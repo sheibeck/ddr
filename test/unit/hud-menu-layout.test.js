@@ -147,8 +147,12 @@ test("(5) the z-ladder: rail (4) < scrim (5) < menu wrap (6) < overlay (8); .mw-
 
 // ─── (6) opening/closing cannot move the viewport ────────────────────────
 
-test("(6) opening/closing cannot move the viewport: the open-state rules declare only visibility/opacity/transform/pointer-events/background/color; the dropdown is absolutely positioned, the scrim is fixed; the menu functions call no camera/positioning function and stamp no lastDismissAt", () => {
-  const ALLOWED = new Set(["visibility", "opacity", "transform", "pointer-events", "background", "color"]);
+test("(6) opening/closing cannot move the viewport: the open-state rules declare only visibility/opacity/transform/pointer-events/background/color/transition; the dropdown is absolutely positioned, the scrim is fixed; the menu functions call no camera/positioning function and stamp no lastDismissAt", () => {
+  // Phase 58 (MOTION-02) whitelists exactly one more property: `transition`
+  // — pure timing metadata, never itself a layout-affecting declaration
+  // (it names which properties animate and how fast, not a new value for
+  // any of them), so it cannot move the viewport either.
+  const ALLOWED = new Set(["visibility", "opacity", "transform", "pointer-events", "background", "color", "transition"]);
   const openMenuRule = ruleFor('\\.mw-hud-menu\\[data-open="1"\\]');
   const openScrimRule = ruleFor('\\.mw-hud-menu-scrim\\[data-open="1"\\]');
   const openFaceRule = ruleFor('\\.mw-hud-menu-btn\\[aria-expanded="true"\\] \\.mw-hud-menu-face');
@@ -173,9 +177,14 @@ test("(6) opening/closing cannot move the viewport: the open-state rules declare
   }
 });
 
-// ─── (7) no motion ────────────────────────────────────────────────────────
+// ─── (7) motion (Phase 58, MOTION-02) ──────────────────────────────────────
 
-test("(7) no motion: none of the menu rules carries a transition or an animation, and @keyframes mwrise occurs exactly once (the pre-existing sheet keyframes)", () => {
+test("(7) motion (Phase 58, MOTION-02): the resting/open menu rules carry the exact close/open transitions pinned to motion.js's constants; every menu rule still declares no animation, and @keyframes mwrise still occurs exactly once (the pre-existing sheet keyframe — the menu transitions between two declared states, never through a keyframe of its own)", () => {
+  const restingRule = ruleFor("\\.mw-hud-menu(?!-)");
+  assert.match(restingRule, /transition:opacity \.12s ease-in,transform \.12s ease-in,visibility 0s \.12s/);
+  const openRule = ruleFor('\\.mw-hud-menu\\[data-open="1"\\]');
+  assert.match(openRule, /transition:opacity \.16s ease-out,transform \.16s ease-out,visibility 0s/);
+
   for (const selector of [
     "\\.mw-hud-menu(?!-)",
     '\\.mw-hud-menu\\[data-open="1"\\]',
@@ -186,10 +195,9 @@ test("(7) no motion: none of the menu rules carries a transition or an animation
     "\\.mw-hud-menu-item",
   ]) {
     const rule = ruleFor(selector);
-    assert.doesNotMatch(rule, /transition/i, `${selector} must declare no transition`);
     assert.doesNotMatch(rule, /animation/i, `${selector} must declare no animation`);
   }
-  assert.equal((CODE.match(/@keyframes mwrise/g) || []).length, 1, "comment-stripped: exactly the pre-existing sheet keyframes, no new one added");
+  assert.equal((CODE.match(/@keyframes mwrise/g) || []).length, 1, "comment-stripped: exactly the pre-existing sheet keyframe, no new one added for the menu");
 });
 
 // ─── BEHAVIOUR harness ────────────────────────────────────────────────────

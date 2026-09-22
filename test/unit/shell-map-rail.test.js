@@ -146,10 +146,14 @@ test("(b) CSS: .mw-rail's own values, the five tone rules, typography, action-bu
   // and border-top are unchanged. The structural half of this claim (the
   // rail is out of #app's flex flow) is proven with teeth by
   // rail-overlay.test.js; this test only pins the byte-exact declarations.
-  assert.match(HTML, /\.mw-rail\{[^}]*position:absolute[^}]*padding:14px 16px 18px[^}]*border-top:3px solid var\(--rail-edge\)[^}]*transform:translateY\(100%\)[^}]*visibility:hidden[^}]*pointer-events:none[^}]*\}/);
+  // Phase 58 (MOTION-02): the base/shown rules now also carry the close/
+  // open transitions, and the hidden rule's display restore is !important
+  // (beats the global [hidden]{display:none!important} reset — see
+  // panel-motion.test.js's own dedicated test for the rationale).
+  assert.match(HTML, /\.mw-rail\{[^}]*position:absolute[^}]*padding:14px 16px 18px[^}]*border-top:3px solid var\(--rail-edge\)[^}]*transform:translateY\(100%\)[^}]*visibility:hidden[^}]*pointer-events:none;transition:transform \.12s ease-in,visibility 0s \.12s\}/);
   assert.doesNotMatch(HTML.match(/^\.mw-rail\{[^}]*\}/m)[0], /flex:none|min-height:132px/);
-  assert.match(HTML, /^\.mw-rail\[hidden\]\{display:block;transform:translateY\(100%\);visibility:hidden;pointer-events:none\}$/m);
-  assert.match(HTML, /^\.mw-rail\[data-shown="1"\]\{transform:translateY\(0\);visibility:visible;pointer-events:auto\}$/m);
+  assert.match(HTML, /^\.mw-rail\[hidden\]\{display:block!important;transform:translateY\(100%\);visibility:hidden;pointer-events:none\}$/m);
+  assert.match(HTML, /^\.mw-rail\[data-shown="1"\]\{transform:translateY\(0\);visibility:visible;pointer-events:auto;transition:transform \.18s ease-out,visibility 0s\}$/m);
   const tones = {
     info: ["#6b5c3c", "#e8c97a"],
     good: ["#5e7a3c", "#a8cc72"],
@@ -443,8 +447,11 @@ test("(o) 2026-09-17 UAT ruling (reverses the 2026-09-16 map-tab-only rule): sho
 
 test("(p) renderEncounter re-renders the rail (guarded on __mzState) and toggles the pulse cover on both panel show/hide sites", () => {
   const encRegion = fnRegion("function renderEncounter() {");
-  assert.match(encRegion, /if \(panel\) panel\.hidden = true;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.remove\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
-  assert.match(encRegion, /if \(panel\) panel\.hidden = false;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.add\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
+  // Phase 58 (MOTION-02): the raw panel.hidden writes now route through
+  // hidePanel()/showPanel() (window.__mzMotion's fail-open wrappers) — the
+  // same call sites, the same surrounding statements.
+  assert.match(encRegion, /if \(panel\) hidePanel\(panel\);\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.remove\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
+  assert.match(encRegion, /if \(panel\) showPanel\(panel\);\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.add\("covered"\);\s*\n\s*if \(window\.__mzState\) window\.renderRail\?\.\(\);/);
 });
 
 // ─── (q) 2026-09-17 UAT ruling (actual icons): renderRail's <img> branch, mzRailLine's optional trailing iconKey ────────────

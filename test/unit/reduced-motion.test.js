@@ -159,3 +159,65 @@ test("reduced-motion/pan: source anchors — the camera instance reads prefersRe
   const subscribeMatches = stripped.match(/onReducedMotionChange\(window,/g) || [];
   assert.equal(subscribeMatches.length, 1, "onReducedMotionChange(window, must be wired exactly once");
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+// ─── panels (MOTION-02, Plan 58-04) ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+test("reduced-motion/panels: with the default (reduced) sandbox, closeMarksLegend()/closeCampSheet() set hidden synchronously and write no data-motion", () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, reducedMotion: true });
+  sandbox.setState(newRun(1));
+
+  const legend = doc.document.getElementById("mw-legend-sheet");
+  sandbox.context.openMarksLegend();
+  sandbox.context.closeMarksLegend();
+  assert.equal(legend.hidden, true, "reduced motion must resolve the close synchronously");
+  assert.equal(legend.dataset.motion, undefined);
+
+  const camp = doc.document.getElementById("mw-camp-sheet");
+  sandbox.context.openCampSheet();
+  sandbox.context.closeCampSheet();
+  assert.equal(camp.hidden, true);
+  assert.equal(camp.dataset.motion, undefined);
+});
+
+test("reduced-motion/panels: with the default (reduced) sandbox, renderEncounter's close sets #enc-panel hidden synchronously with no data-motion", () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, reducedMotion: true });
+  sandbox.setState(newRun(1));
+
+  const panel = doc.document.getElementById("enc-panel");
+  sandbox.context.window.__mzStair = {};
+  sandbox.context.renderEncounter();
+  assert.equal(panel.hidden, false);
+
+  sandbox.context.window.__mzStair = null;
+  sandbox.context.renderEncounter();
+  assert.equal(panel.hidden, true, "reduced motion must resolve the close synchronously");
+  assert.equal(panel.dataset.motion, undefined);
+});
+
+test("reduced-motion/panels: with the default (reduced) sandbox, showTab's outgoing screen hides synchronously and writes no inline transform", () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, reducedMotion: true });
+  sandbox.setState(newRun(1));
+
+  const maze = doc.document.getElementById("screen-maze");
+  const hero = doc.document.getElementById("screen-hero");
+  sandbox.context.window.__mzShowTab("hero");
+  assert.equal(hero.hidden, false);
+  assert.equal(maze.hidden, true, "reduced motion must hide the outgoing screen synchronously");
+  assert.equal(maze.dataset.motion, undefined);
+  assert.equal(maze.style.transform, "", "reduced motion must write no inline leaving transform");
+});
+
+test("reduced-motion/panels: source anchor — settleAllMotion()'s body drains the panel-close helper via panelMotion.finishAll()", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const stripped = stripHtml(raw);
+  const settleIdx = stripped.indexOf("function settleAllMotion(");
+  assert.ok(settleIdx !== -1, "function settleAllMotion( not found");
+  const settleNextFn = stripped.indexOf("\nfunction ", settleIdx + 1);
+  const settleBody = stripped.slice(settleIdx, settleNextFn === -1 ? stripped.length : settleNextFn);
+  assert.match(settleBody, /panelMotion\.finishAll\(\);/);
+});

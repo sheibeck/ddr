@@ -1968,7 +1968,15 @@ let mwActiveTab = "maze";
     // mid-leave, is left alone.
     for (const key of Object.keys(screens)) {
       const el = screens[key];
-      if (key === name) { showPanel(el); continue; }
+      if (key === name) {
+        // A straight-back tap re-selects a screen that was still mid-leave
+        // (its own pending close carried an inline leaving transform) —
+        // clear that offset before showPanel cancels the close, so a
+        // reselected screen is never left with a stale translateY.
+        el.style.transform = "";
+        showPanel(el);
+        continue;
+      }
       if (el.hidden || window.__mzMotion?.isClosing?.(el)) continue;
       if (window.__mzMotion && !window.__mzMotion.reduced()) {
         const scrollTop = screensEl ? screensEl.scrollTop : 0;

@@ -84,14 +84,14 @@ test("(2) the stage is the positioning parent and clips the translated-out rail:
 
 // ─── (3) visibility is transform-driven, not display-driven ──────────────
 
-test("(3) visibility is transform-driven, not display-driven: the resting, shown and hidden-attribute rules each carry transform + visibility, the hidden-attribute rule restores a block display first, and pointer-events flips with visibility (T-57-04)", () => {
+test("(3) visibility is transform-driven, not display-driven: the resting, shown and hidden-attribute rules each carry transform + visibility, the hidden-attribute rule restores a block display first with !important (Phase 58, MOTION-02 — beats the global [hidden]{display:none!important} reset that silently defeated this rule until now), and pointer-events flips with visibility (T-57-04)", () => {
   const restingRule = ruleFor("\\.mw-rail");
   assert.match(restingRule, /transform:translateY\(100%\)/);
   assert.match(restingRule, /visibility:hidden/);
   assert.match(restingRule, /pointer-events:none/);
 
   const hiddenRule = ruleFor('\\.mw-rail\\[hidden\\]');
-  assert.match(hiddenRule, /^display:block/, "the hidden-attribute rule's FIRST declaration must restore block display");
+  assert.match(hiddenRule, /^display:block!important/, "the hidden-attribute rule's FIRST declaration must restore block display, and it must be !important");
   assert.match(hiddenRule, /transform:translateY\(100%\)/);
   assert.match(hiddenRule, /visibility:hidden/);
   assert.match(hiddenRule, /pointer-events:none/);
@@ -141,11 +141,19 @@ test("(5) renderRail() neither refits the canvas nor nudges the camera: the stan
   const region = fnRegion("function renderRail()");
   assert.equal((region.match(/fit\(/g) || []).length, 0);
   assert.equal((region.match(/KeepPartyInView/g) || []).length, 0);
-  // The dataset.shown write introduced in this plan's Task 2 lives here too —
+  // The dataset.shown write introduced in 57-02's Task 2 lives here too —
   // confirm it is present and written from the same hidden predicate.
+  // Phase 58 (MOTION-02): renderRail() now also READS dataset.shown
+  // (wasShown) BEFORE overwriting it, to tell a hidden->shown change from
+  // a card-replacing-a-card-while-shown change (the rail retention rule) —
+  // so the token now appears twice (the read, then the write), while the
+  // WRITE itself stays exactly-once and still follows railEl.hidden.
   assert.equal((region.match(/railEl\.hidden =/g) || []).length, 1);
-  assert.equal((region.match(/railEl\.dataset\.shown/g) || []).length, 1);
-  assert.ok(region.indexOf("railEl.hidden =") < region.indexOf("railEl.dataset.shown"));
+  assert.equal((region.match(/railEl\.dataset\.shown/g) || []).length, 2);
+  const hiddenWriteIdx = region.indexOf("railEl.hidden =");
+  const shownWriteIdx = region.indexOf("railEl.dataset.shown = railEl.hidden");
+  assert.ok(shownWriteIdx !== -1, "the dataset.shown WRITE (not the wasShown read) must be present");
+  assert.ok(hiddenWriteIdx < shownWriteIdx, "the hidden write must still precede the dataset.shown write");
 });
 
 // ─── (6) the rail is still a sibling of the screens, not a child of one ──
@@ -158,13 +166,18 @@ test("(6) the rail is still a sibling of the screens, not a child of one: id=\"m
   assert.doesNotMatch(mainSlice, /id="mw-rail"/);
 });
 
-// ─── (7) no transition, duration or easing was added ──────────────────────
+// ─── (7) the slide is exactly Phase 58's ───────────────────────────────
 
-test("(7) no transition, duration or easing was added: the three rail visibility rules carry no transition declaration (Phase 58 owns the motion)", () => {
+test("(7) motion (Phase 58, MOTION-02): the base rule carries the exact CLOSE transition and the shown rule carries the exact OPEN transition, pinned to src/browser/motion.js's own constants; the hidden-attribute rule (a static display/transform/visibility/pointer-events snapshot, never itself transitioning) still carries none", () => {
   const restingRule = ruleFor("\\.mw-rail");
   const hiddenRule = ruleFor('\\.mw-rail\\[hidden\\]');
   const shownRule = ruleFor('\\.mw-rail\\[data-shown="1"\\]');
+  assert.match(restingRule, /transition:transform \.12s ease-in,visibility 0s \.12s/);
+  assert.match(shownRule, /transition:transform \.18s ease-out,visibility 0s/);
+  assert.doesNotMatch(hiddenRule, /transition/);
+  // Neither rule declares an `animation` — the rail's motion is a plain
+  // CSS transition between two declared states, never a keyframe.
   for (const rule of [restingRule, hiddenRule, shownRule]) {
-    assert.doesNotMatch(rule, /transition/);
+    assert.doesNotMatch(rule, /animation/);
   }
 });

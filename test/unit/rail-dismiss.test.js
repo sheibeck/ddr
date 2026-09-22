@@ -332,13 +332,21 @@ test("Section B (4): an armed body tap on a plain card with no buttons and no lo
   await sleepPastArmWindow();
 
   assert.equal(sandbox.actionsEl().children.length, 0, "the plain card must carry no action row");
+  const titleBefore = doc.document.getElementById("mw-rail-title").textContent;
 
   sandbox.railEl().onclick(bodyTapEvent());
 
   assert.equal(sandbox.context.window.__mzRail.card, null, "the dismiss branch must clear the rail view-model's card");
   const railEl = sandbox.railEl();
   assert.equal(railEl.hidden, true, "renderRail() must have re-run and hidden the now-idle rail");
-  assert.equal(railEl.dataset.idle, "1", "the rail must have re-rendered into its idle state");
+  assert.equal(railEl.dataset.shown, "0", "the rail must have re-rendered into its idle state");
+  // Phase 58 (MOTION-02): the idle re-render is a skip-repaint path — the
+  // departing card's own content (title/lines/etc.) is retained on screen,
+  // NOT overwritten with the idle copy, so it stays intact through its
+  // 120ms slide-out. dataset.idle is therefore stale here (whatever it
+  // was on the last SHOWN render) rather than freshly "1" — deliberate,
+  // per the rail-retention rule (58-04-PLAN.md's Task 2).
+  assert.equal(doc.document.getElementById("mw-rail-title").textContent, titleBefore, "the departing card's title must be retained for the slide-out, not repainted to the idle copy");
 });
 
 test("Section B (5): on a screen where the rail has never shown, a body tap on the resting rail throws nothing and leaves the view-model at its resting value", () => {

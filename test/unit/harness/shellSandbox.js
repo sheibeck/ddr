@@ -55,7 +55,7 @@ import {
 import { renderStoreScreen } from "../../../src/browser/storeScreen.js";
 import { identityLine, identityParts, counterSlots } from "../../../src/browser/hudBands.js";
 import { hudMenuNext } from "../../../src/browser/hudMenu.js";
-import { REDUCED_MOTION_QUERY, prefersReducedMotion } from "../../../src/browser/motion.js";
+import { REDUCED_MOTION_QUERY, prefersReducedMotion, createPanelMotion } from "../../../src/browser/motion.js";
 import { createCameraGlide } from "../../../src/browser/cameraGlide.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -143,6 +143,24 @@ function wireBridges(context) {
     cancelRaf: (id) => w.cancelAnimationFrame(id),
     reduced: () => prefersReducedMotion(w),
   });
+  // Phase 58 (MOTION-02) — the REAL panel-close helper, driven by this
+  // sandbox's own scheduler (the fake clock's setTimeout/clearTimeout when
+  // loadShellSandbox was given one, else the sandbox's inert never-firing
+  // default) and the live reduced-motion predicate reading this sandbox's
+  // own matchMedia stub. Never a stub instance — panel-motion.test.js and
+  // reduced-motion.test.js's "panels" section both depend on exercising
+  // the real timer-driven close.
+  const panelMotion = createPanelMotion({
+    setTimeout: (fn, ms) => w.setTimeout(fn, ms),
+    clearTimeout: (id) => w.clearTimeout(id),
+    reduced: () => prefersReducedMotion(w),
+  });
+  w.__mzMotion = {
+    reduced: () => prefersReducedMotion(w),
+    open: (el) => panelMotion.open(el),
+    close: (el, onHidden) => panelMotion.close(el, onHidden),
+    isClosing: (el) => panelMotion.isClosing(el),
+  };
 }
 
 /**

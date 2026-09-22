@@ -415,8 +415,11 @@ test('(h) PERF addendum 2026-09-17: the party pulse is paused/hidden while the e
   const b = CODE.indexOf("\nfunction ", a + 1);
   assert.ok(a !== -1 && b !== -1 && b > a, "renderEncounter() region found");
   const region = CODE.slice(a, b);
-  assert.match(region, /if \(panel\) panel\.hidden = true;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.remove\("covered"\);/);
-  assert.match(region, /if \(panel\) panel\.hidden = false;\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.add\("covered"\);/);
+  // Phase 58 (MOTION-02): the raw panel.hidden writes now route through
+  // hidePanel()/showPanel() (window.__mzMotion's fail-open wrappers) — the
+  // same call sites, the same surrounding statements.
+  assert.match(region, /if \(panel\) hidePanel\(panel\);\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.remove\("covered"\);/);
+  assert.match(region, /if \(panel\) showPanel\(panel\);\s*\n\s*document\.getElementById\("mw-party-pulse"\)\?\.classList\.add\("covered"\);/);
 });
 
 // ─── (i) canvas: draw() region positive/negative pins ─────────────────────
