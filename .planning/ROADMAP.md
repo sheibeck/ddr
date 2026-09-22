@@ -69,8 +69,15 @@ Plans:
   4. Tapping MARKS, CENTRE, MAKE CAMP or the gear chip never also moves the party, and the party is never left sitting under the chip strip
   5. The HUD reads as stacked bands (name/class + HP, then counters, then conditions, then chips) with nothing overlapping at any text size or square count, and a player caught in Table-7 darkness can see it on the map along with how much longer it lasts
 
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+Plans (strictly sequential — every plan edits `mazeworld.html`, and worktrees are degraded for this run, so no two can share a wave):
+
+- [ ] 57-01-PLAN.md — HUD four bands + the chip strip leaves the viewport; `src/browser/hudBands.js` (LAYOUT-04, LAYOUT-05)
+- [ ] 57-02-PLAN.md — the rail becomes an out-of-flow overlay inside a new `#mw-stage`; the viewport stops moving (LAYOUT-01)
+- [ ] 57-03-PLAN.md — guarded tap-to-dismiss + doubled, line-scaled, bounded rail holds (LAYOUT-02, LAYOUT-03)
+- [ ] 57-04-PLAN.md — counter-driven darkness vignette via a new `__mzDarkness` bridge, plus the phase gate and todo closure (LAYOUT-06)
 
 ### Phase 58: Motion & Pacing
 
