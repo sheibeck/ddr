@@ -4,17 +4,17 @@ milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 57
 current_phase_name: map-hud-layout-band
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: "Completed 57-01-PLAN.md (four-band HUD + chip strip out of the viewport). BREAK TAKEN 2026-09-22 at the user's request to switch models; tree clean, nothing in flight. RESUME: /gsd-autonomous — dispatch 57-02 (rail overlay, LAYOUT-01), then 57-03, then 57-04. Run conventions that are NOT in the plans and must be carried into every executor brief: (1) worktrees are DEGRADED for this run (worktree base-check -> shouldDegrade true, fork-ref-unknown) so executors run SEQUENTIALLY on the main tree, one at a time, never parallel; (2) phase base commit for all 57 gate diffs is 4d43edf; (3) NO bare substring greps in acceptance checks — anchor them or scope to stripHtml from tools/ident-sweep.mjs (Phase 56 lost three criteria to this); (4) re-pin broken tests, never delete — compare grep -c '^test(' against git show 4d43edf:<file>; (5) deferred-UAT protocol: no device pause, no APK, device checks go to SUMMARY human_verification for the Phase 60 batch; (6) verifier agents are OFF — VERIFICATION.md is orchestrator-authored; (7) use gsd-tools state verbs, do not hand-edit STATE.md (fields fixed at 27735e2); (8) arm a Monitor per dispatch that checks BOTH commits AND working-tree file mtimes — a commit-only watch false-alarms on long single tasks. Open user rulings from this phase: darkness vignette follows mapViewRadius NOT revealRadius; the DARK chip must name any active waiver; unifying the two darkness mechanisms is backlog 999.8, out of v1.8."
-last_updated: "2026-09-22T17:03:46.649Z"
+stopped_at: "Completed 57-02-PLAN.md (rail overlay, LAYOUT-01). RESUME: /gsd-autonomous — dispatch 57-03 (rail dismiss + doubled holds, LAYOUT-02/03), then 57-04 (darkness legibility, LAYOUT-06). Same run conventions from the 57-01/57-02 break still apply (worktrees degraded, sequential executor, phase base 4d43edf, anchored greps, re-pin never delete, deferred-UAT to Phase 60, verifier agents off, gsd-tools state verbs only)."
+last_updated: "2026-09-22T17:29:11.032Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 57 execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
   percent: 20
 total_plans_in_phase: 4
 ---
@@ -31,10 +31,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: 57 (map-hud-layout-band) — EXECUTING
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 4
-Progress: [██████░░░░] 63%
-Plan: 2 of 4
+Progress: [████████░░] 75%
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-22 — Phase 57 execution started
 
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T17:03:46.217Z
-Stopped at: Completed 57-01-PLAN.md — four-band HUD + chip strip out of viewport
+Last session: 2026-09-22T17:29:11.002Z
+Stopped at: Completed 57-02-PLAN.md (rail overlay, LAYOUT-01). RESUME: /gsd-autonomous — dispatch 57-03 (rail dismiss + doubled holds, LAYOUT-02/03), then 57-04 (darkness legibility, LAYOUT-06). Same run conventions from the 57-01/57-02 break still apply (worktrees degraded, sequential executor, phase base 4d43edf, anchored greps, re-pin never delete, deferred-UAT to Phase 60, verifier agents off, gsd-tools state verbs only).
 Resume file: None
 
 ## Operator Next Steps
@@ -322,6 +322,7 @@ Resume file: None
 | Phase 56 P03 | 15min | 3 tasks | 3 files |
 | Phase 56 P04 | 30min | 2 tasks | 3 files |
 | Phase 57 P01 | ~55min | 3 tasks | 10 files |
+| Phase 57 P02 | 25min | 3 tasks | 3 files |
 
 ## Decisions
 
@@ -587,6 +588,9 @@ Resume file: None
 - [Phase ?]: Phase 56 Plan 04: wired mazeworld.html to src/browser/sfx.js at exactly four call sites (import, applySettings gate, dispatchWithNarration seam, first-gesture pointerdown listener); AUD-05 proven by a zero-open()-calls test, not merely zero clips played
 - [Phase ?]: HUD_BAND_ANCHORS holds literal search-anchor strings (id=/class= attribute forms), not bare ids, so band 2 (no id, only a class) is anchorable the same way as the other three bands
 - [Phase ?]: Band 1 identity element deliberately reuses the exact .mw-hud-name/#mw-hud-name naming Phase 35 retired — the 2026-09-21 ruling's explicit reversal, confirmed against pre-Phase-35 git history
+- [Phase ?]: 57-02: #mw-stage wraps .mw-screens + #mw-rail (not .mazebox) — keeps the rail a sibling of the screens so the every-tab feedback ruling stands
+- [Phase ?]: 57-02: rail visibility model is transform+visibility with [hidden] restoring block display first, never display:none — Phase 58 animates the slide this phase makes possible
+- [Phase ?]: 57-02: renderRail() writes data-shown from the same predicate as hidden (railEl.hidden ? "0" : "1"), one write site, so the two can never drift
 
 ### Blockers
 

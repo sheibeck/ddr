@@ -41,7 +41,7 @@
 
 ### Map & HUD layout (LAYOUT — promoted from backlog 999.4)
 
-- [ ] **LAYOUT-01**: The rail slides up over the map; the map neither resizes nor reflows when the rail appears or leaves
+- [x] **LAYOUT-01**: The rail slides up over the map; the map neither resizes nor reflows when the rail appears or leaves
 - [ ] **LAYOUT-02**: A tap on the body dismisses a rail card that asks for no decision; a card that asks for a decision can only be cleared by making it
 - [ ] **LAYOUT-03**: A rail card stays readable long enough to finish reading it — roughly double today's hold
 - [x] **LAYOUT-04**: Tapping MARKS, CENTRE, MAKE CAMP or the gear chip never also moves the party, and the party is never left sitting under the chip strip
@@ -92,7 +92,7 @@
 | AUD-04 | Phase 56 | Complete |
 | AUD-05 | Phase 56 | Complete |
 | AUD-06 | Phase 56 | Complete |
-| LAYOUT-01 | Phase 57 | Pending |
+| LAYOUT-01 | Phase 57 | Complete |
 | LAYOUT-02 | Phase 57 | Pending |
 | LAYOUT-03 | Phase 57 | Pending |
 | LAYOUT-04 | Phase 57 | Complete |
