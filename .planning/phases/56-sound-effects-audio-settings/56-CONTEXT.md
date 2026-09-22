@@ -39,7 +39,19 @@ Also out of scope: music or ambient loops (REQUIREMENTS.md "Out of Scope"), any 
 - **Sound Off gates at the module boundary — no `AudioContext` is ever constructed.** AUD-05 says "opens no audio device", so the muted-gain-node approach is explicitly rejected. Flipping Sound back On mid-session constructs the context and decodes the clips at that moment (the same unlock path, just triggered later).
 - **`copySfx()` in `tools/build-www.mjs`**, mirroring `copyIcons()` exactly: a whole-directory copy at build time from `sfx/` into `www/sfx/`, throwing loudly if the source directory is missing. The MP3s ship as delivered — **no re-encoding**. (`icons/optimized/` already copies, so `party_*` and `set_dungeon_*` need no build change; `sfx/` is the only gap.)
 - **`node --test` unit tests over a pure event→clip mapping table plus an injected fake audio backend**, mirroring `haptics.js`'s `__mzHapticsImportOverride` hook. Tests assert: the right clip ids fire for a given event list, the de-dupe and 3-per-dispatch cap hold, the shuffle-bag never repeats back-to-back, and **Sound Off fires nothing and constructs no context**. Device confirmation is deferred to the Phase 60 batch.
-- **The monster-family cry plays on `combatJoined`** — the Fight! press — one cry per fight, selected from the foe's BESTIARY `type` (Beasts / Demons / Humans / Lair Beasts / Magical / Walking Dead → `enemy-batrat` / `enemy-beast` / `enemy-demon` / `enemy-human` / `enemy-undead`). Not on `encounterStarted`, which is the preview the player has not committed to yet. Note the six BESTIARY families map onto five clips — the planner must record which family shares a clip and why.
+- **The monster-family cry plays on `combatJoined`** — the Fight! press — one cry per fight, selected from the foe's BESTIARY `type`. Not on `encounterStarted`, which is the preview the player has not committed to yet.
+- **The family→clip map is FIXED by user ruling (2026-09-22)** and is not an open design question:
+
+  | Family | Clip |
+  |---|---|
+  | Beasts | `enemy-beast` |
+  | Demons | `enemy-demon` |
+  | Humans | `enemy-human` |
+  | Lair Beasts | `enemy-human` — humanoid lair-dwellers (Dog Face, Goblin, Hobgoblin, M&M, Pogo, Hair); they carry swords and wilmst, not an animal's voice |
+  | Magical | `enemy-demon` — nearest fit; nothing matches Drekk / Shadow / Werebeast / Drudge cleanly |
+  | Walking Dead | `enemy-undead` |
+
+- **`enemy-batrat.mp3` is deliberately UNUSED (user ruling, 2026-09-22).** It is a creature-specific cry — "Bat/Rat" is a single tier-1 entry inside Beasts (`content/bestiary.js:42`), not a family — and the user ruled out any per-creature override layer in front of the family map. Bat/Rat sounds like the rest of Beasts. Consequences: the map is total over all six families with two deliberate shares; **30 of the 31 clips are mapped and one is recorded-unused**, so any completeness assertion must be written as 30 + 1, never as a check over all 31; `copySfx()` still copies `sfx/` whole, so the file still ships; and the unused clip is noted in the event-map module's comments with the ruling date so a later reader does not "fix" it by wiring Bat/Rat back up.
 
 ### Claude's Discretion
 
