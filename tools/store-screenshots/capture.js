@@ -3,7 +3,7 @@ const fs = require('fs');
 const { startRun, snapshot, stepToward } = require('./bot.js');
 const SIZES = { phone: [432, 768, 2.5], tab7: [675, 1200, 2], tab10: [810, 1440, 2] }; // all exact 9:16
 const PRIORITY = ['FIGHT IT OUT','1 · STRIKE','TAKE ALL','TAKE','EQUIP NOW','STOW','GO DOWN','DESCEND','TAKE THEM ALONG','WELCOME','ACCEPT','YES','MOVE ON','CONTINUE','OK','DONE','CLOSE','LEAVE','CONFIRM','BURY THEM'];
-const NAV = /^mw-chip|^btn-camp|^mw-gear-btn|^mw-tab|^mw-cond/;
+const NAV = /^mw-chip|^btn-camp|^mw-gear-btn|^mw-hud-menu|^mw-tab|^mw-cond/;
 const bodyText = (page, n=500) => page.evaluate((n)=>document.body.innerText.replace(/\s*\n\s*/g,' / ').slice(0,n), n);
 const clickTab = (page, t) => page.evaluate((t)=>[...document.querySelectorAll('button.mw-tab')].find(b=>b.innerText.trim()===t).click(), t);
 const clickLabel = (page, lab) => page.evaluate((lab)=>{const norm=b=>b.innerText.trim().replace(/\s+/g,' ').slice(0,28); const b=[...document.querySelectorAll('button')].filter(b=>b.offsetParent!==null&&!b.disabled).find(b=>norm(b)===lab); if(!b) return false; b.click(); return true;}, lab);

@@ -26,19 +26,26 @@
 // by paint()'s HUD writes.
 
 /**
- * HUD_BAND_ANCHORS — the four band anchors, in the ruled top-to-bottom
- * order, as the exact literal substrings their markup carries in
- * mazeworld.html: the band-1 identity element, the band-2 counters
- * element, the condition-chip strip host, the map chip band. This is the
- * SINGLE place the order is written down — test/unit/hud-bands-layout
- * .test.js asserts these four substrings appear in mazeworld.html in this
- * exact order, so the constant and the markup can never drift apart.
+ * HUD_BAND_ANCHORS — the band anchors, in the ruled top-to-bottom order, as
+ * the exact literal substrings their markup carries in mazeworld.html: the
+ * band-1 identity element, the HP strip directly under it, the band-2
+ * counters element, the condition-chip strip host. This is the SINGLE place
+ * the order is written down — test/unit/hud-bands-layout.test.js asserts
+ * these four substrings appear in mazeworld.html in this exact order, so
+ * the constant and the markup can never drift apart.
+ *
+ * USER MOCK RULING 2026-09-22 (Plan 05): the former fourth anchor
+ * (`id="mw-map-chips"`, the map chip band) is retired — that band is gone
+ * outright, folded into the ☰ HUD menu on band 2 (src/browser/hudMenu.js).
+ * The HP strip (`class="mw-hud-wptrack"`) takes its place in the anchor
+ * list, between band 1 and band 2, matching its new position in the
+ * markup.
  */
 export const HUD_BAND_ANCHORS = Object.freeze([
   'id="mw-hud-name"',
+  'class="mw-hud-wptrack"',
   'class="mw-hud-counters"',
   'id="mm-conditions"',
-  'id="mw-map-chips"',
 ]);
 
 /**

@@ -134,6 +134,10 @@
      above. Supersedes the Device-review round 4 19px HUD-number size. */
   --mw-font-hud-label:calc(0.40625rem * var(--mw-text-scale)); /* Press Start 2P — mock's 6.5px HUD tags */
   --mw-font-hud-num:calc(1rem * var(--mw-text-scale));         /* Courier Prime Bold — mock's 16px HUD numbers */
+  /* Phase 57 (LAYOUT-05), Plan 05: the 2026-09-22 mock's 13px band-1
+     Courier Prime Bold size — the name and the race/class/level line share
+     this token (design/Mazeworld Map.dc.html's own literal font-size:13px). */
+  --mw-font-hud-ident:calc(0.8125rem * var(--mw-text-scale));
 }
 *{box-sizing:border-box}
 body{
@@ -347,23 +351,18 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-vignette[data-dark="near"]{box-shadow:inset 0 0 55px 34px rgba(6,5,4,.94)}
 .mw-vignette[data-dark="close"]{box-shadow:inset 0 0 34px 54px rgba(4,3,2,.97)}
 /* Phase 35 (MAP-06/08): MARKS/CENTRE, MAKE CAMP + the settings gear, per
-   design/Mazeworld Map Panel.dc.html's chrome block — replaces the Phase 33
-   chip-row chrome entirely.
-   Phase 57 (LAYOUT-04, 2026-09-21 user ruling): this strip is no longer an
-   absolute overlay INSIDE .mw-maze-viewport — a chip tap there could also
-   land on the canvas's tap-to-move, and the viewport's keepInViewAxis rect
-   counted cells hidden under it. It is now a static band-4 header, a
-   sibling of .mazebox inside #screen-maze, reading like the condition
-   strip above it (no position, no z-index — a real layout band). */
-.mw-map-chips{flex:none;display:flex;gap:6px;align-items:center;padding:6px 14px;background:#181409;border-bottom:3px solid #3a3226}
-.mw-map-chips-gap{flex:1}
-.mw-map-chip{font-family:var(--disp);font-size:7px;letter-spacing:0;padding:9px 10px;min-height:48px;min-width:48px;background:#1b170f;border:2px solid #4a4032;color:#e8c97a;box-shadow:0 3px 0 #0d0b08;border-radius:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.mw-map-chip.camp{background:#241d12;border-color:#6b5c3c}
-/* 2026-09-16 UAT (user ruling): the settings gear glyph needs a readable
-   size and a font that has it — the chip's 48dp box, border, shadow and
-   press state all come from .mw-map-chip above. */
-.mw-map-chip.gear{font-family:var(--mono);font-size:22px;line-height:1;padding:0 12px}
-.mw-map-chip:active{transform:translateY(2px);box-shadow:0 1px 0 #0d0b08}
+   design/Mazeworld Map Panel.dc.html's chrome block — replaced the Phase 33
+   chip-row chrome entirely, then the Phase 57 (LAYOUT-04, 2026-09-21 user
+   ruling) static band-4 header (a chip tap could reach the canvas's
+   tap-to-move while it lived INSIDE .mw-maze-viewport; the viewport's
+   keepInViewAxis rect also counted cells hidden under it).
+   USER MOCK RULING 2026-09-22 (Plan 05, amending the 2026-09-21 ruling
+   above): "too many buttons; we don't need more rails on the top; get rid
+   of clutter." The chip band is retired outright — no band 4 at all. The
+   four controls (MARKS, CENTRE MAP, MAKE CAMP, SETTINGS) move into a ☰
+   dropdown menu that hangs from band 2 (see .mw-hud-menu-wrap below and
+   src/browser/hudMenu.js); the four legacy chip ids stay as the menu rows'
+   own ids so the classic listener lines below are byte-identical. */
 /* Phase 35 (MAP-07): the pulsing gold ring over the party's canvas cell — a
    DOM element (not a canvas rAF loop), so the blanket prefers-reduced-motion
    rule (~L814) zeroes its animation for reduced-motion users (the ring then
@@ -476,9 +475,10 @@ button.danger:active:not(:disabled){background:var(--mw-danger-panel);color:var(
    spell-menu buttons all use this class. Bumped to a still-visually-
    "secondary" but comfortably >=48dp-tall size. */
 button.small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:13px 14px;min-height:48px}
-/* Phase 35 (MAP-06): MAKE CAMP is now the top-right chip over the viewport
-   (.mw-map-chips/.mw-map-chip.camp above), which already styles its
-   pressed state — no scoped hover/active pair needed here. */
+/* Phase 35 (MAP-06) / Phase 57 (LAYOUT-04/05, Plan 05): MAKE CAMP is now a
+   row (.mw-hud-menu-item) inside the ☰ HUD menu — the menu-item rule
+   already styles its pressed state (button:active's generic rule) — no
+   scoped hover/active pair needed here. */
 /* Phase 25.1 (DFB-06): short-on-food state — visibly dimmed, never disabled,
    so a tap can still surface the campFailed rail line's refusal numbers. */
 #btn-camp[data-short="1"]{opacity:.55;border-style:dashed}
@@ -889,22 +889,47 @@ html,body{height:100%}
    as before. */
 #app.mw-app{display:flex;flex-direction:column;height:100vh;background:var(--paper)}
 
-.mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;padding:calc(8px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 9px;display:flex;flex-direction:column;gap:6px}
-/* Phase 57 (LAYOUT-05, 2026-09-21 user ruling): the HUD reads as four
-   stacked bands — this SUPERSEDES Phase 35 (MAP-01) ruling 5's single HUD
-   row (FLOOR/DAY/SQUARES/RATIONS + the x/y WP bar on one line, the DR13
-   character line retired outright). The four bands, top to bottom:
-     1. Identity + vitals — the restored name/race/class(sub)/level line
-        (#mw-hud-name, .mw-hud-identity) plus the x/y HP block + DEV chip.
-     2. Counters — Depth/Day/Squares/Rations, on .mw-hud-counters.
-     3. Condition chips — .mw-cond-strip, directly below this header,
-        unchanged: still hidden when nothing is active.
-     4. Map chip strip — .mw-map-chips, now OUTSIDE .mw-maze-viewport
-        entirely (see that class's own CSS comment) so a chip tap can never
-        also move the party and the keep-in-view rect is honest. */
-.mw-hud-identity{display:flex;align-items:center;gap:10px}
-.mw-hud-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--disp);font-size:var(--mw-font-hud-label);color:#e6ddc6}
-.mw-hud-counters{display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap}
+/* Phase 57 (LAYOUT-05, 2026-09-21 user ruling): the HUD read as four
+   stacked bands (identity+vitals, counters, condition chips, the map chip
+   strip) — this SUPERSEDED Phase 35 (MAP-01) ruling 5's single HUD row.
+   USER MOCK RULING 2026-09-22 (Plan 05, amending the 2026-09-21 order
+   above — "re-arrange the header rails to save space; too many buttons; we
+   don't need more rails on the top; consolidate the buttons into a
+   hamburger menu"): band 4 is retired outright. The HUD is now:
+     1. Band 1 (.mw-hud-identity) — the name (#mw-hud-name, gold, never
+        truncated), then the race/class(sub)/level line (#mw-hud-line,
+        dimmed, ellipsis-truncating), then the x/y HP text
+        (#mw-hud-wp/.mw-hud-wp-text), then the DEV chip.
+     2. The HP strip (.mw-hud-wptrack) — a full-width 4px bar directly
+        under band 1, so the text and the bar can never collide (D-02: this
+        is a one-time layout change, not a camera move).
+     3. Band 2 (.mw-hud-band2) — the counters (.mw-hud-counters:
+        Depth/Day/Squares/Rations) on the left, and the ☰ HUD menu
+        (.mw-hud-menu-wrap) flush right on the same row. MARKS, CENTRE MAP,
+        MAKE CAMP and SETTINGS — the former band 4 — live in the menu's
+        dropdown now (src/browser/hudMenu.js); each row keeps its legacy
+        chip id so the classic listener lines below route unchanged.
+     4. Condition chips (.mw-cond-strip) — unchanged: still hidden when
+        nothing is active.
+   The HUD (bands 1-3 + conditions) hides on the Dead tab via
+   [data-offtab="1"] (paint()'s band writes and showTab both feed it). */
+.mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;display:flex;flex-direction:column}
+.mw-hud-identity{display:flex;align-items:baseline;gap:8px;padding:calc(9px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 10px;background:#241d12;overflow:hidden}
+.mw-hud-name{flex:none;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#e8c97a}
+.mw-hud-line{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#a89c82}
+/* Phase 35 (MAP-01) / Phase 57 (LAYOUT-05/Plan 05): the x/y HP readout, a
+   direct child of band 1 now (the .mw-hud-wp wrapper div retired — the
+   strip below is the bar) — paint() writes the text and the strip's
+   width/threshold classes from the mock's own >50 green / >22 gold / else
+   red bar thresholds (text turns red at <=25). */
+.mw-hud-wp-text{flex:none;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);white-space:nowrap;color:#e6ddc6}
+.mw-hud-wp-text.low{color:#e05a48}
+.mw-hud-wptrack{flex:none;height:4px;background:#2c2519;box-shadow:inset 0 1px 0 rgba(0,0,0,.5)}
+.mw-hud-wpfill{height:100%;background:#7f9d4e;transition:width .25s ease}
+.mw-hud-wpfill.mid{background:#e8c97a}
+.mw-hud-wpfill.low{background:#e05a48}
+.mw-hud-band2{display:flex;align-items:center;gap:10px;padding:8px 14px 9px}
+.mw-hud-counters{flex:1;min-width:0;display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap}
 .mw-hud-item{
   font-family:var(--disp);font-size:var(--mw-font-hud-label);letter-spacing:0;
   text-transform:uppercase;color:#9a8f76;
@@ -917,20 +942,54 @@ html,body{height:100%}
 }
 .mw-hud-floor b{color:#e8c97a}
 .mw-hud-rations.warn b{color:#e05a48}
-/* Phase 35 (MAP-01) / Phase 57 (LAYOUT-05): the x/y HP readout + threshold
-   bar, in band 1 alongside the identity line — paint() writes the text and
-   the bar's width/threshold classes from the mock's own >50 green / >22
-   gold / else red bar thresholds (text turns red at <=25). Phase 57 bounds
-   the block (flex + min-width) instead of flex:none so it can never
-   collide with a long identity line, and the track is now the box's full
-   width (with a floor) instead of a fixed 64px. */
-.mw-hud-wp{flex:0 1 100px;min-width:70px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
-.mw-hud-wp-text{font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-num);white-space:nowrap;color:#e6ddc6}
-.mw-hud-wp-text.low{color:#e05a48}
-.mw-hud-wptrack{width:100%;min-width:56px;height:5px;background:#2c2519;box-shadow:inset 0 0 0 1px #0f0d09}
-.mw-hud-wpfill{height:100%;background:#7f9d4e;transition:width .25s ease}
-.mw-hud-wpfill.mid{background:#e8c97a}
-.mw-hud-wpfill.low{background:#e05a48}
+/* Phase 57 (LAYOUT-05), Plan 05, discovery D — src/browser/hudBands.js's
+   COUNTER_SLOT_CH: only Squares (#m-steps, above) keeps the D-08 5ch slot;
+   Depth/Day/Rations are sized to their real bounds so band 2 still fits a
+   Pixel 7 at text size M now that it also carries the ☰ button. */
+#m-floor{min-width:3ch}
+#m-day{min-width:3ch}
+#m-rations{min-width:2ch}
+/* Phase 57 (LAYOUT-04/05), Plan 05 — the ☰ HUD menu hanging off band 2.
+   The wrap is band 2's SIBLING of .mw-hud-counters (never its child, since
+   .mw-hud-counters keeps overflow:hidden) so the dropdown is never clipped.
+   z-ladder (T-57-19): .mw-rail is 4, the scrim is 5, this wrap is 6, the
+   encounter overlay (.mw-overlay) is 8 — none of .mw-hud/.mw-hud-band2/
+   #mw-stage may gain a z-index, a transform, an opacity below 1 or a
+   clipping overflow, or the ladder scrambles or the dropdown clips. */
+.mw-hud-menu-wrap{position:relative;flex:none;z-index:6}
+.mw-hud-menu-btn{width:48px;height:48px;margin:-7px -8px -7px 0;padding:0;border:0;background:transparent;box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center}
+.mw-hud-menu-face{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;line-height:1;color:#e8c97a;background:#241d12;border:2px solid #6b5c3c;box-shadow:0 3px 0 #0d0b08}
+.mw-hud-menu-btn[aria-expanded="true"] .mw-hud-menu-face{background:#e8c97a;color:#14110c}
+/* Resting state: invisible AND non-interactive — a closed menu can never
+   swallow a map tap underneath it (T-57-16). No transition/animation/
+   @keyframes anywhere in this block: opening/closing is instant this plan;
+   Phase 58 (MOTION-02) adds the mock's rise transition later, onto this
+   SAME data-open/visibility/opacity/transform model — never a display
+   toggle (D-02: neither state may move .mw-maze-viewport). */
+.mw-hud-menu{position:absolute;right:0;top:calc(100% + 7px);min-width:168px;display:flex;flex-direction:column;background:#1b170f;border:2px solid #6b5c3c;box-shadow:0 6px 0 rgba(8,7,5,.6);visibility:hidden;opacity:0;transform:translateY(-6px);pointer-events:none}
+.mw-hud-menu[data-open="1"]{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+.mw-hud-menu-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:var(--disp);font-size:7.5px;letter-spacing:0;line-height:1.6;padding:13px 14px;min-height:48px;color:#e6ddc6;background:#1b170f;border:0;border-top:2px solid #241f16;border-radius:0;box-shadow:none}
+.mw-hud-menu-item:first-child{border-top:0}
+.mw-hud-menu-glyph{flex:none;width:18px;height:14px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);line-height:1}
+.mw-hud-menu-glyph[data-glyph="marks"]{color:#e8c97a;font-size:13px}
+.mw-hud-menu-glyph[data-glyph="centre"]{color:#8fb08a;font-size:14px}
+.mw-hud-menu-glyph[data-glyph="camp"]{color:#b9a4ef;font-size:16px}
+.mw-hud-menu-glyph[data-glyph="settings"]{color:#9a8f76;font-size:15px}
+/* T-57-15/T-57-16: a transparent, fixed full-screen scrim, present only
+   while the menu is open — the tap that closes the menu (any tap but the
+   menu itself) lands HERE, never on the map, structurally (the scrim is not
+   a descendant of #mw-maze-viewport, so the gesture tracker never sees it). */
+.mw-hud-menu-scrim{position:fixed;inset:0;z-index:5;background:transparent;visibility:hidden;pointer-events:none;touch-action:none}
+.mw-hud-menu-scrim[data-open="1"]{visibility:visible;pointer-events:auto}
+/* Phase 57 (LAYOUT-05), Plan 05 — the mock's Dead-tab gate (discovery B):
+   the HUD and the condition strip hide on Dead; #screen-dead takes over the
+   top safe-area padding band 1 used to carry so its first line still
+   clears the status bar. A display toggle is correct here — this is a
+   tab-level screen swap (showTab already toggles `hidden` the same way),
+   never the ☰ menu's own data-state model. */
+.mw-hud[data-offtab="1"]{display:none}
+.mw-cond-strip[data-offtab="1"]{display:none}
+#screen-dead{padding-top:calc(14px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))}
 /* Phase 35 (MAP-01, ruling 5): the condition-chip strip — its own strip
    directly under the HUD (not a wrapping row inside it, and no longer over
    the viewport). One chip per conditionsOf(S) descriptor; tapping a chip
@@ -1405,29 +1464,64 @@ html,body{height:100%}
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
   <!-- ============ TOP HUD (real GameState, safe-area-padded) ============ -->
-  <!-- Phase 57 (LAYOUT-05): band 1 (identity + vitals) then band 2
-       (counters) — see the .mw-hud CSS comment for the full four-band
-       ruling. -->
+  <!-- Phase 57 (LAYOUT-05), Plan 05 (USER MOCK RULING 2026-09-22): the HUD
+       reads top to bottom as band 1 (identity + the x/y HP text), the HP
+       strip, band 2 (counters + the hamburger menu), then the condition
+       chips — see the .mw-hud CSS comment for the full ruling and the
+       amendment note. The former band-4 chip strip is retired into the
+       menu on band 2. -->
   <header class="mw-hud" id="mw-hud">
     <div class="mw-hud-identity">
       <span class="mw-hud-name" id="mw-hud-name"></span>
-      <!-- Phase 35 (MAP-01, ruling 5) / Phase 57 (LAYOUT-05): the x/y HP
-           readout over a threshold bar — paint() writes the text and the
-           bar's width/threshold classes. -->
-      <div class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0/0 HP</span><div class="mw-hud-wptrack"><div class="mw-hud-wpfill" id="mw-hud-wpfill" style="width:100%"></div></div></div>
+      <span class="mw-hud-line" id="mw-hud-line"></span>
+      <!-- Phase 35 (MAP-01, ruling 5) / Phase 57 (LAYOUT-05, Plan 05): the
+           x/y HP text — paint() writes it and the strip's width/threshold
+           classes below (the wrapper div retired; this is now a direct
+           child of band 1, per the mock). -->
+      <span class="mw-hud-wp-text" id="mw-hud-wp">0/0 HP</span>
       <!-- Phase 21 (TUNE-04, D-13): a dev start-at-depth run is visibly
            marked — toggled from state.dev in paint(), never reachable from
            normal play. -->
       <span class="mw-dev-chip" id="mw-dev-chip" hidden>DEV</span>
     </div>
-    <div class="mw-hud-counters">
-      <div class="mw-hud-item mw-hud-floor">Depth<b id="m-floor">1</b></div>
-      <div class="mw-hud-item">Day<b id="m-day">1</b></div>
-      <div class="mw-hud-item">Squares<b id="m-steps">0</b></div>
-      <!-- 04-DR9: RATIONS joins the left cluster, depletion bar removed —
-           just the label+number now (see .mw-hud-rations CSS comment). -->
-      <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
+    <div class="mw-hud-wptrack"><div class="mw-hud-wpfill" id="mw-hud-wpfill" style="width:100%"></div></div>
+    <div class="mw-hud-band2">
+      <div class="mw-hud-counters">
+        <div class="mw-hud-item mw-hud-floor">Depth<b id="m-floor">1</b></div>
+        <div class="mw-hud-item">Day<b id="m-day">1</b></div>
+        <div class="mw-hud-item">Squares<b id="m-steps">0</b></div>
+        <!-- 04-DR9: RATIONS joins the left cluster, depletion bar removed —
+             just the label+number now (see .mw-hud-rations CSS comment). -->
+        <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
+      </div>
+      <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the hamburger menu. The four
+           rows keep the legacy chip ids (mw-chip-marks, mw-chip-centre,
+           btn-camp, mw-gear-btn) so the classic script's existing listener
+           lines (openMarksLegend, centerMap, openCampSheet,
+           openSettingsSheet) route unchanged — see src/browser/hudMenu.js's
+           HUD_MENU_ITEMS for the label/glyph/colour source of truth. -->
+      <div class="mw-hud-menu-wrap">
+        <button type="button" class="mw-hud-menu-btn" id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"><span class="mw-hud-menu-face" aria-hidden="true">&#9776;</span></button>
+        <div class="mw-hud-menu" id="mw-hud-menu" role="menu" aria-label="Map menu" data-open="0">
+          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-marks"><span class="mw-hud-menu-glyph" data-glyph="marks" aria-hidden="true">&#9672;</span><span class="mw-hud-menu-label">MARKS</span></button>
+          <!-- USER RULING 2026-09-22: "CENTRE MAP" (not the shipped chip's
+               "CENTRE") — the menu opens from every tab now, so the row
+               names what it centres. The one wording change adopted from
+               the mock (discovery C); every other row/surface keeps the
+               app's own wording. -->
+          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-centre"><span class="mw-hud-menu-glyph" data-glyph="centre" aria-hidden="true">&#8853;</span><span class="mw-hud-menu-label">CENTRE MAP</span></button>
+          <button type="button" role="menuitem" class="mw-hud-menu-item" id="btn-camp"><span class="mw-hud-menu-glyph" data-glyph="camp" aria-hidden="true">&#9790;</span><span class="mw-hud-menu-label">MAKE CAMP</span></button>
+          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn"><span class="mw-hud-menu-glyph" data-glyph="settings" aria-hidden="true">&#9881;</span><span class="mw-hud-menu-label">SETTINGS</span></button>
+        </div>
+      </div>
     </div>
+    <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the tap that closes the menu is
+         consumed here, structurally: this scrim is the header's last child,
+         is NOT a descendant of #mw-maze-viewport, and sits above the
+         map/rail (z 5) and below the menu (z 6, see .mw-hud-menu-wrap's own
+         CSS comment for the whole z-ladder). Its onclick raises "outside"
+         and dispatches zero moves (T-57-15). -->
+    <div class="mw-hud-menu-scrim" id="mw-hud-menu-scrim" aria-hidden="true" data-open="0"></div>
   </header>
   <!-- Phase 35 (MAP-01, ruling 5): the condition-chip strip — moved OUT of
        the HUD header into its own strip directly beneath it. One chip per
@@ -1452,22 +1546,14 @@ html,body{height:100%}
          "maze" preserved — device-review revision #3 only renames the
          USER-VISIBLE label, not the code ids/keys). -->
     <section class="mw-screen" id="screen-maze" data-screen="maze">
-      <!-- Phase 57 (LAYOUT-04, band 4): the map chip strip is now a static
-           header band, a sibling ABOVE .mazebox — no longer inside
-           .mw-maze-viewport (see .mw-map-chips' own CSS comment for why).
-           #btn-camp keeps its id so paint()'s short-state block stays
-           unchanged; MARKS/CENTRE/gap/MAKE CAMP/gear keep their order. -->
-      <div class="mw-map-chips" id="mw-map-chips">
-        <button type="button" class="mw-map-chip" id="mw-chip-marks">MARKS</button>
-        <button type="button" class="mw-map-chip" id="mw-chip-centre">CENTRE</button>
-        <span class="mw-map-chips-gap" aria-hidden="true"></span>
-        <button type="button" class="mw-map-chip camp" id="btn-camp">MAKE CAMP</button>
-        <!-- 2026-09-16 UAT (user ruling): the settings gear is a chip
-             right of MAKE CAMP; same id, same module listener
-             (openSettingsSheet) as before — the Settings sheet itself
-             is unchanged. -->
-        <button type="button" class="mw-map-chip gear" id="mw-gear-btn" aria-label="Settings">&#9881;</button>
-      </div>
+      <!-- Phase 57 (LAYOUT-04), Plan 05 (USER MOCK RULING 2026-09-22): the
+           former band-4 map chip strip is retired outright — #screen-maze
+           opens straight onto .mazebox now. MARKS, CENTRE MAP, MAKE CAMP
+           and SETTINGS moved into the ☰ HUD menu on band 2 (see the
+           header above and src/browser/hudMenu.js); the four chip ids
+           (mw-chip-marks, mw-chip-centre, btn-camp, mw-gear-btn) live on
+           the menu's rows now, unchanged, so paint()'s short-state block
+           and the classic listener lines below still find them. -->
       <!-- DR13: the "MAP" heading row is gone — its vitals (level, HP, status)
            moved up into the persistent HUD character line, and the map viewport
            now claims that reclaimed vertical space. -->
@@ -1808,6 +1894,18 @@ let mwActiveTab = "maze";
   function showTab(name) {
     if (!screens[name]) return;
     for (const key of Object.keys(screens)) screens[key].hidden = key !== name;
+    // Phase 57 (LAYOUT-05), Plan 05 (discovery B): the HUD and the
+    // condition strip hide on Dead (the mock's showHud/hasConds gate) —
+    // ONE predicate feeds both data-offtab writes so they can never
+    // disagree. Then close the ☰ menu on every tab switch
+    // (hudMenuEvent("tab")) BEFORE the keep-in-view call below, so the HUD
+    // is back in the layout before the viewport rect is measured.
+    const offtab = name === "dead" ? "1" : "0";
+    const hudEl = document.getElementById("mw-hud");
+    if (hudEl) hudEl.dataset.offtab = offtab;
+    const condEl = document.getElementById("mm-conditions");
+    if (condEl) condEl.dataset.offtab = offtab;
+    hudMenuEvent("tab");
     for (const btn of tabs) {
       const on = btn.dataset.tab === name;
       btn.classList.toggle("active", on);
@@ -2561,15 +2659,19 @@ function paint() {
   // "warn" text-color toggle remains, still colorblind-safe via the
   // co-rendered "RATIONS n" label (never color-only).
   document.getElementById("m-rat-wrap").classList.toggle("warn", c.rations <= 2);
-  // Phase 57 (LAYOUT-05): band 1's identity line (Name — Race Class (Sub)
-  // · Lvl N), also through the bridge — the title attribute carries the
-  // same string so a truncated (ellipsised) line is still readable on a
-  // long-press. Fail-open: a missing bridge leaves the existing text.
+  // Phase 57 (LAYOUT-05), Plan 05: band 1's name (never truncated) and its
+  // race/class(sub)/level line (which does truncate) — split by the bridge's
+  // identityParts(c) into #mw-hud-name/#mw-hud-line. #mw-hud-line's title
+  // carries the FULL identityLine(c) string so an ellipsised line is still
+  // readable on a long-press. Fail-open: a missing bridge leaves the
+  // existing text in place rather than throwing.
   const hudName = document.getElementById("mw-hud-name");
-  if (hudName && window.__mzHudBands) {
-    const identity = window.__mzHudBands.identityLine(c);
-    hudName.textContent = identity;
-    hudName.title = identity;
+  const hudLine = document.getElementById("mw-hud-line");
+  if (hudName && hudLine && window.__mzHudBands) {
+    const parts = window.__mzHudBands.identityParts(c);
+    hudName.textContent = parts.name;
+    hudLine.textContent = parts.line;
+    hudLine.title = window.__mzHudBands.identityLine(c);
   }
   // Phase 47 (SHELL-01), Plan 03: the m-gold HUD write moved into
   // gearTab.js#renderGearTab (window.__mzTabs.gear(...) below owns it now).
@@ -3476,6 +3578,10 @@ function renderEncounter() {
   // ONLY while something is actually happening (feature-tile narration,
   // combat, store, death/win) — never a permanent fixture beneath the map.
   const active = hasActiveEncounter();
+  // Phase 57 (LAYOUT-04/05), Plan 05 (T-57-17): the ☰ menu can never be
+  // open over an encounter — hudMenuNext also refuses to OPEN it while one
+  // is active, but this closes an already-open menu the instant one starts.
+  if (active) hudMenuEvent("encounter");
   // Phase 32 (CMBUI-05, design §6.3 rule 2): stamp lastDismissAt on the
   // true -> false transition (the overlay just closed under the thumb) —
   // window.move's settle clause refuses a step for DISMISS_SETTLE_MS after
@@ -4180,6 +4286,43 @@ document.getElementById("mw-chip-centre").addEventListener("click", centerMap);
 // naming the bridge explicitly keeps the pattern consistent and greppable.
 window.mzCenterMap = centerMap;
 
+// Phase 57 (LAYOUT-04/05), Plan 05 — the ☰ HUD menu. Three top-level
+// function declarations (hoisted, TDZ-safe) plus three onclick wiring
+// lines. The pure open/close policy lives in src/browser/hudMenu.js
+// (bridged as window.__mzHudMenu); this block is the ONE writer that acts
+// on its answer — DOM state only (never S/state, so a save can never carry
+// it), and it calls no fit()/keep-in-view/centring/positionCanvas/tapStep,
+// so opening or closing the menu can never move the map (D-02).
+function hudMenuIsOpen() {
+  return document.getElementById("mw-hud-menu")?.dataset.open === "1";
+}
+function setHudMenuOpen(open) {
+  const state = open ? "1" : "0";
+  const menu = document.getElementById("mw-hud-menu");
+  if (menu) menu.dataset.open = state;
+  const scrim = document.getElementById("mw-hud-menu-scrim");
+  if (scrim) scrim.dataset.open = state;
+  const btn = document.getElementById("mw-hud-menu-btn");
+  if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+// hudMenuEvent(kind) must be TDZ-safe: showTab's init-time call (below) runs
+// BEFORE `let S` — reading `S` directly there is the 2026-09-17 boot-killing
+// bug class. `encounter` is only ever computed once window.__mzState exists
+// (through hasActiveEncounter()); before boot it is always false, which is
+// also the right answer (no encounter can be active before S exists). The
+// scrim being outside #mw-maze-viewport is what makes the outside tap
+// structurally consumed — this function never sees that tap at all.
+function hudMenuEvent(kind) {
+  const open = hudMenuIsOpen();
+  const encounter = window.__mzState ? hasActiveEncounter() : false;
+  const next = window.__mzHudMenu ? window.__mzHudMenu.next(open, kind, { encounter }) : false;
+  if (next !== open) setHudMenuOpen(next);
+  if (kind === "escape" && !next) document.getElementById("mw-hud-menu-btn")?.focus();
+}
+document.getElementById("mw-hud-menu-btn").onclick = () => hudMenuEvent("toggle");
+document.getElementById("mw-hud-menu-scrim").onclick = () => hudMenuEvent("outside");
+document.getElementById("mw-hud-menu").onclick = () => hudMenuEvent("select");
+
 // Quick task 260918-vm3 (MAP-02/MAP-07, "stationary camera"): keepPartyInView()
 // is the ONE non-centring camera nudge — it moves `cam` the minimum needed to
 // keep the party inside a margin near a visible edge (src/browser/controls.js
@@ -4369,6 +4512,10 @@ function inspectAt(clientX, clientY) {
 
 addEventListener("keydown", e => {
   const k = e.key.toLowerCase();
+  // Phase 57 (LAYOUT-04/05), Plan 05: Escape closes the ☰ menu when it
+  // is open — checked before any other key handling below (the encounter
+  // gate included), mirroring the mock's dropdown convention.
+  if (k === "escape" && hudMenuIsOpen()) { e.preventDefault(); hudMenuEvent("escape"); return; }
   const dirKeys = { arrowup:"N", w:"N", arrowdown:"S", s:"S", arrowleft:"W", a:"W", arrowright:"E", d:"E" };
   // Device-review revision #5 (extended): while the encounter/feature
   // overlay is up, movement is blocked outright — direction keys no longer
@@ -5882,10 +6029,14 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden,
+        hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || hudMenuIsOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
+          // Phase 57 (LAYOUT-04/05), Plan 05: the Android back button closes
+          // the ☰ menu (device equivalent of Escape, orchestrator-approved
+          // as standard behaviour) — first, before any of the modals below.
+          hudMenuEvent("escape");
           window.__mzStair = null;
           closeCampSheet();
           closeMarksLegend();

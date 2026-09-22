@@ -160,13 +160,13 @@ test("COUNTER_SLOT_CH: m-rations holds at least as many digits as the largest ra
 
 // ─── HUD_BAND_ANCHORS ──────────────────────────────────────────────────
 
-test("HUD_BAND_ANCHORS has exactly four entries in the ruled order", () => {
+test("HUD_BAND_ANCHORS has exactly four entries in the 2026-09-22 mock's order (Plan 05: the chip band is retired, the HP strip takes its place)", () => {
   assert.equal(HUD_BAND_ANCHORS.length, 4);
   assert.deepStrictEqual(HUD_BAND_ANCHORS, [
     'id="mw-hud-name"',
+    'class="mw-hud-wptrack"',
     'class="mw-hud-counters"',
     'id="mm-conditions"',
-    'id="mw-map-chips"',
   ]);
 });
 
