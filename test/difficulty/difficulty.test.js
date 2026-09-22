@@ -28,6 +28,7 @@ import {
   heroSpFor,
   campHealFor,
   dotHpFor,
+  DOT_HP_BASE,
   startingRationsFor,
   tierSpreadFor,
   scaleHazard,
@@ -43,7 +44,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 // ─── USER RULING D: the remove list is GONE — no floor-range name survives ──
 
-test("USER RULING D: DIALS is frozen and its key set is exactly the global model's 27 dials", () => {
+test("USER RULING D/G: DIALS is frozen and its key set is exactly the global model's 26 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key)", () => {
   assert.equal(Object.isFrozen(DIALS), true);
   const keys = Object.keys(DIALS).sort();
   assert.deepStrictEqual(keys, [
@@ -54,7 +55,6 @@ test("USER RULING D: DIALS is frozen and its key set is exactly the global model
     "DARK_BLOB_CAP",
     "DARK_RADIUS",
     "DARK_RADIUS_CAP",
-    "DOT_HP_FRACTION",
     "DOT_MIX",
     "ENCOUNTER_DOTS",
     "FLEE_NEED_MOD",
@@ -236,10 +236,27 @@ test("campHealFor keeps the SAME d10 draw re-centered around CAMP_HEAL_FRACTION 
   assert.equal(campHealFor(40, 10), Math.max(1, Math.round(0.17 * 40) + 10 - 5));
 });
 
-test("dotHpFor: small/mid/large fractions of maxWP, min 1", () => {
-  assert.equal(dotHpFor("small", 40), Math.max(1, Math.round(0.24 * 40)));
-  assert.equal(dotHpFor("mid", 40), Math.max(1, Math.round(0.36 * 40)));
-  assert.equal(dotHpFor("large", 40), Math.max(1, Math.round(0.6 * 40)));
+test("USER RULING G (cycle 3): dotHpFor reads DOT_HP_BASE's flat canon value (10/15/25), scaled ONCE by HERO_HP_SCALE — never by the hero's own maxWP (no compounding)", () => {
+  assert.deepStrictEqual(DOT_HP_BASE, { small: 10, mid: 15, large: 25 });
+  // Identity (HERO_HP_SCALE 1): the flat canon numbers exactly, structural fast path.
+  assert.equal(dotHpFor("small"), 10);
+  assert.equal(dotHpFor("mid"), 15);
+  assert.equal(dotHpFor("large"), 25);
+  assert.equal(Object.is(dotHpFor("small"), 10), true, "identity returns the literal, not a rounded copy");
+
+  const restore = setDialsForTuning({ HERO_HP_SCALE: 1.25 });
+  try {
+    assert.equal(dotHpFor("small"), Math.max(1, Math.round(10 * 1.25)));
+    assert.equal(dotHpFor("mid"), Math.max(1, Math.round(15 * 1.25)));
+    assert.equal(dotHpFor("large"), Math.max(1, Math.round(25 * 1.25)));
+  } finally {
+    restore();
+  }
+
+  // The compounding bug this fix retires: dotHpFor no longer takes a maxWP
+  // argument at all, so a dot's size can never depend on (and feed back
+  // into) the hero's own CURRENT maxWP.
+  assert.equal(dotHpFor.length, 1, "dotHpFor(kind) — no maxWP parameter");
 });
 
 // ─── kept helpers (unchanged behavior, still draw-free) ─────────────────────

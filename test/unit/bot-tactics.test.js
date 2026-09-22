@@ -299,9 +299,17 @@ test("playRun: a forced Fighter/Knight cell uses at least one ability and never 
   // confirmed via a live playRun scratch run before writing this assertion
   // (node -e over tools/lib/tuning-bot.mjs); seed 1 alone already satisfies
   // it, but the loop keeps the proof robust to any future BOT_DEFAULTS tweak.
+  //
+  // Cap re-measured to 2000 (was 1000) under USER RULING G (2026-09-21,
+  // cycle 3, Adjustment 2): dotHpFor's Table-4 dots now read DOT_HP_BASE's
+  // flat canon values (10/15/25) instead of a fraction of the hero's own
+  // (class-dependent) maxWP — a real, deliberate identity-column shift, not
+  // a regression. Seed 3's run now legitimately resolves at 1163 actions
+  // (was under 1000 before this fix); 2000 keeps a ~2x margin for all five
+  // seeds while staying well clear of BOT_DEFAULTS' own 20000 safety cap.
   let sawAbility = false;
   for (let seed = 1; seed <= 5; seed++) {
-    const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 1000, force: { cls: "Fighter", sub: "Knight", race: "Human" } }, (events) => {
+    const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 2000, force: { cls: "Fighter", sub: "Knight", race: "Human" } }, (events) => {
       if (events.some((e) => e.type === "abilityUsed")) sawAbility = true;
     });
     assert.strictEqual(r.stuck, false, `seed ${seed}: the bot must not stall`);

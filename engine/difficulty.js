@@ -42,9 +42,8 @@ import { ENCOUNTER_TABLES } from "../content/encounters.js";
 
 /**
  * deepFreeze(obj) — Object.freeze is shallow; DIALS carries nested
- * `{ base, perDepth }` / `DOT_HP_FRACTION` / `DOT_MIX` / `CLASS_MITIGATION`
- * objects that must be just as immutable as their parent. Not exported —
- * internal helper only.
+ * `{ base, perDepth }` / `DOT_MIX` / `CLASS_MITIGATION` objects that must be
+ * just as immutable as their parent. Not exported — internal helper only.
  */
 function deepFreeze(obj) {
   Object.freeze(obj);
@@ -123,13 +122,6 @@ export const DIALS = deepFreeze({
    * `round(0.17 * 41.67) + d10 - 5` has mean 7.6 vs canon's `d10 + 2` mean
    * 7.5. Direction: ↑ = easier. */
   CAMP_HEAL_FRACTION: 0.17,
-  /** DOT_HP_FRACTION — Table-4's ±HP dots (p.45) as fractions of the hero's
-   * OWN maxWP (small/mid/large), so a dot is the same relative risk on every
-   * floor, at every hero HP scale. No identity exists (canon was flat 10 /
-   * 15 / 25) — mean-matched at level 1 (÷ 41.67): 10/41.67≈0.24,
-   * 15/41.67≈0.36, 25/41.67≈0.6. Direction: n/a (a risk/reward dot, not a
-   * monotone difficulty axis). */
-  DOT_HP_FRACTION: { small: 0.24, mid: 0.36, large: 0.6 },
   /** FOOD_CLOCK — a multiplier on the class's canon starting-ration count.
    * Identity: 1 (canon). Direction: ↑ = more starting rations (easier). */
   FOOD_CLOCK: 1,
@@ -205,6 +197,24 @@ export const DIALS = deepFreeze({
 
 /** Every BREATHER_EVERY-th floor after floor 1 is a lighter "breather" floor. */
 export const BREATHER_EVERY = 5;
+
+/**
+ * DOT_HP_BASE — Table-4's ±HP dots (p.45), canon flat values (small/mid/
+ * large = 10/15/25). DELIBERATE RULES CHANGE (Phase 54, BAND-02,
+ * 2026-09-21, USER RULING G): retires 54-05's `DOT_HP_FRACTION` (a fraction
+ * of the hero's CURRENT maxWP), which COMPOUNDED — the "+25 HP" row's
+ * `c.maxWP += dotHpFor("large", c.maxWP)` fed the dot's own OUTPUT back into
+ * its NEXT INPUT (`maxWP`), so each pull was a permanent ×1.6 on top of the
+ * last (three pulls ≈ ×4; a Pixel 7 on-device run showed a 140-hp "-15 HP"
+ * toll on floor 6). `dotHpFor` (below) now reads this FLAT table, scaled
+ * ONCE by `HERO_HP_SCALE` — never by the hero's own prior pulls — so a dot
+ * is a fixed hp swing at the CURRENT hero-scale, with zero feedback into
+ * itself. Not a `DIALS` key (no fit coordinate, no held-dial row): the flat
+ * canon numbers are content, not a tunable dial — `HERO_HP_SCALE` is the
+ * dial that already scales them fairly, same as every other maxWP-anchored
+ * value in this module.
+ */
+export const DOT_HP_BASE = Object.freeze({ small: 10, mid: 15, large: 25 });
 
 // --- Phase 41 (TERR-01): water pool knobs -----------------------------------
 // Unchanged by Phase 54 — water is a rhythm knob, not a difficulty dial (the
@@ -372,8 +382,9 @@ export function foeHitFor(raw, curve) {
 /**
  * heroMeanMaxWpFor(level) — the unweighted mean, over the three CLASSES, of
  * a level-`level` hero's maxWP at HERO_HP_SCALE 1 (the level-appropriate
- * "mean hero" ROUND_DAMAGE_CEILING/CAMP_HEAL_FRACTION/DOT_HP_FRACTION are
- * mean-matched against). Pinned: 41.67 / 46.17 / 50.00 / 54.50 / 60.00 for
+ * "mean hero" ROUND_DAMAGE_CEILING/CAMP_HEAL_FRACTION are mean-matched
+ * against — DOT_HP_BASE, USER RULING G, is a flat canon table scaled by
+ * HERO_HP_SCALE directly, not mean-matched). Pinned: 41.67 / 46.17 / 50.00 / 54.50 / 60.00 for
  * levels 1..5 (2 dp) — see docs/DIFFICULTY-RETUNE.md's Identity commit
  * section for the derivation. Not draw-based — reads content/classes.js's
  * static dice tables only.
@@ -441,12 +452,15 @@ export function campHealFor(maxWP, d10) {
 }
 
 /**
- * dotHpFor(kind, maxWP) — Table-4's ±HP dots as a fraction of the hero's OWN
- * maxWP (`kind` in "small" | "mid" | "large"). `Math.max(1, ...)` guarantees
- * a dot never rounds to 0.
+ * dotHpFor(kind) — Table-4's ±HP dots (`kind` in "small" | "mid" | "large"),
+ * DOT_HP_BASE's flat canon value scaled ONCE by live.HERO_HP_SCALE — USER
+ * RULING G: never a fraction of the hero's OWN (mutable) maxWP, which is
+ * what let the "+25 HP" row compound (see DOT_HP_BASE's own JSDoc).
+ * `Math.max(1, ...)` guarantees a dot never rounds to 0. The strict `=== 1`
+ * fast path keeps HERO_HP_SCALE identity structural.
  */
-export function dotHpFor(kind, maxWP) {
-  return Math.max(1, Math.round(live.DOT_HP_FRACTION[kind] * maxWP));
+export function dotHpFor(kind) {
+  return live.HERO_HP_SCALE === 1 ? DOT_HP_BASE[kind] : Math.max(1, Math.round(DOT_HP_BASE[kind] * live.HERO_HP_SCALE));
 }
 
 /**

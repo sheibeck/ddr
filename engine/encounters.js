@@ -275,18 +275,19 @@ export function tableFour(state, result, rng, events = []) {
   // as a line, not a stat token. E10: rows already narrated by another event
   // (the "wilmst cache" row → goldGained) do NOT also push a redundant beat.
   switch (result) {
-    // DELIBERATE RULES CHANGE (Phase 54, USER RULING D): the flat HP dots
-    // are fractions of the hero's maxWP (DOT_HP_FRACTION) so a dot is the
-    // same relative risk on every floor; the XP dots ride HERO_SP_SCALE
-    // like kills.
+    // DELIBERATE RULES CHANGE (Phase 54, USER RULING D, amended by USER
+    // RULING G 2026-09-21): the flat HP dots (DOT_HP_BASE) are scaled ONCE
+    // by HERO_HP_SCALE — never by the hero's own current maxWP (that fed
+    // the dot's own output back into its next input and compounded); the
+    // XP dots ride HERO_SP_SCALE like kills.
     case "+10 HP": {
-      const n = dotHpFor("small", c.maxWP);
+      const n = dotHpFor("small");
       c.wp = Math.min(c.maxWP, c.wp + n);
       events.push({ type: "tableFour", result: `The maze, for once, gives something back. ${n} hp.` });
       break;
     }
     case "-10 HP": {
-      const n = dotHpFor("small", c.maxWP);
+      const n = dotHpFor("small");
       c.wp -= n;
       events.push({ type: "tableFour", result: `Something unseen takes its cut — ${n} hp, gone.` });
       break;
@@ -299,7 +300,7 @@ export function tableFour(state, result, rng, events = []) {
       break;
     }
     case "+25 HP": {
-      const n = dotHpFor("large", c.maxWP);
+      const n = dotHpFor("large");
       c.maxWP += n;
       c.wp += n;
       events.push({ type: "tableFour", result: `A rare kindness — you come away tougher. +${n} to your health, for keeps.` });
@@ -313,7 +314,7 @@ export function tableFour(state, result, rng, events = []) {
       break;
     }
     case "-15 HP": {
-      const n = dotHpFor("mid", c.maxWP);
+      const n = dotHpFor("mid");
       c.wp -= n;
       events.push({ type: "tableFour", result: `The maze extracts a toll you did not agree to. ${n} hp.` });
       break;

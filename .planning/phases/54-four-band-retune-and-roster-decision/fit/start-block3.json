@@ -22,11 +22,6 @@
   "HERO_REGEN_PER_FLOOR": 0.25,
   "HERO_SP_SCALE": 0.28,
   "CAMP_HEAL_FRACTION": 0.2,
-  "DOT_HP_FRACTION": {
-    "small": 0.24,
-    "mid": 0.36,
-    "large": 0.6
-  },
   "FOOD_CLOCK": 1.5,
   "ENCOUNTER_DOTS": {
     "base": 7,

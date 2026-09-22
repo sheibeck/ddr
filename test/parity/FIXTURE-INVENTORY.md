@@ -2398,3 +2398,44 @@ after the fit lands; every record's `after` value here is re-measured
 there against the fitted (non-identity) dial values — this section
 records the IDENTITY commit only.
 
+### USER RULING G (2026-09-21, mid-54-07 cycle 3, "Adjustment 2") — the
+### Table-4 HP-dot compounding fix RETIRES `encounters#tablefour`'s record
+
+54-05's `dotHpFor(kind, maxWP)` read `DOT_HP_FRACTION` — a FRACTION of the
+hero's own CURRENT `maxWP` — which is what produced the `encounters#tablefour`
+divergence recorded immediately above (`c.maxWP` 65 → 64: `round(0.6*40)=24`,
+one short of the frozen prototype's flat `+25`). That same fraction-of-
+current-maxWP shape is also what let a REPEATED `+25 HP` pull COMPOUND: each
+pull's own output (`maxWP`) fed the NEXT pull's input, so three pulls in a
+row multiplied `maxWP` by roughly `1.6^3 ≈ 4`, not `+75` (a Pixel 7 on-device
+run surfaced a 140-hp `-15 HP` toll on floor 6 from this). USER RULING G
+directed the fix: `dotHpFor(kind)` now reads `DOT_HP_BASE` — the canon FLAT
+values (10/15/25) — scaled ONCE by `HERO_HP_SCALE`, never by the hero's own
+maxWP. `DOT_HP_FRACTION` is retired from `DIALS` entirely (not a dial at
+all going forward — a flat content table, `HERO_HP_SCALE` is the dial that
+already scales it fairly, same as every other maxWP-anchored value in
+`engine/difficulty.js`).
+
+**Consequence for this fixture, measured live:** at `HERO_HP_SCALE`'s
+identity value (1, unchanged by this commit — the fit's own commit is what
+moves `HERO_HP_SCALE` away from identity), `dotHpFor("large")` now returns
+EXACTLY `25` — the SAME flat amount the frozen prototype still grants — so
+`encounters#tablefour`'s action path no longer diverges from the prototype
+AT ALL. Its `"divergence"` record (`kind: "action-path"`, `phase: "54"`) is
+REMOVED from `action-script.encounters.json`; the scenario's own
+`chargenDivergence` (ABIL-02/HEDGE-03, unrelated to Phase 54) is untouched.
+`node tools/initiative-fixture-scan.mjs | diff - tools/initiative-fixture-
+scan-output.txt` is unchanged (empty diff — Part B's Phase-51-era invariant:
+a dot-hp cause was never a round-advance event, so this scan carries no
+predictor of its own for this fixture either direction). The full parity
+suite (`node --test test/parity/*.test.js`) is **43/43 pass, fail 0** with
+the record removed and the fixture now byte-identical to the frozen
+prototype at every action.
+
+**MOVED SET (2) as of this commit**: `action-script.combat.json#lose-apprentice`,
+`action-script.combat.json#flee` — `action-script.encounters.json#tablefour`
+drops OUT of the declared set (it no longer diverges). This is Phase 54's
+own `EXPECTED` array in `test/parity/divergence-records.test.js`'s
+`BAND-02 (USER RULING D)` guard, updated in the same commit as the engine
+fix — the guard fails first if any OTHER site ever moves.
+

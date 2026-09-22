@@ -364,16 +364,30 @@ const PHASE_54_IDENTITY_FLOOR1_CURVE = {
 test("BAND-02 (USER RULING D): the holders declaring Phase 54 are exactly the measured moved set of the identity commit; difficultyCurve(1) reads the identity column; the count roll keeps the canon draw shape", () => {
   // Part (a): EXPECTED is the MEASURED moved set — everything that moves at
   // identity is declared (USER RULING D supersedes the old "measure zero"
-  // BAND-02 guard). Three holders: the retired level-keyed foe-count cap
-  // lets combat.json's lose-apprentice/flee scenarios roll a THIRD Beasts
-  // foe at their own count draw (a level-cap cause); encounters.json's
-  // tablefour scenario's "+25 HP" row is now dotHpFor("large", maxWP) (a
-  // dot-hp cause). See test/parity/FIXTURE-INVENTORY.md's Phase 54 section
-  // for the full predictor/scan/moved-set accounting.
+  // BAND-02 guard). Two holders remain at this (USER RULING G, cycle 3)
+  // commit: the retired level-keyed foe-count cap lets combat.json's
+  // lose-apprentice/flee scenarios roll a THIRD Beasts foe at their own
+  // count draw (a level-cap cause).
+  //
+  // USER RULING G (2026-09-21, cycle 3, "Adjustment 2"): encounters.json's
+  // tablefour scenario's declared "dot-hp cause" record is RETIRED here —
+  // fixing the Table-4 HP-dot compounding bug (54-05's DOT_HP_FRACTION was
+  // a fraction of the hero's own CURRENT maxWP, which fed the "+25 HP"
+  // row's own output back into its next input) replaced it with
+  // DOT_HP_BASE's flat canon value (25) scaled ONCE by HERO_HP_SCALE. At
+  // HERO_HP_SCALE's identity value (1, unchanged by this commit —
+  // engine/difficulty.js#DIALS ships the fit's values only in a LATER
+  // commit), dotHpFor("large") now returns EXACTLY 25 — the same flat
+  // canon amount the frozen prototype grants — so this scenario's
+  // action-path no longer diverges at all. Measured live: the fixture's
+  // encounterDot replay now byte-matches the frozen prototype at every
+  // step (65 -> 65, not 65 -> 64); the "divergence" block was removed from
+  // action-script.encounters.json#tablefour accordingly. See
+  // test/parity/FIXTURE-INVENTORY.md's Phase 54 section for the full
+  // predictor/scan/moved-set accounting.
   const EXPECTED = [
     "action-script.combat.json#flee",
     "action-script.combat.json#lose-apprentice",
-    "action-script.encounters.json#tablefour",
   ].sort();
 
   const declared = new Set(

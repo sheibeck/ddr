@@ -252,9 +252,11 @@ test("encounterDot: a plain Table Four row (e.g. '+10 HP') applies directly, no 
   const state = fixedState({ c: { wp: 40, maxWP: 55 } });
   // d8=4, d10=1 -> ENCOUNTER_TABLES[3][0] === "+10 HP" (04.2 E3: was "+10 WP").
   const events = encounterDot(state, fakeRng([4, 1]), []);
-  // Phase 54 (BAND-02, USER RULING D): the flat "+10 HP" dot is now
-  // dotHpFor("small", maxWP) — a fraction of the hero's own maxWP.
-  const expectedHeal = dotHpFor("small", 55);
+  // Phase 54 (BAND-02, USER RULING D, amended USER RULING G cycle 3): the
+  // flat "+10 HP" dot is dotHpFor("small") — DOT_HP_BASE's canon flat value
+  // scaled ONCE by HERO_HP_SCALE (identity here), never a fraction of the
+  // hero's own (mutable) maxWP.
+  const expectedHeal = dotHpFor("small");
   assert.equal(state.c.wp, 40 + expectedHeal);
   assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 HP"));
   // The tableFour beat now carries a prose sentence, not the raw cell string.
@@ -288,32 +290,43 @@ test("tableFour: a lethal '-15 HP' row kills via die('maze')", () => {
   assert.ok(events.some((e) => e.type === "died" && e.cause === "maze"));
 });
 
-// DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21, USER RULING D):
-// every flat Table-4 ±HP dot is now DOT_HP_FRACTION of the hero's OWN
-// maxWP, and the XP dots ride HERO_SP_SCALE like a kill. maxWP 40 pins:
-// small = round(0.24*40) = 10, mid = round(0.36*40) = 14, large =
-// round(0.6*40) = 24 — measured via dotHpFor itself, never hand-typed.
-test("tableFour ±HP dots are fractions of maxWP (maxWP 40 -> +10/-10/-15 -> 10/10/14; +25 -> +24 maxWP)", () => {
-  assert.equal(dotHpFor("small", 40), 10);
-  assert.equal(dotHpFor("mid", 40), 14);
-  assert.equal(dotHpFor("large", 40), 24);
+// DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21, USER RULING D,
+// amended USER RULING G cycle 3): every flat Table-4 ±HP dot is now
+// DOT_HP_BASE's canon flat value (10/15/25) scaled ONCE by HERO_HP_SCALE —
+// identity here (1), so the dots are exactly canon — and the XP dots ride
+// HERO_SP_SCALE like a kill. The +25 HP row no longer compounds: it reads
+// the SAME flat 25 (scaled by HERO_HP_SCALE) regardless of the hero's own
+// current maxWP, so three pulls in a row grow maxWP by exactly 75, never a
+// geometric ×4.
+test("tableFour ±HP dots are DOT_HP_BASE canon flats scaled by HERO_HP_SCALE (identity: +10/-10/-15/+25 -> 10/10/15/25; no compounding across repeat pulls)", () => {
+  assert.equal(dotHpFor("small"), 10);
+  assert.equal(dotHpFor("mid"), 15);
+  assert.equal(dotHpFor("large"), 25);
 
   const plus10 = fixedState({ c: { wp: 20, maxWP: 40 } });
   tableFour(plus10, "+10 HP", fakeRng([]), []);
-  assert.equal(plus10.c.wp, 30, "20 + dotHpFor(small,40)=10");
+  assert.equal(plus10.c.wp, 30, "20 + dotHpFor(small)=10");
 
   const minus10 = fixedState({ c: { wp: 20, maxWP: 40 } });
   tableFour(minus10, "-10 HP", fakeRng([]), []);
-  assert.equal(minus10.c.wp, 10, "20 - dotHpFor(small,40)=10");
+  assert.equal(minus10.c.wp, 10, "20 - dotHpFor(small)=10");
 
   const minus15 = fixedState({ c: { wp: 30, maxWP: 40 } });
   tableFour(minus15, "-15 HP", fakeRng([]), []);
-  assert.equal(minus15.c.wp, 16, "30 - dotHpFor(mid,40)=14");
+  assert.equal(minus15.c.wp, 15, "30 - dotHpFor(mid)=15");
 
   const plus25 = fixedState({ c: { wp: 30, maxWP: 40 } });
   tableFour(plus25, "+25 HP", fakeRng([]), []);
-  assert.equal(plus25.c.maxWP, 64, "40 + dotHpFor(large,40)=24");
-  assert.equal(plus25.c.wp, 54, "30 + dotHpFor(large,40)=24");
+  assert.equal(plus25.c.maxWP, 65, "40 + dotHpFor(large)=25");
+  assert.equal(plus25.c.wp, 55, "30 + dotHpFor(large)=25");
+
+  // No compounding: three "+25 HP" pulls in a row grow maxWP by exactly
+  // 3*25=75 (canon flat, identity HERO_HP_SCALE), never a geometric blowup.
+  const thrice = fixedState({ c: { wp: 40, maxWP: 40 } });
+  tableFour(thrice, "+25 HP", fakeRng([]), []);
+  tableFour(thrice, "+25 HP", fakeRng([]), []);
+  tableFour(thrice, "+25 HP", fakeRng([]), []);
+  assert.equal(thrice.c.maxWP, 40 + 3 * 25, "three pulls add exactly 3x the flat dot, no feedback");
 });
 
 test("tableFour: +10 XP / +25 XP ride heroSpFor (identity: no-op)", () => {
