@@ -374,10 +374,50 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
    static and the keyframes animate only opacity + transform — shadow
    animation is not GPU-composited and forced Chromium to re-rasterise the
    whole map layer every frame (logcat tile-memory spam); will-change
-   promotes the ring to its own layer. */
-.mw-party-pulse{position:absolute;border-radius:50%;pointer-events:none;z-index:2;box-shadow:0 0 0 3px #14110c,0 0 14px 3px rgba(232,201,122,.5);will-change:transform,opacity;animation:mwglow 1.6s ease-in-out infinite}
+   promotes the ring to its own layer. Phase 59 (ANIM-03, D-04 — the user's
+   999.1 words: "Dial back the black circle around the party marker — the
+   party is already highlighted, the ring is too stark"): the hard 3px dark
+   ring is gone. The soft radial glow the canvas used to paint under the
+   party (draw()'s old createRadialGradient pass) now lives here instead, at
+   half its old alpha, so it travels with the marker sprite below instead of
+   staying pinned to the party's real (pre-glide) square. */
+.mw-party-pulse{position:absolute;border-radius:50%;pointer-events:none;z-index:2;box-shadow:0 0 14px 3px rgba(232,201,122,.25);background:radial-gradient(closest-side,rgba(232,201,122,.28) 15%,rgba(232,201,122,0) 100%);will-change:transform,opacity;animation:mwglow 1.6s ease-in-out infinite}
 .mw-party-pulse.covered{animation-play-state:paused;visibility:hidden}
 @keyframes mwglow{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.18)}}
+
+/* Phase 59 (ANIM-01, D-01/D-02/D-05): the party marker is a DOM sprite,
+   #mw-party-sprite, sitting AFTER the ring (#mw-party-pulse) in the markup
+   so the ring's .covered class hides/pauses it via a sibling rule with no
+   JS change (renderEncounter's own covered toggles, above, are untouched).
+   draw() no longer paints the party at all — positionPartySprite() (called
+   from positionCanvas(), below in the classic script) places this element
+   in lockstep with the canvas's own device-pixel-rounded origin. The idle
+   loop is four stacked frame images sharing ONE opacity-only keyframe
+   (mwpartyidle), phase-shifted by src/browser/partySprite.js's own
+   idleFrameDelaysMs() so exactly one is opaque at any instant — composited-
+   only, per the 2026-09-17 UAT PERF rule above: no non-composited property
+   may drive this loop. Under the blanket prefers-reduced-motion rule every
+   animation is removed, so each frame falls back to its own base
+   (non-animated) style — only idle frame 1's base style is opaque, which
+   freezes the loop on frame 1 with no JS involved at all (D-05). */
+.mw-party-sprite{position:absolute;left:0;top:0;z-index:3;pointer-events:none;will-change:transform}
+.mw-party-frame{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;opacity:0;pointer-events:none;-webkit-user-drag:none}
+.mw-party-frame[data-set="idle"]{animation:mwpartyidle 1.12s step-end infinite}
+.mw-party-frame[data-set="idle"][data-k="1"]{opacity:1}
+.mw-party-frame[data-set="idle"][data-k="2"]{animation-delay:-.84s}
+.mw-party-frame[data-set="idle"][data-k="3"]{animation-delay:-.56s}
+.mw-party-frame[data-set="idle"][data-k="4"]{animation-delay:-.28s}
+@keyframes mwpartyidle{0%{opacity:1}25%{opacity:0}100%{opacity:0}}
+.mw-party-sprite[data-pose="step"] .mw-party-frame[data-set="idle"]{visibility:hidden}
+.mw-party-sprite[data-pose="step"][data-frame="1"] .mw-party-frame[data-set="step"][data-k="1"]{opacity:1}
+.mw-party-sprite[data-pose="step"][data-frame="2"] .mw-party-frame[data-set="step"][data-k="2"]{opacity:1}
+.mw-party-sprite[data-pose="step"][data-frame="3"] .mw-party-frame[data-set="step"][data-k="3"]{opacity:1}
+.mw-party-sprite[data-pose="step"][data-frame="4"] .mw-party-frame[data-set="step"][data-k="4"]{opacity:1}
+.mw-party-sprite[data-art="static"]{background:url(icons/optimized/party.png) center/contain no-repeat}
+.mw-party-sprite[data-art="none"]{background:radial-gradient(closest-side,#f4dc94 72%,rgba(244,220,148,0) 74%)}
+.mw-party-sprite[data-art="static"] .mw-party-frame,.mw-party-sprite[data-art="none"] .mw-party-frame{display:none}
+.mw-party-pulse.covered ~ .mw-party-sprite{visibility:hidden}
+.mw-party-pulse.covered ~ .mw-party-sprite .mw-party-frame{animation-play-state:paused}
 
 /* Device-review revision #5: the encounter/feature-event panel as an
    OVER-MAP OVERLAY — absolutely positioned inside .mazebox (DR5: moved from
@@ -1635,6 +1675,24 @@ html,body{height:100%}
                centered over the party's canvas cell by positionPartyPulse()
                (called from positionCanvas()), never a canvas rAF loop. -->
           <div class="mw-party-pulse" id="mw-party-pulse" aria-hidden="true"></div>
+          <!-- Phase 59 (ANIM-01): the party marker is THIS DOM sprite,
+               placed by positionPartySprite() from positionCanvas() — the
+               canvas no longer paints the party. It MUST stay AFTER the
+               ring above: the ring's .covered class hides/pauses it through
+               a CSS sibling rule, not a JS change. Starts at
+               data-art="static" (the shipped party.png, the fail-safe first
+               frame) until the trailing module script's boot-time decode
+               check upgrades it to "frames" or downgrades it to "none". -->
+          <div class="mw-party-sprite" id="mw-party-sprite" aria-hidden="true" data-art="static" data-pose="idle">
+            <img class="mw-party-frame" data-set="idle" data-k="1" src="icons/optimized/party_idle_1.png" alt="" draggable="false" decoding="async">
+            <img class="mw-party-frame" data-set="idle" data-k="2" src="icons/optimized/party_idle_2.png" alt="" draggable="false" decoding="async">
+            <img class="mw-party-frame" data-set="idle" data-k="3" src="icons/optimized/party_idle_3.png" alt="" draggable="false" decoding="async">
+            <img class="mw-party-frame" data-set="idle" data-k="4" src="icons/optimized/party_idle_4.png" alt="" draggable="false" decoding="async">
+            <img class="mw-party-frame" data-set="step" data-k="1" src="icons/optimized/party_step_1.png" alt="" draggable="false" decoding="async">
+            <img class="mw-party-frame" data-set="step" data-k="2" src="icons/optimized/party_step_2.png" alt="" draggable="false" decoding="async">
+            <img class="mw-party-frame" data-set="step" data-k="3" src="icons/optimized/party_step_3.png" alt="" draggable="false" decoding="async">
+            <img class="mw-party-frame" data-set="step" data-k="4" src="icons/optimized/party_step_4.png" alt="" draggable="false" decoding="async">
+          </div>
         </div>
 
         <!-- DR5: the encounter/feature-event panel is a direct child of
