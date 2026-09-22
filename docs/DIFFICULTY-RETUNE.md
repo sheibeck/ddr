@@ -5200,6 +5200,256 @@ regenerated identity-commit movers.
 
 **Gates:** `npm test` green at every commit (3427 -> 3439 -> 3445 -> 3458, +31 new tests across the three commits); `npm run build:www` exit 0 at every commit; master hash `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` unchanged; `git diff --stat 7b03404 -- content/ test/parity/harness/comparables.js test/parity/prototype-master.js.txt` empty.
 
+#### USER RULINGS E/F/G — checkpointed fit, cycle 3 (2026-09-21, mid-54-07)
+
+54-07's own dispatch ran the fit in THREE cycles, each a standing-authority
+checkpoint (USER RULING F): stop on a failure pattern, adjust ONE thing,
+resume — never burn the full budget blind.
+
+**Cycle 1** (plan-10's own committed evidence, `fit/fit-log-plan10.jsonl`,
+`fit/search-stdout-plan10.txt`, budget 80 from `fit/start.json`): 27
+evaluations, only 3 distinct feasible points (#1 identity 237, #5 135, #18
+64 — all MISS, floors 5-12 ~15-20 pts too easy), 22 of 25 rejections the
+class-fairness guardrail on the Magic User. **USER RULING E**: budget 40 (not
+80/100), seeds stay 200 — a single 200-seed evaluation measured 6-10 min on
+this 4-core i5-2400 (3x the plan's own estimate), so budget 80 would run
+~12h.
+
+**Cycle 2** (`fit/fit-log-block1.jsonl`, `fit/best-block1.json`,
+`fit/search-stdout-block1.txt`, `fit/start-block1.json`): USER RULING F
+"Adjustment 1" promoted `CLASS_MITIGATION["Magic User"].spellPower` into
+`SEARCH_PLAN` as an 11th coordinate (probed first) — the one dial that could
+prop the MU pool back up, previously outside the CORE 10. Block 1 (10 rows)
+reached **#6, score 10.83** (`FOE_LEVEL {0.9, 0.26}`, `HERO_HP_SCALE 1.25`,
+`HERO_REGEN 0.25`, `HERO_SP_SCALE 0.28`, `LOOT_SCALE 0.8`; floors 8-12 in
+band, floor 5 +8, floor 6 +16, floor 7 +13) then produced a clear failure
+pattern over the next 9 evaluations — zero improvement, 7 of 9 vetoed by the
+SAME class guardrails, floor-6/7 misses unmoved. **Two root causes**
+identified: (1) a Table-4 HP-dot compounding bug (54-05's
+`DOT_HP_FRACTION` — a fraction of the hero's own CURRENT `maxWP` — fed the
+"+25 HP" row's own output back into its next input, ~×4 across three pulls,
+surfaced on a Pixel 7 device run as a 140-hp "-15 HP" toll); (2) the
+class-fairness tolerances themselves (1.0-floor `p50` delta, 12-point
+`reach5` delta) were too tight for a 200-seed/class sample — a 1-floor
+median swing is common noise, not a real fairness violation. Adjustment 1's
+`spellPower` coordinate proved a structural no-op across every probed
+value (the per-floor survival metric never registers a change from it
+alone).
+
+**USER RULING G "Adjustment 2"** (engine, ruled by the user): retires
+`DOT_HP_FRACTION` — `dotHpFor(kind)` now reads `DOT_HP_BASE`'s flat canon
+table (10/15/25), scaled ONCE by `HERO_HP_SCALE`, never by the hero's own
+maxWP. `content/bestiary.js` untouched. Commit `88b081e`.
+
+**USER RULING G "Adjustment 3"** (search, standing authority): (a)
+`classConstraints` tolerances loosened — `p50` 1.0 -> 2.0 floors, `reach5`
+12 -> 20 points (`CLASS_P50_TOLERANCE`/`CLASS_REACH5_TOLERANCE`); (b)
+`SEARCH_PLAN` drops the `spellPower` coordinate again (proved a no-op),
+returning it to `HELD_DIALS` at identity; (c) the fit-tool replay-resume
+bug fixed — a rejected candidate's `score: Infinity` silently serializes as
+`"score":null` (JSON has no Infinity literal); the OLD `readLog` handed
+that `null` straight into `row.score < baseScore`, where `null` coerces to
+`0`, so a resumed walk reusing an infeasible logged row would look like the
+BEST score of the entire search, silently diverging from the original
+walk. `tools/lib/fit-resume.mjs` (new, pure, engine-free) fixes this via
+`rehydrateRow`, proven by a dedicated regression test (a synthetic search
+resumed from a log containing an infeasible row reproduces the original
+walk byte-for-byte); (d) per-block stdout append (`>>`), never truncate.
+Commit `6b48281`.
+
+**Cycle 3** (`fit/fit-log.jsonl` = `fit/fit-log-block3.jsonl`, `fit/fit-log.md`,
+`fit/best.json`, `fit/search-stdout-block3.txt`, restart from
+`fit/start-block3.json` = the cycle-2 best #6's dials): block 1 (budget 10)
+converged strongly — ZERO constraint rejections across all 10 evaluations
+(vs cycle 1's 22/25, cycle 2's 7/9), the block's own #1 (the cycle-2 best
+re-evaluated on the corrected engine, score 9.8073 — the engine fix alone
+moved the SAME dials from 10.83 to 9.8073) improved to #2's 7.1327 (27%),
+and 10 of 12 floors landed in band. Per USER RULING F this continues in the
+SAME log — block 2 (budget 20, resumed) found a full **PASS at evaluation
+#13, score 2.7113**, every floor 1-12 inside its Ruling C tolerance band,
+zero class-pool rejections across the whole 13-row walk. The tool exits at
+the first PASS+ok candidate (10 of 20 unused in block 2). Full evaluation
+table: `fit/fit-log.md`.
+
+#### Fit — commit `7db833e` (bounded coordinate search over SEARCH_PLAN; cycle 3, budget 20/block, resumed; 4 workers; 200 seeds)
+
+**Parameters:** `node tools/fit-difficulty.mjs --search --start=fit/start-block3.json --budget=10 --seeds=200 --workers=4 --log=fit/fit-log-block3.jsonl --out=fit/best-block3.json`, then the same command with `--budget=20` (resumed, one continuous walk per the Adjustment-3(c) fix). Stop reason: `pass` (evaluation #13).
+
+**What the fit moved** (vs `fit/start-block3.json`, three of the core-10 coordinates — the other seven land unmoved at their cycle-2-carried start value):
+- `FOE_LEVEL.perDepth` 0.26 -> 0.29 (harder: foe level climbs faster with depth)
+- `FOE_HIT_SCALE.perDepth` 0.02 -> 0.01 (easier: the whole-hit scale grows more slowly with depth)
+- `FOE_HP_SCALE.base` 0.8 -> 0.9 (harder: foes start with more relative HP, slightly longer fights)
+
+**Notch record:** none — every evaluated candidate in cycle 3 satisfied `constraints.ok` without any `CLASS_MITIGATION` adjustment; the best pooled candidate (#13) is ALSO the best constrained candidate.
+
+**Full evaluation table** (13 rows, `fit/fit-log.md` verbatim):
+
+| # | score | verdict | S1 | S4 | S5 | S8 | S10 | S12 | tail S15 | tail S20 | reach20 | F/T/M p50 | F/T/M reach5 | ok/reason | vs start |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 9.8073 | MISS | 99.5 | 85.3 | 76.9 | 45.7 | 23.4 | 16.2 | 3.8 | 1.2 | 0.5 | 8/9/7 | 87.1/86.4/74.0 | ok | (= start) |
+| 2 | 7.1327 | MISS | 99.5 | 85.3 | 76.9 | 42.7 | 21.5 | 12.1 | 3.2 | 0.8 | 1.0 | 8/8/7 | 87.3/86.9/74.5 | ok | FOE_LEVEL perDepth 0.29 |
+| 3 | 13.8735 | MISS | 99.5 | 80.8 | 76.1 | 37.3 | 17.5 | 7.2 | 2.9 | 1.0 | 0.5 | 7/8/6 | 81.0/84.5/67.9 | ok | FOE_LEVEL perDepth 0.30 |
+| 4 | 11.7791 | MISS | 99.5 | 80.8 | 76.1 | 37.3 | 17.5 | 8.5 | 4.3 | 1.7 | 1.5 | 7/8/6 | 81.0/84.7/67.9 | ok | FOE_LEVEL base 1.0 |
+| 5 | 9.8073 | MISS | 99.5 | 85.3 | 76.9 | 45.7 | 23.4 | 16.2 | 4.6 | 2.3 | 2.0 | 8/9/7 | 87.1/86.7/74.0 | ok | FOE_LEVEL base 0.75 |
+| 6 | 8.5242 | MISS | 99.5 | 85.8 | 80.6 | 42.8 | 22.6 | 13.3 | 2.9 | 1.9 | 0.5 | 8/8/6.5 | 87.3/86.0/75.0 | ok | + HERO_SP_SCALE 0.33 |
+| 7 | 16.3402 | MISS | 99.5 | 84.8 | 75.9 | 36.1 | 13.3 | 8.9 | 1.4 | 0.0 | 0.0 | 7/7/6 | 87.9/87.1/70.8 | ok | + HERO_SP_SCALE 0.23 |
+| 8 | 22.9586 | MISS | 99.0 | 82.8 | 72.4 | 33.6 | 16.3 | 6.6 | 1.4 | 0.0 | 0.0 | 7/8/6 | 84.6/88.5/69.6 | ok | + FOE_HIT_SCALE base 0.68 |
+| 9 | 7.9637 | MISS | 99.5 | 87.9 | 81.7 | 46.7 | 22.3 | 15.9 | 3.7 | 1.8 | 2.0 | 8/9/6 | 90.3/91.7/75.5 | ok | + FOE_HIT_SCALE base 0.52 |
+| 10 | 17.3641 | MISS | 99.5 | 80.7 | 72.4 | 38.0 | 14.7 | 8.0 | 2.9 | 0.0 | 1.0 | 8/8/6 | 83.1/85.0/67.9 | ok | + FOE_HIT_SCALE perDepth 0.03 |
+| 11 | 5.0468 | MISS | 99.5 | 84.9 | 79.6 | 44.7 | 23.2 | 17.0 | 6.0 | 1.3 | 1.0 | 7/9/7 | 82.3/92.1/73.6 | ok | + FOE_HIT_SCALE perDepth 0.01 |
+| 12 | 11.9797 | MISS | 99.5 | 87.9 | 83.3 | 46.4 | 26.2 | 15.2 | 5.7 | 0.0 | 0.5 | 8/9/6 | 89.1/91.7/76.5 | ok | + FOE_HIT_SCALE perDepth 0 |
+| 13 | **2.7113** | **PASS** | 99.5 | 82.9 | 75.0 | 41.3 | 21.2 | 14.3 | 7.3 | 3.5 | 1.5 | 7/8/7 | 82.3/88.7/68.0 | ok | + FOE_HP_SCALE base 0.9 |
+
+`BEST #13 score=2.7113`; `elapsed: 995.6s workers=4 evaluations=13 stopped=pass`.
+
+#### AFTER (global model) — commit `7db833e` (readouts committed at `3e25980`)
+
+**Solo (200 seeds):** `Death-depth distribution: min=1 p50=7 p90=12 max=30`. `Reach table: >=5: 80.5% >=10: 23.6% >=20: 1.1% >=30: 0.6% >=50: 0.0%`. `Death-cause breakdown` top entries: starved in the dark 21 (10.5%), cut down by a Werebeast 15 (7.5%), undone by a trap 12 (6.0%), cut down by a Dante 9 (4.5%), spent by the dungeon itself 9 (4.5%). `Class identity`: Fighter n=69 p50=7 reach5=82.3% dmgTaken/fight=11.15; Thief n=72 p50=8 reach5=88.7% dmgTaken/fight=7.78; Magic User n=59 p50=7 reach5=68.0% dmgTaken/fight=7.71. `Stuck: 26 of 200`. `Bot: exploreBudget=50 maxActions=20000 party=off flee=0.4/0.6(caster) potion<0.6 camp<0.5 seeds=200 startDepth=1`. **Verdict: all floors 1-12 inside the pass band.**
+
+**--party (200 seeds):** `Death-depth distribution: min=2 p50=7 p90=12 max=25`. `Class identity`: Fighter reach5=84.8%, Thief reach5=86.7% reach20=3.3%, Magic User reach5=81.4% reach20=2.3%. `Stuck: 51 of 200`.
+
+**--start-depth=20 slice (50 seeds):** `Death-depth distribution: min=20 p50=21 p90=24 max=37`. `Per-floor survival` at L=20: `reached=50 deaths=13 p_L=74.0% target p_L=84.5%`.
+
+**Class smoke** (`docs/class-pass/v17-p54-global-after-smoke.json`, `meta.commit 7db833e`, 143 cells x 5 seeds = 715 runs): `POOLED n=715 stuck=88 mean=7.92 p50=7.0 p90=13.0 >=5%=82.3 >=10%=23.1 >=20%=2.2`.
+
+**Per-floor table** (floors 1-12 from the 200-seed solo, PASS/MISS; floors 13-20 from the 1000-seed tail, `tail`, dS only):
+
+| Floor | p_L | S_L | target S_L | dS | combat/dot/starve | level | gold | maxWP | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 99.5% | 99.5% | 98.8% | +0.7 | 1/0/0 | 1.05 | 113 | 56.6 | PASS |
+| 2 | 99.0% | 98.5% | 95.1% | +3.4 | 0/1/1 | 1.11 | 240 | 58.3 | PASS |
+| 3 | 91.9% | 90.5% | 88.6% | +1.9 | 15/0/1 | 1.13 | 413 | 60.1 | PASS |
+| 4 | 91.6% | 82.9% | 79.7% | +3.2 | 10/5/0 | 1.22 | 623 | 62.1 | PASS |
+| 5 | 90.5% | 75.0% | 69.2% | +5.8 | 7/6/2 | 1.64 | 875 | 67.1 | PASS |
+| 6 | 85.1% | 63.8% | 58.4% | +5.4 | 15/1/5 | 2.18 | 1255 | 72.8 | PASS |
+| 7 | 76.3% | 48.7% | 48.0% | +0.7 | 21/4/3 | 2.36 | 1694 | 74.8 | PASS |
+| 8 | 84.9% | 41.3% | 38.7% | +2.6 | 6/4/3 | 2.67 | 2166 | 80.8 | PASS |
+| 9 | 69.9% | 28.9% | 30.8% | -1.9 | 17/1/4 | 3.01 | 2605 | 85.9 | PASS |
+| 10 | 73.5% | 21.2% | 24.3% | -3.1 | 9/3/1 | 3.35 | 3078 | 90.9 | PASS |
+| 11 | 76.5% | 16.2% | 19.1% | -2.9 | 7/0/1 | 3.74 | 3848 | 99.6 | PASS |
+| 12 | 88.0% | 14.3% | 15.1% | -0.8 | 3/0/0 | 3.92 | 4889 | 105.1 | PASS |
+| 13 | 78.9% | 10.0%* | 11.9% | -1.9 | tail (1000-seed) | 4.09 | 6096 | 112.0 | tail |
+| 14 | 80.9% | 8.1%* | 9.5% | -1.4 | tail | 4.13 | 6231 | 117.8 | tail |
+| 15 | 85.2% | 6.9%* | 7.6% | -0.7 | tail | 4.58 | 7568 | 122.8 | tail |
+| 16 | 82.6% | 5.7%* | 6.2% | -0.5 | tail | — | — | — | tail |
+| 17 | 78.9% | 4.5%* | 5.0% | -0.5 | tail | — | — | — | tail |
+| 18 | 72.4% | 3.3%* | 4.2% | -0.9 | tail | — | — | — | tail |
+| 19 | 84.2% | 2.7%* | 3.5% | -0.8 | tail | — | — | — | tail |
+| 20 | 93.3% | 2.6%* | 3.0% | -0.4 | tail | — | — | — | tail |
+
+`* S_L for floors 13-20 is read from the 1000-seed tail run's own S_L (product from depth 1, not re-based on the 200-seed run's S_12) — see the Tail section below for the exhaustive per-floor breakdown, including combat/dot/starvation-exhaustion splits.`
+
+**Class-pool table** (200-seed solo):
+
+| Class | n | p50 | reach5 | reach10 | dmg taken/fight | rounds/fight | foe miss % | casts def/off | potions | ok |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Fighter | 69 | 7 | 82.3% | 17.7% | 11.15 | 4.43 | 66.4% | 0/0 | 1.06 | yes |
+| Thief | 72 | 8 | 88.7% | 30.6% | 7.78 | 3.22 | 69.8% | 0/0 | 2.07 | yes |
+| Magic User | 59 | 7 | 68.0% | 22.0% | 7.71 | 3.03 | 66.9% | 249/1338 | 3.61 | yes |
+
+**Recorded spread** (class smoke, 143 cells): Thief p50Depth min 4.0 (Pilfer/Elven) max 14.0 (Ninja/Human), reach5 min 33.3% (Pilfer/Elven) max 100.0% (Pickpocket/Human); Magic User p50Depth min 3.0 (Summoner/Elven) max 17.0 (Court Mage/Fridgian), reach5 min 0.0% (Summoner/Elven) max 100.0% (Wizard/Wilmsry); Fighter p50Depth min 4.0 (Barbarian/Elven) max 11.0 (Master of Arms/Elven), reach5 min 40.0% (Barbarian/Elven) max 100.0% (Guard/Dwarven). Intended; no fix column (the loosened class-fairness constraints, USER RULING G, accept this spread as "the hand you're dealt").
+
+**Reading:** the fit PASSes every floor 1-12 at the 200-seed solo (and the 1000-seed tail independently confirms the SAME 12 floors stay inside band at 10x the sample) — a clean win against the Ruling C target, a first for this phase after three failed cycles. BEFORE (Phase 53 AFTER, `78572c5`) read p50/p90 4/6, reach>=5 33.0%, reach>=10/20 0.0%; AFTER reads p50/p90 7/12, reach>=5 80.5%, reach>=10 23.6%, reach>=20 1.1% — every headline number moved toward the Ruling C target, most dramatically reach>=5 (33% -> 80.5%) and reach>=10 (0% -> 23.6%). The pace table shows the hero crossing level 2 around floor 6 and level 3 around floor 9 — Wall-band leveling lines up with the Wall's own difficulty step (`FOE_LEVEL` crosses tier 3 at depth 6 too).
+
+#### Tail — measured, not fitted (1,000-seed solo; --start-depth=10 slice) — user cut 2026-09-21
+
+**1,000-seed solo** (`readouts/global-after-solo-1000.txt`): `Death-depth distribution: min=1 p50=7 p90=12 max=45`. `Per-floor survival` (verbatim, floors 13-20 + reach-20):
+
+| Floor | reached (of 1000) | p_L | S_L | target S_L | dS | note |
+|---|---|---|---|---|---|---|
+| 13 | 90 | 78.9% | 10.0% | 11.9% | -1.9 | tail |
+| 14 | 68 | 80.9% | 8.1% | 9.5% | -1.4 | tail |
+| 15 | 54 | 85.2% | 6.9% | 7.6% | -0.7 | tail |
+| 16 | 46 | 82.6% | 5.7% | 6.2% | -0.5 | tail |
+| 17 | 38 | 78.9% | 4.5% | 5.0% | -0.5 | tail |
+| 18 | 29 | 72.4% | 3.3% | 4.2% | -0.9 | tail |
+| 19 | 19 | 84.2% | 2.7% | 3.5% | -0.8 | tail |
+| 20 | 15 | 93.3% | 2.6% | 3.0% | -0.4 | tail |
+
+`reach-20: 1.5% — reported, not pass/fail (band 3.0-5.0%)`. Floors 1-12 at 1000 seeds independently confirm PASS (all 12 within their `dS` tolerance — see the AFTER per-floor table above, which already folds this run's own floors 1-12 in as a cross-check; the two runs' floors 1-12 verdicts agree floor-for-floor).
+
+**--start-depth=10 slice (200 seeds)** (`readouts/global-after-start-depth-10.txt`): `Death-depth distribution: min=10 p50=12 p90=17 max=24` — informational, p_L 10-20 read against the curve, not scored.
+
+Floors 13-20 and reach-20 are not in the fit's objective or the verdict; they are recorded here as measured.
+
+#### Change table (BAND-03)
+
+**Removed (USER RULING D, landed 54-05):** `WALL_*`, `BREAKAWAY_*`, `ENDGAME_*` knots, `knotFoePowerFor`/`knotHazardFor`/`knotAbilityThreatFor`, `FOE_GRACE_AT_1..4`, `graceFor`, `HAZARD_SCALE_AT_*`, `HAZARD_FROM_DEPTH`, `WALL_HAZARD_SCALE`, `COMBAT_SCALE_FROM_DEPTH` + the 21+ soft-cap ramp (`FOE_POWER_MAX/SOFT_K`, `ABILITY_THREAT_MAX/SOFT_K`, `FOE_CAP_MAX/SOFT_K`), `DENSITY_CANON_THROUGH_DEPTH`, `DARK_HOLD_THROUGH_DEPTH`, `foeDmgBonusFor` (all → removed). `DOT_HP_FRACTION` (landed 54-05) → removed at 54-07 (USER RULING G) — replaced by the flat, non-dial `DOT_HP_BASE` content table.
+
+| Constant / dial | File | Before (5550002) | Identity commit | Fitted / held (7db833e) | Searched? | Direction | Record |
+|---|---|---|---|---|---|---|---|
+| `COMBAT_SCALE_FROM_DEPTH` | difficulty.js | 21 | removed | removed | n/a | n/a | identity commit `3226c20` |
+| `FOE_GRACE_AT_2` | difficulty.js | 0.5 | removed | removed | n/a | n/a | identity commit `3226c20` |
+| `WALL_FOE_POWER_AT_START` | difficulty.js | 0.85 (rung1) | removed | removed | n/a | n/a | rung history (retired ladder) |
+| `ENDGAME_FOE_POWER_AT_END` | difficulty.js | 1.0 | removed | removed | n/a | n/a | rung history (retired ladder) |
+| `ENCOUNTER_DOT_CAP` | difficulty.js | 13 | removed | removed | n/a | n/a | identity commit `3226c20` |
+| `DARK_HOLD_THROUGH_DEPTH` | difficulty.js | 3 | removed | removed | n/a | n/a | identity commit `3226c20` |
+| `knotFoePowerFor` | difficulty.js | fn | removed | removed | n/a | n/a | identity commit `3226c20` |
+| `foeDmgBonusFor` | difficulty.js | fn | removed | removed | n/a | n/a | identity commit `3226c20` |
+| `DOT_HP_FRACTION` | difficulty.js | n/a | `{0.24,0.36,0.6}` | removed (→ `DOT_HP_BASE` flat) | n/a | n/a | this commit `88b081e` (USER RULING G) |
+| `FOE_LEVEL` | difficulty.js | n/a (new) | `{0.6, 0.2}` | fitted `{0.9, 0.29}` | yes | ↑ harder | `fit/fit-log.jsonl #13` |
+| `HERO_SP_SCALE` | difficulty.js | n/a (new) | 1 | fitted 0.28 (unmoved from start-block3) | yes | ↓ easier XP pace | `fit/fit-log.jsonl #13` |
+| `LOOT_SCALE` | difficulty.js | n/a (new) | 1 | held 0.8 | held | ↓ less coin | held (available) |
+| `FOE_HIT_SCALE` | difficulty.js | n/a (new) | `{1, 0}` | fitted `{0.6, 0.01}` | yes | ↓ easier hits | `fit/fit-log.jsonl #13` |
+| `FOE_HP_SCALE` | difficulty.js | n/a (new) | `{1, 0}` | fitted `{0.9, 0.015}` | yes | ↑ tankier foes | `fit/fit-log.jsonl #13` |
+| `HERO_HP_SCALE` | difficulty.js | n/a (new) | 1 | fitted 1.25 (unmoved from start-block3) | yes | ↑ tankier hero | `fit/fit-log.jsonl #13` |
+| `HERO_REGEN_PER_FLOOR` | difficulty.js | n/a (new) | 0 | fitted 0.25 (unmoved) | yes | ↑ easier | `fit/fit-log.jsonl #13` |
+| `CAMP_HEAL_FRACTION` | difficulty.js | n/a (new) | 0.17 | held 0.2 | held | ↑ easier | held (available) |
+| `ROUND_DAMAGE_CEILING` | difficulty.js | n/a (new) | 0 | held 0.5 | held | ↑ easier (softer) | held (available); TUNE-08 roster |
+| `FOE_COUNT_SKEW` | difficulty.js | n/a (new) | 0 | held 1 | held | ↑ more bodies | held (available); 0..4 if released |
+| `HAZARD_SCALE` | difficulty.js | n/a (new) | `{1, 0}` | fitted base 0.6 (unmoved), perDepth held 0.02 | base: yes | ↓ easier hazards | `fit/fit-log.jsonl #13` |
+| `ENCOUNTER_DOTS` | difficulty.js | n/a (new) | `{9, 1}` | fitted base 7 (unmoved), perDepth held 0.3 | base: yes | ↓ less attrition | `fit/fit-log.jsonl #13` |
+| `FOOD_CLOCK` | difficulty.js | n/a (new) | 1 | held 1.5 | held | ↑ more rations | held (available); [1.0,1.6] if released |
+| `ABILITY_THREAT` | difficulty.js | n/a (new) | `{1, 0}` | held `{1, 0}` | held | ↑ more caster acts | held (available); base [0.6,1.2] if released |
+| `STORE_TIER` | difficulty.js | n/a (canon) | `{0, 0.3}` | held `{0, 0.3}` | held | ↑ richer stores sooner | available, canon |
+| `FIGHT_SHARE` (`DOT_MIX.fight`) | difficulty.js | n/a (new) | 1.0 | held 1.0 | held | ↑ more fights | held (available); [0.6,1.2] if released |
+| `WANDER_RATE` | difficulty.js | n/a (new) | 1 | held 1 | held | ↑ more wandering checks | held (available); {0,1,2} if released |
+| `FOE_ACCURACY` | difficulty.js | n/a (new) | 0 | held 0 | held | ↑ harder to-hit | held (available); -3..+3 if released |
+| `MAZE_SIZE` | difficulty.js | n/a | n/a (cut) | n/a (cut) | n/a | n/a | available, not implemented (v1.8 candidate) |
+| `DARK_BLOBS` | difficulty.js | n/a (canon) | `{-0.4, 0.7}` | held `{-0.4, 0.7}` | held | ↑ more darkness | held (available) |
+| `CLASS_MITIGATION` | difficulty.js | n/a (new) | every row 1/0 | identity (no notch) | Magic User.spellPower: yes (cycle 2 only, dropped cycle 3) | n/a | held (available); TIER_SPREAD-adjacent |
+| `TIER_SPREAD` | difficulty.js | 1 (canon d4=1) | 1 | held 1 | held | ↑ more bleed | available, canon |
+
+#### Miss table (BAND-03)
+
+**Floors 1-12: none — every floor 1-12 inside its band** (the AFTER solo verdict is PASS; `misses: []` at `fit/fit-log.jsonl #13`).
+
+**Tail rows (13-20, dS only, no verdict):**
+
+| Floor | dS | note |
+|---|---|---|
+| 13 | -1.9 | tail |
+| 14 | -1.4 | tail |
+| 15 | -0.7 | tail |
+| 16 | -0.5 | tail |
+| 17 | -0.5 | tail |
+| 18 | -0.9 | tail |
+| 19 | -0.8 | tail |
+| 20 | -0.4 | tail |
+| reach-20 | 1.5% vs 3.0-5.0% | tail, reported |
+
+Every tail `dS` is small (largest magnitude -1.9 at floor 13) and the SAME sign (slightly under target) across all 8 floors — a mild, consistent undershoot past floor 12, not a structural miss; no held dial is named to release, since the fit's own objective never scored these floors (releasing a held dial to chase the tail would risk re-opening floors 1-12, which are currently clean).
+
+#### Roster under the ceiling (TUNE-08)
+
+| Creature | Type / tier | First floor | Raw max/round | foeHitScale | Scaled max | Hero level | Ceiling | Clamped max | Depth-20 deaths (n/50) | Decision |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Herman | Humans t5 | 13 | 25+12=37 | 0.73 | 27 | 4 | 34 | 27 | 9 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+| Drarl | Lair Beasts t5 | 13 | 25+12=37 | 0.73 | 27 | 4 | 34 | 27 | 11 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+| Vampire | Walking Dead t5 | 13 | (25+8)×2=66 | 0.73 | 24×2=48 | 4 | 34 | **34** | 6 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+| Djinni | Demons t5 | 13 | 25+8=33 | 0.73 | 24 | 4 | 34 | 24 | 6 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+| Drake | Beasts t4 | 9 | 16+48=64 | 0.69 | 44 | 3 | 31 | **31** | 1 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+
+**Ruling B superseded:** the Drake trim USER RULING B proposed mid-phase (2d10+4 -> 2d8+2, under the old whole-sum rule's 116% reading) is NOT applied — `ROUND_DAMAGE_CEILING` bounds the Drake's crit to 31 regardless of dice notation; the ceiling is the mechanism, not a bestiary edit. The forced-20 slice reads p_20 74.0% vs the Ruling C 84.5% target (the Endgame shape is measured, not fitted — the tail's own reach-20 1.5% vs 3.0-5.0% band agrees this is a harder-than-target Endgame, recorded not chased). Tier-5 roster: 7 creatures (Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead, Demons — 6 types x tiers, tier 5 has 7 rows); first floor of tier 5 under the fitted map is depth 13 — unchanged from the v1.8 content-candidate note (54-CONTEXT.md's "Roster depth question").
+
+#### Depth-20 slice — p_L readout (USER RULING C)
+
+`Per-floor survival` (50 seeds, `--start-depth=20`): L=20 p_L=74.0% (target 84.5%, dS +71.0 vs the tail's own S_L base — informational only, this column reads the SLICE's own S_L which restarts at depth 20, not the full-run S_L); L=21 p_L=64.9%; L=22 p_L=69.6%; L=23 p_L=53.3%; L=24 p_L=57.1%; L=25 p_L=66.7% (target p_L 88.9%). Every floor 21-25 reads well below the Ruling C target — this is the SAME pattern the 1000-seed tail's own floors 21+ (`info`, not scored) show, confirming the Endgame is harder than Ruling C's own curve past floor 20 under this fit; recorded, not chased (BAND-01's Endgame band is "victory rare and celebrated" — a harder-than-target deep Endgame is consistent with that spirit, not a defect).
+
+#### Parity — measured set (BAND-02)
+
+Scan: `node tools/initiative-fixture-scan.mjs | diff - tools/initiative-fixture-scan-output.txt` clean (regenerated at commit `7db833e`). Suite: `node --test test/parity/*.test.js` green (43+/43+). **MOVED SET (26 declared holders across three mechanisms)**: 31 `chargenDivergence` holders (all 14 chargen seeds + movement#script + economy#script + 6 combat scenarios + 4 magic scenarios + 5 encounters scenarios — HERO_HP_SCALE/FOOD_CLOCK), 17 `floorFeatureShift` holders (ENCOUNTER_DOTS remap, a new record kind), 9 `divergence` (action-path) holders with `phase` containing `54` (win/chest/movement#script new; lose/lose-apprentice/lose-plain/flee/parley/cast-damage re-measured) — see `test/parity/FIXTURE-INVENTORY.md`'s `### Fitted dials — measured set` section for the full per-mechanism accounting and `test/parity/divergence-records.test.js`'s `BAND-02 (USER RULING D/G)` guard for the machine-checked EXPECTED set. `grep -rc '"BAND-02"' test/parity/fixtures/*.json` > 0 across all six fixture files. Master hash `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` unchanged; `test/parity/harness/comparables.js` untouched (every `applyFloorFeatureShift` copy is LOCAL to its own test file, per the engine gate).
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
