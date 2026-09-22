@@ -260,6 +260,10 @@ None - no external service configuration required.
 - Phase 58 (Motion Pacing) is already being planned concurrently (untracked `.planning/phases/58-motion-pacing/58-0N-PLAN.md` files present at dispatch, left untouched by this plan per the run's own instruction). This plan's resting-state CSS (`.mw-hud-menu[data-open="1"]`/`.mw-hud-menu-scrim[data-open="1"]`/`[aria-expanded="true"]`, all opacity/visibility/transform/pointer-events/colour only) is exactly the shape MOTION-02 needs to add a transition onto — no structural rework anticipated.
 - No blockers.
 
+## Self-Check: PASSED
+
+All created files verified present on disk (`src/browser/hudMenu.js`, `test/unit/hudMenu.test.js`, `test/unit/hud-menu-layout.test.js`, this SUMMARY.md); all four commits (`8fb33ea`, `d2b7350`, `3a23a0b`, `9e1eca0`) verified present in `git log`. No missing items.
+
 ---
 *Phase: 57-map-hud-layout-band*
 *Completed: 2026-09-22*

@@ -6,16 +6,16 @@ current_phase: 57
 current_phase_name: map-hud-layout-band
 current_plan: 4
 status: verifying
-stopped_at: "Completed 57-04-PLAN.md (darkness legibility — vignette, waiver naming, named cancel, LAYOUT-06). Phase 57 plans 1-4 all complete; orchestrator is adding plan 57-05 (HUD compaction + hamburger-menu mock) before closing the phase. RESUME: /gsd-execute-phase for 57-05, or await orchestrator."
-last_updated: "2026-09-22T18:49:36.779Z"
+stopped_at: Completed 57-05-PLAN.md
+last_updated: "2026-09-22T19:26:44.063Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 57 execution started
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 9
-  completed_plans: 8
-  percent: 20
+  completed_phases: 2
+  total_plans: 16
+  completed_plans: 9
+  percent: 40
 total_plans_in_phase: 4
 ---
 
@@ -33,7 +33,7 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 Phase: 57 (map-hud-layout-band) — EXECUTING
 Current Plan: 4
 Total Plans in Phase: 4
-Progress: [█████████░] 89%
+Progress: [██████░░░░] 56%
 Plan: 4 of 4
 Status: Phase complete — ready for verification
 Last activity: 2026-09-22 — Phase 57 execution started
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T18:49:36.748Z
-Stopped at: Completed 57-04-PLAN.md (darkness legibility — vignette, waiver naming, named cancel, LAYOUT-06). Phase 57 plans 1-4 all complete; orchestrator is adding plan 57-05 (HUD compaction + hamburger-menu mock) before closing the phase. RESUME: /gsd-execute-phase for 57-05, or await orchestrator.
+Last session: 2026-09-22T19:26:43.928Z
+Stopped at: Completed 57-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -325,6 +325,7 @@ Resume file: None
 | Phase 57 P02 | 25min | 3 tasks | 3 files |
 | Phase 57 P03 | ~45min | 3 tasks | 8 files |
 | Phase 57 P04 | ~40min | 3 tasks | 13 files |
+| Phase 57 P05 | ~3h | 3 tasks | 15 files |
 
 ## Decisions
 
@@ -598,6 +599,9 @@ Resume file: None
 - [Phase ?]: Section B of rail-dismiss.test.js needed a sibling loader (loadRailDismissSandbox), not a caller of shellSandbox.js#loadShellSandbox, because renderRail's stub can't be undone after the fact — S/railShownAt/lastRailKeyShown/railTimer are per-execution vm let bindings, not context-global properties.
 - [Phase ?]: LAYOUT-06 corrected: the Phase 41 render-window filter already read c.darkFor correctly; the real 2026-09-21 device bug was waiver visibility (a torch/Amulet/Night Vision waiver holds the dark back silently while the DARK chip keeps counting down) — 57-04 built the vignette AND named the waiver.
 - [Phase ?]: vignetteFor() is fed mapViewRadius(S), never revealRadius(S) — the two diverge under a waiver, and the vignette must explain what the map is rendering, not the 1994 reveal-radius rule. Unifying the two mechanisms is deferred to backlog 999.8.
+- [Phase ?]: USER MOCK RULING 2026-09-22: chip band retired outright into a hamburger (☰) menu on HUD band 2; HP bar moves to a strip under band 1; CENTRE MAP is the one adopted wording change
+- [Phase ?]: Counter slots reconciled (discovery D): only Squares keeps the 5-digit D-08 slot; Depth/Day/Rations narrow to 3/3/2 digits so band 2 fits a 411px Pixel 7 with the ☰ button
+- [Phase ?]: Android back button closes the ☰ menu (device equivalent of Escape), approved by the orchestrator as standard behaviour
 
 ### Blockers
 
