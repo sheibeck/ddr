@@ -169,7 +169,9 @@ test("CONDITION_TONE/CONDITION_EXPLAIN carry the three new item-driven chip keys
   assert.match(region, /"cooling"/);
   assert.match(region, /charges, next in/);
 
-  assert.match(CODE, /window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainCondition\(cn, label\), "info", 4200, "·"\)/);
+  // Phase 57 (LAYOUT-03): the condition-chip explain card's hold literal
+  // was doubled from 4200 to 8400, same ruling as every other RAIL_HOLD key.
+  assert.match(CODE, /window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainCondition\(cn, label\), "info", 8400, "·"\)/);
 });
 
 // ─── 6. Hero tab: engine-routed to-hit/strike-die ─────────────────────────

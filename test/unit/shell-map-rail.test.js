@@ -221,7 +221,7 @@ test("(e) bridges: window.__mzRailVM/__mzRail/mzRailLine/renderRail/mzRailPulse 
 
 // ─── (f) renderRail ─────────────────────────────────────────────────────
 
-test("(f) renderRail: decision precedence (joiner < find < climb < card < idle), the key gate, armEncounterButtons, the generic guardTap wiring, the five action ids, zero innerHTML/listener-on-panel-body-card, one setTimeout keyed on .hold", () => {
+test("(f) renderRail: decision precedence (joiner < find < climb < card < idle), the key gate, armEncounterButtons, the generic guardTap wiring, the five action ids, zero innerHTML/listener-on-panel-body-card, one setTimeout whose delay comes from holdForCard", () => {
   const region = railRegion();
   const idx = (needle) => region.indexOf(needle);
   const joinerIdx = idx("if (S.pendingJoiner && !S.combat && !S.store) {");
@@ -241,7 +241,10 @@ test("(f) renderRail: decision precedence (joiner < find < climb < card < idle),
     assert.doesNotMatch(region, bad);
   }
   assert.equal((region.match(/setTimeout\(/g) || []).length, 1);
-  assert.match(region, /\.hold \|\| 4200/);
+  // Phase 57 (LAYOUT-03): the auto-clear timer's delay now comes from the
+  // bridged holdForCard(rail.card) (line-scaled, bounded), not the raw
+  // rail.card.hold || 4200 literal fallback this test used to pin.
+  assert.match(region, /vm\.holdForCard \? vm\.holdForCard\(rail\.card\) : 8400/);
   assert.match(railButtonsRegion(), /guardTap\(document\.getElementById\(b\.id\), b\.onTap\)/);
 });
 
@@ -375,6 +378,12 @@ test("(l) layout: the tab bar is a static flex child, .mw-screens is flush insid
 
 // ─── (m) aria-disabled sweep ──────────────────────────────────────────────
 
+// Phase 57 (LAYOUT-02): unchanged by design — the new #mw-rail body-tap
+// dismiss handler deliberately does NOT stamp aria-disabled on the rail
+// container itself (see mazeworld.html's own handler doc comment for why:
+// guardTap's own aria-disabled/descendant-selector pairing would leave the
+// attribute stuck on #mw-rail forever), so the descendant sweep selector
+// pinned below still covers every element that actually needs clearing.
 test('(m) armEncounterButtons\' sweep selector includes #mw-rail [aria-disabled="true"]', () => {
   assert.match(CODE, /#mw-rail \[aria-disabled="true"\]/);
 });
