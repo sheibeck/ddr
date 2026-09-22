@@ -227,6 +227,10 @@
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
+## Current State (2026-09-22, v1.7 Tuning Pass — Phases 50–54 complete; Phase 55 Human DR Round next)
+
+**Code-complete, device round pending:** v1.7 "Tuning Pass — Initiative, Cadence & the Four-Band Curve" (Phases 50–54) — the character roller fixed; initiative rolled once per combat and visible; one honest swing per foe per round with a smooth depth-scaled damage curve; Joiner level capped by floor; and Phase 54's global difficulty model (USER RULING D): one frozen `DIALS` object, foe level keyed to depth, a round-damage ceiling, hero HP/regen helpers, the fair tuning bot and `tools/fit-difficulty.mjs` — fitted by a checkpointed search (USER RULINGS E–G) to the user's per-floor survival curve, PASS at evaluation #13 (score 2.71; the 1,000-seed tail rides the curve to floor 20; roster Herman/Drarl/Vampire/Djinni/Drake stays, capped by the ceiling). Fourteen device-session findings (2026-09-21) are queued as quick tasks after the round.
+
 ## Current State (2026-09-20, v1.6 Shell Debt & Dead Code code-complete — Phases 44–49; v1.5 + v1.6 device UAT batches pending)
 
 **Code-complete, UAT pending:** v1.6 "Shell Debt & Dead Code" (Phases 44–49) — the classic engine retired from the shell; one worn-model path; `narrationLines.js` and honest exports, `winGame`/`won` and `tutorial.js` gone; Gear/Hero/Store as `src/browser/` modules with a DOM-snapshot lock and a bridge registry; stale-terms tripwire; Android-only CLAUDE.md; perf baseline + two step-path fixes measured on the Pixel 7. Zero gameplay change; parity master untouched.
@@ -322,4 +326,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-20 — v1.7 Phases 50–52 complete; Phase 53 next*
+*Last updated: 2026-09-22 — v1.7 Phases 50–54 complete (fit PASS); Phase 55 Human DR Round next*
