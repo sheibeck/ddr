@@ -52,7 +52,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 Plans:
 
 - [x] 56-01-PLAN.md — copySfx() build step: the 30 clips ship inside the bundle, a build missing sfx/ fails loud (AUD-06)
-- [ ] 56-02-PLAN.md — src/browser/sfx.js pure core: event→clip table, family cry map, per-dispatch order/de-dupe/cap, counter-driven variation (AUD-01, AUD-02, AUD-03)
+- [x] 56-02-PLAN.md — src/browser/sfx.js pure core: event→clip table, family cry map, per-dispatch order/de-dupe/cap, counter-driven variation (AUD-01, AUD-02, AUD-03)
 - [ ] 56-03-PLAN.md — Web Audio player: decode-once-at-unlock, overlapping voices capped at 8, fail-open degradation, bridge registration (AUD-04)
 - [ ] 56-04-PLAN.md — shell wiring + Settings "Sound" gate + phase gate (AUD-05)
 

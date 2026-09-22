@@ -5,16 +5,16 @@ milestone_name: Sound, Motion & Set Dressing
 current_phase: 56
 current_phase_name: sound-effects-audio-settings
 status: in_progress
-stopped_at: Completed 56-01-PLAN.md
-last_updated: "2026-09-22T13:36:52.682Z"
+stopped_at: Completed 56-02-PLAN.md
+last_updated: "2026-09-22T13:48:39.460Z"
 last_activity: 2026-09-22
-last_activity_desc: "Phase 56 Plan 01 executed: copySfx() build wiring + sfx-assets.test.js (AUD-06 build-side half)"
+last_activity_desc: "Phase 56 Plan 02 executed: src/browser/sfx.js pure core (clip tables, family cry map, dispatch resolver, counter-driven variation) + test/unit/sfx-map.test.js"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 2
+  percent: 50
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: Phase 56 (Sound Effects & Audio Settings) — planned, 4 plans
-Plan: 56-01 complete (copySfx() build wiring + asset manifest test); 56-02/56-03/56-04 not yet started
-Status: 56-01 executed and committed — AUD-06's build-side half (whole-directory sfx/ copy, fail-loud on missing source, 30-clip manifest pinned); engine/content untouched, npm test 3484/3484, parity master hash unchanged
-Last activity: 2026-09-22 — Phase 56 Plan 01 executed (tools/build-www.mjs copySfx(), test/unit/sfx-assets.test.js)
+Plan: 56-01/56-02 complete (copySfx() build wiring + asset manifest test; sfx.js pure core + mapping tests); 56-03/56-04 not yet started
+Status: 56-02 executed and committed — AUD-01/02/03's pure core (30-clip vocabulary, 18 groups, 26 mapped events, total 6-family FAMILY_CRY map, groupsForDispatch/createVariation/clipsForDispatch); engine/content untouched, npm test 3502/3502, parity master hash unchanged
+Last activity: 2026-09-22 — Phase 56 Plan 02 executed (src/browser/sfx.js pure core, test/unit/sfx-map.test.js)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -175,8 +175,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T13:36:52.652Z
-Stopped at: Completed 56-01-PLAN.md
+Last session: 2026-09-22T13:48:32.234Z
+Stopped at: Completed 56-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -313,6 +313,7 @@ Resume file: None
 | Phase 52 P02 | ~2h | 3 tasks | 14 files |
 | Phase 52 P03 | ~90min | 3 tasks | 3 files |
 | Phase 56 P01 | 25min | 2 tasks | 2 files |
+| Phase 56 P02 | 6min | 3 tasks | 2 files |
 
 ## Decisions
 
@@ -572,6 +573,7 @@ Resume file: None
 - [Phase ?]: 52-03: Applied the user's hand-to-54 ruling verbatim as per-row Disposition text on all 65 still-flagged damage-curve cells (21 tier-5 -> deliberate deep-tier threat; 44 tier 2-4 -> curve height, a Phase 54 dial) — no bestiary trims this plan
 - [Phase ?]: 52-03: AFTER bot readout ran on the ruling-only commit 049ab50 (no engine/bestiary changes in this plan); meta-parity confirmed true against Phase 51's AFTER smoke modulo commit
 - [Phase ?]: copySfx() call ordering fixed exactly as planned: after copySplash(), before vendorCapacitorPackages()
+- [Phase ?]: Reworded sfx.js header comment to avoid a literal grep collision with the plan's own Math.random() verification check (comment wording only, no behavior change).
 
 ### Blockers
 

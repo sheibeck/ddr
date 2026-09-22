@@ -161,3 +161,14 @@ None - no external service configuration required.
 ---
 *Phase: 56-sound-effects-audio-settings*
 *Completed: 2026-09-22*
+
+## Self-Check: PASSED
+
+- FOUND: src/browser/sfx.js
+- FOUND: test/unit/sfx-map.test.js
+- FOUND: .planning/phases/56-sound-effects-audio-settings/56-02-SUMMARY.md
+- FOUND: commit 44397d8
+- FOUND: commit a25bd0d
+- FOUND: commit 28811c4
+- FOUND: commit 8e25171
+- FOUND: commit 09214fd
