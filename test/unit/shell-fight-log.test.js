@@ -144,6 +144,21 @@ test("renderFightLog(host) reads window.__mzFightLogVM.rows, builds entries via 
   assert.equal(markHits.length, 1, "the › mark literal must appear exactly once");
 });
 
+// Phase 58 (MOTION-03/D-16), Plan 06 — while a beat is live, renderFightLog
+// reveals only the rows up to the beat's own maxId, but syncFightLogLive
+// always receives the WHOLE (unfiltered) log — the announcer must read the
+// full round in the very first beat render, even though the visible rows
+// reveal and type one by one.
+test("renderFightLog(host) calls syncFightLogLive(log) with the SAME (unfiltered) log the row-building loop reads from, not a filtered/sliced copy", () => {
+  const region = helpersRegion();
+  assert.match(region, /const bv = window\.__mzBeat\?\.view\?\.\(\) \|\| null;/);
+  assert.match(region, /const log = bv \? bv\.log : window\.__mzFightLog;/);
+  assert.match(region, /const rows = window\.__mzFightLogVM \? window\.__mzFightLogVM\.rows\(log\) : \[\];/);
+  const syncHits = region.match(/syncFightLogLive\(log\);/g) || [];
+  assert.equal(syncHits.length, 1, "syncFightLogLive(log) — the unfiltered log — must be called exactly once");
+  assert.doesNotMatch(region, /syncFightLogLive\(window\.__mzFightLog\)/, "syncFightLogLive must read the SAME `log` local, not re-read window.__mzFightLog directly");
+});
+
 // ─── 4. renderEncounter calls renderFightLog; zero remaining Round Card ───
 
 test("renderEncounter region calls renderFightLog(...) and carries zero Round Card artifacts", () => {

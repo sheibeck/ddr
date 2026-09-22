@@ -184,10 +184,13 @@ test("Phase 29 (LOOT-04)/Phase 35: the find card (rail decision, a full bag) cal
 
 // ─── 6. the loot screen card ──────────────────────────────────────────────
 
-const LOOT_GUARD = 'if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {';
+// Phase 58 (MOTION-03): the loot/beats/store branch conditions now also
+// carry the beat's `!bv && ` gate (D-09/D-11) — re-pinned to the landed
+// strings.
+const LOOT_GUARD = 'if (!bv && S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {';
 const JOINER_GUARD = 'if (S.pendingJoiner && !S.combat && !S.store)';
-const BEATS_GUARD = 'if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {';
-const STORE_GUARD = 'if (S.store) {';
+const BEATS_GUARD = 'if (!bv && !S.combat && S.beats && S.beats.groups && S.beats.groups.length) {';
+const STORE_GUARD = 'if (!bv && S.store) {';
 
 function lootRegion() {
   const start = CODE.indexOf(LOOT_GUARD);

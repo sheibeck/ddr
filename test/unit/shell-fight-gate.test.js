@@ -62,7 +62,8 @@ test("CMB-01: window.mzFight dispatches the engine's fight action exactly once",
 
 test("CMB-01: renderEncounter's Fight! gate reads combat.pending, not a presentation flag", () => {
   const renderEncounterRegion = region("function renderEncounter", "function noteCombat");
-  assert.match(renderEncounterRegion, /if \(C\.pending\)/);
+  // Phase 58 (MOTION-03): the pending gate now also carries `&& !bv` (D-09).
+  assert.match(renderEncounterRegion, /if \(C\.pending && !bv\)/);
   // Phase 34 (CSCR-06): the gate renders the MAJOR OVERLAY, not the old
   // #a-fight button inside the combat-panel markup.
   assert.match(renderEncounterRegion, /renderMajorOverlay\(body/);

@@ -64,8 +64,11 @@ function fnRegion(sig) {
 function overRegion() {
   return fnRegion("function renderCombatOver(host, kind, opts = {})");
 }
+// Phase 58 (MOTION-03): every renderEncounter branch marker below now
+// carries the beat's `!bv && ` gate (D-09/D-11) — re-pinned to the landed
+// strings, same regions.
 function deathBranch() {
-  return sliceBetween(CODE, "if (S.dead) {", "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {");
+  return sliceBetween(CODE, "if (!bv && S.dead) {", "if (!bv && !S.combat && S.beats && S.beats.groups && S.beats.groups.length) {");
 }
 function wireDeathConfirmRegion() {
   return sliceBetween(CODE, "function wireDeathConfirm", "function foeStatusBadges(");
@@ -73,15 +76,15 @@ function wireDeathConfirmRegion() {
 function beatsBranch() {
   return sliceBetween(
     CODE,
-    "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {",
-    "if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
+    "if (!bv && !S.combat && S.beats && S.beats.groups && S.beats.groups.length) {",
+    "if (!bv && S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
   );
 }
 function lootBranch() {
   return sliceBetween(
     CODE,
-    "if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
-    "if (S.store) {",
+    "if (!bv && S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
+    "if (!bv && S.store) {",
   );
 }
 // Phase 35 (MAP-04): the joiner/find prompts moved from renderEncounter into
@@ -374,8 +377,10 @@ test('Phase 34 (whole-phase voice scan): the flee beat title "You got out" is cl
 
 test("Phase 46: the retired won card is gone and the store region is untouched", () => {
   assert.doesNotMatch(CODE, /Through the Gate/);
-  assert.equal((CODE.match(/if \(S\.dead\) \{/g) || []).length, 1);
-  const storeRegion = sliceBetween(CODE, "if (S.store) {", "const C = S.combat;");
+  // Phase 58 (MOTION-03): the death-branch condition now carries the
+  // beat's `!bv && ` gate (D-09/D-11) — re-pinned to the landed string.
+  assert.equal((CODE.match(/if \(!bv && S\.dead\) \{/g) || []).length, 1);
+  const storeRegion = sliceBetween(CODE, "if (!bv && S.store) {", "const V = bv ? bv.state : S;");
   assert.doesNotMatch(storeRegion, /guardTap\(/);
   assert.doesNotMatch(storeRegion, /dataset\.mode/);
 });

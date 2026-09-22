@@ -28,6 +28,9 @@ import { keepInViewAxis } from "../../src/browser/controls.js";
 import { REDUCED_MOTION_QUERY } from "../../src/browser/motion.js";
 import { railPush, emptyRail, RAIL_HOLD } from "../../src/browser/rail.js";
 import { stripHtml } from "../../tools/ident-sweep.mjs";
+import { applyAction } from "../../engine/engine.js";
+import { fightLogLinesFor, appendFightLog } from "../../src/browser/fightLog.js";
+import { planBeat } from "../../src/browser/combatBeat.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -278,4 +281,125 @@ test("reduced-motion/typing: source anchor — settleAllMotion()'s body drains t
   const settleNextFn = stripped.indexOf("\nfunction ", settleIdx + 1);
   const settleBody = stripped.slice(settleIdx, settleNextFn === -1 ? stripped.length : settleNextFn);
   assert.match(settleBody, /typewriter\.completeAll\(\);/);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// ─── beat (MOTION-03, Plan 58-06) ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+// fixed* helpers — copied verbatim from test/unit/combat-beat-shell.test.js's
+// own (see that file's header comment for why applyAction, not hand-built
+// events, is the plan's documented fallback source of a real resolved
+// round).
+function fixedFighterB(overrides = {}) {
+  return {
+    cls: "Fighter", sub: "Soldier", race: "Human", level: 3, sp: 0,
+    maxWP: 55, wp: 55, skills: {}, vp: 0,
+    weapon: "Sword", prof: 2, magicWpn: 0,
+    armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+    temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x",
+    potions: 1, rations: 6, gold: 50, scrolls: 0,
+    haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
+    items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
+    regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    darkFor: 0,
+    ...overrides,
+  };
+}
+function fixedFloorB(overrides = {}) {
+  const g = [];
+  for (let y = 0; y < 3; y++) {
+    g.push([]);
+    for (let x = 0; x < 3; x++) g[y].push({ wall: false, dark: false, seen: true, feat: null });
+  }
+  return { g, px: 1, py: 1, depth: 1, ...overrides };
+}
+function fixedStateB(overrides = {}) {
+  const { c: cOverrides, floor: floorOverrides, ...rest } = overrides;
+  return {
+    version: 1, seed: 1, rngState: 1,
+    c: fixedFighterB(cOverrides),
+    floor: fixedFloorB(floorOverrides),
+    day: 1, steps: 0, combat: null, store: null, beats: null, party: [],
+    dead: false, deathNote: "", epitaph: "",
+    ...rest,
+  };
+}
+function fixedFoeB(overrides = {}) {
+  return {
+    name: "Target", type: "Beasts", lvl: 1, size: "S", intel: 1,
+    wp: 10, maxWP: 10, alive: true, asleep: 0, sp: {}, lives: 1,
+    ...overrides,
+  };
+}
+
+/** A real, resolved, mid-fight round (rngState 32 — the same scenario
+ * combat-beat-shell.test.js's own midFightRound() uses): the hero kills
+ * Goblin Grunt (line 0) and Cave Rat strikes back (line 1); Cave Rat stays
+ * alive, so `after.combat` is still set — no ending. */
+function midFightRoundB() {
+  const before = fixedStateB({ rngState: 32 });
+  before.combat = {
+    foes: [fixedFoeB({ name: "Goblin Grunt", wp: 1, maxWP: 10 }), fixedFoeB({ name: "Cave Rat", wp: 40, maxWP: 40 })],
+    type: "Beasts", round: 3, target: 0, spellOpen: false, tracked: false, first: "you",
+  };
+  const { state: after, events } = applyAction(before, { type: "attack" });
+  return { before, after, events };
+}
+
+test("reduced-motion/beat: source anchor — engineCombatAction computes planBeat only when prefersReducedMotion(window) is false", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const stripped = stripHtml(raw);
+  const start = stripped.indexOf("function engineCombatAction(type, extra) {");
+  assert.ok(start !== -1, "function engineCombatAction(type, extra) { not found");
+  const end = stripped.indexOf("window.mzAttack = ", start);
+  const body = stripped.slice(start, end);
+  const planIdx = body.indexOf("planBeat({");
+  assert.equal((body.match(/planBeat\(\{/g) || []).length, 1, "planBeat({ must appear exactly once");
+  const guardIdx = body.lastIndexOf("if (!prefersReducedMotion(window)) {", planIdx);
+  assert.ok(guardIdx !== -1 && guardIdx < planIdx, "planBeat({ must sit inside the !prefersReducedMotion(window) branch");
+});
+
+test("reduced-motion/beat: with the default (reduced) sandbox, beatRunner.start(plan) renders every line at once with none typing and settles synchronously", () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, reducedMotion: true });
+  const { before, after, events } = midFightRoundB();
+
+  const w = sandbox.context.window;
+  const beforeLog = w.__mzFightLog;
+  w.__mzState.set(after);
+  const lines = fightLogLinesFor("attack", events, {});
+  w.__mzFightLog = appendFightLog(beforeLog, lines, before.combat.round);
+  const plan = planBeat({ actionType: "attack", events, before, after, beforeLog, afterLog: w.__mzFightLog, ctx: {} });
+
+  const started = sandbox.beatRunner.start(plan);
+  assert.ok(started, "beatRunner.start(plan) must return true for a real resolved round");
+
+  // Landed SYNCHRONOUSLY — no clock.advance() call between start() and
+  // this assertion (this sandbox has no clock at all: the default inert
+  // never-firing setTimeout/rAF would strand a REAL timed beat forever, so
+  // a synchronous landing here is itself proof the reduced path never
+  // scheduled a timer).
+  assert.equal(w.__mzBeat.active(), false, "reduced motion must resolve the whole beat synchronously, in the same call");
+  const rows = Array.from(doc.document.getElementById("enc-body").querySelectorAll(".cb-log-entry"));
+  assert.equal(rows.length, 3, "every line must land at once, not one at a time");
+  for (const row of rows) {
+    assert.equal(row.getAttribute("aria-hidden"), null, "reduced motion must never leave a row mid-typed");
+    const textEl = row.querySelector(".cb-log-text");
+    assert.equal(textEl.children.length, 0, "reduced motion must never build typed/rest span children");
+  }
+  // D-17: reduced motion collapses the BEAT itself to nothing — the
+  // buttons still "arm on the normal delay" (58-CONTEXT.md), the very same
+  // ARM_DELAY_MS window every settle render stamps.
+  assert.equal(sandbox.context.encArmed(), false, "the arm window itself is unaffected by reduced motion — only the beat's reveal collapses");
+});
+
+test("reduced-motion/beat: source anchor — settleAllMotion()'s body contains beatRunner.hurry()", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const stripped = stripHtml(raw);
+  const settleIdx = stripped.indexOf("function settleAllMotion(");
+  assert.ok(settleIdx !== -1, "function settleAllMotion( not found");
+  const settleNextFn = stripped.indexOf("\nfunction ", settleIdx + 1);
+  const settleBody = stripped.slice(settleIdx, settleNextFn === -1 ? stripped.length : settleNextFn);
+  assert.match(settleBody, /beatRunner\.hurry\(\);/);
 });

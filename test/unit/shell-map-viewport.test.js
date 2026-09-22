@@ -271,8 +271,10 @@ test("(g) hasActiveEncounter() includes the stair flag", () => {
 
 test("(g) renderEncounter: the stair branch is the first branch, before the death branch, and renders the MAP_COPY.stair spec through renderMajorOverlay", () => {
   const region = renderEncounterRegion();
-  const stairIdx = region.indexOf("if (window.__mzStair && !S.combat && !S.dead) {");
-  const deadIdx = region.indexOf("if (S.dead) {");
+  // Phase 58 (MOTION-03): both markers now carry the beat's `!bv && ` gate
+  // (D-09/D-11) — re-pinned to the landed strings.
+  const stairIdx = region.indexOf("if (!bv && window.__mzStair && !S.combat && !S.dead) {");
+  const deadIdx = region.indexOf("if (!bv && S.dead) {");
   assert.ok(stairIdx !== -1, "stair branch not found");
   assert.ok(deadIdx !== -1, "death branch not found");
   assert.ok(stairIdx < deadIdx, "the stair branch must precede the death branch inside renderEncounter");

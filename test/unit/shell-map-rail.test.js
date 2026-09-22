@@ -93,14 +93,16 @@ function stepNowRegion() {
 function stepWithRegion() {
   return sliceBetween(CODE, "function stepWith(action)", "function stepNow(dir)");
 }
+// Phase 58 (MOTION-03): the death/beats branch conditions now also carry
+// the beat's `!bv && ` gate (D-09/D-11) — re-pinned to the landed strings.
 function deathBranch() {
-  return sliceBetween(CODE, "if (S.dead) {", "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {");
+  return sliceBetween(CODE, "if (!bv && S.dead) {", "if (!bv && !S.combat && S.beats && S.beats.groups && S.beats.groups.length) {");
 }
 function beatsBranch() {
   return sliceBetween(
     CODE,
-    "if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {",
-    "if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
+    "if (!bv && !S.combat && S.beats && S.beats.groups && S.beats.groups.length) {",
+    "if (!bv && S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {",
   );
 }
 function hasActiveRegion() {

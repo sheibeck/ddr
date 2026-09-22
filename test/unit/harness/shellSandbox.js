@@ -69,6 +69,26 @@ import {
   railDismissKind,
   emptyRail,
 } from "../../../src/browser/rail.js";
+// Phase 58 (MOTION-03), Plan 06 — the fight-log/combat-panel/combat-menu
+// view-models (the module script's own __mzFightLogVM/__mzCombatVM bridge
+// shapes) and the pure+timed combat-beat core, wired below so
+// combat-beat-shell.test.js can drive the REAL renderEncounter()/
+// renderFightLog()/renderActionArea() through a REAL beat, never a stub.
+import {
+  fightLogRows,
+  toggleFightLogEntry,
+  fightLogAnnouncement,
+  appendFightLog,
+  dullFightLogLine,
+} from "../../../src/browser/fightLog.js";
+import {
+  combatHeaderViewModel,
+  foeListViewModel,
+  yourLotViewModel,
+  encounterOverlaySpec,
+} from "../../../src/browser/combatPanel.js";
+import { combatMenuViewModel } from "../../../src/browser/combatMenu.js";
+import { planBeat, createBeat, createBeatRunner } from "../../../src/browser/combatBeat.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -103,15 +123,26 @@ function extractScriptRegions(raw) {
  * objects the module script assigns, importing the SAME names from the SAME
  * files (twin of the module script's bridge block — when a carve moves an
  * export, re-point the import here in the same commit; src/browser/bridge.js
- * is the source of truth for every live `window.__mz*` name). Bridges the
- * three snapshot surfaces never reach (__mzRailVM, __mzFightLogVM,
- * __mzCombatVM, __mzIconMap, __mzMapMarks, __mzCanvasSizing, __mzTapStep,
- * __mzControls, __mzIconsApi, __mzHaptics, __mzSettings) are deliberately
- * NOT wired — renderRail()/draw() are stubbed no-ops (see loadShellSandbox
- * step 5), so paint() never reaches for them. __mzTabs is the module
- * script's mount bridge (gear/hero/store); __mzCarriedList is its sibling.
- * renderHeroTab (wired below) renders the Grimoire itself — this harness
- * carries no separate grimoire-rendering seam.
+ * is the source of truth for every live `window.__mz*` name). Bridges some
+ * snapshot surfaces never reach (__mzIconMap, __mzMapMarks, __mzCanvasSizing,
+ * __mzTapStep, __mzControls, __mzIconsApi, __mzHaptics, __mzSettings) are
+ * deliberately NOT wired — renderRail()/draw() are stubbed no-ops (see
+ * loadShellSandbox step 5), so paint() never reaches for them. __mzTabs is
+ * the module script's mount bridge (gear/hero/store); __mzCarriedList is its
+ * sibling. renderHeroTab (wired below) renders the Grimoire itself — this
+ * harness carries no separate grimoire-rendering seam.
+ *
+ * Phase 58 (MOTION-03), Plan 06 — __mzFightLogVM and __mzCombatVM are now
+ * wired from the REAL src/browser/fightLog.js/combatPanel.js/combatMenu.js
+ * exports (previously absent — the pre-Plan-06 comment above named them as
+ * never-reached), and __mzBeat is wired over a REAL createBeatRunner (this
+ * sandbox's own clock — the fake clock's setTimeout/performance.now when
+ * loadShellSandbox was given one, else the sandbox's inert never-firing
+ * default — and the live reduced-motion predicate). The runner itself is
+ * exposed on loadShellSandbox's returned object as `beatRunner` so a test
+ * can `beatRunner.start(planBeat({...}))` directly, reproducing
+ * engineCombatAction's own handoff (that function lives in the module
+ * script and cannot run in this classic-only sandbox).
  */
 function wireBridges(context) {
   const w = context.window;
@@ -195,6 +226,35 @@ function wireBridges(context) {
     active: typewriter.active,
     durationFor: (text) => typeDurationMs(String(text ?? "").length),
   };
+  // Phase 34/35 — the fight-log and combat-panel/menu view-model bridges,
+  // in the SAME shapes the module script assigns (mazeworld.html's own
+  // window.__mzFightLogVM/__mzCombatVM lines).
+  w.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine };
+  w.__mzCombatVM = { header: combatHeaderViewModel, foes: foeListViewModel, lot: yourLotViewModel, overlay: encounterOverlaySpec, menu: combatMenuViewModel };
+  // Phase 58 (MOTION-03) — the REAL combat-beat runner, driven by this
+  // sandbox's own scheduler (the fake clock when loadShellSandbox was given
+  // one, else the sandbox's inert never-firing default) and the live
+  // reduced-motion predicate. Never a stub instance — combat-beat-shell
+  // .test.js and reduced-motion.test.js's "beat" section both depend on
+  // exercising the real reveal/type/hurry/settle machinery through
+  // renderEncounter()/renderFightLog()/renderActionArea().
+  const beatRunner = createBeatRunner({
+    beat: createBeat({
+      setTimeout: (fn, ms) => w.setTimeout(fn, ms),
+      clearTimeout: (id) => w.clearTimeout(id),
+      reduced: () => prefersReducedMotion(w),
+    }),
+    durationFor: (text) => typeDurationMs(String(text ?? "").length),
+    onRender: () => context.renderEncounter(),
+    onSettle: () => { context.paint(); context.renderEncounter(); },
+    playClips: () => {},
+  });
+  w.__mzBeat = {
+    active: () => beatRunner.active(),
+    hurry: () => beatRunner.hurry(),
+    view: () => beatRunner.view(),
+  };
+  context.__mzBeatRunnerInstance = beatRunner;
 }
 
 /**
@@ -321,6 +381,11 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
     setState: (s) => context.window.__mzState.set(s),
     paint: () => context.paint(),
     renderEncounter: () => context.renderEncounter(),
+    // Phase 58 (MOTION-03) — the REAL createBeatRunner instance wired by
+    // wireBridges above; a test drives it directly via
+    // beatRunner.start(planBeat({...})), reproducing engineCombatAction's
+    // own module-script-only handoff.
+    beatRunner: context.__mzBeatRunnerInstance,
     doc,
   };
 }

@@ -237,10 +237,12 @@ test("Phase 34: the old 7-button bar, the combat use-list and the spell menu are
 test("Phase 34/35: guard: true occurs exactly once — the loot card (the combat use-list folded into the ITEMS submenu rows)", () => {
   const hits = CODE.match(/guard: true/g) || [];
   assert.equal(hits.length, 1);
-  const lootIdx = CODE.indexOf("if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {");
+  // Phase 58 (MOTION-03): both markers now carry the beat's `!bv && ` gate
+  // (D-09/D-11) — re-pinned to the landed strings, same region.
+  const lootIdx = CODE.indexOf("if (!bv && S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {");
   // Phase 35 (MAP-04): the joiner/find branches moved out of renderEncounter
   // — the loot branch's next renderEncounter sibling is the store guard now.
-  const storeIdx = CODE.indexOf("if (S.store) {");
+  const storeIdx = CODE.indexOf("if (!bv && S.store) {");
   const lootGuardIdx = CODE.indexOf("guard: true", lootIdx);
   assert.ok(lootIdx !== -1 && storeIdx !== -1 && lootGuardIdx > lootIdx && lootGuardIdx < storeIdx, "the sole guard:true must sit inside the loot branch");
 });

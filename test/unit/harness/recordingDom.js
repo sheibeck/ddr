@@ -63,12 +63,102 @@ function collectDescendants(root, parsed, out) {
   return out;
 }
 
-function queryAll(root, sel) {
+// Phase 58 (MOTION-03), Plan 06 — a scoped, best-effort innerHTML->element
+// fallback for `querySelector`/`querySelectorAll` ONLY. recordingDom's own
+// `innerHTML` setter (below) deliberately never parses markup into real
+// `.children` (see its own doc comment: ids are recorded roots, not
+// nested-by-parse) — a pattern like mazeworld.html's renderCombatHeader
+// (`el.innerHTML = "<span class=\"cb-head-label\"></span>..."; el
+// .querySelector(".cb-head-label").textContent = vm.label;`) previously
+// threw here (`querySelector` returning null on a genuinely empty
+// `.children`), the first time any Phase 58 test drove the real combat
+// body through this harness. This parser is ADDITIVE ONLY: it NEVER
+// mutates `root.children` (a real appended child always wins first, and
+// serializeElements/serializeNode — the shell-tab-snapshots.test.js pinned
+// fixtures — read ONLY `.children`, so every pre-existing fixture stays
+// byte-identical), it only widens what querySelector/querySelectorAll can
+// FIND inside an element whose content was set via `.innerHTML = "..."`.
+// VOID_TAGS never push a stack frame (no matching close tag exists in the
+// shell's own innerHTML literals — img/br are never used this way, listed
+// here only for correctness against a real HTML void-element set).
+const VOID_TAGS = new Set(["br", "hr", "img", "input", "meta", "link"]);
+function parseHtmlFragment(html, makeElement) {
+  const root = { children: [] };
+  const stack = [root];
+  let i = 0;
+  const n = html.length;
+  while (i < n) {
+    if (html[i] === "<") {
+      if (html[i + 1] === "/") {
+        const close = html.indexOf(">", i);
+        if (close === -1) break;
+        if (stack.length > 1) stack.pop();
+        i = close + 1;
+        continue;
+      }
+      const close = html.indexOf(">", i);
+      if (close === -1) break;
+      const tagSrc = html.slice(i + 1, close);
+      const selfClosing = /\/\s*$/.test(tagSrc);
+      const cleanTagSrc = selfClosing ? tagSrc.slice(0, tagSrc.lastIndexOf("/")) : tagSrc;
+      const spaceIdx = cleanTagSrc.search(/\s/);
+      const tagName = (spaceIdx === -1 ? cleanTagSrc : cleanTagSrc.slice(0, spaceIdx)).toLowerCase();
+      const attrsStr = spaceIdx === -1 ? "" : cleanTagSrc.slice(spaceIdx);
+      const el = makeElement(tagName);
+      const attrRe = /([a-zA-Z_:][a-zA-Z0-9_:.-]*)(?:="([^"]*)")?/g;
+      let am;
+      while ((am = attrRe.exec(attrsStr))) {
+        const name = am[1];
+        const value = am[2] ?? "";
+        if (!name) continue;
+        if (name === "class") el.className = value;
+        else if (name === "id") el.id = value;
+        else el.setAttribute(name, value);
+      }
+      stack[stack.length - 1].children.push(el);
+      if (!selfClosing && !VOID_TAGS.has(tagName)) stack.push(el);
+      i = close + 1;
+      continue;
+    }
+    const next = html.indexOf("<", i);
+    const textEnd = next === -1 ? n : next;
+    const text = html.slice(i, textEnd);
+    if (text) stack[stack.length - 1].children.push({ nodeType: 3, textContent: text });
+    i = textEnd;
+  }
+  return root.children;
+}
+
+/** getParsedHtmlChildren(root, makeElement) — memoised per `root`, keyed on
+ * the exact `content.value` string last parsed (a fresh `.innerHTML =`
+ * write invalidates the cache automatically since the keyed value differs). */
+function getParsedHtmlChildren(root, makeElement) {
+  const src = root._content.value;
+  if (root._parsedHtmlCache && root._parsedHtmlCache.src === src) {
+    return root._parsedHtmlCache.children;
+  }
+  const children = parseHtmlFragment(src, makeElement);
+  root._parsedHtmlCache = { src, children };
+  return children;
+}
+
+function queryAll(root, sel, makeElement) {
   const parsed = parseSelector(sel);
   if (parsed.type === "scopeChild") {
     return root.children.filter((c) => c.nodeType !== 3 && c.tagName === parsed.value);
   }
-  return collectDescendants(root, parsed, []);
+  const real = collectDescendants(root, parsed, []);
+  if (real.length || !root._content || root._content.kind !== "html" || !root._content.value) {
+    return real;
+  }
+  const parsedChildren = getParsedHtmlChildren(root, makeElement);
+  const out = [];
+  for (const child of parsedChildren) {
+    if (child.nodeType === 3) continue;
+    if (elementMatches(child, parsed)) out.push(child);
+    collectDescendants(child, parsed, out);
+  }
+  return out;
 }
 
 /**
@@ -315,8 +405,8 @@ export function createRecordingDocument() {
     });
 
     // ── query ────────────────────────────────────────────────────────────
-    el.querySelectorAll = (sel) => queryAll(el, sel);
-    el.querySelector = (sel) => queryAll(el, sel)[0] || null;
+    el.querySelectorAll = (sel) => queryAll(el, sel, makeElement);
+    el.querySelector = (sel) => queryAll(el, sel, makeElement)[0] || null;
 
     // ── misc no-ops / defensive stubs (A4: added because a shell function
     // this harness's callers exercise reaches for them) ────────────────────

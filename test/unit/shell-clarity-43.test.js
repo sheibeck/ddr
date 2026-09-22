@@ -70,7 +70,9 @@ function findRegion() {
 }
 
 function lootRegion() {
-  return sliceBetween(CODE, "if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {", "if (S.store) {");
+  // Phase 58 (MOTION-03): both markers now carry the beat's `!bv && ` gate
+  // (D-09/D-11) — re-pinned to the landed strings, same region.
+  return sliceBetween(CODE, "if (!bv && S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {", "if (!bv && S.store) {");
 }
 
 // Phase 47 (SHELL-03), Plan 05: the store's whole render body is

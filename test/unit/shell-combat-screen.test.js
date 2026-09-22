@@ -69,8 +69,10 @@ function renderEncounterRegion() {
 
 function combatBranch() {
   const region = renderEncounterRegion();
-  const start = region.indexOf("const C = S.combat;");
-  assert.ok(start !== -1, "combatBranch: const C = S.combat; not found inside renderEncounter region");
+  // Phase 58 (MOTION-03): `const C = S.combat;` became `const V = bv ? bv.state
+  // : S; const C = V.combat;` (D-09) — re-pinned to the landed marker.
+  const start = region.indexOf("const V = bv ? bv.state : S;");
+  assert.ok(start !== -1, "combatBranch: const V = bv ? bv.state : S; not found inside renderEncounter region");
   return region.slice(start);
 }
 
@@ -97,7 +99,9 @@ function guardHelpersRegion() {
 test("CSCR-01: combat branch builds the pending gate, then header -> cb-mid -> foes -> lot -> log -> cb-act in strictly increasing order", () => {
   const region = combatBranch();
   const modeIdx = region.indexOf('panel.dataset.mode = "dark";');
-  const pendingIdx = region.indexOf("if (C.pending)");
+  // Phase 58 (MOTION-03): the pending gate now also carries `&& !bv` (D-09)
+  // — re-pinned to the landed condition.
+  const pendingIdx = region.indexOf("if (C.pending && !bv)");
   const headerIdx = region.indexOf("renderCombatHeader(body");
   const midIdx = region.indexOf('mid.id = "cb-mid"');
   const foesIdx = region.indexOf("renderFoeCards(mid");
@@ -167,7 +171,7 @@ test("CSCR-01: no Google Fonts, three @font-face declarations, and every new lab
 // ─── d. Foe cards (CSCR-02) ─────────────────────────────────────────────
 
 test("CSCR-02: renderFoeCards builds every card field via textContent/className, guards the live-card tap exactly once, and carries no innerHTML", () => {
-  const region = fnRegion("function renderFoeCards(host, vm, onPick)");
+  const region = fnRegion("function renderFoeCards(host, vm, onPick, hitFoe = -1)");
   for (const needle of ["cb-foe-glyph", "cb-foe-name", "cb-foe-meta", "cb-foe-wp", "cb-foe-tag", "cb-bar-fill"]) {
     assert.match(region, new RegExp(needle), `renderFoeCards must reference ${needle}`);
   }
@@ -239,8 +243,10 @@ test("CSCR-06: the pending gate renders the overlay from encounterOverlaySpec, m
   const region = combatBranch();
   assert.match(region, /window\.__mzCombatVM\.overlay\(S\)/);
   assert.match(region, /onTap: \(\) => window\.mzFight\?\.\(\)/);
-  const pendingStart = region.indexOf("if (C.pending)");
-  assert.ok(pendingStart !== -1, "if (C.pending) must exist in the combat branch");
+  // Phase 58 (MOTION-03): the pending gate now also carries `&& !bv` (D-09)
+  // — re-pinned to the landed condition.
+  const pendingStart = region.indexOf("if (C.pending && !bv)");
+  assert.ok(pendingStart !== -1, "if (C.pending && !bv) must exist in the combat branch");
   const braceEnd = region.indexOf("}", region.indexOf("return;", pendingStart));
   const pendingBlock = region.slice(pendingStart, braceEnd + 1);
   assert.match(pendingBlock, /return;/);
@@ -283,6 +289,26 @@ test("CSCR-08: the <style> block carries no aria-disabled selector, and no trans
   assert.doesNotMatch(styleBlock(), /aria-disabled/);
   assert.doesNotMatch(CODE, /transitionend/i);
   assert.doesNotMatch(CODE, /animationend/i);
+});
+
+// Phase 58 (MOTION-03, D-11), Plan 06 — beatHurryTap is the ONE sanctioned
+// tap-anywhere listener on the encounter panel: it only hurries a live
+// combat beat, and it never dispatches, dismisses or selects anything.
+// This test names it exactly, rather than letting the pattern-based CSCR-08
+// checks above silently tolerate a future second such listener.
+test("CSCR-08: #enc-panel carries exactly one capture-phase click listener — beatHurryTap, the one sanctioned tap-anywhere exception (D-11) — whose body dispatches, dismisses and renders nothing", () => {
+  const listenerHits = CODE.match(/document\.getElementById\("enc-panel"\)\?\.addEventListener\("click", beatHurryTap, true\);/g) || [];
+  assert.equal(listenerHits.length, 1, "exactly one capture-phase click listener must be wired on #enc-panel, naming beatHurryTap");
+  const fnHits = CODE.match(/function beatHurryTap\(e\) \{/g) || [];
+  assert.equal(fnHits.length, 1, "exactly one function beatHurryTap(e) { declaration");
+  const start = CODE.indexOf("function beatHurryTap(e) {");
+  const end = CODE.indexOf("\n}", start);
+  const body = CODE.slice(start, end + 2);
+  assert.doesNotMatch(body, /window\.mz/, "beatHurryTap must never dispatch through a window.mz* bridge");
+  assert.doesNotMatch(body, /dispatch/i, "beatHurryTap must never dispatch");
+  assert.doesNotMatch(body, /renderEncounter\(\)/, "beatHurryTap must never render directly — the beat's own onSettle does that");
+  assert.doesNotMatch(body, /hidden/, "beatHurryTap must never write hidden");
+  assert.doesNotMatch(body, /S\./, "beatHurryTap must never touch S");
 });
 
 // ─── i. Bridge + imports ──────────────────────────────────────────────────

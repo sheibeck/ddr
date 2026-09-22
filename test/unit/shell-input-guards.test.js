@@ -232,10 +232,12 @@ test("renderCarriedList (gearTab.js): mkBtn routes through deps.guardTap when op
 test("guard: true appears exactly once — the loot card (Phase 34 folded the combat use-list into the ITEMS submenu)", () => {
   const hits = CODE.match(/guard: true/g) || [];
   assert.equal(hits.length, 1);
-  const lootIdx = CODE.indexOf("if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {");
+  // Phase 58 (MOTION-03): both markers now carry the beat's `!bv && ` gate
+  // (D-09/D-11) — re-pinned to the landed strings, same region.
+  const lootIdx = CODE.indexOf("if (!bv && S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {");
   // Phase 35 (MAP-04): the joiner/find branches moved out of renderEncounter
   // — the loot branch's next renderEncounter sibling is the store guard now.
-  const storeIdx = CODE.indexOf("if (S.store) {");
+  const storeIdx = CODE.indexOf("if (!bv && S.store) {");
   const lootGuardIdx = CODE.indexOf("guard: true", lootIdx);
   assert.ok(lootIdx !== -1 && storeIdx !== -1 && lootGuardIdx > lootIdx && lootGuardIdx < storeIdx, "loot card's guard:true must sit inside the loot branch");
 });
@@ -316,6 +318,27 @@ test("renderEncounter region: no panel/body/card gains a tap-anywhere-to-dismiss
   assert.doesNotMatch(region, /body\.addEventListener/);
   assert.doesNotMatch(region, /card\.onclick/);
   assert.doesNotMatch(region, /card\.addEventListener/);
+});
+
+// Phase 58 (MOTION-03, D-11), Plan 06 — beatHurryTap is the ONE sanctioned
+// tap-anywhere listener on the encounter panel: it only hurries a live
+// combat beat, never dispatches, dismisses or selects anything. Named
+// exactly here (its twin lives in shell-combat-screen.test.js) rather than
+// letting the pattern-based check above silently tolerate a future second
+// such listener.
+test("CSCR-08: #enc-panel carries exactly one capture-phase click listener — beatHurryTap, the one sanctioned tap-anywhere exception (D-11) — whose body dispatches, dismisses and renders nothing", () => {
+  const listenerHits = CODE.match(/document\.getElementById\("enc-panel"\)\?\.addEventListener\("click", beatHurryTap, true\);/g) || [];
+  assert.equal(listenerHits.length, 1, "exactly one capture-phase click listener must be wired on #enc-panel, naming beatHurryTap");
+  const fnHits = CODE.match(/function beatHurryTap\(e\) \{/g) || [];
+  assert.equal(fnHits.length, 1, "exactly one function beatHurryTap(e) { declaration");
+  const start = CODE.indexOf("function beatHurryTap(e) {");
+  const end = CODE.indexOf("\n}", start);
+  const body = CODE.slice(start, end + 2);
+  assert.doesNotMatch(body, /window\.mz/, "beatHurryTap must never dispatch through a window.mz* bridge");
+  assert.doesNotMatch(body, /dispatch/i, "beatHurryTap must never dispatch");
+  assert.doesNotMatch(body, /renderEncounter\(\)/, "beatHurryTap must never render directly — the beat's own onSettle does that");
+  assert.doesNotMatch(body, /hidden/, "beatHurryTap must never write hidden");
+  assert.doesNotMatch(body, /S\./, "beatHurryTap must never touch S");
 });
 
 test("the <style> block carries no aria-disabled selector — no visual flicker for the arm window", () => {

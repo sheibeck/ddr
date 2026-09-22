@@ -109,7 +109,7 @@ test("engineCombatAction: normalizeTarget(state.combat) occurs exactly once, bet
  * ============================================================ */
 
 test("renderFoeCards: the dead-card else branch sets aria-disabled only, with no role/tabIndex/handler", () => {
-  const region = fnRegion("function renderFoeCards(host, vm, onPick)");
+  const region = fnRegion("function renderFoeCards(host, vm, onPick, hitFoe = -1)");
   const ifIdx = region.indexOf("if (c.alive) {");
   assert.ok(ifIdx !== -1, "if (c.alive) { not found");
   const elseIdx = region.indexOf("} else {", ifIdx);
@@ -124,7 +124,7 @@ test("renderFoeCards: the dead-card else branch sets aria-disabled only, with no
 });
 
 test("renderFoeCards: the live branch's guardTap/tabIndex wiring is unchanged (exactly once each), no innerHTML anywhere", () => {
-  const region = fnRegion("function renderFoeCards(host, vm, onPick)");
+  const region = fnRegion("function renderFoeCards(host, vm, onPick, hitFoe = -1)");
   const guardHits = region.match(/guardTap\(el, \(\) => onPick\(/g) || [];
   assert.equal(guardHits.length, 1, "guardTap(el, () => onPick( must appear exactly once");
   const tabHits = region.match(/el\.tabIndex = 0/g) || [];

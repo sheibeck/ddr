@@ -115,9 +115,11 @@ function renderEncounterRegion() {
 test("renderEncounter() contains exactly one window.__mzTabs.store(body, S, tabDeps()); call inside an if (S.store) { block, and no leftover store literal", () => {
   const region = renderEncounterRegion();
   assert.equal((region.match(/window\.__mzTabs\.store\(body, S, tabDeps\(\)\);/g) || []).length, 1);
-  const ifIdx = region.indexOf("if (S.store) {");
+  // Phase 58 (MOTION-03): the store branch condition now also carries the
+  // beat's `!bv && ` gate (D-09/D-11) — re-pinned to the landed string.
+  const ifIdx = region.indexOf("if (!bv && S.store) {");
   const callIdx = region.indexOf("window.__mzTabs.store(");
-  assert.ok(ifIdx !== -1 && callIdx !== -1 && callIdx > ifIdx, "the mount call sits inside the if (S.store) { block");
+  assert.ok(ifIdx !== -1 && callIdx !== -1 && callIdx > ifIdx, "the mount call sits inside the if (!bv && S.store) { block");
   // Scoped to the STORE's own id literals (id="shelf"/getElementById("shelf")
   // etc.) — a bare `/"shelf"/` substring match would also false-positive on
   // the UNRELATED loot branch's `class="shelf" id="loot-drop-shelf"` card,
