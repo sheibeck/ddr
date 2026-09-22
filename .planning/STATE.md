@@ -6,7 +6,7 @@ current_phase: 57
 current_phase_name: map-hud-layout-band
 current_plan: 2
 status: executing
-stopped_at: Completed 57-01-PLAN.md — four-band HUD + chip strip out of viewport
+stopped_at: "Completed 57-01-PLAN.md (four-band HUD + chip strip out of the viewport). BREAK TAKEN 2026-09-22 at the user's request to switch models; tree clean, nothing in flight. RESUME: /gsd-autonomous — dispatch 57-02 (rail overlay, LAYOUT-01), then 57-03, then 57-04. Run conventions that are NOT in the plans and must be carried into every executor brief: (1) worktrees are DEGRADED for this run (worktree base-check -> shouldDegrade true, fork-ref-unknown) so executors run SEQUENTIALLY on the main tree, one at a time, never parallel; (2) phase base commit for all 57 gate diffs is 4d43edf; (3) NO bare substring greps in acceptance checks — anchor them or scope to stripHtml from tools/ident-sweep.mjs (Phase 56 lost three criteria to this); (4) re-pin broken tests, never delete — compare grep -c '^test(' against git show 4d43edf:<file>; (5) deferred-UAT protocol: no device pause, no APK, device checks go to SUMMARY human_verification for the Phase 60 batch; (6) verifier agents are OFF — VERIFICATION.md is orchestrator-authored; (7) use gsd-tools state verbs, do not hand-edit STATE.md (fields fixed at 27735e2); (8) arm a Monitor per dispatch that checks BOTH commits AND working-tree file mtimes — a commit-only watch false-alarms on long single tasks. Open user rulings from this phase: darkness vignette follows mapViewRadius NOT revealRadius; the DARK chip must name any active waiver; unifying the two darkness mechanisms is backlog 999.8, out of v1.8."
 last_updated: "2026-09-22T17:03:46.649Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 57 execution started
