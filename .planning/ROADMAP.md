@@ -74,7 +74,7 @@ Plans:
 
 Plans (strictly sequential — every plan edits `mazeworld.html`, and worktrees are degraded for this run, so no two can share a wave):
 
-- [ ] 57-01-PLAN.md — HUD four bands + the chip strip leaves the viewport; `src/browser/hudBands.js` (LAYOUT-04, LAYOUT-05)
+- [x] 57-01-PLAN.md — HUD four bands + the chip strip leaves the viewport; `src/browser/hudBands.js` (LAYOUT-04, LAYOUT-05)
 - [ ] 57-02-PLAN.md — the rail becomes an out-of-flow overlay inside a new `#mw-stage`; the viewport stops moving (LAYOUT-01)
 - [ ] 57-03-PLAN.md — guarded tap-to-dismiss + doubled, line-scaled, bounded rail holds (LAYOUT-02, LAYOUT-03)
 - [ ] 57-04-PLAN.md — counter-driven darkness vignette via a new `__mzDarkness` bridge, plus the phase gate and todo closure (LAYOUT-06)

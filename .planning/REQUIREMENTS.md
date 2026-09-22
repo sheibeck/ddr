@@ -44,8 +44,8 @@
 - [ ] **LAYOUT-01**: The rail slides up over the map; the map neither resizes nor reflows when the rail appears or leaves
 - [ ] **LAYOUT-02**: A tap on the body dismisses a rail card that asks for no decision; a card that asks for a decision can only be cleared by making it
 - [ ] **LAYOUT-03**: A rail card stays readable long enough to finish reading it — roughly double today's hold
-- [ ] **LAYOUT-04**: Tapping MARKS, CENTRE, MAKE CAMP or the gear chip never also moves the party, and the party is never left sitting under the chip strip
-- [ ] **LAYOUT-05**: The HUD reads as stacked bands — name/class with HP, then counters, then conditions, then chips — with nothing overlapping at any text size or square count
+- [x] **LAYOUT-04**: Tapping MARKS, CENTRE, MAKE CAMP or the gear chip never also moves the party, and the party is never left sitting under the chip strip
+- [x] **LAYOUT-05**: The HUD reads as stacked bands — name/class with HP, then counters, then conditions, then chips — with nothing overlapping at any text size or square count
 - [ ] **LAYOUT-06**: A player caught in Table-7 darkness can see it on the map and see how much longer it lasts
 
 ### Dungeon set dressing (DRESS)
@@ -95,8 +95,8 @@
 | LAYOUT-01 | Phase 57 | Pending |
 | LAYOUT-02 | Phase 57 | Pending |
 | LAYOUT-03 | Phase 57 | Pending |
-| LAYOUT-04 | Phase 57 | Pending |
-| LAYOUT-05 | Phase 57 | Pending |
+| LAYOUT-04 | Phase 57 | Complete |
+| LAYOUT-05 | Phase 57 | Complete |
 | LAYOUT-06 | Phase 57 | Pending |
 | MOTION-01 | Phase 58 | Pending |
 | MOTION-02 | Phase 58 | Pending |

@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
-current_phase: 56
-current_phase_name: sound-effects-audio-settings
-current_plan: 4
-status: in_progress
-stopped_at: Completed 56-04-PLAN.md — Phase 56 complete, all four plans landed
-last_updated: "2026-09-22T14:44:03.624Z"
+current_phase: 57
+current_phase_name: map-hud-layout-band
+current_plan: 2
+status: executing
+stopped_at: Completed 57-01-PLAN.md — four-band HUD + chip strip out of viewport
+last_updated: "2026-09-22T17:03:46.649Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 56 Plan 02 executed (src/browser/sfx.js pure core, test/unit/sfx-map.test.js)
+last_activity_desc: Phase 57 execution started
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 8
+  completed_plans: 5
   percent: 20
 total_plans_in_phase: 4
 ---
@@ -26,17 +26,17 @@ total_plans_in_phase: 4
 See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 Sound, Motion & Set Dressing started; three Pixel 7 UAT batches still un-run: v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.8 — roadmap created (Phases 56–60: Sound Effects & Audio Settings, Map & HUD Layout Band, Motion & Pacing, Party Animation & Dungeon Set Dressing, Performance & Footprint Close); next is phase planning starting at Phase 56
+**Current focus:** Phase 57 — map-hud-layout-band
 
 ## Current Position
 
-Phase: Phase 56 (Sound Effects & Audio Settings) — planned, 4 plans
-Current Plan: 4
+Phase: 57 (map-hud-layout-band) — EXECUTING
+Current Plan: 2
 Total Plans in Phase: 4
-Progress: [██████████] 100%
-Plan: 4 of 4
-Status: 56-02 executed and committed — AUD-01/02/03's pure core (30-clip vocabulary, 18 groups, 26 mapped events, total 6-family FAMILY_CRY map, groupsForDispatch/createVariation/clipsForDispatch); engine/content untouched, npm test 3502/3502, parity master hash unchanged
-Last activity: 2026-09-22 — Phase 56 Plan 02 executed (src/browser/sfx.js pure core, test/unit/sfx-map.test.js)
+Progress: [██████░░░░] 63%
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-09-22 — Phase 57 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T14:44:03.595Z
-Stopped at: Completed 56-04-PLAN.md — Phase 56 complete, all four plans landed
+Last session: 2026-09-22T17:03:46.217Z
+Stopped at: Completed 57-01-PLAN.md — four-band HUD + chip strip out of viewport
 Resume file: None
 
 ## Operator Next Steps
@@ -321,6 +321,7 @@ Resume file: None
 | Phase 56 P02 | 6min | 3 tasks | 2 files |
 | Phase 56 P03 | 15min | 3 tasks | 3 files |
 | Phase 56 P04 | 30min | 2 tasks | 3 files |
+| Phase 57 P01 | ~55min | 3 tasks | 10 files |
 
 ## Decisions
 
@@ -584,6 +585,8 @@ Resume file: None
 - [Phase ?]: sfx.js: DEFAULT_BACKEND.open() uses two literal new window.(webkit)AudioContext() sites (standard + prefixed fallback) so the plan's exact construction-site grep bound is satisfied honestly rather than gamed to zero
 - [Phase ?]: test/unit/sfx.test.js: avoids hardcoding which multi-clip sample comes first since sfx.js's defaultVariation counter is module-level state shared across every test in the file; tests assert relative rotation or use single-clip groups instead
 - [Phase ?]: Phase 56 Plan 04: wired mazeworld.html to src/browser/sfx.js at exactly four call sites (import, applySettings gate, dispatchWithNarration seam, first-gesture pointerdown listener); AUD-05 proven by a zero-open()-calls test, not merely zero clips played
+- [Phase ?]: HUD_BAND_ANCHORS holds literal search-anchor strings (id=/class= attribute forms), not bare ids, so band 2 (no id, only a class) is anchorable the same way as the other three bands
+- [Phase ?]: Band 1 identity element deliberately reuses the exact .mw-hud-name/#mw-hud-name naming Phase 35 retired — the 2026-09-21 ruling's explicit reversal, confirmed against pre-Phase-35 git history
 
 ### Blockers
 
