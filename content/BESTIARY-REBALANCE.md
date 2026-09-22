@@ -564,71 +564,71 @@ cells (down from the BEFORE run's 116) after the crit-rule fix and Herman's
 
 band | tier | type | name | dice | maxSingleHit | MU bar | % | category | wouldBeTrim | Disposition
 ---|---|---|---|---|---|---|---|---|---|---
-Filter | 3 | Beasts | Rast | 1d8+4 | 31 | 39.5 | 78% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 3 | Beasts | Sterling | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 4 | Beasts | Drake | 2d10+4 | 61 | 46.0 | 133% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 3 | Humans | Frank | 1d8+6 | 35 | 39.5 | 89% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 3 | Humans | Primp | 1d8+2 | 27 | 39.5 | 68% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 4 | Humans | Craig | 1d12+0 | 37 | 46.0 | 80% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 4 | Humans | Herman | d6 (default) | 34 | 46.0 | 74% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 1 | Lair Beasts | Pogo | 1d6+4 | 21 | 35.0 | 60% | row-dice | 1d6+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 2 | Lair Beasts | Trachea | 1d10+0 | 23 | 35.0 | 66% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 3 | Lair Beasts | Blumble | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Filter | 3 | Magical | Werebeast | 1d10+0 | 27 | 39.5 | 68% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 3 | Beasts | Rast | 1d8+4 | 33 | 39.5 | 84% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 3 | Beasts | Sterling | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 3 | Beasts | Wolf | 1d6+2 | 25 | 39.5 | 63% | row-dice | 1d6+1 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Beasts | Drake | 2d10+4 | 64 | 46.0 | 139% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Beasts | Stink Bug | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Wall | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Wall | 4 | Demons | Ghost | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Demons | Spectre | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Wall | 3 | Humans | Frank | 1d8+6 | 37 | 39.5 | 94% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 3 | Humans | Primp | 1d8+2 | 29 | 39.5 | 73% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Humans | Craig | 1d12+0 | 40 | 46.0 | 87% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Humans | Herman | d6 (default) | 37 | 46.0 | 80% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Wall | 2 | Lair Beasts | Trachea | 1d10+0 | 24 | 39.5 | 61% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Lair Beasts | Drarl | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Wall | 3 | Magical | Werebeast | 1d10+0 | 29 | 39.5 | 73% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Magical | Drudge | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Wall | 4 | Walking Dead | Bones | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Walking Dead | Floater | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 4 | Walking Dead | Undead | d6 (default) | 28 | 46.0 | 61% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Wall | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Breakaway | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Breakaway | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Breakaway | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Breakaway | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Breakaway | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Breakaway | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Breakaway | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Breakaway | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Breakaway | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Breakaway | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Breakaway | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Breakaway | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Breakaway | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Breakaway | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Endgame | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Endgame | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Endgame | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Endgame | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Endgame | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Endgame | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Endgame | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Endgame | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Endgame | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | - | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Endgame | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Endgame | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | curve height — a Phase 54 dial (four-band retune), not a Phase 52 cliff
-Endgame | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Endgame | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
-Endgame | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | left as a deliberate deep-tier threat (Endgame band) — D-07
+Filter | 3 | Beasts | Rast | 1d8+4 | 31 | 39.5 | 78% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 3 | Beasts | Sterling | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 4 | Beasts | Drake | 2d10+4 | 61 | 46.0 | 133% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 3 | Humans | Frank | 1d8+6 | 35 | 39.5 | 89% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 3 | Humans | Primp | 1d8+2 | 27 | 39.5 | 68% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 4 | Humans | Craig | 1d12+0 | 37 | 46.0 | 80% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 4 | Humans | Herman | d6 (default) | 34 | 46.0 | 74% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 1 | Lair Beasts | Pogo | 1d6+4 | 21 | 35.0 | 60% | row-dice | 1d6+3 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 2 | Lair Beasts | Trachea | 1d10+0 | 23 | 35.0 | 66% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 3 | Lair Beasts | Blumble | 1d12+0 | 31 | 39.5 | 78% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Filter | 3 | Magical | Werebeast | 1d10+0 | 27 | 39.5 | 68% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 3 | Beasts | Rast | 1d8+4 | 33 | 39.5 | 84% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 3 | Beasts | Sterling | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 3 | Beasts | Wolf | 1d6+2 | 25 | 39.5 | 63% | row-dice | 1d6+1 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Beasts | Drake | 2d10+4 | 64 | 46.0 | 139% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Beasts | Stink Bug | d6 (default) | 28 | 46.0 | 61% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Wall | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Wall | 4 | Demons | Ghost | d6 (default) | 28 | 46.0 | 61% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Demons | Spectre | d6 (default) | 28 | 46.0 | 61% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Wall | 3 | Humans | Frank | 1d8+6 | 37 | 39.5 | 94% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 3 | Humans | Primp | 1d8+2 | 29 | 39.5 | 73% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Humans | Craig | 1d12+0 | 40 | 46.0 | 87% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Humans | Herman | d6 (default) | 37 | 46.0 | 80% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Wall | 2 | Lair Beasts | Trachea | 1d10+0 | 24 | 39.5 | 61% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 39.5 | 84% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Lair Beasts | Drarl | d6 (default) | 28 | 46.0 | 61% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Wall | 3 | Magical | Werebeast | 1d10+0 | 29 | 39.5 | 73% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Magical | Drudge | d6 (default) | 28 | 46.0 | 61% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Wall | 4 | Walking Dead | Bones | d6 (default) | 28 | 46.0 | 61% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Walking Dead | Floater | d6 (default) | 28 | 46.0 | 61% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 4 | Walking Dead | Undead | d6 (default) | 28 | 46.0 | 61% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Wall | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Breakaway | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Breakaway | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Breakaway | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Breakaway | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Breakaway | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Breakaway | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Breakaway | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Breakaway | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Breakaway | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Breakaway | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Breakaway | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Breakaway | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Breakaway | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Breakaway | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Endgame | 3 | Beasts | Rast | 1d8+4 | 33 | 53.5 | 62% | row-dice | 1d8+3 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Endgame | 3 | Beasts | Sterling | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Endgame | 4 | Beasts | Drake | 2d10+4 | 64 | 53.5 | 120% | row-dice | 1d6+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Endgame | 5 | Beasts | Dread Lock | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Endgame | 5 | Beasts | Stalka Beast | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Endgame | 5 | Demons | Djinni | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Endgame | 3 | Humans | Frank | 1d8+6 | 37 | 53.5 | 69% | row-dice | 1d8+3 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Endgame | 4 | Humans | Craig | 1d12+0 | 40 | 53.5 | 75% | row-dice | 1d8+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Endgame | 4 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | level-base | - | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Endgame | 5 | Humans | Herman | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Endgame | 3 | Lair Beasts | Blumble | 1d12+0 | 33 | 53.5 | 62% | row-dice | 1d10+0 | capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit) — 0 rows flagged under rule=dice at the fitted commit
+Endgame | 5 | Lair Beasts | Drarl | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Endgame | 5 | Magical | Drudge | d6 (default) | 37 | 53.5 | 69% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
+Endgame | 5 | Walking Dead | Vampire | 1d4+0 | 33 | 53.5 | 62% | deep-tier | - | stays — capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit); deliberate deep-tier threat (D-07)
 
 `FLAGGED: 65 rows across 209 row×band cells (deep-tier 21, level-base 14,
 row-dice 30, bolt 0)` — `NOTED: 0 rows`.
@@ -683,3 +683,72 @@ starting input for each row's dice-notation option.
 Pointer: `docs/DIFFICULTY-RETUNE.md`, `## v1.7 tuning pass (Phases 51–54)`
 → `### v1.7 · Phase 52 — cadence & damage curve` (the ledger H3 quoting this
 table's counts and the cadence readout).
+
+### Phase 54 addendum (USER RULING D, 2026-09-21) — the global model and the round-damage ceiling
+
+**The audit, re-keyed to the global model** (`tools/damage-curve-audit.mjs`,
+Phase 54-07/USER RULING G — see that tool's own header for the full
+re-keying: `hitScaleForBand`/`tierReachableFloors` replace the retired flat
+`dmgBonusForBand`; `critMax` is scaled through `foeHitFor` at the band's
+worst `foeHitScale` and THEN clamped by `roundDamageCapFor(effLevel)`; hero
+HP bars fold `HERO_HP_SCALE`), re-run at the fitted commit (`fit/fit-log.jsonl
+#13`, score 2.7113, PASS) for both rules:
+
+| Rule | BEFORE (Phase 52) | AFTER (Phase 54-07, fitted) |
+|---|---|---|
+| whole | not separately measured (Phase 52 measured `dice` only) | **5** rows flagged across 108 row×band cells |
+| dice | **65** rows flagged across 209 row×band cells (Phase 27 baseline) | **0** rows flagged across 108 row×band cells |
+
+The row×band cell COUNT itself drops (209 → 108) because band reachability
+is now driven by the fitted `FOE_LEVEL` map (`tierReachableFloors`) instead
+of a flat `d >= T` range check — several tier/band combinations that used
+to be "reachable" under the old range rule no longer are under the fitted
+map (and vice versa; the counts are not directly comparable measurement-
+for-measurement, only FLAGGED-for-FLAGGED). Under `rule=dice` — the rule
+Phase 52 measured its 65-row baseline against — **every previously flagged
+row now clears the bar**: `ROUND_DAMAGE_CEILING` (held at 0.5) caps every
+single hit at `round(0.5 * heroMeanMaxWpFor(effLevel))`, which is at or
+below the 60%-of-MU-bar flag threshold for all 209 (dice-rule) cells. The
+five `rule=whole` flags (Frank ×2, Rast, Sterling, Blumble — all `row-dice`,
+none `deep-tier`/`level-base`/`bolt`) sit right at the ceiling's own edge
+(31–31 vs a 31–34 cap, per band) — informational only; `rule=whole` was
+never Phase 52's own measurement rule, and BAND-02 forbids a per-row dice
+trim regardless. Every row in the "Still flagged" table above now reads
+`capped by ROUND_DAMAGE_CEILING (Phase 54-07 fit)` — refreshed in place,
+same table, same rows, no new table.
+
+**Roster under the ceiling (TUNE-08)** — Herman / Drarl / Vampire / Djinni
+recorded at their TIER-5 row (the tier Ruling B's own crit-% figures
+referenced); Drake is Beasts-only at tier 4. "First floor" = the earliest
+floor `d` with `foeLevelFor(d)` equal to the row's own tier T or T+1 (the
+d4 tier-bleed), read off the fitted `FOE_LEVEL` map. "Hero level at that
+floor" = the AFTER solo (200-seed) Pace block's `meanLevel` at that floor,
+rounded. "Ceiling" = `roundDamageCapFor(level)` at that rounded level.
+"Clamped" = `min(scaled, ceiling)`. "Depth-20 slice deaths" = the
+`--seeds=50 --start-depth=20` readout's own death-cause breakdown (of 50
+runs):
+
+| Creature | Type / tier | First floor | Raw max/round (levelBase + 2×diceMax, ×atk) | foeHitScale | Scaled max | Hero level | Ceiling | Clamped max | Depth-20 deaths (n/50) | Decision |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Herman | Humans t5 | 13 | 25 + 12 = 37 | 0.73 | 27 | 4 | 34 | 27 | 9 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+| Drarl | Lair Beasts t5 | 13 | 25 + 12 = 37 | 0.73 | 27 | 4 | 34 | 27 | 11 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+| Vampire | Walking Dead t5 | 13 | (25 + 8) × 2 = 66 | 0.73 | 24 × 2 = 48 | 4 | 34 | **34** | 6 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+| Djinni | Demons t5 | 13 | 25 + 8 = 33 | 0.73 | 24 | 4 | 34 | 24 | 6 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+| Drake | Beasts t4 | 9 | 16 + 48 = 64 | 0.69 | 44 | 3 | 31 | **31** | 1 | stays — capped by ROUND_DAMAGE_CEILING 0.5 |
+
+Vampire's two attacks (48 total) and Drake's 2d10+4 breath (44 scaled) are
+the two rows the ceiling ACTUALLY clamps (34 and 31 respectively, both
+below their scaled total) — direct numeric evidence the ceiling is doing
+real work, not a no-op. No `content/bestiary.js` row is edited; no tier
+move.
+
+**Ruling B superseded:** the Drake trim USER RULING B proposed mid-phase
+(2d10+4 → 2d8+2, under the old whole-sum rule's 116% reading) is NOT
+applied. `ROUND_DAMAGE_CEILING` bounds the Drake's crit to 31 regardless of
+its dice notation — the ceiling is the mechanism that keeps the Drake from
+one-shotting a level-3 hero now, not a bestiary edit.
+
+**The `yardstick:after` block is untouched** — `content/bestiary.js` carries
+no Phase 54 edit, so `test/unit/bestiary-yardstick.test.js`'s D-04
+doc-consistency test (the AFTER block byte-identical to a fresh render)
+stays green unchanged.

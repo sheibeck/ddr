@@ -16,7 +16,7 @@
 //                       the WHOLE lvl^2 + dmgBonus + dice sum). "dice" = the
 //                       Phase 52 rule (a foe crit doubles the dice only:
 //                       lvl^2 + dmgBonus + 2*dice).
-//   --smoke=<path>      default docs/class-pass/v17-p51-after-smoke.json —
+//   --smoke=<path>      default docs/class-pass/v17-p54-global-after-smoke.json —
 //                       the locked yardstick source for each band's hero
 //                       level (median meanLevel over cells whose p50Depth
 //                       falls in the band).
@@ -35,33 +35,37 @@
 // sum_{k=1}^{L-1} mean(gain[k]), for "Magic User" (the weakest class) and
 // "Fighter" (the sturdiest).
 //
-// Row evaluation: every bestiary row at its tier T (array index + 1, 1..5)
-// is evaluated in every band whose max depth is >= T (a tier-T foe is only
-// ever reachable at depth >= T — see engine/combat.js#startCombat's
-// maxLvl/lvl tiering). The row's EFFECTIVE hero level in that band is
-// `max(T, bandLevel)` capped at 5 — a tier-4 row met in a level-3 band is
-// still met by a hero of level >= 4 (a tier-T foe implies a level->=T
+// Row evaluation (Phase 54-07, USER RULING G — re-keyed to the global
+// model): every bestiary row at its tier T (array index + 1, 1..5) is
+// evaluated in every band where `tierReachableFloors(T, band)` is
+// non-empty (some floor d in the band has `foeLevelFor(d)` equal to T or
+// T+1 — the fitted FOE_LEVEL map, with the d4 tier-bleed folded in, NOT a
+// flat `d >= T` range check). The row's EFFECTIVE hero level in that band
+// is `max(T, bandLevel)` capped at 5 — a tier-4 row met in a level-3 band
+// is still met by a hero of level >= 4 (a tier-T foe implies a level->=T
 // hero), so the row's own MU/Fighter bars (the per-row table columns) are
 // computed at this effective level, which may exceed the band's own
-// printed baseline level.
+// printed baseline level; `roundDamageCapFor` is also evaluated at this
+// effective level.
 //
-// `dmgBonus` for a row/band pair is the MAXIMUM of
-// `foeDmgBonusFor(T, difficultyCurve(d))` over every floor d in the band
-// with d >= T (exhaustive over floors — grace floors 2-4 can legitimately
-// produce a NEGATIVE dmgBonus; this audit reports the row's WORST case,
-// i.e. the max).
+// `hitScale` for a row/band pair is the MAXIMUM `difficultyCurve(d).
+// foeHitScale` over `tierReachableFloors(T, band)` (exhaustive over the
+// floors that can actually produce this tier — this audit reports the
+// row's WORST case, i.e. the max).
 //
 // `levelBase` reads `sp.strikesAs` when present (Phase 52 Plan 02 adds this
-// field to Herman) else `T * T` — so this tool needs no change for the
-// AFTER run.
+// field to Herman) else `T * T`.
 // `diceMax` = `sp.dmg ? n*sides+bonus : 6` (the default dice notation when
 // a row carries no `sp.dmg` of its own).
-// `hitMax` = `levelBase + dmgBonus + diceMax`.
-// `critMax` (rule=whole) = `2 * hitMax`; (rule=dice) =
-// `levelBase + dmgBonus + 2*diceMax`.
+// `hitMax` = `foeHitFor(levelBase + diceMax, { foeHitScale: hitScale })`.
+// `critMax` = `foeHitFor(rule=whole: 2*(levelBase+diceMax) | rule=dice:
+// levelBase+2*diceMax, { foeHitScale: hitScale })`, clamped by
+// `roundDamageCapFor(effLevel)`.
 // `boltMax` = the max `dmg` (n*sides+bonus) over the row's kit's
 // bolt/drain descriptors (0 when the row carries no kit, or its kit has no
-// bolt/drain entries).
+// bolt/drain entries) — NEVER scaled by foeHitFor or clamped by
+// roundDamageCapFor (the real engine's rollDice(rng, a.dmg) sites don't
+// either — see engine/foeAbilities.js).
 // `maxSingleHit` = `max(critMax, boltMax)`.
 // `worstTurn` (informational only) = `(sp.atk || 1) * critMax`.
 //
@@ -85,14 +89,28 @@ import path from "node:path";
 import url from "node:url";
 
 import { BESTIARY, FOE_ABILITIES, CLASSES } from "../content/index.js";
+import { difficultyCurve, foeLevelFor, foeHitFor, roundDamageCapFor, DIALS } from "../engine/difficulty.js";
 
-// Phase 54 (BAND-02, USER RULING D): `foeDmgBonusFor` (a flat bonus added to
-// the lvl^2 term) is RETIRED — the global model scales the WHOLE hit via
-// `FOE_HIT_SCALE`/`foeHitFor` instead, with per-visit lethality bounded by
-// `ROUND_DAMAGE_CEILING` (superseding this audit's old per-monster trim
-// logic). This tool's `dmgBonusForBand` is a stub (always 0, matching the
-// FOE_HIT_SCALE identity) until 54-06/54-07 rewires it against the new
-// model — see docs/DIFFICULTY-RETUNE.md's Identity commit section.
+// Phase 54-07 (BAND-02, USER RULING D/G, 2026-09-21) — re-keyed to the
+// GLOBAL DIFFICULTY MODEL: the retired flat `dmgBonusForBand` stub is
+// replaced by `hitScaleForBand`/`tierReachable`, reading the FITTED
+// `difficultyCurve`/`foeLevelFor`/`DIALS` directly (this tool now reads the
+// SHIPPED fitted dials — the report header names them). A tier T is
+// "reachable" in a band when some floor d in the band has `foeLevelFor(d)`
+// equal to T (direct) or T+1 (the d4 tier-bleed knocks a T+1-mapped floor
+// down to T) — `null` (this audit's existing "band cannot reach this tier"
+// contract) when no such floor exists. The crit/melee max is
+// `foeHitFor(<the whole hit>, curve)` at the band's WORST (maximum)
+// `foeHitScale` over its reachable floors, THEN clamped by
+// `roundDamageCapFor(effLevel)` (ROUND_DAMAGE_CEILING is a real dial now,
+// held at 0.5) — mirrors engine/combat.js's own `Math.min(dmg,
+// roundDamageCapFor(c.level))` clamp on the FIRST swing of a visit
+// (`dealtThisVisit` starts at 0). Bolt/drain ability damage
+// (`engine/foeAbilities.js#rollDice(rng, a.dmg)`) is NEVER scaled by
+// `foeHitFor` or clamped by `roundDamageCapFor` in the real engine, so
+// `boltMax` stays exactly as before — an unscaled raw dice max. The hero
+// HP bars (classBarAt) fold `HERO_HP_SCALE` (and CLASS_MITIGATION's hpMul,
+// identity 1 today) the SAME way `engine/difficulty.js#heroMaxWpFor` does.
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
@@ -109,7 +127,7 @@ const FOE_ABILITIES_BY_ID = new Map(FOE_ABILITIES.map((a) => [a.id, a]));
 // --- CLI -------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const args = { rule: null, smoke: "docs/class-pass/v17-p51-after-smoke.json", levels: null };
+  const args = { rule: null, smoke: "docs/class-pass/v17-p54-global-after-smoke.json", levels: null };
   for (const arg of argv) {
     if (arg.startsWith("--rule=")) args.rule = arg.slice("--rule=".length);
     else if (arg.startsWith("--smoke=")) args.smoke = arg.slice("--smoke=".length);
@@ -131,12 +149,17 @@ function meanDice(d) {
 
 /** classBarAt(clsName, level) — mean max HP at `level` for a Human with no
  * store purchases/skills: base + mean(baseWP.dice) + the mean of every
- * gain[1..level-1] dice entry. */
+ * gain[1..level-1] dice entry, scaled by HERO_HP_SCALE and the class's own
+ * CLASS_MITIGATION.hpMul (identity 1 today) — the SAME arithmetic
+ * `engine/difficulty.js#heroMaxWpFor` applies to every rolled/gained maxWP
+ * (Phase 54-07, USER RULING G). */
 function classBarAt(clsName, level) {
   const cls = CLASSES[clsName];
   let hp = cls.baseWP.base + meanDice(cls.baseWP.dice);
   for (let k = 1; k < level; k++) hp += meanDice(cls.gain[k]);
-  return hp;
+  const classMit = DIALS.CLASS_MITIGATION[clsName];
+  const mul = DIALS.HERO_HP_SCALE * ((classMit && classMit.hpMul) || 1);
+  return hp * mul;
 }
 
 function muBarAt(level) {
@@ -201,18 +224,41 @@ function boltMaxOf(row) {
   return best;
 }
 
-/** dmgBonusForBand(T, band) — STUBBED at 0 (Phase 54, USER RULING D): the
- * flat-bonus model this measured is retired; see the module header. Still
- * returns `null` when the band cannot reach this tier at all, preserving
- * every existing caller's null-check. */
-function dmgBonusForBand(T, band) {
-  const lo = Math.max(band.min, T);
-  if (lo > band.max) return null; // band cannot reach this tier at all
-  return 0;
+/** tierReachableFloors(T, band) — every floor d in [band.min, band.max]
+ * with `foeLevelFor(d) === T` (direct) or `foeLevelFor(d) === T + 1` (the
+ * d4 tier-bleed knocks a T+1-mapped floor down to T) — the SET of floors
+ * that can actually produce a tier-T foe in this band, under the fitted
+ * FOE_LEVEL map. Empty when the band never produces this tier at all. */
+function tierReachableFloors(T, band) {
+  const floors = [];
+  for (let d = band.min; d <= band.max; d++) {
+    const mapped = foeLevelFor(d);
+    if (mapped === T || mapped === T + 1) floors.push(d);
+  }
+  return floors;
 }
 
-function critMaxOf(rule, levelBase, dmgBonus, diceMax) {
-  return rule === "whole" ? 2 * (levelBase + dmgBonus + diceMax) : levelBase + dmgBonus + 2 * diceMax;
+/** hitScaleForBand(T, band) — the WORST (maximum) `foeHitScale` over this
+ * tier's reachable floors in this band (Phase 54-07, USER RULING G) — `null`
+ * when the band cannot produce this tier at all (mirrors the retired
+ * `dmgBonusForBand`'s null contract, so every existing caller's
+ * `if (x === null) continue` guard is unchanged). */
+function hitScaleForBand(T, band) {
+  const floors = tierReachableFloors(T, band);
+  if (!floors.length) return null;
+  return Math.max(...floors.map((d) => difficultyCurve(d).foeHitScale));
+}
+
+/** critMaxOf(rule, levelBase, diceMax, hitScale, capLevel) — the whole hit
+ * (Phase 54-07, USER RULING G): the crit total is scaled through
+ * `foeHitFor` at the band's worst `foeHitScale`, THEN clamped by
+ * `roundDamageCapFor(capLevel)` — mirrors engine/combat.js's own
+ * `Math.min(dmg, roundDamageCapFor(c.level))` on the FIRST swing of a visit
+ * (`dealtThisVisit` starts at 0, so the cap directly bounds a single hit). */
+function critMaxOf(rule, levelBase, diceMax, hitScale, capLevel) {
+  const raw = rule === "whole" ? 2 * (levelBase + diceMax) : levelBase + 2 * diceMax;
+  const scaled = foeHitFor(raw, { foeHitScale: hitScale });
+  return Math.min(scaled, roundDamageCapFor(capLevel));
 }
 
 /** wouldBeTrim — the largest same-family notation that clears the bar:
@@ -220,11 +266,11 @@ function critMaxOf(rule, levelBase, dmgBonus, diceMax) {
  * to 1; never below 1d6+0. `clears(n,sides,bonus)` recomputes maxSingleHit
  * with that candidate notation and checks it against the 60% MU-bar
  * threshold. */
-function wouldBeTrim(sp, rule, levelBase, dmgBonus, boltMax, muBar) {
+function wouldBeTrim(sp, rule, levelBase, hitScale, capLevel, boltMax, muBar) {
   const orig = sp.dmg;
   const clears = (n, sides, bonus) => {
     const diceMaxC = n * sides + bonus;
-    const critC = critMaxOf(rule, levelBase, dmgBonus, diceMaxC);
+    const critC = critMaxOf(rule, levelBase, diceMaxC, hitScale, capLevel);
     const maxC = Math.max(critC, boltMax);
     return maxC < 0.6 * muBar;
   };
@@ -241,10 +287,10 @@ function wouldBeTrim(sp, rule, levelBase, dmgBonus, boltMax, muBar) {
   return "none";
 }
 
-function categorize({ T, boltMax, critMax, rule, levelBase, dmgBonus, muBar, boltId }) {
+function categorize({ T, boltMax, critMax, rule, levelBase, hitScale, capLevel, muBar, boltId }) {
   if (boltMax > critMax) return `bolt:${boltId}`;
   if (T === 5) return "deep-tier";
-  const defaultCrit = critMaxOf(rule, levelBase, dmgBonus, 6);
+  const defaultCrit = critMaxOf(rule, levelBase, 6, hitScale, capLevel);
   if (defaultCrit >= 0.6 * muBar) return "level-base";
   return "row-dice";
 }
@@ -259,7 +305,10 @@ function main() {
   out.push(`# damage-curve-audit — rule=${args.rule}`);
   out.push("");
   out.push(
-    `Rule: ${args.rule === "whole" ? "today's rule — a foe crit doubles the WHOLE lvl^2 + dmgBonus + dice sum" : "the Phase 52 rule — a foe crit doubles the DICE only (lvl^2 + dmgBonus + 2*dice)"}.`,
+    `Rule: ${args.rule === "whole" ? "today's rule — a foe crit doubles the WHOLE lvl^2 + dice sum" : "the Phase 52 rule — a foe crit doubles the DICE only (lvl^2 + 2*dice)"}, scaled through foeHitFor at the band's worst foeHitScale, clamped by roundDamageCapFor(effLevel).`,
+  );
+  out.push(
+    `Phase 54-07 (USER RULING G, cycle 3) fitted dials this report reads: FOE_LEVEL ${JSON.stringify(DIALS.FOE_LEVEL)}, FOE_HIT_SCALE ${JSON.stringify(DIALS.FOE_HIT_SCALE)}, ROUND_DAMAGE_CEILING ${DIALS.ROUND_DAMAGE_CEILING}, HERO_HP_SCALE ${DIALS.HERO_HP_SCALE}.`,
   );
   if (args.levels) {
     out.push(`Band levels: --levels override (${args.levels.join(",")}), smoke file not read.`);
@@ -288,25 +337,26 @@ function main() {
   for (const band of bandLevels) {
     out.push(`## ${band.name} (depth ${band.min}-${band.max}, hero level ${band.level})`);
     out.push("");
-    out.push("| tier | type | name | dice | atk | levelBase | dmgBonus | hitMax | critMax | boltMax | maxSingleHit | worstTurn | MU bar | FT bar | % of MU bar | verdict |");
+    out.push("| tier | type | name | dice | atk | levelBase | hitScale | hitMax | critMax | boltMax | maxSingleHit | worstTurn | MU bar | FT bar | % of MU bar | verdict |");
     out.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
 
     for (const type of Object.keys(BESTIARY)) {
       const tiers = BESTIARY[type];
       for (let tIdx = 0; tIdx < tiers.length; tIdx++) {
         const T = tIdx + 1;
-        const dmgBonus = dmgBonusForBand(T, band);
-        if (dmgBonus === null) continue; // this band never reaches tier T
+        const hitScale = hitScaleForBand(T, band);
+        if (hitScale === null) continue; // this band never reaches tier T
+        const effLevel = Math.min(5, Math.max(T, band.level));
+        const capLevel = effLevel;
         for (const row of tiers[tIdx]) {
           cellCount++;
           const levelBase = levelBaseOf(row, T);
           const diceMax = diceMaxOf(row.sp);
-          const hitMax = levelBase + dmgBonus + diceMax;
-          const critMax = critMaxOf(args.rule, levelBase, dmgBonus, diceMax);
+          const hitMax = foeHitFor(levelBase + diceMax, { foeHitScale: hitScale });
+          const critMax = critMaxOf(args.rule, levelBase, diceMax, hitScale, capLevel);
           const { max: boltMax, id: boltId } = boltMaxOf(row);
           const maxSingleHit = Math.max(critMax, boltMax);
           const worstTurn = ((row.sp && row.sp.atk) || 1) * critMax;
-          const effLevel = Math.min(5, Math.max(T, band.level));
           const muBar = muBarAt(effLevel);
           const ftBar = ftBarAt(effLevel);
           const pct = (maxSingleHit / muBar) * 100;
@@ -316,7 +366,7 @@ function main() {
           else if (maxSingleHit >= 0.6 * ftBar) verdict = "note";
 
           out.push(
-            `| ${T} | ${type} | ${row.n} | ${formatDice(row.sp)} | ${(row.sp && row.sp.atk) || 1} | ${levelBase} | ${dmgBonus} | ${hitMax} | ${critMax} | ${boltMax} | ${maxSingleHit} | ${worstTurn} | ${muBar.toFixed(1)} | ${ftBar.toFixed(1)} | ${pct.toFixed(0)}% | ${verdict} |`,
+            `| ${T} | ${type} | ${row.n} | ${formatDice(row.sp)} | ${(row.sp && row.sp.atk) || 1} | ${levelBase} | ${hitScale.toFixed(2)} | ${hitMax} | ${critMax} | ${boltMax} | ${maxSingleHit} | ${worstTurn} | ${muBar.toFixed(1)} | ${ftBar.toFixed(1)} | ${pct.toFixed(0)}% | ${verdict} |`,
           );
 
           if (row.n === "Herman") {
@@ -325,14 +375,14 @@ function main() {
 
           if (verdict === "FLAG") {
             totalFlagged++;
-            const category = categorize({ T, boltMax, critMax, rule: args.rule, levelBase, dmgBonus, muBar, boltId });
+            const category = categorize({ T, boltMax, critMax, rule: args.rule, levelBase, hitScale, capLevel, muBar, boltId });
             if (category === "deep-tier") deepTierCount++;
             else if (category === "level-base") levelBaseCount++;
             else if (category.startsWith("bolt:")) boltCount++;
             else rowDiceCount++;
             let trim = "";
             if (category === "row-dice" && row.sp && row.sp.dmg) {
-              trim = wouldBeTrim(row.sp, args.rule, levelBase, dmgBonus, boltMax, muBar);
+              trim = wouldBeTrim(row.sp, args.rule, levelBase, hitScale, capLevel, boltMax, muBar);
             }
             flaggedRows.push({
               band: band.name,
