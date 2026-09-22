@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 59
-current_phase_name: Party Animation & Dungeon Set Dressing
-current_plan: Not started
-status: planning
+current_phase_name: party-animation-dungeon-set-dressing
+current_plan: 1
+status: executing
 stopped_at: Completed 58-07-PLAN.md
-last_updated: "2026-09-22T23:03:45.901Z"
+last_updated: "2026-09-22T23:45:29.208Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 58 complete, transitioned to Phase 59
+last_activity_desc: Phase 59 execution started
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 21
-  completed_plans: 16
+  completed_plans: 18
   percent: 60
 total_plans_in_phase: 4
 ---
@@ -26,17 +26,17 @@ total_plans_in_phase: 4
 See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 Sound, Motion & Set Dressing started; three Pixel 7 UAT batches still un-run: v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 58 — motion-pacing
+**Current focus:** Phase 59 — party-animation-dungeon-set-dressing
 
 ## Current Position
 
-Phase: 59 — Party Animation & Dungeon Set Dressing
-Current Plan: Not started
-Total Plans in Phase: 7
+Phase: 59 (party-animation-dungeon-set-dressing) — EXECUTING
+Current Plan: 1
+Total Plans in Phase: 5
 Progress: [████████░░] 76%
-Plan: 7 of 7
-Status: Ready to plan
-Last activity: 2026-09-22 — Phase 58 complete, transitioned to Phase 59
+Plan: 1 of 5
+Status: Executing Phase 59
+Last activity: 2026-09-22 — Phase 59 execution started
 
 ## Ground Truth (durable facts every session needs)
 
