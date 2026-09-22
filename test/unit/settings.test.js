@@ -46,19 +46,23 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: the four fields' defaults", () => {
+test("SETTINGS_DEFAULTS: the five fields' defaults", () => {
   assert.equal(SETTINGS_DEFAULTS.textSize, "M");
   assert.equal(SETTINGS_DEFAULTS.sound, true);
   assert.equal(SETTINGS_DEFAULTS.haptics, true);
   assert.equal(SETTINGS_DEFAULTS.confirmBeforeQuit, true);
+  // Phase 59 (DRESS-05): the fifth field, Set Dressing, defaults On.
+  assert.equal(SETTINGS_DEFAULTS.dressing, true);
 });
 
-test("writeSetting/readSettings: each of the 4 fields round-trips through window.mzStorage", async () => {
+test("writeSetting/readSettings: each of the 5 fields round-trips through window.mzStorage", async () => {
   await withFakeLocalStorage(async (_ls, store) => {
     await writeSetting("sound", false);
     await writeSetting("haptics", false);
     await writeSetting("textSize", "L");
     await writeSetting("confirmBeforeQuit", false);
+    // Phase 59 (DRESS-05): the fifth field round-trips in the same blob.
+    await writeSetting("dressing", false);
     await flushStorage();
 
     const settings = await readSettings();
@@ -67,6 +71,7 @@ test("writeSetting/readSettings: each of the 4 fields round-trips through window
       haptics: false,
       textSize: "L",
       confirmBeforeQuit: false,
+      dressing: false,
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -131,8 +136,9 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S" });
     assert.equal("handedness" in settings, false);
 
-    assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), ["sound", "haptics", "textSize", "confirmBeforeQuit"]);
-    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 4);
+    // Phase 59 (DRESS-05): five keys now, `dressing` appended last.
+    assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), ["sound", "haptics", "textSize", "confirmBeforeQuit", "dressing"]);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 5);
     assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -181,4 +187,51 @@ test("settings.js never touches raw localStorage directly (only via storage.js/w
   const fs = await import("node:fs");
   const src = fs.readFileSync(new URL("../../src/browser/settings.js", import.meta.url), "utf8");
   assert.equal(/\blocalStorage\b/.test(src), false);
+});
+
+// --- Phase 59 (DRESS-05): the `dressing` field --------------------------
+
+test("dressing: independent of sound — writing either never changes the other", async () => {
+  await withFakeLocalStorage(async () => {
+    await writeSetting("dressing", false);
+    await flushStorage();
+    let settings = await readSettings();
+    assert.equal(settings.dressing, false);
+    assert.equal(settings.sound, SETTINGS_DEFAULTS.sound);
+
+    await writeSetting("sound", false);
+    await flushStorage();
+    settings = await readSettings();
+    assert.equal(settings.sound, false);
+    assert.equal(settings.dressing, false); // unchanged by the sound write
+  });
+});
+
+test("dressing: an invalid value is rejected (no-op, keeps prior/default)", async () => {
+  await withFakeLocalStorage(async () => {
+    await writeSetting("dressing", "off");
+    await flushStorage();
+    assert.equal((await readSettings()).dressing, true); // stays at default
+
+    await writeSetting("dressing", 0);
+    await flushStorage();
+    assert.equal((await readSettings()).dressing, true); // still default
+  });
+});
+
+test("dressing: a persisted blob WITHOUT the dressing key reads dressing true (tolerant load, no migration)", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ sound: false, haptics: false, textSize: "S", confirmBeforeQuit: false }));
+    const settings = await readSettings();
+    assert.equal(settings.dressing, true);
+    assert.equal(settings.sound, false); // the other fields still load normally
+  });
+});
+
+test("dressing: a persisted blob with an invalid dressing value (e.g. \"yes\") reads the default true", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ dressing: "yes" }));
+    const settings = await readSettings();
+    assert.equal(settings.dressing, true);
+  });
 });

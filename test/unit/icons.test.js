@@ -18,6 +18,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { FEATURE_ICONS, PLAYER_MARKER_ICON, featureKeyForCell, drawFeatureIcon } from "../../src/browser/icons.js";
+// Phase 59 (DRESS-01..05), Plan 02 — a second import line (never editing the
+// line above) so this file's own diff against BASE_59 stays additions-only.
+import { loadIconSet, preloadIcons } from "../../src/browser/icons.js";
 
 /** A minimal fake CanvasRenderingContext2D that just records call order/args. */
 function makeFakeCtx() {
@@ -155,4 +158,82 @@ test("drawFeatureIcon: scale=0.75 with a rotated (one-way-door) icon shrinks it 
   const iconSize = Math.round(size * 0.75);
   assert.deepEqual(ctx.calls[1], ["translate", 100 + size / 2, 200 + size / 2]);
   assert.deepEqual(ctx.calls[3], ["drawImage", -iconSize / 2, -iconSize / 2, iconSize, iconSize]);
+});
+
+// --- loadIconSet / preloadIcons (Phase 59, DRESS-01..05, Plan 02) -----------
+//
+// loadIconSet is the ONE image loader (D-14): preloadIcons now delegates to
+// it, and src/browser/dressing.js#createDressingArt reuses it for the lazy
+// dressing load. A fake `makeImage` factory below stands in for the real
+// `Image` constructor, so these tests never touch the DOM.
+
+/**
+ * makeFakeImageFactory({fail}) — a fake Image() factory: setting `.src`
+ * schedules an async `onload` (or `onerror` when `fail` is true) on the
+ * next microtask, mirroring a real Image's async decode without touching
+ * the DOM.
+ */
+function makeFakeImageFactory({ fail = false } = {}) {
+  const created = [];
+  const factory = () => {
+    const img = {
+      decoding: "",
+      _src: "",
+      onload: null,
+      onerror: null,
+      get src() {
+        return this._src;
+      },
+      set src(v) {
+        this._src = v;
+        queueMicrotask(() => {
+          if (fail) {
+            if (this.onerror) this.onerror(new Error("fake load failure"));
+          } else if (this.onload) {
+            this.onload();
+          }
+        });
+      },
+    };
+    created.push(img);
+    return img;
+  };
+  factory.created = created;
+  return factory;
+}
+
+test("loadIconSet: resolves { name: img } once every name fires onload, setting src to base/<name>.png and decoding to async", async () => {
+  const factory = makeFakeImageFactory();
+  const map = await loadIconSet("base", ["a", "b"], factory);
+  assert.deepEqual(Object.keys(map).sort(), ["a", "b"]);
+  assert.equal(map.a.src, "base/a.png");
+  assert.equal(map.b.src, "base/b.png");
+  assert.equal(map.a.decoding, "async");
+  assert.equal(map.b.decoding, "async");
+  assert.equal(factory.created.length, 2);
+});
+
+test("loadIconSet: fail-open — an onerror still resolves (never rejects) so a broken icon never blocks the caller", async () => {
+  const factory = makeFakeImageFactory({ fail: true });
+  const map = await loadIconSet("base", ["broken"], factory);
+  assert.ok(map.broken);
+  assert.equal(map.broken.src, "base/broken.png");
+});
+
+test("preloadIcons: still resolves a map keyed by all 9 FEATURE_ICONS, delegating to loadIconSet's default Image() factory", async () => {
+  const previousImage = globalThis.Image;
+  const factory = makeFakeImageFactory();
+  globalThis.Image = function FakeImage() {
+    return factory();
+  };
+  try {
+    const map = await preloadIcons("icons/optimized");
+    assert.deepEqual(Object.keys(map).sort(), [...FEATURE_ICONS].sort());
+    for (const name of FEATURE_ICONS) {
+      assert.equal(map[name].src, `icons/optimized/${name}.png`);
+    }
+  } finally {
+    if (previousImage === undefined) delete globalThis.Image;
+    else globalThis.Image = previousImage;
+  }
 });
