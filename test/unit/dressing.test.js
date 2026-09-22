@@ -24,12 +24,21 @@ import {
   RARE_WEIGHT,
   DEPTH_LEAN,
   DEPTH_LEAN_SPAN,
+  PROP_SCALE,
+  FLOOR_PROP_ALPHA,
+  WALL_PROP_ALPHA,
   propWeight,
   placeDressing,
   dressingKey,
+  visibleProps,
+  drawDressingLayer,
+  createDressingArt,
+  createDressingBridge,
 } from "../../src/browser/dressing.js";
 import { genFloor } from "../../engine/maze.js";
 import { makeRng } from "../../engine/rng.js";
+import { drawFeatureIcon } from "../../src/browser/icons.js";
+import { createRecordingContext } from "./harness/recordingCanvas.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -344,4 +353,277 @@ test("dressingKey: seed:depth: followed by one char per cell, row-major, 1 for w
 test("dressingKey: a missing/malformed grid yields an empty cell tail, never throws", () => {
   assert.equal(dressingKey(1, 1, undefined), "1:1:");
   assert.equal(dressingKey(1, 1, []), "1:1:");
+});
+
+// --- Task 2: draw-time exclusions, the dimmed layer, lazy-load, the bridge -
+
+function openCell() {
+  return { wall: false, seen: true, feat: null };
+}
+
+test("createRecordingContext: supports every method/property draw() and drawFeatureIcon use, records calls with alpha, keeps a save/restore state stack, and exposes imageDraws()", () => {
+  const ctx = createRecordingContext();
+  assert.equal(ctx.globalAlpha, 1);
+
+  ctx.fillStyle = "#111";
+  ctx.strokeStyle = "#222";
+  ctx.lineWidth = 3;
+  ctx.font = "12px sans";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillRect(0, 0, 10, 10);
+  ctx.strokeRect(0, 0, 10, 10);
+  ctx.clearRect(0, 0, 10, 10);
+  ctx.fillText("hi", 0, 0);
+  ctx.translate(1, 1);
+  ctx.rotate(0.5);
+  ctx.scale(1, 1);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(1, 1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.arc(0, 0, 5, 0, 7);
+
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 5);
+  assert.equal(typeof grad.addColorStop, "function");
+  grad.addColorStop(0, "red");
+  grad.addColorStop(1, "blue");
+
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  const img = { fake: true };
+  ctx.drawImage(img, 1, 2, 3, 4);
+  ctx.restore();
+
+  // globalAlpha reverted after restore (state stack).
+  assert.equal(ctx.globalAlpha, 1);
+
+  // Every call was recorded with an op/args/alpha shape.
+  for (const call of ctx.calls) {
+    assert.ok(typeof call.op === "string");
+    assert.ok(Array.isArray(call.args));
+    assert.ok(typeof call.alpha === "number");
+  }
+  const opsSeen = new Set(ctx.calls.map((c) => c.op));
+  for (const op of [
+    "setTransform", "fillRect", "strokeRect", "clearRect", "fillText",
+    "save", "restore", "translate", "rotate", "scale", "beginPath",
+    "closePath", "arc", "fill", "stroke", "moveTo", "lineTo", "drawImage",
+    "createRadialGradient",
+  ]) {
+    assert.ok(opsSeen.has(op), `expected ctx.calls to include a "${op}" entry`);
+  }
+
+  const draws = ctx.imageDraws();
+  assert.deepEqual(draws, [{ img, x: 1, y: 2, w: 3, h: 4, alpha: 0.5 }]);
+});
+
+test("PROP_SCALE / FLOOR_PROP_ALPHA / WALL_PROP_ALPHA match the plan exactly", () => {
+  assert.equal(PROP_SCALE, 0.6);
+  assert.equal(FLOOR_PROP_ALPHA, 0.35);
+  assert.equal(WALL_PROP_ALPHA, 0.85);
+});
+
+test("visibleProps: drops a prop on a feature (the stairs included), the party square, an unseen cell, or a cell the visible predicate rejects; clearing that cell's feat makes the prop visible again", () => {
+  const grid = Array.from({ length: 5 }, () => Array.from({ length: 5 }, () => openCell()));
+  grid[1][1].feat = "exit"; // the stairs, at (x:1, y:1)
+  grid[1][2].feat = "dot"; // at (x:2, y:1)
+  grid[3][3].seen = false; // at (x:3, y:3)
+
+  const party = { x: 2, y: 2 };
+  const props = [
+    { x: 1, y: 1, id: "sack", icon: "set_dungeon_sack", kind: "floor" }, // on the stairs
+    { x: 2, y: 1, id: "crate", icon: "set_dungeon_crate", kind: "floor" }, // on a "dot" cell
+    { x: 2, y: 2, id: "rat", icon: "set_dungeon_rat", kind: "floor" }, // the party square
+    { x: 3, y: 3, id: "moss", icon: "set_dungeon_moss", kind: "floor" }, // unseen
+    { x: 4, y: 1, id: "rocks", icon: "set_dungeon_rocks", kind: "floor" }, // predicate rejects (4,1)
+    { x: 4, y: 4, id: "book", icon: "set_dungeon_book", kind: "floor" }, // survives every filter
+  ];
+  const visible = (x, y) => !(x === 4 && y === 1);
+
+  const kept = visibleProps(props, { grid, party, visible });
+  assert.deepEqual(kept.map((p) => p.id), ["book"]);
+
+  // No `visible` predicate given: fails open (never drops for that reason alone).
+  const keptNoPredicate = visibleProps(
+    [{ x: 4, y: 1, id: "rocks", icon: "set_dungeon_rocks", kind: "floor" }],
+    { grid, party }
+  );
+  assert.deepEqual(keptNoPredicate.map((p) => p.id), ["rocks"]);
+
+  // Clearing the stairs' feat makes that prop visible again (the one
+  // documented consequence of placement never reading `feat`).
+  grid[1][1].feat = null;
+  const keptAfterResolve = visibleProps(props, { grid, party, visible });
+  assert.deepEqual(keptAfterResolve.map((p) => p.id).sort(), ["book", "sack"]);
+});
+
+test("drawDressingLayer: draws every visible prop dim/small and centred, in exactly one save/restore, restores globalAlpha to 1, and skips an undecoded/missing image", () => {
+  const grid = Array.from({ length: 5 }, () => Array.from({ length: 5 }, () => openCell()));
+  const cell = 32;
+  const props = [
+    { x: 1, y: 1, id: "sack", icon: "set_dungeon_sack", kind: "floor" },
+    { x: 3, y: 3, id: "torch_sconce", icon: "set_dungeon_torch_sconce", kind: "wall" },
+    { x: 4, y: 4, id: "book", icon: "set_dungeon_book", kind: "floor" }, // image missing
+    { x: 0, y: 4, id: "rat", icon: "set_dungeon_rat", kind: "floor" }, // image present but undecoded
+  ];
+  const images = {
+    set_dungeon_sack: { complete: true, naturalWidth: 144 },
+    set_dungeon_torch_sconce: { complete: true, naturalWidth: 144 },
+    set_dungeon_rat: { complete: false, naturalWidth: 0 },
+  };
+
+  const ctx = createRecordingContext();
+  const drawn = drawDressingLayer(ctx, props, {
+    grid,
+    party: { x: 0, y: 0 },
+    images,
+    cell,
+    drawIcon: drawFeatureIcon,
+  });
+  assert.equal(drawn, 2);
+
+  assert.equal(ctx.calls.filter((c) => c.op === "save").length, 1);
+  assert.equal(ctx.calls.filter((c) => c.op === "restore").length, 1);
+  assert.equal(ctx.globalAlpha, 1);
+
+  const draws = ctx.imageDraws();
+  assert.equal(draws.length, 2);
+  const iconSize = Math.round(cell * PROP_SCALE);
+  assert.equal(iconSize, Math.round(cell * 0.6));
+  assert.ok(iconSize < Math.round(cell * 0.75), "props must draw smaller than a feature icon");
+
+  const floorDraw = draws.find((d) => d.img === images.set_dungeon_sack);
+  const wallDraw = draws.find((d) => d.img === images.set_dungeon_torch_sconce);
+  assert.ok(floorDraw, "the floor prop should have been drawn");
+  assert.ok(wallDraw, "the wall prop should have been drawn");
+  assert.equal(floorDraw.alpha, FLOOR_PROP_ALPHA);
+  assert.equal(wallDraw.alpha, WALL_PROP_ALPHA);
+  assert.equal(floorDraw.w, iconSize);
+  assert.equal(floorDraw.h, iconSize);
+  assert.equal(floorDraw.x, 1 * cell + (cell - iconSize) / 2);
+  assert.equal(floorDraw.y, 1 * cell + (cell - iconSize) / 2);
+});
+
+test("createDressingArt: loads the 54 images at most once, only once enabled AND released — every On/Off, release/setEnabled ordering the plan specifies", async () => {
+  function makeDeferred() {
+    let resolve;
+    const promise = new Promise((res) => {
+      resolve = res;
+    });
+    return { promise, resolve };
+  }
+
+  // setEnabled(true) before release() never loads; release() while enabled
+  // loads exactly once; repeated release/setEnabled calls never reload;
+  // images()/onReady resolve once, after the load; setEnabled(false) after
+  // loading keeps images() while flipping enabled() false.
+  {
+    let loadCalls = 0;
+    let readyCalls = 0;
+    const deferred = makeDeferred();
+    const art = createDressingArt({
+      load: () => {
+        loadCalls++;
+        return deferred.promise;
+      },
+      onReady: () => {
+        readyCalls++;
+      },
+    });
+
+    art.setEnabled(true);
+    assert.equal(loadCalls, 0, "setEnabled(true) before release() must never load");
+    assert.equal(art.images(), null);
+
+    art.release();
+    assert.equal(loadCalls, 1, "release() while enabled must call load exactly once");
+
+    art.release();
+    art.setEnabled(true);
+    assert.equal(loadCalls, 1, "repeated release/setEnabled calls must never load a second time");
+    assert.equal(art.images(), null, "images() is null until the load resolves");
+    assert.equal(readyCalls, 0);
+
+    deferred.resolve({ set_dungeon_sack: {} });
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.deepEqual(art.images(), { set_dungeon_sack: {} });
+    assert.equal(readyCalls, 1, "onReady is called once after the load resolves");
+
+    art.setEnabled(false);
+    assert.equal(art.enabled(), false);
+    assert.deepEqual(art.images(), { set_dungeon_sack: {} }, "images() keeps the map after disabling");
+  }
+
+  // release() while disabled never loads; a later setEnabled(true) loads once.
+  {
+    let loadCalls = 0;
+    const deferred = makeDeferred();
+    const art = createDressingArt({
+      load: () => {
+        loadCalls++;
+        return deferred.promise;
+      },
+    });
+
+    art.release();
+    assert.equal(loadCalls, 0, "release() while disabled must never load");
+
+    art.setEnabled(true);
+    assert.equal(loadCalls, 1, "a later setEnabled(true) must load exactly once");
+
+    art.setEnabled(true);
+    art.release();
+    assert.equal(loadCalls, 1, "still never a second load");
+  }
+});
+
+test("createDressingBridge: drawLayer no-ops (0 drawn, zero context calls) while disabled or before images arrive; with images it draws visibleProps(propsFor(state)); propsFor memoises per key and never mutates state", () => {
+  const grid = genFloor(2, makeRng(5)).g;
+  const state = { seed: 5, floor: { depth: 2, g: grid, px: 1, py: 1 } };
+
+  {
+    const art = { enabled: () => false, images: () => null };
+    const ctx = createRecordingContext();
+    const bridge = createDressingBridge({ art, drawIcon: drawFeatureIcon });
+    const drawn = bridge.drawLayer(ctx, state, 32, () => true);
+    assert.equal(drawn, 0);
+    assert.equal(ctx.calls.length, 0);
+  }
+
+  {
+    const art = { enabled: () => true, images: () => null };
+    const ctx = createRecordingContext();
+    const bridge = createDressingBridge({ art, drawIcon: drawFeatureIcon });
+    const drawn = bridge.drawLayer(ctx, state, 32, () => true);
+    assert.equal(drawn, 0);
+    assert.equal(ctx.calls.length, 0);
+  }
+
+  {
+    const images = {};
+    for (const name of DRESSING_ICON_NAMES) images[name] = { complete: true, naturalWidth: 144 };
+    const art = { enabled: () => true, images: () => images };
+    const bridge = createDressingBridge({ art, drawIcon: drawFeatureIcon });
+
+    const props1 = bridge.propsFor(state);
+    const props2 = bridge.propsFor(state);
+    assert.equal(props1, props2, "propsFor memoises the SAME array object for the same key");
+
+    const stateAtDepth3 = { seed: 5, floor: { depth: 3, g: genFloor(3, makeRng(5)).g, px: 1, py: 1 } };
+    const props3 = bridge.propsFor(stateAtDepth3);
+    assert.notEqual(props3, props1, "a new depth recomputes placement");
+
+    const before = JSON.stringify(state);
+    const ctx = createRecordingContext();
+    const drawn = bridge.drawLayer(ctx, state, 32, () => true);
+    assert.equal(JSON.stringify(state), before, "drawLayer never mutates state");
+    const expected = visibleProps(props1, { grid, party: { x: 1, y: 1 }, visible: () => true });
+    assert.equal(drawn, expected.length);
+  }
 });

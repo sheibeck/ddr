@@ -291,3 +291,175 @@ export function dressingKey(seed, depth, grid) {
   }
   return `${seed}:${depth}:${cells}`;
 }
+
+// --- Draw-time exclusions, the dimmed layer, lazy-load and the bridge -----
+// (D-10, D-11, D-12, D-13, D-14, D-16)
+
+/** Icon draw scale for a prop (D-13): below the feature layer's 0.75. */
+export const PROP_SCALE = 0.6;
+
+/** Floor-prop opacity (D-11): dim, so encounter icons stay unmistakable. */
+export const FLOOR_PROP_ALPHA = 0.35;
+
+/**
+ * Wall-prop opacity (D-12). DRESS-05's own requirements text says wall props
+ * draw at "full strength" — the 59-CONTEXT.md decision record (D-12) locks
+ * this at ~85% instead (still strong, but never mistaken for full-ink
+ * feature art); the locked decision wins over the looser requirements
+ * phrasing.
+ */
+export const WALL_PROP_ALPHA = 0.85;
+
+/**
+ * visibleProps(props, { grid, party, visible }) — the DRAW-TIME exclusion
+ * filter (DRESS-03, D-10): a placed prop is only ever drawn when its cell
+ * still exists, has been seen, passes the caller's darkness/render-window
+ * predicate (or no predicate was given, which fails open to "visible"), has
+ * no LIVE feature on it (the stairs included — `feat` covers every feature
+ * kind), and isn't the party's current square. This is the ONLY place
+ * placement's determinism (placeDressing reads none of this) meets the
+ * live, mutable run state — see this module's head comment for why that
+ * split is deliberate.
+ */
+export function visibleProps(props, { grid, party, visible } = {}) {
+  if (!Array.isArray(props)) return [];
+  return props.filter((prop) => {
+    const cell = grid && grid[prop.y] && grid[prop.y][prop.x];
+    if (!cell) return false;
+    if (!cell.seen) return false;
+    if (visible && !visible(prop.x, prop.y)) return false;
+    if (cell.feat) return false;
+    if (party && prop.x === party.x && prop.y === party.y) return false;
+    return true;
+  });
+}
+
+/**
+ * drawDressingLayer(ctx, props, { grid, party, visible, images, cell, drawIcon })
+ * — draws every prop `visibleProps` keeps, dim and small, through the
+ * shared `drawIcon` (drawFeatureIcon), below the feature/party layers a
+ * thin call site in mazeworld.html's draw() draws next. Wraps the whole
+ * pass in exactly one save/restore (a try/finally, so a thrown draw call
+ * still restores) — globalAlpha is guaranteed back to whatever it was
+ * before this call once it returns. An image that hasn't decoded yet
+ * (`!img.complete` or a zero `naturalWidth`) is skipped, never drawn.
+ * Returns the count actually drawn.
+ */
+export function drawDressingLayer(ctx, props, { grid, party, visible, images, cell, drawIcon } = {}) {
+  const toDraw = visibleProps(props, { grid, party, visible });
+  let drawn = 0;
+  ctx.save();
+  try {
+    for (const prop of toDraw) {
+      const img = images && images[prop.icon];
+      if (!img || !img.complete || !(img.naturalWidth > 0)) continue;
+      ctx.globalAlpha = prop.kind === "wall" ? WALL_PROP_ALPHA : FLOOR_PROP_ALPHA;
+      drawIcon(ctx, img, prop.x * cell, prop.y * cell, cell, undefined, PROP_SCALE);
+      drawn++;
+    }
+  } finally {
+    ctx.restore();
+  }
+  return drawn;
+}
+
+/**
+ * createDressingArt({ load, onReady }) — the lazy-load controller (D-14,
+ * D-16): the 54 dressing images are loaded AT MOST ONCE, and only once the
+ * caller has BOTH enabled dressing (`setEnabled(true)`) AND released the
+ * loader (`release()`, meant to be called after the shell's first map
+ * paint, so cold start never grows). While disabled, `load` is never
+ * called, no matter how many times `release`/`setEnabled` fire. `load()`'s
+ * resolved value becomes `images()`; `onReady` fires once, after that
+ * resolution (never on a rejection — a failed load just leaves `images()`
+ * null, fail-open, matching every other icon-loading path in this
+ * codebase). `setEnabled(false)` after a successful load simply flips
+ * `enabled()` — the already-loaded map is kept in `images()` (no re-load if
+ * turned back on later, since `requested` stays true).
+ */
+export function createDressingArt({ load, onReady = () => {} } = {}) {
+  let on = false;
+  let released = false;
+  let requested = false;
+  let map = null;
+
+  function maybeLoad() {
+    if (!(on && released && !requested)) return;
+    requested = true;
+    try {
+      Promise.resolve(load())
+        .then((resolved) => {
+          map = resolved;
+          try {
+            onReady();
+          } catch {
+            // onReady is caller code; never let it break the loader.
+          }
+        })
+        .catch(() => {
+          // Fail-open: a rejected load leaves map null, never throws.
+        });
+    } catch {
+      // A synchronously-throwing load() also fails open.
+    }
+  }
+
+  return {
+    setEnabled(v) {
+      on = v === true;
+      maybeLoad();
+    },
+    release() {
+      released = true;
+      maybeLoad();
+    },
+    enabled() {
+      return on;
+    },
+    images() {
+      return map;
+    },
+  };
+}
+
+/**
+ * createDressingBridge({ art, drawIcon }) — the thin factory 59-05 wires
+ * into mazeworld.html's draw() as `window.__mzDressing`. `propsFor(state)`
+ * memoises exactly ONE placement (keyed by `dressingKey`), so repeated
+ * draw() calls on the same floor never re-roll placement, while a genuinely
+ * new floor (a new depth, or a different grid) recomputes on the next call.
+ * `drawLayer(ctx, state, cell, visible)` draws nothing and touches `ctx` not
+ * at all while dressing is disabled, before its images have loaded, or when
+ * `state` has no floor — the three conditions D-16 and D-14 require. Never
+ * throws, and never mutates `state`.
+ */
+export function createDressingBridge({ art, drawIcon } = {}) {
+  let memo = null; // { key, props }
+
+  function propsFor(state) {
+    if (!state || !state.floor) return [];
+    const key = dressingKey(state.seed, state.floor.depth, state.floor.g);
+    if (memo && memo.key === key) return memo.props;
+    const props = placeDressing({ seed: state.seed, depth: state.floor.depth, grid: state.floor.g });
+    memo = { key, props };
+    return props;
+  }
+
+  function drawLayer(ctx, state, cell, visible) {
+    if (!art || !art.enabled()) return 0;
+    const images = art.images();
+    if (!images) return 0;
+    if (!state || !state.floor) return 0;
+    const props = propsFor(state);
+    return drawDressingLayer(ctx, props, {
+      grid: state.floor.g,
+      party: { x: state.floor.px, y: state.floor.py },
+      visible,
+      images,
+      cell,
+      drawIcon,
+    });
+  }
+
+  return { drawLayer, propsFor };
+}

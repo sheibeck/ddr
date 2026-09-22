@@ -65,17 +65,27 @@ export function featureKeyForCell(cell) {
 }
 
 /**
- * preloadIcons(basePath) — loads every FEATURE_ICONS PNG once at boot,
- * fail-open (a missing/broken icon just resolves without drawing, never
- * blocks boot). Browser-only: constructs `Image()`, so callers must only
- * invoke this after DOM/window exist.
+ * loadIconSet(basePath, names, makeImage) — Phase 59 (DRESS-01..05): the ONE
+ * image loader, factored out of `preloadIcons`' own body so the lazy
+ * set-dressing load (D-14, src/browser/dressing.js#createDressingArt) reuses
+ * the exact same fail-open per-image logic instead of a second
+ * implementation. Resolves a `{ name: img }` map once every name has fired
+ * `onload` or `onerror` (fail-open: a missing/broken icon just resolves
+ * without drawing, never blocks the caller). `makeImage` defaults to
+ * `() => new Image()` but is only ever CALLED once this function actually
+ * runs — the default value itself is just a function reference, so
+ * importing this module under `node --test` still constructs zero `Image`s
+ * (mirrors this module's own DOM-free-at-import-time discipline above).
+ * Browser-only in practice: callers must only invoke this after DOM/window
+ * exist (or supply a fake `makeImage` under test, as
+ * test/unit/icons.test.js does).
  */
-export function preloadIcons(basePath) {
+export function loadIconSet(basePath, names, makeImage = () => new Image()) {
   const map = {};
-  const loaded = FEATURE_ICONS.map(
+  const loaded = names.map(
     (name) =>
       new Promise((resolve) => {
-        const img = new Image();
+        const img = makeImage();
         img.decoding = "async";
         img.onload = () => resolve();
         img.onerror = () => resolve(); // fail-open: never blocks boot
@@ -84,6 +94,18 @@ export function preloadIcons(basePath) {
       })
   );
   return Promise.all(loaded).then(() => map);
+}
+
+/**
+ * preloadIcons(basePath) — loads every FEATURE_ICONS PNG once at boot,
+ * fail-open (a missing/broken icon just resolves without drawing, never
+ * blocks boot). Browser-only: constructs `Image()` (via loadIconSet's
+ * default factory), so callers must only invoke this after DOM/window
+ * exist. Delegates to loadIconSet — behaviour is unchanged from before
+ * Phase 59 factored the loader out.
+ */
+export function preloadIcons(basePath) {
+  return loadIconSet(basePath, FEATURE_ICONS);
 }
 
 /**
