@@ -74,3 +74,15 @@ The runs, the "what should be true" text and the note tables are in `docs/DIFFIC
 ## Verdict (fill in — TUNE-09)
 
 > _the user's words, verbatim:_
+
+---
+
+## Verdict — recorded 2026-09-22 (TUNE-09: explicit user deferral)
+
+> **The user's words, verbatim:** "I'm going to defer judgment on the curve for now. It's much better and we'll revisit later after I've had more plays. I want to move on to other milestones."
+
+**Status:** DEFERRED by the user, on a positive reading ("much better"). Not a "tune-again" verdict and not a pass — judgment is postponed until more play time has accumulated on the fitted build (HEAD `9bae7b6`, the APK installed 2026-09-22 02:56).
+
+**What this closes:** TUNE-09's requirement is met by this recorded deferral (the milestone closes on a recorded "tuned" result **or** an explicit user-recorded deferral). Phase 55 completes on that basis; v1.7 closes.
+
+**What stays open:** the four-run DR checklist (section A) and the 25 phase items (sections B–F) are un-run and stay in this file for whenever the user wants them; the v1.5 (140) and v1.6 (26) batches stay open as before. Revisit trigger: the user reports enough plays to judge the curve, or a new tuning pass is stood up.
