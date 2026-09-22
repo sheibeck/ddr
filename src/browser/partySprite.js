@@ -2,9 +2,8 @@
 //
 // Phase 59 (ANIM-01/02/03) — the living party marker's pure presentation
 // core: the idle frame schedule, the step-glide frame schedule, the
-// canvas-lockstep placement math, and the art-fallback choice. (Task 2 of
-// this plan adds a retargetable step-glide controller built on Phase 58's
-// camera glide, on top of the functions below.)
+// canvas-lockstep placement math, the art-fallback choice, and a
+// retargetable step-glide controller built on Phase 58's camera glide.
 //
 // Four rules, per D-01, D-02, D-03 and D-05 (59-CONTEXT.md):
 //
@@ -173,4 +172,235 @@ export function spriteArt({ framesReady, staticReady }) {
   }
   if (staticReady) return "static";
   return "none";
+}
+
+/**
+ * createPartySprite({ now, raf, cancelRaf, reduced, render, durationMs })
+ *
+ * The marker's retargetable step-glide controller (D-03), built on Phase
+ * 58's `createCameraGlide`. Returns `{ stepTo, displayed, pose, frame,
+ * active, finish, cancel, box }` (`box` is `spriteBoxPx` itself).
+ *
+ * Retarget contract (D-03): the CALLER passes the currently displayed
+ * point as `from` on every `stepTo` call (never the previous logical
+ * target) — this is what makes a rapid second step re-aim from wherever
+ * the marker visually is, with no queue and no stutter. `stepTo` starts a
+ * `durationMs` (default `STEP_GLIDE_MS`) ease-out glide, renders `from`
+ * at once in the step pose on frame 1 (order matters: the glide is started
+ * BEFORE that render, so a render that reads `displayed()` mid-call
+ * already sees an active glide, never a stale/self-healed one), advances
+ * the step frame with the glide's own eased progress, and settles to the
+ * idle pose exactly on arrival.
+ *
+ * Self-heal (D-01's lockstep guarantee): `displayed(real)` returns the
+ * in-flight point while a glide heads for `real`; if a glide is heading
+ * somewhere else (a teleport, floor change, new run or load moved the
+ * party without a step), it ends that glide on the very next `displayed`
+ * call and returns `real` — the marker can never drift to a stale square,
+ * with no extra hook anywhere else.
+ *
+ * Reduced motion (D-05): under the injected `reduced()`, `stepTo` lands on
+ * `to` synchronously in the idle pose with exactly one render and nothing
+ * scheduled; the `from` point is never rendered. A live flip to reduced
+ * mid-glide lands the very next scheduled frame on the target (handled by
+ * `createCameraGlide` itself, which reads `reduced()` live on every step).
+ * `finish()` lands an in-flight glide at once (the shell's
+ * `settleAllMotion`).
+ *
+ * Every public method is wrapped so it can never throw into a caller,
+ * including a throwing `render` callback, which ends the glide cleanly
+ * instead of leaving a stranded frame.
+ *
+ * @param {{
+ *   now: () => number,
+ *   raf: (fn: () => void) => any,
+ *   cancelRaf: (id: any) => void,
+ *   reduced: () => boolean,
+ *   render?: () => void,
+ *   durationMs?: number,
+ * }} deps
+ */
+export function createPartySprite({ now, raf, cancelRaf, reduced, render = () => {}, durationMs = STEP_GLIDE_MS }) {
+  const glide = createCameraGlide({ now, raf, cancelRaf, reduced, durationMs });
+
+  /** @type {null | { target: {x:number,y:number}, t0: number }} */
+  let run = null;
+  /** @type {null | {x:number,y:number}} */
+  let current = null;
+  let poseNow = "idle";
+  let frameNow = 0;
+  // True for the exact duration of an onPoint(p) call — i.e. while this
+  // module is executing INSIDE cameraGlide.js's own step() call stack (see
+  // endGlide's doc comment below for why this matters).
+  let inOnPoint = false;
+
+  function samePoint(a, b) {
+    return !!a && !!b && a.x === b.x && a.y === b.y;
+  }
+
+  /**
+   * endGlide(useFinish) — the ONE place this module ever calls
+   * `glide.cancel()`/`glide.finish()`.
+   *
+   * Landed-API adaptation (discovery note, this module's own head comment):
+   * cameraGlide.js's step() (Phase 58, landed, out of this plan's scope to
+   * modify) reads its OWN closed-over `run` variable again immediately
+   * AFTER calling the `apply` callback (`run.frame = raf(step)`, on the
+   * non-landing branch). `apply` is this module's `onPoint`. If `onPoint` —
+   * or anything `onPoint` calls, directly or indirectly (this module's own
+   * `render()` throwing, or `render()` itself reentrantly calling
+   * `displayed()` with a stale point, which is EXACTLY T-59-01's teleport-
+   * mid-glide self-heal path) — calls `glide.cancel()`/`glide.finish()`
+   * synchronously, that nulls cameraGlide's `run` out from under it, and
+   * `step()`'s very next line throws `Cannot set properties of null`.
+   *
+   * While `inOnPoint` is true, this function skips the real glide call
+   * instead. That loses nothing observable: this module's OWN `run` is
+   * always cleared by the caller right after (via `settle`), so every
+   * future `onPoint` tick for the stale glide is already a no-op (its
+   * first line is `if (!run) return;`); the background glide finishes
+   * itself invisibly on its own schedule; and any later `stepTo()`
+   * supersedes it safely regardless, since cameraGlide's own `to()` always
+   * cancels its prior frame before starting a new one.
+   */
+  function endGlide(useFinish) {
+    if (inOnPoint) return;
+    try {
+      if (useFinish) glide.finish();
+      else glide.cancel();
+    } catch {
+      // never throw into the caller.
+    }
+  }
+
+  function settle(callRender) {
+    run = null;
+    current = null;
+    poseNow = "idle";
+    frameNow = 0;
+    if (callRender) {
+      try {
+        render();
+      } catch {
+        // a throwing render must never strand this controller's state.
+      }
+    }
+  }
+
+  function onPoint(p) {
+    if (!run) return;
+    inOnPoint = true;
+    try {
+      current = { x: p.x, y: p.y };
+      if (samePoint(p, run.target)) {
+        settle(true);
+        return;
+      }
+      frameNow = stepFrameAt(now() - run.t0, durationMs);
+      try {
+        render();
+      } catch {
+        endGlide(false);
+        settle(false);
+      }
+    } finally {
+      inOnPoint = false;
+    }
+  }
+
+  function stepTo(from, to) {
+    try {
+      if (!from || !to) return;
+      if (samePoint(from, to)) {
+        endGlide(false);
+        settle(true);
+        return;
+      }
+      run = { target: { x: to.x, y: to.y }, t0: now() };
+      if (reduced()) {
+        // Lands synchronously inside glide.to(); onPoint settles with one
+        // render. The "from" point is deliberately never rendered.
+        glide.to(from, to, onPoint);
+        return;
+      }
+      current = { x: from.x, y: from.y };
+      poseNow = "step";
+      frameNow = 1;
+      // Start the glide FIRST: a render() call below (or by the caller
+      // immediately after) that reads displayed() must already see an
+      // active glide, or it would self-heal the glide it is starting.
+      glide.to(from, to, onPoint);
+      try {
+        render();
+      } catch {
+        endGlide(false);
+        settle(false);
+      }
+    } catch {
+      // never throw into the caller.
+    }
+  }
+
+  function displayed(real) {
+    try {
+      if (run && glide.active() && samePoint(run.target, real)) {
+        return { x: current.x, y: current.y };
+      }
+      if (run) {
+        // Self-heal (T-59-01): the glide is inactive or heading somewhere
+        // other than `real` — end it now. No render here; the caller is
+        // already rendering (it just asked where to draw the marker). See
+        // endGlide's doc comment: this is routinely called reentrantly
+        // from inside an active glide's own render callback (a teleport
+        // detected on the very next in-flight frame), which is exactly why
+        // it must go through endGlide rather than call glide.cancel()
+        // directly.
+        endGlide(false);
+        settle(false);
+        return real;
+      }
+      return real;
+    } catch {
+      return real;
+    }
+  }
+
+  function pose() {
+    return poseNow;
+  }
+
+  function frame() {
+    return frameNow;
+  }
+
+  function active() {
+    return run !== null;
+  }
+
+  function finish() {
+    try {
+      if (run) {
+        endGlide(true);
+      }
+      if (run) {
+        // onPoint above should have already settled; this is a safety net
+        // in case some edge case left `run` set (including endGlide
+        // skipping the real glide.finish() call during reentrancy).
+        settle(true);
+      }
+    } catch {
+      // never throw into the caller.
+    }
+  }
+
+  function cancel() {
+    try {
+      endGlide(false);
+      if (run) settle(true);
+    } catch {
+      // never throw into the caller.
+    }
+  }
+
+  return { stepTo, displayed, pose, frame, active, finish, cancel, box: spriteBoxPx };
 }

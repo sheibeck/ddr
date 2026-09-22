@@ -26,8 +26,10 @@ import {
   snapToDevicePx,
   spriteBoxPx,
   spriteArt,
+  createPartySprite,
 } from "../../src/browser/partySprite.js";
-import { PAN_MS } from "../../src/browser/cameraGlide.js";
+import { PAN_MS, easeOutCubic } from "../../src/browser/cameraGlide.js";
+import { createFakeClock } from "./harness/fakeClock.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -188,6 +190,342 @@ test("spriteArt: any false frame (or a wrong-length array) falls back to 'static
 
   assert.equal(spriteArt({ framesReady: null, staticReady: true }), "static");
   assert.equal(spriteArt({ framesReady: undefined, staticReady: false }), "none");
+});
+
+// ─── createPartySprite: Task 2 ─────────────────────────────────────────────
+//
+// Driven by createFakeClock (test/unit/harness/fakeClock.js, landed 58-03).
+// makeController() wires a fresh fake clock + a render spy that records the
+// controller's own state (and, when `extra` is given, a caller-chosen probe
+// such as `displayed(to).x`) on every render call.
+
+function makeController({ reduced = () => false, durationMs = 200, extra = () => undefined } = {}) {
+  const clock = createFakeClock();
+  const renderLog = [];
+  let controller;
+  const render = () => {
+    renderLog.push({
+      t: clock.now(),
+      pose: controller.pose(),
+      frame: controller.frame(),
+      active: controller.active(),
+      extra: extra(controller),
+    });
+  };
+  controller = createPartySprite({
+    now: clock.now,
+    raf: clock.requestAnimationFrame,
+    cancelRaf: clock.cancelAnimationFrame,
+    reduced,
+    render,
+    durationMs,
+  });
+  return { clock, controller, renderLog };
+}
+
+test("createPartySprite: stepTo() (reduced false) renders exactly once synchronously; at that moment displayed(to) reads the 'from' point, pose 'step', frame 1, active true", () => {
+  const from = { x: 1.5, y: 1.5 };
+  const to = { x: 2.5, y: 1.5 };
+  const { controller, renderLog } = makeController({ reduced: () => false });
+  controller.stepTo(from, to);
+  assert.equal(renderLog.length, 1);
+  assert.deepEqual(controller.displayed(to), from);
+  assert.equal(controller.pose(), "step");
+  assert.equal(controller.frame(), 1);
+  assert.equal(controller.active(), true);
+});
+
+test("createPartySprite: advancing the clock moves displayed().x monotonically, strictly between 'from' and 'to' before landing, and frame() matches stepFrameAt at every applied frame", () => {
+  const from = { x: 1.5, y: 1.5 };
+  const to = { x: 2.5, y: 1.5 };
+  const { clock, controller, renderLog } = makeController({
+    reduced: () => false,
+    extra: (c) => c.displayed(to).x,
+  });
+  controller.stepTo(from, to);
+  renderLog.length = 0; // drop the synchronous stepTo render
+
+  clock.advance(200);
+
+  assert.ok(renderLog.length > 0);
+  for (let i = 1; i < renderLog.length; i++) {
+    assert.ok(renderLog[i].extra >= renderLog[i - 1].extra, `render ${i} moved backward: ${renderLog[i].extra} < ${renderLog[i - 1].extra}`);
+  }
+  for (let i = 0; i < renderLog.length - 1; i++) {
+    assert.ok(
+      renderLog[i].extra > 1.5 && renderLog[i].extra < 2.5,
+      `intermediate render ${i} not strictly between bounds: ${renderLog[i].extra}`,
+    );
+  }
+  // frame() at every render (t0 = 0, since stepTo ran at clock time 0)
+  for (const entry of renderLog) {
+    const expectedFrame = entry === renderLog[renderLog.length - 1] ? 0 : stepFrameAt(entry.t, 200, 4);
+    assert.equal(entry.frame, expectedFrame, `t=${entry.t}: expected frame ${expectedFrame}, got ${entry.frame}`);
+  }
+});
+
+test("createPartySprite: the first frame at or after 200ms lands displayed(to) exactly on target, active false, idle, frame 0, one render, nothing pending", () => {
+  const from = { x: 1.5, y: 1.5 };
+  const to = { x: 2.5, y: 1.5 };
+  const { clock, controller, renderLog } = makeController({ reduced: () => false });
+  controller.stepTo(from, to);
+  renderLog.length = 0;
+
+  clock.advance(200);
+
+  assert.deepEqual(controller.displayed(to), to);
+  assert.equal(controller.active(), false);
+  assert.equal(controller.pose(), "idle");
+  assert.equal(controller.frame(), 0);
+  assert.equal(renderLog[renderLog.length - 1].pose, "idle");
+  assert.equal(clock.pending(), 0);
+});
+
+test("createPartySprite: retargeting mid-flight re-aims from the displayed point, never jumps backward, resets frame to 1, and lands exactly on the new target 200ms after the retarget", () => {
+  const A = { x: 1.5, y: 1.5 };
+  const B = { x: 2.5, y: 1.5 };
+  const C = { x: 4.5, y: 1.5 };
+  const { clock, controller, renderLog } = makeController({ reduced: () => false });
+  controller.stepTo(A, B);
+  clock.advance(100);
+  const midB = controller.displayed(B);
+  assert.ok(midB.x > A.x && midB.x < B.x);
+
+  renderLog.length = 0;
+  controller.stepTo(midB, C);
+  assert.equal(renderLog.length, 1); // the synchronous retarget render
+  const afterRetarget = controller.displayed(C);
+  assert.ok(afterRetarget.x >= midB.x, "retarget must never jump backward");
+  assert.equal(controller.frame(), 1);
+
+  clock.advance(200);
+  assert.deepEqual(controller.displayed(C), C);
+  assert.equal(controller.pose(), "idle");
+});
+
+test("createPartySprite: the eased progress matches cameraGlide.js's easeOutCubic exactly at every applied frame (lockstep with the camera)", () => {
+  const from = { x: 0, y: 0 };
+  const to = { x: 10, y: 0 };
+  const { clock, controller, renderLog } = makeController({
+    reduced: () => false,
+    extra: (c) => c.displayed(to).x,
+  });
+  controller.stepTo(from, to);
+  renderLog.length = 0;
+
+  clock.advance(200);
+
+  for (const entry of renderLog) {
+    const expectedRatio = easeOutCubic(entry.t / 200);
+    const actualRatio = (entry.extra - from.x) / (to.x - from.x);
+    assert.ok(
+      Math.abs(actualRatio - expectedRatio) < 1e-12,
+      `t=${entry.t}: ratio ${actualRatio} !== easeOutCubic(${entry.t}/200)=${expectedRatio}`,
+    );
+  }
+});
+
+test("createPartySprite: self-heal — displayed(D) with D !== B ends the in-flight glide, active() false, idle, and no more renders fire on further advance", () => {
+  const A = { x: 1.5, y: 1.5 };
+  const B = { x: 2.5, y: 1.5 };
+  const D = { x: 9, y: 9 };
+  const { clock, controller, renderLog } = makeController({ reduced: () => false });
+  controller.stepTo(A, B);
+  clock.advance(64);
+  renderLog.length = 0;
+
+  const result = controller.displayed(D);
+  assert.deepEqual(result, D);
+  assert.equal(controller.active(), false);
+  assert.equal(controller.pose(), "idle");
+  assert.equal(renderLog.length, 0, "self-heal must not itself call render");
+
+  clock.advance(400);
+  assert.equal(renderLog.length, 0, "no more renders should fire after self-heal cancelled the glide");
+});
+
+test("createPartySprite: stepTo(p, p) (the same point) lands at once — render once, idle, nothing scheduled", () => {
+  const { clock, controller, renderLog } = makeController({ reduced: () => false });
+  const p = { x: 3, y: 3 };
+  controller.stepTo(p, p);
+  assert.equal(renderLog.length, 1);
+  assert.equal(controller.pose(), "idle");
+  assert.equal(controller.active(), false);
+  assert.equal(clock.pending(), 0);
+});
+
+test("createPartySprite: reduced true — stepTo lands synchronously with one render, displayed(to) === to, idle, frame 0, nothing pending; the 'from' point is never rendered", () => {
+  const from = { x: 1, y: 1 };
+  const to = { x: 5, y: 1 };
+  const { clock, controller, renderLog } = makeController({
+    reduced: () => true,
+    extra: (c) => c.displayed(to).x,
+  });
+  controller.stepTo(from, to);
+  assert.equal(renderLog.length, 1);
+  assert.equal(renderLog[0].extra, to.x, "the 'from' point must never be the rendered value");
+  assert.deepEqual(controller.displayed(to), to);
+  assert.equal(controller.pose(), "idle");
+  assert.equal(controller.frame(), 0);
+  assert.equal(clock.pending(), 0);
+});
+
+test("createPartySprite: reduced flipping true mid-flight lands the very next frame exactly on the target, idle", () => {
+  const from = { x: 0, y: 0 };
+  const to = { x: 10, y: 0 };
+  let reducedFlag = false;
+  const { clock, controller, renderLog } = makeController({ reduced: () => reducedFlag });
+  controller.stepTo(from, to);
+  clock.advance(32);
+  assert.ok(controller.displayed(to).x < 10);
+
+  reducedFlag = true;
+  renderLog.length = 0;
+  clock.advance(16);
+
+  assert.deepEqual(controller.displayed(to), to);
+  assert.equal(controller.pose(), "idle");
+  assert.equal(controller.active(), false);
+  assert.equal(clock.pending(), 0);
+});
+
+test("createPartySprite: finish() mid-flight lands on the target once, synchronously, idle, nothing pending", () => {
+  const from = { x: 0, y: 0 };
+  const to = { x: 10, y: 0 };
+  const { clock, controller, renderLog } = makeController({ reduced: () => false });
+  controller.stepTo(from, to);
+  clock.advance(48);
+  renderLog.length = 0;
+
+  controller.finish();
+
+  assert.equal(renderLog.length, 1);
+  assert.deepEqual(controller.displayed(to), to);
+  assert.equal(controller.pose(), "idle");
+  assert.equal(controller.active(), false);
+  assert.equal(clock.pending(), 0);
+});
+
+test("createPartySprite: cancel() mid-flight ends the glide idle with one render, and a later displayed(to) returns to", () => {
+  const from = { x: 0, y: 0 };
+  const to = { x: 10, y: 0 };
+  const { clock, controller, renderLog } = makeController({ reduced: () => false });
+  controller.stepTo(from, to);
+  clock.advance(48);
+  renderLog.length = 0;
+
+  controller.cancel();
+
+  assert.equal(renderLog.length, 1);
+  assert.equal(controller.pose(), "idle");
+  assert.equal(controller.active(), false);
+  assert.deepEqual(controller.displayed(to), to);
+});
+
+test("createPartySprite: displayed(real) with no glide ever started returns real and never calls render; box is spriteBoxPx itself", () => {
+  const { controller, renderLog } = makeController({ reduced: () => false });
+  const real = { x: 7, y: 2 };
+  assert.deepEqual(controller.displayed(real), real);
+  assert.equal(renderLog.length, 0);
+  assert.equal(controller.box, spriteBoxPx);
+});
+
+test("createPartySprite: a throwing render callback at stepTo() ends the glide cleanly (no frame left pending) and never throws out of stepTo", () => {
+  const from = { x: 0, y: 0 };
+  const to = { x: 10, y: 0 };
+  const clock = createFakeClock();
+  const controller = createPartySprite({
+    now: clock.now,
+    raf: clock.requestAnimationFrame,
+    cancelRaf: clock.cancelAnimationFrame,
+    reduced: () => false,
+    render: () => {
+      throw new Error("boom");
+    },
+  });
+  assert.doesNotThrow(() => controller.stepTo(from, to));
+  assert.equal(clock.pending(), 0, "no frame left pending after a throwing render");
+  assert.equal(controller.active(), false);
+});
+
+test("createPartySprite: a throwing render callback during an in-flight frame update also ends the glide cleanly and never throws (landed-API note below)", () => {
+  // Landed-API note: cameraGlide.js's step() (Phase 58) reads its own
+  // closed-over `run` again immediately AFTER this module's onPoint/apply
+  // callback returns. A synchronous glide.cancel() from WITHIN that
+  // callback would null cameraGlide's `run` out from under it and crash on
+  // the very next line — so this controller intentionally does NOT cancel
+  // the underlying glide when a throw (or a reentrant self-heal) is
+  // detected mid-callback; it only clears its OWN state, which makes every
+  // future onPoint tick a no-op. The background glide therefore keeps
+  // ticking harmlessly (clock.pending() > 0) until it lands naturally on
+  // its own schedule — this controller is already inert by then.
+  const from = { x: 0, y: 0 };
+  const to = { x: 10, y: 0 };
+  const clock = createFakeClock();
+  let callCount = 0;
+  let renderCallsAfterThrow = 0;
+  const controller = createPartySprite({
+    now: clock.now,
+    raf: clock.requestAnimationFrame,
+    cancelRaf: clock.cancelAnimationFrame,
+    reduced: () => false,
+    render: () => {
+      callCount++;
+      if (callCount > 1) {
+        renderCallsAfterThrow++;
+        throw new Error("boom");
+      }
+    },
+  });
+  controller.stepTo(from, to);
+  assert.doesNotThrow(() => clock.advance(16));
+  assert.equal(controller.active(), false);
+  assert.equal(controller.pose(), "idle");
+  assert.equal(renderCallsAfterThrow, 1, "the throwing render fires exactly once, never again");
+
+  // The background glide is still silently ticking (this controller no-ops
+  // it); it never throws, and eventually lands and stops on its own.
+  assert.doesNotThrow(() => clock.advance(400));
+  assert.equal(clock.pending(), 0, "the stale glide lands naturally and clears its own pending frame");
+  assert.equal(renderCallsAfterThrow, 1, "no further render calls after the controller settled");
+});
+
+test("createPartySprite: self-heal reentrant from within an active glide's own render callback (T-59-01: a teleport detected on the very next in-flight frame) never crashes cameraGlide.js's step()", () => {
+  const A = { x: 1.5, y: 1.5 };
+  const B = { x: 2.5, y: 1.5 };
+  const teleportedTo = { x: 9, y: 9 };
+  const clock = createFakeClock();
+  let teleported = false;
+  let selfHealResult = null;
+  let controller;
+  const render = () => {
+    // Simulates the shell's real render(): on the SECOND render (the first
+    // in-flight frame after stepTo's own synchronous one), pretend a
+    // teleport just moved the party to `teleportedTo` without a matching
+    // stepTo() call, and read displayed() for it right here — reentrant,
+    // from inside onPoint's own call stack, exactly like T-59-01 describes.
+    if (teleported) {
+      selfHealResult = controller.displayed(teleportedTo);
+      teleported = false;
+    }
+  };
+  controller = createPartySprite({
+    now: clock.now,
+    raf: clock.requestAnimationFrame,
+    cancelRaf: clock.cancelAnimationFrame,
+    reduced: () => false,
+    render,
+  });
+  controller.stepTo(A, B); // synchronous render #1 (teleported still false)
+  teleported = true;
+  assert.doesNotThrow(() => clock.advance(16)); // render #2 self-heals reentrantly
+  assert.deepEqual(selfHealResult, teleportedTo);
+  assert.equal(controller.active(), false);
+  assert.equal(controller.pose(), "idle");
+
+  // The stale glide (still silently ticking toward B) never crashes on
+  // later frames — `teleported` is already false, so render() is a no-op.
+  assert.doesNotThrow(() => clock.advance(400));
 });
 
 // ─── node check (acceptance criterion) ──────────────────────────────────────
