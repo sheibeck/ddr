@@ -215,6 +215,22 @@ function copySplash() {
   step("copied assets/ddr_splash.png into www/assets/ddr_splash.png");
 }
 
+// Phase 56 (AUD-06): the 30 delivered one-shot sound clips, whole-directory
+// copied at build time — mirrors copyIcons() exactly (throw loudly if the
+// source is missing, no per-file allowlist/filter/transcode, so a clip added
+// to sfx/ later ships without a build change). This is what makes AUD-06's
+// "first launch after install with the phone in airplane mode plays every
+// clip" guarantee true: nothing in the audio path is ever fetched at
+// runtime, only copied here at build time.
+function copySfx() {
+  const src = path.join(ROOT, "sfx");
+  if (!existsSync(src)) {
+    throw new Error(`${src} does not exist — expected the 30 delivered one-shot sfx/*.mp3 clips (see src/browser/sfx.js)`);
+  }
+  cpSync(src, path.join(WWW, "sfx"), { recursive: true });
+  step("copied sfx/ into www/sfx/");
+}
+
 function vendorCapacitorPackages() {
   const imports = {};
   for (const pkg of CAPACITOR_PACKAGES) {
@@ -298,6 +314,7 @@ function main() {
   copyFonts();
   copyIcons();
   copySplash();
+  copySfx();
   const importMap = vendorCapacitorPackages();
   writeIndexHtml(importMap);
   step("done");
