@@ -224,7 +224,10 @@ export const BRIDGE = Object.freeze({
   }),
   __mzRailVM: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)"]),
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)",
+      "mazeworld.html (classic: renderRail's auto-clear timer — holdForCard; the guarded #mw-rail body-tap dismiss handler — dismissKind)",
+    ]),
     purpose: "Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time.",
   }),
   __mzRations: Object.freeze({

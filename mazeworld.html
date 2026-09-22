@@ -2406,7 +2406,7 @@ function paintConditions(c) {
       btn.appendChild(d);
     }
     host.appendChild(btn);
-    guardTap(btn, () => window.mzRailLine?.(label.toUpperCase(), explainCondition(cn, label), "info", 4200, "·"));
+    guardTap(btn, () => window.mzRailLine?.(label.toUpperCase(), explainCondition(cn, label), "info", 8400, "·"));
   }
   // Key-gated: only re-arm when the chip SET actually changed, not on every
   // repaint after a step — armEncounterButtons() is cheap but pointless
@@ -3639,6 +3639,12 @@ function renderEncounter() {
 // re-arm the auto-clear.
 let lastRailKeyShown = "";
 let railTimer = null;
+// Phase 57 (LAYOUT-02): the rail's own arm-window stamp — set in
+// renderRail()'s isNew branch (below), read by the guarded #mw-rail
+// body-tap dismiss handler (defined next to window.mzRailPulse further
+// down) via window.__mzInputGuards.isArmed(railShownAt, Date.now()), so the
+// SAME gesture that raised a card can never also dismiss it.
+let railShownAt = 0;
 
 // railButtons(host, buttons): the ONE generic action-row builder every rail
 // decision (joiner/find/climb) and every future rail action reuses — the
@@ -3845,6 +3851,9 @@ function renderRail() {
   const isNew = key !== lastRailKeyShown;
   if (isNew) {
     lastRailKeyShown = key;
+    // Phase 57 (LAYOUT-02): restart the arm window on every fresh card —
+    // the gesture that produced this render can never also dismiss it.
+    railShownAt = Date.now();
     if (buttons.length) armEncounterButtons();
     railEl.classList.remove("mw-rail-new");
     void railEl.offsetWidth;
@@ -3853,10 +3862,14 @@ function renderRail() {
     clearTimeout(railTimer);
     railTimer = null;
     if (!idle && !buttons.length && rail.card) {
+      // Phase 57 (LAYOUT-03): the hold is now line-scaled and bounded —
+      // routed through the bridged holdForCard, not rail.card.hold direct,
+      // so the per-line scaling actually reaches the screen. Falls back to
+      // the doubled default (8400) only if the bridge itself is missing.
       railTimer = setTimeout(() => {
         window.__mzRail = vm.clear(window.__mzRail);
         renderRail();
-      }, rail.card.hold || 4200);
+      }, vm.holdForCard ? vm.holdForCard(rail.card) : 8400);
     }
   }
 }
@@ -3885,6 +3898,55 @@ function railPulse() {
 
 window.renderRail = renderRail;
 window.mzRailPulse = railPulse;
+
+// Phase 57 (LAYOUT-02) — the rail's own guarded body-tap dismiss handler,
+// wired exactly once (a one-time element listener, like
+// initMazeViewportControls' pointerdown binding below, not a per-render
+// rebuild). Four ordered checks, each returning immediately on a match:
+//   1. The tap's target resolves to a rail action BUTTON (.mw-rail-btn) —
+//      return and let the button's own guardTap-wired onclick run; a tap on
+//      a button is never treated as a body tap.
+//   2. The tap landed inside the arm window the CURRENT card opened with
+//      (isArmed(railShownAt, now)) — the gesture that caused a card can
+//      never also dismiss it.
+//   3. The card classifies as locked (railLocked() true, OR it carries a
+//      live action row) — railPulse() and return. The card stays; Phase 35
+//      ruling 3's buttons remain the ONLY way out of a decision card, and
+//      this handler must never become a second exit.
+//   4. Otherwise: clear the auto-clear timer, clear the rail view-model,
+//      re-render.
+// NOT wired through guardTap (the classic script's generic decision-button
+// wrapper, above): guardTap stamps aria-disabled="true" on its OWN target,
+// and the arm sweep that clears that attribute (armEncounterButtons) uses a
+// DESCENDANT selector (#mw-rail [aria-disabled="true"]) that would never
+// reach an attribute placed on #mw-rail itself — the attribute would stick
+// forever. guardTap also gates on the SHARED encRenderedAt stamp, which for
+// a no-button card is whatever an older encounter-panel render left behind
+// — exactly the wrong guard for exactly the cards this handler serves. This
+// handler instead reuses the SAME isArmed(...) predicate guardTap is built
+// on, against railShownAt, a stamp this plan adds for the rail alone.
+// Structural note: #mw-rail is a direct child of #mw-stage (a sibling of
+// .mw-screens), never a descendant of #mw-maze-viewport — see the rail's
+// own markup comment and initMazeViewportControls' pointerdown binding
+// further down, which binds to the viewport element ALONE. A rail tap
+// therefore has no path to tapStep() — a structural guarantee, not a
+// stopPropagation hope.
+document.getElementById("mw-rail").onclick = (e) => {
+  const target = e && e.target;
+  const btnTarget = target && typeof target.closest === "function" ? target.closest(".mw-rail-btn") : null;
+  if (btnTarget) return;
+  if (!window.__mzInputGuards || !window.__mzInputGuards.isArmed(railShownAt, Date.now())) return;
+  const railVM = window.__mzRailVM;
+  if (!railVM || typeof railVM.dismissKind !== "function") return;
+  const actionsEl = document.getElementById("mw-rail-actions");
+  const buttonCount = actionsEl ? actionsEl.children.length : 0;
+  const kind = railVM.dismissKind(railLocked(), buttonCount);
+  if (kind === "locked") { railPulse(); return; }
+  clearTimeout(railTimer);
+  railTimer = null;
+  window.__mzRail = railVM.clear(window.__mzRail);
+  renderRail();
+};
 
 // Phase 44 (DEAD-01/DEAD-03): the classic run-save persistence (save()/
 // load()/SAVE_KEY) and the classic cold-boot character roll (the classic
@@ -4088,8 +4150,8 @@ function tapStep(clientX, clientY) {
   const isOpen = (x, y) => !!(g[y] && g[y][x] && (ethereal || !g[y][x].wall));
   const res = window.__mzTapStep.resolveStep({ x: px, y: py }, cell, isOpen);
   const copy = window.__mzRailVM.copy;
-  if (res.kind === "here") { window.mzRailLine?.(copy.here.title, copy.here.line, "dull", 2200); return; }
-  if (res.kind === "blocked") { window.mzRailLine?.(copy.noWay.title, copy.noWay.line, "dull", 2400); return; }
+  if (res.kind === "here") { window.mzRailLine?.(copy.here.title, copy.here.line, "dull", 4400); return; }
+  if (res.kind === "blocked") { window.mzRailLine?.(copy.noWay.title, copy.noWay.line, "dull", 4800); return; }
   // window.move IS the module's engineMove bridge — the classic move()
   // no longer exists, same as the keyboard path below; the engine's own
   // wall/one-way/bounds checks still run.
@@ -4329,7 +4391,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // fightLog.js, folding the same linesForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
   // destinations — rail or fight log").
-  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, wornReconcileCard, abilityPoolCard } from "./src/browser/rail.js";
+  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, wornReconcileCard, abilityPoolCard, holdForCard, railDismissKind } from "./src/browser/rail.js";
   // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
   // view-models and the four-action-grid/submenu view-model, bridged onto
   // window.__mzCombatVM below for the classic renderEncounter to consume.
@@ -4567,7 +4629,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // pending) — NEVER a field on S/state, because serializeRun spreads S
   // wholesale and this is purely "what's currently on screen" (same rule as
   // window.__mzFightEnd/__mzCombatMenu).
-  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY };
+  // Phase 57 (LAYOUT-02/03): holdForCard/dismissKind join this SAME bridge
+  // object — no new window.__mz* name, so bridge-registry.test.js's
+  // set-equality is untouched. renderRail()'s auto-clear timer reads
+  // holdForCard; the guarded #mw-rail body-tap handler (classic script,
+  // next to window.mzRailPulse) reads dismissKind.
+  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY, holdForCard, dismissKind: railDismissKind };
   window.__mzRail = emptyRail();
   // Phase 35 (MAP-05, decision 5) — the stair-down gate's own presentation
   // flag: { dir } while THE STAIR DOWN overlay is up, else null. Never a
@@ -5717,7 +5784,7 @@ window.__mzClassicBoot = async function classicBoot() {
         },
         showConfirmQuit: () => {
           window.logLine(`<span class="beat">Press back again to abandon this delve.</span>`);
-          window.mzRailLine?.(RAIL_COPY.quit.title, RAIL_COPY.quit.line, "dull", 4200);
+          window.mzRailLine?.(RAIL_COPY.quit.title, RAIL_COPY.quit.line, "dull", 8400);
         },
       }),
     }).catch(() => {
