@@ -52,6 +52,16 @@ export const BRIDGE = Object.freeze({
     ]),
     purpose: "Bridges the pure bag-capacity readout (used/slots, full) so the Gear tab and every loot/find/store surface agree with the engine's real cap.",
   }),
+  __mzCameraGlide: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: keepPartyInView — the glided keep-in-view nudge)",
+      "mazeworld.html (classic: glideCenterMap — the CENTRE row of the ☰ menu)",
+      "mazeworld.html (classic: anchorCamOnParty — cancels before a snap or a pinch frame)",
+      "mazeworld.html (classic: the viewport's pointerdown handler — cancels so the finger wins)",
+    ]),
+    purpose: "Bridges the pure src/browser/cameraGlide.js retargetable ease-out tween (Phase 58, MOTION-01) so the classic camera code eases `cam` without a second copy of the tween math.",
+  }),
   __mzCanvasSizing: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: fit — canvas backing size + cell size for text scale)"]),

@@ -4680,6 +4680,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // can call them without an ES `import` (see this module's own doc comment
   // on why window.move/window.__mzState use the same bridge pattern).
   import { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis } from "./src/browser/controls.js";
+  // Phase 58 (MOTION-01/05) — the live reduced-motion predicate/subscription
+  // and the retargetable ease-out camera tween, bridged below (beside
+  // window.__mzControls) so the classic keepPartyInView/glideCenterMap/
+  // anchorCamOnParty/pointerdown can ease `cam` without a second copy of
+  // the math.
+  import { prefersReducedMotion, onReducedMotionChange } from "./src/browser/motion.js";
+  import { createCameraGlide } from "./src/browser/cameraGlide.js";
   // Phase 35 (MAP-02) — the tap-to-step direction resolver + hold-inspect
   // cards (Plan 01); bridged beside window.__mzControls below for the
   // classic script's tapStep()/inspectAt() to consume.
@@ -5100,6 +5107,26 @@ window.__mzClassicBoot = async function classicBoot() {
   // first time — no first-paint pop, fail-open per icons.js's own contract
   // (a missing/broken icon just resolves without drawing).
   window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis };
+  // Phase 58 (MOTION-01) — the map camera's ~200ms ease-out tween (D-04).
+  // The classic keepPartyInView (the glided keep-in-view nudge),
+  // glideCenterMap (the CENTRE row), anchorCamOnParty (every snap and
+  // pinch frame) and the viewport's pointerdown handler (the finger wins)
+  // all read this bridge at call time; drag and pinch never call into it.
+  window.__mzCameraGlide = createCameraGlide({
+    now: () => performance.now(),
+    raf: (fn) => requestAnimationFrame(fn),
+    cancelRaf: (id) => cancelAnimationFrame(id),
+    reduced: () => prefersReducedMotion(window),
+  });
+  // Phase 58 (MOTION-05) — the ONE mid-session settle point: every
+  // in-flight Phase 58 effect lands its end state here the instant reduced
+  // motion turns on mid-session. Plans 58-04..58-06 each add their own
+  // effect's settle call to this function's body; 58-07's audit asserts it
+  // covers all four effects.
+  function settleAllMotion() {
+    window.__mzCameraGlide?.finish?.();
+  }
+  onReducedMotionChange(window, (reduced) => { if (reduced) settleAllMotion(); });
   // Phase 35 (MAP-02) — tapStep()/inspectAt() (classic script) read the
   // dominant-axis step resolver and hold-inspect cards through this bridge.
   window.__mzTapStep = { resolveStep, inspectCell, HOLD_MS, TAP_MAX_TRAVEL_PX, DIR_VECTORS };
