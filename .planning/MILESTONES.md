@@ -1,5 +1,34 @@
 # Milestones
 
+## v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve (Code-complete: 2026-09-22; device UAT batch deferred by the user)
+
+**Closeout type:** override_closeout (15/15 requirements complete, 6/6 phases `passed`, audit `tech_debt` with zero blockers) — run autonomously under the deferred-UAT protocol. Phase 55 is a zero-plan device round: its VERIFICATION reads `passed` on the user's explicit recorded deferral of the curve verdict (TUNE-09's own stated alternative), but the manager projection cannot mark a plan-less phase `implementation_complete` — hence override, not verified, closeout.
+**Phases completed:** 6 phases, 18 plans · **Timeline:** 2026-09-20 → 2026-09-22 (131 commits) · **Tests:** 3,315 → 3,479 green; parity master `a1f4d0dc…` untouched, every fixture mover measured and declared.
+**Ratified during the run:** verification agents off (orchestrator-authored VERIFICATION.md per phase); USER RULING D — the floor-range ladder abandoned mid-phase-54 for a global difficulty model (dungeon-wide dials, foe level from depth, a round-damage ceiling); RULINGS E/F/G — fit budget 40, checkpointed blocks (stop on a failure pattern, adjust, restart), the Table-4 HP-dot compounding fixed as an engine adjustment; the 65 remaining damage-curve cells accepted as curve height, not cliffs, each with a written disposition; the tier-3/5 roster kept intact under the round-damage ceiling rather than nerfed.
+**Balance verdict (BAND-03):** the fit reached PASS at evaluation #13 — solo 200 seeds, death floor p50 4 → **7**, p90 6 → **12**, reach ≥ 5 33 % → **80.5 %**; all floors 1–12 inside their Ruling C band on the 1,000-seed tail, floors 13–20 within ~2 points of the curve. **Recorded miss:** reach-20 1.5 % vs the 3–5 % band — one `FOE_LEVEL.perDepth` notch is the lever if a later round wants it.
+
+**Key accomplishments:**
+
+- **Character roller fix (Phase 50)** — the reels and the Hero tab now read one `rollerPendingState`: `src/browser/roller.js` with a monotonic roll token that drops a superseded resolution, a serialized `startNewRun()` chain and an inert CTA until reveal; `tools/roller-repro.mjs` (dependency-free headless-Chrome CDP driver) records BEFORE/AFTER 4/4 matched. Shell-only — engine, content and fixtures diff-empty.
+- **Initiative once per combat (Phase 51)** — `resolveInitiative` fires once from `fight()`; the per-round re-roll is deleted, so a foe can never take two turns back to back. Narrated exactly once per fight in the Oracle and the fight log through a shared `initiativeVerdictText`. Three measured fixtures declared and regenerated — two of them now end **alive**, which is the bug's shape made visible.
+- **Foe cadence & damage curve (Phase 52)** — an ability turn provably contains zero ordinary swings (the reported "two hits plus a bolt" was Phase 51's double turn); a foe crit doubles the dice, not the `lvl² + bonus + dice` sum, and Herman's flat 25 became `strikesAs: 5` — `critMax` 82/100 → 37/37. `tools/cadence-audit.mjs` and `tools/damage-curve-audit.mjs` are standing gates; flagged cells 116 → 65, each surviving one ruled on in `content/BESTIARY-REBALANCE.md`.
+- **Joiner level cap (Phase 53)** — a Joiner met on floor N is at most level N, in one line with zero added draws, byte-identical narration and payload shapes, and a **measured MOVED SET of zero** proved three ways.
+- **Four-band retune (Phase 54)** — `engine/difficulty.js` rebuilt as a global model (foe level `0.9 + 0.29·d`, `FOE_HIT_SCALE 0.6 + 0.01·d`, `FOE_HP_SCALE 0.9`, hero HP ×1.25, regen 0.25/floor, loot 0.8) fitted by a new `tools/fit-difficulty.mjs` against a fair bot; floor 1 stays parity-exact; the tier-3/5 roster (Herman, Drarl, Vampire, Djinni, Drake) **stays, capped by `ROUND_DAMAGE_CEILING 0.5`**, with zero bestiary dice edits; one-and-done climbs landed alongside; the new `floorFeatureShift` record kind declared across 17 fixture holders.
+- **Human DR round (Phase 55)** — a debug APK built from `9bae7b6` and driven on the Pixel 7; the four-run checklist and 25 phase items were presented and the user recorded a verbatim deferral: *"I'm going to defer judgment on the curve for now. It's much better and we'll revisit later after I've had more plays."*
+
+### Known Gaps (carried forward)
+
+| Item | Gap | Where it lands |
+|------|-----|----------------|
+| `docs/UAT-v1.7.md` | Four-run DR bar + 25 phase checks, presented but un-run | Next device sitting — with the v1.6 (26) and v1.5 (140) batches |
+| reach-20 | 1.5 % vs the 3–5 % band (1,000-seed tail) | One `FOE_LEVEL.perDepth` notch, a future tuning round |
+| 17 pending todos | Device-session UI/engine bugs captured 2026-09-21/22 on the identity build | ROADMAP Backlog 999.4–999.7 |
+| `npm run boot:check` | Environment-blocked on this machine (not a code regression) | Migrate to CDP or re-run in a clean session |
+
+**Archive:** `.planning/milestones/v1.7-ROADMAP.md`, `.planning/milestones/v1.7-REQUIREMENTS.md`, `.planning/milestones/v1.7-MILESTONE-AUDIT.md`, `.planning/milestones/v1.7-phases/`
+
+---
+
 ## v1.6 Shell Debt & Dead Code (Code-complete: 2026-09-20; device UAT batch pending)
 
 **Closeout type:** verified closeout (19/19 requirements complete, 6/6 phases `passed`, audit `tech_debt` with zero blockers) — run autonomously under the deferred-UAT protocol; Phase 49's three Pixel 7 rounds were the only device pauses. The 26-item v1.6 UAT batch (`docs/UAT-v1.6.md`) and the never-run 140-item v1.5 batch are open on APK `c0cdbae`; the v1.0-era quick-task stubs, four deferred todos and one dormant seed were re-acknowledged (STATE.md Deferred Items).
