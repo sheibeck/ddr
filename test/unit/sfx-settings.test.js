@@ -247,18 +247,25 @@ const htmlRaw = fs.readFileSync(HTML_PATH, "utf8");
 const htmlStripped = stripHtml(htmlRaw);
 
 /**
- * extractFunctionBody(source, signatureRe) — finds `signatureRe`, then
- * brace-counts from its first `{` to the matching `}`, returning the
- * substring in between (inclusive). Used only against mazeworld.html's
- * module script, whose applySettings/dispatchWithNarration bodies contain
- * no string literal with an unbalanced brace character, so a plain counter
- * is sufficient here (not a general-purpose JS parser).
+ * extractFunctionBody(source, signatureRe) — finds `signatureRe` (which
+ * must itself end with the function's own opening `{`, as every call site
+ * below does), then brace-counts from THAT brace to the matching `}`,
+ * returning the substring in between (inclusive). Used only against
+ * mazeworld.html's module script, whose applySettings/dispatchWithNarration
+ * bodies contain no string literal with an unbalanced brace character, so a
+ * plain counter is sufficient here (not a general-purpose JS parser).
+ * Phase 58 (D-12) fix: the brace start is now taken from the END of the
+ * signature match (`m.index + m[0].length - 1`), not `source.indexOf("{",
+ * m.index)` — the latter broke the moment dispatchWithNarration's new
+ * `opts = {}` default parameter put an embedded `{}` pair INSIDE the
+ * signature itself, ahead of the real body brace. Equivalent for every
+ * pre-existing signature (none of which has a brace before its own body).
  */
 function extractFunctionBody(source, signatureRe) {
   const m = signatureRe.exec(source);
   if (!m) return null;
-  const braceStart = source.indexOf("{", m.index);
-  if (braceStart === -1) return null;
+  const braceStart = m.index + m[0].length - 1;
+  if (braceStart < 0 || source[braceStart] !== "{") return null;
   let depth = 0;
   for (let i = braceStart; i < source.length; i++) {
     if (source[i] === "{") depth++;
@@ -282,17 +289,34 @@ test("sfx-settings: shell wiring — applySfxSettings( appears exactly once, ins
   assert.ok(body.includes("applySfxSettings("), "the AUD-05 gate call must sit inside applySettings's body");
 });
 
-test("sfx-settings: shell wiring — playForDispatch( appears exactly once, inside dispatchWithNarration's function body, after dispatch(action)", () => {
-  const count = (htmlStripped.match(/playForDispatch\(/g) || []).length;
-  assert.equal(count, 1);
-  const body = extractFunctionBody(htmlStripped, /function dispatchWithNarration\(action\)\s*\{/);
-  assert.ok(body, "dispatchWithNarration(action) must exist");
-  assert.ok(body.includes("playForDispatch("), "the dispatch-path audio seam must sit inside dispatchWithNarration's body");
+// Phase 58 (MOTION-03, D-12) re-pin: dispatchWithNarration's signature grew
+// an `opts = {}` second parameter so engineCombatAction can defer a combat
+// round's clips into the beat instead of playing them at dispatch time.
+// playForDispatch( and its new twin cuesForDispatch( each still appear
+// exactly once inside the function body, both after the real dispatch, now
+// sitting in one Array.isArray(opts.cues) if/else — never loosened to
+// accept any signature.
+test("sfx-settings: shell wiring — playForDispatch(/cuesForDispatch( each appear exactly once, inside dispatchWithNarration(action, opts = {})'s body, after dispatch(action), in one if/else", () => {
+  const playCount = (htmlStripped.match(/playForDispatch\(/g) || []).length;
+  assert.equal(playCount, 1);
+  const cuesCount = (htmlStripped.match(/cuesForDispatch\(/g) || []).length;
+  assert.equal(cuesCount, 1);
+
+  const body = extractFunctionBody(htmlStripped, /function dispatchWithNarration\(action, opts = \{\}\)\s*\{/);
+  assert.ok(body, "dispatchWithNarration(action, opts = {}) must exist with the exact new signature");
+  assert.ok(body.includes("playForDispatch("), "the dispatch-time audio seam must sit inside dispatchWithNarration's body");
+  assert.ok(body.includes("cuesForDispatch("), "the deferred-cues seam must sit inside dispatchWithNarration's body");
+  assert.ok(
+    /if \(Array\.isArray\(opts\.cues\)\) \{[\s\S]*cuesForDispatch\([\s\S]*?\} else \{[\s\S]*playForDispatch\([\s\S]*?\}/.test(body),
+    "cuesForDispatch and playForDispatch must sit in one Array.isArray(opts.cues) if/else pair"
+  );
 
   const dispatchIdx = htmlStripped.indexOf("const result = dispatch(action);");
   const playIdx = htmlStripped.indexOf("playForDispatch(action.type");
-  assert.ok(dispatchIdx > -1 && playIdx > -1);
-  assert.ok(playIdx > dispatchIdx, "the audio call must run AFTER the real dispatch, so it reads real events");
+  const cuesIdx = htmlStripped.indexOf("cuesForDispatch(action.type");
+  assert.ok(dispatchIdx > -1 && playIdx > -1 && cuesIdx > -1);
+  assert.ok(playIdx > dispatchIdx, "the dispatch-time audio call must run AFTER the real dispatch, so it reads real events");
+  assert.ok(cuesIdx > dispatchIdx, "the deferred-cues call must also run AFTER the real dispatch");
 });
 
 test("sfx-settings: shell wiring — unlockSfx( and playUiTap( each appear exactly once", () => {

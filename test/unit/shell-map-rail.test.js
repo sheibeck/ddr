@@ -80,7 +80,9 @@ function railButtonsRegion() {
   return fnRegion("function railButtons(host, buttons)");
 }
 function dispatchRegion() {
-  return sliceBetween(CODE, "function dispatchWithNarration(action)", "window.move = function engineMove");
+  // Phase 58 (MOTION-03, D-12) re-pin: dispatchWithNarration grew an
+  // `opts = {}` second parameter (engineCombatAction's deferred-cues seam).
+  return sliceBetween(CODE, "function dispatchWithNarration(action, opts = {})", "window.move = function engineMove");
 }
 function engineMoveRegion() {
   return sliceBetween(CODE, "window.move = function engineMove", "function stepNow(dir)");

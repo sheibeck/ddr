@@ -82,8 +82,11 @@ test("the module script imports linesForAction from src/browser/narrationLines.j
   assert.match(CODE, /import \{ linesForAction \} from "\.\/src\/browser\/narrationLines\.js";/);
 });
 
-test("dispatchWithNarration(action) is defined exactly once and calls linesForAction(action.type, ...)", () => {
-  const defs = CODE.match(/function dispatchWithNarration\(action\)/g) || [];
+// Phase 58 (MOTION-03, D-12) re-pin: dispatchWithNarration grew an
+// `opts = {}` second parameter (engineCombatAction's deferred-cues seam) —
+// still defined exactly once, still calling linesForAction(action.type, ...).
+test("dispatchWithNarration(action, opts = {}) is defined exactly once and calls linesForAction(action.type, ...)", () => {
+  const defs = CODE.match(/function dispatchWithNarration\(action, opts = \{\}\)/g) || [];
   assert.equal(defs.length, 1, "dispatchWithNarration must be defined exactly once");
   assert.match(CODE, /linesForAction\(action\.type/);
 });

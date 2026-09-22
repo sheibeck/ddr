@@ -70,7 +70,9 @@ function renderEncounterRegion() {
 }
 
 function dispatchRegion() {
-  return sliceBetween(CODE, "function dispatchWithNarration(action)", "window.move = function engineMove");
+  // Phase 58 (MOTION-03, D-12) re-pin: dispatchWithNarration grew an
+  // `opts = {}` second parameter (engineCombatAction's deferred-cues seam).
+  return sliceBetween(CODE, "function dispatchWithNarration(action, opts = {})", "window.move = function engineMove");
 }
 
 // A per-function slice from an exact signature to the NEXT "\nfunction "
