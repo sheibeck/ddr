@@ -450,7 +450,7 @@ button{
    flash. */
 /* Quick fix 2026-09-18 (user: "FIGHT IT OUT sometimes isn't yellow"): the
    generic hover (0,2,1) outranks every single-class button skin (.mw-major-btn,
-   .cb-btn, .mw-map-chip, .mw-camp-btn ... at 0,1,0), so a STUCK hover on a
+   .cb-btn, .mw-hud-menu-item, .mw-camp-btn ... at 0,1,0), so a STUCK hover on a
    freshly rendered button under the last touch point repainted it in the
    panel tone. Hover is a pointer affordance — apply it only where a pointer
    can hover; a touch-only WebView reports (hover: none) and never gets it. */
@@ -1188,8 +1188,9 @@ html,body{height:100%}
    (design/Mazeworld Mobile.dc.html's legendOpen block) — a dark panel
    sliding up over the WHOLE app (not just the map viewport), listing every
    one of the 9 FEATURE_ICONS PNGs (icons/optimized/*.png) with its name and
-   a short deadpan description. Opened by the MARKS chip, dismissed by
-   tapping the scrim or the close affordance — see the classic script's
+   a short deadpan description. Opened by the MARKS row of the ☰ HUD
+   menu (Phase 57, Plan 05), dismissed by tapping the scrim or the close
+   affordance — see the classic script's
    openMarksLegend()/closeMarksLegend(). */
 .mw-legend-sheet{position:fixed;inset:0;z-index:45;display:flex;align-items:flex-end}
 .mw-legend-sheet[hidden]{display:none}
@@ -1356,10 +1357,10 @@ html,body{height:100%}
      Full-screen scrim + rising panel matching design/Mazeworld
      Mobile.dc.html's "WHAT THE MARKS MEAN" legendOpen block — replaces the
      prototype's inline .legend strip that used to live under the map.
-     Opened by the MARKS chip (mw-chip-marks), rows populated once by
-     renderMarksLegend() (classic script, below) from the same
-     icons/optimized/*.png set preloadIcons() already loads. Dismissed by
-     tapping the scrim or the Close button. -->
+     Opened by the MARKS row of the ☰ HUD menu (mw-chip-marks, Phase 57
+     Plan 05), rows populated once by renderMarksLegend() (classic script,
+     below) from the same icons/optimized/*.png set preloadIcons() already
+     loads. Dismissed by tapping the scrim or the Close button. -->
 <div id="mw-legend-sheet" class="mw-legend-sheet" hidden>
   <div class="mw-legend-scrim" id="mw-legend-scrim"></div>
   <div class="mw-legend-panel" role="dialog" aria-label="What the marks mean">
@@ -1373,9 +1374,9 @@ html,body{height:100%}
 
 <!-- ============ SETTINGS BOTTOM SHEET (04-DR9, completes UX-07) ============
      Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
-     -scrim/-panel/-head/-close, above) — opened by the gear chip in the
-     viewport chip row (#mw-gear-btn), dismissed by tapping the scrim or
-     Close. Each row is a
+     -scrim/-panel/-head/-close, above) — opened by the SETTINGS row of the
+     ☰ HUD menu (#mw-gear-btn, Phase 57 Plan 05), dismissed by tapping the
+     scrim or Close. Each row is a
      label + a row of segmented option buttons; the currently-selected value
      (read from settings.js's readSettings()) gets the `active` class — see
      the trailing module script's applySettings()/renderSettingsSheet(). A
@@ -1391,8 +1392,8 @@ html,body{height:100%}
     </div>
     <div class="mw-settings-rows" id="mw-settings-rows">
       <!-- Phase 33 (UIF-05): the former control-bar side option is gone —
-           Make Camp moved to the Marks/Centre chip row and no longer needs
-           a side setting. -->
+           Make Camp moved to the Marks/Centre chip row (Phase 57 Plan 05:
+           now the ☰ HUD menu) and no longer needs a side setting. -->
       <div class="mw-settings-row">
         <span class="mw-settings-label">Text size</span>
         <div class="mw-settings-options" data-setting="textSize">
@@ -1441,9 +1442,9 @@ html,body{height:100%}
 
 <!-- ============ MAKE CAMP BOTTOM SHEET (Phase 35, MAP-06/08) ============
      Reuses the MARKS legend sheet's own scrim/rise chrome
-     (.mw-legend-sheet/-scrim/-panel/-head, above) — opened by the top-right
-     MAKE CAMP chip over the viewport (#btn-camp), dismissed by tapping the
-     scrim. SLEEP dispatches the existing camp bridge (window.mzMakeCamp);
+     (.mw-legend-sheet/-scrim/-panel/-head, above) — opened by the MAKE CAMP
+     row of the ☰ HUD menu (#btn-camp, Phase 57 Plan 05), dismissed by
+     tapping the scrim. SLEEP dispatches the existing camp bridge (window.mzMakeCamp);
      the refusal/result reach the player through the rail, not this sheet —
      see openCampSheet()/closeCampSheet() (classic script, below). -->
 <div id="mw-camp-sheet" class="mw-legend-sheet" hidden>
@@ -4176,11 +4177,12 @@ document.getElementById("btn-abandon-character").onclick = () => {
     window.mzAbandonCharacter();
   }
 };
-// Phase 35 (MAP-06): the camp chip now opens the MAKE CAMP bottom sheet
-// (openCampSheet, defined further down) instead of dispatching "camp"
-// directly — SLEEP inside that sheet is the actual camp dispatch, routed
-// through the same window.mzMakeCamp bridge (trailing module script) this
-// onclick used to call straight from the chip.
+// Phase 35 (MAP-06): the camp row (Phase 57 Plan 05: the ☰ HUD menu's MAKE
+// CAMP row, formerly a chip) opens the MAKE CAMP bottom sheet (openCampSheet,
+// defined further down) instead of dispatching "camp" directly — SLEEP
+// inside that sheet is the actual camp dispatch, routed through the same
+// window.mzMakeCamp bridge (trailing module script) this onclick used to
+// call straight from the chip.
 // audit-batch E12 (part 3): the #btn-clearyard control and its handler were
 // removed — the lifetime death total is non-clearable by design now.
 // Phase 35 (MAP-02, ruling 2): the retired control bar's click listener that
@@ -4197,8 +4199,9 @@ document.getElementById("btn-abandon-character").onclick = () => {
 // DR4 group 2: MARKS opens the mock's "WHAT THE MARKS MEAN" bottom sheet
 // (design/Mazeworld Map Panel.dc.html's legendOpen block) — replaces the
 // prototype's inline .legend strip toggle. CENTRE still just snaps the
-// camera pan back onto the player. Both remain >=48dp chips per the 48dp
-// Corrections table.
+// camera pan back onto the player. Both were >=48dp chips per the 48dp
+// Corrections table; Phase 57 (Plan 05) moved both into the ☰ HUD menu as
+// rows, each still a >=48dp tap target (.mw-hud-menu-item's min-height).
 //
 // Rows come from src/browser/mapMarks.js's MARKS_LEGEND data via the
 // window.__mzMapMarks bridge; each row's icon is the same
@@ -4329,7 +4332,8 @@ document.getElementById("mw-hud-menu").onclick = () => hudMenuEvent("select");
 // #keepInViewAxis), never snapping to centre. Called after a genuine step, a
 // tab return, an overlay dismiss, a pinch-end, a Settings close, a textSize
 // change or a resize (wired at each of those call sites, below). The four
-// centring triggers — the CENTRE chip, a floorChanged/teleported event, a new
+// centring triggers — the CENTRE MAP row (Phase 57 Plan 05: the ☰ HUD
+// menu's, formerly the CENTRE chip), a floorChanged/teleported event, a new
 // run (including the dev start-at-depth run) and the boot first paint — call
 // window.mzCenterMap instead; nothing else calls it.
 function keepPartyInView() {

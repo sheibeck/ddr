@@ -76,12 +76,11 @@ function storeRegion() {
 }
 
 function chipsMarkup() {
-  // Phase 57 (LAYOUT-04) re-pin: the chip band is now a sibling ABOVE
-  // .mazebox, outside .mw-maze-viewport entirely — it no longer ends at the
-  // viewport's closing </div>/the encounter overlay section; the next
-  // markup landmark after the chip band closes is .mazebox's own opening
-  // tag.
-  return sliceBetween(HTML, '<div class="mw-map-chips"', '<div class="mazebox">');
+  // Phase 57 (LAYOUT-04/05), Plan 05 re-pin (USER MOCK RULING 2026-09-22):
+  // the chip band is retired outright — the four controls now live as rows
+  // inside the ☰ HUD menu on band 2, sliced from the menu wrap through
+  // the header's own close.
+  return sliceBetween(HTML, '<div class="mw-hud-menu-wrap">', "</header>");
 }
 
 // ─── UIF-01: the GEAR action row + inline two-tap Drop confirm ───────────
@@ -171,18 +170,18 @@ test("UIF-01: engine/actions.js still whitelists dropItem (no new engine action 
 
 // ─── UIF-05: Make Camp joins the Marks/Centre row; handedness is gone ────
 
-test("the chip row holds Marks, Centre, the camp chip, then the settings gear, in that order (2026-09-16 UAT)", () => {
+test("the ☰ menu holds MARKS, CENTRE MAP, MAKE CAMP, then SETTINGS, in that order (2026-09-16 UAT chip order, carried into the Phase 57 Plan 05 menu)", () => {
   const markup = chipsMarkup();
   const marksIdx = markup.indexOf('id="mw-chip-marks"');
   const centreIdx = markup.indexOf('id="mw-chip-centre"');
   const campIdx = markup.indexOf('id="btn-camp"');
   const gearIdx = markup.indexOf('id="mw-gear-btn"');
-  assert.ok(marksIdx !== -1 && centreIdx !== -1 && campIdx !== -1 && gearIdx !== -1, "all four chips found in the row");
-  assert.ok(marksIdx < centreIdx && centreIdx < campIdx && campIdx < gearIdx, "Marks, then Centre, then the camp chip, then the settings gear");
+  assert.ok(marksIdx !== -1 && centreIdx !== -1 && campIdx !== -1 && gearIdx !== -1, "all four rows found in the menu");
+  assert.ok(marksIdx < centreIdx && centreIdx < campIdx && campIdx < gearIdx, "Marks, then Centre Map, then Make Camp, then Settings");
 
   const campButtonMatch = markup.match(/<button[^>]*id="btn-camp"[^>]*>/);
-  assert.ok(campButtonMatch, "camp button tag found in the chip row");
-  assert.match(campButtonMatch[0], /class="mw-map-chip camp"/);
+  assert.ok(campButtonMatch, "camp button tag found in the menu");
+  assert.match(campButtonMatch[0], /role="menuitem" class="mw-hud-menu-item"/);
 });
 
 test("UIF-05: no trace of the former handed-layout option remains in the shell", () => {
@@ -191,14 +190,21 @@ test("UIF-05: no trace of the former handed-layout option remains in the shell",
   assert.doesNotMatch(RAW_HTML, /#app\[data-/);
 });
 
-test("UIF-05/Phase 57 (LAYOUT-04): the chip band is a static layout band (no position, no z-index) and pins the camp chip to the far right via the gap span", () => {
-  const chipsRuleMatch = HTML.match(/^\.mw-map-chips\{[^}]*\}/m);
-  assert.ok(chipsRuleMatch, ".mw-map-chips rule found");
-  assert.doesNotMatch(chipsRuleMatch[0], /position:/, "Phase 57 (LAYOUT-04): the chip band is no longer an absolute overlay");
-  assert.doesNotMatch(chipsRuleMatch[0], /z-index/, "Phase 57 (LAYOUT-04): the chip band no longer needs a stacking context");
-  assert.match(chipsRuleMatch[0], /flex:none/);
-  assert.match(chipsRuleMatch[0], /background:#181409/);
-  assert.match(HTML, /^\.mw-map-chips-gap\{flex:1\}$/m);
+test("UIF-05/Phase 57 (LAYOUT-04/05), Plan 05: the chip band is retired outright and the ☰ wrapper (.mw-hud-menu-wrap) is the only positioned HUD element", () => {
+  assert.doesNotMatch(HTML, /\.mw-map-chips\{/, "the chip band rule is retired");
+  assert.doesNotMatch(HTML, /\.mw-map-chips-gap\{/, "the chip gap rule is retired");
+  const wrapRuleMatch = HTML.match(/^\.mw-hud-menu-wrap\{[^}]*\}/m);
+  assert.ok(wrapRuleMatch, ".mw-hud-menu-wrap rule found");
+  assert.match(wrapRuleMatch[0], /position:relative/);
+  assert.match(wrapRuleMatch[0], /z-index:6/);
+  // No other HUD-family rule (.mw-hud/.mw-hud-band2/.mw-hud-counters) may
+  // declare a position — the menu wrap is the ONE positioned HUD element.
+  for (const selector of [".mw-hud", ".mw-hud-band2", ".mw-hud-counters"]) {
+    const escaped = selector.replace(/\./g, "\\.");
+    const rule = HTML.match(new RegExp(`^${escaped}\\{[^}]*\\}`, "m"));
+    assert.ok(rule, `${selector} rule found`);
+    assert.doesNotMatch(rule[0], /position:/, `${selector} must declare no position`);
+  }
   assert.doesNotMatch(HTML, /#btn-camp:hover/);
   assert.doesNotMatch(HTML, /#btn-camp:active/);
   assert.match(HTML, /#btn-camp\[data-short="1"\]\{/);

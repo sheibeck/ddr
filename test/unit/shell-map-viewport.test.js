@@ -315,12 +315,13 @@ test("(h) keydown: arrows still resolve through dirKeys into window.move() (Phas
 
 // ─── (i) back button ────────────────────────────────────────────────────────
 
-test("(i) getGameContext: hasOpenModal/isAtRoot/closeModal all honour the stair overlay and the two sheets", () => {
+test("(i) getGameContext: hasOpenModal/isAtRoot/closeModal all honour the stair overlay and the two sheets; Phase 57 (LAYOUT-04/05, Plan 05): the ☰ HUD menu is a modal too — hasOpenModal ORs in hudMenuIsOpen(), and closeModal's FIRST statement closes it", () => {
   const region = getGameContextRegion();
   const hasOpenModalLine = sliceBetween(region, "hasOpenModal:", "hasLiveRun:");
   assert.match(hasOpenModalLine, /window\.__mzStair/);
   assert.match(hasOpenModalLine, /mw-camp-sheet/);
   assert.match(hasOpenModalLine, /mw-legend-sheet/);
+  assert.match(hasOpenModalLine, /hudMenuIsOpen\(\)/);
   const isAtRootLine = sliceBetween(region, "isAtRoot:", "closeModal:");
   assert.match(isAtRootLine, /!window\.__mzStair/);
   const closeModalRegion = sliceBetween(region, "closeModal: () => {", "navigateBack:");
@@ -328,6 +329,9 @@ test("(i) getGameContext: hasOpenModal/isAtRoot/closeModal all honour the stair 
   assert.match(closeModalRegion, /closeCampSheet\(\);/);
   assert.match(closeModalRegion, /closeMarksLegend\(\);/);
   assert.doesNotMatch(closeModalRegion, /__mzRail/);
+  const hudMenuCallIdx = closeModalRegion.indexOf('hudMenuEvent("escape");');
+  const stairNullIdx = closeModalRegion.indexOf("window.__mzStair = null;");
+  assert.ok(hudMenuCallIdx !== -1 && stairNullIdx !== -1 && hudMenuCallIdx < stairNullIdx, "hudMenuEvent(\"escape\") must be closeModal's first statement");
 });
 
 // ─── (j) guard-timing invariants ───────────────────────────────────────────

@@ -22,7 +22,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { HUD_BAND_ANCHORS, identityLine, counterSlots } from "../../src/browser/hudBands.js";
+import { HUD_BAND_ANCHORS, identityLine, identityParts, counterSlots } from "../../src/browser/hudBands.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
 
@@ -41,7 +41,7 @@ function sliceBetween(source, startMarker, endMarker, fromIndex = 0) {
 
 // ─── (1) band order matches HUD_BAND_ANCHORS exactly ───────────────────
 
-test("(1) the four bands' anchors appear in mazeworld.html in exactly the order HUD_BAND_ANCHORS declares", () => {
+test("(1) the four bands' anchors appear in mazeworld.html in exactly the 2026-09-22 mock's order HUD_BAND_ANCHORS declares (Plan 05: name, HP strip, counters, conditions)", () => {
   assert.equal(HUD_BAND_ANCHORS.length, 4, "HUD_BAND_ANCHORS must declare exactly four anchors");
   let cursor = -1;
   for (const anchor of HUD_BAND_ANCHORS) {
@@ -55,11 +55,16 @@ test("(1) the four bands' anchors appear in mazeworld.html in exactly the order 
 // ─── (2) LAYOUT-04(a): a chip tap can never reach the canvas gesture
 // tracker because the chips are not inside its host ──────────────────────
 
-test("(2) a chip tap can never reach the canvas gesture tracker because the chips are not inside its host: the .mw-maze-viewport slice contains no chip markup and no .mw-map-chip class occurrence", () => {
+test("(2) a menu row tap can never reach the canvas gesture tracker because the menu is not inside its host: the .mw-maze-viewport slice contains no chip/menu/scrim markup and no .mw-map-chip class occurrence", () => {
   const viewportRegion = sliceBetween(HTML, '<div class="mw-maze-viewport" id="mw-maze-viewport">', '<!-- DR5: the encounter/feature-event panel');
   assert.doesNotMatch(viewportRegion, /id="mw-map-chips"/, "the chip band id must not appear inside the viewport");
   assert.doesNotMatch(viewportRegion, /mw-map-chip/, "no .mw-map-chip class occurrence must appear inside the viewport");
   assert.doesNotMatch(viewportRegion, /id="mw-chip-marks"|id="mw-chip-centre"|id="btn-camp"|id="mw-gear-btn"/, "none of the four chip ids may appear inside the viewport");
+  // Phase 57 (LAYOUT-04/05), Plan 05: the ☰ HUD menu and its scrim must
+  // be equally absent from the viewport's hit path — a menu row tap can
+  // never reach the canvas gesture tracker either.
+  assert.doesNotMatch(viewportRegion, /mw-hud-menu/, "no mw-hud-menu token may appear inside the viewport");
+  assert.doesNotMatch(viewportRegion, /id="mw-hud-menu-scrim"/, "the scrim id must not appear inside the viewport");
 });
 
 // ─── (3) LAYOUT-04(b): the gesture tracker's host is unchanged, so the
@@ -83,7 +88,7 @@ function paintFresh(state) {
   return doc;
 }
 
-test("(4) BEHAVIOUR: paint() writes #m-steps and #mw-hud-name through __mzHudBands, matching counterSlots()/identityLine() at 999, 1000 and 100000 steps", () => {
+test("(4) BEHAVIOUR: paint() writes #m-steps through __mzHudBands.counterSlots() and splits identityParts(c) across #mw-hud-name/#mw-hud-line, with identityLine(c) as #mw-hud-line's title, at 999, 1000 and 100000 steps", () => {
   const states = fixedStates();
   for (const steps of [999, 1000, 100000]) {
     const state = structuredClone(states.thief);
@@ -94,9 +99,16 @@ test("(4) BEHAVIOUR: paint() writes #m-steps and #mw-hud-name through __mzHudBan
     const el = doc.document.getElementById("m-steps");
     assert.equal(el.textContent, stepsSlot.text, `#m-steps must equal counterSlots()'s text at steps=${steps}`);
 
-    const expectedIdentity = identityLine(state.c);
+    // Phase 57 (LAYOUT-05), Plan 05: band 1 is now split — #mw-hud-name
+    // (never truncated) and #mw-hud-line (the ellipsis-truncating race/
+    // class/level line), with the FULL identityLine(c) string on
+    // #mw-hud-line's title for a long-press.
+    const expectedParts = identityParts(state.c);
     const nameEl = doc.document.getElementById("mw-hud-name");
-    assert.equal(nameEl.textContent, expectedIdentity, `#mw-hud-name must equal identityLine(c) at steps=${steps}`);
+    const lineEl = doc.document.getElementById("mw-hud-line");
+    assert.equal(nameEl.textContent, expectedParts.name, `#mw-hud-name must equal identityParts(c).name at steps=${steps}`);
+    assert.equal(lineEl.textContent, expectedParts.line, `#mw-hud-line must equal identityParts(c).line at steps=${steps}`);
+    assert.equal(lineEl.title, identityLine(state.c), `#mw-hud-line's title must equal identityLine(c) at steps=${steps}`);
   }
 });
 

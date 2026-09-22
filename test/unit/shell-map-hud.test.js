@@ -90,23 +90,28 @@ function styleBlock() {
 
 // ─── (a) HUD markup ─────────────────────────────────────────────────────
 
-test("(a) HUD markup: band 1 (identity line, WP block, DEV chip) and band 2 (Depth/Day/Squares/Rations) with their kept ids, the gear gone from the HUD, zero DEAD character-line ids (Phase 57 LAYOUT-05)", () => {
+test("(a) HUD markup: band 1 (name, race/class line, HP text, DEV chip), the HP strip, band 2 (Depth/Day/Squares/Rations + the ☰ menu) with their kept ids, the settings row is a menuitem inside #mw-hud-menu, zero DEAD character-line ids (Phase 57 LAYOUT-05, Plan 05)", () => {
   const hudStart = HTML.indexOf('<header class="mw-hud" id="mw-hud">');
   const hudEnd = HTML.indexOf("</header>", hudStart);
   assert.ok(hudStart !== -1 && hudEnd !== -1 && hudEnd > hudStart, "the HUD header region must be found");
   const region = HTML.slice(hudStart, hudEnd);
 
-  // Band 1 (.mw-hud-identity): the identity line, then the WP block, then
-  // the DEV chip, in that order.
+  // Band 1 (.mw-hud-identity): name, then the race/class line, then the HP
+  // text, then the DEV chip, in that order.
   const identityStart = region.indexOf('<div class="mw-hud-identity">');
   const nameIdx = region.indexOf('id="mw-hud-name"');
+  const lineIdx = region.indexOf('id="mw-hud-line"');
   const wpIdx = region.indexOf('id="mw-hud-wp"');
   const devIdx = region.indexOf('id="mw-dev-chip"');
-  assert.ok(identityStart !== -1 && nameIdx !== -1 && wpIdx !== -1 && devIdx !== -1, "band 1's four anchors all found");
-  assert.ok(identityStart < nameIdx && nameIdx < wpIdx && wpIdx < devIdx, "identity wrapper, name, WP block, DEV chip in that order");
+  assert.ok(identityStart !== -1 && nameIdx !== -1 && lineIdx !== -1 && wpIdx !== -1 && devIdx !== -1, "band 1's five anchors all found");
+  assert.ok(identityStart < nameIdx && nameIdx < lineIdx && lineIdx < wpIdx && wpIdx < devIdx, "identity wrapper, name, line, HP text, DEV chip in that order");
   assert.equal((region.match(/id="mw-hud-wp"/g) || []).length, 1);
   assert.equal((region.match(/id="mw-hud-wpfill"/g) || []).length, 1);
-  assert.match(region, /class="mw-hud-wp"><span class="mw-hud-wp-text" id="mw-hud-wp">0\/0 HP<\/span>/);
+  // Phase 57 (Plan 05): the .mw-hud-wp wrapper div is retired — the HP text
+  // is a direct child span of band 1 now, and the track sits in its own
+  // strip below band 1 (asserted separately by test (b)'s layout order).
+  assert.match(region, /<span class="mw-hud-wp-text" id="mw-hud-wp">0\/0 HP<\/span>/);
+  assert.doesNotMatch(region, /class="mw-hud-wp">/, "the .mw-hud-wp wrapper div is retired (Plan 05)");
 
   // Band 2 (.mw-hud-counters): Depth, Day, Squares, Rations, in order, with
   // their kept ids (D-09) — the FLOOR label is renamed Depth (2026-09-21
@@ -125,7 +130,15 @@ test("(a) HUD markup: band 1 (identity line, WP block, DEV chip) and band 2 (Dep
 
   assert.doesNotMatch(region, /mw-hud-top/, ".mw-hud-top is retired (Phase 57 supersedes Phase 35 ruling 5)");
   assert.doesNotMatch(region, /mw-hud-row/, ".mw-hud-row is retired (Phase 57 supersedes Phase 35 ruling 5)");
-  assert.equal((region.match(/id="mw-gear-btn"/g) || []).length, 0, "the settings gear left the HUD (2026-09-16 UAT)");
+  // Phase 57 (Plan 05): the settings gear is a menuitem inside the ☰
+  // menu now, not a bare chip — id="mw-gear-btn" exists exactly once,
+  // inside #mw-hud-menu, as role="menuitem".
+  assert.equal((region.match(/id="mw-gear-btn"/g) || []).length, 1, "the settings row exists exactly once, inside the ☰ menu");
+  const menuStart = region.indexOf('id="mw-hud-menu"');
+  const gearIdx = region.indexOf('id="mw-gear-btn"');
+  assert.ok(menuStart !== -1 && gearIdx > menuStart, "the settings row sits inside #mw-hud-menu");
+  const gearRowMatch = region.match(/<button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn">/);
+  assert.ok(gearRowMatch, "the settings row is a role=menuitem inside #mw-hud-menu");
 
   // Phase 35's retired character-line ids stay retired, EXCEPT hud-name —
   // Phase 57 (2026-09-21 ruling) deliberately restores it as band 1's
@@ -147,47 +160,65 @@ test('(a) raw file: zero occurrences of every retired character-line/chip-track 
 
 // ─── (b) layout: band 1 precedes band 2; the condition strip sits between </header> and <main>; the chip band moved outside the viewport ──
 
-test('(b) layout: band 1 precedes band 2; mw-cond-strip sits directly after </header> and before <main>; #mw-map-chips now sits inside #screen-maze before <div class="mazebox"> (Phase 57 LAYOUT-04/05)', () => {
+test('(b) layout: band 1 precedes the HP strip precedes band 2; mw-cond-strip sits directly after </header> and before <main>; the chip band is retired and #screen-maze opens straight onto <div class="mazebox"> (Phase 57 LAYOUT-04/05, Plan 05)', () => {
   const identityIdx = HTML.indexOf('<div class="mw-hud-identity">');
+  const wptrackIdx = HTML.indexOf('<div class="mw-hud-wptrack">');
+  const band2Idx = HTML.indexOf('<div class="mw-hud-band2">');
   const countersIdx = HTML.indexOf('<div class="mw-hud-counters">');
   const h = HTML.indexOf("</header>");
   const c = HTML.indexOf('class="mw-cond-strip" id="mm-conditions"');
   const m = HTML.indexOf('<main class="mw-screens"');
   const screenMazeIdx = HTML.indexOf('<section class="mw-screen" id="screen-maze"');
-  const chipsIdx = HTML.indexOf('<div class="mw-map-chips" id="mw-map-chips">');
   const mazeboxIdx = HTML.indexOf('<div class="mazebox">');
   const viewportIdx = HTML.indexOf('<div class="mw-maze-viewport" id="mw-maze-viewport">');
   assert.ok(
-    identityIdx !== -1 && countersIdx !== -1 && h !== -1 && c !== -1 && m !== -1 && screenMazeIdx !== -1 && chipsIdx !== -1 && mazeboxIdx !== -1 && viewportIdx !== -1,
+    identityIdx !== -1 && wptrackIdx !== -1 && band2Idx !== -1 && countersIdx !== -1 && h !== -1 && c !== -1 && m !== -1 && screenMazeIdx !== -1 && mazeboxIdx !== -1 && viewportIdx !== -1,
     "all anchors found",
   );
-  assert.ok(identityIdx < countersIdx, "band 1 precedes band 2");
+  assert.ok(identityIdx < wptrackIdx && wptrackIdx < band2Idx && band2Idx < countersIdx, "band 1, then the HP strip, then band 2, then its counters");
   assert.ok(h < c && c < m, "</header> < mw-cond-strip < <main>");
-  assert.ok(screenMazeIdx < chipsIdx && chipsIdx < mazeboxIdx && mazeboxIdx < viewportIdx, "#mw-map-chips sits inside #screen-maze, before .mazebox, before .mw-maze-viewport");
+  // Phase 57 (Plan 05): the chip band is gone outright — #screen-maze opens
+  // straight onto .mazebox, which precedes .mw-maze-viewport as before.
+  assert.doesNotMatch(HTML, /id="mw-map-chips"/, "the chip band id is retired");
+  assert.ok(screenMazeIdx < mazeboxIdx && mazeboxIdx < viewportIdx, "#screen-maze opens directly onto .mazebox, before .mw-maze-viewport");
+  const afterScreenMaze = HTML.slice(screenMazeIdx, mazeboxIdx);
+  const stripped = afterScreenMaze.replace(/<!--[\s\S]*?-->/g, "").trim();
+  assert.equal(stripped, '<section class="mw-screen" id="screen-maze" data-screen="maze">', "no markup between #screen-maze's opening tag and .mazebox but comments");
   assert.equal((HTML.match(new RegExp('id="' + 'mw-party-' + 'rail"', "g")) || []).length, 0);
 });
 
 // ─── (c) HUD CSS ────────────────────────────────────────────────────────
 
-test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-counters/.mw-hud-item/.mw-hud-item b/.mw-hud-wp/.mw-hud-wptrack values match the four-band layout (Phase 57 LAYOUT-05)", () => {
-  assert.match(HTML, /^\.mw-hud\{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;padding:calc\(8px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\) 14px 9px;display:flex;flex-direction:column;gap:6px\}$/m);
+test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp-text/.mw-hud-wptrack/.mw-hud-band2/.mw-hud-counters/.mw-hud-item/.mw-hud-item b values match the compacted 2026-09-22 layout (Phase 57 LAYOUT-05, Plan 05)", () => {
+  assert.match(HTML, /^\.mw-hud\{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;display:flex;flex-direction:column\}$/m);
   assert.doesNotMatch(HTML, /\.mw-hud\{[^}]*position:sticky/);
+  assert.doesNotMatch(HTML, /\.mw-hud\{[^}]*z-index/, ".mw-hud must declare no z-index (T-57-19)");
   assert.doesNotMatch(HTML, /^\.mw-hud-top\{/m, ".mw-hud-top no longer appears as a rule opener");
   assert.doesNotMatch(HTML, /^\.mw-hud-row\{/m, ".mw-hud-row no longer appears as a rule opener");
-  assert.match(HTML, /^\.mw-hud-identity\{display:flex;align-items:center;gap:10px\}$/m);
-  assert.match(HTML, /^\.mw-hud-name\{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var\(--disp\);font-size:var\(--mw-font-hud-label\);color:#e6ddc6\}$/m);
-  assert.match(HTML, /^\.mw-hud-counters\{display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap\}$/m);
+  assert.match(HTML, /^\.mw-hud-identity\{display:flex;align-items:baseline;gap:8px;padding:calc\(9px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\) 14px 10px;background:#241d12;overflow:hidden\}$/m);
+  assert.match(HTML, /^\.mw-hud-name\{flex:none;white-space:nowrap;font-family:var\(--mono\);font-weight:700;font-size:var\(--mw-font-hud-ident\);color:#e8c97a\}$/m);
+  assert.doesNotMatch(HTML.match(/^\.mw-hud-name\{[^}]*\}$/m)[0], /overflow|text-overflow|ellipsis/, "the name never truncates (Plan 05)");
+  assert.match(HTML, /^\.mw-hud-line\{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var\(--mono\);font-weight:700;font-size:var\(--mw-font-hud-ident\);color:#a89c82\}$/m);
+  assert.match(HTML, /^\.mw-hud-wp-text\{flex:none;font-family:var\(--mono\);font-weight:700;font-size:var\(--mw-font-hud-ident\);white-space:nowrap;color:#e6ddc6\}$/m);
+  assert.match(HTML, /^\.mw-hud-wptrack\{flex:none;height:4px;background:#2c2519;box-shadow:inset 0 1px 0 rgba\(0,0,0,\.5\)\}$/m);
+  assert.doesNotMatch(HTML, /\.mw-hud-wp\{/, "the .mw-hud-wp wrapper rule is retired (Plan 05)");
+  assert.match(HTML, /^\.mw-hud-band2\{display:flex;align-items:center;gap:10px;padding:8px 14px 9px\}$/m);
+  assert.match(HTML, /^\.mw-hud-counters\{flex:1;min-width:0;display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap\}$/m);
   assert.equal((HTML.match(/^\.mw-hud-floor b\{color:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-rations\.warn b\{color:#e05a48\}$/gm) || []).length, 1);
   assert.match(HTML, /\.mw-hud-item b\{[^}]*display:inline-block;text-align:right;min-width:5ch;[^}]*\}/);
-  assert.match(HTML, /^\.mw-hud-wp\{flex:0 1 100px;min-width:70px;display:flex;flex-direction:column;gap:4px;align-items:flex-end\}$/m);
-  assert.match(HTML, /^\.mw-hud-wptrack\{width:100%;min-width:56px;height:5px;/m);
-  assert.doesNotMatch(HTML, /\.mw-hud-wptrack\{width:64px/, "the fixed 64px track width is gone (Phase 57 LAYOUT-05)");
+  // Phase 57 (Plan 05), discovery D: only Squares (#m-steps, via .mw-hud-item b
+  // above) keeps the 5ch slot; the other three counters get narrower,
+  // id-scoped slots so band 2 still fits a Pixel 7 with the ☰ button.
+  assert.equal((HTML.match(/^#m-floor\{min-width:3ch\}$/gm) || []).length, 1);
+  assert.equal((HTML.match(/^#m-day\{min-width:3ch\}$/gm) || []).length, 1);
+  assert.equal((HTML.match(/^#m-rations\{min-width:2ch\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wpfill\.mid\{background:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wpfill\.low\{background:#e05a48\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wp-text\.low\{color:#e05a48\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/--mw-font-hud-label:calc\(0\.40625rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
   assert.equal((HTML.match(/--mw-font-hud-num:calc\(1rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
+  assert.equal((HTML.match(/--mw-font-hud-ident:calc\(0\.8125rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
 });
 
 // ─── (d) chip CSS + the four condition tone rules ─────────────────────────
@@ -307,7 +338,7 @@ test("(f) paintConditions: createElement(button), data-tone from CONDITION_TONE 
 
 // ─── (g) paint() WP writes, no character-line writes ──────────────────────
 
-test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds; the band-2 counters route through __mzHudBands.counterSlots(S), band-1's identity line through __mzHudBands.identityLine(c)", () => {
+test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds; the band-2 counters route through __mzHudBands.counterSlots(S), band-1's name/line split through __mzHudBands.identityParts(c), with identityLine(c) kept as the title", () => {
   const region = paintRegion();
   assert.match(region, /wpText\.textContent = `\$\{Math\.max\(0, c\.wp\)\}\/\$\{c\.maxWP\} HP`;/);
   assert.match(region, /wpText\.classList\.toggle\("low", pct <= 25\)/);
@@ -317,6 +348,9 @@ test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds; the ban
   // document.getElementById("m-floor").textContent = ... literals — they
   // route through ONE loop over __mzHudBands.counterSlots(S).
   assert.match(region, /window\.__mzHudBands\.counterSlots\(S\)/);
+  // Phase 57 (Plan 05): band 1 is now split — identityParts(c) feeds the
+  // two spans, identityLine(c) is kept as #mw-hud-line's title.
+  assert.match(region, /window\.__mzHudBands\.identityParts\(c\)/);
   assert.match(region, /window\.__mzHudBands\.identityLine\(c\)/);
   assert.doesNotMatch(region, /document\.getElementById\("m-floor"\)\.textContent = S\.floor\.depth;/, "the old inline m-floor write is gone");
   // "hud-name" is deliberately present now (the #mw-hud-name write) —
@@ -328,46 +362,40 @@ test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds; the ban
 
 // ─── (h) viewport chrome ────────────────────────────────────────────────
 
-test("(h) chrome: chip ids/order/classes (MARKS, CENTRE, gap, MAKE CAMP, gear) sliced from band 4 above .mazebox (Phase 57 LAYOUT-04), zero retired chip-row/flash literals, .mw-map-chip.camp/.gear colours, the new static-band .mw-map-chips rule", () => {
-  const chipsStart = HTML.indexOf('<div class="mw-map-chips" id="mw-map-chips">');
-  // Phase 57 (LAYOUT-04) re-pin: the chip band is now a sibling ABOVE
-  // .mazebox, outside .mw-maze-viewport entirely — .mazebox's own opening
-  // tag is the next markup landmark after the chip band closes.
-  const chipsEnd = HTML.indexOf('<div class="mazebox">');
-  assert.ok(chipsStart !== -1 && chipsEnd !== -1 && chipsEnd > chipsStart);
-  const region = HTML.slice(chipsStart, chipsEnd);
+test("(h) chrome: menu row ids/order/classes (MARKS, CENTRE MAP, MAKE CAMP, SETTINGS) matching HUD_MENU_ITEMS, sliced from the ☰ menu wrap on band 2 (Phase 57 LAYOUT-04/05, Plan 05), zero retired chip-row/flash literals, the [data-glyph] colour rules, no .mw-map-chip rule survives", () => {
+  const wrapStart = HTML.indexOf('<div class="mw-hud-menu-wrap">');
+  const wrapEnd = HTML.indexOf("</header>");
+  assert.ok(wrapStart !== -1 && wrapEnd !== -1 && wrapEnd > wrapStart);
+  const region = HTML.slice(wrapStart, wrapEnd);
   const marksIdx = region.indexOf('id="mw-chip-marks"');
   const centreIdx = region.indexOf('id="mw-chip-centre"');
-  const gapIdx = region.indexOf('class="mw-map-chips-gap"');
   const campIdx = region.indexOf('id="btn-camp"');
   const gearIdx = region.indexOf('id="mw-gear-btn"');
-  assert.ok(marksIdx !== -1 && centreIdx !== -1 && gapIdx !== -1 && campIdx !== -1 && gearIdx !== -1);
-  assert.ok(marksIdx < centreIdx && centreIdx < gapIdx && gapIdx < campIdx && campIdx < gearIdx, "MARKS, CENTRE, the gap, MAKE CAMP, then the settings gear");
-  assert.match(region, /class="mw-map-chip camp" id="btn-camp"/);
-  assert.match(region, /class="mw-map-chip gear" id="mw-gear-btn" aria-label="Settings"/);
+  assert.ok(marksIdx !== -1 && centreIdx !== -1 && campIdx !== -1 && gearIdx !== -1);
+  assert.ok(marksIdx < centreIdx && centreIdx < campIdx && campIdx < gearIdx, "MARKS, CENTRE MAP, MAKE CAMP, then SETTINGS — HUD_MENU_ITEMS' order");
+  assert.match(region, /class="mw-hud-menu-item" id="btn-camp"/);
+  assert.match(region, /class="mw-hud-menu-item" id="mw-gear-btn"/);
+  assert.match(region, />CENTRE MAP</, "the centre row reads CENTRE MAP (USER RULING 2026-09-22)");
   // Phase 57 (LAYOUT-04): the party-pulse ring stayed INSIDE the viewport
   // when the chips left it — it is no longer in this region, but it still
   // exists exactly once in the file (inside .mw-maze-viewport now).
-  assert.doesNotMatch(region, /mw-party-pulse/, "the party-pulse ring is no longer inside the chip band");
+  assert.doesNotMatch(region, /mw-party-pulse/, "the party-pulse ring is no longer inside the menu");
   assert.equal((HTML.match(/id="mw-party-pulse" aria-hidden="true"/g) || []).length, 1, "the party-pulse ring still exists exactly once");
 
   for (const literal of ["mw-viewport-chips", "mw-flash", "flashMessage", "MAZE_CANVAS_COLORS"]) {
     assert.equal((HTML.match(new RegExp(escapeRegExp(literal), "g")) || []).length, 0, `expected zero occurrences of "${literal}"`);
   }
-
-  assert.match(HTML, /^\.mw-map-chip\.camp\{background:#241d12;border-color:#6b5c3c\}$/m);
-  assert.match(HTML, /^\.mw-map-chip\.gear\{[^}]*font-size:22px[^}]*\}$/m);
+  // Phase 57 (Plan 05): the chip CSS rules (.mw-map-chip*) are retired
+  // outright — the menu-item/glyph rules replace them.
+  assert.doesNotMatch(HTML, /\.mw-map-chip/, ".mw-map-chip rules are retired");
   assert.equal((HTML.match(/@keyframes mwglow/g) || []).length, 1);
 
-  // Phase 57 (LAYOUT-04): .mw-map-chips is now a static layout band — no
-  // position, no z-index — reading like the condition strip above it.
-  const chipsRuleMatch = HTML.match(/^\.mw-map-chips\{[^}]*\}$/m);
-  assert.ok(chipsRuleMatch, ".mw-map-chips rule found");
-  assert.doesNotMatch(chipsRuleMatch[0], /position:/);
-  assert.doesNotMatch(chipsRuleMatch[0], /z-index/);
-  assert.match(chipsRuleMatch[0], /flex:none/);
-  assert.match(chipsRuleMatch[0], /background:#181409/);
-  assert.match(chipsRuleMatch[0], /border-bottom:3px solid #3a3226/);
+  // Phase 57 (Plan 05): the four [data-glyph] rules carry HUD_MENU_ITEMS'
+  // own colour/size per row.
+  assert.equal((HTML.match(/^\.mw-hud-menu-glyph\[data-glyph="marks"\]\{color:#e8c97a;font-size:13px\}$/gm) || []).length, 1);
+  assert.equal((HTML.match(/^\.mw-hud-menu-glyph\[data-glyph="centre"\]\{color:#8fb08a;font-size:14px\}$/gm) || []).length, 1);
+  assert.equal((HTML.match(/^\.mw-hud-menu-glyph\[data-glyph="camp"\]\{color:#b9a4ef;font-size:16px\}$/gm) || []).length, 1);
+  assert.equal((HTML.match(/^\.mw-hud-menu-glyph\[data-glyph="settings"\]\{color:#9a8f76;font-size:15px\}$/gm) || []).length, 1);
 });
 
 // ─── (h) PERF 2026-09-17: composited party pulse ───────────────────────────
