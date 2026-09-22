@@ -104,6 +104,7 @@ Last activity: 2026-09-21 — Phase 54 execution started
 - 2026-09-21 — **Combat submenu rows clip their text; order spells by level then name** (user, Pixel 7): `.cb-row` clips on the phone; spell rows are in SPELLS order — sort by effective level then name (land with the hide-uncastable todo). UI quick task — `todos/pending/2026-09-21-combat-submenu-rows-clip-their-text-order-spells-by-level-then-name.md`
 - 2026-09-21 — **Foe type listed after the name on the combat screen** (user, Pixel 7): the foe record already carries its BESTIARY family (`type`); surface it after the name on the foe card. UI quick task — `todos/pending/2026-09-21-foe-type-listed-after-the-name-on-the-combat-screen.md`
 - 2026-09-21 — **Fit tool replay-resume diverges after an infeasible point** (orchestrator, during 54-07): `+Infinity` scores serialise as `null`, so a resumed walk takes a different step after the first rejected candidate and re-evaluates points; also per-block stdout was truncated with `>`. Tooling quick task — `todos/pending/2026-09-21-fit-tool-replay-resume-diverges-after-an-infeasible-point.md`
+- 2026-09-21 — **Oracle combat lines must read in event order** (user, Pixel 7 log): the Oracle reuses the rail fold, which sorts by PRIORITY (you/them/other) and collapses identical lines across time — riposte kills print before the misses that caused them; give the Oracle idx-order + adjacent-only folding. UI quick task — `todos/pending/2026-09-21-oracle-combat-lines-must-read-in-event-order.md`
 
 ### Roadmap Evolution
 
