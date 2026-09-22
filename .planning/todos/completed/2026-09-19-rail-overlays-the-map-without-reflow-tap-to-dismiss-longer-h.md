@@ -27,3 +27,7 @@ User feedback (2026-09-19, on-device): three rail behaviours are wrong.
 - **Tap-to-dismiss:** `guardTap(railEl, …)` in the shell: if `railLocked()` or the card has buttons → `railPulse()` (no dismiss); otherwise `clearTimeout(railTimer)`, `window.__mzRail = vm.clear(window.__mzRail)`, `renderRail()`. Make sure a tap on a rail BUTTON still routes to the button (event target check) and that the tap does not also fall through to `tapStep()` on the map.
 - **Longer hold:** roughly double `RAIL_HOLD` (default ~8000, dull ~4500, mark ~6500, day ~6000, floor ~8000, camp ~8000, level ~9000) — or scale by line count (base + per-line) since the complaint is "all the text"; tap-to-dismiss makes the longer hold cheap. `WORN_RECONCILE_HOLD` follows the same rule. Update `test/unit/rail.test.js` / any `shell-map-rail.test.js` pins on the numbers.
 - Sequencing: this touches `mazeworld.html`'s rail block — land it as a quick task **after Phase 47 (Shell Modularisation)** or as its own quick task between phases, never mid-wave (executors are editing the shell). Device check rides in the milestone-close Pixel 7 batch.
+
+## Resolved
+
+Resolved by Phase 57 plans 02 (the overlay/transform structure) and 03 (tap-to-dismiss + the doubled/line-scaled hold table).

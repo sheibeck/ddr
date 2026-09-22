@@ -25,3 +25,7 @@ Reflow the HUD into four stacked bands, top to bottom (user ruling 2026-09-21 �
 3. **Condition chips:** the existing `.mw-cond-strip` (hidden when empty).
 4. **Map chip strip:** MARKS / CENTRE / MAKE CAMP / gear as a reserved layout band (the companion todo) — outside the map viewport.
 Keep `paint()`'s ids (`m-floor`, `m-day`, `m-steps`, `m-rations`, `mw-hud-wp`) and the low/critical threshold classes; safe-area padding stays on band 1. The rail/toast surfaces and the DEV chip are unchanged. Land with the chip-strip todo as one UI quick task between phases, never mid-wave. Pixel 7 check: reach 1,000+ squares — no overlap; the four bands read in that order on the map tab; other tabs unaffected.
+
+## Resolved
+
+Resolved by Phase 57 plan 01 (the four stacked HUD bands, fixed-width counters, the identity line's return).

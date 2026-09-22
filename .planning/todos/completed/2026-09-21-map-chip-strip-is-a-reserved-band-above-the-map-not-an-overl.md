@@ -22,3 +22,7 @@ Two symptoms, one cause — the chip strip (`.mw-map-chips`: MARKS, CENTRE, MAKE
 ## Solution
 
 Make the chip strip a real layout band, not an overlay: a secondary header row directly under the tab chits (`.mw-map-heading-row` area), outside `.mw-maze-viewport`, so the canvas starts below it. Then (a) chip taps never overlap canvas cells (no hit-test special-casing needed), and (b) `rect` in the keep-in-view call is the true visible map, so the nudge threshold is honest at the top edge. Keep the Phase 35 chip look (`.mw-map-chip`) and the MAKE CAMP / gear placement (gear stays right of MAKE CAMP per the v1.4 ruling); drop `position:absolute` / `z-index:3` on `.mw-map-chips`. Check the rail overlay todo (2026-09-19) for the same "overlay vs layout" decision so both land consistently. Quick task between phases — never mid-wave (executors edit `mazeworld.html`). Pixel 7 check: tap each chip with the party 1–2 cells below it, confirm no movement; walk the party to the top edge, confirm the nudge fires with the strip fully clear of the map.
+
+## Resolved
+
+Resolved by Phase 57 plan 01 (the chip strip carved out of `.mw-maze-viewport` into its own layout band).
