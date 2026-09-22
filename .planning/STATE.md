@@ -102,6 +102,7 @@ Last activity: 2026-09-21 — Phase 54 execution started
 - 2026-09-21 — **Scroll read in combat narrates a level refusal although it cast** (user, Pixel 7): `scrollTooAdvanced` (copy-to-book gate) is worded as a refusal right before the cast line — narration-only fix. UI quick task — `todos/pending/2026-09-21-scroll-read-in-combat-narrates-a-level-refusal-although-it-cast.md`
 - 2026-09-21 — **Sub-class descriptions must state every advantage and disadvantage** (user, Pixel 7): the Summoner blurb never mentions the level-3 offense gate; audit every SUB_NOTE / RACE_NOTE against MU_CHART + the Phase 24 identity table. Content task — `todos/pending/2026-09-21-sub-class-descriptions-must-state-every-advantage-and-disadvantage.md`
 - 2026-09-21 — **Combat submenu rows clip their text; order spells by level then name** (user, Pixel 7): `.cb-row` clips on the phone; spell rows are in SPELLS order — sort by effective level then name (land with the hide-uncastable todo). UI quick task — `todos/pending/2026-09-21-combat-submenu-rows-clip-their-text-order-spells-by-level-then-name.md`
+- 2026-09-21 — **Foe type listed after the name on the combat screen** (user, Pixel 7): the foe record already carries its BESTIARY family (`type`); surface it after the name on the foe card. UI quick task — `todos/pending/2026-09-21-foe-type-listed-after-the-name-on-the-combat-screen.md`
 
 ### Roadmap Evolution
 
