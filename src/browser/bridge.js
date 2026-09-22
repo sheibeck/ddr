@@ -14,11 +14,12 @@
 // `## Module bridge` table from this map — the map is the source, the doc
 // is generated.
 //
-// Three names (`__mzAppImportOverride`, `__mzHapticsImportOverride`,
-// `__mzPreferencesOverride`) are test-only injection hooks: a src/browser/
-// module checks `globalThis.<name>` so a test can swap its native import for
-// a fake, WITHOUT any shipped code path ever setting the global itself — the
-// hook is reachable only when a test sets it.
+// Four names (`__mzAppImportOverride`, `__mzHapticsImportOverride`,
+// `__mzPreferencesOverride`, `__mzSfxBackendOverride`) are test-only
+// injection hooks: a src/browser/ module checks `globalThis.<name>` so a
+// test can swap its native import/backend for a fake, WITHOUT any shipped
+// code path ever setting the global itself — the hook is reachable only
+// when a test sets it.
 //
 // Five names (`__mzCombatMenu`, `__mzFightEnd`, `__mzFightLog`, `__mzRail`,
 // `__mzStair`) are presentation-only state written by BOTH scripts: the
@@ -230,6 +231,11 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: fit — reads the current text-scale/haptics/sound settings)"]),
     purpose: "Exposes the module's currently-applied settings object so the classic canvas-fit routine can read the live text-scale setting.",
+  }),
+  __mzSfxBackendOverride: Object.freeze({
+    owner: "src/browser/sfx.js",
+    consumers: Object.freeze(["test/unit/sfx.test.js", "test/unit/sfx-settings.test.js"]),
+    purpose: "Test-only injection hook so a test can replace the Web Audio backend with a fake and assert which clips actually started, without any shipped code path setting it.",
   }),
   __mzShowTab: Object.freeze({
     owner: "mazeworld.html (classic)",
