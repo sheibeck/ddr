@@ -5053,7 +5053,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 56 (AUD-01..06) — the whole audio layer lives in src/browser/sfx.js;
   // this module script calls it directly (dispatchWithNarration and
   // hapticForEvents both live here too, so no window.__mz* bridge is needed).
-  import { unlockSfx, applySfxSettings, playForDispatch, playUiTap, playClipIds } from "./src/browser/sfx.js";
+  import { unlockSfx, applySfxSettings, playForDispatch, cuesForDispatch, playUiTap, playClipIds } from "./src/browser/sfx.js";
   // 04-06: the Wave-1 pure geometry/icon modules — bridged onto window.*
   // below so the classic (non-module) script's fit()/draw()/tap-handler code
   // can call them without an ES `import` (see this module's own doc comment
@@ -5819,7 +5819,17 @@ window.__mzClassicBoot = async function classicBoot() {
   // reading the SAME before/result already in scope — the seam contract
   // above (returns the dispatch result unchanged, byte-identical render
   // tails) is unchanged by its addition.
-  function dispatchWithNarration(action) {
+  // Phase 58 (MOTION-03, D-12): a combat round's clips are resolved HERE
+  // exactly as before (same order, de-dupe, 3-voice cap, counter-driven
+  // variation and family cry, all through cuesForDispatch — the source-
+  // indexed twin of the clip list playForDispatch already used) but are
+  // NOT played here. When the caller passes `opts.cues` (an array),
+  // engineCombatAction is the only caller that does, the resolved cues are
+  // pushed onto it instead, so it can hand them to the combat beat and fire
+  // each clip with the line that caused it. Every other dispatch (move,
+  // camp, store, joiner, inventory, and the no-beat/reduced-motion combat
+  // path) still calls opts-less and plays at dispatch time, unchanged.
+  function dispatchWithNarration(action, opts = {}) {
     const before = window.__mzState.get();
     const roundBefore = before && before.combat ? before.combat.round : null;
     const result = dispatch(action);
@@ -5842,7 +5852,11 @@ window.__mzClassicBoot = async function classicBoot() {
       ),
       combatType: result.state?.combat?.type ?? before?.combat?.type,
     };
-    playForDispatch(action.type, result.events, audioCtx);
+    if (Array.isArray(opts.cues)) {
+      for (const cue of cuesForDispatch(action.type, result.events, audioCtx)) opts.cues.push(cue);
+    } else {
+      playForDispatch(action.type, result.events, audioCtx);
+    }
     window.__mzCombatMenu = null;
     let lines = [];
     if (wasCombat || inCombat) {
@@ -6385,7 +6399,12 @@ window.__mzClassicBoot = async function classicBoot() {
     // reduced.
     const before = window.__mzState.get();
     const beforeLog = window.__mzFightLog;
-    const { state, events, html } = dispatchWithNarration({ type, ...extra });
+    // Phase 58 (MOTION-03, D-12): defer this dispatch's clips into `cues`
+    // instead of playing them at dispatch time — the beat below fires each
+    // one with its own line; the no-beat/reduced-motion tail plays them all
+    // at once, identical to the pre-Phase-58 playForDispatch.
+    const cues = [];
+    const { state, events, html } = dispatchWithNarration({ type, ...extra }, { cues });
     window.__mzState.set(state);
     // Phase 36 (TGT-01/02) — settle the aim on the next living foe after
     // EVERY combat dispatch (hero blow, Joiner blow, Freeze/stone/fire/gas,
@@ -6429,9 +6448,14 @@ window.__mzClassicBoot = async function classicBoot() {
         beforeLog,
         afterLog: window.__mzFightLog,
         ctx: NARRATIVE_ACTIONS.has(type) ? { narrate: narrateEvent } : {},
+        cues,
       });
       if (plan && beatRunner.start(plan)) return;
     }
+    // No beat started (reduced motion, no plan, or start() returned false):
+    // play every deferred clip at once, identical to the pre-Phase-58
+    // playForDispatch call this replaced.
+    playClipIds(cues.map((c) => c.clip));
     window.paint();
     window.renderEncounter();
   }
