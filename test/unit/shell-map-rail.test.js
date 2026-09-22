@@ -140,7 +140,16 @@ test("(a) markup: #mw-rail exists once, sits between </main> and the tab bar, it
 // ─── (b) CSS ────────────────────────────────────────────────────────────
 
 test("(b) CSS: .mw-rail's own values, the five tone rules, typography, action-button shadows, and one @keyframes mwpulse, no aria-disabled in the style block", () => {
-  assert.match(HTML, /\.mw-rail\{[^}]*min-height:132px[^}]*padding:14px 16px 18px[^}]*border-top:3px solid var\(--rail-edge\)[^}]*\}/);
+  // Phase 57 (LAYOUT-01): re-pinned from the old flex:none;min-height:132px
+  // sibling rule to the absolute-overlay rule — position/transform/
+  // visibility/pointer-events replace the flex participation, the padding
+  // and border-top are unchanged. The structural half of this claim (the
+  // rail is out of #app's flex flow) is proven with teeth by
+  // rail-overlay.test.js; this test only pins the byte-exact declarations.
+  assert.match(HTML, /\.mw-rail\{[^}]*position:absolute[^}]*padding:14px 16px 18px[^}]*border-top:3px solid var\(--rail-edge\)[^}]*transform:translateY\(100%\)[^}]*visibility:hidden[^}]*pointer-events:none[^}]*\}/);
+  assert.doesNotMatch(HTML.match(/^\.mw-rail\{[^}]*\}/m)[0], /flex:none|min-height:132px/);
+  assert.match(HTML, /^\.mw-rail\[hidden\]\{display:block;transform:translateY\(100%\);visibility:hidden;pointer-events:none\}$/m);
+  assert.match(HTML, /^\.mw-rail\[data-shown="1"\]\{transform:translateY\(0\);visibility:visible;pointer-events:auto\}$/m);
   const tones = {
     info: ["#6b5c3c", "#e8c97a"],
     good: ["#5e7a3c", "#a8cc72"],
@@ -340,12 +349,21 @@ test("(k.2) Move-on retirement: death/beats/camp carry their Phase 35 replacemen
 
 // ─── (l) layout ─────────────────────────────────────────────────────────
 
-test("(l) layout: the tab bar is a static flex child, .mw-screens is flush, and paint() renders the rail right after the encounter overlay", () => {
+test("(l) layout: the tab bar is a static flex child, .mw-screens is flush inside #mw-stage, and paint() renders the rail right after the encounter overlay", () => {
   const tabbarRule = HTML.match(/\.mw-tabbar\{([^}]*)\}/);
   assert.ok(tabbarRule);
   assert.match(tabbarRule[1], /flex:none/);
   assert.doesNotMatch(tabbarRule[1], /position:fixed/);
   assert.match(HTML, /\.mw-screens\{[^}]*padding:0[^}]*\}/);
+  // Phase 57 (LAYOUT-01): #mw-stage wraps .mw-screens + #mw-rail; the tab
+  // bar stays a direct child of #app, outside the wrapper.
+  const stageIdx = HTML.indexOf('id="mw-stage"');
+  const mainIdx = HTML.indexOf('<main class="mw-screens"');
+  const railIdx = HTML.indexOf('id="mw-rail"');
+  const stageCloseIdx = HTML.indexOf("</div>", railIdx);
+  const navIdx = HTML.indexOf('<nav class="mw-tabbar"');
+  assert.ok(stageIdx !== -1 && stageIdx < mainIdx, "#mw-stage must open before <main class=\"mw-screens\"");
+  assert.ok(stageCloseIdx !== -1 && stageCloseIdx > railIdx && stageCloseIdx < navIdx, "#mw-stage's closing </div> must sit after #mw-rail and before the tab bar");
   // Phase 49 (PERF-02, fix 2): renderRail() is still the statement directly
   // before draw() — draw() is now the ONLY canvas draw per step (stepWith's
   // own redundant second draw() call, 49-01's finding, was removed) — but a
