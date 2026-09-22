@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 58
-current_phase_name: Motion & Pacing
-current_plan: Not started
-status: planning
+current_phase_name: motion-pacing
+current_plan: 1
+status: executing
 stopped_at: Completed 57-05-PLAN.md
-last_updated: "2026-09-22T19:32:44.015Z"
+last_updated: "2026-09-22T20:07:49.227Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 57 complete, transitioned to Phase 58
+last_activity_desc: Phase 58 execution started
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 16
-  completed_plans: 9
+  total_plans: 21
+  completed_plans: 11
   percent: 40
 total_plans_in_phase: 4
 ---
@@ -26,17 +26,17 @@ total_plans_in_phase: 4
 See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 Sound, Motion & Set Dressing started; three Pixel 7 UAT batches still un-run: v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 57 — map-hud-layout-band
+**Current focus:** Phase 58 — motion-pacing
 
 ## Current Position
 
-Phase: 58 — Motion & Pacing
-Current Plan: Not started
-Total Plans in Phase: 4
+Phase: 58 (motion-pacing) — EXECUTING
+Current Plan: 1
+Total Plans in Phase: 7
 Progress: [██████░░░░] 56%
-Plan: 4 of 4
-Status: Ready to plan
-Last activity: 2026-09-22 — Phase 57 complete, transitioned to Phase 58
+Plan: 1 of 7
+Status: Executing Phase 58
+Last activity: 2026-09-22 — Phase 58 execution started
 
 ## Ground Truth (durable facts every session needs)
 
