@@ -223,13 +223,23 @@ function makeController({ reduced = () => false, durationMs = 200, extra = () =>
   return { clock, controller, renderLog };
 }
 
-test("createPartySprite: stepTo() (reduced false) renders exactly once synchronously; at that moment displayed(to) reads the 'from' point, pose 'step', frame 1, active true", () => {
+test("createPartySprite: stepTo() (reduced false) renders exactly once synchronously; at that moment (read from WITHIN the render callback itself, like the real shell's call site) displayed(to) reads the 'from' point, pose 'step', frame 1, active true", () => {
   const from = { x: 1.5, y: 1.5 };
   const to = { x: 2.5, y: 1.5 };
-  const { controller, renderLog } = makeController({ reduced: () => false });
+  // `extra` reads displayed(to) FROM INSIDE the render callback, exactly
+  // like the shell's real render() will (positionPartySprite reads
+  // sprite.displayed(realPos) from inside the render it was handed) — this
+  // is what makes the "glide started before render" ordering observable:
+  // if glide.to() has not yet run when render() fires, glide.active() is
+  // still false and displayed() would wrongly self-heal to `to` instead of
+  // returning `from`.
+  const { controller, renderLog } = makeController({
+    reduced: () => false,
+    extra: (c) => c.displayed(to),
+  });
   controller.stepTo(from, to);
   assert.equal(renderLog.length, 1);
-  assert.deepEqual(controller.displayed(to), from);
+  assert.deepEqual(renderLog[0].extra, from);
   assert.equal(controller.pose(), "step");
   assert.equal(controller.frame(), 1);
   assert.equal(controller.active(), true);
