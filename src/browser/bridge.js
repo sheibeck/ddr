@@ -151,8 +151,13 @@ export const BRIDGE = Object.freeze({
   }),
   __mzHudBands: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: paint — the HUD identity line and the fixed-width counter slots)"]),
-    purpose: "Bridges the pure src/browser/hudBands.js identityLine/counterSlots formatters (Phase 57, LAYOUT-05) so paint() renders band 1's identity line and band 2's fixed-width counters from ONE engine-agnostic source.",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — band 1's name/line split via identityParts, and the fixed-width counter slots)"]),
+    purpose: "Bridges the pure src/browser/hudBands.js identityLine/identityParts/counterSlots formatters (Phase 57, LAYOUT-05) so paint() renders band 1's identity line (split into a never-truncated name and a truncating race/class/level line, Plan 05) and band 2's fixed-width counters from ONE engine-agnostic source.",
+  }),
+  __mzHudMenu: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: hudMenuEvent — the ☰ HUD menu's open/close policy)"]),
+    purpose: "Bridges the pure src/browser/hudMenu.js hudMenuNext reducer (Phase 57, LAYOUT-04/05, Plan 05) so the shell holds no second copy of the ☰ menu's close rules; the classic hudMenuEvent reads the live open state and the encounter context and asks this bridge for the next state, failing closed when the bridge is missing.",
   }),
   __mzIconMap: Object.freeze({
     owner: "mazeworld.html (module)",

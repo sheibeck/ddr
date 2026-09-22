@@ -12,9 +12,12 @@ import {
   HUD_BAND_ANCHORS,
   COUNTER_DIGIT_SLOT,
   COUNTER_OVERFLOW,
+  COUNTER_SLOT_CH,
   identityLine,
+  identityParts,
   counterSlots,
 } from "../../src/browser/hudBands.js";
+import { BAGS } from "../../content/bags.js";
 
 // ─── identityLine() ────────────────────────────────────────────────────
 
@@ -109,6 +112,50 @@ test("counterSlots: a missing/partial state yields zeroes rather than throwing",
   const partial = counterSlots({ day: 5 });
   assert.equal(partial.find((s) => s.id === "m-day").text, "5");
   assert.equal(partial.find((s) => s.id === "m-floor").text, "0");
+});
+
+// ─── identityParts() (Phase 57, Plan 05 — the band-1 split) ────────────
+
+const IDENTITY_MATRIX = [
+  { name: "Ardwin", race: "Human", cls: "Thief", sub: "Guard", level: 3 }, // full
+  { name: "Ardwin", race: "Human", cls: "Thief", sub: null, level: 3 }, // no sub
+  { name: "", race: "Human", cls: "Thief", sub: "Guard", level: 3 }, // no name
+  { name: "Ardwin", race: "Human", cls: "Thief", sub: "Guard", level: 0 }, // no level
+  { name: "Ardwin", race: "", cls: "", sub: null, level: 1 }, // no race or class
+];
+
+test("identityParts: for every character in the matrix, identityLine(c) equals name + em dash + identityParts(c).line", () => {
+  for (const c of IDENTITY_MATRIX) {
+    const parts = identityParts(c);
+    assert.equal(identityLine(c), `${parts.name} — ${parts.line}`);
+  }
+});
+
+test("identityParts: null/missing yields the stand-in name and an empty line; identityLine(null) still returns the stand-in alone", () => {
+  const parts = identityParts(null);
+  assert.equal(parts.name, "Nameless");
+  assert.equal(parts.line, "");
+  assert.ok(Object.isFrozen(parts));
+  assert.equal(identityParts(undefined).name, "Nameless");
+  assert.equal(identityLine(null), "Nameless");
+});
+
+// ─── COUNTER_SLOT_CH (Phase 57, Plan 05 — discovery D) ──────────────────
+
+test("COUNTER_SLOT_CH: frozen, keyed exactly to counterSlots' four ids in order, m-steps equals COUNTER_DIGIT_SLOT, every value a positive integer <= COUNTER_DIGIT_SLOT", () => {
+  assert.ok(Object.isFrozen(COUNTER_SLOT_CH));
+  const slots = counterSlots({ floor: { depth: 1 }, day: 1, steps: 1, c: { rations: 1 } });
+  assert.deepStrictEqual(Object.keys(COUNTER_SLOT_CH), slots.map((s) => s.id));
+  assert.equal(COUNTER_SLOT_CH["m-steps"], COUNTER_DIGIT_SLOT);
+  for (const v of Object.values(COUNTER_SLOT_CH)) {
+    assert.ok(Number.isInteger(v) && v > 0 && v <= COUNTER_DIGIT_SLOT);
+  }
+});
+
+test("COUNTER_SLOT_CH: m-rations holds at least as many digits as the largest ration cap in content/bags.js", () => {
+  const largestRationCap = Math.max(...Object.values(BAGS).map((b) => b.rations));
+  const digitsNeeded = String(largestRationCap).length;
+  assert.ok(COUNTER_SLOT_CH["m-rations"] >= digitsNeeded, `m-rations slot (${COUNTER_SLOT_CH["m-rations"]}) must hold at least ${digitsNeeded} digits for the largest bag's rations cap (${largestRationCap})`);
 });
 
 // ─── HUD_BAND_ANCHORS ──────────────────────────────────────────────────

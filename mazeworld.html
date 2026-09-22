@@ -4554,7 +4554,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 57 (LAYOUT-05): the pure band-1 identity line + band-2
   // fixed-width counter slot formatters, bridged as __mzHudBands below so
   // paint() renders both through the ONE shared source.
-  import { identityLine, counterSlots } from "./src/browser/hudBands.js";
+  import { identityLine, identityParts, counterSlots } from "./src/browser/hudBands.js";
+  // Phase 57 (LAYOUT-04/05), Plan 05 — the pure ☰ HUD menu open/close
+  // reducer, bridged as __mzHudMenu below so the shell holds no second copy
+  // of the menu's close rules.
+  import { hudMenuNext } from "./src/browser/hudMenu.js";
   // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
   import { usableBy, dropShelfItems } from "./src/browser/viewModels.js";
@@ -4681,10 +4685,16 @@ window.__mzClassicBoot = async function classicBoot() {
   // unconditionally.
   window.__mzArmorDisplay = { armorDisplay, bagArmorText };
 
-  // Phase 57 (LAYOUT-05): bridge the PURE band-1 identity line and band-2
-  // fixed-width counter-slot formatters so paint() writes both HUD bands
-  // from ONE engine-agnostic source — read-only, no rng, safe every paint.
-  window.__mzHudBands = { identityLine, counterSlots };
+  // Phase 57 (LAYOUT-05): bridge the PURE band-1 identity line/parts and
+  // band-2 fixed-width counter-slot formatters so paint() writes both HUD
+  // bands from ONE engine-agnostic source — read-only, no rng, safe every
+  // paint. Plan 05 adds identityParts, band 1's name/line split.
+  window.__mzHudBands = { identityLine, identityParts, counterSlots };
+  // Phase 57 (LAYOUT-04/05), Plan 05: bridge the PURE ☰ HUD menu
+  // open/close policy — read-only, no rng, no DOM. The classic hudMenuEvent
+  // (below) is the ONE writer that acts on its answer; a missing bridge
+  // fails closed at that call site.
+  window.__mzHudMenu = { next: hudMenuNext };
 
   // Phase 29 (LOOT-03/04): bridge the PURE compare-to-equipped verdict and
   // the ONE bag-capacity readout so the loot screen, the gear panel, the
