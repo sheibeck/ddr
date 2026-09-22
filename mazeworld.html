@@ -690,8 +690,17 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-major-btn.secondary{background:transparent;color:#a89c82;border:2px solid #3a3226;box-shadow:none}
 
 /* ---------- Phase 35 (MAP-03/04): the RAIL ---------- */
-.mw-rail{flex:none;min-height:132px;padding:14px 16px 18px;border-top:3px solid var(--rail-edge);background:#1b170f;color:#e6ddc6;font-family:var(--mono)}
-.mw-rail[hidden]{display:none}
+/* Phase 57 (LAYOUT-01, 2026-09-21/22 user ruling): the rail is now an
+   absolutely-positioned overlay inside #mw-stage (its positioning parent),
+   pinned to the stage's own bottom edge — a show or a hide can therefore
+   never change .mw-maze-viewport's box, unlike the old flex:none;
+   min-height:132px rule this replaces, which stole that height from
+   .mw-screens on every toggle. Visibility is transform-plus-visibility,
+   never display:none, specifically so Phase 58 (MOTION-01..05) can animate
+   the slide — this rule adds no transition, duration or easing of its own. */
+.mw-rail{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:14px 16px 18px;border-top:3px solid var(--rail-edge);background:#1b170f;color:#e6ddc6;font-family:var(--mono);transform:translateY(100%);visibility:hidden;pointer-events:none}
+.mw-rail[hidden]{display:block;transform:translateY(100%);visibility:hidden;pointer-events:none}
+.mw-rail[data-shown="1"]{transform:translateY(0);visibility:visible;pointer-events:auto}
 .mw-rail[data-idle="1"]{background:#161209}
 .mw-rail[data-tone="info"]{--rail-edge:#6b5c3c;--rail-ink:#e8c97a}
 .mw-rail[data-tone="good"]{--rail-edge:#5e7a3c;--rail-ink:#a8cc72}
@@ -948,6 +957,13 @@ html,body{height:100%}
 .mw-party-status{align-self:flex-start;margin-top:1px}
 .mw-wilmst{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px}
 .mw-wilmst b{color:var(--ink);font-weight:600}
+/* Phase 57 (LAYOUT-01): #mw-stage is the rail's positioning parent — it must
+   stay flex:1/min-height:0 (a link in the #app -> .mw-stage -> .mw-screens
+   -> #screen-maze -> .mazebox -> .mw-maze-viewport definite-height chain) so
+   the map's height is unaffected by the wrapper. overflow:hidden clips the
+   translated-out rail at the stage's own bottom edge instead of letting it
+   paint over the tab bar. */
+.mw-stage{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .mw-screens{flex:1;min-height:0;overflow-y:auto;padding:0}
 .mw-screen{display:block;padding:14px}
 
@@ -1409,6 +1425,15 @@ html,body{height:100%}
        the rail. Hidden entirely when no condition is active. -->
   <div class="mw-cond-strip" id="mm-conditions" hidden></div>
 
+  <!-- Phase 57 (LAYOUT-01): #mw-stage is the rail's positioning parent — a
+       wrapper spanning exactly the region above the tab bar, holding both
+       .mw-screens and #mw-rail as its two children. This is what lets the
+       rail be pinned with `bottom:0` and stay clipped above the tab bar
+       without needing to know the tab bar's safe-area-dependent height, and
+       what decouples the rail's visibility from .mw-maze-viewport's box —
+       see .mw-rail's own CSS comment for the rest of the mechanism. -->
+  <div class="mw-stage" id="mw-stage">
+
   <!-- ============ 5 TAB SCREENS ============ -->
   <main class="mw-screens" id="mw-screens">
 
@@ -1634,14 +1659,18 @@ html,body{height:100%}
   </main>
 
   <!-- Phase 35 (MAP-03/04): the RAIL — the map screen's persistent bottom
-       card. A direct child of #app between the screens and the (now static)
-       tab bar so every out-of-combat dispatch is seen no matter which tab is
-       open (a Gear-tab Use/Equip, a Hero-tab Cast). renderRail() (trailing
-       module script) toggles `hidden` while combat/death/win own the column
-       and rewrites icon/title/lines/actions in place — never rebuilt via
-       body.innerHTML, so the persistent #mw-rail-live child below is never
-       torn down and stays reliably announced by assistive tech (mirrors
-       #enc-round-live's persistent-node pattern). -->
+       card. A direct child of #mw-stage, a sibling of .mw-screens (not a
+       child of any one screen), so every out-of-combat dispatch is seen no
+       matter which tab is open (a Gear-tab Use/Equip, a Hero-tab Cast).
+       renderRail() (trailing module script) toggles `hidden` while
+       combat/death/win own the column and rewrites icon/title/lines/actions
+       in place — never rebuilt via body.innerHTML, so the persistent
+       #mw-rail-live child below is never torn down and stays reliably
+       announced by assistive tech (mirrors #enc-round-live's persistent-node
+       pattern). Phase 57 (LAYOUT-01): the rail is now an absolutely-
+       positioned overlay inside #mw-stage so a card can never resize
+       .mw-maze-viewport, and it stays a sibling of .mw-screens (not a child
+       of one) so the 2026-09-17 every-tab feedback ruling still stands. -->
   <section class="mw-rail" id="mw-rail" data-tone="dull" data-idle="1" aria-label="What is happening">
     <div class="mw-rail-row">
       <span class="mw-rail-icon" id="mw-rail-icon" aria-hidden="true">·</span>
@@ -1657,6 +1686,7 @@ html,body{height:100%}
          so a new rail card is announced exactly once. -->
     <div class="sr-only" id="mw-rail-live" aria-live="polite" aria-atomic="true"></div>
   </section>
+  </div>
 
   <!-- ============ 5-TAB BOTTOM NAV (UX; fixed, safe-area-padded) ============ -->
   <nav class="mw-tabbar" id="mw-tabbar">
