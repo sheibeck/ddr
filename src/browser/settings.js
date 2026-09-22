@@ -1,10 +1,11 @@
 // src/browser/settings.js
 //
-// The single source of truth for the four persisted UX settings (UX-07;
+// The single source of truth for the five persisted UX settings (UX-07;
 // DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
 // former control-bar side option, Phase 46 NAME-02 removed the on-screen
 // movement-control-scheme field — tap-to-move has been the only movement
-// surface since v1.4/v1.5) plus the pure text-scaling (UX-08) and
+// surface since v1.4/v1.5; Phase 59 DRESS-05 added `dressing`, the Set
+// Dressing On/Off row) plus the pure text-scaling (UX-08) and
 // confirm-before-quit-gate helpers. All persistence goes through
 // src/browser/storage.js's shared async abstraction (which itself installs
 // `window.mzStorage` for the classic non-module script) — never any raw
@@ -15,9 +16,9 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All four fields are persisted as ONE JSON object under a single
+// All five fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never four separate keys racing each other.
+// per settings change, never five separate keys racing each other.
 //
 // Fail-open posture (matches engineAdapter.js's persist()/boot()/getBest()):
 // a missing key, a blocked/private store, or a corrupt/malformed JSON blob
@@ -25,19 +26,31 @@
 // throws. Phase 33 (UIF-05): the former handed-layout field was removed; a
 // persisted blob that still carries it is ignored on read because
 // readSettings only merges SETTINGS_DEFAULTS keys, and writeSetting rejects
-// unknown keys — no migration needed.
+// unknown keys — no migration needed. Phase 59 (DRESS-05): the same tolerant
+// posture covers `dressing` going forward — an OLD blob with no `dressing`
+// key at all reads as On (its default) through this exact merge, no
+// migration step needed either.
 
 import { getItem, setItem } from "./storage.js";
 
-/** Single versioned key all four settings fields are persisted under. */
+/** Single versioned key all five settings fields are persisted under. */
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
-/** The four UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md). */
+/**
+ * The five UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md).
+ * Phase 59 (DRESS-05): `dressing` (Set Dressing On/Off, default true) is the
+ * fifth field, persisted in this SAME blob as `sound` and every other field
+ * — but fully independent of it: writing one never changes the other (see
+ * the settings.test.js "independence" pin). It's read by
+ * src/browser/dressing.js#createDressingArt's lazy-load controller, so
+ * turning it Off both draws nothing AND never loads the 54 dressing images.
+ */
 export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
   haptics: true,
   textSize: "M",
   confirmBeforeQuit: true,
+  dressing: true,
 });
 
 // Allowed value sets per field — writeSetting() validates against these
@@ -48,6 +61,7 @@ const ALLOWED_VALUES = {
   haptics: [true, false],
   textSize: ["S", "M", "L"],
   confirmBeforeQuit: [true, false],
+  dressing: [true, false],
 };
 
 function isValidSettingValue(key, value) {
@@ -56,7 +70,7 @@ function isValidSettingValue(key, value) {
 }
 
 /**
- * readSettings() — resolves the full four-field settings object: persisted
+ * readSettings() — resolves the full five-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled
