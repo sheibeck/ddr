@@ -637,6 +637,11 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-foe-meta{font-family:var(--mono);font-weight:700;font-size:12px;color:#a89c82;margin-top:4px}
 .cb-foe-right{text-align:right;flex:none}
 .cb-foe-wp{font-family:var(--mono);font-weight:700;font-size:15px;color:#e6ddc6}
+/* Phase 58 (MOTION-03, D-09): the strike pop lands with the line that
+   caused it — reuses the existing mwStrikePop keyframes (~L522 above). The
+   blanket reduced-motion rule (mazeworld.html ~L847) zeroes this like every
+   other animation. */
+.cb-foe.cb-foe-hit .cb-foe-wp{animation:mwStrikePop .3s ease-out both}
 .cb-foe-tag{font-family:var(--disp);font-size:6px;line-height:1.8;margin-top:5px;color:#e8c97a;min-height:11px}
 .cb-foe-tag.status{color:#a78ce8}
 .cb-foe.dead .cb-foe-tag{color:#8f856f}
@@ -1957,6 +1962,9 @@ let mwActiveTab = "maze";
   const screensEl = document.getElementById("mw-screens");
   function showTab(name) {
     if (!screens[name]) return;
+    // Phase 58 (MOTION-03, D-11): a tab switch lands the round the same
+    // way a hurry tap does — nothing is lost.
+    window.__mzBeat?.hurry?.();
     // Phase 58 (MOTION-02, D-05/D-06/D-07/D-08): a tab switch cross-fades
     // — never a horizontal slide, so the map never looks like it is
     // scrolling. The incoming screen opens through showPanel (which also
@@ -3061,7 +3069,10 @@ function hasActiveEncounter() {
   // Phase 35 (MAP-05): the stair-down overlay (window.__mzStair, presentation
   // only, never S/state) blocks the map exactly like every other over-map
   // overlay above.
-  return !!(S && (S.dead || S.combat || S.store || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length))) || !!window.__mzStair;
+  // Phase 58 (MOTION-03, D-11): a combat beat, including a combat-ending
+  // round, keeps the encounter up and the map parked until its last line
+  // lands. Reads no `S` in this clause.
+  return !!(S && (S.dead || S.combat || S.store || (S.pendingLoot && S.pendingLoot.length) || (S.beats && S.beats.groups && S.beats.groups.length))) || !!window.__mzStair || !!window.__mzBeat?.active?.();
 }
 
 // Phase 58 (MOTION-02, D-08) — fail-open wrappers over window.__mzMotion,
@@ -3122,8 +3133,15 @@ let lastLogSeqShown = 0;
 // the combat-body render, so the next time the same card appears it types
 // again rather than being treated as a same-content re-render.
 let lastMajorTypedKey = "";
+// Phase 58 (MOTION-03, D-09/D-14/D-16): types the currently-revealed
+// fight-log row once per beat line; a re-render at the same line id adopts
+// the in-flight block instead of restarting it.
+let lastBeatTypedId = null;
 
 function encArmed() {
+  // Phase 58 (MOTION-03, D-11): buttons and keys arm only after the
+  // round's last line has landed.
+  if (window.__mzBeat?.active?.()) return false;
   return window.__mzInputGuards ? window.__mzInputGuards.isArmed(encRenderedAt, Date.now()) : true;
 }
 function encounterSettled() {
@@ -3243,13 +3261,25 @@ function foeStatusBadges(f) {
 // renderYourLot/renderActionArea/renderCombatOver after it, before
 // renderEncounter).
 function renderFightLog(host) {
-  const log = window.__mzFightLog;
+  // Phase 58 (MOTION-03, D-09/D-14/D-16): while a beat is live, the log
+  // reads from the beat's own view (its frame's `log`/`maxId`) instead of
+  // the live window.__mzFightLog, and only rows up to `maxId` show — never
+  // cutting a batch short, just not yet revealing what hasn't landed. The
+  // announcer (below) always gets the WHOLE (unfiltered) log, so a screen
+  // reader hears the full round in the very first beat render (D-16) even
+  // though the visible rows reveal and type one by one.
+  const bv = window.__mzBeat?.view?.() || null;
+  const log = bv ? bv.log : window.__mzFightLog;
   const rows = window.__mzFightLogVM ? window.__mzFightLogVM.rows(log) : [];
   const section = document.createElement("section");
   section.className = "cb-log";
   section.id = "cb-log";
   section.setAttribute("aria-label", "Fight log");
+  let typingTextEl = null;
+  let typingEntryEl = null;
+  let typingText = null;
   for (const r of rows) {
+    if (bv && r.id > bv.maxId) continue;
     const el = document.createElement("div");
     el.className = "cb-log-entry cb-log-" + r.tone;
     el.dataset.logId = String(r.id);
@@ -3284,9 +3314,28 @@ function renderFightLog(host) {
     }
     el.appendChild(bodyEl);
     section.appendChild(el);
+    if (bv && bv.typeId != null && r.id === bv.typeId) {
+      typingTextEl = text;
+      typingEntryEl = el;
+      typingText = r.text;
+    }
   }
   host.appendChild(section);
   syncFightLogLive(log);
+  // Phase 58 (MOTION-03, D-14): types the row the beat's CURRENT line
+  // reveals; a re-render at the same line id adopts the in-flight block
+  // instead of restarting it; a hurried/settled render (typeId null, or no
+  // beat at all) cancels any stray run so nothing is left typing forever.
+  if (typingTextEl) {
+    if (bv.typeId !== lastBeatTypedId) {
+      lastBeatTypedId = bv.typeId;
+      window.__mzTypewriter?.type?.("fightlog", { targets: [typingTextEl], texts: [typingText], ariaHost: typingEntryEl });
+    } else if (window.__mzTypewriter?.active?.("fightlog")) {
+      window.__mzTypewriter.adopt("fightlog", [typingTextEl], typingEntryEl);
+    }
+  } else {
+    window.__mzTypewriter?.cancel?.("fightlog");
+  }
 }
 
 // 2026-09-17 UAT (user ruling): feature cards and the encounter/stair
@@ -3377,7 +3426,7 @@ function renderCombatHeader(host, vm) {
 
 // Phase 34 (CSCR-02/08, Decision 3) — picking a new aim point is a guarded
 // presentation mutation; no engine action exists or is added.
-function renderFoeCards(host, vm, onPick) {
+function renderFoeCards(host, vm, onPick, hitFoe = -1) {
   const section = document.createElement("section");
   section.id = "cb-foes";
   section.className = "cb-foes";
@@ -3397,7 +3446,9 @@ function renderFoeCards(host, vm, onPick) {
   list.className = "cb-foe-list";
   vm.cards.forEach((c) => {
     const el = document.createElement("div");
-    el.className = "cb-foe" + (c.state === "target" ? " target" : "") + (c.state === "dead" ? " dead" : "");
+    // Phase 58 (MOTION-03, D-09): the strike pop lands on exactly the foe
+    // the beat's current line struck.
+    el.className = "cb-foe" + (c.state === "target" ? " target" : "") + (c.state === "dead" ? " dead" : "") + (c.i === hitFoe ? " cb-foe-hit" : "");
     el.dataset.foe = String(c.i);
     const row = document.createElement("div");
     row.className = "cb-foe-row";
@@ -3593,7 +3644,10 @@ function openCombatMenu(a) {
 // once; SPELLS-or-ABILITIES/ITEMS/SOCIAL open their submenu) or, while a
 // submenu is open, the submenu itself (title/BACK chip/rows).
 function renderActionArea(host) {
-  const vm = window.__mzCombatVM.menu(S);
+  // Phase 58 (MOTION-03): while a beat is live, the menu reads the beat's
+  // own frame state (its buttons stay guardTap-wired and therefore
+  // disarmed until the beat ends — see encArmed()).
+  const vm = window.__mzCombatVM.menu(window.__mzBeat?.view?.()?.state || S);
   const menu = window.__mzCombatMenu;
   const open = menu && menu.open && vm.submenus[menu.open] ? menu.open : null;
   if (open) {
@@ -3795,6 +3849,13 @@ function renderEncounter() {
   // Phase 32 (CMBUI-04): every button this render builds below shares one
   // fresh arm-delay stamp.
   armEncounterButtons();
+  // Phase 58 (MOTION-03, D-09/D-11): while a beat is live, `bv` is its
+  // view() — the presentation-only frame every branch below reads instead
+  // of the live `S`. `!bv &&` in front of the stair/death/beats/loot/store
+  // conditions lets a combat-ending round's beat render the combat body
+  // (from the frame state) first; the settle render then takes the normal
+  // branch once the beat has actually ended.
+  const bv = window.__mzBeat?.view?.() || null;
   // Phase 34 — every branch starts in the pre-Phase-34 styling; the combat/
   // pending branches (and, from Plan 05, the endings/joiner/find) opt into
   // the mock palette by setting "dark".
@@ -3814,7 +3875,7 @@ function renderEncounter() {
   // NOT YET's re-render flips hasActiveEncounter() true->false, so the
   // dismissal transition further down stamps the settle window and
   // recenters — no extra code needed here.
-  if (window.__mzStair && !S.combat && !S.dead) {
+  if (!bv && window.__mzStair && !S.combat && !S.dead) {
     panel.dataset.mode = "dark";
     const s = window.__mzStair;
     renderMajorOverlay(body, {
@@ -3834,7 +3895,7 @@ function renderEncounter() {
   // pre-death "what got you" beat is folded straight into THAT IS THAT's own
   // lines (decision 5: re-pin renderCombatOver, don't rebuild); there is no
   // separate Move-on card to dismiss first any more.
-  if (S.dead) {
+  if (!bv && S.dead) {
     // Phase 34 (CSCR-07): THAT IS THAT — the mock's dark over-panel, not the
     // legacy death card markup. DR16 Fix 3 (read the Oracle before
     // dismissing) and DR4 group 3 (Confirm stays armed, no read-first lock)
@@ -3852,7 +3913,7 @@ function renderEncounter() {
     return;
   }
   // whatever just happened comes first — one moment at a time on a phone
-  if (!S.combat && S.beats && S.beats.groups && S.beats.groups.length) {
+  if (!bv && !S.combat && S.beats && S.beats.groups && S.beats.groups.length) {
     const b = S.beats;
     // Phase 34 (CSCR-07): a won-without-drops / soothed / fled fight ends on
     // the over-panel; every other beat (floor, level-up, feature narration)
@@ -3887,7 +3948,7 @@ function renderEncounter() {
   // covers the map, hasActiveEncounter() gates window.move, buttons
   // inherit the base ≥48dp min-height and the .actions gap (Phase 32 owns
   // the systematic guard redesign).
-  if (S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {
+  if (!bv && S.pendingLoot && S.pendingLoot.length && !S.combat && !S.store) {
     const c = S.c;
     const usage = window.__mzBagUsage(c);
     const rep = window.__mzLootReport;
@@ -3937,7 +3998,7 @@ function renderEncounter() {
   // src/browser/storeScreen.js#renderStoreScreen — this is now the ONE
   // mount call for the Store surface (the __mzControls/__mzTables/__mzTabs
   // precedent: module-assigned, classic-read).
-  if (S.store) {
+  if (!bv && S.store) {
     window.__mzTabs.store(body, S, tabDeps());
     return;
   }
@@ -3945,7 +4006,12 @@ function renderEncounter() {
   // already gated that case above (panel stays hidden, this function returns
   // early), so reaching this point with !S.combat can no longer happen.
 
-  const C = S.combat;
+  // Phase 58 (MOTION-03, D-09): while a beat is live, `V` is its
+  // presentation-only frame state (bv.state) — the header/foes/lot render
+  // from it instead of the live `S`, so a struck foe's HP/strike pop and
+  // the hero's HP move with the line that caused them.
+  const V = bv ? bv.state : S;
+  const C = V.combat;
   rd.textContent = "";
   // Phase 34 — the legacy topbar is hidden by the dark mode; the
   // mw-round-tick pulse (a topbar-only affordance) is retired with it.
@@ -3955,8 +4021,10 @@ function renderEncounter() {
   // while combat.pending is true, nothing has rolled initiative or struck
   // yet (Phase 31 rule), so this is the map's MAJOR OVERLAY, not the combat
   // panel's header/foes/lot/log/grid chrome. Returns before any band below
-  // is built.
-  if (C.pending) {
+  // is built. Phase 58 (D-09): a beat is never live here — planBeat()
+  // returns null while combat.pending is true — but `&& !bv` keeps this
+  // branch's own precondition self-evident.
+  if (C.pending && !bv) {
     const spec = window.__mzCombatVM.overlay(S);
     renderMajorOverlay(body, { ...spec, primary: { label: spec.primary.label, onTap: () => window.mzFight?.() }, secondary: null });
     return;
@@ -3966,20 +4034,27 @@ function renderEncounter() {
   // types again rather than being treated as a same-content re-render.
   lastMajorTypedKey = "";
 
-  renderCombatHeader(body, window.__mzCombatVM.header(S));
+  renderCombatHeader(body, window.__mzCombatVM.header(V));
 
   const mid = document.createElement("div");
   mid.className = "cb-mid";
   mid.id = "cb-mid";
-  renderFoeCards(mid, window.__mzCombatVM.foes(S, { chipsFor: (f) => foeStatusBadges(f).map((b) => b.t) }), (i) => { S.combat.target = i; renderEncounter(); });
-  renderYourLot(mid, window.__mzCombatVM.lot(S));
+  // Phase 58 (MOTION-03, D-09): the foe-pick callback is guarded — while a
+  // beat is showing an ending round's frame, S.combat is already null (the
+  // real dispatch already resolved it); guardTap/encArmed already swallow
+  // a tap here during a live beat, this is defensive.
+  renderFoeCards(mid, window.__mzCombatVM.foes(V, { chipsFor: (f) => foeStatusBadges(f).map((b) => b.t) }), (i) => { if (S.combat) { S.combat.target = i; renderEncounter(); } }, bv ? bv.hitFoe : -1);
+  renderYourLot(mid, window.__mzCombatVM.lot(V));
   renderFightLog(mid);
   body.appendChild(mid);
   // Phase 34 (CSCR-04) — scroll the newest log entry into view only when a
   // NEW log batch landed since the last render, so a submenu open/close
-  // re-render of the same log never yanks the scroll position.
-  if (window.__mzFightLog && window.__mzFightLog.seq !== lastLogSeqShown) {
-    lastLogSeqShown = window.__mzFightLog.seq;
+  // re-render of the same log never yanks the scroll position. Phase 58
+  // (MOTION-03): while a beat is live, the log is its own frame's log
+  // (bv.log), not necessarily the live window.__mzFightLog.
+  const logForScroll = bv ? bv.log : window.__mzFightLog;
+  if (logForScroll && logForScroll.seq !== lastLogSeqShown) {
+    lastLogSeqShown = logForScroll.seq;
     mid.querySelector(".cb-log-entry")?.scrollIntoView({ block: "nearest" });
   }
 
@@ -4387,6 +4462,22 @@ document.getElementById("mw-rail").onclick = (e) => {
   window.__mzRail = railVM.clear(window.__mzRail);
   renderRail();
 };
+
+// Phase 58 (MOTION-03, D-11): a tap during a beat lands the rest of the
+// round instantly. Capture phase on #enc-panel: this runs BEFORE any
+// combat button's guardTap onclick or a fight-log row's own onclick ever
+// fires, and stopPropagation keeps the tap from ever reaching its target.
+// This is the ONE sanctioned tap-anywhere listener on the encounter panel
+// (the CSCR-08 tests name it exactly, rather than silently tolerating it):
+// it never dispatches, dismisses or selects anything — a no-op outside a
+// live beat.
+function beatHurryTap(e) {
+  if (!window.__mzBeat?.active?.()) return;
+  e.stopPropagation();
+  e.preventDefault();
+  window.__mzBeat.hurry();
+}
+document.getElementById("enc-panel")?.addEventListener("click", beatHurryTap, true);
 
 // Phase 44 (DEAD-01/DEAD-03): the classic run-save persistence (save()/
 // load()/SAVE_KEY) and the classic cold-boot character roll (the classic
