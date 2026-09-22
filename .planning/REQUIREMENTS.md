@@ -36,7 +36,7 @@
 - [x] **MOTION-01**: The map pans smoothly to follow the party instead of jumping between positions
 - [x] **MOTION-02**: Menus, panels and tabs open and close with motion rather than appearing instantly
 - [ ] **MOTION-03**: A combat round plays out with a readable beat between exchanges, so the player can take in each one before the next lands
-- [ ] **MOTION-04**: Rail and encounter text types itself on quickly rather than appearing as a finished block
+- [x] **MOTION-04**: Rail and encounter text types itself on quickly rather than appearing as a finished block
 - [x] **MOTION-05**: With reduced motion requested (OS preference), every animation resolves immediately to its end state and no information is lost
 
 ### Map & HUD layout (LAYOUT — promoted from backlog 999.4)
@@ -101,7 +101,7 @@
 | MOTION-01 | Phase 58 | Complete |
 | MOTION-02 | Phase 58 | Complete |
 | MOTION-03 | Phase 58 | Pending |
-| MOTION-04 | Phase 58 | Pending |
+| MOTION-04 | Phase 58 | Complete |
 | MOTION-05 | Phase 58 | Complete |
 | ANIM-01 | Phase 59 | Pending |
 | ANIM-02 | Phase 59 | Pending |

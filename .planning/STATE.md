@@ -4,17 +4,17 @@ milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 58
 current_phase_name: motion-pacing
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 58-04-PLAN.md
-last_updated: "2026-09-22T21:13:16.598Z"
+stopped_at: Completed 58-05-PLAN.md
+last_updated: "2026-09-22T21:41:20.644Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 58 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 21
-  completed_plans: 13
+  completed_plans: 14
   percent: 40
 total_plans_in_phase: 4
 ---
@@ -31,10 +31,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: 58 (motion-pacing) — EXECUTING
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 7
-Progress: [██████░░░░] 62%
-Plan: 3 of 7
+Progress: [███████░░░] 67%
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-09-22 — Phase 58 execution started
 
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-22T21:13:16.548Z
-Stopped at: Completed 58-04-PLAN.md
+Last session: 2026-09-22T21:41:20.613Z
+Stopped at: Completed 58-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -328,6 +328,7 @@ Resume file: None
 | Phase 57 P05 | ~3h | 3 tasks | 15 files |
 | Phase 58 P03 | 35min | 3 tasks | 10 files |
 | Phase 58 P04 | 75min | 3 tasks | 11 files |
+| Phase 58 P05 | 25min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -608,6 +609,9 @@ Resume file: None
 - [Phase ?]: Phase 58-03: window.__mzControls wired per-test in map-pan.test.js/reduced-motion.test.js (mirroring rail-dismiss.test.js's own pattern) rather than expanding shellSandbox.js#wireBridges' documented scope.
 - [Phase ?]: Phase 58-03: pointerdown-cancel test takes the source-anchor route (not a sandbox event-fire) since recordingDom.js's addEventListener is a no-op and out of this plan's files_modified.
 - [Phase ?]: Phase 58 Plan 04: rail/☰ menu animate via pure CSS transitions on their existing data-state models (data-shown/data-open); only the hidden-based surfaces (sheets, overlay, tabs) route through window.__mzMotion's timer-driven createPanelMotion helper
+- [Phase ?]: Phase 58 Plan 05: Typewriter clock literal matches camera-glide's exactly, re-pinned perfMarks PERF-01 census to treat both as one shared live-clock exception
+- [Phase ?]: Phase 58 Plan 05: renderMajorOverlay's typing key uses an unprintable \u0001 separator between title and line to avoid theoretical concatenation collisions
+- [Phase ?]: Phase 58 Plan 05: the rail's holdCard is captured once at isNew-block time and closed over by startHold, not re-read from rail.card inside the deferred setTimeout callback
 
 ### Blockers
 
