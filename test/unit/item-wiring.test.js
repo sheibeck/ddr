@@ -22,6 +22,13 @@ import { canParley, playerStrike, foeTurn } from "../../engine/combat.js";
 import { useItem } from "../../engine/items.js";
 import { weaponDamage } from "../../engine/derived.js";
 import { sellPriceFor } from "../../engine/economy.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 /** fakeRng(seq) — `.d()` pops the next value regardless of side count; throws
  * on underflow (a "no further rng draw expected" assertion). */

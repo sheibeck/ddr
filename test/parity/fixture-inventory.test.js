@@ -108,14 +108,20 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
     // to tier 2, Ned is now the tier-1 Humans row this seed rolls (a
     // declared action-path divergence — see FIXTURE-INVENTORY.md's Phase 27
     // section).
+    // Phase 54-07 (USER RULING G cycle 3, BAND-02): FOE_HP_SCALE fitted to
+    // { base: 0.9, perDepth: 0.015 } scales every foe's copy-time wp
+    // (foeWpFor, engine/difficulty.js) — round(8 * 0.915) = 7 at depth 1.
+    // Every other pinned foe's wp in this array rounds to the SAME value
+    // under the fitted scale (round(3*0.915)=3, round(1*0.915)=1), so only
+    // Ned's wp 8 -> 7 moves visibly here.
     {
       fixture: "action-script.combat.json",
       scenario: "parley",
       seed: 303,
       forced: "Humans",
       foes: [
-        { name: "Ned", type: "Humans", lvl: 1, wp: 8 },
-        { name: "Ned", type: "Humans", lvl: 1, wp: 8 },
+        { name: "Ned", type: "Humans", lvl: 1, wp: 7 },
+        { name: "Ned", type: "Humans", lvl: 1, wp: 7 },
       ],
     },
     {

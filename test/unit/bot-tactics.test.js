@@ -31,6 +31,13 @@ import { DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
 import { SPELLS } from "../../content/index.js";
 import { maxCharges } from "../../engine/movement.js";
 import { takeFind } from "../../engine/items.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 /** idx(name) — the SPELLS index for a spell by exact display name. */
 function idx(name) {

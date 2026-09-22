@@ -31,6 +31,13 @@ import { playerStrike, foeTurn, flee, alliesTurn } from "../../engine/combat.js"
 import { SPELLS } from "../../content/index.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 

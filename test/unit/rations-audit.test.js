@@ -29,6 +29,13 @@ import { newRun } from "../../engine/state.js";
 import { BAGS } from "../../content/index.js";
 import { EVENT_NARRATION, RATION_RULE_LINE, narrateEvent } from "../../src/browser/eventNarration.js";
 import { LINE_FOR, narrativeLineText } from "../../src/browser/narrationLines.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");

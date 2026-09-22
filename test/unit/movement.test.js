@@ -32,6 +32,26 @@ import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { fallDark } from "../../engine/encounters.js";
 import { inDark, revealRadius } from "../../engine/derived.js";
 import { difficultyCurve, scaleHazard, campHealFor, heroRegenFor, heroSpFor, setDialsForTuning, wanderWakeFacesFor } from "../../engine/difficulty.js";
+import { setIdentityDials, IDENTITY_DIALS } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
+
+/**
+ * setDials(overrides) — this file's OWN local drop-in replacement for a
+ * bare `setDialsForTuning(overrides)` call: merges `overrides` against
+ * IDENTITY_DIALS (never against the fitted `DIALS`, which is what a raw
+ * `setDialsForTuning` call would do), and its returned restore function
+ * resets `live` back to IDENTITY_DIALS (never to fitted `DIALS`, which is
+ * what the raw `setDialsForTuning`-returned `restore()` always does).
+ */
+function setDials(overrides) {
+  setDialsForTuning({ ...IDENTITY_DIALS, ...overrides });
+  return () => setDialsForTuning(IDENTITY_DIALS);
+}
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -300,7 +320,7 @@ test("move: hazardScale is identity (1) at every depth by default; a synthetic H
     assert.equal(Object.is(difficultyCurve(depth).hazardScale, 1), true, `depth ${depth}: hazardScale must be exactly 1 at identity`);
   }
 
-  const restore = setDialsForTuning({ HAZARD_SCALE: { base: 0.5, perDepth: 0 } });
+  const restore = setDials({ HAZARD_SCALE: { base: 0.5, perDepth: 0 } });
   try {
     const state = fixedState({ floor: { depth: 5 } });
     open(state.floor.g, 5, 4, { feat: "gorge" });
@@ -760,7 +780,7 @@ test("descend: the SP bonus is heroSpFor(40 + 30*depth) — identity (HERO_SP_SC
 // (0) never pushes a floorRegen event; a synthetic override proves the
 // wiring (0 new draws either way).
 test("descend: no floorRegen event at HERO_REGEN_PER_FLOOR 0 (identity); under a 0.25 override the hero gains round(0.25 * maxWP) capped at maxWP and the event carries the amount", () => {
-  const restore = setDialsForTuning({ HERO_REGEN_PER_FLOOR: 0.25 });
+  const restore = setDials({ HERO_REGEN_PER_FLOOR: 0.25 });
   try {
     const state = fixedState({ c: { wp: 10, maxWP: 55 } });
     open(state.floor.g, 5, 4, { feat: "exit" });
@@ -867,7 +887,7 @@ test("wanderWakeFacesFor: 1 -> face 1; 2 -> faces 1-2; 0 -> never; Bard = +1 cap
   assert.equal(wanderWakeFacesFor("Wizard"), 1, "identity: only a bare 1 wakes a non-Bard");
   assert.equal(wanderWakeFacesFor("Bard"), 2, "identity: a Bard's canon +1 stacks on top of the dial");
 
-  const restore2 = setDialsForTuning({ WANDER_RATE: 2 });
+  const restore2 = setDials({ WANDER_RATE: 2 });
   try {
     assert.equal(wanderWakeFacesFor("Wizard"), 2);
     assert.equal(wanderWakeFacesFor("Bard"), 3);
@@ -875,14 +895,14 @@ test("wanderWakeFacesFor: 1 -> face 1; 2 -> faces 1-2; 0 -> never; Bard = +1 cap
     restore2();
   }
 
-  const restore0 = setDialsForTuning({ WANDER_RATE: 0 });
+  const restore0 = setDials({ WANDER_RATE: 0 });
   try {
     assert.equal(wanderWakeFacesFor("Wizard"), 0, "0 means a wandering monster never wakes the party");
   } finally {
     restore0();
   }
 
-  const restoreCap = setDialsForTuning({ WANDER_RATE: 20 });
+  const restoreCap = setDials({ WANDER_RATE: 20 });
   try {
     assert.equal(wanderWakeFacesFor("Bard"), 20, "a Bard's +1 is capped at 20, a d20's own ceiling");
   } finally {
@@ -907,7 +927,7 @@ test("wanderWakeFacesFor: 1 -> face 1; 2 -> faces 1-2; 0 -> never; Bard = +1 cap
   }
   const state = fixedState();
   open(state.floor.g, 5, 5);
-  const restoreWide = setDialsForTuning({ WANDER_RATE: 5 });
+  const restoreWide = setDials({ WANDER_RATE: 5 });
   try {
     // heal d10=5, then eight wander checks all above wakeOn(5) -> never wakes
     const rng = countingRng(fakeRng([5, 20, 20, 20, 20, 20, 20, 20, 20]));

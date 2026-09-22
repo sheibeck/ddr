@@ -58,6 +58,23 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const ECONOMY_FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "fixtures", "action-script.economy.json"), "utf8"));
 const ENCOUNTERS_FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "fixtures", "action-script.encounters.json"), "utf8"));
 
+/**
+ * applyFloorFeatureShift(state, floorShift) — Phase 54-07 (USER RULING G
+ * cycle 3, BAND-02): a LOCAL copy (test/parity/harness/comparables.js is
+ * never edited — the engine gate) of movement-parity.test.js's /
+ * combat-parity.test.js's identically-named helper; see either file's own
+ * header comment for the ENCOUNTER_DOTS-remap mechanism this declares.
+ */
+function applyFloorFeatureShift(state, floorShift) {
+  const cells = floorShift?.cells?.[state?.floor?.depth];
+  if (!cells || !state.floor) return state;
+  const g = state.floor.g.map((row) => row.map((cell) => ({ ...cell })));
+  for (const { x, y, before } of cells) {
+    if (g[y] && g[y][x]) g[y][x] = { ...g[y][x], feat: before };
+  }
+  return { ...state, floor: { ...state.floor, g } };
+}
+
 // --- economy: a full store visit -------------------------------------------
 
 test("economy parity (store visit): engine matches the frozen prototype after every action", () => {
@@ -69,7 +86,12 @@ test("economy parity (store visit): engine matches the frozen prototype after ev
   // Phase 38 (ABIL-02): the economy fixture's script top level carries a
   // declared chargenDivergence (seed 3, Thief Pickpocket).
   const shift = chargenShiftOf(ECONOMY_FIXTURE);
-  const cmp = shift ? (s) => stripChargenShift(comparable(s), shift) : comparable;
+  // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply the fixture's
+  // declared floorFeatureShift (ENCOUNTER_DOTS remap) before every other
+  // strip — see applyFloorFeatureShift's own header (harness/comparables.js).
+  const floorShift = ECONOMY_FIXTURE.floorFeatureShift;
+  const baseCmp = (s) => comparable(applyFloorFeatureShift(s, floorShift));
+  const cmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
 
   const ctx = loadPrototypeSandbox({ seed: ECONOMY_FIXTURE.seed });
   let engineState = newRun(ECONOMY_FIXTURE.seed);
@@ -153,7 +175,11 @@ for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
     // Phase 38 (ABIL-02): trap/chest/tablefour/faerie/affliction all carry a
     // declared chargenDivergence.
     const shift = chargenShiftOf(scenario);
-    const cmp = shift ? (s) => stripChargenShift(comparable(s), shift) : comparable;
+    // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply this scenario's
+    // declared floorFeatureShift before every other strip.
+    const floorShift = scenario.floorFeatureShift;
+    const baseCmp = (s) => comparable(applyFloorFeatureShift(s, floorShift));
+    const cmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
     // Phase 54 (BAND-02, USER RULING D): a scenario MAY also carry a
     // "action-path" divergence record — the SAME mechanism
     // combat-parity.test.js's scenario loop already uses. `null` for every

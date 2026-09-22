@@ -30,8 +30,15 @@ import {
   fallDark,
 } from "../../engine/encounters.js";
 import { GW, GH } from "../../engine/maze.js";
-import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, setDialsForTuning } from "../../engine/difficulty.js";
+import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor } from "../../engine/difficulty.js";
 import { makeRng } from "../../engine/rng.js";
+import { setIdentityDials, withIdentity } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -148,17 +155,14 @@ test("springTrap: hazardScale is identity (1) at every depth by default — the 
 });
 
 test("springTrap: a synthetic HAZARD_SCALE override scales the Spike damage through the live curve (restored after)", () => {
-  const restore = setDialsForTuning({ HAZARD_SCALE: { base: 0.5, perDepth: 0 } });
-  try {
+  withIdentity({ HAZARD_SCALE: { base: 0.5, perDepth: 0 } }, () => {
     const state = fixedState({ floor: { depth: 5 } });
     const events = springTrap(state, fakeRng([20, 8, 3]), []);
     const expectedDmg = scaleHazard(15, difficultyCurve(5));
     assert.equal(expectedDmg, 8, "round(15 * 0.5) = 8 (measured via scaleHazard itself)");
     assert.equal(state.c.wp, 40 - expectedDmg);
     assert.ok(events.some((e) => e.type === "trapSprung" && e.dmg === expectedDmg));
-  } finally {
-    restore();
-  }
+  });
 });
 
 // --- openChest ----------------------------------------------------------

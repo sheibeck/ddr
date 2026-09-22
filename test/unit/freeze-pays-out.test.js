@@ -17,6 +17,13 @@ import { castSpell } from "../../engine/magic.js";
 import { killSpFor } from "../../engine/derived.js";
 import { SPELLS } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 

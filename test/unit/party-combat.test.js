@@ -26,6 +26,13 @@ import { memberToHit, bestAttackSpell } from "../../engine/derived.js";
 import { newDay } from "../../engine/movement.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR, ORACLE_ONLY, FEATURE_EVENTS, linesForAction } from "../../src/browser/narrationLines.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 /** fakeRng(seq) — `.d()` pops the next value regardless of side count; throws
  * on underflow, which doubles as a "no more rng draws expected" assertion. */

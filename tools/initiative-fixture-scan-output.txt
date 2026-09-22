@@ -19,16 +19,16 @@
 | action-script.chargen.json | action-script.chargen.json#seed-32 | 32 | Fighter Samurai Wilmsry | 0 | never | false | n/a | n/a | none |
 | action-script.chargen.json | action-script.chargen.json#seed-35 | 35 | Magic User Cleric Troll | 0 | never | false | n/a | n/a | none |
 | action-script.movement.json | action-script.movement.json#script | 256 | Thief Cat Burglar Human | 101 | never | false | n/a | n/a | none |
-| action-script.combat.json | action-script.combat.json#win | 3 | Thief Pickpocket Human | 2 | never | false | never | 1 | none |
-| action-script.combat.json | action-script.combat.json#lose | 14 | Fighter Soldier Fridgian | 11 | 1 | true | 0 | 4 | 24+31+51+52 |
+| action-script.combat.json | action-script.combat.json#win | 3 | Thief Pickpocket Human | 2 | never | false | 0 | 1 | 54 |
+| action-script.combat.json | action-script.combat.json#lose | 14 | Fighter Soldier Fridgian | 11 | 1 | true | 0 | 4 | 24+31+51+52+54 |
 | action-script.combat.json | action-script.combat.json#lose-apprentice | 127 | Magic User Apprentice Human | 15 | 1 | true | 0 | 15 | 31+51+54 |
-| action-script.combat.json | action-script.combat.json#lose-plain | 1119 | Thief Cutthroat Human | 8 | 1 | true | 2 | 8 | 51 |
+| action-script.combat.json | action-script.combat.json#lose-plain | 1119 | Thief Cutthroat Human | 8 | 1 | true | 0 | 8 | 51+54 |
 | action-script.combat.json | action-script.combat.json#flee | 17 | Thief Pilfer Fridgian | 2 | never | false | 0 | 1 | 54 |
-| action-script.combat.json | action-script.combat.json#parley | 303 | Thief Con Artist Wilmsry | 2 | never | false | 0 | 1 | 27+31 |
-| action-script.magic.json | action-script.magic.json#cast-damage | 8 | Magic User Illusionist Wilmsry | 2 | never | false | 0 | 1 | 23+31 |
-| action-script.magic.json | action-script.magic.json#heal | 7 | Magic User Wizard Human | 1 | never | false | never | n/a | none |
-| action-script.magic.json | action-script.magic.json#potion | 1 | Fighter Knight Fridgian | 1 | never | false | never | n/a | none |
-| action-script.magic.json | action-script.magic.json#scroll | 7 | Magic User Wizard Human | 1 | never | false | never | n/a | none |
+| action-script.combat.json | action-script.combat.json#parley | 303 | Thief Con Artist Wilmsry | 2 | never | false | 0 | 1 | 27+31+54 |
+| action-script.magic.json | action-script.magic.json#cast-damage | 8 | Magic User Illusionist Wilmsry | 2 | never | false | 0 | 1 | 23+31+54 |
+| action-script.magic.json | action-script.magic.json#heal | 7 | Magic User Wizard Human | 1 | never | false | 0 | n/a | none |
+| action-script.magic.json | action-script.magic.json#potion | 1 | Fighter Knight Fridgian | 1 | never | false | 0 | n/a | none |
+| action-script.magic.json | action-script.magic.json#scroll | 7 | Magic User Wizard Human | 1 | never | false | 0 | n/a | none |
 | action-script.economy.json | action-script.economy.json#script | 3 | Thief Pickpocket Human | 10 | never | false | n/a | n/a | none |
 | action-script.encounters.json | action-script.encounters.json#trap | 1 | Fighter Knight Fridgian | 1 | never | false | n/a | n/a | none |
 | action-script.encounters.json | action-script.encounters.json#chest | 2 | Thief Cat Burglar Wilmsry | 1 | never | false | n/a | n/a | none |
@@ -45,16 +45,16 @@ INITIATIVE EXPOSURE: 3 of 31 replay sites
 
 ### action-script.combat.json#lose
 fields.before (prototype @end): {"wp":0,"sp":5,"gold":51,"kills":1,"rations":7}
-fields.after (engine @end): {"wp":51,"sp":45,"gold":52,"kills":2,"rations":8}
+fields.after (engine @end): {"wp":64,"sp":12,"gold":52,"kills":2,"rations":11}
 state.before (prototype @end): {"dead":true}
 state.after (engine @end): {"dead":false}
 firstDivergentAction: 0
 maxRound: 4
-divergence.phase: 24+31+51+52
+divergence.phase: 24+31+51+52+54
 
 ### action-script.combat.json#lose-apprentice
 fields.before (prototype @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":4}
-fields.after (engine @end): {"wp":23,"sp":60,"gold":50,"kills":2,"rations":4}
+fields.after (engine @end): {"wp":35,"sp":17,"gold":50,"kills":2,"rations":6}
 state.before (prototype @end): {"dead":true}
 state.after (engine @end): {"dead":false}
 firstDivergentAction: 0
@@ -63,9 +63,9 @@ divergence.phase: 31+51+54
 
 ### action-script.combat.json#lose-plain
 fields.before (prototype @end): {"wp":0,"sp":0,"gold":50,"kills":0,"rations":5}
-fields.after (engine @end): {"wp":34,"sp":0,"gold":50,"kills":0,"rations":5}
+fields.after (engine @end): {"wp":47,"sp":0,"gold":50,"kills":0,"rations":8}
 state.before (prototype @end): {"dead":true}
 state.after (engine @end): {"dead":false}
-firstDivergentAction: 2
+firstDivergentAction: 0
 maxRound: 8
-divergence.phase: 51
+divergence.phase: 51+54

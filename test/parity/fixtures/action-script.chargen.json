@@ -1,117 +1,540 @@
 {
   "seed": 20260907,
-  "seeds": [1, 2, 3, 4, 6, 7, 8, 13, 15, 19, 24, 29, 32, 35],
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    6,
+    7,
+    8,
+    13,
+    15,
+    19,
+    24,
+    29,
+    32,
+    35
+  ],
   "actions": [],
   "_note": "Character generation happens entirely at newRun/newGame with no further actions, so `actions` is empty (per action-script.schema.md, an empty actions array is valid). The `seeds` array is the covering set this chargen fixture iterates: across it every class (Fighter/Thief/Magic User), all six races (Human/Elven/Dwarven/Wilmsry/Fridgian/Troll), a Samurai (plate + magic weapon), and the special-grant grimoire branches (Wizard/Illusionist/Summoner/Sorcerer/Apprentice/Warlock/Cleric) are exercised at least once. `seed` is the schema-required scalar (a representative single seed); the parity and determinism tests iterate `seeds`. See `divergences` below: Phase 23 (IDENT-02/IDENT-03) originally declared seeds 15/24, both since UPDATED (after/rationale) by Phase 40's spell table reshape + day-one damage guarantee (SPELL-04/SPELL-05), which also adds seeds 7 and 29; Phase 38 (ABIL-02, the Special Skills table reshape) contributed seeds 1/2/3/4/6/13/32.",
   "divergences": {
-    "7": {
-      "phase": 40,
-      "requirements": ["SPELL-04"],
-      "fields": ["grimoire"],
-      "before": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal"] },
-      "after": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal", "Lesser Summon"] },
-      "rationale": "Phase 40 (SPELL-04): this Wizard's book (Sense Presence/Mirror Self/Stun/Heal) has no damage-dealing spell under the narrowed day-one guarantee (Stun no longer counts — control, not damage). content/spells.js's Lesser Summon (roll: \"derived\", lesser: true, so dealsDamage is true) is spliced into the day-one pool at a derived-random position for this seed and itself satisfies the guarantee, so it is appended — no Freeze needed. Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited."
-    },
-    "15": {
-      "phase": 40,
-      "requirements": ["SPELL-04", "FID-06"],
-      "fields": ["grimoire"],
-      "before": { "grimoire": ["Stupidity", "Stun", "Shield", "Summon", "Heal"] },
-      "after": { "grimoire": ["Stupidity", "Stun", "Lesser Summon", "Shield", "Summon"] },
-      "rationale": "Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, 2026-09-18): the Phase 23 Summoner/Summon level-1 override is retired — Summon is spell level 2 again, no longer usable-now, so it no longer counts toward the two-usable-now top-up on its own. content/spells.js's Lesser Summon (roll: \"derived\") is spliced into this seed's shuffled low-level pool at a derived-random position, displacing Heal from the final book; the Summoner is also deterministically granted Lesser Summon (already present here from the splice, so no duplicate is pushed). Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited."
-    },
-    "24": {
-      "phase": 40,
-      "requirements": ["SPELL-04", "SPELL-05", "FID-06"],
-      "fields": ["grimoire"],
-      "before": { "grimoire": ["Heal", "Strength", "Stupidity", "Detect Magic", "Sense Presence"] },
-      "after": { "grimoire": ["Heal", "Strength", "Stupidity", "Map the Floor", "Sense Presence", "Freeze"] },
-      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws."
-    },
-    "29": {
-      "phase": 40,
-      "requirements": ["SPELL-05"],
-      "fields": ["grimoire"],
-      "before": { "grimoire": ["Detect Magic", "Shield", "Strength", "Acid", "Insane", "Freeze", "Sense Danger"] },
-      "after": { "grimoire": ["Map the Floor", "Shield", "Strength", "Acid", "Insane", "Freeze", "Sense Danger"] },
-      "rationale": "Phase 40 (SPELL-05): pure rename at the same table position — Detect Magic becomes Map the Floor. The Warlock cannot learn the special school (content/mu-chart.js: special: null), so Lesser Summon is never in its learnable pool and this is the ONLY change; Freeze already satisfied the day-one damage guarantee before and after this phase."
-    },
     "1": {
-      "phase": 38,
-      "requirements": ["ABIL-02"],
-      "fields": ["skills"],
-      "before": { "skills": { "Climbing": 1, "Ambidextrous": 1, "Runes/Signs": 1 } },
-      "after": { "skills": { "Ambidextrous": 1, "Runes/Signs": 1 } },
-      "rationale": "ABIL-02: Climbing was dropped outright by the Special Skills table reshape; the table position it occupied is now Second Wind, an active split into c.abilities (secondWind) rather than a c.skills entry."
+      "phase": "38+54",
+      "requirements": [
+        "ABIL-02",
+        "BAND-02"
+      ],
+      "fields": [
+        "skills",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "skills": {
+          "Climbing": 1,
+          "Ambidextrous": 1,
+          "Runes/Signs": 1
+        },
+        "maxWP": 58,
+        "wp": 58,
+        "rations": 6
+      },
+      "after": {
+        "skills": {
+          "Ambidextrous": 1,
+          "Runes/Signs": 1
+        },
+        "maxWP": 73,
+        "wp": 73,
+        "rations": 9
+      },
+      "rationale": "ABIL-02: Climbing was dropped outright by the Special Skills table reshape; the table position it occupied is now Second Wind, an active split into c.abilities (secondWind) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "2": {
-      "phase": "38+45",
-      "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"],
-      "fields": ["skills", "items", "worn"],
+      "phase": "38+45+54",
+      "requirements": [
+        "ABIL-02",
+        "QUICK-260918-w4n",
+        "HEDGE-03",
+        "BAND-02"
+      ],
+      "fields": [
+        "skills",
+        "items",
+        "worn",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
       "before": {
-        "skills": { "Climbing": 1, "Acute Hearing": 1, "Leaping": 1, "Night Vision": 1 },
-        "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 } }]
+        "skills": {
+          "Climbing": 1,
+          "Acute Hearing": 1,
+          "Leaping": 1,
+          "Night Vision": 1
+        },
+        "items": [
+          {
+            "kind": "cloak",
+            "n": "Cloak of Regeneration",
+            "eff": {
+              "cloakRegen": 1
+            }
+          }
+        ],
+        "maxWP": 40,
+        "wp": 40,
+        "rations": 5
       },
       "after": {
-        "skills": { "Acute Hearing": 1, "Night Vision": 1 },
+        "skills": {
+          "Acute Hearing": 1,
+          "Night Vision": 1
+        },
         "items": [],
-        "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth" } }
+        "worn": {
+          "cloak": {
+            "kind": "cloak",
+            "n": "Cloak of Armor",
+            "eff": {
+              "cloakArmor": 1
+            },
+            "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
+          }
+        },
+        "maxWP": 50,
+        "wp": 50,
+        "rations": 8
       },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "3": {
-      "phase": "38+45",
-      "requirements": ["ABIL-02", "HEDGE-03"],
-      "fields": ["skills", "items", "worn"],
+      "phase": "38+45+54",
+      "requirements": [
+        "ABIL-02",
+        "HEDGE-03",
+        "BAND-02"
+      ],
+      "fields": [
+        "skills",
+        "items",
+        "worn",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
       "before": {
-        "skills": { "Heft": 1, "Silence": 1 },
-        "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "txt": "walk through walls, once every 100 squares" }]
+        "skills": {
+          "Heft": 1,
+          "Silence": 1
+        },
+        "items": [
+          {
+            "kind": "cloak",
+            "n": "Cloak of Ether",
+            "eff": {},
+            "use": "ether",
+            "txt": "walk through walls, once every 100 squares"
+          }
+        ],
+        "maxWP": 40,
+        "wp": 40,
+        "rations": 5
       },
       "after": {
-        "skills": { "Heft": 1 },
+        "skills": {
+          "Heft": 1
+        },
         "items": [],
-        "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+        "worn": {
+          "cloak": {
+            "kind": "cloak",
+            "n": "Cloak of Ether",
+            "eff": {},
+            "use": "ether",
+            "every": 80,
+            "txt": "walk through walls, once every 100 squares"
+          }
+        },
+        "maxWP": 50,
+        "wp": 50,
+        "rations": 8
       },
-      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "4": {
-      "phase": "38+45",
-      "requirements": ["ABIL-02", "HEDGE-03"],
-      "fields": ["skills", "items", "worn"],
+      "phase": "38+45+54",
+      "requirements": [
+        "ABIL-02",
+        "HEDGE-03",
+        "BAND-02"
+      ],
+      "fields": [
+        "skills",
+        "items",
+        "worn",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
       "before": {
-        "skills": { "Climbing": 1, "Acute Hearing": 1, "Silence": 1 },
-        "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 } }]
+        "skills": {
+          "Climbing": 1,
+          "Acute Hearing": 1,
+          "Silence": 1
+        },
+        "items": [
+          {
+            "kind": "cloak",
+            "n": "Cloak of Regeneration",
+            "eff": {
+              "cloakRegen": 1
+            }
+          }
+        ],
+        "maxWP": 40,
+        "wp": 40,
+        "rations": 5
       },
       "after": {
-        "skills": { "Acute Hearing": 1 },
+        "skills": {
+          "Acute Hearing": 1
+        },
         "items": [],
-        "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 }, "txt": "used, a d6 hp back at once; then twenty squares of rest before it works again" } }
+        "worn": {
+          "cloak": {
+            "kind": "cloak",
+            "n": "Cloak of Regeneration",
+            "eff": {
+              "cloakRegen": 1
+            },
+            "txt": "used, a d6 hp back at once; then twenty squares of rest before it works again"
+          }
+        },
+        "maxWP": 50,
+        "wp": 50,
+        "rations": 8
       },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "6": {
-      "phase": 38,
-      "requirements": ["ABIL-02"],
-      "fields": ["skills"],
-      "before": { "skills": { "Hardiness": 1, "Leaping": 1 } },
-      "after": { "skills": { "Hardiness": 1 } },
-      "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep, an active split into c.abilities (sweep) rather than a c.skills entry."
+      "phase": "38+54",
+      "requirements": [
+        "ABIL-02",
+        "BAND-02"
+      ],
+      "fields": [
+        "skills",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "skills": {
+          "Hardiness": 1,
+          "Leaping": 1
+        },
+        "maxWP": 75,
+        "wp": 75,
+        "rations": 6
+      },
+      "after": {
+        "skills": {
+          "Hardiness": 1
+        },
+        "maxWP": 94,
+        "wp": 94,
+        "rations": 9
+      },
+      "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep, an active split into c.abilities (sweep) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+    },
+    "7": {
+      "phase": "40+54",
+      "requirements": [
+        "SPELL-04",
+        "BAND-02"
+      ],
+      "fields": [
+        "grimoire",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "grimoire": [
+          "Sense Presence",
+          "Mirror Self",
+          "Stun",
+          "Heal"
+        ],
+        "maxWP": 31,
+        "wp": 31,
+        "rations": 4
+      },
+      "after": {
+        "grimoire": [
+          "Sense Presence",
+          "Mirror Self",
+          "Stun",
+          "Heal",
+          "Lesser Summon"
+        ],
+        "maxWP": 39,
+        "wp": 39,
+        "rations": 6
+      },
+      "rationale": "Phase 40 (SPELL-04): this Wizard's book (Sense Presence/Mirror Self/Stun/Heal) has no damage-dealing spell under the narrowed day-one guarantee (Stun no longer counts — control, not damage). content/spells.js's Lesser Summon (roll: \"derived\", lesser: true, so dealsDamage is true) is spliced into the day-one pool at a derived-random position for this seed and itself satisfies the guarantee, so it is appended — no Freeze needed. Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+    },
+    "8": {
+      "phase": "54",
+      "requirements": [
+        "BAND-02"
+      ],
+      "fields": [
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "maxWP": 31,
+        "wp": 31,
+        "rations": 4
+      },
+      "after": {
+        "maxWP": 39,
+        "wp": 39,
+        "rations": 6
+      },
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "13": {
-      "phase": 38,
-      "requirements": ["ABIL-02"],
-      "fields": ["skills"],
-      "before": { "skills": { "Death-touch": 1, "Tracking": 1 } },
-      "after": { "skills": {} },
-      "rationale": "ABIL-02: Death-touch was converted to the Death Touch active and Tracking was dropped outright; Death Touch landed in c.abilities (deathTouch) instead of c.skills, and Tracking's table position is now Battle Roar (also an active)."
+      "phase": "38+54",
+      "requirements": [
+        "ABIL-02",
+        "BAND-02"
+      ],
+      "fields": [
+        "skills",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "skills": {
+          "Death-touch": 1,
+          "Tracking": 1
+        },
+        "maxWP": 31,
+        "wp": 31,
+        "rations": 6
+      },
+      "after": {
+        "skills": {},
+        "maxWP": 39,
+        "wp": 39,
+        "rations": 9
+      },
+      "rationale": "ABIL-02: Death-touch was converted to the Death Touch active and Tracking was dropped outright; Death Touch landed in c.abilities (deathTouch) instead of c.skills, and Tracking's table position is now Battle Roar (also an active). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+    },
+    "15": {
+      "phase": "40+54",
+      "requirements": [
+        "SPELL-04",
+        "FID-06",
+        "BAND-02"
+      ],
+      "fields": [
+        "grimoire",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "grimoire": [
+          "Stupidity",
+          "Stun",
+          "Shield",
+          "Summon",
+          "Heal"
+        ],
+        "maxWP": 28,
+        "wp": 28,
+        "rations": 4
+      },
+      "after": {
+        "grimoire": [
+          "Stupidity",
+          "Stun",
+          "Lesser Summon",
+          "Shield",
+          "Summon"
+        ],
+        "maxWP": 35,
+        "wp": 35,
+        "rations": 6
+      },
+      "rationale": "Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, 2026-09-18): the Phase 23 Summoner/Summon level-1 override is retired — Summon is spell level 2 again, no longer usable-now, so it no longer counts toward the two-usable-now top-up on its own. content/spells.js's Lesser Summon (roll: \"derived\") is spliced into this seed's shuffled low-level pool at a derived-random position, displacing Heal from the final book; the Summoner is also deterministically granted Lesser Summon (already present here from the splice, so no duplicate is pushed). Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+    },
+    "19": {
+      "phase": "54",
+      "requirements": [
+        "BAND-02"
+      ],
+      "fields": [
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "maxWP": 35,
+        "wp": 35,
+        "rations": 4
+      },
+      "after": {
+        "maxWP": 44,
+        "wp": 44,
+        "rations": 6
+      },
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+    },
+    "24": {
+      "phase": "40+54",
+      "requirements": [
+        "SPELL-04",
+        "SPELL-05",
+        "FID-06",
+        "BAND-02"
+      ],
+      "fields": [
+        "grimoire",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "grimoire": [
+          "Heal",
+          "Strength",
+          "Stupidity",
+          "Detect Magic",
+          "Sense Presence"
+        ],
+        "maxWP": 31,
+        "wp": 31,
+        "rations": 4
+      },
+      "after": {
+        "grimoire": [
+          "Heal",
+          "Strength",
+          "Stupidity",
+          "Map the Floor",
+          "Sense Presence",
+          "Freeze"
+        ],
+        "maxWP": 39,
+        "wp": 39,
+        "rations": 6
+      },
+      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+    },
+    "29": {
+      "phase": "40+54",
+      "requirements": [
+        "SPELL-05",
+        "BAND-02"
+      ],
+      "fields": [
+        "grimoire",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "grimoire": [
+          "Detect Magic",
+          "Shield",
+          "Strength",
+          "Acid",
+          "Insane",
+          "Freeze",
+          "Sense Danger"
+        ],
+        "maxWP": 29,
+        "wp": 29,
+        "rations": 4
+      },
+      "after": {
+        "grimoire": [
+          "Map the Floor",
+          "Shield",
+          "Strength",
+          "Acid",
+          "Insane",
+          "Freeze",
+          "Sense Danger"
+        ],
+        "maxWP": 36,
+        "wp": 36,
+        "rations": 6
+      },
+      "rationale": "Phase 40 (SPELL-05): pure rename at the same table position — Detect Magic becomes Map the Floor. The Warlock cannot learn the special school (content/mu-chart.js: special: null), so Lesser Summon is never in its learnable pool and this is the ONLY change; Freeze already satisfied the day-one damage guarantee before and after this phase. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "32": {
-      "phase": 38,
-      "requirements": ["ABIL-02"],
-      "fields": ["skills"],
-      "before": { "skills": { "Agility": 1, "Runes/Signs": 1, "Language": 1 } },
-      "after": { "skills": { "Runes/Signs": 1 } },
-      "rationale": "ABIL-02: Agility was converted to Sidestep and Language was dropped outright; Sidestep's table position (now an active) and Language's replacement (Pommel Strike, also an active) both landed in c.abilities instead of c.skills."
+      "phase": "38+54",
+      "requirements": [
+        "ABIL-02",
+        "BAND-02"
+      ],
+      "fields": [
+        "skills",
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "skills": {
+          "Agility": 1,
+          "Runes/Signs": 1,
+          "Language": 1
+        },
+        "maxWP": 55,
+        "wp": 55,
+        "rations": 6
+      },
+      "after": {
+        "skills": {
+          "Runes/Signs": 1
+        },
+        "maxWP": 69,
+        "wp": 69,
+        "rations": 9
+      },
+      "rationale": "ABIL-02: Agility was converted to Sidestep and Language was dropped outright; Sidestep's table position (now an active) and Language's replacement (Pommel Strike, also an active) both landed in c.abilities instead of c.skills. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+    },
+    "35": {
+      "phase": "54",
+      "requirements": [
+        "BAND-02"
+      ],
+      "fields": [
+        "maxWP",
+        "wp",
+        "rations"
+      ],
+      "before": {
+        "maxWP": 75,
+        "wp": 75,
+        "rations": 4
+      },
+      "after": {
+        "maxWP": 94,
+        "wp": 94,
+        "rations": 6
+      },
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     }
   }
 }

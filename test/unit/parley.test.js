@@ -18,6 +18,13 @@ import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js";
 import { RACES, ENC_TYPES } from "../../content/index.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 // --- local fixtures (copied verbatim from test/unit/combat.test.js /
 // test/unit/party-combat.test.js / test/unit/foe-turn-draw-count.test.js —

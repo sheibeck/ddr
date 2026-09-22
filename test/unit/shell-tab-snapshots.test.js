@@ -29,6 +29,13 @@ import url from "node:url";
 
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates, SNAPSHOT_IDS } from "./harness/shellSandbox.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE_DIR = path.join(__dirname, "fixtures", "shell-snapshots");

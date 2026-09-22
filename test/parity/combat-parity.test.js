@@ -190,6 +190,26 @@ function comparable(state) {
   return rest;
 }
 
+/**
+ * applyFloorFeatureShift(state, floorShift) — Phase 54-07 (USER RULING G
+ * cycle 3, BAND-02): forces a scenario's declared `floorFeatureShift.cells`
+ * (measured, per depth) onto BOTH sides' `floor.g[y][x].feat` before
+ * comparison — symmetric and side-agnostic, mirroring
+ * movement-parity.test.js's identically-named helper (see that file's own
+ * header comment for the ENCOUNTER_DOTS-remap mechanism this declares).
+ * A no-op when the scenario carries no `floorFeatureShift` or `state.floor`
+ * is absent.
+ */
+function applyFloorFeatureShift(state, floorShift) {
+  const cells = floorShift?.cells?.[state?.floor?.depth];
+  if (!cells || !state.floor) return state;
+  const g = state.floor.g.map((row) => row.map((cell) => ({ ...cell })));
+  for (const { x, y, before } of cells) {
+    if (g[y] && g[y][x]) g[y][x] = { ...g[y][x], feat: before };
+  }
+  return { ...state, floor: { ...state.floor, g } };
+}
+
 /** applyStartCombat(state, wandering, forced) — the engine-side equivalent
  * of applyAction for the internal (non-validated) startCombat call: clone,
  * rebuild rng from the persisted cursor, run startCombat, persist the rng
@@ -215,7 +235,14 @@ for (const scenario of FIXTURE.scenarios) {
     // scoped divergence (c.sp/c.gold/combat.parleyTried/combat.parleyInsulted);
     // see stripParleyDivergence's JSDoc in ./harness/comparables.js. Every other
     // scenario keeps comparing on the bare comparable().
-    const baseCmp = scenario.name === "parley" ? (s) => stripParleyDivergence(comparable(s)) : comparable;
+    // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply this scenario's
+    // declared floorFeatureShift (if any) BEFORE every other strip — see
+    // applyFloorFeatureShift's own header for the ENCOUNTER_DOTS-remap
+    // mechanism.
+    const floorShift = scenario.floorFeatureShift;
+    const baseCmp = scenario.name === "parley"
+      ? (s) => stripParleyDivergence(comparable(applyFloorFeatureShift(s, floorShift)))
+      : (s) => comparable(applyFloorFeatureShift(s, floorShift));
     // Phase 38 (ABIL-02): win/lose/lose-plain/flee/parley all carry a
     // declared chargenDivergence (the table reshape moved their chargen
     // c.skills) — wrap the base comparable (including any parley strip)

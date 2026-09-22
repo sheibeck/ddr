@@ -5,214 +5,1214 @@
       "name": "win",
       "seed": 3,
       "actions": [
-        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
-        { "type": "attack" }
+        {
+          "type": "startCombat",
+          "wandering": false,
+          "forced": "Beasts"
+        },
+        {
+          "type": "attack"
+        }
       ],
       "chargenDivergence": {
-        "phase": "38+45",
-        "requirements": ["ABIL-02", "HEDGE-03"],
-        "fields": ["skills", "items", "worn"],
+        "phase": "38+45+54",
+        "requirements": [
+          "ABIL-02",
+          "HEDGE-03",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "items",
+          "worn",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
         "before": {
-          "skills": { "Heft": 1, "Silence": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+          "skills": {
+            "Heft": 1,
+            "Silence": 1
+          },
+          "items": [
+            {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 100,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          ],
+          "maxWP": 40,
+          "wp": 40,
+          "rations": 5
         },
         "after": {
-          "skills": { "Heft": 1 },
+          "skills": {
+            "Heft": 1
+          },
           "items": [],
-          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+          "worn": {
+            "cloak": {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 80,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          },
+          "maxWP": 50,
+          "wp": 50,
+          "rations": 8
         },
-        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. The opening strike's event is renamed backstab (was silenceStrike) but events are not byte-diffed; crit/dmg/wp are identical (the plain-Thief fallback crits anyway). Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. The opening strike's event is renamed backstab (was silenceStrike) but events are not byte-diffed; crit/dmg/wp are identical (the plain-Thief fallback crits anyway). Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 5,
+              "y": 3,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 9,
+              "y": 4,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 19,
+              "y": 5,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 12,
+              "y": 7,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 3,
+              "y": 11,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 10,
+              "y": 11,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 9,
+              "y": 13,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 15,
+              "y": 14,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 9,
+              "y": 15,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 16,
+              "y": 15,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 1,
+              "y": 17,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 11,
+              "y": 18,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 8,
+              "y": 19,
+              "before": "climb",
+              "after": null
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "divergence": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "action-path",
+        "fromAction": 1,
+        "fields": [
+          "sp"
+        ],
+        "before": {
+          "sp": 20
+        },
+        "after": {
+          "sp": 6
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_SP_SCALE fitted to 0.28 scales the kill SP grant (heroSpFor, engine/combat.js#killFoe) awarded at action 1 (the killing strike). No further SP-granting action occurs in this scenario, so both sides hold steady at their own value (20 vs 6) through the end. wp/rations also diverge here but are already declared and stripped throughout via this scenario's own chargenDivergence (HERO_HP_SCALE/FOOD_CLOCK, chargen-time); gold and kills are unaffected. Measured live by replaying this scenario's own action script against the fitted engine, never hand-typed."
       }
     },
     {
       "name": "lose",
       "seed": 14,
       "actions": [
-        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" }
+        {
+          "type": "startCombat",
+          "wandering": false,
+          "forced": "Beasts"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        }
       ],
       "divergence": {
-        "phase": "24+31+51+52",
-        "requirements": ["FID-07", "IDENT-08", "CMB-01", "INIT-01", "DMG-02"],
+        "phase": "24+31+51+52+54",
+        "requirements": [
+          "FID-07",
+          "IDENT-08",
+          "CMB-01",
+          "INIT-01",
+          "DMG-02"
+        ],
         "kind": "action-path",
         "fromAction": 0,
-        "fields": ["wp", "sp", "kills", "rations"],
-        "before": { "wp": 0, "sp": 5, "kills": 1, "rations": 7 },
-        "after": { "wp": 51, "sp": 45, "kills": 2, "rations": 8 },
-        "stateFields": ["dead"],
-        "stateBefore": { "dead": true },
-        "stateAfter": { "dead": false },
-        "rationale": "This seed's hero is a Fridgian Soldier. From action 1 (the first attack) onward the prototype and engine diverge byte-for-byte because a Fridgian's hide (content/races.js, Phase 24) now soaks 2 flat from every landed foe blow, floor 1, stacking with Hardiness -- a pure damage-arithmetic change with zero rng-draw impact. Separately, the frenzy corpse-whiff branch (rng.d(10) against a dead foe, wasting both swings) was deliberately removed, since it never should have wasted the hero's second swing on a corpse in the first place -- this REMOVES exactly one rng.d(10) draw the first time this Fridgian frenzies with a dead foe present (action 7 of this scenario), shifting the rng cursor for every subsequent draw. The combined effect: the hero kills the Shriek at action 8 (engine) instead of dying to it at action 10 (prototype) -- the action path itself changes, not merely a numeric drift, so the per-action byte diff is skipped from action 1 onward (Phase 24) and both sides' end-of-scenario c-fields (wp/sp/kills/rations) plus the dead flag are machine-checked against the measured before/after above instead. Neither the seed nor the action list were touched -- lose-apprentice (seed 127) restores byte-identical death-path parity coverage. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): this Fridgian Soldier's Beasts phobia triggers at Fight!. The prototype froze him and spent action 1 shaking it off (no strike die drawn); the engine sets combat.afraid = 2 instead and action 1 is a real strike at need - 3 and half damage, so the rng draw sequence diverges from action 1 onward -- on top of the Phase 24 frenzy/hide divergence above. fromAction moves from 1 to 0 because the fight-step combat object already differs (afraid counter vs freeze flag) the instant Fight! resolves. After re-measured live on 2026-09-16 (wp 22->51, sp 30->45; the hero still survives). Phase 51 (INIT-01, 2026-09-20): initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from the first live-fight round advance (action 1) onward the engine draws two fewer d20 per round and never gives the foe two turns back to back. Knight-vs-big-foe narrows to the opener (evaluated once at the single roll). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value (wp 51->50; the hero still survives, one hp lower). Phase 52 (DMG-02, 2026-09-20): a foe critical now doubles the damage dice, not the whole lvl^2 + dmgBonus + dice sum. This scenario's Shriek rolls a natural 1 at action 3: whole-sum crit 2 * (1 + 1) = 4 minus the Fridgian hide's 2 = 2; dice-doubled crit 1 + 2*1 = 3 minus the hide's 2 = 1 -- the hero ends one hp higher (wp 50 -> 51). Zero draw change (the same to-hit die and the same single damage die, in the same position). Measured by tools/initiative-fixture-scan.mjs Part B on the edited engine -- never hand-typed."
+        "fields": [
+          "wp",
+          "sp",
+          "kills",
+          "rations"
+        ],
+        "before": {
+          "wp": 0,
+          "sp": 5,
+          "kills": 1,
+          "rations": 7
+        },
+        "after": {
+          "wp": 64,
+          "sp": 12,
+          "kills": 2,
+          "rations": 11
+        },
+        "stateFields": [
+          "dead"
+        ],
+        "stateBefore": {
+          "dead": true
+        },
+        "stateAfter": {
+          "dead": false
+        },
+        "rationale": "This seed's hero is a Fridgian Soldier. From action 1 (the first attack) onward the prototype and engine diverge byte-for-byte because a Fridgian's hide (content/races.js, Phase 24) now soaks 2 flat from every landed foe blow, floor 1, stacking with Hardiness -- a pure damage-arithmetic change with zero rng-draw impact. Separately, the frenzy corpse-whiff branch (rng.d(10) against a dead foe, wasting both swings) was deliberately removed, since it never should have wasted the hero's second swing on a corpse in the first place -- this REMOVES exactly one rng.d(10) draw the first time this Fridgian frenzies with a dead foe present (action 7 of this scenario), shifting the rng cursor for every subsequent draw. The combined effect: the hero kills the Shriek at action 8 (engine) instead of dying to it at action 10 (prototype) -- the action path itself changes, not merely a numeric drift, so the per-action byte diff is skipped from action 1 onward (Phase 24) and both sides' end-of-scenario c-fields (wp/sp/kills/rations) plus the dead flag are machine-checked against the measured before/after above instead. Neither the seed nor the action list were touched -- lose-apprentice (seed 127) restores byte-identical death-path parity coverage. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): this Fridgian Soldier's Beasts phobia triggers at Fight!. The prototype froze him and spent action 1 shaking it off (no strike die drawn); the engine sets combat.afraid = 2 instead and action 1 is a real strike at need - 3 and half damage, so the rng draw sequence diverges from action 1 onward -- on top of the Phase 24 frenzy/hide divergence above. fromAction moves from 1 to 0 because the fight-step combat object already differs (afraid counter vs freeze flag) the instant Fight! resolves. After re-measured live on 2026-09-16 (wp 22->51, sp 30->45; the hero still survives). Phase 51 (INIT-01, 2026-09-20): initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from the first live-fight round advance (action 1) onward the engine draws two fewer d20 per round and never gives the foe two turns back to back. Knight-vs-big-foe narrows to the opener (evaluated once at the single roll). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value (wp 51->50; the hero still survives, one hp lower). Phase 52 (DMG-02, 2026-09-20): a foe critical now doubles the damage dice, not the whole lvl^2 + dmgBonus + dice sum. This scenario's Shriek rolls a natural 1 at action 3: whole-sum crit 2 * (1 + 1) = 4 minus the Fridgian hide's 2 = 2; dice-doubled crit 1 + 2*1 = 3 minus the hide's 2 = 1 -- the hero ends one hp higher (wp 50 -> 51). Zero draw change (the same to-hit die and the same single damage die, in the same position). Measured by tools/initiative-fixture-scan.mjs Part B on the edited engine -- never hand-typed. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): the fitted dials (FOE_LEVEL, FOE_HIT_SCALE, FOE_HP_SCALE, HERO_HP_SCALE, HERO_REGEN_PER_FLOOR, HERO_SP_SCALE, HAZARD_SCALE, ENCOUNTER_DOTS, plus the held ROUND_DAMAGE_CEILING/LOOT_SCALE/FOE_COUNT_SKEW/FOOD_CLOCK) change this scenario's whole combat outcome, not just a scaled number — re-measured end-to-end by replaying this scenario's own action script against the fitted engine (never hand-typed); the prototype's own before/dead values are untouched (the frozen master never changes)."
       },
       "chargenDivergence": {
-        "phase": 38,
-        "requirements": ["ABIL-02"],
-        "fields": ["skills"],
-        "before": { "skills": { "Stealth": 1, "Cooking": 1, "Leaping": 1 } },
-        "after": { "skills": { "Stealth": 1, "Cooking": 1 } },
-        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep (an active), which lives in c.abilities (sweep) instead of c.skills. The existing action-path record above is untouched."
+        "phase": "38+54",
+        "requirements": [
+          "ABIL-02",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "skills": {
+            "Stealth": 1,
+            "Cooking": 1,
+            "Leaping": 1
+          },
+          "maxWP": 52,
+          "wp": 52,
+          "rations": 6
+        },
+        "after": {
+          "skills": {
+            "Stealth": 1,
+            "Cooking": 1
+          },
+          "maxWP": 65,
+          "wp": 65,
+          "rations": 9
+        },
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep (an active), which lives in c.abilities (sweep) instead of c.skills. The existing action-path record above is untouched. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 7,
+              "y": 3,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 11,
+              "y": 5,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 7,
+              "y": 6,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 11,
+              "y": 9,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 9,
+              "y": 10,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 15,
+              "y": 11,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 1,
+              "y": 13,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 7,
+              "y": 13,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 13,
+              "y": 13,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 19,
+              "y": 15,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 19,
+              "y": 18,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 4,
+              "y": 19,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 7,
+              "y": 19,
+              "before": "gorge",
+              "after": null
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
       "name": "lose-apprentice",
       "seed": 127,
       "actions": [
-        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" }
+        {
+          "type": "startCombat",
+          "wandering": false,
+          "forced": "Beasts"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        }
       ],
       "divergence": {
         "phase": "31+51+54",
-        "requirements": ["CMB-01", "INIT-01", "BAND-02"],
+        "requirements": [
+          "CMB-01",
+          "INIT-01",
+          "BAND-02"
+        ],
         "kind": "action-path",
         "fromAction": 0,
-        "fields": ["wp", "sp", "gold", "kills", "rations"],
-        "before": { "wp": 0, "sp": 0, "gold": 50, "kills": 0, "rations": 4 },
-        "after": { "wp": 23, "sp": 60, "gold": 50, "kills": 2, "rations": 4 },
-        "stateFields": ["dead"],
-        "stateBefore": { "dead": true },
-        "stateAfter": { "dead": false },
-        "rationale": "Phase 31, user ruling 2026-09-16: phobia is a penalty, not a lost action. The seed-127 Human Apprentice fears Beasts; the prototype froze him at Fight! and spent action 1 (the first attack) shaking it off -- no strike die drawn. The engine sets combat.afraid = 2 and action 1 is a real strike (need - 3, floor 1, half damage), so every draw from action 1 onward shifts and the outcome is re-measured here. fromAction is 0 because the fight-step combat object differs (afraid counter vs freeze flag) the instant Fight! resolves. NOTE: this scenario was added in Phase 24 to restore byte-identical death-path parity; that coverage now lives in the lose-plain scenario (seed 1119, below), which is itself a declared divergence again as of Phase 51 (see its own record). Phase 31 alone (re-measured 2026-09-16): the hero still died (wp 0, dead: true), matching the prototype's own outcome field-for-field, even though the exact draw sequence from action 1 onward differed. Phase 51 (INIT-01, 2026-09-20): initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from action 0 onward the engine draws two fewer d20 per round and never gives the foe two turns back to back -- with roughly a third less incoming damage per exchange, this Apprentice now SURVIVES the same 15-action script and clears the encounter (wp 0->23, sp 0->40, gold 50->52, kills 0->2, rations 4->6, dead true->false). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value. Phase 54 (BAND-02, 2026-09-21, USER RULING D): identity-commit level-cap cause -- the retired level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is gone; FOE_COUNT_TABLE row 0 (identity) now rolls a THIRD Beasts foe at this seed's count draw, changing the whole fight from action 0. Re-measured live via this file's own replay harness: sp 40->60 (a third kill's SP share), gold 52->50 (the third foe's own coin roll shifts the downstream loot-gate draw so the engine no longer clears the >2+lvl loot-gate on this particular kill), rations 6->4 (the shifted draw sequence no longer lands a Cooking/d6>=4 rations tick); wp/kills/dead are unchanged (still 23/2/false)."
+        "fields": [
+          "wp",
+          "sp",
+          "gold",
+          "kills",
+          "rations"
+        ],
+        "before": {
+          "wp": 0,
+          "sp": 0,
+          "gold": 50,
+          "kills": 0,
+          "rations": 4
+        },
+        "after": {
+          "wp": 35,
+          "sp": 17,
+          "gold": 50,
+          "kills": 2,
+          "rations": 6
+        },
+        "stateFields": [
+          "dead"
+        ],
+        "stateBefore": {
+          "dead": true
+        },
+        "stateAfter": {
+          "dead": false
+        },
+        "rationale": "Phase 31, user ruling 2026-09-16: phobia is a penalty, not a lost action. The seed-127 Human Apprentice fears Beasts; the prototype froze him at Fight! and spent action 1 (the first attack) shaking it off -- no strike die drawn. The engine sets combat.afraid = 2 and action 1 is a real strike (need - 3, floor 1, half damage), so every draw from action 1 onward shifts and the outcome is re-measured here. fromAction is 0 because the fight-step combat object differs (afraid counter vs freeze flag) the instant Fight! resolves. NOTE: this scenario was added in Phase 24 to restore byte-identical death-path parity; that coverage now lives in the lose-plain scenario (seed 1119, below), which is itself a declared divergence again as of Phase 51 (see its own record). Phase 31 alone (re-measured 2026-09-16): the hero still died (wp 0, dead: true), matching the prototype's own outcome field-for-field, even though the exact draw sequence from action 1 onward differed. Phase 51 (INIT-01, 2026-09-20): initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from action 0 onward the engine draws two fewer d20 per round and never gives the foe two turns back to back -- with roughly a third less incoming damage per exchange, this Apprentice now SURVIVES the same 15-action script and clears the encounter (wp 0->23, sp 0->40, gold 50->52, kills 0->2, rations 4->6, dead true->false). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value. Phase 54 (BAND-02, 2026-09-21, USER RULING D): identity-commit level-cap cause -- the retired level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is gone; FOE_COUNT_TABLE row 0 (identity) now rolls a THIRD Beasts foe at this seed's count draw, changing the whole fight from action 0. Re-measured live via this file's own replay harness: sp 40->60 (a third kill's SP share), gold 52->50 (the third foe's own coin roll shifts the downstream loot-gate draw so the engine no longer clears the >2+lvl loot-gate on this particular kill), rations 6->4 (the shifted draw sequence no longer lands a Cooking/d6>=4 rations tick); wp/kills/dead are unchanged (still 23/2/false). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): the fitted dials (FOE_LEVEL, FOE_HIT_SCALE, FOE_HP_SCALE, HERO_HP_SCALE, HERO_REGEN_PER_FLOOR, HERO_SP_SCALE, HAZARD_SCALE, ENCOUNTER_DOTS, plus the held ROUND_DAMAGE_CEILING/LOOT_SCALE/FOE_COUNT_SKEW/FOOD_CLOCK) change this scenario's whole combat outcome, not just a scaled number — re-measured end-to-end by replaying this scenario's own action script against the fitted engine (never hand-typed); the prototype's own before/dead values are untouched (the frozen master never changes)."
       },
       "chargenDivergence": {
-        "phase": 40,
-        "requirements": ["SPELL-04", "SPELL-05"],
-        "fields": ["grimoire"],
-        "before": { "grimoire": ["Strength", "Shield", "Detect Magic", "Heal", "Stun"] },
-        "after": { "grimoire": ["Strength", "Shield", "Map the Floor", "Heal", "Stun", "Freeze"] },
-        "rationale": "Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). This Apprentice's ready set (Strength/Shield/Heal/Stun) had no damage-dealing spell under the narrowed SPELL-04 guarantee — Stun no longer counts (control, not damage; it satisfied the OLD attack-kind guarantee, which is why this seed was byte-identical to the prototype before this phase). The day-one top-up now appends Freeze. This scenario only ever `attack`s (never casts), so the action path itself and its already-declared action-path divergence (above) are unaffected — only the chargen-time grimoire differs."
+        "phase": "40+54",
+        "requirements": [
+          "SPELL-04",
+          "SPELL-05",
+          "BAND-02"
+        ],
+        "fields": [
+          "grimoire",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "grimoire": [
+            "Strength",
+            "Shield",
+            "Detect Magic",
+            "Heal",
+            "Stun"
+          ],
+          "maxWP": 33,
+          "wp": 33,
+          "rations": 4
+        },
+        "after": {
+          "grimoire": [
+            "Strength",
+            "Shield",
+            "Map the Floor",
+            "Heal",
+            "Stun",
+            "Freeze"
+          ],
+          "maxWP": 41,
+          "wp": 41,
+          "rations": 6
+        },
+        "rationale": "Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). This Apprentice's ready set (Strength/Shield/Heal/Stun) had no damage-dealing spell under the narrowed SPELL-04 guarantee — Stun no longer counts (control, not damage; it satisfied the OLD attack-kind guarantee, which is why this seed was byte-identical to the prototype before this phase). The day-one top-up now appends Freeze. This scenario only ever `attack`s (never casts), so the action path itself and its already-declared action-path divergence (above) are unaffected — only the chargen-time grimoire differs. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 10,
+              "y": 3,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 17,
+              "y": 4,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 11,
+              "y": 6,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 8,
+              "y": 7,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 13,
+              "y": 8,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 4,
+              "y": 9,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 18,
+              "y": 11,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 19,
+              "y": 11,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 19,
+              "y": 12,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 12,
+              "y": 13,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 19,
+              "y": 13,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 8,
+              "y": 15,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 10,
+              "y": 19,
+              "before": "climb",
+              "after": null
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
       "name": "lose-plain",
       "seed": 1119,
       "actions": [
-        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" },
-        { "type": "attack" }
+        {
+          "type": "startCombat",
+          "wandering": false,
+          "forced": "Beasts"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        }
       ],
       "divergence": {
-        "phase": "51",
-        "requirements": ["INIT-01"],
+        "phase": "51+54",
+        "requirements": [
+          "INIT-01"
+        ],
         "kind": "action-path",
         "fromAction": 2,
-        "fields": ["wp", "sp", "gold", "kills", "rations"],
-        "before": { "wp": 0, "sp": 0, "gold": 50, "kills": 0, "rations": 5 },
-        "after": { "wp": 34, "sp": 0, "gold": 50, "kills": 0, "rations": 5 },
-        "stateFields": ["dead"],
-        "stateBefore": { "dead": true },
-        "stateAfter": { "dead": false },
-        "rationale": "This scenario was added in Phase 24/31 (a plain Human Cutthroat, no Beasts phobia) to restore byte-identical death-path parity coverage after the Afraid ruling took it from lose-apprentice -- it carried NO divergence record from Phase 31 through Phase 50. Phase 51 (INIT-01, 2026-09-20) takes that byte-identical coverage too: initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from action 2 onward (the first action where the two sides' combatComparable diverges, measured -- not action 1, since this scenario's action-1 exchange happens not to shift the rng cursor) the engine draws two fewer d20 per round and never gives the foe two turns back to back. With roughly a third less incoming damage per exchange, this Cutthroat now SURVIVES the same 8-action script and clears the encounter (wp 0->34, dead true->false; sp/gold/kills/rations are unaffected -- the fight ends on the kill's own payout draw, not a further action). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value. No other scenario in this fixture was previously byte-identical and is now moved by Phase 51 -- this is the one new holder the MOVED SET names beyond lose/lose-apprentice."
-      },
-      "chargenDivergence": {
-        "phase": "38+45",
-        "requirements": ["ABIL-02", "HEDGE-03"],
-        "fields": ["skills", "items", "worn"],
+        "fields": [
+          "wp",
+          "sp",
+          "gold",
+          "kills",
+          "rations"
+        ],
         "before": {
-          "skills": { "Leaping": 1, "Sewing": 1, "Night Vision": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+          "wp": 0,
+          "sp": 0,
+          "gold": 50,
+          "kills": 0,
+          "rations": 5
         },
         "after": {
-          "skills": { "Sewing": 1, "Night Vision": 1 },
-          "items": [],
-          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+          "wp": 47,
+          "sp": 0,
+          "gold": 50,
+          "kills": 0,
+          "rations": 8
         },
-        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. Phase 51 (INIT-01, 2026-09-20) gave this scenario its own action-path divergence (see above) -- this chargen-time record is unaffected. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "stateFields": [
+          "dead"
+        ],
+        "stateBefore": {
+          "dead": true
+        },
+        "stateAfter": {
+          "dead": false
+        },
+        "rationale": "This scenario was added in Phase 24/31 (a plain Human Cutthroat, no Beasts phobia) to restore byte-identical death-path parity coverage after the Afraid ruling took it from lose-apprentice -- it carried NO divergence record from Phase 31 through Phase 50. Phase 51 (INIT-01, 2026-09-20) takes that byte-identical coverage too: initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from action 2 onward (the first action where the two sides' combatComparable diverges, measured -- not action 1, since this scenario's action-1 exchange happens not to shift the rng cursor) the engine draws two fewer d20 per round and never gives the foe two turns back to back. With roughly a third less incoming damage per exchange, this Cutthroat now SURVIVES the same 8-action script and clears the encounter (wp 0->34, dead true->false; sp/gold/kills/rations are unaffected -- the fight ends on the kill's own payout draw, not a further action). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value. No other scenario in this fixture was previously byte-identical and is now moved by Phase 51 -- this is the one new holder the MOVED SET names beyond lose/lose-apprentice. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): the fitted dials (FOE_LEVEL, FOE_HIT_SCALE, FOE_HP_SCALE, HERO_HP_SCALE, HERO_REGEN_PER_FLOOR, HERO_SP_SCALE, HAZARD_SCALE, ENCOUNTER_DOTS, plus the held ROUND_DAMAGE_CEILING/LOOT_SCALE/FOE_COUNT_SKEW/FOOD_CLOCK) change this scenario's whole combat outcome, not just a scaled number — re-measured end-to-end by replaying this scenario's own action script against the fitted engine (never hand-typed); the prototype's own before/dead values are untouched (the frozen master never changes)."
+      },
+      "chargenDivergence": {
+        "phase": "38+45+54",
+        "requirements": [
+          "ABIL-02",
+          "HEDGE-03",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "items",
+          "worn",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "skills": {
+            "Leaping": 1,
+            "Sewing": 1,
+            "Night Vision": 1
+          },
+          "items": [
+            {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 100,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          ],
+          "maxWP": 40,
+          "wp": 40,
+          "rations": 5
+        },
+        "after": {
+          "skills": {
+            "Sewing": 1,
+            "Night Vision": 1
+          },
+          "items": [],
+          "worn": {
+            "cloak": {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 80,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          },
+          "maxWP": 50,
+          "wp": 50,
+          "rations": 8
+        },
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. Phase 51 (INIT-01, 2026-09-20) gave this scenario its own action-path divergence (see above) -- this chargen-time record is unaffected. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 3,
+              "y": 3,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 14,
+              "y": 3,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 10,
+              "y": 7,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 7,
+              "y": 9,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 4,
+              "y": 11,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 5,
+              "y": 14,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 17,
+              "y": 15,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 10,
+              "y": 17,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 7,
+              "y": 19,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 9,
+              "y": 19,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 10,
+              "y": 19,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 11,
+              "y": 19,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 16,
+              "y": 19,
+              "before": "gorge",
+              "after": null
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
       "name": "flee",
       "seed": 17,
       "actions": [
-        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
-        { "type": "flee" }
+        {
+          "type": "startCombat",
+          "wandering": false,
+          "forced": "Beasts"
+        },
+        {
+          "type": "flee"
+        }
       ],
       "divergence": {
         "phase": "54",
-        "requirements": ["BAND-02"],
+        "requirements": [
+          "BAND-02"
+        ],
         "kind": "action-path",
         "fromAction": 0,
-        "fields": ["wp", "sp", "gold", "kills", "rations"],
-        "before": { "wp": 40, "sp": 0, "gold": 50, "kills": 0, "rations": 5 },
-        "after": { "wp": 40, "sp": 0, "gold": 50, "kills": 0, "rations": 5 },
-        "rationale": "USER RULING D — global-difficulty (identity commit): level-cap cause. The retired level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is gone; FOE_COUNT_TABLE row 0 (identity) now rolls a THIRD Beasts foe at this seed's count draw (combat.foes.length 2 vs 3 at action 0, startCombat), so the per-action byte diff is declared off from action 0. A flee action never touches foe hp/kills/loot, so the scenario's end-of-scenario c-fields are UNAFFECTED by the extra foe -- both sides measure identically (wp 40, sp 0, gold 50, kills 0, rations 5); this record exists solely to declare the mid-fight roster-shape divergence the per-action byte diff would otherwise trip on at action 0. Measured live via this file's own replay harness, never hand-typed."
-      },
-      "chargenDivergence": {
-        "phase": "38+45",
-        "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"],
-        "fields": ["skills", "items", "worn"],
+        "fields": [
+          "wp",
+          "sp",
+          "gold",
+          "kills",
+          "rations"
+        ],
         "before": {
-          "skills": { "Heft": 1, "Silence": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "a full suit of plate that weighs nothing" }]
+          "wp": 40,
+          "sp": 0,
+          "gold": 50,
+          "kills": 0,
+          "rations": 5
         },
         "after": {
-          "skills": { "Heft": 1 },
-          "items": [],
-          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Flying", "eff": { "fly": 1 }, "txt": "flight for 20 squares, once every 50" } }
+          "wp": 50,
+          "sp": 0,
+          "gold": 50,
+          "kills": 0,
+          "rations": 8
         },
-        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Flying instead of Cloak of Armor. Cloak of Flying's txt is untouched by this task (it already carried an act block before this task, so it is not one of the 9 reworded rows) -- only Cloak of Armor's name is in REWORDED_TXT_ITEMS, so the prototype side's txt would be stripped while the engine side's is not — moot now: the cloak is worn, not bagged, so stripCloakArmorTxt (a c.items-only strip) never reaches it. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "rationale": "USER RULING D — global-difficulty (identity commit): level-cap cause. The retired level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is gone; FOE_COUNT_TABLE row 0 (identity) now rolls a THIRD Beasts foe at this seed's count draw (combat.foes.length 2 vs 3 at action 0, startCombat), so the per-action byte diff is declared off from action 0. A flee action never touches foe hp/kills/loot, so the scenario's end-of-scenario c-fields are UNAFFECTED by the extra foe -- both sides measure identically (wp 40, sp 0, gold 50, kills 0, rations 5); this record exists solely to declare the mid-fight roster-shape divergence the per-action byte diff would otherwise trip on at action 0. Measured live via this file's own replay harness, never hand-typed. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): the fitted dials (FOE_LEVEL, FOE_HIT_SCALE, FOE_HP_SCALE, HERO_HP_SCALE, HERO_REGEN_PER_FLOOR, HERO_SP_SCALE, HAZARD_SCALE, ENCOUNTER_DOTS, plus the held ROUND_DAMAGE_CEILING/LOOT_SCALE/FOE_COUNT_SKEW/FOOD_CLOCK) change this scenario's whole combat outcome, not just a scaled number — re-measured end-to-end by replaying this scenario's own action script against the fitted engine (never hand-typed); the prototype's own before/dead values are untouched (the frozen master never changes)."
+      },
+      "chargenDivergence": {
+        "phase": "38+45+54",
+        "requirements": [
+          "ABIL-02",
+          "QUICK-260918-w4n",
+          "HEDGE-03",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "items",
+          "worn",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "skills": {
+            "Heft": 1,
+            "Silence": 1
+          },
+          "items": [
+            {
+              "kind": "cloak",
+              "n": "Cloak of Armor",
+              "eff": {
+                "cloakArmor": 1
+              },
+              "txt": "a full suit of plate that weighs nothing"
+            }
+          ],
+          "maxWP": 40,
+          "wp": 40,
+          "rations": 5
+        },
+        "after": {
+          "skills": {
+            "Heft": 1
+          },
+          "items": [],
+          "worn": {
+            "cloak": {
+              "kind": "cloak",
+              "n": "Cloak of Flying",
+              "eff": {
+                "fly": 1
+              },
+              "txt": "flight for 20 squares, once every 50"
+            }
+          },
+          "maxWP": 50,
+          "wp": 50,
+          "rations": 8
+        },
+        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Flying instead of Cloak of Armor. Cloak of Flying's txt is untouched by this task (it already carried an act block before this task, so it is not one of the 9 reworded rows) -- only Cloak of Armor's name is in REWORDED_TXT_ITEMS, so the prototype side's txt would be stripped while the engine side's is not — moot now: the cloak is worn, not bagged, so stripCloakArmorTxt (a c.items-only strip) never reaches it. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 13,
+              "y": 7,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 14,
+              "y": 7,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 6,
+              "y": 9,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 11,
+              "y": 10,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 5,
+              "y": 11,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 17,
+              "y": 11,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 12,
+              "y": 13,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 9,
+              "y": 15,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 6,
+              "y": 17,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 7,
+              "y": 17,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 15,
+              "y": 17,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 6,
+              "y": 19,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 18,
+              "y": 19,
+              "before": "trap",
+              "after": "gorge"
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
       "name": "parley",
       "seed": 303,
       "actions": [
-        { "type": "startCombat", "wandering": false, "forced": "Humans" },
-        { "type": "parley" }
+        {
+          "type": "startCombat",
+          "wandering": false,
+          "forced": "Humans"
+        },
+        {
+          "type": "parley"
+        }
       ],
       "divergence": {
-        "phase": "27+31",
-        "requirements": ["TUNE-06", "CMB-01"],
+        "phase": "27+31+54",
+        "requirements": [
+          "TUNE-06",
+          "CMB-01"
+        ],
         "kind": "action-path",
         "fromAction": 0,
-        "fields": ["wp", "sp", "gold", "kills", "rations"],
-        "before": { "wp": 40, "sp": 13, "gold": 250, "kills": 0, "rations": 5 },
-        "after": { "wp": 34, "sp": 5, "gold": 50, "kills": 0, "rations": 5 },
-        "stateFields": ["dead"],
-        "stateBefore": { "dead": false },
-        "stateAfter": { "dead": false },
-        "rationale": "Phase 27 (TUNE-06): Dante was demoted to tier 2 and the tier-1 Humans row is now Ned (wp 8, one swing a round) -- the first deliberate canon deviation of the v1.2 retune (docs/DIFFICULTY-RETUNE.md, v1.2 section). From action 0 (startCombat) the engine rolls Ned x2 where the frozen prototype rolls Dante x2, so the foe objects and every downstream draw differ; the parley outcome on each side is recorded here as measured. No other scenario in any fixture rolls a Humans encounter, so this is the only divergence the Dante change causes. Phase 31 (CMB-01, user ruling 2026-09-16): the Fight! split moves rollInitiative (and everything from it onward) out of startCombat into the new fight action, which now runs strictly AFTER the Knight/Con Artist/Court Mage foe-removal loop completes (that loop stays in the encounter step, in its existing position, ahead of the cut line) -- a genuine, structural rng-order change for any character whose sub draws in that loop. This Con Artist's level-1-foe escape roll (rng.d(6), one of the two Neds fled) now lands BEFORE the two initiative d20s instead of after, so the initiative outcome and every downstream draw shift; here the foes win initiative and land one pre-emptive strike before Talk-it-down is even attempted. Re-measured live on 2026-09-16 (wp 40->34, sp 7->5); the outcome is still a successful parley, just with a shallower wp/sp margin."
-      },
-      "chargenDivergence": {
-        "phase": "38+45",
-        "requirements": ["ABIL-02", "HEDGE-03"],
-        "fields": ["skills", "items", "worn"],
+        "fields": [
+          "wp",
+          "sp",
+          "gold",
+          "kills",
+          "rations"
+        ],
         "before": {
-          "skills": { "Leaping": 1, "Heft": 1, "Locks": 2 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+          "wp": 40,
+          "sp": 13,
+          "gold": 250,
+          "kills": 0,
+          "rations": 5
         },
         "after": {
-          "skills": { "Heft": 1, "Locks": 2 },
-          "items": [],
-          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+          "wp": 46,
+          "sp": 1,
+          "gold": 50,
+          "kills": 0,
+          "rations": 8
         },
-        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The existing action-path record above is untouched. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "stateFields": [
+          "dead"
+        ],
+        "stateBefore": {
+          "dead": false
+        },
+        "stateAfter": {
+          "dead": false
+        },
+        "rationale": "Phase 27 (TUNE-06): Dante was demoted to tier 2 and the tier-1 Humans row is now Ned (wp 8, one swing a round) -- the first deliberate canon deviation of the v1.2 retune (docs/DIFFICULTY-RETUNE.md, v1.2 section). From action 0 (startCombat) the engine rolls Ned x2 where the frozen prototype rolls Dante x2, so the foe objects and every downstream draw differ; the parley outcome on each side is recorded here as measured. No other scenario in any fixture rolls a Humans encounter, so this is the only divergence the Dante change causes. Phase 31 (CMB-01, user ruling 2026-09-16): the Fight! split moves rollInitiative (and everything from it onward) out of startCombat into the new fight action, which now runs strictly AFTER the Knight/Con Artist/Court Mage foe-removal loop completes (that loop stays in the encounter step, in its existing position, ahead of the cut line) -- a genuine, structural rng-order change for any character whose sub draws in that loop. This Con Artist's level-1-foe escape roll (rng.d(6), one of the two Neds fled) now lands BEFORE the two initiative d20s instead of after, so the initiative outcome and every downstream draw shift; here the foes win initiative and land one pre-emptive strike before Talk-it-down is even attempted. Re-measured live on 2026-09-16 (wp 40->34, sp 7->5); the outcome is still a successful parley, just with a shallower wp/sp margin. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): the fitted dials (FOE_LEVEL, FOE_HIT_SCALE, FOE_HP_SCALE, HERO_HP_SCALE, HERO_REGEN_PER_FLOOR, HERO_SP_SCALE, HAZARD_SCALE, ENCOUNTER_DOTS, plus the held ROUND_DAMAGE_CEILING/LOOT_SCALE/FOE_COUNT_SKEW/FOOD_CLOCK) change this scenario's whole combat outcome, not just a scaled number — re-measured end-to-end by replaying this scenario's own action script against the fitted engine (never hand-typed); the prototype's own before/dead values are untouched (the frozen master never changes)."
+      },
+      "chargenDivergence": {
+        "phase": "38+45+54",
+        "requirements": [
+          "ABIL-02",
+          "HEDGE-03",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "items",
+          "worn",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "skills": {
+            "Leaping": 1,
+            "Heft": 1,
+            "Locks": 2
+          },
+          "items": [
+            {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 100,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          ],
+          "maxWP": 40,
+          "wp": 40,
+          "rations": 5
+        },
+        "after": {
+          "skills": {
+            "Heft": 1,
+            "Locks": 2
+          },
+          "items": [],
+          "worn": {
+            "cloak": {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 80,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          },
+          "maxWP": 50,
+          "wp": 50,
+          "rations": 8
+        },
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The existing action-path record above is untouched. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 2,
+              "y": 3,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 5,
+              "y": 3,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 13,
+              "y": 7,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 19,
+              "y": 8,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 13,
+              "y": 9,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 18,
+              "y": 9,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 11,
+              "y": 11,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 19,
+              "y": 11,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 7,
+              "y": 16,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 11,
+              "y": 16,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 8,
+              "y": 19,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 14,
+              "y": 19,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 16,
+              "y": 19,
+              "before": "chest",
+              "after": "trap"
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     }
   ]

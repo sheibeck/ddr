@@ -1,65 +1,578 @@
 {
   "_note": "Magic parity fixture (01-09): four independent scenarios exercising castSpell (a damage spell in a forced encounter, and a heal outside combat), drinkPotion, and readScroll. Seeds were found by a throwaway discovery script (engine-only, cross-checked for prototype parity before being committed here — same method 01-05/01-07/01-08 used) that scanned seeds 1-5000 via newRun(seed) for a Magic User whose rolled grimoire/scrolls made each scenario reachable at level 1: seed 8 is an Illusionist with Freeze in its grimoire (a lvl-1 offense spell, thrown kind); seed 7 is a Wizard with Heal in its grimoire and a scroll on hand. `castSpell` requires an `idx` field (the spell's index into content/spells.js's SPELLS array, matching engine/actions.js's castSpell.idx validation); `drinkPotion`/`readScroll` take no extra fields. `startCombat` is not in engine/actions.js's validated ACTION_TYPES (an internal function other rule domains call) -- see test/parity/combat-parity.test.js's header for why the harness special-cases it. Phase 23 Plan 04 (FID-06): the `cast-damage` scenario now carries a `divergence` record — Freeze pays out via killFoe, a deliberate rules change. Phase 31 (2026-09-16, CMB-01, user ruling \"phobia is a penalty, not a lost action\"): seed 8's Illusionist fears Beasts, so the Fight! split's phobia trigger now sets combat.afraid instead of the prototype's freeze flag — the record was upgraded from a Phase 23 field-only shape to a kind:\"action-path\" record (fromAction 0); the declared after-values are unchanged (re-measured and confirmed byte-identical).",
-  "spellIndex": { "Heal": 0, "Freeze": 4 },
+  "spellIndex": {
+    "Heal": 0,
+    "Freeze": 4
+  },
   "scenarios": [
     {
       "name": "cast-damage",
       "seed": 8,
       "actions": [
-        { "type": "startCombat", "wandering": false, "forced": "Beasts" },
-        { "type": "castSpell", "idx": 4 }
+        {
+          "type": "startCombat",
+          "wandering": false,
+          "forced": "Beasts"
+        },
+        {
+          "type": "castSpell",
+          "idx": 4
+        }
       ],
       "divergence": {
-        "phase": "23+31",
-        "requirements": ["FID-06", "CMB-01"],
+        "phase": "23+31+54",
+        "requirements": [
+          "FID-06",
+          "CMB-01",
+          "BAND-02"
+        ],
         "kind": "action-path",
         "fromAction": 0,
-        "fields": ["sp", "gold", "kills", "rations"],
-        "before": { "sp": 0, "gold": 50, "kills": 0, "rations": 4 },
-        "after": { "sp": 5, "gold": 51, "kills": 1, "rations": 5 },
-        "stateFields": ["dead"],
-        "stateBefore": { "dead": false },
-        "stateAfter": { "dead": false },
-        "rationale": "Freeze pays out (user decision 2026-09-14) — the prototype's thrown branch marked a frozen foe dead without calling killFoe, so a Freeze kill awarded no experience, coin, treasure roll, kill count, or ration; the engine now routes the kill through killFoe after emitting frozenSolid. Seed 8's Illusionist freezes the Shriek on a d10 roll of 1 (a hit), so this is the one parity scenario that now pays out where the prototype did not. killFoe's four draws (d6 sp roll, d10 coin roll, d20 treasure check, Beasts cooking d6) happen after the last compared action in this scenario, so no earlier draw position moves — items/wp/level and combat-null-on-both-sides are unchanged. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): the seed-8 Illusionist fears Beasts, so at Fight! the prototype set its freeze flag while the engine sets combat.afraid = 2 — the compared combat objects differ from action 0, hence the action-path shape (fromAction 0, kind action-path). The prototype's castSpell had no fear check, so both sides cast Freeze on the same draws: d10 roll 1 vs need 6 (prototype) / need 3 (engine, afraid -3) — still a hit; the halved damage (3 -> 2) is irrelevant because Freeze kills through killFoe regardless of hp. No draw position moves relative to the Phase 23 measurement, so the declared end fields are unchanged: sp 5, gold 51, kills 1, rations 5. Re-measured live on 2026-09-16 and confirmed byte-identical to the Phase 23 record."
+        "fields": [
+          "sp",
+          "gold",
+          "kills",
+          "rations"
+        ],
+        "before": {
+          "sp": 0,
+          "gold": 50,
+          "kills": 0,
+          "rations": 4
+        },
+        "after": {
+          "sp": 1,
+          "gold": 51,
+          "kills": 1,
+          "rations": 7
+        },
+        "stateFields": [
+          "dead"
+        ],
+        "stateBefore": {
+          "dead": false
+        },
+        "stateAfter": {
+          "dead": false
+        },
+        "rationale": "Freeze pays out (user decision 2026-09-14) — the prototype's thrown branch marked a frozen foe dead without calling killFoe, so a Freeze kill awarded no experience, coin, treasure roll, kill count, or ration; the engine now routes the kill through killFoe after emitting frozenSolid. Seed 8's Illusionist freezes the Shriek on a d10 roll of 1 (a hit), so this is the one parity scenario that now pays out where the prototype did not. killFoe's four draws (d6 sp roll, d10 coin roll, d20 treasure check, Beasts cooking d6) happen after the last compared action in this scenario, so no earlier draw position moves — items/wp/level and combat-null-on-both-sides are unchanged. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): the seed-8 Illusionist fears Beasts, so at Fight! the prototype set its freeze flag while the engine sets combat.afraid = 2 — the compared combat objects differ from action 0, hence the action-path shape (fromAction 0, kind action-path). The prototype's castSpell had no fear check, so both sides cast Freeze on the same draws: d10 roll 1 vs need 6 (prototype) / need 3 (engine, afraid -3) — still a hit; the halved damage (3 -> 2) is irrelevant because Freeze kills through killFoe regardless of hp. No draw position moves relative to the Phase 23 measurement, so the declared end fields are unchanged: sp 5, gold 51, kills 1, rations 5. Re-measured live on 2026-09-16 and confirmed byte-identical to the Phase 23 record. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_SP_SCALE fitted to 0.28 rescales the killFoe sp grant (5 -> 1); FOOD_CLOCK held at 1.5 rescales the chargen ration base the +1 kill ration rides on (6 -> 7); gold/kills unaffected (measured). Re-measured live by replaying this scenario against the fitted engine, never hand-typed."
+      },
+      "chargenDivergence": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "fields": [
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "maxWP": 31,
+          "wp": 31,
+          "rations": 4
+        },
+        "after": {
+          "maxWP": 39,
+          "wp": 39,
+          "rations": 6
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 5,
+              "y": 1,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 13,
+              "y": 1,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 11,
+              "y": 2,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 14,
+              "y": 3,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 15,
+              "y": 7,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 6,
+              "y": 9,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 19,
+              "y": 11,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 11,
+              "y": 13,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 5,
+              "y": 14,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 1,
+              "y": 16,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 11,
+              "y": 16,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 11,
+              "y": 17,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 13,
+              "y": 17,
+              "before": "chest",
+              "after": "trap"
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
       "name": "heal",
       "seed": 7,
-      "actions": [{ "type": "castSpell", "idx": 0 }],
+      "actions": [
+        {
+          "type": "castSpell",
+          "idx": 0
+        }
+      ],
       "chargenDivergence": {
-        "phase": 40,
-        "requirements": ["SPELL-04"],
-        "fields": ["grimoire"],
-        "before": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal"] },
-        "after": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal", "Lesser Summon"] },
-        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). The cast itself (Heal, idx 0) is unaffected — Heal's mechanic/txt position is byte-identical."
+        "phase": "40+54",
+        "requirements": [
+          "SPELL-04",
+          "BAND-02"
+        ],
+        "fields": [
+          "grimoire",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "grimoire": [
+            "Sense Presence",
+            "Mirror Self",
+            "Stun",
+            "Heal"
+          ],
+          "maxWP": 31,
+          "wp": 31,
+          "rations": 4
+        },
+        "after": {
+          "grimoire": [
+            "Sense Presence",
+            "Mirror Self",
+            "Stun",
+            "Heal",
+            "Lesser Summon"
+          ],
+          "maxWP": 39,
+          "wp": 39,
+          "rations": 6
+        },
+        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). The cast itself (Heal, idx 0) is unaffected — Heal's mechanic/txt position is byte-identical. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 15,
+              "y": 3,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 16,
+              "y": 5,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 19,
+              "y": 7,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 7,
+              "y": 9,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 19,
+              "y": 10,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 16,
+              "y": 11,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 17,
+              "y": 12,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 2,
+              "y": 13,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 13,
+              "y": 13,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 1,
+              "y": 15,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 13,
+              "y": 15,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 8,
+              "y": 17,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 15,
+              "y": 17,
+              "before": "dot",
+              "after": "tele"
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
       "name": "potion",
       "seed": 1,
-      "actions": [{ "type": "drinkPotion" }],
+      "actions": [
+        {
+          "type": "drinkPotion"
+        }
+      ],
       "chargenDivergence": {
-        "phase": 38,
-        "requirements": ["ABIL-02"],
-        "fields": ["skills"],
-        "before": { "skills": { "Climbing": 1, "Ambidextrous": 1, "Runes/Signs": 1 } },
-        "after": { "skills": { "Ambidextrous": 1, "Runes/Signs": 1 } },
-        "rationale": "ABIL-02: as chargen seed 1 — Climbing was dropped outright by the reshape; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills."
+        "phase": "38+54",
+        "requirements": [
+          "ABIL-02",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "skills": {
+            "Climbing": 1,
+            "Ambidextrous": 1,
+            "Runes/Signs": 1
+          },
+          "maxWP": 58,
+          "wp": 58,
+          "rations": 6
+        },
+        "after": {
+          "skills": {
+            "Ambidextrous": 1,
+            "Runes/Signs": 1
+          },
+          "maxWP": 73,
+          "wp": 73,
+          "rations": 9
+        },
+        "rationale": "ABIL-02: as chargen seed 1 — Climbing was dropped outright by the reshape; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 8,
+              "y": 1,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 11,
+              "y": 1,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 11,
+              "y": 4,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 16,
+              "y": 7,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 7,
+              "y": 8,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 10,
+              "y": 9,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 11,
+              "y": 9,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 17,
+              "y": 9,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 1,
+              "y": 11,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 15,
+              "y": 15,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 5,
+              "y": 16,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 17,
+              "y": 16,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 7,
+              "y": 19,
+              "before": "trap",
+              "after": "climb"
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
       "name": "scroll",
       "seed": 7,
-      "actions": [{ "type": "readScroll" }],
+      "actions": [
+        {
+          "type": "readScroll"
+        }
+      ],
       "chargenDivergence": {
-        "phase": 40,
-        "requirements": ["SPELL-04"],
-        "fields": ["grimoire"],
-        "before": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal"] },
-        "after": { "grimoire": ["Sense Presence", "Mirror Self", "Stun", "Heal", "Lesser Summon"] },
-        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). readScroll's own picked spell/option-list length is unaffected — measured live, see FIXTURE-INVENTORY.md's Phase 40 section."
+        "phase": "40+54",
+        "requirements": [
+          "SPELL-04",
+          "BAND-02"
+        ],
+        "fields": [
+          "grimoire",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "grimoire": [
+            "Sense Presence",
+            "Mirror Self",
+            "Stun",
+            "Heal"
+          ],
+          "maxWP": 31,
+          "wp": 31,
+          "rations": 4
+        },
+        "after": {
+          "grimoire": [
+            "Sense Presence",
+            "Mirror Self",
+            "Stun",
+            "Heal",
+            "Lesser Summon"
+          ],
+          "maxWP": 39,
+          "wp": 39,
+          "rations": 6
+        },
+        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). readScroll's own picked spell/option-list length is unaffected — measured live, see FIXTURE-INVENTORY.md's Phase 40 section. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 15,
+              "y": 3,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 16,
+              "y": 5,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 19,
+              "y": 7,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 7,
+              "y": 9,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 19,
+              "y": 10,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 16,
+              "y": 11,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 17,
+              "y": 12,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 2,
+              "y": 13,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 13,
+              "y": 13,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 1,
+              "y": 15,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 13,
+              "y": 15,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 8,
+              "y": 17,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 15,
+              "y": 17,
+              "before": "dot",
+              "after": "tele"
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     }
   ]

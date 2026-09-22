@@ -21,6 +21,13 @@ import { useAbility, abilityRoundsLeft, applyPommel, applyDirtyTrick, applyPoiso
 import { isReady, remaining, startEffect } from "../../engine/effects.js";
 import { abilityEffectActive, foeToHitVs, DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
 import { endCombat, foeTurn, pickFoeTarget, applyFoeDamageToPlayer, flee } from "../../engine/combat.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count; throws on underflow (a "no more draws expected"

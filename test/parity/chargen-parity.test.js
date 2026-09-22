@@ -201,8 +201,12 @@ test("chargen fixture divergence records are narrow and well-formed (FID-06)", (
   // 6, 13, 32) — see that file's Phase 38 section for the full measured
   // before/after table. Phase 45 (HEDGE-03) extends seeds 2/3/4 (already
   // among the 11) with `items`/`worn` — no new record, the key count is
-  // unchanged.
-  assert.ok(keys.length <= 11, `expected at most 11 divergence records, got ${keys.length}`);
+  // unchanged. Phase 54-07 (USER RULING G, cycle 3, BAND-02): the fitted
+  // HERO_HP_SCALE (1.25) and FOOD_CLOCK (held, 1.5) move maxWP/wp/rations at
+  // EVERY chargen seed — extends the existing 11 records with those three
+  // fields and adds the 3 seeds that previously carried none (8, 19, 35),
+  // for exactly 14 (= the full seed set) going forward.
+  assert.ok(keys.length <= 14, `expected at most 14 divergence records, got ${keys.length}`);
   for (const key of keys) {
     assert.ok(SEEDS.includes(Number(key)), `divergence key ${key} is not in the fixture's seeds array`);
     const record = divergences[key];

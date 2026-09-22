@@ -22,6 +22,13 @@ import assert from "node:assert/strict";
 
 import { foeTurn, flee, foeLevelBase } from "../../engine/combat.js";
 import { BESTIARY } from "../../content/index.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 /** fakeRng(seq) — `.d()` pops the next value regardless of side count; throws
  * on underflow, which doubles as a "no more rng draws expected" assertion. */

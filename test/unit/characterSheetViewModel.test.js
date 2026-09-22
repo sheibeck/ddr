@@ -19,6 +19,13 @@ import { strikeDie, toHit, upkeep, weaponDamage } from "../../engine/derived.js"
 import { THRESHOLDS, ABILITY_BY_ID } from "../../content/index.js";
 import { startCooldown } from "../../engine/effects.js";
 import { characterSheetViewModel } from "../../src/browser/heroTab.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 function statByKey(vm, key) {
   const row = vm.stats.find((s) => s.key === key);

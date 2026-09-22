@@ -37,7 +37,7 @@ intent artifact).
 | action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | lose-plain | 1119 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
 | action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | parley | 303 | startCombat | Humans | Ned (Humans lvl 1, wp 8); Ned (Humans lvl 1, wp 8) |
+| action-script.combat.json | parley | 303 | startCombat | Humans | Ned (Humans lvl 1, wp 7); Ned (Humans lvl 1, wp 7) |
 | action-script.magic.json | cast-damage | 8 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
 | action-script.magic.json | heal | 7 | none | — | — |
 | action-script.magic.json | potion | 1 | none | — | — |
@@ -2438,4 +2438,92 @@ drops OUT of the declared set (it no longer diverges). This is Phase 54's
 own `EXPECTED` array in `test/parity/divergence-records.test.js`'s
 `BAND-02 (USER RULING D)` guard, updated in the same commit as the engine
 fix — the guard fails first if any OTHER site ever moves.
+
+### Fitted dials — measured set (54-07, USER RULING G cycle 3, the fit commit)
+
+Fit: `fit/fit-log.jsonl` #13 (score 2.7113, verdict PASS, `constraints.ok`
+true, zero class-fairness rejections) — see `fit/fit-log.md` for the full
+evaluation table. `DIALS` ships at this evaluated point; the three core-10
+coordinates that moved from `fit/start-block3.json` are `FOE_LEVEL.perDepth`
+(0.26 -> 0.29), `FOE_HIT_SCALE.perDepth` (0.02 -> 0.01), `FOE_HP_SCALE.base`
+(0.8 -> 0.9); every other core-10/held dial lands at its cycle-2-carried
+start value. Per USER RULING D ("everything that moves is declared"), the
+fit moves EVERY fixture in some way — `difficultyCurve(1)` itself is no
+longer parity-exact (`foeHitScale` 0.61, `foeHpScale` 0.915, `hazardScale`
+0.62, `dots` 7, all off their identity/canon values — `foeLevel` alone still
+clamps to 1). Three independent causes, each declared at its own
+mechanism:
+
+**(1) Chargen (`chargenDivergence`, 31 holders declaring `phase` containing
+`54`):** `HERO_HP_SCALE` (1.25) scales every rolled `maxWP`/`wp`
+(`round(canon * 1.25)`); `FOOD_CLOCK` (held, 1.5) scales every class's
+starting `rations` (`round(canon * 1.5)`). `STARTING_GOLD`/
+`STARTING_POTION_BONUS` are held at identity, so `gold`/`potions` never
+move. Every one of the chargen fixture's 14 seeds, the movement fixture's
+seed 256 (top-level `chargenDivergence`), the economy fixture's seed 3
+(top-level), all 6 combat scenarios, all 4 magic scenarios, and all 5
+encounters scenarios carry this record — measured live via `newRun(seed).c`
+vs the frozen prototype sandbox, never hand-typed.
+
+**(2) Floor-feature remap (`floorFeatureShift`, a NEW record kind, 17
+holders):** `ENCOUNTER_DOTS` fitted (`{ base: 7, perDepth: 0.3 }`, from
+identity `{ base: 9, perDepth: 1 }`) changes `difficultyCurve(depth).dots`.
+`genFloor`'s feature-scatter loop (`engine/maze.js`) walks the SAME
+`rng.shuffle(far)` result but assigns the first `dots` array slots to the
+`'dot'` feat before moving on to tele/chest/trap/climb/gorge — a smaller
+`dots` count shifts every LATER feature category's starting index by the
+same delta, remapping which cells land on which feat. The rng cursor itself
+is UNCHANGED (the shuffle runs once regardless of `dots`; nothing after it
+draws more or fewer times), so this is a pure, deterministic re-mapping,
+never new randomness — every affected site's `floorFeatureShift.cells`
+lists the EXACT `(x, y, before, after)` triples, measured by a live
+cell-by-cell diff of `floor.g` against the frozen prototype (never
+hand-typed), and a dedicated regression test (`movement-parity.test.js`'s
+own) proves the declared cells match the measured ones exactly, with no
+undeclared cell diverging. 13 cells move at depth 1 for every seed tested
+(the delta between `dots` identity and fitted is a CONSTANT 3, so the
+window of re-flagged cells is a structural constant, not seed-dependent);
+the movement fixture ALSO declares floor 2's own 13-cell shift (its script
+descends to floor 2 at action 12). `applyFloorFeatureShift` — a small pure
+helper forcing the declared cells to their `before` value on BOTH sides
+before every comparison, side-agnostic — is defined LOCALLY in every parity
+test file that needs it (`movement-parity.test.js`, `combat-parity.test.js`,
+`magic-parity.test.js`, `economy-parity.test.js`, `full-suite.test.js`) —
+never added to `test/parity/harness/comparables.js`, which stays untouched
+per the engine gate.
+
+**(3) Mid-scenario action-path divergences (`divergence`, `kind:
+"action-path"`, 9 holders declaring `phase` containing `54`):** every
+scenario/script whose end-of-run `c` fields move under the fitted dials
+(`HERO_SP_SCALE` 0.28 rescales every SP grant; `LOOT_SCALE` held at 0.8
+rescales every coin-site payout) carries a machine-checked `before`/`after`
+record (`declaredEndDiffs`), re-measured by REPLAYING that scenario's own
+action script against the fitted engine — never hand-typed:
+
+| Holder | New or re-measured | Cause | fields moved |
+|---|---|---|---|
+| `action-script.combat.json#win` | new | HERO_SP_SCALE (kill SP) | sp |
+| `action-script.combat.json#lose` | re-measured (was 24+31+51+52) | HERO_SP_SCALE + LOOT_SCALE + FOOD_CLOCK/HERO_HP_SCALE combat-length effects | wp, sp, kills, rations |
+| `action-script.combat.json#lose-apprentice` | re-measured (was 31+51) | same, plus the pre-existing level-cap cause | wp, sp, gold, kills, rations |
+| `action-script.combat.json#lose-plain` | re-measured (was 51) | same | wp, sp, gold, kills, rations |
+| `action-script.combat.json#flee` | re-measured (was 54, level-cap cause) | rations only newly moves (wp/sp/gold/kills unaffected by a flee) | wp, sp, gold, kills, rations |
+| `action-script.combat.json#parley` | re-measured (was 27+31) | HERO_SP_SCALE (parley payout) | wp, sp, gold, kills, rations |
+| `action-script.encounters.json#chest` | new | LOOT_SCALE (chest gold) | gold |
+| `action-script.magic.json#cast-damage` | re-measured (was 23+31) | HERO_SP_SCALE (Freeze-kill SP) + FOOD_CLOCK (chargen ration base the +1 kill ration rides on) | sp, gold, kills, rations |
+| `action-script.movement.json#script` | new | HERO_SP_SCALE (the descend SP bonus, action 12) | sp |
+
+`action-script.encounters.json#tablefour` stays UNDECLARED at the fitted
+commit (as it was at the identity commit, per USER RULING G's own section
+above) — `HERO_HP_SCALE` applies identically to `DOT_HP_BASE.large` and the
+chargen `maxWP` it lands on, so the "+25 HP" dot and the seed's own maxWP
+scale together and the scenario's action-path never diverges independently
+of its already-declared `chargenDivergence`.
+
+**Gates at this commit:** `node tools/initiative-fixture-scan.mjs |
+diff - tools/initiative-fixture-scan-output.txt` clean (regenerated);
+`npm test` 3479/3479, fail 0; `npm run build:www` exit 0; master hash
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0` unchanged;
+`git diff --stat <PRE_FIT> -- content/bestiary.js tools/lib/tuning-bot.mjs
+test/parity/harness/comparables.js test/parity/prototype-master.js.txt`
+empty.
 

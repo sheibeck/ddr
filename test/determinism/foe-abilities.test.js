@@ -41,6 +41,13 @@ import { newRun } from "../../engine/engine.js";
 import { startCombat, fight, playerStrike, foeTurn } from "../../engine/combat.js";
 import { foeLevelFor } from "../../engine/difficulty.js";
 import { stripVolatileFields } from "../parity/harness/diffState.js";
+import { setIdentityDials } from "../unit/harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 /** firstDepthOfTier(tier) — Phase 54 (BAND-02, USER RULING D): foe level is
  * now a function of DEPTH (foeLevelFor), never the hero's level — the first

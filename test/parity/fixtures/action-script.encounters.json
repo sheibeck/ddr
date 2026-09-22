@@ -2,76 +2,774 @@
   "_note": "Each scenario's seed was found by brute-force search: run newRun(seed) then a single direct springTrap/openChest/encounterDot call and keep the first seed whose result matches the scenario's target outcome (a sprung/damaging trap, an opened chest, a plain Table Four row, a Faerie encounter, and a Disease/Poison affliction). 'springTrap'/'openChest'/'encounterDot' are internal (non-validated) actions, mirroring action-script.combat.json's 'startCombat' precedent — the harness clones/rehydrates-rng/persists by hand, the same shape applyAction itself uses.",
   "scenarios": [
     {
-      "name": "trap", "seed": 1, "actions": [{ "type": "springTrap" }],
+      "name": "trap",
+      "seed": 1,
+      "actions": [
+        {
+          "type": "springTrap"
+        }
+      ],
       "chargenDivergence": {
-        "phase": 38, "requirements": ["ABIL-02"], "fields": ["skills"],
-        "before": { "skills": { "Climbing": 1, "Ambidextrous": 1, "Runes/Signs": 1 } },
-        "after": { "skills": { "Ambidextrous": 1, "Runes/Signs": 1 } },
-        "rationale": "ABIL-02: as chargen seed 1 — Climbing dropped outright; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills. springTrap's dodge never read Climbing."
-      }
-    },
-    {
-      "name": "chest", "seed": 2, "actions": [{ "type": "openChest" }],
-      "chargenDivergence": {
-        "phase": "38+45", "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"], "fields": ["skills", "items", "worn"],
+        "phase": "38+54",
+        "requirements": [
+          "ABIL-02",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
         "before": {
-          "skills": { "Climbing": 1, "Acute Hearing": 1, "Leaping": 1, "Night Vision": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 }, "txt": "d6 wp back every 20 squares" }]
+          "skills": {
+            "Climbing": 1,
+            "Ambidextrous": 1,
+            "Runes/Signs": 1
+          },
+          "maxWP": 58,
+          "wp": 58,
+          "rations": 6
         },
         "after": {
-          "skills": { "Acute Hearing": 1, "Night Vision": 1 },
-          "items": [],
-          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth" } }
+          "skills": {
+            "Ambidextrous": 1,
+            "Runes/Signs": 1
+          },
+          "maxWP": 73,
+          "wp": 73,
+          "rations": 9
         },
-        "rationale": "ABIL-02: as chargen seed 2 — Climbing (the Cat Burglar's FREE_SKILL grant, now Dirty Trick) and Leaping (dropped, now Smoke) both landed in c.abilities (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "rationale": "ABIL-02: as chargen seed 1 — Climbing dropped outright; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills. springTrap's dodge never read Climbing. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 8,
+              "y": 1,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 11,
+              "y": 1,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 11,
+              "y": 4,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 16,
+              "y": 7,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 7,
+              "y": 8,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 10,
+              "y": 9,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 11,
+              "y": 9,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 17,
+              "y": 9,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 1,
+              "y": 11,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 15,
+              "y": 15,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 5,
+              "y": 16,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 17,
+              "y": 16,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 7,
+              "y": 19,
+              "before": "trap",
+              "after": "climb"
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
-      "name": "tablefour", "seed": 3, "actions": [{ "type": "encounterDot" }],
+      "name": "chest",
+      "seed": 2,
+      "actions": [
+        {
+          "type": "openChest"
+        }
+      ],
       "chargenDivergence": {
-        "phase": "38+45", "requirements": ["ABIL-02", "HEDGE-03"], "fields": ["skills", "items", "worn"],
+        "phase": "38+45+54",
+        "requirements": [
+          "ABIL-02",
+          "QUICK-260918-w4n",
+          "HEDGE-03",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "items",
+          "worn",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
         "before": {
-          "skills": { "Heft": 1, "Silence": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+          "skills": {
+            "Climbing": 1,
+            "Acute Hearing": 1,
+            "Leaping": 1,
+            "Night Vision": 1
+          },
+          "items": [
+            {
+              "kind": "cloak",
+              "n": "Cloak of Regeneration",
+              "eff": {
+                "cloakRegen": 1
+              },
+              "txt": "d6 wp back every 20 squares"
+            }
+          ],
+          "maxWP": 40,
+          "wp": 40,
+          "rations": 5
         },
         "after": {
-          "skills": { "Heft": 1 },
+          "skills": {
+            "Acute Hearing": 1,
+            "Night Vision": 1
+          },
           "items": [],
-          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+          "worn": {
+            "cloak": {
+              "kind": "cloak",
+              "n": "Cloak of Armor",
+              "eff": {
+                "cloakArmor": 1
+              },
+              "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
+            }
+          },
+          "maxWP": 50,
+          "wp": 50,
+          "rations": 8
         },
-        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active; it lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "rationale": "ABIL-02: as chargen seed 2 — Climbing (the Cat Burglar's FREE_SKILL grant, now Dirty Trick) and Leaping (dropped, now Smoke) both landed in c.abilities (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 17,
+              "y": 1,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 2,
+              "y": 7,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 3,
+              "y": 7,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 5,
+              "y": 7,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 14,
+              "y": 7,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 14,
+              "y": 9,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 15,
+              "y": 10,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 19,
+              "y": 12,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 5,
+              "y": 13,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 19,
+              "y": 13,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 13,
+              "y": 17,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 3,
+              "y": 19,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 5,
+              "y": 19,
+              "before": "dot",
+              "after": "chest"
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "divergence": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "action-path",
+        "fromAction": 0,
+        "fields": [
+          "gold"
+        ],
+        "before": {
+          "gold": 190
+        },
+        "after": {
+          "gold": 162
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): LOOT_SCALE held at 0.8 scales the chest gold post-draw (lootFor, engine/encounters.js#openChest) at action 0. No further gold-affecting action occurs in this single-action scenario, so both sides hold steady (190 vs 162) after. Measured live by replaying this scenario against the fitted engine, never hand-typed."
       }
     },
     {
-      "name": "faerie", "seed": 38, "actions": [{ "type": "encounterDot" }],
+      "name": "tablefour",
+      "seed": 3,
+      "actions": [
+        {
+          "type": "encounterDot"
+        }
+      ],
       "chargenDivergence": {
-        "phase": "38+45", "requirements": ["ABIL-02", "HEDGE-03"], "fields": ["skills", "items", "worn"],
+        "phase": "38+45+54",
+        "requirements": [
+          "ABIL-02",
+          "HEDGE-03",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "items",
+          "worn",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
         "before": {
-          "skills": { "Silence": 1, "Kata": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 100, "txt": "walk through walls, once every 100 squares" }]
+          "skills": {
+            "Heft": 1,
+            "Silence": 1
+          },
+          "items": [
+            {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 100,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          ],
+          "maxWP": 40,
+          "wp": 40,
+          "rations": 5
+        },
+        "after": {
+          "skills": {
+            "Heft": 1
+          },
+          "items": [],
+          "worn": {
+            "cloak": {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 80,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          },
+          "maxWP": 50,
+          "wp": 50,
+          "rations": 8
+        },
+        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active; it lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 5,
+              "y": 3,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 9,
+              "y": 4,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 19,
+              "y": 5,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 12,
+              "y": 7,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 3,
+              "y": 11,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 10,
+              "y": 11,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 9,
+              "y": 13,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 15,
+              "y": 14,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 9,
+              "y": 15,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 16,
+              "y": 15,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 1,
+              "y": 17,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 11,
+              "y": 18,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 8,
+              "y": 19,
+              "before": "climb",
+              "after": null
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      }
+    },
+    {
+      "name": "faerie",
+      "seed": 38,
+      "actions": [
+        {
+          "type": "encounterDot"
+        }
+      ],
+      "chargenDivergence": {
+        "phase": "38+45+54",
+        "requirements": [
+          "ABIL-02",
+          "HEDGE-03",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "items",
+          "worn",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
+        "before": {
+          "skills": {
+            "Silence": 1,
+            "Kata": 1
+          },
+          "items": [
+            {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 100,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          ],
+          "maxWP": 24,
+          "wp": 24,
+          "rations": 5
         },
         "after": {
           "skills": {},
           "items": [],
-          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Ether", "eff": {}, "use": "ether", "every": 80, "txt": "walk through walls, once every 100 squares" } }
+          "worn": {
+            "cloak": {
+              "kind": "cloak",
+              "n": "Cloak of Ether",
+              "eff": {},
+              "use": "ether",
+              "every": 80,
+              "txt": "walk through walls, once every 100 squares"
+            }
+          },
+          "maxWP": 30,
+          "wp": 30,
+          "rations": 8
         },
-        "rationale": "ABIL-02: Silence converted to Silent Step and the Thief's Kata converted to Feint; both landed in c.abilities (silentStep, feint) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "rationale": "ABIL-02: Silence converted to Silent Step and the Thief's Kata converted to Feint; both landed in c.abilities (silentStep, feint) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 12,
+              "y": 1,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 17,
+              "y": 1,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 18,
+              "y": 3,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 19,
+              "y": 3,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 15,
+              "y": 5,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 11,
+              "y": 6,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 13,
+              "y": 7,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 16,
+              "y": 9,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 14,
+              "y": 15,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 3,
+              "y": 17,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 4,
+              "y": 19,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 8,
+              "y": 19,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 13,
+              "y": 19,
+              "before": "climb",
+              "after": null
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     },
     {
-      "name": "affliction", "seed": 160, "actions": [{ "type": "encounterDot" }],
+      "name": "affliction",
+      "seed": 160,
+      "actions": [
+        {
+          "type": "encounterDot"
+        }
+      ],
       "chargenDivergence": {
-        "phase": "38+45", "requirements": ["ABIL-02", "QUICK-260918-w4n", "HEDGE-03"], "fields": ["skills", "items", "worn"],
+        "phase": "38+45+54",
+        "requirements": [
+          "ABIL-02",
+          "QUICK-260918-w4n",
+          "HEDGE-03",
+          "BAND-02"
+        ],
+        "fields": [
+          "skills",
+          "items",
+          "worn",
+          "maxWP",
+          "wp",
+          "rations"
+        ],
         "before": {
-          "skills": { "Acute Hearing": 1, "Kata": 1, "Locks": 1 },
-          "items": [{ "kind": "cloak", "n": "Cloak of Regeneration", "eff": { "cloakRegen": 1 }, "txt": "d6 wp back every 20 squares" }]
+          "skills": {
+            "Acute Hearing": 1,
+            "Kata": 1,
+            "Locks": 1
+          },
+          "items": [
+            {
+              "kind": "cloak",
+              "n": "Cloak of Regeneration",
+              "eff": {
+                "cloakRegen": 1
+              },
+              "txt": "d6 wp back every 20 squares"
+            }
+          ],
+          "maxWP": 40,
+          "wp": 40,
+          "rations": 5
         },
         "after": {
-          "skills": { "Acute Hearing": 1, "Locks": 1 },
+          "skills": {
+            "Acute Hearing": 1,
+            "Locks": 1
+          },
           "items": [],
-          "worn": { "cloak": { "kind": "cloak", "n": "Cloak of Armor", "eff": { "cloakArmor": 1 }, "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth" } }
+          "worn": {
+            "cloak": {
+              "kind": "cloak",
+              "n": "Cloak of Armor",
+              "eff": {
+                "cloakArmor": 1
+              },
+              "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
+            }
+          },
+          "maxWP": 50,
+          "wp": 50,
+          "rations": 8
         },
-        "rationale": "ABIL-02: the Thief's Kata converted to the Feint active, which lives in c.abilities (feint) instead of c.skills; Locks keeps its measured tier value untouched. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01)."
+        "rationale": "ABIL-02: the Thief's Kata converted to the Feint active, which lives in c.abilities (feint) instead of c.skills; Locks keeps its measured tier value untouched. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      },
+      "floorFeatureShift": {
+        "phase": "54",
+        "requirements": [
+          "BAND-02"
+        ],
+        "kind": "floor-feature-shift",
+        "cells": {
+          "1": [
+            {
+              "x": 9,
+              "y": 1,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 7,
+              "y": 2,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 18,
+              "y": 3,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 3,
+              "y": 7,
+              "before": "tele",
+              "after": "chest"
+            },
+            {
+              "x": 16,
+              "y": 7,
+              "before": "chest",
+              "after": "climb"
+            },
+            {
+              "x": 9,
+              "y": 8,
+              "before": "trap",
+              "after": "gorge"
+            },
+            {
+              "x": 9,
+              "y": 9,
+              "before": "dot",
+              "after": "tele"
+            },
+            {
+              "x": 5,
+              "y": 11,
+              "before": "dot",
+              "after": "chest"
+            },
+            {
+              "x": 15,
+              "y": 11,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 1,
+              "y": 12,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 12,
+              "y": 15,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 3,
+              "y": 17,
+              "before": "gorge",
+              "after": null
+            }
+          ]
+        },
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     }
   ]

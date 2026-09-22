@@ -36,6 +36,13 @@ import {
   STORE_ARMOR_CAP,
   STORE_PREMIUM_BONUS,
 } from "../../content/index.js";
+import { setIdentityDials, withIdentity } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 /** heroOf(seed, cls, depth, extraForce) — a forced-class hero on an arbitrary
  * floor.depth (a plain field write, no rng — the tests never need a real
@@ -96,13 +103,10 @@ test("storeTier(depth) reads difficultyCurve(depth).storeTier; identity reproduc
 });
 
 test("STORE_TIER under setDialsForTuning gives a different ladder: { base: 0, perDepth: 0.55 } -> 112233333333 for depths 1..12", () => {
-  const restore = setDialsForTuning({ STORE_TIER: { base: 0, perDepth: 0.55 } });
-  try {
+  withIdentity({ STORE_TIER: { base: 0, perDepth: 0.55 } }, () => {
     const seq = Array.from({ length: 12 }, (_, i) => storeTier(i + 1)).join("");
     assert.equal(seq, "112233333333");
-  } finally {
-    restore();
-  }
+  });
 });
 
 test("every per-tier table has exactly one entry per tier (length 4)", () => {

@@ -36,6 +36,13 @@ import {
 import { startCombat, fight, foeTurn } from "../../engine/combat.js";
 import { tickAbilityCooldowns, firstReadyAbility } from "../../engine/foeAbilities.js";
 import { BESTIARY, FOE_ABILITIES } from "../../content/index.js";
+import { setIdentityDials, withIdentity } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -135,13 +142,13 @@ function fixedFoe(overrides = {}) {
 
 // --- DIALS pins used by combat wiring ---------------------------------------
 
-test("DIALS pins used by combat wiring are at their identity values (docs/DIFFICULTY-RETUNE.md's dial table)", () => {
-  assert.deepStrictEqual(DIALS.FOE_LEVEL, { base: 0.6, perDepth: 0.2 });
+test("USER RULING G (cycle 3, fitted DIALS): DIALS pins used by combat wiring are at their SHIPPED (fitted/held) values — fit/best.json, docs/DIFFICULTY-RETUNE.md's dial table", () => {
+  assert.deepStrictEqual(DIALS.FOE_LEVEL, { base: 0.9, perDepth: 0.29 });
   assert.equal(DIALS.TIER_SPREAD, 1);
-  assert.deepStrictEqual(DIALS.FOE_HIT_SCALE, { base: 1, perDepth: 0 });
-  assert.deepStrictEqual(DIALS.FOE_HP_SCALE, { base: 1, perDepth: 0 });
-  assert.equal(DIALS.FOE_COUNT_SKEW, 0);
-  assert.equal(DIALS.ROUND_DAMAGE_CEILING, 0);
+  assert.deepStrictEqual(DIALS.FOE_HIT_SCALE, { base: 0.6, perDepth: 0.01 });
+  assert.deepStrictEqual(DIALS.FOE_HP_SCALE, { base: 0.9, perDepth: 0.015 });
+  assert.equal(DIALS.FOE_COUNT_SKEW, 1);
+  assert.equal(DIALS.ROUND_DAMAGE_CEILING, 0.5);
 });
 
 // --- wiring at depth 1 (identity: foeLevelFor(1) === 1, no bleed possible) --
@@ -253,8 +260,7 @@ test("roundDamageCapFor: Infinity at identity (0, off) — every cliff hits exac
 });
 
 test("round-damage ceiling: with ROUND_DAMAGE_CEILING 0.5 a three-swing foe's visit total is clamped to roundDamageCapFor(1) (21) at level 1 — restored after", () => {
-  const restore = setDialsForTuning({ ROUND_DAMAGE_CEILING: 0.5 });
-  try {
+  withIdentity({ ROUND_DAMAGE_CEILING: 0.5 }, () => {
     assert.equal(roundDamageCapFor(1), 21);
     const foe = fixedFoe({ lvl: 1, wp: 1000, maxWP: 1000, sp: { atk: 3, dmg: { n: 1, sides: 1, bonus: 30 } } });
     const state = fixedState({ c: { level: 1, maxWP: 200, wp: 200 }, combat: { foes: [foe], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
@@ -263,9 +269,7 @@ test("round-damage ceiling: with ROUND_DAMAGE_CEILING 0.5 a three-swing foe's vi
     const totalDealt = events.filter((e) => e.type === "struckByFoe").reduce((sum, e) => sum + e.dmg, 0);
     assert.ok(totalDealt <= 21, `visit total ${totalDealt} must stay <= the level-1 cap (21)`);
     assert.equal(state.c.wp, 200 - totalDealt);
-  } finally {
-    restore();
-  }
+  });
 });
 
 // --- pursuitStrike uses the same helper -------------------------------------

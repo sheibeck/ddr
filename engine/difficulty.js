@@ -70,124 +70,202 @@ export const DIALS = deepFreeze({
    * DELIBERATE RULES CHANGE (Phase 54, BAND-02, 2026-09-21, USER RULING D):
    * no identity exists — this REPLACES `min(c.level, depth)` (foe level was a
    * function of the HERO's level, so difficulty stopped scaling with depth
-   * the moment the hero out-leveled the dungeon, around floor 3). Landed at
-   * the starting map `{ base: 0.6, perDepth: 0.2 }`, whose map(1) = 1 keeps
-   * every floor-1 fight identical to canon (parity). Direction: ↑ = harder
-   * (foes hit like a higher tier sooner). */
-  FOE_LEVEL: { base: 0.6, perDepth: 0.2 },
+   * the moment the hero out-leveled the dungeon, around floor 3). Direction:
+   * ↑ = harder (foes hit like a higher tier sooner).
+   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
+   * {0.6,0.2}/{0.9,0.26} -> { base: 0.9, perDepth: 0.29 } —
+   * fit/fit-log.jsonl #13 (score 2.7113, PASS). map(1) = round(0.9+0.29) =
+   * 1 — floor 1 stays identical to canon (parity). */
+  FOE_LEVEL: { base: 0.9, perDepth: 0.29 },
   /** TIER_SPREAD — the d4 "one tier lower" bleed threshold (canon: a roll of
    * 1 on a d4 knocks the tier down by one). Identity: 1 (unchanged from
-   * canon `rng.d(4) === 1`). Direction: ↑ = more low-tier bleed (softer). */
+   * canon `rng.d(4) === 1`). Direction: ↑ = more low-tier bleed (softer).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 1 (= identity, "available, canon"). */
   TIER_SPREAD: 1,
   /** FOE_HIT_SCALE — scales the WHOLE foe hit (`foeLevelBase + dice`, crit
    * included) at the hero/member/pursuit sites, post-roll. Identity:
    * `{ base: 1, perDepth: 0 }` (canon — the dominant damage term untouched).
-   * Direction: ↑ = harder. */
-  FOE_HIT_SCALE: { base: 1, perDepth: 0 },
+   * Direction: ↑ = harder.
+   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
+   * {1,0}/{0.6,0.02} -> { base: 0.6, perDepth: 0.01 } — fit/fit-log.jsonl
+   * #13 (score 2.7113, PASS); the walk moved `perDepth` down from the
+   * cycle-2 start's 0.02 to 0.01 (evaluation #11), a small easing on the
+   * dominant damage term's depth slope. */
+  FOE_HIT_SCALE: { base: 0.6, perDepth: 0.01 },
   /** FOE_HP_SCALE — scales a foe's starting wp/maxWP at copy time. Identity:
-   * `{ base: 1, perDepth: 0 }`. Direction: ↑ = longer fights (harder). */
-  FOE_HP_SCALE: { base: 1, perDepth: 0 },
+   * `{ base: 1, perDepth: 0 }`. Direction: ↑ = longer fights (harder).
+   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): base identity/
+   * start 1/0.8 -> 0.9 — fit/fit-log.jsonl #13 (score 2.7113, PASS).
+   * perDepth: held (available) — Phase 54 fit did not search this dial;
+   * shipped at its start value 0.015. */
+  FOE_HP_SCALE: { base: 0.9, perDepth: 0.015 },
   /** FOE_COUNT_SKEW — an index into FOE_COUNT_TABLE (below) shifting
    * P(1/2/3 foes) once the canon d4 roll is > 2; row 0 is canon. Identity: 0
-   * (canon draw shape, no level-keyed cap). Direction: ↑ = more bodies. */
-  FOE_COUNT_SKEW: 0,
+   * (canon draw shape, no level-keyed cap). Direction: ↑ = more bodies.
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 1 (0..4 if released). */
+  FOE_COUNT_SKEW: 1,
   /** ROUND_DAMAGE_CEILING — a fraction of a level-appropriate hero's MEAN
    * max HP that ONE foe may deal per foeTurn visit, across all its swings
    * (frenzy/sp.atk included); 0 = off. Identity: 0 (no ceiling — canon
    * cliffs stay cliffs until this dial is released). Direction: ↑ = a
    * softer ceiling (0 is the hardest/uncapped setting; a small positive
-   * value is SOFTER than 0). */
-  ROUND_DAMAGE_CEILING: 0,
+   * value is SOFTER than 0).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 0.5 ([0.3, 1.0] if released). TUNE-08's roster-under-
+   * the-ceiling table reads this value. */
+  ROUND_DAMAGE_CEILING: 0.5,
   /** ABILITY_THREAT — the caster-cadence scalar (abilityCadenceFor).
    * Identity: `{ base: 1, perDepth: 0 }`. Direction: ↑ = casters act more
-   * often (harder). */
+   * often (harder).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value { base: 1.0, perDepth: 0 } (= identity; base [0.6, 1.2]
+   * if released). */
   ABILITY_THREAT: { base: 1, perDepth: 0 },
   /** HERO_HP_SCALE — multiplies the hero's rolled maxWP at chargen AND every
    * level-up gain (through `heroMaxWpFor`, which also folds in a class's
    * CLASS_MITIGATION.hpMul). Identity: 1 (canon). Direction: ↑ = tankier
-   * hero (easier). */
-  HERO_HP_SCALE: 1,
+   * hero (easier).
+   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
+   * 1/1.25 -> 1.25 (unmoved from the cycle-2 start this cycle) —
+   * fit/fit-log.jsonl #13 (score 2.7113, PASS). */
+  HERO_HP_SCALE: 1.25,
   /** HERO_REGEN_PER_FLOOR — a fraction of maxWP restored once, on arriving
    * at a new floor (`descend`, hero only). Identity: 0 (no regen — canon has
-   * none). Direction: ↑ = easier. */
-  HERO_REGEN_PER_FLOOR: 0,
+   * none). Direction: ↑ = easier.
+   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
+   * 0/0.25 -> 0.25 (unmoved from the cycle-2 start this cycle) —
+   * fit/fit-log.jsonl #13 (score 2.7113, PASS). */
+  HERO_REGEN_PER_FLOOR: 0.25,
   /** HERO_SP_SCALE — scales every SP grant (kill share, parley, the descend
    * bonus, the table-four +10/+25 XP dots). Identity: 1 (canon). Direction:
-   * ↑ = faster leveling (paces HERO_HP_SCALE's payoff sooner). */
-  HERO_SP_SCALE: 1,
+   * ↑ = faster leveling (paces HERO_HP_SCALE's payoff sooner).
+   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
+   * 1/0.28 -> 0.28 (unmoved from the cycle-2 start this cycle; evaluations
+   * #6-7 probed 0.33/0.23 and both scored worse) — fit/fit-log.jsonl #13
+   * (score 2.7113, PASS). */
+  HERO_SP_SCALE: 0.28,
   /** CAMP_HEAL_FRACTION — a rested night heals `round(fraction * maxWP) +
    * d10 - 5` (the SAME d10 draw canon always made, re-centered). No
    * identity exists (canon was `d10 + 2*level`, a level term, not a
    * fraction of maxWP) — mean-matched at level 1: mean maxWP 41.67, so
    * `round(0.17 * 41.67) + d10 - 5` has mean 7.6 vs canon's `d10 + 2` mean
-   * 7.5. Direction: ↑ = easier. */
-  CAMP_HEAL_FRACTION: 0.17,
+   * 7.5. Direction: ↑ = easier.
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 0.2 ([0.15, 0.5] if released). */
+  CAMP_HEAL_FRACTION: 0.2,
   /** FOOD_CLOCK — a multiplier on the class's canon starting-ration count.
-   * Identity: 1 (canon). Direction: ↑ = more starting rations (easier). */
-  FOOD_CLOCK: 1,
+   * Identity: 1 (canon). Direction: ↑ = more starting rations (easier).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 1.5 ([1.0, 1.6] if released). */
+  FOOD_CLOCK: 1.5,
   /** ENCOUNTER_DOTS — `{ base, perDepth }`; non-breather dots =
    * `round(base + perDepth*depth)`. Identity: `{ base: 9, perDepth: 1 }`
    * (= canon `9 + depth`, no cap). Direction: ↑ = more attrition
-   * (harder). */
-  ENCOUNTER_DOTS: { base: 9, perDepth: 1 },
+   * (harder).
+   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): base identity/
+   * start 9/7 -> 7 (unmoved from the cycle-2 start this cycle) —
+   * fit/fit-log.jsonl #13 (score 2.7113, PASS). perDepth: held (available)
+   * — Phase 54 fit did not search this dial; shipped at its start value
+   * 0.3. */
+  ENCOUNTER_DOTS: { base: 7, perDepth: 0.3 },
   /** HAZARD_SCALE — post-draw fall/trap/leap damage scale (scaleHazard),
    * floor 1 included. Identity: `{ base: 1, perDepth: 0 }` (canon).
-   * Direction: ↑ = harder. */
-  HAZARD_SCALE: { base: 1, perDepth: 0 },
+   * Direction: ↑ = harder.
+   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): base identity/
+   * start 1/0.6 -> 0.6 (unmoved from the cycle-2 start this cycle) —
+   * fit/fit-log.jsonl #13 (score 2.7113, PASS). perDepth: held (available)
+   * — Phase 54 fit did not search this dial; shipped at its start value
+   * 0.02. */
+  HAZARD_SCALE: { base: 0.6, perDepth: 0.02 },
   /** DARK_BLOBS — `{ base, perDepth }`, `clamp(round(base+perDepth*depth), 0,
    * DARK_BLOB_CAP)` on a non-breather floor (0 on a breather). Identity:
    * `{ base: -0.4, perDepth: 0.7 }` reproduces canon's floors 1/2/4/5+
    * exactly; floor 3 reads 2 where the retired floor-hold ramp (see this
    * module's header history paragraph) used to read 1 (not fixture-exposed).
-   * Direction: ↑ = more darkness (harder). */
+   * Direction: ↑ = more darkness (harder).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value { base: -0.4, perDepth: 0.7 } (= identity; perDepth
+   * [0.3, 1.0] if released). */
   DARK_BLOBS: { base: -0.4, perDepth: 0.7 },
-  /** DARK_BLOB_CAP — the hard ceiling on darkBlobs. Identity: 3 (canon). */
+  /** DARK_BLOB_CAP — the hard ceiling on darkBlobs. Identity: 3 (canon).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 3 (= identity). */
   DARK_BLOB_CAP: 3,
   /** DARK_RADIUS — `{ base, perDepth }`, `min(round(base+perDepth*depth),
    * DARK_RADIUS_CAP)`. Identity: `{ base: 3, perDepth: 1 }` (= canon
-   * `3+depth`, capped). Direction: ↑ = larger dark zones (harder). */
+   * `3+depth`, capped). Direction: ↑ = larger dark zones (harder).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value { base: 3, perDepth: 1 } (= identity). */
   DARK_RADIUS: { base: 3, perDepth: 1 },
   /** DARK_RADIUS_CAP — the hard ceiling on darkRadius. Identity: 7
    * (= today exactly — the Phase 27 easing value, kept as this dial's
-   * identity since it is what every current save/fixture already sees). */
+   * identity since it is what every current save/fixture already sees).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 7 (= identity). */
   DARK_RADIUS_CAP: 7,
   /** STORE_TIER — `{ base, perDepth }`, `clamp(round(base+perDepth*depth),
    * 0, 3)`; reproduces today's BAG_FLOORS ladder exactly (map 1..12 =
    * "011122223333"). Consumer hook lands in 54-06. Identity:
    * `{ base: 0, perDepth: 0.3 }`. Direction: ↑ = richer stores sooner
-   * (easier economy). */
+   * (easier economy).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value { base: 0, perDepth: 0.3 } (= identity; perDepth
+   * [0.15, 0.6] if released). */
   STORE_TIER: { base: 0, perDepth: 0.3 },
   /** LOOT_SCALE — 54-06's economy multiplier (gold/treasure). Identity: 1
-   * (canon). Held at identity this plan; consumer hook lands in 54-06. */
-  LOOT_SCALE: 1,
+   * (canon).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 0.8 ([0.4, 1.5] if released). */
+  LOOT_SCALE: 0.8,
   /** FOE_ACCURACY — 54-06's to-hit modifier. Identity: 0 (canon, no
-   * modifier). Held at identity this plan. */
+   * modifier).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 0 (= identity; -3..+3 if released). */
   FOE_ACCURACY: 0,
   /** DOT_MIX — 54-06's Table-4 category weighting (fight/harm/loot/help).
-   * Identity: all 1.0 (canon mix). Held at identity this plan. */
+   * Identity: all 1.0 (canon mix).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value { fight: 1.0, harm: 1.0, loot: 1.0, help: 1.0 } (=
+   * identity; `fight` [0.6, 1.2] if released, harm/loot/help "available,
+   * canon"). */
   DOT_MIX: { fight: 1, harm: 1, loot: 1, help: 1 },
   /** WANDER_RATE — 54-06's wandering-monster check multiplier. Identity: 1
-   * (canon). Held at identity this plan. */
+   * (canon).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 1 (= identity; {0, 1, 2} if released). */
   WANDER_RATE: 1,
-  /** FLEE_NEED_MOD — 54-06's flee-roll modifier. Identity: 0 (canon). Held
-   * at identity this plan. */
+  /** FLEE_NEED_MOD — 54-06's flee-roll modifier. Identity: 0 (canon).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 0 (= identity, "available, canon"). */
   FLEE_NEED_MOD: 0,
   /** PARLEY_NEED_MOD — 54-06's parley-roll modifier. Identity: 0 (canon).
-   * Held at identity this plan. */
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 0 (= identity, "available, canon"). */
   PARLEY_NEED_MOD: 0,
-  /** STARTING_GOLD — 54-06's chargen gold. Identity: 50 (canon). Held at
-   * identity this plan. */
+  /** STARTING_GOLD — 54-06's chargen gold. Identity: 50 (canon).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 50 (= identity, "available, canon"). */
   STARTING_GOLD: 50,
   /** STARTING_POTION_BONUS — 54-06's chargen potion bonus. Identity: 0
-   * (canon). Held at identity this plan. */
+   * (canon).
+   * held (available) — Phase 54 fit did not search this dial; shipped at
+   * its start value 0 (= identity, "available, canon"). */
   STARTING_POTION_BONUS: 0,
   /** CLASS_MITIGATION — 54-06's per-class mitigation rows; `Fighter.hpMul`
    * is already read by `heroMaxWpFor` below (identity 1, a no-op multiplier
    * on top of HERO_HP_SCALE). `Thief.fleeBonus` is seeded from
    * content/flee.js's own canon `FLEE_THIEF_BONUS` (5) so this table is
    * never out of sync with the existing flee-modifier table it will one day
-   * replace. Held at identity this plan; every other consumer hook lands in
-   * 54-06. */
+   * replace.
+   * held (available) — Phase 54 fit did not search this dial (USER RULING
+   * G, cycle 3: the ["Magic User", "spellPower"] leaf was briefly promoted
+   * to a searched coordinate by Ruling F's cycle-2 "Adjustment 1", then
+   * dropped again — it proved a structural no-op across 200 seeds); shipped
+   * at its identity/start values (every row 1, "available" — the fit's
+   * every candidate in cycle 3 satisfied the class-pool constraints without
+   * a manual notch, so this stays untouched). */
   CLASS_MITIGATION: {
     Fighter: { hpMul: 1, armorMul: 1, killSpeed: 1 },
     Thief: { evasion: 0, fleeBonus: FLEE_THIEF_BONUS, trapAvoid: 0, killSpeed: 1 },

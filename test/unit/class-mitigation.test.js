@@ -36,6 +36,28 @@ import { openChest, tableFour, meetFaerie } from "../../engine/encounters.js";
 import { castSpell } from "../../engine/magic.js";
 import { rollCharacter } from "../../engine/character.js";
 import { SPELLS } from "../../content/index.js";
+import { setIdentityDials, withIdentity, IDENTITY_DIALS } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
+
+/**
+ * setDials(overrides) — this file's OWN local drop-in replacement for a
+ * bare `setDialsForTuning(overrides)` call: merges `overrides` against
+ * IDENTITY_DIALS (never against the fitted `DIALS`, which is what a raw
+ * `setDialsForTuning` call would do), and its returned restore function
+ * resets `live` back to IDENTITY_DIALS (never to fitted `DIALS`, which is
+ * what the raw `setDialsForTuning`-returned `restore()` always does). Every
+ * one of this file's many `const restoreX = setDials({...})` /
+ * `restoreX()` pairs below uses this instead, unchanged otherwise.
+ */
+function setDials(overrides) {
+  setDialsForTuning({ ...IDENTITY_DIALS, ...overrides });
+  return () => setDialsForTuning(IDENTITY_DIALS);
+}
 
 /** fakeRng(seq) — pops the next value off `seq` regardless of requested die
  * size; throws on underflow (a "no more draws expected" assertion). Ports
@@ -143,7 +165,7 @@ test("Thief evasion -1 lowers foeToHitVs by 1 for vs hero only (member unchanged
   const identityHero = foeToHitVs(state, "hero");
   const identityMember = foeToHitVs(state, "member");
 
-  const restore3 = setDialsForTuning({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: -1 } } });
+  const restore3 = setDials({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: -1 } } });
   try {
     assert.equal(foeToHitVs(state, "hero"), identityHero - 1, "vs hero drops by exactly 1");
     assert.equal(foeToHitVs(state, "member"), identityMember, "vs member is untouched");
@@ -159,7 +181,7 @@ test("Thief evasion -1 lowers foeToHitVs by 1 for vs hero only (member unchanged
   // A non-Thief never reads CLASS_MITIGATION.Thief.evasion at all.
   const fighter = fixedState({ c: { cls: "Fighter", sub: "Soldier" } });
   const fighterIdentity = foeToHitVs(fighter, "hero");
-  const restore4 = setDialsForTuning({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: -1 } } });
+  const restore4 = setDials({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: -1 } } });
   try {
     assert.equal(foeToHitVs(fighter, "hero"), fighterIdentity, "a Fighter is unaffected by the Thief evasion dial");
   } finally {
@@ -172,7 +194,7 @@ test("FOE_ACCURACY +2 raises the need by 2 for hero and member; the Math.max(1, 
   const identityHero = foeToHitVs(state, "hero");
   const identityMember = foeToHitVs(state, "member");
 
-  const restorePlus = setDialsForTuning({ FOE_ACCURACY: 2 });
+  const restorePlus = setDials({ FOE_ACCURACY: 2 });
   try {
     assert.equal(foeToHitVs(state, "hero"), identityHero + 2);
     assert.equal(foeToHitVs(state, "member"), identityMember + 2);
@@ -185,7 +207,7 @@ test("FOE_ACCURACY +2 raises the need by 2 for hero and member; the Math.max(1, 
   // Acrobat: h = 3 before the accuracy term; -3 accuracy would floor at 1
   // via Math.max(1, h), never go negative.
   const acrobat = fixedState({ c: { cls: "Fighter", sub: "Acrobat" } });
-  const restoreMinus = setDialsForTuning({ FOE_ACCURACY: -3 });
+  const restoreMinus = setDials({ FOE_ACCURACY: -3 });
   try {
     assert.equal(foeToHitVs(acrobat, "hero"), 1, "the floor clamp holds even at a large negative accuracy");
   } finally {
@@ -207,7 +229,7 @@ test("Thief killSpeed 1.25 scales the backstab opener only (a second-round strik
   };
   const identityOpenerDmg = thiefOpener();
   assert.equal(identityOpenerDmg, 10);
-  const restoreThief = setDialsForTuning({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, killSpeed: 1.25 } } });
+  const restoreThief = setDials({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, killSpeed: 1.25 } } });
   try {
     assert.equal(thiefOpener(), Math.max(1, Math.round(10 * 1.25)), "the opener scales by killSpeed");
   } finally {
@@ -224,7 +246,7 @@ test("Thief killSpeed 1.25 scales the backstab opener only (a second-round strik
     return events.find((e) => e.type === "struck").dmg;
   };
   const identitySecondDmg = thiefSecondRound();
-  const restoreThief2 = setDialsForTuning({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, killSpeed: 1.25 } } });
+  const restoreThief2 = setDials({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, killSpeed: 1.25 } } });
   try {
     assert.equal(thiefSecondRound(), identitySecondDmg, "a non-opener Thief strike is unaffected by killSpeed");
   } finally {
@@ -241,7 +263,7 @@ test("Thief killSpeed 1.25 scales the backstab opener only (a second-round strik
     return events.find((e) => e.type === "struck").dmg;
   };
   const identityFighterDmg = fighterStrike();
-  const restoreFighter = setDialsForTuning({ CLASS_MITIGATION: { Fighter: { ...DIALS.CLASS_MITIGATION.Fighter, killSpeed: 0.9 } } });
+  const restoreFighter = setDials({ CLASS_MITIGATION: { Fighter: { ...DIALS.CLASS_MITIGATION.Fighter, killSpeed: 0.9 } } });
   try {
     assert.equal(fighterStrike(), Math.max(1, Math.round(identityFighterDmg * 0.9)), "every Fighter melee strike scales by killSpeed");
   } finally {
@@ -257,7 +279,7 @@ test("Thief killSpeed 1.25 scales the backstab opener only (a second-round strik
     return events.find((e) => e.type === "struck").dmg;
   };
   const identityMuDmg = muStrike();
-  const restoreMu = setDialsForTuning({
+  const restoreMu = setDials({
     CLASS_MITIGATION: {
       Fighter: { ...DIALS.CLASS_MITIGATION.Fighter, killSpeed: 0.9 },
       Thief: { ...DIALS.CLASS_MITIGATION.Thief, killSpeed: 1.25 },
@@ -286,7 +308,7 @@ test("spellPower 1.15 scales a Fireball's rolled damage and never Heal", () => {
     return events.find((e) => e.type === "spellHit").dmg;
   };
   const identityDmg = castFireball();
-  const restore = setDialsForTuning({ CLASS_MITIGATION: { "Magic User": { spellPower: 1.15 } } });
+  const restore = setDials({ CLASS_MITIGATION: { "Magic User": { spellPower: 1.15 } } });
   try {
     assert.equal(castFireball(), Math.max(0, Math.round(identityDmg * 1.15)), "Fireball's applied damage scales by spellPower");
   } finally {
@@ -300,7 +322,7 @@ test("spellPower 1.15 scales a Fireball's rolled damage and never Heal", () => {
     return state.c.wp;
   };
   const identityHealWp = castHeal();
-  const restoreHeal = setDialsForTuning({ CLASS_MITIGATION: { "Magic User": { spellPower: 1.15 } } });
+  const restoreHeal = setDials({ CLASS_MITIGATION: { "Magic User": { spellPower: 1.15 } } });
   try {
     assert.equal(castHeal(), identityHealWp, "Heal is never scaled by spellPower");
   } finally {
@@ -314,7 +336,7 @@ test("armorMul 1.2 scales the Fighter's ar read in armorSoak", () => {
   const fighter = fixedFighter({ cls: "Fighter", ar: 10, armorWP: 20, armorMax: 20, armorMin: 0 });
   const identity = armorSoak(fighter);
   assert.equal(identity.ar, 10);
-  const restore = setDialsForTuning({ CLASS_MITIGATION: { Fighter: { ...DIALS.CLASS_MITIGATION.Fighter, armorMul: 1.2 } } });
+  const restore = setDials({ CLASS_MITIGATION: { Fighter: { ...DIALS.CLASS_MITIGATION.Fighter, armorMul: 1.2 } } });
   try {
     const scaled = armorSoak(fighter);
     assert.equal(scaled.ar, Math.round(10 * 1.2));
@@ -324,7 +346,7 @@ test("armorMul 1.2 scales the Fighter's ar read in armorSoak", () => {
   }
 
   const thief = fixedFighter({ cls: "Thief", ar: 10, armorWP: 20, armorMax: 20, armorMin: 0 });
-  const restoreThief = setDialsForTuning({ CLASS_MITIGATION: { Fighter: { ...DIALS.CLASS_MITIGATION.Fighter, armorMul: 1.2 } } });
+  const restoreThief = setDials({ CLASS_MITIGATION: { Fighter: { ...DIALS.CLASS_MITIGATION.Fighter, armorMul: 1.2 } } });
   try {
     assert.equal(armorSoak(thief).ar, 10, "a non-Fighter never reads armorMul");
   } finally {
@@ -346,7 +368,7 @@ test("LOOT_SCALE 0.8 scales the kill purse / chest / cache / faerie post-draw wi
     return state.c.gold - before;
   };
   const identityKillGold = killPurse();
-  const restoreKill = setDialsForTuning({ LOOT_SCALE: 0.8 });
+  const restoreKill = setDials({ LOOT_SCALE: 0.8 });
   try {
     assert.equal(killPurse(), Math.round(identityKillGold * 0.8));
   } finally {
@@ -363,7 +385,7 @@ test("LOOT_SCALE 0.8 scales the kill purse / chest / cache / faerie post-draw wi
     return state.c.gold - before;
   };
   const identityChestGold = chestGold();
-  const restoreChest = setDialsForTuning({ LOOT_SCALE: 0.8 });
+  const restoreChest = setDials({ LOOT_SCALE: 0.8 });
   try {
     assert.equal(chestGold(), Math.round(identityChestGold * 0.8));
   } finally {
@@ -378,7 +400,7 @@ test("LOOT_SCALE 0.8 scales the kill purse / chest / cache / faerie post-draw wi
     return state.c.gold - before;
   };
   const identityCacheGold = cacheGold();
-  const restoreCache = setDialsForTuning({ LOOT_SCALE: 0.8 });
+  const restoreCache = setDials({ LOOT_SCALE: 0.8 });
   try {
     assert.equal(cacheGold(), Math.round(identityCacheGold * 0.8));
   } finally {
@@ -394,7 +416,7 @@ test("LOOT_SCALE 0.8 scales the kill purse / chest / cache / faerie post-draw wi
     return state.c.gold - before;
   };
   const identityFaerieGold = faerieGold();
-  const restoreFaerie = setDialsForTuning({ LOOT_SCALE: 0.8 });
+  const restoreFaerie = setDials({ LOOT_SCALE: 0.8 });
   try {
     assert.equal(faerieGold(), Math.round(identityFaerieGold * 0.8));
   } finally {
@@ -407,7 +429,7 @@ test("LOOT_SCALE 0.8 scales the kill purse / chest / cache / faerie post-draw wi
 test("STARTING_GOLD 75 / STARTING_POTION_BONUS 1 at chargen", () => {
   const seed = 12345;
   const identity = rollCharacter(makeRng(seed));
-  const restore = setDialsForTuning({ STARTING_GOLD: 75, STARTING_POTION_BONUS: 1 });
+  const restore = setDials({ STARTING_GOLD: 75, STARTING_POTION_BONUS: 1 });
   try {
     const scaled = rollCharacter(makeRng(seed));
     assert.equal(scaled.gold, 75);

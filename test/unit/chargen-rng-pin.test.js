@@ -32,6 +32,13 @@ import { rollCharacter, rollGrimoire } from "../../engine/character.js";
 import { newRun } from "../../engine/engine.js";
 import { SPELLS, CLASSES } from "../../content/index.js";
 import { canLearn, schoolGate } from "../../engine/derived.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 // The 20-seed union of every parity-fixture seed in the repo (14 chargen
 // seeds from action-script.chargen.json + the other fixture seeds named in

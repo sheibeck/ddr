@@ -57,6 +57,13 @@ import { castSpell, canRead } from "../../engine/magic.js";
 import { makeRng } from "../../engine/rng.js";
 import { startEffect } from "../../engine/effects.js";
 import { CLASSES, RACES, ARMORS, ENC_TYPES, WEAPON_MAX, SPELLS, STRIKE_DICE } from "../../content/index.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 /* ============================================================
  * Scaffold — local helpers, mirroring test/unit/identity-combat.test.js /

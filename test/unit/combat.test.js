@@ -35,6 +35,13 @@ import {
   applyFoeDamageToPlayer,
 } from "../../engine/combat.js";
 import { weaponDamage } from "../../engine/derived.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 // Phase 54 (BAND-02, USER RULING D): FOE_CAP_MAX is retired — foe count is
 // now FOE_COUNT_TABLE-bounded (identity FOE_COUNT_SKEW row 0 tops out at 3,
 // the same canon ceiling the retired constant used to enforce structurally).

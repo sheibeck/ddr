@@ -58,6 +58,23 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(__dirname, "fixtures");
 const readFixture = (name) => JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, name), "utf8"));
 
+/**
+ * applyFloorFeatureShift(state, floorShift) — Phase 54-07 (USER RULING G
+ * cycle 3, BAND-02): a LOCAL copy (test/parity/harness/comparables.js is
+ * never edited — the engine gate) of movement-parity.test.js's /
+ * combat-parity.test.js's identically-named helper; see either file's own
+ * header comment for the ENCOUNTER_DOTS-remap mechanism this declares.
+ */
+function applyFloorFeatureShift(state, floorShift) {
+  const cells = floorShift?.cells?.[state?.floor?.depth];
+  if (!cells || !state.floor) return state;
+  const g = state.floor.g.map((row) => row.map((cell) => ({ ...cell })));
+  for (const { x, y, before } of cells) {
+    if (g[y] && g[y][x]) g[y][x] = { ...g[y][x], feat: before };
+  }
+  return { ...state, floor: { ...state.floor, g } };
+}
+
 const CHARGEN_FIXTURE = readFixture("action-script.chargen.json");
 const MOVEMENT_FIXTURE = readFixture("action-script.movement.json");
 const COMBAT_FIXTURE = readFixture("action-script.combat.json");
@@ -164,7 +181,15 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
     // c.skills) — wrap movementComparable with the shift strip, and prove
     // both sides' chargen c matches the record's before/after first.
     const shift = chargenShiftOf(MOVEMENT_FIXTURE);
-    const cmp = shift ? (s) => stripChargenShift(movementComparable(s), shift) : movementComparable;
+    // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply the fixture's
+    // declared floorFeatureShift (ENCOUNTER_DOTS remap) before every other
+    // strip — mirrors movement-parity.test.js's own wiring.
+    const floorShift = MOVEMENT_FIXTURE.floorFeatureShift;
+    const baseCmp = (s) => movementComparable(applyFloorFeatureShift(s, floorShift));
+    const cmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
+    // Phase 54-07 (USER RULING G cycle 3, BAND-02): the descend-SP action-
+    // path record — mirrors movement-parity.test.js's own wiring.
+    const pathDiv = actionPathDivergenceOf(MOVEMENT_FIXTURE);
     const ctx = loadPrototypeSandbox({ seed: MOVEMENT_FIXTURE.seed });
     let engineState = newRun(MOVEMENT_FIXTURE.seed);
     if (shift) {
@@ -177,9 +202,16 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       ctx.move(action.dir);
       const { state } = applyAction(engineState, action);
       engineState = state;
-      const d = diffState(cmp(ctx.S), cmp(engineState));
-      assert.equal(d, null, `movement action ${i}: diverged at ${d}`);
+      if (!skipsByteDiffAt(pathDiv, i)) {
+        const d = diffState(cmp(ctx.S), cmp(engineState));
+        assert.equal(d, null, `movement action ${i}: diverged at ${d}`);
+      }
     });
+    if (pathDiv) {
+      const ends = declaredEndDiffs(ctx.S, engineState, pathDiv);
+      assert.equal(ends.before, null, `movement fixture: prototype end-state != declared before at ${ends.before}`);
+      assert.equal(ends.after, null, `movement fixture: engine end-state != declared after at ${ends.after}`);
+    }
   });
 
   await t.test("combat: every combat scenario matches the frozen prototype", () => {
@@ -189,7 +221,12 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // combat.parleyInsulted); see the imported stripper's JSDoc in
       // ./harness/comparables.js. Every other scenario (win/lose/flee) keeps
       // comparing on the bare combatComparable.
-      const baseCmp = scenario.name === "parley" ? (s) => stripParleyDivergence(combatComparable(s)) : combatComparable;
+      // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply this scenario's
+      // declared floorFeatureShift before every other strip — mirrors
+      // combat-parity.test.js's own wiring.
+      const floorShift = scenario.floorFeatureShift;
+      const floorCmp = (s) => combatComparable(applyFloorFeatureShift(s, floorShift));
+      const baseCmp = scenario.name === "parley" ? (s) => stripParleyDivergence(floorCmp(s)) : floorCmp;
       // Phase 38 (ABIL-02): win/lose/lose-plain/flee/parley all carry a
       // declared chargenDivergence (the table reshape moved their chargen
       // c.skills) — wrap the base comparable with the shift strip.
@@ -243,7 +280,11 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // selects the scenario-scoped stripper (no fixture uses that shape
       // today, but it stays supported).
       const pathDiv = actionPathDivergenceOf(scenario);
-      let cmp = pathDiv ? combatComparable : scenario.divergence ? (s) => stripScenarioDivergence(combatComparable(s), scenario.divergence) : combatComparable;
+      // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply this scenario's
+      // declared floorFeatureShift before every other strip — mirrors
+      // magic-parity.test.js's own wiring.
+      const floorCmp = (s) => combatComparable(applyFloorFeatureShift(s, scenario.floorFeatureShift));
+      let cmp = pathDiv ? floorCmp : scenario.divergence ? (s) => stripScenarioDivergence(floorCmp(s), scenario.divergence) : floorCmp;
       // Phase 38 (ABIL-02): the "potion" scenario (seed 1) carries a declared
       // chargenDivergence — wrap outermost, on top of pathDiv/scenario.divergence.
       const shift = chargenShiftOf(scenario);
@@ -320,7 +361,11 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // Phase 38 (ABIL-02): the economy fixture's script top level carries a
       // declared chargenDivergence (seed 3, Thief Pickpocket).
       const shift = chargenShiftOf(ECONOMY_FIXTURE);
-      const cmp = shift ? (s) => stripChargenShift(economyComparable(s), shift) : economyComparable;
+      // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply the fixture's
+      // declared floorFeatureShift before every other strip — mirrors
+      // economy-parity.test.js's own wiring.
+      const economyBaseCmp = (s) => economyComparable(applyFloorFeatureShift(s, ECONOMY_FIXTURE.floorFeatureShift));
+      const cmp = shift ? (s) => stripChargenShift(economyBaseCmp(s), shift) : economyBaseCmp;
 
       const ctx = loadPrototypeSandbox({ seed: ECONOMY_FIXTURE.seed });
       let engineState = newRun(ECONOMY_FIXTURE.seed);
@@ -357,7 +402,11 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // Phase 38 (ABIL-02): trap/chest/tablefour/faerie/affliction all carry
       // a declared chargenDivergence.
       const shift = chargenShiftOf(scenario);
-      const cmp = shift ? (s) => stripChargenShift(economyComparable(s), shift) : economyComparable;
+      // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply this scenario's
+      // declared floorFeatureShift before every other strip — mirrors
+      // economy-parity.test.js's own wiring.
+      const encountersBaseCmp = (s) => economyComparable(applyFloorFeatureShift(s, scenario.floorFeatureShift));
+      const cmp = shift ? (s) => stripChargenShift(encountersBaseCmp(s), shift) : encountersBaseCmp;
       // Phase 54 (BAND-02, USER RULING D): a scenario MAY also carry an
       // "action-path" divergence record — mirrors economy-parity.test.js's
       // own encounters loop (the two replay sites must agree).

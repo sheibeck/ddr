@@ -42,6 +42,23 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "fixtures", "action-script.magic.json"), "utf8"));
 
 /**
+ * applyFloorFeatureShift(state, floorShift) — Phase 54-07 (USER RULING G
+ * cycle 3, BAND-02): a LOCAL copy (test/parity/harness/comparables.js is
+ * never edited — the engine gate) of movement-parity.test.js's /
+ * combat-parity.test.js's identically-named helper; see either file's own
+ * header comment for the ENCOUNTER_DOTS-remap mechanism this declares.
+ */
+function applyFloorFeatureShift(state, floorShift) {
+  const cells = floorShift?.cells?.[state?.floor?.depth];
+  if (!cells || !state.floor) return state;
+  const g = state.floor.g.map((row) => row.map((cell) => ({ ...cell })));
+  for (const { x, y, before } of cells) {
+    if (g[y] && g[y][x]) g[y][x] = { ...g[y][x], feat: before };
+  }
+  return { ...state, floor: { ...state.floor, g } };
+}
+
+/**
  * comparable(state) — strips fields that are either presentation-only or
  * engine-only bookkeeping, exactly mirroring test/parity/combat-parity.test.js's
  * comparable() (the "cast-damage" scenario enters an active combat sub-state,
@@ -168,7 +185,10 @@ for (const scenario of FIXTURE.scenarios) {
     // selects the scenario-scoped stripper. Every other scenario keeps
     // comparing on the bare `comparable()`.
     const pathDiv = actionPathDivergenceOf(scenario);
-    let cmp = pathDiv ? comparable : scenario.divergence ? (s) => stripScenarioDivergence(comparable(s), scenario.divergence) : comparable;
+    // Phase 54-07 (USER RULING G cycle 3, BAND-02): apply this scenario's
+    // declared floorFeatureShift before every other strip.
+    const floorCmp = (s) => comparable(applyFloorFeatureShift(s, scenario.floorFeatureShift));
+    let cmp = pathDiv ? floorCmp : scenario.divergence ? (s) => stripScenarioDivergence(floorCmp(s), scenario.divergence) : floorCmp;
     // Phase 38 (ABIL-02): the "potion" scenario (seed 1) carries a declared
     // chargenDivergence — wrap outermost, on top of pathDiv/scenario.divergence.
     const shift = chargenShiftOf(scenario);

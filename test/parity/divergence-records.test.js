@@ -342,52 +342,73 @@ test("JOIN-02: the holders declaring Phase 53 are exactly the measured moved set
   assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
 });
 
-// PHASE_54_IDENTITY_FLOOR1_CURVE — difficultyCurve(1) under the global
-// model, pasted verbatim from a `node -e` capture against the landed
-// engine/difficulty.js (Phase 54, BAND-02, USER RULING D — the identity
-// commit's 12-key shape, no mazeSize/foeCap/foeBonus/foeLvlBias fields).
-const PHASE_54_IDENTITY_FLOOR1_CURVE = {
+// PHASE_54_FITTED_FLOOR1_CURVE — difficultyCurve(1) under the fitted (USER
+// RULING G cycle 3) engine, pasted verbatim from a `node -e` capture
+// against the landed engine/difficulty.js. USER RULING D's own text ("Every
+// fixture will move (floor 1 changes — dots, hazards, hero HP, rations, foe
+// hit scale)... the engine gate becomes 'everything that moves is
+// declared', not 'nothing moves'") is realized here: foeLevel still maps to
+// 1 (its own clamp(1,5) floor — FOE_LEVEL's fitted map(1) rounds to 1), but
+// dots/foeHitScale/foeHpScale/hazardScale all move off their identity
+// values because their fitted `perDepth` != 0 (the structural `=== 1`/
+// `perDepth === 0` fast paths in engine/difficulty.js never engage once a
+// dial is genuinely fitted, at ANY depth including 1).
+const PHASE_54_FITTED_FLOOR1_CURVE = {
   depth: 1,
   breather: false,
-  dots: 10,
+  dots: 7,
   darkBlobs: 0,
   darkRadius: 4,
   waterPools: 1,
   storeTier: 0,
   foeLevel: 1,
-  foeHitScale: 1,
-  foeHpScale: 1,
-  hazardScale: 1,
+  foeHitScale: 0.61,
+  foeHpScale: 0.915,
+  hazardScale: 0.62,
   abilityThreat: 1,
 };
 
-test("BAND-02 (USER RULING D): the holders declaring Phase 54 are exactly the measured moved set of the identity commit; difficultyCurve(1) reads the identity column; the count roll keeps the canon draw shape", () => {
-  // Part (a): EXPECTED is the MEASURED moved set — everything that moves at
-  // identity is declared (USER RULING D supersedes the old "measure zero"
-  // BAND-02 guard). Two holders remain at this (USER RULING G, cycle 3)
-  // commit: the retired level-keyed foe-count cap lets combat.json's
-  // lose-apprentice/flee scenarios roll a THIRD Beasts foe at their own
-  // count draw (a level-cap cause).
+test("BAND-02 (USER RULING D/G): the holders declaring Phase 54 are exactly the measured moved set of the FITTED (54-07) commit; difficultyCurve(1) reads the fitted curve (floor 1 is no longer parity-exact — declared, per Ruling D); the count roll keeps the canon draw shape", () => {
+  // Part (a): EXPECTED is the MEASURED moved set — everything that moves
+  // under the FITTED dials is declared (USER RULING D's "everything that
+  // moves is declared" guard). This grows substantially from the identity
+  // commit's 2 holders (flee/lose-apprentice, a level-cap cause) once the
+  // fit ships (USER RULING G cycle 3, fit/fit-log.jsonl #13, score 2.7113
+  // PASS): every scenario/script whose end-of-run `c` fields move under
+  // HERO_HP_SCALE/HERO_SP_SCALE/LOOT_SCALE/FOE_HIT_SCALE/etc — win (kill SP),
+  // chest (LOOT_SCALE chest gold), cast-damage (kill SP + rations), and
+  // movement#script (the descend SP bonus) are NEW action-path records this
+  // commit; lose/lose-plain/parley's PRE-EXISTING action-path records
+  // (Phase 24/27/31/51/52's own causes) are RE-MEASURED for their now-moved
+  // end-state fields and re-declared with "54" appended to `phase`.
   //
   // USER RULING G (2026-09-21, cycle 3, "Adjustment 2"): encounters.json's
-  // tablefour scenario's declared "dot-hp cause" record is RETIRED here —
-  // fixing the Table-4 HP-dot compounding bug (54-05's DOT_HP_FRACTION was
-  // a fraction of the hero's own CURRENT maxWP, which fed the "+25 HP"
-  // row's own output back into its next input) replaced it with
-  // DOT_HP_BASE's flat canon value (25) scaled ONCE by HERO_HP_SCALE. At
-  // HERO_HP_SCALE's identity value (1, unchanged by this commit —
-  // engine/difficulty.js#DIALS ships the fit's values only in a LATER
-  // commit), dotHpFor("large") now returns EXACTLY 25 — the same flat
-  // canon amount the frozen prototype grants — so this scenario's
-  // action-path no longer diverges at all. Measured live: the fixture's
-  // encounterDot replay now byte-matches the frozen prototype at every
-  // step (65 -> 65, not 65 -> 64); the "divergence" block was removed from
-  // action-script.encounters.json#tablefour accordingly. See
-  // test/parity/FIXTURE-INVENTORY.md's Phase 54 section for the full
-  // predictor/scan/moved-set accounting.
+  // tablefour scenario's declared "dot-hp cause" record from the IDENTITY
+  // commit is RETIRED — fixing the Table-4 HP-dot compounding bug (54-05's
+  // DOT_HP_FRACTION was a fraction of the hero's own CURRENT maxWP, which
+  // fed the "+25 HP" row's own output back into its next input) replaced it
+  // with DOT_HP_BASE's flat canon value (25) scaled ONCE by HERO_HP_SCALE.
+  // At the IDENTITY point (HERO_HP_SCALE 1, the commit immediately after
+  // Adjustment 2 lands, before the fit), dotHpFor("large") returns EXACTLY
+  // 25 — the same flat canon amount the frozen prototype grants — so that
+  // scenario's action-path no longer diverges there; at the FITTED point
+  // (HERO_HP_SCALE 1.25) it is folded into `action-script.encounters.json
+  // #chest`'s own chargenDivergence (maxWP/wp/rations) instead — tablefour
+  // itself stays undeclared (both sides still land on the SAME flat 25 *
+  // 1.25, since HERO_HP_SCALE applies identically to both the "large" dot
+  // and the chargen maxWP it lands on). See test/parity/FIXTURE-
+  // INVENTORY.md's Phase 54 section for the full predictor/scan/moved-set
+  // accounting.
   const EXPECTED = [
     "action-script.combat.json#flee",
+    "action-script.combat.json#lose",
     "action-script.combat.json#lose-apprentice",
+    "action-script.combat.json#lose-plain",
+    "action-script.combat.json#parley",
+    "action-script.combat.json#win",
+    "action-script.encounters.json#chest",
+    "action-script.magic.json#cast-damage",
+    "action-script.movement.json#script",
   ].sort();
 
   const declared = new Set(
@@ -398,10 +419,11 @@ test("BAND-02 (USER RULING D): the holders declaring Phase 54 are exactly the me
 
   assert.deepStrictEqual([...declared].sort(), EXPECTED);
 
-  // Part (b): difficultyCurve(1) reads the identity column exactly — the
-  // one never-moved invariant (floor-1 parity) survives the identity
-  // commit unchanged.
-  assert.deepStrictEqual(difficultyCurve(1), PHASE_54_IDENTITY_FLOOR1_CURVE);
+  // Part (b): difficultyCurve(1) reads the FITTED curve exactly — floor 1
+  // is a declared mover under the global model (USER RULING D), not a
+  // never-moved invariant; this pin proves the shipped DIALS produce
+  // EXACTLY this floor-1 shape, measured, never hand-typed.
+  assert.deepStrictEqual(difficultyCurve(1), PHASE_54_FITTED_FLOOR1_CURVE);
 
   // Part (c): the count roll keeps the canon draw shape — a first d4 <= 2
   // draws exactly one d4; a first d4 > 2 draws exactly two — regardless of

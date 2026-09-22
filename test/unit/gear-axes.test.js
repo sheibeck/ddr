@@ -26,6 +26,13 @@ import { playerStrike, flee } from "../../engine/combat.js";
 import { move } from "../../engine/movement.js";
 import { weaponUpgradeDelta, takeItem } from "../../engine/items.js";
 import { lootCompare } from "../../src/browser/viewModels.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// this file's own pins are canon-mechanic numbers written before the fit
+// existed, so it runs under an explicit identity override for its whole
+// lifetime (test/unit/harness/identityDials.js).
+setIdentityDials();
 
 const CLASS_LETTER = { "Fighter": "F", "Thief": "T", "Magic User": "M" };
 

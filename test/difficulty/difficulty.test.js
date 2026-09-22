@@ -36,6 +36,7 @@ import {
   isBreather,
   BREATHER_EVERY,
 } from "../../engine/difficulty.js";
+import { FLEE_THIEF_BONUS } from "../../content/flee.js";
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
@@ -79,6 +80,70 @@ test("USER RULING D/G: DIALS is frozen and its key set is exactly the global mod
   ].sort());
 });
 
+// The identity column — literal, EVERY DIALS key at its pre-fit value (what
+// every dial WAS before the Phase 54-07 fit shipped, USER RULING G cycle 3).
+const IDENTITY_COLUMN = {
+  FOE_LEVEL: { base: 0.6, perDepth: 0.2 },
+  TIER_SPREAD: 1,
+  FOE_HIT_SCALE: { base: 1, perDepth: 0 },
+  FOE_HP_SCALE: { base: 1, perDepth: 0 },
+  FOE_COUNT_SKEW: 0,
+  ROUND_DAMAGE_CEILING: 0,
+  ABILITY_THREAT: { base: 1, perDepth: 0 },
+  HERO_HP_SCALE: 1,
+  HERO_REGEN_PER_FLOOR: 0,
+  HERO_SP_SCALE: 1,
+  CAMP_HEAL_FRACTION: 0.17,
+  FOOD_CLOCK: 1,
+  ENCOUNTER_DOTS: { base: 9, perDepth: 1 },
+  HAZARD_SCALE: { base: 1, perDepth: 0 },
+  DARK_BLOBS: { base: -0.4, perDepth: 0.7 },
+  DARK_BLOB_CAP: 3,
+  DARK_RADIUS: { base: 3, perDepth: 1 },
+  DARK_RADIUS_CAP: 7,
+  STORE_TIER: { base: 0, perDepth: 0.3 },
+  LOOT_SCALE: 1,
+  FOE_ACCURACY: 0,
+  DOT_MIX: { fight: 1, harm: 1, loot: 1, help: 1 },
+  WANDER_RATE: 1,
+  FLEE_NEED_MOD: 0,
+  PARLEY_NEED_MOD: 0,
+  STARTING_GOLD: 50,
+  STARTING_POTION_BONUS: 0,
+  CLASS_MITIGATION: {
+    Fighter: { hpMul: 1, armorMul: 1, killSpeed: 1 },
+    Thief: { evasion: 0, fleeBonus: FLEE_THIEF_BONUS, trapAvoid: 0, killSpeed: 1 },
+    "Magic User": { spellPower: 1 },
+  },
+};
+
+/**
+ * withIdentity(overrides, fn) — Phase 54-07 (USER RULING G cycle 3): DIALS
+ * itself now SHIPS at the fitted values, not identity, so every "identity
+ * column" test below runs `fn` under an EXPLICIT `setDialsForTuning`
+ * override (IDENTITY_COLUMN merged with `overrides`, e.g. a single dial
+ * forced to a non-identity value) rather than relying on DIALS defaulting
+ * to identity. `restore()` always resets `live` all the way back to
+ * (fitted) `DIALS` — never to a previous override — so nested overrides are
+ * expressed as ONE merged object, never as nested `setDialsForTuning` calls.
+ */
+function withIdentity(overrides, fn) {
+  const restore = setDialsForTuning({ ...IDENTITY_COLUMN, ...overrides });
+  try {
+    fn();
+  } finally {
+    restore();
+  }
+}
+
+test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3): DIALS deepStrictEqual the merge of the identity column and fit/best.json (the shipped values are the evaluated ones, no rounding, no hand-tidying)", () => {
+  const bestPath = path.join(__dirname, "..", "..", ".planning", "phases", "54-four-band-retune-and-roster-decision", "fit", "best.json");
+  const best = JSON.parse(fs.readFileSync(bestPath, "utf8"));
+  const merged = { ...IDENTITY_COLUMN, ...best };
+  assert.deepStrictEqual(Object.keys(DIALS).sort(), Object.keys(merged).sort(), "DIALS and the identity+best.json merge must cover the exact same key set");
+  assert.deepStrictEqual(DIALS, merged);
+});
+
 test("USER RULING D: the module's export key set contains no floor-range name (no FROM/TO/THROUGH_DEPTH, no _AT_START/END/N, no SOFT_K, GRACE, KNOT, CANON)", async () => {
   const m = await import("../../engine/difficulty.js");
   const bad = Object.keys(m).filter((k) => /_(FROM|TO|THROUGH)_DEPTH$|_AT_(START|END|[0-9]+)$|SOFT_K$|GRACE|KNOT|CANON/.test(k));
@@ -92,19 +157,49 @@ test("USER RULING D: MAZE_SIZE is absent from DIALS and mazeSize absent from the
 
 // ─── the identity column ────────────────────────────────────────────────────
 
-test("identity column: difficultyCurve(1) reads canon exactly", () => {
+test("identity column: difficultyCurve(1) reads canon exactly (under an explicit identity override — DIALS itself ships fitted, USER RULING G cycle 3)", () => {
+  withIdentity({}, () => {
+    assert.deepStrictEqual(difficultyCurve(1), {
+      depth: 1,
+      breather: false,
+      dots: 10,
+      darkBlobs: 0,
+      darkRadius: 4,
+      waterPools: 1,
+      storeTier: 0,
+      foeLevel: 1,
+      foeHitScale: 1,
+      foeHpScale: 1,
+      hazardScale: 1,
+      abilityThreat: 1,
+    });
+  });
+});
+
+// The FITTED floor-1 curve — USER RULING D (54-CONTEXT.md): under the
+// global model, floor 1 is NOT guaranteed parity-exact the way the retired
+// floor-range knot ladder kept it ("the engine gate becomes 'everything
+// that moves is declared', not 'nothing moves'"). `foeLevel` still maps to
+// 1 (its clamp(1,5) floor), but `FOE_HIT_SCALE`/`FOE_HP_SCALE`/
+// `HAZARD_SCALE`'s fitted `perDepth` != 0 means their structural `=== 1`
+// fast path never engages at ANY depth, including 1 — dots/darkBlobs/
+// darkRadius/storeTier/abilityThreat DO still land on their held-identity
+// values (no coordinate touched them). Pasted verbatim from `node -e`
+// against the landed (fitted) engine; this is the "before" this plan's
+// parity re-measurement (Task 1, Part 5) declares as moved.
+test("USER RULING G (cycle 3, fitted DIALS): difficultyCurve(1) — the fitted curve at floor 1 (foeLevel still 1; foeHitScale/foeHpScale/hazardScale move off identity — declared per USER RULING D)", () => {
   assert.deepStrictEqual(difficultyCurve(1), {
     depth: 1,
     breather: false,
-    dots: 10,
+    dots: 7,
     darkBlobs: 0,
     darkRadius: 4,
     waterPools: 1,
     storeTier: 0,
     foeLevel: 1,
-    foeHitScale: 1,
-    foeHpScale: 1,
-    hazardScale: 1,
+    foeHitScale: 0.61,
+    foeHpScale: 0.915,
+    hazardScale: 0.62,
     abilityThreat: 1,
   });
 });
@@ -140,20 +235,83 @@ const CURVE_PINS = {
   50: { depth: 50, breather: false, dots: 59, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1, foeHpScale: 1, hazardScale: 1, abilityThreat: 1 },
 };
 
-test("identity column: difficultyCurve(depth) for depths 2..25/35/50 deepStrictEqual to the pasted node -e capture", () => {
-  for (const [depth, expected] of Object.entries(CURVE_PINS)) {
-    assert.deepStrictEqual(difficultyCurve(Number(depth)), expected, `depth ${depth}`);
+test("identity column: difficultyCurve(depth) for depths 2..25/35/50 deepStrictEqual to the pasted node -e capture (under an explicit identity override)", () => {
+  withIdentity({}, () => {
+    for (const [depth, expected] of Object.entries(CURVE_PINS)) {
+      assert.deepStrictEqual(difficultyCurve(Number(depth)), expected, `depth ${depth}`);
+    }
+  });
+});
+
+// FITTED_CURVE_PINS — Phase 54-07 fit (USER RULING G cycle 3), depths
+// 2..25/35/50, pasted verbatim from `node -e` against the landed (fitted)
+// engine. `foeHitScale`/`foeHpScale`/`hazardScale` are rounded to 6dp (a
+// `round(x*1e6)/1e6` pass on the raw `node -e` output) to strip IEEE-754
+// representation noise (e.g. raw `0.9450000000000001`) without losing any
+// precision the dials themselves carry (every fitted/held value here has
+// <= 3 decimal digits).
+const FITTED_CURVE_PINS = {
+  2: { depth: 2, breather: false, dots: 8, darkBlobs: 1, darkRadius: 5, waterPools: 1, storeTier: 1, foeLevel: 1, foeHitScale: 0.62, foeHpScale: 0.93, hazardScale: 0.64, abilityThreat: 1 },
+  3: { depth: 3, breather: false, dots: 8, darkBlobs: 2, darkRadius: 6, waterPools: 1, storeTier: 1, foeLevel: 2, foeHitScale: 0.63, foeHpScale: 0.945, hazardScale: 0.66, abilityThreat: 1 },
+  4: { depth: 4, breather: false, dots: 8, darkBlobs: 2, darkRadius: 7, waterPools: 1, storeTier: 1, foeLevel: 2, foeHitScale: 0.64, foeHpScale: 0.96, hazardScale: 0.68, abilityThreat: 1 },
+  5: { depth: 5, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 2, foeHitScale: 0.65, foeHpScale: 0.975, hazardScale: 0.7, abilityThreat: 1 },
+  6: { depth: 6, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 2, foeLevel: 3, foeHitScale: 0.66, foeHpScale: 0.99, hazardScale: 0.72, abilityThreat: 1 },
+  7: { depth: 7, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 3, foeHitScale: 0.67, foeHpScale: 1.005, hazardScale: 0.74, abilityThreat: 1 },
+  8: { depth: 8, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 3, foeHitScale: 0.68, foeHpScale: 1.02, hazardScale: 0.76, abilityThreat: 1 },
+  9: { depth: 9, breather: false, dots: 10, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 0.69, foeHpScale: 1.035, hazardScale: 0.78, abilityThreat: 1 },
+  10: { depth: 10, breather: false, dots: 10, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 0.7, foeHpScale: 1.05, hazardScale: 0.8, abilityThreat: 1 },
+  11: { depth: 11, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 4, foeHitScale: 0.71, foeHpScale: 1.065, hazardScale: 0.82, abilityThreat: 1 },
+  12: { depth: 12, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 0.72, foeHpScale: 1.08, hazardScale: 0.84, abilityThreat: 1 },
+  13: { depth: 13, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.73, foeHpScale: 1.095, hazardScale: 0.86, abilityThreat: 1 },
+  14: { depth: 14, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.74, foeHpScale: 1.11, hazardScale: 0.88, abilityThreat: 1 },
+  15: { depth: 15, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.75, foeHpScale: 1.125, hazardScale: 0.9, abilityThreat: 1 },
+  16: { depth: 16, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 0.76, foeHpScale: 1.14, hazardScale: 0.92, abilityThreat: 1 },
+  17: { depth: 17, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.77, foeHpScale: 1.155, hazardScale: 0.94, abilityThreat: 1 },
+  18: { depth: 18, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.78, foeHpScale: 1.17, hazardScale: 0.96, abilityThreat: 1 },
+  19: { depth: 19, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.79, foeHpScale: 1.185, hazardScale: 0.98, abilityThreat: 1 },
+  20: { depth: 20, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.8, foeHpScale: 1.2, hazardScale: 1, abilityThreat: 1 },
+  21: { depth: 21, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 0.81, foeHpScale: 1.215, hazardScale: 1.02, abilityThreat: 1 },
+  22: { depth: 22, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.82, foeHpScale: 1.23, hazardScale: 1.04, abilityThreat: 1 },
+  23: { depth: 23, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.83, foeHpScale: 1.245, hazardScale: 1.06, abilityThreat: 1 },
+  24: { depth: 24, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.84, foeHpScale: 1.26, hazardScale: 1.08, abilityThreat: 1 },
+  25: { depth: 25, breather: false, dots: 15, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.85, foeHpScale: 1.275, hazardScale: 1.1, abilityThreat: 1 },
+  35: { depth: 35, breather: false, dots: 18, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.95, foeHpScale: 1.425, hazardScale: 1.3, abilityThreat: 1 },
+  50: { depth: 50, breather: false, dots: 22, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.1, foeHpScale: 1.65, hazardScale: 1.6, abilityThreat: 1 },
+};
+
+function roundedCurve(curve) {
+  const r = (x) => Math.round(x * 1e6) / 1e6;
+  return { ...curve, foeHitScale: r(curve.foeHitScale), foeHpScale: r(curve.foeHpScale), hazardScale: r(curve.hazardScale), abilityThreat: r(curve.abilityThreat) };
+}
+
+test("USER RULING G (cycle 3, fitted DIALS): difficultyCurve(depth) for depths 2..25/35/50 deepStrictEqual to the pasted node -e capture (float fields rounded to 6dp)", () => {
+  for (const [depth, expected] of Object.entries(FITTED_CURVE_PINS)) {
+    assert.deepStrictEqual(roundedCurve(difficultyCurve(Number(depth))), expected, `depth ${depth}`);
   }
 });
 
-test("foeLevelFor map 1..25 === '1111222223333344444555555' (identity: no identity exists — the starting map)", () => {
-  const map = Array.from({ length: 25 }, (_, i) => foeLevelFor(i + 1)).join("");
-  assert.equal(map, "1111222223333344444555555");
+test("foeLevelFor map 1..25 (identity, under an explicit identity override) === '1111222223333344444555555'", () => {
+  withIdentity({}, () => {
+    const map = Array.from({ length: 25 }, (_, i) => foeLevelFor(i + 1)).join("");
+    assert.equal(map, "1111222223333344444555555");
+  });
 });
 
-test("dots(d) === 9 + d for d in 1..5 (ENCOUNTER_DOTS identity, no cap) and 9 on every breather floor", () => {
-  for (let d = 1; d <= 5; d++) assert.equal(difficultyCurve(d).dots, 9 + d, `depth ${d}`);
-  for (const d of [6, 11, 16, 21]) assert.equal(difficultyCurve(d).dots, 9, `breather depth ${d}`);
+test("USER RULING G (cycle 3, fitted DIALS): foeLevelFor map 1..25 === '1122233344445555555555555' (FOE_LEVEL fitted to { base: 0.9, perDepth: 0.29 })", () => {
+  const map = Array.from({ length: 25 }, (_, i) => foeLevelFor(i + 1)).join("");
+  assert.equal(map, "1122233344445555555555555");
+});
+
+test("dots(d) (identity, under an explicit identity override) === 9 + d for d in 1..5 (ENCOUNTER_DOTS identity, no cap) and 9 on every breather floor", () => {
+  withIdentity({}, () => {
+    for (let d = 1; d <= 5; d++) assert.equal(difficultyCurve(d).dots, 9 + d, `depth ${d}`);
+    for (const d of [6, 11, 16, 21]) assert.equal(difficultyCurve(d).dots, 9, `breather depth ${d}`);
+  });
+});
+
+test("USER RULING G (cycle 3, fitted DIALS): dots(d) === round(7 + 0.3*d) for d in 1..5 (ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 }) and 7 on every breather floor", () => {
+  for (let d = 1; d <= 5; d++) assert.equal(difficultyCurve(d).dots, Math.round(7 + 0.3 * d), `depth ${d}`);
+  for (const d of [6, 11, 16, 21]) assert.equal(difficultyCurve(d).dots, 7, `breather depth ${d}`);
 });
 
 test("storeTier map 1..12 === '011122223333' (reproduces today's BAG_FLOORS ladder exactly)", () => {
@@ -194,17 +352,30 @@ test("tierSpreadFor() reads live.TIER_SPREAD (identity 1)", () => {
 
 // ─── hero-side helpers ──────────────────────────────────────────────────────
 
-test("heroMeanMaxWpFor(1..5) === [41.67, 46.17, 50.00, 54.50, 60.00] (2dp, HERO_HP_SCALE identity)", () => {
-  const rounded = [1, 2, 3, 4, 5].map((l) => heroMeanMaxWpFor(l).toFixed(2));
-  assert.deepStrictEqual(rounded, ["41.67", "46.17", "50.00", "54.50", "60.00"]);
+test("heroMeanMaxWpFor(1..5) (identity, under an explicit identity override) === [41.67, 46.17, 50.00, 54.50, 60.00] (2dp, HERO_HP_SCALE identity)", () => {
+  withIdentity({}, () => {
+    const rounded = [1, 2, 3, 4, 5].map((l) => heroMeanMaxWpFor(l).toFixed(2));
+    assert.deepStrictEqual(rounded, ["41.67", "46.17", "50.00", "54.50", "60.00"]);
+  });
 });
 
-test("roundDamageCapFor: Infinity at the identity ceiling (0, off); round(0.5 * 41.67) = 21 at level 1 under a 0.5 override (restored after)", () => {
-  assert.equal(roundDamageCapFor(1), Infinity);
-  const restore = setDialsForTuning({ ROUND_DAMAGE_CEILING: 0.5 });
+test("USER RULING G (cycle 3, fitted DIALS): heroMeanMaxWpFor(1..5) === [52.08, 57.71, 62.50, 68.13, 75.00] (2dp, HERO_HP_SCALE fitted to 1.25 — 41.67*1.25=52.09 etc., 2dp rounding of the fitted mean, not the identity mean scaled after)", () => {
+  const rounded = [1, 2, 3, 4, 5].map((l) => heroMeanMaxWpFor(l).toFixed(2));
+  assert.deepStrictEqual(rounded, ["52.08", "57.71", "62.50", "68.13", "75.00"]);
+});
+
+test("roundDamageCapFor: Infinity at the ROUND_DAMAGE_CEILING-off identity value (under an explicit identity override); round(0.5 * 41.67) = 21 at level 1 under a 0.5 override (restored after)", () => {
+  withIdentity({}, () => {
+    assert.equal(roundDamageCapFor(1), Infinity);
+  });
+  const restore = setDialsForTuning({ ...IDENTITY_COLUMN, ROUND_DAMAGE_CEILING: 0.5 });
   assert.equal(roundDamageCapFor(1), 21);
   restore();
-  assert.equal(roundDamageCapFor(1), Infinity, "restore() must put live back to DIALS");
+});
+
+test("USER RULING G (cycle 3, fitted DIALS): roundDamageCapFor is ALREADY on (held at its start value 0.5, not identity 0) — round(0.5 * 52.09) = 26 at level 1, round(0.5 * 62.50) = 31 at level 3", () => {
+  assert.equal(roundDamageCapFor(1), 26);
+  assert.equal(roundDamageCapFor(3), 31);
 });
 
 test("setDialsForTuning throws on an unknown dial key and restore() returns live to DIALS", () => {
@@ -218,40 +389,59 @@ test("setDialsForTuning throws on an unknown dial key and restore() returns live
 
 // ─── identity fast paths (structural, not rounding accidents) ──────────────
 
-test("every helper's identity fast path returns its input by identity", () => {
-  const curve = difficultyCurve(1);
-  assert.equal(Object.is(foeWpFor(42, curve), 42), true);
-  assert.equal(Object.is(foeHitFor(17, curve), 17), true);
-  assert.equal(Object.is(heroMaxWpFor(55, "Fighter"), 55), true);
-  assert.equal(Object.is(heroMaxWpFor(30, "Magic User"), 30), true);
-  assert.equal(Object.is(heroSpFor(123), 123), true);
-  assert.equal(Object.is(startingRationsFor(6), 6), true);
-  assert.equal(Object.is(scaleHazard(9, curve), 9), true);
-  assert.equal(heroRegenFor(100), 0, "HERO_REGEN_PER_FLOOR identity (0) never heals");
+test("every helper's identity fast path returns its input by identity (under an explicit identity override)", () => {
+  withIdentity({}, () => {
+    const curve = difficultyCurve(1);
+    assert.equal(Object.is(foeWpFor(42, curve), 42), true);
+    assert.equal(Object.is(foeHitFor(17, curve), 17), true);
+    assert.equal(Object.is(heroMaxWpFor(55, "Fighter"), 55), true);
+    assert.equal(Object.is(heroMaxWpFor(30, "Magic User"), 30), true);
+    assert.equal(Object.is(heroSpFor(123), 123), true);
+    assert.equal(Object.is(startingRationsFor(6), 6), true);
+    assert.equal(Object.is(scaleHazard(9, curve), 9), true);
+    assert.equal(heroRegenFor(100), 0, "HERO_REGEN_PER_FLOOR identity (0) never heals");
+  });
 });
 
-test("campHealFor keeps the SAME d10 draw re-centered around CAMP_HEAL_FRACTION (identity, mean-matched)", () => {
-  // round(0.17 * 40) + d10 - 5, min 1
-  assert.equal(campHealFor(40, 1), Math.max(1, Math.round(0.17 * 40) + 1 - 5));
-  assert.equal(campHealFor(40, 10), Math.max(1, Math.round(0.17 * 40) + 10 - 5));
+test("USER RULING G (cycle 3, fitted DIALS): every helper reflects the SHIPPED (non-identity) dial values, never the identity fast path, by default", () => {
+  const curve = difficultyCurve(1);
+  assert.equal(foeWpFor(42, curve), Math.max(1, Math.round(42 * 0.915)), "FOE_HP_SCALE fitted (0.9 base) moves foeWpFor off identity");
+  assert.equal(foeHitFor(17, curve), Math.max(1, Math.round(17 * 0.61)), "FOE_HIT_SCALE fitted (0.6 base) moves foeHitFor off identity");
+  assert.equal(heroMaxWpFor(55, "Fighter"), Math.max(1, Math.round(55 * 1.25)), "HERO_HP_SCALE fitted (1.25) moves heroMaxWpFor off identity");
+  assert.equal(heroSpFor(123), Math.round(123 * 0.28), "HERO_SP_SCALE fitted (0.28) moves heroSpFor off identity");
+  assert.equal(startingRationsFor(6), Math.max(1, Math.round(6 * 1.5)), "FOOD_CLOCK held at 1.5 moves startingRationsFor off identity");
+  assert.equal(scaleHazard(9, curve), Math.max(1, Math.round(9 * 0.62)), "HAZARD_SCALE fitted (0.6 base) moves scaleHazard off identity");
+  assert.equal(heroRegenFor(100), Math.max(0, Math.round(0.25 * 100)), "HERO_REGEN_PER_FLOOR fitted (0.25) is no longer a no-op");
+});
+
+test("campHealFor keeps the SAME d10 draw re-centered around CAMP_HEAL_FRACTION (identity, mean-matched, under an explicit identity override)", () => {
+  withIdentity({}, () => {
+    // round(0.17 * 40) + d10 - 5, min 1
+    assert.equal(campHealFor(40, 1), Math.max(1, Math.round(0.17 * 40) + 1 - 5));
+    assert.equal(campHealFor(40, 10), Math.max(1, Math.round(0.17 * 40) + 10 - 5));
+  });
+});
+
+test("USER RULING G (cycle 3): campHealFor at the SHIPPED (held) CAMP_HEAL_FRACTION 0.2 — round(0.2 * 40) + d10 - 5, min 1", () => {
+  assert.equal(campHealFor(40, 1), Math.max(1, Math.round(0.2 * 40) + 1 - 5));
+  assert.equal(campHealFor(40, 10), Math.max(1, Math.round(0.2 * 40) + 10 - 5));
 });
 
 test("USER RULING G (cycle 3): dotHpFor reads DOT_HP_BASE's flat canon value (10/15/25), scaled ONCE by HERO_HP_SCALE — never by the hero's own maxWP (no compounding)", () => {
   assert.deepStrictEqual(DOT_HP_BASE, { small: 10, mid: 15, large: 25 });
-  // Identity (HERO_HP_SCALE 1): the flat canon numbers exactly, structural fast path.
-  assert.equal(dotHpFor("small"), 10);
-  assert.equal(dotHpFor("mid"), 15);
-  assert.equal(dotHpFor("large"), 25);
-  assert.equal(Object.is(dotHpFor("small"), 10), true, "identity returns the literal, not a rounded copy");
+  // Identity (an explicit HERO_HP_SCALE:1 override — DIALS itself ships
+  // HERO_HP_SCALE fitted to 1.25): the flat canon numbers exactly, structural fast path.
+  withIdentity({ HERO_HP_SCALE: 1 }, () => {
+    assert.equal(dotHpFor("small"), 10);
+    assert.equal(dotHpFor("mid"), 15);
+    assert.equal(dotHpFor("large"), 25);
+    assert.equal(Object.is(dotHpFor("small"), 10), true, "identity returns the literal, not a rounded copy");
+  });
 
-  const restore = setDialsForTuning({ HERO_HP_SCALE: 1.25 });
-  try {
-    assert.equal(dotHpFor("small"), Math.max(1, Math.round(10 * 1.25)));
-    assert.equal(dotHpFor("mid"), Math.max(1, Math.round(15 * 1.25)));
-    assert.equal(dotHpFor("large"), Math.max(1, Math.round(25 * 1.25)));
-  } finally {
-    restore();
-  }
+  // The SHIPPED default (HERO_HP_SCALE fitted to 1.25, no override needed).
+  assert.equal(dotHpFor("small"), Math.max(1, Math.round(10 * 1.25)));
+  assert.equal(dotHpFor("mid"), Math.max(1, Math.round(15 * 1.25)));
+  assert.equal(dotHpFor("large"), Math.max(1, Math.round(25 * 1.25)));
 
   // The compounding bug this fix retires: dotHpFor no longer takes a maxWP
   // argument at all, so a dot's size can never depend on (and feed back
