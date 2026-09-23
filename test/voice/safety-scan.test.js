@@ -55,6 +55,11 @@ import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 // voice-checked automatically.
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { MISS_LINES } from "../../src/browser/missLines.js";
+// Phase 61 (STORE-02/03): the upgrade-explanation copy and the store row's
+// own frozen reason copy — new player-facing authored copy, scanned
+// alongside every other presentation COPY bank in collectAuthoredStrings.
+import { UPGRADE_WHY_COPY } from "../../src/browser/upgradeWhy.js";
+import { STORE_ROW_COPY } from "../../src/browser/viewModels.js";
 import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
@@ -332,6 +337,12 @@ function collectAuthoredStrings() {
   // AND counted here so they participate in the completeness/load-bearing
   // meta-tests too.
   JOINER_PARTING_LINES.forEach((s, i) => push(`JOINER_PARTING_LINES[${i}]`, s));
+  // Phase 61 (STORE-02/03): the upgrade-explanation formatter's copy bank
+  // and the store row's own frozen reason copy — every string leaf scanned
+  // AND counted here so they participate in the completeness/load-bearing
+  // meta-tests too.
+  for (const [k, v] of Object.entries(UPGRADE_WHY_COPY)) push(`UPGRADE_WHY_COPY.${k}`, v);
+  for (const [k, v] of Object.entries(STORE_ROW_COPY)) push(`STORE_ROW_COPY.${k}`, v);
 
   return out;
 }

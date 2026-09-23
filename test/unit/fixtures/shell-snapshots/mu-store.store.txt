@@ -22,13 +22,13 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Set of lockpicks<i>opens boxes on 1–5</i></span>\n        <span class=\"g-c\">450 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Spear<i>d8</i></span>\n        <span class=\"g-c\">150 wm</span>"
+    html="<span class=\"g-n\">Spear<i>d8 · d8 vs your d6 · 1.1 vs 0.9 a swing · upgrade</i></span>\n        <span class=\"g-c\">150 wm</span>"
   <button class="goods" onclick>
-    html="<span class=\"g-n\">Quarter Staff<i>d6</i></span>\n        <span class=\"g-c\">25 wm</span>"
+    html="<span class=\"g-n\">Quarter Staff<i>d6 · 0.9 vs 0.9 a swing · not an upgrade</i></span>\n        <span class=\"g-c\">25 wm</span>"
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Sealed scroll</span>\n        <span class=\"g-c\">900 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Warded plate<i>AR 17, 65 hp · enchanted (usable by Fighters — not you)</i></span>\n        <span class=\"g-c\">4,000 wm</span>"
+    html="<span class=\"g-n\">Warded plate<i>AR 17, 65 hp · enchanted · can't use (Fighter only)</i></span>\n        <span class=\"g-c\">4,000 wm</span>"
   <button class="goods" onclick>
     html="<span class=\"g-n\">Rations (+1 ration)</span>\n        <span class=\"g-c\">30 wm</span>"
   <button class="goods" onclick>
