@@ -205,6 +205,9 @@ const BRANCH_TOGGLES = [
   { why: { kind: "weapon", got: { lab: "d8", need: -1, crit: 1, strike: 4.05 }, have: { lab: "d6", need: 0, crit: 1, strike: 5 }, lostProf: 2 } },
   { why: { kind: "armor", got: { ar: 15 }, have: { ar: 6 } } },
   { reason: "tooHeavy" }, { reason: "noArmor" }, { reason: "notBetter" }, { reason: "wrongClass" },
+  // Phase 63 (GSCR-09): itemUnequipped's destroyed branch (the DISCARD
+  // outcome's own line), so the scan renders both sides of its ternary.
+  { destroyed: true },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every
