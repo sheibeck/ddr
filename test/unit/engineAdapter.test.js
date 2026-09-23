@@ -35,7 +35,6 @@ import {
   dispatch,
   formatEvents,
   startNewRun,
-  getBest,
   takeBootWornReport,
 } from "../../src/browser/engineAdapter.js";
 import { flush as flushStorage } from "../../src/browser/storage.js";
@@ -261,52 +260,6 @@ test("startNewRun(seed) after a prior run returns a fresh state and swaps it in 
     assert.equal(state.seed, 4242, "fresh run uses the requested seed");
     assert.equal(getState(), state, "startNewRun swaps in the returned state as current");
   });
-});
-
-test("startNewRun(seed) records the ending run's floor.depth into getBest()", async () => {
-  await withFakeLocalStorage(async () => {
-    initRun(11);
-    getState().floor.depth = 7;
-    await startNewRun(99);
-    assert.equal(await getBest(), 7, "the ended run's deepest floor became the recorded best");
-  });
-});
-
-test("startNewRun(seed) keeps the higher of two recorded bests", async () => {
-  await withFakeLocalStorage(async () => {
-    initRun(1);
-    getState().floor.depth = 3;
-    await startNewRun(2);
-    getState().floor.depth = 1;
-    await startNewRun(3);
-    assert.equal(await getBest(), 3, "a shallower ending run does not overwrite a deeper recorded best");
-  });
-});
-
-test("getBest() returns 0 when nothing is stored and never throws when storage is blocked", async () => {
-  await withFakeLocalStorage(async () => {
-    assert.equal(await getBest(), 0, "no stored best yields 0");
-  });
-
-  const previous = globalThis.localStorage;
-  globalThis.localStorage = {
-    getItem: () => {
-      throw new Error("storage blocked");
-    },
-    setItem: () => {
-      throw new Error("storage blocked");
-    },
-    removeItem: () => {},
-  };
-  try {
-    await assert.doesNotReject(async () => {
-      const best = await getBest();
-      assert.equal(best, 0, "blocked storage falls back to 0");
-    });
-  } finally {
-    if (previous === undefined) delete globalThis.localStorage;
-    else globalThis.localStorage = previous;
-  }
 });
 
 const GRAVE_KEY = "ddr.graveyard.v1";
@@ -592,12 +545,14 @@ test("Device-review Pass B1 item 3: dispatch({type:'abandon'}) buries the curren
   });
 });
 
-// audit-batch E12 (2026-09-09) — the graveyard rework. Parts 1/2/4 all land in
-// persistGrave(): the stored tombstones cap at 5, a separate lifetime total
-// counts every death untrimmed, and a wider recent-names window accumulates for
-// the fresh-roll dedup. `abandon` is used to bury seed-independently (it never
-// depends on maze layout, unlike the starve/fall paths above).
-test("E12: persistGrave caps stored graves at 5 while the total climbs and recentNames accumulates", async () => {
+// audit-batch E12 (2026-09-09) — the graveyard rework. Parts 2/4 land in
+// persistGrave(): a separate lifetime total counts every death untrimmed,
+// and a wider recent-names window accumulates for the fresh-roll dedup.
+// Part 1's 5-stone cap is reversed by Phase 65 (CONTEXT, RUN-02, D-05): the
+// adapter now stores up to 60 stones, matching engine/death.js#bury's own
+// cap. `abandon` is used to bury seed-independently (it never depends on
+// maze layout, unlike the starve/fall paths above).
+test("E12: persistGrave stores up to 60 graves while the total climbs and recentNames accumulates", async () => {
   await withFakeLocalStorage(async (store) => {
     const names = [];
     for (let i = 0; i < 7; i++) {
@@ -612,9 +567,9 @@ test("E12: persistGrave caps stored graves at 5 while the total climbs and recen
 
     const graves = JSON.parse(store.getItem(GRAVE_KEY));
     assert.ok(Array.isArray(graves), "graveyard was written");
-    assert.equal(graves.length, 5, "only the last 5 tombstones are stored (part 1 cap)");
-    // newest-first: the 5 stored are the last 5 deaths, most-recent first
-    assert.equal(graves[0].name, names[6], "the newest death is first among the stored 5");
+    assert.equal(graves.length, 7, "all 7 tombstones are stored (well under the 60 cap, Phase 65 D-05)");
+    // newest-first: the stored stones are ordered most-recent first
+    assert.equal(graves[0].name, names[6], "the newest death is first among the stored stones");
 
     const total = Number(store.getItem(GRAVE_TOTAL_KEY));
     assert.equal(total, 7, "the running total counts EVERY death, untrimmed (part 2)");
@@ -626,7 +581,7 @@ test("E12: persistGrave caps stored graves at 5 while the total climbs and recen
   });
 });
 
-test("E12: the recent-names window is capped at 25 (separately from the 5-grave cap)", async () => {
+test("E12: the recent-names window is capped at 25 (separately from the 60-grave cap), stores up to 60", async () => {
   await withFakeLocalStorage(async (store) => {
     for (let i = 0; i < 30; i++) {
       await startNewRun(2000 + i);
@@ -638,7 +593,21 @@ test("E12: the recent-names window is capped at 25 (separately from the 5-grave 
     const total = Number(store.getItem(GRAVE_TOTAL_KEY));
     assert.equal(total, 30, "the lifetime total still counts all 30 deaths");
     const graves = JSON.parse(store.getItem(GRAVE_KEY));
-    assert.equal(graves.length, 5, "the visible graveyard stays capped at 5");
+    assert.equal(graves.length, 30, "all 30 tombstones are stored (still under the 60 cap)");
+  });
+});
+
+test("Phase 65 (D-05): 62 deaths trim the graveyard to 60 stones while the lifetime total keeps counting all 62", async () => {
+  await withFakeLocalStorage(async (store) => {
+    for (let i = 0; i < 62; i++) {
+      await startNewRun(3000 + i);
+      dispatch({ type: "abandon" });
+      await flushStorage();
+    }
+    const graves = JSON.parse(store.getItem(GRAVE_KEY));
+    assert.equal(graves.length, 60, "the graveyard trims to the 60-stone cap");
+    const total = Number(store.getItem(GRAVE_TOTAL_KEY));
+    assert.equal(total, 62, "the lifetime total still counts every one of the 62 deaths, untrimmed");
   });
 });
 
@@ -887,19 +856,6 @@ test("D-13: a dev run's death through dispatch() writes NO graveyard entry", asy
     assert.equal(store.getItem(GRAVE_KEY), null, "a dev run's death writes no graveyard entry");
     assert.equal(store.getItem(GRAVE_TOTAL_KEY), null, "a dev run's death does not bump the all-time total");
     assert.equal(store.getItem(RECENT_NAMES_KEY), null, "a dev run's death does not enter the recent-names window");
-  });
-});
-
-test("D-13: ending a dev run via startNewRun does not record its depth as best", async () => {
-  await withFakeLocalStorage(async () => {
-    initRun(11, [], { startDepth: 30 });
-    getState().floor.depth = 31; // walked one deeper mid-run
-    await startNewRun(99);
-    assert.equal(await getBest(), 0, "a dev run's ending depth is never recorded as best");
-
-    getState().floor.depth = 4;
-    await startNewRun(100);
-    assert.equal(await getBest(), 4, "a normal run's ending depth still records as best");
   });
 });
 

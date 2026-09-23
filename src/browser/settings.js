@@ -20,7 +20,7 @@
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
 // per settings change, never five separate keys racing each other.
 //
-// Fail-open posture (matches engineAdapter.js's persist()/boot()/getBest()):
+// Fail-open posture (matches engineAdapter.js's persist()/boot()):
 // a missing key, a blocked/private store, or a corrupt/malformed JSON blob
 // all just mean readSettings() returns SETTINGS_DEFAULTS — this module never
 // throws. Phase 33 (UIF-05): the former handed-layout field was removed; a

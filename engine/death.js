@@ -9,8 +9,9 @@
 // fixed clock and the determinism/round-trip/parity harnesses can keep
 // excluding them (01-RESEARCH.md Pitfall 1).
 
-import { EPITAPHS, CAUSE_TEXT, ROMAN } from "../content/index.js";
+import { EPITAPHS, CAUSE_TEXT, ROMAN, SEASON } from "../content/index.js";
 import { died } from "./events.js";
+import { runHash } from "./records.js";
 
 /** fillTemplate(str, ctx) — replaces every {token} in `str` from `ctx`. */
 function fillTemplate(str, ctx) {
@@ -58,10 +59,17 @@ export function epitaphCtx(state, detail) {
   };
 }
 
-/** buildRunSummary(state, cause, when) — the serializable graveyard entry shape. */
-function buildRunSummary(state, cause, when) {
+/**
+ * buildRunSummary(state, cause, when) — the serializable graveyard entry
+ * shape.
+ *
+ * Phase 65 (RUN-01): season, seed, acts and the FNV-1a integrity hash. The
+ * hash is the run's stable id: it excludes when, note and epitaph, so copy
+ * edits and the wall clock never change it. No rng.
+ */
+export function buildRunSummary(state, cause, when) {
   const c = state.c;
-  return {
+  const summary = {
     name: c.name,
     race: c.race,
     sub: c.sub,
@@ -77,7 +85,12 @@ function buildRunSummary(state, cause, when) {
     note: state.deathNote || "died",
     epitaph: state.epitaph,
     when,
+    season: SEASON,
+    seed: typeof state.seed === "number" ? state.seed : null,
+    acts: Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0,
   };
+  summary.hash = runHash(summary);
+  return summary;
 }
 
 /**
