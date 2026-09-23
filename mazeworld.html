@@ -5369,6 +5369,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // node/the browser dev loop.
   import "./src/browser/storage.js";
   import { boot, dispatch, startNewRun, waitForPending, takeBootWornReport } from "./src/browser/engineAdapter.js";
+  // Phase 65 (RUN-04): the death-panel new-best parcel — takeDeathRecord()
+  // (engineAdapter.js) and newBestView() (src/browser/newBest.js) turn a
+  // died event into the classic renderCombatOver's NEW PERSONAL BEST block.
+  import { takeDeathRecord } from "./src/browser/engineAdapter.js";
+  import { newBestView } from "./src/browser/newBest.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
@@ -5651,6 +5656,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // field on S/state (serializeRun spreads S wholesale), same rule as
   // window.__mzRail/__mzFightEnd/__mzCombatMenu.
   window.__mzStair = null;
+  // Phase 65 (RUN-04): the just-died run's NEW PERSONAL BEST block view
+  // (src/browser/newBest.js#newBestView over engineAdapter#takeDeathRecord),
+  // parked once per died event and read by the classic renderCombatOver on
+  // every dead-panel render. Never a field on S/state, same rule as
+  // window.__mzFightEnd.
+  window.__mzDeathRecord = null;
   // The one-shot rail entry point Plans 03/04 use for chip explanations,
   // tap/inspect lines and the back-button quit warning — builds a card
   // directly (no fold pipeline) and repaints.
@@ -6237,6 +6248,11 @@ window.__mzClassicBoot = async function classicBoot() {
     const before = window.__mzState.get();
     const roundBefore = before && before.combat ? before.combat.round : null;
     const result = dispatch(action);
+    // Phase 65 (RUN-04): taken exactly once, right after the synchronous
+    // fold in the adapter. It covers every death path (move, combat
+    // including the beat path, abandon), since this is the shell's only
+    // dispatch call site.
+    if (result.events.some((e) => e.type === "died")) window.__mzDeathRecord = newBestView(takeDeathRecord());
     const ctx = NARRATIVE_ACTIONS.has(action.type) ? { narrate: narrateEvent } : {};
     const wasCombat = !!(before && before.combat);
     const inCombat = !!(result.state && result.state.combat);
@@ -6629,6 +6645,9 @@ window.__mzClassicBoot = async function classicBoot() {
     deadBtn.hidden = !(n > 0);
   }
   function showTitleScreen({ allowResume } = {}) {
+    // Phase 65 (RUN-04): the title shows after BURY THEM, abandon and
+    // save-and-quit, so a later death never renders a stale block.
+    window.__mzDeathRecord = null;
     const screen = document.getElementById("mw-title-screen");
     if (!screen) return;
     resumeIntent = allowResume != null ? allowResume : hasActiveDelveSave();

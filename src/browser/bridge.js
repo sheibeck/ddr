@@ -115,6 +115,14 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: paintVignette — the counter-driven map vignette; paintConditions — the DARK chip's waiver clause)"]),
     purpose: "Bridges the engine's own inDark/revealRadius/mapViewRadius/skill/eff reads plus the pure darknessView.js vignette/waiver helpers, so the shell reads the darkness rule and its three waiver checks instead of reimplementing them.",
   }),
+  __mzDeathRecord: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderCombatOver — renders the NEW PERSONAL BEST block on the THAT IS THAT panel)",
+      "mazeworld.html (module: dispatchWithNarration — sets it on a died event; showTitleScreen — resets it to null)",
+    ]),
+    purpose: "Presentation-only parcel of the just-died run's new-personal-best block view; never a field on state.",
+  }),
   __mzDescend: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: the stair-down overlay's primary action)"]),
