@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"><style>
+body{margin:0;background:#14110c;font-family:'Courier Prime',ui-monospace,monospace}
+a{color:#e8c97a}a:hover{color:#f6e0a2}
+*{-webkit-tap-highlight-color:transparent}
+::-webkit-scrollbar{width:0;height:0}
+@keyframes mwrise{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes mwflick{0%,100%{opacity:1}50%{opacity:.45}}
+</style></helmet>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#14110c;overflow:hidden;font-family:'Courier Prime',ui-monospace,monospace;color:#e6ddc6">
+
+<div style="flex:none;display:flex;align-items:center;gap:10px;padding:9px 14px 10px;border-bottom:3px solid #3a3226;background:#1b170f">
+<sc-if value="{{ hasBack }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ onBack }}" style="flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-6px 0 -6px -8px;font-size:13px;color:#e8c97a;cursor:pointer;box-shadow:inset 0 0 0 2px #4a4032;background:#14110c">&#9664;</div>
+</sc-if>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+<span style="font-family:'Press Start 2P';font-size:9px;color:#c9bda0">LEADERBOARDS</span>
+<span style="font-size:11.5px;color:#8e8369">{{ scopeLine }}</span>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:17px;color:#e8c97a">{{ interred }}</span>
+<span style="font-family:'Press Start 2P';font-size:6px;color:#9a8f76">INTERRED</span>
+</div>
+</div>
+
+<sc-if value="{{ notYard }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:flex;align-items:center;gap:9px;padding:8px 14px 9px;background:#181409;box-shadow:inset 0 -1px 0 #2c2519">
+<div style="{{ me.av }}">{{ me.initials }}</div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:13.5px;color:#e6ddc6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ me.handle }}</span>
+<span style="font-family:'Press Start 2P';font-size:6px;line-height:1.4;color:#9a8f76">{{ me.source }}</span>
+</div>
+<div style="flex:none;display:flex;gap:4px">
+<sc-for list="{{ scopes }}" as="s" hint-placeholder-count="2">
+<div onClick="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<div ref="{{ railRef }}" style="flex:none;display:flex;gap:5px;overflow-x:auto;scroll-behavior:smooth;padding:8px 14px 9px;border-bottom:3px solid #3a3226;background:#181409">
+<sc-for list="{{ boards }}" as="b" hint-placeholder-count="6">
+<div onClick="{{ b.onClick }}" data-on="{{ b.on }}" style="{{ b.style }}">{{ b.tab }}</div>
+</sc-for>
+</div>
+
+<div style="flex:none;padding:11px 14px 12px;border-bottom:1px solid #2c2519;background:#14110c;display:flex;gap:10px;align-items:flex-start">
+<span style="{{ board.markStyle }}">{{ board.mark }}</span>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+<span style="font-family:'Press Start 2P';font-size:8px;line-height:1.5;color:#e8c97a">{{ board.title }}</span>
+<span style="font-size:11.5px;line-height:1.4;color:#8e8369;text-wrap:pretty">{{ board.rule }}</span>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;overflow:auto;padding:0 0 26px">
+
+<sc-if value="{{ isYard }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px;padding:16px 16px 0">
+<sc-for list="{{ stones }}" as="s" hint-placeholder-count="4">
+<div style="{{ s.stone }}">
+<span style="{{ s.cross }}">&#10013;</span>
+<span style="{{ s.nameStyle }}">{{ s.name }}</span>
+<span style="font-family:'Press Start 2P';font-size:6.5px;line-height:1.6;color:#9a8f76">{{ s.line }}</span>
+<div style="width:46px;height:1px;background:#3a3226;margin:2px 0"></div>
+<span style="font-size:12px;line-height:1.4;color:#c9bda0">{{ s.cause }}</span>
+<span style="font-size:11.5px;line-height:1.5;color:#8e8369;text-wrap:pretty">{{ s.epitaph }}</span>
+<div style="margin-top:6px;display:flex;flex-wrap:wrap;justify-content:center;gap:5px">
+<sc-for list="{{ s.stats }}" as="k" hint-placeholder-count="4">
+<div style="display:flex;gap:5px;align-items:baseline;padding:4px 7px;background:#14110c;box-shadow:inset 0 0 0 1px #2c2519">
+<span style="font-family:'Press Start 2P';font-size:6px;color:#9a8f76">{{ k.k }}</span>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:13px;color:#e6ddc6">{{ k.v }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+<div style="display:flex;flex-direction:column">
+<sc-if value="{{ r.divider }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px;padding:9px 14px;background:#100e0a;box-shadow:inset 0 -1px 0 #241f16,inset 0 1px 0 #241f16">
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:15px;color:#4a3f2c;letter-spacing:.2em">···</span>
+<span style="font-family:'Press Start 2P';font-size:6.5px;line-height:1.5;color:#8e8369">{{ r.dividerLabel }}</span>
+</div>
+</sc-if>
+<div onClick="{{ r.onClick }}" style="{{ r.row }}">
+<div style="flex:none;width:28px;display:flex;justify-content:center;padding-top:2px">
+<span style="{{ r.rankStyle }}">{{ r.rank }}</span>
+</div>
+<div style="flex:none;width:30px;height:30px;position:relative"><div style="{{ r.av }}">{{ r.initials }}</div></div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;align-items:baseline;gap:6px;min-width:0">
+<span style="{{ r.handleStyle }}">{{ r.handle }}</span>
+<span style="{{ r.tagStyle }}">{{ r.tag }}</span>
+</div>
+<span style="{{ r.nameStyle }}">{{ r.name }}</span>
+<span style="font-size:11px;line-height:1.35;color:#8e8369">{{ r.line }}</span>
+<div style="height:3px;background:#221d14;box-shadow:inset 0 0 0 1px #0f0d09"><div style="{{ r.bar }}"></div></div>
+<sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:4px;display:flex;flex-direction:column;gap:6px;animation:mwrise .22s steps(3)">
+<span style="font-size:11.5px;line-height:1.45;color:#a89c82;text-wrap:pretty">{{ r.detail }}</span>
+<div style="display:flex;flex-wrap:wrap;gap:5px">
+<sc-for list="{{ r.stats }}" as="s" hint-placeholder-count="4">
+<div style="display:flex;gap:5px;align-items:baseline;padding:4px 7px;background:#1b170f;box-shadow:inset 0 0 0 1px #2c2519">
+<span style="font-family:'Press Start 2P';font-size:6px;color:#9a8f76">{{ s.k }}</span>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:13px;color:#e6ddc6">{{ s.v }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:74px">
+<span style="{{ r.valStyle }}">{{ r.val }}</span>
+<span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76;white-space:nowrap">{{ r.unit }}</span>
+</div>
+</div>
+</div>
+</sc-for>
+
+<div style="margin:14px 14px 0;padding:11px 12px;background:#181409;box-shadow:inset 0 0 0 1px #2c2519;display:flex;align-items:center;gap:10px">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+<span style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76">{{ standing.label }}</span>
+<span style="font-size:11.5px;line-height:1.4;color:#8e8369;text-wrap:pretty">{{ standing.note }}</span>
+</div>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:22px;color:#e8c97a;flex:none">{{ standing.place }}</span>
+</div>
+
+<div style="margin:10px 14px 0;font-size:11px;line-height:1.5;color:#6f6754;text-wrap:pretty">{{ footnote }}</div>
+
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;board&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;deep&quot;,&quot;lean&quot;,&quot;combo&quot;,&quot;days&quot;,&quot;kills&quot;,&quot;purse&quot;,&quot;yard&quot;],&quot;default&quot;:&quot;deep&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;scope&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;all&quot;,&quot;friends&quot;],&quot;default&quot;:&quot;all&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;handle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;@lanternjaw&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Account&quot;}}">
+const GRAVES = [
+  { name:'MARTA QUEN', user:'@quenchless', friend:true,     race:'Wilmsry',  cls:'Thief',    sub:'Cloaker',     lvl:'I',   floor:1, days:4,  squares:96,  kills:2,  skill:40,   wilmst:310,
+    cause:'Cut down by a Zombie', epitaph:'The Zombie was the same level as Marta Quen. Only one of them knew what to do about it.' },
+  { name:'SERA COLL', user:'@sera_c', friend:true,      race:'Human',    cls:'Thief',    sub:'Pickpocket',  lvl:'II',  floor:2, days:6,  squares:168, kills:5,  skill:210,  wilmst:1140,
+    cause:'Cut down by a Dire Boar', epitaph:'Fought on for nine rounds. Should have run on round two.' },
+  { name:'ULBA THE WIDE', user:'@ulba_wide', friend:false,  race:'Troll',    cls:'Warrior',  sub:'Berserker',   lvl:'III', floor:4, days:11, squares:402, kills:19, skill:640,  wilmst:2980,
+    cause:'Starved on the fourth floor', epitaph:'Killed nineteen things and not one of them was edible.' },
+  { name:'BRAN ODDER', user:'@branodder', friend:true,     race:'Dwarven',  cls:'Ranger',   sub:'Trapwright',  lvl:'II',  floor:3, days:7,  squares:191, kills:8,  skill:300,  wilmst:1620,
+    cause:'Sprung his own trap', epitaph:'A trapwright of real ability, in exactly one direction.' },
+  { name:'YSOLDE ASH', user:'@ashfall', friend:false,     race:'Elven',    cls:'Summoner', sub:'Bonecaller',  lvl:'IV',  floor:6, days:16, squares:734, kills:23, skill:1180, wilmst:6410,
+    cause:'Cut down by her own summon', epitaph:'Called something up on floor six and lost the argument.' },
+  { name:'KEPP MARROW', user:'@kepp.marrow', friend:true,    race:'Gnollish', cls:'Cleric',   sub:'Lamplighter', lvl:'II',  floor:3, days:9,  squares:288, kills:7,  skill:340,  wilmst:1490,
+    cause:'Lantern out, floor three', epitaph:'The Lamplighter ran out of oil. Nobody has stopped laughing.' },
+  { name:'TAM UNDERHALE', user:'@underhale', friend:true,  race:'Halfling', cls:'Thief',    sub:'Pickpocket',  lvl:'III', floor:5, days:8,  squares:236, kills:6,  skill:720,  wilmst:4880,
+    cause:'Fell down the stair he found', epitaph:'Fastest descent on record, in every sense.' },
+  { name:'HILDA FERROW', user:'@lanternjaw', friend:true,   race:'Dwarven',  cls:'Thief',    sub:'Pickpocket',  lvl:'I',   floor:1, days:2,  squares:118, kills:6,  skill:120,  wilmst:4688,
+    cause:'Cut down by a Gutter Ghoul', epitaph:'Nobody was impressed. She was warned about that.', you:true },
+  { name:'GRIM HOLLOWAY', user:'@grimholloway', friend:false,  race:'Human',    cls:'Warrior',  sub:'Berserker',   lvl:'III', floor:4, days:13, squares:512, kills:26, skill:690,  wilmst:2210,
+    cause:'Bled out in a corridor', epitaph:'Twenty-six kills, no bandages, one decision to review.' },
+  { name:'NESS QUILT', user:'@lanternjaw', friend:false, you:true,     race:'Wilmsry',  cls:'Ranger',   sub:'Trapwright',  lvl:'II',  floor:3, days:5,  squares:142, kills:4,  skill:280,  wilmst:900,
+    cause:'Teleported into stone', epitaph:'The crevice was optional. She insisted.' },
+  { name:'ODO BELL', user:'@lanternjaw', friend:false, you:true,       race:'Halfling', cls:'Cleric',   sub:'Lamplighter', lvl:'I',   floor:2, days:3,  squares:88,  kills:1,  skill:90,   wilmst:420,
+    cause:'Cut down by a Rat King', epitaph:'Two floors, one rat, no prayers answered.' },
+  { name:'VARG STONEHEEL', user:'@stoneheel', friend:false, race:'Troll',    cls:'Warrior',  sub:'Berserker',   lvl:'IV',  floor:5, days:19, squares:880, kills:31, skill:1020, wilmst:3760,
+    cause:'Died of the fifth floor generally', epitaph:'Walked eight hundred and eighty squares to arrive nowhere.' },
+  { name:'SILT MAWE', user:'@siltmawe', friend:true,      race:'Gnollish', cls:'Summoner', sub:'Bonecaller',  lvl:'III', floor:4, days:10, squares:214, kills:12, skill:610,  wilmst:2040,
+    cause:'Crushed by a collapsing floor', epitaph:'Efficient to the last square, including the one that gave way.' },
+  { name:'PIP ALDERWEY', user:'@lanternjaw', friend:false, you:true,   race:'Elven',    cls:'Ranger',   sub:'Trapwright',  lvl:'I',   floor:1, days:1,  squares:22,  kills:0,  skill:10,   wilmst:60,
+    cause:'Cut down by a Cave Newt', epitaph:'Twenty-two squares. The shortest delve anybody has bothered to record.' },
+];
+
+const BOARDS = [
+  { id:'deep',  tab:'DEEPEST',   mark:'▼', col:'#d3c49f', title:'DEEPEST DESCENT',
+    rule:'Lowest floor reached before dying. Ties broken by the fewer squares walked to get there.',
+    unit:'FLOOR', val:function(g){return g.floor;}, sort:function(a,b){return b.floor-a.floor||a.squares-b.squares;} },
+  { id:'lean',  tab:'LEANEST',   mark:'▪', col:'#e8c97a', title:'DEEPEST, FEWEST STEPS',
+    rule:'Depth first, then economy: the lowest floor reached, and among equals, whoever walked the fewest squares to get there.',
+    unit:'FLOOR · SQ', val:function(g){return g.floor;}, disp:function(g){return g.floor + ' · ' + g.squares;},
+    sort:function(a,b){return b.floor-a.floor||a.squares-b.squares;} },
+  { id:'combo', tab:'LINEAGE',   mark:'◆', col:'#b9a4ef', title:'BY RACE & CLASS',
+    rule:'Every race and class combination rolled so far, ranked by the deepest floor any of them managed.',
+    unit:'FLOOR', group:true },
+  { id:'days',  tab:'LONGEST',   mark:'⧗', col:'#8fb08a', title:'LONGEST HELD OUT',
+    rule:'Days survived underground. Rations are the real opponent.',
+    unit:'DAYS', val:function(g){return g.days;}, sort:function(a,b){return b.days-a.days||b.floor-a.floor;} },
+  { id:'kills', tab:'BUTCHERY',  mark:'✕', col:'#e07260', title:'MOST KILLS',
+    rule:'Things killed before being killed. Not correlated with depth, which is the joke.',
+    unit:'KILLS', val:function(g){return g.kills;}, sort:function(a,b){return b.kills-a.kills||b.floor-a.floor;} },
+  { id:'purse', tab:'PURSE',     mark:'●', col:'#e8c97a', title:'RICHEST CORPSE',
+    rule:'Wilmst carried at the moment of death. All of it still down there.',
+    unit:'WILMST', val:function(g){return g.wilmst;}, sort:function(a,b){return b.wilmst-a.wilmst;} },
+  { id:'yard',  tab:'GRAVEYARD', mark:'✝', col:'#c9bda0', title:'YOUR GRAVEYARD',
+    rule:'Everyone you have rolled and lost, deepest first, with what was said over them. Not ranked against anybody.',
+    unit:'FLOOR · SQ', val:function(g){return g.floor;}, disp:function(g){return g.floor + ' · ' + g.squares;},
+    sort:function(a,b){return b.floor-a.floor||a.squares-b.squares;}, mineOnly:true },
+];
+const TOP = 10;
+
+const AV = ['#6b5c3c','#4a5c6b','#5c4a6b','#4a6b52','#6b4a4a','#5c5c4a'];
+const AVATAR = function (handle, size, on) {
+  const h = handle.split('').reduce(function (a, c) { return (a * 31 + c.charCodeAt(0)) >>> 0; }, 7);
+  return { width: size, height: size, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: "'Press Start 2P'", fontSize: Math.round(size * 0.3), color: '#e6ddc6',
+    background: AV[h % AV.length], boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), 0 0 0 1px ' + (on ? '#e8c97a' : '#2c2519') };
+};
+const INITIALS = function (handle) {
+  const s = handle.replace('@', '').replace(/[._]/g, ' ').split(' ').filter(Boolean);
+  return ((s[0] || '?')[0] + (s[1] ? s[1][0] : (s[0][1] || ''))).toUpperCase();
+};
+
+const ORD = function (n) { return n + (['TH','ST','ND','RD'][n % 100 > 10 && n % 100 < 14 ? 0 : Math.min(n % 10, 4)] || 'TH'); };
+
+class Component extends DCLogic {
+  state = { board: null, open: null, scope: null };
+
+  componentDidMount() { this.syncRail(); }
+  componentDidUpdate() { this.syncRail(); }
+
+  syncRail() {
+    const rail = this._rail;
+    if (!rail) return;
+    const on = rail.querySelector('[data-on="1"]');
+    if (!on) return;
+    const want = Math.max(0, Math.min(on.offsetLeft - (rail.clientWidth - on.offsetWidth) / 2,
+      rail.scrollWidth - rail.clientWidth));
+    if (Math.abs(rail.scrollLeft - want) > 2) rail.scrollLeft = want;
+  }
+
+  boardId() { return this.state.board || this.props.board || 'deep'; }
+
+  chip(b, on) {
+    return { flex: 'none', padding: '7px 9px', fontFamily: "'Press Start 2P'", fontSize: 7, lineHeight: 1.4, cursor: 'pointer',
+      color: on ? '#14110c' : '#9a8f76', background: on ? b.col : '#1b170f',
+      boxShadow: 'inset 0 0 0 1px ' + (on ? b.col : '#2c2519') };
+  }
+
+  scopeId() { return this.state.scope || (this.props.scope === 'friends' ? 'friends' : 'all'); }
+
+  pool(b) {
+    if (b && b.mineOnly) return GRAVES.filter(function (g) { return g.you; });
+    if (this.scopeId() !== 'friends') return GRAVES.slice();
+    return GRAVES.filter(function (g) { return g.friend || g.you; });
+  }
+
+  // top ten, plus your best run pinned below the cut if it missed
+  cut(rows, b) {
+    if (b.mineOnly || rows.length <= TOP) return rows;
+    const head = rows.slice(0, TOP);
+    if (head.some(function (r) { return r.you; })) return head;
+    const mine = rows.filter(function (r) { return r.you; })[0];
+    if (!mine) return head;
+    mine.divider = true;
+    return head.concat([mine]);
+  }
+
+  entries(b) {
+    const list = this.pool(b);
+    if (!b.group) return list.sort(b.sort).map(function (g, i) {
+      return { key: g.name, name: g.name, handle: g.user, line: g.race.toUpperCase() + ' ' + g.sub.toUpperCase() + ' · LVL ' + g.lvl,
+        v: b.val(g), disp: b.disp ? b.disp(g) : null, you: !!g.you, friend: !!g.friend, g: g, i: i };
+    });
+    const map = {};
+    list.forEach(function (g) {
+      const k = g.race + ' ' + g.cls, m = map[k] || (map[k] = { key: k, n: 0, best: 0, sq: 0, top: null, you: false });
+      m.n++; m.you = m.you || !!g.you;
+      if (g.floor > m.best || (g.floor === m.best && g.squares < m.sq)) { m.best = g.floor; m.sq = g.squares; m.top = g; }
+    });
+    return Object.keys(map).map(function (k) { return map[k]; })
+      .sort(function (a, b2) { return b2.best - a.best || a.sq - b2.sq; })
+      .map(function (m, i) {
+        return { key: m.key, name: m.key.toUpperCase(), line: m.n + (m.n === 1 ? ' INTERRED' : ' INTERRED, NO SURVIVORS') + ' · BEST ' + m.top.name,
+          handle: m.top.user, friend: !!m.top.friend, v: m.best, you: m.you, g: m.top, combo: m, i: i };
+      });
+  }
+
+  renderVals() {
+    const self = this, id = this.boardId();
+    const b = BOARDS.filter(function (x) { return x.id === id; })[0] || BOARDS[0];
+    const all = this.entries(b);
+    const rows = this.cut(all, b);
+    const max = all.reduce(function (m, r) { return Math.max(m, r.v); }, 1);
+    const min = all.reduce(function (m, r) { return Math.min(m, r.v); }, max);
+    const mine = all.filter(function (r) { return r.you; })[0];
+    const yard = !!b.mineOnly;
+
+    const friends = this.scopeId() === 'friends';
+    const me = this.props.handle || '@lanternjaw';
+
+    return {
+      dark: true,
+      interred: this.pool(b).length,
+      me: { handle: me, initials: INITIALS(me), source: 'PLAY GAMES · SIGNED IN', av: AVATAR(me, 30, true) },
+      scopes: [['all', 'ALL'], ['friends', 'FRIENDS']].map(function (s) {
+        const on = self.scopeId() === s[0];
+        return { key: s[0], label: s[1], onClick: function () { self.setState({ scope: s[0], open: null }); },
+          style: { padding: '6px 8px', fontFamily: "'Press Start 2P'", fontSize: 6.5, lineHeight: 1.4, cursor: 'pointer',
+            color: on ? '#14110c' : '#9a8f76', background: on ? '#c9bda0' : '#1b170f',
+            boxShadow: 'inset 0 0 0 1px ' + (on ? '#c9bda0' : '#2c2519') } };
+      }),
+      scopeLine: yard ? 'Your own dead. Nobody else’s business.'
+        : friends ? 'Your friends’ dead only. ' + this.pool(b).length + ' of ' + GRAVES.length + ' shown.'
+        : 'Global. Every delve, since the first one.',
+      nav: ['MAP', 'HERO', 'GEAR', 'ORACLE', 'DEAD'].map(function (t) {
+        const on = t === 'DEAD';
+        return { key: t, label: t,
+          style: { flex: 1, textAlign: 'center', padding: '15px 0 13px', fontFamily: "'Press Start 2P'", fontSize: 7.5,
+            cursor: 'pointer', color: on ? '#e8c97a' : '#8f856f', background: on ? '#241d12' : 'transparent',
+            boxShadow: on ? 'inset 0 3px 0 #e8c97a' : 'none' } };
+      }),
+      hasBack: typeof this.props.onBack === 'function',
+      onBack: function () { if (self.props.onBack) self.props.onBack(); },
+      railRef: function (el) { self._rail = el; },
+      boards: BOARDS.map(function (x) {
+        return { key: x.id, tab: x.tab, on: x.id === id ? '1' : '0', style: self.chip(x, x.id === id),
+          onClick: function () { self.setState({ board: x.id, open: null }); } };
+      }),
+      board: { title: b.title, rule: b.rule, mark: b.mark,
+        markStyle: { color: b.col, fontSize: 18, lineHeight: 1, width: 20, textAlign: 'center', flex: 'none', marginTop: 1 } },
+      isYard: yard, notYard: !yard,
+      stones: [].concat(false ? all : []).map(function (r, i) {
+        const g = r.g;
+        return { key: r.key, name: r.name, line: r.line, cause: g.cause + '.', epitaph: g.epitaph,
+          stone: { background: i === 0 ? '#1f1a11' : '#1b170f', border: '3px solid ' + (i === 0 ? '#6b5c3c' : '#2c2519'),
+            borderRadius: '110px 110px 3px 3px', padding: '26px 18px 16px', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', gap: 8, textAlign: 'center' },
+          cross: { fontSize: 15, lineHeight: 1, color: i === 0 ? '#c9bda0' : '#6b5c3c' },
+          nameStyle: { fontFamily: "'Press Start 2P'", fontSize: 9, lineHeight: 1.6, color: '#e6ddc6' },
+          stats: [{ k: 'FLOOR', v: g.floor }, { k: 'DAYS', v: g.days }, { k: 'SQUARES', v: g.squares }, { k: 'KILLS', v: g.kills }] };
+      }),
+      rows: rows.map(function (r) {
+        const top = r.i === 0, open = self.state.open === r.key;
+        const you = r.you && !yard;
+        const ident = yard ? r.name : r.handle;
+        const span = max - min || 1;
+        const frac = (r.v - min) / span;
+        const val = r.disp || (b.id === 'purse' ? r.v.toLocaleString() : String(r.v));
+        return { key: r.key, rank: r.i + 1, name: yard ? r.line : r.name, line: yard ? r.g.cause : r.line, open: open,
+          divider: !!r.divider, dividerLabel: 'NOT IN THE TOP TEN · YOUR BEST RUN',
+          handle: ident, initials: yard ? INITIALS(r.name.replace(/ /g, '.')) : INITIALS(r.handle), av: AVATAR(yard ? r.name : r.handle, 30, you),
+          tag: yard ? '' : (r.you ? 'YOU' : (r.friend ? 'FRIEND' : '')),
+          tagStyle: { flex: 'none', fontFamily: "'Press Start 2P'", fontSize: 6, lineHeight: 1.4,
+            color: you ? '#14110c' : '#9a8f76', background: you ? '#e8c97a' : 'transparent',
+            padding: you ? '3px 4px' : 0 },
+          handleStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 13.5, lineHeight: 1.1,
+            color: you ? '#e8c97a' : '#c9bda0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+          val: val, unit: b.unit, move: r.you ? 'YOU' : '',
+          detail: b.group
+            ? r.combo.n + ' rolled, ' + r.combo.n + ' dead. Deepest was ' + r.g.name + ', floor ' + r.g.floor + ' in ' + r.g.squares + ' squares. ' + r.g.epitaph
+            : yard ? r.g.epitaph : r.g.cause + '. ' + r.g.epitaph,
+          stats: [{ k: 'FLOOR', v: r.g.floor }, { k: 'DAYS', v: r.g.days }, { k: 'SQUARES', v: r.g.squares },
+            { k: 'KILLS', v: r.g.kills }, { k: 'EXP', v: r.g.skill }, { k: 'WILMST', v: r.g.wilmst.toLocaleString() }],
+          onClick: function () { self.setState({ open: open ? null : r.key }); },
+          row: { display: 'flex', gap: 10, alignItems: 'flex-start', padding: '11px 14px 12px', cursor: 'pointer',
+            background: you ? '#1d1810' : (top ? '#191509' : 'transparent'),
+            boxShadow: 'inset 0 -1px 0 #241f16' + (you ? ', inset 3px 0 0 #e8c97a' : (top ? ', inset 3px 0 0 ' + b.col : '')) },
+          rankStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700,
+            fontSize: top ? 21 : 17, lineHeight: 1,
+            color: top ? b.col : (r.i < 3 ? '#c9bda0' : '#8e8369') },
+          nameStyle: { fontFamily: "'Press Start 2P'", fontSize: 7, lineHeight: 1.5, color: top || you ? '#c9bda0' : '#a89c82' },
+          valStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700,
+            fontSize: val.length > 5 ? (top ? 19 : 17) : (top ? 24 : 20), lineHeight: 1, whiteSpace: 'nowrap',
+            color: top ? b.col : '#e6ddc6' },
+          bar: { width: Math.max(3, Math.round(frac * 100)) + '%', height: '100%',
+            background: top ? b.col : '#4a3f2c', transition: 'width .3s steps(6)' } };
+      }),
+      standing: yard ? {
+        label: 'INTERRED', place: all.length,
+        note: 'rolled, delved, and buried. Deepest was ' + (all[0] ? all[0].name + ' on floor ' + all[0].g.floor : '—') + '.',
+      } : mine ? {
+        label: me + ' · ' + b.unit,
+        place: ORD(all.indexOf(mine) + 1),
+        note: 'of ' + all.length + (b.group ? ' combinations' : ' interred') + (friends ? ' among friends. ' : ' worldwide. ') +
+          (all.indexOf(mine) === 0 ? 'Enjoy it.' : (all.indexOf(mine) < TOP ? 'Holding the top ten, for now.' : 'Outside the top ten, pinned above.')),
+      } : { label: 'NO ENTRY', place: '—', note: 'Nobody of yours has qualified for this board yet.' },
+      footnote: yard
+        ? 'Epitaphs are written by the dungeon, not by you. There is no appeal.'
+        : 'Top ten only. Boards count the dead — living characters are provisional and the dungeon keeps no provisional records.',
+    };
+  }
+}
+</script>
+</body>
+</html>

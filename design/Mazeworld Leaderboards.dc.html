@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0a0806;display:flex;justify-content:center;align-items:flex-start;padding:28px 0 40px;font-family:'Courier Prime',ui-monospace,monospace}
+a{color:#e8c97a}a:hover{color:#f6e0a2}
+*{-webkit-tap-highlight-color:transparent}
+</style></helmet>
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ dark }}" hint-size="402px,874px">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding-top:50px;background:#14110c;overflow:hidden;font-family:'Courier Prime',ui-monospace,monospace;color:#e6ddc6">
+
+<sc-if value="{{ onTitle }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 28px 60px">
+<span style="font-family:'Press Start 2P';font-size:16px;line-height:1.6;color:#e8c97a;text-align:center">DUNGEON</span>
+<span style="font-size:14px;font-weight:700;color:#8e8369;text-align:center;text-wrap:pretty">No one is walking the dark right now.</span>
+<div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:22px">
+<div style="text-align:center;font-family:'Press Start 2P';font-size:9px;line-height:1.6;padding:17px 8px;background:#e8c97a;color:#14110c;cursor:pointer;box-shadow:0 4px 0 #6b5c3c">ROLL A NEW HERO</div>
+<div onClick="{{ viewDead }}" style="text-align:center;font-family:'Press Start 2P';font-size:8px;line-height:1.6;padding:15px 8px;border:2px solid #4a4032;color:#c9bda0;cursor:pointer;box-shadow:0 4px 0 #0d0b08">VIEW THE DEAD</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ onBoards }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;position:relative;min-height:0">
+<dc-import name="Mazeworld Boards Panel" board="{{ board }}" scope="{{ scope }}" handle="{{ handle }}" on-back="{{ backFn }}" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import>
+</div>
+
+<sc-if value="{{ inGame }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:flex;border-top:3px solid #3a3226;background:#1b170f;padding-bottom:20px">
+<sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+<div style="{{ n.style }}">{{ n.label }}</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ fromTitle }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;display:flex;gap:8px;padding:10px 14px 28px;border-top:3px solid #3a3226;background:#1b170f">
+<sc-if value="{{ noHero }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ toTitle }}" style="flex:1;text-align:center;font-family:'Press Start 2P';font-size:7.5px;line-height:1.6;padding:14px 6px;border:2px solid #4a4032;color:#c9bda0;cursor:pointer;box-shadow:0 4px 0 #0d0b08">BACK TO TITLE</div>
+<div style="flex:1;text-align:center;font-family:'Press Start 2P';font-size:7.5px;line-height:1.6;padding:14px 6px;background:#e8c97a;color:#14110c;cursor:pointer;box-shadow:0 4px 0 #6b5c3c">ROLL A NEW HERO</div>
+</sc-if>
+<sc-if value="{{ hasHero }}" hint-placeholder-val="{{ false }}">
+<a href="Mazeworld Map.dc.html" style="flex:1;display:block;text-decoration:none;text-align:center;font-family:'Press Start 2P';font-size:8px;line-height:1.6;padding:15px 6px;background:#e8c97a;color:#14110c;cursor:pointer;box-shadow:0 4px 0 #6b5c3c">BACK TO THE DUNGEON</a>
+</sc-if>
+</div>
+</sc-if>
+</sc-if>
+
+</div>
+</x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:900},&quot;entry&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;title&quot;,&quot;in game&quot;],&quot;default&quot;:&quot;title&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Context&quot;},&quot;activeHero&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Context&quot;},&quot;board&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;deep&quot;,&quot;lean&quot;,&quot;combo&quot;,&quot;days&quot;,&quot;kills&quot;,&quot;purse&quot;,&quot;yard&quot;],&quot;default&quot;:&quot;yard&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;scope&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;all&quot;,&quot;friends&quot;],&quot;default&quot;:&quot;all&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;handle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;@lanternjaw&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Account&quot;}}">
+class Component extends DCLogic {
+  state = { screen: 'boards' };
+  renderVals() {
+    const p = this.props, self = this;
+    const fromTitle = (p.entry || 'title') === 'title';
+    const onTitle = fromTitle && this.state.screen === 'title';
+    const hasHero = p.activeHero === true || p.activeHero === 'true';
+    const toTitle = function () { self.setState({ screen: 'title' }); };
+    const toDungeon = function () { window.location.href = 'Mazeworld Map.dc.html'; };
+    return {
+      dark: true,
+      board: p.board || 'yard', scope: p.scope || 'all', handle: p.handle || '@lanternjaw',
+      onTitle: onTitle, onBoards: !onTitle,
+      inGame: !fromTitle, fromTitle: fromTitle,
+      backFn: fromTitle ? (hasHero ? toDungeon : toTitle) : undefined,
+      hasHero: hasHero, noHero: !hasHero,
+      toTitle: toTitle,
+      viewDead: function () { self.setState({ screen: 'boards' }); },
+      nav: ['MAP', 'HERO', 'GEAR', 'ORACLE', 'DEAD'].map(function (t) {
+        const on = t === 'DEAD';
+        return { key: t, label: t,
+          style: { flex: 1, textAlign: 'center', padding: '15px 0 13px', fontFamily: "'Press Start 2P'", fontSize: 7.5,
+            cursor: 'pointer', color: on ? '#e8c97a' : '#8f856f', background: on ? '#241d12' : 'transparent',
+            boxShadow: on ? 'inset 0 3px 0 #e8c97a' : 'none' } };
+      }),
+    };
+  }
+}
+</script>
+</body>
+</html>
