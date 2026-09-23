@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 60
-current_phase_name: Performance & Footprint Close
-current_plan: Not started
-status: planning
+current_phase_name: performance-footprint-close
+current_plan: 1
+status: executing
 stopped_at: Completed 59-05-PLAN.md
-last_updated: "2026-09-23T01:37:45.369Z"
+last_updated: "2026-09-23T02:17:53.734Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 59 complete, transitioned to Phase 60
+last_activity_desc: Phase 60 execution started
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 24
-  completed_plans: 21
+  completed_plans: 23
   percent: 80
 total_plans_in_phase: 4
 ---
@@ -26,17 +26,17 @@ total_plans_in_phase: 4
 See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 Sound, Motion & Set Dressing started; three Pixel 7 UAT batches still un-run: v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 59 — party-animation-dungeon-set-dressing
+**Current focus:** Phase 60 — performance-footprint-close
 
 ## Current Position
 
-Phase: 60 — Performance & Footprint Close
-Current Plan: Not started
-Total Plans in Phase: 5
+Phase: 60 (performance-footprint-close) — EXECUTING
+Current Plan: 1
+Total Plans in Phase: 3
 Progress: [█████████░] 88%
-Plan: 5 of 5
-Status: Ready to plan
-Last activity: 2026-09-22 — Phase 59 complete, transitioned to Phase 60
+Plan: 1 of 3
+Status: Executing Phase 60
+Last activity: 2026-09-22 — Phase 60 execution started
 
 ## Ground Truth (durable facts every session needs)
 
