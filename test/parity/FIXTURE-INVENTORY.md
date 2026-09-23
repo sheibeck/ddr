@@ -2705,3 +2705,66 @@ and after this plan (`cmp` exit 0, measured against the pre-Plan-03 base
 commit via `git archive`) — the bot never buys a non-upgrade, so it was never
 exposed to the new bagging path either.
 
+## Phase 65: the run record's action counter (RUN-01) — measured zero
+
+**The rule.** `state.acts`, a non-negative integer incremented by exactly 1
+inside `engine/engine.js#applyAction` once `validateAction` passes —
+whatever the handler then does (a refused move into a wall, a refused camp
+with no rations, a `notFought` refusal while `combat.pending`, a
+`dismissRefused` with an empty party — every one of them still counts).
+Plain assignment, the same non-negative-integer coercion `validateSave`
+already uses for other fields; zero rng draws. It is whitelisted at both
+`engine/saveState.js` sites (`validateSave`'s `value` literal,
+`rehydrate`'s `state` literal), defaulting a missing or tampered value to 0.
+
+**The predictor.** `state.acts` has no prototype-side equivalent at all — the
+frozen `test/parity/prototype-master.js.txt` never carried an action
+counter, and nothing in `mazeworld.html`'s sandbox increments one either. Its
+exposure across the parity surface is therefore predicted to be 0 IF, and
+only if, it is carved out of every comparable that diffs an engine state
+against the prototype's parsed one — exactly like `storeRoll`/`pendingHazard`
+before it. There are SIX such sites, not three: `movementComparable`,
+`combatComparable` and `economyComparable` in
+`test/parity/harness/comparables.js`, plus a test-local `comparable()` in
+each of `movement-parity.test.js`, `combat-parity.test.js` and
+`magic-parity.test.js`. `acts` is destructured out (`pendingHazard, acts,
+...`) at all six.
+
+**The live-scan results — measured, not assumed.** Before the six carve-outs
+landed (on the Task 1 commit, `state.acts` already existed on every
+GameState but no comparable stripped it yet), `node --test
+test/parity/*.test.js` reported **46 tests, 24 pass, 22 fail** — the
+`acts: 0` key leaking into every comparable's diff against a prototype
+object that has no such key, exactly the exposure the predictor above says a
+missing carve-out produces. After the six carve-outs: **46 tests, 46 pass, 0
+fail.** `git diff --stat -- test/parity/fixtures/
+test/parity/prototype-master.js.txt` is EMPTY (zero fixture edits, master
+untouched) and `git hash-object test/parity/prototype-master.js.txt` still
+prints `a1f4d0dc29782218d8e5aab65bc5989c33f917f0`. `node
+tools/worn-fixture-scan.mjs | diff --strip-trailing-cr -
+tools/worn-fixture-scan-output.txt` and `node
+tools/initiative-fixture-scan.mjs | diff --strip-trailing-cr -
+tools/initiative-fixture-scan-output.txt` are both empty.
+
+**Byte-identical elsewhere.** The tuning bot's `node
+tools/tune-difficulty.mjs --seeds=20 --json` output is byte-identical before
+and after the six carve-out edits (`cmp` exit 0, both saved to the
+scratchpad) — `tools/tune-difficulty.mjs`'s import graph never reaches
+`test/parity/`, so this is provable by construction, not just observation:
+the bot's play-through was never exposed to a comparable-stripping change
+that lives entirely under `test/parity/`. `test/unit/acts-counter.test.js`
+adds a standing guard (`acts 999` vs `acts 0` compared through all three
+harness comparables) so a future comparable edit that forgets the carve-out
+fails immediately, not silently.
+
+**Collateral test updates (in scope, not a fixture move).** Two pre-existing
+unit tests asserted a refused-but-validated `applyAction` call returns the
+input state completely untouched (`test/unit/fight-gate.test.js`'s eight
+`notFought` refusal cases, `test/unit/dismiss-joiner.test.js`'s empty-party
+`dismissRefused` case) — true before this plan, since nothing incremented on
+a refusal. `state.acts` now deliberately breaks that assumption (D-02: it
+counts a refused-but-validated action), so both files were updated to assert
+`acts` moved by exactly 1 and everything else stayed byte-for-byte, mirroring
+the same non-negative-integer coercion `validateSave` uses. Neither file
+touches `test/parity/` or moves a fixture.
+

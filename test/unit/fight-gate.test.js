@@ -223,7 +223,16 @@ for (const { action, refusal } of REFUSAL_CASES) {
     const before = structuredClone(state);
     const { state: next, events } = applyAction(state, action);
     assert.deepStrictEqual(events, [refusal]);
-    assert.deepStrictEqual(next, before, "the returned state is byte-for-byte the input (rngState included — zero draws)");
+    // Phase 65 (RUN-01): this action passes validateAction (it is only the
+    // handler that refuses it), so applyAction still counts it — acts moves
+    // by exactly 1, the same non-negative-integer coercion validateSave
+    // uses for a state (like this hand-built fixedState) that carries no
+    // acts key at all. Everything else stays byte-for-byte the input
+    // (rngState included — zero draws).
+    const beforeActs = Number.isInteger(before.acts) && before.acts >= 0 ? before.acts : 0;
+    assert.equal(next.acts, beforeActs + 1, "a refused-but-validated action still counts as one action");
+    const stripActs = (s) => { const { acts, ...rest } = s; return rest; };
+    assert.deepStrictEqual(stripActs(next), stripActs(before), "the returned state is otherwise byte-for-byte the input (rngState included — zero draws)");
   });
 }
 

@@ -141,7 +141,13 @@ test("applyAction with an empty party returns dismissRefused noParty and an othe
   const before = structuredClone(state);
   const { state: next, events } = applyAction(state, { type: "dismissJoiner" });
   assert.deepEqual(events, [{ type: "dismissRefused", reason: "noParty" }]);
-  assert.deepStrictEqual(next, before);
+  // Phase 65 (RUN-01): this action passes validateAction (only the handler
+  // refuses it for lack of a party), so applyAction still counts it — acts
+  // moves by exactly 1. Everything else stays byte-for-byte the input.
+  const beforeActs = Number.isInteger(before.acts) && before.acts >= 0 ? before.acts : 0;
+  assert.equal(next.acts, beforeActs + 1, "a refused-but-validated action still counts as one action");
+  const stripActs = (s) => { const { acts, ...rest } = s; return rest; };
+  assert.deepStrictEqual(stripActs(next), stripActs(before));
 });
 
 /* ============================================================
