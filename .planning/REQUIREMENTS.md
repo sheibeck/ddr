@@ -26,7 +26,7 @@
 
 ### Gear Rules (engine — declared, deterministic, zero new rng draws)
 
-- [ ] **GRULE-01**: While a fight is up (`state.combat` set), the engine refuses `equipItem`, `unequipSlot`, `wearItem` and the jewelry swap with one `gearRefused { reason: "combat" }` event and a narration line in voice ("Not the moment to change outfits."), with `EVENT_NARRATION` coverage. Each verb has a unit test. Every parity fixture is byte-identical, confirmed by the fixture scan; one that moves is declared.
+- [x] **GRULE-01**: While a fight is up (`state.combat` set), the engine refuses `equipItem`, `unequipSlot`, `wearItem` and the jewelry swap with one `gearRefused { reason: "combat" }` event and a narration line in voice ("Not the moment to change outfits."), with `EVENT_NARRATION` coverage. Each verb has a unit test. Every parity fixture is byte-identical, confirmed by the fixture scan; one that moves is declared.
 - [ ] **GRULE-02**: In a fight, the Gear sheet shows EQUIP / SWAP / UNEQUIP greyed with the combat reason while USE stays live. After the fight they work again. *(Settled in the Phase 61 discuss: the Shield is a spell pool and the torch is a use, so neither is a gear change and both stay live, along with potions, scrolls and Drop.)*
 
 ### Store (engine — declared fixture moves)
@@ -66,7 +66,7 @@
 | GSCR-10 | Phase 63 | Pending |
 | GSCR-11 | Phase 62 | Pending |
 | GSCR-12 | Phase 64 | Pending |
-| GRULE-01 | Phase 61 | Pending |
+| GRULE-01 | Phase 61 | Complete |
 | GRULE-02 | Phase 63 | Pending |
 | STORE-02 | Phase 61 | Pending |
 | STORE-03 | Phase 61 | Pending |
