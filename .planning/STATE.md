@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: The Gear Screen
 status: Awaiting next milestone
-stopped_at: "v1.9 roadmap created 2026-09-23 (Phases 61–64: 61 Gear Rules & Store Purchase Fix (engine) → 62 Gear Tab Layout Rebuild → 63 Action Sheet, Combat Lock & Accessibility → 64 Device Close & UAT Batch; 16/16 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-discuss-phase 61 (STORE-02's buy-and-bag vs. refuse-up-front choice is the open decision), then /gsd-plan-phase 61."
+stopped_at: "v1.9 CLOSED 2026-09-23 (override closeout: 4/4 phases passed, 15/16 requirements + GSCR-12 partial; archived + tagged v1.9). Play 1.9.0 / versionCode 8 AAB built and tagged v1.9.0-play8 for closed testing (user uploads by hand: android/app/build/outputs/bundle/release/app-release.aab). docs/UAT-v1.9.md: A1–A3 pass, 21 deferred to play sessions. Next: /gsd-new-milestone (no next milestone chosen yet); candidate quick tasks: .gitattributes eol=lf pin, Sense Presence initiative, text-size token fix, renderCarriedList gearRow cleanup."
 last_updated: "2026-09-23T17:18:31.156Z"
 last_activity: 2026-09-23
 last_activity_desc: Milestone v1.9 completed and archived
@@ -21,10 +21,10 @@ current_phase_name: PROMOTED → Phases 56 / 58 / 59
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-22 — v1.8 closed and tagged; next milestone: Gear screen UX redo; four Pixel 7 UAT batches still open: v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-23 — v1.9 The Gear Screen closed and tagged; Play 1.9.0 / vc8 built for closed testing; open Pixel 7 UAT batches: v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 63 — Action Sheet, Combat Lock & Accessibility
+**Current focus:** Between milestones. Next: `/gsd-new-milestone` (the user picks the goal)
 
 ## Current Position
 
