@@ -2,13 +2,17 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Leaderboards
-status: planning
-last_updated: "2026-09-23T19:15:00.000Z"
+current_phase: 65
+current_phase_name: Run Record & Personal Bests
+status: executing
+stopped_at: "v2.0 roadmap created 2026-09-23 (Phases 65–69: 65 Run Record & Personal Bests → 66 Leaderboards Panel — Local → 67 Play Games Integration & Account Chip (Research: yes) → 68 Global Boards, Submissions & \"You Placed X\" → 69 Compliance & Device Close; 26/26 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-plan-phase 65 (or /gsd-autonomous to run the whole milestone)."
+last_updated: "2026-09-23T20:14:01.948Z"
 last_activity: 2026-09-23
+last_activity_desc: Phase 65 execution started
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 5
   completed_plans: 0
   percent: 0
 ---
@@ -20,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards started; v1.9 closed and tagged; Play 1.9.0 / vc8 built for closed testing; open Pixel 7 UAT batches: v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v2.0 Leaderboards — roadmap created (Phases 65–69) → `/gsd-plan-phase 65` or `/gsd-autonomous`
+**Current focus:** Phase 65 — Run Record & Personal Bests
 
 ## Current Position
 
-Phase: 65 (Run Record & Personal Bests)
-Plan: — (not yet planned)
-Status: Roadmap created — ready to plan
-Last activity: 2026-09-23 — v2.0 roadmap created (Phases 65–69), 26/26 requirements mapped
+Phase: 65 (Run Record & Personal Bests) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 65
+Last activity: 2026-09-23 — Phase 65 execution started
 
 ## Ground Truth (durable facts every session needs)
 
