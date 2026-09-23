@@ -1421,6 +1421,32 @@ html,body{height:100%}
 .mw-camp-btn{flex:1;white-space:pre-line;text-align:center;font-family:var(--disp);font-size:8px;line-height:1.6;letter-spacing:0;padding:15px 8px;min-height:48px;background:#e8c97a;color:#14110c;border:0;border-radius:0;box-shadow:0 4px 0 #6b5c3c;cursor:pointer}
 .mw-camp-btn.secondary{flex:0 0 auto;padding:15px 16px;background:transparent;border:2px solid #4a4032;color:#c9bda0;box-shadow:0 4px 0 #0d0b08}
 
+/* ---------- GEAR action sheet (Phase 63, GSCR-07..10) ----------
+   Reuses the legend chrome (.mw-legend-sheet/-scrim/-panel, above) for the
+   rise, the fade and the closing state — no motion property of its own
+   lives in this block. A greyed row keys off [data-off] alone, never a
+   screen-reader-only state selector, so there is no extra visual flicker
+   layered on the shared chrome (the Phase 62 CSS convention this block
+   follows). Every font size scales with --mw-text-scale. */
+.mw-gsheet-head{border-bottom:3px solid #3a3226;padding-bottom:13px}
+.mw-gsheet-label{margin:0;font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));line-height:1.5;color:#9a8f76}
+.mw-gsheet-title{margin:9px 0 0;font-family:var(--disp);font-weight:400;font-size:calc(0.625rem * var(--mw-text-scale));line-height:1.5;color:#e6ddc6;text-transform:uppercase}
+.mw-gsheet-title:focus{outline:none}
+.mw-gsheet-note{margin:8px 0 0;font-family:var(--mono);font-weight:700;font-size:calc(0.90625rem * var(--mw-text-scale));line-height:1.45;color:#a89c82}
+.mw-gsheet-why{margin:8px 0 0;font-family:var(--mono);font-weight:700;font-size:calc(0.8125rem * var(--mw-text-scale));line-height:1.4;color:var(--ditto)}
+.mw-gsheet-act{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;margin:0;padding:14px 2px;border:0;border-bottom:2px solid #241f16;border-radius:0;background:transparent;box-shadow:none;letter-spacing:0;text-align:left;color:inherit;cursor:pointer}
+.mw-gsheet-act-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.mw-gsheet-act-label{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));line-height:1.5;color:#e8c97a;text-transform:uppercase}
+.mw-gsheet-act-sub{font-family:var(--mono);font-weight:700;font-size:calc(0.78125rem * var(--mw-text-scale));line-height:1.4;color:#8e8369}
+.mw-gsheet-chev{flex:none;font-family:var(--mono);font-weight:700;font-size:calc(0.9375rem * var(--mw-text-scale));color:#5c5342}
+.mw-gsheet-act[data-off]{opacity:.45;cursor:default}
+.mw-gsheet-act[data-off] .mw-gsheet-act-label{color:#8f856f}
+.mw-gsheet-act[data-off] .mw-gsheet-chev{visibility:hidden}
+.mw-gsheet-act[data-armed] .mw-gsheet-act-label{color:var(--stamp)}
+.mw-gsheet-act:hover:not(:disabled),.mw-gsheet-act:active:not(:disabled){background:transparent;transform:none;box-shadow:none}
+.mw-gsheet-cancel{display:block;width:100%;min-height:48px;margin-top:16px;padding:15px 8px;text-align:center;font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:0;background:transparent;border:2px solid #4a4032;border-radius:0;color:#c9bda0;box-shadow:0 4px 0 #0d0b08}
+.mw-gsheet-cancel:hover:not(:disabled),.mw-gsheet-cancel:active:not(:disabled){background:transparent;color:#c9bda0}
+
 .mw-roller-screen{
   position:fixed;inset:0;z-index:51;
   background:var(--paper);color:var(--ink);
@@ -1619,6 +1645,29 @@ html,body{height:100%}
       <button type="button" class="mw-camp-btn" id="mw-camp-sleep"></button>
       <button type="button" class="mw-camp-btn secondary" id="mw-camp-walk"></button>
     </div>
+  </div>
+</div>
+
+<!-- ============ GEAR ACTION SHEET (Phase 63, GSCR-07..10) ============
+     Reuses the legend chrome (.mw-legend-sheet/-scrim/-panel, above) —
+     opened by tapping a WORN row or a BAG card on the GEAR tab. Its body is
+     filled by src/browser/gearSheet.js#renderGearSheet through the
+     window.__mzGearSheet bridge; the classic script's openGearSheet/
+     closeGearSheet (below) own showing, hiding, focus and the scrim tap.
+     Every action's outcome reaches the player through the rail, never this
+     sheet — see the Phase 63 CONTEXT ruling "Outcome goes to the rail
+     only." -->
+<div id="mw-gear-sheet" class="mw-legend-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-gear-sheet-scrim"></div>
+  <div class="mw-legend-panel" id="mw-gear-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="mw-gear-sheet-title">
+    <div class="mw-gsheet-head">
+      <p class="mw-gsheet-label" id="mw-gear-sheet-label"></p>
+      <h2 class="mw-gsheet-title" id="mw-gear-sheet-title" tabindex="-1"></h2>
+      <p class="mw-gsheet-note" id="mw-gear-sheet-note"></p>
+      <p class="mw-gsheet-why" id="mw-gear-sheet-why" hidden></p>
+    </div>
+    <div class="mw-gsheet-actions" id="mw-gear-sheet-actions"></div>
+    <button type="button" class="mw-gsheet-cancel" id="mw-gear-sheet-cancel"></button>
   </div>
 </div>
 
