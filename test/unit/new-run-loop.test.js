@@ -1,15 +1,16 @@
 // RUN-05 coverage (03-03 Task 2): from a dead run, ONE adapter call
 // (startNewRun()) must yield a brand-new, valid, dice-rolled run — the
-// one-tap "new run" loop — and record the ended run's deepest floor as the
-// best-depth. 02-03 routes this through src/browser/storage.js's shared
-// async abstraction (SAV-04) rather than a raw localStorage stand-in, so
-// startNewRun()/getBest() are now async — see engineAdapter.js's own doc
-// comments for why.
+// one-tap "new run" loop. 02-03 routes this through src/browser/storage.js's
+// shared async abstraction (SAV-04) rather than a raw localStorage stand-in,
+// so startNewRun() is async — see engineAdapter.js's own doc comments for
+// why. Phase 65 (RUN-02/RUN-03, D-09, greenfield ruling): the single
+// best-depth key (ddr.best.v1) is retired — startNewRun() no longer writes
+// it at all; a stored value from before this phase stays on disk untouched.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { initRun, getState, startNewRun, getBest } from "../../src/browser/engineAdapter.js";
+import { initRun, getState, startNewRun } from "../../src/browser/engineAdapter.js";
 
 async function withFakeLocalStorage(fn) {
   const store = new Map();
@@ -46,15 +47,26 @@ test("startNewRun() from a dead run yields a fresh, valid, dice-rolled run in a 
   });
 });
 
-test("startNewRun() records the ended run's deepest floor as the best-depth", async () => {
-  await withFakeLocalStorage(async () => {
+test("startNewRun() never writes the retired best-depth key", async () => {
+  await withFakeLocalStorage(async (store) => {
+    store.setItem("ddr.best.v1", "7");
     const dying = initRun(1);
     dying.floor.depth = 12;
     dying.dead = true;
 
     await startNewRun();
 
-    assert.equal(await getBest(), 12, "the ended run's deepest floor (its score) was recorded as the best-depth");
+    assert.equal(store.getItem("ddr.best.v1"), "7", "a pre-existing best-depth value is left untouched");
+  });
+
+  await withFakeLocalStorage(async (store) => {
+    const dying = initRun(2);
+    dying.floor.depth = 8;
+    dying.dead = true;
+
+    await startNewRun();
+
+    assert.equal(store.getItem("ddr.best.v1"), null, "no best-depth key is ever written from a fresh store");
   });
 });
 

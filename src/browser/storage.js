@@ -19,7 +19,7 @@
 //
 // Every read/write is wrapped to fail safe (never throw, never leave an
 // unhandled rejection) — mirrors src/browser/engineAdapter.js's existing
-// persist()/boot()/getBest() posture (a private window, storage quota, or a
+// persist()/boot() posture (a private window, storage quota, or a
 // native plugin error all just mean the value doesn't round-trip this time).
 //
 // CR-01 (02-REVIEW.md): "fail safe" specifically means degrading to a
@@ -44,13 +44,15 @@
 // non-module classic <script> in mazeworld.html can also reach it — 02-03
 // converges both persistence paths (the classic script's save()/load()/
 // saveGraves()/loadGraves() AND engineAdapter.js's persist()/boot()/
-// persistGrave()/getBest()/recordBest()) on this one module, closing the
-// dual-write hazard 02-RESEARCH.md documents.
+// persistGrave()) on this one module, closing the dual-write hazard
+// 02-RESEARCH.md documents.
 
 import { validateSave } from "../../engine/saveState.js";
 
 // The three legacy localStorage keys this module's callers converge on
-// (src/browser/engineAdapter.js SAVE_KEY/BEST_KEY/GRAVE_KEY, and
+// (src/browser/engineAdapter.js SAVE_KEY/GRAVE_KEY, plus this module's own
+// BEST_KEY — ddr.best.v1 is retired in Phase 65: never written or read into
+// the bests record, but this migration keeps copying it unchanged — and
 // mazeworld.html's own duplicated SAVE_KEY/GRAVE_KEY literals). Defined once
 // here so migrateLegacyKeys() below has a single source of truth for which
 // keys are in scope for the one-time migration.
@@ -312,8 +314,8 @@ export async function migrateLegacyKeys() {
     } catch {
       // Never throw — a migration failure for one key just means that key
       // stays un-migrated this launch, matching this module's overall
-      // fail-safe posture (mirrors persist()/getBest()'s try/catch-and-swallow
-      // pattern in engineAdapter.js).
+      // fail-safe posture (mirrors persist()'s try/catch-and-swallow pattern
+      // in engineAdapter.js).
     }
   }
 }

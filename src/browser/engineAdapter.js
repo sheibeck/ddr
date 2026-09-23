@@ -47,43 +47,44 @@ import * as storage from "./storage.js";
 // adapter's replacement will resolve.
 const SAVE_KEY = "ddr.delve.v1";
 
-// The durable best-depth high score (RUN-05 / 03-CONTEXT.md "score = deepest
-// floor reached"). Deliberately a SEPARATE storage key from SAVE_KEY, and
-// deliberately NOT part of GameState — folding it into GameState would break
-// the save round-trip/parity comparables this phase's difficulty work
-// depends on staying stable. 02-03 routes this key through storage.js (SAV-04
-// — durable Capacitor Preferences on native, localStorage in the dev loop).
-const BEST_KEY = "ddr.best.v1";
+// ddr.best.v1 is retired in Phase 65 (RUN-02/RUN-03, D-09, greenfield
+// ruling): the single best-depth key is never written or read here anymore —
+// a bare floor number carries no run details to render a row from. Any value
+// already on a device's disk stays there untouched (storage.js's LEGACY_KEYS
+// migration still copies it unchanged; nothing here ever reads it back).
 
 // CR-01: matches mazeworld.html's own `const GRAVE_KEY = "ddr.graveyard.v1";`
 // (mazeworld.html line ~2946) so both the classic combat/store code path
 // (still un-ported, per 03-CONTEXT.md/03-REVIEW.md) and this engine-routed
 // path accumulate tombstones into ONE persistent graveyard, both now via the
 // SAME storage.js abstraction (02-03 dual-write convergence). Deliberately a
-// SEPARATE storage key from SAVE_KEY/BEST_KEY, and deliberately NOT part of
+// SEPARATE storage key from SAVE_KEY, and deliberately NOT part of
 // GameState — 03-CONTEXT.md locks the graveyard as adapter-side cross-run
-// accumulation (SAV-05 — durable Capacitor Preferences, mirroring BEST_KEY).
+// accumulation (SAV-05 — durable Capacitor Preferences).
 const GRAVE_KEY = "ddr.graveyard.v1";
 
 // audit-batch E12 (2026-09-09) — the graveyard rework's two new adapter-owned
 // keys, both routed through the SAME storage.js abstraction as GRAVE_KEY and,
-// like GRAVE_KEY, deliberately SEPARATE from SAVE_KEY/BEST_KEY and NOT part of
+// like GRAVE_KEY, deliberately SEPARATE from SAVE_KEY and NOT part of
 // GameState (cross-run accumulation, mirroring the graveyard).
 //
 //  - GRAVE_TOTAL_KEY: a running count of EVERY death ever, incremented on each
 //    persistGrave() and NEVER trimmed (the graveyard array itself is capped at
 //    GRAVE_CAP; this counter is the true lifetime total the Dead screen shows).
 //  - RECENT_NAMES_KEY: the last RECENT_NAMES_CAP dead characters' names,
-//    capped SEPARATELY from the 5-grave cap so names survive as graves trim.
+//    capped SEPARATELY from the grave cap so names survive as graves trim.
 //    Read on a fresh roll and passed as the name-dedup exclusion (part 4).
 const GRAVE_TOTAL_KEY = "ddr.graveyard.total.v1";
 const RECENT_NAMES_KEY = "ddr.graveyard.names.v1";
 
-// Only the 5 most-recent tombstones are stored/shown (part 1); the running
-// total (GRAVE_TOTAL_KEY) is what conveys the true body count. The recent-name
-// dedup window is wider (part 4) so a name stays "recently used" long after its
-// tombstone has aged out of the visible 5.
-const GRAVE_CAP = 5;
+// Phase 65 (CONTEXT, RUN-02) deliberately reverses audit-batch E12 part 1.
+// The mock's GRAVEYARD board lists everyone you have rolled and lost,
+// deepest first, so the adapter stores up to 60 stones, matching
+// engine/death.js#bury's own cap. The running total (GRAVE_TOTAL_KEY) still
+// conveys the true all-time body count. The recent-name dedup window is
+// wider (part 4) so a name stays "recently used" long after its tombstone
+// has aged out of the visible 60.
+const GRAVE_CAP = 60;
 const RECENT_NAMES_CAP = 25;
 
 let currentState = null;
@@ -187,8 +188,8 @@ export function initRun(seed, exclude = [], options = {}) {
  * readRecentNames() — audit-batch E12 (part 4): the last RECENT_NAMES_CAP dead
  * characters' names from storage, for the fresh-roll name-dedup exclusion.
  * Fail-open to [] (private window, blocked storage, corrupt JSON, non-array) —
- * a missing/broken list just means no dedup this roll, never a throw, mirroring
- * getBest()'s fail-open-to-zero posture.
+ * a missing/broken list just means no dedup this roll, never a throw, matching
+ * every other read in this file's fail-safe posture.
  */
 async function readRecentNames() {
   try {
@@ -201,53 +202,12 @@ async function readRecentNames() {
 }
 
 /**
- * getBest() — the best (deepest) floor.depth reached across runs, per
- * 03-CONTEXT.md's "score = deepest floor reached" (descent is one-way, so
- * floor.depth at any point in a run IS the deepest floor reached so far).
- * Resolves 0 if nothing is stored, the stored value is not a finite number,
- * or storage is blocked (private window, quota) — never throws/rejects
- * (matches boot()/persist()'s fail-open-to-zero posture; T-03-06 accepts a
- * self-tampered value since this is single-player with no leaderboard).
- * Async: 02-03 routes this through storage.js's shared abstraction rather
- * than raw localStorage.
- */
-export async function getBest() {
-  try {
-    const raw = await storage.getItem(BEST_KEY);
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : 0;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * recordBest(depth) — module-internal: writes max(stored best, depth) back
- * to BEST_KEY. Never throws (private window/quota just means the new best
- * won't persist, matching persist()'s own posture). Reads-then-writes, so it
- * is awaited by its only caller (startNewRun) rather than fired-and-forgotten
- * — storage.js's getItem() is deliberately NOT queued behind in-flight writes
- * (see storage.js's own doc comment), so a caller needing read-after-write
- * ordering must sequence it itself; startNewRun() is not the rapid-fire
- * per-action hot path dispatch() is, so awaiting here is cheap and correct.
- */
-async function recordBest(depth) {
-  try {
-    const prev = await getBest();
-    const next = Math.max(prev, Number.isFinite(depth) ? depth : 0);
-    await storage.setItem(BEST_KEY, String(next));
-  } catch {
-    /* private window, blocked storage — the new best just won't persist */
-  }
-}
-
-/**
  * persistGrave(state, cause) — CR-01: builds this death's tombstone via
  * engine/death.js#bury() (which already has state.deathNote/state.epitaph
  * set by die()) and appends it to the adapter-owned graveyard at GRAVE_KEY.
- * Mirrors recordBest()'s try/catch-and-swallow posture: a private window or
- * a full storage quota just means the tombstone won't persist, matching
- * persist()/recordBest()'s own fail-safe contract — never throws.
+ * Try/catch-and-swallow, like every other write in this file: a private
+ * window or a full storage quota just means the tombstone won't persist —
+ * never throws.
  *
  * `cause` is read from the `died` event dispatch() just pushed (see below)
  * rather than from `state` itself, because GameState has no persisted
@@ -269,7 +229,7 @@ async function persistGrave(state, cause) {
 
     // Part 1 — append the tombstone, then TRIM to the most-recent GRAVE_CAP.
     // bury() unshifts newest-first (and caps at 60); slice(0, GRAVE_CAP) keeps
-    // the newest 5 that remain shown/stored.
+    // the newest 60 that remain shown/stored (Phase 65, RUN-02, D-05).
     let prevGraves = rawGraves ? JSON.parse(rawGraves) : [];
     if (!Array.isArray(prevGraves)) prevGraves = [];
     const graves = bury(state, cause, null, prevGraves).slice(0, GRAVE_CAP);
@@ -284,7 +244,7 @@ async function persistGrave(state, cause) {
     const total = prevTotal + 1;
 
     // Part 4 — the wider recent-names dedup window, capped SEPARATELY from the
-    // 5-grave cap so a name stays excluded long after its tombstone trims away.
+    // grave cap so a name stays excluded long after its tombstone trims away.
     let recent = rawRecent ? JSON.parse(rawRecent) : [];
     if (!Array.isArray(recent)) recent = [];
     const name = state.c && state.c.name;
@@ -305,11 +265,8 @@ async function persistGrave(state, cause) {
 /**
  * startNewRun(seed, options) — the one-tap new-run entry point (RUN-05;
  * 03-RESEARCH.md "one-tap new run" Option A: the adapter calls the engine's
- * newRun(seed) factory directly, no new engine action type required). If a
- * run is already live AND it is not a dev run, its ending floor.depth is
- * recorded as a candidate best-depth BEFORE it's replaced (descent is
- * one-way, so the ending floor.depth is that run's score). `seed` is guarded
- * to an integer with a Date.now() fallback so a malformed/adversarial seed
+ * newRun(seed) factory directly, no new engine action type required).
+ * `seed` is guarded to an integer with a Date.now() fallback so a malformed/adversarial seed
  * can never reach newRun() unchecked (Security Domain V5; threat T-03-05) —
  * mirrors the seed-recovery guard dispatch() already uses on its fail-closed
  * path. `options.startDepth` (Phase 21, TUNE-04, D-13) is the dev-only
@@ -327,11 +284,6 @@ async function persistGrave(state, cause) {
  * unchanged by this phase.
  */
 export async function startNewRun(seed, options = {}) {
-  if (currentState && !currentState.dev) {
-    // Phase 21 (TUNE-04, D-13): a dev run's ending depth is never a "best" —
-    // it was never earned by a real 1-to-N-depth climb.
-    await recordBest(currentState.floor.depth);
-  }
   const safeSeed = Number.isInteger(seed) ? seed : Date.now();
   // audit-batch E12 (part 4): thread the recent-names dedup window into the
   // fresh roll so a new adventurer avoids reusing the last ~25 dead names.
