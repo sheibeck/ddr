@@ -203,6 +203,15 @@ test("FIND branch: computes usable via window.__mzUsableBy(it, c) and appends it
   );
 });
 
+test("FIND branch: a weapon/armor find shows the explained compare line via window.__mzLootCompare(c, it).line", () => {
+  // Phase 61 (STORE-03)
+  const region = findRegion();
+  assert.match(
+    region,
+    /if \(it\.kind === "weapon" \|\| it\.kind === "armor"\) lines\.push\(\{ text: window\.__mzLootCompare\(c, it\)\.line, roll: null \}\);/,
+  );
+});
+
 test("FIND branch: the drop shelf source is window.__mzDropShelfItems(c), never raw c.items", () => {
   const region = findRegion();
   assert.match(region, /shelfItems = window\.__mzDropShelfItems\(c\);/);

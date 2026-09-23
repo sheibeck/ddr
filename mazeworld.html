@@ -4317,6 +4317,7 @@ function renderRail() {
     tone = "good"; icon = "▪"; title = copy.find.title;
     lines = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
     lines.push({ text: `${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}${usable ? ` ${usable}` : ""}`, roll: null });
+    if (it.kind === "weapon" || it.kind === "armor") lines.push({ text: window.__mzLootCompare(c, it).line, roll: null });
     if (full) {
       lines.push({ text: copy.find.full.replace("{have}", usage.have).replace("{slots}", usage.slots), roll: null });
       shelfItems = window.__mzDropShelfItems(c);

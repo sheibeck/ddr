@@ -379,13 +379,17 @@ test("weaponUpgradeDelta(c, it) is expectedStrike-based, rounded to 2 decimals; 
   else assert.ok(events.some((e) => e.type === "itemTaken"));
 });
 
-test("lootCompare(c, weaponItem).line reads '+{delta} a swing' for an upgrade, 'not an upgrade' otherwise", () => {
+test("lootCompare(c, weaponItem).line ends ' · upgrade' exactly when delta > 0 and ' · not an upgrade' otherwise, and contains ' a swing'", () => {
+  // Phase 61 (STORE-03): the line now explains itself (the "why"), so it no
+  // longer reads as a bare "+{delta} a swing" — it always ends with the
+  // verdict word and always contains the per-swing numbers.
   const c = { cls: "Fighter", sub: null, race: "Human", level: 1, prof: 0, magicWpn: 0, might: 0, skills: {}, items: [], weapon: "Flail", armor: "Nothing", ar: 0 };
   const upgrade = { kind: "weapon", base: "Rapier", bonus: 0, n: "Rapier", txt: "d6" };
   const cmp = lootCompare(c, upgrade);
+  assert.match(cmp.line, / a swing/);
   if (cmp.upgrade) {
-    assert.match(cmp.line, /^\+[\d.]+ a swing$/);
+    assert.ok(cmp.line.endsWith(" · upgrade"), cmp.line);
   } else {
-    assert.equal(cmp.line, "not an upgrade");
+    assert.ok(cmp.line.endsWith(" · not an upgrade"), cmp.line);
   }
 });
