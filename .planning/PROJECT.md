@@ -75,21 +75,21 @@
 - [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.9.md` (21 of 24 open), `docs/UAT-v1.8.md` (30 of 31 open; the user runs them over their own play sessions), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → quick tasks
 - ✓ **Gear screen UX redo** — v1.9 (Phases 62–63): slim AR/WILMST header, five fixed WORN rows, bag meter + tagged cards, per-type consumables, ALSO ON YOU, and one bottom action sheet for every equip/swap/unequip/use/drop (engine-true reasons, combat greying, back/TalkBack/reduced motion). Device batch `docs/UAT-v1.9.md`: 3/24 walked
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
-- [ ] **Leaderboards (planned v2.0, not started)** — the mock's Leaderboards panel over local personal bests and the graveyard, plus opt-in Play Games Services v2 global/friends boards, a "you placed X" death card, the account chip in place of the cog, and the Data Safety / privacy / PGS-console compliance close
+- [ ] **Leaderboards (v2.0, in progress)** — the mock's Leaderboards panel over local personal bests and the graveyard, plus opt-in Play Games Services v2 global/friends boards, a "you placed X" death card, the account chip in place of the cog, and the Data Safety / privacy / PGS-console compliance close
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
 
 ### Out of Scope
 
 - **iOS / Apple App Store** — deliberately out of scope. Android/Google Play only. Avoids the Apple Developer account, Mac/Xcode toolchain, and Apple's review process. May be reconsidered post-launch, but the tech path should not be compromised to accommodate it now.
 - **Networked multiplayer / "play with friends"** — still post-launch (v2). The *party* layer is now IN scope and shipped (Joiners, Phases 7–11) as its single-player foundation; only the network/relay layer stays out.
-- **Accounts, logins, cloud save, servers** — go simple. Platform identity is planned for v2.0 as opt-in Google Play Games sign-in for leaderboards only. Still out: our own accounts or login forms, PGS cloud saves, and any server of our own.
+- **Accounts, logins, cloud save, servers** — go simple. Platform identity arrives in v2.0 as opt-in Google Play Games sign-in for leaderboards only. Still out: our own accounts or login forms, PGS cloud saves, and any server of our own.
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Planned Milestone: v2.0 Leaderboards (recorded 2026-09-23 — NOT started; stand up with `/gsd-new-milestone` when chosen)
+## Current Milestone: v2.0 Leaderboards (started 2026-09-23)
 
-**Scope was settled with the user on 2026-09-23 but deliberately parked.** Nothing is in REQUIREMENTS.md or ROADMAP.md yet. Full record: `.planning/proposed-milestone-leaderboards.md` (§ "Decisions (user, 2026-09-23)").
+Scoped with the user on 2026-09-23, briefly parked, then started the same day. It will be run by `/gsd-autonomous`. Full record: `.planning/proposed-milestone-leaderboards.md` (§ "Decisions (user, 2026-09-23)"). Research: no milestone-level pass. The PGS integration phase is flagged for `gsd-phase-researcher`.
 
 **Goal:** The DEAD tab becomes the user's "Mazeworld Leaderboards" panel. It covers your own dead fully offline, and players signed in to Google Play Games Services v2 also get global and friends boards, a "you placed X" line on death, and an account chip where the settings cog was.
 
@@ -295,7 +295,7 @@
 ## Constraints
 
 - **Platforms**: Must ship to **Google Play (Android only)**. Native packaging, Play App Signing, store entry and internal-testing track are DONE (targetSdk 36, minSdk 24); remaining compliance = Data Safety form, IARC, privacy policy, production listing. iOS is explicitly excluded.
-- **Offline**: v1 must run with **no network**, no accounts, no backend. **Planned v2.0 amendment (user, 2026-09-23; takes effect when that milestone starts):** opt-in Google Play Games Services v2 sign-in adds global/friends leaderboards. Signed out, the game stays fully offline with zero network calls. There is still no backend of our own and no account form (PGS uses the device's Google account).
+- **Offline**: v1 must run with **no network**, no accounts, no backend. **v2.0 amendment (user, 2026-09-23; in effect from v2.0):** opt-in Google Play Games Services v2 sign-in adds global/friends leaderboards. Signed out, the game stays fully offline with zero network calls. There is still no backend of our own and no account form (PGS uses the device's Google account).
 - **Monetization**: **Paid upfront**, no ads/IAP — keep the build free of monetization SDKs.
 - **Fidelity**: The prototype's rules are **canon**; deviations must be deliberate design decisions, not accidental regressions.
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
@@ -412,4 +412,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-23 — v2.0 Leaderboards scoped and recorded as a planned (not started) milestone; next milestone still not chosen*
+*Last updated: 2026-09-23 — milestone v2.0 Leaderboards started (un-parked; to run under /gsd-autonomous)*

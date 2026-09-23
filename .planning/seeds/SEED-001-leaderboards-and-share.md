@@ -1,6 +1,6 @@
 ---
 id: SEED-001
-status: scoped (planned v2.0 Leaderboards, 2026-09-23; not started)
+status: promoted (v2.0 Leaderboards started 2026-09-23)
 planted: 2026-09-17
 planted_during: v1.5 / Phase 37→38 (Meaningful Choices)
 trigger_when: next milestone after v1.5, or any milestone touching the death screen, graveyard, Play listing, top-bar cog/settings, or social/multiplayer

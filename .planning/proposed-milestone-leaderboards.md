@@ -2,7 +2,7 @@
 
 **Captured:** 2026-09-17 (from user via `/gsd-next` → `/gsd-capture`, mid-v1.5)
 **Priority:** Future milestone — after v1.5 (Meaningful Choices). Not blocking any in-flight phase.
-**Status:** SCOPED 2026-09-23 as **planned milestone v2.0 Leaderboards** (not started; user parked it after scoping). Stand up via `/gsd-new-milestone`; the decisions below are settled, so it can go straight to requirements. Research: skip the milestone-level pass and flag the PGS integration phase for `gsd-phase-researcher`.
+**Status:** STARTED 2026-09-23 as **milestone v2.0 Leaderboards** (scoped, briefly parked, then un-parked the same day). The decisions below are settled; requirements come straight from them. Research: skip the milestone-level pass and flag the PGS integration phase for `gsd-phase-researcher`.
 
 ## Vision (user's words, lightly organized)
 
