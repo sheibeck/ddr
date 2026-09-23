@@ -127,3 +127,212 @@ export function boardValue(board, run) {
 export function lineageKey(run) {
   return `${run.race} ${run.cls}`;
 }
+
+// --- the bests record (D-04, D-07, D-08, D-14) --------------------------------
+
+const HASH_RE = /^[0-9a-f]{8}$/;
+
+/** isValidHash(hash) — true only for an 8-lowercase-hex string. */
+export function isValidHash(hash) {
+  return typeof hash === "string" && HASH_RE.test(hash);
+}
+
+/** isPlainObject(v) — a non-null, non-array object. */
+function isPlainObject(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+/**
+ * prune(record) — deletes every runs key not referenced by a RANKED_BOARDS
+ * list or a lineage best. Mutates record.runs in place and returns record.
+ */
+function prune(record) {
+  const keep = new Set();
+  for (const board of RANKED_BOARDS) {
+    for (const hash of record.boards[board]) keep.add(hash);
+  }
+  for (const key of Object.keys(record.lineage)) {
+    const best = record.lineage[key].best;
+    if (best) keep.add(best);
+  }
+  for (const hash of Object.keys(record.runs)) {
+    if (!keep.has(hash)) delete record.runs[hash];
+  }
+  return record;
+}
+
+/** emptyBests() — a fresh, empty BestsRecord. */
+export function emptyBests() {
+  return {
+    v: 1,
+    runs: {},
+    boards: { deep: [], lean: [], days: [], kills: [], purse: [] },
+    lineage: {},
+    last: null,
+  };
+}
+
+/**
+ * sanitizeBests(raw) — never throws: coerces any input into a valid, pruned
+ * BestsRecord, dropping every entry that fails its own shape check.
+ */
+export function sanitizeBests(raw) {
+  try {
+    if (!isPlainObject(raw)) return emptyBests();
+
+    const runs = {};
+    if (isPlainObject(raw.runs)) {
+      for (const key of Object.keys(raw.runs)) {
+        const value = raw.runs[key];
+        if (HASH_RE.test(key) && isPlainObject(value) && value.hash === key) {
+          runs[key] = { ...value };
+        }
+      }
+    }
+
+    const boards = { deep: [], lean: [], days: [], kills: [], purse: [] };
+    if (isPlainObject(raw.boards)) {
+      for (const board of RANKED_BOARDS) {
+        const list = raw.boards[board];
+        if (!Array.isArray(list)) continue;
+        const seen = new Set();
+        const filtered = [];
+        for (const hash of list) {
+          if (typeof hash === "string" && runs[hash] && !seen.has(hash)) {
+            seen.add(hash);
+            filtered.push(hash);
+          }
+        }
+        boards[board] = filtered.slice(0, BOARD_TOP_N);
+      }
+    }
+
+    const lineage = {};
+    if (isPlainObject(raw.lineage)) {
+      for (const key of Object.keys(raw.lineage)) {
+        const value = raw.lineage[key];
+        if (!isPlainObject(value)) continue;
+        if (!Number.isInteger(value.count) || value.count < 1) continue;
+        const best = typeof value.best === "string" && runs[value.best] ? value.best : null;
+        lineage[key] = { count: value.count, best };
+      }
+    }
+
+    const last = typeof raw.last === "string" && HASH_RE.test(raw.last) ? raw.last : null;
+
+    return prune({ v: 1, runs, boards, lineage, last });
+  } catch {
+    return emptyBests();
+  }
+}
+
+/**
+ * updateBests(record, summary) — folds one RunSummary into a BestsRecord.
+ * Never mutates `record` or `summary`. Returns { record, newBests, first }:
+ * newBests is the ordered (per BOARD_IDS) list of boards this run just took
+ * #1 on (an exact tie never counts, and a first-of-combo lineage entry is
+ * silent). first is true only when the record held no runs at all before
+ * this one.
+ */
+export function updateBests(record, summary) {
+  if (!isPlainObject(summary) || !isValidHash(summary.hash)) {
+    return { record, newBests: [], first: false };
+  }
+
+  const rec = sanitizeBests(record);
+  const hash = summary.hash;
+
+  if (rec.last === hash || rec.runs[hash]) {
+    return { record: rec, newBests: [], first: false };
+  }
+
+  const first = RANKED_BOARDS.every((board) => rec.boards[board].length === 0);
+
+  rec.runs[hash] = { ...summary };
+
+  const newBestsSet = new Set();
+
+  for (const board of RANKED_BOARDS) {
+    const list = rec.boards[board];
+    const wasNonEmpty = list.length > 0;
+    let i = list.length;
+    for (let j = 0; j < list.length; j++) {
+      if (compareRuns(board, summary, rec.runs[list[j]]) < 0) {
+        i = j;
+        break;
+      }
+    }
+    if (i < BOARD_TOP_N) {
+      list.splice(i, 0, hash);
+      if (list.length > BOARD_TOP_N) list.length = BOARD_TOP_N;
+    }
+    if (i === 0 && wasNonEmpty) newBestsSet.add(board);
+  }
+
+  const key = lineageKey(summary);
+  const entry = rec.lineage[key];
+  if (!entry) {
+    rec.lineage[key] = { count: 1, best: hash };
+  } else {
+    entry.count += 1;
+    if (!entry.best || !rec.runs[entry.best]) {
+      entry.best = hash;
+    } else if (compareRuns("combo", summary, rec.runs[entry.best]) < 0) {
+      entry.best = hash;
+      newBestsSet.add("combo");
+    }
+  }
+
+  rec.last = hash;
+  prune(rec);
+
+  const newBests = BOARD_IDS.filter((id) => newBestsSet.has(id));
+
+  return { record: rec, newBests, first };
+}
+
+/**
+ * backfillBests(graves) — seeds a BestsRecord from legacy graveyard stones
+ * (newest-first, per the adapter's storage shape). Folds oldest-first so a
+ * tie on every ordering key keeps the OLDER stone ranked first. A stone with
+ * no numeric season is normalized to season 0 with no seed/acts (absent, not
+ * invented) and a freshly computed hash; a stone that already carries a
+ * numeric season and a valid hash keeps both.
+ */
+export function backfillBests(graves) {
+  if (!Array.isArray(graves)) return emptyBests();
+
+  let rec = emptyBests();
+  const oldestFirst = graves.slice().reverse();
+
+  for (const stone of oldestFirst) {
+    if (!isPlainObject(stone) || !Number.isFinite(stone.floor)) continue;
+
+    const s = { ...stone };
+    if (typeof s.season !== "number") {
+      s.season = 0;
+      delete s.seed;
+      delete s.acts;
+      s.hash = runHash(s);
+    } else if (!isValidHash(s.hash)) {
+      s.hash = runHash(s);
+    }
+
+    rec = updateBests(rec, s).record;
+  }
+
+  return rec;
+}
+
+/**
+ * sortGraveyard(graves) — every valid stone (a plain object with a finite
+ * numeric floor), ordered floor desc then steps asc, never cut to ten. Does
+ * not mutate its input; Array.prototype.sort is stable, so ties keep input
+ * order.
+ */
+export function sortGraveyard(graves) {
+  if (!Array.isArray(graves)) return [];
+  return graves
+    .filter((s) => isPlainObject(s) && Number.isFinite(s.floor))
+    .sort((a, b) => compareRuns("yard", a, b));
+}
