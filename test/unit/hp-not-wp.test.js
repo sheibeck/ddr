@@ -27,6 +27,7 @@ import { RAIL_COPY } from "../../src/browser/rail.js";
 import { USABLE_COPY, STORE_ROW_COPY } from "../../src/browser/viewModels.js";
 import { UPGRADE_WHY_COPY } from "../../src/browser/upgradeWhy.js";
 import { ITEM_STATE_COPY, GEAR_COPY } from "../../src/browser/gearTab.js";
+import { GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js";
 import { ABILITY_VIEW_COPY, RATIONS_COPY } from "../../src/browser/heroTab.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { COMBAT_PANEL_COPY } from "../../src/browser/combatPanel.js";
@@ -130,7 +131,7 @@ function collectStringLeaves(obj, pathLabel = "") {
 test("Presentation COPY objects: every string leaf is free of a standalone wp/WP token", () => {
   const banks = {
     // Phase 61 (STORE-02/03): STORE_ROW_COPY added to the walked copy-object list.
-    RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY, UPGRADE_WHY_COPY, STORE_ROW_COPY,
+    RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY, UPGRADE_WHY_COPY, STORE_ROW_COPY, GEAR_SHEET_COPY,
   };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {
@@ -264,6 +265,18 @@ test("src/browser/gearTab.js: no string literal contains a standalone wp/WP toke
     if (m && !isAllowlisted(lit)) offenders.push(`gearTab.js script literal -> ${lit}`);
   }
   assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in src/browser/gearTab.js:\n${offenders.join("\n")}`);
+});
+
+// ─── (f2) src/browser/gearSheet.js — Phase 63 (GSCR-07..10) Plan 01 carve ──
+
+test("src/browser/gearSheet.js: no string literal contains a standalone wp/WP token", () => {
+  const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearSheet.js"), "utf8").replace(/\r\n/g, "\n");
+  const offenders = [];
+  for (const lit of stringLiteralsOf(stripComments(src))) {
+    const m = lit.match(PLAYER_WP);
+    if (m && !isAllowlisted(lit)) offenders.push(`gearSheet.js script literal -> ${lit}`);
+  }
+  assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in src/browser/gearSheet.js:\n${offenders.join("\n")}`);
 });
 
 // ─── (g) src/browser/heroTab.js — Phase 47 Plan 04 carve ───────────────────
