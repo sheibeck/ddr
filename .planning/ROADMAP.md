@@ -79,7 +79,21 @@ Plans:
   4. The player sees a BAG section with a `used / cap` count and a pip meter that both turn red and read "BAG FULL · DROP OR USE SOMETHING" at capacity, computed from `bagUsage` alone so potions and scrolls never count
   5. Bag items render as cards (name, description, a slot tag with `· SWAP` when every fitting slot is taken) and a CONSUMABLES section lists potions/scrolls with `×N` counts and a USE/READ button; the ITEMS combat submenu, the loot screen and the store all read the same `itemRowState`/`bagUsage`/`lootCompare` models this phase builds on
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 62-01-PLAN.md — Gear view models + copy: slim header, five-row WORN (value column, weapon empty line, USE cell from itemRowState), bag meter/pips, bag cards (slot tag · SWAP), CONSUMABLES, ALSO ON YOU; pure and unit-tested, no DOM (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 62-02-PLAN.md — Gear tab DOM rebuild: #screen-gear skeleton + mock CSS (text-scale aware), renderGearTab rewrite on the models, interim in-row actions harvested from the untouched renderCarriedList, potion/scroll tabDeps, declared gear snapshot regeneration, old two-panel pin migration (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 62-03-PLAN.md — GSCR-11 cross-screen agreement: Gear vs ITEMS submenu / loot drop shelf / store sweep, no-fork source guard, idempotency + one-armed-confirm checks; docs catch-up and phase gates (wave 3)
+
 **Research**: none — the mock (`design/Mazeworld Gear.dc.html`) and `docs/GEAR-SLOTS.md` carry the structure and copy
 **UI hint**: yes
 
@@ -260,7 +274,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
-| 62. Gear Tab Layout Rebuild | v1.9 | 0/TBD | Not started | - |
+| 62. Gear Tab Layout Rebuild | v1.9 | 0/3 | Not started | - |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
