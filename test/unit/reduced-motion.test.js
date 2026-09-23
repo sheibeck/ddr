@@ -810,13 +810,20 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
 // 2026-09-22 HUD mock"). BASE_58 (a01b38e) is NOT used here: it postdates
 // 57-05's own HUD work, which legitimately changed paint()/draw(), so
 // comparing against BASE_58 would hide a real Phase 58 regression inside
-// noise BASE_58 already carries. PRE58_PAINT_SHA256 is the SHA-256 of
-// PRE58's own comment-stripped, CRLF-normalised paint() body, computed by a
-// one-off node script reading `git show ab3fca9:mazeworld.html` through
-// tools/ident-sweep.mjs#stripHtml — pinned here as a literal so `npm test`
-// stays independent of git history while still proving no Phase 58 (or
-// later) statement grew it. paint() is untouched by Phase 59 — this digest
-// stays byte-identical to PRE58's.
+// noise BASE_58 already carries. paint() stayed byte-identical to PRE58's
+// through Phase 59, 61 and 62 — until Phase 63 (GRULE-02) legitimately grew
+// it by exactly one guarded statement.
+//
+// PAINT_SHA256 (Phase 63, Plan 04 re-pin): paint() is NOT held to PRE58 any
+// longer — this plan added exactly one statement directly after the gear
+// tab mount, `if (gearSheetTarget !== null) refreshGearSheet();`, so an open
+// Gear action sheet re-reads S every paint (greying in place when a fight
+// starts, closing when its target vanishes). This is the SHA-256 of
+// paint()'s own comment-stripped, CRLF-normalised body AFTER that addition,
+// computed the same one-off way PRE58's own digest was (a node script
+// reading the live file through tools/ident-sweep.mjs#stripHtml) — pinned
+// here as a literal so `npm test` stays independent of git history while
+// still proving no OTHER plan grows it further.
 //
 // DRAW_SHA256 (Phase 59, Plan 03 re-pin, extended by Plan 05): draw() is NOT
 // held to PRE58 any longer — Plan 03 deliberately removed the canvas's own
@@ -828,10 +835,10 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
 // ambient prop layer draws beneath every feature. This is the SHA-256 of
 // draw()'s own comment-stripped body AFTER both changes, computed the same
 // one-off way.
-const PRE58_PAINT_SHA256 = "b90c5e4f80290d1cd3bc4c7f53a2ad8441a3c356d9703d73c9a2ab2f1f9e6f2f";
+const PAINT_SHA256 = "7fe5fedd02d31a20cbf6f069884f2b542a130060f51395a19b551e2824dc4b14";
 const DRAW_SHA256 = "d8550d9858c85c58f637a89ef878a7a6d1cf8ce0886d8b7f2af0c452bdb2c043";
 
-test("reduced-motion/audit: modularity — paint() is byte-identical to PRE58's (ab3fca9); draw() is re-pinned for Phase 59 Plan 05 (the canvas party-marker paint removed by Plan 03, the one dressing-layer call added by Plan 05, nothing else) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
+test("reduced-motion/audit: modularity — paint() is re-pinned for Phase 63 Plan 04 (the one gearSheetTarget-gated refreshGearSheet() call, nothing else); draw() is re-pinned for Phase 59 Plan 05 (the canvas party-marker paint removed by Plan 03, the one dressing-layer call added by Plan 05, nothing else) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
   const stripped = stripHtml(raw);
 
@@ -859,6 +866,6 @@ test("reduced-motion/audit: modularity — paint() is byte-identical to PRE58's 
   const paintHash = crypto.createHash("sha256").update(paintBody, "utf8").digest("hex");
   const drawHash = crypto.createHash("sha256").update(drawBody, "utf8").digest("hex");
 
-  assert.equal(paintHash, PRE58_PAINT_SHA256, "paint()'s comment-stripped body must be byte-identical to PRE58's — no Phase 58/59 plan may grow it");
+  assert.equal(paintHash, PAINT_SHA256, "paint()'s comment-stripped body must match Phase 63 Plan 04's re-pin exactly — the one gearSheetTarget-gated refreshGearSheet() call, nothing else");
   assert.equal(drawHash, DRAW_SHA256, "draw()'s comment-stripped body must match Phase 59 Plan 03's re-pin exactly — the canvas party paint removed, nothing added");
 });

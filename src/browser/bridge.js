@@ -159,6 +159,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull)"]),
     purpose: "Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time.",
   }),
+  __mzGearSheet: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render)"]),
+    purpose: "Bridges src/browser/gearSheet.js's renderGearSheet so the classic sheet lifecycle (open, repaint refresh, close, back button, ghost-tap arm) renders the ONE pure sheet model, never a second copy.",
+  }),
   __mzGravesCount: Object.freeze({
     owner: "mazeworld.html (classic)",
     consumers: Object.freeze(["mazeworld.html (module: refreshTitleDead — the roller screen's death counter)"]),
