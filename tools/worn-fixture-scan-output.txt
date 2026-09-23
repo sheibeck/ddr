@@ -27,7 +27,7 @@
 | action-script.magic.json | action-script.magic.json#heal | 7 | Magic User Wizard Human | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
 | action-script.magic.json | action-script.magic.json#potion | 1 | Fighter Knight Fridgian | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
 | action-script.magic.json | action-script.magic.json#scroll | 7 | Magic User Wizard Human | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
-| action-script.economy.json | action-script.economy.json#script | 3 | Thief Pickpocket Human | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether, Healing potion, Lockpicks | Healing potion, Lockpicks, Speed potion | cloak=Cloak of Ether | true |
+| action-script.economy.json | action-script.economy.json#script | 3 | Thief Pickpocket Human | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether, Healing potion, Lockpicks | Healing potion, Axe, Lockpicks, Speed potion | cloak=Cloak of Ether | true |
 | action-script.encounters.json | action-script.encounters.json#trap | 1 | Fighter Knight Fridgian | (none) | never | (none) | (none) | (none) | (none) | (none) | (none) | false |
 | action-script.encounters.json | action-script.encounters.json#chest | 2 | Thief Cat Burglar Wilmsry | cloak=Cloak of Armor | never | Cloak of Regeneration | (none) | cloak=Cloak of Armor | Cloak of Regeneration, Cloak of Speed | (none) | cloak=Cloak of Armor | true |
 | action-script.encounters.json | action-script.encounters.json#tablefour | 3 | Thief Pickpocket Human | cloak=Cloak of Ether | never | Cloak of Ether | (none) | cloak=Cloak of Ether | Cloak of Ether | (none) | cloak=Cloak of Ether | true |
@@ -109,7 +109,7 @@ before.items (prototype @chargen): [{"kind":"cloak","n":"Cloak of Ether","eff":{
 after.items (engine @chargen): []
 after.worn (engine @chargen): {"cloak":{"kind":"cloak","n":"Cloak of Ether","eff":{},"use":"ether","every":80,"txt":"walk through walls, once every 100 squares"}}
 end.before.items (prototype @end): [{"kind":"cloak","n":"Cloak of Ether","eff":{},"use":"ether","every":100,"txt":"walk through walls, once every 100 squares"},{"kind":"potion","n":"Healing potion","txt":"+d10+2 wp","eff2":"heal","uses":1},{"kind":"picks","n":"Lockpicks","txt":"1–5 on d10 against any lock"}]
-end.after.items (engine @end): [{"kind":"potion","n":"Healing potion","txt":"+d10+2 hp","eff2":"heal","uses":1},{"kind":"picks","n":"Lockpicks","txt":"1–5 on d10 against any lock"},{"kind":"potion","n":"Speed potion","txt":"double attacks, 50 squares","eff2":"speed","uses":1}]
+end.after.items (engine @end): [{"kind":"potion","n":"Healing potion","txt":"+d10+2 hp","eff2":"heal","uses":1},{"kind":"weapon","n":"Axe","base":"Axe","bonus":0,"txt":"d6"},{"kind":"picks","n":"Lockpicks","txt":"1–5 on d10 against any lock"},{"kind":"potion","n":"Speed potion","txt":"double attacks, 50 squares","eff2":"speed","uses":1}]
 end.after.worn (engine @end): {"cloak":{"kind":"cloak","n":"Cloak of Ether","eff":{},"use":"ether","every":80,"txt":"walk through walls, once every 100 squares"}}
 
 ### action-script.encounters.json#chest

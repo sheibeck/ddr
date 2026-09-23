@@ -229,6 +229,20 @@ fixture that must never be edited).
   | `notWorn` | `useRefused` | a cloak/jewelry/staff activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no `c.worn`) keep bag-use |
   | `combat` | `gearRefused` | a gear change attempted while a fight is up (Phase 61, GRULE-01) |
 
+- **Store purchases (Phase 61, STORE-02/03):** `buyFrom`
+  (`engine/economy.js`) settles a purchase BEFORE any gold moves, through one
+  pre-payment predicate, `storeBuyRefusal(c, line)` — gold sufficiency, then
+  legality (`weaponRefusalReason`/`armorRefusalReason`), then room
+  (`canStow`), in that order. A legal buy that clears every check is charged
+  and delivered via `deliverGear(state, it, events)`: an upgrade
+  (`weaponUpgradeDelta`/`armorUpgradeDelta` strictly `> 0`) auto-equips
+  exactly as before and now trades in the old piece, named additively on
+  `itemTaken.replaced`; a legal buy that is NOT an upgrade is charged and
+  stowed instead of rejected, with one new event, `purchaseBagged { item,
+  why }`. The upgrade line (`why` = `gearCompareParts(c, it)`, formatted by
+  `src/browser/upgradeWhy.js#upgradeWhyText`) is advice only — it explains
+  the verdict, it never gates the buy.
+
 ## §5. Old-save reconciliation (GEAR-04)
 
 > **Phase 45 update (2026-09-19):** the bullets below describe the

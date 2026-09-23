@@ -538,3 +538,49 @@ test("GRULE-01 (Phase 61): the combat gear lock moves zero fixtures — no repla
   assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
   assert.equal(gearRefusedCount, 0, "expected zero gearRefused events across every replay site");
 });
+
+// Phase 61 (STORE-02): a store purchase always delivers — the measured
+// moved set is exactly the economy script's Axe purchase (action 3, a
+// legal-but-not-better weapon buy that is now bagged, not lost).
+test("STORE-02 (Phase 61): the holders declaring Phase 61 are exactly the measured moved set — the economy script's Axe is bagged, not lost", () => {
+  // Part (a): the declared set, DMG-02/INIT-01-shaped.
+  const EXPECTED = ["action-script.economy.json#script"];
+
+  const declared = new Set(
+    RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("61")).map(
+      ({ holderId }) => holderId,
+    ),
+  );
+
+  assert.deepStrictEqual([...declared].sort(), [...EXPECTED].sort());
+
+  // Part (b): replay the economy script and prove the measured outcome —
+  // exactly one purchaseBagged event, for the Axe, with a non-null `why`;
+  // and no notBetter itemRejected (the pre-Phase-61 behaviour this plan
+  // retires for a store buy).
+  const { events: economyEvents } = replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true });
+  const purchaseBaggedEvents = economyEvents.filter((e) => e.type === "purchaseBagged");
+  assert.equal(purchaseBaggedEvents.length, 1, "expected exactly one purchaseBagged event in the economy replay");
+  assert.equal(purchaseBaggedEvents[0].item?.n, "Axe", "the one purchaseBagged event must be the Axe");
+  assert.ok(purchaseBaggedEvents[0].why != null, "purchaseBagged.why must be non-null");
+  const notBetterRejections = economyEvents.filter((e) => e.type === "itemRejected" && e.reason === "notBetter");
+  assert.equal(notBetterRejections.length, 0, "expected zero notBetter itemRejected events — Phase 61 bags instead of rejecting");
+
+  // Part (c): across every OTHER replay site, zero purchaseBagged events —
+  // only the economy script's store visit ever buys anything.
+  let otherPurchaseBaggedCount = 0;
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    newRun(seed); // chargen never dispatches an action at all
+  }
+  otherPurchaseBaggedCount += replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions).events.filter((e) => e.type === "purchaseBagged").length;
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    otherPurchaseBaggedCount += replaySiteEvents(scenario.seed, scenario.actions).events.filter((e) => e.type === "purchaseBagged").length;
+  }
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    otherPurchaseBaggedCount += replaySiteEvents(scenario.seed, scenario.actions).events.filter((e) => e.type === "purchaseBagged").length;
+  }
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    otherPurchaseBaggedCount += replaySiteEvents(scenario.seed, scenario.actions).events.filter((e) => e.type === "purchaseBagged").length;
+  }
+  assert.equal(otherPurchaseBaggedCount, 0, "expected zero purchaseBagged events outside the economy script");
+});
