@@ -119,7 +119,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 63-02-PLAN.md — Sheet DOM renderer: `renderGearSheet` (accessible buttons, greyed = inert + reason as description, close-then-dispatch, DROP tap-again, CANCEL) (wave 2)
+- [x] 63-02-PLAN.md — Sheet DOM renderer: `renderGearSheet` (accessible buttons, greyed = inert + reason as description, close-then-dispatch, DROP tap-again, CANCEL) (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -294,7 +294,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 |-------|-----------|----------------|--------|-----------|
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
-| 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 1/5 | In Progress|  |
+| 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 2/5 | In Progress|  |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
 | 57. Map & HUD Layout Band | v1.8 | 5/5 | Complete    | 2026-09-22 |
