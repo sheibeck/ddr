@@ -272,3 +272,175 @@ export function gearSheetModel(state, target) {
 
   return null;
 }
+
+/**
+ * GEAR_SHEET_IDS — the six DOM roots Plan 04's markup declares inside
+ * `#mw-gear-sheet`. renderGearSheet only ever reads/writes through these
+ * ids (via `doc.getElementById`, never `host.querySelector`), mirroring
+ * gearTab.js's own head()/el() id-driven style.
+ */
+export const GEAR_SHEET_IDS = Object.freeze({
+  label: "mw-gear-sheet-label",
+  title: "mw-gear-sheet-title",
+  note: "mw-gear-sheet-note",
+  why: "mw-gear-sheet-why",
+  actions: "mw-gear-sheet-actions",
+  cancel: "mw-gear-sheet-cancel",
+});
+
+// Phase 63 (GSCR-10) — the sheet's own DROP tap-again confirm. Mirrors
+// gearTab.js's DROP_CONFIRM_MS/dropConfirmRevert/revertDropConfirm pattern
+// exactly, under distinct names so gearTab.test.js's once-each pins on the
+// gearTab names never see a second declaration. DOM-local presentation
+// state, never on `state` (serializeRun spreads state, not this module's
+// locals); exactly one button can be armed at a time. A fresh render
+// always calls revertSheetDrop() first, so no prior armed DROP survives a
+// re-render.
+export const SHEET_DROP_CONFIRM_MS = 3000;
+let sheetDropRevert = null;
+function revertSheetDrop() {
+  if (!sheetDropRevert) return;
+  const r = sheetDropRevert;
+  sheetDropRevert = null;
+  r();
+}
+
+// makeConfirmHandler(btn, labelSpan, a, deps) — DROP's tap-again confirm.
+// The first tap arms in place (relabels the button to
+// GEAR_SHEET_COPY.act.dropConfirm, marks dataset.armed and starts the
+// SHEET_DROP_CONFIRM_MS revert) and dispatches nothing. The second tap
+// (while armed) reverts, closes the sheet, THEN dispatches — matching
+// every other enabled action's close-before-dispatch order (GSCR-09).
+function makeConfirmHandler(btn, labelSpan, a, deps) {
+  return () => {
+    if (btn.dataset.armed === "1") {
+      revertSheetDrop();
+      deps.closeGearSheet?.();
+      dispatchRun(a.run, deps);
+      return;
+    }
+    revertSheetDrop();
+    const originalLabel = a.label;
+    labelSpan.textContent = GEAR_SHEET_COPY.act.dropConfirm;
+    btn.setAttribute("aria-label", GEAR_SHEET_COPY.act.dropConfirm);
+    btn.dataset.armed = "1";
+    const timer = setTimeout(revertSheetDrop, SHEET_DROP_CONFIRM_MS);
+    sheetDropRevert = () => {
+      clearTimeout(timer);
+      labelSpan.textContent = originalLabel;
+      btn.setAttribute("aria-label", originalLabel);
+      delete btn.dataset.armed;
+    };
+  };
+}
+
+// dispatchRun(run, deps) — the ONE place a model action's `run` becomes an
+// existing tabDeps() bridge call. Mirrors gearSheetModel's own equipRun
+// shape exactly: a weapon/armor equipItem run carries only `i`; a cloak/
+// jewelry equipItem run also carries `slot`. Never passes an explicit
+// `undefined` second argument.
+function dispatchRun(run, deps) {
+  if (!run) return;
+  if (run.type === "equipItem") {
+    if (run.slot) deps.equipItem?.(run.i, run.slot);
+    else deps.equipItem?.(run.i);
+  } else if (run.type === "unequipSlot") {
+    deps.unequip?.(run.slot);
+  } else if (run.type === "useItem") {
+    deps.useItem?.(run.slot ? { slot: run.slot } : run.i);
+  } else if (run.type === "dropItem") {
+    deps.dropItem?.(run.i);
+  }
+}
+
+// buildActionButton(doc, a, index, deps) — one `<button class="mw-gsheet-act">`
+// per gearSheetModel action, built via createElement/textContent/setAttribute/
+// dataset only (T-63-03: no HTML-string sink anywhere in this file). A
+// greyed action (`!a.enabled`) carries `data-off`/`aria-disabled` and NO
+// click handler at all — tapping it does nothing, never a hidden live
+// button (GSCR-09). An enabled action is wired through `deps.guardTap`
+// (Phase 32's ghost-tap guard), falling back to a plain onclick only when
+// no guardTap dep is supplied. A confirm action (`a.confirm`, DROP only)
+// routes through makeConfirmHandler instead of the plain close-then-
+// dispatch handler.
+function buildActionButton(doc, a, index, deps) {
+  const btn = doc.createElement("button");
+  btn.type = "button";
+  btn.className = "mw-gsheet-act";
+  btn.dataset.key = a.key;
+  btn.setAttribute("aria-label", a.label);
+
+  const main = doc.createElement("span");
+  main.className = "mw-gsheet-act-main";
+  const labelSpan = doc.createElement("span");
+  labelSpan.className = "mw-gsheet-act-label";
+  labelSpan.textContent = a.label;
+  const subSpan = doc.createElement("span");
+  subSpan.className = "mw-gsheet-act-sub";
+  subSpan.id = "mw-gear-sheet-sub-" + index;
+  subSpan.textContent = a.sub;
+  main.appendChild(labelSpan);
+  main.appendChild(subSpan);
+  btn.appendChild(main);
+
+  const chev = doc.createElement("span");
+  chev.className = "mw-gsheet-chev";
+  chev.textContent = GEAR_COPY.chevron;
+  chev.setAttribute("aria-hidden", "true");
+  btn.appendChild(chev);
+
+  btn.setAttribute("aria-describedby", subSpan.id);
+
+  if (!a.enabled) {
+    btn.dataset.off = "1";
+    btn.setAttribute("aria-disabled", "true");
+    return btn;
+  }
+
+  const handler = a.confirm
+    ? makeConfirmHandler(btn, labelSpan, a, deps)
+    : () => {
+        deps.closeGearSheet?.();
+        dispatchRun(a.run, deps);
+      };
+  if (deps.guardTap) deps.guardTap(btn, handler);
+  else btn.onclick = handler;
+
+  return btn;
+}
+
+/**
+ * renderGearSheet(host, state, target, deps) — Plan 02 (GSCR-07..10,
+ * GRULE-02): turns `gearSheetModel(state, target)` into the sheet body.
+ * Fills GEAR_SHEET_IDS's six roots from the model alone; the renderer
+ * holds no rule of its own. Returns `false` and touches nothing when the
+ * model resolves to null (a vanished target — the shell then closes the
+ * sheet). No window/document global; reaches the page only through
+ * `host.ownerDocument`.
+ */
+export function renderGearSheet(host, state, target, deps = {}) {
+  const doc = host.ownerDocument;
+  revertSheetDrop();
+
+  const m = gearSheetModel(state, target);
+  if (!m) return false;
+
+  doc.getElementById(GEAR_SHEET_IDS.label).textContent = m.label;
+  doc.getElementById(GEAR_SHEET_IDS.title).textContent = m.title;
+  doc.getElementById(GEAR_SHEET_IDS.note).textContent = m.note;
+  const whyEl = doc.getElementById(GEAR_SHEET_IDS.why);
+  whyEl.textContent = m.why;
+  whyEl.hidden = !m.why;
+
+  doc.getElementById(GEAR_SHEET_IDS.actions).replaceChildren(
+    ...m.actions.map((a, index) => buildActionButton(doc, a, index, deps))
+  );
+
+  const cancelBtn = doc.getElementById(GEAR_SHEET_IDS.cancel);
+  cancelBtn.textContent = GEAR_SHEET_COPY.cancel;
+  const cancelHandler = () => deps.closeGearSheet?.();
+  if (deps.guardTap) deps.guardTap(cancelBtn, cancelHandler);
+  else cancelBtn.onclick = cancelHandler;
+
+  return true;
+}
