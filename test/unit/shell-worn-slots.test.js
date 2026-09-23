@@ -32,6 +32,9 @@ import path from "node:path";
 import url from "node:url";
 
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+import { renderGearTab, GEAR_WORN_ORDER, gearWornModel } from "../../src/browser/gearTab.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
+import { fixedStates } from "./harness/shellSandbox.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -69,16 +72,6 @@ function renderCarriedListRegion() {
   return sliceBetween(GEAR_SRC, "export function renderCarriedList(", "export function renderGearTab(");
 }
 
-function gearTabBodyRegion() {
-  return GEAR_SRC.slice(GEAR_SRC.indexOf("export function renderGearTab("));
-}
-
-// The new worn-row block only — narrower than gearTabBodyRegion so the
-// "once" pins below aren't confused by wornRow's own (pre-existing, byte-
-// identical) deps.unequip?.(slot) call earlier in the same carry block.
-function wornSlotRowRegion() {
-  return sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
-}
 
 
 // ─── 1. SWAP trio ───────────────────────────────────────────────────────────
@@ -138,41 +131,56 @@ test("Equip branch: the weapon/armor Equip line is byte-identical; the family br
   assert.match(region, /mkSwapConfirm\(i, keys\.map\(\(k\) => \(\{ slot: k, name: state\.c\.worn\[k\]\.n \}\)\)\)/);
 });
 
-// ─── 4. Worn rows in the paint carry region ─────────────────────────────────
+// ─── 4. Worn rows: gearWornModel (Phase 62, GSCR-02 successor) ──────────────
 
-test("Worn rows: wornSlotRow sits between the armor wornRow call and renderCarriedList (src/browser/gearTab.js); wornRow's pinned signature is untouched", () => {
-  assert.equal((CODE.match(/const wornSlotRow = \(slot, it\) => \{/g) || []).length, 0);
-  assert.equal((GEAR_SRC.match(/const wornSlotRow = \(slot, it\) => \{/g) || []).length, 1);
-  assert.match(GEAR_SRC, /const wornRow = \(label, sub, slot, canUnequip, noSlotNeeded\) =>/);
-  const carryRegion = gearTabBodyRegion();
-  const iArmorRow = carryRegion.indexOf("wornRow(armorD.label");
-  const iWornSlotRow = carryRegion.indexOf("const wornSlotRow = (slot, it) => {");
-  const iRenderCarried = carryRegion.indexOf("renderCarriedList(carry, state, items, {");
-  assert.ok(iArmorRow !== -1 && iWornSlotRow !== -1 && iRenderCarried !== -1, "all three anchors found in the renderGearTab body region");
-  assert.ok(iArmorRow < iWornSlotRow && iWornSlotRow < iRenderCarried, "wornSlotRow sits after the armor wornRow call and before renderCarriedList");
-  assert.ok((carryRegion.match(/<span class="mw-worn-tag">worn<\/span>/g) || []).length >= 1, "wornRow's innerHTML template still carries the worn tag");
-  // Phase 39 (GEAR-02/GEAR-05), Plan 05 (T-38-11): wornSlotRow's OWN worn
-  // tag moved off the innerHTML template onto createElement/textContent —
-  // no innerHTML carries an item name in this region anymore.
-  const wornSlotRegion = sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
-  assert.doesNotMatch(wornSlotRegion, /innerHTML/);
-  assert.match(wornSlotRegion, /tag\.className = "mw-worn-tag";/);
-  assert.match(wornSlotRegion, /tag\.textContent = "worn";/);
+// Phase 62 (GSCR-01..06), Plan 02: wornSlotRow/wornRow/the ON YOU paint body
+// are retired with the two-panel renderer — the WORN list's five rows
+// (weapon/armor/cloak/jewelry1/jewelry2) now come from ONE pure model,
+// gearWornModel(state), read by renderGearTab. These two tests (4/5) become
+// behavioral pins on that model and its render wiring; tests 1-3 above and
+// every later test in this file stay byte-identical.
+test("Worn rows: gearWornModel(state) iterates GEAR_WORN_ORDER, and gearRow: true appears exactly once in gearTab.js, inside renderGearTab's region", () => {
+  const { thief } = fixedStates();
+  const model = gearWornModel(thief);
+  assert.deepStrictEqual(model.rows.map((r) => r.key), [...GEAR_WORN_ORDER]);
+
   assert.equal((CODE.match(/gearRow: true/g) || []).length, 0);
   assert.equal((GEAR_SRC.match(/gearRow: true/g) || []).length, 1, "gearRow:true is still passed at exactly the GEAR call site");
+  const gearTabIdx = GEAR_SRC.indexOf("export function renderGearTab(");
+  const gearRowIdx = GEAR_SRC.indexOf("gearRow: true");
+  assert.ok(gearTabIdx !== -1 && gearRowIdx > gearTabIdx, "gearRow: true sits inside renderGearTab's own region");
 });
 
-test("Worn rows: the new wornSlotRow block dispatches Use({slot})/Unequip(slot) and loops WORN_SLOTS exactly once each", () => {
-  const region = wornSlotRowRegion();
-  // Phase 47 (SHELL-01), Plan 03: window.mzUseItem?./window.mzUnequip?. ->
-  // deps.useItem?./deps.unequip?.; window.__mzWornSlots -> the direct
-  // WORN_SLOTS import (always an array — no `|| []` fallback needed).
-  assert.equal((region.match(/deps\.useItem\?\.\(\{ slot \}\)/g) || []).length, 1);
-  assert.equal((region.match(/deps\.unequip\?\.\(slot\)/g) || []).length, 1);
-  assert.equal((region.match(/for \(const slot of WORN_SLOTS\)/g) || []).length, 1);
-  // Phase 39 (GEAR-02/GEAR-05), Plan 05: the row-state rule moved off
-  // it.every/usedAt onto itemRowState(state, it).
-  assert.match(region, /itemRowState\(state, it\)/);
+test("Worn rows: a worn jewel's USE cell dispatches deps.useItem?.({ slot })", () => {
+  const { thief } = fixedStates();
+  const doc = createRecordingDocument();
+  const host = doc.document.getElementById("screen-gear");
+  const useCalls = [];
+  renderGearTab(host, thief, { useItem: (ref) => useCalls.push(ref) });
+  const jewelry1 = doc.document.getElementById("gear-worn").children.find((li) => li.dataset.slot === "jewelry1");
+  const useCell = jewelry1.children.find((n) => n.className === "mw-gear-use");
+  assert.ok(useCell, "expected the thief fixture's worn jewelry1 to carry a USE cell");
+  useCell.children.find((n) => n.tagName === "button").onclick();
+  assert.deepStrictEqual(useCalls, [{ slot: "jewelry1" }]);
+});
+
+test("Worn rows: a worn jewel's Unequip button dispatches deps.unequip?.(slot) on a non-full bag", () => {
+  const c = {
+    cls: "Fighter", weapon: "Axe", armor: "Mail", ar: 12, armorWP: 30, armorMax: 30,
+    gold: 0, items: [], bag: "small",
+    worn: { cloak: null, jewelry1: { kind: "jewelry", n: "Ring of Power", txt: "used, it adds +1 damage to every attack for fifty squares; then fifty squares of quiet" }, jewelry2: null },
+    potions: 0, scrolls: 0, rations: 0, kills: 0, timers: {},
+  };
+  const doc = createRecordingDocument();
+  const host = doc.document.getElementById("screen-gear");
+  const unequipCalls = [];
+  renderGearTab(host, { c }, { unequip: (slot) => unequipCalls.push(slot) });
+  const jewelry1 = doc.document.getElementById("gear-worn").children.find((li) => li.dataset.slot === "jewelry1");
+  const actions = jewelry1.children.find((n) => n.className === "mw-gear-actions");
+  const btn = actions.children[0];
+  assert.equal(btn.disabled, false);
+  btn.onclick();
+  assert.deepStrictEqual(unequipCalls, ["jewelry1"]);
 });
 
 // ─── 5. Classic eff routing — retired ───────────────────────────────────────

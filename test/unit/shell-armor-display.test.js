@@ -32,6 +32,9 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
+import { armorDisplay } from "../../src/browser/viewModels.js";
+import { gearWornModel } from "../../src/browser/gearTab.js";
+
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
@@ -90,11 +93,43 @@ test("Phase 28 (ARMOR-02): renderHeroTab computes armorD once (a direct armorDis
   assert.equal((CODE.match(/\$\{c\.armorWP\}\/\$\{c\.armorMax\} hp/g) || []).length, 0);
 });
 
-// ─── 3. gear worn row: noSlotNeeded + armorD.label ──────────────────────────
+// ─── 3. WORN armor row: unequip.blocked (Phase 62 noSlotNeeded successor) ──
 
-test("Phase 28 (ARMOR-03/04): the gear worn row is wired through armorD, with a noSlotNeeded param", () => {
-  assert.match(GEAR_SRC, /wornRow\(armorD\.label, /);
-  assert.match(GEAR_SRC, /const wornRow = \(label, sub, slot, canUnequip, noSlotNeeded\) =>/);
+// Phase 62 (GSCR-01..06), Plan 02: wornRow's noSlotNeeded param is retired
+// with the two-panel renderer — gearWornModel(state)'s armor row now carries
+// this exact rule directly: `unequip: { slot: "armor", blocked: usage.full
+// && !armorD.destroyed }`, so a DESTROYED piece can still be discarded on a
+// full bag (needs no slot) while an intact piece stays blocked.
+test("Phase 28 (ARMOR-03/04): gearWornModel's armor row reads armorD — a destroyed piece unequips even on a full bag; an intact piece is blocked; a Cloak of Armor's note is armorD.under", () => {
+  const fullBagC = (overrides) => ({
+    cls: "Fighter", weapon: "Axe", bag: "small",
+    items: [{ kind: "tool", n: "Rope" }, { kind: "tool", n: "Ladder" }, { kind: "tool", n: "Picks" }, { kind: "tool", n: "Torch" }],
+    worn: {},
+    ...overrides,
+  });
+
+  // Destroyed Mail on a full bag: unequip stays enabled (no slot needed).
+  const destroyed = fullBagC({ armor: "Mail", ar: 12, armorWP: 0, armorMax: 30 });
+  const destroyedRow = gearWornModel({ c: destroyed }).rows.find((r) => r.key === "armor");
+  assert.equal(armorDisplay(destroyed).destroyed, true);
+  assert.equal(destroyedRow.unequip.blocked, false);
+
+  // An intact Mail on a full bag: unequip is blocked (needs a slot).
+  const intact = fullBagC({ armor: "Mail", ar: 12, armorWP: 30, armorMax: 30 });
+  const intactRow = gearWornModel({ c: intact }).rows.find((r) => r.key === "armor");
+  assert.equal(armorDisplay(intact).destroyed, false);
+  assert.equal(intactRow.unequip.blocked, true);
+
+  // An active Cloak of Armor: the armor row's note is armorD.under.
+  const cloaked = fullBagC({
+    armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0,
+    worn: { cloak: { kind: "cloak", n: "Cloak of Armor", eff: { cloakArmor: 4 } } },
+    timers: { "item:Cloak of Armor": { cadence: "squares", left: 50, cd: 50, phase: "effect" } },
+  });
+  const cloakedRow = gearWornModel({ c: cloaked }).rows.find((r) => r.key === "armor");
+  const cloakedArmorD = armorDisplay(cloaked);
+  assert.equal(cloakedArmorD.magic, true);
+  assert.equal(cloakedRow.note, cloakedArmorD.under);
 });
 
 // ─── 4. renderCarriedList armor row ─────────────────────────────────────────

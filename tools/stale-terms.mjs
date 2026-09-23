@@ -350,14 +350,8 @@ export const ALLOWED = Object.freeze(
     {
       term: "retired-bridges",
       file: "test/unit/shell-clarity-43.test.js",
-      match: "__mzGear/__mzItemRowState are retired|__mzWornSlots -> the direct",
-      reason: "A/B — the title states the trio is retired; the migration comment names the old bridge before the arrow to the direct WORN_SLOTS import",
-    },
-    {
-      term: "wornSlots",
-      file: "test/unit/shell-clarity-43.test.js",
-      match: "__mzWornSlots -> the direct",
-      reason: "B — the migration comment names the old bridge before the arrow to the direct WORN_SLOTS import",
+      match: "__mzGear/__mzItemRowState are retired",
+      reason: "A — the title states the trio is retired",
     },
   ].map((a) => Object.freeze(a)),
 );

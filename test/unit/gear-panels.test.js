@@ -37,8 +37,6 @@ function fixedChar(overrides = {}) {
 
 test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff leaves; 260918-wy1: ring/bracelet/amulet/helm merged into jewelry1/jewelry2; Phase 62 GSCR-01..06 extension)", () => {
   assert.deepEqual(GEAR_COPY, {
-    onYou: "ON YOU",
-    wielded: "WIELDED",
     worn: "WORN",
     alsoOnYou: "ALSO ON YOU",
     bag: "BAG",

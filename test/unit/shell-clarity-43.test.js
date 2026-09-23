@@ -18,7 +18,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
-import { GEAR_COPY } from "../../src/browser/gearTab.js";
+import { GEAR_COPY, gearKitRows } from "../../src/browser/gearTab.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -104,16 +104,6 @@ function heroPaintRegion() {
 
 function gearScreenMarkup() {
   return sliceBetween(HTML, '<section class="mw-screen" id="screen-gear"', '</section>\n\n    <!-- ORACLE');
-}
-
-function paintCarryRegion() {
-  const start = GEAR_SRC.indexOf('const carry = doc.getElementById("s-carry");');
-  assert.ok(start !== -1, 'start marker not found: const carry = doc.getElementById("s-carry");');
-  return GEAR_SRC.slice(start);
-}
-
-function kitRegion() {
-  return sliceBetween(GEAR_SRC, "const rows = [", 'rows.push(["Kills"');
 }
 
 function renderDropShelfRegion() {
@@ -306,7 +296,7 @@ test("Voice: 'Rations' and GEAR_COPY's headings clear the family-friendly safety
   const ALLOW = new Set(ALLOWLIST.map((w) => w.toLowerCase()));
   const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const MATCHERS = BANNED.map((term) => new RegExp("\\b" + escapeRegExp(term) + "\\b", "i"));
-  for (const phrase of ["Rations", GEAR_COPY.onYou, GEAR_COPY.bag, GEAR_COPY.wielded, GEAR_COPY.worn, GEAR_COPY.alsoOnYou]) {
+  for (const phrase of ["Rations", GEAR_COPY.consumables, GEAR_COPY.bag, GEAR_COPY.worn, GEAR_COPY.alsoOnYou]) {
     for (const re of MATCHERS) {
       const hit = phrase.match(re);
       assert.ok(!hit || ALLOW.has(hit[0].toLowerCase()), `banned term found in "${phrase}"`);
@@ -328,71 +318,79 @@ test("HP-not-WP hand-off: the old inline 'Eats {n} a rest' template literal is g
   assert.doesNotMatch(region, /Eats \$\{RACES\[m\.race\]/);
 });
 
-// ─── (10) Gear tab markup: two panels, ON YOU / BAG ──────────────────────
+// ─── (10) Gear tab markup: the Phase 62 five-section skeleton ────────────
 
-test("Markup: #screen-gear has exactly two panels, id=onyou-panel then id=bag-panel, in the pinned source-index order", () => {
+// Phase 62 (GSCR-01..06), Plan 02: the two-panel ON YOU/BAG markup is
+// replaced outright by the ten-id skeleton (header/WORN/BAG/CONSUMABLES/
+// ALSO ON YOU) — greenfield, no dual path.
+test("Markup: #screen-gear holds zero old-style panel sections, and the ten gear ids appear in source order", () => {
   const region = gearScreenMarkup();
-  assert.equal((region.match(/<section class="panel"/g) || []).length, 2, "exactly two panel sections inside #screen-gear");
-  const iOnyouPanel = region.indexOf('id="onyou-panel"');
-  const iSOnyou = region.indexOf('id="s-onyou"');
-  const iSKit = region.indexOf('id="s-kit"');
-  const iBagPanel = region.indexOf('id="bag-panel"');
-  const iSCarryN = region.indexOf('id="s-carry-n"');
-  const iSCarry = region.indexOf('id="s-carry"');
-  assert.ok(
-    [iOnyouPanel, iSOnyou, iSKit, iBagPanel, iSCarryN, iSCarry].every((i) => i !== -1),
-    "every anchor id found inside #screen-gear",
-  );
-  assert.ok(
-    iOnyouPanel < iSOnyou && iSOnyou < iSKit && iSKit < iBagPanel && iBagPanel < iSCarryN && iSCarryN < iSCarry,
-    "source-index order: onyou-panel < s-onyou < s-kit < bag-panel < s-carry-n < s-carry",
-  );
+  assert.equal((region.match(/<section class="panel"/g) || []).length, 0, "the old two-panel markup is gone");
+  const ids = [
+    "gear-stats", "gear-worn-head", "gear-worn",
+    "gear-bag-head", "gear-bag-meter", "gear-bag",
+    "gear-cons-head", "gear-cons",
+    "gear-kit-head", "gear-kit",
+  ];
+  const positions = ids.map((id) => region.indexOf(`id="${id}"`));
+  assert.ok(positions.every((i) => i !== -1), "every one of the ten gear ids found inside #screen-gear");
+  for (let i = 1; i < positions.length; i++) {
+    assert.ok(positions[i - 1] < positions[i], `${ids[i - 1]} must sit before ${ids[i]} in source order`);
+  }
 });
 
-test("GEAR_COPY.onYou/bag match the two h2 headings case-insensitively", () => {
+test("GEAR_COPY.worn/bag/consumables/alsoOnYou match their section heads (WORN/BAG/CONSUMABLES/ALSO ON YOU); the four head ids are h2 elements", () => {
+  assert.equal(GEAR_COPY.worn, "WORN");
+  assert.equal(GEAR_COPY.bag, "BAG");
+  assert.equal(GEAR_COPY.consumables, "CONSUMABLES");
+  assert.equal(GEAR_COPY.alsoOnYou, "ALSO ON YOU");
   const region = gearScreenMarkup();
-  assert.match(region, /<h2>On you<\/h2>/i);
-  assert.match(region, /<h2>Bag <span id="s-carry-n"><\/span><\/h2>/i);
-  assert.equal(GEAR_COPY.onYou.toLowerCase(), "on you");
-  assert.equal(GEAR_COPY.bag.toLowerCase(), "bag");
+  for (const id of ["gear-worn-head", "gear-bag-head", "gear-cons-head", "gear-kit-head"]) {
+    assert.match(region, new RegExp(`<h2 class="mw-gear-head" id="${id}">`));
+  }
 });
 
-// ─── (11) paint()'s carry region: onyou rows, head rows, empty rows ──────
+// ─── (11) the WORN list: gearWornModel + emptySlotRows, no innerHTML ─────
 
-test("renderGearTab (gearTab.js): #s-onyou is declared right beside #s-carry, both cleared; wornRow/wornSlotRow/headRow/emptyRow all append to onyou", () => {
-  const region = paintCarryRegion();
-  assert.match(region, /const onyou = doc\.getElementById\("s-onyou"\);/);
-  assert.match(region, /onyou\.innerHTML = "";/);
-  assert.equal((region.match(/onyou\.appendChild\(li\)/g) || []).length, 4, "wornRow + wornSlotRow + headRow + emptyRow each append to onyou");
-  assert.match(region, /emptySlotRows\(c\)/);
-  assert.match(region, /headRow\(GEAR_COPY\.wielded\);/);
-  assert.match(region, /headRow\(GEAR_COPY\.worn\);/);
-  // The pinned anchors/order from shell-worn-slots.test.js still hold.
-  const iArmorRow = region.indexOf("wornRow(armorD.label");
-  const iWornSlotRow = region.indexOf("const wornSlotRow = (slot, it) => {");
-  const iRenderCarried = region.indexOf("renderCarriedList(carry, state, items, {");
-  assert.ok(iArmorRow !== -1 && iWornSlotRow !== -1 && iRenderCarried !== -1);
-  assert.ok(iArmorRow < iWornSlotRow && iWornSlotRow < iRenderCarried);
+// Phase 62 (GSCR-01..06), Plan 02: wornRow/wornSlotRow/headRow/emptyRow are
+// retired with the two-panel renderer — the WORN list's five rows (empty or
+// filled) now come from ONE pure model, gearWornModel(state), which reads
+// emptySlotRows(c) as its ONE empty-slot source.
+test("renderGearTab (gearTab.js): renderGearTab reads gearWornModel(state); emptySlotRows(c) is read inside gearWornModel's own region", () => {
+  const renderRegion = GEAR_SRC.slice(GEAR_SRC.indexOf("export function renderGearTab("));
+  assert.match(renderRegion, /gearWornModel\(state\)/);
+  const wornModelRegion = sliceBetween(GEAR_SRC, "export function gearWornModel(state) {", "\nexport ");
+  assert.match(wornModelRegion, /emptySlotRows\(c\)/);
+  // renderGearTab's own region does not re-read emptySlotRows directly —
+  // it only ever sees empty rows through gearWornModel's rows.
+  assert.doesNotMatch(renderRegion, /emptySlotRows\(/);
 });
 
-test("renderGearTab (gearTab.js): the WORN_SLOTS loop and wornSlotRow's own body stay innerHTML-free, falling back to an in-voice empty row", () => {
-  const wornSlotRegion = sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
-  assert.doesNotMatch(wornSlotRegion, /innerHTML/);
-  // Phase 47 (SHELL-01), Plan 03: window.__mzWornSlots -> the direct
-  // WORN_SLOTS import (always an array — no `|| []` fallback needed). Two
-  // occurrences now: emptySlotRows' own loop (Task 1, unchanged) and
-  // renderGearTab's wornSlotRow loop (Task 2, this test's real subject).
-  assert.equal((GEAR_SRC.match(/for \(const slot of WORN_SLOTS\)/g) || []).length, 2);
-  assert.match(wornSlotRegion, /const r = emptyFor\(slot\); if \(r\) emptyRow\(r\.text\);/);
+test("renderGearTab (gearTab.js): its region carries no HTML-string write, and emptySlotRows' own WORN_SLOTS loop remains", () => {
+  const renderRegion = GEAR_SRC.slice(GEAR_SRC.indexOf("export function renderGearTab("));
+  assert.doesNotMatch(renderRegion, /\.innerHTML\s*=/);
+  // emptySlotRows(c) still loops WORN_SLOTS once, unchanged since Task 1.
+  assert.equal((GEAR_SRC.match(/for \(const slot of WORN_SLOTS\)/g) || []).length, 1);
 });
 
-// ─── (12) the kit list: no weapon/armor duplicate, ALSO ON YOU head row ──
+// ─── (12) the kit list: no weapon/armor/potions/scrolls/wilmst row ───────
 
-test("Kit (gearTab.js): the rows array no longer duplicates the weapon/armor rows; ALSO ON YOU heads the list", () => {
-  const region = kitRegion();
-  assert.doesNotMatch(region, /armorD\.label, armorD\.under/);
-  assert.match(region, /const rows = \[\s*\["Potions", c\.potions\],/);
-  assert.match(GEAR_SRC, /li\.textContent = GEAR_COPY\.alsoOnYou;/);
+// Phase 62 (GSCR-01..06), Plan 02: potions/scrolls moved to CONSUMABLES and
+// wilmst moved to the header — gearKitRows(state) (ALSO ON YOU) never
+// duplicates the weapon/armor rows (they were never in the kit list) and no
+// longer carries Potions/Scrolls/Wilmst either. renderGearTab writes
+// GEAR_COPY.alsoOnYou to #gear-kit-head via its shared head() helper.
+test("Kit (gearTab.js): gearKitRows has no weapon/armor/Potions/Scrolls/Wilmst row; renderGearTab writes GEAR_COPY.alsoOnYou to #gear-kit-head", () => {
+  const c = {
+    weapon: "Axe", armor: "Mail", ar: 12, armorWP: 30, armorMax: 30,
+    potions: 3, scrolls: 2, gold: 500, rations: 3, kills: 1,
+  };
+  const rows = gearKitRows({ c });
+  const labels = rows.map((r) => r.label);
+  for (const banned of ["Axe", "Mail", "Potions", "Scrolls", "Wilmst"]) {
+    assert.ok(!labels.includes(banned), `expected gearKitRows to carry no "${banned}" row`);
+  }
+  assert.match(GEAR_SRC, /head\("gear-kit-head", GEAR_COPY\.alsoOnYou, "", false\);/);
 });
 
 // ─── (13) renderDropShelf: bag-only entries, both call sites ─────────────
@@ -407,10 +405,18 @@ test("renderDropShelf(shelf, entries) destructures { it, i }; both call sites re
 
 // ─── (14) CSS ─────────────────────────────────────────────────────────────
 
-test("CSS: .mw-onyou-head/.mw-worn-empty/.mw-kit-head exist once each, carrying no transition/animation/aria-disabled token", () => {
-  for (const cls of [".mw-onyou-head", ".mw-worn-empty", ".mw-kit-head"]) {
+// Phase 62 (GSCR-01..06), Plan 02: .mw-onyou-head/.mw-worn-empty/.mw-kit-head
+// (and .mw-wilmst) are retired outright — the Phase 62 Gear CSS block's
+// .mw-gear-row/.mw-gear-card/.mw-gear-head rules replace them.
+test("CSS: the three Phase 43 rules and .mw-wilmst are absent; .mw-gear-row/.mw-gear-card/.mw-gear-head exist once each with no transition/animation/disabled-ARIA token", () => {
+  for (const cls of [".mw-onyou-head", ".mw-worn-empty", ".mw-kit-head", ".mw-wilmst"]) {
+    const ruleMatch = HTML.match(new RegExp("^" + cls.replace(".", "\\.") + "\\{", "m"));
+    assert.equal(ruleMatch, null, `expected ${cls} to be absent`);
+  }
+  for (const cls of [".mw-gear-row", ".mw-gear-card", ".mw-gear-head"]) {
     const ruleMatch = HTML.match(new RegExp("^" + cls.replace(".", "\\.") + "\\{[^}]*\\}", "m"));
     assert.ok(ruleMatch, `${cls} rule found`);
+    assert.equal((HTML.match(new RegExp("^" + cls.replace(".", "\\.") + "\\{", "gm")) || []).length, 1, `${cls} appears exactly once`);
     assert.doesNotMatch(ruleMatch[0], /transition/i);
     assert.doesNotMatch(ruleMatch[0], /animation/i);
     assert.doesNotMatch(ruleMatch[0], /aria-disabled/i);
@@ -419,7 +425,7 @@ test("CSS: .mw-onyou-head/.mw-worn-empty/.mw-kit-head exist once each, carrying 
 
 // ─── (15) build artefact ─────────────────────────────────────────────────
 
-test("Build artefact: www/index.html carries __mzRations, __mzUsableBy, rations-panel, onyou-panel and mw-kit-head (skipped if www/ absent)", () => {
+test("Build artefact: www/index.html carries __mzRations, __mzUsableBy, rations-panel, gear-worn and mw-gear-row (skipped if www/ absent)", () => {
   const wwwPath = path.join(REPO_ROOT, "www", "index.html");
   if (!fs.existsSync(wwwPath)) {
     return; // build:www not run in this environment — not a failure
@@ -428,6 +434,6 @@ test("Build artefact: www/index.html carries __mzRations, __mzUsableBy, rations-
   assert.match(built, /__mzRations/);
   assert.match(built, /__mzUsableBy/);
   assert.match(built, /rations-panel/);
-  assert.match(built, /onyou-panel/);
-  assert.match(built, /mw-kit-head/);
+  assert.match(built, /gear-worn/);
+  assert.match(built, /mw-gear-row/);
 });

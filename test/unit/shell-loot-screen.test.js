@@ -257,14 +257,19 @@ test("Phase 29 (LOOT-02): the joiner region is untouched (no pendingLoot leaked 
 
 // ─── 7. LOOT-04: every readout routes through bagUsage — no raw count survives ──
 
+// Phase 62 (GSCR-01..06), Plan 02: the carried-treasure readout/full-bag
+// gate that used to live inline in renderGearTab's paint body is now ONE
+// pure model, gearBagMeterModel(state) — re-pointed to that region (up to
+// the next top-level export), keeping this test's original intent.
 function paintCarryRegion() {
-  const start = GEAR_SRC.indexOf('const carry = doc.getElementById("s-carry");');
-  const end = GEAR_SRC.indexOf("renderCarriedList(carry, state, items, {");
-  assert.ok(start !== -1 && end !== -1 && end > start, "renderGearTab's carried-treasure region bounds found");
+  const start = GEAR_SRC.indexOf("export function gearBagMeterModel(");
+  assert.ok(start !== -1, "gearBagMeterModel region start found");
+  const end = GEAR_SRC.indexOf("\nexport ", start + 1);
+  assert.ok(end !== -1 && end > start, "gearBagMeterModel region end found");
   return GEAR_SRC.slice(start, end);
 }
 
-test("renderGearTab (gearTab.js): its carried-treasure readout and full-bag gate read bagUsage(c)", () => {
+test("gearBagMeterModel (gearTab.js): the Gear tab's carried-treasure readout and full-bag gate read bagUsage(c)", () => {
   const region = paintCarryRegion();
   assert.match(region, /bagUsage\(c\)/);
   assert.match(region, /usage\.text/);
@@ -345,7 +350,7 @@ test("quick 260918-vvt (d): the loot screen's needsSlot routes through window.__
   assert.match(region, /usage\.full && needsSlot/);
 });
 
-test("quick 260918-vvt (e): renderGearTab's carried-treasure header appends GEAR_COPY.freeRide only for a capped bag", () => {
+test("quick 260918-vvt (e): gearBagMeterModel appends GEAR_COPY.freeRide only for a capped bag", () => {
   const region = paintCarryRegion();
   assert.match(region, /GEAR_COPY\.freeRide/);
   assert.match(region, /usage\.slots !== null/);

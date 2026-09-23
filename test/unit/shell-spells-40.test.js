@@ -24,6 +24,7 @@ import url from "node:url";
 
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { MAP_PALETTE } from "../../src/browser/mapMarks.js";
+import { gearKitRows } from "../../src/browser/gearTab.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -95,19 +96,33 @@ test("CONDITION_COPY/TONE/EXPLAIN: each new key appears exactly once in mazeworl
 
 // ─── (b) Hero-tab ward row: pool AND rounds ────────────────────────────────
 
+// Phase 62 (GSCR-01..06), Plan 02: the ALSO ON YOU block's rows (formerly
+// the classic "#s-kit"/ON YOU-panel `rows.push([...])` array) are now built
+// by ONE pure model, gearKitRows(state) — these two tests become behavioral
+// pins on it rather than a source-literal match.
 test("Hero-tab kit: the Shield row reads pool AND rounds (SPELL-06)", () => {
-  assert.match(GEAR_SRC, /rows\.push\(\[c\.ward\.name, `\$\{c\.ward\.pool\} hp left · \$\{c\.ward\.rounds\} rds`\]\);/);
+  const c = { ward: { name: "Shield", pool: 9, rounds: 3 }, rations: 0, kills: 0 };
+  const row = gearKitRows({ c }).find((r) => r.label === "Shield");
+  assert.equal(row.value, "9 hp left · 3 rds");
 });
 
 // ─── (c) Hero-tab kit: the four new utility rows ───────────────────────────
 
-test("Hero-tab kit: Mirror Self / Sense Presence / Sense Danger (armed) / Map the Floor rows", () => {
-  assert.match(GEAR_SRC, /if \(c\.mirror > 0\) rows\.push\(\["Mirror Self", `\$\{c\.mirror\} rds`\]\);/);
-  assert.match(GEAR_SRC, /if \(c\.senses\) rows\.push\(\["Sense Presence", "till the fight ends"\]\);/);
-  assert.match(GEAR_SRC, /if \(c\.foresight\) rows\.push\(\["Sense Danger", "armed"\]\);/);
-  const region = sliceBetween(GEAR_SRC, 'if (c.foresight) rows.push(["Sense Danger"', 'rows.push(["Kills"');
-  assert.match(region, /c\.timers && c\.timers\["spell:reveal"\]/);
-  assert.match(region, /rows\.push\(\["Map the Floor", `\$\{rev\.left\} sq`\]\);/);
+test("Hero-tab kit: Mirror Self / Sense Presence / Sense Danger (armed) / Map the Floor rows, in Sense Danger < Map the Floor < Kills order", () => {
+  const c = {
+    rations: 0, kills: 5,
+    mirror: 3, senses: true, foresight: true,
+    timers: { "spell:reveal": { phase: "effect", left: 12 } },
+  };
+  const rows = gearKitRows({ c });
+  const byLabel = Object.fromEntries(rows.map((r) => [r.label, r.value]));
+  assert.equal(byLabel["Mirror Self"], "3 rds");
+  assert.equal(byLabel["Sense Presence"], "till the fight ends");
+  assert.equal(byLabel["Sense Danger"], "armed");
+  assert.equal(byLabel["Map the Floor"], "12 sq");
+  const labels = rows.map((r) => r.label);
+  assert.ok(labels.indexOf("Sense Danger") < labels.indexOf("Map the Floor"), "Sense Danger sits before Map the Floor");
+  assert.ok(labels.indexOf("Map the Floor") < labels.indexOf("Kills"), "Map the Floor sits before Kills");
 });
 
 // ─── (d) foeStatusBadges: spell:weaken + f.dot ─────────────────────────────
