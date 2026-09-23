@@ -135,6 +135,45 @@
 
 **Numbers:** 6 phases, 23 plans, 56 tasks, 136 commits, one session with two compactions and one restart; tests 2,924 → 3,315; parity master untouched; 3 Pixel 7 rounds in-phase; 26 device checks deferred.
 
+## v1.8 Sound, Motion & Set Dressing (2026-09-22, one day)
+
+**Phases:** 5 | **Plans:** 24 | **Tasks:** 71 | **Commits:** 146 since `v1.7`
+
+### What Was Built
+- 30 bundled sound clips through a pure `sfx.js` core and an injectable Web Audio backend. Sound Off never constructs an `AudioContext`.
+- The rail as an overlay, stacked HUD bands, and a ☰ menu from the user's mid-run mock. Table-7 darkness shows on the map.
+- Camera glide, panel motion, the typewriter, and an exchange-by-exchange combat beat whose clips fire on their own line. One reduced-motion predicate collapses all of it.
+- A party sprite that step-glides with the camera, and seeded, non-interactive dungeon props behind a Settings toggle.
+- Pixel 7 side-by-side measurement against a freshly built v1.7 baseline. No regressions.
+
+### What Worked
+- **A byte-identical Engine Gate against the previous tag** (`git diff --quiet v1.7 HEAD -- engine/ content/ test/parity/`) made "presentation-only" a one-line proof at every phase close and at the audit.
+- **Pure-core-first waves.** Every feature landed as a clock-free, DOM-free `src/browser/` module with its own tests before a wiring plan touched `mazeworld.html`. That made the two parallel worktree waves (58, 59) safe.
+- **Planning ahead while executing.** 58 and 59 were planned while 57 ran, so the milestone fit in one day.
+- **Absorbing a mid-run design mock** as an added plan (57-05) with amended requirements, instead of a new phase.
+
+### What Was Inefficient
+- **Teeth checks wiped uncommitted work twice** (57-04, 58-03). The fix: commit the task first, `git diff --quiet` before mutating, revert only via `git checkout --`.
+- **Fresh worktrees show 16 CRLF false failures** (no `.gitattributes` pin). Every worktree brief has to explain them away.
+- **Executors idled without reporting** (58-04, 58-07). This needed a spot-check and a stop. Later briefs said "return immediately".
+- **Neither Play-ready AAB existed at close.** The user uploaded a stale Android Studio export (versionCode 1). Always hand over the exact AAB path and versionCode.
+
+### Patterns Established
+- Tag-diff Engine Gate for presentation milestones.
+- A defer-to-settle HUD during animated combat, with the final frame pinned to engine truth.
+- Two side-by-side builds (previous tag + HEAD) in detached worktrees outside the repo when a baseline row is missing.
+- UAT spread over the user's own play sessions, as a recorded, first-class closeout path.
+
+### Key Lessons
+1. Any animated readout that reconstructs state from narration must be pinned to the real after-state at its end. Folded narration lines hide how many events they carry.
+2. Debug field reports against the whole display path, not just the obvious one. The top HUD was sound; the fight panel's live card was not.
+3. Worktrees need line-ending pins before they can be the default.
+
+### Cost Observations
+- Model mix: Opus planner, Sonnet executors and debugger; verification agents off (orchestrator-authored VERIFICATION)
+- Sessions: 1 (autonomous, 2 compactions)
+- Notable: the parallel worktree waves plus plan-ahead cut the wall-clock; the one device session was the whole of Phase 60
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -148,6 +187,8 @@
 | v1.4 | 1 (autonomous, no compaction) | 2 | Claude Design mocks as specs; pure-module-first waves; orchestrator-authored VERIFICATION with deferred UAT; APK built once after the last edit |
 | v1.5 | 1 (autonomous) | 8 | BEFORE/AFTER class-matrix pins around every power change; greenfield ruling (no dual paths); deferred-UAT with orchestrator VERIFICATION |
 | v1.6 | 1 (autonomous, 2 compactions, 1 restart) | 6 | Cleanup-only milestone under an engine fence; measure-first gates per phase (fixture scan, DOM snapshots, stale-terms, perf marks); honest-shortfall protocol with user re-baselining; device rounds only inside the phase that is the device |
+| v1.7 | 1 (autonomous) | 6 | Global difficulty model fitted by a fair bot in checkpointed blocks; user rulings mid-phase; human curve verdict deferred |
+| v1.8 | 1 (autonomous, 2 compactions) | 5 | Presentation-only under a tag-diff Engine Gate; parallel worktree waves; mid-run design mock absorbed as an added plan; UAT spread over play sessions |
 
 ### Cumulative Quality
 
@@ -160,6 +201,8 @@
 | v1.4 | 2170 | parity master untouched; 9 new shell suites incl. phase-wide invariant sweeps (no toast / no D-pad / guards / no S-resident presentation state) | 0 |
 | v1.5 | 3168 | parity byte-identical with declared divergences; BEFORE/AFTER class matrix 143 × 40; effect-timer, worn-slot, ability, spell, terrain suites | 0 |
 | v1.6 | 3315 | parity master untouched; 13 declared worn-model fixture moves; DOM-snapshot lock for 3 screens; bridge registry set-equality; stale-terms tripwire; comment-only-diff proof; 7 dev-gated perf lines pinned | 0 |
+| v1.7 | 3479 | parity master untouched; declared fixture movers incl. the new floorFeatureShift record kind; fit ledger + identityDials harness | 0 |
+| v1.8 | 3905 | engine/content/parity byte-identical to v1.7; fake-clock beat/glide/typewriter suites; reduced-motion audit; bridge set-equality | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 

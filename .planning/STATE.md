@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
-current_plan: Not started
-status: planning
-stopped_at: "v1.8 ALL 5 PHASES COMPLETE (56-60 verified; PERF-03 met on device, no regressions; HUD counter fix 9c1b80f). IN FLIGHT: /gsd-debug .planning/debug/trap-death-21hp-oracle-minus1.md (floor-2 trap killed a 21-HP Ninja, Oracle -1; hypothesis: 58-06 deferred HUD repaint never catches up). User chose debug BEFORE close. THEN: /gsd-audit-milestone -> /gsd-complete-milestone v1.8 -> /gsd-cleanup -> push master+tags -> ASK about Play internal push. Todos: water sound every water step; band-1 = Race+Sub+Lvl (keep race, drop parent class); menu locked when dead (deferred). NEXT MILESTONE: Gear screen UX redo from design project fed8909e 'Mazeworld Gear.dc.html' — mock for UX/visual ONLY, ignore its gear rules (shipped rules canon); save mock to design/ at milestone start."
-last_updated: "2026-09-23T03:21:00.250Z"
+status: Awaiting next milestone
+stopped_at: "v1.8 CLOSED 2026-09-22 (verified closeout, archived + tagged v1.8). Next: /gsd-cleanup (asks before deleting) -> push master+tags -> npm run play:release (1.8.0 / versionCode 7; AAB at android/app/build/outputs/bundle/release/app-release.aab; user chose build after the debug fix) -> /gsd-new-milestone for the Gear screen UX redo (design project fed8909e 'Mazeworld Gear.dc.html'; mock for UX/visual ONLY, shipped gear rules canon; save the mock to design/ at start)."
+last_updated: "2026-09-23T03:56:11.595Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 60 complete, transitioned to Phase 999.1
+last_activity_desc: Milestone v1.8 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
   total_plans: 24
   completed_plans: 24
   percent: 100
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
+current_plan: Not started
 total_plans_in_phase: 4
 ---
 
@@ -23,20 +23,17 @@ total_plans_in_phase: 4
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 Sound, Motion & Set Dressing started; three Pixel 7 UAT batches still un-run: v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-22 — v1.8 closed and tagged; next milestone: Gear screen UX redo; four Pixel 7 UAT batches still open: v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 60 — performance-footprint-close
+**Current focus:** Between milestones. Next: `/gsd-new-milestone` for the Gear screen UX redo
 
 ## Current Position
 
-Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
-Current Plan: Not started
-Total Plans in Phase: 3
-Progress: [██████████] 100%
-Plan: 3 of 3
-Status: Ready to plan
-Last activity: 2026-09-22 — Phase 60 complete, transitioned to Phase 999.1
+Phase: Milestone v1.8 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-22 — Milestone v1.8 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -131,6 +128,17 @@ detail; the backlog phases are the index.
 
 ## Deferred Items
 
+Items acknowledged and deferred at milestone close on 2026-09-22 (v1.8 verified closeout: 5/5 phases `passed`, 26/26 requirements, audit `tech_debt` with zero blockers; the user said "Let's close down the milestone"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | docs/UAT-v1.8.md (30 of 31 open; 56-3 passed), plus UAT-v1.7/v1.6/v1.5 | the user runs them over their own play sessions and reports back |
+| debug | trap-death-21hp-oracle-minus1 | awaiting_human_verify. The engine is consistent. The likeliest reading is a true 1/21 HP. The real beat under-count found along the way is fixed in 42f0f8d |
+| todo | water clip on every water step; band-1 identity as Race + Sub-class + Lvl; ☰ menu locked when dead (user: defer); plus the 14 device todos from 2026-09-21 | .planning/todos/pending/ — quick tasks |
+| follow-up | .gitattributes eol=lf pin; cameraGlide.js reentrancy hardening; mid-round beat frames and foeFrames under-count on folded lines | quick tasks |
+| quick_task | rules-text-audit-pass (20260909), 260908-kkq-rename-product-… | v1.0-era stubs, re-acknowledged |
+| seed | SEED-001 leaderboards & share | dormant (post-launch) |
+
 Items acknowledged and deferred at milestone close on 2026-09-22 (v1.7 override closeout — Phase 55 is a zero-plan device round whose VERIFICATION.md reads `passed` but which the manager projection cannot mark `implementation_complete` without plans; the user directed "move on to other milestones"):
 
 | Category | Item | Status |
@@ -182,13 +190,12 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-23T03:21:00.112Z
-Stopped at: v1.8 ALL 5 PHASES COMPLETE (56-60 verified; PERF-03 met on device, no regressions; HUD counter fix 9c1b80f). IN FLIGHT: /gsd-debug .planning/debug/trap-death-21hp-oracle-minus1.md (floor-2 trap killed a 21-HP Ninja, Oracle -1; hypothesis: 58-06 deferred HUD repaint never catches up). User chose debug BEFORE close. THEN: /gsd-audit-milestone -> /gsd-complete-milestone v1.8 -> /gsd-cleanup -> push master+tags -> ASK about Play internal push. Todos: water sound every water step; band-1 = Race+Sub+Lvl (keep race, drop parent class); menu locked when dead (deferred). NEXT MILESTONE: Gear screen UX redo from design project fed8909e 'Mazeworld Gear.dc.html' — mock for UX/visual ONLY, ignore its gear rules (shipped rules canon); save mock to design/ at milestone start.
+Stopped at: v1.8 CLOSED 2026-09-22 (verified closeout, archived + tagged v1.8). Next: /gsd-cleanup (asks before deleting) -> push master+tags -> npm run play:release (1.8.0 / versionCode 7; AAB at android/app/build/outputs/bundle/release/app-release.aab; user chose build after the debug fix) -> /gsd-new-milestone for the Gear screen UX redo (design project fed8909e 'Mazeworld Gear.dc.html'; mock for UX/visual ONLY, shipped gear rules canon; save the mock to design/ at start).
 Resume file: None
 
 ## Operator Next Steps
 
-- Review the v1.8 ROADMAP.md draft (Phases 56–60) and approve, or provide revision feedback
-- Once approved: `/gsd-plan-phase 56` (Sound Effects & Audio Settings)
+- /gsd-cleanup, push master + tags, `npm run play:release` (1.8.0 / vc7), then /gsd-new-milestone for the Gear screen UX redo
 
 ## Performance Metrics
 

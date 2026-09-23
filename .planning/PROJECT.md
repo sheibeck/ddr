@@ -50,6 +50,8 @@
 - ✓ **Flee retune, Cutthroat Joiner, dead-foe targeting** — v1.5
 - ✓ **Clarity pass** — v1.5 (causes named, loot gating shown, rations per camp, Gear split ON YOU / BAG)
 - ✓ **Shell debt & dead code retired** — v1.6 (classic engine gone from the shell; one worn-model path; honest names; Gear/Hero/Store as `src/browser/` modules behind one `__mzTabs` mount each with a 45-name bridge registry; stale-terms tripwire; perf baseline on device — `mazeworld.html` 8,710 → 5,682, tests 2,924 → 3,315, parity master untouched)
+- ✓ **Four-band difficulty curve** — v1.7 (initiative once per combat, honest foe cadence, smoothed damage curve, depth-capped Joiners, and a global difficulty model fitted by a fair bot: solo death floor p50 4 → 7, reach ≥ 5 33 % → 80.5 %; roster capped by a round-damage ceiling)
+- ✓ **Sound, motion & set dressing** — v1.8 (30 bundled clips with a real Sound Off; camera glide, panel motion, a readable combat beat and typed text, all with a reduced-motion path; the rail overlays the map; stacked HUD bands with a ☰ menu; an animated party sprite; seeded, non-interactive dungeon props; Pixel 7: cold start +5.1 %, step p95 improved, AAB +4.5 %; engine/content/parity byte-identical to v1.7)
 
 ### Active
 
@@ -69,8 +71,9 @@
 - ✓ **Map screen rebuilt to the Claude Design mock** — v1.4 Phase 35 (MAP-01..09): HUD strip (FLOOR · DAY · SQUARES · RATIONS · WP bar) with the condition-chip strip beneath (tap → rail explanation); tap-to-step viewport (dominant axis → fallback, hold to inspect, drag to pan, pinch to zoom) — the D-pad is gone, keyboard arrows stay; the bottom RAIL (`src/browser/rail.js`) replaces every toast in the app and carries every decision (joiner, find, CLIMB IT) with movement locked globally until it is answered; FLOOR N / SKILL LEVEL N are auto-clearing rail cards; the MAJOR OVERLAY now also gates the stair down (GO DOWN / NOT YET, shell pre-dispatch interception of the same engine `move`) and hosts out-of-combat death; MARKS / CENTRE / MAKE CAMP chips with glyph legend + camp sheets; canvas on the mock palette with coloured glyph marks and a pulsing party marker; 2170/2170 tests, engine/content/parity untouched; MAP-10 = 27 Pixel 7 checks deferred to the end-of-run UAT batch (climb dice payload deferred as a post-UAT quick task)
 - ✓ **Spell rework** — v1.5 (utility useful, combat situational, Shield pool visible, timed map reveal, day-one damage spell for every wizard sub, scribed scrolls immediately castable)
 - ✓ **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
-- [ ] **Next tuning pass** — IN PROGRESS as v1.7 (started 2026-09-20) — TUNE-07 human DR round (forced 20/35/50 + natural) and the TUNE-06 roster decision wait in `docs/DIFFICULTY-RETUNE.md`; Play versionCode-4 upload pending the phone — now also: initiative once per combat; one attack per foe per round unless `sp.atk`, ability turns replace swings; initiative line in the Oracle; damage-curve audit (Herman's flat 25 × multiplier); the four-band shape (Filter 1–4 / Wall 5–8 / Breakaway 9–15 / Endgame 16–20, average run ends floor 5–7; bot today median 3, p90 5) — todos in `.planning/todos/pending/`
-- [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.6.md` (26 checks) + `docs/UAT-v1.5.md` (140 checks) on APK `c0cdbae`; findings → quick tasks / a UAT gap plan
+- ✓ **Next tuning pass** — shipped as v1.7 (2026-09-22); the human curve verdict is deferred by the user to later plays, and the reach-20 miss (1.5 % vs 3–5 %) is recorded
+- [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.8.md` (30 of 31 open; the user runs them over their own play sessions), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → quick tasks
+- [ ] **Gear screen UX redo** — next milestone, from the user's `Mazeworld Gear.dc.html` mock (design project fed8909e…). Use it for UX interaction and visual design only; its gear rules are ignored and the shipped rules stay canon (e.g. potions and scrolls ride free)
 
 ### Out of Scope
 
@@ -81,7 +84,7 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v1.8 Sound, Motion & Set Dressing (started 2026-09-22)
+## Last Milestone: v1.8 Sound, Motion & Set Dressing (code-complete 2026-09-22; archived 2026-09-22; device UAT spread over the user's play sessions)
 
 **Goal:** The dungeon stops being silent and static — every action has a sound, the party walks instead of teleporting, screens move instead of snapping, and the floors have things on them.
 
@@ -96,6 +99,8 @@
 **Key context:** **presentation-only** — `engine/` and `content/` are untouched, zero new engine rng draws, zero parity fixtures move. Set-dressing placement is deterministic per floor from a SHELL-side derived stream (`makeRng(hash(seed, "dressing", depth))` in `src/browser/`), never a draw off the engine's main stream. The offline constraint holds: clips bundle into `www/`, no plugin, no network, no new SDK. Watch AAB size and first-paint cost — 31 MP3s plus 54 PNGs on top of the existing icon set (lazy or sprite the dressing images if the first paint moves). Accessibility: the TalkBack announcer (`#mw-rail-live`) still receives the full text at once despite the typing effect, and every motion effect respects the reduced-motion path. All four feature clusters land in `src/browser/` modules on the v1.6 modular shell, not in the old `paint()` bodies. No research pass — backlog 999.1 / 999.3 / 999.4 carry file-level context and the fix design.
 
 **Out of this milestone:** backlog 999.5 (combat screen & Oracle readability), 999.6 (engine rules fixes from the device rounds) and 999.7 (content, tooling, the open climb ruling); the three un-run Pixel 7 UAT batches (`docs/UAT-v1.7.md` 25 + four-run DR bar, `docs/UAT-v1.6.md` 26, `docs/UAT-v1.5.md` 140); the recorded reach-20 fit miss; UX-06 tutorial and STR production launch; SEED-001 leaderboards (trigger fired on the settings cog, deferred again — a large online feature against a fully-offline constraint).
+
+**Outcome:** Phases 56–60 all passed, and 26/26 requirements are complete. Phase 57 took the user's HUD mock mid-run: the chip strip was retired for a ☰ menu on the counters band. On the Pixel 7, measured side by side with v1.7, cold start rose 871 → 915 ms median (+5.1 %), step p95 improved from 22.0 to 16.6 ms, and the release AAB grew 420,608 B (+4.5 %). No regression crossed a threshold. The airplane-mode first launch passed, and the other 30 checks are in `docs/UAT-v1.8.md` for the user's play sessions. Two device findings were fixed after close: counter numerals left-aligned (`9c1b80f`), and the combat beat's final hero-HP frame pinned to the true HP (`42f0f8d`). Three more are todos: the water clip on every step, band 1 as Race + Sub-class + Lvl, and the ☰ menu while dead. **Milestone closed 2026-09-22 as a verified closeout: tests 3,479 → 3,905 green, and engine/, content/ and test/parity/ are byte-identical to `v1.7`.**
 
 ## Last Milestone: v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve (code-complete 2026-09-22; archived 2026-09-22; device UAT batch deferred by the user)
 
@@ -243,6 +248,10 @@
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
+## Current State (2026-09-22, v1.8 Sound, Motion & Set Dressing closed; next: Gear screen UX redo)
+
+**Code-complete, device UAT spread over play sessions:** v1.8 "Sound, Motion & Set Dressing" (Phases 56–60). The dungeon now has sound (30 clips, family cries, and a Sound Off that really is off) and motion (camera glide, panel motion, a readable combat beat, typed text, reduced-motion paths throughout). The HUD is stacked bands with a ☰ menu, and the rail overlays the map. An animated party sprite and seeded ambient props complete it. It was presentation-only: the engine is untouched since v1.7. On Play internal testing the last upload is 1.5.0 / versionCode 6. A 1.8.0 / versionCode 7 AAB is next via `npm run play:release`.
+
 ## Current State (2026-09-22, v1.7 Tuning Pass — Phases 50–54 complete; Phase 55 Human DR Round next)
 
 **Code-complete, device round pending:** v1.7 "Tuning Pass — Initiative, Cadence & the Four-Band Curve" (Phases 50–54) — the character roller fixed; initiative rolled once per combat and visible; one honest swing per foe per round with a smooth depth-scaled damage curve; Joiner level capped by floor; and Phase 54's global difficulty model (USER RULING D): one frozen `DIALS` object, foe level keyed to depth, a round-damage ceiling, hero HP/regen helpers, the fair tuning bot and `tools/fit-difficulty.mjs` — fitted by a checkpointed search (USER RULINGS E–G) to the user's per-floor survival curve, PASS at evaluation #13 (score 2.71; the 1,000-seed tail rides the curve to floor 20; roster Herman/Drarl/Vampire/Djinni/Drake stays, capped by the ceiling). Fourteen device-session findings (2026-09-21) are queued as quick tasks after the round.
@@ -323,6 +332,10 @@
 | `classic script` kept as a live term in the Phase 48 sweep — 2026-09-20 (orchestrator judgment, user-reversible) | It names the non-module `<script>` that still holds `paint()`, the map and combat; only `classic engine`/`dead classic` were the retired mirror | — Pending: flip the tripwire row to enforced and rename the block if the user disagrees |
 | Test bodies edited only for local identifiers + assertion messages in the Phase 48 purge; inert fixture keys removed in one revertible commit (`4272f35`) — 2026-09-20 | Criterion 1/3 could not reach zero otherwise; assertion counts pinned per file so no expected value moved | ✓ 3,288 → 3,288 across the sweep; `git revert 4272f35` restores the literals |
 | `docs/COMBAT-NARRATIVE-DESIGN.md` deleted — Phase 48, 2026-09-20 | Every surface it documented (toasts, D-pad, Round Card, guarded bundled toast) is retired; its one live rule lives in `inputGuards.js`'s header | ✓ Recoverable from `5c904a6` / the Phase 30 archive |
+| v1.8 ran as a presentation-only milestone behind an Engine Gate: `engine/`, `content/` and `test/parity/` byte-identical to the `v1.7` tag; any new randomness (dressing placement, clip variation) comes from shell-side derived streams or counters — 2026-09-22 | Feel work must never move a balance fixture the v1.7 fit was measured on | ✓ Held across all 5 phases and both post-close fixes (`git diff --quiet v1.7 HEAD -- engine/ content/ test/parity/`) |
+| The HUD chip strip was retired for a ☰ menu on the counters band, per the user's mock; the shipped PNG icons stay, and the mock's icons are used only inside the ☰ menu — Phase 57, 2026-09-22 (user) | Too many buttons and too many top rails; the mock folds them into one control and saves a band | ✓ Landed in 57-05; LAYOUT-04/05 amended; a ~34 px Rations clip at text size L was accepted |
+| Combat HUD `paint()` deferred until the beat settles, so the top HP bar doesn't give the outcome away; the beat's final hero-HP frame is pinned to the true after-state — Phase 58 + post-close fix, 2026-09-22 | A readable exchange-by-exchange round should not be spoiled by the HUD, and must never overstate survival | ✓ `42f0f8d`, with a regression test that failed before the fix; mid-round frames on folded multi-hit lines can still briefly under-count (tracked) |
+| Device UAT for v1.8 spread over the user's own play sessions instead of one sitting — 2026-09-22 (user) | "Generally everything looks good… I'll uat over playing several sessions and report back" | — Pending: 30 of 31 checks open in `docs/UAT-v1.8.md` |
 
 ## Evolution
 
@@ -342,4 +355,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 — v1.7 closed (archived + tagged); v1.8 Sound, Motion & Set Dressing started; 17 device todos indexed as backlog 999.4–999.7; SEED-001 leaderboards deferred again by the user*
+*Last updated: 2026-09-22 — v1.8 Sound, Motion & Set Dressing closed (archived + tagged); next milestone: the Gear screen UX redo from the user's mock*

@@ -1,5 +1,45 @@
 # Milestones
 
+## v1.8 Sound, Motion & Set Dressing (Code-complete: 2026-09-22; device UAT spread over the user's play sessions)
+
+**Closeout type:** verified closeout. 26/26 requirements complete, 5/5 phases `passed`, audit `tech_debt` with zero blockers. The run was autonomous under the deferred-UAT protocol. The one Pixel 7 session was Phase 60, where 56-3 (airplane-mode first launch) passed. The user took the other 30 checks into their own play sessions: *"Generally everything looks good. I'm not going to do in depth uat right now. I'll uat over playing several sessions and report back."* Open items were acknowledged in STATE.md Deferred Items.
+**Phases completed:** 5 phases, 24 plans, 71 tasks. **Timeline:** 2026-09-22 (146 commits since `v1.7`). **Tests:** 3,479 → 3,905 green. **Engine Gate:** `engine/`, `content/` and `test/parity/` are byte-identical to `v1.7` across the whole milestone; parity master `a1f4d0dc…` untouched; `package.json` untouched. This was a presentation-only milestone. **Shell:** `mazeworld.html` 5,596 → 6,847 lines, and `src/browser/` went from 26 to 36 modules.
+**Ratified during the run:**
+- Worktrees came back on (`worktree.baseRef: head`), and 58 and 59 ran their core-module waves in parallel.
+- The user's HUD mock (2026-09-22) retired the chip strip for a ☰ menu on the counters band. LAYOUT-04 and LAYOUT-05 were amended to match, keeping the shipped PNG icons and using the mock's icons only in the ☰ menu.
+- The Rations clip at text size L was accepted.
+- Every smart-discuss decision in 58 and 59 was accepted as recommended.
+- Two side-by-side builds (v1.7 tag and HEAD) produced the missing cold-start and AAB baselines.
+
+**Key accomplishments:**
+
+- **Sound (Phase 56):** 30 bundled clips, built byte-identical into `www/`, with a pure `src/browser/sfx.js` mapping. It covers 26 mapped events and a total map from the six BESTIARY families onto four cries, and repeats vary through a counter rather than rng. The Web Audio backend decodes once at unlock and overlaps up to 8 voices. With Sound Off, no `AudioContext` is ever constructed. The airplane-mode first launch passed on the Pixel 7.
+- **HUD & rail layout (Phase 57):** the rail is an overlay that can never resize the map, and a body tap dismisses a card that asks for no decision. Rail holds are doubled and scale with line count. Table-7 darkness shows as a map vignette plus a DARK chip that names its waiver. The HUD is stacked bands (identity + HP strip, counters + ☰ menu, conditions) through `hudBands.js`.
+- **Motion & pacing (Phase 58):**
+  - The camera glides 200 ms and cancels on touch. Every panel opens in 180/160 ms and closes in 120 ms. Rail and encounter text types on at 12 ms/char (700 ms cap).
+  - The combat beat reveals a round one exchange at a time. Hero and foe HP move with the line that caused them, and each clip plays on its own line. A tap or tab switch hurries the beat losslessly.
+  - Reduced motion collapses all of it to the instant end state, through one predicate.
+- **Party animation & set dressing (Phase 59):** the party marker is a DOM sprite with an idle loop. It step-glides in lockstep with the camera, and the dark ring became a soft glow. Seeded `set_dungeon_*` props are dim on paths and full strength on walls, never on a feature, the stairs or the party. Dressing is deterministic per seed and depth, never touches play, and has a Settings toggle.
+- **Performance close (Phase 60):**
+  - `tools/cold-start.mjs` has a tested judge.
+  - On the Pixel 7, same session: cold start **871 → 915 ms** median (+5.1 %), step p95 **22.0 → 16.6 ms** (improved), release AAB **+420,608 B (+4.5 %)**. No PERF-03 threshold was crossed.
+- **Post-close device fixes:**
+  - `9c1b80f`: HUD counters left-aligned in their reserved slots.
+  - `42f0f8d`: the combat beat's last hero-HP frame is pinned to the true final HP. Folded multi-hit lines had under-counted it. This was found while debugging a reported trap death; the engine side was proven consistent.
+
+### Known Gaps (carried forward)
+
+| Item | Gap | Where it lands |
+|------|-----|----------------|
+| `docs/UAT-v1.8.md` | 30 of 31 device checks un-run (56-3 passed) | The user's own play sessions, alongside the v1.7 (25 + DR bar), v1.6 (26) and v1.5 (140) batches |
+| Device findings 2026-09-22 | Water clip only on entering water. Band-1 identity should be Race + Sub-class + Lvl. ☰ menu locked when dead (user: defer). | `.planning/todos/pending/` |
+| Debug `trap-death-21hp-oracle-minus1` | awaiting_human_verify. Likeliest reading: a true 1/21 HP. | The user's recollection or next device pass |
+| Follow-ups | `.gitattributes` eol=lf pin (worktree CRLF false failures); `cameraGlide.js` reentrancy hardening (unreachable today); mid-round beat frames and `foeFrames` can still under-count a folded line briefly | Quick tasks |
+
+**Archive:** `.planning/milestones/v1.8-ROADMAP.md`, `.planning/milestones/v1.8-REQUIREMENTS.md`, `.planning/milestones/v1.8-MILESTONE-AUDIT.md`, `.planning/milestones/v1.8-phases/`
+
+---
+
 ## v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve (Code-complete: 2026-09-22; device UAT batch deferred by the user)
 
 **Closeout type:** override_closeout (15/15 requirements complete, 6/6 phases `passed`, audit `tech_debt` with zero blockers) — run autonomously under the deferred-UAT protocol. Phase 55 is a zero-plan device round: its VERIFICATION reads `passed` on the user's explicit recorded deferral of the curve verdict (TUNE-09's own stated alternative), but the manager projection cannot mark a plan-less phase `implementation_complete` — hence override, not verified, closeout.
