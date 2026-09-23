@@ -115,6 +115,7 @@ counter), **999.5** Combat screen & Oracle readability (submenu clipping/sort, f
 refusal), **999.6** Engine rules fixes (combat re-arm gate, store charge-then-refuse, Summoner school gate, Table-4 HP-dot
 compounding, wilmst cache), **999.7** Content, tooling & the open climb ruling. The todo files stay in `todos/pending/` as the
 detail; the backlog phases are the index.
+- 2026-09-23 — **Sense Presence should win initiative and lift the dark penalties** (user, device run: depth-8 Human Court Mage with senses up lost initiative 2 vs 17 and died): `resolveInitiative` only waives forced foe-first rules, then the d20s decide; `combatInDark` + no-crit-in-dark ignore senses. Fix: senses → you go first (foreseen branch, draw count unchanged), dark line/crit ban honour senses; no fixture carries senses, bot never casts it. Engine rule change — backlog 999.6 or a quick task between phases — `todos/pending/2026-09-23-sense-presence-should-win-initiative-and-lift-the-dark-penal.md`
 
 ### Roadmap Evolution
 
