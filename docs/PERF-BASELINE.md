@@ -493,14 +493,15 @@ _(filled by plan 60-03 in the device session)_
 
 | Row | v1.7 median | v1.7 p95 | v1.7 max | v1.7 n | v1.8 median | v1.8 p95 | v1.8 max | v1.8 n |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| step | | | | | | | | |
-| dispatch | | | | | | | | |
-| paint | | | | | | | | |
-| draw | | | | | | | | |
+| step | 11.6 | 22.0 | 33.2 | 55 | | | | |
+| dispatch | 5.1 | 11.9 | 14.6 | 55 | | | | |
+| paint | 5.1 | 9.3 | 20.8 | 55 | | | | |
+| draw | 3.9 | 9.9 | 13.7 | 55 | | | | |
 
 Verbatim readout, v1.7:
 
 ```
+step 11.6 / 22.0 / 33.2 · dispatch 5.1 / 11.9 / 14.6 · paint 5.1 / 9.3 / 20.8 · draw 3.9 / 9.9 / 13.7 ms (med / p95 / max, n=55)
 ```
 
 Verbatim readout, v1.8:
@@ -508,8 +509,10 @@ Verbatim readout, v1.8:
 ```
 ```
 
-As-run, v1.7: coverage of water / dark / encounter / tab switch — ; jank —
+As-run, v1.7: coverage of water / dark / encounter / tab switch — water yes / dark in+out yes / encounter yes / tab switch yes; jank — none
 As-run, v1.8: coverage of water / dark / encounter / tab switch — ; jank —
+
+Optional cross-check (v1.7, logcat): the last periodic `[mzperf]` log (every 10 recorded steps) was at n=50 — step 10.7 / 22.0 / 33.2 — close to but not identical to the pasted n=55 read (step 11.6 / 22.0 / 33.2); expected, since 5 more steps were recorded between the last periodic log and the user's read. The pasted line stays the record.
 
 ### Verdicts (PERF-03)
 

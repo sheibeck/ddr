@@ -39,7 +39,7 @@ orchestrator's authoritative merge).
 | # | Step | Who | Result |
 |---|------|-----|--------|
 | A1 | Cold start: 1 warm-up + 10 COLD launches per build, run by the executor. The user keeps the phone unlocked, on the charger and untouched for about 3 minutes. | Executor | pass — v1.7 median 871 ms (p95 951, n=10, all COLD); v1.8 median 915 ms (p95 981, n=10, all COLD) |
-| A2 | The step walk on v1.7. Exact path: Title → ENTER → any roll → ⚙ chip right of MAKE CAMP → hold the Version label about 1.2 s → depth 5 → Start. Then walk at least 50 mixed steps through a water pool, into a dark region and out again, with at least one encounter card and at least one Gear or Hero tab switch and back. Then read the `#mw-dev-perf` line under Start. Report the line verbatim, which of the four coverage items were hit, and any jank or "none". | User | |
+| A2 | The step walk on v1.7. Exact path: Title → ENTER → any roll → ⚙ chip right of MAKE CAMP → hold the Version label about 1.2 s → depth 5 → Start. Then walk at least 50 mixed steps through a water pool, into a dark region and out again, with at least one encounter card and at least one Gear or Hero tab switch and back. Then read the `#mw-dev-perf` line under Start. Report the line verbatim, which of the four coverage items were hit, and any jank or "none". | User | pass — step med 11.6 ms / p95 22.0 ms (n=55); coverage water yes / dark in+out yes / encounter yes / tab switch yes; jank none |
 | A3 | The same walk on v1.8, with Settings reached by ☰ → SETTINGS. | User | |
 | A4 | AAB size, already measured by plan 60-02 with no device. See `docs/PERF-BASELINE.md`'s `### AAB size` section. | Executor (done) | |
 | A5 | The user's ruling on each regression the executor flags. Options: accept with a reason, fix, or keep walking the same run and re-read (the later read at n ≥ 50 supersedes, as in Phase 49's n=47 → n=61). | User | |
@@ -114,6 +114,9 @@ _(filled progressively by plan 60-03 as the session proceeds)_
 - 2026-09-23T02:24:54Z — `adb install -r` v1.8 debug APK (`ddr-v1.8-d6db678-debug.apk`) — Success.
 - v1.8 cold-start series run (1 warm-up + 10 COLD launches).
 - 2026-09-23T02:27:22Z — `adb install -r` v1.7 debug APK again (over v1.8) — Success — force-stopped and relaunched (`monkey -p com.darktierstudios.delvedierepeat 1`), logcat cleared, ready for the A2 step walk.
+- A2 (v1.7 step walk) recorded: pass, step med 11.6 ms / p95 22.0 ms (n=55).
+- 2026-09-23T02:36:53Z — `adb uninstall com.darktierstudios.delvedierepeat` (user OK'd this data wipe for 56-3, the fresh-install airplane-mode check) — Success.
+- 2026-09-23T02:36:54Z — `adb install` (fresh, no `-r`) v1.8 debug APK (`ddr-v1.8-d6db678-debug.apk`) — Success. App deliberately **NOT launched** — logcat cleared — left for the user's own first-ever launch in airplane mode (56-3), then the A3 step walk via ☰ → SETTINGS.
 
 **Final build left on the phone:** _(pending — filled at session close)_
 
