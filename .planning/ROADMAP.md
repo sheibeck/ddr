@@ -61,7 +61,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 61-04-PLAN.md — Store rows: `storeRowState` disables exactly what the engine refuses, reason + explained line on the row, store snapshots regenerated (wave 3)
+- [x] 61-04-PLAN.md — Store rows: `storeRowState` disables exactly what the engine refuses, reason + explained line on the row, store snapshots regenerated (wave 3)
 
 **Research**: none — `todos/pending/2026-09-21-no-equipping-or-swapping-gear-during-combat.md` and `todos/pending/2026-09-21-store-purchase-charged-then-rejected-as-not-an-upgrade-spike.md` carry the file-level fix design (`engine/items.js`, `engine/actions.js`, `engine/movement.js:523`'s existing combat-gate pattern, `engine/economy.js`'s `buyFrom`/`weaponUpgradeDelta`)
 **Discuss recommended**: yes — STORE-02's buy-and-bag vs. refuse-up-front choice for a legal-but-not-better item is a real product decision the todo itself flags as open ("Decide in discuss")
@@ -259,7 +259,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 61. Gear Rules & Store Purchase Fix | v1.9 | 3/4 | In Progress|  |
+| 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | In Progress|  |
 | 62. Gear Tab Layout Rebuild | v1.9 | 0/TBD | Not started | - |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
