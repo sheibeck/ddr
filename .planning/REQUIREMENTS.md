@@ -58,7 +58,7 @@
 
 ### Performance & footprint (PERF)
 
-- [ ] **PERF-03**: After the clips and images are added, cold start and step time on the Pixel 7 stay within the v1.7 baseline in `docs/PERF-BASELINE.md`, and the release AAB size change is measured and recorded
+- [x] **PERF-03**: After the clips and images are added, cold start and step time on the Pixel 7 stay within the v1.7 baseline in `docs/PERF-BASELINE.md`, and the release AAB size change is measured and recorded
 
 ---
 
@@ -111,4 +111,4 @@
 | DRESS-03 | Phase 59 | Complete |
 | DRESS-04 | Phase 59 | Complete |
 | DRESS-05 | Phase 59 | Complete |
-| PERF-03 | Phase 60 | Pending |
+| PERF-03 | Phase 60 | Complete |

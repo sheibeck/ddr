@@ -4,18 +4,18 @@ milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 60
 current_phase_name: performance-footprint-close
-current_plan: 1
+current_plan: 3
 status: executing
-stopped_at: Completed 59-05-PLAN.md
-last_updated: "2026-09-23T02:17:53.734Z"
+stopped_at: Completed 60-03-PLAN.md
+last_updated: "2026-09-23T03:10:57.040Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 60 execution started
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 24
-  completed_plans: 23
-  percent: 80
+  completed_plans: 24
+  percent: 100
 total_plans_in_phase: 4
 ---
 
@@ -31,11 +31,11 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: 60 (performance-footprint-close) — EXECUTING
-Current Plan: 1
+Current Plan: 3
 Total Plans in Phase: 3
-Progress: [█████████░] 88%
-Plan: 1 of 3
-Status: Executing Phase 60
+Progress: [██████████] 100%
+Plan: 3 of 3
+Status: Ready to execute
 Last activity: 2026-09-22 — Phase 60 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-23T01:32:45.338Z
-Stopped at: Completed 59-05-PLAN.md
+Last session: 2026-09-23T03:10:57.007Z
+Stopped at: Completed 60-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -334,6 +334,7 @@ Resume file: None
 | Phase 59 P03 | 75min | 3 tasks | 8 files |
 | Phase 59 P04 | 55min | 2 tasks | 5 files |
 | Phase 59 P05 | 95min | 3 tasks | 8 files |
+| Phase 60 P03 | ~50min | 6 tasks | 5 files |
 
 ## Decisions
 
@@ -627,6 +628,9 @@ Resume file: None
 - [Phase ?]: 59-05: PRE59=25136c8 pinned as the phase59-gates.test.js draw() non-blank-line ceiling (66); current draw() is 47 lines
 - [Phase ?]: 59-05: dressing-shell test (3)'s resolved-feature case uses a pinned seed (1, depth 1, cell 17,9) found by a one-off search, with a fixture assertion guarding against future rng drift
 - [Phase ?]: 59-05: shellSandbox.js's default dressing bridge state (enabled, images null) mirrors the real pre-lazy-load boot moment, avoiding a second loader-state copy
+- [Phase ?]: PERF-03 Pixel 7 session: no regressions — cold start +5.1%, step p95 improved 22.0->16.6ms, AAB +4.5%, all under threshold (60-03)
+- [Phase ?]: A second fresh v1.8 install was needed for 56-3 (first install was spent on the A3 step walk before 56-3 ran) — recorded explicitly in the Device table and Session record (60-03)
+- [Phase ?]: User deferred UAT-v1.8 sections B-E (except 56-3) to their own play sessions rather than a full walkthrough; recorded verbatim, not inferred as pass (60-03)
 
 ### Blockers
 
