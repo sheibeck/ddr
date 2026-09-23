@@ -52,10 +52,18 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 **Plans**: 5 plans (3 waves)
 
 Plans:
+**Wave 1**
+
 - [ ] 65-01-PLAN.md — (wave 1) `state.acts`: the per-validated-action counter, tolerant save whitelist, six parity carve-outs, and a measured zero in FIXTURE-INVENTORY (RUN-01)
 - [ ] 65-02-PLAN.md — (wave 1) `engine/records.js`: FNV-1a run hash/id, the shared board table, and the pure bests-record ops (update/sanitize/backfill/sort) (RUN-01, RUN-02, RUN-03)
 - [ ] 65-03-PLAN.md — (wave 1) `content/boards.js` board copy and quip banks, plus the pure `newBestView` view model, safety-scanned (RUN-04)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 65-04-PLAN.md — (wave 2) the summary gains season/seed/acts/hash; the adapter loads/backfills/persists `ddr.bests.v1`, sets GRAVE_CAP 60, retires `ddr.best.v1`, and adds a one-shot `takeDeathRecord()` (RUN-01..04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 65-05-PLAN.md — (wave 3) the gold NEW PERSONAL BEST block inside THAT IS THAT via the `__mzDeathRecord` parcel (RUN-04)
 
 **Research**: none — `engine/death.js#buildRunSummary`, `src/browser/engineAdapter.js`'s three existing keys, and `mzStorage` carry the file-level shape; `.planning/proposed-milestone-leaderboards.md` has the full record.
