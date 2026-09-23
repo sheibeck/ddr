@@ -201,7 +201,7 @@ test("equipItem: swapping onto destroyed armor leaves no bag copy of the destroy
   assert.equal(state.c.items.length, 0, "the destroyed Studded piece vanished, not stowed");
 });
 
-test("applyFoeDamageToPlayer + unequipSlot: combat-destroyed armor (A1) still vanishes on unequip", () => {
+test("applyFoeDamageToPlayer + unequipSlot: combat-destroyed armor (A1) still vanishes on unequip after the fight", () => {
   const state = fixedState({
     c: { armor: "Studded", ar: 15, armorMin: 0, armorWP: 3, armorMax: 20, patches: 0, items: [] },
   });
@@ -212,6 +212,12 @@ test("applyFoeDamageToPlayer + unequipSlot: combat-destroyed armor (A1) still va
   assert.equal(state.c.armorWP, 0);
   assert.equal(state.c.ar, 15, "A1: combat's destroy path never resets c.ar — the guard lives in wornArmorItem");
 
+  // Phase 61 (GRULE-01): unequipSlot now refuses EVERY slot — destroyed
+  // armor included — while state.combat is set (gearRefused, state
+  // untouched); clear combat here so this test keeps proving the A1
+  // destroyed-armor-vanishes rule itself, not the (separately-covered)
+  // combat gear lock.
+  state.combat = null;
   const unequipEvents = unequipSlot(state, "armor", []);
   assert.equal(state.c.items.length, 0, "zero bag items after unequipping a combat-destroyed piece");
   assert.equal(state.c.armor, "Nothing");
