@@ -18,9 +18,9 @@
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| A1 | Open GEAR. The top shows a slim header with **ARMOR RATING** and **WILMST**, and no repeated name or class line (the HUD above already shows it). AR matches the value you'd expect. With a Cloak of Armor (if available) it shows the cloak's effective AR. | user | |
-| A2 | **WORN** lists exactly five rows in order: WEAPON, ARMOR, CLOAK, JEWELRY 1, JEWELRY 2, with an `N / 5` count. Bare fists read as an empty weapon slot, in italics and in voice. Armor wear (`x/y hp`, or `destroyed`) sits in the armor row's note. | user | |
-| A3 | A worn item with a power shows a USE button; use it and walk. It reads **ACTIVE** (n SQ) while running and **COOLING** (n SQ) afterwards, counting down as you step. A staff (if available) shows `k/max · n SQ`. | user | |
+| A1 | Open GEAR. The top shows a slim header with **ARMOR RATING** and **WILMST**, and no repeated name or class line (the HUD above already shows it). AR matches the value you'd expect. With a Cloak of Armor (if available) it shows the cloak's effective AR. | user | pass |
+| A2 | **WORN** lists exactly five rows in order: WEAPON, ARMOR, CLOAK, JEWELRY 1, JEWELRY 2, with an `N / 5` count. Bare fists read as an empty weapon slot, in italics and in voice. Armor wear (`x/y hp`, or `destroyed`) sits in the armor row's note. | user | pass |
+| A3 | A worn item with a power shows a USE button; use it and walk. It reads **ACTIVE** (n SQ) while running and **COOLING** (n SQ) afterwards, counting down as you step. A staff (if available) shows `k/max · n SQ`. | user | pass |
 | A4 | **BAG** shows `used / cap` and one pip per slot. Potions and scrolls never fill a pip. Fill the bag (if convenient): the count and pips turn red and "BAG FULL · DROP OR USE SOMETHING" appears. | user | |
 | A5 | Bag cards show the name, a slot tag (WEAPON / ARMOR / CLOAK / JEWELRY) and `· SWAP` when every slot of that family is full. A staff or torch card carries USE instead of a tag. An item name with an apostrophe (if available) reads normally. | user | |
 | A6 | **CONSUMABLES**: the healing potion row (USE is greyed at full HP or ×0), one row per buff-potion type with `×N`, and SCROLLS `×N` with READ (greyed with a reason if you can't read). Drinking a potion from here works. | user | |
