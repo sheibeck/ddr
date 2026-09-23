@@ -13,7 +13,7 @@
 
 ### Run Record & Personal Bests (offline)
 
-- [ ] **RUN-01**: Every death records a run summary (`buildRunSummary`) that also carries a `rules`/season version, the run seed, an action count and a cheap integrity hash. It adds zero new rng draws, and the new fields are left out of the parity comparables.
+- [x] **RUN-01**: Every death records a run summary (`buildRunSummary`) that also carries a `rules`/season version, the run seed, an action count and a cheap integrity hash. It adds zero new rng draws, and the new fields are left out of the parity comparables.
 - [ ] **RUN-02**: A durable `ddr.bests.v1` record (Capacitor Preferences plus the localStorage mirror, through `mzStorage`) holds the player's best run per board. It is tagged by season, kept all-time, and survives the 60-tombstone graveyard trim.
 - [ ] **RUN-03**: Existing graveyards, the `ddr.best.v1` / `ddr.graveyard.total.v1` keys and old saves load without errors, and the bests record is seeded from the tombstones already present.
 - [ ] **RUN-04**: A new personal best on any board is announced in the death flow, in voice (a card when it is a big update, per the card-vs-toast ruling).
@@ -78,7 +78,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RUN-01 | Phase 65 | Pending |
+| RUN-01 | Phase 65 | Complete |
 | RUN-02 | Phase 65 | Pending |
 | RUN-03 | Phase 65 | Pending |
 | RUN-04 | Phase 65 | Pending |
@@ -106,6 +106,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMPLY-04 | Phase 69 | Pending |
 
 **Coverage:**
+
 - v2.0 requirements: 26 total
 - Mapped to phases: 26
 - Unmapped: 0 ✓
