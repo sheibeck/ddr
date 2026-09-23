@@ -7,7 +7,7 @@ current_phase_name: PROMOTED → Phases 56 / 58 / 59
 current_plan: Not started
 status: planning
 stopped_at: Completed 60-03-PLAN.md
-last_updated: "2026-09-23T03:13:19.225Z"
+last_updated: "2026-09-23T03:17:00.149Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 60 complete, transitioned to Phase 999.1
 progress:
@@ -91,6 +91,7 @@ Last activity: 2026-09-22 — Phase 60 complete, transitioned to Phase 999.1
 | 260918-w4n | Magic items are use-activated only (equipables worn to use, non-equipables from the bag): 9 passive rows converted to `act` records, `eff()` a pure timer sum, no auto-start flight, staff leaves the worn taxonomy (bag item), Cloak of Healing removed (CLOAKS d7, 4 declared fixture moves), bot uses worn items | 2026-09-19 | 6e3c672 | [260918-w4n-magic-items-are-use-activated-only-no-pa](./quick/260918-w4n-magic-items-are-use-activated-only-no-pa/) |
 | 260918-wy1 | Two JEWELRY slots (`c.worn.jewelry1/jewelry2` + cloak) replace ring/bracelet/amulet/helm — any mix of the 8 pieces, third piece refused with a two-button swap, legacy keys fold into the first free jewelry key on load; zero fixture drift | 2026-09-19 | c49dd34 | [260918-wy1-jewelry-two-jewelry-slots-replace-ring-b](./quick/260918-wy1-jewelry-two-jewelry-slots-replace-ring-b/) |
 | 260919-00d | Cloak of Ether walks through stone for 10 squares (act.effect 20 -> 10, cd stays 80, zero fixture drift): `move` accepts any in-bounds cell while live, `resolveEtherEnd` kills via `die("entombed")` when the window closes inside rock, `newDay` skips the wandering-monster fight in stone (draws unchanged), tap-to-move + hold-inspect + chip warn-tone route through rock in the shell | 2026-09-19 | d9ef4e8 | [260919-00d-cloak-of-ether-walks-through-stone-for-1](./quick/260919-00d-cloak-of-ether-walks-through-stone-for-1/) |
+| 14 | fast: HUD counter numerals left-aligned in their reserved slots (device round 2026-09-22) | 2026-09-23 | 9c1b80f | — |
 
 ### Pending Todos
 
