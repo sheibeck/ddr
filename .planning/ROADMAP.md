@@ -73,7 +73,7 @@ Plans:
 **Requirements**: GSCR-01, GSCR-02, GSCR-03, GSCR-04, GSCR-05, GSCR-06, GSCR-11
 **Success Criteria** (what must be TRUE):
 
-  1. The Gear tab opens on a header showing the hero's name, race · sub-class · floor, and the ARMOR RATING (the effective value from `armorDisplay`, Cloak of Armor included)
+  1. The Gear tab opens on a slim stat header showing the ARMOR RATING (the effective value from `armorDisplay`, Cloak of Armor included) and WILMST. The name and class line stay in the global HUD, not repeated.
   2. The player sees a WORN list of five fixed slots (weapon, armor, cloak, jewelry 1, jewelry 2) with an `N / 5` count; each row shows the slot label, item name, a one-line note, a value column, and an in-voice empty state when the slot is bare
   3. A worn item that can be activated shows an inline USE/ACTIVE/COOLING button (a staff shows its charge state) driven only by `itemRowState`, with a squares sub-label that counts down as the party walks
   4. The player sees a BAG section with a `used / cap` count and a pip meter that both turn red and read "BAG FULL · DROP OR USE SOMETHING" at capacity, computed from `bagUsage` alone so potions and scrolls never count

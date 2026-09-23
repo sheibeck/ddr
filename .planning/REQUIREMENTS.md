@@ -11,7 +11,7 @@
 
 ### Gear Screen (presentation — `src/browser/`, no engine bytes)
 
-- [ ] **GSCR-01**: The Gear tab opens on a header showing the hero's name, race · sub-class · floor, and the ARMOR RATING (the effective value from `armorDisplay`, Cloak of Armor included).
+- [ ] **GSCR-01**: The Gear tab opens on a slim stat header showing the ARMOR RATING (the effective value from `armorDisplay`, Cloak of Armor included) and WILMST. The hero's name and class line are not repeated, since the global HUD shows them on every tab. *(Reworded 2026-09-23 in the Phase 62 discuss: the mock is a whole phone with no global HUD.)*
 - [ ] **GSCR-02**: The player sees a WORN list of five slots in fixed order: weapon, armor, cloak, jewelry 1, jewelry 2. It has an `N / 5` count. Each row shows the slot label, item name, a one-line note and a value column (weapon die, armor rating and wear, or a jewelry or cloak bonus). An empty slot shows its in-voice empty line in italics.
 - [ ] **GSCR-03**: A worn item that can be activated shows an inline button that reads USE, ACTIVE or COOLING (a staff shows its charge state), with a squares sub-label that counts down as the party walks. It is driven only by `itemRowState`, and tapping USE runs the same use path as today, which costs the turn in combat.
 - [ ] **GSCR-04**: The player sees a BAG section with a `used / cap` count and a pip meter. At capacity both turn red and read "BAG FULL · DROP OR USE SOMETHING". The count comes from `bagUsage` alone, so potions and scrolls never count.
