@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: The Gear Screen
-status: planning
-last_updated: "2026-09-23T04:23:18.141Z"
+status: roadmapped
+last_updated: "2026-09-23T04:29:20.000Z"
 last_activity: 2026-09-23
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-22 — v1.8 closed and tagged; next milestone: Gear screen UX redo; four Pixel 7 UAT batches still open: v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Between milestones. Next: `/gsd-new-milestone` for the Gear screen UX redo
+**Current focus:** v1.9 The Gear Screen roadmapped (Phases 61–64: 61 Gear Rules & Store Purchase Fix (engine) → 62 Gear Tab Layout Rebuild → 63 Action Sheet, Combat Lock & Accessibility → 64 Device Close & UAT Batch). Next: `/gsd-discuss-phase 61`
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 61 (Gear Rules & Store Purchase Fix) — not yet started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-23 — Milestone v1.9 started
+Status: Roadmap created — ready to discuss/plan Phase 61
+Last activity: 2026-09-23 — v1.9 roadmap created (Phases 61–64)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -119,6 +119,7 @@ detail; the backlog phases are the index.
 ### Roadmap Evolution
 
 - Phase 25.1 inserted after Phase 25: Device Feedback Batch (user, 2026-09-15): card only for decisions, toast-only minor events with narrative text, longer tap-to-dismiss toasts, teleport toast, Oracle fills screen + opens at newest, Joiner swap with snark, Joiners fight by class, camp refusal shows need/have and counts the party (URGENT)
+- v1.9 roadmap created 2026-09-23: Phases 61–64 (engine-first sequencing — Phase 61 Gear Rules & Store Purchase Fix is the milestone's one engine/fixture-moving phase; Phases 62–64 are presentation-only, touching no engine bytes). `/gsd-discuss-phase` flagged as valuable for Phase 61 (STORE-02's buy-and-bag vs. refuse-up-front choice) and Phase 63 (GRULE-02's SHIELD/torch toggle decision). No research pass — the mock, `docs/GEAR-SLOTS.md` and the two v1.9 todos carry file-level context.
 
 ## Deferred Items
 
@@ -183,13 +184,13 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-23T03:21:00.112Z
-Stopped at: v1.8 CLOSED 2026-09-22 (verified closeout, archived + tagged v1.8). Next: /gsd-cleanup (asks before deleting) -> push master+tags -> npm run play:release (1.8.0 / versionCode 7; AAB at android/app/build/outputs/bundle/release/app-release.aab; user chose build after the debug fix) -> /gsd-new-milestone for the Gear screen UX redo (design project fed8909e 'Mazeworld Gear.dc.html'; mock for UX/visual ONLY, shipped gear rules canon; save the mock to design/ at start).
+Last session: 2026-09-23T04:29:20.000Z
+Stopped at: v1.9 roadmap created 2026-09-23 (Phases 61–64: 61 Gear Rules & Store Purchase Fix (engine) → 62 Gear Tab Layout Rebuild → 63 Action Sheet, Combat Lock & Accessibility → 64 Device Close & UAT Batch; 16/16 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-discuss-phase 61 (STORE-02's buy-and-bag vs. refuse-up-front choice is the open decision), then /gsd-plan-phase 61.
 Resume file: None
 
 ## Operator Next Steps
 
-- /gsd-cleanup, push master + tags, `npm run play:release` (1.8.0 / vc7), then /gsd-new-milestone for the Gear screen UX redo
+- /gsd-discuss-phase 61 (or /gsd-plan-phase 61 directly — no research flagged), then continue through Phases 62–64 in order
 
 ## Performance Metrics
 

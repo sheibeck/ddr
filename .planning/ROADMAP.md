@@ -11,9 +11,95 @@
 - ✅ **v1.6 Shell Debt & Dead Code** — Phases 44–49 (code-complete 2026-09-20, archived 2026-09-20; 26-check Pixel 7 UAT batch + the v1.5 140-check batch pending on APK `c0cdbae`; see `.planning/milestones/v1.6-ROADMAP.md`)
 - ✅ **v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve** — Phases 50–55 (code-complete 2026-09-22, archived 2026-09-22, override closeout; the four-run DR checklist + 25-item Pixel 7 batch `docs/UAT-v1.7.md` deferred by the user, as are the v1.6 26-check and v1.5 140-check batches; see `.planning/milestones/v1.7-ROADMAP.md`, `.planning/milestones/v1.7-MILESTONE-AUDIT.md`)
 - ✅ **v1.8 Sound, Motion & Set Dressing** — Phases 56–60 (code-complete 2026-09-22, archived 2026-09-22, verified closeout; 30 of 31 Pixel 7 checks in `docs/UAT-v1.8.md` spread over the user's play sessions; see `.planning/milestones/v1.8-ROADMAP.md`, `.planning/milestones/v1.8-MILESTONE-AUDIT.md`)
+- 🚧 **v1.9 The Gear Screen** — Phases 61–64 roadmapped 2026-09-23 (16 requirements: GSCR/GRULE/STORE; see `.planning/REQUIREMENTS.md`)
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases
+
+### v1.9 The Gear Screen (Phases 61–64) — roadmapped 2026-09-23
+
+Full requirements: `.planning/REQUIREMENTS.md`.
+
+**Milestone gates (apply to every phase below):**
+
+- **Engine gate:** Phase 61 is this milestone's one engine/fixture-moving phase — engine stays pure/deterministic, `test/parity/prototype-master.js.txt` is never edited, every fixture the two rule changes move is measured, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated (no silent blanket regen), no dual-path code, the bot plays the new rules. Phases 62–64 are presentation-only and touch no engine bytes — `engine/` and `content/` stay byte-identical to Phase 61's close.
+- **Mock stance:** the mock (`design/Mazeworld Gear.dc.html`) is the UX/visual spec only, the same stance as the v1.4 combat/map imports. Where it conflicts with the standing UI rulings or the shipped gear rules (potions/scrolls ride free, staffs keep charges, use-activation/cooldowns/bag caps come from the engine), the rulings and rules win. The mock's toast becomes the rail; the bottom nav stays the shipped tab set.
+- **Shared view models:** `itemRowState`, `emptySlotRows`, `bagUsage`, `GEAR_COPY` and `lootCompare` are read by the Gear tab, the ITEMS combat submenu, the loot screen and the store — never re-derived per screen — so a state shown on one surface never disagrees with another.
+- **Accessibility gate:** the sheet's rise/fade has a reduced-motion path, and TalkBack reads its title and actions.
+
+**Working method:** no research pass — the mock, `docs/GEAR-SLOTS.md` and the two v1.9 todos carry the file-level context for every phase. `/gsd-discuss-phase` is called out per phase below where a real decision needs a ruling before planning.
+
+- [ ] **Phase 61: Gear Rules & Store Purchase Fix** - The engine refuses equip/unequip/swap while a fight is up, and a store purchase always delivers the item it charges for
+- [ ] **Phase 62: Gear Tab Layout Rebuild** - The Gear tab shows the mock's header, WORN list, BAG meter and CONSUMABLES block, reading only the shared gear view models
+- [ ] **Phase 63: Action Sheet, Combat Lock & Accessibility** - One bottom action sheet drives every equip/swap/unequip/use/drop decision, greyed with real reasons in combat, reduced-motion and TalkBack safe
+- [ ] **Phase 64: Device Close & UAT Batch** - A Pixel 7 device batch proves the redone tab end to end, recorded in `docs/UAT-v1.9.md`
+
+### Phase 61: Gear Rules & Store Purchase Fix
+
+**Goal**: The engine refuses gear changes while a fight is up, and a store purchase never charges gold for an item it then fails to deliver — closing the two device-found rule holes before the sheet is built on top of them, so later phases can show real engine refusal reasons instead of inventing UI-only ones.
+**Depends on**: Nothing (first phase of the milestone)
+**Requirements**: GRULE-01, STORE-02, STORE-03
+**Success Criteria** (what must be TRUE):
+
+  1. Attempting to equip, unequip, wear, or swap a jewelry slot while `state.combat` is set is refused with one `gearRefused { reason: "combat" }` event and an in-voice narration line ("Not the moment to change outfits."), at zero rng draws
+  2. After the fight ends, the same equip/unequip/swap actions work exactly as before
+  3. A legal store purchase (weapon, armor, or premium item) always either equips or bags the item it charges for; a real refusal (bag full, class cannot use it) happens before payment, with the reason on the row
+  4. A Magic User holding a proficient Quarter Staff can buy a Spiked Staff: gold is charged and the staff is owned — proven by a unit test, since a strictly bigger die must never read as "not an upgrade" against a proficient current weapon
+  5. Every parity fixture either rule change moves is measured with the fixture scan, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated; the frozen prototype master is untouched
+
+**Plans**: TBD
+**Research**: none — `todos/pending/2026-09-21-no-equipping-or-swapping-gear-during-combat.md` and `todos/pending/2026-09-21-store-purchase-charged-then-rejected-as-not-an-upgrade-spike.md` carry the file-level fix design (`engine/items.js`, `engine/actions.js`, `engine/movement.js:523`'s existing combat-gate pattern, `engine/economy.js`'s `buyFrom`/`weaponUpgradeDelta`)
+**Discuss recommended**: yes — STORE-02's buy-and-bag vs. refuse-up-front choice for a legal-but-not-better item is a real product decision the todo itself flags as open ("Decide in discuss")
+
+### Phase 62: Gear Tab Layout Rebuild
+
+**Goal**: The Gear tab reads exactly like the mock — a header, a fixed five-slot WORN list, a BAG with a capacity meter, and a CONSUMABLES block — with every number and label sourced from the shared gear view models so nothing shown here can ever disagree with the ITEMS submenu, the loot screen, or the store.
+**Depends on**: Phase 61 (the WORN/BAG/CONSUMABLES rows read `itemRowState`/`bagUsage`, whose refusal reasons Phase 61 finalizes)
+**Requirements**: GSCR-01, GSCR-02, GSCR-03, GSCR-04, GSCR-05, GSCR-06, GSCR-11
+**Success Criteria** (what must be TRUE):
+
+  1. The Gear tab opens on a header showing the hero's name, race · sub-class · floor, and the ARMOR RATING (the effective value from `armorDisplay`, Cloak of Armor included)
+  2. The player sees a WORN list of five fixed slots (weapon, armor, cloak, jewelry 1, jewelry 2) with an `N / 5` count; each row shows the slot label, item name, a one-line note, a value column, and an in-voice empty state when the slot is bare
+  3. A worn item that can be activated shows an inline USE/ACTIVE/COOLING button (a staff shows its charge state) driven only by `itemRowState`, with a squares sub-label that counts down as the party walks
+  4. The player sees a BAG section with a `used / cap` count and a pip meter that both turn red and read "BAG FULL · DROP OR USE SOMETHING" at capacity, computed from `bagUsage` alone so potions and scrolls never count
+  5. Bag items render as cards (name, description, a slot tag with `· SWAP` when every fitting slot is taken) and a CONSUMABLES section lists potions/scrolls with `×N` counts and a USE/READ button; the ITEMS combat submenu, the loot screen and the store all read the same `itemRowState`/`bagUsage`/`lootCompare` models this phase builds on
+
+**Plans**: TBD
+**Research**: none — the mock (`design/Mazeworld Gear.dc.html`) and `docs/GEAR-SLOTS.md` carry the structure and copy
+**UI hint**: yes
+
+### Phase 63: Action Sheet, Combat Lock & Accessibility
+
+**Goal**: Every equip/swap/unequip/use/drop decision routes through one bottom action sheet that states the engine's real reason for every greyed row, reflects the combat lock live, and is fully usable with reduced motion and TalkBack.
+**Depends on**: Phase 61 (the sheet greys rows on the engine's `gearRefused { reason: "combat" }`), Phase 62 (the sheet opens from the WORN/BAG rows Phase 62 builds)
+**Requirements**: GSCR-07, GSCR-08, GSCR-09, GSCR-10, GRULE-02
+**Success Criteria** (what must be TRUE):
+
+  1. Tapping a worn slot opens a bottom sheet headed by `SLOT · WORN|EMPTY` with a title and note; a filled slot offers USE (with its state reason), UNEQUIP (greyed with "Bag is full — free a slot first." when there is no room), and one SWAP FOR <item> per fitting bag item; an empty slot offers one EQUIP <item> per fitting bag item or a greyed NOTHING TO EQUIP
+  2. Tapping a bag card opens the same sheet with USE (for items that are never worn), one EQUIP TO / SWAP INTO action per named slot the item fits (both jewelry slots named individually), and DROP — replacing today's inline two-tap Drop and swap confirms
+  3. Every greyed sheet action states the engine's own refusal reason, every completed action's outcome reaches the player through the rail in voice, and no toasts or inline refusal text appear on any row
+  4. In a fight, the sheet shows EQUIP / SWAP / UNEQUIP greyed with the combat reason while USE stays live (using an item still costs the turn); after the fight, all three work again
+  5. The sheet closes on CANCEL, a backdrop tap, and the Android back button; its rise and fade have a reduced-motion path, and TalkBack reads the sheet's title and every action
+
+**Plans**: TBD
+**Research**: none — the mock's sheet layout and `docs/GEAR-SLOTS.md` carry the interaction contract
+**Discuss recommended**: yes — GRULE-02's open question (whether the SHIELD and torch "ready" toggles count as gear changes under the same combat gate; the todo recommends yes) needs a ruling before the sheet's greyed-row logic is built
+**UI hint**: yes
+
+### Phase 64: Device Close & UAT Batch
+
+**Goal**: The redone Gear tab is proven end to end on a real device, and the milestone closes on one recorded Pixel 7 checklist per the deferred-UAT protocol.
+**Depends on**: Phase 62, Phase 63 (needs the full tab and sheet built to check them)
+**Requirements**: GSCR-12
+**Success Criteria** (what must be TRUE):
+
+  1. A Pixel 7 device batch walks every sheet path — equip, swap, unequip, use, and drop — on a real build
+  2. The batch covers a full bag, a staff's charge state, and a cooldown counting down while the party walks
+  3. The batch covers the combat lock (greyed EQUIP/SWAP/UNEQUIP mid-fight, live USE) and the reduced-motion path
+  4. The full checklist and its results are recorded in `docs/UAT-v1.9.md`, built as one batched Pixel 7 checklist against a debug APK built only after this phase's wave — per the deferred-UAT protocol, no mid-run device pauses
+
+**Plans**: TBD
+**Research**: none
 
 <details>
 <summary>✅ v1.8 Sound, Motion & Set Dressing (Phases 56–60) — CODE-COMPLETE 2026-09-22, archived 2026-09-22 (verified closeout; device UAT spread over the user's play sessions: 30 of 31 checks open)</summary>
@@ -158,6 +244,10 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
+| 61. Gear Rules & Store Purchase Fix | v1.9 | 0/TBD | Not started | - |
+| 62. Gear Tab Layout Rebuild | v1.9 | 0/TBD | Not started | - |
+| 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
+| 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
 | 57. Map & HUD Layout Band | v1.8 | 5/5 | Complete    | 2026-09-22 |
 | 58. Motion & Pacing | v1.8 | 7/7 | Complete    | 2026-09-22 |

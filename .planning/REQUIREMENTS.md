@@ -54,24 +54,24 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GSCR-01 | — | Pending |
-| GSCR-02 | — | Pending |
-| GSCR-03 | — | Pending |
-| GSCR-04 | — | Pending |
-| GSCR-05 | — | Pending |
-| GSCR-06 | — | Pending |
-| GSCR-07 | — | Pending |
-| GSCR-08 | — | Pending |
-| GSCR-09 | — | Pending |
-| GSCR-10 | — | Pending |
-| GSCR-11 | — | Pending |
-| GSCR-12 | — | Pending |
-| GRULE-01 | — | Pending |
-| GRULE-02 | — | Pending |
-| STORE-02 | — | Pending |
-| STORE-03 | — | Pending |
+| GSCR-01 | Phase 62 | Pending |
+| GSCR-02 | Phase 62 | Pending |
+| GSCR-03 | Phase 62 | Pending |
+| GSCR-04 | Phase 62 | Pending |
+| GSCR-05 | Phase 62 | Pending |
+| GSCR-06 | Phase 62 | Pending |
+| GSCR-07 | Phase 63 | Pending |
+| GSCR-08 | Phase 63 | Pending |
+| GSCR-09 | Phase 63 | Pending |
+| GSCR-10 | Phase 63 | Pending |
+| GSCR-11 | Phase 62 | Pending |
+| GSCR-12 | Phase 64 | Pending |
+| GRULE-01 | Phase 61 | Pending |
+| GRULE-02 | Phase 63 | Pending |
+| STORE-02 | Phase 61 | Pending |
+| STORE-03 | Phase 61 | Pending |
 
-**Coverage:** 16 requirements, 0 mapped (roadmap pending)
+**Coverage:** 16 requirements, 16 mapped (Phases 61–64) ✓
 
 ---
 *Requirements defined: 2026-09-23*
