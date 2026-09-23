@@ -27,9 +27,9 @@
 
 ### Party animation (ANIM)
 
-- [ ] **ANIM-01**: The party marker plays an idle cycle while the player is standing still
+- [x] **ANIM-01**: The party marker plays an idle cycle while the player is standing still
 - [ ] **ANIM-02**: The party marker plays its step cycle while moving between squares and settles back to idle on arrival
-- [ ] **ANIM-03**: The dark ring around the party marker is dialled back so the marker itself reads as the highlight
+- [x] **ANIM-03**: The dark ring around the party marker is dialled back so the marker itself reads as the highlight
 
 ### Motion & pacing (MOTION)
 
@@ -103,9 +103,9 @@
 | MOTION-03 | Phase 58 | Complete |
 | MOTION-04 | Phase 58 | Complete |
 | MOTION-05 | Phase 58 | Complete |
-| ANIM-01 | Phase 59 | Pending |
+| ANIM-01 | Phase 59 | Complete |
 | ANIM-02 | Phase 59 | Pending |
-| ANIM-03 | Phase 59 | Pending |
+| ANIM-03 | Phase 59 | Complete |
 | DRESS-01 | Phase 59 | Pending |
 | DRESS-02 | Phase 59 | Pending |
 | DRESS-03 | Phase 59 | Pending |
