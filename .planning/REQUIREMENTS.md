@@ -50,11 +50,11 @@
 
 ### Dungeon set dressing (DRESS)
 
-- [ ] **DRESS-01**: Floors carry scattered ambient dungeon props drawn from the `set_dungeon_*` set
-- [ ] **DRESS-02**: A prop on a walkable square is dimmed enough that it is never mistaken for an encounter icon; a prop on a wall reads at full strength
-- [ ] **DRESS-03**: A prop never sits on a square holding a feature, the stairs, or the party
-- [ ] **DRESS-04**: The same seed and depth always dress the floor identically, and dressing never changes how a run plays
-- [ ] **DRESS-05**: A player can turn set dressing off in Settings
+- [x] **DRESS-01**: Floors carry scattered ambient dungeon props drawn from the `set_dungeon_*` set
+- [x] **DRESS-02**: A prop on a walkable square is dimmed enough that it is never mistaken for an encounter icon; a prop on a wall reads at full strength
+- [x] **DRESS-03**: A prop never sits on a square holding a feature, the stairs, or the party
+- [x] **DRESS-04**: The same seed and depth always dress the floor identically, and dressing never changes how a run plays
+- [x] **DRESS-05**: A player can turn set dressing off in Settings
 
 ### Performance & footprint (PERF)
 
@@ -106,9 +106,9 @@
 | ANIM-01 | Phase 59 | Complete |
 | ANIM-02 | Phase 59 | Complete |
 | ANIM-03 | Phase 59 | Complete |
-| DRESS-01 | Phase 59 | Pending |
-| DRESS-02 | Phase 59 | Pending |
-| DRESS-03 | Phase 59 | Pending |
-| DRESS-04 | Phase 59 | Pending |
-| DRESS-05 | Phase 59 | Pending |
+| DRESS-01 | Phase 59 | Complete |
+| DRESS-02 | Phase 59 | Complete |
+| DRESS-03 | Phase 59 | Complete |
+| DRESS-04 | Phase 59 | Complete |
+| DRESS-05 | Phase 59 | Complete |
 | PERF-03 | Phase 60 | Pending |

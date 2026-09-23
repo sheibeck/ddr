@@ -5,17 +5,17 @@ milestone_name: Sound, Motion & Set Dressing
 current_phase: 59
 current_phase_name: party-animation-dungeon-set-dressing
 current_plan: 5
-status: executing
-stopped_at: Completed 59-04-PLAN.md
-last_updated: "2026-09-23T00:47:02.799Z"
+status: verifying
+stopped_at: Completed 59-05-PLAN.md
+last_updated: "2026-09-23T01:32:45.370Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 59 execution started
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 21
-  completed_plans: 20
-  percent: 60
+  completed_phases: 4
+  total_plans: 24
+  completed_plans: 21
+  percent: 80
 total_plans_in_phase: 4
 ---
 
@@ -33,9 +33,9 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 Phase: 59 (party-animation-dungeon-set-dressing) — EXECUTING
 Current Plan: 5
 Total Plans in Phase: 5
-Progress: [██████████] 95%
+Progress: [█████████░] 88%
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-22 — Phase 59 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-23T00:46:34.985Z
-Stopped at: Completed 59-04-PLAN.md
+Last session: 2026-09-23T01:32:45.338Z
+Stopped at: Completed 59-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -333,6 +333,7 @@ Resume file: None
 | Phase 58 P07 | 30min | 3 tasks | 7 files |
 | Phase 59 P03 | 75min | 3 tasks | 8 files |
 | Phase 59 P04 | 55min | 2 tasks | 5 files |
+| Phase 59 P05 | 95min | 3 tasks | 8 files |
 
 ## Decisions
 
@@ -623,6 +624,9 @@ Resume file: None
 - [Phase ?]: BASE_59 = f220718 confirmed; draw() modularity digest re-pinned to a new DRAW_SHA256 constant (replacing PRE58_DRAW_SHA256) since draw() deliberately diverges from PRE58 now (the party paint removed); paint()'s PRE58_PAINT_SHA256 stays untouched.
 - [Phase ?]: 59-04: glideParty (classic) calls window.__mzPartySprite.stepTo(from, partyCentre()); stepWith captures glideFrom before the dispatch and triggers the glide after the two pinned camera lines, guarded by !jumped and the moved event.
 - [Phase ?]: 59-04: 12 new deterministic-clock tests (party-glide.test.js + reduced-motion.test.js's party section) prove the glide, retarget, camera lockstep, jump self-heal, reduced-motion synchronous landing, and two reentrancy-safety regressions against cameraGlide.js's known landed-API crash.
+- [Phase ?]: 59-05: PRE59=25136c8 pinned as the phase59-gates.test.js draw() non-blank-line ceiling (66); current draw() is 47 lines
+- [Phase ?]: 59-05: dressing-shell test (3)'s resolved-feature case uses a pinned seed (1, depth 1, cell 17,9) found by a one-off search, with a fixture assertion guarding against future rng drift
+- [Phase ?]: 59-05: shellSandbox.js's default dressing bridge state (enabled, images null) mirrors the real pre-lazy-load boot moment, avoiding a second loader-state copy
 
 ### Blockers
 
