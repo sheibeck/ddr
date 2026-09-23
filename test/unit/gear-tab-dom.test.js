@@ -179,6 +179,7 @@ function gearDeps() {
     dropItem: spy(),
     drinkPotion: spy(),
     readScroll: spy(),
+    openGearSheet: spy(),
   };
 }
 
@@ -309,12 +310,13 @@ test("Edge GSCR-03/ordering: a filled WORN row orders slot, main, value, USE, ch
   const wornEl = doc.document.getElementById("gear-worn");
   const jewelry1 = wornEl.children.find((li) => li.dataset.slot === "jewelry1");
   const classes = jewelry1.children.map((c) => c.className);
-  assert.deepStrictEqual(classes, ["mw-gear-slot", "mw-gear-main", "mw-gear-val", "mw-gear-use", "mw-gear-chev", "mw-gear-actions"]);
+  assert.deepStrictEqual(classes, ["mw-gear-slot", "mw-gear-main", "mw-gear-val", "mw-gear-use", "mw-gear-chev"]);
 });
 
-test("WORN USE cell: a worn jewel with a cooling record renders COOLING/12 SQ, and its click dispatches useItem({ slot })", () => {
+test("WORN USE cell: a worn jewel with a cooling record renders COOLING/12 SQ, and its click stops propagation, dispatches useItem({ slot }) and never opens the sheet", () => {
   const state = { c: richChar({ timers: { [itemTimerId({ n: "Ring of Power" })]: { left: 12 } } }) };
-  const { doc, deps } = renderFresh(state);
+  const deps = gearDeps();
+  const { doc } = renderFresh(state, deps);
   const wornEl = doc.document.getElementById("gear-worn");
   const jewelry1 = wornEl.children.find((li) => li.dataset.slot === "jewelry1");
   const useCell = jewelry1.children.find((n) => n.className === "mw-gear-use");
@@ -323,31 +325,41 @@ test("WORN USE cell: a worn jewel with a cooling record renders COOLING/12 SQ, a
   assert.equal(btn.textContent, GEAR_COPY.use.cooling);
   const sub = useCell.children.find((n) => n.className === "mw-gear-use-sub");
   assert.equal(sub.textContent, "12 SQ");
-  btn.onclick();
+  const s = spy();
+  btn.onclick({ stopPropagation: s });
+  assert.equal(s.calls.length, 1);
   assert.deepStrictEqual(deps.useItem.calls, [[{ slot: "jewelry1" }]]);
+  assert.deepStrictEqual(deps.openGearSheet.calls, []);
 });
 
-test("WORN unequip: enabled on a non-full bag, dispatches unequip(slot); disabled 'Bag full' on a full bag", () => {
-  // Non-full: richChar (3/4 slots).
-  {
-    const state = { c: richChar() };
-    const { doc, deps } = renderFresh(state);
-    const jewelry1 = doc.document.getElementById("gear-worn").children.find((li) => li.dataset.slot === "jewelry1");
-    const actions = jewelry1.children.find((n) => n.className === "mw-gear-actions");
-    const btn = actions.children[0];
-    assert.equal(btn.textContent, GEAR_COPY.act.unequip);
-    assert.equal(btn.disabled, false);
-    btn.onclick();
-    assert.deepStrictEqual(deps.unequip.calls, [["jewelry1"]]);
-  }
-  // Full bag: the thief fixture.
-  {
-    const { doc } = renderFresh(states.thief);
-    const jewelry1 = doc.document.getElementById("gear-worn").children.find((li) => li.dataset.slot === "jewelry1");
-    const actions = jewelry1.children.find((n) => n.className === "mw-gear-actions");
-    const btn = actions.children[0];
-    assert.equal(btn.textContent, GEAR_COPY.act.bagFull);
-    assert.equal(btn.disabled, true);
+test("WORN rows open the sheet: every row (richChar and the mu fixture) opens ({ from: \"worn\", slot }, \"gear-open-<slot>\") on tap, is a role=button/tabindex=0/aria-haspopup=dialog opener with the opens-hint, and Enter/Space open it while an unrelated key does not", () => {
+  for (const state of [{ c: richChar() }, states.mu]) {
+    const deps = gearDeps();
+    const { doc } = renderFresh(state, deps);
+    const wornEl = doc.document.getElementById("gear-worn");
+    for (const li of wornEl.children) {
+      const slot = li.dataset.slot;
+      const main = li.children.find((n) => n.className === "mw-gear-main");
+      assert.equal(main.id, "gear-open-" + slot);
+      assert.equal(main.getAttribute("role"), "button");
+      assert.equal(main.getAttribute("tabindex"), "0");
+      assert.equal(main.getAttribute("aria-haspopup"), "dialog");
+      const hint = main.children.find((n) => n.className === "sr-only");
+      assert.ok(hint, `expected an sr-only opens-hint on the ${slot} row`);
+      assert.equal(hint.textContent, GEAR_COPY.opensHint);
+
+      deps.openGearSheet.calls.length = 0;
+      li.onclick();
+      assert.deepStrictEqual(deps.openGearSheet.calls, [[{ from: "worn", slot }, "gear-open-" + slot]]);
+
+      deps.openGearSheet.calls.length = 0;
+      main.onkeydown({ key: "Enter", preventDefault() {} });
+      assert.equal(deps.openGearSheet.calls.length, 1, `expected Enter to open the ${slot} row`);
+      main.onkeydown({ key: " ", preventDefault() {} });
+      assert.equal(deps.openGearSheet.calls.length, 2, `expected Space to open the ${slot} row`);
+      main.onkeydown({ key: "a", preventDefault() {} });
+      assert.equal(deps.openGearSheet.calls.length, 2, `expected an unrelated key to leave the ${slot} row unopened`);
+    }
   }
 });
 
@@ -401,7 +413,7 @@ test("BAG cards: one li.mw-gear-card per gearBagCardsModel entry, data-i the tru
   const bagEl = doc.document.getElementById("gear-bag");
   assert.equal(bagEl.children.length, model.length);
   bagEl.children.forEach((li, idx) => {
-    assert.equal(li.className, "mw-gear-card");
+    assert.equal(li.className, "mw-gear-card mw-gear-tap");
     assert.equal(li.dataset.i, String(model[idx].i));
   });
 });
@@ -439,27 +451,50 @@ test("BAG cards: a bag-only staff carries a USE cell (READY, dispatches useItem(
   assert.ok(!jewelCard.children.some((n) => n.className === "mw-gear-use"), "expected no USE cell on a bagged, worn-slot-family jewel");
 });
 
-test("BAG cards: harvested Drop confirm ('Drop it?') and the multi-choice swap confirm ('Swap for which?')", () => {
+test("BAG cards open the sheet: each card's onclick opens ({ from: \"bag\", i: card.i, n: card.name }, \"gear-open-bag-<i>\"), and is an accessible opener with the opens-hint", () => {
   const state = { c: richChar() };
-  const { doc, deps } = renderFresh(state);
+  const deps = gearDeps();
+  const { doc } = renderFresh(state, deps);
+  const model = gearBagCardsModel(state);
   const bagEl = doc.document.getElementById("gear-bag");
-  const ropeCard = bagEl.children.find((li) => li.dataset.i === String(state.c.items.indexOf(ROPE_ITEM)));
-  const dropBtn = ropeCard.querySelector(".mw-gear-drop");
-  assert.ok(dropBtn, "expected the rope card's harvested Drop button");
-  dropBtn.onclick();
-  assert.ok(ropeCard.querySelector(".mw-drop-confirm").textContent.includes("Drop it?") || ropeCard.textContent.includes("Drop it?"));
+  for (const card of model) {
+    const li = bagEl.children.find((c) => c.dataset.i === String(card.i));
+    const main = li.children.find((n) => n.className === "mw-gear-card-main");
+    assert.equal(main.id, "gear-open-bag-" + card.i);
+    assert.equal(main.getAttribute("role"), "button");
+    assert.equal(main.getAttribute("tabindex"), "0");
+    assert.equal(main.getAttribute("aria-haspopup"), "dialog");
+    const hint = main.children.find((n) => n.className === "sr-only");
+    assert.equal(hint.textContent, GEAR_COPY.opensHint);
 
-  const jewelI = state.c.items.indexOf(BAGGED_JEWEL);
-  const jewelCard = bagEl.children.find((li) => li.dataset.i === String(jewelI));
-  const equipBtn = jewelCard.querySelector(".mw-gear-actions button");
-  // Find the actual Equip button (the harvested actions row's first button
-  // when no swap is armed yet is Equip, since neither Drop nor Use precede
-  // it in this card's action set — actions: ["equip", "drop"]).
-  const actionsRow = jewelCard.children.find((n) => n.className === "mw-gear-actions");
-  const equip = actionsRow.children.find((b) => b.textContent === "Equip");
-  assert.ok(equip, "expected the bagged jewel's Equip button");
-  equip.onclick();
-  assert.ok(jewelCard.textContent.includes("Swap for which?"));
+    deps.openGearSheet.calls.length = 0;
+    li.onclick();
+    assert.deepStrictEqual(deps.openGearSheet.calls, [[{ from: "bag", i: card.i, n: card.name }, "gear-open-bag-" + card.i]]);
+  }
+});
+
+test("greenfield: no node under SNAPSHOT_IDS.gear carries an interim in-row action class; renderGearTab's own region never calls renderCarriedList; CONSUMABLES rows carry no mw-gear-tap and no onclick", () => {
+  const state = { c: richChar() };
+  const { doc } = renderFresh(state);
+  const nodes = walkAllNodes(doc, GEAR_IDS);
+  const forbiddenClasses = ["mw-gear-actions", "mw-gear-act", "mw-gear-drop", "mw-drop-confirm", "mw-swap-confirm"];
+  for (const node of nodes) {
+    if (node.nodeType === 3) continue;
+    const tokens = (node.className || "").split(/\s+/).filter(Boolean);
+    for (const cls of forbiddenClasses) {
+      assert.ok(!tokens.includes(cls), `unexpected ${cls} under a gear id`);
+    }
+  }
+  const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearTab.js"), "utf8").replace(/\r\n/g, "\n");
+  const stripped = stripJs(src);
+  const region = stripped.slice(stripped.indexOf("export function renderGearTab("));
+  assert.doesNotMatch(region, /renderCarriedList\(/);
+
+  const consEl = doc.document.getElementById("gear-cons");
+  for (const li of consEl.children) {
+    assert.doesNotMatch(li.className, /\bmw-gear-tap\b/);
+    assert.equal(li.onclick, null);
+  }
 });
 
 test("BAG empty state: #gear-bag renders NOTHING LEFT TO CARRY when the bag is empty", () => {

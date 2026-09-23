@@ -18,44 +18,44 @@
     text="5 / 5"
 ## #gear-worn
 <div id="gear-worn">
-  <li class="mw-gear-row" data-slot="weapon">
+  <li class="mw-gear-row mw-gear-tap" data-slot="weapon" onclick>
     <span class="mw-gear-slot">
       text="WEAPON"
-    <div class="mw-gear-main">
+    <div id="gear-open-weapon" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Dagger"
       <span class="mw-gear-note">
         text="no enchantment. Just you and the swing."
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="d6/2"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small mw-gear-act" disabled>
-        text="Bag full"
-  <li class="mw-gear-row" data-slot="armor">
+  <li class="mw-gear-row mw-gear-tap" data-slot="armor" onclick>
     <span class="mw-gear-slot">
       text="ARMOR"
-    <div class="mw-gear-main">
+    <div id="gear-open-armor" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Leather"
       <span class="mw-gear-note">
         text="15/15 hp"
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="AR 6"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small mw-gear-act" disabled>
-        text="Bag full"
-  <li class="mw-gear-row" data-slot="cloak">
+  <li class="mw-gear-row mw-gear-tap" data-slot="cloak" onclick>
     <span class="mw-gear-slot">
       text="CLOAK"
-    <div class="mw-gear-main">
+    <div id="gear-open-cloak" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Cloak of Armor"
       <span class="mw-gear-note">
         text="used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="—"
     <div class="mw-gear-use" data-phase="ready">
@@ -63,17 +63,16 @@
         text="USE"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small mw-gear-act" disabled>
-        text="Bag full"
-  <li class="mw-gear-row" data-slot="jewelry1">
+  <li class="mw-gear-row mw-gear-tap" data-slot="jewelry1" onclick>
     <span class="mw-gear-slot">
       text="JEWELRY 1"
-    <div class="mw-gear-main">
+    <div id="gear-open-jewelry1" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Bracelet of Flight"
       <span class="mw-gear-note">
         text="used, twenty squares of flight when you ask; fifty to catch its breath"
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="—"
     <div class="mw-gear-use" data-phase="ready">
@@ -81,17 +80,16 @@
         text="USE"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small mw-gear-act" disabled>
-        text="Bag full"
-  <li class="mw-gear-row" data-slot="jewelry2">
+  <li class="mw-gear-row mw-gear-tap" data-slot="jewelry2" onclick>
     <span class="mw-gear-slot">
       text="JEWELRY 2"
-    <div class="mw-gear-main">
+    <div id="gear-open-jewelry2" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Amulet of Light"
       <span class="mw-gear-note">
         text="used, it lights fifty squares and tells the dark to leave at once; then it sulks for fifty"
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="—"
     <div class="mw-gear-use" data-phase="ready">
@@ -99,9 +97,6 @@
         text="USE"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small mw-gear-act" disabled>
-        text="Bag full"
 ## #gear-bag-head
 <div id="gear-bag-head">
   <span class="mw-gear-head-title">
@@ -121,8 +116,8 @@
     text="potions & scrolls ride free"
 ## #gear-bag
 <div id="gear-bag">
-  <li class="mw-gear-card" data-i="0">
-    <div class="mw-gear-card-main">
+  <li class="mw-gear-card mw-gear-tap" data-i="0" onclick>
+    <div id="gear-open-bag-0" class="mw-gear-card-main" aria-haspopup="dialog" role="button" tabindex="0">
       <div class="mw-gear-card-top">
         <span class="mw-gear-name">
           text="Wakazashi"
@@ -130,15 +125,12 @@
           text="WEAPON · SWAP"
       <div class="mw-gear-desc">
         text="d6+1 (usable by Fighters, Thieves)"
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
-        text="Equip"
-      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
-        text="Drop"
-  <li class="mw-gear-card" data-i="1">
-    <div class="mw-gear-card-main">
+  <li class="mw-gear-card mw-gear-tap" data-i="1" onclick>
+    <div id="gear-open-bag-1" class="mw-gear-card-main" aria-haspopup="dialog" role="button" tabindex="0">
       <div class="mw-gear-card-top">
         <span class="mw-gear-name">
           text="Warded studded"
@@ -146,15 +138,12 @@
           text="ARMOR · SWAP"
       <div class="mw-gear-desc">
         text="AR 11 · 28/28 hp (usable by Fighters, Thieves)"
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
-        text="Equip"
-      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
-        text="Drop"
-  <li class="mw-gear-card" data-i="2">
-    <div class="mw-gear-card-main">
+  <li class="mw-gear-card mw-gear-tap" data-i="2" onclick>
+    <div id="gear-open-bag-2" class="mw-gear-card-main" aria-haspopup="dialog" role="button" tabindex="0">
       <div class="mw-gear-card-top">
         <span class="mw-gear-name">
           text="Anklet of Invisibility"
@@ -162,25 +151,21 @@
           text="JEWELRY · SWAP"
       <div class="mw-gear-desc">
         text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
-        text="Equip"
-      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
-        text="Drop"
-  <li class="mw-gear-card" data-i="3">
-    <div class="mw-gear-card-main">
+  <li class="mw-gear-card mw-gear-tap" data-i="3" onclick>
+    <div id="gear-open-bag-3" class="mw-gear-card-main" aria-haspopup="dialog" role="button" tabindex="0">
       <div class="mw-gear-card-top">
         <span class="mw-gear-name">
           text="Rope"
       <div class="mw-gear-desc">
         text="the honest way across a crevice. Once."
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
-        text="Drop"
 ## #gear-cons-head
 <div id="gear-cons-head">
   <span class="mw-gear-head-title">

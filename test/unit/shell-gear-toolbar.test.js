@@ -64,10 +64,6 @@ function renderCarriedListRegion() {
   return sliceBetween(GEAR_SRC, "export function renderCarriedList(", "export function renderGearTab(");
 }
 
-function gearTabBodyRegion() {
-  return GEAR_SRC.slice(GEAR_SRC.indexOf("export function renderGearTab("));
-}
-
 // Phase 47 (SHELL-03), Plan 05: the store's whole render body is
 // storeScreen.js#renderStoreScreen — no region-slicing needed, STORE_SRC IS
 // the region.
@@ -125,11 +121,13 @@ test("UIF-01: Yes dispatches through the existing dropItem dep (no new engine ac
   assert.ok((region.match(/deps\.dropItem\?\.\(i\)/g) || []).length >= 2, "gear Yes + the non-gear Drop button both call deps.dropItem");
 });
 
-test("UIF-01: gearRow:true is passed at exactly the GEAR call site", () => {
+// Phase 63 (GSCR-07/08/10), Plan 05: the GEAR tab's per-card harvest through
+// renderCarriedList (the only gearRow:true call site) is retired — every
+// WORN row and BAG card opens the bottom action sheet instead, so
+// gearRow:true no longer appears anywhere in the shipped source.
+test("UIF-01: gearRow:true is retired (Phase 63) — it appears zero times anywhere, including renderGearTab's own region", () => {
   assert.equal((CODE.match(/gearRow: true/g) || []).length, 0);
-  assert.equal((GEAR_SRC.match(/gearRow: true/g) || []).length, 1);
-  const carryRegion = gearTabBodyRegion();
-  assert.match(carryRegion, /gearRow: true/);
+  assert.equal((GEAR_SRC.match(/gearRow: true/g) || []).length, 0);
   const store = storeRegion();
   assert.doesNotMatch(store, /gearRow/);
 });

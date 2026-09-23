@@ -380,6 +380,89 @@ test("sandbox vanish: setState with the sheet's target item removed closes the s
   assert.equal(sheet.hidden, true);
 });
 
+// ─── Phase 63 Plan 05: end-to-end row → sheet → dispatch ─────────────────
+//
+// These two tests drive the REAL gear tab mount (paint(), never
+// sandbox.context.openGearSheet directly) — the row's own onclick opens the
+// sheet, exactly as a player's tap does, proving renderGearTab's opener
+// wiring reaches the real classic openGearSheet/closeGearSheet/dispatch
+// path end to end.
+
+test("end-to-end: tapping the bagged jewel's row (through the real gear-tab mount) opens the sheet; SWAP INTO JEWELRY 1 closes it before dispatching equipItem(i, \"jewelry1\"), and focus returns to the opener", () => {
+  const clock = createFakeClock();
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, reducedMotion: false, clock });
+  sandbox.setState(states.thief);
+  sandbox.paint();
+
+  const bag = bagJewelTarget(states.thief);
+  const openerId = "gear-open-bag-" + bag.i;
+  const openerEl = doc.document.getElementById(openerId);
+  let focusCalls = 0;
+  openerEl.focus = () => {
+    focusCalls++;
+  };
+
+  const sheet = doc.document.getElementById("mw-gear-sheet");
+  sheet.hidden = true;
+
+  const bagEl = doc.document.getElementById("gear-bag");
+  const jewelLi = bagEl.children.find((li) => li.dataset.i === String(bag.i));
+  assert.ok(jewelLi, "expected the bagged jewel's card");
+  jewelLi.onclick();
+
+  assert.equal(sheet.hidden, false, "expected the row's own tap to open the sheet");
+  const titles = actionButtons(doc).map((c) => c.textContent);
+  assert.ok(titles.some((t) => t.includes("SWAP INTO JEWELRY 1")), "expected a SWAP INTO JEWELRY 1 action");
+  assert.ok(titles.some((t) => t.includes("SWAP INTO JEWELRY 2")), "expected a SWAP INTO JEWELRY 2 action");
+  assert.ok(titles.some((t) => t.includes("DROP")), "expected a DROP action");
+
+  clock.advance(ARM_DELAY_MS);
+
+  const spyCalls = [];
+  sandbox.context.window.mzEquipItem = (i, slot) => {
+    spyCalls.push({ i, slot, closingOrHidden: sheet.hidden || sheet.dataset.motion === "closing" });
+  };
+
+  const swapBtn = actionButtons(doc).find((c) => c.dataset.key === "slot:jewelry1");
+  assert.ok(swapBtn, "expected a slot:jewelry1 action button");
+  swapBtn.onclick();
+
+  assert.equal(spyCalls.length, 1);
+  assert.equal(spyCalls[0].i, bag.i);
+  assert.equal(spyCalls[0].slot, "jewelry1");
+  assert.equal(spyCalls[0].closingOrHidden, true, "the sheet must already be closing/hidden when the dispatch lands");
+
+  assert.equal(focusCalls, 0, "focus must not run before the 0ms timer fires");
+  clock.advance(1);
+  assert.equal(focusCalls, 1, "focus returns to the opener once the dispatch-driven 0ms timer fires");
+});
+
+test("end-to-end: clicking a WORN row's USE button (with a stopPropagation stub) dispatches useItem but never opens the sheet", () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc });
+  sandbox.setState(states.thief);
+  sandbox.paint();
+
+  const sheet = doc.document.getElementById("mw-gear-sheet");
+  sheet.hidden = true;
+
+  const useCalls = [];
+  sandbox.context.window.mzUseItem = (ref) => useCalls.push(ref);
+
+  const wornEl = doc.document.getElementById("gear-worn");
+  const jewelry1 = wornEl.children.find((li) => li.dataset.slot === "jewelry1");
+  const useCell = jewelry1.children.find((n) => n.className === "mw-gear-use");
+  assert.ok(useCell, "expected the thief fixture's worn jewelry1 to carry a USE cell");
+  const btn = useCell.children.find((n) => n.tagName === "button");
+  const s = [];
+  btn.onclick({ stopPropagation: () => s.push(1) });
+
+  assert.equal(s.length, 1, "expected the USE tap to stop propagation");
+  assert.deepStrictEqual(useCalls, [{ slot: "jewelry1" }]);
+  assert.equal(sheet.hidden, true, "expected the USE tap to never open the sheet");
+});
+
 // ─── GRULE-02: the live combat re-render ─────────────────────────────────
 //
 // The seed-6 Demons pending-fight fixture (combat-gear-lock.test.js's own
