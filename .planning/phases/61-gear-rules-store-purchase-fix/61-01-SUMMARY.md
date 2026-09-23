@@ -187,3 +187,7 @@ None - no external service configuration required.
 *Phase: 61-gear-rules-store-purchase-fix*
 *Plan: 01*
 *Completed: 2026-09-23*
+
+## Self-Check: PASSED
+
+All created/modified files found on disk (`engine/items.js`, `src/browser/eventNarration.js`, `src/browser/narrationLines.js`, `test/unit/combat-gear-lock.test.js`, `test/parity/divergence-records.test.js`, `test/parity/FIXTURE-INVENTORY.md`, `docs/GEAR-SLOTS.md`, `.planning/phases/61-gear-rules-store-purchase-fix/deferred-items.md`). All four commits (`108ea89`, `ed82b82`, `b103c06`, `6c06538`) found in `git log`.
