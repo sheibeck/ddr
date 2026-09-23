@@ -1,5 +1,7 @@
 # Phase 49 (PERF-01/02) — Measure-First Perf Pass: baseline
 
+_New in this pass: see `## v1.8 — Phase 60` at the end of this file for the v1.7-vs-v1.8 side-by-side AAB size and device comparison tables._
+
 Measure first, fix only what is measured. This doc's Method/Protocol/How to
 re-measure sections were written by Plan 49-01 (instrumentation); the report
 sections (Device, BEFORE, Jank report, Decision, AFTER) are reserved for
@@ -354,3 +356,168 @@ than a new regression.
    remote profiling (`chrome://inspect` over adb, attached to the device's
    WebView) can corroborate these numbers with a flame chart if a future
    pass wants finer-grained attribution than the four rows above give.
+
+## v1.8 — Phase 60 (PERF-03): v1.7 vs v1.8 side by side
+
+Phase 60 measures v1.8's footprint (30 clips from Phase 56, 54 set-dressing
+props and 9 party frames from Phase 59, plus the Phase 57–59 shell work)
+against a v1.7 build measured in the same Pixel 7 session. The Phase 49
+sections above remain the history of v1.6's instrumented pass, and none of
+their rows is re-used as the v1.7 number here — v1.7 is measured fresh,
+side by side with v1.8, in this phase.
+
+### Method (v1.8)
+
+- **Builds.** `v1.7` is the annotated tag `v1.7` at commit
+  `6c299ab07e91cd8d00b30e8e690210172c3b4be7`, and `v1.8` is HEAD at plan
+  60-02's execution, commit `d6db678c10e444aae76f6fd4cbb897eb8010e0b9`. Both
+  were built in their own temporary detached `git worktree` under
+  `C:/projects/mazeworld-perf60/`, created with `core.autocrlf=false`, by
+  `npm run android:debug` then `npm run android:release`, with no version
+  bump anywhere. Both stamp `1.5.0 (6)`. Toolchain identity was re-verified
+  before building: `git diff --quiet v1.7 HEAD -- package.json
+  package-lock.json android/ capacitor.config.json` exits 0 — the npm
+  scripts, the Capacitor 8.5.1 packages, AGP 8.13.0 / Gradle 8.14.3 and the
+  Android project are identical at both commits, so one `node_modules`
+  (copied, not linked, into each temporary tree) served both builds.
+- **Cold start.** `node tools/cold-start.mjs run --label <build> --runs 10
+  --warmup 1` per build. It force-stops, waits 1.5 s, launches with
+  `am start -W`, then holds 4 s. There is 1 unrecorded warm-up launch, then
+  10 measured launches that must all report `LaunchState: COLD`. Median and
+  p95 use the Phase 49 nearest-rank method, and at n = 10 the p95 is the
+  slowest launch. App data is preserved across the install-overs and is the
+  same for both builds.
+- **The TotalTime caveat**, verbatim in meaning: `capacitor.config.json`
+  holds the splash (`launchAutoHide: false`) until the web boot hides it,
+  and this doc does not assert whether the platform's `TotalTime` includes
+  that hold. Both builds share a byte-identical native shell (`android/` is
+  unchanged since v1.7), so the comparison is like for like either way.
+- **Step time.** The Phase 49 Protocol above, walked once per build in the
+  same session, from depth 5. Re-confirmed against the frozen engine at
+  this plan's execution: `difficultyCurve(5)` gives
+  `{"breather":false,"darkBlobs":3,"waterPools":2}` — matches the Phase 49
+  reading exactly, so depth 5 is used unchanged. The two Settings paths:
+  v1.7 is the ⚙ chip right of MAKE CAMP; v1.8 is ☰ → SETTINGS. Shipped
+  defaults apply for both: Sound On, Set dressing On, Android Remove
+  animations off.
+- **AAB.** The file bytes of the signed `app-release.aab` at each commit,
+  with sha256.
+- **Thresholds**, quoted from `60-CONTEXT.md`: cold start regresses when
+  its median exceeds v1.7's by **> 10 % or > 100 ms**; step time regresses
+  when its p95 exceeds v1.7's by **> 2 ms**; the AAB regresses when it
+  grows by **> 2 MB** (read as 2,000,000 bytes). Each is strictly greater,
+  applied by `node tools/cold-start.mjs judge`, with deltas rounded to
+  0.001. The step threshold gates the `step` row (the superset row);
+  `dispatch` / `paint` / `draw` are recorded for attribution only.
+
+### AAB size
+
+| Build | Commit | AAB bytes | AAB sha256 | Debug APK bytes |
+| --- | --- | --- | --- | --- |
+| v1.7 | `6c299ab07e91cd8d00b30e8e690210172c3b4be7` | 9306177 | `09f66060cc86353e0bc6ec587e91d3c498bf9de5889315c7ad4defc1a0915800` | 10519640 |
+| v1.8 | `d6db678c10e444aae76f6fd4cbb897eb8010e0b9` | 9726785 | `3fbfd96631837b030251f51551999545acd98202022771ac467adc63406fb747` | 10980338 |
+| Delta (v1.8 − v1.7) | — | 420608 (+4.520%) | — | 460698 |
+
+`www/` breakdown (uncompressed bytes per top-level entry, from each build's
+own `www/`):
+
+| Entry | v1.7 bytes | v1.8 bytes | Delta |
+| --- | --- | --- | --- |
+| index.html | 318175 | 395546 | +77371 |
+| sfx | 0 | 372480 | +372480 |
+| icons | 1287370 | 1287370 | 0 |
+| fonts | 216316 | 216316 | 0 |
+| vendor | 286984 | 286984 | 0 |
+| src | 439439 | 569886 | +130447 |
+| engine | 643141 | 643141 | 0 |
+| content | 196455 | 196455 | 0 |
+| assets | 2511669 | 2511669 | 0 |
+| **total** | 5899549 | 6479847 | +580298 |
+
+**Footprint note.** The 54 `set_dungeon_*` props (893,505 B, re-derived
+from `git ls-tree -r -l HEAD -- icons/optimized/`) and the 9 party frames
+(181,584 B) were committed in `90dc06c` (2026-09-19, before the `v1.7` tag),
+and v1.7's `copyIcons()` already copies `icons/optimized/` as a whole
+directory — so **both** AAB columns above already contain them, unused in
+v1.7. The v1.7→v1.8 AAB delta is therefore essentially the 30 sfx clips
+(372,480 B, re-derived the same way) plus the code, **not** the dressing
+images. Read the 420,608-byte / 4.520 % AAB delta accordingly — it is not
+evidence that the images were "free"; they were already paid for at v1.7.
+
+**Context, not baseline.** The main checkout's own last locally built
+`android/app/build/outputs/bundle/release/app-release.aab` is 8,358,944
+bytes, built 2026-09-19T11:30:08.722Z — this predates the icon commit
+(`90dc06c`) and the `v1.7` tag, so it is smaller than either column above.
+Per STATE.md, the most recent Play upload (1.5.0, versionCode 6,
+2026-09-19) is built from that same pre-icon state, which makes this line
+the closest measure of what testers download today. It is not a baseline
+for this section's comparison.
+
+No verdict is written here — Verdicts is filled by plan 60-03 through
+`judge`.
+
+### Device
+
+_(filled by plan 60-03 in the device session)_
+
+| Field | Value |
+| --- | --- |
+| Device | |
+| Android version | |
+| Build number (`ro.build.display.id`) | |
+| Session date | |
+| Battery / temperature at start | |
+| Battery / temperature at end | |
+| Install order | |
+| APK files | v1.7: `ddr-v1.7-6c299ab-debug.apk` (sha256 `a6e6fa8043a49597898cbd309e8d1f19fa5c69e600a419233094264f80d101b6`); v1.8: `ddr-v1.8-d6db678-debug.apk` (sha256 `038c042d922ac0d70b3fd71d9ab117361f7a9b4c16cb4f1611443aa33ed65555`) |
+
+### Cold start (TotalTime, ms)
+
+_(filled by plan 60-03 in the device session)_
+
+| Build | Commit | n | median | p95 | min | max | LaunchStates | samples (ms, run order) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| v1.7 | `6c299ab` | | | | | | | |
+| v1.8 | `d6db678` | | | | | | | |
+
+### Step time (ms)
+
+_(filled by plan 60-03 in the device session)_
+
+| Row | v1.7 median | v1.7 p95 | v1.7 max | v1.7 n | v1.8 median | v1.8 p95 | v1.8 max | v1.8 n |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| step | | | | | | | | |
+| dispatch | | | | | | | | |
+| paint | | | | | | | | |
+| draw | | | | | | | | |
+
+Verbatim readout, v1.7:
+
+```
+```
+
+Verbatim readout, v1.8:
+
+```
+```
+
+As-run, v1.7: coverage of water / dark / encounter / tab switch — ; jank —
+As-run, v1.8: coverage of water / dark / encounter / tab switch — ; jank —
+
+### Verdicts (PERF-03)
+
+_(filled by plan 60-03 in the device session)_
+
+| Metric | v1.7 | v1.8 | Delta | Threshold | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Cold start median | | | | > 10% or > 100ms | |
+| Step p95 | | | | > 2ms | |
+| AAB bytes | 9306177 | 9726785 | 420608 (+4.520%) | > 2 MB | |
+
+### Dispositions
+
+_(filled by plan 60-03 in the device session)_
+
+Every regression gets a fix or an explained, accepted miss, in the user's
+own words. If nothing regresses, this section says so in words. A
+disposition is never written on the user's behalf.
