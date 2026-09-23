@@ -40,60 +40,62 @@ orchestrator's authoritative merge).
 |---|------|-----|--------|
 | A1 | Cold start: 1 warm-up + 10 COLD launches per build, run by the executor. The user keeps the phone unlocked, on the charger and untouched for about 3 minutes. | Executor | pass — v1.7 median 871 ms (p95 951, n=10, all COLD); v1.8 median 915 ms (p95 981, n=10, all COLD) |
 | A2 | The step walk on v1.7. Exact path: Title → ENTER → any roll → ⚙ chip right of MAKE CAMP → hold the Version label about 1.2 s → depth 5 → Start. Then walk at least 50 mixed steps through a water pool, into a dark region and out again, with at least one encounter card and at least one Gear or Hero tab switch and back. Then read the `#mw-dev-perf` line under Start. Report the line verbatim, which of the four coverage items were hit, and any jank or "none". | User | pass — step med 11.6 ms / p95 22.0 ms (n=55); coverage water yes / dark in+out yes / encounter yes / tab switch yes; jank none |
-| A3 | The same walk on v1.8, with Settings reached by ☰ → SETTINGS. | User | |
-| A4 | AAB size, already measured by plan 60-02 with no device. See `docs/PERF-BASELINE.md`'s `### AAB size` section. | Executor (done) | |
-| A5 | The user's ruling on each regression the executor flags. Options: accept with a reason, fix, or keep walking the same run and re-read (the later read at n ≥ 50 supersedes, as in Phase 49's n=47 → n=61). | User | |
+| A3 | The same walk on v1.8, with Settings reached by ☰ → SETTINGS. | User | pass — step med 6.9 ms / p95 16.6 ms (n=100); coverage water yes / dark in+out yes / encounter not stated / tab switch (menus) yes; jank none (user's words: "Yes, i walked in water, dark, menus. No jank.") |
+| A4 | AAB size, already measured by plan 60-02 with no device. See `docs/PERF-BASELINE.md`'s `### AAB size` section. | Executor (done) | no regression — +420,608 B / +4.5%, under the > 2,000,000 B threshold. See `docs/PERF-BASELINE.md` `### Verdicts (PERF-03)`. |
+| A5 | The user's ruling on each regression the executor flags. Options: accept with a reason, fix, or keep walking the same run and re-read (the later read at n ≥ 50 supersedes, as in Phase 49's n=47 → n=61). | User | no regressions — no rulings needed (tested `judge`: cold start no, step no — improved 22.0 → 16.6 ms, AAB no; `complete: true`, `anyRegression: false`). |
+
+**User's general verdict on sections B–E (2026-09-22, verbatim):** "Generally everything looks good. I'm not going to do in depth uat right now. I'll uat over playing several sessions and report back." Per this, every B–E row below (except 56-3, which the user did run explicitly) is recorded as "not run — deferred to the user's own play sessions" rather than individually walked.
 
 ## B. Phase 59 — Party Animation & Dungeon Set Dressing (8)
 
 | # | Check | When | Result |
 |---|-------|------|--------|
-| 59-1 | ANIM-01/03 (Pixel 7): the standing party gently cycles its idle frames (about one breath a second) and reads as the highlight on its own; the old black ring is gone, leaving only a soft warm glow | any time | |
-| 59-2 | ANIM-02 (Pixel 7): each step slides the party into the next square with a quick step animation and settles back to idle; fast tapping never stutters or lags; at a map edge the party and the map move as one; the marker disappears under the encounter panel with no flicker | any time | |
-| 59-3 | ANIM-02 (Pixel 7): stairs and teleports put the party on its new square at once, with no slide | any time | |
-| 59-4 | DRESS-01..03 (Pixel 7): each floor shows a handful of dim props on paths and brighter ones on walls; none is mistaken for an encounter, chest or crevice; no prop covers the stairs, a feature or the party; props appear only where the map is revealed and inside the dark window | any time | |
-| 59-5 | DRESS-05 (Pixel 7): Settings → Set dressing Off clears every prop at once and On brings them back; the Sound setting is unaffected | any time | |
-| 59-6 | DRESS-04 / PERF (Pixel 7): cold start with Set dressing On shows the map as fast as before, with props a moment after; closing and reopening mid-floor shows the props in the same places | any time | |
-| 59-7 | Reduced motion (Pixel 7, 'Remove animations' on): the idle art is frozen on frame 1 with a steady glow; each step lands instantly; the Set dressing flip still redraws immediately | reduced-motion pass | |
-| 59-8 | TalkBack (Pixel 7): the party marker and the props add nothing to what TalkBack announces on the map | TalkBack pass | |
+| 59-1 | ANIM-01/03 (Pixel 7): the standing party gently cycles its idle frames (about one breath a second) and reads as the highlight on its own; the old black ring is gone, leaving only a soft warm glow | any time | not run — deferred to the user's own play sessions |
+| 59-2 | ANIM-02 (Pixel 7): each step slides the party into the next square with a quick step animation and settles back to idle; fast tapping never stutters or lags; at a map edge the party and the map move as one; the marker disappears under the encounter panel with no flicker | any time | not run — deferred to the user's own play sessions |
+| 59-3 | ANIM-02 (Pixel 7): stairs and teleports put the party on its new square at once, with no slide | any time | not run — deferred to the user's own play sessions |
+| 59-4 | DRESS-01..03 (Pixel 7): each floor shows a handful of dim props on paths and brighter ones on walls; none is mistaken for an encounter, chest or crevice; no prop covers the stairs, a feature or the party; props appear only where the map is revealed and inside the dark window | any time | not run — deferred to the user's own play sessions |
+| 59-5 | DRESS-05 (Pixel 7): Settings → Set dressing Off clears every prop at once and On brings them back; the Sound setting is unaffected | any time | not run — deferred to the user's own play sessions |
+| 59-6 | DRESS-04 / PERF (Pixel 7): cold start with Set dressing On shows the map as fast as before, with props a moment after; closing and reopening mid-floor shows the props in the same places | any time | not run — deferred to the user's own play sessions |
+| 59-7 | Reduced motion (Pixel 7, 'Remove animations' on): the idle art is frozen on frame 1 with a steady glow; each step lands instantly; the Set dressing flip still redraws immediately | reduced-motion pass | not run — deferred to the user's own play sessions |
+| 59-8 | TalkBack (Pixel 7): the party marker and the props add nothing to what TalkBack announces on the map | TalkBack pass | not run — deferred to the user's own play sessions |
 
 ## C. Phase 58 — Motion & Pacing (7)
 
 | # | Check | When | Result |
 |---|-------|------|--------|
-| 58-1 | MOTION-01 (Pixel 7): walking toward a map edge scrolls smoothly, not in jumps; rapid taps never stutter; a drag mid-glide takes over instantly; the ring stays glued to the party; the resting map stays crisp | any time | |
-| 58-2 | MOTION-02 (Pixel 7): MARKS / camp / Settings sheets slide up and down; the ☰ menu drops in and fades; the encounter overlay fades; tabs cross-fade without the map appearing to scroll; the rail slides up and back down with its own card; nothing feels sluggish (~180 ms open / ~120 ms close) | any time | |
-| 58-3 | MOTION-04 (Pixel 7): rail text types on fast (a long card finishes in under a second); tapping a typing card finishes it without dismissing; stair and encounter cards type their line the same way | any time | |
-| 58-4 | MOTION-04 accessibility (Pixel 7, TalkBack): a new rail card is announced in full the moment it appears, and the encounter card is read in full when focused, even mid-typing | TalkBack pass | |
-| 58-5 | MOTION-03 (Pixel 7): a multi-exchange round plays one exchange at a time at a readable pace; each line types; the foe's HP drops with the line that hit it; buttons return only after the last line; a tap on the panel skips to the end; a killing blow and a death read line by line before the end card | any time | |
-| 58-6 | MOTION-03 audio (Pixel 7): each strike / miss / hurt / kill clip plays as its line appears, not at the start of the round; hurrying plays the rest at once; Sound Off stays silent; a new fight still opens with the family cry | any time | |
-| 58-7 | MOTION-05 (Pixel 7, Android 'Remove animations' on): the map moves in single jumps; every surface appears and disappears instantly with nothing half-visible; a round lands all at once; a whole session (edge walk, every sheet + the ☰ menu, tab switches, rail cards, a full fight) shows no motion and loses no text, sound or card | reduced-motion pass | |
+| 58-1 | MOTION-01 (Pixel 7): walking toward a map edge scrolls smoothly, not in jumps; rapid taps never stutter; a drag mid-glide takes over instantly; the ring stays glued to the party; the resting map stays crisp | any time | not run — deferred to the user's own play sessions |
+| 58-2 | MOTION-02 (Pixel 7): MARKS / camp / Settings sheets slide up and down; the ☰ menu drops in and fades; the encounter overlay fades; tabs cross-fade without the map appearing to scroll; the rail slides up and back down with its own card; nothing feels sluggish (~180 ms open / ~120 ms close) | any time | not run — deferred to the user's own play sessions |
+| 58-3 | MOTION-04 (Pixel 7): rail text types on fast (a long card finishes in under a second); tapping a typing card finishes it without dismissing; stair and encounter cards type their line the same way | any time | not run — deferred to the user's own play sessions |
+| 58-4 | MOTION-04 accessibility (Pixel 7, TalkBack): a new rail card is announced in full the moment it appears, and the encounter card is read in full when focused, even mid-typing | TalkBack pass | not run — deferred to the user's own play sessions |
+| 58-5 | MOTION-03 (Pixel 7): a multi-exchange round plays one exchange at a time at a readable pace; each line types; the foe's HP drops with the line that hit it; buttons return only after the last line; a tap on the panel skips to the end; a killing blow and a death read line by line before the end card | any time | not run — deferred to the user's own play sessions |
+| 58-6 | MOTION-03 audio (Pixel 7): each strike / miss / hurt / kill clip plays as its line appears, not at the start of the round; hurrying plays the rest at once; Sound Off stays silent; a new fight still opens with the family cry | any time | not run — deferred to the user's own play sessions |
+| 58-7 | MOTION-05 (Pixel 7, Android 'Remove animations' on): the map moves in single jumps; every surface appears and disappears instantly with nothing half-visible; a round lands all at once; a whole session (edge walk, every sheet + the ☰ menu, tab switches, rail cards, a full fight) shows no motion and loses no text, sound or card | reduced-motion pass | not run — deferred to the user's own play sessions |
 
 ## D. Phase 57 — Map & HUD Layout Band (10)
 
 | # | Check | When | Result |
 |---|-------|------|--------|
-| 57-1 | LAYOUT-01 (Pixel 7): the map does not jump or shift on any rail show or hide — the party stays on the same screen pixel through a full show/hold/hide cycle | any time | |
-| 57-2 | LAYOUT-01 (Pixel 7): the rail overlays the bottom of the play area without covering the tab bar at any safe-area inset | any time | |
-| 57-3 | LAYOUT-02 (Pixel 7): a body tap dismisses a plain (no-button) rail card; a body tap on a decision card does NOT dismiss it — only its buttons do | any time | |
-| 57-4 | LAYOUT-03 (Pixel 7): a four-line rail card reads comfortably before it clears at the doubled, line-scaled hold | any time | |
-| 57-5 | LAYOUT-04 (Pixel 7, supersedes 57-01/57-04's chip-tap item): with the party 1-2 cells below band 2, open the ☰ and tap each row (MARKS / CENTRE MAP / MAKE CAMP / SETTINGS) — zero party movement; a map tap while the menu is open only closes it; a tab tap while open closes it, a second tap switches; the map never shifts | any time | |
-| 57-6 | LAYOUT-04 (Pixel 7): walking the party to the top edge fires the keep-in-view nudge with nothing of the map hidden under the HUD | any time | |
-| 57-7 | LAYOUT-05 (Pixel 7): past 1,000 Squares no HUD band overlaps at text sizes S and M; at L band 1 does not overlap, the ☰ stays visible and Rations clips ~34px (accepted) | any time | |
-| 57-8 | LAYOUT-05 (Pixel 7): ☰ ◈ ⊕ ☾ ⚙ render as text glyphs in the mock colours (no tofu/emoji substitution); the ☰ is reachable one-handed | any time | |
-| 57-9 | LAYOUT-05 (Pixel 7): on the Dead tab the HUD is gone and the first line clears the status bar | any time | |
-| 57-10 | LAYOUT-06 (Pixel 7): rolling Table-7 Darkness without light gear closes the vignette to radius 1 while the DARK chip counts down; with a lit torch / Amulet of Light / Night Vision the chip names the waiver and the tap card leads with it; an Amulet cancel clears vignette and chip together with an Oracle line; the vignette reads as darkness against the Phase 35 palette | any time | |
+| 57-1 | LAYOUT-01 (Pixel 7): the map does not jump or shift on any rail show or hide — the party stays on the same screen pixel through a full show/hold/hide cycle | any time | not run — deferred to the user's own play sessions |
+| 57-2 | LAYOUT-01 (Pixel 7): the rail overlays the bottom of the play area without covering the tab bar at any safe-area inset | any time | not run — deferred to the user's own play sessions |
+| 57-3 | LAYOUT-02 (Pixel 7): a body tap dismisses a plain (no-button) rail card; a body tap on a decision card does NOT dismiss it — only its buttons do | any time | not run — deferred to the user's own play sessions |
+| 57-4 | LAYOUT-03 (Pixel 7): a four-line rail card reads comfortably before it clears at the doubled, line-scaled hold | any time | not run — deferred to the user's own play sessions |
+| 57-5 | LAYOUT-04 (Pixel 7, supersedes 57-01/57-04's chip-tap item): with the party 1-2 cells below band 2, open the ☰ and tap each row (MARKS / CENTRE MAP / MAKE CAMP / SETTINGS) — zero party movement; a map tap while the menu is open only closes it; a tab tap while open closes it, a second tap switches; the map never shifts | any time | not run — deferred to the user's own play sessions |
+| 57-6 | LAYOUT-04 (Pixel 7): walking the party to the top edge fires the keep-in-view nudge with nothing of the map hidden under the HUD | any time | not run — deferred to the user's own play sessions |
+| 57-7 | LAYOUT-05 (Pixel 7): past 1,000 Squares no HUD band overlaps at text sizes S and M; at L band 1 does not overlap, the ☰ stays visible and Rations clips ~34px (accepted) | any time | not run — deferred to the user's own play sessions |
+| 57-8 | LAYOUT-05 (Pixel 7): ☰ ◈ ⊕ ☾ ⚙ render as text glyphs in the mock colours (no tofu/emoji substitution); the ☰ is reachable one-handed | any time | not run — deferred to the user's own play sessions |
+| 57-9 | LAYOUT-05 (Pixel 7): on the Dead tab the HUD is gone and the first line clears the status bar | any time | not run — deferred to the user's own play sessions |
+| 57-10 | LAYOUT-06 (Pixel 7): rolling Table-7 Darkness without light gear closes the vignette to radius 1 while the DARK chip counts down; with a lit torch / Amulet of Light / Night Vision the chip names the waiver and the tap card leads with it; an Amulet cancel clears vignette and chip together with an Oracle line; the vignette reads as darkness against the Phase 35 palette | any time | not run — deferred to the user's own play sessions |
 
 ## E. Phase 56 — Sound Effects & Audio Settings (6)
 
 | # | Check | When | Result |
 |---|-------|------|--------|
-| 56-1 | AUD-04 latency (Pixel 7): take a step, strike, and open a chest — each clip fires on the action that caused it with no perceptible lag | any time | |
-| 56-2 | AUD-04 overlap (Pixel 7): land a killing blow that also levels you up — the hit, the foe-die and the level-up clips overlap rather than cutting each other off | any time | |
-| 56-3 | AUD-06 airplane mode (Pixel 7): install fresh, enable airplane mode, launch for the first time — every clip still plays, nothing is fetched | fresh install (destructive) | |
-| 56-4 | AUD-05 persistence (Pixel 7): set Sound to Off, force-quit, relaunch — the app is still silent and the Settings row still reads Off | any time | |
-| 56-5 | AUD-02 family cries (Pixel 7): start fights against a Beast, a Demon, a Human, a Lair Beast, a Magical and a Walking Dead foe — each opens with the ruled cry, and the two shares (Lair Beasts on human, Magical on demon) sound deliberate rather than wrong | any time | |
-| 56-6 | MOTION-03 evidence for Phase 58 (Pixel 7): note whether any fight resolves too fast for its own audio to read — evidence for Phase 58's pacing decision, NOT licence to add timing in this phase | any time | |
+| 56-1 | AUD-04 latency (Pixel 7): take a step, strike, and open a chest — each clip fires on the action that caused it with no perceptible lag | any time | not run — deferred to the user's own play sessions |
+| 56-2 | AUD-04 overlap (Pixel 7): land a killing blow that also levels you up — the hit, the foe-die and the level-up clips overlap rather than cutting each other off | any time | not run — deferred to the user's own play sessions |
+| 56-3 | AUD-06 airplane mode (Pixel 7): install fresh, enable airplane mode, launch for the first time — every clip still plays, nothing is fetched | fresh install (destructive) | pass — airplane mode on (Wi-Fi off), first-ever launch of the app on this phone; user confirmed "Yes, sounds worked!". Note: the first v1.8 install had already been opened for the A3 walk before 56-3 ran, so a SECOND fresh install (uninstall + install, not launched) was done at 2026-09-22 22:52:34 to give this check a genuine first launch — see Session record. |
+| 56-4 | AUD-05 persistence (Pixel 7): set Sound to Off, force-quit, relaunch — the app is still silent and the Settings row still reads Off | any time | not run — deferred to the user's own play sessions |
+| 56-5 | AUD-02 family cries (Pixel 7): start fights against a Beast, a Demon, a Human, a Lair Beast, a Magical and a Walking Dead foe — each opens with the ruled cry, and the two shares (Lair Beasts on human, Magical on demon) sound deliberate rather than wrong | any time | not run — deferred to the user's own play sessions |
+| 56-6 | MOTION-03 evidence for Phase 58 (Pixel 7): note whether any fight resolves too fast for its own audio to read — evidence for Phase 58's pacing decision, NOT licence to add timing in this phase | any time | not run — deferred to the user's own play sessions |
 
 ## F. Still open from earlier milestones
 
@@ -117,9 +119,14 @@ _(filled progressively by plan 60-03 as the session proceeds)_
 - A2 (v1.7 step walk) recorded: pass, step med 11.6 ms / p95 22.0 ms (n=55).
 - 2026-09-23T02:36:53Z — `adb uninstall com.darktierstudios.delvedierepeat` (user OK'd this data wipe for 56-3, the fresh-install airplane-mode check) — Success.
 - 2026-09-23T02:36:54Z — `adb install` (fresh, no `-r`) v1.8 debug APK (`ddr-v1.8-d6db678-debug.apk`) — Success. App deliberately **NOT launched** — logcat cleared — left for the user's own first-ever launch in airplane mode (56-3), then the A3 step walk via ☰ → SETTINGS.
+- A3 (v1.8 step walk) recorded: pass, step med 6.9 ms / p95 16.6 ms (n=100). This walk was run on the FIRST v1.8 install — before 56-3, so that install's "first launch" was already spent on the A3 walk, not on 56-3's airplane-mode check.
+- 2026-09-22 22:52:34 — SECOND fresh install for 56-3 (`adb uninstall com.darktierstudios.delvedierepeat` then `adb install` of `ddr-v1.8-d6db678-debug.apk`, not launched), so 56-3's airplane-mode launch is genuinely the app's first launch on that install. The user then enabled airplane mode with Wi-Fi off, opened the app (its first-ever launch on this install), and confirmed "Yes, sounds worked!" — 56-3: pass.
+- Sections B–E: not individually walked. The user's general verdict (verbatim): "Generally everything looks good. I'm not going to do in depth uat right now. I'll uat over playing several sessions and report back." Every B–E row (except 56-3) is recorded "not run — deferred to the user's own play sessions".
 
-**Final build left on the phone:** _(pending — filled at session close)_
+**Final build left on the phone:** v1.8 — `ddr-v1.8-d6db678-debug.apk`, full commit `d6db678c10e444aae76f6fd4cbb897eb8010e0b9`, sha256 `038c042d922ac0d70b3fd71d9ab117361f7a9b4c16cb4f1611443aa33ed65555`. This is the milestone's one debug APK, and it is the build the user ran 56-3's airplane-mode first launch on.
 
-**Regressions and rulings:** _(pointer to `docs/PERF-BASELINE.md#dispositions` — filled at session close)_
+**Regressions and rulings:** No regressions. `node tools/cold-start.mjs judge` (all three measures, `complete: true`): cold start median +44 ms/+5.1% (no), step p95 improved 22.0 → 16.6 ms (no), AAB +420,608 B/+4.5% (no); `anyRegression: false`. See `docs/PERF-BASELINE.md` `### Verdicts (PERF-03)` and `### Dispositions` ("None — no measurement regressed past a PERF-03 threshold").
 
-**Findings → todos:** _(pending)_
+**Findings → todos:**
+- `.planning/todos/pending/2026-09-22-water-square-walk-sound-should-play-every-step-not-just-on-en.md` — the walk-water clip should play on every step on a water square, not just on entering.
+- `.planning/todos/pending/2026-09-22-hud-band-1-identity-line-should-show-sub-class-not-full-class.md` — the HUD identity line should show the sub-class, not the full "Race Class (Sub)" text; open question (keep or drop the race) recorded in the todo for the user to answer.

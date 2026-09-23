@@ -466,8 +466,10 @@ No verdict is written here — Verdicts is filled by plan 60-03 through
 | Session date | 2026-09-22 |
 | Battery / temperature at start | 43% / 27.3°C |
 | Battery / temperature at end | 43% / 27.5°C |
-| Install order | pre-existing sideload (v1.7-era debug build, versionName 1.5.0, lastUpdateTime 2026-09-22 02:56:01, installer=null) → `adb install -r` v1.7 debug APK at 2026-09-23T02:23:25Z → v1.7 cold-start series (1 warm-up + 10 COLD launches) → `adb install -r` v1.8 debug APK at 2026-09-23T02:24:54Z → v1.8 cold-start series (1 warm-up + 10 COLD launches) |
+| Install order | pre-existing sideload (v1.7-era debug build, versionName 1.5.0, lastUpdateTime 2026-09-22 02:56:01, installer=null) → `adb install -r` v1.7 debug APK at 2026-09-23T02:23:25Z → v1.7 cold-start series (1 warm-up + 10 COLD launches) → `adb install -r` v1.8 debug APK at 2026-09-23T02:24:54Z → v1.8 cold-start series (1 warm-up + 10 COLD launches) → `adb install -r` v1.7 again for the A2 walk → `adb uninstall` + fresh `adb install` v1.8 for the A3 walk / 56-3 → a SECOND fresh install (`adb uninstall` then `adb install`) at 2026-09-22 22:52:34, not launched, because the first v1.8 install had already been opened for the A3 walk before 56-3 ran |
 | APK files | v1.7: `ddr-v1.7-6c299ab-debug.apk` (sha256 `a6e6fa8043a49597898cbd309e8d1f19fa5c69e600a419233094264f80d101b6`); v1.8: `ddr-v1.8-d6db678-debug.apk` (sha256 `038c042d922ac0d70b3fd71d9ab117361f7a9b4c16cb4f1611443aa33ed65555`) |
+
+**Note (not a finding):** the on-device Settings panel reads "Version 1.5.0 (6)" for both builds — expected, since this phase deliberately makes no version bump (60-CONTEXT / plan prohibitions). The visible tell between builds is v1.8's own ☰ HUD menu and Sound / Set dressing rows, not the version label.
 
 ### Cold start (TotalTime, ms)
 
@@ -489,14 +491,12 @@ Provisional verdict (cold start + AAB only; step time not yet measured — fille
 
 ### Step time (ms)
 
-_(filled by plan 60-03 in the device session)_
-
 | Row | v1.7 median | v1.7 p95 | v1.7 max | v1.7 n | v1.8 median | v1.8 p95 | v1.8 max | v1.8 n |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| step | 11.6 | 22.0 | 33.2 | 55 | | | | |
-| dispatch | 5.1 | 11.9 | 14.6 | 55 | | | | |
-| paint | 5.1 | 9.3 | 20.8 | 55 | | | | |
-| draw | 3.9 | 9.9 | 13.7 | 55 | | | | |
+| step | 11.6 | 22.0 | 33.2 | 55 | 6.9 | 16.6 | 22.3 | 100 |
+| dispatch | 5.1 | 11.9 | 14.6 | 55 | 2.5 | 6.8 | 11.7 | 100 |
+| paint | 5.1 | 9.3 | 20.8 | 55 | 3.6 | 8.5 | 12.0 | 100 |
+| draw | 3.9 | 9.9 | 13.7 | 55 | 3.0 | 7.2 | 9.3 | 100 |
 
 Verbatim readout, v1.7:
 
@@ -507,27 +507,35 @@ step 11.6 / 22.0 / 33.2 · dispatch 5.1 / 11.9 / 14.6 · paint 5.1 / 9.3 / 20.8 
 Verbatim readout, v1.8:
 
 ```
+step 6.9 / 16.6 / 22.3 · dispatch 2.5 / 6.8 / 11.7 · paint 3.6 / 8.5 / 12.0 · draw 3.0 / 7.2 / 9.3 ms (med / p95 / max, n=100)
 ```
 
 As-run, v1.7: coverage of water / dark / encounter / tab switch — water yes / dark in+out yes / encounter yes / tab switch yes; jank — none
-As-run, v1.8: coverage of water / dark / encounter / tab switch — ; jank —
+As-run, v1.8: coverage of water / dark / encounter / tab switch — water yes / dark in+out yes / encounter not stated / tab switch (menus) yes; jank — none (user's words: "Yes, i walked in water, dark, menus. No jank.")
 
 Optional cross-check (v1.7, logcat): the last periodic `[mzperf]` log (every 10 recorded steps) was at n=50 — step 10.7 / 22.0 / 33.2 — close to but not identical to the pasted n=55 read (step 11.6 / 22.0 / 33.2); expected, since 5 more steps were recorded between the last periodic log and the user's read. The pasted line stays the record.
 
+Optional cross-check (v1.8, logcat): the last periodic `[mzperf]` log was at n=90 — step 7.4 / 18.8 / 30.0 — vs. the pasted n=100 read (step 6.9 / 16.6 / 22.3); the direction agrees (both well under the v1.7 baseline) but the two reads differ by more than the v1.7 cross-check did, consistent with 10 more steps narrowing/shifting the ring further at this larger n. The pasted line stays the record.
+
 ### Verdicts (PERF-03)
 
-_(filled by plan 60-03 in the device session)_
+Tested verdict from `node tools/cold-start.mjs judge --cold-base cold-v1.7.json --cold-head cold-v1.8.json --step-base 22.0 --step-head 16.6 --aab-base 9306177 --aab-head 9726785` (the v1.7/v1.8 authoritative step p95s, per the ### Step time table above):
 
-| Metric | v1.7 | v1.8 | Delta | Threshold | Verdict |
+```
+| Measure | v1.7 | v1.8 | Delta | Threshold | Regresses? |
 | --- | --- | --- | --- | --- | --- |
-| Cold start median | | | | > 10% or > 100ms | |
-| Step p95 | | | | > 2ms | |
-| AAB bytes | 9306177 | 9726785 | 420608 (+4.520%) | > 2 MB | |
+| Cold start median (ms) | 871 | 915 | 44 | > 10 % or > 100 ms | no |
+| Step p95 (ms) | 22 | 16.6 | -5.4 | > 2 ms | no |
+| AAB (bytes) | 9306177 | 9726785 | 420608 | > 2,000,000 B | no |
+[perf03] {"coldStart":{"base":871,"head":915,"delta":44,"deltaPct":0.051,"threshold":"> 10 % or > 100 ms","regresses":false,"rule":"> 10 % or > 100 ms"},"stepP95":{"base":22,"head":16.6,"delta":-5.4,"deltaPct":-0.245,"threshold":"> 2 ms","regresses":false,"rule":"> 2 ms"},"aabBytes":{"base":9306177,"head":9726785,"delta":420608,"deltaPct":0.045,"threshold":"> 2,000,000 B","regresses":false,"rule":"> 2,000,000 B"},"baseLabel":"v1.7","headLabel":"v1.8","anyRegression":false,"complete":true}
+```
+
+`complete: true`, `anyRegression: false` — no measurement regressed. Recorded for the record, no disposition required (all sub-threshold or an improvement):
+
+- Cold start median: +44 ms / +5.1% (positive but well under both the 10% and 100 ms branches of the threshold) — recorded, no disposition needed.
+- AAB: +420,608 B / +4.5% (positive but under the 2,000,000 B threshold) — recorded, no disposition needed. See the Footprint note above: this delta is the 30 sfx clips + code, not the already-bundled dressing images.
+- Step p95: **improved**, 22.0 → 16.6 ms (−5.4 ms) — not a regression in either direction, no disposition needed.
 
 ### Dispositions
 
-_(filled by plan 60-03 in the device session)_
-
-Every regression gets a fix or an explained, accepted miss, in the user's
-own words. If nothing regresses, this section says so in words. A
-disposition is never written on the user's behalf.
+- None — no measurement regressed past a PERF-03 threshold (verdict table above).
