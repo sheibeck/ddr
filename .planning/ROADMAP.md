@@ -57,7 +57,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 61-03-PLAN.md — Store always delivers: pre-payment `storeBuyRefusal`, not-better → bag (`purchaseBagged`), trade-in narration, economy fixture measured/declared/regenerated (wave 2)
+- [x] 61-03-PLAN.md — Store always delivers: pre-payment `storeBuyRefusal`, not-better → bag (`purchaseBagged`), trade-in narration, economy fixture measured/declared/regenerated (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -259,7 +259,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 61. Gear Rules & Store Purchase Fix | v1.9 | 2/4 | In Progress|  |
+| 61. Gear Rules & Store Purchase Fix | v1.9 | 3/4 | In Progress|  |
 | 62. Gear Tab Layout Rebuild | v1.9 | 0/TBD | Not started | - |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
