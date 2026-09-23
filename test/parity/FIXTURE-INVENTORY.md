@@ -2527,3 +2527,81 @@ diff - tools/initiative-fixture-scan-output.txt` clean (regenerated);
 test/parity/harness/comparables.js test/parity/prototype-master.js.txt`
 empty.
 
+## Phase 61: gear rules & store purchase (GRULE-01, STORE-02) — measured per plan
+
+This phase closes two gear-rule holes the on-device Pixel 7 rounds found:
+the combat gear lock (GRULE-01, this plan) so a fight can no longer be
+answered by a mid-swing re-arm, and a store purchase that always delivers
+(STORE-02, Plan 03) so a legal buy is never charged then silently rejected
+as "not an upgrade." Both are declared and measured independently, per
+plan, in their own subsections below.
+
+### Plan 01 — the combat gear lock (GRULE-01): measured zero
+
+**The rule.** Five verbs gate on one new predicate, `gearLockReason(state)`
+(`engine/items.js`): `equipItem` (the weapon/armor direct swap and the
+cloak/targeted-jewelry swap), `unequipSlot` (every slot, occupied or
+empty), and the loot/find verbs that can legitimately be reached while
+`state.combat` is still set — `takeLoot` (both the stow and the
+`equip:true` direct-swap forms), `takeAllLoot`, and `takeFind` (a
+multi-foe kill parks its drop in `state.pendingLoot` before the fight ends;
+a `pendingFind` can linger into a fight since `move()` never blocks on
+one). The lock window is `state.combat` truthy — the pending Fight!
+preview (`combat.pending`) INCLUDED, not just a joined fight. Every
+refusal is `{ type: "gearRefused", verb, reason: "combat", item?, slot? }`,
+pushed by a shared module-private `refuseGear` helper called FIRST in each
+gated verb (before any read that could matter), so a refusal is always a
+pure no-op plus exactly one event — zero rng draws, the state byte-for-byte
+untouched. `wearItem` (the shared internal primitive every gated verb
+above delegates to) stays deliberately UNGATED — it is never dispatched by
+a player action directly.
+
+**The predictor — gated-verb exposure across the 31 sites is 0.** None of
+the six fixture files' action lists (the movement/economy top-level
+`actions`, and every combat/magic/encounters scenario's own `actions`)
+ever dispatches `equipItem`, `unequipSlot`, `takeLoot`, `takeAllLoot`, or
+`takeFind` — a direct grep/walk of all 31 replay sites' fixed action
+scripts, cross-checked by the standing guard below. Since the lock only
+fires on ONE of those five verbs while `state.combat` is set, and no site
+ever dispatches any of them at all (gated or not), the predicted moved set
+was zero before a single line of engine code changed — this section is the
+MEASUREMENT proving that prediction, exactly like Phase 53's JOIN-02
+section above.
+
+**The live-scan results.** `node tools/worn-fixture-scan.mjs | diff -
+tools/worn-fixture-scan-output.txt` and `node
+tools/initiative-fixture-scan.mjs | diff -
+tools/initiative-fixture-scan-output.txt` are both EMPTY once normalized
+for line endings (`diff --strip-trailing-cr`) — this Windows checkout's
+`core.autocrlf` converts the two committed `*-output.txt` files to CRLF
+while every scan re-run emits LF, a PRE-EXISTING environment artifact
+(confirmed present on the unedited base commit too, not caused by this
+plan; already tracked as the standing ".gitattributes eol=lf pin" deferred
+item in `.planning/STATE.md`) — the same CRLF mismatch also trips two
+UNRELATED, PRE-EXISTING `divergence-records.test.js` assertions
+(`HEDGE-03`, `INIT-01`) on this machine, again present on the unedited
+base commit. The full parity suite (`node --test test/parity/*.test.js`)
+reports **45 tests, 43 pass, fail 2** — the same two pre-existing CRLF
+failures, not one more — with `git diff --stat -- test/parity/fixtures/`
+EMPTY (zero fixture edits) and the master hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`).
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s new
+`GRULE-01 (Phase 61)` test pins both facts: part (a) walks every fixture's
+action list and asserts no action's `type` is one of the five GATED verbs;
+part (b) replays all 31 sites (the JOIN-02 `replaySiteEvents` shape) and
+asserts the total `gearRefused` event count is 0 across every one of them.
+If a future engine change ever moves a fixture via this rule, part (a)
+fails first — the measured zero is a checked claim, not an assumption
+baked into silence.
+
+**Byte-identical elsewhere.** `test/parity/harness/comparables.js` is
+untouched — `gearRefused` is an EVENT, never serialized state, so no new
+field needs carving out of any `*Comparable()` function. `engine/actions.js`,
+`mazeworld.html`, `test/parity/fixtures/`, and
+`test/parity/prototype-master.js.txt` are all untouched (`git diff --stat`
+empty on every one). The tuning bot's `node tools/tune-difficulty.mjs
+--seeds=20 --json` output is byte-identical before and after this plan's
+engine edit (`cmp` exit 0) — the bot resolves combat before ever touching
+gear, so it was never exposed to the lock either.
+

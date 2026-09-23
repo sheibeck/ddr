@@ -478,3 +478,63 @@ test("BAND-02 (USER RULING D/G): the holders declaring Phase 54 are exactly the 
   }
   assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
 });
+
+// Phase 61 (GRULE-01): the combat gear lock moves zero fixtures — no replay
+// site dispatches a gated gear verb, and no replay emits gearRefused. The
+// GATED verbs mirror engine/items.js#refuseGear's five call sites.
+const GRULE01_GATED = new Set(["equipItem", "unequipSlot", "takeLoot", "takeAllLoot", "takeFind"]);
+
+test("GRULE-01 (Phase 61): the combat gear lock moves zero fixtures — no replay site dispatches a gated gear verb, and no replay emits gearRefused", () => {
+  // Part (a): no fixture action list ever dispatches a gated gear verb — the
+  // movement/economy top-level `actions`, and every combat/magic/encounters
+  // scenario's own `actions`.
+  const actionLists = [
+    MOVEMENT_FIXTURE.actions,
+    ECONOMY_FIXTURE.actions,
+    ...COMBAT_FIXTURE.scenarios.map((s) => s.actions),
+    ...MAGIC_FIXTURE.scenarios.map((s) => s.actions),
+    ...ENCOUNTERS_FIXTURE.scenarios.map((s) => s.actions),
+  ];
+  const offenders = [];
+  for (const actions of actionLists) {
+    for (const action of actions || []) {
+      if (GRULE01_GATED.has(action.type)) offenders.push(action.type);
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `expected no fixture action to dispatch a gated gear verb; found: ${offenders.join(", ")}`);
+
+  // Part (b): replay every one of the 31 sites and assert zero gearRefused
+  // events anywhere — a legitimately empty moved set still needs proof, not
+  // an assumption baked into silence (the JOIN-02 precedent above).
+  let totalSites = 0;
+  let gearRefusedCount = 0;
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    newRun(seed); // chargen never dispatches an action at all
+  }
+
+  totalSites++;
+  gearRefusedCount += replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions).events.filter((e) => e.type === "gearRefused").length;
+
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    gearRefusedCount += replaySiteEvents(scenario.seed, scenario.actions).events.filter((e) => e.type === "gearRefused").length;
+  }
+
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    gearRefusedCount += replaySiteEvents(scenario.seed, scenario.actions).events.filter((e) => e.type === "gearRefused").length;
+  }
+
+  totalSites++;
+  gearRefusedCount += replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true }).events.filter((e) => e.type === "gearRefused").length;
+
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    gearRefusedCount += replaySiteEvents(scenario.seed, scenario.actions).events.filter((e) => e.type === "gearRefused").length;
+  }
+
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+  assert.equal(gearRefusedCount, 0, "expected zero gearRefused events across every replay site");
+});
