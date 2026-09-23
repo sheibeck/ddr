@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 
 import { newRun, applyAction } from "../../engine/engine.js";
 import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js";
+import { movementComparable, combatComparable, economyComparable } from "../parity/harness/comparables.js";
 
 // firstWallDir(state) — the first cardinal direction from the player's
 // current position that leads onto a wall cell, mirroring
@@ -159,4 +160,16 @@ test("acts 57 survives serializeRun -> JSON.stringify -> validateSave -> rehydra
   assert.equal(check.value.acts, 57);
   const rehydrated = rehydrate(check.value);
   assert.equal(rehydrated.acts, 57);
+});
+
+// --- Task 2: the six-comparable carve-out guard ---
+
+test("acts is carved out of the three harness comparables: acts 999 compares equal to acts 0", () => {
+  const s = newRun(31);
+  const withZero = { ...structuredClone(s), acts: 0 };
+  const withHigh = { ...structuredClone(s), acts: 999 };
+
+  assert.deepStrictEqual(movementComparable(withHigh), movementComparable(withZero), "movementComparable must strip acts");
+  assert.deepStrictEqual(combatComparable(withHigh), combatComparable(withZero), "combatComparable must strip acts");
+  assert.deepStrictEqual(economyComparable(withHigh), economyComparable(withZero), "economyComparable must strip acts");
 });

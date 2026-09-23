@@ -108,7 +108,10 @@ function comparable(state) {
   // harness/comparables.js's Phase 46 rationale (a retired-field carve-out,
   // stripRetiredCounterFields precedent).
   state = reconcilePendingFight(state);
-  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, ...rest } = state;
+  // Phase 65 (RUN-01): strip `state.acts` too, the run's validated-action
+  // counter (engine/engine.js#applyAction). Engine-only bookkeeping with no
+  // prototype-side equivalent, and a plain strip (no reconcile).
+  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, acts, ...rest } = state;
   if (rest.combat) {
     const { initNote, round, ...combatRest } = rest.combat; // round: deliberate divergence (round-count fix 2026-09-09, one-per-cycle) — excluded from parity, its only mechanical use (round===1) is preserved+verified via effects
     rest.combat = stripFoeDamageClosures(combatRest);
