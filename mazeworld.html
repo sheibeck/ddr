@@ -788,6 +788,10 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-over-btn{display:block;width:100%;margin-top:13px;text-align:center;font-family:var(--disp);font-size:8px;letter-spacing:0;padding:15px 10px;background:#e8c97a;color:#14110c;border:0;border-radius:0;box-shadow:0 4px 0 #6b5c3c;cursor:pointer}
 .cb-over-btn.secondary{background:transparent;color:#a89c82;border:2px solid #3a3226;box-shadow:none}
 .cb-over-btn.dead{background:#2a1512;color:#e07260;border:2px solid #a63a2c;box-shadow:0 4px 0 #0d0b08}
+.cb-over-best{margin-top:12px;padding:10px 12px;border:2px solid #e8c97a;background:#1d180f}
+.cb-over-best-head{font-family:var(--disp);font-size:9px;line-height:1.6;color:#e8c97a}
+.cb-over-best-row{font-family:var(--mono);font-weight:700;font-size:14px;line-height:1.4;color:#e8c97a;margin:6px 0 0}
+.cb-over-best-quip{font-family:var(--mono);font-weight:700;font-size:14px;line-height:1.45;color:#c9bda0;margin:8px 0 0}
 .cb-sub{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin:10px 12px 0}
 #enc-panel[data-mode="dark"] .enc-head{font-family:var(--disp);font-size:11px;line-height:1.6;color:#e8c97a;margin:12px 12px 0}
 #enc-panel[data-mode="dark"] .enc-sub{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin:6px 12px 0}
@@ -3212,7 +3216,9 @@ const GRAVE_KEY = "ddr.graveyard.v1";
 // incremented by src/browser/engineAdapter.js#persistGrave (the live death
 // choke point). Read here (read-only) on the Dead-tab open the same way the
 // capped `graves` array is, so the #yard-count copy can show the TRUE body
-// count even though only the last 5 stones are stored/rendered.
+// count even though only the newest 5 stones are rendered here (Phase 65,
+// D-05: the adapter now stores up to 60 stones; this Dead tab still renders
+// a bounded list of 5 until Phase 66 replaces it with the Leaderboards panel).
 const GRAVE_TOTAL_KEY = "ddr.graveyard.total.v1";
 let graves = [];
 let gravesTotal = 0;
@@ -3285,8 +3291,10 @@ function renderGraves() {
     return;
   }
   // audit-batch E12 (part 2): the count reflects the TRUE lifetime total, not
-  // the (≤5) number of stones stored. Only the last GRAVE_CAP stones are kept,
-  // so once the body count passes 5 the copy says so explicitly.
+  // the (≤5) number of stones rendered here. The adapter stores up to 60
+  // stones now (Phase 65, D-05); this Dead tab still renders only the newest
+  // 5 until Phase 66 replaces it with the Leaderboards panel, so once the
+  // body count passes 5 the copy says so explicitly.
   const total = gravesTotal;
   if (!total) {
     // 04-UI-SPEC.md Copywriting Contract — DEAD tab's zero-grave empty state.
@@ -3299,8 +3307,9 @@ function renderGraves() {
   }
   count.textContent = total > 5 ? `Showing last 5 of ${total}` : `${total} interred`;
   wrap.innerHTML = "";
-  // Defensive: the adapter already caps storage at 5, but never render more
-  // than the last 5 stones regardless of what the array holds.
+  // Defensive: the adapter now stores up to 60 stones (Phase 65, D-05), but
+  // this Dead tab never renders more than the newest 5 regardless of what the
+  // array holds, until Phase 66 replaces it with the Leaderboards panel.
   for (const g of graves.slice(0, 5)) {
     const el = document.createElement("article");
     el.className = "stone";
@@ -4048,6 +4057,9 @@ function renderCombatOver(host, kind, opts = {}) {
   line.className = "cb-over-line";
   line.textContent = copy.line;
   over.appendChild(line);
+  // Phase 65 (RUN-04, D-12/D-13): the gold NEW PERSONAL BEST block sits
+  // under THAT IS THAT / "The maze keeps the rest." and above the buttons.
+  if (kind === "dead") renderNewBestBlock(over, window.__mzDeathRecord);
   if (Array.isArray(opts.buttons) && opts.buttons.length) {
     const actions = document.createElement("div");
     actions.className = "cb-over-actions";
@@ -4066,6 +4078,38 @@ function renderCombatOver(host, kind, opts = {}) {
       if (b.onTap) guardTap(document.getElementById(b.id), b.onTap);
     });
   }
+}
+
+// Phase 65 (RUN-04): the gold NEW PERSONAL BEST block on THAT IS THAT
+// (CONTEXT: only a new #1 is announced; a lesser finish stays silent; the
+// rail stays hidden while dead). `view` is src/browser/newBest.js#newBestView's
+// return shape (null | { head, rows, quip }) parked on window.__mzDeathRecord.
+// createElement/className/id/textContent/appendChild only, no innerHTML, and
+// no copy literals of its own — every word comes from the view.
+function renderNewBestBlock(host, view) {
+  if (!view || typeof view !== "object") return;
+  const block = document.createElement("div");
+  block.className = "cb-over-best";
+  block.id = "cb-over-best";
+  if (view.head) {
+    const head = document.createElement("div");
+    head.className = "cb-over-best-head";
+    head.textContent = view.head;
+    block.appendChild(head);
+  }
+  (Array.isArray(view.rows) ? view.rows : []).forEach((row) => {
+    const p = document.createElement("p");
+    p.className = "cb-over-best-row";
+    p.textContent = row;
+    block.appendChild(p);
+  });
+  if (view.quip) {
+    const quip = document.createElement("p");
+    quip.className = "cb-over-best-quip";
+    quip.textContent = view.quip;
+    block.appendChild(quip);
+  }
+  host.appendChild(block);
 }
 
 function renderEncounter() {
@@ -5369,6 +5413,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // node/the browser dev loop.
   import "./src/browser/storage.js";
   import { boot, dispatch, startNewRun, waitForPending, takeBootWornReport } from "./src/browser/engineAdapter.js";
+  // Phase 65 (RUN-04): the death-panel new-best parcel — takeDeathRecord()
+  // (engineAdapter.js) and newBestView() (src/browser/newBest.js) turn a
+  // died event into the classic renderCombatOver's NEW PERSONAL BEST block.
+  import { takeDeathRecord } from "./src/browser/engineAdapter.js";
+  import { newBestView } from "./src/browser/newBest.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
@@ -5651,6 +5700,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // field on S/state (serializeRun spreads S wholesale), same rule as
   // window.__mzRail/__mzFightEnd/__mzCombatMenu.
   window.__mzStair = null;
+  // Phase 65 (RUN-04): the just-died run's NEW PERSONAL BEST block view
+  // (src/browser/newBest.js#newBestView over engineAdapter#takeDeathRecord),
+  // parked once per died event and read by the classic renderCombatOver on
+  // every dead-panel render. Never a field on S/state, same rule as
+  // window.__mzFightEnd.
+  window.__mzDeathRecord = null;
   // The one-shot rail entry point Plans 03/04 use for chip explanations,
   // tap/inspect lines and the back-button quit warning — builds a card
   // directly (no fold pipeline) and repaints.
@@ -6237,6 +6292,11 @@ window.__mzClassicBoot = async function classicBoot() {
     const before = window.__mzState.get();
     const roundBefore = before && before.combat ? before.combat.round : null;
     const result = dispatch(action);
+    // Phase 65 (RUN-04): taken exactly once, right after the synchronous
+    // fold in the adapter. It covers every death path (move, combat
+    // including the beat path, abandon), since this is the shell's only
+    // dispatch call site.
+    if (result.events.some((e) => e.type === "died")) window.__mzDeathRecord = newBestView(takeDeathRecord());
     const ctx = NARRATIVE_ACTIONS.has(action.type) ? { narrate: narrateEvent } : {};
     const wasCombat = !!(before && before.combat);
     const inCombat = !!(result.state && result.state.combat);
@@ -6629,6 +6689,9 @@ window.__mzClassicBoot = async function classicBoot() {
     deadBtn.hidden = !(n > 0);
   }
   function showTitleScreen({ allowResume } = {}) {
+    // Phase 65 (RUN-04): the title shows after BURY THEM, abandon and
+    // save-and-quit, so a later death never renders a stale block.
+    window.__mzDeathRecord = null;
     const screen = document.getElementById("mw-title-screen");
     if (!screen) return;
     resumeIntent = allowResume != null ? allowResume : hasActiveDelveSave();
