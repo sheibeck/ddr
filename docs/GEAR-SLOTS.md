@@ -363,6 +363,16 @@ Name/kind scans that can involve a slot item (routed through
   calls; this phase deliberately does not split the panel), and a
   bag-only drop prompt.
 
+> **Phase 62 update (2026-09-23, v1.9):** the Gear tab displays the worn
+> keys as WEAPON, ARMOR, CLOAK, JEWELRY 1, JEWELRY 2
+> (`src/browser/gearTab.js#GEAR_WORN_ORDER`) — a DISPLAY order only;
+> `WORN_SLOTS`'s own address-space order (`jewelry1`, `jewelry2`, `cloak`)
+> is unchanged. Bare Fists reads as an empty weapon slot. An active Cloak of
+> Armor sits in the CLOAK row, while the ARMOR row keeps showing the plate
+> underneath (`armorDisplay(c).under`). A bagged cloak or jewel offers no
+> USE cell, since it must be worn to work — `gearBagCardsModel` only wires a
+> USE cell for a bag-only item with no worn-slot family.
+
 ## §8. Jewelry family — two pieces (user ruling 2026-09-18, quick 260918-wy1)
 
 **User ruling, verbatim (2026-09-18):**

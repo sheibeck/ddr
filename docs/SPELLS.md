@@ -679,6 +679,14 @@ case):
 
 ### The Hero-tab kit rows
 
+> **Phase 62 update (2026-09-23, v1.9):** these rows no longer live on the
+> Hero tab's `#s-kit` list — the rebuilt Gear tab's ALSO ON YOU list
+> (`#gear-kit`) is now their one home, built from
+> `src/browser/gearTab.js#gearKitRows` with copy in `GEAR_COPY.kit`. Same
+> fields, same gates (`c.ward`, `c.mirror > 0`, `c.senses`, `c.foresight`,
+> the live `c.timers["spell:reveal"]` record), same values — only the
+> mount point moved.
+
 `mazeworld.html`'s `#s-kit` list (built in `paint()`):
 
 - **Shield row (SPELL-06):** `[c.ward.name, "${pool} hp left · ${rounds}

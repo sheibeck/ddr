@@ -113,6 +113,19 @@ and the `rationsViewModel(state)` invariant `total === nightlyEats(state)`.
 
 ## Gear screen (CLAR-04)
 
+> **Phase 62 update (2026-09-23, v1.9):** the two-panel ON YOU / BAG layout
+> below is superseded by the mock layout (`design/Mazeworld Gear.dc.html`):
+> a slim ARMOR RATING / WILMST header, then WORN (five fixed rows — WEAPON,
+> ARMOR, CLOAK, JEWELRY 1, JEWELRY 2), BAG (a capacity meter plus item
+> cards), CONSUMABLES and ALSO ON YOU. `emptySlotRows(c)` now also yields the
+> weapon row (a bare-fisted weapon slot gets its own in-voice empty line,
+> same as armor/jewelry/cloak). The bag-only drop shelf (`dropShelfItems`)
+> is unchanged. See `src/browser/gearTab.js` (`GEAR_WORN_ORDER`,
+> `gearHeaderModel`, `gearWornModel`, `gearBagMeterModel`,
+> `gearBagCardsModel`, `gearConsumablesModel`, `gearKitRows`,
+> `renderGearTab`). The historical two-panel description below is kept for
+> its own record, not as the current layout.
+
 **The two panels, resolved against Phase 37's worn model** (`docs/GEAR-SLOTS.md` — one item per slot, no shields exist; the roadmap's "Carried: weapon, staff, shield" is superseded):
 
 - **ON YOU** = **WIELDED** (the weapon row) + **WORN** (armor, plus the six `WORN_SLOTS` — ring/bracelet/amulet/helm/cloak/staff). Every EMPTY worn slot gets an in-voice row from the new `emptySlotRows(c)` (`GEAR_COPY.empty`), inserted between the existing `wornRow`/`wornSlotRow` calls Plan 04 keeps: `"ring — nothing. Ten fingers, zero commitments."` and the rest, in fixed armor-then-`WORN_SLOTS` order. The staff row alone is class-aware: a non-Magic-User reads `"staff — nothing, and nothing you could hold. Magic Users only."` (`staffNotYou`) rather than the plain empty line, since a non-caster could never wear one anyway (mirrors `autoWearSlot`'s own gate).
