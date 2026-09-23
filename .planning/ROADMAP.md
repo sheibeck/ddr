@@ -47,7 +47,22 @@ Full requirements: `.planning/REQUIREMENTS.md`.
   4. A Magic User holding a Quarter Staff can buy a Spiked Staff: gold is charged, the staff lands in the bag, and the store row and rail line say why it isn't an upgrade (d8 vs your d6 · −1 to hit · per-swing numbers). Proven by a unit test; the one hit-math verdict is kept and explained, never used as a gate
   5. Every parity fixture either rule change moves is measured with the fixture scan, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated; the frozen prototype master is untouched
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 61-01-PLAN.md — Combat gear lock: `gearRefused` gate in equipItem/unequipSlot (+ loot/find take verbs), narration, every-action property test, measured zero fixture moves (wave 1)
+- [ ] 61-02-PLAN.md — Upgrade line explains itself: `gearCompareParts` + `upgradeWhy.js`, lootCompare/loot screen/find card show dice · to-hit · per-swing · lost proficiency (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 61-03-PLAN.md — Store always delivers: pre-payment `storeBuyRefusal`, not-better → bag (`purchaseBagged`), trade-in narration, economy fixture measured/declared/regenerated (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 61-04-PLAN.md — Store rows: `storeRowState` disables exactly what the engine refuses, reason + explained line on the row, store snapshots regenerated (wave 3)
+
 **Research**: none — `todos/pending/2026-09-21-no-equipping-or-swapping-gear-during-combat.md` and `todos/pending/2026-09-21-store-purchase-charged-then-rejected-as-not-an-upgrade-spike.md` carry the file-level fix design (`engine/items.js`, `engine/actions.js`, `engine/movement.js:523`'s existing combat-gate pattern, `engine/economy.js`'s `buyFrom`/`weaponUpgradeDelta`)
 **Discuss recommended**: yes — STORE-02's buy-and-bag vs. refuse-up-front choice for a legal-but-not-better item is a real product decision the todo itself flags as open ("Decide in discuss")
 
@@ -244,7 +259,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 61. Gear Rules & Store Purchase Fix | v1.9 | 0/TBD | Not started | - |
+| 61. Gear Rules & Store Purchase Fix | v1.9 | 0/4 | Planned | - |
 | 62. Gear Tab Layout Rebuild | v1.9 | 0/TBD | Not started | - |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
