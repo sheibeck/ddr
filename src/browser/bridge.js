@@ -242,9 +242,10 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze([
       "mazeworld.html (classic: partyShown — the displayed point a step glide is heading toward)",
       "mazeworld.html (classic: positionPartySprite — box/pose/frame, in lockstep with positionCanvas())",
+      "mazeworld.html (classic: glideParty — stepTo, the step glide, Phase 59 Plan 04)",
       "mazeworld.html (module: settleAllMotion — finish())",
     ]),
-    purpose: "Bridges the pure src/browser/partySprite.js marker controller (Phase 59, ANIM-01/02) so the classic placement code reads one lockstep box and one step glide, never a second copy of the camera math. Plan 59-04 adds the classic glideParty (stepTo) to this list.",
+    purpose: "Bridges the pure src/browser/partySprite.js marker controller (Phase 59, ANIM-01/02) so the classic placement code reads one lockstep box and one step glide, never a second copy of the camera math.",
   }),
   __mzPendingNarration: Object.freeze({
     owner: "mazeworld.html (module)",

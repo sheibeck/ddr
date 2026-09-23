@@ -2329,6 +2329,24 @@ function positionParty() {
 }
 window.mzPositionParty = positionParty;
 
+// Phase 59 (ANIM-02, D-03): the step glide — starts the marker gliding from
+// `from` (where it was DRAWN before this step, captured by the module's
+// stepWith BEFORE the dispatch — see stepWith's own glideFrom comment) to
+// the party's new cell. window.__mzPartySprite is read at CALL time (never
+// captured) so a fresh bridge is always seen; a missing bridge/stepTo
+// fails open — the marker simply sits on the new cell at the next
+// placement, never an error. stepWith (below) is the ONE caller; D-05
+// reduced motion lands the glide in this same call, via the controller's
+// own injected `reduced()` predicate (never a second read here).
+function glideParty(from) {
+  if (!S || !from) return;
+  const sp = window.__mzPartySprite;
+  if (!sp || !sp.stepTo) return;
+  sp.stepTo(from, partyCentre());
+}
+window.mzGlideParty = glideParty;
+window.mzPartyShown = partyShown;
+
 // Phase 35 (decision 3), reversed 2026-09-16 UAT: the canvas chrome
 // palette (fog / bevelled walls / floor inset / border) still comes from
 // src/browser/mapMarks.js via the window.__mzMapMarks bridge; the marks
@@ -6113,6 +6131,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // move-shaped wrapper every existing call site keeps using.
   function stepWith(action) {
     const wasCombat = !!(window.__mzState.get() && window.__mzState.get().combat);
+    // Phase 59 (ANIM-02, D-03): where the marker is DRAWN before this step
+    // (the old cell, or a glide's own in-flight point) — captured HERE,
+    // before the dispatch, because paint() below places the marker on the
+    // NEW cell (positionCanvas() -> positionPartySprite() reads S.floor.px/
+    // py, already moved by then). window.mzPartyShown reads at call time;
+    // a missing bridge is null, and the glide trigger below no-ops on null.
+    const glideFrom = window.mzPartyShown?.() ?? null;
     // Phase 49 (PERF-01): dev-gated timing marks — `perf` is null unless
     // this is a start-at-depth dev run (state.dev), so a normal run reads
     // no clock and records nothing. Four rows, docs/PERF-BASELINE.md#Method.
@@ -6216,6 +6241,11 @@ window.__mzClassicBoot = async function classicBoot() {
     const jumped = events.some((e) => e.type === "floorChanged" || e.type === "teleported");
     if (jumped) window.mzCenterMap?.();
     else if (events.some((e) => e.type === "moved")) window.mzKeepPartyInView?.();
+    // Phase 59 (ANIM-02, D-03): the marker glide starts in the SAME tick as
+    // the camera nudge above, with the same ~200ms ease-out — marker and
+    // map move together. Only a genuine, non-jump step glides; stairs and
+    // teleports keep snapping through mzCenterMap above, never a glide.
+    if (!jumped && glideFrom && events.some((e) => e.type === "moved")) window.mzGlideParty?.(glideFrom);
     if (perf) { perf.record("step", performance.now() - tStep); perfReadout(perf); }
   }
 
