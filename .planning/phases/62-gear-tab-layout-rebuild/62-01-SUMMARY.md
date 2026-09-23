@@ -144,6 +144,7 @@ _Note: both tasks were authored together in-session; the working tree was delibe
 ## Decisions Made
 - Split the two tasks into their own atomic commits by temporarily removing Task 2's code/tests before the Task 1 commit, then restoring them for the Task 2 commit — preserves the plan's per-task commit contract even though both were authored together.
 - `gearUseCell`'s cooldown `sub` reads `12 SQ` (not `itemRowState`'s own `cd 12 SQ` text) — matches the plan's exact behavior spec; `label: COOLING` already carries the "cooling down" meaning so the sub isn't redundant.
+- **REQUIREMENTS.md left untouched (GSCR-01..06 stay `Pending`).** These six requirements describe player-VISIBLE behavior ("The Gear tab opens on...", "The player sees a WORN list...") that only exists once Plan 02 wires these models into the DOM (per this phase's own Source Coverage Audit table, every GSCR-01..06 row spans "01 (model), 02 (DOM)"). This plan ships the pure models only — no `mazeworld.html`/DOM changes — so marking the requirements complete now would be premature. The orchestrator/Plan 02's executor should mark them complete once the renderer wiring lands.
 
 ## Deviations from Plan
 
