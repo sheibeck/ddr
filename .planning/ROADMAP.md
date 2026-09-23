@@ -60,7 +60,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 65-04-PLAN.md — (wave 2) the summary gains season/seed/acts/hash; the adapter loads/backfills/persists `ddr.bests.v1`, sets GRAVE_CAP 60, retires `ddr.best.v1`, and adds a one-shot `takeDeathRecord()` (RUN-01..04)
+- [x] 65-04-PLAN.md — (wave 2) the summary gains season/seed/acts/hash; the adapter loads/backfills/persists `ddr.bests.v1`, sets GRAVE_CAP 60, retires `ddr.best.v1`, and adds a one-shot `takeDeathRecord()` (RUN-01..04)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -288,7 +288,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 65. Run Record & Personal Bests | v2.0 | 3/5 | In Progress|  |
+| 65. Run Record & Personal Bests | v2.0 | 4/5 | In Progress|  |
 | 66. Leaderboards Panel — Local | v2.0 | 0/TBD | Not started | - |
 | 67. Play Games Integration & Account Chip | v2.0 | 0/TBD | Not started | - |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
