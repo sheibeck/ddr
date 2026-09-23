@@ -35,7 +35,7 @@ function fixedChar(overrides = {}) {
 
 // ─── GEAR_COPY — frozen shape pin ───────────────────────────────────────────
 
-test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff leaves; 260918-wy1: ring/bracelet/amulet/helm merged into jewelry1/jewelry2)", () => {
+test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff leaves; 260918-wy1: ring/bracelet/amulet/helm merged into jewelry1/jewelry2; Phase 62 GSCR-01..06 extension)", () => {
   assert.deepEqual(GEAR_COPY, {
     onYou: "ON YOU",
     wielded: "WIELDED",
@@ -44,15 +44,86 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
     bag: "BAG",
     freeRide: "potions & scrolls ride free",
     empty: {
+      weapon: "fists — nothing in hand. Free, always with you, and not very good.",
       armor: "armor — nothing. The wind is your armor, and the wind is not on your side.",
       jewelry1: "jewelry — nothing. Ten fingers, one neck, zero commitments.",
       jewelry2: "jewelry — nothing. Room for one more bad decision.",
       cloak: "cloak — nothing. Cold and unmagical, in that order.",
     },
+    armorRating: "ARMOR RATING",
+    wilmst: "WILMST",
+    consumables: "CONSUMABLES",
+    count: "{n} / {max}",
+    held: "{n} HELD",
+    slot: {
+      weapon: "WEAPON",
+      armor: "ARMOR",
+      cloak: "CLOAK",
+      jewelry1: "JEWELRY 1",
+      jewelry2: "JEWELRY 2",
+    },
+    family: {
+      weapon: "WEAPON",
+      armor: "ARMOR",
+      cloak: "CLOAK",
+      jewelry: "JEWELRY",
+    },
+    swap: " · SWAP",
+    emptyName: "empty",
+    noValue: "—",
+    chevron: "›",
+    weaponMagic: "+{n} magic. Somebody cared, once.",
+    weaponMundane: "no enchantment. Just you and the swing.",
+    magicPlate: "magic plate",
+    armorWear: "{current}/{max} hp",
+    armorDestroyed: "destroyed",
+    bagFull: "BAG FULL · DROP OR USE SOMETHING",
+    bagEmptyHead: "NOTHING LEFT TO CARRY",
+    bagEmptyBody: "You used it all. That was the plan, technically.",
+    use: {
+      use: "USE",
+      active: "ACTIVE",
+      cooling: "COOLING",
+      read: "READ",
+    },
+    healingPotion: "HEALING POTION",
+    healingDesc: "Heals. Wasted at full health.",
+    scrolls: "SCROLLS",
+    scrollDesc: "A random spell, read aloud. No refunds.",
+    qty: "×{n}",
+    kit: {
+      rations: "Rations",
+      rationsValue: "{n} days",
+      spellCharges: "Spell charges",
+      spellChargesValue: "{k} / {max}",
+      wardValue: "{pool} hp left · {rounds} rds",
+      strength: "Strength",
+      strengthValue: "+{n} damage",
+      regen: "Regeneration",
+      regenValue: "d8 a round",
+      mirror: "Mirror Self",
+      mirrorValue: "{n} rds",
+      senses: "Sense Presence",
+      sensesValue: "till the fight ends",
+      foresight: "Sense Danger",
+      foresightValue: "armed",
+      reveal: "Map the Floor",
+      revealValue: "{n} sq",
+      kills: "Kills",
+    },
+    act: {
+      unequip: "Unequip",
+      bagFull: "Bag full",
+    },
   });
   assert.ok(Object.isFrozen(GEAR_COPY));
   assert.ok(Object.isFrozen(GEAR_COPY.empty));
-  assert.deepStrictEqual(Object.keys(GEAR_COPY.empty).sort(), ["armor", "cloak", "jewelry1", "jewelry2"]);
+  assert.ok(Object.isFrozen(GEAR_COPY.slot));
+  assert.ok(Object.isFrozen(GEAR_COPY.family));
+  assert.ok(Object.isFrozen(GEAR_COPY.use));
+  assert.ok(Object.isFrozen(GEAR_COPY.kit));
+  assert.ok(Object.isFrozen(GEAR_COPY.act));
+  assert.deepStrictEqual(Object.keys(GEAR_COPY.empty).sort(), ["armor", "cloak", "jewelry1", "jewelry2", "weapon"]);
 });
 
 test("GEAR_COPY: every string leaf clears the family-friendly safety wordlist", () => {
@@ -174,6 +245,17 @@ test("emptySlotRows: a fully-equipped Magic User (armor worn, both jewelry keys 
     items: [{ kind: "staff", n: "Staff" }],
   });
   assert.deepStrictEqual(emptySlotRows(c), []);
+});
+
+test("emptySlotRows: a bare-fisted character gets the weapon row first (Fists/empty/undefined/not-a-weapon-name); a real weapon gets none", () => {
+  for (const weapon of ["Fists", "", undefined, "NotAWeapon"]) {
+    const c = fixedChar({ weapon, armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0 });
+    const rows = emptySlotRows(c);
+    assert.equal(rows[0].slot, "weapon");
+    assert.equal(rows[0].text, GEAR_COPY.empty.weapon);
+  }
+  const c = fixedChar({ weapon: "Axe" });
+  assert.ok(!emptySlotRows(c).some((r) => r.slot === "weapon"));
 });
 
 test("emptySlotRows: pure — never mutates c, never throws on a sparse c", () => {
