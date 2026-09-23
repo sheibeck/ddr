@@ -48,6 +48,12 @@ import { ABILITY_BY_ID } from "../../content/abilities.js";
 // narrationLines.js, never the reverse (the no-cycle rule the coverage test
 // pins).
 import { slotWord, initiativeVerdictText } from "./narrationLines.js";
+// Phase 61 (STORE-02/STORE-03): purchaseBagged's "why isn't this an
+// upgrade" clause formats engine/derived.js#gearCompareParts through the
+// SAME zero-import formatter narrationLines.js's rail line uses — importing
+// it here does not violate this module's presentation-only contract
+// (upgradeWhy.js carries no engine/ import of its own).
+import { upgradeWhyText } from "./upgradeWhy.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -790,6 +796,15 @@ export const EVENT_NARRATION = {
   buyFailed: (e) => `<span class="miss">You are short ${e.short ?? 0} wilmst.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   bought: (e) => `<span class="hit">Bought: ${e.item ?? "something"}.</span> −${e.cost ?? 0} wilmst.`,
+  // Phase 61 (STORE-02/STORE-03): a legal buy that is NOT an upgrade is
+  // charged and stowed rather than lost — the explanation reuses Plan 02's
+  // upgradeWhyText/gearCompareParts formatter (`e.why` may be a string, e.g.
+  // the voice-scan BASE_EVENT shape — upgradeWhyText returns "" for that,
+  // so no explanation clause is added).
+  purchaseBagged: (e) => {
+    const why = upgradeWhyText(e.why);
+    return `<span class="beat">Into the bag: ${e.item?.n ?? "something"}.</span> Not an upgrade${why ? ` — ${why}` : ""}. It is yours all the same; equip it from Gear if you know something the arithmetic does not.`;
+  },
   // RATION-01: the dedicated, visible ration purchase — surfaces the ration
   // gain explicitly, unlike the old silent food-side-effect +1.
   rationsBought: (e) => `<span class="hit">Stocked up:</span> +${plural(e.amount ?? 1, "ration")}. At least someone is planning ahead.`,
@@ -926,6 +941,13 @@ export const EVENT_NARRATION = {
   // too, ahead of the same generic fallback.
   // Phase 39 (GEAR-05): a tool never duplicates — its own clause ahead of
   // the generic fallback, mirroring the woodsman/acrobat clauses above.
+  // Phase 61 (STORE-02): pre-payment refusals make a store legality
+  // rejection (wrongClass/tooHeavy/noArmor) a LIVE path here now (buyFrom
+  // used to charge first and reject after) — the generic fallback used to
+  // read "Not an upgrade." for every non-woodsman/acrobat/haveOne reason,
+  // which mislabeled a class/race refusal. `notBetter` keeps that exact
+  // line; everything else (wrongClass/tooHeavy/noArmor/notEquippable/
+  // unknown) now mirrors equipRejected's own generic refusal line.
   itemRejected: (e) =>
     e.reason === "woodsman"
       ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
@@ -933,8 +955,13 @@ export const EVENT_NARRATION = {
         ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
         : e.reason === "haveOne"
           ? `<span class="miss">You already carry one ${e.item?.n ?? "of those"}.</span> One is the limit; two is a hobby.`
-          : `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`,
-  itemTaken: (e) => `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.`,
+          : e.reason === "notBetter"
+            ? `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`
+            : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
+  // Phase 61 (STORE-02): an additive `replaced` (the traded-in weapon/armor
+  // piece) appends one clause; the no-replaced text stays byte-identical.
+  itemTaken: (e) =>
+    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.${e.replaced?.n ? ` The shopkeeper keeps your old ${e.replaced.n}.` : ""}`,
   itemUsed: (e) => `You use ${e.item?.n ?? "something"}.`,
   // Phase 24 (IDENT-07): a Pilfer's "cannot use a single magic item that
   // doesn't heal" bad — the refusal fires before any side effect.

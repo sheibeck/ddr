@@ -2605,3 +2605,103 @@ empty on every one). The tuning bot's `node tools/tune-difficulty.mjs
 engine edit (`cmp` exit 0) — the bot resolves combat before ever touching
 gear, so it was never exposed to the lock either.
 
+### Plan 03 — a store purchase always delivers (STORE-02): measured moved set (1)
+
+**The rule.** `buyFrom` no longer deducts gold and marks a stock row sold
+BEFORE knowing whether the purchase can be delivered. `storeBuyRefusal(c,
+line)` (`engine/economy.js`) is the ONE pre-payment predicate — gold, then
+legality (`weaponRefusalReason`/`armorRefusalReason`), then room (`canStow`)
+— checked in that order, before any mutation. A refusal reuses the existing
+event vocabulary (`buyFailed`/`bagFull`/`itemRejected`) — no new refusal
+event type. A legal buy that clears every check is charged, the row is
+marked sold, and `deliverGear(state, it, events)` decides equip-vs-bag: an
+upgrade (`weaponUpgradeDelta`/`armorUpgradeDelta` strictly `> 0`) auto-equips
+via `takeItem` exactly as before, now naming the traded-in piece
+(`itemTaken.replaced`, additive); anything else is bagged with one NEW event,
+`purchaseBagged { item, why }` (`why` = `gearCompareParts(c, it)`, computed
+BEFORE the stow). `takeItem`'s own `notBetter` rejection branch is untouched
+— the store's `buyWeapon`/`buyArmor`/`buyPremium` effects no longer reach it
+at all (`deliverGear` decides equip-vs-bag first), so the ONLY caller still
+exercising that branch is the parity harness's legacy auto-take
+(`test/parity/harness/comparables.js#reconcilePendingFind/reconcilePendingLoot`,
+untouched by this plan). That is why exactly one fixture moves, not more.
+
+**The predictor — store exposure across the 31 sites is exactly 1.** Only
+`action-script.economy.json#script` ever dispatches `buyItem` (the fixture's
+own `_note`/`divergence.rationale` document this: a full store visit,
+8 `buyItem` actions). Its 8 buy outcomes, before -> after this plan:
+
+| Action | Item | Before (pre-Phase-61) | After (Phase 61) |
+|---|---|---|---|
+| 1 (idx 0) | Katana | `itemTaken` (upgrade, equips) | unchanged |
+| 2 (idx 3) | Studded | `itemTaken` (upgrade, equips) | unchanged |
+| 3 (idx 9) | Axe | `bought` + `itemRejected notBetter` (paid, LOST) | `bought` + `purchaseBagged` (paid, BAGGED) — **the one moved outcome** |
+| 4 (idx 10) | Set of lockpicks | `bought` + `giveLockpicks` | unchanged |
+| 5 (idx 11) | Casket, a broadsword (premium) | `buyFailed insufficientGold` | unchanged |
+| 6 (idx 7) | Xtra Healing potion | `bought` + `givePotion` | unchanged |
+| 7 (idx 8) | Speed potion | `bought` + `givePotion` | unchanged |
+| 8 (idx 6) | Sealed scroll | `bought` + `buyScroll` | unchanged |
+
+Only action 3 (the Axe) is a legal-but-not-upgrade weapon/armor/premium buy
+anywhere in the 31 sites — every other `buyWeapon`/`buyArmor`/`buyPremium`
+line either legality-refuses (none do here) or is a genuine upgrade (Katana,
+Studded), so `deliverGear` equips them exactly as `takeItem` always did.
+Predicted moved set: `{action-script.economy.json#script}`, size 1.
+
+**The live-scan results.** `node tools/worn-fixture-scan.mjs | diff -
+tools/worn-fixture-scan-output.txt` and `node tools/initiative-fixture-scan.mjs
+| diff - tools/initiative-fixture-scan-output.txt` are both empty once
+regenerated (this Windows checkout's `core.autocrlf` CRLF/LF artifact is the
+same pre-existing, tracked environment issue Plan 01 documented — confirmed
+present on the unedited base commit too). The scan diff before regeneration
+touched EXACTLY two lines: the economy row's engine-end-items column (`Healing
+potion, Lockpicks, Speed potion` -> `Healing potion, Axe, Lockpicks, Speed
+potion`) and that row's `end.after.items (engine @end)` detail line (the Axe
+weapon object `{"kind":"weapon","n":"Axe","base":"Axe","bonus":0,"txt":"d6"}`
+inserted between the Healing potion and the Lockpicks) — nothing else in
+either scan moved. `node --test test/parity/*.test.js` reports **46 tests, 45
+pass, fail 1** — the one pre-existing `INIT-01` CRLF false negative (confirmed
+identical on the unedited base commit; `HEDGE-03` now passes again once the
+fixture is regenerated), with `git diff --stat -- test/parity/fixtures/`
+touching ONLY `action-script.economy.json`, and the master hash unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`).
+
+**The declared record.** `test/parity/fixtures/action-script.economy.json`'s
+top-level `divergence` record: `phase` "24+39+45" -> "24+39+45+61",
+`requirements` gains `"STORE-02"`, and `after.items` is re-measured to insert
+the Axe weapon item between the Healing potion and the Lockpicks (copied
+verbatim from the scan's `end.after.items (engine @end)` line, never
+hand-typed). `before`, `fields`, `fromAction`, `stockNames`, `stockAfter`,
+`chargenDivergence`, `floorFeatureShift`, the seed, and every action are
+untouched.
+
+| Holder | Cause | fromAction | `items` before -> after |
+|---|---|---|---|
+| `action-script.economy.json#script` | the Axe (action 3) is charged and bagged instead of charged and lost | 0 | `Healing potion, Lockpicks, Speed potion` -> `Healing potion, Axe, Lockpicks, Speed potion` |
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s new
+`STORE-02 (Phase 61)` test pins both facts: part (a) the declared set
+(holders whose `record.phase` split on `+` includes `"61"` via a
+`kind === "divergence"` record) is exactly
+`["action-script.economy.json#script"]`; part (b) replays the economy script
+and asserts exactly one `purchaseBagged` event (the Axe, with a non-null
+`why`) and zero `notBetter` `itemRejected` events; part (c) replays every
+OTHER one of the 31 sites and asserts zero `purchaseBagged` events anywhere
+else. If a future engine change ever moves a second fixture via this rule,
+part (a) fails first — the measured set-of-one is a checked claim, not an
+assumption baked into silence.
+
+**Byte-identical elsewhere.** `takeItem`'s own state mutations are
+byte-identical to before this plan (only its `itemTaken` push gained the
+additive `replaced` key, and its `notBetter`/legality-refusal branches are
+untouched) — every encounters/combat reconcile that calls it
+(`reconcilePendingFind`/`reconcilePendingLoot` in
+`test/parity/harness/comparables.js`) is therefore untouched, and
+`comparables.js` itself needed no edit (`git diff --stat -- test/parity/harness/comparables.js`
+is empty). No new field is serialized onto `state` itself — `purchaseBagged`
+and `itemTaken.replaced` are both EVENT payload only. The tuning bot's `node
+tools/tune-difficulty.mjs --seeds=20 --json` output is byte-identical before
+and after this plan (`cmp` exit 0, measured against the pre-Plan-03 base
+commit via `git archive`) — the bot never buys a non-upgrade, so it was never
+exposed to the new bagging path either.
+
