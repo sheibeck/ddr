@@ -123,8 +123,8 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 63-03-PLAN.md — itemDropped/itemUnequipped reach the rail + the sheet-vs-engine agreement sweep and GRULE-02's after-the-fight proof (wave 3)
-- [ ] 63-04-PLAN.md — Shell wiring: `#mw-gear-sheet` dialog markup/CSS, open/refresh/close lifecycle on the camp-sheet pattern, paint() re-render mid-fight, scrim + back button, `__mzGearSheet` bridge, two declared sheet snapshots (wave 3)
+- [x] 63-03-PLAN.md — itemDropped/itemUnequipped reach the rail + the sheet-vs-engine agreement sweep and GRULE-02's after-the-fight proof (wave 3)
+- [x] 63-04-PLAN.md — Shell wiring: `#mw-gear-sheet` dialog markup/CSS, open/refresh/close lifecycle on the camp-sheet pattern, paint() re-render mid-fight, scrim + back button, `__mzGearSheet` bridge, two declared sheet snapshots (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -294,7 +294,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 |-------|-----------|----------------|--------|-----------|
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
-| 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 2/5 | In Progress|  |
+| 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 4/5 | In Progress|  |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
 | 57. Map & HUD Layout Band | v1.8 | 5/5 | Complete    | 2026-09-22 |
