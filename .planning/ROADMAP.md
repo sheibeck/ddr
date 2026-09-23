@@ -44,7 +44,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
   1. Attempting to equip, unequip, wear, or swap a jewelry slot while `state.combat` is set is refused with one `gearRefused { reason: "combat" }` event and an in-voice narration line ("Not the moment to change outfits."), at zero rng draws
   2. After the fight ends, the same equip/unequip/swap actions work exactly as before
   3. A legal store purchase (weapon, armor, or premium item) always either equips or bags the item it charges for; a real refusal (bag full, class cannot use it) happens before payment, with the reason on the row
-  4. A Magic User holding a proficient Quarter Staff can buy a Spiked Staff: gold is charged and the staff is owned — proven by a unit test, since a strictly bigger die must never read as "not an upgrade" against a proficient current weapon
+  4. A Magic User holding a Quarter Staff can buy a Spiked Staff: gold is charged, the staff lands in the bag, and the store row and rail line say why it isn't an upgrade (d8 vs your d6 · −1 to hit · per-swing numbers). Proven by a unit test; the one hit-math verdict is kept and explained, never used as a gate
   5. Every parity fixture either rule change moves is measured with the fixture scan, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated; the frozen prototype master is untouched
 
 **Plans**: TBD
@@ -83,7 +83,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 
 **Plans**: TBD
 **Research**: none — the mock's sheet layout and `docs/GEAR-SLOTS.md` carry the interaction contract
-**Discuss recommended**: yes — GRULE-02's open question (whether the SHIELD and torch "ready" toggles count as gear changes under the same combat gate; the todo recommends yes) needs a ruling before the sheet's greyed-row logic is built
+**Discuss recommended**: optional. GRULE-02's open question was settled in the Phase 61 discuss: Shield (a spell) and the torch (a use) are not gear changes and stay live mid-fight.
 **UI hint**: yes
 
 ### Phase 64: Device Close & UAT Batch

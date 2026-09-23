@@ -27,12 +27,12 @@
 ### Gear Rules (engine — declared, deterministic, zero new rng draws)
 
 - [ ] **GRULE-01**: While a fight is up (`state.combat` set), the engine refuses `equipItem`, `unequipSlot`, `wearItem` and the jewelry swap with one `gearRefused { reason: "combat" }` event and a narration line in voice ("Not the moment to change outfits."), with `EVENT_NARRATION` coverage. Each verb has a unit test. Every parity fixture is byte-identical, confirmed by the fixture scan; one that moves is declared.
-- [ ] **GRULE-02**: In a fight, the Gear sheet shows EQUIP / SWAP / UNEQUIP greyed with the combat reason while USE stays live. After the fight they work again. Whether the SHIELD and torch "ready" toggles count as gear changes is decided in discuss (the todo recommends the same gate).
+- [ ] **GRULE-02**: In a fight, the Gear sheet shows EQUIP / SWAP / UNEQUIP greyed with the combat reason while USE stays live. After the fight they work again. *(Settled in the Phase 61 discuss: the Shield is a spell pool and the torch is a use, so neither is a gear change and both stay live, along with potions, scrolls and Drop.)*
 
 ### Store (engine — declared fixture moves)
 
 - [ ] **STORE-02**: A store purchase never charges for an item it then fails to deliver. `buyFrom` settles the outcome before gold moves. A legal weapon, armor or premium item is bought and then equipped or bagged by choice. A real refusal (bag full, class cannot use it) happens before payment, with the reason on the row.
-- [ ] **STORE-03**: The store and loot "upgrade / not an upgrade" line compares like with like (proficiency handled the same way on both sides) and is advice, never a gate on buying. A Magic User holding a proficient Quarter Staff can buy a Spiked Staff: gold is charged and the staff is owned (unit test). Store fixtures that move are measured, declared and regenerated.
+- [ ] **STORE-03**: The store, loot and find "upgrade / not an upgrade" line keeps the one hit-math verdict (`weaponUpgradeDelta` / `expectedStrike`) and explains it: dice, to-hit, per-swing numbers, and a lost kit proficiency when there is one. It shows on store weapon and armor rows as well as the loot screen and find card, and it is advice that never disables BUY. A Magic User holding a Quarter Staff can buy a Spiked Staff: gold is charged, the staff lands in the bag, and the line says why it isn't an upgrade (d8 vs d6, −1 to hit). Unit test. Store fixtures that move are measured, declared and regenerated. *(Reworded 2026-09-23 in the Phase 61 discuss: the todo's "proficiency" diagnosis was wrong; Magic User kits carry prof 0, and the Spiked Staff's `need: -1` makes the verdict true.)*
 
 ## Future Requirements
 
