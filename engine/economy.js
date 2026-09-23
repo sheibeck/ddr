@@ -15,8 +15,23 @@
 // No DOM, no localStorage, no Math.random — every roll goes through the
 // injected engine rng, in the prototype's exact consumption order.
 
-import { giveItem, takeItem, stowItem, canStow, bagCap, hasPicks, rollBlade, rollMailPiece, canEquipArmor, toolItem } from "./items.js";
-import { clampCarry, slotItems, hasTool } from "./derived.js";
+import {
+  giveItem,
+  takeItem,
+  stowItem,
+  canStow,
+  bagCap,
+  hasPicks,
+  rollBlade,
+  rollMailPiece,
+  canEquipArmor,
+  toolItem,
+  weaponRefusalReason,
+  armorRefusalReason,
+  weaponUpgradeDelta,
+  armorUpgradeDelta,
+} from "./items.js";
+import { clampCarry, slotItems, hasTool, gearCompareParts } from "./derived.js";
 import { difficultyCurve } from "./difficulty.js";
 import {
   WEAPONS,
@@ -231,16 +246,16 @@ export const STORE_EFFECTS = {
     state.c.armorWP = state.c.armorMax;
   },
   buyWeapon(state, params, events) {
-    takeItem(state, params.item, events);
+    deliverGear(state, params.item, events);
   },
   buyArmor(state, params, events) {
-    takeItem(state, params.item, events);
+    deliverGear(state, params.item, events);
   },
   buyScroll(state, params, events) {
     state.c.scrolls = (state.c.scrolls || 0) + 1;
   },
   buyPremium(state, params, events) {
-    takeItem(state, params.item, events);
+    deliverGear(state, params.item, events);
   },
 };
 
@@ -463,39 +478,115 @@ export function openStore(state, rng, events = []) {
 // handler lands a slot-consuming item in the bag. buyFrom below checks
 // canStow for these BEFORE deducting gold, so a full-bag buy never spends
 // gold or marks the stock slot sold. givePotion is deliberately absent —
-// potions are slot-exempt (LOOT-04) — as are buyWeapon/buyArmor/buyPremium
-// (they equip-or-reject via takeItem, consuming no slot either way) and
-// buyScroll/buyRations/repairArmor/eatRation (scalar effects, no bag write).
+// potions are slot-exempt (LOOT-04). buyScroll/buyRations/repairArmor/
+// eatRation are scalar effects, no bag write.
+//
+// Phase 61 (STORE-02): buyWeapon/buyArmor/buyPremium are NO LONGER an
+// "equip-or-reject" pair outside this pre-payment discipline — GEAR_EFFECTS
+// below joins the same storeBuyRefusal gate a STOWING_EFFECTS line uses,
+// so a legal-but-not-upgrade buy is charged and bagged instead of rejected
+// after payment.
 const STOWING_EFFECTS = new Set(["giveLockpicks", "giveTool"]);
 
+// Phase 61 (STORE-02): the weapon/armor/premium effectIds — a buy that will
+// EITHER auto-equip (an upgrade) OR bag (a legal, not-better item), both
+// gated pre-payment by storeBuyRefusal below.
+const GEAR_EFFECTS = new Set(["buyWeapon", "buyArmor", "buyPremium"]);
+
 /**
- * buyFrom(state, idx, events) — purchases stock slot `idx`: bounds/sold/
- * gold-sufficiency guards (T-01-10b — an invalid buy is a no-op, never a
- * throw), deducts gold, marks the slot sold, then applies the plain-data
- * effect via STORE_EFFECTS. Never calls or stores a function on `state`.
- * Ports mazeworld.html buyFrom() (lines 2051-2061).
+ * gearUpgrades(c, it) — Phase 61 (STORE-02), module-private: the ONE
+ * verdict — is gear item `it` a strict upgrade over what `c` currently
+ * has equipped? Delegates entirely to weaponUpgradeDelta/armorUpgradeDelta
+ * (engine/items.js) — a strict `> 0` (CONTEXT "Keep the ONE verdict"), never
+ * restated. `false` for anything that is not a weapon or armor. Pure, no
+ * rng.
+ */
+function gearUpgrades(c, it) {
+  return it.kind === "weapon" ? weaponUpgradeDelta(c, it) > 0 : it.kind === "armor" ? armorUpgradeDelta(c, it) > 0 : false;
+}
+
+/**
+ * storeBuyRefusal(c, line) — Phase 61 (STORE-02): the ONE pre-payment
+ * refusal predicate. Pure — never mutates `c` or `line`. Given a PRESENT,
+ * UNSOLD stock line, returns `null` when the buy is deliverable, or the
+ * FIRST of:
+ *   (a) insufficient gold — `{ reason: "insufficientGold", short }`;
+ *   (b) a STOWING_EFFECTS line with no room — `{ reason: "bagFull", have, slots }`;
+ *   (c) for a GEAR_EFFECTS line: a class/race/sub legality refusal
+ *       (`weaponRefusalReason`/`armorRefusalReason`) — `{ reason }` — else,
+ *       when the item is not an upgrade AND there is no room to bag it, the
+ *       same `bagFull` shape as (b).
+ * Plan 04's store row reads this SAME predicate to grey/disable a row and
+ * show the reason before the player ever taps BUY.
+ */
+export function storeBuyRefusal(c, line) {
+  if (c.gold < line.cost) return { reason: "insufficientGold", short: line.cost - c.gold };
+  if (STOWING_EFFECTS.has(line.effectId) && !canStow(c)) {
+    return { reason: "bagFull", have: slotItems(c).length, slots: bagCap(c) };
+  }
+  if (GEAR_EFFECTS.has(line.effectId)) {
+    const it = line.effectParams && line.effectParams.item;
+    const legalityReason = it && it.kind === "weapon" ? weaponRefusalReason(c, it) : it && it.kind === "armor" ? armorRefusalReason(c, it) : null;
+    if (legalityReason) return { reason: legalityReason };
+    if (!gearUpgrades(c, it) && !canStow(c)) {
+      return { reason: "bagFull", have: slotItems(c).length, slots: bagCap(c) };
+    }
+  }
+  return null;
+}
+
+/**
+ * deliverGear(state, it, events) — Phase 61 (STORE-02): the ONE place a
+ * paid-for gear item lands. An upgrade auto-equips exactly as today (via
+ * takeItem, which also now names the traded-in piece — engine/items.js).
+ * Anything else is bagged: `why` (gearCompareParts(state.c, it)) is computed
+ * BEFORE stowing, so the explanation always reflects the pre-purchase gear,
+ * then `purchaseBagged { item, why }` fires on a successful stow.
+ * storeBuyRefusal has already proven this call cannot fail (legality and
+ * room are both checked pre-payment) — stowItem's own internal bagFull push
+ * here is defensive, never load-bearing.
+ */
+export function deliverGear(state, it, events) {
+  if (gearUpgrades(state.c, it)) {
+    takeItem(state, it, events);
+    return;
+  }
+  const why = gearCompareParts(state.c, it);
+  if (stowItem(state, it, events, true)) {
+    events.push({ type: "purchaseBagged", item: it, why });
+  }
+}
+
+/**
+ * buyFrom(state, idx, events) — purchases stock slot `idx`: bounds/sold
+ * guards (T-01-10b — an invalid buy is a no-op, never a throw), then a
+ * SINGLE pre-payment refusal check (storeBuyRefusal), deducts gold, marks
+ * the slot sold, then applies the plain-data effect via STORE_EFFECTS.
+ * Never calls or stores a function on `state`. Ports mazeworld.html
+ * buyFrom() (lines 2051-2061).
  *
- * Phase 29 (LOOT-04): for a STOWING_EFFECTS entry, the stow gate is checked
- * BEFORE any gold is deducted or the slot is marked sold — a refused stow
- * (full bag) is a pure no-op plus one `bagFull` event, never a silent
- * gold-loss (RESEARCH Pitfall 1).
+ * Phase 61 (STORE-02): EVERY refusal is now pre-payment — insufficient gold,
+ * a full bag (STOWING_EFFECTS or a not-better GEAR_EFFECTS buy), and gear
+ * legality (class/race/sub) all settle through storeBuyRefusal BEFORE any
+ * gold moves or the slot is marked sold, closing the hole where a legal buy
+ * was charged then silently rejected as "not an upgrade" (the user's Pixel 7
+ * report). Each refusal reason still pushes the SAME event shape as before
+ * (buyFailed/bagFull/itemRejected) — no new refusal event type.
  */
 export function buyFrom(state, idx, events = []) {
   const st = state.store;
   if (!st) return events;
   const item = st.stock[idx];
   if (!item || item.sold) return events;
-  if (state.c.gold < item.cost) {
-    events.push({ type: "buyFailed", reason: "insufficientGold", short: item.cost - state.c.gold });
-    return events;
-  }
-  if (STOWING_EFFECTS.has(item.effectId) && !canStow(state.c)) {
-    events.push({
-      type: "bagFull",
-      item: item.effectParams && item.effectParams.item,
-      have: slotItems(state.c).length,
-      slots: bagCap(state.c),
-    });
+  const refusal = storeBuyRefusal(state.c, item);
+  if (refusal) {
+    if (refusal.reason === "insufficientGold") {
+      events.push({ type: "buyFailed", reason: "insufficientGold", short: refusal.short });
+    } else if (refusal.reason === "bagFull") {
+      events.push({ type: "bagFull", item: item.effectParams && item.effectParams.item, have: refusal.have, slots: refusal.slots });
+    } else {
+      events.push({ type: "itemRejected", item: item.effectParams.item, reason: refusal.reason });
+    }
     return events;
   }
   state.c.gold -= item.cost;

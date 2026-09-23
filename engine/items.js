@@ -483,7 +483,13 @@ export function takeItem(state, it, events = []) {
       events.push({ type: "itemRejected", item: it, reason: "notBetter" });
       return events;
     }
-    events.push({ type: "itemTaken", item: it });
+    // Phase 61 (STORE-02): an additive `replaced` (the traded-in piece) —
+    // computed BEFORE the equip mutation below, since wornWeaponItem(c)
+    // reads the CURRENT weapon. takeItem's only live caller is the store's
+    // deliverGear; the parity harness's legacy auto-take (comparables.js)
+    // discards events, so this is a pure narration addition.
+    const replaced = wornWeaponItem(c);
+    events.push({ type: "itemTaken", item: it, ...(replaced ? { replaced } : {}) });
     c.weapon = it.base;
     c.prof = 0;
     c.magicWpn = it.bonus;
@@ -500,7 +506,10 @@ export function takeItem(state, it, events = []) {
       events.push({ type: "itemRejected", item: it, reason: "notBetter" });
       return events;
     }
-    events.push({ type: "itemTaken", item: it });
+    // Phase 61 (STORE-02): additive `replaced`, mirroring the weapon branch
+    // above — computed before the equip mutation.
+    const replaced = wornArmorItem(c);
+    events.push({ type: "itemTaken", item: it, ...(replaced ? { replaced } : {}) });
     c.armor = it.armor;
     c.ar = it.ar;
     c.armorMin = it.min;
