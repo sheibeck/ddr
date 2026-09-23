@@ -42,6 +42,12 @@
 // — pure content data (not engine/), same discipline as
 // eventNarration.js's own content/flavor.js import.
 import { ABILITY_BY_ID } from "../../content/abilities.js";
+// Phase 61 (STORE-02/STORE-03): upgradeWhy.js carries ZERO imports of its
+// own (not even from content/) — importing it here does not trip T-25-23's
+// standing purity guard (which forbids any `engine/` import line), and it
+// lets the rail's purchaseBagged line reuse the SAME formatter
+// eventNarration.js's Oracle line does, rather than restating it.
+import { upgradeWhyText } from "./upgradeWhy.js";
 
 /**
  * TONES — the tone-family vocabulary every narration line (and the
@@ -1503,6 +1509,16 @@ export const LINE_FOR = {
   buyFailed: (e) => block(`Short ${e?.short ?? 0} wilmst.`),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   bought: (e) => ({ text: `Bought: ${e?.item ?? "something"} (−${e?.cost ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
+  // Phase 61 (STORE-02/STORE-03): a legal not-better buy — charged and
+  // bagged, never lost. Same priority as `bought` so the fold keeps engine
+  // order: "Bought: … (−N wilmst)." then "Into the bag: … — not an upgrade:
+  // …". `why` reuses Plan 02's upgradeWhyText/gearCompareParts formatter
+  // (returns "" for a non-parts `e?.why`, e.g. the voice-scan BASE_EVENT
+  // string shape — no explanation clause is added then).
+  purchaseBagged: (e) => {
+    const why = upgradeWhyText(e?.why);
+    return { text: `Into the bag: ${e?.item?.n ?? "something"} — not an upgrade${why ? `: ${why}` : ""}.`, tone: "beat", priority: PRIORITY.other };
+  },
   rationsBought: (e) => ({ text: `Stocked up: +${e?.amount ?? 1} rations.`, tone: "hit", priority: PRIORITY.other }),
   itemSold: (e) => ({ text: `Sold: ${e?.item?.n ?? "something"} (${e?.price ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
 
@@ -1582,7 +1598,13 @@ export const LINE_FOR = {
   // Phase 24/25: woodsman and acrobat each get their own reason; the generic
   // fallback covers wrongClass/notBetter/noArmor/tooHeavy/notEquippable.
   itemRejected: (e) => block(equipRejectText(e)),
-  itemTaken: (e) => ({ text: `Equipped: ${e?.item?.n ?? "something"}.`, tone: "hit", priority: PRIORITY.other }),
+  // Phase 61 (STORE-02): an additive `replaced` (the traded-in weapon/armor
+  // piece) appends one clause; the no-replaced text stays byte-identical.
+  itemTaken: (e) => ({
+    text: `Equipped: ${e?.item?.n ?? "something"}.${e?.replaced?.n ? ` The shopkeeper keeps your old ${e.replaced.n}.` : ""}`,
+    tone: "hit",
+    priority: PRIORITY.other,
+  }),
   // Phase 39 (GEAR-05): the hazard-tool spend — the card's other button
   // (USE LADDER/USE ROPE); hazardChoice itself is SILENT (ORACLE_ONLY
   // above) — the card IS the UI, this line narrates the outcome.

@@ -184,6 +184,14 @@ const BRANCH_TOGGLES = [
   // branch is already covered by the base render; this pair exercises both
   // named sides explicitly).
   { verb: "takeLoot" }, { verb: "unequipSlot" },
+  // Phase 61 (STORE-02/STORE-03): purchaseBagged's real (non-string) `why`
+  // shapes — a weapon compare (with a lostProf term) and an armor compare —
+  // and itemRejected's legality reasons that now route to the generic
+  // "Not for the likes of you." refusal instead of the old blanket
+  // "Not an upgrade." fallback (notBetter keeps its own dedicated clause).
+  { why: { kind: "weapon", got: { lab: "d8", need: -1, crit: 1, strike: 4.05 }, have: { lab: "d6", need: 0, crit: 1, strike: 5 }, lostProf: 2 } },
+  { why: { kind: "armor", got: { ar: 15 }, have: { ar: 6 } } },
+  { reason: "tooHeavy" }, { reason: "noArmor" }, { reason: "notBetter" }, { reason: "wrongClass" },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every

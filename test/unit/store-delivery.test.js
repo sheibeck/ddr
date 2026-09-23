@@ -11,6 +11,12 @@
 // end to end, including the rail explanation from Plan 02's
 // gearCompareParts/upgradeWhyText.
 //
+// Narration coverage (Task 2) lives in the "narration" section near the
+// bottom of this file: LINE_FOR.purchaseBagged/EVENT_NARRATION.purchaseBagged
+// (the Spiked Staff rail/Oracle strings), the itemTaken trade-in clause, and
+// itemRejected's reason routing (notBetter keeps "Not an upgrade."; every
+// other legality reason now reads the generic refusal instead).
+
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -19,6 +25,8 @@ import { buyFrom, STORE_EFFECTS, storeBuyRefusal } from "../../engine/economy.js
 import { hasPicks, toolItem } from "../../engine/items.js";
 import { hasTool, gearCompareParts } from "../../engine/derived.js";
 import { WEAPONS, ARMORS } from "../../content/index.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR, linesForAction } from "../../src/browser/narrationLines.js";
 import { upgradeWhyText } from "../../src/browser/upgradeWhy.js";
 
 // ─── Fixtures ───────────────────────────────────────────────────────────
@@ -408,4 +416,82 @@ test("storeBuyRefusal: null for a deliverable line, pure (c and line unchanged),
 
   const shortState = fixedState({ c: { gold: 0 } });
   assert.deepStrictEqual(storeBuyRefusal(shortState.c, line), { reason: "insufficientGold", short: line.cost });
+});
+
+// ─── Narration (Task 2) ────────────────────────────────────────────────
+
+test("narration: LINE_FOR.purchaseBagged reads the exact CONTEXT-pinned Spiked Staff string", () => {
+  const magicUser = { ...newRun(7).c, level: 3, weapon: "Quarter Staff", prof: 0, magicWpn: 0 };
+  const item = weaponItem("Spiked Staff", { txt: "d8" });
+  const why = gearCompareParts(magicUser, item);
+  const evt = { type: "purchaseBagged", item, why };
+  assert.equal(LINE_FOR.purchaseBagged(evt).text, "Into the bag: Spiked Staff — not an upgrade: d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing.");
+});
+
+test("narration: EVENT_NARRATION.purchaseBagged (Oracle) contains the same explanation", () => {
+  const magicUser = { ...newRun(7).c, level: 3, weapon: "Quarter Staff", prof: 0, magicWpn: 0 };
+  const item = weaponItem("Spiked Staff", { txt: "d8" });
+  const why = gearCompareParts(magicUser, item);
+  const evt = { type: "purchaseBagged", item, why };
+  assert.match(EVENT_NARRATION.purchaseBagged(evt), /d8 vs your d6 · −1 to hit · 4\.1 vs 5\.0 a swing/);
+});
+
+test("narration: both purchaseBagged builders survive a bare {type} call and a string `why` (the voice-scan BASE_EVENT shape) with no explanation clause, never throwing", () => {
+  assert.doesNotThrow(() => LINE_FOR.purchaseBagged({ type: "purchaseBagged" }));
+  assert.doesNotThrow(() => EVENT_NARRATION.purchaseBagged({ type: "purchaseBagged" }));
+  const stringWhy = { type: "purchaseBagged", item: { n: "Something" }, why: "parley" };
+  const line = LINE_FOR.purchaseBagged(stringWhy);
+  const oracle = EVENT_NARRATION.purchaseBagged(stringWhy);
+  assert.equal(typeof line.text, "string");
+  assert.doesNotMatch(line.text, / — not an upgrade:/, "a non-parts why must add no explanation clause");
+  assert.equal(typeof oracle, "string");
+});
+
+test("narration: itemTaken names the traded-in piece when replaced is present; the no-replaced text stays byte-identical", () => {
+  const withReplaced = { type: "itemTaken", item: { n: "Katana" }, replaced: { n: "Dagger" } };
+  assert.equal(LINE_FOR.itemTaken(withReplaced).text, "Equipped: Katana. The shopkeeper keeps your old Dagger.");
+  const noReplaced = { type: "itemTaken", item: { n: "Katana" } };
+  assert.equal(LINE_FOR.itemTaken(noReplaced).text, "Equipped: Katana.");
+
+  assert.equal(
+    EVENT_NARRATION.itemTaken(withReplaced),
+    '<span class="hit">Equipped:</span> Katana. The shopkeeper keeps your old Dagger.',
+  );
+  assert.equal(EVENT_NARRATION.itemTaken(noReplaced), '<span class="hit">Equipped:</span> Katana.');
+});
+
+test("narration: EVENT_NARRATION.itemRejected — tooHeavy/wrongClass never read 'Not an upgrade'; notBetter still does", () => {
+  const tooHeavy = EVENT_NARRATION.itemRejected({ type: "itemRejected", item: { n: "Plate" }, reason: "tooHeavy" });
+  const wrongClass = EVENT_NARRATION.itemRejected({ type: "itemRejected", item: { n: "Broadsword" }, reason: "wrongClass" });
+  const noArmor = EVENT_NARRATION.itemRejected({ type: "itemRejected", item: { n: "Cloth" }, reason: "noArmor" });
+  const notBetter = EVENT_NARRATION.itemRejected({ type: "itemRejected", item: { n: "Axe" }, reason: "notBetter" });
+  assert.doesNotMatch(tooHeavy, /Not an upgrade/);
+  assert.doesNotMatch(wrongClass, /Not an upgrade/);
+  assert.doesNotMatch(noArmor, /Not an upgrade/);
+  assert.match(noArmor, /wears no armour/);
+  assert.match(notBetter, /Not an upgrade/);
+  // woodsman/acrobat/haveOne clauses stay byte-identical.
+  assert.equal(
+    EVENT_NARRATION.itemRejected({ type: "itemRejected", item: { n: "Mail" }, reason: "woodsman" }),
+    '<span class="miss">A Woodsman in Mail is a tree in a tin.</span> No.',
+  );
+  assert.equal(
+    EVENT_NARRATION.itemRejected({ type: "itemRejected", reason: "acrobat" }),
+    `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`,
+  );
+});
+
+test("narration: linesForAction(buyItem, spikedStaffEvents) yields the bought line then the bagged line, in order", () => {
+  const magicUser = { ...newRun(7).c, level: 3, weapon: "Quarter Staff", prof: 0, magicWpn: 0 };
+  const item = weaponItem("Spiked Staff", { txt: "d8" });
+  const why = gearCompareParts(magicUser, item);
+  const events = [
+    { type: "bought", item: "Spiked Staff", cost: 100 },
+    { type: "purchaseBagged", item, why },
+  ];
+  const lines = linesForAction("buyItem", events);
+  assert.ok(lines.length >= 2, `expected at least two lines, got ${JSON.stringify(lines)}`);
+  const boughtIdx = lines.findIndex((l) => /^Bought:/.test(l.text));
+  const bagIdx = lines.findIndex((l) => /^Into the bag:/.test(l.text));
+  assert.ok(boughtIdx !== -1 && bagIdx !== -1 && boughtIdx < bagIdx, `expected bought before bagged; got ${JSON.stringify(lines.map((l) => l.text))}`);
 });
