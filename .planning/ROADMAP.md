@@ -32,7 +32,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [x] **Phase 61: Gear Rules & Store Purchase Fix** - The engine refuses equip/unequip/swap while a fight is up, and a store purchase always delivers the item it charges for (completed 2026-09-23)
 - [x] **Phase 62: Gear Tab Layout Rebuild** - The Gear tab shows the mock's header, WORN list, BAG meter and CONSUMABLES block, reading only the shared gear view models (completed 2026-09-23)
 - [x] **Phase 63: Action Sheet, Combat Lock & Accessibility** - One bottom action sheet drives every equip/swap/unequip/use/drop decision, greyed with real reasons in combat, reduced-motion and TalkBack safe (completed 2026-09-23)
-- [ ] **Phase 64: Device Close & UAT Batch** - A Pixel 7 device batch proves the redone tab end to end, recorded in `docs/UAT-v1.9.md`
+- [x] **Phase 64: Device Close & UAT Batch** - A Pixel 7 device batch proves the redone tab end to end, recorded in `docs/UAT-v1.9.md` (completed 2026-09-23)
 
 ### Phase 61: Gear Rules & Store Purchase Fix
 
@@ -295,7 +295,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
-| 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
+| 64. Device Close & UAT Batch | v1.9 | 2/2 | Complete    | 2026-09-23 |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
 | 57. Map & HUD Layout Band | v1.8 | 5/5 | Complete    | 2026-09-22 |
 | 58. Motion & Pacing | v1.8 | 7/7 | Complete    | 2026-09-22 |

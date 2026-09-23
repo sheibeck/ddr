@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: The Gear Screen
-current_phase: 64
-current_phase_name: Device Close & UAT Batch
-status: executing
-stopped_at: "v1.9 autonomous run: Phases 61–63 COMPLETE 2026-09-23 (master 4197/4197, boot:check 4/4). Next: Phase 64 Device Close & UAT Batch (smart discuss, then plan, then execute: debug APK + docs/UAT-v1.9.md per the deferred-UAT protocol), then milestone audit, complete and cleanup."
-last_updated: "2026-09-23T16:55:08.168Z"
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
+status: planning
+stopped_at: "v1.9 roadmap created 2026-09-23 (Phases 61–64: 61 Gear Rules & Store Purchase Fix (engine) → 62 Gear Tab Layout Rebuild → 63 Action Sheet, Combat Lock & Accessibility → 64 Device Close & UAT Batch; 16/16 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-discuss-phase 61 (STORE-02's buy-and-bag vs. refuse-up-front choice is the open decision), then /gsd-plan-phase 61."
+last_updated: "2026-09-23T17:15:27.581Z"
 last_activity: 2026-09-23
-last_activity_desc: Phase 63 complete, transitioned to Phase 64
+last_activity_desc: Phase 64 complete, transitioned to Phase 999.1
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
-  percent: 75
+  completed_phases: 4
+  total_plans: 14
+  completed_plans: 14
+  percent: 100
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.8 closed and tagged; next m
 
 ## Current Position
 
-Phase: 64 — Device Close & UAT Batch
+Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-23 — Phase 63 complete, transitioned to Phase 64
+Status: Ready to plan
+Last activity: 2026-09-23 — Phase 64 complete, transitioned to Phase 999.1
 
 ## Ground Truth (durable facts every session needs)
 

@@ -21,53 +21,53 @@
 | A1 | Open GEAR. The top shows a slim header with **ARMOR RATING** and **WILMST**, and no repeated name or class line (the HUD above already shows it). AR matches the value you'd expect. With a Cloak of Armor (if available) it shows the cloak's effective AR. | user | pass |
 | A2 | **WORN** lists exactly five rows in order: WEAPON, ARMOR, CLOAK, JEWELRY 1, JEWELRY 2, with an `N / 5` count. Bare fists read as an empty weapon slot, in italics and in voice. Armor wear (`x/y hp`, or `destroyed`) sits in the armor row's note. | user | pass |
 | A3 | A worn item with a power shows a USE button; use it and walk. It reads **ACTIVE** (n SQ) while running and **COOLING** (n SQ) afterwards, counting down as you step. A staff (if available) shows `k/max · n SQ`. | user | pass |
-| A4 | **BAG** shows `used / cap` and one pip per slot. Potions and scrolls never fill a pip. Fill the bag (if convenient): the count and pips turn red and "BAG FULL · DROP OR USE SOMETHING" appears. | user | |
-| A5 | Bag cards show the name, a slot tag (WEAPON / ARMOR / CLOAK / JEWELRY) and `· SWAP` when every slot of that family is full. A staff or torch card carries USE instead of a tag. An item name with an apostrophe (if available) reads normally. | user | |
-| A6 | **CONSUMABLES**: the healing potion row (USE is greyed at full HP or ×0), one row per buff-potion type with `×N`, and SCROLLS `×N` with READ (greyed with a reason if you can't read). Drinking a potion from here works. | user | |
-| A7 | **ALSO ON YOU** still shows rations, spell charges (Magic User), any running effects (Shield, Strength, Sense Presence…) and kills. Text size S/M/L in Settings resizes the new Gear text. | user | |
+| A4 | **BAG** shows `used / cap` and one pip per slot. Potions and scrolls never fill a pip. Fill the bag (if convenient): the count and pips turn red and "BAG FULL · DROP OR USE SOMETHING" appears. | user | deferred — play sessions |
+| A5 | Bag cards show the name, a slot tag (WEAPON / ARMOR / CLOAK / JEWELRY) and `· SWAP` when every slot of that family is full. A staff or torch card carries USE instead of a tag. An item name with an apostrophe (if available) reads normally. | user | deferred — play sessions |
+| A6 | **CONSUMABLES**: the healing potion row (USE is greyed at full HP or ×0), one row per buff-potion type with `×N`, and SCROLLS `×N` with READ (greyed with a reason if you can't read). Drinking a potion from here works. | user | deferred — play sessions |
+| A7 | **ALSO ON YOU** still shows rations, spell charges (Magic User), any running effects (Shield, Strength, Sense Presence…) and kills. Text size S/M/L in Settings resizes the new Gear text. | user | deferred — play sessions |
 
 ## B. Action sheet — Phase 63 (5)
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| B1 | Tap a **filled** worn row. A sheet rises with `SLOT · WORN`, the name and note, then USE (if the item has one), UNEQUIP, and a `SWAP FOR <item>` row for each fitting bag item. With a full bag, UNEQUIP is greyed with "Bag is full — free a slot first." Destroyed armor (if available) shows DISCARD. | user | |
-| B2 | Tap an **empty** worn slot. It offers one `EQUIP <item>` per fitting bag item, or a greyed NOTHING TO EQUIP. | user | |
-| B3 | Tap a bag **weapon or armor** card. The header shows the explained upgrade line (dice · to-hit · per-swing · upgrade / not an upgrade). A **jewelry** card offers SWAP INTO JEWELRY 1 and JEWELRY 2 by name. | user | |
-| B4 | In a sheet, tap **DROP** once: it relabels "DROP IT? · tap again" and reverts after about 3 s. Tap twice quickly and the item is dropped. Every completed action (equip / swap / unequip / drop) closes the sheet and says so on the **rail**, with no toast and no text left inside the sheet. An illegal swap (if available) is greyed with its reason. | user | |
-| B5 | The inline USE / ACTIVE / COOLING button on a row acts **directly** and never opens the sheet. | user | |
+| B1 | Tap a **filled** worn row. A sheet rises with `SLOT · WORN`, the name and note, then USE (if the item has one), UNEQUIP, and a `SWAP FOR <item>` row for each fitting bag item. With a full bag, UNEQUIP is greyed with "Bag is full — free a slot first." Destroyed armor (if available) shows DISCARD. | user | deferred — play sessions |
+| B2 | Tap an **empty** worn slot. It offers one `EQUIP <item>` per fitting bag item, or a greyed NOTHING TO EQUIP. | user | deferred — play sessions |
+| B3 | Tap a bag **weapon or armor** card. The header shows the explained upgrade line (dice · to-hit · per-swing · upgrade / not an upgrade). A **jewelry** card offers SWAP INTO JEWELRY 1 and JEWELRY 2 by name. | user | deferred — play sessions |
+| B4 | In a sheet, tap **DROP** once: it relabels "DROP IT? · tap again" and reverts after about 3 s. Tap twice quickly and the item is dropped. Every completed action (equip / swap / unequip / drop) closes the sheet and says so on the **rail**, with no toast and no text left inside the sheet. An illegal swap (if available) is greyed with its reason. | user | deferred — play sessions |
+| B5 | The inline USE / ACTIVE / COOLING button on a row acts **directly** and never opens the sheet. | user | deferred — play sessions |
 
 ## C. Store and the upgrade line — Phase 61 (5)
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| C1 | *(if available: a Magic User with a Quarter Staff at a store)* Buy a **Spiked Staff**. Gold drops by its price, the staff is in the **BAG**, and the rail line says why it isn't an upgrade (d8 vs your d6 · −1 to hit …). | user | |
-| C2 | A weapon or armor your class **can't use** shows its row **disabled with the reason on the row**, and tapping it charges nothing. | user | |
-| C3 | With a **full bag**, a lockpicks / tool row and a not-an-upgrade gear row are disabled with "bag full — sell or drop something first". | user | |
-| C4 | Buying a **real upgrade** auto-equips it, and the rail says the shopkeeper kept your old piece. | user | |
-| C5 | Store weapon / armor rows, the loot screen after a fight, and a find card all show the explained line (dice · to-hit · per-swing · upgrade / not an upgrade). | user | |
+| C1 | *(if available: a Magic User with a Quarter Staff at a store)* Buy a **Spiked Staff**. Gold drops by its price, the staff is in the **BAG**, and the rail line says why it isn't an upgrade (d8 vs your d6 · −1 to hit …). | user | deferred — play sessions |
+| C2 | A weapon or armor your class **can't use** shows its row **disabled with the reason on the row**, and tapping it charges nothing. | user | deferred — play sessions |
+| C3 | With a **full bag**, a lockpicks / tool row and a not-an-upgrade gear row are disabled with "bag full — sell or drop something first". | user | deferred — play sessions |
+| C4 | Buying a **real upgrade** auto-equips it, and the rail says the shopkeeper kept your old piece. | user | deferred — play sessions |
+| C5 | Store weapon / armor rows, the loot screen after a fight, and a find card all show the explained line (dice · to-hit · per-swing · upgrade / not an upgrade). | user | deferred — play sessions |
 
 ## D. Combat lock — Phases 61 + 63 (3)
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| D1 | In a fight (and at the Fight! preview), open GEAR and a worn row's sheet: EQUIP / SWAP / UNEQUIP / DISCARD are **greyed** with "Not the moment to change outfits." Nothing changes if you tap them. | user | |
-| D2 | Mid-fight, **USE** (staff / torch / jewelry power), a potion, a scroll, and **DROP** still work, and USE costs your turn as before. | user | |
-| D3 | Open a sheet **before** a fight starts, then trigger the fight: the open sheet re-greys in place. **After** the fight, the same actions work again. | user | |
+| D1 | In a fight (and at the Fight! preview), open GEAR and a worn row's sheet: EQUIP / SWAP / UNEQUIP / DISCARD are **greyed** with "Not the moment to change outfits." Nothing changes if you tap them. | user | deferred — play sessions |
+| D2 | Mid-fight, **USE** (staff / torch / jewelry power), a potion, a scroll, and **DROP** still work, and USE costs your turn as before. | user | deferred — play sessions |
+| D3 | Open a sheet **before** a fight starts, then trigger the fight: the open sheet re-greys in place. **After** the fight, the same actions work again. | user | deferred — play sessions |
 
 ## E. Closing and reduced motion — Phase 63 (2)
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| E1 | The sheet closes on **CANCEL**, on a **tap on the dimmed backdrop**, and on the **Android back** gesture or button. Focus lands back on the row you opened it from. Back feels natural, with no double-close and no app exit. | user | |
-| E2 | With Android **Remove animations** on, the sheet opens and closes instantly with no rise or fade. | user | |
+| E1 | The sheet closes on **CANCEL**, on a **tap on the dimmed backdrop**, and on the **Android back** gesture or button. Focus lands back on the row you opened it from. Back feels natural, with no double-close and no app exit. | user | deferred — play sessions |
+| E2 | With Android **Remove animations** on, the sheet opens and closes instantly with no rise or fade. | user | deferred — play sessions |
 
 ## F. TalkBack — Phase 63 (2)
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| F1 | With TalkBack on, the worn rows and bag cards announce as **buttons that open actions**. Opening one reads the sheet as a **dialog** with its title. | user | |
-| F2 | TalkBack reads each greyed action's **reason** (e.g. "Bag is full — free a slot first.", "Not the moment to change outfits."). | user | |
+| F1 | With TalkBack on, the worn rows and bag cards announce as **buttons that open actions**. Opening one reads the sheet as a **dialog** with its title. | user | deferred — play sessions |
+| F2 | TalkBack reads each greyed action's **reason** (e.g. "Bag is full — free a slot first.", "Not the moment to change outfits."). | user | deferred — play sessions |
 
 ---
 
-**Tally:** _to be filled at the end of the walk_: pass / fail / not reached.
+**Tally (2026-09-23, milestone close):** 3 pass (A1–A3), 0 fail, and 21 deferred to the user's play sessions (A4–A7, B1–B5, C1–C5, D1–D3, E1–E2, F1–F2). The user asked to close the milestone mid-walk and confirm the rest while playing. The results go in this file as they come in, and any fail becomes a todo or a quick task.

@@ -22,7 +22,7 @@
 - [x] **GSCR-09**: Every greyed sheet action states the engine's reason, and every completed action's outcome reaches the player through the rail in voice. There are no toasts and no inline refusal text on rows.
 - [x] **GSCR-10**: The sheet closes on CANCEL, on a backdrop tap and on the Android back button. Its rise and fade have a reduced-motion path, and TalkBack reads the sheet's title and actions.
 - [x] **GSCR-11**: The ITEMS combat submenu, the loot screen and the store keep reading the same shared view models (`itemRowState`, `bagUsage`, `lootCompare`), so a state shown on the Gear tab never disagrees with another screen.
-- [ ] **GSCR-12**: A Pixel 7 device batch covers the redone tab end to end: every sheet path, a full bag, staff charges, a cooldown counting down while walking, the combat lock and reduced motion. It is recorded in `docs/UAT-v1.9.md`.
+- [ ] **GSCR-12**: A Pixel 7 device batch covers the redone tab end to end: every sheet path, a full bag, staff charges, a cooldown counting down while walking, the combat lock and reduced motion. It is recorded in `docs/UAT-v1.9.md`. *(Partial 2026-09-23: 3 of 24 walked, A1–A3 pass; 21 deferred to the user's play sessions, see docs/UAT-v1.9.md.)*
 
 ### Gear Rules (engine — declared, deterministic, zero new rng draws)
 
@@ -65,7 +65,7 @@
 | GSCR-09 | Phase 63 | Complete |
 | GSCR-10 | Phase 63 | Complete |
 | GSCR-11 | Phase 62 | Complete |
-| GSCR-12 | Phase 64 | Pending |
+| GSCR-12 | Phase 64 | Partial — 3 of 24 walked (A1–A3 pass); 21 deferred to play sessions |
 | GRULE-01 | Phase 61 | Complete |
 | GRULE-02 | Phase 63 | Complete |
 | STORE-02 | Phase 61 | Complete |
