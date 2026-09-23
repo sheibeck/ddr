@@ -1,0 +1,274 @@
+// src/browser/gearSheet.js
+//
+// Phase 63 (GSCR-07..10, GRULE-02) — the GEAR tab's bottom action sheet.
+// Follows the docs/SHELL-MODULES.md contract: no window or document
+// globals, only host.ownerDocument plus deps. This plan (01) adds the pure
+// copy and view model; Plan 02 adds the renderer to this same file. The
+// combat lock's own reason text is never quoted here — it is read at call
+// time from src/browser/narrationLines.js's own gearRefused line, referred
+// to below only as "the Phase 61 gearRefused line".
+//
+// gearSheetModel(state, target) is the ONE pure view model behind every
+// equip/swap/unequip/use/drop decision the sheet shows, for either a WORN
+// slot or a BAG card target. It reads gearWornModel/gearBagCardsModel
+// (./gearTab.js) for the WORN rows and BAG cards — never re-derives them —
+// lootCompare/armorDisplay (./viewModels.js) for legality/upgrade text, and
+// gearLockReason (../../engine/items.js) for the combat lock. Pure,
+// null-safe, never mutates state.
+
+import { WORN_FAMILY_OF, WORN_KEYS_OF } from "../../engine/derived.js";
+import { gearLockReason } from "../../engine/items.js";
+import { GEAR_COPY, GEAR_WORN_ORDER, gearWornModel, gearBagCardsModel } from "./gearTab.js";
+import { lootCompare, armorDisplay } from "./viewModels.js";
+import { LINE_FOR } from "./narrationLines.js";
+
+/**
+ * GEAR_SHEET_COPY — every new player-facing string the sheet shows, frozen
+ * (every nested group frozen too) so the voice scan and the hp-not-wp guard
+ * can walk it as one leaf group, mirroring GEAR_COPY's own shape.
+ */
+export const GEAR_SHEET_COPY = Object.freeze({
+  head: Object.freeze({
+    worn: "WORN",
+    empty: "EMPTY",
+    bag: "BAG",
+    fromBag: "USED FROM THE BAG",
+    sep: " · ",
+    nothingWorn: "NOTHING WORN",
+  }),
+  act: Object.freeze({
+    use: "USE",
+    unequip: "UNEQUIP",
+    discard: "DISCARD",
+    swapFor: "SWAP FOR {name}",
+    equip: "EQUIP {name}",
+    equipTo: "EQUIP TO {slot}",
+    swapInto: "SWAP INTO {slot}",
+    drop: "DROP",
+    dropConfirm: "DROP IT? · tap again",
+    nothing: "NOTHING TO EQUIP",
+  }),
+  sub: Object.freeze({
+    unequip: "Moves to the bag and takes a slot.",
+    bagFull: "Bag is full — free a slot first.",
+    discard: "It is scrap now. Off it comes, and nothing goes in the bag.",
+    fills: "Fills the slot and frees a bag slot.",
+    comesOff: "{name} comes off and goes to the bag.",
+    scrap: "{name} is scrap. It stays behind.",
+    drop: "Gone for good. Frees a slot immediately.",
+    nothing: "Nothing in the bag fits this slot. Find something, or live without.",
+  }),
+  use: Object.freeze({
+    ready: "Ready when you are.",
+    consumable: "One use. Then it is a memory.",
+    effect: "Already running — {n} squares left.",
+    effectOne: "Already running — 1 square left.",
+    cooldown: "Cooling down — {n} more squares.",
+    cooldownOne: "Cooling down — 1 more square.",
+    charges: "Charges {state}.",
+  }),
+  cancel: "CANCEL",
+});
+
+/**
+ * gearSheetModel(state, target) — the sheet's header and ordered actions for
+ * a WORN slot (`{ from: "worn", slot }`) or a BAG card
+ * (`{ from: "bag", i, n }`). Returns `null` for any malformed or
+ * unresolvable target (an unknown worn slot, a bag index with no card or a
+ * name mismatch, a bag-free item, a state with no `c`). Every action is
+ * `{ key, label, sub, reason, enabled, run, confirm }` — `reason` is `""`
+ * when enabled, and equal to `sub` when greyed; `confirm` is true only for
+ * DROP. Pure, never mutates `state`.
+ */
+export function gearSheetModel(state, target) {
+  if (!target || typeof target !== "object") return null;
+  const c = state && state.c;
+  if (!c || typeof c !== "object") return null;
+
+  const lock = gearLockReason(state);
+  const lockLine = (verb) => (lock ? LINE_FOR.gearRefused({ type: "gearRefused", verb, reason: lock }).text : "");
+  const cards = gearBagCardsModel(state);
+  const wornRows = gearWornModel(state).rows;
+  const rowByKey = {};
+  for (const row of wornRows) rowByKey[row.key] = row;
+  const armorD = armorDisplay(c);
+
+  // equipRun(i, key) — the exact engine equipItem action. The engine's
+  // validator rejects a `slot` key on a weapon or armor equip, so `slot` is
+  // only added for cloak/jewelry1/jewelry2.
+  const equipRun = (i, key) => {
+    const run = { type: "equipItem", i };
+    if (key === "cloak" || key === "jewelry1" || key === "jewelry2") run.slot = key;
+    return run;
+  };
+
+  // useAction(cell, run) — the sheet's USE row, its sub picked by
+  // gearUseCell's own phase. Never greyed (Phase 31's never-disable-silently
+  // ruling and GRULE-02 both agree USE stays live).
+  const useAction = (cell, run) => {
+    let sub;
+    if (cell.phase === "ready") sub = GEAR_SHEET_COPY.use.ready;
+    else if (cell.phase === "consumable") sub = GEAR_SHEET_COPY.use.consumable;
+    else if (cell.phase === "effect") {
+      sub = cell.remaining === 1 ? GEAR_SHEET_COPY.use.effectOne : GEAR_SHEET_COPY.use.effect.replace("{n}", cell.remaining);
+    } else if (cell.phase === "cooldown") {
+      sub = cell.remaining === 1 ? GEAR_SHEET_COPY.use.cooldownOne : GEAR_SHEET_COPY.use.cooldown.replace("{n}", cell.remaining);
+    } else if (cell.phase === "charges") {
+      sub = GEAR_SHEET_COPY.use.charges.replace("{state}", cell.sub);
+    } else {
+      sub = "";
+    }
+    return { key: "use", label: GEAR_SHEET_COPY.act.use, sub, reason: "", enabled: true, run, confirm: false };
+  };
+
+  // candidate(card, slotKey, kind) — one SWAP FOR (kind "swap") or EQUIP
+  // (kind "equip") action for a WORN-slot sheet, built from a fitting bag
+  // card. Legality (and the illegal reason) comes only from lootCompare for
+  // a weapon/armor card — jewelry and cloaks carry no class/race/weight
+  // restriction, so `cmp` is never consulted for them.
+  const candidate = (card, slotKey, kind) => {
+    const it = c.items[card.i];
+    const isGear = card.family === "weapon" || card.family === "armor";
+    const cmp = isGear ? lootCompare(c, it) : null;
+    const reason = lockLine("equipItem") || (cmp && !cmp.legal ? cmp.line : "");
+    const enabled = !reason;
+    const sub = enabled ? (cmp ? cmp.line : card.desc) : reason;
+    const template = kind === "swap" ? GEAR_SHEET_COPY.act.swapFor : GEAR_SHEET_COPY.act.equip;
+    return {
+      key: `${kind}:${card.i}`,
+      label: template.replace("{name}", card.name),
+      sub,
+      reason,
+      enabled,
+      run: equipRun(card.i, slotKey),
+      confirm: false,
+    };
+  };
+
+  // ─── WORN target ─────────────────────────────────────────────────────
+  if (target.from === "worn" && GEAR_WORN_ORDER.includes(target.slot)) {
+    const slot = target.slot;
+    const row = rowByKey[slot];
+    if (!row) return null;
+
+    const family = slot === "weapon" || slot === "armor" ? slot : WORN_FAMILY_OF[slot];
+    const fits = cards.filter((card) => card.family === family);
+    // The Cloak of Armor's magic plate reads as an empty ARMOR slot: `real`
+    // (not `row.filled`) decides the header's WORN/EMPTY word and the
+    // filled/empty action branch below.
+    const real = slot === "armor" ? armorD.worn : row.filled;
+
+    const label = `${GEAR_COPY.slot[slot]}${GEAR_SHEET_COPY.head.sep}${real ? GEAR_SHEET_COPY.head.worn : GEAR_SHEET_COPY.head.empty}`;
+    const title = real || row.filled ? row.name : GEAR_SHEET_COPY.head.nothingWorn;
+    const note = row.note;
+    const why = "";
+
+    const actions = [];
+    if (real) {
+      if (row.use) actions.push(useAction(row.use, { type: "useItem", slot }));
+
+      if (slot === "armor" && armorD.destroyed) {
+        const reason = lockLine("unequipSlot");
+        const enabled = !reason;
+        actions.push({
+          key: "discard",
+          label: GEAR_SHEET_COPY.act.discard,
+          sub: enabled ? GEAR_SHEET_COPY.sub.discard : reason,
+          reason,
+          enabled,
+          run: { type: "unequipSlot", slot },
+          confirm: false,
+        });
+      } else {
+        const reason = lockLine("unequipSlot") || (row.unequip && row.unequip.blocked ? GEAR_SHEET_COPY.sub.bagFull : "");
+        const enabled = !reason;
+        actions.push({
+          key: "unequip",
+          label: GEAR_SHEET_COPY.act.unequip,
+          sub: enabled ? GEAR_SHEET_COPY.sub.unequip : reason,
+          reason,
+          enabled,
+          run: { type: "unequipSlot", slot },
+          confirm: false,
+        });
+      }
+
+      for (const card of fits) actions.push(candidate(card, slot, "swap"));
+    } else {
+      for (const card of fits) actions.push(candidate(card, slot, "equip"));
+      if (!fits.length) {
+        actions.push({
+          key: "nothing",
+          label: GEAR_SHEET_COPY.act.nothing,
+          sub: GEAR_SHEET_COPY.sub.nothing,
+          reason: GEAR_SHEET_COPY.sub.nothing,
+          enabled: false,
+          run: null,
+          confirm: false,
+        });
+      }
+    }
+
+    return { target, label, title, note, why, actions };
+  }
+
+  // ─── BAG target ──────────────────────────────────────────────────────
+  if (target.from === "bag") {
+    const card = cards.find((k) => k.i === target.i);
+    if (!card || card.name !== target.n) return null;
+
+    const it = c.items[card.i];
+    const isGear = card.family === "weapon" || card.family === "armor";
+    const cmp = isGear ? lootCompare(c, it) : null;
+
+    const label = `${GEAR_SHEET_COPY.head.bag}${GEAR_SHEET_COPY.head.sep}${card.family ? GEAR_COPY.family[card.family] : GEAR_SHEET_COPY.head.fromBag}`;
+    const title = card.name;
+    const note = card.desc;
+    const why = cmp && cmp.legal ? cmp.line : "";
+
+    const actions = [];
+    if (card.use) actions.push(useAction(card.use, { type: "useItem", i: card.i }));
+
+    if (card.family) {
+      const keys = card.family === "weapon" || card.family === "armor" ? [card.family] : WORN_KEYS_OF[card.family] || [];
+      for (const key of keys) {
+        const occupied = key === "armor" ? armorD.worn : !!(rowByKey[key] && rowByKey[key].filled);
+        const reason = lockLine("equipItem") || (cmp && !cmp.legal ? cmp.line : "");
+        const enabled = !reason;
+        const label2 = (occupied ? GEAR_SHEET_COPY.act.swapInto : GEAR_SHEET_COPY.act.equipTo).replace("{slot}", GEAR_COPY.slot[key]);
+        let sub;
+        if (!enabled) {
+          sub = reason;
+        } else if (occupied) {
+          const name = rowByKey[key] ? rowByKey[key].name : "";
+          sub = (key === "armor" && armorD.destroyed ? GEAR_SHEET_COPY.sub.scrap : GEAR_SHEET_COPY.sub.comesOff).replace("{name}", name);
+        } else {
+          sub = GEAR_SHEET_COPY.sub.fills;
+        }
+        actions.push({
+          key: `slot:${key}`,
+          label: label2,
+          sub,
+          reason,
+          enabled,
+          run: equipRun(card.i, key),
+          confirm: false,
+        });
+      }
+    }
+
+    actions.push({
+      key: "drop",
+      label: GEAR_SHEET_COPY.act.drop,
+      sub: GEAR_SHEET_COPY.sub.drop,
+      reason: "",
+      enabled: true,
+      run: { type: "dropItem", i: card.i },
+      confirm: true,
+    });
+
+    return { target, label, title, note, why, actions };
+  }
+
+  return null;
+}
