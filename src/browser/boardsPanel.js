@@ -8,10 +8,13 @@
 // produced by 66-04's boardsView — this module only draws it and manages
 // the panel's own open/board/scope/entry state.
 //
-// Task 1 (this commit): BOARDS_CLASSES, railScrollTarget and
-// renderBoardsPanel — the pure DOM renderer, proven against
-// createRecordingDocument()/hand-built views. Task 2 adds BOARDS_LAST_KEY
-// and createBoardsPanel — the stateful controller.
+// Task 1: BOARDS_CLASSES, railScrollTarget and renderBoardsPanel — the pure
+// DOM renderer, proven against createRecordingDocument()/hand-built views.
+// Task 2 (this commit): BOARDS_LAST_KEY and createBoardsPanel — the
+// stateful controller (entry modes, board memory, scope/row toggles, back
+// routing, rail centring), following roller.js's frozen-factory shape.
+
+import { BOARD_IDS } from "../../engine/records.js";
 
 /**
  * BOARDS_CLASSES — every class name renderBoardsPanel emits, in no
@@ -372,4 +375,198 @@ export function renderBoardsPanel(host, view, handlers = {}) {
   buildDock(doc, view, handlers, dock);
 
   return root;
+}
+
+// ═══════════════════════ Task 2: the controller ═══════════════════════════
+
+/**
+ * BOARDS_LAST_KEY — D-04: a per-viewer convenience key naming the board the
+ * DEAD tab last showed. Not game data — read and written only through the
+ * injected `prefs`, and always inside try/catch (a throwing prefs
+ * implementation must never break the tab switch).
+ */
+export const BOARDS_LAST_KEY = "ddr.boards.last.v1";
+
+/**
+ * createBoardsPanel({ host, buildView, readData, prefs, reducedMotion,
+ * onRoute }) — the Leaderboards panel's stateful controller (D-01, D-02,
+ * D-03, D-04, D-06, D-13). Mirrors roller.js's createRoller shape: a frozen
+ * object of methods closing over module-private state, no window/document
+ * globals — only `host`, `host.ownerDocument` and the injected seams.
+ *
+ * `signedIn` is always false this phase: the ALL/FRIENDS chips render
+ * dimmed and swap in the view's own in-panel note when tapped (D-06).
+ * Phase 67 supplies a real sign-in state through this same call.
+ */
+export function createBoardsPanel({ host, buildView, readData, prefs = null, reducedMotion = () => false, onRoute }) {
+  const doc = host.ownerDocument;
+
+  let entry = null; // null | "tab" | "title"
+  let board = "deep";
+  let scope = "local"; // "local" | "all" | "friends"
+  let open = null; // a row key, or null
+  let hasHero = false;
+
+  function readStoredBoard() {
+    if (!prefs) return null;
+    try {
+      const v = prefs.getItem(BOARDS_LAST_KEY);
+      return typeof v === "string" && BOARD_IDS.includes(v) ? v : null;
+    } catch {
+      return null; // a throwing getItem must never break the tab switch.
+    }
+  }
+
+  function storeBoard(id) {
+    if (!prefs) return;
+    try {
+      prefs.setItem(BOARDS_LAST_KEY, id);
+    } catch {
+      // a throwing setItem must never break the board switch.
+    }
+  }
+
+  function clearTitleMarker() {
+    try {
+      delete doc.body.dataset.boardsEntry;
+    } catch {
+      // a malformed body element must never throw.
+    }
+  }
+
+  /**
+   * centreRail() — D-13's auto-centre: finds the on chip inside .mw-bd-rail
+   * (a plain-object walk — recordingDom, and real DOM alike, support no
+   * attribute selector here) and scrolls the rail toward
+   * railScrollTarget(...) only when it is off by more than 2px, respecting
+   * prefers-reduced-motion (instant "auto" vs "smooth").
+   */
+  function centreRail() {
+    const railEl = host.querySelector(".mw-bd-rail");
+    if (!railEl) return;
+    const chip = (railEl.children || []).find((c) => c && c.dataset && c.dataset.on === "1");
+    if (!chip) return;
+    const target = railScrollTarget({
+      offsetLeft: chip.offsetLeft,
+      offsetWidth: chip.offsetWidth,
+      clientWidth: railEl.clientWidth,
+      scrollWidth: railEl.scrollWidth,
+    });
+    const currentRaw = Number(railEl.scrollLeft);
+    const current = Number.isFinite(currentRaw) ? currentRaw : 0;
+    if (Math.abs(current - target) <= 2) return;
+    if (typeof railEl.scrollTo === "function") {
+      railEl.scrollTo({ left: target, behavior: reducedMotion() ? "auto" : "smooth" });
+    } else {
+      railEl.scrollLeft = target;
+    }
+  }
+
+  /**
+   * render({ reset }) — reads data (falling back to an empty shape on a
+   * throwing readData), builds the view and draws it, then re-centres the
+   * rail. The whole body is wrapped in one try/catch so a failing buildView
+   * leaves the PREVIOUS DOM in place rather than breaking the tab switch.
+   * `reset` zeroes the body's scroll position (a board or scope change);
+   * a row toggle passes false so the list never jumps.
+   */
+  function render({ reset }) {
+    let data;
+    try {
+      data = readData();
+    } catch {
+      data = { bests: null, graves: [], total: 0 };
+    }
+    try {
+      const view = buildView({ ...data, board, scope, open, entry, hasHero, signedIn: false });
+      renderBoardsPanel(host, view, handlers);
+      centreRail();
+      if (reset) {
+        const bodyEl = host.querySelector(".mw-bd-body");
+        if (bodyEl) bodyEl.scrollTop = 0;
+      }
+    } catch {
+      // a failing buildView/render must never break the tab switch — the
+      // previous DOM (if any) is left exactly as it was.
+    }
+  }
+
+  const handlers = {
+    onBoard(id) {
+      if (!BOARD_IDS.includes(id)) return;
+      board = id;
+      open = null;
+      storeBoard(id);
+      render({ reset: true });
+    },
+    onScope(id) {
+      scope = scope === id ? "local" : id;
+      open = null;
+      render({ reset: true });
+    },
+    onRow(key) {
+      open = open === key ? null : key;
+      render({ reset: false });
+    },
+    onBack() {
+      back();
+    },
+    onDock(id) {
+      if (id === "title" || id === "roll" || id === "dungeon") route(id);
+    },
+  };
+
+  function route(action) {
+    const routedHasHero = hasHero;
+    entry = null;
+    clearTitleMarker();
+    onRoute?.(action, { hasHero: routedHasHero });
+  }
+
+  function back() {
+    if (entry !== "title") return false;
+    route(hasHero ? "dungeon" : "title");
+    return true;
+  }
+
+  function isTitleOpen() {
+    return entry === "title";
+  }
+
+  function openFromTab() {
+    entry = "tab";
+    board = readStoredBoard() || "deep";
+    scope = "local";
+    open = null;
+    clearTitleMarker();
+    render({ reset: true });
+  }
+
+  function openFromTitle({ hasHero: h } = {}) {
+    entry = "title";
+    hasHero = !!h;
+    board = "yard"; // D-04: the title's button reads "View the Dead".
+    scope = "local";
+    open = null;
+    doc.body.dataset.boardsEntry = "title";
+    render({ reset: true });
+  }
+
+  function onDeadTab() {
+    if (entry === "title") {
+      centreRail();
+      return;
+    }
+    openFromTab();
+  }
+
+  function refresh() {
+    if (entry !== null) render({ reset: false });
+  }
+
+  function state() {
+    return Object.freeze({ entry, board, scope, open, hasHero });
+  }
+
+  return Object.freeze({ openFromTab, openFromTitle, onDeadTab, back, isTitleOpen, centreRail, refresh, state });
 }
