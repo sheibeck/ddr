@@ -1527,6 +1527,16 @@ html,body{height:100%}
           <button type="button" class="mw-settings-opt" data-value="false">Off</button>
         </div>
       </div>
+      <!-- Phase 59 (DRESS-05): ambient dungeon props on/off, default On,
+           independent of Sound (D-15) — Off also stops the 54 prop images
+           from ever loading (D-16). -->
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Set dressing</span>
+        <div class="mw-settings-options" data-setting="dressing">
+          <button type="button" class="mw-settings-opt" data-value="true">On</button>
+          <button type="button" class="mw-settings-opt" data-value="false">Off</button>
+        </div>
+      </div>
       <!-- Phase 21 (TUNE-04, D-13/D-22) — the version line is a real
            setting-sheet row (build-www.mjs replaces the `dev` placeholder
            with versionName (versionCode) from android/version.properties);
@@ -2418,6 +2428,15 @@ function draw() {
   // the outer maze border
   ctx.lineWidth = 6; ctx.strokeStyle = P.border;
   ctx.strokeRect(3, 3, size - 6, size - 6);
+
+  // Phase 59 (DRESS-01..05): ambient set-dressing props, beneath the
+  // feature icons. Placement, dimming, scale and every feature/stairs/
+  // party/fog/render-window exclusion live entirely in
+  // src/browser/dressing.js — this is the one thin call site. `visible` is
+  // the SAME render-window predicate draw()'s own cell loop above uses, so
+  // a prop is only ever drawn where its cell is drawn. Draws nothing while
+  // Set dressing is Off or before its images have loaded.
+  window.__mzDressing?.drawLayer?.(ctx, S, CELL, visible);
 
   // marks — features are PNG icons (v1.3 canon, restored 2026-09-16 UAT).
   // c.dir rotates the one-way door to its passable direction (DR5); scale
@@ -5216,6 +5235,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // retargetable step-glide controller bridged below as
   // window.__mzPartySprite.
   import { createPartySprite, spriteArt, PARTY_FRAME_ICONS } from "./src/browser/partySprite.js";
+  // Phase 59 (DRESS-01..05) — the pure ambient-prop core (placement,
+  // exclusion, dimmed draw layer, the lazy-load controller and the thin
+  // window.__mzDressing bridge factory) this module wires below.
+  import { createDressingArt, createDressingBridge, DRESSING_ICON_NAMES } from "./src/browser/dressing.js";
+  // Phase 59 (D-14) — a separate import line (not merged with the icons.js
+  // import above) so that pre-existing line stays byte-identical; loadIconSet
+  // is the ONE image loader, reused here for the lazy dressing-art load.
+  import { loadIconSet } from "./src/browser/icons.js";
   // draw() reads MAP_PALETTE from here; inspectAt() reads markForCell/
   // legendFor; the PNG pipeline above (icons.js) is what draws the marks
   // (canon since the 2026-09-16 UAT) — the party moved to the DOM sprite
@@ -5476,6 +5503,16 @@ window.__mzClassicBoot = async function classicBoot() {
   // click handler further down) — never a raw window.mzStorage/localStorage
   // call from here. Phase 33 (UIF-05): the former control-bar side option
   // is gone; this module no longer sets any layout-side attribute here.
+  // Phase 59 (D-14/D-16): the 54 dressing images load once, only after the
+  // first map paint (release(), scheduled below) AND only while Set
+  // dressing is On (setEnabled, in applySettings just below) — declared
+  // BEFORE currentSettings/applySettings, since the first
+  // applySettings(await readSettings()) call further down reads it; a
+  // later `const` here would throw in the temporal dead zone.
+  const dressingArt = createDressingArt({
+    load: () => loadIconSet("./icons/optimized", DRESSING_ICON_NAMES),
+    onReady: () => window.draw?.(),
+  });
   let currentSettings = null;
   function applySettings(settings) {
     currentSettings = settings;
@@ -5494,6 +5531,9 @@ window.__mzClassicBoot = async function classicBoot() {
     // (below) and every write in the #mw-settings-rows handler, since that
     // handler already routes through applySettings — no second hook needed.
     applySfxSettings(settings);
+    // Phase 59 (D-15/D-16): Set dressing gates both drawing (draw() reads
+    // dressingArt.enabled() on every paint) and the lazy image load.
+    dressingArt.setEnabled(settings.dressing === true);
     const appEl = document.getElementById("app");
     if (!appEl) return;
     appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
@@ -5592,6 +5632,9 @@ window.__mzClassicBoot = async function classicBoot() {
       window.fit?.();
       window.mzKeepPartyInView?.();
     }
+    // Phase 59 (DRESS-05): repaint at once so flipping Set dressing Off
+    // clears every prop immediately and On brings them back (once loaded).
+    if (key === "dressing") window.draw?.();
   });
 
   // Phase 56 (AUD-01..05) — the first-gesture unlock + delegated UI tap.
@@ -5745,6 +5788,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // no longer paints the party; this module imports PLAYER_MARKER_ICON
   // directly for the art-fallback check just below instead.
   window.__mzIconsApi = { featureKeyForCell, drawFeatureIcon };
+  // Phase 59 (DRESS-01..05): the ambient prop layer draw() calls beneath
+  // the feature icons — draws nothing while Off or before the 54 images
+  // have loaded.
+  window.__mzDressing = createDressingBridge({ art: dressingArt, drawIcon: drawFeatureIcon });
   window.__mzIconMap = await preloadIcons("./icons/optimized");
   // Phase 59 (ANIM-01, D-01): decode every party-sprite frame plus the
   // static party.png fallback ONCE at boot, then choose the sprite's art
@@ -6345,6 +6392,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // branch left to worry about; the engine's own `boot()` above already set
   // `S` (via window.__mzState) and emitted the resume banner if applicable.
   await window.__mzClassicBoot();
+
+  // Phase 59 (D-14): release the dressing lazy-load one presented frame
+  // after the first map paint (a rAF, then a setTimeout(0) inside it, so
+  // the browser has actually painted before the load starts) — cold start
+  // never waits on the 54 prop images. The controller still loads nothing
+  // while Set dressing is Off.
+  requestAnimationFrame(() => setTimeout(() => dressingArt.release(), 0));
 
   // DR2 "Add a start/title screen" (04-CONTEXT.md DR2 Group 3), revised by
   // 04-DR3, revised again by device-review Pass B1 item 1: RESUME is gone —

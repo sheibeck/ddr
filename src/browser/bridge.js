@@ -120,6 +120,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: the stair-down overlay's primary action)"]),
     purpose: "Exposes the module's descend action so the classic stair overlay's GO button can dispatch it without importing the module a second time.",
   }),
+  __mzDressing: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: draw — the ambient prop layer beneath the feature icons)"]),
+    purpose: "Bridges the pure src/browser/dressing.js ambient-prop layer (Phase 59, DRESS-01..05) so draw() places, dims and excludes props with one thin call and no second copy of the rules; it draws nothing while Set dressing is Off.",
+  }),
   __mzDropShelfItems: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — LOOT and FIND drop-shelf cards)"]),
