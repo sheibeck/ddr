@@ -31,7 +31,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 
 **Working method:** no milestone-level research pass. Phase 67 is flagged `Research: yes` for `gsd-phase-researcher` — it settles the PGS plugin choice, sign-in mechanics, Capacitor 8 / AGP 8.13 compatibility, the score-tag encoding, and LINEAGE's global form together, since all five hinge on the same plugin's API surface. Phases 65, 66, 68 and 69 need no separate research pass — 65/66 build on the codebase's existing `buildRunSummary`/`engineAdapter` keys and the mock, and 68 builds on Phase 67's settled decisions. Full decision record: `.planning/proposed-milestone-leaderboards.md`.
 
-- [ ] **Phase 65: Run Record & Personal Bests** - Every death records a durable, season-tagged run summary and updates an all-time personal-bests record that survives the graveyard trim
+- [x] **Phase 65: Run Record & Personal Bests** - Every death records a durable, season-tagged run summary and updates an all-time personal-bests record that survives the graveyard trim (completed 2026-09-23)
 - [ ] **Phase 66: Leaderboards Panel — Local** - The DEAD tab becomes the mock's Leaderboards panel, running fully offline across all seven boards on personal bests and the graveyard
 - [ ] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle
 - [ ] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card
@@ -64,7 +64,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 65-05-PLAN.md — (wave 3) the gold NEW PERSONAL BEST block inside THAT IS THAT via the `__mzDeathRecord` parcel (RUN-04)
+- [x] 65-05-PLAN.md — (wave 3) the gold NEW PERSONAL BEST block inside THAT IS THAT via the `__mzDeathRecord` parcel (RUN-04)
 
 **Research**: none — `engine/death.js#buildRunSummary`, `src/browser/engineAdapter.js`'s three existing keys, and `mzStorage` carry the file-level shape; `.planning/proposed-milestone-leaderboards.md` has the full record.
 
@@ -309,7 +309,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 65. Run Record & Personal Bests | v2.0 | 4/5 | In Progress|  |
+| 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 0/7 | Planned | - |
 | 67. Play Games Integration & Account Chip | v2.0 | 0/TBD | Not started | - |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
