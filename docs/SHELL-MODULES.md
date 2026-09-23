@@ -3,9 +3,10 @@
 `mazeworld.html` is a mount point. The Gear tab, the Hero tab and the Store
 screen render from named `src/browser/` modules — `gearTab.js`, `heroTab.js`
 and `storeScreen.js` (Phase 47), and the character roller mounts from
-`roller.js` (Phase 50). The contract below is what those modules implement,
-and every `window.__mz*` bridge crossing the classic-script/module-script
-seam is listed in one place, with an owner.
+`roller.js` (Phase 50). The GEAR tab's bottom action sheet renders from
+`gearSheet.js` (Phase 63). The contract below is what those modules
+implement, and every `window.__mz*` bridge crossing the classic-script/
+module-script seam is listed in one place, with an owner.
 
 ## Contract
 
@@ -21,11 +22,15 @@ Each tab module exports one render function:
   action closure over the matching `window.mz*` bridge: `guardTap`,
   `useItem`, `equipItem`, `unequip`, `dropItem`, `sellItem`, `takeLoot`,
   `leaveLoot`, `buyItem`, `leaveStore`, `dismissJoiner`, `castSpell`,
-  `drinkPotion`, `readScroll` (14 keys). Phase 62 (GSCR-06): the rebuilt Gear
-  tab's CONSUMABLES section dispatches the HEALING POTION and SCROLLS rows
-  through `deps.drinkPotion`/`deps.readScroll` — no new engine action, no new
-  bridge; both close over the existing `window.mzDrinkPotion`/
-  `window.mzReadScroll` bridges.
+  `drinkPotion`, `readScroll`, `openGearSheet`, `closeGearSheet` (16 keys).
+  Phase 62 (GSCR-06): the rebuilt Gear tab's CONSUMABLES section dispatches
+  the HEALING POTION and SCROLLS rows through `deps.drinkPotion`/
+  `deps.readScroll` — no new engine action, no new bridge; both close over
+  the existing `window.mzDrinkPotion`/`window.mzReadScroll` bridges. Phase 63
+  (GSCR-07..10, GRULE-02): `openGearSheet`/`closeGearSheet` are closures over
+  the classic sheet lifecycle — the Gear rows call
+  `deps.openGearSheet(target, openerId)` to open the action sheet, and the
+  sheet's own actions call `deps.closeGearSheet()` before dispatching.
 
 Rules:
 
@@ -92,6 +97,26 @@ it touches a reel or the pending state, and every reel lock plus the CTA
 always read the SAME pending object — never a `sheet` captured once and
 reused later.
 
+### Gear action sheet (Phase 63)
+
+`src/browser/gearSheet.js` (GSCR-07..10, GRULE-02) exports `GEAR_SHEET_COPY`,
+`gearSheetModel(state, target)`, `GEAR_SHEET_IDS` and
+`renderGearSheet(host, state, target, deps)` — the ONE bottom action sheet
+behind every equip/swap/unequip/use/drop decision on the GEAR tab, for
+either a WORN slot (`{ from: "worn", slot }`) or a BAG card
+(`{ from: "bag", i, n }`) target.
+
+The classic script owns the sheet's lifecycle, never the module: `openGearSheet(target, openerId)` renders through the bridge and shows the
+panel; `refreshGearSheet()` (called by `paint()` whenever a sheet is open)
+re-derives it from `S` and the stored target every frame — greying it in
+place when a fight starts (GRULE-02), closing it when the target vanishes;
+`closeGearSheet()` hides it, stamps `lastDismissAt` and returns focus to the
+opener. The scrim tap and the Android back button both close it too.
+
+`window.__mzGearSheet` is the one bridge — the module script assigns it to
+`renderGearSheet` before the first `boot()`; the classic script's
+`openGearSheet`/`refreshGearSheet` are its only callers.
+
 ## What stays shared
 
 `src/browser/viewModels.js` keeps the view models more than one surface
@@ -144,6 +169,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzFightEnd | mazeworld.html (module) | mazeworld.html (classic: renderCombatOver — reads and also resets to null)<br>mazeworld.html (module: the post-dispatch combat-end tracker — sets the ending-line parcel) | Presentation-only parcel of a just-ended fight's closing lines; never a field on state. |
 | __mzFightLog | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)<br>mazeworld.html (module: dispatchWithNarration — appends every dispatch's fight-log lines) | Presentation-only whole-fight log entries (rows, seq); never a field on state. |
 | __mzFightLogVM | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull) | Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time. |
+| __mzGearSheet | mazeworld.html (module) | mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render) | Bridges src/browser/gearSheet.js's renderGearSheet so the classic sheet lifecycle (open, repaint refresh, close, back button, ghost-tap arm) renders the ONE pure sheet model, never a second copy. |
 | __mzGravesCount | mazeworld.html (classic) | mazeworld.html (module: refreshTitleDead — the roller screen's death counter) | Exposes the classic script's graveyard-count accessor so the module's title-screen death counter reads the same total. |
 | __mzHapticsImportOverride | src/browser/haptics.js | test/unit/haptics.test.js | Test-only injection hook so a test can replace the native @capacitor/haptics import with a fake, without any shipped code path setting it. |
 | __mzHasTool | mazeworld.html (module) | mazeworld.html (classic/module: rail dark/hazard cards — torch retry, dark-fell gating) | Bridges the pure carried-tool predicate so a hazard/dark rail card only offers a retry when the party actually carries the tool. |

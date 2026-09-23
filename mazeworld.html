@@ -1421,6 +1421,32 @@ html,body{height:100%}
 .mw-camp-btn{flex:1;white-space:pre-line;text-align:center;font-family:var(--disp);font-size:8px;line-height:1.6;letter-spacing:0;padding:15px 8px;min-height:48px;background:#e8c97a;color:#14110c;border:0;border-radius:0;box-shadow:0 4px 0 #6b5c3c;cursor:pointer}
 .mw-camp-btn.secondary{flex:0 0 auto;padding:15px 16px;background:transparent;border:2px solid #4a4032;color:#c9bda0;box-shadow:0 4px 0 #0d0b08}
 
+/* ---------- GEAR action sheet (Phase 63, GSCR-07..10) ----------
+   Reuses the legend chrome (.mw-legend-sheet/-scrim/-panel, above) for the
+   rise, the fade and the closing state — no motion property of its own
+   lives in this block. A greyed row keys off [data-off] alone, never a
+   screen-reader-only state selector, so there is no extra visual flicker
+   layered on the shared chrome (the Phase 62 CSS convention this block
+   follows). Every font size scales with --mw-text-scale. */
+.mw-gsheet-head{border-bottom:3px solid #3a3226;padding-bottom:13px}
+.mw-gsheet-label{margin:0;font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));line-height:1.5;color:#9a8f76}
+.mw-gsheet-title{margin:9px 0 0;font-family:var(--disp);font-weight:400;font-size:calc(0.625rem * var(--mw-text-scale));line-height:1.5;color:#e6ddc6;text-transform:uppercase}
+.mw-gsheet-title:focus{outline:none}
+.mw-gsheet-note{margin:8px 0 0;font-family:var(--mono);font-weight:700;font-size:calc(0.90625rem * var(--mw-text-scale));line-height:1.45;color:#a89c82}
+.mw-gsheet-why{margin:8px 0 0;font-family:var(--mono);font-weight:700;font-size:calc(0.8125rem * var(--mw-text-scale));line-height:1.4;color:var(--ditto)}
+.mw-gsheet-act{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;margin:0;padding:14px 2px;border:0;border-bottom:2px solid #241f16;border-radius:0;background:transparent;box-shadow:none;letter-spacing:0;text-align:left;color:inherit;cursor:pointer}
+.mw-gsheet-act-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.mw-gsheet-act-label{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));line-height:1.5;color:#e8c97a;text-transform:uppercase}
+.mw-gsheet-act-sub{font-family:var(--mono);font-weight:700;font-size:calc(0.78125rem * var(--mw-text-scale));line-height:1.4;color:#8e8369}
+.mw-gsheet-chev{flex:none;font-family:var(--mono);font-weight:700;font-size:calc(0.9375rem * var(--mw-text-scale));color:#5c5342}
+.mw-gsheet-act[data-off]{opacity:.45;cursor:default}
+.mw-gsheet-act[data-off] .mw-gsheet-act-label{color:#8f856f}
+.mw-gsheet-act[data-off] .mw-gsheet-chev{visibility:hidden}
+.mw-gsheet-act[data-armed] .mw-gsheet-act-label{color:var(--stamp)}
+.mw-gsheet-act:hover:not(:disabled),.mw-gsheet-act:active:not(:disabled){background:transparent;transform:none;box-shadow:none}
+.mw-gsheet-cancel{display:block;width:100%;min-height:48px;margin-top:16px;padding:15px 8px;text-align:center;font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:0;background:transparent;border:2px solid #4a4032;border-radius:0;color:#c9bda0;box-shadow:0 4px 0 #0d0b08}
+.mw-gsheet-cancel:hover:not(:disabled),.mw-gsheet-cancel:active:not(:disabled){background:transparent;color:#c9bda0}
+
 .mw-roller-screen{
   position:fixed;inset:0;z-index:51;
   background:var(--paper);color:var(--ink);
@@ -1619,6 +1645,29 @@ html,body{height:100%}
       <button type="button" class="mw-camp-btn" id="mw-camp-sleep"></button>
       <button type="button" class="mw-camp-btn secondary" id="mw-camp-walk"></button>
     </div>
+  </div>
+</div>
+
+<!-- ============ GEAR ACTION SHEET (Phase 63, GSCR-07..10) ============
+     Reuses the legend chrome (.mw-legend-sheet/-scrim/-panel, above) —
+     opened by tapping a WORN row or a BAG card on the GEAR tab. Its body is
+     filled by src/browser/gearSheet.js#renderGearSheet through the
+     window.__mzGearSheet bridge; the classic script's openGearSheet/
+     closeGearSheet (below) own showing, hiding, focus and the scrim tap.
+     Every action's outcome reaches the player through the rail, never this
+     sheet — see the Phase 63 CONTEXT ruling "Outcome goes to the rail
+     only." -->
+<div id="mw-gear-sheet" class="mw-legend-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-gear-sheet-scrim"></div>
+  <div class="mw-legend-panel" id="mw-gear-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="mw-gear-sheet-title">
+    <div class="mw-gsheet-head">
+      <p class="mw-gsheet-label" id="mw-gear-sheet-label"></p>
+      <h2 class="mw-gsheet-title" id="mw-gear-sheet-title" tabindex="-1"></h2>
+      <p class="mw-gsheet-note" id="mw-gear-sheet-note"></p>
+      <p class="mw-gsheet-why" id="mw-gear-sheet-why" hidden></p>
+    </div>
+    <div class="mw-gsheet-actions" id="mw-gear-sheet-actions"></div>
+    <button type="button" class="mw-gsheet-cancel" id="mw-gear-sheet-cancel"></button>
   </div>
 </div>
 
@@ -2924,6 +2973,14 @@ function paintVignette(c) {
   el.dataset.dark = result.level;
 }
 
+// Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet's own
+// presentation state — a target descriptor ({ from: "worn", slot } or
+// { from: "bag", i, n }) plus the opener row's id, for focus return on
+// close. Presentation only, never on S: serializeRun spreads S wholesale,
+// so these would leak into a save if they were.
+let gearSheetTarget = null;
+let gearSheetOpenerId = null;
+
 // Phase 47 (SHELL-01), Plan 03 — the deps object every tab module receives
 // (docs/SHELL-MODULES.md#Contract): guardTap plus one forwarding closure per
 // window.mz* action bridge, so a module never reaches for `window` itself.
@@ -2943,6 +3000,8 @@ function tabDeps() {
     leaveStore: () => window.mzLeaveStore?.(),
     dismissJoiner: (i) => window.mzDismissJoiner?.(i),
     castSpell: (idx) => window.mzCastSpell?.(idx),
+    openGearSheet: (target, openerId) => openGearSheet(target, openerId),
+    closeGearSheet: () => closeGearSheet(),
   };
 }
 
@@ -3062,6 +3121,10 @@ function paint() {
   // YOU, BAG) renders from src/browser/gearTab.js behind ONE mount call;
   // paint() no longer builds any of that DOM itself.
   if (!mwPaintSkipHiddenTabs || mwActiveTab === "gear") window.__mzTabs.gear(document.getElementById("screen-gear"), S, tabDeps());
+
+  // Phase 63 (GRULE-02): an open Gear sheet re-reads S every paint, so a
+  // fight that starts greys it in place and a vanished target closes it.
+  if (gearSheetTarget !== null) refreshGearSheet();
 
   renderEncounter();
   renderRail();
@@ -3362,7 +3425,10 @@ function armEncounterButtons() {
   if (armTimer) clearTimeout(armTimer);
   const delay = (window.__mzInputGuards && window.__mzInputGuards.ARM_DELAY_MS) || 250;
   armTimer = setTimeout(() => {
-    document.querySelectorAll('#enc-panel [aria-disabled="true"]:not(.cb-foe.dead), #mw-rail [aria-disabled="true"], .mw-legend-sheet [aria-disabled="true"]').forEach((el) => el.removeAttribute("aria-disabled"));
+    // Phase 63 (GRULE-02): a greyed Gear-sheet action (:not([data-off]))
+    // keeps its disabled state and reason for TalkBack — only the live
+    // buttons' arm marker is tidied here.
+    document.querySelectorAll('#enc-panel [aria-disabled="true"]:not(.cb-foe.dead), #mw-rail [aria-disabled="true"], .mw-legend-sheet [aria-disabled="true"]:not([data-off])').forEach((el) => el.removeAttribute("aria-disabled"));
   }, delay);
 }
 
@@ -4820,6 +4886,53 @@ function closeCampSheet() {
 document.getElementById("mw-camp-scrim").addEventListener("click", closeCampSheet);
 document.getElementById("btn-camp").onclick = openCampSheet;
 
+// Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet, on the camp-sheet
+// pattern — window.__mzGearSheet (src/browser/gearSheet.js#renderGearSheet)
+// fills the sheet's body from state alone; this script owns showing, hiding,
+// focus, the ghost-tap arm and the scrim tap. The target/opener presentation
+// state lives on the module-level gearSheetTarget/gearSheetOpenerId lets
+// declared above tabDeps().
+function openGearSheet(target, openerId) {
+  if (!S || !S.c || S.dead || !window.__mzGearSheet) return;
+  const sheet = document.getElementById("mw-gear-sheet");
+  if (!sheet) return;
+  // An unresolvable target (a vanished bag index, an unknown slot) opens
+  // nothing — renderGearSheet returns false and touches no DOM.
+  if (!window.__mzGearSheet(sheet, S, target, tabDeps())) return;
+  gearSheetTarget = target;
+  gearSheetOpenerId = openerId || null;
+  showPanel(sheet);
+  armEncounterButtons();
+  document.getElementById("mw-gear-sheet-title")?.focus?.();
+}
+function refreshGearSheet() {
+  if (gearSheetTarget === null) return;
+  const sheet = document.getElementById("mw-gear-sheet");
+  // GRULE-02: every paint re-reads S and the stored target. A fight that
+  // starts greys the sheet in place (renderGearSheet's own combat-lock
+  // branch); a target that vanished (dropped/equipped/swapped away from
+  // under the sheet) closes it instead of showing stale content.
+  if (!S || !S.c || S.dead || !window.__mzGearSheet || !sheet || !window.__mzGearSheet(sheet, S, gearSheetTarget, tabDeps())) {
+    closeGearSheet();
+    return;
+  }
+  armEncounterButtons();
+}
+function closeGearSheet() {
+  const openerId = gearSheetTarget !== null ? gearSheetOpenerId : null;
+  gearSheetTarget = null;
+  gearSheetOpenerId = null;
+  const sheet = document.getElementById("mw-gear-sheet");
+  if (sheet) hidePanel(sheet);
+  // Phase 58 (MOTION-02): stamped at CALL time — see closeCampSheet's own
+  // comment above for why this still covers the whole animated close.
+  lastDismissAt = Date.now();
+  // Focus returns to the row that opened the sheet, after a dispatch-driven
+  // repaint has rebuilt it (the 0ms timer runs after this tick's paint()).
+  if (openerId) setTimeout(() => document.getElementById(openerId)?.focus?.(), 0);
+}
+document.getElementById("mw-gear-sheet-scrim").addEventListener("click", closeGearSheet);
+
 function centerMap() {
   anchorCamOnParty({ x: 0, y: 0 });
   positionCanvas();
@@ -5336,6 +5449,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // Gear tab view models and the shared carried-item list live in
   // gearTab.js; renderGearTab is the tab's mount function.
   import { bagUsage, renderGearTab, renderCarriedList } from "./src/browser/gearTab.js";
+  // Phase 63 (GSCR-07..10, GRULE-02) — the GEAR action sheet's DOM renderer;
+  // the classic script's openGearSheet/refreshGearSheet reach it through the
+  // window.__mzGearSheet bridge assigned below.
+  import { renderGearSheet } from "./src/browser/gearSheet.js";
   // Phase 47 (SHELL-03), Plan 05 — the Store's own mount function, the
   // classic-script carve's whole S.store branch (Task 2).
   import { renderStoreScreen } from "./src/browser/storeScreen.js";
@@ -5499,6 +5616,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzCarriedList.
   window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
   window.__mzCarriedList = renderCarriedList;
+  // Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet's one bridge —
+  // openGearSheet/refreshGearSheet (classic) render through it.
+  window.__mzGearSheet = renderGearSheet;
 
   // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithNarration and
   // the classic renderFightLog/syncFightLogLive read the whole-fight log
@@ -6875,7 +6995,7 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || hudMenuIsOpen(),
+        hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || hudMenuIsOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
@@ -6883,6 +7003,10 @@ window.__mzClassicBoot = async function classicBoot() {
           // the ☰ menu (device equivalent of Escape, orchestrator-approved
           // as standard behaviour) — first, before any of the modals below.
           hudMenuEvent("escape");
+          // Phase 63 (GSCR-10): the Gear sheet is the top-most layer — one
+          // back press closes only it, never falling through to the stair/
+          // camp/legend/beats/store handling below on the same press.
+          if (gearSheetTarget !== null) { closeGearSheet(); return; }
           window.__mzStair = null;
           closeCampSheet();
           closeMarksLegend();

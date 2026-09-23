@@ -1,0 +1,41 @@
+## #mw-gear-sheet-label
+<div id="mw-gear-sheet-label">
+  text="BAG · JEWELRY"
+## #mw-gear-sheet-title
+<div id="mw-gear-sheet-title">
+  text="Anklet of Invisibility"
+## #mw-gear-sheet-note
+<div id="mw-gear-sheet-note">
+  text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+## #mw-gear-sheet-why
+<div id="mw-gear-sheet-why" hidden>
+  text=""
+## #mw-gear-sheet-actions
+<div id="mw-gear-sheet-actions">
+  <button class="mw-gsheet-act" aria-describedby="mw-gear-sheet-sub-0" aria-disabled="true" aria-label="SWAP INTO JEWELRY 1" data-key="slot:jewelry1" type="button" onclick>
+    <span class="mw-gsheet-act-main">
+      <span class="mw-gsheet-act-label">
+        text="SWAP INTO JEWELRY 1"
+      <span id="mw-gear-sheet-sub-0" class="mw-gsheet-act-sub">
+        text="Bracelet of Flight comes off and goes to the bag."
+    <span class="mw-gsheet-chev" aria-hidden="true">
+      text="›"
+  <button class="mw-gsheet-act" aria-describedby="mw-gear-sheet-sub-1" aria-disabled="true" aria-label="SWAP INTO JEWELRY 2" data-key="slot:jewelry2" type="button" onclick>
+    <span class="mw-gsheet-act-main">
+      <span class="mw-gsheet-act-label">
+        text="SWAP INTO JEWELRY 2"
+      <span id="mw-gear-sheet-sub-1" class="mw-gsheet-act-sub">
+        text="Amulet of Light comes off and goes to the bag."
+    <span class="mw-gsheet-chev" aria-hidden="true">
+      text="›"
+  <button class="mw-gsheet-act" aria-describedby="mw-gear-sheet-sub-2" aria-disabled="true" aria-label="DROP" data-key="drop" type="button" onclick>
+    <span class="mw-gsheet-act-main">
+      <span class="mw-gsheet-act-label">
+        text="DROP"
+      <span id="mw-gear-sheet-sub-2" class="mw-gsheet-act-sub">
+        text="Gone for good. Frees a slot immediately."
+    <span class="mw-gsheet-chev" aria-hidden="true">
+      text="›"
+## #mw-gear-sheet-cancel
+<div id="mw-gear-sheet-cancel" aria-disabled="true" onclick>
+  text="CANCEL"

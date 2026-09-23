@@ -47,6 +47,9 @@ import {
   dropShelfItems,
 } from "../../../src/browser/viewModels.js";
 import { bagUsage, renderGearTab, renderCarriedList } from "../../../src/browser/gearTab.js";
+// Phase 63 (GSCR-07..10, GRULE-02) — the GEAR action sheet's DOM renderer,
+// wired below as window.__mzGearSheet exactly as the module script assigns it.
+import { renderGearSheet } from "../../../src/browser/gearSheet.js";
 import {
   rationsViewModel,
   eatsLineFor,
@@ -176,6 +179,9 @@ function wireBridges(context, { dressing = null } = {}) {
   w.__mzDropShelfItems = dropShelfItems;
   w.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
   w.__mzCarriedList = renderCarriedList;
+  // Phase 63 (GSCR-07..10, GRULE-02) — the REAL sheet renderer, mirroring
+  // the module script's own bridge assignment for this same name.
+  w.__mzGearSheet = renderGearSheet;
   // Phase 57 (LAYOUT-05): paint() reads band 1's identity line/parts and
   // band 2's fixed-width counter slots through this bridge — wired so the
   // BEHAVIOUR tests in test/unit/hud-bands-layout.test.js can prove paint()
@@ -480,6 +486,8 @@ export const SNAPSHOT_IDS = Object.freeze({
   // s-carry).
   gear: ["gear-stats", "gear-worn-head", "gear-worn", "gear-bag-head", "gear-bag-meter", "gear-bag", "gear-cons-head", "gear-cons", "gear-kit-head", "gear-kit"],
   store: ["enc-panel", "enc-body", "shelf", "sell-head", "sell-list", "a-leave"],
+  // Phase 63 (GSCR-07..10): the GEAR action sheet's six GEAR_SHEET_IDS roots.
+  gearSheet: ["mw-gear-sheet-label", "mw-gear-sheet-title", "mw-gear-sheet-note", "mw-gear-sheet-why", "mw-gear-sheet-actions", "mw-gear-sheet-cancel"],
 });
 
 function rollThreeDistinctJewels(rng) {

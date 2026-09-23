@@ -1,0 +1,41 @@
+## #mw-gear-sheet-label
+<div id="mw-gear-sheet-label">
+  text="JEWELRY 1 · WORN"
+## #mw-gear-sheet-title
+<div id="mw-gear-sheet-title">
+  text="Bracelet of Flight"
+## #mw-gear-sheet-note
+<div id="mw-gear-sheet-note">
+  text="used, twenty squares of flight when you ask; fifty to catch its breath"
+## #mw-gear-sheet-why
+<div id="mw-gear-sheet-why" hidden>
+  text=""
+## #mw-gear-sheet-actions
+<div id="mw-gear-sheet-actions">
+  <button class="mw-gsheet-act" aria-describedby="mw-gear-sheet-sub-0" aria-disabled="true" aria-label="USE" data-key="use" type="button" onclick>
+    <span class="mw-gsheet-act-main">
+      <span class="mw-gsheet-act-label">
+        text="USE"
+      <span id="mw-gear-sheet-sub-0" class="mw-gsheet-act-sub">
+        text="Ready when you are."
+    <span class="mw-gsheet-chev" aria-hidden="true">
+      text="›"
+  <button class="mw-gsheet-act" aria-describedby="mw-gear-sheet-sub-1" aria-disabled="true" aria-label="UNEQUIP" data-key="unequip" data-off="1" type="button">
+    <span class="mw-gsheet-act-main">
+      <span class="mw-gsheet-act-label">
+        text="UNEQUIP"
+      <span id="mw-gear-sheet-sub-1" class="mw-gsheet-act-sub">
+        text="Bag is full — free a slot first."
+    <span class="mw-gsheet-chev" aria-hidden="true">
+      text="›"
+  <button class="mw-gsheet-act" aria-describedby="mw-gear-sheet-sub-2" aria-disabled="true" aria-label="SWAP FOR Anklet of Invisibility" data-key="swap:2" type="button" onclick>
+    <span class="mw-gsheet-act-main">
+      <span class="mw-gsheet-act-label">
+        text="SWAP FOR Anklet of Invisibility"
+      <span id="mw-gear-sheet-sub-2" class="mw-gsheet-act-sub">
+        text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+    <span class="mw-gsheet-chev" aria-hidden="true">
+      text="›"
+## #mw-gear-sheet-cancel
+<div id="mw-gear-sheet-cancel" aria-disabled="true" onclick>
+  text="CANCEL"

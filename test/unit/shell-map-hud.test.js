@@ -540,8 +540,13 @@ test("(k) openCampSheet/closeCampSheet: the refusal/lock/arm/guard wiring, both 
 
 // ─── (l) settle-stamp / encounterSettled counts ────────────────────────────
 
-test("(l) settle-stamp count is 3 (the dismissal transition + the two sheet closes) and encounterSettled() is unchanged at 2", () => {
-  assert.equal((CODE.match(/lastDismissAt = Date\.now\(\)/g) || []).length, 3);
+// Phase 63 (GSCR-10), Plan 04: closeGearSheet() gains its own
+// `lastDismissAt = Date.now();` stamp, on the exact closeCampSheet/
+// closeMarksLegend pattern this file's own (k) region already pins — 3 -> 4
+// stamps; encounterSettled() itself is unchanged (the Gear sheet reads it
+// through no new call site).
+test("(l) settle-stamp count is 4 (the dismissal transition + the three sheet closes) and encounterSettled() is unchanged at 2", () => {
+  assert.equal((CODE.match(/lastDismissAt = Date\.now\(\)/g) || []).length, 4);
   assert.equal((CODE.match(/encounterSettled\(\)/g) || []).length, 2);
 });
 
