@@ -11,8 +11,15 @@
 // with window/document globals replaced by host.ownerDocument + deps, and the
 // retired window.__mz* bridges (armorDisplay/bagUsage/usableBy/
 // renderCarriedList) replaced by direct imports.
+//
+// Phase 61 (STORE-02/03): each stock row's disabled/reason/advice state
+// comes from src/browser/viewModels.js#storeRowState — built on the
+// engine's own storeBuyRefusal, so a row can never disagree with what
+// tapping BUY would actually do. The reason shown on a row is ROW STATE,
+// never a post-tap refusal message; the rail stays the one feedback
+// surface for everything else.
 
-import { armorDisplay, usableBy } from "./viewModels.js";
+import { armorDisplay, usableBy, storeRowState } from "./viewModels.js";
 import { bagUsage, renderCarriedList } from "./gearTab.js";
 
 // Phase 33 (STORE-01, CONTEXT Area 3 "Feedback") — the store header's one-line
@@ -63,12 +70,29 @@ export function renderStoreScreen(host, state, deps = {}) {
   st.stock.forEach((item, i) => {
     const row = doc.createElement("button");
     row.className = "goods" + (item.sold ? " sold" : "");
-    row.disabled = !!item.sold || c.gold < item.cost;
+    // Phase 61 (STORE-02/03): the row's own buyability/reason/advice come
+    // from the ONE view model, storeRowState — built on the engine's own
+    // storeBuyRefusal (the same predicate buyFrom settles with), so this
+    // row can never disagree with what tapping BUY would actually do. The
+    // reason is row state, shown on the row itself, never a post-tap
+    // message (the rail stays the one feedback surface for everything
+    // else).
+    const rs = storeRowState(c, item);
+    row.disabled = rs.disabled;
     const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each` : item.sub;
     // Phase 43 (CLAR-02): usable is a static USABLE_COPY string (class
-    // names only, never user/item text) — safe inside innerHTML.
-    const usable = item.effectParams && item.effectParams.item ? usableBy(item.effectParams.item, c) : "";
-    row.innerHTML = `<span class="g-n">${item.n}${sub || usable ? `<i>${sub || ""}${sub && usable ? " " : ""}${usable}</i>` : ""}</span>
+    // names only, never user/item text) — safe inside innerHTML. Phase 61
+    // (STORE-02/03): also gated on rs.showUsable — an illegal item's row
+    // already names who via rs.reasonText, so the "(usable by … — not
+    // you)" suffix would only repeat it.
+    const usable = rs.showUsable && item.effectParams && item.effectParams.item ? usableBy(item.effectParams.item, c) : "";
+    // Phase 61 (STORE-02/03): the italic sub composes, in order, the
+    // item's own sub text, the advice compare line (never disables BUY),
+    // then the row's disable reason (can't-use / bag-full — a gold
+    // shortfall is already named by the price column, so it adds nothing
+    // here).
+    const subText = [sub, rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
+    row.innerHTML = `<span class="g-n">${item.n}${subText || usable ? `<i>${subText || ""}${subText && usable ? " " : ""}${usable}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
     row.onclick = () => deps.buyItem?.(i);
     shelf.appendChild(row);

@@ -145,8 +145,9 @@ test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGe
 // ─── (6) storeScreen.js imports from gearTab.js and viewModels.js, never
 // re-deriving what an import already gives it ─────────────────────────────
 
-test("storeScreen.js imports renderCarriedList/bagUsage from ./gearTab.js and armorDisplay/usableBy from ./viewModels.js", () => {
-  assert.match(STORE_RAW, /import \{ armorDisplay, usableBy \} from "\.\/viewModels\.js";/);
+test("storeScreen.js imports renderCarriedList/bagUsage from ./gearTab.js and armorDisplay/usableBy/storeRowState from ./viewModels.js", () => {
+  // Phase 61 (STORE-02/03): storeRowState joins this import line.
+  assert.match(STORE_RAW, /import \{ armorDisplay, usableBy, storeRowState \} from "\.\/viewModels\.js";/);
   assert.match(STORE_RAW, /import \{ bagUsage, renderCarriedList \} from "\.\/gearTab\.js";/);
 });
 

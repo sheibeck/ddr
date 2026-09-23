@@ -234,13 +234,16 @@ test("LOOT branch: subFor appends cmp.usable, and the drop shelf reads window.__
 
 // ─── (4) store rows ──────────────────────────────────────────────────────
 
-test("Store rows: usable is computed guarded on effectParams.item and appended into the <i> sub", () => {
+test("Store rows: usable is computed guarded on effectParams.item and rs.showUsable, row.disabled reads rs.disabled, and the sub composes sub/compareLine/reasonText via storeRowState (Phase 61, STORE-02/03)", () => {
   const region = storeRegion();
+  assert.match(region, /const rs = storeRowState\(c, item\);/);
+  assert.match(region, /row\.disabled = rs\.disabled;/);
   assert.match(
     region,
-    /const usable = item\.effectParams && item\.effectParams\.item \? usableBy\(item\.effectParams\.item, c\) : "";/,
+    /const usable = rs\.showUsable && item\.effectParams && item\.effectParams\.item \? usableBy\(item\.effectParams\.item, c\) : "";/,
   );
-  assert.match(region, /\$\{sub \|\| usable \? `<i>\$\{sub \|\| ""\}\$\{sub && usable \? " " : ""\}\$\{usable\}<\/i>` : ""\}/);
+  assert.match(region, /const subText = \[sub, rs\.compareLine, rs\.reasonText\]\.filter\(Boolean\)\.join\(" · "\);/);
+  assert.match(region, /\$\{subText \|\| usable \? `<i>\$\{subText \|\| ""\}\$\{subText && usable \? " " : ""\}\$\{usable\}<\/i>` : ""\}/);
 });
 
 // ─── (5) Joiner offer card ───────────────────────────────────────────────

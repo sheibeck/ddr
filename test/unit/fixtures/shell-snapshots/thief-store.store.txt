@@ -22,15 +22,15 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Set of lockpicks<i>opens boxes on 1–5</i></span>\n        <span class=\"g-c\">315 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Flail<i>d10+2 (usable by Fighters, Thieves)</i></span>\n        <span class=\"g-c\">175 wm</span>"
+    html="<span class=\"g-n\">Flail<i>d10+2 · d10+2 vs your d6/2 · −2 to hit · crits on 1 vs your 1–2 · 1.7 vs 1.0 a swing · upgrade (usable by Fighters, Thieves)</i></span>\n        <span class=\"g-c\">175 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Spear<i>d8</i></span>\n        <span class=\"g-c\">105 wm</span>"
+    html="<span class=\"g-n\">Spear<i>d8 · d8 vs your d6/2 · −1 to hit · crits on 1 vs your 1–2 · 1.4 vs 1.0 a swing · upgrade</i></span>\n        <span class=\"g-c\">105 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Warded leather<i>AR 7, 25 hp · enchanted (usable by Fighters, Thieves)</i></span>\n        <span class=\"g-c\">700 wm</span>"
+    html="<span class=\"g-n\">Warded leather<i>AR 7, 25 hp · enchanted · AR 7 vs your AR 6 · upgrade (usable by Fighters, Thieves)</i></span>\n        <span class=\"g-c\">700 wm</span>"
   <button class="goods" onclick>
     html="<span class=\"g-n\">Rations (+1 ration)</span>\n        <span class=\"g-c\">21 wm</span>"
-  <button class="goods" onclick>
-    html="<span class=\"g-n\">Torch<i>lights the dark once, and keeps it off for forty squares</i></span>\n        <span class=\"g-c\">18 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Torch<i>lights the dark once, and keeps it off for forty squares · bag full — sell or drop something first</i></span>\n        <span class=\"g-c\">18 wm</span>"
 ## #sell-head
 <div id="sell-head">
 ## #sell-list

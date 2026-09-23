@@ -9,6 +9,7 @@
 import { WEAPONS, ARMORS, BAGS } from "../../content/index.js";
 import { armorSoak, takesBagSlot, gearCompareParts } from "../../engine/derived.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap } from "../../engine/items.js";
+import { storeBuyRefusal } from "../../engine/economy.js";
 import { upgradeWhyText, UPGRADE_WHY_COPY } from "./upgradeWhy.js";
 
 /**
@@ -107,6 +108,18 @@ export const USABLE_COPY = Object.freeze({
   usable: "(usable by {who})",
   notYou: "(usable by {who} — not you)",
   heft: "(usable by {who} — and a Thief with Heft)",
+});
+
+/**
+ * STORE_ROW_COPY — Phase 61 (STORE-02): the one frozen copy object
+ * `storeRowState`'s room-refusal reason text reads from — a leaf-string
+ * bank like USABLE_COPY above, walked by the hp-not-wp guard and the voice
+ * safety scan. A legality refusal reads `lootCompare`'s own "can't use
+ * (…)" line instead (never restated here); a gold shortfall reads nothing
+ * (the price column already says it).
+ */
+export const STORE_ROW_COPY = Object.freeze({
+  bagFull: "bag full — sell or drop something first",
 });
 
 /**
@@ -224,6 +237,37 @@ export function lootCompare(c, it) {
 
   // Phase 43 (CLAR-02, additive field): the fallthrough (jewel/cloak/potion/tool/etc) is never class-restricted.
   return { kind: it.kind, legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line: it.txt ?? "", sub: "", why: null, usable: usableBy(it, c) };
+}
+
+/**
+ * storeRowState(c, line) — Phase 61 (STORE-02/03): the ONE view model a
+ * store stock row reads to decide whether BUY is disabled, why (when the
+ * row itself carries the reason — a gold shortfall is already named by the
+ * price column, so it never repeats here), and the explained
+ * upgrade-or-not advice line for a weapon/armor/premium row.
+ * `disabled`/`refusal` come from the engine's own `storeBuyRefusal`
+ * (engine/economy.js) — the SAME predicate `buyFrom` settles with — so the
+ * row can never disagree with what tapping BUY would actually do. The
+ * verdict and its explanation come only from `lootCompare` above, never a
+ * restated rule; advice (`compareLine`) never feeds `disabled`. Pure —
+ * never mutates `c` or `line`; two calls with the same inputs deep-equal.
+ * Returns `{ disabled, refusal, reasonText, compareLine, showUsable }`.
+ */
+export function storeRowState(c, line) {
+  const refusal = line.sold ? null : storeBuyRefusal(c, line);
+  const disabled = !!line.sold || refusal !== null;
+  const it = line.effectParams && line.effectParams.item;
+  const gear = !!it && (it.kind === "weapon" || it.kind === "armor");
+  const cmp = gear ? lootCompare(c, it) : null;
+  const reasonText =
+    gear && cmp && !cmp.legal
+      ? cmp.line
+      : refusal && refusal.reason === "bagFull"
+        ? STORE_ROW_COPY.bagFull
+        : null;
+  const compareLine = !line.sold && gear && cmp.legal ? cmp.line : null;
+  const showUsable = !(gear && cmp && !cmp.legal);
+  return { disabled, refusal, reasonText, compareLine, showUsable };
 }
 
 /**
