@@ -20,7 +20,12 @@ Each tab module exports one render function:
 - `deps` — the object the classic script's `tabDeps()` builds, each key an
   action closure over the matching `window.mz*` bridge: `guardTap`,
   `useItem`, `equipItem`, `unequip`, `dropItem`, `sellItem`, `takeLoot`,
-  `leaveLoot`, `buyItem`, `leaveStore`, `dismissJoiner`, `castSpell`.
+  `leaveLoot`, `buyItem`, `leaveStore`, `dismissJoiner`, `castSpell`,
+  `drinkPotion`, `readScroll` (14 keys). Phase 62 (GSCR-06): the rebuilt Gear
+  tab's CONSUMABLES section dispatches the HEALING POTION and SCROLLS rows
+  through `deps.drinkPotion`/`deps.readScroll` — no new engine action, no new
+  bridge; both close over the existing `window.mzDrinkPotion`/
+  `window.mzReadScroll` bridges.
 
 Rules:
 
@@ -96,6 +101,18 @@ reads: `armorDisplay`, `bagArmorText`, `USABLE_COPY`, `usableBy`,
 `renderDropShelf` stays in the shell — it renders on the LOOT and FIND
 cards (encounter surfaces, not the Gear tab). The encounter overlay's
 host/frame also stays in the shell.
+
+Phase 62 (GSCR-01..06/11): `src/browser/gearTab.js` also exports the
+Gear-tab view models — `GEAR_WORN_ORDER`, `gearHeaderModel`, `gearUseCell`,
+`gearWornModel`, `gearBagMeterModel`, `gearBagCardsModel`,
+`gearConsumablesModel`, `gearKitRows` — the pure, DOM-free layer
+`renderGearTab` turns into elements. `itemRowState` and `bagUsage` stay the
+shared rules that `combatMenu.js`'s ITEMS submenu, `storeScreen.js`'s sell
+list and the loot card all read too, so the Gear tab can never show a use
+state, bag count or potion availability the player would see differently
+elsewhere (GSCR-11; proven by `test/unit/gear-agreement.test.js`). The Gear
+tab's interim in-row Equip / swap / Drop confirms are `renderCarriedList`'s
+own, harvested per bag card, until the Phase 63 action sheet replaces them.
 
 ## Module bridge
 

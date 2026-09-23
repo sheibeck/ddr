@@ -21,7 +21,7 @@
 - [ ] **GSCR-08**: Tapping a bag card opens the same sheet with USE (for items that are never worn), one EQUIP TO / SWAP INTO action per named slot the item fits (both jewelry slots by name, so the player picks which piece comes off), and DROP. The sheet replaces the inline two-tap Drop and swap confirms.
 - [ ] **GSCR-09**: Every greyed sheet action states the engine's reason, and every completed action's outcome reaches the player through the rail in voice. There are no toasts and no inline refusal text on rows.
 - [ ] **GSCR-10**: The sheet closes on CANCEL, on a backdrop tap and on the Android back button. Its rise and fade have a reduced-motion path, and TalkBack reads the sheet's title and actions.
-- [ ] **GSCR-11**: The ITEMS combat submenu, the loot screen and the store keep reading the same shared view models (`itemRowState`, `bagUsage`, `lootCompare`), so a state shown on the Gear tab never disagrees with another screen.
+- [x] **GSCR-11**: The ITEMS combat submenu, the loot screen and the store keep reading the same shared view models (`itemRowState`, `bagUsage`, `lootCompare`), so a state shown on the Gear tab never disagrees with another screen.
 - [ ] **GSCR-12**: A Pixel 7 device batch covers the redone tab end to end: every sheet path, a full bag, staff charges, a cooldown counting down while walking, the combat lock and reduced motion. It is recorded in `docs/UAT-v1.9.md`.
 
 ### Gear Rules (engine — declared, deterministic, zero new rng draws)
@@ -64,7 +64,7 @@
 | GSCR-08 | Phase 63 | Pending |
 | GSCR-09 | Phase 63 | Pending |
 | GSCR-10 | Phase 63 | Pending |
-| GSCR-11 | Phase 62 | Pending |
+| GSCR-11 | Phase 62 | Complete |
 | GSCR-12 | Phase 64 | Pending |
 | GRULE-01 | Phase 61 | Complete |
 | GRULE-02 | Phase 63 | Pending |
