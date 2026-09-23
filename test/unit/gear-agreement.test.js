@@ -20,7 +20,8 @@
 // cannot read (the Phase 34 row ruling), while the Gear tab greys READ and
 // states that same engine reason (the locked CONTEXT consumables decision).
 // This suite compares scroll COUNTS only, never the READ/tappable state.
-// Phase 63 revisits combat-time greying.
+// Combat-time greying of the WORN/BAG action sheet itself is covered by
+// gear-sheet-model.test.js and gear-sheet-agreement.test.js.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -34,8 +35,8 @@ import { setIdentityDials } from "./harness/identityDials.js";
 import { itemRowState, bagUsage, GEAR_COPY } from "../../src/browser/gearTab.js";
 import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { dropShelfItems } from "../../src/browser/viewModels.js";
-import { itemTimerId, chargesTimerId } from "../../engine/derived.js";
-import { toolItem } from "../../engine/items.js";
+import { itemTimerId, chargesTimerId, slotFor } from "../../engine/derived.js";
+import { toolItem, toolIndex } from "../../engine/items.js";
 import { STAVES } from "../../content/treasure-tables.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
@@ -342,41 +343,43 @@ test("Edge GSCR-11/idempotency: painting the same state twice serializes SNAPSHO
 
 // ═══════════════════════ Edge GSCR-11/concurrency ══════════════════════════
 
-test("Edge GSCR-11/concurrency: arming Drop on one bag card then another leaves exactly one confirm; a fresh paint() clears every confirm", () => {
+test("Edge GSCR-11/concurrency: opening the bagged jewel's sheet then the rope's leaves exactly one sheet shown, with the rope's title; a fresh paint() keeps it rendered; no in-row confirm exists under #gear-bag or #gear-worn", () => {
   const doc = createRecordingDocument();
   const sandbox = loadShellSandbox({ doc });
   sandbox.setState(rawStates.thief);
   sandbox.paint();
 
   const bagEl = doc.document.getElementById("gear-bag");
-  const cards = findAll(bagEl, "mw-gear-card");
-  assert.ok(cards.length >= 2, "expected at least two bag cards for the concurrency check");
+  const jewelEntry = dropShelfItems(rawStates.thief.c).find(({ it }) => slotFor(it) === "jewelry");
+  assert.ok(jewelEntry, "expected a bagged jewel in the thief fixture");
+  const ropeI = toolIndex(rawStates.thief.c, "rope");
+  assert.ok(ropeI !== -1, "expected a rope in the thief fixture's bag");
 
-  const dropButtonOf = (card) => {
-    const actions = card.children.find((n) => n.className === "mw-gear-actions");
-    assert.ok(actions, "expected an actions row on every bag card");
-    const btn = actions.children.find((b) => b.textContent === "Drop");
-    assert.ok(btn, "expected a Drop button in the actions row");
-    return btn;
-  };
+  const jewelLi = bagEl.children.find((li) => li.dataset.i === String(jewelEntry.i));
+  assert.ok(jewelLi, "expected the bagged jewel's card");
+  jewelLi.onclick();
 
-  const dropA = dropButtonOf(cards[0]);
-  const dropB = dropButtonOf(cards[1]);
-  dropA.onclick();
-  dropB.onclick();
+  const sheet = doc.document.getElementById("mw-gear-sheet");
+  assert.equal(sheet.hidden, false, "expected the sheet to open on the jewel card's tap");
 
-  const confirms = findAll(bagEl, "mw-drop-confirm");
-  assert.equal(confirms.length, 1, "expected exactly one armed Drop confirm under #gear-bag");
+  const ropeLi = bagEl.children.find((li) => li.dataset.i === String(ropeI));
+  assert.ok(ropeLi, "expected the rope's card");
+  ropeLi.onclick();
 
-  // Card A's own actions row is restored to a plain (unarmed) Drop button.
-  const actionsA = cards[0].children.find((n) => n.className === "mw-gear-actions");
-  const restoredDrop = actionsA.children.find((b) => b.textContent === "Drop");
-  assert.ok(restoredDrop, "expected card A's Drop button restored (no longer armed)");
+  assert.equal(sheet.hidden, false, "expected exactly one sheet shown after tapping a second card");
+  const titleEl = doc.document.getElementById("mw-gear-sheet-title");
+  assert.equal(titleEl.textContent, rawStates.thief.c.items[ropeI].n);
 
   sandbox.paint();
+  const titleAfterPaint = doc.document.getElementById("mw-gear-sheet-title");
+  assert.equal(titleAfterPaint.textContent, rawStates.thief.c.items[ropeI].n, "a fresh paint() must keep the sheet rendered with the same title");
+
   const bagEl2 = doc.document.getElementById("gear-bag");
-  assert.equal(findAll(bagEl2, "mw-drop-confirm").length, 0, "expected zero armed Drop confirms after a fresh paint()");
-  assert.equal(findAll(bagEl2, "mw-swap-confirm").length, 0, "expected zero armed swap confirms after a fresh paint()");
+  const wornEl2 = doc.document.getElementById("gear-worn");
+  for (const root of [bagEl2, wornEl2]) {
+    assert.equal(findAll(root, "mw-drop-confirm").length, 0, "expected no in-row Drop confirm");
+    assert.equal(findAll(root, "mw-swap-confirm").length, 0, "expected no in-row swap confirm");
+  }
 });
 
 // ═══════════════════════ no-fork source guard ══════════════════════════════

@@ -62,6 +62,13 @@ export function bagUsage(c) {
  * too, so the voice scan and the hp-not-wp guard keep walking ONE object.
  * `empty.weapon` is new (a bare-fisted weapon slot now gets its own in-voice
  * empty line, same as the other four). Every nested group stays frozen.
+ *
+ * Phase 63 (GSCR-07/08/10): the leaf group that held the two interim in-row
+ * action strings is gone with the in-row actions themselves — every equip,
+ * swap, unequip, use and drop decision now goes through the bottom action
+ * sheet (src/browser/gearSheet.js). `opensHint` is new: the sr-only hint
+ * every openable WORN row and BAG card carries for TalkBack, naming that a
+ * tap opens the sheet's actions.
  */
 export const GEAR_COPY = Object.freeze({
   worn: "WORN",
@@ -116,6 +123,7 @@ export const GEAR_COPY = Object.freeze({
   scrolls: "SCROLLS",
   scrollDesc: "A random spell, read aloud. No refunds.",
   qty: "×{n}",
+  opensHint: "opens actions",
   kit: Object.freeze({
     rations: "Rations",
     rationsValue: "{n} days",
@@ -135,10 +143,6 @@ export const GEAR_COPY = Object.freeze({
     reveal: "Map the Floor",
     revealValue: "{n} sq",
     kills: "Kills",
-  }),
-  act: Object.freeze({
-    unequip: "Unequip",
-    bagFull: "Bag full",
   }),
 });
 
@@ -761,18 +765,25 @@ export function renderCarriedList(container, state, items, opts = {}, deps = {})
  * (gearHeaderModel/gearWornModel/gearBagMeterModel/gearBagCardsModel/
  * gearConsumablesModel/gearKitRows above) — it only turns those pure models
  * into DOM via createElement/textContent (T-38-11: no innerHTML carrying an
- * item name anywhere in this region), reusing renderCarriedList (above,
- * byte-identical — never edited here) for each bag card's own Equip/
- * swap-confirm/Drop actions, harvested through ONE per-card gearRow-flagged
- * call so no confirm logic is forked. Five sections in source order: header
+ * item name anywhere in this region). Five sections in source order: header
  * (#gear-stats), WORN (#gear-worn-head/#gear-worn), BAG (#gear-bag-head/
  * #gear-bag-meter/#gear-bag), CONSUMABLES (#gear-cons-head/#gear-cons) and
  * ALSO ON YOU (#gear-kit-head/#gear-kit). No window/document globals —
  * host, host.ownerDocument and deps only.
+ *
+ * Phase 63 (GSCR-07/08/10): every WORN row and BAG card opens the bottom
+ * action sheet through deps.openGearSheet — the `opener` closure below marks
+ * each row's main block as an accessible opener (role, tabindex,
+ * aria-haspopup, the sr-only opens-actions hint, Enter/Space) and wires the
+ * row's own tap. The inline USE / ACTIVE / COOLING button still acts
+ * directly, stopping propagation so the same tap never also opens the
+ * sheet. The interim in-row actions, and the per-card harvest through the
+ * shared carried-item list that used to supply them, are gone — that shared
+ * list now serves only the store sell list, the combat ITEMS list and the
+ * loot card.
  */
 export function renderGearTab(host, state, deps = {}) {
   const doc = host.ownerDocument;
-  const c = state.c;
 
   // ── small DOM builders (closures — kept inside renderGearTab so every
   // new helper stays inside this function's own region, per the plan's
@@ -795,7 +806,7 @@ export function renderGearTab(host, state, deps = {}) {
     btn.className = "mw-gear-use-btn";
     btn.textContent = cell.label;
     btn.setAttribute("aria-label", cell.label + " " + name);
-    btn.onclick = () => deps.useItem?.(ref);
+    btn.onclick = (e) => { e?.stopPropagation?.(); deps.useItem?.(ref); };
     wrap.appendChild(btn);
     if (cell.sub) wrap.appendChild(el("span", "mw-gear-use-sub", cell.sub));
     return wrap;
@@ -804,6 +815,25 @@ export function renderGearTab(host, state, deps = {}) {
     const chev = el("span", "mw-gear-chev", GEAR_COPY.chevron);
     chev.setAttribute("aria-hidden", "true");
     return chev;
+  };
+  // opener(main, target, openerId) — Phase 63 (GSCR-07/08/10): marks `main`
+  // (a WORN row's .mw-gear-main or a BAG card's .mw-gear-card-main) as the
+  // row's accessible opener for the bottom action sheet, and returns the
+  // open() callback the row's own tap handler uses.
+  const opener = (main, target, openerId) => {
+    main.id = openerId;
+    main.setAttribute("role", "button");
+    main.setAttribute("tabindex", "0");
+    main.setAttribute("aria-haspopup", "dialog");
+    main.appendChild(el("span", "sr-only", GEAR_COPY.opensHint));
+    const open = () => deps.openGearSheet?.(target, openerId);
+    main.onkeydown = (e) => {
+      if (e && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault?.();
+        open();
+      }
+    };
+    return open;
   };
 
   // 1. Header — ARMOR RATING / WILMST, the effective values only.
@@ -822,26 +852,17 @@ export function renderGearTab(host, state, deps = {}) {
   head("gear-worn-head", GEAR_COPY.worn, worn.countText, false);
   doc.getElementById("gear-worn").replaceChildren(
     ...worn.rows.map((row) => {
-      const li = el("li", "mw-gear-row" + (row.filled ? "" : " mw-gear-row-empty"));
+      const li = el("li", "mw-gear-row mw-gear-tap" + (row.filled ? "" : " mw-gear-row-empty"));
       li.dataset.slot = row.key;
       li.appendChild(el("span", "mw-gear-slot", row.label));
       const main = el("div", "mw-gear-main");
       main.appendChild(el("span", "mw-gear-name", row.name));
       main.appendChild(el("span", "mw-gear-note", row.note));
       li.appendChild(main);
+      li.onclick = opener(main, { from: "worn", slot: row.key }, "gear-open-" + row.key);
       li.appendChild(el("span", "mw-gear-val", row.value));
       if (row.use) li.appendChild(useCellEl(row.use, row.useRef, row.name));
       li.appendChild(chevron());
-      if (row.unequip) {
-        const actions = el("div", "mw-gear-actions");
-        const btn = doc.createElement("button");
-        btn.className = "small mw-gear-act";
-        btn.textContent = row.unequip.blocked ? GEAR_COPY.act.bagFull : GEAR_COPY.act.unequip;
-        if (row.unequip.blocked) btn.disabled = true;
-        else btn.onclick = () => deps.unequip?.(row.unequip.slot);
-        actions.appendChild(btn);
-        li.appendChild(actions);
-      }
       return li;
     })
   );
@@ -860,9 +881,8 @@ export function renderGearTab(host, state, deps = {}) {
   if (meter.freeRide) meterChildren.push(el("p", "mw-gear-free", meter.freeRide));
   doc.getElementById("gear-bag-meter").replaceChildren(...meterChildren);
 
-  // 4. BAG — the item cards. Each card's Equip/swap-confirm/Drop actions
-  // come from ONE per-card renderCarriedList call (gearRow:true), so
-  // renderCarriedList's own confirm logic is reused, never forked.
+  // 4. BAG — the item cards. Each card is an opener for the bottom action
+  // sheet (Phase 63) — no per-card harvest through renderCarriedList.
   const cards = gearBagCardsModel(state);
   const bagList = doc.getElementById("gear-bag");
   if (!cards.length) {
@@ -873,7 +893,7 @@ export function renderGearTab(host, state, deps = {}) {
   } else {
     bagList.replaceChildren(
       ...cards.map((card) => {
-        const li = el("li", "mw-gear-card");
+        const li = el("li", "mw-gear-card mw-gear-tap");
         li.dataset.i = String(card.i);
         const main = el("div", "mw-gear-card-main");
         const top = el("div", "mw-gear-card-top");
@@ -882,12 +902,9 @@ export function renderGearTab(host, state, deps = {}) {
         main.appendChild(top);
         main.appendChild(el("div", "mw-gear-desc", card.desc));
         li.appendChild(main);
+        li.onclick = opener(main, { from: "bag", i: card.i, n: card.name }, "gear-open-bag-" + card.i);
         if (card.use) li.appendChild(useCellEl(card.use, card.useRef, card.name));
         li.appendChild(chevron());
-        const tmp = doc.createElement("ul");
-        renderCarriedList(tmp, state, c.items, { actions: ["equip", "drop"], gearRow: true, filter: (x) => x === c.items[card.i] }, deps);
-        const actions = tmp.querySelector(".mw-gear-actions");
-        if (actions) li.appendChild(actions);
         return li;
       })
     );

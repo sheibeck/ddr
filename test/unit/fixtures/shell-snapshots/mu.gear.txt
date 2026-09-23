@@ -18,68 +18,72 @@
     text="2 / 5"
 ## #gear-worn
 <div id="gear-worn">
-  <li class="mw-gear-row" data-slot="weapon">
+  <li class="mw-gear-row mw-gear-tap" data-slot="weapon" onclick>
     <span class="mw-gear-slot">
       text="WEAPON"
-    <div class="mw-gear-main">
+    <div id="gear-open-weapon" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Quarter Staff"
       <span class="mw-gear-note">
         text="no enchantment. Just you and the swing."
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="d6"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small mw-gear-act" onclick>
-        text="Unequip"
-  <li class="mw-gear-row" data-slot="armor">
+  <li class="mw-gear-row mw-gear-tap" data-slot="armor" onclick>
     <span class="mw-gear-slot">
       text="ARMOR"
-    <div class="mw-gear-main">
+    <div id="gear-open-armor" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Cloth"
       <span class="mw-gear-note">
         text="12/12 hp"
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="AR 3"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-    <div class="mw-gear-actions">
-      <button class="small mw-gear-act" onclick>
-        text="Unequip"
-  <li class="mw-gear-row mw-gear-row-empty" data-slot="cloak">
+  <li class="mw-gear-row mw-gear-tap mw-gear-row-empty" data-slot="cloak" onclick>
     <span class="mw-gear-slot">
       text="CLOAK"
-    <div class="mw-gear-main">
+    <div id="gear-open-cloak" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="empty"
       <span class="mw-gear-note">
         text="cloak — nothing. Cold and unmagical, in that order."
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="—"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-  <li class="mw-gear-row mw-gear-row-empty" data-slot="jewelry1">
+  <li class="mw-gear-row mw-gear-tap mw-gear-row-empty" data-slot="jewelry1" onclick>
     <span class="mw-gear-slot">
       text="JEWELRY 1"
-    <div class="mw-gear-main">
+    <div id="gear-open-jewelry1" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="empty"
       <span class="mw-gear-note">
         text="jewelry — nothing. Ten fingers, one neck, zero commitments."
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="—"
     <span class="mw-gear-chev" aria-hidden="true">
       text="›"
-  <li class="mw-gear-row mw-gear-row-empty" data-slot="jewelry2">
+  <li class="mw-gear-row mw-gear-tap mw-gear-row-empty" data-slot="jewelry2" onclick>
     <span class="mw-gear-slot">
       text="JEWELRY 2"
-    <div class="mw-gear-main">
+    <div id="gear-open-jewelry2" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="empty"
       <span class="mw-gear-note">
         text="jewelry — nothing. Room for one more bad decision."
+      <span class="sr-only">
+        text="opens actions"
     <span class="mw-gear-val">
       text="—"
     <span class="mw-gear-chev" aria-hidden="true">

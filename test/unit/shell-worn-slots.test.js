@@ -139,16 +139,18 @@ test("Equip branch: the weapon/armor Equip line is byte-identical; the family br
 // gearWornModel(state), read by renderGearTab. These two tests (4/5) become
 // behavioral pins on that model and its render wiring; tests 1-3 above and
 // every later test in this file stay byte-identical.
-test("Worn rows: gearWornModel(state) iterates GEAR_WORN_ORDER, and gearRow: true appears exactly once in gearTab.js, inside renderGearTab's region", () => {
+//
+// Phase 63 (GSCR-07/08/10): the per-card harvest through the shared
+// carried-item list (the gearRow:true call site) is gone — every WORN row
+// and BAG card opens the bottom action sheet instead. This test now pins
+// gearRow: true's absence from gearTab.js entirely.
+test("Worn rows: gearWornModel(state) iterates GEAR_WORN_ORDER, and gearRow: true appears zero times anywhere in the codebase's shipped source", () => {
   const { thief } = fixedStates();
   const model = gearWornModel(thief);
   assert.deepStrictEqual(model.rows.map((r) => r.key), [...GEAR_WORN_ORDER]);
 
   assert.equal((CODE.match(/gearRow: true/g) || []).length, 0);
-  assert.equal((GEAR_SRC.match(/gearRow: true/g) || []).length, 1, "gearRow:true is still passed at exactly the GEAR call site");
-  const gearTabIdx = GEAR_SRC.indexOf("export function renderGearTab(");
-  const gearRowIdx = GEAR_SRC.indexOf("gearRow: true");
-  assert.ok(gearTabIdx !== -1 && gearRowIdx > gearTabIdx, "gearRow: true sits inside renderGearTab's own region");
+  assert.equal((GEAR_SRC.match(/gearRow: true/g) || []).length, 0, "gearRow:true is retired with the Phase 62 per-card harvest");
 });
 
 test("Worn rows: a worn jewel's USE cell dispatches deps.useItem?.({ slot })", () => {
@@ -160,11 +162,11 @@ test("Worn rows: a worn jewel's USE cell dispatches deps.useItem?.({ slot })", (
   const jewelry1 = doc.document.getElementById("gear-worn").children.find((li) => li.dataset.slot === "jewelry1");
   const useCell = jewelry1.children.find((n) => n.className === "mw-gear-use");
   assert.ok(useCell, "expected the thief fixture's worn jewelry1 to carry a USE cell");
-  useCell.children.find((n) => n.tagName === "button").onclick();
+  useCell.children.find((n) => n.tagName === "button").onclick({ stopPropagation() {} });
   assert.deepStrictEqual(useCalls, [{ slot: "jewelry1" }]);
 });
 
-test("Worn rows: a worn jewel's Unequip button dispatches deps.unequip?.(slot) on a non-full bag", () => {
+test("Worn rows: tapping a worn jewel's row opens the sheet on that slot", () => {
   const c = {
     cls: "Fighter", weapon: "Axe", armor: "Mail", ar: 12, armorWP: 30, armorMax: 30,
     gold: 0, items: [], bag: "small",
@@ -173,14 +175,11 @@ test("Worn rows: a worn jewel's Unequip button dispatches deps.unequip?.(slot) o
   };
   const doc = createRecordingDocument();
   const host = doc.document.getElementById("screen-gear");
-  const unequipCalls = [];
-  renderGearTab(host, { c }, { unequip: (slot) => unequipCalls.push(slot) });
+  const openCalls = [];
+  renderGearTab(host, { c }, { openGearSheet: (target, openerId) => openCalls.push([target, openerId]) });
   const jewelry1 = doc.document.getElementById("gear-worn").children.find((li) => li.dataset.slot === "jewelry1");
-  const actions = jewelry1.children.find((n) => n.className === "mw-gear-actions");
-  const btn = actions.children[0];
-  assert.equal(btn.disabled, false);
-  btn.onclick();
-  assert.deepStrictEqual(unequipCalls, ["jewelry1"]);
+  jewelry1.onclick();
+  assert.deepStrictEqual(openCalls, [[{ from: "worn", slot: "jewelry1" }, "gear-open-jewelry1"]]);
 });
 
 // ─── 5. Classic eff routing — retired ───────────────────────────────────────

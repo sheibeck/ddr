@@ -9,31 +9,36 @@
 // test/unit/fixtures/shell-snapshots/.
 //
 // Phase 62 (GSCR-01..06), Plan 02: the Gear tab's fixtures (thief.gear/
-// mu.gear/thief.gear-confirms) now capture the rebuilt tab's five sections —
-// header (#gear-stats), WORN (#gear-worn-head/#gear-worn), BAG
-// (#gear-bag-head/#gear-bag-meter/#gear-bag), CONSUMABLES (#gear-cons-head/
-// #gear-cons) and ALSO ON YOU (#gear-kit-head/#gear-kit) — replacing the
-// retired Phase 43 ON YOU/BAG panel ids. Deliberately regenerated and
-// declared (this file's SUMMARY names the change); the Hero and Store
-// fixtures are untouched.
+// mu.gear) now capture the rebuilt tab's five sections — header
+// (#gear-stats), WORN (#gear-worn-head/#gear-worn), BAG (#gear-bag-head/
+// #gear-bag-meter/#gear-bag), CONSUMABLES (#gear-cons-head/#gear-cons) and
+// ALSO ON YOU (#gear-kit-head/#gear-kit) — replacing the retired Phase 43
+// ON YOU/BAG panel ids. Deliberately regenerated and declared (this file's
+// SUMMARY names the change); the Hero and Store fixtures are untouched.
 //
 // Phase 63 (GSCR-07..10), Plan 04: two new declared fixtures —
 // thief.gear-sheet-bag and thief.gear-sheet-worn — capture the GEAR action
 // sheet's six GEAR_SHEET_IDS roots (SNAPSHOT_IDS.gearSheet) for the bagged
 // third jewel and the worn jewelry1 slot respectively. Every pre-existing
-// fixture stays byte-identical; the sheet's own markup lives outside the
-// seven surfaces those fixtures already lock.
+// fixture stayed byte-identical at the time.
 //
-// Fixtures are captured ONCE, before Plans 03-05 carve a single line out of
-// the three render bodies — a diff after a carve means the carve moved the
-// rendered DOM, never that the fixture needs updating. Regenerating a
+// Phase 63, Plan 05: the interim in-row confirms (thief.gear-confirms) are
+// removed — the Plan 04 sheet snapshots above (thief.gear-sheet-bag/-worn)
+// replace them, and this plan's own row/card changes regenerate thief.gear
+// and mu.gear again (every WORN row and BAG card is now a sheet opener, and
+// the in-row Unequip/Bag-full block is gone). The Hero and Store fixtures
+// stay untouched.
+//
+// Fixtures are captured ONCE, before a later plan carves a single line out
+// of the three render bodies — a diff after a carve means the carve moved
+// the rendered DOM, never that the fixture needs updating. Regenerating a
 // fixture requires a DECLARED, DELIBERATE DOM change with a written
 // rationale (mirrors the engine-gate amendment's fixture-regeneration rule):
 // re-run `MZ_SNAPSHOT_UPDATE=1 node --test test/unit/shell-tab-snapshots.test.js`
 // only when a plan's own SUMMARY.md names the exact DOM change and why.
 //
 // MZ_SNAPSHOT_UPDATE=1: write (never compare) — the ONLY way any of these
-// nine files are ever created or changed. A plain `node --test` run never
+// eight files are ever created or changed. A plain `node --test` run never
 // writes a fixture (Task 3's own guard test below enforces this structurally
 // — a missing/empty fixture is a hard failure, never a silent pass).
 
@@ -110,36 +115,6 @@ test("SHELL-01/02: thief.hero — the Hero tab DOM for a fresh Thief", () => {
 test("SHELL-01: thief.gear — the Gear tab DOM (header/WORN/BAG/CONSUMABLES/ALSO ON YOU) for a fresh Thief with a full bag", () => {
   const { doc } = paintFresh(states.thief);
   check("thief.gear", doc.serializeElements(SNAPSHOT_IDS.gear));
-});
-
-// ─── 3: thief.gear-confirms — the Drop confirm + the jewelry swap confirm ──
-
-test("SHELL-01: thief.gear-confirms — the Drop confirm and the jewelry swap confirm, both armed", () => {
-  const { doc } = paintFresh(states.thief);
-  const bag = doc.elementsById.get("gear-bag");
-  assert.ok(bag, "expected #gear-bag to exist after paint()");
-
-  const buttons = [];
-  (function walk(el) {
-    for (const child of el.children) {
-      if (child.nodeType === 3) continue;
-      if (child.tagName === "button") buttons.push(child);
-      walk(child);
-    }
-  })(bag);
-
-  const dropBtn = buttons.find((b) => b.textContent === "Drop");
-  assert.ok(dropBtn, "expected at least one bag card's Drop button");
-  dropBtn.onclick();
-
-  const equipBtns = buttons.filter((b) => b.textContent === "Equip");
-  assert.ok(equipBtns.length >= 1, "expected at least one bag card's Equip button");
-  for (const b of equipBtns) b.onclick();
-
-  const text = doc.serializeElements(["gear-bag"]);
-  assert.ok(text.includes("Drop it?"), "expected the armed Drop confirm's 'Drop it?' label");
-  assert.ok(text.includes("Swap for which?"), "expected the armed jewelry swap confirm's 'Swap for which?' label (both jewelry keys are worn)");
-  check("thief.gear-confirms", text);
 });
 
 // ─── 3b/3c (Phase 63, GSCR-07..10): the GEAR action sheet's two declared
@@ -230,11 +205,10 @@ test("determinism: two independent sandboxes painting the same fixed state seria
 
 // ─── 10: guard — a plain run must never pass on a missing/empty fixture ────
 
-test("guard: all nine fixtures exist and are non-empty (a plain run never writes one)", { skip: UPDATE && "capture mode — the guard only applies to a compare run" }, () => {
+test("guard: all eight fixtures exist and are non-empty (a plain run never writes one)", { skip: UPDATE && "capture mode — the guard only applies to a compare run" }, () => {
   const names = [
     "thief.hero",
     "thief.gear",
-    "thief.gear-confirms",
     "thief.gear-sheet-bag",
     "thief.gear-sheet-worn",
     "thief-store.store",

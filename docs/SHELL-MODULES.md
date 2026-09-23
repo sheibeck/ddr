@@ -135,9 +135,13 @@ Gear-tab view models — `GEAR_WORN_ORDER`, `gearHeaderModel`, `gearUseCell`,
 shared rules that `combatMenu.js`'s ITEMS submenu, `storeScreen.js`'s sell
 list and the loot card all read too, so the Gear tab can never show a use
 state, bag count or potion availability the player would see differently
-elsewhere (GSCR-11; proven by `test/unit/gear-agreement.test.js`). The Gear
-tab's interim in-row Equip / swap / Drop confirms are `renderCarriedList`'s
-own, harvested per bag card, until the Phase 63 action sheet replaces them.
+elsewhere (GSCR-11; proven by `test/unit/gear-agreement.test.js`). Since
+Phase 63, every WORN row and BAG card opens the action sheet
+(`gearSheet.js`) and the Gear tab no longer calls `renderCarriedList`. The
+shared list now serves the store sell list, the combat ITEMS list and the
+loot card, and its `gearRow` branch has no live caller; it is kept
+byte-identical by the standing ruling, a cleanup candidate for a later
+quick task.
 
 ## Module bridge
 

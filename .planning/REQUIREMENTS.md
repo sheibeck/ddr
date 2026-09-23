@@ -17,17 +17,17 @@
 - [x] **GSCR-04**: The player sees a BAG section with a `used / cap` count and a pip meter. At capacity both turn red and read "BAG FULL · DROP OR USE SOMETHING". The count comes from `bagUsage` alone, so potions and scrolls never count.
 - [x] **GSCR-05**: Each bag item is a card: name, description and a slot tag (the item's kind, plus `· SWAP` when every slot it fits is taken). Bag items that are never worn (staffs, torch, rope and the rest) carry the same USE / state button as the worn rows wherever the engine allows the use.
 - [x] **GSCR-06**: The player sees a CONSUMABLES section with a `N HELD` count. It lists potions and scrolls with `×N` quantities and a USE or READ button, and a READ the hero cannot perform says why. Rations and a Magic User's spell charges keep a readout on the tab, so nothing the old ALSO ON YOU block showed is lost.
-- [ ] **GSCR-07**: Tapping a worn slot opens a bottom action sheet headed by `SLOT · WORN|EMPTY`, a title and a note. A filled slot offers USE (with its state reason), UNEQUIP (greyed with "Bag is full — free a slot first." when there is no room) and one SWAP FOR <item> per fitting bag item. An empty slot offers one EQUIP <item> per fitting bag item, or a greyed NOTHING TO EQUIP.
-- [ ] **GSCR-08**: Tapping a bag card opens the same sheet with USE (for items that are never worn), one EQUIP TO / SWAP INTO action per named slot the item fits (both jewelry slots by name, so the player picks which piece comes off), and DROP. The sheet replaces the inline two-tap Drop and swap confirms.
-- [ ] **GSCR-09**: Every greyed sheet action states the engine's reason, and every completed action's outcome reaches the player through the rail in voice. There are no toasts and no inline refusal text on rows.
-- [ ] **GSCR-10**: The sheet closes on CANCEL, on a backdrop tap and on the Android back button. Its rise and fade have a reduced-motion path, and TalkBack reads the sheet's title and actions.
+- [x] **GSCR-07**: Tapping a worn slot opens a bottom action sheet headed by `SLOT · WORN|EMPTY`, a title and a note. A filled slot offers USE (with its state reason), UNEQUIP (greyed with "Bag is full — free a slot first." when there is no room) and one SWAP FOR <item> per fitting bag item. An empty slot offers one EQUIP <item> per fitting bag item, or a greyed NOTHING TO EQUIP.
+- [x] **GSCR-08**: Tapping a bag card opens the same sheet with USE (for items that are never worn), one EQUIP TO / SWAP INTO action per named slot the item fits (both jewelry slots by name, so the player picks which piece comes off), and DROP. The sheet replaces the inline two-tap Drop and swap confirms.
+- [x] **GSCR-09**: Every greyed sheet action states the engine's reason, and every completed action's outcome reaches the player through the rail in voice. There are no toasts and no inline refusal text on rows.
+- [x] **GSCR-10**: The sheet closes on CANCEL, on a backdrop tap and on the Android back button. Its rise and fade have a reduced-motion path, and TalkBack reads the sheet's title and actions.
 - [x] **GSCR-11**: The ITEMS combat submenu, the loot screen and the store keep reading the same shared view models (`itemRowState`, `bagUsage`, `lootCompare`), so a state shown on the Gear tab never disagrees with another screen.
 - [ ] **GSCR-12**: A Pixel 7 device batch covers the redone tab end to end: every sheet path, a full bag, staff charges, a cooldown counting down while walking, the combat lock and reduced motion. It is recorded in `docs/UAT-v1.9.md`.
 
 ### Gear Rules (engine — declared, deterministic, zero new rng draws)
 
 - [x] **GRULE-01**: While a fight is up (`state.combat` set), the engine refuses `equipItem`, `unequipSlot`, `wearItem` and the jewelry swap with one `gearRefused { reason: "combat" }` event and a narration line in voice ("Not the moment to change outfits."), with `EVENT_NARRATION` coverage. Each verb has a unit test. Every parity fixture is byte-identical, confirmed by the fixture scan; one that moves is declared.
-- [ ] **GRULE-02**: In a fight, the Gear sheet shows EQUIP / SWAP / UNEQUIP greyed with the combat reason while USE stays live. After the fight they work again. *(Settled in the Phase 61 discuss: the Shield is a spell pool and the torch is a use, so neither is a gear change and both stay live, along with potions, scrolls and Drop.)*
+- [x] **GRULE-02**: In a fight, the Gear sheet shows EQUIP / SWAP / UNEQUIP greyed with the combat reason while USE stays live. After the fight they work again. *(Settled in the Phase 61 discuss: the Shield is a spell pool and the torch is a use, so neither is a gear change and both stay live, along with potions, scrolls and Drop.)*
 
 ### Store (engine — declared fixture moves)
 
@@ -60,14 +60,14 @@
 | GSCR-04 | Phase 62 | Complete |
 | GSCR-05 | Phase 62 | Complete |
 | GSCR-06 | Phase 62 | Complete |
-| GSCR-07 | Phase 63 | Pending |
-| GSCR-08 | Phase 63 | Pending |
-| GSCR-09 | Phase 63 | Pending |
-| GSCR-10 | Phase 63 | Pending |
+| GSCR-07 | Phase 63 | Complete |
+| GSCR-08 | Phase 63 | Complete |
+| GSCR-09 | Phase 63 | Complete |
+| GSCR-10 | Phase 63 | Complete |
 | GSCR-11 | Phase 62 | Complete |
 | GSCR-12 | Phase 64 | Pending |
 | GRULE-01 | Phase 61 | Complete |
-| GRULE-02 | Phase 63 | Pending |
+| GRULE-02 | Phase 63 | Complete |
 | STORE-02 | Phase 61 | Complete |
 | STORE-03 | Phase 61 | Complete |
 

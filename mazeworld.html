@@ -302,6 +302,12 @@ ul.skills li span{font-family:var(--mono);font-size:11px;color:var(--moss)}
 .mw-gear-cons-btn{flex:none;min-height:48px;padding:12px 13px;border:0;border-radius:0;background:var(--mw-gold-btn);color:var(--paper);box-shadow:0 4px 0 var(--mw-btn-border);font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:0}
 .mw-gear-cons-btn:disabled{background:#2c2519;color:#8f856f;box-shadow:none}
 .mw-gear-kit li{font-size:calc(0.8125rem * var(--mw-text-scale))}
+/* Phase 63 (GSCR-07/08/10) — every openable WORN row and BAG card carries
+   mw-gear-tap; the [role="button"] opener (.mw-gear-main/.mw-gear-card-main)
+   gets a visible focus ring, never the row itself. Deliberately no
+   transition/animation here. */
+.mw-gear-tap{cursor:pointer;touch-action:manipulation}
+.mw-gear-tap [role="button"]:focus-visible{outline:2px solid var(--ditto);outline-offset:2px}
 #gear-bag .mw-empty-head{font-size:calc(0.75rem * var(--mw-text-scale))}
 #gear-bag .mw-empty-body{font-size:calc(0.8125rem * var(--mw-text-scale))}
 
@@ -1946,9 +1952,9 @@ html,body{height:100%}
          The ten ids below are the render roots src/browser/gearTab.js
          #renderGearTab fills, all sourced from the Plan 01 view models —
          the tab can never disagree with the ITEMS combat submenu, the loot
-         screen or the store. renderCarriedList supplies each bag card's own
-         Equip/swap-confirm/Drop actions (harvested per card) until Phase
-         63's bottom action sheet makes the rows tappable themselves. -->
+         screen or the store. Since Phase 63, every WORN row and BAG card
+         opens the bottom action sheet (#mw-gear-sheet); the inline USE
+         button acts directly; consumables keep their own USE/READ buttons. -->
     <section class="mw-screen" id="screen-gear" data-screen="gear" hidden>
       <div class="mw-gear-stats" id="gear-stats"></div>
 

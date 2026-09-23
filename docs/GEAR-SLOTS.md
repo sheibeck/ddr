@@ -373,6 +373,22 @@ Name/kind scans that can involve a slot item (routed through
 > USE cell, since it must be worn to work — `gearBagCardsModel` only wires a
 > USE cell for a bag-only item with no worn-slot family.
 
+> **Phase 63 update (2026-09-23, v1.9):** every equip, swap, unequip, use
+> and drop decision on the Gear tab goes through the bottom action sheet
+> (`src/browser/gearSheet.js`, wired in `mazeworld.html`) — tapping a WORN
+> row (all five, empty ones included) or a BAG card opens it; the Phase 62
+> interim in-row Unequip/Bag-full block and the per-card harvest through
+> `renderCarriedList` are gone. EQUIP / SWAP / UNEQUIP / DISCARD are greyed
+> mid-fight with the engine's own `gearRefused` line, read through
+> `gearLockReason(state)` on every render (GRULE-01, §4 above). USE and DROP
+> stay live mid-fight — neither changes what you fight with. Illegal
+> candidates (a weapon or armor the class, race or weight rules refuse) are
+> listed but greyed, with the engine's own refusal text via
+> `weaponRefusalReason`/`armorRefusalReason` → `lootCompare(c, it).line`.
+> DROP needs a second tap (`DROP IT? · tap again`, DOM-local, never on
+> `S`). `itemDropped` and `itemUnequipped` narrate on the rail exactly as
+> every other gear event does — no new event type, no in-sheet result text.
+
 ## §8. Jewelry family — two pieces (user ruling 2026-09-18, quick 260918-wy1)
 
 **User ruling, verbatim (2026-09-18):**

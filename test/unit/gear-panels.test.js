@@ -89,6 +89,7 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
     scrolls: "SCROLLS",
     scrollDesc: "A random spell, read aloud. No refunds.",
     qty: "×{n}",
+    opensHint: "opens actions",
     kit: {
       rations: "Rations",
       rationsValue: "{n} days",
@@ -109,10 +110,6 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
       revealValue: "{n} sq",
       kills: "Kills",
     },
-    act: {
-      unequip: "Unequip",
-      bagFull: "Bag full",
-    },
   });
   assert.ok(Object.isFrozen(GEAR_COPY));
   assert.ok(Object.isFrozen(GEAR_COPY.empty));
@@ -120,7 +117,6 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
   assert.ok(Object.isFrozen(GEAR_COPY.family));
   assert.ok(Object.isFrozen(GEAR_COPY.use));
   assert.ok(Object.isFrozen(GEAR_COPY.kit));
-  assert.ok(Object.isFrozen(GEAR_COPY.act));
   assert.deepStrictEqual(Object.keys(GEAR_COPY.empty).sort(), ["armor", "cloak", "jewelry1", "jewelry2", "weapon"]);
 });
 
