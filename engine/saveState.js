@@ -633,6 +633,10 @@ export function validateSave(raw, options = {}) {
     floor: sanitizeWaterCells(clearStaleSpellSeen(obj.floor, migratedC)),
     day,
     steps,
+    // Phase 65 (RUN-01): absent on a pre-Phase-65 save, so it loads as 0 and
+    // counts from the load point. A tampered value (negative, fractional,
+    // NaN, non-number) is never trusted and also loads as 0.
+    acts: Number.isInteger(obj.acts) && obj.acts >= 0 ? obj.acts : 0,
     // Phase 38 (ABIL-05): each party member gets the same tolerant-load
     // rebuild, keyed joiner:<name>:0 (see ensurePartyAbilities's JSDoc).
     party: ensurePartyAbilities(sanitizeParty(obj.party)),
@@ -724,6 +728,10 @@ export function rehydrate(obj) {
     floor: sanitizeWaterCells(clearStaleSpellSeen(obj.floor, migratedC)),
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,
+    // Phase 65 (RUN-01): absent on a pre-Phase-65 save, so it loads as 0 and
+    // counts from the load point. A tampered value (negative, fractional,
+    // NaN, non-number) is never trusted and also loads as 0.
+    acts: Number.isInteger(obj.acts) && obj.acts >= 0 ? obj.acts : 0,
     combat: null,
     store: null,
     beats: null,

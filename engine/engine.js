@@ -45,6 +45,14 @@ export function applyAction(state, action) {
   // (01-RESEARCH.md Pitfall 3 / ENG-04), not be silently shallow-copied around.
   const next = structuredClone(state);
 
+  // Phase 65 (RUN-01): counted after validateAction passes, whatever the
+  // handler then does (a refused move into a wall still counts) — no rng
+  // draw. The same non-negative-integer coercion validateSave applies, so a
+  // hand-built or pre-Phase-65 in-memory state counts from 0. The
+  // early-return path above for an invalid action is unchanged: it still
+  // returns the SAME state object, with acts untouched.
+  next.acts = (Number.isInteger(next.acts) && next.acts >= 0 ? next.acts : 0) + 1;
+
   // Rehydrate the RNG from the persisted cursor so any handler that rolls draws
   // the next values in the run's deterministic stream.
   const rng = makeRng(next.rngState);

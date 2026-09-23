@@ -177,6 +177,13 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     floor,
     day: 1,
     steps: 0,
+    // Phase 65 (RUN-01): the run's validated-action count, incremented once
+    // per validated action by engine/engine.js#applyAction. Plain
+    // assignment, NO rng draw. Read into the run summary and its integrity
+    // hash (engine/death.js#buildRunSummary, Phase 65 Plan 04). The parity
+    // harness strips it in all six comparables, the same way it strips
+    // storeRoll.
+    acts: 0,
     combat: null,
     store: null,
     beats: null,
