@@ -110,7 +110,25 @@ Plans:
   4. In a fight, the sheet shows EQUIP / SWAP / UNEQUIP greyed with the combat reason while USE stays live (using an item still costs the turn); after the fight, all three work again
   5. The sheet closes on CANCEL, a backdrop tap, and the Android back button; its rise and fade have a reduced-motion path, and TalkBack reads the sheet's title and every action
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 63-01-PLAN.md — Sheet view model + copy: `gearSheetModel(state, target)` / `GEAR_SHEET_COPY` in `src/browser/gearSheet.js` (header, ordered actions, combat/bag-full/illegal reasons from the engine's own lines, exact engine runs); pure and unit-tested (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 63-02-PLAN.md — Sheet DOM renderer: `renderGearSheet` (accessible buttons, greyed = inert + reason as description, close-then-dispatch, DROP tap-again, CANCEL) (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 63-03-PLAN.md — itemDropped/itemUnequipped reach the rail + the sheet-vs-engine agreement sweep and GRULE-02's after-the-fight proof (wave 3)
+- [ ] 63-04-PLAN.md — Shell wiring: `#mw-gear-sheet` dialog markup/CSS, open/refresh/close lifecycle on the camp-sheet pattern, paint() re-render mid-fight, scrim + back button, `__mzGearSheet` bridge, two declared sheet snapshots (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 63-05-PLAN.md — WORN rows / BAG cards open the sheet (TalkBack opener semantics, USE stays direct), interim in-row actions removed, test migrations, declared Gear snapshot regeneration, docs, requirements, phase gates (wave 4)
 **Research**: none — the mock's sheet layout and `docs/GEAR-SLOTS.md` carry the interaction contract
 **Discuss recommended**: optional. GRULE-02's open question was settled in the Phase 61 discuss: Shield (a spell) and the torch (a use) are not gear changes and stay live mid-fight.
 **UI hint**: yes
