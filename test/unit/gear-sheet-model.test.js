@@ -11,6 +11,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
+
 import { gearSheetModel, GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js";
 import { GEAR_COPY, GEAR_WORN_ORDER, gearWornModel, gearBagCardsModel } from "../../src/browser/gearTab.js";
 import { armorDisplay, lootCompare } from "../../src/browser/viewModels.js";
@@ -18,6 +22,9 @@ import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { newRun } from "../../engine/engine.js";
 import { toolItem } from "../../engine/items.js";
 import { fixedStates } from "./harness/shellSandbox.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 // ─── fixtures (mirrors test/unit/gear-tab-dom.test.js's own fixedChar) ─────
 
@@ -565,4 +572,65 @@ test("Edge GSCR-09/empty: every enabled action has reason ''; every greyed actio
       else assert.ok(a.reason && a.reason === a.sub, `greyed action ${a.key} must carry reason === sub`);
     }
   }
+});
+
+// ═══════════════════════ Module contract (Task 2) ══════════════════════════
+//
+// Reads gearSheet.js CRLF-normalized, comments stripped with the same
+// order-sensitive stripper test/unit/gear-agreement.test.js's own no-fork
+// source guard uses (line comments first, then block comments), and pins:
+// (a) no window/document global read; (b) the no-fork list — every
+// lower-level shared rule this module must never call directly; (c) the
+// Phase 61 combat line's own text, read at test time (never a literal in
+// this file), does not appear as a literal in the stripped source; (d)
+// GEAR_SHEET_COPY and every nested object are frozen.
+
+function stripComments(source) {
+  const noLineComments = source
+    .split("\n")
+    .map((line) => {
+      const i = line.indexOf("//");
+      return i === -1 ? line : line.slice(0, i);
+    })
+    .join("\n");
+  return noLineComments.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
+}
+
+function readNormalized(relPath) {
+  return fs.readFileSync(path.join(REPO_ROOT, relPath), "utf8").replace(/\r\n/g, "\n");
+}
+
+const GEAR_SHEET_STRIPPED = stripComments(readNormalized("src/browser/gearSheet.js"));
+
+test("Module contract (a): gearSheet.js reads no window/document global", () => {
+  assert.doesNotMatch(GEAR_SHEET_STRIPPED, /\bwindow\./);
+  assert.doesNotMatch(GEAR_SHEET_STRIPPED, /\bdocument\./);
+});
+
+test("Module contract (b): gearSheet.js never calls a lower-level shared rule directly (no-fork)", () => {
+  const FORBIDDEN_TOKENS = [
+    "bagCap(", "canStow(", "slotItems(", "takesBagSlot(", "isReady(", "remaining(",
+    "activationFor(", "itemTimerId(", "chargesTimerId(", "armorSoak(",
+    "weaponUpgradeDelta(", "armorUpgradeDelta(", "expectedStrike(",
+    "weaponRefusalReason(", "armorRefusalReason(",
+  ];
+  for (const token of FORBIDDEN_TOKENS) {
+    assert.ok(!GEAR_SHEET_STRIPPED.includes(token), `gearSheet.js unexpectedly calls ${token}`);
+  }
+});
+
+test("Module contract (c): the Phase 61 combat line's own text is never a literal in gearSheet.js", () => {
+  const combatText = LINE_FOR.gearRefused({ type: "gearRefused", verb: "equipItem", reason: "combat" }).text;
+  assert.ok(combatText.length > 0);
+  assert.ok(!GEAR_SHEET_STRIPPED.includes(combatText), "gearSheet.js must read the combat line, never quote it");
+});
+
+test("Module contract (d): GEAR_SHEET_COPY and every nested object are frozen", () => {
+  const walk = (obj) => {
+    assert.ok(Object.isFrozen(obj));
+    for (const v of Object.values(obj)) {
+      if (v && typeof v === "object") walk(v);
+    }
+  };
+  walk(GEAR_SHEET_COPY);
 });

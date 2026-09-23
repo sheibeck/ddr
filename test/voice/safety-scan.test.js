@@ -64,6 +64,10 @@ import { STORE_ROW_COPY } from "../../src/browser/viewModels.js";
 // string leaf scanned AND counted here so it participates in the
 // completeness/load-bearing meta-tests too.
 import { GEAR_COPY } from "../../src/browser/gearTab.js";
+// Phase 63 (GSCR-07..10): the action sheet's own copy bank — every string
+// leaf scanned AND counted here so it participates in the completeness/
+// load-bearing meta-tests too.
+import { GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js";
 import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
@@ -356,6 +360,15 @@ function collectAuthoredStrings() {
       else if (v && typeof v === "object") walkGearCopy(v, label);
     }
   })(GEAR_COPY, "GEAR_COPY");
+  // Phase 63 (GSCR-07..10): GEAR_SHEET_COPY nests groups (head/act/sub/use)
+  // the same way GEAR_COPY does — the same recursive walk applies.
+  (function walkGearSheetCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkGearSheetCopy(v, label);
+    }
+  })(GEAR_SHEET_COPY, "GEAR_SHEET_COPY");
 
   return out;
 }
