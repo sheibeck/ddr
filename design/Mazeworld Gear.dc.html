@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0a0806;font-family:'Courier Prime',ui-monospace,monospace;color:#e6ddc6}
+a{color:#e8c97a}a:hover{color:#f6e0a2}
+*{-webkit-tap-highlight-color:transparent}
+@keyframes mwfade{from{opacity:0}to{opacity:1}}
+@keyframes mwrise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+</style></helmet>
+
+<div style="display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start;padding:28px 18px 50px">
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ dark }}" hint-size="402px,874px">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding-top:50px;background:#14110c;overflow:hidden;font-family:'Courier Prime',ui-monospace,monospace;color:#e6ddc6">
+
+<div style="flex:none;display:flex;align-items:center;gap:10px;padding:9px 14px 10px;border-bottom:3px solid #3a3226;background:#1b170f">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+<span style="font-family:'Press Start 2P';font-size:9px;color:#c9bda0">HILDA FERROW</span>
+<span style="font-size:11.5px;color:#8e8369">Dwarven Pickpocket &#183; floor 1</span>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:17px;color:#e8c97a">{{ ar }}</span>
+<span style="font-family:'Press Start 2P';font-size:6px;color:#9a8f76">ARMOR RATING</span>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;overflow:auto;padding:16px 16px 30px">
+
+<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #3a3226;padding-bottom:9px">
+<span style="font-family:'Press Start 2P';font-size:9px;color:#c9bda0">WORN</span>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:14px;color:#e8c97a">{{ wornCount }}</span>
+</div>
+<div style="font-size:12.5px;font-weight:700;color:#8f856f;margin-top:8px">TAP A SLOT TO UNEQUIP OR SWAP &#183; TAP AN EMPTY SLOT TO FILL IT</div>
+
+<sc-for list="{{ slots }}" as="k" hint-placeholder-count="7">
+<div onClick="{{ k.onClick }}" style="{{ k.row }}">
+<span style="{{ k.slotStyle }}">{{ k.slot }}</span>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+<span style="{{ k.nameStyle }}">{{ k.n }}</span>
+<span style="{{ k.noteStyle }}">{{ k.note }}</span>
+</div>
+<span style="{{ k.valStyle }}">{{ k.v }}</span>
+<div style="flex:none;display:flex;flex-direction:column;align-items:center">
+<div onClick="{{ k.onUse }}" style="{{ k.useBtn }}">{{ k.useLabel }}</div>
+<span style="{{ k.chargeStyle }}">{{ k.chargeText }}</span>
+</div>
+<span style="{{ k.chevStyle }}">&#8250;</span>
+</div>
+</sc-for>
+
+<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #3a3226;padding-bottom:9px;margin-top:30px">
+<span style="font-family:'Press Start 2P';font-size:9px;color:#c9bda0">BAG</span>
+<span style="{{ bag.countStyle }}">{{ bag.count }}</span>
+</div>
+<div style="display:flex;gap:4px;margin-top:11px">
+<sc-for list="{{ bag.pips }}" as="p" hint-placeholder-count="6"><div style="{{ p.style }}"></div></sc-for>
+</div>
+<div style="{{ bag.noteStyle }}">{{ bag.note }}</div>
+
+<sc-for list="{{ bag.items }}" as="c" hint-placeholder-count="4">
+<div onClick="{{ c.onClick }}" style="{{ c.row }}">
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+<span style="font-family:'Press Start 2P';font-size:8.5px;color:#e6ddc6;line-height:1.5">{{ c.n }}</span>
+<span style="{{ c.slotTagStyle }}">{{ c.slotTag }}</span>
+</div>
+<div style="font-size:14.5px;font-weight:700;color:#a89c82;margin-top:6px;line-height:1.4;text-wrap:pretty">{{ c.d }}</div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:center">
+<div onClick="{{ c.onUse }}" style="{{ c.useBtn }}">{{ c.useLabel }}</div>
+<span style="{{ c.chargeStyle }}">{{ c.chargeText }}</span>
+</div>
+<span style="{{ c.chevStyle }}">&#8250;</span>
+</div>
+</sc-for>
+
+<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #3a3226;padding-bottom:9px;margin-top:30px">
+<span style="font-family:'Press Start 2P';font-size:9px;color:#c9bda0">CONSUMABLES</span>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:14px;color:#e8c97a">{{ consumableCount }}</span>
+</div>
+<sc-for list="{{ consumables }}" as="c" hint-placeholder-count="3">
+<div style="border:2px solid #2c2519;background:#1b170f;padding:12px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:baseline;gap:8px">
+<span style="font-family:'Press Start 2P';font-size:8.5px;color:#e6ddc6;line-height:1.5">{{ c.n }}</span>
+<span style="{{ c.qtyStyle }}">{{ c.qty }}</span>
+</div>
+<div style="font-size:14.5px;font-weight:700;color:#a89c82;margin-top:6px;line-height:1.4;text-wrap:pretty">{{ c.d }}</div>
+<div style="{{ c.tagStyle }}">{{ c.tag }}</div>
+</div>
+<div onClick="{{ c.onUse }}" style="{{ c.btn }}">{{ c.btnLabel }}</div>
+</div>
+</sc-for>
+
+</div>
+
+<sc-if value="{{ toast.on }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;padding:11px 14px;background:#241d12;border-top:3px solid #6b5c3c;display:flex;gap:9px;align-items:flex-start;animation:mwrise .18s ease">
+<span style="color:#e8c97a;font-size:14px;font-weight:700;line-height:1.3">&#8226;</span>
+<span style="flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.4;color:#e6ddc6;text-wrap:pretty">{{ toast.line }}</span>
+</div>
+</sc-if>
+
+<div style="flex:none;display:flex;border-top:3px solid #3a3226;background:#1b170f;padding-bottom:20px">
+<sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+<div style="{{ n.style }}">{{ n.label }}</div>
+</sc-for>
+</div>
+
+<sc-if value="{{ sheet.on }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(8,7,5,.8);display:flex;align-items:flex-end;animation:mwfade .16s ease">
+<div style="width:100%;background:#1b170f;border-top:3px solid #6b5c3c;padding:18px 18px 26px;animation:mwrise .2s ease">
+<div style="border-bottom:3px solid #3a3226;padding-bottom:13px">
+<div style="font-family:'Press Start 2P';font-size:6.5px;color:#9a8f76;line-height:1.5">{{ sheet.slot }}</div>
+<div style="font-family:'Press Start 2P';font-size:10px;color:#e6ddc6;line-height:1.5;margin-top:9px">{{ sheet.title }}</div>
+<div style="font-size:14.5px;font-weight:700;color:#a89c82;margin-top:8px;line-height:1.45;text-wrap:pretty">{{ sheet.note }}</div>
+</div>
+<sc-for list="{{ sheet.actions }}" as="a" hint-placeholder-count="2">
+<div onClick="{{ a.onClick }}" style="{{ a.row }}">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+<span style="{{ a.labelStyle }}">{{ a.label }}</span>
+<span style="font-size:12.5px;font-weight:700;line-height:1.4;color:#8e8369;text-wrap:pretty">{{ a.note }}</span>
+</div>
+<span style="{{ a.chevStyle }}">&#8250;</span>
+</div>
+</sc-for>
+<div onClick="{{ closeSheet }}" style="margin-top:16px;text-align:center;font-family:'Press Start 2P';font-size:8px;padding:15px 8px;border:2px solid #4a4032;color:#c9bda0;cursor:pointer;box-shadow:0 4px 0 #0d0b08">CANCEL</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-import>
+
+<div style="flex:1;min-width:280px;max-width:420px;display:flex;flex-direction:column;gap:16px">
+<div>
+<div style="font-family:'Press Start 2P';font-size:12px;line-height:1.6;color:#e8c97a">GEAR RULES</div>
+<div style="margin-top:9px;font-size:13.5px;line-height:1.5;color:#a89c82;text-wrap:pretty">The phone is live. Equip, unequip, swap and use all run — armor rating, slot count and cooldowns move with them.</div>
+</div>
+<div style="border:1px solid #6b5c3c;background:#181409;padding:13px;display:flex;align-items:center;gap:11px">
+<div style="flex:1;min-width:0">
+<div style="font-family:'Press Start 2P';font-size:8px;line-height:1.5;color:#e8c97a">WALK THE DUNGEON</div>
+<div style="margin-top:8px;font-size:13px;line-height:1.5;color:#8e8369;text-wrap:pretty">Cooldowns count down in squares. In the game this happens as you move; here, step it forward by hand.</div>
+</div>
+<div onClick="{{ onWalk }}" style="flex:none;font-family:'Press Start 2P';font-size:8px;padding:14px 12px;background:#e8c97a;color:#14110c;cursor:pointer;box-shadow:0 4px 0 #6b5c3c;text-align:center">+10 SQ</div>
+</div>
+<sc-for list="{{ rules }}" as="r" hint-placeholder-count="5">
+<div style="border:1px solid #3a3226;background:#181409;padding:13px">
+<div style="display:flex;align-items:baseline;gap:9px">
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:15px;color:#6b5c3c">{{ r.i }}</span>
+<span style="font-family:'Press Start 2P';font-size:8px;line-height:1.5;color:#e6ddc6">{{ r.t }}</span>
+</div>
+<div style="margin-top:9px;font-size:13px;line-height:1.5;color:#8e8369;text-wrap:pretty">{{ r.d }}</div>
+</div>
+</sc-for>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:940}}">
+const SLOTS = ['WEAPON', 'ARMOR', 'CLOAK', 'JEWELRY1', 'JEWELRY2'];
+const SLOT_LABEL = { WEAPON: 'WEAPON', ARMOR: 'ARMOR', CLOAK: 'CLOAK', JEWELRY1: 'JEWELRY 1', JEWELRY2: 'JEWELRY 2' };
+// what an item's slot field must be to sit in a given worn slot
+const SLOT_KIND = { WEAPON: 'WEAPON', ARMOR: 'ARMOR', CLOAK: 'CLOAK', JEWELRY1: 'JEWELRY', JEWELRY2: 'JEWELRY' };
+const EMPTY = {
+  WEAPON: 'nothing in hand but your fists', ARMOR: 'you are wearing cloth', CLOAK: 'no cloak; the lower floors are cold',
+  JEWELRY1: 'ring, bracelet, amulet, gauntlet or helm', JEWELRY2: 'ring, bracelet, amulet, gauntlet or helm',
+};
+const ITEMS = {
+  katana:  { n: 'Katana',               slot: 'WEAPON',   d: 'd10 damage, two hands when it matters', v: 'd10', ar: 0 },
+  hatchet: { n: 'Hand Hatchet',         slot: 'WEAPON',   d: 'd6, and it comes back if you throw it well', v: 'd6', ar: 0,
+             use: { note: 'thrown: d6 at range', lasts: '1 round', dur: 0, cool: 20,
+                    say: 'Threw the hatchet. d6 → 5. Twenty squares before it is back in your hand.' } },
+  studded: { n: 'Studded Leather',      slot: 'ARMOR',    d: 'takes the hit before you do', v: 'AR 12', ar: 12 },
+  chain:   { n: 'Chain Shirt',          slot: 'ARMOR',    d: 'heavier, louder, and considerably better at its job', v: 'AR 15', ar: 15 },
+  cstr:    { n: 'Cloak of Strength',    slot: 'CLOAK',    d: 'no critical damage ever lands on you', v: '—', ar: 0 },
+  creg:    { n: 'Cloak of Regeneration',slot: 'CLOAK',    d: 'd6 hp back every 20 squares, assuming 20 more squares', v: '—', ar: 0,
+             use: { note: 'd6 hp now instead of waiting for the distance', lasts: '1 round', dur: 0, cool: 60,
+                    say: 'Invoked the cloak. d6 → 4 hp back. It sleeps for sixty squares.' } },
+  signet:  { n: 'Signet Ring',          slot: 'JEWELRY', kind: 'RING',     d: 'unidentified. wearing it is the only way to find out', v: '?', ar: 0,
+             use: { note: 'nobody knows what this does. that is the appeal', lasts: '10 squares', dur: 10, cool: 100,
+                    say: 'Turned the signet ring. Something far below acknowledged it.' } },
+  bward:   { n: 'Bracelet of Warding',  slot: 'JEWELRY', kind: 'BRACELET', d: '+1 against anything that was once dead', v: '+1', ar: 0,
+             use: { note: 'the undead will not close with you', lasts: '3 rounds', dur: 0, cool: 80,
+                    say: 'Warded. Nothing dead comes near you for three rounds.' } },
+  gaunt:   { n: 'Thief’s Gauntlet',slot: 'JEWELRY', kind: 'GAUNTLET', d: '+2 to picking anything', v: '+2', ar: 0 },
+  amulet:  { n: 'Amulet of the Drowned', slot: 'JEWELRY', kind: 'AMULET', d: 'you do not need to breathe. you will still panic', v: '—', ar: 0 },
+  helm:    { n: 'Dented Helm',           slot: 'JEWELRY', kind: 'HELM', d: '+1 armor, and the dent is someone else’s lesson', v: '+1', ar: 0 },
+  rope:    { n: 'Grapple & Line',       slot: null,       d: '40 feet of rope you will need exactly once', v: '', ar: 0,
+             use: { note: 'cast the line: cross a crevice or climb a shaft without rolling', lasts: '1 round', dur: 0, cool: 10,
+                    say: 'Cast the line across. No roll needed, which is the whole point of rope.' } },
+  staff:   { n: 'Staff of Embers',      slot: null,       d: 'a stave, not a weapon. it burns what is in front of you', v: '', ar: 0,
+             use: { note: 'd8 fire to everything in the square ahead', lasts: '1 round', dur: 0, cool: 50,
+                    say: 'Invoked the Staff of Embers. d8 → 7 fire, and the corridor lit up.' } },
+  picks:   { n: 'Lockpicks',            slot: null,       d: '1–5 on a d10 against any lock', v: '', ar: 0,
+             use: { note: 'picks a lock, where there is one. there is not one here', lasts: '1 round', dur: 0, cool: 0,
+                    say: 'Nothing locked in this square. The picks go back in the bag.' } },
+};
+
+const RULES = [
+  ['01', 'EQUIP FROM THE BAG', 'Tap a bag item, then EQUIP. It leaves the bag and fills its slot — one slot free, one stat changed.'],
+  ['02', 'JEWELRY SHARES TWO SLOTS', 'Rings, bracelets, amulets, gauntlets and helms all compete for the same two jewelry slots — any combination, two at a time. A jewelry item in the bag offers both slots by name, so you choose which piece comes off.'],
+  ['03', 'SWAP INTO A FULL SLOT', 'Tap an item whose slot is taken and the sheet offers SWAP instead: the worn piece goes to the bag, the new one goes on. Bag count never moves, because it is a trade.'],
+  ['04', 'UNEQUIP TO THE BAG', 'Tap a worn slot and choose UNEQUIP. It needs a free slot — with a full bag the action is greyed and says so rather than silently failing.'],
+  ['05', 'USE, LAST, COOL DOWN', 'A power runs in one line: USE, then ACTIVE while it lasts, then COOLING until enough squares are walked. The button carries the state and the sub-label counts it down. Equipable gear only does this from its slot — in the bag it offers no USE at all.'],
+  ['06', 'CONSUMABLES RUN OUT', 'Potions and scrolls are counted, not slotted — use one and the count drops. Scrolls still occupy the bag, so reading one hands a slot back.'],
+  ['07', 'SOME BAG ITEMS ARE NEVER WORN', 'Rope, staves and picks fit no slot, so their row carries a USE button and no slot tag. They still occupy a slot, so the choice is whether the power is worth the space.'],
+  ['08', 'NO SLOT, NO PICKUP', 'Everything obeys one number: the bag meter. It turns red at capacity and every action that would exceed it is refused with a reason.'],
+];
+
+class Component extends DCLogic {
+  state = {
+    worn: { WEAPON: 'katana', ARMOR: 'studded', CLOAK: 'cstr', JEWELRY1: 'bward', JEWELRY2: 'gaunt' },
+    bag: ['creg', 'signet', 'amulet', 'helm', 'staff', 'rope'],
+    cap: 8, potions: 2, speed: 1, scrolls: 1,
+    timers: {},
+    sheet: null, toast: null,
+  };
+
+  // ready | active (running out over squares) | cooling (squares to walk before reuse)
+  status(id) {
+    const t = this.state.timers[id];
+    if (!t) return { phase: 'ready', left: 0 };
+    if (t.active > 0) return { phase: 'active', left: t.active };
+    if (t.cool > 0) return { phase: 'cooling', left: t.cool };
+    return { phase: 'ready', left: 0 };
+  }
+
+  invoke(id) {
+    const self = this, u = ITEMS[id].use;
+    if (this.status(id).phase !== 'ready') return;
+    this.setState(function (s) {
+      const timers = Object.assign({}, s.timers);
+      timers[id] = { active: u.dur || 0, cool: u.cool || 0 };
+      self.say(u.say);
+      return { timers: timers, sheet: null };
+    });
+  }
+
+  advance(n) {
+    const self = this;
+    this.setState(function (s) {
+      const timers = {}, freed = [];
+      Object.keys(s.timers).forEach(function (id) {
+        const t = s.timers[id];
+        let a = Math.max(0, t.active - n);
+        let c = t.active > 0 ? t.cool : Math.max(0, t.cool - n);
+        if (t.cool > 0 && c === 0 && a === 0) freed.push(ITEMS[id].n);
+        if (a > 0 || c > 0) timers[id] = { active: a, cool: c };
+      });
+      self.say(freed.length ? 'Walked ' + n + ' squares. ' + freed.join(' and ') + ' ready again.'
+        : 'Walked ' + n + ' squares. Nothing has come back yet.');
+      return { timers: timers };
+    });
+  }
+
+  used(s) { return s.bag.length + s.scrolls; }
+
+  // never called from inside a setState updater — always deferred a tick
+  say(line) {
+    const self = this;
+    clearTimeout(this._t);
+    setTimeout(function () {
+      self.setState({ toast: line });
+      self._t = setTimeout(function () { self.setState({ toast: null }); }, 3600);
+    }, 0);
+  }
+
+  // worn slots an item may occupy, in order
+  fits(id) {
+    const kind = ITEMS[id].slot;
+    return SLOTS.filter(function (k) { return SLOT_KIND[k] === kind; });
+  }
+
+  freeSlot(s, id) {
+    const open = this.fits(id).filter(function (k) { return !s.worn[k]; });
+    return open.length ? open[0] : null;
+  }
+
+  equip(id, target) {
+    const self = this;
+    let msg = '';
+    this.setState(function (s) {
+      const it = ITEMS[id];
+      const key = target || self.freeSlot(s, id) || self.fits(id)[0];
+      const cur = s.worn[key];
+      const bag = s.bag.filter(function (x) { return x !== id; });
+      if (cur) bag.push(cur);
+      const worn = Object.assign({}, s.worn); worn[key] = id;
+      msg = cur
+        ? 'Swapped ' + ITEMS[cur].n + ' for ' + it.n + ' in ' + SLOT_LABEL[key].toLowerCase() + '. The old one went back in the bag.'
+        : it.n + ' equipped to ' + SLOT_LABEL[key].toLowerCase() + '.';
+      return { worn: worn, bag: bag, sheet: null };
+    });
+    this.say(msg);
+  }
+
+  unequip(slot) {
+    const self = this;
+    this.setState(function (s) {
+      const id = s.worn[slot];
+      if (!id) return { sheet: null };
+      if (self.used(s) >= s.cap) { self.say('Bag is full. Nowhere to put the ' + ITEMS[id].n + '.'); return { sheet: null }; }
+      const worn = Object.assign({}, s.worn); worn[slot] = null;
+      self.say(ITEMS[id].n + ' unequipped. It takes a bag slot now.');
+      return { worn: worn, bag: s.bag.concat([id]), sheet: null };
+    });
+  }
+
+  drop(id) {
+    const self = this;
+    this.setState(function (s) {
+      self.say(ITEMS[id].n + ' left on the floor. The dungeon keeps it.');
+      return { bag: s.bag.filter(function (x) { return x !== id; }), sheet: null };
+    });
+  }
+
+  sheetFor(s) {
+    const self = this, sh = s.sheet;
+    if (!sh) return { on: false, slot: '', title: '', note: '', actions: [] };
+    const act = function (label, note, on, go) {
+      return { key: label, label: label, note: note,
+        onClick: function (e) { if (e) e.stopPropagation(); if (on) go(); },
+        row: { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 2px', borderBottom: '2px solid #241f16',
+          cursor: on ? 'pointer' : 'default', opacity: on ? 1 : 0.45 },
+        labelStyle: { fontFamily: "'Press Start 2P'", fontSize: 8, lineHeight: 1.5, color: on ? '#e8c97a' : '#8f856f' },
+        chevStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 15, color: '#5c5342',
+          visibility: on ? 'visible' : 'hidden' } };
+    };
+
+    if (sh.from === 'slot') {
+      const id = s.worn[sh.slot];
+      const room = self.used(s) < s.cap;
+      const kind = SLOT_KIND[sh.slot];
+      const fits = function (x) { return ITEMS[x].slot === kind; };
+      if (!id) {
+        const cands = s.bag.filter(fits);
+        return { on: true, slot: SLOT_LABEL[sh.slot] + ' · EMPTY', title: 'NOTHING WORN', note: EMPTY[sh.slot],
+          actions: cands.length
+            ? cands.map(function (c) { return act('EQUIP ' + ITEMS[c].n.toUpperCase(),
+                (ITEMS[c].kind ? ITEMS[c].kind.toLowerCase() + ' · ' : '') + ITEMS[c].d, true, function () { self.equip(c, sh.slot); }); })
+            : [act('NOTHING TO EQUIP', 'Nothing in the bag fits this slot. Find something, or live without.', false, function () {})] };
+      }
+      const swaps = s.bag.filter(fits);
+      const u = ITEMS[id].use, st = self.status(id);
+      return { on: true, slot: SLOT_LABEL[sh.slot] + ' · WORN', title: ITEMS[id].n.toUpperCase(), note: ITEMS[id].d,
+        actions: (u ? [act('USE',
+            st.phase === 'cooling' ? 'Cooling down — ' + st.left + ' more squares.'
+              : st.phase === 'active' ? 'Already running — ' + st.left + ' squares left.'
+              : u.note + ' · lasts ' + u.lasts + ', then ' + u.cool + ' squares of cooldown',
+            st.phase === 'ready', function () { self.invoke(id); })] : [])
+          .concat([act('UNEQUIP', room ? 'Moves to the bag and takes a slot.' : 'Bag is full — free a slot first.', room, function () { self.unequip(sh.slot); })])
+          .concat(swaps.map(function (c) {
+            return act('SWAP FOR ' + ITEMS[c].n.toUpperCase(), ITEMS[c].d + ' · a trade, so the bag stays level', true, function () { self.equip(c, sh.slot); });
+          })) };
+    }
+
+    const id = sh.id, it = ITEMS[id];
+    // equipable gear cannot be used from the bag — wear it first
+    const u = !it.slot ? it.use : null, st = self.status(id);
+    const useAct = u ? [act('USE',
+      st.phase === 'cooling' ? 'Cooling down — ' + st.left + ' more squares.'
+        : st.phase === 'active' ? 'Already running — ' + st.left + ' squares left.'
+        : u.note + ' · lasts ' + u.lasts + ', then ' + u.cool + ' squares of cooldown',
+      st.phase === 'ready', function () { self.invoke(id); })] : [];
+    // one action per slot this item fits: EQUIP where free, SWAP where taken
+    const equipAct = it.slot ? self.fits(id).map(function (k) {
+      const cur = s.worn[k];
+      return act(cur ? 'SWAP INTO ' + SLOT_LABEL[k] : 'EQUIP TO ' + SLOT_LABEL[k],
+        cur ? ITEMS[cur].n + ' comes off and goes to the bag.' : 'Fills the slot and frees a bag slot.',
+        true, function () { self.equip(id, k); });
+    }) : [];
+    return { on: true, slot: 'BAG · ' + (it.kind || it.slot || 'USED FROM THE BAG'), title: it.n.toUpperCase(), note: it.d,
+      actions: useAct.concat(equipAct).concat([act('DROP', 'Gone for good. Frees a slot immediately.', true, function () { self.drop(id); })]) };
+  }
+
+  useCell(id, u) {
+    const self = this;
+    if (!u) return { hasUse: false, useLabel: '', onUse: function () {}, useBtn: { display: 'none' },
+      chargeText: '', chargeStyle: { display: 'none' } };
+    const st = this.status(id), ready = st.phase === 'ready';
+    const col = st.phase === 'active' ? '#8fb08a' : st.phase === 'cooling' ? '#6f6754' : '#e8c97a';
+    return {
+      hasUse: true,
+      useLabel: st.phase === 'active' ? 'ACTIVE' : st.phase === 'cooling' ? 'COOLING' : 'USE',
+      onUse: function (e) { if (e) e.stopPropagation(); if (ready) self.invoke(id); },
+      useBtn: { fontFamily: "'Press Start 2P'", fontSize: 7, padding: '9px 11px', flex: 'none', minWidth: 74,
+        textAlign: 'center', background: ready ? '#2a2416' : '#241f16', color: col,
+        boxShadow: 'inset 0 0 0 1px ' + (ready ? '#6b5c3c' : '#2c2519'), cursor: ready ? 'pointer' : 'default' },
+      chargeText: ready ? u.lasts : st.left + ' SQ',
+      chargeStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 11.5, marginTop: 4,
+        textAlign: 'center', whiteSpace: 'nowrap', color: ready ? '#6f6754' : col },
+    };
+  }
+
+  renderVals() {
+    const self = this, s = this.state;
+    const armor = s.worn.ARMOR ? ITEMS[s.worn.ARMOR].ar : 10;
+    const used = this.used(s), full = used >= s.cap;
+
+    return {
+      dark: true,
+      ar: armor,
+      wornCount: SLOTS.filter(function (k) { return s.worn[k]; }).length + ' / ' + SLOTS.length,
+      slots: SLOTS.map(function (k) {
+        const id = s.worn[k], it = id ? ITEMS[id] : null;
+        const u = it && it.use;
+        return Object.assign({ key: k, slot: SLOT_LABEL[k], n: it ? it.n : 'empty',
+          note: it ? ((it.kind ? it.kind.toLowerCase() + ' · ' : '') + it.d) : EMPTY[k], v: it ? it.v : '—' },
+          self.useCell(id, u), {
+          onClick: function () { self.setState({ sheet: { from: 'slot', slot: k } }); },
+          row: { display: 'flex', alignItems: 'center', gap: 11, padding: '11px 0', borderBottom: '2px solid #241f16', cursor: 'pointer' },
+          slotStyle: { fontFamily: "'Press Start 2P'", fontSize: 6.5, lineHeight: 1.5, width: 62, flex: 'none',
+            color: it ? '#8f856f' : '#5c5342' },
+          nameStyle: { fontSize: 15.5, fontWeight: 700, color: it ? '#e6ddc6' : '#6f6754', fontStyle: it ? 'normal' : 'italic' },
+          noteStyle: { fontSize: 12.5, fontWeight: 700, lineHeight: 1.35, color: it ? '#8f856f' : '#5c5342' },
+          valStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 15, flex: 'none',
+            textAlign: 'right', color: it ? '#c9bda0' : '#4a4232' },
+          chevStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 15, flex: 'none', color: '#5c5342' } });
+      }),
+      bag: {
+        count: used + ' / ' + s.cap,
+        countStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 17, color: full ? '#e07260' : '#e8c97a' },
+        note: full ? 'BAG FULL · DROP OR USE SOMETHING' : '',
+        noteStyle: { fontSize: 12.5, fontWeight: 700, color: '#e07260', marginTop: full ? 8 : 0,
+          height: full ? 'auto' : 0, overflow: 'hidden' },
+        pips: Array.apply(null, Array(s.cap)).map(function (_, i) {
+          return { key: i, style: { flex: 1, height: 10, background: i < used ? (full ? '#e07260' : '#e8c97a') : '#2c2519',
+            boxShadow: 'inset 0 0 0 1px #0f0d09' } };
+        }),
+        items: s.bag.map(function (id) {
+          const it = ITEMS[id];
+          const open = it.slot ? self.freeSlot(s, id) : null;
+          const cur = it.slot && !open;
+          const u = it.slot ? null : it.use;
+          return Object.assign({ key: id, n: it.n.toUpperCase(), d: it.d,
+            slotTag: it.slot ? ((it.kind || it.slot) + (cur ? ' · SWAP' : '')) : '',
+            chevStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 15, flex: 'none', color: '#5c5342' },
+            onClick: function () { self.setState({ sheet: { from: 'bag', id: id } }); } },
+            self.useCell(id, u), {
+            row: { border: '2px solid #2c2519', background: '#1b170f', padding: 12, marginTop: 12, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 10 },
+            slotTagStyle: { fontFamily: "'Press Start 2P'", fontSize: 6, lineHeight: 1.5,
+              color: it.slot ? (cur ? '#b9a4ef' : '#8f856f') : '#8fb08a' } });
+        }),
+      },
+      consumableCount: (s.potions + s.speed + s.scrolls) + ' HELD',
+      consumables: [
+        { id: 'heal', n: 'HEALING POTION', d: '+d10+2 hp, drunk in a single round', qty: s.potions, verb: 'USE' },
+        { id: 'speed', n: 'SPEED POTION', d: 'double attacks for 50 squares', qty: s.speed, verb: 'USE' },
+        { id: 'scroll', n: 'SCROLL, UNREAD', d: 'nobody can read it. reading it is the only way to find out', qty: s.scrolls, verb: 'READ' },
+      ].map(function (c) {
+        const out = c.qty < 1;
+        return { key: c.id, n: c.n, d: c.d, qty: '×' + c.qty, tag: '', btnLabel: out ? 'NONE' : c.verb,
+          qtyStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 15, color: out ? '#8f856f' : '#c9bda0' },
+          tagStyle: { display: 'none' },
+          onUse: out ? function () {} : function () {
+            if (c.id === 'heal') { self.setState(function (st) { return { potions: st.potions - 1 }; }); self.say('Drank a healing potion. +9 hp. No slot freed, because it never took one.'); }
+            else if (c.id === 'speed') { self.setState(function (st) { return { speed: st.speed - 1 }; }); self.say('Drank a speed potion. Double attacks for 50 squares.'); }
+            else { self.setState(function (st) { return { scrolls: st.scrolls - 1 }; }); self.say('Read the scroll aloud. It crumbled, and a bag slot came free.'); }
+          },
+          btn: { fontFamily: "'Press Start 2P'", fontSize: 8, padding: '12px 13px', flex: 'none',
+            background: out ? '#2c2519' : '#e8c97a', color: out ? '#8f856f' : '#14110c',
+            cursor: out ? 'default' : 'pointer', boxShadow: out ? 'none' : '0 4px 0 #6b5c3c' } };
+      }),
+      onWalk: function () { self.advance(10); },
+      sheet: this.sheetFor(s),
+      closeSheet: function () { self.setState({ sheet: null }); },
+      toast: { on: !!s.toast, line: s.toast || '' },
+      nav: ['MAP', 'HERO', 'GEAR', 'ORACLE', 'DEAD'].map(function (t) {
+        const on = t === 'GEAR';
+        return { key: t, label: t,
+          style: { flex: 1, textAlign: 'center', padding: '15px 0 13px', fontFamily: "'Press Start 2P'", fontSize: 7.5,
+            cursor: 'pointer', color: on ? '#e8c97a' : '#8f856f', background: on ? '#241d12' : 'transparent',
+            boxShadow: on ? 'inset 0 3px 0 #e8c97a' : 'none' } };
+      }),
+      rules: RULES.map(function (r) { return { key: r[0], i: r[0], t: r[1], d: r[2] }; }),
+    };
+  }
+}
+</script>
+</body>
+</html>

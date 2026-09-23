@@ -73,7 +73,9 @@
 - ✓ **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
 - ✓ **Next tuning pass** — shipped as v1.7 (2026-09-22); the human curve verdict is deferred by the user to later plays, and the reach-20 miss (1.5 % vs 3–5 %) is recorded
 - [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.8.md` (30 of 31 open; the user runs them over their own play sessions), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → quick tasks
-- [ ] **Gear screen UX redo** — next milestone, from the user's `Mazeworld Gear.dc.html` mock (design project fed8909e…). Use it for UX interaction and visual design only; its gear rules are ignored and the shipped rules stay canon (e.g. potions and scrolls ride free)
+- [ ] **Gear screen UX redo** — v1.9 (in progress), from the user's `design/Mazeworld Gear.dc.html` mock (design project fed8909e…). UX interaction and visual design only; its gear rules are ignored and the shipped rules stay canon (e.g. potions and scrolls ride free)
+- [ ] **No gear changes mid-fight** — v1.9: the engine refuses equip / unequip / swap while `state.combat` is set (todo 2026-09-21)
+- [ ] **A store purchase never loses the item** — v1.9: a legal buy is never charged-then-rejected as "not an upgrade" (the Spiked Staff bug, todo 2026-09-21)
 
 ### Out of Scope
 
@@ -83,6 +85,18 @@
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
+
+## Current Milestone: v1.9 The Gear Screen
+
+**Goal:** Rebuild the Gear tab to the user's "Mazeworld Gear" mock: a WORN slot list, a BAG with a capacity meter, a CONSUMABLES block, and one bottom action sheet for every equip / swap / unequip / use / drop. Close the two gear-rule holes the device rounds found (free re-arming mid-fight, and store purchases that vanish).
+
+**Target features:**
+- **Gear tab redo (presentation)** — a header with the hero's name, race and sub-class, floor, and the ARMOR RATING. A **WORN** list: weapon, armor, cloak, jewelry 1, jewelry 2, each with a count, an in-voice empty state, a value column, and an inline USE / ACTIVE / COOLING button with a squares sub-label. A **BAG** section with an `N / cap` count, a pip meter that turns red at capacity, and item cards carrying a slot tag (`· SWAP` when the slot is taken). A **CONSUMABLES** section: potions and scrolls with ×N counts and a USE / READ button. Tapping a slot or card opens a **bottom action sheet** (slot · state, title, note, then one row per legal action with a reason on each greyed row, then CANCEL). The sheet offers EQUIP TO / SWAP INTO per named slot (both jewelry slots named), UNEQUIP, SWAP FOR, USE and DROP.
+- **Shipped rules stay canon** — the mock's toy rules are ignored. Potions and scrolls ride free (they never count against the bag), staffs keep their charges (`k/max · N SQ`), and use-activation, cooldowns and bag caps come from the engine (`itemRowState`, `activationFor`, `bagUsage`, `c.timers`). The mock's toast becomes the **rail** (standing ruling: the rail is the one feedback surface), HP never WP, and the bottom nav stays the shipped tab set.
+- **No gear changes mid-fight (engine)** — `equipItem` / `unequipSlot` / `wearItem` and the jewelry swap refuse while `state.combat` is set, with one `gearRefused { reason: "combat" }` event and a narration line ("Not the moment to change outfits."). Zero rng draws. In a fight the sheet shows those actions greyed with the reason, and USE stays live because using an item costs the turn.
+- **A store purchase never loses the item (engine)** — `buyFrom` settles the outcome before charging. A legal item is bought and equipped or bagged by choice, never charged and then rejected as "not an upgrade". The upgrade line compares like with like and is advice, not a gate. Store fixtures that move are measured, declared and regenerated.
+
+**Key context:** The mock is the UX and visual spec only (the same stance as the v1.4 combat and map imports). Where it conflicts with the standing UI rulings or the shipped gear rules, the rulings and rules win. The Gear tab lives in `src/browser/gearTab.js` (the Phase 47 carve). Its view models (`itemRowState`, `emptySlotRows`, `bagUsage`, `GEAR_COPY`) are shared with the ITEMS combat submenu, the loot screen and the store, so shared readouts stay single-sourced. The current inline two-tap Drop confirm and the swap confirm give way to the sheet. The two engine changes follow the Engine Gate: the engine stays pure and deterministic, `test/parity/prototype-master.js.txt` is never edited, and every moved fixture is declared, following the greenfield ruling (no dual paths, and the bot plays the new rules). Reduced motion applies to the sheet's rise and fade. No research pass: the mock, `docs/GEAR-SLOTS.md` and the two todos carry the file-level context.
 
 ## Last Milestone: v1.8 Sound, Motion & Set Dressing (code-complete 2026-09-22; archived 2026-09-22; device UAT spread over the user's play sessions)
 
@@ -205,7 +219,7 @@
 <details>
 <summary>Archived: v1.1 milestone section</summary>
 
-## Current Milestone: v1.1 Monster Balancing & Abilities
+## Last Milestone: v1.1 Monster Balancing & Abilities
 
 **Goal:** Make fights fair and interesting at depth — give foes real abilities (spellcasting and specials), rebalance the bestiary, fix parley's dominance, and run the ONE consolidated difficulty retune across party, economy, and monster power.
 
@@ -355,4 +369,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 — v1.8 Sound, Motion & Set Dressing closed (archived + tagged); next milestone: the Gear screen UX redo from the user's mock*
+*Last updated: 2026-09-23 — v1.9 The Gear Screen started (Gear tab redo from the user's mock + no gear changes mid-fight + store purchases never lost)*

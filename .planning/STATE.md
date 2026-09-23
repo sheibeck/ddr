@@ -1,22 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.8
-milestone_name: Sound, Motion & Set Dressing
-status: Awaiting next milestone
-stopped_at: "v1.8 CLOSED 2026-09-22 (verified closeout, archived + tagged v1.8). Next: /gsd-cleanup (asks before deleting) -> push master+tags -> npm run play:release (1.8.0 / versionCode 7; AAB at android/app/build/outputs/bundle/release/app-release.aab; user chose build after the debug fix) -> /gsd-new-milestone for the Gear screen UX redo (design project fed8909e 'Mazeworld Gear.dc.html'; mock for UX/visual ONLY, shipped gear rules canon; save the mock to design/ at start)."
-last_updated: "2026-09-23T03:56:11.595Z"
-last_activity: 2026-09-22
-last_activity_desc: Milestone v1.8 completed and archived
+milestone: v1.9
+milestone_name: The Gear Screen
+status: planning
+last_updated: "2026-09-23T04:23:18.141Z"
+last_activity: 2026-09-23
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 24
-  completed_plans: 24
-  percent: 100
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
-current_plan: Not started
-total_plans_in_phase: 4
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -30,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.8 closed and tagged; next m
 
 ## Current Position
 
-Phase: Milestone v1.8 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-22 — Milestone v1.8 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-23 — Milestone v1.9 started
 
 ## Ground Truth (durable facts every session needs)
 
