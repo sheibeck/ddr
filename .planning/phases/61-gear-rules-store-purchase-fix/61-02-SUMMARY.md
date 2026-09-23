@@ -180,6 +180,15 @@ None - no external service configuration required.
 - Plan 03 (rail explanation) and Plan 04 (store row explanation) can both import `upgradeWhyText`/`gearCompareParts` directly — the parts-then-format split was built specifically so `narrationLines.js`/`eventNarration.js` (Plan 03) and `storeScreen.js` (Plan 04) can format the same parts without re-deriving the arithmetic or breaking their own purity guards.
 - No blockers for Plans 03/04. The pre-existing CRLF/EOL and boot:check environment issues are tracked (STATE.md + this plan's `deferred-items.md`) but do not block further Phase 61 work.
 
+## Self-Check: PASSED
+
+- FOUND: `src/browser/upgradeWhy.js`
+- FOUND: `test/unit/upgrade-why.test.js`
+- FOUND: `.planning/phases/61-gear-rules-store-purchase-fix/61-02-SUMMARY.md`
+- FOUND commit `44ca833` (Task 1)
+- FOUND commit `6d939f0` (Task 2)
+- FOUND commit `d1c9cb9` (docs: complete plan)
+
 ---
 *Phase: 61-gear-rules-store-purchase-fix*
 *Completed: 2026-09-23*
