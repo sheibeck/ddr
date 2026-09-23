@@ -66,7 +66,9 @@ function check(name, text) {
     return;
   }
   assert.ok(fs.existsSync(file), `missing fixture ${file} — run once with MZ_SNAPSHOT_UPDATE=1 to capture the BEFORE fixture`);
-  const fixture = fs.readFileSync(file, "utf8");
+  // CRLF-tolerant: a Windows checkout (core.autocrlf=true, no .gitattributes)
+  // rewrites a merged fixture with \r\n; the rendered text is always \n.
+  const fixture = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
   assert.equal(text, fixture, `${name}.txt mismatch — a diff here means the carve changed the rendered DOM (never the fixture): ${firstDiff(text, fixture)}`);
 }
 
