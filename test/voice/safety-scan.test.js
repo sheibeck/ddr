@@ -69,6 +69,10 @@ import { GEAR_COPY } from "../../src/browser/gearTab.js";
 // load-bearing meta-tests too.
 import { GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js";
 import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
+// Phase 65 (RUN-04): the shared board table's voice half — board copy and
+// both new-best/first-death quip banks, scanned alongside every other
+// presentation COPY bank in collectAuthoredStrings.
+import { BOARD_COPY, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES } from "../../content/boards.js";
 import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
 import { NAMES } from "../../content/names.js";
@@ -372,6 +376,19 @@ function collectAuthoredStrings() {
       else if (v && typeof v === "object") walkGearSheetCopy(v, label);
     }
   })(GEAR_SHEET_COPY, "GEAR_SHEET_COPY");
+  // Phase 65 (RUN-04): BOARD_COPY nests per-board groups (tab/title/rule/
+  // unit/unitOne) the same way GEAR_COPY does — the same recursive walk
+  // applies. New-best voice: the head string plus both quip banks.
+  (function walkBoardCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkBoardCopy(v, label);
+    }
+  })(BOARD_COPY, "BOARD_COPY");
+  push("NEW_BEST_HEAD", NEW_BEST_HEAD);
+  NEW_BEST_LINES.forEach((s, i) => push(`NEW_BEST_LINES[${i}]`, s));
+  FIRST_DEATH_LINES.forEach((s, i) => push(`FIRST_DEATH_LINES[${i}]`, s));
 
   return out;
 }
