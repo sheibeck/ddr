@@ -92,7 +92,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 62-03-PLAN.md — GSCR-11 cross-screen agreement: Gear vs ITEMS submenu / loot drop shelf / store sweep, no-fork source guard, idempotency + one-armed-confirm checks; docs catch-up and phase gates (wave 3)
+- [x] 62-03-PLAN.md — GSCR-11 cross-screen agreement: Gear vs ITEMS submenu / loot drop shelf / store sweep, no-fork source guard, idempotency + one-armed-confirm checks; docs catch-up and phase gates (wave 3)
 
 **Research**: none — the mock (`design/Mazeworld Gear.dc.html`) and `docs/GEAR-SLOTS.md` carry the structure and copy
 **UI hint**: yes
@@ -274,7 +274,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
-| 62. Gear Tab Layout Rebuild | v1.9 | 2/3 | In Progress|  |
+| 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | In Progress|  |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
