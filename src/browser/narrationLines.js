@@ -272,6 +272,10 @@ export const FEATURE_EVENTS = [
   "abilityRefused",
   // Phase 39 (GEAR-05): a spent tool's refusal.
   "toolRefused",
+  // Phase 61 (GRULE-01): the combat gear lock — equipItem/unequipSlot/
+  // takeFind/takeLoot/takeAllLoot refuse while state.combat is set. Not in
+  // ORACLE_ONLY — the rail is the one feedback surface.
+  "gearRefused",
 ];
 
 // ─── Shared helpers (mirrors eventNarration.js's soakedText/needMods pattern) ─
@@ -280,6 +284,14 @@ export const FEATURE_EVENTS = [
 function block(text) {
   return { text, tone: "block", priority: PRIORITY.block };
 }
+
+/**
+ * GEAR_LOCK_LOOT_VERBS — Phase 61 (GRULE-01): the three `gearRefused` verbs
+ * whose line is "the spoils can wait" rather than "not the moment to change
+ * outfits" — a parked-loot/find pickup reads differently from an equip/
+ * unequip attempt, even though both are the same combat gate.
+ */
+const GEAR_LOCK_LOOT_VERBS = new Set(["takeLoot", "takeAllLoot", "takeFind"]);
 
 /** soakParts(soaked) — ["Hardiness 3", "hide 2", "ward 1"], only present keys. */
 function soakParts(soaked) {
@@ -1662,6 +1674,10 @@ export const LINE_FOR = {
     priority: PRIORITY.other,
   }),
   equipRejected: (e) => block(equipRejectText(e)),
+  // Phase 61 (GRULE-01): the combat gear lock's rail/fight-log line — the
+  // fold's PRIORITY.block already renders it as a dull refusal entry
+  // (fightLog.js#fightLogLinesFor maps PRIORITY.block -> tone "dull").
+  gearRefused: (e) => block(GEAR_LOCK_LOOT_VERBS.has(e?.verb) ? "The spoils can wait until the fight is over." : "Not the moment to change outfits."),
   // Phase 29 (LOOT-05): a bag upgrade item was taken — c.bag just went up a tier.
   bagUpgraded: (e) => ({ text: `Bigger bag: ${e?.slots ?? "more"} slots.`, tone: "hit", priority: PRIORITY.you }),
 

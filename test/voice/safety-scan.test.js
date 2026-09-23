@@ -178,6 +178,12 @@ const BRANCH_TOGGLES = [
   // the eaters array (a named Troll member, and an empty array default).
   { heft: true }, { mouths: 3 },
   { eaters: [{ name: "Grunk", race: "Troll", eats: 2 }] }, { eaters: [] },
+  // Phase 61 (GRULE-01): both gearRefused branches — the loot/find verbs
+  // ("takeLoot" here covers the shared Set check) and the equip/unequip
+  // verbs (BASE_EVENT carries no `verb`, so the default equip/unequip
+  // branch is already covered by the base render; this pair exercises both
+  // named sides explicitly).
+  { verb: "takeLoot" }, { verb: "unequipSlot" },
 ];
 
 // The builder fields that ever receive an authored token value; injecting every

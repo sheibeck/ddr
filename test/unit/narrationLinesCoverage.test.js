@@ -134,6 +134,8 @@ const NAMED_LEGIBILITY_EVENTS = [
   "joinerRefused",
   "buyFailed",
   "backstabDenied",
+  // Phase 61 (GRULE-01): the combat gear lock's refusal event.
+  "gearRefused",
 ];
 
 test("every engine-emitted event type either has a LINE_FOR builder or is explicitly Oracle-only", () => {

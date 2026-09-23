@@ -1044,6 +1044,15 @@ export const EVENT_NARRATION = {
           : e.reason === "wrongSlot"
             ? `<span class="miss">${e.item?.n ?? "That"} does not go there.</span> Try the slot it was made for.`
             : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
+  // Phase 61 (GRULE-01): the combat gear lock — equipItem/unequipSlot refuse
+  // with the "outfit" line; the loot/find verbs (parked mid-fight by a
+  // multi-foe kill or a lingering find) get their own "spoils can wait" line.
+  // Defends every field with `?.`/`??` so a bare `{ type }` call (the
+  // coverage/voice scans' own invocation shape) still returns the gear line.
+  gearRefused: (e) =>
+    e?.verb === "takeLoot" || e?.verb === "takeAllLoot" || e?.verb === "takeFind"
+      ? `<span class="miss">The spoils can wait until the fight is over.</span> The fight, rudely, will not.`
+      : `<span class="miss">Not the moment to change outfits.</span> You fight in what you walked in wearing.`,
 
   /* ---------------- pending loot pile (LOOT-01/02/06, Phase 29) ----------------
      A foe drop lands on a pile, not in your hands — the loot screen's own

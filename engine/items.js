@@ -396,12 +396,56 @@ export function autoWearSlot(state, it) {
 }
 
 /**
+ * gearLockReason(state) — Phase 61 (GRULE-01): the combat gear lock's ONE
+ * read-only predicate. Returns the string `"combat"` while a fight is up —
+ * `state.combat` set, the pending Fight! preview (`combat.pending`)
+ * INCLUDED — or `null` otherwise. Once a foe is in front of you, you fight
+ * with what you walked in with; loot is unaffected because `state.combat`
+ * is cleared before the Victory loot card (engine/combat.js#endCombat).
+ * Phase 63's action sheet reads this SAME predicate to grey its EQUIP/SWAP/
+ * UNEQUIP rows with the engine's own reason, rather than re-deriving the
+ * rule. Pure, no rng, no mutation.
+ */
+export function gearLockReason(state) {
+  return state && state.combat ? "combat" : null;
+}
+
+/**
+ * refuseGear(state, verb, extra, events) — Phase 61 (GRULE-01), module-
+ * private: when `gearLockReason(state)` is non-null, pushes
+ * `{ type: "gearRefused", verb, reason, ...extra }` (extra keys included
+ * only when their value is not undefined/null, mirroring itemEquipped's
+ * additive `replaced` precedent) and returns `true`; otherwise returns
+ * `false` and pushes nothing. Every gated verb below calls this FIRST
+ * (before any mutation), so a refused gear change is always a pure no-op
+ * plus exactly one event, and never burns an rng draw.
+ */
+function refuseGear(state, verb, extra, events) {
+  const reason = gearLockReason(state);
+  if (!reason) return false;
+  const evt = { type: "gearRefused", verb, reason };
+  if (extra) {
+    for (const [key, value] of Object.entries(extra)) {
+      if (value !== undefined && value !== null) evt[key] = value;
+    }
+  }
+  events.push(evt);
+  return true;
+}
+
+/**
  * wearItem(state, it, slot, events) — Phase 37 (GEAR-03): assigns `it`
  * (the SAME object, never cloned) into `c.worn[slot]` and pushes
  * `{ type: "itemEquipped", item: it, slot }`. Deliberately does NOT apply
  * `eff.wp` — no JEWELRY/CLOAKS/STAVES row ever carries a `wp` key (Plan 01's
  * no-slot-row-carries-eff.wp tripwire test), so giveItem's flat-wp-on-pickup
  * rule has nothing to apply here. Adds no rng draw.
+ *
+ * Phase 61 (GRULE-01): `wearItem` stays an UNGATED internal primitive — it
+ * is never dispatched directly by a player action. Every real caller is
+ * either combat-gated above it (takeFind/takeLoot/takeAllLoot, via
+ * `refuseGear`) or store-only (`takeItem`, which never runs mid-fight — the
+ * store screen closes before a fight starts).
  */
 export function wearItem(state, it, slot, events = []) {
   state.c.worn[slot] = it;
@@ -506,7 +550,14 @@ export function takeItem(state, it, events = []) {
    state.pendingLoot instead of state.pendingFind. The bag-slot cap
    (content/bags.js BAGS[c.bag].slots) is enforced HERE and ONLY here (Phase 12
    deliberately left giveItem/gainWilmst/takeItem uncapped to keep the frozen
-   parity fixtures byte-identical). */
+   parity fixtures byte-identical).
+
+   Phase 61 (GRULE-01): equipItem/unequipSlot/takeFind/takeLoot/takeAllLoot
+   all gate on `refuseGear` FIRST (before any read that could matter) — while
+   `state.combat` is set (the pending Fight! preview included), every one of
+   them is a pure no-op plus one `gearRefused` event, zero rng, state
+   untouched. `leaveFind`/`dropItem`/`leaveLoot`/`leaveAllLoot` stay UNGATED
+   (declining or dropping something is never a gear change). */
 
 /** bagCap(c) — the character's bag slot capacity, or Infinity if it carries no
  * bag key (a bag-less parity/test character is never capped — matches the
@@ -650,6 +701,7 @@ function wornArmorItem(c) {
 export function takeFind(state, events = []) {
   const it = state.pendingFind;
   if (!it) return events;
+  if (refuseGear(state, "takeFind", { item: it }, events)) return events;
   const slot = autoWearSlot(state, it);
   if (slot) {
     state.pendingFind = null;
@@ -715,6 +767,7 @@ export function equipItem(state, i, events = [], target = null) {
   const c = state.c;
   const it = (c.items || [])[i];
   if (!it) return events;
+  if (refuseGear(state, "equipItem", target != null ? { item: it, slot: target } : { item: it }, events)) return events;
 
   if (it.kind === "weapon") {
     const weaponReason = weaponRefusalReason(c, it);
@@ -819,6 +872,7 @@ export function equipItem(state, i, events = [], target = null) {
  * pattern — not a new event type) so the Oracle can narrate it.
  */
 export function unequipSlot(state, slot, events = []) {
+  if (refuseGear(state, "unequipSlot", { slot }, events)) return events;
   const c = state.c;
   const worn =
     slot === "weapon"
@@ -875,7 +929,14 @@ export function unequipSlot(state, slot, events = []) {
    decides per item (takeLoot/leaveLoot) or in bulk (takeAllLoot/leaveAllLoot)
    once combat ends. All FIVE handlers below are PURE (no rng), exactly like
    the takeFind/leaveFind/equipItem/unequipSlot family above, and every stow
-   routes through stowItem — the one bag-cap gate. */
+   routes through stowItem — the one bag-cap gate.
+
+   Phase 61 (GRULE-01): a multi-foe fight can park a kill's drop in
+   state.pendingLoot WHILE state.combat is still set (killFoe -> offerLoot,
+   before the fight itself ends) — takeLoot/takeAllLoot gate on refuseGear
+   for exactly this reason, even though the shell never shows the loot card
+   mid-fight and the bot resolves combat first. leaveLoot/leaveAllLoot stay
+   UNGATED (declining is never a gear change). */
 
 /**
  * offerLoot(state, it, events) — the ONE producer (killFoe, Task 2):
@@ -907,6 +968,7 @@ export function takeLoot(state, i, equip = false, events = []) {
   const pile = state.pendingLoot || [];
   const it = pile[i];
   if (!it) return events;
+  if (refuseGear(state, "takeLoot", { item: it }, events)) return events;
 
   if (!equip) {
     // Phase 37 (GEAR-03): with c.worn present, an empty-slot item auto-wears
@@ -988,6 +1050,7 @@ export function leaveLoot(state, i, events = []) {
  * the FIRST refusal) — never loses an item. Pure, no rng.
  */
 export function takeAllLoot(state, events = []) {
+  if ((state.pendingLoot || []).length && refuseGear(state, "takeAllLoot", {}, events)) return events;
   const pile = (state.pendingLoot || []).slice();
   const remaining = [];
   let refused = false;

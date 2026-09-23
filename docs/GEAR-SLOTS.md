@@ -207,12 +207,27 @@ fixture that must never be edited).
 - **Staff class gate:** a staff (worn or bagged) remains Magic User only —
   `equipRejected { reason: "wrongClass" }` on equip, and `reconcileWorn`
   (§5) never wears a staff onto a non-caster during migration.
+- **Combat gear lock (Phase 61, GRULE-01):** `equipItem`, `unequipSlot`,
+  `takeFind`, `takeLoot` and `takeAllLoot` all refuse while `state.combat`
+  is set — the pending Fight! preview (`combat.pending`) INCLUDED, not
+  just a joined fight. Each refusal is exactly one `gearRefused { verb,
+  reason: "combat", item?, slot? }` event and zero rng draws; the state is
+  otherwise untouched. `gearLockReason(state)` (`engine/items.js`) is the
+  read-only predicate — it returns `"combat"` mid-fight, `null` otherwise —
+  that any UI (Phase 63's action sheet included) reads to grey the
+  EQUIP/SWAP/UNEQUIP rows with the engine's own reason. USE (staffs, torch,
+  jewelry/cloak activatables), potions, scrolls, spells (the Shield
+  included) and Drop all stay live mid-fight — none of them changes what
+  you fight with, so none of them is ever refused with `gearRefused`.
+  `wearItem` stays an UNGATED internal primitive — every real caller is
+  either combat-gated above it or store-only.
 - **Refusal vocabulary** (§1 of `docs/USABLE-FEATURES-AUDIT.md` carries the
-  full table; the new row this phase adds):
+  full table; the new rows this phase adds):
 
   | Reason | Carried by | Meaning |
   |---|---|---|
   | `notWorn` | `useRefused` | a cloak/jewelry/staff activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no `c.worn`) keep bag-use |
+  | `combat` | `gearRefused` | a gear change attempted while a fight is up (Phase 61, GRULE-01) |
 
 ## §5. Old-save reconciliation (GEAR-04)
 
