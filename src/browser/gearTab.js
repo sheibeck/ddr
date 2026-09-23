@@ -22,7 +22,11 @@ import { canRead } from "../../engine/magic.js";
 import { maxCharges } from "../../engine/movement.js";
 import { sellPriceFor } from "../../engine/economy.js";
 import { WEAPONS } from "../../content/index.js";
-import { armorDisplay, bagArmorText, lootCompare } from "./viewModels.js";
+import { armorDisplay, bagArmorText, lootCompare, usableBy, dropShelfItems } from "./viewModels.js";
+// Phase 62 (GSCR-06) — gearConsumablesModel's SCROLLS row reads the engine's
+// own scroll refusal line (never a restated reason string); a separate
+// import line so it never collides with the pinned derived.js import above.
+import { LINE_FOR } from "./narrationLines.js";
 
 /**
  * bagUsage(c) — Phase 29 (LOOT-04): the ONE "used / slots" readout the
@@ -349,6 +353,180 @@ export function gearWornModel(state) {
   const filled = rows.filter((r) => r.filled).length;
   const countText = GEAR_COPY.count.replace("{n}", filled).replace("{max}", 5);
   return { filled, max: 5, countText, rows };
+}
+
+/**
+ * gearBagMeterModel(state) — Phase 62 (GSCR-04): the BAG section's used/cap
+ * readout and pips, read ONLY from `bagUsage(c)` — never `bagCap`/`canStow`/
+ * `slotItems` directly. `pips` is one bool per slot (the first `have` lit),
+ * `[]` for a bag-less character (`slots === null`). `fullLine`/`freeRide`
+ * are the CONTEXT-locked sub-lines, shown only when they apply. The
+ * `usage.slots !== null ? GEAR_COPY.freeRide : ""` pairing is kept literal —
+ * Plan 02 re-points a shell snapshot pin at this exact region. Pure.
+ */
+export function gearBagMeterModel(state) {
+  const c = (state && state.c) || {};
+  const usage = bagUsage(c);
+  const pips = usage.slots !== null ? Array.from({ length: usage.slots }, (_, i) => i < usage.have) : [];
+  const fullLine = usage.full ? GEAR_COPY.bagFull : "";
+  const freeRide = usage.slots !== null ? GEAR_COPY.freeRide : "";
+  return { have: usage.have, slots: usage.slots, full: usage.full, countText: usage.text, pips, fullLine, freeRide };
+}
+
+/**
+ * gearBagCardsModel(state) — Phase 62 (GSCR-05): one card per
+ * `dropShelfItems(c)` entry (the ONE bag-slot list, true `c.items` index).
+ * `family`/`tag` name the worn-slot family the item fits (weapon/armor/
+ * cloak/jewelry via `slotFor`) plus `· SWAP` when every key of that family
+ * is already occupied — the same "every key taken" test `renderCarriedList`
+ * uses to choose the swap confirm. A bag-only item (no family) carries no
+ * tag and gets a USE cell exactly when `gearUseCell` is non-null (equippable
+ * gear only works from its worn slot, so a bagged cloak/jewel/weapon/armor
+ * never gets one here). `desc` is `it.txt` (`bagArmorText(it)` for armor —
+ * Phase 28 ARMOR-03, live durability, never the frozen txt) plus the
+ * `usableBy(it, c)` suffix. Pure, null-safe.
+ */
+export function gearBagCardsModel(state) {
+  const c = (state && state.c) || {};
+  return dropShelfItems(c).map(({ it, i }) => {
+    const family = it.kind === "weapon" ? "weapon" : it.kind === "armor" ? "armor" : slotFor(it);
+    let swap = false;
+    if (family === "weapon") swap = !!(c.weapon && WEAPONS[c.weapon]);
+    else if (family === "armor") swap = armorDisplay(c).worn;
+    else if (family) swap = (WORN_KEYS_OF[family] || []).every((k) => c.worn && c.worn[k]);
+    const tag = family ? GEAR_COPY.family[family] + (swap ? GEAR_COPY.swap : "") : "";
+    const use = family ? null : gearUseCell(state, it);
+    const useRef = use ? i : null;
+    const base = it.kind === "armor" ? bagArmorText(it) : (it.txt ?? "");
+    const usable = usableBy(it, c);
+    const desc = usable ? `${base} ${usable}` : base;
+    return { i, name: it.n, desc, family, tag, use, useRef };
+  });
+}
+
+/**
+ * gearConsumablesModel(state) — Phase 62 (GSCR-06): the CONSUMABLES block.
+ * Row 0 is HEALING POTION, always shown as `×c.potions`, `enabled` exactly
+ * the combat ITEMS submenu's own potion-row rule (`(c.potions||0) > 0 &&
+ * c.wp < c.maxWP`) — the SAME predicate, so a Gear tap can never waste a
+ * potion the combat menu would have refused (GSCR-06 prohibition). Then one
+ * row per buff-potion NAME (`kind: "potion"` items in `c.items`, grouped, in
+ * first-appearance order), always enabled — the engine's own refusal line
+ * explains any tap on the rail. Then SCROLLS when `c.scrolls > 0`, `enabled`
+ * === `canRead(state)`, its `reason` the engine's OWN
+ * `LINE_FOR.scrollRefused` text (mirrors `engine/magic.js#readScroll`'s own
+ * pilfer/noRunes ternary). `heldText` counts potions + buff items + scrolls.
+ * Pure, null-safe.
+ */
+export function gearConsumablesModel(state) {
+  const c = (state && state.c) || {};
+  const qtyText = (n) => GEAR_COPY.qty.replace("{n}", n);
+
+  const heal = {
+    key: "heal",
+    name: GEAR_COPY.healingPotion,
+    qty: c.potions || 0,
+    qtyText: qtyText(c.potions || 0),
+    desc: GEAR_COPY.healingDesc,
+    verb: GEAR_COPY.use.use,
+    enabled: (c.potions || 0) > 0 && c.wp < c.maxWP,
+    reason: "",
+    dispatch: { type: "drinkPotion" },
+  };
+  const rows = [heal];
+
+  const buffGroups = [];
+  const buffIndexOf = new Map();
+  const items = c.items || [];
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (!it || it.kind !== "potion") continue;
+    if (!buffIndexOf.has(it.n)) {
+      buffIndexOf.set(it.n, buffGroups.length);
+      buffGroups.push({ name: it.n, count: 0, firstIndex: i, firstTxt: it.txt ?? "" });
+    }
+    buffGroups[buffIndexOf.get(it.n)].count++;
+  }
+  for (const g of buffGroups) {
+    rows.push({
+      key: `potion:${g.name}`,
+      name: g.name,
+      qty: g.count,
+      qtyText: qtyText(g.count),
+      desc: g.firstTxt,
+      verb: GEAR_COPY.use.use,
+      enabled: true,
+      reason: "",
+      dispatch: { type: "useItem", i: g.firstIndex },
+    });
+  }
+
+  if (c.scrolls > 0) {
+    const readable = canRead(state);
+    // Mirrors engine/magic.js#readScroll's own pilfer/noRunes ternary — the
+    // reason text is the engine's OWN refusal line, never restated here.
+    const reason = readable ? "" : LINE_FOR.scrollRefused({ reason: c.sub === "Pilfer" ? "pilfer" : "noRunes" }).text;
+    rows.push({
+      key: "scroll",
+      name: GEAR_COPY.scrolls,
+      qty: c.scrolls,
+      qtyText: qtyText(c.scrolls),
+      desc: GEAR_COPY.scrollDesc,
+      verb: GEAR_COPY.use.read,
+      enabled: readable,
+      reason,
+      dispatch: { type: "readScroll" },
+    });
+  }
+
+  const buffCount = buffGroups.reduce((sum, g) => sum + g.count, 0);
+  const held = (c.potions || 0) + buffCount + (c.scrolls || 0);
+  return { held, heldText: GEAR_COPY.held.replace("{n}", held), rows };
+}
+
+/**
+ * gearKitRows(state) — Phase 62 (GSCR-06): the ALSO ON YOU block's rows, in
+ * this fixed order — Rations, Spell charges (Magic User only), every
+ * running effect the old `#s-kit` list showed (Shield ward, Strength,
+ * Regeneration, Mirror Self, Sense Presence, Sense Danger, Map the Floor),
+ * then Kills. Potions, Scrolls and Wilmst are gone — they now live in
+ * CONSUMABLES and the header. The conditions are copied verbatim from the
+ * retired `renderGearTab` kit block. Every `value` is a string. Pure,
+ * null-safe.
+ */
+export function gearKitRows(state) {
+  const c = (state && state.c) || {};
+  const rows = [];
+  rows.push({ label: GEAR_COPY.kit.rations, value: GEAR_COPY.kit.rationsValue.replace("{n}", c.rations || 0) });
+  if (c.cls === "Magic User") {
+    const max = maxCharges(c);
+    const k = max - (c.spellsUsed || 0);
+    rows.push({ label: GEAR_COPY.kit.spellCharges, value: GEAR_COPY.kit.spellChargesValue.replace("{k}", k).replace("{max}", max) });
+  }
+  if (c.ward) {
+    rows.push({ label: c.ward.name, value: GEAR_COPY.kit.wardValue.replace("{pool}", c.ward.pool).replace("{rounds}", c.ward.rounds) });
+  }
+  if (c.might) {
+    rows.push({ label: GEAR_COPY.kit.strength, value: GEAR_COPY.kit.strengthValue.replace("{n}", c.might) });
+  }
+  if (c.regen) {
+    rows.push({ label: GEAR_COPY.kit.regen, value: GEAR_COPY.kit.regenValue });
+  }
+  if (c.mirror > 0) {
+    rows.push({ label: GEAR_COPY.kit.mirror, value: GEAR_COPY.kit.mirrorValue.replace("{n}", c.mirror) });
+  }
+  if (c.senses) {
+    rows.push({ label: GEAR_COPY.kit.senses, value: GEAR_COPY.kit.sensesValue });
+  }
+  if (c.foresight) {
+    rows.push({ label: GEAR_COPY.kit.foresight, value: GEAR_COPY.kit.foresightValue });
+  }
+  const rev = c.timers && c.timers["spell:reveal"];
+  if (rev && rev.phase === "effect" && rev.left > 0) {
+    rows.push({ label: GEAR_COPY.kit.reveal, value: GEAR_COPY.kit.revealValue.replace("{n}", rev.left) });
+  }
+  rows.push({ label: GEAR_COPY.kit.kills, value: String(c.kills || 0) });
+  return rows;
 }
 
 // Phase 33 (UIF-01, CONTEXT Area 1) — the GEAR tab's inline two-tap Drop
