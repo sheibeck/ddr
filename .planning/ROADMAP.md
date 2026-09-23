@@ -81,7 +81,28 @@ Plans:
   4. When the player's best run misses the top ten, it is pinned below a "NOT IN THE TOP TEN · YOUR BEST RUN" divider; tapping any row expands it to show the cause, the epitaph, and FLOOR/DAYS/SQUARES/KILLS/EXP/WILMST chips
   5. Each board ends with a standing card ("your place · of N") and a per-board footnote in voice (GRAVEYARD's own: "Epitaphs are written by the dungeon, not by you. There is no appeal."); signed out, offline, or with Compete off, the whole panel runs on local data only, with zero network calls made
 
-**Plans**: TBD
+**Plans**: 7 plans (4 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 66-01-PLAN.md — (wave 1) LEANEST re-ranked by squares per floor (re-rank on load, zero fixture movement) and the adapter's in-memory graveyard + lifetime-total read seam (BOARD-02, BOARD-03, BOARD-08)
+- [ ] 66-02-PLAN.md — (wave 1) `content/boards.js`: the mock's marks, colours, rule lines and footnotes, the signed-out/empty/standing/dock copy and the standing-quip bank, safety-scanned (BOARD-02, BOARD-03, BOARD-07, BOARD-08)
+- [ ] 66-03-PLAN.md — (wave 1) `src/browser/boardsPanel.js`: the DOM renderer and controller (entry modes, board memory, scope/row toggles, back routing, rail centring) (BOARD-01..08)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 66-04-PLAN.md — (wave 2) `src/browser/boardsView.js`: the pure view model for all seven boards, the standing card, empty and signed-out states (BOARD-02..08)
+- [ ] 66-05-PLAN.md — (wave 2) the `.mw-bd-*` panel CSS, title-mode tab-bar/rail hiding, text scale and reduced motion (BOARD-01..04, BOARD-06)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 66-06-PLAN.md — (wave 3) the DEAD tab becomes the panel: `window.__mzBoards`, the classic graveyard screen deleted, the title gate on the adapter, sandbox + shell tests (BOARD-01..04, BOARD-06..08)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 66-07-PLAN.md — (wave 4) VIEW THE DEAD opens the panel in title mode, Android back mirrors the chevron, and the classic graveyard loader and its harness are retired (BOARD-01, BOARD-08)
+
 **Research**: none — `Mazeworld Leaderboards.dc.html` and `Mazeworld Boards Panel.dc.html` (read via `DesignSync`) are the UX/visual spec.
 **UI hint**: yes
 
@@ -289,7 +310,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 65. Run Record & Personal Bests | v2.0 | 4/5 | In Progress|  |
-| 66. Leaderboards Panel — Local | v2.0 | 0/TBD | Not started | - |
+| 66. Leaderboards Panel — Local | v2.0 | 0/7 | Planned | - |
 | 67. Play Games Integration & Account Chip | v2.0 | 0/TBD | Not started | - |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
