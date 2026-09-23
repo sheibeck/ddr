@@ -354,6 +354,48 @@ test("combatBeat: planBeat for an ending round builds the log via appendFightLog
   assert.deepEqual(plan2.log, appendFightLog(priorLog, lines, before.combat.round));
 });
 
+// Regression: trap-death-21hp-oracle-minus1 (2026-09-22). lineIdxsFor
+// carries only ONE representative event per folded fight-log line
+// (narrationLines.js's enemyRound own contract) — when a foe swings 2+
+// times in a round (or 3+ foes land together), the fold's TEXT sums every
+// hit but heroFrames, fed only that one representative event, under-counts
+// the round's real total. Invisible on a mid-fight round (viewFor already
+// substitutes the real `after` on its own last line) but not on an ENDING
+// round, where every line — including the last, the one on screen the
+// instant before the over-panel/settle takes over — renders from this
+// frame (D-09). planBeat now pins heroHp's last entry to the real final hp.
+test("combatBeat: planBeat's last hero-hp frame equals the real final hp, never an under-count from a fold's first-event-only sample (a foe with 2+ swings this round)", () => {
+  const foes = [
+    { name: "Rat", alive: true, wp: 6, maxWP: 6, type: "Beasts" },
+    { name: "Ogre", alive: true, wp: 20, maxWP: 20, type: "Beasts" },
+  ];
+  const before = fixedState({ combat: fixedCombat(foes, { round: 4 }) });
+  const events = [
+    { type: "struck", target: "Rat", dmg: 5 },
+    { type: "foeKilled", name: "Rat", spGained: 1 },
+    { type: "struckByFoe", name: "Ogre", dmg: 8 },
+    { type: "struckByFoe", name: "Ogre", dmg: 9 },
+  ];
+  const ctx = {};
+
+  // sanity: the fold's TEXT already carries the true combined damage
+  // (8+9=17) — the bug is that heroHp's per-line math does not.
+  const lines = fightLogLinesFor("attack", events, ctx);
+  const ogreLine = lines.find((l) => l.text.includes("Ogre"));
+  assert.ok(ogreLine, "sanity: Ogre's line must exist");
+  assert.match(ogreLine.text, /17/, "sanity: the folded line's text carries the TRUE combined damage (8+9=17)");
+
+  const afterEnding = fixedState({ c: { wp: 55 - 17 }, combat: null }); // true final: 55 - 17 = 38
+  const plan = planBeat({ actionType: "attack", events, before, after: afterEnding, beforeLog: null, ctx });
+  assert.ok(plan);
+  assert.equal(plan.ending, true);
+  assert.equal(
+    plan.heroHp[plan.heroHp.length - 1],
+    38,
+    "the LAST frame must equal the real final hp (55-17=38), not an under-count from only the fold's first constituent event (55-8=47)"
+  );
+});
+
 test("combatBeat: planBeat never mutates before, after, beforeLog, afterLog or events — deep-frozen inputs do not throw", () => {
   const { before, events, ctx, lines } = planBeatFixtures();
   const afterMid = fixedState({ combat: fixedCombat([{ ...before.combat.foes[0], wp: 1 }], { round: before.combat.round }) });

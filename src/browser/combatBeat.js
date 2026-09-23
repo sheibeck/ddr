@@ -268,6 +268,24 @@ export function planBeat(opts = {}) {
 
   const frames = foeFrames(before.combat.foes, lineEvents);
   const heroHp = heroFrames(before.c ? before.c.wp : 0, lineEvents);
+  // Bugfix (post-58-06, trap-death-21hp-oracle-minus1): lineEvents carries
+  // only ONE representative event per folded line (lineIdxsFor's own
+  // contract, inherited from narrationLines.js's enemyRound — a foe with
+  // 2+ swings this round, or 3+ foes landing together, folds into one line
+  // whose TEXT sums every hit but whose `idx` names only the first one).
+  // heroFrames, fed that single event, silently under-counts the round's
+  // real total whenever such a fold occurs. The gap is invisible on a
+  // MID-FIGHT round (viewFor already substitutes the real `after` on its
+  // own last line) but not on an ENDING round, where every line — including
+  // the last, the one on screen the instant before the over-panel/settle
+  // takes over — renders from this frame (D-09). Pin the final entry to
+  // the already-known true final hp so the last number a player can see
+  // before a beat settles never overstates survival. A no-op whenever
+  // heroFrames' cumulative math was already exact (0 or 1 struckByFoe per
+  // fold line, the common case).
+  if (heroHp.length > 0 && after && after.c && typeof after.c.wp === "number") {
+    heroHp[heroHp.length - 1] = Math.max(0, after.c.wp);
+  }
   const cueLinesArr = cueLines(cues, idxs);
 
   return {
