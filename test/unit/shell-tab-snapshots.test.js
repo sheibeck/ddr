@@ -17,6 +17,13 @@
 // declared (this file's SUMMARY names the change); the Hero and Store
 // fixtures are untouched.
 //
+// Phase 63 (GSCR-07..10), Plan 04: two new declared fixtures —
+// thief.gear-sheet-bag and thief.gear-sheet-worn — capture the GEAR action
+// sheet's six GEAR_SHEET_IDS roots (SNAPSHOT_IDS.gearSheet) for the bagged
+// third jewel and the worn jewelry1 slot respectively. Every pre-existing
+// fixture stays byte-identical; the sheet's own markup lives outside the
+// seven surfaces those fixtures already lock.
+//
 // Fixtures are captured ONCE, before Plans 03-05 carve a single line out of
 // the three render bodies — a diff after a carve means the carve moved the
 // rendered DOM, never that the fixture needs updating. Regenerating a
@@ -26,7 +33,7 @@
 // only when a plan's own SUMMARY.md names the exact DOM change and why.
 //
 // MZ_SNAPSHOT_UPDATE=1: write (never compare) — the ONLY way any of these
-// seven files are ever created or changed. A plain `node --test` run never
+// nine files are ever created or changed. A plain `node --test` run never
 // writes a fixture (Task 3's own guard test below enforces this structurally
 // — a missing/empty fixture is a hard failure, never a silent pass).
 
@@ -39,6 +46,8 @@ import url from "node:url";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates, SNAPSHOT_IDS } from "./harness/shellSandbox.js";
 import { setIdentityDials } from "./harness/identityDials.js";
+import { dropShelfItems } from "../../src/browser/viewModels.js";
+import { slotFor } from "../../engine/derived.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
 // this file's own pins are canon-mechanic numbers written before the fit
@@ -133,6 +142,32 @@ test("SHELL-01: thief.gear-confirms — the Drop confirm and the jewelry swap co
   check("thief.gear-confirms", text);
 });
 
+// ─── 3b/3c (Phase 63, GSCR-07..10): the GEAR action sheet's two declared
+// snapshots ────────────────────────────────────────────────────────────
+
+test("SHELL-01 (Phase 63): thief.gear-sheet-bag — the bagged third jewel's sheet (both SWAP INTO slots plus DROP)", () => {
+  const { doc, sandbox } = paintFresh(states.thief);
+  const entry = dropShelfItems(states.thief.c).find(({ it }) => slotFor(it) === "jewelry");
+  assert.ok(entry, "expected a bagged jewel in the thief fixture");
+  sandbox.context.openGearSheet({ from: "bag", i: entry.i, n: entry.it.n }, "gear-open-bag-" + entry.i);
+
+  const text = doc.serializeElements(SNAPSHOT_IDS.gearSheet);
+  assert.ok(text.includes("SWAP INTO JEWELRY 1"), "expected a SWAP INTO JEWELRY 1 action (jewelry1 is worn)");
+  assert.ok(text.includes("SWAP INTO JEWELRY 2"), "expected a SWAP INTO JEWELRY 2 action (jewelry2 is worn)");
+  assert.ok(text.includes("DROP"), "expected the DROP action");
+  check("thief.gear-sheet-bag", text);
+});
+
+test("SHELL-01 (Phase 63): thief.gear-sheet-worn — jewelry1 with UNEQUIP greyed by the full bag", () => {
+  const { doc, sandbox } = paintFresh(states.thief);
+  sandbox.context.openGearSheet({ from: "worn", slot: "jewelry1" }, "gear-open-worn-jewelry1");
+
+  const text = doc.serializeElements(SNAPSHOT_IDS.gearSheet);
+  assert.ok(text.includes("Bag is full — free a slot first."), "expected UNEQUIP's bag-full reason");
+  assert.ok(text.includes("UNEQUIP"), "expected the UNEQUIP action label");
+  check("thief.gear-sheet-worn", text);
+});
+
 // ─── 4: thief-store.store ───────────────────────────────────────────────
 
 test("SHELL-01: thief-store.store — a full-bag Thief's store screen", () => {
@@ -195,8 +230,18 @@ test("determinism: two independent sandboxes painting the same fixed state seria
 
 // ─── 10: guard — a plain run must never pass on a missing/empty fixture ────
 
-test("guard: all seven fixtures exist and are non-empty (a plain run never writes one)", { skip: UPDATE && "capture mode — the guard only applies to a compare run" }, () => {
-  const names = ["thief.hero", "thief.gear", "thief.gear-confirms", "thief-store.store", "mu.hero", "mu.gear", "mu-store.store"];
+test("guard: all nine fixtures exist and are non-empty (a plain run never writes one)", { skip: UPDATE && "capture mode — the guard only applies to a compare run" }, () => {
+  const names = [
+    "thief.hero",
+    "thief.gear",
+    "thief.gear-confirms",
+    "thief.gear-sheet-bag",
+    "thief.gear-sheet-worn",
+    "thief-store.store",
+    "mu.hero",
+    "mu.gear",
+    "mu-store.store",
+  ];
   for (const name of names) {
     const file = path.join(FIXTURE_DIR, `${name}.txt`);
     assert.ok(fs.existsSync(file), `missing fixture ${file}`);

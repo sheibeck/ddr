@@ -228,8 +228,11 @@ test("MAP-08/MOTION-01: window.mzCenterMap = centerMap; is still exactly once �
 
 // ─── (e) settle/arm discipline ──────────────────────────────────────────────
 
-test("settle/arm discipline: lastDismissAt = Date.now() appears exactly 3 times", () => {
-  assert.equal(countOf(RAW, "lastDismissAt = Date.now()"), 3);
+// Phase 63 (GSCR-10), Plan 04: closeGearSheet() gains its own
+// `lastDismissAt = Date.now();` stamp, on the exact closeCampSheet/
+// closeMarksLegend pattern — 3 -> 4 stamps.
+test("settle/arm discipline: lastDismissAt = Date.now() appears exactly 4 times", () => {
+  assert.equal(countOf(RAW, "lastDismissAt = Date.now()"), 4);
 });
 
 test("settle/arm discipline: encounterSettled() appears exactly 2 times", () => {
