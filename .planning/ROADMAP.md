@@ -30,7 +30,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 **Working method:** no research pass — the mock, `docs/GEAR-SLOTS.md` and the two v1.9 todos carry the file-level context for every phase. `/gsd-discuss-phase` is called out per phase below where a real decision needs a ruling before planning.
 
 - [x] **Phase 61: Gear Rules & Store Purchase Fix** - The engine refuses equip/unequip/swap while a fight is up, and a store purchase always delivers the item it charges for (completed 2026-09-23)
-- [ ] **Phase 62: Gear Tab Layout Rebuild** - The Gear tab shows the mock's header, WORN list, BAG meter and CONSUMABLES block, reading only the shared gear view models
+- [x] **Phase 62: Gear Tab Layout Rebuild** - The Gear tab shows the mock's header, WORN list, BAG meter and CONSUMABLES block, reading only the shared gear view models (completed 2026-09-23)
 - [ ] **Phase 63: Action Sheet, Combat Lock & Accessibility** - One bottom action sheet drives every equip/swap/unequip/use/drop decision, greyed with real reasons in combat, reduced-motion and TalkBack safe
 - [ ] **Phase 64: Device Close & UAT Batch** - A Pixel 7 device batch proves the redone tab end to end, recorded in `docs/UAT-v1.9.md`
 
@@ -274,7 +274,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
-| 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | In Progress|  |
+| 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
