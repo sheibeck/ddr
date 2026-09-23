@@ -85,6 +85,31 @@ test("gearTab.js exports renderGearTab, renderCarriedList and the five view mode
   assert.equal(typeof gearTab.ITEM_STATE_COPY, "object");
 });
 
+// Phase 62 (GSCR-01..06), Plan 01 — the eight new pure Gear-tab view models
+// and their one new frozen display-order constant.
+test("gearTab.js exports GEAR_WORN_ORDER and the eight Phase 62 Gear-tab view models", () => {
+  for (const name of [
+    "GEAR_WORN_ORDER",
+    "gearHeaderModel",
+    "gearUseCell",
+    "gearWornModel",
+    "gearBagMeterModel",
+    "gearBagCardsModel",
+    "gearConsumablesModel",
+    "gearKitRows",
+  ]) {
+    assert.ok(name in gearTab, `expected gearTab.js to export ${name}`);
+  }
+  assert.equal(typeof gearTab.GEAR_WORN_ORDER, "object");
+  assert.equal(typeof gearTab.gearHeaderModel, "function");
+  assert.equal(typeof gearTab.gearUseCell, "function");
+  assert.equal(typeof gearTab.gearWornModel, "function");
+  assert.equal(typeof gearTab.gearBagMeterModel, "function");
+  assert.equal(typeof gearTab.gearBagCardsModel, "function");
+  assert.equal(typeof gearTab.gearConsumablesModel, "function");
+  assert.equal(typeof gearTab.gearKitRows, "function");
+});
+
 // ─── (2) no window/document globals ──────────────────────────────────────
 
 test("gearTab.js reads no window/document global — host, host.ownerDocument and deps only", () => {

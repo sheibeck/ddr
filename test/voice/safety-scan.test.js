@@ -60,6 +60,10 @@ import { MISS_LINES } from "../../src/browser/missLines.js";
 // alongside every other presentation COPY bank in collectAuthoredStrings.
 import { UPGRADE_WHY_COPY } from "../../src/browser/upgradeWhy.js";
 import { STORE_ROW_COPY } from "../../src/browser/viewModels.js";
+// Phase 62 (GSCR-01..06): the rebuilt Gear tab's extended copy bank — every
+// string leaf scanned AND counted here so it participates in the
+// completeness/load-bearing meta-tests too.
+import { GEAR_COPY } from "../../src/browser/gearTab.js";
 import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
@@ -343,6 +347,15 @@ function collectAuthoredStrings() {
   // meta-tests too.
   for (const [k, v] of Object.entries(UPGRADE_WHY_COPY)) push(`UPGRADE_WHY_COPY.${k}`, v);
   for (const [k, v] of Object.entries(STORE_ROW_COPY)) push(`STORE_ROW_COPY.${k}`, v);
+  // Phase 62 (GSCR-01..06): GEAR_COPY nests groups (empty/slot/family/use/kit/
+  // act), so walk every string leaf recursively rather than a flat Object.entries.
+  (function walkGearCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkGearCopy(v, label);
+    }
+  })(GEAR_COPY, "GEAR_COPY");
 
   return out;
 }

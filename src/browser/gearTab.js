@@ -22,7 +22,11 @@ import { canRead } from "../../engine/magic.js";
 import { maxCharges } from "../../engine/movement.js";
 import { sellPriceFor } from "../../engine/economy.js";
 import { WEAPONS } from "../../content/index.js";
-import { armorDisplay, bagArmorText, lootCompare } from "./viewModels.js";
+import { armorDisplay, bagArmorText, lootCompare, usableBy, dropShelfItems } from "./viewModels.js";
+// Phase 62 (GSCR-06) — gearConsumablesModel's SCROLLS row reads the engine's
+// own scroll refusal line (never a restated reason string); a separate
+// import line so it never collides with the pinned derived.js import above.
+import { LINE_FOR } from "./narrationLines.js";
 
 /**
  * bagUsage(c) — Phase 29 (LOOT-04): the ONE "used / slots" readout the
@@ -49,6 +53,15 @@ export function bagUsage(c) {
  * key-named leaves, `jewelry1`/`jewelry2` — `WORN_SLOTS` is now the three
  * keys jewelry1/jewelry2/cloak, so `empty` has exactly the leaves armor,
  * jewelry1, jewelry2, cloak.
+ *
+ * Phase 62 (GSCR-01..06): extended for the rebuilt Gear tab's slim header,
+ * five-row WORN list, USE cell, bag meter, bag cards, CONSUMABLES and ALSO
+ * ON YOU (kit) sections — every new string the Plan 01 view models
+ * (gearHeaderModel/gearUseCell/gearWornModel/gearBagMeterModel/
+ * gearBagCardsModel/gearConsumablesModel/gearKitRows) build from lives here
+ * too, so the voice scan and the hp-not-wp guard keep walking ONE object.
+ * `empty.weapon` is new (a bare-fisted weapon slot now gets its own in-voice
+ * empty line, same as the other four). Every nested group stays frozen.
  */
 export const GEAR_COPY = Object.freeze({
   onYou: "ON YOU",
@@ -58,30 +71,100 @@ export const GEAR_COPY = Object.freeze({
   bag: "BAG",
   freeRide: "potions & scrolls ride free",
   empty: Object.freeze({
+    weapon: "fists — nothing in hand. Free, always with you, and not very good.",
     armor: "armor — nothing. The wind is your armor, and the wind is not on your side.",
     jewelry1: "jewelry — nothing. Ten fingers, one neck, zero commitments.",
     jewelry2: "jewelry — nothing. Room for one more bad decision.",
     cloak: "cloak — nothing. Cold and unmagical, in that order.",
   }),
+  armorRating: "ARMOR RATING",
+  wilmst: "WILMST",
+  consumables: "CONSUMABLES",
+  count: "{n} / {max}",
+  held: "{n} HELD",
+  slot: Object.freeze({
+    weapon: "WEAPON",
+    armor: "ARMOR",
+    cloak: "CLOAK",
+    jewelry1: "JEWELRY 1",
+    jewelry2: "JEWELRY 2",
+  }),
+  family: Object.freeze({
+    weapon: "WEAPON",
+    armor: "ARMOR",
+    cloak: "CLOAK",
+    jewelry: "JEWELRY",
+  }),
+  swap: " · SWAP",
+  emptyName: "empty",
+  noValue: "—",
+  chevron: "›",
+  weaponMagic: "+{n} magic. Somebody cared, once.",
+  weaponMundane: "no enchantment. Just you and the swing.",
+  magicPlate: "magic plate",
+  armorWear: "{current}/{max} hp",
+  armorDestroyed: "destroyed",
+  bagFull: "BAG FULL · DROP OR USE SOMETHING",
+  bagEmptyHead: "NOTHING LEFT TO CARRY",
+  bagEmptyBody: "You used it all. That was the plan, technically.",
+  use: Object.freeze({
+    use: "USE",
+    active: "ACTIVE",
+    cooling: "COOLING",
+    read: "READ",
+  }),
+  healingPotion: "HEALING POTION",
+  healingDesc: "Heals. Wasted at full health.",
+  scrolls: "SCROLLS",
+  scrollDesc: "A random spell, read aloud. No refunds.",
+  qty: "×{n}",
+  kit: Object.freeze({
+    rations: "Rations",
+    rationsValue: "{n} days",
+    spellCharges: "Spell charges",
+    spellChargesValue: "{k} / {max}",
+    wardValue: "{pool} hp left · {rounds} rds",
+    strength: "Strength",
+    strengthValue: "+{n} damage",
+    regen: "Regeneration",
+    regenValue: "d8 a round",
+    mirror: "Mirror Self",
+    mirrorValue: "{n} rds",
+    senses: "Sense Presence",
+    sensesValue: "till the fight ends",
+    foresight: "Sense Danger",
+    foresightValue: "armed",
+    reveal: "Map the Floor",
+    revealValue: "{n} sq",
+    kills: "Kills",
+  }),
+  act: Object.freeze({
+    unequip: "Unequip",
+    bagFull: "Bag full",
+  }),
 });
 
 /**
  * emptySlotRows(c) — Phase 43 (CLAR-04) + 260918-w4n (staff amendment) +
- * 260918-wy1 (jewelry-merge): one in-voice row per EMPTY worn KEY — armor
- * (via `armorDisplay(c)`, only when neither worn nor the Cloak of Armor's
- * magic plate) followed by the three `WORN_SLOTS` keys (jewelry1, jewelry2,
- * cloak), in that fixed order — so Plan 04's ON YOU panel can render these
- * between the existing wornRow/wornSlotRow rows. A bare hero shows three
- * rows (two jewelry, one cloak). A legacy `c` with no `worn` map yields all
- * three key rows (every `c.worn?.[slot]` read is falsy). A staff is a bag
- * item — it has no worn slot and therefore no empty-slot row at all. No
- * code change needed for the jewelry merge — this loop already reads
- * `WORN_SLOTS` (now three keys) and `GEAR_COPY.empty[slot]` (now keyed by
- * jewelry1/jewelry2/cloak) generically. Pure, no rng, no mutation.
+ * 260918-wy1 (jewelry-merge) + Phase 62 (GSCR-02, weapon row): one in-voice
+ * row per EMPTY worn KEY, in this fixed order — weapon (only when `c.weapon`
+ * is bare: "Fists", "", undefined or any name not in `WEAPONS`), armor (via
+ * `armorDisplay(c)`, only when neither worn nor the Cloak of Armor's magic
+ * plate), then the three `WORN_SLOTS` keys (jewelry1, jewelry2, cloak) — so
+ * Plan 04's ON YOU panel (and Plan 02's rebuilt WORN list) can render these
+ * between the existing wornRow/wornSlotRow rows. A bare hero shows four rows
+ * (weapon, armor, two jewelry, one cloak — five with a bare cloak slot too).
+ * A legacy `c` with no `worn` map yields all three key rows (every
+ * `c.worn?.[slot]` read is falsy). A staff is a bag item — it has no worn
+ * slot and therefore no empty-slot row at all. No code change needed for the
+ * jewelry merge — this loop already reads `WORN_SLOTS` (now three keys) and
+ * `GEAR_COPY.empty[slot]` (now keyed by jewelry1/jewelry2/cloak) generically.
+ * Pure, no rng, no mutation.
  */
 export function emptySlotRows(c) {
   if (!c || typeof c !== "object") return [];
   const rows = [];
+  if (!(c.weapon && WEAPONS[c.weapon])) rows.push({ slot: "weapon", text: GEAR_COPY.empty.weapon });
   const armor = armorDisplay(c);
   if (!armor.worn && !armor.magic) rows.push({ slot: "armor", text: GEAR_COPY.empty.armor });
   for (const slot of WORN_SLOTS) {
@@ -156,6 +239,294 @@ export function itemRowState(state, it) {
     return { text, kind: "effect", remaining: left };
   }
   return { text: ITEM_STATE_COPY.cooling.replace("{n}", left), kind: "cooldown", remaining: left };
+}
+
+/**
+ * GEAR_WORN_ORDER — Phase 62 (GSCR-02): the rebuilt WORN list's fixed
+ * five-row display order (the mock's order, from `62-CONTEXT.md`) — weapon,
+ * armor, cloak, jewelry1, jewelry2. This is a DISPLAY order only; the
+ * engine's own `WORN_SLOTS` address-space order (jewelry1, jewelry2, cloak)
+ * is unchanged and untouched by this constant.
+ */
+export const GEAR_WORN_ORDER = Object.freeze(["weapon", "armor", "cloak", "jewelry1", "jewelry2"]);
+
+/**
+ * gearHeaderModel(state) — Phase 62 (GSCR-01): the Gear tab's slim stat
+ * header — ARMOR RATING (the effective value, `armorDisplay(c).ar`, so an
+ * active Cloak of Armor is included) and WILMST (`c.gold`, comma-grouped).
+ * No name/race/class/floor — the global HUD already names the hero on every
+ * tab. Pure, null-safe on a sparse `state`.
+ */
+export function gearHeaderModel(state) {
+  const c = (state && state.c) || {};
+  const ar = armorDisplay(c).ar;
+  const gold = c.gold || 0;
+  return {
+    stats: [
+      { key: "ar", label: GEAR_COPY.armorRating, value: ar, text: String(ar) },
+      { key: "gold", label: GEAR_COPY.wilmst, value: gold, text: gold.toLocaleString() },
+    ],
+  };
+}
+
+/**
+ * gearUseCell(state, it) — Phase 62 (GSCR-03): the USE / ACTIVE / COOLING
+ * cell every activatable WORN/bag row shows, derived ONLY from
+ * `itemRowState(state, it)` — the ONE row-state rule, never a restated timer
+ * read. Returns `null` for `kind: "none"` (weapon/armor/rope/ladder/picks —
+ * nothing to tap). `phase` always equals `st.kind`. Pure, null-safe.
+ */
+export function gearUseCell(state, it) {
+  const st = itemRowState(state, it);
+  if (st.kind === "none") return null;
+  const label =
+    st.kind === "effect" ? GEAR_COPY.use.active : st.kind === "cooldown" ? GEAR_COPY.use.cooling : GEAR_COPY.use.use;
+  let sub;
+  if (st.kind === "ready" || st.kind === "consumable") sub = "";
+  else if (st.kind === "effect" || st.kind === "charges") sub = st.text;
+  else sub = st.remaining === 1 ? ITEM_STATE_COPY.square : ITEM_STATE_COPY.squares.replace("{n}", st.remaining);
+  return { phase: st.kind, label, sub, remaining: st.remaining ?? 0 };
+}
+
+/**
+ * gearWornModel(state) — Phase 62 (GSCR-02): the rebuilt WORN list's five
+ * fixed rows, in `GEAR_WORN_ORDER`. Built on `emptySlotRows(c)` (the ONE
+ * empty-slot read), `armorDisplay(c)` (the ONE effective-armor read),
+ * `bagUsage(c)` (the ONE bag-full read) and `gearUseCell` above — no rule is
+ * restated. Returns `{ filled, max: 5, countText, rows }`, each row
+ * `{ key, label, filled, name, note, value, use, useRef, unequip }`. Pure,
+ * null-safe, never throws on a legacy `c` with no `worn`/`items`/`timers`.
+ */
+export function gearWornModel(state) {
+  const c = (state && state.c) || {};
+  const empties = new Set(emptySlotRows(c).map((r) => r.slot));
+  const armorD = armorDisplay(c);
+  const usage = bagUsage(c);
+
+  const rows = GEAR_WORN_ORDER.map((key) => {
+    const label = GEAR_COPY.slot[key];
+
+    if (key === "weapon") {
+      if (empties.has("weapon")) {
+        return { key, label, filled: false, name: GEAR_COPY.emptyName, note: GEAR_COPY.empty.weapon, value: GEAR_COPY.noValue, use: null, useRef: null, unequip: null };
+      }
+      const magic = c.magicWpn || 0;
+      const value = WEAPONS[c.weapon].lab + (magic ? ` +${magic}` : "");
+      const note = magic ? GEAR_COPY.weaponMagic.replace("{n}", magic) : GEAR_COPY.weaponMundane;
+      return { key, label, filled: true, name: c.weapon, note, value, use: null, useRef: null, unequip: { slot: "weapon", blocked: usage.full } };
+    }
+
+    if (key === "armor") {
+      if (armorD.worn) {
+        const note = armorD.magic
+          ? armorD.under
+          : armorD.destroyed
+            ? GEAR_COPY.armorDestroyed
+            : GEAR_COPY.armorWear.replace("{current}", armorD.current).replace("{max}", armorD.max);
+        return { key, label, filled: true, name: c.armor, note, value: `AR ${c.ar}`, use: null, useRef: null, unequip: { slot: "armor", blocked: usage.full && !armorD.destroyed } };
+      }
+      if (armorD.magic) {
+        return { key, label, filled: true, name: GEAR_COPY.magicPlate, note: armorD.under, value: `AR ${armorD.ar}`, use: null, useRef: null, unequip: null };
+      }
+      return { key, label, filled: false, name: GEAR_COPY.emptyName, note: GEAR_COPY.empty.armor, value: GEAR_COPY.noValue, use: null, useRef: null, unequip: null };
+    }
+
+    // cloak / jewelry1 / jewelry2 — the three WORN_SLOTS keys.
+    const it = c.worn && c.worn[key];
+    if (!it) {
+      return { key, label, filled: false, name: GEAR_COPY.emptyName, note: GEAR_COPY.empty[key], value: GEAR_COPY.noValue, use: null, useRef: null, unequip: null };
+    }
+    const use = gearUseCell(state, it);
+    return {
+      key,
+      label,
+      filled: true,
+      name: it.n,
+      note: it.txt ?? "",
+      value: GEAR_COPY.noValue,
+      use,
+      useRef: use ? { slot: key } : null,
+      unequip: { slot: key, blocked: usage.full },
+    };
+  });
+
+  const filled = rows.filter((r) => r.filled).length;
+  const countText = GEAR_COPY.count.replace("{n}", filled).replace("{max}", 5);
+  return { filled, max: 5, countText, rows };
+}
+
+/**
+ * gearBagMeterModel(state) — Phase 62 (GSCR-04): the BAG section's used/cap
+ * readout and pips, read ONLY from `bagUsage(c)` — never `bagCap`/`canStow`/
+ * `slotItems` directly. `pips` is one bool per slot (the first `have` lit),
+ * `[]` for a bag-less character (`slots === null`). `fullLine`/`freeRide`
+ * are the CONTEXT-locked sub-lines, shown only when they apply. The
+ * `usage.slots !== null ? GEAR_COPY.freeRide : ""` pairing is kept literal —
+ * Plan 02 re-points a shell snapshot pin at this exact region. Pure.
+ */
+export function gearBagMeterModel(state) {
+  const c = (state && state.c) || {};
+  const usage = bagUsage(c);
+  const pips = usage.slots !== null ? Array.from({ length: usage.slots }, (_, i) => i < usage.have) : [];
+  const fullLine = usage.full ? GEAR_COPY.bagFull : "";
+  const freeRide = usage.slots !== null ? GEAR_COPY.freeRide : "";
+  return { have: usage.have, slots: usage.slots, full: usage.full, countText: usage.text, pips, fullLine, freeRide };
+}
+
+/**
+ * gearBagCardsModel(state) — Phase 62 (GSCR-05): one card per
+ * `dropShelfItems(c)` entry (the ONE bag-slot list, true `c.items` index).
+ * `family`/`tag` name the worn-slot family the item fits (weapon/armor/
+ * cloak/jewelry via `slotFor`) plus `· SWAP` when every key of that family
+ * is already occupied — the same "every key taken" test `renderCarriedList`
+ * uses to choose the swap confirm. A bag-only item (no family) carries no
+ * tag and gets a USE cell exactly when `gearUseCell` is non-null (equippable
+ * gear only works from its worn slot, so a bagged cloak/jewel/weapon/armor
+ * never gets one here). `desc` is `it.txt` (`bagArmorText(it)` for armor —
+ * Phase 28 ARMOR-03, live durability, never the frozen txt) plus the
+ * `usableBy(it, c)` suffix. Pure, null-safe.
+ */
+export function gearBagCardsModel(state) {
+  const c = (state && state.c) || {};
+  return dropShelfItems(c).map(({ it, i }) => {
+    const family = it.kind === "weapon" ? "weapon" : it.kind === "armor" ? "armor" : slotFor(it);
+    let swap = false;
+    if (family === "weapon") swap = !!(c.weapon && WEAPONS[c.weapon]);
+    else if (family === "armor") swap = armorDisplay(c).worn;
+    else if (family) swap = (WORN_KEYS_OF[family] || []).every((k) => c.worn && c.worn[k]);
+    const tag = family ? GEAR_COPY.family[family] + (swap ? GEAR_COPY.swap : "") : "";
+    const use = family ? null : gearUseCell(state, it);
+    const useRef = use ? i : null;
+    const base = it.kind === "armor" ? bagArmorText(it) : (it.txt ?? "");
+    const usable = usableBy(it, c);
+    const desc = usable ? `${base} ${usable}` : base;
+    return { i, name: it.n, desc, family, tag, use, useRef };
+  });
+}
+
+/**
+ * gearConsumablesModel(state) — Phase 62 (GSCR-06): the CONSUMABLES block.
+ * Row 0 is HEALING POTION, always shown as `×c.potions`, `enabled` exactly
+ * the combat ITEMS submenu's own potion-row rule (`(c.potions||0) > 0 &&
+ * c.wp < c.maxWP`) — the SAME predicate, so a Gear tap can never waste a
+ * potion the combat menu would have refused (GSCR-06 prohibition). Then one
+ * row per buff-potion NAME (`kind: "potion"` items in `c.items`, grouped, in
+ * first-appearance order), always enabled — the engine's own refusal line
+ * explains any tap on the rail. Then SCROLLS when `c.scrolls > 0`, `enabled`
+ * === `canRead(state)`, its `reason` the engine's OWN
+ * `LINE_FOR.scrollRefused` text (mirrors `engine/magic.js#readScroll`'s own
+ * pilfer/noRunes ternary). `heldText` counts potions + buff items + scrolls.
+ * Pure, null-safe.
+ */
+export function gearConsumablesModel(state) {
+  const c = (state && state.c) || {};
+  const qtyText = (n) => GEAR_COPY.qty.replace("{n}", n);
+
+  const heal = {
+    key: "heal",
+    name: GEAR_COPY.healingPotion,
+    qty: c.potions || 0,
+    qtyText: qtyText(c.potions || 0),
+    desc: GEAR_COPY.healingDesc,
+    verb: GEAR_COPY.use.use,
+    enabled: (c.potions || 0) > 0 && c.wp < c.maxWP,
+    reason: "",
+    dispatch: { type: "drinkPotion" },
+  };
+  const rows = [heal];
+
+  const buffGroups = [];
+  const buffIndexOf = new Map();
+  const items = c.items || [];
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (!it || it.kind !== "potion") continue;
+    if (!buffIndexOf.has(it.n)) {
+      buffIndexOf.set(it.n, buffGroups.length);
+      buffGroups.push({ name: it.n, count: 0, firstIndex: i, firstTxt: it.txt ?? "" });
+    }
+    buffGroups[buffIndexOf.get(it.n)].count++;
+  }
+  for (const g of buffGroups) {
+    rows.push({
+      key: `potion:${g.name}`,
+      name: g.name,
+      qty: g.count,
+      qtyText: qtyText(g.count),
+      desc: g.firstTxt,
+      verb: GEAR_COPY.use.use,
+      enabled: true,
+      reason: "",
+      dispatch: { type: "useItem", i: g.firstIndex },
+    });
+  }
+
+  if (c.scrolls > 0) {
+    const readable = canRead(state);
+    // Mirrors engine/magic.js#readScroll's own pilfer/noRunes ternary — the
+    // reason text is the engine's OWN refusal line, never restated here.
+    const reason = readable ? "" : LINE_FOR.scrollRefused({ reason: c.sub === "Pilfer" ? "pilfer" : "noRunes" }).text;
+    rows.push({
+      key: "scroll",
+      name: GEAR_COPY.scrolls,
+      qty: c.scrolls,
+      qtyText: qtyText(c.scrolls),
+      desc: GEAR_COPY.scrollDesc,
+      verb: GEAR_COPY.use.read,
+      enabled: readable,
+      reason,
+      dispatch: { type: "readScroll" },
+    });
+  }
+
+  const buffCount = buffGroups.reduce((sum, g) => sum + g.count, 0);
+  const held = (c.potions || 0) + buffCount + (c.scrolls || 0);
+  return { held, heldText: GEAR_COPY.held.replace("{n}", held), rows };
+}
+
+/**
+ * gearKitRows(state) — Phase 62 (GSCR-06): the ALSO ON YOU block's rows, in
+ * this fixed order — Rations, Spell charges (Magic User only), every
+ * running effect the old `#s-kit` list showed (Shield ward, Strength,
+ * Regeneration, Mirror Self, Sense Presence, Sense Danger, Map the Floor),
+ * then Kills. Potions, Scrolls and Wilmst are gone — they now live in
+ * CONSUMABLES and the header. The conditions are copied verbatim from the
+ * retired `renderGearTab` kit block. Every `value` is a string. Pure,
+ * null-safe.
+ */
+export function gearKitRows(state) {
+  const c = (state && state.c) || {};
+  const rows = [];
+  rows.push({ label: GEAR_COPY.kit.rations, value: GEAR_COPY.kit.rationsValue.replace("{n}", c.rations || 0) });
+  if (c.cls === "Magic User") {
+    const max = maxCharges(c);
+    const k = max - (c.spellsUsed || 0);
+    rows.push({ label: GEAR_COPY.kit.spellCharges, value: GEAR_COPY.kit.spellChargesValue.replace("{k}", k).replace("{max}", max) });
+  }
+  if (c.ward) {
+    rows.push({ label: c.ward.name, value: GEAR_COPY.kit.wardValue.replace("{pool}", c.ward.pool).replace("{rounds}", c.ward.rounds) });
+  }
+  if (c.might) {
+    rows.push({ label: GEAR_COPY.kit.strength, value: GEAR_COPY.kit.strengthValue.replace("{n}", c.might) });
+  }
+  if (c.regen) {
+    rows.push({ label: GEAR_COPY.kit.regen, value: GEAR_COPY.kit.regenValue });
+  }
+  if (c.mirror > 0) {
+    rows.push({ label: GEAR_COPY.kit.mirror, value: GEAR_COPY.kit.mirrorValue.replace("{n}", c.mirror) });
+  }
+  if (c.senses) {
+    rows.push({ label: GEAR_COPY.kit.senses, value: GEAR_COPY.kit.sensesValue });
+  }
+  if (c.foresight) {
+    rows.push({ label: GEAR_COPY.kit.foresight, value: GEAR_COPY.kit.foresightValue });
+  }
+  const rev = c.timers && c.timers["spell:reveal"];
+  if (rev && rev.phase === "effect" && rev.left > 0) {
+    rows.push({ label: GEAR_COPY.kit.reveal, value: GEAR_COPY.kit.revealValue.replace("{n}", rev.left) });
+  }
+  rows.push({ label: GEAR_COPY.kit.kills, value: String(c.kills || 0) });
+  return rows;
 }
 
 // Phase 33 (UIF-01, CONTEXT Area 1) — the GEAR tab's inline two-tap Drop
