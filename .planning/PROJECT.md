@@ -72,8 +72,8 @@
 - ✓ **Spell rework** — v1.5 (utility useful, combat situational, Shield pool visible, timed map reveal, day-one damage spell for every wizard sub, scribed scrolls immediately castable)
 - ✓ **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
 - ✓ **Next tuning pass** — shipped as v1.7 (2026-09-22); the human curve verdict is deferred by the user to later plays, and the reach-20 miss (1.5 % vs 3–5 %) is recorded
-- [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.8.md` (30 of 31 open; the user runs them over their own play sessions), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → quick tasks
-- [ ] **Gear screen UX redo** — v1.9 (in progress; Phase 62 ✓ layout: slim AR + wilmst header, five fixed WORN rows with USE/ACTIVE/COOLING, bag meter + tagged cards, per-type consumables, ALSO ON YOU; the cross-screen agreement sweep proves Gear = ITEMS = loot = store. Phase 63 ✓ action sheet: WORN rows and BAG cards open one bottom sheet with engine-true greyed reasons, a tap-again DROP and the live combat lock, closing on CANCEL / backdrop / back, with a TalkBack dialog and reduced motion. Next: the Phase 64 device close), from the user's `design/Mazeworld Gear.dc.html` mock (design project fed8909e…). UX interaction and visual design only; its gear rules are ignored and the shipped rules stay canon (e.g. potions and scrolls ride free)
+- [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.9.md` (21 of 24 open), `docs/UAT-v1.8.md` (30 of 31 open; the user runs them over their own play sessions), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → quick tasks
+- ✓ **Gear screen UX redo** — v1.9 (Phases 62–63): slim AR/WILMST header, five fixed WORN rows, bag meter + tagged cards, per-type consumables, ALSO ON YOU, and one bottom action sheet for every equip/swap/unequip/use/drop (engine-true reasons, combat greying, back/TalkBack/reduced motion). Device batch `docs/UAT-v1.9.md`: 3/24 walked
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
 
@@ -86,7 +86,7 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v1.9 The Gear Screen
+## Last Milestone: v1.9 The Gear Screen (code-complete 2026-09-23; archived 2026-09-23; Play 1.9.0 / vc8 built for closed testing; device UAT 3/24 walked)
 
 **Goal:** Rebuild the Gear tab to the user's "Mazeworld Gear" mock: a WORN slot list, a BAG with a capacity meter, a CONSUMABLES block, and one bottom action sheet for every equip / swap / unequip / use / drop. Close the two gear-rule holes the device rounds found (free re-arming mid-fight, and store purchases that vanish).
 
@@ -97,6 +97,8 @@
 - **A store purchase never loses the item (engine)** — `buyFrom` settles the outcome before charging. A legal item is bought and equipped or bagged by choice, never charged and then rejected as "not an upgrade". The upgrade line compares like with like and is advice, not a gate. Store fixtures that move are measured, declared and regenerated.
 
 **Key context:** The mock is the UX and visual spec only (the same stance as the v1.4 combat and map imports). Where it conflicts with the standing UI rulings or the shipped gear rules, the rulings and rules win. The Gear tab lives in `src/browser/gearTab.js` (the Phase 47 carve). Its view models (`itemRowState`, `emptySlotRows`, `bagUsage`, `GEAR_COPY`) are shared with the ITEMS combat submenu, the loot screen and the store, so shared readouts stay single-sourced. The current inline two-tap Drop confirm and the swap confirm give way to the sheet. The two engine changes follow the Engine Gate: the engine stays pure and deterministic, `test/parity/prototype-master.js.txt` is never edited, and every moved fixture is declared, following the greenfield ruling (no dual paths, and the bot plays the new rules). Reduced motion applies to the sheet's rise and fade. No research pass: the mock, `docs/GEAR-SLOTS.md` and the two todos carry the file-level context.
+
+**Outcome:** Phases 61–64 all passed, with 15/16 requirements complete and GSCR-12 partial. The engine refuses gear changes mid-fight (`gearRefused`, zero fixtures moved). Store purchases always deliver: refusals happen before payment, a not-better buy goes to the bag, and exactly one fixture was declared (economy). The upgrade line explains itself ("d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing · not an upgrade"). STORE-03 was reworded after the discuss found the verdict true. The Gear tab was rebuilt to the mock with a slim header (GSCR-01 reworded), five fixed WORN rows, a bag meter, consumables, and one bottom action sheet with engine-true greyed reasons, live combat greying, and back/TalkBack/reduced-motion support. Tests went from 3,905 to 4,197. The v1.9 debug APK went onto the Pixel 7 over wireless adb (re-paired this session); A1–A3 passed and 21 checks are deferred to play sessions. **Milestone closed 2026-09-23 as an override closeout.**
 
 ## Last Milestone: v1.8 Sound, Motion & Set Dressing (code-complete 2026-09-22; archived 2026-09-22; device UAT spread over the user's play sessions)
 
@@ -262,6 +264,10 @@
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
+## Current State (2026-09-23, v1.9 The Gear Screen closed; next milestone not yet chosen)
+
+**Code-complete, device UAT spread over play sessions:** v1.9 "The Gear Screen" (Phases 61–64) rebuilt the Gear tab to the user's mock and closed two gear-rule holes: no re-arming mid-fight, and store buys that vanished. The engine changed only in Phase 61, with zero new rng draws and one declared fixture. Play 1.9.0 / versionCode 8 is built and tagged `v1.9.0-play8` for closed testing (the user uploads it by hand). Open device batches: UAT-v1.9 (21), v1.8 (30), v1.7 (25 + DR bar), v1.6 (26), v1.5 (140). New todos: Sense Presence initiative / dark penalties, and the text-size setting missing every `--mw-font-*` token.
+
 ## Current State (2026-09-22, v1.8 Sound, Motion & Set Dressing closed; next: Gear screen UX redo)
 
 **Code-complete, device UAT spread over play sessions:** v1.8 "Sound, Motion & Set Dressing" (Phases 56–60). The dungeon now has sound (30 clips, family cries, and a Sound Off that really is off) and motion (camera glide, panel motion, a readable combat beat, typed text, reduced-motion paths throughout). The HUD is stacked bands with a ☰ menu, and the rail overlays the map. An animated party sprite and seeded ambient props complete it. It was presentation-only: the engine is untouched since v1.7. On Play internal testing the last upload is 1.5.0 / versionCode 6. A 1.8.0 / versionCode 7 AAB is next via `npm run play:release`.
@@ -369,4 +375,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-23 — v1.9 Phases 61–63 complete; Phase 64 Device Close & UAT Batch next*
+*Last updated: 2026-09-23 — v1.9 The Gear Screen closed (override closeout, archived + tagged); next milestone not yet chosen*

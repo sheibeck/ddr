@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: The Gear Screen
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
-status: planning
+status: Awaiting next milestone
 stopped_at: "v1.9 roadmap created 2026-09-23 (Phases 61–64: 61 Gear Rules & Store Purchase Fix (engine) → 62 Gear Tab Layout Rebuild → 63 Action Sheet, Combat Lock & Accessibility → 64 Device Close & UAT Batch; 16/16 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-discuss-phase 61 (STORE-02's buy-and-bag vs. refuse-up-front choice is the open decision), then /gsd-plan-phase 61."
-last_updated: "2026-09-23T17:15:27.581Z"
+last_updated: "2026-09-23T17:18:31.156Z"
 last_activity: 2026-09-23
-last_activity_desc: Phase 64 complete, transitioned to Phase 999.1
+last_activity_desc: Milestone v1.9 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 14
   completed_plans: 14
   percent: 100
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.8 closed and tagged; next m
 
 ## Current Position
 
-Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-23 — Phase 64 complete, transitioned to Phase 999.1
+Phase: Milestone v1.9 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-23 — Milestone v1.9 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -129,6 +129,17 @@ detail; the backlog phases are the index.
 
 ## Deferred Items
 
+Items acknowledged and deferred at milestone close on 2026-09-23 (v1.9 override closeout: 4/4 phases `passed`, 15/16 requirements plus GSCR-12 partial; audit `tech_debt` with zero blockers; the user said "close out the milestone"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | docs/UAT-v1.9.md: 21 of 24 open (A1–A3 passed in-session on the Pixel 7), plus UAT-v1.8/v1.7/v1.6/v1.5 | the user confirms over their play sessions; GSCR-12 recorded Partial |
+| debug | trap-death-21hp-oracle-minus1 | awaiting_human_verify (unchanged since v1.8) |
+| todo | 18 pending, including the 2 new ones: Sense Presence initiative / dark penalties, and the text-size setting missing every --mw-font-* token | .planning/todos/pending/ |
+| follow-up | renderCarriedList gearRow branch + drop/swap-confirm CSS now caller-less; .gitattributes eol=lf pin; the combat lock's extra loot/find verbs (reversible) | quick tasks |
+| quick_task | rules-text-audit-pass (20260909), 260908-kkq-rename-product-… | v1.0-era stubs, re-acknowledged |
+| seed | SEED-001 leaderboards & share | dormant (post-launch) |
+
 Items acknowledged and deferred at milestone close on 2026-09-22 (v1.8 verified closeout: 5/5 phases `passed`, 26/26 requirements, audit `tech_debt` with zero blockers; the user said "Let's close down the milestone"):
 
 | Category | Item | Status |
@@ -196,7 +207,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- /gsd-discuss-phase 61 (or /gsd-plan-phase 61 directly — no research flagged), then continue through Phases 62–64 in order
+- Start the next milestone with /gsd-new-milestone
 
 ## Performance Metrics
 

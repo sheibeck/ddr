@@ -1,10 +1,42 @@
 # Milestones
 
+## v1.9 The Gear Screen (Code-complete: 2026-09-23; Play 1.9.0 / vc8 built for closed testing; device UAT 3/24 walked)
+
+**Closeout type:** override closeout. 15/16 requirements are complete. GSCR-12 (the Pixel 7 batch) is partial: A1–A3 passed in-session over wireless adb, and the other 21 checks are deferred to the user's play sessions (`docs/UAT-v1.9.md`). 4/4 phases `passed`; the audit is `tech_debt` with zero blockers. Known verification overrides: 1 (Phase 64 criteria 1–3 checklisted, not yet walked; see STATE.md Deferred Items).
+**Phases completed:** 4 phases, 14 plans, 28 tasks. **Timeline:** 2026-09-23 (one autonomous run). **Tests:** 3,905 → 4,197 green. **Engine Gate:** `engine/` changed in three files (`items.js`, `economy.js`, `derived.js`, all Phase 61) with zero new rng draws. `content/` and `prototype-master.js.txt` are untouched. Exactly one parity fixture moved (economy), declared.
+
+### Known Gaps
+- **GSCR-12:** the device batch covering every sheet path, a full bag, staff charges, cooldowns, the combat lock and reduced motion. 3 of 24 checks walked; the rest are deferred to play sessions.
+
+**Ratified during the run:**
+- STORE-03 was reworded: the "not an upgrade" verdict is true (the Spiked Staff is `need: -1`, and Magic User kits carry prof 0), so the line now explains itself rather than changing the math.
+- GSCR-01 was reworded: a slim ARMOR RATING / WILMST header, because the global HUD already names the hero.
+- The combat lock also covers the loot/find take verbs (planner decision, reversible).
+- Two tests were made CRLF-tolerant after merges came back with CRLF endings on this Windows checkout.
+
+**Key accomplishments:**
+
+- Engine-level combat gear lock: equipItem/unequipSlot/takeFind/takeLoot/takeAllLoot refuse with one `gearRefused {reason:"combat"}` event while a fight is up, proven by a property test over every ACTION_TYPES entry, with zero moved parity fixtures.
+- The one hit-math verdict is unchanged; `gearCompareParts`/`upgradeWhyText` now build the explanation from the SAME derived helpers, and the loot screen + find card show it — the Spiked Staff case reads exactly "d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing · not an upgrade".
+- buyFrom now settles gold/legality/room BEFORE any mutation (`storeBuyRefusal`); a legal not-better weapon/armor/premium buy is charged and bagged (`purchaseBagged { item, why }`) instead of charged and silently rejected, an upgrade still auto-equips and now names the traded-in piece, and exactly one parity fixture (the economy script's Axe) moves — measured, declared, and pinned by a standing guard.
+- Every store stock row now reads one new view model, `storeRowState(c, line)`, built directly on the engine's own `storeBuyRefusal` (Plan 03) and `lootCompare` (Plan 02) — a row disables exactly when the engine would refuse, names the reason on the row (never a post-tap message), and shows the explained upgrade-or-not line as advice that never disables BUY; the fix also surfaced and closed a real pre-existing gap where a bag-full lockpicks/tool row looked clickable even though `buyFrom` already refused it.
+- Eight pure, DOM-free view models (header, five-row WORN, USE cell, bag meter, bag cards, CONSUMABLES, ALSO ON YOU) built entirely on the existing shared rules — no snapshot moves, `npm test` green at 4047/4054 with the 7 remaining failures reproduced as pre-existing environment noise on the untouched base commit.
+- #screen-gear rebuilt to a ten-id, five-section skeleton (header/WORN/BAG/CONSUMABLES/ALSO ON YOU) wired to the Plan 01 view models via createElement/textContent only, with the three gear snapshot fixtures regenerated and every retired two-panel source pin migrated across 9 test files — full suite 4076/4083 (7 documented pre-existing environment-noise failures), build:www and boot:check both green.
+- A 14-test agreement sweep (7 states, 17 rendered USE-cell/item pairs, 5 named Edge GSCR-11 truths) plus a comment-stripped no-fork source guard proves the Gear tab, the ITEMS combat submenu, the loot drop shelf and the store can never disagree — docs caught up to the rebuilt tab and GSCR-11 closed; the phase closes at npm test 4090/4097 (7 documented pre-existing failures), build:www and boot:check both green, engine/content/test-parity byte-identical to the wave's base commit.
+- Pure `gearSheetModel(state, target)` + frozen `GEAR_SHEET_COPY` deciding every equip/swap/unequip/use/drop action, its engine-sourced greyed reason, and its exact dispatched engine action, for both a WORN slot and a BAG card.
+- `renderGearSheet(host, state, target, deps)` — turns Plan 01's `gearSheetModel` into the sheet's DOM: one real accessible `<button>` per action, greyed rows that explain and never dispatch, DROP's tap-again confirm, and a close-then-dispatch order proven for every action shape.
+- itemDropped/itemUnequipped moved from ORACLE_ONLY to LINE_FOR so DROP/UNEQUIP/DISCARD reach the rail in voice, plus a 117-dispatch sweep proving `gearSheetModel`'s every greyed reason and every enabled outcome agrees exactly with the real engine, GRULE-02's after-the-fight release included.
+- Mounts the GEAR action sheet in the shell on the existing camp-sheet pattern — `#mw-gear-sheet` markup/CSS, `openGearSheet`/`refreshGearSheet`/`closeGearSheet`, a `paint()` re-render that greys the sheet in place when a fight starts, scrim/CANCEL/back-button close paths, the `window.__mzGearSheet` bridge, and two new declared DOM snapshots.
+- WORN rows and BAG cards now open the bottom action sheet as accessible openers; the Phase 62 interim in-row Unequip/Bag-full block and per-card harvest are deleted; tests migrated; thief.gear/mu.gear regenerated and thief.gear-confirms retired; docs and REQUIREMENTS.md close out GSCR-07/08/09/10 and GRULE-02.
+
+---
+
 ## v1.8 Sound, Motion & Set Dressing (Code-complete: 2026-09-22; device UAT spread over the user's play sessions)
 
 **Closeout type:** verified closeout. 26/26 requirements complete, 5/5 phases `passed`, audit `tech_debt` with zero blockers. The run was autonomous under the deferred-UAT protocol. The one Pixel 7 session was Phase 60, where 56-3 (airplane-mode first launch) passed. The user took the other 30 checks into their own play sessions: *"Generally everything looks good. I'm not going to do in depth uat right now. I'll uat over playing several sessions and report back."* Open items were acknowledged in STATE.md Deferred Items.
 **Phases completed:** 5 phases, 24 plans, 71 tasks. **Timeline:** 2026-09-22 (146 commits since `v1.7`). **Tests:** 3,479 → 3,905 green. **Engine Gate:** `engine/`, `content/` and `test/parity/` are byte-identical to `v1.7` across the whole milestone; parity master `a1f4d0dc…` untouched; `package.json` untouched. This was a presentation-only milestone. **Shell:** `mazeworld.html` 5,596 → 6,847 lines, and `src/browser/` went from 26 to 36 modules.
 **Ratified during the run:**
+
 - Worktrees came back on (`worktree.baseRef: head`), and 58 and 59 ran their core-module waves in parallel.
 - The user's HUD mock (2026-09-22) retired the chip strip for a ☰ menu on the counters band. LAYOUT-04 and LAYOUT-05 were amended to match, keeping the shipped PNG icons and using the mock's icons only in the ☰ menu.
 - The Rations clip at text size L was accepted.
