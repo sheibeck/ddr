@@ -136,7 +136,9 @@ test("every declared divergence record across all fixtures is narrow and well-fo
 
 test("HEDGE-03: the holders declaring worn are exactly the scan's MOVED SET", () => {
   const scanOutput = fs.readFileSync(SCAN_OUTPUT_PATH, "utf8");
-  const movedSetLine = scanOutput.split("\n").find((line) => /^MOVED SET \(\d+\): /.test(line));
+  // CRLF-tolerant: a Windows checkout (core.autocrlf=true, no .gitattributes)
+  // writes this file back with \r\n, which the `$`-anchored regex below rejects.
+  const movedSetLine = scanOutput.split(/\r?\n/).find((line) => /^MOVED SET \(\d+\): /.test(line));
   assert.ok(movedSetLine, "tools/worn-fixture-scan-output.txt must carry a MOVED SET line");
 
   const match = movedSetLine.match(/^MOVED SET \((\d+)\): (.*)$/);
@@ -158,7 +160,7 @@ test("HEDGE-03: the holders declaring worn are exactly the scan's MOVED SET", ()
 
 test("INIT-01: the holders declaring Phase 51 are exactly the initiative scan's MOVED SET", () => {
   const scanOutput = fs.readFileSync(INITIATIVE_SCAN_OUTPUT_PATH, "utf8");
-  const movedSetLine = scanOutput.split("\n").find((line) => /^MOVED SET \(\d+\): /.test(line));
+  const movedSetLine = scanOutput.split(/\r?\n/).find((line) => /^MOVED SET \(\d+\): /.test(line));
   assert.ok(movedSetLine, "tools/initiative-fixture-scan-output.txt must carry a MOVED SET line");
 
   const match = movedSetLine.match(/^MOVED SET \((\d+)\): (.*)$/);
