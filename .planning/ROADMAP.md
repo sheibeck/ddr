@@ -52,8 +52,8 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 Plans:
 **Wave 1**
 
-- [ ] 61-01-PLAN.md — Combat gear lock: `gearRefused` gate in equipItem/unequipSlot (+ loot/find take verbs), narration, every-action property test, measured zero fixture moves (wave 1)
-- [ ] 61-02-PLAN.md — Upgrade line explains itself: `gearCompareParts` + `upgradeWhy.js`, lootCompare/loot screen/find card show dice · to-hit · per-swing · lost proficiency (wave 1)
+- [x] 61-01-PLAN.md — Combat gear lock: `gearRefused` gate in equipItem/unequipSlot (+ loot/find take verbs), narration, every-action property test, measured zero fixture moves (wave 1)
+- [x] 61-02-PLAN.md — Upgrade line explains itself: `gearCompareParts` + `upgradeWhy.js`, lootCompare/loot screen/find card show dice · to-hit · per-swing · lost proficiency (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -259,7 +259,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 61. Gear Rules & Store Purchase Fix | v1.9 | 0/4 | Planned | - |
+| 61. Gear Rules & Store Purchase Fix | v1.9 | 2/4 | In Progress|  |
 | 62. Gear Tab Layout Rebuild | v1.9 | 0/TBD | Not started | - |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
