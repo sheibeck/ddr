@@ -115,7 +115,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 63-01-PLAN.md — Sheet view model + copy: `gearSheetModel(state, target)` / `GEAR_SHEET_COPY` in `src/browser/gearSheet.js` (header, ordered actions, combat/bag-full/illegal reasons from the engine's own lines, exact engine runs); pure and unit-tested (wave 1)
+- [x] 63-01-PLAN.md — Sheet view model + copy: `gearSheetModel(state, target)` / `GEAR_SHEET_COPY` in `src/browser/gearSheet.js` (header, ordered actions, combat/bag-full/illegal reasons from the engine's own lines, exact engine runs); pure and unit-tested (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -129,6 +129,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [ ] 63-05-PLAN.md — WORN rows / BAG cards open the sheet (TalkBack opener semantics, USE stays direct), interim in-row actions removed, test migrations, declared Gear snapshot regeneration, docs, requirements, phase gates (wave 4)
+
 **Research**: none — the mock's sheet layout and `docs/GEAR-SLOTS.md` carry the interaction contract
 **Discuss recommended**: optional. GRULE-02's open question was settled in the Phase 61 discuss: Shield (a spell) and the torch (a use) are not gear changes and stay live mid-fight.
 **UI hint**: yes
@@ -293,7 +294,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 |-------|-----------|----------------|--------|-----------|
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
-| 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
+| 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 1/5 | In Progress|  |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
 | 57. Map & HUD Layout Band | v1.8 | 5/5 | Complete    | 2026-09-22 |
