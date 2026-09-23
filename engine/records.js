@@ -82,17 +82,36 @@ function field(o, k) {
 
 /**
  * compareRuns(board, a, b) — negative when a ranks above b, 0 on a full tie.
- * deep/lean/combo/yard: floor desc, then steps asc.
+ * deep/combo/yard: floor desc, then steps asc.
+ * lean: squares per floor asc (cross-multiplied), then floor desc, then
+ * steps asc; an unplaced run (floor below 1) ranks last (Phase 66, D-09 —
+ * LEANEST is squares-per-floor, not a DEEPEST duplicate).
  * days: day desc, then floor desc. kills: kills desc, then floor desc.
  * purse: gold desc only. An unknown board id always returns 0.
  */
 export function compareRuns(board, a, b) {
   switch (board) {
     case "deep":
-    case "lean":
     case "combo":
     case "yard":
       return num(field(b, "floor")) - num(field(a, "floor")) || num(field(a, "steps")) - num(field(b, "steps"));
+    case "lean": {
+      const af = num(field(a, "floor"));
+      const bf = num(field(b, "floor"));
+      const as = num(field(a, "steps"));
+      const bs = num(field(b, "steps"));
+      const aPlaced = af >= 1;
+      const bPlaced = bf >= 1;
+      if (aPlaced !== bPlaced) return aPlaced ? -1 : 1;
+      if (aPlaced && bPlaced) {
+        // Cross-multiplied rate compare (as/af vs bs/bf) so no division or
+        // floating-point rounding ever decides the order — the 1/3 vs 2/6
+        // case must not tie by rounding.
+        const rate = as * bf - bs * af;
+        if (rate !== 0) return rate;
+      }
+      return bf - af || as - bs;
+    }
     case "days":
       return num(field(b, "day")) - num(field(a, "day")) || num(field(b, "floor")) - num(field(a, "floor"));
     case "kills":
@@ -102,6 +121,19 @@ export function compareRuns(board, a, b) {
     default:
       return 0;
   }
+}
+
+/**
+ * leanRate(run) — the LEANEST metric (Phase 66, D-09): squares walked per
+ * floor descended (steps / floor), read by the panel's value bar and by
+ * Phase 68's submission. Number.POSITIVE_INFINITY when the run has no valid
+ * floor (below 1), so an unplaced run never divides by zero. boardValue
+ * ("lean") stays the floor — the row still displays "floor · sq".
+ */
+export function leanRate(run) {
+  const floor = num(field(run, "floor"));
+  const steps = num(field(run, "steps"));
+  return floor >= 1 ? steps / floor : Number.POSITIVE_INFINITY;
 }
 
 /** boardValue(board, run) — the headline number a board's row displays. */
@@ -175,6 +207,12 @@ export function emptyBests() {
 /**
  * sanitizeBests(raw) — never throws: coerces any input into a valid, pruned
  * BestsRecord, dropping every entry that fails its own shape check.
+ *
+ * Phase 66 (D-09): re-ranks every stored list by its board's current
+ * comparator, so an older record whose LEANEST list was stored in the
+ * retired depth order loads re-ranked; a list already in order is unchanged
+ * (Array.prototype.sort is stable), so this is idempotent and needs no
+ * record version bump.
  */
 export function sanitizeBests(raw) {
   try {
@@ -203,6 +241,7 @@ export function sanitizeBests(raw) {
             filtered.push(hash);
           }
         }
+        filtered.sort((x, y) => compareRuns(board, runs[x], runs[y]));
         boards[board] = filtered.slice(0, BOARD_TOP_N);
       }
     }
@@ -292,12 +331,38 @@ export function updateBests(record, summary) {
 }
 
 /**
+ * normalizeStone(stone) — Phase 66 (D-09): the legacy-stone normalization
+ * backfillBests folds in, exported so the graveyard read seam can hash a
+ * stone the same way its backfilled bests entry was hashed (letting the
+ * panel dedupe the graveyard against the bests record). Returns null unless
+ * `stone` is a plain object with a finite numeric floor. Otherwise returns a
+ * shallow copy: when the copy has no numeric season, it is set to season 0
+ * with no seed/acts (absent, not invented) and a freshly computed hash; when
+ * it has a numeric season but no valid hash, only the hash is (re)computed.
+ * A stone that already carries a numeric season AND a valid hash is returned
+ * unchanged (still a shallow copy). Never mutates its input.
+ */
+export function normalizeStone(stone) {
+  if (!isPlainObject(stone) || !Number.isFinite(stone.floor)) return null;
+
+  const s = { ...stone };
+  if (typeof s.season !== "number") {
+    s.season = 0;
+    delete s.seed;
+    delete s.acts;
+    s.hash = runHash(s);
+  } else if (!isValidHash(s.hash)) {
+    s.hash = runHash(s);
+  }
+  return s;
+}
+
+/**
  * backfillBests(graves) — seeds a BestsRecord from legacy graveyard stones
  * (newest-first, per the adapter's storage shape). Folds oldest-first so a
- * tie on every ordering key keeps the OLDER stone ranked first. A stone with
- * no numeric season is normalized to season 0 with no seed/acts (absent, not
- * invented) and a freshly computed hash; a stone that already carries a
- * numeric season and a valid hash keeps both.
+ * tie on every ordering key keeps the OLDER stone ranked first. Each stone is
+ * normalized through normalizeStone (skipping any it returns null for), so
+ * backfill behaviour is byte-identical to before that helper existed.
  */
 export function backfillBests(graves) {
   if (!Array.isArray(graves)) return emptyBests();
@@ -306,17 +371,8 @@ export function backfillBests(graves) {
   const oldestFirst = graves.slice().reverse();
 
   for (const stone of oldestFirst) {
-    if (!isPlainObject(stone) || !Number.isFinite(stone.floor)) continue;
-
-    const s = { ...stone };
-    if (typeof s.season !== "number") {
-      s.season = 0;
-      delete s.seed;
-      delete s.acts;
-      s.hash = runHash(s);
-    } else if (!isValidHash(s.hash)) {
-      s.hash = runHash(s);
-    }
+    const s = normalizeStone(stone);
+    if (!s) continue;
 
     rec = updateBests(rec, s).record;
   }
