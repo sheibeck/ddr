@@ -181,8 +181,9 @@ export const ORACLE_ONLY = new Set([
   "hazardChoice", // Phase 39 (GEAR-05): the pre-roll USE LADDER/USE ROPE decision card IS the UI, like findOffered
   "findTaken", // the dedicated Take it/Leave it prompt IS the UI
   "findLeft", // the dedicated Take it/Leave it prompt IS the UI
-  "itemDropped", // the inventory screen's own drop action is the UI signal
-  "itemUnequipped", // the inventory screen's own unequip action is the UI signal
+  // Phase 63 (GSCR-09): itemDropped/itemUnequipped moved to LINE_FOR — the
+  // Gear tab's action sheet closes on the tap, so the row change alone is
+  // no longer the signal; the rail is the one feedback surface.
   "joinerMet", // the dedicated Joiner recruitment prompt IS the UI
   "faerieMet", // the dedicated faerie encounter prompt IS the UI; faerieBoon/faerieBane narrate the real outcome
   "grimoireSold", // the sell-flow's own confirmation is the UI signal
@@ -1696,6 +1697,13 @@ export const LINE_FOR = {
     priority: PRIORITY.other,
   }),
   equipRejected: (e) => block(equipRejectText(e)),
+  // Phase 63 (GSCR-09): the sheet's DROP/UNEQUIP/DISCARD outcomes reach the
+  // rail in voice, mirroring itemEquipped's item-name-first, one-line shape.
+  itemDropped: (e) => ({ text: `Dropped: ${e?.item?.n ?? "something"}. Gone for good.`, tone: "beat", priority: PRIORITY.other }),
+  itemUnequipped: (e) =>
+    e?.destroyed
+      ? { text: `${e?.item?.n ?? "It"} comes off in pieces. Nothing worth bagging.`, tone: "beat", priority: PRIORITY.other }
+      : { text: `Unequipped: ${e?.item?.n ?? "something"}${e?.slot ? ` (${slotWord(e.slot)})` : ""}. Into the bag it goes.`, tone: "beat", priority: PRIORITY.other },
   // Phase 61 (GRULE-01): the combat gear lock's rail/fight-log line — the
   // fold's PRIORITY.block already renders it as a dull refusal entry
   // (fightLog.js#fightLogLinesFor maps PRIORITY.block -> tone "dull").
