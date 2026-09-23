@@ -206,7 +206,9 @@ test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp
   assert.match(HTML, /^\.mw-hud-counters\{flex:1;min-width:0;display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap\}$/m);
   assert.equal((HTML.match(/^\.mw-hud-floor b\{color:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-rations\.warn b\{color:#e05a48\}$/gm) || []).length, 1);
-  assert.match(HTML, /\.mw-hud-item b\{[^}]*display:inline-block;text-align:right;min-width:5ch;[^}]*\}/);
+  // Device round 2026-09-22 (user): the reserved growth room sits AFTER the
+  // number — right-aligned, Depth's "1" read as belonging to DAY.
+  assert.match(HTML, /\.mw-hud-item b\{[^}]*display:inline-block;text-align:left;min-width:5ch;[^}]*\}/);
   // Phase 57 (Plan 05), discovery D: only Squares (#m-steps, via .mw-hud-item b
   // above) keeps the 5ch slot; the other three counters get narrower,
   // id-scoped slots so band 2 still fits a Pixel 7 with the ☰ button.
