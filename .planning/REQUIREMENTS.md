@@ -32,7 +32,7 @@
 ### Store (engine — declared fixture moves)
 
 - [x] **STORE-02**: A store purchase never charges for an item it then fails to deliver. `buyFrom` settles the outcome before gold moves. A legal weapon, armor or premium item is bought and then equipped or bagged by choice. A real refusal (bag full, class cannot use it) happens before payment, with the reason on the row.
-- [ ] **STORE-03**: The store, loot and find "upgrade / not an upgrade" line keeps the one hit-math verdict (`weaponUpgradeDelta` / `expectedStrike`) and explains it: dice, to-hit, per-swing numbers, and a lost kit proficiency when there is one. It shows on store weapon and armor rows as well as the loot screen and find card, and it is advice that never disables BUY. A Magic User holding a Quarter Staff can buy a Spiked Staff: gold is charged, the staff lands in the bag, and the line says why it isn't an upgrade (d8 vs d6, −1 to hit). Unit test. Store fixtures that move are measured, declared and regenerated. *(Reworded 2026-09-23 in the Phase 61 discuss: the todo's "proficiency" diagnosis was wrong; Magic User kits carry prof 0, and the Spiked Staff's `need: -1` makes the verdict true.)*
+- [x] **STORE-03**: The store, loot and find "upgrade / not an upgrade" line keeps the one hit-math verdict (`weaponUpgradeDelta` / `expectedStrike`) and explains it: dice, to-hit, per-swing numbers, and a lost kit proficiency when there is one. It shows on store weapon and armor rows as well as the loot screen and find card, and it is advice that never disables BUY. A Magic User holding a Quarter Staff can buy a Spiked Staff: gold is charged, the staff lands in the bag, and the line says why it isn't an upgrade (d8 vs d6, −1 to hit). Unit test. Store fixtures that move are measured, declared and regenerated. *(Reworded 2026-09-23 in the Phase 61 discuss: the todo's "proficiency" diagnosis was wrong; Magic User kits carry prof 0, and the Spiked Staff's `need: -1` makes the verdict true.)*
 
 ## Future Requirements
 
@@ -69,7 +69,7 @@
 | GRULE-01 | Phase 61 | Complete |
 | GRULE-02 | Phase 63 | Pending |
 | STORE-02 | Phase 61 | Complete |
-| STORE-03 | Phase 61 | Pending |
+| STORE-03 | Phase 61 | Complete |
 
 **Coverage:** 16 requirements, 16 mapped (Phases 61–64) ✓
 
