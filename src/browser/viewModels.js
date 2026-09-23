@@ -7,8 +7,9 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { WEAPONS, ARMORS, BAGS } from "../../content/index.js";
-import { armorSoak, takesBagSlot } from "../../engine/derived.js";
+import { armorSoak, takesBagSlot, gearCompareParts } from "../../engine/derived.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap } from "../../engine/items.js";
+import { upgradeWhyText, UPGRADE_WHY_COPY } from "./upgradeWhy.js";
 
 /**
  * armorDisplay(c) — Phase 28 (ARMOR-02/04): the ONE render-ready description
@@ -168,14 +169,17 @@ export function usableBy(it, c = null) {
 }
 
 /**
- * lootCompare(c, it) — Phase 29 (LOOT-03): the ONE compare-to-equipped
- * verdict for a loot/find item, mirroring armorDisplay's single-source
- * pattern — the verdict is takeItem's own weaponUpgradeDelta/
- * armorUpgradeDelta (engine/items.js), never a restated formula, so the
- * screen can never disagree with what the engine would actually do. Returns
- * a plain object `{ kind, legal, reason, delta, upgrade, equipNow, line,
- * sub }`; the shell joins `line`/`sub` itself (lootCompare never joins
- * them). Pure, no rng, no mutation.
+ * lootCompare(c, it) — Phase 29 (LOOT-03; Phase 61 STORE-03 additive `why`
+ * field): the ONE compare-to-equipped verdict for a loot/find item,
+ * mirroring armorDisplay's single-source pattern — the verdict is takeItem's
+ * own weaponUpgradeDelta/armorUpgradeDelta (engine/items.js), never a
+ * restated formula, so the screen can never disagree with what the engine
+ * would actually do. `why` (Phase 61) is the explanation of that verdict —
+ * `upgradeWhyText(gearCompareParts(c, it))`, built from the SAME derived
+ * helpers the verdict already read — advice only, it never disables BUY,
+ * TAKE or EQUIP. Returns a plain object `{ kind, legal, reason, delta,
+ * upgrade, equipNow, line, sub, why }`; the shell joins `line`/`sub` itself
+ * (lootCompare never joins them). Pure, no rng, no mutation.
  */
 export function lootCompare(c, it) {
   if (it.kind === "weapon") {
@@ -184,14 +188,13 @@ export function lootCompare(c, it) {
     const legal = reason === null;
     const upgrade = delta > 0;
     const equipNow = legal && upgrade;
+    const why = legal ? upgradeWhyText(gearCompareParts(c, it)) : null;
     const line = !legal
       ? `can't use (${refusalText(reason, WEAPONS[it.base]?.cls ?? "")})`
-      : upgrade
-        ? `+${delta.toFixed(1)} a swing`
-        : "not an upgrade";
+      : `${why}${UPGRADE_WHY_COPY.sep}${upgrade ? UPGRADE_WHY_COPY.upgrade : UPGRADE_WHY_COPY.notUpgrade}`;
     // Phase 43 (CLAR-02, additive field): the same "(usable by …)" suffix
     // the FIND card and store rows show, read from the ONE usableBy rule.
-    return { kind: "weapon", legal, reason, delta, upgrade, equipNow, line, sub: it.txt ?? "", usable: usableBy(it, c) };
+    return { kind: "weapon", legal, reason, delta, upgrade, equipNow, line, sub: it.txt ?? "", why, usable: usableBy(it, c) };
   }
 
   if (it.kind === "armor") {
@@ -200,26 +203,27 @@ export function lootCompare(c, it) {
     const legal = reason === null;
     const upgrade = delta > 0;
     const equipNow = legal && upgrade;
+    const why = legal ? upgradeWhyText(gearCompareParts(c, it)) : null;
     const line = !legal
       ? `can't use (${refusalText(reason, it.cls ?? "")})`
-      : `AR ${it.ar} vs your AR ${c.ar} · ${upgrade ? "upgrade" : "not an upgrade"}`;
+      : `${why}${UPGRADE_WHY_COPY.sep}${upgrade ? UPGRADE_WHY_COPY.upgrade : UPGRADE_WHY_COPY.notUpgrade}`;
     // The AR is already in `line` above — sub carries only the durability
     // pool (Phase 28's tolerant `left ?? wp` read for a fresh, never-worn drop).
     const left = it.left ?? it.wp;
     const sub = left > 0 ? `${left}/${it.wp} hp` : "destroyed";
     // Phase 43 (CLAR-02, additive field)
-    return { kind: "armor", legal, reason, delta, upgrade, equipNow, line, sub, usable: usableBy(it, c) };
+    return { kind: "armor", legal, reason, delta, upgrade, equipNow, line, sub, why, usable: usableBy(it, c) };
   }
 
   if (it.kind === "bag") {
     const line = `${BAGS[it.tier]?.slots ?? "?"} slots — you carry ${bagCap(c) === Infinity ? "no bag" : bagCap(c)}`;
     // sub is deliberately blank — it.txt would just repeat the slot count.
     // Phase 43 (CLAR-02, additive field): a bag is never class-restricted, so usable is always "".
-    return { kind: "bag", legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line, sub: "", usable: usableBy(it, c) };
+    return { kind: "bag", legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line, sub: "", why: null, usable: usableBy(it, c) };
   }
 
   // Phase 43 (CLAR-02, additive field): the fallthrough (jewel/cloak/potion/tool/etc) is never class-restricted.
-  return { kind: it.kind, legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line: it.txt ?? "", sub: "", usable: usableBy(it, c) };
+  return { kind: it.kind, legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line: it.txt ?? "", sub: "", why: null, usable: usableBy(it, c) };
 }
 
 /**

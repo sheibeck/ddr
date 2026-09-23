@@ -1018,6 +1018,20 @@ function weaponDiceMean(w) {
  * of Strength should not make every OTHER weapon look permanently better).
  * Pure, no rng.
  */
+/**
+ * noCritFor(c) — Phase 61 (STORE-03): the ONE "can this character ever
+ * crit" rule expectedStrike already applied inline — extracted verbatim
+ * (byte-identical arithmetic, same three clauses) so gearCompareParts below
+ * can read the SAME rule expectedStrike uses instead of restating it.
+ * `true` for a Guard/Soldier sub or a live `noCrit` effect (e.g. darkness);
+ * `false` otherwise. Does NOT read state.floor's in-fight darkness rule —
+ * that is engine/combat.js's own separate in-combat noCrit, untouched by
+ * this extraction. Pure, no rng.
+ */
+export function noCritFor(c) {
+  return c.sub === "Guard" || c.sub === "Soldier" || eff(c, "noCrit") > 0;
+}
+
 export function expectedStrike(c, base, bonus = 0, prof = 0) {
   const w = WEAPONS[base];
   if (!w) return 0;
@@ -1025,7 +1039,7 @@ export function expectedStrike(c, base, bonus = 0, prof = 0) {
   const need = Math.max(1, classNeed(c) + weaponNeedMod(base));
   const dieN = strikeDie(c);
   const hitP = Math.min(1, need / dieN);
-  const noCrit = c.sub === "Guard" || c.sub === "Soldier" || eff(c, "noCrit") > 0;
+  const noCrit = noCritFor(c);
   const critP = noCrit ? 0 : Math.min(hitP, w.crit / dieN);
   const avg = weaponDiceMean(w);
   let flat = c.level * c.level;
@@ -1037,6 +1051,64 @@ export function expectedStrike(c, base, bonus = 0, prof = 0) {
   flat += 2 * eff(c, "size");
   if (c.sub === "Guard" && c.level < 4) flat -= 4 - c.level;
   return (hitP + critP) * Math.max(1, flat + avg + bonus + prof);
+}
+
+/**
+ * gearCompareParts(c, it) — Phase 61 (STORE-03): plain-data PARTS for the
+ * "why is this an upgrade / not an upgrade" explanation, read from the SAME
+ * derived helpers weaponUpgradeDelta/armorUpgradeDelta (engine/items.js) use
+ * to compute the ONE verdict — this function never restates that
+ * arithmetic, it only exposes the terms that went into it so
+ * src/browser/upgradeWhy.js can format them. Pure, draws no rng, JSON-safe,
+ * never mutates `c`/`it`.
+ *
+ * Weapon (`it.kind === "weapon"` with a recognized `it.base`):
+ *   { kind: "weapon", got: {lab, need, crit, strike}, have: {lab, need, crit, strike}, lostProf }
+ *   - `got` is the candidate item at bonus 0/prof 0 (a store/loot item is
+ *     never pre-enchanted by a proficiency it hasn't earned).
+ *   - `have` is the currently-wielded weapon at c.magicWpn/c.prof — UNLESS
+ *     c.weapon is bare-handed (no WEAPONS entry, e.g. "Fists"), in which
+ *     case `have.lab`/`have.crit` are null (the formatter reads that as
+ *     "bare hands" and skips the crit term) while `have.strike` still comes
+ *     from the real expectedStrike call (0 for an unrecognized base).
+ *   - `lostProf` is c.prof when positive (a weapon switch always resets it
+ *     to 0 — engine/items.js#equipItem/takeItem), 0 otherwise.
+ *   - The two `strike` calls use exactly weaponUpgradeDelta's own argument
+ *     shapes: `expectedStrike(c, it.base, it.bonus || 0, 0)` for got,
+ *     `expectedStrike(c, c.weapon, c.magicWpn || 0, c.prof || 0)` for have.
+ *
+ * Armor (`it.kind === "armor"`): { kind: "armor", got: {ar: it.ar}, have: {ar: c.ar} }.
+ *
+ * Anything else — including an unrecognized weapon base — returns `null`.
+ */
+export function gearCompareParts(c, it) {
+  if (!it || typeof it !== "object") return null;
+  if (it.kind === "weapon") {
+    if (!WEAPONS[it.base]) return null;
+    const gotW = WEAPONS[it.base];
+    const noCrit = noCritFor(c);
+    const got = {
+      lab: gotW.lab + (it.bonus ? " +" + it.bonus : ""),
+      need: weaponNeedMod(it.base),
+      crit: noCrit ? 0 : gotW.crit || 1,
+      strike: expectedStrike(c, it.base, it.bonus || 0, 0),
+    };
+    const haveW = WEAPONS[c.weapon];
+    const have = haveW
+      ? {
+          lab: haveW.lab + (c.magicWpn ? " +" + c.magicWpn : ""),
+          need: weaponNeedMod(c.weapon),
+          crit: noCrit ? 0 : weaponCrit(c),
+          strike: expectedStrike(c, c.weapon, c.magicWpn || 0, c.prof || 0),
+        }
+      : { lab: null, need: 0, crit: null, strike: expectedStrike(c, c.weapon, c.magicWpn || 0, c.prof || 0) };
+    const lostProf = c.prof > 0 ? c.prof : 0;
+    return { kind: "weapon", got, have, lostProf };
+  }
+  if (it.kind === "armor") {
+    return { kind: "armor", got: { ar: it.ar }, have: { ar: c.ar } };
+  }
+  return null;
 }
 
 /**

@@ -25,6 +25,7 @@ import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { RAIL_COPY } from "../../src/browser/rail.js";
 import { USABLE_COPY } from "../../src/browser/viewModels.js";
+import { UPGRADE_WHY_COPY } from "../../src/browser/upgradeWhy.js";
 import { ITEM_STATE_COPY, GEAR_COPY } from "../../src/browser/gearTab.js";
 import { ABILITY_VIEW_COPY, RATIONS_COPY } from "../../src/browser/heroTab.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
@@ -128,7 +129,7 @@ function collectStringLeaves(obj, pathLabel = "") {
 
 test("Presentation COPY objects: every string leaf is free of a standalone wp/WP token", () => {
   const banks = {
-    RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY,
+    RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY, UPGRADE_WHY_COPY,
   };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {

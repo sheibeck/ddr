@@ -14,6 +14,8 @@ import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { WEAPONS } from "../../content/index.js";
 import { takeItem, canEquipWeapon } from "../../engine/items.js";
+import { gearCompareParts } from "../../engine/derived.js";
+import { upgradeWhyText } from "../../src/browser/upgradeWhy.js";
 
 function fixedChar(overrides = {}) {
   return {
@@ -42,7 +44,10 @@ test("lootCompare: a strictly-better weapon is an upgrade, equip-now", () => {
   assert.equal(cmp.delta, 0.5);
   assert.equal(cmp.upgrade, true);
   assert.equal(cmp.equipNow, true);
-  assert.equal(cmp.line, "+0.5 a swing");
+  // Phase 61 (STORE-03): the line now explains itself — measured live from
+  // gearCompareParts/upgradeWhyText, then pinned as a literal.
+  assert.equal(cmp.why, upgradeWhyText(gearCompareParts(c, it)));
+  assert.equal(cmp.line, "d10+2 +2 vs your d10+2 · 2.6 vs 2.1 a swing · upgrade");
   assert.equal(cmp.sub, it.txt);
   assert.equal(cmp.usable, "(usable by Fighters)"); // Phase 43 (CLAR-02): Broadsword is F-only
 });
@@ -53,7 +58,9 @@ test("lootCompare: a not-better weapon reads 'not an upgrade', no equip-now", ()
   const cmp = lootCompare(c, it);
   assert.equal(cmp.upgrade, false);
   assert.equal(cmp.equipNow, false);
-  assert.equal(cmp.line, "not an upgrade");
+  // Phase 61 (STORE-03)
+  assert.equal(cmp.why, upgradeWhyText(gearCompareParts(c, it)));
+  assert.equal(cmp.line, "d6/2 vs your d10+2 · +1 to hit · 0.9 vs 2.1 a swing · not an upgrade");
   assert.equal(cmp.usable, ""); // Phase 43 (CLAR-02): Dagger is FTM, unrestricted
 });
 
