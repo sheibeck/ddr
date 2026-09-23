@@ -2,13 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: The Gear Screen
-status: roadmapped
-last_updated: "2026-09-23T04:29:20.000Z"
+current_phase: 61
+current_phase_name: Gear Rules & Store Purchase Fix
+status: executing
+stopped_at: "v1.9 roadmap created 2026-09-23 (Phases 61–64: 61 Gear Rules & Store Purchase Fix (engine) → 62 Gear Tab Layout Rebuild → 63 Action Sheet, Combat Lock & Accessibility → 64 Device Close & UAT Batch; 16/16 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-discuss-phase 61 (STORE-02's buy-and-bag vs. refuse-up-front choice is the open decision), then /gsd-plan-phase 61."
+last_updated: "2026-09-23T05:15:45.637Z"
 last_activity: 2026-09-23
+last_activity_desc: Phase 61 execution started
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
+  total_plans: 4
   completed_plans: 0
   percent: 0
 ---
@@ -20,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-22 — v1.8 closed and tagged; next milestone: Gear screen UX redo; four Pixel 7 UAT batches still open: v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v1.9 The Gear Screen roadmapped (Phases 61–64: 61 Gear Rules & Store Purchase Fix (engine) → 62 Gear Tab Layout Rebuild → 63 Action Sheet, Combat Lock & Accessibility → 64 Device Close & UAT Batch). Next: `/gsd-discuss-phase 61`
+**Current focus:** Phase 61 — Gear Rules & Store Purchase Fix
 
 ## Current Position
 
-Phase: 61 (Gear Rules & Store Purchase Fix) — not yet started
-Plan: —
-Status: Roadmap created — ready to discuss/plan Phase 61
-Last activity: 2026-09-23 — v1.9 roadmap created (Phases 61–64)
+Phase: 61 (Gear Rules & Store Purchase Fix) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 61
+Last activity: 2026-09-23 — Phase 61 execution started
 
 ## Ground Truth (durable facts every session needs)
 
@@ -115,6 +119,7 @@ counter), **999.5** Combat screen & Oracle readability (submenu clipping/sort, f
 refusal), **999.6** Engine rules fixes (combat re-arm gate, store charge-then-refuse, Summoner school gate, Table-4 HP-dot
 compounding, wilmst cache), **999.7** Content, tooling & the open climb ruling. The todo files stay in `todos/pending/` as the
 detail; the backlog phases are the index.
+
 - 2026-09-23 — **Sense Presence should win initiative and lift the dark penalties** (user, device run: depth-8 Human Court Mage with senses up lost initiative 2 vs 17 and died): `resolveInitiative` only waives forced foe-first rules, then the d20s decide; `combatInDark` + no-crit-in-dark ignore senses. Fix: senses → you go first (foreseen branch, draw count unchanged), dark line/crit ban honour senses; no fixture carries senses, bot never casts it. Engine rule change — backlog 999.6 or a quick task between phases — `todos/pending/2026-09-23-sense-presence-should-win-initiative-and-lift-the-dark-penal.md`
 
 ### Roadmap Evolution
