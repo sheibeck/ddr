@@ -409,6 +409,119 @@ test("reduced-motion/beat: source anchor — settleAllMotion()'s body contains b
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+// ─── party (ANIM-02, Plan 59-04) ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+/** openNeighbor(g, px, py) — the first open (non-wall) 4-neighbour of
+ * (px,py), mirroring party-glide.test.js's own helper. */
+function openNeighbor(g, px, py) {
+  for (const [dx, dy] of [
+    [0, -1],
+    [0, 1],
+    [-1, 0],
+    [1, 0],
+  ]) {
+    const nx = px + dx;
+    const ny = py + dy;
+    if (ny < 0 || ny >= g.length || nx < 0 || nx >= g[0].length) continue;
+    if (!g[ny][nx].wall) return { x: nx, y: ny };
+  }
+  throw new Error("reduced-motion/party: no open 4-neighbour found");
+}
+
+/** buildPartyScenario({ reducedMotion, clock }) — a fresh sandbox, a real
+ * newRun(1) state, the viewport rect overridden, and cam anchored on the
+ * party (centerMap()) — mirrors party-glide.test.js's own buildScenario,
+ * kept local to this file per this file's own per-section convention. */
+function buildPartyScenario({ reducedMotion, clock = null } = {}) {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, reducedMotion, clock });
+  const vp = doc.document.getElementById("mw-maze-viewport");
+  vp.getBoundingClientRect = () => ({ ...RECT });
+  const sprite = doc.document.getElementById("mw-party-sprite");
+
+  const state = newRun(1);
+  sandbox.setState(state);
+  sandbox.context.centerMap();
+
+  return { sandbox, state, sprite, context: sandbox.context };
+}
+
+/** partyStep(scn) — exactly the sequence stepWith performs around its
+ * dispatch: read `from` BEFORE the state changes, move to an open
+ * 4-neighbour, setState the clone, then glideParty(from). */
+function partyStep(scn) {
+  const from = scn.context.partyShown();
+  const clone = structuredClone(scn.state);
+  const nb = openNeighbor(clone.floor.g, clone.floor.px, clone.floor.py);
+  clone.floor.px = nb.x;
+  clone.floor.py = nb.y;
+  scn.state = clone;
+  scn.sandbox.setState(clone);
+  scn.context.glideParty(from);
+}
+
+test("reduced-motion/party: with the default (reduced) sandbox, a step lands the marker on the new cell synchronously in the idle pose; clock.pending() is 0 when a clock is supplied", () => {
+  const clock = createFakeClock();
+  const scn = buildPartyScenario({ reducedMotion: true, clock });
+
+  partyStep(scn);
+
+  assert.equal(scn.sprite.dataset.pose, "idle", "reduced motion must land the marker in the idle pose in the same call");
+  assert.equal(scn.sprite.dataset.frame, undefined);
+  assert.equal(clock.pending(), 0, "reduced motion must never leave a run in flight");
+});
+
+test("reduced-motion/party: prefersReducedMotion is read LIVE — flipping the OS preference to reduced mid-session lands the very next step synchronously", () => {
+  const clock = createFakeClock();
+  const scn = buildPartyScenario({ reducedMotion: false, clock });
+
+  // First step: motion is ON — must still be gliding, not landed yet.
+  partyStep(scn);
+  assert.equal(scn.sprite.dataset.pose, "step", "sanity: motion is ON — the first step must still be gliding");
+  assert.notEqual(clock.pending(), 0);
+  clock.advance(300); // let the first glide land cleanly before the second step
+  assert.equal(scn.sprite.dataset.pose, "idle");
+
+  // Flip the stub's answer live — mirrors a real OS "Remove animations"
+  // toggle firing mid-session (mirrors the "pan" section's own live-flip
+  // test above). prefersReducedMotion(window) reads window.matchMedia FRESH
+  // on every call, so a plain reassignment is enough.
+  scn.context.window.matchMedia = (q) => ({
+    matches: q === REDUCED_MOTION_QUERY,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+
+  // Second step: reduced motion is now live — must land synchronously, no
+  // clock.advance() call between the trigger and this assertion.
+  partyStep(scn);
+  assert.equal(scn.sprite.dataset.pose, "idle", "the second step must land synchronously now that reduced motion is live");
+  assert.equal(scn.sprite.dataset.frame, undefined);
+  assert.equal(clock.pending(), 0);
+});
+
+test("reduced-motion/party: source anchors — stepWith's glide trigger is guarded by !jumped and the moved event, exactly once; the idle CSS freeze holds (exactly one base-opaque idle frame, k=1)", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
+  const stripped = stripHtml(raw);
+
+  const triggerLine = 'if (!jumped && glideFrom && events.some((e) => e.type === "moved")) window.mzGlideParty?.(glideFrom);';
+  const triggerCount = stripped.split(triggerLine).length - 1;
+  assert.equal(triggerCount, 1, "the glide trigger must be guarded by !jumped and the moved event, exactly once");
+
+  // Mirrors party-sprite-shell.test.js's own idle-freeze proof (test (4))
+  // rather than retyping a second regex — the CSS itself is untouched by
+  // this plan, only reused here to close the D-05 ledger claim.
+  const rawHtml = raw.replace(/\r\n/g, "\n");
+  const idleFrameRules = [...rawHtml.matchAll(/^\.mw-party-frame\[data-set="idle"\]\[data-k="(\d)"\]\{([^}]*)\}$/gm)];
+  assert.equal(idleFrameRules.length, 4);
+  const opaque = idleFrameRules.filter((m) => m[2].includes("opacity:1"));
+  assert.equal(opaque.length, 1, "exactly one idle frame rule may declare a base opacity:1");
+  assert.equal(opaque[0][1], "1", "the base-opaque idle frame must be k=1");
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 // ─── audit (MOTION-05, Plan 58-07) — the phase-wide ledger closing all
 // four effects into ONE predicate, ONE settle point, a mid-session flip of
 // all four together, a same-tick smoke test spanning every effect at once,
