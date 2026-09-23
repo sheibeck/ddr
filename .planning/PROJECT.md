@@ -73,7 +73,7 @@
 - ✓ **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
 - ✓ **Next tuning pass** — shipped as v1.7 (2026-09-22); the human curve verdict is deferred by the user to later plays, and the reach-20 miss (1.5 % vs 3–5 %) is recorded
 - [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.8.md` (30 of 31 open; the user runs them over their own play sessions), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → quick tasks
-- [ ] **Gear screen UX redo** — v1.9 (in progress), from the user's `design/Mazeworld Gear.dc.html` mock (design project fed8909e…). UX interaction and visual design only; its gear rules are ignored and the shipped rules stay canon (e.g. potions and scrolls ride free)
+- [ ] **Gear screen UX redo** — v1.9 (in progress; Phase 62 ✓ layout: slim AR + wilmst header, five fixed WORN rows with USE/ACTIVE/COOLING, bag meter + tagged cards, per-type consumables, ALSO ON YOU; the cross-screen agreement sweep proves Gear = ITEMS = loot = store. Next: the Phase 63 action sheet), from the user's `design/Mazeworld Gear.dc.html` mock (design project fed8909e…). UX interaction and visual design only; its gear rules are ignored and the shipped rules stay canon (e.g. potions and scrolls ride free)
 - [ ] **No gear changes mid-fight** — v1.9: engine half ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; the lock also covers the loot/find take verbs). The greyed sheet rows land in Phase 63 (GRULE-02)
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
 
@@ -369,4 +369,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-23 — v1.9 Phase 61 (Gear Rules & Store Purchase Fix) complete; Phase 62 Gear Tab Layout Rebuild next*
+*Last updated: 2026-09-23 — v1.9 Phases 61–62 complete; Phase 63 Action Sheet, Combat Lock & Accessibility next*
