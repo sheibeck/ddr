@@ -288,12 +288,51 @@ export const GEAR_SHEET_IDS = Object.freeze({
   cancel: "mw-gear-sheet-cancel",
 });
 
-// Task 2 replaces this stub with the DROP tap-again confirm's real
-// module-local revert (SHEET_DROP_CONFIRM_MS/sheetDropRevert). A fresh
-// render always calls it first, so no prior armed DROP survives a
-// re-render. This state is presentation-only and never on `state`
-// (serializeRun spreads state, not this module's locals).
-function revertSheetDrop() {}
+// Phase 63 (GSCR-10) — the sheet's own DROP tap-again confirm. Mirrors
+// gearTab.js's DROP_CONFIRM_MS/dropConfirmRevert/revertDropConfirm pattern
+// exactly, under distinct names so gearTab.test.js's once-each pins on the
+// gearTab names never see a second declaration. DOM-local presentation
+// state, never on `state` (serializeRun spreads state, not this module's
+// locals); exactly one button can be armed at a time. A fresh render
+// always calls revertSheetDrop() first, so no prior armed DROP survives a
+// re-render.
+export const SHEET_DROP_CONFIRM_MS = 3000;
+let sheetDropRevert = null;
+function revertSheetDrop() {
+  if (!sheetDropRevert) return;
+  const r = sheetDropRevert;
+  sheetDropRevert = null;
+  r();
+}
+
+// makeConfirmHandler(btn, labelSpan, a, deps) — DROP's tap-again confirm.
+// The first tap arms in place (relabels the button to
+// GEAR_SHEET_COPY.act.dropConfirm, marks dataset.armed and starts the
+// SHEET_DROP_CONFIRM_MS revert) and dispatches nothing. The second tap
+// (while armed) reverts, closes the sheet, THEN dispatches — matching
+// every other enabled action's close-before-dispatch order (GSCR-09).
+function makeConfirmHandler(btn, labelSpan, a, deps) {
+  return () => {
+    if (btn.dataset.armed === "1") {
+      revertSheetDrop();
+      deps.closeGearSheet?.();
+      dispatchRun(a.run, deps);
+      return;
+    }
+    revertSheetDrop();
+    const originalLabel = a.label;
+    labelSpan.textContent = GEAR_SHEET_COPY.act.dropConfirm;
+    btn.setAttribute("aria-label", GEAR_SHEET_COPY.act.dropConfirm);
+    btn.dataset.armed = "1";
+    const timer = setTimeout(revertSheetDrop, SHEET_DROP_CONFIRM_MS);
+    sheetDropRevert = () => {
+      clearTimeout(timer);
+      labelSpan.textContent = originalLabel;
+      btn.setAttribute("aria-label", originalLabel);
+      delete btn.dataset.armed;
+    };
+  };
+}
 
 // dispatchRun(run, deps) — the ONE place a model action's `run` becomes an
 // existing tabDeps() bridge call. Mirrors gearSheetModel's own equipRun
@@ -321,8 +360,9 @@ function dispatchRun(run, deps) {
 // click handler at all — tapping it does nothing, never a hidden live
 // button (GSCR-09). An enabled action is wired through `deps.guardTap`
 // (Phase 32's ghost-tap guard), falling back to a plain onclick only when
-// no guardTap dep is supplied. Task 2 adds the DROP tap-again confirm
-// branch (`a.confirm`) here.
+// no guardTap dep is supplied. A confirm action (`a.confirm`, DROP only)
+// routes through makeConfirmHandler instead of the plain close-then-
+// dispatch handler.
 function buildActionButton(doc, a, index, deps) {
   const btn = doc.createElement("button");
   btn.type = "button";
@@ -357,10 +397,12 @@ function buildActionButton(doc, a, index, deps) {
     return btn;
   }
 
-  const handler = () => {
-    deps.closeGearSheet?.();
-    dispatchRun(a.run, deps);
-  };
+  const handler = a.confirm
+    ? makeConfirmHandler(btn, labelSpan, a, deps)
+    : () => {
+        deps.closeGearSheet?.();
+        dispatchRun(a.run, deps);
+      };
   if (deps.guardTap) deps.guardTap(btn, handler);
   else btn.onclick = handler;
 

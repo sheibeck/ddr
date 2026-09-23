@@ -20,6 +20,7 @@ import {
   gearSheetModel,
   GEAR_SHEET_IDS,
   GEAR_SHEET_COPY,
+  SHEET_DROP_CONFIRM_MS,
 } from "../../src/browser/gearSheet.js";
 import { GEAR_WORN_ORDER, gearBagCardsModel } from "../../src/browser/gearTab.js";
 import { newRun } from "../../engine/engine.js";
@@ -321,5 +322,209 @@ test("Every greyed action across the mu fixture's armor sheet carries data-off/a
       assert.equal(btn.getAttribute("aria-disabled"), "true");
       assert.equal(btn.onclick, null);
     }
+  }
+});
+
+// ═══════════════════════ Task 2: DROP confirm, CANCEL, encoding, idempotency ═
+
+test("DROP first tap: arms in place — 'DROP IT? · tap again' label/aria-label, dataset.armed '1', no dispatch", () => {
+  const state = spikedStaffState(false);
+  const target = { from: "bag", i: 0, n: "Spiked Staff" };
+  const { deps, log } = makeDeps();
+  const { doc, host } = mountHost();
+  renderGearSheet(host, state, target, deps);
+  const dropBtn = findButton(doc, "drop");
+  dropBtn.onclick();
+  const main = dropBtn.children.find((n) => n.className === "mw-gsheet-act-main");
+  const labelSpan = main.children.find((n) => n.className === "mw-gsheet-act-label");
+  assert.equal(labelSpan.textContent, GEAR_SHEET_COPY.act.dropConfirm);
+  assert.equal(dropBtn.getAttribute("aria-label"), GEAR_SHEET_COPY.act.dropConfirm);
+  assert.equal(dropBtn.dataset.armed, "1");
+  assert.deepStrictEqual(log, []);
+});
+
+test("DROP second tap within the window: logs close then dropItem(i); armed state clears", () => {
+  const state = spikedStaffState(false);
+  const target = { from: "bag", i: 0, n: "Spiked Staff" };
+  const { deps, log } = makeDeps();
+  const { doc, host } = mountHost();
+  renderGearSheet(host, state, target, deps);
+  const dropBtn = findButton(doc, "drop");
+  dropBtn.onclick();
+  dropBtn.onclick();
+  assert.deepStrictEqual(log, [["closeGearSheet"], ["dropItem", 0]]);
+  assert.equal(dropBtn.dataset.armed, undefined);
+});
+
+test("DROP reverts after SHEET_DROP_CONFIRM_MS: still armed at 2999ms, reverted at 3000ms with nothing dispatched", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const state = spikedStaffState(false);
+  const target = { from: "bag", i: 0, n: "Spiked Staff" };
+  const { deps, log } = makeDeps();
+  const { doc, host } = mountHost();
+  renderGearSheet(host, state, target, deps);
+  const dropBtn = findButton(doc, "drop");
+  dropBtn.onclick();
+  t.mock.timers.tick(SHEET_DROP_CONFIRM_MS - 1);
+  assert.equal(dropBtn.dataset.armed, "1");
+  t.mock.timers.tick(1);
+  assert.equal(dropBtn.dataset.armed, undefined);
+  const main = dropBtn.children.find((n) => n.className === "mw-gsheet-act-main");
+  const labelSpan = main.children.find((n) => n.className === "mw-gsheet-act-label");
+  assert.equal(labelSpan.textContent, "DROP");
+  assert.equal(dropBtn.getAttribute("aria-label"), "DROP");
+  assert.deepStrictEqual(log, []);
+});
+
+test("Re-render while armed reverts: a fresh render's DROP reads DROP again, and a single tap only re-arms", () => {
+  const state = spikedStaffState(false);
+  const target = { from: "bag", i: 0, n: "Spiked Staff" };
+  const { deps, log } = makeDeps();
+  const { doc, host } = mountHost();
+  renderGearSheet(host, state, target, deps);
+  findButton(doc, "drop").onclick();
+  assert.equal(findButton(doc, "drop").dataset.armed, "1");
+
+  renderGearSheet(host, state, target, deps);
+  const freshDrop = findButton(doc, "drop");
+  const main = freshDrop.children.find((n) => n.className === "mw-gsheet-act-main");
+  const labelSpan = main.children.find((n) => n.className === "mw-gsheet-act-label");
+  assert.equal(labelSpan.textContent, "DROP");
+  assert.equal(freshDrop.dataset.armed, undefined);
+
+  freshDrop.onclick();
+  assert.equal(freshDrop.dataset.armed, "1");
+  assert.deepStrictEqual(log, []);
+});
+
+const TRICKY_NAME = `Thief's "Lucky" <b>Ring</b> \u{1F3B2}`;
+
+test("Edge GSCR-08/encoding: a hostile item name renders verbatim in the bag title, in a SWAP FOR label, and in a SWAP INTO sub", () => {
+  // kind "jewel" (not the worn-row "jewelry") so engine/derived.js's slotFor
+  // falls through to its kind-based fallback for a name SLOT_OF doesn't
+  // recognize (a non-canonical item name, exactly this test's whole point).
+  const bagChar = fixedChar({ worn: { jewelry1: RING_OF_POWER }, items: [{ kind: "jewel", n: TRICKY_NAME, txt: "a strange ring" }] });
+  const bagState = st(bagChar);
+
+  const { doc: doc1, host: host1 } = mountHost();
+  renderGearSheet(host1, bagState, { from: "bag", i: 0, n: TRICKY_NAME }, makeDeps().deps);
+  assert.equal(doc1.document.getElementById(GEAR_SHEET_IDS.title).textContent, TRICKY_NAME);
+
+  const { doc: doc2, host: host2 } = mountHost();
+  renderGearSheet(host2, bagState, { from: "worn", slot: "jewelry1" }, makeDeps().deps);
+  const swapBtn = findButton(doc2, "swap:0");
+  const main2 = swapBtn.children.find((n) => n.className === "mw-gsheet-act-main");
+  const labelSpan2 = main2.children.find((n) => n.className === "mw-gsheet-act-label");
+  assert.equal(labelSpan2.textContent, "SWAP FOR " + TRICKY_NAME);
+
+  const wornTrickyChar = fixedChar({ worn: { jewelry1: { kind: "jewelry", n: TRICKY_NAME, txt: "a strange ring" } }, items: [GAUNTLET] });
+  const wornTrickyState = st(wornTrickyChar);
+  const { doc: doc3, host: host3 } = mountHost();
+  renderGearSheet(host3, wornTrickyState, { from: "bag", i: 0, n: "Gauntlet of the Giant" }, makeDeps().deps);
+  const slotBtn = findButton(doc3, "slot:jewelry1");
+  const main3 = slotBtn.children.find((n) => n.className === "mw-gsheet-act-main");
+  const subSpan3 = main3.children.find((n) => n.className === "mw-gsheet-act-sub");
+  assert.ok(subSpan3.textContent.startsWith(TRICKY_NAME));
+});
+
+test("Edge GSCR-08/encoding: no node under the six GEAR_SHEET_IDS has _content.kind html", () => {
+  const bagChar = fixedChar({ worn: { jewelry1: RING_OF_POWER }, items: [{ kind: "jewel", n: TRICKY_NAME, txt: "a strange ring" }] });
+  const { doc, host } = mountHost();
+  renderGearSheet(host, st(bagChar), { from: "bag", i: 0, n: TRICKY_NAME }, makeDeps().deps);
+  const visit = (node, out) => {
+    out.push(node);
+    for (const child of node.children || []) visit(child, out);
+    return out;
+  };
+  const nodes = Object.values(GEAR_SHEET_IDS).flatMap((id) => visit(doc.document.getElementById(id), []));
+  for (const node of nodes) {
+    if (node.nodeType === 3) continue;
+    assert.notEqual(node._content.kind, "html");
+  }
+});
+
+test("Edge GSCR-09/ordering: closeGearSheet precedes every dispatch across the thief and Spiked Staff sheets, DROP via two taps included", () => {
+  const cases = [
+    { state: fixedStates().thief, target: { from: "worn", slot: "jewelry1" } },
+    { state: spikedStaffState(false), target: { from: "bag", i: 0, n: "Spiked Staff" } },
+  ];
+  for (const { state, target } of cases) {
+    const model = gearSheetModel(state, target);
+    for (const a of model.actions) {
+      if (!a.enabled) continue;
+      const { deps, log } = makeDeps();
+      const { doc, host } = mountHost();
+      renderGearSheet(host, state, target, deps);
+      const btn = findButton(doc, a.key);
+      assert.ok(btn, `expected a button for ${a.key}`);
+      btn.onclick();
+      if (a.confirm) {
+        assert.equal(log.length, 0, "the first tap of a confirm action must not dispatch");
+        btn.onclick();
+      }
+      const closeIdx = log.findIndex((entry) => entry[0] === "closeGearSheet");
+      const dispatchIdx = log.findIndex((entry) => entry[0] !== "closeGearSheet");
+      assert.ok(closeIdx !== -1 && dispatchIdx !== -1, `expected both a close and a dispatch entry for ${a.key}`);
+      assert.ok(closeIdx < dispatchIdx, `closeGearSheet must precede the dispatch for ${a.key}`);
+    }
+  }
+});
+
+test("Idempotency: rendering the same target twice on one host serializes the six ids byte-identically", () => {
+  const state = fixedStates().thief;
+  const target = { from: "worn", slot: "jewelry1" };
+  const { deps } = makeDeps();
+  const { doc, host } = mountHost();
+  renderGearSheet(host, state, target, deps);
+  const first = doc.serializeElements(Object.values(GEAR_SHEET_IDS));
+  renderGearSheet(host, state, target, deps);
+  const second = doc.serializeElements(Object.values(GEAR_SHEET_IDS));
+  assert.equal(second, first);
+});
+
+test("No WP: the serialized sheet for the thief's worn armor and bag sheets carries no standalone wp/WP token", () => {
+  const PLAYER_WP = /(?<![\w.$-])(wp|WP)(?![\w:])/;
+  const { thief } = fixedStates();
+
+  const { doc: doc1, host: host1 } = mountHost();
+  renderGearSheet(host1, thief, { from: "worn", slot: "armor" }, makeDeps().deps);
+  const text1 = doc1.serializeElements(Object.values(GEAR_SHEET_IDS));
+  assert.equal(text1.match(PLAYER_WP), null, `unexpected wp/WP token: ${text1.match(PLAYER_WP) && text1.match(PLAYER_WP)[0]}`);
+
+  const cards = gearBagCardsModel(thief);
+  assert.ok(cards.length > 0, "expected the thief fixture to carry at least one bag card");
+  const card = cards[0];
+  const { doc: doc2, host: host2 } = mountHost();
+  renderGearSheet(host2, thief, { from: "bag", i: card.i, n: card.name }, makeDeps().deps);
+  const text2 = doc2.serializeElements(Object.values(GEAR_SHEET_IDS));
+  assert.equal(text2.match(PLAYER_WP), null, `unexpected wp/WP token: ${text2.match(PLAYER_WP) && text2.match(PLAYER_WP)[0]}`);
+});
+
+// ─── Module contract (mirrors gear-tab-dom.test.js's own order-sensitive
+// comment stripper) ──────────────────────────────────────────────────────
+
+function stripComments(source) {
+  const noLineComments = source
+    .split("\n")
+    .map((line) => {
+      const i = line.indexOf("//");
+      return i === -1 ? line : line.slice(0, i);
+    })
+    .join("\n");
+  return noLineComments.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
+}
+
+const GEAR_SHEET_STRIPPED = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "gearSheet.js"), "utf8").replace(/\r\n/g, "\n"));
+
+test("Module contract: gearSheet.js reads no window/document global, reads ownerDocument at least once, and carries no HTML-string sink", () => {
+  assert.doesNotMatch(GEAR_SHEET_STRIPPED, /\bwindow\./);
+  assert.doesNotMatch(GEAR_SHEET_STRIPPED, /\bdocument\./);
+  assert.ok((GEAR_SHEET_STRIPPED.match(/ownerDocument/g) || []).length >= 1, "expected at least one ownerDocument read");
+  // The three HTML-string sinks, built from split fragments so this test's
+  // own source never contains the literal token (mirrors gear-tab-dom.test.js's
+  // own encoding-pin discipline).
+  const sinkNames = ["inner" + "HTML", "outer" + "HTML", "insertAdjacent" + "HTML"];
+  for (const name of sinkNames) {
+    assert.ok(!GEAR_SHEET_STRIPPED.includes(name), `gearSheet.js must not reference ${name}`);
   }
 });
