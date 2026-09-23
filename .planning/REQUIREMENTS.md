@@ -34,7 +34,7 @@
 - [ ] **PGS-01**: A Capacitor 8-compatible PGS v2 plugin is chosen (researched: `@modbender/capacitor-play-games` vs `@openforge/capacitor-game-connect` vs `capacitor-google-game-services` vs vendoring or forking one) and wired into the Android build. It adds no ads or analytics SDK.
 - [ ] **PGS-02**: PGS auto sign-in runs at launch without blocking play. Declining, having no Play Games profile, or a sign-in failure leaves the game fully playable.
 - [ ] **PGS-03**: Each death of a signed-in, Compete-on player submits one score per global board to the current season's leaderboard IDs, with the row's details (adventurer name, race/sub/level, and the rest of what the panel shows) packed into the 64-char score tag.
-- [ ] **PGS-04**: A death while offline or signed out-but-competing queues its submissions durably. They flush once connectivity and sign-in return, and no score is ever submitted twice.
+- [ ] **PGS-04**: A death while offline or signed-out-but-competing queues its submissions durably. They flush once connectivity and sign-in return, and no score is ever submitted twice.
 - [ ] **PGS-05**: The panel's ALL and FRIENDS views are fed by PGS top scores, the friends collection and the player's own rank. The global form of LINEAGE (per-combo boards, client-side grouping of fetched top scores, or local-only) is settled by the phase research.
 - [ ] **PGS-06**: Leaderboard IDs are keyed per board per season. Bumping the season points new submissions at the new IDs, while old-season boards stay readable and are never written again.
 
@@ -78,12 +78,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| RUN-01 | Phase 65 | Pending |
+| RUN-02 | Phase 65 | Pending |
+| RUN-03 | Phase 65 | Pending |
+| RUN-04 | Phase 65 | Pending |
+| BOARD-01 | Phase 66 | Pending |
+| BOARD-02 | Phase 66 | Pending |
+| BOARD-03 | Phase 66 | Pending |
+| BOARD-04 | Phase 66 | Pending |
+| BOARD-05 | Phase 66 | Pending |
+| BOARD-06 | Phase 66 | Pending |
+| BOARD-07 | Phase 66 | Pending |
+| BOARD-08 | Phase 66 | Pending |
+| PGS-01 | Phase 67 | Pending |
+| PGS-02 | Phase 67 | Pending |
+| ACCT-01 | Phase 67 | Pending |
+| ACCT-02 | Phase 67 | Pending |
+| PGS-03 | Phase 68 | Pending |
+| PGS-04 | Phase 68 | Pending |
+| PGS-05 | Phase 68 | Pending |
+| PGS-06 | Phase 68 | Pending |
+| PLACE-01 | Phase 68 | Pending |
+| PLACE-02 | Phase 68 | Pending |
+| COMPLY-01 | Phase 69 | Pending |
+| COMPLY-02 | Phase 69 | Pending |
+| COMPLY-03 | Phase 69 | Pending |
+| COMPLY-04 | Phase 69 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 ⚠️
+- Mapped to phases: 26
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-23*
-*Last updated: 2026-09-23 after milestone v2.0 start*
+*Last updated: 2026-09-23 after v2.0 roadmap creation (Phases 65–69)*

@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Leaderboards
 status: planning
-last_updated: "2026-09-23T18:34:31.534Z"
+last_updated: "2026-09-23T19:15:00.000Z"
 last_activity: 2026-09-23
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards started; v1.9 closed and tagged; Play 1.9.0 / vc8 built for closed testing; open Pixel 7 UAT batches: v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v2.0 Leaderboards — defining requirements → roadmap → `/gsd-autonomous`
+**Current focus:** v2.0 Leaderboards — roadmap created (Phases 65–69) → `/gsd-plan-phase 65` or `/gsd-autonomous`
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-09-23 — Milestone v2.0 started
+Phase: 65 (Run Record & Personal Bests)
+Plan: — (not yet planned)
+Status: Roadmap created — ready to plan
+Last activity: 2026-09-23 — v2.0 roadmap created (Phases 65–69), 26/26 requirements mapped
 
 ## Ground Truth (durable facts every session needs)
 
@@ -86,6 +86,7 @@ Last activity: 2026-09-23 — Milestone v2.0 started
 
 ### Pending Todos
 
+- 2026-09-23 — **Narrative pass** (user): clarity/stilted-language cleanup of every in-game line (Oracle, rail, fight log, refusals, content descriptions, epitaphs); milestone- or phase-sized, after v2.0 — `todos/pending/2026-09-23-narrative-pass-clarity-cleanup-of-every-in-game-line.md`
 - (dropped 2026-09-17, user) Play Developer API upload — the user uploads the AAB manually in Play Console when needed.
 - ~~2026-09-17 — Stand up the "Shell Debt & Dead Code" cleanup milestone after v1.5~~ DONE 2026-09-19: stood up as v1.6 (Phases 44–49 in ROADMAP.md; `todos/pending/2026-09-17-shell-debt-and-dead-code-cleanup-milestone.md` can be moved to done)
 - 2026-09-19 — **Initiative rolled once per combat, not every round** (user, on-device feel): drop the per-round re-roll at `engine/combat.js:1341` so the foe never gets two consecutive turns; deliberate p.24 divergence — measure/declare/regenerate the combat+magic fixtures it moves, re-pin draw counts, bot before/after. Outside v1.6 (gameplay) — quick task after the milestone or with the next tuning pass — `todos/pending/2026-09-19-initiative-rolled-once-per-combat-not-every-round.md`
@@ -200,13 +201,13 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-23T04:29:20.000Z
-Stopped at: v1.9 roadmap created 2026-09-23 (Phases 61–64: 61 Gear Rules & Store Purchase Fix (engine) → 62 Gear Tab Layout Rebuild → 63 Action Sheet, Combat Lock & Accessibility → 64 Device Close & UAT Batch; 16/16 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-discuss-phase 61 (STORE-02's buy-and-bag vs. refuse-up-front choice is the open decision), then /gsd-plan-phase 61.
+Last session: 2026-09-23T19:15:00.000Z
+Stopped at: v2.0 roadmap created 2026-09-23 (Phases 65–69: 65 Run Record & Personal Bests → 66 Leaderboards Panel — Local → 67 Play Games Integration & Account Chip (Research: yes) → 68 Global Boards, Submissions & "You Placed X" → 69 Compliance & Device Close; 26/26 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-plan-phase 65 (or /gsd-autonomous to run the whole milestone).
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run /gsd-plan-phase 65 to begin the milestone, or /gsd-autonomous to run Phases 65–69 end to end
 
 ## Performance Metrics
 

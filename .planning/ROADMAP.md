@@ -12,10 +12,110 @@
 - ✅ **v1.7 Tuning Pass — Initiative, Cadence & the Four-Band Curve** — Phases 50–55 (code-complete 2026-09-22, archived 2026-09-22, override closeout; the four-run DR checklist + 25-item Pixel 7 batch `docs/UAT-v1.7.md` deferred by the user, as are the v1.6 26-check and v1.5 140-check batches; see `.planning/milestones/v1.7-ROADMAP.md`, `.planning/milestones/v1.7-MILESTONE-AUDIT.md`)
 - ✅ **v1.8 Sound, Motion & Set Dressing** — Phases 56–60 (code-complete 2026-09-22, archived 2026-09-22, verified closeout; 30 of 31 Pixel 7 checks in `docs/UAT-v1.8.md` spread over the user's play sessions; see `.planning/milestones/v1.8-ROADMAP.md`, `.planning/milestones/v1.8-MILESTONE-AUDIT.md`)
 - ✅ **v1.9 The Gear Screen** — Phases 61–64 (code-complete 2026-09-23; override closeout: GSCR-12 device batch partial) → `.planning/milestones/v1.9-ROADMAP.md`
-- 📋 **v2.0 Leaderboards** — PLANNED, not started (scoped 2026-09-23): the mock's Leaderboards panel over local bests + opt-in Play Games Services v2 global/friends boards, "you placed X", account chip, compliance close; see `.planning/proposed-milestone-leaderboards.md` + PROJECT.md
+- 🚧 **v2.0 Leaderboards** — Phases 65–69 roadmapped 2026-09-23: run record & personal bests, the mock's Leaderboards panel over local bests, opt-in Play Games Services v2 global/friends boards, "you placed X", account chip, compliance close; see `.planning/REQUIREMENTS.md` + PROJECT.md
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases
+
+### v2.0 Leaderboards (Phases 65–69) — roadmapped 2026-09-23
+
+Full requirements: `.planning/REQUIREMENTS.md`.
+
+**Milestone gates (apply to every phase below):**
+
+- **Engine gate:** the engine stays pure and deterministic; zero new rng draws touch floor generation; `test/parity/prototype-master.js.txt` is never edited; every new serialized field (season, seed, action count, hash, the bests record) is carved out of all three parity comparables; any fixture a deliberate change moves is measured, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated — no silent blanket regen.
+- **Mock stance:** `Mazeworld Leaderboards.dc.html` and `Mazeworld Boards Panel.dc.html` (project `fed8909e-860d-496e-9d31-04dd31f14a3c`, read via the `DesignSync` tool) are the UX and visual spec only — the iOS frame is preview chrome. Toy fields map to canon: squares → `steps`, WILMST → `gold`, EXP → `sp`, lvl → Roman `level`. The standing rulings win: the rail is the one feedback surface, the shipped tab set stays (DEAD keeps its slot), and player text says HP, never WP.
+- **Offline constraint, amended for this milestone only:** signed out or with Compete off, the game makes zero network calls and the whole local panel works in airplane mode — the relaxation applies only to an opted-in, Compete-on player.
+- **Seasons:** every run summary and every leaderboard carries the `rules`/season version from day one, so a balance change never poisons the all-time boards; personal bests stay all-time locally, tagged by season.
+- **Display name:** the Play Games profile name is what shows on global boards — no adventurer-name composite; the adventurer's name and epitaph ride in the score tag and the local graveyard only.
+
+**Working method:** no milestone-level research pass. Phase 67 is flagged `Research: yes` for `gsd-phase-researcher` — it settles the PGS plugin choice, sign-in mechanics, Capacitor 8 / AGP 8.13 compatibility, the score-tag encoding, and LINEAGE's global form together, since all five hinge on the same plugin's API surface. Phases 65, 66, 68 and 69 need no separate research pass — 65/66 build on the codebase's existing `buildRunSummary`/`engineAdapter` keys and the mock, and 68 builds on Phase 67's settled decisions. Full decision record: `.planning/proposed-milestone-leaderboards.md`.
+
+- [ ] **Phase 65: Run Record & Personal Bests** - Every death records a durable, season-tagged run summary and updates an all-time personal-bests record that survives the graveyard trim
+- [ ] **Phase 66: Leaderboards Panel — Local** - The DEAD tab becomes the mock's Leaderboards panel, running fully offline across all seven boards on personal bests and the graveyard
+- [ ] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle
+- [ ] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card
+- [ ] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch
+
+### Phase 65: Run Record & Personal Bests
+
+**Goal**: Every run's outcome is captured durably — a run summary carrying its season/seed/hash, and a personal-bests record that survives the 60-tombstone graveyard trim — so every later phase (the panel, PGS submission, "you placed X") has real data to read instead of inventing a shape.
+**Depends on**: Nothing (first phase of the milestone)
+**Requirements**: RUN-01, RUN-02, RUN-03, RUN-04
+**Success Criteria** (what must be TRUE):
+
+  1. Every death produces a run summary (`buildRunSummary`) that also carries a `rules`/season version, the run seed, an action count and a cheap integrity hash, with zero new rng draws and the new fields left out of all three parity comparables
+  2. A durable `ddr.bests.v1` record (Capacitor Preferences plus the localStorage mirror, through `mzStorage`) holds the player's best run per board, is tagged by season, is kept all-time, and survives the 60-tombstone graveyard trim
+  3. An existing graveyard, the legacy `ddr.best.v1` / `ddr.graveyard.total.v1` keys, and old saves all load without error, and the bests record backfills from the tombstones already on the device
+  4. When a run beats a personal best on any board, the death flow announces it in voice, as a card per the card-vs-toast ruling (a toast for anything short of a new best)
+
+**Plans**: TBD
+**Research**: none — `engine/death.js#buildRunSummary`, `src/browser/engineAdapter.js`'s three existing keys, and `mzStorage` carry the file-level shape; `.planning/proposed-milestone-leaderboards.md` has the full record.
+
+### Phase 66: Leaderboards Panel — Local
+
+**Goal**: The DEAD tab becomes the mock's Leaderboards panel, presenting every board from local data alone — the graveyard and the Phase 65 personal-bests record — so the panel is complete and honest before any network call exists.
+**Depends on**: Phase 65 (every board and the standing card read the run-summary fields and the bests record Phase 65 builds)
+**Requirements**: BOARD-01, BOARD-02, BOARD-03, BOARD-04, BOARD-05, BOARD-06, BOARD-07, BOARD-08
+**Success Criteria** (what must be TRUE):
+
+  1. The panel replaces the DEAD screen, opens from the in-game DEAD tab and from the title screen's VIEW THE DEAD, and its back button returns to wherever it was opened from (title or dungeon)
+  2. The header shows LEADERBOARDS, a scope line and the INTERRED count, with a Play Games identity strip and an ALL/FRIENDS toggle beneath it (the strip and toggle show a deliberate signed-out state at this phase — Phase 67 makes them live)
+  3. A horizontally scrolling board rail keeps the active chip centred across all seven boards (DEEPEST, LEANEST, LINEAGE, LONGEST, BUTCHERY, PURSE, GRAVEYARD), each with its own mark, title and rule line in voice; each board lists its top ten with rank, avatar, handle, a YOU tag, the adventurer's name, a `RACE SUB · LVL n` line, a value bar and value + unit, all from canon fields (`steps`/`gold`/`sp`/Roman `level`)
+  4. When the player's best run misses the top ten, it is pinned below a "NOT IN THE TOP TEN · YOUR BEST RUN" divider; tapping any row expands it to show the cause, the epitaph, and FLOOR/DAYS/SQUARES/KILLS/EXP/WILMST chips
+  5. Each board ends with a standing card ("your place · of N") and a per-board footnote in voice (GRAVEYARD's own: "Epitaphs are written by the dungeon, not by you. There is no appeal."); signed out, offline, or with Compete off, the whole panel runs on local data only, with zero network calls made
+
+**Plans**: TBD
+**Research**: none — `Mazeworld Leaderboards.dc.html` and `Mazeworld Boards Panel.dc.html` (read via `DesignSync`) are the UX/visual spec.
+**UI hint**: yes
+
+### Phase 67: Play Games Integration & Account Chip
+
+**Goal**: Players can opt in to Google Play Games Services v2 with non-blocking auto sign-in, and the settings cog becomes an account chip that carries sign-in, sign-out and a Compete toggle — laying the plugin and identity foundation Phase 68's submissions build on.
+**Depends on**: Phase 66 (the identity strip and signed-out state Phase 66 built become live once real sign-in exists)
+**Requirements**: PGS-01, PGS-02, ACCT-01, ACCT-02
+**Success Criteria** (what must be TRUE):
+
+  1. A Capacitor 8-compatible PGS v2 plugin is chosen (from `@modbender/capacitor-play-games`, `@openforge/capacitor-game-connect`, `capacitor-google-game-services`, or a vendored/forked alternative) and wired into the Android build, adding no ads or analytics SDK
+  2. PGS auto sign-in runs at launch without blocking play; declining, having no Play Games profile, or a sign-in failure all leave the game fully playable with zero network calls when signed out
+  3. The top-bar settings cog becomes an account chip: the Play Games avatar when signed in, a deliberate "nobody" glyph when signed out
+  4. Tapping the chip opens a menu offering sign in / sign out, a Compete toggle (off means no submissions and no network calls), and the existing Settings entry
+
+**Plans**: TBD
+**Research**: yes — `gsd-phase-researcher` decides the plugin (maintenance, Capacitor 8 / AGP 8.13 compatibility, sign-in API surface), and — folded into this same pass rather than split into Phase 68 — settles the score-tag encoding format and LINEAGE's global form (per-combo boards vs. client-side grouping vs. local-only), since both hinge on the chosen plugin's leaderboard/score-tag API. Phase 68 implements against this phase's decisions with no separate research pass.
+**UI hint**: yes
+
+### Phase 68: Global Boards, Submissions & "You Placed X"
+
+**Goal**: A signed-in, Compete-on player's death submits real scores to the current season's global boards, the panel's ALL and FRIENDS views come alive, and the death flow closes with a ranked quip in voice.
+**Depends on**: Phase 65 (submits the run-summary fields Phase 65 built), Phase 67 (needs the chosen plugin, sign-in state, Compete toggle and the settled tag/LINEAGE decisions)
+**Requirements**: PGS-03, PGS-04, PGS-05, PGS-06, PLACE-01, PLACE-02
+**Success Criteria** (what must be TRUE):
+
+  1. Each death of a signed-in, Compete-on player submits one score per board to the current season's leaderboard IDs, with the row's details (adventurer name, race/sub/level, and the rest of what the panel shows) packed into the 64-char score tag per Phase 67's encoding
+  2. A death while offline or signed-out-but-competing queues its submissions durably; they flush once connectivity and sign-in return, and no score is ever submitted twice
+  3. The panel's ALL and FRIENDS views are fed by PGS top-scores, the friends collection and the player's own rank, with LINEAGE's global form built exactly as Phase 67's research settled it
+  4. Leaderboard IDs are keyed per board per season; bumping the season points new submissions at the new IDs while old-season boards stay readable and are never written again
+  5. After a run's scores are submitted, the death flow shows the player's rank as a quip in voice from a `content/` bank; a run submitted from the offline queue reports its placement on the next successful flush, and a signed-out or Compete-off run shows no rank line and no error
+
+**Plans**: TBD
+**Research**: none — builds directly on Phase 67's plugin, tag-encoding and LINEAGE-form decisions.
+**UI hint**: yes
+
+### Phase 69: Compliance & Device Close
+
+**Goal**: The privacy, Data Safety and Play Console story matches the shipped PGS integration, the console-side setup is handed to the user as a clear runbook rather than blocking the milestone, and the milestone closes on a signed AAB with its own written UAT batch.
+**Depends on**: Phase 68 (documents and ships the complete, submitting integration)
+**Requirements**: COMPLY-01, COMPLY-02, COMPLY-03, COMPLY-04
+**Success Criteria** (what must be TRUE):
+
+  1. The privacy-policy page is updated to describe the opt-in PGS Player ID and scores collection, and states that nothing else leaves the device
+  2. The Data Safety answers are drafted in the repo (Player ID and app activity collected, required for app functionality, not shared, only when signed in) and match a fresh SDK/dependency audit of the shipped build
+  3. A Play Console PGS setup runbook is written covering enabling PGS, linking the SHA-1 of the Play App Signing key, creating the leaderboard IDs per board per season, and publishing the config plus the tester allow-list; because these are Play Console actions only the user can perform, the phase surfaces them as a human checkpoint / deferred item and does not block closure on the user completing them
+  4. A signed AAB with PGS goes to the testing track, and the milestone's Pixel 7 batch is written as `docs/UAT-v2.0.md` (sign-in, decline, offline queue and flush, the panel on every board, the "you placed X" card, the account chip, airplane mode) as one batched checklist per the deferred-UAT protocol — not run mid-milestone
+
+**Plans**: TBD
+**Research**: none
 
 <details>
 <summary>✅ v1.9 The Gear Screen (Phases 61–64) — CODE-COMPLETE 2026-09-23, archived 2026-09-23 (override closeout; Play 1.9.0 / vc8 built for closed testing; device UAT 3 of 24 walked, the rest deferred to play sessions)</summary>
@@ -172,6 +272,11 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
+| 65. Run Record & Personal Bests | v2.0 | 0/TBD | Not started | - |
+| 66. Leaderboards Panel — Local | v2.0 | 0/TBD | Not started | - |
+| 67. Play Games Integration & Account Chip | v2.0 | 0/TBD | Not started | - |
+| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
+| 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
