@@ -6,8 +6,8 @@ current_phase: 999.1
 current_phase_name: PROMOTED → Phases 56 / 58 / 59
 current_plan: Not started
 status: planning
-stopped_at: Completed 60-03-PLAN.md
-last_updated: "2026-09-23T03:17:00.149Z"
+stopped_at: "v1.8 ALL 5 PHASES COMPLETE (56-60 verified; PERF-03 met on device, no regressions; HUD counter fix 9c1b80f). IN FLIGHT: /gsd-debug .planning/debug/trap-death-21hp-oracle-minus1.md (floor-2 trap killed a 21-HP Ninja, Oracle -1; hypothesis: 58-06 deferred HUD repaint never catches up). User chose debug BEFORE close. THEN: /gsd-audit-milestone -> /gsd-complete-milestone v1.8 -> /gsd-cleanup -> push master+tags -> ASK about Play internal push. Todos: water sound every water step; band-1 = Race+Sub+Lvl (keep race, drop parent class); menu locked when dead (deferred). NEXT MILESTONE: Gear screen UX redo from design project fed8909e 'Mazeworld Gear.dc.html' — mock for UX/visual ONLY, ignore its gear rules (shipped rules canon); save mock to design/ at milestone start."
+last_updated: "2026-09-23T03:21:00.250Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 60 complete, transitioned to Phase 999.1
 progress:
@@ -181,8 +181,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-23T03:10:57.007Z
-Stopped at: Completed 60-03-PLAN.md
+Last session: 2026-09-23T03:21:00.112Z
+Stopped at: v1.8 ALL 5 PHASES COMPLETE (56-60 verified; PERF-03 met on device, no regressions; HUD counter fix 9c1b80f). IN FLIGHT: /gsd-debug .planning/debug/trap-death-21hp-oracle-minus1.md (floor-2 trap killed a 21-HP Ninja, Oracle -1; hypothesis: 58-06 deferred HUD repaint never catches up). User chose debug BEFORE close. THEN: /gsd-audit-milestone -> /gsd-complete-milestone v1.8 -> /gsd-cleanup -> push master+tags -> ASK about Play internal push. Todos: water sound every water step; band-1 = Race+Sub+Lvl (keep race, drop parent class); menu locked when dead (deferred). NEXT MILESTONE: Gear screen UX redo from design project fed8909e 'Mazeworld Gear.dc.html' — mock for UX/visual ONLY, ignore its gear rules (shipped rules canon); save mock to design/ at milestone start.
 Resume file: None
 
 ## Operator Next Steps
