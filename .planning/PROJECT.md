@@ -75,16 +75,51 @@
 - [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.9.md` (21 of 24 open), `docs/UAT-v1.8.md` (30 of 31 open; the user runs them over their own play sessions), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → quick tasks
 - ✓ **Gear screen UX redo** — v1.9 (Phases 62–63): slim AR/WILMST header, five fixed WORN rows, bag meter + tagged cards, per-type consumables, ALSO ON YOU, and one bottom action sheet for every equip/swap/unequip/use/drop (engine-true reasons, combat greying, back/TalkBack/reduced motion). Device batch `docs/UAT-v1.9.md`: 3/24 walked
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
+- [ ] **Leaderboards (v2.0)** — the mock's Leaderboards panel over local personal bests and the graveyard, plus opt-in Play Games Services v2 global/friends boards, a "you placed X" death card, the account chip in place of the cog, and the Data Safety / privacy / PGS-console compliance close
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
 
 ### Out of Scope
 
 - **iOS / Apple App Store** — deliberately out of scope. Android/Google Play only. Avoids the Apple Developer account, Mac/Xcode toolchain, and Apple's review process. May be reconsidered post-launch, but the tech path should not be compromised to accommodate it now.
 - **Networked multiplayer / "play with friends"** — still post-launch (v2). The *party* layer is now IN scope and shipped (Joiners, Phases 7–11) as its single-player foundation; only the network/relay layer stays out.
-- **Accounts, logins, cloud save, servers** — go simple; use platform identity (Game Center / Google Play Games) later if/when multiplayer needs it.
+- **Accounts, logins, cloud save, servers** — go simple. Platform identity arrives in v2.0 as opt-in Google Play Games sign-in for leaderboards only. Still out: our own accounts or login forms, PGS cloud saves, and any server of our own.
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
+
+## Current Milestone: v2.0 Leaderboards
+
+**Goal:** The DEAD tab becomes the user's "Mazeworld Leaderboards" panel. It covers your own dead fully offline, and players signed in to Google Play Games Services v2 also get global and friends boards, a "you placed X" line on death, and an account chip where the settings cog was.
+
+**Target features:**
+- **Run record + personal bests (offline)** — `buildRunSummary` gains a `rules`/season version, the run seed, an action count and a cheap hash. A durable `ddr.bests.v1` personal-bests record survives the 60-tombstone graveyard trim, is tagged by season and kept all-time. Existing graveyards load tolerantly.
+- **Leaderboards panel, built to the mock** (`Mazeworld Leaderboards.dc.html` + `Mazeworld Boards Panel.dc.html`) — it replaces the DEAD screen and also opens from the title screen's VIEW THE DEAD, with a back button that returns to the title or the dungeon. Its parts:
+  - A LEADERBOARDS header with a scope line and the INTERRED count.
+  - A Play Games identity strip with an ALL / FRIENDS toggle.
+  - A horizontally scrolling board rail that keeps the active chip centred: DEEPEST, LEANEST (deepest with fewest squares), LINEAGE (by race & class), LONGEST (days), BUTCHERY (kills), PURSE (wilmst at death) and GRAVEYARD (your own dead, not ranked).
+  - For each board: a mark, a title and a rule line in voice, then the top ten with rank, avatar, handle, YOU/FRIEND tag, name, race/sub/level line, value bar and value + unit. Your best run is pinned below a "NOT IN THE TOP TEN" divider when it misses, and tap-to-expand detail shows the cause, epitaph and stat chips.
+  - A standing card ("your place · of N") and a footnote in voice.
+- **Google Play Games Services v2 (opt-in, non-blocking)**:
+  - A Capacitor plugin is chosen, or vendored or forked, and auto sign-in declines gracefully.
+  - Each death submits one score per board, queued offline and flushed when connectivity returns.
+  - Per-row details are packed into the 64-char score tag.
+  - The panel is fed from top scores, the friends collection and the player's own rank.
+  - Boards are created per season; old seasons stay read-only.
+  - Signed out, the global and friends views show a deliberate state, not a broken one.
+- **"You placed X" death card** — after the run's scores are submitted, a rank quip in voice from a `content/` bank ("You placed 3,117th. The 3,116 ahead of you are also dead."). It is offline-tolerant: queued runs report on their next flush.
+- **Account chip replaces the top-bar cog** — a Play Games avatar when signed in, a deliberate "nobody" glyph when not. Its menu offers sign in / sign out, a Compete toggle and the existing Settings entry.
+- **Compliance close** — the Data Safety form (Player ID + scores collected, for app functionality), the privacy-policy update, Play Console PGS setup (SHA-1 of the Play App Signing key, leaderboard IDs per board per season, published config, tester allow-list) and a tester round.
+
+**Key context:**
+- **The mock is the UX and visual spec only**, the same stance as the v1.4 combat/map and v1.9 gear imports. Its iOS frame is preview chrome, and its toy data and field names map to shipped canon: squares → `steps`, WILMST → `gold`, EXP → `sp`, lvl → Roman `level`. The standing rulings win: the rail is the one feedback surface, the shipped tab set stays (DEAD keeps its slot), and it says HP, never WP.
+- **Display name on global boards is the Play Games profile name** (user, 2026-09-17). The adventurer's name and epitaph ride in the score tag and the local graveyard.
+- **Seasons** (user, 2026-09-17): the boards carry the rules/season version from day one, so balance changes never poison the all-time boards.
+- **The Engine Gate holds.** The new summary fields are carved out of the comparables, zero new rng draws touch floor generation, and the prototype master is never edited.
+- **The offline constraint relaxes only for opted-in players.** Signed out, the game makes zero network calls, and the whole local panel works in airplane mode.
+- **The LINEAGE board's global form** (per-combo boards vs. client-side grouping of fetched top scores vs. local-only) and the score-tag encoding are research questions. So is the choice of plugin: `@modbender/capacitor-play-games` vs `@openforge/capacitor-game-connect` vs `capacitor-google-game-services` vs vendoring one.
+- Research: `.planning/proposed-milestone-leaderboards.md` (SEED-001) carries the option table and the compliance checklist.
+
+**Out of this milestone:** tombstone share (`@capacitor/share` + canvas PNG, deferred to a later milestone), our own backend, networked multiplayer, the first-run tutorial (UX-06) and the Play production launch.
 
 ## Last Milestone: v1.9 The Gear Screen (code-complete 2026-09-23; archived 2026-09-23; Play 1.9.0 / vc8 built for closed testing; device UAT 3/24 walked)
 
@@ -258,7 +293,7 @@
 ## Constraints
 
 - **Platforms**: Must ship to **Google Play (Android only)**. Native packaging, Play App Signing, store entry and internal-testing track are DONE (targetSdk 36, minSdk 24); remaining compliance = Data Safety form, IARC, privacy policy, production listing. iOS is explicitly excluded.
-- **Offline**: v1 must run with **no network**, no accounts, no backend.
+- **Offline**: v1 must run with **no network**, no accounts, no backend. **v2.0 amendment (user, 2026-09-23):** opt-in Google Play Games Services v2 sign-in adds global/friends leaderboards. Signed out, the game stays fully offline with zero network calls. There is still no backend of our own and no account form (PGS uses the device's Google account).
 - **Monetization**: **Paid upfront**, no ads/IAP — keep the build free of monetization SDKs.
 - **Fidelity**: The prototype's rules are **canon**; deviations must be deliberate design decisions, not accidental regressions.
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
@@ -375,4 +410,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-23 — v1.9 The Gear Screen closed (override closeout, archived + tagged); next milestone not yet chosen*
+*Last updated: 2026-09-23 — milestone v2.0 Leaderboards started (Play Games + custom panel; account chip; "you placed X"; compliance close; share deferred)*
