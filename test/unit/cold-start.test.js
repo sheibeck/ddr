@@ -2,14 +2,21 @@
 //
 // Phase 60 (PERF-03) — pins tools/cold-start.mjs's pure core (parseAmStart,
 // splitAmStartBlocks, summarizeSamples, resolveAdb, judgePerf03,
-// renderVerdictTable — Tests 1-11). median/p95/max are checked against
+// renderVerdictTable — Tests 1-11) and its CLI (run --fixture/--dry-run,
+// judge, adb-path — Tests 12-18). median/p95/max are checked against
 // src/browser/perfMarks.js's createPerfMarks directly, so cold start is
 // proven to share the Phase 49 step rows' nearest-rank method rather than a
-// re-derived one. Task 2 adds the CLI tests (Tests 12-18) below this file's
-// current tail.
+// re-derived one. Every CLI test spawns the real script with `--adb` set to
+// a nonexistent path (or `--fixture`/`--dry-run`, which never touch adb at
+// all) — no real device or adb binary is ever invoked from this file.
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import url from "node:url";
+import { spawnSync } from "node:child_process";
 
 import { createPerfMarks } from "../../src/browser/perfMarks.js";
 import {
@@ -23,6 +30,10 @@ import {
   judgePerf03,
   renderVerdictTable,
 } from "../../tools/cold-start.mjs";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const SCRIPT = path.join(REPO_ROOT, "tools", "cold-start.mjs");
 
 // --- (1) parseAmStart ----------------------------------------------------
 
@@ -200,4 +211,191 @@ test("renderVerdictTable renders one row per measure with yes / no / not measure
   assert.ok(lines.some((l) => l.startsWith("| Cold start median (ms) |") && l.includes("| yes |")));
   assert.ok(lines.some((l) => l.startsWith("| Step p95 (ms) |") && l.includes("| no |")));
   assert.ok(lines.some((l) => l.startsWith("| AAB (bytes) |") && l.includes("| not measured |")));
+});
+
+// ===========================================================================
+// CLI (Tests 12-18) — added by Task 2
+// ===========================================================================
+
+function runCli(args) {
+  return spawnSync(process.execPath, [SCRIPT, ...args], { cwd: REPO_ROOT, encoding: "utf8" });
+}
+
+function amStartBlock({ totalTime, launchState = "COLD", status = "ok", waitTime = null }) {
+  const lines = ["Starting: Intent { cmp=com.darktierstudios.delvedierepeat/.MainActivity }", `Status: ${status}`];
+  if (launchState !== null) lines.push(`LaunchState: ${launchState}`);
+  lines.push("Activity: com.darktierstudios.delvedierepeat/.MainActivity");
+  lines.push(`TotalTime: ${totalTime}`);
+  if (waitTime !== null) lines.push(`WaitTime: ${waitTime}`);
+  lines.push("Complete");
+  return lines.join("\n");
+}
+
+function errorBlock() {
+  return [
+    "Starting: Intent { cmp=com.darktierstudios.delvedierepeat/.MainActivity }",
+    "Error: Activity not started, unable to resolve Intent",
+  ].join("\n");
+}
+
+function buildTranscriptBlocks({ warmupTotalTime = 9999 } = {}) {
+  const warmup = amStartBlock({ totalTime: warmupTotalTime });
+  const measured = TEST4_SAMPLES.map((totalTime) => amStartBlock({ totalTime }));
+  return [warmup, ...measured];
+}
+
+function writeTempFile(name, content) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cold-start-test-"));
+  const filePath = path.join(dir, name);
+  fs.writeFileSync(filePath, content);
+  return filePath;
+}
+
+function lastLineOf(stdout) {
+  const lines = stdout.trim().split("\n");
+  return lines[lines.length - 1];
+}
+
+// --- (11) run --fixture happy path --------------------------------------
+
+test("run --fixture replays 1 warm-up + 10 measured blocks and spawns no adb", () => {
+  const blocks = buildTranscriptBlocks();
+  const transcriptPath = writeTempFile("transcript.txt", blocks.join("\n"));
+  const outPath = transcriptPath.replace(/\.txt$/, "-out.json");
+
+  const result = runCli(["run", "--label", "t", "--fixture", transcriptPath, "--adb", "Z:/no/such/adb.exe", "--out", outPath]);
+  assert.equal(result.status, 0, result.stderr);
+
+  const lastLine = lastLineOf(result.stdout);
+  assert.match(lastLine, /^\[cold-start\] \{/);
+  const json = JSON.parse(lastLine.slice("[cold-start] ".length));
+  assert.equal(json.summary.n, 10);
+  assert.equal(json.summary.median, 875);
+  assert.deepEqual(json.warmupSamples, [9999]);
+  assert.deepEqual(json.samples, TEST4_SAMPLES);
+  assert.ok(!json.samples.includes(9999));
+  assert.equal(json.source, "fixture");
+
+  const outJson = JSON.parse(fs.readFileSync(outPath, "utf8"));
+  assert.deepEqual(outJson, json);
+});
+
+// --- (12) run --fixture invalid launches --------------------------------
+
+test("run --fixture exits 2 on a non-COLD measured launch and 1 on a missing TotalTime or a non-ok Status", () => {
+  const baseBlocks = buildTranscriptBlocks();
+
+  const warmBlocks = [...baseBlocks];
+  warmBlocks[5] = amStartBlock({ totalTime: TEST4_SAMPLES[4], launchState: "WARM" });
+  const warmPath = writeTempFile("warm.txt", warmBlocks.join("\n"));
+  const warmResult = runCli(["run", "--label", "t", "--fixture", warmPath, "--adb", "Z:/no/such/adb.exe"]);
+  assert.equal(warmResult.status, 2);
+  const warmJson = JSON.parse(lastLineOf(warmResult.stdout).slice("[cold-start] ".length));
+  assert.deepEqual(warmJson.invalid.map((i) => i.run), [5]);
+
+  const errBlocks = [...baseBlocks];
+  errBlocks[5] = errorBlock();
+  const errPath = writeTempFile("err.txt", errBlocks.join("\n"));
+  const errResult = runCli(["run", "--label", "t", "--fixture", errPath, "--adb", "Z:/no/such/adb.exe"]);
+  assert.equal(errResult.status, 1);
+
+  const timeoutBlocks = [...baseBlocks];
+  timeoutBlocks[5] = amStartBlock({ totalTime: TEST4_SAMPLES[4], status: "timeout" });
+  const timeoutPath = writeTempFile("timeout.txt", timeoutBlocks.join("\n"));
+  const timeoutResult = runCli(["run", "--label", "t", "--fixture", timeoutPath, "--adb", "Z:/no/such/adb.exe"]);
+  assert.equal(timeoutResult.status, 1);
+
+  const warmupWarmBlocks = [...baseBlocks];
+  warmupWarmBlocks[0] = amStartBlock({ totalTime: 9999, launchState: "WARM" });
+  const warmupWarmPath = writeTempFile("warmup-warm.txt", warmupWarmBlocks.join("\n"));
+  const warmupWarmResult = runCli(["run", "--label", "t", "--fixture", warmupWarmPath, "--adb", "Z:/no/such/adb.exe"]);
+  assert.equal(warmupWarmResult.status, 0);
+});
+
+// --- (13) run --fixture too few blocks -----------------------------------
+
+test("run --fixture exits 1 when the transcript holds fewer than warmup + runs blocks", () => {
+  const blocks = buildTranscriptBlocks().slice(0, 5);
+  const shortPath = writeTempFile("short.txt", blocks.join("\n"));
+  const result = runCli(["run", "--label", "t", "--fixture", shortPath, "--adb", "Z:/no/such/adb.exe"]);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /warmup|blocks|need/i);
+});
+
+// --- (14) run --dry-run ---------------------------------------------------
+
+test("run --dry-run prints 2 x (warmup + runs) adb command lines and spawns nothing", () => {
+  const result = runCli([
+    "run",
+    "--label",
+    "t",
+    "--dry-run",
+    "--runs",
+    "3",
+    "--warmup",
+    "1",
+    "--serial",
+    "10.0.0.175:40000",
+    "--adb",
+    "Z:/no/such/adb.exe",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  const lines = result.stdout.trim().split("\n");
+  assert.equal(lines.length, 8);
+  for (let i = 0; i < lines.length; i += 2) {
+    assert.match(lines[i], /^Z:\/no\/such\/adb\.exe .*-s 10\.0\.0\.175:40000.*shell am force-stop/);
+    assert.match(lines[i + 1], /^Z:\/no\/such\/adb\.exe .*-s 10\.0\.0\.175:40000.*shell am start -W -n com\.darktierstudios\.delvedierepeat\/\.MainActivity/);
+  }
+});
+
+// --- (15) judge -------------------------------------------------------
+
+test("judge prints the verdict table and a [perf03] JSON line", () => {
+  const coldBase = writeTempFile("cold-base.json", JSON.stringify({ summary: { median: 870 } }));
+  const coldHead = writeTempFile("cold-head.json", JSON.stringify({ summary: { median: 1000 } }));
+  const result = runCli([
+    "judge",
+    "--cold-base",
+    coldBase,
+    "--cold-head",
+    coldHead,
+    "--step-base",
+    "19.8",
+    "--step-head",
+    "21.8",
+    "--aab-base",
+    "9500000",
+    "--aab-head",
+    "9900000",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes("| Measure | v1.7 | v1.8 | Delta | Threshold | Regresses? |"));
+
+  const lastLine = lastLineOf(result.stdout);
+  assert.match(lastLine, /^\[perf03\] \{/);
+  const verdict = JSON.parse(lastLine.slice("[perf03] ".length));
+  assert.equal(verdict.coldStart.regresses, true);
+  assert.equal(verdict.coldStart.delta, 130);
+  assert.equal(verdict.stepP95.regresses, false);
+  assert.equal(verdict.aabBytes.regresses, false);
+});
+
+// --- (16) adb-path ------------------------------------------------------
+
+test("adb-path prints the resolved adb path", () => {
+  const result = runCli(["adb-path", "--adb", "Z:/x/adb.exe"]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), "Z:/x/adb.exe");
+});
+
+// --- (17) usage errors ----------------------------------------------------
+
+test("an unknown subcommand or a missing --label exits 1 with a usage line", () => {
+  const badSub = runCli(["frobnicate"]);
+  assert.equal(badSub.status, 1);
+  assert.match(badSub.stderr, /usage/i);
+
+  const noLabel = runCli(["run", "--dry-run"]);
+  assert.equal(noLabel.status, 1);
+  assert.match(noLabel.stderr, /--label/);
 });
