@@ -1,16 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Leaderboards
-status: planning
-last_updated: "2026-09-23T17:43:19.129Z"
+milestone: v1.9
+milestone_name: The Gear Screen
+status: Awaiting next milestone
+stopped_at: "v1.9 CLOSED 2026-09-23 (override closeout: 4/4 phases passed, 15/16 requirements + GSCR-12 partial; archived + tagged v1.9). Play 1.9.0 / versionCode 8 AAB built and tagged v1.9.0-play8 for closed testing (user uploads by hand: android/app/build/outputs/bundle/release/app-release.aab). docs/UAT-v1.9.md: A1–A3 pass, 21 deferred to play sessions. Next: /gsd-new-milestone (no next milestone chosen yet); candidate quick tasks: .gitattributes eol=lf pin, Sense Presence initiative, text-size token fix, renderCarriedList gearRow cleanup."
+last_updated: "2026-09-23T17:18:31.156Z"
 last_activity: 2026-09-23
+last_activity_desc: Milestone v1.9 completed and archived
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 14
+  completed_plans: 14
+  percent: 100
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
 ---
 
 # Project State
@@ -24,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-23 — v1.9 The Gear Screen closed an
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Milestone v1.9 complete
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-23 — Milestone v2.0 started
+Status: Awaiting next milestone
+Last activity: 2026-09-23 — Milestone v1.9 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 

@@ -2,7 +2,7 @@
 
 **Captured:** 2026-09-17 (from user via `/gsd-next` → `/gsd-capture`, mid-v1.5)
 **Priority:** Future milestone — after v1.5 (Meaningful Choices). Not blocking any in-flight phase.
-**Status:** PROPOSED — stand up via `/gsd-new-milestone` (seed SEED-001 will surface it). Research below is a first pass; flag the global-board phase for `gsd-phase-researcher`.
+**Status:** SCOPED 2026-09-23 as **planned milestone v2.0 Leaderboards** (not started; user parked it after scoping). Stand up via `/gsd-new-milestone`; the decisions below are settled, so it can go straight to requirements. Research: skip the milestone-level pass and flag the PGS integration phase for `gsd-phase-researcher`.
 
 ## Vision (user's words, lightly organized)
 
@@ -80,6 +80,47 @@ What Google Play advertises is **Google Play Games Services (PGS) v2** — the p
 - **PGS auto sign-in: YES.** Opt-out-able, non-blocking; the game stays fully playable signed-out. Full milestone scope (A + D + B + account chip) is in.
 - **Display name on global boards: Play Games profile name.** No adventurer-name composite; the adventurer's name/epitaph lives in the local graveyard and the shared tombstone card.
 - **Seasons: YES.** Boards carry a `rules`/season version so we can reset on new versions and balance changes. Implication: PGS leaderboards are created per season (Play Console IDs generated per ruleset; old-season boards left read-only), and the run summary records `rules` from day one. Personal bests stay all-time locally, tagged by season.
+
+## Decisions (user, 2026-09-23 — `/gsd-new-milestone` scoping, then parked)
+
+- **Version: v2.0**, the first networked feature (opt-in only).
+- **UX spec: the Claude Design mock** — project `https://claude.ai/design/p/fed8909e-860d-496e-9d31-04dd31f14a3c`, files `Mazeworld Leaderboards.dc.html` (the title → VIEW THE DEAD and in-game DEAD-tab entry points, back to title or dungeon) and `Mazeworld Boards Panel.dc.html` (the panel itself). `ios-frame.jsx` and `support.js` are only preview chrome and the design runtime. Read the mock with the `DesignSync` tool (`get_file`). The panel contains:
+  - A LEADERBOARDS header with a scope line and the INTERRED count.
+  - A Play Games identity strip ("PLAY GAMES · SIGNED IN") with an ALL / FRIENDS toggle.
+  - A horizontally scrolling board rail that keeps the active chip centred, with seven boards:
+
+    | Board | Title | Ranked by |
+    |---|---|---|
+    | DEEPEST | DEEPEST DESCENT | floor; ties go to fewer squares |
+    | LEANEST | DEEPEST, FEWEST STEPS | shows `floor · sq` |
+    | LINEAGE | BY RACE & CLASS | race+class, grouped by best floor |
+    | LONGEST | LONGEST HELD OUT | days |
+    | BUTCHERY | MOST KILLS | kills |
+    | PURSE | RICHEST CORPSE | wilmst at death |
+    | GRAVEYARD | YOUR GRAVEYARD | your dead only, deepest first, not ranked |
+
+  - For each board: a mark, a title and a rule line in voice.
+  - The top ten. Each row has rank, avatar (initials, colour from a handle hash), handle, a YOU/FRIEND tag, name, a `RACE SUB · LVL n` line, a value bar, and value + unit.
+  - Your best run pinned under a "NOT IN THE TOP TEN · YOUR BEST RUN" divider when it misses the cut.
+  - Tap-to-expand rows showing cause + epitaph and FLOOR/DAYS/SQUARES/KILLS/EXP/WILMST chips.
+  - A standing card ("@you · UNIT", "3RD", "of N interred worldwide / among friends", with a quip).
+  - A footnote: "Top ten only. Boards count the dead — living characters are provisional…". The GRAVEYARD footnote reads "Epitaphs are written by the dungeon, not by you. There is no appeal."
+- **Mock fields map to canon:** squares → `steps`, WILMST → `gold`, EXP → `sp`, lvl → Roman `level`. The standing UI rulings win: the rail is the feedback surface, the shipped tab set stays, and it says HP, never WP.
+- **Global data: Play Games Services v2 + our own custom panel** (not PGS's stock UI, not our own backend):
+  - Scores go to PGS.
+  - Rows come from top-scores / friends / player-rank calls.
+  - Per-row details are packed into the 64-char score tag.
+  - Whether LINEAGE is global is a phase-research question: per-combo boards vs. client-side grouping of fetched top-N vs. local-only.
+- **In scope:**
+  1. Run record + personal bests.
+  2. The panel.
+  3. PGS integration.
+  4. The "you placed X" death card.
+  5. The account chip replacing the cog.
+  6. The compliance close.
+- **Deferred to a later milestone:** tombstone share (`@capacitor/share` + canvas PNG).
+- **Carried from 2026-09-17:** PGS auto sign-in (opt-out-able, non-blocking), the Play Games profile name on global boards, seasons from day one.
+- **PROJECT.md** holds the full "Planned Milestone: v2.0 Leaderboards" section, including the planned Offline-constraint amendment.
 
 ## Sources
 - Leaderboards concept + tamper protection: https://developers.google.com/games/services/common/concepts/leaderboards
