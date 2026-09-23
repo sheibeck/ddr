@@ -4,17 +4,17 @@ milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
 current_phase: 59
 current_phase_name: party-animation-dungeon-set-dressing
-current_plan: 2
+current_plan: 5
 status: executing
-stopped_at: Completed 59-03-PLAN.md
-last_updated: "2026-09-23T00:21:59.410Z"
+stopped_at: Completed 59-04-PLAN.md
+last_updated: "2026-09-23T00:47:02.799Z"
 last_activity: 2026-09-22
 last_activity_desc: Phase 59 execution started
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 21
-  completed_plans: 19
+  completed_plans: 20
   percent: 60
 total_plans_in_phase: 4
 ---
@@ -31,10 +31,10 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 ## Current Position
 
 Phase: 59 (party-animation-dungeon-set-dressing) — EXECUTING
-Current Plan: 2
+Current Plan: 5
 Total Plans in Phase: 5
-Progress: [█████████░] 90%
-Plan: 2 of 5
+Progress: [██████████] 95%
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-22 — Phase 59 execution started
 
@@ -180,8 +180,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-23T00:21:59.346Z
-Stopped at: Completed 59-03-PLAN.md
+Last session: 2026-09-23T00:46:34.985Z
+Stopped at: Completed 59-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
@@ -332,6 +332,7 @@ Resume file: None
 | Phase 58 P06 | 120min | 3 tasks | 19 files |
 | Phase 58 P07 | 30min | 3 tasks | 7 files |
 | Phase 59 P03 | 75min | 3 tasks | 8 files |
+| Phase 59 P04 | 55min | 2 tasks | 5 files |
 
 ## Decisions
 
@@ -620,6 +621,8 @@ Resume file: None
 - [Phase ?]: Deferred a combat round's clips via dispatchWithNarration(action, opts={}) pushing onto a caller-owned opts.cues array, keeping the return contract unchanged for its other 8 callers
 - [Phase ?]: Pinned the paint()/draw() modularity proof's SHA-256 against PRE58 (Phase 57 close, ab3fca9) rather than BASE_58, since BASE_58 postdates Phase 57's own legitimate HUD edits to those functions
 - [Phase ?]: BASE_59 = f220718 confirmed; draw() modularity digest re-pinned to a new DRAW_SHA256 constant (replacing PRE58_DRAW_SHA256) since draw() deliberately diverges from PRE58 now (the party paint removed); paint()'s PRE58_PAINT_SHA256 stays untouched.
+- [Phase ?]: 59-04: glideParty (classic) calls window.__mzPartySprite.stepTo(from, partyCentre()); stepWith captures glideFrom before the dispatch and triggers the glide after the two pinned camera lines, guarded by !jumped and the moved event.
+- [Phase ?]: 59-04: 12 new deterministic-clock tests (party-glide.test.js + reduced-motion.test.js's party section) prove the glide, retarget, camera lockstep, jump self-heal, reduced-motion synchronous landing, and two reentrancy-safety regressions against cameraGlide.js's known landed-API crash.
 
 ### Blockers
 
