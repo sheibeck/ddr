@@ -84,7 +84,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 62-01-PLAN.md — Gear view models + copy: slim header, five-row WORN (value column, weapon empty line, USE cell from itemRowState), bag meter/pips, bag cards (slot tag · SWAP), CONSUMABLES, ALSO ON YOU; pure and unit-tested, no DOM (wave 1)
+- [x] 62-01-PLAN.md — Gear view models + copy: slim header, five-row WORN (value column, weapon empty line, USE cell from itemRowState), bag meter/pips, bag cards (slot tag · SWAP), CONSUMABLES, ALSO ON YOU; pure and unit-tested, no DOM (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -274,7 +274,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
-| 62. Gear Tab Layout Rebuild | v1.9 | 0/3 | Not started | - |
+| 62. Gear Tab Layout Rebuild | v1.9 | 1/3 | In Progress|  |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
