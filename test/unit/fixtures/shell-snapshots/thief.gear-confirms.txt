@@ -1,11 +1,16 @@
-## #s-carry
-<div id="s-carry">
-  html=""
-  <li>
-    <b>
-      text="Wakazashi"
-    <i>
-      text="d6+1"
+## #gear-bag
+<div id="gear-bag">
+  <li class="mw-gear-card" data-i="0">
+    <div class="mw-gear-card-main">
+      <div class="mw-gear-card-top">
+        <span class="mw-gear-name">
+          text="Wakazashi"
+        <span class="mw-gear-tag mw-gear-tag-swap">
+          text="WEAPON · SWAP"
+      <div class="mw-gear-desc">
+        text="d6+1 (usable by Fighters, Thieves)"
+    <span class="mw-gear-chev" aria-hidden="true">
+      text="›"
     <div class="mw-gear-actions">
       <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
         text="Equip"
@@ -16,24 +21,34 @@
           text="Yes"
         <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:0;" onclick>
           text="No"
-  <li>
-    <b>
-      text="Warded studded"
-    <i>
-      text="AR 11 · 28/28 hp"
+  <li class="mw-gear-card" data-i="1">
+    <div class="mw-gear-card-main">
+      <div class="mw-gear-card-top">
+        <span class="mw-gear-name">
+          text="Warded studded"
+        <span class="mw-gear-tag mw-gear-tag-swap">
+          text="ARMOR · SWAP"
+      <div class="mw-gear-desc">
+        text="AR 11 · 28/28 hp (usable by Fighters, Thieves)"
+    <span class="mw-gear-chev" aria-hidden="true">
+      text="›"
     <div class="mw-gear-actions">
       <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
         text="Equip"
       <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
         text="Drop"
-  <li>
-    <b>
-      text="Anklet of Invisibility · READY"
-    <i>
-      text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+  <li class="mw-gear-card" data-i="2">
+    <div class="mw-gear-card-main">
+      <div class="mw-gear-card-top">
+        <span class="mw-gear-name">
+          text="Anklet of Invisibility"
+        <span class="mw-gear-tag mw-gear-tag-swap">
+          text="JEWELRY · SWAP"
+      <div class="mw-gear-desc">
+        text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+    <span class="mw-gear-chev" aria-hidden="true">
+      text="›"
     <div class="mw-gear-actions">
-      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
-        text="Use"
       <span class="mw-swap-confirm">
         <span>
           text="Swap for which?"
@@ -45,21 +60,15 @@
           text="No"
       <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
         text="Drop"
-  <li>
-    <b>
-      text="Rope"
-    <i>
-      text="the honest way across a crevice. Once."
+  <li class="mw-gear-card" data-i="3">
+    <div class="mw-gear-card-main">
+      <div class="mw-gear-card-top">
+        <span class="mw-gear-name">
+          text="Rope"
+      <div class="mw-gear-desc">
+        text="the honest way across a crevice. Once."
+    <span class="mw-gear-chev" aria-hidden="true">
+      text="›"
     <div class="mw-gear-actions">
-      <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
-        text="Drop"
-  <li>
-    <b>
-      text="Healing potion"
-    <i>
-      text="+d10+2 hp"
-    <div class="mw-gear-actions">
-      <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
-        text="Use"
       <button class="small mw-gear-drop" style="alignSelf:flex-start;marginLeft:auto;marginRight:0;marginTop:4px;" onclick>
         text="Drop"

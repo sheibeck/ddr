@@ -139,12 +139,14 @@ test("renderRail: the climb retry card offers the matching tool when carried; th
 
 // ─── 4. Gear-tab row builders on itemRowState ─────────────────────────────
 
-test("Gear tab: wornSlotRow and renderCarriedList's row builder both read itemRowState(state, it); neither carries the retired it.every cooldown expression", () => {
-  // Phase 47 (SHELL-01), Plan 03, Task 2: both builders moved into
-  // src/browser/gearTab.js, and the bridge call is now a direct import call.
-  const wornSlotRegion = sliceBetween(GEAR_SRC, "const wornSlotRow = (slot, it) => {", "renderCarriedList(carry, state, items, {");
-  assert.match(wornSlotRegion, /itemRowState\(state, it\)/);
-  assert.doesNotMatch(wornSlotRegion, /it\.every \?/);
+test("Gear tab: gearUseCell and renderCarriedList's row builder both read itemRowState(state, it); neither carries the retired it.every cooldown expression", () => {
+  // Phase 62 (GSCR-01..06), Plan 02: wornSlotRow is retired with the
+  // two-panel renderer — every WORN/bag row's USE cell now derives from
+  // gearUseCell(state, it), which itself reads itemRowState(state, it) as
+  // its ONE row-state rule, never a restated it.every cooldown gate.
+  const useCellRegion = sliceBetween(GEAR_SRC, "export function gearUseCell(state, it) {", "\n}");
+  assert.match(useCellRegion, /itemRowState\(state, it\)/);
+  assert.doesNotMatch(useCellRegion, /it\.every \?/);
 
   const rowsRegion = sliceBetween(GEAR_SRC, "rows.forEach(({ it, i }) => {", "for (const a of (opts.actions");
   assert.match(rowsRegion, /itemRowState\(state, it\)/);

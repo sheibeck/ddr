@@ -11,12 +11,12 @@
 
 ### Gear Screen (presentation — `src/browser/`, no engine bytes)
 
-- [ ] **GSCR-01**: The Gear tab opens on a slim stat header showing the ARMOR RATING (the effective value from `armorDisplay`, Cloak of Armor included) and WILMST. The hero's name and class line are not repeated, since the global HUD shows them on every tab. *(Reworded 2026-09-23 in the Phase 62 discuss: the mock is a whole phone with no global HUD.)*
-- [ ] **GSCR-02**: The player sees a WORN list of five slots in fixed order: weapon, armor, cloak, jewelry 1, jewelry 2. It has an `N / 5` count. Each row shows the slot label, item name, a one-line note and a value column (weapon die, armor rating and wear, or a jewelry or cloak bonus). An empty slot shows its in-voice empty line in italics.
-- [ ] **GSCR-03**: A worn item that can be activated shows an inline button that reads USE, ACTIVE or COOLING (a staff shows its charge state), with a squares sub-label that counts down as the party walks. It is driven only by `itemRowState`, and tapping USE runs the same use path as today, which costs the turn in combat.
-- [ ] **GSCR-04**: The player sees a BAG section with a `used / cap` count and a pip meter. At capacity both turn red and read "BAG FULL · DROP OR USE SOMETHING". The count comes from `bagUsage` alone, so potions and scrolls never count.
-- [ ] **GSCR-05**: Each bag item is a card: name, description and a slot tag (the item's kind, plus `· SWAP` when every slot it fits is taken). Bag items that are never worn (staffs, torch, rope and the rest) carry the same USE / state button as the worn rows wherever the engine allows the use.
-- [ ] **GSCR-06**: The player sees a CONSUMABLES section with a `N HELD` count. It lists potions and scrolls with `×N` quantities and a USE or READ button, and a READ the hero cannot perform says why. Rations and a Magic User's spell charges keep a readout on the tab, so nothing the old ALSO ON YOU block showed is lost.
+- [x] **GSCR-01**: The Gear tab opens on a slim stat header showing the ARMOR RATING (the effective value from `armorDisplay`, Cloak of Armor included) and WILMST. The hero's name and class line are not repeated, since the global HUD shows them on every tab. *(Reworded 2026-09-23 in the Phase 62 discuss: the mock is a whole phone with no global HUD.)*
+- [x] **GSCR-02**: The player sees a WORN list of five slots in fixed order: weapon, armor, cloak, jewelry 1, jewelry 2. It has an `N / 5` count. Each row shows the slot label, item name, a one-line note and a value column (weapon die, armor rating and wear, or a jewelry or cloak bonus). An empty slot shows its in-voice empty line in italics.
+- [x] **GSCR-03**: A worn item that can be activated shows an inline button that reads USE, ACTIVE or COOLING (a staff shows its charge state), with a squares sub-label that counts down as the party walks. It is driven only by `itemRowState`, and tapping USE runs the same use path as today, which costs the turn in combat.
+- [x] **GSCR-04**: The player sees a BAG section with a `used / cap` count and a pip meter. At capacity both turn red and read "BAG FULL · DROP OR USE SOMETHING". The count comes from `bagUsage` alone, so potions and scrolls never count.
+- [x] **GSCR-05**: Each bag item is a card: name, description and a slot tag (the item's kind, plus `· SWAP` when every slot it fits is taken). Bag items that are never worn (staffs, torch, rope and the rest) carry the same USE / state button as the worn rows wherever the engine allows the use.
+- [x] **GSCR-06**: The player sees a CONSUMABLES section with a `N HELD` count. It lists potions and scrolls with `×N` quantities and a USE or READ button, and a READ the hero cannot perform says why. Rations and a Magic User's spell charges keep a readout on the tab, so nothing the old ALSO ON YOU block showed is lost.
 - [ ] **GSCR-07**: Tapping a worn slot opens a bottom action sheet headed by `SLOT · WORN|EMPTY`, a title and a note. A filled slot offers USE (with its state reason), UNEQUIP (greyed with "Bag is full — free a slot first." when there is no room) and one SWAP FOR <item> per fitting bag item. An empty slot offers one EQUIP <item> per fitting bag item, or a greyed NOTHING TO EQUIP.
 - [ ] **GSCR-08**: Tapping a bag card opens the same sheet with USE (for items that are never worn), one EQUIP TO / SWAP INTO action per named slot the item fits (both jewelry slots by name, so the player picks which piece comes off), and DROP. The sheet replaces the inline two-tap Drop and swap confirms.
 - [ ] **GSCR-09**: Every greyed sheet action states the engine's reason, and every completed action's outcome reaches the player through the rail in voice. There are no toasts and no inline refusal text on rows.
@@ -54,12 +54,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GSCR-01 | Phase 62 | Pending |
-| GSCR-02 | Phase 62 | Pending |
-| GSCR-03 | Phase 62 | Pending |
-| GSCR-04 | Phase 62 | Pending |
-| GSCR-05 | Phase 62 | Pending |
-| GSCR-06 | Phase 62 | Pending |
+| GSCR-01 | Phase 62 | Complete |
+| GSCR-02 | Phase 62 | Complete |
+| GSCR-03 | Phase 62 | Complete |
+| GSCR-04 | Phase 62 | Complete |
+| GSCR-05 | Phase 62 | Complete |
+| GSCR-06 | Phase 62 | Complete |
 | GSCR-07 | Phase 63 | Pending |
 | GSCR-08 | Phase 63 | Pending |
 | GSCR-09 | Phase 63 | Pending |

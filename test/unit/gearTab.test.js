@@ -200,14 +200,19 @@ test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGe
   assert.equal((MOD.match(/window\.__mzCarriedList = renderCarriedList;/g) || []).length, 1);
 });
 
-// ─── (9) tabDeps() names all 12 keys ──────────────────────────────────────
+// ─── (9) tabDeps() names all 14 keys ──────────────────────────────────────
 
-test("function tabDeps() appears once and its body names all 12 deps keys", () => {
+// Phase 62 (GSCR-01..06), Plan 02: tabDeps() gains drinkPotion/readScroll
+// closures over the existing window.mzDrinkPotion/mzReadScroll bridges —
+// 12 -> 14 keys, no new engine action and no new bridge.
+test("function tabDeps() appears once and its body names all 14 deps keys", () => {
   assert.equal((CLASSIC.match(/function tabDeps\(\)/g) || []).length, 1);
   const region = sliceBetween(CLASSIC, "function tabDeps() {", "\nfunction paint() {");
   for (const key of [
     "guardTap",
     "useItem",
+    "drinkPotion",
+    "readScroll",
     "equipItem",
     "unequip",
     "dropItem",

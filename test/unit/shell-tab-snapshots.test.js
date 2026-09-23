@@ -8,6 +8,15 @@
 // byte-for-byte against committed BEFORE fixtures under
 // test/unit/fixtures/shell-snapshots/.
 //
+// Phase 62 (GSCR-01..06), Plan 02: the Gear tab's fixtures (thief.gear/
+// mu.gear/thief.gear-confirms) now capture the rebuilt tab's five sections —
+// header (#gear-stats), WORN (#gear-worn-head/#gear-worn), BAG
+// (#gear-bag-head/#gear-bag-meter/#gear-bag), CONSUMABLES (#gear-cons-head/
+// #gear-cons) and ALSO ON YOU (#gear-kit-head/#gear-kit) — replacing the
+// retired Phase 43 ON YOU/BAG panel ids. Deliberately regenerated and
+// declared (this file's SUMMARY names the change); the Hero and Store
+// fixtures are untouched.
+//
 // Fixtures are captured ONCE, before Plans 03-05 carve a single line out of
 // the three render bodies — a diff after a carve means the carve moved the
 // rendered DOM, never that the fixture needs updating. Regenerating a
@@ -89,7 +98,7 @@ test("SHELL-01/02: thief.hero — the Hero tab DOM for a fresh Thief", () => {
   check("thief.hero", doc.serializeElements(SNAPSHOT_IDS.hero));
 });
 
-test("SHELL-01: thief.gear — the Gear tab DOM for a fresh Thief with a full bag", () => {
+test("SHELL-01: thief.gear — the Gear tab DOM (header/WORN/BAG/CONSUMABLES/ALSO ON YOU) for a fresh Thief with a full bag", () => {
   const { doc } = paintFresh(states.thief);
   check("thief.gear", doc.serializeElements(SNAPSHOT_IDS.gear));
 });
@@ -98,8 +107,8 @@ test("SHELL-01: thief.gear — the Gear tab DOM for a fresh Thief with a full ba
 
 test("SHELL-01: thief.gear-confirms — the Drop confirm and the jewelry swap confirm, both armed", () => {
   const { doc } = paintFresh(states.thief);
-  const carry = doc.elementsById.get("s-carry");
-  assert.ok(carry, "expected #s-carry to exist after paint()");
+  const bag = doc.elementsById.get("gear-bag");
+  assert.ok(bag, "expected #gear-bag to exist after paint()");
 
   const buttons = [];
   (function walk(el) {
@@ -108,17 +117,17 @@ test("SHELL-01: thief.gear-confirms — the Drop confirm and the jewelry swap co
       if (child.tagName === "button") buttons.push(child);
       walk(child);
     }
-  })(carry);
+  })(bag);
 
   const dropBtn = buttons.find((b) => b.textContent === "Drop");
-  assert.ok(dropBtn, "expected at least one bag row's Drop button");
+  assert.ok(dropBtn, "expected at least one bag card's Drop button");
   dropBtn.onclick();
 
   const equipBtns = buttons.filter((b) => b.textContent === "Equip");
-  assert.ok(equipBtns.length >= 1, "expected at least one bag row's Equip button");
+  assert.ok(equipBtns.length >= 1, "expected at least one bag card's Equip button");
   for (const b of equipBtns) b.onclick();
 
-  const text = doc.serializeElements(["s-carry"]);
+  const text = doc.serializeElements(["gear-bag"]);
   assert.ok(text.includes("Drop it?"), "expected the armed Drop confirm's 'Drop it?' label");
   assert.ok(text.includes("Swap for which?"), "expected the armed jewelry swap confirm's 'Swap for which?' label (both jewelry keys are worn)");
   check("thief.gear-confirms", text);
@@ -145,7 +154,7 @@ test("SHELL-02: mu.hero — the Hero tab DOM for a Magic User with a joined part
   check("mu.hero", text);
 });
 
-test("SHELL-01: mu.gear — the Gear tab DOM for a Magic User with every worn slot empty", () => {
+test("SHELL-01: mu.gear — the Gear tab DOM (header/WORN/BAG/CONSUMABLES/ALSO ON YOU) for a Magic User with every worn slot empty", () => {
   const { doc } = paintFresh(states.mu);
   check("mu.gear", doc.serializeElements(SNAPSHOT_IDS.gear));
 });
