@@ -2,6 +2,7 @@
 created: 2026-09-21T20:40:00.000Z
 title: Store purchase charged then rejected as not an upgrade (Spiked Staff)
 area: engine
+resolves_phase: 61
 files:
   - engine/economy.js:483-506 (buyFrom — gold deducted + item.sold BEFORE the effect runs)
   - engine/economy.js:233-244 (buyWeapon / buyArmor / buyPremium → takeItem)

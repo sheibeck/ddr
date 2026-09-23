@@ -2,6 +2,7 @@
 created: 2026-09-21T23:35:00.000Z
 title: No equipping or swapping gear during combat
 area: engine
+resolves_phase: 61
 files:
   - engine/items.js:714 (equipItem — no `state.combat` gate), 821 (unequipSlot — none), 406 (wearItem — none)
   - engine/actions.js:50-51, 156 (equipItem / unequipSlot dispatch — reachable while state.combat is set)
