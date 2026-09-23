@@ -88,7 +88,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 62-02-PLAN.md — Gear tab DOM rebuild: #screen-gear skeleton + mock CSS (text-scale aware), renderGearTab rewrite on the models, interim in-row actions harvested from the untouched renderCarriedList, potion/scroll tabDeps, declared gear snapshot regeneration, old two-panel pin migration (wave 2)
+- [x] 62-02-PLAN.md — Gear tab DOM rebuild: #screen-gear skeleton + mock CSS (text-scale aware), renderGearTab rewrite on the models, interim in-row actions harvested from the untouched renderCarriedList, potion/scroll tabDeps, declared gear snapshot regeneration, old two-panel pin migration (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -274,7 +274,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
-| 62. Gear Tab Layout Rebuild | v1.9 | 1/3 | In Progress|  |
+| 62. Gear Tab Layout Rebuild | v1.9 | 2/3 | In Progress|  |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 0/TBD | Not started | - |
 | 64. Device Close & UAT Batch | v1.9 | 0/TBD | Not started | - |
 | 56. Sound Effects & Audio Settings | v1.8 | 4/4 | Complete    | 2026-09-22 |
