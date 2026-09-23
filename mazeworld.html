@@ -2250,38 +2250,103 @@ function positionCanvas() {
   const X = Math.round(tx * dpr) / dpr;
   const Y = Math.round(ty * dpr) / dpr;
   cv.style.transform = `translate3d(${X}px, ${Y}px, 0)`;
+  // Phase 59 (ANIM-01): canvas, sprite and ring are placed in one call from
+  // one camera — positionPartySprite() reads the SAME rect/cam/CELL, before
+  // positionPartyPulse()'s own lockstep read.
+  positionPartySprite(rect);
   positionPartyPulse(rect);
 }
 
 // Phase 35 (MAP-07): the pulsing party ring (#mw-party-pulse) is a DOM
 // element, not a canvas rAF loop — this keeps it centered over the party's
 // cell using cameraPan(), the SAME party-screen-offset positionCanvas()'s
-// forward transform implies (quick task 260918-vm3).
+// forward transform implies (quick task 260918-vm3). Phase 59 (ANIM-03): the
+// glow now painted by this ring (the CSS radial-gradient added to
+// .mw-party-pulse) must follow the DISPLAYED marker, not the party's real
+// (pre-glide) square — so this reads partyShown() (below) instead of
+// cameraPan(), converted to the same screen offset cameraPan() itself uses.
+// At rest partyShown() equals partyCentre(), so the ring lands exactly
+// where it always did.
 function positionPartyPulse(rect) {
   const ring = document.getElementById("mw-party-pulse");
   if (!ring) return;
-  const p = cameraPan();
+  const s = partyShown();
+  const p = { x: (s.x - cam.x) * CELL, y: (s.y - cam.y) * CELL };
   ring.style.width = ring.style.height = CELL + "px";
   ring.style.left = (rect.width / 2 + p.x - CELL / 2) + "px";
   ring.style.top = (rect.height / 2 + p.y - CELL / 2) + "px";
 }
 
+// Phase 59 (ANIM-01, D-01): the ONE read of where the party marker is
+// DRAWN — a gliding in-flight point during a step, the real cell otherwise.
+// Tap hit-testing keeps reading cameraPan() (the real party), untouched;
+// this is presentation-only. window.__mzPartySprite is read at CALL time
+// (never captured), so a fresh module bridge is always seen.
+function partyShown() {
+  if (!S) return null;
+  const sp = window.__mzPartySprite;
+  if (sp && sp.displayed) return sp.displayed(partyCentre());
+  return partyCentre();
+}
+
+// Phase 59 (ANIM-01, D-01): places #mw-party-sprite in lockstep with the
+// canvas — the SAME camera and the canvas's own device-pixel-rounded
+// origin (window.__mzPartySprite.box mirrors positionCanvas()'s own tx/ty/
+// rounding exactly), so the sprite and the canvas can never disagree.
+function positionPartySprite(rect) {
+  if (!S) return;
+  const el = document.getElementById("mw-party-sprite");
+  if (!el) return;
+  const sp = window.__mzPartySprite;
+  if (!sp || !sp.box) return;
+  const shown = partyShown(); // computed first — may end a stale glide (T-59-01)
+  const dpr = window.devicePixelRatio || 1;
+  const box = sp.box({ vw: rect.width, vh: rect.height, cam, shown, cell: CELL, pad: CANVAS_PAD, dpr });
+  el.style.width = el.style.height = CELL + "px";
+  el.style.transform = `translate3d(${box.x}px, ${box.y}px, 0)`;
+  const nextPose = sp.pose();
+  if (el.dataset.pose !== nextPose) el.dataset.pose = nextPose;
+  const f = sp.frame();
+  if (f) {
+    const frameStr = String(f);
+    if (el.dataset.frame !== frameStr) el.dataset.frame = frameStr;
+  } else if (el.dataset.frame !== undefined) {
+    delete el.dataset.frame;
+  }
+}
+
+// Phase 59 (ANIM-02): the per-frame repaint of the marker and its glow
+// during a step glide (window.__mzPartySprite's own `render` callback),
+// without re-placing the canvas — the camera itself only moves via
+// positionCanvas() (applyCam), never through this function.
+function positionParty() {
+  if (!S) return;
+  const vp = document.getElementById("mw-maze-viewport");
+  if (!vp) return;
+  const rect = vp.getBoundingClientRect();
+  positionPartySprite(rect);
+  positionPartyPulse(rect);
+}
+window.mzPositionParty = positionParty;
+
 // Phase 35 (decision 3), reversed 2026-09-16 UAT: the canvas chrome
 // palette (fog / bevelled walls / floor inset / border) still comes from
 // src/browser/mapMarks.js via the window.__mzMapMarks bridge; the marks
-// and the party are drawn from the v1.3 PNG icon pipeline (src/browser/
-// icons.js via the window.__mzIconsApi/window.__mzIconMap bridges) — the
-// user reversed decision 3's coloured-glyph experiment and PNG icons are
-// canon again. Both bridges are set up by the trailing module script
-// BEFORE window.__mzClassicBoot() ever calls draw() the first time — see
-// each module's own doc comment for why a classic (non-module) script
-// can't `import` directly. Fail-open on both bridges: a missing palette
-// bridge falls back to the same literal values mapMarks.js exports, and a
-// missing/undecoded icon simply draws nothing for that cell — draw()
-// never throws even if a module somehow failed to load.
+// are drawn from the v1.3 PNG icon pipeline (src/browser/icons.js via the
+// window.__mzIconsApi/window.__mzIconMap bridges) — the user reversed
+// decision 3's coloured-glyph experiment and PNG icons are canon again.
+// Phase 59 (ANIM-01, D-01): the party is no longer drawn here at all — it
+// is the DOM sprite #mw-party-sprite, placed by positionPartySprite() from
+// positionCanvas() below. Both bridges are set up by the trailing module
+// script BEFORE window.__mzClassicBoot() ever calls draw() the first
+// time — see each module's own doc comment for why a classic (non-module)
+// script can't `import` directly. Fail-open on both bridges: a missing
+// palette bridge falls back to the same literal values mapMarks.js
+// exports, and a missing/undecoded icon simply draws nothing for that
+// cell — draw() never throws even if a module somehow failed to load.
 function draw() {
   if (!S) return;
-  const { g, px, py } = S.floor;
+  const { g } = S.floor;
   const size = CELL * GW;
   const M = window.__mzMapMarks;
   // Phase 40 (SPELL-05): floorSpell (a spell-revealed cell's "borrowed
@@ -2354,31 +2419,10 @@ function draw() {
     }
   }
 
-  // the party marker — party.png (v1.3 canon, restored 2026-09-16 UAT),
-  // with the same soft radial glow beneath it as before; the pulsing ring
-  // itself is still the DOM element #mw-party-pulse, positioned by
-  // positionPartyPulse() below, and now pulses around party.png. The
-  // dot+"P" fallback keeps the player visible if party.png never loaded.
-  {
-    const cx = px * CELL + CELL / 2, cy = py * CELL + CELL / 2;
-    const partyImg = iconsApi && iconMap && iconMap[iconsApi.PLAYER_MARKER_ICON];
-    const glowR = CELL * .5;
-    const grad = ctx.createRadialGradient(cx, cy, glowR * .15, cx, cy, glowR);
-    grad.addColorStop(0, "rgba(232,201,122,.55)");
-    grad.addColorStop(1, "rgba(232,201,122,0)");
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(cx, cy, glowR, 0, 7); ctx.fill();
-    if (iconReady(partyImg)) {
-      iconsApi.drawFeatureIcon(ctx, partyImg, px * CELL, py * CELL, CELL);
-    } else {
-      ctx.fillStyle = P.party;
-      ctx.beginPath(); ctx.arc(cx, cy, CELL * .36, 0, 7); ctx.fill();
-      ctx.fillStyle = "#F6F1E4";
-      ctx.font = `${Math.round(CELL * .5)}px "Courier Prime", monospace`;
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText("P", cx, cy + CELL * .03);
-    }
-  }
+  // Phase 59 (ANIM-01, D-01): the party marker is the DOM sprite
+  // #mw-party-sprite, placed by positionPartySprite() from positionCanvas()
+  // below — the canvas no longer paints it (no drawImage, no radial glow,
+  // no dot/"P" fallback).
 
   positionCanvas();
 }
@@ -5149,9 +5193,15 @@ window.__mzClassicBoot = async function classicBoot() {
   import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "./src/browser/inputGuards.js";
   import { computeCanvasBacking, cellSizeForTextScale } from "./src/browser/canvasSizing.js";
   import { preloadIcons, featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON } from "./src/browser/icons.js";
+  // Phase 59 (ANIM-01/02) — the party marker's idle/step timing schedule,
+  // canvas-lockstep placement math and art-fallback choice, plus the
+  // retargetable step-glide controller bridged below as
+  // window.__mzPartySprite.
+  import { createPartySprite, spriteArt, PARTY_FRAME_ICONS } from "./src/browser/partySprite.js";
   // draw() reads MAP_PALETTE from here; inspectAt() reads markForCell/
   // legendFor; the PNG pipeline above (icons.js) is what draws the marks
-  // and the party (canon since the 2026-09-16 UAT).
+  // (canon since the 2026-09-16 UAT) — the party moved to the DOM sprite
+  // in Phase 59.
   import { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor } from "./src/browser/mapMarks.js";
   // 04-DR3 (the roll screen): characterSheetViewModel is the SAME pure,
   // rng-free view-model the HERO tab uses (src/browser/viewModels.js) — the
@@ -5571,6 +5621,21 @@ window.__mzClassicBoot = async function classicBoot() {
     cancelRaf: (id) => cancelAnimationFrame(id),
     reduced: () => prefersReducedMotion(window),
   });
+  // Phase 59 (ANIM-01/02) — the ONE party-marker controller: its idle loop
+  // is pure CSS (see mazeworld.html's own .mw-party-sprite rules above);
+  // this instance owns the retargetable step glide (ANIM-02, wired in Plan
+  // 59-04) and the canvas-lockstep placement math positionPartySprite()
+  // reads via `box`. `render` calls the classic script's own per-frame
+  // repaint of the marker/ring (window.mzPositionParty, set by
+  // positionParty() below) — the SAME reduced-motion predicate every other
+  // Phase 58/59 controller shares, never a second read.
+  window.__mzPartySprite = createPartySprite({
+    now: () => performance.now(),
+    raf: (fn) => requestAnimationFrame(fn),
+    cancelRaf: (id) => cancelAnimationFrame(id),
+    reduced: () => prefersReducedMotion(window),
+    render: () => window.mzPositionParty?.(),
+  });
   // Phase 58 (MOTION-04) — the ONE typed-text effect (D-13/D-14): rail
   // cards, the encounter overlay's line, and (Plan 58-06) fight-log rows
   // all type through this single instance, keyed "rail"/"major"/"fightlog".
@@ -5628,6 +5693,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // covers all four effects.
   function settleAllMotion() {
     window.__mzCameraGlide?.finish?.();
+    window.__mzPartySprite?.finish?.(); // Phase 59 (ANIM-02)
     panelMotion.finishAll();
     typewriter.completeAll();
     beatRunner.hurry();
@@ -5657,11 +5723,35 @@ window.__mzClassicBoot = async function classicBoot() {
   // dominant-axis step resolver and hold-inspect cards through this bridge.
   window.__mzTapStep = { resolveStep, inspectCell, HOLD_MS, TAP_MAX_TRAVEL_PX, DIR_VECTORS };
   window.__mzCanvasSizing = { computeCanvasBacking, cellSizeForTextScale };
-  window.__mzIconsApi = { featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON };
+  // Phase 59 (ANIM-01): PLAYER_MARKER_ICON is no longer read here — draw()
+  // no longer paints the party; this module imports PLAYER_MARKER_ICON
+  // directly for the art-fallback check just below instead.
+  window.__mzIconsApi = { featureKeyForCell, drawFeatureIcon };
   window.__mzIconMap = await preloadIcons("./icons/optimized");
+  // Phase 59 (ANIM-01, D-01): decode every party-sprite frame plus the
+  // static party.png fallback ONCE at boot, then choose the sprite's art
+  // state (spriteArt) so the party marker is never invisible even if some
+  // or all of the shipped art failed to load.
+  {
+    const sprite = document.getElementById("mw-party-sprite");
+    if (sprite) {
+      const frameImgs = Array.from(sprite.querySelectorAll("img.mw-party-frame"));
+      const framesReady = await Promise.all(
+        frameImgs.map((img) =>
+          img
+            .decode()
+            .then(() => img.complete && img.naturalWidth > 0)
+            .catch(() => false)
+        )
+      );
+      const staticImg = window.__mzIconMap[PLAYER_MARKER_ICON];
+      const staticReady = !!(staticImg && staticImg.complete && staticImg.naturalWidth > 0);
+      sprite.dataset.art = spriteArt({ framesReady, staticReady });
+    }
+  }
   // draw() reads MAP_PALETTE from here; inspectAt() reads markForCell/
-  // legendFor; the PNG pipeline above is what draws the marks and the
-  // party (canon since the 2026-09-16 UAT).
+  // legendFor; the PNG pipeline above is what draws the marks (canon since
+  // the 2026-09-16 UAT) — the party moved to the DOM sprite in Phase 59.
   window.__mzMapMarks = { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor };
 
   // One-time, idempotent, non-destructive legacy-key migration (SAV-03 —

@@ -186,8 +186,8 @@ export const BRIDGE = Object.freeze({
   }),
   __mzIconsApi: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: draw — featureKeyForCell/drawFeatureIcon/PLAYER_MARKER_ICON)"]),
-    purpose: "Bridges the pure icon-selection helpers so the map canvas's draw() resolves and paints the same icon set as the rest of the shell.",
+    consumers: Object.freeze(["mazeworld.html (classic: draw — featureKeyForCell/drawFeatureIcon)"]),
+    purpose: "Bridges the pure icon-selection helpers so the map canvas's draw() resolves and paints the same icon set as the rest of the shell; the party marker moved to the DOM sprite (window.__mzPartySprite) in Phase 59.",
   }),
   __mzInputGuards: Object.freeze({
     owner: "mazeworld.html (module)",
@@ -236,6 +236,15 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — Joiner offer party-size cap)"]),
     purpose: "Bridges the engine's PARTY_CAP constant so the Joiner offer card's cap check never drifts from the engine's own limit.",
+  }),
+  __mzPartySprite: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: partyShown — the displayed point a step glide is heading toward)",
+      "mazeworld.html (classic: positionPartySprite — box/pose/frame, in lockstep with positionCanvas())",
+      "mazeworld.html (module: settleAllMotion — finish())",
+    ]),
+    purpose: "Bridges the pure src/browser/partySprite.js marker controller (Phase 59, ANIM-01/02) so the classic placement code reads one lockstep box and one step glide, never a second copy of the camera math. Plan 59-04 adds the classic glideParty (stepTo) to this list.",
   }),
   __mzPendingNarration: Object.freeze({
     owner: "mazeworld.html (module)",
