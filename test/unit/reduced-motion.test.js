@@ -29,6 +29,7 @@ import { keepInViewAxis } from "../../src/browser/controls.js";
 import { REDUCED_MOTION_QUERY, createPanelMotion } from "../../src/browser/motion.js";
 import { createCameraGlide } from "../../src/browser/cameraGlide.js";
 import { createTypewriter } from "../../src/browser/typewriter.js";
+import { createPartySprite } from "../../src/browser/partySprite.js";
 import { railPush, emptyRail, RAIL_HOLD } from "../../src/browser/rail.js";
 import { stripHtml, stripJs } from "../../tools/ident-sweep.mjs";
 import { applyAction } from "../../engine/engine.js";
@@ -473,7 +474,10 @@ test("reduced-motion/audit: four controllers, one predicate — every constructo
     return null;
   }
 
-  for (const marker of ["createCameraGlide(", "createTypewriter(", "createBeat(", "createPanelMotion("]) {
+  // Phase 59 (ANIM-01/02): createPartySprite( joins the controller list —
+  // the party marker's step-glide controller shares the SAME predicate as
+  // every Phase 58 effect, never a second reduced-motion read.
+  for (const marker of ["createCameraGlide(", "createTypewriter(", "createBeat(", "createPanelMotion(", "createPartySprite("]) {
     const args = extractCallArgs(stripped, marker);
     assert.ok(args, `${marker} call not found`);
     assert.match(
@@ -490,7 +494,7 @@ test("reduced-motion/audit: four controllers, one predicate — every constructo
 
 // ─── (3) settle-all ────────────────────────────────────────────────────
 
-test("reduced-motion/audit: settle-all — settleAllMotion() drains all four effects (camera glide finish, panelMotion.finishAll(), typewriter.completeAll(), beatRunner.hurry()); onReducedMotionChange(window, is wired exactly once and its callback calls settleAllMotion() only when the new value is true", () => {
+test("reduced-motion/audit: settle-all — settleAllMotion() drains all five effects (camera glide finish, party-sprite finish, panelMotion.finishAll(), typewriter.completeAll(), beatRunner.hurry()); onReducedMotionChange(window, is wired exactly once and its callback calls settleAllMotion() only when the new value is true", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
   const stripped = stripHtml(raw);
 
@@ -500,6 +504,9 @@ test("reduced-motion/audit: settle-all — settleAllMotion() drains all four eff
   const settleBody = stripped.slice(settleIdx, settleNextFn === -1 ? stripped.length : settleNextFn);
 
   assert.match(settleBody, /window\.__mzCameraGlide\?\.finish\?\.\(\);/, "settleAllMotion must finish the camera glide");
+  // Phase 59 (ANIM-02): settleAllMotion must also finish the party-marker
+  // step glide.
+  assert.match(settleBody, /window\.__mzPartySprite\?\.finish\?\.\(\);/, "settleAllMotion must finish the party-sprite step glide");
   assert.match(settleBody, /panelMotion\.finishAll\(\);/, "settleAllMotion must drain every pending panel close");
   assert.match(settleBody, /typewriter\.completeAll\(\);/, "settleAllMotion must complete every in-flight typing run");
   assert.match(settleBody, /beatRunner\.hurry\(\);/, "settleAllMotion must hurry a live beat");
@@ -513,9 +520,9 @@ test("reduced-motion/audit: settle-all — settleAllMotion() drains all four eff
   );
 });
 
-// ─── (4) mid-session flip, all four together ──────────────────────────
+// ─── (4) mid-session flip, all five together ──────────────────────────
 
-test("reduced-motion/audit: mid-session flip — all four REAL controllers, sharing one switchable reduced flag on one fake clock, land together the instant the same four settle calls settleAllMotion's body makes are run", () => {
+test("reduced-motion/audit: mid-session flip — all five REAL controllers, sharing one switchable reduced flag on one fake clock, land together the instant the same five settle calls settleAllMotion's body makes are run", () => {
   const clock = createFakeClock();
   let reducedFlag = false;
   const reduced = () => reducedFlag;
@@ -575,16 +582,33 @@ test("reduced-motion/audit: mid-session flip — all four REAL controllers, shar
   assert.equal(renders.length, 1, "scenario setup: only line 0 has landed so far");
   assert.equal(settleCalls, 0);
 
-  // Flip the OS preference mid-session, then run the SAME four calls
+  // 5. party sprite (Phase 59, ANIM-02) — a real step glide, in flight
+  // (reduced=false).
+  const partySprite = createPartySprite({
+    now: clock.now,
+    raf: clock.requestAnimationFrame,
+    cancelRaf: clock.cancelAnimationFrame,
+    reduced,
+    render: () => {},
+  });
+  partySprite.stepTo({ x: 0, y: 0 }, { x: 1, y: 0 });
+  assert.equal(partySprite.active(), true, "scenario setup: the party-sprite glide must still be in flight");
+
+  // Flip the OS preference mid-session, then run the SAME five calls
   // settleAllMotion's own body makes.
   reducedFlag = true;
   glide.finish();
+  partySprite.finish();
   panelMotion.finishAll();
   typewriter.completeAll();
   runner.hurry();
 
   assert.deepEqual(camApplied, { x: 10, y: 20 }, "the glide must have applied its exact target");
   assert.equal(glide.active(), false);
+
+  assert.equal(partySprite.active(), false, "the party-sprite glide must be finished");
+  assert.equal(partySprite.pose(), "idle", "the marker must settle to idle");
+  assert.deepEqual(partySprite.displayed({ x: 1, y: 0 }), { x: 1, y: 0 }, "the marker must land exactly at its target");
 
   assert.equal(el.hidden, true, "the element must be hidden");
   assert.equal(onHiddenCalls, 1, "onHidden must fire exactly once");
@@ -602,6 +626,7 @@ test("reduced-motion/audit: mid-session flip — all four REAL controllers, shar
   // Advancing the clock afterwards changes nothing.
   clock.advance(100000);
   assert.deepEqual(camApplied, { x: 10, y: 20 });
+  assert.equal(partySprite.active(), false);
   assert.equal(el.hidden, true);
   assert.equal(onHiddenCalls, 1);
   assert.equal(target.textContent, text);
@@ -672,16 +697,26 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
 // 2026-09-22 HUD mock"). BASE_58 (a01b38e) is NOT used here: it postdates
 // 57-05's own HUD work, which legitimately changed paint()/draw(), so
 // comparing against BASE_58 would hide a real Phase 58 regression inside
-// noise BASE_58 already carries. These two hex digests are the SHA-256 of
-// PRE58's own comment-stripped, CRLF-normalised paint()/draw() bodies,
-// computed by a one-off node script reading `git show
-// ab3fca9:mazeworld.html` through tools/ident-sweep.mjs#stripHtml — pinned
-// here as literals so `npm test` stays independent of git history while
-// still proving no Phase 58 statement grew either body.
+// noise BASE_58 already carries. PRE58_PAINT_SHA256 is the SHA-256 of
+// PRE58's own comment-stripped, CRLF-normalised paint() body, computed by a
+// one-off node script reading `git show ab3fca9:mazeworld.html` through
+// tools/ident-sweep.mjs#stripHtml — pinned here as a literal so `npm test`
+// stays independent of git history while still proving no Phase 58 (or
+// later) statement grew it. paint() is untouched by Phase 59 — this digest
+// stays byte-identical to PRE58's.
+//
+// DRAW_SHA256 (Phase 59, Plan 03 re-pin): draw() is NOT held to PRE58 any
+// longer — Plan 03 deliberately removed the canvas's own party-marker
+// paint (the drawImage/radial-glow/dot-fallback block; the party is now
+// the DOM sprite #mw-party-sprite, positioned by positionPartySprite()).
+// This is the SHA-256 of draw()'s own comment-stripped body AFTER that
+// removal, computed the same one-off way; nothing was added to draw() by
+// this plan, only removed (PRE_DRAW_LINES's line count dropped, per this
+// plan's own discovery step).
 const PRE58_PAINT_SHA256 = "b90c5e4f80290d1cd3bc4c7f53a2ad8441a3c356d9703d73c9a2ab2f1f9e6f2f";
-const PRE58_DRAW_SHA256 = "ce9b08c5e35efad8e4a5096a08dae44cb225273c5b5cca5ac5703af5e9e4033a";
+const DRAW_SHA256 = "cfd8d6f145c3ba6277f8c2dbc4d3f66addf552efa068e3c1b58ccb7f4419c2a9";
 
-test("reduced-motion/audit: modularity — the comment-stripped bodies of paint() and draw() are byte-identical to PRE58's (ab3fca9), pinned by SHA-256, unchanged by any Phase 58 plan", () => {
+test("reduced-motion/audit: modularity — paint() is byte-identical to PRE58's (ab3fca9); draw() is re-pinned for Phase 59 Plan 03 (the canvas party-marker paint removed, nothing added) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
   const stripped = stripHtml(raw);
 
@@ -709,6 +744,6 @@ test("reduced-motion/audit: modularity — the comment-stripped bodies of paint(
   const paintHash = crypto.createHash("sha256").update(paintBody, "utf8").digest("hex");
   const drawHash = crypto.createHash("sha256").update(drawBody, "utf8").digest("hex");
 
-  assert.equal(paintHash, PRE58_PAINT_SHA256, "paint()'s comment-stripped body must be byte-identical to PRE58's — no Phase 58 plan may grow it");
-  assert.equal(drawHash, PRE58_DRAW_SHA256, "draw()'s comment-stripped body must be byte-identical to PRE58's — no Phase 58 plan may grow it");
+  assert.equal(paintHash, PRE58_PAINT_SHA256, "paint()'s comment-stripped body must be byte-identical to PRE58's — no Phase 58/59 plan may grow it");
+  assert.equal(drawHash, DRAW_SHA256, "draw()'s comment-stripped body must match Phase 59 Plan 03's re-pin exactly — the canvas party paint removed, nothing added");
 });

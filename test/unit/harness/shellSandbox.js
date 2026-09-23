@@ -58,6 +58,12 @@ import { hudMenuNext } from "../../../src/browser/hudMenu.js";
 import { REDUCED_MOTION_QUERY, prefersReducedMotion, createPanelMotion } from "../../../src/browser/motion.js";
 import { createCameraGlide } from "../../../src/browser/cameraGlide.js";
 import { createTypewriter, typeDurationMs } from "../../../src/browser/typewriter.js";
+// Phase 59 (ANIM-01/02) — the REAL party-sprite controller (wired below),
+// and (only when a caller opts into `stubDraw: false`) what the REAL
+// draw() itself reads: the icon pipeline and the map-mark palette.
+import { createPartySprite } from "../../../src/browser/partySprite.js";
+import { FEATURE_ICONS, featureKeyForCell, drawFeatureIcon } from "../../../src/browser/icons.js";
+import { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor } from "../../../src/browser/mapMarks.js";
 import {
   railCardFor,
   railPush,
@@ -255,6 +261,21 @@ function wireBridges(context) {
     view: () => beatRunner.view(),
   };
   context.__mzBeatRunnerInstance = beatRunner;
+  // Phase 59 (ANIM-01/02) — the REAL party-marker step-glide controller,
+  // driven by this sandbox's own scheduler (the fake clock when
+  // loadShellSandbox was given one, else the sandbox's inert never-firing
+  // default) and the live reduced-motion predicate; `render` calls the
+  // classic script's own window.mzPositionParty, mirroring the module
+  // script's own construction exactly. Never a stub instance —
+  // party-sprite-shell.test.js's lockstep/reduced-motion tests depend on
+  // exercising the real controller.
+  w.__mzPartySprite = createPartySprite({
+    now: () => w.performance.now(),
+    raf: (fn) => w.requestAnimationFrame(fn),
+    cancelRaf: (id) => w.cancelAnimationFrame(id),
+    reduced: () => prefersReducedMotion(w),
+    render: () => w.mzPositionParty?.(),
+  });
 }
 
 /**
@@ -288,10 +309,28 @@ function wireBridges(context) {
  * typed-text.test.js can exercise renderRail()'s real card-building/typing/
  * hold/dismiss machinery through this one shared harness, rather than a
  * second sibling loader.
+ *
+ * Phase 59 (ANIM-01) — `stubDraw` (default true, unchanged pre-Phase-59
+ * behaviour) keeps draw() stubbed to a no-op; `stubDraw: false` runs the
+ * REAL draw() instead, wiring what it reads (window.__mzIconsApi/
+ * __mzIconMap/__mzMapMarks — deliberately absent from wireBridges above,
+ * since the stubbed draw() never reaches for them): __mzIconMap gets one
+ * fake decoded image per FEATURE_ICONS name (`{ complete: true,
+ * naturalWidth: 144, key: name }`, this harness's stand-in for a browser
+ * Image, mirroring recordingDom.js's own fake-canvas-context precedent).
+ * `canvasContext` (default null), when given, replaces the `#maze` canvas's
+ * `getContext` BEFORE the classic script runs, so `const ctx =
+ * cv.getContext("2d")` (a classic-script top-level statement) captures a
+ * caller-supplied recording context (test/unit/harness/recordingCanvas.js)
+ * instead of recordingDom.js's own no-op sink.
  */
-export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stubRail = true }) {
+export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stubRail = true, stubDraw = true, canvasContext = null }) {
   const raw = fs.readFileSync(HTML_PATH, "utf8").replace(/\r\n/g, "\n");
   const { classic } = extractScriptRegions(raw);
+
+  if (canvasContext) {
+    doc.document.getElementById("maze").getContext = () => canvasContext;
+  }
 
   const fakeStorage = new Map();
   const sandbox = {
@@ -355,7 +394,18 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
   // both are plain `function` declarations, so a direct reassignment is
   // enough, no defineProperty getter trick needed). paintConditions stays
   // live — it only renders the HUD condition strip, harmless and cheap.
-  context.draw = () => {};
+  if (stubDraw) {
+    context.draw = () => {};
+  } else {
+    // Phase 59 (ANIM-01): the REAL draw() runs — wire the icon pipeline +
+    // map-mark palette it reads (deliberately absent from wireBridges
+    // above, since the stubbed draw() never reaches for them).
+    context.window.__mzIconsApi = { featureKeyForCell, drawFeatureIcon };
+    const iconMap = {};
+    for (const name of FEATURE_ICONS) iconMap[name] = { complete: true, naturalWidth: 144, key: name };
+    context.window.__mzIconMap = iconMap;
+    context.window.__mzMapMarks = { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor };
+  }
   if (stubRail) {
     context.renderRail = () => {};
     context.window.renderRail = context.renderRail;

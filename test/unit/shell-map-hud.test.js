@@ -400,8 +400,8 @@ test("(h) chrome: menu row ids/order/classes (MARKS, CENTRE MAP, MAKE CAMP, SETT
 
 // ─── (h) PERF 2026-09-17: composited party pulse ───────────────────────────
 
-test('(h) PERF 2026-09-17: the party pulse animates only composited properties (static ring shadow, opacity/transform keyframes, will-change)', () => {
-  assert.match(HTML, /^\.mw-party-pulse\{[^}]*box-shadow:0 0 0 3px #14110c,0 0 14px 3px rgba\(232,201,122,\.5\)[^}]*will-change:transform,opacity[^}]*animation:mwglow 1\.6s ease-in-out infinite\}$/m);
+test('(h) PERF 2026-09-17: the party pulse animates only composited properties (static ring shadow, opacity/transform keyframes, will-change); Phase 59 (ANIM-03, the user\'s 999.1 words): the hard dark ring is gone, leaving a .25 halo and a .28 radial glow', () => {
+  assert.match(HTML, /^\.mw-party-pulse\{[^}]*box-shadow:0 0 14px 3px rgba\(232,201,122,\.25\)[^}]*background:radial-gradient\(closest-side,rgba\(232,201,122,\.28\) 15%,rgba\(232,201,122,0\) 100%\)[^}]*will-change:transform,opacity[^}]*animation:mwglow 1\.6s ease-in-out infinite\}$/m);
   const kf = HTML.match(/^@keyframes mwglow\{.*\}\}$/m)[0];
   assert.doesNotMatch(kf, /box-shadow/);
   assert.match(kf, /0%,100%\{opacity:\.55;transform:scale\(1\)\}/);
@@ -424,7 +424,7 @@ test('(h) PERF addendum 2026-09-17: the party pulse is paused/hidden while the e
 
 // ─── (i) canvas: draw() region positive/negative pins ─────────────────────
 
-test("(i) draw(): reads the palette from window.__mzMapMarks and the marks/party from the PNG pipeline (v1.3 canon restored 2026-09-16), positionCanvas() last", () => {
+test("(i) draw(): reads the palette from window.__mzMapMarks and the marks from the PNG pipeline (v1.3 canon restored 2026-09-16); Phase 59 (ANIM-01, D-01) — the party is no longer drawn here at all; positionCanvas() last", () => {
   const region = drawRegion();
   for (const needle of [
     "window.__mzMapMarks",
@@ -436,20 +436,29 @@ test("(i) draw(): reads the palette from window.__mzMapMarks and the marks/party
     "P.floorDark",
     "P.floorInset",
     "P.border",
-    "P.party",
     "strokeRect(3, 3, size - 6, size - 6)",
     "window.__mzIconsApi",
     "window.__mzIconMap",
     "img.complete && img.naturalWidth > 0",
     "iconsApi.featureKeyForCell(c)",
     "iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir, 0.75)",
-    "iconMap[iconsApi.PLAYER_MARKER_ICON]",
-    "iconsApi.drawFeatureIcon(ctx, partyImg, px * CELL, py * CELL, CELL)",
-    "createRadialGradient(",
   ]) {
     assert.ok(region.includes(needle), `draw() region must include "${needle}"`);
   }
-  for (const gone of ["getComputedStyle", "globalAlpha", "ctx.fillText(mark.glyph", "MARK_SCALE", "markForCell("]) {
+  // Phase 59 (ANIM-01, D-01): the party marker is the DOM sprite now — the
+  // four needles below moved here from the must-include list above; draw()
+  // must never read/paint the party again.
+  for (const gone of [
+    "getComputedStyle",
+    "globalAlpha",
+    "ctx.fillText(mark.glyph",
+    "MARK_SCALE",
+    "markForCell(",
+    "iconMap[iconsApi.PLAYER_MARKER_ICON]",
+    "iconsApi.drawFeatureIcon(ctx, partyImg, px * CELL, py * CELL, CELL)",
+    "createRadialGradient(",
+    "P.party",
+  ]) {
     assert.ok(!region.includes(gone), `draw() region must not include "${gone}"`);
   }
   assert.match(region.trimEnd(), /positionCanvas\(\);\s*\}$/);
