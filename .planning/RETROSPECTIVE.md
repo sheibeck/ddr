@@ -174,6 +174,40 @@
 - Sessions: 1 (autonomous, 2 compactions)
 - Notable: the parallel worktree waves plus plan-ahead cut the wall-clock; the one device session was the whole of Phase 60
 
+## v1.9 The Gear Screen (2026-09-23, one day)
+
+**Phases:** 4 | **Plans:** 14 | **Commits:** 105 since `v1.8` | **Tests:** 3,905 → 4,197
+
+### What Was Built
+- An engine combat gear lock (`gearRefused`), store purchases that always deliver (pre-payment refusals, not-better → bag, the traded-in piece narrated), and an upgrade line that explains itself.
+- The Gear tab rebuilt to the user's Claude Design mock: a slim header, five fixed WORN rows, a bag meter with tagged cards, consumables, ALSO ON YOU, and one bottom action sheet with engine-true greyed reasons, live combat greying, and back/TalkBack/reduced-motion support.
+- Play 1.9.0 / vc8 built for closed testing; the v1.9 debug APK installed on the Pixel 7.
+
+### What Worked
+- **Scouting before discuss changed the requirements.** The todo's "proficiency" diagnosis of the Spiked Staff was wrong, and reading `expectedStrike` showed the verdict was true. STORE-03 was reworded to "explain it" instead of "change the math".
+- **Engine first, UI after:** Phase 63's greyed rows read the engine's own refusal reasons (`gearLockReason`, `storeBuyRefusal`, `refusalText`), and three agreement sweeps (432, 117 and 17 pairs) proved no screen forks a rule.
+- **Parallel worktree waves** (61-01 ‖ 61-02, 63-03 ‖ 63-04) with a merge and full suite after every wave.
+- **Wireless adb re-pairing mid-session** (`adb pair`) instead of abandoning the device walk.
+
+### What Was Inefficient
+- **CRLF, three times.** Merged files come back CRLF on this checkout (no `.gitattributes`). That caused two post-merge test failures fixed in the harness, and every worktree executor reported 7–16 false failures. The `.gitattributes eol=lf` pin is overdue.
+- `worktree.cleanup-wave` refused a declared fixture deletion, so the merge was done by hand.
+- The planner's STALL false alarm on a 0-byte transcript: planners take about 30 min before their first file.
+- The device walk was cut short (3/24) when the user switched to shipping the closed-test build.
+
+### Patterns Established
+- **Mock stance restated per milestone:** the mock sets layout, style and interaction, the shipped rules stay canon, and the rulings win (the rail, not the mock's toast; HP, not WP; no header that duplicates the HUD).
+- **Interim actions between a layout phase and its sheet phase**, so the tab is never broken between phases.
+- **An orchestrator-written plan for a tiny device-close phase** when the user's phone is waiting.
+
+### Key Lessons
+- Read the rule's arithmetic before accepting a bug report's diagnosis. The user's intent ("make purchases work") can hold while the stated cause is wrong.
+- Pin line endings in the repo before the next worktree-heavy milestone.
+
+### Cost Observations
+- Model mix: Opus planners (3 phases), Sonnet executors (14 plans), orchestrator on Opus. No verification agents.
+- Sessions: 1 (autonomous, no compaction).
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -189,6 +223,7 @@
 | v1.6 | 1 (autonomous, 2 compactions, 1 restart) | 6 | Cleanup-only milestone under an engine fence; measure-first gates per phase (fixture scan, DOM snapshots, stale-terms, perf marks); honest-shortfall protocol with user re-baselining; device rounds only inside the phase that is the device |
 | v1.7 | 1 (autonomous) | 6 | Global difficulty model fitted by a fair bot in checkpointed blocks; user rulings mid-phase; human curve verdict deferred |
 | v1.8 | 1 (autonomous, 2 compactions) | 5 | Presentation-only under a tag-diff Engine Gate; parallel worktree waves; mid-run design mock absorbed as an added plan; UAT spread over play sessions |
+| v1.9 | 1 (autonomous, no compaction) | 4 | Engine rule fixes first so the UI reads real refusal reasons; cross-screen agreement sweeps; in-session wireless-adb device walk (partial) and a Play closed-test build |
 
 ### Cumulative Quality
 
