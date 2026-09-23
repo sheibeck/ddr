@@ -442,6 +442,8 @@ test("(i) draw(): reads the palette from window.__mzMapMarks and the marks from 
     "img.complete && img.naturalWidth > 0",
     "iconsApi.featureKeyForCell(c)",
     "iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir, 0.75)",
+    // Phase 59 (DRESS-01): the ambient prop layer, beneath the features.
+    "window.__mzDressing?.drawLayer?.(ctx, S, CELL, visible)",
   ]) {
     assert.ok(region.includes(needle), `draw() region must include "${needle}"`);
   }

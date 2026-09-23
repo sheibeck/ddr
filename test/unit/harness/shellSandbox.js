@@ -63,6 +63,12 @@ import { createTypewriter, typeDurationMs } from "../../../src/browser/typewrite
 // draw() itself reads: the icon pipeline and the map-mark palette.
 import { createPartySprite } from "../../../src/browser/partySprite.js";
 import { FEATURE_ICONS, featureKeyForCell, drawFeatureIcon } from "../../../src/browser/icons.js";
+// Phase 59 (DRESS-01..05) — the REAL createDressingBridge factory, wired
+// below (always, like __mzPartySprite) over an injectable art source (like
+// the fake clock: `dressing = { enabled, images }` chooses what
+// art.enabled()/art.images() answer — never a second copy of dressing.js's
+// own rules).
+import { createDressingBridge } from "../../../src/browser/dressing.js";
 import { MAP_PALETTE, MARK_GLYPHS, MARK_SCALE, ONEWAY_ROTATION_DEG, MARKS_LEGEND, markForCell, legendFor } from "../../../src/browser/mapMarks.js";
 import {
   railCardFor,
@@ -150,7 +156,7 @@ function extractScriptRegions(raw) {
  * engineCombatAction's own handoff (that function lives in the module
  * script and cannot run in this classic-only sandbox).
  */
-function wireBridges(context) {
+function wireBridges(context, { dressing = null } = {}) {
   const w = context.window;
   w.__mzTables = Object.freeze({ ROMAN });
   w.__mzNightlyEats = nightlyEats;
@@ -276,6 +282,19 @@ function wireBridges(context) {
     reduced: () => prefersReducedMotion(w),
     render: () => w.mzPositionParty?.(),
   });
+  // Phase 59 (DRESS-01..05) — the REAL window.__mzDressing bridge, over an
+  // injectable art source: given `dressing: { enabled, images }`, the
+  // bridge's art answers exactly those two values (a test's fixed decoded-
+  // image map or `null`); the default (no `dressing` option) mirrors the
+  // real boot state one frame BEFORE the lazy load resolves — Set dressing
+  // On, but `images()` still null, which drawLayer's own D-14 guard turns
+  // into "draw nothing", matching mazeworld.html's own module-script
+  // sequencing exactly. Never a stub instance — dressing-shell.test.js
+  // depends on exercising the real bridge/placement/exclusion/draw rules.
+  const dressingArt = dressing
+    ? { enabled: () => dressing.enabled, images: () => dressing.images }
+    : { enabled: () => true, images: () => null };
+  w.__mzDressing = createDressingBridge({ art: dressingArt, drawIcon: drawFeatureIcon });
 }
 
 /**
@@ -323,8 +342,13 @@ function wireBridges(context) {
  * cv.getContext("2d")` (a classic-script top-level statement) captures a
  * caller-supplied recording context (test/unit/harness/recordingCanvas.js)
  * instead of recordingDom.js's own no-op sink.
+ *
+ * Phase 59 (DRESS-01..05) — `dressing` (default null) feeds wireBridges'
+ * own `{ dressing }` option (see its doc comment above): pass
+ * `{ enabled, images }` to control exactly what the real window.__mzDressing
+ * bridge's art source answers.
  */
-export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stubRail = true, stubDraw = true, canvasContext = null }) {
+export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stubRail = true, stubDraw = true, canvasContext = null, dressing = null }) {
   const raw = fs.readFileSync(HTML_PATH, "utf8").replace(/\r\n/g, "\n");
   const { classic } = extractScriptRegions(raw);
 
@@ -385,7 +409,7 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
   const context = vm.createContext(sandbox);
   vm.runInContext(classic, context, { filename: "mazeworld.html#classic" });
 
-  wireBridges(context);
+  wireBridges(context, { dressing });
 
   // Step 5: stub the heavy classic globals AFTER the script ran (a
   // top-level `function draw(){...}`/`function renderRail(){...}`

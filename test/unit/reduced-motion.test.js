@@ -818,18 +818,20 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
 // later) statement grew it. paint() is untouched by Phase 59 — this digest
 // stays byte-identical to PRE58's.
 //
-// DRAW_SHA256 (Phase 59, Plan 03 re-pin): draw() is NOT held to PRE58 any
-// longer — Plan 03 deliberately removed the canvas's own party-marker
-// paint (the drawImage/radial-glow/dot-fallback block; the party is now
-// the DOM sprite #mw-party-sprite, positioned by positionPartySprite()).
-// This is the SHA-256 of draw()'s own comment-stripped body AFTER that
-// removal, computed the same one-off way; nothing was added to draw() by
-// this plan, only removed (PRE_DRAW_LINES's line count dropped, per this
-// plan's own discovery step).
+// DRAW_SHA256 (Phase 59, Plan 03 re-pin, extended by Plan 05): draw() is NOT
+// held to PRE58 any longer — Plan 03 deliberately removed the canvas's own
+// party-marker paint (the drawImage/radial-glow/dot-fallback block; the
+// party is now the DOM sprite #mw-party-sprite, positioned by
+// positionPartySprite()). Plan 05 (DRESS-01..05) then added exactly one
+// statement — window.__mzDressing?.drawLayer?.(ctx, S, CELL, visible); —
+// directly after the maze border and before the feature-icon loop, so the
+// ambient prop layer draws beneath every feature. This is the SHA-256 of
+// draw()'s own comment-stripped body AFTER both changes, computed the same
+// one-off way.
 const PRE58_PAINT_SHA256 = "b90c5e4f80290d1cd3bc4c7f53a2ad8441a3c356d9703d73c9a2ab2f1f9e6f2f";
-const DRAW_SHA256 = "cfd8d6f145c3ba6277f8c2dbc4d3f66addf552efa068e3c1b58ccb7f4419c2a9";
+const DRAW_SHA256 = "d8550d9858c85c58f637a89ef878a7a6d1cf8ce0886d8b7f2af0c452bdb2c043";
 
-test("reduced-motion/audit: modularity — paint() is byte-identical to PRE58's (ab3fca9); draw() is re-pinned for Phase 59 Plan 03 (the canvas party-marker paint removed, nothing added) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
+test("reduced-motion/audit: modularity — paint() is byte-identical to PRE58's (ab3fca9); draw() is re-pinned for Phase 59 Plan 05 (the canvas party-marker paint removed by Plan 03, the one dressing-layer call added by Plan 05, nothing else) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
   const stripped = stripHtml(raw);
 
