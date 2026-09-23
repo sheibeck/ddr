@@ -474,7 +474,11 @@ export const SNAPSHOT_IDS = Object.freeze({
     "s-rations-n", "s-trait", "s-vp", "s-skills", "s-abilities", "s-grim-count", "s-grimoire",
     "doss-who", "doss", "hero-party", "hero-party-list",
   ],
-  gear: ["m-gold", "s-kit", "s-carry-n", "s-onyou", "s-carry"],
+  // Phase 62 (GSCR-01..06): the rebuilt Gear tab's ten render roots — header,
+  // WORN, BAG (meter + cards), CONSUMABLES, ALSO ON YOU — replacing the
+  // retired Phase 43 ON YOU/BAG panel ids (m-gold/s-kit/s-carry-n/s-onyou/
+  // s-carry).
+  gear: ["gear-stats", "gear-worn-head", "gear-worn", "gear-bag-head", "gear-bag-meter", "gear-bag", "gear-cons-head", "gear-cons", "gear-kit-head", "gear-kit"],
   store: ["enc-panel", "enc-body", "shelf", "sell-head", "sell-list", "a-leave"],
 });
 

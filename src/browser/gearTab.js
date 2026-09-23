@@ -64,8 +64,6 @@ export function bagUsage(c) {
  * empty line, same as the other four). Every nested group stays frozen.
  */
 export const GEAR_COPY = Object.freeze({
-  onYou: "ON YOU",
-  wielded: "WIELDED",
   worn: "WORN",
   alsoOnYou: "ALSO ON YOU",
   bag: "BAG",
@@ -379,12 +377,14 @@ export function gearBagMeterModel(state) {
  * `family`/`tag` name the worn-slot family the item fits (weapon/armor/
  * cloak/jewelry via `slotFor`) plus `· SWAP` when every key of that family
  * is already occupied — the same "every key taken" test `renderCarriedList`
- * uses to choose the swap confirm. A bag-only item (no family) carries no
- * tag and gets a USE cell exactly when `gearUseCell` is non-null (equippable
- * gear only works from its worn slot, so a bagged cloak/jewel/weapon/armor
- * never gets one here). `desc` is `it.txt` (`bagArmorText(it)` for armor —
- * Phase 28 ARMOR-03, live durability, never the frozen txt) plus the
- * `usableBy(it, c)` suffix. Pure, null-safe.
+ * uses to choose the swap confirm; `swap` is that same boolean, exposed on
+ * its own (Plan 02, GSCR-05) so the renderer can add the `mw-gear-tag-swap`
+ * CSS class without re-parsing `tag`'s own text. A bag-only item (no
+ * family) carries no tag and gets a USE cell exactly when `gearUseCell` is
+ * non-null (equippable gear only works from its worn slot, so a bagged
+ * cloak/jewel/weapon/armor never gets one here). `desc` is `it.txt`
+ * (`bagArmorText(it)` for armor — Phase 28 ARMOR-03, live durability, never
+ * the frozen txt) plus the `usableBy(it, c)` suffix. Pure, null-safe.
  */
 export function gearBagCardsModel(state) {
   const c = (state && state.c) || {};
@@ -400,7 +400,7 @@ export function gearBagCardsModel(state) {
     const base = it.kind === "armor" ? bagArmorText(it) : (it.txt ?? "");
     const usable = usableBy(it, c);
     const desc = usable ? `${base} ${usable}` : base;
-    return { i, name: it.n, desc, family, tag, use, useRef };
+    return { i, name: it.n, desc, family, tag, swap: family ? swap : false, use, useRef };
   });
 }
 
@@ -756,181 +756,183 @@ export function renderCarriedList(container, state, items, opts = {}, deps = {})
 }
 
 /**
- * renderGearTab(host, state, deps) — Phase 47 (SHELL-01), Plan 03: the ONE
- * mount function for the Gear tab (`#screen-gear`) — m-gold, the ALSO ON
- * YOU panel (`#s-kit`), and the ON YOU/BAG panels (`#s-onyou`/`#s-carry`,
- * via renderCarriedList above). Moved verbatim from the classic script's
- * paint() with `host.ownerDocument` replacing `document`, `state`/`state.c`
- * replacing the classic S/c, and direct engine/viewModels imports replacing
- * the retired window.__mz* bridges (canRead/maxCharges/armorDisplay/
- * bagUsage/emptySlotRows). Every id this function writes lives inside the
- * `#screen-gear` markup section. No window/document globals — host,
- * host.ownerDocument and deps only.
+ * renderGearTab(host, state, deps) — Phase 62 (GSCR-01..06/11): the Gear
+ * tab's ONE mount function, rebuilt on the Plan 01 view models
+ * (gearHeaderModel/gearWornModel/gearBagMeterModel/gearBagCardsModel/
+ * gearConsumablesModel/gearKitRows above) — it only turns those pure models
+ * into DOM via createElement/textContent (T-38-11: no innerHTML carrying an
+ * item name anywhere in this region), reusing renderCarriedList (above,
+ * byte-identical — never edited here) for each bag card's own Equip/
+ * swap-confirm/Drop actions, harvested through ONE per-card gearRow-flagged
+ * call so no confirm logic is forked. Five sections in source order: header
+ * (#gear-stats), WORN (#gear-worn-head/#gear-worn), BAG (#gear-bag-head/
+ * #gear-bag-meter/#gear-bag), CONSUMABLES (#gear-cons-head/#gear-cons) and
+ * ALSO ON YOU (#gear-kit-head/#gear-kit). No window/document globals —
+ * host, host.ownerDocument and deps only.
  */
 export function renderGearTab(host, state, deps = {}) {
   const doc = host.ownerDocument;
   const c = state.c;
 
-  doc.getElementById("m-gold").textContent = c.gold.toLocaleString();
+  // ── small DOM builders (closures — kept inside renderGearTab so every
+  // new helper stays inside this function's own region, per the plan's
+  // source-pin placement rule) ──────────────────────────────────────────
+  const el = (tag, cls, text) => {
+    const e = doc.createElement(tag);
+    if (cls) e.className = cls;
+    if (typeof text === "string") e.textContent = text;
+    return e;
+  };
+  const head = (id, title, countText, full) => {
+    const children = [el("span", "mw-gear-head-title", title)];
+    if (countText) children.push(el("b", "mw-gear-head-count" + (full ? " mw-gear-full" : ""), countText));
+    doc.getElementById(id).replaceChildren(...children);
+  };
+  const useCellEl = (cell, ref, name) => {
+    const wrap = el("div", "mw-gear-use");
+    wrap.dataset.phase = cell.phase;
+    const btn = doc.createElement("button");
+    btn.className = "mw-gear-use-btn";
+    btn.textContent = cell.label;
+    btn.setAttribute("aria-label", cell.label + " " + name);
+    btn.onclick = () => deps.useItem?.(ref);
+    wrap.appendChild(btn);
+    if (cell.sub) wrap.appendChild(el("span", "mw-gear-use-sub", cell.sub));
+    return wrap;
+  };
+  const chevron = () => {
+    const chev = el("span", "mw-gear-chev", GEAR_COPY.chevron);
+    chev.setAttribute("aria-hidden", "true");
+    return chev;
+  };
 
-  const kit = doc.getElementById("s-kit");
-  kit.innerHTML = "";
-  // Phase 43 (CLAR-04): the weapon/armor rows now live in the ON YOU
-  // panel's WIELDED/WORN rows (below, in #s-onyou) — no duplicates here.
-  const rows = [
-    ["Potions", c.potions],
-    ...(c.scrolls ? [["Scrolls", `${c.scrolls}${canRead(state) ? "" : " (unreadable)"}`]] : []),
-    ["Rations", `${c.rations} days`],
-    ["Wilmst", c.gold.toLocaleString()]
-  ];
-  if (c.cls === "Magic User") rows.push(["Spell charges", `${maxCharges(c) - c.spellsUsed} / ${maxCharges(c)}`]);
-  // Phase 40 (SPELL-06): the Shield row now reads BOTH numbers (pool AND
-  // rounds), mirroring the map-HUD ward chip's own {pool, remaining} shape —
-  // the Hero tab used to show pool only.
-  if (c.ward) rows.push([c.ward.name, `${c.ward.pool} hp left · ${c.ward.rounds} rds`]);
-  if (c.might) rows.push(["Strength", `+${c.might} damage`]);
-  if (c.regen) rows.push(["Regeneration", "d8 a round"]);
-  // Phase 40 (SPELL-02/05): the four utility spells that had a real effect
-  // but no Hero-tab row — mirroring the condition-chip strip's own copy.
-  if (c.mirror > 0) rows.push(["Mirror Self", `${c.mirror} rds`]);
-  if (c.senses) rows.push(["Sense Presence", "till the fight ends"]);
-  if (c.foresight) rows.push(["Sense Danger", "armed"]);
-  const rev = c.timers && c.timers["spell:reveal"];
-  if (rev && rev.phase === "effect" && rev.left > 0) rows.push(["Map the Floor", `${rev.left} sq`]);
-  rows.push(["Kills", c.kills || 0]);
-  // Phase 43 (CLAR-04): the ALSO ON YOU head row — potions/scrolls/rations/
-  // wilmst/spell charges/running effects/kills need no bag slot at all.
-  const li = doc.createElement("li");
-  li.className = "mw-kit-head";
-  li.textContent = GEAR_COPY.alsoOnYou;
-  kit.appendChild(li);
-  for (const [a, b] of rows) {
-    const li = doc.createElement("li");
-    li.innerHTML = `${a}<span>${b}</span>`;
-    kit.appendChild(li);
+  // 1. Header — ARMOR RATING / WILMST, the effective values only.
+  const header = gearHeaderModel(state);
+  doc.getElementById("gear-stats").replaceChildren(
+    ...header.stats.map((s) => {
+      const stat = el("div", "mw-gear-stat");
+      stat.appendChild(el("b", "mw-gear-stat-num", s.text));
+      stat.appendChild(el("span", "mw-gear-stat-label", s.label));
+      return stat;
+    })
+  );
+
+  // 2. WORN — five fixed rows, GEAR_WORN_ORDER.
+  const worn = gearWornModel(state);
+  head("gear-worn-head", GEAR_COPY.worn, worn.countText, false);
+  doc.getElementById("gear-worn").replaceChildren(
+    ...worn.rows.map((row) => {
+      const li = el("li", "mw-gear-row" + (row.filled ? "" : " mw-gear-row-empty"));
+      li.dataset.slot = row.key;
+      li.appendChild(el("span", "mw-gear-slot", row.label));
+      const main = el("div", "mw-gear-main");
+      main.appendChild(el("span", "mw-gear-name", row.name));
+      main.appendChild(el("span", "mw-gear-note", row.note));
+      li.appendChild(main);
+      li.appendChild(el("span", "mw-gear-val", row.value));
+      if (row.use) li.appendChild(useCellEl(row.use, row.useRef, row.name));
+      li.appendChild(chevron());
+      if (row.unequip) {
+        const actions = el("div", "mw-gear-actions");
+        const btn = doc.createElement("button");
+        btn.className = "small mw-gear-act";
+        btn.textContent = row.unequip.blocked ? GEAR_COPY.act.bagFull : GEAR_COPY.act.unequip;
+        if (row.unequip.blocked) btn.disabled = true;
+        else btn.onclick = () => deps.unequip?.(row.unequip.slot);
+        actions.appendChild(btn);
+        li.appendChild(actions);
+      }
+      return li;
+    })
+  );
+
+  // 3. BAG — the capacity meter (pips + BAG FULL/free-ride lines).
+  const meter = gearBagMeterModel(state);
+  head("gear-bag-head", GEAR_COPY.bag, meter.countText, meter.full);
+  const meterChildren = [];
+  if (meter.pips.length) {
+    const pips = el("div", "mw-gear-pips" + (meter.full ? " mw-gear-full" : ""));
+    pips.setAttribute("aria-hidden", "true");
+    for (const lit of meter.pips) pips.appendChild(el("div", "mw-gear-pip" + (lit ? " mw-gear-pip-on" : "")));
+    meterChildren.push(pips);
+  }
+  if (meter.fullLine) meterChildren.push(el("p", "mw-gear-full-line", meter.fullLine));
+  if (meter.freeRide) meterChildren.push(el("p", "mw-gear-free", meter.freeRide));
+  doc.getElementById("gear-bag-meter").replaceChildren(...meterChildren);
+
+  // 4. BAG — the item cards. Each card's Equip/swap-confirm/Drop actions
+  // come from ONE per-card renderCarriedList call (gearRow:true), so
+  // renderCarriedList's own confirm logic is reused, never forked.
+  const cards = gearBagCardsModel(state);
+  const bagList = doc.getElementById("gear-bag");
+  if (!cards.length) {
+    const li = el("li", "mw-empty");
+    li.appendChild(el("b", "mw-empty-head", GEAR_COPY.bagEmptyHead));
+    li.appendChild(el("i", "mw-empty-body", GEAR_COPY.bagEmptyBody));
+    bagList.replaceChildren(li);
+  } else {
+    bagList.replaceChildren(
+      ...cards.map((card) => {
+        const li = el("li", "mw-gear-card");
+        li.dataset.i = String(card.i);
+        const main = el("div", "mw-gear-card-main");
+        const top = el("div", "mw-gear-card-top");
+        top.appendChild(el("span", "mw-gear-name", card.name));
+        if (card.tag) top.appendChild(el("span", "mw-gear-tag" + (card.swap ? " mw-gear-tag-swap" : ""), card.tag));
+        main.appendChild(top);
+        main.appendChild(el("div", "mw-gear-desc", card.desc));
+        li.appendChild(main);
+        if (card.use) li.appendChild(useCellEl(card.use, card.useRef, card.name));
+        li.appendChild(chevron());
+        const tmp = doc.createElement("ul");
+        renderCarriedList(tmp, state, c.items, { actions: ["equip", "drop"], gearRow: true, filter: (x) => x === c.items[card.i] }, deps);
+        const actions = tmp.querySelector(".mw-gear-actions");
+        if (actions) li.appendChild(actions);
+        return li;
+      })
+    );
   }
 
-  // carried treasure (Phase 13, ECON-04/05: the keep/drop/equip UI)
-  const carry = doc.getElementById("s-carry");
-  // Phase 43 (CLAR-04): ON YOU rows land in #s-onyou; #s-carry is the BAG.
-  const onyou = doc.getElementById("s-onyou");
-  const items = c.items || [];
-  // Phase 29 (LOOT-04): the readout and the full-bag gate read the ONE
-  // view-model (bagUsage — potions exempt from the count), never a local
-  // count. The engine (stowItem/canStow) alone enforces the cap.
-  const usage = bagUsage(c);
-  // quick 260918-vvt: GEAR_COPY.freeRide is the one home of this note's
-  // copy — shown only for a capped bag; a bag-less dev/test character keeps
-  // the bare count.
-  doc.getElementById("s-carry-n").textContent =
-    usage.slots !== null ? `${usage.text} · ${GEAR_COPY.freeRide}` : usage.text;
-  const bagFull = usage.full;
-  carry.innerHTML = "";
-  onyou.innerHTML = "";
-  // Phase 43 (CLAR-04), 260918-wy1 (jewelry-merge): the empty-slot rows
-  // (armor + the three WORN_SLOTS keys — jewelry1, jewelry2, cloak —
-  // in-voice) come from the ONE emptySlotRows(c) read — never a restated
-  // slot list.
-  const empties = emptySlotRows(c);
-  const emptyFor = (slot) => empties.find((r) => r.slot === slot);
-  const headRow = (text) => {
-    const li = doc.createElement("li");
-    li.className = "none mw-onyou-head";
-    li.textContent = text;
-    onyou.appendChild(li);
-  };
-  const emptyRow = (text) => {
-    const li = doc.createElement("li");
-    li.className = "none mw-worn-empty";
-    li.textContent = text;
-    onyou.appendChild(li);
-  };
+  // 5. CONSUMABLES — HEALING POTION, one row per buff-potion name, SCROLLS.
+  const cons = gearConsumablesModel(state);
+  head("gear-cons-head", GEAR_COPY.consumables, cons.heldText, false);
+  doc.getElementById("gear-cons").replaceChildren(
+    ...cons.rows.map((row) => {
+      const li = el("li", "mw-gear-card mw-gear-cons");
+      li.dataset.key = row.key;
+      const main = el("div", "mw-gear-card-main");
+      const top = el("div", "mw-gear-card-top");
+      top.appendChild(el("span", "mw-gear-name", row.name));
+      top.appendChild(el("span", "mw-gear-qty" + (row.qty === 0 ? " mw-gear-qty-zero" : ""), row.qtyText));
+      main.appendChild(top);
+      main.appendChild(el("div", "mw-gear-desc", row.desc));
+      if (row.reason) main.appendChild(el("p", "mw-gear-cons-tag", row.reason));
+      li.appendChild(main);
+      const btn = doc.createElement("button");
+      btn.className = "mw-gear-cons-btn";
+      btn.textContent = row.verb;
+      if (!row.enabled) {
+        btn.disabled = true;
+      } else {
+        btn.onclick = () => {
+          if (row.dispatch.type === "drinkPotion") deps.drinkPotion?.();
+          else if (row.dispatch.type === "useItem") deps.useItem?.(row.dispatch.i);
+          else if (row.dispatch.type === "readScroll") deps.readScroll?.();
+        };
+      }
+      li.appendChild(btn);
+      return li;
+    })
+  );
 
-  // ≥48dp helper: build a small action button dispatching an engine inventory
-  // action closure (never wrapped in the classic act() — the closure owns its
-  // own state-swap + repaint), with an optional disabled state.
-  const gearBtn = (label, onClick, disabled) => {
-    const bt = doc.createElement("button");
-    bt.className = "small"; bt.textContent = label;
-    bt.style.marginTop = "4px"; bt.style.marginRight = "6px"; bt.style.alignSelf = "flex-start";
-    if (disabled) { bt.disabled = true; }
-    else bt.onclick = onClick;
-    return bt;
-  };
-
-  // Equipped weapon/armor rows first, each with an Unequip control (stows the
-  // worn piece back into the bag — engine gates on a free slot). A bare-handed
-  // "Fists" weapon / "Nothing" armor has nothing to unequip. Phase 28
-  // (ARMOR-03): `noSlotNeeded` lets a DESTROYED piece unequip even on a full
-  // bag — it is discarded (Plan 01's unequipSlot branch), not stowed.
-  const wornRow = (label, sub, slot, canUnequip, noSlotNeeded) => {
-    const li = doc.createElement("li");
-    li.className = "mw-worn";
-    li.innerHTML = `<b>${label} <span class="mw-worn-tag">worn</span></b><i>${sub}</i>`;
-    if (canUnequip) li.appendChild(gearBtn(bagFull && !noSlotNeeded ? "Bag full" : "Unequip", () => deps.unequip?.(slot), bagFull && !noSlotNeeded));
-    onyou.appendChild(li);
-  };
-  const w = WEAPONS[c.weapon] || WEAPONS["Club"];
-  const armorD = armorDisplay(c);
-  headRow(GEAR_COPY.wielded);
-  wornRow(c.weapon, `${w.lab}${c.magicWpn ? ` +${c.magicWpn} magic` : ""}`, "weapon", c.weapon && c.weapon !== "Fists" && WEAPONS[c.weapon]);
-  // Phase 28 (ARMOR-02/04): the worn-armor row now reads the shared
-  // formatter — with the cloak the headline is the cloak (effective armor)
-  // and Unequip still stows the piece underneath; a destroyed piece needs no
-  // slot, so a full bag never blocks discarding it.
-  headRow(GEAR_COPY.worn);
-  if (armorD.worn || armorD.magic)
-    wornRow(armorD.label, armorD.under ? `${armorD.sub} · ${armorD.under}` : armorD.sub, "armor", armorD.worn, armorD.destroyed);
-  else { const r = emptyFor("armor"); if (r) emptyRow(r.text); }
-
-  // Phase 37 (GEAR-03) — one row per populated c.worn[slot], in WORN_SLOTS
-  // order, reads like the armor row above (name, cooldown when counting
-  // down, txt, a Use button, Unequip dimmed to "Bag full" exactly like
-  // weapon/armor). 260918-w4n (use-activated-only): every JEWELRY/CLOAKS row
-  // is act-only now — st.kind is never "none" for a worn-slot item, so every
-  // worn row gets a Use button (the old `it.use` gate is gone). Does NOT
-  // touch wornRow's pinned signature — a slot item is never a weapon/armor,
-  // so it gets its own small builder. 260918-wy1 (jewelry-merge): WORN_SLOTS
-  // is now the three keys jewelry1, jewelry2, cloak — this loop needed no
-  // code change, it already reads WORN_SLOTS generically.
-  const wornSlotRow = (slot, it) => {
-    const li = doc.createElement("li");
-    li.className = "mw-worn";
-    // Phase 39 (GEAR-02/GEAR-05), Plan 05 — the ONE row-state rule
-    // (READY / N SQ / cd N SQ / k/max · N SQ), never it.every/usedAt; built
-    // via createElement/textContent (T-38-11 — no innerHTML carrying an
-    // item name in this region).
-    const st = itemRowState(state, it);
-    const b = doc.createElement("b");
-    b.textContent = it.n + (st.text ? ` · ${st.text}` : "");
-    b.appendChild(doc.createTextNode(" "));
-    const tag = doc.createElement("span");
-    tag.className = "mw-worn-tag";
-    tag.textContent = "worn";
-    b.appendChild(tag);
-    const desc = doc.createElement("i");
-    desc.textContent = it.txt ?? "";
-    li.appendChild(b);
-    li.appendChild(desc);
-    if (st.kind !== "none") li.appendChild(gearBtn("Use", () => deps.useItem?.({ slot })));
-    li.appendChild(gearBtn(bagFull ? "Bag full" : "Unequip", () => deps.unequip?.(slot), bagFull));
-    onyou.appendChild(li);
-  };
-  for (const slot of WORN_SLOTS) { const it = c.worn && c.worn[slot]; if (it) wornSlotRow(slot, it); else { const r = emptyFor(slot); if (r) emptyRow(r.text); } }
-
-  // Phase 14 (ECON-06/07): the carried-item rows now come from the SHARED
-  // renderCarriedList component (used identically by the store sell section and
-  // the combat use-list). clear:false preserves the worn weapon/armor rows
-  // appended just above. Use routes through deps.useItem like Equip/Drop
-  // already do.
-  // Phase 33 (UIF-01) — gearRow:true is passed HERE ONLY (the store sell
-  // list, the combat use-list and the loot card keep the Phase 14/29/32
-  // rendering).
-  renderCarriedList(carry, state, items, {
-    clear: false,
-    actions: ["use", "equip", "drop"],
-    gearRow: true,
-    // 04-UI-SPEC.md Copywriting Contract — GEAR tab's CARRIED empty state.
-    emptyHtml: `<b class="mw-empty-head">NOTHING LEFT TO CARRY</b><i class="mw-empty-body">You used it all. That was the plan, technically.</i>`,
-  }, deps);
+  // 6. ALSO ON YOU — the compact running-effects key/value block.
+  head("gear-kit-head", GEAR_COPY.alsoOnYou, "", false);
+  doc.getElementById("gear-kit").replaceChildren(
+    ...gearKitRows(state).map((row) => {
+      const li = doc.createElement("li");
+      li.appendChild(doc.createTextNode(row.label));
+      li.appendChild(el("span", null, row.value));
+      return li;
+    })
+  );
 }

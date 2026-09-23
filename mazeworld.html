@@ -1890,23 +1890,38 @@ html,body{height:100%}
       </section>
     </section>
 
-    <!-- GEAR (shell; 04-UI-SPEC.md Screen 3 — Phase 43 (CLAR-04): two panels
-         — ON YOU (WIELDED / WORN with empty-slot rows / ALSO ON YOU) and
-         BAG; the roadmap's "Carried: weapon, staff, shield" grouping is
-         superseded — there are no shields, and a staff is a BAG item (used
-         from the BAG panel, by index — 260918-w4n retires the Phase 37 staff
-         worn slot); see docs/CLARITY.md. -->
+    <!-- GEAR (Phase 62, GSCR-01..06/11): design/Mazeworld Gear.dc.html mapped
+         onto the shipped rules — a slim stat header (armor rating and the
+         hero's gold), a fixed five-row WORN list, a BAG with a capacity
+         meter and item cards, CONSUMABLES, and a compact ALSO ON YOU block.
+         The ten ids below are the render roots src/browser/gearTab.js
+         #renderGearTab fills, all sourced from the Plan 01 view models —
+         the tab can never disagree with the ITEMS combat submenu, the loot
+         screen or the store. renderCarriedList supplies each bag card's own
+         Equip/swap-confirm/Drop actions (harvested per card) until Phase
+         63's bottom action sheet makes the rows tappable themselves. -->
     <section class="mw-screen" id="screen-gear" data-screen="gear" hidden>
-      <section class="panel" id="onyou-panel">
-        <h2>On you</h2>
-        <div class="mw-wilmst">Wilmst <b id="m-gold">0</b></div>
-        <ul class="skills" id="s-onyou"></ul>
-        <ul class="kit" id="s-kit"></ul>
+      <div class="mw-gear-stats" id="gear-stats"></div>
+
+      <section class="mw-gear-sec" id="gear-worn-sec">
+        <h2 class="mw-gear-head" id="gear-worn-head"></h2>
+        <ul class="mw-gear-worn" id="gear-worn"></ul>
       </section>
 
-      <section class="panel" id="bag-panel">
-        <h2>Bag <span id="s-carry-n"></span></h2>
-        <ul class="skills" id="s-carry"></ul>
+      <section class="mw-gear-sec" id="gear-bag-sec">
+        <h2 class="mw-gear-head" id="gear-bag-head"></h2>
+        <div class="mw-gear-meter" id="gear-bag-meter"></div>
+        <ul class="mw-gear-cards" id="gear-bag"></ul>
+      </section>
+
+      <section class="mw-gear-sec" id="gear-cons-sec">
+        <h2 class="mw-gear-head" id="gear-cons-head"></h2>
+        <ul class="mw-gear-cards" id="gear-cons"></ul>
+      </section>
+
+      <section class="mw-gear-sec" id="gear-kit-sec">
+        <h2 class="mw-gear-head" id="gear-kit-head"></h2>
+        <ul class="kit mw-gear-kit" id="gear-kit"></ul>
       </section>
     </section>
 
