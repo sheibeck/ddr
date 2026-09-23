@@ -54,9 +54,9 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 Plans:
 **Wave 1**
 
-- [ ] 65-01-PLAN.md — (wave 1) `state.acts`: the per-validated-action counter, tolerant save whitelist, six parity carve-outs, and a measured zero in FIXTURE-INVENTORY (RUN-01)
-- [ ] 65-02-PLAN.md — (wave 1) `engine/records.js`: FNV-1a run hash/id, the shared board table, and the pure bests-record ops (update/sanitize/backfill/sort) (RUN-01, RUN-02, RUN-03)
-- [ ] 65-03-PLAN.md — (wave 1) `content/boards.js` board copy and quip banks, plus the pure `newBestView` view model, safety-scanned (RUN-04)
+- [x] 65-01-PLAN.md — (wave 1) `state.acts`: the per-validated-action counter, tolerant save whitelist, six parity carve-outs, and a measured zero in FIXTURE-INVENTORY (RUN-01)
+- [x] 65-02-PLAN.md — (wave 1) `engine/records.js`: FNV-1a run hash/id, the shared board table, and the pure bests-record ops (update/sanitize/backfill/sort) (RUN-01, RUN-02, RUN-03)
+- [x] 65-03-PLAN.md — (wave 1) `content/boards.js` board copy and quip banks, plus the pure `newBestView` view model, safety-scanned (RUN-04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -288,7 +288,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 65. Run Record & Personal Bests | v2.0 | 0/5 | Planned | - |
+| 65. Run Record & Personal Bests | v2.0 | 3/5 | In Progress|  |
 | 66. Leaderboards Panel — Local | v2.0 | 0/TBD | Not started | - |
 | 67. Play Games Integration & Account Chip | v2.0 | 0/TBD | Not started | - |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
