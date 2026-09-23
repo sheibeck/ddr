@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Sound, Motion & Set Dressing
-current_phase: 60
-current_phase_name: performance-footprint-close
-current_plan: 3
-status: executing
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
+current_plan: Not started
+status: planning
 stopped_at: Completed 60-03-PLAN.md
-last_updated: "2026-09-23T03:10:57.040Z"
+last_updated: "2026-09-23T03:13:19.225Z"
 last_activity: 2026-09-22
-last_activity_desc: Phase 60 execution started
+last_activity_desc: Phase 60 complete, transitioned to Phase 999.1
 progress:
   total_phases: 5
   completed_phases: 5
@@ -30,13 +30,13 @@ See: .planning/PROJECT.md (updated 2026-09-22 — v1.7 closed and tagged; v1.8 S
 
 ## Current Position
 
-Phase: 60 (performance-footprint-close) — EXECUTING
-Current Plan: 3
+Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
+Current Plan: Not started
 Total Plans in Phase: 3
 Progress: [██████████] 100%
 Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-09-22 — Phase 60 execution started
+Status: Ready to plan
+Last activity: 2026-09-22 — Phase 60 complete, transitioned to Phase 999.1
 
 ## Ground Truth (durable facts every session needs)
 

@@ -32,7 +32,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [x] **Phase 57: Map & HUD Layout Band** - The rail overlays the map instead of reflowing it, chip taps never double as a move, and the HUD reads as legible stacked bands with Table-7 darkness visible on the map (completed 2026-09-22)
 - [x] **Phase 58: Motion & Pacing** - The map pans smoothly, panels/menus animate open and closed, combat rounds get a readable beat, and rail/encounter text types itself on — all with a reduced-motion path (completed 2026-09-22)
 - [x] **Phase 59: Party Animation & Dungeon Set Dressing** - The party marker gets idle/step animation cycles and a dialled-back ring, and floors carry deterministic, non-interactive ambient props from the `set_dungeon_*` set (completed 2026-09-22)
-- [ ] **Phase 60: Performance & Footprint Close** - Cold start, step time and AAB size are measured on the Pixel 7 against the v1.7 baseline with the full v1.8 asset set installed, closing the milestone on one debug APK
+- [x] **Phase 60: Performance & Footprint Close** - Cold start, step time and AAB size are measured on the Pixel 7 against the v1.7 baseline with the full v1.8 asset set installed, closing the milestone on one debug APK (completed 2026-09-22)
 
 ### Phase 56: Sound Effects & Audio Settings
 
