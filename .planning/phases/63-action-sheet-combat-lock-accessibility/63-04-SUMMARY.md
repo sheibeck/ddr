@@ -208,3 +208,22 @@ None - no external service configuration required.
 ---
 *Phase: 63-action-sheet-combat-lock-accessibility*
 *Completed: 2026-09-23*
+
+## Self-Check: PASSED
+
+- FOUND: mazeworld.html
+- FOUND: src/browser/bridge.js
+- FOUND: docs/SHELL-MODULES.md
+- FOUND: test/unit/harness/shellSandbox.js
+- FOUND: test/unit/gear-sheet-shell.test.js
+- FOUND: test/unit/fixtures/shell-snapshots/thief.gear-sheet-bag.txt
+- FOUND: test/unit/fixtures/shell-snapshots/thief.gear-sheet-worn.txt
+- FOUND: test/unit/gearTab.test.js
+- FOUND: test/unit/shell-tab-snapshots.test.js
+- FOUND: test/unit/reduced-motion.test.js
+- FOUND: test/unit/shell-map-hud.test.js
+- FOUND: test/unit/shell-map-invariants.test.js
+- FOUND: .planning/phases/63-action-sheet-combat-lock-accessibility/63-04-SUMMARY.md
+- FOUND commit: b9df0e4 (feat(63-04): #mw-gear-sheet markup and the Phase 63 sheet CSS block)
+- FOUND commit: 3ad592b (feat(63-04): classic lifecycle, paint() refresh, tabDeps, arm-sweep, back button, bridge, registry and harness)
+- FOUND commit: 9748c13 (test(63-04): shell suite, two declared sheet snapshots, tabDeps pin and the SHELL-MODULES contract)
