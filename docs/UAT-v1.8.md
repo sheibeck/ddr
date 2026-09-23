@@ -38,7 +38,7 @@ orchestrator's authoritative merge).
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| A1 | Cold start: 1 warm-up + 10 COLD launches per build, run by the executor. The user keeps the phone unlocked, on the charger and untouched for about 3 minutes. | Executor | |
+| A1 | Cold start: 1 warm-up + 10 COLD launches per build, run by the executor. The user keeps the phone unlocked, on the charger and untouched for about 3 minutes. | Executor | pass — v1.7 median 871 ms (p95 951, n=10, all COLD); v1.8 median 915 ms (p95 981, n=10, all COLD) |
 | A2 | The step walk on v1.7. Exact path: Title → ENTER → any roll → ⚙ chip right of MAKE CAMP → hold the Version label about 1.2 s → depth 5 → Start. Then walk at least 50 mixed steps through a water pool, into a dark region and out again, with at least one encounter card and at least one Gear or Hero tab switch and back. Then read the `#mw-dev-perf` line under Start. Report the line verbatim, which of the four coverage items were hit, and any jank or "none". | User | |
 | A3 | The same walk on v1.8, with Settings reached by ☰ → SETTINGS. | User | |
 | A4 | AAB size, already measured by plan 60-02 with no device. See `docs/PERF-BASELINE.md`'s `### AAB size` section. | Executor (done) | |
@@ -105,12 +105,18 @@ These are optional in the same sitting and are not this phase's requirement.
 
 ## Session record
 
-_(filled by plan 60-03)_
+_(filled progressively by plan 60-03 as the session proceeds)_
 
-**Install log:** _(each APK installed, and at what time)_
+**Install log:**
+- Pre-session: v1.7-era debug sideload already on the phone (versionName 1.5.0, lastUpdateTime 2026-09-22 02:56:01, installer=null — not the Play build, no uninstall needed).
+- 2026-09-23T02:23:25Z — `adb install -r` v1.7 debug APK (`ddr-v1.7-6c299ab-debug.apk`) — Success.
+- v1.7 cold-start series run (1 warm-up + 10 COLD launches).
+- 2026-09-23T02:24:54Z — `adb install -r` v1.8 debug APK (`ddr-v1.8-d6db678-debug.apk`) — Success.
+- v1.8 cold-start series run (1 warm-up + 10 COLD launches).
+- 2026-09-23T02:27:22Z — `adb install -r` v1.7 debug APK again (over v1.8) — Success — force-stopped and relaunched (`monkey -p com.darktierstudios.delvedierepeat 1`), logcat cleared, ready for the A2 step walk.
 
-**Final build left on the phone:** _(which build — v1.7 or v1.8)_
+**Final build left on the phone:** _(pending — filled at session close)_
 
-**Regressions and rulings:** _(pointer to `docs/PERF-BASELINE.md#dispositions`)_
+**Regressions and rulings:** _(pointer to `docs/PERF-BASELINE.md#dispositions` — filled at session close)_
 
-**Findings → todos:** _(list)_
+**Findings → todos:** _(pending)_

@@ -458,27 +458,34 @@ No verdict is written here — Verdicts is filled by plan 60-03 through
 
 ### Device
 
-_(filled by plan 60-03 in the device session)_
-
 | Field | Value |
 | --- | --- |
-| Device | |
-| Android version | |
-| Build number (`ro.build.display.id`) | |
-| Session date | |
-| Battery / temperature at start | |
-| Battery / temperature at end | |
-| Install order | |
+| Device | Pixel 7 |
+| Android version | 17 |
+| Build number (`ro.build.display.id`) | CP2A.260705.006 |
+| Session date | 2026-09-22 |
+| Battery / temperature at start | 43% / 27.3°C |
+| Battery / temperature at end | 43% / 27.5°C |
+| Install order | pre-existing sideload (v1.7-era debug build, versionName 1.5.0, lastUpdateTime 2026-09-22 02:56:01, installer=null) → `adb install -r` v1.7 debug APK at 2026-09-23T02:23:25Z → v1.7 cold-start series (1 warm-up + 10 COLD launches) → `adb install -r` v1.8 debug APK at 2026-09-23T02:24:54Z → v1.8 cold-start series (1 warm-up + 10 COLD launches) |
 | APK files | v1.7: `ddr-v1.7-6c299ab-debug.apk` (sha256 `a6e6fa8043a49597898cbd309e8d1f19fa5c69e600a419233094264f80d101b6`); v1.8: `ddr-v1.8-d6db678-debug.apk` (sha256 `038c042d922ac0d70b3fd71d9ab117361f7a9b4c16cb4f1611443aa33ed65555`) |
 
 ### Cold start (TotalTime, ms)
 
-_(filled by plan 60-03 in the device session)_
-
 | Build | Commit | n | median | p95 | min | max | LaunchStates | samples (ms, run order) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| v1.7 | `6c299ab` | | | | | | | |
-| v1.8 | `d6db678` | | | | | | | |
+| v1.7 | `6c299ab` | 10 | 871 | 951 | 842 | 951 | COLD ×10 | 951, 898, 896, 900, 885, 859, 868, 870, 842, 871 |
+| v1.8 | `d6db678` | 10 | 915 | 981 | 866 | 981 | COLD ×10 | 980, 981, 919, 866, 937, 900, 915, 937, 869, 869 |
+
+Provisional verdict (cold start + AAB only; step time not yet measured — filled below after the two step walks):
+
+```
+| Measure | v1.7 | v1.8 | Delta | Threshold | Regresses? |
+| --- | --- | --- | --- | --- | --- |
+| Cold start median (ms) | 871 | 915 | 44 | > 10 % or > 100 ms | no |
+| Step p95 (ms) | — | — | — | > 2 ms | not measured |
+| AAB (bytes) | 9306177 | 9726785 | 420608 | > 2,000,000 B | no |
+[perf03] {"coldStart":{"base":871,"head":915,"delta":44,"deltaPct":0.051,"threshold":"> 10 % or > 100 ms","regresses":false,"rule":"> 10 % or > 100 ms"},"stepP95":{"base":null,"head":null,"delta":null,"deltaPct":null,"threshold":"> 2 ms","regresses":null,"rule":"not measured"},"aabBytes":{"base":9306177,"head":9726785,"delta":420608,"deltaPct":0.045,"threshold":"> 2,000,000 B","regresses":false,"rule":"> 2,000,000 B"},"baseLabel":"v1.7","headLabel":"v1.8","anyRegression":false,"complete":false}
+```
 
 ### Step time (ms)
 
