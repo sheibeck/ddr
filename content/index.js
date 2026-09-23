@@ -34,3 +34,4 @@ export * from "./flee.js";
 export * from "./flavor.js";
 export * from "./epitaphs.js";
 export * from "./names.js";
+export * from "./season.js";
