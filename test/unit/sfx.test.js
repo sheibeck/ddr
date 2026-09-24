@@ -28,6 +28,9 @@ import {
   stopAllSfx,
   sfxClipCount,
   startMusic,
+  groupsForDispatch,
+  cuesForDispatch,
+  STEP_SUPPRESSING_EVENTS,
 } from "../../src/browser/sfx.js";
 
 // ─── Fake backend ────────────────────────────────────────────────────────
@@ -506,4 +509,40 @@ test("sfx (71-07 D-15): the title theme's loop is not a one-shot — startMusic 
     assert.equal(loops, 1, "the loop really started");
     assert.equal(sfxClipCount(), a);
   });
+});
+
+// ─── Phase 71 (D-17, POLISH-12): water steps always sound wet ────────────
+
+test("sfx (71-07 D-17): dry -> water — a waded event with onWater true plays the water group", () => {
+  const events = [{ type: "waded", cost: 2 }];
+  assert.deepEqual(groupsForDispatch("move", events, { stepped: true, onWater: true }), ["water"]);
+  assert.ok(cuesForDispatch("move", events, { stepped: true, onWater: true })[0].clip.startsWith("walk-water"));
+});
+
+test("sfx (71-07 D-17): water -> water — no waded event, onWater true still plays water (the bug)", () => {
+  assert.deepEqual(groupsForDispatch("move", [], { stepped: true, onWater: true }), ["water"]);
+  const cues = cuesForDispatch("move", [], { stepped: true, onWater: true });
+  assert.equal(cues.length, 1);
+  assert.ok(cues[0].clip.startsWith("walk-water"), JSON.stringify(cues));
+});
+
+test("sfx (71-07 D-17): water -> dry — onWater false and no waded plays the ordinary walk", () => {
+  assert.deepEqual(groupsForDispatch("move", [], { stepped: true, onWater: false }), ["walk"]);
+  const cues = cuesForDispatch("move", [], { stepped: true, onWater: false });
+  assert.ok(cues[0].clip.startsWith("walk") && !cues[0].clip.startsWith("walk-water"), JSON.stringify(cues));
+});
+
+test("sfx (71-07 D-17): a waded event with no onWater key still plays water (backward compatible)", () => {
+  assert.deepEqual(groupsForDispatch("move", [{ type: "waded", cost: 2 }], { stepped: true }), ["water"]);
+});
+
+test("sfx (71-07 D-17): a blocked move (stepped false) makes no step sound, even on water", () => {
+  assert.deepEqual(groupsForDispatch("move", [], { stepped: false, onWater: true }), []);
+  assert.deepEqual(cuesForDispatch("move", [], { stepped: false, onWater: true }), []);
+});
+
+test("sfx (71-07 D-17): a step-suppressing event still wins over water", () => {
+  const suppressor = [...STEP_SUPPRESSING_EVENTS][0];
+  const groups = groupsForDispatch("move", [{ type: suppressor }], { stepped: true, onWater: true });
+  assert.ok(!groups.includes("water") && !groups.includes("walk"), JSON.stringify(groups));
 });
