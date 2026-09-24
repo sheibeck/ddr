@@ -454,14 +454,47 @@ export function createPlayGames({
   });
 }
 
+/** seedEntry(e) — module-private: a seeded board entry, or null when unusable. */
+function seedEntry(e) {
+  if (!e || typeof e !== "object" || !isScore(e.score)) return null;
+  return {
+    playerId: typeof e.playerId === "string" ? e.playerId : "",
+    handle: typeof e.handle === "string" ? e.handle : "",
+    score: e.score,
+    tag: typeof e.tag === "string" ? e.tag : "",
+    friend: e.friend === true,
+  };
+}
+
 /**
- * createFakePlayGames({ signedIn, player, interactive }) — the in-memory
- * provider for tests and the browser dev loop (seeded signed in by the
- * dev-only pgsDevSignedIn setting). `interactive` is "accept" (signIn()
- * signs in) or "decline" (it stays signed out). calls() returns the ordered
- * method names called so far, as a frozen copy.
+ * createFakePlayGames({ signedIn, player, interactive, boards, orders,
+ * online, friendsConsent }) — the in-memory provider for tests and the
+ * browser dev loop (seeded signed in by the dev-only pgsDevSignedIn
+ * setting). `interactive` is "accept" (signIn() signs in, and a consent
+ * request grants) or "decline" (both refuse).
+ *
+ * The leaderboard store behaves like a best-score service: `boards` seeds
+ * { [id]: [{ playerId, handle, score, tag, friend }] } in insertion order;
+ * `orders` marks an id "smallerIsBetter" (anything else is larger-is-better);
+ * the player's own entry keeps its best score and that score's tag. Ties keep
+ * insertion order. `online` (flipped by setOnline) and signed-in gate every
+ * leaderboard call. `friendsConsent` is "granted", "required" (a request
+ * with interactive "accept" grants it) or "decline" (a request never does);
+ * the friends collection needs the grant.
+ *
+ * Inspectors: calls() (the ordered provider method names), submissions()
+ * (every accepted { leaderboardId, score, tag }), both frozen copies, and
+ * setOnline(value).
  */
-export function createFakePlayGames({ signedIn = false, player = FAKE_PLAYER, interactive = "accept" } = {}) {
+export function createFakePlayGames({
+  signedIn = false,
+  player = FAKE_PLAYER,
+  interactive = "accept",
+  boards = {},
+  orders = {},
+  online = true,
+  friendsConsent = "granted",
+} = {}) {
   const who =
     player && typeof player === "object"
       ? Object.freeze({
@@ -495,9 +528,127 @@ export function createFakePlayGames({ signedIn = false, player = FAKE_PLAYER, in
     return state ? who : null;
   }
 
+  // --- the leaderboard store -------------------------------------------------
+
+  const store = new Map();
+  for (const [id, list] of Object.entries(boards && typeof boards === "object" ? boards : {})) {
+    if (Array.isArray(list)) store.set(id, list.map(seedEntry).filter(Boolean));
+  }
+  const smaller = (id) => !!orders && typeof orders === "object" && orders[id] === "smallerIsBetter";
+  let reachable = online !== false;
+  let consent = friendsConsent === "required" || friendsConsent === "decline" ? friendsConsent : "granted";
+  const submitted = [];
+
+  const usable = () => state && reachable;
+  const entriesOf = (id) => {
+    if (!store.has(id)) store.set(id, []);
+    return store.get(id);
+  };
+
+  // ranked(id, collection) — the collection's entries, stably sorted in the
+  // board's direction (Array.prototype.sort is stable: ties keep insertion
+  // order), as frozen normalized scores ranked 1..n.
+  function ranked(id, collection) {
+    const dir = smaller(id) ? 1 : -1;
+    const list = entriesOf(id).filter((e) => collection !== "friends" || e.friend || e.playerId === who.id);
+    return [...list]
+      .sort((a, b) => dir * (a.score - b.score))
+      .map((e, i) =>
+        Object.freeze({
+          rank: i + 1,
+          rawScore: e.score,
+          tag: e.tag,
+          handle: e.handle,
+          playerId: e.playerId,
+          friend: e.friend,
+        }),
+      );
+  }
+
+  async function submitScore(opts) {
+    log.push("submitScore");
+    const { leaderboardId, score, tag } = optsOf(opts);
+    if (!isBoardId(leaderboardId) || !isScore(score) || !isTag(tag) || !usable()) return FAILED;
+    const list = entriesOf(leaderboardId);
+    const mine = list.find((e) => e.playerId === who.id);
+    let newBest = true;
+    if (!mine) {
+      list.push({ playerId: who.id, handle: who.displayName, score, tag, friend: false });
+    } else {
+      newBest = smaller(leaderboardId) ? score < mine.score : score > mine.score;
+      if (newBest) {
+        mine.score = score;
+        mine.tag = tag;
+      }
+    }
+    submitted.push(Object.freeze({ leaderboardId, score, tag }));
+    return Object.freeze({ ok: true, newBest });
+  }
+
+  // readable(id, collection) — the shared read gate: signed in, online, a
+  // board id, and the friends grant for the friends collection.
+  function readable(id, collection) {
+    return usable() && isBoardId(id) && (collection !== "friends" || consent === "granted");
+  }
+
+  async function loadTopScores(opts) {
+    log.push("loadTopScores");
+    const { leaderboardId, collection, maxResults } = optsOf(opts);
+    const c = collectionOf(collection);
+    if (!readable(leaderboardId, c)) return FAILED;
+    const all = ranked(leaderboardId, c);
+    return Object.freeze({ ok: true, scores: Object.freeze(all.slice(0, clampResults(maxResults))), total: all.length });
+  }
+
+  async function loadPlayerScore(opts) {
+    log.push("loadPlayerScore");
+    const { leaderboardId, collection } = optsOf(opts);
+    const c = collectionOf(collection);
+    if (!readable(leaderboardId, c)) return FAILED;
+    return Object.freeze({ ok: true, score: ranked(leaderboardId, c).find((s) => s.playerId === who.id) || null });
+  }
+
+  async function loadStanding(opts) {
+    log.push("loadStanding");
+    const { leaderboardId } = optsOf(opts);
+    if (!readable(leaderboardId, "public")) return FAILED;
+    const all = ranked(leaderboardId, "public");
+    const mine = all.find((s) => s.playerId === who.id);
+    return Object.freeze({ ok: true, rank: mine ? mine.rank : null, total: all.length });
+  }
+
+  async function friendsAccess(opts) {
+    log.push("friendsAccess");
+    if (!usable()) return "unavailable";
+    if (consent === "required" && optsOf(opts).request === true && interactive === "accept") consent = "granted";
+    return consent === "granted" ? "granted" : "required";
+  }
+
   function calls() {
     return Object.freeze([...log]);
   }
 
-  return Object.freeze({ kind: "fake", init, isAuthenticated, signIn, getPlayer, calls });
+  function submissions() {
+    return Object.freeze([...submitted]);
+  }
+
+  function setOnline(value) {
+    reachable = value === true;
+  }
+
+  return Object.freeze({
+    kind: "fake",
+    init,
+    isAuthenticated,
+    signIn,
+    getPlayer,
+    submitScore,
+    loadTopScores,
+    loadPlayerScore,
+    loadStanding,
+    friendsAccess,
+    calls,
+    submissions,
+    setOnline,
+  });
 }
