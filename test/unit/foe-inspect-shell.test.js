@@ -271,6 +271,9 @@ test("pins: renderRail keeps the foe card live in combat, lifts it over the acti
   assert.match(region, /railEl\.dataset\.over = "combat"/);
   assert.match(region, /delete railEl\.dataset\.over/);
   assert.match(region, /getElementById\("cb-act"\)/);
+  // Phase 71 (71-05, D-07): the lift reads the what-happened strip's top
+  // first (it sits directly above #cb-act), so the card covers neither.
+  assert.ok(region.indexOf('getElementById("cb-summary")') !== -1 && region.indexOf('getElementById("cb-summary")') < region.indexOf('getElementById("cb-act")'), "the strip is measured first");
   assert.match(region, /--mw-rail-lift/);
   assert.equal((region.match(/fit\(/g) || []).length, 0);
   assert.equal((region.match(/setTimeout\(/g) || []).length, 1, "still one hold timer site");

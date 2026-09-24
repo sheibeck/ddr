@@ -95,6 +95,8 @@ import {
   fightLogAnnouncement,
   appendFightLog,
   dullFightLogLine,
+  roundSummary,
+  ROUND_STRIP_COPY,
 } from "../../../src/browser/fightLog.js";
 import {
   combatHeaderViewModel,
@@ -254,7 +256,8 @@ function wireBridges(context, { dressing = null } = {}) {
   // Phase 34/35 — the fight-log and combat-panel/menu view-model bridges,
   // in the SAME shapes the module script assigns (mazeworld.html's own
   // window.__mzFightLogVM/__mzCombatVM lines).
-  w.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine };
+  // Phase 71 (D-07): summary/copy mirror the module bridge (the what-happened strip).
+  w.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine, summary: roundSummary, copy: ROUND_STRIP_COPY };
   w.__mzCombatVM = { header: combatHeaderViewModel, foes: foeListViewModel, lot: yourLotViewModel, overlay: encounterOverlaySpec, menu: combatMenuViewModel };
   // Phase 71 (D-14) — the ONE foe-condition chip table, in the SAME shape
   // the module script assigns beside __mzCombatVM.

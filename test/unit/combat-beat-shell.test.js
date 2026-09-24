@@ -171,8 +171,15 @@ function encBody(doc) {
   return doc.document.getElementById("enc-body");
 }
 
+// Phase 71 (D-07, R-19/R-20): the beat's line-by-line reveal and its
+// "fightlog" typing moved from the in-panel log (.cb-log-entry in #cb-mid)
+// to the what-happened strip (#cb-summary, .cb-sum-line) above the actions.
+// The pins below keep their meaning: rows revealed one by one, the typed row
+// aria-hidden, the whole-round announcer, and a hurry revealing everything.
+// A round of three lines shows all three there (the strip keeps the last 3).
 function logRows(doc) {
-  return Array.from(encBody(doc).querySelectorAll(".cb-log-entry"));
+  const strip = doc.document.getElementById("cb-summary");
+  return strip ? Array.from(strip.querySelectorAll(".cb-sum-line")) : [];
 }
 
 function foeCard(doc, i) {
@@ -200,7 +207,7 @@ test("combat-beat-shell (1): the first exchange lands immediately — the panel 
   // reconstruct the full line from that pair rather than reading a single
   // aggregate .textContent (which reads only the LAST plain-text write,
   // never live child content, on this fake harness).
-  const textEl = rows[0].querySelector(".cb-log-text");
+  const textEl = rows[0].querySelector(".cb-sum-text");
   assert.equal(textEl.children.length, 2, "a typing row must hold a typed+rest span pair");
   assert.equal(textEl.children[0].textContent + textEl.children[1].textContent, lines[0].text, "the typed+rest split must reconstruct the full first line");
 

@@ -164,15 +164,15 @@ export const BRIDGE = Object.freeze({
   __mzFightLog: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze([
-      "mazeworld.html (classic: renderFightLog / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)",
+      "mazeworld.html (classic: renderFightLog / renderRoundStrip / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)",
       "mazeworld.html (module: dispatchWithNarration — appends every dispatch's fight-log lines)",
     ]),
     purpose: "Presentation-only whole-fight log entries (rows, seq); never a field on state.",
   }),
   __mzFightLogVM: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull)"]),
-    purpose: "Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time.",
+    consumers: Object.freeze(["mazeworld.html (classic: renderFightLog / renderRoundStrip / fightLogRefuse — rows/toggle/announcement/append/dull/summary/copy)"]),
+    purpose: "Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time; summary (roundSummary) and copy (ROUND_STRIP_COPY) feed the Phase 71 D-07 what-happened strip above the combat actions.",
   }),
   __mzFoeConditions: Object.freeze({
     owner: "mazeworld.html (module)",

@@ -344,7 +344,8 @@ test("combat-lock (7): during the beat no foe card is data-locked, and the lock 
   }
   const lockRules = HTML.match(/^#cb-act\[data-locked="1"\][^{]*\{[^}]*\}/gm) || [];
   assert.ok(lockRules.length > 0);
-  for (const rule of lockRules) assert.doesNotMatch(rule, /cb-foe|cb-lot|cb-log|cb-mid/, "the lock styles only the action area");
+  // Phase 71 (D-07): the what-happened strip (#cb-summary / .cb-sum-*) is not an action either.
+  for (const rule of lockRules) assert.doesNotMatch(rule, /cb-foe|cb-lot|cb-log|cb-mid|cb-summary|cb-sum-/, "the lock styles only the action area");
 });
 
 // ─── (8) a tab switch still lands the round, and the next render is unlocked ─

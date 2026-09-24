@@ -112,6 +112,79 @@ export function toggleFightLogEntry(log, id) {
 }
 
 /**
+ * ROUND_STRIP_COPY — Phase 71 (D-07): the what-happened strip's own copy,
+ * from the user's combat v2 mock. `{n}` is filled by the shell (the round
+ * number, the log's entry count). The shell never declares these literals.
+ */
+export const ROUND_STRIP_COPY = Object.freeze({
+  roundHappened: "ROUND {n} · WHAT HAPPENED",
+  resolving: "RESOLVING",
+  fullLog: "FULL LOG · {n} ›",
+});
+
+/** ROUND_STRIP_MAX_LINES — the mock's "last 3 lines of the latest round". */
+const ROUND_STRIP_MAX_LINES = 3;
+
+/**
+ * roundSummary(log, beatView = null) — Phase 71 (D-07): the content of the
+ * "ROUND n · WHAT HAPPENED" strip fixed above the combat actions (the
+ * user's combat v2 mock: the last 3 lines of the latest round).
+ *
+ * Returns a frozen `{ round, lines, newestId, total }`:
+ *   - round: the newest entry's `round` (the round playing or just played),
+ *     or null.
+ *   - lines: at most the LAST 3 entries of that round, oldest -> newest,
+ *     each `{ id, text, tone, newest }`. Text is kept whole (the strip
+ *     never cuts a line mid-text); exactly one line is `newest`.
+ *   - newestId: that newest line's id, or null.
+ *   - total: the whole log's entry count (the FULL LOG chip).
+ *
+ * R-21 ("latest round"): the entries whose `round` equals the newest
+ * entry's round, read back from the end while it matches, so a refusal
+ * appended in the same round joins it. When the newest round is null the
+ * newest batch (its `seq`) stands in.
+ *
+ * Order: the fight log's own fold order (append order), deliberately the
+ * same order the full-log sheet shows, so the two never disagree (backlog
+ * 999.5 note (3): if the fold moves to event order, both follow).
+ *
+ * No spoilers: with a `beatView` (a live beat's `{ log, maxId }`), the
+ * source is `beatView.log` and only entries with `id <= maxId` show, so a
+ * playing round shows only the lines the beat has already revealed. The
+ * round itself is read from the whole log, so a beat that has revealed
+ * nothing of its round shows no lines, never the round before. `total`
+ * counts the whole log (a count is not a spoiler).
+ *
+ * Null, empty or malformed input gives no lines and never throws. Pure:
+ * never mutates `log`.
+ */
+export function roundSummary(log, beatView = null) {
+  const bv = beatView && typeof beatView === "object" ? beatView : null;
+  const src = bv && bv.log ? bv.log : log;
+  const raw = src && typeof src === "object" && Array.isArray(src.entries) ? src.entries : [];
+  const entries = raw.filter((e) => e && typeof e === "object");
+  const total = entries.length;
+  if (!entries.length) return Object.freeze({ round: null, lines: Object.freeze([]), newestId: null, total });
+  const last = entries[entries.length - 1];
+  const round = last.round ?? null;
+  const same = round == null ? (e) => e.seq === last.seq && (e.round ?? null) === null : (e) => e.round === round;
+  const inRound = [];
+  for (let i = entries.length - 1; i >= 0 && same(entries[i]); i--) inRound.unshift(entries[i]);
+  const maxId = bv && Number.isFinite(bv.maxId) ? bv.maxId : Infinity;
+  const shown = inRound.filter((e) => !(e.id > maxId)).slice(-ROUND_STRIP_MAX_LINES);
+  const newestId = shown.length ? shown[shown.length - 1].id ?? null : null;
+  const lines = shown.map((e, k) =>
+    Object.freeze({
+      id: e.id ?? null,
+      text: String(e.text ?? ""),
+      tone: e.tone === "dull" ? "dull" : "narrative",
+      newest: k === shown.length - 1,
+    })
+  );
+  return Object.freeze({ round, lines: Object.freeze(lines), newestId, total });
+}
+
+/**
  * fightLogAnnouncement(log, announcedSeq) — the aria-live announcer's next
  * text: every entry whose `seq` is greater than `announcedSeq`, joined by
  * a single space in append order. Returns `{ seq: log.seq, text }`; for a

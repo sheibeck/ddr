@@ -13,8 +13,11 @@
 //   3. renderFightLog(host): reads window.__mzFightLogVM.rows, builds every
 //      entry via textContent (never innerHTML), tags revealable entries
 //      with cb-log-revealable, toggles in place (no renderEncounter call);
-//   4. renderEncounter calls renderFightLog(...) and carries zero remaining
-//      Round Card artifacts;
+//   4. renderEncounter no longer calls renderFightLog from the combat
+//      branch (Phase 71 R-19: the what-happened strip, renderRoundStrip,
+//      replaced the in-panel log; 71-06 re-hosts renderFightLog's rows in
+//      THE FIGHT SO FAR sheet) and carries zero remaining Round Card
+//      artifacts;
 //   5. routing exclusivity: dispatchWithNarration has exactly one
 //      `if (wasCombat || inCombat)`, routes every folded line (refusals
 //      included) through fightLogLinesFor, and never re-checks
@@ -161,11 +164,20 @@ test("renderFightLog(host) calls syncFightLogLive(log) with the SAME (unfiltered
   assert.doesNotMatch(region, /syncFightLogLive\(window\.__mzFightLog\)/, "syncFightLogLive must read the SAME `log` local, not re-read window.__mzFightLog directly");
 });
 
-// ─── 4. renderEncounter calls renderFightLog; zero remaining Round Card ───
+// ─── 4. renderEncounter builds the strip, not the in-panel log; zero remaining Round Card ───
+//
+// Phase 71 (D-07, R-19): the combat v2 mock's middle holds foes and party
+// only, so renderEncounter no longer calls renderFightLog(mid); it builds
+// the what-happened strip (renderRoundStrip) above the actions instead.
+// renderFightLog stays defined, its row building, reveal toggle and
+// announcer pinned above: 71-06 re-hosts it in THE FIGHT SO FAR sheet (a
+// pin for that call site belongs to 71-06). The revert is renderFightLog(mid).
 
-test("renderEncounter region calls renderFightLog(...) and carries zero Round Card artifacts", () => {
+test("renderEncounter region builds the what-happened strip (not renderFightLog in the middle) and carries zero Round Card artifacts", () => {
   const region = renderEncounterRegion();
-  assert.match(region, /renderFightLog\(/);
+  assert.doesNotMatch(region, /renderFightLog\(mid\)/, "the in-panel log left the middle (R-19)");
+  assert.match(region, /renderRoundStrip\(body/);
+  assert.match(CODE, /function renderFightLog\(host\)/, "renderFightLog stays defined for 71-06's sheet");
   for (const needle of ["__mzRoundCard", "ROUND_CARD_COPY", "roundCardSeq", "round-card"]) {
     const hits = CODE.match(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [];
     assert.equal(hits.length, 0, `${needle} must not appear anywhere in mazeworld.html source`);
