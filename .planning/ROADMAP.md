@@ -250,7 +250,33 @@ Plans:
   3. While a combat round is playing out, the action buttons are visibly unavailable and taps never queue; a tap skips the playback to the round's result; with several foes the latest round summary stays visible above the actions without covering the fight
   4. Long-pressing an enemy raises one dismissible rail card with its details (family, HP, defence, attack, abilities, resistances, current effects, a flavour line) without triggering a normal tap; TalkBack gets a Details action
   5. Every condition an ability, spell or item puts on an enemy (Hamstring, Mark and the rest) shows as a chip on that enemy while it lasts
-**Plans**: TBD
+**Plans**: 6 plans (5 waves)
+
+D-07 follows the user's combat v2 mock (`design/Mazeworld Combat Panel v2.dc.html`, `design/COMBAT-V2-NOTES.md`) and is isolated in 71-05/71-06, after the input lock; the D-13 UAT fold is the last plan.
+
+Plans:
+**Wave 1**
+
+- [ ] 71-01-PLAN.md — (wave 1) sound: CLIP_GAIN per-clip levels (death 0.5, steps 1.6), MUSIC_GAIN 0.9, the effects bus and live levels in sfx.js; volMaster/volMusic/volEffects in ddr.settings.v1; MASTER/MUSIC/EFFECTS sliders under Sound, shown only while Sound is On (POLISH-05; D-01, D-02, D-03)
+- [ ] 71-02-PLAN.md — (wave 1) gear stats: one itemStatLines formatter (plus wornItemFor) that the store rows and the Gear action sheet both render from; the store-vs-sheet agreement test; declared snapshot regeneration; no mazeworld.html edit (POLISH-06; D-04)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 71-03-PLAN.md — (wave 2) foeConditions.js, one chip table for every foe condition (Hamstrung, Marked, Stunned, timed Blind…) with an engine-scan coverage guard; the combat actions lock visibly while a round plays (the mock's HOLD prompt); the tap-to-skip and no-replay proof (POLISH-09, POLISH-07; D-14, D-05, D-06)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 71-04-PLAN.md — (wave 3) long-press enemy details: the pure foeDetails view model (every bestiary creature, HP never WP), the longPress recognizer, a light haptic, the combat-legal rail card above the actions, and a TalkBack Details action (POLISH-08; D-08..D-12)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 71-05-PLAN.md — (wave 4) the mock's "ROUND n · WHAT HAPPENED" strip above the actions (the last 3 lines of the latest round, RESOLVING while busy, no spoilers); the beat reveal moves into it; the middle holds foes and party only (POLISH-07; D-07, D-06)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 71-06-PLAN.md — (wave 5) THE FIGHT SO FAR full-log sheet that the strip opens (grouped by round, honest dice reveal, never mid-round); every Phase 71 device check folded into docs/UAT-v2.0.md section M; phase gates (POLISH-07; D-07, D-13)
+
+**Research**: none (skipped; presentation-only, patterns read from the codebase)
 
 <details>
 <summary>✅ v1.9 The Gear Screen (Phases 61–64) — CODE-COMPLETE 2026-09-23, archived 2026-09-23 (override closeout; Play 1.9.0 / vc8 built for closed testing; device UAT 3 of 24 walked, the rest deferred to play sessions)</summary>
@@ -413,7 +439,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
 | 70. Device-Round Polish | v2.0 | 4/4 | Complete    | 2026-09-24 |
-| 71. Device-Round Polish II | v2.0 | 0/0 | Not started | - |
+| 71. Device-Round Polish II | v2.0 | 0/6 | Planned     | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
