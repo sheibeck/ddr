@@ -342,3 +342,22 @@ test("pins: window.__mzFightLogVM bridges summary: roundSummary and copy: ROUND_
   const sandboxSrc = fs.readFileSync(path.join(REPO_ROOT, "test", "unit", "harness", "shellSandbox.js"), "utf8");
   assert.match(sandboxSrc, /w\.__mzFightLogVM = \{[^}]*summary: roundSummary[^}]*copy: ROUND_STRIP_COPY[^}]*\}/);
 });
+
+// ─── (g) the rise plays once per new newest line ───────────────────────────
+
+test("round-summary (g): the newest line rises in when it is new, and a same-round re-render (a submenu toggle) does not replay the rise", () => {
+  const { doc, sandbox, w } = scenario();
+  const s = fixedState();
+  s.combat = { foes: [fixedFoe({ name: "Wolf" })], type: "Beasts", round: 2, target: 0, spellOpen: false, tracked: false, first: "you" };
+  w.__mzState.set(s);
+  w.__mzFightLog = appendFightLog(null, [{ text: "One.", tone: "narrative", roll: null }], 1);
+  sandbox.context.renderEncounter();
+  assert.ok(stripRows(doc).at(-1).classList.contains("cb-sum-rise"), "a new newest line rises");
+  sandbox.context.renderEncounter();
+  assert.equal(stripRows(doc).at(-1).classList.contains("cb-sum-rise"), false, "a re-render of the same round does not rise again");
+  w.__mzFightLog = appendFightLog(w.__mzFightLog, [{ text: "Two.", tone: "narrative", roll: null }], 2);
+  sandbox.context.renderEncounter();
+  const rows = stripRows(doc);
+  assert.deepEqual(rows.map(rowText), ["Two."], "the latest round only");
+  assert.ok(rows[0].classList.contains("cb-sum-rise"));
+});

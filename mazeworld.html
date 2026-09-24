@@ -764,6 +764,25 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-lot-card.down .cb-lot-fill{background:#3a3226}
 .cb-lot-third{font-family:var(--mono);font-weight:700;font-size:12px;color:#a89c82;margin-top:5px}
 .cb-lot-card.down .cb-lot-third{color:#8f856f}
+/* Phase 71 (POLISH-07, D-07): the "ROUND n · WHAT HAPPENED" strip, values
+   from the combat v2 mock (design/Mazeworld Combat Panel v2.dc.html). It is
+   in the flex flow (flex:none, never absolute or fixed) between the
+   scrolling .cb-mid and .cb-act, so it never covers a foe card or an action.
+   The body is a fixed 78px, bottom-aligned box with a 22px top fade mask:
+   at most the last 3 lines of the latest round, the newest bright and
+   rising in (only when it is new), the older ones dim. While a round
+   resolves the label reads RESOLVING in the mock's red and pulses
+   (mwtorch). The blanket prefers-reduced-motion rule drops the pulse and
+   the rise. */
+#cb-summary{flex:none;border-top:3px solid #3a3226;background:#16120c;padding:9px 12px 10px}
+.cb-sum-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cb-sum-label{font-family:var(--disp);font-size:6.5px;color:#a89c82;line-height:1.7}
+.cb-sum-label[data-busy="1"]{color:#e07260;animation:mwtorch .9s steps(2) infinite}
+.cb-sum-chip{font-family:var(--disp);font-size:6px;color:#8f856f;line-height:1.7;flex:none}
+.cb-sum-body{display:flex;flex-direction:column;justify-content:flex-end;gap:5px;margin-top:7px;height:78px;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 22px);mask-image:linear-gradient(to bottom,transparent 0,#000 22px)}
+.cb-sum-line{font-family:var(--mono);font-size:14px;font-weight:700;line-height:1.4;color:#8f856f}
+.cb-sum-line.cb-sum-newest{color:#e6ddc6}
+.cb-sum-line.cb-sum-rise{animation:mwrise .22s ease}
 .cb-act{flex:none;border-top:3px solid #3a3226;background:#1b170f;padding:10px 12px 26px}
 .cb-prompt{font-family:var(--disp);font-size:6.5px;color:#e8c97a;line-height:1.7}
 .cb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
@@ -898,9 +917,10 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    (.mw-overlay); #mw-rail follows #mw-screens in the markup, so DOM order
    paints it above, and the ☰ scrim (9) and wrap (10) still open over it.
    --mw-rail-lift is measured at render time (the stage's bottom edge to the
-   top of #cb-act), so the card's bottom edge sits on the action area and
-   never covers an action. It may cover the lower foe list or the log; a
-   body tap dismisses it. No new transition or animation. */
+   top of #cb-summary, the what-happened strip, else #cb-act; 71-05), so the
+   card's bottom edge sits on the strip and never covers it or an action.
+   It may cover the lower foe list; a body tap dismisses it. No new
+   transition or animation. */
 #mw-rail[data-over="combat"]{z-index:8;bottom:var(--mw-rail-lift,0px);max-height:45%;overflow-y:auto}
 
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
@@ -1544,6 +1564,9 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 @keyframes mwsheetin{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes mwsheetout{from{transform:translateY(0)}to{transform:translateY(100%)}}
 @keyframes mwfadeout{from{opacity:1}to{opacity:0}}
+/* Phase 71 (D-07): the combat v2 mock's torch pulse, verbatim — the
+   what-happened strip's RESOLVING label (.cb-sum-label[data-busy="1"]). */
+@keyframes mwtorch{0%,100%{opacity:.9}50%{opacity:.5}}
 
 /* ---------- MARKS legend bottom sheet (DR4 group 2) ----------
    Replaces the prototype's inline .legend strip under the map with the
@@ -3580,11 +3603,6 @@ let encRenderedAt = 0;
 let armTimer = null;
 let lastDismissAt = 0;
 let encWasActive = false;
-// Phase 34 (CSCR-04) — the fight log's own scroll-into-view seq gate: only
-// scroll the newest entry into view when a NEW log batch landed since the
-// last render (a submenu open/close re-render of the same log must not
-// re-scroll the middle band).
-let lastLogSeqShown = 0;
 // Phase 58 (MOTION-04, D-13/D-14): types renderMajorOverlay's line once per
 // content — reset in renderEncounter's inactive branch and at the start of
 // the combat-body render, so the next time the same card appears it types
@@ -3783,6 +3801,90 @@ function renderFightLog(host) {
       window.__mzTypewriter?.type?.("fightlog", { targets: [typingTextEl], texts: [typingText], ariaHost: typingEntryEl });
     } else if (window.__mzTypewriter?.active?.("fightlog")) {
       window.__mzTypewriter.adopt("fightlog", [typingTextEl], typingEntryEl);
+    }
+  } else {
+    window.__mzTypewriter?.cancel?.("fightlog");
+  }
+}
+
+// Phase 71 (POLISH-07, D-07): the "ROUND n · WHAT HAPPENED" strip from the
+// user's combat v2 mock (design/Mazeworld Combat Panel v2.dc.html,
+// design/COMBAT-V2-NOTES.md). It sits in the flex flow between the
+// scrolling #cb-mid and the fixed #cb-act, so the foe count never pushes it
+// or the actions off-screen, and it never covers either. Its content is
+// fightLog.js's pure roundSummary: the last 3 whole lines of the latest
+// round, gated on a live beat's maxId so a playing round never shows a line
+// it has not revealed. While a round plays the label reads RESOLVING
+// (data-busy, the mock's red pulse; no pulse under reduced motion).
+// R-20: Phase 58's line-by-line reveal (D-14) and its "fightlog" typing now
+// target the strip's newest line, with the same type/adopt/cancel rules and
+// the same aria-hidden-while-typing rule renderFightLog used; the whole-round
+// announcer (#enc-round-live, D-16) still gets the WHOLE log. The mock's
+// rise-in plays only when a new line becomes the newest, never on a submenu
+// re-render of the same round.
+// R-18: the strip is inside #enc-panel, so mid-round a tap on it is caught
+// by beatHurryTap (capture phase) and skips. This plan adds no listener to
+// it; 71-06's open-the-full-log tap comes later.
+let lastStripRiseId = null;
+function renderRoundStrip(host, fallbackRound) {
+  const bv = window.__mzBeat?.view?.() || null;
+  const log = bv ? bv.log : window.__mzFightLog;
+  if (!window.__mzFightLogVM?.summary || !window.__mzFightLogVM.copy) return;
+  const sum = window.__mzFightLogVM.summary(log, bv);
+  const copy = window.__mzFightLogVM.copy;
+  const busy = !!window.__mzBeat?.active?.();
+  // A fresh fight's log restarts its ids, so an empty log forgets the last
+  // risen line (the new fight's first line always rises).
+  if (!sum.total) lastStripRiseId = null;
+  const strip = document.createElement("div");
+  strip.className = "cb-summary";
+  strip.id = "cb-summary";
+  const head = document.createElement("div");
+  head.className = "cb-sum-head";
+  const label = document.createElement("span");
+  label.className = "cb-sum-label";
+  const n = sum.round != null ? sum.round : (fallbackRound ?? "");
+  label.textContent = busy ? copy.resolving : copy.roundHappened.replace("{n}", String(n));
+  if (busy) label.dataset.busy = "1";
+  head.appendChild(label);
+  const chip = document.createElement("span");
+  chip.className = "cb-sum-chip";
+  chip.textContent = copy.fullLog.replace("{n}", String(sum.total));
+  head.appendChild(chip);
+  strip.appendChild(head);
+  const bodyEl = document.createElement("div");
+  bodyEl.className = "cb-sum-body";
+  let typingTextEl = null;
+  let typingRowEl = null;
+  let typingText = null;
+  for (const line of sum.lines) {
+    const row = document.createElement("div");
+    row.className = "cb-sum-line" + (line.newest ? " cb-sum-newest" : "");
+    row.dataset.logId = String(line.id);
+    if (line.newest && line.id !== lastStripRiseId) {
+      lastStripRiseId = line.id;
+      row.classList.add("cb-sum-rise");
+    }
+    const text = document.createElement("span");
+    text.className = "cb-sum-text";
+    text.textContent = line.text;
+    row.appendChild(text);
+    bodyEl.appendChild(row);
+    if (line.newest && bv && bv.typeId != null && line.id === bv.typeId) {
+      typingTextEl = text;
+      typingRowEl = row;
+      typingText = line.text;
+    }
+  }
+  strip.appendChild(bodyEl);
+  host.appendChild(strip);
+  syncFightLogLive(log);
+  if (typingTextEl) {
+    if (bv.typeId !== lastBeatTypedId) {
+      lastBeatTypedId = bv.typeId;
+      window.__mzTypewriter?.type?.("fightlog", { targets: [typingTextEl], texts: [typingText], ariaHost: typingRowEl });
+    } else if (window.__mzTypewriter?.active?.("fightlog")) {
+      window.__mzTypewriter.adopt("fightlog", [typingTextEl], typingRowEl);
     }
   } else {
     window.__mzTypewriter?.cancel?.("fightlog");
@@ -4598,18 +4700,15 @@ function renderEncounter() {
   // a tap here during a live beat, this is defensive.
   renderFoeCards(mid, window.__mzCombatVM.foes(V, { chipsFor: (f) => foeStatusBadges(f, V).map((b) => b.t) }), (i) => { if (S.combat) { S.combat.target = i; renderEncounter(); } }, bv ? bv.hitFoe : -1);
   renderYourLot(mid, window.__mzCombatVM.lot(V));
-  renderFightLog(mid);
+  // Phase 71 (D-07, R-19): the combat v2 mock's middle holds the foes and
+  // the party only, and scrolls on its own. The in-panel fight log (and its
+  // Phase 34 scroll-into-view gate) left it: the latest round lives in the
+  // what-happened strip below, the full log in 71-06's THE FIGHT SO FAR
+  // sheet, and the Oracle stays the complete per-swing log. The revert is
+  // renderFightLog(mid) here.
   body.appendChild(mid);
-  // Phase 34 (CSCR-04) — scroll the newest log entry into view only when a
-  // NEW log batch landed since the last render, so a submenu open/close
-  // re-render of the same log never yanks the scroll position. Phase 58
-  // (MOTION-03): while a beat is live, the log is its own frame's log
-  // (bv.log), not necessarily the live window.__mzFightLog.
-  const logForScroll = bv ? bv.log : window.__mzFightLog;
-  if (logForScroll && logForScroll.seq !== lastLogSeqShown) {
-    lastLogSeqShown = logForScroll.seq;
-    mid.querySelector(".cb-log-entry")?.scrollIntoView({ block: "nearest" });
-  }
+  // Phase 71 (D-07): the strip sits in the flow directly above the actions.
+  renderRoundStrip(body, C.round);
 
   const act = document.createElement("div");
   act.className = "cb-act";
@@ -4845,7 +4944,10 @@ function renderRail() {
   // an action button. Off in every other case.
   if (S.combat && foeCardUp && !railEl.hidden) {
     railEl.dataset.over = "combat";
-    const actEl = document.getElementById("cb-act");
+    // Phase 71 (71-05, D-07): the what-happened strip sits directly above
+    // #cb-act, so the card's bottom edge lifts to the strip's top when the
+    // strip exists (else #cb-act's), covering neither.
+    const actEl = document.getElementById("cb-summary") || document.getElementById("cb-act");
     const stageEl = document.getElementById("mw-stage");
     let lift = 0;
     if (actEl && stageEl) {
@@ -5695,7 +5797,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // prep.
   import { PRIORITY, narrativeLineText } from "./src/browser/narrationLines.js";
   import { narrateEvent } from "./src/browser/eventNarration.js";
-  import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement } from "./src/browser/fightLog.js";
+  import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement, roundSummary, ROUND_STRIP_COPY } from "./src/browser/fightLog.js";
   // Phase 35 (MAP-03/04) — the RAIL view-model: the out-of-combat twin of
   // fightLog.js, folding the same linesForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
@@ -6087,7 +6189,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // the classic renderFightLog/syncFightLogLive read the whole-fight log
   // through this ONE bridge rather than importing fightLog.js a second
   // time. No rng, no DOM access inside the module itself.
-  window.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine };
+  // Phase 71 (D-07): summary/copy feed the what-happened strip
+  // (renderRoundStrip) its latest-round lines and its label/chip copy.
+  window.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine, summary: roundSummary, copy: ROUND_STRIP_COPY };
 
   // Phase 35 (MAP-03/04) — the RAIL's own bridge, mirroring __mzFightLogVM
   // exactly: the classic renderRail() reads rail.js's pure functions through

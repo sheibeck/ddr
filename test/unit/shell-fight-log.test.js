@@ -164,7 +164,7 @@ test("renderFightLog(host) calls syncFightLogLive(log) with the SAME (unfiltered
   assert.doesNotMatch(region, /syncFightLogLive\(window\.__mzFightLog\)/, "syncFightLogLive must read the SAME `log` local, not re-read window.__mzFightLog directly");
 });
 
-// ─── 4. renderEncounter builds the strip, not the in-panel log; zero Round Card ───
+// ─── 4. renderEncounter builds the strip, not the in-panel log; zero remaining Round Card ───
 //
 // Phase 71 (D-07, R-19): the combat v2 mock's middle holds foes and party
 // only, so renderEncounter no longer calls renderFightLog(mid); it builds
