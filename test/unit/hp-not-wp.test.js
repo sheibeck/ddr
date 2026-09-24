@@ -24,7 +24,7 @@ import url from "node:url";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { RAIL_COPY } from "../../src/browser/rail.js";
-import { USABLE_COPY, STORE_ROW_COPY } from "../../src/browser/viewModels.js";
+import { USABLE_COPY, STORE_ROW_COPY, ITEM_STAT_COPY } from "../../src/browser/viewModels.js";
 import { UPGRADE_WHY_COPY } from "../../src/browser/upgradeWhy.js";
 import { ITEM_STATE_COPY, GEAR_COPY } from "../../src/browser/gearTab.js";
 import { GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js";
@@ -147,6 +147,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     ACCOUNT_COPY,
     // Phase 70 (D-06): the ☰ quit-row copy.
     HUD_MENU_QUIT_COPY,
+    // Phase 71 (D-04): the one item stat formatter's labels and texts.
+    ITEM_STAT_COPY,
     // Phase 68 (PLACE-01/02): the global standing quips and the placement copy.
     GLOBAL_STANDING_LINES, PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,
   };
