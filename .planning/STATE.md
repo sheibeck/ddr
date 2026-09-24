@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Leaderboards
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
+current_phase: 71
+current_phase_name: Device-Round Polish II
 status: executing
 stopped_at: v2.0 Phase 70 in flight (/gsd-autonomous --only 70), orchestrator resume note.
-last_updated: "2026-09-24T12:19:38.220Z"
+last_updated: "2026-09-24T12:49:49.924Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 70 complete, transitioned to Phase 999.1
+last_activity_desc: Phase 71 execution started
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 6
-  total_plans: 35
+  total_plans: 41
   completed_plans: 35
-  percent: 100
+  percent: 85
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards started; v1.9 closed and tagged; Play 1.9.0 / vc8 built for closed testing; open Pixel 7 UAT batches: v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 70 — device-round-polish
+**Current focus:** Phase 71 — Device-Round Polish II
 
 ## Current Position
 
-Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-24 — Phase 70 complete, transitioned to Phase 999.1
+Phase: 71 (Device-Round Polish II) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 71
+Last activity: 2026-09-24 — Phase 71 execution started
 
 ## Ground Truth (durable facts every session needs)
 
