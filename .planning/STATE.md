@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Leaderboards
-current_phase: 71
-current_phase_name: Device-Round Polish II
-status: executing
-stopped_at: v2.0 Phase 70 in flight (/gsd-autonomous --only 70), orchestrator resume note.
-last_updated: "2026-09-24T12:49:49.924Z"
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
+status: planning
+stopped_at: "v2.0 Phase 71 COMPLETE; debug APK on the Pixel 7; milestone lifecycle paused by the user."
+last_updated: "2026-09-24T15:32:20.845Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 71 execution started
+last_activity_desc: Phase 71 complete, transitioned to Phase 999.1
 progress:
   total_phases: 7
-  completed_phases: 6
-  total_plans: 41
-  completed_plans: 35
-  percent: 85
+  completed_phases: 7
+  total_plans: 43
+  completed_plans: 43
+  percent: 100
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards st
 
 ## Current Position
 
-Phase: 71 (Device-Round Polish II) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 71
-Last activity: 2026-09-24 — Phase 71 execution started
+Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-24 — Phase 71 complete, transitioned to Phase 999.1
 
 ## Ground Truth (durable facts every session needs)
 
@@ -208,13 +208,12 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-24T11:30:00.000Z
-Stopped at: v2.0 Phase 71 PLANNED, paused for the user's /compact BEFORE execution (user asked: "make sure we have time to compact after planning").
+Stopped at: v2.0 Phase 71 COMPLETE (8/8 plans, VERIFICATION passed); debug APK installed on the Pixel 7; milestone lifecycle still paused by the user.
 
-- v2.0 status: Phases 65–70 COMPLETE (VERIFICATION passed each; master npm test 5203/5203). The user STOPPED the milestone lifecycle after the first audit (.planning/v2.0-MILESTONE-AUDIT.md) — no archive, no push. Resume the lifecycle (re-audit incl. 70–71 → complete → cleanup → push master + tags) only when the user says.
+- v2.0 status: Phases 65–71 COMPLETE (VERIFICATION passed each; master npm test 5483/5483). The user STOPPED the milestone lifecycle after the first audit (.planning/v2.0-MILESTONE-AUDIT.md, written before 70–71) — no archive, no push. Resume the lifecycle (re-audit incl. 70–71 → complete → cleanup → push master + tags) only when the user says.
 - Phase 70 Device-Round Polish DONE: title theme loop (quick 51h), ☰ = account face + ACCOUNT block + SAVE & QUIT / two-tap ABANDON, ☰ opens everywhere (HUD on the DEAD tab), LINEAGE race+sub selector (records keep per-lineage top 10). Known limitation → backlog 999.10 (relaunch clears a live fight/store). Debug APK with all of Phase 70 is installed on the Pixel 7.
-- Phase 71 Device-Round Polish II: 6 plans / 5 waves committed (c1f22fb), decision coverage 14/14, state.planned-phase run. NEXT: /gsd-autonomous --only 71 execution (state.begin-phase 71 first). Waves: w1 = 71-01 (sound CLIP_GAIN + MUSIC_GAIN 0.9 + MASTER/MUSIC/EFFECTS sliders) ∥ 71-02 (itemStatLines shared store/gear stats); w2 = 71-03 (foeConditions.js chip table for EVERY foe condition incl. hamstrung/marked — POLISH-09/D-14 — + combat action lock "HOLD · THE DICE ARE STILL OUT", tap-to-skip = existing beatHurryTap); w3 = 71-04 (long-press enemy details rail card + TalkBack Details); w4 = 71-05 (mock's "ROUND n · WHAT HAPPENED" strip; in-panel fight log leaves the middle, ruling R-19); w5 = 71-06 ("THE FIGHT SO FAR" full-log sheet + UAT section M + gates).
+- Phase 71 Device-Round Polish II DONE (8 plans / 7 waves; POLISH-05..12): sound levels + MASTER/MUSIC/EFFECTS sliders; one itemStatLines for store + Gear sheet; foeConditions.js chip table (every foe condition) + combat action lock (HOLD prompt, tap skips); long-press foe details card + TalkBack Details; ROUND n · WHAT HAPPENED strip; THE FIGHT SO FAR sheet; UI tap sound only on a real click (R-26: no extra click on STRIKE/GO DOWN) + water steps always splash (D-17 literal: flying over water also splashes — user may want a guard); status chits explain themselves in combat. D-15..D-17 were added mid-phase at the user's request. UAT section M = 41 rows (M1–M41); debug APK built from master and installed (adb install -r).
 - Mock: design/Mazeworld Combat Panel v2.dc.html + design/COMBAT-V2-NOTES.md (committed cf853b5; from claude.ai/design project fed8909e-…, DesignSync authorized via /design-login).
-- After 71's last merge (D-13): npm test, rebuild debug APK, adb install -r (keeps save), move closed todos to .planning/todos/done/ (71-01 sound, 71-02 gear stats, 71-04 long-press, 71-05 combat), 71-VERIFICATION, phase.complete 71.
 - Play Games IDs are LIVE (quick 260924-c14, 96a0e93): APP_ID 517177834262 + Season-1 IDs. Debug-build sign-in needs the user's debug SHA-1 credential (B5:94:1C:…:58:89) + tester list; Play builds need a new AAB (vc10+).
 - AAB: 2.0.0/vc9 built + tagged v2.0.0-play9 BEFORE Phases 70–71 (local, not uploaded, not pushed). A release with 70–71 and the real IDs needs a new AAB (vc10) — ask before building; never upload.
 - Open user questions: title-chip "?" face (keep vs person icon / SIGN IN) — unanswered.

@@ -37,7 +37,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [x] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card (completed 2026-09-24)
 - [x] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch (completed 2026-09-24)
 - [x] **Phase 70: Device-Round Polish** - Title theme from launch through the roller, the ☰ as profile icon opening everywhere with account + quit rows, and a race + sub-class LINEAGE board (completed 2026-09-24)
-- [ ] **Phase 71: Device-Round Polish II** - Balanced, player-adjustable sound levels; full gear stats on the Gear tab; combat input lock + visible round summary; long-press enemy details
+- [x] **Phase 71: Device-Round Polish II** - Balanced, player-adjustable sound levels; full gear stats on the Gear tab; combat input lock + visible round summary; long-press enemy details (completed 2026-09-24)
 
 ### Phase 65: Run Record & Personal Bests
 
@@ -253,6 +253,7 @@ Plans:
   6. The UI tap sound plays only on a real button press: scrolling across a button, a disabled or locked button, and a long press stay silent
   7. In combat, tapping a status chit shows its description on a card above the actions, and every foe condition's description is readable from the long-press details card
   8. Every step onto a water square plays the water walking sound, not only the first step into the water
+
 **Plans**: 8 plans (7 waves)
 
 D-07 follows the user's combat v2 mock (`design/Mazeworld Combat Panel v2.dc.html`, `design/COMBAT-V2-NOTES.md`) and is isolated in 71-05/71-06, after the input lock; 71-06 writes the D-13 UAT section M, and 71-07/71-08 (added 2026-09-24 for D-15/D-16) each append their own rows to it.
@@ -260,32 +261,32 @@ D-07 follows the user's combat v2 mock (`design/Mazeworld Combat Panel v2.dc.htm
 Plans:
 **Wave 1**
 
-- [ ] 71-01-PLAN.md — (wave 1) sound: CLIP_GAIN per-clip levels (death 0.5, steps 1.6), MUSIC_GAIN 0.9, the effects bus and live levels in sfx.js; volMaster/volMusic/volEffects in ddr.settings.v1; MASTER/MUSIC/EFFECTS sliders under Sound, shown only while Sound is On (POLISH-05; D-01, D-02, D-03)
-- [ ] 71-02-PLAN.md — (wave 1) gear stats: one itemStatLines formatter (plus wornItemFor) that the store rows and the Gear action sheet both render from; the store-vs-sheet agreement test; declared snapshot regeneration; no mazeworld.html edit (POLISH-06; D-04)
+- [x] 71-01-PLAN.md — (wave 1) sound: CLIP_GAIN per-clip levels (death 0.5, steps 1.6), MUSIC_GAIN 0.9, the effects bus and live levels in sfx.js; volMaster/volMusic/volEffects in ddr.settings.v1; MASTER/MUSIC/EFFECTS sliders under Sound, shown only while Sound is On (POLISH-05; D-01, D-02, D-03)
+- [x] 71-02-PLAN.md — (wave 1) gear stats: one itemStatLines formatter (plus wornItemFor) that the store rows and the Gear action sheet both render from; the store-vs-sheet agreement test; declared snapshot regeneration; no mazeworld.html edit (POLISH-06; D-04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 71-03-PLAN.md — (wave 2) foeConditions.js, one chip table for every foe condition (Hamstrung, Marked, Stunned, timed Blind…) with an engine-scan coverage guard; the combat actions lock visibly while a round plays (the mock's HOLD prompt); the tap-to-skip and no-replay proof (POLISH-09, POLISH-07; D-14, D-05, D-06)
+- [x] 71-03-PLAN.md — (wave 2) foeConditions.js, one chip table for every foe condition (Hamstrung, Marked, Stunned, timed Blind…) with an engine-scan coverage guard; the combat actions lock visibly while a round plays (the mock's HOLD prompt); the tap-to-skip and no-replay proof (POLISH-09, POLISH-07; D-14, D-05, D-06)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 71-04-PLAN.md — (wave 3) long-press enemy details: the pure foeDetails view model (every bestiary creature, HP never WP), the longPress recognizer, a light haptic, the combat-legal rail card above the actions, and a TalkBack Details action (POLISH-08; D-08..D-12)
+- [x] 71-04-PLAN.md — (wave 3) long-press enemy details: the pure foeDetails view model (every bestiary creature, HP never WP), the longPress recognizer, a light haptic, the combat-legal rail card above the actions, and a TalkBack Details action (POLISH-08; D-08..D-12)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 71-05-PLAN.md — (wave 4) the mock's "ROUND n · WHAT HAPPENED" strip above the actions (the last 3 lines of the latest round, RESOLVING while busy, no spoilers); the beat reveal moves into it; the middle holds foes and party only (POLISH-07; D-07, D-06)
+- [x] 71-05-PLAN.md — (wave 4) the mock's "ROUND n · WHAT HAPPENED" strip above the actions (the last 3 lines of the latest round, RESOLVING while busy, no spoilers); the beat reveal moves into it; the middle holds foes and party only (POLISH-07; D-07, D-06)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 71-06-PLAN.md — (wave 5) THE FIGHT SO FAR full-log sheet that the strip opens (grouped by round, honest dice reveal, never mid-round); every Phase 71 device check folded into docs/UAT-v2.0.md section M; phase gates (POLISH-07; D-07, D-13)
+- [x] 71-06-PLAN.md — (wave 5) THE FIGHT SO FAR full-log sheet that the strip opens (grouped by round, honest dice reveal, never mid-round); every Phase 71 device check folded into docs/UAT-v2.0.md section M; phase gates (POLISH-07; D-07, D-13)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 71-07-PLAN.md — (wave 6) UI tap sound only on a real press: unlock stays on pointerdown, the tap moves to a capture-phase click; silent for disabled / aria-disabled / data-locked / guard-swallowed / mid-round skip taps and a long press; one sound per press via sfxClipCount; pure uiTap.js; section M rows; plus water steps always sound wet via audioCtx.onWater (POLISH-10, POLISH-12; D-15, D-17)
+- [x] 71-07-PLAN.md — (wave 6) UI tap sound only on a real press: unlock stays on pointerdown, the tap moves to a capture-phase click; silent for disabled / aria-disabled / data-locked / guard-swallowed / mid-round skip taps and a long press; one sound per press via sfxClipCount; pure uiTap.js; section M rows; plus water steps always sound wet via audioCtx.onWater (POLISH-10, POLISH-12; D-15, D-17)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 71-08-PLAN.md — (wave 7) status chits explain themselves in combat: a combat-legal "cond" card (rail.js COMBAT_CARD_KINDS) above the strip and actions, readable mid-round without skipping, every hero chip description pinned; foe condition descriptions on the long-press card; section M rows; phase gates (POLISH-11; D-16)
+- [x] 71-08-PLAN.md — (wave 7) status chits explain themselves in combat: a combat-legal "cond" card (rail.js COMBAT_CARD_KINDS) above the strip and actions, readable mid-round without skipping, every hero chip description pinned; foe condition descriptions on the long-press card; section M rows; phase gates (POLISH-11; D-16)
 
 **Research**: none (skipped; presentation-only, patterns read from the codebase)
 
@@ -450,7 +451,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
 | 70. Device-Round Polish | v2.0 | 4/4 | Complete    | 2026-09-24 |
-| 71. Device-Round Polish II | v2.0 | 0/6 | Planned     | - |
+| 71. Device-Round Polish II | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |

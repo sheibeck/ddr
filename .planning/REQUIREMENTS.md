@@ -61,14 +61,14 @@
 - [x] **POLISH-02**: The ☰ button is the Play Games profile icon (initials avatar when signed in, plain ☰ otherwise) and its dropdown carries the account rows (identity, Sign in / Stop competing, Compete); no separate account chip in the HUD band.
 - [x] **POLISH-03**: The ☰ opens on every in-game screen (map, combat and other encounters, the Oracle, the tabs, while dead); Save & quit and a two-tap-armed Abandon this character (New Character when dead) live in it, and the HERO tab's Delve panel is gone.
 - [x] **POLISH-04**: LINEAGE has a race + sub-class selector defaulting to the active hero's lineage and shows the top 10 runs for the selected lineage, locally and (as a filtered sample) globally.
-- [ ] **POLISH-05**: Every sound effect has a per-clip level in one tunable table (death quieter, steps louder), the title theme is louder, and Settings shows MASTER / MUSIC / EFFECTS volume sliders under Sound, visible only while Sound is on, persisted and applied live.
-- [ ] **POLISH-06**: Opening an item from the Gear tab shows the same full stat set the store shows for that item, built from one shared formatter.
-- [ ] **POLISH-07**: While a combat round plays out, the actions are visibly unavailable, taps never queue, and a tap skips to the round's result; with several foes the latest round summary stays visible above the actions without being intrusive.
-- [ ] **POLISH-08**: Long-pressing an enemy raises one dismissible rail card with its details, never also firing the normal tap; TalkBack users get an equivalent Details action.
-- [ ] **POLISH-09**: Every condition an ability, spell or item puts on an enemy (Hamstring, Mark and the rest) shows as a condition chip on that enemy while it lasts, from one table, with a test that fails if a new foe effect has no chip.
-- [ ] **POLISH-10**: The UI tap sound plays only when a button is really pressed: never when a scroll or pan starts on a button, never for a disabled or locked button, and never for a long press.
-- [ ] **POLISH-11**: Tapping a status chit during combat shows that effect's description on a combat-legal card, and each foe condition's description is readable from the long-press details card.
-- [ ] **POLISH-12**: Every step onto a water square plays the water walking sound, not just the step that first enters the water; stepping back onto dry ground plays the ordinary step.
+- [x] **POLISH-05**: Every sound effect has a per-clip level in one tunable table (death quieter, steps louder), the title theme is louder, and Settings shows MASTER / MUSIC / EFFECTS volume sliders under Sound, visible only while Sound is on, persisted and applied live.
+- [x] **POLISH-06**: Opening an item from the Gear tab shows the same full stat set the store shows for that item, built from one shared formatter.
+- [x] **POLISH-07**: While a combat round plays out, the actions are visibly unavailable, taps never queue, and a tap skips to the round's result; with several foes the latest round summary stays visible above the actions without being intrusive.
+- [x] **POLISH-08**: Long-pressing an enemy raises one dismissible rail card with its details, never also firing the normal tap; TalkBack users get an equivalent Details action.
+- [x] **POLISH-09**: Every condition an ability, spell or item puts on an enemy (Hamstring, Mark and the rest) shows as a condition chip on that enemy while it lasts, from one table, with a test that fails if a new foe effect has no chip.
+- [x] **POLISH-10**: The UI tap sound plays only when a button is really pressed: never when a scroll or pan starts on a button, never for a disabled or locked button, and never for a long press.
+- [x] **POLISH-11**: Tapping a status chit during combat shows that effect's description on a combat-legal card, and each foe condition's description is readable from the long-press details card.
+- [x] **POLISH-12**: Every step onto a water square plays the water walking sound, not just the step that first enters the water; stepping back onto dry ground plays the ordinary step.
 
 ## Future Requirements
 
@@ -123,14 +123,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | POLISH-02 | Phase 70 | Complete |
 | POLISH-03 | Phase 70 | Complete |
 | POLISH-04 | Phase 70 | Complete |
-| POLISH-05 | Phase 71 | Pending |
-| POLISH-06 | Phase 71 | Pending |
-| POLISH-07 | Phase 71 | Pending |
-| POLISH-08 | Phase 71 | Pending |
-| POLISH-09 | Phase 71 | Pending |
-| POLISH-10 | Phase 71 | Pending |
-| POLISH-11 | Phase 71 | Pending |
-| POLISH-12 | Phase 71 | Pending |
+| POLISH-05 | Phase 71 | Complete |
+| POLISH-06 | Phase 71 | Complete |
+| POLISH-07 | Phase 71 | Complete |
+| POLISH-08 | Phase 71 | Complete |
+| POLISH-09 | Phase 71 | Complete |
+| POLISH-10 | Phase 71 | Complete |
+| POLISH-11 | Phase 71 | Complete |
+| POLISH-12 | Phase 71 | Complete |
 
 **Coverage:**
 
