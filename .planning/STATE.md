@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Leaderboards
-status: Awaiting next milestone
-stopped_at: "v2.0 Leaderboards CLOSED 2026-09-24 (override closeout); published as Play 2.0.0 / vc10; next: /gsd-new-milestone"
-last_updated: "2026-09-24T19:11:03.071Z"
+milestone: v2.1
+milestone_name: Bug Fixes
+status: planning
+last_updated: "2026-09-24T19:35:51.364Z"
 last_activity: 2026-09-24
-last_activity_desc: Milestone v2.0 completed and archived
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 43
-  completed_plans: 43
-  percent: 100
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: Milestone v2.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-24 — Milestone v2.0 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-24 — Milestone v2.1 started
 
 ## Ground Truth (durable facts every session needs)
 

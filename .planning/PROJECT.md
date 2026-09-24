@@ -88,6 +88,45 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
+## Current Milestone: v2.1 Bug Fixes
+
+Scoped with the user on 2026-09-24. It clears every open device-round todo plus backlog phases 999.8, 999.9 and 999.10. Phases continue from 72.
+
+**Goal:** Close out every open device-round bug so the game is honest, legible and store-clean ahead of the Play production launch.
+
+**Target features:**
+- **Engine rules**, under the greenfield gate: each fix declares and regenerates only the fixtures it moves.
+  - Table-4 +HP dots stop compounding max HP. The red-dot wilmst cache is cut.
+  - The Summoner's grimoire respects the school gate, and combat hides level-locked spells.
+  - Sense Presence wins initiative and lifts the dark penalties.
+  - The trap "-1 HP" death gets a debug and a fix.
+  - Ailment rolls 5–6 give the disease they narrate.
+  - A destroyed armor piece is narrated when it is replaced.
+  - The two darkness mechanisms are unified (999.8).
+  - Live combat and an open store survive a relaunch (999.10).
+- **Combat screen and Oracle:**
+  - Submenu rows stop clipping, and spells sort by level then name.
+  - The foe's family shows after its name.
+  - The Oracle prints in event order.
+  - A scroll that casts no longer narrates a refusal.
+  - The last fight-log row can be tapped.
+- **HUD and shell:**
+  - Band 1 reads "Race Sub-class · Lvl N".
+  - Dead state: only the Oracle, the DEAD/Leaderboards screen and ☰ with Settings accept input, and a **read-only final character sheet** opens from the DEAD screen (user ruling 2026-09-24).
+  - The text-size setting reaches every `--mw-font-*` token.
+  - Dragging the settings sheet no longer scrubs a volume slider.
+  - Climbs and leaps get a **pre-roll prompt**: CLIMB/LEAP IT, USE LADDER/ROPE or TURN BACK. No roll happens until you commit, and TURN BACK is free (user ruling 2026-09-24, option B).
+  - A stairs descent fades to black with the stairs sound, then fades in.
+- **Content:**
+  - Every sub-class and race blurb states its advantages and disadvantages.
+  - A full narrative clarity pass covers every in-game line.
+- **Android and tooling:**
+  - R8 minify, shrink and obfuscation on AGP 8.13 (AGP 9 stays deferred per the Phase 67 spike).
+  - Android 15/16 edge-to-edge, deprecated window APIs and large-screen handling (999.9).
+  - The fit tool's replay-resume diverges after an infeasible point. This gets fixed.
+
+**Not code work:** UAT row F1, the RELEASE-BLOCKING Compete-OFF capture, stays the user's device check in `docs/UAT-v2.0.md`.
+
 ## Last Milestone: v2.0 Leaderboards (shipped 2026-09-24 as Play 2.0.0 / vc10; device UAT spread over the user's play sessions)
 
 Scoped with the user on 2026-09-23, briefly parked, then started the same day. It will be run by `/gsd-autonomous`. Full record: `.planning/proposed-milestone-leaderboards.md` (§ "Decisions (user, 2026-09-23)"). Research: no milestone-level pass. The PGS integration phase is flagged for `gsd-phase-researcher`.
@@ -424,4 +463,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 after v2.0 milestone (Leaderboards shipped as Play 2.0.0 / vc10)*
+*Last updated: 2026-09-24 — v2.1 Bug Fixes milestone started*
