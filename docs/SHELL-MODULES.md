@@ -8,7 +8,12 @@ and `storeScreen.js` (Phase 47), and the character roller mounts from
 `boardsPanel.js` over the pure `boardsView.js` view model (Phase 66). The
 Play Games account (Phase 67) comes from three modules: `playGames.js` (the
 provider seam), `account.js` (the pure view model) and `accountChip.js`
-(the chip and sheet renderers plus the account controller). The
+(the chip and sheet renderers plus the account controller). The global
+boards (Phase 68) add five: `scoreTag.js` (the score tag), `boardScores.js`
+(the per-board score encodings and leaderboard IDs), `pgsQueue.js` (the
+durable submission queue), `globalBoards.js` (the fetch-and-cache
+controller for ALL and FRIENDS) and `placement.js` (the rank line and rail
+card views). The
 contract below is what those modules implement, and every `window.__mz*`
 bridge crossing the classic-script/module-script seam is listed in one
 place, with an owner.
@@ -175,9 +180,10 @@ twin used by `node --test` and the browser dev loop. Both expose `init()`
 (the silent launch attempt), `signIn()` (the interactive attempt, which
 passes `silent: false`), `isAuthenticated()` and `getPlayer()` →
 `{ id, displayName }`. Every method resolves and never rejects. There is no
-sign-out, because PGS v2 has none (D-03). The plugin's leaderboard methods
-are reserved for Phase 68 (`RESERVED_LEADERBOARD_METHODS`) and are not
-exposed yet.
+sign-out, because PGS v2 has none (D-03). Phase 68 binds the leaderboard
+methods: `submitScore`, `loadTopScores`, `loadPlayerScore`, `loadStanding`
+and `friendsAccess`. `PLUGIN_METHODS_USED` is the allow-list of the only
+plugin methods the wrapper ever calls.
 
 `src/browser/account.js` is the pure view model: the account state
 (`ACCOUNT_STATUS`, `normalizeAccountState`), the two rail cards
@@ -221,6 +227,74 @@ The shell wiring (mazeworld.html's module script):
   and every account change calls `boardsPanel.refresh()`.
 
 No new `window.__mz` bridge: the account lives in the module script.
+
+### Global boards, submissions and placement (Phase 68)
+
+**Encodings.** `src/browser/scoreTag.js` encodes a run into the 64-char
+Play Games score tag (versioned, no epitaph) and decodes it tolerantly;
+global rows are drawn from the tag, not from the score.
+`src/browser/boardScores.js` turns a run summary into the five submitted
+scores (DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE; LINEAGE and GRAVEYARD
+are never submitted) and resolves leaderboard IDs per season and board
+from `content/leaderboards.js`. Those IDs are placeholders until the Play
+Console setup in Phase 69, and a placeholder or missing ID skips its board
+silently.
+
+**The queue.** `src/browser/pgsQueue.js` exports
+`createSubmissionQueue({ storage, provider, ids, season, isCompeting,
+isSignedIn, onFlushed, onSeasonDrop })`. Its record lives in
+`ddr.pgsqueue.v1` through `window.mzStorage`: cross-run shell data, never
+game state. The adapter's `setRunRecordedListener` reports every non-dev
+death. The shell's `onRunRecorded` enqueues it: the queue refuses while
+Compete is OFF, otherwise it stores the entry and then starts a flush.
+Flushes also run when sign-in succeeds (at launch or from the Sign in row),
+when the device comes back `online` (forced) and when the app becomes
+visible again (the backoff applies). Each (run, board) is acknowledged and
+stored before the next submission, so a crash or retry never sends a score
+twice. An entry from an older season is dropped, not submitted, and the
+drop is noted once in the Oracle through `window.logLine`. Turning Compete
+OFF purges the queue. The native background flush (`registerNativeChrome`'s
+`waitForPending`) awaits the queue's pending writes alongside the
+adapter's.
+
+**Global views.** `src/browser/globalBoards.js` exports
+`createGlobalBoards({ provider, ids, isActive, playerId, onChange })`,
+which returns `{ view, requestFriendsAccess, clear }`. `view({ board,
+scope, season })` answers at once from a cache kept per season, board and
+scope for about 5 minutes and starts at most one background fetch.
+`onChange` redraws the open panel when a fetch finishes. Friends consent is
+requested only by `requestFriendsAccess()`, which only the panel's SHOW MY
+FRIENDS button calls. While signed out or with Compete OFF, `isActive()` is
+false and no leaderboard call is made; the cache is cleared on sign-out and
+on Compete OFF. The Leaderboards panel reads it through three
+`createBoardsPanel` seams: `global` (the controller's `view`, or null
+before it exists), `seasons` (`{ current: SEASON, all: knownSeasons() }`)
+and `onFriendsConsent`.
+
+**Placement.** `src/browser/placement.js` holds the pure views:
+`placementLine`, `deferredPlacementCard` and `seasonDropLine`. A flush that
+submitted DEEPEST scores reads the player's DEEPEST standing once and calls
+the shell's `handlePgsFlush`:
+
+- The live death, while its THAT IS THAT panel is up, gets the rank line.
+  `window.__mzPlacement` (`{ hash, line, fresh }`) is set and the classic
+  `renderRankLine` draws it under the NEW PERSONAL BEST block. It fades in
+  once, and the blanket reduced-motion rule removes the fade. Nothing shows
+  while the rank is on its way or when the read fails.
+- Every other submitted run folds into one rail card, covering the
+  best-placed run and the count. The card is parked until the dungeon is
+  visible and the party is not dead. It is delivered after any parked
+  account card's hold, never on top of it.
+
+A signed-out or Compete-OFF run shows no rank line, no card and no error.
+
+**Dev loop.** The browser gets the fake provider with dev leaderboard IDs
+(`leaderboardIdsFor({ native: false })`, built once) and the real score
+orders (`scoreOrdersFor`). With the dev setting `pgsDevSignedIn` on,
+submissions, the rank line, the card and the ALL/FRIENDS views all work
+without a device.
+
+`window.__mzPlacement` is the one new bridge (see the table below).
 
 ## What stays shared
 
