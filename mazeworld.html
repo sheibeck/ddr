@@ -3302,16 +3302,6 @@ async function saveGraves() {
   try { await window.mzStorage.setItem(GRAVE_KEY, JSON.stringify(graves.slice(0, 60))); } catch (e) {}
 }
 /* @gsd:dual-write-convergence-extract:graves:end */
-// DR18 (DR15-C): read-only bridge so the trailing <script type="module">'s
-// title-screen code can gate its "View the Dead" entry on a non-empty
-// graveyard. gravesTotal/graves are classic-script top-level `let`s, invisible
-// to the module scope (mirrors window.__mzState's accessor pattern). Populated
-// by loadGraves() during __mzClassicBoot(), which the module awaits BEFORE
-// initTitleScreen() runs; graves.length is the floor so a fresh death (which
-// unshifts into `graves`) surfaces the entry even if the persisted total lags.
-// Kept OUTSIDE the extract-sentinel block above: that block is lifted into a
-// DOM-less node:vm sandbox by the persistence harness where `window` is absent.
-window.__mzGravesCount = () => Math.max(gravesTotal || 0, (graves && graves.length) || 0);
 
 /* ---------------- encounter panel ---------------- */
 // Device-review revision (04-CONTEXT.md "Device-review revisions" #5):
@@ -5404,6 +5394,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // died event into the classic renderCombatOver's NEW PERSONAL BEST block.
   import { takeDeathRecord } from "./src/browser/engineAdapter.js";
   import { newBestView } from "./src/browser/newBest.js";
+  // Phase 66 (BOARD-01..08): the Leaderboards panel's adapter read seam,
+  // controller and pure view model — each on its own line per this file's
+  // import convention.
+  import { getBests, getGraveyard } from "./src/browser/engineAdapter.js";
+  import { createBoardsPanel } from "./src/browser/boardsPanel.js";
+  import { boardsView } from "./src/browser/boardsView.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
@@ -5660,6 +5656,30 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet's one bridge —
   // openGearSheet/refreshGearSheet (classic) render through it.
   window.__mzGearSheet = renderGearSheet;
+
+  // Phase 66 (D-14/D-15): the Leaderboards panel reads only the adapter's
+  // in-memory records through boardsView; presentation only, never a field
+  // on state.
+  function readBoardsData() {
+    const g = getGraveyard();
+    return { bests: getBests(), graves: (g && g.graves) || [], total: (g && g.total) || 0 };
+  }
+  function boardsPrefs() {
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  }
+  const boardsPanel = createBoardsPanel({
+    host: document.getElementById("screen-dead"),
+    buildView: boardsView,
+    readData: readBoardsData,
+    prefs: boardsPrefs(),
+    reducedMotion: () => prefersReducedMotion(window),
+    onRoute: routeFromBoards,
+  });
+  window.__mzBoards = Object.freeze({ onDeadTab: boardsPanel.onDeadTab });
 
   // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithNarration and
   // the classic renderFightLog/syncFightLogLive read the whole-fight log
@@ -6664,14 +6684,16 @@ window.__mzClassicBoot = async function classicBoot() {
   }
   let resumeIntent = false;
   // DR18 (DR15-C): show the title screen's "View the Dead" entry ONLY when the
-  // graveyard is non-empty. Reads the classic script's live count via the
-  // window.__mzGravesCount bridge (see its doc comment in the classic script);
-  // re-checked every time the title screen shows so a death mid-session (which
-  // populates the graveyard) makes the entry appear on the next title return.
+  // graveyard is non-empty. Phase 66 (D-14): reads the adapter's lifetime
+  // total directly (getGraveyard()) instead of the retired classic
+  // window.__mzGravesCount bridge; re-checked every time the title screen
+  // shows so a death mid-session (which folds into the adapter's graveyard
+  // synchronously) makes the entry appear on the next title return.
   function refreshTitleDead() {
     const deadBtn = document.getElementById("mw-title-dead");
     if (!deadBtn) return;
-    const n = window.__mzGravesCount ? window.__mzGravesCount() : 0;
+    const g = getGraveyard();
+    const n = (g && g.total) || 0;
     deadBtn.hidden = !(n > 0);
   }
   function showTitleScreen({ allowResume } = {}) {
@@ -6983,6 +7005,24 @@ window.__mzClassicBoot = async function classicBoot() {
     showTitleScreen();
   };
 
+  // Phase 66 (D-01): the Leaderboards panel's dock/back routing. The
+  // controller has already cleared its own title marker before calling
+  // this, so every branch below is free to change screens.
+  function routeFromBoards(action, { hasHero } = {}) {
+    if (action === "title") {
+      // Passing allowResume preserves the title's own resume decision;
+      // recomputing it from S would misread boot()'s throwaway fresh-run
+      // character as a live hero.
+      window.__mzShowTab?.("maze");
+      showTitleScreen({ allowResume: !!hasHero });
+    } else if (action === "dungeon") {
+      window.__mzShowTab?.("maze");
+      surfaceWornReconcile();
+    } else if (action === "roll") {
+      window.mzStartRoll();
+    }
+  }
+
   // Phase 37 (GEAR-04): surfaces the ONE-SHOT load-time worn-reconciliation
   // report only when something was bagged; takeBootWornReport() nulls
   // itself on read, so a later ENTER (or a fresh roll) is a no-op. Rail
@@ -7009,10 +7049,11 @@ window.__mzClassicBoot = async function classicBoot() {
       window.mzStartRoll();
     };
     // DR18 (DR15-C): "View the Dead" — dismiss the title gate and open the
-    // existing DEAD graveyard view (__mzShowTab("dead") re-fetches the stones).
-    // gravesTotal is already loaded here (loadGraves() ran inside the awaited
-    // __mzClassicBoot() above), so refreshTitleDead()'s non-empty gate is
-    // authoritative on this first paint.
+    // Leaderboards panel on the DEAD tab (__mzShowTab("dead") reaches
+    // window.__mzBoards.onDeadTab, Phase 66). The adapter's graveyard is
+    // already loaded here (boot() ran inside the awaited __mzClassicBoot()
+    // above), so refreshTitleDead()'s non-empty gate is authoritative on
+    // this first paint.
     const deadBtn = document.getElementById("mw-title-dead");
     if (deadBtn) {
       deadBtn.onclick = () => {

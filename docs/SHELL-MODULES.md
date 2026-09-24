@@ -4,9 +4,11 @@
 screen render from named `src/browser/` modules — `gearTab.js`, `heroTab.js`
 and `storeScreen.js` (Phase 47), and the character roller mounts from
 `roller.js` (Phase 50). The GEAR tab's bottom action sheet renders from
-`gearSheet.js` (Phase 63). The contract below is what those modules
-implement, and every `window.__mz*` bridge crossing the classic-script/
-module-script seam is listed in one place, with an owner.
+`gearSheet.js` (Phase 63). The DEAD tab's Leaderboards panel renders from
+`boardsPanel.js` over the pure `boardsView.js` view model (Phase 66). The
+contract below is what those modules implement, and every `window.__mz*`
+bridge crossing the classic-script/module-script seam is listed in one
+place, with an owner.
 
 ## Contract
 
@@ -117,6 +119,49 @@ opener. The scrim tap and the Android back button both close it too.
 `renderGearSheet` before the first `boot()`; the classic script's
 `openGearSheet`/`refreshGearSheet` are its only callers.
 
+### Leaderboards panel (Phase 66)
+
+`src/browser/boardsView.js` exports `boardsView(input)` — the D-15 pure
+view-model seam. Given `{ bests, graves, total, board, scope, open, entry,
+hasHero, signedIn, recentHash }` it returns everything the panel renders:
+the header (title, scope line, INTERRED count), the identity strip (`null`
+on GRAVEYARD, otherwise the signed-out glyph/label/source and dimmed ALL/
+FRIENDS chips), the seven-chip board rail, the active board's mark/title/
+rule line, the body (`rows` | `empty` | `note`), the standing card and the
+footnote. It is a pure function of its input — no DOM, no storage read —
+built entirely from `engine/records.js` and `content/boards.js`.
+
+`src/browser/boardsPanel.js` exports `renderBoardsPanel(host, view,
+handlers)` (a persistent-skeleton DOM renderer reusing its `.mw-bd` root and
+six section children across re-renders, so the rail's and body's own scroll
+positions survive a row tap or board switch) and `createBoardsPanel({ host,
+buildView, readData, prefs, reducedMotion, onRoute })` — the stateful
+controller returning `{ openFromTab, openFromTitle, onDeadTab, back,
+isTitleOpen, centreRail, refresh, state }`.
+
+Two entry modes:
+
+- **Tab** (`openFromTab`/`onDeadTab`) — the game tab bar stays visible with
+  DEAD active, no chevron, no dock. Opens on the board last viewed (the
+  `ddr.boards.last.v1` per-viewer convenience key, read/written through the
+  injected `prefs`, always inside try/catch), falling back to DEEPEST.
+- **Title** (`openFromTitle`) — a ◀ back chevron appears in the header, the
+  bottom dock shows BACK TO TITLE / ROLL A NEW HERO / BACK TO THE DUNGEON,
+  and `body[data-boards-entry="title"]` hides the game tab bar and the rail.
+  Always opens on GRAVEYARD. `back()`/the dock route through the panel's
+  `onRoute(action, { hasHero })` callback ("title" | "dungeon" | "roll").
+
+`window.__mzBoards` is the one bridge — `{ onDeadTab }` — assigned by the
+module script; the classic script's `showTab`'s `name === "dead"` branch is
+its only caller. The panel reads only the adapter's in-memory
+`getBests()`/`getGraveyard()` snapshots (never storage directly), so a death
+that just happened already shows when the DEAD tab opens.
+
+Phases 67 (Play Games sign-in, the account chip) and 68 (global/friends
+boards, submissions) add real sources behind this same `boardsView` seam —
+the signed-out identity strip and dimmed ALL/FRIENDS chips this phase ships
+are the deliberate placeholder those phases bring to life.
+
 ## What stays shared
 
 `src/browser/viewModels.js` keeps the view models more than one surface
@@ -157,6 +202,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzArmorDisplay | mazeworld.html (module) | mazeworld.html (classic: paint — sheet armor line)<br>mazeworld.html (classic: renderCarriedList — bag armor swap-compare text)<br>mazeworld.html (classic: renderDropShelf — bag armor text)<br>mazeworld.html (classic: renderEncounter — loot/find armor text) | Bridges the pure armorDisplay/bagArmorText formatters so every armor string on screen renders from one engine-derived source. |
 | __mzBagUsage | mazeworld.html (module) | mazeworld.html (classic: paint — bag usage readout)<br>mazeworld.html (classic: renderEncounter — loot/find bag-full gate) | Bridges the pure bag-capacity readout (used/slots, full) so the Gear tab and every loot/find/store surface agree with the engine's real cap. |
 | __mzBeat | mazeworld.html (module) | mazeworld.html (classic: renderEncounter/renderFightLog/renderActionArea — view())<br>mazeworld.html (classic: hasActiveEncounter/encArmed — active())<br>mazeworld.html (classic: beatHurryTap/showTab — hurry())<br>mazeworld.html (module: settleAllMotion — hurry()) | Bridges the pure src/browser/combatBeat.js runner (Phase 58, MOTION-03: D-09..D-11, D-17) so the classic renderer reveals an already-resolved combat round one exchange at a time, without a second copy of the reveal schedule. |
+| __mzBoards | mazeworld.html (module) | mazeworld.html (classic: showTab — the DEAD tab opens the Leaderboards panel, or re-centres its rail when the panel is already open from the title) | Bridges the module-owned Leaderboards panel (src/browser/boardsPanel.js over boardsView.js and the adapter's in-memory bests record and graveyard) so the classic tab switch opens it without importing a module; presentation only, never a field on state. |
 | __mzCameraGlide | mazeworld.html (module) | mazeworld.html (classic: keepPartyInView — the glided keep-in-view nudge)<br>mazeworld.html (classic: glideCenterMap — the CENTRE row of the ☰ menu)<br>mazeworld.html (classic: anchorCamOnParty — cancels before a snap or a pinch frame)<br>mazeworld.html (classic: the viewport's pointerdown handler — cancels so the finger wins) | Bridges the pure src/browser/cameraGlide.js retargetable ease-out tween (Phase 58, MOTION-01) so the classic camera code eases `cam` without a second copy of the tween math. |
 | __mzCanvasSizing | mazeworld.html (module) | mazeworld.html (classic: fit — canvas backing size + cell size for text scale) | Bridges the pure canvas-backing/cell-size math so the map canvas resizes identically to the engine's own text-scale settings model. |
 | __mzCarriedList | mazeworld.html (module) | mazeworld.html (classic: the loot card — the shared carried-item list; the store sell list reaches it directly now, via src/browser/storeScreen.js's own gearTab.js import) | Bridges src/browser/gearTab.js's renderCarriedList so the loot card reaches the ONE shared carried-item list renderer, never a second copy. |
@@ -175,7 +221,6 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzFightLog | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)<br>mazeworld.html (module: dispatchWithNarration — appends every dispatch's fight-log lines) | Presentation-only whole-fight log entries (rows, seq); never a field on state. |
 | __mzFightLogVM | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull) | Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time. |
 | __mzGearSheet | mazeworld.html (module) | mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render) | Bridges src/browser/gearSheet.js's renderGearSheet so the classic sheet lifecycle (open, repaint refresh, close, back button, ghost-tap arm) renders the ONE pure sheet model, never a second copy. |
-| __mzGravesCount | mazeworld.html (classic) | mazeworld.html (module: refreshTitleDead — the roller screen's death counter) | Exposes the classic script's graveyard-count accessor so the module's title-screen death counter reads the same total. |
 | __mzHapticsImportOverride | src/browser/haptics.js | test/unit/haptics.test.js | Test-only injection hook so a test can replace the native @capacitor/haptics import with a fake, without any shipped code path setting it. |
 | __mzHasTool | mazeworld.html (module) | mazeworld.html (classic/module: rail dark/hazard cards — torch retry, dark-fell gating) | Bridges the pure carried-tool predicate so a hazard/dark rail card only offers a retry when the party actually carries the tool. |
 | __mzHudBands | mazeworld.html (module) | mazeworld.html (classic: paint — band 1's name/line split via identityParts, and the fixed-width counter slots) | Bridges the pure src/browser/hudBands.js identityLine/identityParts/counterSlots formatters (Phase 57, LAYOUT-05) so paint() renders band 1's identity line (split into a never-truncated name and a truncating race/class/level line, Plan 05) and band 2's fixed-width counters from ONE engine-agnostic source. |
@@ -200,7 +245,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzRations | mazeworld.html (module) | mazeworld.html (classic: renderEncounter — Joiner card eats line) | Bridges the pure rations view-model and eats-line formatter so the Joiner card's eats readout reads engine/movement.js#eatsFor the same way the Hero tab (src/browser/heroTab.js, a direct import — no bridge needed) and its own Company panel do. |
 | __mzSettings | mazeworld.html (module) | mazeworld.html (classic: fit — reads the current text-scale/haptics/sound settings) | Exposes the module's currently-applied settings object so the classic canvas-fit routine can read the live text-scale setting. |
 | __mzSfxBackendOverride | src/browser/sfx.js | test/unit/sfx.test.js<br>test/unit/sfx-settings.test.js | Test-only injection hook so a test can replace the Web Audio backend with a fake and assert which clips actually started, without any shipped code path setting it. |
-| __mzShowTab | mazeworld.html (classic) | mazeworld.html (classic: the death card's Oracle button)<br>mazeworld.html (module: the roller mount's onCommit / the death-screen router — switches tabs after commit or death) | Exposes the classic script's tab-switch function so the module script can route to a tab (maze on boot, dead on death) without a DOM click. |
+| __mzShowTab | mazeworld.html (classic) | mazeworld.html (classic: the death card's Oracle button)<br>mazeworld.html (module: the roller mount's onCommit / the death-screen router — switches tabs after commit or death)<br>mazeworld.html (module: routeFromBoards — back to the map when the panel's title mode exits) | Exposes the classic script's tab-switch function so the module script can route to a tab (maze on boot, dead on death) without a DOM click. |
 | __mzStair | mazeworld.html (module) | mazeworld.html (classic: the stair-down overlay's STAY button — reads and also clears to null)<br>mazeworld.html (module: the tap-to-move step handler / getGameContext / closeModal — sets and clears the overlay flag) | Presentation-only stair-down gate flag ({ dir } while the overlay is up, else null); never a field on state. |
 | __mzState | mazeworld.html (classic) | mazeworld.html (classic: paint/renderRail/railPulse — reads the live GameState)<br>mazeworld.html (module: dispatchWithNarration and every engine-action bridge — get()/set() the live GameState)<br>tools/store-screenshots/bot.js<br>tools/store-screenshots/capture.js | The one get()/set() accessor onto the classic script's `S` variable, letting the module script read and replace the live GameState. |
 | __mzTables | mazeworld.html (module) | mazeworld.html (classic: mzCombatReport — level roman numerals)<br>mazeworld.html (classic: renderEncounter — level roman numerals in the graves stone / Joiner card) | Bridges the one read-only content table (ROMAN) the classic script still cannot import — RACE_NOTE/CLASS_NOTE/SUB_NOTE/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES moved to gearTab.js/heroTab.js, which import content/ directly. |
