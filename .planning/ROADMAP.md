@@ -159,9 +159,9 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 68-01-PLAN.md — (wave 1) `src/browser/scoreTag.js` (the v1 64-char tag, name truncation, defensive decode), `src/browser/boardScores.js` (D-16 encodings, fallback decode, ID lookup), `content/leaderboards.js` (season → five placeholder IDs), runbook leaderboards + season-bump sections (PGS-03, PGS-06)
-- [ ] 68-02-PLAN.md — (wave 1) `src/browser/playGames.js` leaderboard methods on the native provider and the fake (submitScore, loadTopScores, loadPlayerScore, loadStanding, friendsAccess; validated, image-free, time-bounded) (PGS-03, PGS-04, PGS-05)
-- [ ] 68-03-PLAN.md — (wave 1) `content/placement.js` rank-quip bank + deferred card + season-drop line, the panel's global copy, and the pure `src/browser/placement.js` view model, safety-scanned (PLACE-01, PLACE-02)
+- [x] 68-01-PLAN.md — (wave 1) `src/browser/scoreTag.js` (the v1 64-char tag, name truncation, defensive decode), `src/browser/boardScores.js` (D-16 encodings, fallback decode, ID lookup), `content/leaderboards.js` (season → five placeholder IDs), runbook leaderboards + season-bump sections (PGS-03, PGS-06)
+- [x] 68-02-PLAN.md — (wave 1) `src/browser/playGames.js` leaderboard methods on the native provider and the fake (submitScore, loadTopScores, loadPlayerScore, loadStanding, friendsAccess; validated, image-free, time-bounded) (PGS-03, PGS-04, PGS-05)
+- [x] 68-03-PLAN.md — (wave 1) `content/placement.js` rank-quip bank + deferred card + season-drop line, the panel's global copy, and the pure `src/browser/placement.js` view model, safety-scanned (PLACE-01, PLACE-02)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -349,7 +349,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
-| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/7 | Planned | - |
+| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 3/7 | In Progress|  |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
