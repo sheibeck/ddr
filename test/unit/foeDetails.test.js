@@ -306,7 +306,8 @@ test("(e) a hostile getter never throws", () => {
   for (const k of ["name", "type", "lvl", "size", "intel", "wp", "maxWP", "alive", "sp", "lives", "abilities"]) {
     Object.defineProperty(hostile, k, { get() { throw new Error("boom"); }, enumerable: true });
   }
-  const state = stateWith([hostile]);
+  const state = stateWith([{ type: "Beasts" }]);
+  state.combat.foes[0] = hostile;
   let card;
   assert.doesNotThrow(() => {
     card = foeDetailsCard(0, state);
