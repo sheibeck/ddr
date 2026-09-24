@@ -1,6 +1,6 @@
 # v2.0 Pixel 7 device round — Phase 69 (Compliance & Device Close)
 
-**Build:** the Play build and the debug APK are recorded here when built: the 2.0.0 (versionCode 9) AAB by 69-04, the milestone's debug APK by the orchestrator at the close (D-08).
+**Build:** Play build: 2.0.0 (versionCode 9), `android/app/build/outputs/bundle/release/app-release.aab`, 10,352,033 bytes, sha256 `bcaaa1b30fcf0b4683c2c78236880bb03becafbd9239edcf1ff6366664813f97`, signed with the upload key (certificate SHA-256 `50:45:7F:A3:B8:D5:5F:D0:EF:89:C5:74:BF:40:B3:F3:02:9F:EC:C4:9F:50:C5:1D:86:B1:AF:DD:5E:02:56:DD`), built from the release commit tagged `v2.0.0-play9` on 2026-09-24; the user uploads it to closed testing by hand (row 0.3). This build carries the placeholder APP_ID (`000000000000`) and the unfilled `PLACEHOLDER_` board IDs, so Play Games sign-in fails gracefully and the boards are skipped until the console setup and the rebuild in section 0 (row 0.2). The milestone's debug APK is recorded here by the orchestrator at the close (D-08).
 
 **Protocol:** the deferred-UAT protocol. This batch is written and committed in Phase 69. It is not run mid-milestone: it is walked at the milestone close, or in the user's own sessions after it. The orchestrator relays each check, and results are recorded as the user states them: `pass`, `fail: <what you saw>`, or `not reached`. A skipped *if available* or *(optional)* row is recorded as `not reached`, never as a pass. Findings become todos, never mid-walk edits. Every device row is on the Pixel 7.
 

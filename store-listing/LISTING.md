@@ -176,7 +176,49 @@ Run in the 69-01 worktree after `npm ci` (lockfile only) and
   and only with Compete on). **Defect findings: none.**
 
 The build-level half (Gradle `releaseRuntimeClasspath` and the merged release
-manifest) is recorded by 69-04 on the actual 2.0.0 build.
+manifest) is recorded by 69-04 on the actual 2.0.0 build, below.
+
+### Build-level audit (2.0.0, versionCode 9, 2026-09-24)
+
+Run in the main checkout on the signed release build made by
+`npm run android:release` (AGP 8.13.0 / Gradle 8.14.3 / JDK 21, toolchain
+files unchanged). The AAB it was run against:
+`android/app/build/outputs/bundle/release/app-release.aab`, 10,352,033 bytes,
+sha256 `bcaaa1b30fcf0b4683c2c78236880bb03becafbd9239edcf1ff6366664813f97`.
+Raw outputs kept outside the repo.
+
+- **Dependency tree.** `node tools/gradle.mjs :app:dependencies --configuration releaseRuntimeClasspath`.
+  A case-insensitive grep of the report for firebase, admob,
+  play-services-ads, ads-identifier, analytics, measurement, crashlytics,
+  appsflyer, adjust, facebook, appcenter, sentry and bugsnag: **0 hits**.
+  The Google Play services artifacts, unchanged from 67-06's audit:
+
+  | Artifact | Resolved version |
+  |---|---|
+  | `com.google.android.gms:play-services-games-v2` | 22.0.0 |
+  | `com.google.android.gms:play-services-base` | 18.5.0 |
+  | `com.google.android.gms:play-services-basement` | 18.9.0 (18.4.0 requested) |
+  | `com.google.android.gms:play-services-tasks` | 18.2.0 |
+  | `org.jetbrains.kotlin:kotlin-stdlib` | 2.4.10 |
+
+- **google-services not applied.** `android/app/google-services.json` does not
+  exist, so the google-services plugin (on the buildscript classpath) is never
+  applied. No Firebase.
+- **Merged release manifest**
+  (`android/app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml`):
+  `android:versionCode="9"`, `android:versionName="2.0.0"`, the
+  `com.google.android.gms.games.APP_ID` meta-data, and exactly three
+  `uses-permission` entries: `android.permission.INTERNET`,
+  `android.permission.VIBRATE` and the androidx
+  `com.darktierstudios.delvedierepeat.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
+  No `AD_ID`.
+- **Network APIs in the bundled `www/`.** The same `grep -rlE` as the
+  source-level audit, over the `www/` this build produced: 7 files,
+  `www/src/browser/sfx.js` and the six `www/vendor/@capacitor/core/` files
+  (`capacitor.js`, `index.js`, `index.cjs.js` and their `.map` files).
+  Identical to the source-level list above; no new file.
+- **Bundle contents.** 30 `.mp3` entries under `base/assets/public/sfx/`, the
+  delivered clips only. **Defect findings: none.**
 
 ## Screenshots
 
