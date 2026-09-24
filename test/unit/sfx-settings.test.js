@@ -321,9 +321,11 @@ test("sfx-settings: shell wiring — playForDispatch(/cuesForDispatch( each appe
 
 // Phase 71 (D-03): playUiTap( gains exactly ONE more call site — the
 // EFFECTS slider's release preview, `if (key === "volEffects") playUiTap();`
-// (pinned in test/unit/settings-volume-shell.test.js). Every other tap sound
-// still comes from the one capture-phase pointerdown listener.
-test("sfx-settings: shell wiring — unlockSfx( appears exactly once; playUiTap( twice (the pointerdown tap + the Phase 71 EFFECTS preview)", () => {
+// (pinned in test/unit/settings-volume-shell.test.js). Phase 71 (D-15,
+// 71-07): every other tap sound comes from the one capture-phase click
+// listener, through createUiTapSound's `play: () => playUiTap()` (pinned in
+// test/unit/ui-tap-shell.test.js); the pointerdown listener only unlocks.
+test("sfx-settings: shell wiring — unlockSfx( appears exactly once; playUiTap( twice (the click tap + the Phase 71 EFFECTS preview)", () => {
   assert.equal((htmlStripped.match(/unlockSfx\(/g) || []).length, 1);
   assert.equal((htmlStripped.match(/playUiTap\(/g) || []).length, 2);
   assert.equal((htmlStripped.match(/if \(key === "volEffects"\) playUiTap\(\);/g) || []).length, 1);
