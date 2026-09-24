@@ -45,6 +45,12 @@ test("ordinalText: groups digits en-US", () => {
   assert.equal(ordinalText(1001), "1,001st");
 });
 
+test("ordinalText: never throws; a non-integer or negative input gives an empty string", () => {
+  for (const x of [undefined, null, "3", 1.5, -1, NaN, Infinity, {}]) {
+    assert.equal(ordinalText(x), "", `ordinalText(${String(x)})`);
+  }
+});
+
 // ─── placementBand ───────────────────────────────────────────────────────────
 
 test("placementBand: the band switches exactly at 1/2, 10/11 and 100/101", () => {
