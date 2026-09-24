@@ -57,10 +57,10 @@
 
 ### Device-Round Polish (Pixel 7 feedback on the 2.0.0 build, 2026-09-24)
 
-- [ ] **POLISH-01**: The title theme (`sfx/theme.mp3`) loops from launch on the title screen (no tap needed on device) and continues unbroken through the character roller and title-opened panels/sheets; it fades out on reaching the map, respects the Sound setting and stops in the background.
-- [ ] **POLISH-02**: The ☰ button is the Play Games profile icon (initials avatar when signed in, plain ☰ otherwise) and its dropdown carries the account rows (identity, Sign in / Stop competing, Compete); no separate account chip in the HUD band.
-- [ ] **POLISH-03**: The ☰ opens on every in-game screen (map, combat and other encounters, the Oracle, the tabs, while dead); Save & quit and a two-tap-armed Abandon this character (New Character when dead) live in it, and the HERO tab's Delve panel is gone.
-- [ ] **POLISH-04**: LINEAGE has a race + sub-class selector defaulting to the active hero's lineage and shows the top 10 runs for the selected lineage, locally and (as a filtered sample) globally.
+- [x] **POLISH-01**: The title theme (`sfx/theme.mp3`) loops from launch on the title screen (no tap needed on device) and continues unbroken through the character roller and title-opened panels/sheets; it fades out on reaching the map, respects the Sound setting and stops in the background.
+- [x] **POLISH-02**: The ☰ button is the Play Games profile icon (initials avatar when signed in, plain ☰ otherwise) and its dropdown carries the account rows (identity, Sign in / Stop competing, Compete); no separate account chip in the HUD band.
+- [x] **POLISH-03**: The ☰ opens on every in-game screen (map, combat and other encounters, the Oracle, the tabs, while dead); Save & quit and a two-tap-armed Abandon this character (New Character when dead) live in it, and the HERO tab's Delve panel is gone.
+- [x] **POLISH-04**: LINEAGE has a race + sub-class selector defaulting to the active hero's lineage and shows the top 10 runs for the selected lineage, locally and (as a filtered sample) globally.
 
 ## Future Requirements
 
@@ -111,10 +111,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMPLY-02 | Phase 69 | Complete |
 | COMPLY-03 | Phase 69 | Complete |
 | COMPLY-04 | Phase 69 | Complete |
-| POLISH-01 | Phase 70 | Pending |
-| POLISH-02 | Phase 70 | Pending |
-| POLISH-03 | Phase 70 | Pending |
-| POLISH-04 | Phase 70 | Pending |
+| POLISH-01 | Phase 70 | Complete |
+| POLISH-02 | Phase 70 | Complete |
+| POLISH-03 | Phase 70 | Complete |
+| POLISH-04 | Phase 70 | Complete |
 
 **Coverage:**
 

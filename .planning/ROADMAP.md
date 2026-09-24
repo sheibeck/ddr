@@ -36,7 +36,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [x] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle (completed 2026-09-24)
 - [x] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card (completed 2026-09-24)
 - [x] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch (completed 2026-09-24)
-- [ ] **Phase 70: Device-Round Polish** - Title theme from launch through the roller, the ☰ as profile icon opening everywhere with account + quit rows, and a race + sub-class LINEAGE board
+- [x] **Phase 70: Device-Round Polish** - Title theme from launch through the roller, the ☰ as profile icon opening everywhere with account + quit rows, and a race + sub-class LINEAGE board (completed 2026-09-24)
 
 ### Phase 65: Run Record & Personal Bests
 
@@ -233,7 +233,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 70-04-PLAN.md — (wave 3) ☰ opens on every screen with context-disabled rows, above the overlays, back closes it first, HUD on the DEAD tab, mid-encounter resume proof; POLISH-01 conformance vs D-02; Phase 70 checks folded into docs/UAT-v2.0.md (POLISH-01, POLISH-03; D-01, D-02, D-08, D-15)
+- [x] 70-04-PLAN.md — (wave 3) ☰ opens on every screen with context-disabled rows, above the overlays, back closes it first, HUD on the DEAD tab, mid-encounter resume proof; POLISH-01 conformance vs D-02; Phase 70 checks folded into docs/UAT-v2.0.md (POLISH-01, POLISH-03; D-01, D-02, D-08, D-15)
 
 **Research**: none (skipped; reuses the validated draft quick plans 260924-56z and 260924-5b8)
 
@@ -397,7 +397,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
-| 70. Device-Round Polish | v2.0 | 3/4 | In Progress|  |
+| 70. Device-Round Polish | v2.0 | 4/4 | Complete    | 2026-09-24 |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
@@ -611,6 +611,7 @@ Plans:
 **Plans:** 0 plans
 
 **The gap, measured (70-04, real engineAdapter + fake storage):**
+
 - In session: SAVE & QUIT → ENTER resumes exactly (no dispatch happens).
 - After a relaunch: `dispatch()` did persist `combat` / `store`, but `engine/saveState.js#rehydrate` (~L735-736) always resets `combat`, `store`, `beats`, `pendingFind` and `pendingHazard` to null. Only `pendingLoot` survives on purpose (LOOT-06). The code comments call this deliberate: it copies the 1994 prototype's load, which treated them as transient.
 - Consequences: a relaunch mid-fight lands on the same tile with the fight gone, which also means force-closing the app escapes any fight. An open store vanishes the same way.
