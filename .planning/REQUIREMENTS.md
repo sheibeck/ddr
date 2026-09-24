@@ -50,10 +50,10 @@
 
 ### Compliance & Close
 
-- [ ] **COMPLY-01**: The privacy-policy page is updated to describe the opt-in PGS Player ID and scores, and states that nothing else leaves the device.
-- [ ] **COMPLY-02**: The Data Safety answers are drafted in the repo (Player ID and app activity collected, required for app functionality, not shared, and only when signed in to Play Games) and match the shipped build's SDK and dependency audit.
-- [ ] **COMPLY-03**: A Play Console PGS setup runbook covers enabling PGS, linking the SHA-1 of the Play App Signing key, creating the leaderboard IDs per board per season, publishing the config and the tester allow-list. The user performs the console steps, and the IDs land in the build's config.
-- [ ] **COMPLY-04**: A signed AAB with PGS goes to the testing track, and the milestone's Pixel 7 batch is written as `docs/UAT-v2.0.md` (sign-in, decline, offline queue and flush, the panel on every board, the "you placed X" card, the account chip, airplane mode).
+- [x] **COMPLY-01**: The privacy-policy page is updated to describe the opt-in PGS Player ID and scores, and states that nothing else leaves the device.
+- [x] **COMPLY-02**: The Data Safety answers are drafted in the repo (Player ID and app activity collected, required for app functionality, not shared, and only when signed in to Play Games) and match the shipped build's SDK and dependency audit.
+- [x] **COMPLY-03**: A Play Console PGS setup runbook covers enabling PGS, linking the SHA-1 of the Play App Signing key, creating the leaderboard IDs per board per season, publishing the config and the tester allow-list. The user performs the console steps, and the IDs land in the build's config.
+- [x] **COMPLY-04**: A signed AAB with PGS goes to the testing track, and the milestone's Pixel 7 batch is written as `docs/UAT-v2.0.md` (sign-in, decline, offline queue and flush, the panel on every board, the "you placed X" card, the account chip, airplane mode).
 
 ## Future Requirements
 
@@ -100,10 +100,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PGS-06 | Phase 68 | Complete |
 | PLACE-01 | Phase 68 | Complete |
 | PLACE-02 | Phase 68 | Complete |
-| COMPLY-01 | Phase 69 | Pending |
-| COMPLY-02 | Phase 69 | Pending |
-| COMPLY-03 | Phase 69 | Pending |
-| COMPLY-04 | Phase 69 | Pending |
+| COMPLY-01 | Phase 69 | Complete |
+| COMPLY-02 | Phase 69 | Complete |
+| COMPLY-03 | Phase 69 | Complete |
+| COMPLY-04 | Phase 69 | Complete |
 
 **Coverage:**
 

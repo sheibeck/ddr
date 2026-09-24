@@ -35,7 +35,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [x] **Phase 66: Leaderboards Panel — Local** - The DEAD tab becomes the mock's Leaderboards panel, running fully offline across all seven boards on personal bests and the graveyard (completed 2026-09-23)
 - [x] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle (completed 2026-09-24)
 - [x] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card (completed 2026-09-24)
-- [ ] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch
+- [x] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch (completed 2026-09-24)
 
 ### Phase 65: Run Record & Personal Bests
 
@@ -199,7 +199,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion; runs in the main checkout, not a worktree)*
 
-- [ ] 69-04-PLAN.md — (wave 2) release: bump to 2.0.0 / versionCode 9, signed AAB via `npm run android:release` (untracked theme clip held aside), build-level releaseRuntimeClasspath + merged-manifest audit, Play build recorded, tag `v2.0.0-play9`; no upload, no push (COMPLY-04, COMPLY-02)
+- [x] 69-04-PLAN.md — (wave 2) release: bump to 2.0.0 / versionCode 9, signed AAB via `npm run android:release` (untracked theme clip held aside), build-level releaseRuntimeClasspath + merged-manifest audit, Play build recorded, tag `v2.0.0-play9`; no upload, no push (COMPLY-04, COMPLY-02)
 
 **Research**: none
 
@@ -362,7 +362,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
-| 69. Compliance & Device Close | v2.0 | 3/4 | In Progress|  |
+| 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
