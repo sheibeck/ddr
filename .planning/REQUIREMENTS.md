@@ -68,6 +68,7 @@
 - [ ] **POLISH-09**: Every condition an ability, spell or item puts on an enemy (Hamstring, Mark and the rest) shows as a condition chip on that enemy while it lasts, from one table, with a test that fails if a new foe effect has no chip.
 - [ ] **POLISH-10**: The UI tap sound plays only when a button is really pressed: never when a scroll or pan starts on a button, never for a disabled or locked button, and never for a long press.
 - [ ] **POLISH-11**: Tapping a status chit during combat shows that effect's description on a combat-legal card, and each foe condition's description is readable from the long-press details card.
+- [ ] **POLISH-12**: Every step onto a water square plays the water walking sound, not just the step that first enters the water; stepping back onto dry ground plays the ordinary step.
 
 ## Future Requirements
 
@@ -129,10 +130,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | POLISH-09 | Phase 71 | Pending |
 | POLISH-10 | Phase 71 | Pending |
 | POLISH-11 | Phase 71 | Pending |
+| POLISH-12 | Phase 71 | Pending |
 
 **Coverage:**
 
-- v2.0 requirements: 37 total
+- v2.0 requirements: 38 total
 - Mapped to phases: 35
 - Unmapped: 0 ✓
 

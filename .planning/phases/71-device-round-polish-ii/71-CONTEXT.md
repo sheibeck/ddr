@@ -83,6 +83,14 @@ Four presentation fixes on the finished v2.0 build: sound balance and volume con
   - **Interactions.** The card must not cover the "What happened" strip (71-05) or the actions. The combat lock (71-03) doesn't block reading a chit, and a chit tap mid-round may skip the round like any other combat-screen tap (D-06); record which. The tap sound follows 71-07.
   - **Scope.** Shell/presentation only: no engine, content balance or parity impact. Pure view-model tests pin a description for every hero status chip, and the new copy goes into the voice and HP-not-WP scans.
 
+### Water steps always sound wet (POLISH-12)
+- **D-17: every step onto a water square plays the walk-water clip.** On 2026-09-24 the user asked for the 2026-09-22 todo `.planning/todos/pending/2026-09-22-water-square-walk-sound-should-play-every-step-not-just-on-en.md` to be folded in: "Where you want the water walk sound while I'm any water square instead of just first entry." The original report: "When you walk on a water square it should always play a water sound, not just on entering."
+  - **Cause.** `groupEntriesForDispatch` in `src/browser/sfx.js` (~L250) picks "water" only when the dispatch carries a `waded` event. The engine emits `waded` only on the step that enters water from dry ground (`engine/movement.js` ~L360, `cost > 1 && !here.water`, deliberately once per wade for narration). A water→water step therefore plays the dry walk clip.
+  - **Fix, presentation only.** The shell's dispatch `audioCtx` (`mazeworld.html` ~L7327, beside `stepped` / `combatType`) gains a flag such as `onWater`, true when the party's post-dispatch square is water, read from `result.state` the way the engine reads `.water` on a floor cell. The step rule plays "water" when `ctx.onWater` is true OR a `waded` event is present, so the event path still works for callers that don't pass the flag.
+  - **Unchanged:** the engine and its `waded` narration (still once per wade); step suppressors; the dispatch clip cap. Stepping from water back onto dry ground plays the ordinary walk clip.
+  - **Tests.** Pure sfx tests cover dry→water, water→water, water→dry and a blocked move (no step sound). A shell pin checks that audioCtx carries the flag.
+  - It rides in plan 71-07, since both touch the dispatch audio seam. The orchestrator moves the todo on merge.
+
 ### Close-out
 - **D-13 — Device build:** after the last plan merges, the orchestrator rebuilds the debug APK and installs it on the Pixel 7 with `adb install -r` (keeps the save), and every Phase 71 device check is folded into `docs/UAT-v2.0.md` as a new section M. Each source todo moves to `.planning/todos/done/` when its plan lands.
 
