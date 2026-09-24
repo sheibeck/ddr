@@ -107,12 +107,17 @@ test("title-music-shell (5): unlockSfx( occurs exactly once, inside unlockAudioA
   assert.ok(unlockChainOk(html));
 });
 
-test("title-music-shell (6): the first-gesture listener unlocks through unlockAudioAndSync and still plays the UI tap", () => {
-  const idx = html.search(/"pointerdown",\s*\(e\) => \{/);
+// Phase 71 (D-15, 71-07): the tap moved to the capture-phase click listener
+// (test/unit/ui-tap-shell.test.js), so the first-gesture pointerdown
+// listener now only unlocks.
+test("title-music-shell (6): the first-gesture listener unlocks through unlockAudioAndSync and plays no tap (the tap moved to click, D-15)", () => {
+  // Anchored on the unlock itself: 71-04's #enc-panel pointerdown listener
+  // also opens with `"pointerdown", (e) => {` and sits earlier in the file.
+  const idx = html.search(/"pointerdown",\s*\(e\) => \{\s*unlockAudioAndSync\(\);/);
   assert.ok(idx > -1);
   const region = html.slice(idx, html.indexOf("{ capture: true }", idx));
   assert.ok(region.includes("unlockAudioAndSync();"));
-  assert.ok(region.includes("playUiTap()"));
+  assert.ok(!region.includes("playUiTap"));
 });
 
 test("title-music-shell (7): the settings click handler re-syncs on the Sound row", () => {

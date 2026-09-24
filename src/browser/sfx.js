@@ -152,9 +152,12 @@ export const CLIP_GROUPS = Object.freeze({
 // nothing else. In particular "waded" is deliberately ABSENT from this
 // table: water walking is resolved by the synthesized step rule in
 // groupsForDispatch() (Task 2) instead (actionType "move" + ctx.stepped +
-// a "waded" event present -> the "water" group), not by an
-// EVENT_CLIP_GROUP entry — mapping "waded" here too would fire two sounds
-// for one step.
+// ctx.onWater true OR a "waded" event present -> the "water" group), not by
+// an EVENT_CLIP_GROUP entry — mapping "waded" here too would fire two sounds
+// for one step. Phase 71 (D-17): the engine emits "waded" only on the step
+// that enters water from dry ground (once per wade, for narration), so the
+// shell's ctx.onWater (the party's post-dispatch square is water) is what
+// makes every water -> water step sound wet too.
 export const EVENT_CLIP_GROUP = Object.freeze({
   struck: "hit",
   strikeMissed: "miss",
@@ -248,8 +251,9 @@ function groupEntriesForDispatch(actionType, events, ctx) {
     (e) => e && typeof e === "object" && STEP_SUPPRESSING_EVENTS.has(e.type)
   );
   if (actionType === "move" && ctx?.stepped && !hasSuppressor) {
+    // Phase 71 (D-17): wet on every water square, not just the first.
     const waded = list.some((e) => e && typeof e === "object" && e.type === "waded");
-    out.push({ entry: waded ? "water" : "walk", idx: -1 });
+    out.push({ entry: ctx?.onWater === true || waded ? "water" : "walk", idx: -1 });
   }
 
   list.forEach((e, idx) => {
@@ -285,7 +289,9 @@ function groupEntriesForDispatch(actionType, events, ctx) {
  *  1. Guard: a non-array `events` is treated as empty.
  *  2. Synthesized step clip, emitted FIRST: when actionType is "move" AND
  *     ctx.stepped is true AND no event type in the list is in
- *     STEP_SUPPRESSING_EVENTS, push "water" if any event is "waded",
+ *     STEP_SUPPRESSING_EVENTS, push "water" when ctx.onWater is true (the
+ *     party's post-dispatch square is water, Phase 71 D-17) or any event is
+ *     "waded" (the event path, kept for callers that pass no onWater),
  *     otherwise push "walk". Exactly one step clip, never both.
  *  3. Walk `events` in array order: a "combatJoined" resolves the cry via
  *     FAMILY_CRY[ctx.combatType] (pushing nothing when combatType is
@@ -792,6 +798,8 @@ let deviceHandle = null;
 const bufferCache = new Map();
 let unlockInFlight = false;
 const liveVoices = [];
+// Phase 71 (D-15, R-26): one-shot voices started so far (sfxClipCount).
+let oneShotStarts = 0;
 
 function soundIsOff() {
   return !!(currentSettings && currentSettings.sound === false);
@@ -919,6 +927,7 @@ function playClips(clipIds) {
       const voice = backend.start(deviceHandle, buffer, clipGain(clipId));
       if (!voice) continue;
       liveVoices.push(voice);
+      oneShotStarts++;
       while (liveVoices.length > VOICE_CAP) {
         const oldest = liveVoices.shift();
         try {
@@ -981,6 +990,18 @@ export function playUiTap() {
     // cosmetic polish — never throw.
   }
   return undefined;
+}
+
+/**
+ * sfxClipCount() — exported. Phase 71 D-15's one-sound-per-press probe
+ * (R-26): a whole number that rises by one for every one-shot voice
+ * playClips() started (backend.start returned a voice). It counts one-shots
+ * only, never the title theme's loop (startMusic), and it is not reset by
+ * Sound Off. The UI tap listener snapshots it at click time and plays its
+ * tick one task later only if the press's own handlers started nothing.
+ */
+export function sfxClipCount() {
+  return oneShotStarts;
 }
 
 /**

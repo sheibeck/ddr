@@ -26,6 +26,11 @@ import {
   playForDispatch,
   playUiTap,
   stopAllSfx,
+  sfxClipCount,
+  startMusic,
+  groupsForDispatch,
+  cuesForDispatch,
+  STEP_SUPPRESSING_EVENTS,
 } from "../../src/browser/sfx.js";
 
 // ─── Fake backend ────────────────────────────────────────────────────────
@@ -417,4 +422,127 @@ test("sfx: TEETH — the cap-boundary assertion actually distinguishes a capped 
     assert.notEqual(fake.calls.stops.length, 0, "an uncapped voice pool would leave stops empty — this must never be true");
     assert.equal(fake.calls.stops.length, 1);
   });
+});
+
+// ─── Phase 71 (D-15, R-26): sfxClipCount, the one-sound-per-press probe ──
+//
+// Module state is shared across this file, so every case asserts DELTAS.
+
+test("sfx (71-07 D-15): sfxClipCount is a whole number that rises by one per started one-shot voice", async () => {
+  const fake = makeFakeBackend();
+  await withFakeBackend(fake, async () => {
+    applySfxSettings({ sound: true });
+    const before0 = sfxClipCount();
+    assert.ok(Number.isInteger(before0) && before0 >= 0);
+    playUiTap();
+    assert.equal(sfxClipCount(), before0, "no device open yet: nothing started, nothing counted");
+
+    await unlockSfx();
+    await flushMicrotasks();
+    const a = sfxClipCount();
+    playUiTap();
+    assert.equal(sfxClipCount(), a + 1, "a playUiTap adds 1");
+    const b = sfxClipCount();
+    playForDispatch("combatAction", [{ type: "trapSprung" }, { type: "chestOpened" }], {});
+    assert.equal(fake.calls.starts.slice(-2).length, 2);
+    assert.equal(sfxClipCount(), b + 2, "a dispatch that starts 2 voices adds 2");
+  });
+});
+
+test("sfx (71-07 D-15): sfxClipCount does not move for Sound Off, and Sound Off never resets it", async () => {
+  const fake = makeFakeBackend();
+  await withFakeBackend(fake, async () => {
+    applySfxSettings({ sound: true });
+    await unlockSfx();
+    await flushMicrotasks();
+    playUiTap();
+    const a = sfxClipCount();
+    applySfxSettings({ sound: false });
+    assert.equal(sfxClipCount(), a, "Sound Off does not reset the counter");
+    playUiTap();
+    playForDispatch("combatAction", [{ type: "struck" }], {});
+    assert.equal(sfxClipCount(), a);
+  });
+});
+
+test("sfx (71-07 D-15): sfxClipCount does not move for a missing buffer", async () => {
+  const fake = makeFakeBackend({ nullLoadClips: new Set(["ui-tap"]) });
+  await withFakeBackend(fake, async () => {
+    applySfxSettings({ sound: true });
+    await unlockSfx();
+    await flushMicrotasks();
+    const a = sfxClipCount();
+    playUiTap();
+    assert.equal(sfxClipCount(), a);
+  });
+});
+
+test("sfx (71-07 D-15): sfxClipCount does not move when start() throws or returns null", async () => {
+  for (const mode of ["throws", "null"]) {
+    const fake = makeFakeBackend();
+    fake.backend.start = () => {
+      if (mode === "throws") throw new Error("fake start() throws");
+      return null;
+    };
+    await withFakeBackend(fake, async () => {
+      applySfxSettings({ sound: true });
+      await unlockSfx();
+      await flushMicrotasks();
+      const a = sfxClipCount();
+      playUiTap();
+      playForDispatch("combatAction", [{ type: "struck" }], {});
+      assert.equal(sfxClipCount(), a, mode);
+    });
+  }
+});
+
+test("sfx (71-07 D-15): the title theme's loop is not a one-shot — startMusic never moves sfxClipCount", async () => {
+  const fake = makeFakeBackend();
+  let loops = 0;
+  fake.backend.startLoop = () => { loops++; return { loop: true }; };
+  await withFakeBackend(fake, async () => {
+    applySfxSettings({ sound: true });
+    await unlockSfx();
+    await flushMicrotasks();
+    const a = sfxClipCount();
+    startMusic();
+    assert.equal(loops, 1, "the loop really started");
+    assert.equal(sfxClipCount(), a);
+  });
+});
+
+// ─── Phase 71 (D-17, POLISH-12): water steps always sound wet ────────────
+
+test("sfx (71-07 D-17): dry -> water — a waded event with onWater true plays the water group", () => {
+  const events = [{ type: "waded", cost: 2 }];
+  assert.deepEqual(groupsForDispatch("move", events, { stepped: true, onWater: true }), ["water"]);
+  assert.ok(cuesForDispatch("move", events, { stepped: true, onWater: true })[0].clip.startsWith("walk-water"));
+});
+
+test("sfx (71-07 D-17): water -> water — no waded event, onWater true still plays water (the bug)", () => {
+  assert.deepEqual(groupsForDispatch("move", [], { stepped: true, onWater: true }), ["water"]);
+  const cues = cuesForDispatch("move", [], { stepped: true, onWater: true });
+  assert.equal(cues.length, 1);
+  assert.ok(cues[0].clip.startsWith("walk-water"), JSON.stringify(cues));
+});
+
+test("sfx (71-07 D-17): water -> dry — onWater false and no waded plays the ordinary walk", () => {
+  assert.deepEqual(groupsForDispatch("move", [], { stepped: true, onWater: false }), ["walk"]);
+  const cues = cuesForDispatch("move", [], { stepped: true, onWater: false });
+  assert.ok(cues[0].clip.startsWith("walk") && !cues[0].clip.startsWith("walk-water"), JSON.stringify(cues));
+});
+
+test("sfx (71-07 D-17): a waded event with no onWater key still plays water (backward compatible)", () => {
+  assert.deepEqual(groupsForDispatch("move", [{ type: "waded", cost: 2 }], { stepped: true }), ["water"]);
+});
+
+test("sfx (71-07 D-17): a blocked move (stepped false) makes no step sound, even on water", () => {
+  assert.deepEqual(groupsForDispatch("move", [], { stepped: false, onWater: true }), []);
+  assert.deepEqual(cuesForDispatch("move", [], { stepped: false, onWater: true }), []);
+});
+
+test("sfx (71-07 D-17): a step-suppressing event still wins over water", () => {
+  const suppressor = [...STEP_SUPPRESSING_EVENTS][0];
+  const groups = groupsForDispatch("move", [{ type: suppressor }], { stepped: true, onWater: true });
+  assert.ok(!groups.includes("water") && !groups.includes("walk"), JSON.stringify(groups));
 });
