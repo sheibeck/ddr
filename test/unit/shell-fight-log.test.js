@@ -10,14 +10,16 @@
 //   2. syncFightLogLive: no innerHTML, seq-gated via fightLogAnnouncement,
 //      and the old syncRoundCardLive is fully gone from the guard-helper
 //      region (which also stays free of transition/animation tokens);
-//   3. renderFightLog(host): reads window.__mzFightLogVM.rows, builds every
-//      entry via textContent (never innerHTML), tags revealable entries
-//      with cb-log-revealable, toggles in place (no renderEncounter call);
+//   3. renderFightLog(host): Phase 71 (71-06) re-hosted it as THE FIGHT SO
+//      FAR sheet's row builder — it reads window.__mzFightLogVM.byRound,
+//      builds every ROUND n header and entry via textContent (never
+//      innerHTML), tags revealable entries with cb-log-revealable, toggles
+//      in place (no renderEncounter call), and never announces (the sheet
+//      is not a live region; renderRoundStrip feeds the announcer);
 //   4. renderEncounter no longer calls renderFightLog from the combat
 //      branch (Phase 71 R-19: the what-happened strip, renderRoundStrip,
-//      replaced the in-panel log; 71-06 re-hosts renderFightLog's rows in
-//      THE FIGHT SO FAR sheet) and carries zero remaining Round Card
-//      artifacts;
+//      replaced the in-panel log; openFightLogSheet is its one caller) and
+//      carries zero remaining Round Card artifacts;
 //   5. routing exclusivity: dispatchWithNarration has exactly one
 //      `if (wasCombat || inCombat)`, routes every folded line (refusals
 //      included) through fightLogLinesFor, and never re-checks
@@ -133,15 +135,21 @@ test("syncRoundCardLive has zero occurrences anywhere in CODE", () => {
 
 // ─── 3. renderFightLog(host) ───────────────────────────────────────────────
 
-test("renderFightLog(host) reads window.__mzFightLogVM.rows, builds entries via textContent, tags revealable entries, toggles in place", () => {
+// Phase 71 (71-06, R-23): the reveal/roll pins moved with the rows into
+// THE FIGHT SO FAR sheet. A row reveals exactly its entry's own roll; a row
+// with no roll gets no handler.
+test("renderFightLog(host) — the sheet's row builder — reads window.__mzFightLogVM.byRound, builds headers and entries via textContent, tags revealable entries, toggles in place", () => {
   const region = helpersRegion();
   assert.match(region, /function renderFightLog\(host\)/);
-  assert.match(region, /window\.__mzFightLogVM\.rows\(/);
+  assert.match(region, /window\.__mzFightLogVM\.byRound\(window\.__mzFightLog\)/);
   assert.match(region, /dataset\.logId/);
+  assert.match(region, /copy\.roundHead\.replace\("\{n\}"/, "the ROUND n header comes from the copy");
+  assert.match(region, /copy\.noRound/, "the no-round group has the copy's fallback label");
   const textContentHits = region.match(/textContent/g) || [];
-  assert.ok(textContentHits.length >= 3, `expected >= 3 textContent uses, found ${textContentHits.length}`);
+  assert.ok(textContentHits.length >= 4, `expected >= 4 textContent uses, found ${textContentHits.length}`);
   assert.doesNotMatch(region, /innerHTML/);
   assert.match(region, /cb-log-revealable/);
+  assert.match(region, /if \(typeof r\.roll === "string" && r\.roll\) \{/, "a reveal only where the entry carries a roll (R-23)");
   const toggleHits = region.match(/toggle\(window\.__mzFightLog, r\.id\)/g) || [];
   assert.equal(toggleHits.length, 1, "toggle(window.__mzFightLog, r.id) must appear exactly once");
   assert.doesNotMatch(region, /renderEncounter\(\)/, "a log tap must never call renderEncounter() — in-place toggle only");
@@ -149,19 +157,23 @@ test("renderFightLog(host) reads window.__mzFightLogVM.rows, builds entries via 
   assert.equal(markHits.length, 1, "the › mark literal must appear exactly once");
 });
 
-// Phase 58 (MOTION-03/D-16), Plan 06 — while a beat is live, renderFightLog
-// reveals only the rows up to the beat's own maxId, but syncFightLogLive
-// always receives the WHOLE (unfiltered) log — the announcer must read the
-// full round in the very first beat render, even though the visible rows
-// reveal and type one by one.
-test("renderFightLog(host) calls syncFightLogLive(log) with the SAME (unfiltered) log the row-building loop reads from, not a filtered/sliced copy", () => {
-  const region = helpersRegion();
-  assert.match(region, /const bv = window\.__mzBeat\?\.view\?\.\(\) \|\| null;/);
-  assert.match(region, /const log = bv \? bv\.log : window\.__mzFightLog;/);
-  assert.match(region, /const rows = window\.__mzFightLogVM \? window\.__mzFightLogVM\.rows\(log\) : \[\];/);
-  const syncHits = region.match(/syncFightLogLive\(log\);/g) || [];
+// Phase 58 (MOTION-03/D-16), Plan 06, re-pointed by Phase 71 (71-06): the
+// whole-round announcer is fed by renderRoundStrip with the WHOLE
+// (unfiltered) log — the announcer must read the full round in the very
+// first beat render, even though the strip's lines reveal and type one by
+// one. The sheet (renderFightLog) is not a live region: it never announces,
+// never reads a beat view (it never opens mid-round) and never types.
+test("renderRoundStrip calls syncFightLogLive(log) with the SAME (unfiltered) log it reads from; the sheet's renderFightLog never announces, reads no beat view and never types", () => {
+  const strip = fnRegion("function renderRoundStrip(host, fallbackRound)");
+  assert.match(strip, /const bv = window\.__mzBeat\?\.view\?\.\(\) \|\| null;/);
+  assert.match(strip, /const log = bv \? bv\.log : window\.__mzFightLog;/);
+  const syncHits = strip.match(/syncFightLogLive\(log\);/g) || [];
   assert.equal(syncHits.length, 1, "syncFightLogLive(log) — the unfiltered log — must be called exactly once");
-  assert.doesNotMatch(region, /syncFightLogLive\(window\.__mzFightLog\)/, "syncFightLogLive must read the SAME `log` local, not re-read window.__mzFightLog directly");
+  assert.doesNotMatch(strip, /syncFightLogLive\(window\.__mzFightLog\)/, "syncFightLogLive must read the SAME `log` local, not re-read window.__mzFightLog directly");
+  const sheet = helpersRegion();
+  assert.doesNotMatch(sheet, /syncFightLogLive/, "the sheet is not a live region");
+  assert.doesNotMatch(sheet, /__mzBeat/, "the sheet never reads a beat view");
+  assert.doesNotMatch(sheet, /__mzTypewriter/, "the sheet never types");
 });
 
 // ─── 4. renderEncounter builds the strip, not the in-panel log; zero remaining Round Card ───
@@ -169,15 +181,17 @@ test("renderFightLog(host) calls syncFightLogLive(log) with the SAME (unfiltered
 // Phase 71 (D-07, R-19): the combat v2 mock's middle holds foes and party
 // only, so renderEncounter no longer calls renderFightLog(mid); it builds
 // the what-happened strip (renderRoundStrip) above the actions instead.
-// renderFightLog stays defined, its row building, reveal toggle and
-// announcer pinned above: 71-06 re-hosts it in THE FIGHT SO FAR sheet (a
-// pin for that call site belongs to 71-06). The revert is renderFightLog(mid).
+// renderFightLog stays defined, its row building and reveal toggle pinned
+// above: 71-06 re-hosted it in THE FIGHT SO FAR sheet, and
+// openFightLogSheet is now its one caller.
 
-test("renderEncounter region builds the what-happened strip (not renderFightLog in the middle) and carries zero Round Card artifacts", () => {
+test("renderEncounter region builds the what-happened strip (not renderFightLog in the middle) and carries zero Round Card artifacts; openFightLogSheet is renderFightLog's one caller", () => {
   const region = renderEncounterRegion();
   assert.doesNotMatch(region, /renderFightLog\(mid\)/, "the in-panel log left the middle (R-19)");
   assert.match(region, /renderRoundStrip\(body/);
-  assert.match(CODE, /function renderFightLog\(host\)/, "renderFightLog stays defined for 71-06's sheet");
+  assert.match(CODE, /function renderFightLog\(host\)/, "renderFightLog is the sheet's row builder");
+  const calls = [...CODE.matchAll(/renderFightLog\(([^)]*)\)/g)].map((m) => m[1]).filter((a) => a !== "host");
+  assert.deepEqual(calls, ['document.getElementById("mw-fightlog-sheet-rows")'], "the sheet's rows container is the one host");
   for (const needle of ["__mzRoundCard", "ROUND_CARD_COPY", "roundCardSeq", "round-card"]) {
     const hits = CODE.match(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [];
     assert.equal(hits.length, 0, `${needle} must not appear anywhere in mazeworld.html source`);

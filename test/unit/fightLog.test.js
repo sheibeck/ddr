@@ -30,6 +30,7 @@ import {
   fightLogAnnouncement,
   roundSummary,
   ROUND_STRIP_COPY,
+  fightLogByRound,
 } from "../../src/browser/fightLog.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 
@@ -317,6 +318,15 @@ test("ROUND_STRIP_COPY (Phase 71 D-07): frozen, the mock's label/busy/chip templ
   assert.equal(ROUND_STRIP_COPY.roundHappened, "ROUND {n} · WHAT HAPPENED");
   assert.equal(ROUND_STRIP_COPY.resolving, "RESOLVING");
   assert.equal(ROUND_STRIP_COPY.fullLog, "FULL LOG · {n} ›");
+  // Phase 71 (D-07), 71-06: THE FIGHT SO FAR sheet's copy lives in the same
+  // frozen object (bridged once as __mzFightLogVM.copy), so the scan below
+  // and hp-not-wp's walk of ROUND_STRIP_COPY cover it too.
+  assert.equal(ROUND_STRIP_COPY.sheetTitle, "THE FIGHT SO FAR");
+  assert.equal(ROUND_STRIP_COPY.diceHint, "TAP A LINE FOR ITS DICE");
+  assert.equal(ROUND_STRIP_COPY.close, "CLOSE");
+  assert.equal(ROUND_STRIP_COPY.roundHead, "ROUND {n}");
+  assert.ok(ROUND_STRIP_COPY.noRound.length > 0, "the no-round group has a fallback label");
+  assert.ok(ROUND_STRIP_COPY.openLog.length > 0, "the strip has an accessible name for its open tap");
   const ALLOW = new Set(ALLOWLIST.map((w) => w.toLowerCase()));
   const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const MATCHERS = BANNED.map((term) => ({ term, re: new RegExp("\\b" + esc(term) + "\\b", "i") }));
@@ -327,4 +337,68 @@ test("ROUND_STRIP_COPY (Phase 71 D-07): frozen, the mock's label/busy/chip templ
       assert.ok(!m || ALLOW.has(m[0].toLowerCase()), `${key} ("${value}") hits BANNED term ${term}`);
     }
   }
+});
+
+// ─── Phase 71 (D-07), 71-06: fightLogByRound — THE FIGHT SO FAR sheet ───────
+//
+// The full-log sheet the what-happened strip opens (the user's combat v2
+// mock, design/COMBAT-V2-NOTES.md section 5): the whole fight, newest first,
+// grouped under ROUND n headers. R-23: an entry carries exactly the roll the
+// fight log already holds (the engine event's own Oracle detail text) or
+// null; nothing is invented.
+
+const R = (text, roll) => ({ text, tone: "narrative", roll });
+
+test("fightLogByRound (71-06): rounds newest first, entries newest first within a round, each { id, text, tone, roll, show }", () => {
+  let log = appendFightLog(null, [R("r1a", "1d20: 14 vs 12"), R("r1b", null)], 1);
+  log = appendFightLog(log, [R("r2a", null), R("r2b", "2d6: 7")], 2);
+  log = appendFightLog(log, [dullFightLogLine("You cannot run from here.")], 2);
+  const groups = fightLogByRound(log);
+  assert.ok(Object.isFrozen(groups), "the array is frozen");
+  assert.deepEqual(groups.map((g) => g.round), [2, 1], "newest round first");
+  assert.deepEqual(groups[0].entries.map((e) => e.text), ["You cannot run from here.", "r2b", "r2a"], "newest entry first; a same-round refusal joins its round (R-21)");
+  assert.deepEqual(groups[1].entries.map((e) => e.text), ["r1b", "r1a"]);
+  const e = groups[1].entries[1];
+  assert.deepEqual(Object.keys(e).sort(), ["id", "roll", "show", "text", "tone"]);
+  assert.equal(e.id, log.entries[0].id);
+  assert.equal(e.roll, "1d20: 14 vs 12", "the entry's own roll, exactly");
+  assert.equal(e.show, false);
+  assert.equal(groups[1].entries[0].roll, null, "no roll stays null (never invented)");
+  assert.equal(groups[0].entries[0].tone, "dull");
+  assert.ok(Object.isFrozen(groups[0]) && Object.isFrozen(groups[0].entries) && Object.isFrozen(groups[0].entries[0]), "groups and entries are frozen");
+});
+
+test("fightLogByRound (71-06): the show flag follows toggleFightLogEntry", () => {
+  const log = appendFightLog(null, [R("a", "1d20: 3"), R("b", null)], 4);
+  const toggled = toggleFightLogEntry(log, log.entries[0].id);
+  assert.equal(fightLogByRound(toggled)[0].entries.find((x) => x.text === "a").show, true);
+  assert.equal(fightLogByRound(log)[0].entries.find((x) => x.text === "a").show, false);
+});
+
+test("fightLogByRound (71-06): null-round entries form ONE group (round null), placed by its newest entry", () => {
+  let log = appendFightLog(null, [R("n1", null)], null);
+  log = appendFightLog(log, [R("r1", null)], 1);
+  log = appendFightLog(log, [R("n2", null)], null);
+  const groups = fightLogByRound(log);
+  assert.deepEqual(groups.map((g) => g.round), [null, 1]);
+  assert.deepEqual(groups[0].entries.map((x) => x.text), ["n2", "n1"], "one null group holds every null-round entry");
+  assert.deepEqual(groups[1].entries.map((x) => x.text), ["r1"]);
+});
+
+test("fightLogByRound (71-06): a null, empty or malformed log gives [] and never throws", () => {
+  for (const bad of [null, undefined, 42, "x", {}, { entries: null }, { entries: "x" }, { entries: [] }, { entries: [null, 7, "x"] }]) {
+    let groups;
+    assert.doesNotThrow(() => { groups = fightLogByRound(bad); }, `fightLogByRound(${JSON.stringify(bad)})`);
+    assert.deepEqual(groups, []);
+  }
+  const mixed = fightLogByRound({ entries: [null, { id: 1, seq: 1, text: "ok", tone: "odd", round: 2 }] });
+  assert.equal(mixed.length, 1);
+  assert.deepEqual(mixed[0].entries[0], { id: 1, text: "ok", tone: "narrative", roll: null, show: false });
+});
+
+test("fightLogByRound (71-06): pure — two calls deep-equal, the log never mutated", () => {
+  const log = appendFightLog(appendFightLog(null, [R("a", "x")], 1), [R("b", null), R("c", null)], 2);
+  const snap = JSON.stringify(log);
+  assert.deepEqual(fightLogByRound(log), fightLogByRound(log));
+  assert.equal(JSON.stringify(log), snap, "never mutates");
 });

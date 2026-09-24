@@ -159,7 +159,9 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     FOE_CONDITION_COPY,
     // Phase 71 (D-12): the long-press foe card's labels, fallbacks and flavour lines.
     FOE_DETAILS_COPY,
-    // Phase 71 (D-07): the what-happened strip's copy.
+    // Phase 71 (D-07): the what-happened strip's copy, and (71-06) THE FIGHT
+    // SO FAR sheet's title, dice hint, CLOSE, ROUND n header, no-round
+    // fallback and the strip's open-the-log name, which share that object.
     ROUND_STRIP_COPY,
     // Phase 68 (PLACE-01/02): the global standing quips and the placement copy.
     GLOBAL_STANDING_LINES, PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,

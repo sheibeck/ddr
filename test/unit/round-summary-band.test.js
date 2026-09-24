@@ -184,7 +184,10 @@ test("round-summary (c): beatHurryTap with a target inside #cb-summary stops pro
   clock.advance(beatOffsets(plan.texts, durationFor)[1] + 10);
   const target = stripRows(doc)[0];
   assert.ok(target, "a strip row to tap");
-  assert.equal(strip(doc).onclick ?? null, null, "the strip carries no tap handler in this plan (71-06 adds the sheet)");
+  // 71-06 gave the strip its guardTap-wired open-the-full-log tap; mid-round
+  // the capture-phase skip below still stops the tap before it, and
+  // encArmed() refuses it anyway (fight-log-sheet.test.js (c)).
+  assert.equal(typeof strip(doc).onclick, "function", "the strip's open tap is wired (71-06)");
 
   let stopped = false;
   let prevented = false;
