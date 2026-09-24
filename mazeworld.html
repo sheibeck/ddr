@@ -7477,6 +7477,13 @@ window.__mzClassicBoot = async function classicBoot() {
     // whether the fight is being joined this dispatch or was already under
     // way. Fire-and-forget: the audio call below never throws and returns
     // undefined, so it cannot alter this function's return value.
+    // Phase 71 (POLISH-12, D-17): `onWater` is true when the party's
+    // post-dispatch square is water, read off the floor grid the way
+    // engine/movement.js reads it (floor.g[py][px].water), so every step onto
+    // water plays the walk-water group, not just the one step that enters it
+    // (the engine's `waded` event fires once per wade, for narration). Every
+    // step of the read is guarded: a missing floor, row or cell is dry.
+    const postFloor = result.state?.floor;
     const audioCtx = {
       stepped: !!(
         before?.floor &&
@@ -7484,6 +7491,7 @@ window.__mzClassicBoot = async function classicBoot() {
         (before.floor.px !== result.state.floor.px || before.floor.py !== result.state.floor.py)
       ),
       combatType: result.state?.combat?.type ?? before?.combat?.type,
+      onWater: !!postFloor?.g?.[postFloor.py]?.[postFloor.px]?.water,
     };
     if (Array.isArray(opts.cues)) {
       for (const cue of cuesForDispatch(action.type, result.events, audioCtx)) opts.cues.push(cue);

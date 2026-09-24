@@ -228,3 +228,16 @@ test("ui-tap-shell pins: the shell has one unlockSfx( and two playUiTap( call si
   assert.equal((CODE.match(/playUiTap\(/g) || []).length, 2);
   assert.equal((CODE.match(/if \(key === "volEffects"\) playUiTap\(\);/g) || []).length, 1);
 });
+
+// ─── Phase 71 (POLISH-12, D-17): water steps always sound wet ────────────
+
+test("ui-tap-shell pins (D-17): the dispatch audioCtx carries onWater, read from the post-dispatch floor grid, fully guarded", () => {
+  const idx = CODE.indexOf("const audioCtx = {");
+  assert.ok(idx > -1, "the dispatch audioCtx must exist");
+  const block = CODE.slice(idx, CODE.indexOf("};", idx) + 2);
+  assert.match(block, /stepped:/);
+  assert.match(block, /combatType:/);
+  assert.match(block, /onWater: !!postFloor\?\.g\?\.\[postFloor\.py\]\?\.\[postFloor\.px\]\?\.water,/);
+  assert.match(CODE.slice(Math.max(0, idx - 200), idx), /const postFloor = result\.state\?\.floor;/);
+  assert.equal((CODE.match(/const audioCtx = \{/g) || []).length, 1);
+});
