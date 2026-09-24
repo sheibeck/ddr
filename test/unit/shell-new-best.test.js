@@ -199,7 +199,9 @@ test("RUN-04: .cb-over-best-head, .cb-over-best-row and .cb-over-best-quip CSS r
 // ─── d. the rail stays hidden while dead ────────────────────────────────────
 
 test("RUN-04: the rail-hidden-while-dead predicate is unchanged verbatim", () => {
-  const hits = CODE.match(/railEl\.hidden = !!\(S\.combat \|\| S\.dead\) \|\| idle;/g) || [];
+  // Phase 71 (D-10, R-14): the combat half gained the long-press foe card's
+  // exception; S.dead still hides the rail unconditionally.
+  const hits = CODE.match(/railEl\.hidden = !!\(\(S\.combat && !foeCardUp\) \|\| S\.dead\) \|\| idle;/g) || [];
   assert.equal(hits.length, 1);
 });
 
