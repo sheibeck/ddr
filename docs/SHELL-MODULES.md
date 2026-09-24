@@ -6,6 +6,9 @@ and `storeScreen.js` (Phase 47), and the character roller mounts from
 `roller.js` (Phase 50). The GEAR tab's bottom action sheet renders from
 `gearSheet.js` (Phase 63). The DEAD tab's Leaderboards panel renders from
 `boardsPanel.js` over the pure `boardsView.js` view model (Phase 66). The
+Play Games account (Phase 67) comes from three modules: `playGames.js` (the
+provider seam), `account.js` (the pure view model) and `accountChip.js`
+(the chip and sheet renderers plus the account controller). The
 contract below is what those modules implement, and every `window.__mz*`
 bridge crossing the classic-script/module-script seam is listed in one
 place, with an owner.
@@ -161,6 +164,63 @@ Phases 67 (Play Games sign-in, the account chip) and 68 (global/friends
 boards, submissions) add real sources behind this same `boardsView` seam —
 the signed-out identity strip and dimmed ALL/FRIENDS chips this phase ships
 are the deliberate placeholder those phases bring to life.
+
+### Play Games account (Phase 67)
+
+`src/browser/playGames.js` is the D-12 provider seam and the one module
+that names the Play Games plugin package. `createPlayGames()` wraps the
+Capacitor plugin on a native build and loads it lazily, on the first
+provider call only. `createFakePlayGames({ signedIn })` is the in-memory
+twin used by `node --test` and the browser dev loop. Both expose `init()`
+(the silent launch attempt), `signIn()` (the interactive attempt, which
+passes `silent: false`), `isAuthenticated()` and `getPlayer()` →
+`{ id, displayName }`. Every method resolves and never rejects. There is no
+sign-out, because PGS v2 has none (D-03). The plugin's leaderboard methods
+are reserved for Phase 68 (`RESERVED_LEADERBOARD_METHODS`) and are not
+exposed yet.
+
+`src/browser/account.js` is the pure view model: the account state
+(`ACCOUNT_STATUS`, `normalizeAccountState`), the two rail cards
+(`accountCard("welcome" | "failed")`), the boards identity
+(`accountIdentity`) and the chip and sheet views (`accountChipView`,
+`accountSheetView`). It has no DOM, no storage and no provider access.
+
+`src/browser/accountChip.js` exports `renderAccountChip(button, view)`,
+`renderAccountSheet({ rows, title }, view, handlers)` (both build DOM only
+through the host's `ownerDocument`; `ACCOUNT_CLASSES` lists every class
+they emit) and `createAccountController({ provider, settings, notify })`,
+which returns `{ boot, signIn, setCompete, stopCompeting, state, identity,
+chipView, sheetView, subscribe }`. `boot()` reads the settings and, with
+Compete ON, starts one silent `init()` without waiting for it. Only one
+attempt runs at a time, and a superseded or late result is dropped.
+Compete OFF always wins: it persists `compete: false`, cancels the silent
+timeout and never touches the provider (D-02). `subscribe(fn)` hears every
+state change.
+
+The shell wiring (mazeworld.html's module script):
+
+- The provider is chosen by `window.Capacitor?.isNativePlatform?.()`:
+  native gets `createPlayGames()`, the browser dev loop gets the fake,
+  seeded signed in only when the dev setting `pgsDevSignedIn` is on. The
+  seed is read once, at launch.
+- `account.boot()` starts right after the title screen is initialized and
+  is never awaited, so boot, the title and play never wait on Play Games.
+- Both chips, `#mw-acct-chip` on HUD band 2 and `#mw-title-acct-chip` in
+  the title's corner, render the controller's chip view on every account
+  change.
+- Either chip opens `#mw-acct-sheet`. The band-2 chip refuses while an
+  encounter is up (the ☰ menu's rule). The Settings row closes the account
+  sheet and opens the settings sheet. The scrim, Close and the Android
+  back button close it; the back button closes it first, ahead of every
+  other layer.
+- The controller's `notify` parks the welcome and failed cards until the
+  dungeon is visible (no title, no roller, no title-mode Leaderboards
+  panel), then hands them to `window.mzRailLine`. The latest card wins, and
+  each is delivered once.
+- The Leaderboards panel reads the account through its `identity()` seam,
+  and every account change calls `boardsPanel.refresh()`.
+
+No new `window.__mz` bridge: the account lives in the module script.
 
 ## What stays shared
 
