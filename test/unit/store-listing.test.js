@@ -55,3 +55,45 @@ test("the pre-2.0 collect answer and the unused-INTERNET claim are gone", () => 
   // The old permission note: INTERNET was a Capacitor default, "unused".
   assert.doesNotMatch(LISTING, /INTERNET[^\n]*\bunused\b/i);
 });
+
+// Phase 69 (D-03, D-05): the privacy record, the re-voiced description and
+// Google's metadata limits.
+
+/** The fenced block under "## Full description". */
+function fullDescription() {
+  const body = section("Full description (≤ 4000)");
+  const m = body.match(/```\n([\s\S]*?)\n```/);
+  assert.ok(m, "the Full description section has a fenced block");
+  return m[1];
+}
+
+test("the full description fits Play's 4000-character limit and names the leaderboards", () => {
+  const desc = fullDescription();
+  assert.ok(desc.length <= 4000, `full description is ${desc.length} characters`);
+  assert.ok(desc.includes("Optional Google Play Games leaderboards"));
+});
+
+test("the preferred short description fits Play's 80-character limit", () => {
+  const body = section("Short description (≤ 80)");
+  const m = body.match(/`([^`\n]+)`/);
+  assert.ok(m, "a backticked preferred short description");
+  assert.ok(m[1].length <= 80, `short description is ${m[1].length} characters`);
+});
+
+test("the listing never claims that nothing is collected", () => {
+  assert.doesNotMatch(
+    LISTING,
+    /\bno data collected\b|\bcollects? no (user )?data\b|\bnothing is collected\b|\bcollects? nothing\b/i,
+  );
+});
+
+test("the Privacy section records both URLs, the effective date and the website commit", () => {
+  const privacy = section("Privacy policy URL");
+  assert.ok(privacy.includes("privacy/apps"));
+  assert.ok(privacy.includes("privacy/delete-data"));
+  assert.match(
+    privacy,
+    /\b(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, 2026\b/,
+  );
+  assert.match(privacy, /darktier-studio commit [0-9a-f]{7,40}\b/);
+});

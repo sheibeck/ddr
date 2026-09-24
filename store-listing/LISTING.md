@@ -44,7 +44,7 @@ The game is based on the 1994 tabletop Mazeworld rules, adapted for a phone with
 Made for phones, not ported to them
 - Tap or swipe to move; every decision is a large button.
 - One screen for the map, one for your hero, one for gear, one for the Oracle's log, and one for the dead.
-- Plays fully offline. No account, no sign-in, no ads, no in-app purchases, no data collected.
+- Plays fully offline. Optional Google Play Games leaderboards, if you want the whole world to see how you died. No ads, no in-app purchases.
 - Your run saves itself. Put the phone down mid-fight and the monster will wait.
 
 Delve, Die, Repeat is a paid game with nothing else to buy. You get the whole dungeon, and the dungeon gets the whole you.
@@ -57,6 +57,14 @@ Delve, Die, Repeat is a paid game with nothing else to buy. You get the whole du
 (The website's own policy, which discloses Google Analytics, is at
 `https://darktierstudios.com/privacy`. The apps page is stand-alone and is
 the one to enter in Play Console.)
+
+Delete data URL (Play Console's Data safety "Delete data URL" field):
+`https://darktierstudios.com/privacy/delete-data`
+
+Reconciled for 2.0.0 (Leaderboards): effective September 24, 2026;
+darktier-studio commit aaa0f4a (local, not yet deployed; the user deploys the
+site). Source: `C:/projects/darktier-studio/src/pages/privacy/apps.astro` and
+`delete-data.astro`; full hash `aaa0f4ad4822ebd43c58de205c0da210580c41df`.
 
 ## Data safety
 
@@ -179,3 +187,12 @@ graveyard.
 
 Regenerate after UI changes with `node tools/store-screenshots/capture.js`
 (see `tools/store-screenshots/README.md`).
+
+**Owed (deferred human item):** `08-dead.png` (all three sizes) shows the
+pre-2.0 graveyard and must be regenerated showing the Leaderboards panel on
+DEEPEST at 1080×1920, 1350×2400 and 1620×2880. On 2026-09-24 the capture tool
+could not run: `playwright-core` is not installed anywhere in the repo, and
+installing a package was out of scope for 69-01. Either install
+`playwright-core` per the README and run `capture.js` (its bot predates later
+UI changes and may need label updates), or capture by hand in Chrome device
+mode at 432×768 @2.5, 675×1200 @2 and 810×1440 @2 from the served `www/`.
