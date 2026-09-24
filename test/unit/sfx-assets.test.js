@@ -12,10 +12,14 @@
 // not this file's business — this file has no dependency on the sfx module
 // under src/browser/, which does not exist yet in this wave.
 //
-// User ruling (2026-09-22): enemy-batrat.mp3 was deleted. sfx/ holds 30
-// clips and all 30 are mapped — there is no "unused clip" concept. If this
-// test's count ever needs to change, that is a deliberate asset decision,
-// not drift.
+// User ruling (2026-09-22): enemy-batrat.mp3 was deleted. The 30 one-shot
+// clips are all mapped — there is no "unused clip" concept. User ruling
+// (2026-09-24, quick task 260924-51h): sfx/ ALSO holds exactly one declared
+// music track, theme.mp3 (the title theme), pinned separately as
+// EXPECTED_MUSIC — it is never counted among the 30 clips. sfx/ therefore
+// holds exactly 30 + 1 files. If either count ever needs to change, that is
+// a deliberate asset decision, not drift. This file still never imports
+// src/browser/sfx.js — the two pins stay independent.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -44,6 +48,11 @@ const EXPECTED_CLIPS = Object.freeze([
   "levelup", "death", "ui-tap",
 ]);
 
+// User ruling 2026-09-24 (quick task 260924-51h): theme.mp3 is the single
+// declared music track (the title theme). It is not a clip and is not part
+// of the 30 — it streams as a loop, never fires as a one-shot.
+const EXPECTED_MUSIC = Object.freeze(["theme"]);
+
 // ─── (1) EXPECTED_CLIPS shape ───────────────────────────────────────────
 
 test("AUD-06: EXPECTED_CLIPS has exactly 30 entries and no duplicates", () => {
@@ -51,11 +60,19 @@ test("AUD-06: EXPECTED_CLIPS has exactly 30 entries and no duplicates", () => {
   assert.equal(new Set(EXPECTED_CLIPS).size, EXPECTED_CLIPS.length);
 });
 
-// ─── (2) totality gate — sfx/ matches EXPECTED_CLIPS exactly ───────────
+test("AUD-06: EXPECTED_MUSIC has exactly 1 entry and shares nothing with EXPECTED_CLIPS", () => {
+  assert.equal(EXPECTED_MUSIC.length, 1);
+  for (const id of EXPECTED_MUSIC) {
+    assert.equal(EXPECTED_CLIPS.includes(id), false, `${id} must not also be a clip`);
+  }
+});
 
-test("AUD-06: sfx/ contains exactly the 30 expected .mp3 filenames (set equality)", () => {
+// ─── (2) totality gate — sfx/ matches EXPECTED_CLIPS + EXPECTED_MUSIC ──
+
+test("AUD-06: sfx/ contains exactly the 30 expected clips plus the 1 declared music track (set equality)", () => {
   const actual = readdirSync(SFX_DIR).filter((f) => f.endsWith(".mp3")).sort();
-  const expected = EXPECTED_CLIPS.map((id) => `${id}.mp3`).sort();
+  const expected = [...EXPECTED_CLIPS, ...EXPECTED_MUSIC].map((id) => `${id}.mp3`).sort();
+  assert.equal(expected.length, 31);
   assert.deepEqual(actual, expected);
 });
 
