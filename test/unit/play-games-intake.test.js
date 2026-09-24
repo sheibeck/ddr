@@ -141,11 +141,11 @@ test("D-15: the Play Games wiring adds no manifest permission beyond INTERNET", 
   assert.deepEqual(perms, ["android.permission.INTERNET"]);
 });
 
-test("D-15: games-ids.xml defines game_services_project_id as a non-translatable 12-digit placeholder", () => {
+test("D-15: games-ids.xml defines game_services_project_id as a non-translatable 12-digit project ID", () => {
   const m = GAMES_IDS.match(/<string\s+name="game_services_project_id"\s+translatable="false">([^<]*)<\/string>/);
   assert.ok(m, 'games-ids.xml defines game_services_project_id with translatable="false"');
   assert.match(m[1], /^\d{12}$/);
-  assert.match(GAMES_IDS, /PLAY-GAMES-SETUP\.md/, "the placeholder comment points at the setup runbook");
+  assert.match(GAMES_IDS, /PLAY-GAMES-SETUP\.md/, "the comment points at the setup runbook");
 });
 
 // ─── D-13: cap sync wires the plugin's Gradle project ───────────────────────

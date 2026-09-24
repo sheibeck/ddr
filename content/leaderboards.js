@@ -7,6 +7,7 @@
 //   (DEEPEST), lean (LEANEST), days (LONGEST), kills (BUTCHERY) and purse
 //   (PURSE). LINEAGE and GRAVEYARD get no Play Games board (67 D-19): LINEAGE
 //   is built from a DEEPEST sample and GRAVEYARD stays on the device.
+// - Season 1 IDs pasted 2026-09-24 from the user's Play Console setup.
 // - The IDs come from the Play Console (docs/PLAY-GAMES-SETUP.md, finished in
 //   Phase 69). An ID that starts with LEADERBOARD_PLACEHOLDER_PREFIX is not
 //   live: its board is skipped silently (nothing is submitted to it and its
@@ -22,10 +23,10 @@ export const LEADERBOARD_PLACEHOLDER_PREFIX = "PLACEHOLDER";
 
 export const LEADERBOARD_IDS = Object.freeze({
   1: Object.freeze({
-    deep: "PLACEHOLDER_DEEPEST_S1",
-    lean: "PLACEHOLDER_LEANEST_S1",
-    days: "PLACEHOLDER_LONGEST_S1",
-    kills: "PLACEHOLDER_BUTCHERY_S1",
-    purse: "PLACEHOLDER_PURSE_S1",
+    deep: "CgkIlvbN0YYPEAIQAg",
+    lean: "CgkIlvbN0YYPEAIQAw",
+    days: "CgkIlvbN0YYPEAIQBA",
+    kills: "CgkIlvbN0YYPEAIQBQ",
+    purse: "CgkIlvbN0YYPEAIQBg",
   }),
 });

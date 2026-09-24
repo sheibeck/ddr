@@ -46,16 +46,17 @@ function makeRng(seed) {
 
 // --- content/leaderboards.js ----------------------------------------------------
 
-test("LEADERBOARD_IDS is deep-frozen with season 1's five placeholders", () => {
+test("LEADERBOARD_IDS is deep-frozen with season 1's five live Play Console IDs", () => {
   assert.ok(isDeepFrozen(LEADERBOARD_IDS));
   assert.equal(LEADERBOARD_PLACEHOLDER_PREFIX, "PLACEHOLDER");
   assert.deepEqual({ ...LEADERBOARD_IDS[1] }, {
-    deep: "PLACEHOLDER_DEEPEST_S1",
-    lean: "PLACEHOLDER_LEANEST_S1",
-    days: "PLACEHOLDER_LONGEST_S1",
-    kills: "PLACEHOLDER_BUTCHERY_S1",
-    purse: "PLACEHOLDER_PURSE_S1",
+    deep: "CgkIlvbN0YYPEAIQAg",
+    lean: "CgkIlvbN0YYPEAIQAw",
+    days: "CgkIlvbN0YYPEAIQBA",
+    kills: "CgkIlvbN0YYPEAIQBQ",
+    purse: "CgkIlvbN0YYPEAIQBg",
   });
+  for (const id of Object.values(LEADERBOARD_IDS[1])) assert.ok(!id.startsWith(LEADERBOARD_PLACEHOLDER_PREFIX), "season 1 has no placeholder left");
 });
 
 test("every season entry is keyed by a season number and has exactly the five boards", () => {
@@ -222,8 +223,10 @@ test("isRealLeaderboardId accepts console and dev ids, rejects placeholders and 
 });
 
 test("leaderboardId returns null for placeholders and returns a real id when present", () => {
-  assert.equal(leaderboardId(LEADERBOARD_IDS, 1, "deep"), null);
-  for (const b of FIVE) assert.equal(leaderboardId(LEADERBOARD_IDS, SEASON, b), null);
+  // Season 1's shipped IDs are live (2026-09-24): every board resolves to its own ID.
+  for (const b of FIVE) assert.equal(leaderboardId(LEADERBOARD_IDS, SEASON, b), LEADERBOARD_IDS[SEASON][b]);
+  const placeholders = { 1: { deep: "PLACEHOLDER_DEEPEST_S1", lean: "PLACEHOLDER_LEANEST_S1", days: "PLACEHOLDER_LONGEST_S1", kills: "PLACEHOLDER_BUTCHERY_S1", purse: "PLACEHOLDER_PURSE_S1" } };
+  for (const b of FIVE) assert.equal(leaderboardId(placeholders, 1, b), null);
   const live = { 1: { deep: "CgkI4a-Rz8YUEAIQAQ", lean: "PLACEHOLDER_LEANEST_S1", days: "", kills: "x y", purse: 7 } };
   assert.equal(leaderboardId(live, 1, "deep"), "CgkI4a-Rz8YUEAIQAQ");
   assert.equal(leaderboardId(live, 1, "lean"), null);
@@ -275,6 +278,13 @@ test("scoreOrdersFor maps every real id to its order and skips placeholders", ()
     dev_kills_s1: "largerIsBetter",
     dev_purse_s1: "largerIsBetter",
   });
-  assert.deepEqual({ ...scoreOrdersFor(LEADERBOARD_IDS) }, {});
+  assert.deepEqual({ ...scoreOrdersFor(LEADERBOARD_IDS) }, {
+    CgkIlvbN0YYPEAIQAg: "largerIsBetter",
+    CgkIlvbN0YYPEAIQAw: "smallerIsBetter",
+    CgkIlvbN0YYPEAIQBA: "largerIsBetter",
+    CgkIlvbN0YYPEAIQBQ: "largerIsBetter",
+    CgkIlvbN0YYPEAIQBg: "largerIsBetter",
+  });
+  assert.deepEqual({ ...scoreOrdersFor({ 1: { deep: "PLACEHOLDER_DEEPEST_S1" } }) }, {});
   assert.deepEqual({ ...scoreOrdersFor(null) }, {});
 });
