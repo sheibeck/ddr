@@ -18,8 +18,15 @@
 // tapping BUY would actually do. The reason shown on a row is ROW STATE,
 // never a post-tap refusal message; the rail stays the one feedback
 // surface for everything else.
+//
+// Phase 71 (POLISH-06, D-04): an item line's stats come from the ONE
+// formatter, viewModels.js#itemStatLines — the same list the Gear tab's
+// action sheet shows for that item — via storeItemStats below. Lines with
+// no item (food, rations, the sealed scroll, repair) keep their engine
+// `sub` byte-for-byte (R-07); the engine's stock `sub` strings themselves
+// are never edited (the economy parity harness compares them).
 
-import { armorDisplay, usableBy, storeRowState } from "./viewModels.js";
+import { armorDisplay, usableBy, storeRowState, itemStatLines } from "./viewModels.js";
 import { bagUsage, renderCarriedList } from "./gearTab.js";
 
 // Phase 33 (STORE-01, CONTEXT Area 3 "Feedback") — the store header's one-line
@@ -29,6 +36,26 @@ import { bagUsage, renderCarriedList } from "./gearTab.js";
 // not an event). Player-facing: kept clear of content/safety-wordlist.js
 // (scanned by test/unit/shell-map-store-polish.test.js).
 export const STORE_ROLL_COPY = "Stock rolled fresh for this floor. Deeper down, pricier regrets.";
+
+/**
+ * storeItemStats(line, c, showUsable = true) — Phase 71 (POLISH-06, D-04):
+ * the stat texts a stock row shows for the item it sells, read from the ONE
+ * formatter (`itemStatLines`) the Gear sheet also reads, so the two lists
+ * are identical for the same item. `showUsable` is storeRowState's own gate:
+ * when false (an illegal item whose row already names who via its can't-use
+ * reason) the usable-by entry is filtered out rather than repeated. Returns
+ * `null` for a line that wraps no item (food, rations, scroll, repair) or
+ * whose item the formatter has nothing to say about — the row then keeps
+ * the engine's own `sub`. Pure.
+ */
+export function storeItemStats(line, c, showUsable = true) {
+  const item = line && line.effectParams && line.effectParams.item;
+  if (!item) return null;
+  const stats = itemStatLines(item, c)
+    .filter((l) => showUsable || l.key !== "usable")
+    .map((l) => l.text);
+  return stats.length ? stats : null;
+}
 
 /**
  * renderStoreScreen(host, state, deps) — Phase 47 (SHELL-03), Plan 05: the
@@ -79,18 +106,25 @@ export function renderStoreScreen(host, state, deps = {}) {
     // else).
     const rs = storeRowState(c, item);
     row.disabled = rs.disabled;
-    const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each` : item.sub;
+    // Phase 71 (D-04): an item line's stats come from the ONE formatter
+    // (usable-by included, as one of its entries, gated on rs.showUsable).
+    // Every stat string is display text built from engine/content item data
+    // — the same trust as the item.n/item.sub this template already
+    // interpolates — so nothing new is escaped here (T-71-03).
+    const stats = item.effectId === "repairArmor" ? null : storeItemStats(item, c, rs.showUsable);
+    const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each` : stats ? stats.join(" · ") : item.sub;
     // Phase 43 (CLAR-02): usable is a static USABLE_COPY string (class
     // names only, never user/item text) — safe inside innerHTML. Phase 61
     // (STORE-02/03): also gated on rs.showUsable — an illegal item's row
     // already names who via rs.reasonText, so the "(usable by … — not
-    // you)" suffix would only repeat it.
-    const usable = rs.showUsable && item.effectParams && item.effectParams.item ? usableBy(item.effectParams.item, c) : "";
+    // you)" suffix would only repeat it. Phase 71 (D-04): only a fallback
+    // now — a formatter-rendered row already carries usable-by in `stats`.
+    const usable = !stats && rs.showUsable && item.effectParams && item.effectParams.item ? usableBy(item.effectParams.item, c) : "";
     // Phase 61 (STORE-02/03): the italic sub composes, in order, the
-    // item's own sub text, the advice compare line (never disables BUY),
-    // then the row's disable reason (can't-use / bag-full — a gold
-    // shortfall is already named by the price column, so it adds nothing
-    // here).
+    // item's own stats (Phase 71: from the formatter), the advice compare
+    // line (never disables BUY), then the row's disable reason (can't-use /
+    // bag-full — a gold shortfall is already named by the price column, so
+    // it adds nothing here).
     const subText = [sub, rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
     row.innerHTML = `<span class="g-n">${item.n}${subText || usable ? `<i>${subText || ""}${subText && usable ? " " : ""}${usable}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;

@@ -20,7 +20,7 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Speed potion<i>double attacks, 50 squares</i></span>\n        <span class=\"g-c\">500 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Set of lockpicks<i>opens boxes on 1–5</i></span>\n        <span class=\"g-c\">450 wm</span>"
+    html="<span class=\"g-n\">Set of lockpicks<i>1–5 on d10 against any lock</i></span>\n        <span class=\"g-c\">450 wm</span>"
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Spear<i>d8 · d8 vs your d6 · 1.1 vs 0.9 a swing · upgrade</i></span>\n        <span class=\"g-c\">150 wm</span>"
   <button class="goods" onclick>
@@ -28,7 +28,7 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Sealed scroll</span>\n        <span class=\"g-c\">900 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Warded plate<i>AR 17, 65 hp · enchanted · can't use (Fighter only)</i></span>\n        <span class=\"g-c\">4,000 wm</span>"
+    html="<span class=\"g-n\">Warded plate<i>AR 17 · 65/65 hp · enchanted · can't use (Fighter only)</i></span>\n        <span class=\"g-c\">4,000 wm</span>"
   <button class="goods" onclick>
     html="<span class=\"g-n\">Rations (+1 ration)</span>\n        <span class=\"g-c\">30 wm</span>"
   <button class="goods" onclick>

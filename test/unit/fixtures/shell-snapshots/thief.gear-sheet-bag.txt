@@ -5,8 +5,12 @@
 <div id="mw-gear-sheet-title">
   text="Anklet of Invisibility"
 ## #mw-gear-sheet-note
-<div id="mw-gear-sheet-note">
-  text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+<div id="mw-gear-sheet-note" hidden>
+  text=""
+## #mw-gear-sheet-stats
+<div id="mw-gear-sheet-stats" class="mw-gsheet-stats">
+  <p class="mw-gsheet-note mw-gsheet-stat">
+    text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
 ## #mw-gear-sheet-why
 <div id="mw-gear-sheet-why" hidden>
   text=""
