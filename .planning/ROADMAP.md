@@ -165,9 +165,9 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 68-04-PLAN.md — (wave 2) the adapter's run-recorded listener and `src/browser/pgsQueue.js` (ddr.pgsqueue.v1: enqueue-then-flush, ack per run+board, season drop, placeholder skip, purge, single-flight backoff, DEEPEST standing) (PGS-03, PGS-04, PGS-06)
-- [ ] 68-05-PLAN.md — (wave 2) `src/browser/globalBoards.js`: per season/board/scope fetch + 5-minute cache, stale/unreachable/closed/consent states, LINEAGE's 25-score DEEPEST sample, zero calls when inactive (PGS-05)
-- [ ] 68-06-PLAN.md — (wave 2) the panel's live ALL/FRIENDS views: global rows with YOU/FRIEND and the pinned best run, real-rank standing, consent button, SEASON label + picker, LINEAGE grouping, CSS (PGS-05, PGS-06)
+- [x] 68-04-PLAN.md — (wave 2) the adapter's run-recorded listener and `src/browser/pgsQueue.js` (ddr.pgsqueue.v1: enqueue-then-flush, ack per run+board, season drop, placeholder skip, purge, single-flight backoff, DEEPEST standing) (PGS-03, PGS-04, PGS-06)
+- [x] 68-05-PLAN.md — (wave 2) `src/browser/globalBoards.js`: per season/board/scope fetch + 5-minute cache, stale/unreachable/closed/consent states, LINEAGE's 25-score DEEPEST sample, zero calls when inactive (PGS-05)
+- [x] 68-06-PLAN.md — (wave 2) the panel's live ALL/FRIENDS views: global rows with YOU/FRIEND and the pinned best run, real-rank standing, consent button, SEASON label + picker, LINEAGE grouping, CSS (PGS-05, PGS-06)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -349,7 +349,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
-| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 3/7 | In Progress|  |
+| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 6/7 | In Progress|  |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
