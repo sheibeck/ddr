@@ -188,11 +188,13 @@ test("the centerMap bridge itself is untouched: anchorCamOnParty/positionCanvas 
   assert.ok(!/S\.floor/.test(body), "centerMap must never touch S.floor");
 });
 
-test("mzCenterMap call-site count is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch); mzKeepPartyInView is 7 (Phase 44: the callerless window.newGame/engineNewRun override and its mzCenterMap call are gone)", () => {
+// Phase 67 (D-09): closeAccountSheet() is the 8th mzKeepPartyInView site,
+// the settings sheet's own pattern for a sheet outside the tab system.
+test("mzCenterMap call-site count is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch); mzKeepPartyInView is 8 (Phase 44: the callerless window.newGame/engineNewRun override and its mzCenterMap call are gone; Phase 67 adds the account sheet's close)", () => {
   const centerMatches = CODE.match(/window\.mzCenterMap\?\.\(\)/g) || [];
   assert.equal(centerMatches.length, 4);
   const keepInViewMatches = CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || [];
-  assert.equal(keepInViewMatches.length, 7);
+  assert.equal(keepInViewMatches.length, 8);
 });
 
 // Phase 58 (MOTION-01, D-02/D-03): anchorCamOnParty — used by every snap

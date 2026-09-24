@@ -234,9 +234,10 @@ test("(f) pointermove sub-region never recenters or keeps in view (no per-tick r
   assert.doesNotMatch(region, /mzKeepPartyInView/);
 });
 
-test("(f) camera call sites: mzCenterMap is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 7", () => {
+// Phase 67 (D-09): closeAccountSheet() is the 8th mzKeepPartyInView site.
+test("(f) camera call sites: mzCenterMap is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 8 (Phase 67: the account sheet's close)", () => {
   assert.equal((CODE.match(/window\.mzCenterMap\?\.\(\)/g) || []).length, 4);
-  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 7);
+  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 8);
 });
 
 // ─── (g) the stair-down gate ─────────────────────────────────────────────────
