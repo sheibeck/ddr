@@ -92,8 +92,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 66-04-PLAN.md — (wave 2) `src/browser/boardsView.js`: the pure view model for all seven boards, the standing card, empty and signed-out states (BOARD-02..08)
-- [ ] 66-05-PLAN.md — (wave 2) the `.mw-bd-*` panel CSS, title-mode tab-bar/rail hiding, text scale and reduced motion (BOARD-01..04, BOARD-06)
+- [x] 66-04-PLAN.md — (wave 2) `src/browser/boardsView.js`: the pure view model for all seven boards, the standing card, empty and signed-out states (BOARD-02..08)
+- [x] 66-05-PLAN.md — (wave 2) the `.mw-bd-*` panel CSS, title-mode tab-bar/rail hiding, text scale and reduced motion (BOARD-01..04, BOARD-06)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -310,7 +310,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
-| 66. Leaderboards Panel — Local | v2.0 | 3/7 | In Progress|  |
+| 66. Leaderboards Panel — Local | v2.0 | 5/7 | In Progress|  |
 | 67. Play Games Integration & Account Chip | v2.0 | 0/TBD | Not started | - |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
