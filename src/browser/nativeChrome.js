@@ -153,6 +153,14 @@ async function loadApp(injectedApp) {
  * that a subsequent press within a short window escalates to `exit-app`,
  * reset by any non-confirm action) — the caller's getGameContext() does not
  * need to track it.
+ *
+ * Quick task 260924-51h (R-07): two optional hooks, `onBackground` and
+ * `onForeground`. onBackground runs on `pause` and on
+ * `appStateChange({ isActive: false })`, before the (still awaited) storage
+ * flush; onForeground runs on `resume` and on
+ * `appStateChange({ isActive: true })`, with no flush wait. Both are
+ * presentation-only (the shell uses them to stop and restart the title
+ * theme) and a throwing hook is swallowed, never breaking the flush.
  */
 // WR-02 (02-REVIEW.md): guards against registerNativeChrome() ever being
 // invoked a second time in the same page/process lifetime (e.g. a future
@@ -185,6 +193,8 @@ export async function registerNativeChrome({
   storage,
   waitForPending,
   getGameContext,
+  onBackground,
+  onForeground,
 } = {}) {
   if (registered) return;
   registered = true;
@@ -297,8 +307,35 @@ export async function registerNativeChrome({
   // note). CR-02: `waitForPending` (e.g. engineAdapter.js's
   // waitForPending()) is awaited alongside storage.flush() so a write still
   // in its pre-setItem() read phase isn't missed either.
-  App.addListener("pause", () => flushOnBackground(storage, waitForPending));
-  App.addListener("appStateChange", ({ isActive } = {}) => {
-    if (!isActive) return flushOnBackground(storage, waitForPending);
+  //
+  // Quick task 260924-51h (R-07): the optional onBackground/onForeground
+  // hooks run first, synchronously, through callHook() — a throwing hook can
+  // never block or break the flush.
+  App.addListener("pause", () => {
+    callHook(onBackground);
+    return flushOnBackground(storage, waitForPending);
   });
+  App.addListener("appStateChange", ({ isActive } = {}) => {
+    if (!isActive) {
+      callHook(onBackground);
+      return flushOnBackground(storage, waitForPending);
+    }
+    callHook(onForeground);
+    return undefined;
+  });
+  App.addListener("resume", () => {
+    callHook(onForeground);
+  });
+}
+
+/**
+ * callHook(fn) — runs an optional lifecycle hook, swallowing any throw: the
+ * storage flush it sits in front of is safety-critical, the hook is not.
+ */
+function callHook(fn) {
+  try {
+    if (typeof fn === "function") fn();
+  } catch {
+    /* a lifecycle hook must never break the lifecycle handler */
+  }
 }

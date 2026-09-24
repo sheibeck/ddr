@@ -5516,7 +5516,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 56 (AUD-01..06) — the whole audio layer lives in src/browser/sfx.js;
   // this module script calls it directly (dispatchWithNarration and
   // hapticForEvents both live here too, so no window.__mz* bridge is needed).
-  import { unlockSfx, applySfxSettings, playForDispatch, cuesForDispatch, playUiTap, playClipIds } from "./src/browser/sfx.js";
+  import { unlockSfx, applySfxSettings, playForDispatch, cuesForDispatch, playUiTap, playClipIds, startMusic, stopMusic, stopAllSfx, isSfxUnlocked } from "./src/browser/sfx.js";
+  // Quick task 260924-51h — the title theme's pure play/stop controller.
+  import { createTitleMusic } from "./src/browser/titleMusic.js";
   // 04-06: the Wave-1 pure geometry/icon modules — bridged onto window.*
   // below so the classic (non-module) script's fit()/draw()/tap-handler code
   // can call them without an ES `import` (see this module's own doc comment
@@ -6073,7 +6075,74 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 59 (DRESS-05): repaint at once so flipping Set dressing Off
     // clears every prop immediately and On brings them back (once loaded).
     if (key === "dressing") window.draw?.();
+    // Quick task 260924-51h (R-06): this tap is itself a gesture, so Sound
+    // On with the title area up opens the device and starts the theme on
+    // that same tap. On Sound Off, applySfxSettings (via applySettings above)
+    // has already cut everything; the sync just records soundOn false.
+    if (key === "sound") unlockAudioAndSync();
   });
+
+  // Quick task 260924-51h — the title theme (sfx/theme.mp3). WHEN it plays
+  // is src/browser/titleMusic.js's pure edge-triggered controller; HOW is
+  // sfx.js's streamed loop (startMusic/stopMusic) on the same audio device
+  // as the one-shots. Declared here, before the first-gesture listener and
+  // the top-level applySettings(await readSettings()) below, so a tap that
+  // lands during that await never reaches an uninitialised binding. The
+  // reduced predicate is the one every Phase 58/59 controller is built
+  // with: leaving for the map cuts at once instead of the 500 ms fade.
+  const titleMusic = createTitleMusic({
+    start: () => startMusic(),
+    stop: (fadeMs) => stopMusic({ fadeMs }),
+    reduced: () => prefersReducedMotion(window),
+  });
+  // The TITLE AREA (user ruling 2026-09-24): the title screen, the
+  // character roller, or the title-mode Leaderboards panel (its
+  // data-boards-entry marker — the same one dungeonVisible() reads; used
+  // instead of boardsPanel.isTitleOpen(), whose const is declared later in
+  // this script). The account and settings sheets never hide any of these,
+  // so the music keeps playing under them with no extra rule (R-03).
+  function titleMusicShowing() {
+    const title = document.getElementById("mw-title-screen");
+    const roller = document.getElementById("mw-roller-screen");
+    if (title && !title.hidden) return true;
+    if (roller && !roller.hidden) return true;
+    return document.body.dataset.boardsEntry === "title";
+  }
+  // Feeds the controller the live inputs. A null settings mirror reads as
+  // Sound on, matching sfx.js's own posture (before any unlock, `unlocked`
+  // is false anyway). While the controller wants music, startMusic() is
+  // also called: on a live loop it never restarts, it only nudges one the
+  // WebView refused to start (a suspended device, a rejected play()), so a
+  // later gesture rescues a launch-time start that did not sound.
+  function syncTitleMusic() {
+    try {
+      titleMusic.update({
+        titleVisible: titleMusicShowing(),
+        unlocked: isSfxUnlocked(),
+        soundOn: currentSettings?.sound !== false,
+      });
+      if (titleMusic.isPlaying()) startMusic();
+    } catch {
+      /* cosmetic polish — never throw */
+    }
+  }
+  // The shell's ONE unlockSfx( call (sfx-settings.test.js pins exactly one):
+  // opens (or wakes) the audio device, then re-syncs the theme (R-05).
+  function unlockAudioAndSync() {
+    unlockSfx().then(syncTitleMusic, () => {});
+  }
+  // R-07: background cuts the theme and every one-shot at once; foreground
+  // restarts the theme from the top only if the title area is still up and
+  // Sound is on (the controller decides).
+  function setAppActive(active) {
+    try {
+      titleMusic.update({ appActive: active === true });
+      if (active !== true) stopAllSfx();
+    } catch {
+      /* never throw */
+    }
+    syncTitleMusic();
+  }
 
   // Phase 56 (AUD-01..05) — the first-gesture unlock + delegated UI tap.
   // One capture-phase pointerdown listener on document, bound to the first
@@ -6085,11 +6154,16 @@ window.__mzClassicBoot = async function classicBoot() {
   // gesture and while Sound is Off. The map is a <canvas>, never a
   // `button`, so a map tap never matches the second check below — a move
   // plays that move's own walk clip via the dispatch seam instead, so a
-  // single step never produces two sounds.
+  // single step never produces two sounds. Quick task 260924-51h: the same
+  // first-gesture unlock starts the title theme when the title area is up
+  // (in the browser dev loop — native already opened the device at launch,
+  // and there a tap only wakes a device or loop the WebView left silent). If
+  // the title area is gone by the time the unlock lands (ENTER to a resumed
+  // delve as the very first tap), the sync sees that and nothing starts (R-05).
   document.addEventListener(
     "pointerdown",
     (e) => {
-      unlockSfx();
+      unlockAudioAndSync();
       if (e.target?.closest?.("button, [role=\"button\"]")) playUiTap();
     },
     { capture: true },
@@ -7467,6 +7541,51 @@ window.__mzClassicBoot = async function classicBoot() {
     refreshTitleDead();
   })();
 
+  // Quick task 260924-51h — the title theme follows the title area through
+  // ONE MutationObserver (#mw-title-screen[hidden], #mw-roller-screen[hidden],
+  // body[data-boards-entry]) rather than calls inside the title functions,
+  // for two reasons:
+  //  1. The observer callback is a microtask that runs after the WHOLE tap
+  //     handler returns, so each tap is seen as one final state. ENTER to a
+  //     new hero (hideTitleScreen() then the roller shown in the same
+  //     handler) and VIEW THE DEAD (hideTitleScreen() then openFromTitle())
+  //     both stay "in the title area", so the track carries on with no
+  //     restart or stutter; the panel's title/roll routes (marker cleared,
+  //     then the title or roller shown) never restart it either. Reaching
+  //     the map — the roller's commit, ENTER to a resumed delve, BACK TO THE
+  //     DUNGEON — leaves all three off, which fades it out. Every re-show of
+  //     the title or the roller (BURY THEM, Save & quit, abandon, a new
+  //     roll from the Hero tab) restarts it from the top (R-03, R-04, user
+  //     ruling 2026-09-24).
+  //  2. showTitleScreen, hideTitleScreen, routeFromBoards and
+  //     initTitleScreen stay byte-identical: shell-account.test.js E7 and
+  //     shell-boards-panel.test.js E1–E5 run those exact bodies through
+  //     new Function with a fixed scope, so they must gain no identifier.
+  // It is added after the pgsQueue visibilitychange listener above on
+  // purpose (shell-pgs.test.js requires that one to be the first).
+  if (typeof MutationObserver === "function") {
+    const titleMusicObserver = new MutationObserver(syncTitleMusic);
+    for (const id of ["mw-title-screen", "mw-roller-screen"]) {
+      const el = document.getElementById(id);
+      if (el) titleMusicObserver.observe(el, { attributes: true, attributeFilter: ["hidden"] });
+    }
+    titleMusicObserver.observe(document.body, { attributes: true, attributeFilter: ["data-boards-entry"] });
+  }
+  // The browser dev loop's background signal; idempotent alongside the
+  // native onBackground/onForeground hooks below.
+  document.addEventListener("visibilitychange", () => setAppActive(document.visibilityState !== "hidden"));
+  syncTitleMusic();
+  // User ruling 2026-09-24: on native the theme starts at launch with no
+  // tap — Capacitor's WebView plays media without a user gesture — so the
+  // device is opened here, one presented frame after first paint (R-08:
+  // lazy, never ahead of the title). If the WebView still refuses (a
+  // suspended device, a rejected play()), nothing throws and the first tap
+  // rescues it through the same unlock path. The browser keeps the gesture
+  // requirement, so it waits for that first tap.
+  if (window.Capacitor?.isNativePlatform?.()) {
+    requestAnimationFrame(() => setTimeout(unlockAudioAndSync, 0));
+  }
+
   // Phase 67 (PGS-02, D-01/D-02): the launch sign-in, deliberately not
   // awaited. It never blocks boot, the title or play; with Compete OFF the
   // controller calls no provider method at all, and on native the plugin
@@ -7497,6 +7616,11 @@ window.__mzClassicBoot = async function classicBoot() {
       // each board's ack) are awaited alongside, so a queued death survives
       // the app being backgrounded.
       waitForPending: () => Promise.all([waitForPending(), pgsQueue?.waitForPending()]),
+      // Quick task 260924-51h (R-07): background cuts the title theme and
+      // every one-shot; foreground restarts the theme only if the title
+      // area is still up and Sound is on.
+      onBackground: () => setAppActive(false),
+      onForeground: () => setAppActive(true),
       getGameContext: () => ({
         // Phase 35 (ruling 3): a pending rail decision or a failed climb is
         // NOT a modal — it is presentation state on window.__mzRail, never
