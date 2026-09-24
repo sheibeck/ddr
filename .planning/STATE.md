@@ -4,9 +4,9 @@ milestone: v2.0
 milestone_name: Leaderboards
 current_phase: 999.1
 current_phase_name: PROMOTED → Phases 56 / 58 / 59
-status: planning
+status: executing
 stopped_at: v2.0 Phase 70 in flight (/gsd-autonomous --only 70), orchestrator resume note.
-last_updated: "2026-09-24T11:34:37.117Z"
+last_updated: "2026-09-24T12:19:38.220Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 70 complete, transitioned to Phase 999.1
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards st
 
 Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-24 — Phase 70 complete, transitioned to Phase 999.1
 
 ## Ground Truth (durable facts every session needs)
@@ -206,16 +206,18 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-24T04:10:00.000Z
-Stopped at: v2.0 Phase 70 in flight (/gsd-autonomous --only 70), orchestrator resume note.
+Last session: 2026-09-24T11:30:00.000Z
+Stopped at: v2.0 Phase 71 PLANNED, paused for the user's /compact BEFORE execution (user asked: "make sure we have time to compact after planning").
 
-- Phases 65–69 COMPLETE (VERIFICATION passed each). v2.0 audit written (.planning/v2.0-MILESTONE-AUDIT.md, tech_debt, 26/26) — the USER STOPPED the lifecycle there (no archive, no push). Resume the lifecycle (re-audit incl. Phase 70 → complete → cleanup → push) only after Phase 70 closes and the user agrees.
-- 2.0.0/vc9 AAB built + tagged v2.0.0-play9 (local, not pushed, not uploaded). Debug APK 2.0.0 installed on the Pixel 7 via adb install -r (same debug signer, save kept; phone had 1.8.0 debug). Device adb: %LOCALAPPDATA%/Android/Sdk/platform-tools/adb.exe, connected over wireless (mdns 10.0.0.175).
-- Phase 70 Device-Round Polish (POLISH-01..04, CONTEXT D-01..D-15, 4 plans / 3 waves) EXECUTING via /gsd-autonomous --only 70: 51h (POLISH-01 theme) merged c8e25d3; 70-01 (☰ pure layer) + 70-02 (LINEAGE race+sub, records per-lineage top 10, rail-centring .find bug fixed) merged; master 5174/5174. 70-03 (☰ shell wiring: account face, ACCOUNT block, SAVE & QUIT / two-tap ABANDON rows, band-2 chip + HERO Delve panel removed) RUNNING in a worktree. Then 70-04 (☰ opens everywhere incl. combat/Oracle/dead with context-disabled rows, HUD shown on DEAD tab (ruling R-B, user not yet asked to confirm), mid-encounter Save&quit resume test, POLISH-01 check, UAT section L). Quick plans 56z/5b8 were folded into 70-01..03, never executed on their own.
-- POLISH-01 theme loop: quick 260924-51h merged + recorded; debug APK with the theme is installed on the Pixel 7.
-- After Phase 70's last merge (D-15): npm test, rebuild debug APK (theme.mp3 now tracked, so no set-aside), adb install -r, fold device checks into docs/UAT-v2.0.md, 70-VERIFICATION, phase.complete 70. Then ask the user about the lifecycle and about re-cutting the AAB (vc9 not uploaded yet? ask).
-- Open user question: title-chip "?" face → person icon or SIGN IN label? (unanswered; leave as is).
-- Run conventions: gsd-executor in worktrees, one Agent per message; STOP the wtwatch Monitor before dispatching worktree agents, re-arm after; merge by hand (git merge --no-ff -q, git worktree remove -f -f, prune, branch -D); leftover locked worktree folders are harmless; worktree npm test shows 7 CRLF doc-ledger failures; bridge-doc --check fails on master only via CRLF.
+- v2.0 status: Phases 65–70 COMPLETE (VERIFICATION passed each; master npm test 5203/5203). The user STOPPED the milestone lifecycle after the first audit (.planning/v2.0-MILESTONE-AUDIT.md) — no archive, no push. Resume the lifecycle (re-audit incl. 70–71 → complete → cleanup → push master + tags) only when the user says.
+- Phase 70 Device-Round Polish DONE: title theme loop (quick 51h), ☰ = account face + ACCOUNT block + SAVE & QUIT / two-tap ABANDON, ☰ opens everywhere (HUD on the DEAD tab), LINEAGE race+sub selector (records keep per-lineage top 10). Known limitation → backlog 999.10 (relaunch clears a live fight/store). Debug APK with all of Phase 70 is installed on the Pixel 7.
+- Phase 71 Device-Round Polish II: 6 plans / 5 waves committed (c1f22fb), decision coverage 14/14, state.planned-phase run. NEXT: /gsd-autonomous --only 71 execution (state.begin-phase 71 first). Waves: w1 = 71-01 (sound CLIP_GAIN + MUSIC_GAIN 0.9 + MASTER/MUSIC/EFFECTS sliders) ∥ 71-02 (itemStatLines shared store/gear stats); w2 = 71-03 (foeConditions.js chip table for EVERY foe condition incl. hamstrung/marked — POLISH-09/D-14 — + combat action lock "HOLD · THE DICE ARE STILL OUT", tap-to-skip = existing beatHurryTap); w3 = 71-04 (long-press enemy details rail card + TalkBack Details); w4 = 71-05 (mock's "ROUND n · WHAT HAPPENED" strip; in-panel fight log leaves the middle, ruling R-19); w5 = 71-06 ("THE FIGHT SO FAR" full-log sheet + UAT section M + gates).
+- Mock: design/Mazeworld Combat Panel v2.dc.html + design/COMBAT-V2-NOTES.md (committed cf853b5; from claude.ai/design project fed8909e-…, DesignSync authorized via /design-login).
+- After 71's last merge (D-13): npm test, rebuild debug APK, adb install -r (keeps save), move closed todos to .planning/todos/done/ (71-01 sound, 71-02 gear stats, 71-04 long-press, 71-05 combat), 71-VERIFICATION, phase.complete 71.
+- User's Play Games setup: runbook docs/PLAY-GAMES-SETUP.md §6 given to the user (debug SHA-1 B5:94:1C:4F:1E:D4:90:99:F8:3D:E1:63:66:CD:71:38:9C:D3:58:89). When the user sends the APP_ID + five Season-1 leaderboard IDs: paste into android/app/src/main/res/values/games-ids.xml (game_services_project_id) and content/leaderboards.js LEADERBOARD_IDS[1], rebuild + install.
+- AAB: 2.0.0/vc9 built + tagged v2.0.0-play9 BEFORE Phases 70–71 (local, not uploaded, not pushed). A release with 70–71 and the real IDs needs a new AAB (vc10) — ask before building; never upload.
+- Open user questions: title-chip "?" face (keep vs person icon / SIGN IN) — unanswered.
+- Run conventions: gsd-executor in worktrees, one Agent per message; STOP the wtwatch Monitor before dispatching worktree agents, re-arm after (scratchpad wtwatch.sh <label> 30); merge by hand (git merge --no-ff -q; git worktree remove -f -f; prune; branch -D); worktree npm test shows 7 CRLF doc-ledger failures; bridge-doc --check fails on master only via CRLF (verify with an LF copy). ADB: %LOCALAPPDATA%/Android/Sdk/platform-tools/adb.exe (wireless, Pixel 7 connected).
 
 Resume file: None
 
