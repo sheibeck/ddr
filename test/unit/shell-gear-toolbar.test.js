@@ -194,7 +194,9 @@ test("UIF-05/Phase 57 (LAYOUT-04/05), Plan 05: the chip band is retired outright
   const wrapRuleMatch = HTML.match(/^\.mw-hud-menu-wrap\{[^}]*\}/m);
   assert.ok(wrapRuleMatch, ".mw-hud-menu-wrap rule found");
   assert.match(wrapRuleMatch[0], /position:relative/);
-  assert.match(wrapRuleMatch[0], /z-index:6/);
+  // Phase 70 D-08: the ☰ wrap sits above the encounter overlay (z 8) and
+  // its own scrim (z 9), so the dropdown opens over combat and death.
+  assert.match(wrapRuleMatch[0], /z-index:10/);
   // No other HUD-family rule (.mw-hud/.mw-hud-band2/.mw-hud-counters) may
   // declare a position — the menu wrap is the ONE positioned HUD element.
   for (const selector of [".mw-hud", ".mw-hud-band2", ".mw-hud-counters"]) {
