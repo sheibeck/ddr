@@ -2,7 +2,7 @@
 
 ## What This Is
 
-**Delve, Die, Repeat** (appId `com.darktierstudios.delvedierepeat`) is a premium (paid-upfront), fully-offline mobile roguelike dungeon-crawler for **Android (Google Play)**, adapting a fantasy tabletop RPG the author designed in 1994. As of v1.0 (2026-09-13) it is a native Capacitor app on a Google Play **internal-testing track** with real testers: a pure deterministic engine (`engine/`), a dark torch-lit mobile UX built from the Claude Design mock, endless descent, an NPC party system, a real loot economy, and the sarcastic Oracle voice. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
+**Delve, Die, Repeat** (appId `com.darktierstudios.delvedierepeat`) is a premium (paid-upfront), offline-first mobile roguelike dungeon-crawler for **Android (Google Play)**, adapting a fantasy tabletop RPG the author designed in 1994. As of v1.0 (2026-09-13) it is a native Capacitor app on a Google Play **internal-testing track** with real testers: a pure deterministic engine (`engine/`), a dark torch-lit mobile UX built from the Claude Design mock, endless descent, an NPC party system, a real loot economy, and the sarcastic Oracle voice. As of v2.0 (2026-09-24) it is published on Play as 2.0.0 (versionCode 10), with local personal-best leaderboards and opt-in Google Play Games global and friends boards. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
 
 **Tone & voice:** heavy sarcasm and dark humor — self-aware, deadpan, poking fun at fantasy-RPG tropes and at the player's own doomed adventurers — but kept **family-friendly** (no profanity, gore, or adult content; the darkness is in the wit, not the shock). Sarcasm is the through-line of every screen: death epitaphs, the "Oracle" log, item flavor, the tutorial. This voice is a core identity, not decoration.
 
@@ -52,6 +52,8 @@
 - ✓ **Shell debt & dead code retired** — v1.6 (classic engine gone from the shell; one worn-model path; honest names; Gear/Hero/Store as `src/browser/` modules behind one `__mzTabs` mount each with a 45-name bridge registry; stale-terms tripwire; perf baseline on device — `mazeworld.html` 8,710 → 5,682, tests 2,924 → 3,315, parity master untouched)
 - ✓ **Four-band difficulty curve** — v1.7 (initiative once per combat, honest foe cadence, smoothed damage curve, depth-capped Joiners, and a global difficulty model fitted by a fair bot: solo death floor p50 4 → 7, reach ≥ 5 33 % → 80.5 %; roster capped by a round-damage ceiling)
 - ✓ **Sound, motion & set dressing** — v1.8 (30 bundled clips with a real Sound Off; camera glide, panel motion, a readable combat beat and typed text, all with a reduced-motion path; the rail overlays the map; stacked HUD bands with a ☰ menu; an animated party sprite; seeded, non-interactive dungeon props; Pixel 7: cold start +5.1 %, step p95 improved, AAB +4.5 %; engine/content/parity byte-identical to v1.7)
+- ✓ **Leaderboards** — v2.0 (season-tagged run record + all-time personal bests in `engine/records.js`; the DEAD tab and VIEW THE DEAD are the mock's seven-board panel, fully offline; opt-in Play Games Services v2 via the vendored `@modbender/capacitor-play-games`, Compete toggle, seasoned global/friends boards, score-tag details, "you placed X" on death; zero network calls signed out or Compete off; Data Safety/privacy/PGS runbook reconciled; published as 2.0.0 / vc10)
+- ✓ **Device-round polish II** — v2.0 Phases 70–71 (title theme loop, ☰ as the account face opening everywhere with Save & quit / Abandon, race + sub-class LINEAGE, MASTER/MUSIC/EFFECTS volume, full gear stats on the Gear tab, combat input lock + visible round summary + THE FIGHT SO FAR, long-press enemy details)
 
 ### Active
 
@@ -72,10 +74,9 @@
 - ✓ **Spell rework** — v1.5 (utility useful, combat situational, Shield pool visible, timed map reveal, day-one damage spell for every wizard sub, scribed scrolls immediately castable)
 - ✓ **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
 - ✓ **Next tuning pass** — shipped as v1.7 (2026-09-22); the human curve verdict is deferred by the user to later plays, and the reach-20 miss (1.5 % vs 3–5 %) is recorded
-- [ ] **Pixel 7 UAT batches** — `docs/UAT-v1.9.md` (21 of 24 open), `docs/UAT-v1.8.md` (30 of 31 open; the user runs them over their own play sessions), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → quick tasks
+- [ ] **Pixel 7 UAT batches** — `docs/UAT-v2.0.md` (142 open; the user walks it over play sessions on the published 2.0.0 build), `docs/UAT-v1.9.md` (21 of 24 open), `docs/UAT-v1.8.md` (30 of 31 open), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → todos / quick tasks
 - ✓ **Gear screen UX redo** — v1.9 (Phases 62–63): slim AR/WILMST header, five fixed WORN rows, bag meter + tagged cards, per-type consumables, ALSO ON YOU, and one bottom action sheet for every equip/swap/unequip/use/drop (engine-true reasons, combat greying, back/TalkBack/reduced motion). Device batch `docs/UAT-v1.9.md`: 3/24 walked
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
-- [ ] **Leaderboards (v2.0, in progress)** — the mock's Leaderboards panel over local personal bests and the graveyard, plus opt-in Play Games Services v2 global/friends boards, a "you placed X" death card, the account chip in place of the cog, and the Data Safety / privacy / PGS-console compliance close
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
 
 ### Out of Scope
@@ -87,7 +88,7 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v2.0 Leaderboards (started 2026-09-23)
+## Last Milestone: v2.0 Leaderboards (shipped 2026-09-24 as Play 2.0.0 / vc10; device UAT spread over the user's play sessions)
 
 Scoped with the user on 2026-09-23, briefly parked, then started the same day. It will be run by `/gsd-autonomous`. Full record: `.planning/proposed-milestone-leaderboards.md` (§ "Decisions (user, 2026-09-23)"). Research: no milestone-level pass. The PGS integration phase is flagged for `gsd-phase-researcher`.
 
@@ -120,6 +121,8 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 - **The offline constraint relaxes only for opted-in players.** Signed out, the game makes zero network calls, and the whole local panel works in airplane mode.
 - **The LINEAGE board's global form** (per-combo boards vs. client-side grouping of fetched top scores vs. local-only) and the score-tag encoding are research questions. So is the choice of plugin: `@modbender/capacitor-play-games` vs `@openforge/capacitor-game-connect` vs `capacitor-google-game-services` vs vendoring one.
 - Research: `.planning/proposed-milestone-leaderboards.md` (SEED-001) carries the option table and the compliance checklist.
+
+**Outcome:** Phases 65–71 all passed and 38/38 requirements are complete. Phase 65 added the run record and bests: a season-tagged, hash-identified RunSummary and an all-time `ddr.bests.v1` record with a NEW PERSONAL BEST block. The zero-draw `state.acts` field was carved out of every comparable. Phase 66 made the DEAD tab and VIEW THE DEAD the offline Leaderboards panel and deleted the classic graveyard screen. Phases 67–68 added opt-in Play Games Services v2: `@modbender/capacitor-play-games` was vendored, Compete is ON by default, and turning it OFF means the SDK is never initialized. Scores are queued and submitted per board and season, the panel has ALL/FRIENDS rows (the LINEAGE global form groups a top-25 DEEPEST sample on the client), and the death card gets "you placed X". Phase 69 closed compliance and the PGS runbook. Two device-round polish phases (70–71, POLISH-01..12) came out of the user's Pixel 7 sessions. The live APP_ID and Season-1 board IDs went in by quick task 260924-c14, and 2.0.0 (10) was published. **Milestone closed 2026-09-24 as an override closeout.** The 142-row UAT batch is deferred to play sessions, and three post-ship findings are captured as todos.
 
 **Out of this milestone:** tombstone share (`@capacitor/share` + canvas PNG, deferred to a later milestone), our own backend, networked multiplayer, the first-run tutorial (UX-06) and the Play production launch.
 
@@ -301,6 +304,10 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
+## Current State (2026-09-24, v2.0 Leaderboards shipped; next milestone not yet chosen)
+
+**Published, device UAT spread over play sessions:** v2.0 "Leaderboards" (Phases 65–71) is live on Play as 2.0.0 / versionCode 10 (tag `v2.0.0-play10`): personal bests, the seven-board Leaderboards panel, opt-in Play Games global/friends boards with "you placed X", and two device-round polish passes. Signed out or Compete off, the game is still fully offline. Open device batches: UAT-v2.0 (142), v1.9 (21), v1.8 (30), v1.7 (25 + DR bar), v1.6 (26), v1.5 (140). Post-ship todos (2026-09-24): the volume slider scrubs on a sheet drag, the last fight-log row won't reveal its roll, and the stairs fade-to-black request. Next: `/gsd-new-milestone` (candidates: the v1.0 launch tail — the UX-06 tutorial and production launch — the narrative pass todo, or the 999.x backlog).
+
 ## Current State (2026-09-23, v1.9 The Gear Screen closed; next milestone not yet chosen)
 
 **Code-complete, device UAT spread over play sessions:** v1.9 "The Gear Screen" (Phases 61–64) rebuilt the Gear tab to the user's mock and closed two gear-rule holes: no re-arming mid-fight, and store buys that vanished. The engine changed only in Phase 61, with zero new rng draws and one declared fixture. Play 1.9.0 / versionCode 8 is built and tagged `v1.9.0-play8` for closed testing (the user uploads it by hand). Open device batches: UAT-v1.9 (21), v1.8 (30), v1.7 (25 + DR bar), v1.6 (26), v1.5 (140). New todos: Sense Presence initiative / dark penalties, and the text-size setting missing every `--mw-font-*` token.
@@ -393,6 +400,11 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 | The HUD chip strip was retired for a ☰ menu on the counters band, per the user's mock; the shipped PNG icons stay, and the mock's icons are used only inside the ☰ menu — Phase 57, 2026-09-22 (user) | Too many buttons and too many top rails; the mock folds them into one control and saves a band | ✓ Landed in 57-05; LAYOUT-04/05 amended; a ~34 px Rations clip at text size L was accepted |
 | Combat HUD `paint()` deferred until the beat settles, so the top HP bar doesn't give the outcome away; the beat's final hero-HP frame is pinned to the true after-state — Phase 58 + post-close fix, 2026-09-22 | A readable exchange-by-exchange round should not be spoiled by the HUD, and must never overstate survival | ✓ `42f0f8d`, with a regression test that failed before the fix; mid-round frames on folded multi-hit lines can still briefly under-count (tracked) |
 | Device UAT for v1.8 spread over the user's own play sessions instead of one sitting — 2026-09-22 (user) | "Generally everything looks good… I'll uat over playing several sessions and report back" | — Pending: 30 of 31 checks open in `docs/UAT-v1.8.md` |
+| Opt-in PGS v2 via the vendored `@modbender/capacitor-play-games`; Compete ON by default on a fresh install, OFF = SDK never initialized, zero network calls — v2.0 Phase 67, 2026-09-23 (user + research) | The user's 2026-09-17 ruling (auto sign-in, opt-out-able, non-blocking); PGS v2 has no programmatic sign-out, so "Stop competing" replaces it | ✓ Good — shipped in 2.0.0 (10); on-device sign-in checks in UAT-v2.0 |
+| Seasons from day one: every run summary and board carries the rules/season version; personal bests stay all-time locally, tagged by season — v2.0, 2026-09-17 (user) | A balance change must never poison the all-time boards | ✓ Good — Season-1 board IDs live |
+| Global display name = the Play Games profile name; adventurer name + epitaph ride in the 64-char score tag and the local graveyard — v2.0, 2026-09-17 (user) | No adventurer-name composite on public boards | ✓ Good |
+| LINEAGE's global form = client-side grouping of a top-25 DEEPEST sample (the plugin binds no paging) — v2.0 Phase 68; the board ranks race + sub-class since Phase 70 | No per-combo board explosion in Play Console | — Revisit if the sample proves too thin |
+| v2.0 closed on publish with the 142-row device batch spread over the user's play sessions — 2026-09-24 (user) | "We are published and I'll keep testing, but I think we can wrap up the milestone" | — Pending: `docs/UAT-v2.0.md` |
 
 ## Evolution
 
@@ -412,4 +424,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-23 — milestone v2.0 Leaderboards started (un-parked; to run under /gsd-autonomous)*
+*Last updated: 2026-09-24 after v2.0 milestone (Leaderboards shipped as Play 2.0.0 / vc10)*

@@ -2,36 +2,36 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Leaderboards
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
-status: planning
-stopped_at: "v2.0 Phase 71 COMPLETE; debug APK on the Pixel 7; milestone lifecycle paused by the user."
-last_updated: "2026-09-24T15:32:20.845Z"
+status: Awaiting next milestone
+stopped_at: "v2.0 Leaderboards CLOSED 2026-09-24 (override closeout); published as Play 2.0.0 / vc10; next: /gsd-new-milestone"
+last_updated: "2026-09-24T19:11:03.071Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 71 complete, transitioned to Phase 999.1
+last_activity_desc: Milestone v2.0 completed and archived
 progress:
   total_phases: 7
   completed_phases: 7
   total_plans: 43
   completed_plans: 43
   percent: 100
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards started; v1.9 closed and tagged; Play 1.9.0 / vc8 built for closed testing; open Pixel 7 UAT batches: v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as Play 2.0.0 / vc10 and archived; open Pixel 7 UAT batches: v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 71 — Device-Round Polish II
+**Current focus:** Between milestones — start the next with /gsd-new-milestone
 
 ## Current Position
 
-Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-24 — Phase 71 complete, transitioned to Phase 999.1
+Phase: Milestone v2.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-24 — Milestone v2.0 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -139,6 +139,20 @@ detail; the backlog phases are the index.
 
 ## Deferred Items
 
+Items acknowledged and deferred at milestone close on 2026-09-24 (v2.0 override closeout: 7/7 phases `passed`, 38/38 requirements; audit `tech_debt` with zero blockers; the user said "We are published and I'll keep testing, but I think we can wrap up the milestone"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | docs/UAT-v2.0.md: 142 rows open, including F1 (RELEASE-BLOCKING Compete-OFF capture) and 0.8 (diagnostics decision) | the user walks it over play sessions on the published 2.0.0 (10) |
+| uat | UAT-v1.9 (21), v1.8 (30), v1.7 (25 + DR bar), v1.6 (26), v1.5 (140) | carried |
+| debug | trap-death-21hp-oracle-minus1 | awaiting_human_verify (unchanged since v1.8) |
+| todo | 22 pending, including 3 new post-ship findings (volume slider drag-scrub, last fight-log row, stairs fade-to-black) | .planning/todos/pending/ |
+| quick_task | 260924-56z, 260924-5b8 | superseded: absorbed into Phase 70 as draft plans |
+| quick_task | rules-text-audit-pass (20260909), 260908-kkq-rename-product-… | v1.0-era stubs, re-acknowledged |
+| follow-up | AGP 9 blocked by the plugin's Kotlin; `.gitattributes eol=lf`; leftover `.claude/worktrees/` folders | quick tasks |
+
+### Earlier: v1.9 close
+
 Items acknowledged and deferred at milestone close on 2026-09-23 (v1.9 override closeout: 4/4 phases `passed`, 15/16 requirements plus GSCR-12 partial; audit `tech_debt` with zero blockers; the user said "close out the milestone"):
 
 | Category | Item | Status |
@@ -211,8 +225,10 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-24T11:30:00.000Z
-Stopped at: v2.0 Phase 71 COMPLETE (8/8 plans, VERIFICATION passed); debug APK installed on the Pixel 7; milestone lifecycle still paused by the user.
+Last session: 2026-09-24T19:30:00.000Z
+Stopped at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
+
+- (history below is the pre-close record)
 
 - v2.0 status: Phases 65–71 COMPLETE (VERIFICATION passed each; master npm test 5483/5483). The user STOPPED the milestone lifecycle after the first audit (.planning/v2.0-MILESTONE-AUDIT.md, written before 70–71) — no archive, no push. Resume the lifecycle (re-audit incl. 70–71 → complete → cleanup → push master + tags) only when the user says.
 - Phase 70 Device-Round Polish DONE: title theme loop (quick 51h), ☰ = account face + ACCOUNT block + SAVE & QUIT / two-tap ABANDON, ☰ opens everywhere (HUD on the DEAD tab), LINEAGE race+sub selector (records keep per-lineage top 10). Known limitation → backlog 999.10 (relaunch clears a live fight/store). Debug APK with all of Phase 70 is installed on the Pixel 7.
@@ -227,7 +243,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Run /gsd-plan-phase 65 to begin the milestone, or /gsd-autonomous to run Phases 65–69 end to end
+- Start the next milestone with /gsd-new-milestone
 
 ## Performance Metrics
 

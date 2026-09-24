@@ -1,14 +1,36 @@
 # Milestones
 
+## v2.0 Leaderboards (Shipped: 2026-09-24; Play 2.0.0 / vc10 published; device UAT spread over the user's play sessions)
+
+**Closeout type:** override closeout (open artifacts acknowledged). 38/38 requirements complete, 7/7 phases `passed`, audit `tech_debt` with zero blockers (`.planning/milestones/v2.0-MILESTONE-AUDIT.md`). The user published 2.0.0 (versionCode 10, tag `v2.0.0-play10`) and closed the milestone: *"We are published and I'll keep testing, but I think we can wrap up the milestone."* The 142-row Pixel 7 batch `docs/UAT-v2.0.md` goes into their play sessions. Known verification overrides: the deferred UAT batch, 1 debug session, 22 pending todos and 2 v1.0-era quick-task stubs (see STATE.md Deferred Items).
+**Phases completed:** 7 phases (65–71), 43 plans. **Timeline:** 2026-09-23 → 2026-09-24. **Git:** 338 commits since `v1.9`; 163 non-planning files changed, +35,521 / −1,047.
+
+**Key accomplishments:**
+
+- **Run record and personal bests (Phase 65).** Every death records a season-tagged RunSummary with a hash identifier. Deaths fold into a durable all-time `ddr.bests.v1` record, which lives in the pure `engine/records.js` (an FNV-1a run hash and one shared seven-board ordering table). A new `state.acts` counter was added with zero parity-fixture footprint. THAT IS THAT shows a gold NEW PERSONAL BEST block.
+- **Local Leaderboards panel (Phase 66).** The DEAD tab and the title's VIEW THE DEAD became the mock's seven-board Leaderboards panel. It is driven by one pure `boardsView` view model and runs fully offline. The classic graveyard screen and its loader were deleted.
+- **Play Games Services v2 (Phases 67–68).** Sign-in is opt-in and never blocks play, and there is a Compete toggle. Deaths submit scores to seasoned global boards, with the adventurer name and epitaph carried in the score tag. The panel has ALL/FRIENDS views, and the death card gets a ranked "you placed X" quip. Signed out or with Compete off, the game makes zero network calls.
+- **Compliance and release (Phase 69).** The privacy text, Data Safety answers and Play Console PGS runbook are reconciled. The live APP_ID and the five Season-1 board IDs are in (quick 260924-c14). The signed 2.0.0 (10) AAB was published.
+- **Device-round polish (Phases 70–71).** The title theme loops from launch through the roller. The ☰ shows the account avatar, opens everywhere, and holds the account, Save & quit and Abandon rows. The LINEAGE board ranks by race and sub-class. Players can set MASTER/MUSIC/EFFECTS volume. The Gear tab shows full item stats. Combat locks input and keeps the round summary visible while a round plays, and THE FIGHT SO FAR sheet shows the whole fight. Long-pressing an enemy shows its details.
+
+### Known Gaps
+
+- None in requirements. Still open from the first audit: F1, the RELEASE-BLOCKING Compete-OFF cold-boot network capture (the vendored plugin initializes Google's SDK at every launch, even with Compete OFF), the 0.8 diagnostics decision, and AGP 9 blocked upstream by the plugin.
+- Device UAT (142 rows) is deferred to the user's play sessions. Post-ship findings are captured as todos: the volume slider scrubs on a sheet drag, the last fight-log row won't reveal its roll, and the stairs fade-to-black request.
+
+---
+
 ## v1.9 The Gear Screen (Code-complete: 2026-09-23; Play 1.9.0 / vc8 built for closed testing; device UAT 3/24 walked)
 
 **Closeout type:** override closeout. 15/16 requirements are complete. GSCR-12 (the Pixel 7 batch) is partial: A1–A3 passed in-session over wireless adb, and the other 21 checks are deferred to the user's play sessions (`docs/UAT-v1.9.md`). 4/4 phases `passed`; the audit is `tech_debt` with zero blockers. Known verification overrides: 1 (Phase 64 criteria 1–3 checklisted, not yet walked; see STATE.md Deferred Items).
 **Phases completed:** 4 phases, 14 plans, 28 tasks. **Timeline:** 2026-09-23 (one autonomous run). **Tests:** 3,905 → 4,197 green. **Engine Gate:** `engine/` changed in three files (`items.js`, `economy.js`, `derived.js`, all Phase 61) with zero new rng draws. `content/` and `prototype-master.js.txt` are untouched. Exactly one parity fixture moved (economy), declared.
 
 ### Known Gaps
+
 - **GSCR-12:** the device batch covering every sheet path, a full bag, staff charges, cooldowns, the combat lock and reduced motion. 3 of 24 checks walked; the rest are deferred to play sessions.
 
 **Ratified during the run:**
+
 - STORE-03 was reworded: the "not an upgrade" verdict is true (the Spiked Staff is `need: -1`, and Magic User kits carry prof 0), so the line now explains itself rather than changing the math.
 - GSCR-01 was reworded: a slim ARMOR RATING / WILMST header, because the global HUD already names the hero.
 - The combat lock also covers the loot/find take verbs (planner decision, reversible).
