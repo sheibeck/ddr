@@ -19,6 +19,15 @@
 // There is no window/document global, no storage except through the injected
 // settings functions, and no network.
 
+import {
+  ACCOUNT_STATUS,
+  normalizeAccountState,
+  accountCard,
+  accountIdentity,
+  accountChipView,
+  accountSheetView,
+} from "./account.js";
+
 /**
  * ACCOUNT_CLASSES — every class name the renderers emit. 67-05's CSS test
  * (test/unit/account-layout.test.js) pins this exact list and asserts each
@@ -155,4 +164,249 @@ export function renderAccountSheet({ rows, title } = {}, view, handlers = {}) {
   children.push(settings);
 
   rows.replaceChildren(...children);
+}
+
+// ═══════════════════════ Task 2: the controller ═══════════════════════════
+
+/** Read one field of an arbitrary value; a hostile getter reads as undefined. */
+function field(obj, key) {
+  if (obj === null || typeof obj !== "object") return undefined;
+  try {
+    return obj[key];
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * createAccountController({ provider, settings, notify, timeoutMs, setTimer,
+ * clearTimer }) — the one place every account behaviour is decided.
+ *
+ *   provider  a Play Games provider (src/browser/playGames.js); only its
+ *             init() (silent) and signIn() (interactive) are ever called.
+ *   settings  { read, write }: the shell passes readSettings/writeSetting.
+ *             Only the `compete` and `pgsWelcomed` keys are ever written; the
+ *             player's id and display name live in memory for the session.
+ *   notify    notify(card) receives an accountCard object; the shell hands it
+ *             to the rail (never a modal).
+ *   timeoutMs the silent attempt's timeout (default 20000). The interactive
+ *             attempt has none: the player is looking at Google's prompt.
+ *
+ * Returns a frozen { boot, signIn, setCompete, stopCompeting, state,
+ * identity, chipView, sheetView, subscribe }. No method ever throws or
+ * rejects.
+ *
+ * - boot() (D-01/D-02), memoized: reads the settings; with Compete OFF it
+ *   shows "off" and touches no provider method at all; with Compete ON it
+ *   starts the silent attempt WITHOUT awaiting it, so the shell never waits
+ *   on sign-in.
+ * - A success signs in; the first ever success also persists pgsWelcomed and
+ *   raises the welcome card (D-04). A failure, decline, throw, rejection or
+ *   the silent timeout signs out and raises one failed card; nothing is
+ *   scheduled after it (D-11): the next automatic attempt is the next launch
+ *   and a manual retry comes only from signIn().
+ * - One attempt at a time: signIn() runs only from "signedOut" with Compete
+ *   ON. Every attempt carries a token; a result arriving after a newer
+ *   attempt began, after Compete went OFF or after its own timeout fired is
+ *   dropped. Compete OFF always wins.
+ * - setCompete(value) is idempotent; false is Stop competing (D-03): it
+ *   persists Compete OFF, invalidates any in-flight attempt and shows the
+ *   nobody chip. No sign-out is called (the provider has none). Only true
+ *   (or the string "true") turns Compete on.
+ * - subscribe(fn) hears every state change (the shell re-renders the chips,
+ *   the sheet and the Leaderboards panel; Phase 68 purges its queue on
+ *   Compete OFF). A throwing listener never breaks the others.
+ */
+export function createAccountController({
+  provider,
+  settings,
+  notify,
+  timeoutMs = 20000,
+  setTimer = setTimeout,
+  clearTimer = clearTimeout,
+} = {}) {
+  let current = normalizeAccountState({ compete: true, status: ACCOUNT_STATUS.PENDING });
+  let seq = 0; // attempt token: bumping it invalidates any in-flight attempt
+  let booted = null; // boot()'s memoized promise
+  let welcomed = false; // mirrors the persisted pgsWelcomed flag
+  let userSet = false; // setCompete ran: the player's choice outranks a late settings read
+  let cancelTimeout = () => {}; // clears the in-flight silent attempt's timer
+  const listeners = new Set();
+
+  function emit(patch) {
+    current = normalizeAccountState({
+      compete: current.compete,
+      status: current.status,
+      player: current.player,
+      ...patch,
+      welcomed,
+    });
+    for (const fn of [...listeners]) {
+      try {
+        fn(current);
+      } catch {
+        // a broken listener never breaks the others or the controller
+      }
+    }
+  }
+
+  function persist(key, value) {
+    try {
+      Promise.resolve(settings.write(key, value)).catch(() => {});
+    } catch {
+      // storage trouble never breaks the account flow
+    }
+  }
+
+  function raise(kind) {
+    try {
+      notify?.(accountCard(kind));
+    } catch {
+      // a rail failure never breaks the account flow
+    }
+  }
+
+  function apply(result) {
+    if (field(result, "signedIn") === true) {
+      const firstTime = !welcomed;
+      welcomed = true;
+      emit({ status: ACCOUNT_STATUS.SIGNED_IN, player: field(result, "player") ?? null });
+      if (firstTime) {
+        persist("pgsWelcomed", true);
+        raise("welcome");
+      }
+      return;
+    }
+    emit({ status: ACCOUNT_STATUS.SIGNED_OUT, player: null });
+    raise("failed");
+  }
+
+  /**
+   * run(kind) — calls the provider once ("silent" → init(), "interactive" →
+   * signIn()) and settles the attempt. The state must already read pending.
+   * Resolves when the attempt settles (applied or dropped); never rejects.
+   */
+  function run(kind) {
+    const token = ++seq;
+    cancelTimeout();
+    let settled = false;
+    let timer = null;
+    let done;
+    const finished = new Promise((resolve) => {
+      done = resolve;
+    });
+
+    const clear = () => {
+      if (timer === null) return;
+      const t = timer;
+      timer = null;
+      try {
+        clearTimer(t);
+      } catch {
+        // a broken timer never breaks the account flow
+      }
+    };
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clear();
+      if (token === seq && current.compete) apply(result);
+      done();
+    };
+
+    if (kind === "silent") {
+      try {
+        timer = setTimer(() => {
+          timer = null;
+          finish(null);
+        }, timeoutMs);
+      } catch {
+        timer = null;
+      }
+      cancelTimeout = clear;
+    } else {
+      cancelTimeout = () => {};
+    }
+
+    let call;
+    try {
+      call = kind === "silent" ? provider.init() : provider.signIn();
+    } catch {
+      call = null;
+    }
+    Promise.resolve(call).then(finish, () => finish(null));
+    return finished;
+  }
+
+  function attempt(kind) {
+    emit({ status: ACCOUNT_STATUS.PENDING, player: null });
+    return run(kind);
+  }
+
+  function boot() {
+    if (booted) return booted;
+    booted = (async () => {
+      let stored = null;
+      try {
+        stored = await settings.read();
+      } catch {
+        stored = null;
+      }
+      welcomed = welcomed || field(stored, "pgsWelcomed") === true;
+      if (userSet) return; // the player already chose while the settings were loading
+      if (field(stored, "compete") === false) {
+        emit({ compete: false, status: ACCOUNT_STATUS.OFF, player: null });
+        return;
+      }
+      attempt("silent"); // deliberately not awaited (D-01: never blocks boot)
+    })();
+    return booted;
+  }
+
+  function signIn() {
+    if (!current.compete || current.status !== ACCOUNT_STATUS.SIGNED_OUT) return Promise.resolve();
+    return attempt("interactive");
+  }
+
+  function setCompete(on) {
+    const value = on === true || on === "true";
+    userSet = true;
+    if (value === current.compete) return;
+    if (!value) {
+      seq += 1; // invalidates any in-flight attempt: Compete OFF always wins
+      cancelTimeout();
+      cancelTimeout = () => {};
+      emit({ compete: false, status: ACCOUNT_STATUS.OFF, player: null });
+      persist("compete", false);
+      return;
+    }
+    emit({ compete: true, status: ACCOUNT_STATUS.PENDING, player: null });
+    persist("compete", true);
+    run("silent");
+  }
+
+  function stopCompeting() {
+    setCompete(false);
+  }
+
+  function subscribe(fn) {
+    if (typeof fn !== "function") return () => {};
+    listeners.add(fn);
+    return () => {
+      listeners.delete(fn);
+    };
+  }
+
+  return Object.freeze({
+    boot,
+    signIn,
+    setCompete,
+    stopCompeting,
+    state: () => current,
+    identity: () => accountIdentity(current),
+    chipView: () => accountChipView(current),
+    sheetView: () => accountSheetView(current),
+    subscribe,
+  });
 }
