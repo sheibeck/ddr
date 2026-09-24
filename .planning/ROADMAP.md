@@ -242,13 +242,14 @@ Plans:
 
 **Goal**: The second batch of Pixel 7 feedback on the 2.0.0 build lands in v2.0: sounds are balanced and player-adjustable, a gear item shows its full stats wherever it is opened, combat stops accepting taps it cannot act on and keeps the round summary in view, and any enemy can be inspected with a long press.
 **Depends on**: Phase 70 (user device feedback 2026-09-24)
-**Requirements**: POLISH-05, POLISH-06, POLISH-07, POLISH-08
+**Requirements**: POLISH-05, POLISH-06, POLISH-07, POLISH-08, POLISH-09
 **Success Criteria** (what must be TRUE):
 
   1. Each sound effect has its own level in one tunable table (death quieter, steps louder than today), the title theme is louder, and the Settings sheet shows MASTER, MUSIC and EFFECTS sliders under Sound only while Sound is on; levels persist and apply live
   2. Tapping an item on the Gear tab shows the same full stat set the store shows for it, from one shared formatter
   3. While a combat round is playing out, the action buttons are visibly unavailable and taps never queue; a tap skips the playback to the round's result; with several foes the latest round summary stays visible above the actions without covering the fight
   4. Long-pressing an enemy raises one dismissible rail card with its details (family, HP, defence, attack, abilities, resistances, current effects, a flavour line) without triggering a normal tap; TalkBack gets a Details action
+  5. Every condition an ability, spell or item puts on an enemy (Hamstring, Mark and the rest) shows as a chip on that enemy while it lasts
 **Plans**: TBD
 
 <details>

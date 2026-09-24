@@ -13,6 +13,8 @@
 
 Four presentation fixes on the finished v2.0 build: sound balance and volume controls, full gear stats on the Gear tab, combat input lock plus round-summary visibility, and long-press enemy details. Engine rules, content balance and network behaviour are unchanged.
 
+**Round summary design:** D-07's band follows the user's updated mock, "Mazeworld Combat v2.dc.html" (claude.ai/design project fed8909e-860d-496e-9d31-04dd31f14a3c, which imports ios-frame.jsx and support.js). The orchestrator imports it into `design/` before the round-summary plan executes.
+
 **Not in this phase:** the combat/store relaunch gap (backlog 999.10), the milestone close (paused by the user), and any new sounds or assets.
 
 </domain>
@@ -53,6 +55,14 @@ Four presentation fixes on the finished v2.0 build: sound balance and volume con
 - **D-10 — Rail rules:** it's a no-decision card, so a body tap dismisses it. It holds until dismissed while in combat, otherwise it uses the normal RAIL_HOLD. It never appears over the title or roller, and a new long press replaces it.
 - **D-11 — Accessibility:** foe cards expose a "Details" accessible action that raises the same card, for TalkBack users.
 - **D-12 — Pure view model:** tested for every bestiary family and for a malformed or unknown foe. New copy is registered in the voice safety and HP-not-WP scans.
+
+### Enemy condition chips for every ability and spell (POLISH-09)
+- **D-14 — Every foe-affecting condition shows as a chip:** user report (2026-09-24): "the hamstring ability doesn't show up on enemies as a condition chit. Let's make sure conditions from all abilities, spells show up on enemies when affected."
+  - `foeStatusBadges(f)` (`mazeworld.html` ~L3621) is a hand-written list that misses at least `t.hamstrung` (Hamstring) and `t.marked` (Mark), and likely the Pommel / Dirty Trick effects (`engine/abilities.js` apply* functions).
+  - Enumerate every foe-state field the engine sets from an ability, a spell or an item: `engine/abilities.js`, `engine/magic.js` and `engine/combat.js`, plus the combat-wide flags like `S.combat.weakened`. Move the chip mapping into ONE pure table in `src/browser/` (label, tone, optional rounds), and have `foeStatusBadges` / `chipsFor` read it.
+  - Add a coverage test that fails if any foe-affecting effect key the engine can set has no chip entry: scan the engine's assignments to foe fields, or keep an explicit, pinned list next to the apply* functions.
+  - Chip wording follows the house style ("Hamstrung", "Marked", with rounds where the effect is timed). Tones follow the existing convention: a foe debuff is "good" for the player. Any chip content for these conditions matches D-09's long-press card, which reads from the same table.
+  - Presentation only, engine untouched.
 
 ### Close-out
 - **D-13 — Device build:** after the last plan merges, the orchestrator rebuilds the debug APK and installs it on the Pixel 7 with `adb install -r` (keeps the save), and every Phase 71 device check is folded into `docs/UAT-v2.0.md` as a new section M. Each source todo moves to `.planning/todos/done/` when its plan lands.

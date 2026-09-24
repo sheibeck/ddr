@@ -65,6 +65,7 @@
 - [ ] **POLISH-06**: Opening an item from the Gear tab shows the same full stat set the store shows for that item, built from one shared formatter.
 - [ ] **POLISH-07**: While a combat round plays out, the actions are visibly unavailable, taps never queue, and a tap skips to the round's result; with several foes the latest round summary stays visible above the actions without being intrusive.
 - [ ] **POLISH-08**: Long-pressing an enemy raises one dismissible rail card with its details, never also firing the normal tap; TalkBack users get an equivalent Details action.
+- [ ] **POLISH-09**: Every condition an ability, spell or item puts on an enemy (Hamstring, Mark and the rest) shows as a condition chip on that enemy while it lasts, from one table, with a test that fails if a new foe effect has no chip.
 
 ## Future Requirements
 
@@ -123,11 +124,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | POLISH-06 | Phase 71 | Pending |
 | POLISH-07 | Phase 71 | Pending |
 | POLISH-08 | Phase 71 | Pending |
+| POLISH-09 | Phase 71 | Pending |
 
 **Coverage:**
 
-- v2.0 requirements: 34 total
-- Mapped to phases: 34
+- v2.0 requirements: 35 total
+- Mapped to phases: 35
 - Unmapped: 0 ✓
 
 ---
