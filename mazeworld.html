@@ -200,7 +200,7 @@ h1{
   display:flex;justify-content:space-between;align-items:baseline;gap:8px;
 }
 /* DR13: the small gold count/meta on the right of panel headers was too small
-   to read — bumped up across panels (see also .mw-overlay/.yard-head h2 span). */
+   to read — bumped up across panels (see also .mw-overlay). */
 .panel h2 span{font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:var(--ditto)}
 
 /* ---------- character sheet ---------- */
@@ -956,30 +956,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
   .v-side{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
 }
 
-/* ---------- graveyard ---------- */
-.yard-wrap{margin-top:28px;border-top:2px solid var(--ink);padding-top:14px}
-.yard-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
-.yard-head h2{font-family:var(--disp);font-size:15px;letter-spacing:.2em;text-transform:uppercase;margin:0;color:var(--ink-soft)}
-.yard-head h2 span{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--ditto);margin-left:10px}
-.yard{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px}
-.yard-empty{grid-column:1/-1;font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0;padding:18px 0;border-top:1px dotted var(--rule);border-bottom:1px dotted var(--rule)}
-.stone{
-  background:var(--paper-2);
-  border:1px solid var(--rule);
-  border-radius:38% 38% 2px 2px / 52px 52px 2px 2px;
-  border-top-width:2px;border-top-color:var(--ink-soft);
-  padding:26px 16px 14px;
-  display:flex;flex-direction:column;gap:6px;
-  box-shadow:var(--shadow);
-}
-.stone-name{font-family:var(--disp);font-size:17px;line-height:1.15;margin:0;text-align:center;color:var(--ink)}
-.stone-sub{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ditto);margin:0;text-align:center}
-.stone-note{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--stamp);margin:2px 0 0;text-align:center}
-.stone-ep{font-family:var(--body);font-style:italic;font-size:14.5px;line-height:1.4;color:var(--ink-soft);margin:4px 0 2px;text-align:center;text-wrap:balance}
-.stone-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 4px;margin:auto 0 0;padding-top:10px;border-top:1px dotted var(--rule)}
-.stone-stats div{text-align:center}
-.stone-stats dt{font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft)}
-.stone-stats dd{font-family:var(--mono);font-size:13px;margin:1px 0 0;font-variant-numeric:tabular-nums;color:var(--ink)}
 .lastwords{border-top:1px dotted var(--rule);margin:0 0 14px;padding-top:10px;display:flex;flex-direction:column;gap:5px;text-align:left}
 .lastwords p{font-family:var(--mono);font-size:11.5px;line-height:1.45;color:var(--ink-soft);margin:0}
 .epitaph{font-family:var(--body)!important;font-style:italic;font-size:15px!important;color:var(--ink-soft);text-wrap:balance;margin:0 0 14px!important}
@@ -1317,8 +1293,6 @@ body[data-boards-entry="title"] #mw-rail{display:none}
 .mw-empty{padding:22px 6px;text-align:center}
 .mw-empty-head{display:block;font-family:var(--disp);font-size:12px;letter-spacing:.06em;color:var(--ink);margin:0 0 8px}
 .mw-empty-body{display:block;font-family:var(--body);font-style:italic;font-size:13px;color:var(--ink-soft)}
-.mw-error .mw-empty-head{color:var(--stamp)}
-.yard-loading{grid-column:1/-1;font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:0;padding:18px 0;text-align:center}
 
 /* ---------- title / start screen (DR2; revised 04-DR3; RESUME removed
    device-review Pass B1 item 1) ----------
@@ -2084,17 +2058,10 @@ body[data-boards-entry="title"] #mw-rail{display:none}
       </section>
     </section>
 
-    <!-- DEAD — graveyard presentation shell (data wiring is Phase 5) -->
-    <section class="mw-screen" id="screen-dead" data-screen="dead" hidden>
-      <section class="yard-wrap">
-        <div class="yard-head">
-          <!-- audit-batch E12 (part 3): the "Clear the graveyard" button was
-               removed — the running total is non-clearable by design now. -->
-          <h2>The graveyard <span id="yard-count"></span></h2>
-        </div>
-        <div class="yard" id="yard"><p class="yard-loading">Consulting the ledger…</p></div>
-      </section>
-    </section>
+    <!-- DEAD — Phase 66 (BOARD-01, D-14): the Leaderboards panel mounts
+         here, rendered by src/browser/boardsPanel.js through
+         window.__mzBoards. -->
+    <section class="mw-screen" id="screen-dead" data-screen="dead" hidden></section>
 
   </main>
 
@@ -2322,23 +2289,13 @@ let mwActiveTab = "maze";
     // assigns the bridge (a harmless no-op then). The viewport rect is
     // non-zero here because the screen was un-hidden two statements earlier.
     if (name === "maze") window.mzKeepPartyInView?.();
-    // E9 (04.2 Bugs B): re-fetch the graveyard from storage every time the Dead
-    // tab is opened. The Dead screen renders from the classic in-memory `graves`
-    // array, which is only synced from storage at BOOT (loadGraves() inside
-    // window.__mzClassicBoot). Every LIVE death now flows through the engine
-    // adapter (window.move / engineCombatAction -> dispatch ->
-    // engineAdapter.persistGrave), which durably writes the tombstone to
-    // GRAVE_KEY but never touches this classic in-memory list or re-renders the
-    // Dead screen — so a just-died character was invisible on the Dead tab until
-    // the next app reboot (the reported bug: a dead Con Artist never appeared).
-    // loadGraves()/renderGraves() are hoisted classic-script function
-    // declarations (defined further down, same script scope), so they resolve at
-    // click time; the async persistGrave write has long settled by the time the
-    // player taps over to the Dead tab. Presentation-only re-read — no GameState
-    // touched.
-    if (name === "dead" && typeof loadGraves === "function" && typeof renderGraves === "function") {
-      loadGraves().then(() => renderGraves()).catch(() => {});
-    }
+    // Phase 66 (BOARD-01, D-02/D-04/D-15): the DEAD tab opens the
+    // module-owned Leaderboards panel, which reads the adapter's in-memory
+    // bests and graveyard synchronously (a death is already folded in by the
+    // time the tab opens), so there is no storage re-fetch here any more.
+    // Optional-chained because the initial showTab("maze") runs before the
+    // module script assigns window.__mzBoards.
+    if (name === "dead") window.__mzBoards?.onDeadTab?.();
   }
   for (const btn of tabs) btn.addEventListener("click", () => showTab(btn.dataset.tab));
   showTab("maze");
@@ -3345,79 +3302,6 @@ async function saveGraves() {
   try { await window.mzStorage.setItem(GRAVE_KEY, JSON.stringify(graves.slice(0, 60))); } catch (e) {}
 }
 /* @gsd:dual-write-convergence-extract:graves:end */
-// DR18 (DR15-C): read-only bridge so the trailing <script type="module">'s
-// title-screen code can gate its "View the Dead" entry on a non-empty
-// graveyard. gravesTotal/graves are classic-script top-level `let`s, invisible
-// to the module scope (mirrors window.__mzState's accessor pattern). Populated
-// by loadGraves() during __mzClassicBoot(), which the module awaits BEFORE
-// initTitleScreen() runs; graves.length is the floor so a fresh death (which
-// unshifts into `graves`) surfaces the entry even if the persisted total lags.
-// Kept OUTSIDE the extract-sentinel block above: that block is lifted into a
-// DOM-less node:vm sandbox by the persistence harness where `window` is absent.
-window.__mzGravesCount = () => Math.max(gravesTotal || 0, (graves && graves.length) || 0);
-// 04-05: a brief loading placeholder shown while mzStorage resolves the
-// graveyard read, before renderGraves() replaces it with ranked stones, the
-// empty state, or the error fallback (04-UI-SPEC.md UI Considerations
-// backstop — "Graveyard (list-collection), loading"). Deliberately kept
-// OUTSIDE the sentinel-marked block above (test/persistence/harness/
-// sandboxClassicPersistence.js extracts that block into a DOM-less node:vm
-// context — a `document` reference inside it would be a latent trap even
-// though this function is never called by that sandbox).
-function renderGravesLoading() {
-  document.getElementById("yard").innerHTML =
-    `<p class="yard-loading">Consulting the ledger…</p>`;
-}
-
-function renderGraves() {
-  const wrap = document.getElementById("yard");
-  const count = document.getElementById("yard-count");
-  if (gravesLoadError) {
-    count.textContent = "";
-    wrap.innerHTML = `<div class="mw-empty mw-error">
-      <p class="mw-empty-head">THE LEDGER WON'T OPEN</p>
-      <p class="mw-empty-body">Something's stuck. Try again, or close and reopen the app.</p>
-    </div>`;
-    return;
-  }
-  // audit-batch E12 (part 2): the count reflects the TRUE lifetime total, not
-  // the (≤5) number of stones rendered here. The adapter stores up to 60
-  // stones now (Phase 65, D-05); this Dead tab still renders only the newest
-  // 5 until Phase 66 replaces it with the Leaderboards panel, so once the
-  // body count passes 5 the copy says so explicitly.
-  const total = gravesTotal;
-  if (!total) {
-    // 04-UI-SPEC.md Copywriting Contract — DEAD tab's zero-grave empty state.
-    count.textContent = "";
-    wrap.innerHTML = `<div class="mw-empty">
-      <p class="mw-empty-head">NOBODY'S DOWN THERE YET</p>
-      <p class="mw-empty-body">The ledger is empty. Go make it worse.</p>
-    </div>`;
-    return;
-  }
-  count.textContent = total > 5 ? `Showing last 5 of ${total}` : `${total} interred`;
-  wrap.innerHTML = "";
-  // Defensive: the adapter now stores up to 60 stones (Phase 65, D-05), but
-  // this Dead tab never renders more than the newest 5 regardless of what the
-  // array holds, until Phase 66 replaces it with the Leaderboards panel.
-  for (const g of graves.slice(0, 5)) {
-    const el = document.createElement("article");
-    el.className = "stone";
-    el.innerHTML = `
-      <p class="stone-name">${g.name}</p>
-      <p class="stone-sub">${g.race} ${g.sub} · lvl ${window.__mzTables.ROMAN[(g.level || 1) - 1]}</p>
-      <p class="stone-note">${g.note.replace(/^\w/, c => c.toUpperCase())}</p>
-      <p class="stone-ep">${g.epitaph || ""}</p>
-      <dl class="stone-stats">
-        <div><dt>Floor</dt><dd>${g.floor}</dd></div>
-        <div><dt>Days</dt><dd>${g.day}</dd></div>
-        <div><dt>Squares</dt><dd>${g.steps}</dd></div>
-        <div><dt>Kills</dt><dd>${g.kills}</dd></div>
-        <div><dt>XP</dt><dd>${g.sp}</dd></div>
-        <div><dt>Wilmst</dt><dd>${(g.gold || 0).toLocaleString()}</dd></div>
-      </dl>`;
-    wrap.appendChild(el);
-  }
-}
 
 /* ---------------- encounter panel ---------------- */
 // Device-review revision (04-CONTEXT.md "Device-review revisions" #5):
@@ -5419,10 +5303,10 @@ addEventListener("keydown", e => {
 });
 addEventListener("resize", () => { fit(); window.mzKeepPartyInView?.(); renderEncounter(); });
 
-// 02-03: the classic script's boot sequence (loadGraves/renderGraves/fit/
-// paint) used to run synchronously right here, at classic-script parse time.
-// But window.mzStorage — the abstraction loadGraves() calls — is assigned by
-// the trailing <script type="module"> block below, which parses AFTER this
+// 02-03: the classic script's boot sequence (loadGraves/fit/paint) used to
+// run synchronously right here, at classic-script parse time. But
+// window.mzStorage — the abstraction loadGraves() calls — is assigned by the
+// trailing <script type="module"> block below, which parses AFTER this
 // classic script (module scripts are always deferred). Exposing this boot
 // sequence as window.__mzClassicBoot mirrors the existing window.__mzState/
 // window.move bridge pattern (see the trailing module's own doc comment) and
@@ -5433,10 +5317,13 @@ addEventListener("resize", () => { fit(); window.mzKeepPartyInView?.(); renderEn
 // — the classic run-save load/resume/no-save-roll branch is gone. The
 // module boot (below, after window.__mzState.set(engineState)) is the ONE
 // place a resumed run's resume banner Oracle lines are emitted now.
+// Phase 66 (BOARD-01, D-14): the Leaderboards panel renders on the DEAD tab
+// now (src/browser/boardsPanel.js through window.__mzBoards), reading only
+// the adapter's in-memory getBests()/getGraveyard() — never this classic
+// loadGraves() read. The loader/saver sentinel block below is kept only
+// until 66-07 retires it; this boot call is now otherwise a no-op consumer.
 window.__mzClassicBoot = async function classicBoot() {
-  renderGravesLoading();
   await loadGraves();
-  renderGraves();
   fit();
   paint();
 };
@@ -5507,6 +5394,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // died event into the classic renderCombatOver's NEW PERSONAL BEST block.
   import { takeDeathRecord } from "./src/browser/engineAdapter.js";
   import { newBestView } from "./src/browser/newBest.js";
+  // Phase 66 (BOARD-01..08): the Leaderboards panel's adapter read seam,
+  // controller and pure view model — each on its own line per this file's
+  // import convention.
+  import { getBests, getGraveyard } from "./src/browser/engineAdapter.js";
+  import { createBoardsPanel } from "./src/browser/boardsPanel.js";
+  import { boardsView } from "./src/browser/boardsView.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
@@ -5763,6 +5656,30 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet's one bridge —
   // openGearSheet/refreshGearSheet (classic) render through it.
   window.__mzGearSheet = renderGearSheet;
+
+  // Phase 66 (D-14/D-15): the Leaderboards panel reads only the adapter's
+  // in-memory records through boardsView; presentation only, never a field
+  // on state.
+  function readBoardsData() {
+    const g = getGraveyard();
+    return { bests: getBests(), graves: (g && g.graves) || [], total: (g && g.total) || 0 };
+  }
+  function boardsPrefs() {
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  }
+  const boardsPanel = createBoardsPanel({
+    host: document.getElementById("screen-dead"),
+    buildView: boardsView,
+    readData: readBoardsData,
+    prefs: boardsPrefs(),
+    reducedMotion: () => prefersReducedMotion(window),
+    onRoute: routeFromBoards,
+  });
+  window.__mzBoards = Object.freeze({ onDeadTab: boardsPanel.onDeadTab });
 
   // Phase 34 (CSCR-04): read-only fight-log helpers — dispatchWithNarration and
   // the classic renderFightLog/syncFightLogLive read the whole-fight log
@@ -6767,14 +6684,16 @@ window.__mzClassicBoot = async function classicBoot() {
   }
   let resumeIntent = false;
   // DR18 (DR15-C): show the title screen's "View the Dead" entry ONLY when the
-  // graveyard is non-empty. Reads the classic script's live count via the
-  // window.__mzGravesCount bridge (see its doc comment in the classic script);
-  // re-checked every time the title screen shows so a death mid-session (which
-  // populates the graveyard) makes the entry appear on the next title return.
+  // graveyard is non-empty. Phase 66 (D-14): reads the adapter's lifetime
+  // total directly (getGraveyard()) instead of the retired classic
+  // window.__mzGravesCount bridge; re-checked every time the title screen
+  // shows so a death mid-session (which folds into the adapter's graveyard
+  // synchronously) makes the entry appear on the next title return.
   function refreshTitleDead() {
     const deadBtn = document.getElementById("mw-title-dead");
     if (!deadBtn) return;
-    const n = window.__mzGravesCount ? window.__mzGravesCount() : 0;
+    const g = getGraveyard();
+    const n = (g && g.total) || 0;
     deadBtn.hidden = !(n > 0);
   }
   function showTitleScreen({ allowResume } = {}) {
@@ -7086,6 +7005,24 @@ window.__mzClassicBoot = async function classicBoot() {
     showTitleScreen();
   };
 
+  // Phase 66 (D-01): the Leaderboards panel's dock/back routing. The
+  // controller has already cleared its own title marker before calling
+  // this, so every branch below is free to change screens.
+  function routeFromBoards(action, { hasHero } = {}) {
+    if (action === "title") {
+      // Passing allowResume preserves the title's own resume decision;
+      // recomputing it from S would misread boot()'s throwaway fresh-run
+      // character as a live hero.
+      window.__mzShowTab?.("maze");
+      showTitleScreen({ allowResume: !!hasHero });
+    } else if (action === "dungeon") {
+      window.__mzShowTab?.("maze");
+      surfaceWornReconcile();
+    } else if (action === "roll") {
+      window.mzStartRoll();
+    }
+  }
+
   // Phase 37 (GEAR-04): surfaces the ONE-SHOT load-time worn-reconciliation
   // report only when something was bagged; takeBootWornReport() nulls
   // itself on read, so a later ENTER (or a fresh roll) is a no-op. Rail
@@ -7112,10 +7049,11 @@ window.__mzClassicBoot = async function classicBoot() {
       window.mzStartRoll();
     };
     // DR18 (DR15-C): "View the Dead" — dismiss the title gate and open the
-    // existing DEAD graveyard view (__mzShowTab("dead") re-fetches the stones).
-    // gravesTotal is already loaded here (loadGraves() ran inside the awaited
-    // __mzClassicBoot() above), so refreshTitleDead()'s non-empty gate is
-    // authoritative on this first paint.
+    // Leaderboards panel on the DEAD tab (__mzShowTab("dead") reaches
+    // window.__mzBoards.onDeadTab, Phase 66). The adapter's graveyard is
+    // already loaded here (boot() ran inside the awaited __mzClassicBoot()
+    // above), so refreshTitleDead()'s non-empty gate is authoritative on
+    // this first paint.
     const deadBtn = document.getElementById("mw-title-dead");
     if (deadBtn) {
       deadBtn.onclick = () => {

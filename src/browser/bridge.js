@@ -62,6 +62,13 @@ export const BRIDGE = Object.freeze({
     ]),
     purpose: "Bridges the pure src/browser/combatBeat.js runner (Phase 58, MOTION-03: D-09..D-11, D-17) so the classic renderer reveals an already-resolved combat round one exchange at a time, without a second copy of the reveal schedule.",
   }),
+  __mzBoards: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: showTab — the DEAD tab opens the Leaderboards panel, or re-centres its rail when the panel is already open from the title)",
+    ]),
+    purpose: "Bridges the module-owned Leaderboards panel (src/browser/boardsPanel.js over boardsView.js and the adapter's in-memory bests record and graveyard) so the classic tab switch opens it without importing a module; presentation only, never a field on state.",
+  }),
   __mzCameraGlide: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze([
@@ -171,11 +178,6 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render)"]),
     purpose: "Bridges src/browser/gearSheet.js's renderGearSheet so the classic sheet lifecycle (open, repaint refresh, close, back button, ghost-tap arm) renders the ONE pure sheet model, never a second copy.",
-  }),
-  __mzGravesCount: Object.freeze({
-    owner: "mazeworld.html (classic)",
-    consumers: Object.freeze(["mazeworld.html (module: refreshTitleDead — the roller screen's death counter)"]),
-    purpose: "Exposes the classic script's graveyard-count accessor so the module's title-screen death counter reads the same total.",
   }),
   __mzHapticsImportOverride: Object.freeze({
     owner: "src/browser/haptics.js",
@@ -316,6 +318,7 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze([
       "mazeworld.html (classic: the death card's Oracle button)",
       "mazeworld.html (module: the roller mount's onCommit / the death-screen router — switches tabs after commit or death)",
+      "mazeworld.html (module: routeFromBoards — back to the map when the panel's title mode exits)",
     ]),
     purpose: "Exposes the classic script's tab-switch function so the module script can route to a tab (maze on boot, dead on death) without a DOM click.",
   }),

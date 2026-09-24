@@ -512,10 +512,10 @@ test("m4: exactly one startNewRun( call expression in the module script, and it 
   );
 });
 
-test("m5: window.mzStartRoll() is called exactly twice across the classic and module scripts (title ENTER, the dead Hero tab's New Character)", () => {
+test("m5: window.mzStartRoll() is called exactly three times across the classic and module scripts (title ENTER, the dead Hero tab's New Character, and Phase 66's routeFromBoards ROLL A NEW HERO dock button)", () => {
   const classicCalls = (MOUNT_CLASSIC.match(/window\.mzStartRoll\(\)/g) || []).length;
   const modCalls = (MOUNT_MOD.match(/window\.mzStartRoll\(\)/g) || []).length;
-  assert.equal(classicCalls + modCalls, 2);
+  assert.equal(classicCalls + modCalls, 3);
 });
 
 test("m6: every inline-roller identifier is gone from both the classic and module scripts", () => {
