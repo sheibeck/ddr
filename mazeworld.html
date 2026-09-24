@@ -792,6 +792,12 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-over-best-head{font-family:var(--disp);font-size:9px;line-height:1.6;color:#e8c97a}
 .cb-over-best-row{font-family:var(--mono);font-weight:700;font-size:14px;line-height:1.4;color:#e8c97a;margin:6px 0 0}
 .cb-over-best-quip{font-family:var(--mono);font-weight:700;font-size:14px;line-height:1.45;color:#c9bda0;margin:8px 0 0}
+/* Phase 68 (PLACE-01, D-10/D-11): the DEEPEST rank line under the NEW
+   PERSONAL BEST block. It fades in once when the rank arrives; the blanket
+   prefers-reduced-motion rule below removes the fade. */
+.cb-over-rank{font-family:var(--mono);font-weight:700;font-size:14px;line-height:1.45;color:#e8c97a;margin:10px 0 0}
+.cb-over-rank[data-fresh="1"]{animation:mwrankin 600ms ease-out}
+@keyframes mwrankin{from{opacity:0}to{opacity:1}}
 .cb-sub{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin:10px 12px 0}
 #enc-panel[data-mode="dark"] .enc-head{font-family:var(--disp);font-size:11px;line-height:1.6;color:#e8c97a;margin:12px 12px 0}
 #enc-panel[data-mode="dark"] .enc-sub{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin:6px 12px 0}
@@ -4098,6 +4104,7 @@ function renderCombatOver(host, kind, opts = {}) {
   // Phase 65 (RUN-04, D-12/D-13): the gold NEW PERSONAL BEST block sits
   // under THAT IS THAT / "The maze keeps the rest." and above the buttons.
   if (kind === "dead") renderNewBestBlock(over, window.__mzDeathRecord);
+  if (kind === "dead") renderRankLine(over, window.__mzPlacement);
   if (Array.isArray(opts.buttons) && opts.buttons.length) {
     const actions = document.createElement("div");
     actions.className = "cb-over-actions";
@@ -4148,6 +4155,32 @@ function renderNewBestBlock(host, view) {
     block.appendChild(quip);
   }
   host.appendChild(block);
+}
+
+// Phase 68 (PLACE-01, D-10/D-11): the DEEPEST rank line on THAT IS THAT,
+// under the NEW PERSONAL BEST block (or under the panel line when there is
+// none). `placement` is window.__mzPlacement: { hash, line, fresh } or null.
+// The module sets it only when the just-died run's DEEPEST rank has
+// returned, so while the rank is on its way, or when the request fails,
+// nothing shows. A fresh placement fades in once (data-fresh, removed by the
+// blanket reduced-motion rule); drawing it turns the bridge not fresh, so a
+// later redraw of the panel does not fade it again. createElement and
+// textContent only, no innerHTML: the line comes from placementLine with
+// integer tokens.
+function renderRankLine(host, placement) {
+  if (!host) return;
+  const old = typeof host.querySelector === "function" ? host.querySelector("#cb-over-rank") : null;
+  if (old) old.remove();
+  if (!placement || typeof placement !== "object" || typeof placement.line !== "string" || placement.line === "") return;
+  const p = document.createElement("p");
+  p.className = "cb-over-rank";
+  p.id = "cb-over-rank";
+  p.textContent = placement.line;
+  if (placement.fresh === true) p.setAttribute("data-fresh", "1");
+  const actions = typeof host.querySelector === "function" ? host.querySelector(".cb-over-actions") : null;
+  if (actions) host.insertBefore(p, actions);
+  else host.appendChild(p);
+  if (placement.fresh === true) window.__mzPlacement = { hash: placement.hash, line: placement.line, fresh: false };
 }
 
 function renderEncounter() {
@@ -5786,6 +5819,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // every dead-panel render. Never a field on S/state, same rule as
   // window.__mzFightEnd.
   window.__mzDeathRecord = null;
+  // Phase 68 (PLACE-01, D-10/D-11): the just-died run's DEEPEST rank line,
+  // a presentation-only parcel { hash, line, fresh } set by handlePgsFlush
+  // when the rank returns and read by the classic renderCombatOver through
+  // renderRankLine. Null while waiting, on failure, signed out or with
+  // Compete OFF. Never a field on S/state, same rule as __mzDeathRecord.
+  window.__mzPlacement = null;
   // The one-shot rail entry point Plans 03/04 use for chip explanations,
   // tap/inspect lines and the back-button quit warning — builds a card
   // directly (no fold pipeline) and repaints.
@@ -6892,6 +6931,8 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 65 (RUN-04): the title shows after BURY THEM, abandon and
     // save-and-quit, so a later death never renders a stale block.
     window.__mzDeathRecord = null;
+    // Phase 68 (D-11): the same for the rank line.
+    window.__mzPlacement = null;
     const screen = document.getElementById("mw-title-screen");
     if (!screen) return;
     resumeIntent = allowResume != null ? allowResume : hasActiveDelveSave();
