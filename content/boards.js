@@ -92,6 +92,10 @@ export const BOARD_FOOTNOTES = {
 // Leaderboards panel shows, deep-frozen. `{token}` placeholders (n, name,
 // floor, steps, epitaph) are filled by the view model (66-04); content/ holds
 // no functions (test/determinism/content-is-pure-data.test.js).
+// Phase 67 (D-08): `strip.live` is the signed-in strip's source line and the
+// fallback name for a player with no display name; `note.live` is the ALL /
+// FRIENDS tap note while signed in — the global boards are coming online,
+// and it claims no rank or count (Phase 68 brings the real rows).
 export const BOARDS_PANEL_COPY = Object.freeze({
   head: Object.freeze({
     title: "LEADERBOARDS",
@@ -106,6 +110,10 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     glyph: "?",
     label: "PLAY GAMES · SIGNED OUT",
     source: "Your dead only",
+    live: Object.freeze({
+      source: "PLAY GAMES · SIGNED IN",
+      unnamed: "A player with no name",
+    }),
   }),
   chips: Object.freeze({
     all: "ALL",
@@ -114,6 +122,10 @@ export const BOARDS_PANEL_COPY = Object.freeze({
   note: Object.freeze({
     all: "Nobody out there can see you yet.",
     friends: "Your friends have not been told you exist. It may be kinder that way.",
+    live: Object.freeze({
+      all: "The world's ledger is still being bound. Your own dead will have to do.",
+      friends: "Your friends' ledger is still at the bindery. Your own dead will have to do for now.",
+    }),
   }),
   empty: "Nobody of yours has qualified for this board yet.",
   divider: "NOT IN THE TOP TEN · YOUR BEST RUN",
