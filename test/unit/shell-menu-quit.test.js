@@ -230,7 +230,9 @@ test("(9) BEHAVIOUR + SOURCE (D-07): closeMenuThen(fn) raises select, then runs 
   // after hudMenuEvent; the container's bubble select stays as the net.
   assert.equal(CODE.split("function closeMenuThen(").length - 1, 1);
   assert.ok(CODE.indexOf("function hudMenuEvent(") < CODE.indexOf("function closeMenuThen("));
-  assert.match(CODE, /document\.getElementById\("mw-hud-menu"\)\.onclick = \(\) => hudMenuEvent\("select"\);/);
+  // Phase 70 (70-04, D-08): the net is event-aware — a tap on a disabled
+  // (aria-disabled) row returns without raising "select".
+  assert.match(CODE, /document\.getElementById\("mw-hud-menu"\)\.onclick = \(e\) => \{\s*if \(e\?\.target\?\.closest\?\.\('\[aria-disabled="true"\]'\)\) return;\s*hudMenuEvent\("select"\);\s*\};/);
 });
 
 // ─── mzAbandonRun: the dead-state Save & quit ruling ─────────────────────
@@ -284,5 +286,6 @@ test("(11) SOURCE: no confirm dialog anywhere in the comment-stripped shell; mzA
   // The module imports the reducer and the arm window in place on the
   // existing hudMenu.js line.
   assert.equal(HTML.split('from "./src/browser/hudMenu.js";').length - 1, 1);
-  assert.match(HTML, /import \{ hudMenuNext, abandonRowNext, ABANDON_ARM_MS \} from "\.\/src\/browser\/hudMenu\.js";/);
+  // Phase 70 (70-04, D-08) extends the same line with hudMenuRowStates.
+  assert.match(HTML, /import \{ hudMenuNext, abandonRowNext, ABANDON_ARM_MS, hudMenuRowStates \} from "\.\/src\/browser\/hudMenu\.js";/);
 });

@@ -196,8 +196,11 @@ export const BRIDGE = Object.freeze({
   }),
   __mzHudMenu: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: hudMenuEvent — the ☰ HUD menu's open/close policy)"]),
-    purpose: "Bridges the pure src/browser/hudMenu.js hudMenuNext reducer (Phase 57, LAYOUT-04/05, Plan 05) so the shell holds no second copy of the ☰ menu's close rules; the classic hudMenuEvent reads the live open state and the encounter context and asks this bridge for the next state, failing closed when the bridge is missing.",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: hudMenuEvent — the ☰ HUD menu's open/close policy, via next)",
+      "mazeworld.html (classic: syncHudMenuRows — the ☰ rows' per-row availability, via rows)",
+    ]),
+    purpose: "Bridges the pure src/browser/hudMenu.js hudMenuNext reducer (Phase 57, LAYOUT-04/05, Plan 05) and hudMenuRowStates (Phase 70, D-08) so the shell holds no second copy of the ☰ menu's rules; the classic hudMenuEvent reads the live open state and asks next for the open/close policy (the menu opens on every screen, failing closed when the bridge is missing), and the classic syncHudMenuRows asks rows which of the six rows can act in the current context (encounter, dead, hero) and writes disabled plus aria-disabled onto the rest.",
   }),
   __mzIconMap: Object.freeze({
     owner: "mazeworld.html (module)",

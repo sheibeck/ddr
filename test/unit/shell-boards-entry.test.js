@@ -95,7 +95,7 @@ test("(B2) SOURCE: src/browser/nativeChrome.js is untouched by this plan (still 
  * arrow function assigned to the getGameContext() object's `closeModal`
  * property) and returns a Function taking (boardsPanel, S) and yielding the
  * live closure. Deliberately does NOT thread through window/document/
- * hudMenuEvent/gearSheetTarget/closeGearSheet/closeCampSheet/
+ * hudMenuIsOpen/hudMenuEvent/gearSheetTarget/closeGearSheet/closeCampSheet/
  * closeMarksLegend — with a title-open boardsPanel, the guard must return
  * before any of those are ever referenced, so their absence from this
  * factory's scope is itself part of the proof: a regression that moved the
@@ -130,10 +130,10 @@ test("(C1) BEHAVIOUR: with a title-open boardsPanel, the extracted closeModal ca
   assert.equal(fakeS.store, store, "S.store must be the SAME object — never nulled or replaced");
 });
 
-test("(C2) BEHAVIOUR: with a tab-open (isTitleOpen false) boardsPanel, the extracted closeModal does NOT return early — reaching the un-threaded hudMenuEvent() throws (proving the guard is skipped for a tab-opened panel)", () => {
+test("(C2) BEHAVIOUR: with a tab-open (isTitleOpen false) boardsPanel, the extracted closeModal does NOT return early — reaching the un-threaded hudMenuIsOpen() (Phase 70 D-08 menu-first return) throws (proving the guard is skipped for a tab-opened panel)", () => {
   const fakeBoardsPanel = { isTitleOpen: () => false, back: () => true };
   const closeModal = closeModalFactory()(fakeBoardsPanel, { beats: null, store: null });
-  assert.throws(() => closeModal(), /hudMenuEvent is not defined/);
+  assert.throws(() => closeModal(), /hudMenuIsOpen is not defined/);
 });
 
 // ═══════════════════ (D) real-controller routing (D-01/D-03) ═══════════════

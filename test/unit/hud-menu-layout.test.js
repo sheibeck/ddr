@@ -330,7 +330,7 @@ test("(9) BEHAVIOUR: every close trigger closes the menu (re-tap, select, a tab 
 const ROW_IDS = ["mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn", "mw-menu-save-quit", "mw-menu-abandon"];
 
 function rowEl(doc, id) {
-  return doc.elementsById.get(id) || doc.getElementById(id);
+  return doc.elementsById.get(id) || doc.document.getElementById(id);
 }
 function isRowDisabled(doc, id) {
   const el = rowEl(doc, id);
