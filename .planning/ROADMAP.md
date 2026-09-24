@@ -193,9 +193,9 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 69-01-PLAN.md — (wave 1) privacy + Data Safety: reconcile darktier-studio `privacy/apps.astro` + `delete-data.astro` (local commit, user deploys), LISTING.md Data safety answers + not-shared finding + source-level SDK/dependency audit, privacy record (date + website hash), re-voiced offline bullet, graveyard screenshot or deferred item (COMPLY-01, COMPLY-02)
-- [ ] 69-02-PLAN.md — (wave 1) `docs/PLAY-GAMES-SETUP.md` finished: section 6 order of operations, section 12 publishing, leaderboard tester check, edge statements; runbook pins extended (COMPLY-03)
-- [ ] 69-03-PLAN.md — (wave 1) `docs/UAT-v2.0.md`: every 65–68 human_verification item + SUMMARY extras merged by D-09 area, Compete-OFF capture RELEASE-BLOCKING, section 0 deferred user actions, source map (COMPLY-04)
+- [x] 69-01-PLAN.md — (wave 1) privacy + Data Safety: reconcile darktier-studio `privacy/apps.astro` + `delete-data.astro` (local commit, user deploys), LISTING.md Data safety answers + not-shared finding + source-level SDK/dependency audit, privacy record (date + website hash), re-voiced offline bullet, graveyard screenshot or deferred item (COMPLY-01, COMPLY-02)
+- [x] 69-02-PLAN.md — (wave 1) `docs/PLAY-GAMES-SETUP.md` finished: section 6 order of operations, section 12 publishing, leaderboard tester check, edge statements; runbook pins extended (COMPLY-03)
+- [x] 69-03-PLAN.md — (wave 1) `docs/UAT-v2.0.md`: every 65–68 human_verification item + SUMMARY extras merged by D-09 area, Compete-OFF capture RELEASE-BLOCKING, section 0 deferred user actions, source map (COMPLY-04)
 
 **Wave 2** *(blocked on Wave 1 completion; runs in the main checkout, not a worktree)*
 
@@ -362,7 +362,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
-| 69. Compliance & Device Close | v2.0 | 0/4 | Planned | - |
+| 69. Compliance & Device Close | v2.0 | 3/4 | In Progress|  |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
