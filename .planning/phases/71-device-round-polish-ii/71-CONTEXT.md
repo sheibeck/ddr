@@ -64,6 +64,25 @@ Four presentation fixes on the finished v2.0 build: sound balance and volume con
   - Chip wording follows the house style ("Hamstrung", "Marked", with rounds where the effect is timed). Tones follow the existing convention: a foe debuff is "good" for the player. Any chip content for these conditions matches D-09's long-press card, which reads from the same table.
   - Presentation only, engine untouched.
 
+### The UI tap sound plays only on a real press (POLISH-10)
+- **D-15 — Click on activation, not on touch:** user (2026-09-24, folding in the 2026-09-23 todo `.planning/todos/pending/2026-09-23-ui-tap-sound-plays-when-scrolling-over-a-button.md`): "I think we have a backlog or todo item for fixing button presses, too. That feels related to what we're doing here."
+  - Today the shell plays `playUiTap()` from a capture-phase `pointerdown` listener on `document` (`mazeworld.html` ~L6449), so starting a scroll or pan on any button clicks.
+  - Keep `unlockSfx()` on `pointerdown`, because the audio unlock needs the earliest gesture. Move the tap sound to a capture-phase `click` listener on `document` (the todo's preferred option). A scroll cancels the pointer and never fires `click`, so it goes silent.
+  - Stay silent for a button that can't act: `disabled`, `aria-disabled="true"`, or 71-03's `data-locked` combat actions. Also stay silent for a tap the 250 ms `inputGuards.js` arm/settle guard swallows, if the shell can tell. Otherwise record the choice.
+  - A long press (71-04) never fires `click`, so it doesn't click either. Pin it.
+  - Keep the no-double-sound rule: the map canvas never matches, and buttons that dispatch an action with their own clip don't also tick. Keep today's equivalent. The EFFECTS-release preview (71-01, `if (key === "volEffects") playUiTap();`) stays.
+  - Keyboard and TalkBack activation fire `click` too, so they gain the sound. That's accepted.
+  - Test: pin the listener to `click` and that pointerdown → pointercancel plays nothing. Update `sfx-settings.test.js`'s call-site pins as needed. Shell-only: no engine, content or parity impact.
+
+### Status chit descriptions in combat (POLISH-11)
+- **D-16: a status chit tap in combat shows its description.** On 2026-09-24 the user said "Yes, add it", folding in the 2026-09-21 todo `.planning/todos/pending/2026-09-21-status-chit-tap-in-combat-shows-nothing-rail-hidden-in-comba.md`. The user's original report: "when I'm in combat and I tap on a status chit the rail does not show up, so I have no way to see my status effect descriptions in combat."
+  - **Cause.** `railEl.hidden = !!(S.combat || S.dead) || idle` (`mazeworld.html` ~L4793) hides the rail for the whole fight, so the chit tap has no surface to show on.
+  - **Surface.** A hero status chit tapped in combat (Afraid, Poisoned, Asleep, Blind, and so on) raises the same combat-legal card 71-04 built for the long-press foe details. The card sits above the actions, dismisses on a body tap, and never offers a decision. A new chit tap or long press replaces it. The description text is exactly the one the out-of-combat chit tap shows today, from the same source, with no new copy unless it's missing.
+  - **Foe chips.** A tap on a foe card keeps its targeting meaning, because the chips are small and sit inside the tap target. A foe condition's description therefore comes through the long-press details card: each current effect there carries its one-line description from the 71-03 `foeConditions.js` table. Add a short description to that table if 71-04 didn't already. Tapping a foe chip must never also raise the card or change the target unexpectedly; record the ruling.
+  - **Leave the rest of the rail alone.** The rail stays hidden in combat for everything else, per the v1.4 ruling that combat's feedback surface is the fight log.
+  - **Interactions.** The card must not cover the "What happened" strip (71-05) or the actions. The combat lock (71-03) doesn't block reading a chit, and a chit tap mid-round may skip the round like any other combat-screen tap (D-06); record which. The tap sound follows 71-07.
+  - **Scope.** Shell/presentation only: no engine, content balance or parity impact. Pure view-model tests pin a description for every hero status chip, and the new copy goes into the voice and HP-not-WP scans.
+
 ### Close-out
 - **D-13 — Device build:** after the last plan merges, the orchestrator rebuilds the debug APK and installs it on the Pixel 7 with `adb install -r` (keeps the save), and every Phase 71 device check is folded into `docs/UAT-v2.0.md` as a new section M. Each source todo moves to `.planning/todos/done/` when its plan lands.
 

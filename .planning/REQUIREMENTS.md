@@ -66,6 +66,8 @@
 - [ ] **POLISH-07**: While a combat round plays out, the actions are visibly unavailable, taps never queue, and a tap skips to the round's result; with several foes the latest round summary stays visible above the actions without being intrusive.
 - [ ] **POLISH-08**: Long-pressing an enemy raises one dismissible rail card with its details, never also firing the normal tap; TalkBack users get an equivalent Details action.
 - [ ] **POLISH-09**: Every condition an ability, spell or item puts on an enemy (Hamstring, Mark and the rest) shows as a condition chip on that enemy while it lasts, from one table, with a test that fails if a new foe effect has no chip.
+- [ ] **POLISH-10**: The UI tap sound plays only when a button is really pressed: never when a scroll or pan starts on a button, never for a disabled or locked button, and never for a long press.
+- [ ] **POLISH-11**: Tapping a status chit during combat shows that effect's description on a combat-legal card, and each foe condition's description is readable from the long-press details card.
 
 ## Future Requirements
 
@@ -125,10 +127,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | POLISH-07 | Phase 71 | Pending |
 | POLISH-08 | Phase 71 | Pending |
 | POLISH-09 | Phase 71 | Pending |
+| POLISH-10 | Phase 71 | Pending |
+| POLISH-11 | Phase 71 | Pending |
 
 **Coverage:**
 
-- v2.0 requirements: 35 total
+- v2.0 requirements: 37 total
 - Mapped to phases: 35
 - Unmapped: 0 ✓
 

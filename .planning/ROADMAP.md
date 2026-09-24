@@ -242,7 +242,7 @@ Plans:
 
 **Goal**: The second batch of Pixel 7 feedback on the 2.0.0 build lands in v2.0: sounds are balanced and player-adjustable, a gear item shows its full stats wherever it is opened, combat stops accepting taps it cannot act on and keeps the round summary in view, and any enemy can be inspected with a long press.
 **Depends on**: Phase 70 (user device feedback 2026-09-24)
-**Requirements**: POLISH-05, POLISH-06, POLISH-07, POLISH-08, POLISH-09
+**Requirements**: POLISH-05, POLISH-06, POLISH-07, POLISH-08, POLISH-09, POLISH-10, POLISH-11
 **Success Criteria** (what must be TRUE):
 
   1. Each sound effect has its own level in one tunable table (death quieter, steps louder than today), the title theme is louder, and the Settings sheet shows MASTER, MUSIC and EFFECTS sliders under Sound only while Sound is on; levels persist and apply live
@@ -250,9 +250,11 @@ Plans:
   3. While a combat round is playing out, the action buttons are visibly unavailable and taps never queue; a tap skips the playback to the round's result; with several foes the latest round summary stays visible above the actions without covering the fight
   4. Long-pressing an enemy raises one dismissible rail card with its details (family, HP, defence, attack, abilities, resistances, current effects, a flavour line) without triggering a normal tap; TalkBack gets a Details action
   5. Every condition an ability, spell or item puts on an enemy (Hamstring, Mark and the rest) shows as a chip on that enemy while it lasts
-**Plans**: 6 plans (5 waves)
+  6. The UI tap sound plays only on a real button press: scrolling across a button, a disabled or locked button, and a long press stay silent
+  7. In combat, tapping a status chit shows its description on a card above the actions, and every foe condition's description is readable from the long-press details card
+**Plans**: 8 plans (7 waves)
 
-D-07 follows the user's combat v2 mock (`design/Mazeworld Combat Panel v2.dc.html`, `design/COMBAT-V2-NOTES.md`) and is isolated in 71-05/71-06, after the input lock; the D-13 UAT fold is the last plan.
+D-07 follows the user's combat v2 mock (`design/Mazeworld Combat Panel v2.dc.html`, `design/COMBAT-V2-NOTES.md`) and is isolated in 71-05/71-06, after the input lock; 71-06 writes the D-13 UAT section M, and 71-07/71-08 (added 2026-09-24 for D-15/D-16) each append their own rows to it.
 
 Plans:
 **Wave 1**
@@ -275,6 +277,14 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 
 - [ ] 71-06-PLAN.md — (wave 5) THE FIGHT SO FAR full-log sheet that the strip opens (grouped by round, honest dice reveal, never mid-round); every Phase 71 device check folded into docs/UAT-v2.0.md section M; phase gates (POLISH-07; D-07, D-13)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 71-07-PLAN.md — (wave 6) UI tap sound only on a real press: unlock stays on pointerdown, the tap moves to a capture-phase click; silent for disabled / aria-disabled / data-locked / guard-swallowed / mid-round skip taps and a long press; one sound per press via sfxClipCount; pure uiTap.js; section M rows (POLISH-10; D-15)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 71-08-PLAN.md — (wave 7) status chits explain themselves in combat: a combat-legal "cond" card (rail.js COMBAT_CARD_KINDS) above the strip and actions, readable mid-round without skipping, every hero chip description pinned; foe condition descriptions on the long-press card; section M rows; phase gates (POLISH-11; D-16)
 
 **Research**: none (skipped; presentation-only, patterns read from the codebase)
 
