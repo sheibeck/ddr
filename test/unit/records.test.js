@@ -23,6 +23,7 @@ import {
   leanRate,
   boardValue,
   lineageKey,
+  lineageRuns,
   emptyBests,
   sanitizeBests,
   updateBests,
@@ -279,8 +280,31 @@ test("boardValue maps each board to its headline number", () => {
   assert.equal(boardValue("no-such-board", run), 0);
 });
 
-test("lineageKey joins race and cls with a space", () => {
-  assert.equal(lineageKey({ race: "Dwarf", cls: "Fighter" }), "Dwarf Fighter");
+test("lineageKey (Phase 70, D-10) joins race and sub-class with a space, never the base class", () => {
+  assert.equal(lineageKey({ race: "Dwarven", sub: "Knight", cls: "Fighter" }), "Dwarven Knight");
+  assert.doesNotThrow(() => lineageKey(null));
+  assert.doesNotThrow(() => lineageKey({}));
+  assert.equal(lineageKey(null), " ");
+  assert.equal(lineageKey({}), " ");
+  assert.equal(lineageKey({ race: "Troll" }), "Troll ");
+});
+
+test("lineageRuns (Phase 70, D-12): non-array gives [], filters to the lineage, orders floor desc/steps asc/hash asc, never mutates", () => {
+  for (const bad of [null, undefined, {}, "x", 5]) assert.deepStrictEqual(lineageRuns(bad, "Human Knight"), []);
+
+  const a = { race: "Human", sub: "Knight", floor: 5, steps: 50, hash: "bbbbbbbb" };
+  const b = { race: "Human", sub: "Knight", floor: 5, steps: 50, hash: "aaaaaaaa" };
+  const c = { race: "Human", sub: "Knight", floor: 9, steps: 900, hash: "cccccccc" };
+  const d = { race: "Human", sub: "Knight", floor: 5, steps: 10, hash: "dddddddd" };
+  const other = { race: "Human", sub: "Wizard", floor: 20, steps: 1, hash: "eeeeeeee" };
+  const input = Object.freeze([a, null, "junk", [1], b, other, c, d]);
+
+  const out = lineageRuns(input, "Human Knight");
+  assert.deepStrictEqual(out.map((r) => r.hash), ["cccccccc", "dddddddd", "aaaaaaaa", "bbbbbbbb"]);
+  assert.notEqual(out, input);
+  assert.deepStrictEqual(lineageRuns([b, a], "Human Knight").map((r) => r.hash), ["aaaaaaaa", "bbbbbbbb"], "an exact tie always falls to hash ascending");
+  assert.deepStrictEqual(lineageRuns([a, b], "Human Knight").map((r) => r.hash), ["aaaaaaaa", "bbbbbbbb"]);
+  assert.deepStrictEqual(lineageRuns(input, "Troll Acrobat"), []);
 });
 
 // --- board table constants ---------------------------------------------------
@@ -343,7 +367,6 @@ test("emptyBests returns a fresh, deep-equal object on every call", () => {
     v: 1,
     runs: {},
     boards: { deep: [], lean: [], days: [], kills: [], purse: [] },
-    lineage: {},
     last: null,
   };
   const a = emptyBests();
@@ -357,7 +380,7 @@ test("emptyBests returns a fresh, deep-equal object on every call", () => {
 
 // --- updateBests ---------------------------------------------------------------
 
-test("updateBests(emptyBests(), s1) records the first run across every board and lineage", () => {
+test("updateBests(emptyBests(), s1) records the first run across every board, with no lineage map", () => {
   const s1 = makeSummary({ floor: 5 });
   const { record, newBests, first } = updateBests(emptyBests(), s1);
 
@@ -366,7 +389,8 @@ test("updateBests(emptyBests(), s1) records the first run across every board and
   for (const board of RANKED_BOARDS) {
     assert.deepStrictEqual(record.boards[board], [s1.hash]);
   }
-  assert.deepStrictEqual(record.lineage[lineageKey(s1)], { count: 1, best: s1.hash });
+  assert.ok(!("lineage" in record), "the Phase 65 lineage map is retired (Phase 70, D-12)");
+  assert.deepStrictEqual(lineageRuns(Object.values(record.runs), lineageKey(s1)).map((r) => r.hash), [s1.hash]);
   assert.deepStrictEqual(Object.keys(record.runs), [s1.hash]);
   assert.deepStrictEqual(record.runs[s1.hash], s1);
   assert.equal(record.last, s1.hash);
@@ -384,18 +408,19 @@ test("updateBests: a strictly deeper same-combo run announces deep, lean and com
 });
 
 test("updateBests: a run beating every ranked board from a NEW combo announces all boards but never a first-of-combo lineage", () => {
-  const s1 = makeSummary({ floor: 5, steps: 200, day: 5, kills: 5, gold: 100, race: "Human", cls: "Fighter" });
+  const s1 = makeSummary({ floor: 5, steps: 200, day: 5, kills: 5, gold: 100, race: "Human", sub: "Knight", cls: "Fighter" });
   const { record: r1 } = updateBests(emptyBests(), s1);
 
   const s2 = makeSummary({
     floor: 10, steps: 50, day: 10, kills: 10, gold: 500,
-    race: "Dwarf", cls: "Thief", name: "Bob",
+    race: "Dwarven", sub: "Pickpocket", cls: "Thief", name: "Bob",
   });
   const { record: r2, newBests, first } = updateBests(r1, s2);
 
   assert.equal(first, false);
   assert.deepStrictEqual(newBests, ["deep", "lean", "days", "kills", "purse"]);
-  assert.deepStrictEqual(r2.lineage[lineageKey(s2)], { count: 1, best: s2.hash });
+  assert.ok(r2.runs[s2.hash], "the first run of a new lineage is held");
+  assert.ok(!("lineage" in r2));
 });
 
 test("updateBests: a run tying #1 on every key is not a new best, and is inserted directly after the incumbent", () => {
@@ -423,22 +448,66 @@ test("updateBests: a lesser run announces nothing and is inserted at its sorted 
   assert.deepStrictEqual(r2.boards.deep, [s1.hash, s2.hash]);
 });
 
-test("updateBests: lineage count always increments; best only switches when strictly beaten", () => {
+test("updateBests (Phase 70, D-12 / 65 D-14): LINEAGE announces only a strict beat of the held best of the same race + sub-class", () => {
   const s1 = makeSummary({ floor: 5, steps: 100, name: "First" });
-  let rec = updateBests(emptyBests(), s1).record;
-  assert.deepStrictEqual(rec.lineage[lineageKey(s1)], { count: 1, best: s1.hash });
+  const r1 = updateBests(emptyBests(), s1);
+  assert.ok(!r1.newBests.includes("combo"), "the first run of a lineage never announces LINEAGE");
+  let rec = r1.record;
 
   const s2 = makeSummary({ floor: 3, steps: 900, name: "Second" });
   const r2 = updateBests(rec, s2);
   assert.deepStrictEqual(r2.newBests, []);
   rec = r2.record;
-  assert.deepStrictEqual(rec.lineage[lineageKey(s1)], { count: 2, best: s1.hash });
+
+  const tie = makeSummary({ floor: 5, steps: 100, name: "Tie", cause: "trap" });
+  const rt = updateBests(rec, tie);
+  assert.ok(!rt.newBests.includes("combo"), "an exact tie never announces LINEAGE");
 
   const s3 = makeSummary({ floor: 9, steps: 20, name: "Third" });
   const r3 = updateBests(rec, s3);
-  assert.ok(r3.newBests.includes("combo"));
+  assert.ok(r3.newBests.includes("combo"), "a strict beat of the same lineage announces LINEAGE");
   rec = r3.record;
-  assert.deepStrictEqual(rec.lineage[lineageKey(s1)], { count: 3, best: s3.hash });
+  assert.equal(lineageRuns(Object.values(rec.runs), lineageKey(s1))[0].hash, s3.hash);
+
+  const otherSub = makeSummary({ floor: 30, steps: 5, name: "Cousin", sub: "Paladin" });
+  const r4 = updateBests(rec, otherSub);
+  assert.ok(r4.newBests.includes("deep"));
+  assert.ok(!r4.newBests.includes("combo"), "a deeper run of the same race but another sub-class is a first-of-lineage, silent");
+
+  const firstOfNewLineage = makeSummary({ floor: 40, steps: 5, name: "Stranger", race: "Troll", sub: "Acrobat", cls: "Thief" });
+  assert.ok(!updateBests(r4.record, firstOfNewLineage).newBests.includes("combo"));
+});
+
+test("updateBests (Phase 70, D-12): prune keeps each lineage's top ten even when none of them make a ranked board", () => {
+  let rec = emptyBests();
+  for (let i = 0; i < 10; i++) {
+    const big = makeSummary({
+      floor: 100 + i, steps: 1 + i, day: 100 + i, kills: 100 + i, gold: 10000 + i,
+      race: "Elven", sub: "Wizard", cls: "Magic User", name: `Big${i}`,
+    });
+    rec = updateBests(rec, big).record;
+  }
+  const lineageL = [];
+  for (let i = 0; i < 12; i++) {
+    const run = makeSummary({
+      floor: 1 + (i % 6), steps: 500 + i * 7, day: 1, kills: 0, gold: 1,
+      race: "Troll", sub: "Acrobat", cls: "Thief", name: `L${i}`,
+    });
+    lineageL.push(run);
+    rec = updateBests(rec, run).record;
+  }
+  for (const board of RANKED_BOARDS) {
+    for (const run of lineageL) assert.ok(!rec.boards[board].includes(run.hash), `no L run is on ${board}`);
+  }
+  const expected = lineageRuns(lineageL, "Troll Acrobat").slice(0, 10).map((r) => r.hash);
+  const held = lineageRuns(Object.values(rec.runs), "Troll Acrobat").map((r) => r.hash);
+  assert.deepStrictEqual(held, expected, "exactly L's ten best by lineageRuns order are held");
+  const pruned = lineageRuns(lineageL, "Troll Acrobat").slice(10).map((r) => r.hash);
+  assert.equal(pruned.length, 2);
+  for (const h of pruned) assert.ok(!rec.runs[h], "L's 11th and 12th are pruned");
+  for (const board of RANKED_BOARDS) {
+    for (const h of rec.boards[board]) assert.ok(rec.runs[h], `board "${board}" hash ${h} is held`);
+  }
 });
 
 test("updateBests is idempotent: applying the same summary twice returns newBests [] and a deepStrictEqual record", () => {
@@ -494,10 +563,12 @@ test("updateBests: the deepest run survives a 70-run graveyard fold and every bo
 
   const referenced = new Set();
   for (const board of RANKED_BOARDS) for (const h of rec.boards[board]) referenced.add(h);
-  for (const key of Object.keys(rec.lineage)) {
-    if (rec.lineage[key].best) referenced.add(rec.lineage[key].best);
+  const keys = new Set(Object.values(rec.runs).map((r) => lineageKey(r)));
+  for (const key of keys) {
+    for (const r of lineageRuns(Object.values(rec.runs), key).slice(0, BOARD_TOP_N)) referenced.add(r.hash);
   }
   assert.deepStrictEqual(new Set(Object.keys(rec.runs)), referenced);
+  assert.ok(!("lineage" in rec));
 });
 
 test("updateBests (Phase 66, D-09): the lean list of a mixed sequence is ordered by rate, and newBests includes lean only when strictly better (or an equal rate at a deeper floor)", () => {
@@ -551,7 +622,6 @@ test("sanitizeBests drops dangling hashes, caps a 14-hash list at 10, drops unkn
       lean: [],
       unknownBoard: ["00000000"],
     },
-    lineage: {},
     last: null,
   };
   const result = sanitizeBests(raw);
@@ -561,27 +631,29 @@ test("sanitizeBests drops dangling hashes, caps a 14-hash list at 10, drops unkn
   assert.ok(!("unknownBoard" in result.boards), "unknown board key dropped");
 });
 
-test("sanitizeBests drops invalid lineage entries and clears a dangling lineage best", () => {
+test("sanitizeBests (Phase 70, D-12) ignores a legacy Phase 65 lineage map: runs, boards and last load, no lineage key, idempotent", () => {
   const raw = {
-    runs: { aaaaaaaa: { hash: "aaaaaaaa", floor: 1 } },
+    v: 1,
+    runs: { aaaaaaaa: { hash: "aaaaaaaa", floor: 1, race: "Human", sub: "Knight" } },
     boards: { deep: ["aaaaaaaa"] },
     lineage: {
       "Human Fighter": { count: 2, best: "aaaaaaaa" },
       "Zero Count": { count: 0, best: "aaaaaaaa" },
-      "Non Integer": { count: 1.5, best: "aaaaaaaa" },
       "Dangling Best": { count: 1, best: "deadbeef" },
     },
-    last: null,
+    last: "aaaaaaaa",
   };
   const result = sanitizeBests(raw);
-  assert.deepStrictEqual(result.lineage["Human Fighter"], { count: 2, best: "aaaaaaaa" });
-  assert.ok(!("Zero Count" in result.lineage));
-  assert.ok(!("Non Integer" in result.lineage));
-  assert.deepStrictEqual(result.lineage["Dangling Best"], { count: 1, best: null });
+  assert.ok(!("lineage" in result), "the legacy map is dropped on load");
+  assert.deepStrictEqual(Object.keys(result.runs), ["aaaaaaaa"]);
+  assert.deepStrictEqual(result.boards.deep, ["aaaaaaaa"]);
+  assert.equal(result.last, "aaaaaaaa");
+  assert.equal(result.v, 1);
+  assert.deepStrictEqual(sanitizeBests(result), result, "sanitizing its own output is a no-op");
 });
 
 test("sanitizeBests drops a runs entry whose value.hash differs from its key", () => {
-  const raw = { runs: { aaaaaaaa: { hash: "bbbbbbbb", floor: 1 } }, boards: {}, lineage: {}, last: null };
+  const raw = { runs: { aaaaaaaa: { hash: "bbbbbbbb", floor: 1 } }, boards: {}, last: null };
   const result = sanitizeBests(raw);
   assert.deepStrictEqual(result.runs, {});
 });
@@ -604,7 +676,6 @@ test("sanitizeBests re-ranks a hand-built boards.lean list stored in the retired
     v: 1,
     runs: { [runA.hash]: runA, [runB.hash]: runB, [runC.hash]: runC },
     boards: { deep: [], lean: [runA.hash, runB.hash, runC.hash], days: [], kills: [], purse: [] },
-    lineage: {},
     last: null,
   };
   const result = sanitizeBests(raw);
@@ -622,7 +693,6 @@ test("sanitizeBests is idempotent over its own output, and leaves an updateBests
     v: 1,
     runs: { [runA.hash]: runA, [runB.hash]: runB },
     boards: { deep: [], lean: [runA.hash, runB.hash], days: [], kills: [], purse: [] },
-    lineage: {},
     last: null,
   };
   const once = sanitizeBests(raw);
@@ -645,7 +715,6 @@ test("sanitizeBests keeps stored order for two runs tied on every ordering key",
     v: 1,
     runs: { [runA.hash]: runA, [runB.hash]: runB },
     boards: { deep: [], lean: [runA.hash, runB.hash], days: [], kills: [], purse: [] },
-    lineage: {},
     last: null,
   };
   const result = sanitizeBests(raw);
@@ -710,7 +779,7 @@ test("backfillBests: tied stones rank the oldest stone first", () => {
 
 test("backfillBests(graves) makes no announcements and returns the record only", () => {
   const rec = backfillBests([legacyStone({ floor: 3 })]);
-  assert.deepStrictEqual(Object.keys(rec), ["v", "runs", "boards", "lineage", "last"]);
+  assert.deepStrictEqual(Object.keys(rec), ["v", "runs", "boards", "last"]);
 });
 
 // --- normalizeStone (Phase 66, D-09) ----------------------------------------------
