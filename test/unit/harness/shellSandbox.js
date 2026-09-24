@@ -82,6 +82,7 @@ import {
   RAIL_COPY,
   holdForCard,
   railDismissKind,
+  isCombatCard,
   emptyRail,
 } from "../../../src/browser/rail.js";
 // Phase 58 (MOTION-03), Plan 06 — the fight-log/combat-panel/combat-menu
@@ -483,6 +484,8 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
       copy: RAIL_COPY,
       holdForCard,
       dismissKind: railDismissKind,
+      // Phase 71 (D-16, R-28): the combat card kinds predicate renderRail reads.
+      isCombatCard,
     };
     context.window.__mzRail = emptyRail();
   }

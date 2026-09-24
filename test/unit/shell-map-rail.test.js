@@ -448,9 +448,10 @@ test("(o) 2026-09-17 UAT ruling (reverses the 2026-09-16 map-tab-only rule): sho
   // full height); a real card (event, decision, bagFull/equip refusal) shows
   // on any tab; combat/death still own their screens.
   const region = railRegion();
-  // Phase 71 (D-10, R-14): the long-press foe card is the ONE combat-legal
-  // card; every other card still hides while combat owns the screen.
-  assert.match(region, /railEl\.hidden = !!\(\(S\.combat && !foeCardUp\) \|\| S\.dead\) \|\| idle;/);
+  // Phase 71 (D-10, R-14; D-16, R-28): the combat card kinds (the
+  // long-press foe card and the status-chit card) are the only combat-legal
+  // cards; every other card still hides while combat owns the screen.
+  assert.match(region, /railEl\.hidden = !!\(\(S\.combat && !combatCardUp\) \|\| S\.dead\) \|\| idle;/);
   assert.doesNotMatch(region, /mwActiveTab !== "maze"/);
   assert.doesNotMatch(region, /panelUp/);
 });

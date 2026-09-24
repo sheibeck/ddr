@@ -110,27 +110,42 @@ test("ui-tap-shell (a) T-71-14: __mzTapArmed answers null on a throw", () => {
   }
 });
 
-test("ui-tap-shell (b) R-24 regression guard: a real #mm-conditions chip keeps its stale aria-disabled marker, and the tap still sounds once armed", () => {
+// Phase 71 (D-16, R-29): the #mm-conditions chips moved off guardTap onto
+// guardInfoTap (their own condArmed window, no aria-disabled marker), so the
+// stale-marker regression case is built from a guardTap-wrapped element
+// the arm sweep never reaches, and the real chip is checked on its own.
+test("ui-tap-shell (b) R-24 regression guard: a guardTap element the sweep never reaches keeps a stale aria-disabled marker, and the tap still sounds once armed", () => {
+  const { clock, sb, w } = sandbox();
+  const el = fakeEl();
+  sb.context.guardTap(el, () => {});
+  sb.context.armEncounterButtons();
+  const deps = { armedFor: (x) => w.__mzTapArmed(x), beatActive: () => false };
+  assert.equal(uiTapShouldPlay(el, deps), false, "inside the arm window the guard swallows the tap");
+  clock.advance(ARM_DELAY_MS);
+  assert.equal(el.getAttribute("aria-disabled"), "true", "never swept: the marker is stale");
+  assert.equal(w.__mzTapArmed(el), true);
+  assert.equal(uiTapShouldPlay(el, deps), true, "the stale marker never mutes a live guarded element");
+});
+
+test("ui-tap-shell (b) D-16: a real #mm-conditions chip carries no marker, and its tap sound follows its own arm window", () => {
   const { clock, sb, doc, w } = sandbox();
   const s = structuredClone(fixedStates().thief);
   s.c.might = 2; // one live condition, so paintConditions builds one chip
   sb.setState(s);
   sb.paint();
   const host = doc.document.getElementById("mm-conditions");
-  const chip = host.children.find((c) => c.tagName === "button" || c.tag === "button" || c.className === "mw-cond");
+  const chip = host.children.find((c) => c.className === "mw-cond");
   assert.ok(chip, "paintConditions built a chip");
-  // recordingDom's closest() answers null for everything; the chip IS a
-  // real <button>, so answer the tap selector with itself.
   chip.closest = (sel) => (sel === UI_TAP_SELECTOR ? chip : null);
   const deps = { armedFor: (el) => w.__mzTapArmed(el), beatActive: () => false };
-  assert.equal(uiTapShouldPlay(chip, deps), false, "inside the arm window the chip's guard swallows the tap");
+  assert.equal(chip.getAttribute("aria-disabled"), null, "no aria-disabled marker on a chip (R-29)");
+  assert.equal(uiTapShouldPlay(chip, deps), false, "inside the chip's arm window the guard swallows the tap");
   clock.advance(ARM_DELAY_MS);
-  sb.paint(); // a repaint rebuilds the chip and re-stamps the marker
+  sb.paint(); // a repaint rebuilds the chip; the chip set is unchanged, so the window is not restarted
   const chip2 = host.children.find((c) => c.className === "mw-cond");
   chip2.closest = (sel) => (sel === UI_TAP_SELECTOR ? chip2 : null);
-  assert.equal(chip2.getAttribute("aria-disabled"), "true", "#mm-conditions is never swept: the marker is stale");
   assert.equal(w.__mzTapArmed(chip2), true);
-  assert.equal(uiTapShouldPlay(chip2, deps), true, "the stale marker never mutes a live chip");
+  assert.equal(uiTapShouldPlay(chip2, deps), true, "a live chip clicks");
 });
 
 test("ui-tap-shell (c) R-25: a locked action and a guarded foe card during a beat are silent", () => {

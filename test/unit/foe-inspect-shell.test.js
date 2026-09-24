@@ -268,7 +268,12 @@ test("pins: renderRail keeps the foe card live in combat, lifts it over the acti
   const region = CODE.slice(start, CODE.indexOf("\nfunction ", start + 10));
   assert.match(region, /rail\.card\?\.kind === "foe"/);
   assert.match(region, /window\.__mzFoeInspect\.card\(rail\.card\.foe, V\)/);
-  assert.match(region, /railEl\.hidden = !!\(\(S\.combat && !foeCardUp\) \|\| S\.dead\) \|\| idle;/);
+  // Phase 71 (D-16, R-28, R-31): the hidden, data-over and hold decisions
+  // read the combat card kinds (foe and cond) and combatScreenUp(); the live
+  // re-derive above stays foe-only.
+  assert.match(region, /railEl\.hidden = !!\(\(S\.combat && !combatCardUp\) \|\| S\.dead\) \|\| idle;/);
+  assert.match(region, /if \(combatScreenUp\(\) && combatCardUp && !railEl\.hidden\)/);
+  assert.match(region, /else if \(combatCardUp && !combatScreenUp\(\) && railTimer === null\)/);
   assert.match(region, /railEl\.dataset\.over = "combat"/);
   assert.match(region, /delete railEl\.dataset\.over/);
   assert.match(region, /getElementById\("cb-act"\)/);
