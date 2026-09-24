@@ -69,13 +69,32 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 **Plans**: 7 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 72-01-PLAN.md — Roll ledger audit (docs/ROLL-LEDGER.md, extends Phase 31's 34 sites) + BEFORE bot readout + batched rulings checkpoint for NEEDS-RULING findings (wave 1)
 - [ ] 72-02-PLAN.md — Odds harness (test/unit/harness/rollOdds.js) + combat direction test rows, with RED pending rows for the four known bugs (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 72-03-PLAN.md — Non-combat direction test rows: soak, thrown, resist, initiative, flee, parley, traps, locks, climbs/leaps, cure, wake, drops (wave 2)
 - [ ] 72-04-PLAN.md — Fix (d) Thief evasion sign + (a) the insult is the last term on the member branch; Smoke text; measured-zero declaration + ROLL-01 guard (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 72-05-PLAN.md — Fix (b) Fridgian frenzy second swing = normal to-hit narrowed by one (declared canon divergence); measure/declare/regenerate (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 72-06-PLAN.md — Fix (c) Skeleton shatters on its best face (sp.shatterOnBest, shatterIfBest, foeShattered); M&M claim removed; measured (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 72-07-PLAN.md — Close-out: F5 parley-dial sign + ruled findings, AFTER bot readout, final ledger, ledger↔test sync guard (wave 5)
+
+**Cross-cutting constraints:**
+
+- A modifier whose effect is absorbed by a clamp (need already floored at 1, an untouchable need-0 foe, the dark cap at 2) is asserted by the direction test as non-worsening (never flagged as a sign bug), and a clamp never turns a bonus into a penalty
+- Identity-valued dials (e.g. Thief evasion = 0, FOE_ACCURACY = 0) are asserted to change nothing at identity, and their DIRECTION is asserted by probing a non-zero value inside the test
 
 ### Phase 73: Engine Roll-High Mirror
 
