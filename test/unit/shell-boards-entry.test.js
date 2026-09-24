@@ -217,5 +217,35 @@ test("(D4) BEHAVIOUR: after either exit, isTitleOpen() is false and a later onDe
 });
 
 // ═══════════════════ (E) classic graveyard retirement pins (D-14) ══════════
-// Task 2 appends this section once the sentinel block and its harness are
-// actually deleted — see this file's git history for that commit.
+
+test("(E1) SOURCE: the classic graveyard sentinel block and its bindings are gone; window.__mzClassicBoot is fit() then paint() only", () => {
+  assert.doesNotMatch(HTML, /@gsd:dual-write-convergence-extract:graves:start/);
+  assert.doesNotMatch(HTML, /@gsd:dual-write-convergence-extract:graves:end/);
+  assert.doesNotMatch(CODE, /\bGRAVE_KEY\s*=/);
+  assert.doesNotMatch(CODE, /\bGRAVE_TOTAL_KEY\s*=/);
+  assert.doesNotMatch(CODE, /\bfunction loadGraves\(/);
+  assert.doesNotMatch(CODE, /\bfunction saveGraves\(/);
+  assert.doesNotMatch(CODE, /\blet graves\s*=/);
+  assert.doesNotMatch(CODE, /\blet gravesTotal\s*=/);
+  assert.doesNotMatch(CODE, /\bgravesLoadError\b/);
+
+  const bootRegion = sliceBetween(CODE, "window.__mzClassicBoot = async function classicBoot() {", "\n};");
+  const bodyOnly = bootRegion
+    .split("\n")
+    .slice(1)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  assert.deepStrictEqual(bodyOnly, ["fit();", "paint();"]);
+});
+
+test("(E2) SOURCE: test/persistence/harness/sandboxClassicPersistence.js is deleted", () => {
+  const harnessPath = path.join(REPO_ROOT, "test", "persistence", "harness", "sandboxClassicPersistence.js");
+  assert.equal(fs.existsSync(harnessPath), false);
+});
+
+test("(E3) SOURCE: test/persistence/dual-write-convergence.test.js no longer imports the deleted classic-persistence sandbox and reads the graveyard through the adapter's loadGraveyard()", () => {
+  const dwcPath = path.join(REPO_ROOT, "test", "persistence", "dual-write-convergence.test.js");
+  const dwcSrc = fs.readFileSync(dwcPath, "utf8");
+  assert.doesNotMatch(dwcSrc, /^import .*sandboxClassicPersistence\.js.*$/m);
+  assert.ok((dwcSrc.match(/loadGraveyard/g) || []).length >= 2, "expected loadGraveyard imported and used");
+});

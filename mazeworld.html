@@ -3243,66 +3243,6 @@ function renderDropShelf(shelf, entries) {
 // src/browser/gearTab.js#renderGearTab, which imports the pre-existing
 // engine/magic.js#canRead(state) directly.
 
-/* ---------------- the graveyard ---------------- */
-/* @gsd:dual-write-convergence-extract:graves:start */
-// 02-03: loadGraves()/saveGraves() route through window.mzStorage — the
-// shared async Storage abstraction (src/browser/storage.js) — instead of raw
-// localStorage, closing 02-RESEARCH.md's dual-write hazard (this classic
-// script and src/browser/engineAdapter.js's persistGrave() previously each
-// hand-rolled their own independent localStorage reads/writes on this exact
-// key). window.mzStorage is assigned by the trailing <script type="module">
-// block below BEFORE it invokes window.__mzClassicBoot() (which is the only
-// call site that awaits loadGraves()); the classic bury() call site still
-// calls saveGraves() fire-and-forget, matching this abstraction's own
-// fire-and-enqueue posture — storage.js's per-key write queue still orders it
-// correctly. (audit-batch E12 removed the former #btn-clearyard saveGraves()
-// caller — the lifetime total is non-clearable by design now.)
-const GRAVE_KEY = "ddr.graveyard.v1";
-// audit-batch E12 (part 2): the never-trimmed lifetime death total, owned and
-// incremented by src/browser/engineAdapter.js#persistGrave (the live death
-// choke point). Read here (read-only) on the Dead-tab open the same way the
-// capped `graves` array is, so the #yard-count copy can show the TRUE body
-// count even though only the newest 5 stones are rendered here (Phase 65,
-// D-05: the adapter now stores up to 60 stones; this Dead tab still renders
-// a bounded list of 5 until Phase 66 replaces it with the Leaderboards panel).
-const GRAVE_TOTAL_KEY = "ddr.graveyard.total.v1";
-let graves = [];
-let gravesTotal = 0;
-// 04-05: tracked separately from `graves.length === 0` so a genuine storage
-// read failure renders the distinct "THE LEDGER WON'T OPEN" fallback
-// (04-UI-SPEC.md Copywriting Contract / UI Considerations backstop) rather
-// than being silently indistinguishable from a real empty graveyard.
-let gravesLoadError = false;
-
-async function loadGraves() {
-  try {
-    const r = await window.mzStorage.getItem(GRAVE_KEY);
-    graves = r ? JSON.parse(r) || [] : [];
-    gravesLoadError = false;
-  } catch (e) {
-    graves = [];
-    gravesLoadError = true;
-  }
-  if (!Array.isArray(graves)) graves = [];
-  // audit-batch E12 (part 2): pull the lifetime total alongside the graves.
-  // Migration-safe — a pre-E12 player has graves but no total key yet, so fall
-  // back to the visible grave count (Number(null) is a finite 0, so the null
-  // check is needed to tell "missing key" from a real stored "0"). max() guards
-  // any transient under-count so the total is never fewer than the stones shown.
-  try {
-    const tr = await window.mzStorage.getItem(GRAVE_TOTAL_KEY);
-    const tn = Number(tr);
-    gravesTotal = tr !== null && Number.isFinite(tn) ? tn : graves.length;
-  } catch (e) {
-    gravesTotal = graves.length;
-  }
-  gravesTotal = Math.max(gravesTotal, graves.length);
-}
-async function saveGraves() {
-  try { await window.mzStorage.setItem(GRAVE_KEY, JSON.stringify(graves.slice(0, 60))); } catch (e) {}
-}
-/* @gsd:dual-write-convergence-extract:graves:end */
-
 /* ---------------- encounter panel ---------------- */
 // Device-review revision (04-CONTEXT.md "Device-review revisions" #5):
 // #enc-panel is now an OVERLAY over the map (not a permanent panel beneath
@@ -4775,10 +4715,12 @@ document.getElementById("enc-panel")?.addEventListener("click", beatHurryTap, tr
 // Phase 44 (DEAD-01/DEAD-03): the classic run-save persistence (save()/
 // load()/SAVE_KEY) and the classic cold-boot character roll (the classic
 // newGame() and its captured-at-parse-time reference) are gone —
-// src/browser/engineAdapter.js's persist()/boot() is the ONE run-save path
-// (the graves sentinel block above is untouched and still the live
-// graveyard persistence). window.__mzClassicBoot below no longer has a
-// no-saved-run fallback to call.
+// src/browser/engineAdapter.js's persist()/boot() is the ONE run-save path.
+// Phase 66 (D-14): the classic graveyard loader/saver (loadGraves()/
+// saveGraves()/GRAVE_KEY/GRAVE_TOTAL_KEY) are gone too — the adapter
+// (engineAdapter.js#loadGraveyard/persistGrave) is now the ONE graveyard
+// reader and writer. window.__mzClassicBoot below no longer has a
+// no-saved-run fallback to call, and no graveyard to load.
 
 // Device-review Pass B1 item 2: "Save & quit" no longer rerolls immediately
 // — it returns to the title screen (confirm first), where the single ENTER
@@ -5303,27 +5245,21 @@ addEventListener("keydown", e => {
 });
 addEventListener("resize", () => { fit(); window.mzKeepPartyInView?.(); renderEncounter(); });
 
-// 02-03: the classic script's boot sequence (loadGraves/fit/paint) used to
-// run synchronously right here, at classic-script parse time. But
-// window.mzStorage — the abstraction loadGraves() calls — is assigned by the
-// trailing <script type="module"> block below, which parses AFTER this
-// classic script (module scripts are always deferred). Exposing this boot
-// sequence as window.__mzClassicBoot mirrors the existing window.__mzState/
-// window.move bridge pattern (see the trailing module's own doc comment) and
-// lets that module await window.mzStorage's assignment + one-time migration
-// BEFORE the graves load in this sequence runs, closing the parse-order half
-// of the dual-write hazard (02-RESEARCH.md "The dual-write hazard").
-// Phase 44 (DEAD-01): this is now ONLY the graveyard load + first fit/paint
-// — the classic run-save load/resume/no-save-roll branch is gone. The
-// module boot (below, after window.__mzState.set(engineState)) is the ONE
-// place a resumed run's resume banner Oracle lines are emitted now.
-// Phase 66 (BOARD-01, D-14): the Leaderboards panel renders on the DEAD tab
-// now (src/browser/boardsPanel.js through window.__mzBoards), reading only
-// the adapter's in-memory getBests()/getGraveyard() — never this classic
-// loadGraves() read. The loader/saver sentinel block below is kept only
-// until 66-07 retires it; this boot call is now otherwise a no-op consumer.
+// 02-03: the classic script's boot sequence (originally loadGraves/fit/
+// paint) used to run synchronously right here, at classic-script parse
+// time. Exposing it as window.__mzClassicBoot mirrors the existing
+// window.__mzState/window.move bridge pattern (see the trailing module's
+// own doc comment) so the module script can await it at the right point in
+// its own boot sequence.
+// Phase 44 (DEAD-01): the classic run-save load/resume/no-save-roll branch
+// is gone. The module boot (below, after window.__mzState.set(engineState))
+// is the ONE place a resumed run's resume banner Oracle lines are emitted.
+// Phase 66 (BOARD-01, D-14): the graveyard is now read by the adapter
+// (engineAdapter.js#loadGraveyard, awaited inside the module's own boot())
+// — the classic loadGraves()/saveGraves()/GRAVE_KEY/GRAVE_TOTAL_KEY sentinel
+// block is deleted outright (no dual path), so this classic boot is now
+// just the first canvas fit and paint.
 window.__mzClassicBoot = async function classicBoot() {
-  await loadGraves();
   fit();
   paint();
 };
@@ -6644,10 +6580,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // 02-03: only NOW — after window.mzStorage is assigned + migrated above —
   // invoke the classic script's own deferred boot sequence
   // (window.__mzClassicBoot, defined at the bottom of the classic <script>).
-  // Phase 44 (DEAD-01): the slimmed boot is now just the graveyard load +
-  // first fit/paint — there is no classic run-save load/resume/no-save-roll
+  // Phase 44 (DEAD-01): there is no classic run-save load/resume/no-save-roll
   // branch left to worry about; the engine's own `boot()` above already set
   // `S` (via window.__mzState) and emitted the resume banner if applicable.
+  // Phase 66 (D-14): the graveyard is read by the adapter (loadGraveyard(),
+  // awaited inside boot() above), not by this classic boot any more — the
+  // slimmed window.__mzClassicBoot is now just the first canvas fit/paint.
   await window.__mzClassicBoot();
 
   // Phase 59 (D-14): release the dressing lazy-load one presented frame

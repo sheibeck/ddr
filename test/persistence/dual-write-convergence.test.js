@@ -12,19 +12,22 @@
 // load() are gone (retired along with classic newGame() — the last live
 // foothold of the dead engine); engineAdapter.js's persist()/boot() is the
 // ONE run-save path now, already covered by the first two cases below and
-// by test/unit/engineAdapter.test.js. This file keeps only: (a) the
-// engineAdapter-vs-direct-storage.getItem convergence proof, and (b) the
-// classic script's OWN extracted saveGraves()/loadGraves() (the graves key,
-// which is still live persistence) routing through the same
-// window.mzStorage instance.
+// by test/unit/engineAdapter.test.js.
+//
+// Phase 66 (D-14): the classic script's OWN extracted saveGraves()/
+// loadGraves() (and their test/persistence/harness/sandboxClassicPersistence.js
+// vm sandbox) are gone too — the classic script no longer reads or writes the
+// graveyard at all. src/browser/engineAdapter.js's loadGraveyard() is now the
+// ONE graveyard reader, so this file's third case proves ITS read routes
+// through the same shared window.mzStorage instance, replacing the retired
+// classic-extraction proof.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as storage from "../../src/browser/storage.js";
-import { boot, dispatch, getState } from "../../src/browser/engineAdapter.js";
+import { boot, dispatch, getState, loadGraveyard } from "../../src/browser/engineAdapter.js";
 import { rehydrate } from "../../engine/saveState.js";
 import { installFakeCapacitor, installFakeLocalStorage } from "./harness/fakePreferences.js";
-import { loadClassicPersistenceSandbox } from "./harness/sandboxClassicPersistence.js";
 
 const SAVE_KEY = "ddr.delve.v1";
 const GRAVE_KEY = "ddr.graveyard.v1";
@@ -85,30 +88,21 @@ test("engineAdapter and a direct storage.getItem() read see the IDENTICAL value 
   });
 });
 
-test("the classic script's OWN extracted loadGraves()/saveGraves() also route through window.mzStorage under ddr.graveyard.v1", async () => {
+test("engineAdapter's loadGraveyard() reads back the SAME stones and total a direct storage.setItem() wrote — proving its read routes through the shared storage abstraction (Phase 66, D-14)", async () => {
+  const GRAVE_TOTAL_KEY = "ddr.graveyard.total.v1";
   await withConvergedStorage(async (store) => {
-    const classic = loadClassicPersistenceSandbox({ mzStorage: window.mzStorage });
-    classic.graves = [{ name: "Bones", cause: "starve" }];
-    await classic.saveGraves();
+    const stones = [{ name: "Bones", cause: "starve" }];
+    await storage.setItem(GRAVE_KEY, JSON.stringify(stones));
+    await storage.setItem(GRAVE_TOTAL_KEY, "7");
+    await storage.flush();
 
     const raw = store.get(GRAVE_KEY);
-    assert.ok(raw, "the classic script's own saveGraves() wrote through window.mzStorage");
-    assert.deepStrictEqual(JSON.parse(raw), [{ name: "Bones", cause: "starve" }]);
+    assert.ok(raw, "the direct storage.setItem() write landed in the shared backend");
+    assert.deepStrictEqual(JSON.parse(raw), stones);
 
-    classic.graves = [];
-    await classic.loadGraves();
-    // classic.graves is now populated by loadGraves()'s own `JSON.parse(...)`
-    // call, evaluated INSIDE the vm sandbox's separate realm — its objects
-    // are structurally identical to, but not reference-equal-by-prototype
-    // with, this file's own Object/Array (assert.deepStrictEqual treats
-    // cross-realm objects as unequal even with identical shape/values).
-    // Round-tripping through THIS realm's JSON normalizes that away; the
-    // content equality is exactly what this test is verifying.
-    assert.deepStrictEqual(
-      JSON.parse(JSON.stringify(classic.graves)),
-      [{ name: "Bones", cause: "starve" }],
-      "loadGraves() read back through window.mzStorage",
-    );
+    const { graves, total } = await loadGraveyard();
+    assert.deepStrictEqual(graves, stones, "loadGraveyard() reads back the identical stones through window.mzStorage");
+    assert.equal(total, 7, "loadGraveyard() reads back the identical lifetime total through window.mzStorage");
   });
 });
 

@@ -92,7 +92,7 @@ export const BRIDGE = Object.freeze({
   __mzClassicBoot: Object.freeze({
     owner: "mazeworld.html (classic)",
     consumers: Object.freeze(["mazeworld.html (module: the boot sequence after the roller mount — awaits the classic boot before first paint)"]),
-    purpose: "Exposes the classic script's async boot routine so the module script can await it before running the roller screen's own init.",
+    purpose: "Exposes the classic script's async boot routine (the first canvas fit and paint) so the module script can await it before running the title screen's own init.",
   }),
   __mzCombatMenu: Object.freeze({
     owner: "mazeworld.html (module)",
