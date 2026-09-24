@@ -5450,6 +5450,150 @@ Every tail `dS` is small (largest magnitude -1.9 at floor 13) and the SAME sign 
 
 Scan: `node tools/initiative-fixture-scan.mjs | diff - tools/initiative-fixture-scan-output.txt` clean (regenerated at commit `7db833e`). Suite: `node --test test/parity/*.test.js` green (43+/43+). **MOVED SET (26 declared holders across three mechanisms)**: 31 `chargenDivergence` holders (all 14 chargen seeds + movement#script + economy#script + 6 combat scenarios + 4 magic scenarios + 5 encounters scenarios — HERO_HP_SCALE/FOOD_CLOCK), 17 `floorFeatureShift` holders (ENCOUNTER_DOTS remap, a new record kind), 9 `divergence` (action-path) holders with `phase` containing `54` (win/chest/movement#script new; lose/lose-apprentice/lose-plain/flee/parley/cast-damage re-measured) — see `test/parity/FIXTURE-INVENTORY.md`'s `### Fitted dials — measured set` section for the full per-mechanism accounting and `test/parity/divergence-records.test.js`'s `BAND-02 (USER RULING D/G)` guard for the machine-checked EXPECTED set. `grep -rc '"BAND-02"' test/parity/fixtures/*.json` > 0 across all six fixture files. Master hash `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` unchanged; `test/parity/harness/comparables.js` untouched (every `applyFloorFeatureShift` copy is LOCAL to its own test file, per the engine gate).
 
+## v2.1 roll-direction pass (Phase 72) — bot readouts
+
+### Rule changes under measurement
+
+- **(a)** Parley insult applied LAST on the party-member branch, matching the hero branch (need 1→2, 19–20 on a d20 after Phase 73). Landed by 72-04.
+- **(b)** Fridgian frenzy's second swing becomes the normal to-hit narrowed by one face (`Math.max(1, toHit(state)-1)`), replacing the canon hard-set need-3, and applies ONLY to the actual frenzy swing (F4). Landed by 72-05. This is the one fix expected to move difficulty measurably (Fridgian heroes only).
+- **(c)** Skeleton shatter: a best-face landed to-hit roll against a Skeleton destroys it outright (both lives). Landed by 72-06.
+- **(d)** Thief `evasion` dial sign flipped so a positive value subtracts from the foe's need (harder to hit); 0 at identity, so no fixture moves. Landed by 72-04.
+- Plus F1 (member/ally strikes apply the hero's per-target to-hit rules), F3 (Shadow's `daggerOnly` becomes real) and F5 (`PARLEY_NEED_MOD` sign flipped, 0 at identity) — all landed by 72-07.
+
+### Parameters
+
+`node tools/tune-difficulty.mjs --seeds=200` (solo bot, `--start-depth=1`, no `--party`).
+
+### BEFORE — commit 9197002 (phase start, no engine edit)
+
+```
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=7  p90=12  max=30
+
+Action-count distribution:
+  min=187  p50=887  p90=20000  max=20000
+
+Death-cause breakdown:
+  starved in the dark  21 (10.5%)
+  cut down by a Werebeast 15 (7.5%)
+  undone by a trap     12 (6.0%)
+  cut down by a Dante  9 (4.5%)
+  spent by the dungeon itself 9 (4.5%)
+  cut down by a Poltergeist 7 (3.5%)
+  cut down by a Blumble 7 (3.5%)
+  cut down by a Cave Bear 7 (3.5%)
+  cut down by a Frank  6 (3.0%)
+  cut down by a Drudge 6 (3.0%)
+  cut down by a Drarl  6 (3.0%)
+  cut down by a Trachea 5 (2.5%)
+  cut down by a Herman 5 (2.5%)
+  came up short on a leap 4 (2.0%)
+  cut down by a Skeleton 4 (2.0%)
+  cut down by a Craig  4 (2.0%)
+  cut down by a Floater 4 (2.0%)
+  cut down by a Stink Bug 4 (2.0%)
+  cut down by a Drake  4 (2.0%)
+  cut down by a Primp  4 (2.0%)
+  cut down by a Djinni 3 (1.5%)
+  cut down by a Google 3 (1.5%)
+  cut down by a Ghoul  2 (1.0%)
+  cut down by a Bones  2 (1.0%)
+  cut down by a Hair   2 (1.0%)
+  cut down by a Spectre 2 (1.0%)
+  cut down by a Rinkle 2 (1.0%)
+  cut down by a Drat   2 (1.0%)
+  cut down by a Vampire 2 (1.0%)
+  cut down by a Undead 2 (1.0%)
+  fell off a wall      2 (1.0%)
+  cut down by a Shadow 1 (0.5%)
+  cut down by a Dread Lock 1 (0.5%)
+  cut down by a Ghost  1 (0.5%)
+  cut down by a China Wolf 1 (0.5%)
+  cut down by a Ned    1 (0.5%)
+  cut down by a Gremlin 1 (0.5%)
+  cut down by a Sterling 1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=564  successes=346 (61.3%)  failures=218  refused=0  exhausted=0
+  runs with >=1 attempt: 76 of 200
+  SP from parley: 1841 of 119708 total SP (1.5%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 80.5%  >=10: 23.6%  >=20: 1.1%  >=30: 0.6%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=53  p50=115  p90=135  max=187
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 62/2082 (3.0%)
+  6-10: 99/1021 (9.7%)
+  11-20: 162/358 (45.3%)
+  21-30: 41/63 (65.1%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=625  foeBolted=215  foeDrained=18  foeDebuffed=51  foeHealed=2  foeSummoned=4
+  heroResisted=301  heroResistFailed=111
+  ability damage: 1179 of 31172 total damage taken (3.8%)
+
+Stuck: 26 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=200  startDepth=1
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 1:1  2:2  3:16  4:15  5:15  6:21  7:28  8:13  9:22  10:13  11:8  12:3  13:4  14:4  15:2  16:1  17:3  18:1  28:1  30:1
+  mean death depth=7.74  floors gained p50=6 mean=6.74  encounters survived mean=16.65
+  reach: >=5 80.5%  >=8 43.7%  >=9 36.2%  >=10 23.6%  >=13 9.8%  >=16 4.0%  >=20 1.1%
+  band share of deaths: Filter 1-4 19.5% | Wall 5-8 44.3% | Breakaway 9-15 32.2% | Endgame 16-20 2.9% | beyond 20 1.1%
+  top causes — Filter: cut down by a Dante 7, cut down by a Poltergeist 6, cut down by a Cave Bear 4, spent by the dungeon itself 3, cut down by a Hair 2
+  top causes — Wall: cut down by a Werebeast 13, starved in the dark 13, cut down by a Blumble 7, undone by a trap 7, spent by the dungeon itself 5
+  top causes — Breakaway: starved in the dark 6, cut down by a Drarl 5, cut down by a Drudge 5, cut down by a Herman 5, cut down by a Craig 4
+  top causes — Endgame: came up short on a leap 1, cut down by a Drarl 1, cut down by a Dread Lock 1, cut down by a Drudge 1, cut down by a Floater 1
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):
+  L=1  reached=200  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=99.5%  S_L=99.5%  target p_L=98.8%  target S_L=98.8%  dS=+0.7  PASS
+  L=2  reached=199  deaths=2 (combat 0 / dot 1 / starvation-exhaustion 1 / other 0)  p_L=99.0%  S_L=98.5%  target p_L=96.3%  target S_L=95.1%  dS=+3.4  PASS
+  L=3  reached=197  deaths=16 (combat 15 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=91.9%  S_L=90.5%  target p_L=93.1%  target S_L=88.6%  dS=+1.9  PASS
+  L=4  reached=178  deaths=15 (combat 10 / dot 5 / starvation-exhaustion 0 / other 0)  p_L=91.6%  S_L=82.9%  target p_L=89.9%  target S_L=79.7%  dS=+3.2  PASS
+  L=5  reached=158  deaths=15 (combat 7 / dot 6 / starvation-exhaustion 2 / other 0)  p_L=90.5%  S_L=75.0%  target p_L=86.9%  target S_L=69.2%  dS=+5.8  PASS
+  L=6  reached=141  deaths=21 (combat 15 / dot 1 / starvation-exhaustion 5 / other 0)  p_L=85.1%  S_L=63.8%  target p_L=84.3%  target S_L=58.4%  dS=+5.4  PASS
+  L=7  reached=118  deaths=28 (combat 21 / dot 4 / starvation-exhaustion 3 / other 0)  p_L=76.3%  S_L=48.7%  target p_L=82.2%  target S_L=48.0%  dS=+0.7  PASS
+  L=8  reached=86  deaths=13 (combat 6 / dot 4 / starvation-exhaustion 3 / other 0)  p_L=84.9%  S_L=41.3%  target p_L=80.6%  target S_L=38.7%  dS=+2.6  PASS
+  L=9  reached=73  deaths=22 (combat 17 / dot 1 / starvation-exhaustion 4 / other 0)  p_L=69.9%  S_L=28.9%  target p_L=79.5%  target S_L=30.8%  dS=-1.9  PASS
+  L=10  reached=49  deaths=13 (combat 9 / dot 3 / starvation-exhaustion 1 / other 0)  p_L=73.5%  S_L=21.2%  target p_L=78.9%  target S_L=24.3%  dS=-3.1  PASS
+  L=11  reached=34  deaths=8 (combat 7 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=76.5%  S_L=16.2%  target p_L=78.7%  target S_L=19.1%  dS=-2.9  PASS
+  L=12  reached=25  deaths=3 (combat 3 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=88.0%  S_L=14.3%  target p_L=78.8%  target S_L=15.1%  dS=-0.8  PASS
+  L=13  reached=22  deaths=4 (combat 4 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=81.8%  S_L=11.7%  target p_L=79.1%  target S_L=11.9%  dS=-0.2  tail
+  L=14  reached=16  deaths=4 (combat 4 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=75.0%  S_L=8.8%  target p_L=79.6%  target S_L=9.5%  dS=-0.7  tail
+  L=15  reached=12  deaths=2 (combat 2 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=83.3%  S_L=7.3%  target p_L=80.2%  target S_L=7.6%  dS=-0.3  tail
+  L=16  reached=10  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=90.0%  S_L=6.6%  target p_L=81.0%  target S_L=6.2%  dS=+0.4  tail
+  L=17  reached=9  deaths=3 (combat 3 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=66.7%  S_L=4.4%  target p_L=81.8%  target S_L=5.0%  dS=-0.6  tail
+  L=18  reached=5  deaths=1 (combat 0 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=80.0%  S_L=3.5%  target p_L=82.7%  target S_L=4.2%  dS=-0.7  tail
+  L=19  reached=4  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=3.5%  target p_L=83.6%  target S_L=3.5%  dS=+0.0  tail
+  L=20  reached=3  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=3.5%  target p_L=84.5%  target S_L=3.0%  dS=+0.5  tail
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):
+  Fighter  n=69  p50=7  reach5=82.3%  reach10=17.7%  reach20=0.0%  dmgTaken/fight=11.15  rounds/fight=4.43  foeMiss=66.4%  casts(def/off)=0/0  potions/run=1.06  backstabs/run=0.00  flees/run=1.91
+  Thief  n=72  p50=8  reach5=88.7%  reach10=30.6%  reach20=1.6%  dmgTaken/fight=7.78  rounds/fight=3.22  foeMiss=69.8%  casts(def/off)=0/0  potions/run=2.07  backstabs/run=11.29  flees/run=3.56
+  Magic User  n=59  p50=7  reach5=68.0%  reach10=22.0%  reach20=2.0%  dmgTaken/fight=7.71  rounds/fight=3.03  foeMiss=66.9%  casts(def/off)=249/1338  potions/run=3.61  backstabs/run=0.00  flees/run=1.41
+
+Outcome: 174 dead, 26 stuck (hit maxActions=20000; excluded from depth stats)
+
+EXIT=0
+```
+
+Full raw output archived at the scratchpad path used during this run; the table above is verbatim from the tool's own stdout (Pace and the L=21+ info-only rows of Per-floor survival trimmed for length — both are unaffected by the four fixes under measurement, which are combat/parley mechanics, not floor-pacing mechanics).
+
+### AFTER — pending
+
+Recorded by 72-07 once the four known fixes and the F1/F3/F5 rulings have landed.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
