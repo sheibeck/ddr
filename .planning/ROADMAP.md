@@ -86,9 +86,9 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 66-01-PLAN.md — (wave 1) LEANEST re-ranked by squares per floor (re-rank on load, zero fixture movement) and the adapter's in-memory graveyard + lifetime-total read seam (BOARD-02, BOARD-03, BOARD-08)
-- [ ] 66-02-PLAN.md — (wave 1) `content/boards.js`: the mock's marks, colours, rule lines and footnotes, the signed-out/empty/standing/dock copy and the standing-quip bank, safety-scanned (BOARD-02, BOARD-03, BOARD-07, BOARD-08)
-- [ ] 66-03-PLAN.md — (wave 1) `src/browser/boardsPanel.js`: the DOM renderer and controller (entry modes, board memory, scope/row toggles, back routing, rail centring) (BOARD-01..08)
+- [x] 66-01-PLAN.md — (wave 1) LEANEST re-ranked by squares per floor (re-rank on load, zero fixture movement) and the adapter's in-memory graveyard + lifetime-total read seam (BOARD-02, BOARD-03, BOARD-08)
+- [x] 66-02-PLAN.md — (wave 1) `content/boards.js`: the mock's marks, colours, rule lines and footnotes, the signed-out/empty/standing/dock copy and the standing-quip bank, safety-scanned (BOARD-02, BOARD-03, BOARD-07, BOARD-08)
+- [x] 66-03-PLAN.md — (wave 1) `src/browser/boardsPanel.js`: the DOM renderer and controller (entry modes, board memory, scope/row toggles, back routing, rail centring) (BOARD-01..08)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -310,7 +310,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
-| 66. Leaderboards Panel — Local | v2.0 | 0/7 | Planned | - |
+| 66. Leaderboards Panel — Local | v2.0 | 3/7 | In Progress|  |
 | 67. Play Games Integration & Account Chip | v2.0 | 0/TBD | Not started | - |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
