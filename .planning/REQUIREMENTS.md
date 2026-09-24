@@ -61,6 +61,10 @@
 - [x] **POLISH-02**: The ☰ button is the Play Games profile icon (initials avatar when signed in, plain ☰ otherwise) and its dropdown carries the account rows (identity, Sign in / Stop competing, Compete); no separate account chip in the HUD band.
 - [x] **POLISH-03**: The ☰ opens on every in-game screen (map, combat and other encounters, the Oracle, the tabs, while dead); Save & quit and a two-tap-armed Abandon this character (New Character when dead) live in it, and the HERO tab's Delve panel is gone.
 - [x] **POLISH-04**: LINEAGE has a race + sub-class selector defaulting to the active hero's lineage and shows the top 10 runs for the selected lineage, locally and (as a filtered sample) globally.
+- [ ] **POLISH-05**: Every sound effect has a per-clip level in one tunable table (death quieter, steps louder), the title theme is louder, and Settings shows MASTER / MUSIC / EFFECTS volume sliders under Sound, visible only while Sound is on, persisted and applied live.
+- [ ] **POLISH-06**: Opening an item from the Gear tab shows the same full stat set the store shows for that item, built from one shared formatter.
+- [ ] **POLISH-07**: While a combat round plays out, the actions are visibly unavailable, taps never queue, and a tap skips to the round's result; with several foes the latest round summary stays visible above the actions without being intrusive.
+- [ ] **POLISH-08**: Long-pressing an enemy raises one dismissible rail card with its details, never also firing the normal tap; TalkBack users get an equivalent Details action.
 
 ## Future Requirements
 
@@ -115,11 +119,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | POLISH-02 | Phase 70 | Complete |
 | POLISH-03 | Phase 70 | Complete |
 | POLISH-04 | Phase 70 | Complete |
+| POLISH-05 | Phase 71 | Pending |
+| POLISH-06 | Phase 71 | Pending |
+| POLISH-07 | Phase 71 | Pending |
+| POLISH-08 | Phase 71 | Pending |
 
 **Coverage:**
 
-- v2.0 requirements: 30 total
-- Mapped to phases: 30
+- v2.0 requirements: 34 total
+- Mapped to phases: 34
 - Unmapped: 0 ✓
 
 ---

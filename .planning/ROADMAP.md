@@ -37,6 +37,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [x] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card (completed 2026-09-24)
 - [x] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch (completed 2026-09-24)
 - [x] **Phase 70: Device-Round Polish** - Title theme from launch through the roller, the ☰ as profile icon opening everywhere with account + quit rows, and a race + sub-class LINEAGE board (completed 2026-09-24)
+- [ ] **Phase 71: Device-Round Polish II** - Balanced, player-adjustable sound levels; full gear stats on the Gear tab; combat input lock + visible round summary; long-press enemy details
 
 ### Phase 65: Run Record & Personal Bests
 
@@ -237,6 +238,19 @@ Plans:
 
 **Research**: none (skipped; reuses the validated draft quick plans 260924-56z and 260924-5b8)
 
+### Phase 71: Device-Round Polish II
+
+**Goal**: The second batch of Pixel 7 feedback on the 2.0.0 build lands in v2.0: sounds are balanced and player-adjustable, a gear item shows its full stats wherever it is opened, combat stops accepting taps it cannot act on and keeps the round summary in view, and any enemy can be inspected with a long press.
+**Depends on**: Phase 70 (user device feedback 2026-09-24)
+**Requirements**: POLISH-05, POLISH-06, POLISH-07, POLISH-08
+**Success Criteria** (what must be TRUE):
+
+  1. Each sound effect has its own level in one tunable table (death quieter, steps louder than today), the title theme is louder, and the Settings sheet shows MASTER, MUSIC and EFFECTS sliders under Sound only while Sound is on; levels persist and apply live
+  2. Tapping an item on the Gear tab shows the same full stat set the store shows for it, from one shared formatter
+  3. While a combat round is playing out, the action buttons are visibly unavailable and taps never queue; a tap skips the playback to the round's result; with several foes the latest round summary stays visible above the actions without covering the fight
+  4. Long-pressing an enemy raises one dismissible rail card with its details (family, HP, defence, attack, abilities, resistances, current effects, a flavour line) without triggering a normal tap; TalkBack gets a Details action
+**Plans**: TBD
+
 <details>
 <summary>✅ v1.9 The Gear Screen (Phases 61–64) — CODE-COMPLETE 2026-09-23, archived 2026-09-23 (override closeout; Play 1.9.0 / vc8 built for closed testing; device UAT 3 of 24 walked, the rest deferred to play sessions)</summary>
 
@@ -398,6 +412,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
 | 70. Device-Round Polish | v2.0 | 4/4 | Complete    | 2026-09-24 |
+| 71. Device-Round Polish II | v2.0 | 0/0 | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
