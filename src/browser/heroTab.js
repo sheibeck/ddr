@@ -600,13 +600,6 @@ export function renderHeroTab(host, state, deps = {}) {
   doc.getElementById("s-level").textContent = "Lvl " + ROMAN[c.level - 1];
   doc.getElementById("s-name").textContent = c.name;
   doc.getElementById("s-tag").textContent = `${c.race} ${c.sub} · ${c.cls}`;
-  // DR16 fix: when the character is dead they're already buried, so the
-  // "Abandon this character" control becomes the new-run entry point. Flip
-  // its label live (its onclick branches on the same dead state).
-  {
-    const abandonBtn = doc.getElementById("btn-abandon-character");
-    if (abandonBtn) abandonBtn.textContent = state.dead ? "New Character" : "Abandon this character";
-  }
   doc.getElementById("s-wp").textContent = Math.max(0, c.wp);
   doc.getElementById("s-wpmax").textContent = c.maxWP;
   const pct = clamp(c.wp / c.maxWP * 100, 0, 100);

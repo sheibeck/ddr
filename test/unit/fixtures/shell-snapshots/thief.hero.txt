@@ -7,9 +7,6 @@
 ## #s-tag
 <div id="s-tag">
   text="Wilmsry Cat Burglar · Thief"
-## #btn-abandon-character
-<div id="btn-abandon-character" onclick>
-  text="Abandon this character"
 ## #s-wp
 <div id="s-wp">
   text="40"

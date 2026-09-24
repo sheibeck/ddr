@@ -203,9 +203,9 @@ test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp
   assert.match(HTML, /^\.mw-hud-wptrack\{flex:none;height:4px;background:#2c2519;box-shadow:inset 0 1px 0 rgba\(0,0,0,\.5\)\}$/m);
   assert.doesNotMatch(HTML, /\.mw-hud-wp\{/, "the .mw-hud-wp wrapper rule is retired (Plan 05)");
   assert.match(HTML, /^\.mw-hud-band2\{display:flex;align-items:center;gap:10px;padding:8px 14px 9px\}$/m);
-  // Phase 67 (ACCT-01, D-05): gap 8px -> 7px pays back the last 3px of the
-  // band-2 width budget once the 44px account chip joins the ☰ (408.8 of 411).
-  assert.match(HTML, /^\.mw-hud-counters\{flex:1;min-width:0;display:flex;gap:7px;align-items:baseline;overflow:hidden;flex-wrap:nowrap\}$/m);
+  // Phase 70 (POLISH-02, D-03): the band-2 account chip is retired, so the
+  // counters get their pre-Phase-67 8px gap back (M 377.8 of 411).
+  assert.match(HTML, /^\.mw-hud-counters\{flex:1;min-width:0;display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap\}$/m);
   assert.equal((HTML.match(/^\.mw-hud-floor b\{color:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-rations\.warn b\{color:#e05a48\}$/gm) || []).length, 1);
   // Device round 2026-09-22 (user): the reserved growth room sits AFTER the
@@ -537,7 +537,8 @@ test("(k) openCampSheet/closeCampSheet: the refusal/lock/arm/guard wiring, both 
   assert.match(closeMarksRegion, /lastDismissAt = Date\.now\(\);/);
 
   assert.equal((CODE.match(/document\.getElementById\("mw-camp-scrim"\)\.addEventListener\("click", closeCampSheet\);/g) || []).length, 1);
-  assert.equal((CODE.match(/document\.getElementById\("btn-camp"\)\.onclick = openCampSheet;/g) || []).length, 1);
+  // Phase 70 (D-07): the MAKE CAMP row closes the ☰ first (closeMenuThen).
+  assert.equal((CODE.match(/document\.getElementById\("btn-camp"\)\.onclick = closeMenuThen\(openCampSheet\);/g) || []).length, 1);
 });
 
 // ─── (l) settle-stamp / encounterSettled counts ────────────────────────────

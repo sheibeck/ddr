@@ -512,7 +512,7 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
  */
 export const SNAPSHOT_IDS = Object.freeze({
   hero: [
-    "s-level", "s-name", "s-tag", "btn-abandon-character", "s-wp", "s-wpmax", "s-wpfill",
+    "s-level", "s-name", "s-tag", "s-wp", "s-wpmax", "s-wpfill",
     "s-die", "s-hit", "s-dmg", "s-arm", "s-int", "s-sp", "s-next", "s-cost", "s-rations",
     "s-rations-n", "s-trait", "s-vp", "s-skills", "s-abilities", "s-grim-count", "s-grimoire",
     "doss-who", "doss", "hero-party", "hero-party-list",

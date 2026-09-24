@@ -95,8 +95,8 @@ returns `Object.freeze({ start, commit, pending, dispose })`:
   cls, sub }` word lists built from `content/index.js`'s RACES/CLASSES).
 
 The mount assigns `window.mzStartRoll = roller.start` — the one bridge name
-both roll triggers (the title screen's ENTER button, and the dead Hero
-tab's "New Character" button) call. The same never-`window`/`document`
+both roll triggers (the title screen's ENTER button, and the ☰ menu's
+dead-state NEW CHARACTER row, Phase 70) call. The same never-`window`/`document`
 invariant every other module in this doc follows applies here too — the
 factory reaches the page only through the injected `doc`.
 
@@ -188,15 +188,20 @@ plugin methods the wrapper ever calls.
 `src/browser/account.js` is the pure view model: the account state
 (`ACCOUNT_STATUS`, `normalizeAccountState`), the two rail cards
 (`accountCard("welcome" | "failed")`), the boards identity
-(`accountIdentity`) and the chip and sheet views (`accountChipView`,
-`accountSheetView`). It has no DOM, no storage and no provider access.
+(`accountIdentity`) and the chip, sheet and ☰ face views (`accountChipView`,
+`accountSheetView`, and Phase 70's `accountMenuView`: the initials avatar
+when signed in, the plain ☰ otherwise). It has no DOM, no storage and no
+provider access.
 
 `src/browser/accountChip.js` exports `renderAccountChip(button, view)`,
-`renderAccountSheet({ rows, title }, view, handlers)` (both build DOM only
-through the host's `ownerDocument`; `ACCOUNT_CLASSES` lists every class
-they emit) and `createAccountController({ provider, settings, notify })`,
-which returns `{ boot, signIn, setCompete, stopCompeting, state, identity,
-chipView, sheetView, subscribe }`. `boot()` reads the settings and, with
+`renderAccountSheet({ rows, title }, view, handlers)`, Phase 70's
+`renderMenuFace(button, view)` (repaints the ☰ button's static
+`.mw-hud-menu-face` and its aria-label) and `renderAccountMenu(host, view,
+handlers)` (the sheet's rows without its title or Settings row). All build
+DOM only through the host's `ownerDocument`; `ACCOUNT_CLASSES` lists every
+class they emit. `createAccountController({ provider, settings, notify })`
+returns `{ boot, signIn, setCompete, stopCompeting, state, identity,
+chipView, sheetView, menuView, subscribe }`. `boot()` reads the settings and, with
 Compete ON, starts one silent `init()` without waiting for it. Only one
 attempt runs at a time, and a superseded or late result is dropped.
 Compete OFF always wins: it persists `compete: false`, cancels the silent
@@ -211,14 +216,22 @@ The shell wiring (mazeworld.html's module script):
   seed is read once, at launch.
 - `account.boot()` starts right after the title screen is initialized and
   is never awaited, so boot, the title and play never wait on Play Games.
-- Both chips, `#mw-acct-chip` on HUD band 2 and `#mw-title-acct-chip` in
-  the title's corner, render the controller's chip view on every account
-  change.
-- Either chip opens `#mw-acct-sheet`. The band-2 chip refuses while an
-  encounter is up (the ☰ menu's rule). The Settings row closes the account
-  sheet and opens the settings sheet. The scrim, Close and the Android
-  back button close it; the back button closes it first, ahead of every
-  other layer.
+- `renderAccountSurfaces()` runs on every account change and once before
+  boot. It paints three surfaces from the controller's views: the title's
+  corner chip `#mw-title-acct-chip` (`chipView`), the ☰ button
+  `#mw-hud-menu-btn` (`menuView` through `renderMenuFace`) and the ☰
+  dropdown's ACCOUNT block `#mw-hud-menu-acct` (`sheetView` through
+  `renderAccountMenu`).
+- Phase 70 (D-03, superseding Phase 67 D-05) retired the band-2 account
+  chip. In the dungeon the ☰ wears the account face, and its dropdown opens
+  on the ACCOUNT block: identity, Sign in / Stop competing / a disabled
+  SIGNING IN…, the helper line and Compete ON/OFF. Each ACCOUNT row closes
+  the menu first (`hudMenuEvent("select")`, D-07) and then calls the
+  controller. The block follows the ☰'s own availability rule.
+- Only the title chip opens `#mw-acct-sheet` now, with no encounter guard.
+  The Settings row closes the account sheet and opens the settings sheet.
+  The scrim, Close and the Android back button close it; the back button
+  closes it first, ahead of every other layer.
 - The controller's `notify` parks the welcome and failed cards until the
   dungeon is visible (no title, no roller, no title-mode Leaderboards
   panel), then hands them to `window.mzRailLine`. The latest card wins, and
@@ -227,6 +240,31 @@ The shell wiring (mazeworld.html's module script):
   and every account change calls `boardsPanel.refresh()`.
 
 No new `window.__mz` bridge: the account lives in the module script.
+
+### The ☰ menu rows (Phase 70)
+
+The ☰ dropdown (`#mw-hud-menu`) reads, top to bottom: the ACCOUNT block
+(`#mw-hud-menu-acct`), MARKS, CENTRE MAP, MAKE CAMP, SETTINGS (the four
+`HUD_MENU_ITEMS` rows), SAVE & QUIT (`#mw-menu-save-quit`), then ABANDON
+THIS CHARACTER (`#mw-menu-abandon`) last, in the danger look. The HERO
+tab's Delve panel and its two buttons are retired (D-06).
+
+- D-07: every row closes the menu before its action runs. The classic
+  `closeMenuThen(fn)` wraps each legacy row's existing handler (raise
+  `hudMenuEvent("select")`, then run it); the ACCOUNT rows and the quit rows
+  raise `select` themselves before calling the controller or the bridge. The
+  dropdown's own bubble `select` stays as a no-op safety net.
+- SAVE & QUIT closes the menu, then calls `window.mzAbandonRun`, which shows
+  the title with `allowResume: hasActiveDelveSave()`. There is no dialog. A
+  live hero resumes on ENTER; a dead hero's Save & quit arms no resume.
+- ABANDON THIS CHARACTER arms in the row through `hudMenu.js`'s
+  `abandonRowNext`. With Settings › Confirm before quit On, the first tap
+  shows TAP AGAIN TO BURY THEM and a second tap within `ABANDON_ARM_MS`
+  closes the menu and calls `window.mzAbandonCharacter`; with it Off, one
+  tap does. The arm expires on its timer and whenever the menu closes
+  (`setHudMenuOpen` writes `data-armed="0"`). Opening the menu stamps
+  `data-dead` from the live state; while dead the row reads NEW CHARACTER
+  and calls `window.mzStartRoll`. There are no confirm dialogs.
 
 ### Global boards, submissions and placement (Phase 68)
 
