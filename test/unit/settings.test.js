@@ -46,7 +46,7 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: the eight fields' defaults", () => {
+test("SETTINGS_DEFAULTS: the eleven fields' defaults", () => {
   assert.equal(SETTINGS_DEFAULTS.textSize, "M");
   assert.equal(SETTINGS_DEFAULTS.sound, true);
   assert.equal(SETTINGS_DEFAULTS.haptics, true);
@@ -58,6 +58,10 @@ test("SETTINGS_DEFAULTS: the eight fields' defaults", () => {
   assert.equal(SETTINGS_DEFAULTS.compete, true);
   assert.equal(SETTINGS_DEFAULTS.pgsWelcomed, false);
   assert.equal(SETTINGS_DEFAULTS.pgsDevSignedIn, false);
+  // Phase 71 (D-03): the three volume sliders default to full, 100.
+  assert.equal(SETTINGS_DEFAULTS.volMaster, 100);
+  assert.equal(SETTINGS_DEFAULTS.volMusic, 100);
+  assert.equal(SETTINGS_DEFAULTS.volEffects, 100);
 });
 
 test("writeSetting/readSettings: each of the 5 fields round-trips through window.mzStorage", async () => {
@@ -80,6 +84,10 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       compete: true,
       pgsWelcomed: false,
       pgsDevSignedIn: false,
+      // Phase 71 (D-03): the volume sliders keep their defaults.
+      volMaster: 100,
+      volMusic: 100,
+      volEffects: 100,
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -145,7 +153,8 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     assert.equal("handedness" in settings, false);
 
     // Phase 59 (DRESS-05) appended `dressing`; Phase 67 (PGS-02) appended
-    // `compete`, `pgsWelcomed` and `pgsDevSignedIn` — eight keys, in order.
+    // `compete`, `pgsWelcomed` and `pgsDevSignedIn`; Phase 71 (D-03) appended
+    // `volMaster`, `volMusic` and `volEffects` — eleven keys, in order.
     assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), [
       "sound",
       "haptics",
@@ -155,8 +164,11 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
       "compete",
       "pgsWelcomed",
       "pgsDevSignedIn",
+      "volMaster",
+      "volMusic",
+      "volEffects",
     ]);
-    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 8);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 11);
     assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -324,5 +336,89 @@ test("Phase 67: a persisted compete of \"off\" (invalid) reads back as the defau
     assert.equal(settings.compete, true);
     assert.equal(settings.pgsWelcomed, false);
     assert.equal(settings.pgsDevSignedIn, false);
+  });
+});
+
+// --- Phase 71 (D-03): volMaster, volMusic, volEffects ---------------------
+
+test("Phase 71 (D-03): an old blob with no vol keys reads all three at 100 (tolerant load, no migration)", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ sound: false, haptics: false, textSize: "S", confirmBeforeQuit: false, dressing: false, compete: false, pgsWelcomed: true, pgsDevSignedIn: false }),
+    );
+    const settings = await readSettings();
+    assert.equal(settings.volMaster, 100);
+    assert.equal(settings.volMusic, 100);
+    assert.equal(settings.volEffects, 100);
+    assert.equal(settings.sound, false); // the old fields still load normally
+    assert.equal(settings.compete, false);
+  });
+});
+
+test("Phase 71 (D-03): a stored 0 or 100 is kept", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ volMaster: 0, volMusic: 100, volEffects: 37 }));
+    const settings = await readSettings();
+    assert.equal(settings.volMaster, 0);
+    assert.equal(settings.volMusic, 100);
+    assert.equal(settings.volEffects, 37);
+  });
+});
+
+test("Phase 71 (D-03): a stored 50.5, -1, 101, \"50\", null or true reads the default 100", async () => {
+  for (const bad of [50.5, -1, 101, "50", null, true]) {
+    await withFakeLocalStorage(async (_ls, store) => {
+      store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ volMaster: bad, volMusic: bad, volEffects: bad }));
+      const settings = await readSettings();
+      assert.equal(settings.volMaster, 100, `volMaster ${JSON.stringify(bad)} reads 100`);
+      assert.equal(settings.volMusic, 100, `volMusic ${JSON.stringify(bad)} reads 100`);
+      assert.equal(settings.volEffects, 100, `volEffects ${JSON.stringify(bad)} reads 100`);
+    });
+  }
+});
+
+test("Phase 71 (D-03): writeSetting(\"volMusic\", 0) and (…, 100) persist", async () => {
+  await withFakeLocalStorage(async () => {
+    await writeSetting("volMusic", 0);
+    await flushStorage();
+    assert.equal((await readSettings()).volMusic, 0);
+    await writeSetting("volMusic", 100);
+    await flushStorage();
+    assert.equal((await readSettings()).volMusic, 100);
+  });
+});
+
+test("Phase 71 (D-03): writeSetting(\"volMusic\", 101 / 50.5 / \"50\") is a no-op returning the current settings", async () => {
+  await withFakeLocalStorage(async () => {
+    await writeSetting("volMusic", 40);
+    await flushStorage();
+    const current = await readSettings();
+    assert.equal(current.volMusic, 40);
+    for (const bad of [101, 50.5, "50", -1, NaN, null]) {
+      assert.deepEqual(await writeSetting("volMusic", bad), current, `volMusic ${String(bad)} is rejected`);
+    }
+    await flushStorage();
+    assert.equal((await readSettings()).volMusic, 40);
+  });
+});
+
+test("Phase 71 (D-03): independence — writing a vol key changes no other key; writing sound changes no vol key", async () => {
+  await withFakeLocalStorage(async () => {
+    const before = await readSettings();
+    await writeSetting("volEffects", 25);
+    await flushStorage();
+    const afterVol = await readSettings();
+    assert.deepEqual(afterVol, { ...before, volEffects: 25 });
+
+    await writeSetting("volMaster", 60);
+    await flushStorage();
+    await writeSetting("sound", false);
+    await flushStorage();
+    const afterSound = await readSettings();
+    assert.equal(afterSound.sound, false);
+    assert.equal(afterSound.volMaster, 60);
+    assert.equal(afterSound.volMusic, 100);
+    assert.equal(afterSound.volEffects, 25);
   });
 });
