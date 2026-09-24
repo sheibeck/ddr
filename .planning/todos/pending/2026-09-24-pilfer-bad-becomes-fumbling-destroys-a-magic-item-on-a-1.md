@@ -32,7 +32,7 @@ This is a hard lockout from a whole category of loot. The user wants a risk inst
 **Decide in the Phase 75 discuss:**
 - The die. A d20 gives a 5% fumble per use, which is the natural default for the user's "rolls a one".
 - The explosion damage:
-  - How much. Options: a flat die (e.g. d6), scaled by depth, or scaled by the item's tier/value.
+  - **How much — ruled 2026-09-24: d10 damage** (user: "d10 damage on magic item explode").
   - Who takes it. The Pilfer only, or also the party and/or the foes in a fight?
   - Whether armor soaks it or it bypasses armor.
   - Whether it can kill: it should, since the engine already handles death from any HP loss (death epitaph line).
