@@ -205,8 +205,16 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-23T19:15:00.000Z
-Stopped at: v2.0 roadmap created 2026-09-23 (Phases 65–69: 65 Run Record & Personal Bests → 66 Leaderboards Panel — Local → 67 Play Games Integration & Account Chip (Research: yes) → 68 Global Boards, Submissions & "You Placed X" → 69 Compliance & Device Close; 26/26 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-plan-phase 65 (or /gsd-autonomous to run the whole milestone).
+Last session: 2026-09-24T01:30:00.000Z
+Stopped at: /gsd-autonomous v2.0 run IN PROGRESS (orchestrator resume note, written before a /compact).
+- Phase 65 COMPLETE (5/5, 65-VERIFICATION passed, 4297 tests).
+- Phase 66: plans 01-06 merged (4456/4456 green); 66-07 (title entry + Android back) executing in a worktree. After it merges: npm test, roadmap.update-plan-progress 66 66-07, orchestrator-authored 66-VERIFICATION.md (status passed + human_verification list merged from the 66 SUMMARYs), phase.complete 66, commit.
+- AGP 9.3.1 spike running in a worktree; it writes .planning/phases/67-play-games-integration-account-chip/67-AGP9-SPIKE.md with a VERDICT line (ADOPT AGP 9.3.1 / STAY ON AGP 8.13.0) and commits build config only on ADOPT. Merge its branch before Phase 67 wave 2 (67-06 reads the VERDICT).
+- Phase 67 PLANNED (8 plans, 3 waves; 21/21 decisions incl. D-20 plugin as-is + D-02 amended, D-21 AGP spike). 67-01 checkpoint is pre-answered by D-20/D-21 (do not stop). Execute after 66 closes.
+- Phase 68: CONTEXT committed (D-01..D-17); planner running in background (commits plans itself). Then run decision-coverage gate + state.planned-phase.
+- Phase 69: CONTEXT committed (privacy page lives in C:/projects/darktier-studio/src/pages/privacy/apps.astro, reconcile there, commit locally, user deploys; 2.0.0/vc9 AAB built, user uploads; debug APK offered; docs/UAT-v2.0.md).
+- Run conventions: executors in worktrees (sonnet), one Agent per message, merge manually with git merge --no-ff + worktree remove + branch -D (cleanup-wave helper trips on already-removed entries); worktree npm test shows 7 known CRLF doc-ledger failures that pass on master; stall watch = scratchpad wtwatch.sh <label> 30 via Monitor; decision-coverage gate needs D-NN cited under an "## Must haves"/"## Objective" heading; verifier off -> orchestrator writes VERIFICATION per deferred-UAT protocol.
+- Todo captured: loop sfx/theme.mp3 on the title screen (after v2.0 unless the user folds it into 69).
 Resume file: None
 
 ## Operator Next Steps
