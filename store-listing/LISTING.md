@@ -44,7 +44,7 @@ The game is based on the 1994 tabletop Mazeworld rules, adapted for a phone with
 Made for phones, not ported to them
 - Tap or swipe to move; every decision is a large button.
 - One screen for the map, one for your hero, one for gear, one for the Oracle's log, and one for the dead.
-- Plays fully offline. No account, no sign-in, no ads, no in-app purchases, no data collected.
+- Plays fully offline. Optional Google Play Games leaderboards, if you want the whole world to see how you died. No ads, no in-app purchases.
 - Your run saves itself. Put the phone down mid-fight and the monster will wait.
 
 Delve, Die, Repeat is a paid game with nothing else to buy. You get the whole dungeon, and the dungeon gets the whole you.
@@ -58,15 +58,125 @@ Delve, Die, Repeat is a paid game with nothing else to buy. You get the whole du
 `https://darktierstudios.com/privacy`. The apps page is stand-alone and is
 the one to enter in Play Console.)
 
+Delete data URL (Play Console's Data safety "Delete data URL" field):
+`https://darktierstudios.com/privacy/delete-data`
+
+Reconciled for 2.0.0 (Leaderboards): effective September 24, 2026;
+darktier-studio commit aaa0f4a (local, not yet deployed; the user deploys the
+site). Source: `C:/projects/darktier-studio/src/pages/privacy/apps.astro` and
+`delete-data.astro`; full hash `aaa0f4ad4822ebd43c58de205c0da210580c41df`.
+
 ## Data safety
 
-"Does your app collect or share any of the required user data types?" → **No.**
-Every data type: not collected, not shared. Android Advertising ID: not used.
-No third-party SDKs. Saves and graveyard live on-device only in
-`@capacitor/preferences`; the Play purchase itself is Google's data, not the
-app's. Verified 2026-09-17 against `www/`, `AndroidManifest.xml`, and
-`package.json`: no `fetch`/`XMLHttpRequest`/`WebSocket`, no analytics, ads, or
-crash SDKs, only the `INTERNET` permission (Capacitor default, unused).
+Answers for 2.0.0 (Leaderboards). Play Console → Delve, Die, Repeat → Policy
+and programs → App content → Data safety.
+
+"Does your app collect or share any of the required user data types?" →
+**Yes.** Since 2.0 the game posts runs to Google Play Games leaderboards while
+the in-game Compete setting is on (it is on by default; the player can turn it
+off at any time from the account menu).
+
+| Data type | What it is | Collected | Shared | Optional | Purpose | Processed ephemerally |
+|---|---|---|---|---|---|---|
+| Personal info → **User IDs** | The Google Play Games player ID | Yes | No | Yes (Compete off) | App functionality | No |
+| App activity → **Other actions** | Per run: the five leaderboard scores (DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE) plus the score tag's gameplay details: race, sub-class, level, cause of death, floor, days, steps, kills, wilmst carried, experience, and the game-rolled adventurer name (possibly shortened) | Yes | No | Yes (Compete off) | App functionality | No (Google stores the scores) |
+
+"Other actions" is Play's App activity type for "any other user activity or
+actions in-app not listed here such as gameplay" (answer/10787469, checked
+2026-09-24), so game scores go there.
+
+Every other data type: not collected, not shared. The epitaph, saves,
+settings, personal bests and the local graveyard never leave the phone.
+Android Advertising ID: not used. Data is not sold.
+
+- **Security:** encrypted in transit. Play Games Services sends it over HTTPS
+  (Google's PGS disclosure page, below).
+- **Deletion:** users can request that data be deleted: yes. Through their
+  Play Games profile (the Play Store's Play Games Profile settings or
+  `https://play.google.com/games/profile`), with step-by-step instructions at
+  `https://darktierstudios.com/privacy/delete-data` (Play Console's "Delete
+  data URL").
+- **Why "optional":** every user, on every device and in every region, can turn
+  Compete off from the account menu (STOP COMPETING, or COMPETE → OFF). With it
+  off the game makes no sign-in, submit or fetch call and discards any runs
+  still queued. Play counts an opt-out as optional collection ("all users …
+  can either optionally provide information, opt-out, or opt-in",
+  answer/10787469).
+
+### Shared: the finding and its sources
+
+**Not shared.** The data goes to Google Play Games Services, which processes it
+to run this game's leaderboards. That is a transfer to a service provider
+processing data on the developer's behalf, which Play excludes from "sharing".
+Posting a run to a public leaderboard is also the player's own choice, made by
+leaving Compete on and announced by the first-sign-in card ("Every death goes
+on the public record"), which is the user-initiated exemption. Google's PGS page
+adds that a PGS game "can only read/write the authenticated player's data" for
+that game.
+
+Sources:
+
+- Play Console Help, "Provide information for Google Play's Data safety
+  section", `https://support.google.com/googleplay/android-developer/answer/10787469`
+  (fetched 2026-09-24): the service-provider and user-initiated exemptions
+  from "sharing", the optional rule, the App activity and App info and
+  performance type definitions.
+- Android Developers, "Prepare for Google Play's data disclosure
+  requirements" for Play Games Services,
+  `https://developer.android.com/games/pgs/data-collection` (page last
+  updated 2026-06-16; fetched 2026-09-24; the old
+  `developers.google.com/games/services/data-collection` URL redirects
+  here): encrypted in transit over HTTPS; the authenticated-player rule; users
+  delete through their Play Games profile; "as the app developer, you are
+  solely responsible for deciding how to respond".
+
+### Open decision for the console step (user)
+
+Google's PGS page lists data its SDK collects **automatically**: Gamer
+Identity, plus Analytics and Diagnostics "to improve the stability of our
+SDKs". Per 67 D-20 the SDK initializes at every app start, even with Compete
+off (the game itself makes no Play Games call then, but Google's software
+starts). The answers above stay as locked in 69-CONTEXT D-04. **The user
+decides at console time:** if the release-blocking Compete-off network capture
+in `docs/UAT-v2.0.md` shows the SDK sending anything at launch, the
+conservative answer is to also declare **App info and performance →
+Diagnostics** (collected, not optional, purpose App functionality, not shared).
+If the capture shows nothing, the table above stands as is.
+
+### Source-level audit (2026-09-24, commit ebe4b05)
+
+Run in the 69-01 worktree after `npm ci` (lockfile only) and
+`npm run build:www`; raw outputs kept outside the repo.
+
+- **Runtime packages.** `package.json` dependencies: `@capacitor/android`,
+  `@capacitor/app`, `@capacitor/core`, `@capacitor/haptics`,
+  `@capacitor/preferences`, `@capacitor/screen-orientation`,
+  `@capacitor/splash-screen`, `@capacitor/status-bar`, and
+  `@modbender/capacitor-play-games` pinned at exactly `0.5.0`. One
+  devDependency, `@capacitor/cli`. The lockfile's non-dev package entries are
+  those nine plus `tslib` (10 in all). A case-insensitive grep of those names
+  for firebase, admob, play-services-ads, ads-identifier, analytics,
+  measurement, crashlytics, appsflyer, adjust, facebook, appcenter, sentry and
+  bugsnag: **0 hits**. No ads, analytics or crash-reporting SDK.
+- **Permissions.** `android/app/src/main/AndroidManifest.xml` declares one
+  `uses-permission`: `android.permission.INTERNET`, used by Google Play
+  services for Play Games while Compete is on (and by Google's own SDK start-up,
+  67 D-20). No `AD_ID`. The only other Play Games entry is the
+  `com.google.android.gms.games.APP_ID` meta-data.
+- **Network APIs in `www/`.** `grep -rlE` for `fetch(`, `XMLHttpRequest`,
+  `WebSocket`, `sendBeacon` and `EventSource` over the freshly built `www/`:
+
+  | File hit | Classification |
+  |---|---|
+  | `www/src/browser/sfx.js` | Same-origin `fetch` of a bundled `./sfx/<clip>.mp3` file inside the app; no network |
+  | `www/vendor/@capacitor/core/capacitor.js`, `index.js`, `index.cjs.js` (and their `.map` files) | Capacitor's own `CapacitorHttp` web patch; inert, because `capacitor.config.json` does not enable `CapacitorHttp` |
+
+  No hit in the vendored Play Games plugin's web code, and none in
+  `src/browser/playGames.js` (it calls the native plugin, which loads lazily
+  and only with Compete on). **Defect findings: none.**
+
+The build-level half (Gradle `releaseRuntimeClasspath` and the merged release
+manifest) is recorded by 69-04 on the actual 2.0.0 build.
 
 ## Screenshots
 
@@ -77,3 +187,12 @@ graveyard.
 
 Regenerate after UI changes with `node tools/store-screenshots/capture.js`
 (see `tools/store-screenshots/README.md`).
+
+**Owed (deferred human item):** `08-dead.png` (all three sizes) shows the
+pre-2.0 graveyard and must be regenerated showing the Leaderboards panel on
+DEEPEST at 1080×1920, 1350×2400 and 1620×2880. On 2026-09-24 the capture tool
+could not run: `playwright-core` is not installed anywhere in the repo, and
+installing a package was out of scope for 69-01. Either install
+`playwright-core` per the README and run `capture.js` (its bot predates later
+UI changes and may need label updates), or capture by hand in Chrome device
+mode at 432×768 @2.5, 675×1200 @2 and 810×1440 @2 from the served `www/`.
