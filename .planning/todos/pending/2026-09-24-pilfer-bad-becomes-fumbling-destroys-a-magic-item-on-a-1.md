@@ -26,11 +26,11 @@ This is a hard lockout from a whole category of loot. The user wants a risk inst
 **The new bad (user ruling):**
 - A Pilfer can use magic items under the normal rules. The heal-only refusal is removed.
 - Each time a Pilfer uses a magic item, the Pilfer rolls a die. On a roll of 1 (the worst face — this matches the v2.1 roll-high convention, where 1 is always worst), the item is **destroyed**, and it **explodes, dealing damage** (user addition, 2026-09-24: "If the magic item is destroyed, it will deal damage as it explodes.").
+- **Ruled 2026-09-24:** the fumbled use does NOT take effect. User's words: "it no longer works and it turns to dust". The item fails, explodes for damage, and crumbles to dust; nothing is left in the bag or slot.
 - The Pilfer's good (traps disarm themselves, locks open) is unchanged.
 
 **Decide in the Phase 75 discuss:**
 - The die. A d20 gives a 5% fumble per use, which is the natural default for the user's "rolls a one".
-- Whether the item still takes effect on the use that destroys it (e.g. "it works, then comes apart in your hands"), or fizzles and breaks.
 - The explosion damage:
   - How much. Options: a flat die (e.g. d6), scaled by depth, or scaled by the item's tier/value.
   - Who takes it. The Pilfer only, or also the party and/or the foes in a fight?
@@ -41,7 +41,7 @@ This is a hard lockout from a whole category of loot. The user wants a risk inst
   - Potions, staves, wands and use-activated cloaks/jewelry are clear cases.
   - Worn passive items (armor, rings that only sit there) aren't "used", so they're probably exempt.
   - Torches and other `kind:"tool"` kit are mundane, so they're exempt, as today.
-  - Scrolls: does `canRead` open up for a Pilfer under the normal rules (Magic User or Runes/Signs), and does reading fumble?
+  - Scrolls: covered by the new thief scroll rule (RULES-10). Every Thief, Pilfer included, gets a 50% read chance and the scroll is always consumed. Open question: does a Pilfer ALSO roll the fumble when reading, so the scroll can explode on top of failing?
 - The narration: a new event (e.g. `pilferFumbled`) with an `EVENT_NARRATION` entry, in the voice. The user's framing is "constantly fiddling with things like an ADHD teenager"; keep it family-friendly and don't name a diagnosis in player text. Something like "fiddled with it until it came apart".
 
 **Engine gate:**

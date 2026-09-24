@@ -18,7 +18,8 @@
 - [ ] **RULES-06**: The HP a trap shows the player equals the HP it actually takes. A hero cannot die to a trap the Oracle reports as −1 HP. Root-cause it with `/gsd-debug` before fixing. (todo 2026-09-22 trap-death-at-21-hp)
 - [ ] **RULES-07**: An ailment roll of 5–6 gives the Disease it narrates, not a phobia. (todo 2026-09-23 ailment-roll-5-6)
 - [ ] **RULES-08**: When new armor replaces a destroyed piece, the player is told the old piece was destroyed and is gone. It never silently vanishes on a swap. (todo 2026-09-23 destroyed-armor)
-- [ ] **RULES-09**: A Pilfer can use magic items under the normal rules. The heal-only refusal is gone. Instead, every time a Pilfer uses a magic item it rolls a die, and on a 1 the item is destroyed and explodes, dealing damage, and the player is told so. Tools never fumble. The die, which items count as magic, whether the fumbling use still takes effect, and the explosion's damage (how much, who it hits, whether armor soaks it) are decided in the Phase 75 discuss. The fumble draw comes from a derived rng stream. The Pilfer blurb states both sides. (user, 2026-09-24; todo 2026-09-24 pilfer-bad-becomes-fumbling)
+- [ ] **RULES-09**: A Pilfer can use magic items under the normal rules. The heal-only refusal is gone. Instead, every time a Pilfer uses a magic item it rolls a die, and on a 1 the use fails, and the item explodes for damage and turns to dust. The player is told so. Tools never fumble. The die, which items count as magic, and the explosion's damage (how much, who it hits, whether armor soaks it) are decided in the Phase 75 discuss. The fumble draw comes from a derived rng stream. The Pilfer blurb states both sides. (user, 2026-09-24; todo 2026-09-24 pilfer-bad-becomes-fumbling)
+- [ ] **RULES-10**: Every Thief (all 8 sub-classes, Pilfer included) may attempt to read any scroll, and succeeds 50% of the time. A success casts the scroll's spell; a failure casts nothing. The scroll is consumed either way, and both outcomes are narrated. Whether Runes/Signs still guarantees the read, and whether a Pilfer's RULES-09 fumble also applies to scrolls, are decided in the Phase 75 discuss. The roll comes from a derived rng stream. (user, 2026-09-24; todo 2026-09-24 thieves-read-scrolls-at-50-percent)
 
 ### Roll direction & modifier honesty (ROLL) — user, 2026-09-24
 
@@ -130,6 +131,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | RULES-07 | Phase 75 | Pending |
 | RULES-08 | Phase 75 | Pending |
 | RULES-09 | Phase 75 | Pending |
+| RULES-10 | Phase 75 | Pending |
 | DARK-01 | Phase 76 | Pending |
 | DARK-02 | Phase 76 | Pending |
 | SAV-06 | Phase 76 | Pending |
@@ -163,7 +165,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | BOARD-13 | Phase 81 | Pending |
 | BOARD-14 | Phase 81 | Pending |
 
-**Coverage:** 45 requirements. Mapped: 45/45 ✓
+**Coverage:** 46 requirements. Mapped: 46/46 ✓
 
 ---
 *Requirements defined: 2026-09-24*

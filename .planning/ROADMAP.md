@@ -90,14 +90,15 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 ### Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs
 **Goal**: Character creation, HP growth, spell legality, initiative, traps, ailments and armor destruction follow the rules the game claims, written in the roll-high convention from the start.
 **Depends on**: Phase 73 (written directly on top of the roll-high mirror so nothing here needs rewriting later)
-**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08, RULES-09
+**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08, RULES-09, RULES-10
 **Success Criteria** (what must be TRUE):
   1. Pulling multiple Table-4 "+HP" dots grows a character's max HP linearly, not compounding (×1.6 each time), and the toll row takes its share from that same non-inflated pool.
   2. A red-dot wilmst cache pays a bounded cut (~100 × depth) instead of buying out the store, a newly rolled Summoner's grimoire holds no spell from a school gated above its level, and the combat SPELLS menu hides (never just greys) anything level- or school-locked.
   3. A hero with Sense Presence active always wins initiative outright, never sees "You cannot see what you are fighting," and can land crits in the dark.
   4. A trap the Oracle reports as "−1 HP" can never kill the hero — the fix follows an explicit `/gsd-debug` root-cause session before it lands, not a guess.
   5. An ailment roll of 5–6 always gives the Disease it narrates, and replacing a destroyed armor piece with a new one always tells the player the old piece was destroyed and is gone.
-  6. A Pilfer can use magic items like anyone else, but each use can fumble: on a rolled 1 the item is destroyed and explodes for damage, and the Oracle says so; tools never fumble, and the Pilfer blurb states both its good and its bad.
+  6. A Pilfer can use magic items like anyone else, but each use can fumble: on a rolled 1 the use fails, and the item explodes for damage and turns to dust (the Oracle says so); tools never fumble, and the Pilfer blurb states both its good and its bad.
+  7. Any Thief can try to read a scroll: half the time it casts, half the time it crumbles unread, and the scroll is gone either way.
 **Plans**: TBD
 **UI hint**: yes
 
