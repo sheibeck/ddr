@@ -23,7 +23,9 @@ import {
   AVATAR_PALETTE,
 } from "../../src/browser/boardsView.js";
 import { emptyBests, updateBests, runHash, normalizeStone, BOARD_IDS } from "../../engine/records.js";
-import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY } from "../../content/boards.js";
+import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, GLOBAL_STANDING_LINES } from "../../content/boards.js";
+import { encodeTag, decodeTag } from "../../src/browser/scoreTag.js";
+import { boardScore } from "../../src/browser/boardScores.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -686,13 +688,16 @@ test("signed out (false, missing, or truthy-but-not-true), even with a player: t
   }
 });
 
-test("signed in: a ranked board's all/friends scope gives the live coming-online note; local still lists rows", () => {
+test("signed in: local still lists the player's own rows; all/friends never show local rows (Phase 68 reads the global snapshot)", () => {
   const rec = recordWith([makeSummary({ floor: 5 })]);
   const base = { bests: rec, graves: [], board: "deep", entry: "tab", signedIn: true, player: LIVE_PLAYER };
-  assert.deepStrictEqual(boardsView({ ...base, scope: "all" }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.live.all });
-  assert.deepStrictEqual(boardsView({ ...base, scope: "friends" }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.live.friends });
   assert.equal(boardsView({ ...base, scope: "local" }).body.kind, "rows");
-  assert.deepStrictEqual(boardsView({ ...base, board: "combo", scope: "all" }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.live.all });
+  for (const scope of ["all", "friends"]) {
+    for (const board of ["deep", "combo"]) {
+      // no global input on a signed-in global view reads as unreachable, never as the local rows.
+      assert.deepStrictEqual(boardsView({ ...base, board, scope }).body, { kind: "note", line: BOARDS_PANEL_COPY.global.unreachable });
+    }
+  }
 });
 
 test("GRAVEYARD: strip null and scope ignored, signed in or out", () => {
@@ -719,10 +724,10 @@ test("signed in: header, rows, standing, footnote, rail, board and dock equal th
   }
 });
 
-test("signed in: no view string mentions worldwide or among friends, on any board or scope", () => {
+test("signed in on the local scope: no view string mentions worldwide or among friends, on any board", () => {
   const rec = recordWith([makeSummary({ floor: 5 }), makeSummary({ seed: 2, floor: 3 })]);
   for (const board of BOARD_IDS) {
-    for (const scope of ["local", "all", "friends"]) {
+    for (const scope of ["local"]) {
       const view = boardsView({ bests: rec, graves: [], total: 2, board, scope, entry: "tab", signedIn: true, player: LIVE_PLAYER });
       for (const s of collectStrings(view)) {
         assert.doesNotMatch(s, /worldwide/i);
@@ -750,4 +755,412 @@ test("Purity with a player: deep-frozen signed-in input is never mutated and two
   });
   assert.deepStrictEqual(boardsView(input), v1);
   assert.equal(input.player.displayName, "Lanternjaw");
+});
+
+// =============================================================================
+// Phase 68 (PGS-05, PGS-06; D-05..D-09, D-16, D-17) — the global views
+// =============================================================================
+
+const G = BOARDS_PANEL_COPY.global;
+
+/** gRun(overrides) — a decoded v1 score tag (the GlobalEntry.run shape 68-05 produces). */
+function gRun(overrides = {}) {
+  return decodeTag(
+    encodeTag({
+      race: "Dwarven",
+      sub: "Pickpocket",
+      level: 3,
+      cause: "combat",
+      floor: 7,
+      day: 4,
+      steps: 431,
+      kills: 9,
+      gold: 12345,
+      sp: 77,
+      name: "Brom Ironfoot",
+      ...overrides,
+    })
+  );
+}
+
+/** gEntry(i, overrides, runOverrides) — a GlobalEntry at list index i (rank i + 1 unless overridden). */
+function gEntry(i, overrides = {}, runOverrides = {}) {
+  const run = Object.prototype.hasOwnProperty.call(overrides, "run") ? overrides.run : gRun(runOverrides);
+  return {
+    key: `g:p${i}:${i}`,
+    rank: i + 1,
+    handle: `Delver${i}`,
+    playerId: `p${i}`,
+    you: false,
+    friend: false,
+    rawScore: run ? boardScore("deep", run) : 0,
+    run,
+    ...overrides,
+  };
+}
+
+/** snap(overrides) — a deep-frozen GlobalSnapshot (68-05's contract). */
+function snap(overrides = {}) {
+  return deepFreeze({
+    status: "ready",
+    board: "deep",
+    scope: "all",
+    season: 1,
+    entries: [],
+    you: null,
+    total: null,
+    sampled: null,
+    stale: false,
+    ...overrides,
+  });
+}
+
+/** gView(overrides) — a signed-in ALL view on DEEPEST. */
+function gView(overrides = {}) {
+  return boardsView({ bests: null, graves: [], board: "deep", scope: "all", entry: "tab", signedIn: true, player: LIVE_PLAYER, ...overrides });
+}
+
+test("global ALL rows: handle headline with its initials avatar, FRIEND/YOU tags, decoded name and level line, value, stats, cause detail with no epitaph", () => {
+  const e0 = gEntry(0, { handle: "Rival", friend: true });
+  const e1 = gEntry(1, { handle: "Lanternjaw", you: true }, { floor: 6, name: "Pell Moss" });
+  const e2 = gEntry(2, { handle: "Stranger" }, { floor: 5, cause: "starve" });
+  const view = gView({ global: snap({ entries: [e0, e1, e2], you: { ...e1, key: "g:you" }, total: 3 }) });
+  assert.equal(view.body.kind, "rows");
+  const rows = view.body.rows;
+  assert.equal(rows.length, 3, "the player already listed is not pinned again");
+  assert.deepStrictEqual(rows[0], {
+    key: e0.key,
+    rank: "1",
+    top: true,
+    podium: true,
+    you: false,
+    divider: "",
+    headline: "Rival",
+    tag: "FRIEND",
+    name: "Brom Ironfoot",
+    line: "DWARVEN PICKPOCKET · LVL III",
+    detail: "Cut down by a foe",
+    val: "7",
+    unit: "FLOOR",
+    stats: [
+      { k: "FLOOR", v: "7" },
+      { k: "DAYS", v: "4" },
+      { k: "SQUARES", v: "431" },
+      { k: "KILLS", v: "9" },
+      { k: "EXP", v: "77" },
+      { k: "WILMST", v: "12,345" },
+    ],
+    barPct: 100,
+    avatar: { initials: initialsOf("Rival"), bg: avatarColour("Rival") },
+    open: false,
+  });
+  assert.equal(rows[1].tag, "YOU");
+  assert.equal(rows[1].you, true);
+  assert.equal(rows[1].name, "Pell Moss");
+  assert.equal(rows[2].tag, "");
+  assert.equal(rows[2].detail, "Starved in the dark");
+  assert.equal(rows[2].podium, true);
+  for (const row of rows) {
+    assert.deepStrictEqual(Object.keys(row.avatar).sort(), ["bg", "initials"], "initials only, never a remote image");
+    assert.doesNotMatch(row.detail, /promoted|stone/i);
+  }
+});
+
+test("global ALL: the player's best outside the top ten is pinned last under the divider with the YOU tag", () => {
+  const entries = [];
+  for (let i = 0; i < 10; i++) entries.push(gEntry(i, {}, { floor: 20 - i }));
+  const you = gEntry(56, { key: "g:you", handle: "Lanternjaw", you: true }, { floor: 4, name: "Pell Moss" });
+  const view = gView({ global: snap({ entries, you, total: 9044 }) });
+  const rows = view.body.rows;
+  assert.equal(rows.length, 11);
+  const pinned = rows[10];
+  assert.equal(pinned.divider, BOARDS_PANEL_COPY.divider);
+  assert.equal(pinned.divider, "NOT IN THE TOP TEN · YOUR BEST RUN");
+  assert.equal(pinned.tag, "YOU");
+  assert.equal(pinned.you, true);
+  assert.equal(pinned.rank, "57");
+  assert.equal(pinned.top, false);
+  assert.equal(pinned.podium, false);
+  assert.equal(pinned.headline, "Lanternjaw");
+  for (const row of rows.slice(0, 10)) assert.equal(row.divider, "");
+});
+
+test("global rows: LEANEST shows 'floor · steps', PURSE groups digits, both decoded from the tag", () => {
+  const e = gEntry(0, {}, { floor: 7, steps: 431, gold: 1234567 });
+  const lean = gView({ board: "lean", global: snap({ board: "lean", entries: [e] }) }).body.rows[0];
+  assert.equal(lean.val, "7 · 431");
+  assert.equal(lean.unit, BOARD_COPY.lean.unitLabel);
+  const purse = gView({ board: "purse", global: snap({ board: "purse", entries: [e] }) }).body.rows[0];
+  assert.equal(purse.val, "999,999", "gold is capped by the tag's field cap");
+  const days = gView({ board: "days", global: snap({ board: "days", entries: [e] }) }).body.rows[0];
+  assert.equal(days.val, "4");
+  assert.equal(days.unit, BOARD_COPY.days.unitLabel);
+  const kills = gView({ board: "kills", global: snap({ board: "kills", entries: [e] }) }).body.rows[0];
+  assert.equal(kills.val, "9");
+});
+
+test("global rows: a tag that does not decode gives a minimal row from the raw score (D-16)", () => {
+  const cases = [
+    { board: "deep", rawScore: boardScore("deep", { floor: 6, steps: 250 }), val: "6", unit: "FLOOR" },
+    { board: "days", rawScore: boardScore("days", { day: 12, floor: 5 }), val: "12", unit: BOARD_COPY.days.unitLabel },
+    { board: "kills", rawScore: boardScore("kills", { kills: 9, floor: 5 }), val: "9", unit: BOARD_COPY.kills.unitLabel },
+    { board: "purse", rawScore: 1234567, val: "1,234,567", unit: BOARD_COPY.purse.unitLabel },
+    { board: "lean", rawScore: 61571, val: "61.6", unit: G.leanRateUnit },
+    { board: "deep", rawScore: -1, val: "—", unit: "FLOOR" },
+    { board: "purse", rawScore: 1.5, val: "—", unit: BOARD_COPY.purse.unitLabel },
+  ];
+  for (const c of cases) {
+    const e = gEntry(0, { handle: "Ghost", run: null, rawScore: c.rawScore });
+    const row = gView({ board: c.board, global: snap({ board: c.board, entries: [e] }) }).body.rows[0];
+    assert.equal(row.headline, "Ghost", c.board);
+    assert.equal(row.val, c.val, `${c.board} ${c.rawScore}`);
+    assert.equal(row.unit, c.unit, c.board);
+    assert.equal(row.name, "");
+    assert.equal(row.line, "");
+    assert.equal(row.detail, "");
+    assert.deepStrictEqual(row.stats, []);
+  }
+});
+
+test("global rows: an empty handle reads as the nameless delver, avatar included", () => {
+  const e = gEntry(0, { handle: "" });
+  const row = gView({ global: snap({ entries: [e] }) }).body.rows[0];
+  assert.equal(row.headline, G.anon);
+  assert.deepStrictEqual(row.avatar, { initials: initialsOf(G.anon), bg: avatarColour(G.anon) });
+});
+
+test("global rows: bars follow the min-max rule over the rendered rows", () => {
+  const entries = [gEntry(0, {}, { floor: 9 }), gEntry(1, {}, { floor: 7 }), gEntry(2, {}, { floor: 5 })];
+  const rows = gView({ global: snap({ entries }) }).body.rows;
+  assert.deepStrictEqual(rows.map((r) => r.barPct), [100, 50, 3]);
+});
+
+test("PGS-05 ordering: snapshot order is kept, the reported rank is shown (list position when missing), the pinned YOU row is last", () => {
+  const entries = [gEntry(0, { rank: 4 }), gEntry(1, { rank: null }), gEntry(2, { rank: 9 }, { floor: 9 })];
+  const you = gEntry(3, { key: "g:you", you: true, rank: 120 });
+  const rows = gView({ global: snap({ entries, you }) }).body.rows;
+  assert.deepStrictEqual(rows.map((r) => r.key), [entries[0].key, entries[1].key, entries[2].key, "g:you"]);
+  assert.deepStrictEqual(rows.map((r) => r.rank), ["4", "2", "9", "120"]);
+  assert.equal(rows[3].divider, BOARDS_PANEL_COPY.divider);
+});
+
+test("PGS-05 adjacency: two entries with equal values keep their snapshot order and both render", () => {
+  const entries = [gEntry(0, { handle: "Second" }, { floor: 7 }), gEntry(1, { handle: "First" }, { floor: 7 })];
+  const rows = gView({ global: snap({ entries }) }).body.rows;
+  assert.deepStrictEqual(rows.map((r) => r.headline), ["Second", "First"]);
+  assert.deepStrictEqual(rows.map((r) => r.barPct), [100, 100]);
+});
+
+test("global standing: the real rank with worldwide / among-friends counts and a banded quip", () => {
+  const you = gEntry(2, { key: "g:you", you: true }, { name: "Brom Ironfoot" });
+  const entries = [gEntry(0), gEntry(1), { ...you, key: "g:p2:2" }];
+  const all = gView({ global: snap({ entries, you, total: 9044 }) }).standing;
+  assert.equal(all.label, "BROM IRONFOOT · FLOOR");
+  assert.equal(all.place, "3RD");
+  assert.ok(all.note.startsWith("of 9,044 interred worldwide. "), all.note);
+  assert.ok(GLOBAL_STANDING_LINES.ten.includes(all.note.slice("of 9,044 interred worldwide. ".length)), all.note);
+
+  const friends = gView({ scope: "friends", global: snap({ scope: "friends", entries, you, total: 12 }) }).standing;
+  assert.ok(friends.note.startsWith("of 12 among friends. "), friends.note);
+
+  const noTotal = gView({ global: snap({ entries, you, total: null }) }).standing;
+  assert.ok(noTotal.note.startsWith("of 3 interred worldwide. "), noTotal.note);
+
+  const lean = gView({ board: "lean", global: snap({ board: "lean", entries, you, total: 50 }) }).standing;
+  assert.equal(lean.label, "BROM IRONFOOT · " + BOARD_COPY.lean.unitLabel);
+
+  const none = gView({ global: snap({ entries, you: null, total: 9044 }) }).standing;
+  assert.deepStrictEqual(none, { label: "NO ENTRY", place: "—", note: G.noEntry });
+});
+
+test("global standing quip bands switch at ranks 1/2, 10/11 and 100/101, deterministically", () => {
+  const bands = [
+    [1, "first"],
+    [2, "ten"],
+    [10, "ten"],
+    [11, "hundred"],
+    [100, "hundred"],
+    [101, "rest"],
+    [5000, "rest"],
+  ];
+  for (const [rank, band] of bands) {
+    const you = gEntry(0, { key: "g:you", you: true, rank });
+    const input = { global: snap({ entries: [], you, total: 9044 }) };
+    const standing = gView(input).standing;
+    const quip = standing.note.slice("of 9,044 interred worldwide. ".length);
+    assert.ok(GLOBAL_STANDING_LINES[band].includes(quip), `rank ${rank} -> ${quip}`);
+    assert.equal(standing.place, ordinal(rank));
+    assert.deepStrictEqual(gView(input).standing, standing);
+  }
+});
+
+test("global status bodies: loading, unreachable, closed, consent and an empty board are in-panel, never blocking", () => {
+  const loading = gView({ global: snap({ status: "loading" }) });
+  assert.deepStrictEqual(loading.body, { kind: "note", line: G.loading });
+  assert.equal(loading.standing, null);
+  const unreachable = gView({ global: snap({ status: "unreachable" }) });
+  assert.deepStrictEqual(unreachable.body, { kind: "note", line: G.unreachable });
+  assert.equal(unreachable.standing, null);
+  const closed = gView({ global: snap({ status: "closed" }) });
+  assert.deepStrictEqual(closed.body, { kind: "note", line: G.closed });
+  assert.equal(closed.standing, null);
+  const consent = gView({ scope: "friends", global: snap({ status: "consent", scope: "friends" }) });
+  assert.deepStrictEqual(consent.body, { kind: "consent", line: G.consent, action: { id: "friendsConsent", label: "SHOW MY FRIENDS" } });
+  assert.equal(consent.standing, null);
+  for (const v of [loading, unreachable, closed, consent]) assert.equal(v.footnote, BOARD_FOOTNOTES.ranked);
+});
+
+test("PGS-05 empty: a ready board with no entries shows the empty note and NO ENTRY, or the ranked card when the player has a score", () => {
+  const empty = gView({ global: snap({ entries: [] }) });
+  assert.deepStrictEqual(empty.body, { kind: "empty", line: G.empty });
+  assert.deepStrictEqual(empty.standing, { label: "NO ENTRY", place: "—", note: G.noEntry });
+  const you = gEntry(0, { key: "g:you", you: true, rank: 14 });
+  const mine = gView({ global: snap({ entries: [], you, total: 40 }) });
+  assert.equal(mine.body.kind, "empty");
+  assert.equal(mine.standing.place, "14TH");
+});
+
+test("global: a stale ready snapshot renders its rows normally", () => {
+  const view = gView({ global: snap({ entries: [gEntry(0)], stale: true }) });
+  assert.equal(view.body.kind, "rows");
+  assert.equal(view.body.rows.length, 1);
+});
+
+test("PGS-05 empty: a null, undefined or malformed global input on a signed-in global view reads as unreachable, never throws", () => {
+  for (const global of [null, undefined, "ready", 7, [], {}, { status: "weird" }, { status: 3 }]) {
+    let view;
+    assert.doesNotThrow(() => {
+      view = gView({ global });
+    });
+    assert.deepStrictEqual(view.body, { kind: "note", line: G.unreachable }, JSON.stringify(global));
+    assert.equal(view.standing, null);
+  }
+  // A ready snapshot with a malformed entries list or junk entries still renders what it can.
+  const junk = gView({ global: { status: "ready", entries: "nope", you: 5 } });
+  assert.deepStrictEqual(junk.body, { kind: "empty", line: G.empty });
+  const mixed = gView({ global: { status: "ready", entries: [null, 3, gEntry(0)], you: null } });
+  assert.equal(mixed.body.rows.length, 1);
+});
+
+test("LINEAGE global: DEEPEST sample grouped by race and class, first entry kept, honest sampled footnote", () => {
+  const entries = [
+    gEntry(0, { handle: "Alpha" }, { race: "Dwarven", sub: "Pickpocket", floor: 9 }),
+    gEntry(1, { handle: "Bravo" }, { race: "Human", sub: "Soldier", floor: 8 }),
+    gEntry(2, { handle: "Charlie" }, { race: "Dwarven", sub: "Cutthroat", floor: 7 }),
+    gEntry(3, { handle: "Delta", run: null, rawScore: 6000000 }),
+    gEntry(4, { handle: "Echo" }, { race: "Gnome", sub: "Soldier", floor: 6 }),
+  ];
+  const you = gEntry(1, { key: "g:you", you: true }, { race: "Human", sub: "Soldier", floor: 8 });
+  const view = gView({ board: "combo", global: snap({ board: "combo", entries, you, sampled: 5 }) });
+  assert.equal(view.body.kind, "rows");
+  const rows = view.body.rows;
+  assert.deepStrictEqual(rows.map((r) => r.name), ["DWARVEN THIEF", "HUMAN FIGHTER"]);
+  assert.deepStrictEqual(rows.map((r) => r.headline), ["Alpha", "Bravo"]);
+  assert.deepStrictEqual(rows.map((r) => r.rank), ["1", "2"]);
+  assert.equal(rows[0].line, "DWARVEN PICKPOCKET · LVL III");
+  assert.equal(rows[0].val, "9");
+  assert.equal(rows[0].unit, "FLOOR");
+  assert.equal(view.footnote, "Sampled from the top 5 deepest corpses in the world. Rare lineages may be buried further down.");
+  assert.equal(view.standing.place, "2ND");
+  assert.equal(view.standing.label, "HUMAN FIGHTER · FLOOR");
+  assert.ok(view.standing.note.startsWith("of 2 lineages in the sample. "), view.standing.note);
+  assert.ok(GLOBAL_STANDING_LINES.ten.includes(view.standing.note.slice("of 2 lineages in the sample. ".length)));
+
+  const absent = gView({
+    board: "combo",
+    global: snap({ board: "combo", entries, you: gEntry(9, { key: "g:you", you: true }, { race: "Troll", sub: "Wizard" }), sampled: 5 }),
+  });
+  assert.deepStrictEqual(absent.standing, { label: "NO ENTRY", place: "—", note: G.noEntry });
+});
+
+test("PGS-05 adjacency and empty: two LINEAGE entries of one race and class collapse to the first; an empty sample shows the empty note with n 0", () => {
+  const entries = [
+    gEntry(0, { handle: "Keep" }, { race: "Elven", sub: "Wizard", floor: 5 }),
+    gEntry(1, { handle: "Drop" }, { race: "Elven", sub: "Warlock", floor: 5 }),
+  ];
+  const rows = gView({ board: "combo", global: snap({ board: "combo", entries, sampled: 2 }) }).body.rows;
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].headline, "Keep");
+
+  const empty = gView({ board: "combo", global: snap({ board: "combo", entries: [], sampled: 0 }) });
+  assert.deepStrictEqual(empty.body, { kind: "empty", line: G.empty });
+  assert.equal(empty.footnote, "Sampled from the top 0 deepest corpses in the world. Rare lineages may be buried further down.");
+  assert.deepStrictEqual(empty.standing, { label: "NO ENTRY", place: "—", note: G.noEntry });
+});
+
+test("header season: 'SEASON n' on every view; the picker shows only with two seasons, signed in, on a global scope off GRAVEYARD", () => {
+  assert.deepStrictEqual(boardsView({}).header.season, { label: "SEASON 1", picker: null });
+  assert.deepStrictEqual(boardsView({ board: "yard" }).header.season, { label: "SEASON 1", picker: null });
+  assert.deepStrictEqual(gView({ seasons: [1] }).header.season, { label: "SEASON 1", picker: null });
+  assert.deepStrictEqual(gView({ season: 2, seasons: [1, 2] }).header.season, {
+    label: "SEASON 2",
+    picker: [
+      { n: 1, label: "SEASON 1", on: false },
+      { n: 2, label: "SEASON 2", on: true },
+    ],
+  });
+  assert.equal(gView({ season: 2, seasons: [1, 2], board: "yard" }).header.season.picker, null);
+  assert.equal(gView({ season: 2, seasons: [1, 2], scope: "local" }).header.season.picker, null);
+  assert.equal(gView({ season: 2, seasons: [1, 2], signedIn: false }).header.season.picker, null);
+  // a malformed season or seasons input falls back to season 1 / [season].
+  assert.deepStrictEqual(gView({ season: -3, seasons: "x" }).header.season, { label: "SEASON 1", picker: null });
+  assert.deepStrictEqual(gView({ season: 3 }).header.season, { label: "SEASON 3", picker: null });
+});
+
+test("header scope line: signed in, ALL and FRIENDS name the global scopes; otherwise the Phase 66 lines", () => {
+  assert.equal(gView({}).header.scopeLine, G.scope.all);
+  assert.equal(gView({ scope: "friends" }).header.scopeLine, G.scope.friends);
+  assert.equal(gView({ scope: "local" }).header.scopeLine, BOARDS_PANEL_COPY.scope.ranked);
+  assert.equal(gView({ board: "yard" }).header.scopeLine, BOARDS_PANEL_COPY.scope.yard);
+  assert.equal(gView({ signedIn: false }).header.scopeLine, BOARDS_PANEL_COPY.scope.ranked);
+});
+
+test("signed out (D-07): any global input is ignored — the view equals the no-global view, with the Phase 66 notes", () => {
+  const rec = recordWith([makeSummary({ floor: 5 })]);
+  const global = snap({ entries: [gEntry(0)], you: gEntry(0, { key: "g:you", you: true }), total: 9 });
+  for (const board of BOARD_IDS) {
+    for (const scope of ["local", "all", "friends"]) {
+      const common = { bests: rec, graves: [], total: 1, board, scope, entry: "tab" };
+      assert.deepStrictEqual(boardsView({ ...common, global, season: 2, seasons: [1, 2] }), boardsView({ ...common, season: 2, seasons: [1, 2] }), `${board} ${scope}`);
+    }
+  }
+  assert.deepStrictEqual(boardsView({ board: "deep", scope: "all", global }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.all });
+  assert.deepStrictEqual(boardsView({ board: "deep", scope: "friends", global }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.friends });
+});
+
+test("GRAVEYARD stays local in every state (D-17): signed in with a global snapshot on ALL, it lists the stones", () => {
+  const graves = [legacyStone({ floor: 1 })];
+  const view = gView({ board: "yard", graves, global: snap({ entries: [gEntry(0)] }) });
+  assert.equal(view.body.kind, "rows");
+  assert.equal(view.body.rows[0].headline, "Old One");
+  assert.equal(view.standing.label, "INTERRED");
+  assert.equal(view.footnote, BOARD_FOOTNOTES.yard);
+});
+
+test("Purity with a global snapshot: deep-frozen input is never mutated and two calls are deepStrictEqual", () => {
+  const you = gEntry(12, { key: "g:you", you: true });
+  const input = deepFreeze({
+    board: "deep",
+    scope: "all",
+    entry: "tab",
+    signedIn: true,
+    player: { id: "p1", displayName: "Lanternjaw" },
+    global: snap({ entries: [gEntry(0), gEntry(1)], you, total: 100 }),
+    season: 1,
+    seasons: [1],
+  });
+  let v1;
+  assert.doesNotThrow(() => {
+    v1 = boardsView(input);
+  });
+  assert.deepStrictEqual(boardsView(input), v1);
+  const combo = deepFreeze({ ...input, board: "combo", global: snap({ board: "combo", entries: [gEntry(0), gEntry(1)], sampled: 2 }) });
+  assert.deepStrictEqual(boardsView(combo), boardsView(combo));
+});
+
+test("source pins: the retired coming-online notes are gone and the minimal row goes through scoreFallback", () => {
+  assert.doesNotMatch(STRIPPED, /note\.live/);
+  assert.match(STRIPPED, /function buildGlobalRows/);
+  assert.match(STRIPPED, /scoreFallback\(/);
+  assert.doesNotMatch(STRIPPED, /globalBoards/);
 });
