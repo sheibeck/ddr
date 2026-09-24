@@ -396,20 +396,31 @@ test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-
 
 // ─── (13) BEHAVIOUR: the HUD is off-tab on Dead ──────────────────────────
 
-test("(13) BEHAVIOUR + structural: window.__mzShowTab(\"dead\") writes data-offtab \"1\" on #mw-hud and #mm-conditions (each of maze/hero/gear/oracle writes \"0\"); the [data-offtab=\"1\"] rules exist for .mw-hud and .mw-cond-strip, and #screen-dead carries the safe-area top padding", () => {
+test("(13) BEHAVIOUR + structural (Phase 70 D-08, ruling R-B): the HUD and condition strip stay on all five in-game tabs including DEAD (no data-offtab \"1\"); only the title-opened Leaderboards panel hides them through body[data-boards-entry=\"title\"]; no [data-offtab rule remains; the in-game #screen-dead sits flush (padding-top 0) and the title-mode panel keeps the safe-area top padding", () => {
+  const { doc, sandbox } = freshSandbox(states.thief);
+  for (const tab of ["dead", "maze", "hero", "gear", "oracle", "dead"]) {
+    sandbox.context.window.__mzShowTab(tab);
+    assert.notEqual(doc.elementsById.get("mw-hud")?.dataset?.offtab, "1", `#mw-hud must not go off-tab on ${tab}`);
+    assert.notEqual(doc.elementsById.get("mm-conditions")?.dataset?.offtab, "1", `#mm-conditions must not go off-tab on ${tab}`);
+  }
+  const showTabRegion = sliceBetween(CODE, "function showTab(name) {", "for (const btn of tabs) btn.addEventListener");
+  assert.doesNotMatch(showTabRegion, /offtab/, "showTab writes no data-offtab");
+
+  assert.doesNotMatch(HTML, /\[data-offtab/, "no [data-offtab rule remains");
+  assert.match(HTML, /^body\[data-boards-entry="title"\] #mw-hud\{display:none\}$/m);
+  assert.match(HTML, /^body\[data-boards-entry="title"\] #mm-conditions\{display:none\}$/m);
+  assert.match(HTML, /^#screen-dead\{padding-top:0\}$/m);
+  assert.match(HTML, /^body\[data-boards-entry="title"\] #screen-dead\{padding-top:calc\(14px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\)\}$/m);
+  assert.match(HTML, /^#screen-dead\{padding-left:0;padding-right:0;padding-bottom:0;height:100%\}$/m);
+});
+
+// ─── (21) BEHAVIOUR: the ☰ opens on the DEAD tab ─────────────────────────
+
+test("(21) BEHAVIOUR (Phase 70 D-08, ruling R-B): on the in-game DEAD tab the ☰ onclick opens the menu", () => {
   const { doc, sandbox } = freshSandbox(states.thief);
   sandbox.context.window.__mzShowTab("dead");
-  assert.equal(doc.elementsById.get("mw-hud").dataset.offtab, "1");
-  assert.equal(doc.elementsById.get("mm-conditions").dataset.offtab, "1");
-  for (const tab of ["maze", "hero", "gear", "oracle"]) {
-    sandbox.context.window.__mzShowTab(tab);
-    assert.equal(doc.elementsById.get("mw-hud").dataset.offtab, "0", `#mw-hud must be "0" on ${tab}`);
-    assert.equal(doc.elementsById.get("mm-conditions").dataset.offtab, "0", `#mm-conditions must be "0" on ${tab}`);
-  }
-
-  assert.match(HTML, /^\.mw-hud\[data-offtab="1"\]\{display:none\}$/m);
-  assert.match(HTML, /^\.mw-cond-strip\[data-offtab="1"\]\{display:none\}$/m);
-  assert.match(HTML, /^#screen-dead\{padding-top:calc\(14px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\)\}$/m);
+  menuBtn(doc).onclick();
+  assert.ok(isOpen(doc), "the ☰ opens on the DEAD tab");
 });
 
 // ─── (14) the width budget at text size M fits a 411px Pixel 7 ──────────
