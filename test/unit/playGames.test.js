@@ -905,6 +905,241 @@ test("fake: a custom player is used as given; calls() is the ordered, frozen met
   assert.equal(calls.length, 4);
 });
 
+// --- Phase 68: the fake provider's leaderboard store ----------------------------------
+
+const SEEDED = Object.freeze({
+  B: [
+    { playerId: "r1", handle: "Rival", score: 50, tag: "x", friend: true },
+    { playerId: "r2", handle: "Stranger", score: 40, tag: "y" },
+  ],
+});
+
+test("fake: frozen, kind fake, exactly PROVIDER_METHODS plus calls, submissions and setOnline", () => {
+  const fake = createFakePlayGames();
+  assert.equal(Object.isFrozen(fake), true);
+  assert.equal(fake.kind, "fake");
+  assert.deepEqual(fnKeys(fake), [...PROVIDER_METHODS, "calls", "submissions", "setOnline"].sort());
+});
+
+test("fake: submitScore keeps the best score per player, larger-is-better by default", async () => {
+  const fake = createFakePlayGames({ signedIn: true });
+  assert.deepEqual(await fake.submitScore({ leaderboardId: "B", score: 10, tag: "t1" }), { ok: true, newBest: true });
+  assert.deepEqual(await fake.submitScore({ leaderboardId: "B", score: 5, tag: "t2" }), { ok: true, newBest: false });
+  assert.deepEqual(await fake.submitScore({ leaderboardId: "B", score: 10, tag: "t3" }), { ok: true, newBest: false }, "a tie is not a new best");
+  const mine = await fake.loadPlayerScore({ leaderboardId: "B", collection: "public" });
+  assert.deepEqual(mine.score, { rank: 1, rawScore: 10, tag: "t1", handle: "Dev Delver", playerId: "fake-player", friend: false });
+  assert.deepEqual(await fake.submitScore({ leaderboardId: "B", score: 12, tag: "t4" }), { ok: true, newBest: true });
+  assert.equal((await fake.loadPlayerScore({ leaderboardId: "B" })).score.tag, "t4");
+});
+
+test("fake: on a smallerIsBetter board a lower score is the new best", async () => {
+  const fake = createFakePlayGames({ signedIn: true, orders: { L: "smallerIsBetter" } });
+  assert.deepEqual(await fake.submitScore({ leaderboardId: "L", score: 900, tag: "a" }), { ok: true, newBest: true });
+  assert.deepEqual(await fake.submitScore({ leaderboardId: "L", score: 400, tag: "b" }), { ok: true, newBest: true });
+  assert.deepEqual(await fake.submitScore({ leaderboardId: "L", score: 700, tag: "c" }), { ok: true, newBest: false });
+  assert.equal((await fake.loadPlayerScore({ leaderboardId: "L" })).score.rawScore, 400);
+
+  const seeded = createFakePlayGames({
+    signedIn: true,
+    orders: { L: "smallerIsBetter" },
+    boards: { L: [{ playerId: "r1", handle: "Slow", score: 900, tag: "s" }, { playerId: "r2", handle: "Quick", score: 100, tag: "q" }] },
+  });
+  const top = await seeded.loadTopScores({ leaderboardId: "L" });
+  assert.deepEqual(top.scores.map((s) => [s.rank, s.handle]), [[1, "Quick"], [2, "Slow"]]);
+});
+
+test("fake: submissions() is a frozen, ordered copy of every accepted submission", async () => {
+  const fake = createFakePlayGames({ signedIn: true });
+  await fake.submitScore({ leaderboardId: "B", score: 10, tag: "t1" });
+  await fake.submitScore({ leaderboardId: "C", score: 3, tag: "t2" });
+  await fake.submitScore({ leaderboardId: "B", score: 1, tag: "t3" });
+  const subs = fake.submissions();
+  assert.deepEqual(subs, [
+    { leaderboardId: "B", score: 10, tag: "t1" },
+    { leaderboardId: "C", score: 3, tag: "t2" },
+    { leaderboardId: "B", score: 1, tag: "t3" },
+  ]);
+  assert.equal(Object.isFrozen(subs), true);
+  assert.equal(Object.isFrozen(subs[0]), true);
+  await fake.submitScore({ leaderboardId: "B", score: 11, tag: "t4" });
+  assert.equal(subs.length, 3, "a copy");
+  assert.equal(fake.submissions().length, 4);
+});
+
+test("fake: signed out, offline or invalid input resolves { ok: false } and records nothing", async () => {
+  const out = createFakePlayGames();
+  assert.deepEqual(await out.submitScore({ leaderboardId: "B", score: 10, tag: "t" }), { ok: false });
+  assert.deepEqual(out.submissions(), []);
+
+  const fake = createFakePlayGames({ signedIn: true });
+  fake.setOnline(false);
+  assert.deepEqual(await fake.submitScore({ leaderboardId: "B", score: 10, tag: "t" }), { ok: false });
+  for (const bad of [
+    { leaderboardId: "", score: 1, tag: "t" },
+    { leaderboardId: "B", score: -1, tag: "t" },
+    { leaderboardId: "B", score: 1.5, tag: "t" },
+    { leaderboardId: "B", score: 1, tag: "no spaces" },
+    { leaderboardId: "B", score: 1, tag: "a".repeat(65) },
+  ]) {
+    fake.setOnline(true);
+    assert.deepEqual(await fake.submitScore(bad), { ok: false }, JSON.stringify(bad));
+  }
+  assert.deepEqual(fake.submissions(), []);
+  assert.deepEqual(await fake.loadPlayerScore({ leaderboardId: "B" }), { ok: true, score: null });
+
+  const startsOffline = createFakePlayGames({ signedIn: true, online: false });
+  assert.deepEqual(await startsOffline.submitScore({ leaderboardId: "B", score: 1, tag: "t" }), { ok: false });
+  startsOffline.setOnline(true);
+  assert.deepEqual(await startsOffline.submitScore({ leaderboardId: "B", score: 1, tag: "t" }), { ok: true, newBest: true });
+});
+
+test("fake: loadTopScores ranks a seeded board 1..n with the entry count as total; maxResults cuts the list", async () => {
+  const fake = createFakePlayGames({ signedIn: true, boards: SEEDED });
+  const top = await fake.loadTopScores({ leaderboardId: "B", collection: "public", maxResults: 10 });
+  assert.equal(top.ok, true);
+  assert.equal(top.total, 2);
+  assert.deepEqual(top.scores, [
+    { rank: 1, rawScore: 50, tag: "x", handle: "Rival", playerId: "r1", friend: true },
+    { rank: 2, rawScore: 40, tag: "y", handle: "Stranger", playerId: "r2", friend: false },
+  ]);
+  assert.equal(Object.isFrozen(top), true);
+  assert.equal(Object.isFrozen(top.scores), true);
+  assert.equal(Object.isFrozen(top.scores[0]), true);
+
+  const one = await fake.loadTopScores({ leaderboardId: "B", collection: "public", maxResults: 1 });
+  assert.deepEqual(one.scores.map((s) => s.handle), ["Rival"]);
+  assert.equal(one.total, 2, "total counts the whole board, not the page");
+
+  const empty = await fake.loadTopScores({ leaderboardId: "nobody-home" });
+  assert.deepEqual(empty, { ok: true, scores: [], total: 0 });
+  assert.deepEqual(await fake.loadTopScores({ leaderboardId: "" }), { ok: false });
+});
+
+test("fake: equal scores keep insertion order", async () => {
+  const fake = createFakePlayGames({
+    signedIn: true,
+    boards: {
+      T: [
+        { playerId: "a", handle: "First", score: 7, tag: "" },
+        { playerId: "b", handle: "Second", score: 9, tag: "" },
+        { playerId: "c", handle: "Third", score: 7, tag: "" },
+      ],
+    },
+  });
+  await fake.submitScore({ leaderboardId: "T", score: 7, tag: "me" });
+  const top = await fake.loadTopScores({ leaderboardId: "T" });
+  assert.deepEqual(top.scores.map((s) => [s.rank, s.handle]), [
+    [1, "Second"],
+    [2, "First"],
+    [3, "Third"],
+    [4, "Dev Delver"],
+  ]);
+});
+
+test("fake: the player's own entry uses player.id and player.displayName; loadPlayerScore is null before any submission", async () => {
+  const me = { id: "me", displayName: "Grimsby" };
+  const fake = createFakePlayGames({ signedIn: true, player: me, boards: SEEDED });
+  assert.deepEqual(await fake.loadPlayerScore({ leaderboardId: "B", collection: "public" }), { ok: true, score: null });
+  await fake.submitScore({ leaderboardId: "B", score: 45, tag: "g" });
+  assert.deepEqual(await fake.loadPlayerScore({ leaderboardId: "B", collection: "public" }), {
+    ok: true,
+    score: { rank: 2, rawScore: 45, tag: "g", handle: "Grimsby", playerId: "me", friend: false },
+  });
+  const top = await fake.loadTopScores({ leaderboardId: "B" });
+  assert.deepEqual(top.scores.map((s) => s.playerId), ["r1", "me", "r2"]);
+  assert.equal(top.total, 3);
+});
+
+test("fake: the friends collection lists only friends plus the player, ranked among themselves", async () => {
+  const fake = createFakePlayGames({ signedIn: true, boards: SEEDED });
+  await fake.submitScore({ leaderboardId: "B", score: 45, tag: "me" });
+  const friends = await fake.loadTopScores({ leaderboardId: "B", collection: "friends", maxResults: 10 });
+  assert.deepEqual(friends.scores.map((s) => [s.rank, s.handle, s.friend]), [
+    [1, "Rival", true],
+    [2, "Dev Delver", false],
+  ]);
+  assert.equal(friends.total, 2);
+  const mine = await fake.loadPlayerScore({ leaderboardId: "B", collection: "friends" });
+  assert.equal(mine.score.rank, 2);
+});
+
+test("fake: the friends collection needs consent — \"required\" and \"decline\" resolve { ok: false }", async () => {
+  for (const friendsConsent of ["required", "decline"]) {
+    const fake = createFakePlayGames({ signedIn: true, boards: SEEDED, friendsConsent });
+    assert.deepEqual(await fake.loadTopScores({ leaderboardId: "B", collection: "friends" }), { ok: false }, friendsConsent);
+    assert.deepEqual(await fake.loadPlayerScore({ leaderboardId: "B", collection: "friends" }), { ok: false }, friendsConsent);
+    assert.equal((await fake.loadTopScores({ leaderboardId: "B", collection: "public" })).ok, true, "public needs no consent");
+  }
+});
+
+test("fake: loadStanding resolves the public rank and entry count, or rank null before any submission", async () => {
+  const fake = createFakePlayGames({ signedIn: true, boards: SEEDED });
+  assert.deepEqual(await fake.loadStanding({ leaderboardId: "B" }), { ok: true, rank: null, total: 2 });
+  await fake.submitScore({ leaderboardId: "B", score: 30, tag: "z" });
+  assert.deepEqual(await fake.loadStanding({ leaderboardId: "B" }), { ok: true, rank: 3, total: 3 });
+  assert.deepEqual(await fake.loadStanding({ leaderboardId: "" }), { ok: false });
+});
+
+test("fake: friendsAccess follows the consent mode; accept grants on request, decline stays required", async () => {
+  const granted = createFakePlayGames({ signedIn: true });
+  assert.equal(await granted.friendsAccess({ request: false }), "granted");
+
+  const required = createFakePlayGames({ signedIn: true, friendsConsent: "required" });
+  assert.equal(await required.friendsAccess({ request: false }), "required");
+  assert.equal(await required.friendsAccess(), "required", "a silent check never grants");
+  assert.equal(await required.friendsAccess({ request: true }), "granted");
+  assert.equal(await required.friendsAccess({ request: false }), "granted", "the grant sticks");
+  assert.equal((await required.loadTopScores({ leaderboardId: "B", collection: "friends" })).ok, true);
+
+  const refusesPrompt = createFakePlayGames({ signedIn: true, friendsConsent: "required", interactive: "decline" });
+  assert.equal(await refusesPrompt.friendsAccess({ request: true }), "required");
+
+  const declined = createFakePlayGames({ signedIn: true, friendsConsent: "decline" });
+  assert.equal(await declined.friendsAccess({ request: false }), "required");
+  assert.equal(await declined.friendsAccess({ request: true }), "required");
+  assert.equal(await declined.friendsAccess({ request: false }), "required");
+});
+
+test("fake: offline or signed out, every leaderboard read fails and friendsAccess is unavailable", async () => {
+  const fake = createFakePlayGames({ signedIn: true, boards: SEEDED });
+  fake.setOnline(false);
+  assert.deepEqual(await fake.loadTopScores({ leaderboardId: "B" }), { ok: false });
+  assert.deepEqual(await fake.loadPlayerScore({ leaderboardId: "B" }), { ok: false });
+  assert.deepEqual(await fake.loadStanding({ leaderboardId: "B" }), { ok: false });
+  assert.equal(await fake.friendsAccess({ request: false }), "unavailable");
+  assert.equal(await fake.friendsAccess({ request: true }), "unavailable");
+  fake.setOnline(true);
+  assert.equal((await fake.loadTopScores({ leaderboardId: "B" })).ok, true);
+
+  const out = createFakePlayGames({ boards: SEEDED });
+  assert.deepEqual(await out.loadTopScores({ leaderboardId: "B" }), { ok: false });
+  assert.deepEqual(await out.loadStanding({ leaderboardId: "B" }), { ok: false });
+  assert.equal(await out.friendsAccess({ request: false }), "unavailable");
+});
+
+test("fake: every leaderboard call appends its method name to calls()", async () => {
+  const fake = createFakePlayGames({ signedIn: true });
+  await fake.submitScore({ leaderboardId: "B", score: 1, tag: "t" });
+  await fake.loadTopScores({ leaderboardId: "B" });
+  await fake.loadPlayerScore({ leaderboardId: "B" });
+  await fake.loadStanding({ leaderboardId: "B" });
+  await fake.friendsAccess({ request: false });
+  await fake.submitScore({ leaderboardId: "", score: 1, tag: "t" });
+  fake.submissions();
+  fake.setOnline(true);
+  assert.deepEqual(fake.calls(), ["submitScore", "loadTopScores", "loadPlayerScore", "loadStanding", "friendsAccess", "submitScore"]);
+});
+
+test("fake: seeded boards are copied, never mutated, and bad seed entries are ignored", async () => {
+  const boards = { B: [{ playerId: "r1", handle: "Rival", score: 50, tag: "x" }, null, "junk", { playerId: "r3", handle: "NoScore" }] };
+  const fake = createFakePlayGames({ signedIn: true, boards });
+  await fake.submitScore({ leaderboardId: "B", score: 60, tag: "m" });
+  assert.equal(boards.B.length, 4);
+  assert.equal(boards.B[0].score, 50);
+  const top = await fake.loadTopScores({ leaderboardId: "B" });
+  assert.deepEqual(top.scores.map((s) => s.handle), ["Dev Delver", "Rival"]);
+});
+
 // --- source pins ---------------------------------------------------------------
 
 const CODE = stripJs(fs.readFileSync(MODULE_PATH, "utf8"));
