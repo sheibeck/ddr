@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Leaderboards
 current_phase: 69
-current_phase_name: Compliance & Device Close
-status: planning
+current_phase_name: compliance-device-close
+status: executing
 stopped_at: /gsd-autonomous v2.0 run IN PROGRESS (orchestrator resume note, written before a /compact).
-last_updated: "2026-09-24T05:41:41.191Z"
+last_updated: "2026-09-24T06:05:00.764Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 68 complete, transitioned to Phase 69
+last_activity_desc: Phase 69 execution started
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 27
+  total_plans: 31
   completed_plans: 27
   percent: 80
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards started; v1.9 closed and tagged; Play 1.9.0 / vc8 built for closed testing; open Pixel 7 UAT batches: v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 68 — global-boards-submissions-you-placed-x
+**Current focus:** Phase 69 — compliance-device-close
 
 ## Current Position
 
-Phase: 69 — Compliance & Device Close
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-24 — Phase 68 complete, transitioned to Phase 69
+Phase: 69 (compliance-device-close) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 69
+Last activity: 2026-09-24 — Phase 69 execution started
 
 ## Ground Truth (durable facts every session needs)
 
