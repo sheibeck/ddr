@@ -792,6 +792,8 @@ let deviceHandle = null;
 const bufferCache = new Map();
 let unlockInFlight = false;
 const liveVoices = [];
+// Phase 71 (D-15, R-26): one-shot voices started so far (sfxClipCount).
+let oneShotStarts = 0;
 
 function soundIsOff() {
   return !!(currentSettings && currentSettings.sound === false);
@@ -919,6 +921,7 @@ function playClips(clipIds) {
       const voice = backend.start(deviceHandle, buffer, clipGain(clipId));
       if (!voice) continue;
       liveVoices.push(voice);
+      oneShotStarts++;
       while (liveVoices.length > VOICE_CAP) {
         const oldest = liveVoices.shift();
         try {
@@ -981,6 +984,18 @@ export function playUiTap() {
     // cosmetic polish — never throw.
   }
   return undefined;
+}
+
+/**
+ * sfxClipCount() — exported. Phase 71 D-15's one-sound-per-press probe
+ * (R-26): a whole number that rises by one for every one-shot voice
+ * playClips() started (backend.start returned a voice). It counts one-shots
+ * only, never the title theme's loop (startMusic), and it is not reset by
+ * Sound Off. The UI tap listener snapshots it at click time and plays its
+ * tick one task later only if the press's own handlers started nothing.
+ */
+export function sfxClipCount() {
+  return oneShotStarts;
 }
 
 /**
