@@ -80,6 +80,12 @@ export const BOARDS_CLASSES = Object.freeze([
   "mw-bd-foot",
   "mw-bd-dock",
   "mw-bd-dock-btn",
+  // Phase 68 (D-06, D-08): the SEASON label, the older-season picker and
+  // the friends consent button.
+  "mw-bd-season",
+  "mw-bd-seasons",
+  "mw-bd-season-chip",
+  "mw-bd-consent",
 ]);
 
 /** finite(n) — coerces to a finite number, else 0. */
@@ -155,6 +161,25 @@ function buildHead(doc, view, handlers) {
   const headtext = el(doc, "div", "mw-bd-headtext");
   headtext.appendChild(el(doc, "span", "mw-bd-title", view.header.title));
   headtext.appendChild(el(doc, "span", "mw-bd-scope", view.header.scopeLine));
+  const season = view.header.season;
+  if (season && typeof season === "object") {
+    // Phase 68 (D-08): the SEASON label, plus the older-season picker only
+    // when the view offers one (two or more seasons, on a global view).
+    headtext.appendChild(el(doc, "span", "mw-bd-season", String(season.label ?? "")));
+    if (Array.isArray(season.picker)) {
+      const seasons = el(doc, "div", "mw-bd-seasons");
+      for (const s of season.picker) {
+        const chip = el(doc, "button", "mw-bd-season-chip", String(s.label ?? ""));
+        chip.type = "button";
+        chip.dataset.season = String(s.n);
+        chip.dataset.on = s.on ? "1" : "0";
+        chip.setAttribute("aria-pressed", s.on ? "true" : "false");
+        chip.onclick = () => handlers.onSeason?.(s.n);
+        seasons.appendChild(chip);
+      }
+      headtext.appendChild(seasons);
+    }
+  }
   children.push(headtext);
 
   const interred = el(doc, "div", "mw-bd-interred");
@@ -333,10 +358,21 @@ function buildBody(doc, view, handlers, bodyEl) {
     children.push(el(doc, "p", "mw-bd-empty", view.body.line));
   } else if (view.body.kind === "note") {
     children.push(el(doc, "p", "mw-bd-note", view.body.line));
+  } else if (view.body.kind === "consent") {
+    // Phase 68 (D-06): the friends consent note with its in-panel button —
+    // never a modal or a rail card.
+    children.push(el(doc, "p", "mw-bd-note", view.body.line));
+    const action = view.body.action || {};
+    const btn = el(doc, "button", "mw-bd-consent", String(action.label ?? ""));
+    btn.type = "button";
+    btn.dataset.action = String(action.id ?? "");
+    btn.onclick = () => handlers.onConsent?.();
+    children.push(btn);
   } else {
     for (const row of view.body.rows) children.push(buildRow(doc, view, row, handlers));
   }
-  children.push(buildStanding(doc, view.standing));
+  // Phase 68: a global view that is not ready has no standing card.
+  if (view.standing) children.push(buildStanding(doc, view.standing));
   children.push(el(doc, "p", "mw-bd-foot", view.footnote));
   bodyEl.replaceChildren(...children);
 }
@@ -408,6 +444,11 @@ function signedOutIdentity() {
   return SIGNED_OUT;
 }
 
+/** defaultSeasons() — createBoardsPanel's default seasons seam (season 1 only). */
+function defaultSeasons() {
+  return { current: 1, all: [1] };
+}
+
 /**
  * createBoardsPanel({ host, buildView, readData, prefs, reducedMotion,
  * onRoute }) — the Leaderboards panel's stateful controller (D-01, D-02,
@@ -419,8 +460,16 @@ function signedOutIdentity() {
  * identity() seam ({ signedIn, player: { id, displayName } | null }; the
  * default is signed out). Every render re-reads it, so refresh() picks up a
  * sign-in or sign-out while the panel is open; a missing, throwing or
- * malformed identity renders signed out. Phase 68 adds global and friends
- * sources behind the same view.
+ * malformed identity renders signed out.
+ *
+ * Phase 68 (D-05..D-08) adds three optional seams: `global({ board, scope,
+ * season })` answers the global snapshot (68-07 passes the global-boards
+ * controller's view), asked only while signed in on ALL / FRIENDS off
+ * GRAVEYARD — signed out or Compete OFF it is never called; `seasons()`
+ * answers { current, all } for the SEASON label and the older-season picker;
+ * `onFriendsConsent()` runs from the in-panel SHOW MY FRIENDS button. The
+ * panel still reaches Play Games only through these injected functions, and
+ * a missing or throwing seam never breaks a render.
  */
 export function createBoardsPanel({
   host,
@@ -430,8 +479,37 @@ export function createBoardsPanel({
   reducedMotion = () => false,
   onRoute,
   identity = signedOutIdentity,
+  global = null,
+  seasons = defaultSeasons,
+  onFriendsConsent = null,
 }) {
   const doc = host.ownerDocument;
+
+  /** readSeasons() — { current, all } from the seasons() seam; a throw or malformed answer means season 1 of [1]. */
+  function readSeasons() {
+    let answer;
+    try {
+      answer = typeof seasons === "function" ? seasons() : null;
+    } catch {
+      answer = null; // a throwing seasons() must never break the tab switch.
+    }
+    const isSeason = (n) => Number.isInteger(n) && n > 0;
+    const current = answer && typeof answer === "object" && isSeason(answer.current) ? answer.current : 1;
+    const listed = answer && typeof answer === "object" && Array.isArray(answer.all) ? answer.all.filter(isSeason) : [];
+    const all = listed.length ? [...new Set(listed)].sort((a, b) => a - b) : [current];
+    return { current, all };
+  }
+
+  /** readGlobal(signedIn) — the global snapshot, asked only when signed in on a global scope off GRAVEYARD; null otherwise or on a throw. */
+  function readGlobal(signedIn) {
+    if (!signedIn || scope === "local" || board === "yard" || typeof global !== "function") return null;
+    try {
+      const answer = global({ board, scope, season });
+      return answer === undefined ? null : answer;
+    } catch {
+      return null; // a throwing global() reads as no snapshot (the view says unreachable).
+    }
+  }
 
   /** readIdentity() — the account identity as { signedIn, player }; never throws. */
   function readIdentity() {
@@ -451,6 +529,7 @@ export function createBoardsPanel({
   let scope = "local"; // "local" | "all" | "friends"
   let open = null; // a row key, or null
   let hasHero = false;
+  let season = 1; // Phase 68 (D-08): the viewed season; reset to the current one on every open.
 
   function readStoredBoard() {
     if (!prefs) return null;
@@ -524,7 +603,21 @@ export function createBoardsPanel({
     }
     try {
       const { signedIn, player } = readIdentity();
-      const view = buildView({ ...data, board, scope, open, entry, hasHero, signedIn, player });
+      const { all } = readSeasons();
+      const snapshot = readGlobal(signedIn);
+      const view = buildView({
+        ...data,
+        board,
+        scope,
+        open,
+        entry,
+        hasHero,
+        signedIn,
+        player,
+        global: snapshot,
+        season,
+        seasons: all,
+      });
       renderBoardsPanel(host, view, handlers);
       centreRail();
       if (reset) {
@@ -560,6 +653,21 @@ export function createBoardsPanel({
     onDock(id) {
       if (id === "title" || id === "roll" || id === "dungeon") route(id);
     },
+    onSeason(n) {
+      // Phase 68 (D-08): older seasons are read-only views; only a known season switches.
+      if (!readSeasons().all.includes(n)) return;
+      season = n;
+      open = null;
+      render({ reset: true });
+    },
+    onConsent() {
+      // Phase 68 (D-06): the in-panel SHOW MY FRIENDS button.
+      try {
+        if (typeof onFriendsConsent === "function") onFriendsConsent();
+      } catch {
+        // a throwing consent handler must never break the panel.
+      }
+    },
   };
 
   function route(action) {
@@ -584,6 +692,7 @@ export function createBoardsPanel({
     board = readStoredBoard() || "deep";
     scope = "local";
     open = null;
+    season = readSeasons().current;
     clearTitleMarker();
     render({ reset: true });
   }
@@ -594,6 +703,7 @@ export function createBoardsPanel({
     board = "yard"; // D-04: the title's button reads "View the Dead".
     scope = "local";
     open = null;
+    season = readSeasons().current;
     doc.body.dataset.boardsEntry = "title";
     render({ reset: true });
   }
@@ -611,7 +721,7 @@ export function createBoardsPanel({
   }
 
   function state() {
-    return Object.freeze({ entry, board, scope, open, hasHero });
+    return Object.freeze({ entry, board, scope, open, hasHero, season });
   }
 
   return Object.freeze({ openFromTab, openFromTitle, onDeadTab, back, isTitleOpen, centreRail, refresh, state });

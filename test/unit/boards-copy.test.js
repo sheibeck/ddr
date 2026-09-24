@@ -199,7 +199,7 @@ test("No STANDING_LINES entry mentions a pin, worldwide, friends, or another pla
   }
 });
 
-// ─── Phase 67 (D-08): the signed-in strip and coming-online notes ───────────
+// ─── Phase 67 (D-08): the signed-in strip (Phase 68 retires the coming-online notes) ─
 
 test("BOARDS_PANEL_COPY.strip.live: the signed-in source line verbatim and a non-empty fallback name", () => {
   assert.equal(BOARDS_PANEL_COPY.strip.live.source, "PLAY GAMES · SIGNED IN");
@@ -210,27 +210,14 @@ test("BOARDS_PANEL_COPY.strip.live: the signed-in source line verbatim and a non
   assert.equal(BOARDS_PANEL_COPY.strip.source, "Your dead only");
 });
 
-test("BOARDS_PANEL_COPY.note.live: the coming-online notes verbatim, the signed-out notes untouched", () => {
-  assert.equal(
-    BOARDS_PANEL_COPY.note.live.all,
-    "The world's ledger is still being bound. Your own dead will have to do.",
-  );
-  assert.equal(
-    BOARDS_PANEL_COPY.note.live.friends,
-    "Your friends' ledger is still at the bindery. Your own dead will have to do for now.",
-  );
+test("BOARDS_PANEL_COPY.note: exactly the Phase 66 signed-out notes (Phase 68 retired 67-04's coming-online notes)", () => {
+  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.note), ["all", "friends"]);
   assert.equal(BOARDS_PANEL_COPY.note.all, "Nobody out there can see you yet.");
   assert.equal(
     BOARDS_PANEL_COPY.note.friends,
     "Your friends have not been told you exist. It may be kinder that way.",
   );
-});
-
-test("The live notes claim no rank, count or ranking scope (they say the boards are not open yet)", () => {
-  const forbidden = /worldwide|among friends|\d|\b(rank|ranked|place|placed)\b|@/i;
-  for (const [k, line] of Object.entries(BOARDS_PANEL_COPY.note.live)) {
-    assert.doesNotMatch(line, forbidden, `note.live.${k} -> "${line}"`);
-  }
+  assert.ok(Object.isFrozen(BOARDS_PANEL_COPY.note));
 });
 
 // ─── Phase 68 (D-05..D-09): the global board copy ───────────────────────────

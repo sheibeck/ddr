@@ -87,6 +87,10 @@ function setup(overrides = {}) {
   // Phase 67 (D-08): identity is only passed when a test supplies one, so
   // every other test exercises createBoardsPanel's signed-out default.
   if (Object.prototype.hasOwnProperty.call(overrides, "identity")) params.identity = overrides.identity;
+  // Phase 68: the global/seasons/onFriendsConsent seams, likewise only when given.
+  for (const key of ["global", "seasons", "onFriendsConsent"]) {
+    if (Object.prototype.hasOwnProperty.call(overrides, key)) params[key] = overrides[key];
+  }
   const panel = createBoardsPanel(params);
   return { doc, host, buildView, readData, prefs, onRoute, reducedMotion, panel };
 }
@@ -553,12 +557,205 @@ test("refresh() re-renders only while the panel is open", () => {
   assert.equal(buildView.calls.length, afterOpen + 1);
 });
 
-test("state() returns a frozen snapshot with entry/board/scope/open/hasHero", () => {
+test("state() returns a frozen snapshot with entry/board/scope/open/hasHero/season", () => {
   const { panel } = setup();
   panel.openFromTitle({ hasHero: true });
   const s = panel.state();
-  assert.deepStrictEqual(s, { entry: "title", board: "yard", scope: "local", open: null, hasHero: true });
+  assert.deepStrictEqual(s, { entry: "title", board: "yard", scope: "local", open: null, hasHero: true, season: 1 });
   assert.ok(Object.isFrozen(s));
+});
+
+// ─── Phase 68 (D-05..D-08): the global, seasons and onFriendsConsent seams ──
+
+const SIGNED_IN = () => ({ signedIn: true, player: { id: "p1", displayName: "Lanternjaw" } });
+
+/** globalBuildView() — scope chips, a season picker from input.seasons, and a consent body on FRIENDS. */
+function globalBuildView() {
+  const calls = [];
+  const fn = (input) => {
+    calls.push([input]);
+    const view = scopeCapableBuildView()(input);
+    view.header.season = {
+      label: `SEASON ${input.season}`,
+      picker: input.seasons.length >= 2 ? input.seasons.map((n) => ({ n, label: `SEASON ${n}`, on: n === input.season })) : null,
+    };
+    view.body =
+      input.scope === "friends"
+        ? { kind: "consent", line: "c", action: { id: "friendsConsent", label: "SHOW MY FRIENDS" } }
+        : { kind: "rows", rows: [{ key: "r1", rank: "1", top: true, podium: true, you: false, divider: "", avatar: { initials: "AB", bg: "#000" }, headline: "A", tag: "", name: "", line: "l", barPct: 100, val: "1", unit: "FLOOR", open: input.open === "r1", detail: "", stats: [] }] };
+    view.standing = null;
+    return view;
+  };
+  fn.calls = calls;
+  return fn;
+}
+
+function scopeChip(host, id) {
+  return host.querySelector(".mw-bd-scopes").querySelectorAll(".mw-bd-scope-chip").find((c) => c.dataset.scope === id);
+}
+
+test("global(): called only when signed in, on ALL/FRIENDS, off GRAVEYARD — its answer reaches buildView as global", () => {
+  const buildView = globalBuildView();
+  const answer = Object.freeze({ status: "ready", entries: [] });
+  const global = spy();
+  global.ret = answer;
+  const { host, panel } = setup({ buildView, identity: SIGNED_IN, global });
+
+  panel.openFromTab();
+  assert.equal(global.calls.length, 0, "local scope asks nothing");
+  assert.equal(lastBuildInput(buildView).global, null);
+
+  scopeChip(host, "all").onclick();
+  assert.equal(global.calls.length, 1);
+  assert.deepStrictEqual(global.calls[0], [{ board: "deep", scope: "all", season: 1 }]);
+  assert.equal(lastBuildInput(buildView).global, answer);
+
+  scopeChip(host, "friends").onclick();
+  assert.deepStrictEqual(global.calls[1], [{ board: "deep", scope: "friends", season: 1 }]);
+
+  host.querySelector(".mw-bd-rail").children.find((c) => c.dataset.board === "yard").onclick();
+  assert.equal(global.calls.length, 2, "GRAVEYARD stays local (D-17)");
+  assert.equal(lastBuildInput(buildView).global, null);
+
+  host.querySelector(".mw-bd-rail").children.find((c) => c.dataset.board === "combo").onclick();
+  assert.deepStrictEqual(global.calls[2], [{ board: "combo", scope: "friends", season: 1 }]);
+});
+
+test("global(): signed out (or Compete OFF), opening ALL and FRIENDS calls global zero times", () => {
+  const buildView = globalBuildView();
+  const global = spy();
+  const { host, panel } = setup({ buildView, identity: () => ({ signedIn: false, player: null }), global });
+  panel.openFromTab();
+  scopeChip(host, "all").onclick();
+  scopeChip(host, "friends").onclick();
+  panel.refresh();
+  assert.equal(global.calls.length, 0);
+  assert.equal(lastBuildInput(buildView).global, null);
+});
+
+test("global(): a throwing or non-function global passes null and the panel still renders", () => {
+  for (const global of [
+    () => {
+      throw new Error("boom");
+    },
+    "not a function",
+    null,
+  ]) {
+    const buildView = globalBuildView();
+    const { host, panel } = setup({ buildView, identity: SIGNED_IN, global });
+    panel.openFromTab();
+    assert.doesNotThrow(() => scopeChip(host, "all").onclick());
+    assert.equal(panel.state().scope, "all");
+    assert.equal(lastBuildInput(buildView).global, null);
+    assert.ok(host.querySelector(".mw-bd-row"), "the panel rendered");
+  }
+});
+
+test("without the Phase 68 seams, buildView gets global null, season 1 and seasons [1]", () => {
+  const buildView = makeBuildView();
+  const { panel } = setup({ buildView, identity: SIGNED_IN });
+  panel.openFromTab();
+  const input = lastBuildInput(buildView);
+  assert.equal(input.global, null);
+  assert.equal(input.season, 1);
+  assert.deepStrictEqual(input.seasons, [1]);
+});
+
+test("seasons(): the viewed season starts at current on every open; onSeason switches only to a known season, clears the open row and resets scroll", () => {
+  const buildView = globalBuildView();
+  const global = spy();
+  const { host, panel } = setup({ buildView, identity: SIGNED_IN, global, seasons: () => ({ current: 2, all: [1, 2] }) });
+  panel.openFromTab();
+  assert.equal(panel.state().season, 2);
+  assert.equal(lastBuildInput(buildView).season, 2);
+  assert.deepStrictEqual(lastBuildInput(buildView).seasons, [1, 2]);
+
+  scopeChip(host, "all").onclick();
+  host.querySelector(".mw-bd-row").onclick();
+  assert.equal(panel.state().open, "r1");
+  host.querySelector(".mw-bd-body").scrollTop = 40;
+
+  const chip = (n) => host.querySelector(".mw-bd-seasons").querySelectorAll(".mw-bd-season-chip").find((c) => c.dataset.season === String(n));
+  chip(1).onclick();
+  assert.equal(panel.state().season, 1);
+  assert.equal(panel.state().open, null);
+  assert.equal(host.querySelector(".mw-bd-body").scrollTop, 0);
+  assert.deepStrictEqual(global.calls[global.calls.length - 1], [{ board: "deep", scope: "all", season: 1 }]);
+
+  // refresh() keeps the viewed season.
+  panel.refresh();
+  assert.equal(panel.state().season, 1);
+  assert.equal(lastBuildInput(buildView).season, 1);
+
+  panel.openFromTitle({ hasHero: false });
+  assert.equal(panel.state().season, 2, "openFromTitle resets to the current season");
+  panel.openFromTab();
+  assert.equal(panel.state().season, 2, "openFromTab resets to the current season");
+});
+
+test("seasons(): onSeason ignores a season outside seasons().all", () => {
+  let seasonsAnswer = { current: 2, all: [1, 2] };
+  const buildView = globalBuildView();
+  const { host, panel } = setup({ buildView, identity: SIGNED_IN, seasons: () => seasonsAnswer });
+  panel.openFromTab();
+  scopeChip(host, "all").onclick();
+  const chip1 = host.querySelector(".mw-bd-seasons").querySelectorAll(".mw-bd-season-chip").find((c) => c.dataset.season === "1");
+  seasonsAnswer = { current: 2, all: [2] }; // season 1 withdrawn between render and tap
+  const before = buildView.calls.length;
+  chip1.onclick();
+  assert.equal(panel.state().season, 2);
+  assert.equal(buildView.calls.length, before, "no re-render for an unknown season");
+});
+
+test("seasons(): a throwing or malformed seasons() falls back to season 1 of [1]", () => {
+  for (const seasons of [
+    () => {
+      throw new Error("boom");
+    },
+    () => null,
+    () => ({ current: -1, all: "x" }),
+    "not a function",
+  ]) {
+    const buildView = globalBuildView();
+    const { panel } = setup({ buildView, identity: SIGNED_IN, seasons });
+    assert.doesNotThrow(() => panel.openFromTab());
+    assert.equal(panel.state().season, 1);
+    assert.equal(lastBuildInput(buildView).season, 1);
+    assert.deepStrictEqual(lastBuildInput(buildView).seasons, [1]);
+  }
+});
+
+test("onConsent: the SHOW MY FRIENDS button calls onFriendsConsent once; a missing or throwing handler never throws", () => {
+  const onFriendsConsent = spy();
+  {
+    const buildView = globalBuildView();
+    const { host, panel } = setup({ buildView, identity: SIGNED_IN, onFriendsConsent });
+    panel.openFromTab();
+    scopeChip(host, "friends").onclick();
+    host.querySelector(".mw-bd-consent").onclick();
+    assert.equal(onFriendsConsent.calls.length, 1);
+  }
+  for (const handler of [
+    undefined,
+    () => {
+      throw new Error("boom");
+    },
+    "not a function",
+  ]) {
+    const buildView = globalBuildView();
+    const overrides = { buildView, identity: SIGNED_IN };
+    if (handler !== undefined) overrides.onFriendsConsent = handler;
+    const { host, panel } = setup(overrides);
+    panel.openFromTab();
+    scopeChip(host, "friends").onclick();
+    assert.doesNotThrow(() => host.querySelector(".mw-bd-consent").onclick());
+  }
+});
+
+test("source pins (Phase 68): createBoardsPanel names the global, seasons and onFriendsConsent seams", () => {
+  assert.match(MODULE_SRC, /onFriendsConsent/);
+  assert.match(MODULE_SRC, /global\(/);
+  assert.match(MODULE_SRC, /mw-bd-consent/);
 });
 
 // ─── source pins ────────────────────────────────────────────────────────
