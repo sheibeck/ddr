@@ -132,7 +132,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 67-06-PLAN.md — (wave 2) exact 0.5.0 install with lockfile integrity, WebView vendoring, APP_ID placeholder resource + manifest, the ruling's build-time patch, debug build and Gradle ads/analytics audit (PGS-01)
-- [ ] 67-07-PLAN.md — (wave 2) `src/browser/accountChip.js`: chip/sheet renderers and the account controller (silent non-blocking boot, Compete, welcome/failed cards, one attempt at a time) (PGS-02, ACCT-01, ACCT-02)
+- [x] 67-07-PLAN.md — (wave 2) `src/browser/accountChip.js`: chip/sheet renderers and the account controller (silent non-blocking boot, Compete, welcome/failed cards, one attempt at a time) (PGS-02, ACCT-01, ACCT-02)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -348,7 +348,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 |-------|-----------|----------------|--------|-----------|
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
-| 67. Play Games Integration & Account Chip | v2.0 | 6/8 | In Progress|  |
+| 67. Play Games Integration & Account Chip | v2.0 | 7/8 | In Progress|  |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/7 | Planned | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
