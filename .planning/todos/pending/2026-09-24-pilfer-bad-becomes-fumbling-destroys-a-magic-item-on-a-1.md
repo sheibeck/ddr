@@ -28,13 +28,15 @@ This is a hard lockout from a whole category of loot. The user wants a risk inst
 - Each time a Pilfer uses a magic item, the Pilfer rolls a die. On a roll of 1 (the worst face — this matches the v2.1 roll-high convention, where 1 is always worst), the item is **destroyed**, and it **explodes, dealing damage** (user addition, 2026-09-24: "If the magic item is destroyed, it will deal damage as it explodes.").
 - **Ruled 2026-09-24:** the fumbled use does NOT take effect. User's words: "it no longer works and it turns to dust". The item fails, explodes for damage, and crumbles to dust; nothing is left in the bag or slot.
 - The Pilfer's good (traps disarm themselves, locks open) is unchanged.
+- **Ruled 2026-09-24:**
+  - The fumble die is a **d20**: a 1 fumbles, 5% per use.
+  - **Armor does not soak** the d10 blast.
+  - **Magic items = use-activated jewelry, cloaks and staves.** (User: "I think those are the only usable magic items.") Potions are pending a user answer.
 
 **Decide in the Phase 75 discuss:**
-- The die. A d20 gives a 5% fumble per use, which is the natural default for the user's "rolls a one".
 - The explosion damage:
   - **How much — ruled 2026-09-24: d10 damage** (user: "d10 damage on magic item explode").
   - **Who takes it — ruled 2026-09-24: the Pilfer.** User: "the pilfer's d10 is the damage a pilfer takes for fumbling." The party and foes are unaffected.
-  - Whether armor soaks it or it bypasses armor.
   - Whether it can kill: it should, since the engine already handles death from any HP loss (death epitaph line).
   - The damage roll is another derived-stream draw, like the fumble roll.
 - Which items count as "magic items":
