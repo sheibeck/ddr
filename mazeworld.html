@@ -7048,16 +7048,23 @@ window.__mzClassicBoot = async function classicBoot() {
       if (resumeIntent) { surfaceWornReconcile(); return; } // boot() already rehydrated the live delve underneath
       window.mzStartRoll();
     };
-    // DR18 (DR15-C): "View the Dead" — dismiss the title gate and open the
-    // Leaderboards panel on the DEAD tab (__mzShowTab("dead") reaches
-    // window.__mzBoards.onDeadTab, Phase 66). The adapter's graveyard is
-    // already loaded here (boot() ran inside the awaited __mzClassicBoot()
-    // above), so refreshTitleDead()'s non-empty gate is authoritative on
-    // this first paint.
+    // DR18 (DR15-C), Phase 66 (BOARD-01, D-01/D-04): "View the Dead" —
+    // dismiss the title gate and open the Leaderboards panel in TITLE mode
+    // on GRAVEYARD (boardsPanel.openFromTitle), then switch the DEAD tab
+    // active so its onDeadTab() branch only re-centres the rail (title mode
+    // is already set by the time the tab switch runs). hasHero is the
+    // title's OWN resume decision (ENTER's resumeIntent), never recomputed
+    // from S — boot() always leaves a throwaway fresh-run character in S
+    // that is not a live hero, so reading S here would misreport "no live
+    // hero" as one. The adapter's graveyard is already loaded here (boot()
+    // ran inside the awaited __mzClassicBoot() above), so
+    // refreshTitleDead()'s non-empty gate is authoritative on this first
+    // paint.
     const deadBtn = document.getElementById("mw-title-dead");
     if (deadBtn) {
       deadBtn.onclick = () => {
         hideTitleScreen();
+        boardsPanel.openFromTitle({ hasHero: resumeIntent });
         window.__mzShowTab?.("dead");
       };
     }
@@ -7091,10 +7098,18 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || hudMenuIsOpen(),
+        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || hudMenuIsOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
+          // Phase 66 (D-03): the Android back button mirrors the chevron on
+          // a title-opened Leaderboards panel — routes to the dungeon when a
+          // live hero exists, else the title — and returns before the ☰
+          // escape and before any S mutation below, so a resumed run's
+          // combat, store or beats are never cleared by leaving the panel. A
+          // tab-opened panel is untouched: nativeChrome.js's own back
+          // behaviour for the DEAD tab is unchanged.
+          if (boardsPanel.isTitleOpen()) { boardsPanel.back(); return; }
           // Phase 57 (LAYOUT-04/05), Plan 05: the Android back button closes
           // the ☰ menu (device equivalent of Escape, orchestrator-approved
           // as standard behaviour) — first, before any of the modals below.
