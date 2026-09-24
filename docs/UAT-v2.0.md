@@ -161,6 +161,163 @@ The seven boards: **DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE, LINEAGE** and **
 |---|------|-----|--------|
 | Z1 | In the browser dev loop, turn on the dev "simulate signed-in" setting (`pgsDevSignedIn`) and relaunch. A death shows the rank line, and ALL shows rows from the dev boards. | user | open |
 
+## Source map
+
+Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) and every SUMMARY extra (`[NN-PP-Sk]`, k in list order) appears once below. *Merged* means the check is walked in that row; *superseded* means a later phase replaced the behaviour.
+
+| Source | Item | Row | Disposition |
+|--------|------|-----|-------------|
+| [65-V1] | voice: BOARD_COPY rule lines, new-best and first-death quip banks | K1 | own row |
+| [65-V2] | install over an install with graves: boots, stones listed, no crash | A1 | own row |
+| [65-V3] | die twice: Dead tab count rises, clean restart | A3 | own row (66-V10 merged into it) |
+| [65-V4] | storage cleared, first death works | A9 | own row (last: it clears app data) |
+| [65-V5] | fresh install first death: gold block, one first-death line | A2 | own row |
+| [65-V6] | deeper death: NEW PERSONAL BEST rows and quip, buttons on-screen at largest text | A4 | own row |
+| [65-V7] | shallower death: no block | A5 | own row |
+| [65-V8] | REVIEW THE ORACLE and back: same block, same quip | A6 | own row |
+| [65-V9] | BURY THEM, new run, early death: no stale block | A7 | own row |
+| [65-V10] | rail never over the death panel | A8 | own row |
+| [66-V1] | voice: panel copy (rule lines, footnotes, standing lines) | B11 | own row |
+| [66-V2] | active chip glides; jumps with reduce-motion | B6 | own row |
+| [66-V3] | deep GRAVEYARD row expands in place | B7 | own row |
+| [66-V4] | board order reads right; LEANEST rewards efficient runs | B8 | own row |
+| [66-V5] | standing card place and 'of N' after a fresh death | B10 | own row |
+| [66-V6] | panel matches the mock at text size M | B3 | own row (extended to name all seven boards) |
+| [66-V7] | largest text: header, strip, rail don't crowd the list | B4 | own row |
+| [66-V8] | rail chips and row tap targets comfortable | B5 | own row |
+| [66-V9] | DEAD tab: panel, tab bar, DEAD lit, no chevron | C1 | own row |
+| [66-V10] | after a death the DEAD tab lists the run at once, INTERRED +1 | A3 | merged: same check as 65-V3 (the Dead tab count rising after a death) |
+| [66-V11] | DEAD tab reopens on the last board viewed | C2 | own row |
+| [66-V12] | every board renders, empty or not, in airplane mode | J2 | own row |
+| [66-V13] | title View the Dead appears after the first-ever death, no restart | C3 | own row |
+| [66-V14] | no live hero: View the Dead on GRAVEYARD, chevron, two buttons, no tab bar | C4 | own row |
+| [66-V15] | BACK TO TITLE returns; ENTER still rolls | C5 | own row |
+| [66-V16] | ROLL A NEW HERO: roller, then map | C6 | own row |
+| [66-V17] | after Save & quit: BACK TO THE DUNGEON resumes | C7 | own row |
+| [66-V18] | Android back mirrors the chevron; DEAD tab as before | C8 | own row |
+| [67-V1] | RELEASE-BLOCKING Compete OFF cold boot, logcat + network capture | F1 | own row, RELEASE-BLOCKING (67-01-S1, 67-06-S2 and 67-08-S5's capture clause merged into it) |
+| [67-V2] | Compete OFF + airplane: cold boot and a full run, no stall | J1 | own row |
+| [67-V3] | placeholder APP_ID, Compete ON: nobody chip, one failure card after ENTER | D1 | own row |
+| [67-V4] | no Play Games profile: fully playable | D2 | own row |
+| [67-V5] | band 2 at S/M/L: no clipping, chip left of ☰, height and dropdown unchanged | E1 | own row |
+| [67-V6] | title chip placement; nobody face reads as deliberate | E2 | own row |
+| [67-V7] | account sheet from both chips; Settings row above the title | E3 | own row |
+| [67-V8] | Android back closes the account sheet first | C9 | own row (a back behaviour, so in section C) |
+| [67-V9] | band-2 chip ignored in combat/encounters | E4 | own row |
+| [67-V10] | voice: welcome card, failure card, Stop competing helper, Compete OFF line | K2 | own row (spans sections D and E, so in K) |
+| [67-V11] | after console setup: auto sign-in, initials, welcome once, strip SIGNED IN | D3 | own row |
+| [67-V12] | after console setup: Sign in row signs in; decline shows the failure card, no retry | D4, D5 | split: decline and accept are two moments |
+| [67-V13] | Stop competing flips chips and strip; Compete ON signs back in silently | E5 | own row |
+| [67-V14] | signed in: ALL/FRIENDS coming-online notes; Compete OFF restores strip and dimmed chips; GRAVEYARD no strip | F3, B12 | partly superseded: the coming-online notes clause is superseded by Phase 68 live boards (now B13 to B16); the Compete OFF clause is F3, the GRAVEYARD clause is B12 |
+| [67-V15] | console: walk the runbook, confirm menu paths; debug keytool SHA-1 | 0.1, 0.10 | own rows in section 0 (user, non-device) |
+| [68-V1] | console: create the five Season-1 boards, paste IDs, rebuild | 0.1, 0.2 | merged into section 0 (user console steps) |
+| [68-V2] | after console setup: a tester death on all five boards, v1 tag in the console | H1 | own row |
+| [68-V3] | 'You placed Nth of M.' fades in once; no fade with remove-animations | H2, H3 | split: the reduced-motion repeat is a second death |
+| [68-V4] | not a best: standing line, never a placed claim | H4 | own row |
+| [68-V5] | die offline, relaunch online: lands once per board; one LEDGER CAUGHT UP card | G1 | own row |
+| [68-V6] | queued death, Compete OFF, online, Compete ON: nothing submitted | G2 | own row |
+| [68-V7] | (optional) Compete ON signed out, die, sign in: queued run submits | G3 | own row |
+| [68-V8] | Compete OFF, die: no rank line, card, error or traffic (capture) | F2 | own row: a death, a different moment from F1's cold boot |
+| [68-V9] | ALL on DEEPEST row anatomy; expand shows cause + six chips; YOU/FRIEND tags fit | B13 | own row |
+| [68-V10] | outside the top ten: pinned divider; standing card fits | B14 | own row |
+| [68-V11] | ALL fills in seconds; airplane: last result or unreachable note | B15, J3 | split: the airplane clause is in section J |
+| [68-V12] | FRIENDS consent note and button; consent screen only after the tap; decline | B16 | own row |
+| [68-V13] | LINEAGE on ALL grouped + sampled footnote; SEASON label fits beside INTERRED | B17, I1 | split: the SEASON label clause is in section I |
+| [68-V14] | signed out or Compete OFF: ALL/FRIENDS show the Phase 66 notes | F3 | own row (shares F3 with 67-V14's Compete OFF clause: same moment) |
+| [68-V15] | voice at default and largest: rank quips, ledger card, season-drop line, panel notes | K3 | own row (spans sections B, G, H and I, so in K) |
+| [68-V16] | browser dev loop: pgsDevSignedIn, rank line, dev-board rows | Z1 | own row (a desk check, not a device check) |
+| [65-03-S1] | voice: BOARD_COPY rule lines and both quip banks | K1 | merged into 65-V1 |
+| [65-04-S1] | install over an install with graves | A1 | merged into 65-V2 |
+| [65-04-S2] | die twice: count rises, clean restart | A3 | merged into 65-V3 |
+| [65-04-S3] | storage cleared, first death works | A9 | merged into 65-V4 |
+| [65-05-S1] | fresh install first death gold block | A2 | merged into 65-V5 |
+| [65-05-S2] | deeper death NEW PERSONAL BEST at largest text | A4 | merged into 65-V6 |
+| [65-05-S3] | shallower death no block | A5 | merged into 65-V7 |
+| [65-05-S4] | REVIEW THE ORACLE and back | A6 | merged into 65-V8 |
+| [65-05-S5] | BURY THEM, new run, early death | A7 | merged into 65-V9 |
+| [65-05-S6] | rail never over the death panel | A8 | merged into 65-V10 |
+| [66-02-S1] | voice: panel copy | B11 | merged into 66-V1 |
+| [66-03-S1] | chip glide / reduce-motion jump | B6 | merged into 66-V2 |
+| [66-03-S2] | deep GRAVEYARD row expands in place | B7 | merged into 66-V3 |
+| [66-04-S1] | board order; LEANEST rewards efficient runs | B8 | merged into 66-V4 |
+| [66-04-S2] | standing card after a fresh death | B10 | merged into 66-V5 |
+| [66-05-S1] | matches the mock at M | B3 | merged into 66-V6 |
+| [66-05-S2] | usable at the largest text size | B4 | merged into 66-V7 |
+| [66-05-S3] | chips and tap targets comfortable | B5 | merged into 66-V8 |
+| [66-06-S1] | DEAD tab: tab bar, DEAD lit, no chevron | C1 | merged into 66-V9 |
+| [66-06-S2] | after a death the run is listed, INTERRED +1 | A3 | merged into 66-V10 (itself merged into A3) |
+| [66-06-S3] | tab reopens on the last board | C2 | merged into 66-V11 |
+| [66-06-S4] | every board renders in airplane mode | J2 | merged into 66-V12 |
+| [66-06-S5] | title View the Dead after the first death | C3 | merged into 66-V13 |
+| [66-07-S1] | no live hero: GRAVEYARD, chevron, two buttons | C4 | merged into 66-V14 |
+| [66-07-S2] | BACK TO TITLE; ENTER still rolls | C5 | merged into 66-V15 |
+| [66-07-S3] | ROLL A NEW HERO to the map | C6 | merged into 66-V16 |
+| [66-07-S4] | BACK TO THE DUNGEON resumes | C7 | merged into 66-V17 |
+| [66-07-S5] | Android back mirrors the chevron | C8 | merged into 66-V18 |
+| [66-07-S6] | airplane mode changes nothing (title-opened panel) | J2 | merged into 66-V12's row (same airplane check of the panel) |
+| [67-01-S1] | release-blocking Compete OFF cold boot capture | F1 | merged into 67-V1 (same check) |
+| [67-01-S2] | Compete OFF + airplane cold boot and full run | J1 | merged into 67-V2 |
+| [67-02-S1] | walk the runbook in Play Console, confirm menu paths | 0.1 | merged into 67-V15 |
+| [67-02-S2] | debug-keystore keytool prints a SHA-1 | 0.10 | merged into 67-V15 |
+| [67-02-S3] | after the APP_ID rebuild: tester initials, strip SIGNED IN | D3 | merged into 67-V11 |
+| [67-03-S1] | voice: welcome card | K2 | merged into 67-V10 |
+| [67-03-S2] | voice: failure card, never modal | K2 | merged into 67-V10 |
+| [67-03-S3] | voice: Stop competing helper and Compete OFF line | K2 | merged into 67-V10 |
+| [67-03-S4] | nobody glyph and pending face read as deliberate | E2 | merged into 67-V6 |
+| [67-04-S1] | signed in: strip with display name, gold-ring avatar, SIGNED IN | D3 | merged into 67-V11 (same strip at sign-in) |
+| [67-04-S2] | signed in: ALL/FRIENDS show the coming-online notes | B13, B16 | superseded by Phase 68 live boards |
+| [67-04-S3] | Compete OFF: strip back to ?, SIGNED OUT, chips dimmed | F3 | merged into 67-V14's Compete OFF clause |
+| [67-04-S4] | GRAVEYARD shows no identity strip | B12 | merged into 67-V14's GRAVEYARD clause |
+| [67-05-S1] | band 2 at S/M/L, chip left of ☰, 477.8px at L | E1 | merged into 67-V5 |
+| [67-05-S2] | title chip clear of status bar, cutout, splash text | E2 | merged into 67-V6 |
+| [67-05-S3] | nobody face deliberate on HUD and title | E2 | merged into 67-V6 |
+| [67-05-S4] | band-2 height unchanged; ☰ dropdown and scrim | E1 | merged into 67-V5 |
+| [67-05-S5] | sheet opens from both chips; Settings row above the title | E3 | merged into 67-V7 |
+| [67-06-S1] | placeholder APP_ID, Compete ON: nobody chip, one failure card | D1 | merged into 67-V3 |
+| [67-06-S2] | Compete OFF cold boot capture (release-blocking) | F1 | merged into 67-V1 (same check) |
+| [67-06-S3] | after console setup: Sign in row signs a tester in | D5 | merged into 67-V12 |
+| [67-07-S1] | welcome card once, never again after restart | D3 | merged into 67-V11 |
+| [67-07-S2] | declined sign-in: failure card, nothing modal, no retry | D4 | merged into 67-V12 |
+| [67-07-S3] | Stop competing to nobody; Compete ON signs back in silently | E5 | merged into 67-V13 |
+| [67-08-S1] | chip positions; placeholder nobody glyph and one card after ENTER | E2, D1 | merged into 67-V6 and 67-V3 |
+| [67-08-S2] | after console setup: auto sign-in, welcome once, strip SIGNED IN | D3 | merged into 67-V11 |
+| [67-08-S3] | declined Sign in: failure card, nothing modal | D4 | merged into 67-V12 |
+| [67-08-S4] | no Play Games profile: fully playable | D2 | merged into 67-V4 |
+| [67-08-S5] | Stop competing flips chips; Compete OFF cold boot capture | E5, F1 | merged: the Stop competing clause into 67-V13, the capture clause into 67-V1 |
+| [67-08-S6] | Settings row from the title chip opens settings above the title | E3 | merged into 67-V7 |
+| [67-08-S7] | Android back closes the account sheet first | C9 | merged into 67-V8 |
+| [67-08-S8] | band-2 chip ignored during combat | E4 | merged into 67-V9 |
+| [68-01-S1] | create the five season-1 leaderboards in Play Console | 0.1 | merged into 68-V1 (section 0) |
+| [68-01-S2] | paste the IDs into LEADERBOARD_IDS[1] and rebuild | 0.2 | merged into 68-V1 (section 0) |
+| [68-01-S3] | console score view shows the tag; LEANEST is rate x 1,000 | H1 | merged into 68-V2 |
+| [68-02-S1] | a Compete-ON death appears on the Play Games board with its tag | H1 | merged into 68-V2 |
+| [68-02-S2] | friends consent screen only after the in-panel tap | B16 | merged into 68-V12 |
+| [68-02-S3] | (optional) rank line reflects the new score after a submit | H5 | own row: an extra with no VERIFICATION twin |
+| [68-03-S1] | voice: DEEPEST rank quip at default and largest | K3 | merged into 68-V15 |
+| [68-03-S2] | voice: LEDGER CAUGHT UP card (one/many), holds ~12 s | K3, G1 | merged into 68-V15 (read) and 68-V5 (the hold) |
+| [68-03-S3] | standing-band line never claims the run placed | H4 | merged into 68-V4 |
+| [68-03-S4] | voice: season-drop Oracle line and ALL/FRIENDS notes | K3 | merged into 68-V15 |
+| [68-04-S1] | airplane death, relaunch online: once on each board | G1 | merged into 68-V5 |
+| [68-04-S2] | queued death, Compete OFF then ON: nothing submitted | G2 | merged into 68-V6 |
+| [68-04-S3] | (optional) signed out, die, sign in: queued run submits | G3 | merged into 68-V7 |
+| [68-05-S1] | ALL fills in seconds, local rows usable | B15 | merged into 68-V11 |
+| [68-05-S2] | airplane: last result or unreachable note, nothing blocks | J3 | merged into 68-V11 |
+| [68-05-S3] | FRIENDS consent note; screen only after the tap; decline | B16 | merged into 68-V12 |
+| [68-06-S1] | ALL on DEEPEST row anatomy; expand shows cause + six chips | B13 | merged into 68-V9 |
+| [68-06-S2] | YOU and FRIEND tags fit beside a long handle | B13 | merged into 68-V9 |
+| [68-06-S3] | NOT IN THE TOP TEN divider row last | B14 | merged into 68-V10 |
+| [68-06-S4] | standing card '3RD · of N interred worldwide.' fits | B14 | merged into 68-V10 |
+| [68-06-S5] | FRIENDS without consent: note and SHOW MY FRIENDS fit | B16 | merged into 68-V12 |
+| [68-06-S6] | SEASON label fits; second-season chips wrap, switch read-only | I1, I2 | split: the label merges into 68-V13 (I1); the second-season chips are an extra with no VERIFICATION twin (own row I2) |
+| [68-06-S7] | LINEAGE on ALL grouped rows and sampled footnote | B17 | merged into 68-V13 |
+| [68-06-S8] | signed out or Compete OFF: Phase 66 notes | F3 | merged into 68-V14 |
+| [68-07-S1] | 'You placed Nth of M.' fades in once | H2 | merged into 68-V3 |
+| [68-07-S2] | remove-animations: no fade | H3 | merged into 68-V3 |
+| [68-07-S3] | airplane death, relaunch: one LEDGER CAUGHT UP card after the map shows | G1 | merged into 68-V5 |
+| [68-07-S4] | Compete OFF, die: no rank line, card, error or traffic | F2 | merged into 68-V8 |
+| [68-07-S5] | ALL, FRIENDS and LINEAGE at default and largest text | B13, B16, B17 | merged into 68-V9, 68-V12 and 68-V13 (text sizes added to those rows) |
+| [68-07-S6] | browser dev loop: pgsDevSignedIn | Z1 | merged into 68-V16 |
+
 ---
 
 **Tally (written 2026-09-24):** 0 walked. The batch is run at the milestone close per the deferred-UAT protocol; RELEASE-BLOCKING row F1 must pass before any production rollout.
