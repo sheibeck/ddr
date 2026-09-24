@@ -8,7 +8,12 @@ and `storeScreen.js` (Phase 47), and the character roller mounts from
 `boardsPanel.js` over the pure `boardsView.js` view model (Phase 66). The
 Play Games account (Phase 67) comes from three modules: `playGames.js` (the
 provider seam), `account.js` (the pure view model) and `accountChip.js`
-(the chip and sheet renderers plus the account controller). The
+(the chip and sheet renderers plus the account controller). The global
+boards (Phase 68) add five: `scoreTag.js` (the score tag), `boardScores.js`
+(the per-board score encodings and leaderboard IDs), `pgsQueue.js` (the
+durable submission queue), `globalBoards.js` (the fetch-and-cache
+controller for ALL and FRIENDS) and `placement.js` (the rank line and rail
+card views). The
 contract below is what those modules implement, and every `window.__mz*`
 bridge crossing the classic-script/module-script seam is listed in one
 place, with an owner.
@@ -175,9 +180,10 @@ twin used by `node --test` and the browser dev loop. Both expose `init()`
 (the silent launch attempt), `signIn()` (the interactive attempt, which
 passes `silent: false`), `isAuthenticated()` and `getPlayer()` →
 `{ id, displayName }`. Every method resolves and never rejects. There is no
-sign-out, because PGS v2 has none (D-03). The plugin's leaderboard methods
-are reserved for Phase 68 (`RESERVED_LEADERBOARD_METHODS`) and are not
-exposed yet.
+sign-out, because PGS v2 has none (D-03). Phase 68 binds the leaderboard
+methods: `submitScore`, `loadTopScores`, `loadPlayerScore`, `loadStanding`
+and `friendsAccess`. `PLUGIN_METHODS_USED` is the allow-list of the only
+plugin methods the wrapper ever calls.
 
 `src/browser/account.js` is the pure view model: the account state
 (`ACCOUNT_STATUS`, `normalizeAccountState`), the two rail cards
@@ -221,6 +227,74 @@ The shell wiring (mazeworld.html's module script):
   and every account change calls `boardsPanel.refresh()`.
 
 No new `window.__mz` bridge: the account lives in the module script.
+
+### Global boards, submissions and placement (Phase 68)
+
+**Encodings.** `src/browser/scoreTag.js` encodes a run into the 64-char
+Play Games score tag (versioned, no epitaph) and decodes it tolerantly;
+global rows are drawn from the tag, not from the score.
+`src/browser/boardScores.js` turns a run summary into the five submitted
+scores (DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE; LINEAGE and GRAVEYARD
+are never submitted) and resolves leaderboard IDs per season and board
+from `content/leaderboards.js`. Those IDs are placeholders until the Play
+Console setup in Phase 69, and a placeholder or missing ID skips its board
+silently.
+
+**The queue.** `src/browser/pgsQueue.js` exports
+`createSubmissionQueue({ storage, provider, ids, season, isCompeting,
+isSignedIn, onFlushed, onSeasonDrop })`. Its record lives in
+`ddr.pgsqueue.v1` through `window.mzStorage`: cross-run shell data, never
+game state. The adapter's `setRunRecordedListener` reports every non-dev
+death. The shell's `onRunRecorded` enqueues it: the queue refuses while
+Compete is OFF, otherwise it stores the entry and then starts a flush.
+Flushes also run when sign-in succeeds (at launch or from the Sign in row),
+when the device comes back `online` (forced) and when the app becomes
+visible again (the backoff applies). Each (run, board) is acknowledged and
+stored before the next submission, so a crash or retry never sends a score
+twice. An entry from an older season is dropped, not submitted, and the
+drop is noted once in the Oracle through `window.logLine`. Turning Compete
+OFF purges the queue. The native background flush (`registerNativeChrome`'s
+`waitForPending`) awaits the queue's pending writes alongside the
+adapter's.
+
+**Global views.** `src/browser/globalBoards.js` exports
+`createGlobalBoards({ provider, ids, isActive, playerId, onChange })`,
+which returns `{ view, requestFriendsAccess, clear }`. `view({ board,
+scope, season })` answers at once from a cache kept per season, board and
+scope for about 5 minutes and starts at most one background fetch.
+`onChange` redraws the open panel when a fetch finishes. Friends consent is
+requested only by `requestFriendsAccess()`, which only the panel's SHOW MY
+FRIENDS button calls. While signed out or with Compete OFF, `isActive()` is
+false and no leaderboard call is made; the cache is cleared on sign-out and
+on Compete OFF. The Leaderboards panel reads it through three
+`createBoardsPanel` seams: `global` (the controller's `view`, or null
+before it exists), `seasons` (`{ current: SEASON, all: knownSeasons() }`)
+and `onFriendsConsent`.
+
+**Placement.** `src/browser/placement.js` holds the pure views:
+`placementLine`, `deferredPlacementCard` and `seasonDropLine`. A flush that
+submitted DEEPEST scores reads the player's DEEPEST standing once and calls
+the shell's `handlePgsFlush`:
+
+- The live death, while its THAT IS THAT panel is up, gets the rank line.
+  `window.__mzPlacement` (`{ hash, line, fresh }`) is set and the classic
+  `renderRankLine` draws it under the NEW PERSONAL BEST block. It fades in
+  once, and the blanket reduced-motion rule removes the fade. Nothing shows
+  while the rank is on its way or when the read fails.
+- Every other submitted run folds into one rail card, covering the
+  best-placed run and the count. The card is parked until the dungeon is
+  visible and the party is not dead. It is delivered after any parked
+  account card's hold, never on top of it.
+
+A signed-out or Compete-OFF run shows no rank line, no card and no error.
+
+**Dev loop.** The browser gets the fake provider with dev leaderboard IDs
+(`leaderboardIdsFor({ native: false })`, built once) and the real score
+orders (`scoreOrdersFor`). With the dev setting `pgsDevSignedIn` on,
+submissions, the rank line, the card and the ALL/FRIENDS views all work
+without a device.
+
+`window.__mzPlacement` is the one new bridge (see the table below).
 
 ## What stays shared
 
@@ -299,6 +373,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzPartySprite | mazeworld.html (module) | mazeworld.html (classic: partyShown — the displayed point a step glide is heading toward)<br>mazeworld.html (classic: positionPartySprite — box/pose/frame, in lockstep with positionCanvas())<br>mazeworld.html (classic: glideParty — stepTo, the step glide, Phase 59 Plan 04)<br>mazeworld.html (module: settleAllMotion — finish()) | Bridges the pure src/browser/partySprite.js marker controller (Phase 59, ANIM-01/02) so the classic placement code reads one lockstep box and one step glide, never a second copy of the camera math. |
 | __mzPendingNarration | mazeworld.html (module) | mazeworld.html (classic: renderEncounter — the narrated() helper building loot/find/store narration lines) | Presentation-only queue of narration HTML lines a dispatch produced, read once by the encounter card that follows; never a field on state. |
 | __mzPerfMarks | mazeworld.html (module) | mazeworld.html (classic: paint — the one canvas draw() call's dev-gated timing bracket, PERF-02 fix 2) | Bridges the SAME perfMarks module instance stepWith already imports directly, so classic paint()'s draw() call — now the only canvas draw per step — can record its own `draw` timing row from the classic side (which cannot `import`); read-only from paint() (record() only, never reset()/summary()). |
+| __mzPlacement | mazeworld.html (module) | mazeworld.html (classic: renderCombatOver / renderRankLine — draws the DEEPEST rank line on the THAT IS THAT panel, then marks it not fresh)<br>mazeworld.html (module: onRunRecorded — resets it for a new death; handlePgsFlush — sets it when the run's rank returns; showTitleScreen and onAccountForPgs — reset it to null) | Presentation-only parcel { hash, line, fresh } of the just-died run's DEEPEST rank line (Phase 68, PLACE-01); never a field on state. |
 | __mzPreferencesOverride | src/browser/storage.js | test/persistence/harness/fakePreferences.js | Test-only injection hook so a test can replace the native @capacitor/preferences import with a fake, without any shipped code path setting it. |
 | __mzRail | mazeworld.html (module) | mazeworld.html (classic: renderRail / railLocked — reads and also clears pending on dismiss)<br>mazeworld.html (module: dispatchWithNarration / darkFell / mzRailLine — pushes new cards) | Presentation-only rail state (seq/card/pending) — what is currently on screen at the bottom of the map; never a field on state. |
 | __mzRailVM | mazeworld.html (module) | mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)<br>mazeworld.html (classic: renderRail's auto-clear timer — holdForCard; the guarded #mw-rail body-tap dismiss handler — dismissKind) | Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. |
