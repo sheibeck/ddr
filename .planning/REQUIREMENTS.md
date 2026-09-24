@@ -18,7 +18,7 @@
 - [ ] **RULES-06**: The HP a trap shows the player equals the HP it actually takes. A hero cannot die to a trap the Oracle reports as −1 HP. Root-cause it with `/gsd-debug` before fixing. (todo 2026-09-22 trap-death-at-21-hp)
 - [ ] **RULES-07**: An ailment roll of 5–6 gives the Disease it narrates, not a phobia. (todo 2026-09-23 ailment-roll-5-6)
 - [ ] **RULES-08**: When new armor replaces a destroyed piece, the player is told the old piece was destroyed and is gone. It never silently vanishes on a swap. (todo 2026-09-23 destroyed-armor)
-- [ ] **RULES-09**: A Pilfer can use magic items under the normal rules. The heal-only refusal is gone. Instead, every time a Pilfer uses a magic item it rolls a die, and on a 1 the item is destroyed and the player is told so. Tools never fumble. The die, which items count as magic, and whether the fumbling use still takes effect are decided in the Phase 75 discuss. The fumble draw comes from a derived rng stream. The Pilfer blurb states both sides. (user, 2026-09-24; todo 2026-09-24 pilfer-bad-becomes-fumbling)
+- [ ] **RULES-09**: A Pilfer can use magic items under the normal rules. The heal-only refusal is gone. Instead, every time a Pilfer uses a magic item it rolls a die, and on a 1 the item is destroyed and explodes, dealing damage, and the player is told so. Tools never fumble. The die, which items count as magic, whether the fumbling use still takes effect, and the explosion's damage (how much, who it hits, whether armor soaks it) are decided in the Phase 75 discuss. The fumble draw comes from a derived rng stream. The Pilfer blurb states both sides. (user, 2026-09-24; todo 2026-09-24 pilfer-bad-becomes-fumbling)
 
 ### Roll direction & modifier honesty (ROLL) — user, 2026-09-24
 

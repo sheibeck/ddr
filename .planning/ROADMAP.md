@@ -97,7 +97,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. A hero with Sense Presence active always wins initiative outright, never sees "You cannot see what you are fighting," and can land crits in the dark.
   4. A trap the Oracle reports as "−1 HP" can never kill the hero — the fix follows an explicit `/gsd-debug` root-cause session before it lands, not a guess.
   5. An ailment roll of 5–6 always gives the Disease it narrates, and replacing a destroyed armor piece with a new one always tells the player the old piece was destroyed and is gone.
-  6. A Pilfer can use magic items like anyone else, but each use can fumble: on a rolled 1 the item is destroyed and the Oracle says so; tools never fumble, and the Pilfer blurb states both its good and its bad.
+  6. A Pilfer can use magic items like anyone else, but each use can fumble: on a rolled 1 the item is destroyed and explodes for damage, and the Oracle says so; tools never fumble, and the Pilfer blurb states both its good and its bad.
 **Plans**: TBD
 **UI hint**: yes
 
