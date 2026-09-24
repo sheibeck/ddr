@@ -24,8 +24,9 @@ Today `canRead` lets only a Magic User, or someone with the Runes/Signs skill, r
 
 **Rule (user rulings, 2026-09-24):**
 - **Anyone** (every class, sub-class and race) may attempt to read any scroll. `canRead`'s class/skill gate and the Pilfer lockout go away.
+- **Runes/Signs reads automatically (ruled 2026-09-24).** A non-Magic-User with the Runes/Signs skill reads every scroll automatically, just like a Magic User: no intelligence roll and no fumble. User: "Runes/Signs on a non-magic-user means they can read them automatically, just like a magic-user." They get the free cast only; the grimoire copy stays Magic-User-only.
 - **Magic Users always succeed.** They keep today's path unchanged: cast, plus the grimoire copy when the spell is learnable.
-- **Everyone else makes an intelligence roll** against their own `c.intel`: a d20 checked against intel, reusing the existing check's shape (`resistRoll`: today d20 < intel; after the Phase 73 mirror, expressed roll-high). On a success, the scroll's spell is cast through the free-cast path (`scrollCast`). On a failure, nothing is cast.
+- **Everyone else** (no Magic User class, no Runes/Signs) **makes an intelligence roll** against their own `c.intel`: a d20 checked against intel, reusing the existing check's shape (`resistRoll`: today d20 < intel; after the Phase 73 mirror, expressed roll-high). On a success, the scroll's spell is cast through the free-cast path (`scrollCast`). On a failure, nothing is cast.
 - **A bad failure is a FUMBLE (ruling 3):** a read that misses by more than half the required number backfires. The scroll's spell takes effect **on the reader instead of its target** (e.g. a Fireball burns the reader). Magic Users never fumble, because they always succeed.
 - **The scroll is consumed on every attempt**, success or failure. This carries over from ruling 1 and was not revoked.
 - Narrate both outcomes, in voice. A failure should read as squinting at runes you can't make out while the scroll crumbles, not as a refusal.
@@ -36,7 +37,6 @@ Today `canRead` lets only a Magic User, or someone with the Runes/Signs skill, r
   - Beware: the same words read roll-under give different odds (for intel 14, only a natural 20 would fumble). Confirm the reading with the user and show both numbers.
 - **Self-targeted scrolls on a fumble** (healing, Shield, Sense Presence, map reveals), where "the caster instead of the target" is the same person. Options: the effect goes to the foe (a healed or shielded enemy), it inverts (e.g. a heal harms), or it simply fizzles. Also: a fumble outside combat, with no foe present.
 - **Multi-target scrolls** (area damage) on a fumble: the reader takes one hit, or every hit?
-- A non-Magic-User with **Runes/Signs**: automatic success like a Magic User (the skill's whole point today), a bonus on the intelligence roll, or nothing?
 - **A Pilfer reading a scroll:** does the RULES-09 fumble also apply (a 1 makes it explode for d10), or does the intelligence roll cover scrolls on its own?
 - **Low-intel characters:** `resistRoll` skips its roll below intel 12. That gate is for foe abilities and should NOT carry over. Every non-Magic-User reader rolls, and a low intel just means worse odds.
 
