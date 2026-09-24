@@ -174,6 +174,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull)"]),
     purpose: "Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time.",
   }),
+  __mzFoeConditions: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: foeStatusBadges — the combat foe cards' condition chips, via chips)"]),
+    purpose: "Bridges src/browser/foeConditions.js's foeConditionChips, the one foe-condition chip table (Phase 71 D-14), so the classic foe cards read every ability, spell and item condition from one source that 71-04's long-press card also reads.",
+  }),
   __mzGearSheet: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render)"]),

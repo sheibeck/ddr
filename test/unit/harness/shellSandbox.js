@@ -103,6 +103,7 @@ import {
   encounterOverlaySpec,
 } from "../../../src/browser/combatPanel.js";
 import { combatMenuViewModel } from "../../../src/browser/combatMenu.js";
+import { foeConditionChips } from "../../../src/browser/foeConditions.js";
 import { planBeat, createBeat, createBeatRunner } from "../../../src/browser/combatBeat.js";
 // Phase 66 (BOARD-01, D-14/D-15) — the REAL Leaderboards panel and view
 // model, only the data source injected (like the dressing art source):
@@ -254,6 +255,9 @@ function wireBridges(context, { dressing = null } = {}) {
   // window.__mzFightLogVM/__mzCombatVM lines).
   w.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine };
   w.__mzCombatVM = { header: combatHeaderViewModel, foes: foeListViewModel, lot: yourLotViewModel, overlay: encounterOverlaySpec, menu: combatMenuViewModel };
+  // Phase 71 (D-14) — the ONE foe-condition chip table, in the SAME shape
+  // the module script assigns beside __mzCombatVM.
+  w.__mzFoeConditions = { chips: foeConditionChips };
   // Phase 58 (MOTION-03) — the REAL combat-beat runner, driven by this
   // sandbox's own scheduler (the fake clock when loadShellSandbox was given
   // one, else the sandbox's inert never-firing default) and the live

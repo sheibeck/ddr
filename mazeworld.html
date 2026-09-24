@@ -769,6 +769,17 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-btn-label{font-family:var(--disp);font-size:7.5px;line-height:1.6}
 .cb-btn-sub{font-family:var(--mono);font-weight:700;font-size:12.5px;margin-top:6px;color:#a89c82;line-height:1.35}
 .cb-btn-off .cb-btn-sub{color:#8f856f}
+/* Phase 71 (D-05, R-09/R-10): while a round's beats play, #cb-act carries
+   data-locked="1". The prompt reads the combat v2 mock's HOLD line in its
+   dim #8f856f (text and colour only: same position and size), and every
+   action (grid button, submenu row, BACK chip) is dimmed, flat (the mock's
+   busy state drops the raised shadow) and pointer-inert, so there is no
+   press feedback and a tap falls through to the action area, where the
+   #enc-panel hurry tap lands the round. No motion: the settle render simply
+   draws the actions live again. */
+#cb-act[data-locked="1"] .cb-prompt,#cb-act[data-locked="1"] .cb-sub-title{color:#8f856f}
+#cb-act[data-locked="1"] .cb-btn,#cb-act[data-locked="1"] .cb-row,#cb-act[data-locked="1"] .cb-chip{opacity:.45;box-shadow:none;pointer-events:none;cursor:default}
+#cb-act[data-locked="1"] .cb-btn:active,#cb-act[data-locked="1"] .cb-row:active,#cb-act[data-locked="1"] .cb-chip:active{transform:none;box-shadow:none}
 .cb-submenu{animation:mwrise .16s ease}
 .cb-sub-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .cb-sub-title{font-family:var(--disp);font-size:6.5px;color:#e8c97a;line-height:1.7}
@@ -3594,7 +3605,11 @@ function armEncounterButtons() {
     // Phase 63 (GRULE-02): a greyed Gear-sheet action (:not([data-off]))
     // keeps its disabled state and reason for TalkBack — only the live
     // buttons' arm marker is tidied here.
-    document.querySelectorAll('#enc-panel [aria-disabled="true"]:not(.cb-foe.dead), #mw-rail [aria-disabled="true"], .mw-legend-sheet [aria-disabled="true"]:not([data-off])').forEach((el) => el.removeAttribute("aria-disabled"));
+    // Phase 71 (D-05, R-09): a locked combat action (a round's beats still
+    // playing) keeps its disabled state between beat lines, so the
+    // #enc-panel part skips [data-locked]; the settle render redraws the
+    // actions unlocked and the next sweep tidies them as before.
+    document.querySelectorAll('#enc-panel [aria-disabled="true"]:not(.cb-foe.dead):not([data-locked]), #mw-rail [aria-disabled="true"], .mw-legend-sheet [aria-disabled="true"]:not([data-off])').forEach((el) => el.removeAttribute("aria-disabled"));
   }, delay);
 }
 
@@ -3657,34 +3672,21 @@ function wireDeathConfirm() {
 // per-foe status fields the engine sets (asleep from doze/stun, frozen from
 // freeze/ice, an acid-over-time tick, blind, stupefied, shrunk, fixated) plus
 // the foe-DANGER "frenzied" (it swings twice), which is flagged in red.
-function foeStatusBadges(f) {
-  const out = [];
-  if (f.asleep > 0) out.push({ t: "Asleep", tone: "good" });
-  if (f.frozen) out.push({ t: "Frozen", tone: "good" });
-  if (f.acid && f.acid.rounds > 0) out.push({ t: `Acid · ${f.acid.rounds}`, tone: "acid" });
-  if (f.blind) out.push({ t: "Blind", tone: "good" });
-  if (f.stupid) out.push({ t: "Stupefied", tone: "good" });
-  if (f.shrunk) out.push({ t: "Shrunk", tone: "good" });
-  if (f.fixated) out.push({ t: "Fixated", tone: "good" });
-  if (f.frenzied) out.push({ t: "Frenzied", tone: "bad" });
-  // DR18 (Fix 4): the Weaken spell sets a COMBAT-WIDE flag (S.combat.weakened,
-  // engine/magic.js) that halves EVERY foe's damage (read at combat.js) — but
-  // nothing surfaced it on the monsters. Read the shared flag here and show a
-  // "Weakened" chip on each foe while it's set (tone "good" — a foe debuff is
-  // good for the player, like Asleep/Frozen). Presentation only; engine unchanged.
-  // Phase 40 (SPELL-01/02): the hero's own spell:weaken c.timers record now
-  // carries the duration this badge reports — a live record names its rounds
-  // ("Weakened · N"), matching the map-HUD chip family's naming convention;
-  // a Weakened-but-no-record state (legacy save mid-fight) still shows the
-  // plain "Weakened" fallback.
-  const wk = S.c.timers && S.c.timers["spell:weaken"];
-  if (S && S.combat && S.combat.weakened) out.push({ t: wk && wk.left > 0 ? `Weakened · ${wk.left}` : "Weakened", tone: "good" });
-  // Phase 40 (SPELL-01): Ice's real per-round DOT — a foe-carried f.dot
-  // record (shared shape with Poisoned Edge, engine/combat.js) surfaces
-  // beside the Acid badge above; by === "ice" is the only Ice-specific case,
-  // everything else (Poisoned Edge and any future dot source) reads "Poison".
-  if (f.dot && f.dot.left > 0) out.push({ t: `${f.dot.by === "ice" ? "Ice" : "Poison"} · ${f.dot.left}`, tone: "acid" });
-  return out;
+// DR18 (Fix 4): the Weaken spell's COMBAT-WIDE flag (S.combat.weakened)
+// shows a "Weakened" chip on every foe. Phase 40 (SPELL-01/02): the hero's
+// own spell:weaken c.timers record names its rounds ("Weakened · N"), and
+// Ice's/Poisoned Edge's shared f.dot record shows "Ice · n"/"Poison · n".
+// Phase 71 (D-14): the user reported Hamstring never showed a chip; the
+// hand-written list here also missed Mark, Pommel's Stunned and Dirty
+// Trick's timed Blind. The mapping now lives in ONE pure table,
+// src/browser/foeConditions.js (window.__mzFoeConditions), which 71-04's
+// long-press foe card also reads, guarded by an engine-scan coverage test.
+// This is a thin reader: `V` is the state the caller is drawing (a beat's
+// frame state mid-round, so a chip moves with the same line as the foe's
+// HP), falling back to the live S. Returns [] without the bridge.
+function foeStatusBadges(f, V) {
+  const chips = window.__mzFoeConditions?.chips?.(f, V || S) || [];
+  return chips.map((ch) => ({ t: ch.text, tone: ch.tone }));
 }
 
 // Phase 47 (SHELL-02), Plan 04: the Company panel's DISMISS confirm trio,
@@ -4082,7 +4084,27 @@ function renderActionArea(host) {
   // Phase 58 (MOTION-03): while a beat is live, the menu reads the beat's
   // own frame state (its buttons stay guardTap-wired and therefore
   // disarmed until the beat ends — see encArmed()).
-  const vm = window.__mzCombatVM.menu(window.__mzBeat?.view?.()?.state || S);
+  // Phase 71 (D-05, R-09/R-10): while a round's beats play, the action area
+  // (#cb-act: the grid, a submenu's rows and its BACK chip) renders visibly
+  // unavailable. #cb-act and every action it builds carry data-locked="1"
+  // (the CSS dims them, drops the raised shadow and makes them pointer-inert)
+  // plus aria-disabled, which the arm sweep never strips from a locked
+  // action. The prompt reads the resolving line. guardTap stays wired and
+  // encArmed() still swallows any tap; a tap on a locked action falls
+  // through to the action area, where Phase 58's beatHurryTap lands the
+  // round (D-06). The settle render draws the actions live again. Foe cards,
+  // YOUR LOT and the log are never locked: they are the fight being shown.
+  const locked = !!window.__mzBeat?.active?.();
+  const vm = window.__mzCombatVM.menu(window.__mzBeat?.view?.()?.state || S, { locked });
+  const lockAction = (el) => {
+    if (locked && el) {
+      el.setAttribute("data-locked", "1");
+      el.setAttribute("aria-disabled", "true");
+    }
+    return el;
+  };
+  if (locked) host.setAttribute("data-locked", "1");
+  else host.removeAttribute("data-locked");
   const menu = window.__mzCombatMenu;
   const open = menu && menu.open && vm.submenus[menu.open] ? menu.open : null;
   if (open) {
@@ -4106,10 +4128,11 @@ function renderActionArea(host) {
     const list = document.createElement("div");
     list.className = "cb-sub-list";
     list.id = "cb-sub-list";
-    sm.rows.forEach((row, i) => list.appendChild(cbRow(row, i + 1)));
+    sm.rows.forEach((row, i) => list.appendChild(lockAction(cbRow(row, i + 1))));
     wrap.appendChild(list);
     host.appendChild(wrap);
     guardTap(document.getElementById("cb-back"), () => { window.__mzCombatMenu = null; renderEncounter(); });
+    lockAction(back);
     return;
   }
   const prompt = document.createElement("div");
@@ -4132,7 +4155,7 @@ function renderActionArea(host) {
     sub.className = "cb-btn-sub";
     sub.textContent = a.sub;
     btn.appendChild(sub);
-    grid.appendChild(btn);
+    grid.appendChild(lockAction(btn));
   });
   host.appendChild(grid);
   guardTap(document.getElementById("cb-strike"), () => window.mzAttack?.());
@@ -4545,7 +4568,7 @@ function renderEncounter() {
   // beat is showing an ending round's frame, S.combat is already null (the
   // real dispatch already resolved it); guardTap/encArmed already swallow
   // a tap here during a live beat, this is defensive.
-  renderFoeCards(mid, window.__mzCombatVM.foes(V, { chipsFor: (f) => foeStatusBadges(f).map((b) => b.t) }), (i) => { if (S.combat) { S.combat.target = i; renderEncounter(); } }, bv ? bv.hitFoe : -1);
+  renderFoeCards(mid, window.__mzCombatVM.foes(V, { chipsFor: (f) => foeStatusBadges(f, V).map((b) => b.t) }), (i) => { if (S.combat) { S.combat.target = i; renderEncounter(); } }, bv ? bv.hitFoe : -1);
   renderYourLot(mid, window.__mzCombatVM.lot(V));
   renderFightLog(mid);
   body.appendChild(mid);
@@ -5605,6 +5628,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzCombatVM below for the classic renderEncounter to consume.
   import { combatHeaderViewModel, foeListViewModel, yourLotViewModel, encounterOverlaySpec } from "./src/browser/combatPanel.js";
   import { combatMenuViewModel } from "./src/browser/combatMenu.js";
+  // Phase 71 (D-14): the ONE foe-condition chip table.
+  import { foeConditionChips } from "./src/browser/foeConditions.js";
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
   // Reroutes the movement input surface — tap-to-step (Phase 35) and arrow/
   // WASD keydown, both of which already call the plain `move(dir)` global
@@ -6026,6 +6051,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // OVERLAY's spec; menu is consumed by Plan 04's action grid. Read-only,
   // no rng, no DOM access inside these pure modules.
   window.__mzCombatVM = { header: combatHeaderViewModel, foes: foeListViewModel, lot: yourLotViewModel, overlay: encounterOverlaySpec, menu: combatMenuViewModel };
+  // Phase 71 (D-14): the one foe-condition chip table (src/browser/foeConditions.js),
+  // read by the classic foeStatusBadges; 71-04's long-press card reads the same table.
+  window.__mzFoeConditions = { chips: foeConditionChips };
 
   // 04-05: GAME_NAME is the single centralized source of the product's
   // display name (04-CONTEXT.md branding decision) — the static <title>/<h1>
