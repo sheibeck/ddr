@@ -171,8 +171,7 @@ function harness({
     onSeasonDrop: (n) => drops.push(n),
     now: () => sw.t,
   });
-  const providerCalls = () => fake.calls().filter((c) => c === "submitScore" || c === "loadStanding");
-  return { q, fake, w, store, sw, flushed, drops, providerCalls, ids: map };
+  return { q, fake, w, store, sw, flushed, drops, ids: map };
 }
 
 function storedEntryQueue(entries, done = []) {
@@ -677,6 +676,7 @@ test("state() is a frozen snapshot", async () => {
   const h = harness({ signedIn: false });
   await h.q.enqueue(summary(1));
   await h.q.enqueue(summary(2));
+  await h.q.waitForPending(); // the enqueue's own forced flush settles (signed out: no-op)
   const st = h.q.state();
   assert.ok(Object.isFrozen(st));
   assert.deepStrictEqual(st.pending, [summary(1).hash, summary(2).hash]);
