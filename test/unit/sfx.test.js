@@ -26,6 +26,8 @@ import {
   playForDispatch,
   playUiTap,
   stopAllSfx,
+  sfxClipCount,
+  startMusic,
 } from "../../src/browser/sfx.js";
 
 // ─── Fake backend ────────────────────────────────────────────────────────
@@ -416,5 +418,92 @@ test("sfx: TEETH — the cap-boundary assertion actually distinguishes a capped 
     // this is what would catch it — stops.length would read 0, not 1.
     assert.notEqual(fake.calls.stops.length, 0, "an uncapped voice pool would leave stops empty — this must never be true");
     assert.equal(fake.calls.stops.length, 1);
+  });
+});
+
+// ─── Phase 71 (D-15, R-26): sfxClipCount, the one-sound-per-press probe ──
+//
+// Module state is shared across this file, so every case asserts DELTAS.
+
+test("sfx (71-07 D-15): sfxClipCount is a whole number that rises by one per started one-shot voice", async () => {
+  const fake = makeFakeBackend();
+  await withFakeBackend(fake, async () => {
+    applySfxSettings({ sound: true });
+    const before0 = sfxClipCount();
+    assert.ok(Number.isInteger(before0) && before0 >= 0);
+    playUiTap();
+    assert.equal(sfxClipCount(), before0, "no device open yet: nothing started, nothing counted");
+
+    await unlockSfx();
+    await flushMicrotasks();
+    const a = sfxClipCount();
+    playUiTap();
+    assert.equal(sfxClipCount(), a + 1, "a playUiTap adds 1");
+    const b = sfxClipCount();
+    playForDispatch("combatAction", [{ type: "trapSprung" }, { type: "chestOpened" }], {});
+    assert.equal(fake.calls.starts.slice(-2).length, 2);
+    assert.equal(sfxClipCount(), b + 2, "a dispatch that starts 2 voices adds 2");
+  });
+});
+
+test("sfx (71-07 D-15): sfxClipCount does not move for Sound Off, and Sound Off never resets it", async () => {
+  const fake = makeFakeBackend();
+  await withFakeBackend(fake, async () => {
+    applySfxSettings({ sound: true });
+    await unlockSfx();
+    await flushMicrotasks();
+    playUiTap();
+    const a = sfxClipCount();
+    applySfxSettings({ sound: false });
+    assert.equal(sfxClipCount(), a, "Sound Off does not reset the counter");
+    playUiTap();
+    playForDispatch("combatAction", [{ type: "struck" }], {});
+    assert.equal(sfxClipCount(), a);
+  });
+});
+
+test("sfx (71-07 D-15): sfxClipCount does not move for a missing buffer", async () => {
+  const fake = makeFakeBackend({ nullLoadClips: new Set(["ui-tap"]) });
+  await withFakeBackend(fake, async () => {
+    applySfxSettings({ sound: true });
+    await unlockSfx();
+    await flushMicrotasks();
+    const a = sfxClipCount();
+    playUiTap();
+    assert.equal(sfxClipCount(), a);
+  });
+});
+
+test("sfx (71-07 D-15): sfxClipCount does not move when start() throws or returns null", async () => {
+  for (const mode of ["throws", "null"]) {
+    const fake = makeFakeBackend();
+    fake.backend.start = () => {
+      if (mode === "throws") throw new Error("fake start() throws");
+      return null;
+    };
+    await withFakeBackend(fake, async () => {
+      applySfxSettings({ sound: true });
+      await unlockSfx();
+      await flushMicrotasks();
+      const a = sfxClipCount();
+      playUiTap();
+      playForDispatch("combatAction", [{ type: "struck" }], {});
+      assert.equal(sfxClipCount(), a, mode);
+    });
+  }
+});
+
+test("sfx (71-07 D-15): the title theme's loop is not a one-shot — startMusic never moves sfxClipCount", async () => {
+  const fake = makeFakeBackend();
+  let loops = 0;
+  fake.backend.startLoop = () => { loops++; return { loop: true }; };
+  await withFakeBackend(fake, async () => {
+    applySfxSettings({ sound: true });
+    await unlockSfx();
+    await flushMicrotasks();
+    const a = sfxClipCount();
+    startMusic();
+    assert.equal(loops, 1, "the loop really started");
+    assert.equal(sfxClipCount(), a);
   });
 });
