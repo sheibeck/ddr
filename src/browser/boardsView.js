@@ -21,6 +21,16 @@
 // the SEASON label and the older-season picker (D-08). Signed out (which is
 // also Compete OFF) every view is the local Phase 66 view; GRAVEYARD is local
 // in every state (D-17).
+//
+// Phase 70 (POLISH-04; D-09..D-13): LINEAGE is one race + sub-class at a
+// time. The `lineage` input is the panel's picker selection and `hero` the
+// active hero's { race, sub } (already gated by the controller);
+// resolveLineage turns them, the most recent run and the content order into
+// the selected lineage (D-11). Local LINEAGE lists that lineage's ten
+// deepest runs by engine/records.js lineageRuns — the same order prune keeps
+// them by (D-12); signed in, the cached DEEPEST sample is filtered to it
+// (D-13). The view carries `picker` (the RACE and SUB-CLASS chip rows) on
+// LINEAGE only.
 
 import {
   compareRuns,
@@ -29,6 +39,7 @@ import {
   sortGraveyard,
   sanitizeBests,
   lineageKey,
+  lineageRuns,
   BOARD_IDS,
 } from "../../engine/records.js";
 import {
@@ -40,9 +51,19 @@ import {
 } from "../../content/boards.js";
 import { ROMAN } from "../../content/index.js";
 import { CAUSE_TEXT } from "../../content/epitaphs.js";
+import { RACES } from "../../content/races.js";
+import { CLASSES } from "../../content/classes.js";
 import { scoreFallback } from "./boardScores.js";
 
 const HASH_RE = /^[0-9a-f]{8}$/;
+
+/** LINEAGE_RACES — the six races in content order (Phase 70, D-09). */
+export const LINEAGE_RACES = Object.freeze(Object.keys(RACES));
+
+/** LINEAGE_SUBS — every sub-class in content order: each class (CLASSES key order), its subs in order (Phase 70, D-09). */
+export const LINEAGE_SUBS = Object.freeze(
+  Object.keys(CLASSES).flatMap((cls) => (Array.isArray(CLASSES[cls].subs) ? CLASSES[cls].subs : []))
+);
 
 // ─── ported mock helpers (D-05: port, don't reinvent) ──────────────────────
 
@@ -138,6 +159,7 @@ function statChips(run) {
 function valueText(board, run) {
   switch (board) {
     case "deep":
+    case "combo":
       return String(num(rf(run, "floor")));
     case "lean":
       return `${num(rf(run, "floor"))}${BOARDS_PANEL_COPY.sep}${num(rf(run, "steps"))}`;
@@ -257,8 +279,19 @@ function finalize(rawRows, openKey, { skipCut = false } = {}) {
 /** buildRankedRows(board, bests) — one per hash in bests.boards[board], in order. */
 function buildRankedRows(board, bests) {
   const hashes = bests && Array.isArray(bests.boards?.[board]) ? bests.boards[board] : [];
-  return hashes.map((hash, i) => {
-    const run = (bests.runs && bests.runs[hash]) || {};
+  return buildRunRows(
+    board,
+    hashes.map((hash) => ({ hash, run: (bests.runs && bests.runs[hash]) || {} }))
+  );
+}
+
+/**
+ * buildRunRows(board, items) — the Phase 66 ranked row, one per { hash, run }
+ * in the given order, keyed by the run hash. Local LINEAGE (Phase 70, D-09)
+ * feeds it a lineage's runs so its rows are exactly the ranked-board rows.
+ */
+function buildRunRows(board, items) {
+  return items.map(({ hash, run }, i) => {
     return {
       key: hash,
       run,
@@ -280,47 +313,89 @@ function buildRankedRows(board, bests) {
   });
 }
 
-/** buildLineageRows(bests) — one per lineage entry whose best run exists, sorted per D-13's LINEAGE order. */
-function buildLineageRows(bests) {
-  const lineage = bests && typeof bests.lineage === "object" && bests.lineage ? bests.lineage : {};
-  const runsMap = bests && typeof bests.runs === "object" && bests.runs ? bests.runs : {};
-  const items = [];
-  for (const key of Object.keys(lineage)) {
-    const entry = lineage[key];
-    const best = entry && typeof entry.best === "string" ? entry.best : null;
-    const run = best ? runsMap[best] : null;
-    if (!run) continue;
-    items.push({ key, count: num(entry.count) || entry.count || 0, run });
-  }
-  items.sort((a, b) => compareRuns("combo", a.run, b.run) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
-  return items.map((item, i) => {
-    const count = item.count;
-    const lineTemplate = count === 1 ? BOARDS_PANEL_COPY.lineage.one : BOARDS_PANEL_COPY.lineage.many;
+// ─── LINEAGE selection (Phase 70: D-09..D-11) ───────────────────────────────
+
+/** isRace(x) / isSub(x) — a content race / sub-class id. */
+function isRace(x) {
+  return typeof x === "string" && LINEAGE_RACES.includes(x);
+}
+function isSub(x) {
+  return typeof x === "string" && LINEAGE_SUBS.includes(x);
+}
+
+/**
+ * resolveLineage({ lineage, hero, recent }) — the selected lineage (D-11).
+ * The fallback is the hero when both its race and sub are content ids, else
+ * the most recent run when both are, else the first race and first sub-class
+ * in content order (Human + Wizard). A `lineage` input (the panel's picker
+ * selection) then wins field by field: race and sub are validated
+ * independently, so an unknown id falls through to the fallback's. Pure;
+ * returns a fresh { race, sub }.
+ */
+export function resolveLineage({ lineage, hero, recent } = {}) {
+  let base = { race: LINEAGE_RACES[0], sub: LINEAGE_SUBS[0] };
+  if (isRace(rf(hero, "race")) && isSub(rf(hero, "sub"))) base = { race: hero.race, sub: hero.sub };
+  else if (isRace(rf(recent, "race")) && isSub(rf(recent, "sub"))) base = { race: recent.race, sub: recent.sub };
+  return {
+    race: isRace(rf(lineage, "race")) ? lineage.race : base.race,
+    sub: isSub(rf(lineage, "sub")) ? lineage.sub : base.sub,
+  };
+}
+
+/** lineageName(sel) — the "Race Sub" display name the {lineage} token takes. */
+function lineageName(sel) {
+  return `${sel.race} ${sel.sub}`;
+}
+
+/** buildPicker(sel) — the RACE row then the SUB-CLASS row, one chip per content id, the selection on. */
+function buildPicker(sel) {
+  const chips = (ids, selected) => ids.map((id) => ({ id, label: id.toUpperCase(), on: id === selected }));
+  return {
+    race: sel.race,
+    sub: sel.sub,
+    rows: [
+      { kind: "race", label: BOARDS_PANEL_COPY.lineage.race, chips: chips(LINEAGE_RACES, sel.race) },
+      { kind: "sub", label: BOARDS_PANEL_COPY.lineage.sub, chips: chips(LINEAGE_SUBS, sel.sub) },
+    ],
+  };
+}
+
+/** lineageEmpty(sel) — the local in-voice empty note naming the lineage. */
+function lineageEmpty(sel) {
+  return { kind: "empty", line: fill(BOARDS_PANEL_COPY.lineage.empty, { lineage: lineageName(sel) }) };
+}
+
+/**
+ * buildLineageStanding(sel, runs, bests, normalizedGraves, recentHash) — the
+ * local LINEAGE card: the lineage's most recent run (the recentHash run when
+ * it is of this lineage, else the newest matching grave, else bests.last when
+ * it matches, else the lineage's best) placed among the lineage's runs.
+ * NO ENTRY when the lineage has none.
+ */
+function buildLineageStanding(sel, runs, bests, normalizedGraves, recentHash) {
+  if (runs.length === 0) {
     return {
-      key: "combo:" + item.key,
-      run: item.run,
-      rank: String(i + 1),
-      top: i === 0,
-      podium: i < 3,
-      you: false,
-      divider: "",
-      headline: rf(item.run, "name") || "",
-      tag: "",
-      name: item.key.toUpperCase(),
-      line: fill(lineTemplate, { n: count }),
-      detail: fill(BOARDS_PANEL_COPY.lineage.detail, {
-        n: count,
-        name: rf(item.run, "name") || "",
-        floor: num(rf(item.run, "floor")),
-        steps: num(rf(item.run, "steps")),
-        epitaph: rf(item.run, "epitaph") || "",
-      }),
-      val: String(num(rf(item.run, "floor"))),
-      unit: BOARD_COPY.combo.unitLabel,
-      stats: statChips(item.run),
-      metric: metricFor("combo", item.run),
+      label: BOARDS_PANEL_COPY.standing.noEntry,
+      place: BOARDS_PANEL_COPY.standing.noPlace,
+      note: BOARDS_PANEL_COPY.standing.noNote,
     };
-  });
+  }
+  const key = lineageKey(sel);
+  const byHash = (h) => (typeof h === "string" ? runs.findIndex((r) => r.hash === h) : -1);
+  let idx = byHash(recentHash);
+  if (idx === -1) {
+    const grave = normalizedGraves.find((g) => lineageKey(g) === key);
+    if (grave) idx = byHash(grave.hash);
+  }
+  if (idx === -1 && bests && typeof bests.last === "string") idx = byHash(bests.last);
+  if (idx === -1) idx = 0;
+  const run = runs[idx];
+  const placeNum = idx + 1;
+  return {
+    label: String(rf(run, "name") || "").toUpperCase() + BOARDS_PANEL_COPY.sep + BOARD_COPY.combo.unitLabel,
+    place: ordinal(placeNum),
+    note: fill(BOARDS_PANEL_COPY.standing.ofLineage, { n: runs.length }) + " " + pickQuip(placeNum, "combo", run.hash),
+  };
 }
 
 /** buildGraveyardRows(graves) — every normalized stone (up to 60) in sortGraveyard order, unranked. */
@@ -486,51 +561,68 @@ function buildGlobalRows(board, snap, openKey) {
 }
 
 /**
- * lineageGroups(entries) — D-09 / 67 D-19: the DEEPEST sample grouped by
- * "race cls", keeping the first (best-ranked) entry per combination in
- * sample order; entries without a decoded race and class are skipped.
+ * ofLineageRun(run, key) — true when a decoded tag's race and sub are content
+ * ids forming `key`. Foreign or unknown strings never match (T-70-05).
  */
-function lineageGroups(entries) {
-  const seen = new Set();
-  const groups = [];
-  for (const entry of entries) {
-    const run = entryRun(entry);
-    const race = typeof rf(run, "race") === "string" ? run.race : "";
-    const cls = typeof rf(run, "cls") === "string" ? run.cls : "";
-    if (!race || !cls) continue;
-    const key = `${race} ${cls}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    groups.push({ key, entry, run });
-  }
-  return groups;
+function ofLineageRun(run, key) {
+  return !!run && isRace(rf(run, "race")) && isSub(rf(run, "sub")) && lineageKey(run) === key;
 }
 
-/** buildGlobalLineageRows(groups, openKey) — one row per race-and-class group, in sample order. */
-function buildGlobalLineageRows(groups, openKey) {
-  const rows = groups.map((g, i) => {
-    const handle = globalHandle(g.entry);
-    return {
-      key: "combo:" + g.key,
-      run: g.run,
-      avatarKey: handle,
-      rank: String(i + 1),
-      top: i === 0,
-      podium: i < 3,
-      you: g.entry.you === true,
-      divider: "",
-      headline: handle,
-      tag: globalTag(g.entry),
-      name: g.key.toUpperCase(),
-      line: levelLine(g.run),
-      detail: globalCause(g.run),
-      val: String(num(rf(g.run, "floor"))),
-      unit: BOARD_COPY.combo.unitLabel,
-      stats: statChips(g.run),
-      metric: metricFor("combo", g.run),
-    };
-  });
-  return finalize(rows, openKey, { skipCut: true });
+/**
+ * buildGlobalLineageView(sel, snap, openKey) — D-13: the cached DEEPEST
+ * sample filtered to the selected lineage, in sample order, ranked 1..n (the
+ * lineage position, never the worldwide DEEPEST rank) and cut to ten. The
+ * player's own entry of this lineage that is not shown is pinned last under
+ * the divider (only when a row is shown): ranked by its position among the
+ * matches when it is in the sample, unranked when only snap.you carries it.
+ * No match gives the global lineage empty note; the footnote says the list
+ * is filtered from the top n deepest.
+ */
+function buildGlobalLineageView(sel, snap, openKey) {
+  const key = lineageKey(sel);
+  const sampled = snap.sampled !== null ? snap.sampled : snap.entries.length;
+  const matches = snap.entries.filter((e) => ofLineageRun(entryRun(e), key));
+  const shown = matches.slice(0, 10);
+  const rows = shown.map((e, i) => ({ ...globalRow("combo", e, i), rank: String(i + 1) }));
+
+  if (rows.length > 0) {
+    const youIdx = matches.findIndex((e) => e.you === true);
+    if (youIdx >= shown.length) {
+      rows.push({ ...globalRow("combo", matches[youIdx], null), rank: String(youIdx + 1) });
+    } else if (youIdx === -1 && snap.you && ofLineageRun(entryRun(snap.you), key)) {
+      rows.push({ ...globalRow("combo", snap.you, null), rank: "" });
+    }
+  }
+
+  return {
+    body: rows.length
+      ? { kind: "rows", rows: finalize(rows, openKey, { skipCut: true }) }
+      : { kind: "empty", line: fill(G.lineageEmpty, { lineage: lineageName(sel), n: sampled }) },
+    standing: buildGlobalLineageStanding(key, snap, matches),
+    footnote: fill(G.sampledFoot, { n: sampled }),
+  };
+}
+
+/**
+ * buildGlobalLineageStanding(key, snap, matches) — the player's own entry
+ * (snap.you, else the listed entry marked you): NO ENTRY when there is none,
+ * the not-this-lineage card when it is of another lineage, otherwise its
+ * ordinal among the lineage's matches (the dash when not in the sample).
+ */
+function buildGlobalLineageStanding(key, snap, matches) {
+  const listed = snap.entries.find((e) => e.you === true) || null;
+  const you = snap.you || listed;
+  if (!you) return noGlobalEntry();
+  const run = entryRun(you);
+  if (!ofLineageRun(run, key)) {
+    return { label: BOARDS_PANEL_COPY.standing.noEntry, place: BOARDS_PANEL_COPY.standing.noPlace, note: G.noLineage };
+  }
+  const label = String(rf(run, "name") || globalHandle(you)).toUpperCase() + BOARDS_PANEL_COPY.sep + BOARD_COPY.combo.unitLabel;
+  const ofLine = fill(G.ofLineage, { n: matches.length });
+  const idx = matches.findIndex((e) => e.you === true);
+  if (idx === -1) return { label, place: BOARDS_PANEL_COPY.standing.noPlace, note: ofLine };
+  const place = idx + 1;
+  return { label, place: ordinal(place), note: ofLine + " " + globalQuip(place, "combo") };
 }
 
 /** globalQuip(place, board) — GLOBAL_STANDING_LINES by band (1 / top 10 / top 100 / the rest), picked from the place and the board index. */
@@ -553,31 +645,17 @@ function noGlobalEntry() {
 }
 
 /**
- * buildGlobalStanding(board, scope, snap, groups) — D-05's real-rank card:
- * the player's own score (snap.you, else the listed entry marked you), its
+ * buildGlobalStanding(board, scope, snap) — D-05's real-rank card: the
+ * player's own score (snap.you, else the listed entry marked you), its
  * reported rank (the list position when missing) out of the board's total
- * (the entry count when unknown), plus a banded quip. LINEAGE places the
- * player's combination among the sample's groups. NO ENTRY when absent.
+ * (the entry count when unknown), plus a banded quip. NO ENTRY when absent.
+ * LINEAGE has its own card (buildGlobalLineageStanding, Phase 70 D-13).
  */
-function buildGlobalStanding(board, scope, snap, groups) {
+function buildGlobalStanding(board, scope, snap) {
   const listed = snap.entries.findIndex((e) => e.you === true);
   const you = snap.you || (listed !== -1 ? snap.entries[listed] : null);
   if (!you) return noGlobalEntry();
   const run = entryRun(you);
-
-  if (board === "combo") {
-    const race = typeof rf(run, "race") === "string" ? run.race : "";
-    const cls = typeof rf(run, "cls") === "string" ? run.cls : "";
-    const key = race && cls ? `${race} ${cls}` : "";
-    const idx = key ? groups.findIndex((g) => g.key === key) : -1;
-    if (idx === -1) return noGlobalEntry();
-    const place = idx + 1;
-    return {
-      label: key.toUpperCase() + BOARDS_PANEL_COPY.sep + BOARD_COPY.combo.unitLabel,
-      place: ordinal(place),
-      note: fill(G.ofSampled, { n: groups.length }) + " " + globalQuip(place, "combo"),
-    };
-  }
 
   let place = null;
   if (Number.isInteger(you.rank) && you.rank > 0) place = you.rank;
@@ -596,9 +674,10 @@ function buildGlobalStanding(board, scope, snap, groups) {
  * (D-06, D-07): loading / unreachable / closed are in-panel notes with no
  * card, consent is the note plus the SHOW MY FRIENDS action, ready is the
  * rows (or the empty note) with the real-rank card. Nothing blocks and
- * nothing is a modal or a rail card.
+ * nothing is a modal or a rail card. On LINEAGE a ready snapshot is filtered
+ * to the selected lineage `sel` (Phase 70, D-13).
  */
-function buildGlobalView(board, scope, global, openKey) {
+function buildGlobalView(board, scope, global, openKey, sel) {
   const snap = readSnapshot(global);
   const note = (line) => ({ body: { kind: "note", line }, standing: null, footnote: BOARD_FOOTNOTES.ranked });
   switch (snap.status) {
@@ -613,20 +692,12 @@ function buildGlobalView(board, scope, global, openKey) {
         footnote: BOARD_FOOTNOTES.ranked,
       };
     case "ready": {
+      if (board === "combo") return buildGlobalLineageView(sel, snap, openKey);
       const empty = { kind: "empty", line: G.empty };
-      if (board === "combo") {
-        const groups = lineageGroups(snap.entries);
-        const rows = buildGlobalLineageRows(groups, openKey);
-        return {
-          body: rows.length ? { kind: "rows", rows } : empty,
-          standing: buildGlobalStanding("combo", scope, snap, groups),
-          footnote: fill(G.sampledFoot, { n: snap.sampled !== null ? snap.sampled : snap.entries.length }),
-        };
-      }
       const rows = buildGlobalRows(board, snap, openKey);
       return {
         body: rows.length ? { kind: "rows", rows } : empty,
-        standing: buildGlobalStanding(board, scope, snap, []),
+        standing: buildGlobalStanding(board, scope, snap),
         footnote: BOARD_FOOTNOTES.ranked,
       };
     }
@@ -800,16 +871,6 @@ function buildStanding({ board, bests, pool, recentHash, interredCount, normaliz
     };
   }
 
-  if (board === "combo") {
-    const uncut = buildLineageRows(bests);
-    const key = lineageKey(recent);
-    const idx = uncut.findIndex((row) => row.key === "combo:" + key);
-    const placeNum = idx === -1 ? uncut.length + 1 : idx + 1;
-    const label = key.toUpperCase() + BOARDS_PANEL_COPY.sep + BOARD_COPY.combo.unitLabel;
-    const note = fill(BOARDS_PANEL_COPY.standing.ofCombos, { n: uncut.length }) + " " + pickQuip(placeNum, "combo", recent.hash);
-    return { label, place: ordinal(placeNum), note };
-  }
-
   const better = pool.filter((r) => compareRuns(board, r, recent) < 0).length;
   const placeNum = better + 1;
   const label = String(rf(recent, "name") || "").toUpperCase() + BOARDS_PANEL_COPY.sep + BOARD_COPY[board].unitLabel;
@@ -834,6 +895,12 @@ const SCOPES = ["local", "all", "friends"];
  * null while not ready — and the footnote), `season` (default 1) and
  * `seasons` (default [season]) for header.season { label, picker }, and the
  * body kind "consent" { line, action: { id: "friendsConsent", label } }.
+ * Phase 70 (D-09..D-13) adds `lineage` ({ race?, sub? } or null — the
+ * panel's picker selection) and `hero` ({ race, sub } or null — the active
+ * hero, already gated by the controller), and the output `picker`: null off
+ * LINEAGE; on LINEAGE { race, sub, rows: [race row, sub row] }, each row
+ * { kind, label, chips: [{ id, label, on }] }. LINEAGE's body, standing and
+ * (signed in) footnote are for that one race + sub-class.
  */
 export function boardsView(input = {}) {
   const raw = input && typeof input === "object" ? input : {};
@@ -857,6 +924,18 @@ export function boardsView(input = {}) {
   const season = isSeason(raw.season) ? raw.season : 1;
   const seasons = readSeasons(raw.seasons, season);
 
+  // Phase 70 (D-11): LINEAGE's selection — the picker, else the live hero,
+  // else the most recent run, else the first race and sub-class in content order.
+  const sel =
+    board === "combo"
+      ? resolveLineage({
+          lineage: raw.lineage,
+          hero: raw.hero,
+          recent: findRecentRun(pool, bests, normalizedGraves, raw.recentHash),
+        })
+      : null;
+  const lineagePool = sel ? lineageRuns(pool, lineageKey(sel)) : [];
+
   // Body selection (D-07, D-17): GRAVEYARD → the local stones; the local
   // scope → the local rows; signed out (or Compete OFF) on ALL / FRIENDS →
   // the Phase 66 note, asking nothing of the world; signed in → the global
@@ -866,35 +945,42 @@ export function boardsView(input = {}) {
   if (board === "yard") {
     const rows = finalize(buildGraveyardRows(rawGraves), openKey, { skipCut: true });
     body = rows.length ? { kind: "rows", rows } : { kind: "empty", line: BOARDS_PANEL_COPY.empty };
+  } else if (scope === "local" && board === "combo") {
+    const rows = finalize(
+      buildRunRows("combo", lineagePool.map((run) => ({ hash: run.hash, run }))),
+      openKey,
+      {}
+    );
+    body = rows.length ? { kind: "rows", rows } : lineageEmpty(sel);
   } else if (scope === "local") {
-    const rows =
-      board === "combo"
-        ? finalize(buildLineageRows(bests), openKey, {})
-        : finalize(buildRankedRows(board, bests), openKey, {});
+    const rows = finalize(buildRankedRows(board, bests), openKey, {});
     body = rows.length ? { kind: "rows", rows } : { kind: "empty", line: BOARDS_PANEL_COPY.empty };
   } else if (!signedIn) {
     body = { kind: "note", line: scope === "all" ? BOARDS_PANEL_COPY.note.all : BOARDS_PANEL_COPY.note.friends };
   } else {
-    globalView = buildGlobalView(board, scope, raw.global, openKey);
+    globalView = buildGlobalView(board, scope, raw.global, openKey, sel);
     body = globalView.body;
   }
 
-  const standing = globalView
-    ? globalView.standing
-    : buildStanding({
-        board,
-        bests,
-        pool,
-        recentHash: raw.recentHash,
-        interredCount,
-        normalizedGraves,
-      });
+  let standing;
+  if (globalView) standing = globalView.standing;
+  else if (board === "combo") standing = buildLineageStanding(sel, lineagePool, bests, normalizedGraves, raw.recentHash);
+  else
+    standing = buildStanding({
+      board,
+      bests,
+      pool,
+      recentHash: raw.recentHash,
+      interredCount,
+      normalizedGraves,
+    });
 
   return {
     header: buildHeader(entry, board, interredCount, { signedIn, scope, season, seasons }),
     strip: buildStrip(board, scope, signedIn, player),
     rail: buildRail(board),
     board: buildBoardHead(board),
+    picker: sel ? buildPicker(sel) : null,
     body,
     standing,
     footnote: globalView ? globalView.footnote : buildFootnote(board),
