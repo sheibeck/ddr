@@ -78,7 +78,8 @@ test("newBestView with several boards returns ordered rows (mock tab order) and 
 test("newBestValueText formats every board id per the plan's rules", () => {
   assert.equal(newBestValueText("deep", { floor: 9 }), "floor 9");
   assert.equal(newBestValueText("lean", { floor: 9, steps: 312 }), "floor 9 · 312 sq");
-  assert.equal(newBestValueText("combo", { race: "Dwarf", cls: "Fighter", floor: 4 }), "Dwarf Fighter · floor 4");
+  // Phase 70 (D-10): LINEAGE reads race + sub-class, never the base class.
+  assert.equal(newBestValueText("combo", { race: "Dwarven", sub: "Knight", cls: "Fighter", floor: 4 }), "Dwarven Knight · floor 4");
   assert.equal(newBestValueText("days", { day: 1 }), "1 day");
   assert.equal(newBestValueText("days", { day: 14 }), "14 days");
   assert.equal(newBestValueText("kills", { kills: 1 }), "1 kill");

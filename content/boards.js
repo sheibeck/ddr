@@ -33,11 +33,11 @@ export const BOARD_COPY = {
   },
   combo: {
     tab: "LINEAGE",
-    title: "BY RACE & CLASS",
+    title: "BY RACE & SUB-CLASS",
     mark: "◆",
     col: "#b9a4ef",
     unitLabel: "FLOOR",
-    rule: "Every race and class combination rolled so far, ranked by the deepest floor any of them managed.",
+    rule: "One race, one sub-class, the ten deepest of them. Ties go to whoever walked less.",
     unit: "floor",
   },
   days: {
@@ -102,6 +102,12 @@ export const BOARD_FOOTNOTES = {
 // tags, the standing lines (worldwide / among friends / the sampled LINEAGE
 // count) and the honest LINEAGE sample footnote. No line names or singles
 // out another player; the joke stays on the player's own dead.
+// Phase 70 (D-09, D-13): LINEAGE is one race + sub-class at a time. `lineage`
+// holds the RACE / SUB-CLASS picker labels and the local empty note; the
+// `{lineage}` token (the "Race Sub" display name) joins the token set, filled
+// by the view model. `standing.ofLineage` and `global.ofLineage / noLineage /
+// lineageEmpty` place the player within one lineage, and `global.sampledFoot`
+// says honestly that the list is filtered from the top n deepest.
 export const BOARDS_PANEL_COPY = Object.freeze({
   head: Object.freeze({
     title: "LEADERBOARDS",
@@ -149,8 +155,10 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     noEntry: "Nothing of yours on this board yet this season.",
     ofWorld: "of {n} interred worldwide.",
     ofFriends: "of {n} among friends.",
-    ofSampled: "of {n} lineages in the sample.",
-    sampledFoot: "Sampled from the top {n} deepest corpses in the world. Rare lineages may be buried further down.",
+    ofLineage: "of {n} of this lineage in the sample.",
+    noLineage: "Nothing of yours of this lineage in the sample. The world keeps only your best corpse.",
+    lineageEmpty: "No {lineage} made the top {n} deepest this season. Somebody has to fall that far first.",
+    sampledFoot: "Filtered from the top {n} deepest corpses in the world. Rare lineages may be buried further down.",
   }),
   empty: "Nobody of yours has qualified for this board yet.",
   divider: "NOT IN THE TOP TEN · YOUR BEST RUN",
@@ -159,7 +167,7 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     noPlace: "—",
     noNote: "The ledger opens at your first funeral.",
     ofYours: "of {n} of yours.",
-    ofCombos: "of {n} combinations.",
+    ofLineage: "of {n} of this lineage.",
     interred: "INTERRED",
     yardNote: "rolled, delved, and buried. Deepest was {name} on floor {floor}.",
   }),
@@ -172,9 +180,9 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     wilmst: "WILMST",
   }),
   lineage: Object.freeze({
-    one: "{n} INTERRED",
-    many: "{n} INTERRED, NO SURVIVORS",
-    detail: "{n} rolled, {n} dead. Deepest was {name}, floor {floor} in {steps} squares. {epitaph}",
+    race: "RACE",
+    sub: "SUB-CLASS",
+    empty: "No {lineage} of yours has died yet. The dungeon is patient.",
   }),
   level: "LVL",
   sep: " · ",

@@ -88,7 +88,8 @@ function setup(overrides = {}) {
   // every other test exercises createBoardsPanel's signed-out default.
   if (Object.prototype.hasOwnProperty.call(overrides, "identity")) params.identity = overrides.identity;
   // Phase 68: the global/seasons/onFriendsConsent seams, likewise only when given.
-  for (const key of ["global", "seasons", "onFriendsConsent"]) {
+  // Phase 70 (D-11): the hero seam, likewise only when given.
+  for (const key of ["global", "seasons", "onFriendsConsent", "hero"]) {
     if (Object.prototype.hasOwnProperty.call(overrides, key)) params[key] = overrides[key];
   }
   const panel = createBoardsPanel(params);
@@ -557,12 +558,232 @@ test("refresh() re-renders only while the panel is open", () => {
   assert.equal(buildView.calls.length, afterOpen + 1);
 });
 
-test("state() returns a frozen snapshot with entry/board/scope/open/hasHero/season", () => {
+test("state() returns a frozen snapshot with entry/board/scope/open/hasHero/season/lineage", () => {
   const { panel } = setup();
   panel.openFromTitle({ hasHero: true });
   const s = panel.state();
-  assert.deepStrictEqual(s, { entry: "title", board: "yard", scope: "local", open: null, hasHero: true, season: 1 });
+  assert.deepStrictEqual(s, { entry: "title", board: "yard", scope: "local", open: null, hasHero: true, season: 1, lineage: null });
   assert.ok(Object.isFrozen(s));
+});
+
+// ─── Phase 70 (D-09, D-11): the LINEAGE selection and the hero seam ─────
+
+/**
+ * lineageBuildView() — a LINEAGE-aware fake view: on "combo" a two-row
+ * picker resolved like boardsView (selection per field, else hero, else
+ * Human + Wizard), null elsewhere; one openable row keyed "r1".
+ */
+function lineageBuildView() {
+  const calls = [];
+  const inner = makeBuildView();
+  const fn = (input) => {
+    calls.push([input]);
+    const view = inner(input);
+    view.body = { kind: "rows", rows: [{ key: "r1", rank: "1", top: true, podium: true, you: false, divider: "", avatar: { initials: "AB", bg: "#000" }, headline: "A", tag: "", name: "", line: "l", barPct: 100, val: "1", unit: "FLOOR", open: input.open === "r1", detail: "", stats: [] }] };
+    if (input.board === "combo") {
+      const race = (input.lineage && input.lineage.race) || (input.hero && input.hero.race) || "Human";
+      const sub = (input.lineage && input.lineage.sub) || (input.hero && input.hero.sub) || "Wizard";
+      const chips = (ids, on) => ids.map((id) => ({ id, label: id.toUpperCase(), on: id === on }));
+      view.picker = {
+        race,
+        sub,
+        rows: [
+          { kind: "race", label: "RACE", chips: chips(["Human", "Elven", "Dwarven", "Troll"], race) },
+          { kind: "sub", label: "SUB-CLASS", chips: chips(["Wizard", "Knight", "Acrobat"], sub) },
+        ],
+      };
+    } else {
+      view.picker = null;
+    }
+    return view;
+  };
+  fn.calls = calls;
+  return fn;
+}
+
+function pickChip(host, kind, id) {
+  const row = host.querySelector(".mw-bd-lineage").children.find((r) => r.dataset.kind === kind);
+  return row.children[1].children.find((c) => c.dataset.id === id);
+}
+
+function pickChips(host, kind) {
+  return host.querySelector(".mw-bd-lineage").children.find((r) => r.dataset.kind === kind).children[1];
+}
+
+function railChip(host, id) {
+  return host.querySelector(".mw-bd-rail").children.find((c) => c.dataset.board === id);
+}
+
+test("LINEAGE selection (D-11): every open passes lineage null; the rendered picker is pinned and kept across board, scope, row and refresh renders", () => {
+  const buildView = lineageBuildView();
+  const { host, panel } = setup({ buildView, prefs: fakePrefs({ [BOARDS_LAST_KEY]: "combo" }) });
+  panel.openFromTab();
+  assert.equal(lastBuildInput(buildView).lineage, null);
+  assert.deepStrictEqual(panel.state().lineage, { race: "Human", sub: "Wizard" });
+
+  pickChip(host, "race", "Troll").onclick();
+  assert.deepStrictEqual(lastBuildInput(buildView).lineage, { race: "Troll", sub: "Wizard" });
+
+  railChip(host, "deep").onclick();
+  assert.deepStrictEqual(lastBuildInput(buildView).lineage, { race: "Troll", sub: "Wizard" });
+  railChip(host, "combo").onclick();
+  assert.deepStrictEqual(lastBuildInput(buildView).lineage, { race: "Troll", sub: "Wizard" });
+  host.querySelector(".mw-bd-row").onclick();
+  assert.deepStrictEqual(lastBuildInput(buildView).lineage, { race: "Troll", sub: "Wizard" });
+  panel.refresh();
+  assert.deepStrictEqual(lastBuildInput(buildView).lineage, { race: "Troll", sub: "Wizard" });
+  assert.deepStrictEqual(panel.state().lineage, { race: "Troll", sub: "Wizard" });
+  assert.ok(Object.isFrozen(panel.state().lineage));
+
+  panel.openFromTab();
+  assert.equal(lastBuildInput(buildView).lineage, null, "re-defaults on every open");
+  pickChip(host, "sub", "Acrobat").onclick();
+  panel.openFromTitle({ hasHero: false });
+  assert.equal(lastBuildInput(buildView).lineage, null, "the title open re-defaults too");
+});
+
+test("onLineage: a sub chip keeps the held race, clears the open row and resets the body's scroll", () => {
+  const buildView = lineageBuildView();
+  const { host, panel } = setup({ buildView, prefs: fakePrefs({ [BOARDS_LAST_KEY]: "combo" }) });
+  panel.openFromTab();
+  pickChip(host, "race", "Elven").onclick();
+  host.querySelector(".mw-bd-row").onclick();
+  assert.equal(lastBuildInput(buildView).open, "r1");
+  host.querySelector(".mw-bd-body").scrollTop = 40;
+
+  pickChip(host, "sub", "Knight").onclick();
+  const input = lastBuildInput(buildView);
+  assert.deepStrictEqual(input.lineage, { race: "Elven", sub: "Knight" });
+  assert.equal(input.open, null);
+  assert.equal(host.querySelector(".mw-bd-body").scrollTop, 0);
+});
+
+test("onLineage: an unknown kind or a non-string id is ignored (no render)", () => {
+  const inner = lineageBuildView();
+  const buildView = (input) => {
+    const view = inner(input);
+    if (view.picker) {
+      view.picker.rows = [
+        { kind: "bogus", label: "X", chips: [{ id: "Troll", label: "TROLL", on: false }] },
+        { kind: "race", label: "RACE", chips: [{ id: 5, label: "FIVE", on: false }, { id: null, label: "NULL", on: false }] },
+      ];
+    }
+    return view;
+  };
+  buildView.calls = inner.calls;
+  const { host, panel } = setup({ buildView, prefs: fakePrefs({ [BOARDS_LAST_KEY]: "combo" }) });
+  panel.openFromTab();
+  const before = inner.calls.length;
+  const section = host.querySelector(".mw-bd-lineage");
+  for (const row of section.children) for (const chip of row.children[1].children) chip.onclick();
+  assert.equal(inner.calls.length, before);
+});
+
+test("hero seam (D-11): tab mode passes a fresh { race, sub }; title mode without a resumable hero never asks; with one it passes", () => {
+  const hero = spy();
+  hero.ret = { race: "Elven", sub: "Knight", level: 3 };
+  const buildView = lineageBuildView();
+  const { panel } = setup({ buildView, hero });
+  panel.openFromTab();
+  assert.deepStrictEqual(lastBuildInput(buildView).hero, { race: "Elven", sub: "Knight" });
+  assert.ok(hero.calls.length >= 1);
+
+  const asked = hero.calls.length;
+  panel.openFromTitle({ hasHero: false });
+  assert.equal(lastBuildInput(buildView).hero, null);
+  assert.equal(hero.calls.length, asked, "boot's throwaway hero is not live — the seam is not asked");
+
+  panel.openFromTitle({ hasHero: true });
+  assert.deepStrictEqual(lastBuildInput(buildView).hero, { race: "Elven", sub: "Knight" });
+});
+
+test("hero seam: a throwing, non-function, missing or malformed answer is null and the panel still renders", () => {
+  const answers = [
+    () => {
+      throw new Error("boom");
+    },
+    5,
+    () => null,
+    () => "Elven Knight",
+    () => ({ race: "Elven" }),
+    () => ({ race: 3, sub: "Knight" }),
+  ];
+  for (const hero of answers) {
+    const buildView = lineageBuildView();
+    const { host, panel } = setup({ buildView, hero });
+    assert.doesNotThrow(() => panel.openFromTab());
+    assert.equal(lastBuildInput(buildView).hero, null);
+    assert.ok(host.querySelector(".mw-bd"));
+  }
+  const buildView = lineageBuildView();
+  const { panel } = setup({ buildView });
+  panel.openFromTab();
+  assert.equal(lastBuildInput(buildView).hero, null, "the default seam answers no hero");
+});
+
+test("picker centring: reset renders scroll each row toward its on chip ('smooth', or 'auto' under reduced motion, scrollLeft without scrollTo); row toggles do not", () => {
+  for (const reduced of [false, true]) {
+    const buildView = lineageBuildView();
+    const { host, panel } = setup({ buildView, reducedMotion: () => reduced, prefs: fakePrefs({ [BOARDS_LAST_KEY]: "combo" }) });
+    panel.openFromTab();
+    const subChips = pickChips(host, "sub");
+    subChips.clientWidth = 360;
+    subChips.scrollWidth = 900;
+    subChips.scrollLeft = 200;
+    const calls = [];
+    subChips.scrollTo = (opts) => calls.push(opts);
+
+    host.querySelector(".mw-bd-row").onclick();
+    assert.deepStrictEqual(calls, [], "a row toggle never re-centres the picker");
+
+    pickChip(host, "race", "Dwarven").onclick();
+    assert.deepStrictEqual(calls, [{ left: 0, behavior: reduced ? "auto" : "smooth" }]);
+  }
+  {
+    const buildView = lineageBuildView();
+    const { host, panel } = setup({ buildView, prefs: fakePrefs({ [BOARDS_LAST_KEY]: "combo" }) });
+    panel.openFromTab();
+    const raceChips = pickChips(host, "race");
+    raceChips.clientWidth = 360;
+    raceChips.scrollWidth = 900;
+    raceChips.scrollLeft = 120;
+    delete raceChips.scrollTo;
+    railChip(host, "combo").onclick();
+    assert.equal(raceChips.scrollLeft, 0, "no scrollTo: scrollLeft is assigned");
+    raceChips.scrollLeft = 1;
+    const calls = [];
+    raceChips.scrollTo = (opts) => calls.push(opts);
+    railChip(host, "combo").onclick();
+    assert.deepStrictEqual(calls, [], "within 2px: nothing");
+  }
+});
+
+test("LINEAGE (D-13): global() is asked exactly { board: 'combo', scope, season } — once per render, nothing new on a chip tap", () => {
+  const inner = lineageBuildView();
+  const buildView = (input) => {
+    const view = inner(input);
+    view.strip = {
+      glyph: "",
+      avatar: null,
+      label: "L",
+      source: "S",
+      scopes: [
+        { id: "all", label: "ALL", on: input.scope === "all", dim: false },
+        { id: "friends", label: "FRIENDS", on: input.scope === "friends", dim: false },
+      ],
+    };
+    return view;
+  };
+  buildView.calls = inner.calls;
+  const global = spy();
+  global.ret = { status: "ready", entries: [] };
+  const { host, panel } = setup({ buildView, identity: SIGNED_IN, global, prefs: fakePrefs({ [BOARDS_LAST_KEY]: "combo" }) });
+  panel.openFromTab();
+  assert.equal(global.calls.length, 0, "the local scope asks nothing");
+  scopeChip(host, "all").onclick();
+  assert.deepStrictEqual(global.calls, [[{ board: "combo", scope: "all", season: 1 }]]);
+  pickChip(host, "sub", "Knight").onclick();
+  assert.deepStrictEqual(global.calls, [[{ board: "combo", scope: "all", season: 1 }], [{ board: "combo", scope: "all", season: 1 }]]);
 });
 
 // ─── Phase 68 (D-05..D-08): the global, seasons and onFriendsConsent seams ──

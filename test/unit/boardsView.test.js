@@ -21,6 +21,9 @@ import {
   initialsOf,
   ordinal,
   AVATAR_PALETTE,
+  LINEAGE_RACES,
+  LINEAGE_SUBS,
+  resolveLineage,
 } from "../../src/browser/boardsView.js";
 import { emptyBests, updateBests, runHash, normalizeStone, BOARD_IDS } from "../../engine/records.js";
 import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, GLOBAL_STANDING_LINES } from "../../content/boards.js";
@@ -277,25 +280,111 @@ test("LEANEST order in the rows follows squares per floor: a lean 22-step floor-
   assert.equal(deepView.body.rows[0].headline, "Grinder", "DEEPEST must rank the deeper run first, unlike LEANEST");
 });
 
-test("LINEAGE rows: grouped by race+class, ordered by compareRuns('combo'), keyed 'combo:' + lineage key", () => {
-  const a1 = makeSummary({ race: "Human", cls: "Fighter", floor: 5, name: "Anna" });
-  const a2 = makeSummary({ race: "Human", cls: "Fighter", floor: 8, steps: 10, name: "Zoe", seed: 2 });
-  const b1 = makeSummary({ race: "Dwarf", cls: "Thief", floor: 3, name: "Bob", seed: 3 });
-  const rec = recordWith([a1, a2, b1]);
-  const view = boardsView({ bests: rec, graves: [], total: 3, board: "combo", entry: "tab" });
-  assert.deepStrictEqual(
-    view.body.rows.map((r) => r.key),
-    ["combo:Human Fighter", "combo:Dwarf Thief"]
-  );
-  const humanFighter = view.body.rows[0];
-  assert.equal(humanFighter.headline, "Zoe", "the combo's best run (deepest) is the headline");
-  assert.equal(humanFighter.name, "HUMAN FIGHTER");
-  assert.equal(humanFighter.line, "2 INTERRED, NO SURVIVORS");
-  assert.equal(humanFighter.val, "8");
+test("LINEAGE rows (Phase 70, D-09): only the selected race + sub-class, lineageRuns order, Phase 66 rows keyed by run hash", () => {
+  const a1 = makeSummary({ race: "Human", sub: "Knight", floor: 5, name: "Anna" });
+  const a2 = makeSummary({ race: "Human", sub: "Knight", floor: 8, steps: 10, name: "Zoe", seed: 2 });
+  const other = makeSummary({ race: "Human", sub: "Guard", floor: 20, name: "Gus", seed: 3 });
+  const b1 = makeSummary({ race: "Dwarven", sub: "Knight", floor: 30, name: "Bob", seed: 4 });
+  const rec = recordWith([a1, a2, other, b1]);
+  const view = boardsView({ bests: rec, graves: [], total: 4, board: "combo", entry: "tab", lineage: { race: "Human", sub: "Knight" } });
+  assert.equal(view.body.kind, "rows");
+  assert.deepStrictEqual(view.body.rows.map((r) => r.key), [a2.hash, a1.hash]);
+  const top = view.body.rows[0];
+  assert.equal(top.headline, "Zoe");
+  assert.equal(top.rank, "1");
+  assert.equal(top.top, true);
+  assert.equal(top.line, "HUMAN KNIGHT · LVL II");
+  assert.equal(top.val, "8");
+  assert.equal(top.unit, "FLOOR");
+  assert.equal(top.name, "");
+  assert.equal(top.tag, "");
+  assert.equal(top.you, false);
+  assert.equal(top.divider, "");
+  assert.equal(top.detail, "Died to a rat. The rat remembers.");
+  assert.equal(top.stats.length, 6);
+});
 
-  const dwarfThief = view.body.rows[1];
-  assert.equal(dwarfThief.line, "1 INTERRED");
-  assert.match(dwarfThief.detail, /^1 rolled, 1 dead\. Deepest was Bob, floor 3 in \d+ squares\. /);
+test("LINEAGE rows: the pool is graves ∪ bests.runs deduped by hash, cut to ten, deepest first", () => {
+  const runs = [];
+  for (let i = 0; i < 13; i++) {
+    runs.push(makeSummary({ race: "Troll", sub: "Acrobat", cls: "Thief", floor: 1 + i, steps: 100 - i, name: `T${i}`, seed: 100 + i }));
+  }
+  const rec = recordWith(runs);
+  const graves = runs.slice(0, 5).map((r) => ({ ...r }));
+  const legacy = legacyStone({ race: "Troll", sub: "Acrobat", cls: "Thief", floor: 99, name: "Ancient" });
+  const recWithLegacy = updateBests(rec, normalizeStone(legacy)).record;
+  const view = boardsView({ bests: recWithLegacy, graves: [legacy, ...graves], board: "combo", entry: "tab", lineage: { race: "Troll", sub: "Acrobat" } });
+  assert.equal(view.body.rows.length, 10);
+  assert.equal(view.body.rows[0].headline, "Ancient", "the legacy stone and its backfilled entry count once");
+  assert.equal(view.body.rows.filter((r) => r.headline === "Ancient").length, 1);
+  const floors = view.body.rows.map((r) => Number(r.val));
+  assert.deepStrictEqual(floors, [99, 13, 12, 11, 10, 9, 8, 7, 6, 5]);
+});
+
+test("LINEAGE empty (D-09): a lineage with no runs shows the in-voice note naming it, and the NO ENTRY card", () => {
+  const rec = recordWith([makeSummary({ race: "Human", sub: "Knight", floor: 4 })]);
+  const view = boardsView({ bests: rec, graves: [], board: "combo", entry: "tab", lineage: { race: "Troll", sub: "Acrobat" } });
+  assert.deepStrictEqual(view.body, { kind: "empty", line: "No Troll Acrobat of yours has died yet. The dungeon is patient." });
+  assert.deepStrictEqual(view.standing, { label: "NO ENTRY", place: "—", note: BOARDS_PANEL_COPY.standing.noNote });
+});
+
+test("LINEAGE_RACES / LINEAGE_SUBS: the 6 races and 24 sub-classes in content order, frozen", () => {
+  assert.deepStrictEqual([...LINEAGE_RACES], ["Human", "Elven", "Dwarven", "Wilmsry", "Fridgian", "Troll"]);
+  assert.equal(LINEAGE_SUBS.length, 24);
+  assert.deepStrictEqual(LINEAGE_SUBS.slice(0, 8), ["Wizard", "Warlock", "Sorcerer", "Summoner", "Cleric", "Illusionist", "Court Mage", "Apprentice"]);
+  assert.equal(LINEAGE_SUBS[8], "Knight");
+  assert.equal(LINEAGE_SUBS[16], "Pickpocket");
+  assert.equal(LINEAGE_SUBS[23], "Acrobat");
+  assert.ok(Object.isFrozen(LINEAGE_RACES));
+  assert.ok(Object.isFrozen(LINEAGE_SUBS));
+});
+
+test("picker (D-09): null off LINEAGE; on LINEAGE a RACE row of 6 then a SUB-CLASS row of 24, upper-cased, exactly one chip on per row", () => {
+  for (const board of ["deep", "lean", "days", "kills", "purse", "yard"]) {
+    assert.equal(boardsView({ board, entry: "tab" }).picker, null, board);
+  }
+  const view = boardsView({ board: "combo", entry: "tab", lineage: { race: "Dwarven", sub: "Court Mage" } });
+  const p = view.picker;
+  assert.equal(p.race, "Dwarven");
+  assert.equal(p.sub, "Court Mage");
+  assert.deepStrictEqual(p.rows.map((r) => [r.kind, r.label]), [["race", "RACE"], ["sub", "SUB-CLASS"]]);
+  assert.deepStrictEqual(p.rows[0].chips.map((c) => c.id), [...LINEAGE_RACES]);
+  assert.deepStrictEqual(p.rows[1].chips.map((c) => c.id), [...LINEAGE_SUBS]);
+  assert.deepStrictEqual(p.rows[1].chips.find((c) => c.id === "Court Mage"), { id: "Court Mage", label: "COURT MAGE", on: true });
+  for (const row of p.rows) assert.equal(row.chips.filter((c) => c.on).length, 1);
+  assert.equal(p.rows[0].chips.find((c) => c.on).id, "Dwarven");
+  // Signed in on ALL the picker is the same.
+  const g = boardsView({ board: "combo", scope: "all", entry: "tab", signedIn: true, lineage: { race: "Dwarven", sub: "Court Mage" } });
+  assert.deepStrictEqual(g.picker, p);
+});
+
+test("resolveLineage (D-11): picker per field, else hero, else the most recent run, else Human + Wizard", () => {
+  const hero = { race: "Elven", sub: "Knight" };
+  const recent = { race: "Troll", sub: "Acrobat" };
+  assert.deepStrictEqual(resolveLineage({ lineage: { race: "Dwarven", sub: "Ninja" }, hero, recent }), { race: "Dwarven", sub: "Ninja" });
+  assert.deepStrictEqual(resolveLineage({ lineage: { race: "Gnome", sub: "Ninja" }, hero, recent }), { race: "Elven", sub: "Ninja" });
+  assert.deepStrictEqual(resolveLineage({ lineage: { race: "Dwarven", sub: 5 }, hero, recent }), { race: "Dwarven", sub: "Knight" });
+  assert.deepStrictEqual(resolveLineage({ lineage: null, hero, recent }), { race: "Elven", sub: "Knight" });
+  assert.deepStrictEqual(resolveLineage({ lineage: null, hero: { race: "Elven", sub: "Paladin" }, recent }), { race: "Troll", sub: "Acrobat" });
+  assert.deepStrictEqual(resolveLineage({ hero: null, recent }), recent);
+  assert.deepStrictEqual(resolveLineage({ hero: null, recent: { race: "Dwarf", sub: "Thief" } }), { race: "Human", sub: "Wizard" });
+  assert.deepStrictEqual(resolveLineage({}), { race: "Human", sub: "Wizard" });
+  assert.deepStrictEqual(resolveLineage(), { race: "Human", sub: "Wizard" });
+});
+
+test("LINEAGE default through boardsView: hero, else recentHash run, else newest grave, else bests.last, else Human + Wizard", () => {
+  const oldRun = makeSummary({ race: "Elven", sub: "Cleric", floor: 3, name: "Old" });
+  const newRun = makeSummary({ race: "Fridgian", sub: "Bard", floor: 2, name: "New", seed: 2 });
+  const rec = recordWith([oldRun, newRun]);
+  const base = { bests: rec, board: "combo", entry: "tab" };
+  assert.equal(boardsView({ ...base, graves: [], hero: { race: "Troll", sub: "Samurai" } }).picker.race, "Troll");
+  assert.equal(boardsView({ ...base, graves: [], recentHash: oldRun.hash }).picker.sub, "Cleric");
+  assert.equal(boardsView({ ...base, graves: [{ ...oldRun }] }).picker.sub, "Cleric", "the newest grave");
+  assert.equal(boardsView({ ...base, graves: [] }).picker.sub, "Bard", "bests.last");
+  const none = boardsView({ board: "combo", entry: "tab" });
+  assert.deepStrictEqual([none.picker.race, none.picker.sub], ["Human", "Wizard"]);
+  const wins = boardsView({ ...base, graves: [], hero: { race: "Troll", sub: "Samurai" }, lineage: { sub: "Bard" } });
+  assert.deepStrictEqual([wins.picker.race, wins.picker.sub], ["Troll", "Bard"]);
 });
 
 test("GRAVEYARD rows: all normalized stones in sortGraveyard order, unranked, keyed hash + ':' + index", () => {
@@ -489,14 +578,34 @@ test("standing, a tie: three runs tied on every key with the recent one among th
   assert.equal(view.standing.place, "1ST");
 });
 
-test("standing, LINEAGE: the recent run's combo rank among all combos, label is COMBO · FLOOR, note counts combinations", () => {
-  const a1 = makeSummary({ race: "Human", cls: "Fighter", floor: 8, name: "Zoe" });
-  const a2 = makeSummary({ race: "Human", cls: "Fighter", floor: 2, name: "Anna", seed: 2 });
-  const b1 = makeSummary({ race: "Dwarf", cls: "Thief", floor: 9, name: "Bob", seed: 3 });
-  const rec = recordWith([a1, a2, b1]);
-  const view = boardsView({ bests: rec, graves: [], total: 3, board: "combo", entry: "tab", recentHash: a2.hash });
-  assert.equal(view.standing.label, "HUMAN FIGHTER · FLOOR");
-  assert.match(view.standing.note, /^of 2 combinations\. /);
+test("standing, LINEAGE (D-09): the lineage's most recent run placed among that lineage's runs", () => {
+  const a1 = makeSummary({ race: "Human", sub: "Knight", floor: 8, name: "Zoe" });
+  const a2 = makeSummary({ race: "Human", sub: "Knight", floor: 2, name: "Anna", seed: 2 });
+  const a3 = makeSummary({ race: "Human", sub: "Knight", floor: 5, name: "Mid", seed: 5 });
+  const b1 = makeSummary({ race: "Dwarven", sub: "Pickpocket", floor: 9, name: "Bob", seed: 3 });
+  const rec = recordWith([a1, a2, a3, b1]);
+  const base = { bests: rec, graves: [], total: 4, board: "combo", entry: "tab", lineage: { race: "Human", sub: "Knight" } };
+
+  const byRecent = boardsView({ ...base, recentHash: a2.hash }).standing;
+  assert.equal(byRecent.label, "ANNA · FLOOR");
+  assert.equal(byRecent.place, "3RD");
+  assert.match(byRecent.note, /^of 3 of this lineage\. /);
+
+  // recentHash of another lineage: the newest matching grave.
+  const byGrave = boardsView({ ...base, graves: [{ ...b1 }, { ...a3 }, { ...a1 }], recentHash: b1.hash }).standing;
+  assert.equal(byGrave.label, "MID · FLOOR");
+  assert.equal(byGrave.place, "2ND");
+
+  // No matching grave, bests.last is another lineage (b1): the lineage's best.
+  const byBest = boardsView(base).standing;
+  assert.equal(byBest.label, "ZOE · FLOOR");
+  assert.equal(byBest.place, "1ST");
+
+  // bests.last of this lineage.
+  const lastIsLineage = recordWith([b1, a1, a2, a3]);
+  const byLast = boardsView({ ...base, bests: lastIsLineage }).standing;
+  assert.equal(byLast.label, "MID · FLOOR");
+  assert.equal(byLast.place, "2ND");
 });
 
 test("standing, GRAVEYARD: label INTERRED, place is the header's interred, note names the deepest run", () => {
@@ -525,9 +634,9 @@ test("standing quip: deterministic — the same hash and board always pick the s
   assert.equal(view1.standing.note, view2.standing.note);
 });
 
-test("A full run of all seven boards on a 12-run fixture: DEEPEST and LEANEST orders differ, GRAVEYARD holds all unranked, LINEAGE groups by race+class", () => {
-  const races = ["Human", "Dwarf", "Elf"];
-  const classes = ["Fighter", "Thief"];
+test("A full run of all seven boards on a 12-run fixture: DEEPEST and LEANEST orders differ, GRAVEYARD holds all unranked, LINEAGE lists the selected lineage", () => {
+  const races = ["Human", "Dwarven", "Elven"];
+  const subs = ["Knight", "Pickpocket"];
   const runs = [];
   for (let i = 0; i < 12; i++) {
     runs.push(
@@ -535,7 +644,7 @@ test("A full run of all seven boards on a 12-run fixture: DEEPEST and LEANEST or
         seed: i + 1,
         name: `Delver${i}`,
         race: races[i % races.length],
-        cls: classes[Math.floor(i / races.length) % classes.length],
+        sub: subs[Math.floor(i / races.length) % subs.length],
         floor: 1 + (i % 10),
         steps: 20 + i * 37,
         day: 1 + (i % 8),
@@ -558,13 +667,15 @@ test("A full run of all seven boards on a 12-run fixture: DEEPEST and LEANEST or
   assert.equal(yardView.body.rows.length, 12);
   assert.ok(yardView.body.rows.every((r) => r.rank === ""));
 
-  const comboView = boardsView({ bests: rec, graves, total: 12, board: "combo", entry: "tab" });
-  const uniqueCombos = new Set(runs.map((r) => `${r.race} ${r.cls}`));
-  assert.equal(comboView.body.rows.length, uniqueCombos.size);
+  const comboView = boardsView({ bests: rec, graves, total: 12, board: "combo", entry: "tab", lineage: { race: "Dwarven", sub: "Pickpocket" } });
+  const expected = runs.filter((r) => r.race === "Dwarven" && r.sub === "Pickpocket");
+  assert.equal(comboView.body.rows.length, expected.length);
+  assert.ok(comboView.body.rows.every((r) => r.line.startsWith("DWARVEN PICKPOCKET · ")));
 
   for (const board of BOARD_IDS) {
+    // With no hero or selection LINEAGE defaults to the newest grave's lineage, which has runs.
     const view = boardsView({ bests: rec, graves, total: 12, board, entry: "tab" });
-    assert.equal(view.body.kind, "rows");
+    assert.equal(view.body.kind, "rows", board);
   }
 });
 
@@ -616,7 +727,9 @@ test("Empty data: boardsView({}) returns a complete view with INTERRED 0, an emp
   for (const board of BOARD_IDS) {
     const boardView = boardsView({ board, entry: "tab" });
     assert.equal(boardView.body.kind, "empty");
-    assert.equal(boardView.body.line, BOARDS_PANEL_COPY.empty);
+    // LINEAGE's empty note names the default lineage (Phase 70, D-09/D-11).
+    const line = board === "combo" ? "No Human Wizard of yours has died yet. The dungeon is patient." : BOARDS_PANEL_COPY.empty;
+    assert.equal(boardView.body.line, line, board);
   }
 });
 
@@ -1047,50 +1160,101 @@ test("PGS-05 empty: a null, undefined or malformed global input on a signed-in g
   assert.equal(mixed.body.rows.length, 1);
 });
 
-test("LINEAGE global: DEEPEST sample grouped by race and class, first entry kept, honest sampled footnote", () => {
+test("LINEAGE global (D-13): the sample filtered to the selected race + sub-class, sample order, ranks 1..n, filtered footnote", () => {
   const entries = [
     gEntry(0, { handle: "Alpha" }, { race: "Dwarven", sub: "Pickpocket", floor: 9 }),
     gEntry(1, { handle: "Bravo" }, { race: "Human", sub: "Soldier", floor: 8 }),
     gEntry(2, { handle: "Charlie" }, { race: "Dwarven", sub: "Cutthroat", floor: 7 }),
     gEntry(3, { handle: "Delta", run: null, rawScore: 6000000 }),
     gEntry(4, { handle: "Echo" }, { race: "Gnome", sub: "Soldier", floor: 6 }),
+    gEntry(5, { handle: "Foxtrot" }, { race: "Human", sub: "Soldier", floor: 5 }),
   ];
   const you = gEntry(1, { key: "g:you", you: true }, { race: "Human", sub: "Soldier", floor: 8 });
-  const view = gView({ board: "combo", global: snap({ board: "combo", entries, you, sampled: 5 }) });
+  const view = gView({ board: "combo", lineage: { race: "Human", sub: "Soldier" }, global: snap({ board: "combo", entries, you, sampled: 25 }) });
   assert.equal(view.body.kind, "rows");
   const rows = view.body.rows;
-  assert.deepStrictEqual(rows.map((r) => r.name), ["DWARVEN THIEF", "HUMAN FIGHTER"]);
-  assert.deepStrictEqual(rows.map((r) => r.headline), ["Alpha", "Bravo"]);
-  assert.deepStrictEqual(rows.map((r) => r.rank), ["1", "2"]);
-  assert.equal(rows[0].line, "DWARVEN PICKPOCKET · LVL III");
-  assert.equal(rows[0].val, "9");
+  // snap.you is of this lineage but no sample entry is marked you: pinned last, unranked.
+  assert.deepStrictEqual(rows.map((r) => r.headline), ["Bravo", "Foxtrot", "Delver1"]);
+  assert.deepStrictEqual(rows.map((r) => r.rank), ["1", "2", ""], "the lineage position, never the worldwide rank");
+  assert.equal(rows[2].divider, BOARDS_PANEL_COPY.divider);
+  assert.equal(rows[0].line, "HUMAN SOLDIER · LVL III");
+  assert.equal(rows[0].val, "8");
   assert.equal(rows[0].unit, "FLOOR");
-  assert.equal(view.footnote, "Sampled from the top 5 deepest corpses in the world. Rare lineages may be buried further down.");
-  assert.equal(view.standing.place, "2ND");
-  assert.equal(view.standing.label, "HUMAN FIGHTER · FLOOR");
-  assert.ok(view.standing.note.startsWith("of 2 lineages in the sample. "), view.standing.note);
-  assert.ok(GLOBAL_STANDING_LINES.ten.includes(view.standing.note.slice("of 2 lineages in the sample. ".length)));
+  assert.ok(rows.every((r) => !/remembers/.test(r.detail)), "global rows carry no epitaph");
+  assert.equal(view.footnote, "Filtered from the top 25 deepest corpses in the world. Rare lineages may be buried further down.");
 
-  const absent = gView({
+  // Standing: no entry marked you in the sample, so the dash with the lineage count.
+  assert.equal(view.standing.label, "BROM IRONFOOT · FLOOR");
+  assert.equal(view.standing.place, "—");
+  assert.equal(view.standing.note, "of 2 of this lineage in the sample.");
+
+  // The player's entry is listed: placed among the matches with a quip.
+  const listedEntries = entries.map((e, i) => (i === 5 ? { ...e, you: true } : e));
+  const listed = gView({ board: "combo", lineage: { race: "Human", sub: "Soldier" }, global: snap({ board: "combo", entries: listedEntries, you, sampled: 25 }) });
+  assert.equal(listed.standing.place, "2ND");
+  assert.ok(listed.standing.note.startsWith("of 2 of this lineage in the sample. "), listed.standing.note);
+  assert.ok(GLOBAL_STANDING_LINES.ten.includes(listed.standing.note.slice("of 2 of this lineage in the sample. ".length)));
+
+  // The player's entry is of another lineage.
+  const other = gView({
     board: "combo",
-    global: snap({ board: "combo", entries, you: gEntry(9, { key: "g:you", you: true }, { race: "Troll", sub: "Wizard" }), sampled: 5 }),
+    lineage: { race: "Human", sub: "Soldier" },
+    global: snap({ board: "combo", entries, you: gEntry(9, { key: "g:you", you: true }, { race: "Troll", sub: "Wizard" }), sampled: 25 }),
   });
-  assert.deepStrictEqual(absent.standing, { label: "NO ENTRY", place: "—", note: G.noEntry });
+  assert.deepStrictEqual(other.standing, { label: "NO ENTRY", place: "—", note: G.noLineage });
+
+  // No player entry at all.
+  const none = gView({ board: "combo", lineage: { race: "Human", sub: "Soldier" }, global: snap({ board: "combo", entries, sampled: 25 }) });
+  assert.deepStrictEqual(none.standing, { label: "NO ENTRY", place: "—", note: G.noEntry });
 });
 
-test("PGS-05 adjacency and empty: two LINEAGE entries of one race and class collapse to the first; an empty sample shows the empty note with n 0", () => {
-  const entries = [
-    gEntry(0, { handle: "Keep" }, { race: "Elven", sub: "Wizard", floor: 5 }),
-    gEntry(1, { handle: "Drop" }, { race: "Elven", sub: "Warlock", floor: 5 }),
-  ];
-  const rows = gView({ board: "combo", global: snap({ board: "combo", entries, sampled: 2 }) }).body.rows;
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].headline, "Keep");
+test("LINEAGE global pin (D-13): the player's own entry of this lineage outside the shown ten is pinned under the divider", () => {
+  const entries = [];
+  for (let i = 0; i < 12; i++) entries.push(gEntry(i, { handle: `H${i}` }, { race: "Elven", sub: "Wizard", floor: 20 - i }));
+  const inSample = entries.map((e, i) => (i === 11 ? { ...e, you: true } : e));
+  const rows = gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries: inSample, sampled: 25 }) }).body.rows;
+  assert.equal(rows.length, 11);
+  assert.deepStrictEqual(rows.slice(0, 10).map((r) => r.rank), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+  assert.equal(rows[10].rank, "12", "its position among the matches");
+  assert.equal(rows[10].divider, BOARDS_PANEL_COPY.divider);
+  assert.equal(rows[10].tag, G.you);
+  assert.equal(rows[10].you, true);
 
-  const empty = gView({ board: "combo", global: snap({ board: "combo", entries: [], sampled: 0 }) });
-  assert.deepStrictEqual(empty.body, { kind: "empty", line: G.empty });
-  assert.equal(empty.footnote, "Sampled from the top 0 deepest corpses in the world. Rare lineages may be buried further down.");
+  // Only snap.you carries it (not in the sample): pinned unranked.
+  const you = gEntry(40, { key: "g:you", you: true, rank: 400 }, { race: "Elven", sub: "Wizard", floor: 2 });
+  const onlyYou = gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries, you, sampled: 25 }) }).body.rows;
+  assert.equal(onlyYou.length, 11);
+  assert.equal(onlyYou[10].rank, "");
+  assert.equal(onlyYou[10].key, "g:you");
+
+  // snap.you of another lineage is never pinned.
+  const foreign = gEntry(40, { key: "g:you", you: true }, { race: "Troll", sub: "Wizard" });
+  assert.equal(gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries, you: foreign, sampled: 25 }) }).body.rows.length, 10);
+
+  // A shown you entry is not pinned twice.
+  const shownYou = entries.map((e, i) => (i === 3 ? { ...e, you: true } : e));
+  const shown = gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries: shownYou, you, sampled: 25 }) }).body.rows;
+  assert.equal(shown.length, 10);
+});
+
+test("PGS-05 adjacency and empty: equal LINEAGE entries keep sample order; unknown strings never match; no match shows the lineage empty note", () => {
+  const entries = [
+    gEntry(0, { handle: "First" }, { race: "Elven", sub: "Wizard", floor: 5 }),
+    gEntry(1, { handle: "Other" }, { race: "Elven", sub: "Warlock", floor: 5 }),
+    gEntry(2, { handle: "Second" }, { race: "Elven", sub: "Wizard", floor: 5 }),
+    gEntry(3, { handle: "Foreign", run: { race: "Elven ", sub: "Wizard", floor: 5 } }),
+    gEntry(4, { handle: "Nulled", run: null }),
+  ];
+  const rows = gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries, sampled: 5 }) }).body.rows;
+  assert.deepStrictEqual(rows.map((r) => r.headline), ["First", "Second"]);
+
+  const empty = gView({ board: "combo", lineage: { race: "Troll", sub: "Acrobat" }, global: snap({ board: "combo", entries, sampled: 5 }) });
+  assert.deepStrictEqual(empty.body, { kind: "empty", line: "No Troll Acrobat made the top 5 deepest this season. Somebody has to fall that far first." });
+  assert.equal(empty.footnote, "Filtered from the top 5 deepest corpses in the world. Rare lineages may be buried further down.");
   assert.deepStrictEqual(empty.standing, { label: "NO ENTRY", place: "—", note: G.noEntry });
+
+  const none = gView({ board: "combo", global: snap({ board: "combo", entries: [], sampled: 0 }) });
+  assert.deepStrictEqual(none.body, { kind: "empty", line: "No Human Wizard made the top 0 deepest this season. Somebody has to fall that far first." });
 });
 
 test("header season: 'SEASON n' on every view; the picker shows only with two seasons, signed in, on a global scope off GRAVEYARD", () => {
@@ -1159,8 +1323,18 @@ test("Purity with a global snapshot: deep-frozen input is never mutated and two 
     v1 = boardsView(input);
   });
   assert.deepStrictEqual(boardsView(input), v1);
-  const combo = deepFreeze({ ...input, board: "combo", global: snap({ board: "combo", entries: [gEntry(0), gEntry(1)], sampled: 2 }) });
+  const combo = deepFreeze({
+    ...input,
+    board: "combo",
+    lineage: { race: "Dwarven", sub: "Pickpocket" },
+    hero: { race: "Troll", sub: "Acrobat" },
+    global: snap({ board: "combo", entries: [gEntry(0), gEntry(1)], sampled: 2 }),
+  });
   assert.deepStrictEqual(boardsView(combo), boardsView(combo));
+  assert.equal(boardsView(combo).body.rows.length, 2);
+  const localCombo = deepFreeze({ ...combo, scope: "local", bests: recordWith([makeSummary({ race: "Troll", sub: "Acrobat" })]), graves: [legacyStone({ race: "Troll", sub: "Acrobat" })] });
+  assert.doesNotThrow(() => boardsView(localCombo));
+  assert.deepStrictEqual(boardsView(localCombo), boardsView(localCombo));
 });
 
 test("source pins: the retired coming-online notes are gone and the minimal row goes through scoreFallback", () => {

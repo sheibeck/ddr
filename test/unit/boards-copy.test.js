@@ -16,7 +16,8 @@ import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, GLOBAL_
 
 const MOCK_RULE = {
   deep: "Lowest floor reached before dying. Ties broken by the fewer squares walked to get there.",
-  combo: "Every race and class combination rolled so far, ranked by the deepest floor any of them managed.",
+  // Phase 70 (D-09): LINEAGE re-voiced for one race + sub-class's top ten.
+  combo: "One race, one sub-class, the ten deepest of them. Ties go to whoever walked less.",
   days: "Days survived underground. Rations are the real opponent.",
   kills: "Things killed before being killed. Not correlated with depth, which is the joke.",
   purse: "Wilmst carried at the moment of death. All of it still down there.",
@@ -36,7 +37,7 @@ const MOCK_MARK_COL = {
 };
 
 const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
-const TOKENS = new Set(["n", "name", "floor", "steps", "epitaph"]);
+const TOKENS = new Set(["n", "name", "floor", "steps", "epitaph", "lineage"]);
 
 /** Every `{token}` in a string, without the braces. */
 function tokensIn(s) {
@@ -76,7 +77,7 @@ test("BOARD_COPY tab/title/unit/unitOne match their Phase 65 values", () => {
   const pinned = {
     deep: { tab: "DEEPEST", title: "DEEPEST DESCENT", unit: "floor" },
     lean: { tab: "LEANEST", title: "DEEPEST, FEWEST STEPS", unit: "sq" },
-    combo: { tab: "LINEAGE", title: "BY RACE & CLASS", unit: "floor" },
+    combo: { tab: "LINEAGE", title: "BY RACE & SUB-CLASS", unit: "floor" },
     days: { tab: "LONGEST", title: "LONGEST HELD OUT", unit: "days", unitOne: "day" },
     kills: { tab: "BUTCHERY", title: "MOST KILLS", unit: "kills", unitOne: "kill" },
     purse: { tab: "PURSE", title: "RICHEST CORPSE", unit: "wilmst" },
@@ -151,7 +152,7 @@ test("Every BOARDS_PANEL_COPY leaf is a non-empty string", () => {
   }
 });
 
-test("Every BOARDS_PANEL_COPY template's tokens are only from {n,name,floor,steps,epitaph}", () => {
+test("Every BOARDS_PANEL_COPY template's tokens are only from {n,name,floor,steps,epitaph,lineage}", () => {
   for (const [path, value] of collectLeaves(BOARDS_PANEL_COPY)) {
     for (const t of tokensIn(value)) {
       assert.ok(TOKENS.has(t), `${path} uses unexpected token {${t}}`);
@@ -238,8 +239,11 @@ const GLOBAL_PINS = {
   noEntry: "Nothing of yours on this board yet this season.",
   ofWorld: "of {n} interred worldwide.",
   ofFriends: "of {n} among friends.",
-  ofSampled: "of {n} lineages in the sample.",
-  sampledFoot: "Sampled from the top {n} deepest corpses in the world. Rare lineages may be buried further down.",
+  // Phase 70 (D-09, D-13): the per-lineage global lines; ofSampled retired.
+  ofLineage: "of {n} of this lineage in the sample.",
+  noLineage: "Nothing of yours of this lineage in the sample. The world keeps only your best corpse.",
+  lineageEmpty: "No {lineage} made the top {n} deepest this season. Somebody has to fall that far first.",
+  sampledFoot: "Filtered from the top {n} deepest corpses in the world. Rare lineages may be buried further down.",
 };
 
 test("BOARDS_PANEL_COPY.global is deep-frozen and sits after note", () => {
@@ -268,11 +272,12 @@ test("BOARDS_PANEL_COPY.global pins every other string verbatim (D-05..D-09)", (
   assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.global).sort(), ["scope", ...Object.keys(GLOBAL_PINS)].sort());
 });
 
-test("BOARDS_PANEL_COPY.global token rules: season/ofWorld/ofFriends/ofSampled/sampledFoot carry {n}; nothing else carries a token", () => {
-  const withN = new Set(["season", "ofWorld", "ofFriends", "ofSampled", "sampledFoot"]);
+test("BOARDS_PANEL_COPY.global token rules: season/ofWorld/ofFriends/ofLineage/sampledFoot carry {n}; lineageEmpty carries {lineage} then {n}; nothing else carries a token", () => {
+  const withN = new Set(["season", "ofWorld", "ofFriends", "ofLineage", "sampledFoot"]);
   for (const [p, v] of collectLeaves(BOARDS_PANEL_COPY.global)) {
     const t = tokensIn(v);
     if (withN.has(p)) assert.deepStrictEqual(t, ["n"], `global.${p}`);
+    else if (p === "lineageEmpty") assert.deepStrictEqual(t, ["lineage", "n"], `global.${p}`);
     else assert.deepStrictEqual(t, [], `global.${p}`);
   }
   assert.match(BOARDS_PANEL_COPY.global.ofWorld, /worldwide/);
@@ -292,6 +297,43 @@ test("The Phase 66/67 keys of BOARDS_PANEL_COPY are unchanged by the Phase 68 ad
   ]);
   assert.equal(BOARDS_PANEL_COPY.scope.ranked, "Your dead only. The world has not been told.");
   assert.equal(BOARDS_PANEL_COPY.divider, "NOT IN THE TOP TEN · YOUR BEST RUN");
+});
+
+// ─── Phase 70 (D-09, D-10): the race + sub-class LINEAGE copy ───────────────
+
+test("BOARDS_PANEL_COPY.lineage is exactly the picker labels and the empty note (the Phase 65 one/many/detail lines are retired)", () => {
+  assert.deepStrictEqual({ ...BOARDS_PANEL_COPY.lineage }, {
+    race: "RACE",
+    sub: "SUB-CLASS",
+    empty: "No {lineage} of yours has died yet. The dungeon is patient.",
+  });
+  assert.ok(Object.isFrozen(BOARDS_PANEL_COPY.lineage));
+});
+
+test("BOARDS_PANEL_COPY.standing: ofLineage replaces ofCombos", () => {
+  assert.equal(BOARDS_PANEL_COPY.standing.ofLineage, "of {n} of this lineage.");
+  assert.ok(!("ofCombos" in BOARDS_PANEL_COPY.standing));
+  assert.ok(!("ofSampled" in BOARDS_PANEL_COPY.global));
+});
+
+test("BOARD_COPY.combo is re-voiced for race + sub-class", () => {
+  assert.equal(BOARD_COPY.combo.title, "BY RACE & SUB-CLASS");
+  assert.equal(BOARD_COPY.combo.rule, "One race, one sub-class, the ten deepest of them. Ties go to whoever walked less.");
+  assert.equal(BOARD_COPY.combo.tab, "LINEAGE");
+  assert.equal(BOARD_COPY.combo.unitLabel, "FLOOR");
+});
+
+test("No Phase 70 LINEAGE string has a markup character, WP or a handle marker", () => {
+  const strings = [
+    ...collectLeaves(BOARDS_PANEL_COPY.lineage).map(([p, v]) => [`lineage.${p}`, v]),
+    ["standing.ofLineage", BOARDS_PANEL_COPY.standing.ofLineage],
+    // combo.title keeps the mock's "&" (BY RACE & SUB-CLASS), drawn via textContent.
+    ["combo.rule", BOARD_COPY.combo.rule],
+  ];
+  for (const [p, v] of strings) {
+    assert.doesNotMatch(v, /[<>&@]/, `${p} -> "${v}"`);
+    assert.doesNotMatch(v, /\bWP\b/i, `${p} -> "${v}"`);
+  }
 });
 
 const GLOBAL_STANDING_PINS = {

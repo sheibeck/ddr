@@ -30,7 +30,8 @@ export function newBestValueText(board, summary) {
     case "lean":
       return `floor ${n(s.floor)}${SEP}${n(s.steps)} ${BOARD_COPY.lean.unit}`;
     case "combo":
-      return `${s.race || ""} ${s.cls || ""}${SEP}floor ${n(s.floor)}`;
+      // Phase 70 (D-10): a lineage is race + sub-class, the same key LINEAGE ranks by.
+      return `${s.race || ""} ${s.sub || ""}${SEP}floor ${n(s.floor)}`;
     case "days": {
       const d = n(s.day);
       return `${d} ${d === 1 ? BOARD_COPY.days.unitOne : BOARD_COPY.days.unit}`;

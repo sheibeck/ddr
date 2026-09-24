@@ -32,7 +32,7 @@ import {
 import { flush as flushStorage } from "../../src/browser/storage.js";
 import { newRun } from "../../engine/engine.js";
 import { serializeRun } from "../../engine/saveState.js";
-import { emptyBests, updateBests, runHash, BOARD_IDS } from "../../engine/records.js";
+import { emptyBests, updateBests, runHash, normalizeStone, BOARD_IDS } from "../../engine/records.js";
 import { BOARD_COPY } from "../../content/boards.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -112,8 +112,10 @@ test("lazy path: a death before loadBests()/boot() is ever called folds the lega
     assert.equal(Object.keys(stored.runs).length, 3, "2 legacy stones + this death = 3 runs");
     const seasons = Object.values(stored.runs).map((r) => r.season).sort();
     assert.deepStrictEqual(seasons, [0, 0, 1]);
-    const lineageSum = Object.values(stored.lineage).reduce((sum, l) => sum + l.count, 0);
-    assert.equal(lineageSum, 3);
+    for (const hash of Object.keys(stored.runs)) {
+      assert.equal(stored.runs[hash].hash, hash, "every backfilled run is held under its own hash");
+    }
+    assert.ok(!("lineage" in stored), "the retired Phase 65 lineage map is never written (Phase 70, D-12)");
   });
 });
 
@@ -159,16 +161,15 @@ test("boot with an existing valid ddr.bests.v1 loads it via sanitizeBests; grave
     const seeded = updateBests(emptyBests(), summary).record;
     store.setItem(BESTS_KEY, JSON.stringify(seeded));
     // A different lineage's legacy stone in the graveyard — if boot()
-    // erroneously re-folded the graveyard, a second lineage key would show
-    // up here.
-    store.setItem(GRAVE_KEY, JSON.stringify([
-      legacyStone({ name: "Other", race: "Elf", cls: "Thief", floor: 2, when: 9 }),
-    ]));
+    // erroneously re-folded the graveyard, its normalized hash would show
+    // up in the loaded runs.
+    const other = legacyStone({ name: "Other", race: "Elf", cls: "Thief", floor: 2, when: 9 });
+    store.setItem(GRAVE_KEY, JSON.stringify([other]));
 
     await boot(1234);
 
     const loaded = getBests();
-    assert.equal(Object.keys(loaded.lineage).length, 1, "only the stored record's own lineage entry is present");
+    assert.ok(!loaded.runs[normalizeStone(other).hash], "the legacy graveyard stone was not re-folded");
     assert.ok(loaded.runs[summary.hash], "the seeded run survived sanitizeBests");
   });
 });

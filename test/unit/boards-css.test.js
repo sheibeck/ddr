@@ -137,6 +137,26 @@ test("CSS (Phase 68): the season label, picker and consent rules exist and carry
   assert.match(STYLE_BLOCK, /\.mw-bd-season-chip\[data-on="1"\]\{/);
 });
 
+test("CSS (Phase 70, D-09): .mw-bd-pick-chip is a 44px-tall target and each .mw-bd-pick-chips row scrolls horizontally", () => {
+  const chip = findRuleBody(".mw-bd-pick-chip");
+  assert.ok(chip, "expected an exact .mw-bd-pick-chip{...} rule");
+  assert.match(chip, /min-height:44px/);
+  assert.match(chip, /white-space:nowrap/);
+  const chips = findRuleBody(".mw-bd-pick-chips");
+  assert.ok(chips, "expected an exact .mw-bd-pick-chips{...} rule");
+  assert.match(chips, /overflow-x:auto/);
+  assert.match(chips, /min-width:0/);
+});
+
+test("CSS (Phase 70, D-09): the picker rules exist, carry no motion, and the on chip is painted in the LINEAGE colour", () => {
+  for (const selector of [".mw-bd-lineage", ".mw-bd-pick", ".mw-bd-pick-label", ".mw-bd-pick-chips", ".mw-bd-pick-chip"]) {
+    const body = findRuleBody(selector);
+    assert.ok(body, `expected an exact ${selector}{...} rule`);
+    assert.doesNotMatch(body, /animation|transition/);
+  }
+  assert.match(STYLE_BLOCK, /\.mw-bd-pick-chip\[data-on="1"\]\{color:#14110c;background:#b9a4ef;box-shadow:inset 0 0 0 1px #b9a4ef\}/);
+});
+
 test("CSS: .mw-bd-row uses touch-action:manipulation", () => {
   const body = findRuleBody(".mw-bd-row");
   assert.ok(body, "expected an exact .mw-bd-row{...} rule");
