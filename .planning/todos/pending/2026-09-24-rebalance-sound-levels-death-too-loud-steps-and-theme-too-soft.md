@@ -31,3 +31,18 @@ Do it in code, not by re-editing the mp3s. That is faster, reversible, and the u
 - Presentation only: no engine, content or parity changes. It fits as a quick task, or as a follow-up plan in v2.0's Phase 70 if the user wants it in this release.
 
 **Answer to "is it easier to do it myself?":** yes and no. Rebalancing the mp3 files by hand in Audacity (Effect → Amplify/Normalize) also works, but it's slower to iterate and has to be redone whenever a clip changes. The per-clip table is a small code change, and after it the user can tune any sound by editing one number.
+
+## Addition (user, 2026-09-24): volume sliders in Settings
+
+"Let's add master, music, and effects volume knobs under the sounds on/off setting. Only show those when sound is on."
+
+- Three sliders sit directly under the Sound On/Off row in the settings sheet: **MASTER**, **MUSIC** and **EFFECTS**. They show only when Sound is On and are hidden entirely when it's Off.
+- Persist them in `ddr.settings.v1` as `volMaster` / `volMusic` / `volEffects`, each 0–100 with a default of 100. Old blobs read the defaults with no migration; update `shell-gear-toolbar`'s settings-key pin.
+- Wiring:
+  - MASTER sets the device's master gain.
+  - MUSIC multiplies `MUSIC_GAIN` on the theme's gain node.
+  - EFFECTS multiplies a new effects bus between the one-shot voices (after `CLIP_GAIN`) and the master.
+- Changes apply live while dragging, including to the theme if it's playing on the title. Nothing new plays when a slider moves: optionally a single `ui-tap` preview when EFFECTS is released.
+- 44px touch targets, the house settings look, text scales with S/M/L. No motion under reduced motion.
+- The per-clip `CLIP_GAIN` table above still sets the default balance between sounds, and the three sliders are the player's own overall control on top of it.
+- Device check: set each slider to 0 and to 100, confirm Sound Off hides the sliders and silences everything, and confirm Sound On brings back the saved levels.
