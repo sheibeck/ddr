@@ -2,6 +2,7 @@
 created: 2026-09-22T22:52:00.000Z
 title: HUD band-1 identity line should show the sub-class, not the full "Race Class (Sub)" text
 area: ui
+resolves_phase: 78
 files:
   - src/browser/hudBands.js:85-94 (identityParts — builds `line` as
     `${raceClass}${subGroup} · Lvl ${level}`, i.e. "Race Class (Sub) · Lvl N")

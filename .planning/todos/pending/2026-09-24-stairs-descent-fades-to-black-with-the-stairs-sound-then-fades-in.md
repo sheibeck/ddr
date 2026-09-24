@@ -2,6 +2,7 @@
 created: 2026-09-24T19:08:42.196Z
 title: Stairs descent fades to black with the stairs sound, then fades in on the new floor
 area: ui
+resolves_phase: 78
 files:
   - mazeworld.html:7691
   - mazeworld.html:7791-7806

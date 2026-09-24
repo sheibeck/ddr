@@ -2,6 +2,7 @@
 created: 2026-09-21T22:35:00.000Z
 title: Table-4 HP dots compound max HP geometrically (54-05 regression)
 area: engine
+resolves_phase: 75
 files:
   - engine/difficulty.js:126-132 (DOT_HP_FRACTION { small 0.24, mid 0.36, large 0.6 } — fractions of the hero's CURRENT maxWP)
   - engine/difficulty.js:444-450 (dotHpFor(kind, maxWP))

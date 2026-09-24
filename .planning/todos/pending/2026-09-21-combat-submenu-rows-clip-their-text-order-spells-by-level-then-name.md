@@ -2,6 +2,7 @@
 created: 2026-09-21T21:00:00.000Z
 title: Combat submenu rows clip their text; order spells by level then name
 area: ui
+resolves_phase: 77
 files:
   - mazeworld.html:644 (.cb-row — padding:10px 11px, min-height:48px)
   - mazeworld.html:647 (.cb-row-label — font-size 7.5px display font, line-height 1.6, overflow:hidden)

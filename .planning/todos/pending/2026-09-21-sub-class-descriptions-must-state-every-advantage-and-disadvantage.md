@@ -2,6 +2,7 @@
 created: 2026-09-21T20:59:00.000Z
 title: Sub-class descriptions must state every advantage and disadvantage
 area: content
+resolves_phase: 79
 files:
   - content/flavor.js:39 (SUB_NOTE — the per-sub blurbs shown on the roller / Hero tab)
   - content/flavor.js:64 (Summoner blurb — never mentions the offense school opening at level 3)

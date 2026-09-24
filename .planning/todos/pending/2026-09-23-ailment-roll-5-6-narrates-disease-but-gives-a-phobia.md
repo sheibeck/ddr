@@ -2,6 +2,7 @@
 created: 2026-09-23T00:30:00.000Z
 title: Ailment rolls 5–6 narrate "Disease" but actually give a phobia
 area: ui
+resolves_phase: 75
 files:
   - content/afflictions.js:13-14 (rows 5 and 6 — kind "Disease", phobia:true, loss null)
   - engine/encounters.js:632-642 (rollAffliction — emits afflictionRolled {roll, kind}, then phobiaAcquired and returns; no disease is applied)

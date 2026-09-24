@@ -2,6 +2,7 @@
 created: 2026-09-24T19:07:39.855Z
 title: Dragging the settings sheet scrubs a volume slider under the finger
 area: ui
+resolves_phase: 78
 files:
   - mazeworld.html:1647-1665
   - mazeworld.html:1939-1960

@@ -2,6 +2,7 @@
 created: 2026-09-23T17:52:30.553Z
 title: Enable R8 code shrinking/obfuscation and evaluate AGP 9 upgrade
 area: tooling
+resolves_phase: 80
 files:
   - android/app/build.gradle:55-62
   - android/app/proguard-rules.pro

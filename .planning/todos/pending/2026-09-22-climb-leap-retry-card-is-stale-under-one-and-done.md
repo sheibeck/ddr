@@ -2,6 +2,7 @@
 created: 2026-09-22T12:10:00.000Z
 title: CLIMB IT retry card is stale under one-and-done — decide pre-roll prompt vs tool-only card
 area: ui
+resolves_phase: 78
 files:
   - mazeworld.html:3673-3695 (the rail "climb" pending card — CLIMB IT / LEAP IT retry label + USE LADDER / USE ROPE when the tool is carried)
   - mazeworld.html:4999-5015 (the pending flag: set on fellClimbing / fellInGorge, presentation-only in window.__mzRail)

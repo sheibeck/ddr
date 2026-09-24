@@ -2,6 +2,7 @@
 created: 2026-09-21T21:58:00.000Z
 title: Red-dot wilmst cache still pays far too much
 area: engine
+resolves_phase: 75
 files:
   - engine/encounters.js:250-262 (WILMST_CACHE_PER_DEPTH = 300 — the Table-4 "wilmst cache" row, a documented TUNING KNOB; flat, no rng)
   - engine/encounters.js:321-333 (the row's gainWilmst(lootFor(300 × depth)) call)

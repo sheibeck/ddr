@@ -2,6 +2,7 @@
 created: 2026-09-23T04:37:49.776Z
 title: Sense Presence should win initiative and lift the dark penalties
 area: engine
+resolves_phase: 75
 files:
   - engine/combat.js:176-205 (resolveInitiative — `c.senses` only waives the forced foe-first rules; the d20s still decide)
   - engine/combat.js:489 (combatInDark event — fires with senses up; "You cannot see what you are fighting.")

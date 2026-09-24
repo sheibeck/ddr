@@ -2,6 +2,7 @@
 created: 2026-09-21T20:58:00.000Z
 title: Scroll read in combat narrates a level refusal although it cast
 area: ui
+resolves_phase: 77
 files:
   - engine/magic.js:636-654 (readScroll — scrollTooAdvanced is pushed when the spell can't be SCRIBED, then the free cast proceeds)
   - src/browser/narrationLines.js:1473 (scrollTooAdvanced line: "X needs level N; you are M." — reads as a refusal)

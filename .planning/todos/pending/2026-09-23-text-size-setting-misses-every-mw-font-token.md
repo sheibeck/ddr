@@ -2,6 +2,7 @@
 created: 2026-09-23T10:00:00.000Z
 title: Text-size setting misses every --mw-font-* token
 area: ui
+resolves_phase: 78
 files:
   - mazeworld.html:124-140 (:root declares --mw-text-scale:1 and every --mw-font-* token as calc(<rem> * var(--mw-text-scale)))
   - mazeworld.html:5540 (appEl.style.setProperty("--mw-text-scale", …) — the S/M/L setting is written on #app, not :root)

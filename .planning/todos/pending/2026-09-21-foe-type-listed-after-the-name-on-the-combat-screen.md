@@ -2,6 +2,7 @@
 created: 2026-09-21T21:05:00.000Z
 title: Foe type listed after the name on the combat screen
 area: ui
+resolves_phase: 77
 files:
   - mazeworld.html:2956-2995 (renderFoeCards — `.cb-foe-name` shows only `c.name`)
   - mazeworld.html:3539 (renderFoeCards call — foes view-model built in src/browser/combatPanel.js)

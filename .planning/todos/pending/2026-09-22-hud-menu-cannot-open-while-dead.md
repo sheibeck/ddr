@@ -3,7 +3,7 @@ created: 2026-09-22T23:40:00.000Z
 updated: 2026-09-23
 title: A dead character gets only the Oracle and the DEAD screen (the ☰ menu cannot open while dead)
 area: ui
-resolves_phase: 67
+resolves_phase: 78
 files:
   - mazeworld.html hudMenuEvent (~L4814) — passes `{ encounter: hasActiveEncounter() }` to __mzHudMenu.next
   - src/browser/hudMenu.js hudMenuNext — `toggle` refuses to open while ctx.encounter is truthy (57-05, T-57-17); SETTINGS row is the legacy cog `mw-gear-btn` (L37)

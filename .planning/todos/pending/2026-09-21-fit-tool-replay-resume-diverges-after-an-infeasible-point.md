@@ -2,6 +2,7 @@
 created: 2026-09-21T21:32:00.000Z
 title: Fit tool replay-resume diverges after an infeasible point; stdout truncated per block
 area: tooling
+resolves_phase: 80
 files:
   - tools/fit-difficulty.mjs:340-355 (evaluate — replay reuses a logged row only if the nth candidate's dials match; the logged row is read back with `score: null` where the live run had `+Infinity`)
   - tools/lib/fit-score.mjs:268-282 (applyStep) and tools/fit-difficulty.mjs:188-215 (runSearch — the walk's next step depends on the previous row's score/feasibility)

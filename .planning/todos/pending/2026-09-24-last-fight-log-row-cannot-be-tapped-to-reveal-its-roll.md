@@ -2,6 +2,7 @@
 created: 2026-09-24T19:07:39.855Z
 title: Last row of the full fight log cannot be tapped to reveal its roll
 area: ui
+resolves_phase: 77
 files:
   - mazeworld.html:1767-1788
   - mazeworld.html:2056-2075

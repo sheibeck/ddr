@@ -2,6 +2,7 @@
 created: 2026-09-23T18:20:00.000Z
 title: Narrate a destroyed armor piece when new armor replaces it
 area: engine
+resolves_phase: 75
 files:
   - engine/items.js:775-830
   - engine/items.js:975-1040

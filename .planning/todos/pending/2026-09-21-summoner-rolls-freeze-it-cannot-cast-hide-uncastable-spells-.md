@@ -2,6 +2,7 @@
 created: 2026-09-21T20:50:00.000Z
 title: Summoner rolls Freeze it cannot cast; hide uncastable spells in combat
 area: engine
+resolves_phase: 75
 files:
   - content/mu-chart.js:31-34 (Summoner — `gate: { offense: 3 }`: the offense school opens at level 3)
   - content/spells.js:87 (Freeze — offense, lvl 1, thrown)

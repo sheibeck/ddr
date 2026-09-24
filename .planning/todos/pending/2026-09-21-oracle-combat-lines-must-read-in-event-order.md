@@ -2,6 +2,7 @@
 created: 2026-09-21T21:50:00.000Z
 title: Oracle combat lines must read in event order, not priority order
 area: ui
+resolves_phase: 77
 files:
   - src/browser/narrationLines.js:63-67 (PRIORITY — block 0 / you 1 / them 2 / feature 3 / other 4)
   - src/browser/narrationLines.js:966 (the fold sorts lines by priority, then idx — time order is the tiebreak, not the key)

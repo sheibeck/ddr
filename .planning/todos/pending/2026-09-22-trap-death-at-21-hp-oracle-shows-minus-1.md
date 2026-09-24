@@ -2,6 +2,7 @@
 created: 2026-09-22T23:45:00.000Z
 title: Trap on floor 2 killed a 21-HP Elven Ninja while the Oracle showed -1 HP
 area: engine-or-display (investigate first — /gsd-debug)
+resolves_phase: 75
 files:
   - mazeworld.html paint() / the 58-06 combat-beat HUD deferral (HUD paint waits for the beat's end)
   - engine trap resolution + its narration (EVENT_NARRATION / eventNarration.js)

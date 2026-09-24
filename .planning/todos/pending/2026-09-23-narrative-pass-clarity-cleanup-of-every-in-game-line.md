@@ -2,6 +2,7 @@
 created: 2026-09-23T18:48:12.581Z
 title: Narrative pass — clean up every in-game line so it says clearly what happened
 area: content
+resolves_phase: 79
 files:
   - src/browser/narrationLines.js — the Oracle/rail line bank (~1.7k lines)
   - src/browser/eventNarration.js — EVENT_NARRATION event → line mapping (~1.1k lines)
