@@ -39,6 +39,12 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [ ] **ROLL-03**: Every displayed modifier is signed from the player's point of view: "+2 to hit" always means better odds, and "−2" always means worse. This covers item, loot, store and find comparisons, the hero sheet, spell and ability text, condition chips and the fight log's need breakdown. The same modifier never shows opposite signs on two surfaces.
 - [ ] **ROLL-04**: The rules text, `content/` descriptions and narration that encode roll direction ("1–N", "need N", "natural 1", "−3 on to-hit") are rewritten to the bigger-is-better reading, and a doc-synced test pins that no roll-under phrasing remains in player-facing strings.
 
+### Leaderboards (BOARD) — device report 2026-09-24, v2.0 build
+
+- [ ] **BOARD-09**: On the global boards, the signed-in player's own score is tagged **YOU**, never FRIEND, in both the All and Friends scopes. Today the row is tagged "FRIEND" because `you` is set only when the score's `playerId` equals the signed-in id (`globalBoards.js:80`) and that match fails on device. Root-cause the id mismatch; don't paper over it.
+- [ ] **BOARD-10**: When the player's own score is already inside the shown top ten, the "not in the top ten / your best run" standing card does not appear. It appears only when the player is ranked but off the visible list. (Device: sole entry, rank #1, shown twice.)
+- [ ] **BOARD-11**: When signed in with Compete ON, the Leaderboards panel opens on **ALL**. Today it defaults to `"local"` (`boardsView.js:911`), so neither ALL nor FRIENDS is selected. Signed out or Compete OFF keeps the local view.
+
 ### Darkness (DARK) — backlog 999.8
 
 - [ ] **DARK-01**: One shared darkness-waiver predicate drives both `revealRadius` and `mapViewRadius`. A lit torch, the Amulet or Night Vision widens what you reveal as you walk as well as what is rendered.
@@ -106,7 +112,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 
-**Coverage:** 38 requirements. Mapped: 0 (the roadmapper fills this).
+**Coverage:** 41 requirements. Mapped: 0 (the roadmapper fills this).
 
 ---
 *Requirements defined: 2026-09-24*
