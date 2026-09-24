@@ -17,7 +17,7 @@ import url from "node:url";
 
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { createAccountController } from "../../src/browser/accountChip.js";
-import { accountCard, accountChipView, accountSheetView } from "../../src/browser/account.js";
+import { accountCard, accountChipView, accountSheetView, accountMenuView } from "../../src/browser/account.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -149,12 +149,30 @@ function make({ settingsInit = {}, timeoutMs, provider } = {}) {
 
 // ─── the API shape ───────────────────────────────────────────────────────
 
-test("createAccountController returns a frozen API with the nine methods", () => {
+test("createAccountController returns a frozen API with the ten methods (Phase 70 adds menuView)", () => {
   const { ctl } = make();
   assert.ok(Object.isFrozen(ctl));
-  for (const m of ["boot", "signIn", "setCompete", "stopCompeting", "state", "identity", "chipView", "sheetView", "subscribe"]) {
+  const keys = ["boot", "signIn", "setCompete", "stopCompeting", "state", "identity", "chipView", "sheetView", "menuView", "subscribe"];
+  for (const m of keys) {
     assert.equal(typeof ctl[m], "function", m);
   }
+  assert.deepStrictEqual(Object.keys(ctl).sort(), [...keys].sort());
+});
+
+test("menuView (Phase 70 D-03): equals accountMenuView(state()) before boot, signed in and with Compete OFF", async () => {
+  const { ctl, provider } = make();
+  assert.deepEqual(ctl.menuView(), accountMenuView(ctl.state()));
+  assert.equal(ctl.menuView().face, "menu");
+  await ctl.boot();
+  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
+  await flush();
+  assert.equal(ctl.state().status, "signedIn");
+  assert.deepEqual(ctl.menuView(), accountMenuView(ctl.state()));
+  assert.equal(ctl.menuView().face, "avatar");
+  assert.equal(ctl.menuView().label, "Menu — signed in as Hilda Ferrow");
+  ctl.stopCompeting();
+  assert.deepEqual(ctl.menuView(), accountMenuView(ctl.state()));
+  assert.equal(ctl.menuView().face, "menu");
 });
 
 test("before boot: the state is pending with Compete ON, and the chip shows the pending face", () => {

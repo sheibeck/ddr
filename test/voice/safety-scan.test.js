@@ -82,6 +82,8 @@ import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, NEW_BES
 import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../content/placement.js";
 // Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy joins the same walk.
 import { ACCOUNT_COPY } from "../../content/account.js";
+// Phase 70 (D-06): the ☰ menu's Save & quit / Abandon row copy joins the same walk.
+import { HUD_MENU_QUIT_COPY } from "../../src/browser/hudMenu.js";
 import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
 import { NAMES } from "../../content/names.js";
@@ -430,6 +432,14 @@ function collectAuthoredStrings() {
       else if (v && typeof v === "object") walkAccountCopy(v, label);
     }
   })(ACCOUNT_COPY, "ACCOUNT_COPY");
+  // Phase 70 (D-06): the ☰ quit-row copy, same recursive string-leaf walk.
+  (function walkQuitCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkQuitCopy(v, label);
+    }
+  })(HUD_MENU_QUIT_COPY, "HUD_MENU_QUIT_COPY");
   // Phase 68 (PLACE-01/02): the global standing quips, the rank-quip bank,
   // the deferred rail card and the season-drop line, same recursive walk.
   for (const [bankName, bank] of [

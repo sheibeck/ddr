@@ -11,6 +11,13 @@
 // welcome card is the first-sign-in notice (D-04); the failed card covers a
 // failed or declined sign-in (D-11). Both are rail cards, never modals.
 //
+// Phase 70 (POLISH-02): in play, the ☰ menu button now wears the account face
+// (70 D-03): the initials avatar when signed in, the plain ☰ otherwise, with
+// menuLabel as its accessible label. The dropdown carries the ACCOUNT block
+// (identity, action, helper line, Compete; no title and no Settings row). The
+// title keeps its own chip and account sheet (70 D-04). The failed card now
+// points at "the menu in the corner", since the band-2 face it named is gone.
+//
 // `content/` holds pure data only: the `{name}` placeholder below is filled
 // by src/browser/account.js, never here.
 
@@ -23,6 +30,12 @@ export const ACCOUNT_COPY = Object.freeze({
     signedOut: "Play Games account: nobody signed in",
     pending: "Play Games account: signing in",
     off: "Play Games account: Compete is off",
+  }),
+  // Phase 70 (D-03): the ☰ menu button's accessible label — naming the
+  // player when signed in, plain otherwise.
+  menuLabel: Object.freeze({
+    signedIn: "Menu — signed in as {name}",
+    plain: "Menu",
   }),
   sheet: Object.freeze({
     title: "PLAY GAMES",
@@ -51,7 +64,7 @@ export const ACCOUNT_COPY = Object.freeze({
     }),
     failed: Object.freeze({
       title: "PLAY GAMES DID NOT ANSWER",
-      line: "Sign-in failed, or was declined. You stay unrecorded and fully playable. Try again, or turn Compete off, from the little face in the corner.",
+      line: "Sign-in failed, or was declined. You stay unrecorded and fully playable. Try again, or turn Compete off, from the menu in the corner.",
     }),
   }),
 });

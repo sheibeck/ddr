@@ -9,7 +9,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { HUD_MENU_ITEMS, HUD_MENU_EVENTS, hudMenuNext } from "../../src/browser/hudMenu.js";
+import {
+  HUD_MENU_ITEMS,
+  HUD_MENU_EVENTS,
+  hudMenuNext,
+  HUD_MENU_GLYPH,
+  HUD_MENU_QUIT_COPY,
+  ABANDON_ARM_MS,
+  ABANDON_ROW_EVENTS,
+  abandonRowNext,
+} from "../../src/browser/hudMenu.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -87,4 +96,158 @@ test("purity: the comment-stripped module source contains no document/window/glo
   const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "hudMenu.js"), "utf8");
   const stripped = stripJs(src);
   assert.doesNotMatch(stripped, /\b(document|window|globalThis|setTimeout|localStorage)\b/);
+});
+
+// ─── quit rows (Phase 70 D-06) — the ☰ glyph, the quit-row copy and the
+// two-tap abandon reducer ─────────────────────────────────────────────────
+
+test("quit rows (D-06): HUD_MENU_GLYPH is the ☰ codepoint 9776", () => {
+  assert.equal(HUD_MENU_GLYPH, String.fromCodePoint(9776));
+});
+
+test("quit rows (D-06): HUD_MENU_QUIT_COPY is frozen with the four row labels", () => {
+  assert.ok(Object.isFrozen(HUD_MENU_QUIT_COPY));
+  assert.deepStrictEqual(
+    { ...HUD_MENU_QUIT_COPY },
+    {
+      saveQuit: "SAVE & QUIT",
+      abandon: "ABANDON THIS CHARACTER",
+      armed: "TAP AGAIN TO BURY THEM",
+      newCharacter: "NEW CHARACTER",
+    },
+  );
+});
+
+test("quit rows (D-06): ABANDON_ARM_MS is 3000 and ABANDON_ROW_EVENTS is exactly tap, timeout, close, frozen", () => {
+  assert.equal(ABANDON_ARM_MS, 3000);
+  assert.ok(Object.isFrozen(ABANDON_ROW_EVENTS));
+  assert.deepStrictEqual([...ABANDON_ROW_EVENTS], ["tap", "timeout", "close"]);
+});
+
+test("quit rows (D-06): a tap on a dead hero's row is NEW CHARACTER from either armed state", () => {
+  for (const armed of [true, false]) {
+    assert.deepStrictEqual({ ...abandonRowNext(armed, "tap", { dead: true }) }, { armed: false, act: "newCharacter" });
+    assert.deepStrictEqual(
+      { ...abandonRowNext(armed, "tap", { dead: true, confirm: false }) },
+      { armed: false, act: "newCharacter" },
+    );
+  }
+});
+
+test("quit rows (D-06): confirm on — the first live tap arms, the second abandons", () => {
+  const first = abandonRowNext(false, "tap", { dead: false, confirm: true });
+  assert.deepStrictEqual({ ...first }, { armed: true, act: null });
+  const second = abandonRowNext(first.armed, "tap", { dead: false, confirm: true });
+  assert.deepStrictEqual({ ...second }, { armed: false, act: "abandon" });
+});
+
+test("quit rows (D-06): confirm off — one live tap abandons", () => {
+  assert.deepStrictEqual(
+    { ...abandonRowNext(false, "tap", { dead: false, confirm: false }) },
+    { armed: false, act: "abandon" },
+  );
+});
+
+test("quit rows (D-06): a missing, null, non-object or confirm-less ctx is fail-safe — the first tap only arms", () => {
+  for (const ctx of [undefined, null, 42, "confirm", true, {}, { dead: false }, { confirm: "false" }, { confirm: 0 }]) {
+    assert.deepStrictEqual({ ...abandonRowNext(false, "tap", ctx) }, { armed: true, act: null }, `ctx=${JSON.stringify(ctx)}`);
+  }
+});
+
+test("quit rows (D-06): a hostile ctx (throwing getters, a throwing proxy) never throws and is fail-safe", () => {
+  const hostile = {
+    get confirm() {
+      throw new Error("boom");
+    },
+    get dead() {
+      throw new Error("boom");
+    },
+  };
+  let r;
+  assert.doesNotThrow(() => {
+    r = abandonRowNext(false, "tap", hostile);
+  });
+  assert.deepStrictEqual({ ...r }, { armed: true, act: null });
+  const proxy = new Proxy(
+    {},
+    {
+      get() {
+        throw new Error("trap");
+      },
+    },
+  );
+  assert.doesNotThrow(() => {
+    r = abandonRowNext(false, "tap", proxy);
+  });
+  assert.deepStrictEqual({ ...r }, { armed: true, act: null });
+});
+
+test("quit rows (D-06): timeout, close, unknown and missing kinds disarm from either state", () => {
+  for (const kind of ["timeout", "close", "bogus", undefined, null, 42]) {
+    for (const armed of [true, false]) {
+      assert.deepStrictEqual(
+        { ...abandonRowNext(armed, kind, { dead: false, confirm: true }) },
+        { armed: false, act: null },
+        `kind=${String(kind)} armed=${armed}`,
+      );
+    }
+  }
+});
+
+test("quit rows (D-06): adjacency — a tap after timeout re-arms; only a tap on an armed row abandons", () => {
+  const ctx = { dead: false, confirm: true };
+  let s = abandonRowNext(false, "tap", ctx);
+  assert.equal(s.armed, true);
+  s = abandonRowNext(s.armed, "timeout", ctx);
+  assert.deepStrictEqual({ ...s }, { armed: false, act: null });
+  s = abandonRowNext(s.armed, "tap", ctx);
+  assert.deepStrictEqual({ ...s }, { armed: true, act: null });
+  s = abandonRowNext(s.armed, "close", ctx);
+  assert.deepStrictEqual({ ...s }, { armed: false, act: null });
+  s = abandonRowNext(s.armed, "tap", ctx);
+  s = abandonRowNext(s.armed, "tap", ctx);
+  assert.deepStrictEqual({ ...s }, { armed: false, act: "abandon" });
+});
+
+test("quit rows (D-06): only a strict-true armed value abandons on the next tap", () => {
+  for (const armed of [1, "true", {}, undefined, null]) {
+    assert.deepStrictEqual({ ...abandonRowNext(armed, "tap", { confirm: true }) }, { armed: true, act: null });
+  }
+});
+
+test("quit rows (D-06): totality — always frozen, armed strictly boolean, act in {null, abandon, newCharacter}, never throws", () => {
+  const armeds = [true, false, undefined, null, 1, 0, "true"];
+  const kinds = [...ABANDON_ROW_EVENTS, "bogus", undefined, null, 42];
+  const ctxs = [
+    undefined,
+    null,
+    {},
+    7,
+    { dead: true },
+    { dead: "true" },
+    { confirm: false },
+    { confirm: true },
+    { dead: false, confirm: false },
+  ];
+  for (const armed of armeds) {
+    for (const kind of kinds) {
+      for (const ctx of ctxs) {
+        let r;
+        assert.doesNotThrow(() => {
+          r = abandonRowNext(armed, kind, ctx);
+        });
+        assert.ok(Object.isFrozen(r));
+        assert.equal(typeof r.armed, "boolean");
+        assert.ok([null, "abandon", "newCharacter"].includes(r.act), `act=${String(r.act)}`);
+      }
+    }
+  }
+});
+
+test("quit rows (D-06): the five new names are each exported exactly once", () => {
+  const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "hudMenu.js"), "utf8");
+  for (const name of ["HUD_MENU_GLYPH", "HUD_MENU_QUIT_COPY", "ABANDON_ARM_MS", "ABANDON_ROW_EVENTS", "abandonRowNext"]) {
+    const re = new RegExp(`export\\s+(?:const|function)\\s+${name}\\b`, "g");
+    assert.equal((src.match(re) || []).length, 1, name);
+  }
 });

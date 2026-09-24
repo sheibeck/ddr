@@ -15,8 +15,15 @@ import url from "node:url";
 
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
-import { ACCOUNT_CLASSES, renderAccountChip, renderAccountSheet } from "../../src/browser/accountChip.js";
-import { accountChipView, accountSheetView } from "../../src/browser/account.js";
+import {
+  ACCOUNT_CLASSES,
+  renderAccountChip,
+  renderAccountSheet,
+  renderMenuFace,
+  renderAccountMenu,
+} from "../../src/browser/accountChip.js";
+import { accountChipView, accountSheetView, accountMenuView } from "../../src/browser/account.js";
+import { HUD_MENU_GLYPH } from "../../src/browser/hudMenu.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -313,6 +320,157 @@ test("sheet: a re-render replaces the rows, never duplicating them", () => {
   assert.equal(rows.querySelectorAll(".mw-acct-help").length, 0);
 });
 
+// ─── the ☰ face (Phase 70 D-03) ──────────────────────────────────────────
+
+/** A ☰ button shaped like the shell's static markup: one .mw-hud-menu-face holding the glyph. */
+function freshMenuButton() {
+  const { document } = createRecordingDocument();
+  const button = document.createElement("button");
+  button.className = "mw-hud-menu-btn";
+  button.setAttribute("aria-label", "Menu");
+  const face = document.createElement("span");
+  face.className = "mw-hud-menu-face";
+  face.setAttribute("aria-hidden", "true");
+  face.textContent = HUD_MENU_GLYPH;
+  button.appendChild(face);
+  return { document, button, face };
+}
+
+test("menu face (D-03): the signed-in view reuses .mw-hud-menu-face and paints one initials child on the hashed colour", () => {
+  const { button, face } = freshMenuButton();
+  const view = accountMenuView(STATES.signedIn);
+  renderMenuFace(button, view);
+  assert.equal(button.children.length, 1, "no face is added");
+  assert.strictEqual(button.children[0], face);
+  assert.equal(face.dataset.state, "avatar");
+  assert.equal(face.getAttribute("aria-hidden"), "true");
+  assert.equal(face.children.length, 1);
+  assert.ok(hasClass(face.children[0], "mw-acct-initials"));
+  assert.equal(face.children[0].textContent, view.initials);
+  assert.equal(face.style.background, view.bg);
+  assert.ok(view.bg);
+  assert.equal(button.getAttribute("aria-label"), "Menu — signed in as Hilda Ferrow");
+});
+
+test("menu face (D-03): the plain view on the same element shows only the ☰ text, clears the background and labels Menu", () => {
+  const { button, face } = freshMenuButton();
+  renderMenuFace(button, accountMenuView(STATES.signedIn));
+  for (const status of ["signedOut", "pending", "off"]) {
+    renderMenuFace(button, accountMenuView(STATES[status]));
+    assert.strictEqual(button.querySelector(".mw-hud-menu-face"), face);
+    assert.equal(face.dataset.state, "menu");
+    assert.equal(face.getAttribute("aria-hidden"), "true");
+    assert.equal(face.children.filter((c) => c.nodeType !== 3).length, 0, `${status}: no element children`);
+    assert.equal(face.textContent, HUD_MENU_GLYPH);
+    assert.equal(face.style.background, "");
+    assert.equal(button.getAttribute("aria-label"), "Menu");
+    // and back to the avatar again
+    renderMenuFace(button, accountMenuView(STATES.signedIn));
+    assert.equal(face.dataset.state, "avatar");
+    assert.equal(face.querySelectorAll(".mw-acct-initials").length, 1);
+  }
+});
+
+test("menu face: a null button, a null view or a button with no .mw-hud-menu-face is a no-op that creates nothing", () => {
+  assert.doesNotThrow(() => renderMenuFace(null, accountMenuView(STATES.signedIn)));
+  assert.doesNotThrow(() => renderMenuFace(undefined, accountMenuView(STATES.signedIn)));
+  const { button, face } = freshMenuButton();
+  assert.doesNotThrow(() => renderMenuFace(button, null));
+  assert.equal(face.dataset.state, undefined);
+  assert.equal(button.getAttribute("aria-label"), "Menu");
+  const bare = freshButton().button;
+  bare.setAttribute("aria-label", "Menu");
+  assert.doesNotThrow(() => renderMenuFace(bare, accountMenuView(STATES.signedIn)));
+  assert.equal(bare.children.length, 0, "nothing is created");
+  assert.equal(bare.getAttribute("aria-label"), "Menu", "the label is left alone");
+});
+
+// ─── the ACCOUNT block in the ☰ dropdown (Phase 70 D-04) ─────────────────
+
+function freshHost() {
+  const { document } = createRecordingDocument();
+  return { document, host: document.createElement("div") };
+}
+
+const firstClass = (c) => (c.className || "").split(/\s+/)[0];
+
+test("account menu (D-04): each status draws identity, the action when present, help when present, then Compete — no title, no Settings", () => {
+  const expected = {
+    signedIn: ["mw-acct-id", "mw-acct-action", "mw-acct-help", "mw-acct-row"],
+    signedOut: ["mw-acct-id", "mw-acct-action", "mw-acct-row"],
+    pending: ["mw-acct-id", "mw-acct-action", "mw-acct-row"],
+    off: ["mw-acct-id", "mw-acct-help", "mw-acct-row"],
+  };
+  for (const [status, order] of Object.entries(expected)) {
+    const { host } = freshHost();
+    const view = accountSheetView(STATES[status]);
+    renderAccountMenu(host, view, {});
+    assert.deepEqual(host.children.map(firstClass), order, status);
+    assert.equal(host.querySelector(".mw-acct-settings"), null, `${status}: no Settings row`);
+    assert.equal(host.querySelector(".mw-acct-name").textContent, view.identity.name);
+    assert.equal(host.querySelector(".mw-acct-status").textContent, view.identity.status);
+    for (const c of host.children) assert.notEqual(c.textContent, view.title, `${status}: no title row`);
+  }
+});
+
+test("account menu (D-04): signIn → onSignIn, stopCompeting → onStopCompeting, options → onCompete(value)", () => {
+  const h = { onSignIn: spy(), onStopCompeting: spy(), onCompete: spy(), onSettings: spy() };
+  const { host } = freshHost();
+  renderAccountMenu(host, accountSheetView(STATES.signedOut), h);
+  host.querySelector(".mw-acct-action").onclick();
+  assert.equal(h.onSignIn.calls.length, 1);
+  const opts = host.querySelectorAll(".mw-acct-opt");
+  opts[0].onclick();
+  opts[1].onclick();
+  assert.deepEqual(h.onCompete.calls, [[true], [false]]);
+  renderAccountMenu(host, accountSheetView(STATES.signedIn), h);
+  host.querySelector(".mw-acct-action").onclick();
+  assert.equal(h.onStopCompeting.calls.length, 1);
+  assert.equal(h.onSignIn.calls.length, 1);
+  assert.equal(h.onSettings.calls.length, 0);
+});
+
+test("account menu: a pending or disabled action calls nothing; missing handlers never throw", () => {
+  const h = { onSignIn: spy(), onStopCompeting: spy(), onCompete: spy() };
+  const { host } = freshHost();
+  renderAccountMenu(host, accountSheetView(STATES.pending), h);
+  const pending = host.querySelector(".mw-acct-action");
+  assert.equal(pending.disabled, true);
+  if (typeof pending.onclick === "function") pending.onclick();
+  const view = { ...accountSheetView(STATES.signedOut), action: { id: "signIn", label: "SIGN IN", disabled: true } };
+  renderAccountMenu(host, view, h);
+  const disabled = host.querySelector(".mw-acct-action");
+  if (typeof disabled.onclick === "function") disabled.onclick();
+  assert.equal(h.onSignIn.calls.length, 0);
+  assert.equal(h.onStopCompeting.calls.length, 0);
+
+  for (const status of Object.keys(STATES)) {
+    for (const handlers of [undefined, null, {}]) {
+      const { host: bare } = freshHost();
+      assert.doesNotThrow(() => renderAccountMenu(bare, accountSheetView(STATES[status]), handlers));
+      for (const btn of [bare.querySelector(".mw-acct-action"), ...bare.querySelectorAll(".mw-acct-opt")]) {
+        if (btn && typeof btn.onclick === "function") assert.doesNotThrow(() => btn.onclick());
+      }
+    }
+  }
+});
+
+test("account menu: a re-render replaces the rows, never duplicating them; a null host or view is a no-op", () => {
+  const { host } = freshHost();
+  renderAccountMenu(host, accountSheetView(STATES.signedIn), {});
+  renderAccountMenu(host, accountSheetView(STATES.signedIn), {});
+  renderAccountMenu(host, accountSheetView(STATES.signedOut), {});
+  assert.equal(host.querySelectorAll(".mw-acct-id").length, 1);
+  assert.equal(host.querySelectorAll(".mw-acct-action").length, 1);
+  assert.equal(host.querySelectorAll(".mw-acct-row").length, 1);
+  assert.equal(host.querySelectorAll(".mw-acct-help").length, 0);
+  assert.doesNotThrow(() => renderAccountMenu(null, accountSheetView(STATES.signedIn), {}));
+  assert.doesNotThrow(() => renderAccountMenu(undefined, accountSheetView(STATES.signedIn), {}));
+  const before = host.children.length;
+  assert.doesNotThrow(() => renderAccountMenu(host, null, {}));
+  assert.equal(host.children.length, before, "a null view leaves the rows alone");
+});
+
 // ─── the class contract ──────────────────────────────────────────────────
 
 test("ACCOUNT_CLASSES is the frozen, pinned list (identical to 67-05's account-layout RENDERER_CLASSES)", () => {
@@ -338,6 +496,17 @@ test("ACCOUNT_CLASSES completeness: every class emitted across four sheet states
     const { button } = freshButton();
     renderAccountChip(button, accountChipView(STATES[status]));
     for (const child of button.children) classesUnder(child, emitted);
+  }
+  // Phase 70 (D-03/D-04): the ☰ ACCOUNT block and the ☰ face's children
+  // emit only listed classes too (the .mw-hud-menu-face itself is the
+  // shell's static markup, not a renderer emission).
+  for (const status of Object.keys(STATES)) {
+    const { host } = freshHost();
+    renderAccountMenu(host, accountSheetView(STATES[status]), {});
+    for (const child of host.children) classesUnder(child, emitted);
+    const { face, button } = freshMenuButton();
+    renderMenuFace(button, accountMenuView(STATES[status]));
+    for (const child of face.children) if (child.nodeType !== 3) classesUnder(child, emitted);
   }
   // "active" is a state modifier on .mw-acct-opt, not a contract class.
   emitted.delete("active");
@@ -367,4 +536,7 @@ test("source pins: the renderer exports are present exactly once", () => {
   assert.equal((MODULE_SRC.match(/export const ACCOUNT_CLASSES/g) || []).length, 1);
   assert.equal((MODULE_SRC.match(/export function renderAccountChip/g) || []).length, 1);
   assert.equal((MODULE_SRC.match(/export function renderAccountSheet/g) || []).length, 1);
+  // Phase 70 (D-03/D-04): the ☰ face and ACCOUNT-block renderers.
+  assert.equal((MODULE_SRC.match(/export function renderMenuFace\b/g) || []).length, 1);
+  assert.equal((MODULE_SRC.match(/export function renderAccountMenu\b/g) || []).length, 1);
 });

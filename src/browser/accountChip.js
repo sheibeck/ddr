@@ -18,6 +18,12 @@
 // from src/browser/playGames.js), so this module never names the plugin.
 // There is no window/document global, no storage except through the injected
 // settings functions, and no network.
+//
+// Phase 70 (POLISH-02, D-03/D-04): the ☰ menu button wears the account face
+// (renderMenuFace, painting the shell's own .mw-hud-menu-face) and its
+// dropdown carries the ACCOUNT block (renderAccountMenu: the sheet's rows
+// without its title or Settings row, because the ☰ already has SETTINGS).
+// The controller adds menuView(). The title keeps its chip and sheet.
 
 import {
   ACCOUNT_STATUS,
@@ -26,13 +32,16 @@ import {
   accountIdentity,
   accountChipView,
   accountSheetView,
+  accountMenuView,
 } from "./account.js";
 
 /**
  * ACCOUNT_CLASSES — every class name the renderers emit. 67-05's CSS test
  * (test/unit/account-layout.test.js) pins this exact list and asserts each
  * has a rule. The "active" modifier on .mw-acct-opt is a state, not part of
- * the contract.
+ * the contract. Phase 70's menu renderers (renderMenuFace, renderAccountMenu)
+ * emit only classes already listed here; the .mw-hud-menu-face they paint is
+ * the shell's static markup, never created by a renderer.
  */
 export const ACCOUNT_CLASSES = Object.freeze([
   "mw-acct-face",
@@ -166,6 +175,52 @@ export function renderAccountSheet({ rows, title } = {}, view, handlers = {}) {
   rows.replaceChildren(...children);
 }
 
+/**
+ * renderMenuFace(button, view) — paints the ☰ button's face from an
+ * accountMenuView (Phase 70 D-03). Repaints only the button's existing
+ * .mw-hud-menu-face (the shell's static markup) and the button's aria-label;
+ * a null button, a null view or a button without that face is a no-op that
+ * creates nothing. "avatar" gets one .mw-acct-initials child on an inline
+ * background; "menu" gets the ☰ glyph as plain text with no background.
+ */
+export function renderMenuFace(button, view) {
+  if (!button || !view) return;
+  const face = button.querySelector(".mw-hud-menu-face");
+  if (!face) return;
+  const doc = button.ownerDocument;
+  face.dataset.state = String(view.face ?? "");
+  face.setAttribute("aria-hidden", "true");
+  if (view.face === "avatar") {
+    face.replaceChildren(el(doc, "span", "mw-acct-initials", String(view.initials ?? "")));
+    face.style.background = String(view.bg ?? "");
+  } else {
+    face.replaceChildren();
+    face.textContent = String(view.glyph ?? "");
+    face.style.background = "";
+  }
+  button.setAttribute("aria-label", String(view.label ?? ""));
+}
+
+/**
+ * renderAccountMenu(host, view, handlers = {}) — the ACCOUNT block inside
+ * the ☰ dropdown (Phase 70 D-04), from an accountSheetView. Replaces the
+ * host's children on every call with the identity block, the one action the
+ * view allows, the helper line when present and the Compete ON/OFF toggle.
+ * Deliberately no title and no Settings row: the ☰ already has SETTINGS.
+ * Handlers (all optional): onSignIn, onStopCompeting, onCompete(value). A
+ * null host or view is a no-op.
+ */
+export function renderAccountMenu(host, view, handlers = {}) {
+  if (!host || !view) return;
+  const h = handlers || {};
+  const doc = host.ownerDocument;
+  const children = [buildIdentity(doc, view.identity || {})];
+  if (view.action) children.push(buildAction(doc, view.action, h));
+  if (typeof view.help === "string" && view.help) children.push(el(doc, "p", "mw-acct-help", view.help));
+  children.push(buildCompete(doc, view.compete || {}, h));
+  host.replaceChildren(...children);
+}
+
 // ═══════════════════════ Task 2: the controller ═══════════════════════════
 
 /** Read one field of an arbitrary value; a hostile getter reads as undefined. */
@@ -193,8 +248,8 @@ function field(obj, key) {
  *             attempt has none: the player is looking at Google's prompt.
  *
  * Returns a frozen { boot, signIn, setCompete, stopCompeting, state,
- * identity, chipView, sheetView, subscribe }. No method ever throws or
- * rejects.
+ * identity, chipView, sheetView, menuView, subscribe }. No method ever
+ * throws or rejects. menuView() (Phase 70 D-03) is the ☰ face's view.
  *
  * - boot() (D-01/D-02), memoized: reads the settings; with Compete OFF it
  *   shows "off" and touches no provider method at all; with Compete ON it
@@ -407,6 +462,7 @@ export function createAccountController({
     identity: () => accountIdentity(current),
     chipView: () => accountChipView(current),
     sheetView: () => accountSheetView(current),
+    menuView: () => accountMenuView(current),
     subscribe,
   });
 }
