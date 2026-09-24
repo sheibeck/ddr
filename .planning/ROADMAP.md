@@ -123,15 +123,15 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 67-01-PLAN.md — (wave 1, checkpoint) read-only review of the @modbender/capacitor-play-games 0.5.0 tarball plus a blocking-human intake ruling (as-is / patch / stop): its load() initializes the PGS SDK at every launch (D-17, D-13) (PGS-01)
-- [ ] 67-02-PLAN.md — (wave 1) settings gain compete/pgsWelcomed/pgsDevSignedIn; `src/browser/playGames.js` provider seam (lazy native + in-memory fake, no sign-out, reserved Phase 68 methods); `docs/PLAY-GAMES-SETUP.md` console runbook (PGS-01, PGS-02)
-- [ ] 67-03-PLAN.md — (wave 1) `content/account.js` copy and the pure `src/browser/account.js` chip/sheet/card/identity view model, safety-scanned (ACCT-01, ACCT-02)
-- [ ] 67-04-PLAN.md — (wave 1) the Leaderboards identity strip goes live: signed-in avatar/name/PLAY GAMES · SIGNED IN, coming-online notes, `createBoardsPanel`'s injected identity() seam (ACCT-01)
-- [ ] 67-05-PLAN.md — (wave 1) shell markup + CSS: the band-2 chip beside ☰, the title-screen chip, the account bottom sheet, 44×44 faces, z-order over the title, the band-2 width budget (ACCT-01, ACCT-02)
+- [x] 67-01-PLAN.md — (wave 1, checkpoint) read-only review of the @modbender/capacitor-play-games 0.5.0 tarball plus a blocking-human intake ruling (as-is / patch / stop): its load() initializes the PGS SDK at every launch (D-17, D-13) (PGS-01)
+- [x] 67-02-PLAN.md — (wave 1) settings gain compete/pgsWelcomed/pgsDevSignedIn; `src/browser/playGames.js` provider seam (lazy native + in-memory fake, no sign-out, reserved Phase 68 methods); `docs/PLAY-GAMES-SETUP.md` console runbook (PGS-01, PGS-02)
+- [x] 67-03-PLAN.md — (wave 1) `content/account.js` copy and the pure `src/browser/account.js` chip/sheet/card/identity view model, safety-scanned (ACCT-01, ACCT-02)
+- [x] 67-04-PLAN.md — (wave 1) the Leaderboards identity strip goes live: signed-in avatar/name/PLAY GAMES · SIGNED IN, coming-online notes, `createBoardsPanel`'s injected identity() seam (ACCT-01)
+- [x] 67-05-PLAN.md — (wave 1) shell markup + CSS: the band-2 chip beside ☰, the title-screen chip, the account bottom sheet, 44×44 faces, z-order over the title, the band-2 width budget (ACCT-01, ACCT-02)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 67-06-PLAN.md — (wave 2) exact 0.5.0 install with lockfile integrity, WebView vendoring, APP_ID placeholder resource + manifest, the ruling's build-time patch, debug build and Gradle ads/analytics audit (PGS-01)
+- [x] 67-06-PLAN.md — (wave 2) exact 0.5.0 install with lockfile integrity, WebView vendoring, APP_ID placeholder resource + manifest, the ruling's build-time patch, debug build and Gradle ads/analytics audit (PGS-01)
 - [ ] 67-07-PLAN.md — (wave 2) `src/browser/accountChip.js`: chip/sheet renderers and the account controller (silent non-blocking boot, Compete, welcome/failed cards, one attempt at a time) (PGS-02, ACCT-01, ACCT-02)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -348,7 +348,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 |-------|-----------|----------------|--------|-----------|
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
-| 67. Play Games Integration & Account Chip | v2.0 | 0/8 | Planned | - |
+| 67. Play Games Integration & Account Chip | v2.0 | 6/8 | In Progress|  |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/7 | Planned | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
