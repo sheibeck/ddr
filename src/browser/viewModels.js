@@ -7,7 +7,7 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { WEAPONS, ARMORS, BAGS } from "../../content/index.js";
-import { armorSoak, takesBagSlot, gearCompareParts } from "../../engine/derived.js";
+import { armorSoak, takesBagSlot, gearCompareParts, activationFor } from "../../engine/derived.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap } from "../../engine/items.js";
 import { storeBuyRefusal } from "../../engine/economy.js";
 import { upgradeWhyText, UPGRADE_WHY_COPY } from "./upgradeWhy.js";
@@ -179,6 +179,170 @@ export function usableBy(it, c = null) {
   const heroLetter = c.cls === "Fighter" ? "F" : c.cls === "Thief" ? "T" : "M";
   if (!letters.includes(heroLetter)) return USABLE_COPY.heft.replace("{who}", who);
   return usable;
+}
+
+/**
+ * ITEM_STAT_COPY — Phase 71 (POLISH-06, D-04): every label and text
+ * template `itemStatLines` (below) emits — a frozen leaf-string bank like
+ * USABLE_COPY/STORE_ROW_COPY above, walked by the hp-not-wp guard and the
+ * voice safety scan. `label` names each stat (for a screen reader or a
+ * future labelled layout); `text` holds the display templates. Durability
+ * reads "hp", never "WP" (Phase 43 CLAR-01).
+ */
+export const ITEM_STAT_COPY = Object.freeze({
+  label: Object.freeze({
+    damage: "Damage",
+    ar: "Armour rating",
+    wear: "Durability",
+    enchanted: "Enchantment",
+    effect: "Effect",
+    charges: "Charges",
+    slots: "Bag slots",
+    usable: "Usable by",
+  }),
+  text: Object.freeze({
+    bonus: "{lab} +{n}",
+    ar: "AR {n}",
+    wear: "{left}/{max} hp",
+    destroyed: "destroyed",
+    enchanted: "enchanted",
+    charges: "{n}/{max} charges",
+    slots: "{n} slots",
+  }),
+});
+
+/** statLine(key, value, text) — one frozen formatter entry. */
+function statLine(key, value, text) {
+  return Object.freeze({ key, label: ITEM_STAT_COPY.label[key], value, text });
+}
+
+/** heroFor(c) — the hero usableBy may judge against, or null. A sparse or
+ * missing hero (no class/race) reads as "no hero", so usableBy names who CAN
+ * use the item instead of throwing on a missing race row. */
+function heroFor(c) {
+  return c && typeof c === "object" && c.cls && c.race ? c : null;
+}
+
+/**
+ * itemStatLines(item, c = null) — Phase 71 (POLISH-06, D-04): the ONE stat
+ * formatter the store stock rows (src/browser/storeScreen.js) and the Gear
+ * tab's action sheet (src/browser/gearSheet.js) both read, so the two
+ * surfaces can never drift. Display text only — it restates no rule:
+ * legality stays in `usableBy` (reused here, never restated), the upgrade
+ * verdict stays in `lootCompare`, the damage label stays
+ * `WEAPONS[base].lab`, and durability reads `bagArmorText`'s own tolerant
+ * `left ?? wp` rule. Returns a frozen array of frozen
+ * `{ key, label, value, text }` entries in a fixed per-kind order:
+ *   - weapon: damage (`lab`, plus " +N" only when bonus > 0 — never "+0"),
+ *     enchanted (bonus > 0), usable;
+ *   - armor: ar, wear (`left/wp hp`, or "destroyed" at left <= 0),
+ *     enchanted (AR or durability above the ARMORS table row — a warded
+ *     piece, readable from a worn slot too), usable;
+ *   - staff: effect (`txt`), charges (`n/max`, max from the activation
+ *     table), usable;
+ *   - bag: slots (`BAGS[tier].slots`);
+ *   - any other kind with `txt` (cloak, jewel, potion, tool, picks): effect,
+ *     then usable (always empty for these today).
+ * `null`, a non-object, an unknown kind with no `txt`, a weapon whose base
+ * is not in WEAPONS, an armour with no numeric AR, or a bag of an unknown
+ * tier returns `[]`. Pure, no rng, never mutates `item` or `c`, never
+ * throws.
+ */
+export function itemStatLines(item, c = null) {
+  if (!item || typeof item !== "object") return Object.freeze([]);
+  const hero = heroFor(c);
+  const lines = [];
+  const pushUsable = () => {
+    const usable = usableBy(item, hero);
+    if (usable) lines.push(statLine("usable", usable, usable));
+  };
+
+  if (item.kind === "weapon") {
+    const w = WEAPONS[item.base];
+    if (!w) return Object.freeze([]);
+    const bonus = Number.isInteger(item.bonus) && item.bonus > 0 ? item.bonus : 0;
+    const damage = bonus ? ITEM_STAT_COPY.text.bonus.replace("{lab}", w.lab).replace("{n}", bonus) : w.lab;
+    lines.push(statLine("damage", damage, damage));
+    if (bonus) lines.push(statLine("enchanted", bonus, ITEM_STAT_COPY.text.enchanted));
+    pushUsable();
+    return Object.freeze(lines);
+  }
+
+  if (item.kind === "armor") {
+    if (typeof item.ar !== "number") return Object.freeze([]);
+    lines.push(statLine("ar", item.ar, ITEM_STAT_COPY.text.ar.replace("{n}", item.ar)));
+    const left = item.left ?? item.wp;
+    if (typeof left === "number") {
+      const text = left > 0 ? ITEM_STAT_COPY.text.wear.replace("{left}", left).replace("{max}", item.wp) : ITEM_STAT_COPY.text.destroyed;
+      lines.push(statLine("wear", left > 0 ? left : 0, text));
+    }
+    const base = ARMORS.find((a) => a.name === item.armor);
+    if (base && (item.ar > base.ar || (typeof item.wp === "number" && item.wp > base.wp))) {
+      lines.push(statLine("enchanted", item.ar - base.ar, ITEM_STAT_COPY.text.enchanted));
+    }
+    pushUsable();
+    return Object.freeze(lines);
+  }
+
+  if (item.kind === "bag") {
+    const bag = BAGS[item.tier];
+    if (!bag) return Object.freeze([]);
+    lines.push(statLine("slots", bag.slots, ITEM_STAT_COPY.text.slots.replace("{n}", bag.slots)));
+    return Object.freeze(lines);
+  }
+
+  if (typeof item.txt === "string" && item.txt) lines.push(statLine("effect", item.txt, item.txt));
+  if (item.kind === "staff") {
+    const act = activationFor(item);
+    if (act && act.charges !== undefined) {
+      const n = Number.isInteger(item.charges) ? item.charges : act.charges;
+      lines.push(statLine("charges", n, ITEM_STAT_COPY.text.charges.replace("{n}", n).replace("{max}", act.charges)));
+    }
+  }
+  if (!lines.length) return Object.freeze([]);
+  pushUsable();
+  return Object.freeze(lines);
+}
+
+/**
+ * wornItemFor(c, slot) — Phase 71 (POLISH-06, D-04): the item-shaped view
+ * of a WORN slot, so a worn piece formats through the SAME
+ * `itemStatLines` as a bag item. A worn weapon or armour has no item object
+ * on `c` (the engine keeps c.weapon/c.magicWpn and c.armor/c.ar/c.armorMax/
+ * c.armorWP instead), so this adapter mirrors the engine's own
+ * wornWeaponItem/wornArmorItem shapes (engine/items.js, not exported) —
+ * `cls` from the ARMORS row, `left` from c.armorWP — which is exactly the
+ * item the engine hands back on an unequip. Equipping therefore never
+ * changes a stat list except durability wear. The Cloak of Armor's magic
+ * plate is not a worn piece: `armorDisplay(c).worn` decides, so a cloak
+ * with nothing under it reads `null`. cloak/jewelry1/jewelry2 return
+ * `c.worn[slot]` itself. `null` for an empty slot, an unknown slot or a
+ * missing `c`. Pure, never mutates `c`.
+ */
+export function wornItemFor(c, slot) {
+  if (!c || typeof c !== "object") return null;
+  if (slot === "weapon") {
+    if (!c.weapon || !WEAPONS[c.weapon]) return null;
+    return { kind: "weapon", n: c.weapon, base: c.weapon, bonus: c.magicWpn || 0 };
+  }
+  if (slot === "armor") {
+    if (!armorDisplay(c).worn) return null;
+    const base = ARMORS.find((a) => a.name === c.armor);
+    return {
+      kind: "armor",
+      n: c.armor,
+      armor: c.armor,
+      ar: c.ar,
+      wp: c.armorMax,
+      left: c.armorWP,
+      min: c.armorMin,
+      cls: base ? base.cls : "FTM",
+    };
+  }
+  if (slot === "cloak" || slot === "jewelry1" || slot === "jewelry2") {
+    return (c.worn && c.worn[slot]) || null;
+  }
+  return null;
 }
 
 /**

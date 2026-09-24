@@ -22,7 +22,7 @@ import { makeRng } from "../../engine/rng.js";
 import { openStore, storeBuyRefusal } from "../../engine/economy.js";
 import { bagCap, slotItems } from "../../engine/items.js";
 import { WEAPONS, ARMORS } from "../../content/index.js";
-import { storeRowState, STORE_ROW_COPY, lootCompare } from "../../src/browser/viewModels.js";
+import { storeRowState, STORE_ROW_COPY, lootCompare, itemStatLines, armorDisplay } from "../../src/browser/viewModels.js";
 import { renderStoreScreen } from "../../src/browser/storeScreen.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
@@ -290,4 +290,51 @@ test("DOM: renderStoreScreen renders the Spiked Staff row enabled with its compa
 
   assert.equal(swordRow.disabled, true, "the illegal Broadsword row must be disabled");
   assert.ok(swordRow.innerHTML.includes("can't use ("), `expected the Broadsword row to show its can't-use reason, got: ${swordRow.innerHTML}`);
+});
+
+// ─── Phase 71 (POLISH-06, D-04): item rows read the ONE stat formatter ────
+
+function renderRows(c, stock) {
+  const base = newRun(7);
+  const state = { ...base, c, store: { stock, haggle: 1, race: c.race } };
+  const rec = createRecordingDocument();
+  const host = rec.document.createElement("div");
+  renderStoreScreen(host, state, {});
+  return rec.elementsById.get("shelf").children;
+}
+
+test("DOM (Phase 71): an item line's italic segment is itemStatLines' texts joined by ' · ', then the compare line", () => {
+  const c = fixedFighter({ weapon: "Dagger" });
+  const sword = weaponItem("Long Sword");
+  const plate = armorItem("Plate");
+  const [swordRow, plateRow] = renderRows(c, [weaponLine(sword, 200), armorLine(plate, 300)]);
+  for (const [row, item, line] of [[swordRow, sword, weaponLine(sword, 200)], [plateRow, plate, armorLine(plate, 300)]]) {
+    const seg = itemStatLines(item, c).map((l) => l.text).join(" · ");
+    const rs = storeRowState(c, line);
+    const expected = [seg, rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
+    assert.ok(row.innerHTML.includes(`<i>${expected}</i>`), `expected <i>${expected}</i>, got ${row.innerHTML}`);
+  }
+  // Durability reads the formatter's "left/max hp", never the engine's "AR n, wp hp" sub.
+  assert.ok(plateRow.innerHTML.includes(`AR ${plate.ar} · ${plate.wp}/${plate.wp} hp`));
+});
+
+test("DOM (Phase 71, R-07): food, rations, the sealed scroll and the repair row render byte-identically to the pre-Phase-71 composition", () => {
+  const c = fixedFighter({ armor: "Mail", ar: 12, armorWP: 18, armorMax: 30 });
+  const stock = [
+    mkStock("Meal (+15 hp)", 20, "eatRation", { wp: 15 }),
+    mkStock("Rations (+1 ration)", 20, "buyRations", { amount: 1 }),
+    mkStock("Sealed scroll", 900, "buyScroll", null),
+    mkStock("Repair your mail", 20, "repairArmor", null, "12 points at a tenth of its cost each"),
+  ];
+  const rows = renderRows(c, stock);
+  const ad = armorDisplay(c);
+  stock.forEach((item, i) => {
+    // The legacy (Phase 61) composition, restated here as the byte pin.
+    const rs = storeRowState(c, item);
+    const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each` : item.sub;
+    const subText = [sub, rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
+    const expected = `<span class="g-n">${item.n}${subText ? `<i>${subText}</i>` : ""}</span>
+        <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
+    assert.equal(rows[i].innerHTML, expected, item.n);
+  });
 });

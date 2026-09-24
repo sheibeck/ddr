@@ -15,11 +15,16 @@
 // lootCompare/armorDisplay (./viewModels.js) for legality/upgrade text, and
 // gearLockReason (../../engine/items.js) for the combat lock. Pure,
 // null-safe, never mutates state.
+//
+// Phase 71 (POLISH-06, D-04): the sheet also shows the item's full stat
+// list (`stats`), read from viewModels.js#itemStatLines — the ONE formatter
+// the store rows read too — through wornItemFor for a worn slot. The note
+// never repeats a stat the list already shows (R-06).
 
 import { WORN_FAMILY_OF, WORN_KEYS_OF } from "../../engine/derived.js";
 import { gearLockReason } from "../../engine/items.js";
 import { GEAR_COPY, GEAR_WORN_ORDER, gearWornModel, gearBagCardsModel } from "./gearTab.js";
-import { lootCompare, armorDisplay } from "./viewModels.js";
+import { lootCompare, armorDisplay, itemStatLines, wornItemFor } from "./viewModels.js";
 import { LINE_FOR } from "./narrationLines.js";
 
 /**
@@ -78,7 +83,9 @@ export const GEAR_SHEET_COPY = Object.freeze({
  * name mismatch, a bag-free item, a state with no `c`). Every action is
  * `{ key, label, sub, reason, enabled, run, confirm }` — `reason` is `""`
  * when enabled, and equal to `sub` when greyed; `confirm` is true only for
- * DROP. Pure, never mutates `state`.
+ * DROP. Phase 71 (D-04): an additive `stats` — the item's stat texts from
+ * viewModels.js#itemStatLines (a worn slot through wornItemFor), `[]` when
+ * the slot is empty. Pure, never mutates `state`.
  */
 export function gearSheetModel(state, target) {
   if (!target || typeof target !== "object") return null;
@@ -160,7 +167,16 @@ export function gearSheetModel(state, target) {
 
     const label = `${GEAR_COPY.slot[slot]}${GEAR_SHEET_COPY.head.sep}${real ? GEAR_SHEET_COPY.head.worn : GEAR_SHEET_COPY.head.empty}`;
     const title = real || row.filled ? row.name : GEAR_SHEET_COPY.head.nothingWorn;
-    const note = row.note;
+    // Phase 71 (D-04): the worn piece's stats, from the one formatter.
+    const stats = itemStatLines(wornItemFor(c, slot), c).map((l) => l.text);
+    // Phase 71 (R-06): the note never repeats a stat. The weapon note is a
+    // voice line, not a stat, so it stays. Worn armour's note IS its
+    // durability, and a worn cloak/jewel's note IS its effect text — both
+    // now in `stats`, so the note empties; under the Cloak of Armor the note
+    // names the plate that actually counts (armorDisplay's own `sub`)
+    // instead. An empty slot (no stats) keeps its in-voice empty line.
+    let note = row.note;
+    if (stats.length && slot !== "weapon") note = slot === "armor" && armorD.magic ? armorD.sub : "";
     const why = "";
 
     const actions = [];
@@ -209,7 +225,7 @@ export function gearSheetModel(state, target) {
       }
     }
 
-    return { target, label, title, note, why, actions };
+    return { target, label, title, note, why, actions, stats };
   }
 
   // ─── BAG target ──────────────────────────────────────────────────────
@@ -223,7 +239,13 @@ export function gearSheetModel(state, target) {
 
     const label = `${GEAR_SHEET_COPY.head.bag}${GEAR_SHEET_COPY.head.sep}${card.family ? GEAR_COPY.family[card.family] : GEAR_SHEET_COPY.head.fromBag}`;
     const title = card.name;
-    const note = card.desc;
+    // Phase 71 (D-04): the bag item's stats, from the one formatter.
+    const stats = itemStatLines(it, c).map((l) => l.text);
+    // Phase 71 (R-06): the card desc is the item's txt (bagArmorText for
+    // armour) plus its usable-by — exactly what `stats` now carries — so the
+    // note is dropped whenever the stats cover it, and kept only for an item
+    // the formatter has nothing to say about. The Gear tab CARD is unchanged.
+    const note = stats.length ? "" : card.desc;
     const why = cmp && cmp.legal ? cmp.line : "";
 
     const actions = [];
@@ -267,15 +289,19 @@ export function gearSheetModel(state, target) {
       confirm: true,
     });
 
-    return { target, label, title, note, why, actions };
+    return { target, label, title, note, why, actions, stats };
   }
 
   return null;
 }
 
 /**
- * GEAR_SHEET_IDS — the six DOM roots Plan 04's markup declares inside
- * `#mw-gear-sheet`. renderGearSheet only ever reads/writes through these
+ * GEAR_SHEET_IDS — the DOM roots of `#mw-gear-sheet`. Six are declared by
+ * Plan 04's markup (label, title, note, why, actions, cancel). The seventh,
+ * `stats` (Phase 71, D-04), is created by renderGearSheet itself on its
+ * first render — inserted after the note and before the why line inside
+ * `.mw-gsheet-head` — and reused afterwards (R-05: 71-02 makes no
+ * mazeworld.html edit). renderGearSheet only ever reads/writes through these
  * ids (via `doc.getElementById`, never `host.querySelector`), mirroring
  * gearTab.js's own head()/el() id-driven style.
  */
@@ -283,10 +309,29 @@ export const GEAR_SHEET_IDS = Object.freeze({
   label: "mw-gear-sheet-label",
   title: "mw-gear-sheet-title",
   note: "mw-gear-sheet-note",
+  stats: "mw-gear-sheet-stats",
   why: "mw-gear-sheet-why",
   actions: "mw-gear-sheet-actions",
   cancel: "mw-gear-sheet-cancel",
 });
+
+// ensureStatsEl(doc, whyEl) — Phase 71 (D-04, R-05): the stats container,
+// created on the first render (a real document has no such id until then)
+// and inserted before the why line through its parent, so it sits between
+// the note and the why line. Reused on every later render — never a second
+// container. Each stat row reuses the note's own typography class
+// (`mw-gsheet-note`, already scaled by --mw-text-scale) and wraps like it,
+// so the rows reflow at text size L inside the already-scrolling sheet.
+function ensureStatsEl(doc, whyEl) {
+  let el = doc.getElementById(GEAR_SHEET_IDS.stats);
+  if (!el) {
+    el = doc.createElement("div");
+    el.id = GEAR_SHEET_IDS.stats;
+  }
+  if (!el.parentNode && whyEl && whyEl.parentNode) whyEl.parentNode.insertBefore(el, whyEl);
+  el.className = "mw-gsheet-stats";
+  return el;
+}
 
 // Phase 63 (GSCR-10) — the sheet's own DROP tap-again confirm. Mirrors
 // gearTab.js's DROP_CONFIRM_MS/dropConfirmRevert/revertDropConfirm pattern
@@ -412,7 +457,8 @@ function buildActionButton(doc, a, index, deps) {
 /**
  * renderGearSheet(host, state, target, deps) — Plan 02 (GSCR-07..10,
  * GRULE-02): turns `gearSheetModel(state, target)` into the sheet body.
- * Fills GEAR_SHEET_IDS's six roots from the model alone; the renderer
+ * Fills GEAR_SHEET_IDS's roots from the model alone (Phase 71: seven,
+ * the stats container created here on first render); the renderer
  * holds no rule of its own. Returns `false` and touches nothing when the
  * model resolves to null (a vanished target — the shell then closes the
  * sheet). No window/document global; reaches the page only through
@@ -427,10 +473,26 @@ export function renderGearSheet(host, state, target, deps = {}) {
 
   doc.getElementById(GEAR_SHEET_IDS.label).textContent = m.label;
   doc.getElementById(GEAR_SHEET_IDS.title).textContent = m.title;
-  doc.getElementById(GEAR_SHEET_IDS.note).textContent = m.note;
+  const noteEl = doc.getElementById(GEAR_SHEET_IDS.note);
+  noteEl.textContent = m.note;
+  // Phase 71 (R-06): an emptied note (its content now in the stats) hides.
+  noteEl.hidden = !m.note;
   const whyEl = doc.getElementById(GEAR_SHEET_IDS.why);
   whyEl.textContent = m.why;
   whyEl.hidden = !m.why;
+
+  // Phase 71 (D-04): one row per stat, textContent only; a re-render
+  // replaces the rows, and an empty list hides the container.
+  const statsEl = ensureStatsEl(doc, whyEl);
+  statsEl.replaceChildren(
+    ...m.stats.map((text) => {
+      const row = doc.createElement("p");
+      row.className = "mw-gsheet-note mw-gsheet-stat";
+      row.textContent = text;
+      return row;
+    })
+  );
+  statsEl.hidden = !m.stats.length;
 
   doc.getElementById(GEAR_SHEET_IDS.actions).replaceChildren(
     ...m.actions.map((a, index) => buildActionButton(doc, a, index, deps))

@@ -5,8 +5,12 @@
 <div id="mw-gear-sheet-title">
   text="Bracelet of Flight"
 ## #mw-gear-sheet-note
-<div id="mw-gear-sheet-note">
-  text="used, twenty squares of flight when you ask; fifty to catch its breath"
+<div id="mw-gear-sheet-note" hidden>
+  text=""
+## #mw-gear-sheet-stats
+<div id="mw-gear-sheet-stats" class="mw-gsheet-stats">
+  <p class="mw-gsheet-note mw-gsheet-stat">
+    text="used, twenty squares of flight when you ask; fifty to catch its breath"
 ## #mw-gear-sheet-why
 <div id="mw-gear-sheet-why" hidden>
   text=""

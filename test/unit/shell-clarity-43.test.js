@@ -228,9 +228,14 @@ test("Store rows: usable is computed guarded on effectParams.item and rs.showUsa
   const region = storeRegion();
   assert.match(region, /const rs = storeRowState\(c, item\);/);
   assert.match(region, /row\.disabled = rs\.disabled;/);
+  // Phase 71 (D-04): an item line's stats (usable-by included, gated on
+  // rs.showUsable) come from the ONE formatter via storeItemStats; the
+  // separate usable suffix survives only as the fallback for a line the
+  // formatter renders nothing for.
+  assert.match(region, /const stats = item\.effectId === "repairArmor" \? null : storeItemStats\(item, c, rs\.showUsable\);/);
   assert.match(
     region,
-    /const usable = rs\.showUsable && item\.effectParams && item\.effectParams\.item \? usableBy\(item\.effectParams\.item, c\) : "";/,
+    /const usable = !stats && rs\.showUsable && item\.effectParams && item\.effectParams\.item \? usableBy\(item\.effectParams\.item, c\) : "";/,
   );
   assert.match(region, /const subText = \[sub, rs\.compareLine, rs\.reasonText\]\.filter\(Boolean\)\.join\(" · "\);/);
   assert.match(region, /\$\{subText \|\| usable \? `<i>\$\{subText \|\| ""\}\$\{subText && usable \? " " : ""\}\$\{usable\}<\/i>` : ""\}/);

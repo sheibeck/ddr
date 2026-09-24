@@ -29,6 +29,22 @@
 // the in-row Unequip/Bag-full block is gone). The Hero and Store fixtures
 // stay untouched.
 //
+// Phase 71 (POLISH-06, D-04), Plan 02: four declared regenerations, every
+// other fixture byte-identical. The item stat list now comes from ONE
+// formatter (src/browser/viewModels.js#itemStatLines) that the store rows
+// and the Gear sheet share:
+//   - thief.gear-sheet-bag / thief.gear-sheet-worn: SNAPSHOT_IDS.gearSheet
+//     gains the renderer-created #mw-gear-sheet-stats root (one
+//     mw-gsheet-note row per stat), and the jewel's note empties and hides
+//     because its effect text (and usable-by) now sits in the stats, once
+//     (R-06).
+//   - thief-store.store / mu-store.store: every stock line that wraps an
+//     item renders its italic segment from the formatter — armour reads
+//     "AR n · left/max hp" (was the engine's "AR n, wp hp"), the lockpicks
+//     read their item text, and usable-by joins the stats with " · " before
+//     the compare line instead of trailing after it. Food, rations, the
+//     sealed scroll and repair keep their engine sub byte-for-byte (R-07).
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

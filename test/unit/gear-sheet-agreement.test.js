@@ -28,7 +28,7 @@ import { railCardFor } from "../../src/browser/rail.js";
 import { fightLogLinesFor } from "../../src/browser/fightLog.js";
 import { gearSheetModel, GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js";
 import { gearBagCardsModel, GEAR_WORN_ORDER } from "../../src/browser/gearTab.js";
-import { lootCompare } from "../../src/browser/viewModels.js";
+import { lootCompare, itemStatLines, wornItemFor } from "../../src/browser/viewModels.js";
 import { fixedStates } from "./harness/shellSandbox.js";
 
 // ════════════════════════════════════════════════════════════════════════
@@ -331,6 +331,28 @@ test("sweep: every WORN-slot and BAG-card target resolves (gearSheetModel is nev
     [],
     "every target built from GEAR_WORN_ORDER / gearBagCardsModel must resolve",
   );
+});
+
+test("sweep (Phase 71, D-04): every resolved target's stats is an array of non-empty strings, equal to the one formatter's own texts", () => {
+  let targets = 0;
+  for (const [label, state] of SWEEP_STATES) {
+    const c = state.c;
+    const cards = gearBagCardsModel(state);
+    const all = [...GEAR_WORN_ORDER.map((slot) => ({ from: "worn", slot })), ...cards.map((card) => ({ from: "bag", i: card.i, n: card.name }))];
+    for (const target of all) {
+      let model;
+      assert.doesNotThrow(() => {
+        model = gearSheetModel(state, target);
+      }, `${label}/${JSON.stringify(target)}`);
+      assert.ok(model, `${label}/${JSON.stringify(target)} must resolve`);
+      assert.ok(Array.isArray(model.stats), `${label}/${JSON.stringify(target)}: stats must be an array`);
+      for (const s of model.stats) assert.ok(typeof s === "string" && s.length > 0, `${label}/${JSON.stringify(target)}: "${s}"`);
+      const item = target.from === "bag" ? c.items[target.i] : wornItemFor(c, target.slot);
+      assert.deepStrictEqual(model.stats, itemStatLines(item, c).map((l) => l.text), `${label}/${JSON.stringify(target)}`);
+      targets++;
+    }
+  }
+  assert.ok(targets >= 40, `expected at least 40 swept targets, got ${targets}`);
 });
 
 test("sweep: every greyed action's reason is unambiguously combat, bagFull or illegal — no unclassifiable reason", () => {
