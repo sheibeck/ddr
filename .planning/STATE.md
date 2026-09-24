@@ -205,17 +205,16 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-24T01:30:00.000Z
+Last session: 2026-09-24T01:40:00.000Z
 Stopped at: /gsd-autonomous v2.0 run IN PROGRESS (orchestrator resume note, written before a /compact).
 
-- Phase 65 COMPLETE (5/5, 65-VERIFICATION passed, 4297 tests).
-- Phase 66: plans 01-06 merged (4456/4456 green); 66-07 (title entry + Android back) executing in a worktree. After it merges: npm test, roadmap.update-plan-progress 66 66-07, orchestrator-authored 66-VERIFICATION.md (status passed + human_verification list merged from the 66 SUMMARYs), phase.complete 66, commit.
-- AGP 9.3.1 spike running in a worktree; it writes .planning/phases/67-play-games-integration-account-chip/67-AGP9-SPIKE.md with a VERDICT line (ADOPT AGP 9.3.1 / STAY ON AGP 8.13.0) and commits build config only on ADOPT. Merge its branch before Phase 67 wave 2 (67-06 reads the VERDICT).
-- Phase 67 PLANNED (8 plans, 3 waves; 21/21 decisions incl. D-20 plugin as-is + D-02 amended, D-21 AGP spike). 67-01 checkpoint is pre-answered by D-20/D-21 (do not stop). Execute after 66 closes.
-- Phase 68: CONTEXT committed (D-01..D-17); planner running in background (commits plans itself). Then run decision-coverage gate + state.planned-phase.
-- Phase 69: CONTEXT committed (privacy page lives in C:/projects/darktier-studio/src/pages/privacy/apps.astro, reconcile there, commit locally, user deploys; 2.0.0/vc9 AAB built, user uploads; debug APK offered; docs/UAT-v2.0.md).
-- Run conventions: executors in worktrees (sonnet), one Agent per message, merge manually with git merge --no-ff + worktree remove + branch -D (cleanup-wave helper trips on already-removed entries); worktree npm test shows 7 known CRLF doc-ledger failures that pass on master; stall watch = scratchpad wtwatch.sh <label> 30 via Monitor; decision-coverage gate needs D-NN cited under an "## Must haves"/"## Objective" heading; verifier off -> orchestrator writes VERIFICATION per deferred-UAT protocol.
-- Todo captured: loop sfx/theme.mp3 on the title screen (after v2.0 unless the user folds it into 69).
+- Phases 65, 66, 67 COMPLETE (orchestrator VERIFICATION.md each, status passed, human_verification lists for docs/UAT-v2.0.md). Master npm test 4983/4984 — the 1 failure is AUD-06 (user's untracked sfx/theme.mp3; tracked in the theme todo, not a regression).
+- AGP 9.3.1 spike: STAY ON AGP 8.13.0 (67-AGP9-SPIKE.md). Plugin @modbender/capacitor-play-games@0.5.0 installed as-is, no Gradle fix. R8/AGP9 todo updated (AGP 9 blocked upstream by Pgs.kt:144).
+- Phase 68 EXECUTING: 68-01..68-06 merged + roadmap progress updated. 68-07 (shell wiring: queue/listener, flush triggers, rank line __mzPlacement, deferred rail card, season-drop Oracle line, global panel seams, SHELL-MODULES doc) running in a worktree. After it merges: npm test, roadmap.update-plan-progress 68 68-07 complete, write 68-VERIFICATION.md (reqs PGS-03..06, PLACE-01/02; merge human_verification from 68 SUMMARYs), phase.complete 68, commit.
+- Phase 69 next: CONTEXT committed (D-01..D-09). Plan it (gsd-planner opus, decision-coverage gate, state.planned-phase), then execute. Privacy page: C:/projects/darktier-studio/src/pages/privacy/apps.astro (reconcile, commit locally in that repo, user deploys). 2.0.0/vc9 AAB built, user uploads (never upload). Debug APK offered at close. docs/UAT-v2.0.md merges every 65–68 human_verification item; 67's Compete-OFF network capture is release-blocking.
+- Then milestone lifecycle: audit, complete, cleanup; push master + tags (authorized; retry once, never force).
+- Run conventions: executors = gsd-executor in worktrees, one Agent per message; STOP the wtwatch Monitor before each Agent dispatch (its git polling caused 2 "could not verify git identity" worktree failures), re-arm after (scratchpad wtwatch.sh <label> 30). Merge by hand: git merge --no-ff -q, git worktree remove -f -f, prune, branch -D. Leftover locked worktree folders under .claude/worktrees/ are harmless — delete at milestone close. Worktree npm test shows 7 known CRLF doc-ledger failures (pass on master). Don't run state.planned-phase while another phase is executing (it resets Current Position).
+- Backlog 999.9 captured (Play Console edge-to-edge / deprecated window APIs / large-screen orientation). Theme.mp3 todo stays after v2.0.
 
 Resume file: None
 
