@@ -118,7 +118,26 @@ Plans:
   3. The top-bar settings cog becomes an account chip: the Play Games avatar when signed in, a deliberate "nobody" glyph when signed out
   4. Tapping the chip opens a menu offering sign in / sign out, a Compete toggle (off means no submissions and no network calls), and the existing Settings entry
 
-**Plans**: TBD
+**Plans**: 8 plans (3 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 67-01-PLAN.md — (wave 1, checkpoint) read-only review of the @modbender/capacitor-play-games 0.5.0 tarball plus a blocking-human intake ruling (as-is / patch / stop): its load() initializes the PGS SDK at every launch (D-17, D-13) (PGS-01)
+- [ ] 67-02-PLAN.md — (wave 1) settings gain compete/pgsWelcomed/pgsDevSignedIn; `src/browser/playGames.js` provider seam (lazy native + in-memory fake, no sign-out, reserved Phase 68 methods); `docs/PLAY-GAMES-SETUP.md` console runbook (PGS-01, PGS-02)
+- [ ] 67-03-PLAN.md — (wave 1) `content/account.js` copy and the pure `src/browser/account.js` chip/sheet/card/identity view model, safety-scanned (ACCT-01, ACCT-02)
+- [ ] 67-04-PLAN.md — (wave 1) the Leaderboards identity strip goes live: signed-in avatar/name/PLAY GAMES · SIGNED IN, coming-online notes, `createBoardsPanel`'s injected identity() seam (ACCT-01)
+- [ ] 67-05-PLAN.md — (wave 1) shell markup + CSS: the band-2 chip beside ☰, the title-screen chip, the account bottom sheet, 44×44 faces, z-order over the title, the band-2 width budget (ACCT-01, ACCT-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 67-06-PLAN.md — (wave 2) exact 0.5.0 install with lockfile integrity, WebView vendoring, APP_ID placeholder resource + manifest, the ruling's build-time patch, debug build and Gradle ads/analytics audit (PGS-01)
+- [ ] 67-07-PLAN.md — (wave 2) `src/browser/accountChip.js`: chip/sheet renderers and the account controller (silent non-blocking boot, Compete, welcome/failed cards, one attempt at a time) (PGS-02, ACCT-01, ACCT-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 67-08-PLAN.md — (wave 3) shell wiring: provider by platform, both chips, the sheet and back button, rail cards parked until the dungeon is visible, the boards identity seam, docs, and the last-wave debug APK (PGS-02, ACCT-01, ACCT-02)
+
 **Research**: yes — `gsd-phase-researcher` decides the plugin (maintenance, Capacitor 8 / AGP 8.13 compatibility, sign-in API surface), and — folded into this same pass rather than split into Phase 68 — settles the score-tag encoding format and LINEAGE's global form (per-combo boards vs. client-side grouping vs. local-only), since both hinge on the chosen plugin's leaderboard/score-tag API. Phase 68 implements against this phase's decisions with no separate research pass.
 **UI hint**: yes
 
@@ -311,7 +330,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 |-------|-----------|----------------|--------|-----------|
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 5/7 | In Progress|  |
-| 67. Play Games Integration & Account Chip | v2.0 | 0/TBD | Not started | - |
+| 67. Play Games Integration & Account Chip | v2.0 | 0/8 | Planned | - |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
