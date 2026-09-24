@@ -76,6 +76,8 @@ import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 // footnotes, the panel copy bank and the standing-quip bank — join the same
 // walk so they participate in the completeness/load-bearing meta-tests too.
 import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES } from "../../content/boards.js";
+// Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy joins the same walk.
+import { ACCOUNT_COPY } from "../../content/account.js";
 import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
 import { NAMES } from "../../content/names.js";
@@ -416,6 +418,14 @@ function collectAuthoredStrings() {
       else if (v && typeof v === "object") walkBoardCopy(v, label);
     }
   })(STANDING_LINES, "STANDING_LINES");
+  // Phase 67 (ACCT-01/02): ACCOUNT_COPY joins the same recursive string-leaf walk.
+  (function walkAccountCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkAccountCopy(v, label);
+    }
+  })(ACCOUNT_COPY, "ACCOUNT_COPY");
 
   return out;
 }

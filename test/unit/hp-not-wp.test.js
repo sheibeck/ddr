@@ -39,6 +39,8 @@ import {
 // Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy — walked
 // the same way the other COPY objects in banks (below) are.
 import { BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES } from "../../content/boards.js";
+// Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy, walked the same way.
+import { ACCOUNT_COPY } from "../../content/account.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -137,6 +139,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY, UPGRADE_WHY_COPY, STORE_ROW_COPY, GEAR_SHEET_COPY,
     // Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy banks.
     BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES,
+    // Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy.
+    ACCOUNT_COPY,
   };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {
