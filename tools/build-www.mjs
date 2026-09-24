@@ -230,7 +230,7 @@ function copySplash() {
 function copySfx() {
   const src = path.join(ROOT, "sfx");
   if (!existsSync(src)) {
-    throw new Error(`${src} does not exist — expected the 30 delivered one-shot sfx/*.mp3 clips (see src/browser/sfx.js)`);
+    throw new Error(`${src} does not exist — expected the 30 delivered one-shot sfx/*.mp3 clips and the title theme (see CLIP_IDS / MUSIC_IDS in src/browser/sfx.js)`);
   }
   cpSync(src, path.join(WWW, "sfx"), { recursive: true });
   step("copied sfx/ into www/sfx/");

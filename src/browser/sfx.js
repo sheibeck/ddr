@@ -21,9 +21,11 @@
 // module, two passes. Like haptics.js, cosmetic/presentation code here must
 // never throw.
 
-// CLIP_IDS — the 30 delivered clip basenames (no extension), exactly
-// matching every file in sfx/ (and, after build, www/sfx/ via copySfx()).
-// This list is asserted 1:1 against sfx/ by test/unit/sfx-map.test.js AND
+// CLIP_IDS — the 30 one-shot clip basenames (no extension); sfx/ also
+// holds the MUSIC_IDS track (quick task 260924-51h, the title theme — see
+// the section at the bottom of this file). Copied to www/sfx/ via
+// copySfx(). This list is asserted 1:1 against sfx/'s one-shot clips by
+// test/unit/sfx-map.test.js AND
 // against test/unit/sfx-assets.test.js's own manifest (56-01) — two
 // independent pins on the same 30 filenames.
 export const CLIP_IDS = Object.freeze([
@@ -321,9 +323,95 @@ export function clipsForDispatch(actionType, events, ctx, variation = defaultVar
 //                             voice.
 //   close(handle)            -> void                    tear the device down.
 //
+// Plus OPTIONAL methods (quick task 260924-51h). A backend without them
+// simply has no device re-resume and no music, so every existing
+// five-method test fake keeps working unchanged:
+//
+//   resume(handle)                     -> void          wake an open but
+//                             suspended device (called by unlockSfx() on a
+//                             later gesture).
+//   startLoop(handle, trackId, gain)   -> voice|null    start (or restart
+//                             from the top) the looping music track at
+//                             `gain`, relative to the one-shots' master.
+//   resumeLoop(handle, voice)          -> void          make a live loop
+//                             actually sound (resume the device, re-play a
+//                             stalled element) without rewinding it.
+//   fadeOut(handle, voice, ms)         -> void          fade the loop to
+//                             silence over `ms` then pause it; ms <= 0
+//                             pauses at once.
+//
 // Every DEFAULT_BACKEND method individually swallows its own failure and
 // returns null/void instead of propagating a throw — sound is cosmetic
 // polish and must never break a dispatch, matching haptics.js's posture.
+
+// RESUME_WAIT_MS — how long open() waits for ctx.resume() before handing
+// back the (possibly still suspended) device anyway. Quick task 260924-51h
+// opens the device at launch on native with no gesture; if the WebView
+// ever leaves the context suspended, a resume() promise that never settles
+// must not wedge unlockSfx() in flight for the whole session. A suspended
+// device is re-resumed by the next gesture (backend.resume below).
+const RESUME_WAIT_MS = 1000;
+
+function unrefTimer(timer) {
+  // Node's `node --test` only: browser/WebView timer ids are plain numbers.
+  if (timer && typeof timer.unref === "function") timer.unref();
+  return timer;
+}
+
+function wakeContext(ctx) {
+  try {
+    if (ctx && ctx.state === "suspended" && typeof ctx.resume === "function") {
+      Promise.resolve(ctx.resume()).catch(() => {});
+    }
+  } catch {
+    // never throw.
+  }
+}
+
+// The music element helpers (quick task 260924-51h). `voice` is the
+// per-device music record `{ trackId, el, source, gainNode, pauseTimer }`.
+function clearPauseTimer(voice) {
+  if (voice && voice.pauseTimer) {
+    clearTimeout(voice.pauseTimer);
+    voice.pauseTimer = null;
+  }
+}
+
+function pauseElement(el) {
+  try {
+    el?.pause?.();
+  } catch {
+    // never throw.
+  }
+}
+
+function playElement(handle, voice) {
+  wakeContext(handle?.ctx);
+  try {
+    const p = voice.el.play();
+    // Autoplay/unlock refusals stay silent: a later gesture nudges the
+    // loop again (resumeLoop).
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {
+    // never throw.
+  }
+}
+
+function setMusicLevel(handle, voice, gain) {
+  try {
+    const param = voice.gainNode?.gain;
+    if (param) {
+      const now = handle?.ctx?.currentTime ?? 0;
+      param.cancelScheduledValues(now);
+      param.setValueAtTime(gain, now);
+    } else {
+      voice.el.volume = gain;
+    }
+  } catch {
+    // never throw.
+  }
+}
+
 const DEFAULT_BACKEND = {
   async open() {
     try {
@@ -335,12 +423,130 @@ const DEFAULT_BACKEND = {
         ctx = new window.webkitAudioContext();
       }
       if (!ctx) return null;
-      if (typeof ctx.resume === "function") await ctx.resume();
+      if (typeof ctx.resume === "function") {
+        let timer = null;
+        try {
+          await Promise.race([
+            Promise.resolve(ctx.resume()).catch(() => {}),
+            new Promise((resolve) => {
+              timer = unrefTimer(setTimeout(resolve, RESUME_WAIT_MS));
+            }),
+          ]);
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      }
       const masterGain = ctx.createGain();
       masterGain.connect(ctx.destination);
       return { ctx, masterGain };
     } catch {
       return null;
+    }
+  },
+
+  resume(handle) {
+    wakeContext(handle?.ctx);
+  },
+
+  // Quick task 260924-51h, ORCHESTRATOR OVERRIDE: the theme is STREAMED
+  // through one HTMLAudioElement, never decodeAudioData'd whole (about
+  // 145 s of stereo would decode to roughly 50 MB of PCM per title visit).
+  // The element is created lazily on the first start (preload set only
+  // then — always after a gesture or, on native, after first paint), with
+  // loop = true and the same relative ./sfx/<id>.mp3 path the clips use (no
+  // fetch call of its own, per the offline gate). It is routed ONCE through
+  // ctx.createMediaElementSource(el) -> a music GainNode at `gain` -> the
+  // device's masterGain, so it shares the Sound gate, the master level and
+  // the teardown with the one-shots. createMediaElementSource may only be
+  // called once per element, so the element and its source node are kept
+  // on the device handle for reuse across title visits; a new device (after
+  // Sound Off/On) gets a fresh element. If the graph is unavailable, the
+  // bare element plays at el.volume = gain and stops without a fade.
+  startLoop(handle, trackId, gain) {
+    try {
+      if (!handle) return null;
+      let voice = handle.music;
+      if (!voice || voice.trackId !== trackId) {
+        const AudioCtor = globalThis.Audio;
+        if (typeof AudioCtor !== "function") return null;
+        const el = new AudioCtor();
+        el.loop = true;
+        el.preload = "auto";
+        el.src = `./sfx/${trackId}.mp3`;
+        voice = { trackId, el, source: null, gainNode: null, pauseTimer: null };
+        const ctx = handle.ctx;
+        if (ctx && typeof ctx.createMediaElementSource === "function") {
+          try {
+            voice.source = ctx.createMediaElementSource(el);
+            const out = handle.masterGain || ctx.destination;
+            try {
+              const gainNode = ctx.createGain();
+              voice.source.connect(gainNode);
+              gainNode.connect(out);
+              voice.gainNode = gainNode;
+            } catch {
+              // no gain node: the source still has to reach the output, or
+              // the captured element would be silent.
+              voice.source.connect(out);
+            }
+          } catch {
+            voice.source = null;
+            voice.gainNode = null;
+          }
+        }
+        handle.music = voice;
+      }
+      clearPauseTimer(voice);
+      setMusicLevel(handle, voice, gain);
+      try {
+        voice.el.currentTime = 0;
+      } catch {
+        // an element with no metadata yet may refuse a seek — it starts at 0 anyway.
+      }
+      playElement(handle, voice);
+      return voice;
+    } catch {
+      return null;
+    }
+  },
+
+  resumeLoop(handle, voice) {
+    try {
+      if (!voice?.el || voice.pauseTimer) return;
+      wakeContext(handle?.ctx);
+      if (voice.el.paused) playElement(handle, voice);
+    } catch {
+      // never throw.
+    }
+  },
+
+  fadeOut(handle, voice, ms) {
+    try {
+      if (!voice?.el) return;
+      clearPauseTimer(voice);
+      const param = voice.gainNode?.gain;
+      const ctx = handle?.ctx;
+      if (ms > 0 && param && ctx) {
+        try {
+          const now = ctx.currentTime;
+          param.cancelScheduledValues(now);
+          param.setValueAtTime(param.value, now);
+          param.linearRampToValueAtTime(0, now + ms / 1000);
+          voice.pauseTimer = unrefTimer(
+            setTimeout(() => {
+              voice.pauseTimer = null;
+              pauseElement(voice.el);
+            }, ms),
+          );
+          return;
+        } catch {
+          clearPauseTimer(voice);
+          // the ramp failed — fall through to an immediate pause.
+        }
+      }
+      pauseElement(voice.el);
+    } catch {
+      // never throw.
     }
   },
 
@@ -386,6 +592,21 @@ const DEFAULT_BACKEND = {
   },
 
   close(handle) {
+    // Quick task 260924-51h: release the music element with its device — a
+    // source node is bound to this context, so the next device builds a
+    // fresh element rather than reusing this one.
+    try {
+      const voice = handle?.music;
+      if (voice) {
+        clearPauseTimer(voice);
+        pauseElement(voice.el);
+        voice.el?.removeAttribute?.("src");
+        voice.el?.load?.();
+        handle.music = null;
+      }
+    } catch {
+      // never throw on teardown.
+    }
     try {
       handle?.ctx?.close?.();
     } catch {
@@ -442,11 +663,24 @@ function soundIsOff() {
  * ALL 30 CLIP_IDS in parallel and does NOT await them — decode is off the
  * critical path, so a clip fired before its own decode lands is dropped by
  * playClips() below, never queued.
+ *
+ * Quick task 260924-51h: when the device is ALREADY open, a later call asks
+ * the backend to resume it (optional backend.resume). The native build opens
+ * the device at launch with no gesture; should the WebView leave that
+ * context suspended, the next tap wakes it here. Still never a second open.
  */
 export async function unlockSfx() {
   try {
     if (soundIsOff()) return;
-    if (deviceHandle) return;
+    if (deviceHandle) {
+      try {
+        const backend = resolveBackend();
+        if (typeof backend.resume === "function") backend.resume(deviceHandle);
+      } catch {
+        // waking an open device is best effort — never throw.
+      }
+      return;
+    }
     if (unlockInFlight) return;
     unlockInFlight = true;
 
@@ -571,6 +805,8 @@ export function playUiTap() {
 
 /**
  * stopAllSfx() — exported. Stops every live voice and empties the FIFO.
+ * Quick task 260924-51h: also cuts the title theme at once (no fade), so
+ * stopAllSfx silences everything — the app-background path relies on this.
  * Never throws.
  */
 export function stopAllSfx() {
@@ -584,6 +820,7 @@ export function stopAllSfx() {
         // an already-spent voice must never throw upstream.
       }
     }
+    stopMusic({ fadeMs: 0 });
   } catch {
     // never throw.
   }
@@ -609,6 +846,8 @@ export function applySfxSettings(settings) {
     const isOff = soundIsOff();
 
     if (!wasOff && isOff) {
+      // stopAllSfx also cuts the title theme (quick task 260924-51h), so the
+      // loop is silenced before the device it plays through is closed.
       stopAllSfx();
       if (deviceHandle) {
         const backend = resolveBackend();
@@ -621,6 +860,107 @@ export function applySfxSettings(settings) {
       deviceHandle = null;
       bufferCache.clear();
     }
+  } catch {
+    // never throw.
+  }
+  return undefined;
+}
+
+// ============================================================================
+// Quick task 260924-51h: the title theme. A looping music track on the same
+// device as the one-shots — same Sound gate, same master level, same
+// teardown. WHEN it plays is decided by the pure controller in
+// src/browser/titleMusic.js; mazeworld.html wires the two together.
+// ============================================================================
+
+// MUSIC_IDS — the one declared music track: sfx/theme.mp3, beside the clips
+// and copied to www/sfx/ by copySfx(). It is never in CLIP_IDS, so
+// unlockSfx() never loads it and playClips() can never fire it as a
+// one-shot. test/unit/sfx-assets.test.js pins sfx/ as 30 clips + this 1.
+export const MUSIC_IDS = Object.freeze(["theme"]);
+
+// MUSIC_GAIN — R-09: the loop sits below the one-shots. The clips feed the
+// device's masterGain at 1.0; the loop runs through its own gain node at
+// half that level into the same masterGain.
+export const MUSIC_GAIN = 0.5;
+
+// Module state for the music half:
+//  - musicVoice: the live loop (the backend's voice), or null.
+//  - musicHandle: the device handle musicVoice plays on, so a stop always
+//    reaches the device the loop actually started on.
+// Nothing decoded is ever held here: the theme STREAMS through a media
+// element (orchestrator override — about 145 s of stereo decodes to roughly
+// 50 MB of PCM, which must not sit resident on a mid-range phone). The
+// element starts fetching only when music is first wanted, which is always
+// after first paint (R-08); a missing or unplayable file is silent.
+let musicVoice = null;
+let musicHandle = null;
+
+/**
+ * isSfxUnlocked() — exported. True once a device is open (after a
+ * successful unlockSfx()), false again after a Sound-Off teardown. The
+ * title-music controller's `unlocked` input. Never throws.
+ */
+export function isSfxUnlocked() {
+  return !!deviceHandle;
+}
+
+/**
+ * startMusic(trackId = MUSIC_IDS[0]) — exported. Starts the looping track
+ * from the top on the open device. Silently does nothing for an unknown id,
+ * with no device, with Sound Off, or on a backend without startLoop. While
+ * a loop is already live on this device it never restarts it: it only
+ * nudges it (backend.resumeLoop — resume a suspended device, re-play an
+ * element whose play() was refused), which is how a later gesture rescues a
+ * launch-time start the WebView declined. Never throws; returns undefined.
+ */
+export function startMusic(trackId = MUSIC_IDS[0]) {
+  try {
+    if (!MUSIC_IDS.includes(trackId)) return undefined;
+    if (!deviceHandle || soundIsOff()) return undefined;
+    const backend = resolveBackend();
+    if (typeof backend.startLoop !== "function") return undefined;
+    if (musicVoice) {
+      if (musicHandle === deviceHandle) {
+        try {
+          backend.resumeLoop?.(deviceHandle, musicVoice);
+        } catch {
+          // a nudge is best effort.
+        }
+        return undefined;
+      }
+      // a loop left over from a closed device — forget it.
+      musicVoice = null;
+      musicHandle = null;
+    }
+    const voice = backend.startLoop(deviceHandle, trackId, MUSIC_GAIN);
+    if (voice) {
+      musicVoice = voice;
+      musicHandle = deviceHandle;
+    }
+  } catch {
+    // cosmetic polish — never throw.
+  }
+  return undefined;
+}
+
+/**
+ * stopMusic({ fadeMs = 0 } = {}) — exported. Stops the live loop: fades it
+ * out over fadeMs then pauses (backend.fadeOut), or falls back to
+ * backend.stop(voice). A non-finite or negative fadeMs becomes 0 (cut at
+ * once). With no live loop it calls nothing. Never throws.
+ */
+export function stopMusic({ fadeMs = 0 } = {}) {
+  try {
+    const voice = musicVoice;
+    const handle = musicHandle;
+    musicVoice = null;
+    musicHandle = null;
+    if (!voice) return undefined;
+    const ms = typeof fadeMs === "number" && Number.isFinite(fadeMs) && fadeMs > 0 ? fadeMs : 0;
+    const backend = resolveBackend();
+    if (typeof backend.fadeOut === "function") backend.fadeOut(handle, voice, ms);
+    else backend.stop(voice);
   } catch {
     // never throw.
   }
