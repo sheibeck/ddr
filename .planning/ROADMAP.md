@@ -216,7 +216,25 @@ Plans:
   3. The ☰ opens on every in-game screen — map, combat and other encounters, the Oracle, the tabs, and while dead — with rows that cannot act in the current context shown disabled rather than hidden
   4. Save & quit and Abandon this character live at the bottom of the ☰ dropdown (Abandon two-tap armed, New Character when dead); the HERO tab's Delve panel is removed
   5. LINEAGE shows a race and sub-class selector defaulting to the active hero's lineage and lists the top 10 runs for that lineage (local: kept per lineage in the records; global: filtered from the DEEPEST sample with an honest footnote)
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
+
+POLISH-01 was delivered by quick task 260924-51h (merged c8e25d3, D-01); 70-04 confirms it against D-02 without reimplementing it.
+
+Plans:
+**Wave 1**
+
+- [ ] 70-01-PLAN.md — (wave 1) ☰ pure layer: accountMenuView, renderMenuFace/renderAccountMenu, controller menuView, ACCOUNT_COPY.menuLabel; HUD_MENU_QUIT_COPY + abandonRowNext two-tap arm; scan registrations (POLISH-02, POLISH-03; D-03, D-04, D-06)
+- [ ] 70-02-PLAN.md — (wave 1) LINEAGE race + sub-class board: lineageKey race+sub, prune keeps each lineage's top 10, lineage map retired; picker view + default chain + filtered global sample; panel chip rows, hero seam, .mw-bd-pick CSS (POLISH-04; D-09..D-14)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 70-03-PLAN.md — (wave 2) ☰ shell: the ☰ wears the account face, ACCOUNT block in the dropdown, band-2 chip removed; SAVE & QUIT + two-tap ABANDON rows, Delve panel deleted, every row closes the menu first (POLISH-02, POLISH-03; D-03..D-07)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 70-04-PLAN.md — (wave 3) ☰ opens on every screen with context-disabled rows, above the overlays, back closes it first, HUD on the DEAD tab, mid-encounter resume proof; POLISH-01 conformance vs D-02; Phase 70 checks folded into docs/UAT-v2.0.md (POLISH-01, POLISH-03; D-01, D-02, D-08, D-15)
+
+**Research**: none (skipped; reuses the validated draft quick plans 260924-56z and 260924-5b8)
 
 <details>
 <summary>✅ v1.9 The Gear Screen (Phases 61–64) — CODE-COMPLETE 2026-09-23, archived 2026-09-23 (override closeout; Play 1.9.0 / vc8 built for closed testing; device UAT 3 of 24 walked, the rest deferred to play sessions)</summary>
@@ -378,7 +396,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
-| 70. Device-Round Polish | v2.0 | 0/0 | Not started | - |
+| 70. Device-Round Polish | v2.0 | 0/4 | Planned     | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
