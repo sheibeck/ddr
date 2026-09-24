@@ -145,8 +145,8 @@ test("sfx-music: MUSIC_IDS is frozen ['theme'], disjoint from CLIP_IDS, and ever
   }
 });
 
-test("sfx-music: MUSIC_GAIN is 0.5 — below the one-shot level (R-09)", () => {
-  assert.equal(MUSIC_GAIN, 0.5);
+test("sfx-music: MUSIC_GAIN is 0.9 — still below the one-shot level (R-09; Phase 71 D-02)", () => {
+  assert.equal(MUSIC_GAIN, 0.9);
   assert.ok(MUSIC_GAIN > 0 && MUSIC_GAIN < 1);
 });
 
@@ -495,8 +495,12 @@ test("sfx-music (default backend): the first start creates ONE looping element o
     assert.equal(el.paused, false);
     assert.equal(world.sources.length, 1);
     const ctx = world.contexts[0];
-    const masterGain = ctx.gains[0];
-    const musicGain = ctx.gains[1];
+    // Phase 71 (D-03): open() now also builds an effects bus, so the gains
+    // are found by wiring, not by creation order — the master is the gain
+    // wired to the destination, the music gain the one the source feeds.
+    const masterGain = ctx.gains.find((g) => g.connectedTo === ctx.destination);
+    const musicGain = world.sources[0].src.connectedTo;
+    assert.ok(ctx.gains.includes(musicGain));
     assert.equal(world.sources[0].src.el, el);
     assert.equal(world.sources[0].src.connectedTo, musicGain);
     assert.equal(musicGain.connectedTo, masterGain);
@@ -512,7 +516,7 @@ test("sfx-music (default backend): fade = gain ramp to 0 over fadeMs, then pause
     await unlockSfx();
     startMusic();
     const el = world.elements[0];
-    const musicGain = world.contexts[0].gains[1];
+    const musicGain = world.sources[0].src.connectedTo;
     el.currentTime = 42;
 
     stopMusic({ fadeMs: 500 });
