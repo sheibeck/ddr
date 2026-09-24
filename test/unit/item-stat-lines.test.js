@@ -246,9 +246,9 @@ test("wornItemFor: equipping an item never changes its stat list — weapon, pre
 
 // A tiny local wrapper so the test reads as "equip through the engine".
 function applyEquip(state, action) {
-  const s = structuredClone(state);
-  applyAction(s, action);
-  return { state: s };
+  const { state: next, events } = applyAction(state, action);
+  assert.ok(events.some((e) => e.type === "itemEquipped"), `expected ${JSON.stringify(action)} to equip, got ${JSON.stringify(events.map((e) => e.type))}`);
+  return { state: next };
 }
 
 // ─── ITEM_STAT_COPY: frozen, no WP, family-friendly ──────────────────────
