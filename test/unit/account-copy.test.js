@@ -60,11 +60,21 @@ test("ACCOUNT_COPY holds only non-empty strings (no functions, numbers or nulls)
   }
 });
 
-test("The only {token} in the table is {name}, and it appears in chipLabel.signedIn", () => {
+test("The only {token} in the table is {name}, and it appears in chipLabel.signedIn and menuLabel.signedIn", () => {
   for (const [p, v] of collectLeaves(ACCOUNT_COPY)) {
     for (const m of v.matchAll(/\{([a-zA-Z]+)\}/g)) assert.equal(m[1], "name", `${p} has an unknown token {${m[1]}}`);
   }
   assert.match(ACCOUNT_COPY.chipLabel.signedIn, /\{name\}/);
+  assert.match(ACCOUNT_COPY.menuLabel.signedIn, /\{name\}/);
+  assert.doesNotMatch(ACCOUNT_COPY.menuLabel.plain, /\{name\}/);
+});
+
+test("menuLabel is the ☰ button's accessible label pair (Phase 70 D-03)", () => {
+  assert.ok(Object.isFrozen(ACCOUNT_COPY.menuLabel));
+  assert.deepStrictEqual({ ...ACCOUNT_COPY.menuLabel }, {
+    signedIn: "Menu — signed in as {name}",
+    plain: "Menu",
+  });
 });
 
 test("glyph is the dim question mark (D-07)", () => {
@@ -131,6 +141,15 @@ test("cards.failed says the game stays playable and offers retrying and Compete 
   assert.match(c.line, /playable/i);
   assert.match(c.line, /try again/i);
   assert.match(c.line, /Compete off/);
+});
+
+test("cards.failed points at the menu in the corner, not the retired band-2 face (Phase 70 DISC-4)", () => {
+  const line = ACCOUNT_COPY.cards.failed.line;
+  assert.ok(line.endsWith("turn Compete off, from the menu in the corner."), line);
+  assert.equal(
+    line,
+    "Sign-in failed, or was declined. You stay unrecorded and fully playable. Try again, or turn Compete off, from the menu in the corner.",
+  );
 });
 
 test("No line says WP; player text says HP", () => {

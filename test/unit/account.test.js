@@ -21,8 +21,10 @@ import {
   accountSheetView,
   accountCard,
   accountIdentity,
+  accountMenuView,
 } from "../../src/browser/account.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
+import { HUD_MENU_GLYPH } from "../../src/browser/hudMenu.js";
 import { avatarColour, initialsOf } from "../../src/browser/boardsView.js";
 import { RAIL_HOLD, RAIL_TONES } from "../../src/browser/rail.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
@@ -319,6 +321,71 @@ test("identity: every other state gives { signedIn: false, player: null }", () =
     const id = accountIdentity(s);
     assert.deepStrictEqual({ ...id }, { signedIn: false, player: null });
     assert.ok(Object.isFrozen(id));
+  }
+});
+
+// ─── the ☰ face (Phase 70 D-03) ────────────────────────────────────────────
+
+test("menu (D-03): signed in gives the initials avatar and a label naming the player", () => {
+  const v = accountMenuView(SIGNED_IN);
+  assert.deepStrictEqual({ ...v }, {
+    face: "avatar",
+    initials: initialsOf("Hilda Ferrow"),
+    bg: avatarColour("Hilda Ferrow"),
+    glyph: "",
+    label: "Menu — signed in as Hilda Ferrow",
+  });
+  assert.ok(Object.isFrozen(v));
+});
+
+test("menu (D-03): the avatar maths matches the account chip's exactly", () => {
+  const menu = accountMenuView(SIGNED_IN);
+  const chip = accountChipView(SIGNED_IN);
+  assert.equal(menu.initials, chip.initials);
+  assert.equal(menu.bg, chip.bg);
+  assert.equal(menu.face, chip.face);
+});
+
+test("menu (D-03): signed in with no display name uses the unnamed line in the label", () => {
+  const v = accountMenuView({ ...SIGNED_IN, player: { id: "p-1", displayName: "   " } });
+  assert.equal(v.face, "avatar");
+  assert.equal(v.label, `Menu — signed in as ${ACCOUNT_COPY.sheet.unnamed}`);
+  assert.equal(v.initials, initialsOf(ACCOUNT_COPY.sheet.unnamed));
+});
+
+test("menu (D-03): a non-Latin name takes its initials from initialsOf, unchanged", () => {
+  const name = "Ærwyn Đorđević";
+  const v = accountMenuView({ ...SIGNED_IN, player: { id: "p-2", displayName: name } });
+  assert.equal(v.initials, initialsOf(name));
+  assert.equal(v.bg, avatarColour(name));
+  assert.equal(v.label, `Menu — signed in as ${name}`);
+});
+
+test("menu (D-03): a name with $ patterns fills {name} literally", () => {
+  const v = accountMenuView({ ...SIGNED_IN, player: { id: "p-3", displayName: "$& $1 $'" } });
+  assert.equal(v.label, "Menu — signed in as $& $1 $'");
+});
+
+test("menu (D-03): signed out, pending, Compete OFF and a stale signed-in under OFF all wear the plain ☰", () => {
+  for (const state of [SIGNED_OUT, PENDING, OFF, STALE_OFF]) {
+    const v = accountMenuView(state);
+    assert.deepStrictEqual(
+      { ...v },
+      { face: "menu", initials: "", bg: "", glyph: HUD_MENU_GLYPH, label: ACCOUNT_COPY.menuLabel.plain },
+      JSON.stringify(state),
+    );
+    assert.equal(v.label, "Menu");
+    assert.ok(Object.isFrozen(v));
+  }
+});
+
+test("menu (D-03): total over malformed input, frozen, and never the avatar without a signed-in status", () => {
+  for (const input of MALFORMED) {
+    let v;
+    assert.doesNotThrow(() => { v = accountMenuView(input); }, `menu(${JSON.stringify(input) ?? typeof input})`);
+    assertDeepFrozen(v, "menu");
+    assert.ok(["avatar", "menu"].includes(v.face));
+    if (v.face === "menu") assert.equal(v.glyph, HUD_MENU_GLYPH);
   }
 });
 
