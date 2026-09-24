@@ -368,8 +368,9 @@ test("wiring: renderRoundStrip guards the strip's open tap; CLOSE and the scrim 
   const scrimHits = CODE.match(/getElementById\("mw-fightlog-sheet-scrim"\)\.onclick = closeFightLogSheet;/g) || [];
   assert.equal(closeHits.length, 1, "CLOSE wired exactly once");
   assert.equal(scrimHits.length, 1, "the scrim wired exactly once");
-  const render = sliceBetween(CODE, "function renderFightLog(host)", "function noteCombat(");
-  assert.doesNotMatch(render, /mw-fightlog-sheet-(close|scrim)/, "neither is wired inside the render region");
+  for (const sig of ["function renderFightLog(host)", "function renderRoundStrip(host, fallbackRound)", "function renderEncounter()", "function openFightLogSheet()"]) {
+    assert.doesNotMatch(fnRegion(sig), /mw-fightlog-sheet-(close|scrim)"\)\.(onclick|addEventListener)/,`neither is wired inside ${sig} (wired once at load, never per render)`);
+  }
 
   const open = fnRegion("function openFightLogSheet()");
   assert.match(open, /if \(window\.__mzBeat\?\.active\?\.\(\)\) return;/, "R-18: a no-op mid-round");

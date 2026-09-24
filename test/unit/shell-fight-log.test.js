@@ -143,7 +143,7 @@ test("renderFightLog(host) — the sheet's row builder — reads window.__mzFigh
   assert.match(region, /function renderFightLog\(host\)/);
   assert.match(region, /window\.__mzFightLogVM\.byRound\(window\.__mzFightLog\)/);
   assert.match(region, /dataset\.logId/);
-  assert.match(region, /copy\.roundHead\.replace\("\{n\}"/, "the ROUND n header comes from the copy");
+  assert.match(region, /copy\.roundHead[^\n]*\.replace\("\{n\}"/,"the ROUND n header comes from the copy");
   assert.match(region, /copy\.noRound/, "the no-round group has the copy's fallback label");
   const textContentHits = region.match(/textContent/g) || [];
   assert.ok(textContentHits.length >= 4, `expected >= 4 textContent uses, found ${textContentHits.length}`);
@@ -190,7 +190,7 @@ test("renderEncounter region builds the what-happened strip (not renderFightLog 
   assert.doesNotMatch(region, /renderFightLog\(mid\)/, "the in-panel log left the middle (R-19)");
   assert.match(region, /renderRoundStrip\(body/);
   assert.match(CODE, /function renderFightLog\(host\)/, "renderFightLog is the sheet's row builder");
-  const calls = [...CODE.matchAll(/renderFightLog\(([^)]*)\)/g)].map((m) => m[1]).filter((a) => a !== "host");
+  const calls = [...CODE.matchAll(/renderFightLog\((.*?)\);/g)].map((m) => m[1]);
   assert.deepEqual(calls, ['document.getElementById("mw-fightlog-sheet-rows")'], "the sheet's rows container is the one host");
   for (const needle of ["__mzRoundCard", "ROUND_CARD_COPY", "roundCardSeq", "round-card"]) {
     const hits = CODE.match(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [];

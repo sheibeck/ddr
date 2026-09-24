@@ -1764,6 +1764,30 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-gsheet-cancel{display:block;width:100%;min-height:48px;margin-top:16px;padding:15px 8px;text-align:center;font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:0;background:transparent;border:2px solid #4a4032;border-radius:0;color:#c9bda0;box-shadow:0 4px 0 #0d0b08}
 .mw-gsheet-cancel:hover:not(:disabled),.mw-gsheet-cancel:active:not(:disabled){background:transparent;color:#c9bda0}
 
+/* ---------- THE FIGHT SO FAR, the full-log sheet (Phase 71, D-07, R-22) ----------
+   The user's combat v2 mock (design/COMBAT-V2-NOTES.md section 5, the
+   showLog block): a darker scrim, a bottom panel capped at 74% of the
+   screen whose head stays put while only the rows scroll, the title and
+   hint in the display face, a bordered CLOSE chip, ROUND n group headers,
+   and the rows in the fight log's own .cb-log-* look with the gold roll
+   line. The rise, the fade and the closing state are the legend family's
+   own; this block adds no motion of its own. */
+#mw-fightlog-sheet .mw-legend-scrim{background:rgba(10,8,6,.72)}
+#mw-fightlog-sheet .mw-legend-panel{max-height:74%;display:flex;flex-direction:column;overflow:hidden;padding:0 0 var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))}
+.mw-fl-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 12px 10px;flex:none}
+.mw-fl-titles{display:flex;flex-direction:column;gap:4px;min-width:0}
+.mw-fl-title{margin:0;font-family:var(--disp);font-weight:400;font-size:7px;color:#e8c97a;line-height:1.7}
+.mw-fl-title:focus{outline:none}
+.mw-fl-hint{margin:0;font-family:var(--disp);font-size:6px;color:#8f856f;line-height:1.7}
+.mw-fl-close{flex:none;min-height:40px;padding:7px 9px;font-family:var(--disp);font-size:7px;letter-spacing:0;color:#c9bda0;background:transparent;border:2px solid #4a4032;border-radius:0;box-shadow:none;cursor:pointer}
+.mw-fl-close:hover:not(:disabled),.mw-fl-close:active:not(:disabled){background:transparent;color:#c9bda0}
+.mw-fl-rows{flex:1;min-height:0;overflow-y:auto;padding:4px 12px 30px}
+.mw-fl-round{margin-top:18px;font-family:var(--disp);font-size:6px;color:#8f856f;line-height:1.7}
+.mw-fl-group:first-child .mw-fl-round{margin-top:4px}
+.mw-fl-rows .cb-log-revealable:focus-visible{outline:2px solid #e8c97a;outline-offset:2px}
+#cb-summary[role="button"]{cursor:pointer}
+#cb-summary[role="button"]:focus-visible{outline:2px solid #e8c97a;outline-offset:-2px}
+
 .mw-roller-screen{
   position:fixed;inset:0;z-index:51;
   background:var(--paper);color:var(--ink);
@@ -2027,6 +2051,26 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
     </div>
     <div class="mw-gsheet-actions" id="mw-gear-sheet-actions"></div>
     <button type="button" class="mw-gsheet-cancel" id="mw-gear-sheet-cancel"></button>
+  </div>
+</div>
+<!-- Phase 71 (POLISH-07, D-07, R-22): THE FIGHT SO FAR, the full-log bottom
+     sheet the what-happened strip (#cb-summary) opens, from the user's
+     combat v2 mock (design/COMBAT-V2-NOTES.md section 5). A body-level member
+     of the legend-sheet family (scrim, rise, closing state, back button);
+     styled to the mock below. openFightLogSheet/closeFightLogSheet own it;
+     renderFightLog fills the rows. Not a live region: #enc-round-live stays
+     the one announcer. -->
+<div id="mw-fightlog-sheet" class="mw-legend-sheet mw-fightlog-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-fightlog-sheet-scrim"></div>
+  <div class="mw-legend-panel" id="mw-fightlog-sheet-panel" role="dialog" aria-modal="true" aria-label="The fight so far">
+    <div class="mw-fl-head">
+      <div class="mw-fl-titles">
+        <h2 class="mw-fl-title" id="mw-fightlog-sheet-title" tabindex="-1"></h2>
+        <p class="mw-fl-hint" id="mw-fightlog-sheet-hint" hidden></p>
+      </div>
+      <button type="button" class="mw-fl-close" id="mw-fightlog-sheet-close"></button>
+    </div>
+    <div class="mw-fl-rows" id="mw-fightlog-sheet-rows"></div>
   </div>
 </div>
 
@@ -3729,82 +3773,74 @@ function foeStatusBadges(f, V) {
 // Plans 03-05 add renderMajorOverlay/renderCombatHeader/renderFoeCards/
 // renderYourLot/renderActionArea/renderCombatOver after it, before
 // renderEncounter).
+// Phase 71 (POLISH-07, D-07), 71-06: renderFightLog(host) is now THE FIGHT
+// SO FAR sheet's row builder (the in-panel log left the combat middle in
+// 71-05, R-19). openFightLogSheet is its one caller and host is the sheet's
+// #mw-fightlog-sheet-rows. It reads fightLog.js's pure fightLogByRound (the
+// whole fight, newest first, grouped under ROUND n headers) from the live
+// window.__mzFightLog: the sheet never opens mid-round (R-18), so there is
+// no beat view to gate, nothing types, and nothing is announced here (the
+// sheet is not a live region; renderRoundStrip feeds #enc-round-live).
+// R-23: a row reveals exactly the roll its entry carries (the engine event's
+// own Oracle detail text); a row with no roll is plain and gets no handler.
+// Returns true when at least one row can reveal dice (the sheet's hint).
 function renderFightLog(host) {
-  // Phase 58 (MOTION-03, D-09/D-14/D-16): while a beat is live, the log
-  // reads from the beat's own view (its frame's `log`/`maxId`) instead of
-  // the live window.__mzFightLog, and only rows up to `maxId` show — never
-  // cutting a batch short, just not yet revealing what hasn't landed. The
-  // announcer (below) always gets the WHOLE (unfiltered) log, so a screen
-  // reader hears the full round in the very first beat render (D-16) even
-  // though the visible rows reveal and type one by one.
-  const bv = window.__mzBeat?.view?.() || null;
-  const log = bv ? bv.log : window.__mzFightLog;
-  const rows = window.__mzFightLogVM ? window.__mzFightLogVM.rows(log) : [];
-  const section = document.createElement("section");
-  section.className = "cb-log";
-  section.id = "cb-log";
-  section.setAttribute("aria-label", "Fight log");
-  let typingTextEl = null;
-  let typingEntryEl = null;
-  let typingText = null;
-  for (const r of rows) {
-    if (bv && r.id > bv.maxId) continue;
-    const el = document.createElement("div");
-    el.className = "cb-log-entry cb-log-" + r.tone;
-    el.dataset.logId = String(r.id);
-    const mark = document.createElement("span");
-    mark.className = "cb-log-mark";
-    mark.textContent = "›";
-    el.appendChild(mark);
-    const bodyEl = document.createElement("div");
-    bodyEl.className = "cb-log-body";
-    const text = document.createElement("div");
-    text.className = "cb-log-text";
-    text.textContent = r.text;
-    bodyEl.appendChild(text);
-    if (typeof r.roll === "string" && r.roll) {
-      const roll = document.createElement("div");
-      roll.className = "cb-log-roll";
-      roll.textContent = r.roll;
-      roll.hidden = !r.show;
-      bodyEl.appendChild(roll);
-      el.classList.add("cb-log-revealable");
-      el.tabIndex = 0;
-      // A log tap is a reveal toggle, not a decision button: deliberately
-      // NOT wrapped in guardTap and never calls renderEncounter — a log
-      // tap must not re-arm the action buttons.
-      el.onclick = () => {
-        window.__mzFightLog = window.__mzFightLogVM.toggle(window.__mzFightLog, r.id);
-        roll.hidden = !roll.hidden;
-      };
-      el.onkeydown = (e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
-      };
+  if (!host) return false;
+  host.textContent = "";
+  const groups = window.__mzFightLogVM?.byRound ? window.__mzFightLogVM.byRound(window.__mzFightLog) : [];
+  const copy = window.__mzFightLogVM?.copy || {};
+  let anyRoll = false;
+  for (const g of groups) {
+    const group = document.createElement("div");
+    group.className = "mw-fl-group";
+    const head = document.createElement("div");
+    head.className = "mw-fl-round";
+    head.textContent = g.round != null ? String(copy.roundHead || "").replace("{n}", String(g.round)) : String(copy.noRound || "");
+    group.appendChild(head);
+    for (const r of g.entries) {
+      const el = document.createElement("div");
+      el.className = "cb-log-entry cb-log-" + r.tone;
+      el.dataset.logId = String(r.id);
+      const mark = document.createElement("span");
+      mark.className = "cb-log-mark";
+      mark.textContent = "›";
+      mark.setAttribute("aria-hidden", "true");
+      el.appendChild(mark);
+      const bodyEl = document.createElement("div");
+      bodyEl.className = "cb-log-body";
+      const text = document.createElement("div");
+      text.className = "cb-log-text";
+      text.textContent = r.text;
+      bodyEl.appendChild(text);
+      if (typeof r.roll === "string" && r.roll) {
+        anyRoll = true;
+        const roll = document.createElement("div");
+        roll.className = "cb-log-roll";
+        roll.textContent = r.roll;
+        roll.hidden = !r.show;
+        bodyEl.appendChild(roll);
+        el.classList.add("cb-log-revealable");
+        el.tabIndex = 0;
+        el.setAttribute("role", "button");
+        el.setAttribute("aria-expanded", r.show ? "true" : "false");
+        // A log tap is a reveal toggle, not a decision button: deliberately
+        // NOT wrapped in guardTap and never calls renderEncounter — it flips
+        // the entry's presentation-only show flag and this one row in place.
+        el.onclick = () => {
+          window.__mzFightLog = window.__mzFightLogVM.toggle(window.__mzFightLog, r.id);
+          roll.hidden = !roll.hidden;
+          el.setAttribute("aria-expanded", roll.hidden ? "false" : "true");
+        };
+        el.onkeydown = (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
+        };
+      }
+      el.appendChild(bodyEl);
+      group.appendChild(el);
     }
-    el.appendChild(bodyEl);
-    section.appendChild(el);
-    if (bv && bv.typeId != null && r.id === bv.typeId) {
-      typingTextEl = text;
-      typingEntryEl = el;
-      typingText = r.text;
-    }
+    host.appendChild(group);
   }
-  host.appendChild(section);
-  syncFightLogLive(log);
-  // Phase 58 (MOTION-03, D-14): types the row the beat's CURRENT line
-  // reveals; a re-render at the same line id adopts the in-flight block
-  // instead of restarting it; a hurried/settled render (typeId null, or no
-  // beat at all) cancels any stray run so nothing is left typing forever.
-  if (typingTextEl) {
-    if (bv.typeId !== lastBeatTypedId) {
-      lastBeatTypedId = bv.typeId;
-      window.__mzTypewriter?.type?.("fightlog", { targets: [typingTextEl], texts: [typingText], ariaHost: typingEntryEl });
-    } else if (window.__mzTypewriter?.active?.("fightlog")) {
-      window.__mzTypewriter.adopt("fightlog", [typingTextEl], typingEntryEl);
-    }
-  } else {
-    window.__mzTypewriter?.cancel?.("fightlog");
-  }
+  return anyRoll;
 }
 
 // Phase 71 (POLISH-07, D-07): the "ROUND n · WHAT HAPPENED" strip from the
@@ -3823,8 +3859,11 @@ function renderFightLog(host) {
 // rise-in plays only when a new line becomes the newest, never on a submenu
 // re-render of the same round.
 // R-18: the strip is inside #enc-panel, so mid-round a tap on it is caught
-// by beatHurryTap (capture phase) and skips. This plan adds no listener to
-// it; 71-06's open-the-full-log tap comes later.
+// by beatHurryTap (capture phase) and skips. 71-06: once the round has
+// landed, a tap opens THE FIGHT SO FAR (openFightLogSheet), wired through
+// guardTap like every other combat button, so encArmed() also refuses it
+// mid-beat and inside the arm window. It is an element handler, never a
+// card/body/panel listener (CSCR-08), and a button for keyboard and TalkBack.
 let lastStripRiseId = null;
 function renderRoundStrip(host, fallbackRound) {
   const bv = window.__mzBeat?.view?.() || null;
@@ -3839,6 +3878,13 @@ function renderRoundStrip(host, fallbackRound) {
   const strip = document.createElement("div");
   strip.className = "cb-summary";
   strip.id = "cb-summary";
+  strip.setAttribute("role", "button");
+  strip.tabIndex = 0;
+  strip.setAttribute("aria-label", copy.openLog);
+  guardTap(strip, openFightLogSheet);
+  strip.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); strip.click(); }
+  };
   const head = document.createElement("div");
   head.className = "cb-sum-head";
   const label = document.createElement("span");
@@ -4476,6 +4522,8 @@ function renderEncounter() {
     // previous fight's leftovers.
     window.__mzFightEnd = null;
     window.__mzCombatMenu = null;
+    // Phase 71 (71-06, D-07): the fight is over, so its full-log sheet goes too.
+    if (fightLogSheetOpen()) closeFightLogSheet();
   }
   encWasActive = active;
   if (!active) {
@@ -5344,6 +5392,54 @@ function closeGearSheet() {
 }
 document.getElementById("mw-gear-sheet-scrim").addEventListener("click", closeGearSheet);
 
+// Phase 71 (POLISH-07, D-07, R-22/R-23): THE FIGHT SO FAR, the full-log
+// sheet the what-happened strip opens (the user's combat v2 mock), on the
+// Gear sheet's pattern: renderFightLog fills the rows from the live fight
+// log, this script owns showing, hiding, focus and the scrim tap. The sheet
+// only reads the log and flips a presentation-only reveal flag; it never
+// acts. fightLogSheetShown is its open state (the Gear sheet's
+// gearSheetTarget equivalent), so an element's default `hidden` never
+// decides it.
+// R-18: a no-op while a round is still resolving — mid-round a strip tap is
+// beatHurryTap's skip, and the strip's guardTap refuses it too; this is the
+// last line of that defence.
+let fightLogSheetShown = false;
+function fightLogSheetOpen() {
+  return fightLogSheetShown;
+}
+function openFightLogSheet() {
+  if (window.__mzBeat?.active?.()) return;
+  if (!S || !S.combat || !window.__mzFightLogVM?.byRound) return;
+  const sheet = document.getElementById("mw-fightlog-sheet");
+  if (!sheet) return;
+  const copy = window.__mzFightLogVM.copy || {};
+  document.getElementById("mw-fightlog-sheet-title").textContent = copy.sheetTitle || "";
+  document.getElementById("mw-fightlog-sheet-close").textContent = copy.close || "";
+  const anyRoll = renderFightLog(document.getElementById("mw-fightlog-sheet-rows"));
+  const hint = document.getElementById("mw-fightlog-sheet-hint");
+  hint.textContent = copy.diceHint || "";
+  hint.hidden = !anyRoll;
+  fightLogSheetShown = true;
+  showPanel(sheet);
+  document.getElementById("mw-fightlog-sheet-title")?.focus?.();
+}
+function closeFightLogSheet() {
+  if (!fightLogSheetShown) return;
+  fightLogSheetShown = false;
+  const sheet = document.getElementById("mw-fightlog-sheet");
+  if (sheet) hidePanel(sheet);
+  // No lastDismissAt stamp: the sheet only ever sits over a fight, where the
+  // map is already parked, and the encounter's own end stamps it. Instead, a
+  // fresh arm window for the combat screen underneath, so the second half
+  // of a double tap on CLOSE or the scrim can never land on an action.
+  if (S && S.combat) {
+    armEncounterButtons();
+    setTimeout(() => document.getElementById("cb-summary")?.focus?.(), 0);
+  }
+}
+document.getElementById("mw-fightlog-sheet-close").onclick = closeFightLogSheet;
+document.getElementById("mw-fightlog-sheet-scrim").onclick = closeFightLogSheet;
+
 function centerMap() {
   anchorCamOnParty({ x: 0, y: 0 });
   positionCanvas();
@@ -5696,6 +5792,12 @@ addEventListener("keydown", e => {
   // is open — checked before any other key handling below (the encounter
   // gate included), mirroring the mock's dropdown convention.
   if (k === "escape" && hudMenuIsOpen()) { e.preventDefault(); hudMenuEvent("escape"); return; }
+  // Phase 71 (71-06): THE FIGHT SO FAR is modal over the combat screen, so
+  // no key reaches the actions under it; Escape closes it.
+  if (fightLogSheetOpen()) {
+    if (k === "escape") { e.preventDefault(); closeFightLogSheet(); }
+    return;
+  }
   const dirKeys = { arrowup:"N", w:"N", arrowdown:"S", s:"S", arrowleft:"W", a:"W", arrowright:"E", d:"E" };
   // Device-review revision #5 (extended): while the encounter/feature
   // overlay is up, movement is blocked outright — direction keys no longer
@@ -5797,7 +5899,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // prep.
   import { PRIORITY, narrativeLineText } from "./src/browser/narrationLines.js";
   import { narrateEvent } from "./src/browser/eventNarration.js";
-  import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement, roundSummary, ROUND_STRIP_COPY } from "./src/browser/fightLog.js";
+  import { fightLogLinesFor, appendFightLog, dullFightLogLine, fightLogRows, toggleFightLogEntry, fightLogAnnouncement, roundSummary, ROUND_STRIP_COPY, fightLogByRound } from "./src/browser/fightLog.js";
   // Phase 35 (MAP-03/04) — the RAIL view-model: the out-of-combat twin of
   // fightLog.js, folding the same linesForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
@@ -6191,7 +6293,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // time. No rng, no DOM access inside the module itself.
   // Phase 71 (D-07): summary/copy feed the what-happened strip
   // (renderRoundStrip) its latest-round lines and its label/chip copy.
-  window.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine, summary: roundSummary, copy: ROUND_STRIP_COPY };
+  window.__mzFightLogVM = { rows: fightLogRows, toggle: toggleFightLogEntry, announcement: fightLogAnnouncement, append: appendFightLog, dull: dullFightLogLine, summary: roundSummary, copy: ROUND_STRIP_COPY, byRound: fightLogByRound };
 
   // Phase 35 (MAP-03/04) — the RAIL's own bridge, mirroring __mzFightLogVM
   // exactly: the classic renderRail() reads rail.js's pure functions through
@@ -8185,7 +8287,7 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || hudMenuIsOpen() || accountSheetOpen(),
+        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
@@ -8209,6 +8311,10 @@ window.__mzClassicBoot = async function classicBoot() {
           // returns at once — the rest of this handler would otherwise
           // clear the store/beats/stair underneath on the same press.
           if (hudMenuIsOpen()) { hudMenuEvent("escape"); return; }
+          // Phase 71 (71-06, D-07): THE FIGHT SO FAR sits over the combat
+          // screen, so one back press closes only it; the fight underneath
+          // is exactly as it was.
+          if (fightLogSheetOpen()) { closeFightLogSheet(); return; }
           // Phase 63 (GSCR-10): the Gear sheet is the top-most layer — one
           // back press closes only it, never falling through to the stair/
           // camp/legend/beats/store handling below on the same press.

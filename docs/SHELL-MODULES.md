@@ -489,16 +489,51 @@ rises in once, the older ones are dim; the label pulses (`mwtorch`) while a
 round resolves. Reduced motion drops both through the blanket rule.
 
 R-19: the in-panel fight log left the middle, with its scroll-into-view
-gate. `renderFightLog` stays defined (71-06 re-hosts its rows in THE
-FIGHT SO FAR sheet the strip opens); until then the Oracle is the full log.
-The revert is `renderFightLog(mid)` in the combat branch.
+gate. `renderFightLog` stays defined: 71-06 re-hosted it as the row builder
+of THE FIGHT SO FAR, the sheet the strip opens (below).
 
 R-20: Phase 58's line-by-line beat reveal and its "fightlog" typewriter
 target the strip's newest line, with the same type/adopt/cancel and
 aria-hidden-while-typing rules; `#enc-round-live` still announces the whole
 round once. R-18: the strip is inside `#enc-panel`, so a mid-round tap on it
-is caught by `beatHurryTap` and skips; the strip itself has no listener in
-this plan.
+is caught by `beatHurryTap` and skips; the strip's own open tap (71-06)
+never fires then.
+
+### THE FIGHT SO FAR, the full-log sheet (Phase 71)
+
+Tapping the what-happened strip once the round has landed opens THE FIGHT
+SO FAR, the whole fight's log from the user's combat v2 mock
+(`design/COMBAT-V2-NOTES.md` section 5). The strip is a keyboard- and
+TalkBack-reachable button wired through `guardTap(strip, openFightLogSheet)`,
+so `encArmed()` refuses it mid-beat and inside the arm window, and
+`openFightLogSheet` itself is a no-op while a beat is live (R-18). The
+content is `fightLogByRound` in `src/browser/fightLog.js`, bridged as
+`window.__mzFightLogVM.byRound`: groups newest first under `ROUND n`
+headers, entries newest first, null-round entries in one group labelled
+`ROUND_STRIP_COPY.noRound`. The sheet's copy (title, dice hint, CLOSE, the
+header template, the strip's accessible name) shares `ROUND_STRIP_COPY`.
+
+R-22: in the mock the sheet is a layer inside the combat panel. Here it is
+`#mw-fightlog-sheet`, a body-level member of the `.mw-legend-sheet` family
+(z 45, beside the Gear, Settings and MARKS sheets), styled to the mock: the
+`rgba(10,8,6,.72)` scrim, a panel capped at 74% whose head stays put while
+the rows scroll, the 7px title, the 6px hint and the bordered CLOSE chip. It
+opens and closes through `showPanel`/`hidePanel` (the shared panel-motion
+helper, instant under reduced motion), CLOSE and the scrim are wired once at
+load, and the render region gains no listener (CSCR-08). Android back closes
+only the sheet (`closeModal`'s early return right after the ☰ one), Escape
+closes it, no other key reaches the actions under it, and an encounter that
+ends closes it. It is not a live region: `#enc-round-live` stays the one
+announcer. Its open state is `fightLogSheetOpen()`.
+
+R-23: `renderFightLog(host)` builds the rows with the fight log's own
+`.cb-log-*` look. A row whose entry carries `roll` (the engine event's own
+Oracle detail text, set by `fightLogLinesFor`) is a tabbable toggle that
+shows or hides exactly that text in gold through `__mzFightLogVM.toggle`,
+re-rendering only that row; a row with no roll is plain and has no handler.
+The `TAP A LINE FOR ITS DICE` hint shows only when some row has a roll.
+There is no dice-mode setting (DR18 retired it), so this is the mock's
+"on tap" mode.
 
 ## What stays shared
 
@@ -556,8 +591,8 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzDropShelfItems | mazeworld.html (module) | mazeworld.html (classic: renderEncounter — LOOT and FIND drop-shelf cards) | Bridges the pure bag-items-only list the shared drop shelf renders when a pickup would overflow the bag. |
 | __mzEther | mazeworld.html (module) | mazeworld.html (classic: condition-chip tone for the ether condition)<br>mazeworld.html (classic: map pointer handlers — tap-to-move isOpen predicate, hold-inspect ethereal flag) | Bridges the pure Cloak of Ether predicates (itemEffectActive, inStone) so tap-to-move, hold-inspect and the condition chip agree on wall-walking state. |
 | __mzFightEnd | mazeworld.html (module) | mazeworld.html (classic: renderCombatOver — reads and also resets to null)<br>mazeworld.html (module: the post-dispatch combat-end tracker — sets the ending-line parcel) | Presentation-only parcel of a just-ended fight's closing lines; never a field on state. |
-| __mzFightLog | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / renderRoundStrip / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)<br>mazeworld.html (module: dispatchWithNarration — appends every dispatch's fight-log lines) | Presentation-only whole-fight log entries (rows, seq); never a field on state. |
-| __mzFightLogVM | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / renderRoundStrip / fightLogRefuse — rows/toggle/announcement/append/dull/summary/copy) | Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time; summary (roundSummary) and copy (ROUND_STRIP_COPY) feed the Phase 71 D-07 what-happened strip above the combat actions. |
+| __mzFightLog | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / renderRoundStrip / openFightLogSheet / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)<br>mazeworld.html (module: dispatchWithNarration — appends every dispatch's fight-log lines) | Presentation-only whole-fight log entries (rows, seq); never a field on state. |
+| __mzFightLogVM | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / renderRoundStrip / openFightLogSheet / fightLogRefuse — rows/toggle/announcement/append/dull/summary/copy/byRound) | Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time; summary (roundSummary) and copy (ROUND_STRIP_COPY) feed the Phase 71 D-07 what-happened strip above the combat actions; byRound (fightLogByRound) feeds THE FIGHT SO FAR, the full-log sheet the strip opens (71-06), whose copy shares ROUND_STRIP_COPY. |
 | __mzFoeConditions | mazeworld.html (module) | mazeworld.html (classic: foeStatusBadges — the combat foe cards' condition chips, via chips) | Bridges src/browser/foeConditions.js's foeConditionChips, the one foe-condition chip table (Phase 71 D-14), so the classic foe cards read every ability, spell and item condition from one source that 71-04's long-press card also reads. |
 | __mzFoeInspect | mazeworld.html (module) | mazeworld.html (classic: renderRail — re-derives the live foe card's lines while S.combat is set, via card)<br>mazeworld.html (classic: renderFoeCards — the Details button's accessible name, via label) | Bridges src/browser/foeDetails.js's foeDetailsCard and detailsLabel: the long-press foe card view model (Phase 71 D-09/D-10) that the classic rail keeps live through a fight, and the TalkBack Details action's name (D-11). |
 | __mzGearSheet | mazeworld.html (module) | mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render) | Bridges src/browser/gearSheet.js's renderGearSheet so the classic sheet lifecycle (open, repaint refresh, close, back button, ghost-tap arm) renders the ONE pure sheet model, never a second copy. |
