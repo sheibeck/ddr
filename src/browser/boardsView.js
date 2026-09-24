@@ -8,8 +8,19 @@
 // engine/records.js and every word of copy comes from content/boards.js —
 // this module holds no player-facing literal of its own except the
 // structural separator (BOARDS_PANEL_COPY.sep). No network. Phase 67 (D-08)
-// adds the signed-in strip and notes from the signedIn/player inputs; Phase
-// 68 adds global sources behind the same view.
+// adds the signed-in strip from the signedIn/player inputs.
+//
+// Phase 68 (PGS-05, PGS-06; D-05..D-09, D-16, D-17) adds the global source at
+// this same seam: the `global` input is a GlobalSnapshot as 68-05's
+// src/browser/globalBoards.js produces it (status loading | ready |
+// unreachable | consent | closed, board, scope, season, entries, you, total,
+// sampled, stale), consumed here as plain data — this module never imports
+// or calls the controller. Global rows decode their values from the score
+// tag (D-16), falling back to scoreFallback on the raw score when a tag does
+// not decode, and never carry an epitaph (67 D-18). `season`/`seasons` add
+// the SEASON label and the older-season picker (D-08). Signed out (which is
+// also Compete OFF) every view is the local Phase 66 view; GRAVEYARD is local
+// in every state (D-17).
 
 import {
   compareRuns,
@@ -20,8 +31,16 @@ import {
   lineageKey,
   BOARD_IDS,
 } from "../../engine/records.js";
-import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES } from "../../content/boards.js";
+import {
+  BOARD_COPY,
+  BOARD_FOOTNOTES,
+  BOARDS_PANEL_COPY,
+  STANDING_LINES,
+  GLOBAL_STANDING_LINES,
+} from "../../content/boards.js";
 import { ROMAN } from "../../content/index.js";
+import { CAUSE_TEXT } from "../../content/epitaphs.js";
+import { scoreFallback } from "./boardScores.js";
 
 const HASH_RE = /^[0-9a-f]{8}$/;
 
@@ -215,13 +234,18 @@ function barPercents(entries) {
   });
 }
 
-/** finalize(rawRows, openKey, opts) — applies cutTopTen (unless skipCut), the bar rule, the avatar and `open`, and strips the internal `run`/`metric` fields. */
+/**
+ * finalize(rawRows, openKey, opts) — applies cutTopTen (unless skipCut), the
+ * bar rule, the avatar and `open`, and strips the internal `run`/`metric`/
+ * `avatarKey` fields. The avatar is drawn from `avatarKey` when a row sets
+ * one (global rows: the Play Games handle), else from the run's name.
+ */
 function finalize(rawRows, openKey, { skipCut = false } = {}) {
   const cutRows = skipCut ? rawRows.map((r) => ({ ...r })) : cutTopTen(rawRows);
   const withBars = barPercents(cutRows);
   return withBars.map((r) => {
-    const avatarName = rf(r.run, "name") || "";
-    const { run, metric, ...rest } = r;
+    const avatarName = typeof r.avatarKey === "string" ? r.avatarKey : rf(r.run, "name") || "";
+    const { run, metric, avatarKey, ...rest } = r;
     return {
       ...rest,
       avatar: { initials: initialsOf(avatarName), bg: avatarColour(avatarName) },
@@ -324,6 +348,293 @@ function buildGraveyardRows(graves) {
   }));
 }
 
+// ─── global views (Phase 68: D-05..D-09, D-16, D-17) ────────────────────────
+
+const G = BOARDS_PANEL_COPY.global;
+const GLOBAL_STATUSES = Object.freeze(["loading", "ready", "unreachable", "consent", "closed"]);
+const UNREACHABLE = Object.freeze({ status: "unreachable", entries: Object.freeze([]), you: null, total: null, sampled: null });
+
+/** isObj(v) — a non-null, non-array object. */
+function isObj(v) {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
+/**
+ * readSnapshot(global) — the snapshot guard. Anything that is not an object
+ * with a known status reads as unreachable; entries count only on a ready
+ * snapshot, and non-object entries are dropped; a non-object `you` is null;
+ * total and sampled are non-negative integers or null. Never mutates.
+ */
+function readSnapshot(global) {
+  if (!isObj(global) || !GLOBAL_STATUSES.includes(global.status)) return UNREACHABLE;
+  const ready = global.status === "ready";
+  const count = (v) => (Number.isInteger(v) && v >= 0 ? v : null);
+  return {
+    status: global.status,
+    entries: ready && Array.isArray(global.entries) ? global.entries.filter(isObj) : [],
+    you: ready && isObj(global.you) ? global.you : null,
+    total: count(global.total),
+    sampled: count(global.sampled),
+  };
+}
+
+/** globalCause(run) — CAUSE_TEXT with {foe} as the generic foe, first letter capitalised; "" for an unknown cause. */
+function globalCause(run) {
+  const cause = rf(run, "cause");
+  if (typeof cause !== "string" || !Object.prototype.hasOwnProperty.call(CAUSE_TEXT, cause)) return "";
+  const text = fill(CAUSE_TEXT[cause], { foe: G.foe });
+  return text ? text[0].toUpperCase() + text.slice(1) : "";
+}
+
+/** globalHandle(entry) — the trimmed Play Games handle, or the nameless-delver line. */
+function globalHandle(entry) {
+  const h = typeof entry.handle === "string" ? entry.handle.trim() : "";
+  return h || G.anon;
+}
+
+/** entryRun(entry) — the decoded tag, or null when the tag did not decode. */
+function entryRun(entry) {
+  return isObj(entry.run) ? entry.run : null;
+}
+
+/** globalTag(entry) — "YOU", "FRIEND" or "". */
+function globalTag(entry) {
+  if (entry.you === true) return G.you;
+  if (entry.friend === true) return G.friend;
+  return "";
+}
+
+/**
+ * fallbackCell(board, rawScore) — the minimal row's value (D-16) recovered
+ * from the raw score by scoreFallback: DEEPEST the floor, LONGEST the days,
+ * BUTCHERY the kills, PURSE the grouped gold, LEANEST the squares-per-floor
+ * rate to one decimal. A raw score scoreFallback rejects shows the dash.
+ */
+function fallbackCell(board, rawScore) {
+  const unit = BOARD_COPY[board].unitLabel;
+  const fb = scoreFallback(board, rawScore);
+  if (!fb) return { val: BOARDS_PANEL_COPY.standing.noPlace, unit, metric: Number.NEGATIVE_INFINITY };
+  switch (board) {
+    case "deep":
+      return { val: String(fb.floor), unit, metric: fb.floor };
+    case "lean":
+      return { val: fb.rate.toFixed(1), unit: G.leanRateUnit, metric: -fb.rate };
+    case "days":
+      return { val: String(fb.day), unit, metric: fb.day };
+    case "kills":
+      return { val: String(fb.kills), unit, metric: fb.kills };
+    case "purse":
+      return { val: fb.gold.toLocaleString("en-US"), unit, metric: fb.gold };
+    default:
+      return { val: BOARDS_PANEL_COPY.standing.noPlace, unit, metric: Number.NEGATIVE_INFINITY };
+  }
+}
+
+/**
+ * globalRow(board, entry, index) — one ranked global row. `index` is the
+ * list position (the rank shown when Play Games reported none); null marks
+ * the pinned YOU row under the divider. The avatar is the handle's initials
+ * (never a remote image); the detail is the cause line only (no epitaph,
+ * 67 D-18); a run-null entry is the minimal row.
+ */
+function globalRow(board, entry, index) {
+  const pinned = index === null;
+  const run = entryRun(entry);
+  const handle = globalHandle(entry);
+  let rank = "";
+  if (Number.isInteger(entry.rank) && entry.rank > 0) rank = String(entry.rank);
+  else if (!pinned) rank = String(index + 1);
+  const base = {
+    key: typeof entry.key === "string" && entry.key ? entry.key : pinned ? "g:you" : `g:${index}`,
+    run,
+    avatarKey: handle,
+    rank,
+    top: !pinned && index === 0,
+    podium: !pinned && index < 3,
+    you: pinned || entry.you === true,
+    divider: pinned ? BOARDS_PANEL_COPY.divider : "",
+    headline: handle,
+    tag: pinned ? G.you : globalTag(entry),
+  };
+  if (run) {
+    return {
+      ...base,
+      name: String(rf(run, "name") ?? ""),
+      line: levelLine(run),
+      detail: globalCause(run),
+      val: valueText(board, run),
+      unit: BOARD_COPY[board].unitLabel,
+      stats: statChips(run),
+      metric: metricFor(board, run),
+    };
+  }
+  const cell = fallbackCell(board, entry.rawScore);
+  return { ...base, name: "", line: "", detail: "", val: cell.val, unit: cell.unit, stats: [], metric: cell.metric };
+}
+
+/**
+ * buildGlobalRows(board, snap, openKey) — the snapshot's entries in the
+ * order Play Games returned them (never re-sorted), plus the player's own
+ * best pinned last under the divider when no listed entry is theirs (D-05).
+ */
+function buildGlobalRows(board, snap, openKey) {
+  const rows = snap.entries.map((e, i) => globalRow(board, e, i));
+  if (rows.length > 0 && snap.you && !snap.entries.some((e) => e.you === true)) {
+    rows.push(globalRow(board, snap.you, null));
+  }
+  return finalize(rows, openKey, { skipCut: true });
+}
+
+/**
+ * lineageGroups(entries) — D-09 / 67 D-19: the DEEPEST sample grouped by
+ * "race cls", keeping the first (best-ranked) entry per combination in
+ * sample order; entries without a decoded race and class are skipped.
+ */
+function lineageGroups(entries) {
+  const seen = new Set();
+  const groups = [];
+  for (const entry of entries) {
+    const run = entryRun(entry);
+    const race = typeof rf(run, "race") === "string" ? run.race : "";
+    const cls = typeof rf(run, "cls") === "string" ? run.cls : "";
+    if (!race || !cls) continue;
+    const key = `${race} ${cls}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    groups.push({ key, entry, run });
+  }
+  return groups;
+}
+
+/** buildGlobalLineageRows(groups, openKey) — one row per race-and-class group, in sample order. */
+function buildGlobalLineageRows(groups, openKey) {
+  const rows = groups.map((g, i) => {
+    const handle = globalHandle(g.entry);
+    return {
+      key: "combo:" + g.key,
+      run: g.run,
+      avatarKey: handle,
+      rank: String(i + 1),
+      top: i === 0,
+      podium: i < 3,
+      you: g.entry.you === true,
+      divider: "",
+      headline: handle,
+      tag: globalTag(g.entry),
+      name: g.key.toUpperCase(),
+      line: levelLine(g.run),
+      detail: globalCause(g.run),
+      val: String(num(rf(g.run, "floor"))),
+      unit: BOARD_COPY.combo.unitLabel,
+      stats: statChips(g.run),
+      metric: metricFor("combo", g.run),
+    };
+  });
+  return finalize(rows, openKey, { skipCut: true });
+}
+
+/** globalQuip(place, board) — GLOBAL_STANDING_LINES by band (1 / top 10 / top 100 / the rest), picked from the place and the board index. */
+function globalQuip(place, board) {
+  const bank =
+    place === 1
+      ? GLOBAL_STANDING_LINES.first
+      : place <= 10
+        ? GLOBAL_STANDING_LINES.ten
+        : place <= 100
+          ? GLOBAL_STANDING_LINES.hundred
+          : GLOBAL_STANDING_LINES.rest;
+  const boardIdx = BOARD_IDS.indexOf(board);
+  return bank[(place + (boardIdx === -1 ? 0 : boardIdx)) % bank.length];
+}
+
+/** noGlobalEntry() — the standing card when the player has nothing on this board. */
+function noGlobalEntry() {
+  return { label: BOARDS_PANEL_COPY.standing.noEntry, place: BOARDS_PANEL_COPY.standing.noPlace, note: G.noEntry };
+}
+
+/**
+ * buildGlobalStanding(board, scope, snap, groups) — D-05's real-rank card:
+ * the player's own score (snap.you, else the listed entry marked you), its
+ * reported rank (the list position when missing) out of the board's total
+ * (the entry count when unknown), plus a banded quip. LINEAGE places the
+ * player's combination among the sample's groups. NO ENTRY when absent.
+ */
+function buildGlobalStanding(board, scope, snap, groups) {
+  const listed = snap.entries.findIndex((e) => e.you === true);
+  const you = snap.you || (listed !== -1 ? snap.entries[listed] : null);
+  if (!you) return noGlobalEntry();
+  const run = entryRun(you);
+
+  if (board === "combo") {
+    const race = typeof rf(run, "race") === "string" ? run.race : "";
+    const cls = typeof rf(run, "cls") === "string" ? run.cls : "";
+    const key = race && cls ? `${race} ${cls}` : "";
+    const idx = key ? groups.findIndex((g) => g.key === key) : -1;
+    if (idx === -1) return noGlobalEntry();
+    const place = idx + 1;
+    return {
+      label: key.toUpperCase() + BOARDS_PANEL_COPY.sep + BOARD_COPY.combo.unitLabel,
+      place: ordinal(place),
+      note: fill(G.ofSampled, { n: groups.length }) + " " + globalQuip(place, "combo"),
+    };
+  }
+
+  let place = null;
+  if (Number.isInteger(you.rank) && you.rank > 0) place = you.rank;
+  else if (listed !== -1) place = listed + 1;
+  const who = String(rf(run, "name") || globalHandle(you)).toUpperCase();
+  const label = who + BOARDS_PANEL_COPY.sep + BOARD_COPY[board].unitLabel;
+  const total = Math.max(snap.total !== null ? snap.total : snap.entries.length, place || 0);
+  const ofLine = fill(scope === "friends" ? G.ofFriends : G.ofWorld, { n: total.toLocaleString("en-US") });
+  if (place === null) return { label, place: BOARDS_PANEL_COPY.standing.noPlace, note: ofLine };
+  return { label, place: ordinal(place), note: ofLine + " " + globalQuip(place, board) };
+}
+
+/**
+ * buildGlobalView(board, scope, global, openKey) — the signed-in ALL /
+ * FRIENDS body, standing card and footnote from the snapshot's status
+ * (D-06, D-07): loading / unreachable / closed are in-panel notes with no
+ * card, consent is the note plus the SHOW MY FRIENDS action, ready is the
+ * rows (or the empty note) with the real-rank card. Nothing blocks and
+ * nothing is a modal or a rail card.
+ */
+function buildGlobalView(board, scope, global, openKey) {
+  const snap = readSnapshot(global);
+  const note = (line) => ({ body: { kind: "note", line }, standing: null, footnote: BOARD_FOOTNOTES.ranked });
+  switch (snap.status) {
+    case "loading":
+      return note(G.loading);
+    case "closed":
+      return note(G.closed);
+    case "consent":
+      return {
+        body: { kind: "consent", line: G.consent, action: { id: "friendsConsent", label: G.consentButton } },
+        standing: null,
+        footnote: BOARD_FOOTNOTES.ranked,
+      };
+    case "ready": {
+      const empty = { kind: "empty", line: G.empty };
+      if (board === "combo") {
+        const groups = lineageGroups(snap.entries);
+        const rows = buildGlobalLineageRows(groups, openKey);
+        return {
+          body: rows.length ? { kind: "rows", rows } : empty,
+          standing: buildGlobalStanding("combo", scope, snap, groups),
+          footnote: fill(G.sampledFoot, { n: snap.sampled !== null ? snap.sampled : snap.entries.length }),
+        };
+      }
+      const rows = buildGlobalRows(board, snap, openKey);
+      return {
+        body: rows.length ? { kind: "rows", rows } : empty,
+        standing: buildGlobalStanding(board, scope, snap, []),
+        footnote: BOARD_FOOTNOTES.ranked,
+      };
+    }
+    default:
+      return note(G.unreachable);
+  }
+}
+
 // ─── header/strip/rail/board/footnote/dock builders (Task 2) ───────────────
 
 function computeInterred(total, stoneCount) {
@@ -331,15 +642,44 @@ function computeInterred(total, stoneCount) {
   return stoneCount;
 }
 
-function buildHeader(entry, boardId, interredCount) {
+/** seasonLabel(n) — "SEASON n". */
+function seasonLabel(n) {
+  return fill(G.season, { n });
+}
+
+/**
+ * buildHeader(entry, boardId, interredCount, ctx) — the title, scope line
+ * (the global scope lines while signed in on ALL / FRIENDS), interred count,
+ * back affordance and the D-08 season block: the SEASON label on every view,
+ * and a picker only with two or more seasons, signed in, on a global scope,
+ * off GRAVEYARD.
+ */
+function buildHeader(entry, boardId, interredCount, { signedIn, scope, season, seasons }) {
+  const globalScope = boardId !== "yard" && signedIn && scope !== "local";
+  let scopeLine = boardId === "yard" ? BOARDS_PANEL_COPY.scope.yard : BOARDS_PANEL_COPY.scope.ranked;
+  if (globalScope) scopeLine = scope === "friends" ? G.scope.friends : G.scope.all;
+  const picker =
+    globalScope && seasons.length >= 2 ? seasons.map((n) => ({ n, label: seasonLabel(n), on: n === season })) : null;
   return {
     title: BOARDS_PANEL_COPY.head.title,
-    scopeLine: boardId === "yard" ? BOARDS_PANEL_COPY.scope.yard : BOARDS_PANEL_COPY.scope.ranked,
+    scopeLine,
     interred: interredCount,
     interredLabel: BOARDS_PANEL_COPY.head.interred,
     back: entry === "title",
     backLabel: BOARDS_PANEL_COPY.head.back,
+    season: { label: seasonLabel(season), picker },
   };
+}
+
+/** isSeason(n) — a positive integer. */
+function isSeason(n) {
+  return Number.isInteger(n) && n > 0;
+}
+
+/** readSeasons(raw, season) — the positive-integer seasons, deduped and ascending; [season] when none. */
+function readSeasons(raw, season) {
+  const list = Array.isArray(raw) ? [...new Set(raw.filter(isSeason))].sort((a, b) => a - b) : [];
+  return list.length ? list : [season];
 }
 
 /** playerName(player) — the trimmed display name, or strip.live.unnamed when there is none. */
@@ -489,8 +829,11 @@ const SCOPES = ["local", "all", "friends"];
  * 66-03-PLAN.md's `<interfaces>` block for the exact view shape this returns.
  * Phase 67 (D-08) supplies signedIn and player ({ id, displayName } or null)
  * at this seam: signed in, the strip carries the display name, its avatar
- * and PLAY GAMES · SIGNED IN, and the ALL/FRIENDS notes say the global boards
- * are coming online. Phase 68 adds the global and friends sources.
+ * and PLAY GAMES · SIGNED IN. Phase 68 adds `global` (a GlobalSnapshot or
+ * null; signed in on ALL / FRIENDS it drives the body, the standing card —
+ * null while not ready — and the footnote), `season` (default 1) and
+ * `seasons` (default [season]) for header.season { label, picker }, and the
+ * body kind "consent" { line, action: { id: "friendsConsent", label } }.
  */
 export function boardsView(input = {}) {
   const raw = input && typeof input === "object" ? input : {};
@@ -511,40 +854,50 @@ export function boardsView(input = {}) {
   const interredCount = computeInterred(raw.total, normalizedGraves.length);
   const pool = runPool(bests, rawGraves);
 
+  const season = isSeason(raw.season) ? raw.season : 1;
+  const seasons = readSeasons(raw.seasons, season);
+
+  // Body selection (D-07, D-17): GRAVEYARD → the local stones; the local
+  // scope → the local rows; signed out (or Compete OFF) on ALL / FRIENDS →
+  // the Phase 66 note, asking nothing of the world; signed in → the global
+  // snapshot's view.
   let body;
+  let globalView = null;
   if (board === "yard") {
     const rows = finalize(buildGraveyardRows(rawGraves), openKey, { skipCut: true });
     body = rows.length ? { kind: "rows", rows } : { kind: "empty", line: BOARDS_PANEL_COPY.empty };
-  } else if (scope !== "local") {
-    // Phase 67 (D-08): signed in, the note says the global boards are coming
-    // online; the rows stay local until Phase 68 and nothing claims a ranking.
-    const notes = signedIn ? BOARDS_PANEL_COPY.note.live : BOARDS_PANEL_COPY.note;
-    body = { kind: "note", line: scope === "all" ? notes.all : notes.friends };
-  } else if (board === "combo") {
-    const rows = finalize(buildLineageRows(bests), openKey, {});
+  } else if (scope === "local") {
+    const rows =
+      board === "combo"
+        ? finalize(buildLineageRows(bests), openKey, {})
+        : finalize(buildRankedRows(board, bests), openKey, {});
     body = rows.length ? { kind: "rows", rows } : { kind: "empty", line: BOARDS_PANEL_COPY.empty };
+  } else if (!signedIn) {
+    body = { kind: "note", line: scope === "all" ? BOARDS_PANEL_COPY.note.all : BOARDS_PANEL_COPY.note.friends };
   } else {
-    const rows = finalize(buildRankedRows(board, bests), openKey, {});
-    body = rows.length ? { kind: "rows", rows } : { kind: "empty", line: BOARDS_PANEL_COPY.empty };
+    globalView = buildGlobalView(board, scope, raw.global, openKey);
+    body = globalView.body;
   }
 
-  const standing = buildStanding({
-    board,
-    bests,
-    pool,
-    recentHash: raw.recentHash,
-    interredCount,
-    normalizedGraves,
-  });
+  const standing = globalView
+    ? globalView.standing
+    : buildStanding({
+        board,
+        bests,
+        pool,
+        recentHash: raw.recentHash,
+        interredCount,
+        normalizedGraves,
+      });
 
   return {
-    header: buildHeader(entry, board, interredCount),
+    header: buildHeader(entry, board, interredCount, { signedIn, scope, season, seasons }),
     strip: buildStrip(board, scope, signedIn, player),
     rail: buildRail(board),
     board: buildBoardHead(board),
     body,
     standing,
-    footnote: buildFootnote(board),
+    footnote: globalView ? globalView.footnote : buildFootnote(board),
     dock: buildDock(entry, hasHero),
   };
 }

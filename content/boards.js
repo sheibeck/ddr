@@ -93,9 +93,9 @@ export const BOARD_FOOTNOTES = {
 // floor, steps, epitaph) are filled by the view model (66-04); content/ holds
 // no functions (test/determinism/content-is-pure-data.test.js).
 // Phase 67 (D-08): `strip.live` is the signed-in strip's source line and the
-// fallback name for a player with no display name; `note.live` is the ALL /
-// FRIENDS tap note while signed in — the global boards are coming online,
-// and it claims no rank or count (Phase 68 brings the real rows).
+// fallback name for a player with no display name. `note` holds only the
+// Phase 66 signed-out ALL / FRIENDS notes: Phase 68 retired 67-04's
+// signed-in "coming online" notes, which the live global views replace.
 // Phase 68 (D-05..D-09): `global` holds the ALL / FRIENDS board copy — the
 // scope lines, the SEASON {n} label, the loading / unreachable / closed /
 // empty notes, the friends consent note and button, the YOU / FRIEND row
@@ -128,10 +128,6 @@ export const BOARDS_PANEL_COPY = Object.freeze({
   note: Object.freeze({
     all: "Nobody out there can see you yet.",
     friends: "Your friends have not been told you exist. It may be kinder that way.",
-    live: Object.freeze({
-      all: "The world's ledger is still being bound. Your own dead will have to do.",
-      friends: "Your friends' ledger is still at the bindery. Your own dead will have to do for now.",
-    }),
   }),
   global: Object.freeze({
     scope: Object.freeze({

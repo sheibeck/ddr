@@ -969,7 +969,12 @@ test("global standing: the real rank with worldwide / among-friends counts and a
   const lean = gView({ board: "lean", global: snap({ board: "lean", entries, you, total: 50 }) }).standing;
   assert.equal(lean.label, "BROM IRONFOOT · " + BOARD_COPY.lean.unitLabel);
 
-  const none = gView({ global: snap({ entries, you: null, total: 9044 }) }).standing;
+  // 68-05: a ready snapshot can carry you null when only the player-score call
+  // failed; the listed entry marked you still places the player.
+  const listedOnly = gView({ global: snap({ entries, you: null, total: 9044 }) }).standing;
+  assert.equal(listedOnly.place, "3RD");
+
+  const none = gView({ global: snap({ entries: [gEntry(0), gEntry(1)], you: null, total: 9044 }) }).standing;
   assert.deepStrictEqual(none, { label: "NO ENTRY", place: "—", note: G.noEntry });
 });
 
