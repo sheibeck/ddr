@@ -83,7 +83,11 @@ function setup(overrides = {}) {
   const prefs = overrides.prefs === undefined ? fakePrefs() : overrides.prefs;
   const onRoute = overrides.onRoute || spy();
   const reducedMotion = overrides.reducedMotion || (() => false);
-  const panel = createBoardsPanel({ host, buildView, readData, prefs, reducedMotion, onRoute });
+  const params = { host, buildView, readData, prefs, reducedMotion, onRoute };
+  // Phase 67 (D-08): identity is only passed when a test supplies one, so
+  // every other test exercises createBoardsPanel's signed-out default.
+  if (Object.prototype.hasOwnProperty.call(overrides, "identity")) params.identity = overrides.identity;
+  const panel = createBoardsPanel(params);
   return { doc, host, buildView, readData, prefs, onRoute, reducedMotion, panel };
 }
 
@@ -138,7 +142,7 @@ test("openFromTitle({ hasHero }): opens yard regardless of prefs, sets body.data
   assert.equal(lastInput.hasHero, false);
 });
 
-test("every open passes scope local, open null and signedIn false to buildView", () => {
+test("every open passes scope local, open null, signedIn false and player null to buildView (no identity seam given)", () => {
   const buildView = makeBuildView();
   const { panel } = setup({ buildView });
   panel.openFromTab();
@@ -146,12 +150,100 @@ test("every open passes scope local, open null and signedIn false to buildView",
   assert.equal(lastInput.scope, "local");
   assert.equal(lastInput.open, null);
   assert.equal(lastInput.signedIn, false);
+  assert.equal(lastInput.player, null);
 
   panel.openFromTitle({ hasHero: true });
   lastInput = buildView.calls[buildView.calls.length - 1][0];
   assert.equal(lastInput.scope, "local");
   assert.equal(lastInput.open, null);
   assert.equal(lastInput.signedIn, false);
+  assert.equal(lastInput.player, null);
+});
+
+// ─── Phase 67 (D-08): the injected identity() seam ──────────────────────
+
+function lastBuildInput(buildView) {
+  return buildView.calls[buildView.calls.length - 1][0];
+}
+
+test("identity(): a signed-in answer reaches buildView as signedIn true and that player on every render", () => {
+  const buildView = makeBuildView();
+  const player = { id: "p", displayName: "Lanternjaw" };
+  const { host, panel } = setup({ buildView, identity: () => ({ signedIn: true, player }) });
+  panel.openFromTab();
+  assert.equal(lastBuildInput(buildView).signedIn, true);
+  assert.deepStrictEqual(lastBuildInput(buildView).player, player);
+
+  // A board switch re-renders and re-reads the identity.
+  host.querySelector(".mw-bd-rail").children.find((c) => c.dataset.board === "kills").onclick();
+  assert.equal(lastBuildInput(buildView).board, "kills");
+  assert.equal(lastBuildInput(buildView).signedIn, true);
+  assert.deepStrictEqual(lastBuildInput(buildView).player, player);
+
+  panel.openFromTitle({ hasHero: false });
+  assert.equal(lastBuildInput(buildView).signedIn, true);
+  assert.deepStrictEqual(lastBuildInput(buildView).player, player);
+});
+
+test("identity(): signed out drops the player; a truthy-but-not-true signedIn is signed out; a missing player is null", () => {
+  const cases = [
+    [{ signedIn: false, player: { id: "x", displayName: "X" } }, false, null],
+    [{ signedIn: "true", player: { id: "x", displayName: "X" } }, false, null],
+    [{ signedIn: true }, true, null],
+    [{ signedIn: true, player: null }, true, null],
+  ];
+  for (const [answer, signedIn, player] of cases) {
+    const buildView = makeBuildView();
+    const { panel } = setup({ buildView, identity: () => answer });
+    panel.openFromTab();
+    assert.equal(lastBuildInput(buildView).signedIn, signedIn, JSON.stringify(answer));
+    assert.equal(lastBuildInput(buildView).player, player, JSON.stringify(answer));
+  }
+});
+
+test("identity(): a throwing, non-object or non-function identity renders signed out and the panel still renders", () => {
+  const variants = [
+    () => {
+      throw new Error("boom");
+    },
+    () => null,
+    () => "signed-in",
+    null,
+    "not a function",
+  ];
+  for (const identity of variants) {
+    const buildView = makeBuildView();
+    const { host, panel } = setup({ buildView, identity });
+    assert.doesNotThrow(() => panel.openFromTab());
+    assert.equal(buildView.calls.length, 1);
+    assert.equal(lastBuildInput(buildView).signedIn, false);
+    assert.equal(lastBuildInput(buildView).player, null);
+    assert.ok(host.querySelector(".mw-bd"), "the panel rendered");
+  }
+});
+
+test("refresh() re-reads identity() while open and does nothing while closed", () => {
+  const buildView = makeBuildView();
+  let answer = { signedIn: false, player: null };
+  const { panel } = setup({ buildView, identity: () => answer });
+
+  answer = { signedIn: true, player: { id: "p", displayName: "Lanternjaw" } };
+  panel.refresh();
+  assert.equal(buildView.calls.length, 0, "closed: no render");
+
+  panel.openFromTab();
+  assert.equal(lastBuildInput(buildView).signedIn, true);
+
+  answer = { signedIn: false, player: { id: "p", displayName: "Lanternjaw" } };
+  panel.refresh();
+  assert.equal(buildView.calls.length, 2);
+  assert.equal(lastBuildInput(buildView).signedIn, false);
+  assert.equal(lastBuildInput(buildView).player, null);
+
+  answer = { signedIn: true, player: { id: "q", displayName: "Moss" } };
+  panel.refresh();
+  assert.equal(lastBuildInput(buildView).signedIn, true);
+  assert.equal(lastBuildInput(buildView).player.displayName, "Moss");
 });
 
 // ─── board memory / rail chip ───────────────────────────────────────────

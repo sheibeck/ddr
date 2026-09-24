@@ -233,6 +233,81 @@ test("strip: null hides .mw-bd-strip; a strip renders the glyph/label/source and
   assert.deepStrictEqual(onScope.calls, [["all"], ["friends"]]);
 });
 
+// ─── Phase 67 (D-08): the signed-in avatar strip ────────────────────────
+
+const ON_RING = "inset 0 0 0 1px rgba(0,0,0,.5), 0 0 0 1px #e8c97a";
+
+// makeSignedInView(overrides) — makeView with the signed-in strip shape
+// boardsView produces (67-04): no glyph, an initials avatar, the display
+// name and PLAY GAMES · SIGNED IN, lit chips.
+function makeSignedInView(overrides = {}) {
+  return makeView({
+    strip: {
+      glyph: "",
+      avatar: { initials: "LJ", bg: "#4a5c6b" },
+      label: "Lanternjaw",
+      source: "PLAY GAMES · SIGNED IN",
+      scopes: [
+        { id: "all", label: "ALL", on: false, dim: false },
+        { id: "friends", label: "FRIENDS", on: false, dim: false },
+      ],
+    },
+    ...overrides,
+  });
+}
+
+test("strip, signed in: one .mw-bd-av without the nobody class, the initials, data-on 1, inline background and the gold on-ring", () => {
+  const view = makeSignedInView();
+  const onScope = spy();
+  const { root } = renderFresh(view, { onScope });
+  const strip = root.querySelector(".mw-bd-strip");
+  assert.equal(strip.hidden, false);
+  assert.equal(strip.querySelector(".mw-bd-av-nobody"), null);
+  const avs = strip.children.filter((c) => /\bmw-bd-av\b/.test(c.className || ""));
+  assert.equal(avs.length, 1);
+  const av = avs[0];
+  assert.equal(av.className, "mw-bd-av");
+  assert.equal(av.textContent, "LJ");
+  assert.equal(av.dataset.on, "1");
+  assert.equal(av.getAttribute("aria-hidden"), "true");
+  assert.equal(av.style.background, "#4a5c6b");
+  assert.equal(av.style.boxShadow, ON_RING);
+  assert.equal(strip.querySelector(".mw-bd-strip-label").textContent, "Lanternjaw");
+  assert.equal(strip.querySelector(".mw-bd-strip-source").textContent, "PLAY GAMES · SIGNED IN");
+  const chips = strip.querySelectorAll(".mw-bd-scope-chip");
+  assert.equal(chips.length, 2);
+  chips.forEach((chip) => {
+    assert.equal(chip.dataset.dim, "0");
+    chip.onclick();
+  });
+  assert.deepStrictEqual(onScope.calls, [["all"], ["friends"]]);
+});
+
+test("strip: avatar null, or no avatar key at all, still draws the Phase 66 nobody glyph", () => {
+  const base = makeView().strip;
+  for (const strip of [{ ...base, avatar: null }, base]) {
+    const { root } = renderFresh(makeView({ strip }));
+    const glyph = root.querySelector(".mw-bd-strip").querySelector(".mw-bd-av-nobody");
+    assert.ok(glyph);
+    assert.equal(glyph.className, "mw-bd-av mw-bd-av-nobody");
+    assert.equal(glyph.textContent, "?");
+    assert.equal(glyph.dataset.on, undefined);
+    assert.equal(glyph.style.boxShadow, undefined);
+  }
+});
+
+test("strip: re-rendering signed out after signed in swaps the avatar back to the nobody glyph", () => {
+  const doc = createRecordingDocument();
+  const host = doc.document.getElementById("screen-boards");
+  renderBoardsPanel(host, makeSignedInView(), {});
+  const root = renderBoardsPanel(host, makeView(), {});
+  const strip = root.querySelector(".mw-bd-strip");
+  const avs = strip.children.filter((c) => /\bmw-bd-av\b/.test(c.className || ""));
+  assert.equal(avs.length, 1);
+  assert.equal(avs[0].className, "mw-bd-av mw-bd-av-nobody");
+  assert.equal(strip.querySelector(".mw-bd-strip-label").textContent, "PLAY GAMES · SIGNED OUT");
+});
+
 // ─── rail ───────────────────────────────────────────────────────────────
 
 test("rail: seven .mw-bd-chip buttons in view order; the on chip alone gets inline colours; onclick calls onBoard(id)", () => {
@@ -460,6 +535,28 @@ test("BOARDS_CLASSES: every className the renderer emits (across every optional/
   const foundSorted = [...found].sort();
   const classesSorted = [...BOARDS_CLASSES].sort();
   assert.deepStrictEqual(foundSorted, classesSorted);
+});
+
+test("BOARDS_CLASSES (Phase 67): a signed-in view emits no class outside the list, and the union with it is still exactly the list", () => {
+  const views = [
+    makeView(),
+    makeView({ body: { kind: "empty", line: "Nobody of yours has qualified for this board yet." } }),
+    makeView({ body: { kind: "note", line: "Nobody out there can see you yet." } }),
+    makeSignedInView(),
+    makeSignedInView({ body: { kind: "note", line: "The world's ledger is still being bound. Your own dead will have to do." } }),
+  ];
+  const found = new Set();
+  views.forEach((view, i) => {
+    const { root } = renderFresh(view);
+    for (const node of walkAll(root)) {
+      if (node.nodeType === 3) continue;
+      for (const token of (node.className || "").split(/\s+/).filter(Boolean)) {
+        if (i >= 3) assert.ok(BOARDS_CLASSES.includes(token), `signed-in view emitted an unlisted class: ${token}`);
+        found.add(token);
+      }
+    }
+  });
+  assert.deepStrictEqual([...found].sort(), [...BOARDS_CLASSES].sort());
 });
 
 // ─── railScrollTarget ───────────────────────────────────────────────────

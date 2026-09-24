@@ -628,3 +628,126 @@ test("source pins: the comment-stripped module holds no document./window./localS
     assert.doesNotMatch(STRIPPED, new RegExp(`\\b${ident}\\b`), `unexpected network identifier: ${ident}`);
   }
 });
+
+// =============================================================================
+// Phase 67 (D-08) — the signed-in strip and the coming-online notes
+// =============================================================================
+
+const LIVE_PLAYER = { id: "p1", displayName: "Lanternjaw" };
+
+test("signed in: DEEPEST strip carries the display name, its initials avatar, PLAY GAMES · SIGNED IN and lit chips", () => {
+  const view = boardsView({ bests: null, graves: [], board: "deep", scope: "local", entry: "tab", signedIn: true, player: LIVE_PLAYER });
+  assert.deepStrictEqual(view.strip, {
+    glyph: "",
+    avatar: { initials: initialsOf("Lanternjaw"), bg: avatarColour("Lanternjaw") },
+    label: "Lanternjaw",
+    source: "PLAY GAMES · SIGNED IN",
+    scopes: [
+      { id: "all", label: "ALL", on: false, dim: false },
+      { id: "friends", label: "FRIENDS", on: false, dim: false },
+    ],
+  });
+});
+
+test("signed in: the display name is trimmed", () => {
+  const view = boardsView({ board: "deep", entry: "tab", signedIn: true, player: { id: "p", displayName: "  Lanternjaw  " } });
+  assert.equal(view.strip.label, "Lanternjaw");
+  assert.equal(view.strip.avatar.initials, initialsOf("Lanternjaw"));
+});
+
+test("signed in with no usable name: label and avatar fall back to strip.live.unnamed", () => {
+  const fallback = BOARDS_PANEL_COPY.strip.live.unnamed;
+  for (const player of [null, undefined, { id: "p", displayName: "" }, { id: "p", displayName: "   " }, { id: "p" }, { id: "p", displayName: 42 }, "Lanternjaw", 7]) {
+    const view = boardsView({ board: "deep", entry: "tab", signedIn: true, player });
+    assert.equal(view.strip.label, fallback, `player ${JSON.stringify(player)}`);
+    assert.deepStrictEqual(view.strip.avatar, { initials: initialsOf(fallback), bg: avatarColour(fallback) });
+    assert.equal(view.strip.source, BOARDS_PANEL_COPY.strip.live.source);
+  }
+});
+
+test("signed out (false, missing, or truthy-but-not-true), even with a player: the Phase 66 strip plus avatar null", () => {
+  for (const signedIn of [false, undefined, "true", 1]) {
+    const view = boardsView({ board: "deep", scope: "all", entry: "tab", signedIn, player: LIVE_PLAYER });
+    assert.deepStrictEqual(
+      view.strip,
+      {
+        glyph: "?",
+        avatar: null,
+        label: "PLAY GAMES · SIGNED OUT",
+        source: "Your dead only",
+        scopes: [
+          { id: "all", label: "ALL", on: true, dim: true },
+          { id: "friends", label: "FRIENDS", on: false, dim: true },
+        ],
+      },
+      `signedIn ${JSON.stringify(signedIn)}`
+    );
+    assert.deepStrictEqual(view.body, { kind: "note", line: BOARDS_PANEL_COPY.note.all });
+  }
+});
+
+test("signed in: a ranked board's all/friends scope gives the live coming-online note; local still lists rows", () => {
+  const rec = recordWith([makeSummary({ floor: 5 })]);
+  const base = { bests: rec, graves: [], board: "deep", entry: "tab", signedIn: true, player: LIVE_PLAYER };
+  assert.deepStrictEqual(boardsView({ ...base, scope: "all" }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.live.all });
+  assert.deepStrictEqual(boardsView({ ...base, scope: "friends" }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.live.friends });
+  assert.equal(boardsView({ ...base, scope: "local" }).body.kind, "rows");
+  assert.deepStrictEqual(boardsView({ ...base, board: "combo", scope: "all" }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.live.all });
+});
+
+test("GRAVEYARD: strip null and scope ignored, signed in or out", () => {
+  const graves = [legacyStone({ floor: 1 })];
+  for (const signedIn of [true, false]) {
+    const view = boardsView({ bests: null, graves, board: "yard", scope: "friends", entry: "tab", signedIn, player: LIVE_PLAYER });
+    assert.equal(view.strip, null);
+    assert.equal(view.body.kind, "rows");
+  }
+});
+
+test("signed in: header, rows, standing, footnote, rail, board and dock equal the signed-out view for the same data", () => {
+  const runs = [];
+  for (let i = 0; i < 12; i++) runs.push(makeSummary({ seed: i + 1, name: `Delver${i}`, floor: 1 + (i % 9), steps: 30 + i }));
+  const rec = recordWith(runs);
+  const graves = runs.map((r) => ({ ...r }));
+  for (const board of BOARD_IDS) {
+    for (const entry of ["tab", "title"]) {
+      const common = { bests: rec, graves, total: 12, board, scope: "local", entry, hasHero: false, open: runs[0].hash };
+      const { strip: _out, ...outRest } = boardsView({ ...common, signedIn: false });
+      const { strip: _in, ...inRest } = boardsView({ ...common, signedIn: true, player: LIVE_PLAYER });
+      assert.deepStrictEqual(inRest, outRest, `board ${board} entry ${entry}`);
+    }
+  }
+});
+
+test("signed in: no view string mentions worldwide or among friends, on any board or scope", () => {
+  const rec = recordWith([makeSummary({ floor: 5 }), makeSummary({ seed: 2, floor: 3 })]);
+  for (const board of BOARD_IDS) {
+    for (const scope of ["local", "all", "friends"]) {
+      const view = boardsView({ bests: rec, graves: [], total: 2, board, scope, entry: "tab", signedIn: true, player: LIVE_PLAYER });
+      for (const s of collectStrings(view)) {
+        assert.doesNotMatch(s, /worldwide/i);
+        assert.doesNotMatch(s, /among friends/i);
+      }
+    }
+  }
+});
+
+test("Purity with a player: deep-frozen signed-in input is never mutated and two calls are deepStrictEqual", () => {
+  const rec = deepFreeze(recordWith([makeSummary({ floor: 5 })]));
+  const input = deepFreeze({
+    bests: rec,
+    graves: [],
+    total: 1,
+    board: "deep",
+    scope: "all",
+    entry: "tab",
+    signedIn: true,
+    player: { id: "p1", displayName: "Lanternjaw" },
+  });
+  let v1;
+  assert.doesNotThrow(() => {
+    v1 = boardsView(input);
+  });
+  assert.deepStrictEqual(boardsView(input), v1);
+  assert.equal(input.player.displayName, "Lanternjaw");
+});

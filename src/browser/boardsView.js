@@ -7,7 +7,9 @@
 // randomness anywhere in this module. Every ordering comes from
 // engine/records.js and every word of copy comes from content/boards.js —
 // this module holds no player-facing literal of its own except the
-// structural separator (BOARDS_PANEL_COPY.sep). No network.
+// structural separator (BOARDS_PANEL_COPY.sep). No network. Phase 67 (D-08)
+// adds the signed-in strip and notes from the signedIn/player inputs; Phase
+// 68 adds global sources behind the same view.
 
 import {
   compareRuns,
@@ -340,13 +342,37 @@ function buildHeader(entry, boardId, interredCount) {
   };
 }
 
-function buildStrip(boardId, scope, signedIn) {
+/** playerName(player) — the trimmed display name, or strip.live.unnamed when there is none. */
+function playerName(player) {
+  const raw = player && typeof player === "object" ? player.displayName : null;
+  const name = typeof raw === "string" ? raw.trim() : "";
+  return name || BOARDS_PANEL_COPY.strip.live.unnamed;
+}
+
+function buildStrip(boardId, scope, signedIn, player) {
   if (boardId === "yard") return null;
   const dim = signedIn !== true;
+  let head;
+  if (signedIn === true) {
+    // Phase 67 (D-08): the live strip — the display name, its initials avatar
+    // (the mock's AVATAR, drawn with the gold on-ring) and PLAY GAMES · SIGNED IN.
+    const name = playerName(player);
+    head = {
+      glyph: "",
+      avatar: { initials: initialsOf(name), bg: avatarColour(name) },
+      label: name,
+      source: BOARDS_PANEL_COPY.strip.live.source,
+    };
+  } else {
+    head = {
+      glyph: BOARDS_PANEL_COPY.strip.glyph,
+      avatar: null,
+      label: BOARDS_PANEL_COPY.strip.label,
+      source: BOARDS_PANEL_COPY.strip.source,
+    };
+  }
   return {
-    glyph: BOARDS_PANEL_COPY.strip.glyph,
-    label: BOARDS_PANEL_COPY.strip.label,
-    source: BOARDS_PANEL_COPY.strip.source,
+    ...head,
     scopes: [
       { id: "all", label: BOARDS_PANEL_COPY.chips.all, on: scope === "all", dim },
       { id: "friends", label: BOARDS_PANEL_COPY.chips.friends, on: scope === "friends", dim },
@@ -458,9 +484,13 @@ const SCOPES = ["local", "all", "friends"];
 /**
  * boardsView(input) — the D-15 seam: a pure, deterministic function of
  * { bests, graves, total, board, scope, open, entry, hasHero, signedIn,
- * recentHash } producing the whole Leaderboards panel's content. No DOM, no
- * storage, no clock, no randomness, no input mutation. See 66-03-PLAN.md's
- * `<interfaces>` block for the exact view shape this returns.
+ * player, recentHash } producing the whole Leaderboards panel's content. No
+ * DOM, no storage, no clock, no randomness, no input mutation. See
+ * 66-03-PLAN.md's `<interfaces>` block for the exact view shape this returns.
+ * Phase 67 (D-08) supplies signedIn and player ({ id, displayName } or null)
+ * at this seam: signed in, the strip carries the display name, its avatar
+ * and PLAY GAMES · SIGNED IN, and the ALL/FRIENDS notes say the global boards
+ * are coming online. Phase 68 adds the global and friends sources.
  */
 export function boardsView(input = {}) {
   const raw = input && typeof input === "object" ? input : {};
@@ -472,6 +502,9 @@ export function boardsView(input = {}) {
   const entry = raw.entry === "title" ? "title" : "tab";
   const hasHero = raw.hasHero === true;
   const signedIn = raw.signedIn === true;
+  // A player only counts while signedIn is exactly true; anything that is not
+  // an object is treated as no player (playerName falls back to the unnamed line).
+  const player = signedIn && raw.player && typeof raw.player === "object" ? raw.player : null;
   const openKey = raw.open ?? null;
 
   const normalizedGraves = rawGraves.map(normalizeStone).filter(Boolean);
@@ -483,7 +516,10 @@ export function boardsView(input = {}) {
     const rows = finalize(buildGraveyardRows(rawGraves), openKey, { skipCut: true });
     body = rows.length ? { kind: "rows", rows } : { kind: "empty", line: BOARDS_PANEL_COPY.empty };
   } else if (scope !== "local") {
-    body = { kind: "note", line: scope === "all" ? BOARDS_PANEL_COPY.note.all : BOARDS_PANEL_COPY.note.friends };
+    // Phase 67 (D-08): signed in, the note says the global boards are coming
+    // online; the rows stay local until Phase 68 and nothing claims a ranking.
+    const notes = signedIn ? BOARDS_PANEL_COPY.note.live : BOARDS_PANEL_COPY.note;
+    body = { kind: "note", line: scope === "all" ? notes.all : notes.friends };
   } else if (board === "combo") {
     const rows = finalize(buildLineageRows(bests), openKey, {});
     body = rows.length ? { kind: "rows", rows } : { kind: "empty", line: BOARDS_PANEL_COPY.empty };
@@ -503,7 +539,7 @@ export function boardsView(input = {}) {
 
   return {
     header: buildHeader(entry, board, interredCount),
-    strip: buildStrip(board, scope, signedIn),
+    strip: buildStrip(board, scope, signedIn, player),
     rail: buildRail(board),
     board: buildBoardHead(board),
     body,
