@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Leaderboards
 current_phase: 67
-current_phase_name: Play Games Integration & Account Chip
-status: planning
+current_phase_name: play-games-integration-account-chip
+status: executing
 stopped_at: /gsd-autonomous v2.0 run IN PROGRESS (orchestrator resume note, written before a /compact).
-last_updated: "2026-09-24T02:03:44.275Z"
+last_updated: "2026-09-24T02:05:32.925Z"
 last_activity: 2026-09-23
-last_activity_desc: Phase 66 complete, transitioned to Phase 67
+last_activity_desc: Phase 67 execution started
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 26
+  total_plans: 27
   completed_plans: 12
   percent: 40
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards started; v1.9 closed and tagged; Play 1.9.0 / vc8 built for closed testing; open Pixel 7 UAT batches: v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 66 — Leaderboards Panel — Local
+**Current focus:** Phase 67 — play-games-integration-account-chip
 
 ## Current Position
 
-Phase: 67 — Play Games Integration & Account Chip
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-23 — Phase 66 complete, transitioned to Phase 67
+Phase: 67 (play-games-integration-account-chip) — EXECUTING
+Plan: 1 of 8
+Status: Executing Phase 67
+Last activity: 2026-09-23 — Phase 67 execution started
 
 ## Ground Truth (durable facts every session needs)
 
