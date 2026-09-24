@@ -20,5 +20,5 @@ TBD. Hints:
 - Respect the `sound` setting (`applySfxSettings`); stop in `stopAllSfx` and on app pause/background (`nativeChrome.js`'s pause listener).
 - Autoplay: the Android WebView blocks audio before a user gesture. Music can only start on the first tap (`unlockSfx`), so decide whether it begins on the first touch or whether the native splash counts. "Splash screen" most likely means the title screen; the Capacitor native splash shows for under a second before the WebView loads. Confirm with the user.
 - 2.3 MB: decode lazily after the first paint so boot isn't delayed; check the AAB size budget (PERF-03 tracked AAB growth).
-- Commit `sfx/theme.mp3` with the implementing task.
+- Commit `sfx/theme.mp3` with the implementing task. **Until then `npm test` shows 1 failure:** `test/unit/sfx-assets.test.js` AUD-06 pins exactly 30 clips in `sfx/`. The implementing task must add the theme to that test as a music track (or move it to a `music/` folder) rather than widening the clip count.
 - Presentation-only, no engine impact. A quick task after v2.0, or folded into Phase 69's device close if the user wants it in this release.

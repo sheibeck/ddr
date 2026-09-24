@@ -32,7 +32,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 **Working method:** no milestone-level research pass. Phase 67 is flagged `Research: yes` for `gsd-phase-researcher` — it settles the PGS plugin choice, sign-in mechanics, Capacitor 8 / AGP 8.13 compatibility, the score-tag encoding, and LINEAGE's global form together, since all five hinge on the same plugin's API surface. Phases 65, 66, 68 and 69 need no separate research pass — 65/66 build on the codebase's existing `buildRunSummary`/`engineAdapter` keys and the mock, and 68 builds on Phase 67's settled decisions. Full decision record: `.planning/proposed-milestone-leaderboards.md`.
 
 - [x] **Phase 65: Run Record & Personal Bests** - Every death records a durable, season-tagged run summary and updates an all-time personal-bests record that survives the graveyard trim (completed 2026-09-23)
-- [ ] **Phase 66: Leaderboards Panel — Local** - The DEAD tab becomes the mock's Leaderboards panel, running fully offline across all seven boards on personal bests and the graveyard
+- [x] **Phase 66: Leaderboards Panel — Local** - The DEAD tab becomes the mock's Leaderboards panel, running fully offline across all seven boards on personal bests and the graveyard (completed 2026-09-23)
 - [ ] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle
 - [ ] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card
 - [ ] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch
@@ -101,7 +101,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 66-07-PLAN.md — (wave 4) VIEW THE DEAD opens the panel in title mode, Android back mirrors the chevron, and the classic graveyard loader and its harness are retired (BOARD-01, BOARD-08)
+- [x] 66-07-PLAN.md — (wave 4) VIEW THE DEAD opens the panel in title mode, Android back mirrors the chevron, and the classic graveyard loader and its harness are retired (BOARD-01, BOARD-08)
 
 **Research**: none — `Mazeworld Leaderboards.dc.html` and `Mazeworld Boards Panel.dc.html` (read via `DesignSync`) are the UX/visual spec.
 **UI hint**: yes
@@ -329,7 +329,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
-| 66. Leaderboards Panel — Local | v2.0 | 6/7 | In Progress|  |
+| 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 0/8 | Planned | - |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
@@ -515,15 +515,18 @@ Plans:
 **Plans:** 0 plans
 
 **The three warnings, verbatim from Play Console:**
+
 1. *"From Android 15, apps targeting SDK 35 will display edge-to-edge by default. Apps targeting SDK 35 should handle insets to make sure that their app displays correctly on Android 15 and later. Investigate this issue and allow time to test edge-to-edge and make the required updates. Alternatively, call enableEdgeToEdge() for Kotlin or EdgeToEdge.enable() for Java for backward compatibility."*
 2. *"One or more of the APIs you use or parameters that you set for edge-to-edge and window display have been deprecated in Android 15. To fix this, migrate away from these APIs or parameters."*
 3. *"Your game doesn't support all display configurations, and uses resizability and orientation restrictions that may lead to layout issues for your users."*
 
 **What is already in place (so this is a verify-and-tidy, not a rewrite):**
+
 - `targetSdkVersion = 36` (`android/variables.gradle`), so edge-to-edge is already forced on Android 15+.
 - `mazeworld.html` pads its fixed chrome with `var(--safe-area-inset-*, env(safe-area-inset-*))` (HUD band ~L1026, dead screen ~L1105, `.mw-bd-dock` ~L1187, title/panels ~L1261/1344/1417/1527). Device checks so far have looked right on the Pixel 7, but nobody has tested gesture-nav vs 3-button nav, a display cutout, or landscape.
 
 **Likely sources, to confirm:**
+
 - **Warning 2:** `src/browser/nativeChrome.js` ~L219-220 calls `StatusBar.setBackgroundColor({ color: "#1b170f" })`. On Android that maps to `Window.setStatusBarColor`, which is deprecated in API 35 and ignored under edge-to-edge (the comment there already calls it best-effort). Drop the call, or move to `@capacitor/status-bar`'s edge-to-edge-aware API if 8.x has one. Also check Capacitor core, SplashScreen and the Play Games plugin (Phase 67) for `setStatusBarColor`, `setNavigationBarColor` or `setDecorFitsSystemWindows`. Play Console names the calling class under "View details".
 - **Warning 1:** confirm Capacitor 8's `BridgeActivity` already enables edge-to-edge, or call `EdgeToEdge.enable(this)` in `MainActivity`. Then check that the WebView really receives the insets: Capacitor's `SystemBars`/`adjustMarginsForEdgeToEdge` config, and whether `env(safe-area-inset-*)` is populated inside the Android WebView or needs the Capacitor-injected `--safe-area-inset-*` variables.
 - **Warning 3:** `AndroidManifest.xml` sets `android:screenOrientation="portrait"` and `nativeChrome.js` locks portrait through `@capacitor/screen-orientation`. On Android 16 (targetSdk 36), large screens (smallest width ≥ 600dp) **ignore** orientation and resizability restrictions, so the game will run in landscape or in split-screen on tablets and foldables whatever we set. Decide whether to (a) accept a letterboxed portrait column centred on wide screens (a max-width layout plus a dark gutter), or (b) do nothing and accept the warning. Games can opt out through the `android:appCategory="game"` exemption, so check whether Play still flags a game that declares it.

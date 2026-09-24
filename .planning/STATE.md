@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Leaderboards
-current_phase: 66
-current_phase_name: Leaderboards Panel — Local
-status: executing
-stopped_at: "v2.0 roadmap created 2026-09-23 (Phases 65–69: 65 Run Record & Personal Bests → 66 Leaderboards Panel — Local → 67 Play Games Integration & Account Chip (Research: yes) → 68 Global Boards, Submissions & \\\\\\\\\\\\\\\"You Placed X\\\\\\\\\\\\\\\" → 69 Compliance & Device Close; 26/26 requirements mapped, see ROADMAP.md/REQUIREMENTS.md). Next: /gsd-plan-phase 65 (or /gsd-autonomous to run the whole milestone)."
-last_updated: "2026-09-24T01:01:34.587Z"
+current_phase: 67
+current_phase_name: Play Games Integration & Account Chip
+status: planning
+stopped_at: /gsd-autonomous v2.0 run IN PROGRESS (orchestrator resume note, written before a /compact).
+last_updated: "2026-09-24T02:03:44.275Z"
 last_activity: 2026-09-23
-last_activity_desc: Phase 66 execution started
+last_activity_desc: Phase 66 complete, transitioned to Phase 67
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 12
-  completed_plans: 5
-  percent: 20
+  completed_phases: 2
+  total_plans: 26
+  completed_plans: 12
+  percent: 40
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-23 — milestone v2.0 Leaderboards st
 
 ## Current Position
 
-Phase: 66 (Leaderboards Panel — Local) — EXECUTING
-Plan: 1 of 7
-Status: Ready to execute
-Last activity: 2026-09-23 — Phase 66 execution started
+Phase: 67 — Play Games Integration & Account Chip
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-23 — Phase 66 complete, transitioned to Phase 67
 
 ## Ground Truth (durable facts every session needs)
 
@@ -207,6 +207,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 Last session: 2026-09-24T01:30:00.000Z
 Stopped at: /gsd-autonomous v2.0 run IN PROGRESS (orchestrator resume note, written before a /compact).
+
 - Phase 65 COMPLETE (5/5, 65-VERIFICATION passed, 4297 tests).
 - Phase 66: plans 01-06 merged (4456/4456 green); 66-07 (title entry + Android back) executing in a worktree. After it merges: npm test, roadmap.update-plan-progress 66 66-07, orchestrator-authored 66-VERIFICATION.md (status passed + human_verification list merged from the 66 SUMMARYs), phase.complete 66, commit.
 - AGP 9.3.1 spike running in a worktree; it writes .planning/phases/67-play-games-integration-account-chip/67-AGP9-SPIKE.md with a VERDICT line (ADOPT AGP 9.3.1 / STAY ON AGP 8.13.0) and commits build config only on ADOPT. Merge its branch before Phase 67 wave 2 (67-06 reads the VERDICT).
@@ -215,6 +216,7 @@ Stopped at: /gsd-autonomous v2.0 run IN PROGRESS (orchestrator resume note, writ
 - Phase 69: CONTEXT committed (privacy page lives in C:/projects/darktier-studio/src/pages/privacy/apps.astro, reconcile there, commit locally, user deploys; 2.0.0/vc9 AAB built, user uploads; debug APK offered; docs/UAT-v2.0.md).
 - Run conventions: executors in worktrees (sonnet), one Agent per message, merge manually with git merge --no-ff + worktree remove + branch -D (cleanup-wave helper trips on already-removed entries); worktree npm test shows 7 known CRLF doc-ledger failures that pass on master; stall watch = scratchpad wtwatch.sh <label> 30 via Monitor; decision-coverage gate needs D-NN cited under an "## Must haves"/"## Objective" heading; verifier off -> orchestrator writes VERIFICATION per deferred-UAT protocol.
 - Todo captured: loop sfx/theme.mp3 on the title screen (after v2.0 unless the user folds it into 69).
+
 Resume file: None
 
 ## Operator Next Steps

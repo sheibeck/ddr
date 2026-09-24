@@ -20,14 +20,14 @@
 
 ### Leaderboards Panel (presentation, built to the mock)
 
-- [ ] **BOARD-01**: The panel replaces the DEAD screen. It opens from the in-game DEAD tab and from the title screen's VIEW THE DEAD, and its back button returns to wherever it was opened from (title or dungeon).
-- [ ] **BOARD-02**: The panel header shows LEADERBOARDS, a scope line and the INTERRED count. Below it sit a Play Games identity strip and an ALL / FRIENDS toggle.
-- [ ] **BOARD-03**: A horizontally scrolling board rail keeps the active chip centred and carries seven boards: DEEPEST (floor; ties go to fewer squares), LEANEST (deepest, fewest steps; shows `floor · sq`), LINEAGE (by race & class), LONGEST (days), BUTCHERY (kills), PURSE (wilmst at death) and GRAVEYARD (your own dead, deepest first, not ranked). Each board has its own mark, title and rule line in voice.
-- [ ] **BOARD-04**: Each board lists the top ten. A row shows rank, avatar (initials, colour from a handle hash), handle, a YOU/FRIEND tag, the adventurer's name, a `RACE SUB · LVL n` line, a value bar, and value + unit, all from canon fields.
-- [ ] **BOARD-05**: When the player's best run misses the top ten, it is pinned below a "NOT IN THE TOP TEN · YOUR BEST RUN" divider.
-- [ ] **BOARD-06**: Tapping a row expands it to show the cause, the epitaph and FLOOR / DAYS / SQUARES / KILLS / EXP / WILMST chips.
-- [ ] **BOARD-07**: Each board ends with a standing card ("your place · of N", interred worldwide or among friends, with a quip) and a per-board footnote in voice (the GRAVEYARD footnote: "Epitaphs are written by the dungeon, not by you. There is no appeal.").
-- [ ] **BOARD-08**: Signed out, offline or with Compete off, the whole panel runs on local data (personal bests and the graveyard), and the ALL / FRIENDS views show a deliberate signed-out state, not a broken one. No network call is made.
+- [x] **BOARD-01**: The panel replaces the DEAD screen. It opens from the in-game DEAD tab and from the title screen's VIEW THE DEAD, and its back button returns to wherever it was opened from (title or dungeon).
+- [x] **BOARD-02**: The panel header shows LEADERBOARDS, a scope line and the INTERRED count. Below it sit a Play Games identity strip and an ALL / FRIENDS toggle.
+- [x] **BOARD-03**: A horizontally scrolling board rail keeps the active chip centred and carries seven boards: DEEPEST (floor; ties go to fewer squares), LEANEST (deepest, fewest steps; shows `floor · sq`), LINEAGE (by race & class), LONGEST (days), BUTCHERY (kills), PURSE (wilmst at death) and GRAVEYARD (your own dead, deepest first, not ranked). Each board has its own mark, title and rule line in voice.
+- [x] **BOARD-04**: Each board lists the top ten. A row shows rank, avatar (initials, colour from a handle hash), handle, a YOU/FRIEND tag, the adventurer's name, a `RACE SUB · LVL n` line, a value bar, and value + unit, all from canon fields.
+- [x] **BOARD-05**: When the player's best run misses the top ten, it is pinned below a "NOT IN THE TOP TEN · YOUR BEST RUN" divider.
+- [x] **BOARD-06**: Tapping a row expands it to show the cause, the epitaph and FLOOR / DAYS / SQUARES / KILLS / EXP / WILMST chips.
+- [x] **BOARD-07**: Each board ends with a standing card ("your place · of N", interred worldwide or among friends, with a quip) and a per-board footnote in voice (the GRAVEYARD footnote: "Epitaphs are written by the dungeon, not by you. There is no appeal.").
+- [x] **BOARD-08**: Signed out, offline or with Compete off, the whole panel runs on local data (personal bests and the graveyard), and the ALL / FRIENDS views show a deliberate signed-out state, not a broken one. No network call is made.
 
 ### Google Play Games Services v2 (opt-in, non-blocking)
 
@@ -82,14 +82,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RUN-02 | Phase 65 | Complete |
 | RUN-03 | Phase 65 | Complete |
 | RUN-04 | Phase 65 | Complete |
-| BOARD-01 | Phase 66 | Pending |
-| BOARD-02 | Phase 66 | Pending |
-| BOARD-03 | Phase 66 | Pending |
-| BOARD-04 | Phase 66 | Pending |
-| BOARD-05 | Phase 66 | Pending |
-| BOARD-06 | Phase 66 | Pending |
-| BOARD-07 | Phase 66 | Pending |
-| BOARD-08 | Phase 66 | Pending |
+| BOARD-01 | Phase 66 | Complete |
+| BOARD-02 | Phase 66 | Complete |
+| BOARD-03 | Phase 66 | Complete |
+| BOARD-04 | Phase 66 | Complete |
+| BOARD-05 | Phase 66 | Complete |
+| BOARD-06 | Phase 66 | Complete |
+| BOARD-07 | Phase 66 | Complete |
+| BOARD-08 | Phase 66 | Complete |
 | PGS-01 | Phase 67 | Pending |
 | PGS-02 | Phase 67 | Pending |
 | ACCT-01 | Phase 67 | Pending |
