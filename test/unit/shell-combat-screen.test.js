@@ -100,7 +100,10 @@ function guardHelpersRegion() {
 
 // ─── a. Layout order (CSCR-01) ─────────────────────────────────────────────
 
-test("CSCR-01: combat branch builds the pending gate, then header -> cb-mid -> foes -> lot -> log -> cb-act in strictly increasing order", () => {
+// Phase 71 (D-07, R-19): the combat v2 mock's middle holds foes and party
+// only; the in-panel log left it, and the what-happened strip
+// (renderRoundStrip) sits between #cb-mid and #cb-act instead.
+test("CSCR-01: combat branch builds the pending gate, then header -> cb-mid -> foes -> lot -> summary strip -> cb-act in strictly increasing order", () => {
   const region = combatBranch();
   const modeIdx = region.indexOf('panel.dataset.mode = "dark";');
   // Phase 58 (MOTION-03): the pending gate now also carries `&& !bv` (D-09)
@@ -110,14 +113,16 @@ test("CSCR-01: combat branch builds the pending gate, then header -> cb-mid -> f
   const midIdx = region.indexOf('mid.id = "cb-mid"');
   const foesIdx = region.indexOf("renderFoeCards(mid");
   const lotIdx = region.indexOf("renderYourLot(mid");
-  const logIdx = region.indexOf("renderFightLog(mid)");
+  const appendMidIdx = region.indexOf("body.appendChild(mid)");
+  const logIdx = region.indexOf("renderRoundStrip(body");
   const actIdx = region.indexOf('act.id = "cb-act"');
+  assert.equal(region.indexOf("renderFightLog(mid)"), -1, "the in-panel log is no longer built in the middle (R-19)");
   assert.ok(modeIdx !== -1, 'panel.dataset.mode = "dark"; must be set in the combat branch');
   assert.ok(modeIdx < pendingIdx, "dark mode is set before the pending gate");
   assert.ok(
     pendingIdx > -1 && headerIdx > pendingIdx && midIdx > headerIdx && foesIdx > midIdx &&
-    lotIdx > foesIdx && logIdx > lotIdx && actIdx > logIdx,
-    "expected strictly increasing order: pending -> header -> cb-mid -> foes -> lot -> log -> cb-act",
+    lotIdx > foesIdx && appendMidIdx > lotIdx && logIdx > appendMidIdx && actIdx > logIdx,
+    "expected strictly increasing order: pending -> header -> cb-mid -> foes -> lot -> (mid appended) -> summary strip -> cb-act",
   );
 });
 
@@ -165,6 +170,14 @@ test("CSCR-01: no Google Fonts, three @font-face declarations, and every new lab
   const logTextRule = HTML.match(/\.cb-log-text\{([^}]*)\}/);
   assert.ok(logTextRule, ".cb-log-text{...} rule must exist");
   assert.match(logTextRule[1], /var\(--mono\)/);
+
+  // Phase 71 (D-07): the what-happened strip reuses the bundled faces too.
+  const sumLineRule = HTML.match(/\.cb-sum-line\{([^}]*)\}/);
+  assert.ok(sumLineRule, ".cb-sum-line{...} rule must exist");
+  assert.match(sumLineRule[1], /var\(--mono\)/);
+  const sumLabelRule = HTML.match(/\.cb-sum-label\{([^}]*)\}/);
+  assert.ok(sumLabelRule, ".cb-sum-label{...} rule must exist");
+  assert.match(sumLabelRule[1], /var\(--disp\)/);
 
   const rootRule = HTML.match(/:root\{([\s\S]*?)\n\}/);
   assert.ok(rootRule, ":root{...} rule must exist");

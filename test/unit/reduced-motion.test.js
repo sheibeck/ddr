@@ -385,11 +385,14 @@ test("reduced-motion/beat: with the default (reduced) sandbox, beatRunner.start(
   // a synchronous landing here is itself proof the reduced path never
   // scheduled a timer).
   assert.equal(w.__mzBeat.active(), false, "reduced motion must resolve the whole beat synchronously, in the same call");
-  const rows = Array.from(doc.document.getElementById("enc-body").querySelectorAll(".cb-log-entry"));
+  // Phase 71 (D-07, R-20): the beat's rows now live in the what-happened
+  // strip (#cb-summary); under reduced motion it shows the round complete
+  // at once, nothing typed (its pulse and rise fall to the blanket rule).
+  const rows = Array.from(doc.document.getElementById("cb-summary").querySelectorAll(".cb-sum-line"));
   assert.equal(rows.length, 3, "every line must land at once, not one at a time");
   for (const row of rows) {
     assert.equal(row.getAttribute("aria-hidden"), null, "reduced motion must never leave a row mid-typed");
-    const textEl = row.querySelector(".cb-log-text");
+    const textEl = row.querySelector(".cb-sum-text");
     assert.equal(textEl.children.length, 0, "reduced motion must never build typed/rest span children");
   }
   // D-17: reduced motion collapses the BEAT itself to nothing — the
@@ -793,7 +796,8 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
   const started = scn.sandbox.beatRunner.start(plan);
   assert.ok(started, "beatRunner.start(plan) must return true for a real resolved round");
   assert.equal(w.__mzBeat.active(), false, "the whole beat must land synchronously");
-  const rows = Array.from(scn.sandbox.doc.document.getElementById("enc-body").querySelectorAll(".cb-log-entry"));
+  // Phase 71 (D-07, R-20): the rows are the what-happened strip's.
+  const rows = Array.from(scn.sandbox.doc.document.getElementById("cb-summary").querySelectorAll(".cb-sum-line"));
   assert.equal(rows.length, plan.count, "every line must be visible at once");
   for (const row of rows) {
     assert.equal(row.getAttribute("aria-hidden"), null, "no row may be left mid-typed");
