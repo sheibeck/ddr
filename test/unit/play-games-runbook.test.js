@@ -7,7 +7,12 @@
 // the 64-char score tag. Phase 68 adds the leaderboards table (each board's
 // ordering, LEANEST the only smaller-is-better one), where the IDs go
 // (content/leaderboards.js), the season-bump process and the tag's name
-// rule. It also keeps the doc on the shipping name only.
+// rule. It also keeps the doc on the shipping name only. Phase 69 (COMPLY-03,
+// D-06) extends the pins: the section 6 order of operations (each checklist
+// step in acting order, matched by the section it cites), the section 12
+// publishing step (the Publishing path, the up-to-2-hours delay and its
+// dated source), the per-row ordering of the leaderboards table, the Data
+// safety and privacy pointers, and consecutive section numbering.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -46,6 +51,19 @@ const REQUIRED = [
   "PLACEHOLDER",
   "tamper",
   "First L.",
+  // Phase 69 (D-06): the order of operations, publishing, the Data safety
+  // pointer with the two privacy URLs, the debug credential, the score
+  // format and where the deferred console items are recorded.
+  "Order of operations",
+  "Publishing",
+  "Grow users",
+  "2 hours",
+  "store-listing/LISTING.md",
+  "privacy/apps",
+  "privacy/delete-data",
+  "debug keystore",
+  "Numeric",
+  "docs/UAT-v2.0.md",
 ];
 
 for (const needle of REQUIRED) {
@@ -63,4 +81,99 @@ test("runbook uses the shipping name, never the old working title", () => {
 
 test("runbook says the upload key's SHA-1 is the wrong one", () => {
   assert.match(DOC, /Not the upload key's SHA-1/);
+});
+
+// ---------------------------------------------------------------------
+// Phase 69 (D-06): structural pins.
+// ---------------------------------------------------------------------
+
+/** The text from the "## " heading whose title matches `titleRe` up to the next "## " heading. */
+function section(titleRe) {
+  const lines = DOC.split("\n");
+  const start = lines.findIndex((l) => l.startsWith("## ") && titleRe.test(l));
+  assert.notEqual(start, -1, `no "## " heading matches ${titleRe}`);
+  let end = lines.findIndex((l, i) => i > start && l.startsWith("## "));
+  if (end === -1) end = lines.length;
+  return lines.slice(start, end).join("\n");
+}
+
+/**
+ * The numbered checklist items of a section: each item starts on a line that
+ * begins with a number and a period, and takes its indented continuation
+ * lines with it (so a wrapped step still reads as one step).
+ */
+function checklistItems(text) {
+  const items = [];
+  for (const line of text.split("\n")) {
+    if (/^\d+\. /.test(line)) items.push(line);
+    else if (items.length && /^\s+\S/.test(line)) items[items.length - 1] += " " + line.trim();
+  }
+  return items;
+}
+
+test("the leaderboards table gives each board its ordering (LEANEST the only smaller-is-better one)", () => {
+  const rows = section(/Leaderboards/).split("\n");
+  const row = (name) => {
+    const found = rows.filter((l) => l.startsWith(`| ${name} `));
+    assert.equal(found.length, 1, `exactly one table row for ${name}`);
+    return found[0];
+  };
+  assert.match(row("LEANEST"), /Smaller is better/);
+  assert.doesNotMatch(row("LEANEST"), /Larger is better/);
+  for (const name of ["DEEPEST", "LONGEST", "BUTCHERY", "PURSE"]) {
+    assert.match(row(name), /Larger is better/, `${name} is larger-is-better`);
+    assert.doesNotMatch(row(name), /Smaller is better/, `${name} is not smaller-is-better`);
+  }
+});
+
+test("section 6 is an order of operations whose steps run in acting order", () => {
+  const items = checklistItems(section(/Order of operations/));
+  assert.ok(items.length >= 9, `expected at least 9 checklist steps, found ${items.length}`);
+  // Each step is found by the first checklist item that cites it. The word
+  // boundaries keep "section 2" from matching "sections 2" or "section 12".
+  const STEPS = [
+    ["enable Play Games Services", /\bsection 2\b/],
+    ["the SHA-1 credential", /\bsection 3\b/],
+    ["the APP_ID", /\bsection 4\b/],
+    ["Testers", /\bsection 5\b/],
+    ["create the leaderboards", /\bsection 7\b/],
+    ["the IDs into content/leaderboards.js", /content\/leaderboards\.js/],
+    ["rebuild and upload", /docs\/RELEASING\.md/],
+    ["the tester check", /\bsection 11\b/],
+    ["publish", /\bsection 12\b/],
+    ["the Data safety answers", /store-listing\/LISTING\.md/],
+    ["the season bump", /\bsection 9\b/],
+  ];
+  let prev = -1;
+  for (const [label, re] of STEPS) {
+    const at = items.findIndex((it) => re.test(it));
+    assert.notEqual(at, -1, `the checklist must have a step for ${label} (${re})`);
+    assert.ok(at > prev, `the step for ${label} (item ${at + 1}) must come after the previous step (item ${prev + 1})`);
+    prev = at;
+  }
+});
+
+test("section 6 records the console steps as deferred items that never block a milestone", () => {
+  const s6 = section(/Order of operations/);
+  assert.match(s6, /docs\/UAT-v2\.0\.md/);
+  assert.match(s6, /never block/);
+});
+
+test("section 12 publishes the configuration, with the path, the delay and its dated source", () => {
+  const s12 = section(/^## 12\. /);
+  assert.match(s12, /^## 12\. Publish/);
+  assert.match(s12, /Grow users/);
+  assert.match(s12, /Setup and management/);
+  assert.match(s12, /Publishing/);
+  assert.match(s12, /2 hours/);
+  assert.match(s12, /developer\.android\.com\/games\/pgs\/console\/publish/);
+  assert.match(s12, /\d{4}-\d{2}-\d{2}/, "the source carries a date");
+});
+
+test("the numbered sections run 1, 2, 3 ... with no gap and no repeat", () => {
+  const nums = [...DOC.matchAll(/^## (\d+)\./gm)].map((m) => Number(m[1]));
+  assert.ok(nums.length >= 12, `expected at least 12 numbered sections, found ${nums.length}`);
+  nums.forEach((n, i) => assert.equal(n, i + 1, `section heading #${i + 1} is numbered ${n}`));
+  const headings = DOC.split("\n").filter((l) => l.startsWith("## "));
+  assert.equal(headings.length, nums.length, 'every "## " heading is numbered');
 });
