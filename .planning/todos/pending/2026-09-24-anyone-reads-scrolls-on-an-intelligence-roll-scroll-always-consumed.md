@@ -30,13 +30,13 @@ Today `canRead` lets only a Magic User, or someone with the Runes/Signs skill, r
 - **A bad failure is a FUMBLE (ruling 3):** a read that misses by more than half the required number backfires. The scroll's spell takes effect **on the reader instead of its target** (e.g. a Fireball burns the reader). Magic Users never fumble, because they always succeed.
 - **A fumbled beneficial scroll helps the enemy (ruled 2026-09-24).** A good-effect scroll (heal, Shield, Sense Presence and the like) that fumbles gives its effect to the enemy instead. User: "a good affect scroll that fumbles affects the enemy." Harmful scrolls hit the reader; helpful scrolls help the foe. **Which foe: the TARGETED enemy** (user: "a shield scroll with a fumble means you shield the target enemy instead"). So a fumbled Shield scroll shields the foe you're targeting, and the fight UI should show that foe's new effect (CMBUI-13 indicators).
 - **The fumble cutoff, confirmed 2026-09-24:** a fumble is a roll below half the target number you needed. This is roll-high; Phase 75 lands after the Phase 73 mirror. The rule is `roll < T / 2`, where T is the target to meet or beat. Worked example: intel 14 today (roll-under, success on 1–13) becomes a roll-high target of 8+. A fumble is a roll of 3 or less (15%); 4–7 is a plain failure (20%). Pin exact-half rounding in a test.
+- **An area-damage fumble hits the reader AND everyone in the reader's party (ruled 2026-09-24).** Each party member takes the spell's damage as if targeted.
+- **Pilfers read scrolls like everyone else (ruled 2026-09-24).** The Pilfer's RULES-09 d10 fumble applies to magic items only, never to scrolls, so a Pilfer's scroll read uses this rule unchanged.
 - **A fumble outside combat fizzles (ruled 2026-09-24):** there is no target to turn it on, so the scroll has no effect and is destroyed.
 - **The scroll is consumed on every attempt**, success or failure. This carries over from ruling 1 and was not revoked.
 - Narrate both outcomes, in voice. A failure should read as squinting at runes you can't make out while the scroll crumbles, not as a refusal.
 
 **Decide in the Phase 75 discuss:**
-- **Multi-target scrolls** (area damage) on a fumble: the reader takes one hit, or every hit?
-- **A Pilfer reading a scroll:** does the RULES-09 fumble also apply (a 1 makes it explode for d10), or does the intelligence roll cover scrolls on its own?
 - **Low-intel characters:** `resistRoll` skips its roll below intel 12. That gate is for foe abilities and should NOT carry over. Every non-Magic-User reader rolls, and a low intel just means worse odds.
 
 **Engine gate:** the intelligence roll is a new draw. Take it from a derived rng stream (`makeRng(hash(seed, "scrollRead", …))`) so it doesn't reorder the main stream. Measure, declare and regenerate only the moved fixtures. Every new event gets an `EVENT_NARRATION` entry. Update the class and sub-class blurbs that mention scrolls or Runes/Signs, per VOX-04.
