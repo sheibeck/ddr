@@ -13,6 +13,7 @@
 - ✅ **v1.8 Sound, Motion & Set Dressing** — Phases 56–60 (code-complete 2026-09-22, archived 2026-09-22, verified closeout; 30 of 31 Pixel 7 checks in `docs/UAT-v1.8.md` spread over the user's play sessions; see `.planning/milestones/v1.8-ROADMAP.md`, `.planning/milestones/v1.8-MILESTONE-AUDIT.md`)
 - ✅ **v1.9 The Gear Screen** — Phases 61–64 (code-complete 2026-09-23; override closeout: GSCR-12 device batch partial) → `.planning/milestones/v1.9-ROADMAP.md`
 - ✅ **v2.0 Leaderboards** — Phases 65–71 (shipped 2026-09-24 as Play 2.0.0 / vc10; override closeout: 38/38 requirements, 7/7 phases passed, 142-row Pixel 7 batch `docs/UAT-v2.0.md` spread over the user's play sessions) → `.planning/milestones/v2.0-ROADMAP.md`
+- 🚧 **v2.1 Bug Fixes** — Phases 72–81 (roadmapped 2026-09-24; clears every open device-round bug plus backlog 999.5–999.10, and reworks the Leaderboards panel scopes)
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases
@@ -32,7 +33,147 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 </details>
 
-_No milestone in progress — next: `/gsd-new-milestone`._
+### v2.1 Bug Fixes (Phases 72–80) — IN PROGRESS
+
+**Engine gate (greenfield, user ruling 2026-09-17):** every RULES/DARK/SAV change is the only rule afterwards (no dual path). Measure the fixtures it moves, declare each with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerate only those. `test/parity/prototype-master.js.txt` is never edited, new serialized fields are carved out of the three comparables, and a bot readout is taken before and after any change that affects difficulty.
+
+**Roll-high ruling (user, 2026-09-24):** the engine itself switches to roll-high rather than gaining a display adapter (Phase 73, ROLL-05) — every seed must resolve identically to before the switch, so the parity suite staying byte-identical is the proof. The sign/ordering audit (Phase 72, ROLL-01) lands first so the mirror is built on already-correct modifiers, and every phase after the mirror (RULES, DARK, SAV, CMBUI's roll-showing indicators) is written directly in the roll-high convention instead of being rewritten later.
+
+- [ ] **Phase 72: Roll-Direction Sign Audit & Fixes** - the audited ledger of every roll modifier's sign, with the three known bugs fixed under the engine gate, landing before the roll-high mirror
+- [ ] **Phase 73: Engine Roll-High Mirror** - the engine itself switches every die check to roll-high; the full parity suite proves it byte-identical
+- [ ] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers
+- [ ] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
+- [ ] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store
+- [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
+- [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
+- [ ] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep
+- [ ] **Phase 80: Android Release Build & Tooling** - R8 minify/shrink, edge-to-edge and large-screen handling, and the fit tool's replay-resume fix
+- [ ] **Phase 81: Leaderboards Panel Fixes** - YOU tag, standing card, ME | ALL | FRIENDS scopes with ALL default when signed in, LINEAGE ME-only, GRAVEYARD removed
+
+## Phase Details
+
+### Phase 72: Roll-Direction Sign Audit & Fixes
+**Goal**: Every modifier that affects a roll has the correct sign, audited and fixed under the engine gate, before the engine's roll-high conversion begins.
+**Depends on**: Nothing (first phase of v2.1; must land before the roll-high mirror)
+**Requirements**: ROLL-01
+**Success Criteria** (what must be TRUE):
+  1. An audited ledger covers every modifier (weapon, armor, spell, ability, item, race, sub-class, condition, terrain) on every roll type (to-hit both ways, soak, saves/resistance, initiative, climbs, flee, parley, traps), confirming each bonus widens the success range and each penalty narrows it.
+  2. The parley-insult "+1" lands in the correct order relative to the Smoke/Mirror/invisible/blind "natural 1" overrides on both the hero and member branches.
+  3. Fridgian frenzy's second swing honours the dark-cap penalty instead of hard-setting a fixed need.
+  4. The bestiary `critOn: 1` claim (Skeleton, "a 1 shatters it") is either wired into the engine or removed from the text.
+  5. Every fixture the fixes move is measured, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated — nothing else moves.
+**Plans**: TBD
+
+### Phase 73: Engine Roll-High Mirror
+**Goal**: The engine itself resolves every die check as roll-high, so no later display code or rule fix ever needs a translation layer again.
+**Depends on**: Phase 72 (the sign/ordering fixes land first so the mirror is built on already-correct modifiers, not redone afterward)
+**Requirements**: ROLL-05
+**Success Criteria** (what must be TRUE):
+  1. Every die check in the engine reads the same rng draw `r` as `(N+1) − r` on an N-sided die and succeeds at or above a high target, with modifiers applied as signed bonuses that always help the roller when positive.
+  2. Every seeded run resolves identically to before the switch — the full parity suite (chargen, combat, economy) is byte-identical before and after, proving the mirror changed representation, not outcome.
+  3. A guard test fails the build on any roll-under comparison left anywhere in `engine/`.
+  4. Content numbers that encode to-hit/AR/etc. are re-expressed in the new convention, and any roll-related value already in a saved game converts once, tolerantly, on load.
+  5. Every event that carries a roll (`struck`, foe swings, soak, thrown spells, resistance, parley, traps, locks, climbs/leaps, cures, wake, drops, gates, summons, crits) natively carries the high-is-good `roll`, `target` and `dieN`.
+**Plans**: TBD
+
+### Phase 74: Roll Display & Modifier Honesty
+**Goal**: Every roll and modifier the player sees is a direct, honest read of the engine's own high-is-good numbers.
+**Depends on**: Phase 73 (the mirror must land first — the display reads the engine's numbers directly, with no adapter)
+**Requirements**: ROLL-02, ROLL-03
+**Success Criteria** (what must be TRUE):
+  1. The Oracle, fight log, dice reveals, rail cards, hero sheet, combat menu and foe details all print the engine's own roll and target with no translation layer, and a higher roll always reads as better (on a d20 a caster needs 18–20, a thief 17–20, a fighter 16–20).
+  2. Every displayed modifier is signed from the player's point of view — "+2" always reads better, "−2" always reads worse — across item/loot/store/find comparisons, the hero sheet, spell/ability text, condition chips and the fight log's need breakdown.
+  3. The same modifier never shows opposite signs on two different surfaces.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs
+**Goal**: Character creation, HP growth, spell legality, initiative, traps, ailments and armor destruction follow the rules the game claims, written in the roll-high convention from the start.
+**Depends on**: Phase 73 (written directly on top of the roll-high mirror so nothing here needs rewriting later)
+**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08
+**Success Criteria** (what must be TRUE):
+  1. Pulling multiple Table-4 "+HP" dots grows a character's max HP linearly, not compounding (×1.6 each time), and the toll row takes its share from that same non-inflated pool.
+  2. A red-dot wilmst cache pays a bounded cut (~100 × depth) instead of buying out the store, a newly rolled Summoner's grimoire holds no spell from a school gated above its level, and the combat SPELLS menu hides (never just greys) anything level- or school-locked.
+  3. A hero with Sense Presence active always wins initiative outright, never sees "You cannot see what you are fighting," and can land crits in the dark.
+  4. A trap the Oracle reports as "−1 HP" can never kill the hero — the fix follows an explicit `/gsd-debug` root-cause session before it lands, not a guess.
+  5. An ailment roll of 5–6 always gives the Disease it narrates, and replacing a destroyed armor piece with a new one always tells the player the old piece was destroyed and is gone.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 76: Darkness Unification & Relaunch Persistence
+**Goal**: One shared darkness rule governs everything the player experiences as dark, and saving or force-closing never lets a player escape a live fight or an open store.
+**Depends on**: Phase 75 (shares the engine fixture gate; sequenced after the RULES phase to avoid overlapping fixture claims)
+**Requirements**: DARK-01, DARK-02, SAV-06, SAV-07
+**Success Criteria** (what must be TRUE):
+  1. A lit torch, the Amulet, or Night Vision widens what a player reveals while walking by the same rule that widens what is rendered — `revealRadius` and `mapViewRadius` never disagree again.
+  2. The DARK chip, the map vignette and per-tile dark painting all read from the same unified waiver rule, so a light source means the same thing on every surface.
+  3. A player who Saves & quits, or whose app is killed, mid-fight relaunches into the exact same fight — same foes, HP, round and active effects — and force-closing can no longer be used to escape a fight.
+  4. A player who relaunches with the store open returns to the same store with the same stock.
+**Plans**: TBD
+**Device check**: yes — relaunch-mid-fight and relaunch-mid-store batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
+
+### Phase 77: Combat Screen & Oracle Readability
+**Goal**: Everything the player reads during a fight is legible, correctly ordered, honest, and shows what effects are currently live on them or their foe.
+**Depends on**: Phase 74 (the roll-high display convention must be in place before combat-screen indicators show roll data)
+**Requirements**: CMBUI-07, CMBUI-08, CMBUI-09, CMBUI-10, CMBUI-11, CMBUI-12, CMBUI-13
+**Success Criteria** (what must be TRUE):
+  1. Every combat submenu row (spells, abilities, items, social) grows to fit its text on the Pixel 7 with no clipped label or description, and spell rows sort by level ascending then alphabetically.
+  2. Each foe card shows the foe's bestiary family after its name, and the Oracle prints combat lines in the order they happened (adjacent identical lines still fold).
+  3. Reading a scroll in combat that successfully casts its spell never narrates a level refusal, and the last (oldest) row of THE FIGHT SO FAR can be tapped to reveal its roll like every other row.
+  4. Every active ability or spell effect (Smoke, Sidestep, Battle Roar, Riposte, Taunt, Shield, Sense Presence and every other timed or conditional effect) shows an indicator on the hero (YOUR LOT) or the foe it affects, with rounds remaining, a tap-for-description, and it clears when the effect ends.
+**Plans**: TBD
+**UI hint**: yes
+**Device check**: yes — combat-screen legibility (submenu clipping, indicator readability) batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
+
+### Phase 78: HUD, Dead State & Climb Decisions
+**Goal**: The HUD tells the truth at a glance, the dead state locks down cleanly, settings behave as expected, and crossing a wall or crevice is a decision the player makes before any dice are rolled.
+**Depends on**: Nothing (shell/presentation-only, zero fixture moves)
+**Requirements**: HUD-01, HUD-02, HUD-03, HUD-04, HUD-05, HUD-06, CLIMB-01, CLIMB-02
+**Success Criteria** (what must be TRUE):
+  1. Band 1 reads "Race Sub-class · Lvl N" (e.g. "Dwarf Pickpocket · Lvl 3") with no parent class and no parentheses.
+  2. Once the hero is dead, only the Oracle, the DEAD/Leaderboards screen and the ☰ menu accept input — map taps, other tabs, camp, marks and centre map are inert — and the DEAD screen offers a read-only final character sheet (stats, gear, level) for the run that just ended.
+  3. The Settings text-size choice (S/M/L) scales every `--mw-font-*` token, and dragging or scrolling the settings sheet never changes a volume slider — a deliberate horizontal drag on a slider still sets its volume.
+  4. A stairs descent fades to black under the stairs sound, then fades in on the new floor, honouring reduced motion.
+  5. Stepping toward a wall or crevice square first shows a decision card — CLIMB IT / LEAP IT, USE LADDER / USE ROPE (when carried), TURN BACK — with no dice rolled until the player commits; TURN BACK costs nothing (no step, time or roll) and no stale retry card ever appears after a crossing.
+**Plans**: TBD
+**UI hint**: yes
+**Device check**: yes — dead-state input lockdown, settings-sheet drag behaviour, the stairs fade and the climb card need a Pixel 7 pass, batched into the milestone-close checklist per the deferred-UAT protocol.
+
+### Phase 79: Content & Narrative Pass
+**Goal**: Every piece of in-game text — class/race blurbs, roll-direction phrasing and the full narrative sweep — reads honestly and consistently in the game's voice.
+**Depends on**: Phase 74 (roll-direction display must be settled before the text is rewritten to match it), Phase 77 (VOX-05 sweeps the new CMBUI-13 effect-indicator text)
+**Requirements**: VOX-04, ROLL-04, VOX-05
+**Success Criteria** (what must be TRUE):
+  1. Every sub-class and race description states both its advantage(s) and disadvantage(s), including school gates such as the Summoner's no-offense-spells-before-level-3.
+  2. No player-facing string still encodes roll-under phrasing ("1–N", "need N", "natural 1", "−3 on to-hit") — a doc-synced test pins that none remains.
+  3. Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why, while staying sarcastic and family-friendly.
+**Plans**: TBD
+
+### Phase 80: Android Release Build & Tooling
+**Goal**: The release build is optimized and store-clean on modern Android and large screens, and the tuning tool's replay-resume is trustworthy.
+**Depends on**: Nothing (native/infra track, independent of the gameplay phases)
+**Requirements**: DROID-01, DROID-02, DROID-03, TOOL-01
+**Success Criteria** (what must be TRUE):
+  1. The release AAB builds with R8 minify, shrink and obfuscation on AGP 8.13, ships a deobfuscation mapping, and a release-signed Pixel 7 build boots, saves and resumes, handles back, and plays sound/haptics as before.
+  2. The game draws correctly edge-to-edge on Android 15+, in both gesture and 3-button navigation and with a display cutout, using no deprecated window or status-bar APIs Play flags.
+  3. On a tablet, foldable or Chromebook, the game presents a deliberate, documented layout (such as a letterboxed portrait column) rather than a broken one, and Play's display-configuration warning is addressed or consciously accepted.
+  4. A fit-tool run resumed from its JSONL log retraces the exact same walk as the live run, including after an infeasible (`+Infinity`) point, with per-block stdout appended rather than truncated.
+**Plans**: TBD
+**UI hint**: yes
+**Device check**: yes — DROID-02/03 recommended for `--research-phase` (Android 15/16 edge-to-edge + large-screen handling); needs device checks in both navigation modes plus an emulator tablet/foldable, batched into the milestone-close Pixel 7 checklist.
+
+### Phase 81: Leaderboards Panel Fixes
+**Goal**: The Leaderboards panel shows the signed-in player accurately, filters every board by ME | ALL | FRIENDS, and drops the boards Play Games cannot back honestly.
+**Depends on**: Nothing (shell-only: `src/browser/boardsView.js`, `boardsPanel.js`, `globalBoards.js`, `content/boards.js`, plus `engine/records.js` `BOARD_IDS`; zero parity fixtures)
+**Requirements**: BOARD-09, BOARD-10, BOARD-11, BOARD-12, BOARD-13, BOARD-14
+**Success Criteria** (what must be TRUE):
+  1. The panel shows three scope chips — ME | ALL | FRIENDS — and every board can be viewed under each; signed in with Compete ON it opens on ALL, signed out or Compete OFF it opens on ME with ALL/FRIENDS showing the sign-in note.
+  2. On ALL and FRIENDS the signed-in player's own score is tagged YOU — never FRIEND — with the `playerId` mismatch root-caused and fixed, and the "not in the top ten / your best run" card appears only when the player is ranked but off the visible list.
+  3. LINEAGE appears only under ME, sits at the end of the board rail, and never reads the global DEEPEST sample.
+  4. The GRAVEYARD board is gone; ME rows keep each run's tap-to-expand details (epitaph included), the stored run history still feeds ME and LINEAGE, and old saves load cleanly.
+**Plans**: TBD
+**UI hint**: yes
+**Device check**: yes — needs a signed-in Google Play Games build (YOU tag, standing card, ALL default, ME/ALL/FRIENDS switching, LINEAGE under ME only), batched into the milestone-close Pixel 7 checklist.
 
 ## Deferred / Not This Milestone
 
@@ -43,13 +184,23 @@ _No milestone in progress — next: `/gsd-new-milestone`._
 - Store screen restyle to the dark vocabulary (Phase 47 moves the store into `storeScreen.js` unchanged — the restyle edits that module later).
 - Dice-mode setting.
 - Haptics polish; the unguarded button set from 32-03 (store rows, drop shelf, `a-evt`, `btn-again`, spell menu).
-- Climb dice payload (`roll`/`need` on the four climb events) — carried over from v1.4 as a post-UAT quick task.
+- Climb dice payload (`roll`/`need` on the four climb events) — carried over from v1.4 as a post-UAT quick task. **Superseded 2026-09-24**: CLIMB-01/02 (v2.1 Phase 78) replaces the retry card with a pre-roll decision card, and ROLL-05 (Phase 73) makes every climb roll high-is-good natively.
 - Shell debt noted in the v1.5 audit but not in v1.6's requirements: the unreachable parley fluency-2 branch (`canParley`'s Magical tier, `wilmsryVsMagical`) and the `railCardFor` tie-break — fold into Phase 44's orphan sweep if they fall out for free, otherwise a quick task.
 
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
+| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 0/– | Not started | - |
+| 73. Engine Roll-High Mirror | v2.1 | 0/– | Not started | - |
+| 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
+| 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
+| 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
+| 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
+| 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
+| 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
+| 80. Android Release Build & Tooling | v2.1 | 0/– | Not started | - |
+| 81. Leaderboards Panel Fixes | v2.1 | 0/– | Not started | - |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
@@ -143,7 +294,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.5: Combat screen & Oracle readability (BACKLOG)
+### Phase 999.5: Combat screen & Oracle readability (PROMOTED → Phase 77)
+
+> **Promoted 2026-09-24 into milestone v2.1 as CMBUI-07..13, Phase 77 (Combat Screen & Oracle Readability).** Kept here for its planning context until v2.1 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured from the 2026-09-21 Pixel 7 device round] Everything the player reads during a fight is legible, ordered and honest: submenu rows stop clipping and sort by spell level, the foe's BESTIARY family shows after its name, the Oracle prints combat lines in event order rather than priority order, status chits are readable mid-fight, and a scroll that casts stops narrating a refusal.
 **Requirements:** TBD
@@ -161,7 +314,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.6: Engine rules fixes from the device rounds (BACKLOG)
+### Phase 999.6: Engine rules fixes from the device rounds (PROMOTED → Phase 75)
+
+> **Promoted 2026-09-24 into milestone v2.1 as RULES-01..04, Phase 75 (Engine Rules — Character, Economy, Grimoire & Combat Bugs).** The combat gear-lock and store-charge-then-refuse items in this backlog already shipped as v1.9 Phase 61 (GRULE-02 / STORE-02/03); only the Summoner school-gate, hide-uncastable-spells, HP-dot compounding and wilmst-cache items carried forward into v2.1. Kept here for its planning context until v2.1 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured from the 2026-09-21 Pixel 7 device round] Five rules bugs the fitted build exposed: a free mid-fight re-arm, a store purchase that charges then refuses, a Summoner holding spells it cannot cast, Table-4 HP dots that compound max HP geometrically, and a wilmst cache that still pays far too much.
 **Requirements:** TBD
@@ -169,11 +324,11 @@ Plans:
 
 **Captured todos (5):**
 
-- `todos/pending/2026-09-21-no-equipping-or-swapping-gear-during-combat.md` — `equipItem` / `unequipSlot` / `wearItem` carry no `state.combat` gate and the Gear tab stays live mid-fight; wants an engine refusal + disabled rows (`engine/movement.js:523` is the existing gate pattern).
-- `todos/pending/2026-09-21-store-purchase-charged-then-rejected-as-not-an-upgrade-spike.md` — `buyFrom` deducts gold and marks the row sold BEFORE `takeItem` can reject `notBetter`; a purchase must always deliver or refuse before charging.
-- `todos/pending/2026-09-21-summoner-rolls-freeze-it-cannot-cast-hide-uncastable-spells-.md` — chargen's `rollGrimoire` ignores the `mu-chart.js` school gate; plus the user ruling that the combat menu HIDES level-locked spells (reverses the earlier disabled-but-visible CONTEXT decision).
-- `todos/pending/2026-09-21-table-4-hp-dots-compound-max-hp-geometrically-regression.md` — the "+25 HP" row adds `0.6 × CURRENT maxWP` permanently (×1.6 per pull, compounding) and the toll row then takes 36 % of the inflated pool; a 54-05 regression that also inflates the fit's bot heroes.
-- `todos/pending/2026-09-21-red-dot-wilmst-cache-still-pays-far-too-much.md` — `WILMST_CACHE_PER_DEPTH = 300` flat × depth; wants its own cut (~100 × depth) or a derived-rng roll.
+- `todos/pending/2026-09-21-no-equipping-or-swapping-gear-during-combat.md` — `equipItem` / `unequipSlot` / `wearItem` carry no `state.combat` gate and the Gear tab stays live mid-fight; wants an engine refusal + disabled rows (`engine/movement.js:523` is the existing gate pattern). **DONE — shipped as v1.9 Phase 61 (GRULE-02).**
+- `todos/pending/2026-09-21-store-purchase-charged-then-rejected-as-not-an-upgrade-spike.md` — `buyFrom` deducts gold and marks the row sold BEFORE `takeItem` can reject `notBetter`; a purchase must always deliver or refuse before charging. **DONE — shipped as v1.9 Phase 61 (STORE-02/03).**
+- `todos/pending/2026-09-21-summoner-rolls-freeze-it-cannot-cast-hide-uncastable-spells-.md` — chargen's `rollGrimoire` ignores the `mu-chart.js` school gate; plus the user ruling that the combat menu HIDES level-locked spells (reverses the earlier disabled-but-visible CONTEXT decision). **Carried to v2.1 as RULES-03/04.**
+- `todos/pending/2026-09-21-table-4-hp-dots-compound-max-hp-geometrically-regression.md` — the "+25 HP" row adds `0.6 × CURRENT maxWP` permanently (×1.6 per pull, compounding) and the toll row then takes 36 % of the inflated pool; a 54-05 regression that also inflates the fit's bot heroes. **Carried to v2.1 as RULES-01.**
+- `todos/pending/2026-09-21-red-dot-wilmst-cache-still-pays-far-too-much.md` — `WILMST_CACHE_PER_DEPTH = 300` flat × depth; wants its own cut (~100 × depth) or a derived-rng roll. **Carried to v2.1 as RULES-02.**
 
 **Engine gate applies:** every one of these is a rules change — measure the moved parity fixtures first, declare each with before/after in `test/parity/FIXTURE-INVENTORY.md`, regenerate only those, master never edited, bot readout before/after.
 
@@ -181,7 +336,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.7: Content accuracy, tooling & the open climb ruling (BACKLOG)
+### Phase 999.7: Content accuracy, tooling & the open climb ruling (PROMOTED → Phases 78, 79, 80)
+
+> **Promoted 2026-09-24 into milestone v2.1: the climb/leap ruling → CLIMB-01/02, Phase 78; sub-class descriptions → VOX-04, Phase 79; the fit-tool replay-resume bug → TOOL-01, Phase 80.** The climb ruling was decided by the user 2026-09-24 as option B (the pre-roll CLIMB/LEAP/USE LADDER/USE ROPE/TURN BACK decision card). Kept here for its planning context until v2.1 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured 2026-09-21/22] The odds and ends from the device rounds: sub-class blurbs that hide their own gates, a fit tool whose replay-resume diverges, and the CLIMB IT retry card that went stale when Phase 54 made climbs one-and-done.
 **Requirements:** TBD
@@ -191,13 +348,15 @@ Plans:
 
 - `todos/pending/2026-09-21-sub-class-descriptions-must-state-every-advantage-and-disadvantage.md` — the Summoner blurb never mentions the level-3 offense gate; audit every `SUB_NOTE` / `RACE_NOTE` against `MU_CHART` + the Phase 24 identity table. Content only.
 - `todos/pending/2026-09-21-fit-tool-replay-resume-diverges-after-an-infeasible-point.md` — `+Infinity` scores serialise as `null`, so a resumed walk takes a different step after the first rejected candidate; per-block stdout was also truncated. Tooling only.
-- `todos/pending/2026-09-22-climb-leap-retry-card-is-stale-under-one-and-done.md` — **needs a user ruling:** A (retire the retry) vs B (pre-roll CLIMB / USE TOOL / TURN BACK prompt — the user's stated preference; no rng until commit). Keep the ladder/rope option either way; `mapMarks.js` crevice copy reads pre-one-and-done too.
+- `todos/pending/2026-09-22-climb-leap-retry-card-is-stale-under-one-and-done.md` — **resolved by user ruling 2026-09-24, option B:** a pre-roll CLIMB / USE TOOL / TURN BACK prompt, no rng until commit. Keep the ladder/rope option; `mapMarks.js` crevice copy reads pre-one-and-done too.
 
 Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.8: Unify the two darkness mechanisms (BACKLOG)
+### Phase 999.8: Unify the two darkness mechanisms (PROMOTED → Phase 76)
+
+> **Promoted 2026-09-24 into milestone v2.1 as DARK-01/02, Phase 76 (Darkness Unification & Relaunch Persistence).** Kept here for its planning context until v2.1 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [User ruling 2026-09-22, found during Phase 57 planning] The game has **two** darkness mechanisms with **different waiver sets**, and they disagree. Unify them behind one shared waiver predicate so a light source means the same thing everywhere.
 **Requirements:** TBD
@@ -232,7 +391,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.9: Android 15/16 edge-to-edge, deprecated window APIs, large-screen orientation (BACKLOG)
+### Phase 999.9: Android 15/16 edge-to-edge, deprecated window APIs, large-screen orientation (PROMOTED → Phase 80)
+
+> **Promoted 2026-09-24 into milestone v2.1 as DROID-02/03, Phase 80 (Android Release Build & Tooling).** Flagged `--research-phase` recommended. Kept here for its planning context until v2.1 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured 2026-09-23 from the Play Console pre-launch notes on the 1.9.0 / vc8 build] Clear the three Play Console warnings so the game draws correctly edge-to-edge on Android 15+ and behaves on tablets, foldables and Chromebooks.
 **Requirements:** TBD
@@ -263,7 +424,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.10: Keep live combat and open store through a relaunch (BACKLOG)
+### Phase 999.10: Keep live combat and open store through a relaunch (PROMOTED → Phase 76)
+
+> **Promoted 2026-09-24 into milestone v2.1 as SAV-06/07, Phase 76 (Darkness Unification & Relaunch Persistence).** Kept here for its planning context until v2.1 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured 2026-09-24 from Phase 70 plan 70-04's resume proof; user ruling: finish Phase 70, fix later] A player who Save & quits (or whose app is killed) mid-fight or mid-store should come back to the same fight or store after a relaunch, not to a cleared tile.
 **Requirements:** TBD

@@ -45,6 +45,10 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [ ] **BOARD-10**: When the player's own score is already inside the shown top ten, the "not in the top ten / your best run" standing card does not appear. It appears only when the player is ranked but off the visible list. (Device: sole entry, rank #1, shown twice.)
 - [ ] **BOARD-11**: When signed in with Compete ON, the Leaderboards panel opens on **ALL**. Today it defaults to `"local"` (`boardsView.js:911`), so neither ALL nor FRIENDS is selected. Signed out or Compete OFF keeps the local view.
 
+- [ ] **BOARD-12**: The Leaderboards panel has three scope chips, **ME | ALL | FRIENDS**, and every board can be filtered by them. ME is the local list of the player's own runs (today's hidden `"local"` scope, with no chip to return to it). Signed out or with Compete OFF, ALL and FRIENDS keep today's sign-in note and ME stays the default. BOARD-11's ALL default applies when signed in with Compete ON. (user ruling 2026-09-24)
+- [ ] **BOARD-13**: LINEAGE is a ME-only board. Its tab is shown only while ME is selected, it moves to the end of the board rail, and it no longer reads the global DEEPEST sample. The reason is that Play Games keeps one best score per player per board, so a global lineage view could only ever show each player's all-time deepest character. (user ruling 2026-09-24)
+- [ ] **BOARD-14**: The GRAVEYARD board is removed, because ME covers it. Its tab, copy and view branch go away. The run history that feeds ME and LINEAGE stays stored, and old saves load tolerantly. Nothing a player could see on GRAVEYARD is lost: ME rows keep the run's tap-to-expand details. (user ruling 2026-09-24)
+
 ### Darkness (DARK) — backlog 999.8
 
 - [ ] **DARK-01**: One shared darkness-waiver predicate drives both `revealRadius` and `mapViewRadius`. A lit torch, the Amulet or Night Vision widens what you reveal as you walk as well as what is rendered.
@@ -96,6 +100,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 ## Future Requirements
 
+- Global per-sub-class (and/or per-race) Play Games leaderboards, so LINEAGE can rank globally: 24 sub-class boards (6 × 24 = 144 race × sub-class boards is likely past Play Games' per-game cap). Deferred by the user, 2026-09-24.
 - AGP 9 upgrade. It is blocked by the Play Games plugin per the Phase 67 spike (`67-AGP9-SPIKE.md`); re-check when the plugin or Capacitor supports it.
 
 ## Out of Scope
@@ -111,8 +116,53 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| ROLL-01 | Phase 72 | Pending |
+| ROLL-05 | Phase 73 | Pending |
+| ROLL-02 | Phase 74 | Pending |
+| ROLL-03 | Phase 74 | Pending |
+| RULES-01 | Phase 75 | Pending |
+| RULES-02 | Phase 75 | Pending |
+| RULES-03 | Phase 75 | Pending |
+| RULES-04 | Phase 75 | Pending |
+| RULES-05 | Phase 75 | Pending |
+| RULES-06 | Phase 75 | Pending |
+| RULES-07 | Phase 75 | Pending |
+| RULES-08 | Phase 75 | Pending |
+| DARK-01 | Phase 76 | Pending |
+| DARK-02 | Phase 76 | Pending |
+| SAV-06 | Phase 76 | Pending |
+| SAV-07 | Phase 76 | Pending |
+| CMBUI-07 | Phase 77 | Pending |
+| CMBUI-08 | Phase 77 | Pending |
+| CMBUI-09 | Phase 77 | Pending |
+| CMBUI-10 | Phase 77 | Pending |
+| CMBUI-11 | Phase 77 | Pending |
+| CMBUI-12 | Phase 77 | Pending |
+| CMBUI-13 | Phase 77 | Pending |
+| HUD-01 | Phase 78 | Pending |
+| HUD-02 | Phase 78 | Pending |
+| HUD-03 | Phase 78 | Pending |
+| HUD-04 | Phase 78 | Pending |
+| HUD-05 | Phase 78 | Pending |
+| HUD-06 | Phase 78 | Pending |
+| CLIMB-01 | Phase 78 | Pending |
+| CLIMB-02 | Phase 78 | Pending |
+| BOARD-09 | Phase 81 | Pending |
+| BOARD-10 | Phase 81 | Pending |
+| BOARD-11 | Phase 81 | Pending |
+| VOX-04 | Phase 79 | Pending |
+| ROLL-04 | Phase 79 | Pending |
+| VOX-05 | Phase 79 | Pending |
+| DROID-01 | Phase 80 | Pending |
+| DROID-02 | Phase 80 | Pending |
+| DROID-03 | Phase 80 | Pending |
+| TOOL-01 | Phase 80 | Pending |
+| BOARD-12 | Phase 81 | Pending |
+| BOARD-13 | Phase 81 | Pending |
+| BOARD-14 | Phase 81 | Pending |
 
-**Coverage:** 41 requirements. Mapped: 0 (the roadmapper fills this).
+**Coverage:** 44 requirements. Mapped: 44/44 ✓
 
 ---
 *Requirements defined: 2026-09-24*
+*Roadmap created: 2026-09-24 (Phases 72–80)*

@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
 status: planning
-last_updated: "2026-09-24T19:35:51.364Z"
+last_updated: "2026-09-24T20:15:00.000Z"
 last_activity: 2026-09-24
 progress:
-  total_phases: 0
+  total_phases: 10
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as Play 2.0.0 / vc10 and archived; open Pixel 7 UAT batches: v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Between milestones — start the next with /gsd-new-milestone
+**Current focus:** v2.1 Bug Fixes roadmapped (Phases 72-81, 44/44 requirements mapped) — plan Phase 72 next
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 72 (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-24 — Milestone v2.1 started
+Status: Roadmap created — ready for /gsd-plan-phase 72
+Last activity: 2026-09-24 — ROADMAP.md created for v2.1 (Phases 72-81, 44/44 requirements mapped; roll-high engine mirror sequenced as Phase 73 per user ruling)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -132,6 +132,9 @@ detail; the backlog phases are the index.
 
 - Phase 25.1 inserted after Phase 25: Device Feedback Batch (user, 2026-09-15): card only for decisions, toast-only minor events with narrative text, longer tap-to-dismiss toasts, teleport toast, Oracle fills screen + opens at newest, Joiner swap with snark, Joiners fight by class, camp refusal shows need/have and counts the party (URGENT)
 - v1.9 roadmap created 2026-09-23: Phases 61–64 (engine-first sequencing — Phase 61 Gear Rules & Store Purchase Fix is the milestone's one engine/fixture-moving phase; Phases 62–64 are presentation-only, touching no engine bytes). `/gsd-discuss-phase` flagged as valuable for Phase 61 (STORE-02's buy-and-bag vs. refuse-up-front choice) and Phase 63 (GRULE-02's SHIELD/torch toggle decision). No research pass — the mock, `docs/GEAR-SLOTS.md` and the two v1.9 todos carry file-level context.
+
+- v2.1 roadmap created 2026-09-24: Phases 72-80 (41 requirements). Two mid-roadmapping course corrections from the user: (1) ROLL-05 became the engine itself switching to roll-high (not a display adapter) -- resequenced to its own Phase 73 immediately after the ROLL-01 sign audit (Phase 72) and before all other engine-gated work, so RULES/DARK/SAV (Phase 75-76) and CMBUI roll-showing indicators (Phase 77) are written directly in the roll-high convention; (2) three v2.0 Leaderboards device findings (BOARD-09/10/11 -- YOU vs FRIEND tag, spurious standing card, ALL-not-local default) were folded into Phase 78 alongside HUD. Phase order: 72 ROLL-01 -> 73 ROLL-05 (mirror) -> 74 ROLL-02/03 (display) -> 75 RULES-01..08 -> 76 DARK+SAV -> 77 CMBUI -> 78 HUD+CLIMB+BOARD -> 79 VOX+ROLL-04 (content, last) -> 80 DROID+TOOL.
+- 2026-09-24 (user, at roadmap approval): Leaderboards reworked. Scope chips ME | ALL | FRIENDS (ALL default when signed in with Compete ON); LINEAGE becomes ME-only at the end of the rail (Play Games keeps one best score per player per board, so a global lineage view cannot be honest; per-sub-class global boards deferred); the GRAVEYARD board is removed (ME covers it). BOARD-09..14 split out of Phase 78 into their own Phase 81.
 
 ## Deferred Items
 
@@ -239,7 +242,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 72 (Roll-Direction Sign Audit & Fixes) with /gsd-plan-phase 72
 
 ## Performance Metrics
 
