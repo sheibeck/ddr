@@ -55,6 +55,13 @@
 - [x] **COMPLY-03**: A Play Console PGS setup runbook covers enabling PGS, linking the SHA-1 of the Play App Signing key, creating the leaderboard IDs per board per season, publishing the config and the tester allow-list. The user performs the console steps, and the IDs land in the build's config.
 - [x] **COMPLY-04**: A signed AAB with PGS goes to the testing track, and the milestone's Pixel 7 batch is written as `docs/UAT-v2.0.md` (sign-in, decline, offline queue and flush, the panel on every board, the "you placed X" card, the account chip, airplane mode).
 
+### Device-Round Polish (Pixel 7 feedback on the 2.0.0 build, 2026-09-24)
+
+- [ ] **POLISH-01**: The title theme (`sfx/theme.mp3`) loops from launch on the title screen (no tap needed on device) and continues unbroken through the character roller and title-opened panels/sheets; it fades out on reaching the map, respects the Sound setting and stops in the background.
+- [ ] **POLISH-02**: The ☰ button is the Play Games profile icon (initials avatar when signed in, plain ☰ otherwise) and its dropdown carries the account rows (identity, Sign in / Stop competing, Compete); no separate account chip in the HUD band.
+- [ ] **POLISH-03**: The ☰ opens on every in-game screen (map, combat and other encounters, the Oracle, the tabs, while dead); Save & quit and a two-tap-armed Abandon this character (New Character when dead) live in it, and the HERO tab's Delve panel is gone.
+- [ ] **POLISH-04**: LINEAGE has a race + sub-class selector defaulting to the active hero's lineage and shows the top 10 runs for the selected lineage, locally and (as a filtered sample) globally.
+
 ## Future Requirements
 
 - **Tombstone share**: `@capacitor/share` plus a canvas-rendered PNG tombstone with the Play Store link, on death and in the graveyard.
@@ -104,11 +111,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMPLY-02 | Phase 69 | Complete |
 | COMPLY-03 | Phase 69 | Complete |
 | COMPLY-04 | Phase 69 | Complete |
+| POLISH-01 | Phase 70 | Pending |
+| POLISH-02 | Phase 70 | Pending |
+| POLISH-03 | Phase 70 | Pending |
+| POLISH-04 | Phase 70 | Pending |
 
 **Coverage:**
 
-- v2.0 requirements: 26 total
-- Mapped to phases: 26
+- v2.0 requirements: 30 total
+- Mapped to phases: 30
 - Unmapped: 0 ✓
 
 ---

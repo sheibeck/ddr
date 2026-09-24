@@ -36,6 +36,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [x] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle (completed 2026-09-24)
 - [x] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card (completed 2026-09-24)
 - [x] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch (completed 2026-09-24)
+- [ ] **Phase 70: Device-Round Polish** - Title theme from launch through the roller, the ☰ as profile icon opening everywhere with account + quit rows, and a race + sub-class LINEAGE board
 
 ### Phase 65: Run Record & Personal Bests
 
@@ -203,6 +204,20 @@ Plans:
 
 **Research**: none
 
+### Phase 70: Device-Round Polish
+
+**Goal**: The first Pixel 7 round on the v2.0 build lands as part of v2.0: the title theme plays from launch through character creation, the ☰ button becomes the Play Games profile icon and opens on every screen with the account rows plus Save & quit and Abandon, and LINEAGE becomes a race + sub-class top-10 board.
+**Depends on**: Phase 69 (user device feedback on the 2.0.0 debug build, 2026-09-24)
+**Requirements**: POLISH-01, POLISH-02, POLISH-03, POLISH-04
+**Success Criteria** (what must be TRUE):
+
+  1. `sfx/theme.mp3` loops from the moment the title screen appears at launch (no tap needed on device), continues unbroken into the character roller and over the title-opened panels/sheets, fades out on reaching the map, respects the Sound setting and stops in the background
+  2. The ☰ button shows the signed-in player's initials avatar (plain ☰ otherwise) and its dropdown opens with an ACCOUNT block (identity, Sign in / Stop competing, Compete); the separate band-2 account chip is gone; the title keeps its corner chip
+  3. The ☰ opens on every in-game screen — map, combat and other encounters, the Oracle, the tabs, and while dead — with rows that cannot act in the current context shown disabled rather than hidden
+  4. Save & quit and Abandon this character live at the bottom of the ☰ dropdown (Abandon two-tap armed, New Character when dead); the HERO tab's Delve panel is removed
+  5. LINEAGE shows a race and sub-class selector defaulting to the active hero's lineage and lists the top 10 runs for that lineage (local: kept per lineage in the records; global: filtered from the DEEPEST sample with an honest footnote)
+**Plans**: TBD
+
 <details>
 <summary>✅ v1.9 The Gear Screen (Phases 61–64) — CODE-COMPLETE 2026-09-23, archived 2026-09-23 (override closeout; Play 1.9.0 / vc8 built for closed testing; device UAT 3 of 24 walked, the rest deferred to play sessions)</summary>
 
@@ -363,6 +378,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
+| 70. Device-Round Polish | v2.0 | 0/0 | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
