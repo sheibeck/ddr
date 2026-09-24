@@ -79,6 +79,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [ ] **HUD-04**: The Settings text-size choice (S/M/L) scales every `--mw-font-*` token. (todo 2026-09-23 text-size-setting)
 - [ ] **HUD-05**: Dragging or scrolling the settings sheet never changes a volume slider. A deliberate horizontal drag on a slider still sets its volume. (todo 2026-09-24 settings-sheet-drag-scrub)
 - [ ] **HUD-06**: A stairs descent fades to black under the stairs sound, then fades in on the new floor, and honours reduced motion. (todo 2026-09-24 stairs-descent-fades)
+- [ ] **HUD-07**: Acute Hearing gains "hear the next room": map squares next to the party that hold an encounter show a faint "something's there" mark before the party steps in. It replaces the dead "3 to hit the unseen" clause Phase 72 removes, the skill keeps "never surprised", and its description states the new ability. (user ruling 2026-09-24, Phase 72 finding F2)
 
 ### Climbs & leaps (CLIMB) — user ruling 2026-09-24, option B
 
@@ -149,6 +150,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | HUD-04 | Phase 78 | Pending |
 | HUD-05 | Phase 78 | Pending |
 | HUD-06 | Phase 78 | Pending |
+| HUD-07 | Phase 78 | Pending |
 | CLIMB-01 | Phase 78 | Pending |
 | CLIMB-02 | Phase 78 | Pending |
 | BOARD-09 | Phase 81 | Pending |
@@ -165,7 +167,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | BOARD-13 | Phase 81 | Pending |
 | BOARD-14 | Phase 81 | Pending |
 
-**Coverage:** 46 requirements. Mapped: 46/46 ✓
+**Coverage:** 47 requirements. Mapped: 47/47 ✓
 
 ---
 *Requirements defined: 2026-09-24*

@@ -172,7 +172,7 @@ Plans:
 
 **Goal**: The HUD tells the truth at a glance, the dead state locks down cleanly, settings behave as expected, and crossing a wall or crevice is a decision the player makes before any dice are rolled.
 **Depends on**: Nothing (shell/presentation-only, zero fixture moves)
-**Requirements**: HUD-01, HUD-02, HUD-03, HUD-04, HUD-05, HUD-06, CLIMB-01, CLIMB-02
+**Requirements**: HUD-01, HUD-02, HUD-03, HUD-04, HUD-05, HUD-06, HUD-07, CLIMB-01, CLIMB-02
 **Success Criteria** (what must be TRUE):
 
   1. Band 1 reads "Race Sub-class · Lvl N" (e.g. "Dwarf Pickpocket · Lvl 3") with no parent class and no parentheses.
@@ -180,6 +180,7 @@ Plans:
   3. The Settings text-size choice (S/M/L) scales every `--mw-font-*` token, and dragging or scrolling the settings sheet never changes a volume slider — a deliberate horizontal drag on a slider still sets its volume.
   4. A stairs descent fades to black under the stairs sound, then fades in on the new floor, honouring reduced motion.
   5. Stepping toward a wall or crevice square first shows a decision card — CLIMB IT / LEAP IT, USE LADDER / USE ROPE (when carried), TURN BACK — with no dice rolled until the player commits; TURN BACK costs nothing (no step, time or roll) and no stale retry card ever appears after a crossing.
+  6. A hero with Acute Hearing sees a faint "something's there" mark on neighbouring squares that hold an encounter, before stepping in.
 
 **Plans**: TBD
 **UI hint**: yes
