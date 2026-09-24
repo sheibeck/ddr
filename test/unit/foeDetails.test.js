@@ -12,7 +12,8 @@
 //       from the SAME exported engine helpers (never retyped numbers);
 //   (c) nothing hidden: fleesBelow, sp.every and the ability cadences never
 //       appear;
-//   (d) the conditions line agrees with foeConditionChips (D-14's one table);
+//   (d) the effects lines agree with foeConditionChips (D-14's one table),
+//       one line per effect with its description (Phase 71 D-16, R-30);
 //   (e) malformed, unknown and hostile inputs give a fallback card, no throw;
 //   (f) purity: two calls deep-equal, the state is never mutated;
 //   (g) FOE_DETAILS_COPY is frozen and voice-safe; detailsLabel (D-11).
@@ -247,7 +248,18 @@ test("(c) hidden rules values never appear: fleesBelow, sp.every, ability cadenc
 
 // ─── (d) the conditions line ───────────────────────────────────────────────
 
-test("(d) the effects line is foeConditionChips' texts joined, from the same table", () => {
+// Phase 71 (D-16, R-30): the long-press card is where a foe condition is
+// explained, so the one joined effects line became one line per current
+// effect, "<chip text> — <chip desc>", in foeConditionChips order.
+const effectLines = (card) => {
+  const t = texts(card);
+  // family, HP, [defence], attack, abilities, resistances, ...effects, flavour
+  const hasDefence = t.length > 0 && !/swing|Never swings/.test(t[2]);
+  const first = hasDefence ? 6 : 5;
+  return t.slice(first, t.length - 1);
+};
+
+test("(d) the effects are one line per foeConditionChips chip, '<text> — <desc>', from the same table", () => {
   const f = pick("Beasts", "Wolf");
   f.hamstrung = true;
   f.marked = true;
@@ -256,10 +268,43 @@ test("(d) the effects line is foeConditionChips' texts joined, from the same tab
   const state = stateWith([f]);
   state.combat.weakened = true;
   state.c.timers["spell:weaken"] = { left: 3 };
-  const expected = foeConditionChips(f, state).map((c) => c.text).join(" · ");
-  assert.ok(expected.includes("Hamstrung"));
-  const t = texts(foeDetailsCard(0, state));
-  assert.equal(t[t.length - 2], expected);
+  const chips = foeConditionChips(f, state);
+  const expected = chips.map((c) => `${c.text} — ${c.desc}`);
+  assert.ok(expected[0].startsWith("Blind · 2 — "), expected[0]);
+  assert.equal(chips.length, 4);
+  for (const c of chips) assert.ok(typeof c.desc === "string" && c.desc.length > 0, `${c.key} desc`);
+  assert.deepEqual(effectLines(foeDetailsCard(0, state)), expected);
+});
+
+test("(d) a Hamstrung foe Blind for 2 rounds yields exactly two effect lines, in table order", () => {
+  const f = pick("Beasts", "Wolf");
+  f.hamstrung = true;
+  f.blind = true;
+  f.blindFor = 2;
+  const state = stateWith([f]);
+  const lines = effectLines(foeDetailsCard(0, state));
+  assert.equal(lines.length, 2, lines.join(" | "));
+  const [blind, ham] = foeConditionChips(f, state);
+  assert.equal(lines[0], `Blind · 2 — ${blind.desc}`);
+  assert.equal(lines[1], `Hamstrung — ${ham.desc}`);
+});
+
+test("(d) a Weakened fight adds its line on every foe", () => {
+  const a = pick("Beasts", "Wolf");
+  const b = pick("Humans", "Ned");
+  const state = stateWith([a, b]);
+  state.combat.weakened = true;
+  state.c.timers["spell:weaken"] = { left: 2 };
+  for (const i of [0, 1]) {
+    const [weak] = foeConditionChips(state.combat.foes[i], state);
+    const lines = effectLines(foeDetailsCard(i, state));
+    assert.deepEqual(lines, [`Weakened · 2 — ${weak.desc}`], `foe ${i}`);
+  }
+});
+
+test("(d) no effects still reads the one noEffects line", () => {
+  const state = stateWith([pick("Beasts", "Wolf")]);
+  assert.deepEqual(effectLines(foeDetailsCard(0, state)), [FOE_DETAILS_COPY.noEffects]);
 });
 
 // ─── (e) malformed, unknown, hostile ───────────────────────────────────────

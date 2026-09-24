@@ -545,3 +545,51 @@ test("rail.js is pure: no window/document/Date.now/localStorage/setTimeout/inner
     assert.doesNotMatch(text, new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${needle} must not appear in rail.js`);
   }
 });
+
+// ─── Phase 71 (D-16, R-28): the combat card kinds and the condition card ───
+// Read through a namespace import so this block fails on its own (RED)
+// without breaking the rest of the file's named imports.
+import * as railNS from "../../src/browser/rail.js";
+
+test("Phase 71 D-16: COMBAT_CARD_KINDS is frozen [\"foe\", \"cond\"]", () => {
+  const { COMBAT_CARD_KINDS } = railNS;
+  assert.ok(Array.isArray(COMBAT_CARD_KINDS), "COMBAT_CARD_KINDS must be exported");
+  assert.deepEqual([...COMBAT_CARD_KINDS], ["foe", "cond"]);
+  assert.ok(Object.isFrozen(COMBAT_CARD_KINDS));
+});
+
+test("Phase 71 D-16: isCombatCard is true only for a card whose kind is a combat card kind, never throws", () => {
+  const { isCombatCard } = railNS;
+  assert.equal(typeof isCombatCard, "function", "isCombatCard must be exported");
+  assert.equal(isCombatCard({ kind: "foe" }), true);
+  assert.equal(isCombatCard({ kind: "cond", title: "AFRAID" }), true);
+  for (const bad of [null, undefined, "foe", "cond", 7, true, [], {}, { kind: null }, { kind: "dark" }, { kind: "FOE" }, { kind: ["foe"] }, () => {}]) {
+    assert.equal(isCombatCard(bad), false, `isCombatCard(${JSON.stringify(bad)})`);
+  }
+  const hostile = {};
+  Object.defineProperty(hostile, "kind", { get() { throw new Error("boom"); } });
+  assert.doesNotThrow(() => isCombatCard(hostile));
+  assert.equal(isCombatCard(hostile), false);
+});
+
+test("Phase 71 D-16: conditionCard is the plain line card plus kind \"cond\"; pure", () => {
+  const { conditionCard } = railNS;
+  assert.equal(typeof conditionCard, "function", "conditionCard must be exported");
+  const card = conditionCard("AFRAID", "A penalty on every roll until it passes.");
+  const line = railLineCard("AFRAID", "A penalty on every roll until it passes.", "info", RAIL_HOLD.default, "·");
+  assert.equal(card.kind, "cond");
+  const { kind, ...rest } = card;
+  assert.deepEqual(rest, line);
+  assert.deepEqual(card.lines, [{ text: "A penalty on every roll until it passes.", roll: null }]);
+  assert.equal(card.tone, "info");
+  assert.equal(card.icon, "·");
+  assert.equal(card.hold, RAIL_HOLD.default);
+  assert.deepEqual(conditionCard("AFRAID", "x"), conditionCard("AFRAID", "x"));
+  assert.notEqual(conditionCard("AFRAID", "x"), conditionCard("AFRAID", "x"));
+  // Malformed input behaves as railLineCard does.
+  for (const [t, l] of [[undefined, undefined], [null, ""], [3, {}]]) {
+    const { kind: k, ...r } = conditionCard(t, l);
+    assert.equal(k, "cond");
+    assert.deepEqual(r, railLineCard(t, l, "info", RAIL_HOLD.default, "·"));
+  }
+});

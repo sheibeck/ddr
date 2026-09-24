@@ -46,7 +46,8 @@ import { ACCOUNT_COPY } from "../../content/account.js";
 // Phase 70 (D-06): the ☰ menu's Save & quit / Abandon row copy, walked the same way.
 import { HUD_MENU_QUIT_COPY } from "../../src/browser/hudMenu.js";
 // Phase 71 (D-14): the one foe-condition chip table's labels, walked the same way.
-import { FOE_CONDITION_COPY } from "../../src/browser/foeConditions.js";
+// Phase 71 (D-16, R-30): and its one-line descriptions, read on the long-press card.
+import { FOE_CONDITION_COPY, FOE_CONDITION_DESC } from "../../src/browser/foeConditions.js";
 // Phase 71 (D-12): the long-press foe card's copy, walked the same way.
 import { FOE_DETAILS_COPY } from "../../src/browser/foeDetails.js";
 // Phase 71 (D-07): the what-happened strip's label, busy label and chip.
@@ -157,6 +158,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     ITEM_STAT_COPY,
     // Phase 71 (D-14): the foe-condition chip labels.
     FOE_CONDITION_COPY,
+    // Phase 71 (D-16, R-30): the foe-condition descriptions on the long-press card.
+    FOE_CONDITION_DESC,
     // Phase 71 (D-12): the long-press foe card's labels, fallbacks and flavour lines.
     FOE_DETAILS_COPY,
     // Phase 71 (D-07): the what-happened strip's copy, and (71-06) THE FIGHT
