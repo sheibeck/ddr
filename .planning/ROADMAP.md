@@ -188,7 +188,19 @@ Plans:
   3. A Play Console PGS setup runbook is written covering enabling PGS, linking the SHA-1 of the Play App Signing key, creating the leaderboard IDs per board per season, and publishing the config plus the tester allow-list; because these are Play Console actions only the user can perform, the phase surfaces them as a human checkpoint / deferred item and does not block closure on the user completing them
   4. A signed AAB with PGS goes to the testing track, and the milestone's Pixel 7 batch is written as `docs/UAT-v2.0.md` (sign-in, decline, offline queue and flush, the panel on every board, the "you placed X" card, the account chip, airplane mode) as one batched checklist per the deferred-UAT protocol — not run mid-milestone
 
-**Plans**: TBD
+**Plans**: 4 plans (2 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 69-01-PLAN.md — (wave 1) privacy + Data Safety: reconcile darktier-studio `privacy/apps.astro` + `delete-data.astro` (local commit, user deploys), LISTING.md Data safety answers + not-shared finding + source-level SDK/dependency audit, privacy record (date + website hash), re-voiced offline bullet, graveyard screenshot or deferred item (COMPLY-01, COMPLY-02)
+- [ ] 69-02-PLAN.md — (wave 1) `docs/PLAY-GAMES-SETUP.md` finished: section 6 order of operations, section 12 publishing, leaderboard tester check, edge statements; runbook pins extended (COMPLY-03)
+- [ ] 69-03-PLAN.md — (wave 1) `docs/UAT-v2.0.md`: every 65–68 human_verification item + SUMMARY extras merged by D-09 area, Compete-OFF capture RELEASE-BLOCKING, section 0 deferred user actions, source map (COMPLY-04)
+
+**Wave 2** *(blocked on Wave 1 completion; runs in the main checkout, not a worktree)*
+
+- [ ] 69-04-PLAN.md — (wave 2) release: bump to 2.0.0 / versionCode 9, signed AAB via `npm run android:release` (untracked theme clip held aside), build-level releaseRuntimeClasspath + merged-manifest audit, Play build recorded, tag `v2.0.0-play9`; no upload, no push (COMPLY-04, COMPLY-02)
+
 **Research**: none
 
 <details>
@@ -350,7 +362,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
-| 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
+| 69. Compliance & Device Close | v2.0 | 0/4 | Planned | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
