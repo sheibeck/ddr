@@ -33,15 +33,15 @@
 
 - [x] **PGS-01**: A Capacitor 8-compatible PGS v2 plugin is chosen (researched: `@modbender/capacitor-play-games` vs `@openforge/capacitor-game-connect` vs `capacitor-google-game-services` vs vendoring or forking one) and wired into the Android build. It adds no ads or analytics SDK.
 - [x] **PGS-02**: PGS auto sign-in runs at launch without blocking play. Declining, having no Play Games profile, or a sign-in failure leaves the game fully playable.
-- [ ] **PGS-03**: Each death of a signed-in, Compete-on player submits one score per global board to the current season's leaderboard IDs, with the row's details (adventurer name, race/sub/level, and the rest of what the panel shows) packed into the 64-char score tag.
-- [ ] **PGS-04**: A death while offline or signed-out-but-competing queues its submissions durably. They flush once connectivity and sign-in return, and no score is ever submitted twice.
-- [ ] **PGS-05**: The panel's ALL and FRIENDS views are fed by PGS top scores, the friends collection and the player's own rank. The global form of LINEAGE (per-combo boards, client-side grouping of fetched top scores, or local-only) is settled by the phase research.
-- [ ] **PGS-06**: Leaderboard IDs are keyed per board per season. Bumping the season points new submissions at the new IDs, while old-season boards stay readable and are never written again.
+- [x] **PGS-03**: Each death of a signed-in, Compete-on player submits one score per global board to the current season's leaderboard IDs, with the row's details (adventurer name, race/sub/level, and the rest of what the panel shows) packed into the 64-char score tag.
+- [x] **PGS-04**: A death while offline or signed-out-but-competing queues its submissions durably. They flush once connectivity and sign-in return, and no score is ever submitted twice.
+- [x] **PGS-05**: The panel's ALL and FRIENDS views are fed by PGS top scores, the friends collection and the player's own rank. The global form of LINEAGE (per-combo boards, client-side grouping of fetched top scores, or local-only) is settled by the phase research.
+- [x] **PGS-06**: Leaderboard IDs are keyed per board per season. Bumping the season points new submissions at the new IDs, while old-season boards stay readable and are never written again.
 
 ### "You Placed X"
 
-- [ ] **PLACE-01**: After a run's scores are submitted, the death flow shows the player's rank as a quip in voice from a `content/` bank ("You placed 3,117th. The 3,116 ahead of you are also dead.").
-- [ ] **PLACE-02**: A run submitted from the offline queue reports its placement on the next successful flush. A signed-out or Compete-off run shows no rank line and no error.
+- [x] **PLACE-01**: After a run's scores are submitted, the death flow shows the player's rank as a quip in voice from a `content/` bank ("You placed 3,117th. The 3,116 ahead of you are also dead.").
+- [x] **PLACE-02**: A run submitted from the offline queue reports its placement on the next successful flush. A signed-out or Compete-off run shows no rank line and no error.
 
 ### Account Chip
 
@@ -94,12 +94,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PGS-02 | Phase 67 | Complete |
 | ACCT-01 | Phase 67 | Complete |
 | ACCT-02 | Phase 67 | Complete |
-| PGS-03 | Phase 68 | Pending |
-| PGS-04 | Phase 68 | Pending |
-| PGS-05 | Phase 68 | Pending |
-| PGS-06 | Phase 68 | Pending |
-| PLACE-01 | Phase 68 | Pending |
-| PLACE-02 | Phase 68 | Pending |
+| PGS-03 | Phase 68 | Complete |
+| PGS-04 | Phase 68 | Complete |
+| PGS-05 | Phase 68 | Complete |
+| PGS-06 | Phase 68 | Complete |
+| PLACE-01 | Phase 68 | Complete |
+| PLACE-02 | Phase 68 | Complete |
 | COMPLY-01 | Phase 69 | Pending |
 | COMPLY-02 | Phase 69 | Pending |
 | COMPLY-03 | Phase 69 | Pending |

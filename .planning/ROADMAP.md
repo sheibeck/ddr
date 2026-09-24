@@ -34,7 +34,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 - [x] **Phase 65: Run Record & Personal Bests** - Every death records a durable, season-tagged run summary and updates an all-time personal-bests record that survives the graveyard trim (completed 2026-09-23)
 - [x] **Phase 66: Leaderboards Panel — Local** - The DEAD tab becomes the mock's Leaderboards panel, running fully offline across all seven boards on personal bests and the graveyard (completed 2026-09-23)
 - [x] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle (completed 2026-09-24)
-- [ ] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card
+- [x] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card (completed 2026-09-24)
 - [ ] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch
 
 ### Phase 65: Run Record & Personal Bests
@@ -171,7 +171,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 68-07-PLAN.md — (wave 3) shell wiring: death → queue, flush triggers, Compete-OFF purge, the THAT IS THAT rank line (`window.__mzPlacement`), the parked deferred card, the season-drop Oracle line, the panel's global seams, docs (PGS-03, PGS-04, PGS-05, PLACE-01, PLACE-02)
+- [x] 68-07-PLAN.md — (wave 3) shell wiring: death → queue, flush triggers, Compete-OFF purge, the THAT IS THAT rank line (`window.__mzPlacement`), the parked deferred card, the season-drop Oracle line, the panel's global seams, docs (PGS-03, PGS-04, PGS-05, PLACE-01, PLACE-02)
 
 **Research**: none — builds directly on Phase 67's plugin, tag-encoding and LINEAGE-form decisions.
 **UI hint**: yes
@@ -349,7 +349,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
-| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 6/7 | In Progress|  |
+| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
