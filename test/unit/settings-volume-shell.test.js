@@ -50,10 +50,12 @@ function extractBody(source, signatureRe) {
   return null;
 }
 
+// Every <style> block, first open to last close (the shell has several; the
+// shell-combat-screen styleBlock() shape).
 function styleBlock() {
-  const open = html.indexOf("<style");
-  const close = html.indexOf("</style>", open);
-  assert.ok(open > -1 && close > open, "the <style> block exists");
+  const open = html.indexOf("<style>");
+  const close = html.lastIndexOf("</style>");
+  assert.ok(open > -1 && close > open, "the <style> blocks exist");
   return html.slice(open, close);
 }
 

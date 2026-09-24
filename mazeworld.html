@@ -1596,6 +1596,23 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 /* Phase 67 (D-12): the dev row's second group (Play Games, dev) sits under
    the start-depth options, so its label needs the row's own top spacing. */
 #mw-dev-row .mw-settings-options + .mw-settings-label{margin-top:14px}
+/* Phase 71 (POLISH-05, D-03): the MASTER / MUSIC / EFFECTS volume sliders
+   under the Sound row (#mw-vol-rows, shown only while Sound is On — the
+   .mw-settings-row[hidden] rule below removes the group otherwise). Native
+   range inputs restyled in the settings palette: a 44px-tall touch box with
+   a 28px square thumb. Labels and percentages scale with S/M/L. No motion
+   of any kind, so reduced motion has nothing to stop. */
+.mw-vol-row + .mw-vol-row{margin-top:10px}
+.mw-vol-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.mw-vol-label{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));line-height:1.5;letter-spacing:.08em;text-transform:uppercase;color:#c9bda0}
+.mw-vol-pct{flex:none;font-family:var(--mono);font-weight:700;font-size:calc(0.8125rem * var(--mw-text-scale));color:#e8c97a;font-variant-numeric:tabular-nums}
+.mw-vol-range{-webkit-appearance:none;appearance:none;display:block;width:100%;height:44px;min-height:44px;margin:0;padding:0;background:transparent;cursor:pointer;touch-action:pan-y}
+.mw-vol-range:focus{outline:none}
+.mw-vol-range:focus-visible{outline:2px solid #e8c97a;outline-offset:2px}
+.mw-vol-range::-webkit-slider-runnable-track{height:8px;background:#1b170f;border:2px solid #4a4032;border-radius:0}
+.mw-vol-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:-12px;background:#e8c97a;border:2px solid #14110c;border-radius:0;box-shadow:0 3px 0 #0d0b08}
+.mw-vol-range::-moz-range-track{height:8px;background:#1b170f;border:2px solid #4a4032;border-radius:0}
+.mw-vol-range::-moz-range-thumb{width:28px;height:28px;background:#e8c97a;border:2px solid #14110c;border-radius:0;box-shadow:0 3px 0 #0d0b08}
 
 /* ---------- Account bottom sheet (Phase 67, ACCT-02, D-09/D-10) ----------
    The legend-sheet family's chrome (.mw-legend-sheet/-scrim/-panel/-head/
@@ -1845,6 +1862,28 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
         <div class="mw-settings-options" data-setting="sound">
           <button type="button" class="mw-settings-opt" data-value="true">On</button>
           <button type="button" class="mw-settings-opt" data-value="false">Off</button>
+        </div>
+      </div>
+      <!-- Phase 71 (POLISH-05, D-03): the MASTER / MUSIC / EFFECTS volume
+           sliders, shown only while Sound is On (R-01: the module script's
+           renderSettingsSheet sets `hidden` from the Sound setting, and the
+           .mw-settings-row[hidden] rule takes the group out of layout, tab
+           order and the accessibility tree). It starts hidden so a first
+           paint before settings load never flashes it. The levels live in
+           ddr.settings.v1 as volMaster / volMusic / volEffects, through
+           settings.js only: a drag applies live, a release persists (R-02). -->
+      <div class="mw-settings-row mw-vol-rows" id="mw-vol-rows" hidden>
+        <div class="mw-vol-row">
+          <div class="mw-vol-head"><span class="mw-vol-label">Master</span><span class="mw-vol-pct" data-vol-pct="volMaster">100%</span></div>
+          <input type="range" class="mw-vol-range" data-vol="volMaster" min="0" max="100" step="1" value="100" aria-label="Master volume">
+        </div>
+        <div class="mw-vol-row">
+          <div class="mw-vol-head"><span class="mw-vol-label">Music</span><span class="mw-vol-pct" data-vol-pct="volMusic">100%</span></div>
+          <input type="range" class="mw-vol-range" data-vol="volMusic" min="0" max="100" step="1" value="100" aria-label="Music volume">
+        </div>
+        <div class="mw-vol-row">
+          <div class="mw-vol-head"><span class="mw-vol-label">Effects</span><span class="mw-vol-pct" data-vol-pct="volEffects">100%</span></div>
+          <input type="range" class="mw-vol-range" data-vol="volEffects" min="0" max="100" step="1" value="100" aria-label="Effects volume">
         </div>
       </div>
       <div class="mw-settings-row">
@@ -6066,6 +6105,19 @@ window.__mzClassicBoot = async function classicBoot() {
         btn.classList.toggle("active", btn.dataset.value === current);
       });
     });
+    // Phase 71 (D-03, R-01): the volume sliders exist only while Sound is
+    // On — `hidden` (with the .mw-settings-row[hidden] rule) removes the
+    // group from layout, tab order and the accessibility tree. Each slider
+    // and its percentage show the saved level (100 when unset).
+    const volRows = document.getElementById("mw-vol-rows");
+    if (volRows) volRows.hidden = currentSettings.sound !== true;
+    document.querySelectorAll("#mw-vol-rows [data-vol]").forEach((input) => {
+      const saved = currentSettings[input.dataset.vol];
+      const level = Number.isInteger(saved) && saved >= 0 && saved <= 100 ? saved : 100;
+      input.value = String(level);
+      const pct = input.closest(".mw-vol-row")?.querySelector(".mw-vol-pct");
+      if (pct) pct.textContent = `${level}%`;
+    });
   }
 
   function openSettingsSheet() {
@@ -6247,6 +6299,41 @@ window.__mzClassicBoot = async function classicBoot() {
     // that same tap. On Sound Off, applySfxSettings (via applySettings above)
     // has already cut everything; the sync just records soundOn false.
     if (key === "sound") unlockAudioAndSync();
+  });
+
+  // Phase 71 (POLISH-05, D-03, R-02): the MASTER / MUSIC / EFFECTS sliders.
+  // Dragging (`input`) applies the level LIVE — an in-memory settings object
+  // (the mirror plus the dragged value) through applySettings, which reaches
+  // sfx.js's applySfxSettings and so the device, the effects bus and a
+  // playing title theme — and never writes storage. Releasing (`change`)
+  // persists once through settings.js's writeSetting, then re-applies and
+  // re-renders. Only an EFFECTS release previews one ui-tap at the new level;
+  // MASTER and MUSIC releases play nothing. The capture-phase pointerdown
+  // listener below plays its tap only for buttons, so grabbing a slider
+  // makes no tap sound. volSliderValue is the shell's own inline clamp (no
+  // copy of any settings.js / sfx.js export).
+  function volSliderValue(input) {
+    const n = Math.round(Number(input?.value));
+    return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 100;
+  }
+  document.getElementById("mw-settings-rows")?.addEventListener("input", (e) => {
+    const input = e.target?.closest?.("[data-vol]");
+    if (!input || !currentSettings) return;
+    const key = input.dataset.vol;
+    const value = volSliderValue(input);
+    applySettings({ ...currentSettings, [key]: value });
+    const pct = input.closest(".mw-vol-row")?.querySelector(".mw-vol-pct");
+    if (pct) pct.textContent = `${value}%`;
+  });
+  document.getElementById("mw-settings-rows")?.addEventListener("change", async (e) => {
+    const input = e.target?.closest?.("[data-vol]");
+    if (!input) return;
+    const key = input.dataset.vol;
+    const value = volSliderValue(input);
+    const next = await writeSetting(key, value);
+    applySettings(next);
+    renderSettingsSheet();
+    if (key === "volEffects") playUiTap();
   });
 
   // Quick task 260924-51h — the title theme (sfx/theme.mp3). WHEN it plays

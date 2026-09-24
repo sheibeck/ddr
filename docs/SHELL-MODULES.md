@@ -372,7 +372,7 @@ only when the player reaches the map and a cut at once under reduced motion,
 Sound Off or background.
 
 **Player.** `src/browser/sfx.js` exports `MUSIC_IDS` (`["theme"]`),
-`MUSIC_GAIN` (0.5), `isSfxUnlocked`, `startMusic` and `stopMusic`. The theme
+`MUSIC_GAIN` (0.9 since Phase 71; 0.5 at 51h), `isSfxUnlocked`, `startMusic` and `stopMusic`. The theme
 streams through one looping media element. That element is routed once
 through `createMediaElementSource` into a music gain node on the one-shots'
 device, so it shares the Sound gate, the master level and the teardown.
@@ -395,6 +395,22 @@ device, so it shares the Sound gate, the master level and the teardown.
 A throwing hook never breaks the storage flush.
 
 There is no new bridge.
+
+**Levels (Phase 71, POLISH-05, D-01..D-03).** `src/browser/sfx.js` also
+exports `CLIP_GAIN`, `clipGain`, `volumeLevels` and raises `MUSIC_GAIN` to
+0.9. `CLIP_GAIN` is the one hand-tunable per-clip balance table, keyed by
+clip id (`death` 0.5, the six step clips 1.6, every other clip 1.0, capped
+at 2.0). Each one-shot plays through its own gain node at `clipGain(id)`,
+then an effects bus, then the device master. The theme's gain node skips the
+effects bus and feeds the master directly, so MASTER scales everything,
+EFFECTS the one-shots only and MUSIC the theme only. The music level is
+`MUSIC_GAIN` times the MUSIC slider. `settings.js` persists the three
+sliders in `ddr.settings.v1` as `volMaster`, `volMusic` and `volEffects`
+(integers 0-100, default 100). In the settings sheet they sit under the
+Sound row (`#mw-vol-rows`) and show only while Sound is On. Dragging applies
+the level live through `applySettings` without writing storage. Releasing
+persists once through `writeSetting`, and an EFFECTS release previews one
+ui-tap. There is no new bridge.
 
 ## What stays shared
 
