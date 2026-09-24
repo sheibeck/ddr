@@ -216,6 +216,7 @@ Plans:
   3. The ☰ opens on every in-game screen — map, combat and other encounters, the Oracle, the tabs, and while dead — with rows that cannot act in the current context shown disabled rather than hidden
   4. Save & quit and Abandon this character live at the bottom of the ☰ dropdown (Abandon two-tap armed, New Character when dead); the HERO tab's Delve panel is removed
   5. LINEAGE shows a race and sub-class selector defaulting to the active hero's lineage and lists the top 10 runs for that lineage (local: kept per lineage in the records; global: filtered from the DEEPEST sample with an honest footnote)
+
 **Plans**: 4 plans (3 waves)
 
 POLISH-01 was delivered by quick task 260924-51h (merged c8e25d3, D-01); 70-04 confirms it against D-02 without reimplementing it.
@@ -223,8 +224,8 @@ POLISH-01 was delivered by quick task 260924-51h (merged c8e25d3, D-01); 70-04 c
 Plans:
 **Wave 1**
 
-- [ ] 70-01-PLAN.md — (wave 1) ☰ pure layer: accountMenuView, renderMenuFace/renderAccountMenu, controller menuView, ACCOUNT_COPY.menuLabel; HUD_MENU_QUIT_COPY + abandonRowNext two-tap arm; scan registrations (POLISH-02, POLISH-03; D-03, D-04, D-06)
-- [ ] 70-02-PLAN.md — (wave 1) LINEAGE race + sub-class board: lineageKey race+sub, prune keeps each lineage's top 10, lineage map retired; picker view + default chain + filtered global sample; panel chip rows, hero seam, .mw-bd-pick CSS (POLISH-04; D-09..D-14)
+- [x] 70-01-PLAN.md — (wave 1) ☰ pure layer: accountMenuView, renderMenuFace/renderAccountMenu, controller menuView, ACCOUNT_COPY.menuLabel; HUD_MENU_QUIT_COPY + abandonRowNext two-tap arm; scan registrations (POLISH-02, POLISH-03; D-03, D-04, D-06)
+- [x] 70-02-PLAN.md — (wave 1) LINEAGE race + sub-class board: lineageKey race+sub, prune keeps each lineage's top 10, lineage map retired; picker view + default chain + filtered global sample; panel chip rows, hero seam, .mw-bd-pick CSS (POLISH-04; D-09..D-14)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -396,7 +397,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
-| 70. Device-Round Polish | v2.0 | 0/4 | Planned     | - |
+| 70. Device-Round Polish | v2.0 | 2/4 | In Progress|  |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
