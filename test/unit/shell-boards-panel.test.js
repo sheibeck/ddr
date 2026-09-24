@@ -316,6 +316,60 @@ test("(F2) SOURCE: showTab's DEAD branch calls the boards bridge, refreshTitleDe
   assert.match(CODE, /import \{ boardsView \} from "\.\/src\/browser\/boardsView\.js";/);
 });
 
+// ═══════════════════════ (G) Phase 70 (D-11): the LINEAGE hero seam ═════════
+
+test("(G1) SOURCE: the createBoardsPanel block carries exactly one hero seam, reading window.__mzState and the dead flag", () => {
+  const panel = sliceBetween(CODE, "const boardsPanel = createBoardsPanel({", "\n  });");
+  const seams = panel.split("\n").filter((line) => /^\s*hero:/.test(line));
+  assert.equal(seams.length, 1, "exactly one hero seam");
+  const [seam] = seams;
+  assert.match(seam, /window\.__mzState\?\.get\?\.\(\)/);
+  assert.match(seam, /!st\.dead/);
+  assert.match(seam, /\{ race: st\.c\.race, sub: st\.c\.sub \}/);
+  assert.match(seam, /: null; \},$/);
+});
+
+/** heroSeam(window) — the shipped `hero:` seam, extracted from the createBoardsPanel block and evaluated over a fake window. */
+function heroSeam(fakeWindow) {
+  const panel = sliceBetween(CODE, "const boardsPanel = createBoardsPanel({", "\n  });") + "\n";
+  const m = panel.match(/\n\s*hero: ([^\n]*?),\n/);
+  assert.ok(m, "hero seam");
+  return new Function("window", `return (${m[1]});`)(fakeWindow);
+}
+
+test("(G2) BEHAVIOUR: the hero seam answers the living hero's { race, sub }, and null when S is absent, heroless or dead", () => {
+  const withS = (S) => ({ __mzState: { get: () => S } });
+  const hero = { race: "Troll", sub: "Acrobat", cls: "Thief", name: "Grub" };
+  assert.deepStrictEqual(heroSeam(withS({ c: hero, dead: false }))(), { race: "Troll", sub: "Acrobat" });
+  assert.deepStrictEqual(heroSeam(withS({ c: hero }))(), { race: "Troll", sub: "Acrobat" });
+  assert.equal(heroSeam(withS({ c: hero, dead: true }))(), null);
+  assert.equal(heroSeam(withS(null))(), null);
+  assert.equal(heroSeam(withS({ dead: false }))(), null);
+  assert.equal(heroSeam({})(), null, "no __mzState yet");
+});
+
+test("(G3) BEHAVIOUR: in the real DEAD tab, tapping LINEAGE shows the RACE / SUB-CLASS picker (the sandbox panel has no hero seam: the newest grave's lineage is on)", () => {
+  const runs = twelveRuns().map((r, i) => makeSummary({ ...r, race: "Dwarven", sub: i % 2 ? "Knight" : "Soldier" }));
+  const { root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
+  const section = root.querySelector(".mw-bd-lineage");
+  assert.equal(section.hidden, true, "hidden off LINEAGE");
+  root.querySelector(".mw-bd-rail").children.find((c) => c.dataset.board === "combo").onclick();
+  assert.equal(section.hidden, false);
+  assert.deepStrictEqual(section.children.map((r) => r.dataset.kind), ["race", "sub"]);
+  const onId = (kind) =>
+    section.children.find((r) => r.dataset.kind === kind).children[1].children.find((c) => c.dataset.on === "1").dataset.id;
+  const newest = runs[runs.length - 1];
+  assert.deepStrictEqual([onId("race"), onId("sub")], [newest.race, newest.sub]);
+  const rows = root.querySelectorAll(".mw-bd-row");
+  assert.equal(rows.length, 6, "the six runs of that lineage");
+  // A SUB-CLASS chip tap re-lists the board.
+  section.children[1].children[1].children.find((c) => c.dataset.id === (newest.sub === "Knight" ? "Soldier" : "Knight")).onclick();
+  assert.equal(root.querySelectorAll(".mw-bd-row").length, 6);
+  section.children[1].children[1].children.find((c) => c.dataset.id === "Acrobat").onclick();
+  assert.equal(root.querySelectorAll(".mw-bd-row").length, 0);
+  assert.equal(root.querySelector(".mw-bd-empty").textContent, "No Dwarven Acrobat of yours has died yet. The dungeon is patient.");
+});
+
 test("(F3) SOURCE (BOARD-08): the comment-stripped shell makes zero network calls", () => {
   for (const bad of [/fetch\(/, /XMLHttpRequest/, /WebSocket/, /EventSource/, /sendBeacon/]) {
     assert.doesNotMatch(CODE, bad);

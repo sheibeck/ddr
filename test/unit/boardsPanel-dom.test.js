@@ -136,12 +136,12 @@ function walkAll(node, out = []) {
 
 // ─── skeleton identity ──────────────────────────────────────────────────
 
-test("skeleton: first render creates exactly one .mw-bd root with the six sections in order; a second render reuses root/rail/body", () => {
+test("skeleton: first render creates exactly one .mw-bd root with the seven sections in order; a second render reuses root/rail/body", () => {
   const view = makeView();
   const { doc, host, root } = renderFresh(view);
   assert.equal(host.children.filter((c) => c.className === "mw-bd").length, 1);
   const classes = root.children.map((c) => c.className);
-  assert.deepStrictEqual(classes, ["mw-bd-head", "mw-bd-strip", "mw-bd-rail", "mw-bd-boardhead", "mw-bd-body", "mw-bd-dock"]);
+  assert.deepStrictEqual(classes, ["mw-bd-head", "mw-bd-strip", "mw-bd-rail", "mw-bd-boardhead", "mw-bd-lineage", "mw-bd-body", "mw-bd-dock"]);
 
   const rail1 = root.querySelector(".mw-bd-rail");
   const body1 = root.querySelector(".mw-bd-body");
@@ -525,6 +525,7 @@ test("BOARDS_CLASSES: every className the renderer emits (across every optional/
     makeView({ body: { kind: "note", line: "Nobody out there can see you yet." } }),
     makeGlobalView(),
     makeGlobalView({ body: CONSENT_BODY }),
+    makeLineageView(),
   ];
   const found = new Set();
   for (const view of views) {
@@ -548,6 +549,7 @@ test("BOARDS_CLASSES (Phase 67): a signed-in view emits no class outside the lis
     makeSignedInView({ body: { kind: "note", line: "The world is unreachable. Your own dead are still here." } }),
     makeGlobalView(),
     makeGlobalView({ body: CONSENT_BODY, standing: null }),
+    makeLineageView(),
   ];
   const found = new Set();
   views.forEach((view, i) => {
@@ -561,6 +563,93 @@ test("BOARDS_CLASSES (Phase 67): a signed-in view emits no class outside the lis
     }
   });
   assert.deepStrictEqual([...found].sort(), [...BOARDS_CLASSES].sort());
+});
+
+// ─── Phase 70 (D-09): the LINEAGE RACE / SUB-CLASS picker ────────────────
+
+// makeLineageView(race, sub) — the LINEAGE board with a two-row picker.
+function makeLineageView(race = "Dwarven", sub = "Knight") {
+  const chips = (ids, on) => ids.map((id) => ({ id, label: id.toUpperCase(), on: id === on }));
+  return makeView({
+    board: { id: "combo", mark: "◆", col: "#b9a4ef", title: "BY RACE & SUB-CLASS", rule: "One race, one sub-class." },
+    picker: {
+      race,
+      sub,
+      rows: [
+        { kind: "race", label: "RACE", chips: chips(["Human", "Elven", "Dwarven"], race) },
+        { kind: "sub", label: "SUB-CLASS", chips: chips(["Wizard", "Knight", "Court Mage"], sub) },
+      ],
+    },
+  });
+}
+
+function pickRows(root) {
+  return root.querySelector(".mw-bd-lineage").children;
+}
+
+test("picker: a view with no picker (null or absent) leaves .mw-bd-lineage hidden and empty", () => {
+  for (const view of [makeView(), makeView({ picker: null })]) {
+    const { root } = renderFresh(view);
+    const section = root.querySelector(".mw-bd-lineage");
+    assert.equal(section.hidden, true);
+    assert.equal(section.children.length, 0);
+  }
+  // A LINEAGE render followed by a board without a picker hides and empties it again.
+  const { host, root } = renderFresh(makeLineageView());
+  renderBoardsPanel(host, makeView({ picker: null }), {});
+  assert.equal(root.querySelector(".mw-bd-lineage").hidden, true);
+  assert.equal(root.querySelector(".mw-bd-lineage").children.length, 0);
+});
+
+test("picker: two .mw-bd-pick rows (race then sub), each a labelled group with a .mw-bd-pick-label and a .mw-bd-pick-chips of chip buttons", () => {
+  const { root } = renderFresh(makeLineageView());
+  const section = root.querySelector(".mw-bd-lineage");
+  assert.equal(section.hidden, false);
+  const rows = pickRows(root);
+  assert.deepStrictEqual(rows.map((r) => [r.className, r.dataset.kind]), [["mw-bd-pick", "race"], ["mw-bd-pick", "sub"]]);
+  assert.equal(rows[0].getAttribute("role"), "group");
+  assert.equal(rows[0].getAttribute("aria-label"), "RACE");
+  assert.equal(rows[1].getAttribute("aria-label"), "SUB-CLASS");
+  assert.deepStrictEqual(rows[1].children.map((c) => c.className), ["mw-bd-pick-label", "mw-bd-pick-chips"]);
+  assert.equal(rows[1].children[0].textContent, "SUB-CLASS");
+  const chips = rows[1].children[1].children;
+  assert.deepStrictEqual(chips.map((c) => c.textContent), ["WIZARD", "KNIGHT", "COURT MAGE"]);
+  const mage = chips[2];
+  assert.equal(mage.tagName, "button");
+  assert.equal(mage.className, "mw-bd-pick-chip");
+  assert.equal(mage.type, "button");
+  assert.equal(mage.dataset.kind, "sub");
+  assert.equal(mage.dataset.id, "Court Mage");
+  assert.equal(mage.dataset.on, "0");
+  assert.equal(mage.getAttribute("aria-pressed"), "false");
+  assert.equal(chips[1].dataset.on, "1");
+  assert.equal(chips[1].getAttribute("aria-pressed"), "true");
+});
+
+test("picker: a chip's onclick calls handlers.onLineage(kind, id)", () => {
+  const onLineage = spy();
+  const { root } = renderFresh(makeLineageView(), { onLineage });
+  const rows = pickRows(root);
+  rows[0].children[1].children[0].onclick();
+  rows[1].children[1].children[2].onclick();
+  assert.deepStrictEqual(onLineage.calls, [["race", "Human"], ["sub", "Court Mage"]]);
+});
+
+test("picker: a second render reuses each row and its chips container (a row's scroll survives a chip tap); only the chips change", () => {
+  const { host, root } = renderFresh(makeLineageView("Dwarven", "Knight"));
+  const [race1, sub1] = pickRows(root);
+  const subChips1 = sub1.children[1];
+  subChips1.scrollLeft = 64;
+  const oldChip = subChips1.children[1];
+
+  renderBoardsPanel(host, makeLineageView("Dwarven", "Court Mage"), {});
+  const [race2, sub2] = pickRows(root);
+  assert.equal(race2, race1);
+  assert.equal(sub2, sub1);
+  assert.equal(sub2.children[1], subChips1);
+  assert.equal(sub2.children[1].scrollLeft, 64);
+  assert.notEqual(sub2.children[1].children[1], oldChip, "the chips themselves are rebuilt");
+  assert.equal(sub2.children[1].children[2].dataset.on, "1");
 });
 
 // ─── Phase 68 (D-06, D-08): season label and picker, consent body, null standing ──

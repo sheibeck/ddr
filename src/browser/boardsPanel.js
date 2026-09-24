@@ -86,6 +86,12 @@ export const BOARDS_CLASSES = Object.freeze([
   "mw-bd-seasons",
   "mw-bd-season-chip",
   "mw-bd-consent",
+  // Phase 70 (D-09): the LINEAGE board's RACE and SUB-CLASS chip rows.
+  "mw-bd-lineage",
+  "mw-bd-pick",
+  "mw-bd-pick-label",
+  "mw-bd-pick-chips",
+  "mw-bd-pick-chip",
 ]);
 
 /** finite(n) — coerces to a finite number, else 0. */
@@ -121,13 +127,26 @@ function el(doc, tag, className, text) {
   return e;
 }
 
-const SECTION_CLASSES = ["mw-bd-head", "mw-bd-strip", "mw-bd-rail", "mw-bd-boardhead", "mw-bd-body", "mw-bd-dock"];
+const SECTION_CLASSES = [
+  "mw-bd-head",
+  "mw-bd-strip",
+  "mw-bd-rail",
+  "mw-bd-boardhead",
+  "mw-bd-lineage", // Phase 70 (D-09): the LINEAGE picker, hidden off LINEAGE.
+  "mw-bd-body",
+  "mw-bd-dock",
+];
+
+/** childList(node) — a node's element children as a plain array (an HTMLCollection has no .find). */
+function childList(node) {
+  return node && node.children ? Array.from(node.children) : [];
+}
 
 /**
  * ensureSkeleton(host) — finds an existing `.mw-bd` root (a second render on
- * the same host reuses it, along with its six section children — the rail's
- * and the body's scroll positions survive a re-render this way) or creates
- * one with the six section children in order.
+ * the same host reuses it, along with its seven section children — the
+ * rail's, the picker rows' and the body's scroll positions survive a
+ * re-render this way) or creates one with the seven section children in order.
  */
 function ensureSkeleton(host) {
   const doc = host.ownerDocument;
@@ -143,6 +162,7 @@ function ensureSkeleton(host) {
     strip: root.querySelector(".mw-bd-strip"),
     rail: root.querySelector(".mw-bd-rail"),
     boardhead: root.querySelector(".mw-bd-boardhead"),
+    lineage: root.querySelector(".mw-bd-lineage"),
     body: root.querySelector(".mw-bd-body"),
     dock: root.querySelector(".mw-bd-dock"),
   };
@@ -262,6 +282,61 @@ function buildBoardHead(doc, view, boardheadEl) {
   boardtext.appendChild(el(doc, "span", "mw-bd-rule", view.board.rule));
 
   boardheadEl.replaceChildren(mark, boardtext);
+}
+
+/**
+ * buildLineagePicker(doc, view, handlers, sectionEl) — Phase 70 (D-09): the
+ * LINEAGE board's RACE and SUB-CLASS chip rows from view.picker. Hidden and
+ * empty when the view carries no picker. Each row (found by walking the
+ * section's children for its dataset.kind — no attribute selector) and its
+ * chips container are created once and reused, so a row's horizontal scroll
+ * position survives a chip tap; only the chips are replaced.
+ */
+function buildLineagePicker(doc, view, handlers, sectionEl) {
+  const picker = view.picker;
+  if (!picker || typeof picker !== "object" || !Array.isArray(picker.rows)) {
+    sectionEl.hidden = true;
+    sectionEl.replaceChildren();
+    return;
+  }
+  sectionEl.hidden = false;
+
+  const existing = childList(sectionEl);
+  const rowEls = picker.rows.map((row) => {
+    const kind = String(row.kind ?? "");
+    const label = String(row.label ?? "");
+    let rowEl = existing.find((c) => c && c.dataset && c.dataset.kind === kind);
+    if (!rowEl) {
+      rowEl = el(doc, "div", "mw-bd-pick");
+      rowEl.dataset.kind = kind;
+      rowEl.setAttribute("role", "group");
+      rowEl.appendChild(el(doc, "span", "mw-bd-pick-label"));
+      rowEl.appendChild(el(doc, "div", "mw-bd-pick-chips"));
+    }
+    rowEl.setAttribute("aria-label", label);
+    const parts = childList(rowEl);
+    const labelEl = parts.find((c) => c.className === "mw-bd-pick-label");
+    const chipsEl = parts.find((c) => c.className === "mw-bd-pick-chips");
+    labelEl.textContent = label;
+    const chips = (Array.isArray(row.chips) ? row.chips : []).map((c) => {
+      const chip = el(doc, "button", "mw-bd-pick-chip", String(c.label ?? ""));
+      chip.type = "button";
+      chip.dataset.kind = kind;
+      chip.dataset.id = String(c.id ?? "");
+      chip.dataset.on = c.on ? "1" : "0";
+      chip.setAttribute("aria-pressed", c.on ? "true" : "false");
+      chip.onclick = () => handlers.onLineage?.(kind, c.id);
+      return chip;
+    });
+    chipsEl.replaceChildren(...chips);
+    return rowEl;
+  });
+
+  // Re-seat the rows only when the row list itself changed (never on a chip
+  // tap), so an unchanged row is never detached and keeps its scroll.
+  const current = childList(sectionEl);
+  const same = current.length === rowEls.length && current.every((c, i) => c === rowEls[i]);
+  if (!same) sectionEl.replaceChildren(...rowEls);
 }
 
 function buildRow(doc, view, row, handlers) {
@@ -398,10 +473,11 @@ function buildDock(doc, view, handlers, dockEl) {
  * renderBoardsPanel(host, view, handlers = {}) — draws the whole Leaderboards
  * panel from a view object alone (see 66-03-PLAN.md's `<interfaces>` for the
  * exact view shape). Ensures the `.mw-bd` skeleton (head/strip/rail/
- * boardhead/body/dock, in that order) exists under `host`, reusing it — and
- * the rail/body elements inside it — on every subsequent call, so a row tap
- * or board switch never resets the rail's or the body's own scroll position
- * (only their CHILDREN are replaced via replaceChildren).
+ * boardhead/lineage/body/dock, in that order) exists under `host`, reusing
+ * it — and the rail/picker-row/body elements inside it — on every
+ * subsequent call, so a row tap or board switch never resets the rail's,
+ * a picker row's or the body's own scroll position (only their CHILDREN are
+ * replaced via replaceChildren).
  *
  * Reaches the page only through `host.ownerDocument` and its own arguments —
  * no window/document/globalThis reference anywhere in this module — and
@@ -411,7 +487,7 @@ function buildDock(doc, view, handlers, dockEl) {
  */
 export function renderBoardsPanel(host, view, handlers = {}) {
   const doc = host.ownerDocument;
-  const { root, head, strip, rail, boardhead, body, dock } = ensureSkeleton(host);
+  const { root, head, strip, rail, boardhead, lineage, body, dock } = ensureSkeleton(host);
 
   root.dataset.board = view.board.id;
   root.dataset.entry = view.header.back ? "title" : "tab";
@@ -420,6 +496,7 @@ export function renderBoardsPanel(host, view, handlers = {}) {
   buildStrip(doc, view, handlers, strip);
   buildRail(doc, view, handlers, rail);
   buildBoardHead(doc, view, boardhead);
+  buildLineagePicker(doc, view, handlers, lineage);
   buildBody(doc, view, handlers, body);
   buildDock(doc, view, handlers, dock);
 
@@ -442,6 +519,11 @@ const SIGNED_OUT = Object.freeze({ signedIn: false, player: null });
 /** signedOutIdentity() — createBoardsPanel's default identity seam (always signed out). */
 function signedOutIdentity() {
   return SIGNED_OUT;
+}
+
+/** noHero() — createBoardsPanel's default hero seam (no live hero). */
+function noHero() {
+  return null;
 }
 
 /** defaultSeasons() — createBoardsPanel's default seasons seam (season 1 only). */
@@ -470,6 +552,17 @@ function defaultSeasons() {
  * `onFriendsConsent()` runs from the in-panel SHOW MY FRIENDS button. The
  * panel still reaches Play Games only through these injected functions, and
  * a missing or throwing seam never breaks a render.
+ *
+ * Phase 70 (D-09, D-11) adds the optional `hero()` seam — the active hero's
+ * { race, sub }, or null (the default) — and the LINEAGE selection. hero()
+ * is asked on every render except in title mode without a resumable hero
+ * (boot leaves a throwaway, non-live hero there), and a throwing, missing
+ * or malformed answer reads as null. The selection starts null on every
+ * open (so the view re-defaults: hero, most recent run, first in content
+ * order), is pinned from each rendered view.picker, survives board, scope,
+ * season, row and refresh renders while the panel is open, and changes only
+ * through onLineage(kind, id). global() is asked exactly as before — LINEAGE
+ * filters the same cached DEEPEST sample (D-13).
  */
 export function createBoardsPanel({
   host,
@@ -482,8 +575,28 @@ export function createBoardsPanel({
   global = null,
   seasons = defaultSeasons,
   onFriendsConsent = null,
+  hero = noHero,
 }) {
   const doc = host.ownerDocument;
+
+  /**
+   * readHero() — Phase 70 (D-11): the live hero's { race, sub }, or null. In
+   * title mode with no resumable hero the seam is not asked at all (boot's
+   * throwaway fresh-run hero is not live). A throwing seam, a non-function or
+   * an answer without a string race and sub all read as null.
+   */
+  function readHero() {
+    if (entry === "title" && !hasHero) return null;
+    let answer;
+    try {
+      answer = typeof hero === "function" ? hero() : null;
+    } catch {
+      return null;
+    }
+    if (!answer || typeof answer !== "object") return null;
+    if (typeof answer.race !== "string" || typeof answer.sub !== "string") return null;
+    return { race: answer.race, sub: answer.sub };
+  }
 
   /** readSeasons() — { current, all } from the seasons() seam; a throw or malformed answer means season 1 of [1]. */
   function readSeasons() {
@@ -530,6 +643,7 @@ export function createBoardsPanel({
   let open = null; // a row key, or null
   let hasHero = false;
   let season = 1; // Phase 68 (D-08): the viewed season; reset to the current one on every open.
+  let lineage = null; // Phase 70 (D-11): the LINEAGE selection { race, sub }; null re-defaults, on every open.
 
   function readStoredBoard() {
     if (!prefs) return null;
@@ -566,23 +680,44 @@ export function createBoardsPanel({
    * prefers-reduced-motion (instant "auto" vs "smooth").
    */
   function centreRail() {
-    const railEl = host.querySelector(".mw-bd-rail");
-    if (!railEl) return;
-    const chip = (railEl.children || []).find((c) => c && c.dataset && c.dataset.on === "1");
+    centreIn(host.querySelector(".mw-bd-rail"));
+  }
+
+  /**
+   * centreIn(containerEl) — scrolls a horizontal chip container so its on
+   * chip (dataset.on "1", found by a children walk) sits toward
+   * railScrollTarget(...), only when off by more than 2px; instant "auto"
+   * under prefers-reduced-motion, "smooth" otherwise, and a scrollLeft
+   * assignment when scrollTo is missing. Shared by the rail and (Phase 70,
+   * D-09) each LINEAGE picker row.
+   */
+  function centreIn(containerEl) {
+    if (!containerEl) return;
+    const chip = childList(containerEl).find((c) => c && c.dataset && c.dataset.on === "1");
     if (!chip) return;
     const target = railScrollTarget({
       offsetLeft: chip.offsetLeft,
       offsetWidth: chip.offsetWidth,
-      clientWidth: railEl.clientWidth,
-      scrollWidth: railEl.scrollWidth,
+      clientWidth: containerEl.clientWidth,
+      scrollWidth: containerEl.scrollWidth,
     });
-    const currentRaw = Number(railEl.scrollLeft);
+    const currentRaw = Number(containerEl.scrollLeft);
     const current = Number.isFinite(currentRaw) ? currentRaw : 0;
     if (Math.abs(current - target) <= 2) return;
-    if (typeof railEl.scrollTo === "function") {
-      railEl.scrollTo({ left: target, behavior: reducedMotion() ? "auto" : "smooth" });
+    if (typeof containerEl.scrollTo === "function") {
+      containerEl.scrollTo({ left: target, behavior: reducedMotion() ? "auto" : "smooth" });
     } else {
-      railEl.scrollLeft = target;
+      containerEl.scrollLeft = target;
+    }
+  }
+
+  /** centrePicker() — Phase 70 (D-09): centres each LINEAGE picker row's on chip (children walks only). */
+  function centrePicker() {
+    const section = host.querySelector(".mw-bd-lineage");
+    if (!section || section.hidden) return;
+    for (const rowEl of childList(section)) {
+      const chipsEl = childList(rowEl).find((c) => c && c.className === "mw-bd-pick-chips");
+      centreIn(chipsEl);
     }
   }
 
@@ -617,10 +752,19 @@ export function createBoardsPanel({
         global: snapshot,
         season,
         seasons: all,
+        lineage: lineage ? { ...lineage } : null,
+        hero: readHero(),
       });
+      // Phase 70 (D-11): pin the resolved selection so board, scope, row and
+      // refresh renders keep it for the rest of this panel session.
+      const picked = view && view.picker;
+      if (picked && typeof picked.race === "string" && typeof picked.sub === "string") {
+        lineage = { race: picked.race, sub: picked.sub };
+      }
       renderBoardsPanel(host, view, handlers);
       centreRail();
       if (reset) {
+        centrePicker();
         const bodyEl = host.querySelector(".mw-bd-body");
         if (bodyEl) bodyEl.scrollTop = 0;
       }
@@ -660,6 +804,14 @@ export function createBoardsPanel({
       open = null;
       render({ reset: true });
     },
+    onLineage(kind, id) {
+      // Phase 70 (D-09): a RACE or SUB-CLASS chip. The view validates the id
+      // against the content lists and falls back down the default chain.
+      if ((kind !== "race" && kind !== "sub") || typeof id !== "string") return;
+      lineage = { race: lineage ? lineage.race : undefined, sub: lineage ? lineage.sub : undefined, [kind]: id };
+      open = null;
+      render({ reset: true });
+    },
     onConsent() {
       // Phase 68 (D-06): the in-panel SHOW MY FRIENDS button.
       try {
@@ -693,6 +845,7 @@ export function createBoardsPanel({
     scope = "local";
     open = null;
     season = readSeasons().current;
+    lineage = null; // Phase 70 (D-11): re-default on every open.
     clearTitleMarker();
     render({ reset: true });
   }
@@ -704,6 +857,7 @@ export function createBoardsPanel({
     scope = "local";
     open = null;
     season = readSeasons().current;
+    lineage = null; // Phase 70 (D-11): re-default on every open.
     doc.body.dataset.boardsEntry = "title";
     render({ reset: true });
   }
@@ -721,7 +875,7 @@ export function createBoardsPanel({
   }
 
   function state() {
-    return Object.freeze({ entry, board, scope, open, hasHero, season });
+    return Object.freeze({ entry, board, scope, open, hasHero, season, lineage: lineage ? Object.freeze({ ...lineage }) : null });
   }
 
   return Object.freeze({ openFromTab, openFromTitle, onDeadTab, back, isTitleOpen, centreRail, refresh, state });
