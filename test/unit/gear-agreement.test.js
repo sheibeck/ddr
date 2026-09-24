@@ -455,7 +455,8 @@ test("no-fork source guard: combatMenu.js imports itemRowState from ./gearTab.js
 
 test("no-fork source guard: storeScreen.js imports bagUsage from ./gearTab.js and storeRowState from ./viewModels.js", () => {
   assert.ok(STORE_SCREEN_STRIPPED.includes('import { bagUsage, renderCarriedList } from "./gearTab.js";'));
-  assert.ok(STORE_SCREEN_STRIPPED.includes('import { armorDisplay, usableBy, storeRowState } from "./viewModels.js";'));
+  // Phase 71 (D-04): itemStatLines joins the import — item rows read the ONE stat formatter.
+  assert.ok(STORE_SCREEN_STRIPPED.includes('import { armorDisplay, usableBy, storeRowState, itemStatLines } from "./viewModels.js";'));
 });
 
 test("no-fork source guard: mazeworld.html bridges window.__mzBagUsage and window.__mzLootCompare to gearTab.js's own functions", () => {
