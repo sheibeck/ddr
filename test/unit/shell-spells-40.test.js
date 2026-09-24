@@ -127,14 +127,18 @@ test("Hero-tab kit: Mirror Self / Sense Presence / Sense Danger (armed) / Map th
 
 // ─── (d) foeStatusBadges: spell:weaken + f.dot ─────────────────────────────
 
-test("foeStatusBadges: reads the hero's spell:weaken record and a foe's f.dot record", () => {
-  const region = sliceBetween(CODE, "function foeStatusBadges(f) {", "\n}");
-  assert.match(region, /S\.c\.timers && S\.c\.timers\["spell:weaken"\]/);
-  assert.match(region, /Weakened · \$\{wk\.left\}/);
-  assert.match(region, /f\.dot && f\.dot\.left > 0/);
-  assert.match(region, /f\.dot\.by === "ice" \? "Ice" : "Poison"/);
-  assert.equal((CODE.match(/"spell:weaken"/g) || []).length, 1);
-  assert.equal((CODE.match(/f\.dot\.by === "ice"/g) || []).length, 1);
+// Phase 71 (D-14): the spell:weaken and f.dot reads moved into the ONE foe
+// condition table, src/browser/foeConditions.js; the shell's foeStatusBadges
+// is now a thin reader of window.__mzFoeConditions.
+test("foeStatusBadges: reads the table through window.__mzFoeConditions; foeConditions.js reads the hero's spell:weaken record and a foe's f.dot record", () => {
+  const region = sliceBetween(CODE, "function foeStatusBadges(f, V) {", "\n}");
+  assert.match(region, /window\.__mzFoeConditions/);
+  assert.equal((CODE.match(/"spell:weaken"/g) || []).length, 0, "the shell no longer reads spell:weaken itself");
+  assert.equal((CODE.match(/f\.dot\.by === "ice"/g) || []).length, 0, "the shell no longer maps f.dot itself");
+  const FOE_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "foeConditions.js"), "utf8").replace(/\r\n/g, "\n"));
+  assert.match(FOE_SRC, /timers\["spell:weaken"\]/);
+  assert.match(FOE_SRC, /f\.dot\.left/);
+  assert.match(FOE_SRC, /f\.dot\.by === "ice" \? C\.ice : C\.poison/);
 });
 
 // ─── (e) draw(): spellSeen tint + fallback palette parity ─────────────────

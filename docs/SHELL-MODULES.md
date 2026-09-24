@@ -412,6 +412,25 @@ the level live through `applySettings` without writing storage. Releasing
 persists once through `writeSetting`, and an EFFECTS release previews one
 ui-tap. There is no new bridge.
 
+### Combat foe conditions and the action lock (Phase 71)
+
+D-14: every condition an ability, spell or item puts on a foe comes from ONE
+pure table, `src/browser/foeConditions.js` (`FOE_CONDITIONS`,
+`FOE_CONDITION_COPY`, `foeConditionChips(foe, state)`). The module script
+bridges it as `window.__mzFoeConditions = { chips }`; the classic
+`foeStatusBadges(f, V)` is a thin reader of it, fed the beat's frame state
+so a chip moves with the same line as the foe's HP, and 71-04's long-press
+foe card reads the same table. `test/unit/foe-conditions.test.js` scans the
+engine's foe-field assignments, so a new foe effect with no chip (and no
+reasoned exclusion) fails the build.
+
+D-05: while a round's beats play, `renderActionArea` passes `{ locked }` to
+`combatMenuViewModel`, which swaps the prompt to the mock's "HOLD · THE DICE
+ARE STILL OUT". `#cb-act` and every action it builds carry `data-locked="1"`
+(dimmed, flat, pointer-inert) plus `aria-disabled`, which the arm sweep
+skips. A tap still lands the round through Phase 58's single `beatHurryTap`
+and never acts (D-06).
+
 ## What stays shared
 
 `src/browser/viewModels.js` keeps the view models more than one surface
@@ -470,6 +489,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzFightEnd | mazeworld.html (module) | mazeworld.html (classic: renderCombatOver — reads and also resets to null)<br>mazeworld.html (module: the post-dispatch combat-end tracker — sets the ending-line parcel) | Presentation-only parcel of a just-ended fight's closing lines; never a field on state. |
 | __mzFightLog | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)<br>mazeworld.html (module: dispatchWithNarration — appends every dispatch's fight-log lines) | Presentation-only whole-fight log entries (rows, seq); never a field on state. |
 | __mzFightLogVM | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull) | Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time. |
+| __mzFoeConditions | mazeworld.html (module) | mazeworld.html (classic: foeStatusBadges — the combat foe cards' condition chips, via chips) | Bridges src/browser/foeConditions.js's foeConditionChips, the one foe-condition chip table (Phase 71 D-14), so the classic foe cards read every ability, spell and item condition from one source that 71-04's long-press card also reads. |
 | __mzGearSheet | mazeworld.html (module) | mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render) | Bridges src/browser/gearSheet.js's renderGearSheet so the classic sheet lifecycle (open, repaint refresh, close, back button, ghost-tap arm) renders the ONE pure sheet model, never a second copy. |
 | __mzHapticsImportOverride | src/browser/haptics.js | test/unit/haptics.test.js | Test-only injection hook so a test can replace the native @capacitor/haptics import with a fake, without any shipped code path setting it. |
 | __mzHasTool | mazeworld.html (module) | mazeworld.html (classic/module: rail dark/hazard cards — torch retry, dark-fell gating) | Bridges the pure carried-tool predicate so a hazard/dark rail card only offers a retry when the party actually carries the tool. |

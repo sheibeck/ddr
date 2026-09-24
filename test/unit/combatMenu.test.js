@@ -442,3 +442,47 @@ test("COMBAT_MENU_COPY: every string leaf is non-empty and clear of content/safe
     assert.deepEqual(hits, [], `${key} ("${value}") must be clear of BANNED terms`);
   }
 });
+
+// ─── Phase 71 (D-05, R-10): the locked menu while a round's beats play ────
+
+test("Phase 71 D-05/R-10: COMBAT_MENU_COPY.resolving is the combat v2 mock's busy prompt, exactly", () => {
+  assert.equal(COMBAT_MENU_COPY.resolving, "HOLD · THE DICE ARE STILL OUT");
+});
+
+function lockFixtures() {
+  return [
+    fixedState({ combat: fixedCombat([]) }),
+    fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal", "Freeze"], spellsUsed: 0 }, combat: fixedCombat([]) }),
+    fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }),
+    fixedState({ c: { cls: "Thief", sub: "Cutthroat", abilities: ["pommel", "hamstring"] }, combat: fixedCombat([]) }),
+    fixedState({ c: { potions: 0 }, combat: null }),
+  ];
+}
+
+test("Phase 71 D-05: combatMenuViewModel(state, { locked: true }) swaps the prompt to the resolving line and flags every action and submenu row locked", () => {
+  for (const state of lockFixtures()) {
+    const vm = combatMenuViewModel(state, { locked: true });
+    assert.equal(vm.prompt, COMBAT_MENU_COPY.resolving);
+    assert.equal(vm.actions.length, 4);
+    for (const a of vm.actions) assert.equal(a.locked, true, `action ${a.key} must carry locked: true`);
+    for (const [key, sm] of Object.entries(vm.submenus)) {
+      assert.ok(sm.rows.length > 0);
+      for (const row of sm.rows) assert.equal(row.locked, true, `${key} row ${row.id} must carry locked: true`);
+    }
+    // Locked changes the look only: every other field is today's.
+    const unlocked = combatMenuViewModel(state);
+    const strip = (vmIn) => JSON.parse(JSON.stringify(vmIn, (k, v) => (k === "locked" ? undefined : v)));
+    assert.deepEqual({ ...strip(vm), prompt: unlocked.prompt }, strip(unlocked));
+  }
+});
+
+test("Phase 71 D-05: with no opts, or a falsy locked, the output is deep-equal to today's (no locked key anywhere)", () => {
+  for (const state of lockFixtures()) {
+    const today = combatMenuViewModel(state);
+    for (const opts of [undefined, {}, { locked: false }, { locked: 0 }, { locked: null }, null]) {
+      assert.deepEqual(combatMenuViewModel(state, opts), today);
+    }
+    assert.equal(today.prompt, COMBAT_MENU_COPY.prompt);
+    assert.doesNotMatch(JSON.stringify(today), /"locked"/);
+  }
+});

@@ -24,6 +24,9 @@ import { isReady } from "../../engine/effects.js";
 /** COMBAT_MENU_COPY — every literal string this module emits (voice-scanned by test/unit/combatMenu.test.js). */
 export const COMBAT_MENU_COPY = Object.freeze({
   prompt: "PICK YOUR MISTAKE",
+  // Phase 71 (D-05, R-10): the combat v2 mock's busy prompt, shown while a
+  // round's beats are still playing (design/COMBAT-V2-NOTES.md, section 4).
+  resolving: "HOLD · THE DICE ARE STILL OUT",
   strike: "1 · STRIKE",
   spells: "2 · SPELLS",
   abilities: "2 · ABILITIES",
@@ -114,8 +117,26 @@ function abilityRows(c) {
  * "social". Never throws on `state.combat === null` (a default
  * `{round:1, tracked:false}` combat shape is substituted for the fields
  * this view-model reads).
+ *
+ * Phase 71 (D-05, R-10): `opts.locked === true` (the shell passes it while a
+ * round's beats are still playing) swaps `prompt` to
+ * COMBAT_MENU_COPY.resolving and adds `locked: true` to every action and
+ * every submenu row, so the shell can draw them visibly unavailable. With no
+ * opts, or a falsy `locked`, the output is exactly the unlocked shape (no
+ * `locked` key anywhere). Locking changes the look only: the rows' own
+ * `enabled`/`dispatch` are untouched.
  */
-export function combatMenuViewModel(state) {
+export function combatMenuViewModel(state, opts) {
+  const locked = !!(opts && opts.locked === true);
+  const vm = combatMenuViewModelUnlocked(state);
+  if (!locked) return vm;
+  const lock = (x) => ({ ...x, locked: true });
+  const submenus = {};
+  for (const [key, sm] of Object.entries(vm.submenus)) submenus[key] = { ...sm, rows: sm.rows.map(lock) };
+  return { prompt: COMBAT_MENU_COPY.resolving, actions: vm.actions.map(lock), submenus };
+}
+
+function combatMenuViewModelUnlocked(state) {
   const c = state.c;
   const C = state.combat || { round: 1, tracked: false };
   const sheet = characterSheetViewModel(state);

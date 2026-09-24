@@ -17,6 +17,10 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
+// Phase 71 (D-14): one sandbox case proves the chips reach a real foe card.
+import { createRecordingDocument } from "./harness/recordingDom.js";
+import { loadShellSandbox } from "./harness/shellSandbox.js";
+
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const RAW_HTML = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8");
@@ -186,7 +190,9 @@ test("CSCR-02/08 (Decision 3): the combat branch mutates S.combat.target through
   const region = renderEncounterRegion();
   const targetHits = region.match(/S\.combat\.target = i; renderEncounter\(\);/g) || [];
   assert.equal(targetHits.length, 1, "S.combat.target = i; renderEncounter(); must appear exactly once");
-  const chipHits = region.match(/chipsFor: \(f\) => foeStatusBadges\(f\)\.map\(\(b\) => b\.t\)/g) || [];
+  // Phase 71 (D-14): the chips read the beat's frame state V, so a chip and
+  // the foe's HP move with the same line.
+  const chipHits = region.match(/chipsFor: \(f\) => foeStatusBadges\(f, V\)\.map\(\(b\) => b\.t\)/g) || [];
   assert.equal(chipHits.length, 1, "the chipsFor callback must appear exactly once");
   assert.doesNotMatch(CODE, /C\.target = i; renderEncounter\(\);/);
   assert.doesNotMatch(CODE, /[Rr]etarget/);
@@ -328,4 +334,98 @@ test("CSCR-03: the old ally-as-foe-card markup is gone; the ally now folds into 
   assert.doesNotMatch(CODE, /className = "foe ally"/);
   assert.doesNotMatch(CODE, /Fighting for you ·/);
   assert.match(COMBAT_PANEL_SRC, /allyThird/);
+});
+
+// ─── k. Phase 71 (D-14): foe chips from the one table ─────────────────────
+
+test("Phase 71 D-14: foeStatusBadges(f, V) is a thin reader of window.__mzFoeConditions.chips, mapped to { t, tone }, [] without the bridge", () => {
+  const region = sliceBetween(CODE, "function foeStatusBadges(f, V) {", "\n}");
+  assert.match(region, /window\.__mzFoeConditions\?\.chips\?\.\(f, V \|\| S\)/);
+  assert.match(region, /t: \w+\.text, tone: \w+\.tone/);
+  for (const field of ["asleep", "frozen", "acid", "blind", "stupid", "shrunk", "fixated", "frenzied", "hamstrung", "marked", "stunned"]) {
+    assert.doesNotMatch(region, new RegExp(`f\\.${field}\\b`), `foeStatusBadges must not read f.${field} itself any more`);
+  }
+  assert.equal((CODE.match(/function foeStatusBadges\(/g) || []).length, 1);
+});
+
+test("Phase 71 D-14: the module imports foeConditions.js once and bridges window.__mzFoeConditions = { chips: foeConditionChips } exactly once", () => {
+  assert.equal((CODE.match(/from "\.\/src\/browser\/foeConditions\.js"/g) || []).length, 1);
+  assert.equal((CODE.match(/window\.__mzFoeConditions = \{ chips: foeConditionChips \};/g) || []).length, 1);
+});
+
+test("Phase 71 D-14 (sandbox): Hamstrung, Marked and Stunned foes show their chips on their own cards; a dead foe reads DOWN", () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc });
+  const w = sandbox.context.window;
+  const foe = (name, extra) => ({ name, type: "Beasts", lvl: 1, size: "S", intel: 1, wp: 10, maxWP: 10, alive: true, asleep: 0, sp: {}, lives: 1, ...extra });
+  // The fixed hero/floor shape copied from combat-beat-shell.test.js's fixedState.
+  const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ wall: false, dark: false, seen: true, feat: null })));
+  const state = {
+    version: 1, seed: 1, rngState: 1,
+    c: {
+      cls: "Fighter", sub: "Soldier", race: "Human", level: 3, sp: 0, maxWP: 55, wp: 55, skills: {}, vp: 0,
+      weapon: "Sword", prof: 2, magicWpn: 0, armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+      temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x", potions: 1, rations: 6, gold: 50, scrolls: 0,
+      haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null, items: [], grimoire: [], spellsUsed: 0, kills: 0,
+      might: 0, ward: null, regen: false, mirror: 0, foresight: false, name: "Test Delver", darkFor: 0,
+    },
+    floor: { g, px: 1, py: 1, depth: 1 },
+    day: 1, steps: 0, combat: null, store: null, beats: null, party: [], dead: false, deathNote: "", epitaph: "",
+  };
+  state.combat = {
+    foes: [
+      foe("Limp Wolf", { hamstrung: true }),
+      foe("Marked Rat", { marked: true, blind: true, blindFor: 2 }),
+      foe("Dazed Bat", { stunned: true }),
+      foe("Gone Toad", { alive: false, wp: 0, hamstrung: true }),
+    ],
+    type: "Beasts", round: 2, target: 0, spellOpen: false, tracked: false, first: "you",
+  };
+  w.__mzState.set(state);
+  sandbox.context.renderEncounter();
+  const body = doc.document.getElementById("enc-body");
+  const tagOf = (i) => Array.from(body.querySelectorAll(".cb-foe")).find((el) => el.dataset.foe === String(i)).querySelector(".cb-foe-tag").textContent;
+  assert.equal(tagOf(0), "HAMSTRUNG");
+  assert.equal(tagOf(1), "BLIND · 2 · MARKED");
+  assert.equal(tagOf(2), "STUNNED");
+  assert.equal(tagOf(3), "DOWN");
+});
+
+// ─── l. Phase 71 (D-05, R-09/R-10): the action area locks while a round plays ─
+
+test("Phase 71 D-05: renderActionArea computes locked from __mzBeat.active and passes { locked } to the menu view-model", () => {
+  const region = fnRegion("function renderActionArea(host)");
+  assert.match(region, /const locked = !!window\.__mzBeat\?\.active\?\.\(\);/);
+  assert.match(region, /window\.__mzCombatVM\.menu\(window\.__mzBeat\?\.view\?\.\(\)\?\.state \|\| S, \{ locked \}\)/);
+  assert.match(region, /data-locked/);
+  // guardTap wiring is unchanged: strike + three openers + BACK.
+  assert.match(region, /guardTap\(document\.getElementById\("cb-strike"\), \(\) => window\.mzAttack\?\.\(\)\);/);
+  assert.match(region, /guardTap\(document\.getElementById\("cb-back"\)/);
+});
+
+test("Phase 71 D-05: the arm sweep keeps a locked action's aria-disabled — the #enc-panel part carries :not([data-locked]); rail and legend parts unchanged; never the ☰", () => {
+  const region = fnRegion("function armEncounterButtons()");
+  assert.match(region, /#enc-panel \[aria-disabled="true"\]:not\(\.cb-foe\.dead\):not\(\[data-locked\]\)/);
+  assert.match(region, /#mw-rail \[aria-disabled="true"\], \.mw-legend-sheet \[aria-disabled="true"\]:not\(\[data-off\]\)/);
+  assert.equal((region.match(/data-locked/g) || []).length, 1);
+  assert.doesNotMatch(region, /mw-hud-menu/);
+});
+
+test("Phase 71 D-05: a #cb-act[data-locked=\"1\"] rule dims the prompt and actions, drops the raised shadow, and makes them pointer-inert with no press feedback — no motion, no aria-disabled selector", () => {
+  const css = styleBlock();
+  const rules = css.match(/^#cb-act\[data-locked="1"\][^{]*\{[^}]*\}/gm) || [];
+  assert.ok(rules.length >= 1, "at least one #cb-act[data-locked=\"1\"] rule");
+  const all = rules.join("\n");
+  assert.match(all, /pointer-events:none/);
+  assert.match(all, /box-shadow:none/);
+  assert.match(all, /opacity:\.45/);
+  assert.match(all, /#8f856f/);
+  assert.match(all, /:active[^{]*\{[^}]*transform:none/);
+  assert.doesNotMatch(all, /transition|animation/);
+  assert.doesNotMatch(css, /aria-disabled/);
+});
+
+test("Phase 71 D-06/R-08: still exactly one capture click listener on #enc-panel — no second tap-to-skip listener was added", () => {
+  const all = CODE.match(/getElementById\("enc-panel"\)\?\.addEventListener\(/g) || [];
+  assert.equal(all.length, 1);
 });
