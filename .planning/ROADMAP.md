@@ -43,6 +43,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [ ] **Phase 73: Engine Roll-High Mirror** - the engine itself switches every die check to roll-high; the full parity suite proves it byte-identical
 - [ ] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers
 - [ ] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
+- [ ] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire
 - [ ] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store
 - [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
@@ -53,126 +54,169 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 ## Phase Details
 
 ### Phase 72: Roll-Direction Sign Audit & Fixes
+
 **Goal**: Every modifier that affects a roll has the correct sign, audited and fixed under the engine gate, before the engine's roll-high conversion begins.
 **Depends on**: Nothing (first phase of v2.1; must land before the roll-high mirror)
 **Requirements**: ROLL-01
 **Success Criteria** (what must be TRUE):
+
   1. An audited ledger covers every modifier (weapon, armor, spell, ability, item, race, sub-class, condition, terrain) on every roll type (to-hit both ways, soak, saves/resistance, initiative, climbs, flee, parley, traps), confirming each bonus widens the success range and each penalty narrows it.
   2. The parley-insult "+1" lands in the correct order relative to the Smoke/Mirror/invisible/blind "natural 1" overrides on both the hero and member branches.
   3. Fridgian frenzy's second swing honours the dark-cap penalty instead of hard-setting a fixed need.
   4. The bestiary `critOn: 1` claim (Skeleton, "a 1 shatters it") is either wired into the engine or removed from the text.
   5. Every fixture the fixes move is measured, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated — nothing else moves.
+
 **Plans**: TBD
 
 ### Phase 73: Engine Roll-High Mirror
+
 **Goal**: The engine itself resolves every die check as roll-high, so no later display code or rule fix ever needs a translation layer again.
 **Depends on**: Phase 72 (the sign/ordering fixes land first so the mirror is built on already-correct modifiers, not redone afterward)
 **Requirements**: ROLL-05
 **Success Criteria** (what must be TRUE):
+
   1. Every die check in the engine reads the same rng draw `r` as `(N+1) − r` on an N-sided die and succeeds at or above a high target, with modifiers applied as signed bonuses that always help the roller when positive.
   2. Every seeded run resolves identically to before the switch — the full parity suite (chargen, combat, economy) is byte-identical before and after, proving the mirror changed representation, not outcome.
   3. A guard test fails the build on any roll-under comparison left anywhere in `engine/`.
   4. Content numbers that encode to-hit/AR/etc. are re-expressed in the new convention, and any roll-related value already in a saved game converts once, tolerantly, on load.
   5. Every event that carries a roll (`struck`, foe swings, soak, thrown spells, resistance, parley, traps, locks, climbs/leaps, cures, wake, drops, gates, summons, crits) natively carries the high-is-good `roll`, `target` and `dieN`.
+
 **Plans**: TBD
 
 ### Phase 74: Roll Display & Modifier Honesty
+
 **Goal**: Every roll and modifier the player sees is a direct, honest read of the engine's own high-is-good numbers.
 **Depends on**: Phase 73 (the mirror must land first — the display reads the engine's numbers directly, with no adapter)
 **Requirements**: ROLL-02, ROLL-03
 **Success Criteria** (what must be TRUE):
+
   1. The Oracle, fight log, dice reveals, rail cards, hero sheet, combat menu and foe details all print the engine's own roll and target with no translation layer, and a higher roll always reads as better (on a d20 a caster needs 18–20, a thief 17–20, a fighter 16–20).
   2. Every displayed modifier is signed from the player's point of view — "+2" always reads better, "−2" always reads worse — across item/loot/store/find comparisons, the hero sheet, spell/ability text, condition chips and the fight log's need breakdown.
   3. The same modifier never shows opposite signs on two different surfaces.
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs
+
 **Goal**: Character creation, HP growth, spell legality, initiative, traps, ailments and armor destruction follow the rules the game claims, written in the roll-high convention from the start.
 **Depends on**: Phase 73 (written directly on top of the roll-high mirror so nothing here needs rewriting later)
-**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08, RULES-09, RULES-10
+**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08
 **Success Criteria** (what must be TRUE):
+
   1. Pulling multiple Table-4 "+HP" dots grows a character's max HP linearly, not compounding (×1.6 each time), and the toll row takes its share from that same non-inflated pool.
   2. A red-dot wilmst cache pays a bounded cut (~100 × depth) instead of buying out the store, a newly rolled Summoner's grimoire holds no spell from a school gated above its level, and the combat SPELLS menu hides (never just greys) anything level- or school-locked.
   3. A hero with Sense Presence active always wins initiative outright, never sees "You cannot see what you are fighting," and can land crits in the dark.
   4. A trap the Oracle reports as "−1 HP" can never kill the hero — the fix follows an explicit `/gsd-debug` root-cause session before it lands, not a guess.
   5. An ailment roll of 5–6 always gives the Disease it narrates, and replacing a destroyed armor piece with a new one always tells the player the old piece was destroyed and is gone.
-  6. A Pilfer can use magic items like anyone else, but each use can fumble: on a rolled 1 the use fails, and the item explodes for d10 damage and turns to dust (the Oracle says so); tools never fumble, and the Pilfer blurb states both its good and its bad.
-  7. Anyone can try to read a scroll: a Magic User or anyone with Runes/Signs always succeeds, everyone else succeeds on an intelligence roll, a badly failed read (missing by more than half the required number) turns a harmful spell on the reader or hands a helpful one to the enemy, and the scroll is gone either way.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 75.1: Pilfer Fumbles & Scroll Reading (INSERTED)
+
+**Goal**: The Pilfer trades its heal-only lockout for a fumble risk on magic items, and anyone can try a scroll. Magic Users and Runes/Signs readers always succeed; everyone else rolls intelligence, and a bad miss turns the scroll against the reader.
+**Depends on**: Phase 75 (engine-gated and fixture-moving, sequenced after the RULES phase so fixture claims don't overlap; written in the roll-high convention from Phase 73)
+**Requirements**: RULES-09, RULES-10
+**Success Criteria** (what must be TRUE):
+
+  1. A Pilfer can use use-activated jewelry, cloaks and staves like anyone else, but each use rolls a d20. On a 1 the use fails, the item explodes for d10 damage to the Pilfer (armor does not soak it) and turns to dust, and the Oracle says so. Potions, scrolls and tools never fumble.
+  2. Anyone can try to read a scroll, and the scroll is gone either way. A Magic User, or anyone with Runes/Signs, always succeeds. Everyone else rolls d20 against their intelligence (no intel-12 floor): meeting the target casts the spell; missing casts nothing.
+  3. A read that rolls below half the required target is a fumble. A harmful spell hits the reader instead of its target, and an area-damage spell hits the reader and their whole party. A helpful spell lands on the targeted enemy (a fumbled Shield shields that foe). Outside combat a fumble has no effect.
+  4. The Pilfer's and every affected class's descriptions state the new rules, both outcomes are narrated in voice, the new rolls come from derived rng streams, and every moved fixture is declared and regenerated.
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 76: Darkness Unification & Relaunch Persistence
+
 **Goal**: One shared darkness rule governs everything the player experiences as dark, and saving or force-closing never lets a player escape a live fight or an open store.
-**Depends on**: Phase 75 (shares the engine fixture gate; sequenced after the RULES phase to avoid overlapping fixture claims)
+**Depends on**: Phase 75.1 (shares the engine fixture gate; sequenced after the RULES phases to avoid overlapping fixture claims)
 **Requirements**: DARK-01, DARK-02, SAV-06, SAV-07
 **Success Criteria** (what must be TRUE):
+
   1. A lit torch, the Amulet, or Night Vision widens what a player reveals while walking by the same rule that widens what is rendered — `revealRadius` and `mapViewRadius` never disagree again.
   2. The DARK chip, the map vignette and per-tile dark painting all read from the same unified waiver rule, so a light source means the same thing on every surface.
   3. A player who Saves & quits, or whose app is killed, mid-fight relaunches into the exact same fight — same foes, HP, round and active effects — and force-closing can no longer be used to escape a fight.
   4. A player who relaunches with the store open returns to the same store with the same stock.
+
 **Plans**: TBD
 **Device check**: yes — relaunch-mid-fight and relaunch-mid-store batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
 
 ### Phase 77: Combat Screen & Oracle Readability
+
 **Goal**: Everything the player reads during a fight is legible, correctly ordered, honest, and shows what effects are currently live on them or their foe.
 **Depends on**: Phase 74 (the roll-high display convention must be in place before combat-screen indicators show roll data)
 **Requirements**: CMBUI-07, CMBUI-08, CMBUI-09, CMBUI-10, CMBUI-11, CMBUI-12, CMBUI-13
 **Success Criteria** (what must be TRUE):
+
   1. Every combat submenu row (spells, abilities, items, social) grows to fit its text on the Pixel 7 with no clipped label or description, and spell rows sort by level ascending then alphabetically.
   2. Each foe card shows the foe's bestiary family after its name, and the Oracle prints combat lines in the order they happened (adjacent identical lines still fold).
   3. Reading a scroll in combat that successfully casts its spell never narrates a level refusal, and the last (oldest) row of THE FIGHT SO FAR can be tapped to reveal its roll like every other row.
   4. Every active ability or spell effect (Smoke, Sidestep, Battle Roar, Riposte, Taunt, Shield, Sense Presence and every other timed or conditional effect) shows an indicator on the hero (YOUR LOT) or the foe it affects, with rounds remaining, a tap-for-description, and it clears when the effect ends.
+
 **Plans**: TBD
 **UI hint**: yes
 **Device check**: yes — combat-screen legibility (submenu clipping, indicator readability) batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
 
 ### Phase 78: HUD, Dead State & Climb Decisions
+
 **Goal**: The HUD tells the truth at a glance, the dead state locks down cleanly, settings behave as expected, and crossing a wall or crevice is a decision the player makes before any dice are rolled.
 **Depends on**: Nothing (shell/presentation-only, zero fixture moves)
 **Requirements**: HUD-01, HUD-02, HUD-03, HUD-04, HUD-05, HUD-06, CLIMB-01, CLIMB-02
 **Success Criteria** (what must be TRUE):
+
   1. Band 1 reads "Race Sub-class · Lvl N" (e.g. "Dwarf Pickpocket · Lvl 3") with no parent class and no parentheses.
   2. Once the hero is dead, only the Oracle, the DEAD/Leaderboards screen and the ☰ menu accept input — map taps, other tabs, camp, marks and centre map are inert — and the DEAD screen offers a read-only final character sheet (stats, gear, level) for the run that just ended.
   3. The Settings text-size choice (S/M/L) scales every `--mw-font-*` token, and dragging or scrolling the settings sheet never changes a volume slider — a deliberate horizontal drag on a slider still sets its volume.
   4. A stairs descent fades to black under the stairs sound, then fades in on the new floor, honouring reduced motion.
   5. Stepping toward a wall or crevice square first shows a decision card — CLIMB IT / LEAP IT, USE LADDER / USE ROPE (when carried), TURN BACK — with no dice rolled until the player commits; TURN BACK costs nothing (no step, time or roll) and no stale retry card ever appears after a crossing.
+
 **Plans**: TBD
 **UI hint**: yes
 **Device check**: yes — dead-state input lockdown, settings-sheet drag behaviour, the stairs fade and the climb card need a Pixel 7 pass, batched into the milestone-close checklist per the deferred-UAT protocol.
 
 ### Phase 79: Content & Narrative Pass
+
 **Goal**: Every piece of in-game text — class/race blurbs, roll-direction phrasing and the full narrative sweep — reads honestly and consistently in the game's voice.
-**Depends on**: Phase 74 (roll-direction display must be settled before the text is rewritten to match it), Phase 77 (VOX-05 sweeps the new CMBUI-13 effect-indicator text)
+**Depends on**: Phase 74 (roll-direction display must be settled before the text is rewritten to match it), Phase 75.1 (the new Pilfer and scroll text), Phase 77 (VOX-05 sweeps the new CMBUI-13 effect-indicator text)
 **Requirements**: VOX-04, ROLL-04, VOX-05
 **Success Criteria** (what must be TRUE):
+
   1. Every sub-class and race description states both its advantage(s) and disadvantage(s), including school gates such as the Summoner's no-offense-spells-before-level-3.
   2. No player-facing string still encodes roll-under phrasing ("1–N", "need N", "natural 1", "−3 on to-hit") — a doc-synced test pins that none remains.
   3. Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why, while staying sarcastic and family-friendly.
+
 **Plans**: TBD
 
 ### Phase 80: Android Release Build & Tooling
+
 **Goal**: The release build is optimized and store-clean on modern Android and large screens, and the tuning tool's replay-resume is trustworthy.
 **Depends on**: Nothing (native/infra track, independent of the gameplay phases)
 **Requirements**: DROID-01, DROID-02, DROID-03, TOOL-01
 **Success Criteria** (what must be TRUE):
+
   1. The release AAB builds with R8 minify, shrink and obfuscation on AGP 8.13, ships a deobfuscation mapping, and a release-signed Pixel 7 build boots, saves and resumes, handles back, and plays sound/haptics as before.
   2. The game draws correctly edge-to-edge on Android 15+, in both gesture and 3-button navigation and with a display cutout, using no deprecated window or status-bar APIs Play flags.
   3. On a tablet, foldable or Chromebook, the game presents a deliberate, documented layout (such as a letterboxed portrait column) rather than a broken one, and Play's display-configuration warning is addressed or consciously accepted.
   4. A fit-tool run resumed from its JSONL log retraces the exact same walk as the live run, including after an infeasible (`+Infinity`) point, with per-block stdout appended rather than truncated.
+
 **Plans**: TBD
 **UI hint**: yes
 **Device check**: yes — DROID-02/03 recommended for `--research-phase` (Android 15/16 edge-to-edge + large-screen handling); needs device checks in both navigation modes plus an emulator tablet/foldable, batched into the milestone-close Pixel 7 checklist.
 
 ### Phase 81: Leaderboards Panel Fixes
+
 **Goal**: The Leaderboards panel shows the signed-in player accurately, filters every board by ME | ALL | FRIENDS, and drops the boards Play Games cannot back honestly.
 **Depends on**: Nothing (shell-only: `src/browser/boardsView.js`, `boardsPanel.js`, `globalBoards.js`, `content/boards.js`, plus `engine/records.js` `BOARD_IDS`; zero parity fixtures)
 **Requirements**: BOARD-09, BOARD-10, BOARD-11, BOARD-12, BOARD-13, BOARD-14
 **Success Criteria** (what must be TRUE):
+
   1. The panel shows three scope chips — ME | ALL | FRIENDS — and every board can be viewed under each; signed in with Compete ON it opens on ALL, signed out or Compete OFF it opens on ME with ALL/FRIENDS showing the sign-in note.
   2. On ALL and FRIENDS the signed-in player's own score is tagged YOU — never FRIEND — with the `playerId` mismatch root-caused and fixed, and the "not in the top ten / your best run" card appears only when the player is ranked but off the visible list.
   3. LINEAGE appears only under ME, sits at the end of the board rail, and never reads the global DEEPEST sample.
   4. The GRAVEYARD board is gone; ME rows keep each run's tap-to-expand details (epitaph included), the stored run history still feeds ME and LINEAGE, and old saves load cleanly.
+
 **Plans**: TBD
 **UI hint**: yes
 **Device check**: yes — needs a signed-in Google Play Games build (YOU tag, standing card, ALL default, ME/ALL/FRIENDS switching, LINEAGE under ME only), batched into the milestone-close Pixel 7 checklist.
@@ -197,6 +241,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 | 73. Engine Roll-High Mirror | v2.1 | 0/– | Not started | - |
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
+| 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |

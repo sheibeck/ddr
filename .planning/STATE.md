@@ -2,11 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
+current_phase: 72
 status: planning
-last_updated: "2026-09-24T20:15:00.000Z"
+stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
+last_updated: "2026-09-24T22:12:49.714Z"
 last_activity: 2026-09-24
+last_activity_desc: ROADMAP.md created for v2.1 (Phases 72-81, 44/44 requirements mapped; roll-high engine mirror sequenced as Phase 73 per user ruling)
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -89,8 +92,8 @@ Last activity: 2026-09-24 — ROADMAP.md created for v2.1 (Phases 72-81, 44/44 r
 
 ### Pending Todos
 
-- 2026-09-24 — **Pilfer bad becomes fumbling** (user, added to v2.1 as RULES-09, Phase 75): drop the heal-only lockout; a Pilfer uses magic items normally but a rolled 1 destroys the item — `todos/pending/2026-09-24-pilfer-bad-becomes-fumbling-destroys-a-magic-item-on-a-1.md`
-- 2026-09-24 — **Anyone reads scrolls on an intelligence roll** (user, v2.1 RULES-10, Phase 75): Magic Users always succeed, everyone else rolls d20 vs intel, scroll consumed either way — `todos/pending/2026-09-24-anyone-reads-scrolls-on-an-intelligence-roll-scroll-always-consumed.md`
+- 2026-09-24 — **Pilfer bad becomes fumbling** (user, added to v2.1 as RULES-09, Phase 75.1): drop the heal-only lockout; a Pilfer uses magic items normally but a rolled 1 destroys the item — `todos/pending/2026-09-24-pilfer-bad-becomes-fumbling-destroys-a-magic-item-on-a-1.md`
+- 2026-09-24 — **Anyone reads scrolls on an intelligence roll** (user, v2.1 RULES-10, Phase 75.1): Magic Users always succeed, everyone else rolls d20 vs intel, scroll consumed either way — `todos/pending/2026-09-24-anyone-reads-scrolls-on-an-intelligence-roll-scroll-always-consumed.md`
 - 2026-09-24 — **Stairs descent fades to black** (user): fade to black while the stairs clip plays, swap floors while dark, fade in on the new level; lock input during it; reduced-motion fallback — `todos/pending/2026-09-24-stairs-descent-fades-to-black-with-the-stairs-sound-then-fades-in.md`
 - 2026-09-24 — **Settings sheet drag scrubs a volume slider** (user, on-device): a vertical drag that starts on a MASTER/MUSIC/EFFECTS slider moves the volume instead of scrolling the sheet — `todos/pending/2026-09-24-settings-sheet-drag-scrub-moves-volume-sliders.md`
 - 2026-09-24 — **Last fight-log row won't reveal its roll** (user, on-device): the bottom-most row of THE FIGHT SO FAR sheet can't be tapped to expand — `todos/pending/2026-09-24-last-fight-log-row-cannot-be-tapped-to-reveal-its-roll.md`
@@ -137,6 +140,7 @@ detail; the backlog phases are the index.
 
 - v2.1 roadmap created 2026-09-24: Phases 72-80 (41 requirements). Two mid-roadmapping course corrections from the user: (1) ROLL-05 became the engine itself switching to roll-high (not a display adapter) -- resequenced to its own Phase 73 immediately after the ROLL-01 sign audit (Phase 72) and before all other engine-gated work, so RULES/DARK/SAV (Phase 75-76) and CMBUI roll-showing indicators (Phase 77) are written directly in the roll-high convention; (2) three v2.0 Leaderboards device findings (BOARD-09/10/11 -- YOU vs FRIEND tag, spurious standing card, ALL-not-local default) were folded into Phase 78 alongside HUD. Phase order: 72 ROLL-01 -> 73 ROLL-05 (mirror) -> 74 ROLL-02/03 (display) -> 75 RULES-01..08 -> 76 DARK+SAV -> 77 CMBUI -> 78 HUD+CLIMB+BOARD -> 79 VOX+ROLL-04 (content, last) -> 80 DROID+TOOL.
 - 2026-09-24 (user, at roadmap approval): Leaderboards reworked. Scope chips ME | ALL | FRIENDS (ALL default when signed in with Compete ON); LINEAGE becomes ME-only at the end of the rail (Play Games keeps one best score per player per board, so a global lineage view cannot be honest; per-sub-class global boards deferred); the GRAVEYARD board is removed (ME covers it). BOARD-09..14 split out of Phase 78 into their own Phase 81.
+- Phase 75.1 inserted after Phase 75: Pilfer Fumbles & Scroll Reading — RULES-09/10 moved out of Phase 75 into their own phase (user, 2026-09-24)
 
 ## Deferred Items
 

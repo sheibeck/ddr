@@ -2,7 +2,7 @@
 created: 2026-09-24T22:01:37.633Z
 title: Pilfer's bad becomes fumbling — a rolled 1 destroys the magic item being used
 area: engine
-resolves_phase: 75
+resolves_phase: 75.1
 files:
   - engine/items.js:1278-1292 (useItem — the Phase 24 IDENT-07 "heal-only" Pilfer refusal, reason "pilfer")
   - engine/magic.js:579-585 (canRead — `if (c.sub === "Pilfer") return false`)
@@ -33,7 +33,7 @@ This is a hard lockout from a whole category of loot. The user wants a risk inst
   - **Armor does not soak** the d10 blast.
   - **Magic items = use-activated jewelry, cloaks and staves.** (User: "I think those are the only usable magic items.") **Potions are safe:** a Pilfer drinks any potion like anyone else, with no fumble roll (user, 2026-09-24).
 
-**Decide in the Phase 75 discuss:**
+**Decide in the Phase 75.1 discuss:**
 - The explosion damage:
   - **How much — ruled 2026-09-24: d10 damage** (user: "d10 damage on magic item explode").
   - **Who takes it — ruled 2026-09-24: the Pilfer.** User: "the pilfer's d10 is the damage a pilfer takes for fumbling." The party and foes are unaffected.

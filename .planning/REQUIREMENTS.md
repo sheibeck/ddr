@@ -130,8 +130,8 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | RULES-06 | Phase 75 | Pending |
 | RULES-07 | Phase 75 | Pending |
 | RULES-08 | Phase 75 | Pending |
-| RULES-09 | Phase 75 | Pending |
-| RULES-10 | Phase 75 | Pending |
+| RULES-09 | Phase 75.1 | Pending |
+| RULES-10 | Phase 75.1 | Pending |
 | DARK-01 | Phase 76 | Pending |
 | DARK-02 | Phase 76 | Pending |
 | SAV-06 | Phase 76 | Pending |

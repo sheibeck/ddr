@@ -2,7 +2,7 @@
 created: 2026-09-24T22:20:00.000Z
 title: Anyone can read a scroll on an intelligence roll; Magic Users always succeed; the scroll is consumed either way
 area: engine
-resolves_phase: 75
+resolves_phase: 75.1
 files:
   - engine/magic.js:579-585 (canRead — Magic User or Runes/Signs; a Pilfer is always refused)
   - engine/magic.js:~586-655 (readScroll — refusals before `c.scrolls--`, then scrollRead → optional grimoire copy (Magic Users) → scrollCast)
@@ -36,7 +36,7 @@ Today `canRead` lets only a Magic User, or someone with the Runes/Signs skill, r
 - **The scroll is consumed on every attempt**, success or failure. This carries over from ruling 1 and was not revoked.
 - Narrate both outcomes, in voice. A failure should read as squinting at runes you can't make out while the scroll crumbles, not as a refusal.
 
-**Decide in the Phase 75 discuss:**
+**Decide in the Phase 75.1 discuss:**
 - **Low-intel characters:** `resistRoll` skips its roll below intel 12. That gate is for foe abilities and should NOT carry over. Every non-Magic-User reader rolls, and a low intel just means worse odds.
 
 **Engine gate:** the intelligence roll is a new draw. Take it from a derived rng stream (`makeRng(hash(seed, "scrollRead", …))`) so it doesn't reorder the main stream. Measure, declare and regenerate only the moved fixtures. Every new event gets an `EVENT_NARRATION` entry. Update the class and sub-class blurbs that mention scrolls or Runes/Signs, per VOX-04.
