@@ -155,12 +155,43 @@ export function boardValue(board, run) {
   }
 }
 
-/** lineageKey(run) — the LINEAGE grouping key: "{race} {cls}". */
+/**
+ * lineageKey(run) — the LINEAGE grouping key: "{race} {sub}". The sub-class
+ * is the field the LINEAGE rows display ("RACE SUB"), so a lineage is a race
+ * plus a sub-class, never the base class (Phase 70, D-10). Never throws: a
+ * null or non-object run, or a missing field, reads as "".
+ */
 export function lineageKey(run) {
-  return `${run.race} ${run.cls}`;
+  return `${canon(field(run, "race"))} ${canon(field(run, "sub"))}`;
 }
 
-// --- the bests record (D-04, D-07, D-08, D-14) --------------------------------
+/**
+ * byLineageOrder(a, b) — the single per-lineage order: compareRuns("combo")
+ * (floor desc, then steps asc), then run hash ascending, so two runs tied on
+ * floor and steps always come out in the same order.
+ */
+function byLineageOrder(a, b) {
+  const c = compareRuns("combo", a, b);
+  if (c !== 0) return c;
+  const ah = canon(field(a, "hash"));
+  const bh = canon(field(b, "hash"));
+  return ah < bh ? -1 : ah > bh ? 1 : 0;
+}
+
+/**
+ * lineageRuns(runs, key) — the runs of one lineage, best first (Phase 70,
+ * D-12). Keeps only plain-object runs whose lineageKey equals `key`, ordered
+ * by the single per-lineage order (floor desc, steps asc, hash asc). This is
+ * the order prune keeps a lineage's top ten by, and the order the
+ * Leaderboards LINEAGE view lists them in. A non-array input gives [];
+ * always a new array, never mutates its input.
+ */
+export function lineageRuns(runs, key) {
+  if (!Array.isArray(runs)) return [];
+  return runs.filter((r) => isPlainObject(r) && lineageKey(r) === key).sort(byLineageOrder);
+}
+
+// --- the bests record (D-04, D-07, D-08, D-14; Phase 70 D-12) ------------------
 
 const HASH_RE = /^[0-9a-f]{8}$/;
 
@@ -175,17 +206,28 @@ function isPlainObject(v) {
 }
 
 /**
- * prune(record) — deletes every runs key not referenced by a RANKED_BOARDS
- * list or a lineage best. Mutates record.runs in place and returns record.
+ * prune(record) — deletes every runs key that is neither referenced by a
+ * RANKED_BOARDS list nor among its lineage's BOARD_TOP_N best runs (by the
+ * lineageRuns order). Invariant (Phase 70, D-12): every lineage's ten best
+ * folded runs stay held, so the LINEAGE board's per-lineage top ten can be
+ * derived from record.runs alone. Mutates record.runs in place and returns
+ * record.
  */
 function prune(record) {
   const keep = new Set();
   for (const board of RANKED_BOARDS) {
     for (const hash of record.boards[board]) keep.add(hash);
   }
-  for (const key of Object.keys(record.lineage)) {
-    const best = record.lineage[key].best;
-    if (best) keep.add(best);
+  const groups = new Map();
+  for (const run of Object.values(record.runs)) {
+    const key = lineageKey(run);
+    const group = groups.get(key);
+    if (group) group.push(run);
+    else groups.set(key, [run]);
+  }
+  for (const group of groups.values()) {
+    group.sort(byLineageOrder);
+    for (let i = 0; i < group.length && i < BOARD_TOP_N; i++) keep.add(group[i].hash);
   }
   for (const hash of Object.keys(record.runs)) {
     if (!keep.has(hash)) delete record.runs[hash];
@@ -199,7 +241,6 @@ export function emptyBests() {
     v: 1,
     runs: {},
     boards: { deep: [], lean: [], days: [], kills: [], purse: [] },
-    lineage: {},
     last: null,
   };
 }
@@ -213,6 +254,11 @@ export function emptyBests() {
  * retired depth order loads re-ranked; a list already in order is unchanged
  * (Array.prototype.sort is stable), so this is idempotent and needs no
  * record version bump.
+ *
+ * Phase 70 (D-12): a legacy Phase 65 `lineage` {count, best} map is ignored
+ * — a tolerant load with no version bump. The record is rebuilt from v,
+ * runs, boards and last only, and prune re-derives the per-lineage keep set
+ * from the held runs.
  */
 export function sanitizeBests(raw) {
   try {
@@ -246,20 +292,9 @@ export function sanitizeBests(raw) {
       }
     }
 
-    const lineage = {};
-    if (isPlainObject(raw.lineage)) {
-      for (const key of Object.keys(raw.lineage)) {
-        const value = raw.lineage[key];
-        if (!isPlainObject(value)) continue;
-        if (!Number.isInteger(value.count) || value.count < 1) continue;
-        const best = typeof value.best === "string" && runs[value.best] ? value.best : null;
-        lineage[key] = { count: value.count, best };
-      }
-    }
-
     const last = typeof raw.last === "string" && HASH_RE.test(raw.last) ? raw.last : null;
 
-    return prune({ v: 1, runs, boards, lineage, last });
+    return prune({ v: 1, runs, boards, last });
   } catch {
     return emptyBests();
   }
@@ -269,9 +304,13 @@ export function sanitizeBests(raw) {
  * updateBests(record, summary) — folds one RunSummary into a BestsRecord.
  * Never mutates `record` or `summary`. Returns { record, newBests, first }:
  * newBests is the ordered (per BOARD_IDS) list of boards this run just took
- * #1 on (an exact tie never counts, and a first-of-combo lineage entry is
- * silent). first is true only when the record held no runs at all before
- * this one.
+ * #1 on (an exact tie never counts). first is true only when the record held
+ * no runs at all before this one.
+ *
+ * LINEAGE ("combo") is derived from the held runs (Phase 70, D-12, keeping
+ * the 65 D-14 rule): it is announced only when the run strictly beats the
+ * best held run of the same race + sub-class. The first run of a lineage is
+ * silent, and an exact tie never counts.
  */
 export function updateBests(record, summary) {
   if (!isPlainObject(summary) || !isValidHash(summary.hash)) {
@@ -286,6 +325,8 @@ export function updateBests(record, summary) {
   }
 
   const first = RANKED_BOARDS.every((board) => rec.boards[board].length === 0);
+
+  const previousLineageBest = lineageRuns(Object.values(rec.runs), lineageKey(summary))[0] || null;
 
   rec.runs[hash] = { ...summary };
 
@@ -308,18 +349,8 @@ export function updateBests(record, summary) {
     if (i === 0 && wasNonEmpty) newBestsSet.add(board);
   }
 
-  const key = lineageKey(summary);
-  const entry = rec.lineage[key];
-  if (!entry) {
-    rec.lineage[key] = { count: 1, best: hash };
-  } else {
-    entry.count += 1;
-    if (!entry.best || !rec.runs[entry.best]) {
-      entry.best = hash;
-    } else if (compareRuns("combo", summary, rec.runs[entry.best]) < 0) {
-      entry.best = hash;
-      newBestsSet.add("combo");
-    }
+  if (previousLineageBest && compareRuns("combo", summary, previousLineageBest) < 0) {
+    newBestsSet.add("combo");
   }
 
   rec.last = hash;
