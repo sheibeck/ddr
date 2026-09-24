@@ -164,6 +164,29 @@ test("(5) the z-ladder (Phase 70 D-08): rail (4) < overlay (8) < scrim < menu wr
   }
 });
 
+// ─── (5b) the combat-legal foe card (Phase 71 D-10, R-14) ────────────────
+
+test("(5b) the combat-legal rail rule sits at z-index 8, equal to .mw-overlay and below the ☰ scrim; #mw-rail follows #mw-screens in the markup, so DOM order paints it above the overlay", () => {
+  const zOf = (rule, name) => {
+    const m = rule.match(/z-index:(\d+)/);
+    assert.ok(m, `${name} must declare a z-index`);
+    return Number(m[1]);
+  };
+  const overRail = zOf(ruleFor('#mw-rail\\[data-over="combat"\\]'), '#mw-rail[data-over="combat"]');
+  const overlay = zOf(ruleFor("\\.mw-overlay"), ".mw-overlay");
+  const scrim = zOf(ruleFor("\\.mw-hud-menu-scrim"), ".mw-hud-menu-scrim");
+  const wrap = zOf(ruleFor("\\.mw-hud-menu-wrap"), ".mw-hud-menu-wrap");
+  assert.equal(overRail, 8);
+  assert.equal(overRail, overlay, "the tie with the overlay is deliberate: DOM order decides it");
+  assert.ok(overRail < scrim && scrim < wrap, "the ☰ scrim and dropdown still open over the foe card");
+  const screensIdx = HTML.indexOf('id="mw-screens"');
+  const encIdx = HTML.indexOf('id="enc-panel"');
+  const railIdx = HTML.indexOf('id="mw-rail"');
+  assert.ok(screensIdx !== -1 && encIdx > screensIdx && railIdx > encIdx, "#mw-rail follows #mw-screens (and the #enc-panel overlay inside it)");
+  // The base rule is untouched: the rail sits below the overlay everywhere else.
+  assert.equal(zOf(ruleFor("\\.mw-rail"), ".mw-rail"), 4);
+});
+
 // ─── (6) opening/closing cannot move the viewport ────────────────────────
 
 test("(6) opening/closing cannot move the viewport: the open-state rules declare only visibility/opacity/transform/pointer-events/background/color/transition; the dropdown is absolutely positioned, the scrim is fixed; the menu functions call no camera/positioning function and stamp no lastDismissAt", () => {

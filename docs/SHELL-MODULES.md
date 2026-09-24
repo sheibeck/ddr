@@ -431,6 +431,43 @@ ARE STILL OUT". `#cb-act` and every action it builds carry `data-locked="1"`
 skips. A tap still lands the round through Phase 58's single `beatHurryTap`
 and never acts (D-06).
 
+### Long-press a foe for its details card (Phase 71)
+
+D-08..D-12: holding a combat foe card (`.cb-foe[data-foe]`) for `HOLD_MS`
+(450 ms) within `TAP_MAX_TRAVEL_PX` raises one rail card for that foe. The
+recognizer is the pure `src/browser/longPress.js` (`createLongPress`, the
+map's own hold-inspect constants). The module script wires it: a
+`pointerdown` on `#enc-panel`, `pointermove`/`pointerup`/`pointercancel`/
+`scroll` on `document` in the capture phase, and one `window` capture-phase
+`click` suppressor that swallows the trailing click once after a fired press,
+so a long press never aims and never skips a beat (R-17). A `contextmenu`
+listener and the `.cb-foe` CSS stop selection, callout and context menu. On
+trigger it gives a light haptic (`maybeHaptic(currentSettings, "Light")`)
+and calls `window.mzInspectFoe(i)`, the ONE entry point, which pushes
+`foeDetailsCard(i, V)` (`src/browser/foeDetails.js`, a pure view model:
+family, HP, defence, attack and an engine-helper damage range, abilities,
+resistances, current effects from `foeConditions.js`, a flavour line) onto
+`window.__mzRail`. It is a no-op while the title or roller is up
+(`dungeonVisible()`).
+
+The TalkBack twin (D-11) is a visually hidden `<button class="sr-only
+cb-foe-details">` after every foe card, named "Details: <NAME>" through
+`window.__mzFoeInspect.label`; it calls the same `mzInspectFoe` and never
+touches the aim.
+
+The combat-legal rail (D-10, R-14/R-15): `renderRail` hides the rail
+whenever combat or death owns the screen, except for this card. While
+`S.combat` is set it stamps `#mw-rail[data-over="combat"]` (z-index 8, tied
+with the overlay and painted above it by DOM order; the ☰ scrim and wrap stay
+above) and lifts its bottom edge to the top of `#cb-act` through
+`--mw-rail-lift`, so the action buttons are never covered. It re-derives the
+card through `window.__mzFoeInspect.card` on every repaint (never re-rising,
+re-announcing or typing) and holds until a body tap dismisses it; when the
+fight ends with it up, its normal hold starts from that moment. Every other
+card stays hidden in combat. Backlog 999.5's "status chit in combat" card can
+reuse this combat-legal path: give it its own `kind` and add that kind to the
+`foeCardUp`-style exception in `renderRail`.
+
 ## What stays shared
 
 `src/browser/viewModels.js` keeps the view models more than one surface
@@ -490,6 +527,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzFightLog | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / fightLogRefuse — reads and also writes via __mzFightLogVM.toggle/append)<br>mazeworld.html (module: dispatchWithNarration — appends every dispatch's fight-log lines) | Presentation-only whole-fight log entries (rows, seq); never a field on state. |
 | __mzFightLogVM | mazeworld.html (module) | mazeworld.html (classic: renderFightLog / fightLogRefuse — rows/toggle/announcement/append/dull) | Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time. |
 | __mzFoeConditions | mazeworld.html (module) | mazeworld.html (classic: foeStatusBadges — the combat foe cards' condition chips, via chips) | Bridges src/browser/foeConditions.js's foeConditionChips, the one foe-condition chip table (Phase 71 D-14), so the classic foe cards read every ability, spell and item condition from one source that 71-04's long-press card also reads. |
+| __mzFoeInspect | mazeworld.html (module) | mazeworld.html (classic: renderRail — re-derives the live foe card's lines while S.combat is set, via card)<br>mazeworld.html (classic: renderFoeCards — the Details button's accessible name, via label) | Bridges src/browser/foeDetails.js's foeDetailsCard and detailsLabel: the long-press foe card view model (Phase 71 D-09/D-10) that the classic rail keeps live through a fight, and the TalkBack Details action's name (D-11). |
 | __mzGearSheet | mazeworld.html (module) | mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render) | Bridges src/browser/gearSheet.js's renderGearSheet so the classic sheet lifecycle (open, repaint refresh, close, back button, ghost-tap arm) renders the ONE pure sheet model, never a second copy. |
 | __mzHapticsImportOverride | src/browser/haptics.js | test/unit/haptics.test.js | Test-only injection hook so a test can replace the native @capacitor/haptics import with a fake, without any shipped code path setting it. |
 | __mzHasTool | mazeworld.html (module) | mazeworld.html (classic/module: rail dark/hazard cards — torch retry, dark-fell gating) | Bridges the pure carried-tool predicate so a hazard/dark rail card only offers a retry when the party actually carries the tool. |
@@ -511,7 +549,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzPerfMarks | mazeworld.html (module) | mazeworld.html (classic: paint — the one canvas draw() call's dev-gated timing bracket, PERF-02 fix 2) | Bridges the SAME perfMarks module instance stepWith already imports directly, so classic paint()'s draw() call — now the only canvas draw per step — can record its own `draw` timing row from the classic side (which cannot `import`); read-only from paint() (record() only, never reset()/summary()). |
 | __mzPlacement | mazeworld.html (module) | mazeworld.html (classic: renderCombatOver / renderRankLine — draws the DEEPEST rank line on the THAT IS THAT panel, then marks it not fresh)<br>mazeworld.html (module: onRunRecorded — resets it for a new death; handlePgsFlush — sets it when the run's rank returns; showTitleScreen and onAccountForPgs — reset it to null) | Presentation-only parcel { hash, line, fresh } of the just-died run's DEEPEST rank line (Phase 68, PLACE-01); never a field on state. |
 | __mzPreferencesOverride | src/browser/storage.js | test/persistence/harness/fakePreferences.js | Test-only injection hook so a test can replace the native @capacitor/preferences import with a fake, without any shipped code path setting it. |
-| __mzRail | mazeworld.html (module) | mazeworld.html (classic: renderRail / railLocked — reads and also clears pending on dismiss)<br>mazeworld.html (module: dispatchWithNarration / darkFell / mzRailLine — pushes new cards) | Presentation-only rail state (seq/card/pending) — what is currently on screen at the bottom of the map; never a field on state. |
+| __mzRail | mazeworld.html (module) | mazeworld.html (classic: renderRail / railLocked — reads and also clears pending on dismiss)<br>mazeworld.html (module: dispatchWithNarration / darkFell / mzRailLine / mzInspectFoe — pushes new cards) | Presentation-only rail state (seq/card/pending) — what is currently on screen at the bottom of the map; never a field on state. |
 | __mzRailVM | mazeworld.html (module) | mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)<br>mazeworld.html (classic: renderRail's auto-clear timer — holdForCard; the guarded #mw-rail body-tap dismiss handler — dismissKind) | Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. |
 | __mzRations | mazeworld.html (module) | mazeworld.html (classic: renderEncounter — Joiner card eats line) | Bridges the pure rations view-model and eats-line formatter so the Joiner card's eats readout reads engine/movement.js#eatsFor the same way the Hero tab (src/browser/heroTab.js, a direct import — no bridge needed) and its own Company panel do. |
 | __mzSettings | mazeworld.html (module) | mazeworld.html (classic: fit — reads the current text-scale/haptics/sound settings) | Exposes the module's currently-applied settings object so the classic canvas-fit routine can read the live text-scale setting. |

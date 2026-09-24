@@ -426,6 +426,27 @@ test("Phase 71 D-05: a #cb-act[data-locked=\"1\"] rule dims the prompt and actio
 });
 
 test("Phase 71 D-06/R-08: still exactly one capture click listener on #enc-panel — no second tap-to-skip listener was added", () => {
-  const all = CODE.match(/getElementById\("enc-panel"\)\?\.addEventListener\(/g) || [];
-  assert.equal(all.length, 1);
+  // 71-04 (D-08) adds a pointerdown and a contextmenu listener on #enc-panel
+  // for the foe long press; neither is a click listener, so the pin counts
+  // CLICK listeners on #enc-panel (the tap-to-skip surface), and names the
+  // only other two event types allowed there.
+  const clicks = CODE.match(/getElementById\("enc-panel"\)\?\.addEventListener\("click"/g) || [];
+  assert.equal(clicks.length, 1);
+  const types = [...CODE.matchAll(/getElementById\("enc-panel"\)\?\.addEventListener\("([a-z]+)"/g)].map((m) => m[1]).sort();
+  assert.deepEqual(types, ["click", "contextmenu", "pointerdown"]);
+});
+
+// ─── m. Phase 71 (D-11): one Details sibling per foe card ────────────────
+
+test("Phase 71 D-11: renderFoeCards builds one sr-only .cb-foe-details button per card, after the card, wired through guardTap to mzInspectFoe", () => {
+  const region = fnRegion("function renderFoeCards(host, vm, onPick, hitFoe = -1)");
+  assert.equal((region.match(/document\.createElement\("button"\)/g) || []).length, 1, "one Details button built per card iteration");
+  assert.match(region, /details\.className = "sr-only cb-foe-details";/);
+  assert.match(region, /details\.type = "button";/);
+  assert.match(region, /details\.setAttribute\("aria-label", /);
+  assert.match(region, /guardTap\(details, \(\) => window\.mzInspectFoe\?\.\(c\.i\)\);/);
+  const cardAppend = region.indexOf("list.appendChild(el);");
+  const detailsAppend = region.indexOf("list.appendChild(details);");
+  assert.ok(cardAppend !== -1 && detailsAppend > cardAppend, "the Details button is the card's next sibling");
+  assert.doesNotMatch(region, /details[^;\n]*target/, "the Details button never aims");
 });

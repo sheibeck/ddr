@@ -43,6 +43,20 @@ export const FOE_GLYPHS = Object.freeze({
   default: "●",
 });
 
+/**
+ * playerNote(text) — Phase 71 (R-16, D-12): a bestiary note as the player
+ * reads it. Two notes in content/bestiary.js say "wp" ("two attacks, 1 wp
+ * each", "venom: 2 wp a round for d10 rounds"); content is not edited, so
+ * the player-facing surfaces rewrite a STANDALONE wp/WP token to HP here.
+ * The token rule is test/unit/hp-not-wp.test.js's PLAYER_WP: a code-like
+ * fragment (c.wp, maxWP, cb-foe-wp, `wp:`) is left alone. The foe card
+ * meta line (below) and the long-press foe card (src/browser/foeDetails.js,
+ * which imports this; never the reverse) both read notes through it.
+ */
+export function playerNote(text) {
+  return String(text ?? "").replace(/(?<![\w.$-])(wp|WP)(?![\w:])/g, "HP");
+}
+
 const pctFor = (wp, max) => (max > 0 ? Math.round(Math.max(0, Math.min(100, (wp / max) * 100))) : 0);
 
 /** combatHeaderViewModel(state) — { label, round, standing }. */
@@ -68,7 +82,8 @@ export function foeListViewModel(state, opts = {}) {
   const cards = foes.map((f, i) => {
     const glyph = FOE_GLYPHS[f.type] || FOE_GLYPHS.default;
     const name = String(f.name).toUpperCase();
-    const meta = [f.size ?? "?", `INT ${f.intel ?? "?"}`, f.sp && f.sp.note ? f.sp.note : null].filter(Boolean).join(" · ").toUpperCase();
+    // Phase 71 (R-16): the note goes through playerNote so no creature's meta says WP.
+    const meta = [f.size ?? "?", `INT ${f.intel ?? "?"}`, f.sp && f.sp.note ? playerNote(f.sp.note) : null].filter(Boolean).join(" · ").toUpperCase();
     const wp = Math.max(0, f.wp ?? 0);
     const wpLabel = f.alive ? `${wp} / ${f.maxWP}` : "—";
     const pct = f.alive ? pctFor(wp, f.maxWP || 1) : 0;

@@ -727,6 +727,10 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-foe{border:2px solid #6b2c22;background:#1e120f;padding:10px 11px;cursor:pointer}
 .cb-foe.target{border-color:#e8c97a;background:#241d12}
 .cb-foe.dead{border-color:#241f16;background:#15120c;opacity:.45;cursor:default}
+/* Phase 71 (D-08): a foe card is long-pressed for its details card, so the
+   WebView's text selection, the touch callout and (in the module script)
+   the context menu never appear on one. */
+.cb-foe{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .cb-foe-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .cb-foe-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
 .cb-foe-glyph{font-size:19px;color:#e07260;width:22px;text-align:center;flex:none}
@@ -888,6 +892,16 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-rail.mw-rail-new{animation:mwrise .18s ease}
 @keyframes mwpulse{0%,100%{box-shadow:none}50%{box-shadow:inset 0 0 0 3px var(--rail-ink)}}
 .mw-rail.mw-rail-pulse{animation:mwpulse .45s ease 2}
+/* Phase 71 (POLISH-08; D-10, R-14): the long-press foe card is the ONE rail
+   card that shows during a fight. renderRail stamps data-over="combat" while
+   S.combat is set and that card is up. z-index 8 ties the encounter overlay
+   (.mw-overlay); #mw-rail follows #mw-screens in the markup, so DOM order
+   paints it above, and the ☰ scrim (9) and wrap (10) still open over it.
+   --mw-rail-lift is measured at render time (the stage's bottom edge to the
+   top of #cb-act), so the card's bottom edge sits on the action area and
+   never covers an action. It may cover the lower foe list or the log; a
+   body tap dismisses it. No new transition or animation. */
+#mw-rail[data-over="combat"]{z-index:8;bottom:var(--mw-rail-lift,0px);max-height:45%;overflow-y:auto}
 
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
@@ -3936,6 +3950,20 @@ function renderFoeCards(host, vm, onPick, hitFoe = -1) {
       el.setAttribute("aria-disabled", "true");
     }
     list.appendChild(el);
+    // Phase 71 (D-11): the TalkBack twin of the long press — a visually
+    // hidden Details button right after every foe card, so swiping past a
+    // card lands on "Details: <NAME>". It raises the same rail card through
+    // window.mzInspectFoe and never changes the aim. Its name comes from the
+    // module's foe-details copy (the shell declares no copy), with the card
+    // name as a fallback.
+    const details = document.createElement("button");
+    details.type = "button";
+    details.className = "sr-only cb-foe-details";
+    const detailsName = window.__mzFoeInspect?.label?.(c.name) || c.name;
+    details.textContent = detailsName;
+    details.setAttribute("aria-label", detailsName);
+    guardTap(details, () => window.mzInspectFoe?.(c.i));
+    list.appendChild(details);
   });
   section.appendChild(list);
   host.appendChild(section);
@@ -4774,6 +4802,23 @@ function renderRail() {
     peek = zoom > 1 ? copy.peekPinch : copy.peekStep;
   }
 
+  // Phase 71 (POLISH-08; D-10, R-14, R-15): the long-press foe card
+  // (src/browser/foeDetails.js, pushed by window.mzInspectFoe) is the ONE
+  // card allowed to show while combat owns the screen. While S.combat is
+  // set, its lines, title and icon are re-derived on every repaint from the
+  // same state the foe cards render (the beat frame's state during
+  // playback, otherwise S), so its HP and effects track the fight. The
+  // rail parcel keeps the latest view, so the card still reads the last
+  // live values once the fight is over. The key does not change, so a
+  // repaint never re-rises, re-announces or re-arms.
+  const foeCardUp = rail.card?.kind === "foe" && key === "card:" + rail.card.seq;
+  if (foeCardUp && S.combat && window.__mzFoeInspect?.card) {
+    const V = window.__mzBeat?.view?.()?.state || S;
+    const liveCard = window.__mzFoeInspect.card(rail.card.foe, V);
+    window.__mzRail = { ...window.__mzRail, card: { ...rail.card, icon: liveCard.icon, iconKey: liveCard.iconKey ?? null, title: liveCard.title, lines: liveCard.lines } };
+    icon = liveCard.icon; iconKey = liveCard.iconKey ?? null; title = liveCard.title; lines = liveCard.lines;
+  }
+
   // Phase 58 (MOTION-02, D-06): read BEFORE the hidden/data-shown write
   // below — whether the rail was already up when THIS render started, so
   // the isNew block further down can tell "a card replacing a card while
@@ -4790,8 +4835,28 @@ function renderRail() {
   // showTab/renderEncounter predicates, while `data-shown` is what the
   // stylesheet reads to slide the overlay in and out — both are written
   // from this one predicate, in one place, so they can never drift.
-  railEl.hidden = !!(S.combat || S.dead) || idle;
+  // Phase 71 (D-10, R-14): the foe card is the one exception to "combat
+  // hides the rail"; every other card stays hidden in combat, as before.
+  railEl.hidden = !!((S.combat && !foeCardUp) || S.dead) || idle;
   railEl.dataset.shown = railEl.hidden ? "0" : "1";
+  // Phase 71 (R-14): over the combat screen the rail rises to the overlay's
+  // z-index (the #mw-rail[data-over="combat"] CSS) and its bottom edge is
+  // lifted to the top of the action area, measured now, so it never covers
+  // an action button. Off in every other case.
+  if (S.combat && foeCardUp && !railEl.hidden) {
+    railEl.dataset.over = "combat";
+    const actEl = document.getElementById("cb-act");
+    const stageEl = document.getElementById("mw-stage");
+    let lift = 0;
+    if (actEl && stageEl) {
+      const actTop = actEl.getBoundingClientRect().top;
+      const stageBottom = stageEl.getBoundingClientRect().bottom;
+      if (Number.isFinite(actTop) && Number.isFinite(stageBottom)) lift = Math.max(0, Math.round(stageBottom - actTop));
+    }
+    if (typeof railEl.style.setProperty === "function") railEl.style.setProperty("--mw-rail-lift", lift + "px");
+  } else if (railEl.dataset.over) {
+    delete railEl.dataset.over;
+  }
 
   // Phase 58 (MOTION-02, D-06): the rail must slide out showing the card
   // that is LEAVING, not the idle copy — an idle render (the card just
@@ -4887,28 +4952,41 @@ function renderRail() {
     syncRailLive(idle ? "" : title + ". " + lines.map((l) => l.text).join(" "));
     clearTimeout(railTimer);
     railTimer = null;
-    // Phase 58 (MOTION-04, D-15): the hold is reading time, not typing
-    // time — it starts only once the block finishes (onDone), never at the
-    // moment the card first shows.
-    const holdCard = !idle && !buttons.length && rail.card ? rail.card : null;
-    const startHold = () => {
-      if (!holdCard) return;
-      // Phase 57 (LAYOUT-03): the hold is line-scaled and bounded — routed
-      // through the bridged holdForCard, not rail.card.hold direct, so the
-      // per-line scaling actually reaches the screen. Falls back to the
-      // doubled default (8400) only if the bridge itself is missing.
-      railTimer = setTimeout(() => {
-        window.__mzRail = vm.clear(window.__mzRail);
-        renderRail();
-      }, vm.holdForCard ? vm.holdForCard(holdCard) : 8400);
-    };
-    if (window.__mzTypewriter && typedTexts.some((t) => t.length)) {
+  }
+  // Phase 58 (MOTION-04, D-15): the hold is reading time, not typing
+  // time — it starts only once the block finishes (onDone), never at the
+  // moment the card first shows.
+  const holdCard = !idle && !buttons.length && rail.card ? rail.card : null;
+  const startHold = () => {
+    if (!holdCard) return;
+    // Phase 57 (LAYOUT-03): the hold is line-scaled and bounded — routed
+    // through the bridged holdForCard, not rail.card.hold direct, so the
+    // per-line scaling actually reaches the screen. Falls back to the
+    // doubled default (8400) only if the bridge itself is missing.
+    railTimer = setTimeout(() => {
+      window.__mzRail = vm.clear(window.__mzRail);
+      renderRail();
+    }, vm.holdForCard ? vm.holdForCard(holdCard) : 8400);
+  };
+  if (isNew) {
+    if (foeCardUp) {
+      // Phase 71 (D-10, R-15): the foe card is a reference card the player
+      // asked for, so it shows at once (never typed), and while the fight
+      // goes on it holds until dismissed (no timer).
+      window.__mzTypewriter?.cancel?.("rail");
+      if (!S.combat) startHold();
+    } else if (window.__mzTypewriter && typedTexts.some((t) => t.length)) {
       window.__mzTypewriter.type("rail", { targets: typedTargets, texts: typedTexts, ariaHost: linesEl, onDone: startHold });
     } else {
       // Fail-open: no bridge, or nothing to type — start the hold directly,
       // exactly today's pre-Phase-58 timing.
       startHold();
     }
+  } else if (foeCardUp && !S.combat && railTimer === null) {
+    // Phase 71 (D-10): the fight ended with the foe card up — its normal
+    // line-scaled hold starts from this moment, once (a later repaint finds
+    // the timer running and leaves it alone).
+    startHold();
   }
 }
 
@@ -5630,6 +5708,10 @@ window.__mzClassicBoot = async function classicBoot() {
   import { combatMenuViewModel } from "./src/browser/combatMenu.js";
   // Phase 71 (D-14): the ONE foe-condition chip table.
   import { foeConditionChips } from "./src/browser/foeConditions.js";
+  // Phase 71 (POLISH-08; D-08..D-12): the long-press foe card's pure view
+  // model and the long-press recognizer.
+  import { foeDetailsCard, detailsLabel } from "./src/browser/foeDetails.js";
+  import { createLongPress } from "./src/browser/longPress.js";
   // 01-07 walking-skeleton browser adapter (SKELETON.md "Browser render").
   // Reroutes the movement input surface — tap-to-step (Phase 35) and arrow/
   // WASD keydown, both of which already call the plain `move(dir)` global
@@ -6045,6 +6127,78 @@ window.__mzClassicBoot = async function classicBoot() {
     window.__mzRail = railPush(window.__mzRail, railLineCard(title, line, tone, hold, icon, iconKey));
     window.renderRail?.();
   };
+
+  // Phase 71 (POLISH-08; D-09..D-11, R-13..R-17) — long-press a foe for its
+  // details card. window.__mzFoeInspect is the view model the classic
+  // renderRail re-derives the live card through (R-15) and the Details
+  // button's accessible name (D-11). window.mzInspectFoe(i) is the ONE entry
+  // point both gestures use (the long press below and the classic Details
+  // button): it pushes a presentation card onto the rail and repaints —
+  // never a field on state, never an action, never the aim. It is a no-op
+  // while the title, the roller or the title-opened panel is up (D-10), with
+  // no state, or for an index outside the fight's foe list.
+  window.__mzFoeInspect = { card: foeDetailsCard, label: detailsLabel };
+  window.mzInspectFoe = (i) => {
+    if (!dungeonVisible()) return;
+    const live = window.__mzState?.get?.();
+    if (!live) return;
+    const V = window.__mzBeat?.view?.()?.state || live;
+    const foes = V && V.combat && V.combat.foes;
+    if (!Array.isArray(foes) || !Number.isInteger(i) || i < 0 || i >= foes.length) return;
+    window.__mzRail = railPush(window.__mzRail, foeDetailsCard(i, V));
+    window.renderRail?.();
+  };
+
+  // Phase 71 (D-08) — the long-press gesture on the combat foe cards.
+  // - pointerdown sits on #enc-panel (the overlay that holds every foe card)
+  //   and arms only when the press starts on a .cb-foe[data-foe]; a press
+  //   anywhere else in the panel is a new gesture, so it cancels.
+  // - move/up/cancel and scroll listen on document in the capture phase, so
+  //   a re-render that replaces the pressed card mid-hold (a beat line) still
+  //   reports the pointer, and a scroll of the overlay cancels the press.
+  // - The click suppressor listens on WINDOW in the capture phase: the first
+  //   listener any click meets. After a fired long press it swallows the
+  //   trailing click exactly once (consumeClick), before the foe card's aim
+  //   tap and before #enc-panel's beatHurryTap, so a long press never aims,
+  //   never fires another tap meaning and, during a beat, never skips the
+  //   round (R-17: the card rises and the round keeps playing).
+  // - contextmenu is prevented on a foe card (with the .cb-foe CSS, no text
+  //   selection or callout either).
+  // None of these is a click listener on #enc-panel, so beatHurryTap stays
+  // its only one (CSCR-08).
+  const foeLongPress = createLongPress({
+    setTimeout: (fn, ms) => setTimeout(fn, ms),
+    clearTimeout: (id) => clearTimeout(id),
+    now: () => Date.now(),
+    onLongPress: (i) => {
+      maybeHaptic(currentSettings, "Light");
+      window.mzInspectFoe(i);
+    },
+  });
+  const pressedFoe = (e) => {
+    const t = e && e.target;
+    const card = t && typeof t.closest === "function" ? t.closest(".cb-foe[data-foe]") : null;
+    if (!card) return null;
+    const i = Number(card.dataset.foe);
+    return Number.isInteger(i) ? i : null;
+  };
+  document.getElementById("enc-panel")?.addEventListener("pointerdown", (e) => {
+    const i = pressedFoe(e);
+    if (i === null) { foeLongPress.cancel(); return; }
+    foeLongPress.down({ id: e.pointerId, x: e.clientX, y: e.clientY, foe: i });
+  });
+  document.addEventListener("pointermove", (e) => foeLongPress.move({ id: e.pointerId, x: e.clientX, y: e.clientY }), true);
+  document.addEventListener("pointerup", (e) => foeLongPress.up({ id: e.pointerId, x: e.clientX, y: e.clientY }), true);
+  document.addEventListener("pointercancel", () => foeLongPress.cancel(), true);
+  document.addEventListener("scroll", () => foeLongPress.cancel(), true);
+  window.addEventListener("click", (e) => {
+    if (!foeLongPress.consumeClick()) return;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
+  document.getElementById("enc-panel")?.addEventListener("contextmenu", (e) => {
+    if (pressedFoe(e) !== null) e.preventDefault();
+  });
 
   // Phase 34 (CSCR-01/02/03/06) — the ONE bridge renderEncounter's combat
   // branch reads for header/foe-card/YOUR LOT content and the MAJOR

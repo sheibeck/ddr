@@ -179,6 +179,14 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: foeStatusBadges — the combat foe cards' condition chips, via chips)"]),
     purpose: "Bridges src/browser/foeConditions.js's foeConditionChips, the one foe-condition chip table (Phase 71 D-14), so the classic foe cards read every ability, spell and item condition from one source that 71-04's long-press card also reads.",
   }),
+  __mzFoeInspect: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderRail — re-derives the live foe card's lines while S.combat is set, via card)",
+      "mazeworld.html (classic: renderFoeCards — the Details button's accessible name, via label)",
+    ]),
+    purpose: "Bridges src/browser/foeDetails.js's foeDetailsCard and detailsLabel: the long-press foe card view model (Phase 71 D-09/D-10) that the classic rail keeps live through a fight, and the TalkBack Details action's name (D-11).",
+  }),
   __mzGearSheet: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: openGearSheet / refreshGearSheet — the Gear action sheet's render)"]),
@@ -302,7 +310,7 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze([
       "mazeworld.html (classic: renderRail / railLocked — reads and also clears pending on dismiss)",
-      "mazeworld.html (module: dispatchWithNarration / darkFell / mzRailLine — pushes new cards)",
+      "mazeworld.html (module: dispatchWithNarration / darkFell / mzRailLine / mzInspectFoe — pushes new cards)",
     ]),
     purpose: "Presentation-only rail state (seq/card/pending) — what is currently on screen at the bottom of the map; never a field on state.",
   }),

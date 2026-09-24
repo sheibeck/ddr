@@ -24,8 +24,9 @@ import {
   foeListViewModel,
   yourLotViewModel,
   encounterOverlaySpec,
+  playerNote,
 } from "../../src/browser/combatPanel.js";
-import { ENC_TYPES } from "../../content/bestiary.js";
+import { ENC_TYPES, BESTIARY } from "../../content/bestiary.js";
 import { maxCharges } from "../../engine/movement.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 
@@ -130,6 +131,47 @@ test("foeListViewModel: meta variants — no sp.note; size undefined", () => {
 
   const noSize = foeListViewModel(fixedState({ combat: fixedCombat([{ name: "Kobold", alive: true, type: "Beasts", intel: 1, wp: 5, maxWP: 5 }]) }));
   assert.equal(noSize.cards[0].meta, "? · INT 1");
+});
+
+// Phase 71 (R-16, D-12): two bestiary notes say "wp" ("two attacks, 1 wp
+// each", "venom: 2 wp a round…"). The foe card meta routes sp.note through
+// playerNote, so those two read HP; every other creature's meta is unchanged.
+const PLAYER_WP = /(?<![\w.$-])(wp|WP)(?![\w:])/;
+
+test("foeListViewModel: the Bat/Rat and Viper meta read HP, never a standalone WP (R-16)", () => {
+  const bat = { name: "Bat/Rat", alive: true, type: "Beasts", size: "T", intel: 1, sp: { note: "two attacks, 1 wp each" }, wp: 1, maxWP: 1 };
+  const viper = { name: "Viper", alive: true, type: "Beasts", size: "S", intel: 1, sp: { note: "venom: 2 wp a round for d10 rounds" }, wp: 3, maxWP: 3 };
+  const vm = foeListViewModel(fixedState({ combat: fixedCombat([bat, viper]) }));
+  assert.equal(vm.cards[0].meta, "T · INT 1 · TWO ATTACKS, 1 HP EACH");
+  assert.equal(vm.cards[1].meta, "S · INT 1 · VENOM: 2 HP A ROUND FOR D10 ROUNDS");
+  for (const c of vm.cards) assert.ok(!PLAYER_WP.test(c.meta), c.meta);
+});
+
+test("foeListViewModel: every other creature's meta is unchanged by playerNote", () => {
+  for (const type of ENC_TYPES) {
+    for (const tier of BESTIARY[type]) {
+      for (const p of tier) {
+        const foe = { name: p.n, alive: true, type, size: p.sz, intel: p.i, sp: p.sp || {}, wp: p.wp, maxWP: p.wp };
+        const meta = foeListViewModel(fixedState({ combat: fixedCombat([foe]) })).cards[0].meta;
+        assert.ok(!PLAYER_WP.test(meta), `${p.n}: ${meta}`);
+        if (!p.sp || !p.sp.note || !PLAYER_WP.test(p.sp.note)) {
+          const old = [p.sz ?? "?", `INT ${p.i ?? "?"}`, p.sp && p.sp.note ? p.sp.note : null].filter(Boolean).join(" · ").toUpperCase();
+          assert.equal(meta, old, `${p.n}'s meta is unchanged`);
+        }
+      }
+    }
+  }
+});
+
+test("playerNote: a standalone wp/WP token becomes HP; code-like fragments stay", () => {
+  assert.equal(playerNote("two attacks, 1 wp each"), "two attacks, 1 HP each");
+  assert.equal(playerNote("75 WP"), "75 HP");
+  assert.equal(playerNote("(WP)"), "(HP)");
+  assert.equal(playerNote("c.wp and maxWP and cb-foe-wp and wp: 12 and viewport"), "c.wp and maxWP and cb-foe-wp and wp: 12 and viewport");
+  assert.equal(playerNote(""), "");
+  assert.equal(playerNote(null), "");
+  assert.equal(playerNote(undefined), "");
+  assert.equal(playerNote(7), "7");
 });
 
 test("foeListViewModel: glyph per type, unknown type falls back to default", () => {
