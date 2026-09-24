@@ -6177,6 +6177,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // quick 260918-vvt — a SEPARATE import line (same module) so the pinned
   // line above stays byte-identical; bridged below as __mzTakesBagSlot.
   import { takesBagSlot } from "./engine/derived.js";
+  // quick 260924-g8m — a SEPARATE import line (same module, same precedent)
+  // so the pinned lines above stay byte-identical; the dispatch audioCtx's
+  // onWater reads the engine's own wading rule (moveCost) below.
+  import { moveCost } from "./engine/derived.js";
   // Phase 57 (LAYOUT-06) — a SEPARATE import line (same module, same
   // precedent as the two above) so the pinned `conditionsOf, hasTool,
   // mapViewRadius, inViewWindow` import line stays byte-identical for
@@ -7557,7 +7561,13 @@ window.__mzClassicBoot = async function classicBoot() {
     // water plays the walk-water group, not just the one step that enters it
     // (the engine's `waded` event fires once per wade, for narration). Every
     // step of the read is guarded: a missing floor, row or cell is dry.
+    // quick 260924-g8m (user, 2026-09-24: "Keep flight over water silent"):
+    // a water square only splashes when the party actually WADES it — the
+    // engine's own rule, moveCost(state, cell) > 1 — so a live fly or ether
+    // effect (cost 1) crosses water with the ordinary dry step, matching the
+    // engine's `waded` narration, which skips flight the same way.
     const postFloor = result.state?.floor;
+    const postCell = postFloor?.g?.[postFloor.py]?.[postFloor.px];
     const audioCtx = {
       stepped: !!(
         before?.floor &&
@@ -7565,7 +7575,7 @@ window.__mzClassicBoot = async function classicBoot() {
         (before.floor.px !== result.state.floor.px || before.floor.py !== result.state.floor.py)
       ),
       combatType: result.state?.combat?.type ?? before?.combat?.type,
-      onWater: !!postFloor?.g?.[postFloor.py]?.[postFloor.px]?.water,
+      onWater: !!postCell?.water && moveCost(result.state, postCell) > 1,
     };
     if (Array.isArray(opts.cues)) {
       for (const cue of cuesForDispatch(action.type, result.events, audioCtx)) opts.cues.push(cue);

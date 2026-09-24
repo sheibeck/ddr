@@ -252,7 +252,12 @@ test("ui-tap-shell pins (D-17): the dispatch audioCtx carries onWater, read from
   const block = CODE.slice(idx, CODE.indexOf("};", idx) + 2);
   assert.match(block, /stepped:/);
   assert.match(block, /combatType:/);
-  assert.match(block, /onWater: !!postFloor\?\.g\?\.\[postFloor\.py\]\?\.\[postFloor\.px\]\?\.water,/);
-  assert.match(CODE.slice(Math.max(0, idx - 200), idx), /const postFloor = result\.state\?\.floor;/);
+  // quick 260924-g8m: only a WADED water square splashes — the engine's own
+  // wading rule (moveCost > 1), so live flight / ether crosses water dry.
+  assert.match(block, /onWater: !!postCell\?\.water && moveCost\(result\.state, postCell\) > 1,/);
+  assert.match(CODE, /import \{ moveCost \} from "\.\/engine\/derived\.js";/);
+  const pre = CODE.slice(Math.max(0, idx - 1500), idx);
+  assert.match(pre, /const postFloor = result\.state\?\.floor;/);
+  assert.match(pre, /const postCell = postFloor\?\.g\?\.\[postFloor\.py\]\?\.\[postFloor\.px\];/);
   assert.equal((CODE.match(/const audioCtx = \{/g) || []).length, 1);
 });
