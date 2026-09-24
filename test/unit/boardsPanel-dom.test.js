@@ -523,6 +523,8 @@ test("BOARDS_CLASSES: every className the renderer emits (across every optional/
     makeView(),
     makeView({ body: { kind: "empty", line: "Nobody of yours has qualified for this board yet." } }),
     makeView({ body: { kind: "note", line: "Nobody out there can see you yet." } }),
+    makeGlobalView(),
+    makeGlobalView({ body: CONSENT_BODY }),
   ];
   const found = new Set();
   for (const view of views) {
@@ -543,7 +545,9 @@ test("BOARDS_CLASSES (Phase 67): a signed-in view emits no class outside the lis
     makeView({ body: { kind: "empty", line: "Nobody of yours has qualified for this board yet." } }),
     makeView({ body: { kind: "note", line: "Nobody out there can see you yet." } }),
     makeSignedInView(),
-    makeSignedInView({ body: { kind: "note", line: "The world's ledger is still being bound. Your own dead will have to do." } }),
+    makeSignedInView({ body: { kind: "note", line: "The world is unreachable. Your own dead are still here." } }),
+    makeGlobalView(),
+    makeGlobalView({ body: CONSENT_BODY, standing: null }),
   ];
   const found = new Set();
   views.forEach((view, i) => {
@@ -557,6 +561,104 @@ test("BOARDS_CLASSES (Phase 67): a signed-in view emits no class outside the lis
     }
   });
   assert.deepStrictEqual([...found].sort(), [...BOARDS_CLASSES].sort());
+});
+
+// ─── Phase 68 (D-06, D-08): season label and picker, consent body, null standing ──
+
+const CONSENT_BODY = Object.freeze({
+  kind: "consent",
+  line: "Play Games will not show us your friends until you say so.",
+  action: Object.freeze({ id: "friendsConsent", label: "SHOW MY FRIENDS" }),
+});
+
+// makeGlobalView(overrides) — a signed-in ALL view with the SEASON label and
+// a two-season picker (season 2 viewed).
+function makeGlobalView(overrides = {}) {
+  const base = makeSignedInView();
+  return {
+    ...base,
+    header: {
+      ...base.header,
+      scopeLine: "Global. Every delve this season.",
+      season: {
+        label: "SEASON 2",
+        picker: [
+          { n: 1, label: "SEASON 1", on: false },
+          { n: 2, label: "SEASON 2", on: true },
+        ],
+      },
+    },
+    ...overrides,
+  };
+}
+
+test("header season: span.mw-bd-season carries the label inside the head text; no picker renders no .mw-bd-seasons", () => {
+  const view = makeGlobalView({ header: { ...makeView().header, season: { label: "SEASON 1", picker: null } } });
+  const { root } = renderFresh(view);
+  const headtext = root.querySelector(".mw-bd-headtext");
+  const label = headtext.querySelector(".mw-bd-season");
+  assert.ok(label);
+  assert.equal(label.tagName.toLowerCase(), "span");
+  assert.equal(label.textContent, "SEASON 1");
+  assert.equal(root.querySelectorAll(".mw-bd-seasons").length, 0);
+
+  // a view with no header.season at all (the Phase 66/67 shape) renders neither.
+  const { root: bare } = renderFresh(makeView());
+  assert.equal(bare.querySelectorAll(".mw-bd-season").length, 0);
+  assert.equal(bare.querySelectorAll(".mw-bd-seasons").length, 0);
+});
+
+test("header season picker: one button.mw-bd-season-chip per season with type/data-season/data-on/aria-pressed, onclick calling onSeason(n)", () => {
+  const onSeason = spy();
+  const view = makeGlobalView();
+  const { root } = renderFresh(view, { onSeason });
+  const seasons = root.querySelector(".mw-bd-headtext").querySelector(".mw-bd-seasons");
+  assert.ok(seasons, "the picker sits in the head text block");
+  const chips = seasons.querySelectorAll(".mw-bd-season-chip");
+  assert.equal(chips.length, 2);
+  chips.forEach((chip, i) => {
+    const s = view.header.season.picker[i];
+    assert.equal(chip.tagName.toLowerCase(), "button");
+    assert.equal(chip.type, "button");
+    assert.equal(chip.dataset.season, String(s.n));
+    assert.equal(chip.dataset.on, s.on ? "1" : "0");
+    assert.equal(chip.getAttribute("aria-pressed"), s.on ? "true" : "false");
+    assert.equal(chip.textContent, s.label);
+    chip.onclick();
+  });
+  assert.deepStrictEqual(onSeason.calls, [[1], [2]]);
+});
+
+test("consent body: p.mw-bd-note with the line, then button.mw-bd-consent (type button, data-action) whose onclick calls onConsent()", () => {
+  const onConsent = spy();
+  const view = makeGlobalView({ body: CONSENT_BODY });
+  const { root } = renderFresh(view, { onConsent });
+  const body = root.querySelector(".mw-bd-body");
+  const note = body.querySelector(".mw-bd-note");
+  assert.equal(note.textContent, CONSENT_BODY.line);
+  const btn = body.querySelector(".mw-bd-consent");
+  assert.ok(btn);
+  assert.equal(btn.tagName.toLowerCase(), "button");
+  assert.equal(btn.type, "button");
+  assert.equal(btn.dataset.action, "friendsConsent");
+  assert.equal(btn.textContent, "SHOW MY FRIENDS");
+  assert.ok(body.children.indexOf(btn) > body.children.indexOf(note), "the button sits under the note");
+  assert.equal(body.querySelectorAll(".mw-bd-row").length, 0);
+  btn.onclick();
+  assert.deepStrictEqual(onConsent.calls, [[]]);
+  // no handler: the click is a no-op, never a throw.
+  const { root: root2 } = renderFresh(view);
+  assert.doesNotThrow(() => root2.querySelector(".mw-bd-consent").onclick());
+});
+
+test("a null standing renders no .mw-bd-standing; the footnote still renders last", () => {
+  const view = makeGlobalView({ body: { kind: "note", line: "Asking the world who died. It keeps records, slowly." }, standing: null });
+  const { root } = renderFresh(view);
+  const body = root.querySelector(".mw-bd-body");
+  assert.equal(body.querySelectorAll(".mw-bd-standing").length, 0);
+  const foot = body.querySelector(".mw-bd-foot");
+  assert.equal(foot.textContent, view.footnote);
+  assert.equal(body.children.indexOf(foot), body.children.length - 1);
 });
 
 // ─── railScrollTarget ───────────────────────────────────────────────────

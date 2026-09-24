@@ -118,6 +118,25 @@ test("CSS: .mw-bd-dock-btn is at least 48px tall", () => {
   assert.match(body, /min-height:48px/);
 });
 
+test("CSS (Phase 68): .mw-bd-season-chip and .mw-bd-consent declare a min-height of at least 44px", () => {
+  for (const selector of [".mw-bd-season-chip", ".mw-bd-consent"]) {
+    const body = findRuleBody(selector);
+    assert.ok(body, `expected an exact ${selector}{...} rule`);
+    const m = body.match(/min-height:(\d+)px/);
+    assert.ok(m, `${selector} declares no px min-height`);
+    assert.ok(Number(m[1]) >= 44, `${selector} min-height ${m[1]}px is under 44px`);
+  }
+});
+
+test("CSS (Phase 68): the season label, picker and consent rules exist and carry no motion", () => {
+  for (const selector of [".mw-bd-season", ".mw-bd-seasons", ".mw-bd-season-chip", ".mw-bd-consent"]) {
+    const body = findRuleBody(selector);
+    assert.ok(body, `expected an exact ${selector}{...} rule`);
+    assert.doesNotMatch(body, /animation|transition/);
+  }
+  assert.match(STYLE_BLOCK, /\.mw-bd-season-chip\[data-on="1"\]\{/);
+});
+
 test("CSS: .mw-bd-row uses touch-action:manipulation", () => {
   const body = findRuleBody(".mw-bd-row");
   assert.ok(body, "expected an exact .mw-bd-row{...} rule");
