@@ -208,6 +208,41 @@
 - Model mix: Opus planners (3 phases), Sonnet executors (14 plans), orchestrator on Opus. No verification agents.
 - Sessions: 1 (autonomous, no compaction).
 
+## v2.0 Leaderboards (2026-09-23 → 2026-09-24)
+
+**Phases:** 7 (65–71; 70–71 added mid-milestone from device rounds) | **Plans:** 43 | **Commits:** 338 since `v1.9` | **Tests:** 4,197 → 5,483
+
+### What Was Built
+- A season-tagged run record and an all-time personal-bests record (`engine/records.js`), with a NEW PERSONAL BEST block on death. The zero-draw `state.acts` counter was carved out of every parity comparable.
+- The DEAD tab and VIEW THE DEAD rebuilt as the mock's seven-board Leaderboards panel, fully offline, driven by one pure `boardsView`.
+- Opt-in Play Games Services v2 through the vendored `@modbender/capacitor-play-games`, with a Compete toggle, a durable submission queue, seasoned global/friends boards, a score tag, and "you placed X". There are zero game network calls signed out or with Compete off.
+- A compliance close (privacy, Data Safety, PGS runbook), the live APP_ID and board IDs, and two device-round polish phases (title theme, the ☰ as the account face, LINEAGE by race + sub-class, volume sliders, gear stats, the combat lock, long-press foe details).
+- Play 2.0.0 / vc10 published.
+
+### What Worked
+- **One provider seam (`playGames.js`, native + fake)** kept every PGS behaviour testable offline, including a recording Proxy that proves zero calls while Compete is OFF.
+- **Placeholder IDs that fail gracefully** let the milestone ship code before the console setup, and the real IDs were a one-quick-task swap.
+- **Device rounds became phases (70, 71)** with requirement IDs (POLISH-01..12) instead of loose quick tasks. The draft quick plans (56z, 5b8) were reused as phase inputs.
+- **Orchestrator audit** (no integration-checker agent) was enough: cross-phase seams and flows were checked from source.
+
+### What Was Inefficient
+- The milestone lifecycle was paused after a first audit, then Phases 70–71 were added. The close had to re-audit and merge the two audit passes.
+- CRLF debt is still unfixed (7 false doc-ledger failures per worktree).
+- The plugin is young and blocks AGP 9 upstream. It also initializes Google's SDK at launch even with Compete OFF, which moved a guarantee from code to a device capture (F1).
+
+### Patterns Established
+- **Offline constraint amended per opt-in:** the network is allowed only for a signed-in, Compete-on player, and it is proven by a fake provider plus a device capture.
+- **Seasons from day one** for anything ranked.
+- **Publish, then close:** the user ships the build and walks UAT over play sessions. Post-ship findings go straight to todos.
+
+### Key Lessons
+- When a third-party SDK sits under a privacy promise, plan the device capture that proves the promise (F1) as release-blocking from the start.
+- Close the milestone lifecycle before adding device-round phases, or plan for the re-audit.
+
+### Cost Observations
+- Model mix: Opus planners, Sonnet executors, orchestrator on Opus; one researcher (Phase 67). No verification agents.
+- Sessions: several (autonomous runs plus device rounds).
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -224,6 +259,7 @@
 | v1.7 | 1 (autonomous) | 6 | Global difficulty model fitted by a fair bot in checkpointed blocks; user rulings mid-phase; human curve verdict deferred |
 | v1.8 | 1 (autonomous, 2 compactions) | 5 | Presentation-only under a tag-diff Engine Gate; parallel worktree waves; mid-run design mock absorbed as an added plan; UAT spread over play sessions |
 | v1.9 | 1 (autonomous, no compaction) | 4 | Engine rule fixes first so the UI reads real refusal reasons; cross-screen agreement sweeps; in-session wireless-adb device walk (partial) and a Play closed-test build |
+| v2.0 | several | 7 (two device-round phases added) | First network feature behind an opt-in provider seam with a fake; seasons from day one; publish-then-close with UAT over play sessions |
 
 ### Cumulative Quality
 
@@ -238,6 +274,8 @@
 | v1.6 | 3315 | parity master untouched; 13 declared worn-model fixture moves; DOM-snapshot lock for 3 screens; bridge registry set-equality; stale-terms tripwire; comment-only-diff proof; 7 dev-gated perf lines pinned | 0 |
 | v1.7 | 3479 | parity master untouched; declared fixture movers incl. the new floorFeatureShift record kind; fit ledger + identityDials harness | 0 |
 | v1.8 | 3905 | engine/content/parity byte-identical to v1.7; fake-clock beat/glide/typewriter suites; reduced-motion audit; bridge set-equality | 0 |
+| v1.9 | 4197 | one declared fixture (economy); cross-screen agreement sweeps (432 / 117 / 17 pairs) | 0 |
+| v2.0 | 5483 | parity master untouched; `acts` carved out (measured-zero); fake PGS provider + recording Proxy (zero calls Compete OFF); boardsView 43 tests | 1 vendored Capacitor plugin (`@modbender/capacitor-play-games`, pinned) |
 
 ### Top Lessons (Verified Across Milestones)
 
