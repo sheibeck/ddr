@@ -96,6 +96,12 @@ export const BOARD_FOOTNOTES = {
 // fallback name for a player with no display name; `note.live` is the ALL /
 // FRIENDS tap note while signed in — the global boards are coming online,
 // and it claims no rank or count (Phase 68 brings the real rows).
+// Phase 68 (D-05..D-09): `global` holds the ALL / FRIENDS board copy — the
+// scope lines, the SEASON {n} label, the loading / unreachable / closed /
+// empty notes, the friends consent note and button, the YOU / FRIEND row
+// tags, the standing lines (worldwide / among friends / the sampled LINEAGE
+// count) and the honest LINEAGE sample footnote. No line names or singles
+// out another player; the joke stays on the player's own dead.
 export const BOARDS_PANEL_COPY = Object.freeze({
   head: Object.freeze({
     title: "LEADERBOARDS",
@@ -126,6 +132,29 @@ export const BOARDS_PANEL_COPY = Object.freeze({
       all: "The world's ledger is still being bound. Your own dead will have to do.",
       friends: "Your friends' ledger is still at the bindery. Your own dead will have to do for now.",
     }),
+  }),
+  global: Object.freeze({
+    scope: Object.freeze({
+      all: "Global. Every delve this season.",
+      friends: "Your friends’ dead only. This season.",
+    }),
+    season: "SEASON {n}",
+    loading: "Asking the world who died. It keeps records, slowly.",
+    unreachable: "The world is unreachable. Your own dead are still here.",
+    closed: "This board has not opened yet. The ledger is still being ruled.",
+    empty: "Nobody has died on this board yet this season. Somebody has to go first.",
+    consent: "Play Games will not show us your friends until you say so.",
+    consentButton: "SHOW MY FRIENDS",
+    you: "YOU",
+    friend: "FRIEND",
+    anon: "A nameless delver",
+    foe: "foe",
+    leanRateUnit: "SQ / FLOOR",
+    noEntry: "Nothing of yours on this board yet this season.",
+    ofWorld: "of {n} interred worldwide.",
+    ofFriends: "of {n} among friends.",
+    ofSampled: "of {n} lineages in the sample.",
+    sampledFoot: "Sampled from the top {n} deepest corpses in the world. Rare lineages may be buried further down.",
   }),
   empty: "Nobody of yours has qualified for this board yet.",
   divider: "NOT IN THE TOP TEN · YOUR BEST RUN",
@@ -199,3 +228,29 @@ export const FIRST_DEATH_LINES = [
   "The ledger opens with you. Someone had to go first.",
   "One death, one entry, every record. Enjoy the top of a very short list.",
 ];
+
+// GLOBAL_STANDING_LINES (Phase 68, D-05) — the standing-card quip bank for
+// the ALL / FRIENDS boards, one bank per worldwide rank tier, deep-frozen and
+// token-free. The joke is on the player's corpse, never on another player.
+export const GLOBAL_STANDING_LINES = Object.freeze({
+  first: Object.freeze([
+    "First place. The others have been told, and are not thrilled.",
+    "Top of the heap. Mind the drop.",
+    "Nobody has done better. Nobody will admit it, either.",
+  ]),
+  ten: Object.freeze([
+    "Top ten. Strangers are studying your corpse.",
+    "In the top ten. Your ghost has earned a small nod.",
+    "Top ten. The rest are taking notes, grudgingly.",
+  ]),
+  hundred: Object.freeze([
+    "Top hundred. A large room, but a respectable one.",
+    "Somewhere in the top hundred. The view is mostly other graves.",
+    "Top hundred. Frame it before the season ends.",
+  ]),
+  rest: Object.freeze([
+    "Out in the crowd. Everyone here is dead too, if that helps.",
+    "Not near the top. Not near the bottom either, probably.",
+    "A face in a very large, very quiet crowd.",
+  ]),
+});
