@@ -44,3 +44,14 @@ Two independent steps. Do R8 first, because it is low-risk and works on AGP 8.13
 - This overturns the standing "don't let Studio upgrade" rule, so update STATE.md's Build/env ground truth when it lands.
 
 Good as a quick task or a small infra phase. Worth doing before the Play production launch (STR track).
+
+## Update 2026-09-23 — AGP 9.3.1 spike result (Phase 67, D-21)
+
+`.planning/phases/67-play-games-integration-account-chip/67-AGP9-SPIKE.md` tried the whole-build move to **AGP 9.3.1 / Gradle 9.5.0** and the verdict was to **stay on AGP 8.13.0**. The Play Games plugin (`@modbender/capacitor-play-games@0.5.0`) builds unmodified on 8.13. Its own AGP 9.3.1 buildscript is shadowed by the root classpath.
+
+Three root-config fixes got AGP 9 as far as Kotlin compilation. All three must be threaded through `tools/pin-jdk.mjs`, because `cap sync` rewrites `gradle.properties`:
+- `proguard-android-optimize.txt`
+- `android.builtInKotlin=false`
+- `android.newDsl=false`
+
+The build then **hard-fails inside the plugin's shipped source**: `Pgs.kt:144`, "Returns are prohibited for functions with an expression body". **Step 2 is therefore blocked upstream.** Re-run the spike when the plugin publishes a release that fixes it, or drops its self-applied `org.jetbrains.kotlin.android`. Step 1 (R8 on 8.13) is unaffected and still worth doing.
