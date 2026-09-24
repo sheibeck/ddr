@@ -120,6 +120,16 @@ export const ROUND_STRIP_COPY = Object.freeze({
   roundHappened: "ROUND {n} · WHAT HAPPENED",
   resolving: "RESOLVING",
   fullLog: "FULL LOG · {n} ›",
+  // Phase 71 (D-07), 71-06: THE FIGHT SO FAR, the full-log sheet the strip
+  // opens (the mock's showLog block). openLog is the strip's accessible
+  // name; roundHead heads each group; noRound heads the (defensive) group
+  // of entries logged without a round.
+  openLog: "Open the full fight log",
+  sheetTitle: "THE FIGHT SO FAR",
+  diceHint: "TAP A LINE FOR ITS DICE",
+  close: "CLOSE",
+  roundHead: "ROUND {n}",
+  noRound: "OFF THE BOOKS",
 });
 
 /** ROUND_STRIP_MAX_LINES — the mock's "last 3 lines of the latest round". */
@@ -182,6 +192,46 @@ export function roundSummary(log, beatView = null) {
     })
   );
   return Object.freeze({ round, lines: Object.freeze(lines), newestId, total });
+}
+
+/**
+ * fightLogByRound(log) — Phase 71 (D-07), 71-06: the content of THE FIGHT
+ * SO FAR sheet (the user's combat v2 mock, design/COMBAT-V2-NOTES.md
+ * section 5): the whole fight, grouped under ROUND n headers.
+ *
+ * Returns a frozen array of frozen `{ round, entries }` groups:
+ *   - groups newest first, ordered by each group's newest entry;
+ *   - entries within a group newest first, each a frozen
+ *     `{ id, text, tone, roll, show }`;
+ *   - every entry whose round is null/undefined joins ONE group with
+ *     `round: null` (the shell labels it with ROUND_STRIP_COPY.noRound).
+ *
+ * R-23: `roll` is exactly the entry's own roll string (fightLogLinesFor set
+ * it from the engine event's Oracle detail text) or null; nothing is
+ * invented. `show` is the entry's reveal flag (toggleFightLogEntry).
+ *
+ * A null, empty or malformed log gives []; non-object entries are skipped.
+ * Pure: never mutates `log`.
+ */
+export function fightLogByRound(log) {
+  const raw = log && typeof log === "object" && Array.isArray(log.entries) ? log.entries : [];
+  const groups = new Map();
+  for (let i = raw.length - 1; i >= 0; i--) {
+    const e = raw[i];
+    if (!e || typeof e !== "object") continue;
+    const round = e.round ?? null;
+    if (!groups.has(round)) groups.set(round, []);
+    groups.get(round).push(
+      Object.freeze({
+        id: e.id ?? null,
+        text: String(e.text ?? ""),
+        tone: e.tone === "dull" ? "dull" : "narrative",
+        roll: typeof e.roll === "string" && e.roll ? e.roll : null,
+        show: !!e.show,
+      })
+    );
+  }
+  return Object.freeze([...groups].map(([round, entries]) => Object.freeze({ round, entries: Object.freeze(entries) })));
 }
 
 /**

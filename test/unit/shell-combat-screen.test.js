@@ -449,6 +449,26 @@ test("Phase 71 D-06/R-08: still exactly one capture click listener on #enc-panel
   assert.deepEqual(types, ["click", "contextmenu", "pointerdown"]);
 });
 
+// ─── l2. Phase 71 (71-06, D-07/D-06): the strip opens THE FIGHT SO FAR ──
+//
+// The strip's open tap is a guardTap-wired element handler (not a card,
+// body or panel listener, so the CSCR-08 checks above still hold), and
+// #enc-panel still carries exactly one capture click listener: mid-round,
+// beatHurryTap stops the tap before the strip's handler (R-18), and
+// encArmed() refuses it anyway.
+
+test("Phase 71 (71-06): renderRoundStrip wires the strip's open tap through guardTap(strip, openFightLogSheet) as a keyboard-reachable button; no new #enc-panel listener", () => {
+  const region = fnRegion("function renderRoundStrip(host, fallbackRound)");
+  const hits = region.match(/guardTap\(strip, openFightLogSheet\);/g) || [];
+  assert.equal(hits.length, 1, "exactly one guarded open tap");
+  assert.doesNotMatch(region, /strip\.onclick\s*=/, "never a bare onclick");
+  assert.doesNotMatch(region, /addEventListener/, "no listener of its own");
+  assert.match(region, /strip\.setAttribute\("role", "button"\);/);
+  assert.match(region, /strip\.tabIndex = 0;/);
+  const clicks = CODE.match(/getElementById\("enc-panel"\)\?\.addEventListener\("click"/g) || [];
+  assert.equal(clicks.length, 1, "still one capture click on #enc-panel");
+});
+
 // ─── m. Phase 71 (D-11): one Details sibling per foe card ────────────────
 
 test("Phase 71 D-11: renderFoeCards builds one sr-only .cb-foe-details button per card, after the card, wired through guardTap to mzInspectFoe", () => {

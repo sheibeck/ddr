@@ -8,13 +8,13 @@
 
 **Sign-in and leaderboard rows** need the user's console setup in section 0; they are marked *(after console setup)*. On a locally built debug APK they also need the optional debug-keystore credential (`docs/PLAY-GAMES-SETUP.md` section 3, row 0.10). Without it, walk them on the Play build from closed testing.
 
-**Sources:** `.planning/phases/65-run-record-personal-bests/65-VERIFICATION.md` (10 items), `.planning/phases/66-leaderboards-panel-local/66-VERIFICATION.md` (18 items), `.planning/phases/67-play-games-integration-account-chip/67-VERIFICATION.md` (15 items) and `.planning/phases/68-global-boards-submissions-you-placed-x/68-VERIFICATION.md` (16 items), 59 in all. Extras came from the "Human verification (deferred to end of run)" sections of 65-03, 65-04, 65-05, 66-02 to 66-07, 67-01 to 67-08 and 68-01 to 68-07 (the sections in 65-01, 65-02 and 66-01 say None). Phase 70 (device-round polish, no VERIFICATION file) added section L from the "Human verification" sections of `.planning/quick/260924-51h-loop-theme-mp3-on-the-title-screen-v2-0/260924-51h-SUMMARY.md` (9 items), 70-01 (5), 70-02 (6), 70-03 (5) and 70-04 (7), 32 in all; it re-worded C1, C9, D1, D3, E2, E3 and E5 and superseded E1, E4 and B17. Items were merged and reordered for one pass; the **Source map** at the end accounts for every source item.
+**Sources:** `.planning/phases/65-run-record-personal-bests/65-VERIFICATION.md` (10 items), `.planning/phases/66-leaderboards-panel-local/66-VERIFICATION.md` (18 items), `.planning/phases/67-play-games-integration-account-chip/67-VERIFICATION.md` (15 items) and `.planning/phases/68-global-boards-submissions-you-placed-x/68-VERIFICATION.md` (16 items), 59 in all. Extras came from the "Human verification (deferred to end of run)" sections of 65-03, 65-04, 65-05, 66-02 to 66-07, 67-01 to 67-08 and 68-01 to 68-07 (the sections in 65-01, 65-02 and 66-01 say None). Phase 70 (device-round polish, no VERIFICATION file) added section L from the "Human verification" sections of `.planning/quick/260924-51h-loop-theme-mp3-on-the-title-screen-v2-0/260924-51h-SUMMARY.md` (9 items), 70-01 (5), 70-02 (6), 70-03 (5) and 70-04 (7), 32 in all; it re-worded C1, C9, D1, D3, E2, E3 and E5 and superseded E1, E4 and B17. Phase 71 (device-round polish II, no VERIFICATION file) added section M from the "Human verification (deferred)" sections of 71-01 (6 items), 71-02 (4), 71-03 (5), 71-04 (7), 71-05 (5) and 71-06 (4), 31 in all, in `.planning/phases/71-device-round-polish-ii/`; it re-worded L1 and superseded no row. Items were merged and reordered for one pass; the **Source map** at the end accounts for every source item.
 
 **Suggested order:**
 1. Section 0, the console, website and upload steps (user), except row 0.8, which waits for F1.
 2. **F1, the RELEASE-BLOCKING capture**, on a fresh install with Compete OFF before any sign-in. Carve-out: row A1 needs the old v1.9 install, so if the phone still has it, walk A1 before F1's uninstall (it runs offline and touches no Compete or network state); otherwise A1 is `not reached`.
 3. Still on that fresh install: B1 (every board empty), then keep the capture running and die with Compete OFF. That one death covers F2, A2 (first-ever death), B2 (one death on every board) and C3. Then row 0.8.
-4. The sections that need no console setup: the rest of A, B3 to B12, C, D1 and D2, E2 and E3, and K1 and K2 (the parts shown signed out). Then section L, the Phase 70 device round, except L10, L12 and L28 (E1, E4 and B17 are superseded; skip them).
+4. The sections that need no console setup: the rest of A, B3 to B12, C, D1 and D2, E2 and E3, and K1 and K2 (the parts shown signed out). Then section L, the Phase 70 device round, except L10, L12 and L28 (E1, E4 and B17 are superseded; skip them). Then section M, the Phase 71 device round, on the Phase 71 debug APK; none of its rows needs the console setup.
 5. After the console setup and the rebuild from row 0.2 (installed as a Play update, so saves are kept): D3 to D5, E5, F3, B13 to B16, G, H, I and K3, then L10, L12 and L28.
 6. Section J, airplane mode, last among the device sections. Row A9 clears app storage, so it closes the walk.
 7. Section Z, the desk check, any time.
@@ -161,7 +161,7 @@ Walk on the Phase 70 debug APK the orchestrator installs with `adb install -r` (
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| L1 | Cold launch, no tap: the title theme is audible within about 1 s of the title appearing, with no tap needed, and is clearly quieter than a UI tap or a footstep. | user | open |
+| L1 | Cold launch, no tap: the title theme is audible within about 1 s of the title appearing, with no tap needed. Since Phase 71 (MUSIC_GAIN 0.9) it is clearly audible and still sits under a UI tap or a footstep, and the MUSIC slider scales it (see M1 and M3). | user | open |
 | L2 | With no live hero, tap ENTER: the music carries on into the roller with no restart or stutter, keeps playing through the reel spin and reveal, and fades out over about half a second on reaching the map. | user | open |
 | L3 | VIEW THE DEAD: the music carries on. With no live hero, the panel's chevron returns to the title and the music continues without restarting. Opening the account sheet over the title leaves it playing. | user | open |
 | L4 | ENTER to a resumed delve (live save): the theme fades on reaching the map. Die, then BURY THEM: back on the title, the theme restarts from the top on its own. | user | open |
@@ -191,6 +191,41 @@ Walk on the Phase 70 debug APK the orchestrator installs with `adb install -r` (
 | L28 | *(after console setup; signed in, Compete ON)* LINEAGE on ALL and FRIENDS lists only that lineage from the top 25 deepest, ranked 1..n; your own entry is pinned under NOT IN THE TOP TEN · YOUR BEST RUN when it isn't shown; the footnote reads "Filtered from the top 25 deepest corpses in the world…". Check at the default and largest text sizes. | user | open |
 | L29 | A deeper death of a race + sub-class you have died as before announces LINEAGE on NEW PERSONAL BEST as "Race Sub · floor n". The first death of a new lineage does not. | user | open |
 
+## M. Device-round polish II — Phase 71 (28)
+
+Walk on the Phase 71 debug APK the orchestrator installs with `adb install -r` (same debug signer, saves kept). Order: the sound mix and the volume sliders, the Gear sheet's stats, the combat lock and the tap-to-skip, the foe condition chips, the long-press foe card, the what-happened strip, then THE FIGHT SO FAR sheet. No row needs the console setup. Rows are grouped by plan in walk order; a later Phase 71 plan appends its rows after the last one here, bumps the count in this heading, and adds its source lines at the end of the Source map's Phase 71 block.
+
+| # | Step | Who | Result |
+|---|------|-----|--------|
+| M1 | Play a stretch of a run with Sound On. The hero-death sound is clearly quieter than before, and the footsteps (dry and water) are clearly louder. On the title, the theme is louder than in Phase 70 but still sits under a footstep or a UI tap. | user | open |
+| M2 | In Settings with Sound On, MASTER, MUSIC and EFFECTS show directly under the Sound row. Sound Off hides all three and silences everything; Sound On brings them back at the saved levels. | user | open |
+| M3 | On the title with the theme playing, drag MUSIC to 0 and back to 100: the theme follows your finger live. Drag MASTER to 0: everything goes silent, and at 100 everything is back. | user | open |
+| M4 | Releasing EFFECTS plays exactly one tap sound at the new level. Releasing MASTER or MUSIC plays nothing. | user | open |
+| M5 | Set the three sliders to different levels, force-close and relaunch: the three levels are as you left them. | user | open |
+| M6 | At text size L the three slider rows are readable and easy to drag with a thumb, and the settings sheet still scrolls down to the Version row. | user | open |
+| M7 | On the Gear tab, tap the worn weapon. The sheet shows its damage dice (and +N if enchanted) and who can use it, above the upgrade line and the actions. | user | open |
+| M8 | Tap worn armour: the sheet shows AR and durability (current/max hp, or destroyed). Then tap a bag weapon, bag armour, a cloak, a jewel and a staff: each shows the same stat lines a store row shows for that item. | user | open |
+| M9 | In a store, a weapon or armour row reads the same stats as the Gear sheet does for that item, with usable-by now read before the compare line. Food, repair and the sealed scroll read as before. | user | open |
+| M10 | At text size L the Gear sheet's stats wrap onto rows, and every action and CANCEL is still reachable by scrolling the sheet. Note it as a finding if the stat block reads too airy (the rows reuse the note's 8px top margin). | user | open |
+| M11 | In a multi-foe fight, press STRIKE and watch the round type out. The four action buttons go dim at once, lose their raised shadow and do not depress when tapped, and the prompt reads "HOLD · THE DICE ARE STILL OUT". The buttons come back the moment the round finishes. Opening the ☰ mid-round still lands the round first (L22 still holds). | user | open |
+| M12 | Spam STRIKE while a round types. The first tap lands the whole round at once, with no extra strike afterwards. | user | open |
+| M13 | While a round types, tap a foe card, then (next round) the what-happened strip. Each tap lands the round at once: the aim does not change, and the strip's tap opens nothing (THE FIGHT SO FAR stays closed). | user | open |
+| M14 | *(if available: a hero with Hamstring, Mark, Pommel Strike or Dirty Trick)* Use each on a foe. Each shows its chip on that foe's card (Blind with its rounds) and the chip goes when it wears off. Weaken still shows Weakened with its rounds on every foe. | user | open |
+| M15 | In a multi-foe fight, long-press each foe in turn. You get a light buzz, then one rail card for that foe: name and family, HP (never WP), defence, attacks and damage range, abilities, resistances, current effects and a flavour line. Each new long press replaces the card. | user | open |
+| M16 | A short tap on a foe still aims at it, and a long press never changes the aim. No text-selection handles or context menu ever appear on a foe card. | user | open |
+| M17 | The foe card sits above the what-happened strip and the action buttons, never over them, at text sizes M and L. It stays up through several rounds while its HP and effects update, and a tap on the card dismisses it. | user | open |
+| M18 | *(edge)* Kill the last foe with the card up: the card clears on its own after its normal hold. | user | open |
+| M19 | *(edge)* Long-press a foe while a round is still typing: the card appears and the round keeps playing (it is not skipped). | user | open |
+| M20 | With TalkBack on, swipe through a foe card: the next stop is "Details: <name>". Double-tap it and the same card appears, with the aim unchanged. | user | open |
+| M21 | With Haptics Off in Settings, the long press still works, with no buzz. | user | open |
+| M22 | Fight 3 or more foes at text size M, then L. The "ROUND n · WHAT HAPPENED" strip sits directly above the buttons and shows the last three lines of the round, the newest bright. The foes and your lot scroll above it, and nothing covers a foe card or a button. | user | open |
+| M23 | While a round plays, the strip's label pulses RESOLVING, and only lines that have already appeared show there. | user | open |
+| M24 | The strip, its label, the FULL LOG chip and the top fade match the combat v2 mock. | user | open |
+| M25 | With Android's remove-animations setting on, the strip shows each round complete, with no pulse and no rise. | user | open |
+| M26 | After a few rounds, tap the what-happened strip. THE FIGHT SO FAR rises with every line of the fight, newest first under ROUND n headers, and the list scrolls while the title and CLOSE stay put. It matches the mock: dark scrim, a panel no taller than about three quarters of the screen. | user | open |
+| M27 | In THE FIGHT SO FAR, tap a line that has dice: its roll appears in gold under it, and a second tap hides it. Lines without dice do nothing. The "TAP A LINE FOR ITS DICE" hint shows only when some line has dice. CLOSE, a tap on the dark area above the panel, or Android back closes it (back closes only the sheet), and the fight is exactly as it was. | user | open |
+| M28 | With TalkBack on, the strip reads "Open the full fight log" and a double-tap opens THE FIGHT SO FAR; a line with dice reads as a button that shows and hides its roll. With Android's remove-animations setting on, the sheet opens and closes instantly. | user | open |
+
 ## Z. Desk check — browser dev loop (2)
 
 | # | Step | Who | Result |
@@ -200,7 +235,7 @@ Walk on the Phase 70 debug APK the orchestrator installs with `adb install -r` (
 
 ## Source map
 
-Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) and every SUMMARY extra (`[NN-PP-Sk]`, and `[51h-Sk]` for quick task 260924-51h, k in list order) appears once below. *Merged* means the check is walked in that row; *superseded* means a later phase replaced the behaviour; *re-worded for Phase 70* means the row still stands but now describes the Phase 70 surface.
+Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) and every SUMMARY extra (`[NN-PP-Sk]`, and `[51h-Sk]` for quick task 260924-51h, k in list order) appears once below. *Merged* means the check is walked in that row; *superseded* means a later phase replaced the behaviour; *re-worded for Phase 70* (or *for Phase 71*) means the row still stands but now describes that phase's surface. The Phase 71 lines (`[71-PP-Sk]`) form the last block, so a later Phase 71 plan appends its lines at the very end.
 
 | Source | Item | Row | Disposition |
 |--------|------|-----|-------------|
@@ -354,7 +389,7 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [68-07-S4] | Compete OFF, die: no rank line, card, error or traffic | F2 | merged into 68-V8 |
 | [68-07-S5] | ALL, FRIENDS and LINEAGE at default and largest text | B13, B16, B17 | merged into 68-V9 and 68-V12 (text sizes added to those rows); the B17 part is superseded by Phase 70 (L28) |
 | [68-07-S6] | browser dev loop: pgsDevSignedIn | Z1 | merged into 68-V16 |
-| [51h-S1] | cold launch, no tap: theme within ~1 s, quieter than one-shots | L1 | own row |
+| [51h-S1] | cold launch, no tap: theme within ~1 s, quieter than one-shots | L1 | re-worded for Phase 71 (M1): MUSIC_GAIN 0.9, still under the one-shots, the MUSIC slider scales it |
 | [51h-S2] | title into roller: no restart or stutter; fades on reaching the map | L2 | own row |
 | [51h-S3] | VIEW THE DEAD carries on; chevron back continues; account sheet keeps it playing | L3 | own row |
 | [51h-S4] | resumed delve fades on the map; BURY THEM restarts it from the top | L4 | own row |
@@ -386,7 +421,38 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [70-04-S5] | back with the ☰ over a store or stair prompt closes only the menu | L21 | own row |
 | [70-04-S6] | ☰ tap lands a typing combat round at once | L22 | own row |
 | [70-04-S7] | DEAD tab shows the HUD; room at L; VIEW THE DEAD shows no HUD or ☰ | L23 | own row |
+| [71-01-S1] | death quieter, footsteps louder; theme louder but under a footstep or UI tap | M1 | own row (re-words L1) |
+| [71-01-S2] | MASTER/MUSIC/EFFECTS under Sound; Sound Off hides and silences; On restores | M2 | own row |
+| [71-01-S3] | on the title, MUSIC and MASTER drags apply live | M3 | own row |
+| [71-01-S4] | EFFECTS release plays one tap; MASTER/MUSIC release nothing | M4 | own row |
+| [71-01-S5] | the three levels survive a force-close and relaunch | M5 | own row |
+| [71-01-S6] | text size L: slider rows readable and draggable; sheet scrolls to Version | M6 | own row |
+| [71-02-S1] | worn weapon: damage dice (+N) and usable-by above the upgrade line | M7 | own row |
+| [71-02-S2] | worn armour AR and durability; bag weapon/armour/cloak/jewel/staff match the store row | M8 | own row |
+| [71-02-S3] | store weapon/armour rows read the sheet's stats; food, repair, sealed scroll unchanged | M9 | own row (the "also worth a look" usable-by-before-compare note folded in) |
+| [71-02-S4] | text size L: stats wrap; actions and CANCEL reachable | M10 | own row (the "also worth a look" airy stat block note folded in as a finding) |
+| [71-03-S1] | STRIKE: actions dim, no shadow, no press; HOLD prompt; back on settle | M11 | own row |
+| [71-03-S2] | spam STRIKE: the first tap lands the round, no extra strike | M12 | own row |
+| [71-03-S3] | a foe or log tap mid-round lands the round; the aim does not change | M13 | own row (the log is the what-happened strip since 71-05; 71-05-S2's and 71-06-S3's strip taps merged into it) |
+| [71-03-S4] | Hamstring, Mark, Pommel Strike and Dirty Trick chips; Weaken on every foe | M14 | own row (if available) |
+| [71-03-S5] | ☰ mid-round lands the round first | L22, M11 | merged into 70-04-S6 (L22 still holds; a still-holds clause in M11) |
+| [71-04-S1] | long press: buzz, one card with name, family, HP, defence, attacks, abilities, resistances, effects, flavour; replaced by the next | M15 | own row |
+| [71-04-S2] | a short tap aims, a long press never does; no selection handles or context menu | M16 | own row |
+| [71-04-S3] | the card sits above the actions at M and L, holds and updates through rounds, a tap dismisses | M17 | own row (71-05-S4 merged into it: above the strip too) |
+| [71-04-S4] | last foe killed with the card up: it clears after its hold | M18 | own row (edge) |
+| [71-04-S5] | a long press mid-round shows the card and does not skip the round | M19 | own row (edge) |
+| [71-04-S6] | TalkBack "Details: <name>" raises the same card, aim unchanged | M20 | own row |
+| [71-04-S7] | Haptics Off: the long press works with no buzz | M21 | own row |
+| [71-05-S1] | 3+ foes at M and L: the strip above the buttons, last three lines, nothing covered | M22 | own row |
+| [71-05-S2] | RESOLVING pulses, only revealed lines; a mid-round strip tap lands the round, nothing opens | M23, M13 | split: the label and the revealed lines in M23; the strip tap merged into 71-03-S3 (M13) |
+| [71-05-S3] | strip, label, chip and fade match the mock | M24 | own row |
+| [71-05-S4] | the foe details card sits above the strip and the buttons | M17 | merged into 71-04-S3 |
+| [71-05-S5] | reduced motion: the strip shows each round complete, no pulse or rise | M25 | own row |
+| [71-06-S1] | the strip opens THE FIGHT SO FAR: every line, newest first under ROUND n, scrolls | M26 | own row |
+| [71-06-S2] | a line with dice reveals its roll in gold and hides it again; plain lines inert; CLOSE, scrim and back close it | M27 | own row |
+| [71-06-S3] | a strip tap mid-round lands the round and does not open the sheet | M13 | merged into 71-03-S3 |
+| [71-06-S4] | TalkBack names the strip and the dice lines; reduced motion opens and closes the sheet instantly | M28 | own row |
 
 ---
 
-**Tally (written 2026-09-24, Phase 70 fold the same day):** 0 walked. Phase 70 added section L (29 rows) and Z2, re-worded C1, C9, D1, D3, E2, E3 and E5, and superseded E1, E4 and B17. The batch is run at the milestone close per the deferred-UAT protocol; RELEASE-BLOCKING row F1 must pass before any production rollout.
+**Tally (written 2026-09-24, Phase 70 fold the same day; Phase 71 fold 2026-09-24):** 0 walked. Phase 70 added section L (29 rows) and Z2, re-worded C1, C9, D1, D3, E2, E3 and E5, and superseded E1, E4 and B17. Phase 71 (71-01 to 71-06) added section M (28 rows from 31 source items) and re-worded L1; it superseded no row. The batch is run at the milestone close per the deferred-UAT protocol; RELEASE-BLOCKING row F1 must pass before any production rollout.
