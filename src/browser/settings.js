@@ -1,12 +1,13 @@
 // src/browser/settings.js
 //
-// The single source of truth for the eight persisted settings (UX-07;
+// The single source of truth for the eleven persisted settings (UX-07;
 // DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
 // former control-bar side option, Phase 46 NAME-02 removed the on-screen
 // movement-control-scheme field — tap-to-move has been the only movement
 // surface since v1.4/v1.5; Phase 59 DRESS-05 added `dressing`, the Set
 // Dressing On/Off row; Phase 67 PGS-02 added the three Play Games fields
-// below) plus the pure text-scaling (UX-08) and
+// below; Phase 71 D-03 added the three volume levels) plus the pure
+// text-scaling (UX-08) and
 // confirm-before-quit-gate helpers. All persistence goes through
 // src/browser/storage.js's shared async abstraction (which itself installs
 // `window.mzStorage` for the classic non-module script) — never any raw
@@ -17,9 +18,9 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All eight fields are persisted as ONE JSON object under a single
+// All eleven fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never eight separate keys racing each other.
+// per settings change, never eleven separate keys racing each other.
 //
 // Phase 67 (PGS-02) fields:
 //   - `compete` (D-01, D-02): the Compete toggle, default ON on a fresh
@@ -27,6 +28,13 @@
 //   - `pgsWelcomed` (D-04): the one-time first-sign-in card has been shown.
 //   - `pgsDevSignedIn` (D-12): dev-only; seeds the in-memory fake Play Games
 //     provider as signed in, in the browser dev loop only — ignored on native.
+//
+// Phase 71 (POLISH-05, D-03) fields: `volMaster`, `volMusic`, `volEffects`
+// — the MASTER / MUSIC / EFFECTS volume sliders under the Sound row, each an
+// integer 0-100, default 100. src/browser/sfx.js#volumeLevels turns them into
+// gains (MASTER the device master, MUSIC times MUSIC_GAIN on the theme,
+// EFFECTS the one-shots' bus). They are validated by a predicate (an
+// integer from 0 to 100 inclusive) rather than an allowed-values list.
 //
 // Fail-open posture (matches engineAdapter.js's persist()/boot()):
 // a missing key, a blocked/private store, or a corrupt/malformed JSON blob
@@ -39,11 +47,14 @@
 // key at all reads as On (its default) through this exact merge, no
 // migration step needed either. Phase 67 (PGS-02): the same again for
 // `compete`, `pgsWelcomed` and `pgsDevSignedIn` — an old blob without them
-// reads their defaults (true / false / false), no migration.
+// reads their defaults (true / false / false), no migration. Phase 71
+// (D-03): the three volume levels read their default 100 from an old blob
+// through the same tolerant merge — and a non-integer, out-of-range or
+// string stored value reads 100 too — with no migration.
 
 import { getItem, setItem } from "./storage.js";
 
-/** Single versioned key all eight settings fields are persisted under. */
+/** Single versioned key all eleven settings fields are persisted under. */
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
 /**
@@ -58,6 +69,8 @@ export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
  * Phase 67 (PGS-02): `compete` (D-01, default true), `pgsWelcomed` (D-04,
  * default false) and `pgsDevSignedIn` (D-12, default false, browser dev loop
  * only) are appended after `dressing`, in that order.
+ * Phase 71 (D-03): `volMaster`, `volMusic` and `volEffects` (integers 0-100,
+ * default 100) are appended after `pgsDevSignedIn`, in that order.
  */
 export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
@@ -68,11 +81,20 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   compete: true,
   pgsWelcomed: false,
   pgsDevSignedIn: false,
+  volMaster: 100,
+  volMusic: 100,
+  volEffects: 100,
 });
 
-// Allowed value sets per field — writeSetting() validates against these
-// before persisting (T-04-04: an adversarial/malformed value like
-// textSize:'XL' can never reach storage).
+// Allowed values per field — writeSetting() validates against these before
+// persisting (T-04-04: an adversarial/malformed value like textSize:'XL' can
+// never reach storage). Each entry is either an allowed-values array (every
+// pre-Phase-71 field) or a predicate (Phase 71 D-03: the volume levels,
+// which accept only an integer from 0 to 100 inclusive — T-71-01).
+function isVolumeLevel(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 100;
+}
+
 const ALLOWED_VALUES = {
   sound: [true, false],
   haptics: [true, false],
@@ -82,15 +104,20 @@ const ALLOWED_VALUES = {
   compete: [true, false],
   pgsWelcomed: [true, false],
   pgsDevSignedIn: [true, false],
+  volMaster: isVolumeLevel,
+  volMusic: isVolumeLevel,
+  volEffects: isVolumeLevel,
 };
 
 function isValidSettingValue(key, value) {
+  if (!Object.prototype.hasOwnProperty.call(ALLOWED_VALUES, key)) return false;
   const allowed = ALLOWED_VALUES[key];
+  if (typeof allowed === "function") return allowed(value) === true;
   return Array.isArray(allowed) && allowed.includes(value);
 }
 
 /**
- * readSettings() — resolves the full eight-field settings object: persisted
+ * readSettings() — resolves the full eleven-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled

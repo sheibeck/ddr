@@ -319,9 +319,14 @@ test("sfx-settings: shell wiring — playForDispatch(/cuesForDispatch( each appe
   assert.ok(cuesIdx > dispatchIdx, "the deferred-cues call must also run AFTER the real dispatch");
 });
 
-test("sfx-settings: shell wiring — unlockSfx( and playUiTap( each appear exactly once", () => {
+// Phase 71 (D-03): playUiTap( gains exactly ONE more call site — the
+// EFFECTS slider's release preview, `if (key === "volEffects") playUiTap();`
+// (pinned in test/unit/settings-volume-shell.test.js). Every other tap sound
+// still comes from the one capture-phase pointerdown listener.
+test("sfx-settings: shell wiring — unlockSfx( appears exactly once; playUiTap( twice (the pointerdown tap + the Phase 71 EFFECTS preview)", () => {
   assert.equal((htmlStripped.match(/unlockSfx\(/g) || []).length, 1);
-  assert.equal((htmlStripped.match(/playUiTap\(/g) || []).length, 1);
+  assert.equal((htmlStripped.match(/playUiTap\(/g) || []).length, 2);
+  assert.equal((htmlStripped.match(/if \(key === "volEffects"\) playUiTap\(\);/g) || []).length, 1);
 });
 
 test("sfx-settings: shell wiring — the two pre-existing hapticForEvents(events) CALL SITES are untouched", () => {

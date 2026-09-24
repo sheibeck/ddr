@@ -50,6 +50,72 @@ export const CLIP_IDS = Object.freeze([
   "ui-tap",
 ]);
 
+// CLIP_GAIN — Phase 71 (POLISH-05, D-01): THE one hand-tunable per-clip
+// balance table, keyed by the sfx/ file names (the CLIP_IDS above). Each
+// one-shot voice plays through its own gain node at clipGain(id), then the
+// effects bus, then the device master — so a clip that is too loud or too
+// soft is fixed HERE, never by re-exporting its mp3. A clip with no entry
+// plays at the 1.0 default; values are capped at 2.0 (clipGain clamps) so no
+// entry can drive a voice into clipping. test/unit/sfx-levels.test.js pins
+// every key to a real CLIP_IDS id and every value into (0, 2].
+//
+// Starting values, from the 2026-09-24 Pixel 7 device round: the hero-death
+// cue (`death`, the `died` event) was too loud, the footsteps (dry and
+// water) too soft. `foe-die` is deliberately ABSENT — it is the foeKilled
+// cue, not the hero's death (R-03), so it keeps the 1.0 default.
+export const CLIP_GAIN = Object.freeze({
+  "walk1": 1.6,
+  "walk2": 1.6,
+  "walk3": 1.6,
+  "walk-water1": 1.6,
+  "walk-water2": 1.6,
+  "walk-water3": 1.6,
+  "death": 0.5,
+});
+
+// CLIP_GAIN_MAX — the per-clip cap (D-01).
+const CLIP_GAIN_MAX = 2.0;
+
+/**
+ * clipGain(id) — PURE. The per-voice gain for one clip: CLIP_GAIN[id]
+ * clamped into (0, CLIP_GAIN_MAX], or the 1.0 default for any clip with no
+ * entry, an unknown id, or a non-string. Own keys only, so an id like
+ * "toString" never reads the prototype. Never throws.
+ */
+export function clipGain(id) {
+  if (typeof id !== "string" || !Object.prototype.hasOwnProperty.call(CLIP_GAIN, id)) return 1.0;
+  const v = CLIP_GAIN[id];
+  if (typeof v !== "number" || !Number.isFinite(v) || v <= 0) return 1.0;
+  return Math.min(CLIP_GAIN_MAX, v);
+}
+
+/**
+ * volumeLevel(v) — internal. One 0-100 integer slider value as a gain in
+ * [0, 1]; anything else (missing, non-integer, out of range, a string, NaN)
+ * reads the 100 default, i.e. 1.0.
+ */
+function volumeLevel(v) {
+  return Number.isInteger(v) && v >= 0 && v <= 100 ? v / 100 : 1.0;
+}
+
+/**
+ * volumeLevels(settings) — PURE, exported. Phase 71 (D-03): the three
+ * player volume sliders (settings.js's volMaster / volMusic / volEffects,
+ * integers 0-100, default 100) as frozen gains { master, music, effects }.
+ * 0 is exact silence on that bus, 100 is unity. A missing or null settings
+ * object, or any invalid value, reads 1.0 — the same tolerant posture as
+ * settings.js's own validator (re-checked here, since a tampered blob must
+ * never over-drive the graph).
+ */
+export function volumeLevels(settings) {
+  const s = settings && typeof settings === "object" ? settings : {};
+  return Object.freeze({
+    master: volumeLevel(s.volMaster),
+    music: volumeLevel(s.volMusic),
+    effects: volumeLevel(s.volEffects),
+  });
+}
+
 // CLIP_GROUPS — group id -> ordered, frozen array of clip ids. Five
 // multi-clip groups get counter-driven variation (see createVariation() in
 // Task 2); the thirteen single-clip groups are one-element arrays so the
@@ -317,8 +383,11 @@ export function clipsForDispatch(actionType, events, ctx, variation = defaultVar
 //   load(handle, clipId)   -> Promise<buffer|null>    fetch + decode one
 //                             clip; null on any failure (missing file, bad
 //                             bytes, decode error).
-//   start(handle, buffer)  -> voice|null              start one voice off an
-//                             already-decoded buffer, immediately.
+//   start(handle, buffer, gain) -> voice|null         start one voice off an
+//                             already-decoded buffer, immediately. Phase 71
+//                             (D-01): the optional third `gain` is the
+//                             clip's CLIP_GAIN level (clipGain(id)); a
+//                             five-method fake may simply ignore it.
 //   stop(voice)             -> void                    stop one in-flight
 //                             voice.
 //   close(handle)            -> void                    tear the device down.
@@ -339,6 +408,15 @@ export function clipsForDispatch(actionType, events, ctx, variation = defaultVar
 //   fadeOut(handle, voice, ms)         -> void          fade the loop to
 //                             silence over `ms` then pause it; ms <= 0
 //                             pauses at once.
+//
+// Phase 71 (D-03) adds two more OPTIONAL methods, for the player's volume
+// sliders. A backend without them simply ignores the sliders:
+//
+//   setLevels(handle, { master, effects }) -> void     set the device master
+//                             gain and the one-shots' effects bus, live.
+//   setLoopLevel(handle, voice, gain)      -> void     set a live loop's
+//                             level (MUSIC_GAIN times the MUSIC slider); a
+//                             no-op while that loop is fading out.
 //
 // Every DEFAULT_BACKEND method individually swallows its own failure and
 // returns null/void instead of propagating a throw — sound is cosmetic
@@ -397,6 +475,19 @@ function playElement(handle, voice) {
   }
 }
 
+// Phase 71 (D-03): set one AudioParam at once — cancel any scheduled
+// automation, then pin the value at the context's current time. Never throws.
+function setParamNow(handle, param, value) {
+  try {
+    if (!param || typeof value !== "number" || !Number.isFinite(value) || value < 0) return;
+    const now = handle?.ctx?.currentTime ?? 0;
+    param.cancelScheduledValues(now);
+    param.setValueAtTime(value, now);
+  } catch {
+    // never throw.
+  }
+}
+
 function setMusicLevel(handle, voice, gain) {
   try {
     const param = voice.gainNode?.gain;
@@ -438,7 +529,18 @@ const DEFAULT_BACKEND = {
       }
       const masterGain = ctx.createGain();
       masterGain.connect(ctx.destination);
-      return { ctx, masterGain };
+      // Phase 71 (D-03): the effects bus — every one-shot voice (after its
+      // own CLIP_GAIN node) feeds this, and this feeds the master. The theme
+      // does NOT go through it (R-04): MASTER scales everything, EFFECTS the
+      // one-shots only, MUSIC the theme only.
+      let effectsGain = null;
+      try {
+        effectsGain = ctx.createGain();
+        effectsGain.connect(masterGain);
+      } catch {
+        effectsGain = null; // one-shots fall back to the master directly.
+      }
+      return { ctx, masterGain, effectsGain };
     } catch {
       return null;
     }
@@ -566,12 +668,27 @@ const DEFAULT_BACKEND = {
     }
   },
 
-  start(handle, buffer) {
+  start(handle, buffer, gain = 1) {
     try {
       if (!handle?.ctx || !buffer) return null;
-      const source = handle.ctx.createBufferSource();
+      const ctx = handle.ctx;
+      const source = ctx.createBufferSource();
       source.buffer = buffer;
-      source.connect(handle.masterGain || handle.ctx.destination);
+      // Phase 71 (D-01): source -> a per-voice gain at the clip's CLIP_GAIN
+      // level -> the effects bus (or the master, or the destination on an
+      // older handle). The returned voice is still the source node, so
+      // stop() and the FIFO are unchanged.
+      const out = handle.effectsGain || handle.masterGain || ctx.destination;
+      const level = typeof gain === "number" && Number.isFinite(gain) && gain >= 0 ? gain : 1;
+      let voiceGain = null;
+      try {
+        voiceGain = ctx.createGain();
+        voiceGain.gain.value = level;
+        voiceGain.connect(out);
+      } catch {
+        voiceGain = null; // no per-voice gain — the clip plays at unity.
+      }
+      source.connect(voiceGain || out);
       // No lead-in, no lookahead, no delay constant — starts at the
       // context's current time. Combat/rail pacing is Phase 58's concern,
       // not this backend's.
@@ -579,6 +696,28 @@ const DEFAULT_BACKEND = {
       return source;
     } catch {
       return null;
+    }
+  },
+
+  // Phase 71 (D-03): the MASTER and EFFECTS sliders, applied live.
+  setLevels(handle, levels) {
+    try {
+      setParamNow(handle, handle?.masterGain?.gain, levels?.master);
+      setParamNow(handle, handle?.effectsGain?.gain, levels?.effects);
+    } catch {
+      // never throw.
+    }
+  },
+
+  // Phase 71 (D-03): the MUSIC slider on a live loop. A loop that is fading
+  // out (pauseTimer set) is left alone, so a drag never cancels the fade.
+  setLoopLevel(handle, voice, gain) {
+    try {
+      if (!voice?.el || voice.pauseTimer) return;
+      if (typeof gain !== "number" || !Number.isFinite(gain) || gain < 0) return;
+      setMusicLevel(handle, voice, gain);
+    } catch {
+      // never throw.
     }
   },
 
@@ -644,6 +783,10 @@ export const VOICE_CAP = 8;
 //  - unlockInFlight: guards a second unlockSfx() call while backend.open()
 //    is still pending.
 //  - liveVoices: FIFO of currently-playing voices, oldest first.
+// Phase 71 (D-03): currentSettings also carries the three volume sliders
+// (volMaster / volMusic / volEffects); applyLevels() below pushes them to the
+// open device and the live loop whenever the mirror changes or a new device
+// opens.
 let currentSettings = null;
 let deviceHandle = null;
 const bufferCache = new Map();
@@ -652,6 +795,38 @@ const liveVoices = [];
 
 function soundIsOff() {
   return !!(currentSettings && currentSettings.sound === false);
+}
+
+/**
+ * applyLevels() — internal, Phase 71 (D-03). Pushes volumeLevels(currentSettings)
+ * to the open device (optional backend.setLevels: master + effects) and to a
+ * live loop on that device (optional backend.setLoopLevel at MUSIC_GAIN *
+ * music). A stopped or fading loop is already forgotten by stopMusic(), so it
+ * is never re-levelled. A backend without either method is a silent no-op.
+ * Never throws.
+ */
+function applyLevels() {
+  try {
+    if (!deviceHandle) return;
+    const backend = resolveBackend();
+    const levels = volumeLevels(currentSettings);
+    if (typeof backend.setLevels === "function") {
+      try {
+        backend.setLevels(deviceHandle, { master: levels.master, effects: levels.effects });
+      } catch {
+        // a level write is best effort.
+      }
+    }
+    if (musicVoice && musicHandle === deviceHandle && typeof backend.setLoopLevel === "function") {
+      try {
+        backend.setLoopLevel(deviceHandle, musicVoice, MUSIC_GAIN * levels.music);
+      } catch {
+        // a level write is best effort.
+      }
+    }
+  } catch {
+    // never throw.
+  }
 }
 
 /**
@@ -693,6 +868,9 @@ export async function unlockSfx() {
     }
     if (!handle) return; // audio unavailable — resting state, a later gesture can retry
     deviceHandle = handle;
+    // Phase 71 (D-03): the new device takes the saved slider levels at once,
+    // before any clip can play on it.
+    applyLevels();
 
     for (const clipId of CLIP_IDS) {
       try {
@@ -736,7 +914,9 @@ function playClips(clipIds) {
     try {
       const buffer = bufferCache.get(clipId);
       if (!buffer) continue;
-      const voice = backend.start(deviceHandle, buffer);
+      // Phase 71 (D-01): the clip's CLIP_GAIN level rides as the third
+      // argument; a five-method fake that ignores it still plays.
+      const voice = backend.start(deviceHandle, buffer, clipGain(clipId));
       if (!voice) continue;
       liveVoices.push(voice);
       while (liveVoices.length > VOICE_CAP) {
@@ -838,6 +1018,11 @@ export function stopAllSfx() {
  * unlockSfx() call — driven by the next user gesture — performs the open
  * and re-decode. This is what keeps "flip Sound on before any gesture"
  * silent-but-errorless instead of attempting a gesture-less open.
+ *
+ * Phase 71 (D-03): afterwards, for ANY settings, the volume sliders are
+ * applied live to the open device and a live loop (applyLevels) — this is
+ * how a slider drag reaches a playing theme. With no device open it does
+ * nothing; the next unlock applies the saved levels to the new device.
  */
 export function applySfxSettings(settings) {
   try {
@@ -860,6 +1045,7 @@ export function applySfxSettings(settings) {
       deviceHandle = null;
       bufferCache.clear();
     }
+    applyLevels();
   } catch {
     // never throw.
   }
@@ -869,7 +1055,8 @@ export function applySfxSettings(settings) {
 // ============================================================================
 // Quick task 260924-51h: the title theme. A looping music track on the same
 // device as the one-shots — same Sound gate, same master level, same
-// teardown. WHEN it plays is decided by the pure controller in
+// teardown. Phase 71 (D-02/D-03): its level is MUSIC_GAIN times the MUSIC
+// slider, re-applied live while the loop plays (applyLevels). WHEN it plays is decided by the pure controller in
 // src/browser/titleMusic.js; mazeworld.html wires the two together.
 // ============================================================================
 
@@ -879,10 +1066,12 @@ export function applySfxSettings(settings) {
 // one-shot. test/unit/sfx-assets.test.js pins sfx/ as 30 clips + this 1.
 export const MUSIC_IDS = Object.freeze(["theme"]);
 
-// MUSIC_GAIN — R-09: the loop sits below the one-shots. The clips feed the
-// device's masterGain at 1.0; the loop runs through its own gain node at
-// half that level into the same masterGain.
-export const MUSIC_GAIN = 0.5;
+// MUSIC_GAIN — R-09: the loop still sits below the one-shots' unity level.
+// Raised from 0.5 to 0.9 on the 2026-09-24 Pixel 7 device round (Phase 71
+// D-02: the theme was too soft). The loop runs through its own gain node
+// into the device's masterGain (not the effects bus, R-04); its live level is
+// MUSIC_GAIN times the player's MUSIC slider (volumeLevels().music, D-03).
+export const MUSIC_GAIN = 0.9;
 
 // Module state for the music half:
 //  - musicVoice: the live loop (the backend's voice), or null.
@@ -933,7 +1122,8 @@ export function startMusic(trackId = MUSIC_IDS[0]) {
       musicVoice = null;
       musicHandle = null;
     }
-    const voice = backend.startLoop(deviceHandle, trackId, MUSIC_GAIN);
+    // Phase 71 (D-03): the loop's level is MUSIC_GAIN times the MUSIC slider.
+    const voice = backend.startLoop(deviceHandle, trackId, MUSIC_GAIN * volumeLevels(currentSettings).music);
     if (voice) {
       musicVoice = voice;
       musicHandle = deviceHandle;
