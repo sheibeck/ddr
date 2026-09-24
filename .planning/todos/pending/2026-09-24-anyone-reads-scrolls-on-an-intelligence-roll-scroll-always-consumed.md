@@ -28,7 +28,7 @@ Today `canRead` lets only a Magic User, or someone with the Runes/Signs skill, r
 - **Magic Users always succeed.** They keep today's path unchanged: cast, plus the grimoire copy when the spell is learnable.
 - **Everyone else** (no Magic User class, no Runes/Signs) **makes an intelligence roll** against their own `c.intel`: a d20 checked against intel, reusing the existing check's shape (`resistRoll`: today d20 < intel; after the Phase 73 mirror, expressed roll-high). On a success, the scroll's spell is cast through the free-cast path (`scrollCast`). On a failure, nothing is cast.
 - **A bad failure is a FUMBLE (ruling 3):** a read that misses by more than half the required number backfires. The scroll's spell takes effect **on the reader instead of its target** (e.g. a Fireball burns the reader). Magic Users never fumble, because they always succeed.
-- **A fumbled beneficial scroll helps the enemy (ruled 2026-09-24).** A good-effect scroll (heal, Shield, Sense Presence and the like) that fumbles gives its effect to the enemy instead. User: "a good affect scroll that fumbles affects the enemy." Harmful scrolls hit the reader; helpful scrolls help the foe.
+- **A fumbled beneficial scroll helps the enemy (ruled 2026-09-24).** A good-effect scroll (heal, Shield, Sense Presence and the like) that fumbles gives its effect to the enemy instead. User: "a good affect scroll that fumbles affects the enemy." Harmful scrolls hit the reader; helpful scrolls help the foe. **Which foe: the TARGETED enemy** (user: "a shield scroll with a fumble means you shield the target enemy instead"). So a fumbled Shield scroll shields the foe you're targeting, and the fight UI should show that foe's new effect (CMBUI-13 indicators).
 - **The scroll is consumed on every attempt**, success or failure. This carries over from ruling 1 and was not revoked.
 - Narrate both outcomes, in voice. A failure should read as squinting at runes you can't make out while the scroll crumbles, not as a refusal.
 
@@ -36,7 +36,6 @@ Today `canRead` lets only a Magic User, or someone with the Runes/Signs skill, r
 - **The fumble arithmetic in the roll-high convention.** Phase 75 lands after the Phase 73 mirror, and the user reasons roll-high. The recommended reading is that the "required number" is the target T you must meet or beat, and a fumble is `T − roll > T / 2`, i.e. rolling below half the target.
   - Worked example: intel 14 today (roll-under, success on 1–13) becomes a roll-high target of 8+. A fumble is then a roll of 3 or less (misses 8 by 5 or more): 15% of reads, against 50% plain failures.
   - Beware: the same words read roll-under give different odds (for intel 14, only a natural 20 would fumble). Confirm the reading with the user and show both numbers.
-- **Which enemy** gets a fumbled good effect: the targeted foe, a random live foe, or every foe for a party-wide buff?
 - **A fumbled good scroll outside combat**, with no enemy present: it fizzles? (Recommended: it fizzles with a line saying the magic went looking for an enemy and found none.) And a map-reveal scroll: does it just fail?
 - **Multi-target scrolls** (area damage) on a fumble: the reader takes one hit, or every hit?
 - **A Pilfer reading a scroll:** does the RULES-09 fumble also apply (a 1 makes it explode for d10), or does the intelligence roll cover scrolls on its own?
