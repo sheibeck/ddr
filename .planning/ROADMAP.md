@@ -33,7 +33,7 @@ Full requirements: `.planning/REQUIREMENTS.md`.
 
 - [x] **Phase 65: Run Record & Personal Bests** - Every death records a durable, season-tagged run summary and updates an all-time personal-bests record that survives the graveyard trim (completed 2026-09-23)
 - [x] **Phase 66: Leaderboards Panel — Local** - The DEAD tab becomes the mock's Leaderboards panel, running fully offline across all seven boards on personal bests and the graveyard (completed 2026-09-23)
-- [ ] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle
+- [x] **Phase 67: Play Games Integration & Account Chip** - Opt-in, non-blocking Play Games Services v2 sign-in replaces the settings cog with an account chip and a Compete toggle (completed 2026-09-24)
 - [ ] **Phase 68: Global Boards, Submissions & "You Placed X"** - Signed-in players' deaths submit scores to seasoned global boards, feed the panel's ALL/FRIENDS views, and land a ranked quip on the death card
 - [ ] **Phase 69: Compliance & Device Close** - Privacy, Data Safety and the Play Console PGS runbook are ready for the user's console steps, and a signed AAB ships with the milestone's UAT batch
 
@@ -136,7 +136,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 67-08-PLAN.md — (wave 3) shell wiring: provider by platform, both chips, the sheet and back button, rail cards parked until the dungeon is visible, the boards identity seam, docs, and the last-wave debug APK (PGS-02, ACCT-01, ACCT-02)
+- [x] 67-08-PLAN.md — (wave 3) shell wiring: provider by platform, both chips, the sheet and back button, rail cards parked until the dungeon is visible, the boards identity seam, docs, and the last-wave debug APK (PGS-02, ACCT-01, ACCT-02)
 
 **Research**: yes — `gsd-phase-researcher` decides the plugin (maintenance, Capacitor 8 / AGP 8.13 compatibility, sign-in API surface), and — folded into this same pass rather than split into Phase 68 — settles the score-tag encoding format and LINEAGE's global form (per-combo boards vs. client-side grouping vs. local-only), since both hinge on the chosen plugin's leaderboard/score-tag API. Phase 68 implements against this phase's decisions with no separate research pass.
 **UI hint**: yes
@@ -348,7 +348,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 |-------|-----------|----------------|--------|-----------|
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
-| 67. Play Games Integration & Account Chip | v2.0 | 7/8 | In Progress|  |
+| 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/7 | Planned | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |

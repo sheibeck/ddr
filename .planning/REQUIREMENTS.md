@@ -31,8 +31,8 @@
 
 ### Google Play Games Services v2 (opt-in, non-blocking)
 
-- [ ] **PGS-01**: A Capacitor 8-compatible PGS v2 plugin is chosen (researched: `@modbender/capacitor-play-games` vs `@openforge/capacitor-game-connect` vs `capacitor-google-game-services` vs vendoring or forking one) and wired into the Android build. It adds no ads or analytics SDK.
-- [ ] **PGS-02**: PGS auto sign-in runs at launch without blocking play. Declining, having no Play Games profile, or a sign-in failure leaves the game fully playable.
+- [x] **PGS-01**: A Capacitor 8-compatible PGS v2 plugin is chosen (researched: `@modbender/capacitor-play-games` vs `@openforge/capacitor-game-connect` vs `capacitor-google-game-services` vs vendoring or forking one) and wired into the Android build. It adds no ads or analytics SDK.
+- [x] **PGS-02**: PGS auto sign-in runs at launch without blocking play. Declining, having no Play Games profile, or a sign-in failure leaves the game fully playable.
 - [ ] **PGS-03**: Each death of a signed-in, Compete-on player submits one score per global board to the current season's leaderboard IDs, with the row's details (adventurer name, race/sub/level, and the rest of what the panel shows) packed into the 64-char score tag.
 - [ ] **PGS-04**: A death while offline or signed-out-but-competing queues its submissions durably. They flush once connectivity and sign-in return, and no score is ever submitted twice.
 - [ ] **PGS-05**: The panel's ALL and FRIENDS views are fed by PGS top scores, the friends collection and the player's own rank. The global form of LINEAGE (per-combo boards, client-side grouping of fetched top scores, or local-only) is settled by the phase research.
@@ -45,8 +45,8 @@
 
 ### Account Chip
 
-- [ ] **ACCT-01**: The top-bar settings cog becomes an account chip: the Play Games avatar when signed in, a deliberate "nobody" glyph when signed out.
-- [ ] **ACCT-02**: Tapping the chip opens a menu with sign in / sign out, a Compete toggle (off means no submissions and no network calls) and the existing Settings entry.
+- [x] **ACCT-01**: The top-bar settings cog becomes an account chip: the Play Games avatar when signed in, a deliberate "nobody" glyph when signed out.
+- [x] **ACCT-02**: Tapping the chip opens a menu with sign in / sign out, a Compete toggle (off means no submissions and no network calls) and the existing Settings entry.
 
 ### Compliance & Close
 
@@ -90,10 +90,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOARD-06 | Phase 66 | Complete |
 | BOARD-07 | Phase 66 | Complete |
 | BOARD-08 | Phase 66 | Complete |
-| PGS-01 | Phase 67 | Pending |
-| PGS-02 | Phase 67 | Pending |
-| ACCT-01 | Phase 67 | Pending |
-| ACCT-02 | Phase 67 | Pending |
+| PGS-01 | Phase 67 | Complete |
+| PGS-02 | Phase 67 | Complete |
+| ACCT-01 | Phase 67 | Complete |
+| ACCT-02 | Phase 67 | Complete |
 | PGS-03 | Phase 68 | Pending |
 | PGS-04 | Phase 68 | Pending |
 | PGS-05 | Phase 68 | Pending |
