@@ -1,11 +1,12 @@
 // src/browser/settings.js
 //
-// The single source of truth for the five persisted UX settings (UX-07;
+// The single source of truth for the eight persisted settings (UX-07;
 // DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
 // former control-bar side option, Phase 46 NAME-02 removed the on-screen
 // movement-control-scheme field — tap-to-move has been the only movement
 // surface since v1.4/v1.5; Phase 59 DRESS-05 added `dressing`, the Set
-// Dressing On/Off row) plus the pure text-scaling (UX-08) and
+// Dressing On/Off row; Phase 67 PGS-02 added the three Play Games fields
+// below) plus the pure text-scaling (UX-08) and
 // confirm-before-quit-gate helpers. All persistence goes through
 // src/browser/storage.js's shared async abstraction (which itself installs
 // `window.mzStorage` for the classic non-module script) — never any raw
@@ -16,9 +17,16 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All five fields are persisted as ONE JSON object under a single
+// All eight fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never five separate keys racing each other.
+// per settings change, never eight separate keys racing each other.
+//
+// Phase 67 (PGS-02) fields:
+//   - `compete` (D-01, D-02): the Compete toggle, default ON on a fresh
+//     install; OFF means the Play Games provider is never called at all.
+//   - `pgsWelcomed` (D-04): the one-time first-sign-in card has been shown.
+//   - `pgsDevSignedIn` (D-12): dev-only; seeds the in-memory fake Play Games
+//     provider as signed in, in the browser dev loop only — ignored on native.
 //
 // Fail-open posture (matches engineAdapter.js's persist()/boot()):
 // a missing key, a blocked/private store, or a corrupt/malformed JSON blob
@@ -29,21 +37,27 @@
 // unknown keys — no migration needed. Phase 59 (DRESS-05): the same tolerant
 // posture covers `dressing` going forward — an OLD blob with no `dressing`
 // key at all reads as On (its default) through this exact merge, no
-// migration step needed either.
+// migration step needed either. Phase 67 (PGS-02): the same again for
+// `compete`, `pgsWelcomed` and `pgsDevSignedIn` — an old blob without them
+// reads their defaults (true / false / false), no migration.
 
 import { getItem, setItem } from "./storage.js";
 
-/** Single versioned key all five settings fields are persisted under. */
+/** Single versioned key all eight settings fields are persisted under. */
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
 /**
- * The five UX-07 fields and their defaults (04-UI-SPEC.md / 04-CONTEXT.md).
+ * The five UX-07 fields plus the three Phase 67 fields, and their defaults
+ * (04-UI-SPEC.md / 04-CONTEXT.md; 67-CONTEXT.md D-01, D-04, D-12).
  * Phase 59 (DRESS-05): `dressing` (Set Dressing On/Off, default true) is the
  * fifth field, persisted in this SAME blob as `sound` and every other field
  * — but fully independent of it: writing one never changes the other (see
  * the settings.test.js "independence" pin). It's read by
  * src/browser/dressing.js#createDressingArt's lazy-load controller, so
  * turning it Off both draws nothing AND never loads the 54 dressing images.
+ * Phase 67 (PGS-02): `compete` (D-01, default true), `pgsWelcomed` (D-04,
+ * default false) and `pgsDevSignedIn` (D-12, default false, browser dev loop
+ * only) are appended after `dressing`, in that order.
  */
 export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
@@ -51,6 +65,9 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   textSize: "M",
   confirmBeforeQuit: true,
   dressing: true,
+  compete: true,
+  pgsWelcomed: false,
+  pgsDevSignedIn: false,
 });
 
 // Allowed value sets per field — writeSetting() validates against these
@@ -62,6 +79,9 @@ const ALLOWED_VALUES = {
   textSize: ["S", "M", "L"],
   confirmBeforeQuit: [true, false],
   dressing: [true, false],
+  compete: [true, false],
+  pgsWelcomed: [true, false],
+  pgsDevSignedIn: [true, false],
 };
 
 function isValidSettingValue(key, value) {
@@ -70,7 +90,7 @@ function isValidSettingValue(key, value) {
 }
 
 /**
- * readSettings() — resolves the full five-field settings object: persisted
+ * readSettings() — resolves the full eight-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled

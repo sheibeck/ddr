@@ -213,7 +213,7 @@ test("UIF-05: the camp button's onclick wiring and short-state read stay singula
   assert.equal((CODE.match(/const campBtn = document\.getElementById\("btn-camp"\);/g) || []).length, 1);
 });
 
-test("UIF-05: settings.js has no trace of handedness and exposes exactly 5 fields, in order", async () => {
+test("UIF-05: settings.js has no trace of handedness and exposes exactly 8 fields, in order", async () => {
   const settingsPath = path.join(REPO_ROOT, "src", "browser", "settings.js");
   const settingsSrc = fs.readFileSync(settingsPath, "utf8");
   assert.doesNotMatch(settingsSrc, /handedness/i);
@@ -226,5 +226,10 @@ test("UIF-05: settings.js has no trace of handedness and exposes exactly 5 field
     "textSize",
     "confirmBeforeQuit",
     "dressing",
+    // Phase 67 (PGS-02): Compete (D-01), the first-sign-in flag (D-04) and
+    // the dev simulate-signed-in flag (D-12), appended in this order.
+    "compete",
+    "pgsWelcomed",
+    "pgsDevSignedIn",
   ]);
 });
