@@ -230,8 +230,8 @@ test("pins: the gesture listeners — pointerdown on #enc-panel gated on .cb-foe
   const down = sliceFrom(CODE, 'document.getElementById("enc-panel")?.addEventListener("pointerdown"', 500);
   assert.match(CODE, /closest\("\.cb-foe\[data-foe\]"\)/);
   assert.match(down, /foeLongPress\.down\(/);
-  assert.match(CODE, /document\.addEventListener\("pointermove", \(e\) => foeLongPress\.move\([^)]*\)\), true\);/);
-  assert.match(CODE, /document\.addEventListener\("pointerup", \(e\) => foeLongPress\.up\([^)]*\)\), true\);/);
+  assert.match(CODE, /document\.addEventListener\("pointermove", \(e\) => foeLongPress\.move\([^)]*\), true\);/);
+  assert.match(CODE, /document\.addEventListener\("pointerup", \(e\) => foeLongPress\.up\([^)]*\), true\);/);
   assert.match(CODE, /document\.addEventListener\("pointercancel", \(\) => foeLongPress\.cancel\(\), true\);/);
   assert.match(CODE, /document\.addEventListener\("scroll", \(\) => foeLongPress\.cancel\(\), true\);/);
   const click = sliceFrom(CODE, 'window.addEventListener("click", (e) => {', 300);
@@ -277,7 +277,7 @@ test("pins: renderRail keeps the foe card live in combat, lifts it over the acti
 });
 
 test("pins: CSS — the combat-legal rail rule and the foe card's no-selection rule; no new motion; no aria-disabled", () => {
-  const style = (HTML.match(/<style>([\s\S]*?)<\/style>/) || [])[1] || "";
+  const style = [...HTML.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join("\n");
   const over = (style.match(/^#mw-rail\[data-over="combat"\]\{([^}]*)\}/m) || [])[1];
   assert.ok(over, 'a #mw-rail[data-over="combat"] rule');
   assert.match(over, /z-index:8/);
