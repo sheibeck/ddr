@@ -229,7 +229,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 70-03-PLAN.md — (wave 2) ☰ shell: the ☰ wears the account face, ACCOUNT block in the dropdown, band-2 chip removed; SAVE & QUIT + two-tap ABANDON rows, Delve panel deleted, every row closes the menu first (POLISH-02, POLISH-03; D-03..D-07)
+- [x] 70-03-PLAN.md — (wave 2) ☰ shell: the ☰ wears the account face, ACCOUNT block in the dropdown, band-2 chip removed; SAVE & QUIT + two-tap ABANDON rows, Delve panel deleted, every row closes the menu first (POLISH-02, POLISH-03; D-03..D-07)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -397,7 +397,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
 | 68. Global Boards, Submissions & "You Placed X" | v2.0 | 7/7 | Complete    | 2026-09-24 |
 | 69. Compliance & Device Close | v2.0 | 4/4 | Complete    | 2026-09-24 |
-| 70. Device-Round Polish | v2.0 | 2/4 | In Progress|  |
+| 70. Device-Round Polish | v2.0 | 3/4 | In Progress|  |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
 | 63. Action Sheet, Combat Lock & Accessibility | v1.9 | 5/5 | Complete    | 2026-09-23 |
