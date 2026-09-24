@@ -21,7 +21,9 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripHtml } from "../../tools/ident-sweep.mjs";
-import { HUD_MENU_ITEMS } from "../../src/browser/hudMenu.js";
+import { HUD_MENU_ITEMS, HUD_MENU_GLYPH } from "../../src/browser/hudMenu.js";
+import { textScaleForSize } from "../../src/browser/settings.js";
+import { ACCOUNT_COPY } from "../../content/account.js";
 import { COUNTER_SLOT_CH, identityParts, identityLine } from "../../src/browser/hudBands.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
@@ -80,13 +82,17 @@ test("(2) the ☰ sits on band 2, outside .mw-hud-counters' clipping box: the ba
     assert.match(countersOnly, new RegExp(`id="${id}"`), `#${id} must sit inside the counters-only slice`);
   }
   assert.doesNotMatch(countersOnly, /mw-hud-menu/, "the counters slice must carry no mw-hud-menu token");
-  // Phase 67 (ACCT-01, D-05): the account chip sits between the counters
-  // and the menu wrap (immediately left of the ☰), never inside the
-  // counters' clipping box.
-  const chipIdx = band2Slice.indexOf('id="mw-acct-chip"');
-  const lastCounterIdx = band2Slice.indexOf('id="m-rations"');
-  assert.ok(chipIdx !== -1, "#mw-acct-chip must sit on band 2");
-  assert.ok(lastCounterIdx < chipIdx && chipIdx < wrapIdx, "#mw-acct-chip sits after the counters and before the menu wrap");
+  // Phase 70 (POLISH-02, D-03, superseding Phase 67 D-05): the band-2
+  // account chip and its actions wrapper are retired. The ☰ wrap directly
+  // follows the counters again (the Phase 57 shape): between the counters'
+  // closing tag and the wrap there is only whitespace and comments.
+  const stripped = band2Slice.replace(/<!--[\s\S]*?-->/g, "");
+  assert.match(stripped, /<\/div>\s*<div class="mw-hud-menu-wrap">/, "the menu wrap directly follows the counters' closing tag");
+  const countersBlock = stripped.slice(stripped.indexOf('class="mw-hud-counters"'), stripped.indexOf('class="mw-hud-menu-wrap"'));
+  assert.equal((countersBlock.match(/<div\b/g) || []).length, (countersBlock.match(/<\/div>/g) || []).length, "no extra wrapper opens between the counters and the ☰ wrap");
+  for (const token of ["mw-acct-chip", "mw-hud-actions", "mw-acct-face"]) {
+    assert.doesNotMatch(stripped, new RegExp(token), `band 2 carries no ${token} token`);
+  }
 });
 
 // ─── (3) the four menu rows match HUD_MENU_ITEMS in order ───────────────
@@ -111,12 +117,12 @@ test("(3) the four menu rows match HUD_MENU_ITEMS in order: id, label and glyph 
 
 test("(4) the menu, the ☰ and the scrim are outside .mw-maze-viewport's hit path: none of their ids/row ids appear in the viewport slice; all precede <main class=\"mw-screens\">; the gesture tracker still binds pointerdown to its viewport local alone", () => {
   const viewportRegion = sliceBetween(HTML, '<div class="mw-maze-viewport" id="mw-maze-viewport">', "<!-- DR5: the encounter/feature-event panel");
-  // Phase 67 (ACCT-01): the account chip joins both id lists.
-  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn", "mw-acct-chip"]) {
+  // Phase 70 (D-04): the ACCOUNT host inside the dropdown joins both id lists.
+  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn", "mw-hud-menu-acct"]) {
     assert.doesNotMatch(viewportRegion, new RegExp(`id="${id}"`), `#${id} must not appear inside the viewport`);
   }
   const mainIdx = HTML.indexOf('<main class="mw-screens"');
-  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-acct-chip"]) {
+  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-hud-menu-acct"]) {
     const idx = HTML.indexOf(`id="${id}"`);
     assert.ok(idx !== -1 && idx < mainIdx, `#${id} must precede <main class="mw-screens">`);
   }
@@ -128,7 +134,7 @@ test("(4) the menu, the ☰ and the scrim are outside .mw-maze-viewport's hit pa
 
 // ─── (5) the z-ladder ────────────────────────────────────────────────────
 
-test("(5) the z-ladder: rail (4) < scrim (5) < menu wrap (6) < overlay (8); .mw-hud, .mw-hud-band2 and .mw-stage declare no z-index and no transform", () => {
+test("(5) the z-ladder: rail (4) < scrim (5) < menu wrap (6) < overlay (8); .mw-hud, .mw-hud-band2 and .mw-stage declare no z-index and no transform (Phase 70 D-03: the band-2 actions wrapper is retired, so it is no longer listed)", () => {
   const railRule = ruleFor("\\.mw-rail");
   const scrimRule = ruleFor("\\.mw-hud-menu-scrim");
   const wrapRule = ruleFor("\\.mw-hud-menu-wrap");
@@ -147,8 +153,6 @@ test("(5) the z-ladder: rail (4) < scrim (5) < menu wrap (6) < overlay (8); .mw-
     [".mw-hud", ruleFor("\\.mw-hud")],
     [".mw-hud-band2", ruleFor("\\.mw-hud-band2")],
     [".mw-stage", ruleFor("\\.mw-stage")],
-    // Phase 67 (ACCT-01): the group wrapping the account chip and the ☰ wrap.
-    [".mw-hud-actions", ruleFor("\\.mw-hud-actions")],
   ]) {
     assert.doesNotMatch(rule, /z-index/, `${selector} must declare no z-index`);
     assert.doesNotMatch(rule, /transform/, `${selector} must declare no transform`);
@@ -368,7 +372,7 @@ test("(13) BEHAVIOUR + structural: window.__mzShowTab(\"dead\") writes data-offt
 
 // ─── (14) the width budget at text size M fits a 411px Pixel 7 ──────────
 
-test("(14) the width budget at text size M fits a 411px Pixel 7 (band-2 padding/gap, counters gap, item gap, the ☰'s width minus its negative inline-end margin, the account chip's footprint, COUNTER_SLOT_CH's per-id slots)", () => {
+test("(14) the width budget at text sizes S/M/L (band-2 padding/gap, counters gap, item gap, the ☰'s width minus its negative inline-end margin, COUNTER_SLOT_CH's per-id slots): S 336.4 and M 377.8 fit a 411px Pixel 7, L is 446.8 (the pre-Phase-67 figure)", () => {
   const LABELS = ["DEPTH", "DAY", "SQUARES", "RATIONS"];
   const LABEL_ADVANCE_PX = 6.5; // Press Start 2P, 1em advance per glyph
   const NUMBER_ADVANCE_PX = 16 * 0.6; // Courier Prime Bold, 0.6em advance per digit
@@ -385,6 +389,9 @@ test("(14) the width budget at text size M fits a 411px Pixel 7 (band-2 padding/
   const countersGapMatch = countersRule.match(/gap:(\d+)px/);
   assert.ok(countersGapMatch, "counters gap not found");
   const countersGap = Number(countersGapMatch[1]);
+  // Phase 70 (D-03): the band-2 account chip is retired, so the counters'
+  // gap is back to its pre-Phase-67 8px and the budget has no chip term.
+  assert.equal(countersGap, 8, "the counters' gap is back to 8px");
 
   const itemRule = ruleFor("\\.mw-hud-item");
   const itemGapMatch = itemRule.match(/gap:(\d+)px/);
@@ -397,22 +404,6 @@ test("(14) the width budget at text size M fits a 411px Pixel 7 (band-2 padding/
   const btnMarginMatch = btnRule.match(/margin:-?\d+px -(\d+)px/);
   assert.ok(btnWidthMatch && btnMarginMatch, "☰ button width/margin not found");
   const btnFootprint = Number(btnWidthMatch[1]) - Number(btnMarginMatch[1]);
-
-  // Phase 67 (ACCT-01, D-05): the account chip immediately left of the ☰.
-  // Its footprint is width + margin-left + margin-right (the margin
-  // shorthand's 4th and 2nd values); its negative margin-left overlaps the
-  // band gap, which is still counted once. The chip's wrapping group
-  // (.mw-hud-actions) must declare no gap of its own.
-  const chipRule = ruleFor("\\.mw-acct-chip");
-  const chipWidth = Number((chipRule.match(/(?:^|;)width:(\d+)px/) || [])[1]);
-  const chipHeight = Number((chipRule.match(/(?:^|;)height:(\d+)px/) || [])[1]);
-  assert.ok(chipWidth >= 44 && chipHeight >= 44, `the account chip must be at least 44×44 (got ${chipWidth}×${chipHeight})`);
-  const chipMarginMatch = chipRule.match(/(?:^|;)margin:([^;]+)/);
-  assert.ok(chipMarginMatch, "account chip margin shorthand not found");
-  const chipMargins = chipMarginMatch[1].trim().split(/\s+/).map((v) => parseFloat(v));
-  assert.equal(chipMargins.length, 4, "the account chip's margin shorthand must carry four values");
-  const chipFootprint = chipWidth + chipMargins[3] + chipMargins[1];
-  assert.doesNotMatch(ruleFor("\\.mw-hud-actions"), /(?:^|;)gap:/, ".mw-hud-actions must declare no gap");
 
   // Slot widths: from COUNTER_SLOT_CH (in ch == digits, at NUMBER_ADVANCE_PX
   // per digit) — the shell's own CSS min-width rules must equal these.
@@ -435,26 +426,21 @@ test("(14) the width budget at text size M fits a 411px Pixel 7 (band-2 padding/
   const itemGaps = 3 * countersGap;
 
   function totalAt(scale) {
-    return (
-      labelsTotalPx * scale +
-      numbersTotalPx * scale +
-      labelNumberGaps * scale +
-      itemGaps +
-      bandHPadding +
-      bandGap +
-      chipFootprint +
-      btnFootprint
-    );
+    return labelsTotalPx * scale + numbersTotalPx * scale + labelNumberGaps * scale + itemGaps + bandHPadding + bandGap + btnFootprint;
   }
 
-  const totalM = totalAt(1);
+  const totalS = totalAt(textScaleForSize("S"));
+  const totalM = totalAt(textScaleForSize("M"));
+  const totalL = totalAt(textScaleForSize("L"));
+  assert.equal(totalS.toFixed(1), "336.4");
+  assert.equal(totalM.toFixed(1), "377.8");
+  assert.equal(totalL.toFixed(1), "446.8");
+  assert.ok(totalS <= 411, `band 2's width budget at S (${totalS.toFixed(1)}px) must fit a 411px Pixel 7`);
   assert.ok(totalM <= 411, `band 2's width budget at M (${totalM.toFixed(1)}px) must fit a 411px Pixel 7`);
   // eslint-disable-next-line no-console
-  console.log(`hud-menu-layout (14): band 2 at M computes to ${totalM.toFixed(1)}px of 411 (account chip footprint ${chipFootprint}px).`);
-
-  const totalL = totalAt(1.25);
+  console.log(`hud-menu-layout (14): band 2 computes to S ${totalS.toFixed(1)}px / M ${totalM.toFixed(1)}px of 411.`);
   // eslint-disable-next-line no-console
-  console.log(`hud-menu-layout (14): band 2 at L (×1.25) computes to ${totalL.toFixed(1)}px — logged only, the deferred device check.`);
+  console.log(`hud-menu-layout (14): band 2 at L computes to ${totalL.toFixed(1)}px — the pre-Phase-67 figure, logged and pinned (the device check).`);
 });
 
 // ─── (15) BEHAVIOUR: band 1 through the bridge ───────────────────────────
@@ -465,4 +451,62 @@ test("(15) BEHAVIOUR: paint() writes identityParts(c).name into #mw-hud-name, id
   assert.equal(doc.elementsById.get("mw-hud-name").textContent, parts.name);
   assert.equal(doc.elementsById.get("mw-hud-line").textContent, parts.line);
   assert.equal(doc.elementsById.get("mw-hud-line").title, identityLine(states.thief.c));
+});
+
+// ─── (16) Phase 70 (POLISH-02, D-03/D-04): the account face and block ────
+
+test("(16) the ☰ wears the account face and the dropdown opens on the ACCOUNT block: the host is #mw-hud-menu's first child with its group aria; the static face is the plain ☰ (data-state menu); the avatar-face rule keeps the 34px box; the dropdown is at most 288px wide, fits 411px and scrolls inside itself", () => {
+  // The ACCOUNT host is the dropdown's first child.
+  const menuOpen = '<div class="mw-hud-menu" id="mw-hud-menu" role="menu" aria-label="Map menu" data-open="0">';
+  const menuIdx = HTML.indexOf(menuOpen);
+  assert.ok(menuIdx !== -1, "the dropdown's opening tag");
+  const afterOpen = HTML.slice(menuIdx + menuOpen.length).replace(/^(\s|<!--[\s\S]*?-->)*/, "");
+  assert.ok(
+    afterOpen.startsWith('<div class="mw-hud-menu-acct" id="mw-hud-menu-acct" role="group" aria-label="Play Games account"></div>'),
+    `the ACCOUNT host must be the dropdown's first child, got: ${afterOpen.slice(0, 120)}`,
+  );
+  assert.equal((HTML.match(/id="mw-hud-menu-acct"/g) || []).length, 1);
+
+  // The static face: the plain ☰, labelled Menu (the signed-out label).
+  const face = HTML.match(/<span class="mw-hud-menu-face" data-state="menu" aria-hidden="true">&#(\d+);<\/span>/);
+  assert.ok(face, 'the static ☰ face carries data-state="menu"');
+  assert.equal(String.fromCodePoint(Number(face[1])), HUD_MENU_GLYPH);
+  assert.match(HTML, /id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"/);
+  assert.equal(ACCOUNT_COPY.menuLabel.plain, "Menu");
+
+  // The avatar face: border:0 and the chip avatar's gold on-ring; the base
+  // face stays 34×34 so the button never changes size between faces.
+  const avatar = ruleFor('\\.mw-hud-menu-face\\[data-state="avatar"\\]');
+  assert.match(avatar, /(?:^|;)border:0(?:;|$)/);
+  assert.match(avatar, /box-shadow:inset 0 0 0 1px rgba\(0,0,0,\.5\),0 0 0 1px #e8c97a/);
+  const base = ruleFor("\\.mw-hud-menu-face");
+  assert.match(base, /(?:^|;)width:34px/);
+  assert.match(base, /(?:^|;)height:34px/);
+
+  // The dropdown: min(288px, 100vw - 40px) wide, which at 411px is at most
+  // 411 − band 2's 14px right padding − a 12px margin; it scrolls inside
+  // itself under a max-height.
+  const menuRule = ruleFor("\\.mw-hud-menu(?!-)");
+  const width = menuRule.match(/(?:^|;)width:min\((\d+)px,calc\(100vw - (\d+)px\)\)/);
+  assert.ok(width, "the dropdown's width is min(<px>, calc(100vw - <px>))");
+  assert.equal(Number(width[1]), 288);
+  const atPixel7 = Math.min(Number(width[1]), 411 - Number(width[2]));
+  assert.ok(atPixel7 <= 411 - 14 - 12, `the dropdown (${atPixel7}px) must fit 385px on a Pixel 7`);
+  assert.doesNotMatch(menuRule, /min-width:/, "the fixed width replaces the old min-width");
+  assert.match(menuRule, /(?:^|;)max-height:calc\(/);
+  assert.match(menuRule, /(?:^|;)overflow-y:auto/);
+  assert.match(menuRule, /(?:^|;)overscroll-behavior:contain/);
+
+  // The ACCOUNT block's own inset and divider; no row is :first-child now.
+  const acct = ruleFor("\\.mw-hud-menu-acct");
+  assert.match(acct, /padding:0 14px/);
+  assert.match(acct, /border-bottom:2px solid/);
+  assert.doesNotMatch(HTML, /^\.mw-hud-menu-item:first-child\{/m, "the dead :first-child border reset is gone");
+
+  // 44px rows: the ACCOUNT block reuses the sheet's rows.
+  const pxOf = (rule, prop) => Number((rule.match(new RegExp(`(?:^|;|\\s)${prop}:(\\d+)px`)) || [])[1]);
+  assert.ok(pxOf(ruleFor("\\.mw-acct-id"), "min-height") >= 44);
+  assert.ok(pxOf(ruleFor("\\.mw-acct-action"), "min-height") >= 48);
+  assert.ok(pxOf(ruleFor("\\.mw-acct-opt"), "min-height") >= 48);
+  assert.ok(pxOf(ruleFor("\\.mw-hud-menu-item"), "min-height") >= 48);
 });

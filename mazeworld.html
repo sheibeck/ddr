@@ -1044,7 +1044,7 @@ html,body{height:100%}
 .mw-hud-wpfill.mid{background:#e8c97a}
 .mw-hud-wpfill.low{background:#e05a48}
 .mw-hud-band2{display:flex;align-items:center;gap:10px;padding:8px 14px 9px}
-.mw-hud-counters{flex:1;min-width:0;display:flex;gap:7px;align-items:baseline;overflow:hidden;flex-wrap:nowrap}
+.mw-hud-counters{flex:1;min-width:0;display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap}
 .mw-hud-item{
   font-family:var(--disp);font-size:var(--mw-font-hud-label);letter-spacing:0;
   text-transform:uppercase;color:#9a8f76;
@@ -1075,23 +1075,25 @@ html,body{height:100%}
 .mw-hud-menu-btn{width:48px;height:48px;margin:-7px -8px -7px 0;padding:0;border:0;background:transparent;box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center}
 .mw-hud-menu-face{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;line-height:1;color:#e8c97a;background:#241d12;border:2px solid #6b5c3c;box-shadow:0 3px 0 #0d0b08}
 .mw-hud-menu-btn[aria-expanded="true"] .mw-hud-menu-face{background:#e8c97a;color:#14110c}
-/* Phase 67 (ACCT-01, D-05/D-07): the Play Games account chip, immediately
-   left of the ☰ inside .mw-hud-actions. The group declares no gap,
-   z-index, transform or position, so the ☰ wrap's z-index 6 still competes
-   at header level and the z-ladder above is unchanged. Width budget (see
-   test/unit/hud-menu-layout.test.js (14)): the chip's 44px hit box overlaps
-   band 2's otherwise-empty 10px gap through margin-left:-10px, so it costs
-   34px; .mw-hud-counters' gap dropped 8px -> 7px to pay back the last 3px,
-   keeping band 2 inside a 411px Pixel 7 at text size M (408.8px). The -5px
-   vertical margins keep band 2's height equal to the ☰'s outer 34px, and
-   min-height overrides the generic button's 48px floor for the same reason.
-   The chip keeps the ☰'s flat look: no press jump, no hover fill.
+/* Phase 70 (POLISH-02, D-03, superseding Phase 67 D-05): the ☰ button
+   wears the Play Games account face. Signed in, .mw-hud-menu-face carries
+   the initials avatar (data-state="avatar", painted by
+   src/browser/accountChip.js#renderMenuFace): border:0 plus the chip
+   avatar's gold on-ring, so its 34px outer box never changes between
+   faces. Signed out, signing in or Compete OFF it keeps the plain ☰
+   (data-state="menu", the rule above). The separate band-2 account chip is
+   retired (greenfield, no dual path), so band 2 is back to its Phase 57
+   shape: the counters, then the ☰ wrap, with the counters' gap back at 8px
+   (test/unit/hud-menu-layout.test.js (14): S 336.4 / M 377.8 / L 446.8px).
+   The .mw-acct-chip rules below now serve the title screen's corner chip
+   only; it keeps the ☰'s flat look (no press jump, no hover fill), and
+   min-height keeps its 44px target from growing to the generic 48px.
    Faces (data-state on .mw-acct-face, rendered by src/browser/accountChip.js):
    "avatar" = initials on an inline background plus the mock's gold on-ring;
    "nobody" = a hollow square with a dim ? (deliberate, never broken);
    "pending" = the nobody face, dimmed. */
-.mw-hud-actions{display:flex;align-items:center;flex:none}
-.mw-acct-chip{width:44px;height:44px;min-height:44px;min-width:44px;margin:-5px 0 -5px -10px;padding:0;border:0;background:transparent;box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center;flex:none}
+.mw-hud-menu-face[data-state="avatar"]{border:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),0 0 0 1px #e8c97a}
+.mw-acct-chip{width:44px;height:44px;min-height:44px;min-width:44px;margin:0;padding:0;border:0;background:transparent;box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center;flex:none}
 .mw-acct-chip:active:not(:disabled){transform:none;box-shadow:none}
 .mw-acct-chip:hover:not(:disabled){background:transparent}
 .mw-acct-face{width:34px;height:34px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -1109,11 +1111,29 @@ html,body{height:100%}
    through one). The base rule below carries the CLOSE transition (120ms
    ease-in, matching every other D-05 surface's close); `[data-open="1"]`
    carries the OPEN transition (160ms ease-out, the mock's own `.16s`) —
-   `visibility` flips only at the end of each. */
-.mw-hud-menu{position:absolute;right:0;top:calc(100% + 7px);min-width:168px;display:flex;flex-direction:column;background:#1b170f;border:2px solid #6b5c3c;box-shadow:0 6px 0 rgba(8,7,5,.6);visibility:hidden;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .12s ease-in,transform .12s ease-in,visibility 0s .12s}
+   `visibility` flips only at the end of each.
+   Phase 70 (D-04/D-06): the dropdown now opens on the ACCOUNT block and
+   ends with SAVE & QUIT and ABANDON THIS CHARACTER, so it has a fixed
+   width, min(288px, 100vw - 40px), which fits a 411px Pixel 7 inside
+   band 2's 14px right padding plus a 12px margin, and it scrolls inside
+   itself when taller than the room below the header. The max-height is the
+   viewport minus the header's worst case at text size L (band 1 9+10px
+   padding plus the 13px x1.25 identity line, ~21px; the 4px HP strip;
+   band 2 8+34+9px; the 3px border: ~98px), the 7px offset, the tab bar
+   (2px border + 56px tab + 8px padding) and a small margin: 180px in all,
+   plus both safe-area insets. overscroll-behavior keeps a fling from
+   scrolling the screen behind it. */
+.mw-hud-menu{position:absolute;right:0;top:calc(100% + 7px);width:min(288px,calc(100vw - 40px));max-height:calc(100vh - 180px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;background:#1b170f;border:2px solid #6b5c3c;box-shadow:0 6px 0 rgba(8,7,5,.6);visibility:hidden;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .12s ease-in,transform .12s ease-in,visibility 0s .12s}
 .mw-hud-menu[data-open="1"]{visibility:visible;opacity:1;transform:none;pointer-events:auto;transition:opacity .16s ease-out,transform .16s ease-out,visibility 0s}
 .mw-hud-menu-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:var(--disp);font-size:7.5px;letter-spacing:0;line-height:1.6;padding:13px 14px;min-height:48px;color:#e6ddc6;background:#1b170f;border:0;border-top:2px solid #241f16;border-radius:0;box-shadow:none}
-.mw-hud-menu-item:first-child{border-top:0}
+/* Phase 70 (D-04): the ACCOUNT block (#mw-hud-menu-acct) is the dropdown's
+   first child, rendered by src/browser/accountChip.js#renderAccountMenu
+   with the account sheet's own .mw-acct-* rows (identity, the one action,
+   the helper line, Compete ON/OFF), so no menu row is ever :first-child
+   now and the old border-top reset is gone. The block carries the rows'
+   14px inset and a divider before MARKS; flex:none keeps the scrolling
+   dropdown from squeezing it. */
+.mw-hud-menu-acct{flex:none;padding:0 14px;border-bottom:2px solid #3a3226}
 .mw-hud-menu-glyph{flex:none;width:18px;height:14px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);line-height:1}
 .mw-hud-menu-glyph[data-glyph="marks"]{color:#e8c97a;font-size:13px}
 .mw-hud-menu-glyph[data-glyph="centre"]{color:#8fb08a;font-size:14px}
@@ -1395,10 +1415,11 @@ body[data-boards-entry="title"] #mw-rail{display:none}
 }
 /* Phase 67 (ACCT-01, D-06): the account chip in the title screen's
    top-right corner, clear of the status bar (safe-area top inset), above
-   the art/scrim and .mw-title-body (z 1). margin:0 cancels the band-2
-   chip's overlap margins. The signed-out/pending faces get a dark fill here
+   the art/scrim and .mw-title-body (z 1). Phase 70 (D-03): the band-2 chip
+   is retired, so .mw-acct-chip itself declares margin:0 and this rule no
+   longer overrides it. The signed-out/pending faces get a dark fill here
    only, so the hollow square still reads against the splash art. */
-.mw-title-acct{position:absolute;top:calc(12px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));right:12px;z-index:2;margin:0}
+.mw-title-acct{position:absolute;top:calc(12px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));right:12px;z-index:2}
 .mw-title-acct .mw-acct-face:not([data-state="avatar"]){background:rgba(8,7,5,.72)}
 .mw-title-name{
   font-family:var(--disp);font-weight:400;font-size:clamp(20px,6vw,28px);
@@ -1822,8 +1843,9 @@ body[data-boards-entry="title"] #mw-rail{display:none}
      (.mw-legend-sheet/-scrim/-panel/-head/-close, above). Its rows are
      rendered by src/browser/accountChip.js into #mw-acct-rows, and the title
      text comes from content through the module script, so the markup carries
-     none. Opened by either account chip (#mw-acct-chip on HUD band 2,
-     #mw-title-acct-chip on the title screen). -->
+     none. Phase 70 (D-03/D-04): opened only from the title screen's corner
+     chip (#mw-title-acct-chip); in the dungeon the same rows live in the ☰
+     dropdown's ACCOUNT block (#mw-hud-menu-acct). -->
 <div id="mw-acct-sheet" class="mw-legend-sheet mw-acct-sheet" hidden>
   <div class="mw-legend-scrim" id="mw-acct-scrim"></div>
   <div class="mw-legend-panel" role="dialog" aria-labelledby="mw-acct-title">
@@ -1910,23 +1932,24 @@ body[data-boards-entry="title"] #mw-rail{display:none}
              just the label+number now (see .mw-hud-rations CSS comment). -->
         <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
       </div>
-      <div class="mw-hud-actions">
-      <!-- Phase 67 (ACCT-01, D-05/D-07): the Play Games account chip sits
-           immediately left of the hamburger button. The hamburger, its
-           dropdown and its four legacy row ids are unchanged. The static
-           face below is the deliberate "nobody" first paint; the real face
-           is rendered by src/browser/accountChip.js through the module
-           script. -->
-      <button type="button" class="mw-acct-chip" id="mw-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Play Games account"><span class="mw-acct-face" data-state="nobody" aria-hidden="true"><span class="mw-acct-glyph">?</span></span></button>
       <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the hamburger menu. The four
            rows keep the legacy chip ids (mw-chip-marks, mw-chip-centre,
            btn-camp, mw-gear-btn) so the classic script's existing listener
            lines (openMarksLegend, centerMap, openCampSheet,
-           openSettingsSheet) route unchanged — see src/browser/hudMenu.js's
-           HUD_MENU_ITEMS for the label/glyph/colour source of truth. -->
+           openSettingsSheet) keep their handlers — see
+           src/browser/hudMenu.js's HUD_MENU_ITEMS for the label/glyph/colour
+           source of truth.
+           Phase 70 (POLISH-02, D-03/D-04, superseding Phase 67 D-05): the
+           button wears the Play Games account face (the initials avatar
+           when signed in, this static plain ☰ otherwise; painted by
+           src/browser/accountChip.js#renderMenuFace through the module
+           script), and the dropdown opens on the ACCOUNT block (the
+           group host below, rendered by renderAccountMenu). The separate
+           band-2 account chip is retired. -->
       <div class="mw-hud-menu-wrap">
-        <button type="button" class="mw-hud-menu-btn" id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"><span class="mw-hud-menu-face" aria-hidden="true">&#9776;</span></button>
+        <button type="button" class="mw-hud-menu-btn" id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"><span class="mw-hud-menu-face" data-state="menu" aria-hidden="true">&#9776;</span></button>
         <div class="mw-hud-menu" id="mw-hud-menu" role="menu" aria-label="Map menu" data-open="0">
+          <div class="mw-hud-menu-acct" id="mw-hud-menu-acct" role="group" aria-label="Play Games account"></div>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-marks"><span class="mw-hud-menu-glyph" data-glyph="marks" aria-hidden="true">&#9672;</span><span class="mw-hud-menu-label">MARKS</span></button>
           <!-- USER RULING 2026-09-22: "CENTRE MAP" (not the shipped chip's
                "CENTRE") — the menu opens from every tab now, so the row
@@ -1937,7 +1960,6 @@ body[data-boards-entry="title"] #mw-rail{display:none}
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="btn-camp"><span class="mw-hud-menu-glyph" data-glyph="camp" aria-hidden="true">&#9790;</span><span class="mw-hud-menu-label">MAKE CAMP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn"><span class="mw-hud-menu-glyph" data-glyph="settings" aria-hidden="true">&#9881;</span><span class="mw-hud-menu-label">SETTINGS</span></button>
         </div>
-      </div>
       </div>
     </div>
     <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the tap that closes the menu is
@@ -5508,7 +5530,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // only module that names the plugin) and the account chip, sheet and
   // controller.
   import { createPlayGames, createFakePlayGames } from "./src/browser/playGames.js";
-  import { createAccountController, renderAccountChip, renderAccountSheet } from "./src/browser/accountChip.js";
+  import { createAccountController, renderAccountChip, renderAccountSheet, renderMenuFace, renderAccountMenu } from "./src/browser/accountChip.js";
   // Phase 68 (PGS-03..06, PLACE-01/02): the adapter's run-recorded hook, the
   // durable submission queue, the global-boards controller, the placement
   // copy views, the leaderboard IDs and the current season — each on its own
@@ -5982,13 +6004,15 @@ window.__mzClassicBoot = async function classicBoot() {
   document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
   document.getElementById("mw-settings-close")?.addEventListener("click", closeSettingsSheet);
 
-  // Phase 67 (ACCT-02, D-09/D-10): the account bottom sheet, opened by
-  // either account chip. The band-2 chip refuses to open while an encounter
-  // is up (the ☰ menu's T-57-17 rule; hasActiveEncounter() is the classic
-  // script's global function); the title chip always opens. The sheet's
-  // rows are rendered by accountChip.js from the controller's sheet view,
-  // and every row goes through the controller. Settings closes this sheet
-  // and opens the existing settings sheet, which stacks above the title.
+  // Phase 67 (ACCT-02, D-09/D-10): the account bottom sheet. Phase 70
+  // (D-03/D-04): only the title screen's corner chip opens it now, and it
+  // always opens (the title has no encounter to guard). In the dungeon the
+  // same rows live in the ☰ dropdown's ACCOUNT block (renderAccountSurfaces
+  // below), whose availability is the ☰'s own rule (plan 70-04 widens it
+  // per D-08). The sheet's rows are rendered by accountChip.js from the
+  // controller's sheet view, and every row goes through the controller.
+  // Settings closes this sheet and opens the existing settings sheet, which
+  // stacks above the title.
   function accountSheetOpen() {
     const sheet = document.getElementById("mw-acct-sheet");
     return !!sheet && !sheet.hidden;
@@ -6009,9 +6033,8 @@ window.__mzClassicBoot = async function classicBoot() {
       },
     );
   }
-  function openAccountSheet({ fromHud } = {}) {
+  function openAccountSheet() {
     if (!account) return;
-    if (fromHud && window.__mzState && hasActiveEncounter()) return;
     const sheet = document.getElementById("mw-acct-sheet");
     if (!sheet) return;
     renderAccountSheetNow();
@@ -6023,8 +6046,7 @@ window.__mzClassicBoot = async function classicBoot() {
     // The settings sheet's pattern: keep the party in view, never recentre.
     window.mzKeepPartyInView?.();
   }
-  document.getElementById("mw-acct-chip")?.addEventListener("click", () => openAccountSheet({ fromHud: true }));
-  document.getElementById("mw-title-acct-chip")?.addEventListener("click", () => openAccountSheet({ fromHud: false }));
+  document.getElementById("mw-title-acct-chip")?.addEventListener("click", () => openAccountSheet());
   document.getElementById("mw-acct-scrim")?.addEventListener("click", closeAccountSheet);
   document.getElementById("mw-acct-close")?.addEventListener("click", closeAccountSheet);
 
@@ -6267,20 +6289,38 @@ window.__mzClassicBoot = async function classicBoot() {
     settings: { read: readSettings, write: writeAccountSetting },
     notify: parkAccountCard,
   });
-  // D-05/D-06/D-07: both chips (HUD band 2 and the title's corner) show the
-  // controller's chip view on every account change.
-  function renderAccountChips() {
-    const view = account.chipView();
-    renderAccountChip(document.getElementById("mw-acct-chip"), view);
-    renderAccountChip(document.getElementById("mw-title-acct-chip"), view);
+  // Phase 70 (POLISH-02, D-03/D-04/D-07): the three account surfaces, all
+  // from the controller's views on every account change. The title's corner
+  // chip shows the chip view (Phase 67 D-06); the ☰ button wears the menu
+  // view (the initials avatar when signed in, the plain ☰ otherwise); the
+  // ☰ dropdown's ACCOUNT block shows the sheet view's rows. Each ACCOUNT
+  // row closes the menu first (the classic hudMenuEvent("select"), D-07),
+  // then routes through the controller.
+  function renderAccountSurfaces() {
+    renderAccountChip(document.getElementById("mw-title-acct-chip"), account.chipView());
+    renderMenuFace(document.getElementById("mw-hud-menu-btn"), account.menuView());
+    renderAccountMenu(document.getElementById("mw-hud-menu-acct"), account.sheetView(), {
+      onSignIn: () => {
+        hudMenuEvent("select");
+        account.signIn();
+      },
+      onStopCompeting: () => {
+        hudMenuEvent("select");
+        account.stopCompeting();
+      },
+      onCompete: (value) => {
+        hudMenuEvent("select");
+        account.setCompete(value);
+      },
+    });
   }
   account.subscribe(() => {
-    renderAccountChips();
+    renderAccountSurfaces();
     if (accountSheetOpen()) renderAccountSheetNow();
     boardsPanel.refresh();
   });
-  // The pending face until boot() settles the first state.
-  renderAccountChips();
+  // The pending faces until boot() settles the first state.
+  renderAccountSurfaces();
 
   // Phase 68 (PGS-03/04, D-01/D-02/D-04): every non-dev death reaches the
   // durable queue (ddr.pgsqueue.v1) through the adapter's run-recorded

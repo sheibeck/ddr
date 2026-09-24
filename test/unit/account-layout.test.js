@@ -3,11 +3,12 @@
 // Phase 67 (ACCT-01/ACCT-02), Plan 05: the shell's home for the Play Games
 // account chip and its bottom sheet. Markup and CSS only; 67-07's
 // src/browser/accountChip.js renders into these elements and 67-08 wires
-// them. This file pins:
-//   - the band-2 slot: counters, then .mw-hud-actions, then #mw-acct-chip,
-//     then the ☰ wrap and button (D-05);
+// them. Phase 70 (POLISH-02, D-03, superseding Phase 67 D-05) retired the
+// band-2 chip: the ☰ button wears the account face and its dropdown carries
+// the ACCOUNT block (pinned in hud-menu-layout.test.js (16)). This file pins:
+//   - band 2 carries no account chip and no actions wrapper (D-03);
 //   - the title chip in #mw-title-screen's corner (D-06);
-//   - both chips' attributes and their static "nobody" first paint (D-07);
+//   - the title chip's attributes and its static "nobody" first paint (D-07);
 //   - the account sheet in the mw-legend-sheet family (D-09);
 //   - the hidden dev option that seeds the browser fake (D-12);
 //   - the CSS: 44×44 targets, the faces, the title placement, the sheets'
@@ -46,35 +47,21 @@ const CHIP_FACE = '<span class="mw-acct-face" data-state="nobody" aria-hidden="t
 
 // ─── markup ──────────────────────────────────────────────────────────────
 
-test("(1) band 2 order: counters, then .mw-hud-actions, then #mw-acct-chip, then .mw-hud-menu-wrap, then #mw-hud-menu-btn, all before </header>", () => {
+test("(1) Phase 70 D-03: band 2 carries no account chip and no actions wrapper (the ☰ wrap follows the counters); the title chip is intact", () => {
   const band2 = sliceBetween(HTML, '<div class="mw-hud-band2">', "</header>");
-  const order = [
-    'class="mw-hud-counters"',
-    'id="m-rations"',
-    'class="mw-hud-actions"',
-    'id="mw-acct-chip"',
-    'class="mw-hud-menu-wrap"',
-    'id="mw-hud-menu-btn"',
-  ].map((marker) => {
-    const idx = band2.indexOf(marker);
-    assert.ok(idx !== -1, `band 2 must carry ${marker}`);
-    return idx;
-  });
-  for (let i = 1; i < order.length; i++) assert.ok(order[i - 1] < order[i], `band-2 marker ${i} out of order`);
-  assert.equal((HTML.match(/class="mw-hud-actions"/g) || []).length, 1, "exactly one .mw-hud-actions group");
-  // The chip's own markup (from the group's opening tag to the menu wrap)
-  // must carry no mw-hud-menu token.
-  const chipSlice = band2.slice(band2.indexOf('class="mw-hud-actions"'), band2.indexOf('class="mw-hud-menu-wrap"'));
-  assert.doesNotMatch(chipSlice, /mw-hud-menu/, "the chip markup and its comment carry no mw-hud-menu token");
+  for (const token of ['id="mw-acct-chip"', 'class="mw-hud-actions"', "mw-acct-face"]) {
+    assert.equal(band2.indexOf(token), -1, `band 2 must carry no ${token}`);
+  }
+  assert.equal((HTML.match(/class="mw-hud-actions"/g) || []).length, 0, "no .mw-hud-actions group anywhere");
+  const countersIdx = band2.indexOf('class="mw-hud-counters"');
+  const wrapIdx = band2.indexOf('class="mw-hud-menu-wrap"');
+  assert.ok(countersIdx !== -1 && wrapIdx !== -1 && countersIdx < wrapIdx, "the counters, then the ☰ wrap");
+  assert.equal((HTML.match(/id="mw-title-acct-chip"/g) || []).length, 1, "the title chip is intact");
 });
 
-test("(2) both chips carry the button type, the aria contract and the static nobody face; each id exists exactly once", () => {
-  assert.equal((HTML.match(/id="mw-acct-chip"/g) || []).length, 1);
+test("(2) the title chip carries the button type, the aria contract and the static nobody face; the retired band-2 chip id appears nowhere", () => {
+  assert.equal((HTML.match(/id="mw-acct-chip"/g) || []).length, 0, "the band-2 chip is retired (Phase 70 D-03)");
   assert.equal((HTML.match(/id="mw-title-acct-chip"/g) || []).length, 1);
-  assert.ok(
-    HTML.includes(`<button type="button" class="mw-acct-chip" id="mw-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Play Games account">${CHIP_FACE}</button>`),
-    "band-2 chip markup",
-  );
   assert.ok(
     HTML.includes(`<button type="button" class="mw-acct-chip mw-title-acct" id="mw-title-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Play Games account">${CHIP_FACE}</button>`),
     "title chip markup",
@@ -109,9 +96,9 @@ test("(5) the dev option: a pgsDevSignedIn group with false/true values inside t
   assert.ok(devRow.indexOf('id="mw-dev-start-btn"') < devRow.indexOf('data-setting="pgsDevSignedIn"'), "the dev group follows the start-depth options");
 });
 
-test("(6) both chips and the sheet sit outside .mw-maze-viewport's hit path", () => {
+test("(6) the title chip and the sheet sit outside .mw-maze-viewport's hit path", () => {
   const viewport = sliceBetween(HTML, '<div class="mw-maze-viewport" id="mw-maze-viewport">', "<!-- DR5: the encounter/feature-event panel");
-  for (const id of ["mw-acct-chip", "mw-title-acct-chip", "mw-acct-sheet", "mw-acct-scrim", "mw-acct-rows", "mw-acct-close"]) {
+  for (const id of ["mw-title-acct-chip", "mw-acct-sheet", "mw-acct-scrim", "mw-acct-rows", "mw-acct-close"]) {
     assert.doesNotMatch(viewport, new RegExp(`id="${id}"`), `#${id} must not appear inside the viewport`);
   }
 });
@@ -136,7 +123,7 @@ function zOf(rule, name) {
   return Number(m[1]);
 }
 
-test("(7) the chip's hit box is at least 44×44 (width, height and min-height), with the generic button press neutralised", () => {
+test("(7) the title chip's hit box (.mw-acct-chip, now the title chip's only user) is at least 44×44 (width, height and min-height), with the generic button press neutralised", () => {
   const chip = ruleFor("\\.mw-acct-chip");
   assert.match(HTML, /^\.mw-acct-chip\{width:44px;height:44px/m);
   assert.ok(pxOf(chip, "width") >= 44, "width ≥ 44");
@@ -147,15 +134,16 @@ test("(7) the chip's hit box is at least 44×44 (width, height and min-height), 
   assert.match(active, /box-shadow:none/);
 });
 
-test("(8) the title chip is absolutely positioned top-right, clear of the safe-area inset, with its overlap margins cancelled", () => {
+test("(8) the title chip is absolutely positioned top-right, clear of the safe-area inset; .mw-acct-chip declares margin:0 itself (Phase 70 D-03: no band-2 overlap margins left to cancel)", () => {
   const rule = ruleFor("\\.mw-title-acct");
   assert.match(rule, /position:absolute/);
   assert.match(rule, /top:calc\(12px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\)/);
   assert.match(rule, /right:12px/);
-  assert.match(rule, /margin:0/);
+  assert.doesNotMatch(rule, /(?:^|;)margin:/, ".mw-title-acct needs no margin override");
+  assert.match(ruleFor("\\.mw-acct-chip"), /(?:^|;)margin:0(?:;|$)/);
   // It sits above .mw-title-body's own z-index.
   assert.ok(zOf(rule, ".mw-title-acct") > zOf(ruleFor("\\.mw-title-body"), ".mw-title-body"));
-  // .mw-title-acct follows .mw-acct-chip in source, so its margin:0 wins at equal specificity.
+  // .mw-title-acct follows .mw-acct-chip in source, so its own rules win at equal specificity.
   assert.ok(HTML.indexOf("\n.mw-title-acct{") > HTML.indexOf("\n.mw-acct-chip{"));
 });
 
@@ -188,13 +176,6 @@ test("(10) the faces: nobody is a hollow square with a dim ?, pending is the nob
   assert.match(glyph, /font-family:var\(--mono\)/);
 });
 
-test("(11) .mw-hud-actions declares no position, z-index, transform or gap (the ☰ z-ladder is unchanged)", () => {
-  const rule = ruleFor("\\.mw-hud-actions");
-  for (const prop of ["position", "z-index", "transform", "gap"]) {
-    assert.doesNotMatch(rule, new RegExp(`(?:^|;)${prop}:`), `.mw-hud-actions must declare no ${prop}`);
-  }
-});
-
 // The class contract. 67-07's renderer (src/browser/accountChip.js) exports
 // ACCOUNT_CLASSES with exactly the first list; the second is this plan's own
 // static markup. Pinned literally so either side drifting fails here.
@@ -203,7 +184,9 @@ const RENDERER_CLASSES = [
   "mw-acct-name", "mw-acct-status", "mw-acct-action", "mw-acct-help", "mw-acct-row",
   "mw-acct-label", "mw-acct-options", "mw-acct-opt", "mw-acct-settings",
 ];
-const STATIC_CLASSES = ["mw-hud-actions", "mw-acct-chip", "mw-title-acct", "mw-acct-sheet", "mw-acct-title", "mw-acct-rows"];
+// Phase 70 (D-03/D-04): the band-2 wrapper is retired; the ☰ dropdown's
+// ACCOUNT host joins the static markup.
+const STATIC_CLASSES = ["mw-hud-menu-acct", "mw-acct-chip", "mw-title-acct", "mw-acct-sheet", "mw-acct-title", "mw-acct-rows"];
 
 test("(12) every class in the renderer contract and the static markup has at least one rule in the style blocks", () => {
   for (const cls of [...RENDERER_CLASSES, ...STATIC_CLASSES]) {
