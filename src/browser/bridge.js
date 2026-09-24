@@ -319,8 +319,9 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze([
       "mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)",
       "mazeworld.html (classic: renderRail's auto-clear timer — holdForCard; the guarded #mw-rail body-tap dismiss handler — dismissKind)",
+      "mazeworld.html (classic: renderRail's combat-legal hidden/data-over/hold decisions — isCombatCard, Phase 71 D-16)",
     ]),
-    purpose: "Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time.",
+    purpose: "Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. Phase 71 (D-16): isCombatCard names the card kinds (the long-press foe card and the status-chit card) that show over the combat screen.",
   }),
   __mzRations: Object.freeze({
     owner: "mazeworld.html (module)",

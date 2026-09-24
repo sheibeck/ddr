@@ -489,6 +489,38 @@ reuse this combat-legal path: give it its own `kind` and add that kind to the
 what-happened strip) when it exists, else `#cb-act`, so the card covers
 neither the strip nor the actions.
 
+**Status chits explain themselves in combat (Phase 71, POLISH-11, D-16).**
+71-08 generalises the combat-legal path above from the foe card to the
+combat card kinds. `src/browser/rail.js` exports `COMBAT_CARD_KINDS`
+(`["foe", "cond"]`), `isCombatCard(card)` and `conditionCard(title, line)`
+(the chip's own line card plus `kind: "cond"`). `window.__mzRailVM` bridges
+`isCombatCard`, and `renderRail`'s `combatCardUp` replaces the foe-only test
+in the hidden, data-over/lift and hold decisions; only the foe card is
+re-derived live. Those decisions read the classic `combatScreenUp()` (a live
+fight, or the last round still playing after the engine cleared
+`S.combat`, R-31). Every other card still stays hidden in combat.
+- **The chit card (R-28).** A `#mm-conditions` chip tapped while the combat
+  screen is up calls `window.mzConditionCard(title, text)` (module, beside
+  `mzInspectFoe`, guarded by `dungeonVisible()`), which pushes
+  `conditionCard` with the same sentence the out-of-combat tap shows
+  (`explainCondition`, or the darkness waiver line). Out of combat the chip
+  keeps the typed `mzRailLine(..., "info", 8400, "·")` card. A new chit tap
+  or a long press replaces the card, and a body tap dismisses it.
+- **Reading mid-round (R-29).** The chips use `guardInfoTap(btn, fn,
+  condArmed)`, not `guardTap`: `condArmed()` is the Phase 32 window measured
+  from the chip-set change (`condArmedAt`, stamped in paintConditions' key
+  gate), never the beat gate. `#mm-conditions` sits outside `#enc-panel`, so
+  the tap never skips the round. The predicate is registered in `tapGuards`,
+  so the 71-07 tap sound follows it, and no `aria-disabled` marker is
+  stamped (the arm sweep never covered the chips, so TalkBack used to call
+  every chip disabled).
+- **Foe descriptions (R-30).** `foeConditions.js` `FOE_CONDITION_DESC` gives
+  each foe condition one line, carried on every chip as `desc`. The
+  long-press card (`foeDetails.js`) lists each current effect on its own line,
+  `<chip text> — <desc>`. A tap on a foe card, chips included, only aims.
+
+This closes backlog 999.5's "status chit in combat shows nothing" item.
+
 ### The what-happened strip (Phase 71)
 
 D-07: the combat screen follows the user's combat v2 mock
@@ -635,7 +667,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzPlacement | mazeworld.html (module) | mazeworld.html (classic: renderCombatOver / renderRankLine — draws the DEEPEST rank line on the THAT IS THAT panel, then marks it not fresh)<br>mazeworld.html (module: onRunRecorded — resets it for a new death; handlePgsFlush — sets it when the run's rank returns; showTitleScreen and onAccountForPgs — reset it to null) | Presentation-only parcel { hash, line, fresh } of the just-died run's DEEPEST rank line (Phase 68, PLACE-01); never a field on state. |
 | __mzPreferencesOverride | src/browser/storage.js | test/persistence/harness/fakePreferences.js | Test-only injection hook so a test can replace the native @capacitor/preferences import with a fake, without any shipped code path setting it. |
 | __mzRail | mazeworld.html (module) | mazeworld.html (classic: renderRail / railLocked — reads and also clears pending on dismiss)<br>mazeworld.html (module: dispatchWithNarration / darkFell / mzRailLine / mzInspectFoe — pushes new cards) | Presentation-only rail state (seq/card/pending) — what is currently on screen at the bottom of the map; never a field on state. |
-| __mzRailVM | mazeworld.html (module) | mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)<br>mazeworld.html (classic: renderRail's auto-clear timer — holdForCard; the guarded #mw-rail body-tap dismiss handler — dismissKind) | Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. |
+| __mzRailVM | mazeworld.html (module) | mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)<br>mazeworld.html (classic: renderRail's auto-clear timer — holdForCard; the guarded #mw-rail body-tap dismiss handler — dismissKind)<br>mazeworld.html (classic: renderRail's combat-legal hidden/data-over/hold decisions — isCombatCard, Phase 71 D-16) | Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. Phase 71 (D-16): isCombatCard names the card kinds (the long-press foe card and the status-chit card) that show over the combat screen. |
 | __mzRations | mazeworld.html (module) | mazeworld.html (classic: renderEncounter — Joiner card eats line) | Bridges the pure rations view-model and eats-line formatter so the Joiner card's eats readout reads engine/movement.js#eatsFor the same way the Hero tab (src/browser/heroTab.js, a direct import — no bridge needed) and its own Company panel do. |
 | __mzSettings | mazeworld.html (module) | mazeworld.html (classic: fit — reads the current text-scale/haptics/sound settings) | Exposes the module's currently-applied settings object so the classic canvas-fit routine can read the live text-scale setting. |
 | __mzSfxBackendOverride | src/browser/sfx.js | test/unit/sfx.test.js<br>test/unit/sfx-settings.test.js | Test-only injection hook so a test can replace the Web Audio backend with a fake and assert which clips actually started, without any shipped code path setting it. |
