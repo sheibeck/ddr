@@ -4,8 +4,20 @@
 // that names the Play Games plugin package. The shell and every other module
 // reach Play Games only through a provider made here: createPlayGames() over
 // the Capacitor plugin on a native build, createFakePlayGames() in memory for
-// `node --test` and the browser dev loop. Both expose the same four methods
+// `node --test` and the browser dev loop. Both expose the same nine methods
 // (PROVIDER_METHODS), so callers swap them without a code change.
+//
+// Phase 68 (PGS-03..05) binds the leaderboard calls behind the same seam:
+// submitScore (one validated score with its tag, D-01), loadTopScores and
+// loadPlayerScore (the all-time public or friends collection, D-05/D-06),
+// loadStanding (the DEEPEST rank and score count for the rank line, D-10)
+// and friendsAccess (the silent consent check, or the consent request from
+// the in-panel button only, D-06). Only PLUGIN_METHODS_USED are ever called
+// on the plugin. Every method resolves; the leaderboard reads and writes are
+// raced against a call timer and resolve their failure shape instead of
+// hanging (D-07), so a wedged native call never blocks the queue or the
+// panel. Scores are normalized to { rank, rawScore, tag, handle, playerId,
+// friend }: no image URL ever leaves this module.
 //
 // The caller (the account controller, 67-07) decides whether to call at all.
 // Compete OFF means no call, and since the plugin module is loaded lazily on
@@ -21,9 +33,8 @@
 // is no retry here; the controller owns retry policy.
 //
 // There is no sign-out method: PGS v2 has no programmatic sign-out (D-03,
-// confirmed by 67-RESEARCH.md). Only initialize / signIn / isSignedIn /
-// getPlayer are ever called on the plugin; nothing telemetry-shaped (stats,
-// events, recall or server-side access) is touched. The player identity is
+// confirmed by 67-RESEARCH.md). Nothing telemetry-shaped (stats, events,
+// recall or server-side access) is touched. The player identity is
 // exactly { id, displayName }: avatar, hi-res and banner image URLs are
 // dropped, so nothing downstream can fetch a remote profile image (D-07).
 //
@@ -35,23 +46,38 @@
 //
 // No DOM, no window/document global, no bridge name, no network API.
 
-/** The provider contract every implementation exposes (D-12). */
-export const PROVIDER_METHODS = Object.freeze(["init", "isAuthenticated", "signIn", "getPlayer"]);
-
-/**
- * The plugin's leaderboard methods, reserved for Phase 68, which binds them
- * behind this same seam. This phase exposes none of them. Carried to Phase
- * 68: D-14 (the 64-char URL-safe score tag), D-18 (no epitaph in the tag)
- * and D-19 (five boards per season; LINEAGE sampled from a DEEPEST fetch).
- * See docs/PLAY-GAMES-SETUP.md's engineering notes.
- */
-export const RESERVED_LEADERBOARD_METHODS = Object.freeze([
+/** The provider contract every implementation exposes (D-12; Phase 68 adds five). */
+export const PROVIDER_METHODS = Object.freeze([
+  "init",
+  "isAuthenticated",
+  "signIn",
+  "getPlayer",
   "submitScore",
   "loadTopScores",
-  "loadPlayerCenteredScores",
+  "loadPlayerScore",
+  "loadStanding",
+  "friendsAccess",
+]);
+
+/**
+ * The only plugin methods this module ever calls: the telemetry-free
+ * allow-list. Stats, events, recall, server-side access and snapshots are
+ * never touched.
+ */
+export const PLUGIN_METHODS_USED = Object.freeze([
+  "initialize",
+  "signIn",
+  "isSignedIn",
+  "getPlayer",
+  "submitScore",
+  "loadTopScores",
   "loadCurrentPlayerScore",
+  "loadLeaderboard",
   "loadFriends",
 ]);
+
+/** The default leaderboard call timeout (D-07). */
+const CALL_TIMEOUT_MS = 15000;
 
 /** The fake provider's default signed-in identity (browser dev loop, tests). */
 export const FAKE_PLAYER = Object.freeze({ id: "fake-player", displayName: "Dev Delver" });
@@ -71,6 +97,101 @@ function toPlayer(info) {
   return Object.freeze({ id: trimmed(info.playerId), displayName: trimmed(info.displayName) });
 }
 
+/** The failure shape of every { ok } leaderboard method. */
+const FAILED = Object.freeze({ ok: false });
+
+/**
+ * TAG_OK — module-private: the score tag's alphabet, the URI unreserved
+ * characters, 0..64 long (D-01; kept local so this module does not depend on
+ * the tag encoder).
+ */
+const TAG_OK = /^[A-Za-z0-9._~-]{0,64}$/;
+
+/** isScore(n) — a raw score is a non-negative safe integer. */
+function isScore(n) {
+  return Number.isSafeInteger(n) && n >= 0;
+}
+
+/** isBoardId(id) — a leaderboard id is a non-empty string. */
+function isBoardId(id) {
+  return typeof id === "string" && id.trim() !== "";
+}
+
+/** isTag(t) — a string in the tag alphabet, at most 64 characters. */
+function isTag(t) {
+  return typeof t === "string" && TAG_OK.test(t);
+}
+
+/** clampResults(n) — maxResults clamped to the plugin's 1..25; 10 for a non-number. */
+function clampResults(n) {
+  if (typeof n !== "number" || !Number.isFinite(n)) return 10;
+  return Math.min(25, Math.max(1, Math.trunc(n)));
+}
+
+/** collectionOf(c) — "friends", or "public" for anything else. */
+function collectionOf(c) {
+  return c === "friends" ? "friends" : "public";
+}
+
+/** countOf(n) — a non-negative integer, else null. */
+function countOf(n) {
+  return Number.isSafeInteger(n) && n >= 0 ? n : null;
+}
+
+/** rankOf(n) — an integer rank >= 1, else null. */
+function rankOf(n) {
+  return Number.isSafeInteger(n) && n >= 1 ? n : null;
+}
+
+/** optsOf(o) — the options object, or {} for anything else. */
+function optsOf(o) {
+  return o && typeof o === "object" ? o : {};
+}
+
+/** variantOf(leaderboard, collection) — the all-time variant for that collection, or null. */
+function variantOf(leaderboard, collection) {
+  if (!leaderboard || typeof leaderboard !== "object" || !Array.isArray(leaderboard.variants)) return null;
+  return (
+    leaderboard.variants.find(
+      (v) => v && typeof v === "object" && v.timeSpan === "allTime" && v.collection === collection,
+    ) || null
+  );
+}
+
+/**
+ * normalizeScore(s) — a plugin LeaderboardScore normalized to exactly the
+ * frozen { rank, rawScore, tag, handle, playerId, friend }. Nothing else is
+ * copied: no display strings, no timestamps, no image URL (D-07). A missing
+ * or non-integer rank is null; the handle is the score holder's display name,
+ * falling back to the holder's profile name, then "". Returns null for
+ * anything that is not an object.
+ */
+export function normalizeScore(s) {
+  if (!s || typeof s !== "object") return null;
+  const holder = s.scoreHolder && typeof s.scoreHolder === "object" ? s.scoreHolder : {};
+  return Object.freeze({
+    rank: rankOf(s.rank),
+    rawScore: typeof s.rawScore === "number" && Number.isFinite(s.rawScore) ? s.rawScore : 0,
+    tag: typeof s.scoreTag === "string" ? s.scoreTag : "",
+    handle: trimmed(s.scoreHolderDisplayName) || trimmed(holder.displayName),
+    playerId: trimmed(holder.playerId),
+    friend: holder.friendStatus === "friend",
+  });
+}
+
+/** scoresOf(list) — a frozen array of normalized scores (non-objects dropped). */
+function scoresOf(list) {
+  return Object.freeze((Array.isArray(list) ? list : []).map(normalizeScore).filter(Boolean));
+}
+
+/** accessOf(result) — a loadFriends result read as a consent state. */
+function accessOf(result) {
+  if (!result || typeof result !== "object") return "unavailable";
+  if (result.resolutionRequired === true) return "required";
+  if (result.resolutionRequired === false) return "granted";
+  return "unavailable";
+}
+
 function signedOut() {
   return Object.freeze({ signedIn: false, player: null });
 }
@@ -80,12 +201,19 @@ function signedInAs(player) {
 }
 
 /**
- * createPlayGames({ loadPlugin }) — the native provider. `loadPlugin` is an
- * optional injected loader resolving the plugin's module namespace (tests
- * pass a fake); the default is the dynamic import of the plugin package.
- * Constructing the provider loads nothing.
+ * createPlayGames({ loadPlugin, callTimeoutMs, setTimer, clearTimer }) — the
+ * native provider. `loadPlugin` is an optional injected loader resolving the
+ * plugin's module namespace (tests pass a fake); the default is the dynamic
+ * import of the plugin package. `callTimeoutMs` (default 15 s) bounds every
+ * leaderboard call except the consent request; `setTimer`/`clearTimer` are
+ * injectable for tests. Constructing the provider loads nothing.
  */
-export function createPlayGames({ loadPlugin } = {}) {
+export function createPlayGames({
+  loadPlugin,
+  callTimeoutMs = CALL_TIMEOUT_MS,
+  setTimer = setTimeout,
+  clearTimer = clearTimeout,
+} = {}) {
   const loader = typeof loadPlugin === "function" ? loadPlugin : () => import("@modbender/capacitor-play-games");
 
   let loading = null; // memoized Promise<{ PlayGames }> (a plain wrapper)
@@ -175,7 +303,155 @@ export function createPlayGames({ loadPlugin } = {}) {
     }
   }
 
-  return Object.freeze({ kind: "native", init, isAuthenticated, signIn, getPlayer });
+  // timed(call, failure) — ready() then call(PlayGames), raced against the
+  // call timer. Resolves call's value, or `failure` on a rejection, a throw
+  // or the timeout; a late settlement after the timeout is ignored. `call`
+  // must resolve a plain value, never the proxy (the thenable trap).
+  function timed(call, failure) {
+    return new Promise((resolve) => {
+      let settled = false;
+      let timer = null;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        if (timer !== null) {
+          try {
+            clearTimer(timer);
+          } catch {
+            // a broken clearTimer must not wedge the call
+          }
+        }
+        resolve(value);
+      };
+      try {
+        timer = setTimer(() => finish(failure), callTimeoutMs);
+      } catch {
+        timer = null;
+      }
+      Promise.resolve()
+        .then(() => ready())
+        .then((wrap) => call(wrap.PlayGames))
+        .then(finish, () => finish(failure));
+    });
+  }
+
+  /**
+   * submitScore({ leaderboardId, score, tag }) — one validated score with its
+   * tag (D-01): { ok: true, newBest } where newBest is the all-time result's
+   * flag, or null when the plugin reports no all-time result; { ok: false }
+   * on invalid input (the plugin is never called), a failure or the timeout.
+   */
+  async function submitScore(opts) {
+    const { leaderboardId, score, tag } = optsOf(opts);
+    if (!isBoardId(leaderboardId) || !isScore(score) || !isTag(tag)) return FAILED;
+    return timed(async (PlayGames) => {
+      const result = await PlayGames.submitScore({ leaderboardId, score, scoreTag: tag });
+      const results = result && typeof result === "object" && Array.isArray(result.results) ? result.results : [];
+      const allTime = results.find((r) => r && typeof r === "object" && r.timeSpan === "allTime");
+      const newBest = allTime && typeof allTime.newBest === "boolean" ? allTime.newBest : null;
+      return Object.freeze({ ok: true, newBest });
+    }, FAILED);
+  }
+
+  /**
+   * loadTopScores({ leaderboardId, collection, maxResults }) — the all-time
+   * top scores of the public or friends collection (D-05, D-06), maxResults
+   * clamped to 1..25: { ok: true, scores, total } where total is that
+   * collection's all-time score count, or null.
+   */
+  async function loadTopScores(opts) {
+    const { leaderboardId, collection, maxResults } = optsOf(opts);
+    if (!isBoardId(leaderboardId)) return FAILED;
+    const c = collectionOf(collection);
+    return timed(async (PlayGames) => {
+      const result = await PlayGames.loadTopScores({
+        leaderboardId,
+        timeSpan: "allTime",
+        collection: c,
+        maxResults: clampResults(maxResults),
+        forceReload: false,
+      });
+      if (!result || typeof result !== "object" || !Array.isArray(result.scores)) return FAILED;
+      const variant = variantOf(result.leaderboard, c);
+      return Object.freeze({
+        ok: true,
+        scores: scoresOf(result.scores),
+        total: variant ? countOf(variant.numScores) : null,
+      });
+    }, FAILED);
+  }
+
+  /**
+   * loadPlayerScore({ leaderboardId, collection }) — the signed-in player's
+   * own all-time score in that collection: { ok: true, score } (score null
+   * when the player has none).
+   */
+  async function loadPlayerScore(opts) {
+    const { leaderboardId, collection } = optsOf(opts);
+    if (!isBoardId(leaderboardId)) return FAILED;
+    return timed(async (PlayGames) => {
+      const result = await PlayGames.loadCurrentPlayerScore({
+        leaderboardId,
+        timeSpan: "allTime",
+        collection: collectionOf(collection),
+      });
+      if (!result || typeof result !== "object") return FAILED;
+      return Object.freeze({ ok: true, score: normalizeScore(result.score) });
+    }, FAILED);
+  }
+
+  /**
+   * loadStanding({ leaderboardId }) — the board's metadata, reloaded, read
+   * for the player's all-time public rank and the score count (the DEEPEST
+   * rank line, D-10): { ok: true, rank, total }, each null when absent.
+   */
+  async function loadStanding(opts) {
+    const { leaderboardId } = optsOf(opts);
+    if (!isBoardId(leaderboardId)) return FAILED;
+    return timed(async (PlayGames) => {
+      const result = await PlayGames.loadLeaderboard({ leaderboardId, forceReload: true });
+      const board = result && typeof result === "object" ? result.leaderboard : null;
+      if (!board || typeof board !== "object") return FAILED;
+      const variant = variantOf(board, "public");
+      return Object.freeze({
+        ok: true,
+        rank: variant ? rankOf(variant.playerRank) : null,
+        total: variant ? countOf(variant.numScores) : null,
+      });
+    }, FAILED);
+  }
+
+  /**
+   * friendsAccess({ request }) — "granted", "required" or "unavailable"
+   * (D-06). Only request: true may show the Play Games consent screen (the
+   * in-panel button); a refusal resolves "required". The request is not
+   * timed, like the interactive sign-in: the player may take their time.
+   */
+  async function friendsAccess(opts) {
+    const request = optsOf(opts).request === true;
+    const call = async (PlayGames) =>
+      accessOf(await PlayGames.loadFriends({ pageSize: 1, forceReload: false, resolve: request }));
+    if (!request) return timed(call, "unavailable");
+    try {
+      const { PlayGames } = await ready();
+      return await call(PlayGames);
+    } catch {
+      return "unavailable";
+    }
+  }
+
+  return Object.freeze({
+    kind: "native",
+    init,
+    isAuthenticated,
+    signIn,
+    getPlayer,
+    submitScore,
+    loadTopScores,
+    loadPlayerScore,
+    loadStanding,
+    friendsAccess,
+  });
 }
 
 /**
