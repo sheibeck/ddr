@@ -1127,6 +1127,95 @@ html,body{height:100%}
 .mw-hud[data-offtab="1"]{display:none}
 .mw-cond-strip[data-offtab="1"]{display:none}
 #screen-dead{padding-top:calc(14px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))}
+/* Phase 66 (BOARD-01..06, D-01/D-13/D-14), the Leaderboards panel, ported
+   from design/Mazeworld Boards Panel.dc.html and design/Mazeworld
+   Leaderboards.dc.html (the iOS frame in both mocks is preview chrome
+   only). Every font-size below is calc(<mock px / 16>rem * var(--mw-text-
+   scale)) so the S/M/L text-size setting scales it, matching the Gear
+   tab's convention. The panel replaces #screen-dead edge to edge — a
+   separate rule below zeroes the side/bottom padding the tab normally
+   carries while leaving the pinned top padding line above untouched.
+   Reduced motion: the only motion here is .mw-bd-detail's rise-in
+   (reusing the existing @keyframes mwrise) and .mw-bd-bar-fill's width
+   transition — both fall to the blanket prefers-reduced-motion rule
+   below, and nothing else in this block declares transition/animation. */
+#screen-dead{padding-left:0;padding-right:0;padding-bottom:0;height:100%}
+.mw-bd{display:flex;flex-direction:column;height:100%;min-height:0;background:#14110c;color:#e6ddc6}
+.mw-bd-head{flex:none;display:flex;align-items:center;gap:10px;padding:9px 14px 10px;border-bottom:3px solid #3a3226;background:#1b170f}
+.mw-bd-back{flex:none;width:44px;height:44px;min-height:44px;margin:-6px 0 -6px -8px;padding:0;display:flex;align-items:center;justify-content:center;font-size:calc(0.8125rem * var(--mw-text-scale));color:#e8c97a;background:#14110c;border:0;border-radius:0;box-shadow:inset 0 0 0 2px #4a4032}
+.mw-bd-headtext{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.mw-bd-title{font-family:var(--disp);font-size:calc(0.5625rem * var(--mw-text-scale));color:#c9bda0}
+.mw-bd-scope{font-size:calc(0.71875rem * var(--mw-text-scale));color:#8e8369}
+.mw-bd-interred{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.mw-bd-interred-n{font-family:var(--mono);font-weight:700;font-size:calc(1.0625rem * var(--mw-text-scale));color:#e8c97a}
+.mw-bd-interred-label{font-family:var(--disp);font-size:calc(0.375rem * var(--mw-text-scale));color:#9a8f76}
+.mw-bd-strip{flex:none;display:flex;align-items:center;gap:9px;padding:8px 14px 9px;background:#181409;box-shadow:inset 0 -1px 0 #2c2519}
+.mw-bd-av{flex:none;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:calc(0.5625rem * var(--mw-text-scale));color:#e6ddc6;box-shadow:inset 0 0 0 1px rgba(0,0,0,.5), 0 0 0 1px #2c2519}
+.mw-bd-av-nobody{background:#1b170f;color:#6f6754}
+.mw-bd-strip-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.mw-bd-strip-label{font-family:var(--mono);font-weight:700;font-size:calc(0.84375rem * var(--mw-text-scale));color:#e6ddc6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mw-bd-strip-source{font-family:var(--disp);font-size:calc(0.375rem * var(--mw-text-scale));line-height:1.4;color:#9a8f76}
+.mw-bd-scopes{flex:none;display:flex;gap:4px}
+.mw-bd-scope-chip{flex:none;min-height:36px;padding:6px 8px;font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));line-height:1.4;color:#9a8f76;background:#1b170f;border:0;border-radius:0;box-shadow:inset 0 0 0 1px #2c2519}
+.mw-bd-scope-chip[data-on="1"]{color:#14110c;background:#c9bda0;box-shadow:inset 0 0 0 1px #c9bda0}
+.mw-bd-scope-chip[data-dim="1"]{opacity:.45}
+.mw-bd-rail{flex:none;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:8px 14px 9px;border-bottom:3px solid #3a3226;background:#181409}
+.mw-bd-rail::-webkit-scrollbar{display:none}
+.mw-bd-chip{flex:none;white-space:nowrap;min-height:36px;padding:7px 9px;font-family:var(--disp);font-size:calc(0.4375rem * var(--mw-text-scale));line-height:1.4;color:#9a8f76;background:#1b170f;border:0;border-radius:0;box-shadow:inset 0 0 0 1px #2c2519}
+.mw-bd-boardhead{flex:none;display:flex;gap:10px;align-items:flex-start;padding:11px 14px 12px;border-bottom:1px solid #2c2519;background:#14110c}
+.mw-bd-mark{flex:none;width:20px;margin-top:1px;text-align:center;line-height:1;font-size:calc(1.125rem * var(--mw-text-scale))}
+.mw-bd-boardtext{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.mw-bd-boardtitle{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));line-height:1.5;color:#e8c97a}
+.mw-bd-rule{font-size:calc(0.71875rem * var(--mw-text-scale));line-height:1.4;color:#8e8369;text-wrap:pretty}
+.mw-bd-body{flex:1;min-height:0;overflow-y:auto;padding:0 0 26px}
+.mw-bd-empty,.mw-bd-note{margin:0;padding:18px 14px;font-size:calc(0.75rem * var(--mw-text-scale));color:#8e8369;box-shadow:inset 0 -1px 0 #241f16}
+.mw-bd-entry{display:flex;flex-direction:column}
+.mw-bd-divider{display:flex;align-items:center;gap:8px;padding:9px 14px;background:#100e0a;box-shadow:inset 0 -1px 0 #241f16, inset 0 1px 0 #241f16}
+.mw-bd-divider-dots{font-family:var(--mono);font-weight:700;font-size:calc(0.9375rem * var(--mw-text-scale));color:#4a3f2c;letter-spacing:.2em}
+.mw-bd-divider-label{font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));line-height:1.5;color:#8e8369}
+.mw-bd-row{display:flex;gap:10px;align-items:flex-start;padding:11px 14px 12px;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -1px 0 #241f16}
+.mw-bd-row[data-top="1"]{background:#191509}
+.mw-bd-row[data-you="1"]{background:#1d1810;box-shadow:inset 0 -1px 0 #241f16, inset 3px 0 0 #e8c97a}
+.mw-bd-rank{flex:none;width:28px;padding-top:2px;text-align:center;font-family:var(--mono);font-weight:700;font-size:calc(1.0625rem * var(--mw-text-scale));line-height:1;color:#8e8369}
+.mw-bd-row[data-podium="1"] .mw-bd-rank{color:#c9bda0}
+.mw-bd-row[data-top="1"] .mw-bd-rank{font-size:calc(1.3125rem * var(--mw-text-scale))}
+.mw-bd-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.mw-bd-idline{display:flex;align-items:baseline;gap:6px;min-width:0}
+.mw-bd-handle{font-family:var(--mono);font-weight:700;font-size:calc(0.84375rem * var(--mw-text-scale));line-height:1.1;color:#c9bda0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mw-bd-row[data-you="1"] .mw-bd-handle{color:#e8c97a}
+.mw-bd-tag{flex:none;font-family:var(--disp);font-size:calc(0.375rem * var(--mw-text-scale));line-height:1.4;color:#9a8f76;background:transparent;padding:0}
+.mw-bd-row[data-you="1"] .mw-bd-tag{color:#14110c;background:#e8c97a;padding:3px 4px}
+.mw-bd-name{font-family:var(--disp);font-size:calc(0.4375rem * var(--mw-text-scale));line-height:1.5;color:#a89c82}
+.mw-bd-row[data-top="1"] .mw-bd-name,.mw-bd-row[data-you="1"] .mw-bd-name{color:#c9bda0}
+.mw-bd-line{font-size:calc(0.6875rem * var(--mw-text-scale));line-height:1.35;color:#8e8369}
+.mw-bd-bar{height:3px;background:#221d14;box-shadow:inset 0 0 0 1px #0f0d09}
+.mw-bd-bar-fill{height:100%;background:#4a3f2c;transition:width .3s steps(6)}
+.mw-bd-detail{display:flex;flex-direction:column;gap:6px;margin-top:4px;animation:mwrise .22s steps(3)}
+.mw-bd-detail-text{font-size:calc(0.71875rem * var(--mw-text-scale));line-height:1.45;color:#a89c82;text-wrap:pretty}
+.mw-bd-stats{display:flex;flex-wrap:wrap;gap:5px}
+.mw-bd-stat{display:flex;gap:5px;align-items:baseline;padding:4px 7px;background:#1b170f;box-shadow:inset 0 0 0 1px #2c2519}
+.mw-bd-stat-k{font-family:var(--disp);font-size:calc(0.375rem * var(--mw-text-scale));color:#9a8f76}
+.mw-bd-stat-v{font-family:var(--mono);font-weight:700;font-size:calc(0.8125rem * var(--mw-text-scale));color:#e6ddc6}
+.mw-bd-valcell{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:74px}
+.mw-bd-val{font-family:var(--mono);font-weight:700;font-size:calc(1.25rem * var(--mw-text-scale));line-height:1;white-space:nowrap;color:#e6ddc6}
+.mw-bd-row[data-top="1"] .mw-bd-val{font-size:calc(1.5rem * var(--mw-text-scale))}
+.mw-bd-val[data-long="1"]{font-size:calc(1.0625rem * var(--mw-text-scale))}
+.mw-bd-row[data-top="1"] .mw-bd-val[data-long="1"]{font-size:calc(1.1875rem * var(--mw-text-scale))}
+.mw-bd-unit{font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));color:#9a8f76;white-space:nowrap}
+.mw-bd-standing{margin:14px 14px 0;padding:11px 12px;background:#181409;box-shadow:inset 0 0 0 1px #2c2519;display:flex;align-items:center;gap:10px}
+.mw-bd-standing-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.mw-bd-standing-label{font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));color:#9a8f76}
+.mw-bd-standing-note{font-size:calc(0.71875rem * var(--mw-text-scale));line-height:1.4;color:#8e8369;text-wrap:pretty}
+.mw-bd-standing-place{flex:none;font-family:var(--mono);font-weight:700;font-size:calc(1.375rem * var(--mw-text-scale));color:#e8c97a}
+.mw-bd-foot{margin:10px 14px 0;font-size:calc(0.6875rem * var(--mw-text-scale));line-height:1.5;color:#6f6754;text-wrap:pretty}
+.mw-bd-dock{flex:none;display:flex;gap:8px;padding:10px 14px calc(12px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));border-top:3px solid #3a3226;background:#1b170f}
+.mw-bd-dock-btn{flex:1;min-height:48px;padding:14px 6px;font-family:var(--disp);font-size:calc(0.46875rem * var(--mw-text-scale));line-height:1.6;color:#c9bda0;background:transparent;border:2px solid #4a4032;border-radius:0;box-shadow:0 4px 0 #0d0b08}
+.mw-bd-dock-btn[data-primary="1"]{color:#14110c;background:#e8c97a;border-color:#e8c97a;box-shadow:0 4px 0 #6b5c3c}
+/* D-01: a title-opened panel owns the whole screen — the game tab bar and
+   the map's rail hide entirely. D-02: a tab-opened panel keeps both (no
+   body[data-boards-entry] marker is set in that mode). */
+body[data-boards-entry="title"] #mw-tabbar{display:none}
+body[data-boards-entry="title"] #mw-rail{display:none}
 /* Phase 35 (MAP-01, ruling 5): the condition-chip strip — its own strip
    directly under the HUD (not a wrapping row inside it, and no longer over
    the viewport). One chip per conditionsOf(S) descriptor; tapping a chip
