@@ -165,6 +165,9 @@ function buildHead(doc, view, handlers) {
   return children;
 }
 
+/** AVATAR_ON_RING — the mock's AVATAR `on` box-shadow (a dark inset edge plus the gold ring). */
+const AVATAR_ON_RING = "inset 0 0 0 1px rgba(0,0,0,.5), 0 0 0 1px #e8c97a";
+
 function buildStrip(doc, view, handlers, stripEl) {
   const strip = view.strip;
   stripEl.hidden = strip === null;
@@ -173,7 +176,17 @@ function buildStrip(doc, view, handlers, stripEl) {
     return;
   }
 
-  const av = el(doc, "div", "mw-bd-av mw-bd-av-nobody", strip.glyph);
+  let av;
+  if (strip.avatar && typeof strip.avatar === "object") {
+    // Phase 67 (D-08): signed in — the mock's AVATAR(handle, 30, true): the
+    // initials square in its palette colour with the gold on-ring.
+    av = el(doc, "div", "mw-bd-av", String(strip.avatar.initials ?? ""));
+    av.dataset.on = "1";
+    av.style.background = strip.avatar.bg;
+    av.style.boxShadow = AVATAR_ON_RING;
+  } else {
+    av = el(doc, "div", "mw-bd-av mw-bd-av-nobody", strip.glyph);
+  }
   av.setAttribute("aria-hidden", "true");
 
   const text = el(doc, "div", "mw-bd-strip-text");
@@ -387,6 +400,14 @@ export function renderBoardsPanel(host, view, handlers = {}) {
  */
 export const BOARDS_LAST_KEY = "ddr.boards.last.v1";
 
+/** SIGNED_OUT — the frozen signed-out identity createBoardsPanel falls back to. */
+const SIGNED_OUT = Object.freeze({ signedIn: false, player: null });
+
+/** signedOutIdentity() — createBoardsPanel's default identity seam (always signed out). */
+function signedOutIdentity() {
+  return SIGNED_OUT;
+}
+
 /**
  * createBoardsPanel({ host, buildView, readData, prefs, reducedMotion,
  * onRoute }) — the Leaderboards panel's stateful controller (D-01, D-02,
@@ -394,12 +415,36 @@ export const BOARDS_LAST_KEY = "ddr.boards.last.v1";
  * object of methods closing over module-private state, no window/document
  * globals — only `host`, `host.ownerDocument` and the injected seams.
  *
- * `signedIn` is always false this phase: the ALL/FRIENDS chips render
- * dimmed and swap in the view's own in-panel note when tapped (D-06).
- * Phase 67 supplies a real sign-in state through this same call.
+ * Phase 67 (D-08) supplies the account identity through the injected
+ * identity() seam ({ signedIn, player: { id, displayName } | null }; the
+ * default is signed out). Every render re-reads it, so refresh() picks up a
+ * sign-in or sign-out while the panel is open; a missing, throwing or
+ * malformed identity renders signed out. Phase 68 adds global and friends
+ * sources behind the same view.
  */
-export function createBoardsPanel({ host, buildView, readData, prefs = null, reducedMotion = () => false, onRoute }) {
+export function createBoardsPanel({
+  host,
+  buildView,
+  readData,
+  prefs = null,
+  reducedMotion = () => false,
+  onRoute,
+  identity = signedOutIdentity,
+}) {
   const doc = host.ownerDocument;
+
+  /** readIdentity() — the account identity as { signedIn, player }; never throws. */
+  function readIdentity() {
+    let id;
+    try {
+      id = typeof identity === "function" ? identity() : null;
+    } catch {
+      id = null; // a throwing identity() must never break the tab switch.
+    }
+    if (!id || typeof id !== "object" || id.signedIn !== true) return SIGNED_OUT;
+    const player = id.player && typeof id.player === "object" ? id.player : null;
+    return { signedIn: true, player };
+  }
 
   let entry = null; // null | "tab" | "title"
   let board = "deep";
@@ -478,7 +523,8 @@ export function createBoardsPanel({ host, buildView, readData, prefs = null, red
       data = { bests: null, graves: [], total: 0 };
     }
     try {
-      const view = buildView({ ...data, board, scope, open, entry, hasHero, signedIn: false });
+      const { signedIn, player } = readIdentity();
+      const view = buildView({ ...data, board, scope, open, entry, hasHero, signedIn, player });
       renderBoardsPanel(host, view, handlers);
       centreRail();
       if (reset) {
