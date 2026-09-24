@@ -80,6 +80,13 @@ test("(2) the ☰ sits on band 2, outside .mw-hud-counters' clipping box: the ba
     assert.match(countersOnly, new RegExp(`id="${id}"`), `#${id} must sit inside the counters-only slice`);
   }
   assert.doesNotMatch(countersOnly, /mw-hud-menu/, "the counters slice must carry no mw-hud-menu token");
+  // Phase 67 (ACCT-01, D-05): the account chip sits between the counters
+  // and the menu wrap (immediately left of the ☰), never inside the
+  // counters' clipping box.
+  const chipIdx = band2Slice.indexOf('id="mw-acct-chip"');
+  const lastCounterIdx = band2Slice.indexOf('id="m-rations"');
+  assert.ok(chipIdx !== -1, "#mw-acct-chip must sit on band 2");
+  assert.ok(lastCounterIdx < chipIdx && chipIdx < wrapIdx, "#mw-acct-chip sits after the counters and before the menu wrap");
 });
 
 // ─── (3) the four menu rows match HUD_MENU_ITEMS in order ───────────────
@@ -104,11 +111,12 @@ test("(3) the four menu rows match HUD_MENU_ITEMS in order: id, label and glyph 
 
 test("(4) the menu, the ☰ and the scrim are outside .mw-maze-viewport's hit path: none of their ids/row ids appear in the viewport slice; all precede <main class=\"mw-screens\">; the gesture tracker still binds pointerdown to its viewport local alone", () => {
   const viewportRegion = sliceBetween(HTML, '<div class="mw-maze-viewport" id="mw-maze-viewport">', "<!-- DR5: the encounter/feature-event panel");
-  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn"]) {
+  // Phase 67 (ACCT-01): the account chip joins both id lists.
+  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn", "mw-acct-chip"]) {
     assert.doesNotMatch(viewportRegion, new RegExp(`id="${id}"`), `#${id} must not appear inside the viewport`);
   }
   const mainIdx = HTML.indexOf('<main class="mw-screens"');
-  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim"]) {
+  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-acct-chip"]) {
     const idx = HTML.indexOf(`id="${id}"`);
     assert.ok(idx !== -1 && idx < mainIdx, `#${id} must precede <main class="mw-screens">`);
   }

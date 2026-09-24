@@ -1560,6 +1560,8 @@ body[data-boards-entry="title"] #mw-rail{display:none}
 <div id="mw-title-screen" class="mw-title-screen">
   <img class="mw-title-art" src="./assets/ddr_splash.png" alt="" aria-hidden="true">
   <div class="mw-title-scrim" aria-hidden="true"></div>
+  <!-- Phase 67 (ACCT-01, D-06): the same account chip, top-right of the title screen, clear of the safe area. -->
+  <button type="button" class="mw-acct-chip mw-title-acct" id="mw-title-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Play Games account"><span class="mw-acct-face" data-state="nobody" aria-hidden="true"><span class="mw-acct-glyph">?</span></span></button>
   <div class="mw-title-body">
     <!-- Title/tagline text intentionally omitted — the splash art (ddr_splash.png)
          already contains the game name + tagline (user directive, DR3). -->
@@ -1695,8 +1697,25 @@ body[data-boards-entry="title"] #mw-rail{display:none}
            collapsed by the :empty rule — in a normal run, because the marks
            record nothing unless state.dev is true. -->
       <div class="mw-settings-row" id="mw-settings-version-row"><span class="mw-settings-label mw-settings-version" id="mw-settings-version">Version <span id="mw-app-version">dev</span></span></div>
-      <div class="mw-settings-row" id="mw-dev-row" hidden><span class="mw-settings-label">Start at depth (dev)</span><div class="mw-settings-options"><input type="number" id="mw-dev-start-depth" min="1" max="999" value="20" inputmode="numeric" aria-label="Start depth"><button type="button" class="mw-settings-opt" id="mw-dev-start-btn">Start</button></div><div id="mw-dev-perf"></div></div>
+      <div class="mw-settings-row" id="mw-dev-row" hidden><span class="mw-settings-label">Start at depth (dev)</span><div class="mw-settings-options"><input type="number" id="mw-dev-start-depth" min="1" max="999" value="20" inputmode="numeric" aria-label="Start depth"><button type="button" class="mw-settings-opt" id="mw-dev-start-btn">Start</button></div>
+        <!-- Phase 67 (D-12): seeds the browser Play Games fake at the next launch; browser dev loop only, native ignores it. -->
+        <span class="mw-settings-label">Play Games (dev, next launch)</span><div class="mw-settings-options" data-setting="pgsDevSignedIn"><button type="button" class="mw-settings-opt" data-value="false">Signed out</button><button type="button" class="mw-settings-opt" data-value="true">Signed in</button></div><div id="mw-dev-perf"></div></div>
     </div>
+  </div>
+</div>
+
+<!-- ============ ACCOUNT BOTTOM SHEET (Phase 67, ACCT-02, D-09/D-10) ============
+     The Play Games account sheet, in the legend-sheet family's chrome
+     (.mw-legend-sheet/-scrim/-panel/-head/-close, above). Its rows are
+     rendered by src/browser/accountChip.js into #mw-acct-rows, and the title
+     text comes from content through the module script, so the markup carries
+     none. Opened by either account chip (#mw-acct-chip on HUD band 2,
+     #mw-title-acct-chip on the title screen). -->
+<div id="mw-acct-sheet" class="mw-legend-sheet mw-acct-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-acct-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-labelledby="mw-acct-title">
+    <div class="mw-legend-head"><span class="mw-acct-title" id="mw-acct-title"></span><button type="button" class="mw-legend-close" id="mw-acct-close" aria-label="Close">Close</button></div>
+    <div class="mw-acct-rows" id="mw-acct-rows"></div>
   </div>
 </div>
 
@@ -1778,6 +1797,14 @@ body[data-boards-entry="title"] #mw-rail{display:none}
              just the label+number now (see .mw-hud-rations CSS comment). -->
         <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
       </div>
+      <div class="mw-hud-actions">
+      <!-- Phase 67 (ACCT-01, D-05/D-07): the Play Games account chip sits
+           immediately left of the hamburger button. The hamburger, its
+           dropdown and its four legacy row ids are unchanged. The static
+           face below is the deliberate "nobody" first paint; the real face
+           is rendered by src/browser/accountChip.js through the module
+           script. -->
+      <button type="button" class="mw-acct-chip" id="mw-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Play Games account"><span class="mw-acct-face" data-state="nobody" aria-hidden="true"><span class="mw-acct-glyph">?</span></span></button>
       <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the hamburger menu. The four
            rows keep the legacy chip ids (mw-chip-marks, mw-chip-centre,
            btn-camp, mw-gear-btn) so the classic script's existing listener
@@ -1797,6 +1824,7 @@ body[data-boards-entry="title"] #mw-rail{display:none}
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="btn-camp"><span class="mw-hud-menu-glyph" data-glyph="camp" aria-hidden="true">&#9790;</span><span class="mw-hud-menu-label">MAKE CAMP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn"><span class="mw-hud-menu-glyph" data-glyph="settings" aria-hidden="true">&#9881;</span><span class="mw-hud-menu-label">SETTINGS</span></button>
         </div>
+      </div>
       </div>
     </div>
     <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the tap that closes the menu is
