@@ -47,6 +47,8 @@ import { ACCOUNT_COPY } from "../../content/account.js";
 import { HUD_MENU_QUIT_COPY } from "../../src/browser/hudMenu.js";
 // Phase 71 (D-14): the one foe-condition chip table's labels, walked the same way.
 import { FOE_CONDITION_COPY } from "../../src/browser/foeConditions.js";
+// Phase 71 (D-12): the long-press foe card's copy, walked the same way.
+import { FOE_DETAILS_COPY } from "../../src/browser/foeDetails.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -153,6 +155,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     ITEM_STAT_COPY,
     // Phase 71 (D-14): the foe-condition chip labels.
     FOE_CONDITION_COPY,
+    // Phase 71 (D-12): the long-press foe card's labels, fallbacks and flavour lines.
+    FOE_DETAILS_COPY,
     // Phase 68 (PLACE-01/02): the global standing quips and the placement copy.
     GLOBAL_STANDING_LINES, PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,
   };
