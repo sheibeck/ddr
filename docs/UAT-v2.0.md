@@ -230,7 +230,7 @@ Walk on the Phase 71 debug APK the orchestrator installs with `adb install -r` (
 | M31 | GO DOWN on the stair card, and STRIKE in a fight, each play only their own sound (the stairs, the round's first hit or miss), with no extra click in front. | user | open |
 | M32 | While a round types, tap a dimmed (locked) combat action, then a foe card. The round lands, and neither tap clicks. | user | open |
 | M33 | *(edge)* Open the ☰ during a fight and tap the dimmed MAKE CAMP row (the L17 rows): no click sound. The EFFECTS release preview still plays its one tap (see M4). | user | open |
-| M34 | Walk across several water squares in a row: every step splashes, not just the first. Step out onto dry ground: the ordinary footstep plays. | user | open |
+| M34 | Walk across several water squares in a row: every step splashes, not just the first. Step out onto dry ground: the ordinary footstep plays. *(if available)* With a Cloak of Flying / Bracelet of Flight or the Cloak of Ether **in use**, cross water: every step is the ordinary dry footstep, never a splash (quick 260924-g8m, user ruling 2026-09-24). | user | open |
 | M35 | In a fight, get a status on your hero (Afraid from a phobia, or Poisoned) and tap its chit in the strip under the HUD. A card appears with the same description you would see outside a fight, above the what-happened strip and the action buttons, covering neither. A tap on the card dismisses it. | user | open |
 | M36 | Tap a chit while a round is still typing. The card appears at once, the round keeps playing (it is not skipped), and the tap clicks. | user | open |
 | M37 | Tap a chit, then long-press a foe: the foe card replaces the chit card. Tap a chit again: the chit card replaces the foe card. | user | open |
