@@ -93,6 +93,7 @@ Last activity: 2026-09-24 — Phase 71 complete, transitioned to Phase 999.1
 
 ### Pending Todos
 
+- 2026-09-24 — **Stairs descent fades to black** (user): fade to black while the stairs clip plays, swap floors while dark, fade in on the new level; lock input during it; reduced-motion fallback — `todos/pending/2026-09-24-stairs-descent-fades-to-black-with-the-stairs-sound-then-fades-in.md`
 - 2026-09-24 — **Settings sheet drag scrubs a volume slider** (user, on-device): a vertical drag that starts on a MASTER/MUSIC/EFFECTS slider moves the volume instead of scrolling the sheet — `todos/pending/2026-09-24-settings-sheet-drag-scrub-moves-volume-sliders.md`
 - 2026-09-24 — **Last fight-log row won't reveal its roll** (user, on-device): the bottom-most row of THE FIGHT SO FAR sheet can't be tapped to expand — `todos/pending/2026-09-24-last-fight-log-row-cannot-be-tapped-to-reveal-its-roll.md`
 - 2026-09-23 — **Narrative pass** (user): clarity/stilted-language cleanup of every in-game line (Oracle, rail, fight log, refusals, content descriptions, epitaphs); milestone- or phase-sized, after v2.0 — `todos/pending/2026-09-23-narrative-pass-clarity-cleanup-of-every-in-game-line.md`
