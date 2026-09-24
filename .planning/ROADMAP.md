@@ -154,7 +154,25 @@ Plans:
   4. Leaderboard IDs are keyed per board per season; bumping the season points new submissions at the new IDs while old-season boards stay readable and are never written again
   5. After a run's scores are submitted, the death flow shows the player's rank as a quip in voice from a `content/` bank; a run submitted from the offline queue reports its placement on the next successful flush, and a signed-out or Compete-off run shows no rank line and no error
 
-**Plans**: TBD
+**Plans**: 7 plans (3 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 68-01-PLAN.md — (wave 1) `src/browser/scoreTag.js` (the v1 64-char tag, name truncation, defensive decode), `src/browser/boardScores.js` (D-16 encodings, fallback decode, ID lookup), `content/leaderboards.js` (season → five placeholder IDs), runbook leaderboards + season-bump sections (PGS-03, PGS-06)
+- [ ] 68-02-PLAN.md — (wave 1) `src/browser/playGames.js` leaderboard methods on the native provider and the fake (submitScore, loadTopScores, loadPlayerScore, loadStanding, friendsAccess; validated, image-free, time-bounded) (PGS-03, PGS-04, PGS-05)
+- [ ] 68-03-PLAN.md — (wave 1) `content/placement.js` rank-quip bank + deferred card + season-drop line, the panel's global copy, and the pure `src/browser/placement.js` view model, safety-scanned (PLACE-01, PLACE-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 68-04-PLAN.md — (wave 2) the adapter's run-recorded listener and `src/browser/pgsQueue.js` (ddr.pgsqueue.v1: enqueue-then-flush, ack per run+board, season drop, placeholder skip, purge, single-flight backoff, DEEPEST standing) (PGS-03, PGS-04, PGS-06)
+- [ ] 68-05-PLAN.md — (wave 2) `src/browser/globalBoards.js`: per season/board/scope fetch + 5-minute cache, stale/unreachable/closed/consent states, LINEAGE's 25-score DEEPEST sample, zero calls when inactive (PGS-05)
+- [ ] 68-06-PLAN.md — (wave 2) the panel's live ALL/FRIENDS views: global rows with YOU/FRIEND and the pinned best run, real-rank standing, consent button, SEASON label + picker, LINEAGE grouping, CSS (PGS-05, PGS-06)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 68-07-PLAN.md — (wave 3) shell wiring: death → queue, flush triggers, Compete-OFF purge, the THAT IS THAT rank line (`window.__mzPlacement`), the parked deferred card, the season-drop Oracle line, the panel's global seams, docs (PGS-03, PGS-04, PGS-05, PLACE-01, PLACE-02)
+
 **Research**: none — builds directly on Phase 67's plugin, tag-encoding and LINEAGE-form decisions.
 **UI hint**: yes
 
@@ -331,7 +349,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`. Phase artifacts: `.plannin
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 0/8 | Planned | - |
-| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/TBD | Not started | - |
+| 68. Global Boards, Submissions & "You Placed X" | v2.0 | 0/7 | Planned | - |
 | 69. Compliance & Device Close | v2.0 | 0/TBD | Not started | - |
 | 61. Gear Rules & Store Purchase Fix | v1.9 | 4/4 | Complete    | 2026-09-23 |
 | 62. Gear Tab Layout Rebuild | v1.9 | 3/3 | Complete    | 2026-09-23 |
