@@ -537,7 +537,8 @@ test("(k) openCampSheet/closeCampSheet: the refusal/lock/arm/guard wiring, both 
   assert.match(closeMarksRegion, /lastDismissAt = Date\.now\(\);/);
 
   assert.equal((CODE.match(/document\.getElementById\("mw-camp-scrim"\)\.addEventListener\("click", closeCampSheet\);/g) || []).length, 1);
-  assert.equal((CODE.match(/document\.getElementById\("btn-camp"\)\.onclick = openCampSheet;/g) || []).length, 1);
+  // Phase 70 (D-07): the MAKE CAMP row closes the ☰ first (closeMenuThen).
+  assert.equal((CODE.match(/document\.getElementById\("btn-camp"\)\.onclick = closeMenuThen\(openCampSheet\);/g) || []).length, 1);
 });
 
 // ─── (l) settle-stamp / encounterSettled counts ────────────────────────────

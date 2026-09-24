@@ -21,7 +21,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripHtml } from "../../tools/ident-sweep.mjs";
-import { HUD_MENU_ITEMS, HUD_MENU_GLYPH } from "../../src/browser/hudMenu.js";
+import { HUD_MENU_ITEMS, HUD_MENU_GLYPH, HUD_MENU_QUIT_COPY } from "../../src/browser/hudMenu.js";
 import { textScaleForSize } from "../../src/browser/settings.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
 import { COUNTER_SLOT_CH, identityParts, identityLine } from "../../src/browser/hudBands.js";
@@ -337,11 +337,11 @@ test("(11) BEHAVIOUR: with __mzHudMenu deleted from the sandbox window, the ☰ 
 
 // ─── (12) accessibility ───────────────────────────────────────────────────
 
-test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-label; the dropdown is role=menu; every row is role=menuitem; aria-expanded mirrors data-open across open and close", () => {
+test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-label; the dropdown is role=menu; every row (the four legacy rows plus Phase 70's SAVE & QUIT and ABANDON) is role=menuitem; aria-expanded mirrors data-open across open and close", () => {
   assert.match(HTML, /id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"/);
   assert.match(HTML, /<div class="mw-hud-menu" id="mw-hud-menu" role="menu" aria-label="Map menu" data-open="0">/);
   const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', "</header>");
-  assert.equal((menuSlice.match(/role="menuitem"/g) || []).length, 4, "all four rows must be role=menuitem");
+  assert.equal((menuSlice.match(/role="menuitem"/g) || []).length, 6, "all six rows must be role=menuitem");
 
   const { doc } = freshSandbox(states.thief);
   menuBtn(doc).onclick();
@@ -509,4 +509,87 @@ test("(16) the ☰ wears the account face and the dropdown opens on the ACCOUNT 
   assert.ok(pxOf(ruleFor("\\.mw-acct-action"), "min-height") >= 48);
   assert.ok(pxOf(ruleFor("\\.mw-acct-opt"), "min-height") >= 48);
   assert.ok(pxOf(ruleFor("\\.mw-hud-menu-item"), "min-height") >= 48);
+});
+
+// ─── (17) Phase 70 (POLISH-03, D-06): the quit rows ─────────────────────
+
+const decodeAmp = (t) => t.replace(/&amp;/g, "&");
+
+test("(17) the dropdown's rows are the ACCOUNT host, the four HUD_MENU_ITEMS rows, SAVE & QUIT, then ABANDON THIS CHARACTER last (danger look, data-armed/data-dead 0, three labels equal to HUD_MENU_QUIT_COPY); the label-switch CSS exists; the HERO tab's Delve panel and its two legacy ids are gone", () => {
+  const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', '<div class="mw-hud-menu-scrim"');
+  const ids =[...menuSlice.replace(/<!--[\s\S]*?-->/g, "").matchAll(/<(?:div|button)\b[^>]*\bid="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(ids, ["mw-hud-menu", "mw-hud-menu-acct", ...HUD_MENU_ITEMS.map((r) => r.id), "mw-menu-save-quit", "mw-menu-abandon"]);
+
+  const save = menuSlice.match(/<button type="button" role="menuitem" class="([^"]+)" id="mw-menu-save-quit">([\s\S]*?)<\/button>/);
+  assert.ok(save, "SAVE & QUIT row markup");
+  assert.deepStrictEqual(save[1].split(" "), ["mw-hud-menu-item", "mw-hud-menu-quit", "mw-hud-menu-split"]);
+  const saveLabels = [...save[2].matchAll(/<span class="mw-hud-menu-label">([^<]+)<\/span>/g)].map((m) => decodeAmp(m[1]));
+  assert.deepStrictEqual(saveLabels, [HUD_MENU_QUIT_COPY.saveQuit]);
+
+  const abandon = menuSlice.match(/<button type="button" role="menuitem" class="([^"]+)" id="mw-menu-abandon" data-armed="0" data-dead="0">([\s\S]*?)<\/button>/);
+  assert.ok(abandon, "ABANDON row markup with data-armed=\"0\" data-dead=\"0\"");
+  assert.deepStrictEqual(abandon[1].split(" "), ["mw-hud-menu-item", "mw-hud-menu-quit", "mw-danger-btn"]);
+  const abandonLabels = [...abandon[2].matchAll(/<span class="mw-hud-menu-label" data-when="([^"]+)">([^<]+)<\/span>/g)].map((m) => [m[1], decodeAmp(m[2])]);
+  assert.deepStrictEqual(abandonLabels, [
+    ["idle", HUD_MENU_QUIT_COPY.abandon],
+    ["armed", HUD_MENU_QUIT_COPY.armed],
+    ["dead", HUD_MENU_QUIT_COPY.newCharacter],
+  ]);
+  assert.ok(menuSlice.lastIndexOf("</button>") === menuSlice.indexOf("</button>", menuSlice.indexOf('id="mw-menu-abandon"')), "ABANDON is the last row");
+
+  // The label switch: all three hidden, then exactly one shown by state;
+  // only display is declared, and nothing animates.
+  assert.match(HTML, /^\.mw-hud-menu-quit \.mw-hud-menu-label\[data-when\]\{display:none\}$/m);
+  assert.match(HTML, /^\.mw-hud-menu-quit\[data-dead="0"\]\[data-armed="0"\] \.mw-hud-menu-label\[data-when="idle"\]\{display:inline\}$/m);
+  assert.match(HTML, /^\.mw-hud-menu-quit\[data-dead="0"\]\[data-armed="1"\] \.mw-hud-menu-label\[data-when="armed"\]\{display:inline\}$/m);
+  assert.match(HTML, /^\.mw-hud-menu-quit\[data-dead="1"\] \.mw-hud-menu-label\[data-when="dead"\]\{display:inline\}$/m);
+  assert.match(ruleFor("\\.mw-hud-menu-item\\.mw-hud-menu-quit"), /^padding-left:42px$/);
+  assert.match(ruleFor("\\.mw-hud-menu-item\\.mw-hud-menu-split"), /border-top:4px solid/);
+  for (const sel of ["\\.mw-hud-menu-item\\.mw-hud-menu-quit", "\\.mw-hud-menu-item\\.mw-hud-menu-split"]) {
+    assert.doesNotMatch(ruleFor(sel), /animation|transition|min-height/, `${sel} declares no motion and keeps the 48px row floor`);
+  }
+  // The danger look outranks the generic menu-item fill on hover and press.
+  assert.match(HTML, /^button\.mw-danger-btn\{border-color:var\(--mw-danger-border\);background:var\(--mw-danger-panel\);color:var\(--stamp\)\}$/m);
+  assert.match(HTML, /^button\.mw-danger-btn:hover:not\(:disabled\)\{background:#341814\}$/m);
+  assert.doesNotMatch(HTML, /^\.mw-hud-menu-item:(?:hover|active)/m, "no menu-item hover/active fill that could outrank the danger look");
+
+  // The HERO tab's Delve panel is gone (no dual path).
+  for (const id of ["btn-save-quit", "btn-abandon-character"]) {
+    assert.equal(HTML.indexOf(`id="${id}"`), -1, `#${id} is retired`);
+    assert.equal(CODE.indexOf(`"${id}"`), -1, `no wiring names ${id}`);
+  }
+  assert.doesNotMatch(HTML, /<h2>Delve<\/h2>/);
+});
+
+// ─── (18) BEHAVIOUR: every close disarms, opening stamps data-dead ──────
+
+test("(18) BEHAVIOUR: an armed ABANDON row reads data-armed \"0\" after every close (scrim, select, escape, tab, encounter); opening stamps data-dead \"1\" for a dead hero and \"0\" for a live one", () => {
+  const abandonEl = (doc) => doc.elementsById.get("mw-menu-abandon") || doc.getElementById("mw-menu-abandon");
+  const closers = {
+    scrim: (doc) => scrimEl(doc).onclick(),
+    select: (doc) => menuEl(doc).onclick(),
+    escape: (doc, sandbox) => sandbox.context.hudMenuEvent("escape"),
+    tab: (doc, sandbox) => sandbox.context.window.__mzShowTab("hero"),
+    encounter: (doc, sandbox) => sandbox.context.hudMenuEvent("encounter"),
+  };
+  for (const [name, close] of Object.entries(closers)) {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc), `${name}: opened`);
+    abandonEl(doc).dataset.armed = "1";
+    close(doc, sandbox);
+    assert.ok(isClosed(doc), `${name}: closed`);
+    assert.equal(abandonEl(doc).dataset.armed, "0", `${name}: the close disarms the row`);
+  }
+
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.setState({ ...states.thief, dead: true });
+    sandbox.context.setHudMenuOpen(true);
+    assert.equal(abandonEl(doc).dataset.dead, "1", "a dead hero stamps data-dead 1");
+    sandbox.context.setHudMenuOpen(false);
+    sandbox.setState({ ...states.thief, dead: false });
+    sandbox.context.setHudMenuOpen(true);
+    assert.equal(abandonEl(doc).dataset.dead, "0", "a live hero stamps data-dead 0");
+  }
 });

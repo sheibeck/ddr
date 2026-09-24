@@ -1139,6 +1139,22 @@ html,body{height:100%}
 .mw-hud-menu-glyph[data-glyph="centre"]{color:#8fb08a;font-size:14px}
 .mw-hud-menu-glyph[data-glyph="camp"]{color:#b9a4ef;font-size:16px}
 .mw-hud-menu-glyph[data-glyph="settings"]{color:#9a8f76;font-size:15px}
+/* Phase 70 (D-06): the two quit rows. They carry no glyph, so their labels
+   start where the glyph rows' labels do: padding-left 42px = the row's
+   14px + the 18px glyph + the 10px gap. .mw-hud-menu-split draws a heavier
+   divider above SAVE & QUIT. ABANDON THIS CHARACTER also carries
+   button.mw-danger-btn (0,1,1), which outranks .mw-hud-menu-item's fill and
+   colour (0,1,0); its own :hover/:active rules (0,3,1) outrank the generic
+   hover and press, so a stuck hover or a press never flashes the menu-item
+   fill. Exactly one of its three labels shows: data-dead wins (NEW
+   CHARACTER), then data-armed (TAP AGAIN TO BURY THEM), else the idle
+   label. Only display flips: no animation, no layout change. */
+.mw-hud-menu-item.mw-hud-menu-quit{padding-left:42px}
+.mw-hud-menu-item.mw-hud-menu-split{border-top:4px solid #3a3226}
+.mw-hud-menu-quit .mw-hud-menu-label[data-when]{display:none}
+.mw-hud-menu-quit[data-dead="0"][data-armed="0"] .mw-hud-menu-label[data-when="idle"]{display:inline}
+.mw-hud-menu-quit[data-dead="0"][data-armed="1"] .mw-hud-menu-label[data-when="armed"]{display:inline}
+.mw-hud-menu-quit[data-dead="1"] .mw-hud-menu-label[data-when="dead"]{display:inline}
 /* T-57-15/T-57-16: a transparent, fixed full-screen scrim, present only
    while the menu is open — the tap that closes the menu (any tap but the
    menu itself) lands HERE, never on the map, structurally (the scrim is not
@@ -1375,8 +1391,8 @@ body[data-boards-entry="title"] #mw-rail{display:none}
    one exists, or opens #mw-roller-screen (the "THE TABLES DECIDE" roll
    screen, the only place a new character is ever rolled) when it doesn't —
    see the trailing module script's `resumeIntent`/showTitleScreen(). This
-   screen can also reappear mid-session via window.mzAbandonRun (HERO tab's
-   abandon-run action). */
+   screen can also reappear mid-session via window.mzAbandonRun (the ☰
+   menu's SAVE & QUIT row, Phase 70 D-06). */
 .mw-title-screen{
   position:fixed;inset:0;z-index:50;
   display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
@@ -1959,6 +1975,20 @@ body[data-boards-entry="title"] #mw-rail{display:none}
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-centre"><span class="mw-hud-menu-glyph" data-glyph="centre" aria-hidden="true">&#8853;</span><span class="mw-hud-menu-label">CENTRE MAP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="btn-camp"><span class="mw-hud-menu-glyph" data-glyph="camp" aria-hidden="true">&#9790;</span><span class="mw-hud-menu-label">MAKE CAMP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn"><span class="mw-hud-menu-glyph" data-glyph="settings" aria-hidden="true">&#9881;</span><span class="mw-hud-menu-label">SETTINGS</span></button>
+          <!-- Phase 70 (POLISH-03, D-06; user request 2026-09-24): Save & quit
+               and Abandon moved here from the HERO tab's retired Delve
+               panel. SAVE & QUIT is non-destructive and has no dialog.
+               ABANDON THIS CHARACTER is last, in the danger look, and
+               arms in the row: the first tap shows TAP AGAIN TO BURY
+               THEM (data-armed="1"), the second buries the hero; the arm
+               expires after ABANDON_ARM_MS or whenever the menu closes,
+               and Settings › Confirm before quit Off makes it one tap.
+               With the hero dead (data-dead="1") the row reads NEW
+               CHARACTER. The CSS shows exactly one of the three labels;
+               src/browser/hudMenu.js#HUD_MENU_QUIT_COPY is the copy source
+               of truth and abandonRowNext the arm rule. -->
+          <button type="button" role="menuitem" class="mw-hud-menu-item mw-hud-menu-quit mw-hud-menu-split" id="mw-menu-save-quit"><span class="mw-hud-menu-label">SAVE &amp; QUIT</span></button>
+          <button type="button" role="menuitem" class="mw-hud-menu-item mw-hud-menu-quit mw-danger-btn" id="mw-menu-abandon" data-armed="0" data-dead="0"><span class="mw-hud-menu-label" data-when="idle">ABANDON THIS CHARACTER</span><span class="mw-hud-menu-label" data-when="armed">TAP AGAIN TO BURY THEM</span><span class="mw-hud-menu-label" data-when="dead">NEW CHARACTER</span></button>
         </div>
       </div>
     </div>
@@ -2152,26 +2182,6 @@ body[data-boards-entry="title"] #mw-rail{display:none}
       <section class="panel dossier">
         <h2>The Game Master's notes <span id="doss-who"></span></h2>
         <div class="doss" id="doss"></div>
-      </section>
-
-      <section class="panel">
-        <h2>Delve</h2>
-        <div class="actions">
-          <!-- Device-review Pass B1 item 2: "Save & quit" (formerly
-               "Abandon your run") — the NON-destructive quit. The run stays
-               saved (persist() already runs after every dispatch), so this
-               just returns to the title screen with resume armed; the
-               title's single ENTER button (Pass B1 item 1) is what actually
-               resumes it. Not styled as danger — nothing is lost.
-               Device-review Pass B1 item 3: "Abandon this character"
-               (formerly "Clear save," which wrongly rerolled a new
-               character immediately) — the DESTRUCTIVE option. Buries the
-               CURRENT character in the graveyard (window.mzAbandonCharacter
-               below) and leaves no active run, so the next ENTER instead
-               opens the roller for a brand-new character. -->
-          <button class="small" id="btn-save-quit">Save &amp; quit</button>
-          <button class="small mw-danger-btn" id="btn-abandon-character">Abandon this character</button>
-        </div>
       </section>
     </section>
 
@@ -4912,33 +4922,6 @@ document.getElementById("enc-panel")?.addEventListener("click", beatHurryTap, tr
 // reader and writer. window.__mzClassicBoot below no longer has a
 // no-saved-run fallback to call, and no graveyard to load.
 
-// Device-review Pass B1 item 2: "Save & quit" no longer rerolls immediately
-// — it returns to the title screen (confirm first), where the single ENTER
-// button resumes this exact run. The module script below defines
-// window.mzAbandonRun (same bridge pattern as window.move above it); it is
-// the only path now — a missing bridge is a boot bug to surface, not a
-// reason to keep a classic fallback alive.
-document.getElementById("btn-save-quit").onclick = () => {
-  window.mzAbandonRun();
-};
-// Device-review Pass B1 item 3: "Abandon this character" (formerly "Clear
-// save", which wrongly rerolled a new character immediately) is the
-// DESTRUCTIVE option — it buries the CURRENT character in the graveyard via
-// the engine's own "abandon" action (window.mzAbandonCharacter, module
-// script below) and leaves no active run.
-document.getElementById("btn-abandon-character").onclick = () => {
-  // DR16 fix: once the character is DEAD they are already buried in the
-  // graveyard (die()->persistGrave), so "Abandon this character" is meaningless
-  // — the button becomes "New Character" (label flipped in paint()) and starts a
-  // fresh roll instead. This restores the new-run path the death->graveyard
-  // Confirm change removed. While ALIVE it is still the destructive abandon.
-  const st = window.__mzState && window.__mzState.get();
-  if (st && st.dead) {
-    window.mzStartRoll();
-  } else {
-    window.mzAbandonCharacter();
-  }
-};
 // Phase 35 (MAP-06): the camp row (Phase 57 Plan 05: the ☰ HUD menu's MAKE
 // CAMP row, formerly a chip) opens the MAKE CAMP bottom sheet (openCampSheet,
 // defined further down) instead of dispatching "camp" directly — SLEEP
@@ -5006,7 +4989,7 @@ function closeMarksLegend() {
   // CLOSE_MS + CLOSE_SLACK_MS (154ms) — still covers the whole close.
   lastDismissAt = Date.now();
 }
-document.getElementById("mw-chip-marks").addEventListener("click", openMarksLegend);
+document.getElementById("mw-chip-marks").addEventListener("click", closeMenuThen(openMarksLegend));
 document.getElementById("mw-legend-scrim").addEventListener("click", closeMarksLegend);
 document.getElementById("mw-legend-close").addEventListener("click", closeMarksLegend);
 
@@ -5039,7 +5022,7 @@ function closeCampSheet() {
   lastDismissAt = Date.now();
 }
 document.getElementById("mw-camp-scrim").addEventListener("click", closeCampSheet);
-document.getElementById("btn-camp").onclick = openCampSheet;
+document.getElementById("btn-camp").onclick = closeMenuThen(openCampSheet);
 
 // Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet, on the camp-sheet
 // pattern — window.__mzGearSheet (src/browser/gearSheet.js#renderGearSheet)
@@ -5105,7 +5088,7 @@ function glideCenterMap() {
     centerMap();
   }
 }
-document.getElementById("mw-chip-centre").addEventListener("click", glideCenterMap);
+document.getElementById("mw-chip-centre").addEventListener("click", closeMenuThen(glideCenterMap));
 // Device-review Pass B1 item 4: bridged onto window (same pattern as
 // window.move/window.newGame/window.__mzState) so the trailing module
 // script can auto-recenter the viewport on the party without duplicating
@@ -5136,6 +5119,16 @@ function setHudMenuOpen(open) {
   if (scrim) scrim.dataset.open = state;
   const btn = document.getElementById("mw-hud-menu-btn");
   if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+  // Phase 70 (D-06): the ABANDON row's two label states. Opening stamps
+  // data-dead from the live state (read through window.__mzState, never a
+  // bare S, so this stays TDZ-safe), which swaps the row to NEW CHARACTER;
+  // every close (select, outside, tab, encounter, escape, toggle) disarms
+  // it, so a stale TAP AGAIN TO BURY THEM never survives the menu.
+  const abandonRow = document.getElementById("mw-menu-abandon");
+  if (abandonRow) {
+    if (open) abandonRow.dataset.dead = window.__mzState?.get?.()?.dead === true ? "1" : "0";
+    else abandonRow.dataset.armed = "0";
+  }
 }
 // hudMenuEvent(kind) must be TDZ-safe: showTab's init-time call (below) runs
 // BEFORE `let S` — reading `S` directly there is the 2026-09-17 boot-killing
@@ -5150,6 +5143,20 @@ function hudMenuEvent(kind) {
   const next = window.__mzHudMenu ? window.__mzHudMenu.next(open, kind, { encounter }) : false;
   if (next !== open) setHudMenuOpen(next);
   if (kind === "escape" && !next) document.getElementById("mw-hud-menu-btn")?.focus();
+}
+// Phase 70 (D-07): every ☰ row closes the menu BEFORE its action runs, so a
+// sheet, the title screen or the roller it opens never appears under a
+// still-open dropdown. closeMenuThen(fn) wraps a row's existing handler:
+// raise "select" (closing the menu), then run fn with the click's
+// arguments. A hoisted declaration, so the module script's rows (SETTINGS,
+// the ACCOUNT block, the quit rows) reach it the way they reach
+// hudMenuEvent. The container's own bubble "select" below stays as the
+// Phase 57 safety net; on an already-closed menu it is a no-op.
+function closeMenuThen(fn) {
+  return function (...args) {
+    hudMenuEvent("select");
+    return fn.apply(this, args);
+  };
 }
 document.getElementById("mw-hud-menu-btn").onclick = () => hudMenuEvent("toggle");
 document.getElementById("mw-hud-menu-scrim").onclick = () => hudMenuEvent("outside");
@@ -5618,7 +5625,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 57 (LAYOUT-04/05), Plan 05 — the pure ☰ HUD menu open/close
   // reducer, bridged as __mzHudMenu below so the shell holds no second copy
   // of the menu's close rules.
-  import { hudMenuNext } from "./src/browser/hudMenu.js";
+  import { hudMenuNext, abandonRowNext, ABANDON_ARM_MS } from "./src/browser/hudMenu.js";
   // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
   import { usableBy, dropShelfItems } from "./src/browser/viewModels.js";
@@ -6000,7 +6007,7 @@ window.__mzClassicBoot = async function classicBoot() {
     // callers (scrim, Close) funnel through here.
     window.mzKeepPartyInView?.();
   }
-  document.getElementById("mw-gear-btn")?.addEventListener("click", openSettingsSheet);
+  document.getElementById("mw-gear-btn")?.addEventListener("click", closeMenuThen(openSettingsSheet));
   document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
   document.getElementById("mw-settings-close")?.addEventListener("click", closeSettingsSheet);
 
@@ -6049,6 +6056,53 @@ window.__mzClassicBoot = async function classicBoot() {
   document.getElementById("mw-title-acct-chip")?.addEventListener("click", () => openAccountSheet());
   document.getElementById("mw-acct-scrim")?.addEventListener("click", closeAccountSheet);
   document.getElementById("mw-acct-close")?.addEventListener("click", closeAccountSheet);
+
+  // Phase 70 (POLISH-03, D-06/D-07): the ☰'s two quit rows. Both stop the
+  // click from bubbling to the dropdown's own "select" safety net, because
+  // they decide themselves when the menu closes.
+  // - SAVE & QUIT closes the menu, then calls window.mzAbandonRun (the
+  //   non-destructive quit to the title, no dialog).
+  // - ABANDON THIS CHARACTER asks abandonRowNext (src/browser/hudMenu.js).
+  //   With Settings › Confirm before quit On (the default) the first tap
+  //   only arms the row (data-armed "1", TAP AGAIN TO BURY THEM) and leaves
+  //   the menu open; one ABANDON_ARM_MS timer disarms it, restarted on each
+  //   arm, and setHudMenuOpen disarms it whenever the menu closes. A tap
+  //   while armed, or any tap with the setting Off, closes the menu, then
+  //   buries the hero through window.mzAbandonCharacter. With the hero dead
+  //   the row is NEW CHARACTER: a tap closes the menu, then rolls a new
+  //   hero (window.mzStartRoll).
+  let abandonArmTimer = null;
+  document.getElementById("mw-menu-save-quit")?.addEventListener("click", (e) => {
+    e?.stopPropagation?.();
+    hudMenuEvent("select");
+    window.mzAbandonRun();
+  });
+  document.getElementById("mw-menu-abandon")?.addEventListener("click", (e) => {
+    e?.stopPropagation?.();
+    const row = document.getElementById("mw-menu-abandon");
+    if (!row) return;
+    const r = abandonRowNext(row.dataset.armed === "1", "tap", {
+      dead: window.__mzState?.get?.()?.dead === true,
+      confirm: shouldConfirmQuit(currentSettings),
+    });
+    row.dataset.armed = r.armed ? "1" : "0";
+    if (abandonArmTimer !== null) {
+      clearTimeout(abandonArmTimer);
+      abandonArmTimer = null;
+    }
+    if (r.act === null) {
+      if (r.armed) {
+        abandonArmTimer = setTimeout(() => {
+          abandonArmTimer = null;
+          row.dataset.armed = "0";
+        }, ABANDON_ARM_MS);
+      }
+      return;
+    }
+    hudMenuEvent("select");
+    if (r.act === "newCharacter") window.mzStartRoll();
+    else window.mzAbandonCharacter();
+  });
 
   // Phase 21 (TUNE-04, D-13/D-22): a small, LOCAL long-press handler for the
   // hidden dev row — deliberately NOT the maze viewport's own tap-vs-drag
@@ -7133,7 +7187,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // on a captured `sheet` while the CTA committed a separately-tracked
   // pending state (SC1/SC2). commitRolledState above is the commit callback
   // — window.mzStartRoll stays the bridge name both roll triggers
-  // (title ENTER, the dead Hero tab's "New Character") call.
+  // (title ENTER, the ☰ menu's dead-state NEW CHARACTER row) call.
   const roller = createRoller({
     doc: document,
     startNewRun,
@@ -7227,18 +7281,21 @@ window.__mzClassicBoot = async function classicBoot() {
     screen.hidden = false;
   }
 
-  // Device-review Pass B1 item 2: "Save & quit" (HERO tab's #btn-save-quit,
-  // formerly "Abandon your run") — the NON-destructive quit. startNewRun()
-  // is never called here, so the run's save is untouched; resumeIntent (now
-  // forced true) picks that exact run back up on the next ENTER tap.
+  // Device-review Pass B1 item 2 / Phase 70 (D-06): "Save & quit" — the ☰
+  // menu's SAVE & QUIT row (the HERO tab's Delve panel is retired) — the
+  // NON-destructive quit. There is no dialog: nothing is lost (DISC-2).
+  // startNewRun() is never called here, so the run's save is untouched
+  // (persist() already runs after every dispatch). With a live hero,
+  // resumeIntent picks that exact run back up on the next ENTER tap,
+  // mid-encounter included. A dead hero's Save & quit arms no resume, so
+  // ENTER rolls a new hero — the same as relaunching on a dead save.
   window.mzAbandonRun = function saveAndQuit() {
-    const ok = window.confirm("Save and quit to the title screen? Enter will pick this delve back up.");
-    if (!ok) return;
-    showTitleScreen({ allowResume: true });
+    showTitleScreen({ allowResume: hasActiveDelveSave() });
   };
 
-  // Device-review Pass B1 item 3: "Abandon this character" (HERO tab's
-  // #btn-abandon-character, formerly "Clear save," which wrongly rerolled a
+  // Device-review Pass B1 item 3 / Phase 70 (D-06): "Abandon this
+  // character" — the ☰ menu's ABANDON THIS CHARACTER row (formerly the HERO
+  // tab's button, and before that "Clear save," which wrongly rerolled a
   // new character immediately) — the DESTRUCTIVE option. Routes through the
   // engine's own "abandon" action (engine/engine.js -> engine/death.js#die(),
   // the SAME terminator every other death uses) so the RNG cursor advances
@@ -7251,19 +7308,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // above, a dead run is never offered for resume, so the next ENTER tap
   // opens the roller for a brand-new character — the exact same "no active
   // run left" contract every other death in this game already relies on.
-  // 04-DR9: gated by the Settings sheet's confirm-before-quit toggle
-  // (04-UI-SPEC.md "Confirm-before-quit" — this is the Sheet's "CUT LOSSES ·
-  // ROLL ANOTHER" action). ON (default): unchanged confirm-then-abandon
-  // flow. OFF: abandon immediately, no dialog. The Android back button's own
-  // press-twice-to-exit safety (nativeChrome.js#decideBackAction) is
-  // deliberately untouched by this setting — see settings.js's own header
-  // note and 04-UI-SPEC.md's "this phase doesn't change that logic".
+  // Phase 70 (D-06, DISC-1): no dialog here any more. Settings › Confirm
+  // before quit (04-DR9) now governs the row's in-row two-tap arm
+  // (abandonRowNext): On (default) = TAP AGAIN TO BURY THEM first, Off = one
+  // tap; by the time this runs the player has already confirmed. The
+  // Android back button's own press-twice-to-exit safety
+  // (nativeChrome.js#decideBackAction) is deliberately untouched by this
+  // setting — see settings.js's own header note.
   window.mzAbandonCharacter = function abandonCharacter() {
     if (!hasActiveDelveSave()) return;
-    if (shouldConfirmQuit(currentSettings)) {
-      const ok = window.confirm(`Abandon ${S.c.name}? They go in the graveyard for good — there is no undo.`);
-      if (!ok) return;
-    }
     const { state, html } = dispatchWithNarration({ type: "abandon" });
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);

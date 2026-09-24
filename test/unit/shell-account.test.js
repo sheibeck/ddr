@@ -6,8 +6,8 @@
 // the title chip and the account sheet (D-06..D-10), the Phase 70 account
 // surfaces (the ☰ face and the ACCOUNT block, D-03/D-04/D-07), the Android
 // back button, the Leaderboards identity seam (D-08) and the rail-card
-// parking (D-04, D-11). mazeworld.html has no ESM surface a test could import, so this uses
-// the comment-stripping and region-extraction technique of
+// parking (D-04, D-11). mazeworld.html has no ESM surface a test could
+// import, so this uses the comment-stripping and region-extraction technique of
 // test/unit/shell-boards-panel.test.js / shell-boards-entry.test.js: SOURCE
 // pins over the comment-stripped text, and BEHAVIOUR tests that evaluate the
 // exact shipped source of a region with fakes threaded in.
@@ -383,10 +383,11 @@ test("(F2) the ☰ menu keeps its four legacy rows (ids and listener lines) in o
   for (let i = 0; i < order.length; i++) assert.ok(order[i] !== -1, `row ${i} present`);
   for (let i = 1; i < order.length; i++) assert.ok(order[i - 1] < order[i], `row ${i} out of order`);
   assert.equal(menu.indexOf("<button"), menu.indexOf('id="mw-chip-marks"') - '<button type="button" role="menuitem" class="mw-hud-menu-item" '.length, "no row precedes the ACCOUNT host");
-  assert.match(CODE, /document\.getElementById\("mw-chip-marks"\)\.addEventListener\("click", openMarksLegend\);/);
-  assert.match(CODE, /document\.getElementById\("mw-chip-centre"\)\.addEventListener\("click", glideCenterMap\);/);
-  assert.match(CODE, /document\.getElementById\("btn-camp"\)\.onclick = openCampSheet;/);
-  assert.match(CODE, /document\.getElementById\("mw-gear-btn"\)\?\.addEventListener\("click", openSettingsSheet\);/);
+  // Phase 70 (D-07): every row closes the menu before its action.
+  assert.match(CODE, /document\.getElementById\("mw-chip-marks"\)\.addEventListener\("click", closeMenuThen\(openMarksLegend\)\);/);
+  assert.match(CODE, /document\.getElementById\("mw-chip-centre"\)\.addEventListener\("click", closeMenuThen\(glideCenterMap\)\);/);
+  assert.match(CODE, /document\.getElementById\("btn-camp"\)\.onclick = closeMenuThen\(openCampSheet\);/);
+  assert.match(CODE, /document\.getElementById\("mw-gear-btn"\)\?\.addEventListener\("click", closeMenuThen\(openSettingsSheet\)\);/);
 });
 
 test("(F3) no new window.__mz bridge in the account wiring, and the comment-stripped shell has no network-capable call", () => {

@@ -95,8 +95,8 @@ returns `Object.freeze({ start, commit, pending, dispose })`:
   cls, sub }` word lists built from `content/index.js`'s RACES/CLASSES).
 
 The mount assigns `window.mzStartRoll = roller.start` — the one bridge name
-both roll triggers (the title screen's ENTER button, and the dead Hero
-tab's "New Character" button) call. The same never-`window`/`document`
+both roll triggers (the title screen's ENTER button, and the ☰ menu's
+dead-state NEW CHARACTER row, Phase 70) call. The same never-`window`/`document`
 invariant every other module in this doc follows applies here too — the
 factory reaches the page only through the injected `doc`.
 
@@ -240,6 +240,31 @@ The shell wiring (mazeworld.html's module script):
   and every account change calls `boardsPanel.refresh()`.
 
 No new `window.__mz` bridge: the account lives in the module script.
+
+### The ☰ menu rows (Phase 70)
+
+The ☰ dropdown (`#mw-hud-menu`) reads, top to bottom: the ACCOUNT block
+(`#mw-hud-menu-acct`), MARKS, CENTRE MAP, MAKE CAMP, SETTINGS (the four
+`HUD_MENU_ITEMS` rows), SAVE & QUIT (`#mw-menu-save-quit`), then ABANDON
+THIS CHARACTER (`#mw-menu-abandon`) last, in the danger look. The HERO
+tab's Delve panel and its two buttons are retired (D-06).
+
+- D-07: every row closes the menu before its action runs. The classic
+  `closeMenuThen(fn)` wraps each legacy row's existing handler (raise
+  `hudMenuEvent("select")`, then run it); the ACCOUNT rows and the quit rows
+  raise `select` themselves before calling the controller or the bridge. The
+  dropdown's own bubble `select` stays as a no-op safety net.
+- SAVE & QUIT closes the menu, then calls `window.mzAbandonRun`, which shows
+  the title with `allowResume: hasActiveDelveSave()`. There is no dialog. A
+  live hero resumes on ENTER; a dead hero's Save & quit arms no resume.
+- ABANDON THIS CHARACTER arms in the row through `hudMenu.js`'s
+  `abandonRowNext`. With Settings › Confirm before quit On, the first tap
+  shows TAP AGAIN TO BURY THEM and a second tap within `ABANDON_ARM_MS`
+  closes the menu and calls `window.mzAbandonCharacter`; with it Off, one
+  tap does. The arm expires on its timer and whenever the menu closes
+  (`setHudMenuOpen` writes `data-armed="0"`). Opening the menu stamps
+  `data-dead` from the live state; while dead the row reads NEW CHARACTER
+  and calls `window.mzStartRoll`. There are no confirm dialogs.
 
 ### Global boards, submissions and placement (Phase 68)
 
