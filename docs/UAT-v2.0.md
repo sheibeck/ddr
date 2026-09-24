@@ -8,7 +8,7 @@
 
 **Sign-in and leaderboard rows** need the user's console setup in section 0; they are marked *(after console setup)*. On a locally built debug APK they also need the optional debug-keystore credential (`docs/PLAY-GAMES-SETUP.md` section 3, row 0.10). Without it, walk them on the Play build from closed testing.
 
-**Sources:** `.planning/phases/65-run-record-personal-bests/65-VERIFICATION.md` (10 items), `.planning/phases/66-leaderboards-panel-local/66-VERIFICATION.md` (18 items), `.planning/phases/67-play-games-integration-account-chip/67-VERIFICATION.md` (15 items) and `.planning/phases/68-global-boards-submissions-you-placed-x/68-VERIFICATION.md` (16 items), 59 in all. Extras came from the "Human verification (deferred to end of run)" sections of 65-03, 65-04, 65-05, 66-02 to 66-07, 67-01 to 67-08 and 68-01 to 68-07 (the sections in 65-01, 65-02 and 66-01 say None). Phase 70 (device-round polish, no VERIFICATION file) added section L from the "Human verification" sections of `.planning/quick/260924-51h-loop-theme-mp3-on-the-title-screen-v2-0/260924-51h-SUMMARY.md` (9 items), 70-01 (5), 70-02 (6), 70-03 (5) and 70-04 (7), 32 in all; it re-worded C1, C9, D1, D3, E2, E3 and E5 and superseded E1, E4 and B17. Phase 71 (device-round polish II, no VERIFICATION file) added section M from the "Human verification (deferred)" sections of 71-01 (6 items), 71-02 (4), 71-03 (5), 71-04 (7), 71-05 (5), 71-06 (4) and 71-07 (7), 38 in all, in `.planning/phases/71-device-round-polish-ii/`; it re-worded L1 and M16 (71-07's long-press silence merged into M16) and superseded no row. Items were merged and reordered for one pass; the **Source map** at the end accounts for every source item.
+**Sources:** `.planning/phases/65-run-record-personal-bests/65-VERIFICATION.md` (10 items), `.planning/phases/66-leaderboards-panel-local/66-VERIFICATION.md` (18 items), `.planning/phases/67-play-games-integration-account-chip/67-VERIFICATION.md` (15 items) and `.planning/phases/68-global-boards-submissions-you-placed-x/68-VERIFICATION.md` (16 items), 59 in all. Extras came from the "Human verification (deferred to end of run)" sections of 65-03, 65-04, 65-05, 66-02 to 66-07, 67-01 to 67-08 and 68-01 to 68-07 (the sections in 65-01, 65-02 and 66-01 say None). Phase 70 (device-round polish, no VERIFICATION file) added section L from the "Human verification" sections of `.planning/quick/260924-51h-loop-theme-mp3-on-the-title-screen-v2-0/260924-51h-SUMMARY.md` (9 items), 70-01 (5), 70-02 (6), 70-03 (5) and 70-04 (7), 32 in all; it re-worded C1, C9, D1, D3, E2, E3 and E5 and superseded E1, E4 and B17. Phase 71 (device-round polish II, no VERIFICATION file) added section M from the "Human verification (deferred)" sections of 71-01 (6 items), 71-02 (4), 71-03 (5), 71-04 (7), 71-05 (5), 71-06 (4), 71-07 (7) and 71-08 (7), 45 in all, in `.planning/phases/71-device-round-polish-ii/`; it re-worded L1 and M16 (71-07's long-press silence merged into M16) and superseded no row. Items were merged and reordered for one pass; the **Source map** at the end accounts for every source item.
 
 **Suggested order:**
 1. Section 0, the console, website and upload steps (user), except row 0.8, which waits for F1.
@@ -191,9 +191,9 @@ Walk on the Phase 70 debug APK the orchestrator installs with `adb install -r` (
 | L28 | *(after console setup; signed in, Compete ON)* LINEAGE on ALL and FRIENDS lists only that lineage from the top 25 deepest, ranked 1..n; your own entry is pinned under NOT IN THE TOP TEN · YOUR BEST RUN when it isn't shown; the footnote reads "Filtered from the top 25 deepest corpses in the world…". Check at the default and largest text sizes. | user | open |
 | L29 | A deeper death of a race + sub-class you have died as before announces LINEAGE on NEW PERSONAL BEST as "Race Sub · floor n". The first death of a new lineage does not. | user | open |
 
-## M. Device-round polish II — Phase 71 (34)
+## M. Device-round polish II — Phase 71 (41)
 
-Walk on the Phase 71 debug APK the orchestrator installs with `adb install -r` (same debug signer, saves kept). Order: the sound mix and the volume sliders, the Gear sheet's stats, the combat lock and the tap-to-skip, the foe condition chips, the long-press foe card, the what-happened strip, THE FIGHT SO FAR sheet, then the UI tap sound and the water steps. No row needs the console setup. Rows are grouped by plan in walk order; a later Phase 71 plan appends its rows after the last one here, bumps the count in this heading, and adds its source lines at the end of the Source map's Phase 71 block.
+Walk on the Phase 71 debug APK the orchestrator installs with `adb install -r` (same debug signer, saves kept). Order: the sound mix and the volume sliders, the Gear sheet's stats, the combat lock and the tap-to-skip, the foe condition chips, the long-press foe card, the what-happened strip, THE FIGHT SO FAR sheet, the UI tap sound and the water steps, then the status chits in a fight. No row needs the console setup. Rows are grouped by plan in walk order; a later Phase 71 plan appends its rows after the last one here, bumps the count in this heading, and adds its source lines at the end of the Source map's Phase 71 block.
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
@@ -231,6 +231,13 @@ Walk on the Phase 71 debug APK the orchestrator installs with `adb install -r` (
 | M32 | While a round types, tap a dimmed (locked) combat action, then a foe card. The round lands, and neither tap clicks. | user | open |
 | M33 | *(edge)* Open the ☰ during a fight and tap the dimmed MAKE CAMP row (the L17 rows): no click sound. The EFFECTS release preview still plays its one tap (see M4). | user | open |
 | M34 | Walk across several water squares in a row: every step splashes, not just the first. Step out onto dry ground: the ordinary footstep plays. | user | open |
+| M35 | In a fight, get a status on your hero (Afraid from a phobia, or Poisoned) and tap its chit in the strip under the HUD. A card appears with the same description you would see outside a fight, above the what-happened strip and the action buttons, covering neither. A tap on the card dismisses it. | user | open |
+| M36 | Tap a chit while a round is still typing. The card appears at once, the round keeps playing (it is not skipped), and the tap clicks. | user | open |
+| M37 | Tap a chit, then long-press a foe: the foe card replaces the chit card. Tap a chit again: the chit card replaces the foe card. | user | open |
+| M38 | *(if available: a hero who can Hamstring, Mark or Blind a foe)* Put one or more of those on a foe, then long-press it. Each effect is on its own line with a one-line description. A short tap on that foe, even on its chip text, only aims. | user | open |
+| M39 | *(edge)* End the fight with a chit card up: it clears on its own after its normal hold. | user | open |
+| M40 | Outside a fight, a chit tap works exactly as before: the typed rail card with the chip's description. | user | open |
+| M41 | *(edge)* With TalkBack on, a chit is no longer announced as "disabled", and double-tapping it in a fight raises the card. | user | open |
 
 ## Z. Desk check — browser dev loop (2)
 
@@ -465,7 +472,14 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [71-07-S5] | a long press makes no click; a later short tap on the same foe clicks and aims | M16 | merged into 71-04-S2 (M16 re-worded) |
 | [71-07-S6] | *(edge)* a dimmed ☰ row is silent; the EFFECTS preview is intact | M33, M4 | own row for the ☰ half (edge); the EFFECTS preview half merged into 71-01-S4 (M4) |
 | [71-07-S7] | several water squares in a row splash on every step; dry ground plays the ordinary footstep | M34 | own row |
+| [71-08-S1] | a chit card in combat, same description as outside, above the strip and the actions; a tap dismisses it | M35 | own row |
+| [71-08-S2] | a chit tap mid-round shows the card at once, the round is not skipped, and the tap clicks | M36 | own row |
+| [71-08-S3] | a long press replaces the chit card; a chit tap replaces the foe card | M37 | own row |
+| [71-08-S4] | a foe's effects each on their own line with a description on the long-press card; a short tap, even on the chip text, only aims | M38 | own row (if available) |
+| [71-08-S5] | the fight ends with a chit card up: it clears after its normal hold | M39 | own row (edge) |
+| [71-08-S6] | outside a fight a chit tap is unchanged (the typed rail card) | M40 | own row |
+| [71-08-S7] | *(edge)* TalkBack no longer says "disabled" on a chit; a double-tap in a fight raises the card | M41 | own row (edge) |
 
 ---
 
-**Tally (written 2026-09-24, Phase 70 fold the same day; Phase 71 fold 2026-09-24):** 0 walked. Phase 70 added section L (29 rows) and Z2, re-worded C1, C9, D1, D3, E2, E3 and E5, and superseded E1, E4 and B17. Phase 71 (71-01 to 71-07) added section M (34 rows from 38 source items) and re-worded L1; it superseded no row. The 71-07 fold (2026-09-24) added M29 to M34 (the UI tap sound on a real press, D-15, and the water steps, D-17), merged its long-press silence into M16 (re-worded) and its EFFECTS-preview half into M4. The batch is run at the milestone close per the deferred-UAT protocol; RELEASE-BLOCKING row F1 must pass before any production rollout.
+**Tally (written 2026-09-24, Phase 70 fold the same day; Phase 71 fold 2026-09-24):** 0 walked. Phase 70 added section L (29 rows) and Z2, re-worded C1, C9, D1, D3, E2, E3 and E5, and superseded E1, E4 and B17. Phase 71 (71-01 to 71-08) added section M (41 rows from 45 source items) and re-worded L1; it superseded no row. The 71-07 fold (2026-09-24) added M29 to M34 (the UI tap sound on a real press, D-15, and the water steps, D-17), merged its long-press silence into M16 (re-worded) and its EFFECTS-preview half into M4. The 71-08 fold (2026-09-24) added M35 to M41 (a status chit tapped in a fight shows its description, and foe effects are described on the long-press card, D-16), merged nothing and re-worded no row. The batch is run at the milestone close per the deferred-UAT protocol; RELEASE-BLOCKING row F1 must pass before any production rollout.
