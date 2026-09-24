@@ -398,7 +398,16 @@ Every planner pre-scan item (F1–F5, O1–O4) verified against the code and tex
 
 ## Rulings
 
-_(Filled by Task 3 of this plan.)_
+The `## New findings` table above has four NEEDS-RULING rows: F1, F2, F3, F4 (F5 is a SIGN BUG — text-backed and local — so CONTEXT lets it be fixed without a ruling; it carries no row here). The orchestrator took all four rulings from the user BEFORE this plan executed (`.planning/phases/72-roll-direction-sign-audit-fixes/72-RULINGS.md`, 2026-09-24), specifically so this checkpoint could resolve without a stop. This audit's own sweep of every remaining die-check and modifier source (`## Site inventory`, `## Modifier ledger`) turned up no NEW findings requiring a ruling beyond these four — O1-O4 are OUT OF SCOPE or Phase 74/79 handoffs, not rulings, and F5 is a SIGN BUG, not a ruling. **No new checkpoint fired.**
+
+| Fn | Ruling | Applied by | Date | User's words |
+|----|--------|------------|------|------------------------|
+| F1 | **fix**: party members, summoned allies and legacy allies obey the same per-target to-hit rules as the hero (dozing/stupid ≥ floor, `sp.toHit` "hittable only on a 4", `sp.fast` "strike one higher", `sp.magicOnly` "only magic touches it" — a member needs a magic weapon, Philly `slow` if it applies to the attacker's roll). | 72-07 (local, in `memberStrike` / `alliesTurn` legacy / `allyTurn`). If it proves non-local, a `--gaps` follow-up is recorded instead. | 2026-09-24 | "Fix (Recommended)" |
+| F2 | **text**: drop the dead "3 to hit the unseen" clause from Acute Hearing (`content/skills.js` ~L51). Acute Hearing keeps "never surprised". The replacement mechanic, **"Hear the next room"** (squares next to the party that hold an encounter show a faint "something's there" mark before stepping in), is a new map feature OUT of Phase 72's scope — tracked as **HUD-07 in Phase 78**. Phase 72 only removes the dead clause. | 72-07 (text only) | 2026-09-24 | "Drop it, but replace it with some other mechanic" → chose "Hear the next room" |
+| F3 | **fix**: the Shadow's "only a dagger or magic touches it" (`sp.daggerOnly`) becomes real. A strike on a Shadow needs a dagger or a magic weapon, otherwise need 0 (untouchable), exactly like the `magicOnly` rule, for the hero AND members/allies (consistent with F1). A declared canon divergence (the prototype leaves `daggerOnly` inert); measure, declare and regenerate moved fixtures. | 72-07 | 2026-09-24 | "Fix (Recommended)" |
+| F4 | **fix**: the frenzy odds (normal to-hit narrowed by one) apply ONLY to the actual frenzy swing, i.e. when the d8 ≤ 5 frenzy fired. A Fridgian's other second attacks (Barbarian extra attack, haste, Ambidextrous, Last Stand) use the normal to-hit. | 72-05 (same edit as fix (b)) | 2026-09-24 | "Frenzy swing only (Recommended)" |
+
+Each finding's `## New findings` Proposed disposition row already reflects the ruling above (both were written from the same source, `72-RULINGS.md`); no further edit to that table is needed.
 
 ## Skeleton shatter scope
 
