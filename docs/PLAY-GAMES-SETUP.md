@@ -72,54 +72,98 @@ on the internal-testing track's tester list (and your own). Anyone else simply s
 
 This runbook is finished in Phase 69, which adds:
 
-- **The leaderboards (D-19):** five per season, namely DEEPEST, LEANEST, LONGEST, BUTCHERY and
-  PURSE. LINEAGE and GRAVEYARD get no PGS board (LINEAGE is derived from DEEPEST, GRAVEYARD is
-  local only). Each board's sort direction and score format follow the mapping in
-  `.planning/phases/67-play-games-integration-account-chip/67-RESEARCH.md` ("Board →
-  Leaderboard Mapping"):
-
-  | Board | Score | Sort |
-  |---|---|---|
-  | DEEPEST | `floor * 1000000 - steps` | larger is better |
-  | LEANEST | per Phase 66's final ranking (composite like DEEPEST, or a scaled steps-per-floor ratio) | confirm in Phase 68 |
-  | LONGEST | `day * 1000 + floor` | larger is better |
-  | BUTCHERY | `kills * 1000 + floor` | larger is better |
-  | PURSE | `gold` | larger is better |
-
-  Sort order is fixed when a leaderboard is created and cannot change after publishing.
+- **The leaderboards (D-19):** five per season, created as described in step 7. LINEAGE and
+  GRAVEYARD get no PGS board (LINEAGE is derived from a DEEPEST sample, GRAVEYARD is local only).
 - **The cap:** PGS allows 70 leaderboards per game, for its whole lifetime. Five boards per
   season lasts 14 seasons. Old seasons' boards are never deleted.
-- **The per-board, per-season leaderboard IDs**, pasted into the build's ID table.
+- **The per-board, per-season leaderboard IDs**, pasted into `content/leaderboards.js` (step 8).
 - **Publishing** the PGS configuration, so accounts beyond the Testers list can sign in.
 - **The Data Safety answers** for Play Games sign-in and leaderboard submissions.
 
-## 7. Engineering notes carried to Phase 68
+## 7. Leaderboards (one set of five per season)
 
-Recorded here so the decisions survive between phases (D-14, D-18, D-19):
+1. **Play Games Services** → **Setup and management** → **Leaderboards** → **Create
+   leaderboard**, once for each row below.
+2. Name each one with its board name and season (for example *DEEPEST, Season 1*).
+3. Set **Ordering** exactly as in the table. It is fixed once the leaderboard is published and
+   cannot be changed afterwards; a wrong ordering means a new leaderboard and one fewer of the
+   70.
+4. Leave the score format **Numeric** with no decimal places, and leave the lower and upper
+   limits empty.
+5. Leave **tamper protection** on. It is on by default for new leaderboards and should stay
+   on: it lets Google hide scores it flags as forged.
 
-- **Score tag (D-14).** At most **64** characters, only from the unreserved set
-  `A-Z a-z 0-9 - . _ ~`. A malformed tag throws on submit, so the encoder is defensive. Layout,
-  versioned and dot-delimited plain text:
+| Board | Internal key | Ordering | Submitted score |
+|---|---|---|---|
+| DEEPEST | `deep` | Larger is better | the floor times 1,000,000, minus the steps walked (steps capped at 999,999): deeper wins, and on the same floor fewer steps wins |
+| LEANEST | `lean` | Smaller is better | the squares walked per floor descended, times 1,000, rounded (a floor-0 death counts as one floor) |
+| LONGEST | `days` | Larger is better | the day times 1,000, plus the floor (capped at 999) as the tiebreak |
+| BUTCHERY | `kills` | Larger is better | the kills times 1,000, plus the floor (capped at 999) as the tiebreak |
+| PURSE | `gold` | Larger is better | the gold carried, as is |
+
+The number the console shows is an ordering key, not what players see. Rows read their
+displayed values (floor, steps, day, kills, gold and the rest) from the score tag (step 10).
+
+**The LEANEST limit.** One integer cannot also break ties by depth, so two runs with the same
+squares-per-floor rate rank equally whatever floor they reached. This is accepted: the local
+board still breaks that tie by depth.
+
+## 8. Where the IDs go
+
+1. Each leaderboard's page shows its **leaderboard ID** (a string like `CgkI...`).
+2. Paste each ID into `content/leaderboards.js`, under `LEADERBOARD_IDS[season]`, replacing
+   that board's `PLACEHOLDER_` value (for example `PLACEHOLDER_DEEPEST_S1` becomes the DEEPEST
+   leaderboard's ID).
+3. Rebuild and upload as in step 4.
+
+A board whose ID is still a placeholder is skipped silently: nothing is submitted to it (runs
+stay queued for it), and its global view says the board has not opened yet. So the IDs can go
+in one at a time.
+
+## 9. Starting a new season
+
+When a balance change moves the depth curve (D-15):
+
+1. Create five new leaderboards in the console, as in step 7, named for the new season.
+2. In `content/leaderboards.js`, add a new `LEADERBOARD_IDS` entry for the next season number
+   with the five new IDs (step 8).
+3. Bump `SEASON` in `content/season.js` and add a line to its season changelog.
+4. Never edit or delete an older season's entry. Old boards stay readable from the panel's
+   season picker and are never written again.
+
+The unit suite fails if `SEASON` has no `LEADERBOARD_IDS` entry, so step 2 cannot be forgotten.
+Remember the cap: 70 leaderboards per game, so five per season lasts 14 seasons.
+
+## 10. How the score tag is built (Phase 68)
+
+Every submission carries a score tag, which is where a global row's details come from
+(`src/browser/scoreTag.js`):
+
+- **Length and characters.** At most **64** characters, only from the unreserved set
+  `A-Z a-z 0-9 - . _ ~`. The encoder always stays inside both.
+- **Field order (v1).** Versioned and dot-delimited plain text:
 
   ```
   v1.{race}.{sub}.{lvl}.{cause}.{floor}.{day}.{steps}.{kills}.{gold}.{sp}.{name}
   ```
 
-  47 characters are fixed, leaving 17 for the name. Race, sub-class and cause are frozen numeric
-  indexes (never reorder them). An unparseable tag decodes to "no adventurer detail" and never
-  blanks a row.
-- **Name truncation.** Full "First Last" if it fits; else "First L."; else the first name
-  hard-truncated to the budget, no ellipsis.
-- **No epitaph in the tag (D-18).** It cannot fit. Global rows expand to a short cause line
-  (from the cause code) plus the stat chips; your own runs keep their full epitaphs from local
-  data.
-- **LINEAGE global (D-19).** Client-side grouping of a top-N DEEPEST fetch by race + class, the
-  best entry per combo, with an honest "sampled" footnote. No per-combo boards, ever.
-- **Submissions.** The plugin (0.5.0) resolves a submission only after the server write (it uses
-  the `*Immediate` variants), and PGS has no offline queue, so Phase 68's durable submission
-  queue stays required.
+  Race, sub-class and cause are frozen numeric indexes (new ones are appended, never
+  reordered). Each number is capped (level 99, floor 999, day 9,999, steps 99,999, kills
+  9,999, gold and sp 999,999).
+- **The name.** Spaces become `_` and any other character outside the set is dropped. The name
+  gets whatever room the numbers leave: the full name if it fits, else "First L.", else the
+  first name cut short with no ellipsis. The worst case (every number at its cap) leaves 16
+  characters; the Phase 67 research counted 17, but twelve fields need eleven dots.
+- **No epitaph.** It cannot fit, and it stays on the player's own device. Global rows show a
+  short cause line from the cause code instead; your own runs keep their full epitaphs.
+- **A tag that fails to decode** still shows the player's handle and the board's value (read
+  back from the raw score), so a row is never blank.
+- **LINEAGE global (D-19).** Client-side grouping of a top-N DEEPEST fetch by race + class,
+  the best entry per combo, with an honest "sampled" footnote. No per-combo boards, ever.
+- **Submissions.** The plugin (0.5.0) resolves a submission only after the server write, and
+  PGS has no offline queue, so the game keeps its own durable submission queue.
 
-## 8. How to check it worked
+## 11. How to check it worked
 
 Install a Play build (internal testing) on a device signed in with a tester account. After
 launch:
