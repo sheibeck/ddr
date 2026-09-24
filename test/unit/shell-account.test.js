@@ -78,7 +78,13 @@ function cardParking(doc) {
   const region = sliceBetween(CODE, "let pendingAccountCard = null;", "\n  account = createAccountController({");
   const rail = [];
   const win = { mzRailLine: (...args) => rail.push(args) };
-  const make = new Function("document", "window", region + "\nreturn { dungeonVisible, parkAccountCard, flushAccountCard };");
+  // Phase 68 (D-12): flushAccountCard also delivers the placement card, whose
+  // slot (pendingPgsCard) is declared beside `let account` before the panel.
+  const make = new Function(
+    "document",
+    "window",
+    "let pendingPgsCard = null;\n" + region + "\nreturn { dungeonVisible, parkAccountCard, flushAccountCard };",
+  );
   return { ...make(doc, win), rail };
 }
 
@@ -145,7 +151,8 @@ test("(A2) SOURCE: the provider is chosen by isNativePlatform — createPlayGame
   assert.match(MODULE, /const pgsNative = !!window\.Capacitor\?\.isNativePlatform\?\.\(\);/);
   assert.match(
     MODULE,
-    /const pgsProvider = pgsNative \? createPlayGames\(\) : createFakePlayGames\(\{ signedIn: currentSettings\?\.pgsDevSignedIn === true \}\);/,
+    // Phase 68 (68-07): the fake also gets the real score orders for the dev IDs.
+    /const pgsProvider = pgsNative \? createPlayGames\(\) : createFakePlayGames\(\{ signedIn: currentSettings\?\.pgsDevSignedIn === true, orders: scoreOrdersFor\(pgsIds\) \}\);/,
   );
   assert.equal(occurrences(MODULE, "createPlayGames("), 1);
   assert.equal(occurrences(MODULE, "createFakePlayGames("), 1);

@@ -5499,6 +5499,16 @@ window.__mzClassicBoot = async function classicBoot() {
   // controller.
   import { createPlayGames, createFakePlayGames } from "./src/browser/playGames.js";
   import { createAccountController, renderAccountChip, renderAccountSheet } from "./src/browser/accountChip.js";
+  // Phase 68 (PGS-03..06, PLACE-01/02): the adapter's run-recorded hook, the
+  // durable submission queue, the global-boards controller, the placement
+  // copy views, the leaderboard IDs and the current season — each on its own
+  // line per this file's import convention.
+  import { setRunRecordedListener } from "./src/browser/engineAdapter.js";
+  import { createSubmissionQueue } from "./src/browser/pgsQueue.js";
+  import { createGlobalBoards } from "./src/browser/globalBoards.js";
+  import { placementLine, deferredPlacementCard, seasonDropLine } from "./src/browser/placement.js";
+  import { leaderboardIdsFor, knownSeasons, scoreOrdersFor } from "./src/browser/boardScores.js";
+  import { SEASON } from "./content/season.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
@@ -5775,6 +5785,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // instance, so its identity() arrow can never reach a temporal dead zone;
   // until the controller exists the strip reads signed out.
   let account = null;
+  // Phase 68 (D-01..D-07, D-10..D-12): the submission queue, the global
+  // boards controller, the hash of the run whose THAT IS THAT panel may still
+  // be up, and the parked placement rail card. All assigned after the
+  // account controller (below) and declared here for the same reason as
+  // `account`. Shell presentation state only, never a field on S/state.
+  let globalBoards = null;
+  let pgsQueue = null;
+  let liveDeathHash = null;
+  let pendingPgsCard = null;
   const boardsPanel = createBoardsPanel({
     host: document.getElementById("screen-dead"),
     buildView: boardsView,
@@ -5785,6 +5804,14 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 67 (D-08): the identity strip reads the live account; the
     // account block below calls boardsPanel.refresh() on every change.
     identity: () => (account ? account.identity() : { signedIn: false, player: null }),
+    // Phase 68 (D-05..D-08): ALL and FRIENDS read the global-boards
+    // controller's cached snapshot (null until it exists; it makes no call
+    // while signed out or with Compete OFF); the SEASON label and picker
+    // read the current season and the seasons in the IDs map; the SHOW MY
+    // FRIENDS button is the only place friends consent is requested.
+    global: (q) => (globalBoards ? globalBoards.view(q) : null),
+    seasons: () => ({ current: SEASON, all: knownSeasons() }),
+    onFriendsConsent: () => { globalBoards?.requestFriendsAccess()?.catch?.(() => {}); },
   });
   window.__mzBoards = Object.freeze({ onDeadTab: boardsPanel.onDeadTab });
 
@@ -6082,7 +6109,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // when the dev setting pgsDevSignedIn is on. The seed is read once, here,
   // so a flip takes effect next launch; a native build ignores it.
   const pgsNative = !!window.Capacitor?.isNativePlatform?.();
-  const pgsProvider = pgsNative ? createPlayGames() : createFakePlayGames({ signedIn: currentSettings?.pgsDevSignedIn === true });
+  // Phase 68 (PGS-06, D-14): the leaderboard IDs, built once (the dev map is
+  // a new object per call). Native reads content/leaderboards.js (placeholder
+  // IDs until the Play Console setup, so those boards are skipped); the
+  // browser dev loop gets dev IDs, and the fake is told each board's real
+  // score order, so submissions, the rank line, the rail card and the
+  // global views all run without a device.
+  const pgsIds = leaderboardIdsFor({ native: pgsNative });
+  const pgsProvider = pgsNative ? createPlayGames() : createFakePlayGames({ signedIn: currentSettings?.pgsDevSignedIn === true, orders: scoreOrdersFor(pgsIds) });
   // The controller persists Compete and pgsWelcomed through settings.js;
   // re-applying keeps the module's settings mirror coherent (Phase 68 reads
   // Compete from it).
@@ -6109,11 +6143,38 @@ window.__mzClassicBoot = async function classicBoot() {
     pendingAccountCard = card;
     flushAccountCard();
   }
+  // Phase 68 (D-12): the one placement card (pendingPgsCard) shares this
+  // delivery. The rail holds one card and a second push replaces the first,
+  // so the account card goes first; a placement card waiting behind it is
+  // delivered by a timer after the account card's hold, never on top of it.
+  // The placement card also waits while the party is dead: the rail is
+  // hidden under THAT IS THAT, so it lands on the next map instead.
+  let pgsCardTimer = null;
   function flushAccountCard() {
-    if (!pendingAccountCard || !dungeonVisible()) return;
-    const card = pendingAccountCard;
-    pendingAccountCard = null;
+    let accountHold = -1;
+    if (pendingAccountCard && dungeonVisible()) {
+      const card = pendingAccountCard;
+      pendingAccountCard = null;
+      window.mzRailLine?.(card.title, card.line, card.tone, card.hold);
+      accountHold = Number.isFinite(card.hold) ? card.hold : 0;
+    }
+    if (!pendingPgsCard || pgsCardTimer !== null) return;
+    if (!dungeonVisible() || window.__mzState?.get?.()?.dead === true) return;
+    if (accountHold >= 0) {
+      pgsCardTimer = setTimeout(() => {
+        pgsCardTimer = null;
+        flushAccountCard();
+      }, accountHold + 600);
+      return;
+    }
+    const card = pendingPgsCard;
+    pendingPgsCard = null;
     window.mzRailLine?.(card.title, card.line, card.tone, card.hold);
+  }
+  function parkPgsCard(card) {
+    if (!card) return;
+    pendingPgsCard = card; // the latest wins
+    flushAccountCard();
   }
   account = createAccountController({
     provider: pgsProvider,
@@ -6134,6 +6195,104 @@ window.__mzClassicBoot = async function classicBoot() {
   });
   // The pending face until boot() settles the first state.
   renderAccountChips();
+
+  // Phase 68 (PGS-03/04, D-01/D-02/D-04): every non-dev death reaches the
+  // durable queue (ddr.pgsqueue.v1) through the adapter's run-recorded
+  // listener. The queue refuses while Compete is OFF, stores the entry
+  // before any submission and then tries a flush; a signed-out death waits
+  // for sign-in. It flushes again when sign-in succeeds (onAccountForPgs),
+  // when the device comes back online (forced) and when the app is visible
+  // again (the backoff applies). Nothing here is awaited: boot and offline
+  // play never wait on Play Games.
+  pgsQueue = createSubmissionQueue({
+    storage: window.mzStorage,
+    provider: pgsProvider,
+    ids: pgsIds,
+    season: SEASON,
+    isCompeting: () => account.state().compete === true,
+    isSignedIn: () => account.identity().signedIn === true,
+    onFlushed: handlePgsFlush,
+    onSeasonDrop: notePgsSeasonDrop,
+  });
+  // PGS-05 (D-05..D-07): the panel's ALL/FRIENDS/LINEAGE snapshots, cached
+  // per season, board and scope; zero calls while signed out (Compete OFF
+  // reads signed out). Each finished fetch redraws the open panel.
+  globalBoards = createGlobalBoards({
+    provider: pgsProvider,
+    ids: pgsIds,
+    isActive: () => account.identity().signedIn === true,
+    playerId: () => account.identity().player?.id || "",
+    onChange: () => boardsPanel.refresh(),
+  });
+  pgsQueue.load();
+  setRunRecordedListener(onRunRecorded);
+  account.subscribe(onAccountForPgs);
+  window.addEventListener("online", () => pgsQueue?.flush({ force: true }));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pgsQueue?.flush();
+  });
+
+  // The previous account status and Compete value, so a transition fires once.
+  let pgsLastStatus = null;
+  let pgsLastCompete = null;
+  // A death was recorded (never a dev death: the adapter skips those). It is
+  // now the live death whose panel may show the rank line; any earlier rank
+  // line is dropped. The queue decides whether to keep it (D-04).
+  function onRunRecorded(summary) {
+    liveDeathHash = summary && typeof summary.hash === "string" ? summary.hash : null;
+    window.__mzPlacement = null;
+    pgsQueue?.enqueue(summary);
+  }
+  // PLACE-01/02 (D-10..D-12): a flush submitted DEEPEST scores and read the
+  // player's DEEPEST standing. The live death, while its THAT IS THAT panel
+  // is up, gets the rank line; every other submitted run folds into one
+  // parked rail card. A null standing (the read failed) shows nothing.
+  function handlePgsFlush(result) {
+    const submitted = Array.isArray(result?.submitted) ? result.submitted.filter((e) => e && typeof e.hash === "string") : [];
+    const standing = result?.standing;
+    if (!standing || typeof standing !== "object" || submitted.length === 0) return;
+    const { rank, total } = standing;
+    let rest = submitted;
+    const live = liveDeathHash ? submitted.find((e) => e.hash === liveDeathHash) : null;
+    if (live && window.__mzState?.get?.()?.dead === true) {
+      const line = placementLine({ rank, total, newBest: live.newBest, hash: live.hash });
+      if (line) {
+        window.__mzPlacement = { hash: live.hash, line, fresh: true };
+        renderRankLine(document.getElementById("cb-over"), window.__mzPlacement);
+      }
+      rest = submitted.filter((e) => e !== live);
+    }
+    if (rest.length === 0) return;
+    const newBest = rest.some((e) => e.newBest === true) ? true : rest.every((e) => e.newBest === false) ? false : null;
+    const card = deferredPlacementCard({ count: rest.length, rank, total, newBest, hash: rest[rest.length - 1].hash });
+    if (card) parkPgsCard(card);
+  }
+  // D-03: queued deaths from an older season were dropped, not submitted.
+  // One Oracle line in voice; the copy is pinned free of markup and only a
+  // number is filled in.
+  function notePgsSeasonDrop(count) {
+    const line = seasonDropLine(count);
+    if (!line) return;
+    window.logLine?.(`<span class="beat">${line}</span>`);
+  }
+  // D-02/D-04: Compete OFF purges the queue (after the controller already
+  // reads OFF, so an in-flight flush stops) and drops the cached remote
+  // rows and any rank line; becoming signed in flushes the queue once;
+  // leaving signed in drops the cached remote rows.
+  function onAccountForPgs(state) {
+    const status = state?.status ?? null;
+    const compete = state?.compete === true;
+    const turnedOff = !compete && pgsLastCompete !== false;
+    if (turnedOff) {
+      pgsQueue?.purge();
+      globalBoards?.clear();
+      window.__mzPlacement = null;
+    }
+    if (status === "signedIn" && pgsLastStatus !== "signedIn") pgsQueue?.flush({ force: true });
+    else if (status !== "signedIn" && pgsLastStatus === "signedIn" && !turnedOff) globalBoards?.clear();
+    pgsLastStatus = status;
+    pgsLastCompete = compete;
+  }
 
   // 04-06: bridge the pure controls.js/canvasSizing.js math + icons.js onto
   // window.* for the classic script's fit()/draw()/tap-handler to consume
@@ -6931,8 +7090,10 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 65 (RUN-04): the title shows after BURY THEM, abandon and
     // save-and-quit, so a later death never renders a stale block.
     window.__mzDeathRecord = null;
-    // Phase 68 (D-11): the same for the rank line.
+    // Phase 68 (D-11/D-12): the same for the rank line. With no death panel
+    // left, a rank that returns later goes to the rail card instead.
     window.__mzPlacement = null;
+    liveDeathHash = null;
     const screen = document.getElementById("mw-title-screen");
     if (!screen) return;
     resumeIntent = allowResume != null ? allowResume : hasActiveDelveSave();
@@ -7332,7 +7493,10 @@ window.__mzClassicBoot = async function classicBoot() {
       // app — engineAdapter.js's waitForPending() is awaited alongside
       // storage.flush() (both inside registerNativeChrome's
       // pause/appStateChange handlers) so that write isn't lost.
-      waitForPending,
+      // Phase 68 (D-02): the submission queue's own writes (a death's entry,
+      // each board's ack) are awaited alongside, so a queued death survives
+      // the app being backgrounded.
+      waitForPending: () => Promise.all([waitForPending(), pgsQueue?.waitForPending()]),
       getGameContext: () => ({
         // Phase 35 (ruling 3): a pending rail decision or a failed climb is
         // NOT a modal — it is presentation state on window.__mzRail, never

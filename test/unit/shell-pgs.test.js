@@ -672,7 +672,7 @@ test("(C6) BEHAVIOUR: an account card alone still goes straight to the rail (Pha
 // ═══════════════════════ (P) the panel's global seams (D-05..D-08) ═════════
 
 function panelSeams(boards) {
-  const panel = sliceBetween(MODULE, "const boardsPanel = createBoardsPanel({", "\n  });");
+  const panel = sliceBetween(MODULE, "const boardsPanel = createBoardsPanel({", "\n  });") + "\n";
   const seams = ["global", "seasons", "onFriendsConsent"].map((k) => {
     const m = panel.match(new RegExp(`\\n\\s*${k}: ([^\\n]*?),\\n`));
     assert.ok(m, `${k} seam`);
