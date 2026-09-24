@@ -68,14 +68,18 @@ test("(A1) SOURCE: the title's #mw-title-dead onclick opens the panel in title m
 
 // ═══════════════════════ (B) region pin — Android back mirror (D-03) ═══════
 
-test("(B1) SOURCE: getGameContext's hasOpenModal includes boardsPanel.isTitleOpen(), and closeModal's FIRST statement mirrors the chevron, exactly once each", () => {
+// Phase 67 (D-09): the account-sheet branch is now closeModal's first
+// statement; the chevron mirror is the first statement after it.
+test("(B1) SOURCE: getGameContext's hasOpenModal includes boardsPanel.isTitleOpen(), and closeModal's first statement after the Phase 67 account-sheet branch mirrors the chevron, exactly once each", () => {
   assert.equal(occurrences(HTML, "if (boardsPanel.isTitleOpen()) { boardsPanel.back(); return; }"), 1);
   assert.match(CODE, /hasOpenModal: boardsPanel\.isTitleOpen\(\) \|\|/);
   const closeModalRegion = sliceBetween(CODE, "closeModal: () => {", "\n        navigateBack: () => {");
+  const acctIdx = closeModalRegion.indexOf("if (accountSheetOpen()) { closeAccountSheet(); return; }");
   const guardIdx = closeModalRegion.indexOf("if (boardsPanel.isTitleOpen()) { boardsPanel.back(); return; }");
   const escapeIdx = closeModalRegion.indexOf('hudMenuEvent("escape");');
-  assert.ok(guardIdx !== -1 && escapeIdx !== -1, "expected both the title-open guard and the ☰ escape inside closeModal");
-  assert.ok(guardIdx < escapeIdx, "the title-open guard must be closeModal's FIRST statement, before the ☰ escape");
+  assert.ok(acctIdx !== -1 && guardIdx !== -1 && escapeIdx !== -1, "expected the account-sheet branch, the title-open guard and the ☰ escape inside closeModal");
+  assert.ok(acctIdx < guardIdx, "the Phase 67 account-sheet branch comes first");
+  assert.ok(guardIdx < escapeIdx, "the title-open guard must be the first statement after the account-sheet branch, before the ☰ escape");
 });
 
 test("(B2) SOURCE: src/browser/nativeChrome.js is untouched by this plan (still exports decideBackAction unchanged)", () => {
@@ -101,7 +105,10 @@ test("(B2) SOURCE: src/browser/nativeChrome.js is untouched by this plan (still 
 function closeModalFactory() {
   const region = sliceBetween(CODE, "closeModal: () => {", "\n        navigateBack: () => {");
   const src = region.replace(/^closeModal: \(\) => \{/, "function closeModal() {").replace(/,\s*$/, "");
-  return new Function("boardsPanel", "S", src + "\nreturn closeModal;");
+  // Phase 67: the account-sheet seams default to a closed sheet, so these
+  // tests exercise the branch after it exactly as before.
+  const make = new Function("boardsPanel", "S", "accountSheetOpen", "closeAccountSheet", src + "\nreturn closeModal;");
+  return (boardsPanel, S, accountSheetOpen = () => false, closeAccountSheet = () => {}) => make(boardsPanel, S, accountSheetOpen, closeAccountSheet);
 }
 
 test("(C1) BEHAVIOUR: with a title-open boardsPanel, the extracted closeModal calls back() exactly once and leaves S.beats/S.store untouched", () => {

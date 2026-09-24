@@ -238,10 +238,10 @@ test("(D1) BEHAVIOUR: empty data (null bests, no graves, total 0) shows INTERRED
 
 // ═══════════════════════ (E) routeFromBoards (D-01) ═════════════════════════
 
-/** routeFromBoardsFactory() — extracts routeFromBoards' source from the module script and returns a Function taking (window, showTitleScreen, surfaceWornReconcile) and returning the live routeFromBoards closure. Never a stub of the real logic — the exact shipped source is evaluated. */
+/** routeFromBoardsFactory() — extracts routeFromBoards' source from the module script and returns a Function taking (window, showTitleScreen, surfaceWornReconcile, flushAccountCard) and returning the live routeFromBoards closure. Never a stub of the real logic — the exact shipped source is evaluated. Phase 67 (D-04/D-11) added the flushAccountCard seam to the dungeon branch. */
 function routeFromBoardsFactory() {
   const region = sliceBetween(CODE, "function routeFromBoards(action", "\n  function surfaceWornReconcile(");
-  return new Function("window", "showTitleScreen", "surfaceWornReconcile", region + "\nreturn routeFromBoards;");
+  return new Function("window", "showTitleScreen", "surfaceWornReconcile", "flushAccountCard", region + "\nreturn routeFromBoards;");
 }
 
 function callRouteFromBoards(action, opts) {
@@ -252,7 +252,8 @@ function callRouteFromBoards(action, opts) {
   };
   const showTitleScreen = (arg) => calls.push(["showTitleScreen", arg]);
   const surfaceWornReconcile = () => calls.push(["surfaceWornReconcile"]);
-  const routeFromBoards = routeFromBoardsFactory()(fakeWindow, showTitleScreen, surfaceWornReconcile);
+  const flushAccountCard = () => calls.push(["flushAccountCard"]);
+  const routeFromBoards = routeFromBoardsFactory()(fakeWindow, showTitleScreen, surfaceWornReconcile, flushAccountCard);
   routeFromBoards(action, opts);
   return calls;
 }
@@ -271,10 +272,11 @@ test('(E2) SOURCE: routeFromBoards("title", { hasHero: false }) passes allowResu
   ]);
 });
 
-test('(E3) SOURCE: routeFromBoards("dungeon", ...) shows the map then surfaces the worn-reconcile report', () => {
+test('(E3) SOURCE: routeFromBoards("dungeon", ...) shows the map, surfaces the worn-reconcile report, then delivers a parked account card (Phase 67)', () => {
   assert.deepStrictEqual(callRouteFromBoards("dungeon", { hasHero: true }), [
     ["showTab", "maze"],
     ["surfaceWornReconcile"],
+    ["flushAccountCard"],
   ]);
 });
 

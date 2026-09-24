@@ -5453,6 +5453,11 @@ window.__mzClassicBoot = async function classicBoot() {
   import { getBests, getGraveyard } from "./src/browser/engineAdapter.js";
   import { createBoardsPanel } from "./src/browser/boardsPanel.js";
   import { boardsView } from "./src/browser/boardsView.js";
+  // Phase 67 (PGS-02, ACCT-01/02, D-12): the Play Games provider seam (the
+  // only module that names the plugin) and the account chip, sheet and
+  // controller.
+  import { createPlayGames, createFakePlayGames } from "./src/browser/playGames.js";
+  import { createAccountController, renderAccountChip, renderAccountSheet } from "./src/browser/accountChip.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
@@ -5724,6 +5729,11 @@ window.__mzClassicBoot = async function classicBoot() {
       return null;
     }
   }
+  // Phase 67 (D-08): the one account controller, assigned after the
+  // settings load (below). Declared here, before the Leaderboards panel
+  // instance, so its identity() arrow can never reach a temporal dead zone;
+  // until the controller exists the strip reads signed out.
+  let account = null;
   const boardsPanel = createBoardsPanel({
     host: document.getElementById("screen-dead"),
     buildView: boardsView,
@@ -5731,6 +5741,9 @@ window.__mzClassicBoot = async function classicBoot() {
     prefs: boardsPrefs(),
     reducedMotion: () => prefersReducedMotion(window),
     onRoute: routeFromBoards,
+    // Phase 67 (D-08): the identity strip reads the live account; the
+    // account block below calls boardsPanel.refresh() on every change.
+    identity: () => (account ? account.identity() : { signedIn: false, player: null }),
   });
   window.__mzBoards = Object.freeze({ onDeadTab: boardsPanel.onDeadTab });
 
@@ -5881,6 +5894,52 @@ window.__mzClassicBoot = async function classicBoot() {
   document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
   document.getElementById("mw-settings-close")?.addEventListener("click", closeSettingsSheet);
 
+  // Phase 67 (ACCT-02, D-09/D-10): the account bottom sheet, opened by
+  // either account chip. The band-2 chip refuses to open while an encounter
+  // is up (the ☰ menu's T-57-17 rule; hasActiveEncounter() is the classic
+  // script's global function); the title chip always opens. The sheet's
+  // rows are rendered by accountChip.js from the controller's sheet view,
+  // and every row goes through the controller. Settings closes this sheet
+  // and opens the existing settings sheet, which stacks above the title.
+  function accountSheetOpen() {
+    const sheet = document.getElementById("mw-acct-sheet");
+    return !!sheet && !sheet.hidden;
+  }
+  function renderAccountSheetNow() {
+    if (!account) return;
+    renderAccountSheet(
+      { rows: document.getElementById("mw-acct-rows"), title: document.getElementById("mw-acct-title") },
+      account.sheetView(),
+      {
+        onSignIn: () => account.signIn(),
+        onStopCompeting: () => account.stopCompeting(),
+        onCompete: (value) => account.setCompete(value),
+        onSettings: () => {
+          closeAccountSheet();
+          openSettingsSheet();
+        },
+      },
+    );
+  }
+  function openAccountSheet({ fromHud } = {}) {
+    if (!account) return;
+    if (fromHud && window.__mzState && hasActiveEncounter()) return;
+    const sheet = document.getElementById("mw-acct-sheet");
+    if (!sheet) return;
+    renderAccountSheetNow();
+    panelMotion.open(sheet);
+  }
+  function closeAccountSheet() {
+    const sheet = document.getElementById("mw-acct-sheet");
+    if (sheet) panelMotion.close(sheet);
+    // The settings sheet's pattern: keep the party in view, never recentre.
+    window.mzKeepPartyInView?.();
+  }
+  document.getElementById("mw-acct-chip")?.addEventListener("click", () => openAccountSheet({ fromHud: true }));
+  document.getElementById("mw-title-acct-chip")?.addEventListener("click", () => openAccountSheet({ fromHud: false }));
+  document.getElementById("mw-acct-scrim")?.addEventListener("click", closeAccountSheet);
+  document.getElementById("mw-acct-close")?.addEventListener("click", closeAccountSheet);
+
   // Phase 21 (TUNE-04, D-13/D-22): a small, LOCAL long-press handler for the
   // hidden dev row — deliberately NOT the maze viewport's own tap-vs-drag
   // gesture classifier (src/browser/controls.js), which is scoped to
@@ -5968,6 +6027,66 @@ window.__mzClassicBoot = async function classicBoot() {
     /* fail-open: settings.js itself never throws, but defend anyway — a
        settings read failure must never block boot */
   }
+
+  // Phase 67 (PGS-02, D-01/D-02/D-12): the Play Games account. On a native
+  // build the provider wraps the plugin (reached only through playGames.js,
+  // loaded lazily on the first provider call). The browser dev loop never
+  // loads the plugin: it gets the in-memory fake, seeded signed in only
+  // when the dev setting pgsDevSignedIn is on. The seed is read once, here,
+  // so a flip takes effect next launch; a native build ignores it.
+  const pgsNative = !!window.Capacitor?.isNativePlatform?.();
+  const pgsProvider = pgsNative ? createPlayGames() : createFakePlayGames({ signedIn: currentSettings?.pgsDevSignedIn === true });
+  // The controller persists Compete and pgsWelcomed through settings.js;
+  // re-applying keeps the module's settings mirror coherent (Phase 68 reads
+  // Compete from it).
+  async function writeAccountSetting(key, value) {
+    const next = await writeSetting(key, value);
+    applySettings(next);
+    return next;
+  }
+  // D-04/D-11: the two account cards reach the rail (the one feedback
+  // surface) only while the dungeon is visible. A card raised while the
+  // title, the roller or the title-opened Leaderboards panel is up is parked
+  // and delivered when the player lands on the map; the latest card wins,
+  // and each is delivered once. Presentation only, never a field on state.
+  let pendingAccountCard = null;
+  function dungeonVisible() {
+    const title = document.getElementById("mw-title-screen");
+    const roller = document.getElementById("mw-roller-screen");
+    if (title && !title.hidden) return false;
+    if (roller && !roller.hidden) return false;
+    return document.body.dataset.boardsEntry !== "title";
+  }
+  function parkAccountCard(card) {
+    if (!card) return;
+    pendingAccountCard = card;
+    flushAccountCard();
+  }
+  function flushAccountCard() {
+    if (!pendingAccountCard || !dungeonVisible()) return;
+    const card = pendingAccountCard;
+    pendingAccountCard = null;
+    window.mzRailLine?.(card.title, card.line, card.tone, card.hold);
+  }
+  account = createAccountController({
+    provider: pgsProvider,
+    settings: { read: readSettings, write: writeAccountSetting },
+    notify: parkAccountCard,
+  });
+  // D-05/D-06/D-07: both chips (HUD band 2 and the title's corner) show the
+  // controller's chip view on every account change.
+  function renderAccountChips() {
+    const view = account.chipView();
+    renderAccountChip(document.getElementById("mw-acct-chip"), view);
+    renderAccountChip(document.getElementById("mw-title-acct-chip"), view);
+  }
+  account.subscribe(() => {
+    renderAccountChips();
+    if (accountSheetOpen()) renderAccountSheetNow();
+    boardsPanel.refresh();
+  });
+  // The pending face until boot() settles the first state.
+  renderAccountChips();
 
   // 04-06: bridge the pure controls.js/canvasSizing.js math + icons.js onto
   // window.* for the classic script's fit()/draw()/tap-handler to consume
@@ -6690,6 +6809,10 @@ window.__mzClassicBoot = async function classicBoot() {
     onCommit: (state) => {
       commitRolledState(state);
       window.__mzShowTab?.("maze");
+      // Phase 67 (D-04/D-11): deliver a parked account card on the map. The
+      // roller hides its own screen right after this callback returns, so
+      // the flush waits one microtask for that.
+      queueMicrotask(flushAccountCard);
     },
   });
   window.mzStartRoll = roller.start;
@@ -6732,6 +6855,12 @@ window.__mzClassicBoot = async function classicBoot() {
   function hideTitleScreen() {
     const screen = document.getElementById("mw-title-screen");
     if (screen) screen.hidden = true;
+    // Phase 67 (D-04/D-11): a parked account card lands once the map is
+    // showing. Deferred one microtask so the tap handler finishes first:
+    // ENTER may open the roller and VIEW THE DEAD opens the title-mode
+    // Leaderboards panel right after this call, and the card must wait for
+    // either.
+    queueMicrotask(flushAccountCard);
   }
   // A run counts as "active"/resumable only while it is not dead.
   function hasActiveDelveSave() {
@@ -7073,6 +7202,8 @@ window.__mzClassicBoot = async function classicBoot() {
     } else if (action === "dungeon") {
       window.__mzShowTab?.("maze");
       surfaceWornReconcile();
+      // Phase 67 (D-04/D-11): the panel cleared its title marker already.
+      flushAccountCard();
     } else if (action === "roll") {
       window.mzStartRoll();
     }
@@ -7126,6 +7257,13 @@ window.__mzClassicBoot = async function classicBoot() {
     refreshTitleDead();
   })();
 
+  // Phase 67 (PGS-02, D-01/D-02): the launch sign-in, deliberately not
+  // awaited. It never blocks boot, the title or play; with Compete OFF the
+  // controller calls no provider method at all, and on native the plugin
+  // is reached only through playGames.js. boot() never rejects; the catch
+  // is defence in depth against an unhandled rejection.
+  account.boot().catch(() => {});
+
   // PLT-02 (back button) / PLT-03 (lifecycle flush) — 02-RESEARCH.md "Back
   // Button + Lifecycle". Native-only: isNativePlatform() is false in the
   // browser dev loop and under node, so registerNativeChrome (and its
@@ -7153,10 +7291,14 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || hudMenuIsOpen(),
+        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || hudMenuIsOpen() || accountSheetOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
+          // Phase 67 (D-09): the account sheet is the top-most layer (it can
+          // sit over the title, the title-mode Leaderboards panel or the
+          // map), so one back press closes only it.
+          if (accountSheetOpen()) { closeAccountSheet(); return; }
           // Phase 66 (D-03): the Android back button mirrors the chevron on
           // a title-opened Leaderboards panel — routes to the dungeon when a
           // live hero exists, else the title — and returns before the ☰
