@@ -12,7 +12,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES } from "../../content/boards.js";
+import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, GLOBAL_STANDING_LINES } from "../../content/boards.js";
 
 const MOCK_RULE = {
   deep: "Lowest floor reached before dying. Ties broken by the fewer squares walked to get there.",
@@ -230,5 +230,124 @@ test("The live notes claim no rank, count or ranking scope (they say the boards 
   const forbidden = /worldwide|among friends|\d|\b(rank|ranked|place|placed)\b|@/i;
   for (const [k, line] of Object.entries(BOARDS_PANEL_COPY.note.live)) {
     assert.doesNotMatch(line, forbidden, `note.live.${k} -> "${line}"`);
+  }
+});
+
+// ─── Phase 68 (D-05..D-09): the global board copy ───────────────────────────
+
+const GLOBAL_PINS = {
+  season: "SEASON {n}",
+  loading: "Asking the world who died. It keeps records, slowly.",
+  unreachable: "The world is unreachable. Your own dead are still here.",
+  closed: "This board has not opened yet. The ledger is still being ruled.",
+  empty: "Nobody has died on this board yet this season. Somebody has to go first.",
+  consent: "Play Games will not show us your friends until you say so.",
+  consentButton: "SHOW MY FRIENDS",
+  you: "YOU",
+  friend: "FRIEND",
+  anon: "A nameless delver",
+  foe: "foe",
+  leanRateUnit: "SQ / FLOOR",
+  noEntry: "Nothing of yours on this board yet this season.",
+  ofWorld: "of {n} interred worldwide.",
+  ofFriends: "of {n} among friends.",
+  ofSampled: "of {n} lineages in the sample.",
+  sampledFoot: "Sampled from the top {n} deepest corpses in the world. Rare lineages may be buried further down.",
+};
+
+test("BOARDS_PANEL_COPY.global is deep-frozen and sits after note", () => {
+  const g = BOARDS_PANEL_COPY.global;
+  assert.ok(g && typeof g === "object");
+  (function walk(obj) {
+    if (obj && typeof obj === "object") {
+      assert.ok(Object.isFrozen(obj), "every nested object in BOARDS_PANEL_COPY.global must be frozen");
+      for (const v of Object.values(obj)) walk(v);
+    }
+  })(g);
+  const keys = Object.keys(BOARDS_PANEL_COPY);
+  assert.equal(keys.indexOf("global"), keys.indexOf("note") + 1);
+});
+
+test("BOARDS_PANEL_COPY.global.scope pins the ALL / FRIENDS scope lines verbatim (D-05, D-06)", () => {
+  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.global.scope), ["all", "friends"]);
+  assert.equal(BOARDS_PANEL_COPY.global.scope.all, "Global. Every delve this season.");
+  assert.equal(BOARDS_PANEL_COPY.global.scope.friends, "Your friends’ dead only. This season.");
+});
+
+test("BOARDS_PANEL_COPY.global pins every other string verbatim (D-05..D-09)", () => {
+  for (const [k, v] of Object.entries(GLOBAL_PINS)) {
+    assert.equal(BOARDS_PANEL_COPY.global[k], v, `global.${k}`);
+  }
+  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.global).sort(), ["scope", ...Object.keys(GLOBAL_PINS)].sort());
+});
+
+test("BOARDS_PANEL_COPY.global token rules: season/ofWorld/ofFriends/ofSampled/sampledFoot carry {n}; nothing else carries a token", () => {
+  const withN = new Set(["season", "ofWorld", "ofFriends", "ofSampled", "sampledFoot"]);
+  for (const [p, v] of collectLeaves(BOARDS_PANEL_COPY.global)) {
+    const t = tokensIn(v);
+    if (withN.has(p)) assert.deepStrictEqual(t, ["n"], `global.${p}`);
+    else assert.deepStrictEqual(t, [], `global.${p}`);
+  }
+  assert.match(BOARDS_PANEL_COPY.global.ofWorld, /worldwide/);
+  assert.match(BOARDS_PANEL_COPY.global.ofFriends, /among friends/);
+});
+
+test("No BOARDS_PANEL_COPY.global string has a markup character, WP or a handle marker", () => {
+  for (const [p, v] of collectLeaves(BOARDS_PANEL_COPY.global)) {
+    assert.doesNotMatch(v, /[<>&@]/, `global.${p} -> "${v}"`);
+    assert.doesNotMatch(v, /\bWP\b/i, `global.${p} -> "${v}"`);
+  }
+});
+
+test("The Phase 66/67 keys of BOARDS_PANEL_COPY are unchanged by the Phase 68 addition", () => {
+  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY), [
+    "head", "scope", "strip", "chips", "note", "global", "empty", "divider", "standing", "stats", "lineage", "level", "sep", "dock",
+  ]);
+  assert.equal(BOARDS_PANEL_COPY.scope.ranked, "Your dead only. The world has not been told.");
+  assert.equal(BOARDS_PANEL_COPY.divider, "NOT IN THE TOP TEN · YOUR BEST RUN");
+});
+
+const GLOBAL_STANDING_PINS = {
+  first: [
+    "First place. The others have been told, and are not thrilled.",
+    "Top of the heap. Mind the drop.",
+    "Nobody has done better. Nobody will admit it, either.",
+  ],
+  ten: [
+    "Top ten. Strangers are studying your corpse.",
+    "In the top ten. Your ghost has earned a small nod.",
+    "Top ten. The rest are taking notes, grudgingly.",
+  ],
+  hundred: [
+    "Top hundred. A large room, but a respectable one.",
+    "Somewhere in the top hundred. The view is mostly other graves.",
+    "Top hundred. Frame it before the season ends.",
+  ],
+  rest: [
+    "Out in the crowd. Everyone here is dead too, if that helps.",
+    "Not near the top. Not near the bottom either, probably.",
+    "A face in a very large, very quiet crowd.",
+  ],
+};
+
+test("GLOBAL_STANDING_LINES is deep-frozen { first, ten, hundred, rest } with at least 3 lines each", () => {
+  assert.ok(Object.isFrozen(GLOBAL_STANDING_LINES));
+  assert.deepStrictEqual(Object.keys(GLOBAL_STANDING_LINES), ["first", "ten", "hundred", "rest"]);
+  for (const [bank, lines] of Object.entries(GLOBAL_STANDING_LINES)) {
+    assert.ok(Object.isFrozen(lines), `${bank} must be frozen`);
+    assert.ok(lines.length >= 3, `${bank} has at least 3 lines`);
+  }
+});
+
+test("GLOBAL_STANDING_LINES pins the plan's lines verbatim, with no {token}, markup, WP or handle marker", () => {
+  for (const [bank, lines] of Object.entries(GLOBAL_STANDING_PINS)) {
+    lines.forEach((line, i) => assert.equal(GLOBAL_STANDING_LINES[bank][i], line, `${bank}[${i}]`));
+  }
+  for (const [bank, lines] of Object.entries(GLOBAL_STANDING_LINES)) {
+    lines.forEach((line, i) => {
+      assert.deepStrictEqual(tokensIn(line), [], `${bank}[${i}]`);
+      assert.doesNotMatch(line, /[<>&@{}]/, `${bank}[${i}] -> "${line}"`);
+      assert.doesNotMatch(line, /\bWP\b/i, `${bank}[${i}] -> "${line}"`);
+    });
   }
 });

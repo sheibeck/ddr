@@ -38,7 +38,9 @@ import {
 } from "../../content/index.js";
 // Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy — walked
 // the same way the other COPY objects in banks (below) are.
-import { BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES } from "../../content/boards.js";
+import { BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, GLOBAL_STANDING_LINES } from "../../content/boards.js";
+// Phase 68 (PLACE-01/02): the rank-quip bank, deferred card and season-drop line.
+import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../content/placement.js";
 // Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy, walked the same way.
 import { ACCOUNT_COPY } from "../../content/account.js";
 
@@ -141,6 +143,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES,
     // Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy.
     ACCOUNT_COPY,
+    // Phase 68 (PLACE-01/02): the global standing quips and the placement copy.
+    GLOBAL_STANDING_LINES, PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,
   };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {
@@ -321,4 +325,9 @@ test("PLAYER_WP self-check: excludes code identifiers, matches real player copy"
   for (const bad of [" wp/day", "+d10+2 wp", "75 WP", "(WP)"]) {
     assert.equal(PLAYER_WP.test(bad), true, `PLAYER_WP must match player copy "${bad}"`);
   }
+});
+
+test("Phase 68: BOARDS_PANEL_COPY.global is covered by the BOARDS_PANEL_COPY walk", () => {
+  const leaves = collectStringLeaves(BOARDS_PANEL_COPY).map(([p]) => p);
+  assert.ok(leaves.includes("global.scope.all") && leaves.includes("global.sampledFoot"));
 });
