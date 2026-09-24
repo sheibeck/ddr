@@ -45,6 +45,8 @@ import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../conten
 import { ACCOUNT_COPY } from "../../content/account.js";
 // Phase 70 (D-06): the ☰ menu's Save & quit / Abandon row copy, walked the same way.
 import { HUD_MENU_QUIT_COPY } from "../../src/browser/hudMenu.js";
+// Phase 71 (D-14): the one foe-condition chip table's labels, walked the same way.
+import { FOE_CONDITION_COPY } from "../../src/browser/foeConditions.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -149,6 +151,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     HUD_MENU_QUIT_COPY,
     // Phase 71 (D-04): the one item stat formatter's labels and texts.
     ITEM_STAT_COPY,
+    // Phase 71 (D-14): the foe-condition chip labels.
+    FOE_CONDITION_COPY,
     // Phase 68 (PLACE-01/02): the global standing quips and the placement copy.
     GLOBAL_STANDING_LINES, PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,
   };
