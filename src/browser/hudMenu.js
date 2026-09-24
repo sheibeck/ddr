@@ -20,6 +20,15 @@
 // openSettingsSheet) route unchanged — a rename here would silently
 // disconnect a handler.
 //
+// Phase 70 (POLISH-02/03): the ☰ glyph is also the account face's
+// signed-out look (D-03) — signed in, the button wears the initials avatar
+// instead (src/browser/account.js#accountMenuView). Per D-06 the two quit
+// rows (SAVE & QUIT and ABANDON THIS CHARACTER, NEW CHARACTER once the hero
+// is dead) live in this menu too. Abandon has an in-row two-tap arm with no
+// modal (abandonRowNext below); Settings › Confirm before quit governs the
+// arm (draft DISC-1): On means two taps, Off means one. The shell owns the
+// ABANDON_ARM_MS timer and feeds its expiry back in as a "timeout" event.
+//
 // Pure, DOM-free, timer-free, storage-free — same house shape as
 // src/browser/hudBands.js. Bridged onto the shell as `next: hudMenuNext`.
 
@@ -70,4 +79,75 @@ export function hudMenuNext(open, kind, ctx) {
   // and any unknown/missing kind — fail-closed: the menu can only ever end
   // up closed, never stranded open over the map.
   return false;
+}
+
+// ─── Phase 70 (D-03, D-06): the ☰ glyph and the quit rows ────────────────
+
+/**
+ * HUD_MENU_GLYPH — the ☰ codepoint (U+2630, 9776), written as an escape so
+ * the source stays ASCII. The menu button's face whenever the player is not
+ * signed in to Play Games (signed out, signing in, Compete OFF) — D-03.
+ */
+export const HUD_MENU_GLYPH = "☰";
+
+/**
+ * HUD_MENU_QUIT_COPY — the two quit rows' labels (D-06). `abandon` is the
+ * live hero's row at rest, `armed` the same row after the first tap (the
+ * second tap buries them), `newCharacter` the row once the hero is dead.
+ */
+export const HUD_MENU_QUIT_COPY = Object.freeze({
+  saveQuit: "SAVE & QUIT",
+  abandon: "ABANDON THIS CHARACTER",
+  armed: "TAP AGAIN TO BURY THEM",
+  newCharacter: "NEW CHARACTER",
+});
+
+/** ABANDON_ARM_MS — how long an armed Abandon row waits for its second tap. */
+export const ABANDON_ARM_MS = 3000;
+
+/**
+ * ABANDON_ROW_EVENTS — the event kinds abandonRowNext() understands:
+ *   - "tap"      the Abandon / New character row was tapped
+ *   - "timeout"  the shell's ABANDON_ARM_MS timer ran out
+ *   - "close"    the menu closed (any hudMenuNext close)
+ */
+export const ABANDON_ROW_EVENTS = Object.freeze(["tap", "timeout", "close"]);
+
+const TAP_EVENT = ABANDON_ROW_EVENTS[0];
+
+/** Read one ctx flag; a non-object or a hostile getter reads as undefined. */
+function flag(ctx, key) {
+  if (ctx === null || typeof ctx !== "object") return undefined;
+  try {
+    return ctx[key];
+  } catch {
+    return undefined;
+  }
+}
+
+const REST = Object.freeze({ armed: false, act: null });
+const ARMED = Object.freeze({ armed: true, act: null });
+const ABANDON = Object.freeze({ armed: false, act: "abandon" });
+const NEW_CHARACTER = Object.freeze({ armed: false, act: "newCharacter" });
+
+/**
+ * abandonRowNext(armed, kind, ctx) -> frozen { armed, act }
+ *
+ * The whole two-tap arm (D-06). ctx is { dead, confirm }:
+ *   - a tap with the hero dead (ctx.dead strictly true) is NEW CHARACTER,
+ *     whatever the arm state;
+ *   - a live tap with confirm required arms the row, and a tap on an
+ *     already-armed row (strictly true) abandons;
+ *   - confirm is required unless ctx.confirm is strictly false (the player
+ *     turned Settings › Confirm before quit Off) — a missing, hostile or
+ *     non-boolean ctx is fail-safe, so the first tap only ever arms;
+ *   - "timeout", "close" and any unknown or missing kind disarm.
+ * act is null, "abandon" or "newCharacter". Total: never throws.
+ */
+export function abandonRowNext(armed, kind, ctx) {
+  if (kind !== TAP_EVENT) return REST;
+  if (flag(ctx, "dead") === true) return NEW_CHARACTER;
+  const confirm = flag(ctx, "confirm") !== false;
+  if (!confirm || armed === true) return ABANDON;
+  return ARMED;
 }
