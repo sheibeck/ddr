@@ -16,11 +16,15 @@
 // Games has no programmatic sign-out, so a signed-in sheet offers STOP
 // COMPETING plus the helper line pointing at the Play Games app.
 //
+// Phase 70 (POLISH-02, D-03): accountMenuView() gives the ☰ menu button the
+// same avatar when signed in, and the plain ☰ glyph otherwise.
+//
 // Every export is total (never throws) and returns frozen objects.
 
 import { initialsOf, avatarColour } from "./boardsView.js";
 import { RAIL_HOLD } from "./rail.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
+import { HUD_MENU_GLYPH } from "./hudMenu.js";
 
 /** ACCOUNT_STATUS — the four account statuses the controller moves between. */
 export const ACCOUNT_STATUS = Object.freeze({
@@ -105,6 +109,25 @@ export function accountChipView(input) {
     label = label.replace("{name}", () => name);
   }
   return Object.freeze({ ...face, label });
+}
+
+/**
+ * accountMenuView(state) — the ☰ menu button's face, { face, initials, bg,
+ * glyph, label } (Phase 70 D-03, superseding Phase 67 D-05's separate band-2
+ * chip). Signed in (Compete ON) it is the same initials avatar the chip
+ * wears — faceOf() does the maths, never re-implemented — with a label that
+ * names the player. Signed out, signing in and Compete OFF all show the
+ * plain ☰ glyph (face "menu") labelled "Menu": the "?" nobody face stays on
+ * the title chip and the Leaderboards strip only (D-04).
+ */
+export function accountMenuView(input) {
+  const state = normalizeAccountState(input);
+  if (state.status === ACCOUNT_STATUS.SIGNED_IN) {
+    const name = nameOf(state);
+    const label = ACCOUNT_COPY.menuLabel.signedIn.replace("{name}", () => name);
+    return Object.freeze({ ...faceOf(state), label });
+  }
+  return Object.freeze({ face: "menu", initials: "", bg: "", glyph: HUD_MENU_GLYPH, label: ACCOUNT_COPY.menuLabel.plain });
 }
 
 /** The single action row the sheet offers for a status, or null (D-10). */
