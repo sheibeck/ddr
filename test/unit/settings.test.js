@@ -46,13 +46,18 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: the five fields' defaults", () => {
+test("SETTINGS_DEFAULTS: the eight fields' defaults", () => {
   assert.equal(SETTINGS_DEFAULTS.textSize, "M");
   assert.equal(SETTINGS_DEFAULTS.sound, true);
   assert.equal(SETTINGS_DEFAULTS.haptics, true);
   assert.equal(SETTINGS_DEFAULTS.confirmBeforeQuit, true);
   // Phase 59 (DRESS-05): the fifth field, Set Dressing, defaults On.
   assert.equal(SETTINGS_DEFAULTS.dressing, true);
+  // Phase 67 (PGS-02): Compete defaults ON (D-01), the first-sign-in card
+  // has not been shown (D-04), and the dev simulate-signed-in flag is off (D-12).
+  assert.equal(SETTINGS_DEFAULTS.compete, true);
+  assert.equal(SETTINGS_DEFAULTS.pgsWelcomed, false);
+  assert.equal(SETTINGS_DEFAULTS.pgsDevSignedIn, false);
 });
 
 test("writeSetting/readSettings: each of the 5 fields round-trips through window.mzStorage", async () => {
@@ -72,6 +77,9 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       textSize: "L",
       confirmBeforeQuit: false,
       dressing: false,
+      compete: true,
+      pgsWelcomed: false,
+      pgsDevSignedIn: false,
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -136,9 +144,19 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S" });
     assert.equal("handedness" in settings, false);
 
-    // Phase 59 (DRESS-05): five keys now, `dressing` appended last.
-    assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), ["sound", "haptics", "textSize", "confirmBeforeQuit", "dressing"]);
-    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 5);
+    // Phase 59 (DRESS-05) appended `dressing`; Phase 67 (PGS-02) appended
+    // `compete`, `pgsWelcomed` and `pgsDevSignedIn` — eight keys, in order.
+    assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), [
+      "sound",
+      "haptics",
+      "textSize",
+      "confirmBeforeQuit",
+      "dressing",
+      "compete",
+      "pgsWelcomed",
+      "pgsDevSignedIn",
+    ]);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 8);
     assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -233,5 +251,78 @@ test("dressing: a persisted blob with an invalid dressing value (e.g. \"yes\") r
     store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ dressing: "yes" }));
     const settings = await readSettings();
     assert.equal(settings.dressing, true);
+  });
+});
+
+// --- Phase 67 (PGS-02): compete, pgsWelcomed, pgsDevSignedIn -------------
+
+test("Phase 67: an old five-key blob reads compete true, pgsWelcomed false, pgsDevSignedIn false (tolerant load, no migration)", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ sound: false, haptics: false, textSize: "S", confirmBeforeQuit: false, dressing: false }),
+    );
+    const settings = await readSettings();
+    assert.equal(settings.compete, true);
+    assert.equal(settings.pgsWelcomed, false);
+    assert.equal(settings.pgsDevSignedIn, false);
+    assert.equal(settings.sound, false); // the old fields still load normally
+    assert.equal(settings.dressing, false);
+  });
+});
+
+test("Phase 67: writeSetting(\"compete\", false) persists false and changes no other field", async () => {
+  await withFakeLocalStorage(async () => {
+    const before = await readSettings();
+    await writeSetting("compete", false);
+    await flushStorage();
+    const after = await readSettings();
+    assert.deepEqual(after, { ...before, compete: false });
+  });
+});
+
+test("Phase 67: writeSetting(\"pgsWelcomed\", true) changes only pgsWelcomed", async () => {
+  await withFakeLocalStorage(async () => {
+    const before = await readSettings();
+    await writeSetting("pgsWelcomed", true);
+    await flushStorage();
+    const after = await readSettings();
+    assert.deepEqual(after, { ...before, pgsWelcomed: true });
+  });
+});
+
+test("Phase 67: writeSetting(\"pgsDevSignedIn\", true) changes only pgsDevSignedIn", async () => {
+  await withFakeLocalStorage(async () => {
+    const before = await readSettings();
+    await writeSetting("pgsDevSignedIn", true);
+    await flushStorage();
+    const after = await readSettings();
+    assert.deepEqual(after, { ...before, pgsDevSignedIn: true });
+  });
+});
+
+test("Phase 67: invalid compete values (\"no\", 0) are no-ops returning the current settings", async () => {
+  await withFakeLocalStorage(async () => {
+    const current = await readSettings();
+    assert.deepEqual(await writeSetting("compete", "no"), current);
+    assert.deepEqual(await writeSetting("compete", 0), current);
+    await flushStorage();
+    assert.equal((await readSettings()).compete, true);
+
+    await writeSetting("compete", false);
+    await flushStorage();
+    const off = await readSettings();
+    assert.deepEqual(await writeSetting("compete", "no"), off); // keeps the last valid value
+    assert.equal((await readSettings()).compete, false);
+  });
+});
+
+test("Phase 67: a persisted compete of \"off\" (invalid) reads back as the default true", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ compete: "off", pgsWelcomed: "yes", pgsDevSignedIn: 1 }));
+    const settings = await readSettings();
+    assert.equal(settings.compete, true);
+    assert.equal(settings.pgsWelcomed, false);
+    assert.equal(settings.pgsDevSignedIn, false);
   });
 });
