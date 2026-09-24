@@ -13,6 +13,12 @@
 //   3. defence (omitted if none)  7. current effects (foeConditions.js, D-14)
 //   4. attack and damage range    8. one deadpan flavour line
 //
+// Phase 71 (D-16, R-30): "7" is one line PER current effect, in
+// foeConditionChips order, each "<chip text> — <chip desc>" — the long-press
+// card is where a foe condition is explained (a tap on a foe card, chips
+// included, only aims). The text and the description both come from the
+// chips, never re-derived here. With no effects it is the one noEffects line.
+//
 // Only what the player could plausibly know. Deliberately LEFT OUT, because
 // the rules keep them hidden: sp.fleesBelow (the Djinni's flee threshold),
 // sp.every and every ability `every`/`uses` cadence, the foe's live ability
@@ -253,9 +259,12 @@ function resistLine(foe, type, name) {
   return parts.join(" · ");
 }
 
-function effectsLine(foe, state) {
+/** effectLines(foe, state) — Phase 71 (D-16, R-30): one "<text> — <desc>"
+ * line per foeConditionChips chip, in table order, or [noEffects]. */
+function effectLines(foe, state) {
   const chips = safe(() => foeConditionChips(foe, state), []);
-  return chips.length ? chips.map((c) => c.text).join(" · ") : C.noEffects;
+  if (!chips.length) return [C.noEffects];
+  return chips.map((c) => (c.desc ? `${c.text} — ${c.desc}` : c.text));
 }
 
 function fallbackCard(i) {
@@ -297,7 +306,7 @@ export function foeDetailsCard(i, state) {
   lines.push(line(attackLine(foe, sp, state)));
   lines.push(line(abilitiesLine(foe, sp)));
   lines.push(line(resistLine(foe, type, name)));
-  lines.push(line(effectsLine(foe, state)));
+  for (const text of effectLines(foe, state)) lines.push(line(text));
   lines.push(line((type && C.flavour[type]) || C.flavour.default));
 
   return {
