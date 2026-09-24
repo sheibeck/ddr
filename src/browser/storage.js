@@ -42,10 +42,13 @@
 //
 // Exposed as window.mzStorage (guarded: only when `window` exists) so the
 // non-module classic <script> in mazeworld.html can also reach it — 02-03
-// converges both persistence paths (the classic script's save()/load()/
-// saveGraves()/loadGraves() AND engineAdapter.js's persist()/boot()/
-// persistGrave()) on this one module, closing the dual-write hazard
-// 02-RESEARCH.md documents.
+// converged both persistence paths onto this one module, closing the
+// dual-write hazard 02-RESEARCH.md documents. Phase 44 (DEAD-01/DEAD-03)
+// retired the classic script's own save()/load(); Phase 66 (D-14) retired
+// its saveGraves()/loadGraves() the same way — engineAdapter.js's
+// persist()/boot()/persistGrave()/loadGraveyard() is now the ONE
+// run-save-and-graveyard path, and this module is the ONE storage
+// abstraction underneath it.
 
 import { validateSave } from "../../engine/saveState.js";
 
