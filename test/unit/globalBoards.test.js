@@ -384,7 +384,7 @@ test("the player's own score outside the top ten is you, keyed g:you, with its r
 });
 
 test("the player's own score inside the top ten marks the matching entry you as well", async () => {
-  const r = rig({ boards: { [DEEP]: [...rivals(12), mine(985)] } });
+  const r = rig({ boards: { [DEEP]: [...rivals(12), mine(995)] } });
   r.gb.view(deepAll);
   await flush();
   const snap = r.gb.view(deepAll);
@@ -422,7 +422,7 @@ test("the player's own score is you even when Play Games returns it without a pl
 });
 
 test("with no signed-in id yet, the player score's own playerId marks the matching entry", async () => {
-  const r = rig({ boards: { [DEEP]: [...rivals(12), mine(985)] }, meId: "" });
+  const r = rig({ boards: { [DEEP]: [...rivals(12), mine(995)] }, meId: "" });
   r.gb.view(deepAll);
   await flush();
   const snap = r.gb.view(deepAll);
