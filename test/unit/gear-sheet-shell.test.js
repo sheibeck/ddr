@@ -96,9 +96,13 @@ test("markup: #mw-gear-sheet is a hidden .mw-legend-sheet with the scrim, the ro
   assert.match(markup, /role="dialog" aria-modal="true" aria-labelledby="mw-gear-sheet-title"/);
   assert.match(markup, /<h2 class="mw-gsheet-title" id="mw-gear-sheet-title" tabindex="-1">/);
   assert.match(markup, /<button type="button" class="mw-gsheet-cancel" id="mw-gear-sheet-cancel">/);
-  for (const id of Object.values(GEAR_SHEET_IDS)) {
+  // Phase 71 (D-04, R-05): `stats` is the one GEAR_SHEET_IDS root the
+  // renderer creates itself (inserted after the note, before why) — 71-02
+  // makes no mazeworld.html edit, so it is never declared in the markup.
+  for (const [key, id] of Object.entries(GEAR_SHEET_IDS)) {
     const re = new RegExp(`id="${id}"`, "g");
-    assert.equal((markup.match(re) || []).length, 1, `expected id="${id}" exactly once inside the sheet markup`);
+    const expected = key === "stats" ? 0 : 1;
+    assert.equal((markup.match(re) || []).length, expected, `expected id="${id}" ${expected ? "exactly once" : "never"} inside the sheet markup`);
   }
 });
 

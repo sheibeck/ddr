@@ -16,7 +16,10 @@ import { newRun, applyAction } from "../../engine/engine.js";
 import { rollBlade, rollMailPiece, rollJewel, rollCloak, rollStaff, toolItem, bagItemFor } from "../../engine/items.js";
 import { WEAPONS, ARMORS, BAGS, POTIONS } from "../../content/index.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
-import { itemStatLines, wornItemFor, ITEM_STAT_COPY, usableBy } from "../../src/browser/viewModels.js";
+import { itemStatLines, wornItemFor, ITEM_STAT_COPY, usableBy, storeRowState } from "../../src/browser/viewModels.js";
+import { gearSheetModel } from "../../src/browser/gearSheet.js";
+import { renderStoreScreen, storeItemStats } from "../../src/browser/storeScreen.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
 
 // ─── fixtures ────────────────────────────────────────────────────────────
 
@@ -279,5 +282,120 @@ test("Voice: every ITEM_STAT_COPY leaf clears the family-friendly safety wordlis
       assert.ok(!m || ALLOW.has(m[0].toLowerCase()), `ITEM_STAT_COPY.${at} contains banned term "${m && m[0]}"`);
     }
     assert.doesNotMatch(value, /\bwp\b/i, `ITEM_STAT_COPY.${at} must not say wp/WP`);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Task 2 — the store row and the Gear sheet render the SAME stat list
+// ═══════════════════════════════════════════════════════════════════════
+
+/** A roomy hero for the agreement sweep: a large bag, the class the item wants. */
+function sweepHero(cls, items) {
+  return fixedChar({ cls, bag: "large", items: structuredClone(items), worn: {} });
+}
+/** economy.js#openStore's mk() stock-line shape for an item line. */
+const stockLine = (item, effectId) => ({ n: item.n, sub: item.txt ?? null, cost: 100, effectId, effectParams: { item: structuredClone(item) }, sold: false });
+
+// [item, hero class, store effectId or null (the store never sells that kind)]
+const AGREEMENT = [
+  [shopWeapon("Long Sword"), "Fighter", "buyWeapon"],
+  [shopArmor("Plate"), "Fighter", "buyArmor"],
+  [PREMIUM_BLADE, "Fighter", "buyPremium"],
+  [PREMIUM_MAIL, "Fighter", "buyPremium"],
+  [CLOAK, "Fighter", null],
+  [JEWEL, "Fighter", null],
+  [STAFF, "Magic User", null],
+  [TORCH, "Fighter", "giveTool"],
+  [PICKS, "Fighter", "giveLockpicks"],
+];
+
+test("agreement (bag): for every kind, the Gear sheet's stats equal itemStatLines, and the store row's stat segment equals the sheet's", () => {
+  for (const [item, cls, effectId] of AGREEMENT) {
+    const c = sweepHero(cls, [item]);
+    const state = { c };
+    const sheet = gearSheetModel(state, { from: "bag", i: 0, n: item.n });
+    assert.ok(sheet, `${item.n}: the bag sheet must resolve`);
+    assert.deepStrictEqual(sheet.stats, texts(itemStatLines(item, c)), `${item.n}: sheet vs formatter`);
+    assert.ok(sheet.stats.length > 0, `${item.n}: a real item always has stats`);
+    if (effectId) {
+      const line = stockLine(item, effectId);
+      const rs = storeRowState(c, line);
+      assert.equal(rs.showUsable, true, `${item.n}: a legal item keeps its usable-by`);
+      assert.deepStrictEqual(storeItemStats(line, c, rs.showUsable), sheet.stats, `${item.n}: store vs sheet`);
+    }
+  }
+});
+
+test("agreement (store DOM): an item row's italic segment opens with the formatter's stats joined by ' · '", () => {
+  const c = sweepHero("Fighter", []);
+  c.gold = 99999;
+  const lines = AGREEMENT.filter(([, cls, e]) => e && cls === "Fighter").map(([item, , e]) => stockLine(item, e));
+  const base = newRun(7);
+  const state = { ...base, c, store: { stock: lines, haggle: 1, race: c.race } };
+  const rec = createRecordingDocument();
+  const host = rec.document.createElement("div");
+  renderStoreScreen(host, state, {});
+  const rows = rec.elementsById.get("shelf").children;
+  assert.equal(rows.length, lines.length);
+  lines.forEach((line, i) => {
+    const seg = texts(itemStatLines(line.effectParams.item, c)).join(" · ");
+    assert.ok(rows[i].innerHTML.includes(`<i>${seg}`), `${line.n}: expected <i>${seg}…, got ${rows[i].innerHTML}`);
+  });
+});
+
+test("agreement (worn): after equipping, the worn sheet's stats equal the bag sheet's — weapon, premium blade, armour, premium mail, cloak, jewel", () => {
+  const cases = [
+    [shopWeapon("Long Sword"), "weapon"],
+    [PREMIUM_BLADE, "weapon"],
+    [shopArmor("Plate"), "armor"],
+    [PREMIUM_MAIL, "armor"],
+    [CLOAK, "cloak"],
+    [JEWEL, "jewelry1"],
+  ];
+  for (const [item, slot] of cases) {
+    const state = newRun(11);
+    state.c = { ...state.c, ...sweepHero("Fighter", [item]) };
+    const bagStats = gearSheetModel(state, { from: "bag", i: 0, n: item.n }).stats;
+    const run = { type: "equipItem", i: 0 };
+    if (slot === "cloak" || slot === "jewelry1") run.slot = slot;
+    const { state: after } = applyEquip(state, run);
+    const wornStats = gearSheetModel(after, { from: "worn", slot }).stats;
+    assert.deepStrictEqual(wornStats, bagStats, `${item.n} (${slot})`);
+  }
+});
+
+test("agreement (worn armour wear): a worn-down piece reads the same as that piece in the bag with left = armorWP", () => {
+  for (const item of [shopArmor("Plate"), PREMIUM_MAIL]) {
+    const state = newRun(11);
+    state.c = { ...state.c, ...sweepHero("Fighter", [item]) };
+    const { state: after } = applyEquip(state, { type: "equipItem", i: 0 });
+    after.c.armorWP = 5;
+    const wornStats = gearSheetModel(after, { from: "worn", slot: "armor" }).stats;
+    assert.deepStrictEqual(wornStats, texts(itemStatLines({ ...item, left: 5 }, after.c)), item.n);
+    assert.ok(wornStats.includes(`5/${item.wp} hp`));
+    after.c.armorWP = 0;
+    assert.ok(gearSheetModel(after, { from: "worn", slot: "armor" }).stats.includes(ITEM_STAT_COPY.text.destroyed));
+  }
+});
+
+test("agreement (illegal): the store hides usable-by behind its can't-use reason; the sheet still lists it", () => {
+  const item = shopWeapon("Broadsword");
+  const c = sweepHero("Magic User", [item]);
+  const line = stockLine(item, "buyWeapon");
+  const rs = storeRowState(c, line);
+  assert.equal(rs.showUsable, false);
+  const sheet = gearSheetModel({ c }, { from: "bag", i: 0, n: item.n });
+  assert.deepStrictEqual(storeItemStats(line, c, false), sheet.stats.filter((t) => t !== usableBy(item, c)));
+});
+
+test("store: a line with no item (food, rations, scroll, repair) has no formatter stats — its engine sub stands", () => {
+  const c = sweepHero("Fighter", []);
+  for (const line of [
+    { n: "Meal (+15 hp)", sub: null, cost: 20, effectId: "eatRation", effectParams: { wp: 15 }, sold: false },
+    { n: "Rations (+1 ration)", sub: null, cost: 20, effectId: "buyRations", effectParams: { amount: 1 }, sold: false },
+    { n: "Sealed scroll", sub: null, cost: 900, effectId: "buyScroll", effectParams: null, sold: false },
+    { n: "Repair your mail", sub: "9 points at a tenth of its cost each", cost: 20, effectId: "repairArmor", effectParams: null, sold: false },
+  ]) {
+    assert.equal(storeItemStats(line, c, true), null, line.n);
   }
 });

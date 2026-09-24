@@ -287,7 +287,7 @@ test("CANCEL: reads CANCEL and is wired through guardTap to closeGearSheet", () 
   assert.deepStrictEqual(log, [["closeGearSheet"]]);
 });
 
-test("No node under the six GEAR_SHEET_IDS carries an HTML-string write", () => {
+test("No node under the GEAR_SHEET_IDS roots (seven since Phase 71) carries an HTML-string write", () => {
   const c = fixedChar({ worn: { jewelry1: RING_OF_POWER }, items: [GAUNTLET] });
   const state = st(c);
   const { deps } = makeDeps();
@@ -427,7 +427,7 @@ test("Edge GSCR-08/encoding: a hostile item name renders verbatim in the bag tit
   assert.ok(subSpan3.textContent.startsWith(TRICKY_NAME));
 });
 
-test("Edge GSCR-08/encoding: no node under the six GEAR_SHEET_IDS has _content.kind html", () => {
+test("Edge GSCR-08/encoding: no node under the GEAR_SHEET_IDS roots (seven since Phase 71) has _content.kind html", () => {
   const bagChar = fixedChar({ worn: { jewelry1: RING_OF_POWER }, items: [{ kind: "jewel", n: TRICKY_NAME, txt: "a strange ring" }] });
   const { doc, host } = mountHost();
   renderGearSheet(host, st(bagChar), { from: "bag", i: 0, n: TRICKY_NAME }, makeDeps().deps);
@@ -470,7 +470,7 @@ test("Edge GSCR-09/ordering: closeGearSheet precedes every dispatch across the t
   }
 });
 
-test("Idempotency: rendering the same target twice on one host serializes the six ids byte-identically", () => {
+test("Idempotency: rendering the same target twice on one host serializes every GEAR_SHEET_IDS root byte-identically", () => {
   const state = fixedStates().thief;
   const target = { from: "worn", slot: "jewelry1" };
   const { deps } = makeDeps();
@@ -498,6 +498,92 @@ test("No WP: the serialized sheet for the thief's worn armor and bag sheets carr
   renderGearSheet(host2, thief, { from: "bag", i: card.i, n: card.name }, makeDeps().deps);
   const text2 = doc2.serializeElements(Object.values(GEAR_SHEET_IDS));
   assert.equal(text2.match(PLAYER_WP), null, `unexpected wp/WP token: ${text2.match(PLAYER_WP) && text2.match(PLAYER_WP)[0]}`);
+});
+
+// ─── Phase 71 (POLISH-06, D-04): the stats container ─────────────────────
+//
+// GEAR_SHEET_IDS grows from six roots to seven: `stats` is the one root the
+// renderer creates itself (R-05 — no mazeworld.html edit in 71-02), inserted
+// after #mw-gear-sheet-note and before #mw-gear-sheet-why inside the head.
+
+/** mountSheetHead() — a host plus a real .mw-gsheet-head parent holding the
+ * label/title/note/why roots in markup order, so the renderer's insertion
+ * point can be observed (recordingDom's getElementById roots are otherwise
+ * parentless). */
+function mountSheetHead() {
+  const { doc, host } = mountHost();
+  const head = doc.document.createElement("div");
+  head.className = "mw-gsheet-head";
+  for (const key of ["label", "title", "note", "why"]) head.appendChild(doc.document.getElementById(GEAR_SHEET_IDS[key]));
+  return { doc, host, head };
+}
+
+test("GEAR_SHEET_IDS: seven roots — the six markup roots plus the renderer-created stats container", () => {
+  assert.equal(Object.keys(GEAR_SHEET_IDS).length, 7);
+  assert.equal(GEAR_SHEET_IDS.stats, "mw-gear-sheet-stats");
+  assert.ok(Object.isFrozen(GEAR_SHEET_IDS));
+});
+
+test("Stats: the container is created once, sits after the note and before why, and carries one mw-gsheet-note row per stat", () => {
+  const c = fixedChar({ weapon: "Axe" });
+  const state = st(c);
+  const target = { from: "worn", slot: "weapon" };
+  const model = gearSheetModel(state, target);
+  assert.ok(model.stats.length >= 1);
+  const { doc, host, head } = mountSheetHead();
+  renderGearSheet(host, state, target, makeDeps().deps);
+
+  const statsEl = doc.document.getElementById(GEAR_SHEET_IDS.stats);
+  assert.deepStrictEqual(
+    head.children.map((n) => n.id),
+    [GEAR_SHEET_IDS.label, GEAR_SHEET_IDS.title, GEAR_SHEET_IDS.note, GEAR_SHEET_IDS.stats, GEAR_SHEET_IDS.why],
+  );
+  assert.equal(statsEl.parentNode, head);
+  assert.equal(statsEl.hidden, false);
+  assert.equal(statsEl.children.length, model.stats.length);
+  statsEl.children.forEach((row, i) => {
+    assert.ok(row.className.split(/\s+/).includes("mw-gsheet-note"), "each stat row reuses the note typography class");
+    assert.equal(row.textContent, model.stats[i]);
+    assert.notEqual(row._content.kind, "html");
+  });
+
+  // A second render reuses the same container and replaces its rows.
+  renderGearSheet(host, state, target, makeDeps().deps);
+  assert.equal(doc.document.getElementById(GEAR_SHEET_IDS.stats), statsEl);
+  assert.equal(head.children.filter((n) => n.id === GEAR_SHEET_IDS.stats).length, 1);
+  assert.equal(statsEl.children.length, model.stats.length);
+});
+
+test("Stats: an empty stat list hides the container and leaves it with no rows; re-targeting replaces, never appends", () => {
+  const c = fixedChar({ weapon: "Axe", worn: {} });
+  const state = st(c);
+  const { doc, host } = mountSheetHead();
+  renderGearSheet(host, state, { from: "worn", slot: "weapon" }, makeDeps().deps);
+  const statsEl = doc.document.getElementById(GEAR_SHEET_IDS.stats);
+  const weaponRows = statsEl.children.length;
+  assert.ok(weaponRows > 0);
+
+  assert.deepStrictEqual(gearSheetModel(state, { from: "worn", slot: "jewelry1" }).stats, []);
+  renderGearSheet(host, state, { from: "worn", slot: "jewelry1" }, makeDeps().deps);
+  assert.equal(statsEl.hidden, true);
+  assert.equal(statsEl.children.length, 0);
+
+  renderGearSheet(host, state, { from: "worn", slot: "weapon" }, makeDeps().deps);
+  assert.equal(statsEl.hidden, false);
+  assert.equal(statsEl.children.length, weaponRows);
+});
+
+test("Note: hidden when the model's note is empty (the stats carry it), shown otherwise", () => {
+  const c = fixedChar({ worn: { jewelry1: RING_OF_POWER }, items: [GAUNTLET] });
+  const state = st(c);
+  const { doc, host } = mountSheetHead();
+  renderGearSheet(host, state, { from: "worn", slot: "jewelry1" }, makeDeps().deps);
+  const noteEl = doc.document.getElementById(GEAR_SHEET_IDS.note);
+  assert.equal(noteEl.textContent, "");
+  assert.equal(noteEl.hidden, true);
+  renderGearSheet(host, state, { from: "worn", slot: "weapon" }, makeDeps().deps);
+  assert.ok(noteEl.textContent.length > 0);
+  assert.equal(noteEl.hidden, false);
 });
 
 // ─── Module contract (mirrors gear-tab-dom.test.js's own order-sensitive

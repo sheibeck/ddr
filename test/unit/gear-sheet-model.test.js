@@ -17,7 +17,8 @@ import url from "node:url";
 
 import { gearSheetModel, GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js";
 import { GEAR_COPY, GEAR_WORN_ORDER, gearWornModel, gearBagCardsModel } from "../../src/browser/gearTab.js";
-import { armorDisplay, lootCompare } from "../../src/browser/viewModels.js";
+import { armorDisplay, lootCompare, itemStatLines, wornItemFor, usableBy } from "../../src/browser/viewModels.js";
+import { WEAPONS } from "../../content/index.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { newRun } from "../../engine/engine.js";
 import { toolItem } from "../../engine/items.js";
@@ -101,7 +102,10 @@ test("Filled worn jewel: label/title/note/why, action keys and runs", () => {
 
   assert.equal(model.label, "JEWELRY 1 · WORN");
   assert.equal(model.title, "Ring of Power");
-  assert.equal(model.note, row.note);
+  // Phase 71 (D-04, R-06): the jewel's effect text now sits in `stats`, so
+  // the note no longer repeats it — each stat shows once.
+  assert.deepStrictEqual(model.stats, [row.note]);
+  assert.equal(model.note, "");
   assert.equal(model.why, "");
   assert.deepStrictEqual(model.actions.map((a) => a.key), ["use", "unequip", "swap:0"]);
 
@@ -224,7 +228,11 @@ test("Bag header: label BAG · <FAMILY> or USED FROM THE BAG; title/note/why", (
   assert.equal(model.label, "BAG · WEAPON");
   assert.equal(model.title, "Club");
   const card = gearBagCardsModel(st(c))[0];
-  assert.equal(model.note, card.desc);
+  // Phase 71 (D-04, R-06): the card desc (txt + usable-by) is now carried by
+  // `stats` — the bag note is dropped rather than repeat it.
+  assert.ok(card.desc.length > 0);
+  assert.equal(model.note, "");
+  assert.deepStrictEqual(model.stats, itemStatLines(club, c).map((l) => l.text));
   assert.equal(model.why, lootCompare(c, club).line);
 
   const rope = toolItem("rope");
@@ -232,6 +240,78 @@ test("Bag header: label BAG · <FAMILY> or USED FROM THE BAG; title/note/why", (
   const model2 = gearSheetModel(st(c2), { from: "bag", i: 0, n: "Rope" });
   assert.equal(model2.label, "BAG · USED FROM THE BAG");
   assert.equal(model2.why, "");
+});
+
+// ═══════════════════════ Phase 71 (D-04): the stat list ════════════════════
+
+test("Stats: a worn weapon shows its damage label (the dice the old sheet never showed), then usable-by; the note keeps its voice line", () => {
+  const c = fixedChar({ weapon: "Axe", magicWpn: 0 });
+  const model = gearSheetModel(st(c), { from: "worn", slot: "weapon" });
+  assert.equal(model.stats[0], WEAPONS.Axe.lab);
+  assert.deepStrictEqual(model.stats, itemStatLines(wornItemFor(c, "weapon"), c).map((l) => l.text));
+  assert.equal(model.note, gearWornModel(st(c)).rows.find((r) => r.key === "weapon").note);
+
+  const magic = fixedChar({ weapon: "Axe", magicWpn: 2 });
+  const m2 = gearSheetModel(st(magic), { from: "worn", slot: "weapon" });
+  assert.equal(m2.stats[0], `${WEAPONS.Axe.lab} +2`);
+  assert.ok(m2.stats.includes("enchanted"));
+});
+
+test("Stats: worn armour shows AR and durability; the note no longer repeats the durability", () => {
+  const c = fixedChar({ armor: "Mail", ar: 12, armorWP: 18, armorMax: 30 });
+  const model = gearSheetModel(st(c), { from: "worn", slot: "armor" });
+  assert.equal(model.stats[0], "AR 12");
+  assert.equal(model.stats[1], "18/30 hp");
+  assert.deepStrictEqual(model.stats, itemStatLines(wornItemFor(c, "armor"), c).map((l) => l.text));
+  assert.equal(model.note, "");
+  for (const s of model.stats) assert.ok(!model.note.includes(s));
+});
+
+test("Stats: an empty slot yields [] and keeps its in-voice empty note; the magic plate with nothing under it yields []", () => {
+  const c = fixedChar({ worn: {} });
+  const model = gearSheetModel(st(c), { from: "worn", slot: "jewelry2" });
+  assert.deepStrictEqual(model.stats, []);
+  assert.equal(model.note, GEAR_COPY.empty.jewelry2);
+
+  const cloak = { kind: "cloak", n: "Cloak of Armor", eff: { cloakArmor: 4 } };
+  const timers = { "item:Cloak of Armor": { cadence: "squares", left: 50, cd: 50, phase: "effect" } };
+  const cloakOnly = fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0, worn: { cloak }, timers });
+  assert.ok(armorDisplay(cloakOnly).magic && !armorDisplay(cloakOnly).worn);
+  const m2 = gearSheetModel(st(cloakOnly), { from: "worn", slot: "armor" });
+  assert.deepStrictEqual(m2.stats, []);
+  assert.equal(m2.note, gearWornModel(st(cloakOnly)).rows.find((r) => r.key === "armor").note);
+
+  // A real piece under the magic plate: the stats are the real piece's; the
+  // note names the plate that actually counts (armorDisplay's own sub), never
+  // the piece's durability a second time.
+  const under = fixedChar({ armor: "Mail", ar: 12, armorWP: 18, armorMax: 30, worn: { cloak }, timers });
+  const m3 = gearSheetModel(st(under), { from: "worn", slot: "armor" });
+  assert.deepStrictEqual(m3.stats.slice(0, 2), ["AR 12", "18/30 hp"]);
+  assert.equal(m3.note, armorDisplay(under).sub);
+  assert.ok(!m3.note.includes("18/30"));
+});
+
+test("Stats: a bag item reads itemStatLines(c.items[i], c); the note is dropped because the stats carry it (R-06)", () => {
+  const shortSword = { kind: "weapon", base: "Short Sword", bonus: 0, n: "Short Sword", txt: "d6+2" };
+  const c = fixedChar({ items: [GAUNTLET, shortSword] });
+  for (const [i, it] of [[0, GAUNTLET], [1, shortSword]]) {
+    const model = gearSheetModel(st(c), { from: "bag", i, n: it.n });
+    assert.deepStrictEqual(model.stats, itemStatLines(it, c).map((l) => l.text));
+    assert.equal(model.note, "");
+  }
+  // usable-by sits in the stats, once.
+  const sword = gearSheetModel(st(c), { from: "bag", i: 1, n: "Short Sword" });
+  const usable = usableBy(shortSword, c);
+  assert.equal(sword.stats.filter((s) => s === usable).length, usable ? 1 : 0);
+});
+
+test("Stats: always an array of strings, and a sparse state never throws", () => {
+  const sparse = { c: { weapon: "Fists", armor: "Nothing" } };
+  for (const slot of GEAR_WORN_ORDER) {
+    const m = gearSheetModel(sparse, { from: "worn", slot });
+    assert.ok(Array.isArray(m.stats));
+    for (const s of m.stats) assert.equal(typeof s, "string");
+  }
 });
 
 // ═══════════════════════ Acceptance: Spiked Staff ══════════════════════════

@@ -85,6 +85,12 @@ test("storeScreen.js exports renderStoreScreen and STORE_ROLL_COPY", () => {
   assert.equal(typeof storeScreen.STORE_ROLL_COPY, "string");
 });
 
+test("Phase 71 (D-04): storeScreen.js exports storeItemStats, and the row reads it (the one formatter, never the engine sub, for an item line)", () => {
+  assert.equal(typeof storeScreen.storeItemStats, "function");
+  assert.match(STORE_STRIPPED, /itemStatLines\(/);
+  assert.match(STORE_STRIPPED, /storeItemStats\(item, c, rs\.showUsable\)/);
+});
+
 // ─── (2) no window/document globals ──────────────────────────────────────
 
 test("storeScreen.js reads no window/document global — host, host.ownerDocument and deps only", () => {
@@ -147,7 +153,9 @@ test("the module script assigns window.__mzTabs = Object.freeze({ gear: renderGe
 
 test("storeScreen.js imports renderCarriedList/bagUsage from ./gearTab.js and armorDisplay/usableBy/storeRowState from ./viewModels.js", () => {
   // Phase 61 (STORE-02/03): storeRowState joins this import line.
-  assert.match(STORE_RAW, /import \{ armorDisplay, usableBy, storeRowState \} from "\.\/viewModels\.js";/);
+  // Phase 71 (D-04): itemStatLines joins it too — an item row's stats come
+  // from the ONE formatter the Gear sheet also reads.
+  assert.match(STORE_RAW, /import \{ armorDisplay, usableBy, storeRowState, itemStatLines \} from "\.\/viewModels\.js";/);
   assert.match(STORE_RAW, /import \{ bagUsage, renderCarriedList \} from "\.\/gearTab\.js";/);
 });
 

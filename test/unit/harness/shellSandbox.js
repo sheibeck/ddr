@@ -524,7 +524,9 @@ export const SNAPSHOT_IDS = Object.freeze({
   gear: ["gear-stats", "gear-worn-head", "gear-worn", "gear-bag-head", "gear-bag-meter", "gear-bag", "gear-cons-head", "gear-cons", "gear-kit-head", "gear-kit"],
   store: ["enc-panel", "enc-body", "shelf", "sell-head", "sell-list", "a-leave"],
   // Phase 63 (GSCR-07..10): the GEAR action sheet's six GEAR_SHEET_IDS roots.
-  gearSheet: ["mw-gear-sheet-label", "mw-gear-sheet-title", "mw-gear-sheet-note", "mw-gear-sheet-why", "mw-gear-sheet-actions", "mw-gear-sheet-cancel"],
+  // Phase 71 (D-04): plus the renderer-created stats container, in its
+  // on-screen place between the note and the why line.
+  gearSheet: ["mw-gear-sheet-label", "mw-gear-sheet-title", "mw-gear-sheet-note", "mw-gear-sheet-stats", "mw-gear-sheet-why", "mw-gear-sheet-actions", "mw-gear-sheet-cancel"],
 });
 
 function rollThreeDistinctJewels(rng) {
