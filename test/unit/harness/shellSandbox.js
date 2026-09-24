@@ -57,7 +57,7 @@ import {
 } from "../../../src/browser/heroTab.js";
 import { renderStoreScreen } from "../../../src/browser/storeScreen.js";
 import { identityLine, identityParts, counterSlots } from "../../../src/browser/hudBands.js";
-import { hudMenuNext } from "../../../src/browser/hudMenu.js";
+import { hudMenuNext, hudMenuRowStates } from "../../../src/browser/hudMenu.js";
 import { REDUCED_MOTION_QUERY, prefersReducedMotion, createPanelMotion } from "../../../src/browser/motion.js";
 import { createCameraGlide } from "../../../src/browser/cameraGlide.js";
 import { createTypewriter, typeDurationMs } from "../../../src/browser/typewriter.js";
@@ -195,7 +195,7 @@ function wireBridges(context, { dressing = null } = {}) {
   // Phase 57 (LAYOUT-04/05), Plan 05: the ☰ HUD menu's pure open/close
   // reducer, wired from the real module so test/unit/hud-menu-layout.test.js's
   // BEHAVIOUR cases exercise the real close policy, never a stub.
-  w.__mzHudMenu = { next: hudMenuNext };
+  w.__mzHudMenu = { next: hudMenuNext, rows: hudMenuRowStates };
   // Phase 58 (MOTION-01) — the REAL camera glide, driven by this sandbox's
   // own scheduler (the fake clock's requestAnimationFrame/performance.now
   // when loadShellSandbox was given one, else the sandbox's inert default

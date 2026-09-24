@@ -8,14 +8,14 @@
 
 **Sign-in and leaderboard rows** need the user's console setup in section 0; they are marked *(after console setup)*. On a locally built debug APK they also need the optional debug-keystore credential (`docs/PLAY-GAMES-SETUP.md` section 3, row 0.10). Without it, walk them on the Play build from closed testing.
 
-**Sources:** `.planning/phases/65-run-record-personal-bests/65-VERIFICATION.md` (10 items), `.planning/phases/66-leaderboards-panel-local/66-VERIFICATION.md` (18 items), `.planning/phases/67-play-games-integration-account-chip/67-VERIFICATION.md` (15 items) and `.planning/phases/68-global-boards-submissions-you-placed-x/68-VERIFICATION.md` (16 items), 59 in all. Extras came from the "Human verification (deferred to end of run)" sections of 65-03, 65-04, 65-05, 66-02 to 66-07, 67-01 to 67-08 and 68-01 to 68-07 (the sections in 65-01, 65-02 and 66-01 say None). Items were merged and reordered for one pass; the **Source map** at the end accounts for every source item.
+**Sources:** `.planning/phases/65-run-record-personal-bests/65-VERIFICATION.md` (10 items), `.planning/phases/66-leaderboards-panel-local/66-VERIFICATION.md` (18 items), `.planning/phases/67-play-games-integration-account-chip/67-VERIFICATION.md` (15 items) and `.planning/phases/68-global-boards-submissions-you-placed-x/68-VERIFICATION.md` (16 items), 59 in all. Extras came from the "Human verification (deferred to end of run)" sections of 65-03, 65-04, 65-05, 66-02 to 66-07, 67-01 to 67-08 and 68-01 to 68-07 (the sections in 65-01, 65-02 and 66-01 say None). Phase 70 (device-round polish, no VERIFICATION file) added section L from the "Human verification" sections of `.planning/quick/260924-51h-loop-theme-mp3-on-the-title-screen-v2-0/260924-51h-SUMMARY.md` (9 items), 70-01 (5), 70-02 (6), 70-03 (5) and 70-04 (7), 32 in all; it re-worded C1, C9, D1, D3, E2, E3 and E5 and superseded E1, E4 and B17. Items were merged and reordered for one pass; the **Source map** at the end accounts for every source item.
 
 **Suggested order:**
 1. Section 0, the console, website and upload steps (user), except row 0.8, which waits for F1.
 2. **F1, the RELEASE-BLOCKING capture**, on a fresh install with Compete OFF before any sign-in. Carve-out: row A1 needs the old v1.9 install, so if the phone still has it, walk A1 before F1's uninstall (it runs offline and touches no Compete or network state); otherwise A1 is `not reached`.
 3. Still on that fresh install: B1 (every board empty), then keep the capture running and die with Compete OFF. That one death covers F2, A2 (first-ever death), B2 (one death on every board) and C3. Then row 0.8.
-4. The sections that need no console setup: the rest of A, B3 to B12, C, D1 and D2, E1 to E4, and K1 and K2 (the parts shown signed out).
-5. After the console setup and the rebuild from row 0.2 (installed as a Play update, so saves are kept): D3 to D5, E5, F3, B13 to B17, G, H, I and K3.
+4. The sections that need no console setup: the rest of A, B3 to B12, C, D1 and D2, E2 and E3, and K1 and K2 (the parts shown signed out). Then section L, the Phase 70 device round, except L10, L12 and L28 (E1, E4 and B17 are superseded; skip them).
+5. After the console setup and the rebuild from row 0.2 (installed as a Play update, so saves are kept): D3 to D5, E5, F3, B13 to B16, G, H, I and K3, then L10, L12 and L28.
 6. Section J, airplane mode, last among the device sections. Row A9 clears app storage, so it closes the walk.
 7. Section Z, the desk check, any time.
 
@@ -70,13 +70,13 @@ The seven boards: **DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE, LINEAGE** and **
 | B14 | *(after console setup; signed in, Compete ON; if available: outside the top ten)* **NOT IN THE TOP TEN · YOUR BEST RUN** is pinned last. The standing card ("3RD" with "of N interred worldwide." and a quip) fits without clipping. | user | open |
 | B15 | *(after console setup; signed in, Compete ON)* Open ALL: the global rows fill within a few seconds, and the local rows stay usable while they load. | user | open |
 | B16 | *(after console setup; signed in, Compete ON; a fresh account without friends consent)* FRIENDS shows the consent note and a SHOW MY FRIENDS button that fits and is easy to tap. The Play Games consent screen appears only after that tap, never on opening the panel, switching boards or scopes, or a background fetch. Declining leaves the note, with no modal and no rail card. Check at the default and largest text sizes. | user | open |
-| B17 | *(after console setup; signed in, Compete ON)* LINEAGE on ALL shows grouped race-and-class rows and the "Sampled from the top N deepest corpses" footnote, at the default and largest text sizes. | user | open |
+| B17 | Superseded by Phase 70 — see L28. | user | superseded |
 
 ## C. Title vs tab entry, and back — Phases 66 + 67 (9)
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| C1 | The DEAD tab shows the panel with the tab bar visible and DEAD lit, and no chevron. | user | open |
+| C1 | The DEAD tab shows the panel under the HUD (with the ☰, Phase 70), with the tab bar visible and DEAD lit, and no chevron. | user | open |
 | C2 | The DEAD tab reopens on the last board viewed. | user | open |
 | C3 | After the first-ever death, the title's **View the Dead** appears without a restart. | user | open |
 | C4 | With no live hero, View the Dead opens on GRAVEYARD with the chevron, BACK TO TITLE and ROLL A NEW HERO, and no tab bar. | user | open |
@@ -84,15 +84,15 @@ The seven boards: **DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE, LINEAGE** and **
 | C6 | ROLL A NEW HERO opens the roller and lands on the map after commit. | user | open |
 | C7 | After Save & quit, View the Dead shows a single BACK TO THE DUNGEON that resumes the same run on the map. | user | open |
 | C8 | Android back on the title-opened panel does what the chevron does. On the DEAD tab it behaves as before. | user | open |
-| C9 | Android back closes the account sheet first, whether it sits over the title, the title-mode Leaderboards panel or the map. | user | open |
+| C9 | Android back closes the account sheet first, whether it sits over the title or the title-mode Leaderboards panel (since Phase 70 it opens only from the title chip, never over the map). | user | open |
 
 ## D. Sign-in: auto, decline, no profile — Phase 67 (5)
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| D1 | *(placeholder APP_ID: the 2.0.0 (9) build or the debug APK, before the rebuild in 0.2; Compete ON)* Cold boot. Both chips show the nobody glyph, and exactly one **PLAY GAMES DID NOT ANSWER** rail card appears after ENTER, never over the title or the roller. Play is normal, with no crash. | user | open |
+| D1 | *(placeholder APP_ID: the 2.0.0 (9) build or the debug APK, before the rebuild in 0.2; Compete ON)* Cold boot. The ☰ face shows the plain ☰ and the title chip shows the nobody glyph, and exactly one **PLAY GAMES DID NOT ANSWER** rail card appears after ENTER, never over the title or the roller. Play is normal, with no crash. | user | open |
 | D2 | *(no Play Games profile; if available: a device or Android user without one)* The game is fully playable. | user | open |
-| D3 | *(after console setup; a tester account)* Launch: the tester auto-signs in. Both chips show the initials, the **ON THE PUBLIC RECORD** welcome card appears once and never again after a restart, and the Leaderboards identity strip shows the display name, a square initials avatar with the gold ring, and PLAY GAMES · SIGNED IN. | user | open |
+| D3 | *(after console setup; a tester account)* Launch: the tester auto-signs in. The ☰ face and the title chip show the initials, the **ON THE PUBLIC RECORD** welcome card appears once and never again after a restart, and the Leaderboards identity strip shows the display name, a square initials avatar with the gold ring, and PLAY GAMES · SIGNED IN. | user | open |
 | D4 | *(after console setup; signed out)* In the account sheet, tap **Sign in**, then cancel Google's prompt. The PLAY GAMES DID NOT ANSWER card appears, nothing is modal, the chip stays the nobody glyph, and no automatic retry follows during the session. | user | open |
 | D5 | *(after console setup; signed out)* Tap **Sign in** again and accept: the tester is signed in and the chip shows the player. | user | open |
 
@@ -100,11 +100,11 @@ The seven boards: **DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE, LINEAGE** and **
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
-| E1 | At text sizes S, M and L, band 2 shows Depth/Day/Squares/Rations with no clipping, and the account chip sits directly left of ☰. At L the computed budget is 477.8px, so watch the counters there. Band 2's height is unchanged, and ☰ still opens its dropdown above the map and rail, with the scrim closing it. | user | open |
-| E2 | The title chip sits in the top-right corner, clear of the status bar, the camera cutout and the splash art's baked-in text. The nobody face (a hollow square with a dim ?) and the pending face read as deliberate, not broken, on both the HUD and the title. | user | open |
-| E3 | The account sheet opens from both chips. Its Settings row, opened from the title chip, opens the settings sheet above the title screen. | user | open |
-| E4 | The band-2 chip is ignored during combat and any encounter. The title chip is unaffected. | user | open |
-| E5 | *(after console setup; signed in, Compete ON)* **Stop competing** flips both chips and the Leaderboards strip to the nobody glyph at once. Turning Compete ON again signs back in silently: the chip goes pending, then shows the avatar, with no prompt. | user | open |
+| E1 | Superseded by Phase 70 — see L9. | user | superseded |
+| E2 | The title chip sits in the top-right corner, clear of the status bar, the camera cutout and the splash art's baked-in text. The nobody face (a hollow square with a dim ?) and the pending face read as deliberate, not broken, on the title chip (the HUD's face is the ☰ since Phase 70; see L9). | user | open |
+| E3 | The account sheet opens from the title chip (in the dungeon the ☰'s ACCOUNT block replaces it since Phase 70; see L11). Its Settings row opens the settings sheet above the title screen. | user | open |
+| E4 | Superseded by Phase 70 — see L16. | user | superseded |
+| E5 | *(after console setup; signed in, Compete ON)* **Stop competing** flips the ☰ face, the title chip and the Leaderboards strip to the nobody glyph (the ☰ to the plain ☰) at once. Turning Compete ON again signs back in silently: the chip goes pending, then shows the avatar, with no prompt. | user | open |
 
 ## F. Compete OFF and the network capture — Phases 67 + 68 (3)
 
@@ -155,15 +155,52 @@ The seven boards: **DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE, LINEAGE** and **
 | K2 | The welcome card (ON THE PUBLIC RECORD), the failure card (PLAY GAMES DID NOT ANSWER), the sheet's Stop competing helper line and the Compete OFF line: deadpan, family-friendly, no awkward wrapping, and none of them implies the account is signed out while Play Games is still signed in. The rail cards hold long enough. | user | open |
 | K3 | *(after console setup; signed in, Compete ON)* The DEEPEST rank quips on THAT IS THAT, the ledger card (one-run and many-run), the season-drop Oracle line, and the panel's loading, unreachable, consent and sampled-LINEAGE notes: no clipping or overflow, and the joke lands on the player's own adventurer. | user | open |
 
-## Z. Desk check — browser dev loop (1)
+## L. Device-round polish — Phase 70 (29)
+
+Walk on the Phase 70 debug APK the orchestrator installs with `adb install -r` (same debug signer, saves kept). Order: the title theme, the ☰ face and ACCOUNT block, the quit rows, the ☰ everywhere, then LINEAGE.
+
+| # | Step | Who | Result |
+|---|------|-----|--------|
+| L1 | Cold launch, no tap: the title theme is audible within about 1 s of the title appearing, with no tap needed, and is clearly quieter than a UI tap or a footstep. | user | open |
+| L2 | With no live hero, tap ENTER: the music carries on into the roller with no restart or stutter, keeps playing through the reel spin and reveal, and fades out over about half a second on reaching the map. | user | open |
+| L3 | VIEW THE DEAD: the music carries on. With no live hero, the panel's chevron returns to the title and the music continues without restarting. Opening the account sheet over the title leaves it playing. | user | open |
+| L4 | ENTER to a resumed delve (live save): the theme fades on reaching the map. Die, then BURY THEM: back on the title, the theme restarts from the top on its own. | user | open |
+| L5 | Settings on the title: Sound Off cuts the music at once; Sound On starts it on that tap. | user | open |
+| L6 | Press Home on the title: silent in the background; reopen and the theme restarts. Background from the map and reopen: it stays silent. | user | open |
+| L7 | With Android's remove-animations setting on, reaching the map cuts the music instantly, with no fade. | user | open |
+| L8 | *(edge)* Let the theme run past about 2:25: it loops with no audible gap or click at the seam. Note a gap as a finding, not a fix. | user | open |
+| L9 | Signed out (or Compete OFF): the ☰ shows the plain ☰ glyph and TalkBack reads "Menu". At text sizes S, M and L, band 2 shows Depth/Day/Squares/Rations with no clipping and the ☰ flush right (the computed budget at L is 446.8px, so watch the counters there). Band 2's height is unchanged. The placeholder APP_ID build's failure card ends "…from the menu in the corner." | user | open |
+| L10 | *(after console setup; signed in, Compete ON)* The ☰ shows your initials on your avatar colour, the same as the title chip, with no change in button size between faces; TalkBack reads "Menu — signed in as {your name}". Turning Compete OFF in the ACCOUNT block flips it back to the plain ☰. | user | open |
+| L11 | Open the ☰: the ACCOUNT block comes first (identity, one action — SIGN IN, STOP COMPETING or a disabled SIGNING IN… — the helper line when there is one, and COMPETE ON/OFF; no title, no second SETTINGS row). Then MARKS, CENTRE MAP, MAKE CAMP and SETTINGS, then SAVE & QUIT, then a red ABANDON THIS CHARACTER. Nothing clips at 411px wide, the dropdown scrolls if it runs too tall at L, and every row closes the menu as it acts. | user | open |
+| L12 | *(after console setup; signed out)* SIGN IN from the ACCOUNT block signs the tester in; declining shows the failure card ending "…from the menu in the corner.", with nothing modal. | user | open |
+| L13 | SAVE & QUIT on the map goes straight to the title with no dialog, and ENTER resumes the run. | user | open |
+| L14 | ABANDON THIS CHARACTER with Settings › Confirm before quit On: one tap shows TAP AGAIN TO BURY THEM; waiting about 3 s or closing the menu reverts it; two quick taps bury the hero with no dialog. With the setting Off, one tap buries the hero. | user | open |
+| L15 | The HERO tab has no Delve panel. The title chip and the account sheet still work from the title. | user | open |
+| L16 | The ☰ opens on the map, in a fight, in a store, on a loot pile, at the stair prompt, over THAT IS THAT, on the Oracle (via REVIEW THE ORACLE while dead) and on all five tabs including DEAD. The dropdown sits above the overlay, and a tap outside it closes the menu without pressing anything underneath. | user | open |
+| L17 | Mid-fight, MAKE CAMP and CENTRE MAP are dimmed, do nothing when tapped and leave the menu open. MARKS, SETTINGS, the ACCOUNT rows, SAVE & QUIT and ABANDON all work. | user | open |
+| L18 | SAVE & QUIT mid-fight, then ENTER: the same fight, the same round and the same foes (an in-session resume is exact). | user | open |
+| L19 | *(edge; known limitation, backlog 999.10)* SAVE & QUIT mid-fight, force-close, relaunch and ENTER: the hero is back on the same tile, but the fight is gone. The same with an open store: the store is gone. Repeat with an untaken loot pile: the pile is still there. Record what you see; a cleared fight or store is expected today, not a fail. | user | open |
+| L20 | Dead: the ☰ opens over THAT IS THAT and its last row reads NEW CHARACTER, which opens the roller (the title theme starts). SAVE & QUIT while dead goes to the title, and ENTER there rolls a new hero. | user | open |
+| L21 | With the ☰ open over a store or the stair prompt, Android back closes only the menu; the store or prompt stays. | user | open |
+| L22 | Tap ☰ while a combat round is still typing out: the round lands at once, with no half-typed round under the menu. | user | open |
+| L23 | The DEAD tab shows the HUD above the Leaderboards panel. At text size L the list still has usable room (note it as a finding if it feels cramped). VIEW THE DEAD from the title shows no HUD and no ☰. | user | open |
+| L24 | LINEAGE: the RACE and SUB-CLASS picker rows fit and scroll sideways at text sizes S, M and L on the 411px screen; every chip is easy to tap, and the on chip is lavender. | user | open |
+| L25 | LINEAGE's default selection: with a live hero, that hero's race + sub-class; after a death, the dead run's lineage; from the title with a resumable hero, that hero; from the title with none, the most recent run's lineage, or Human + Wizard on a fresh install. | user | open |
+| L26 | A LINEAGE chip tap re-lists the board. The selection survives switching boards and scopes, and resets on reopening the panel. | user | open |
+| L27 | An unplayed lineage shows "No {Race Sub} of yours has died yet. The dungeon is patient." and a NO ENTRY card. | user | open |
+| L28 | *(after console setup; signed in, Compete ON)* LINEAGE on ALL and FRIENDS lists only that lineage from the top 25 deepest, ranked 1..n; your own entry is pinned under NOT IN THE TOP TEN · YOUR BEST RUN when it isn't shown; the footnote reads "Filtered from the top 25 deepest corpses in the world…". Check at the default and largest text sizes. | user | open |
+| L29 | A deeper death of a race + sub-class you have died as before announces LINEAGE on NEW PERSONAL BEST as "Race Sub · floor n". The first death of a new lineage does not. | user | open |
+
+## Z. Desk check — browser dev loop (2)
 
 | # | Step | Who | Result |
 |---|------|-----|--------|
 | Z1 | In the browser dev loop, turn on the dev "simulate signed-in" setting (`pgsDevSignedIn`) and relaunch. A death shows the rank line, and ALL shows rows from the dev boards. | user | open |
+| Z2 | In the browser dev loop, the title is silent until the first tap, and ENTER as the very first tap to a resumed delve never plays the theme. | user | open |
 
 ## Source map
 
-Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) and every SUMMARY extra (`[NN-PP-Sk]`, k in list order) appears once below. *Merged* means the check is walked in that row; *superseded* means a later phase replaced the behaviour.
+Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) and every SUMMARY extra (`[NN-PP-Sk]`, and `[51h-Sk]` for quick task 260924-51h, k in list order) appears once below. *Merged* means the check is walked in that row; *superseded* means a later phase replaced the behaviour; *re-worded for Phase 70* means the row still stands but now describes the Phase 70 surface.
 
 | Source | Item | Row | Disposition |
 |--------|------|-----|-------------|
@@ -185,7 +222,7 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [66-V6] | panel matches the mock at text size M | B3 | own row (extended to name all seven boards) |
 | [66-V7] | largest text: header, strip, rail don't crowd the list | B4 | own row |
 | [66-V8] | rail chips and row tap targets comfortable | B5 | own row |
-| [66-V9] | DEAD tab: panel, tab bar, DEAD lit, no chevron | C1 | own row |
+| [66-V9] | DEAD tab: panel, tab bar, DEAD lit, no chevron | C1 | re-worded for Phase 70 (L23): the DEAD tab now carries the HUD |
 | [66-V10] | after a death the DEAD tab lists the run at once, INTERRED +1 | A3 | merged: same check as 65-V3 (the Dead tab count rising after a death) |
 | [66-V11] | DEAD tab reopens on the last board viewed | C2 | own row |
 | [66-V12] | every board renders, empty or not, in airplane mode | J2 | own row |
@@ -197,17 +234,17 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [66-V18] | Android back mirrors the chevron; DEAD tab as before | C8 | own row |
 | [67-V1] | RELEASE-BLOCKING Compete OFF cold boot, logcat + network capture | F1 | own row, RELEASE-BLOCKING (67-01-S1, 67-06-S2 and 67-08-S5's capture clause merged into it) |
 | [67-V2] | Compete OFF + airplane: cold boot and a full run, no stall | J1 | own row |
-| [67-V3] | placeholder APP_ID, Compete ON: nobody chip, one failure card after ENTER | D1 | own row |
+| [67-V3] | placeholder APP_ID, Compete ON: nobody chip, one failure card after ENTER | D1 | re-worded for Phase 70 (L9): the ☰ face and the title chip |
 | [67-V4] | no Play Games profile: fully playable | D2 | own row |
-| [67-V5] | band 2 at S/M/L: no clipping, chip left of ☰, height and dropdown unchanged | E1 | own row |
-| [67-V6] | title chip placement; nobody face reads as deliberate | E2 | own row |
-| [67-V7] | account sheet from both chips; Settings row above the title | E3 | own row |
-| [67-V8] | Android back closes the account sheet first | C9 | own row (a back behaviour, so in section C) |
-| [67-V9] | band-2 chip ignored in combat/encounters | E4 | own row |
+| [67-V5] | band 2 at S/M/L: no clipping, chip left of ☰, height and dropdown unchanged | E1 | superseded by Phase 70 (L9): the band-2 chip is retired; the ☰ dropdown and scrim are walked in L16 |
+| [67-V6] | title chip placement; nobody face reads as deliberate | E2 | re-worded for Phase 70 (L9): E2 keeps the title chip; the HUD face is the ☰ |
+| [67-V7] | account sheet from both chips; Settings row above the title | E3 | re-worded for Phase 70 (L11): the sheet opens from the title chip only; the ACCOUNT block replaces it in the dungeon |
+| [67-V8] | Android back closes the account sheet first | C9 | re-worded for Phase 70 (L11): the sheet no longer opens over the map |
+| [67-V9] | band-2 chip ignored in combat/encounters | E4 | superseded by Phase 70 (L16): the ☰ opens during encounters |
 | [67-V10] | voice: welcome card, failure card, Stop competing helper, Compete OFF line | K2 | own row (spans sections D and E, so in K) |
-| [67-V11] | after console setup: auto sign-in, initials, welcome once, strip SIGNED IN | D3 | own row |
+| [67-V11] | after console setup: auto sign-in, initials, welcome once, strip SIGNED IN | D3 | re-worded for Phase 70 (L10): the ☰ face and the title chip |
 | [67-V12] | after console setup: Sign in row signs in; decline shows the failure card, no retry | D4, D5 | split: decline and accept are two moments |
-| [67-V13] | Stop competing flips chips and strip; Compete ON signs back in silently | E5 | own row |
+| [67-V13] | Stop competing flips chips and strip; Compete ON signs back in silently | E5 | re-worded for Phase 70 (L10): the ☰ face, the title chip and the strip |
 | [67-V14] | signed in: ALL/FRIENDS coming-online notes; Compete OFF restores strip and dimmed chips; GRAVEYARD no strip | F3, B12 | partly superseded: the coming-online notes clause is superseded by Phase 68 live boards (now B13 to B16); the Compete OFF clause is F3, the GRAVEYARD clause is B12 |
 | [67-V15] | console: walk the runbook, confirm menu paths; debug keytool SHA-1 | 0.1, 0.10 | own rows in section 0 (user, non-device) |
 | [68-V1] | console: create the five Season-1 boards, paste IDs, rebuild | 0.1, 0.2 | merged into section 0 (user console steps) |
@@ -222,7 +259,7 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [68-V10] | outside the top ten: pinned divider; standing card fits | B14 | own row |
 | [68-V11] | ALL fills in seconds; airplane: last result or unreachable note | B15, J3 | split: the airplane clause is in section J |
 | [68-V12] | FRIENDS consent note and button; consent screen only after the tap; decline | B16 | own row |
-| [68-V13] | LINEAGE on ALL grouped + sampled footnote; SEASON label fits beside INTERRED | B17, I1 | split: the SEASON label clause is in section I |
+| [68-V13] | LINEAGE on ALL grouped + sampled footnote; SEASON label fits beside INTERRED | B17, I1 | split: B17 superseded by Phase 70 (L28); the SEASON label clause is in section I (I1) |
 | [68-V14] | signed out or Compete OFF: ALL/FRIENDS show the Phase 66 notes | F3 | own row (shares F3 with 67-V14's Compete OFF clause: same moment) |
 | [68-V15] | voice at default and largest: rank quips, ledger card, season-drop line, panel notes | K3 | own row (spans sections B, G, H and I, so in K) |
 | [68-V16] | browser dev loop: pgsDevSignedIn, rank line, dev-board rows | Z1 | own row (a desk check, not a device check) |
@@ -244,7 +281,7 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [66-05-S1] | matches the mock at M | B3 | merged into 66-V6 |
 | [66-05-S2] | usable at the largest text size | B4 | merged into 66-V7 |
 | [66-05-S3] | chips and tap targets comfortable | B5 | merged into 66-V8 |
-| [66-06-S1] | DEAD tab: tab bar, DEAD lit, no chevron | C1 | merged into 66-V9 |
+| [66-06-S1] | DEAD tab: tab bar, DEAD lit, no chevron | C1 | merged into 66-V9; re-worded for Phase 70 (L23) |
 | [66-06-S2] | after a death the run is listed, INTERRED +1 | A3 | merged into 66-V10 (itself merged into A3) |
 | [66-06-S3] | tab reopens on the last board | C2 | merged into 66-V11 |
 | [66-06-S4] | every board renders in airplane mode | J2 | merged into 66-V12 |
@@ -259,34 +296,34 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [67-01-S2] | Compete OFF + airplane cold boot and full run | J1 | merged into 67-V2 |
 | [67-02-S1] | walk the runbook in Play Console, confirm menu paths | 0.1 | merged into 67-V15 |
 | [67-02-S2] | debug-keystore keytool prints a SHA-1 | 0.10 | merged into 67-V15 |
-| [67-02-S3] | after the APP_ID rebuild: tester initials, strip SIGNED IN | D3 | merged into 67-V11 |
+| [67-02-S3] | after the APP_ID rebuild: tester initials, strip SIGNED IN | D3 | merged into 67-V11; re-worded for Phase 70 (L10) |
 | [67-03-S1] | voice: welcome card | K2 | merged into 67-V10 |
 | [67-03-S2] | voice: failure card, never modal | K2 | merged into 67-V10 |
 | [67-03-S3] | voice: Stop competing helper and Compete OFF line | K2 | merged into 67-V10 |
-| [67-03-S4] | nobody glyph and pending face read as deliberate | E2 | merged into 67-V6 |
-| [67-04-S1] | signed in: strip with display name, gold-ring avatar, SIGNED IN | D3 | merged into 67-V11 (same strip at sign-in) |
+| [67-03-S4] | nobody glyph and pending face read as deliberate | E2 | merged into 67-V6; re-worded for Phase 70 (L9) |
+| [67-04-S1] | signed in: strip with display name, gold-ring avatar, SIGNED IN | D3 | merged into 67-V11; re-worded for Phase 70 (L10) |
 | [67-04-S2] | signed in: ALL/FRIENDS show the coming-online notes | B13, B16 | superseded by Phase 68 live boards |
 | [67-04-S3] | Compete OFF: strip back to ?, SIGNED OUT, chips dimmed | F3 | merged into 67-V14's Compete OFF clause |
 | [67-04-S4] | GRAVEYARD shows no identity strip | B12 | merged into 67-V14's GRAVEYARD clause |
-| [67-05-S1] | band 2 at S/M/L, chip left of ☰, 477.8px at L | E1 | merged into 67-V5 |
-| [67-05-S2] | title chip clear of status bar, cutout, splash text | E2 | merged into 67-V6 |
-| [67-05-S3] | nobody face deliberate on HUD and title | E2 | merged into 67-V6 |
-| [67-05-S4] | band-2 height unchanged; ☰ dropdown and scrim | E1 | merged into 67-V5 |
-| [67-05-S5] | sheet opens from both chips; Settings row above the title | E3 | merged into 67-V7 |
-| [67-06-S1] | placeholder APP_ID, Compete ON: nobody chip, one failure card | D1 | merged into 67-V3 |
+| [67-05-S1] | band 2 at S/M/L, chip left of ☰, 477.8px at L | E1 | superseded by Phase 70 (L9) |
+| [67-05-S2] | title chip clear of status bar, cutout, splash text | E2 | merged into 67-V6; re-worded for Phase 70 (L9) |
+| [67-05-S3] | nobody face deliberate on HUD and title | E2 | merged into 67-V6; re-worded for Phase 70 (L9) |
+| [67-05-S4] | band-2 height unchanged; ☰ dropdown and scrim | E1 | superseded by Phase 70 (L9, L16) |
+| [67-05-S5] | sheet opens from both chips; Settings row above the title | E3 | merged into 67-V7; re-worded for Phase 70 (L11) |
+| [67-06-S1] | placeholder APP_ID, Compete ON: nobody chip, one failure card | D1 | merged into 67-V3; re-worded for Phase 70 (L9) |
 | [67-06-S2] | Compete OFF cold boot capture (release-blocking) | F1 | merged into 67-V1 (same check) |
 | [67-06-S3] | after console setup: Sign in row signs a tester in | D5 | merged into 67-V12 |
-| [67-07-S1] | welcome card once, never again after restart | D3 | merged into 67-V11 |
+| [67-07-S1] | welcome card once, never again after restart | D3 | merged into 67-V11; re-worded for Phase 70 (L10) |
 | [67-07-S2] | declined sign-in: failure card, nothing modal, no retry | D4 | merged into 67-V12 |
-| [67-07-S3] | Stop competing to nobody; Compete ON signs back in silently | E5 | merged into 67-V13 |
-| [67-08-S1] | chip positions; placeholder nobody glyph and one card after ENTER | E2, D1 | merged into 67-V6 and 67-V3 |
-| [67-08-S2] | after console setup: auto sign-in, welcome once, strip SIGNED IN | D3 | merged into 67-V11 |
+| [67-07-S3] | Stop competing to nobody; Compete ON signs back in silently | E5 | merged into 67-V13; re-worded for Phase 70 (L10) |
+| [67-08-S1] | chip positions; placeholder nobody glyph and one card after ENTER | E2, D1 | merged into 67-V6 and 67-V3; re-worded for Phase 70 (L9) |
+| [67-08-S2] | after console setup: auto sign-in, welcome once, strip SIGNED IN | D3 | merged into 67-V11; re-worded for Phase 70 (L10) |
 | [67-08-S3] | declined Sign in: failure card, nothing modal | D4 | merged into 67-V12 |
 | [67-08-S4] | no Play Games profile: fully playable | D2 | merged into 67-V4 |
-| [67-08-S5] | Stop competing flips chips; Compete OFF cold boot capture | E5, F1 | merged: the Stop competing clause into 67-V13, the capture clause into 67-V1 |
-| [67-08-S6] | Settings row from the title chip opens settings above the title | E3 | merged into 67-V7 |
-| [67-08-S7] | Android back closes the account sheet first | C9 | merged into 67-V8 |
-| [67-08-S8] | band-2 chip ignored during combat | E4 | merged into 67-V9 |
+| [67-08-S5] | Stop competing flips chips; Compete OFF cold boot capture | E5, F1 | merged: the Stop competing clause into 67-V13 (re-worded for Phase 70, L10), the capture clause into 67-V1 |
+| [67-08-S6] | Settings row from the title chip opens settings above the title | E3 | merged into 67-V7; re-worded for Phase 70 (L11) |
+| [67-08-S7] | Android back closes the account sheet first | C9 | merged into 67-V8; re-worded for Phase 70 (L11) |
+| [67-08-S8] | band-2 chip ignored during combat | E4 | superseded by Phase 70 (L16) |
 | [68-01-S1] | create the five season-1 leaderboards in Play Console | 0.1 | merged into 68-V1 (section 0) |
 | [68-01-S2] | paste the IDs into LEADERBOARD_IDS[1] and rebuild | 0.2 | merged into 68-V1 (section 0) |
 | [68-01-S3] | console score view shows the tag; LEANEST is rate x 1,000 | H1 | merged into 68-V2 |
@@ -309,15 +346,47 @@ Every item from the four VERIFICATION files (`[NN-Vk]`, k in frontmatter order) 
 | [68-06-S4] | standing card '3RD · of N interred worldwide.' fits | B14 | merged into 68-V10 |
 | [68-06-S5] | FRIENDS without consent: note and SHOW MY FRIENDS fit | B16 | merged into 68-V12 |
 | [68-06-S6] | SEASON label fits; second-season chips wrap, switch read-only | I1, I2 | split: the label merges into 68-V13 (I1); the second-season chips are an extra with no VERIFICATION twin (own row I2) |
-| [68-06-S7] | LINEAGE on ALL grouped rows and sampled footnote | B17 | merged into 68-V13 |
+| [68-06-S7] | LINEAGE on ALL grouped rows and sampled footnote | B17 | superseded by Phase 70 (L28) |
 | [68-06-S8] | signed out or Compete OFF: Phase 66 notes | F3 | merged into 68-V14 |
 | [68-07-S1] | 'You placed Nth of M.' fades in once | H2 | merged into 68-V3 |
 | [68-07-S2] | remove-animations: no fade | H3 | merged into 68-V3 |
 | [68-07-S3] | airplane death, relaunch: one LEDGER CAUGHT UP card after the map shows | G1 | merged into 68-V5 |
 | [68-07-S4] | Compete OFF, die: no rank line, card, error or traffic | F2 | merged into 68-V8 |
-| [68-07-S5] | ALL, FRIENDS and LINEAGE at default and largest text | B13, B16, B17 | merged into 68-V9, 68-V12 and 68-V13 (text sizes added to those rows) |
+| [68-07-S5] | ALL, FRIENDS and LINEAGE at default and largest text | B13, B16, B17 | merged into 68-V9 and 68-V12 (text sizes added to those rows); the B17 part is superseded by Phase 70 (L28) |
 | [68-07-S6] | browser dev loop: pgsDevSignedIn | Z1 | merged into 68-V16 |
+| [51h-S1] | cold launch, no tap: theme within ~1 s, quieter than one-shots | L1 | own row |
+| [51h-S2] | title into roller: no restart or stutter; fades on reaching the map | L2 | own row |
+| [51h-S3] | VIEW THE DEAD carries on; chevron back continues; account sheet keeps it playing | L3 | own row |
+| [51h-S4] | resumed delve fades on the map; BURY THEM restarts it from the top | L4 | own row |
+| [51h-S5] | Sound Off cuts, Sound On starts on that tap | L5 | own row |
+| [51h-S6] | Home on the title silences, reopen restarts; from the map stays silent | L6 | own row |
+| [51h-S7] | remove-animations: instant cut on reaching the map | L7 | own row |
+| [51h-S8] | loop seam past ~2:25: no gap or click | L8 | own row (edge) |
+| [51h-S9] | browser dev loop: silent until the first tap; ENTER to a resumed delve never plays | Z2 | own row (a desk check, not a device check) |
+| [70-01-S1] | signed in: ☰ initials on the avatar colour; TalkBack "Menu — signed in as" | L10 | merged into 70-03-S1's signed-in clause |
+| [70-01-S2] | signed out, signing in or Compete OFF: plain ☰; TalkBack "Menu" | L9 | merged into 70-03-S1's signed-out clause |
+| [70-01-S3] | ACCOUNT block: identity, one action, helper, COMPETE; no title, no second SETTINGS | L11 | merged into 70-03-S2 |
+| [70-01-S4] | ABANDON two-tap arm, 3 s disarm, Confirm Off one tap; dead reads NEW CHARACTER | L14, L20 | merged into 70-03-S4 (the dead clause into 70-04-S4) |
+| [70-01-S5] | failed or declined sign-in card ends "…from the menu in the corner." | L9, L12 | split: the placeholder build's failure card in L9, the declined sign-in in L12 |
+| [70-02-S1] | LINEAGE picker rows fit and scroll at S/M/L; lavender on chip | L24 | own row |
+| [70-02-S2] | LINEAGE default selection (live hero, after death, title, fresh install) | L25 | own row |
+| [70-02-S3] | chip tap re-lists; survives boards/scopes; resets on reopen | L26 | own row |
+| [70-02-S4] | unplayed lineage copy and NO ENTRY card | L27 | own row |
+| [70-02-S5] | signed in: ALL/FRIENDS filtered from the top 25; pinned own entry; footnote | L28 | own row (supersedes B17) |
+| [70-02-S6] | deeper death announces LINEAGE on NEW PERSONAL BEST; new lineage does not | L29 | own row |
+| [70-03-S1] | ☰ face signed in/out, no size change, band 2 at S/M/L, TalkBack | L9, L10 | split: signed out in L9, signed in (after console setup) in L10 |
+| [70-03-S2] | dropdown: ACCOUNT block first, Sign in, Compete OFF flips the face, row order, no clipping, scroll at L, rows close the menu | L11, L12, L10 | split: the layout in L11, Sign in in L12, the Compete OFF flip in L10 |
+| [70-03-S3] | SAVE & QUIT to the title, no dialog; ENTER resumes | L13 | own row |
+| [70-03-S4] | ABANDON arm, revert, two taps, Confirm Off; dead NEW CHARACTER and dead Save & quit | L14, L20 | split: the live arm in L14, the dead clauses merged into 70-04-S4 (L20) |
+| [70-03-S5] | HERO tab has no Delve panel; title chip and sheet still work | L15 | own row |
+| [70-04-S1] | ☰ opens on every screen and tab; dropdown above the overlay; scrim presses nothing | L16 | own row (supersedes E4) |
+| [70-04-S2] | mid-fight MAKE CAMP and CENTRE MAP dimmed and inert; other rows work | L17 | own row |
+| [70-04-S3] | mid-fight Save & quit resumes the same fight, in session and after a relaunch | L18, L19 | split: in session in L18 (exact); the relaunch clause re-worded per the 2026-09-24 user ruling (defer) to the known limitation in L19 (fight and store cleared, loot kept; backlog 999.10) |
+| [70-04-S4] | dead: ☰ over THAT IS THAT, NEW CHARACTER opens the roller; dead Save & quit's ENTER rolls | L20 | own row (70-01-S4's and 70-03-S4's dead clauses merged into it) |
+| [70-04-S5] | back with the ☰ over a store or stair prompt closes only the menu | L21 | own row |
+| [70-04-S6] | ☰ tap lands a typing combat round at once | L22 | own row |
+| [70-04-S7] | DEAD tab shows the HUD; room at L; VIEW THE DEAD shows no HUD or ☰ | L23 | own row |
 
 ---
 
-**Tally (written 2026-09-24):** 0 walked. The batch is run at the milestone close per the deferred-UAT protocol; RELEASE-BLOCKING row F1 must pass before any production rollout.
+**Tally (written 2026-09-24, Phase 70 fold the same day):** 0 walked. Phase 70 added section L (29 rows) and Z2, re-worded C1, C9, D1, D3, E2, E3 and E5, and superseded E1, E4 and B17. The batch is run at the milestone close per the deferred-UAT protocol; RELEASE-BLOCKING row F1 must pass before any production rollout.

@@ -172,10 +172,16 @@ test("CSS: the two title-mode chrome rules exist exactly", () => {
 
 // ─── (6): the pinned #screen-dead line, plus the new layout-reset line ────
 
-test("CSS: the pinned #screen-dead padding-top line is untouched, and a separate rule zeroes the side/bottom padding", () => {
+test("CSS (Phase 70 D-08): the in-game #screen-dead sits flush under the HUD (padding-top 0), the title-opened panel keeps the safe-area top padding, and a separate rule zeroes the side/bottom padding", () => {
+  assert.match(STYLE_BLOCK, /(^|\n)#screen-dead\{padding-top:0\}/);
   assert.match(
     STYLE_BLOCK,
-    /#screen-dead\{padding-top:calc\(14px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\)\}/
+    /body\[data-boards-entry="title"\] #screen-dead\{padding-top:calc\(14px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\)\}/
+  );
+  assert.doesNotMatch(
+    STYLE_BLOCK,
+    /(^|\n)#screen-dead\{padding-top:calc\(/,
+    "the unscoped safe-area padding line is retired (the HUD carries the inset on the in-game tab)"
   );
   assert.match(STYLE_BLOCK, /#screen-dead\{padding-left:0;padding-right:0;padding-bottom:0;height:100%\}/);
 });

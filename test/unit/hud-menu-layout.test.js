@@ -134,21 +134,26 @@ test("(4) the menu, the ☰ and the scrim are outside .mw-maze-viewport's hit pa
 
 // ─── (5) the z-ladder ────────────────────────────────────────────────────
 
-test("(5) the z-ladder: rail (4) < scrim (5) < menu wrap (6) < overlay (8); .mw-hud, .mw-hud-band2 and .mw-stage declare no z-index and no transform (Phase 70 D-03: the band-2 actions wrapper is retired, so it is no longer listed)", () => {
-  const railRule = ruleFor("\\.mw-rail");
-  const scrimRule = ruleFor("\\.mw-hud-menu-scrim");
-  const wrapRule = ruleFor("\\.mw-hud-menu-wrap");
-  const overlayRule = ruleFor("\\.mw-overlay");
+test("(5) the z-ladder (Phase 70 D-08): rail (4) < overlay (8) < scrim < menu wrap < .mw-legend-sheet (45) < .mw-title-screen (50), so the dropdown and its scrim sit above the encounter overlay and the death panel; .mw-hud, .mw-hud-band2 and .mw-stage declare no z-index and no transform (Phase 70 D-03: the band-2 actions wrapper is retired, so it is no longer listed)", () => {
   const zOf = (rule, name) => {
     const m = rule.match(/z-index:(\d+)/);
     assert.ok(m, `${name} must declare a z-index`);
     return Number(m[1]);
   };
-  const rail = zOf(railRule, ".mw-rail");
-  const scrim = zOf(scrimRule, ".mw-hud-menu-scrim");
-  const wrap = zOf(wrapRule, ".mw-hud-menu-wrap");
-  const overlay = zOf(overlayRule, ".mw-overlay");
-  assert.ok(rail < scrim && scrim < wrap && wrap < overlay, `expected rail(${rail}) < scrim(${scrim}) < wrap(${wrap}) < overlay(${overlay})`);
+  const rail = zOf(ruleFor("\\.mw-rail"), ".mw-rail");
+  const overlay = zOf(ruleFor("\\.mw-overlay"), ".mw-overlay");
+  const scrim = zOf(ruleFor("\\.mw-hud-menu-scrim"), ".mw-hud-menu-scrim");
+  const wrap = zOf(ruleFor("\\.mw-hud-menu-wrap"), ".mw-hud-menu-wrap");
+  const legend = zOf(ruleFor("\\.mw-legend-sheet"), ".mw-legend-sheet");
+  const title = zOf(ruleFor("\\.mw-title-screen"), ".mw-title-screen");
+  assert.equal(rail, 4);
+  assert.equal(overlay, 8);
+  assert.equal(legend, 45);
+  assert.equal(title, 50);
+  assert.ok(
+    rail < overlay && overlay < scrim && scrim < wrap && wrap < legend && legend < title,
+    `expected rail(${rail}) < overlay(${overlay}) < scrim(${scrim}) < wrap(${wrap}) < legend(${legend}) < title(${title})`,
+  );
   for (const [selector, rule] of [
     [".mw-hud", ruleFor("\\.mw-hud")],
     [".mw-hud-band2", ruleFor("\\.mw-hud-band2")],
@@ -302,11 +307,14 @@ test("(9) BEHAVIOUR: every close trigger closes the menu (re-tap, select, a tab 
     assert.ok(isClosed(doc), "Escape/the back button must close the menu");
   }
   // stripped-source pins: renderEncounter calls hudMenuEvent("encounter")
-  // guarded on active; the keydown escape branch precedes the listener's
-  // hasActiveEncounter() branch; showTab calls hudMenuEvent("tab") before
-  // its keep-in-view call.
+  // only on the rising edge (an encounter STARTING, Phase 70 R-D) and
+  // re-syncs an open menu's rows; the keydown escape branch precedes the
+  // listener's hasActiveEncounter() branch; showTab calls
+  // hudMenuEvent("tab") before its keep-in-view call.
   const encRegion = fnRegion("function renderEncounter() {");
-  assert.match(encRegion, /if \(active\) hudMenuEvent\("encounter"\);/);
+  assert.match(encRegion, /if \(active && !encWasActive\) hudMenuEvent\("encounter"\);/);
+  assert.doesNotMatch(encRegion, /if \(active\) hudMenuEvent\("encounter"\);/);
+  assert.match(encRegion, /if \(hudMenuIsOpen\(\)\) syncHudMenuRows\(\);/);
   const keydownRegion = sliceBetween(CODE, 'addEventListener("keydown"', 'addEventListener("resize"');
   const escapeIdx = keydownRegion.indexOf('hudMenuEvent("escape")');
   const hasActiveIdx = keydownRegion.indexOf("hasActiveEncounter()");
@@ -317,13 +325,47 @@ test("(9) BEHAVIOUR: every close trigger closes the menu (re-tap, select, a tab 
   assert.ok(tabEventIdx !== -1 && keepInViewIdx !== -1 && tabEventIdx < keepInViewIdx, 'hudMenuEvent("tab") must run before the keep-in-view call');
 });
 
-// ─── (10) BEHAVIOUR: cannot open during an encounter ─────────────────────
+// ─── (10) BEHAVIOUR: opens during an encounter, rows disabled by context ──
 
-test("(10) BEHAVIOUR: while window.__mzStair is truthy (hasActiveEncounter() true), the ☰ onclick leaves the menu closed", () => {
+const ROW_IDS = ["mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn", "mw-menu-save-quit", "mw-menu-abandon"];
+
+function rowEl(doc, id) {
+  return doc.elementsById.get(id) || doc.document.getElementById(id);
+}
+function isRowDisabled(doc, id) {
+  const el = rowEl(doc, id);
+  return el.disabled === true && el.getAttribute("aria-disabled") === "true";
+}
+function isRowEnabled(doc, id) {
+  const el = rowEl(doc, id);
+  return el.disabled !== true && el.getAttribute("aria-disabled") === null;
+}
+function assertRows(doc, disabledIds, label) {
+  for (const id of ROW_IDS) {
+    if (disabledIds.includes(id)) assert.ok(isRowDisabled(doc, id), `${label}: ${id} must carry disabled + aria-disabled="true"`);
+    else assert.ok(isRowEnabled(doc, id), `${label}: ${id} must carry neither disabled nor aria-disabled`);
+  }
+}
+
+test("(10) BEHAVIOUR (Phase 70 D-08): while window.__mzStair is truthy (hasActiveEncounter() true), the ☰ onclick OPENS the menu; MAKE CAMP and CENTRE MAP carry disabled + aria-disabled=\"true\", the other four rows carry neither, and the ACCOUNT block gets no row-sync writes", () => {
   const { doc, sandbox } = freshSandbox(states.thief);
   sandbox.context.window.__mzStair = { dir: "N" };
   menuBtn(doc).onclick();
-  assert.ok(isClosed(doc), "the menu must not open while an encounter is active");
+  assert.ok(isOpen(doc), "the menu must open over an encounter (D-08)");
+  assertRows(doc, ["btn-camp", "mw-chip-centre"], "stair prompt");
+  const acct = rowEl(doc, "mw-hud-menu-acct");
+  assert.notEqual(acct.disabled, true, "the ACCOUNT host is never disabled by the row sync");
+  assert.equal(acct.getAttribute("aria-disabled"), null, "the ACCOUNT host never carries aria-disabled from the row sync");
+  const walk = (el) => {
+    for (const child of el.children || []) {
+      assert.notEqual(child.disabled, true, "an ACCOUNT child is never disabled by the row sync");
+      assert.equal(child.getAttribute?.("aria-disabled") ?? null, null, "an ACCOUNT child never carries aria-disabled from the row sync");
+      walk(child);
+    }
+  };
+  walk(acct);
+  const syncRegion = fnRegion("function syncHudMenuRows(");
+  assert.doesNotMatch(syncRegion, /mw-hud-menu-acct/, "syncHudMenuRows never names the ACCOUNT block");
 });
 
 // ─── (11) BEHAVIOUR: fail closed without the bridge ──────────────────────
@@ -354,20 +396,31 @@ test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-
 
 // ─── (13) BEHAVIOUR: the HUD is off-tab on Dead ──────────────────────────
 
-test("(13) BEHAVIOUR + structural: window.__mzShowTab(\"dead\") writes data-offtab \"1\" on #mw-hud and #mm-conditions (each of maze/hero/gear/oracle writes \"0\"); the [data-offtab=\"1\"] rules exist for .mw-hud and .mw-cond-strip, and #screen-dead carries the safe-area top padding", () => {
+test("(13) BEHAVIOUR + structural (Phase 70 D-08, ruling R-B): the HUD and condition strip stay on all five in-game tabs including DEAD (no data-offtab \"1\"); only the title-opened Leaderboards panel hides them through body[data-boards-entry=\"title\"]; no [data-offtab rule remains; the in-game #screen-dead sits flush (padding-top 0) and the title-mode panel keeps the safe-area top padding", () => {
+  const { doc, sandbox } = freshSandbox(states.thief);
+  for (const tab of ["dead", "maze", "hero", "gear", "oracle", "dead"]) {
+    sandbox.context.window.__mzShowTab(tab);
+    assert.notEqual(doc.elementsById.get("mw-hud")?.dataset?.offtab, "1", `#mw-hud must not go off-tab on ${tab}`);
+    assert.notEqual(doc.elementsById.get("mm-conditions")?.dataset?.offtab, "1", `#mm-conditions must not go off-tab on ${tab}`);
+  }
+  const showTabRegion = sliceBetween(CODE, "function showTab(name) {", "for (const btn of tabs) btn.addEventListener");
+  assert.doesNotMatch(showTabRegion, /offtab/, "showTab writes no data-offtab");
+
+  assert.doesNotMatch(HTML, /\[data-offtab/, "no [data-offtab rule remains");
+  assert.match(HTML, /^body\[data-boards-entry="title"\] #mw-hud\{display:none\}$/m);
+  assert.match(HTML, /^body\[data-boards-entry="title"\] #mm-conditions\{display:none\}$/m);
+  assert.match(HTML, /^#screen-dead\{padding-top:0\}$/m);
+  assert.match(HTML, /^body\[data-boards-entry="title"\] #screen-dead\{padding-top:calc\(14px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\)\}$/m);
+  assert.match(HTML, /^#screen-dead\{padding-left:0;padding-right:0;padding-bottom:0;height:100%\}$/m);
+});
+
+// ─── (21) BEHAVIOUR: the ☰ opens on the DEAD tab ─────────────────────────
+
+test("(21) BEHAVIOUR (Phase 70 D-08, ruling R-B): on the in-game DEAD tab the ☰ onclick opens the menu", () => {
   const { doc, sandbox } = freshSandbox(states.thief);
   sandbox.context.window.__mzShowTab("dead");
-  assert.equal(doc.elementsById.get("mw-hud").dataset.offtab, "1");
-  assert.equal(doc.elementsById.get("mm-conditions").dataset.offtab, "1");
-  for (const tab of ["maze", "hero", "gear", "oracle"]) {
-    sandbox.context.window.__mzShowTab(tab);
-    assert.equal(doc.elementsById.get("mw-hud").dataset.offtab, "0", `#mw-hud must be "0" on ${tab}`);
-    assert.equal(doc.elementsById.get("mm-conditions").dataset.offtab, "0", `#mm-conditions must be "0" on ${tab}`);
-  }
-
-  assert.match(HTML, /^\.mw-hud\[data-offtab="1"\]\{display:none\}$/m);
-  assert.match(HTML, /^\.mw-cond-strip\[data-offtab="1"\]\{display:none\}$/m);
-  assert.match(HTML, /^#screen-dead\{padding-top:calc\(14px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\)\}$/m);
+  menuBtn(doc).onclick();
+  assert.ok(isOpen(doc), "the ☰ opens on the DEAD tab");
 });
 
 // ─── (14) the width budget at text size M fits a 411px Pixel 7 ──────────
@@ -592,4 +645,134 @@ test("(18) BEHAVIOUR: an armed ABANDON row reads data-armed \"0\" after every cl
     sandbox.context.setHudMenuOpen(true);
     assert.equal(abandonEl(doc).dataset.dead, "0", "a live hero stamps data-dead 0");
   }
+});
+
+// ─── (19) BEHAVIOUR: the ☰ opens everywhere, rows disabled by context ────
+// Phase 70 D-08 (POLISH-03): the ☰ opens on the map, in combat and every
+// other encounter, and while dead; MAKE CAMP and CENTRE MAP dim (disabled +
+// aria-disabled) when they cannot act, and an open menu re-syncs its rows
+// when the encounter state changes under it.
+
+test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead with MAKE CAMP and CENTRE MAP disabled, enables all six rows when idle, re-syncs an open menu, survives an ongoing encounter's re-render, ignores a tap on a disabled row, and a select on a closed menu is a no-op", () => {
+  // combat: opens, camp + centre disabled
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.setState({ ...states.thief, combat: { round: 1 } });
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc), "combat: the ☰ opens");
+    assertRows(doc, ["btn-camp", "mw-chip-centre"], "combat");
+  }
+  // dead: opens, data-dead "1", camp + centre disabled
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.setState({ ...states.thief, dead: true });
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc), "dead: the ☰ opens");
+    assert.equal(rowEl(doc, "mw-menu-abandon").dataset.dead, "1", "dead: the last row reads NEW CHARACTER");
+    assertRows(doc, ["btn-camp", "mw-chip-centre"], "dead");
+  }
+  // a live, idle hero: all six enabled
+  {
+    const { doc } = freshSandbox(states.thief);
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    assertRows(doc, [], "idle");
+  }
+  // the menu open over the stair prompt re-syncs when the prompt clears
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.context.window.__mzStair = { dir: "N" };
+    sandbox.renderEncounter();
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    assertRows(doc, ["btn-camp", "mw-chip-centre"], "stair up");
+    sandbox.context.window.__mzStair = null;
+    sandbox.renderEncounter();
+    assert.ok(isOpen(doc), "the encounter ending leaves the menu open");
+    assertRows(doc, [], "stair cleared");
+  }
+  // an ongoing encounter's re-render leaves an open menu alone (R-D)
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.context.window.__mzStair = { dir: "N" };
+    sandbox.renderEncounter();
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    sandbox.renderEncounter();
+    assert.ok(isOpen(doc), "a re-render of an ongoing encounter must not close the menu");
+  }
+  // an encounter STARTING under an open menu still closes it (R-D)
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.renderEncounter();
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    sandbox.context.window.__mzStair = { dir: "N" };
+    sandbox.renderEncounter();
+    assert.ok(isClosed(doc), "an encounter starting closes the menu");
+  }
+  // a tap on a disabled row keeps the menu open; a bare onclick() closes it
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.context.window.__mzStair = { dir: "N" };
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    const campRow = rowEl(doc, "btn-camp");
+    const fakeEvent = { target: { closest: (sel) => (sel === '[aria-disabled="true"]' ? campRow : null) } };
+    menuEl(doc).onclick(fakeEvent);
+    assert.ok(isOpen(doc), "a tap on a disabled row leaves the menu open");
+    const liveEvent = { target: { closest: () => null } };
+    menuEl(doc).onclick(liveEvent);
+    assert.ok(isClosed(doc), "a tap on an enabled row closes the menu");
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    menuEl(doc).onclick();
+    assert.ok(isClosed(doc), "onclick() with no event still closes the menu");
+  }
+  // select on a closed menu changes nothing
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    assert.ok(isClosed(doc));
+    const before = rowEl(doc, "mw-menu-abandon").dataset.armed;
+    sandbox.context.hudMenuEvent("select");
+    assert.ok(isClosed(doc), "select on a closed menu keeps it closed");
+    assert.equal(rowEl(doc, "mw-menu-abandon").dataset.armed, before);
+    sandbox.context.syncHudMenuRows();
+    sandbox.context.syncHudMenuRows();
+    assertRows(doc, [], "a repeated row sync is idempotent");
+  }
+});
+
+// ─── (20) SOURCE: back closes the menu first, the beat lands first ───────
+
+test("(20) SOURCE (Phase 70 D-08): closeModal's menu-first early return precedes the gear-sheet branch and the S.beats/S.store clears; hudMenuEvent lands a live beat before opening and asks with no encounter context; armEncounterButtons never sweeps the ☰; the disabled-row rule is scoped under #mw-hud-menu and outranks the camp short state", () => {
+  const closeRegion = sliceBetween(CODE, "closeModal: () => {", "navigateBack:");
+  const menuFirst = closeRegion.indexOf('if (hudMenuIsOpen()) { hudMenuEvent("escape"); return; }');
+  const gear = closeRegion.indexOf("if (gearSheetTarget !== null)");
+  const beats = closeRegion.indexOf("S.beats = null;");
+  const store = closeRegion.indexOf("S.store = null;");
+  assert.ok(menuFirst !== -1, "closeModal carries the menu-first early return");
+  assert.ok(gear !== -1 && beats !== -1 && store !== -1);
+  assert.ok(menuFirst < gear && menuFirst < beats && menuFirst < store, "the menu-first return runs before the gear sheet and the S.beats/S.store clears");
+  assert.equal((closeRegion.match(/hudMenuEvent\("escape"\)/g) || []).length, 1, "no unconditional escape remains in closeModal");
+  const acct = closeRegion.indexOf("if (accountSheetOpen())");
+  const title = closeRegion.indexOf("if (boardsPanel.isTitleOpen())");
+  assert.ok(acct !== -1 && title !== -1 && acct < menuFirst && title < menuFirst, "the account-sheet and title-panel returns still come first");
+
+  const eventRegion = fnRegion("function hudMenuEvent(");
+  const hurry = eventRegion.indexOf("window.__mzBeat?.hurry?.()");
+  const openCall = eventRegion.indexOf("setHudMenuOpen(true)");
+  assert.ok(hurry !== -1 && openCall !== -1 && hurry < openCall, "a live beat is landed before the menu opens (R-C)");
+  assert.doesNotMatch(eventRegion, /hasActiveEncounter/, "hudMenuEvent asks the policy with no encounter context");
+
+  const openRegion = fnRegion("function setHudMenuOpen(");
+  assert.match(openRegion, /syncHudMenuRows\(\)/, "setHudMenuOpen(true) syncs the rows");
+
+  const armRegion = fnRegion("function armEncounterButtons(");
+  assert.doesNotMatch(armRegion, /mw-hud-menu/, "the arm sweep never touches the ☰ rows' aria-disabled");
+
+  const disabledRule = HTML.match(/^#mw-hud-menu \.mw-hud-menu-item:disabled\{([^}]*)\}/m);
+  assert.ok(disabledRule, "a disabled-row rule is scoped under #mw-hud-menu");
+  assert.match(disabledRule[1], /opacity:/);
+  assert.doesNotMatch(disabledRule[1], /animation|transition/, "the disabled look carries no motion");
 });

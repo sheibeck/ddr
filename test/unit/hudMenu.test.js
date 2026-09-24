@@ -18,6 +18,7 @@ import {
   ABANDON_ARM_MS,
   ABANDON_ROW_EVENTS,
   abandonRowNext,
+  hudMenuRowStates,
 } from "../../src/browser/hudMenu.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import fs from "node:fs";
@@ -29,10 +30,14 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 // ─── hudMenuNext() — the <behavior> matrix ──────────────────────────────
 
-test("hudMenuNext: toggle opens from closed (no encounter), closes from open, stays closed during an encounter", () => {
-  assert.equal(hudMenuNext(false, "toggle", {}), true);
-  assert.equal(hudMenuNext(true, "toggle", {}), false);
-  assert.equal(hudMenuNext(false, "toggle", { encounter: true }), false);
+test("hudMenuNext: toggle opens whatever the context (D-08) and closes from open", () => {
+  // Phase 70 D-08 lifted the Phase 57 T-57-17 refusal: the ☰ opens on the
+  // map, in combat and every other encounter, and while dead.
+  for (const ctx of [{}, { encounter: true }, { encounter: false }, null, undefined, 42, { dead: true }]) {
+    assert.equal(hudMenuNext(false, "toggle", ctx), true, `ctx=${JSON.stringify(ctx)} opens`);
+    assert.equal(hudMenuNext(true, "toggle", ctx), false, `ctx=${JSON.stringify(ctx)} closes`);
+  }
+  assert.equal(hudMenuNext(false, "toggle"), true);
 });
 
 test("hudMenuNext: every kind other than toggle, and any unknown/missing kind, closes from either starting state", () => {
@@ -250,4 +255,111 @@ test("quit rows (D-06): the five new names are each exported exactly once", () =
     const re = new RegExp(`export\\s+(?:const|function)\\s+${name}\\b`, "g");
     assert.equal((src.match(re) || []).length, 1, name);
   }
+});
+
+// ─── row states (Phase 70 D-08) — the ☰ opens everywhere and dims the rows
+// that cannot act in the current context ─────────────────────────────────
+
+const ROW_ORDER = [
+  { key: "marks", id: "mw-chip-marks" },
+  { key: "centre", id: "mw-chip-centre" },
+  { key: "camp", id: "btn-camp" },
+  { key: "settings", id: "mw-gear-btn" },
+  { key: "saveQuit", id: "mw-menu-save-quit" },
+  { key: "abandon", id: "mw-menu-abandon" },
+];
+
+function enabledMap(rows) {
+  return Object.fromEntries(rows.map((r) => [r.key, r.enabled]));
+}
+
+const ALL_ON = Object.freeze({ marks: true, centre: true, camp: true, settings: true, saveQuit: true, abandon: true });
+
+test("row states (D-08): six frozen { key, id, enabled } entries in dropdown order; the first four ids equal HUD_MENU_ITEMS'", () => {
+  const rows = hudMenuRowStates({ hero: true });
+  assert.ok(Object.isFrozen(rows));
+  assert.equal(rows.length, 6);
+  for (const r of rows) {
+    assert.ok(Object.isFrozen(r));
+    assert.deepStrictEqual(Object.keys(r).sort(), ["enabled", "id", "key"]);
+    assert.equal(typeof r.enabled, "boolean");
+  }
+  assert.deepStrictEqual(
+    rows.map((r) => ({ key: r.key, id: r.id })),
+    ROW_ORDER,
+  );
+  assert.deepStrictEqual(
+    rows.slice(0, 4).map((r) => r.id),
+    HUD_MENU_ITEMS.map((r) => r.id),
+  );
+});
+
+test("row states (D-08): a live, idle hero enables all six rows", () => {
+  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: false, encounter: false })), { ...ALL_ON });
+});
+
+test("row states (D-08): an over-map encounter disables MAKE CAMP and CENTRE MAP only", () => {
+  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: false, encounter: true })), {
+    ...ALL_ON,
+    centre: false,
+    camp: false,
+  });
+});
+
+test("row states (D-08): a dead hero disables MAKE CAMP; CENTRE MAP follows the encounter flag alone", () => {
+  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: true, encounter: false })), { ...ALL_ON, camp: false });
+  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: true, encounter: true })), {
+    ...ALL_ON,
+    centre: false,
+    camp: false,
+  });
+});
+
+test("row states (D-08): no hero (hero not strictly true) disables MAKE CAMP only", () => {
+  for (const hero of [false, undefined, null, 1, "true"]) {
+    assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero, dead: false, encounter: false })), { ...ALL_ON, camp: false }, `hero=${String(hero)}`);
+  }
+});
+
+test("row states (D-08): MARKS, SETTINGS, SAVE & QUIT and ABANDON are always enabled", () => {
+  const ctxs = [{ hero: true }, { hero: true, encounter: true }, { hero: true, dead: true }, { hero: false, dead: true, encounter: true }, {}];
+  for (const ctx of ctxs) {
+    const m = enabledMap(hudMenuRowStates(ctx));
+    for (const key of ["marks", "settings", "saveQuit", "abandon"]) assert.equal(m[key], true, `${key} ctx=${JSON.stringify(ctx)}`);
+  }
+});
+
+test("row states (D-08): a missing, null, non-object or hostile ctx never throws; MAKE CAMP is disabled (fail-safe) and every other row enabled", () => {
+  const hostile = {
+    get hero() {
+      throw new Error("boom");
+    },
+    get dead() {
+      throw new Error("boom");
+    },
+    get encounter() {
+      throw new Error("boom");
+    },
+  };
+  const proxy = new Proxy(
+    {},
+    {
+      get() {
+        throw new Error("trap");
+      },
+    },
+  );
+  for (const ctx of [undefined, null, 42, "hero", true, hostile, proxy]) {
+    let rows;
+    assert.doesNotThrow(() => {
+      rows = hudMenuRowStates(ctx);
+    });
+    assert.deepStrictEqual(enabledMap(rows), { ...ALL_ON, camp: false });
+  }
+  assert.doesNotThrow(() => hudMenuRowStates());
+});
+
+test("row states (D-08): hudMenuRowStates is exported exactly once", () => {
+  const src = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "hudMenu.js"), "utf8");
+  assert.equal((src.match(/export\s+function\s+hudMenuRowStates\b/g) || []).length, 1);
 });

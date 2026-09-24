@@ -150,11 +150,18 @@ test("(A5) BEHAVIOUR: a tab-opened panel never sets body[data-boards-entry]", ()
   assert.equal(sandbox.context.window.document.body.dataset.boardsEntry, undefined);
 });
 
-test("(A6) BEHAVIOUR: the HUD and condition strip still go off-tab on DEAD (unrelated Phase 57 behaviour, untouched by this plan)", () => {
+test("(A6) BEHAVIOUR: the in-game DEAD tab keeps the HUD and the condition strip (Phase 70 D-08); only the title-opened panel hides them, through the body marker", () => {
   const runs = twelveRuns();
-  const { doc } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  assert.equal(doc.elementsById.get("mw-hud").dataset.offtab, "1");
-  assert.equal(doc.elementsById.get("mm-conditions").dataset.offtab, "1");
+  const { doc, sandbox } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
+  assert.notEqual(doc.elementsById.get("mw-hud")?.dataset?.offtab, "1");
+  assert.notEqual(doc.elementsById.get("mm-conditions")?.dataset?.offtab, "1");
+  // Tab mode sets no body marker (A5), so the title-mode hide rules below
+  // never apply to the in-game tab. shell-boards-entry.test.js (D1) proves
+  // openFromTitle sets the "title" marker these rules key on.
+  assert.equal(sandbox.context.window.document.body.dataset.boardsEntry, undefined);
+  const html = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
+  assert.match(html, /^body\[data-boards-entry="title"\] #mw-hud\{display:none\}$/m);
+  assert.match(html, /^body\[data-boards-entry="title"\] #mm-conditions\{display:none\}$/m);
 });
 
 // ═══════════════════════ (B) board memory (D-04) ════════════════════════════

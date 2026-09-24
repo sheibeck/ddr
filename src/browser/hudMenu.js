@@ -29,8 +29,15 @@
 // arm (draft DISC-1): On means two taps, Off means one. The shell owns the
 // ABANDON_ARM_MS timer and feeds its expiry back in as a "timeout" event.
 //
+// Phase 70 (POLISH-03, D-08): the menu opens on every screen — the map,
+// combat and every other encounter, the Oracle, all five tabs and while
+// dead. Rows that cannot act in the current context are shown disabled
+// (dimmed, not hidden, no action) by hudMenuRowStates below; the shell's
+// syncHudMenuRows writes its answer onto the six row buttons.
+//
 // Pure, DOM-free, timer-free, storage-free — same house shape as
-// src/browser/hudBands.js. Bridged onto the shell as `next: hudMenuNext`.
+// src/browser/hudBands.js. Bridged onto the shell as
+// `{ next: hudMenuNext, rows: hudMenuRowStates }`.
 
 /**
  * HUD_MENU_ITEMS — the four menu rows, frozen, in the mock's own order:
@@ -66,15 +73,16 @@ const TOGGLE_EVENT = HUD_MENU_EVENTS[0];
  *
  * The whole close policy, in one place: select, a ☰ re-tap, an outside
  * tap, a tab switch, an encounter starting and Escape all close the menu.
- * Opening is refused while an encounter is up (T-57-17). Total over every
- * `open`/`kind`/`ctx` shape — never throws, always returns a strict boolean.
+ * A toggle on a closed menu always opens it: Phase 70 D-08 lifted the
+ * Phase 57 T-57-17 refusal, so the menu opens whatever the context. `ctx`
+ * is no longer read; the parameter stays so every caller's shape is
+ * unchanged (what a row can do in context is hudMenuRowStates' job). Total
+ * over every `open`/`kind`/`ctx` shape — never throws, always returns a
+ * strict boolean.
  */
 export function hudMenuNext(open, kind, ctx) {
   const isOpen = open === true;
-  if (kind === TOGGLE_EVENT) {
-    if (isOpen) return false;
-    return !(ctx && ctx.encounter === true);
-  }
+  if (kind === TOGGLE_EVENT) return !isOpen;
   // Every other kind — every listed HUD_MENU_EVENTS member besides "toggle",
   // and any unknown/missing kind — fail-closed: the menu can only ever end
   // up closed, never stranded open over the map.
@@ -150,4 +158,45 @@ export function abandonRowNext(armed, kind, ctx) {
   const confirm = flag(ctx, "confirm") !== false;
   if (!confirm || armed === true) return ABANDON;
   return ARMED;
+}
+
+// ─── Phase 70 (D-08): the rows' availability in context ──────────────────
+
+const QUIT_ROW_IDS = Object.freeze({ saveQuit: "mw-menu-save-quit", abandon: "mw-menu-abandon" });
+
+/**
+ * hudMenuRowStates(ctx) -> frozen [{ key, id, enabled }] x6, in dropdown
+ * order: MARKS, CENTRE MAP, MAKE CAMP, SETTINGS (HUD_MENU_ITEMS' ids), then
+ * SAVE & QUIT and ABANDON / NEW CHARACTER (the 70-03 quit-row ids).
+ *
+ * ctx is { encounter, dead, hero } (D-08, planner ruling R-A):
+ *   - MARKS, SETTINGS, SAVE & QUIT and ABANDON are always enabled;
+ *   - CENTRE MAP is disabled only while an over-map encounter covers the
+ *     map (ctx.encounter strictly true) — there is no visible map to centre;
+ *   - MAKE CAMP, the one engine-refused row, is enabled only with a hero
+ *     (ctx.hero strictly true) who is not dead and not mid-encounter. Its
+ *     short-on-food dim (Phase 25.1 DFB-06) is a separate shell state and
+ *     never disables it.
+ * A missing, null, non-object or hostile ctx never throws: MAKE CAMP reads
+ * as disabled (fail-safe for the one dispatching row), every other row as
+ * enabled. The ACCOUNT block is not a row here — it is always available.
+ */
+export function hudMenuRowStates(ctx) {
+  const encounter = flag(ctx, "encounter") === true;
+  const dead = flag(ctx, "dead") === true;
+  const hero = flag(ctx, "hero") === true;
+  const enabled = {
+    marks: true,
+    centre: !encounter,
+    camp: hero && !dead && !encounter,
+    settings: true,
+    saveQuit: true,
+    abandon: true,
+  };
+  const rows = [
+    ...HUD_MENU_ITEMS.map((item) => ({ key: item.key, id: item.id })),
+    { key: "saveQuit", id: QUIT_ROW_IDS.saveQuit },
+    { key: "abandon", id: QUIT_ROW_IDS.abandon },
+  ];
+  return Object.freeze(rows.map((r) => Object.freeze({ key: r.key, id: r.id, enabled: enabled[r.key] })));
 }

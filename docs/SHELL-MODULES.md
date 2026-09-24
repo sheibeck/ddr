@@ -266,6 +266,33 @@ tab's Delve panel and its two buttons are retired (D-06).
   `data-dead` from the live state; while dead the row reads NEW CHARACTER
   and calls `window.mzStartRoll`. There are no confirm dialogs.
 
+**The ☰ opens everywhere (Phase 70, D-08).** The Phase 57 T-57-17 refusal
+is lifted: `hudMenuNext`'s toggle opens the menu on the map, in combat and
+every other encounter (store, loot pile, stair prompt, beats), on the
+Oracle, on all five tabs including DEAD, and while dead. Rows are disabled
+by context, not hidden.
+
+- `hudMenu.js#hudMenuRowStates(ctx)` (bridged as `window.__mzHudMenu.rows`)
+  answers which of the six rows can act: MARKS, SETTINGS, SAVE & QUIT and
+  ABANDON always; CENTRE MAP unless an over-map encounter covers the map;
+  MAKE CAMP only with a live hero outside an encounter. Its short-on-food
+  dim (Phase 25.1 DFB-06) stays separate and never disables it.
+- The classic `syncHudMenuRows()` writes that answer onto the row buttons
+  (`disabled` plus `aria-disabled="true"`, both cleared when live). It is
+  TDZ-safe (state through `window.__mzState`), never touches the ACCOUNT
+  block, and runs on every open and on every `renderEncounter()` while the
+  menu is open. A tap on a disabled row leaves the menu open.
+- The z-ladder is rail 4 < encounter/death overlay 8 < scrim 9 < ☰ wrap 10
+  < sheets 45 < title 50 < roller 51 < account/settings sheets 55, so a
+  scrim tap over a fight only closes the menu.
+- The Android back button closes the menu first and returns
+  (`closeModal`'s menu-first early return), so a store, loot pile, stair
+  prompt or beat beneath survives that press.
+- Opening the menu lands a live combat beat first
+  (`window.__mzBeat?.hurry?.()`), the way a tab switch does.
+- `renderEncounter` closes an open menu only when an encounter STARTS; a
+  re-render of an ongoing encounter leaves it open.
+
 ### Global boards, submissions and placement (Phase 68)
 
 **Encodings.** `src/browser/scoreTag.js` encodes a run into the 64-char
@@ -431,7 +458,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzHapticsImportOverride | src/browser/haptics.js | test/unit/haptics.test.js | Test-only injection hook so a test can replace the native @capacitor/haptics import with a fake, without any shipped code path setting it. |
 | __mzHasTool | mazeworld.html (module) | mazeworld.html (classic/module: rail dark/hazard cards — torch retry, dark-fell gating) | Bridges the pure carried-tool predicate so a hazard/dark rail card only offers a retry when the party actually carries the tool. |
 | __mzHudBands | mazeworld.html (module) | mazeworld.html (classic: paint — band 1's name/line split via identityParts, and the fixed-width counter slots) | Bridges the pure src/browser/hudBands.js identityLine/identityParts/counterSlots formatters (Phase 57, LAYOUT-05) so paint() renders band 1's identity line (split into a never-truncated name and a truncating race/class/level line, Plan 05) and band 2's fixed-width counters from ONE engine-agnostic source. |
-| __mzHudMenu | mazeworld.html (module) | mazeworld.html (classic: hudMenuEvent — the ☰ HUD menu's open/close policy) | Bridges the pure src/browser/hudMenu.js hudMenuNext reducer (Phase 57, LAYOUT-04/05, Plan 05) so the shell holds no second copy of the ☰ menu's close rules; the classic hudMenuEvent reads the live open state and the encounter context and asks this bridge for the next state, failing closed when the bridge is missing. |
+| __mzHudMenu | mazeworld.html (module) | mazeworld.html (classic: hudMenuEvent — the ☰ HUD menu's open/close policy, via next)<br>mazeworld.html (classic: syncHudMenuRows — the ☰ rows' per-row availability, via rows) | Bridges the pure src/browser/hudMenu.js hudMenuNext reducer (Phase 57, LAYOUT-04/05, Plan 05) and hudMenuRowStates (Phase 70, D-08) so the shell holds no second copy of the ☰ menu's rules; the classic hudMenuEvent reads the live open state and asks next for the open/close policy (the menu opens on every screen, failing closed when the bridge is missing), and the classic syncHudMenuRows asks rows which of the six rows can act in the current context (encounter, dead, hero) and writes disabled plus aria-disabled onto the rest. |
 | __mzIconMap | mazeworld.html (module) | mazeworld.html (classic: draw — the preloaded map icon atlas) | Bridges the preloaded PNG icon atlas so the map canvas's draw() can paint feature icons without re-fetching them. |
 | __mzIconsApi | mazeworld.html (module) | mazeworld.html (classic: draw — featureKeyForCell/drawFeatureIcon) | Bridges the pure icon-selection helpers so the map canvas's draw() resolves and paints the same icon set as the rest of the shell; the party marker moved to the DOM sprite (window.__mzPartySprite) in Phase 59. |
 | __mzInputGuards | mazeworld.html (module) | mazeworld.html (classic: renderEncounter — encArmed/encounterSettled/armEncounterButtons) | Bridges the pure arm-delay/dismiss-settle predicates so the encounter overlay's double-tap and stale-dismiss guards read one shared clock rule. |

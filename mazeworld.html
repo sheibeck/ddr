@@ -587,7 +587,11 @@ button.small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-tra
    already styles its pressed state (button:active's generic rule) — no
    scoped hover/active pair needed here. */
 /* Phase 25.1 (DFB-06): short-on-food state — visibly dimmed, never disabled,
-   so a tap can still surface the campFailed rail line's refusal numbers. */
+   so a tap can still surface the campFailed rail line's refusal numbers.
+   Phase 70 (D-08) is separate: the row IS disabled by context (mid-
+   encounter, dead, no hero) through syncHudMenuRows and the #mw-hud-menu
+   :disabled rule, which outranks this one; short on food alone never
+   disables it. */
 #btn-camp[data-short="1"]{opacity:.55;border-style:dashed}
 /* 04-DR3: "Abandon your run" — the mock's CUT LOSSES destructive chrome
    (border/background/color literally matching design/Mazeworld
@@ -1026,8 +1030,10 @@ html,body{height:100%}
         chip id so the classic listener lines below route unchanged.
      4. Condition chips (.mw-cond-strip) — unchanged: still hidden when
         nothing is active.
-   The HUD (bands 1-3 + conditions) hides on the Dead tab via
-   [data-offtab="1"] (paint()'s band writes and showTab both feed it). */
+   The HUD (bands 1-3 + conditions) shows on all five in-game tabs,
+   including Dead (Phase 70 D-08, retiring the Phase 57 Dead-tab hide); only
+   the title-opened Leaderboards panel hides it, through
+   body[data-boards-entry="title"]. */
 .mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;display:flex;flex-direction:column}
 .mw-hud-identity{display:flex;align-items:baseline;gap:8px;padding:calc(9px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 10px;background:#241d12;overflow:hidden}
 .mw-hud-name{flex:none;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#e8c97a}
@@ -1067,11 +1073,15 @@ html,body{height:100%}
 /* Phase 57 (LAYOUT-04/05), Plan 05 — the ☰ HUD menu hanging off band 2.
    The wrap is band 2's SIBLING of .mw-hud-counters (never its child, since
    .mw-hud-counters keeps overflow:hidden) so the dropdown is never clipped.
-   z-ladder (T-57-19): .mw-rail is 4, the scrim is 5, this wrap is 6, the
-   encounter overlay (.mw-overlay) is 8 — none of .mw-hud/.mw-hud-band2/
-   #mw-stage may gain a z-index, a transform, an opacity below 1 or a
-   clipping overflow, or the ladder scrambles or the dropdown clips. */
-.mw-hud-menu-wrap{position:relative;flex:none;z-index:6}
+   z-ladder (T-57-19, re-cut by Phase 70 D-08 so the ☰ opens over every
+   screen): .mw-rail 4 < the encounter/death overlay (.mw-overlay) 8 < the
+   scrim 9 < this wrap 10 < the MARKS/camp/gear sheets 45 < the title 50 <
+   the roller 51 < the account/settings sheets 55 — so the dropdown and its
+   scrim sit above combat and THAT IS THAT, and every sheet a row opens
+   sits above the dropdown. None of .mw-hud/.mw-hud-band2/#mw-stage may
+   gain a z-index, a transform, an opacity below 1 or a clipping overflow,
+   or the ladder scrambles or the dropdown clips. */
+.mw-hud-menu-wrap{position:relative;flex:none;z-index:10}
 .mw-hud-menu-btn{width:48px;height:48px;margin:-7px -8px -7px 0;padding:0;border:0;background:transparent;box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center}
 .mw-hud-menu-face{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;line-height:1;color:#e8c97a;background:#241d12;border:2px solid #6b5c3c;box-shadow:0 3px 0 #0d0b08}
 .mw-hud-menu-btn[aria-expanded="true"] .mw-hud-menu-face{background:#e8c97a;color:#14110c}
@@ -1155,21 +1165,33 @@ html,body{height:100%}
 .mw-hud-menu-quit[data-dead="0"][data-armed="0"] .mw-hud-menu-label[data-when="idle"]{display:inline}
 .mw-hud-menu-quit[data-dead="0"][data-armed="1"] .mw-hud-menu-label[data-when="armed"]{display:inline}
 .mw-hud-menu-quit[data-dead="1"] .mw-hud-menu-label[data-when="dead"]{display:inline}
+/* Phase 70 (D-08): a row that cannot act in the current context (MAKE CAMP
+   mid-encounter, dead or with no hero; CENTRE MAP while an encounter covers
+   the map) is shown, dimmed, never hidden. syncHudMenuRows sets the
+   disabled property (plus the ARIA flag); the generic button:active rule
+   already skips
+   :disabled, so it shows no press. Scoped under #mw-hud-menu (1,2,0) so it
+   outranks #btn-camp[data-short="1"] (1,1,0). The glyph greys with the
+   label. No motion. */
+#mw-hud-menu .mw-hud-menu-item:disabled{opacity:.38;cursor:not-allowed;color:#8e8369;border-style:solid}
+#mw-hud-menu .mw-hud-menu-item:disabled .mw-hud-menu-glyph{color:#6f6754}
 /* T-57-15/T-57-16: a transparent, fixed full-screen scrim, present only
    while the menu is open — the tap that closes the menu (any tap but the
    menu itself) lands HERE, never on the map, structurally (the scrim is not
-   a descendant of #mw-maze-viewport, so the gesture tracker never sees it). */
-.mw-hud-menu-scrim{position:fixed;inset:0;z-index:5;background:transparent;visibility:hidden;pointer-events:none;touch-action:none}
+   a descendant of #mw-maze-viewport, so the gesture tracker never sees it).
+   Phase 70 (D-08): z 9 puts it above the encounter overlay (8), so a scrim
+   tap over a fight, a store or the death panel only closes the menu and
+   never presses an overlay button beneath. */
+.mw-hud-menu-scrim{position:fixed;inset:0;z-index:9;background:transparent;visibility:hidden;pointer-events:none;touch-action:none}
 .mw-hud-menu-scrim[data-open="1"]{visibility:visible;pointer-events:auto}
-/* Phase 57 (LAYOUT-05), Plan 05 — the mock's Dead-tab gate (discovery B):
-   the HUD and the condition strip hide on Dead; #screen-dead takes over the
-   top safe-area padding band 1 used to carry so its first line still
-   clears the status bar. A display toggle is correct here — this is a
-   tab-level screen swap (showTab already toggles `hidden` the same way),
-   never the ☰ menu's own data-state model. */
-.mw-hud[data-offtab="1"]{display:none}
-.mw-cond-strip[data-offtab="1"]{display:none}
-#screen-dead{padding-top:calc(14px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))}
+/* Phase 70 (D-08, ruling R-B): the Phase 57 discovery-B Dead-tab gate that
+   hid the HUD and the condition strip is retired — the HUD (and so the ☰)
+   shows on all five in-game tabs, and the in-game Leaderboards panel sits
+   flush under it like the map (band 1 already carries the status-bar
+   inset). Only the title-opened panel hides the HUD (see the
+   body[data-boards-entry="title"] rules below) and keeps its own safe-area
+   top padding there. */
+#screen-dead{padding-top:0}
 /* Phase 66 (BOARD-01..06, D-01/D-13/D-14), the Leaderboards panel, ported
    from design/Mazeworld Boards Panel.dc.html and design/Mazeworld
    Leaderboards.dc.html (the iOS frame in both mocks is preview chrome
@@ -1277,6 +1299,13 @@ html,body{height:100%}
    body[data-boards-entry] marker is set in that mode). */
 body[data-boards-entry="title"] #mw-tabbar{display:none}
 body[data-boards-entry="title"] #mw-rail{display:none}
+/* Phase 70 (D-08, R-B; D-04): the title-opened panel also hides the HUD and
+   the condition strip (no ☰ on the title area; the panel can sit over the
+   boot throwaway hero), and keeps the safe-area top padding the HUD would
+   otherwise carry, so its first line clears the status bar. */
+body[data-boards-entry="title"] #mw-hud{display:none}
+body[data-boards-entry="title"] #mm-conditions{display:none}
+body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))}
 /* Phase 35 (MAP-01, ruling 5): the condition-chip strip — its own strip
    directly under the HUD (not a wrapping row inside it, and no longer over
    the viewport). One chip per conditionsOf(S) descriptor; tapping a chip
@@ -1995,9 +2024,10 @@ body[data-boards-entry="title"] #mw-rail{display:none}
     <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the tap that closes the menu is
          consumed here, structurally: this scrim is the header's last child,
          is NOT a descendant of #mw-maze-viewport, and sits above the
-         map/rail (z 5) and below the menu (z 6, see .mw-hud-menu-wrap's own
-         CSS comment for the whole z-ladder). Its onclick raises "outside"
-         and dispatches zero moves (T-57-15). -->
+         map, the rail and (Phase 70 D-08) the encounter/death overlay (z 9)
+         and below the menu (z 10, see .mw-hud-menu-wrap's own CSS comment
+         for the whole z-ladder). Its onclick raises "outside" and
+         dispatches zero moves (T-57-15) and presses nothing beneath. -->
     <div class="mw-hud-menu-scrim" id="mw-hud-menu-scrim" aria-hidden="true" data-open="0"></div>
   </header>
   <!-- Phase 35 (MAP-01, ruling 5): the condition-chip strip — moved OUT of
@@ -2417,17 +2447,13 @@ let mwActiveTab = "maze";
         hidePanel(el);
       }
     }
-    // Phase 57 (LAYOUT-05), Plan 05 (discovery B): the HUD and the
-    // condition strip hide on Dead (the mock's showHud/hasConds gate) —
-    // ONE predicate feeds both data-offtab writes so they can never
-    // disagree. Then close the ☰ menu on every tab switch
-    // (hudMenuEvent("tab")) BEFORE the keep-in-view call below, so the HUD
-    // is back in the layout before the viewport rect is measured.
-    const offtab = name === "dead" ? "1" : "0";
-    const hudEl = document.getElementById("mw-hud");
-    if (hudEl) hudEl.dataset.offtab = offtab;
-    const condEl = document.getElementById("mm-conditions");
-    if (condEl) condEl.dataset.offtab = offtab;
+    // Phase 70 (D-08, ruling R-B) retires the Phase 57 discovery-B rule
+    // that hid the HUD and the condition strip on the DEAD tab, so the ☰ is
+    // reachable on every in-game tab. The title-opened Leaderboards panel
+    // still hides the HUD, through its body[data-boards-entry="title"]
+    // marker (D-04 keeps the ☰ off the title area). Close the ☰ menu on
+    // every tab switch (hudMenuEvent("tab")) BEFORE the keep-in-view call
+    // below, as before.
     hudMenuEvent("tab");
     for (const btn of tabs) {
       const on = btn.dataset.tab === name;
@@ -4231,10 +4257,15 @@ function renderEncounter() {
   // ONLY while something is actually happening (feature-tile narration,
   // combat, store, death/win) — never a permanent fixture beneath the map.
   const active = hasActiveEncounter();
-  // Phase 57 (LAYOUT-04/05), Plan 05 (T-57-17): the ☰ menu can never be
-  // open over an encounter — hudMenuNext also refuses to OPEN it while one
-  // is active, but this closes an already-open menu the instant one starts.
-  if (active) hudMenuEvent("encounter");
+  // Phase 70 (D-08, ruling R-D): the ☰ now opens over encounters, so only an
+  // encounter STARTING (the false -> true edge) closes an open menu — a
+  // safety net, since the scrim above the overlay makes it practically
+  // unreachable. A re-render of an ongoing encounter leaves the menu alone,
+  // and an open menu re-syncs its rows (MAKE CAMP, CENTRE MAP) whenever the
+  // encounter state changes under it. Supersedes Phase 57's T-57-17 close on
+  // every active render.
+  if (active && !encWasActive) hudMenuEvent("encounter");
+  if (hudMenuIsOpen()) syncHudMenuRows();
   // Phase 32 (CMBUI-05, design §6.3 rule 2): stamp lastDismissAt on the
   // true -> false transition (the overlay just closed under the thumb) —
   // window.move's settle clause refuses a step for DISMISS_SETTLE_MS after
@@ -5129,20 +5160,59 @@ function setHudMenuOpen(open) {
     if (open) abandonRow.dataset.dead = window.__mzState?.get?.()?.dead === true ? "1" : "0";
     else abandonRow.dataset.armed = "0";
   }
+  // Phase 70 (D-08): every open re-reads which rows can act right now.
+  if (open) syncHudMenuRows();
 }
 // hudMenuEvent(kind) must be TDZ-safe: showTab's init-time call (below) runs
 // BEFORE `let S` — reading `S` directly there is the 2026-09-17 boot-killing
-// bug class. `encounter` is only ever computed once window.__mzState exists
-// (through hasActiveEncounter()); before boot it is always false, which is
-// also the right answer (no encounter can be active before S exists). The
+// bug class. Phase 70 (D-08): the policy no longer takes an encounter
+// context — the ☰ opens on every screen — so this reads no state at all.
+// Opening lands a live combat beat first (ruling R-C), the same way a tab
+// switch does, so no row's action ever runs under a half-played round. The
 // scrim being outside #mw-maze-viewport is what makes the outside tap
 // structurally consumed — this function never sees that tap at all.
 function hudMenuEvent(kind) {
   const open = hudMenuIsOpen();
-  const encounter = window.__mzState ? hasActiveEncounter() : false;
-  const next = window.__mzHudMenu ? window.__mzHudMenu.next(open, kind, { encounter }) : false;
-  if (next !== open) setHudMenuOpen(next);
+  const next = window.__mzHudMenu ? window.__mzHudMenu.next(open, kind) : false;
+  if (next !== open) {
+    if (next) {
+      window.__mzBeat?.hurry?.();
+      setHudMenuOpen(true);
+    } else {
+      setHudMenuOpen(false);
+    }
+  }
   if (kind === "escape" && !next) document.getElementById("mw-hud-menu-btn")?.focus();
+}
+// Phase 70 (D-08): the ☰ opens everywhere, and the rows that cannot act in
+// the current context are shown disabled (dimmed, not hidden, no action):
+// MAKE CAMP while an over-map encounter is up, the hero is dead or there is
+// no hero, and CENTRE MAP while an encounter covers the map. The pure
+// src/browser/hudMenu.js#hudMenuRowStates (bridged as
+// window.__mzHudMenu.rows) owns the rule; this writes its answer onto the
+// six row buttons — the disabled property plus aria-disabled="true", both
+// cleared when the row is live. TDZ-safe like hudMenuEvent: state comes
+// through window.__mzState, never a bare S, and the encounter is only
+// computed once that bridge exists. It never touches the ACCOUNT block
+// (#mw-hud-menu-acct), which is always available. A missing bridge is a
+// no-op. Idempotent: a repeated sync writes the same values.
+function syncHudMenuRows() {
+  const rowsOf = window.__mzHudMenu?.rows;
+  if (typeof rowsOf !== "function") return;
+  const state = window.__mzState?.get?.();
+  const encounter = window.__mzState ? hasActiveEncounter() : false;
+  const rows = rowsOf({ encounter, dead: state?.dead === true, hero: !!state?.c });
+  for (const row of rows) {
+    const el = document.getElementById(row.id);
+    if (!el) continue;
+    if (row.enabled) {
+      el.disabled = false;
+      el.removeAttribute("aria-disabled");
+    } else {
+      el.disabled = true;
+      el.setAttribute("aria-disabled", "true");
+    }
+  }
 }
 // Phase 70 (D-07): every ☰ row closes the menu BEFORE its action runs, so a
 // sheet, the title screen or the roller it opens never appears under a
@@ -5160,7 +5230,13 @@ function closeMenuThen(fn) {
 }
 document.getElementById("mw-hud-menu-btn").onclick = () => hudMenuEvent("toggle");
 document.getElementById("mw-hud-menu-scrim").onclick = () => hudMenuEvent("outside");
-document.getElementById("mw-hud-menu").onclick = () => hudMenuEvent("select");
+// Phase 70 (D-08): a tap on a disabled row does nothing and the menu stays
+// open, so the player sees why (the row is dimmed) instead of the menu
+// vanishing. Called with no event, it still raises "select".
+document.getElementById("mw-hud-menu").onclick = (e) => {
+  if (e?.target?.closest?.('[aria-disabled="true"]')) return;
+  hudMenuEvent("select");
+};
 
 // Quick task 260918-vm3 (MAP-02/MAP-07, "stationary camera"): keepPartyInView()
 // is the ONE non-centring camera nudge — it moves `cam` the minimum needed to
@@ -5624,8 +5700,9 @@ window.__mzClassicBoot = async function classicBoot() {
   import { identityLine, identityParts, counterSlots } from "./src/browser/hudBands.js";
   // Phase 57 (LAYOUT-04/05), Plan 05 — the pure ☰ HUD menu open/close
   // reducer, bridged as __mzHudMenu below so the shell holds no second copy
-  // of the menu's close rules.
-  import { hudMenuNext, abandonRowNext, ABANDON_ARM_MS } from "./src/browser/hudMenu.js";
+  // of the menu's close rules. Phase 70 (D-08) adds hudMenuRowStates, the
+  // rows' per-context availability, on the same bridge.
+  import { hudMenuNext, abandonRowNext, ABANDON_ARM_MS, hudMenuRowStates } from "./src/browser/hudMenu.js";
   // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
   import { usableBy, dropShelfItems } from "./src/browser/viewModels.js";
@@ -5764,8 +5841,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 57 (LAYOUT-04/05), Plan 05: bridge the PURE ☰ HUD menu
   // open/close policy — read-only, no rng, no DOM. The classic hudMenuEvent
   // (below) is the ONE writer that acts on its answer; a missing bridge
-  // fails closed at that call site.
-  window.__mzHudMenu = { next: hudMenuNext };
+  // fails closed at that call site. Phase 70 (D-08): `rows` answers which
+  // of the six rows can act in the current context; the classic
+  // syncHudMenuRows writes disabled + aria-disabled from it.
+  window.__mzHudMenu = { next: hudMenuNext, rows: hudMenuRowStates };
 
   // Phase 29 (LOOT-03/04): bridge the PURE compare-to-equipped verdict and
   // the ONE bag-capacity readout so the loot screen, the gear panel, the
@@ -7752,7 +7831,11 @@ window.__mzClassicBoot = async function classicBoot() {
           // Phase 57 (LAYOUT-04/05), Plan 05: the Android back button closes
           // the ☰ menu (device equivalent of Escape, orchestrator-approved
           // as standard behaviour) — first, before any of the modals below.
-          hudMenuEvent("escape");
+          // Phase 70 (D-08): the menu now opens over a store, a loot pile,
+          // the stair prompt or a beat, so a press that closes the menu
+          // returns at once — the rest of this handler would otherwise
+          // clear the store/beats/stair underneath on the same press.
+          if (hudMenuIsOpen()) { hudMenuEvent("escape"); return; }
           // Phase 63 (GSCR-10): the Gear sheet is the top-most layer — one
           // back press closes only it, never falling through to the stair/
           // camp/legend/beats/store handling below on the same press.
