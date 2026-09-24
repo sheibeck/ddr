@@ -328,7 +328,7 @@ test("every view is total over malformed input and returns deep-frozen results",
   for (const input of MALFORMED) {
     for (const [name, fn] of [["chip", accountChipView], ["sheet", accountSheetView], ["identity", accountIdentity]]) {
       let v;
-      assert.doesNotThrow(() => { v = fn(input); }, `${name}(${String(input)})`);
+      assert.doesNotThrow(() => { v = fn(input); }, `${name}(${JSON.stringify(input) ?? typeof input})`);
       assertDeepFrozen(v, name);
     }
   }
