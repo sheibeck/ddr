@@ -205,16 +205,16 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-24T01:40:00.000Z
-Stopped at: /gsd-autonomous v2.0 run IN PROGRESS (orchestrator resume note, written before a /compact).
+Last session: 2026-09-24T04:10:00.000Z
+Stopped at: v2.0 Phase 70 in flight (/gsd-autonomous --only 70), orchestrator resume note.
 
-- Phases 65, 66, 67, 68 COMPLETE (orchestrator VERIFICATION.md each, status passed, human_verification lists for docs/UAT-v2.0.md). Master npm test 5023/5024 — the 1 failure is AUD-06 (user's untracked sfx/theme.mp3; tracked in the theme todo). bridge-doc --check fails on master only via CRLF working copy (content identical to HEAD).
-- AGP 9.3.1 spike: STAY ON AGP 8.13.0 (67-AGP9-SPIKE.md). Plugin @modbender/capacitor-play-games@0.5.0 installed as-is, no Gradle fix. R8/AGP9 todo updated (AGP 9 blocked upstream by Pgs.kt:144).
-- Phase 69 PLANNING: gsd-planner (opus) running in background; it commits the plans. Then: decision-coverage gate (9/9), state.planned-phase 69, begin-phase, execute waves.
-- Phase 69: Privacy page: C:/projects/darktier-studio/src/pages/privacy/apps.astro (reconcile, commit locally in that repo, user deploys). 2.0.0/vc9 AAB built, user uploads (never upload). Debug APK offered at close. docs/UAT-v2.0.md merges every 65–68 human_verification item; 67's Compete-OFF network capture is release-blocking.
-- Then milestone lifecycle: audit, complete, cleanup; push master + tags (authorized; retry once, never force).
-- Run conventions: executors = gsd-executor in worktrees, one Agent per message; STOP the wtwatch Monitor before each Agent dispatch (its git polling caused 2 "could not verify git identity" worktree failures), re-arm after (scratchpad wtwatch.sh <label> 30). Merge by hand: git merge --no-ff -q, git worktree remove -f -f, prune, branch -D. Leftover locked worktree folders under .claude/worktrees/ are harmless — delete at milestone close. Worktree npm test shows 7 known CRLF doc-ledger failures (pass on master). Don't run state.planned-phase while another phase is executing (it resets Current Position).
-- Backlog 999.9 captured (Play Console edge-to-edge / deprecated window APIs / large-screen orientation). Theme.mp3 todo stays after v2.0.
+- Phases 65–69 COMPLETE (VERIFICATION passed each). v2.0 audit written (.planning/v2.0-MILESTONE-AUDIT.md, tech_debt, 26/26) — the USER STOPPED the lifecycle there (no archive, no push). Resume the lifecycle (re-audit incl. Phase 70 → complete → cleanup → push) only after Phase 70 closes and the user agrees.
+- 2.0.0/vc9 AAB built + tagged v2.0.0-play9 (local, not pushed, not uploaded). Debug APK 2.0.0 installed on the Pixel 7 via adb install -r (same debug signer, save kept; phone had 1.8.0 debug). Device adb: %LOCALAPPDATA%/Android/Sdk/platform-tools/adb.exe, connected over wireless (mdns 10.0.0.175).
+- Phase 70 Device-Round Polish (POLISH-01..04, CONTEXT D-01..D-15) added to v2.0 from the user's Pixel 7 feedback. Planner (opus) running; it reuses the draft quick plans 260924-56z (☰ account face + account rows + Save&quit/Abandon into ☰) and 260924-5b8 (LINEAGE race+sub selector, top 10) — those quick tasks will NOT be executed separately.
+- POLISH-01 (title theme) is quick task 260924-51h, executor running in a worktree (streams via HTMLAudioElement → WebAudio gain; plays from launch with no tap on native; continues through the roller; fades at the map). MERGE CAVEAT: the main checkout has UNTRACKED copies of sfx/theme.mp3 and .planning/quick/260924-51h-*/260924-51h-PLAN.md that the branch commits — move them to the scratchpad before `git merge`, then diff/verify (sha256 0e3bed0a820e6ed0…). After 51h: STATE quick-tasks table row, npm test should be 0 failures.
+- After Phase 70's last merge (D-15): npm test, rebuild debug APK (theme.mp3 now tracked, so no set-aside), adb install -r, fold device checks into docs/UAT-v2.0.md, 70-VERIFICATION, phase.complete 70. Then ask the user about the lifecycle and about re-cutting the AAB (vc9 not uploaded yet? ask).
+- Open user question: title-chip "?" face → person icon or SIGN IN label? (unanswered; leave as is).
+- Run conventions: gsd-executor in worktrees, one Agent per message; STOP the wtwatch Monitor before dispatching worktree agents, re-arm after; merge by hand (git merge --no-ff -q, git worktree remove -f -f, prune, branch -D); leftover locked worktree folders are harmless; worktree npm test shows 7 CRLF doc-ledger failures; bridge-doc --check fails on master only via CRLF.
 
 Resume file: None
 
