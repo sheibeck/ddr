@@ -41,7 +41,7 @@ This is a hard lockout from a whole category of loot. The user wants a risk inst
   - Potions, staves, wands and use-activated cloaks/jewelry are clear cases.
   - Worn passive items (armor, rings that only sit there) aren't "used", so they're probably exempt.
   - Torches and other `kind:"tool"` kit are mundane, so they're exempt, as today.
-  - Scrolls: covered by the new thief scroll rule (RULES-10). Every Thief, Pilfer included, gets a 50% read chance and the scroll is always consumed. Open question: does a Pilfer ALSO roll the fumble when reading, so the scroll can explode on top of failing?
+  - Scrolls: covered by RULES-10. Anyone reads a scroll on an intelligence roll, Magic Users always succeed, and the scroll is always consumed. Open question: does a Pilfer ALSO roll the fumble when reading, so the scroll can explode on top of failing?
 - The narration: a new event (e.g. `pilferFumbled`) with an `EVENT_NARRATION` entry, in the voice. The user's framing is "constantly fiddling with things like an ADHD teenager"; keep it family-friendly and don't name a diagnosis in player text. Something like "fiddled with it until it came apart".
 
 **Engine gate:**

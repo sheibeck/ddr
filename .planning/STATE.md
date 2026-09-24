@@ -90,7 +90,7 @@ Last activity: 2026-09-24 — ROADMAP.md created for v2.1 (Phases 72-81, 44/44 r
 ### Pending Todos
 
 - 2026-09-24 — **Pilfer bad becomes fumbling** (user, added to v2.1 as RULES-09, Phase 75): drop the heal-only lockout; a Pilfer uses magic items normally but a rolled 1 destroys the item — `todos/pending/2026-09-24-pilfer-bad-becomes-fumbling-destroys-a-magic-item-on-a-1.md`
-- 2026-09-24 — **Thieves read scrolls at 50%** (user, added to v2.1 as RULES-10, Phase 75): any Thief may attempt a scroll, 50% success, scroll consumed either way — `todos/pending/2026-09-24-thieves-read-scrolls-at-50-percent-scroll-always-consumed.md`
+- 2026-09-24 — **Anyone reads scrolls on an intelligence roll** (user, v2.1 RULES-10, Phase 75): Magic Users always succeed, everyone else rolls d20 vs intel, scroll consumed either way — `todos/pending/2026-09-24-anyone-reads-scrolls-on-an-intelligence-roll-scroll-always-consumed.md`
 - 2026-09-24 — **Stairs descent fades to black** (user): fade to black while the stairs clip plays, swap floors while dark, fade in on the new level; lock input during it; reduced-motion fallback — `todos/pending/2026-09-24-stairs-descent-fades-to-black-with-the-stairs-sound-then-fades-in.md`
 - 2026-09-24 — **Settings sheet drag scrubs a volume slider** (user, on-device): a vertical drag that starts on a MASTER/MUSIC/EFFECTS slider moves the volume instead of scrolling the sheet — `todos/pending/2026-09-24-settings-sheet-drag-scrub-moves-volume-sliders.md`
 - 2026-09-24 — **Last fight-log row won't reveal its roll** (user, on-device): the bottom-most row of THE FIGHT SO FAR sheet can't be tapped to expand — `todos/pending/2026-09-24-last-fight-log-row-cannot-be-tapped-to-reveal-its-roll.md`
