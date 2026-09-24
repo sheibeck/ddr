@@ -4,6 +4,9 @@
 Play Games Services (PGS) v2 so their runs can go on the global boards. The code side ships in
 Phase 67; the console side below is yours, and can be done in parallel with development.
 
+Walk section 6 (Order of operations) top to bottom; every other section is the detail behind
+one of its steps.
+
 ## 1. What this is
 
 These are the Play Console steps only the account owner can do. Until they are done, sign-in
@@ -21,7 +24,7 @@ the order of the steps is what matters.
 2. Choose **No, my game doesn't use Google APIs** to create a new PGS project, or **Yes** to link
    the existing Google Cloud project if one was already created for this app.
 3. Save. The configuration starts out **unpublished**, which is what you want while testing
-   (see step 5).
+   (see section 5).
 
 ## 3. Credentials (the SHA-1 that matters)
 
@@ -47,7 +50,9 @@ keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androi
 
 Copy the `SHA1:` line into the second credential. A debug build and a Play build have different
 signers (the phone holds only one at a time, see `docs/RELEASING.md`); each matches its own
-credential.
+credential. The two credentials sit side by side on the same package and never interfere:
+adding the debug one does not break the Play one, and a debug build never matches the Play
+credential (or the other way round).
 
 ## 4. The APP_ID
 
@@ -58,36 +63,67 @@ credential.
    67-06). `android/app/src/main/AndroidManifest.xml` references that resource from its
    `com.google.android.gms.games.APP_ID` meta-data; nothing else needs to change.
 3. Rebuild: `npm run android:debug` for a local test build, or `npm run play:release` for the
-   next internal-testing upload.
+   next Play testing-track upload (`docs/RELEASING.md`).
 
-With the placeholder still in place, sign-in fails as described in step 1 and the game plays on.
+With the placeholder still in place, sign-in fails as described in section 1 and the game plays
+on.
 
 ## 5. Testers
 
 While the PGS configuration is unpublished, only Google accounts on its **Testers** list can
-sign in. **Play Games Services** → **Setup and management** → **Testers** → add every account
-on the internal-testing track's tester list (and your own). Anyone else simply stays signed out.
+sign in. **Grow users** → **Play Games Services** → **Setup and management** → **Testers** →
+**Add testers**, then add every account on the closed-testing track's tester list (and any
+internal-testing testers), and your own. Anyone else simply stays signed out.
 
-## 6. What Phase 69 completes
+Instead of adding accounts one by one, the **Release tracks** tab on the same page can enable a
+whole Play release track (for example the closed-testing track) for PGS testing; that works
+the same as listing each of its testers. Google says new testers can use PGS within a couple of
+hours.
 
-This runbook is finished in Phase 69, which adds:
+**Add yourself.** An unpublished configuration with nobody on the Testers list lets nobody sign
+in, you included.
 
-- **The leaderboards (D-19):** five per season, created as described in step 7. LINEAGE and
-  GRAVEYARD get no PGS board (LINEAGE is derived from a DEEPEST sample, GRAVEYARD is local only).
-- **The cap:** PGS allows 70 leaderboards per game, for its whole lifetime. Five boards per
+## 6. Order of operations (Phase 69)
+
+These are your Play Console steps. They are recorded as deferred human items in
+`docs/UAT-v2.0.md` and never block a milestone close: the 2.0.0 build works without them
+(sign-in fails gracefully, and each board is skipped until its ID is in). Do them in this order;
+each line names the section that details it.
+
+1. Enable Play Games Services (section 2).
+2. Add the Android credential with the Play App Signing key's SHA-1, and optionally a second one
+   with the debug keystore's SHA-1 for a local debug APK (section 3).
+3. Copy the APP_ID (section 4).
+4. Add every closed-testing tester and yourself to Testers, or enable the closed-testing track
+   there (section 5).
+5. Create the five Season-1 leaderboards: DEEPEST, LEANEST, LONGEST, BUTCHERY and PURSE
+   (section 7).
+6. Send Claude the APP_ID and the five leaderboard IDs, or paste them yourself into
+   `games-ids.xml` and `content/leaderboards.js` `LEADERBOARD_IDS[1]` (sections 4 and 8).
+7. Rebuild and upload with a versionCode bump, `npm run play:release` (`docs/RELEASING.md`).
+8. Check with a tester account: sign-in, then one death on all five boards (section 11).
+9. Publish the Play Games configuration (section 12).
+10. Enter the Data safety answers from `store-listing/LISTING.md`, with the privacy URL
+    https://darktierstudios.com/privacy/apps and the delete-data URL
+    https://darktierstudios.com/privacy/delete-data (Play Console → **App content**).
+11. Later, once per season, create the next five boards and bump the season (section 9).
+
+Two facts to keep in mind while doing it:
+
+- **LINEAGE and GRAVEYARD get no PGS board (D-19).** LINEAGE is derived from a DEEPEST sample,
+  and GRAVEYARD is local only. Five boards per season, no more.
+- **The cap.** PGS allows 70 leaderboards per game, for its whole lifetime. Five boards per
   season lasts 14 seasons. Old seasons' boards are never deleted.
-- **The per-board, per-season leaderboard IDs**, pasted into `content/leaderboards.js` (step 8).
-- **Publishing** the PGS configuration, so accounts beyond the Testers list can sign in.
-- **The Data Safety answers** for Play Games sign-in and leaderboard submissions.
 
 ## 7. Leaderboards (one set of five per season)
 
 1. **Play Games Services** → **Setup and management** → **Leaderboards** → **Create
    leaderboard**, once for each row below.
-2. Name each one with its board name and season (for example *DEEPEST, Season 1*).
-3. Set **Ordering** exactly as in the table. It is fixed once the leaderboard is published and
-   cannot be changed afterwards; a wrong ordering means a new leaderboard and one fewer of the
-   70.
+2. Name each one with its board name and season, typed exactly as: *DEEPEST, Season 1*,
+   *LEANEST, Season 1*, *LONGEST, Season 1*, *BUTCHERY, Season 1*, *PURSE, Season 1*.
+3. Set **Ordering** exactly as in the table (the console may label it **Sort order**). It is
+   fixed once the leaderboard is published and cannot be changed afterwards; a wrong ordering
+   means a new leaderboard and one fewer of the 70.
 4. Leave the score format **Numeric** with no decimal places, and leave the lower and upper
    limits empty.
 5. Leave **tamper protection** on. It is on by default for new leaderboards and should stay
@@ -102,7 +138,7 @@ This runbook is finished in Phase 69, which adds:
 | PURSE | `gold` | Larger is better | the gold carried, as is |
 
 The number the console shows is an ordering key, not what players see. Rows read their
-displayed values (floor, steps, day, kills, gold and the rest) from the score tag (step 10).
+displayed values (floor, steps, day, kills, gold and the rest) from the score tag (section 10).
 
 **The LEANEST limit.** One integer cannot also break ties by depth, so two runs with the same
 squares-per-floor rate rank equally whatever floor they reached. This is accepted: the local
@@ -114,7 +150,7 @@ board still breaks that tie by depth.
 2. Paste each ID into `content/leaderboards.js`, under `LEADERBOARD_IDS[season]`, replacing
    that board's `PLACEHOLDER_` value (for example `PLACEHOLDER_DEEPEST_S1` becomes the DEEPEST
    leaderboard's ID).
-3. Rebuild and upload as in step 4.
+3. Rebuild and upload as in section 4.
 
 A board whose ID is still a placeholder is skipped silently: nothing is submitted to it (runs
 stay queued for it), and its global view says the board has not opened yet. So the IDs can go
@@ -124,15 +160,16 @@ in one at a time.
 
 When a balance change moves the depth curve (D-15):
 
-1. Create five new leaderboards in the console, as in step 7, named for the new season.
+1. Create five new leaderboards in the console, as in section 7, named for the new season.
 2. In `content/leaderboards.js`, add a new `LEADERBOARD_IDS` entry for the next season number
-   with the five new IDs (step 8).
+   with the five new IDs (section 8).
 3. Bump `SEASON` in `content/season.js` and add a line to its season changelog.
 4. Never edit or delete an older season's entry. Old boards stay readable from the panel's
    season picker and are never written again.
 
 The unit suite fails if `SEASON` has no `LEADERBOARD_IDS` entry, so step 2 cannot be forgotten.
-Remember the cap: 70 leaderboards per game, so five per season lasts 14 seasons.
+Remember the cap: 70 leaderboards per game, so five per season lasts 14 seasons. The fourteenth
+season takes boards 66 to 70, the last five; there is no fifteenth set of five.
 
 ## 10. How the score tag is built (Phase 68)
 
@@ -165,12 +202,56 @@ Every submission carries a score tag, which is where a global row's details come
 
 ## 11. How to check it worked
 
-Install a Play build (internal testing) on a device signed in with a tester account. After
-launch:
+Install a Play build (closed or internal testing) on a device signed in with a tester account.
+After launch:
 
 - the account chip shows the player's initials instead of the "nobody" glyph, and
 - the Leaderboards identity strip reads **PLAY GAMES · SIGNED IN**.
 
 If the chip stays the "nobody" glyph, re-check in order: the credential's SHA-1 is the app
-signing key's (step 3), the APP_ID replaced the placeholder and the build was rebuilt (step 4),
-and the account is on the Testers list (step 5).
+signing key's (section 3), the APP_ID replaced the placeholder and the build was rebuilt
+(section 4), and the account is on the Testers list (section 5).
+
+**The leaderboard check.** Once the five IDs are in and the build is rebuilt (section 8), one
+tester death appears on all five boards. In the console, each board's score view shows the
+run's v1 tag, for example `v1.2.8.3.0.7.22.431.19.4688.1180.Hilda_Ferrow` (a level 3 Dwarven
+Pickpocket killed in combat on floor 7, day 22, after 431 steps, 19 kills and 4,688 gold). That
+run's scores are:
+
+| Board | Score | Why |
+|---|---|---|
+| DEEPEST | 6,999,569 | 7 × 1,000,000 − 431 |
+| LEANEST | 61,571 | 431 ÷ 7 × 1,000, rounded: the squares-per-floor rate times 1,000 |
+| LONGEST | 22,007 | 22 × 1,000 + 7 |
+| BUTCHERY | 19,007 | 19 × 1,000 + 7 |
+| PURSE | 4,688 | the gold, as is |
+
+If a board shows nothing, check that its ID replaced its placeholder (section 8); a board
+still on a placeholder is skipped silently.
+
+## 12. Publish the Play Games configuration
+
+1. Play Console → **Delve, Die, Repeat** → **Grow users** → **Play Games Services** →
+   **Setup and management** → **Publishing**.
+2. The page lists anything missing or misconfigured that stops publishing. Fix each item, come
+   back, and follow the instructions on the page to publish.
+
+What publishing does:
+
+- Every player with the game can use Play Games sign-in and the leaderboards, not only the
+  accounts on the Testers list (or an enabled release track).
+- It is separate from publishing the app itself. It does not release a build and does not make
+  the game visible on the Play Store.
+- Changes take **up to 2 hours** to reach players. Publish at least 2 hours before a production
+  rollout, or sign-in and the boards may not work for the first players.
+- Tester data is not deleted at publish.
+- Each leaderboard's ordering cannot be changed once published (section 7), so check the table
+  before pressing publish.
+
+When: after the section 11 check passes. While the app is only on closed testing, staying
+unpublished is fine as long as every closed-track tester is on the Testers list (section 5);
+anyone else simply stays signed out.
+
+Source: Google's "Test and publish your game",
+https://developer.android.com/games/pgs/console/publish (page last updated 2026-06-16, read
+2026-09-24). The path and wording above match the page as read that day.
