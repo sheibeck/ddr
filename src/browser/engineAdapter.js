@@ -128,6 +128,13 @@ let missSeq = 0;
 let bests = null;
 let deathRecord = null;
 
+// Phase 66 (BOARD-02, D-08/D-15): the in-memory { graves, total } the
+// Leaderboards panel and the title's VIEW THE DEAD gate read; adapter-owned
+// cross-run data, never GameState (mirrors `bests`'s posture above). Null
+// until loadGraveyard() runs. Replaced (never mutated) on every change so an
+// earlier reference stays a stable snapshot.
+let graveyard = null;
+
 /** getState() — the adapter's current engine GameState (or null before boot). */
 export function getState() {
   return currentState;
@@ -182,6 +189,61 @@ export async function loadBests() {
  */
 export function getBests() {
   return bests;
+}
+
+/**
+ * loadGraveyard() — Phase 66 (BOARD-02, D-08/D-15): loads the durable
+ * GRAVE_KEY stones and GRAVE_TOTAL_KEY lifetime count into the in-memory
+ * { graves, total } snapshot getGraveyard() serves. Never rejects: corrupt
+ * JSON, a non-array value, or a storage read that throws all resolve to
+ * { graves: [], total: 0 }. `graves` keeps only plain non-array entries and
+ * is capped at GRAVE_CAP (the newest 60, since the array is stored
+ * newest-first). `total` is the stored value only when it is a non-negative
+ * integer; otherwise (missing, corrupt, negative, fractional or non-finite)
+ * it falls back to the stone count — and either way, never less than the
+ * stone count actually present (mirrors persistGrave()'s own total-fallback
+ * rule below, using the uncapped stone count exactly as that function does).
+ * Idempotent to call more than once; boot() calls this once, right after
+ * loadBests(), so the panel and the title gate can read a populated snapshot
+ * synchronously the instant boot() resolves.
+ */
+export async function loadGraveyard() {
+  try {
+    const [rawGraves, rawTotal] = await Promise.all([
+      storage.getItem(GRAVE_KEY),
+      storage.getItem(GRAVE_TOTAL_KEY),
+    ]);
+
+    let parsed;
+    try {
+      parsed = rawGraves ? JSON.parse(rawGraves) : [];
+    } catch {
+      parsed = [];
+    }
+    if (!Array.isArray(parsed)) parsed = [];
+    const filtered = parsed.filter((s) => s && typeof s === "object" && !Array.isArray(s));
+    const graves = filtered.slice(0, GRAVE_CAP);
+
+    const parsedTotal = Number(rawTotal);
+    const storedTotal =
+      rawTotal !== null && Number.isInteger(parsedTotal) && parsedTotal >= 0 ? parsedTotal : filtered.length;
+    const total = Math.max(storedTotal, filtered.length);
+
+    graveyard = { graves, total };
+    return graveyard;
+  } catch {
+    graveyard = { graves: [], total: 0 };
+    return graveyard;
+  }
+}
+
+/**
+ * getGraveyard() — the adapter's current in-memory { graves, total }
+ * snapshot, or null before the first loadGraveyard()/boot() call this
+ * session. Callers treat the returned object as read-only.
+ */
+export function getGraveyard() {
+  return graveyard;
 }
 
 /**
@@ -307,6 +369,19 @@ async function readRecentNames() {
 function recordDeath(state, cause, when) {
   try {
     const summary = buildRunSummary(state, cause, when);
+
+    // Phase 66 (BOARD-02, D-08/D-15): fold this death into the in-memory
+    // graveyard synchronously, before the bests branch below, so it runs
+    // whether or not `bests` has been loaded yet this session. recordDeath()
+    // is only reached for non-dev deaths (dispatch()'s caller below excludes
+    // dev deaths entirely), so a dev run's death never touches this.
+    if (graveyard !== null) {
+      graveyard = {
+        graves: [summary, ...graveyard.graves].slice(0, GRAVE_CAP),
+        total: graveyard.total + 1,
+      };
+    }
+
     if (bests !== null) {
       const r = updateBests(bests, summary);
       bests = r.record;
@@ -399,6 +474,15 @@ async function persistGrave(state, cause, when, summary, bestsJson) {
       storage.setItem(RECENT_NAMES_KEY, JSON.stringify(recent)),
     ];
     if (bestsJson !== null) writes.push(storage.setItem(BESTS_KEY, bestsJson));
+
+    // Phase 66 (BOARD-02, D-08/D-15): a death that raced ahead of boot()'s
+    // loadGraveyard() (this function's own lazy `bests` path above, mirrored
+    // here) leaves `graveyard` still null; seed it from the graves/total this
+    // function just computed so the in-memory view never lags storage.
+    if (graveyard === null) {
+      graveyard = { graves, total };
+    }
+
     await Promise.all(writes);
   } catch {
     /* private window, blocked storage — the tombstone just won't persist */
@@ -461,6 +545,10 @@ export async function boot(freshSeed) {
   // the death panel can read a synchronous "new best?" answer the very
   // first time a death happens this session.
   await loadBests();
+  // Phase 66 (BOARD-02, D-08/D-15): the Leaderboards panel and the title's
+  // VIEW THE DEAD gate read the graveyard synchronously via getGraveyard()
+  // from here on, so it must be populated before boot() resolves too.
+  await loadGraveyard();
   let raw = null;
   try {
     raw = await storage.getItem(SAVE_KEY);
