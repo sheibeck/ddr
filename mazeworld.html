@@ -1038,7 +1038,7 @@ html,body{height:100%}
 .mw-hud-wpfill.mid{background:#e8c97a}
 .mw-hud-wpfill.low{background:#e05a48}
 .mw-hud-band2{display:flex;align-items:center;gap:10px;padding:8px 14px 9px}
-.mw-hud-counters{flex:1;min-width:0;display:flex;gap:8px;align-items:baseline;overflow:hidden;flex-wrap:nowrap}
+.mw-hud-counters{flex:1;min-width:0;display:flex;gap:7px;align-items:baseline;overflow:hidden;flex-wrap:nowrap}
 .mw-hud-item{
   font-family:var(--disp);font-size:var(--mw-font-hud-label);letter-spacing:0;
   text-transform:uppercase;color:#9a8f76;
@@ -1069,6 +1069,31 @@ html,body{height:100%}
 .mw-hud-menu-btn{width:48px;height:48px;margin:-7px -8px -7px 0;padding:0;border:0;background:transparent;box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center}
 .mw-hud-menu-face{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;line-height:1;color:#e8c97a;background:#241d12;border:2px solid #6b5c3c;box-shadow:0 3px 0 #0d0b08}
 .mw-hud-menu-btn[aria-expanded="true"] .mw-hud-menu-face{background:#e8c97a;color:#14110c}
+/* Phase 67 (ACCT-01, D-05/D-07): the Play Games account chip, immediately
+   left of the ☰ inside .mw-hud-actions. The group declares no gap,
+   z-index, transform or position, so the ☰ wrap's z-index 6 still competes
+   at header level and the z-ladder above is unchanged. Width budget (see
+   test/unit/hud-menu-layout.test.js (14)): the chip's 44px hit box overlaps
+   band 2's otherwise-empty 10px gap through margin-left:-10px, so it costs
+   34px; .mw-hud-counters' gap dropped 8px -> 7px to pay back the last 3px,
+   keeping band 2 inside a 411px Pixel 7 at text size M (408.8px). The -5px
+   vertical margins keep band 2's height equal to the ☰'s outer 34px, and
+   min-height overrides the generic button's 48px floor for the same reason.
+   The chip keeps the ☰'s flat look: no press jump, no hover fill.
+   Faces (data-state on .mw-acct-face, rendered by src/browser/accountChip.js):
+   "avatar" = initials on an inline background plus the mock's gold on-ring;
+   "nobody" = a hollow square with a dim ? (deliberate, never broken);
+   "pending" = the nobody face, dimmed. */
+.mw-hud-actions{display:flex;align-items:center;flex:none}
+.mw-acct-chip{width:44px;height:44px;min-height:44px;min-width:44px;margin:-5px 0 -5px -10px;padding:0;border:0;background:transparent;box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center;flex:none}
+.mw-acct-chip:active:not(:disabled){transform:none;box-shadow:none}
+.mw-acct-chip:hover:not(:disabled){background:transparent}
+.mw-acct-face{width:34px;height:34px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mw-acct-face[data-state="avatar"]{border:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),0 0 0 1px #e8c97a}
+.mw-acct-face[data-state="nobody"]{background:transparent;border:2px solid #6b5c3c;box-shadow:none}
+.mw-acct-face[data-state="pending"]{background:transparent;border:2px solid #6b5c3c;box-shadow:none;opacity:.55}
+.mw-acct-initials{font-family:var(--disp);font-size:10px;line-height:1;color:#e6ddc6}
+.mw-acct-glyph{font-family:var(--mono);font-weight:700;font-size:15px;line-height:1;color:#6b5c3c}
 /* Resting state: invisible AND non-interactive — a closed menu can never
    swallow a map tap underneath it (T-57-16). Phase 58 (MOTION-02, D-06/
    D-07): the mock's small rise transition, onto this SAME data-open/
@@ -1344,6 +1369,13 @@ body[data-boards-entry="title"] #mw-rail{display:none}
   padding:0 24px calc(40px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;
 }
+/* Phase 67 (ACCT-01, D-06): the account chip in the title screen's
+   top-right corner, clear of the status bar (safe-area top inset), above
+   the art/scrim and .mw-title-body (z 1). margin:0 cancels the band-2
+   chip's overlap margins. The signed-out/pending faces get a dark fill here
+   only, so the hollow square still reads against the splash art. */
+.mw-title-acct{position:absolute;top:calc(12px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));right:12px;z-index:2;margin:0}
+.mw-title-acct .mw-acct-face:not([data-state="avatar"]){background:rgba(8,7,5,.72)}
 .mw-title-name{
   font-family:var(--disp);font-weight:400;font-size:clamp(20px,6vw,28px);
   line-height:1.35;color:var(--ditto);margin:0;text-wrap:balance;
@@ -1471,6 +1503,63 @@ body[data-boards-entry="title"] #mw-rail{display:none}
 .mw-settings-opt:active:not(:disabled){
   background:#e8c97a;color:#14110c;box-shadow:0 1px 0 #0d0b08;transform:translateY(2px);
 }
+/* Phase 67 (D-12): the dev row's second group (Play Games, dev) sits under
+   the start-depth options, so its label needs the row's own top spacing. */
+#mw-dev-row .mw-settings-options + .mw-settings-label{margin-top:14px}
+
+/* ---------- Account bottom sheet (Phase 67, ACCT-02, D-09/D-10) ----------
+   The legend-sheet family's chrome (.mw-legend-sheet/-scrim/-panel/-head/
+   -close, above); rows rendered by src/browser/accountChip.js into
+   #mw-acct-rows. Both this sheet and the settings sheet stack at z-index 55,
+   above the title screen (50) and the roller (51): the title chip opens the
+   account sheet from the title screen, and its Settings row opens the
+   settings sheet from there too. Every row keeps at least 44px of tap
+   height and every button a 48px floor (UX-02). The .mw-acct-row/-label/
+   -options/-opt rules copy the .mw-settings-* declarations as separate
+   rules, so the settings selectors themselves stay untouched. */
+#mw-acct-sheet,#mw-settings-sheet{z-index:55}
+.mw-acct-sheet{align-items:flex-end}
+.mw-acct-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mw-acct-rows{display:flex;flex-direction:column}
+.mw-acct-id{display:flex;align-items:center;gap:12px;padding:14px 0;min-height:44px;border-bottom:2px solid #241f16}
+.mw-acct-id .mw-acct-face{flex:none}
+.mw-acct-id-text{flex:1;display:flex;flex-direction:column;min-width:0;gap:4px}
+.mw-acct-name{font-family:var(--mono);font-weight:700;font-size:13.5px;color:#e6ddc6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mw-acct-status{font-family:var(--disp);font-size:6.5px;line-height:1.6;letter-spacing:.06em;text-transform:uppercase;color:#9a8f76}
+.mw-acct-action{
+  display:block;width:100%;min-height:48px;margin-top:14px;padding:12px 14px;
+  font-family:var(--disp);font-size:8px;letter-spacing:.08em;text-transform:uppercase;
+  color:#e8c97a;background:#1a1510;border:2px solid #6b5c3c;border-radius:0;box-shadow:0 4px 0 #0d0b08;
+}
+.mw-acct-action:hover:not(:disabled){background:#1a1510;color:#e8c97a}
+.mw-acct-action:active:not(:disabled){background:#e8c97a;color:#14110c;box-shadow:0 1px 0 #0d0b08;transform:translateY(3px)}
+.mw-acct-action:disabled{opacity:.35;color:#9a8f76;border-color:#4a4032;box-shadow:none}
+.mw-acct-help{margin:10px 0 0;font-family:var(--mono);font-weight:700;font-size:12.5px;line-height:1.35;color:#a89c82}
+.mw-acct-row{padding:14px 0;border-bottom:2px solid #241f16}
+.mw-acct-row:last-child{border-bottom:0}
+.mw-acct-label{
+  display:block;font-family:var(--disp);font-size:8px;letter-spacing:.08em;
+  text-transform:uppercase;color:#c9bda0;margin-bottom:10px;
+}
+.mw-acct-options{display:flex;gap:8px;flex-wrap:wrap}
+.mw-acct-opt{
+  flex:1;min-height:48px;min-width:64px;padding:10px 8px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  border:2px solid #4a4032;background:#1b170f;color:#c9bda0;
+  box-shadow:0 3px 0 #0d0b08;border-radius:4px;
+}
+.mw-acct-opt.active{background:#241d12;color:#e8c97a;border-color:#e8c97a}
+.mw-acct-opt:hover:not(:disabled){background:#1b170f;color:#c9bda0}
+.mw-acct-opt.active:hover:not(:disabled){background:#241d12;color:#e8c97a}
+.mw-acct-opt:active:not(:disabled){
+  background:#e8c97a;color:#14110c;box-shadow:0 1px 0 #0d0b08;transform:translateY(2px);
+}
+.mw-acct-settings{
+  display:flex;align-items:center;gap:10px;width:100%;min-height:48px;margin-top:4px;padding:13px 0;
+  text-align:left;font-family:var(--disp);font-size:7.5px;letter-spacing:0;line-height:1.6;
+  color:#e6ddc6;background:transparent;border:0;border-top:2px solid #241f16;border-radius:0;box-shadow:none;
+}
+.mw-acct-settings:hover:not(:disabled){background:transparent;color:#e6ddc6}
 
 /* Phase 21 (TUNE-04, D-13/D-22): the version row is a flex container via
    .mw-settings-row, so the `hidden` attribute alone would not hide the dev
@@ -1560,6 +1649,8 @@ body[data-boards-entry="title"] #mw-rail{display:none}
 <div id="mw-title-screen" class="mw-title-screen">
   <img class="mw-title-art" src="./assets/ddr_splash.png" alt="" aria-hidden="true">
   <div class="mw-title-scrim" aria-hidden="true"></div>
+  <!-- Phase 67 (ACCT-01, D-06): the same account chip, top-right of the title screen, clear of the safe area. -->
+  <button type="button" class="mw-acct-chip mw-title-acct" id="mw-title-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Play Games account"><span class="mw-acct-face" data-state="nobody" aria-hidden="true"><span class="mw-acct-glyph">?</span></span></button>
   <div class="mw-title-body">
     <!-- Title/tagline text intentionally omitted — the splash art (ddr_splash.png)
          already contains the game name + tagline (user directive, DR3). -->
@@ -1695,8 +1786,25 @@ body[data-boards-entry="title"] #mw-rail{display:none}
            collapsed by the :empty rule — in a normal run, because the marks
            record nothing unless state.dev is true. -->
       <div class="mw-settings-row" id="mw-settings-version-row"><span class="mw-settings-label mw-settings-version" id="mw-settings-version">Version <span id="mw-app-version">dev</span></span></div>
-      <div class="mw-settings-row" id="mw-dev-row" hidden><span class="mw-settings-label">Start at depth (dev)</span><div class="mw-settings-options"><input type="number" id="mw-dev-start-depth" min="1" max="999" value="20" inputmode="numeric" aria-label="Start depth"><button type="button" class="mw-settings-opt" id="mw-dev-start-btn">Start</button></div><div id="mw-dev-perf"></div></div>
+      <div class="mw-settings-row" id="mw-dev-row" hidden><span class="mw-settings-label">Start at depth (dev)</span><div class="mw-settings-options"><input type="number" id="mw-dev-start-depth" min="1" max="999" value="20" inputmode="numeric" aria-label="Start depth"><button type="button" class="mw-settings-opt" id="mw-dev-start-btn">Start</button></div>
+        <!-- Phase 67 (D-12): seeds the browser Play Games fake at the next launch; browser dev loop only, native ignores it. -->
+        <span class="mw-settings-label">Play Games (dev, next launch)</span><div class="mw-settings-options" data-setting="pgsDevSignedIn"><button type="button" class="mw-settings-opt" data-value="false">Signed out</button><button type="button" class="mw-settings-opt" data-value="true">Signed in</button></div><div id="mw-dev-perf"></div></div>
     </div>
+  </div>
+</div>
+
+<!-- ============ ACCOUNT BOTTOM SHEET (Phase 67, ACCT-02, D-09/D-10) ============
+     The Play Games account sheet, in the legend-sheet family's chrome
+     (.mw-legend-sheet/-scrim/-panel/-head/-close, above). Its rows are
+     rendered by src/browser/accountChip.js into #mw-acct-rows, and the title
+     text comes from content through the module script, so the markup carries
+     none. Opened by either account chip (#mw-acct-chip on HUD band 2,
+     #mw-title-acct-chip on the title screen). -->
+<div id="mw-acct-sheet" class="mw-legend-sheet mw-acct-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-acct-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-labelledby="mw-acct-title">
+    <div class="mw-legend-head"><span class="mw-acct-title" id="mw-acct-title"></span><button type="button" class="mw-legend-close" id="mw-acct-close" aria-label="Close">Close</button></div>
+    <div class="mw-acct-rows" id="mw-acct-rows"></div>
   </div>
 </div>
 
@@ -1778,6 +1886,14 @@ body[data-boards-entry="title"] #mw-rail{display:none}
              just the label+number now (see .mw-hud-rations CSS comment). -->
         <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
       </div>
+      <div class="mw-hud-actions">
+      <!-- Phase 67 (ACCT-01, D-05/D-07): the Play Games account chip sits
+           immediately left of the hamburger button. The hamburger, its
+           dropdown and its four legacy row ids are unchanged. The static
+           face below is the deliberate "nobody" first paint; the real face
+           is rendered by src/browser/accountChip.js through the module
+           script. -->
+      <button type="button" class="mw-acct-chip" id="mw-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Play Games account"><span class="mw-acct-face" data-state="nobody" aria-hidden="true"><span class="mw-acct-glyph">?</span></span></button>
       <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the hamburger menu. The four
            rows keep the legacy chip ids (mw-chip-marks, mw-chip-centre,
            btn-camp, mw-gear-btn) so the classic script's existing listener
@@ -1797,6 +1913,7 @@ body[data-boards-entry="title"] #mw-rail{display:none}
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="btn-camp"><span class="mw-hud-menu-glyph" data-glyph="camp" aria-hidden="true">&#9790;</span><span class="mw-hud-menu-label">MAKE CAMP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn"><span class="mw-hud-menu-glyph" data-glyph="settings" aria-hidden="true">&#9881;</span><span class="mw-hud-menu-label">SETTINGS</span></button>
         </div>
+      </div>
       </div>
     </div>
     <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the tap that closes the menu is
