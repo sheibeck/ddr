@@ -147,6 +147,8 @@ test("(5) the z-ladder: rail (4) < scrim (5) < menu wrap (6) < overlay (8); .mw-
     [".mw-hud", ruleFor("\\.mw-hud")],
     [".mw-hud-band2", ruleFor("\\.mw-hud-band2")],
     [".mw-stage", ruleFor("\\.mw-stage")],
+    // Phase 67 (ACCT-01): the group wrapping the account chip and the ☰ wrap.
+    [".mw-hud-actions", ruleFor("\\.mw-hud-actions")],
   ]) {
     assert.doesNotMatch(rule, /z-index/, `${selector} must declare no z-index`);
     assert.doesNotMatch(rule, /transform/, `${selector} must declare no transform`);
@@ -366,7 +368,7 @@ test("(13) BEHAVIOUR + structural: window.__mzShowTab(\"dead\") writes data-offt
 
 // ─── (14) the width budget at text size M fits a 411px Pixel 7 ──────────
 
-test("(14) the width budget at text size M fits a 411px Pixel 7 (band-2 padding/gap, counters gap, item gap, the ☰'s width minus its negative inline-end margin, COUNTER_SLOT_CH's per-id slots)", () => {
+test("(14) the width budget at text size M fits a 411px Pixel 7 (band-2 padding/gap, counters gap, item gap, the ☰'s width minus its negative inline-end margin, the account chip's footprint, COUNTER_SLOT_CH's per-id slots)", () => {
   const LABELS = ["DEPTH", "DAY", "SQUARES", "RATIONS"];
   const LABEL_ADVANCE_PX = 6.5; // Press Start 2P, 1em advance per glyph
   const NUMBER_ADVANCE_PX = 16 * 0.6; // Courier Prime Bold, 0.6em advance per digit
@@ -396,6 +398,22 @@ test("(14) the width budget at text size M fits a 411px Pixel 7 (band-2 padding/
   assert.ok(btnWidthMatch && btnMarginMatch, "☰ button width/margin not found");
   const btnFootprint = Number(btnWidthMatch[1]) - Number(btnMarginMatch[1]);
 
+  // Phase 67 (ACCT-01, D-05): the account chip immediately left of the ☰.
+  // Its footprint is width + margin-left + margin-right (the margin
+  // shorthand's 4th and 2nd values); its negative margin-left overlaps the
+  // band gap, which is still counted once. The chip's wrapping group
+  // (.mw-hud-actions) must declare no gap of its own.
+  const chipRule = ruleFor("\\.mw-acct-chip");
+  const chipWidth = Number((chipRule.match(/(?:^|;)width:(\d+)px/) || [])[1]);
+  const chipHeight = Number((chipRule.match(/(?:^|;)height:(\d+)px/) || [])[1]);
+  assert.ok(chipWidth >= 44 && chipHeight >= 44, `the account chip must be at least 44×44 (got ${chipWidth}×${chipHeight})`);
+  const chipMarginMatch = chipRule.match(/(?:^|;)margin:([^;]+)/);
+  assert.ok(chipMarginMatch, "account chip margin shorthand not found");
+  const chipMargins = chipMarginMatch[1].trim().split(/\s+/).map((v) => parseFloat(v));
+  assert.equal(chipMargins.length, 4, "the account chip's margin shorthand must carry four values");
+  const chipFootprint = chipWidth + chipMargins[3] + chipMargins[1];
+  assert.doesNotMatch(ruleFor("\\.mw-hud-actions"), /(?:^|;)gap:/, ".mw-hud-actions must declare no gap");
+
   // Slot widths: from COUNTER_SLOT_CH (in ch == digits, at NUMBER_ADVANCE_PX
   // per digit) — the shell's own CSS min-width rules must equal these.
   // Squares (m-steps) keeps the generic 5ch slot on .mw-hud-item b (D-08);
@@ -424,12 +442,15 @@ test("(14) the width budget at text size M fits a 411px Pixel 7 (band-2 padding/
       itemGaps +
       bandHPadding +
       bandGap +
+      chipFootprint +
       btnFootprint
     );
   }
 
   const totalM = totalAt(1);
   assert.ok(totalM <= 411, `band 2's width budget at M (${totalM.toFixed(1)}px) must fit a 411px Pixel 7`);
+  // eslint-disable-next-line no-console
+  console.log(`hud-menu-layout (14): band 2 at M computes to ${totalM.toFixed(1)}px of 411 (account chip footprint ${chipFootprint}px).`);
 
   const totalL = totalAt(1.25);
   // eslint-disable-next-line no-console
