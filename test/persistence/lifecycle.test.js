@@ -256,3 +256,120 @@ test("WR-02: a second registerNativeChrome() call in the same process is a no-op
     "a second call in the same process must not register any listeners on a second App instance"
   );
 });
+
+// ─── Quick task 260924-51h (R-07): onBackground / onForeground hooks ─────
+//
+// The title theme stops on background and may restart on foreground. The
+// hooks are presentation-only: they run synchronously ahead of the flush,
+// and a throwing hook must never block or break the safety-critical flush.
+
+test("260924-51h: pause calls onBackground synchronously, and still resolves only after the flush settles", async () => {
+  const fakeApp = makeFakeApp();
+  const storage = makeControllableStorage();
+  const calls = [];
+  await registerNativeChrome({
+    App: fakeApp,
+    storage,
+    getGameContext: () => ({}),
+    onBackground: () => calls.push("bg"),
+    onForeground: () => calls.push("fg"),
+  });
+  let resolved = false;
+  const p = Promise.resolve(fakeApp._listeners.get("pause")()).then(() => {
+    resolved = true;
+  });
+  assert.deepEqual(calls, ["bg"], "onBackground runs synchronously inside the pause handler");
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(resolved, false, "the pause handler still awaits the flush");
+  storage.resolveFlush();
+  await p;
+  assert.equal(resolved, true);
+});
+
+test("260924-51h: appStateChange({ isActive: false }) calls onBackground and awaits the flush", async () => {
+  const fakeApp = makeFakeApp();
+  const storage = makeControllableStorage();
+  const calls = [];
+  await registerNativeChrome({
+    App: fakeApp,
+    storage,
+    getGameContext: () => ({}),
+    onBackground: () => calls.push("bg"),
+    onForeground: () => calls.push("fg"),
+  });
+  let resolved = false;
+  const p = Promise.resolve(fakeApp._listeners.get("appStateChange")({ isActive: false })).then(() => {
+    resolved = true;
+  });
+  assert.deepEqual(calls, ["bg"]);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(resolved, false);
+  storage.resolveFlush();
+  await p;
+  assert.equal(resolved, true);
+});
+
+test("260924-51h: appStateChange({ isActive: true }) calls onForeground and does not hang", async () => {
+  const fakeApp = makeFakeApp();
+  const storage = makeControllableStorage(); // never resolves
+  const calls = [];
+  await registerNativeChrome({
+    App: fakeApp,
+    storage,
+    getGameContext: () => ({}),
+    onBackground: () => calls.push("bg"),
+    onForeground: () => calls.push("fg"),
+  });
+  await assert.doesNotReject(() => Promise.resolve(fakeApp._listeners.get("appStateChange")({ isActive: true })));
+  assert.deepEqual(calls, ["fg"]);
+});
+
+test("260924-51h: a resume listener is registered and calls onForeground", async () => {
+  const fakeApp = makeFakeApp();
+  const calls = [];
+  await registerNativeChrome({
+    App: fakeApp,
+    storage: { flush: async () => {} },
+    getGameContext: () => ({}),
+    onBackground: () => calls.push("bg"),
+    onForeground: () => calls.push("fg"),
+  });
+  assert.ok(fakeApp._listeners.has("resume"), "registerNativeChrome must register a resume listener");
+  await assert.doesNotReject(() => Promise.resolve(fakeApp._listeners.get("resume")()));
+  assert.deepEqual(calls, ["fg"]);
+});
+
+test("260924-51h: throwing hooks never make a handler throw, and pause still awaits the flush", async () => {
+  const fakeApp = makeFakeApp();
+  const storage = makeControllableStorage();
+  const boom = () => {
+    throw new Error("hook boom");
+  };
+  await registerNativeChrome({ App: fakeApp, storage, getGameContext: () => ({}), onBackground: boom, onForeground: boom });
+  let resolved = false;
+  let p;
+  assert.doesNotThrow(() => {
+    p = Promise.resolve(fakeApp._listeners.get("pause")()).then(() => {
+      resolved = true;
+    });
+  });
+  assert.doesNotThrow(() => fakeApp._listeners.get("appStateChange")({ isActive: true }));
+  assert.doesNotThrow(() => fakeApp._listeners.get("resume")());
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(resolved, false, "a throwing onBackground must not short-circuit the flush wait");
+  storage.resolveFlush();
+  await p;
+  assert.equal(resolved, true);
+});
+
+test("260924-51h: with the hooks omitted, pause, appStateChange and resume all run without throwing", async () => {
+  const fakeApp = makeFakeApp();
+  await registerNativeChrome({ App: fakeApp, storage: { flush: async () => {} }, getGameContext: () => ({}) });
+  await assert.doesNotReject(() => Promise.resolve(fakeApp._listeners.get("pause")()));
+  await assert.doesNotReject(() => Promise.resolve(fakeApp._listeners.get("appStateChange")({ isActive: false })));
+  await assert.doesNotReject(() => Promise.resolve(fakeApp._listeners.get("appStateChange")({ isActive: true })));
+  await assert.doesNotReject(() => Promise.resolve(fakeApp._listeners.get("resume")()));
+});

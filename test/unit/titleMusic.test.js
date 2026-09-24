@@ -190,6 +190,36 @@ test("titleMusic: appActive true while the title is hidden calls nothing", () =>
   assert.equal(stops.length, 0);
 });
 
+// ─── user rulings 2026-09-24: title area includes the roller; native launch ─
+
+test("titleMusic: native launch — the device opening with the title up and no gesture starts the theme (unlocked arrives on its own)", () => {
+  const { music, starts } = makeRig();
+  // boot: settings applied, title painted, still locked
+  music.update({ titleVisible: true, soundOn: true });
+  assert.equal(starts.length, 0);
+  // the launch-time native unlock lands after first paint
+  music.update({ unlocked: true });
+  assert.equal(starts.length, 1);
+});
+
+test("titleMusic: title -> roller is one continuous title-area state — no stop, no restart", () => {
+  const { music, starts, stops } = makeRig();
+  music.update(ALL_ON);
+  // the shell observes 'title hidden + roller shown' as ONE state: titleVisible stays true
+  music.update({ titleVisible: true });
+  assert.equal(starts.length, 1);
+  assert.equal(stops.length, 0);
+});
+
+test("titleMusic: roller -> map fades; a later roll (roller shown again) restarts from the top", () => {
+  const { music, starts, stops } = makeRig();
+  music.update(ALL_ON);
+  music.update({ titleVisible: false }); // roller commit lands on the map
+  assert.deepEqual(stops, [MUSIC_FADE_MS]);
+  music.update({ titleVisible: true }); // e.g. the dead Hero tab's New Character opens the roller
+  assert.equal(starts.length, 2);
+});
+
 // ─── input hygiene ───────────────────────────────────────────────────────
 
 test("titleMusic: non-boolean patch values and unknown keys are ignored; a null or non-object patch is a no-op", () => {

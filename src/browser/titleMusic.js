@@ -7,10 +7,24 @@
 // the same split as the pure halves of motion.js and sfx.js.
 //
 // DOM/audio wiring lives in mazeworld.html (a MutationObserver on the title
-// screen and the title-mode Leaderboards marker, the first-gesture unlock,
-// the Sound settings tap and the app lifecycle hooks feed update()); the
-// actual playback lives in sfx.js (startMusic / stopMusic). Like every
-// other presentation module here, nothing in this file may ever throw.
+// screen, the character roller and the title-mode Leaderboards marker, the
+// launch-time native unlock, the first-gesture unlock, the Sound settings
+// tap and the app lifecycle hooks feed update()); the actual playback lives
+// in sfx.js (startMusic / stopMusic). Like every other presentation module
+// here, nothing in this file may ever throw.
+//
+// User rulings 2026-09-24, applied during execution:
+//  - The `titleVisible` input means the whole TITLE AREA: the title screen,
+//    the character roller, or the title-mode Leaderboards panel (with the
+//    account/settings sheets over any of them). Title -> roller is one
+//    continuous state, so the track never restarts or stutters there; it
+//    fades only when the player reaches the map, and restarts from the top
+//    whenever the title area is shown again.
+//  - On native the device is opened at launch (Capacitor's WebView plays
+//    media without a gesture), so `unlocked` goes true right after first
+//    paint and the theme starts with no tap. In the browser dev loop the
+//    gesture requirement still applies and `unlocked` waits for the first
+//    tap. Either way this module only sees the boolean.
 
 // MUSIC_FADE_MS — the title-exit fade. R-04 asks for ~400–600 ms when the
 // player leaves the title for the roller or the map; reduced motion, Sound
@@ -21,9 +35,9 @@ const INPUT_KEYS = Object.freeze(["titleVisible", "unlocked", "soundOn", "appAct
 
 /**
  * shouldPlayTitleMusic(inputs) — PURE. True only when all four inputs are
- * strictly `true`: the title (or its title-mode panel) is showing, the audio
- * device has been unlocked by a gesture, Sound is on, and the app is in the
- * foreground. Anything else — a missing argument, a non-object, a truthy
+ * strictly `true`: the title area (title, roller or title-mode panel) is
+ * showing, the audio device is open (at launch on native, on the first
+ * gesture in a browser), Sound is on, and the app is in the foreground. Anything else — a missing argument, a non-object, a truthy
  * non-boolean — is false.
  */
 export function shouldPlayTitleMusic(inputs) {
@@ -52,7 +66,8 @@ function safeCall(fn, ...args) {
  *  - update(patch): copies only the four known keys, and only boolean
  *    values; then on a rising edge of shouldPlayTitleMusic calls start()
  *    once, and on a falling edge calls stop(ms). ms is MUSIC_FADE_MS only
- *    when the title alone went away (unlocked, soundOn and appActive still
+ *    when the title area alone went away — the player reached the map —
+ *    (unlocked, soundOn and appActive still
  *    true) and reduced() is not true; every other falling edge is stop(0),
  *    because background, Sound Off and device loss must cut at once.
  *    Returns isPlaying().

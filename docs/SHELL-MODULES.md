@@ -296,6 +296,41 @@ without a device.
 
 `window.__mzPlacement` is the one new bridge (see the table below).
 
+### Title music (quick task 260924-51h)
+
+**Controller.** `src/browser/titleMusic.js` is the pure half: it exports
+`MUSIC_FADE_MS` (500), `shouldPlayTitleMusic` and `createTitleMusic({ start,
+stop, reduced })`. The controller is edge-triggered on four booleans:
+title area showing, device unlocked, Sound on and app active. On the rising
+edge it calls `start()`. On the falling edge it calls `stop(ms)`, with a fade
+only when the player reaches the map and a cut at once under reduced motion,
+Sound Off or background.
+
+**Player.** `src/browser/sfx.js` exports `MUSIC_IDS` (`["theme"]`),
+`MUSIC_GAIN` (0.5), `isSfxUnlocked`, `startMusic` and `stopMusic`. The theme
+streams through one looping media element. That element is routed once
+through `createMediaElementSource` into a music gain node on the one-shots'
+device, so it shares the Sound gate, the master level and the teardown.
+`stopAllSfx` and the Sound-Off teardown also cut it.
+
+**Shell.** `mazeworld.html` declares `titleMusic`, `titleMusicShowing`,
+`syncTitleMusic`, `unlockAudioAndSync` (the file's one `unlockSfx(` call) and
+`setAppActive`. Its inputs come from four places:
+
+- One `MutationObserver(syncTitleMusic)` watches `#mw-title-screen[hidden]`,
+  `#mw-roller-screen[hidden]` and `body[data-boards-entry]`. The title area
+  is the title, the roller and the title-mode Leaderboards panel, so the
+  title functions stay untouched.
+- The first-gesture listener and the Sound settings row.
+- A `visibilitychange` listener.
+- On native, a launch-time unlock one frame after first paint.
+
+**Lifecycle.** `registerNativeChrome` takes two optional hooks,
+`onBackground` and `onForeground`, which the shell wires to `setAppActive`.
+A throwing hook never breaks the storage flush.
+
+There is no new bridge.
+
 ## What stays shared
 
 `src/browser/viewModels.js` keeps the view models more than one surface
