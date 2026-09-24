@@ -322,7 +322,12 @@ test("(f) paintConditions: createElement(button), data-tone from CONDITION_TONE 
   // verbatim as the ternary's else branch.
   assert.match(region, /btn\.dataset\.tone = cn\.key === "ether" && window\.__mzEther\?\.inStone\(S\)/);
   assert.match(region, /CONDITION_TONE\[cn\.key\] \|\| \(cn\.polarity === "bad" \? "bad" : "good"\)/);
-  assert.match(region, /guardTap\(btn, \(\) => window\.mzRailLine\?\.\(/);
+  // Phase 71 (D-16, R-29): the chip has its own arm guard (guardInfoTap +
+  // condArmed) and two branches: the combat-legal condition card while the
+  // combat screen is up, else the unchanged typed line card.
+  assert.match(region, /guardInfoTap\(btn, \(\) => \(combatScreenUp\(\)/);
+  assert.match(region, /\? window\.mzConditionCard\?\.\(label\.toUpperCase\(\), explainText\)/);
+  assert.match(region, /: window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·"\)\), condArmed\);/);
   // Phase 39 (GEAR-02/GEAR-05), Plan 05: the tap explanation now routes
   // through explainCondition(cn, label) — the item-sourced-chip-aware
   // wrapper around the plain CONDITION_EXPLAIN[cn.key] fallback (which

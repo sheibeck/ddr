@@ -552,6 +552,41 @@ export function railLineCard(title, line, tone, hold, icon = "·", iconKey = nul
   return { icon, iconKey, title, lines: [{ text: line, roll: null }], tone, hold };
 }
 
+/**
+ * COMBAT_CARD_KINDS — Phase 71 (D-16, R-28): the only card kinds that show
+ * over the combat screen. The v1.4 ruling stands for every other card (the
+ * fight log is combat's feedback surface, so the rail hides while a fight
+ * owns the screen). "foe" is 71-04's long-press foe details card; "cond" is
+ * the hero status-chit card a chip tap raises mid-fight. The shell's
+ * renderRail reads isCombatCard (through window.__mzRailVM) for its hidden,
+ * data-over/lift and hold decisions.
+ */
+export const COMBAT_CARD_KINDS = Object.freeze(["foe", "cond"]);
+
+/**
+ * isCombatCard(card) — true only for an object whose `kind` is one of
+ * COMBAT_CARD_KINDS. null, a string, a missing kind and any other kind are
+ * false. Never throws (a throwing `kind` getter reads as false).
+ */
+export function isCombatCard(card) {
+  try {
+    return !!card && typeof card === "object" && COMBAT_CARD_KINDS.includes(card.kind);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * conditionCard(title, line) — Phase 71 (D-16, R-28): the hero status-chit
+ * card for the combat screen. It is exactly the chip's out-of-combat line
+ * card (railLineCard with tone "info", the default hold and the "·" icon)
+ * plus `kind: "cond"`, so the text is the same sentence from the same
+ * source; only the kind lets it show over the fight. Pure.
+ */
+export function conditionCard(title, line) {
+  return { ...railLineCard(title, line, "info", RAIL_HOLD.default, "·"), kind: "cond" };
+}
+
 // COUNT_WORDS — Phase 37 (GEAR-04): the small-number words wornReconcileCard
 // spells out ("two rings", not "2 rings"); a count of seven or more falls
 // back to the plain digit (index 0 is unused — a report entry's bagged

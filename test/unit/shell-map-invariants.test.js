@@ -207,9 +207,12 @@ test("MAP-08: none of the file-wide guarded ids carry a bare .onclick assignment
   }
 });
 
-test("MAP-08: condition chips are wired through guardTap", () => {
+test("MAP-08: condition chips are wired through an arm guard (Phase 71 D-16: guardInfoTap with condArmed)", () => {
   const region = fnRegion("function paintConditions(c) {");
-  assert.match(region, /guardTap\(btn,/);
+  // Phase 71 (D-16, R-29): the chips keep the Phase 32 arm window, now
+  // measured from their own chip-set change so a fight never locks them.
+  assert.match(region, /guardInfoTap\(btn,/);
+  assert.match(region, /, condArmed\);/);
 });
 
 test("MAP-08: the four map chips' listeners exist exactly once each", () => {

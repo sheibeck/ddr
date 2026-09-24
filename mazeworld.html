@@ -3220,6 +3220,10 @@ function explainCondition(cn, label) {
 // tap puts CONDITION_EXPLAIN[cn.key] in the rail as an info card, instead of
 // the old innerHTML-built, non-interactive span.
 let lastCondKeyShown = "";
+// Phase 71 (D-16, R-29): the chips' own arm stamp — the Phase 32 250 ms
+// window measured from the last chip-SET change (the key gate below), read
+// by condArmed(). Never the encounter's encRenderedAt, never the beat gate.
+let condArmedAt = 0;
 function paintConditions(c) {
   const host = document.getElementById("mm-conditions");
   if (!host) return;
@@ -3315,13 +3319,20 @@ function paintConditions(c) {
     const explainText = darkWaiver
       ? `The dark is on you, but ${WAIVER_LABEL[darkWaiver]} is keeping it off the map. ${CONDITION_EXPLAIN.darkness}`
       : explainCondition(cn, label);
-    guardTap(btn, () => window.mzRailLine?.(label.toUpperCase(), explainText, "info", 8400, "·"));
+    // Phase 71 (D-16, R-28/R-29/R-31): while the combat screen is up the
+    // same sentence goes on the combat-legal condition card (the rail is
+    // otherwise hidden in a fight); anywhere else it is the unchanged typed
+    // line card. The chip's own guard (condArmed) keeps it readable mid-round.
+    guardInfoTap(btn, () => (combatScreenUp()
+      ? window.mzConditionCard?.(label.toUpperCase(), explainText)
+      : window.mzRailLine?.(label.toUpperCase(), explainText, "info", 8400, "·")), condArmed);
   }
   // Key-gated: only re-arm when the chip SET actually changed, not on every
   // repaint after a step — armEncounterButtons() is cheap but pointless
   // churn otherwise (mirrors the RAIL's own seq-gating discipline).
   if (keyList !== lastCondKeyShown) {
     lastCondKeyShown = keyList;
+    condArmedAt = Date.now();
     armEncounterButtons();
   }
   host.hidden = false;
@@ -3715,6 +3726,42 @@ function guardTap(btn, fn) {
   tapGuards.set(btn, encArmed);
   btn.setAttribute("aria-disabled", "true");
   btn.onclick = () => { if (encArmed()) fn(); };
+}
+// Phase 71 (D-16, R-31): "the combat screen is up" — a live fight, OR the
+// last round's playback, which runs after the engine has already cleared
+// S.combat while the combat screen is still showing. It drives the status
+// chit's routing and renderRail's data-over/lift and hold decisions, so a
+// card raised during that last playback stays over the combat screen.
+function combatScreenUp() {
+  return !!(S && (S.combat || window.__mzBeat?.active?.()));
+}
+
+// Phase 71 (D-16, R-29): the status chits' arm guard. Reading a status is an
+// inspection (like 71-04's long press, R-17), not a decision: the card
+// rises at once and the round keeps playing. So the chips do NOT use
+// encArmed(), which is false for a whole beat and re-arms at every beat
+// line's render; they get the same Phase 32 window measured from their own
+// chip-set change (condArmedAt, stamped in paintConditions' key gate).
+// Fail-open: no guards bridge, or a throw, reads as armed.
+function condArmed() {
+  try {
+    return window.__mzInputGuards ? window.__mzInputGuards.isArmed(condArmedAt, Date.now()) : true;
+  } catch {
+    return true;
+  }
+}
+
+// guardInfoTap(btn, fn, armed) — Phase 71 (D-16, R-29): guardTap's shape
+// for an INFO tap with its own arm predicate. It registers that predicate in
+// tapGuards, so the 71-07 tap sound follows the same answer the handler
+// gets (a chit tap mid-round clicks, because it acts). It stamps NO
+// aria-disabled marker: the arm sweep never covers #mm-conditions, so
+// guardTap's marker left every chip announced as disabled for good. A null
+// btn is tolerated, like guardTap.
+function guardInfoTap(btn, fn, armed) {
+  if (!btn) return;
+  tapGuards.set(btn, armed);
+  btn.onclick = () => { if (armed()) fn(); };
 }
 window.__mzTapArmed = (el) => {
   try {
@@ -4981,6 +5028,12 @@ function renderRail() {
   // live values once the fight is over. The key does not change, so a
   // repaint never re-rises, re-announces or re-arms.
   const foeCardUp = rail.card?.kind === "foe" && key === "card:" + rail.card.seq;
+  // Phase 71 (D-16, R-28): the combat-legal rules now apply to every combat
+  // card kind (rail.js COMBAT_CARD_KINDS: the foe card and the status-chit
+  // "cond" card): shown over the combat screen, lifted, shown at once, held
+  // while the combat screen is up, then the normal hold. Only the foe card
+  // is re-derived live; a condition's sentence is static text.
+  const combatCardUp = !!window.__mzRailVM?.isCombatCard?.(rail.card) && key === "card:" + rail.card.seq;
   if (foeCardUp && S.combat && window.__mzFoeInspect?.card) {
     const V = window.__mzBeat?.view?.()?.state || S;
     const liveCard = window.__mzFoeInspect.card(rail.card.foe, V);
@@ -5004,15 +5057,18 @@ function renderRail() {
   // showTab/renderEncounter predicates, while `data-shown` is what the
   // stylesheet reads to slide the overlay in and out — both are written
   // from this one predicate, in one place, so they can never drift.
-  // Phase 71 (D-10, R-14): the foe card is the one exception to "combat
-  // hides the rail"; every other card stays hidden in combat, as before.
-  railEl.hidden = !!((S.combat && !foeCardUp) || S.dead) || idle;
+  // Phase 71 (D-10, R-14; D-16, R-28): the combat cards (the foe card and
+  // the status-chit card) are the one exception to "combat hides the rail";
+  // every other card stays hidden in combat, as before (the v1.4 ruling).
+  railEl.hidden = !!((S.combat && !combatCardUp) || S.dead) || idle;
   railEl.dataset.shown = railEl.hidden ? "0" : "1";
   // Phase 71 (R-14): over the combat screen the rail rises to the overlay's
   // z-index (the #mw-rail[data-over="combat"] CSS) and its bottom edge is
   // lifted to the top of the action area, measured now, so it never covers
-  // an action button. Off in every other case.
-  if (S.combat && foeCardUp && !railEl.hidden) {
+  // an action button. Off in every other case. Phase 71 (D-16, R-31): keyed
+  // on combatScreenUp(), so a combat card raised during the last round's
+  // playback (S.combat already cleared) still sits over the combat screen.
+  if (combatScreenUp() && combatCardUp && !railEl.hidden) {
     railEl.dataset.over = "combat";
     // Phase 71 (71-05, D-07): the what-happened strip sits directly above
     // #cb-act, so the card's bottom edge lifts to the strip's top when the
@@ -5141,12 +5197,12 @@ function renderRail() {
     }, vm.holdForCard ? vm.holdForCard(holdCard) : 8400);
   };
   if (isNew) {
-    if (foeCardUp) {
-      // Phase 71 (D-10, R-15): the foe card is a reference card the player
-      // asked for, so it shows at once (never typed), and while the fight
-      // goes on it holds until dismissed (no timer).
+    if (combatCardUp) {
+      // Phase 71 (D-10, R-15; D-16, R-28): a combat card is a reference card
+      // the player asked for, so it shows at once (never typed), and while
+      // the combat screen is up it holds until dismissed (no timer).
       window.__mzTypewriter?.cancel?.("rail");
-      if (!S.combat) startHold();
+      if (!combatScreenUp()) startHold();
     } else if (window.__mzTypewriter && typedTexts.some((t) => t.length)) {
       window.__mzTypewriter.type("rail", { targets: typedTargets, texts: typedTexts, ariaHost: linesEl, onDone: startHold });
     } else {
@@ -5154,8 +5210,8 @@ function renderRail() {
       // exactly today's pre-Phase-58 timing.
       startHold();
     }
-  } else if (foeCardUp && !S.combat && railTimer === null) {
-    // Phase 71 (D-10): the fight ended with the foe card up — its normal
+  } else if (combatCardUp && !combatScreenUp() && railTimer === null) {
+    // Phase 71 (D-10; D-16): the fight ended with a combat card up — its normal
     // line-scaled hold starts from this moment, once (a later repaint finds
     // the timer running and leaves it alone).
     startHold();
@@ -5926,7 +5982,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // fightLog.js, folding the same linesForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
   // destinations — rail or fight log").
-  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, holdForCard, railDismissKind, wornReconcileCard, abilityPoolCard } from "./src/browser/rail.js";
+  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, holdForCard, railDismissKind, conditionCard, isCombatCard, wornReconcileCard, abilityPoolCard } from "./src/browser/rail.js";
   // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
   // view-models and the four-action-grid/submenu view-model, bridged onto
   // window.__mzCombatVM below for the classic renderEncounter to consume.
@@ -6331,7 +6387,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // set-equality is untouched. renderRail()'s auto-clear timer reads
   // holdForCard; the guarded #mw-rail body-tap handler (classic script,
   // next to window.mzRailPulse) reads dismissKind.
-  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY, holdForCard, dismissKind: railDismissKind };
+  // Phase 71 (D-16, R-28): isCombatCard joins it too — renderRail's
+  // combat-legal test for the foe card and the status-chit card.
+  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY, holdForCard, dismissKind: railDismissKind, isCombatCard };
   window.__mzRail = emptyRail();
   // Phase 35 (MAP-05, decision 5) — the stair-down gate's own presentation
   // flag: { dir } while THE STAIR DOWN overlay is up, else null. Never a
@@ -6376,6 +6434,22 @@ window.__mzClassicBoot = async function classicBoot() {
     const foes = V && V.combat && V.combat.foes;
     if (!Array.isArray(foes) || !Number.isInteger(i) || i < 0 || i >= foes.length) return;
     window.__mzRail = railPush(window.__mzRail, foeDetailsCard(i, V));
+    window.renderRail?.();
+  };
+
+  // Phase 71 (POLISH-11, D-16, R-28) — the ONE combat entry for a status
+  // chit: the classic paintConditions chip calls it while the combat screen
+  // is up. It pushes the combat-legal condition card (rail.js conditionCard:
+  // the chip's own line card plus kind "cond") onto the rail and repaints —
+  // a presentation card, never a field on state, never an action, never the
+  // aim, never a skip. A no-op while the title, the roller or the
+  // title-opened panel is up, with no state, or with neither a fight nor a
+  // round still playing.
+  window.mzConditionCard = (title, text) => {
+    if (!dungeonVisible()) return;
+    const live = window.__mzState?.get?.();
+    if (!live || !(live.combat || window.__mzBeat?.active?.())) return;
+    window.__mzRail = railPush(window.__mzRail, conditionCard(title, text));
     window.renderRail?.();
   };
 
