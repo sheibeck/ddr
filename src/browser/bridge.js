@@ -382,6 +382,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find per-item bag-full gate)"]),
     purpose: "Bridges the one bag-free predicate (potions/scrolls/bags ride free) so the loot and find cards gate bag-full per item, not on the aggregate alone.",
   }),
+  __mzTapArmed: Object.freeze({
+    owner: "mazeworld.html (classic)",
+    consumers: Object.freeze(["mazeworld.html (module: the UI-tap capture-phase click listener — createUiTapSound's armedFor)"]),
+    purpose: "Phase 71 D-15/R-24: the tap sound asks a guardTap-wrapped element's own arm guard, so a swallowed tap is silent and a stale arm marker never mutes a live button.",
+  }),
   __mzTapStep: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: map pointer handlers — resolveStep/inspectCell/HOLD_MS/TAP_MAX_TRAVEL_PX)"]),

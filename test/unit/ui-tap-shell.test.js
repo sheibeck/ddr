@@ -180,7 +180,7 @@ test("ui-tap-shell pins (D-15): the pointerdown listener only unlocks", () => {
 test("ui-tap-shell pins (D-15, T-71-13): exactly one document capture-phase click listener, calling uiTapSound.onClick, never stopping or preventing", () => {
   const hits = CODE.match(/document\.addEventListener\(\s*"click"/g) || [];
   assert.equal(hits.length, 1);
-  const args = extractCallArgs(CODE, 'document.addEventListener("click", ');
+  const args = extractCallArgs(CODE, "document.addEventListener(", CODE.indexOf('document.addEventListener("click", '));
   assert.ok(args, "the tap listener is written on one line: document.addEventListener(\"click\", …");
   assert.match(args, /\(e\) => uiTapSound\.onClick\(e\)/);
   assert.match(args, /\{ capture: true \}/);

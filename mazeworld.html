@@ -3697,11 +3697,33 @@ function armEncounterButtons() {
 // attribute and is never referenced by CSS, so there is no 250 ms flicker).
 // Tolerates a null btn so optional action-bar buttons keep their existing
 // `if (x) …` null-guard call sites.
+//
+// Phase 71 (D-15, R-24): tapGuards records every element guardTap wraps with
+// the SAME predicate its onclick checks (encArmed), and window.__mzTapArmed(el)
+// asks it at click time — the same task as the handler, so the same answer.
+// The UI tap sound (the module's capture-phase click listener) follows that
+// answer: a tap the guard swallows is silent. It never trusts the
+// aria-disabled marker for a guarded element, because the marker goes stale:
+// paintConditions re-stamps it on every #mm-conditions chip on every paint,
+// and the arm sweep never clears #mm-conditions, so a marker rule would mute
+// every condition chip for good. An element guardTap never wrapped answers
+// null (the sound then reads its own disabled/aria-disabled), and a throw
+// answers null too.
+const tapGuards = new WeakMap();
 function guardTap(btn, fn) {
   if (!btn) return;
+  tapGuards.set(btn, encArmed);
   btn.setAttribute("aria-disabled", "true");
   btn.onclick = () => { if (encArmed()) fn(); };
 }
+window.__mzTapArmed = (el) => {
+  try {
+    const guard = el && typeof el === "object" ? tapGuards.get(el) : undefined;
+    return typeof guard === "function" ? guard() === true : null;
+  } catch {
+    return null;
+  }
+};
 
 // Phase 34 (CSCR-04/08) — the fight log's screen-reader announcer.
 // #enc-round-live is a PERSISTENT sr-only node (a sibling of #enc-body,
@@ -5981,7 +6003,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 56 (AUD-01..06) — the whole audio layer lives in src/browser/sfx.js;
   // this module script calls it directly (dispatchWithNarration and
   // hapticForEvents both live here too, so no window.__mz* bridge is needed).
-  import { unlockSfx, applySfxSettings, playForDispatch, cuesForDispatch, playUiTap, playClipIds, startMusic, stopMusic, stopAllSfx, isSfxUnlocked } from "./src/browser/sfx.js";
+  import { unlockSfx, applySfxSettings, playForDispatch, cuesForDispatch, playUiTap, playClipIds, startMusic, stopMusic, stopAllSfx, isSfxUnlocked, sfxClipCount } from "./src/browser/sfx.js";
+  // Phase 71 (D-15) — when the UI tap sound plays: on a real click only.
+  import { createUiTapSound } from "./src/browser/uiTap.js";
   // Quick task 260924-51h — the title theme's pure play/stop controller.
   import { createTitleMusic } from "./src/browser/titleMusic.js";
   // 04-06: the Wave-1 pure geometry/icon modules — bridged onto window.*
@@ -6696,9 +6720,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // playing title theme — and never writes storage. Releasing (`change`)
   // persists once through settings.js's writeSetting, then re-applies and
   // re-renders. Only an EFFECTS release previews one ui-tap at the new level;
-  // MASTER and MUSIC releases play nothing. The capture-phase pointerdown
-  // listener below plays its tap only for buttons, so grabbing a slider
-  // makes no tap sound. volSliderValue is the shell's own inline clamp (no
+  // MASTER and MUSIC releases play nothing. The capture-phase click listener
+  // below (71-07, D-15) plays its tap only for buttons, and a range input is
+  // not a button, so grabbing a slider makes no tap sound. volSliderValue is the shell's own inline clamp (no
   // copy of any settings.js / sfx.js export).
   function volSliderValue(input) {
     const n = Math.round(Number(input?.value));
@@ -6786,30 +6810,57 @@ window.__mzClassicBoot = async function classicBoot() {
     syncTitleMusic();
   }
 
-  // Phase 56 (AUD-01..05) — the first-gesture unlock + delegated UI tap.
+  // Phase 56 (AUD-01..05) — the first-gesture unlock.
   // One capture-phase pointerdown listener on document, bound to the first
   // tap ANYWHERE in the session (deliberately not to one specific button —
   // a player who taps something else first would otherwise get a silent
   // session): the unlock call below self-guards on the Sound setting and
   // on already being open, so calling it unconditionally on every tap is
   // safe and the app is simply silent-but-errorless before the first
-  // gesture and while Sound is Off. The map is a <canvas>, never a
-  // `button`, so a map tap never matches the second check below — a move
-  // plays that move's own walk clip via the dispatch seam instead, so a
-  // single step never produces two sounds. Quick task 260924-51h: the same
+  // gesture and while Sound is Off. The unlock stays on pointerdown because
+  // it needs the earliest gesture. Quick task 260924-51h: the same
   // first-gesture unlock starts the title theme when the title area is up
   // (in the browser dev loop — native already opened the device at launch,
   // and there a tap only wakes a device or loop the WebView left silent). If
   // the title area is gone by the time the unlock lands (ENTER to a resumed
   // delve as the very first tap), the sync sees that and nothing starts (R-05).
+  //
+  // Phase 71 (POLISH-10, D-15) — the UI tap sound plays on the click, not the
+  // touch. It used to tick here on pointerdown, which fires before the
+  // browser knows a tap from a scroll, so starting a scroll on any button
+  // clicked. A scroll ends in pointercancel and never fires click, so the
+  // capture-phase click listener below is silent for it. src/browser/uiTap.js
+  // decides the rest:
+  // - R-24: a disabled, data-locked or aria-disabled (unguarded) button is
+  //   silent; a guardTap-wrapped button follows its own guard through
+  //   window.__mzTapArmed, never its stale arm marker.
+  // - R-25: mid-beat, a tap inside #enc-panel is beatHurryTap's skip, silent.
+  // - R-26: one sound per press. The decision is made in the capture phase and
+  //   the tick plays one task later (setTimeout, never a microtask) only if
+  //   the press's own handlers started no one-shot (sfxClipCount) and no
+  //   round (GO DOWN plays only `stairs`, STRIKE only its round).
+  // - R-27: 71-04's long-press suppressor is a WINDOW capture-phase click
+  //   listener, so it stops a long press's trailing click before this
+  //   document listener ever sees it.
+  // The map is a <canvas>, never a button, so a map tap never matches: a
+  // move plays its own walk clip via the dispatch seam. Keyboard and
+  // TalkBack activation fire click, so they gain the sound (D-15 accepts it).
+  // The listener only reads: it never stops, prevents or dispatches.
+  const uiTapSound = createUiTapSound({
+    play: () => playUiTap(),
+    clipCount: () => sfxClipCount(),
+    beatActive: () => !!window.__mzBeat?.active?.(),
+    armedFor: (el) => window.__mzTapArmed?.(el) ?? null,
+    schedule: (fn) => setTimeout(fn, 0),
+  });
   document.addEventListener(
     "pointerdown",
     (e) => {
       unlockAudioAndSync();
-      if (e.target?.closest?.("button, [role=\"button\"]")) playUiTap();
     },
     { capture: true },
   );
+  document.addEventListener("click", (e) => uiTapSound.onClick(e), { capture: true });
 
   try {
     applySettings(await readSettings());

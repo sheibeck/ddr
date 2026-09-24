@@ -111,7 +111,9 @@ test("title-music-shell (5): unlockSfx( occurs exactly once, inside unlockAudioA
 // (test/unit/ui-tap-shell.test.js), so the first-gesture pointerdown
 // listener now only unlocks.
 test("title-music-shell (6): the first-gesture listener unlocks through unlockAudioAndSync and plays no tap (the tap moved to click, D-15)", () => {
-  const idx = html.search(/"pointerdown",\s*\(e\) => \{/);
+  // Anchored on the unlock itself: 71-04's #enc-panel pointerdown listener
+  // also opens with `"pointerdown", (e) => {` and sits earlier in the file.
+  const idx = html.search(/"pointerdown",\s*\(e\) => \{\s*unlockAudioAndSync\(\);/);
   assert.ok(idx > -1);
   const region = html.slice(idx, html.indexOf("{ capture: true }", idx));
   assert.ok(region.includes("unlockAudioAndSync();"));

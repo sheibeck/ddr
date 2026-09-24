@@ -412,6 +412,24 @@ the level live through `applySettings` without writing storage. Releasing
 persists once through `writeSetting`, and an EFFECTS release previews one
 ui-tap. There is no new bridge.
 
+**The tap sound on a real press (Phase 71, POLISH-10, D-15).** The audio
+unlock stays on the capture-phase `pointerdown` listener on `document` (the
+earliest gesture); the UI tap moved to a capture-phase `click` listener on
+`document`, so a scroll that starts on a button (pointerdown, then
+pointercancel, no click) is silent. `src/browser/uiTap.js` (pure) exports
+`UI_TAP_SELECTOR`, `uiTapShouldPlay` and `createUiTapSound`. A disabled,
+`data-locked` or (unguarded) `aria-disabled` button is silent; a
+guardTap-wrapped button follows its own arm guard through the classic
+`tapGuards` registry and `window.__mzTapArmed`, never its stale arm marker
+(R-24: `#mm-conditions` chips keep `aria-disabled` forever). Mid-beat, a tap
+inside `#enc-panel` is the skip and is silent (R-25). 71-04's window
+capture-phase suppressor stops a long press's trailing click before the tap
+listener sees it (R-27). `sfx.js` exports `sfxClipCount()`, a count of
+started one-shot voices (never the theme loop): the tap is decided in the
+capture phase and played one task later only if the press's own handlers
+started no clip and no round, so GO DOWN and STRIKE make one sound each
+(R-26). Keyboard and TalkBack activation fire click and gain the sound.
+
 ### Combat foe conditions and the action lock (Phase 71)
 
 D-14: every condition an ability, spell or item puts on a foe comes from ONE
@@ -627,6 +645,7 @@ map disagree, or when the shell/modules define a name the map lacks.
 | __mzTables | mazeworld.html (module) | mazeworld.html (classic: mzCombatReport — level roman numerals)<br>mazeworld.html (classic: renderEncounter — level roman numerals in the graves stone / Joiner card) | Bridges the one read-only content table (ROMAN) the classic script still cannot import — RACE_NOTE/CLASS_NOTE/SUB_NOTE/THRESHOLDS/WEAPONS/FIGHTER_SKILLS/THIEF_SKILLS/RACES moved to gearTab.js/heroTab.js, which import content/ directly. |
 | __mzTabs | mazeworld.html (module) | mazeworld.html (classic: paint() — one call per tab surface; renderEncounter() — the store branch) | The tab modules' render functions, one frozen object — gear + hero + store, the phase's final shape — the __mzControls/__mzTables precedent for a module-assigned, classic-read bridge. |
 | __mzTakesBagSlot | mazeworld.html (module) | mazeworld.html (classic: renderEncounter — loot/find per-item bag-full gate) | Bridges the one bag-free predicate (potions/scrolls/bags ride free) so the loot and find cards gate bag-full per item, not on the aggregate alone. |
+| __mzTapArmed | mazeworld.html (classic) | mazeworld.html (module: the UI-tap capture-phase click listener — createUiTapSound's armedFor) | Phase 71 D-15/R-24: the tap sound asks a guardTap-wrapped element's own arm guard, so a swallowed tap is silent and a stale arm marker never mutes a live button. |
 | __mzTapStep | mazeworld.html (module) | mazeworld.html (classic: map pointer handlers — resolveStep/inspectCell/HOLD_MS/TAP_MAX_TRAVEL_PX) | Bridges the pure tap-to-move step resolver and hold-inspect builder so map taps and holds share one gesture-to-action rule. |
 | __mzToolIndex | mazeworld.html (module) | mazeworld.html (classic: the dark rail card's USE TORCH button) | Bridges the engine's tool-slot resolver so the dark card's USE TORCH tap dispatches the correct, freshly-resolved bag index. |
 | __mzTypewriter | mazeworld.html (module) | mazeworld.html (classic: renderRail — types a fresh card's lines/rolls, adopts an in-flight block on a same-card re-render, starts the hold from the block's own onDone)<br>mazeworld.html (classic: the #mw-rail body-tap handler — a tap on typing text completes it instead of dismissing)<br>mazeworld.html (classic: renderMajorOverlay — types the encounter/stair overlay's line once per content, adopts it on a same-content re-render) | Bridges src/browser/typewriter.js's one shared, keyed typewriter (Phase 58, MOTION-04: rail cards, the encounter overlay's line, and — Plan 58-06 — fight-log rows type on at 12ms/char, capped at 700ms/block) so the classic renderers type without a second copy of the schedule; a caller's own announcer/description node always carries the complete text at once, regardless of typing (D-16). |
