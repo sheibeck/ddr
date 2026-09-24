@@ -33,6 +33,23 @@ release notes → Save + Start rollout. Testers get it within minutes (no review
   A Play-installed build and a locally-signed build have different signers, so one must be
   uninstalled before the other installs — the phone can't hold both.
 
+## Android toolchain pin (AGP 8.13.0, D-21)
+
+The build stays on **AGP 8.13.0 / Gradle 8.14.3 / JDK 21 / compileSdk 36** (Phase 67, D-21).
+The Play Games plugin (`@modbender/capacitor-play-games`, pinned at exactly 0.5.0, installed
+unmodified) declares AGP 9.3.1 + Kotlin Gradle Plugin 2.4.10 in its own `buildscript {}`, but
+the root project's AGP 8.13.0 shadows them and the plugin builds cleanly on the pinned toolchain
+with **no Gradle fix** (67-AGP9-SPIKE.md; confirmed again by 67-06's `npm run android:debug`).
+A whole-build move to AGP 9.3.1 / Gradle 9.5.0 failed in the spike (the plugin's Kotlin
+sources do not compile once its KGP 2.4.10 actually takes effect), so:
+
+- Do **not** let Android Studio's upgrade assistant bump AGP/Gradle.
+- The only expected build noise from the plugin is the KGP warning "Gradle 8.14.3 is
+  deprecated ..." (advisory).
+- A plugin version bump is a deliberate, reviewed change (D-17): re-review the tarball, update
+  the pin and lock integrity in `test/unit/play-games-intake.test.js`, and re-run the
+  `:app:dependencies --configuration releaseRuntimeClasspath` audit for ads/analytics SDKs.
+
 ## Uploading from the CLI (not set up yet)
 
 Play's Developer API can do the upload so no Console drag-and-drop is needed:
