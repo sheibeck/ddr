@@ -72,7 +72,10 @@ import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 // Phase 65 (RUN-04): the shared board table's voice half — board copy and
 // both new-best/first-death quip banks, scanned alongside every other
 // presentation COPY bank in collectAuthoredStrings.
-import { BOARD_COPY, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES } from "../../content/boards.js";
+// Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy — the
+// footnotes, the panel copy bank and the standing-quip bank — join the same
+// walk so they participate in the completeness/load-bearing meta-tests too.
+import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES } from "../../content/boards.js";
 import { BESTIARY } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
 import { NAMES } from "../../content/names.js";
@@ -389,6 +392,30 @@ function collectAuthoredStrings() {
   push("NEW_BEST_HEAD", NEW_BEST_HEAD);
   NEW_BEST_LINES.forEach((s, i) => push(`NEW_BEST_LINES[${i}]`, s));
   FIRST_DEATH_LINES.forEach((s, i) => push(`FIRST_DEATH_LINES[${i}]`, s));
+  // Phase 66 (BOARD-02/03/07/08): BOARD_FOOTNOTES, BOARDS_PANEL_COPY and
+  // STANDING_LINES join the same recursive string-leaf walk used for
+  // BOARD_COPY, so the panel's own new copy is scanned and counted here too.
+  (function walkBoardCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkBoardCopy(v, label);
+    }
+  })(BOARD_FOOTNOTES, "BOARD_FOOTNOTES");
+  (function walkBoardCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkBoardCopy(v, label);
+    }
+  })(BOARDS_PANEL_COPY, "BOARDS_PANEL_COPY");
+  (function walkBoardCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkBoardCopy(v, label);
+    }
+  })(STANDING_LINES, "STANDING_LINES");
 
   return out;
 }

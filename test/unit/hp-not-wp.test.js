@@ -36,6 +36,9 @@ import {
   RACES, FIGHTER_SKILLS, THIEF_SKILLS, POTIONS, JEWELRY, CLOAKS, STAVES, SPELLS, ABILITIES, TOOLS,
   RACE_NOTE, CLASS_NOTE, SUB_NOTE,
 } from "../../content/index.js";
+// Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy — walked
+// the same way the other COPY objects in banks (below) are.
+import { BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES } from "../../content/boards.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -132,6 +135,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
   const banks = {
     // Phase 61 (STORE-02/03): STORE_ROW_COPY added to the walked copy-object list.
     RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY, UPGRADE_WHY_COPY, STORE_ROW_COPY, GEAR_SHEET_COPY,
+    // Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy banks.
+    BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES,
   };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {
