@@ -855,7 +855,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | User's list + full brainstorm | ~84–97 | 53 |
 | Tier frames (made once, reused) | — | +4 |
 
-Minimum art job: **29 pictures + 4 tier frames**, exported as about **49 icon files**.
+Minimum art job: **29 pictures + 4 tier frames**, exported as about **49 icon files**. The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
 
 *Decisions that move the counts:*
 
