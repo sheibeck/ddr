@@ -14,7 +14,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
-import { characterSheetViewModel } from "../../src/browser/heroTab.js";
+import { characterSheetViewModel, grimoireViewModel } from "../../src/browser/heroTab.js";
 import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 import { canCast } from "../../engine/derived.js";
 import { canParley } from "../../engine/combat.js";
@@ -139,22 +139,35 @@ test("Bard: ABILITIES opens SING, ready vs. counting-down", () => {
 });
 
 // ─── Magic User: SPELLS grid + submenu rows in SPELLS array order ─────────
+//
+// Phase 75 (RULES-04, user ruling 2026-09-21): the combat SPELLS submenu
+// HIDES a level- or school-locked spell (canCast(state, sp) === false) — it
+// reverses the old "disabled rows stay visible" reading of this test file,
+// for combat only. A spell that IS castable but out of charges stays
+// listed, disabled. The Hero-tab Grimoire (grimoireViewModel) is untouched.
 
-test("Magic User (Wizard): SPELLS sub-line, submenu title, rows in SPELLS order incl. an above-level spell", () => {
+test("Magic User (Wizard): SPELLS sub-line, submenu title, rows in SPELLS order, castable rows only", () => {
   const c = { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal", "Freeze", "Lightning"], spellsUsed: 0 };
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
 
   assert.equal(vm.actions[1].key, "spells");
   assert.equal(vm.actions[1].label, "2 · SPELLS");
+  // "N known" stays the whole book count (flagged assumption in the plan's
+  // CONTEXT), so this sub-line still reads "3 known" even though only two
+  // rows are listed below.
   assert.equal(vm.actions[1].sub, "4 charges left · 3 known");
   assert.equal(vm.actions[1].opens, "spells");
 
   assert.equal(vm.submenus.spells.title, "TEST DELVER · SPELLS · 4 CHARGES");
 
-  const grimoireOrder = SPELLS.filter((sp) => c.grimoire.includes(sp.n));
-  assert.equal(vm.submenus.spells.rows.length, grimoireOrder.length);
-  grimoireOrder.forEach((sp, i) => {
+  const lightning = SPELLS.find((sp) => sp.n === "Lightning");
+  assert.equal(canCast(state, lightning), false, "Lightning is above level 1 — canCast must refuse it");
+
+  const castable = SPELLS.filter((sp) => c.grimoire.includes(sp.n) && canCast(state, sp));
+  assert.equal(vm.submenus.spells.rows.length, castable.length);
+  assert.equal(vm.submenus.spells.rows.length, 2, "Lightning has no row at all — hidden, not greyed");
+  castable.forEach((sp, i) => {
     const row = vm.submenus.spells.rows[i];
     const idx = SPELLS.indexOf(sp);
     assert.equal(row.id, `spell-${idx}`);
@@ -162,27 +175,118 @@ test("Magic User (Wizard): SPELLS sub-line, submenu title, rows in SPELLS order 
     assert.equal(row.cost, `LVL ${sp.lvl}`);
     assert.equal(row.desc, sp.txt || "");
     assert.deepEqual(row.dispatch, { type: "castSpell", idx });
-    const expectedEnabled = canCast(state, sp) && 4 > 0;
-    assert.equal(row.enabled, expectedEnabled, `${sp.n}: enabled must mirror canCast && charges>0`);
+    assert.equal(row.enabled, true, `${sp.n}: castable with charges left must be enabled`);
     // Phase 40 (SPELL-01): every spell row carries the same niche/nicheLabel
     // pair the Hero-tab Grimoire rows carry (grimoireViewModel.test.js).
     assert.equal(row.niche, sp.niche);
     assert.equal(row.nicheLabel, NICHE_LABELS[sp.niche]);
   });
 
-  const lightning = SPELLS.find((sp) => sp.n === "Lightning");
-  assert.equal(canCast(state, lightning), false, "Lightning is above level 1 — canCast must refuse it");
-  const lightningRow = vm.submenus.spells.rows.find((r) => r.label === "LIGHTNING");
-  assert.equal(lightningRow.enabled, false);
-  assert.ok(lightningRow.dispatch, "the disabled row still carries a dispatch payload");
+  assert.ok(!vm.submenus.spells.rows.some((r) => r.label === "LIGHTNING"), "a level-locked spell has no row at all");
 });
 
-test("Magic User with an empty grimoire: SPELLS submenu is the single disabled NOTHING IN THE GRIMOIRE row", () => {
+test("RULES-04: a level-1 Sorcerer's healing school opens at 4 — Heal is hidden, Freeze is listed", () => {
+  const c = { cls: "Magic User", sub: "Sorcerer", level: 1, grimoire: ["Heal", "Freeze"], spellsUsed: 0 };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.deepEqual(vm.submenus.spells.rows.map((r) => r.label), ["FREEZE"]);
+});
+
+test("RULES-04 adjacency: a spell's effective level or school gate equal to the hero's level is listed; one level above either is hidden", () => {
+  // Acid: lvl 2, offense. A Wizard has no gate.offense override (schoolGate
+  // defaults to 1), so this isolates the spell's own LEVEL gate.
+  const acid = SPELLS.find((sp) => sp.n === "Acid");
+  const acidAtLevel = fixedState({
+    c: { cls: "Magic User", sub: "Wizard", level: acid.lvl, grimoire: [acid.n], spellsUsed: 0 },
+    combat: fixedCombat([]),
+  });
+  assert.deepEqual(
+    combatMenuViewModel(acidAtLevel).submenus.spells.rows.map((r) => r.label),
+    ["ACID"],
+    `level ${acid.lvl} hero, level ${acid.lvl} spell: listed`,
+  );
+
+  // Turn Walking Dead: lvl 2, s "protection". Illusionist's gate.protection
+  // is 3 — its own spell level (2) never blocks it, so this isolates the
+  // SCHOOL gate exactly at, and one below, the threshold. A "hidden" verdict
+  // still leaves ONE row (the noCastable placeholder) — the assertion below
+  // checks the spell's OWN label is absent, not a bare row count.
+  const protSpell = SPELLS.find((sp) => sp.n === "Turn Walking Dead");
+  const gateLevel = 3; // content/mu-chart.js Illusionist.gate.protection
+  const atGate = fixedState({
+    c: { cls: "Magic User", sub: "Illusionist", level: gateLevel, grimoire: [protSpell.n], spellsUsed: 0 },
+    combat: fixedCombat([]),
+  });
+  assert.deepEqual(
+    combatMenuViewModel(atGate).submenus.spells.rows.map((r) => r.label),
+    ["TURN WALKING DEAD"],
+    `Illusionist at the gate level ${gateLevel}: listed`,
+  );
+
+  const belowGate = fixedState({
+    c: { cls: "Magic User", sub: "Illusionist", level: gateLevel - 1, grimoire: [protSpell.n], spellsUsed: 0 },
+    combat: fixedCombat([]),
+  });
+  const belowGateRows = combatMenuViewModel(belowGate).submenus.spells.rows;
+  assert.ok(!belowGateRows.some((r) => r.label === "TURN WALKING DEAD"), "Illusionist one level below the gate: hidden");
+  assert.deepEqual(belowGateRows, [
+    { id: "none", label: COMBAT_MENU_COPY.noCastable, cost: "", desc: COMBAT_MENU_COPY.noCastableDesc, enabled: false, dispatch: null },
+  ]);
+});
+
+test("RULES-04: with every charge spent, a castable spell's row stays listed, disabled", () => {
+  const c = { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal", "Freeze"], spellsUsed: 999 };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.equal(vm.submenus.spells.rows.length, 2, "both castable-by-level rows stay listed when spent");
+  for (const row of vm.submenus.spells.rows) assert.equal(row.enabled, false, `${row.label}: out of charges must be disabled, not hidden`);
+});
+
+test("RULES-04 ordering: visible rows keep their relative SPELLS order — hiding a row never reorders the others", () => {
+  const c = { cls: "Magic User", sub: "Wizard", level: 2, grimoire: ["Heal", "Freeze", "Acid"], spellsUsed: 0 };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  const expectedOrder = SPELLS.filter((sp) => c.grimoire.includes(sp.n)).map((sp) => sp.n.toUpperCase());
+  assert.deepEqual(vm.submenus.spells.rows.map((r) => r.label), expectedOrder);
+});
+
+test("RULES-04 all-locked: a level-1 Sorcerer whose book is only Heal shows one disabled row with the noCastable copy, distinct from noSpells", () => {
+  const state = fixedState({ c: { cls: "Magic User", sub: "Sorcerer", level: 1, grimoire: ["Heal"], spellsUsed: 0 }, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.deepEqual(vm.submenus.spells.rows, [
+    { id: "none", label: COMBAT_MENU_COPY.noCastable, cost: "", desc: COMBAT_MENU_COPY.noCastableDesc, enabled: false, dispatch: null },
+  ]);
+  assert.notEqual(COMBAT_MENU_COPY.noCastable, COMBAT_MENU_COPY.noSpells);
+  assert.notEqual(COMBAT_MENU_COPY.noCastableDesc, COMBAT_MENU_COPY.noSpellsDesc);
+});
+
+test("Magic User with an empty grimoire: SPELLS submenu is still the single disabled NOTHING IN THE GRIMOIRE row (today's empty case, unchanged)", () => {
   const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: [] }, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
   assert.deepEqual(vm.submenus.spells.rows, [
     { id: "none", label: COMBAT_MENU_COPY.noSpells, cost: "", desc: COMBAT_MENU_COPY.noSpellsDesc, enabled: false, dispatch: null },
   ]);
+});
+
+test("RULES-04 scope: the combat SPELLS submenu hides Lightning (above level 1) but the Hero-tab Grimoire (grimoireViewModel) still lists it", () => {
+  const c = { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal", "Lightning"], spellsUsed: 0 };
+  const combatState = fixedState({ c, combat: fixedCombat([]) });
+  const combatVm = combatMenuViewModel(combatState);
+  assert.ok(!combatVm.submenus.spells.rows.some((r) => r.label === "LIGHTNING"), "combat hides the level-locked spell");
+
+  // grimoireViewModel keeps listing Lightning regardless (it is never
+  // filtered out of `rows`, unlike the combat submenu above) — it is not
+  // castable here either way (Lightning is combatOnly, so out of combat its
+  // own disabledReason names that, not the level gate; in combat it would
+  // name the level gate instead — either way, this plan never touches that
+  // logic or its rows).
+  const heroState = fixedState({ c, combat: null });
+  const heroVm = grimoireViewModel(heroState);
+  assert.ok(heroVm.rows.some((r) => r.name === "Lightning"), "the Hero-tab Grimoire keeps listing Lightning, locked or not");
+  const lightningRow = heroVm.rows.find((r) => r.name === "Lightning");
+  assert.equal(lightningRow.castable, false);
+  assert.equal(typeof lightningRow.disabledReason, "string");
+  assert.ok(lightningRow.disabledReason.length > 0);
 });
 
 // ─── Thief: SOCIAL flee cost bonus, WITHDRAW, PARLEY ───────────────────────
