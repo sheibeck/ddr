@@ -568,10 +568,17 @@ Plans:
 - The global LINEAGE view for a picked sub-class reads **that sub-class's board** (top page + the player's own standing), not the DEEPEST sample. Race stays a client-side filter from the score tag on that board's rows. This is honest per sub-class; the race split is still a sample, and the copy should say so.
 - This reverses or extends Phase 81's "LINEAGE ME-only". **It depends on Phase 81 landing first** (ME | ALL | FRIENDS scopes).
 
+**Decided (user, 2026-09-24): Google only, rolling season sets.**
+
+- **Play Games only.** No backend of our own and no managed leaderboard service. Considered and rejected: a Cloudflare Worker + D1 server (PGS `requestServerSideAccess` identity, `loadFriends` filter, replay-verified runs), and PlayFab / LootLocker / Nakama.
+- **Each season gets a full set of 29 boards** (5 main + 24 sub-class) with fresh IDs, added as a new `LEADERBOARD_IDS` entry plus a `SEASON` bump and an app update, as the season model already works. **The old season's set is deleted later** to stay under Play Games' **70-leaderboard cap**. Published boards cannot be reset, but they can be deleted.
+- **Rolling window:** at most two season sets live at once (58 boards). Season N-1's set must be deleted before Season N+1's set is created (3 × 29 = 87 > 70). Google does not document whether deleted boards still count toward the cap. **Test it once with a throwaway board** before the first rollover.
+- **The script therefore needs two modes:** `create --season N` (create the 29 boards, capture the IDs, write the `content/leaderboards.js` entry) and `delete --season N` (delete that season's 29 by name/ID; `--dry-run` first).
+- **Once a season is deleted,** the panel's season picker must drop it (or show it as retired). `pgsQueue` must treat a "leaderboard not found" error on a retired season's board as permanent and drop the entry, not retry forever. Players who haven't updated keep submitting to the old boards until those are deleted, and after that the submissions are dropped.
+
 **Open decisions (for milestone discussion):**
 
-- **Seasonal or all-time sub-class boards?** Play Games caps a game at **70 leaderboards**. All-time: 5 + 24 = 29 total, room left for future seasons of the 5 main boards. Per-season: 24 new boards each season, so Season 2 = 58 and Season 3 goes past the cap. Claude recommends **all-time** (personal bests are already all-time locally).
-- Race boards too (6 more)? Race × sub-class (144) is impossible under the cap.
+- Race boards too? 6 more per season makes 35 per set, and two live sets = 70, exactly at the cap, so probably not. (6 more)? Race × sub-class (144) is impossible under the cap.
 - Board icons: `imageConfigurations.upload` (`LEADERBOARD_ICON`) could reuse the sub-class PNG art. Optional.
 - Does "you placed X" also report the sub-class standing on the death card?
 
