@@ -207,7 +207,7 @@ test("foeToHitBreakdown: a plain Human Soldier has zero mods; a Guard has exactl
 test("foeToHitBreakdown: need matches foeToHitVs across FOE_ACCURACY x Thief evasion x vs (extends the identity matrix, USER RULING D)", () => {
   const subs = ["Soldier", "Guard", "Acrobat"];
   for (const accuracy of [-3, 0, 3]) {
-    for (const evasion of [-1, 0]) {
+    for (const evasion of [1, 0]) {
       const restore = setDialsForTuning({
         FOE_ACCURACY: accuracy,
         CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion } },
@@ -223,7 +223,7 @@ test("foeToHitBreakdown: need matches foeToHitVs across FOE_ACCURACY x Thief eva
               assert.equal(need, expected, label);
               if (accuracy) assert.ok(mods.some((m) => m.name === "accuracy" && m.delta === accuracy), label);
               if (evasion && cls === "Thief" && vs === "hero") {
-                assert.ok(mods.some((m) => m.name === "evasion" && m.delta === evasion), label);
+                assert.ok(mods.some((m) => m.name === "evasion" && m.delta === -evasion), label);
               } else {
                 assert.ok(!mods.some((m) => m.name === "evasion"), label);
               }

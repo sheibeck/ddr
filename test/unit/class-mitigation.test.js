@@ -160,12 +160,12 @@ test("at identity every helper returns its input by identity", () => {
 
 // --- FOE_ACCURACY / Thief evasion ------------------------------------------
 
-test("Thief evasion -1 lowers foeToHitVs by 1 for vs hero only (member unchanged); the breakdown records { name: 'evasion', delta: -1 }", () => {
+test("Thief evasion +1 lowers foeToHitVs by 1 for vs hero only (member unchanged); the breakdown records { name: 'evasion', delta: -1 }", () => {
   const state = fixedState({ c: { cls: "Thief", sub: "Pilfer" } });
   const identityHero = foeToHitVs(state, "hero");
   const identityMember = foeToHitVs(state, "member");
 
-  const restore3 = setDials({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: -1 } } });
+  const restore3 = setDials({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: 1 } } });
   try {
     assert.equal(foeToHitVs(state, "hero"), identityHero - 1, "vs hero drops by exactly 1");
     assert.equal(foeToHitVs(state, "member"), identityMember, "vs member is untouched");
@@ -181,7 +181,7 @@ test("Thief evasion -1 lowers foeToHitVs by 1 for vs hero only (member unchanged
   // A non-Thief never reads CLASS_MITIGATION.Thief.evasion at all.
   const fighter = fixedState({ c: { cls: "Fighter", sub: "Soldier" } });
   const fighterIdentity = foeToHitVs(fighter, "hero");
-  const restore4 = setDials({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: -1 } } });
+  const restore4 = setDials({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: 1 } } });
   try {
     assert.equal(foeToHitVs(fighter, "hero"), fighterIdentity, "a Fighter is unaffected by the Thief evasion dial");
   } finally {

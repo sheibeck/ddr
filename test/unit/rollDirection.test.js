@@ -858,7 +858,6 @@ test("[foe-vs-hero:foe-level-die] a higher-tier foe strikes no worse than a lowe
 
 test(
   '[foe-vs-hero:thief-evasion] a positive evasion dial should make a Thief HARDER to hit (a penalty to the foe), engine/difficulty.js#classEvasionFor ~L591 (72-04 flips the sign)',
-  { todo: "fixed by 72-04" },
   () => {
     const thief = () => inCombat(heroState({ cls: "Thief", sub: "Pickpocket", race: "Human" }), [NEUTRAL_FOE()]);
     const nonThief = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);

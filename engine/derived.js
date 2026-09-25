@@ -1226,7 +1226,10 @@ export function foeToHitVs(state, vs = "hero") {
   // "member") + CLASS_MITIGATION.Thief.evasion (vs "hero" only — the hero's
   // own body). Identity 0 for both is a structural no-op.
   h += foeAccuracyFor();
-  if (vs === "hero" && c.cls === "Thief") h += classEvasionFor(c);
+  // CLASS_MITIGATION.Thief.evasion (vs hero only) is SUBTRACTED from the
+  // foe's need: a positive evasion makes the Thief harder to hit. Phase 72,
+  // ROLL-01 (d), user ruling 2026-09-24; identity 0 is a structural no-op.
+  if (vs === "hero" && c.cls === "Thief") h -= classEvasionFor(c);
   if (abilityEffectActive(c, "battleRoar") || partyEffectActive(state, "battleRoar")) h -= 2;
   if (vs === "hero" && abilityEffectActive(c, "sidestep")) h -= 2;
   if (vs === "hero" && abilityEffectActive(c, "smoke")) h = 1;
@@ -1287,11 +1290,14 @@ export function foeToHitBreakdown(state, vs = "hero") {
     h += accuracy;
     if (h !== before) mods.push({ name: "accuracy", delta: h - before });
   }
+  // CLASS_MITIGATION.Thief.evasion (vs hero only) is SUBTRACTED from the
+  // foe's need: a positive evasion makes the Thief harder to hit. Phase 72,
+  // ROLL-01 (d), user ruling 2026-09-24; identity 0 is a structural no-op.
   if (vs === "hero" && c.cls === "Thief") {
     const evasion = classEvasionFor(c);
     if (evasion) {
       const before = h;
-      h += evasion;
+      h -= evasion;
       if (h !== before) mods.push({ name: "evasion", delta: h - before });
     }
   }
