@@ -28,7 +28,7 @@ import {
   gearCompareParts,
   carriedItems,
 } from "../../engine/derived.js";
-import { equipItem, unequipSlot, takeLoot, useItem } from "../../engine/items.js";
+import { equipItem, unequipSlot, takeLoot, useItem, narrateTimerTransitions } from "../../engine/items.js";
 import { deliverGear } from "../../engine/economy.js";
 import { validateAction } from "../../engine/actions.js";
 import { rehydrate } from "../../engine/saveState.js";
@@ -415,4 +415,63 @@ test("saveState#rehydrate: c.weapon names a staff with no c.staff at all — res
   const out = rehydrate(state);
   assert.equal(out.c.weapon, "Fists");
   assert.equal("staff" in out.c, false);
+});
+
+// ─── Plan 75-09: a bagged staff is inert, and says so (RULES-13, second
+//     half) ───────────────────────────────────────────────────────────────
+
+test("useItem(i): a Magic User using a BAGGED Birch Staff by index is refused notWielded, before any side effect", () => {
+  const staff = birchStaff({ charges: 2 });
+  const state = fixedState({ c: { weapon: "Club", items: [staff] } });
+  const before = structuredClone(state.c);
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.deepStrictEqual(events, [{ type: "useRefused", item: staff, reason: "notWielded" }]);
+  // no side effect: charges/timers/items untouched, and a fakeRng with no
+  // values does not throw (no die was drawn).
+  assert.deepStrictEqual(state.c, before);
+});
+
+test("useItem(i): a Fighter using the same bagged staff still gets wrongClass (the earlier rung)", () => {
+  const staff = birchStaff();
+  const state = fixedState({ c: { cls: "Fighter", sub: "Soldier", weapon: "Long Sword", items: [staff] } });
+  const events = useItem(state, 0, fakeRng([]), []);
+  assert.deepStrictEqual(events, [{ type: "useRefused", item: staff, reason: "wrongClass" }]);
+});
+
+test("useItem({slot:'weapon'}): the WIELDED staff (not addressed by bag index) still works and spends a charge, unaffected by notWielded", () => {
+  const staff = birchStaff({ charges: 2 });
+  const state = fixedState({
+    c: { weapon: "Birch Staff", staff, items: [] },
+    combat: fixedCombat([fixedFoe(), fixedFoe()]),
+  });
+  const events = useItem(state, { slot: "weapon" }, fakeRng([]), []);
+  assert.equal(staff.charges, 1);
+  assert.ok(events.some((e) => e.type === "itemUsed"));
+  assert.ok(!events.some((e) => e.type === "useRefused"));
+});
+
+test("narrateTimerTransitions: a bagged (unwielded) staff still recharges on the squares tick", () => {
+  const staff = birchStaff({ charges: 0 });
+  const state = fixedState({ c: { weapon: "Club", items: [staff] } });
+  const events = narrateTimerTransitions(state, [{ id: `charges:${staff.n}`, from: "cooldown", to: null }], []);
+  assert.equal(staff.charges, 1);
+  assert.ok(events.some((e) => e.type === "staffRecharged" && e.item === "Birch Staff"));
+});
+
+test("EVENT_NARRATION.useRefused({reason:'notWielded'}) names the staff and ends 'Wield it first.'; notWorn is unchanged", async () => {
+  const { EVENT_NARRATION } = await import("../../src/browser/eventNarration.js");
+  const line = EVENT_NARRATION.useRefused({ item: { n: "Birch Staff" }, reason: "notWielded" });
+  assert.match(line, /Birch Staff/);
+  assert.match(line, /Wield it first\.$/);
+  const notWornLine = EVENT_NARRATION.useRefused({ item: { n: "Ring of Power" }, reason: "notWorn" });
+  assert.match(notWornLine, /Wear it first\.$/);
+});
+
+test("LINE_FOR.useRefused gives the rail twin for notWielded; notWorn is unchanged", async () => {
+  const { LINE_FOR } = await import("../../src/browser/narrationLines.js");
+  const card = LINE_FOR.useRefused({ item: { n: "Birch Staff" }, reason: "notWielded" });
+  assert.match(card.text, /Birch Staff/);
+  assert.match(card.text, /Wield it first\.$/);
+  const notWornCard = LINE_FOR.useRefused({ item: { n: "Ring of Power" }, reason: "notWorn" });
+  assert.match(notWornCard.text, /Wear it first\.$/);
 });

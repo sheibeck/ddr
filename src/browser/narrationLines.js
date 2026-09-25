@@ -1707,6 +1707,9 @@ export const LINE_FOR = {
       // Phase 37 (GEAR-03): a cloak/jewelry/staff activatable used from the
       // BAG in the new worn-slot model — activatables must be worn to work.
       notWorn: `${item} is in your bag, doing what things in bags do: nothing. Wear it first.`,
+      // RULES-13 (Phase 75, user 2026-09-25): a staff's power works only
+      // while wielded — a bagged one is inert, same voice as notWorn.
+      notWielded: `${item} is in your bag, doing what things in bags do: nothing. Wield it first.`,
       // Phase 39 (GEAR-05): the torch used while not dark.
       notDark: "It is not dark. Save the torch for when it is.",
     };
