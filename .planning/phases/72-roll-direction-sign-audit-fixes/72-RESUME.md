@@ -3,15 +3,14 @@
 **Updated:** 2026-09-25, after Phase 73 wave 1 merged (master 5,751/5,751 green).
 
 ## Where the run is
-- `/gsd-autonomous` is running milestone v2.1. Phases 72 and 81 are COMPLETE and pushed. Phase 81 ran early, by the user's choice.
-- **Phase 73 (Engine Roll-High Mirror) is executing:** 10 plans in 8 waves.
-  - Wave 1 (73-01 helper + guard, 73-02 baselines, 73-03 rollRange + ledger verdicts) is MERGED and green.
-  - The base readout matches Phase 72's AFTER block exactly.
-  - **NEXT: wave 2 = 73-04** (hero strike, crits, foe soak), then 73-05 … 73-10, ONE plan per wave, in series. Each executes as a gsd-executor (sonnet) in a worktree, with a stall Monitor.
-- **Remaining order after 73:** 74 → 75 → 75.1 → 75.2 (NEW) → 76 → 77 → 78 → 79 → 80 (researcher) → lifecycle.
-- Every phase has a committed CONTEXT.md (discuss pre-collected), so every phase skips discuss: plan with `--skip-research` (except 80), then execute.
+- `/gsd-autonomous` is running milestone v2.1.
+- Phases 72, 81 and **73 are COMPLETE and pushed**. Phase 73 ended with 5,752/5,752 green, byte-identical parity, and an identical readout.
+- **NEXT: Phase 74 (Roll Display & Modifier Honesty).** Its CONTEXT exists: plan with `--skip-research`, then execute.
+- **Remaining order:** 74, 75, 75.1, 75.2, 75.3, 76, 77, 78, 79, 80 (with a researcher), then the lifecycle.
+- Every phase has a committed CONTEXT.md, so every one skips discuss.
 
-## Captures since the last compact (all routed and committed)
+## Captures (all routed and committed)
+- Also added after the Phase 73 start: Phase 75 RULES-12 (a tile interrupted by a wanderer is resolved after the fight), RULES-13 (a magic staff is a wielded d8 weapon for Magic Users), RULES-14 (Bubble reflects the next attack and keeps a small pool), and RULES-15 (no rations, no spell refill). Phase 75.3 (deep-floor difficulty) covers RULES-16/17/18: foe count, the curve from floor 12, and control spells at depth. Phase 77 gets CMBUI-14 (combat ITEMS shows EQUIPPED and greys out gear) and Dazed honesty. Phase 78 gets HUD-09 (the full-bag find card), and the new-day refill line was folded into the charge rail item.
 - Phase 75:
   - The Summoner's offense gate is removed (RULES-03 amended).
   - The Summoner's new weakness: healing spells it casts restore half (floor, min 1).
@@ -31,7 +30,7 @@
 - **Per-wave merge:** after the executor returns, `worktree.record-agent` (use the TRUE base; an executor may misreport it) then `worktree.cleanup-wave --manifest <scratchpad>/wave-<phase>-<n>.json`.
   - If blocked, merge manually with `git merge --no-ff` after checking the merge-base, then remove the worktree and branch.
   - REQUIREMENTS.md conflicts: keep master's version, and mark requirements complete centrally.
-- **Worktree-only noise:** `core.autocrlf=true` gives 7 CRLF doc-ledger test failures ONLY inside worktrees. Tell every executor.
+- **The worktree CRLF noise is FIXED** (e52f711 made the ledger tests CRLF-tolerant). `npm test` must be 100% green everywhere; any failure is real.
 - The 200-seed readout takes ~15 min, which is over the 10-min Bash cap, so it runs in the background and waits on the completion notification.
 - **Research:** only Phase 80. **Verification agents are off.** The orchestrator writes each VERIFICATION with a `human_verification` list, and device checks are batched for milestone close. Build the debug APK after the last wave.
 - **Stall watch:** a Monitor per executor watching commits plus tree/file-mtime hashes. Transcript .output files can be 0 bytes, so don't trust their size.

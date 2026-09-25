@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 73
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
+current_phase: 74
+current_phase_name: Roll Display & Modifier Honesty
 status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-25T13:14:25.335Z"
+last_updated: "2026-09-25T16:41:48.104Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 81 complete (run early by user choice); resuming the roll-high track at Phase 73
+last_activity_desc: Phase 73 complete, transitioned to Phase 74
 progress:
-  total_phases: 12
-  completed_phases: 2
+  total_phases: 13
+  completed_phases: 3
   total_plans: 23
-  completed_plans: 17
-  percent: 17
+  completed_plans: 23
+  percent: 23
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 73 — Engine Roll-High Mirror
+Phase: 74 — Roll Display & Modifier Honesty
 Plan: Not started
-Status: Ready to plan (context pre-collected)
-Last activity: 2026-09-25 — Phase 81 complete (run early by user choice); resuming the roll-high track at Phase 73
+Status: Ready to plan
+Last activity: 2026-09-25 — Phase 73 complete, transitioned to Phase 74
 
 ## Ground Truth (durable facts every session needs)
 

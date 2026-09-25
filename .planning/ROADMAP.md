@@ -40,7 +40,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 **Roll-high ruling (user, 2026-09-24):** the engine itself switches to roll-high rather than gaining a display adapter (Phase 73, ROLL-05) — every seed must resolve identically to before the switch, so the parity suite staying byte-identical is the proof. The sign/ordering audit (Phase 72, ROLL-01) lands first so the mirror is built on already-correct modifiers, and every phase after the mirror (RULES, DARK, SAV, CMBUI's roll-showing indicators) is written directly in the roll-high convention instead of being rewritten later.
 
 - [x] **Phase 72: Roll-Direction Sign Audit & Fixes** - the audited ledger of every roll modifier's sign, with the three known bugs fixed under the engine gate, landing before the roll-high mirror (completed 2026-09-24)
-- [ ] **Phase 73: Engine Roll-High Mirror** - the engine itself switches every die check to roll-high; the full parity suite proves it byte-identical
+- [x] **Phase 73: Engine Roll-High Mirror** - the engine itself switches every die check to roll-high; the full parity suite proves it byte-identical (completed 2026-09-25)
 - [ ] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers
 - [ ] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
 - [ ] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire
@@ -111,7 +111,7 @@ Plans:
   4. Content numbers that encode to-hit/AR/etc. are re-expressed in the new convention, and any roll-related value already in a saved game converts once, tolerantly, on load.
   5. Every event that carries a roll (`struck`, foe swings, soak, thrown spells, resistance, parley, traps, locks, climbs/leaps, cures, wake, drops, gates, summons, crits) natively carries the high-is-good `roll`, `target` and `dieN`.
 
-**Plans**: 9/10 plans executed
+**Plans**: 10/10 plans complete
 
 Plans:
 **Wave 1**
@@ -146,7 +146,7 @@ Plans:
 
 **Wave 8**
 
-- [ ] 73-10-PLAN.md — Close-out: the three proofs recorded (parity, direction tests, identical 200-seed readout), the ledger finalized with Phase 74/79 handoffs, and the comment sweep (wave 8)
+- [x] 73-10-PLAN.md — Close-out: the three proofs recorded (parity, direction tests, identical 200-seed readout), the ledger finalized with Phase 74/79 handoffs, and the comment sweep (wave 8)
 
 **Cross-cutting constraints:**
 
@@ -372,7 +372,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
-| 73. Engine Roll-High Mirror | v2.1 | 9/10 | In Progress|  |
+| 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
