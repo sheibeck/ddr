@@ -165,3 +165,18 @@ On the Pixel 7:
 ---
 *Phase: 73-engine-roll-high-mirror*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: engine/derived.js
+- FOUND: engine/magic.js
+- FOUND: engine/foeAbilities.js
+- FOUND: engine/combat.js
+- FOUND: src/browser/eventNarration.js
+- FOUND: test/parity/roll-high-invariant.test.js
+- FOUND: test/unit/roll-high-guard.test.js
+- FOUND: test/unit/resist-roll.test.js
+- FOUND: .planning/phases/73-engine-roll-high-mirror/73-06-SUMMARY.md
+- FOUND: 3fda951 (Task 1 commit)
+- FOUND: 89ad2e5 (Task 2 commit)
+- FOUND: b49dd6d (Task 3 commit)
