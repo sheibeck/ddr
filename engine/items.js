@@ -112,7 +112,7 @@ export function gainWilmst(state, n, why, rng, events = []) {
   const c = state.c;
   let amt = Math.round(n * (1 + 0.5 * eff(c, "greed")));
   if (c.sub === "Pickpocket") {
-    const extra = Math.round(((rng.d(10) + rng.d(10)) * 10 * state.floor.depth) / LOOT_DIVISOR) + rng.d(4);
+    const extra = Math.round(((rng.d(10) + rng.d(10)) * 10 * state.floor.depth) / LOOT_DIVISOR) + rng.d(4); // roll:amount
     amt += extra;
     events.push({ type: "goldGained", amount: extra, why: "pickpocket" });
   }
@@ -129,7 +129,7 @@ export function hasPicks(c) {
 /* ---------------- treasure rollers ---------------- */
 
 export function rollJewel(rng) {
-  return Object.assign({ kind: "jewel" }, JEWELRY[rng.d(8) - 1]);
+  return Object.assign({ kind: "jewel" }, JEWELRY[rng.d(8) - 1]); // roll:selection
 }
 
 export function rollCloak(rng) {
@@ -137,11 +137,11 @@ export function rollCloak(rng) {
   // draws rng.d(CLOAKS.length) (still ONE gen.next() draw, rng cursor
   // unchanged) instead of the old literal d8. rollJewel/rollStaff are left at
   // their literal 8 — their own tables are still 8 rows.
-  return Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1]);
+  return Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1]); // roll:selection
 }
 
 export function rollStaff(rng) {
-  const row = STAVES[rng.d(8) - 1];
+  const row = STAVES[rng.d(8) - 1]; // roll:selection
   // Phase 39 (GEAR-02): the old every-250-squares cooldown field is retired
   // — a staff now carries a charge pool (`charges`), looked up by name from
   // the content declaration; the same single `rng.d(8)` draw as before.
@@ -152,7 +152,7 @@ export function rollStaff(rng) {
 export function rollBlade(rng, depth, magical) {
   const base = rng.pick(Object.keys(WEAPONS));
   if (!magical) return { kind: "weapon", n: base, base, bonus: 0, txt: WEAPONS[base].lab };
-  const b = rollDice(rng, WEAPON_BONUS_TABLE[rng.d(6) - 1]);
+  const b = rollDice(rng, WEAPON_BONUS_TABLE[rng.d(6) - 1]); // roll:selection
   return {
     kind: "weapon",
     n: `${rng.pick(BLADE_NAMES)}, a ${base.toLowerCase()}`,
@@ -165,7 +165,7 @@ export function rollBlade(rng, depth, magical) {
 /** Magic Armor, p.48: the armour table, then d6 for the AR and WP bonus. */
 export function rollMailPiece(rng) {
   const a = rng.pick(ARMORS);
-  const m = MAGIC_ARMOR_TABLE[rng.d(6) - 1];
+  const m = MAGIC_ARMOR_TABLE[rng.d(6) - 1]; // roll:selection
   return {
     kind: "armor",
     n: `Warded ${a.name.toLowerCase()}`,
@@ -212,10 +212,10 @@ function pickLootTool(toolRng, depth, c) {
   const candidates = TOOL_ORDER.filter((key) => (depth >= 2 || key !== "ladder") && !hasTool(c, key));
   if (!candidates.length) return null;
   const totalWeight = candidates.reduce((sum, key) => sum + TOOL_LOOT_WEIGHTS[key], 0);
-  let r = toolRng.d(totalWeight);
+  let r = toolRng.d(totalWeight); // roll:selection
   for (const key of candidates) {
     r -= TOOL_LOOT_WEIGHTS[key];
-    if (r <= 0) return key;
+    if (r <= 0) return key; // roll:selection
   }
   return candidates[candidates.length - 1]; // defensive: unreachable given totalWeight's derivation
 }
@@ -247,21 +247,21 @@ function pickLootTool(toolRng, depth, c) {
  * to the pre-plan behavior), never a crash.
  */
 export function rollTreasureItem(rng, depth, c) {
-  if (!hasPicks(c || {}) && rng.d(12) === 1) {
+  if (!hasPicks(c || {}) && rng.d(12) === 1) { // roll:selection
     return { kind: "picks", n: "Lockpicks", txt: "1–5 on d10 against any lock" };
   }
   if (typeof rng.getState === "function") {
     const toolRng = derivedRng(rng.getState(), "tool", depth);
-    if (toolRng.d(8) === 1) {
+    if (toolRng.d(8) === 1) { // roll:selection
       const key = pickLootTool(toolRng, depth, c || {});
       if (key) return toolItem(key);
     }
   }
-  const r = rng.d(10);
-  if (r <= 3) return rollBlade(rng, depth, true);
-  if (r <= 5) return rollMailPiece(rng);
-  if (r <= 7) return rollJewel(rng);
-  if (r <= 9) return rollCloak(rng);
+  const r = rng.d(10); // roll:selection
+  if (r <= 3) return rollBlade(rng, depth, true); // roll:selection
+  if (r <= 5) return rollMailPiece(rng); // roll:selection
+  if (r <= 7) return rollJewel(rng); // roll:selection
+  if (r <= 9) return rollCloak(rng); // roll:selection
   return rollStaff(rng);
 }
 
@@ -1352,7 +1352,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
 
   switch (kind) {
     case "heal": {
-      const a = rng.d(10) + 2;
+      const a = rng.d(10) + 2; // roll:amount
       c.wp = Math.min(c.maxWP, c.wp + a);
       events.push({ type: "healed", amount: a });
       break;
@@ -1402,7 +1402,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // hp back INSTANTLY (no rng gate — a use at full hp still spends the
       // cooldown, like a wasted potion), then applyActivation starts the
       // bare 20-square cooldown (act.effect is 0, act.cd is 20).
-      const amount = Math.min(c.maxWP - c.wp, rng.d(6));
+      const amount = Math.min(c.maxWP - c.wp, rng.d(6)); // roll:amount
       c.wp = Math.min(c.maxWP, c.wp + amount);
       events.push({ type: "cloakRegenerated", amount });
       break;
@@ -1477,7 +1477,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       break;
     }
     case "fire": {
-      const n = rng.d(6);
+      const n = rng.d(6); // roll:amount
       let tot = 0;
       for (let k = 0; k < n && foes.length; k++) {
         const t = foes[k % foes.length];
@@ -1485,7 +1485,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
         // Phase 31 Afraid: halves the hero's item-dealt fire damage
         // (post-roll arithmetic, zero rng change; a no-op unless
         // combat.afraid > 0).
-        const dmg = afraidDamage(state, rng.d(10) + 4);
+        const dmg = afraidDamage(state, rng.d(10) + 4); // roll:amount
         // Item damage is physical (18-RESEARCH A3): soakable by sp.ar,
         // never multiplied (no caster identity applies to an item effect).
         const hit = damageFoe(state, t, dmg, { kind: "item", crit: false }, rng, events);

@@ -322,7 +322,7 @@ export function rollGrimoire(rng, sub) {
     high = rolled.filter((sp) => sp.lvl > 2);
   rng.shuffle(low);
   rng.shuffle(high);
-  const n = Math.max(4, rng.d(10));
+  const n = Math.max(4, rng.d(10)); // roll:amount
 
   // ONE derived rng stream for this whole call, keyed on the MAIN cursor so
   // every seed gets its own placement but the main rng itself never advances
@@ -332,8 +332,8 @@ export function rollGrimoire(rng, sub) {
   // still deterministic, never throws.
   const dr = derivedRng(typeof rng.getState === "function" ? rng.getState() : 0, "grimoire", sub);
   for (const sp of added) {
-    if (sp.lvl <= 2) low.splice(dr.d(low.length + 1) - 1, 0, sp);
-    else high.splice(dr.d(high.length + 1) - 1, 0, sp);
+    if (sp.lvl <= 2) low.splice(dr.d(low.length + 1) - 1, 0, sp); // roll:selection
+    else high.splice(dr.d(high.length + 1) - 1, 0, sp); // roll:selection
   }
 
   const book = [];
@@ -379,7 +379,7 @@ export function rollGrimoire(rng, sub) {
   // the shuffle above completes — `spare`'s shuffle draw count is unchanged
   // by this splice; only its post-shuffle CONTENT/length grows.
   for (const sp of added) {
-    if (dayOnePool(sp)) spare.splice(dr.d(spare.length + 1) - 1, 0, sp);
+    if (dayOnePool(sp)) spare.splice(dr.d(spare.length + 1) - 1, 0, sp); // roll:selection
   }
   for (const sp of spare) { if (ready() >= 2) break; if (!book.includes(sp.n)) book.push(sp.n); }
 
@@ -438,7 +438,8 @@ export function rollGrimoire(rng, sub) {
 export const nameFor = (rng, r, exclude = []) => {
   const pool = NAMES[r] || NAMES.Human;
   const combos = pool.first.length * pool.sur.length;
-  let i = rng.d(combos) - 1; // the ONE and ONLY rng draw (one gen.next())
+  // the ONE and ONLY rng draw (one gen.next())
+  let i = rng.d(combos) - 1; // roll:selection
   const build = (idx) => {
     const first = pool.first[idx % pool.first.length];
     const sur = pool.sur[Math.floor(idx / pool.first.length)];
@@ -487,11 +488,11 @@ export const nameFor = (rng, r, exclude = []) => {
  */
 export function rollCharacter(rng, exclude = [], force = null) {
   const f = normalizeForce(force);
-  const cd = rng.d(6);
+  const cd = rng.d(6); // roll:selection
   const cls = f?.cls ?? (cd <= 2 ? "Magic User" : cd <= 4 ? "Fighter" : "Thief");
-  let sd = rng.d(8);
+  let sd = rng.d(8); // roll:selection
   let sub = f?.sub ?? CLASSES[cls].subs[sd - 1];
-  const rd = rng.d(8);
+  const rd = rng.d(8); // roll:selection
   let race = f?.race ?? RACE_D8[rd - 1];
   // A forced Samurai matched against a NATURALLY-rolled Fridgian race (the
   // both-forced combo is already rejected by normalizeForce above) — throw
@@ -502,9 +503,9 @@ export function rollCharacter(rng, exclude = [], force = null) {
     );
   }
   // "You cannot be a Fridgian Samurai because Fridges don't wear any armor."
-  while (race === "Fridgian" && sub === "Samurai") { sd = rng.d(8); sub = CLASSES[cls].subs[sd - 1]; }
+  while (race === "Fridgian" && sub === "Samurai") { sd = rng.d(8); sub = CLASSES[cls].subs[sd - 1]; } // roll:selection
   const R = RACES[race];
-  const intel = rng.d(20);
+  const intel = rng.d(20); // roll:amount
 
   // baseWP is `{ base, dice }`; a flat class (Thief) uses a zero dice notation
   // (rollDice draws nothing), so Thief consumes no die here — matching the
@@ -531,7 +532,7 @@ export function rollCharacter(rng, exclude = [], force = null) {
     else armor = byName("Cloth");
   }
 
-  const ph = PHOBIAS[rng.d(10) - 1];
+  const ph = PHOBIAS[rng.d(10) - 1]; // roll:selection
   const c = {
     cls, sub, race, intel, level: 1, sp: 0,
     maxWP, wp: maxWP,
@@ -539,12 +540,12 @@ export function rollCharacter(rng, exclude = [], force = null) {
     weapon: wpn, prof, magicWpn: sub === "Samurai" ? 2 : 0,
     armor: armor.name, ar: armor.ar, armorMin: armor.min,
     armorWP: armor.wp, armorMax: armor.wp, patches: 0,
-    temperament: TEMPERAMENTS[rng.d(12) - 1],
-    motive: MOTIVES[rng.d(12) - 1],
+    temperament: TEMPERAMENTS[rng.d(12) - 1], // roll:selection
+    motive: MOTIVES[rng.d(12) - 1], // roll:selection
     phobia: ph.n, phobiaType: ph.t,
     // Phase 54 (BAND-02, USER RULING D): STARTING_POTION_BONUS — a no-op at
     // identity.
-    potions: startingPotionsFor(cls === "Magic User" ? rng.d(6) : cls === "Thief" ? 2 : 1),
+    potions: startingPotionsFor(cls === "Magic User" ? rng.d(6) : cls === "Thief" ? 2 : 1), // roll:amount
     // Phase 54 (BAND-02, USER RULING D): FOOD_CLOCK — a no-op at identity.
     rations: startingRationsFor(cls === "Fighter" ? 6 : cls === "Thief" ? 5 : 4),
     // Phase 54 (BAND-02, USER RULING D): STARTING_GOLD — a no-op at identity.
@@ -556,7 +557,7 @@ export function rollCharacter(rng, exclude = [], force = null) {
     // 260918-w4n: the dropped healing cloak leaves CLOAKS at 7 rows — this
     // draws rng.d(CLOAKS.length) (still ONE gen.next() draw, rng cursor
     // unchanged) instead of the old literal d8.
-    items: cls === "Thief" ? [Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1])] : [],
+    items: cls === "Thief" ? [Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1])] : [], // roll:selection
     grimoire: cls === "Magic User" ? rollGrimoire(rng, sub) : [],
     spellsUsed: 0, kills: 0, might: 0, ward: null, regen: false, mirror: 0, foresight: false,
     // DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): a brand-new
@@ -644,7 +645,7 @@ export function checkLevel(state, rng, events = []) {
     } else if (c.sub === "Apprentice" && c.level >= 3) {
       let ns;
       do {
-        ns = CLASSES["Magic User"].subs[rng.d(8) - 1];
+        ns = CLASSES["Magic User"].subs[rng.d(8) - 1]; // roll:selection
       } while (ns === "Apprentice");
       c.sub = ns;
       c.grimoire = c.grimoire.filter((n2) => canLearn(ns, SPELLS.find((sp) => sp.n === n2) || { s: "offense" }));
@@ -654,7 +655,7 @@ export function checkLevel(state, rng, events = []) {
       rng.shuffle(fresh);
       const got = fresh.slice(0, 2).map((sp) => sp.n);
       c.grimoire.push(...got);
-      if (rng.d(8) === 1) {
+      if (rng.d(8) === 1) { // roll:mishap-on-1
         const nonFire = c.grimoire.filter((n2) => !["Fireball", "Freeze", "Lightning"].includes(n2));
         if (nonFire.length) {
           const lost = rng.pick(nonFire);

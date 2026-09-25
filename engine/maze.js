@@ -339,7 +339,7 @@ export function placeWater(g, depth, rng) {
     const seeds = eligibleSeeds();
     if (!seeds.length) break;
     const [sx, sy] = rng.pick(seeds);
-    const target = WATER_POOL_SIZE_MIN + rng.d(WATER_POOL_SIZE_MAX - WATER_POOL_SIZE_MIN + 1) - 1;
+    const target = WATER_POOL_SIZE_MIN + rng.d(WATER_POOL_SIZE_MAX - WATER_POOL_SIZE_MIN + 1) - 1; // roll:amount
     g[sy][sx].water = true;
     const pool = [[sx, sy]];
 
