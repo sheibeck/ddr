@@ -206,3 +206,42 @@ test("narrateEvent: a deep-frozen foeMissed event narrates identically twice and
   assert.equal(first, second);
   assert.match(first, /Sidestep \+2, insulted −1/);
 });
+
+// ═════════════════════════════════════════════════════════════════════════
+// Task 2 (74-03): the rail lines (LINE_FOR), the would-have-hit names, and
+// the fleeRolled line's shared modsText call — src/browser/narrationLines.js
+// ═════════════════════════════════════════════════════════════════════════
+
+test("LINE_FOR.heightsFear: penalty 2 reads 'Heights: −2 on the climb.'", () => {
+  assert.equal(LINE_FOR.heightsFear({ type: "heightsFear", penalty: 2 }).text, "Heights: −2 on the climb.");
+});
+
+test("LINE_FOR.waterFear: penalty 1 reads 'Bodies of water: −1 on the leap.'", () => {
+  assert.equal(LINE_FOR.waterFear({ type: "waterFear", penalty: 1 }).text, "Bodies of water: −1 on the leap.");
+});
+
+test("LINE_FOR.foeMissed: a would-have-hit Weaken cap ('penalty') names 'Weaken', not the raw engine name", () => {
+  const text = LINE_FOR.foeMissed({
+    type: "foeMissed",
+    name: "Zit",
+    roll: 16,
+    atLeast: 17,
+    mods: [{ name: "penalty", delta: -2 }],
+  }).text;
+  assert.match(text, /Weaken/);
+  assert.doesNotMatch(text, /penalty/);
+});
+
+test("LINE_FOR.fleeRolled: Thief +5, Mail −1 still reads unchanged through the shared formatter", () => {
+  const text = LINE_FOR.fleeRolled({
+    type: "fleeRolled",
+    roll: 8,
+    atLeast: 10,
+    dieN: 20,
+    mods: [
+      { name: "Thief", delta: 5 },
+      { name: "Mail", delta: -1 },
+    ],
+  }).text;
+  assert.equal(text, "Flee: 8 vs 10–20 (Thief +5, Mail −1)");
+});

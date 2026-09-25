@@ -51,7 +51,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // Phase 73 (ROLL-05): rollRange.js is the ONE place a winning range is
 // formatted ("16–20") — like upgradeWhy.js, it carries zero imports of its
 // own, so pulling it in here does not trip T-25-23's engine-import guard.
-import { rangeText, rollVsText } from "./rollRange.js";
+import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS } from "./rollRange.js";
 
 /**
  * TONES — the tone-family vocabulary every narration line (and the
@@ -320,12 +320,11 @@ function soakSuffix(soaked) {
   return parts.length ? ` · ${parts.join(", ")} soaked` : "";
 }
 
-/** fleeModsText(mods) — "Thief +5" / "Thief +5, Mail −1" (Phase 42, FLEE-02;
- * mirrors eventNarration.js's modsText format so the line/Oracle/fight-
- * log surfaces all speak the same modifier vocabulary). */
-function fleeModsText(mods) {
-  return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
-}
+// Phase 74 (ROLL-02/03): the module-private fleeModsText this file used to
+// define is gone — fleeRolled below now calls rollRange.js's modsText
+// directly (ROLLERS.you; the hero's own roll, never flipped) so the flee
+// line speaks the exact same player-signed modifier vocabulary as every
+// other surface, rather than restating the format locally.
 
 const CRIT_BY_TEXT = {
   stealth: "stealth",
@@ -1028,9 +1027,12 @@ export const LINE_FOR = {
   // the dedicated death/epitaph screen still owns the `died` event itself.
   entombed: () => ({ text: "The cloak gives out. The stone does not.", tone: "hurt", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  heightsFear: (e) => ({ text: `Heights: +${e?.penalty ?? 0} on the roll.`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 74 (ROLL-02/03): the player-signed cost of the check, matching
+  // eventNarration.js's heightsFear/waterFear sign rule.
+  heightsFear: (e) => ({ text: `Heights: ${signedText(-(e?.penalty ?? 0))} on the climb.`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  waterFear: (e) => ({ text: `Bodies of water: +${e?.penalty ?? 0} on the roll.`, tone: "hurt", priority: PRIORITY.other }),
+  // Phase 74 (ROLL-02/03): see heightsFear's comment above for the sign rule.
+  waterFear: (e) => ({ text: `Bodies of water: ${signedText(-(e?.penalty ?? 0))} on the leap.`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   trappedPanic: (e) => ({ text: `${e?.phobia ?? "Being trapped"}: four walls, one used door (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 41 (TERR-04/05): a fresh terrain-phobia region entry — the same
@@ -1197,7 +1199,7 @@ export const LINE_FOR = {
   fleeRolled: (e) => {
     const mods = e?.mods ?? [];
     return {
-      text: `Flee: ${rollVsText(e?.roll, e?.atLeast, e?.dieN)}${mods.length ? ` (${fleeModsText(mods)})` : ""}`,
+      text: `Flee: ${rollVsText(e?.roll, e?.atLeast, e?.dieN)}${mods.length ? ` (${modsText(mods, ROLLERS.you)})` : ""}`,
       tone: "beat",
       priority: PRIORITY.other,
     };
@@ -1286,7 +1288,9 @@ export const LINE_FOR = {
     // roll-high mirror of the old `e.roll <= e.need - negSum` reading.
     const wouldHaveHit = negative.length > 0 && e?.roll != null && e?.atLeast != null && e.roll >= e.atLeast + negSum;
     let text = `${e?.name ?? "It"} misses ${e?.member ?? "you"}`;
-    if (wouldHaveHit) text += ` · ${negative.map((m) => m.name).join(", ")}`;
+    // Phase 74 (ROLL-02/03): name each entry through modLabel — the
+    // Weaken cap's raw name ("penalty") reads as "Weaken" here too.
+    if (wouldHaveHit) text += ` · ${negative.map((m) => modLabel(m.name)).join(", ")}`;
     return { text, tone: "dodge", priority: e?.member ? PRIORITY.feature : PRIORITY.them };
   },
   wardReflected: (e) => ({ text: `The ward throws ${e?.amount ?? 0} back.`, tone: "hit", priority: PRIORITY.them }),

@@ -72,14 +72,14 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     That does not work here.
 
 ▶ heightsFear
-    Heights: your stomach reaches the ground well before your feet do. +0 on a roll you wanted low.
-    Heights: your stomach reaches the ground well before your feet do. +0 on a roll you wanted low.
-    Heights: your stomach reaches the ground well before your feet do. +0 on a roll you wanted low.
+    Heights: your stomach reaches the ground well before your feet do. 0 on the climb.
+    Heights: your stomach reaches the ground well before your feet do. 0 on the climb.
+    Heights: your stomach reaches the ground well before your feet do. 0 on the climb.
 
 ▶ waterFear
-    Bodies of water: something down there may be wet. That is enough. +0 on a roll you wanted low.
-    Bodies of water: something down there may be wet. That is enough. +0 on a roll you wanted low.
-    Bodies of water: something down there may be wet. That is enough. +0 on a roll you wanted low.
+    Bodies of water: something down there may be wet. That is enough. 0 on the leap.
+    Bodies of water: something down there may be wet. That is enough. 0 on the leap.
+    Bodies of water: something down there may be wet. That is enough. 0 on the leap.
 
 ▶ trappedPanic
     Being trapped: four walls and one door you already used. −3 hp.
@@ -442,9 +442,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Drake's Bubble goes wide of Drake. The maze absorbs the effort without comment.
 
 ▶ memberStruck
-    16 vs 4–20 (class +3). Dante turns on Ysolde for 11 hp.
-    5 vs 20 (weapon −3, armor-bulk −3). Floater turns on Fenna for 3 hp.
-    3 vs 17–20 (weapon −1). Werebeast turns on Thalorin for 15 hp.
+    16 vs 4–20 (class −3). Dante turns on Ysolde for 11 hp.
+    5 vs 20 (weapon +3, armor-bulk +3). Floater turns on Fenna for 3 hp.
+    3 vs 17–20 (weapon +1). Werebeast turns on Thalorin for 15 hp.
 
 ▶ memberDowned
     Philly goes down, and what is left of them wants no further part of this.
@@ -467,9 +467,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Blumble sleeps through it.
 
 ▶ foeMissed
-    Rast swings at Ysolde, 18 vs 5–20 (dark-cap −1), and misses.
-    Zombie swings at Yrliss, 17 vs 15–20 (armor-bulk +3, fluency −3), and misses.
-    Bat/Rat swings at Esk, 7 vs 8–20 (weapon −1, armor-bulk −1), and misses.
+    Rast swings at Ysolde, 18 vs 5–20 (dark-cap +1), and misses.
+    Zombie swings at Yrliss, 17 vs 15–20 (armor-bulk −3, fluency +3), and misses.
+    Bat/Rat swings at Esk, 7 vs 8–20 (weapon +1, armor-bulk +1), and misses.
 
 ▶ wardReflected
     The ward throws 13 back at Drarl.
@@ -507,9 +507,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     The pendant drinks half of Bat/Rat's blow before it reaches you.
 
 ▶ struckByFoe
-    1 vs 9–20 (armor-bulk −2). Sterling hits you for 22 hp.
-    15 vs 13–20 (insulted −1). Werebeast hits you for 21 hp.
-    7 vs 18–20 (armor-bulk +2, armor-bulk +2). Dante hits you for 28 hp.
+    1 vs 9–20 (armor-bulk +2). Sterling hits you for 22 hp.
+    15 vs 13–20 (insulted +1). Werebeast hits you for 21 hp.
+    7 vs 18–20 (armor-bulk −2, armor-bulk −2). Dante hits you for 28 hp.
 
 ▶ wardFaded
     The ward fades.

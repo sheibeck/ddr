@@ -32,8 +32,8 @@ them — those rows are marked "unchanged" below, not rewritten.
 | `fellClimbing` | hp | type (wall) | "Gravity remembers you exist — 5 hp." | `Fall: the wall had other plans. −5 hp.` | Plan 01 |
 | `fellInGorge` | hp | type (crevice) | "Short. The floor of the crevice makes its introduction — 7 hp." | `Fall: short. The floor of the crevice makes its introduction. −7 hp.` | Plan 01 |
 | `trappedPanic` | hp | ADDED `phobia` | "Four walls and one door you already used. −4 hp." | `Being trapped: four walls and one door you already used. −4 hp.` | Plan 01 |
-| `heightsFear` | roll penalty | ADDED `penalty` | "Your stomach reaches the ground well before your feet do." | `Heights: your stomach reaches the ground well before your feet do. +2 on a roll you wanted low.` | Plan 01 |
-| `waterFear` | roll penalty | ADDED `penalty` | "Something down there may be wet. That is enough." | `Bodies of water: something down there may be wet. That is enough. +1 on a roll you wanted low.` | Plan 01 |
+| `heightsFear` | roll penalty | ADDED `penalty` | "Your stomach reaches the ground well before your feet do." | `Heights: your stomach reaches the ground well before your feet do. −2 on the climb.` | Plan 01 (Phase 74 ROLL-02/03: player-signed) |
+| `waterFear` | roll penalty | ADDED `penalty` | "Something down there may be wet. That is enough." | `Bodies of water: something down there may be wet. That is enough. −1 on the leap.` | Plan 01 (Phase 74 ROLL-02/03: player-signed) |
 | `waded` | squares | present (`cost`) | "Wading. Everything takes twice as long and smells worse." | `Water: 2 squares a step, and it smells worse.` | Plan 01 |
 | `summonBackfired` | hp | ADDED `spell`,`sub` | "The summoning turns on you for 9 hp." | `Summoning: Summon answered, then turned on you — a Summoner's doubled creatures come with a grudge. −9 hp.` | Plan 01 |
 | `backfireSelfDamage` | hp | ADDED `spell`,`sub` | "It costs you 4 hp." | `Backfire: Fireball went wrong in your hands — the Apprentice tax, one time in eight. −4 hp.` | Plan 01 |
