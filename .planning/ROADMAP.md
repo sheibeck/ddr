@@ -724,7 +724,7 @@ Plans:
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
 - **Survivor (tiered):** live for X days in a single run. Tier thresholds are decided at planning, calibrated from bot/sim day counts.
 - **Hoarder (tiered):** gain X coin. Decide at planning whether it counts one run or lifetime, and whether it's coin earned or coin held.
-- **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Decide at planning whether a death before the first step (floor 0) also counts.
+- **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
 - **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. The tier thresholds are decided at planning.
 
 **Design principle: tiers and breadcrumbs (user, 2026-09-25):**
