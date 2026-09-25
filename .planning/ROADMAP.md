@@ -543,7 +543,7 @@ Plans:
   - Thief: Pickpocket, Pilfer, Cat Burglar, Cutthroat, Cloaker, Ninja, Con Artist, Acrobat
   - `src/browser/scoreTag.js:38` `TAG_SUBS` is a frozen, append-only index in a different order. `classOfSub()` is at `:66`.
 - **Play Games app / project ID `517177834262`:** `android/app/src/main/res/values/games-ids.xml:6`; runbook `docs/PLAY-GAMES-SETUP.md`.
-- **Board IDs:** `content/leaderboards.js` `LEADERBOARD_IDS`, one frozen entry per season with 5 keys (deep/lean/days/kills/purse). A `PLACEHOLDER` prefix means the board is skipped silently.
+- **Board IDs:** `content/leaderboards.js` `LEADERBOARD_IDS`, one frozen entry per season with 5 keys (deep/lean/days/kills/purse; `lean` goes away, see the LEANEST decision). A `PLACEHOLDER` prefix means the board is skipped silently.
 - **Scores:** `src/browser/boardScores.js`. The DEEPEST encoding is `floor * 1,000,000 - steps` (steps capped at 999,999), `largerIsBetter`. `leaderboardId(ids, season, board)` is at `:132`, and dev builds use `dev_{board}_s{season}` (`:165`).
 - **Submission:** `mazeworld.html` `onRunRecorded` → `src/browser/pgsQueue.js` enqueue (`:124`) → `flush()` → `provider.submitScore` (`:386`), one acked board at a time. Standing is fetched on the deep board (`:428-432`). The provider is `src/browser/playGames.js` (`@modbender/capacitor-play-games` 0.5.0).
 - **No service account yet:** `docs/RELEASING.md` "Uploading from the CLI (not set up yet)" and `C:/Users/Dell/.play/` does not exist.
@@ -571,18 +571,26 @@ Plans:
 **Decided (user, 2026-09-24): Google only, rolling season sets.**
 
 - **Play Games only.** No backend of our own and no managed leaderboard service. Considered and rejected: a Cloudflare Worker + D1 server (PGS `requestServerSideAccess` identity, `loadFriends` filter, replay-verified runs), and PlayFab / LootLocker / Nakama.
-- **Each season gets a full set of 29 boards** (5 main + 24 sub-class) with fresh IDs, added as a new `LEADERBOARD_IDS` entry plus a `SEASON` bump and an app update, as the season model already works. **The old season's set is deleted later** to stay under Play Games' **70-leaderboard cap**. Published boards cannot be reset, but they can be deleted.
-- **Rolling window:** at most two season sets live at once (58 boards). Season N-1's set must be deleted before Season N+1's set is created (3 × 29 = 87 > 70). Google does not document whether deleted boards still count toward the cap. **Test it once with a throwaway board** before the first rollover.
-- **The script therefore needs two modes:** `create --season N` (create the 29 boards, capture the IDs, write the `content/leaderboards.js` entry) and `delete --season N` (delete that season's 29 by name/ID; `--dry-run` first).
+- **Each season gets a full set of 28 boards** (4 main + 24 sub-class; LEANEST is dropped, see below) with fresh IDs, added as a new `LEADERBOARD_IDS` entry plus a `SEASON` bump and an app update, as the season model already works. **The old season's set is deleted later** to stay under Play Games' **70-leaderboard cap**. Published boards cannot be reset, but they can be deleted.
+- **Rolling window:** at most two season sets live at once (56 boards). Season N-1's set must be deleted before Season N+1's set is created (3 × 28 = 84 > 70). Google does not document whether deleted boards still count toward the cap. **Test it once with a throwaway board** before the first rollover.
+- **The script therefore needs two modes:** `create --season N` (create the 28 boards, capture the IDs, write the `content/leaderboards.js` entry) and `delete --season N` (delete that season's 28 by name/ID; `--dry-run` first).
 - **Once a season is deleted,** the panel's season picker must drop it (or show it as retired). `pgsQueue` must treat a "leaderboard not found" error on a retired season's board as permanent and drop the entry, not retry forever. Players who haven't updated keep submitting to the old boards until those are deleted, and after that the submissions are dropped.
+
+**Decided (user, 2026-09-24): drop LEANEST.**
+
+- **Why:** LEANEST ranks by steps per floor (`src/browser/boardScores.js` `lean = round(1000 × steps / max(floor, 1))`; local `engine/records.js` `compareRuns("lean")`). A 1-step death therefore tops it (a floor-0 death counts as one floor on Play Games, and a 1-step death on floor 1 tops the local board). The user's intended meaning, "deepest floor, then the fewest steps", is exactly DEEPEST's ordering (`floor × 1,000,000 − steps`). v2.0 Phase 66 D-09 had moved LEANEST to steps per floor precisely to stop it duplicating DEEPEST, so there is no honest single-number LEANEST left.
+- **Considered and parked:** "fewest steps to reach floor 5 / 10 / 15 / 20" speedrun boards. The user liked the idea, but it adds 4 boards per season, and the user wants fewer boards, not more. Keep it as an idea only.
+- **Scope of the removal:** drop `lean` from `RANKED_BOARDS` / `BOARD_IDS` (`engine/records.js`), `SUBMIT_BOARDS` / `SCORE_ORDER` / `boardScore` / `scoreFallback` (`src/browser/boardScores.js`), the `lean` key of every `LEADERBOARD_IDS` season entry, `content/boards.js` copy, the panel's board rail, the bests record's `lean` list (tolerant-load: an old `ddr.bests.v1` with a `lean` list loads cleanly and drops it), and queued `pgsQueue` entries' `lean` scores (dropped on load, never submitted). Also update `docs/PLAY-GAMES-SETUP.md` §7 (board table and "The LEANEST limit").
+- **The live Season-1 LEANEST board** (`CgkIlvbN0YYPEAIQAw`): stop submitting to it, then delete it in Play Console (or by the script's `delete` mode) once the update without it is out. That frees one slot under the 70 cap.
+- **Could land earlier:** this is a board removal like Phase 81's GRAVEYARD removal and closes a live exploit, so it could be folded into **Phase 81** (v2.1) instead of waiting for this milestone. Decide at v2.1 Phase 81 planning.
 
 **Open decisions (for milestone discussion):**
 
-- Race boards too? 6 more per season makes 35 per set, and two live sets = 70, exactly at the cap, so probably not. Race × sub-class (144) is impossible under the cap.
+- Race boards too? 6 more per season makes 34 per set, and two live sets = 68, just under the cap, so probably not. Race × sub-class (144) is impossible under the cap.
 - Board icons: `imageConfigurations.upload` (`LEADERBOARD_ICON`) could reuse the sub-class PNG art. Optional.
 - Does "you placed X" also report the sub-class standing on the death card?
 
-**Constraints:** shell and tooling only, so the engine is untouched and there are zero parity fixtures. The service-account key never enters the repo or `www/`. No new runtime SDK (the ads/analytics audit stays clean). Needs a signed-in Pixel 7 check (submission lands on the sub-class board; LINEAGE ALL/FRIENDS), batched into the milestone-close checklist.
+**Constraints:** shell and tooling, plus the pure `engine/records.js` board list for the LEANEST removal; zero parity fixtures expected (verify). The service-account key never enters the repo or `www/`. No new runtime SDK (the ads/analytics audit stays clean). Needs a signed-in Pixel 7 check (submission lands on the sub-class board; LINEAGE ALL/FRIENDS), batched into the milestone-close checklist.
 
 **Sources:** [leaderboardConfigurations.insert](https://developer.android.com/games/services/publishing/api/leaderboardConfigurations/insert) · [LeaderboardConfiguration resource](https://developer.android.com/games/services/publishing/api/leaderboardConfigurations) · [70-leaderboard limit](https://developers.google.com/games/services/common/concepts/leaderboards)
 
