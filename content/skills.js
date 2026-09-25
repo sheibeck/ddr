@@ -48,7 +48,14 @@ export const THIEF_SKILLS = {
   "Sewing": { cost: 4, up: 2, txt: "patch any armour, d6 back, 4 times", txt2: "patch any armour, d6+3 back, 6 times" },
   "Night Vision": { cost: 3, txt: "darkness costs you nothing" },
   "Heft": { cost: 5, txt: "+2 damage, mail armour, half upkeep" },
-  "Acute Hearing": { cost: 5, txt: "never surprised; 3 to hit the unseen" },
+  // DELIBERATE RULES CHANGE (Phase 72, ROLL-01, finding F2, user ruling
+  // 2026-09-24): "3 to hit the unseen" promised a to-hit bonus against an
+  // unseen foe that no engine site ever read (a dead claim) — dropped.
+  // "never surprised" is kept (its own initiative-side effect is real, see
+  // docs/ROLL-LEDGER.md's [initiative:acute-hearing] row). The user's
+  // requested replacement ("Hear the next room") is a new map feature, OUT
+  // of this phase's scope — tracked as HUD-07 in Phase 78.
+  "Acute Hearing": { cost: 5, txt: "never surprised" },
   "Dirty Trick": { cost: 3, active: "dirtyTrick", txt: "sand, thumb, elbow: the target is blinded for two rounds" },
   "Smoke": { cost: 4, active: "smoke", txt: "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works" },
   "Silent Step": { cost: 6, active: "silentStep", txt: "nobody heard that: your next attack is an automatic critical, any round" },

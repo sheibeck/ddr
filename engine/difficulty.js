@@ -677,9 +677,12 @@ export function fleeNeedModFor() {
 }
 
 /**
- * parleyNeedModFor() — PARLEY_NEED_MOD, added to engine/combat.js#parley's
- * `need` (after its own `Math.min(9 + bonus, 17)` ceiling). Identity: 0
- * (canon). Direction: up = harder.
+ * parleyNeedModFor() — PARLEY_NEED_MOD, subtracted from engine/combat.js
+ * #parley's `need` (after its own `Math.min(9 + bonus, 17)` ceiling), since
+ * parley succeeds on `roll <= need`. Identity: 0 (canon). Direction: up =
+ * harder (fewer faces succeed). Phase 72 (ROLL-01, finding F5): was
+ * mistakenly ADDED, which made a positive value easier — fixed to match
+ * this JSDoc's own documented direction.
  */
 export function parleyNeedModFor() {
   return live.PARLEY_NEED_MOD;

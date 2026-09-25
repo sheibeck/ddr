@@ -24,12 +24,15 @@
 //
 // Most BESTIARY creature `sp.*` flags (poison/disease/steals/enthrall/awe/
 // grapple/entangle/possess/raise/shriek/quills/loot/song/pack/
-// age/pursues/seesInvis/noTurn/never_melee/dark/daggerOnly/
+// age/pursues/seesInvis/noTurn/never_melee/dark/
 // caster/breaks/every, etc.) are flavor-only in the frozen prototype — grep
 // confirms none of them are ever read anywhere in mazeworld.html's live
 // logic (only `sp.note` feeds the UI). Only `sp.atk`, `sp.dmg`, `sp.toHit`,
 // `sp.fast`, `sp.magicOnly`, `sp.noArmor`, `sp.twice` (via `lives`),
-// `sp.shatterOnBest` (Phase 72, ROLL-01 (c) — see shatterIfBest below), and —
+// `sp.shatterOnBest` (Phase 72, ROLL-01 (c) — see shatterIfBest below),
+// `sp.daggerOnly` (Phase 72, ROLL-01, finding F3 — the Shadow's "only a
+// dagger or magic touches it" was inert in the frozen prototype; a DECLARED
+// CANON DIVERGENCE makes it real, mirroring magicOnly exactly), and —
 // since Phase 52 (DMG-02) — `sp.strikesAs` have any mechanical effect, and
 // this module implements exactly those, matching
 // the prototype's ACTUAL behavior rather than the aspirational flavor text
@@ -629,6 +632,12 @@ export function playerStrike(state, rng, events = []) {
     if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
     if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
     if (t.sp && t.sp.magicOnly && !c.magicWpn) need = 0; // only magic touches it
+    // Phase 72 (ROLL-01, finding F3, user ruling 2026-09-24): the Shadow's
+    // "only a dagger or magic touches it" (sp.daggerOnly) becomes real — a
+    // strike needs a dagger or a magic weapon, otherwise the target is
+    // untouchable, exactly like magicOnly above. DECLARED CANON DIVERGENCE:
+    // the prototype leaves daggerOnly inert (no engine site ever read it).
+    if (t.sp && t.sp.daggerOnly && !c.magicWpn && c.weapon !== "Dagger") need = 0; // only a dagger or magic touches it
     // Phase 38 (ABIL-02, need_shift_spec): Overhead Blow's party-agnostic
     // "you need two better to land it" self-penalty — a transient descriptor
     // term, zero draws, applied BEFORE Afraid so Afraid's own penalty stacks
@@ -1276,9 +1285,14 @@ export function parley(state, rng, events = []) {
     c.level -
     top;
   const roll = rng.d(20);
-  // Phase 54 (BAND-02, USER RULING D): PARLEY_NEED_MOD, added AFTER the
-  // 85% ceiling (D-08) — identity 0 is a structural no-op.
-  const need = Math.min(9 + bonus, 17) + parleyNeedModFor(); // D-08: an 85% ceiling — no stack is an auto-win
+  // Phase 72 (ROLL-01, finding F5): parley succeeds on roll <= need, so the
+  // dial is subtracted — a positive value is harder, as documented; identity
+  // 0 is a structural no-op. (The Phase 54 BAND-02 USER RULING D wiring
+  // added the dial instead, which made a positive value EASIER — the
+  // opposite of its own JSDoc; fixed without a ruling per CONTEXT's
+  // text-backed/local rule, since the dial is 0 at identity and no fixture
+  // moves.)
+  const need = Math.min(9 + bonus, 17) - parleyNeedModFor(); // D-08: an 85% ceiling — no stack is an auto-win
   events.push({ type: "parleyRolled", roll, need, fluency: flu });
   if (roll <= need) {
     // D-01/D-02: parley's payout is now STRUCTURALLY half of the same
@@ -1510,8 +1524,22 @@ export function allyTurn(state, rng, events = []) {
   const t = liveFoes(state)[0];
   if (!t) return events;
   const dieN = STRIKE_DICE[C.ally.lvl - 1];
-  const roll = rng.d(dieN);
-  if (roll <= 5) {
+  let roll = rng.d(dieN);
+  // Phase 72 (ROLL-01, finding F1, user ruling 2026-09-24): a summoned
+  // ally's strike now obeys the same per-target to-hit rules
+  // playerStrike/memberStrike apply — same order, applied to the flat
+  // need-5 baseline this function has always used. A summon carries no
+  // weapon of its own, so magicOnly/daggerOnly always leave it untouchable
+  // against a flagged foe (it has no magic weapon or dagger to touch one
+  // with).
+  let need = 5;
+  if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(dieN));
+  if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
+  if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
+  if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
+  if (t.sp && t.sp.magicOnly) need = 0; // only magic touches it
+  if (t.sp && t.sp.daggerOnly) need = 0; // only a dagger or magic touches it
+  if (roll <= need) {
     // Phase 72 (ROLL-01 (c)): a landed summoned-ally strike on its die's
     // best face shatters a shatter-flagged foe (the Skeleton) outright —
     // skip the damage roll. The `--C.ally.rounds` countdown below still
@@ -1576,11 +1604,24 @@ export function alliesTurn(state, rng, events = []) {
     const classed = !!(sheet && sheet.cls && RACES[sheet.race]);
     if (!classed) {
       // pre-25.1 LEGACY strike — an entry with no persistent sheet
-      // (defensive; every real member has one). Byte-identical to before.
+      // (defensive; every real member has one).
       const t = foes[0];
       const legacyDieN = STRIKE_DICE[clamp(ally.lvl, 1, 5) - 1];
-      const roll = rng.d(legacyDieN);
-      if (roll <= 5) {
+      let roll = rng.d(legacyDieN);
+      // Phase 72 (ROLL-01, finding F1, user ruling 2026-09-24): a legacy
+      // ally's strike now obeys the same per-target to-hit rules
+      // playerStrike/memberStrike apply — same order, applied to the flat
+      // need-5 baseline this branch has always used. A legacy entry has no
+      // weapon of its own, so magicOnly/daggerOnly always leave it
+      // untouchable against a flagged foe.
+      let need = 5;
+      if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(legacyDieN));
+      if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
+      if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
+      if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
+      if (t.sp && t.sp.magicOnly) need = 0; // only magic touches it
+      if (t.sp && t.sp.daggerOnly) need = 0; // only a dagger or magic touches it
+      if (roll <= need) {
         // Phase 72 (ROLL-01 (c)): a landed legacy-ally strike on its die's
         // best face shatters a shatter-flagged foe (the Skeleton) outright —
         // skip the damage roll.
@@ -1859,8 +1900,24 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
  */
 function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   let need = memberToHit(view);
+  const dieN = strikeDie(view);
+  let roll = rng.d(dieN);
+  // Phase 72 (ROLL-01, finding F1, user ruling 2026-09-24): a party member's
+  // strike now obeys the SAME per-target to-hit rules playerStrike applies
+  // to the hero — every bestiary note promising one of these terms is
+  // written for "a strike", not "the hero's strike specifically". Same
+  // order as playerStrike: Philly's second die first (it narrows the ROLL,
+  // not the need), then dozing/stupid, sp.toHit, sp.fast, magicOnly,
+  // daggerOnly (F3), and finally the ability descriptor's own needShift —
+  // mirroring playerStrike's Overhead Blow, which also applies AFTER the
+  // per-target terms.
+  if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(dieN));
+  if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
+  if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
+  if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
+  if (t.sp && t.sp.magicOnly && !view.magicWpn) need = 0; // only magic touches it
+  if (t.sp && t.sp.daggerOnly && !view.magicWpn && view.weapon !== "Dagger") need = 0; // only a dagger or magic touches it
   if (mod && mod.needShift) need = Math.max(1, need + mod.needShift);
-  const roll = rng.d(strikeDie(view));
   const weapon = sheet.weapon;
   const auto = !!(mod && mod.autoHit);
   if (!auto && roll > need) {
@@ -1878,7 +1935,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   // Phase 72 (ROLL-01 (c)): a landed member strike on its die's best face
   // shatters a shatter-flagged foe (the Skeleton) outright — skip the
   // damage roll.
-  if (shatterIfBest(state, t, roll, strikeDie(view), ally.name, rng, events)) return;
+  if (shatterIfBest(state, t, roll, dieN, ally.name, rng, events)) return;
   let dmg = weaponDamage(view, rng);
   if (mod && mod.bonusDmg) dmg += mod.bonusDmg;
   const noCrit = view.sub === "Guard" || view.sub === "Soldier";

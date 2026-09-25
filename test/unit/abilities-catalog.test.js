@@ -74,7 +74,9 @@ test("Locks/Sewing keep their up-tier + txt2; the ten kept passives keep their e
     "THIEF_SKILLS.Sewing": [THIEF_SKILLS, "Sewing", "patch any armour, d6 back, 4 times"],
     "THIEF_SKILLS.Night Vision": [THIEF_SKILLS, "Night Vision", "darkness costs you nothing"],
     "THIEF_SKILLS.Heft": [THIEF_SKILLS, "Heft", "+2 damage, mail armour, half upkeep"],
-    "THIEF_SKILLS.Acute Hearing": [THIEF_SKILLS, "Acute Hearing", "never surprised; 3 to hit the unseen"],
+    // Phase 72 (ROLL-01, finding F2): the dead "3 to hit the unseen" clause
+    // (no engine site ever read it) was dropped; "never surprised" is kept.
+    "THIEF_SKILLS.Acute Hearing": [THIEF_SKILLS, "Acute Hearing", "never surprised"],
   };
   for (const [label, [table, key, txt]] of Object.entries(KEPT_TXT)) {
     assert.equal(table[key].txt, txt, `${label}: kept-passive txt must be byte-identical to the pre-phase string`);

@@ -3036,3 +3036,80 @@ narrationLines.js`) entries, satisfying both coverage guards
 (`test/unit/formatEventsCoverage.test.js`, `test/unit/
 narrationLinesCoverage.test.js`).
 
+### Plan 07 — late findings (F5 and rulings): measured zero
+
+**The changes.** F5 (`docs/ROLL-LEDGER.md`'s `## New findings`): `engine/
+combat.js#parley`'s `need` line now SUBTRACTS `parleyNeedModFor()` instead of
+adding it — `Math.min(9 + bonus, 17) - parleyNeedModFor()` — matching
+`parleyNeedModFor`'s own JSDoc ("up = harder"); the dial defaults to 0
+(identity), so `- 0` is byte-identical to `+ 0` for every fixture regardless
+of whether it ever calls parley. F1 (user-ruled fix, `## Rulings`):
+`memberStrike`, `alliesTurn`'s legacy (unclassed) branch, and `allyTurn`
+(the summoned ally) all gain the SAME per-target to-hit chain
+`playerStrike` already applies to the hero — dozing/stupid's need-5 floor,
+`sp.toHit`'s cap, `sp.fast`'s one-face narrowing, `sp.magicOnly`'s
+untouchability, and Philly's `sp.slow` keep-the-lower second die — applied
+to each function's own baseline need (the member's `memberToHit(view)`, or
+the flat 5 the legacy/summon paths have always used). F3 (user-ruled fix):
+the Shadow's `sp.daggerOnly` ("only a dagger or magic touches it") becomes
+a real, engine-enforced untouchability term — exactly like `magicOnly` —
+wired into all four to-hit sites F1 touches PLUS `playerStrike` itself (the
+hero's own strike), a DECLARED CANON DIVERGENCE (the frozen prototype never
+read `daggerOnly` at all).
+
+**The predictor.** F5 needs no reachability argument — the dial is 0 in
+every fixture, so the sign flip is a structural no-op regardless of whether
+parley is ever called (seed 303's `parley` scenario calls it, and still
+moves nothing, since `- 0 === + 0`). F1 and F3 both reduce, by the SAME
+"Parity-exposed bestiary surface" argument Plan 06 already established
+(`## Parity-exposed bestiary surface` above): every one of the 31 replay
+sites rolls only Beasts lvl 1 (Bat/Rat, Shriek, Viper) or Humans lvl 1
+(Ned/Dante) — `content/bestiary.js` confirms none of those five entries
+carries `sp.toHit`, `sp.fast`, `sp.magicOnly`, `sp.daggerOnly`, or
+`sp.slow` — and (for F1 specifically) no fixture ever populates
+`state.party`/`combat.allies`/`combat.ally` (the same JOIN-02/72-04
+precedent), so `memberStrike`/`alliesTurn`'s legacy branch/`allyTurn` never
+run at all against any of the 31 sites. Predicted moved set for all three:
+**zero**.
+
+**The live-scan results — measured, not assumed.**
+1. `node --test test/parity/*.test.js`: **47 tests, 47 pass, 0 fail** (unchanged from Plan 06's count).
+2. `node tools/initiative-fixture-scan.mjs | diff --strip-trailing-cr - tools/initiative-fixture-scan-output.txt`: empty.
+3. `node tools/worn-fixture-scan.mjs | diff --strip-trailing-cr - tools/worn-fixture-scan-output.txt`: empty.
+4. `node --test test/parity/fixture-inventory.test.js`: **5 tests, 5 pass, 0 fail** (the roster is unchanged).
+5. `git diff --stat 9197002..HEAD -- test/parity/fixtures/ test/parity/harness/comparables.js test/parity/prototype-master.js.txt`: empty.
+6. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s
+`ROLL-01 (Phase 72)` test is extended with parts (d) and (e): the same
+31-site replay that already proves zero `memberStruck`/member-`foeMissed`
+events (part b) and zero `foeShattered` events (part c) also asserts zero
+`allyStruck`/`allyMissed` events (part d, F1's unreachability) and zero
+`encounterStarted` events naming a Shadow among their foes (part e, F3's
+unreachability) — `ROLL01_EXPECTED_HOLDERS` stays `[]` (F1/F3/F5 all
+measure a zero moved set, same as 72-04/05/06).
+
+#### Moved set — declared records
+
+**Empty — a measured zero.** No holder's `divergence.phase` gains a `+72`
+from this plan.
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+#### Byte-identical elsewhere
+
+`test/parity/harness/comparables.js` is untouched — F5's dial and F1/F3's
+new per-target need terms are pure arithmetic on values already read inside
+existing to-hit functions, adding no new serialized field. `content/
+skills.js`'s Acute Hearing text edit (F2) is not serialized into any
+fixture either — `engine/character.js#rollCharacter` stores `c.skills` as a
+plain `{ [name]: level }` map with no `txt` (confirmed by 72-04's own
+Task 2 check for the Smoke text edit; re-confirmed here: `test/parity/
+fixtures/action-script.chargen.json` and `action-script.encounters.json`
+both carry only `"Acute Hearing": 1`-style key/level pairs, never the
+skill's `txt` string). `test/parity/prototype-master.js.txt` hash is
+unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`) — the frozen
+prototype is never edited.
+
