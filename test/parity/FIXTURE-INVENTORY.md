@@ -3177,3 +3177,90 @@ from this phase, across any of the nine plans.
 |---|---|---|---|---|---|---|
 | *(none — measured zero)* | | | | | | |
 
+## Phase 75: engine rules (RULES-01..15) — measured per plan
+
+Phase 75 closes eight canon rule gaps the device reports and the ROADMAP
+found (RULES-01..08). Each plan measures its own moved set independently,
+in its own subsection below; later Phase 75 plans record their own
+measurements here as they land, consolidated into one summary by 75-13.
+
+### Plan 05 — the Summoner gate removal and grant-time legality (RULES-03): measured
+
+**The rule.** `content/mu-chart.js` drops `MU_CHART.Summoner.gate` entirely
+— a level-1 Summoner now rolls and casts offense (schoolGate("Summoner",
+"offense") reads the default 1). For the six sub-classes that keep a
+school gate (Warlock, Sorcerer, Court Mage, Illusionist, Cleric,
+Apprentice), a new predicate — `grantableAt(sub, sp, level)` =
+`canLearn(sub, sp) && schoolGate(sub, sp.s) <= level` (`engine/
+character.js`) — is wired into all four grant paths: `rollGrimoire`'s
+`low`/`high` walks (new `level` parameter, default 1), `checkLevel`'s
+Sorcerer gain and Apprentice reveal, and `engine/encounters.js#findGrimoire`.
+Every call site SKIPS a non-grantable spell while walking an
+ALREADY-SHUFFLED list — no re-roll, no re-shuffle, no reordered draw. A
+book may still hold a higher-LEVEL spell, as canon does; the cast-time
+level lock stays entirely inside `canCast`.
+
+**The predictor.** Two independent effects can move a fixture:
+
+1. The Summoner's offense gate removal widens `rollGrimoire`'s day-one
+   `spare` pool (`dayOnePool`, unchanged predicate, now includes the
+   previously-gated level-1 offense spells for the Summoner) — this
+   LENGTHENS `rng.shuffle(spare)`'s draw count for the Summoner alone
+   (every other sub's pool is untouched by this specific effect), moving
+   every Summoner chargen seed's rng cursor from that point on. Predicted:
+   chargen seed 15 (the fixture's one Summoner seed).
+2. The grant-time legality filter changes WHICH spell fills a book slot for
+   any of the six gated subs whenever the shuffled `low`/`high` walk would
+   otherwise have handed out a spell whose school is still closed — this
+   changes book CONTENT (never the shuffle/draw count) for that seed.
+   Predicted: chargen seeds 24 (Apprentice, divination gated at 3) and 29
+   (Warlock, protection gated at 4); combat `lose-apprentice`'s
+   `chargenDivergence` (seed 127, Apprentice, divination gated at 3).
+
+**The live-scan results — measured, not assumed.** Every predicted seed was
+replayed live via `newRun(seed)` (chargen) and the fixture's own action
+script (combat), never hand-typed:
+
+- Seed 15 (Summoner): the LIVE engine's grimoire (`["Stupidity", "Stun",
+  "Lesser Summon", "Shield", "Summon"]`) is BYTE-IDENTICAL to the
+  already-declared Phase 40 `after` value — this predicted mover does NOT
+  actually move. (The widened `spare` pool changes the SHUFFLE's draw
+  count, per test/unit/chargen-rng-pin.test.js's re-measured
+  `ROLL_GRIMOIRE_DRAW_COUNTS.Summoner: 31 -> 36`, but this particular
+  seed's shuffle happens to still land on the same final book content.)
+- Seed 24 (Apprentice): Map the Floor (divination, gate 3) is dropped from
+  the low walk; the walk reaches one entry further and lands on Weaken
+  (offense, ungated) instead — **moved**.
+- Seed 29 (Warlock): Shield (protection, gate 4) is dropped from the low
+  walk; the walk reaches one entry further and lands on Doze (offense,
+  ungated) instead — **moved**.
+- `action-script.combat.json#lose-apprentice` (seed 127, Apprentice): Map
+  the Floor is dropped the same way, replaced by Insane (offense,
+  ungated) — **moved**. The scenario's own action-path `divergence`
+  (`wp`/`sp`/`gold`/`kills`/`rations`) is re-measured live and confirmed
+  UNCHANGED (this scenario only ever `attack`s, never casts).
+
+`node --test "test/parity/**/*.test.js"`: **53 tests, 53 pass, 0 fail.**
+`git diff --stat <plan-base> -- test/parity/prototype-master.js.txt
+test/parity/harness/comparables.js`: empty — no comparable carve-out was
+needed (grimoire is already a compared/stripped field on every touched
+holder). `git hash-object test/parity/prototype-master.js.txt`:
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+
+#### Moved set — declared records
+
+| Holder | Site / seed | Hero | record | fields before → after | rationale pointer |
+|---|---|---|---|---|---|
+| `action-script.chargen.json#seed-24` | chargen, seed 24 | Human Magic User Apprentice | `divergences["24"]` | `grimoire`: `[...,"Map the Floor",...]` → `[...,"Weaken",...]` (position 3) | Apprentice divination gate 3 |
+| `action-script.chargen.json#seed-29` | chargen, seed 29 | (race) Magic User Warlock | `divergences["29"]` | `grimoire`: `["Map the Floor","Shield",...]` → `["Map the Floor",...,"Doze",...]` (Shield dropped, Doze added) | Warlock protection gate 4 |
+| `action-script.combat.json#lose-apprentice` | combat, seed 127 | Human Magic User Apprentice | `chargenDivergence` | `grimoire`: `[...,"Map the Floor",...]` → `[...,"Insane",...]` (position 2) | Apprentice divination gate 3 |
+
+Seed 15 (Summoner) was predicted but measured NOT to move (see above) — it
+is not in the declared set. Every other chargen seed, and every other
+combat/magic/economy/encounters scenario, is byte-identical to its
+pre-Plan-05 value; `test/parity/divergence-records.test.js`'s
+`RULES75_EXPECTED_HOLDERS` guard pins this exact three-holder set.
+
+Later Phase 75 plans record their own measurements in their own
+subsections here, consolidated into one Phase-wide summary by 75-13.
+

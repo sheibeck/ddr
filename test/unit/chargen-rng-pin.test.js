@@ -83,9 +83,18 @@ function countingRng(inner) {
 // Pinned via `rng.getState()` immediately after `rollCharacter(rng)`, one
 // fresh `makeRng(seed)` per entry, measured on the untouched pre-Phase-23
 // engine (commit f344642, 2026-09-14).
+//
+// RULES-03 (Phase 75, user 2026-09-25): seed 15 re-measured live — it rolls a
+// Summoner, whose `dayOnePool`/`spare` pool now includes the previously-gated
+// level-1 offense spells (the Summoner's offense gate is removed,
+// content/mu-chart.js), lengthening `rng.shuffle(spare)` inside
+// rollGrimoire by 5 draws (31 -> 36, see ROLL_GRIMOIRE_DRAW_COUNTS.Summoner
+// below). This is the ONE declared chargen mover for this plan
+// (test/parity/FIXTURE-INVENTORY.md's Phase 75 Plan 05 section); every
+// other seed's cursor is unchanged.
 const ROLL_CHARACTER_PINS = {
   1: -2023389403, 2: -759718062, 3: 1071847752, 4: -759718060, 6: 440012085,
-  7: -447588372, 8: -1015482844, 13: -2023389391, 14: -2023389390, 15: 2079754316,
+  7: -447588372, 8: -1015482844, 13: -2023389391, 14: -2023389390, 15: -1647318507,
   17: 1071847766, 19: 816082980, 24: 2015813128, 29: 1447918660, 32: -2023389372,
   35: 1447918666, 38: 1071847787, 160: 1071847909, 256: -759717808, 303: 1071848052,
 };
@@ -93,17 +102,29 @@ const ROLL_CHARACTER_PINS = {
 // Pinned via `newRun(seed).rngState` — a DIFFERENT (larger) cursor than the
 // rollCharacter-only pins above, because newRun also generates the starting
 // floor (genFloor) after chargen finishes. Same seeds, same untouched engine.
+//
+// RULES-03 (Phase 75): seed 15 re-measured live — same cause as
+// ROLL_CHARACTER_PINS above (the Summoner's widened spare pool).
 const NEW_RUN_PINS = {
   1: -1692776321, 2: 266671887, 3: 1466402031, 4: 266671889, 6: 202730694,
-  7: 514860380, 8: 74848302, 13: -365163772, 14: 2034296515, 15: 10907112,
+  7: 514860380, 8: 74848302, 13: -365163772, 14: 2034296515, 15: -1252764228,
   17: 1466402045, 19: -1188823027, 24: -556987352, 29: -1820658687, 32: -1692776290,
   35: 642742802, 38: -996999417, 160: -1564893768, 256: 2098237954, 303: -429104679,
 };
 
 // Pinned per-sub rollGrimoire draw counts (constant across seeds — proven by
 // the sweep below), measured on the untouched engine.
+//
+// RULES-03 (Phase 75, user 2026-09-25): Summoner re-measured live, 31 -> 36
+// — the offense gate's removal (content/mu-chart.js) widens `dayOnePool`
+// (`sp.lvl === 1 && schoolGate(sub, sp.s) <= 1`, this file's own formula
+// below) to include the level-1 offense spells (Doze, Freeze, Stun, Weaken),
+// lengthening `rng.shuffle(spare)`'s draw count. Every other sub is
+// unchanged (none of the six sub-classes that keep a gate has its `spare`
+// pool touched by this plan's grant-time filter, which only skips spells
+// while WALKING low/high — never widens or narrows the spare shuffle).
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
-  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 31,
+  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 36,
   Cleric: 34, Illusionist: 34, "Court Mage": 34, Apprentice: 38,
 };
 

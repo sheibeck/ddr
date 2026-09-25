@@ -30,7 +30,7 @@ import { skill, skillTier, canLearn, intelBonus, itemEffectActive } from "./deri
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, lootFor, classTrapAvoidFor, remapEncounterResult } from "./difficulty.js";
-import { checkLevel, rollCharacter, grantLevelAbilities } from "./character.js";
+import { checkLevel, rollCharacter, grantLevelAbilities, grantableAt } from "./character.js";
 import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
 import { openStore } from "./economy.js";
@@ -379,6 +379,14 @@ export function findFood(state, rng, events = []) {
  * findGrimoire(state, rng, events) — sells an unusable book for gold, or
  * (a Magic User) copies out up to `max(1, d4)` new learnable spells. Ports
  * mazeworld.html findGrimoire() (lines 2165-2173).
+ *
+ * RULES-03 (Phase 75, user 2026-09-25): the `learnable` pool and its shuffle
+ * are UNCHANGED (still `canLearn`, so the shuffle's length/draw count never
+ * moves) — only the WALK that fills `got` is grant-time-legal: it takes the
+ * first k = max(1, d4) spells off the already-shuffled list that are
+ * grantable at the hero's CURRENT level (`grantableAt`), skipping a spell
+ * whose school is still gated above that level. The d4 itself is drawn
+ * exactly where it always was.
  */
 export function findGrimoire(state, rng, events = []) {
   const c = state.c;
@@ -389,7 +397,12 @@ export function findGrimoire(state, rng, events = []) {
   }
   const learnable = SPELLS.filter((sp) => canLearn(c.sub, sp) && !c.grimoire.includes(sp.n));
   rng.shuffle(learnable);
-  const got = learnable.slice(0, Math.max(1, rng.d(4))).map((sp) => sp.n); // roll:amount
+  const k = Math.max(1, rng.d(4)); // roll:amount
+  const got = [];
+  for (const sp of learnable) {
+    if (got.length >= k) break;
+    if (grantableAt(c.sub, sp, c.level)) got.push(sp.n);
+  }
   c.grimoire.push(...got);
   events.push({ type: "grimoireLearned", spells: got });
   return events;
