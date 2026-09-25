@@ -215,7 +215,7 @@ Plans:
 
   9. A day without enough rations refills no spell books, and the player is told why.
 
-**Plans**: 6/13 plans executed
+**Plans**: 8/13 plans executed
 
 - [x] 75-01-PLAN.md
 - [x] 75-02-PLAN.md
@@ -223,8 +223,8 @@ Plans:
 - [x] 75-04-PLAN.md
 - [x] 75-05-PLAN.md
 - [x] 75-06-PLAN.md
-- [ ] 75-07-PLAN.md
-- [ ] 75-08-PLAN.md
+- [x] 75-07-PLAN.md
+- [x] 75-08-PLAN.md
 - [ ] 75-09-PLAN.md
 - [ ] 75-10-PLAN.md
 - [ ] 75-11-PLAN.md
@@ -277,6 +277,7 @@ Plans:
 **Wave 7** *(blocked on Wave 6 completion)*
 
 - [ ] 75.1-08-PLAN.md — Close Phase 75.1's engine gate: record both balance changes against their readouts, write the fixture story with a standing exposure guard, note the new check sites in the roll ledger, refresh the voice sample, and pr... (wave 7)
+
 **UI hint**: yes
 
 ### Phase 75.2: Hero Size Matters (INSERTED)
@@ -409,6 +410,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [ ] 80-05-PLAN.md — Run the emulator pass CONTEXT asked for: an R8 release smoke, edge-to-edge in gesture and 3-button navigation and with a display cutout, and the tablet and foldable large-screen behaviour, with screenshots in the phas... (wave 4)
+
 **UI hint**: yes
 **Device check**: yes — DROID-02/03 recommended for `--research-phase` (Android 15/16 edge-to-edge + large-screen handling); needs device checks in both navigation modes plus an emulator tablet/foldable, batched into the milestone-close Pixel 7 checklist.
 
@@ -466,7 +468,7 @@ Plans:
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
 | 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
-| 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 6/13 | In Progress|  |
+| 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 8/13 | In Progress|  |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
