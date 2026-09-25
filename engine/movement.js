@@ -29,7 +29,7 @@
 import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
 import { difficultyCurve, scaleHazard, heroSpFor, heroRegenFor, campHealFor, wanderWakeFacesFor } from "./difficulty.js";
 import { skill, skillTier, upkeep, eff, revealRadius, isFlying, armorBulk, itemEffectActive, activationFor, hasTool, moveCost, inStone } from "./derived.js";
-import { rollDice } from "./dice.js";
+import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
@@ -255,37 +255,54 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
       noteHeightsAttempt(state, nx, ny, events);
       let ok = true;
       let hurt = 0;
+      // Phase 73 (ROLL-05): every modifier (the phobia penalty, armor bulk)
+      // folds into the roll-high THRESHOLD (faces), never the die — the
+      // raw rng.d(10) draw stays exactly where it was, same order, same
+      // count. `checkFields` carries the reported roll/atLeast/dieN triple
+      // for whichever branch ran; `rollsList` (climb only) carries every
+      // segment's own mirrored roll.
+      let checkFields = {};
+      let rollsList = null;
       if (climbing) {
         const hPenalty = heightsPenalty(state.c);
         // Phase 43 (CLAR-01, additive): penalty names the cause for the
         // narration; fixtures compare state, so this moves none.
         if (hPenalty) events.push({ type: "heightsFear", penalty: hPenalty });
-        const kind = rng.pick(["rope", "rock", "wood"]);
+        const kind = rng.pick(["rope", "rock", "wood"]); // roll:selection
         const tbl = CLIMB_TABLE[kind];
-        const feet = 10 * (1 + rng.d(2));
+        const feet = 10 * (1 + rng.d(2)); // roll:selection
+        // Phase 38 (ABIL-02): the retired climb bonus — no term subtracted here anymore.
+        // Phase 39 (GEAR-01): armor bulk is a deterministic penalty on the
+        // roll comparison, exactly like hPenalty above — no new rng draw.
+        // Phase 73 (ROLL-05): the penalties are constant across every
+        // segment, so they fold into the winning-face count ONCE, here.
+        const climbFaces = tbl.success - hPenalty - armorBulk(state.c);
+        rollsList = [];
+        let lastCheck = null;
         for (let ft = 0; ft < feet && ok; ft += 10) {
-          // Phase 38 (ABIL-02): the retired climb bonus — no term subtracted here anymore.
-          // Phase 39 (GEAR-01): armor bulk is a deterministic penalty on the
-          // roll comparison, exactly like hPenalty above — no new rng draw.
-          const r = rng.d(10) + hPenalty + armorBulk(state.c);
-          if (r <= tbl.success) continue;
+          const check = rollCheck(rng, 10, atLeastFor(climbFaces, 10));
+          lastCheck = check;
+          rollsList.push(check.roll);
+          if (check.ok) continue;
           ok = false;
-          for (let g = 0; g <= ft; g += 10) if (rng.d(20) > 2) hurt += rollDice(rng, tbl.fall);
+          for (let g = 0; g <= ft; g += 10) if (rng.d(20) > 2) hurt += rollDice(rng, tbl.fall); // roll:already-high
           // Phase 38 (ABIL-02): the retired climb and leap fall-damage halving — gone for everyone.
         }
+        checkFields = rollFields(lastCheck);
       } else {
         const wPenalty = waterPenalty(state.c);
         // Phase 43 (CLAR-01, additive): penalty names the cause for the
         // narration; fixtures compare state, so this moves none.
         if (wPenalty) events.push({ type: "waterFear", penalty: wPenalty });
-        const row = LEAP_TABLE[rng.d(4) - 1];
+        const row = LEAP_TABLE[rng.d(4) - 1]; // roll:selection
         const need = state.c.cls === "Fighter" ? row.F : state.c.cls === "Thief" ? row.T : row.M;
         // Phase 38 (ABIL-02): the retired leap bonus — no term subtracted here anymore.
         // Phase 39 (GEAR-01): armor bulk penalty, same as the climb branch above.
-        const r = rng.d(10) + wPenalty + armorBulk(state.c);
-        if (r > need) {
+        const check = rollCheck(rng, 10, atLeastFor(need - wPenalty - armorBulk(state.c), 10));
+        checkFields = rollFields(check);
+        if (!check.ok) {
           ok = false;
-          hurt = rng.d(6) + rng.d(6);
+          hurt = rng.d(6) + rng.d(6); // roll:amount
           // Phase 38 (ABIL-02): the retired climb and leap fall-damage halving — gone for everyone.
         }
       }
@@ -304,14 +321,23 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
         // new draws; the global HAZARD_SCALE dial, literal 1 at identity.
         hurt = scaleHazard(hurt, difficultyCurve(state.floor.depth));
         state.c.wp -= hurt;
-        events.push({ type: climbing ? "fellClimbing" : "fellInGorge", hurt });
+        events.push({
+          type: climbing ? "fellClimbing" : "fellInGorge",
+          hurt,
+          ...checkFields,
+          ...(rollsList ? { rolls: rollsList } : {}),
+        });
         if (state.c.wp <= 0) {
           die(state, climbing ? "fall" : "gorge", null, rng, events, now);
           return events;
         }
         events.push({ type: "draggedOver", feat: there.feat });
       } else {
-        events.push({ type: climbing ? "climbedOver" : "leaptOver" });
+        events.push({
+          type: climbing ? "climbedOver" : "leaptOver",
+          ...checkFields,
+          ...(rollsList ? { rolls: rollsList } : {}),
+        });
       }
       there.feat = null;
     }
@@ -684,7 +710,7 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
     // DELIBERATE RULES CHANGE (Phase 54, USER RULING D): a rested night
     // heals a fraction of maxWP (CAMP_HEAL_FRACTION) — hero-keyed, no depth
     // term; the d10 stays as variance so the draw count is unchanged.
-    let heal = campHealFor(c.maxWP, rng.d(10));
+    let heal = campHealFor(c.maxWP, rng.d(10)); // roll:amount
     // Phase 25 (FEED-01, additive payload): who doubled the heal, if anyone
     // — a Soldier's label wins for a Wilmsry Soldier (matches `heal *= 2`'s
     // own `||` precedence below, which is untouched). Narration only.
@@ -705,11 +731,14 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
     // event) rather than curing it outright.
     if (c.affliction) {
       const af = c.affliction;
-      if (rng.d(20) <= 10 + (skill(c, "Hardiness") ? 4 : 0)) {
+      // Phase 73 (ROLL-05): the cure check reads roll-high through
+      // rollCheck — same single rng.d(20) draw, same position.
+      const check = rollCheck(rng, 20, atLeastFor(10 + (skill(c, "Hardiness") ? 4 : 0), 20));
+      if (check.ok) {
         c.affliction = null;
-        events.push({ type: "afflictionCured", kind: af.kind });
+        events.push({ type: "afflictionCured", kind: af.kind, ...rollFields(check) });
       } else {
-        events.push({ type: "afflictionLingers", kind: af.kind });
+        events.push({ type: "afflictionLingers", kind: af.kind, ...rollFields(check) });
       }
     }
 
@@ -734,12 +763,12 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
       const tier = skillTier(c, "Sewing");
       const maxPatch = tier === 2 ? 6 : 4;
       if (tier && c.patches < maxPatch) {
-        const amt = tier === 2 ? rng.d(6) + 3 : rng.d(6);
+        const amt = tier === 2 ? rng.d(6) + 3 : rng.d(6); // roll:amount
         c.armorWP = Math.min(c.armorMax, c.armorWP + amt);
         c.patches++;
         events.push({ type: "armorPatched", amount: amt, by: "Sewing" });
       } else if (c.sub === "Master of Arms") {
-        const amt = rng.d(6) + 3;
+        const amt = rng.d(6) + 3; // roll:amount
         c.armorWP = Math.min(c.armorMax, c.armorWP + amt);
         events.push({ type: "armorPatched", amount: amt, by: "Master of Arms" });
       }
@@ -780,16 +809,27 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   // just a wider (or narrower) face count that wakes the party; identity
   // (1) reproduces the canon "===1" rule exactly, and the Bard's own +1 is
   // additive on top of the dial (capped at 20), never doubled by it.
+  // Phase 73 (ROLL-05): the bad news already sits at the bottom of the die
+  // (a LOW roll wakes you), so this stays UNMIRRORED — the raw draw IS the
+  // roll (already-high). The hero's quiet check reads `roll >= wakeOn + 1`;
+  // every hour that fails it wakes the party. Same eight draws, same order,
+  // same threshold, just read roll-high instead of roll-under.
   const wakeOn = wanderWakeFacesFor(c.sub);
+  const wakeRolls = [];
   let woke = 0;
-  for (let h = 0; h < 8; h++) if (rng.d(20) <= wakeOn) woke++;
+  for (let h = 0; h < 8; h++) {
+    const roll = rng.d(20); // roll:already-high
+    wakeRolls.push(roll);
+    if (roll >= wakeOn + 1) continue; // quiet hour
+    woke++;
+  }
   // 260919-00d (user ruling 2026-09-19): nothing wanders through solid
   // stone — reachable only while ethereal (a camp, or a 100th step taken,
   // inside rock). The eight d20 draws above still happen in the same order
   // either way (the day's own clock; rng cursor unchanged) — only the
   // resulting forced-random encounter is skipped.
   if (woke && !inStone(state)) {
-    events.push({ type: "wanderingMonster", hours: woke, bard: c.sub === "Bard" });
+    events.push({ type: "wanderingMonster", hours: woke, bard: c.sub === "Bard", rolls: wakeRolls, atLeast: wakeOn + 1, dieN: 20 });
     startCombat(state, true, null, rng, events);
   }
   return events;
@@ -836,12 +876,12 @@ export function teleport(state, rng, events = []) {
   if (illusionist) {
     dir = bestTeleportDir(state);
   } else {
-    const a = DIRECTION_TABLE[rng.d(8) - 1];
-    const b = DIRECTION_TABLE[rng.d(8) - 1];
+    const a = DIRECTION_TABLE[rng.d(8) - 1]; // roll:selection
+    const b = DIRECTION_TABLE[rng.d(8) - 1]; // roll:selection
     dir = a;
     other = b;
   }
-  const dist = illusionist ? 12 : rng.d(20);
+  const dist = illusionist ? 12 : rng.d(20); // roll:amount
   const f = state.floor;
 
   let x = f.px;
@@ -947,9 +987,12 @@ export function bestTeleportDir(state) {
  */
 export function cutthroatMurderCheck(state, rng, events = []) {
   if (state.c.sub === "Cutthroat" && Array.isArray(state.party) && state.party.length > 0) {
-    if (rng.d(20) === 1) {
+    // Phase 73 (ROLL-05): a mishap gate that fires on the natural 1 stays on
+    // the 1 — "1 is always the worst face" needs no mirror here.
+    const roll = rng.d(20); // roll:mishap-on-1
+    if (roll === 1) {
       const victim = state.party.splice(0, 1)[0];
-      events.push({ type: "joinerMurdered", name: victim.name, sub: victim.sub, depth: state.floor.depth });
+      events.push({ type: "joinerMurdered", name: victim.name, sub: victim.sub, depth: state.floor.depth, roll, atLeast: 2, dieN: 20 });
     }
   }
   return events;
