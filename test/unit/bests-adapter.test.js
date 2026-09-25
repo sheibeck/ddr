@@ -28,6 +28,7 @@ import {
   getBests,
   takeDeathRecord,
   waitForPending,
+  setRunRecordedListener,
 } from "../../src/browser/engineAdapter.js";
 import { flush as flushStorage } from "../../src/browser/storage.js";
 import { newRun } from "../../engine/engine.js";
@@ -155,22 +156,31 @@ test("boot backfill: 3 full legacy stones + one partial stone, ddr.best.v1, grav
   });
 });
 
-test("boot with an existing valid ddr.bests.v1 loads it via sanitizeBests; graveyard stones are NOT re-folded", async () => {
+test("boot with an existing valid ddr.bests.v1 loads it via sanitizeBests, then reconciles a graveyard stone it doesn't already hold (Phase 81, BOARD-15)", async () => {
+  // Phase 81 (BOARD-15) deliberately overturns this test's former "graveyard
+  // stones are NOT re-folded" contract: loadBests() now reconciles the
+  // loaded record against the stored graveyard on every boot (see
+  // engineAdapter.js#loadBests' own doc comment), specifically so a stone
+  // whose bests write was lost (persistGrave()'s non-atomic writes) still
+  // surfaces on the player's own boards after a relaunch. A DIFFERENT
+  // legacy stone already held under its own hash is never duplicated — that
+  // half of the original contract still holds and is asserted below.
   await withFakeLocalStorage(async (store) => {
     const summary = makeSummary();
     const seeded = updateBests(emptyBests(), summary).record;
     store.setItem(BESTS_KEY, JSON.stringify(seeded));
-    // A different lineage's legacy stone in the graveyard — if boot()
-    // erroneously re-folded the graveyard, its normalized hash would show
-    // up in the loaded runs.
+    // A different lineage's legacy stone, missing from the seeded record —
+    // reconciliation now folds it in (it qualifies for its own lineage's
+    // top ten, having no competition there).
     const other = legacyStone({ name: "Other", race: "Elf", cls: "Thief", floor: 2, when: 9 });
     store.setItem(GRAVE_KEY, JSON.stringify([other]));
 
     await boot(1234);
 
     const loaded = getBests();
-    assert.ok(!loaded.runs[normalizeStone(other).hash], "the legacy graveyard stone was not re-folded");
+    assert.ok(loaded.runs[normalizeStone(other).hash], "the missing legacy graveyard stone is folded in by boot reconciliation");
     assert.ok(loaded.runs[summary.hash], "the seeded run survived sanitizeBests");
+    assert.equal(Object.keys(loaded.runs).length, 2, "exactly the seeded run plus the one reconciled stone — no duplicate");
   });
 });
 
@@ -402,6 +412,58 @@ test("starting a new run clears any pending one-shot death report", async () => 
     dispatch({ type: "abandon" });
     await startNewRun(402); // starts a new run, clearing the previous death's report
     assert.equal(takeDeathRecord(), null, "the new run cleared the previous death's pending report");
+  });
+});
+
+// --- boot-time reconciliation (Phase 81, BOARD-15) --------------------------
+
+test("boot reconciliation: a graveyard stone missing from ddr.bests.v1 is folded in before getBests() is ever exposed, silently", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const depth9 = makeSummary({ floor: 9, steps: 100, name: "Nine" });
+    const depth10 = makeSummary({ floor: 10, steps: 50, name: "Ten" });
+    const recordWithoutDepth10 = updateBests(emptyBests(), depth9).record;
+
+    store.setItem(BESTS_KEY, JSON.stringify(recordWithoutDepth10));
+    store.setItem(GRAVE_KEY, JSON.stringify([depth10, depth9])); // stored newest-first
+
+    let listenerCalls = 0;
+    setRunRecordedListener(() => {
+      listenerCalls++;
+    });
+
+    await boot(1);
+
+    assert.equal(getBests().boards.deep[0], depth10.hash, "the depth-10 stone is folded in and ranks DEEPEST #1");
+    assert.equal(takeDeathRecord(), null, "no one-shot death report for a run folded by boot reconciliation");
+    assert.equal(listenerCalls, 0, "the run-recorded listener is never called for a boot-reconciled run");
+
+    await waitForPending();
+    await flushStorage();
+    assert.deepStrictEqual(JSON.parse(store.getItem(BESTS_KEY)), getBests(), "the stored record matches getBests() after the write settles");
+
+    setRunRecordedListener(null); // unregister — don't leak into later tests in this file
+  });
+});
+
+test("boot reconciliation: already-consistent stores perform no ddr.bests.v1 write", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const depth9 = makeSummary({ floor: 9, name: "Nine" });
+    const record = updateBests(emptyBests(), depth9).record;
+    store.setItem(BESTS_KEY, JSON.stringify(record));
+    store.setItem(GRAVE_KEY, JSON.stringify([depth9]));
+
+    let setItemCalls = 0;
+    const realSetItem = store.setItem.bind(store);
+    store.setItem = (k, v) => {
+      if (k === BESTS_KEY) setItemCalls++;
+      return realSetItem(k, v);
+    };
+
+    await boot(1);
+    await waitForPending();
+    await flushStorage();
+
+    assert.equal(setItemCalls, 0, "reconciliation over already-consistent stores never rewrites ddr.bests.v1");
   });
 });
 

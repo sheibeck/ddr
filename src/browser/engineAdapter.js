@@ -23,7 +23,7 @@ import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js
 import { bury, buildRunSummary } from "../../engine/death.js";
 // Phase 65 (RUN-02/RUN-03): the pure bests-record operations — this adapter
 // owns the durable ddr.bests.v1 storage, engine/records.js owns the shape.
-import { emptyBests, sanitizeBests, updateBests, backfillBests } from "../../engine/records.js";
+import { emptyBests, sanitizeBests, updateBests, backfillBests, reconcileBests } from "../../engine/records.js";
 // 04-04: the data-driven event->narration lookup table (UX-05) that replaces
 // this file's former ~26-case monolithic switch. EVENT_NARRATION covers the
 // full ~162-type engine vocabulary; test/unit/formatEventsCoverage.test.js
@@ -177,16 +177,46 @@ export function getState() {
  * calls this once, right after migrateLegacyKeys(), so the record is in
  * memory before boot() resolves and the death panel can read it
  * synchronously the first time a death happens.
+ *
+ * Phase 81 (BOARD-15): once a stored record is parsed, it is reconciled
+ * against the stored ddr.graveyard.v1 stones via engine/records.js#
+ * reconcileBests — a boot-time backstop for persistGrave()'s independent,
+ * non-atomic BESTS_KEY/GRAVE_KEY writes (a device process suspension mid-
+ * write can let the graveyard write for a death land while its bests write
+ * is lost). The stored record is rewritten only when reconciliation actually
+ * changed it, so a boot over already-consistent stores never touches
+ * BESTS_KEY. The backfill path below never needs this extra pass —
+ * backfillBests already folds every graveyard stone in — and this never
+ * touches deathRecord, runRecordedListener or the graveyard keys.
  */
 export async function loadBests() {
   try {
     const raw = await storage.getItem(BESTS_KEY);
     if (typeof raw === "string") {
+      let parsed = null;
       try {
-        bests = sanitizeBests(JSON.parse(raw));
-        return bests;
+        parsed = sanitizeBests(JSON.parse(raw));
       } catch {
-        /* corrupt JSON — fall through to the graveyard backfill below */
+        parsed = null; // corrupt JSON — fall through to the graveyard backfill below
+      }
+      if (parsed !== null) {
+        const rawGraves = await storage.getItem(GRAVE_KEY);
+        let graves = [];
+        try {
+          graves = rawGraves ? JSON.parse(rawGraves) : [];
+        } catch {
+          graves = [];
+        }
+        if (!Array.isArray(graves)) graves = [];
+        const reconciled = reconcileBests(parsed, graves);
+        bests = reconciled;
+        if (JSON.stringify(reconciled) !== JSON.stringify(parsed)) {
+          // Fire-and-enqueue, like persist(): the reconciled record is
+          // already in memory and returned below regardless of whether this
+          // write lands.
+          track(storage.setItem(BESTS_KEY, JSON.stringify(bests)));
+        }
+        return bests;
       }
     }
     // Absent, or a parse failure: backfill from the legacy graveyard. A

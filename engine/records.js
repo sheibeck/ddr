@@ -404,6 +404,56 @@ export function backfillBests(graves) {
 }
 
 /**
+ * reconcileBests(record, graves) — Phase 81 (BOARD-15): the boot-time
+ * invariant that the bests record reflects every stored graveyard stone.
+ * `ddr.bests.v1` and `ddr.graveyard.v1` are written as independent storage
+ * calls (src/browser/engineAdapter.js#persistGrave), so an interrupted write
+ * can let the graveyard write for a death land while its bests write is
+ * lost. This pure, idempotent fold repairs that on every boot.
+ *
+ * Starts from sanitizeBests(record) and remembers its `last`. When `graves`
+ * is an array, walks it oldest-first (it is stored newest-first) and, for
+ * each entry, normalizes it via normalizeStone — skipping a stone that
+ * normalizes to null, or whose hash the record already holds — then folds a
+ * new one in via updateBests. `last` is restored to the remembered value
+ * before returning, so a device relaunch can never move the standing card's
+ * "most recent run" out from under a real death just because an older
+ * graveyard stone happened to fold in behind it.
+ *
+ * Never mutates `record` or `graves`. Never throws: a non-array `graves`
+ * (null, a string, ...) returns sanitizeBests(record) unchanged, and any
+ * caught failure during the fold also falls back to sanitizeBests(record).
+ *
+ * Not an announcement path: unlike updateBests, this returns only the
+ * record — no newBests/first — because a run folded in here was never
+ * death-panel-fresh. It must never trigger a NEW PERSONAL BEST notice or a
+ * Play Games submission; only a real death at dispatch()'s `died` choke
+ * point does that.
+ */
+export function reconcileBests(record, graves) {
+  try {
+    const sanitized = sanitizeBests(record);
+    if (!Array.isArray(graves)) return sanitized;
+
+    const last = sanitized.last;
+    let rec = sanitized;
+    const oldestFirst = graves.slice().reverse();
+
+    for (const stone of oldestFirst) {
+      const s = normalizeStone(stone);
+      if (!s) continue;
+      if (rec.runs[s.hash]) continue;
+      rec = updateBests(rec, s).record;
+    }
+
+    rec.last = last;
+    return rec;
+  } catch {
+    return sanitizeBests(record);
+  }
+}
+
+/**
  * sortGraveyard(graves) — every valid stone (a plain object with a finite
  * numeric floor), ordered floor desc then steps asc, never cut to ten. Does
  * not mutate its input; Array.prototype.sort is stable, so ties keep input

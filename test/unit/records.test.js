@@ -32,6 +32,7 @@ import {
   updateBests,
   backfillBests,
   normalizeStone,
+  reconcileBests,
   sortGraveyard,
 } from "../../engine/records.js";
 
@@ -830,6 +831,86 @@ test("normalizeStone never mutates its input", () => {
   const before = { ...stone };
   normalizeStone(stone);
   assert.deepStrictEqual(stone, before);
+});
+
+// --- reconcileBests (Phase 81, BOARD-15) ------------------------------------------
+
+test("reconcileBests: a graveyard stone missing from the record folds in above an existing depth-9 run, and last is restored", () => {
+  const depth9 = makeSummary({ floor: 9, steps: 100, name: "Nine" });
+  const depth10 = makeSummary({ floor: 10, steps: 50, name: "Ten" });
+  const record = updateBests(emptyBests(), depth9).record;
+  assert.equal(record.last, depth9.hash);
+
+  const graves = [depth10, depth9]; // stored newest-first, per the adapter's own shape
+  const result = reconcileBests(record, graves);
+
+  assert.equal(result.boards.deep[0], depth10.hash, "the depth-10 stone is DEEPEST #1");
+  assert.equal(result.boards.deep[1], depth9.hash, "the depth-9 run stays #2");
+  assert.equal(result.last, depth9.hash, "last is restored to the input record's own last, not the reconciled stone");
+});
+
+test("reconcileBests: every graveyard stone already held returns a record deep-equal to sanitizeBests(record)", () => {
+  const depth9 = makeSummary({ floor: 9, name: "Nine" });
+  const record = updateBests(emptyBests(), depth9).record;
+  const result = reconcileBests(record, [depth9]);
+  assert.deepStrictEqual(result, sanitizeBests(record));
+});
+
+test("reconcileBests: a stone outside every top ten and its lineage's ten best is folded then pruned away; a second reconcile is deep-equal", () => {
+  let rec = emptyBests();
+  for (let i = 0; i < 10; i++) {
+    const s = makeSummary({
+      floor: 500 + i, day: 500 + i, kills: 500 + i, gold: 500 + i, steps: 1,
+      race: "Human", sub: "Soldier", cls: "Fighter", name: `Best${i}`,
+    });
+    rec = updateBests(rec, s).record;
+  }
+  const weak = makeSummary({
+    floor: 1, day: 1, kills: 0, gold: 0, steps: 999,
+    race: "Human", sub: "Soldier", cls: "Fighter", name: "Weak",
+  });
+
+  const once = reconcileBests(rec, [weak]);
+  assert.ok(!once.runs[weak.hash], "the weak stone is folded then immediately pruned away (prune)");
+
+  const twice = reconcileBests(once, [weak]);
+  assert.deepStrictEqual(twice, once, "a second reconcile over the same graves is a no-op");
+});
+
+test("reconcileBests: a legacy stone (no season) folds under the same hash backfillBests would give it — no duplicate", () => {
+  const stone = legacyStone({ floor: 7, steps: 40 });
+  const normalized = normalizeStone(stone);
+
+  const record = reconcileBests(emptyBests(), [stone]);
+  assert.equal(Object.keys(record.runs).length, 1);
+  assert.ok(record.runs[normalized.hash]);
+
+  const again = reconcileBests(record, [stone]);
+  assert.equal(Object.keys(again.runs).length, 1, "folding the same legacy stone again produces no duplicate");
+});
+
+test("reconcileBests: non-array graves (null/string/[{}]) returns sanitizeBests(record) and never throws", () => {
+  const depth9 = makeSummary({ floor: 9, name: "Nine" });
+  const record = updateBests(emptyBests(), depth9).record;
+
+  for (const bad of [null, "not-an-array", undefined, 42]) {
+    const result = reconcileBests(record, bad);
+    assert.deepStrictEqual(result, sanitizeBests(record));
+  }
+
+  const malformed = reconcileBests(record, [{}]);
+  assert.deepStrictEqual(malformed, sanitizeBests(record), "a stone with no finite floor normalizes to null and is skipped");
+});
+
+test("reconcileBests never mutates its inputs (deep-frozen record and graves pass)", () => {
+  const depth9 = makeSummary({ floor: 9, name: "Nine" });
+  const depth10 = makeSummary({ floor: 10, name: "Ten" });
+  const record = deepFreeze(updateBests(emptyBests(), depth9).record);
+  const graves = deepFreeze([{ ...depth10 }, { ...depth9 }]);
+
+  assert.doesNotThrow(() => reconcileBests(record, graves));
+  const result = reconcileBests(record, graves);
+  assert.equal(result.boards.deep[0], depth10.hash);
 });
 
 // --- sortGraveyard ---------------------------------------------------------------
