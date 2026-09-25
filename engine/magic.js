@@ -200,7 +200,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         // Lesser Summon: a plain d4, never doubled, never the +2 tacked onto
         // the full table's roll — shorter, and never lengthened by a
         // Summoner's own doubling (it isn't doubled here at all).
-        rounds: lesser ? rng.d(4) : (doubled ? 2 : 1) * rng.d(4) + 2,
+        rounds: lesser ? rng.d(4) : (doubled ? 2 : 1) * rng.d(4) + 2, // roll:amount
         name: rng.pick(lesser ? LESSER_ALLY_NAMES : ALLY_NAMES),
       };
       if (C) {
@@ -215,10 +215,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // Phase 54 (BAND-02, USER RULING D): spellDamageFor scales an MU's
     // offensive spell POWER — here, how many foes the stun affects.
     // Identity 1 (spellPowerFor) is a structural no-op.
-    const n = spellDamageFor(rng.d(6) * Math.max(1, c.level - sp.lvl), c);
+    const n = spellDamageFor(rng.d(6) * Math.max(1, c.level - sp.lvl), c); // roll:amount
     const affected = liveFoes(state).slice(0, n);
     affected.forEach((f) => {
-      f.asleep = Math.max(f.asleep, rng.d(4));
+      f.asleep = Math.max(f.asleep, rng.d(4)); // roll:amount
     });
     events.push({ type: "stunned", count: Math.min(n, liveFoes(state).length) });
   } else if (sp.kind === "weaken") {
@@ -235,7 +235,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // sp.combatOnly (true for Weaken) guarantees C exists whenever this
     // branch runs — the `if (C)` guard is defensive (engine V5 discipline),
     // not reachable-false in real play.
-    const rounds = rng.d(4) + 1;
+    const rounds = rng.d(4) + 1; // roll:amount
     if (C) {
       C.weakened = true;
       C.foeToHitPenalty = 3;
@@ -260,7 +260,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       events.push({ type: "blinded", target: t.name });
     }
   } else if (sp.kind === "shrink") {
-    const n = rng.d(6);
+    const n = rng.d(6); // roll:amount
     const affected = liveFoes(state).slice(0, n);
     affected.forEach((f) => {
       f.wp = Math.ceil(f.wp / 2);
@@ -271,7 +271,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else if (sp.kind === "acid") {
     const t = C && C.foes[C.target];
     if (t && t.alive) {
-      t.acid = { rounds: rng.d(6), dmg: sp.dmg };
+      t.acid = { rounds: rng.d(6), dmg: sp.dmg }; // roll:amount
       events.push({ type: "acidApplied", target: t.name, rounds: t.acid.rounds });
     }
   } else if (sp.kind === "dot") {
@@ -287,7 +287,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // tampered/unknown dot row missing it never writes a broken record.
     const t = C && C.foes[C.target];
     if (t && t.alive && sp.dmg) {
-      t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice" };
+      t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice" }; // roll:amount
       events.push({ type: "iceApplied", target: t.name, rounds: t.dot.left });
     }
   } else if (sp.kind === "quake") {
@@ -318,18 +318,18 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       }
     }
   } else if (sp.kind === "vapor") {
-    const r = c.level >= 5 ? 4 : rng.d(6);
+    const r = c.level >= 5 ? 4 : rng.d(6); // roll:selection
     events.push({ type: "vaporRolled", roll: r });
     liveFoes(state).forEach((f) => {
-      if (r === 4 && rng.d(10) !== 1) {
+      if (r === 4 && rng.d(10) !== 1) { // roll:mishap-on-1
         f.wp = 0;
         killFoe(state, f, rng, events);
       } else {
-        f.asleep = Math.max(f.asleep, rng.d(6) + 2);
+        f.asleep = Math.max(f.asleep, rng.d(6) + 2); // roll:amount
       }
     });
   } else if (sp.kind === "volley") {
-    const n = rng.d(8);
+    const n = rng.d(8); // roll:amount
     const foes = liveFoes(state);
     let tot = 0;
     for (let k = 0; k < n && foes.length; k++) {
@@ -371,7 +371,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     }
   } else if (sp.kind === "gate") {
     if (C && (C.type === "Walking Dead" || C.type === "Demons")) {
-      const gone = liveFoes(state).slice(0, rng.d(6));
+      const gone = liveFoes(state).slice(0, rng.d(6)); // roll:amount
       gone.forEach((f) => {
         f.alive = false;
         f.turned = true;
@@ -410,7 +410,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     const type = rng.pick(ENC_TYPES);
     events.push({ type: "senseDanger", nextEncounter: type });
   } else if (sp.kind === "mirror") {
-    c.mirror = rng.d(6);
+    c.mirror = rng.d(6); // roll:amount
     events.push({ type: "mirrorSelf", rounds: c.mirror });
   } else if (sp.kind === "ward") {
     c.ward = { pool: sp.pool, rounds: sp.rounds, reflect: !!sp.reflect, name: sp.n };
@@ -431,7 +431,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     if (!t) {
       events.push({ type: "insaneNoTarget" });
     } else {
-      const r = rng.d(6);
+      const r = rng.d(6); // roll:selection
       events.push({ type: "insaneRolled", target: t.name, roll: r });
       if (r === 1) {
         t.wp = 0;
@@ -439,7 +439,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       } else if (r === 2) {
         const o = liveFoes(state).find((f) => f !== t);
         if (o) {
-          const d = t.lvl * t.lvl + rng.d(6);
+          const d = t.lvl * t.lvl + rng.d(6); // roll:amount
           // A maddened foe's blow on its neighbour is physical (kind:"foe")
           // — the victim's own natural armor may soak it (gated d20, D-05);
           // no CANON-04 multiplier row applies (no player caster identity).
@@ -453,7 +453,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         t.fled = true;
         events.push({ type: "insaneFled", target: t.name });
       } else if (r === 4) {
-        t.asleep = rng.d(4);
+        t.asleep = rng.d(4); // roll:amount
       } else if (r === 5) {
         t.frenzied = true;
       }
@@ -483,7 +483,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else if (sp.kind === "status") {
     const t = C && liveFoes(state)[0];
     if (t) {
-      t.asleep = rng.d(4);
+      t.asleep = rng.d(4); // roll:amount
       events.push({ type: "dozed", target: t.name, rounds: t.asleep });
     }
   } else {
@@ -591,7 +591,7 @@ export function drinkPotion(state, rng, events = []) {
   if (refuseIfPending(state, events, "actionRefused", { action: "drinkPotion" })) return events;
   if (c.potions <= 0) return events;
   c.potions--;
-  let amt = 2 * rng.d(10) + 5;
+  let amt = 2 * rng.d(10) + 5; // roll:amount
   if (RACES[c.race].heal2x) amt *= 2;
   c.wp = Math.min(c.maxWP, c.wp + amt);
   // Phase 25 (FEED-01, additive payload): narrate a heal2x race's double —
