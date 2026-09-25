@@ -59,6 +59,11 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // foe-side/thrown lines convert in 73-05/73-07) formats its range through
 // rangeText here, so no two surfaces ever write a range differently.
 import { rangeText, rollVsText, modsClause, signedText, ROLLERS } from "./rollRange.js";
+// RULES-07 (Phase 75): afflictionRolled reads the row's own `phobia` flag by
+// roll so a mind-row (5-6) narrates honestly instead of printing "Disease." —
+// pure content data, no engine/ import, same discipline as the flavor.js
+// import above.
+import { AFFLICTIONS } from "../../content/afflictions.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -935,8 +940,17 @@ export const EVENT_NARRATION = {
   // clean sentence ("Something is wrong with you. Poison.") while the Oracle
   // log still shows the roll. `kind` is the REAL diagnosis (Poison/Disease),
   // never the renamed "Ailment" dispatch bucket, so the two never contradict.
-  afflictionRolled: (e) =>
-    `Something is wrong with you. <span class="roll">The die turns up ${e.roll ?? "?"}.</span> ${e.kind ?? "Something has its hooks in you"}.`,
+  // RULES-07 (Phase 75, user kept canon 2026-09-25: AFFLICTIONS rows 5-6 stay
+  // a disease of the mind that gives a phobia — the engine and content are
+  // unchanged, only the words). The roll clause stays inside the span per
+  // this file's convention; the row is read by roll (`AFFLICTIONS[roll-1]`),
+  // never by `e.kind` alone, so a mind row never prints "Disease." A missing
+  // or out-of-range roll falls back to today's wording rather than guess.
+  afflictionRolled: (e) => {
+    const row = AFFLICTIONS[(e.roll ?? 0) - 1];
+    const clause = row?.phobia ? "Not your body — your nerve." : `${e.kind ?? "Something has its hooks in you"}.`;
+    return `Something is wrong with you. <span class="roll">The die turns up ${e.roll ?? "?"}.</span> ${clause}`;
+  },
   phobiaAcquired: (e) => `<span class="hurt">A new fear settles in: ${e.name ?? "something"}.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   afflictionCaught: (e) => `<span class="hurt">${e.kind ?? "It"}: it takes hold.</span> −${e.first ?? 0} hp.`,

@@ -52,6 +52,10 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // formatted ("16–20") — like upgradeWhy.js, it carries zero imports of its
 // own, so pulling it in here does not trip T-25-23's engine-import guard.
 import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS } from "./rollRange.js";
+// RULES-07 (Phase 75): afflictionRolled's rail line reads the row's own
+// `phobia` flag by roll, mirroring eventNarration.js — pure content data
+// (not engine/), same discipline as the ABILITY_BY_ID import above.
+import { AFFLICTIONS } from "../../content/afflictions.js";
 
 /**
  * TONES — the tone-family vocabulary every narration line (and the
@@ -1606,7 +1610,13 @@ export const LINE_FOR = {
     };
     return block(map[e?.reason] ?? "Word has reached the Joiners.");
   },
-  afflictionRolled: (e) => ({ text: `Something is wrong with you: ${e?.kind ?? "it has its hooks in you"}.`, tone: "hurt", priority: PRIORITY.other }),
+  // RULES-07 (Phase 75): the rail twin of eventNarration.js's afflictionRolled
+  // — a mind row (5-6) says so instead of "Disease.".
+  afflictionRolled: (e) => {
+    const row = AFFLICTIONS[(e?.roll ?? 0) - 1];
+    const kind = row?.phobia ? "not your body — your nerve" : (e?.kind ?? "it has its hooks in you");
+    return { text: `Something is wrong with you: ${kind}.`, tone: "hurt", priority: PRIORITY.other };
+  },
   phobiaAcquired: (e) => ({ text: `New fear: ${e?.name ?? "something"}.`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   afflictionCaught: (e) => ({ text: `${e?.kind ?? "It"}: takes hold (−${e?.first ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
