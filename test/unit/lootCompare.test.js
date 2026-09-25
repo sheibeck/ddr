@@ -14,7 +14,7 @@ import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { WEAPONS } from "../../content/index.js";
 import { takeItem, canEquipWeapon } from "../../engine/items.js";
-import { gearCompareParts } from "../../engine/derived.js";
+import { gearCompareParts, strikeDie } from "../../engine/derived.js";
 import { upgradeWhyText } from "../../src/browser/upgradeWhy.js";
 
 function fixedChar(overrides = {}) {
@@ -45,8 +45,10 @@ test("lootCompare: a strictly-better weapon is an upgrade, equip-now", () => {
   assert.equal(cmp.upgrade, true);
   assert.equal(cmp.equipNow, true);
   // Phase 61 (STORE-03): the line now explains itself — measured live from
-  // gearCompareParts/upgradeWhyText, then pinned as a literal.
-  assert.equal(cmp.why, upgradeWhyText(gearCompareParts(c, it)));
+  // gearCompareParts/upgradeWhyText, then pinned as a literal. Phase 74
+  // (ROLL-02/03): both weapons share the same need (0), so the die/haveName
+  // opts don't change this particular line — no to-hit term either way.
+  assert.equal(cmp.why, upgradeWhyText(gearCompareParts(c, it), { dieN: strikeDie(c), haveName: "Broadsword" }));
   assert.equal(cmp.line, "d10+2 +2 vs your d10+2 · 2.6 vs 2.1 a swing · upgrade");
   assert.equal(cmp.sub, it.txt);
   assert.equal(cmp.usable, "(usable by Fighters)"); // Phase 43 (CLAR-02): Broadsword is F-only
@@ -58,10 +60,29 @@ test("lootCompare: a not-better weapon reads 'not an upgrade', no equip-now", ()
   const cmp = lootCompare(c, it);
   assert.equal(cmp.upgrade, false);
   assert.equal(cmp.equipNow, false);
-  // Phase 61 (STORE-03)
-  assert.equal(cmp.why, upgradeWhyText(gearCompareParts(c, it)));
-  assert.equal(cmp.line, "d6/2 vs your d10+2 · +1 to hit · 0.9 vs 2.1 a swing · not an upgrade");
+  // Phase 61 (STORE-03); Phase 74 (ROLL-02/03): the to-hit term now states
+  // which way it goes and names the wielded weapon.
+  assert.equal(cmp.why, upgradeWhyText(gearCompareParts(c, it), { dieN: strikeDie(c), haveName: "Broadsword" }));
+  assert.equal(cmp.line, "d6/2 vs your d10+2 · +1 to hit, better than your Broadsword · 0.9 vs 2.1 a swing · not an upgrade");
   assert.equal(cmp.usable, ""); // Phase 43 (CLAR-02): Dagger is FTM, unrestricted
+});
+
+// ─── Phase 74 (ROLL-02/03): the device-trigger case (ROLL-LEDGER) ─────────
+
+test("lootCompare: the device-trigger weapon pair (rollDirection.test.js) reads which way the to-hit change goes", () => {
+  // rollDirection.test.js's "the device trigger" case: Bardiche (need −2)
+  // vs Club (need 0) for a Human Fighter/Soldier. −2 really IS worse.
+  const c = fixedChar({ cls: "Fighter", sub: "Soldier", race: "Human", weapon: "Club", prof: 0, magicWpn: 0 });
+  const heavy = { kind: "weapon", base: "Bardiche", bonus: 0, n: "Bardiche", txt: "2d10+2" };
+  const heavyCmp = lootCompare(c, heavy);
+  assert.equal(heavyCmp.legal, true);
+  assert.match(heavyCmp.why, /−2 to hit, worse than your Club/);
+
+  // and the mirror case — a light weapon's +1 really IS better.
+  const light = { kind: "weapon", base: "Dagger", bonus: 0, n: "Dagger", txt: "d6/2" };
+  const lightCmp = lootCompare(c, light);
+  assert.equal(lightCmp.legal, true);
+  assert.match(lightCmp.why, /\+1 to hit, better than your Club/);
 });
 
 test("lootCompare: class-illegal weapon reads 'can't use (Fighter only)'", () => {

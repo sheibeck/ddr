@@ -243,7 +243,9 @@ test("Combat: SWAP INTO WEAPON greys with the model's reason, DROP stays wired; 
   assert.equal(typeof dropBtn2.onclick, "function");
   const whyEl = doc2.document.getElementById(GEAR_SHEET_IDS.why);
   assert.equal(whyEl.hidden, false);
-  assert.equal(whyEl.textContent, "d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing · not an upgrade");
+  // Phase 74 (ROLL-02/03): the to-hit term now states which way it goes and
+  // names the wielded weapon (Quarter Staff).
+  assert.equal(whyEl.textContent, "d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 a swing · not an upgrade");
 });
 
 test("Vanished target: returns false and the actions container receives no new children", () => {

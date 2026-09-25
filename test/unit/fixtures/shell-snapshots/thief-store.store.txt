@@ -22,9 +22,9 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Set of lockpicks<i>1–5 on d10 against any lock</i></span>\n        <span class=\"g-c\">315 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Flail<i>d10+2 · (usable by Fighters, Thieves) · d10+2 vs your d6/2 · −2 to hit · crits on 1 vs your 1–2 · 1.7 vs 1.0 a swing · upgrade</i></span>\n        <span class=\"g-c\">175 wm</span>"
+    html="<span class=\"g-n\">Flail<i>d10+2 · (usable by Fighters, Thieves) · d10+2 vs your d6/2 · −2 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.7 vs 1.0 a swing · upgrade</i></span>\n        <span class=\"g-c\">175 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Spear<i>d8 · d8 vs your d6/2 · −1 to hit · crits on 1 vs your 1–2 · 1.4 vs 1.0 a swing · upgrade</i></span>\n        <span class=\"g-c\">105 wm</span>"
+    html="<span class=\"g-n\">Spear<i>d8 · d8 vs your d6/2 · −1 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.4 vs 1.0 a swing · upgrade</i></span>\n        <span class=\"g-c\">105 wm</span>"
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Warded leather<i>AR 7 · 25/25 hp · enchanted · (usable by Fighters, Thieves) · AR 7 vs your AR 6 · upgrade</i></span>\n        <span class=\"g-c\">700 wm</span>"
   <button class="goods" onclick>

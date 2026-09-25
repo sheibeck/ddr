@@ -2,19 +2,37 @@
 //
 // Phase 61 (STORE-03): formats engine/derived.js#gearCompareParts' plain-data
 // parts into the "why is this an upgrade / not an upgrade" explanation line.
-// PRESENTATION ONLY, engine-free and IMPORT-FREE (no `import` statement at
-// all, not even a bare content/ read) — the same purity discipline
-// narrationLines.js/eventNarration.js already hold themselves to (T-25-23),
-// so those two modules can format the SAME parts in Plan 03 without
-// re-deriving them or breaking their own purity guards. Pure, no
-// Math.random/Date.now, no DOM, never mutates its argument. Copy lives in
-// the frozen UPGRADE_WHY_COPY below, walked by test/unit/hp-not-wp.test.js
-// alongside every other presentation COPY bank.
+// PRESENTATION ONLY, engine-free. Phase 74 (ROLL-02/03, "Roll Display &
+// Modifier Honesty"): purity now means ONE import — the pure, import-free
+// src/browser/rollRange.js formatter — for the to-hit sign and the die-aware
+// crit-range text. rollRange.js is itself pure and import-free, so
+// eventNarration.js and narrationLines.js (which call upgradeWhyText with no
+// options, per 74-CONTEXT — the purchase-bagged Oracle/rail lines carry no
+// hero die) keep their own established purity discipline (T-25-23)
+// undisturbed. Pure, no Math.random/Date.now, no DOM, never mutates its
+// argument. Copy lives in the frozen UPGRADE_WHY_COPY below, walked by
+// test/unit/hp-not-wp.test.js alongside every other presentation COPY bank.
 //
 // The verdict word ("upgrade"/"not an upgrade") is NOT decided here — this
 // module only explains a verdict `src/browser/viewModels.js#lootCompare`
 // already computed from weaponUpgradeDelta/armorUpgradeDelta. This is advice
 // only; it never gates BUY, TAKE or EQUIP (CONTEXT "The upgrade line").
+//
+// Phase 74 (ROLL-02/03): the to-hit term now states which way the change
+// goes, e.g. "−2 to hit, worse than your Club" (74-CONTEXT "Item, loot,
+// store and find comparisons": comparisons say which way is better; + is
+// always easier to hit, − always harder). This closes the ROLL-LEDGER
+// device-trigger case: a dropped heavy weapon (need −2) compared against a
+// Club now reads which way it goes instead of a bare signed number. The
+// crit term now reads roll-high, on the hero's own strike die ("crits on
+// 19–20 vs your 20") instead of the old pre-mirror roll-under reading
+// ("crits on 1–2 vs your 1") — Phase 73 moved crits onto a weapon's TOP die
+// faces, so the old reading was wrong. The crit term only appears when the
+// caller supplies opts.dieN; with no die in reach (the purchase-bagged
+// Oracle/rail lines) the term is simply omitted, never printed in the old
+// roll-under form.
+
+import { toHitText, facesRangeText } from "./rollRange.js";
 
 /** UPGRADE_WHY_COPY — every string leaf this formatter builds from. Frozen
  * so the voice scan and hp-not-wp guard can walk it like every other
@@ -23,7 +41,11 @@
 export const UPGRADE_WHY_COPY = Object.freeze({
   dice: "{got} vs your {have}",
   bareHands: "bare hands",
-  toHit: "{signed} to hit",
+  toHit: "{toHit}, {verdict} than {whose}",
+  better: "better",
+  worse: "worse",
+  yours: "yours",
+  yourNamed: "your {name}",
   crit: "crits on {got} vs your {have}",
   swing: "{got} vs {have} a swing",
   lostProf: "loses your +{n} practiced bonus",
@@ -43,52 +65,43 @@ export function swingText(x) {
   return (Math.round(x * 10) / 10).toFixed(1);
 }
 
-/** critRange(n) — module-private: the die-roll range a crit die value reads
- * as. 1 -> "1" (only a natural 1 crits), 2 -> "1–2" (U+2013 en dash, a
- * roll of 1 OR 2 crits). This module carries no other crit value today
- * (WEAPONS.crit is 1|2 in content/weapons.js). */
-function critRange(n) {
-  return n === 2 ? "1–2" : "1";
-}
-
 function fill(template, values) {
   return Object.entries(values).reduce((s, [k, v]) => s.split(`{${k}}`).join(v), template);
 }
 
-/** signedNeed(d) — a to-hit NEED delta as "+d" (positive, easier to hit) or
- * "−|d|" (negative, harder to hit — U+2212 minus sign, never the ASCII
- * hyphen). `d` is never 0 at the call site (the caller only formats the
- * term when `d !== 0`). */
-function signedNeed(d) {
-  return d > 0 ? `+${d}` : `−${Math.abs(d)}`;
-}
-
 /**
- * upgradeWhyText(parts) — Phase 61 (STORE-03): the ONE formatter for
- * `gearCompareParts(c, it)`'s output. Returns `""` for anything that is not
- * a non-null object whose `kind` is `"weapon"` or `"armor"` (null, undefined,
- * a string, an unrecognized kind like `"cloak"`) — never throws.
+ * upgradeWhyText(parts, opts) — Phase 61 (STORE-03); Phase 74 (ROLL-02/03)
+ * adds the optional second argument `opts: { dieN, haveName }`. Returns `""`
+ * for anything that is not a non-null object whose `kind` is `"weapon"` or
+ * `"armor"` (null, undefined, a string, an unrecognized kind like `"cloak"`)
+ * — never throws.
  *
  * Weapon: collects the terms that DIFFER, in this fixed order, then joins
  * with UPGRADE_WHY_COPY.sep:
  *   (a) dice — when got.lab !== have.lab (have.lab === null reads as
  *       "bare hands", the bare-handed case);
- *   (b) to-hit — when d = got.need - have.need is non-zero;
- *   (c) crit — when have.crit is not null (never shown for a bare-handed
- *       `have`) and got.crit !== have.crit (never shown for a noCrit
- *       character, whose got/have both read 0);
+ *   (b) to-hit — when d = got.need - have.need is non-zero: toHitText(d),
+ *       then "better than {whose}" (d > 0) or "worse than {whose}" (d < 0),
+ *       where {whose} is "your {opts.haveName}" when a name is supplied,
+ *       else the bare "yours";
+ *   (c) crit — only when opts.dieN is a finite number, have.crit is not
+ *       null (never shown for a bare-handed `have`) and got.crit !==
+ *       have.crit (never shown for a noCrit character, whose got/have both
+ *       read 0); got and have are written via facesRangeText(crit, dieN),
+ *       the hero's own roll-high top-face range;
  *   (d) swing — always, the per-swing numbers via swingText;
  *   (e) lostProf — when parts.lostProf > 0.
  *
  * Armor: the one fixed UPGRADE_WHY_COPY.armor template with got.ar/have.ar.
  */
-export function upgradeWhyText(parts) {
+export function upgradeWhyText(parts, opts) {
   if (!parts || typeof parts !== "object") return "";
   if (parts.kind === "armor") {
     return fill(UPGRADE_WHY_COPY.armor, { got: parts.got.ar, have: parts.have.ar });
   }
   if (parts.kind !== "weapon") return "";
 
+  const { dieN, haveName } = opts || {};
   const { got, have, lostProf } = parts;
   const terms = [];
 
@@ -96,10 +109,19 @@ export function upgradeWhyText(parts) {
   if (got.lab !== have.lab) terms.push(fill(UPGRADE_WHY_COPY.dice, { got: got.lab, have: haveLab }));
 
   const needDelta = got.need - have.need;
-  if (needDelta !== 0) terms.push(fill(UPGRADE_WHY_COPY.toHit, { signed: signedNeed(needDelta) }));
+  if (needDelta !== 0) {
+    const whose = haveName ? fill(UPGRADE_WHY_COPY.yourNamed, { name: haveName }) : UPGRADE_WHY_COPY.yours;
+    terms.push(
+      fill(UPGRADE_WHY_COPY.toHit, {
+        toHit: toHitText(needDelta),
+        verdict: needDelta > 0 ? UPGRADE_WHY_COPY.better : UPGRADE_WHY_COPY.worse,
+        whose,
+      }),
+    );
+  }
 
-  if (have.crit !== null && got.crit !== have.crit) {
-    terms.push(fill(UPGRADE_WHY_COPY.crit, { got: critRange(got.crit), have: critRange(have.crit) }));
+  if (Number.isFinite(dieN) && have.crit !== null && got.crit !== have.crit) {
+    terms.push(fill(UPGRADE_WHY_COPY.crit, { got: facesRangeText(got.crit, dieN), have: facesRangeText(have.crit, dieN) }));
   }
 
   terms.push(fill(UPGRADE_WHY_COPY.swing, { got: swingText(got.strike), have: swingText(have.strike) }));
