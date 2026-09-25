@@ -123,6 +123,14 @@ None - no external service configuration required.
 - 75-05 (Summoner offense-gate removal) can proceed with no edit to this file: the combat SPELLS menu reads `canCast` directly, so removing `MU_CHART.Summoner.gate.offense` will surface a level-1 Summoner's offense spells here automatically.
 - 77 (CMBUI-08 level-then-name spell sort) can layer on top of the now-hidden-row list; this plan explicitly preserves today's SPELLS-array visible-row order and does not introduce a competing sort.
 
+## Self-Check: PASSED
+
+- FOUND: `src/browser/combatMenu.js`
+- FOUND: `test/unit/combatMenu.test.js`
+- FOUND: `.planning/phases/75-engine-rules-character-economy-grimoire-combat-bugs/75-03-SUMMARY.md`
+- FOUND commit: `b8fd729`
+- FOUND commit: `4c8529d`
+
 ---
 *Phase: 75-engine-rules-character-economy-grimoire-combat-bugs*
 *Completed: 2026-09-25*
