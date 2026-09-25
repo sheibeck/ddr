@@ -164,7 +164,7 @@ Plans:
   2. Every displayed modifier is signed from the player's point of view — "+2" always reads better, "−2" always reads worse — across item/loot/store/find comparisons, the hero sheet, spell/ability text, condition chips and the fight log's need breakdown.
   3. The same modifier never shows opposite signs on two different surfaces.
 
-**Plans**: 7/8 plans executed
+**Plans**: 8/8 plans complete
 
 Plans:
 **Wave 1**
@@ -245,7 +245,38 @@ Plans:
   3. A read that rolls below half the required target is a fumble. A harmful spell hits the reader instead of its target, and an area-damage spell hits the reader and their whole party. A helpful spell lands on the targeted enemy (a fumbled Shield shields that foe). Outside combat a fumble has no effect.
   4. The Pilfer's and every affected class's descriptions state the new rules, both outcomes are narrated in voice, the new rolls come from derived rng streams, and every moved fixture is declared and regenerated.
 
-**Plans**: TBD
+**Plans**: 0/9 plans executed
+
+Plans:
+**Wave 1**
+
+- [ ] 75.1-01-PLAN.md — Replace the Pilfer's heal-only lockout with a fumble risk (RULES-09): a Pilfer uses jewelry, cloaks and staves like anyone else, but each use rolls a d20, and on a 1 the use fails, the item explodes for d10 to the Pil... (wave 1)
+- [ ] 75.1-02-PLAN.md — Decide and pin, per spell, what a fumbled scroll does (RULES-10's classification, Claude's discretion in 75.1-CONTEXT): which side it lands on (harmful to the reader, area on the reader's side, helpful to the targeted... (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 75.1-03-PLAN.md — Build the foe-side effects a fumbled helpful scroll can hand the targeted enemy (RULES-10: "a fumbled Shield shields that foe"): a foe Shield pool, a foe Bubble that catches a blow and throws it back, foe Mirror Self,... (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 75.1-04-PLAN.md — Build the reader-side effects a harmful fumble needs (RULES-10, with the user's fumble-severity rulings of 2026-09-25 and the second ruling on turn-loss duration and easy hits): (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 75.1-05-PLAN.md — Turn a fumbled scroll against its reader (RULES-10): one resolver that reads the 75.1-02 table and applies the harmful, area or helpful effect on the right side, using the foe-side (75.1-03) and reader-side (75.1-04) ... (wave 4)
+- [ ] 75.1-09-PLAN.md — Give the hero-cannot-act state (75.1-04) its shell: a combat menu with one way forward, LET THE ROUND PLAY; the bridge that sends it to the engine; a "Can't act" chip, and "Blinded" and "Shrunk" chips for hero Blind a... (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 75.1-06-PLAN.md — Let anyone try a scroll (RULES-10): Magic Users and Runes/Signs holders always succeed, everyone else rolls intelligence, a bad miss is a fumble, and the scroll is consumed every time (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 75.1-07-PLAN.md — Show every reader their scroll odds before they read, and make the class and skill descriptions state the new reading rule (RULES-10, ROADMAP criterion 4: "every affected class's descriptions state the new rules") (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 75.1-08-PLAN.md — Close Phase 75.1's engine gate: record both balance changes against their readouts, write the fixture story with a standing exposure guard, note the new check sites in the roll ledger, refresh the voice sample, and pr... (wave 7)
 **UI hint**: yes
 
 ### Phase 75.2: Hero Size Matters (INSERTED)
@@ -358,7 +389,26 @@ Plans:
   3. On a tablet, foldable or Chromebook, the game presents a deliberate, documented layout (such as a letterboxed portrait column) rather than a broken one, and Play's display-configuration warning is addressed or consciously accepted.
   4. A fit-tool run resumed from its JSONL log retraces the exact same walk as the live run, including after an infeasible (`+Infinity`) point, with per-block stdout appended rather than truncated.
 
-**Plans**: TBD
+**Plans**: 0/6 plans executed
+
+Plans:
+**Wave 1**
+
+- [ ] 80-01-PLAN.md — Turn on R8 for the release build (minify, resource shrinking, obfuscation) on the pinned AGP 8.13.0 toolchain, prove it with a real release build, and document the deobfuscation mapping (wave 1)
+- [ ] 80-03-PLAN.md — Give tablets, foldables and Chromebooks a deliberate, documented layout: declare the app a game so Android 16 keeps honouring the portrait lock, and present the shell as one centred, phone-width portrait column with p... (wave 1)
+- [ ] 80-06-PLAN.md — Prove TOOL-01 end to end through the real CLI: a fit resumed from its JSONL log retraces the live walk exactly, including after an infeasible (+Infinity) point, and per-block stdout is appended, never truncated (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 80-02-PLAN.md — Remove the deprecated status-bar colour path from the shipped app by uninstalling @capacitor/status-bar and styling the bars through Capacitor 8's core SystemBars plugin, then prove the native plugin list and the R8 r... (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 80-04-PLAN.md — Audit the actual R8 release artifact for deprecated window and system-UI API calls and for the merged manifest's large-screen attributes, with a reusable, tested scanner, and document edge-to-edge handling and the aud... (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 80-05-PLAN.md — Run the emulator pass CONTEXT asked for: an R8 release smoke, edge-to-edge in gesture and 3-button navigation and with a display cutout, and the tablet and foldable large-screen behaviour, with screenshots in the phas... (wave 4)
 **UI hint**: yes
 **Device check**: yes — DROID-02/03 recommended for `--research-phase` (Android 15/16 edge-to-edge + large-screen handling); needs device checks in both navigation modes plus an emulator tablet/foldable, batched into the milestone-close Pixel 7 checklist.
 
@@ -415,7 +465,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
-| 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete    | 2026-09-25 |
+| 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 6/13 | In Progress|  |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
