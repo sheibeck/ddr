@@ -169,3 +169,46 @@ export const ROLL_COPY = Object.freeze({ toHit: "{signed} to hit" });
 export function toHitText(delta) {
   return ROLL_COPY.toHit.replace("{signed}", signedText(delta));
 }
+
+/**
+ * facesRangeText(faces, dieN) — converts a count of winning faces on a
+ * dieN-sided die into the lo–hi range the same way engine/dice.js's
+ * atLeastFor does (per docs/ROLL-LEDGER.md's "Handoffs → Phase 74" handoff):
+ * atLeast = (dieN + 1 − faces). A non-finite faces or dieN reads "?"; 0 or
+ * fewer winning faces reads "nothing"; otherwise the count feeds rangeText,
+ * which already collapses a top-face-only range to the single face and
+ * floors a faces count at or above dieN to "1–N".
+ *
+ * Kept import-free on purpose — this is the SAME conversion
+ * engine/dice.js#atLeastFor makes, re-derived here rather than imported so
+ * this module never depends on engine/.
+ *
+ * Examples: (5, 20) "16–20"; (4, 20) "17–20"; (1, 20) "20" (single face);
+ * (0, 20) and (-1, 20) "nothing"; (5, 6) "2–6"; (20, 20) and (25, 20)
+ * "1–20"; (NaN, 20) and (5, undefined) "?".
+ */
+export function facesRangeText(faces, dieN) {
+  if (!Number.isFinite(faces) || !Number.isFinite(dieN)) return "?";
+  if (faces <= 0) return "nothing";
+  return rangeText(dieN + 1 - faces, dieN);
+}
+
+/**
+ * dieText(dieN) — "d20"; a non-finite dieN reads "d?".
+ */
+export function dieText(dieN) {
+  return `d${Number.isFinite(dieN) ? dieN : "?"}`;
+}
+
+/**
+ * hitRangeText(faces, dieN, opts) — the full range-and-die-and-modifiers
+ * clause every non-event surface uses: "16–20 (d20)", or with
+ * opts.mods/opts.roller, "17–20 (d20; Sidestep +2, insulted −1)". A missing
+ * or empty opts.mods adds no semicolon clause at all.
+ */
+export function hitRangeText(faces, dieN, opts) {
+  const range = facesRangeText(faces, dieN);
+  const die = dieText(dieN);
+  const mods = opts && Array.isArray(opts.mods) && opts.mods.length ? `; ${modsText(opts.mods, opts.roller)}` : "";
+  return `${range} (${die}${mods})`;
+}
