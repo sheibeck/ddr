@@ -578,7 +578,7 @@ Plans:
 
 **Open decisions (for milestone discussion):**
 
-- Race boards too? 6 more per season makes 35 per set, and two live sets = 70, exactly at the cap, so probably not. (6 more)? Race × sub-class (144) is impossible under the cap.
+- Race boards too? 6 more per season makes 35 per set, and two live sets = 70, exactly at the cap, so probably not. Race × sub-class (144) is impossible under the cap.
 - Board icons: `imageConfigurations.upload` (`LEADERBOARD_ICON`) could reuse the sub-class PNG art. Optional.
 - Does "you placed X" also report the sub-class standing on the death card?
 
