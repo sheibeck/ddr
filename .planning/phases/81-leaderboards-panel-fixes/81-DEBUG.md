@@ -8,6 +8,43 @@ document is built in three passes by Plan 01's three tasks: Task 1 writes
 any of the three tasks — every finding here is pinned by a test in
 `test/unit/board-death-paths.test.js` or `test/unit/board-global-trace.test.js`.
 
+## Root causes
+
+| R-id | Symptom (device words) | Verdict | Root cause (one sentence) | Evidence (file:line) | Pinning test | Fix owner |
+| --- | --- | --- | --- | --- | --- | --- |
+| R-09 | "shows 'Friend' as the label on the leaderboard" for the friend's own row | CONFIRMED | A listed row's `scoreHolder` is OMITTED by the plugin whenever Play Games reports none, so its `playerId` decodes to `""` and can never match the signed-in account id — even for the player's own entry. | `src/browser/globalBoards.js:76-91`, `src/browser/playGames.js:169-180`, `LeaderboardsModule.kt:159` | `board-global-trace.test.js` "R-09 identity invariant" ×2 (todo) | 81-06 |
+| R-10 | "shows my entry again beneath the 'not in the top ten your best run'" | CONFIRMED (a direct consequence of R-09) | `buildGlobalRows` only skips re-pinning the player's own entry when a LISTED row already carries `you: true` — which R-09's bug means never happens for an affected row. | `src/browser/boardsView.js:555-561` | `board-global-trace.test.js` "R-10 shown-twice" (todo) | 81-06 |
+| R-15 | "that character of my own didn't even show up on my own boards anywhere but the graveyard" | DEVICE-ONLY | No engine/adapter code defect reproduces this; the leading evidence-consistent explanation is `ddr.bests.v1` and `ddr.graveyard.v1` being written as four independent, non-atomic `storage.setItem` calls, so an Android process suspension between two of them can lose the bests write for a death whose graveyard write already landed. | `src/browser/engineAdapter.js:500-505`, `src/browser/storage.js:67-69` | `board-death-paths.test.js` (all 8 pass — no reproducible local-layer defect) | 81-05 |
+| R-16a | "My friend got to depth 11 and it still showed him as not in the top 10" | CONFIRMED | `pgsQueue.js#run()`'s `break outer` on the FIRST queued run's first failed board submission abandons every LATER run's submissions too, on every flush, forever. | `src/browser/pgsQueue.js:373-419` | `board-global-trace.test.js` "R-16a queue wedge" (todo) | 81-06 |
+| R-16b | "He saw my entry on the board, but I couldn't see his" | CONFIRMED | `loadTopScores` hard-codes `forceReload: false` with no override, and `createGlobalBoards`'s 5-minute cache has no invalidation hook tied to a submission or a panel reopen (only a full `clear()` on sign-out/Compete-off). | `src/browser/playGames.js:362-382`, `src/browser/globalBoards.js:41,260-279,303-306`, `mazeworld.html:7151,7155` | `board-global-trace.test.js` "R-16b forceReload" + "R-16b cache invalidation" (both todo) | 81-06 |
+| R-16c | "it still showed him as not in the top 10" (a copy-honesty gap, not the missing-score cause) | CONFIRMED (narrower; contributing) | A record Play Games WITHHOLDS from the public list (unshared gameplay activity, `rank: null`) is shown under the exact same "NOT IN THE TOP TEN" divider as a genuinely ranked-but-off-list record. | `src/browser/boardsView.js:508-533,654-669`, `content/boards.js:164` | `board-global-trace.test.js` "R-16c public visibility" (todo) | 81-06 |
+
+## Fix routing
+
+- A defect in `engine/records.js` or `src/browser/engineAdapter.js` goes to
+  **81-05**: R-15's boot-time `reconcileBests(record, graves)` backstop.
+- A defect in `src/browser/globalBoards.js`, `playGames.js`, `boardsView.js`,
+  `boardsPanel.js`, `pgsQueue.js`, `scoreTag.js`, `content/boards.js` or
+  `mazeworld.html` goes to **81-06**: R-09, R-10, R-16a, R-16b and R-16c all
+  land there (R-10's fix IS R-09's fix; R-16a/R-16b/R-16c are three
+  independent fixes in the same file family).
+- No defect this session found falls outside both lists.
+
+**Every device symptom in the todo file is accounted for:**
+
+- "shows 'Friend' as the label ... my entry again beneath the 'not in the top
+  ten your best run'" → R-09 + R-10.
+- "when we are connected … default to 'All'" → out of this plan's scope
+  (BOARD-11, already routed to 81-04's scope-default work, not a bug this
+  debug session owns).
+- "My friend got to depth 11 and it still showed him as not in the top 10 …
+  He saw my entry on the board, but I couldn't see his" → R-16a (his
+  submission never got through the wedge) and/or R-16b (the user's client
+  never re-fetched); R-16c explains why the "not in the top 10" copy itself
+  is misleading even once the data is correct.
+- "that character of my own didn't even show up on my own boards anywhere but
+  the graveyard" → R-15.
+
 ## R-15
 
 **Symptom (device, 2026-09-25):** a depth-10 run showed in the Graveyard but
