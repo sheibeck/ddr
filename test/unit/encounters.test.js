@@ -30,7 +30,7 @@ import {
   fallDark,
 } from "../../engine/encounters.js";
 import { GW, GH } from "../../engine/maze.js";
-import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor } from "../../engine/difficulty.js";
+import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, setDialsForTuning } from "../../engine/difficulty.js";
 import { makeRng } from "../../engine/rng.js";
 import { setIdentityDials, withIdentity } from "./harness/identityDials.js";
 
@@ -349,21 +349,46 @@ test("tableFour: +10 XP / +25 XP ride heroSpFor (identity: no-op)", () => {
   assert.equal(state25.c.sp, heroSpFor(25));
 });
 
-test("tableFour: the 'wilmst cache' row pays a depth-scaled amount via goldGained, NO redundant beat, NO new rng (E10/ECON-09)", () => {
-  // Depth 1 → 300 * 1. The empty fakeRng sequence is itself the no-new-rng
+test("tableFour: the 'wilmst cache' row pays a depth-scaled amount via goldGained, NO redundant beat, NO new rng (E10/ECON-09, RULES-02 Phase 75: 300 -> 100 per depth)", () => {
+  // Depth 1 → 100 * 1. The empty fakeRng sequence is itself the no-new-rng
   // assertion: fakeRng throws on ANY .d()/.pick() draw, so the row's gold path
   // must stay flat/derived (a Pickpocket would draw, but a Soldier does not).
   const d1 = fixedState({ c: { gold: 0 }, floor: { depth: 1 } });
   const e1 = tableFour(d1, "wilmst cache", fakeRng([]), []);
-  assert.equal(d1.c.gold, 300, "depth 1 → 300 wilmst");
-  assert.ok(e1.some((e) => e.type === "goldGained" && e.amount === 300), "goldGained narrates the depth-1 amount");
+  assert.equal(d1.c.gold, 100, "depth 1 → 100 wilmst");
+  assert.ok(e1.some((e) => e.type === "goldGained" && e.amount === 100), "goldGained narrates the depth-1 amount");
   assert.ok(!e1.some((e) => e.type === "tableFour"), "no redundant raw-jargon tableFour beat");
 
-  // Depth 7 → 300 * 7 = 2100, confirming the flat linear depth scaling.
+  // Depth 7 → 100 * 7 = 700, confirming the flat linear depth scaling.
   const d7 = fixedState({ c: { gold: 0 }, floor: { depth: 7 } });
   const e7 = tableFour(d7, "wilmst cache", fakeRng([]), []);
-  assert.equal(d7.c.gold, 2100, "depth 7 → 2100 wilmst");
-  assert.ok(e7.some((e) => e.type === "goldGained" && e.amount === 2100), "goldGained narrates the depth-7 amount");
+  assert.equal(d7.c.gold, 700, "depth 7 → 700 wilmst");
+  assert.ok(e7.some((e) => e.type === "goldGained" && e.amount === 700), "goldGained narrates the depth-7 amount");
+});
+
+test("tableFour: the 'wilmst cache' row at shipped dials (LOOT_SCALE 0.8) pays 80 at depth 1 and 1600 at depth 20 (RULES-02)", () => {
+  setDialsForTuning({});
+  try {
+    const d1 = fixedState({ c: { gold: 0 }, floor: { depth: 1 } });
+    const e1 = tableFour(d1, "wilmst cache", fakeRng([]), []);
+    assert.equal(d1.c.gold, 80, "depth 1 → round(100*1*0.8) = 80");
+    assert.ok(e1.some((e) => e.type === "goldGained" && e.amount === 80));
+
+    const d20 = fixedState({ c: { gold: 0 }, floor: { depth: 20 } });
+    const e20 = tableFour(d20, "wilmst cache", fakeRng([]), []);
+    assert.equal(d20.c.gold, 1600, "depth 20 → round(100*20*0.8) = 1600");
+    assert.ok(e20.some((e) => e.type === "goldGained" && e.amount === 1600));
+  } finally {
+    setIdentityDials();
+  }
+});
+
+test("tableFour: two 'wilmst cache' rows on one floor pay the same amount each (RULES-02 idempotency)", () => {
+  const state = fixedState({ c: { gold: 0 }, floor: { depth: 3 } });
+  tableFour(state, "wilmst cache", fakeRng([]), []);
+  const afterFirst = state.c.gold;
+  tableFour(state, "wilmst cache", fakeRng([]), []);
+  assert.equal(state.c.gold, afterFirst * 2, "the second cache on the same floor pays exactly the same amount as the first");
 });
 
 // --- findFood / findGrimoire / findGear / findMisc -------------------------

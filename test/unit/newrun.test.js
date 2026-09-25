@@ -82,7 +82,7 @@ test("D-14: newRun(seed) === newRun(seed, [], { startDepth: 1 }) deep-equal, dev
   assert.equal(newRun.length, 1, "newRun's declared arity is still exactly one parameter (seed)");
 });
 
-test("D-13: startDepth 20 -> floor 20, level 5, sp 1501, dev true, purse +6000, rngState advanced", () => {
+test("D-13: startDepth 20 -> floor 20, level 5, sp 1501, dev true, purse +2000, rngState advanced (RULES-02, Phase 75: WILMST_CACHE_PER_DEPTH 300 -> 100)", () => {
   const base = newRun(42);
   const dev = newRun(42, [], { startDepth: 20 });
   assert.equal(dev.floor.depth, 20);
@@ -90,9 +90,9 @@ test("D-13: startDepth 20 -> floor 20, level 5, sp 1501, dev true, purse +6000, 
   assert.equal(dev.c.sp, THRESHOLDS[4]);
   assert.equal(dev.dev, true);
   assert.ok(dev.c.maxWP > base.c.maxWP, "the dev run leveled up, gaining maxWP");
-  assert.ok(dev.c.gold >= base.c.gold + 6000, "the dev run's purse gained at least the flat 6000 wilmst-cache amount");
+  assert.ok(dev.c.gold >= base.c.gold + 2000, "the dev run's purse gained at least the flat 2000 wilmst-cache amount (100 * startDepth 20)");
   if (base.c.sub !== "Pickpocket") {
-    const expectedGain = Math.round(6000 * (1 + 0.5 * eff(base.c, "greed")));
+    const expectedGain = Math.round(2000 * (1 + 0.5 * eff(base.c, "greed")));
     assert.equal(dev.c.gold, base.c.gold + expectedGain, "non-Pickpocket dev purse is exactly the greed-scaled wilmst-cache grant");
   }
   assert.notEqual(dev.rngState, base.rngState, "the dev branch's extra draws advance rngState past the default run's cursor");
@@ -117,7 +117,7 @@ test("D-13: chargen is untouched -- the dev run rolls the SAME adventurer", () =
   }
 });
 
-test("D-13: startDepth 3 -> level 3 / sp 501 / floor 3; startDepth 50 -> level 5 / sp 1501 / floor 50 / purse +15000", () => {
+test("D-13: startDepth 3 -> level 3 / sp 501 / floor 3; startDepth 50 -> level 5 / sp 1501 / floor 50 / purse +5000 (RULES-02, Phase 75: WILMST_CACHE_PER_DEPTH 300 -> 100)", () => {
   const base3 = newRun(9);
   const dev3 = newRun(9, [], { startDepth: 3 });
   assert.equal(dev3.floor.depth, 3);
@@ -129,7 +129,7 @@ test("D-13: startDepth 3 -> level 3 / sp 501 / floor 3; startDepth 50 -> level 5
   assert.equal(dev50.floor.depth, 50);
   assert.equal(dev50.c.level, 5);
   assert.equal(dev50.c.sp, THRESHOLDS[4]);
-  assert.ok(dev50.c.gold >= base50.c.gold + 15000, "startDepth 50's purse grants at least the flat 15000 wilmst-cache amount");
+  assert.ok(dev50.c.gold >= base50.c.gold + 5000, "startDepth 50's purse grants at least the flat 5000 wilmst-cache amount (100 * startDepth 50)");
 });
 
 test("sanitisation: 0, -3, NaN, 1.5, Infinity, 'abc', undefined all equal newRun(seed); 5000 clamps to DEV_START_DEPTH_MAX", () => {
