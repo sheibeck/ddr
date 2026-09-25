@@ -222,3 +222,24 @@ None - no external service configuration required.
 ---
 *Phase: 75-engine-rules-character-economy-grimoire-combat-bugs*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: content/mu-chart.js
+- FOUND: engine/character.js
+- FOUND: engine/encounters.js
+- FOUND: test/unit/grimoire-legality.test.js
+- FOUND: test/parity/fixtures/action-script.chargen.json
+- FOUND: test/parity/fixtures/action-script.combat.json
+- FOUND: test/parity/FIXTURE-INVENTORY.md
+- FOUND: test/parity/divergence-records.test.js
+- FOUND: test/unit/identity-contract.test.js
+- FOUND: test/unit/casters-can-act.test.js
+- FOUND: test/unit/chargen-rng-pin.test.js
+- FOUND: test/unit/day-one-damage.test.js
+- FOUND: tools/readouts/75-05-before.txt
+- FOUND: tools/readouts/75-05-after.txt
+- FOUND commit: aae50d7 (feat: Task 1)
+- FOUND commit: 0e78e7d (docs: Task 2)
+- FOUND commit: 3be1c3d (test: Task 3 re-pins)
+- FOUND commit: cc7bc2a (docs: before/after readouts)
