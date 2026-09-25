@@ -152,6 +152,33 @@ const OUTCOME = {
   // (never_melee skips the gate entirely) AND it succeeded — the ability
   // never fires off a failed gate.
   foeCast: () => true,
+  // 73-09 rows: traps, locks, climbs, leaps, cures, wake, and the Cutthroat
+  // murder check.
+  trapAvoided: () => true, // a trapAvoided event only fires once the dodge check succeeded
+  trapSprung: () => false, // trapSprung only fires once the dodge check failed (and the hero is not a Pilfer)
+  trapDisarmed: () => false, // trapDisarmed (Pilfer) only fires once the dodge check failed
+  chestLockRolled: (e) => !!e.opened, // opened is exactly the check's own .ok
+  // climbedOver/fellClimbing both carry `roll` (the LAST segment's roll)
+  // alongside `rolls` (every segment's own roll) — the loop halts on the
+  // first failed segment, so a climbedOver's `rolls` are ALL at or above
+  // atLeast, and a fellClimbing's `rolls` are every-earlier-segment-passed
+  // followed by exactly one failing last segment.
+  climbedOver: (e) => Array.isArray(e.rolls) && e.rolls.every((r) => r >= e.atLeast),
+  fellClimbing: (e) => {
+    if (!Array.isArray(e.rolls) || e.rolls.length === 0) return true;
+    const last = e.rolls[e.rolls.length - 1];
+    const priorAllOk = e.rolls.slice(0, -1).every((r) => r >= e.atLeast);
+    return !(last < e.atLeast && priorAllOk);
+  },
+  leaptOver: () => true, // a leaptOver event only fires once the leap check succeeded
+  fellInGorge: () => false, // fellInGorge only fires once the leap check failed
+  afflictionCured: () => true, // afflictionCured only fires once the cure check succeeded
+  afflictionLingers: () => false, // afflictionLingers only fires once the cure check failed
+  // wanderingMonster carries no singular `roll` — only `rolls` (the eight
+  // hourly draws, already-high/unmirrored) — so `hours` must equal the
+  // count of rolls that failed the hero's quiet check (roll < atLeast).
+  wanderingMonster: (e) => Array.isArray(e.rolls) && e.rolls.filter((r) => r < e.atLeast).length === e.hours,
+  joinerMurdered: () => false, // a mishap on the natural 1 — always a failure for the hero
 };
 
 /**
@@ -176,7 +203,7 @@ const NESTED_CHECKS = {
 const SELECTION_ROLL_EVENTS = ["encounterRolled", "vaporRolled", "insaneRolled", "insanityRolled", "afflictionRolled", "faerieMet"];
 
 /** COMPLETE — set to true by 73-09, once every roll-carrying event has been converted. */
-const COMPLETE = false;
+const COMPLETE = true;
 
 // --- rule functions (I1-I6) -------------------------------------------------
 
@@ -475,11 +502,12 @@ test("roll-high invariant self-test: each rule (I1-I6) fires on its own syntheti
     checkEvent({ type: "selfTestCheck", roll: 10 }, [], { complete: true }).some((v) => v.startsWith("I6")),
     "expected an I6 violation (forced COMPLETE) for a roll with no atLeast and not a selection type",
   );
-  // I6 does not fire when COMPLETE is left at its real (false) value.
+  // I6 does not fire when complete is explicitly forced off (independent of
+  // the module's real COMPLETE value, which 73-09 sets to true).
   assert.deepStrictEqual(
-    checkEvent({ type: "selfTestCheck", roll: 10 }, []).filter((v) => v.startsWith("I6")),
+    checkEvent({ type: "selfTestCheck", roll: 10 }, [], { complete: false }).filter((v) => v.startsWith("I6")),
     [],
-    "expected zero I6 violations when complete is not forced (module COMPLETE is false)",
+    "expected zero I6 violations when complete is forced off",
   );
   // I6 does not fire on a SELECTION_ROLL_EVENTS type even with COMPLETE forced on.
   assert.deepStrictEqual(
@@ -501,6 +529,6 @@ test("roll-high invariant self-test: each rule (I1-I6) fires on its own syntheti
   }
 });
 
-test("COMPLETE is false in this plan", () => {
-  assert.equal(COMPLETE, false);
+test("COMPLETE is true — every roll-carrying event has been converted", () => {
+  assert.equal(COMPLETE, true);
 });
