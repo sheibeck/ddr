@@ -175,22 +175,24 @@ test("Ice (dot cast): one draw for the duration, no to-hit roll; the SAME dispat
   assert.equal(foe.dot.left, 3, "the SAME dispatch's trailing foeTurn already ticked it once");
 });
 
-test("Ice: an intel>=12 foe can resist (d20 below intel) before any dot draw", () => {
+test("Ice: an intel>=12 foe can resist (raw d20 below intel, mirrored roll 10) before any dot draw", () => {
   const foe = fixedFoe({ name: "Target", intel: 12, wp: 100, maxWP: 100 });
   const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
-  // 11 -> resistRoll resists (11 < 12); tail: foe miss (20) + initiative (15/10).
+  // raw 11 -> resistRoll resists (11 < 12; mirrored roll 21-11=10 >= atLeast
+  // 22-12=10); tail: foe miss (20) + initiative (15/10).
   const events = castSpell(state, SPELL_IDX.Ice, fakeRng([11, 20, 15, 10]), []);
-  assert.ok(events.some((e) => e.type === "spellResisted" && e.spell === "Ice" && e.roll === 11));
+  assert.ok(events.some((e) => e.type === "spellResisted" && e.spell === "Ice" && e.roll === 10 && e.atLeast === 10 && e.dieN === 20));
   assert.equal(foe.dot, undefined, "a resisted Ice never lands");
 });
 
 test("Ice: an intel>=12 foe that fails to resist still gets the dot (resistFailed then iceApplied)", () => {
   const foe = fixedFoe({ name: "Target", intel: 12, wp: 100, maxWP: 100 });
   const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
-  // 12 -> fails to resist (12 is NOT < 12); d4=2 (rounds 3, cast draw); tail
-  // ticks once (d6=1), foe miss (20), initiative (15/10).
+  // raw 12 -> fails to resist (12 is NOT < 12; mirrored roll 21-12=9 <
+  // atLeast 10); d4=2 (rounds 3, cast draw); tail ticks once (d6=1), foe
+  // miss (20), initiative (15/10).
   const events = castSpell(state, SPELL_IDX.Ice, fakeRng([12, 2, 1, 20, 15, 10]), []);
-  assert.ok(events.some((e) => e.type === "resistFailed" && e.roll === 12));
+  assert.ok(events.some((e) => e.type === "resistFailed" && e.roll === 9 && e.atLeast === 10 && e.dieN === 20));
   const applied = events.find((e) => e.type === "iceApplied");
   assert.ok(applied);
   assert.equal(applied.rounds, 3, "d4(2)+1");

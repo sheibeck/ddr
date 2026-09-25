@@ -124,9 +124,14 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   c.spellsUsed++;
   if (C) C.spellOpen = false;
 
-  // an Apprentice's spells go wrong one time in eight
-  if (c.sub === "Apprentice" && rng.d(8) === 1) {
-    events.push({ type: "spellBackfired", spell: sp.n });
+  // an Apprentice's spells go wrong one time in eight — Phase 73 (ROLL-05):
+  // a natural-1 mishap gate is not mirrored (a 1 is always the worst face);
+  // drawn ONLY for an Apprentice, on its own line so the guard can tag it —
+  // the ternary preserves the old `&&` short-circuit exactly (a non-
+  // Apprentice draws nothing here).
+  const apprenticeBackfireRoll = c.sub === "Apprentice" ? rng.d(8) : null; // roll:mishap-on-1
+  if (apprenticeBackfireRoll === 1) {
+    events.push({ type: "spellBackfired", spell: sp.n, roll: apprenticeBackfireRoll, atLeast: 2, dieN: 8 });
     if (sp.dmg && sp.kind === "thrown") {
       const self = Math.ceil(rollDice(rng, sp.dmg) / 2);
       c.wp -= self;
@@ -147,18 +152,20 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   // live in derived.js's resistRoll, shared with engine/foeAbilities.js's
   // hero-side check; byte-identical control flow and events (the gate is
   // the same boolean, relocated), so parity's cast-damage fixture (Shriek,
-  // intel 1) never enters the rolled branch on either side.
+  // intel 1) never enters the rolled branch on either side. Phase 73
+  // (ROLL-05): resistRoll's own draw is now roll-high; both events carry the
+  // { roll, atLeast, dieN } triple alongside their existing fields.
   if (C && !RESIST_IMMUNE_KINDS.has(sp.kind)) {
     const t = liveFoes(state)[0];
     if (t) {
       const res = resistRoll(rng, t.intel);
       if (res.rolled) {
         if (res.resisted) {
-          events.push({ type: "spellResisted", target: t.name, spell: sp.n, roll: res.roll, intel: t.intel });
+          events.push({ type: "spellResisted", target: t.name, spell: sp.n, ...rollFields(res), intel: t.intel });
           afterPlayerAction(state, rng, events);
           return events;
         }
-        events.push({ type: "resistFailed", target: t.name, roll: res.roll });
+        events.push({ type: "resistFailed", target: t.name, ...rollFields(res) });
       }
     }
   }
@@ -173,12 +180,16 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     const lesser = sp.lesser === true;
     const doubled = c.sub === "Summoner" && !lesser; // a Summoner's FULL creatures come doubled
     const lvl = lesser ? Math.max(1, Math.min(3, c.level - 1)) : Math.min(5, c.level + (doubled ? 1 : 0));
-    if (doubled && rng.d(8) === 1) {
-      const hurt = lvl * lvl + rng.d(6);
+    // Phase 73 (ROLL-05): the same natural-1 mishap pattern as the
+    // Apprentice backfire above — drawn ONLY when doubled (the ternary
+    // preserves the old `&&` short-circuit), on its own tagged line.
+    const doubledBackfireRoll = doubled ? rng.d(8) : null; // roll:mishap-on-1
+    if (doubledBackfireRoll === 1) {
+      const hurt = lvl * lvl + rng.d(6); // roll:amount
       c.wp -= hurt;
       // Phase 43 (CLAR-01, additive): spell/sub name the cause for the
       // narration; fixtures compare state, so this moves none.
-      events.push({ type: "summonBackfired", amount: hurt, spell: sp.n, sub: c.sub });
+      events.push({ type: "summonBackfired", amount: hurt, spell: sp.n, sub: c.sub, roll: doubledBackfireRoll, atLeast: 2, dieN: 8 });
       if (c.wp <= 0) {
         die(state, "summon", null, rng, events, now);
         return events;

@@ -2143,7 +2143,9 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   events.push({ type: "allyCast", ...base });
   const res = resistRoll(rng, t.intel);
   if (res.rolled && res.resisted) {
-    events.push({ type: "allySpellMissed", ...base, resisted: true, roll: res.roll });
+    // Phase 73 (ROLL-05): resistRoll's own draw is roll-high; carry its
+    // { roll, atLeast, dieN } triple alongside the existing resisted flag.
+    events.push({ type: "allySpellMissed", ...base, resisted: true, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN });
     return;
   }
   if (sp.kind === "weaken") {

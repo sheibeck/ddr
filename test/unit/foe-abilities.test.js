@@ -234,13 +234,15 @@ test("kit order + interleave (D-04): the Drudge kit casts Freeze, Fireball, Ligh
 
 // --- 7: resist (D-07) ----------------------------------------------------------
 
-test("resist (D-07): intel 12 hero — d20 11 resists a bolt (no damage die), d20 12 fails then the bolt lands; intel 11 never rolls", () => {
+test("resist (D-07): intel 12 hero — raw d20 11 resists a bolt (mirrored roll 10, no damage die), raw d20 12 fails (mirrored roll 9) then the bolt lands; intel 11 never rolls", () => {
   const state = fixedState({ c: { intel: 12 } });
   const foe = fixedFoe({ abilities: ["krupkeFreeze"] });
   state.combat = fixedCombat([foe]);
   const events = foeTurn(state, fakeRng([1, 11]), []);
   assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResisted"]);
-  assert.equal(events[1].roll, 11);
+  assert.equal(events[1].roll, 10);
+  assert.equal(events[1].atLeast, 10);
+  assert.equal(events[1].dieN, 20);
   assert.equal(events[1].intel, 12);
   assert.equal(state.c.wp, 55);
 
@@ -249,7 +251,9 @@ test("resist (D-07): intel 12 hero — d20 11 resists a bolt (no damage die), d2
   state2.combat = fixedCombat([foe2]);
   const events2 = foeTurn(state2, fakeRng([1, 12, 4]), []);
   assert.deepEqual(events2.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
-  assert.equal(events2[1].roll, 12);
+  assert.equal(events2[1].roll, 9);
+  assert.equal(events2[1].atLeast, 10);
+  assert.equal(events2[1].dieN, 20);
   assert.equal(events2[2].dmg, 4);
 
   const state3 = fixedState({ c: { intel: 11 } });
@@ -580,8 +584,8 @@ test("narration: every new event builder returns a non-empty string for a bare {
     foeHealed: { type: "foeHealed", name: "Stalka Beast", ability: "stalkaHeal", amount: 4, wp: 94, maxWP: 94 },
     foeSummoned: { type: "foeSummoned", name: "Skeleton", by: "Vampire", pending: true },
     foeEffectFaded: { type: "foeEffectFaded", kind: "dazed" },
-    heroResisted: { type: "heroResisted", name: "Krupke", ability: "krupkeFreeze", roll: 11, intel: 12 },
-    heroResistFailed: { type: "heroResistFailed", name: "Krupke", ability: "krupkeFreeze", roll: 12, intel: 12 },
+    heroResisted: { type: "heroResisted", name: "Krupke", ability: "krupkeFreeze", roll: 10, atLeast: 10, dieN: 20, intel: 12 },
+    heroResistFailed: { type: "heroResistFailed", name: "Krupke", ability: "krupkeFreeze", roll: 9, atLeast: 10, dieN: 20, intel: 12 },
     foePursued: { type: "foePursued", name: "Spectre" },
     foeOutOfSpells: { type: "foeOutOfSpells", name: "Drudge" },
   };

@@ -100,14 +100,16 @@ export function firstReadyAbility(state, f) {
  * (engine/derived.js). Pushes `heroResisted`/`heroResistFailed` only when a
  * roll actually happened (hero intel >= 12 — resistRoll's own gate); returns
  * `true` when the effect is fully resisted (0 further effect, no further
- * draw). Never called for heal/summon or a member-targeted bolt/drain.
+ * draw). Never called for heal/summon or a member-targeted bolt/drain. Phase
+ * 73 (ROLL-05): both events carry resistRoll's { roll, atLeast, dieN } triple
+ * alongside `intel`.
  */
 function heroResist(rng, c, f, a, events) {
   const res = resistRoll(rng, c.intel);
   if (res.rolled && res.resisted) {
-    events.push({ type: "heroResisted", name: f.name, ability: a.id, roll: res.roll, intel: c.intel });
+    events.push({ type: "heroResisted", name: f.name, ability: a.id, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel: c.intel });
   } else if (res.rolled) {
-    events.push({ type: "heroResistFailed", name: f.name, ability: a.id, roll: res.roll, intel: c.intel });
+    events.push({ type: "heroResistFailed", name: f.name, ability: a.id, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel: c.intel });
   }
   return res.rolled && res.resisted;
 }

@@ -342,34 +342,49 @@ test("castSpell: Sense Danger (non-combat) sets foresight and picks the next enc
 
 // --- Phase 19: resistance via the shared resistRoll (FOE-07) ---------------
 
-test("castSpell: an intel-12 foe resists Weaken on a d20 of 11 — spellResisted payload unchanged, one d20 then the foe turn", () => {
+test("castSpell: an intel-12 foe resists Weaken on a raw d20 of 11 (mirrored roll 10 vs atLeast 10) — spellResisted, one d20 then the foe turn", () => {
   const foe = fixedFoe({ intel: 12, wp: 10, maxWP: 10 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
     combat: fixedCombat([foe]),
   });
-  // 11 -> resistRoll resists (11 < 12); tail 7 = foe miss — no round-advance
-  // draws, initiative is rolled once, Phase 51 (exactly 2 draws total).
+  // raw 11 -> resistRoll resists (11 < 12; mirrored roll 21-11=10 >= atLeast
+  // 22-12=10); tail 7 = foe miss — no round-advance draws, initiative is
+  // rolled once, Phase 51 (exactly 2 draws total).
   const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([11, 7]), []);
   assert.ok(
-    events.some((e) => e.type === "spellResisted" && e.target === "Target" && e.spell === "Weaken" && e.roll === 11 && e.intel === 12),
+    events.some(
+      (e) =>
+        e.type === "spellResisted" &&
+        e.target === "Target" &&
+        e.spell === "Weaken" &&
+        e.roll === 10 &&
+        e.atLeast === 10 &&
+        e.dieN === 20 &&
+        e.intel === 12,
+    ),
   );
   assert.ok(!events.some((e) => e.type === "weakened"));
   assert.ok(!state.combat.weakened, "the resisted Weaken never lands");
   assert.equal(state.c.spellsUsed, 1);
 });
 
-test("castSpell: a d20 of 12 fails to resist — resistFailed { target, roll: 12 } then Weaken lands", () => {
+test("castSpell: a raw d20 of 12 fails to resist — resistFailed { target, roll: 9 (mirrored), atLeast: 10, dieN: 20 } then Weaken lands", () => {
   const foe = fixedFoe({ intel: 12, wp: 10, maxWP: 10 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
     combat: fixedCombat([foe]),
   });
-  // 12 -> resistRoll fails to resist (12 is NOT < 12); Phase 40 (SPELL-01)
-  // adds ONE d4 draw for the new spell:weaken duration (2 -> rounds 3)
-  // between the resist roll and the same foe-miss tail (7) — no round-advance draws, Phase 51.
+  // raw 12 -> resistRoll fails to resist (12 is NOT < 12; mirrored roll
+  // 21-12=9 < atLeast 22-12=10); Phase 40 (SPELL-01) adds ONE d4 draw for
+  // the new spell:weaken duration (2 -> rounds 3) between the resist roll
+  // and the same foe-miss tail (7) — no round-advance draws, Phase 51.
   const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([12, 2, 7]), []);
-  assert.ok(events.some((e) => e.type === "resistFailed" && e.target === "Target" && e.roll === 12));
+  assert.ok(
+    events.some(
+      (e) => e.type === "resistFailed" && e.target === "Target" && e.roll === 9 && e.atLeast === 10 && e.dieN === 20,
+    ),
+  );
   const weakened = events.find((e) => e.type === "weakened");
   assert.ok(weakened);
   assert.equal(weakened.rounds, 3, "d4(2)+1");
