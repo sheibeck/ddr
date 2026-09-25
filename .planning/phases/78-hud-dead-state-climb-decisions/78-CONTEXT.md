@@ -41,6 +41,7 @@ So Phase 78 depends on Phase 73/74 (it runs after them anyway, in numeric order)
   - Measure first, never edit the prototype master, and carve any new serialized field out of the comparables.
 
 ### Dead state, HUD and feel (user accepted 2026-09-25)
+- **Added 2026-09-25 (user report; todo `2026-09-25-rail-line-when-a-spell-charge-is-regained`):** a regained spell charge gets a rail toast line again. `spellChargeRecovered` sits in `narrationLines.js` ORACLE_ONLY because "the HUD charge display already shows this", but the HUD no longer shows charges. Move it to LINE_FOR (toast, not card) with the count, and audit ORACLE_ONLY for other stale "the HUD shows this" reasons. Presentation-only.
 - **HUD-01:** band 1 reads "Race Sub-class · Lvl N" (e.g. "Dwarf Pickpocket · Lvl 3"), with no parent class and no parentheses.
 - **HUD-02:** once the hero is dead, only the Oracle, the DEAD/Leaderboards screen and the ☰ menu (Settings, the way back to the title; the account rows stay in ☰ per the standing ruling) accept input. Map taps, the other tabs, camp, marks and centre-map are inert.
 - **HUD-03:** a **FINAL SHEET** button on the DEAD screen opens the Hero tab's character sheet (`src/browser/heroTab.js#characterSheetViewModel`) in READ-ONLY mode: stats, level, gear, grimoire and the epitaph, with no action buttons. It is for the run that just ended.
