@@ -703,3 +703,39 @@ Plans:
 Plans:
 
 - [ ] TBD (promote with /gsd-new-milestone when ready — user wants this as its own milestone)
+
+### Phase 999.12: Achievements track (BACKLOG — promote as its own milestone)
+
+**Goal:** [Captured 2026-09-25, user] Add an achievements track to the game. Every achievement name and unlock line is written in the game's sarcastic, family-friendly voice. **The user wants this promoted as its own milestone** (via `/gsd-new-milestone`), not folded into a bug-fix milestone.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**The user's seed list (ideas, not a closed set):**
+
+- **Depth milestones:** reach 5, 10, 15 and 20. **20 is "Unicorn!"** (matches the depth-20 unicorn-ceiling tuning target).
+- **Fully dressed:** have an item equipped in every slot at once.
+- **Naked ambition:** reach 5 with **nothing equipped**. You must unequip everything before your first move, so the check is "zero equipped at step 1 and never re-equipped".
+- **Teetotaler:** reach 5 without drinking a single healing potion.
+- **Frequent flier:** die 100 times, counted across all runs.
+- **Read the label:** drink the Death potion (`content/potions.js:45`, `eff: "death"`, *"your dead!"*).
+- **Body counts:** kill 100 Walking Dead, and one "kill 100" for each monster group. The groups are the `content/bestiary.js` `BESTIARY` keys: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead.
+- **Every race:** reach 5 with each race in `content/races.js`: Human, Elven, Dwarven, Wilmsry, Fridgian, Troll.
+- **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
+- **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
+
+**Open decisions (for milestone discussion):**
+
+- **"Level" means floor depth or character level?** The engine has both: character level comes from `levelFromSP` in `engine/derived.js`. The depth-20 unicorn target suggests depth, and "reach 5" in the other ideas probably means depth too. Confirm.
+- **Where achievements live:** Play Games achievements, a local in-game list, or both. The plugin `@modbender/capacitor-play-games` already exposes `unlockAchievement` / `incrementAchievement` / `setAchievementSteps` / `loadAchievements` / `showAchievements`. The game must stay fully playable offline, so a local list is the source of truth and Play Games is a mirror. Unlocks earned offline or while signed out are queued like `pgsQueue` scores.
+- **Provisioning:** Play Console achievements need an icon and fixed XP points (1,000 XP cap per game). Created by script via the Games Configuration API (`achievementConfigurations.insert`) with the same service account as 999.11's leaderboards script, or by hand. Plan them together.
+- **Counters and persistence:** the kill counts per group, deaths, races/classes reached and sub-classes delved need a durable lifetime-stats record in `@capacitor/preferences` (the `storage.js` pattern), kept separate from the run save. Tolerant-load, no legacy paths. Decide whether to count retroactively from the local graveyard/bests history.
+- **Engine purity:** the engine only emits the facts (kills with group, potion drunk, equip state at step 1, depth reached). The achievement tracker is a shell layer that folds events into the lifetime stats. Zero rng draws, so zero parity fixtures should move (verify).
+- **Surfacing:** an unlock is a minor event, so it shows as a toast with a sarcastic line, not a card (see the card vs toast rule). The list lives somewhere in ☰ or the Hero Company tab; the Play Games achievements UI opens from ☰. Hidden or secret achievements (e.g. the Death potion) keep the joke intact.
+- **Bot / sim:** decide whether the headless bot tracks achievements (probably not, but depth-reach rates from the sim help calibrate how hard each one is).
+- **More ideas welcome:** the user's list is a starting point. Brainstorm more in the game's voice during discussion.
+
+**Constraints:** offline-first (no network needed to earn an achievement); no new runtime SDK beyond the existing Play Games plugin; family-friendly copy; needs a signed-in Pixel 7 check (unlock toast plus the Play Games popup), batched into the milestone-close checklist.
+
+Plans:
+
+- [ ] TBD (promote with /gsd-new-milestone when ready — user wants this as its own milestone)
