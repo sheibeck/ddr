@@ -41,7 +41,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 - [x] **Phase 72: Roll-Direction Sign Audit & Fixes** - the audited ledger of every roll modifier's sign, with the three known bugs fixed under the engine gate, landing before the roll-high mirror (completed 2026-09-24)
 - [x] **Phase 73: Engine Roll-High Mirror** - the engine itself switches every die check to roll-high; the full parity suite proves it byte-identical (completed 2026-09-25)
-- [ ] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers
+- [x] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers (completed 2026-09-25)
 - [ ] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
 - [ ] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire
 - [ ] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules
@@ -185,7 +185,7 @@ Plans:
 
 **Wave 4**
 
-- [ ] 74-08-PLAN.md — The cross-surface sign consistency guard and range-format pin, copy banks walked by the standing scans, the ROLL-LEDGER display closure and the whole-phase gates (wave 4)
+- [x] 74-08-PLAN.md — The cross-surface sign consistency guard and range-format pin, copy banks walked by the standing scans, the ROLL-LEDGER display closure and the whole-phase gates (wave 4)
 
 **Cross-cutting constraints:**
 
@@ -400,7 +400,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
-| 74. Roll Display & Modifier Honesty | v2.1 | 7/8 | In Progress|  |
+| 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete    | 2026-09-25 |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |

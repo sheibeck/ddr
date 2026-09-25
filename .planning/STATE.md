@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 74
-current_phase_name: Roll Display & Modifier Honesty
+current_phase: 75
+current_phase_name: Engine Rules — Character, Economy, Grimoire & Combat Bugs
 status: executing
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-25T17:44:29.774Z"
+last_updated: "2026-09-25T19:26:25.002Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 73 complete, transitioned to Phase 74
+last_activity_desc: Phase 74 complete, transitioned to Phase 75
 progress:
   total_phases: 13
-  completed_phases: 3
-  total_plans: 31
-  completed_plans: 23
-  percent: 23
+  completed_phases: 4
+  total_plans: 44
+  completed_plans: 31
+  percent: 31
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 74 — Roll Display & Modifier Honesty
+Phase: 75 — Engine Rules — Character, Economy, Grimoire & Combat Bugs
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-09-25 — Phase 73 complete, transitioned to Phase 74
+Last activity: 2026-09-25 — Phase 74 complete, transitioned to Phase 75
 
 ## Ground Truth (durable facts every session needs)
 

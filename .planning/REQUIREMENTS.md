@@ -46,8 +46,8 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
   - (b) Fridgian frenzy's second swing hard-sets need 3 and skips the dark cap (~:611).
   - (c) Bestiary `critOn: 1` ("a 1 shatters it", Skeleton) is never read by the engine. Wire it in, or drop the claim.
 - [x] **ROLL-05**: Every die check in the engine resolves roll-high. The engine reads the same rng draw `r` as `(N+1) − r` on an N-sided die and succeeds at or above a target, with modifiers as signed bonuses to the roll or target (+ always helps the roller). Every seeded run resolves identically, parity fixtures stay byte-identical, and a guard test fails on any roll-under comparison left in `engine/`. This covers all ~34 sites: to-hit both ways, soak, thrown spells, resistance, parley, traps, locks, climbs/leaps, cures, wake, drops, gates, summons, crits and the "natural" overrides. Flee and initiative keep roll-high with their modifier conventions aligned. Content numbers (weapon and bestiary to-hit, AR, etc.) are re-expressed in the new convention, and any value stored in save state gets a one-time tolerant-load conversion. Events carry the high-is-good `roll`, `target` and `dieN` natively, including soak, climb/leap, cure and wake.
-- [ ] **ROLL-02**: Every roll the player sees prints the engine's own high-is-good roll and target, with no translation layer: the Oracle, fight log, dice reveals, rail cards, hero sheet, combat menu and foe details. On a d20 a caster needs 18–20, a thief 17–20 and a fighter 16–20.
-- [ ] **ROLL-03**: Every displayed modifier is signed from the player's point of view: "+2 to hit" always means better odds, and "−2" always means worse. This covers item, loot, store and find comparisons, the hero sheet, spell and ability text, condition chips and the fight log's need breakdown. The same modifier never shows opposite signs on two surfaces.
+- [x] **ROLL-02**: Every roll the player sees prints the engine's own high-is-good roll and target, with no translation layer: the Oracle, fight log, dice reveals, rail cards, hero sheet, combat menu and foe details. On a d20 a caster needs 18–20, a thief 17–20 and a fighter 16–20.
+- [x] **ROLL-03**: Every displayed modifier is signed from the player's point of view: "+2 to hit" always means better odds, and "−2" always means worse. This covers item, loot, store and find comparisons, the hero sheet, spell and ability text, condition chips and the fight log's need breakdown. The same modifier never shows opposite signs on two surfaces.
 - [ ] **ROLL-04**: The rules text, `content/` descriptions and narration that encode roll direction ("1–N", "need N", "natural 1", "−3 on to-hit") are rewritten to the bigger-is-better reading, and a doc-synced test pins that no roll-under phrasing remains in player-facing strings.
 
 ### Leaderboards (BOARD) — device report 2026-09-24, v2.0 build
@@ -136,8 +136,8 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 |-------------|-------|--------|
 | ROLL-01 | Phase 72 | Complete |
 | ROLL-05 | Phase 73 | Complete |
-| ROLL-02 | Phase 74 | Pending |
-| ROLL-03 | Phase 74 | Pending |
+| ROLL-02 | Phase 74 | Complete |
+| ROLL-03 | Phase 74 | Complete |
 | RULES-01 | Phase 75 | Pending |
 | RULES-02 | Phase 75 | Pending |
 | RULES-03 | Phase 75 | Pending |
