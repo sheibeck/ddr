@@ -24,6 +24,28 @@ Output: `android/app/build/outputs/bundle/release/app-release.aab`, signed with 
 Then Play Console → Testing → Internal testing → **Create new release** → drop the .aab →
 release notes → Save + Start rollout. Testers get it within minutes (no review on internal).
 
+## Next Play push: release notes
+
+Tester-facing text to paste into Play Console's release notes for the next push (v2.1
+Leaderboards panel fixes). Family-friendly deadpan, no internal ids:
+
+- The Leaderboards panel now has ME | ALL | FRIENDS; signed in, it opens on ALL.
+- Your own score is tagged YOU and appears once.
+- The boards refresh when you open them.
+- LEANEST and GRAVEYARD are gone; your own dead are all still under ME, epitaphs included.
+- Every finished run lands on your own boards.
+
+## After the push: console checklist
+
+1. Delete LEANEST, Season 1 (`CgkIlvbN0YYPEAIQAw`) in Play Console once the new build is live
+   (docs/PLAY-GAMES-SETUP.md section 13).
+2. With two signed-in accounts (you and a friend), confirm a new DEEPEST score from one shows
+   on the other's ALL board after reopening the Leaderboards panel (the milestone-close device
+   check).
+
+The push itself follows the standing ask-first rule (after every update, ask before pushing a
+versionCode-bumped signed AAB to the internal-testing track).
+
 - `android/version.properties` is the single source of `versionCode` / `versionName`. Play
   rejects a re-used versionCode, so `play:release` always bumps it; use
   `node tools/bump-version.mjs --name 1.1.0` when the human-readable version should change too.

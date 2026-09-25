@@ -298,12 +298,13 @@ by context, not hidden.
 **Encodings.** `src/browser/scoreTag.js` encodes a run into the 64-char
 Play Games score tag (versioned, no epitaph) and decodes it tolerantly;
 global rows are drawn from the tag, not from the score.
-`src/browser/boardScores.js` turns a run summary into the five submitted
-scores (DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE; LINEAGE and GRAVEYARD
-are never submitted) and resolves leaderboard IDs per season and board
-from `content/leaderboards.js`. Those IDs are placeholders until the Play
+`src/browser/boardScores.js` turns a run summary into the four submitted
+scores (DEEPEST, LONGEST, BUTCHERY, PURSE; LINEAGE and GRAVEYARD are never
+submitted) and resolves leaderboard IDs per season and board from
+`content/leaderboards.js`. Those IDs are placeholders until the Play
 Console setup in Phase 69, and a placeholder or missing ID skips its board
-silently.
+silently. LEANEST was retired in v2.1 (BOARD-17): since v2.1, LINEAGE is
+ME-only and GRAVEYARD is folded into ME.
 
 **The queue.** `src/browser/pgsQueue.js` exports
 `createSubmissionQueue({ storage, provider, ids, season, isCompeting,
