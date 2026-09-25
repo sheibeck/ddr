@@ -79,11 +79,14 @@ off at any time from the account menu).
 | Data type | What it is | Collected | Shared | Optional | Purpose | Processed ephemerally |
 |---|---|---|---|---|---|---|
 | Personal info → **User IDs** | The Google Play Games player ID | Yes | No | Yes (Compete off) | App functionality | No |
-| App activity → **Other actions** | Per run: the five leaderboard scores (DEEPEST, LEANEST, LONGEST, BUTCHERY, PURSE) plus the score tag's gameplay details: race, sub-class, level, cause of death, floor, days, steps, kills, wilmst carried, experience, and the game-rolled adventurer name (possibly shortened) | Yes | No | Yes (Compete off) | App functionality | No (Google stores the scores) |
+| App activity → **Other actions** | Per run: the four leaderboard scores (DEEPEST, LONGEST, BUTCHERY, PURSE) plus the score tag's gameplay details: race, sub-class, level, cause of death, floor, days, steps, kills, wilmst carried, experience, and the game-rolled adventurer name (possibly shortened) | Yes | No | Yes (Compete off) | App functionality | No (Google stores the scores) |
 
 "Other actions" is Play's App activity type for "any other user activity or
 actions in-app not listed here such as gameplay" (answer/10787469, checked
 2026-09-24), so game scores go there.
+
+Since v2.1, LEANEST is no longer submitted (BOARD-17); the Data safety
+answers themselves are unchanged.
 
 Every other data type: not collected, not shared. The epitaph, saves,
 settings, personal bests and the local graveyard never leave the phone.
