@@ -1,8 +1,8 @@
 ---
-status: awaiting_human_verify
+status: root_cause_found
 trigger: "DATA_START My Elven Ninja walked into a trap with 21 hitpoints to spare, Oracle shows I took -1 hitpoint, but I died. So, -1 hp took 21 hitpoints in actuality. / I was only floor 2 for the trap, btw DATA_END"
 created: 2026-09-22T23:25:00Z
-updated: 2026-09-23T00:20:00Z
+updated: 2026-09-25T00:00:00Z
 ---
 
 ## Symptoms
@@ -89,3 +89,255 @@ verification: "New regression test (test/unit/combat-beat.test.js, 'planBeat's l
 files_changed:
   - src/browser/combatBeat.js
   - test/unit/combat-beat.test.js
+
+## Phase 75 session (2026-09-25)
+
+Resumed per ROADMAP Phase 75 success criterion 4 (RULES-06's fix must follow
+an explicit root-cause session, never a guess). Plan base:
+`4076858db405012d5fccf597b8d078403fc96ebf` (master, after Phase 73 roll-high
+and Phase 74 display honesty). This session re-verifies every 2026-09-22
+finding on current master, runs a real engine-level reproduction at scale,
+audits every visible hero-HP readout across every beat-ending path via the
+real shell, and records the verdict below. No production file was touched —
+`engine/`, `content/`, `src/` and `mazeworld.html` are byte-identical to the
+plan base (`git diff --stat 4076858db405012d5fccf597b8d078403fc96ebf --
+engine content src mazeworld.html` is empty).
+
+### Re-verification (step 2 of Task 1)
+
+- **`planBeat` still pins the last hero-hp frame to the real final hp, and
+  its regression test still passes.** `src/browser/combatBeat.js` lines
+  271-288 still carry the exact fix (`heroHp[heroHp.length - 1] =
+  Math.max(0, after.c.wp)`), and `test/unit/combat-beat.test.js`'s own
+  regression ("planBeat's last hero-hp frame equals the real final hp...")
+  still passes on master (`node --test test/unit/combat-beat.test.js` —
+  31/31 pass, including that test). **Re-confirmed, unchanged.**
+- **`springTrap` still subtracts and narrates the same `dmg` value after the
+  Phase 73 event reshape.** `engine/encounters.js` lines 85-99: `dmg` is
+  computed once (roll, `times`, Cat Burglar ×2, Hardiness −3, `scaleHazard`),
+  THEN `c.wp -= dmg` and `events.push({ type: "trapSprung", ...rollFields(check),
+  name: tr.n, dmg })` read the SAME local `dmg`. Phase 73's ROLL-05 rework
+  changed what the event's `roll`/`atLeast`/`dieN` triple reports (the dodge
+  check, not the trap-kind pick) but left `dmg`'s own computation and use
+  completely untouched — narration and the actual subtraction still cannot
+  diverge for a single `trapSprung` event. Confirmed live by this session's
+  new `test/unit/trap-death-repro.test.js` (a scripted `-1 HP` scenario on a
+  21-hp hero — the report's own numbers — survives at 20 hp, and the Oracle
+  line reads the identical `−1 hp`). **Re-confirmed, unchanged.**
+- **`trappedPanic` and `afflictionTick` still leave at least 1 hp.**
+  `engine/movement.js` line 402 (`Math.min(raw, Math.max(0, c.wp - 1))`) and
+  line 421 (`Math.min(rollDice(rng, af.loss), Math.max(0, c.wp - 1))`) both
+  still carry the >=1-hp clamp, unchanged since the 2026-09-22 session read
+  them. **Re-confirmed, unchanged.**
+- **Every hp-reducing event on a move step still gets its own Oracle
+  line.** `src/browser/engineAdapter.js#formatEvents` still maps every event
+  to its own line (only a literal no-op like the silent "moved" event is
+  filtered) — re-read this session, unchanged in shape. Cross-checked
+  empirically too: the engine-scale reproduction below inventoried every
+  hp-changing event type this codebase's engine can currently push (a full
+  `grep -n "c\.wp -="`/`"c\.wp = Math\.min"` sweep across `engine/*.js`) and
+  found none un-narrated — see the (ii) count.
+
+### Engine-level reproduction at scale (step 3-4 of Task 1)
+
+A scratch script (`tools/lib/tuning-bot.mjs`'s own `decideAction`/
+`makeBotContext` policy, driving the real `engine/engine.js#applyAction`
+from `newRun(seed, [], { startDepth: 2, ... })`, never hand-built events)
+ran **500 seeds** (250 unforced, 250 forced `{ race: "Elven", sub: "Ninja" }`
+— the report's own identity), each up to 400 actions, for **197,377 total
+actions**. For every action it recorded hp before, every hp-changing
+event's own narrated amount (a full inventory of every `c.wp -=`/
+`c.wp = Math.min(...)` site across `engine/*.js`: `trapSprung`,
+`trappedPanic`, `afflictionTick`, `afflictionCaught`, `wentHungry`,
+`fellClimbing`/`fellInGorge`, `backfireSelfDamage`, `summonBackfired`,
+`earthquakeSelfDamage`, `deathCast`, `struckByFoe`, `foeBolted`,
+`insanitySelfHarm`, and the `tableFour` `-10 HP`/`-15 HP` prose rows), hp
+after, and death. For every action that ended a fight it also ran
+`planBeat` on that action's `(before, after, events)` and compared the last
+hero-hp frame to `after.c.wp`.
+
+**The three must-haves counts:**
+
+| # | Question | Count | out of |
+|---|----------|-------|--------|
+| (i) | deaths whose narrated losses summed to LESS than the hp the hero had | **0** | 16 deaths |
+| (ii) | actions whose narrated-loss sum differed from the actual hp change | **18*** | 197,377 actions |
+| (iii) | fight endings whose last frame overstated hp vs `after.c.wp` | **0** | 2,207 fight endings |
+
+\* **All 18 of (ii) are explained, not bugs.** Every one of the 18 hits is a
+death dispatch where the narrated loss (e.g. `trapSprung.dmg`) is LARGER
+than the clamped actual change — because `engine/death.js#die()` sets
+`c.wp = 0` unconditionally (never negative) regardless of how far the blow
+overkills. Example: seed 1169, `move E` → `trapSprung` (dmg 32) → `died`; the
+hero had 30 hp, the trap narrated 32, `c.wp` clamps to 0, so the "actual"
+change reads 30 while the narrated loss reads 32 — the OPPOSITE shape from
+the report (a correctly-narrated, MORE-than-sufficient blow, not an
+under-narrated one). A handful of the 18 are a second, unrelated
+measurement artifact: `secondWindHealed` (an ability self-heal) riding the
+same dispatch as a `struckByFoe` — the heal and the hit each narrate their
+own correct number; only their net (not either alone) is the dispatch's
+total, which this script's crude per-event sum doesn't reconstruct. Neither
+shape is the reported bug (a narrated loss SMALLER than the hp the hero had,
+killing them). Full JSON output and the reproduction script itself are in
+the session scratchpad (never committed): `75-01-trap-death-repro.mjs` /
+`75-01-trap-death-repro-out.json`.
+
+**Conclusion: the engine and its narration tables never produced an
+under-narrated fatal loss, a narration/actual mismatch on a pure-loss
+dispatch, or a last-frame overstatement, across 197k real actions and 2,207
+real fight endings — at scale, on current master, with the report's own
+race/sub forced.**
+
+### Shell-level audit across every beat-ending path (Task 2)
+
+Reused `test/unit/combat-beat-shell.test.js`'s own technique (a REAL beat
+runner — `createBeatRunner`/`createBeat` — driven against the classic shell
+sandbox, `test/unit/harness/shellSandbox.js`, over a fake clock) with a
+deliberately worst-case K-of-M multi-swing fold (an Ogre landing two swings,
+8+9=17, folded into one fight-log line — the exact shape the 2026-09-22
+session's own blind spot 1 named) to check `#mw-hud-wp` (the top HUD,
+painted by `paint()`) and the YOUR LOT hero card (`#cb-lot .cb-lot-wp`, fed
+by `window.__mzCombatVM.lot(V)`) against engine truth (`state.c.wp`) at the
+moment the player can next act, on **all eight named paths**:
+
+| # | Path | HUD (`#mw-hud-wp`) | YOUR LOT card | Result |
+|---|------|---------------------|----------------|--------|
+| 1 | natural settle | 38/55 HP | 38/55 | match |
+| 2 | hurry (tap-to-hurry) | 38/55 HP | 38/55 | match |
+| 3 | tab switch mid-beat | 38/55 HP | 38/55 | match |
+| 4 | flee (combat-ending) | 38/55 HP | 38/55 | match |
+| 5 | a kill (combat-ending, over-panel up) | 38/55 HP | 38/55 | match |
+| 6 | a superseded dispatch (a second round arrives mid-first-beat) | 38/55 HP | 38/55 | match |
+| 7 | the over-panel dismiss (`S.beats = null; renderEncounter();`) | 38/55 HP | 38/55 | match |
+| 8 | reduced motion (the whole beat resolves synchronously, no timers) | 38/55 HP | 38/55 | match |
+
+**All eight beat-ending paths show the correct, engine-true hp at the
+moment the player can next act. Zero mismatches.** Script:
+`75-01-shell-audit.mjs` in the session scratchpad (never committed).
+
+**Blind spot 1 (intermediate, non-last frames) — verdict: STILL PRESENT,
+CONFIRMED, but NEVER exposed at an actionable moment.** A follow-up case in
+the same script built a round where the K-of-M fold is genuinely NOT the
+round's last line (a further single-hit line follows it). The fold's own
+frame (index 1 of 3) still reads `47/55` — the fold's first-constituent-only
+under-count (`55-8`), not the true running total at that point (`55-17=38`).
+This is the SAME mechanism the 2026-09-22 session named and deliberately
+left unfixed (blind spot 1: "does not fix intermediate frame under-counts
+... only the LAST line ... is corrected"). Re-confirmed live, at the shell
+level, this session. **But**: `test/unit/combat-beat-shell.test.js`'s own
+test (4) already proves the action buttons (`#cb-strike` etc.) stay
+`encArmed() === false` for the WHOLE beat, regardless of which frame is
+rendering — so this transient overstatement (on screen for at most one
+`BEAT_GAP_MS` ≈ 600ms) is never the number a player can act on. The round's
+own LAST frame — the number that persists into the actionable moment — is
+always correct (`36/55` in the same test), matching the eight-path audit
+above. **This is not a fatal-exposure window; it is a cosmetic,
+sub-second, non-actionable display quirk, unchanged from the 2026-09-22
+session's own assessment.**
+
+**Verdict for foeFrames (blind spot 3):** not re-examined this session (the
+2026-09-22 session already classified it correctly — it cannot mislead the
+player about their OWN survival, which is this requirement's whole concern
+— and nothing this session found changes that classification).
+
+### Eliminated (this session, added to the running list)
+
+- hypothesis: "a NEW engine, narration, or planBeat regression was
+  introduced by Phase 73 (roll-high) or Phase 74 (display honesty) that
+  reopens the 2026-09-22 gap"
+  evidence: every 2026-09-22 finding re-verified byte-for-byte on master
+  (see Re-verification above); the engine-scale reproduction (500 seeds,
+  197,377 actions, 2,207 fight endings) found zero under-narrated fatal
+  losses and zero last-frame overstatements; the shell-level audit found
+  zero HP-readout mismatches across all eight beat-ending paths, even under
+  a deliberately worst-case K-of-M fold
+  timestamp: 2026-09-25
+- hypothesis: "the death IS reproducible end-to-end from a dev start at
+  depth 2 with the report's own race/sub forced, given enough seeds"
+  evidence: 250 seeds forced to `{ race: "Elven", sub: "Ninja" }` (the
+  report's own identity), 400 actions each, produced 16 deaths total across
+  the full 500-seed run and NONE matched the report's shape (an
+  under-narrated fatal trap); this is consistent with (not proof against)
+  the original session's own blind spot 2 — a single, unreproduced field
+  report can remain genuinely unreproducible even when its explained cause
+  (blind spot 1's presentation gap, already fixed for the exposed case) is
+  fully understood
+  timestamp: 2026-09-25
+
+### Verdict
+
+**`status: root_cause_found`.** The confirmed cause is the SAME one the
+2026-09-22 session found and fixed: `src/browser/combatBeat.js#planBeat`'s
+`heroHp` array, before the fix, under-counted a K-of-M multi-swing fold's
+true damage on the ENDING round's LAST line — the one frame guaranteed to
+be on screen the instant before a beat settles — letting the YOUR LOT hero
+card show far more hp than `state.c.wp` actually held, right before a
+subsequent, correctly-narrated hazard (a small trap) could then be genuinely
+fatal against the true, much-lower hp. This session's exhaustive
+re-verification (byte-for-byte code re-read), engine-scale reproduction
+(500 seeds / 197,377 actions / 2,207 fight endings, zero anomalies of any
+of the three kinds asked for), and shell-level 8-path audit (zero HP-readout
+mismatches at any actionable moment, even under a deliberately worst-case
+fold) all agree: **this fix fully closes the exposed gap, and no NEW,
+different root cause reproduces on current master.**
+
+No new production cause is confirmed this session, so — per this plan's own
+instruction — **`test/unit/trap-death-repro.test.js` carries zero
+`{ todo: true }` cases and zero "RULES-06 cause:" test names.** It instead
+carries four PASSING pins: the trap-narration-equals-actual-loss invariant
+(both the report's own `-1 HP`-on-21-hp shape, and the overkill/clamp
+shape the engine-scale run's own (ii) count needed explaining), the
+last-frame fix re-verified with a freshly-built K-of-M fixture, and blind
+spot 1's transient-but-non-actionable frame documented as a known,
+bounded, unchanged limitation.
+
+The original report itself (a single, unreproduced field report, matching
+the 2026-09-22 session's own blind spot 2) still cannot be reproduced
+end-to-end — this session's 250 forced-identity seeds did not surface a
+matching death, and per this plan's own ground rule, "a plausible mechanism
+that cannot be shown stays unreproduced, never confirmed." The strongest
+available account remains: the player very likely watched the YOUR LOT
+card's pre-2026-09-22-fix under-count during a multi-swing exchange
+(possibly on an EARLIER build than the fix — the report is undated against
+a specific version), formed a false belief about their real hp, and then
+walked into a genuinely fatal (or near-fatal, on top of unremembered prior
+damage) trap that the Oracle narrated correctly the whole time.
+
+### Fix inputs
+
+No code fix is required from this session — the confirmed cause is already
+fixed (`src/browser/combatBeat.js`, 2026-09-22) and already regression-tested
+(`test/unit/combat-beat.test.js`, re-pinned again in
+`test/unit/trap-death-repro.test.js`). Per `75-CONTEXT.md`'s own instruction,
+75-08 still owns the two standing guards below — both already TRUE per this
+session's evidence, so 75-08's job is to make them permanently,
+mechanically true (not to change behavior):
+
+1. **Every visible HP readout equals `state.c.wp` wherever the player can
+   act.** Already true (this session's 8-path shell audit, zero
+   mismatches). 75-08 should promote `75-01-shell-audit.mjs`'s technique (or
+   an equivalent) into a committed, permanent test in this repo's `test/
+   unit/` suite, so a FUTURE regression on any of the eight named paths — or
+   a ninth path added later — is caught the same way this plan caught the
+   original 2026-09-22 gap.
+2. **No hp loss goes un-narrated or mis-narrated.** Already true (this
+   session's engine-scale reproduction, 197,377 actions, zero mismatches
+   once the death-clamp/heal-in-same-dispatch measurement artifacts are
+   accounted for). 75-08 may promote the event-type inventory this
+   session's `narratedLossFor`/`KNOWN_HP_EVENTS` mapping built (see the
+   scratchpad script) into a permanent "every new hp-reducing site must
+   register its own narrated-amount field" guard, so a future engine change
+   that adds a ninth `c.wp -=` site without a matching Oracle field is
+   caught by a test, not a field report.
+
+Optional (Claude's Discretion, not required by the Verdict): blind spot 1
+(the intermediate, non-last K-of-M fold frame's transient under-count)
+could still be tightened by extending the 2026-09-22 fix's own pinning
+approach to every mid-round frame, not just the last one — `heroFrames`
+would need each line's frame to reflect the TRUE cumulative loss through
+that line's real events (not just its one representative event), which
+requires either widening `lineIdxsFor`'s one-idx-per-line contract or
+computing a parallel true-cumulative array off the full `events` array
+rather than the folded `lineEvents` subset. This is NOT required — the
+Verdict already establishes this window is never actionable — but would
+close the cosmetic gap entirely if 75-08 has budget for it.
