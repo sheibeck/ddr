@@ -1,0 +1,179 @@
+
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+Action-count distribution:
+  min=212  p50=882  p90=20000  max=20000
+
+Death-cause breakdown:
+  cut down by a Werebeast 27 (13.5%)
+  starved in the dark  18 (9.0%)
+  undone by a trap     11 (5.5%)
+  cut down by a Dante  9 (4.5%)
+  spent by the dungeon itself 8 (4.0%)
+  cut down by a Blumble 7 (3.5%)
+  cut down by a Vampire 7 (3.5%)
+  cut down by a Drarl  6 (3.0%)
+  cut down by a Poltergeist 6 (3.0%)
+  came up short on a leap 6 (3.0%)
+  cut down by a Craig  6 (3.0%)
+  cut down by a Google 5 (2.5%)
+  cut down by a Cave Bear 5 (2.5%)
+  cut down by a Drudge 4 (2.0%)
+  cut down by a Spectre 4 (2.0%)
+  cut down by a Shadow 4 (2.0%)
+  cut down by a Rinkle 4 (2.0%)
+  cut down by a Drake  4 (2.0%)
+  cut down by a Herman 4 (2.0%)
+  cut down by a Floater 3 (1.5%)
+  fell off a wall      3 (1.5%)
+  cut down by a Skeleton 3 (1.5%)
+  cut down by a Frank  3 (1.5%)
+  cut down by a Djinni 2 (1.0%)
+  cut down by a Trachea 2 (1.0%)
+  cut down by a Bones  2 (1.0%)
+  cut down by a Stink Bug 2 (1.0%)
+  cut down by a Drat   2 (1.0%)
+  cut down by a Ghoul  2 (1.0%)
+  cut down by a Primp  2 (1.0%)
+  cut down by a Ghost  1 (0.5%)
+  cut down by a Dread Lock 1 (0.5%)
+  cut down by a China Wolf 1 (0.5%)
+  cut down by a Hair   1 (0.5%)
+  cut down by a Ned    1 (0.5%)
+  cut down by a Sterling 1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=565  successes=363 (64.2%)  failures=202  refused=0  exhausted=0
+  runs with >=1 attempt: 79 of 200
+  SP from parley: 1924 of 119910 total SP (1.6%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 80.2%  >=10: 24.9%  >=20: 1.1%  >=30: 0.6%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=53  p50=115  p90=136  max=165
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 63/2080 (3.0%)
+  6-10: 90/1027 (8.8%)
+  11-20: 156/340 (45.9%)
+  21-30: 41/66 (62.1%)
+  31-50: 19/40 (47.5%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=653  foeBolted=261  foeDrained=19  foeDebuffed=60  foeHealed=0  foeSummoned=4
+  heroResisted=280  heroResistFailed=119
+  ability damage: 1380 of 32425 total damage taken (4.3%)
+
+Stuck: 23 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=200  startDepth=1
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 2:2  3:18  4:15  5:13  6:29  7:23  8:11  9:22  10:14  11:5  12:4  13:7  14:5  15:4  17:1  18:2  28:1  40:1
+  mean death depth=7.85  floors gained p50=6 mean=6.85  encounters survived mean=16.89
+  reach: >=5 80.2%  >=8 43.5%  >=9 37.3%  >=10 24.9%  >=13 11.9%  >=16 2.8%  >=20 1.1%
+  band share of deaths: Filter 1-4 19.8% | Wall 5-8 42.9% | Breakaway 9-15 34.5% | Endgame 16-20 1.7% | beyond 20 1.1%
+  top causes — Filter: cut down by a Dante 6, cut down by a Poltergeist 6, cut down by a Google 4, cut down by a Cave Bear 3, cut down by a Shadow 3
+  top causes — Wall: cut down by a Werebeast 23, starved in the dark 8, cut down by a Blumble 7, undone by a trap 5, cut down by a Rinkle 4
+  top causes — Breakaway: starved in the dark 7, cut down by a Craig 6, cut down by a Drarl 6, cut down by a Vampire 6, cut down by a Drake 4
+  top causes — Endgame: came up short on a leap 1, cut down by a Drudge 1, cut down by a Vampire 1
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):
+  L=1  reached=200  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=100.0%  target p_L=98.8%  target S_L=98.8%  dS=+1.2  PASS
+  L=2  reached=200  deaths=2 (combat 0 / dot 1 / starvation-exhaustion 1 / other 0)  p_L=99.0%  S_L=99.0%  target p_L=96.3%  target S_L=95.1%  dS=+3.9  PASS
+  L=3  reached=198  deaths=18 (combat 15 / dot 1 / starvation-exhaustion 2 / other 0)  p_L=90.9%  S_L=90.0%  target p_L=93.1%  target S_L=88.6%  dS=+1.4  PASS
+  L=4  reached=177  deaths=15 (combat 10 / dot 5 / starvation-exhaustion 0 / other 0)  p_L=91.5%  S_L=82.4%  target p_L=89.9%  target S_L=79.7%  dS=+2.7  PASS
+  L=5  reached=160  deaths=13 (combat 7 / dot 3 / starvation-exhaustion 3 / other 0)  p_L=91.9%  S_L=75.7%  target p_L=86.9%  target S_L=69.2%  dS=+6.5  PASS
+  L=6  reached=145  deaths=29 (combat 23 / dot 2 / starvation-exhaustion 4 / other 0)  p_L=80.0%  S_L=60.5%  target p_L=84.3%  target S_L=58.4%  dS=+2.1  PASS
+  L=7  reached=114  deaths=23 (combat 18 / dot 4 / starvation-exhaustion 1 / other 0)  p_L=79.8%  S_L=48.3%  target p_L=82.2%  target S_L=48.0%  dS=+0.3  PASS
+  L=8  reached=85  deaths=11 (combat 7 / dot 4 / starvation-exhaustion 0 / other 0)  p_L=87.1%  S_L=42.1%  target p_L=80.6%  target S_L=38.7%  dS=+3.4  PASS
+  L=9  reached=74  deaths=22 (combat 19 / dot 1 / starvation-exhaustion 2 / other 0)  p_L=70.3%  S_L=29.6%  target p_L=79.5%  target S_L=30.8%  dS=-1.2  PASS
+  L=10  reached=50  deaths=14 (combat 7 / dot 5 / starvation-exhaustion 2 / other 0)  p_L=72.0%  S_L=21.3%  target p_L=78.9%  target S_L=24.3%  dS=-3.0  PASS
+  L=11  reached=34  deaths=5 (combat 5 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=85.3%  S_L=18.2%  target p_L=78.7%  target S_L=19.1%  dS=-0.9  PASS
+  L=12  reached=29  deaths=4 (combat 4 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=86.2%  S_L=15.7%  target p_L=78.8%  target S_L=15.1%  dS=+0.6  PASS
+  L=13  reached=24  deaths=7 (combat 5 / dot 0 / starvation-exhaustion 2 / other 0)  p_L=70.8%  S_L=11.1%  target p_L=79.1%  target S_L=11.9%  dS=-0.8  tail
+  L=14  reached=16  deaths=5 (combat 5 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=68.8%  S_L=7.6%  target p_L=79.6%  target S_L=9.5%  dS=-1.9  tail
+  L=15  reached=11  deaths=4 (combat 3 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=63.6%  S_L=4.9%  target p_L=80.2%  target S_L=7.6%  dS=-2.7  tail
+  L=16  reached=7  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=4.9%  target p_L=81.0%  target S_L=6.2%  dS=-1.3  tail
+  L=17  reached=7  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=85.7%  S_L=4.2%  target p_L=81.8%  target S_L=5.0%  dS=-0.8  tail
+  L=18  reached=6  deaths=2 (combat 1 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=66.7%  S_L=2.8%  target p_L=82.7%  target S_L=4.2%  dS=-1.4  tail
+  L=19  reached=4  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=83.6%  target S_L=3.5%  dS=-0.7  tail
+  L=20  reached=3  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=84.5%  target S_L=3.0%  dS=-0.2  tail
+  L=21  reached=3  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=85.4%  target S_L=2.5%  dS=+0.3  info
+  L=22  reached=3  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=86.4%  target S_L=2.2%  dS=+0.6  info
+  L=23  reached=2  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=87.2%  target S_L=1.9%  dS=+0.9  info
+  L=24  reached=2  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=88.1%  target S_L=1.7%  dS=+1.1  info
+  L=25  reached=2  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=88.9%  target S_L=1.5%  dS=+1.3  info
+  L=26  reached=2  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=27  reached=2  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=28  reached=2  deaths=1 (combat 0 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=50.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=29  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=30  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=31  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=32  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=33  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=34  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=35  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=36  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=37  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=38  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=39  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=1.4%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  L=40  reached=1  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=0.0%  S_L=0.0%  target p_L=n/a  target S_L=n/a  dS=n/a  info
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+Pace (per floor reached — mean hero level / gold / AR / weapon cost / maxWP / potions; afraid triggers, died afraid):
+  L=1  n=200  level=1.05  gold=108.58  ar=5.79  weapon=177.75  maxWP=56.34  potions=1.82  afraid=44  diedAfraid=0
+  L=2  n=200  level=1.11  gold=229.81  ar=5.73  weapon=181.25  maxWP=58.25  potions=1.49  afraid=101  diedAfraid=0
+  L=3  n=198  level=1.12  gold=402.99  ar=5.27  weapon=181.57  maxWP=60.64  potions=0.84  afraid=83  diedAfraid=0
+  L=4  n=177  level=1.21  gold=585.40  ar=4.91  weapon=190.40  maxWP=63.26  potions=0.74  afraid=73  diedAfraid=0
+  L=5  n=160  level=1.63  gold=814.17  ar=4.76  weapon=196.72  maxWP=68.21  potions=0.57  afraid=75  diedAfraid=1
+  L=6  n=145  level=2.15  gold=1154.14  ar=4.80  weapon=209.14  maxWP=73.52  potions=0.49  afraid=59  diedAfraid=1
+  L=7  n=114  level=2.29  gold=1581.25  ar=4.93  weapon=213.82  maxWP=76.18  potions=0.45  afraid=61  diedAfraid=1
+  L=8  n=85  level=2.60  gold=1963.56  ar=4.42  weapon=243.24  maxWP=82.89  potions=0.41  afraid=46  diedAfraid=2
+  L=9  n=74  level=2.95  gold=2367.11  ar=4.20  weapon=237.16  maxWP=87.91  potions=0.35  afraid=31  diedAfraid=0
+  L=10  n=50  level=3.24  gold=2856.08  ar=4.54  weapon=226.00  maxWP=91.34  potions=0.34  afraid=25  diedAfraid=2
+  L=11  n=34  level=3.50  gold=3431.18  ar=5.62  weapon=222.79  maxWP=99.38  potions=0.53  afraid=8  diedAfraid=1
+  L=12  n=29  level=3.72  gold=3773.76  ar=5.86  weapon=249.14  maxWP=102.59  potions=0.34  afraid=15  diedAfraid=0
+  L=13  n=24  level=4.04  gold=4557.83  ar=5.75  weapon=254.17  maxWP=107.83  potions=0.42  afraid=13  diedAfraid=0
+  L=14  n=16  level=4.06  gold=5132.31  ar=5.75  weapon=215.63  maxWP=106.88  potions=0.31  afraid=11  diedAfraid=2
+  L=15  n=11  level=4.55  gold=5881.91  ar=3.73  weapon=145.45  maxWP=114.82  potions=0.45  afraid=5  diedAfraid=1
+  L=16  n=7  level=4.57  gold=6384.29  ar=3.57  weapon=200.00  maxWP=120.14  potions=0.00  afraid=3  diedAfraid=0
+  L=17  n=7  level=5.00  gold=7008.86  ar=4.00  weapon=200.00  maxWP=127.86  potions=0.00  afraid=5  diedAfraid=0
+  L=18  n=6  level=5.00  gold=7902.83  ar=4.17  weapon=229.17  maxWP=129.67  potions=0.00  afraid=2  diedAfraid=0
+  L=19  n=4  level=5.00  gold=8027.00  ar=3.75  weapon=162.50  maxWP=142.25  potions=0.00  afraid=5  diedAfraid=0
+  L=20  n=3  level=5.00  gold=9664.00  ar=4.00  weapon=150.00  maxWP=147.67  potions=0.00  afraid=0  diedAfraid=0
+  L=21  n=3  level=5.00  gold=10992.00  ar=4.00  weapon=150.00  maxWP=147.67  potions=0.00  afraid=2  diedAfraid=0
+  L=22  n=3  level=5.00  gold=13365.00  ar=4.00  weapon=150.00  maxWP=147.67  potions=0.00  afraid=1  diedAfraid=0
+  L=23  n=2  level=5.00  gold=14239.50  ar=5.00  weapon=50.00  maxWP=180.50  potions=0.00  afraid=1  diedAfraid=0
+  L=24  n=2  level=5.00  gold=14373.00  ar=6.50  weapon=137.50  maxWP=180.50  potions=0.00  afraid=2  diedAfraid=0
+  L=25  n=2  level=5.00  gold=17298.00  ar=6.50  weapon=137.50  maxWP=180.50  potions=0.00  afraid=4  diedAfraid=0
+  L=26  n=2  level=5.00  gold=17337.50  ar=6.50  weapon=137.50  maxWP=180.50  potions=0.00  afraid=0  diedAfraid=0
+  L=27  n=2  level=5.00  gold=21194.50  ar=6.50  weapon=137.50  maxWP=180.50  potions=0.00  afraid=0  diedAfraid=0
+  L=28  n=2  level=5.00  gold=21230.50  ar=6.50  weapon=137.50  maxWP=180.50  potions=0.00  afraid=0  diedAfraid=0
+  L=29  n=1  level=5.00  gold=14668.00  ar=3.00  weapon=200.00  maxWP=163.00  potions=0.00  afraid=0  diedAfraid=0
+  L=30  n=1  level=5.00  gold=14690.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=2  diedAfraid=0
+  L=31  n=1  level=5.00  gold=14699.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=0  diedAfraid=0
+  L=32  n=1  level=5.00  gold=19999.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=6  diedAfraid=0
+  L=33  n=1  level=5.00  gold=23766.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=3  diedAfraid=0
+  L=34  n=1  level=5.00  gold=23812.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=1  diedAfraid=0
+  L=35  n=1  level=5.00  gold=23812.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=0  diedAfraid=0
+  L=36  n=1  level=5.00  gold=26985.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=0  diedAfraid=0
+  L=37  n=1  level=5.00  gold=27024.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=1  diedAfraid=0
+  L=38  n=1  level=5.00  gold=27113.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=0  diedAfraid=0
+  L=39  n=1  level=5.00  gold=31211.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=0  diedAfraid=0
+  L=40  n=1  level=5.00  gold=31267.00  ar=3.00  weapon=200.00  maxWP=194.00  potions=0.00  afraid=3  diedAfraid=0
+
+Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):
+  Fighter  n=69  p50=7  reach5=81.0%  reach10=20.6%  reach20=0.0%  dmgTaken/fight=12.00  rounds/fight=4.91  foeMiss=65.3%  casts(def/off)=0/0  potions/run=1.09  backstabs/run=0.00  flees/run=2.45
+  Thief  n=72  p50=8  reach5=90.2%  reach10=32.8%  reach20=1.6%  dmgTaken/fight=7.45  rounds/fight=3.26  foeMiss=70.0%  casts(def/off)=0/0  potions/run=2.04  backstabs/run=10.04  flees/run=3.51
+  Magic User  n=59  p50=6  reach5=67.9%  reach10=20.8%  reach20=1.9%  dmgTaken/fight=8.01  rounds/fight=2.92  foeMiss=66.1%  casts(def/off)=246/1417  potions/run=3.53  backstabs/run=0.00  flees/run=1.20
+
+Outcome: 177 dead, 23 stuck (hit maxActions=20000; excluded from depth stats)
+

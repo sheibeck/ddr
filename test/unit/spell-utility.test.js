@@ -155,14 +155,18 @@ test("conditionsOf: is a PURE read — no mutation, no rng — with all four uti
 // SPELL-02: rollInitiative — Sense Presence waives every forced foe-first rule
 // ============================================================================
 
-test("rollInitiative: a Samurai with c.senses up rolls normally — the higher d20 wins, forced foe-first is waived", () => {
+// RULES-05 (Phase 75, user 2026-09-25): re-pinned — Phase 40's waiver only
+// stopped the FORCED foe-first override, leaving a fair coin-flip that
+// senses could still lose. c.senses now wins the roll outright (joins the
+// unconditional "you" branch), so BOTH dice orderings below go "you".
+test("rollInitiative: a Samurai with c.senses up wins outright — the fair d20 no longer matters", () => {
   const state = fixedState({ c: { sub: "Samurai", senses: 1 } });
   state.combat = fixedCombat([]);
-  assert.equal(rollInitiative(state, fakeRng([10, 1])), "you", "mine(10) >= theirs(1) — a normal win, no longer forced foe");
+  assert.equal(rollInitiative(state, fakeRng([10, 1])), "you", "mine(10) >= theirs(1) — wins either way");
 
   const state2 = fixedState({ c: { sub: "Samurai", senses: 1 } });
   state2.combat = fixedCombat([]);
-  assert.equal(rollInitiative(state2, fakeRng([1, 10])), "foe", "mine(1) < theirs(10) — still a fair loss, not a forced one");
+  assert.equal(rollInitiative(state2, fakeRng([1, 10])), "you", "mine(1) < theirs(10) — senses wins outright now, not a fair loss");
 });
 
 test("rollInitiative: a Samurai with c.senses = 0 (or absent) is still forced foe — the existing pin is unaffected", () => {
@@ -226,13 +230,15 @@ test("fight: combatJoined stays the plain byte-identical shape when c.senses is 
   assert.ok(!("senses" in joined));
 });
 
-test("fight: combatJoined carries no senses key when senses is up but the foe still wins the roll", () => {
+// RULES-05 (Phase 75): re-pinned — a dice pair that would have lost the fair
+// roll (mine < theirs) still goes "you" now, with why "senses" and the
+// additive senses:true key, since senses wins outright.
+test("fight: combatJoined carries senses:true and why 'senses' even when the dice alone would have lost", () => {
   const state = fixedState({ c: { senses: 1 } });
   state.combat = fixedCombat([fixedFoe({ type: "Beasts" })], { pending: true });
-  // mine(1) < theirs(10) -> "foe"; foeTurn then runs (one swing at need>=1 miss, roll=20).
-  const events = fight(state, fakeRng([1, 10, 20]), []);
+  const events = fight(state, fakeRng([1, 10]), []);
   const joined = events.find((e) => e.type === "combatJoined");
-  assert.deepStrictEqual(joined, { type: "combatJoined", first: "foe", mine: 1, theirs: 10, foe: "Target" });
+  assert.deepStrictEqual(joined, { type: "combatJoined", first: "you", mine: 1, theirs: 10, why: "senses", foe: "Target", senses: true });
 });
 
 // ============================================================================
@@ -300,13 +306,17 @@ test("narration: sensesFaded / regenFaded render non-empty text in all three tab
   assert.ok(RAIL_FAMILY.regenFaded && RAIL_FAMILY.regenFaded.title.length > 0);
 });
 
+// RULES-05 (Phase 75): re-pinned — the "senses" verdict's wording moved to
+// "You felt them coming." (see test/unit/sense-presence.test.js/
+// initiative-line.test.js for the full pin); this test only proves the
+// payoff line is additive (a plain win keeps the bare wording).
 test("narration: combatJoined{senses:true} names Sense Presence's payoff; a plain win keeps the old wording", () => {
   const withSenses = EVENT_NARRATION.combatJoined({ type: "combatJoined", first: "you", senses: true });
   const plain = EVENT_NARRATION.combatJoined({ type: "combatJoined", first: "you" });
-  assert.ok(withSenses.includes("Nothing gets the jump on you"));
-  assert.ok(!plain.includes("Nothing gets the jump on you"));
+  assert.ok(withSenses.includes("You felt them coming."));
+  assert.ok(!plain.includes("You felt them coming."));
   const lineWithSenses = LINE_FOR.combatJoined({ type: "combatJoined", first: "you", senses: true });
-  assert.ok(lineWithSenses.text.includes("Nothing gets the jump on you"));
+  assert.ok(lineWithSenses.text.includes("You felt them coming."));
 });
 
 /** fakeRng(seq) — verbatim copy of test/unit/combat.test.js's helper: `.d()`

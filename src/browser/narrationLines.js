@@ -934,7 +934,10 @@ export function initiativeVerdictText(e) {
     case "acuteHearing":
       return "Acute Hearing — you go first.";
     case "senses":
-      return "You go first. Nothing gets the jump on you.";
+      // RULES-05 (Phase 75): Sense Presence wins the roll outright now — the
+      // sentence below states the reason before the verdict, like every
+      // other why case's own opening clause.
+      return "You felt them coming. You go first.";
     case "knight":
       return "A Knight's welcome — it comes straight at you.";
     case "courtMage":
@@ -1297,7 +1300,13 @@ export const LINE_FOR = {
     if (wouldHaveHit) text += ` · ${negative.map((m) => modLabel(m.name)).join(", ")}`;
     return { text, tone: "dodge", priority: e?.member ? PRIORITY.feature : PRIORITY.them };
   },
-  wardReflected: (e) => ({ text: `The ward throws ${e?.amount ?? 0} back.`, tone: "hit", priority: PRIORITY.them }),
+  // RULES-14 (Phase 75): the rail twin of eventNarration.js's own
+  // mirror-aware wardReflected line.
+  wardReflected: (e) => ({
+    text: e?.mirror ? `The bubble sends it back — ${e?.amount ?? 0} to ${e?.target ?? "them"}. Pop.` : `The ward throws ${e?.amount ?? 0} back.`,
+    tone: "hit",
+    priority: PRIORITY.them,
+  }),
   wardAbsorbed: (e) => ({ text: `The ward eats ${e?.amount ?? 0} (${e?.remaining ?? 0} left).`, tone: "hit", priority: PRIORITY.them }),
   wardShattered: () => ({ text: "The ward shatters.", tone: "hurt", priority: PRIORITY.them }),
   armorDestroyed: () => ({ text: "Your armour gives out.", tone: "hurt", priority: PRIORITY.them }),
@@ -1478,7 +1487,13 @@ export const LINE_FOR = {
   revealFaded: () => ({ text: "The map forgets what it was told.", tone: "beat", priority: PRIORITY.other }),
   senseDanger: (e) => ({ text: `Bad feeling about the ${e?.nextEncounter ?? "next encounter"}.`, tone: "magic", priority: PRIORITY.you }),
   mirrorSelf: (e) => ({ text: `A mirror image holds (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
-  wardRaised: (e) => ({ text: `${e?.spell ?? "The ward"} raises a ward (${e?.pool ?? 0})${e?.reflect ? ", reflecting" : ""}.`, tone: "magic", priority: PRIORITY.you }),
+  // RULES-14 (Phase 75): the rail twin of eventNarration.js's own
+  // mirror-aware wardRaised line.
+  wardRaised: (e) => ({
+    text: e?.mirror ? "A bubble shimmers around you. Next hit bounces back." : `${e?.spell ?? "The ward"} raises a ward (${e?.pool ?? 0}).`,
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
   strengthCast: (e) => ({ text: `Might surges +${e?.might ?? 0}.`, tone: "magic", priority: PRIORITY.you }),
   regenerationCast: () => ({ text: "Wounds start closing on their own.", tone: "magic", priority: PRIORITY.you }),
   insaneNoTarget: () => block("No one here to turn insane at."),

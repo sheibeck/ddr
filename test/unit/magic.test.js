@@ -206,15 +206,21 @@ test("castSpell: Heal caps at maxWP", () => {
 test("castSpell: Shield sets a ward pool/rounds", () => {
   const state = fixedState({ c: { grimoire: ["Shield"] } });
   const events = castSpell(state, SPELL_IDX.Shield, fakeRng([]), []);
-  assert.deepStrictEqual(state.c.ward, { pool: 50, rounds: 5, reflect: false, name: "Shield" });
+  assert.deepStrictEqual(state.c.ward, { pool: 50, rounds: 5, name: "Shield" });
   assert.ok(events.some((e) => e.type === "wardRaised"));
 });
 
-test("castSpell: Bubble sets a reflecting ward pool", () => {
+// RULES-14 (Phase 75, user 2026-09-25): Bubble is a one-shot mirror now, not
+// a bigger Shield — re-pinned from the old reflecting-pool shape. See
+// test/unit/bubble-mirror.test.js for the full mirror/pop-pool behaviour.
+test("castSpell: Bubble raises an armed mirror, not a soak pool", () => {
   const state = fixedState({ c: { grimoire: ["Bubble"], level: 3 } });
   const events = castSpell(state, SPELL_IDX.Bubble, fakeRng([]), []);
-  assert.deepStrictEqual(state.c.ward, { pool: 100, rounds: 12, reflect: true, name: "Bubble" });
-  assert.ok(events.some((e) => e.type === "wardRaised" && e.reflect === true));
+  assert.deepStrictEqual(state.c.ward, { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null });
+  const raised = events.find((e) => e.type === "wardRaised");
+  assert.ok(raised);
+  assert.equal(raised.mirror, true);
+  assert.equal(raised.popPool, 25);
 });
 
 test("castSpell: Strength grants +damage and doubles Win Potential once", () => {
@@ -278,7 +284,7 @@ test("castSpell: Earthquake spares the caster behind a ward (in combat)", () => 
   // (covered separately below); an empty foe list also keeps
   // afterPlayerAction's trailing call a zero-draw no-op (encounterCleared).
   const state = fixedState({
-    c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: { pool: 10, rounds: 1, reflect: false, name: "Shield" } },
+    c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: { pool: 10, rounds: 1, name: "Shield" } },
     combat: fixedCombat([]),
   });
   castSpell(state, SPELL_IDX.Earthquake, fakeRng([1, 1, 1]), []);

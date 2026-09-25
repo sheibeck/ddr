@@ -371,7 +371,7 @@ test("applyFoeDamageToPlayer: soaked stacks Hardiness then hide for a Fridgian w
 });
 
 test("applyFoeDamageToPlayer: soaked.ward for a ward pool 4 vs dmg 9", () => {
-  const state = fixedState({ c: { ward: { pool: 4, reflect: false, rounds: 3 } } });
+  const state = fixedState({ c: { ward: { pool: 4, rounds: 3 } } });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];

@@ -103,9 +103,17 @@ test("CMB-02: CONDITION_COPY has a ward row and an afraid row and no phobia row"
 });
 
 test("CMB-04: the cn.key === \"ward\" branch renders both hp and rds on one chip", () => {
-  const wardIdx = CODE.indexOf('cn.key === "ward"');
+  // RULES-14 (Phase 75): scoped to paintConditions' own detail branch —
+  // explainCondition (above paintConditions in source order) now ALSO
+  // carries a `cn.key === "ward"` check of its own (the armed-mirror tap
+  // sentence), so a raw CODE.indexOf would find that one first.
+  const paintConditionsRegion = region("function paintConditions", "function paintVignette");
+  // RULES-14 (Phase 75): the label computation ABOVE this detail branch also
+  // carries its own `cn.key === "ward"` check now (the chip's name), so the
+  // detail branch is found via its distinguishing `else if` form.
+  const wardIdx = paintConditionsRegion.indexOf('else if (cn.key === "ward")');
   assert.ok(wardIdx !== -1, "the ward detail branch is missing");
-  const branchRegion = CODE.slice(wardIdx, wardIdx + 200);
+  const branchRegion = paintConditionsRegion.slice(wardIdx, wardIdx + 200);
   assert.match(branchRegion, /hp/);
   assert.match(branchRegion, /rds/);
 });

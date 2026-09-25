@@ -154,10 +154,19 @@ export function knightFacesBigFoe(state) {
  * slow/Knight-vs-big-foe/Court Mage round 1) for as long as `c.senses` is
  * truthy — until the fight it is active in ends (combat.js#endCombat's
  * unconditional `c.senses = 0` reset; a narrated `sensesFaded` fires there
- * too, see endCombat below). The two d20s are still ALWAYS drawn — this only
- * changes which branch the ternary takes, never the draw count. A foreseen
- * character still always goes first regardless of senses (the `foreseen`
- * check is unchanged and evaluated after).
+ * too, see endCombat below).
+ *
+ * DELIBERATE RULES CHANGE (RULES-05, Phase 75, 2026-09-25): Phase 40's waiver
+ * only stopped a forced-foe-first override — a sensed character could still
+ * LOSE the fair d20 roll and go second (a device report: a depth-8 Court
+ * Mage with senses up lost initiative 2 vs 17 in the dark and died), which
+ * contradicts the spell's own "nothing gets the jump on you" text. `c.senses`
+ * now joins `foreseen`/`acuteHearing` in the unconditional "you go first"
+ * branch of the `C.first` ternary below. The two d20s are STILL ALWAYS
+ * drawn — this is a branch change, never a draw-count change, so no fixture
+ * moves. A foreseen character still always goes first regardless of senses
+ * (the `foreseen` check is unchanged and evaluated first in the `why`
+ * chain).
  *
  * DELIBERATE RULES CHANGE (Phase 51, INIT-01, 2026-09-20): this used to be
  * called once per round from `afterPlayerAction` (canon p.24's "a fresh d20
@@ -192,7 +201,8 @@ export function resolveInitiative(state, rng) {
   const acuteHearing = skill(c, "Acute Hearing");
   const forcedFoe = (samurai || slow || knightBig || courtMage) && !foreseen && !c.senses;
   c.foresight = false;
-  C.first = forcedFoe ? "foe" : foreseen || acuteHearing ? "you" : mine >= theirs ? "you" : "foe";
+  // RULES-05 (Phase 75): c.senses joins the unconditional "you" branch.
+  C.first = forcedFoe ? "foe" : foreseen || acuteHearing || c.senses ? "you" : mine >= theirs ? "you" : "foe";
   let why;
   if (forcedFoe) {
     why = samurai ? "samurai" : slow ? "slow" : knightBig ? "knight" : "courtMage";
@@ -512,7 +522,10 @@ export function fight(state, rng, events = []) {
       ...(hardinessShrug ? rollFields(hardinessShrug) : {}),
     });
   }
-  if (inDark(state) && !skill(c, "Night Vision")) events.push({ type: "combatInDark" });
+  // RULES-05 (Phase 75): Sense Presence is "full skill in the dark" — an
+  // active senses waiver stops this line firing, mirroring derived.js#toHit's
+  // existing dark-cap waiver.
+  if (inDark(state) && !skill(c, "Night Vision") && !c.senses) events.push({ type: "combatInDark" });
   if (first === "foe") {
     foeTurn(state, rng, events);
     // BUG FIX (Phase 26 gap closure, 2026-09-15): the opening foe turn can
@@ -742,8 +755,13 @@ export function playerStrike(state, rng, events = []) {
     // (the only noCrit hook in combat), matching the prototype's Guard/Soldier
     // "your blows never crit" seam. Pure read (no rng), so parity is unaffected
     // for every character not carrying the cloak (eff noCrit === 0).
+    // RULES-05 (Phase 75): Sense Presence waives the dark no-crit ban too —
+    // "full skill in the dark," matching toHit's existing dark-cap waiver.
     const noCrit =
-      c.sub === "Guard" || c.sub === "Soldier" || (inDark(state) && !skill(c, "Night Vision")) || eff(c, "noCrit") > 0;
+      c.sub === "Guard" ||
+      c.sub === "Soldier" ||
+      (inDark(state) && !skill(c, "Night Vision") && !c.senses) ||
+      eff(c, "noCrit") > 0;
     // Phase 39 (GEAR-01): the crit RANGE is now weapon-driven — a precise
     // blade (Rapier/Katana/Wakazashi/Ninja-to/Dagger, crit:2) doubles on the
     // die's top TWO faces; every other weapon still doubles only on the top
@@ -2272,12 +2290,16 @@ export function pickFoeTarget(state, rng, foe = null) {
 
 /**
  * applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atLeast, dieN,
- * mods }) — the hero-damage pipeline a landed foe swing runs through, from
- * Hardiness onward: Hardiness reduction, the Pendant of Fortitude's
- * single-charge `c.halfNext` halving, ward absorb/reflect/shatter (a
- * reflected blow can kill the FOE instead of the hero), armor soak (a
- * roll-high check against `soakAr`'s top faces via `armorSoak(c)`, gated on
- * worn/effective armour), the `struckByFoe` event, and `die()` on lethal.
+ * mods }) — the hero-damage pipeline a landed foe swing runs through.
+ * RULES-14 (Phase 75): an armed Bubble mirror is checked FIRST, ahead of
+ * everything below — see the mirror early-return at the top of this
+ * function's body. From there onward: Hardiness reduction, the Pendant of
+ * Fortitude's single-charge `c.halfNext` halving, ward absorb/shatter (the
+ * OLD reflect-the-soaked-share path is gone — a mirror-reflected blow can
+ * still kill the FOE instead of the hero, but that now happens only via the
+ * top-of-function mirror branch), armor soak (a roll-high check against
+ * `soakAr`'s top faces via `armorSoak(c)`, gated on worn/effective armour),
+ * the `struckByFoe` event, and `die()` on lethal.
  * Verbatim port of foeTurn's former hero-damage branch (formerly
  * lines 904-981) — the to-hit roll, raw damage computation, weakened
  * halving, and critical doubling stay inline in foeTurn and are passed in
@@ -2324,6 +2346,28 @@ export function pickFoeTarget(state, rng, foe = null) {
 export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atLeast, dieN, mods, ignoresArmor, ability }) {
   const c = state.c;
   const R = RACES[c.race];
+
+  // RULES-14 (Phase 75, user 2026-09-25): Bubble's one-shot mirror sits
+  // ahead of EVERYTHING else in this pipeline — Hardiness, the Fridgian
+  // hide, the Pendant of Fortitude's halfNext, and Brace — so the full blow
+  // reflects and no single-charge buffer is spent on a mirrored blow. An
+  // armed mirror (`c.ward.mirror`) reflects the WHOLE incoming `dmg` at the
+  // attacker through the one damageFoe seam (`kind: "reflect"`), the caster
+  // takes none of it, then the ward pops into a plain `popPool`-hp pool for
+  // the rest of THIS round only (`rounds: 1` — the foeTurn tail tick below
+  // always fades it at the end of the same foe turn it popped in). A reflect
+  // that kills the attacker still runs killFoe and the swing loop continues
+  // to the next foe, exactly like the old reflect-kill contract.
+  if (c.ward && c.ward.mirror && dmg > 0) {
+    const bounce = damageFoe(state, foe, dmg, { kind: "reflect", crit: false }, rng, events);
+    if (!bounce.soaked) events.push({ type: "wardReflected", target: foe.name, amount: bounce.applied, mirror: true });
+    c.ward = { name: c.ward.name, pool: c.ward.popPool, rounds: 1 };
+    if (foe.wp <= 0) {
+      killFoe(state, foe, rng, events);
+    }
+    return { died: false, onArmour: false, applied: 0 };
+  }
+
   // Phase 25 (FEED-01, additive payload): what passive soak actually reduced
   // this blow — only the keys that fired, each the integer amount removed.
   // Narration-only bookkeeping; every reduction below was already computed
@@ -2372,7 +2416,11 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
     events.push({ type: "braceHeld", name: foe.name, soaked: before - dmg });
   }
 
-  // a ward eats the blow before armour or flesh does
+  // a ward eats the blow before armour or flesh does. RULES-14 (Phase 75):
+  // the old "reflect the ward's soaked SHARE" branch here is deleted
+  // outright (greenfield) — reflection is now the mirror-only early return
+  // above; this block is left handling exactly what Shield (and a popped
+  // Bubble pool) have always done: absorb, then shatter.
   let warded = 0;
   if (c.ward && c.ward.pool > 0) {
     warded = Math.min(c.ward.pool, dmg);
@@ -2380,20 +2428,7 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
     dmg -= warded;
     // Phase 25 (FEED-01, additive payload): the ward's share of this blow.
     if (warded > 0) soaked.ward = warded;
-    if (c.ward.reflect && warded > 0) {
-      // Reflected damage is treated as physical (18-RESEARCH A2 — soakable
-      // by the foe's own natural armor, never subject to the multiplier
-      // table); the d20 here is gated on foe.sp.ar exactly like every other
-      // seam draw, so no parity path changes.
-      const bounce = damageFoe(state, foe, warded, { kind: "reflect", crit: false }, rng, events);
-      if (!bounce.soaked) events.push({ type: "wardReflected", target: foe.name, amount: bounce.applied });
-      if (foe.wp <= 0) {
-        killFoe(state, foe, rng, events);
-        return { died: false, onArmour: false, applied: 0 }; // the FOE died to reflect, not the hero
-      }
-    } else if (warded > 0) {
-      events.push({ type: "wardAbsorbed", amount: warded, remaining: c.ward.pool });
-    }
+    if (warded > 0) events.push({ type: "wardAbsorbed", amount: warded, remaining: c.ward.pool });
     if (c.ward.pool <= 0) {
       events.push({ type: "wardShattered" });
       c.ward = null;
@@ -2930,7 +2965,13 @@ export function foeTurn(state, rng, events = []) {
       }
     }
   }
-  if (c.ward && --c.ward.rounds <= 0) {
+  // RULES-14 (Phase 75): an ARMED mirror carries `rounds: null` and never
+  // ticks here — it stays armed until a blow lands (see the mirror branch in
+  // applyFoeDamageToPlayer) or the fight ends (endCombat still clears every
+  // ward). A POPPED pool always carries `rounds: 1`, so this always fades it
+  // at the end of the SAME foe turn it popped in — "a pool for the rest of
+  // that round," literally. Shield's own `rounds` countdown is unchanged.
+  if (c.ward && typeof c.ward.rounds === "number" && --c.ward.rounds <= 0) {
     events.push({ type: "wardFaded" });
     c.ward = null;
   }

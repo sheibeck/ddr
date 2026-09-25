@@ -52,6 +52,7 @@ import { makeRng } from "../../engine/rng.js";
 import { stripVolatileFields } from "../parity/harness/diffState.js";
 import { openStore } from "../../engine/economy.js";
 import { springTrap, openChest, encounterDot } from "../../engine/encounters.js";
+import { SPELLS } from "../../content/index.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -167,18 +168,38 @@ for (const scenario of MAGIC_FIXTURE.scenarios) {
 
 test("a mid-cast ward sub-state (Shield) round-trips losslessly", () => {
   // Directly exercise a ward spell's serializable shape (state.c.ward's
-  // pool/rounds/reflect/name) rather than relying on a fixture seed happening
+  // pool/rounds/name) rather than relying on a fixture seed happening
   // to roll "Shield" into its grimoire — this is a serialization proof
   // (ENG-04), not a prototype-parity proof (that's magic-parity.test.js's job).
   let state = newRun(1);
   state.c.grimoire = ["Shield"];
   const { state: afterCast } = applyAction(state, { type: "castSpell", idx: 1 }); // SPELLS[1] === Shield
   state = afterCast;
-  assert.deepStrictEqual(state.c.ward, { pool: 50, rounds: 5, reflect: false, name: "Shield" }, "the ward was actually set");
+  assert.deepStrictEqual(state.c.ward, { pool: 50, rounds: 5, name: "Shield" }, "the ward was actually set");
 
   const stripped = stripVolatileFields(state);
   const rehydrated = JSON.parse(JSON.stringify(stripped));
   assert.deepStrictEqual(rehydrated, stripped, "state with an active ward sub-state must round-trip losslessly");
+});
+
+// RULES-14 (Phase 75, user 2026-09-25): an armed Bubble mirror (rounds: null)
+// round-trips losslessly too — the sibling proof to Shield's above.
+test("a mid-cast armed mirror (Bubble) round-trips losslessly, including a null rounds", () => {
+  let state = newRun(1);
+  state.c.grimoire = ["Bubble"];
+  state.c.level = 3;
+  const bubbleIdx = SPELLS.findIndex((sp) => sp.n === "Bubble");
+  const { state: afterCast } = applyAction(state, { type: "castSpell", idx: bubbleIdx });
+  state = afterCast;
+  assert.deepStrictEqual(
+    state.c.ward,
+    { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null },
+    "the armed mirror was actually set",
+  );
+
+  const stripped = stripVolatileFields(state);
+  const rehydrated = JSON.parse(JSON.stringify(stripped));
+  assert.deepStrictEqual(rehydrated, stripped, "state with an armed mirror must round-trip losslessly, including rounds: null");
 });
 
 test("Phase 29 (LOOT-06): a state carrying a 3-item pendingLoot pile round-trips losslessly and idempotently", () => {

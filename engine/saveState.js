@@ -26,7 +26,7 @@ import {
   freeWornKey,
 } from "./derived.js";
 import { ensureAbilities } from "./character.js";
-import { ACTIVATION_OF } from "../content/index.js";
+import { ACTIVATION_OF, SPELLS } from "../content/index.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -236,6 +236,33 @@ function clearStaleTimers(c) {
     } else {
       clearRoundTimers(c);
     }
+  }
+  return c;
+}
+
+/**
+ * sanitizeWard(c) — RULES-14 (Phase 75, user 2026-09-25) load-tolerance for
+ * `c.ward`, mirroring clearStaleTimers/sanitizePhobiaFields's discipline: a
+ * pre-Phase-75 save's reflecting ward (`{ pool, rounds, reflect: true, name
+ * }` — set only by casting Bubble or channeling the Rowan Staff dome before
+ * this phase) becomes the new armed-mirror shape (`{ name, mirror: true,
+ * pool: 0, popPool, rounds: null }`), with `popPool` read from the LIVE
+ * SPELLS Bubble row (never hard-coded) so a future retune never needs a
+ * second tolerant-load edit. Any other present ward (Shield, an already-
+ * mirrored/popped Bubble) simply loses a stray `reflect` key — no ward ever
+ * carries one again. When `c.ward` is absent/null this does NOTHING — a save
+ * that never had a ward must not gain one. Mutates and returns the passed
+ * `c`.
+ */
+function sanitizeWard(c) {
+  if (!c || typeof c !== "object" || Array.isArray(c)) return c;
+  const w = c.ward;
+  if (!w || typeof w !== "object" || Array.isArray(w)) return c;
+  if (w.reflect) {
+    const bubble = SPELLS.find((sp) => sp.n === "Bubble");
+    c.ward = { name: w.name || "Bubble", mirror: true, pool: 0, popPool: (bubble && bubble.popPool) || 25, rounds: null };
+  } else if ("reflect" in w) {
+    delete w.reflect;
   }
   return c;
 }
@@ -597,9 +624,15 @@ export function validateSave(raw, options = {}) {
   // clearStaleSpellSeen below needs this SAME final c (not obj.c) — it must
   // see whatever c.timers looks like AFTER foldLegacyCounters, since that is
   // the only migration step that could ever touch c.timers.
-  const migratedC = foldLegacyCounters(
-    ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), seed),
-    steps,
+  // RULES-14 (Phase 75): sanitizeWard runs OUTERMOST (matching
+  // sanitizeWaterCells' own "newest migration wraps the previous one"
+  // convention below) — a pre-Phase-75 reflecting ward becomes the armed
+  // mirror after every other migration step has already run.
+  const migratedC = sanitizeWard(
+    foldLegacyCounters(
+      ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), seed),
+      steps,
+    ),
   );
 
   const value = {
@@ -699,10 +732,14 @@ export function rehydrate(obj) {
   // raw serialized state in tests (and is idempotent on an already-migrated
   // one, since boot()'s real path always calls it on validateSave's OWN
   // output), so it needs the identical migrateSpellNames/clearStaleSpellSeen
-  // treatment to stay consistent between the two entry points.
-  const migratedC = foldLegacyCounters(
-    ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), obj.seed),
-    obj.steps ?? 0,
+  // treatment to stay consistent between the two entry points. RULES-14
+  // (Phase 75): sanitizeWard runs OUTERMOST here too, mirroring
+  // validateSave's own composition exactly.
+  const migratedC = sanitizeWard(
+    foldLegacyCounters(
+      ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), obj.seed),
+      obj.steps ?? 0,
+    ),
   );
   const state = {
     version: STATE_VERSION,

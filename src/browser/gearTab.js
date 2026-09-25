@@ -130,6 +130,11 @@ export const GEAR_COPY = Object.freeze({
     spellCharges: "Spell charges",
     spellChargesValue: "{k} / {max}",
     wardValue: "{pool} hp left · {rounds} rds",
+    // RULES-14 (Phase 75, deviation Rule 1): an armed Bubble mirror has no
+    // pool/rounds to show yet — the map-HUD ward chip already reads "next
+    // hit" for the same state; this row matches it instead of interpolating
+    // wardValue's {pool}/{rounds} against a null rounds.
+    wardMirrorValue: "next hit",
     strength: "Strength",
     strengthValue: "+{n} damage",
     regen: "Regeneration",
@@ -508,7 +513,14 @@ export function gearKitRows(state) {
     rows.push({ label: GEAR_COPY.kit.spellCharges, value: GEAR_COPY.kit.spellChargesValue.replace("{k}", k).replace("{max}", max) });
   }
   if (c.ward) {
-    rows.push({ label: c.ward.name, value: GEAR_COPY.kit.wardValue.replace("{pool}", c.ward.pool).replace("{rounds}", c.ward.rounds) });
+    // RULES-14 (Phase 75, deviation Rule 1 — a real bug this plan's shape
+    // change would otherwise introduce): an armed mirror's `rounds` is
+    // `null`, so it reads the dedicated "next hit" row instead of
+    // interpolating wardValue against a null count.
+    const value = c.ward.mirror
+      ? GEAR_COPY.kit.wardMirrorValue
+      : GEAR_COPY.kit.wardValue.replace("{pool}", c.ward.pool).replace("{rounds}", c.ward.rounds);
+    rows.push({ label: c.ward.name, value });
   }
   if (c.might) {
     rows.push({ label: GEAR_COPY.kit.strength, value: GEAR_COPY.kit.strengthValue.replace("{n}", c.might) });

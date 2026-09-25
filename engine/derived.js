@@ -560,7 +560,7 @@ export function isFlying(state) {
  *     remaining:<left>, cadence:"squares"|"rounds", source:<item display
  *     name>, might?:<amount, "might"-kind only>}
  *   - might  {polarity:"good"}                            — the SPELL's +damage, lasts the day (no count) — distinct from a potion's timed "might" chip above; both may appear together
- *   - ward   {polarity:"good", pool:<hp>, remaining:<rounds>, name:<spell/item name>} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape
+ *   - ward   {polarity:"good", pool:<hp>, remaining?:<rounds>, name:<spell/item name>, mirror?:true} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape. RULES-14 (Phase 75): an ARMED Bubble mirror also fires this (pool 0, no `remaining`, `mirror: true`); a popped Bubble pool keeps the plain Shield shape
  *   - mirror {polarity:"good", remaining:<rounds>}         — Phase 40 (SPELL-02): Mirror Self — c.mirror counts down once per foeTurn; cleared at endCombat
  *   - senses {polarity:"good"}                             — Phase 40 (SPELL-02): Sense Presence — a flat 0/1 flag (no count), lasts until endCombat clears it; also waives every forced foe-first initiative rule (see combat.js#rollInitiative)
  *   - regen  {polarity:"good"}                              — Phase 40 (SPELL-02): Regeneration — a flat boolean (no count, the d8/round tick has no duration field), cleared at endCombat
@@ -606,13 +606,26 @@ export function conditionsOf(state) {
 
   if (c.might > 0) out.push({ key: "might", polarity: "good" });
   // Phase 31 (CMB-04): the Shield chip — c.ward is the same field the
-  // engine's absorb/reflect/shatter code (engine/combat.js) already reads;
-  // this surfaces it as data only (pool + rounds), never touching the
-  // lifecycle events (wardRaised/wardAbsorbed/wardReflected/wardShattered/
-  // wardFaded already narrate). Gated on a positive pool so a shattered
-  // (pool<=0, about to be nulled) ward never flashes a zero-hp chip.
-  if (c.ward && c.ward.pool > 0) {
-    out.push({ key: "ward", polarity: "good", pool: c.ward.pool, remaining: c.ward.rounds, name: c.ward.name });
+  // engine's absorb/shatter code (engine/combat.js) already reads; this
+  // surfaces it as data only (pool + rounds), never touching the lifecycle
+  // events (wardRaised/wardAbsorbed/wardReflected/wardShattered/wardFaded
+  // already narrate). Gated on a positive pool so a shattered (pool<=0,
+  // about to be nulled) ward never flashes a zero-hp chip.
+  //
+  // RULES-14 (Phase 75): an ARMED mirror (c.ward.mirror) also fires this
+  // gate even though its pool is 0 — the ward is very much "up," just
+  // waiting for a blow instead of soaking one. It carries `mirror: true`
+  // and NO `remaining` key (its `rounds` is `null`, not a count); a popped
+  // pool (or Shield) keeps today's `{pool, remaining, name}` shape exactly.
+  if (c.ward && (c.ward.pool > 0 || c.ward.mirror)) {
+    out.push({
+      key: "ward",
+      polarity: "good",
+      pool: c.ward.pool,
+      name: c.ward.name,
+      ...(typeof c.ward.rounds === "number" ? { remaining: c.ward.rounds } : {}),
+      ...(c.ward.mirror ? { mirror: true } : {}),
+    });
   }
 
   // Phase 40 (SPELL-02): the three utility spells with a real effect but no

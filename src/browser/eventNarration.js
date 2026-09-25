@@ -573,7 +573,14 @@ export const EVENT_NARRATION = {
   foeSlept: (e) => `${e.name ?? "It"} sleeps through it.`,
   foeMissed: (e) =>
     `${e.name ?? "It"} swings${e.member ? ` at ${e.member}` : ""}, <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.foe)}, and misses.`,
-  wardReflected: (e) => `<span class="hit">The ward throws ${e.amount ?? 0} back at ${e.target ?? "it"}.</span>`,
+  // RULES-14 (Phase 75): a mirror's reflect reads its own line (the bubble
+  // "pops" — a one-shot mirror, not a repeating soak pool) and names the
+  // pool it leaves behind; a plain ward reflect (pre-Phase-75 save, or any
+  // future non-mirror reflect) keeps today's text.
+  wardReflected: (e) =>
+    e.mirror
+      ? `<span class="hit">The bubble catches it and sends it back — ${e.amount ?? 0} to ${e.target ?? "it"}. Pop.</span> A thin film holds for the rest of the round.`
+      : `<span class="hit">The ward throws ${e.amount ?? 0} back at ${e.target ?? "it"}.</span>`,
   wardAbsorbed: (e) => `The ward eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
   armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
@@ -777,7 +784,15 @@ export const EVENT_NARRATION = {
   revealFaded: () => `<span class="beat">The map forgets what it was told.</span>`,
   senseDanger: (e) => `<span class="beat">You get a bad feeling about the next ${e.nextEncounter ?? "encounter"}.</span>`,
   mirrorSelf: (e) => `<span class="hit">A mirror image holds for ${e.rounds ?? 0} rounds.</span>`,
-  wardRaised: (e) => `<span class="hit">${e.spell ?? "The ward"} raises a ward: ${e.pool ?? 0} points${e.reflect ? ", reflecting" : ""}.</span>`,
+  // RULES-14 (Phase 75): a mirror spell (Bubble) reads its own line —
+  // nothing to soak yet, just a promise to bounce the next blow — while
+  // every other ward (Shield) keeps its plain "N points" text (no more
+  // ", reflecting" suffix — that promise is now the whole point of the
+  // mirror line, never a footnote on Shield's).
+  wardRaised: (e) =>
+    e.mirror
+      ? `<span class="hit">A bubble shimmers around you. The next blow goes back where it came from.</span>`
+      : `<span class="hit">${e.spell ?? "The ward"} raises a ward: ${e.pool ?? 0} points.</span>`,
   strengthCast: (e) => `<span class="hit">Might surges: +${e.might ?? 0}.</span>`,
   regenerationCast: () => `<span class="hit">Wounds start closing on their own.</span>`,
   insaneNoTarget: () => `<span class="miss">There is no one here to turn insane at.</span>`,

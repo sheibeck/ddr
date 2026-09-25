@@ -114,7 +114,10 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
     Summon: { combatOnly: false },
     Fireball: { dmg: { n: 2, sides: 10, bonus: 4 }, combatOnly: true },
     "Major Heal": { dmg: { n: 3, sides: 10, bonus: 0 }, combatOnly: false },
-    Bubble: { pool: 100, rounds: 12, reflect: true, combatOnly: false },
+    // RULES-14 (Phase 75, user 2026-09-25): Bubble's pool/rounds/reflect
+    // shape is retired (greenfield) — it is now a one-shot mirror with a
+    // small pop pool. Re-pinned to the new fields.
+    Bubble: { mirror: true, popPool: 25, combatOnly: false },
     "Sense Danger": { combatOnly: false },
     "Turn Walking Dead": { combatOnly: true },
     "Plane Gate": { combatOnly: true },
