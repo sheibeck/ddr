@@ -145,6 +145,7 @@ detail; the backlog phases are the index.
 - 2026-09-24 (user): LEANEST board dropped (1-step deaths top a steps-per-floor board; "deepest, then fewest steps" is DEEPEST). Added as BOARD-17 to Phase 81. Per-sub-class leaderboards + global LINEAGE captured as backlog 999.11, to be promoted as its own milestone (Google Play Games only, rolling 28-board season sets, boards created by script via the Games Configuration API).
 - Phase 75.1 inserted after Phase 75: Pilfer Fumbles & Scroll Reading — RULES-09/10 moved out of Phase 75 into their own phase (user, 2026-09-24)
 - Run order changed (user, 2026-09-25): Phase 81 (Leaderboards, live Play bugs) runs right after Phase 72, then 73 → 80 in order. Discuss for every phase 73–81 was collected up front (all CONTEXT.md files written); RULES-07 amended to keep canon (ailment 5–6 = phobia, narrated honestly); Phase 78 now depends on 73/74 (climb card became an engine pending decision).
+- Phase 75.2 inserted after Phase 75.1: Hero Size Matters (RULES-11) — race sets size, items step it; damage, target size and size rules (user, 2026-09-25)
 
 ## Deferred Items
 

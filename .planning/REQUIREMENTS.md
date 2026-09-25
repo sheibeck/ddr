@@ -20,6 +20,7 @@
 - [ ] **RULES-08**: When new armor replaces a destroyed piece, the player is told the old piece was destroyed and is gone. It never silently vanishes on a swap. (todo 2026-09-23 destroyed-armor)
 - [ ] **RULES-09**: A Pilfer can use magic items under the normal rules. The heal-only refusal is gone. Instead, every time a Pilfer uses a magic item (use-activated jewelry, cloaks and staves) it rolls a d20, and on a 1 the use fails, the item explodes for d10 damage to the Pilfer (armor does not soak it), and it turns to dust. Scrolls and potions are not magic items for this rule; a Pilfer drinks potions normally. The player is told so. Tools never fumble. The fumble draw comes from a derived rng stream. The Pilfer blurb states both sides. (user, 2026-09-24; todo 2026-09-24 pilfer-bad-becomes-fumbling)
 - [ ] **RULES-10**: Anyone can attempt to read any scroll. Magic Users, and any character with the Runes/Signs skill, always succeed and never fumble. Everyone else makes an intelligence roll (d20 against their own intel, with no intel-12 floor); a success casts the scroll's spell and a failure casts nothing, except that a read that rolls below half the required target is a FUMBLE: a harmful spell takes effect on the reader instead of its target, and a beneficial spell takes effect on the targeted enemy instead of the reader (a fumbled Shield scroll shields the foe you're targeting). A fumbled area-damage spell hits the reader and everyone in the reader's party. Outside combat, a fumble has no effect. The scroll is consumed either way, and both outcomes are narrated. The class/skill gate and the Pilfer lockout in `canRead` go away. A Pilfer reads scrolls under this rule; the RULES-09 fumble never applies to scrolls. The roll comes from a derived rng stream. (user, 2026-09-24; todo 2026-09-24 anyone-reads-scrolls-on-an-intelligence-roll)
+- [ ] **RULES-11**: Hero size matters (user, 2026-09-25). Race sets the starting size (Elven and Dwarven Small, Troll Large, the rest Human-size, from the existing race data). Items and potions step it: the Gauntlet of the Giant and Enlarge are each exactly +1 size step, and Enlarge's separate +4 damage is removed. Each step up gives +2 damage and makes foes hit you one face more easily; each step down gives -2 damage and makes foes need one face more. Rules that care about a creature being big or small read the hero's size too. Item text states exactly what a step does, with no ceiling promise. (todo 2026-09-25 hero-size-means-nothing-beyond-damage)
 
 ### Roll direction & modifier honesty (ROLL) — user, 2026-09-24
 
@@ -138,6 +139,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | RULES-08 | Phase 75 | Pending |
 | RULES-09 | Phase 75.1 | Pending |
 | RULES-10 | Phase 75.1 | Pending |
+| RULES-11 | Phase 75.2 | Pending |
 | DARK-01 | Phase 76 | Pending |
 | DARK-02 | Phase 76 | Pending |
 | SAV-06 | Phase 76 | Pending |

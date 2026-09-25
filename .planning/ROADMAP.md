@@ -44,6 +44,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [ ] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers
 - [ ] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
 - [ ] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire
+- [ ] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules
 - [ ] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store
 - [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
@@ -196,10 +197,26 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 75.2: Hero Size Matters (INSERTED)
+
+**Goal**: A hero's size is a real stat. Race sets it, items step it, and it changes how hard you hit, how easily you're hit, and how size-based rules treat you, so the Gauntlet of the Giant and Enlarge deliver what their text promises.
+**Depends on**: Phase 75.1 (engine-gated and fixture-moving; sequenced after the other RULES phases so fixture claims don't overlap; written roll-high on Phase 73's helper)
+**Requirements**: RULES-11
+**Success Criteria** (what must be TRUE):
+
+  1. Every hero has a size from their race (Elven and Dwarven Small, Troll Large, the rest Human-size), shown on the hero sheet, and items/potions step it up or down for their duration.
+  2. Each size step up gives +2 damage and makes the hero one face easier for foes to hit; each step down gives -2 damage and one face harder, with the effect visible in the roll breakdown.
+  3. Rules that care about a creature being big or small read the hero's size as well as the foe's.
+  4. The Gauntlet of the Giant and the Enlarge potion are both exactly a +1 size step (Enlarge's separate +4 damage is gone), and their text states exactly what a step does, with no ceiling promise.
+  5. Moved fixtures are measured, declared and regenerated, and a bot readout before and after is recorded.
+
+**Plans**: TBD
+**UI hint**: yes
+
 ### Phase 76: Darkness Unification & Relaunch Persistence
 
 **Goal**: One shared darkness rule governs everything the player experiences as dark, and saving or force-closing never lets a player escape a live fight or an open store.
-**Depends on**: Phase 75.1 (shares the engine fixture gate; sequenced after the RULES phases to avoid overlapping fixture claims)
+**Depends on**: Phase 75.2 (shares the engine fixture gate; sequenced after the RULES phases to avoid overlapping fixture claims)
 **Requirements**: DARK-01, DARK-02, SAV-06, SAV-07
 **Success Criteria** (what must be TRUE):
 
@@ -331,6 +348,7 @@ Plans:
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
+| 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |

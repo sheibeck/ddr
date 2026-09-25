@@ -2,6 +2,7 @@
 created: 2026-09-25T00:00:00.000Z
 title: Hero size means nothing beyond a damage bump - make size matter or make the items honest
 area: engine
+resolves_phase: 75.2
 files:
   - content/treasure-tables.js:109-111 (Gauntlet of the Giant — eff { size: 1 }, txt "one size larger for fifty squares; mind the ceilings, then fifty squares of shrinking back", act kind "giant")
   - content/potions.js:36-38 (Enlarge — txt "one size up, +4 damage, 50 squares", act kind "might" +4)
