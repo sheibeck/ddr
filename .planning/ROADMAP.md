@@ -66,7 +66,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. The bestiary `critOn: 1` claim (Skeleton, "a 1 shatters it") is either wired into the engine or removed from the text.
   5. Every fixture the fixes move is measured, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated — nothing else moves.
 
-**Plans**: 5/7 plans executed
+**Plans**: 6/7 plans executed
 
 Plans:
 **Wave 1**
@@ -85,7 +85,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 72-06-PLAN.md — Fix (c) Skeleton shatters on its best face (sp.shatterOnBest, shatterIfBest, foeShattered); M&M claim removed; measured (wave 4)
+- [x] 72-06-PLAN.md — Fix (c) Skeleton shatters on its best face (sp.shatterOnBest, shatterIfBest, foeShattered); M&M claim removed; measured (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -268,7 +268,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 5/7 | In Progress|  |
+| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 6/7 | In Progress|  |
 | 73. Engine Roll-High Mirror | v2.1 | 0/– | Not started | - |
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
