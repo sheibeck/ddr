@@ -532,3 +532,63 @@ test("roll-high invariant self-test: each rule (I1-I6) fires on its own syntheti
 test("COMPLETE is true — every roll-carrying event has been converted", () => {
   assert.equal(COMPLETE, true);
 });
+
+// --- ROLL-05 standing zero-declaration check --------------------------------
+//
+// 73-10: walks every declared divergence record across all six fixture
+// files — the same shape test/parity/divergence-records.test.js#collectRecords
+// walks, re-implemented locally here so this file carries its own standing
+// guard — and asserts that none of them declares Phase 73. This is the
+// machine-checked half of "proof it changed nothing": the byte-identical
+// parity suite, the unchanged direction tests, the unmoved state pins/save
+// and the matching 200-seed readout together mean the roll-high mirror
+// never needed to regenerate a fixture or declare a divergence anywhere.
+
+function collectDivergenceRecords() {
+  const out = [];
+
+  for (const [seedKey, record] of Object.entries(CHARGEN_FIXTURE.divergences || {})) {
+    out.push({ id: `action-script.chargen.json#seed-${seedKey}:divergences`, record });
+  }
+
+  const scenarioFixtures = [
+    ["action-script.combat.json", COMBAT_FIXTURE],
+    ["action-script.magic.json", MAGIC_FIXTURE],
+    ["action-script.encounters.json", ENCOUNTERS_FIXTURE],
+  ];
+  for (const [fileName, fixture] of scenarioFixtures) {
+    for (const scenario of fixture.scenarios || []) {
+      const holderId = `${fileName}#${scenario.name}`;
+      if (scenario.divergence) out.push({ id: `${holderId}:divergence`, record: scenario.divergence });
+      if (scenario.chargenDivergence) out.push({ id: `${holderId}:chargenDivergence`, record: scenario.chargenDivergence });
+    }
+  }
+
+  const scriptFixtures = [
+    ["action-script.movement.json", MOVEMENT_FIXTURE],
+    ["action-script.economy.json", ECONOMY_FIXTURE],
+  ];
+  for (const [fileName, fixture] of scriptFixtures) {
+    const holderId = `${fileName}#script`;
+    if (fixture.divergence) out.push({ id: `${holderId}:divergence`, record: fixture.divergence });
+    if (fixture.chargenDivergence) out.push({ id: `${holderId}:chargenDivergence`, record: fixture.chargenDivergence });
+  }
+
+  return out;
+}
+
+test("ROLL-05 zero-declaration: no divergence record anywhere declares Phase 73", () => {
+  const records = collectDivergenceRecords();
+  assert.ok(records.length > 0, "expected at least one declared divergence record across the six fixtures");
+  const phase73 = records.filter(({ record }) =>
+    String(record.phase ?? "")
+      .split("+")
+      .map((s) => s.trim())
+      .includes("73"),
+  );
+  assert.deepStrictEqual(
+    phase73.map((r) => r.id),
+    [],
+    "expected zero divergence records to declare Phase 73 — the roll-high mirror changed representation only, never outcome",
+  );
+});

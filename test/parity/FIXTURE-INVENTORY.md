@@ -3113,3 +3113,62 @@ skill's `txt` string). `test/parity/prototype-master.js.txt` hash is
 unchanged (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`) — the frozen
 prototype is never edited.
 
+## Phase 73: engine roll-high mirror (ROLL-05) — measured zero
+
+`docs/ROLL-LEDGER.md`'s `## Phase 73 mirror verdicts (ROLL-05)` classifies
+every one of the 48 CHECK sites (plus the SELECTION/AMOUNT appendix) as
+MIRROR, ALREADY HIGH or MISHAP ON 1, and the engine now reads every check
+through the one `engine/dice.js#rollCheck` helper: a raw draw `r` on an
+N-sided die becomes `roll = N + 1 - r`, and a roll-under `need` of `k`
+winning faces becomes the roll-high `atLeast = N + 1 - k`
+(`atLeastFor(faces, N)`, 73-01). Plans 73-04 through 73-09 converted every
+site and every roll-carrying event to the `{ roll, atLeast, dieN }` triple.
+
+**The rule.** Because `rng.d(N)` draws exactly the same raw value `r`, in
+the same position, in the same order as the pre-phase engine — only the
+READING of that value changed — every seed must resolve identically. A
+roll-under `need` of `k` faces and a roll-high `atLeast = N + 1 - k`
+describe the exact same set of winning raw draws; the arithmetic identity
+`roll >= atLeast <=> r <= k` holds for every `r` in `1..N`. Modifiers fold
+into the threshold the same way on both sides of the mirror (a `+1` face
+either raises `need` or lowers `atLeast` by exactly one), so the mirror is a
+pure representation change with no way to move an outcome.
+
+**The predictor.** A representation change that never alters which raw
+draws win can never move a parity fixture, a direction-test expectation, a
+state pin or a save-compat pin — every one of those is keyed to raw engine
+STATE (or, for the direction tests, the FRACTION of winning faces), never
+to how a roll is narrated. Predicted moved set across all nine plans: zero
+fixtures, zero divergence records, zero comparable carve-outs, zero direction-
+test edits, zero state-pin edits, zero save-compat edits.
+
+**The live-scan results — measured, not assumed (commit range `d274925`
+(phase base) → the 73-10 HEAD).**
+
+1. `node --test "test/parity/**/*.test.js"`: **52 tests, 52 pass, 0 fail.**
+2. `git diff --stat d274925 -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js`: empty.
+3. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node tools/initiative-fixture-scan.mjs | diff --strip-trailing-cr - tools/initiative-fixture-scan-output.txt`: empty.
+5. `node tools/worn-fixture-scan.mjs | diff --strip-trailing-cr - tools/worn-fixture-scan-output.txt`: empty.
+6. `git diff --stat d274925 -- test/unit/rollDirection.test.js test/unit/rollDirection-checks.test.js test/unit/roll-ledger-sync.test.js test/unit/harness/rollOdds.js`: empty — the Phase 72 odds-based direction tests run UNCHANGED and pass.
+7. `node --test test/parity/fixture-inventory.test.js`: **5 tests, 5 pass, 0 fail** (the roster is unchanged).
+
+**The three wider nets.**
+
+- **State pins** (`test/unit/roll-high-state-pins.test.js`, `test/unit/fixtures/roll-high/`, `test/unit/harness/rollHighBaseline.js`): `git log --oneline` over those paths shows only 73-02's two pinning commits (`724033b`, `6b70ee0`) — untouched by every conversion plan since — and `node --test test/unit/roll-high-state-pins.test.js` is **13/13 green**.
+- **The pre-switch save** (`test/unit/roll-high-save-compat.test.js`): green in the same run above — a save built at the Phase 72 close commit loads, resolves and round-trips identically, no conversion step.
+- **The runtime invariant** (`test/parity/roll-high-invariant.test.js`): `COMPLETE` is `true` (every roll-carrying event type across the whole engine is validated by rules I1–I6 over the bot sweep and the 31-site parity replay), and the standing ROLL-05 zero-declaration test (73-10) walks every declared divergence record across all six fixture files and confirms none of them names Phase 73.
+
+**The readout (third proof).** `node tools/tune-difficulty.mjs --seeds=200` at the 73-10 HEAD matches both the Phase 73 base readout (`tools/roll-high-baseline-readout.txt`) and every recorded line of the Phase 72 `### AFTER — commit d2adfd6` block in `docs/DIFFICULTY-RETUNE.md`, byte-for-byte (after CRLF normalisation) — recorded under `docs/DIFFICULTY-RETUNE.md`'s own new `## v2.1 roll-high mirror (Phase 73) — bot readout` H2 (see that document for the full transcript and both `tools/readout-compare.mjs` comparison results).
+
+**Byte-identical elsewhere.** `test/parity/harness/comparables.js` is untouched across all nine plans — the mirror never adds, removes or renames a serialized field; it only changes how an already-serialized (or already-computed) roll is READ. `test/parity/prototype-master.js.txt` is never edited. No persisted content field was renamed (weapon `need`, `sp.toHit`, `sp.ar` and the like keep their old names and their old VALUES — counts of winning faces — per CONTEXT's "content numbers keep their values" ruling), so no save requires a conversion step. The old roll-under `need` field is removed from every event (greenfield, no dual fields); every event gains `roll`, `atLeast` and `dieN` natively.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.** No holder's `divergence.phase` gains a `+73`
+from this phase, across any of the nine plans.
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
