@@ -84,7 +84,9 @@ test("ar 12: a soak roll of exactly 12 soaks (boundary)", () => {
   const result = damageFoe(state, foe, 7, { kind: "melee" }, rng, events);
   assert.deepEqual(result, { applied: 0, soaked: true, mult: 1 });
   assert.equal(foe.wp, 10);
-  assert.deepEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 7 }]);
+  // raw draw 12 mirrors to face 9 on a d20; atLeastFor(ar 12, 20) = 9 — the
+  // boundary face itself soaks.
+  assert.deepEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 7, roll: 9, atLeast: 9, dieN: 20 }]);
   assert.throws(() => rng.d(20), /sequence exhausted/);
 });
 
@@ -93,7 +95,9 @@ test("ar 12: a soak roll of exactly 13 lands (boundary)", () => {
   const state = fixedState();
   const events = [];
   const result = damageFoe(state, foe, 7, { kind: "melee" }, fakeRng([13]), events);
-  assert.deepEqual(result, { applied: 7, soaked: false, mult: 1 });
+  // raw draw 13 mirrors to face 8 on a d20 — one short of atLeast 9, so the
+  // blow lands; the failed soak triple rides along on `soak`.
+  assert.deepEqual(result, { applied: 7, soaked: false, mult: 1, soak: { roll: 8, atLeast: 9, dieN: 20 } });
   assert.equal(foe.wp, 3);
   assert.deepEqual(events, []);
 });
@@ -141,7 +145,8 @@ test("physical kinds ally / foe / reflect / item are all soakable", () => {
     const rng = fakeRng([1]);
     const result = damageFoe(state, foe, 7, { kind }, rng, events);
     assert.deepEqual(result, { applied: 0, soaked: true, mult: 1 }, `kind ${kind}`);
-    assert.deepEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 7 }], `kind ${kind}`);
+    // raw draw 1 mirrors to face 20 on a d20, well past atLeast 9.
+    assert.deepEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 7, roll: 20, atLeast: 9, dieN: 20 }], `kind ${kind}`);
     assert.throws(() => rng.d(20), /sequence exhausted/, `kind ${kind} drew more than once`);
   }
 });
@@ -176,7 +181,8 @@ test("halfDmg foe with ar: the soak decides on the halved value and reports it",
   const events = [];
   const result = damageFoe(state, foe, 7, { kind: "melee" }, fakeRng([5]), events);
   assert.deepEqual(result, { applied: 0, soaked: true, mult: 1 });
-  assert.deepEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 4 }]);
+  // raw draw 5 mirrors to face 16 on a d20, well past atLeast 9.
+  assert.deepEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 4, roll: 16, atLeast: 9, dieN: 20 }]);
 });
 
 test("CANON-04 rows via damageFoe", () => {

@@ -1327,7 +1327,8 @@ test("playerStrike: natural armour soaks a blow (roll <= sp.ar): foeArmorSoaked,
   // draws — initiative is rolled once, Phase 51.
   const rng = fakeRng([3, 4, 5, 7]);
   const events = playerStrike(state, rng, []);
-  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5 });
+  // raw draw 5 mirrors to face 16 on a d20; atLeastFor(ar 12, 20) = 9.
+  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5, roll: 16, atLeast: 9, dieN: 20 });
   assert.equal(events.some((e) => e.type === "struck"), false, "a soaked blow emits no struck event");
   assert.equal(foe.wp, 10, "the armor absorbed the blow entirely");
   assert.equal(state.combat.round, 2);
@@ -1441,7 +1442,8 @@ test("allyTurn: an ally's blow can be soaked (one extra d20, no allyStruck), and
   state.combat = fixedCombat([foe], { ally: { lvl: 1, rounds: 2, name: "Bear" } });
   const rng = fakeRng([3, 4, 5]);
   const events = allyTurn(state, rng, []);
-  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5 });
+  // raw draw 5 mirrors to face 16 on a d20; atLeastFor(ar 12, 20) = 9.
+  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5, roll: 16, atLeast: 9, dieN: 20 });
   assert.equal(events.some((e) => e.type === "allyStruck"), false);
   assert.equal(foe.wp, 10);
   assert.equal(state.combat.ally.rounds, 1);
@@ -1461,7 +1463,8 @@ test("alliesTurn: a party member's strike is routed through the seam (soakable)"
   state.combat = fixedCombat([foe], { allies: [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Soldier", wp: 20, maxWP: 20 }] });
   const rng = fakeRng([3, 4, 5]);
   const events = alliesTurn(state, rng, []);
-  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5 });
+  // raw draw 5 mirrors to face 16 on a d20; atLeastFor(ar 12, 20) = 9.
+  assert.deepEqual(events.find((e) => e.type === "foeArmorSoaked"), { type: "foeArmorSoaked", name: "Target", amount: 5, roll: 16, atLeast: 9, dieN: 20 });
   assert.equal(events.some((e) => e.type === "allyStruck"), false);
   assert.equal(foe.wp, 10);
 });
@@ -1535,7 +1538,8 @@ test("applyFoeDamageToPlayer: a reflected blow onto an armoured foe can be soake
   const rng = fakeRng([5]);
   const result = applyFoeDamageToPlayer(state, foe, rng, events, { dmg: 5, roll: 3, need: 5 });
   assert.deepEqual(result, { died: false, onArmour: false, applied: 0 });
-  assert.deepStrictEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 5 }]);
+  // raw draw 5 mirrors to face 16 on a d20; atLeastFor(ar 12, 20) = 9.
+  assert.deepStrictEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 5, roll: 16, atLeast: 9, dieN: 20 }]);
   assert.equal(foe.wp, 10);
   assert.equal(state.c.ward.pool, 5);
   assert.equal(state.c.wp, 55);

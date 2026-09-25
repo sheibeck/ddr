@@ -69,6 +69,7 @@ export const ENFORCED = [
   "engine/effects.js",
   "engine/engine.js",
   "engine/events.js",
+  "engine/foeDamage.js",
   "engine/phobias.js",
   "engine/records.js",
   "engine/rng.js",
@@ -77,8 +78,9 @@ export const ENFORCED = [
 ];
 
 // Flips true in 73-09, once combat.js, derived.js, encounters.js,
-// foeAbilities.js, foeDamage.js, magic.js and movement.js have all
-// converted their check sites and joined ENFORCED.
+// foeAbilities.js, magic.js and movement.js have all converted their check
+// sites and joined ENFORCED. engine/foeDamage.js (73-04) is the first of
+// these seven to convert.
 export const ALL_ENFORCED = false;
 
 // Per-enforced-file draw-tag counts, keyed by the SAME kind vocabulary the
@@ -101,6 +103,7 @@ export const DRAW_INVENTORY = {
   "engine/effects.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/engine.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/events.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
+  "engine/foeDamage.js": { rollCheck: 1, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/phobias.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/records.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/rng.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

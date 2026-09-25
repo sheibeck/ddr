@@ -478,14 +478,16 @@ test("applyFoeDamageToPlayer: magic plate (Cloak of Armor) never wears — wear:
 
 // --- 6. struck: need + critBy --------------------------------------------
 
-test("playerStrike: struck carries need = toHit(state); critBy absent when not critical (Soldier's noCrit)", () => {
+test("playerStrike: struck carries atLeast/dieN derived from toHit(state); critBy absent when not critical (Soldier's noCrit)", () => {
   const state = fixedState({ c: { sub: "Soldier" } });
   const foe = fixedFoe({ wp: 100, maxWP: 100 });
   state.combat = fixedCombat([foe]);
-  const need = toHit(state);
-  const events = playerStrike(state, fakeRng([need, 4, ...FILL]), []);
+  const faces = toHit(state);
+  assert.equal(faces, 5, "sanity: a Fighter/Soldier needs 5 winning faces unafraid");
+  const events = playerStrike(state, fakeRng([faces, 4, ...FILL]), []);
   const struck = events.find((e) => e.type === "struck");
-  assert.equal(struck.need, need);
+  assert.equal(struck.dieN, 20);
+  assert.equal(struck.atLeast, 16, "atLeastFor(5, 20) = 16");
   assert.equal("critBy" in struck, false);
 });
 

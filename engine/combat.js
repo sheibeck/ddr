@@ -871,6 +871,7 @@ export function playerStrike(state, rng, events = []) {
         ...(mods.length ? { mods } : {}),
         ...(afraidMods.length ? { afraid: true } : {}),
         ...(auto ? { auto: true } : {}),
+        ...(landed.soak ? { soak: landed.soak } : {}),
         ...(AS ? { via: AS.key } : {}),
       });
     if (t.wp <= 0) killFoe(state, t, rng, events);
