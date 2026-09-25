@@ -203,25 +203,33 @@ test("equipItem (new model): a ring and a cloak occupy different families — eq
   assert.deepStrictEqual(events, [{ type: "itemEquipped", item: cloak, slot: "cloak" }]);
 });
 
-// 260918-w4n (staff amendment, user ruling 2026-09-18): a staff is not
-// equipable at all any more — equipItem refuses it notEquippable for EVERY
-// class (the same refusal a potion already gets), never wrongClass.
-test("equipItem (new model): a staff is refused notEquippable for a non-Magic-User; nothing moves", () => {
+// RULES-13 (Phase 75, user 2026-09-25) REVERSES the 2026-09-18 staff
+// amendment this comment/these two tests used to pin ("a staff is not
+// equipable at all any more"): a magic staff now equips into the WEAPON
+// slot (a scalar c.weapon/c.staff pair, never a c.worn family) — MU-only.
+// A non-Magic-User is still refused, but now with `wrongClass` (a class-
+// legality refusal, like any other weapon), not `notEquippable`. Full
+// wield-model coverage lives in test/unit/staff-wield.test.js; these two
+// tests stay here only to keep THIS file's "every kind, every class" sweep
+// honest.
+test("equipItem (new model): a staff is refused wrongClass for a non-Magic-User; nothing moves", () => {
   const staff = OAK_STAFF();
   const state = hero({ c: { cls: "Fighter", items: [staff] } });
   const events = equipItem(state, 0, []);
-  assert.deepStrictEqual(events, [{ type: "equipRejected", item: staff, reason: "notEquippable" }]);
+  assert.deepStrictEqual(events, [{ type: "equipRejected", item: staff, reason: "wrongClass" }]);
   assert.deepStrictEqual(state.c.items, [staff]);
   assert.deepStrictEqual(state.c.worn, {});
 });
 
-test("equipItem (new model): a staff is refused notEquippable for a Magic User too — nothing moves", () => {
+test("equipItem (new model): a Magic User WIELDS a staff into the weapon slot — never a c.worn family key", () => {
   const staff = OAK_STAFF();
-  const state = hero({ c: { cls: "Magic User", items: [staff] } });
+  const state = hero({ c: { cls: "Magic User", weapon: "Club", items: [staff] } });
   const events = equipItem(state, 0, []);
-  assert.deepStrictEqual(events, [{ type: "equipRejected", item: staff, reason: "notEquippable" }]);
-  assert.deepStrictEqual(state.c.items, [staff]);
-  assert.deepStrictEqual(state.c.worn, {});
+  assert.equal(state.c.weapon, "Oak Staff");
+  assert.equal(state.c.staff, staff);
+  assert.deepStrictEqual(state.c.worn, {}, "a wielded staff is never a c.worn entry");
+  assert.equal(state.c.items.length, 1, "the displaced Club lands in the freed bag slot");
+  assert.ok(events.some((e) => e.type === "itemEquipped" && e.slot === "weapon"));
 });
 
 test("equipItem (new model): potions/picks are still not equippable", () => {
@@ -232,14 +240,28 @@ test("equipItem (new model): potions/picks are still not equippable", () => {
   }
 });
 
-test("equipItem legacy identity: without c.worn, a ring/cloak/staff still gets notEquippable and c is byte-identical", () => {
-  for (const it of [RING(), CLOAK_SPEED(), OAK_STAFF()]) {
+test("equipItem legacy identity: without c.worn, a ring/cloak still gets notEquippable and c is byte-identical", () => {
+  for (const it of [RING(), CLOAK_SPEED()]) {
     const state = legacyHero({ c: { cls: "Magic User", items: [it] } });
     const before = JSON.stringify(state);
     const events = equipItem(state, 0, []);
     assert.deepStrictEqual(events, [{ type: "equipRejected", item: it, reason: "notEquippable" }]);
     assert.equal(JSON.stringify(state), before, "legacy state must be byte-identical after a refused equip");
   }
+});
+
+// RULES-13 (Phase 75): the weapon slot (c.weapon/c.staff) has NEVER
+// depended on c.worn's presence, unlike the cloak/jewelry family above —
+// so a staff equip succeeds even in a legacy (no c.worn) state, exactly
+// like an ordinary weapon swap always has.
+test("equipItem legacy identity: without c.worn, a Magic User can still WIELD a staff (the weapon slot never depended on c.worn)", () => {
+  const staff = OAK_STAFF();
+  const state = legacyHero({ c: { cls: "Magic User", items: [staff] } });
+  const events = equipItem(state, 0, []);
+  assert.equal(state.c.weapon, "Oak Staff");
+  assert.equal(state.c.staff, staff);
+  assert.ok(events.some((e) => e.type === "itemEquipped" && e.slot === "weapon"));
+  assert.equal("worn" in state.c, false, "legacy state gains no c.worn key");
 });
 
 /* ============================================================

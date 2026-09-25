@@ -202,6 +202,31 @@ test("a mid-cast armed mirror (Bubble) round-trips losslessly, including a null 
   assert.deepStrictEqual(rehydrated, stripped, "state with an armed mirror must round-trip losslessly, including rounds: null");
 });
 
+// RULES-13 (Phase 75, user 2026-09-25): a wielded magic staff — c.weapon
+// naming the staff AND c.staff carrying the real, charge-bearing object —
+// round-trips losslessly, exactly like the ward sub-states above.
+test("a wielded magic staff (c.weapon/c.staff) round-trips losslessly", () => {
+  let state = newRun(1);
+  state.c.cls = "Magic User";
+  state.c.sub = "Wizard";
+  state.c.items = state.c.items || [];
+  state.c.items.push({ kind: "staff", n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents indefinitely", charges: 2 });
+  const staffIdx = state.c.items.length - 1;
+  const { state: afterEquip } = applyAction(state, { type: "equipItem", i: staffIdx });
+  state = afterEquip;
+  assert.equal(state.c.weapon, "Birch Staff", "the staff was actually wielded");
+  assert.deepStrictEqual(
+    state.c.staff,
+    { kind: "staff", n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents indefinitely", charges: 2 },
+    "c.staff carries the real charge-bearing object",
+  );
+
+  const stripped = stripVolatileFields(state);
+  const rehydrated = JSON.parse(JSON.stringify(stripped));
+  assert.deepStrictEqual(rehydrated, stripped, "state with a wielded staff must round-trip losslessly");
+  assert.doesNotThrow(() => structuredClone(state), "structuredClone must not throw on a wielded staff");
+});
+
 test("Phase 29 (LOOT-06): a state carrying a 3-item pendingLoot pile round-trips losslessly and idempotently", () => {
   const state = newRun(1);
   state.pendingLoot = [

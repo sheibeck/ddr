@@ -26,7 +26,7 @@ import {
   freeWornKey,
 } from "./derived.js";
 import { ensureAbilities } from "./character.js";
-import { ACTIVATION_OF, SPELLS } from "../content/index.js";
+import { ACTIVATION_OF, SPELLS, STAFF_NAMES } from "../content/index.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -263,6 +263,37 @@ function sanitizeWard(c) {
     c.ward = { name: w.name || "Bubble", mirror: true, pool: 0, popPool: (bubble && bubble.popPool) || 25, rounds: null };
   } else if ("reflect" in w) {
     delete w.reflect;
+  }
+  return c;
+}
+
+/**
+ * sanitizeStaff(c) — RULES-13 (Phase 75, user 2026-09-25) load-tolerance for
+ * the wielded-staff pair `c.weapon`/`c.staff`, mirroring sanitizeWard's exact
+ * discipline immediately above. `c.staff` is kept ONLY when it is a plain
+ * object of `kind: "staff"` whose display name (`.n`) is both a genuine
+ * STAFF_NAMES entry AND equal to `c.weapon` — any other present value (a
+ * tampered shape, a mismatched name, a stale object left over from a
+ * mid-migration save) is dropped outright. When `c.weapon` itself NAMES a
+ * staff (a STAFF_NAMES entry) but no valid `c.staff` survives that check,
+ * the weapon slot resets to bare hands (`"Fists"`, prof 0, magicWpn 0) — a
+ * wielded staff's name and its charge-bearing object must always travel
+ * together, never a name with nothing behind it. Deliberately never touches
+ * a BAGGED staff (`c.items`) — a tolerant load must never change a
+ * character's loadout, only repair the worn weapon-slot pair itself. When
+ * `c.staff` is absent AND `c.weapon` is not a staff name, this does
+ * NOTHING. Mutates and returns the passed `c`.
+ */
+function sanitizeStaff(c) {
+  if (!c || typeof c !== "object" || Array.isArray(c)) return c;
+  const s = c.staff;
+  const validStaff =
+    !!s && typeof s === "object" && !Array.isArray(s) && s.kind === "staff" && typeof s.n === "string" && STAFF_NAMES.includes(s.n) && s.n === c.weapon;
+  if ("staff" in c && !validStaff) delete c.staff;
+  if (STAFF_NAMES.includes(c.weapon) && !validStaff) {
+    c.weapon = "Fists";
+    c.prof = 0;
+    c.magicWpn = 0;
   }
   return c;
 }
@@ -627,11 +658,16 @@ export function validateSave(raw, options = {}) {
   // RULES-14 (Phase 75): sanitizeWard runs OUTERMOST (matching
   // sanitizeWaterCells' own "newest migration wraps the previous one"
   // convention below) — a pre-Phase-75 reflecting ward becomes the armed
-  // mirror after every other migration step has already run.
-  const migratedC = sanitizeWard(
-    foldLegacyCounters(
-      ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), seed),
-      steps,
+  // mirror after every other migration step has already run. RULES-13
+  // (Phase 75): sanitizeStaff runs OUTERMOST of all — after sanitizeWard —
+  // repairing/dropping a tampered or stale c.staff/c.weapon pair last, once
+  // every other field on `c` has already settled.
+  const migratedC = sanitizeStaff(
+    sanitizeWard(
+      foldLegacyCounters(
+        ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), seed),
+        steps,
+      ),
     ),
   );
 
@@ -734,11 +770,14 @@ export function rehydrate(obj) {
   // output), so it needs the identical migrateSpellNames/clearStaleSpellSeen
   // treatment to stay consistent between the two entry points. RULES-14
   // (Phase 75): sanitizeWard runs OUTERMOST here too, mirroring
-  // validateSave's own composition exactly.
-  const migratedC = sanitizeWard(
-    foldLegacyCounters(
-      ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), obj.seed),
-      obj.steps ?? 0,
+  // validateSave's own composition exactly. RULES-13 (Phase 75):
+  // sanitizeStaff runs OUTERMOST of all here too, mirroring validateSave.
+  const migratedC = sanitizeStaff(
+    sanitizeWard(
+      foldLegacyCounters(
+        ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), obj.seed),
+        obj.steps ?? 0,
+      ),
     ),
   );
   const state = {

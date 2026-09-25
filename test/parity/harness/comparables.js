@@ -188,6 +188,22 @@ function stripFoeEffectField(c) {
   return rest;
 }
 
+/** stripStaffField — RULES-13 (Phase 75, user 2026-09-25) carve-out. Adds
+ * `c.staff`, a brand-new engine-only wielded-weapon field (the wielded magic
+ * staff object itself, engine/derived.js#wieldedStaff) with NO prototype-
+ * side equivalent — the frozen prototype (test/parity/prototype-master.js.txt
+ * — DO NOT EDIT) never had an equipable staff at all. No fixture ever wields
+ * or carries a staff into combat (measured — zero fixtures moved), so this
+ * is carved out purely as a structural tripwire, mirroring
+ * stripFoeEffectField/stripTimersField immediately above: a future fixture
+ * that DOES carry a wielded staff never reaches the diff on this genuine,
+ * permanent, deliberate divergence. */
+function stripStaffField(c) {
+  if (!c || !("staff" in c)) return c;
+  const { staff, ...rest } = c;
+  return rest;
+}
+
 /** stripTimersField(c) — Phase 36 (BAL foundation / ROADMAP SC-6) adds
  * `c.timers`, a brand-new engine-only lazily-created timer map
  * (engine/effects.js) with NO prototype-side equivalent — the frozen
@@ -536,7 +552,9 @@ export function movementComparable(state) {
   // Phase 41 (TERR-01): strip the new engine-only water flag too (see
   // stripWaterField above) — the same structural-carve-out category.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c)))))))))))));
+  // RULES-13 (Phase 75): stripStaffField wraps OUTERMOST — see its own
+  // doc comment above.
+  if (rest.c) rest.c = stripStaffField(stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c))))))))))))));
   return rest;
 }
 
@@ -626,7 +644,9 @@ export function combatComparable(state) {
   // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
   // Phase 41 (TERR-01): see movementComparable's rationale above.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c)))))))))))));
+  // RULES-13 (Phase 75): stripStaffField wraps OUTERMOST — see its own
+  // doc comment above (movementComparable's chain).
+  if (rest.c) rest.c = stripStaffField(stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripPhobiaFields(rest.c))))))))))))));
   return rest;
 }
 
@@ -1158,7 +1178,9 @@ export function economyComparable(state) {
   // Phase 40 (SPELL-05, Plan 04): see movementComparable's rationale above.
   // Phase 41 (TERR-01): see movementComparable's rationale above.
   if (rest.floor) rest.floor = stripWaterField(stripSpellSeen(rest.floor));
-  if (rest.c) rest.c = stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(stripPhobiaFields(rest.c)))))))))))))));
+  // RULES-13 (Phase 75): stripStaffField wraps OUTERMOST — see its own
+  // doc comment above (movementComparable's chain).
+  if (rest.c) rest.c = stripStaffField(stripReauthoredEveryField(stripCloakArmorTxt(stripBagArmorFields(stripAbilitiesField(dropEmptyWorn(stripTimersField(stripFoeEffectField(stripNameField(stripFlightFields(stripDarkForField(stripRetiredCounterFields(stripBagField(stripRationsField(stripAfflictionLoss(stripPhobiaFields(rest.c))))))))))))))));
   return rest;
 }
 

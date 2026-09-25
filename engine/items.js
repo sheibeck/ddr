@@ -32,6 +32,7 @@ import {
   carriedItems,
   hasTool,
   inDark,
+  wieldedStaff,
 } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { startEffect, startCooldown, isReady, remaining } from "./effects.js";
@@ -493,6 +494,11 @@ export function takeItem(state, it, events = []) {
     c.weapon = it.base;
     c.prof = 0;
     c.magicWpn = it.bonus;
+    // RULES-13 (Phase 75): leaving a wielded staff for an ordinary weapon
+    // clears its wield state — defensive here, since economy.js#gearUpgrades
+    // never treats a weapon as an upgrade while a staff is wielded, so this
+    // branch is never actually reached mid-wield in play.
+    delete c.staff;
     return events;
   }
 
@@ -665,8 +671,15 @@ export function bagItemFor(tier) {
  * (an unequip sentinel weapon not in the WEAPONS table). The equipped weapon is
  * stored only as scalar base/prof/magicWpn fields — like takeItem, the magic
  * weapon's flavor name is not retained, so the reconstructed item uses the base
- * name; its magic bonus (c.magicWpn) IS preserved on `bonus`. */
+ * name; its magic bonus (c.magicWpn) IS preserved on `bonus`.
+ *
+ * RULES-13 (Phase 75): when a magic staff is wielded, `wieldedStaff(c)`
+ * returns the REAL staff object (its charges must travel with it, unlike an
+ * ordinary weapon's scalar-only bookkeeping) — returned directly, ahead of
+ * the WEAPONS lookup below (a staff name is never a WEAPONS key). */
 function wornWeaponItem(c) {
+  const staff = wieldedStaff(c);
+  if (staff) return staff;
   if (!c.weapon || !WEAPONS[c.weapon]) return null;
   const bonus = c.magicWpn || 0;
   return {
@@ -813,9 +826,39 @@ export function equipItem(state, i, events = [], target = null) {
     c.weapon = it.base;
     c.prof = 0;
     c.magicWpn = it.bonus || 0;
+    // RULES-13 (Phase 75): equipping an ordinary weapon over a wielded staff
+    // leaves the wield state — `worn` above already returned the staff
+    // itself (wornWeaponItem), so it is bagged like any other displaced
+    // weapon; the scalar c.staff pointer just needs clearing.
+    delete c.staff;
     if (worn) c.items[i] = worn;
     else c.items.splice(i, 1);
     events.push({ type: "itemEquipped", item: it, slot: "weapon" });
+    return events;
+  }
+
+  // RULES-13 (Phase 75, user 2026-09-25 — reverses the 2026-09-18 staff
+  // amendment): a magic staff equips into the WEAPON slot, MU-only. Mirrors
+  // the weapon branch above exactly (a direct swap, no strictly-better
+  // gate) except the equip target is the staff OBJECT itself (c.staff),
+  // not a WEAPONS base name — its charges travel with it. `worn` may be an
+  // ordinary weapon OR a previously-wielded staff (wornWeaponItem returns
+  // either); either way it is bagged into the freed slot. The `replaced`
+  // additive names whatever was displaced (Phase 25 additive-payload
+  // pattern), mirroring the cloak/jewelry branch below.
+  if (it.kind === "staff") {
+    if (c.cls !== "Magic User") {
+      events.push({ type: "equipRejected", item: it, reason: "wrongClass" });
+      return events;
+    }
+    const worn = wornWeaponItem(c);
+    c.staff = it;
+    c.weapon = it.n;
+    c.prof = 0;
+    c.magicWpn = 0;
+    if (worn) c.items[i] = worn;
+    else c.items.splice(i, 1);
+    events.push({ type: "itemEquipped", item: it, slot: "weapon", ...(worn ? { replaced: worn } : {}) });
     return events;
   }
 
@@ -842,12 +885,15 @@ export function equipItem(state, i, events = [], target = null) {
   }
 
   // cloaks, jewelry — worn slots in the new model (Phase 37, GEAR-03).
-  // 260918-w4n (staff amendment): a staff is EXCLUDED here — it is not
-  // equipable at all; it falls through to the notEquippable refusal below,
-  // the same one a potion already gets (slotFor(it) is always null for a
-  // staff regardless, so this branch's own `!family` guard would have
-  // refused it anyway — excluded explicitly so the intent reads plainly).
-  // Potions, picks, bags — never an equip slot either.
+  // RULES-13 (Phase 75) REVERSES the 2026-09-18 staff amendment this
+  // comment used to describe: a staff is no longer excluded here by
+  // reaching this branch at all — it is handled by its OWN branch above,
+  // ahead of this one, since a staff is equipped into the WEAPON slot, not
+  // a `c.worn` family key (`slotFor(it)` still returns null for a staff —
+  // SLOT_OF is still built from JEWELRY_ROWS + CLOAKS_ROWS only — so a
+  // staff would still fall through to `notEquippable` here if it ever DID
+  // reach this branch, but it never does). Potions, picks, bags — never an
+  // equip slot either.
   //
   // 260918-wy1 (jewelry-merge): `slotFor` now returns a FAMILY, not a
   // concrete key. Rule: an explicit `target` wins (validated against the
@@ -944,6 +990,10 @@ export function unequipSlot(state, slot, events = []) {
     c.weapon = "Fists";
     c.prof = 0;
     c.magicWpn = 0;
+    // RULES-13 (Phase 75): `worn` above already bagged the staff itself
+    // (wornWeaponItem, via stowItem) when one was wielded — clear the
+    // scalar pointer alongside the bare-hands reset.
+    delete c.staff;
   } else if (slot === "armor") {
     c.armor = "Nothing";
     c.ar = 0;
@@ -1029,9 +1079,11 @@ export function takeLoot(state, i, equip = false, events = []) {
   }
 
   // Deliberately unchanged (Phase 43 owns loot-card equip for slot items):
-  // the equip:true form is weapon/armor only — a slot item here still gets
-  // notEquippable.
-  if (it.kind !== "weapon" && it.kind !== "armor") {
+  // the equip:true form is weapon/armor/staff only — every other slot item
+  // here still gets notEquippable. RULES-13 (Phase 75): a staff joins
+  // weapon/armor here — it equips into the WEAPON slot exactly like a
+  // dropped weapon would.
+  if (it.kind !== "weapon" && it.kind !== "armor" && it.kind !== "staff") {
     events.push({ type: "equipRejected", item: it, reason: "notEquippable" });
     return events;
   }
@@ -1047,8 +1099,30 @@ export function takeLoot(state, i, equip = false, events = []) {
     c.weapon = it.base;
     c.prof = 0;
     c.magicWpn = it.bonus || 0;
+    delete c.staff;
     pile.splice(i, 1);
     events.push({ type: "itemEquipped", item: it, slot: "weapon" });
+    return events;
+  }
+
+  // RULES-13 (Phase 75): mirrors equipItem's staff branch exactly — MU-only,
+  // a direct swap into the weapon slot, the displaced piece (weapon or a
+  // previously-wielded staff) stowed through the SAME gate the weapon
+  // branch above uses (a full bag keeps the loot pending, per this
+  // function's own doc).
+  if (it.kind === "staff") {
+    if (c.cls !== "Magic User") {
+      events.push({ type: "equipRejected", item: it, reason: "wrongClass" });
+      return events;
+    }
+    const worn = wornWeaponItem(c);
+    if (worn && !stowItem(state, worn, events, true)) return events;
+    c.staff = it;
+    c.weapon = it.n;
+    c.prof = 0;
+    c.magicWpn = 0;
+    pile.splice(i, 1);
+    events.push({ type: "itemEquipped", item: it, slot: "weapon", ...(worn ? { replaced: worn } : {}) });
     return events;
   }
 
@@ -1274,12 +1348,18 @@ export function narrateTimerTransitions(state, transitions, events = []) {
  * Amulet of Stone/Cloak of Invisibility/Speed/Ether) keep their switch case
  * via `use`, which always equals the activation kind except the torch's
  * light/lit pair (its `use` is "light", its activation `kind` is "lit").
+ *
+ * RULES-13 (Phase 75): `{ slot: "weapon" }` addresses the WIELDED staff —
+ * resolved via `wieldedStaff(c)`, not `c.worn["weapon"]` (a staff is never a
+ * `c.worn` entry; it lives on the scalar c.weapon/c.staff pair). With no
+ * staff wielded this resolves to `null` and the function returns a SILENT
+ * no-op below, exactly like an out-of-range bag index.
  */
 export function useItem(state, ref, rng, events = [], now = Date.now) {
   const c = state.c;
   const slot = ref && typeof ref === "object" ? ref.slot : null;
   const i = slot ? null : ref;
-  const it = slot ? c.worn && c.worn[slot] : (c.items || [])[i];
+  const it = slot === "weapon" ? wieldedStaff(c) : slot ? c.worn && c.worn[slot] : (c.items || [])[i];
   if (!it) return events;
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check, before every
   // refusal below.
