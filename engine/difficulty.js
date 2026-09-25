@@ -432,7 +432,7 @@ export const FOE_COUNT_TABLE = Object.freeze([
  * `rng.d(4) <= 2 ? 1 : rng.d(4) <= 3 ? 2 : 3` ternary.
  */
 export function foeCountFor(firstRoll, drawSecond) {
-  if (firstRoll <= 2) return 1;
+  if (firstRoll <= 2) return 1; // roll:selection
   return FOE_COUNT_TABLE[live.FOE_COUNT_SKEW][drawSecond() - 1];
 }
 

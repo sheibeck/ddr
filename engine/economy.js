@@ -408,7 +408,7 @@ export function openStore(state, rng, events = []) {
   if (c.cls === "Magic User") add("Sealed scroll", 900, "buyScroll", null);
 
   // one thing on the shelf you cannot simply buy
-  const premium = rng.d(2) === 1 ? rollBlade(rng, d, true) : rollMailPiece(rng);
+  const premium = rng.d(2) === 1 ? rollBlade(rng, d, true) : rollMailPiece(rng); // roll:selection
   stock.push(premiumLine(premium));
 
   // Phase 33 (STORE-01, CONTEXT Area 3): depth-rolled stock, ONLY on a run

@@ -225,13 +225,13 @@ export function useAbility(state, key, rng, events = []) {
     }
     case "cutpurse": {
       const t = C.foes[C.target];
-      const amount = rng.d(10) * c.level;
+      const amount = rng.d(10) * c.level; // roll:amount
       events.push({ type: "cutpursed", target: t.name, amount });
       gainWilmst(state, amount, "cutpurse", rng, events);
       break;
     }
     case "secondWind": {
-      const heal = rng.d(8) + c.level;
+      const heal = rng.d(8) + c.level; // roll:amount
       const amount = Math.min(heal, c.maxWP - c.wp);
       c.wp += amount;
       events.push({ type: "secondWindHealed", amount, rolled: heal });
