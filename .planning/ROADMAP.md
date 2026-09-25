@@ -716,12 +716,17 @@ Plans:
 - **Fully dressed:** have an item equipped in every slot at once.
 - **Naked ambition:** reach 5 with **nothing equipped**. You must unequip everything before your first move, so the check is "zero equipped at step 1 and never re-equipped".
 - **Teetotaler:** reach 5 without drinking a single healing potion.
-- **Frequent flier:** die 100 times, counted across all runs.
+- **Frequent flier (tiered):** die 50, 100, 200 and 500 times, counted across all runs.
 - **Read the label:** drink the Death potion (`content/potions.js:45`, `eff: "death"`, *"your dead!"*).
 - **Body counts:** kill 100 Walking Dead, and one "kill 100" for each monster group. The groups are the `content/bestiary.js` `BESTIARY` keys: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead.
 - **Every race:** reach 5 with each race in `content/races.js`: Human, Elven, Dwarven, Wilmsry, Fridgian, Troll.
 - **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
+
+**Design principle: tiers and breadcrumbs (user, 2026-09-25):**
+
+- **Tier the counters.** Counting achievements come in escalating tiers (deaths 50 / 100 / 200 / 500). Apply the same idea to kill counts and similar tracks, so there is always a next rung in sight.
+- **Achievements hint at other achievements.** An easier, more common unlock's sarcastic line drops a clue about a less obvious one. Example: *Fully dressed* (every slot filled, likely common) hints that taking it all *off* might also count, which leads to *Naked ambition*, something few players would think of otherwise. Chain the hidden or odd achievements behind hints from the obvious ones. Hidden achievements can be revealed when their hint fires (Play Games `revealAchievement` exists for exactly this).
 
 **Open decisions (for milestone discussion):**
 
