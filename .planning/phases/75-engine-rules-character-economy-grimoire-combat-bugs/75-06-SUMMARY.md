@@ -203,3 +203,15 @@ None - no external service configuration required.
 ---
 *Phase: 75-engine-rules-character-economy-grimoire-combat-bugs*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: test/unit/sense-presence.test.js
+- FOUND: test/unit/bubble-mirror.test.js
+- FOUND: tools/readouts/75-06-before.txt
+- FOUND: tools/readouts/75-06-after.txt
+- FOUND: .planning/phases/75-engine-rules-character-economy-grimoire-combat-bugs/75-06-SUMMARY.md
+- FOUND commit: 67b9227 (feat: RULES-05)
+- FOUND commit: 36e313c (feat: RULES-14)
+- FOUND commit: 1bc0041 (docs: readouts)
+- FOUND commit: e857b43 (docs: this SUMMARY)
