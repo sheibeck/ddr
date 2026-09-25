@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 999.1
+current_phase: 73
 current_phase_name: PROMOTED → Phases 56 / 58 / 59
 status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-25T05:39:40.369Z"
+last_updated: "2026-09-25T12:00:22.784Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 81 complete, transitioned to Phase 999.1
+last_activity_desc: Phase 81 complete (run early by user choice); resuming the roll-high track at Phase 73
 progress:
   total_phases: 11
   completed_phases: 2
