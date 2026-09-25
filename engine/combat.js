@@ -1564,7 +1564,6 @@ export function allyTurn(state, rng, events = []) {
   const t = liveFoes(state)[0];
   if (!t) return events;
   const dieN = STRIKE_DICE[C.ally.lvl - 1];
-  let roll = rng.d(dieN);
   // Phase 72 (ROLL-01, finding F1, user ruling 2026-09-24): a summoned
   // ally's strike now obeys the same per-target to-hit rules
   // playerStrike/memberStrike apply — same order, applied to the flat
@@ -1572,14 +1571,29 @@ export function allyTurn(state, rng, events = []) {
   // weapon of its own, so magicOnly/daggerOnly always leave it untouchable
   // against a flagged foe (it has no magic weapon or dagger to touch one
   // with).
-  let need = 5;
-  if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(dieN));
-  if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
-  if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
-  if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
-  if (t.sp && t.sp.magicOnly) need = 0; // only magic touches it
-  if (t.sp && t.sp.daggerOnly) need = 0; // only a dagger or magic touches it
-  if (roll <= need) {
+  // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and now
+  // sits above the strike draw, since atLeastFor(faces, dieN) must be ready
+  // before rollCheck fires. `need` -> `faces`.
+  let faces = 5;
+  if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or stupid) creature
+  if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
+  if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
+  if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
+  if (t.sp && t.sp.daggerOnly) faces = 0; // only a dagger or magic touches it
+  // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike die,
+  // in the same draw position the old roll-under draw sat — the strike die,
+  // then (for Philly) a second draw, same as before.
+  let check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
+  // CANON-05 (D-12, p.36): Philly's `slow` gives two dice and keeps the
+  // HIGHER of the two mirrored faces — byte-identical to the old "two dice,
+  // keep the lower raw face" rule.
+  if (t.sp && t.sp.slow) {
+    const second = rollCheck(rng, dieN, check.atLeast);
+    const better = Math.max(check.roll, second.roll);
+    check = { roll: better, atLeast: check.atLeast, dieN, ok: better >= check.atLeast };
+  }
+  const roll = check.roll;
+  if (check.ok) {
     // Phase 72 (ROLL-01 (c)): a landed summoned-ally strike on its die's
     // best face shatters a shatter-flagged foe (the Skeleton) outright —
     // skip the damage roll. The `--C.ally.rounds` countdown below still
@@ -1589,11 +1603,19 @@ export function allyTurn(state, rng, events = []) {
       // D-06/D-20: an ally's blow is physical (soakable) and never matches a
       // multiplier row (no cls on a summoned/party ally this phase).
       const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
-      if (!hit.soaked) events.push({ type: "allyStruck", name: C.ally.name, target: t.name, dmg: hit.applied });
+      if (!hit.soaked)
+        events.push({
+          type: "allyStruck",
+          name: C.ally.name,
+          target: t.name,
+          dmg: hit.applied,
+          ...rollFields(check),
+          ...(hit.soak ? { soak: hit.soak } : {}),
+        });
       if (t.wp <= 0) killFoe(state, t, rng, events);
     }
   } else {
-    events.push({ type: "allyMissed", name: C.ally.name });
+    events.push({ type: "allyMissed", name: C.ally.name, target: t.name, ...rollFields(check) });
   }
   if (--C.ally.rounds <= 0) {
     events.push({ type: "allyDeparted", name: C.ally.name });
@@ -1647,21 +1669,30 @@ export function alliesTurn(state, rng, events = []) {
       // (defensive; every real member has one).
       const t = foes[0];
       const legacyDieN = STRIKE_DICE[clamp(ally.lvl, 1, 5) - 1];
-      let roll = rng.d(legacyDieN);
       // Phase 72 (ROLL-01, finding F1, user ruling 2026-09-24): a legacy
       // ally's strike now obeys the same per-target to-hit rules
       // playerStrike/memberStrike apply — same order, applied to the flat
       // need-5 baseline this branch has always used. A legacy entry has no
       // weapon of its own, so magicOnly/daggerOnly always leave it
       // untouchable against a flagged foe.
-      let need = 5;
-      if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(legacyDieN));
-      if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
-      if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
-      if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
-      if (t.sp && t.sp.magicOnly) need = 0; // only magic touches it
-      if (t.sp && t.sp.daggerOnly) need = 0; // only a dagger or magic touches it
-      if (roll <= need) {
+      // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and
+      // now sits above the strike draw. `need` -> `faces`.
+      let faces = 5;
+      if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or stupid) creature
+      if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
+      if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
+      if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
+      if (t.sp && t.sp.daggerOnly) faces = 0; // only a dagger or magic touches it
+      // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike
+      // die, then (for Philly) a second draw — same draw order as before.
+      let check = rollCheck(rng, legacyDieN, atLeastFor(faces, legacyDieN));
+      if (t.sp && t.sp.slow) {
+        const second = rollCheck(rng, legacyDieN, check.atLeast);
+        const better = Math.max(check.roll, second.roll);
+        check = { roll: better, atLeast: check.atLeast, dieN: legacyDieN, ok: better >= check.atLeast };
+      }
+      const roll = check.roll;
+      if (check.ok) {
         // Phase 72 (ROLL-01 (c)): a landed legacy-ally strike on its die's
         // best face shatters a shatter-flagged foe (the Skeleton) outright —
         // skip the damage roll.
@@ -1670,10 +1701,18 @@ export function alliesTurn(state, rng, events = []) {
         // D-06/D-20: a party member's blow is physical (soakable) and never
         // matches a multiplier row (no cls on a legacy C.allies entry).
         const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
-        if (!hit.soaked) events.push({ type: "allyStruck", name: ally.name, target: t.name, dmg: hit.applied });
+        if (!hit.soaked)
+          events.push({
+            type: "allyStruck",
+            name: ally.name,
+            target: t.name,
+            dmg: hit.applied,
+            ...rollFields(check),
+            ...(hit.soak ? { soak: hit.soak } : {}),
+          });
         if (t.wp <= 0) killFoe(state, t, rng, events);
       } else {
-        events.push({ type: "allyMissed", name: ally.name });
+        events.push({ type: "allyMissed", name: ally.name, target: t.name, ...rollFields(check) });
       }
       continue;
     }
@@ -1939,34 +1978,42 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
  * marked before this plan's Mark ability exists).
  */
 function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
-  let need = memberToHit(view);
   const dieN = strikeDie(view);
-  let roll = rng.d(dieN);
   // Phase 72 (ROLL-01, finding F1, user ruling 2026-09-24): a party member's
   // strike now obeys the SAME per-target to-hit rules playerStrike applies
   // to the hero — every bestiary note promising one of these terms is
   // written for "a strike", not "the hero's strike specifically". Same
-  // order as playerStrike: Philly's second die first (it narrows the ROLL,
-  // not the need), then dozing/stupid, sp.toHit, sp.fast, magicOnly,
+  // order as playerStrike: dozing/stupid, sp.toHit, sp.fast, magicOnly,
   // daggerOnly (F3), and finally the ability descriptor's own needShift —
   // mirroring playerStrike's Overhead Blow, which also applies AFTER the
   // per-target terms.
-  if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(dieN));
-  if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
-  if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
-  if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
-  if (t.sp && t.sp.magicOnly && !view.magicWpn) need = 0; // only magic touches it
-  if (t.sp && t.sp.daggerOnly && !view.magicWpn && view.weapon !== "Dagger") need = 0; // only a dagger or magic touches it
-  if (mod && mod.needShift) need = Math.max(1, need + mod.needShift);
+  // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and now
+  // sits above the strike draw. `need` -> `faces`.
+  let faces = memberToHit(view);
+  if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or stupid) creature
+  if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
+  if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
+  if (t.sp && t.sp.magicOnly && !view.magicWpn) faces = 0; // only magic touches it
+  if (t.sp && t.sp.daggerOnly && !view.magicWpn && view.weapon !== "Dagger") faces = 0; // only a dagger or magic touches it
+  if (mod && mod.needShift) faces = Math.max(1, faces + mod.needShift);
+  // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike die,
+  // then (for Philly) a second draw — same draw order as before (the strike
+  // die, then Philly's).
+  let check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
+  if (t.sp && t.sp.slow) {
+    const second = rollCheck(rng, dieN, check.atLeast);
+    const better = Math.max(check.roll, second.roll);
+    check = { roll: better, atLeast: check.atLeast, dieN, ok: better >= check.atLeast };
+  }
+  const roll = check.roll;
   const weapon = sheet.weapon;
   const auto = !!(mod && mod.autoHit);
-  if (!auto && roll > need) {
+  if (!auto && !check.ok) {
     events.push({
       type: "allyMissed",
       name: ally.name,
       target: t.name,
-      roll,
-      need,
+      ...rollFields(check),
       ...(weapon ? { weapon } : {}),
       ...(mod ? { via: mod.key } : {}),
     });
@@ -1979,7 +2026,13 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   let dmg = weaponDamage(view, rng);
   if (mod && mod.bonusDmg) dmg += mod.bonusDmg;
   const noCrit = view.sub === "Guard" || view.sub === "Soldier";
-  let crit = roll === 1 && !noCrit;
+  // Phase 73 (ROLL-05): a member's natural-best crit is the die's top face
+  // (isBestFace), not a fixed "natural 1" — byte-identical odds, mirrored.
+  let crit = isBestFace(roll, dieN) && !noCrit;
+  // Phase 73 (ROLL-05): the lowest winning face for the crit that landed —
+  // only set for the die-driven crit above; backstab/a forced crit are
+  // unconditional and carry no threshold of their own (reset below).
+  let critAtLeast = crit ? dieN : undefined;
   // Phase 38 (ABIL-05): Death Touch's finish, mirroring playerStrike's own
   // gate exactly.
   if (mod && mod.finishUnder && t.wp < mod.finishUnder) {
@@ -1995,10 +2048,14 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   const heavy = view.cls === "Thief" && armorBulk(view) >= 2;
   if (mod && mod.forceCrit) {
     const deniedByHeavy = mod.key === "silentStep" && heavy;
-    if (!noCrit && !deniedByHeavy) crit = true;
+    if (!noCrit && !deniedByHeavy) {
+      crit = true;
+      critAtLeast = undefined;
+    }
   }
   if (!mod && view.cls === "Thief" && !ally.backstabUsed && !heavy) {
     crit = true;
+    critAtLeast = undefined;
     backstab = true;
     ally.backstabUsed = true; // the transient combat entry, not the sheet
   }
@@ -2012,10 +2069,14 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
       name: ally.name,
       target: t.name,
       dmg: hit.applied,
+      ...rollFields(check),
       ...(weapon ? { weapon } : {}),
       ...(crit ? { crit: true } : {}),
+      ...(critAtLeast !== undefined ? { critAtLeast } : {}),
       ...(backstab ? { backstab: true } : {}),
+      ...(auto ? { auto: true } : {}),
       ...(mod ? { via: mod.key } : {}),
+      ...(hit.soak ? { soak: hit.soak } : {}),
     });
   if (t.wp <= 0) killFoe(state, t, rng, events);
 }

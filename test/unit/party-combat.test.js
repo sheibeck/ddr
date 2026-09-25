@@ -413,8 +413,10 @@ test("DFB-05 Thief: a missed opener keeps the backstab for the next landed blow"
   let events = alliesTurn(state, fakeRng([9]), []);
   let ev = events.find((e) => e.type === "allyMissed");
   assert.equal(ev.target, foe.name);
-  assert.equal(ev.roll, 9);
-  assert.equal(ev.need, 4);
+  // faces 4 on a d20 -> atLeastFor(4, 20) = 17; raw draw 9 mirrors to roll 12.
+  assert.equal(ev.roll, 12);
+  assert.equal(ev.atLeast, 17);
+  assert.equal(ev.dieN, 20);
   assert.equal(ev.weapon, "Dagger");
   assert.ok(!state.combat.allies[0].backstabUsed);
 
@@ -440,9 +442,12 @@ test("DFB-05 Magic User: casts Freeze at the hero's current target — d10 5 wit
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
   const events = alliesTurn(state, fakeRng([5, 4, 4, 1, 20]), []);
   const cast = events.find((e) => e.type === "allyCast");
-  assert.equal(cast.roll, 5);
-  assert.equal(cast.need, 6);
-  assert.equal(cast.bonus, 3);
+  // faces 6 + school bonus 3 -> atLeastFor(9, 10) = 2; raw draw 5 mirrors to
+  // roll 6 (6 >= 2 hits).
+  assert.equal(cast.roll, 6);
+  assert.equal(cast.atLeast, 2);
+  assert.equal(cast.dieN, 10);
+  assert.deepStrictEqual(cast.mods, [{ name: "school", delta: 3 }]);
   const hit = events.find((e) => e.type === "allySpellHit");
   assert.equal(hit.effect, "frozen");
   assert.equal(hit.dmg, 4);
@@ -535,7 +540,8 @@ test("DFB-05 legacy fallback: an allies entry with no persistent sheet strikes e
   state2.combat = fixedCombat([foe2], { allies: [fixedAlly()] });
   const events2 = alliesTurn(state2, fakeRng([9]), []);
   const ev2 = events2.find((e) => e.type === "allyMissed");
-  assert.deepEqual(ev2, { type: "allyMissed", name: "Ada" });
+  // faces 5 on a d20 -> atLeastFor(5, 20) = 16; raw draw 9 mirrors to roll 12.
+  assert.deepEqual(ev2, { type: "allyMissed", name: "Ada", target: foe2.name, roll: 12, atLeast: 16, dieN: 20 });
 });
 
 test("DFB-05 newDay: member spell charges reset with the day; a sheet without the field never gains one", () => {
