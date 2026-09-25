@@ -45,7 +45,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [ ] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
 - [ ] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire
 - [ ] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules
-- [ ] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth; at least 2 foes from floor 10, at least 3 from floor 20
+- [ ] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth, a steeper foe curve and tier past floor 12, and control spells lose their lock at depth
 - [ ] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store
 - [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
@@ -224,14 +224,16 @@ Plans:
 
 ### Phase 75.3: Deep-Floor Encounter Scaling (INSERTED)
 
-**Goal**: Fights grow with depth. Solo encounters fade as the party goes deeper, so floors 20+ feel like the unicorn ceiling they are meant to be, not a solo-fight stroll to 30.
+**Goal**: The deep floors keep getting harder. Fights grow in number, foes grow in toughness and tier past floor 12, and control spells stop locking everything, so floor 20+ is the unicorn ceiling it is meant to be, not a stroll to 40.
 **Depends on**: Phase 75.2 (the bot readout measures hero size and foe count together; engine-gated)
-**Requirements**: RULES-16
+**Requirements**: RULES-16, RULES-17, RULES-18
 **Success Criteria** (what must be TRUE):
 
   1. Floors 1-4 keep today's foe count (50% solo); on floors 5-9 a fight is solo only on a d4 of 1 (25%); from floor 10 a fight is never solo (at least 2 foes); from floor 20 at least 3.
   2. The same rng draws are used (the existing d4 and table roll); the depth rule reshapes the result, so no unrelated fixture reorders.
   3. A 200-seed bot readout before and after is recorded against the depth-20 unicorn / floor 5-7 average target, and any moved fixtures are declared and regenerated.
+  4. From floor 12, foe HP and hit climb on a steeper slope and the roster keeps escalating past today's level-5 tier cap, with slopes set by bot readouts.
+  5. From floor 12, foes increasingly resist or shake off Freeze, Stone, Doze and Weaken, so a control-lock rotation no longer carries a caster to depth 40.
 
 **Plans**: TBD
 

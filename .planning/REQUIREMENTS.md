@@ -26,6 +26,8 @@
 - [ ] **RULES-14**: Bubble is no longer a bigger Shield. It fully reflects the NEXT blow that would hit the caster back at the attacker (the caster takes none), then pops, leaving a small soak pool (about 25 hp; final value set in plan) for the rest of that round. Shield keeps its 50 hp / 5 rounds. (user, 2026-09-25; todo 2026-09-25 bubble-reflects-the-next-attack)
 - [ ] **RULES-15**: A new day (making camp, or every 100 squares) refills spell books ONLY when the party eats. With too few rations nobody's book refills, and the Oracle and rail say why ("You need a good night's sleep"). The per-20-squares trickle is unchanged. (user, 2026-09-25; todo 2026-09-25 no-rations-no-spell-recovery)
 - [ ] **RULES-16**: The number of foes grows with depth. Floors 1-4 keep today's 50% solo fights; floors 5-9 are solo only on a d4 of 1; from floor 10 a fight has at least 2 foes, and from floor 20 at least 3. The existing draws are kept, and a before/after 200-seed readout is taken against the depth-20 target. (user, 2026-09-25: a Troll Summoner on floor 23 kept getting solo fights; todo 2026-09-25 deep-floor-solo-fights)
+- [ ] **RULES-17**: Deep floors keep getting harder. From floor 12, foe HP and hit scale climb on a steeper second slope, and the foe roster keeps escalating past today's level-5 cap (a higher cap or elite variants). The slopes are set by 200-seed bot readouts against the depth-20 unicorn / floor 5-7 average target. (user, 2026-09-25: a friend's Sorcerer at depth 42 meets ~14 hp foes; todo 2026-09-25 deep-floors-barely-get-harder)
+- [ ] **RULES-18**: Control spells lose their lock at depth. From floor 12, foes increasingly resist or shake off Freeze, Stone, Doze, Weaken and similar control (a depth-scaled roll-high resistance, with capped durations if needed), so a freeze-lock rotation can't carry a caster to depth 40. (user, 2026-09-25; same todo)
 
 ### Roll direction & modifier honesty (ROLL) — user, 2026-09-24
 
@@ -152,6 +154,8 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | RULES-10 | Phase 75.1 | Pending |
 | RULES-11 | Phase 75.2 | Pending |
 | RULES-16 | Phase 75.3 | Pending |
+| RULES-17 | Phase 75.3 | Pending |
+| RULES-18 | Phase 75.3 | Pending |
 | DARK-01 | Phase 76 | Pending |
 | DARK-02 | Phase 76 | Pending |
 | SAV-06 | Phase 76 | Pending |
