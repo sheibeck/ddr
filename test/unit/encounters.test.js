@@ -209,9 +209,12 @@ test("openChest: RULE-01 — a higher-Intelligence character opens a borderline 
   // a roll of 9 (9 > 8) fails, matching the pre-RULE-01 baseline exactly.
   const lowIntel = fixedState({ c: { intel: 5 } });
   const lowEvents = openChest(lowIntel, fakeRng([9]), []);
+  // Phase 73 (ROLL-05): faces=8 -> atLeast = 20+1-8 = 13; raw 9 mirrors to
+  // roll = 20+1-9 = 12 (12 < 13 still fails, matching the pre-mirror raw
+  // 9 > need 8).
   assert.ok(
-    lowEvents.some((e) => e.type === "chestLockRolled" && e.need === 8 && e.roll === 9 && e.opened === false),
-    "low intel: need stays 8, the same borderline roll of 9 still fails"
+    lowEvents.some((e) => e.type === "chestLockRolled" && e.atLeast === 13 && e.roll === 12 && e.opened === false),
+    "low intel: atLeast stays 13 (faces 8), the same borderline roll still fails"
   );
   assert.ok(lowEvents.some((e) => e.type === "chestLocked"));
   assert.equal(lowIntel.c.gold, 50, "untouched — the chest never opened");
@@ -223,9 +226,12 @@ test("openChest: RULE-01 — a higher-Intelligence character opens a borderline 
   // fixture above, proving the intel bonus changed only the threshold.
   const highIntel = fixedState({ c: { intel: 20 } });
   const highEvents = openChest(highIntel, fakeRng([9, 1, 2, 7, 8, 1]), []);
+  // Phase 73 (ROLL-05): faces=10 -> atLeast = 20+1-10 = 11; the SAME raw 9
+  // mirrors to roll = 12 (12 >= 11 now succeeds, matching the pre-mirror
+  // raw 9 <= need 10).
   assert.ok(
-    highEvents.some((e) => e.type === "chestLockRolled" && e.need === 10 && e.roll === 9 && e.opened === true),
-    "high intel: need rises to 10, the identical roll of 9 now succeeds"
+    highEvents.some((e) => e.type === "chestLockRolled" && e.atLeast === 11 && e.roll === 12 && e.opened === true),
+    "high intel: atLeast falls to 11 (faces 10), the identical roll now succeeds"
   );
   assert.ok(highEvents.some((e) => e.type === "chestOpened"));
   assert.equal(highIntel.c.gold, 120, "50 starting + 70 chest gold — the chest opened and paid out");

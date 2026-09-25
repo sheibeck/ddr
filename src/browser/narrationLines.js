@@ -790,9 +790,10 @@ function parleyChain(events, consumed) {
 
 /**
  * chestChain(events, consumed) — `chestLockRolled` + (`chestOpened` |
- * `chestLocked`) fold into ONE line: the outcome's own text plus
- * `(${roll} vs ${need})`. A Pilfer's roll-free `chestOpened` (reason
- * "pilfer") has no preceding `chestLockRolled` and keeps its own builder.
+ * `chestLocked`) fold into ONE line: the outcome's own text plus the
+ * roll-high triple via rollVsText, `(${roll} vs ${lo}–${hi})`. A Pilfer's
+ * roll-free `chestOpened` (reason "pilfer") has no preceding
+ * `chestLockRolled` and keeps its own builder.
  */
 function chestChain(events, consumed) {
   const built = [];
@@ -805,7 +806,7 @@ function chestChain(events, consumed) {
         consumed.add(i);
         consumed.add(j);
         const b = LINE_FOR[oe.type](oe);
-        built.push({ text: `${b.text} (${e.roll} vs ${e.need})`, tone: b.tone, priority: b.priority, idx: i });
+        built.push({ text: `${b.text} (${rollVsText(e.roll, e.atLeast, e.dieN)})`, tone: b.tone, priority: b.priority, idx: i });
         break;
       }
       if (oe.type === "chestLockRolled") break;
@@ -1555,7 +1556,8 @@ export const LINE_FOR = {
   // is already a full prose sentence (engine/encounters.js#tableFour).
   tableFour: (e) => ({ text: e?.result ?? "Something happens.", tone: "beat", priority: PRIORITY.other }),
   tableFourNoop: (e) => ({ text: e?.result ?? "Nothing much happens.", tone: "beat", priority: PRIORITY.other }),
-  trapAvoided: (e) => ({ text: `You clock it early (${e?.roll ?? "?"} vs ${e?.need ?? "?"}).`, tone: "hit", priority: PRIORITY.other }),
+  // Phase 73 (ROLL-05): the roll-high triple, via rollVsText.
+  trapAvoided: (e) => ({ text: `You clock it early (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}).`, tone: "hit", priority: PRIORITY.other }),
   trapDisarmed: () => ({ text: "Pilfer: trap disarmed.", tone: "hit", priority: PRIORITY.feature }),
   trapDoubled: () => ({ text: "Cat Burglar: the trap hits twice as hard.", tone: "hurt", priority: PRIORITY.feature }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -1567,7 +1569,8 @@ export const LINE_FOR = {
     tone: "hit",
     priority: PRIORITY.feature,
   }),
-  chestLockRolled: (e) => ({ text: `Lock: ${e?.roll ?? "?"} vs ${e?.need ?? "?"}`, tone: "beat", priority: PRIORITY.other }),
+  // Phase 73 (ROLL-05): the roll-high triple, via rollVsText.
+  chestLockRolled: (e) => ({ text: `Lock: ${rollVsText(e?.roll, e?.atLeast, e?.dieN)}`, tone: "beat", priority: PRIORITY.other }),
   chestLocked: () => ({ text: "The lock wins this round.", tone: "miss", priority: PRIORITY.other }),
   scrollFound: () => ({ text: "A scroll, tucked in with the loot.", tone: "hit", priority: PRIORITY.other }),
   foodFound: (e) => ({ text: `${e?.name ?? "Food"} (+${e?.wp ?? 0} hp).`, tone: "hit", priority: PRIORITY.other }),

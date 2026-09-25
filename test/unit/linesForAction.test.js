@@ -518,12 +518,12 @@ test("chains: parleyRolled + parleyFailed folds the roll into one line", () => {
 
 test("chains: chestLockRolled + chestOpened folds the roll into one line", () => {
   const events = [
-    { type: "chestLockRolled", roll: 4, need: 8, dieN: 10, picks: false, opened: true },
+    { type: "chestLockRolled", roll: 4, atLeast: 8, dieN: 10, picks: false, opened: true },
     { type: "chestOpened" },
   ];
   const out = linesForAction("openChest", events, {});
   assert.equal(out.length, 1);
-  assert.ok(out[0].text.includes("(4 vs 8)"));
+  assert.ok(out[0].text.includes("(4 vs 8–10)"));
 });
 
 test("chains: a Pilfer's roll-free chestOpened keeps its own line", () => {
