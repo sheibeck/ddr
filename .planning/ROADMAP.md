@@ -66,7 +66,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. The bestiary `critOn: 1` claim (Skeleton, "a 1 shatters it") is either wired into the engine or removed from the text.
   5. Every fixture the fixes move is measured, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated — nothing else moves.
 
-**Plans**: 2/7 plans executed
+**Plans**: 4/7 plans executed
 
 Plans:
 **Wave 1**
@@ -76,8 +76,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 72-03-PLAN.md — Non-combat direction test rows: soak, thrown, resist, initiative, flee, parley, traps, locks, climbs/leaps, cure, wake, drops (wave 2)
-- [ ] 72-04-PLAN.md — Fix (d) Thief evasion sign + (a) the insult is the last term on the member branch; Smoke text; measured-zero declaration + ROLL-01 guard (wave 2)
+- [x] 72-03-PLAN.md — Non-combat direction test rows: soak, thrown, resist, initiative, flee, parley, traps, locks, climbs/leaps, cure, wake, drops (wave 2)
+- [x] 72-04-PLAN.md — Fix (d) Thief evasion sign + (a) the insult is the last term on the member branch; Smoke text; measured-zero declaration + ROLL-01 guard (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -267,7 +267,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 2/7 | In Progress|  |
+| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 4/7 | In Progress|  |
 | 73. Engine Roll-High Mirror | v2.1 | 0/– | Not started | - |
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
