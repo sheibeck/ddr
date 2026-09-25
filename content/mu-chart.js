@@ -28,9 +28,12 @@ export const MU_CHART = {
     offense: 0, protection: 3, healing: 4, divination: 0, special: null, illusion: null,
     gate: { divination: 3 },
   },
+  // RULES-03, Phase 75, user 2026-09-25: the offense gate is removed — a
+  // level-1 Summoner rolls and casts offense normally. The trade-off is the
+  // summon backfire (one Summon in eight turns turns on you), and, from
+  // 75-10, halved healing.
   "Summoner": {
     offense: 0, protection: 2, healing: 0, divination: 4, special: 1, illusion: null,
-    gate: { offense: 3 },
   },
   "Apprentice": {
     offense: 0, protection: 0, healing: 0, divination: 0, special: 0, illusion: 0,

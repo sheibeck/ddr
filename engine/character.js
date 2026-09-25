@@ -290,6 +290,29 @@ export function ensureAbilities(c, base) {
 }
 
 /**
+ * grantableAt(sub, sp, level) — RULES-03 (Phase 75, user 2026-09-25):
+ * grant-time legality. A book must never be HANDED a spell whose school is
+ * still closed at the level it is granted — `canLearn(sub, sp)` (the
+ * subclass may ever learn this school at all) AND `schoolGate(sub, sp.s) <=
+ * level` (the school is already open at this level). This is deliberately
+ * NARROWER than "castable": it says nothing about the spell's own printed
+ * LEVEL (a book may still hold a higher-level spell, as canon does — the
+ * must-have grants (Summon lvl 2, Fireball lvl 3, Major Heal lvl 3) are
+ * above level 1 by design) — the cast-time level lock stays entirely inside
+ * engine/derived.js#canCast.
+ *
+ * Used on all four grant paths: rollGrimoire's low/high walks below (this
+ * file), checkLevel's Sorcerer gain and Apprentice reveal (this file), and
+ * engine/encounters.js#findGrimoire. Every call site SKIPS a non-grantable
+ * spell WHILE WALKING an already-shuffled list — it never re-rolls, re-
+ * shuffles, or reorders a draw, so the ZERO-DRAW GUARANTEE the rollGrimoire
+ * JSDoc below documents is untouched by this filter.
+ */
+export function grantableAt(sub, sp, level) {
+  return canLearn(sub, sp) && schoolGate(sub, sp.s) <= level;
+}
+
+/**
  * rollGrimoire(rng, sub) — d10 spells (minimum 4) drawn from what the subclass
  * may ever learn, with the subclass "must-have" grants, the first-day
  * usability top-up, and a guaranteed day-one DAMAGE-dealing spell. Ports
@@ -308,8 +331,15 @@ export function ensureAbilities(c, base) {
  * test/unit/chargen-rng-pin.test.js (the pinned pre-Phase-23 order, still
  * green) and test/unit/day-one-damage.test.js (the Phase 40 zero-draw proof
  * + the 8-sub day-one damage guarantee).
+ *
+ * RULES-03 (Phase 75, user 2026-09-25): `level` (default 1, the chargen
+ * caller's own starting level) is threaded into the low/high walks below via
+ * `grantableAt(sub, sp, level)` — a spell whose school is still gated above
+ * `level` is SKIPPED while walking the already-shuffled `low`/`high` lists,
+ * never re-rolled or re-shuffled, so this filter adds and reorders no draw
+ * (see grantableAt's own JSDoc above).
  */
-export function rollGrimoire(rng, sub) {
+export function rollGrimoire(rng, sub, level = 1) {
   const pool = SPELLS.filter((sp) => canLearn(sub, sp));
   // Phase 40 (SPELL-04): a row flagged `roll: "derived"` (today, only
   // Lesser Summon) never enters the main-rng-shuffled `rolled` pools below —
@@ -337,8 +367,12 @@ export function rollGrimoire(rng, sub) {
   }
 
   const book = [];
-  for (const sp of low) { if (book.length < Math.min(n, 6)) book.push(sp.n); }
-  for (const sp of high) { if (book.length < n) book.push(sp.n); }
+  // RULES-03 (Phase 75): a spell not grantable at `level` (its school gate
+  // still closed) is skipped while walking the already-shuffled list — the
+  // walk's LENGTH target (n / min(n,6)) and every other spell's relative
+  // order are unaffected; only a gated spell is left out of the book.
+  for (const sp of low) { if (book.length >= Math.min(n, 6)) break; if (grantableAt(sub, sp, level)) book.push(sp.n); }
+  for (const sp of high) { if (book.length >= n) break; if (grantableAt(sub, sp, level)) book.push(sp.n); }
   if (sub === "Cleric") for (const n2 of ["Heal", "Major Heal"]) if (!book.includes(n2)) book.push(n2);
   if (sub === "Illusionist") for (const n2 of ["Mirror Self", "Phantom Host"]) if (!book.includes(n2)) book.push(n2);
   if (sub === "Summoner" && !book.includes("Summon")) book.push("Summon");
@@ -346,8 +380,9 @@ export function rollGrimoire(rng, sub) {
   // "Give the summoner a level 1 summon" — a deterministic grant, zero
   // draws, mirroring the Summon grant directly above. Retires the Phase 23
   // SPELL_LEVEL_OVERRIDES.Summoner entry (content/spell-level-overrides.js);
-  // Summon itself is spell level 2 for the Summoner again (its offense gate
-  // stays 3 — untouched, per the user's own point).
+  // Summon itself is spell level 2 for the Summoner again. RULES-03 (Phase
+  // 75): the Summoner's offense gate is retired entirely (content/mu-chart.js)
+  // — this must-have grant's own school (special) was never gated anyway.
   if (sub === "Summoner" && !book.includes("Lesser Summon")) book.push("Lesser Summon");
   if (sub === "Sorcerer") for (const n2 of ["Freeze", "Fireball"]) if (!book.includes(n2)) book.push(n2);
   // you must be able to actually do something on your first day
@@ -648,12 +683,26 @@ export function checkLevel(state, rng, events = []) {
         ns = CLASSES["Magic User"].subs[rng.d(8) - 1]; // roll:selection
       } while (ns === "Apprentice");
       c.sub = ns;
-      c.grimoire = c.grimoire.filter((n2) => canLearn(ns, SPELLS.find((sp) => sp.n === n2) || { s: "offense" }));
+      // RULES-03 (Phase 75): the level-3 reveal drops any book spell whose
+      // school is gated above the hero's NEW level for its NEW sub (e.g. a
+      // Warlock's protection gate 4, a Sorcerer's healing gate 4, a Court
+      // Mage's divination gate 4) — grantableAt, not canLearn alone, so a
+      // revealed sub never keeps a spell it could not have been GRANTED at
+      // this level. It can be learned again later, once the school opens.
+      c.grimoire = c.grimoire.filter((n2) => grantableAt(ns, SPELLS.find((sp) => sp.n === n2) || { s: "offense" }, c.level));
     }
     if (c.sub === "Sorcerer") {
       const fresh = SPELLS.filter((sp) => canLearn("Sorcerer", sp) && !c.grimoire.includes(sp.n));
       rng.shuffle(fresh);
-      const got = fresh.slice(0, 2).map((sp) => sp.n);
+      // RULES-03 (Phase 75): walk the SAME already-shuffled `fresh` list and
+      // take the first two spells GRANTABLE at the new level (Sorcerer's own
+      // healing gate is 4) — the shuffle itself is unchanged (same pool,
+      // same length, same draw count), only which entries are ACCEPTED.
+      const got = [];
+      for (const sp of fresh) {
+        if (got.length >= 2) break;
+        if (grantableAt("Sorcerer", sp, c.level)) got.push(sp.n);
+      }
       c.grimoire.push(...got);
       if (rng.d(8) === 1) { // roll:mishap-on-1
         const nonFire = c.grimoire.filter((n2) => !["Fireball", "Freeze", "Lightning"].includes(n2));
