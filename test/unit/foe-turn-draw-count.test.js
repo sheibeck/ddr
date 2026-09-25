@@ -288,7 +288,14 @@ const FULL_FIGHTS = [
   // attacks), outcome unchanged ("won"). A legitimate roster-shape move
   // under this plan's own engine gate ("everything that moves is
   // declared"), not a regression.
-  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek", "Shriek"], totalDraws: 88, attacks: 12, outcome: "won" },
+  // Phase 72 (ROLL-01 (b), 2026-09-24): re-measured live — this seed's hero
+  // is a Fridgian, and the frenzy second swing's need is no longer the
+  // canon hard-set 3; it is the normal to-hit narrowed by one (dark cap
+  // honoured). The frenzy swing now lands differently across the fight,
+  // which resolves it in fewer rounds: totalDraws 88 -> 70, attacks 12 -> 9
+  // (roster and outcome unchanged — this is a declared canon divergence's
+  // downstream trajectory change, not a bug).
+  { seed: 17, forced: "Beasts", foeNames: ["Viper", "Shriek", "Shriek"], totalDraws: 70, attacks: 9, outcome: "won" },
   // Phase 51 (INIT-01, 2026-09-20): re-measured live — 52/8 -> 29/5, same
   // rng-stream-reshuffle cause as every other row here.
   { seed: 303, forced: "Humans", foeNames: ["Ned", "Ned"], totalDraws: 29, attacks: 5, outcome: "won" },
@@ -629,7 +636,11 @@ for (const row of GATED_DRAWS) {
 // 12/36/88/29/21/45/38 -> 12/36/88/29/21/83/38 (seed 17's total is
 // unchanged at 88; only seed 127 moves, 45 -> 83 — see FULL_FIGHTS' own
 // per-row comments).
-test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/88/29/21/83/38) are measured-current and no fixture-roster creature carries a kit", () => {
+//
+// Phase 72 (ROLL-01 (b), 2026-09-24): re-measured live — only seed 17 (the
+// one Fridgian hero in this table) moves, 88 -> 70 — see FULL_FIGHTS' own
+// per-row comment above.
+test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/70/29/21/83/38) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);

@@ -13,12 +13,12 @@
 // not identity) — every row that needs a specific dial value applies it
 // itself via setDialsForTuning and restores the shipped DIALS afterward.
 //
-// Four rows are PENDING (node:test's `todo` option, naming the fixing plan):
-// the party-member insult-ordering bug (72-04), the Thief evasion sign
-// inversion (72-04), the Fridgian frenzy second-swing math (72-05, two
-// rows), and the Skeleton shatter mechanic (72-06, six rows split from the
-// plan's five listed ids — the sixth pins the "even on your last life"
-// case). Every other row passes today.
+// One bug group remains PENDING (node:test's `todo` option, naming the
+// fixing plan): the Skeleton shatter mechanic (72-06, six rows split from
+// the plan's five listed ids — the sixth pins the "even on your last life"
+// case). The party-member insult-ordering bug and the Thief evasion sign
+// inversion (both 72-04) and the Fridgian frenzy second-swing math (72-05,
+// two rows) are now green. Every other row passes today.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -505,7 +505,6 @@ test('[hero-strike:acuteness] a live Potion of Acuteness effect ("strike on a d6
 
 test(
   '[hero-strike:frenzy-second-swing] "your normal to-hit, one worse" — the actual frenzy swing only, engine/combat.js#playerStrike ~L611 (72-05 replaces the canon hard-set)',
-  { todo: "fixed by 72-05" },
   () => {
     // Draw 0 = the frenzy trigger (a d8 <= 5 fires it); fixed at face 1 (always
     // fires). Draw 1 = swing 1's strike die, filled to its OWN worst face (a
@@ -525,7 +524,6 @@ test(
 
 test(
   "[hero-strike:frenzy-dark-cap] the same frenzy swing in the dark — never better than the dark-capped normal swing",
-  { todo: "fixed by 72-05" },
   () => {
     const frenziedDark = () => {
       const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Fridgian" }), [NEUTRAL_FOE()]));

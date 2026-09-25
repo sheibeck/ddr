@@ -36,6 +36,10 @@ import {
 } from "../../engine/combat.js";
 import { weaponDamage } from "../../engine/derived.js";
 import { setIdentityDials } from "./harness/identityDials.js";
+// Phase 72-05 (ROLL-01 (b)): the shared odds harness, reused here for the
+// three outcome-based frenzy-swing tests below — never for anything else in
+// this file, which keeps its own fixedState/fakeRng scaffolding.
+import { faceOdds, heroState, foeFrom, inCombat } from "./harness/rollOdds.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
 // this file's own pins are canon-mechanic numbers written before the fit
@@ -558,7 +562,8 @@ test("playerStrike: Fridgian frenzy grants a second wild swing that always targe
   // could roll a d10 <= 5 against a dead foe here and waste the whole round
   // ("frenzyWasted") — that branch and its rng.d(10) draw are both gone.
   // frenzy roll d8=5 (<=5, triggers); both swings target the live Target and
-  // miss (need 5 for the first swing, need 3 for the frenzy swing — 20 beats
+  // miss (need 5 for the first swing; the frenzy swing's need is the normal
+  // need narrowed by one (Phase 72 ROLL-01 (b)), so need 4 here — 20 beats
   // both); the still-alive Target swings back and misses (foeDie 20 vs need
   // 5). Phase 51 (INIT-01): a Fridgian's `slow` race flag no longer forces a
   // SECOND foeTurn this call — initiative is rolled once, at fight()'s Fight!
@@ -584,6 +589,78 @@ test("playerStrike: Fridgian frenzy grants a second wild swing that always targe
     /sequence exhausted/,
     "the fakeRng is fully consumed — the whiff draw is gone, not merely unused",
   );
+});
+
+// --- Phase 72 ROLL-01 (b): frenzy's second swing, outcome-based (72-05) ----
+//
+// Three odds rows, driven through the shared harness (test/unit/harness/
+// rollOdds.js) rather than fakeRng, so the claim is proven on SUCCESS ODDS
+// (wins/N over the probed die's own faces), never on a hand-computed need
+// number — matching test/unit/rollDirection.test.js's own frenzy rows,
+// which these mirror as a second, independent proof.
+
+/** withClubHarness(state) — pins the hero's weapon to Club and clears
+ * skills/spell charges, mirroring test/unit/rollDirection.test.js's own
+ * withClub helper, so the frenzy-swing comparison below isn't also a silent
+ * weapon/skill comparison. */
+function withClubHarness(state) {
+  state.c.weapon = "Club";
+  state.c.magicWpn = 0;
+  state.c.prof = 0;
+  state.c.spellsUsed = 999;
+  state.c.skills = {};
+  return state;
+}
+
+/** landedHarness(state, rng) — the hero's strike connected (mirrors
+ * test/unit/rollDirection.test.js's own `landed` helper). */
+function landedHarness(state, rng) {
+  const events = [];
+  playerStrike(state, rng, events);
+  return events.some((e) => e.type === "struck" || e.type === "foeArmorSoaked");
+}
+
+// Ned (Humans tier 1): no sp.atk/abilities kit, the plainest single-swing foe.
+const harnessNeutralFoe = () => foeFrom("Humans", 1, "Ned");
+
+// Draw 0 = the frenzy trigger (d8), fixed at face 1 so it always fires. Draw
+// 1 = swing 1's strike die, filled to its own worst face (a guaranteed
+// miss) so swing 2 is reached. Draw 2 = swing 2, the row's own probed draw.
+const frenzyOpts = { isProbe: (i) => i === 2, fill: (i, sides) => (i === 0 ? 1 : sides) };
+
+test("[ROLL-01 (b)] frenzy second swing, lit Fighter: swing 2 wins = normal wins - 1", () => {
+  const frenzied = () => withClubHarness(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Fridgian" }), [harnessNeutralFoe()]));
+  const plain = () => withClubHarness(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [harnessNeutralFoe()]));
+  const swing2 = faceOdds((rng) => landedHarness(frenzied(), rng), { ...frenzyOpts, label: "ROLL-01 (b) frenzy lit Fighter swing 2" });
+  const normal = faceOdds((rng) => landedHarness(plain(), rng), { label: "ROLL-01 (b) frenzy lit Fighter normal" });
+  assert.equal(swing2.n, normal.n, "[ROLL-01 (b)] the frenzy swing rolls the hero's own normal die");
+  assert.equal(swing2.wins, normal.wins - 1, "[ROLL-01 (b)] a fighter's frenzy swing is exactly one face worse than normal");
+});
+
+test("[ROLL-01 (b)] frenzy second swing, lit Magic User: swing 2 wins = normal wins - 1 (canon had it EQUAL)", () => {
+  const frenzied = () => withClubHarness(inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Fridgian" }), [harnessNeutralFoe()]));
+  const plain = () => withClubHarness(inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Human" }), [harnessNeutralFoe()]));
+  const swing2 = faceOdds((rng) => landedHarness(frenzied(), rng), { ...frenzyOpts, label: "ROLL-01 (b) frenzy lit MU swing 2" });
+  const normal = faceOdds((rng) => landedHarness(plain(), rng), { label: "ROLL-01 (b) frenzy lit MU normal" });
+  assert.equal(swing2.n, normal.n, "[ROLL-01 (b)] the frenzy swing rolls the hero's own normal die");
+  assert.equal(swing2.wins, normal.wins - 1, "[ROLL-01 (b)] a magic user's frenzy swing is exactly one face worse than normal (canon left it equal)");
+});
+
+test("[ROLL-01 (b)] frenzy second swing, dark without Night Vision: never above the dark-capped normal swing, never below one face", () => {
+  const frenziedDark = () => {
+    const s = withClubHarness(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Fridgian" }), [harnessNeutralFoe()]));
+    s.floor.g[s.floor.py][s.floor.px].dark = true;
+    return s;
+  };
+  const plainDark = () => {
+    const s = withClubHarness(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [harnessNeutralFoe()]));
+    s.floor.g[s.floor.py][s.floor.px].dark = true;
+    return s;
+  };
+  const swing2 = faceOdds((rng) => landedHarness(frenziedDark(), rng), { ...frenzyOpts, label: "ROLL-01 (b) frenzy dark swing 2" });
+  const normal = faceOdds((rng) => landedHarness(plainDark(), rng), { label: "ROLL-01 (b) frenzy dark normal" });
+  assert.ok(swing2.wins <= normal.wins, "[ROLL-01 (b)] the frenzy swing in the dark is never above the dark-capped normal swing");
+  assert.ok(swing2.wins >= 1, "[ROLL-01 (b)] the frenzy swing never drops below the single best face against a touchable foe");
 });
 
 // audit-bugs (2026-09-09, E7): a Con Artist's opening blow is a deliberate
