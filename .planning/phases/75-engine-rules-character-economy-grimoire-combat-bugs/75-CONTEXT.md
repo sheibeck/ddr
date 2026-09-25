@@ -93,6 +93,12 @@ Character creation, HP growth, spell legality, initiative, traps, ailments and a
 - A declared canon-era rules change: measure, declare and regenerate the fixtures where Bubble was cast, and take a bot readout. Update the spell text, `docs/SPELLS.md` and the Grimoire.
 - Check the shared ward code with Shield, member casts, a fumbled Bubble scroll landing on a foe (RULES-10), and ward-ignoring foe abilities.
 
+### No rations, no spell recovery — RULES-15 (user, 2026-09-25; todo `2026-09-25-no-rations-no-spell-recovery`)
+- `engine/movement.js#newDay` refills the hero's (~L634) and members' (~L655) books BEFORE the rations check.
+- Move both refills INSIDE the fed branch (`c.rations >= eats`), beside the rest-heal. An unfed day refills nothing and narrates it ("No supper, no sleep worth the name. Your book stays empty.").
+- This applies to camping and the automatic 100-square day alike. The 20-square Magic User trickle is unchanged.
+- A declared canon divergence: measure, declare and regenerate the fixtures, and take a bot readout (harder for starving casters). Update the camp copy and docs.
+
 ### Engine gate (standing)
 - Pure and deterministic. New rolls come from a derived stream.
 - Measure moved fixtures, declare each in `test/parity/FIXTURE-INVENTORY.md`, and regenerate only those. Carve new serialized fields out of the three `*Comparable()` functions.
