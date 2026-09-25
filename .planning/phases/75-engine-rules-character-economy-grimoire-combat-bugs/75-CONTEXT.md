@@ -35,6 +35,7 @@ Character creation, HP growth, spell legality, initiative, traps, ailments and a
   - The cache stays the best single find (≈ a good chest) and never buys out the store.
   - No new rng draw.
   - Measure and declare any moved fixture (`action-script.encounters.json`/economy), and record before/after in the difficulty ledger.
+- **SUMMONER GATE REMOVED (user, 2026-09-25; todo `2026-09-25-summoner-loses-its-offense-gate-…`):** delete `MU_CHART.Summoner.gate = { offense: 3 }` (`content/mu-chart.js:33`). A level-1 Summoner can roll and cast offense spells; its disadvantage is now "summons may turn on you" (the blurb/footer is Phase 79's, generated from the chart). Measure, declare and regenerate any chargen/combat fixture this moves. The "level-1 Summoner rolls no offense spell" example below is SUPERSEDED; the legality rule applies to the six sub-classes that still have gates (Warlock, Sorcerer, Court Mage, Illusionist, Cleric, Apprentice).
 - **Grimoire legality (RULES-03):** never GRANT a spell the sub-class cannot cast at the level it is granted.
   - `rollGrimoire`, and every later learn path, skips/re-rolls picks whose school gate (`schoolGate(sub, school) > level`) or spell level exceeds the hero's level. A level-1 Summoner gets no offense spell.
   - If the re-roll would reorder chargen draws, take it from a derived stream (`makeRng(hash(seed, "grimoireGate", …))`), and measure and declare the chargen fixture mover. `test/parity/prototype-master.js.txt` is never edited.

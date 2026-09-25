@@ -50,6 +50,9 @@ Everything the player reads during a fight is legible, correctly ordered and hon
 - Chip numbers and signs use Phase 74's formatter (player-view signs; ranges like "18–20" where a chip states odds).
 
 ### Readability fixes — CMBUI-07..12 (user accepted 2026-09-25)
+- **User report 2026-09-25 (todo `2026-09-25-summoner-loses-its-offense-gate-…`):**
+  - A cast Lesser Summon's ally does NOT show in the party list (YOUR LOT). Root-cause it first (the view model likely reads `state.party` only, not the combat ally). YOUR LOT must list EVERY combatant on the hero's side, including a summoned ally, with its HP, remaining rounds and effect chips.
+  - Lesser Summon (lvl 1, SPELLS row 32) must list with the level-1 spells: covered by the CMBUI-08 sort, pinned by a test.
 - **CMBUI-07/08:**
   - Every combat submenu row (spells, abilities, items, social) GROWS to fit its full label and description on the Pixel 7, with no clipping and no truncation. Today `.cb-row-label` has `overflow:hidden` and the list is capped at `max-height 206px`.
   - Spell rows sort by spell level ascending, then A–Z. (Level-locked spells are already hidden by Phase 75's RULES-04.)

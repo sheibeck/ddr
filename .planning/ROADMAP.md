@@ -133,7 +133,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
   1. Pulling multiple Table-4 "+HP" dots grows a character's max HP linearly, not compounding (×1.6 each time), and the toll row takes its share from that same non-inflated pool.
-  2. A red-dot wilmst cache pays a bounded cut (~100 × depth) instead of buying out the store, a newly rolled Summoner's grimoire holds no spell from a school gated above its level, and the combat SPELLS menu hides (never just greys) anything level- or school-locked.
+  2. A red-dot wilmst cache pays a bounded cut (~100 × depth) instead of buying out the store, the Summoner's offense gate is gone (a level-1 Summoner casts offense; amended 2026-09-25) while no gated sub-class's grimoire holds a spell from a school gated above its level, and the combat SPELLS menu hides (never just greys) anything level- or school-locked.
   3. A hero with Sense Presence active always wins initiative outright, never sees "You cannot see what you are fighting," and can land crits in the dark.
   4. A trap the Oracle reports as "−1 HP" can never kill the hero — the fix follows an explicit `/gsd-debug` root-cause session before it lands, not a guess.
   5. An ailment roll of 5–6 always narrates what it gives (canon: a phobia, a disease of the mind — user ruling 2026-09-25), and replacing a destroyed armor piece with a new one always tells the player the old piece was destroyed and is gone.
