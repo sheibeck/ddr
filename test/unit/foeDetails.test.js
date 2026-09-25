@@ -29,6 +29,7 @@ import { BESTIARY, ENC_TYPES } from "../../content/bestiary.js";
 import { FOE_ABILITIES } from "../../content/foe-abilities.js";
 import { foeLevelBase } from "../../engine/combat.js";
 import { difficultyCurve, foeHitFor } from "../../engine/difficulty.js";
+import { newRun } from "../../engine/engine.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 
 // The hp-not-wp guard's own regex, verbatim (test/unit/hp-not-wp.test.js).
@@ -82,6 +83,32 @@ function pick(type, name) {
     if (p) return foeFrom(p, type, t);
   }
   throw new Error(`no ${name} in ${type}`);
+}
+
+/**
+ * fullHeroState(foe, over) — Phase 74 (ROLL-02/03): a real newRun(1) state
+ * with race/cls/sub/level/weapon overridden to a level-1 Human Fighter on a
+ * Club (the same pattern test/unit/characterSheetViewModel.test.js's 74-04
+ * specifics test uses), holding ONE live foe in combat.foes. `over.c` merges
+ * onto the class/race overrides; `over.floor` merges onto the real floor
+ * object (never replaces it — heroHitOddsVs/foeHitOddsVs read state.floor.g
+ * via inDark, so a floor override must keep the grid). `over.combat` merges
+ * onto the { foes, type, round, target } combat shape. Every other GameState
+ * field (timers, magicWpn, etc.) is newRun's own genuine output, unlike
+ * stateWith's minimal `c` (which deliberately has no race/cls, so the odds
+ * line quietly drops out there).
+ */
+function fullHeroState(foe, over = {}) {
+  const { c: cOver, floor: floorOver, combat: combatOver, ...rest } = over;
+  const state = newRun(1);
+  Object.assign(state.c, { race: "Human", cls: "Fighter", sub: "Soldier", level: 1, weapon: "Club", ...cOver });
+  // newRun's own c.timers is undefined until a timer is first set; give it a
+  // real object so a test can write state.c.timers["spell:weaken"] directly.
+  if (!state.c.timers || typeof state.c.timers !== "object") state.c.timers = {};
+  if (floorOver) Object.assign(state.floor, floorOver);
+  state.combat = { foes: [foe], type: foe.type, round: 1, target: 0, ...combatOver };
+  Object.assign(state, rest);
+  return state;
 }
 
 const texts = (card) => card.lines.map((l) => l.text);
@@ -152,6 +179,22 @@ test("(b) line order: family, HP, defence, attack, abilities, resistances, effec
   assert.ok(t[5].startsWith("INT 8"), t[5]);
   assert.equal(t[6], FOE_DETAILS_COPY.noEffects);
   assert.equal(t[7], FOE_DETAILS_COPY.flavour.Humans);
+
+  // Phase 74 (ROLL-02): a full hero adds the odds line right after the
+  // defence line, before the attack line — the rest of the D-09 order holds.
+  const fullState = fullHeroState(pick("Humans", "Krupke"), { floor: { depth: 4 } });
+  fullState.combat.foes[0].wp = 11;
+  const ft = texts(foeDetailsCard(0, fullState));
+  assert.equal(ft.length, 9, ft.join(" | "));
+  assert.equal(ft[0], "HUMANS · SIZE H");
+  assert.equal(ft[1], `HP 11 / ${fullState.combat.foes[0].maxWP}`);
+  assert.ok(ft[2].includes("AR 12"), ft[2]);
+  assert.ok(ft[3].startsWith("You hit it on") && ft[3].includes("it hits you on"), ft[3]);
+  assert.ok(ft[4].includes("1 swing"), ft[4]);
+  assert.ok(ft[5].includes("Weaken") && ft[5].includes("Freeze"), ft[5]);
+  assert.ok(ft[6].startsWith("INT 8"), ft[6]);
+  assert.equal(ft[7], FOE_DETAILS_COPY.noEffects);
+  assert.equal(ft[8], FOE_DETAILS_COPY.flavour.Humans);
 });
 
 test("(b) the defence line is omitted when nothing applies; the default d6 and a flat 1 have ranges", () => {
@@ -171,9 +214,7 @@ test("(b) the defence line is omitted when nothing applies; the default d6 and a
   assert.ok(bt[2].includes(`${flat}–${flat}`) || bt[2].includes(`hits for ${flat} `), bt[2]);
 });
 
-test("(b) defence labels: to-hit, magic-only, dagger-only, half damage; strikesAs feeds the range", () => {
-  const zit = texts(foeDetailsCard(0, stateWith([pick("Beasts", "Zit")])));
-  assert.ok(zit[2].includes("4 or under"), zit[2]);
+test("(b) defence labels: magic-only, dagger-only, half damage; strikesAs feeds the range", () => {
   const ghost = texts(foeDetailsCard(0, stateWith([pick("Demons", "Ghost")])));
   assert.ok(ghost[2].includes(FOE_DETAILS_COPY.magicOnly), ghost[2]);
   const shadow = texts(foeDetailsCard(0, stateWith([pick("Magical", "Shadow")])));
@@ -187,6 +228,60 @@ test("(b) defence labels: to-hit, magic-only, dagger-only, half damage; strikesA
   const base = foeLevelBase(herman); // strikesAs 5 → 25
   assert.equal(base, 25);
   assert.ok(h.some((x) => x.includes(`${foeHitFor(base + 1, curve)}–${foeHitFor(base + 6, curve)}`)), h.join(" | "));
+});
+
+// ─── Phase 74 (ROLL-02/03): the two-way "right now" odds line ─────────────
+
+test("(Phase 74) a level-1 Human Fighter vs a plain foe reads both directions, right after HP (no defence line)", () => {
+  const ned = pick("Humans", "Ned");
+  const t = texts(foeDetailsCard(0, fullHeroState(ned)));
+  assert.equal(t[2], "You hit it on 16–20 (d20) · it hits you on 16–20 (d20)", t.join(" | "));
+});
+
+test("(Phase 74) a sp.toHit cap no longer has a static defence label; it becomes a real odds range instead", () => {
+  const zit = pick("Beasts", "Zit");
+  const minimal = texts(foeDetailsCard(0, stateWith([zit])));
+  assert.ok(!minimal.some((x) => /or under/.test(x)), minimal.join(" | "));
+  assert.ok(!minimal.some((x) => /You hit it|You cannot touch it/.test(x)), minimal.join(" | "));
+
+  const t = texts(foeDetailsCard(0, fullHeroState(pick("Beasts", "Zit"))));
+  // Zit's own bestiary level feeds ONLY the foe-side die (foeDie); the
+  // sp.toHit cap is entirely the hero's own side, pinned exactly here.
+  assert.ok(t[2].startsWith("You hit it on 17–20 (d20) · it hits you on "), t[2]);
+});
+
+test("(Phase 74) the foe side's odds carry the same signed modifiers as rollOdds.js: Sidestep + insulted, then Guard", () => {
+  const sidestepState = fullHeroState(pick("Humans", "Ned"), {
+    c: { timers: { "ability:sidestep": { phase: "effect", left: 2, cadence: "rounds" } } },
+    combat: { parleyInsulted: true },
+  });
+  const t = texts(foeDetailsCard(0, sidestepState));
+  assert.equal(t[2], "You hit it on 16–20 (d20) · it hits you on 17–20 (d20; Sidestep +2, insulted −1)", t.join(" | "));
+
+  const guardState = fullHeroState(pick("Humans", "Ned"), { c: { sub: "Guard" } });
+  const gt = texts(foeDetailsCard(0, guardState));
+  assert.equal(gt[2], "You hit it on 16–20 (d20) · it hits you on 17–20 (d20; Guard +1)", gt.join(" | "));
+});
+
+test("(Phase 74) a magicOnly foe with no magic weapon is untouchable; c.magicWpn makes it touchable", () => {
+  const ghost = pick("Demons", "Ghost");
+  const state = fullHeroState(ghost);
+  const t = texts(foeDetailsCard(0, state));
+  assert.ok(t[2].includes(FOE_DETAILS_COPY.magicOnly), t[2]);
+  assert.ok(t[3].startsWith(`${FOE_DETAILS_COPY.oddsUntouchable} · it hits you on`), t[3]);
+
+  const armed = fullHeroState(pick("Demons", "Ghost"), { c: { magicWpn: 1 } });
+  const at = texts(foeDetailsCard(0, armed));
+  assert.ok(at[3].startsWith("You hit it on"), at[3]);
+});
+
+test("(Phase 74) a never_melee foe's odds line has no 'it hits you' part", () => {
+  const drudge = pick("Magical", "Drudge");
+  const state = fullHeroState(drudge);
+  const t = texts(foeDetailsCard(0, state));
+  const oddsText = t.find((x) => x.startsWith("You hit it on") || x.startsWith(FOE_DETAILS_COPY.oddsUntouchable));
+  assert.ok(oddsText, t.join(" | "));
+  assert.ok(!oddsText.includes("it hits you"), oddsText);
 });
 
 test("(b) resistances: DAMAGE_MULTIPLIERS rows by type and by name, and kill-it-twice with lives left", () => {

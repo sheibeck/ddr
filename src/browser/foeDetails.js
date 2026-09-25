@@ -8,10 +8,19 @@
 // card live while the fight goes on — D-10/R-15).
 //
 // D-09, lines in this order (each { text, roll: null }):
-//   1. family and size            5. abilities (FOE_ABILITIES names) + the note
-//   2. HP cur / max, or DOWN      6. INT, DAMAGE_MULTIPLIERS rows, lives left
-//   3. defence (omitted if none)  7. current effects (foeConditions.js, D-14)
-//   4. attack and damage range    8. one deadpan flavour line
+//   1. family and size            6. abilities (FOE_ABILITIES names) + the note
+//   2. HP cur / max, or DOWN      7. INT, DAMAGE_MULTIPLIERS rows, lives left
+//   3. defence (omitted if none)  8. current effects (foeConditions.js, D-14)
+//   4. odds (omitted if no hero)  9. one deadpan flavour line
+//   5. attack and damage range
+//
+// Phase 74 (ROLL-02/03): "4" is the two-way "right now" odds line, right
+// after the defence line (or right after HP when there is no defence line)
+// — "You hit it on 17–20 (d20) · it hits you on 16–20 (d20)", read ONLY
+// from rollOdds.js (heroHitOddsVs/foeHitOddsVs), never a restated formula.
+// The old static "Hit only on a {n} or under" defence label became this
+// real range (74-CONTEXT). It is omitted for any state without a full hero
+// (oddsLine returns null quietly; the card never throws).
 //
 // Phase 71 (D-16, R-30): "7" is one line PER current effect, in
 // foeConditionChips order, each "<chip text> — <chip desc>" — the long-press
@@ -49,6 +58,7 @@ import { difficultyCurve, foeHitFor } from "../../engine/difficulty.js";
 import { foeConditionChips } from "./foeConditions.js";
 import { FOE_GLYPHS, playerNote } from "./combatPanel.js";
 import { RAIL_HOLD } from "./rail.js";
+import { heroHitOddsVs, foeHitOddsVs } from "./rollOdds.js";
 
 function deepFreeze(o) {
   for (const v of Object.values(o)) if (v && typeof v === "object") deepFreeze(v);
@@ -65,10 +75,16 @@ export const FOE_DETAILS_COPY = deepFreeze({
   hpUnknown: "HP ?",
   down: "DOWN",
   ar: "AR {n}",
-  toHit: "Hit only on a {n} or under",
   magicOnly: "Only magic touches it",
   daggerOnly: "Only a dagger or magic touches it",
   halfDmg: "Takes half damage",
+  // Phase 74 (ROLL-02/03): the two-way "right now" odds line, right after
+  // the defence line — the engine's own heroHitOddsVs/foeHitOddsVs
+  // (src/browser/rollOdds.js), never a restated formula. Replaces the old
+  // static `toHit` defence label above.
+  oddsYou: "You hit it on {range}",
+  oddsUntouchable: "You cannot touch it",
+  oddsIt: "it hits you on {range}",
   swing: "1 swing",
   swings: "{n} swings",
   flat: "a flat {n}",
@@ -186,12 +202,35 @@ function defenceLine(sp) {
   const parts = [];
   const ar = num(rd(sp, "ar"));
   if (ar !== null && ar > 0) parts.push(fill(C.ar, { n: ar }));
-  const toHit = num(rd(sp, "toHit"));
-  if (toHit !== null) parts.push(fill(C.toHit, { n: toHit }));
+  // Phase 74 (ROLL-02): sp.toHit no longer carries its own static label —
+  // it now shows through as a real range on the odds line (oddsLine below).
   if (rd(sp, "magicOnly")) parts.push(C.magicOnly);
   if (rd(sp, "daggerOnly")) parts.push(C.daggerOnly);
   if (rd(sp, "halfDmg")) parts.push(C.halfDmg);
   return parts.length ? parts.join(" · ") : null;
+}
+
+/**
+ * oddsLine(foe, sp, state) — Phase 74 (ROLL-02): the long-press card's
+ * two-way "right now" odds against the hero, read ONLY from rollOdds.js
+ * (heroHitOddsVs/foeHitOddsVs), never a restated formula. Returns null
+ * unless state.c is an object; the whole computation runs inside safe(),
+ * so a bare/minimal `c` (missing race/cls/sub/level/weapon) quietly drops
+ * the line instead of throwing. The you-part reads oddsUntouchable when
+ * the target-trait terms zero the hero's faces out (magicOnly/daggerOnly
+ * without the right weapon); the it-part is omitted for a never_melee foe
+ * (it never swings, so there is no "it hits you" side).
+ */
+function oddsLine(foe, sp, state) {
+  return safe(() => {
+    if (!state || typeof state.c !== "object" || state.c === null) return null;
+    const hero = heroHitOddsVs(state, foe);
+    const parts = [hero.untouchable ? C.oddsUntouchable : fill(C.oddsYou, { range: hero.text })];
+    if (!rd(sp, "never_melee")) {
+      parts.push(fill(C.oddsIt, { range: foeHitOddsVs(state, foe).text }));
+    }
+    return parts.join(" · ");
+  }, null);
 }
 
 function attackLine(foe, sp, state) {
@@ -303,6 +342,8 @@ export function foeDetailsCard(i, state) {
   const lines = [line(familyLine(type, rd(foe, "size"))), line(hpLine(foe))];
   const defence = defenceLine(sp);
   if (defence) lines.push(line(defence));
+  const odds = oddsLine(foe, sp, state);
+  if (odds) lines.push(line(odds));
   lines.push(line(attackLine(foe, sp, state)));
   lines.push(line(abilitiesLine(foe, sp)));
   lines.push(line(resistLine(foe, type, name)));
