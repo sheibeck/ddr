@@ -21,7 +21,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { foeDetailsCard, FOE_DETAILS_COPY, detailsLabel } from "../../src/browser/foeDetails.js";
+import { foeDetailsCard, FOE_DETAILS_COPY, detailsLabel, foeConditionEffect } from "../../src/browser/foeDetails.js";
 import { foeConditionChips } from "../../src/browser/foeConditions.js";
 import { FOE_GLYPHS } from "../../src/browser/combatPanel.js";
 import { RAIL_HOLD } from "../../src/browser/rail.js";
@@ -345,13 +345,22 @@ test("(c) hidden rules values never appear: fleesBelow, sp.every, ability cadenc
 
 // Phase 71 (D-16, R-30): the long-press card is where a foe condition is
 // explained, so the one joined effects line became one line per current
-// effect, "<chip text> — <chip desc>", in foeConditionChips order.
+// effect, "<chip text> — <chip desc>", in foeConditionChips order. Phase 74
+// (ROLL-02/03) inserted an optional odds line between the defence line and
+// the attack line, so this helper detects it by shape rather than a fixed
+// offset (every (d) test below uses a minimal/stateWith hero, where the odds
+// line never appears — same first=5/6 as before; the Phase 74 tests further
+// down use a full hero, where it does).
 const effectLines = (card) => {
   const t = texts(card);
-  // family, HP, [defence], attack, abilities, resistances, ...effects, flavour
-  const hasDefence = t.length > 0 && !/swing|Never swings/.test(t[2]);
-  const first = hasDefence ? 6 : 5;
-  return t.slice(first, t.length - 1);
+  const looksLikeAttack = (s) => /swing|Never swings/.test(s);
+  const looksLikeOdds = (s) => /^(You hit it|You cannot touch it)\b/.test(s);
+  // family, HP, [defence], [odds], attack, abilities, resistances, ...effects, flavour
+  let i = 2;
+  if (t[i] && !looksLikeAttack(t[i]) && !looksLikeOdds(t[i])) i++; // defence line present
+  if (t[i] && looksLikeOdds(t[i])) i++; // odds line present (Phase 74)
+  i += 3; // attack, abilities, resistances
+  return t.slice(i, t.length - 1);
 };
 
 test("(d) the effects are one line per foeConditionChips chip, '<text> — <desc>', from the same table", () => {
@@ -400,6 +409,76 @@ test("(d) a Weakened fight adds its line on every foe", () => {
 test("(d) no effects still reads the one noEffects line", () => {
   const state = stateWith([pick("Beasts", "Wolf")]);
   assert.deepEqual(effectLines(foeDetailsCard(0, state)), [FOE_DETAILS_COPY.noEffects]);
+});
+
+// ─── Phase 74 (ROLL-02/03): foe condition effects with their ranges ───────
+
+test("(Phase 74) foeConditionEffect: weakened states its effect and range from the player's side; insulted stacks on top", () => {
+  const ned = pick("Humans", "Ned");
+  const state = fullHeroState(ned, { combat: { weakened: true, foeToHitPenalty: 3 } });
+  assert.equal(foeConditionEffect({ key: "weakened" }, ned, state), "it hits you only on 18–20 (d20)");
+
+  const ned2 = pick("Humans", "Ned");
+  const insultedState = fullHeroState(ned2, { combat: { weakened: true, foeToHitPenalty: 3, parleyInsulted: true } });
+  assert.equal(foeConditionEffect({ key: "weakened" }, ned2, insultedState), "it hits you only on 17–20 (d20)");
+});
+
+test("(Phase 74) foeConditionEffect: a blind foe reads its plain range; insulted stacks on top", () => {
+  const ned = pick("Humans", "Ned");
+  ned.blind = true;
+  const state = fullHeroState(ned);
+  assert.equal(foeConditionEffect({ key: "blind" }, ned, state), "it hits you only on 20 (d20)");
+
+  const ned2 = pick("Humans", "Ned");
+  ned2.blind = true;
+  const insultedState = fullHeroState(ned2, { combat: { parleyInsulted: true } });
+  assert.equal(foeConditionEffect({ key: "blind" }, ned2, insultedState), "it hits you only on 19–20 (d20)");
+});
+
+test("(Phase 74) foeConditionEffect: asleep and stupid read the hero's own floored-at-5 odds (a level-1 Magic User)", () => {
+  const asleepFoe = pick("Humans", "Ned");
+  asleepFoe.asleep = 2;
+  const asleepState = fullHeroState(asleepFoe, { c: { cls: "Magic User", sub: "Wizard" } });
+  assert.equal(foeConditionEffect({ key: "asleep" }, asleepFoe, asleepState), "you hit it on 16–20 (d20)");
+
+  const stupidFoe = pick("Humans", "Ned");
+  stupidFoe.stupid = true;
+  const stupidState = fullHeroState(stupidFoe, { c: { cls: "Magic User", sub: "Wizard" } });
+  assert.equal(foeConditionEffect({ key: "stupid" }, stupidFoe, stupidState), "you hit it on 16–20 (d20)");
+});
+
+test("(Phase 74) foeConditionEffect: every other chip key has no to-hit effect", () => {
+  const ned = pick("Humans", "Ned");
+  const state = fullHeroState(ned);
+  for (const key of ["stunned", "hamstrung", "marked", "frozen", "acid", "dot", "shrunk", "fixated", "frenzied"]) {
+    assert.equal(foeConditionEffect({ key }, ned, state), null, key);
+  }
+});
+
+test("(Phase 74) foeConditionEffect: a minimal state (no full hero) returns null, never throws", () => {
+  const ned = pick("Humans", "Ned");
+  const state = stateWith([ned]);
+  assert.doesNotThrow(() => foeConditionEffect({ key: "weakened" }, ned, state));
+  assert.equal(foeConditionEffect({ key: "weakened" }, ned, state), null);
+  assert.equal(foeConditionEffect({ key: "blind" }, ned, state), null);
+  assert.equal(foeConditionEffect({ key: "asleep" }, ned, state), null);
+});
+
+test("(Phase 74) the long-press effect line for a Weakened fight reads the effect and range before the unchanged description", () => {
+  const ned = pick("Humans", "Ned");
+  const state = fullHeroState(ned, { combat: { weakened: true, foeToHitPenalty: 3 } });
+  state.c.timers["spell:weaken"] = { left: 2 };
+  const [weak] = foeConditionChips(ned, state);
+  const lines = effectLines(foeDetailsCard(0, state));
+  assert.deepEqual(lines, [`Weakened · 2 — it hits you only on 18–20 (d20). ${weak.desc}`]);
+});
+
+test("(Phase 74) a chip with no to-hit effect keeps '<text> — <desc>' exactly as today, even on a full hero", () => {
+  const f = pick("Beasts", "Wolf");
+  f.hamstrung = true;
+  const state = fullHeroState(f);
+  const [ham] = foeConditionChips(f, state);
+  assert.deepEqual(effectLines(foeDetailsCard(0, state)), [`Hamstrung — ${ham.desc}`]);
 });
 
 // ─── (e) malformed, unknown, hostile ───────────────────────────────────────

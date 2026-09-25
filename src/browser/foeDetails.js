@@ -85,6 +85,10 @@ export const FOE_DETAILS_COPY = deepFreeze({
   oddsYou: "You hit it on {range}",
   oddsUntouchable: "You cannot touch it",
   oddsIt: "it hits you on {range}",
+  // Phase 74: the effect clause a to-hit-moving foe condition adds to its
+  // long-press effect line, stated from the player's side.
+  effectYou: "you hit it on {range}",
+  effectIt: "it hits you only on {range}",
   swing: "1 swing",
   swings: "{n} swings",
   flat: "a flat {n}",
@@ -298,12 +302,49 @@ function resistLine(foe, type, name) {
   return parts.join(" · ");
 }
 
+// Phase 74 (ROLL-02/03): the foeConditions.js chips that move a to-hit
+// roll — asleep/stupid floor the hero's own swing at 5 faces (the you-part
+// effect); blind/weakened move the foe's swing at the hero (the it-part
+// effect). Every other chip has no to-hit effect (null).
+const EFFECT_YOU_KEYS = new Set(["asleep", "stupid"]);
+const EFFECT_IT_KEYS = new Set(["blind", "weakened"]);
+
+/**
+ * foeConditionEffect(chip, foe, state) — Phase 74 (ROLL-02/03): a
+ * foeConditionChips chip's to-hit effect, stated from the player's side
+ * with its resulting range (74-CONTEXT condition chips), or null for a
+ * chip with no to-hit effect. asleep/stupid read heroHitOddsVs(state,
+ * foe).text ("you hit it on {range}"); blind/weakened read
+ * foeHitOddsVs(state, foe).plainText ("it hits you only on {range}") — the
+ * plain range with no modifier clause, since the chip line already names
+ * its own effect. Reads ONLY rollOdds.js, never a restated formula. Runs
+ * inside safe(…, null) — a minimal state (no full hero) quietly returns
+ * null, never throws. Exported so Phase 77's CMBUI-13 effect indicators
+ * can reuse it rather than re-deriving anything.
+ */
+export function foeConditionEffect(chip, foe, state) {
+  return safe(() => {
+    if (!chip || typeof chip !== "object") return null;
+    if (!state || typeof state.c !== "object" || state.c === null) return null;
+    if (EFFECT_YOU_KEYS.has(chip.key)) return fill(C.effectYou, { range: heroHitOddsVs(state, foe).text });
+    if (EFFECT_IT_KEYS.has(chip.key)) return fill(C.effectIt, { range: foeHitOddsVs(state, foe).plainText });
+    return null;
+  }, null);
+}
+
 /** effectLines(foe, state) — Phase 71 (D-16, R-30): one "<text> — <desc>"
- * line per foeConditionChips chip, in table order, or [noEffects]. */
+ * line per foeConditionChips chip, in table order, or [noEffects]. Phase 74
+ * (ROLL-02/03): a to-hit-moving chip's line gains its computed effect and
+ * range, "<text> — <effect>. <desc>" (foeConditionEffect above); every
+ * other chip keeps "<text> — <desc>" exactly as before. */
 function effectLines(foe, state) {
   const chips = safe(() => foeConditionChips(foe, state), []);
   if (!chips.length) return [C.noEffects];
-  return chips.map((c) => (c.desc ? `${c.text} — ${c.desc}` : c.text));
+  return chips.map((c) => {
+    const effect = foeConditionEffect(c, foe, state);
+    if (effect) return `${c.text} — ${effect}. ${c.desc}`;
+    return c.desc ? `${c.text} — ${c.desc}` : c.text;
+  });
 }
 
 function fallbackCard(i) {
