@@ -252,68 +252,71 @@ test("foeToHitVs/foeToHitBreakdown: Battle Roar (-2) applies to both vs values; 
   assert.equal(foeToHitVs(smoke, "member"), foeToHitVs(control, "member"));
 });
 
-// --- 2. needMods on events ---------------------------------------------------
+// --- 2. mods on events (Phase 73, ROLL-05: needMods -> mods) ---------------
 
-test("foeTurn: foeMissed carries needMods for a Guard hero; a plain Soldier's foeMissed has none", () => {
+test("foeTurn: foeMissed carries mods for a Guard hero; a plain Soldier's foeMissed has none", () => {
   const guardState = fixedState({ c: { sub: "Guard" } });
   const foe = fixedFoe();
   guardState.combat = fixedCombat([foe]);
-  // need = 4 (Guard); roll 5 misses.
+  // faces = 4 (Guard); atLeast = 17; raw draw 5 mirrors to roll 16, which misses.
   const ev1 = foeTurn(guardState, fakeRng([5]), []);
   const missed1 = ev1.find((e) => e.type === "foeMissed");
-  assert.deepEqual(missed1.needMods, [{ name: "Guard", delta: -1 }]);
-  assert.equal(missed1.need, 4);
+  assert.deepEqual(missed1.mods, [{ name: "Guard", delta: -1 }]);
+  assert.equal(missed1.atLeast, 17);
+  assert.equal(missed1.roll, 16);
 
   const soldierState = fixedState({ c: { sub: "Soldier" } });
   const foe2 = fixedFoe();
   soldierState.combat = fixedCombat([foe2]);
-  // need = 5 (no mods); roll 6 misses.
+  // faces = 5 (no mods); atLeast = 16; raw draw 6 mirrors to roll 15, which misses.
   const ev2 = foeTurn(soldierState, fakeRng([6]), []);
   const missed2 = ev2.find((e) => e.type === "foeMissed");
-  assert.equal("needMods" in missed2, false);
+  assert.equal("mods" in missed2, false);
 });
 
-test("foeTurn: struckByFoe carries needMods on a landed hit against a Guard hero", () => {
+test("foeTurn: struckByFoe carries mods on a landed hit against a Guard hero", () => {
   const state = fixedState({ c: { sub: "Guard" } });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
-  // roll 3 (<= need 4) hits; damage die d6 = 4.
+  // faces = 4 (Guard), atLeast = 17; raw draw 3 mirrors to roll 18 (>=17) hits; damage die d6 = 4.
   const ev = foeTurn(state, fakeRng([3, 4]), []);
   const struck = ev.find((e) => e.type === "struckByFoe");
-  assert.deepEqual(struck.needMods, [{ name: "Guard", delta: -1 }]);
+  assert.deepEqual(struck.mods, [{ name: "Guard", delta: -1 }]);
 });
 
-test("foeTurn: the member branch (memberStruck + its miss) carries needMods too — the hero's own passives still apply", () => {
+test("foeTurn: the member branch (memberStruck + its miss) carries mods too — the hero's own passives still apply", () => {
   const foeHit = fixedFoe({ lvl: 1, wp: 30 });
   const allyHit = fixedAlly({ wp: 12, maxWP: 20 });
   const hitState = fixedState({ c: { sub: "Guard" }, party: [fixedMember({ wp: 12 })] });
   hitState.combat = fixedCombat([foeHit], { allies: [allyHit] });
-  // pick d(2)=2 -> member; to-hit roll 3 (<= need 4) hits; dmg die d6 = 4.
+  // pick d(2)=2 -> member; mFaces = 4 (Guard), atLeast = 17; raw draw 3 mirrors
+  // to roll 18 (>=17) hits; dmg die d6 = 4.
   const evHit = foeTurn(hitState, fakeRng([2, 3, 4]), []);
   const ms = evHit.find((e) => e.type === "memberStruck");
-  assert.deepEqual(ms.needMods, [{ name: "Guard", delta: -1 }]);
-  assert.equal(ms.need, 4);
+  assert.deepEqual(ms.mods, [{ name: "Guard", delta: -1 }]);
+  assert.equal(ms.atLeast, 17);
 
   const foeMiss = fixedFoe({ lvl: 1, wp: 30 });
   const allyMiss = fixedAlly({ wp: 12, maxWP: 20 });
   const missState = fixedState({ c: { sub: "Guard" }, party: [fixedMember({ wp: 12 })] });
   missState.combat = fixedCombat([foeMiss], { allies: [allyMiss] });
-  // pick d(2)=2 -> member; to-hit roll 5 (> need 4) misses.
+  // pick d(2)=2 -> member; raw draw 5 mirrors to roll 16 (<17) misses.
   const evMiss = foeTurn(missState, fakeRng([2, 5]), []);
   const missed = evMiss.find((e) => e.type === "foeMissed" && e.member);
-  assert.deepEqual(missed.needMods, [{ name: "Guard", delta: -1 }]);
+  assert.deepEqual(missed.mods, [{ name: "Guard", delta: -1 }]);
 });
 
-test("flee: pursuitStrike's foeMissed carries needMods for a Guard hero (module-private, exercised via flee)", () => {
+test("flee: pursuitStrike's foeMissed carries mods for a Guard hero (module-private, exercised via flee)", () => {
   // Phase 42 (FLEE-01): need is 14 (was 11) — a Human Fighter/Guard has no
   // flee modifiers, so the escaping roll moves from 11 to 14.
   const state = fixedState({ c: { sub: "Guard", cls: "Fighter" } });
   const foe = fixedFoe({ sp: { pursues: true } });
   state.combat = fixedCombat([foe]);
-  // flee roll 14 (>=14, bonus 0 for a non-Thief) succeeds; pursuit roll 5 (> need 4) misses.
+  // flee roll 14 (>=14, bonus 0 for a non-Thief) succeeds; pursuit faces = 4
+  // (Guard), atLeast = 17; raw draw 5 mirrors to roll 16, which misses.
   const events = flee(state, fakeRng([14, 5]), []);
   const missed = events.find((e) => e.type === "foeMissed");
-  assert.deepEqual(missed.needMods, [{ name: "Guard", delta: -1 }]);
+  assert.deepEqual(missed.mods, [{ name: "Guard", delta: -1 }]);
   assert.ok(events.some((e) => e.type === "fled" && e.reason === "escaped"));
 });
 
@@ -321,14 +324,15 @@ test("foeTurn: C.parleyInsulted appends an 'insulted' entry after the passive br
   const state = fixedState({ c: { sub: "Guard" } });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe], { parleyInsulted: true });
-  // need = 4 (Guard) + 1 (insulted) = 5; roll 6 misses.
+  // faces = 4 (Guard) + 1 (insulted) = 5; atLeast = 16; raw draw 6 mirrors to
+  // roll 15, which misses.
   const events = foeTurn(state, fakeRng([6]), []);
   const missed = events.find((e) => e.type === "foeMissed");
-  assert.deepEqual(missed.needMods, [
+  assert.deepEqual(missed.mods, [
     { name: "Guard", delta: -1 },
     { name: "insulted", delta: 1 },
   ]);
-  assert.equal(missed.need, 5);
+  assert.equal(missed.atLeast, 16);
 });
 
 // --- 3. soaked -----------------------------------------------------------
@@ -338,7 +342,7 @@ test("applyFoeDamageToPlayer: soaked.hide for a Fridgian; final dmg reflects the
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   const struck = events.find((e) => e.type === "struckByFoe");
   assert.deepEqual(struck.soaked, { hide: 2 });
   assert.equal(struck.dmg, 3);
@@ -349,7 +353,7 @@ test("applyFoeDamageToPlayer: soaked.hardiness for a Hardiness hero", () => {
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   const struck = events.find((e) => e.type === "struckByFoe");
   assert.deepEqual(struck.soaked, { hardiness: 3 });
   assert.equal(struck.dmg, 2);
@@ -360,7 +364,7 @@ test("applyFoeDamageToPlayer: soaked stacks Hardiness then hide for a Fridgian w
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 10, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 10, roll: 18, atLeast: 16, dieN: 20 });
   const struck = events.find((e) => e.type === "struckByFoe");
   assert.deepEqual(struck.soaked, { hardiness: 3, hide: 2 });
   assert.equal(struck.dmg, 5);
@@ -371,23 +375,23 @@ test("applyFoeDamageToPlayer: soaked.ward for a ward pool 4 vs dmg 9", () => {
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 9, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 9, roll: 18, atLeast: 16, dieN: 20 });
   const struck = events.find((e) => e.type === "struckByFoe");
   assert.deepEqual(struck.soaked, { ward: 4 });
   assert.equal(struck.dmg, 5);
 });
 
-test("applyFoeDamageToPlayer: plain hero has no soaked/needMods/soldierCrit keys; key order re-pinned", () => {
+test("applyFoeDamageToPlayer: plain hero has no soaked/mods/soldierCrit keys; key order re-pinned", () => {
   const state = fixedState();
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   const struck = events.find((e) => e.type === "struckByFoe");
   assert.equal("soaked" in struck, false);
-  assert.equal("needMods" in struck, false);
+  assert.equal("mods" in struck, false);
   assert.equal("soldierCrit" in struck, false);
-  assert.deepEqual(Object.keys(struck), ["type", "name", "roll", "need", "dmg", "ignoresArmor", "critical"]);
+  assert.deepEqual(Object.keys(struck), ["type", "name", "roll", "atLeast", "dieN", "dmg", "ignoresArmor", "critical"]);
 });
 
 test("applyFoeDamageToPlayer: an ability bolt (foeBolted) also carries soaked", () => {
@@ -403,26 +407,26 @@ test("applyFoeDamageToPlayer: an ability bolt (foeBolted) also carries soaked", 
 
 // --- 4. soldierCrit -----------------------------------------------------
 
-test("applyFoeDamageToPlayer: soldierCrit is true ONLY for a Soldier's roll of 2 — absent on roll 1, absent for a Guard", () => {
+test("applyFoeDamageToPlayer: soldierCrit is true ONLY for a Soldier's second-highest face (dieN-1) — absent on the top face, absent for a Guard", () => {
   const soldierState = fixedState({ c: { sub: "Soldier" } });
   const foe = fixedFoe();
   soldierState.combat = fixedCombat([foe]);
 
   let events = [];
-  applyFoeDamageToPlayer(soldierState, foe, fakeRng([]), events, { dmg: 5, roll: 2, need: 5 });
+  applyFoeDamageToPlayer(soldierState, foe, fakeRng([]), events, { dmg: 5, roll: 19, atLeast: 16, dieN: 20 });
   let struck = events.find((e) => e.type === "struckByFoe");
   assert.equal(struck.soldierCrit, true);
   assert.equal(struck.critical, false);
 
   events = [];
-  applyFoeDamageToPlayer(soldierState, foe, fakeRng([]), events, { dmg: 5, roll: 1, need: 5 });
+  applyFoeDamageToPlayer(soldierState, foe, fakeRng([]), events, { dmg: 5, roll: 20, atLeast: 16, dieN: 20 });
   struck = events.find((e) => e.type === "struckByFoe");
   assert.equal("soldierCrit" in struck, false);
   assert.equal(struck.critical, true);
 
   const guardState = fixedState({ c: { sub: "Guard" } });
   events = [];
-  applyFoeDamageToPlayer(guardState, foe, fakeRng([]), events, { dmg: 5, roll: 2, need: 5 });
+  applyFoeDamageToPlayer(guardState, foe, fakeRng([]), events, { dmg: 5, roll: 19, atLeast: 16, dieN: 20 });
   struck = events.find((e) => e.type === "struckByFoe");
   assert.equal("soldierCrit" in struck, false);
 });
@@ -654,17 +658,20 @@ test("takeItem/equipItem: an Acrobat's weapon rejection reports reason 'acrobat'
 
 // --- 10. narration clauses --------------------------------------------
 
-test("EVENT_NARRATION.struckByFoe: soaked + needMods render; the unflagged sentence is byte-identical to before", () => {
+test("EVENT_NARRATION.struckByFoe: soaked + mods render; the unflagged sentence is byte-identical to before", () => {
+  // Phase 73 (ROLL-05): the old {roll:3, need:4} shape mirrors to
+  // {roll:18, atLeast:17, dieN:20} — atLeastFor(4, 20) = 17.
   const decorated = EVENT_NARRATION.struckByFoe({
     type: "struckByFoe",
     name: "Dante",
-    roll: 3,
-    need: 4,
+    roll: 18,
+    atLeast: 17,
+    dieN: 20,
     dmg: 4,
     ignoresArmor: false,
     critical: false,
     soaked: { hide: 2 },
-    needMods: [{ name: "Guard", delta: -1 }],
+    mods: [{ name: "Guard", delta: -1 }],
   });
   assert.match(decorated, /hide soaked 2/);
   assert.match(decorated, /Guard/);
@@ -673,13 +680,14 @@ test("EVENT_NARRATION.struckByFoe: soaked + needMods render; the unflagged sente
   const plain = EVENT_NARRATION.struckByFoe({
     type: "struckByFoe",
     name: "Dante",
-    roll: 3,
-    need: 4,
+    roll: 18,
+    atLeast: 17,
+    dieN: 20,
     dmg: 4,
     ignoresArmor: false,
     critical: false,
   });
-  assert.equal(plain, '<span class="roll">3</span> vs 4. Dante hits you for <span class="hurt">4 hp</span>.');
+  assert.equal(plain, '<span class="roll">18</span> vs 17–20. Dante hits you for <span class="hurt">4 hp</span>.');
 });
 
 test("EVENT_NARRATION.strikeMissed: appends the quip after the roll and the plain miss sentence; absent quip renders identically to before", () => {

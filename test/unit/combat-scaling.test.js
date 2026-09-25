@@ -247,7 +247,7 @@ test("dmgBonus is retired: a hero-side foeTurn swing's damage is exactly foeHitF
   const events1 = foeTurn(state1, rng1, []);
   const struck1 = events1.find((e) => e.type === "struckByFoe");
   assert.ok(struck1);
-  assert.equal(struck1.roll, 3);
+  assert.equal(struck1.roll, 18, "raw draw 3 mirrors to 21 - 3 = 18");
   assert.equal(struck1.dmg, 1 * 1 + 4, "foeLevelBase(1) + dice, no dmgBonus term (identity FOE_HIT_SCALE)");
   assert.equal(state1.c.wp, 55 - struck1.dmg);
   assert.equal(rng1.draws, 2);

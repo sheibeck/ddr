@@ -90,18 +90,10 @@ function modsText(mods) {
   return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
 }
 
-/** needModsClause(mods, need) — " (needs 4: Guard −1)" appended right after
- * "vs N"; "" when absent. Phase 73 (ROLL-05): kept AS-IS for the foe-side and
- * thrown-spell lines below, which still carry the old roll-under `need`
- * field until 73-05/73-07 convert them. */
-function needModsClause(mods, need) {
-  return mods && mods.length ? ` (needs ${need ?? "?"}: ${modsText(mods)})` : "";
-}
-
 /** modsClause(mods) — " (Guard −1, insulted +1)" appended right after the
- * roll-high range ("vs 16–20"); "" when absent. Phase 73 (ROLL-05): the
- * roll-high counterpart of needModsClause, used by every converted line —
- * the threshold is already visible in the range, so no "needs N:" prefix. */
+ * roll-high range ("vs 16–20"); "" when absent. Phase 73 (ROLL-05): every
+ * foe-swing and member-branch line now reads this — the threshold is
+ * already visible in the range, so no "needs N:" prefix is needed. */
 function modsClause(mods) {
   return mods && mods.length ? ` (${modsText(mods)})` : "";
 }
@@ -561,7 +553,7 @@ export const EVENT_NARRATION = {
   // PARTY-04/PARTY-05 (Phase 8): a foe lands on a party member instead of you —
   // better them than you, frankly. `name` is the foe, `member` the companion.
   memberStruck: (e) =>
-    `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} turns on ${e.member ?? "your companion"} for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
+    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} turns on ${e.member ?? "your companion"} for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
   // PARTY-05: a member hits 0 hp — they do not die a hero's death, they simply
   // decide this dungeon is no longer their problem and leave the run.
   memberDowned: (e) => `<span class="hurt">${e.name ?? "Your companion"} goes down, and what is left of them wants no further part of this.</span>`,
@@ -569,7 +561,7 @@ export const EVENT_NARRATION = {
   acidTick: (e) => `Acid eats at ${e.target ?? "it"}: <span class="roll">${e.dmg ?? 0}</span> hp.`,
   foeSlept: (e) => `${e.name ?? "It"} sleeps through it.`,
   foeMissed: (e) =>
-    `${e.name ?? "It"} swings${e.member ? ` at ${e.member}` : ""}, <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}, and misses.`,
+    `${e.name ?? "It"} swings${e.member ? ` at ${e.member}` : ""}, <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}, and misses.`,
   wardReflected: (e) => `<span class="hit">The ward throws ${e.amount ?? 0} back at ${e.target ?? "it"}.</span>`,
   wardAbsorbed: (e) => `The ward eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
@@ -591,13 +583,13 @@ export const EVENT_NARRATION = {
   // incoming blow, then spends itself. `name` is the foe whose hit was blunted.
   damageHalved: (e) => `<span class="hit">The pendant drinks half of ${e.name ?? "that"}'s blow before it reaches you.</span>`,
   // Phase 25 (FEED-01, additive payload): `soldierCrit` renders exactly like
-  // `critical` (a Soldier's roll-of-2 is a crit in every way that matters to
-  // the Oracle); `needMods`/`soaked` render only when present, so a plain
-  // hero's line stays byte-identical to before.
+  // `critical` (a Soldier's second-highest face is a crit in every way that
+  // matters to the Oracle); `mods`/`soaked` render only when present, so a
+  // plain hero's line stays byte-identical to before.
   // Dice-first fight-log convention (Phase 34) — unchanged by CLAR-01: the
   // foe's name IS the cause and the fight log already folds this line.
   struckByFoe: (e) =>
-    `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
+    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
   // Phase 40 (SPELL-02): endCombat's own expiry narration for a

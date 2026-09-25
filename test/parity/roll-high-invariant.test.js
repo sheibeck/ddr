@@ -105,6 +105,14 @@ const OUTCOME = {
   // (roll 1, atLeast 2, dieN 8) — the caster's own safety check FAILED.
   spellBackfired: () => false,
   summonBackfired: () => false,
+  // 73-07 rows: the foe's own to-hit rolls (hero branch, member branch,
+  // pursuit) and the hero's own armor soak. Each fires on only ONE side of
+  // its own check, so the outcome is a constant, exactly like the 73-04/06
+  // rows above.
+  foeMissed: () => false, // a foeMissed event only fires once the foe's own to-hit check failed
+  struckByFoe: () => true, // a struckByFoe event only fires once the foe's own to-hit check succeeded
+  memberStruck: () => true, // a memberStruck event only fires once the foe's own to-hit check succeeded (against a member)
+  armorSoaked: () => true, // an armorSoaked event only fires once the hero's armor soak check succeeded
 };
 
 /**

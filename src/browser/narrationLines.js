@@ -317,7 +317,7 @@ function soakSuffix(soaked) {
 }
 
 /** fleeModsText(mods) — "Thief +5" / "Thief +5, Mail −1" (Phase 42, FLEE-02;
- * mirrors eventNarration.js's needModsText format so the line/Oracle/fight-
+ * mirrors eventNarration.js's modsText format so the line/Oracle/fight-
  * log surfaces all speak the same modifier vocabulary). */
 function fleeModsText(mods) {
   return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
@@ -1253,8 +1253,9 @@ export const LINE_FOR = {
     tone: "miss",
     priority: PRIORITY.feature,
   }),
-  // Phase 25 (FEED-01): `needMods` names the reason a swing that should have
-  // landed did not — only when the roll would have hit without the modifier.
+  // Phase 25 (FEED-01, renamed Phase 73 ROLL-05): `mods` names the reason a
+  // swing that should have landed did not — only when the roll would have
+  // hit without the modifier (see foeMissed's own builder below).
   memberStruck: (e) => {
     const crit = e?.critical ? " · CRIT" : "";
     return { text: `${e?.name ?? "It"} hits ${e?.member ?? "your companion"} (${e?.dmg ?? 0})${crit}`, tone: "hurt", priority: PRIORITY.feature };
@@ -1264,10 +1265,14 @@ export const LINE_FOR = {
   acidTick: (e) => ({ text: `Acid eats at ${e?.target ?? "it"} (${e?.dmg ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   foeSlept: (e) => ({ text: `${e?.name ?? "It"} sleeps through it.`, tone: "dodge", priority: PRIORITY.them }),
   foeMissed: (e) => {
-    const mods = e?.needMods ?? [];
+    const mods = e?.mods ?? [];
     const negative = mods.filter((m) => m.delta < 0);
     const negSum = negative.reduce((sum, m) => sum + m.delta, 0);
-    const wouldHaveHit = negative.length > 0 && e?.roll != null && e?.need != null && e.roll <= e.need - negSum;
+    // Phase 73 (ROLL-05): without the negative deltas, the foe's lowest
+    // winning face would have been atLeast + negSum (negSum <= 0), so a
+    // roll at or above that reduced threshold "would have hit" — the
+    // roll-high mirror of the old `e.roll <= e.need - negSum` reading.
+    const wouldHaveHit = negative.length > 0 && e?.roll != null && e?.atLeast != null && e.roll >= e.atLeast + negSum;
     let text = `${e?.name ?? "It"} misses ${e?.member ?? "you"}`;
     if (wouldHaveHit) text += ` · ${negative.map((m) => m.name).join(", ")}`;
     return { text, tone: "dodge", priority: e?.member ? PRIORITY.feature : PRIORITY.them };

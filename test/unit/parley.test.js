@@ -361,9 +361,9 @@ test("PARLEY-02 / D-05: through applyAction an exhausted encounter yields only p
   assert.deepStrictEqual(retry, [], "no encounter left to retry, zero draws, empty events");
 });
 
-// --- Test 5: parleyInsulted widens the MEMBER branch mNeed -----------------
+// --- Test 5: parleyInsulted widens the MEMBER branch atLeast ---------------
 
-test("PARLEY-02 / D-06 / D-20: parleyInsulted widens the MEMBER branch mNeed by exactly 1, roll untouched", () => {
+test("PARLEY-02 / D-06 / D-20: parleyInsulted widens the MEMBER branch atLeast by one more top face, mirrored roll untouched", () => {
   const baseline = fixedState({ party: [fixedMember({ wp: 12 })] });
   const baselineAlly = fixedAlly({ wp: 12, maxWP: 20 });
   baseline.combat = fixedCombat([fixedFoe({ lvl: 1, wp: 30 })], { allies: [baselineAlly] });
@@ -371,8 +371,8 @@ test("PARLEY-02 / D-06 / D-20: parleyInsulted widens the MEMBER branch mNeed by 
   const missed = baselineEvents.find((e) => e.type === "foeMissed");
   assert.ok(missed);
   assert.equal(missed.member, "Ada");
-  assert.equal(missed.need, 5);
-  assert.equal(missed.roll, 6);
+  assert.equal(missed.atLeast, 16);
+  assert.equal(missed.roll, 15, "raw draw 6 mirrors to 21 - 6 = 15");
   assert.equal(baselineAlly.wp, 12);
   assert.equal(baseline.c.wp, 55, "hero untouched");
 
@@ -383,8 +383,8 @@ test("PARLEY-02 / D-06 / D-20: parleyInsulted widens the MEMBER branch mNeed by 
   const struck = insultedEvents.find((e) => e.type === "memberStruck");
   assert.ok(struck);
   assert.equal(struck.member, "Ada");
-  assert.equal(struck.need, 6, "5 + the insulted +1");
-  assert.equal(struck.roll, 6, "the same literal roll");
+  assert.equal(struck.atLeast, 15, "one more top face than the baseline's 16");
+  assert.equal(struck.roll, 15, "the same mirrored roll");
   assert.equal(struck.dmg, 4);
   assert.equal(insultedAlly.wp, 8);
   assert.equal(insulted.c.wp, 55, "hero untouched");
@@ -393,21 +393,23 @@ test("PARLEY-02 / D-06 / D-20: parleyInsulted widens the MEMBER branch mNeed by 
 // --- Test 5b: Phase 72 ROLL-01 (a) — the insult lands AFTER the member's own Smoke --
 
 test("Phase 72 ROLL-01 (a): the member branch applies the insult after the member's own Smoke", () => {
-  // A member with a live Smoke (overrides mNeed to 1) and a live Taunt (a
+  // A member with a live Smoke (overrides mFaces to 1) and a live Taunt (a
   // zero-draw deterministic target, per pickFoeTarget's taunter branch), plus
-  // an insulted foe. Smoke, then insulted last: mNeed = 1 + 1 = 2.
+  // an insulted foe. Smoke, then insulted last: mFaces = 1 + 1 = 2, atLeast = 19.
   const state = fixedState({ party: [fixedMember({ wp: 12 })] });
   const ally = fixedAlly({ wp: 12, maxWP: 20 });
   state.combat = fixedCombat([fixedFoe({ lvl: 1, wp: 30 })], { allies: [ally], parleyInsulted: true });
   startEffect(state.party[0], "ability:smoke", { rounds: 2 });
   startEffect(state.party[0], "ability:taunt", { rounds: 1 });
 
+  // Taunt bypasses the pool-pick draw entirely, so the first draw IS the
+  // to-hit roll: raw 2 mirrors to roll 19, exactly on the widened atLeast.
   const events = foeTurn(state, fakeRng([2, 3]), []);
   const struck = events.find((e) => e.type === "memberStruck");
-  assert.ok(struck, "Smoke (need 1) + insulted (+1) = need 2, so a roll of 2 lands");
-  assert.equal(struck.need, 2, "1 (Smoke override) + 1 (insulted)");
-  assert.ok(struck.needMods && struck.needMods.length >= 2, "needMods carries both Smoke and insulted");
-  const names = struck.needMods.map((m) => m.name);
+  assert.ok(struck, "Smoke (atLeast 20) narrowed by insulted (one more face, atLeast 19) lands on the mirrored roll 19");
+  assert.equal(struck.atLeast, 19, "one fewer face needed than Smoke alone (20), from the insulted +1");
+  assert.ok(struck.mods && struck.mods.length >= 2, "mods carries both Smoke and insulted");
+  const names = struck.mods.map((m) => m.name);
   assert.equal(names[names.length - 1], "insulted", "insulted is the LAST need term");
   const smokeIdx = names.indexOf("Smoke");
   assert.ok(smokeIdx >= 0 && smokeIdx < names.length - 1, "Smoke precedes insulted");
@@ -452,10 +454,10 @@ test("PARLEY-02 / D-06: a failed parley sets the insult, which persists every ro
   foe.asleep = 0;
   state.c.wp = 55;
   const t1 = foeTurn(state, fakeRng([6, 3]), []);
-  assert.ok(t1.some((e) => e.type === "struckByFoe" && e.need === 6));
+  assert.ok(t1.some((e) => e.type === "struckByFoe" && e.atLeast === 15));
   state.c.wp = 55;
   const t2 = foeTurn(state, fakeRng([6, 3]), []);
-  assert.ok(t2.some((e) => e.type === "struckByFoe" && e.need === 6));
+  assert.ok(t2.some((e) => e.type === "struckByFoe" && e.atLeast === 15));
 
   endCombat(state, []);
   assert.equal(state.combat, null);
@@ -723,25 +725,31 @@ test("D-19 old-save probe: mid-fight flags round-trip losslessly through JSON an
 // type at fluency >= 1 (and for Con Artists / Wilmsry) — so an insulted group
 // with a pursuer is reachable. The parting strike on a flee exit gets the same
 // post-draw `need += 1` as the two foeTurn sites; the roll itself is untouched.
-test("PARLEY-02 / D-06 / D-20 (WR-01): parleyInsulted widens pursuitStrike's need by exactly 1, zero extra draws", () => {
+test("PARLEY-02 / D-06 / D-20 (WR-01): parleyInsulted widens pursuitStrike's atLeast by one more top face, zero extra draws", () => {
   const probe = fixedState();
   probe.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })]);
   const probeEvents = flee(probe, fakeRng([15, 20]), []);
   const probeMiss = probeEvents.find((e) => e.type === "foeMissed");
-  assert.ok(probeMiss, "roll 20 misses the baseline pursuit");
-  const N = probeMiss.need;
+  assert.ok(probeMiss, "raw draw 20 mirrors to roll 1, missing the baseline pursuit");
+  const { dieN, atLeast } = probeMiss;
+  // The raw draw that mirrors to exactly one face under the baseline's
+  // atLeast (a miss) — and, once the insult removes one face, exactly on
+  // the widened atLeast (a hit), same literal draw.
+  const rawJustUnder = dieN + 2 - atLeast;
 
   const baseline = fixedState();
   baseline.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })]);
-  const baseEvents = flee(baseline, fakeRng([15, N + 1]), []);
+  const baseEvents = flee(baseline, fakeRng([15, rawJustUnder]), []);
   assert.deepEqual(baseEvents.map((e) => e.type), ["fleeRolled", "foePursued", "foeMissed", "fled", "combatEnded"]);
-  assert.equal(baseEvents.find((e) => e.type === "foeMissed").need, N);
+  const baseMiss = baseEvents.find((e) => e.type === "foeMissed");
+  assert.equal(baseMiss.atLeast, atLeast);
+  assert.equal(baseMiss.roll, atLeast - 1);
 
   const insulted = fixedState();
   insulted.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })], { parleyInsulted: true });
-  const insEvents = flee(insulted, fakeRng([15, N + 1, 4]), []);
+  const insEvents = flee(insulted, fakeRng([15, rawJustUnder, 4]), []);
   assert.deepEqual(insEvents.map((e) => e.type), ["fleeRolled", "foePursued", "struckByFoe", "fled", "combatEnded"]);
   const struck = insEvents.find((e) => e.type === "struckByFoe");
-  assert.equal(struck.need, N + 1, "N + the insulted +1");
-  assert.equal(struck.roll, N + 1, "the same literal roll");
+  assert.equal(struck.atLeast, atLeast - 1, "one more top face than the baseline");
+  assert.equal(struck.roll, atLeast - 1, "the same mirrored roll, now landing on the widened range");
 });

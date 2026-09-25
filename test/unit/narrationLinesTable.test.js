@@ -160,12 +160,15 @@ test("locked wordings: struckByFoe", () => {
 
 test("locked wordings: foeMissed", () => {
   assert.equal(LINE_FOR.foeMissed({ type: "foeMissed", name: "Dante" }).text, "Dante misses you");
+  // atLeast 17 (5 faces - Guard's -1); without the Guard debuff the atLeast
+  // would have been 16 (atLeast + negSum), and roll 16 clears that — "would
+  // have hit" without the penalty.
   assert.equal(
-    LINE_FOR.foeMissed({ type: "foeMissed", name: "Dante", roll: 5, need: 4, needMods: [{ name: "Guard", delta: -1 }] }).text,
+    LINE_FOR.foeMissed({ type: "foeMissed", name: "Dante", roll: 16, atLeast: 17, mods: [{ name: "Guard", delta: -1 }] }).text,
     "Dante misses you · Guard",
   );
   assert.equal(
-    LINE_FOR.foeMissed({ type: "foeMissed", name: "Dante", roll: 12, need: 4, needMods: [{ name: "Guard", delta: -1 }] }).text,
+    LINE_FOR.foeMissed({ type: "foeMissed", name: "Dante", roll: 12, atLeast: 17, mods: [{ name: "Guard", delta: -1 }] }).text,
     "Dante misses you",
   );
 });
