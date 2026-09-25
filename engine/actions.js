@@ -113,12 +113,15 @@ export function validateAction(action) {
     case "useItem":
       // Phase 37 (GEAR-03): the slot address form — exactly one of `i` or
       // `slot` may be present, never both. 260918-wy1: the address space is
-      // now the three worn keys (two jewelry, one cloak).
+      // the three worn keys (two jewelry, one cloak). RULES-13 (Phase 75):
+      // "weapon" joins the address space — a WIELDED staff's power is used
+      // via `{ slot: "weapon" }` (engine/items.js#useItem resolves it to
+      // wieldedStaff(c), not c.worn.weapon, which never exists).
       if (action.slot !== undefined) {
-        if (action.i !== undefined || !WORN_SLOTS.includes(action.slot)) {
+        if (action.i !== undefined || (!WORN_SLOTS.includes(action.slot) && action.slot !== "weapon")) {
           return {
             ok: false,
-            reason: "useItem.slot must be one of jewelry1, jewelry2, cloak (and excludes i)",
+            reason: "useItem.slot must be one of jewelry1, jewelry2, cloak, weapon (and excludes i)",
           };
         }
         break;

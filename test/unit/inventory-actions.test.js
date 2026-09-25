@@ -202,10 +202,16 @@ test("equipItem: REJECTS heavy armor for a Thief without Heft; ACCEPTS it with H
   assert.equal(withHeft.c.items.length, 0, "worn was 'Nothing' — no piece swapped back, net −1 slot");
 });
 
-test("equipItem: REJECTS a non-equippable item (a staff is a bag item, not a slot)", () => {
-  const state = fixedState({ c: { items: [{ kind: "staff", n: "Staff of Testing", txt: "zap" }] } });
+// RULES-13 (Phase 75, user 2026-09-25) REVERSES the old "a staff is never
+// equipable" rule this test used to pin — a magic staff now equips into the
+// WEAPON slot for a Magic User (test/unit/staff-wield.test.js owns full
+// coverage of that path); a non-Magic-User is still refused, but now with
+// `wrongClass` (a class-legality refusal, like any other weapon), not the
+// old `notEquippable` (there was no equip slot at all for the item kind).
+test("equipItem: REJECTS a staff for a non-Magic-User with wrongClass (RULES-13 — a staff is now the WEAPON slot, MU-only)", () => {
+  const state = fixedState({ c: { cls: "Fighter", sub: "Soldier", items: [{ kind: "staff", n: "Staff of Testing", txt: "zap" }] } });
   const events = equipItem(state, 0, []);
-  assert.ok(events.some((e) => e.type === "equipRejected" && e.reason === "notEquippable"));
+  assert.ok(events.some((e) => e.type === "equipRejected" && e.reason === "wrongClass"));
   assert.equal(state.c.items.length, 1, "the staff stays in the bag");
 });
 

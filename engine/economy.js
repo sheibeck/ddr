@@ -31,7 +31,7 @@ import {
   weaponUpgradeDelta,
   armorUpgradeDelta,
 } from "./items.js";
-import { clampCarry, slotItems, hasTool, gearCompareParts } from "./derived.js";
+import { clampCarry, slotItems, hasTool, gearCompareParts, wieldedStaff } from "./derived.js";
 import { difficultyCurve } from "./difficulty.js";
 import {
   WEAPONS,
@@ -498,11 +498,18 @@ const GEAR_EFFECTS = new Set(["buyWeapon", "buyArmor", "buyPremium"]);
  * verdict — is gear item `it` a strict upgrade over what `c` currently
  * has equipped? Delegates entirely to weaponUpgradeDelta/armorUpgradeDelta
  * (engine/items.js) — a strict `> 0` (CONTEXT "Keep the ONE verdict"), never
- * restated. `false` for anything that is not a weapon or armor. Pure, no
- * rng.
+ * restated. `false` for anything that is not a weapon or armor.
+ *
+ * RULES-13 (Phase 75): a weapon purchase is NEVER an "upgrade" while a
+ * staff is wielded — the store never sells staves, so the only way this
+ * function's weapon branch could otherwise fire mid-wield is trading the
+ * staff away for a plain weapon the player never asked to swap to.
+ * `wieldedStaff(c)` is the SAME gate storeBuyRefusal's room check reads
+ * (via this function), so the two stay consistent. Pure, no rng.
  */
 function gearUpgrades(c, it) {
-  return it.kind === "weapon" ? weaponUpgradeDelta(c, it) > 0 : it.kind === "armor" ? armorUpgradeDelta(c, it) > 0 : false;
+  if (it.kind === "weapon") return !wieldedStaff(c) && weaponUpgradeDelta(c, it) > 0;
+  return it.kind === "armor" ? armorUpgradeDelta(c, it) > 0 : false;
 }
 
 /**

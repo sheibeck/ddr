@@ -81,6 +81,18 @@
 // only (15 entries). A staff lives in `c.items` (one bag slot) and is used
 // by bag index; its charges+recharge model is unchanged.
 //
+// REVERSED by RULES-13 (Phase 75, user 2026-09-25): "treat a staff as an
+// equipable melee weapon for magic users. D8 base damage. Staves should no
+// longer be usable from inventory, but only if equipped." A magic staff
+// (any STAVES_ROWS row) is now wielded in the WEAPON slot by a Magic User
+// and fights as a flat d8 melee weapon (STAFF_WEAPON below), and its
+// charged power works only while wielded. The paragraph above is kept
+// verbatim as the historical record of the rule it reverses — `SLOT_OF`
+// still deliberately excludes STAVES_ROWS (a staff is still never a
+// `c.worn` entry; it is addressed through the SEPARATE c.weapon/c.staff
+// weapon-slot pair, engine/derived.js#wieldedStaff), so that reasoning
+// stays accurate unchanged. STAFF_WEAPON/STAFF_NAMES are exported below.
+//
 // The jewelry-merge ruling (user, 2026-09-18, quick 260918-wy1): "We should
 // not have ring/bracelet/amulet as separate equipment slots. We should have
 // jewelry as a slot. Let's allow us to slot up to 2 pieces of jewelry: any
@@ -269,6 +281,39 @@ function dropAuthored(row) {
 export const JEWELRY = JEWELRY_ROWS.map(dropAuthored);
 export const CLOAKS = CLOAKS_ROWS.map(dropAuthored);
 export const STAVES = STAVES_ROWS.map(dropAuthored);
+
+/**
+ * STAFF_WEAPON — RULES-13 (Phase 75, user 2026-09-25, reversing the
+ * 2026-09-18 staff amendment above): the ONE weapon-stats row a wielded
+ * magic staff fights as, regardless of which of the eight STAVES_ROWS it
+ * is — a flat d8 melee profile (need 0, crit 1, max 8) on top of the hero's
+ * usual damage modifiers (engine/derived.js#weaponDamage). Deliberately NOT
+ * a content/weapons.js WEAPONS entry (a staff item has no WEAPONS key at
+ * all, and WEAPONS' key order is load-bearing for the store shuffle and
+ * rollBlade — see that file's own header); engine/derived.js#weaponRow is
+ * the ONE lookup that resolves a weapon-slot name to this row when the name
+ * is one of STAFF_NAMES below. Frozen; never spread onto a staff item
+ * object — the item itself keeps its own kind:"staff" shape (n/use/txt/
+ * charges); this is a SEPARATE combat-stats row the engine reads by NAME,
+ * exactly the way it reads WEAPONS[name].
+ */
+export const STAFF_WEAPON = Object.freeze({
+  dice: { n: 1, sides: 8, bonus: 0 },
+  lab: "d8",
+  cls: "M",
+  need: 0,
+  crit: 1,
+  max: 8,
+});
+
+/**
+ * STAFF_NAMES — the eight STAVES_ROWS display names, frozen. The set
+ * engine/derived.js#weaponRow (and every save-tolerance/comparables check
+ * that needs to recognize "is this weapon-slot name a staff") tests a
+ * weapon-slot name against, to decide "resolve as STAFF_WEAPON" vs an
+ * ordinary WEAPONS lookup.
+ */
+export const STAFF_NAMES = Object.freeze(STAVES_ROWS.map((row) => row.n));
 
 /** SLOT_OF — display name (`.n`) -> slot FAMILY (jewelry | cloak), derived
  * from JEWELRY_ROWS + CLOAKS_ROWS ONLY (260918-w4n, staff amendment: a staff
