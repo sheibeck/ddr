@@ -51,6 +51,11 @@ Everything the player reads during a fight is legible, correctly ordered and hon
 
 ### Readability fixes — CMBUI-07..12 (user accepted 2026-09-25)
 - **User report 2026-09-25:** Lesser Summon (lvl 1, SPELLS row 32) must list with the level-1 spells. The CMBUI-08 sort covers it; pin it with a test. (The "summon missing from YOUR LOT" report was WITHDRAWN by the user: it does show.)
+- **Dazed honesty (user, 2026-09-25; todo `2026-09-25-dazed-works-but-nothing-says-what-it-does`):** Dazed works (−2 winning faces on the hero's to-hit, `engine/derived.js` ~L1134), but the chip is label-only and the Oracle line is flavor-only.
+  - EVERY hero-side chip's tap description (CMBUI-13) names its mechanical effect, with numbers in Phase 74's format, e.g. "Dazed: −2 to hit (19–20 instead of 17–20), 2 more rounds".
+  - The onset line names the effect.
+  - Every roll affected carries the modifier in its `mods` list.
+  - Audit `weakened` and every other condition for the same gap.
 - **CMBUI-14 (user, 2026-09-25; todo `2026-09-25-combat-items-mark-equipped-grey-out-unusable-bag-gear`):** in the combat ITEMS submenu (`combatMenu.js` ~L254-326):
   - worn rows show EQUIPPED;
   - bag rows whose activation needs the item worn (jewelry, cloak, staff) are DISABLED with a reason ("NOT EQUIPPED · can't swap mid-fight");
