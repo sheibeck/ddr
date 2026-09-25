@@ -13,12 +13,13 @@
     1. Check `git worktree list` and the `agent-*` branches for SUMMARYs.
     2. Merge each finished wave with `worktree.cleanup-wave`. It blocks on worktree-only line-ending noise in the shell snapshots, so run `git checkout -- test/unit/fixtures/shell-snapshots/` in the worktree first. If it reports branch_mismatch on a rerun, merge manually.
     3. Run `npm test`, then `roadmap.update-plan-progress`, then dispatch the next wave. The prompt pattern is in `<scratchpad>/last-executor-prompt.txt`.
-- **Phase 80 research is committed** (619dd4c). **IN FLIGHT: the Phase 80 planner** (no-commit mode). When it returns, run the gates, `annotate-dependencies 80`, and commit `docs(80): create phase plan`. Phase 80 executes LAST.
 - Accepted Phase 75 planner calls:
   - RULES-03 legality = the school gate only; canon grants are kept.
   - The cache pays 100 × depth.
   - A wielded staff is not magic vs magic-only foes.
   - A Summoner's Heal scroll heals half.
+- **USER-APPROVED PENDING EDIT (2026-09-25):** after plan 80-02 lands, update `.claude/CLAUDE.md`'s stack table. Replace the `@capacitor/status-bar` row with Capacitor 8's core SystemBars plugin, which ships in `@capacitor/core` and needs no extra package. Also run `npm ci` in the main checkout after 80-02 merges.
+- Phase 80 is PLANNED (aa2129b): 6 plans in 4 waves.
 - **Remaining order:** 75, 75.1, 75.2, 75.3, 76, 77, 78, 79, 80, then the lifecycle.
 - The edge-probe reports are pre-built: `<scratchpad>/cov<phase>.json` for every remaining phase.
 - `boot:check` is environment-flaky on this machine. Rerun it once before judging.
