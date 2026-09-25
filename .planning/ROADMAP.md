@@ -523,3 +523,62 @@ Plans:
 Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.11: Per-sub-class leaderboards & global LINEAGE (BACKLOG — promote as its own milestone)
+
+**Goal:** [Captured 2026-09-24, user] Every sub-class has its own global DEEPEST board on Play Games. Claude creates all 24 boards in Play Console by script and captures their IDs; nobody fills in the Console form 24 times. The game submits each run to its sub-class board, and LINEAGE gets an honest global form back. **The user wants this promoted as its own milestone** (via `/gsd-new-milestone`, after v2.1), not folded into v2.1.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Combines two threads:**
+
+1. **The ask (user, 2026-09-24):** one leaderboard per sub-class, all ranked by deepest depth. Creating each board by hand in Play Console is too slow with 24 sub-classes, so Claude should create them. It must also **retrieve each new board's ID** and wire it in, the way the Season-1 IDs were pasted by quick task 260924-c14.
+2. **The deferred LINEAGE global board:** v2.0 Phase 68 built LINEAGE's global form by grouping a top-25 DEEPEST sample on the client, with no per-combo board explosion in Play Console (PROJECT.md key decision; `proposed-milestone-leaderboards.md` "Race/sub-class boards: combinatorial"). At v2.1 roadmap approval the user made LINEAGE ME-only and deferred per-sub-class global boards (STATE.md 2026-09-24; **Phase 81** success criterion 3). The reason: Play Games keeps one best score per player per board, so a sample of DEEPEST cannot honestly rank lineages. Per-sub-class boards are the fix.
+
+**What exists today (verified 2026-09-24):**
+
+- **24 sub-classes, 8 per parent class:** `content/classes.js:13` (`CLASSES[...].subs`). The id is also the display name.
+  - Magic User: Wizard, Warlock, Sorcerer, Summoner, Cleric, Illusionist, Court Mage, Apprentice
+  - Fighter: Knight, Guard, Woodsman, Soldier, Barbarian, Master of Arms, Samurai, Bard
+  - Thief: Pickpocket, Pilfer, Cat Burglar, Cutthroat, Cloaker, Ninja, Con Artist, Acrobat
+  - `src/browser/scoreTag.js:38` `TAG_SUBS` is a frozen, append-only index in a different order. `classOfSub()` is at `:66`.
+- **Play Games app / project ID `517177834262`:** `android/app/src/main/res/values/games-ids.xml:6`; runbook `docs/PLAY-GAMES-SETUP.md`.
+- **Board IDs:** `content/leaderboards.js` `LEADERBOARD_IDS`, one frozen entry per season with 5 keys (deep/lean/days/kills/purse). A `PLACEHOLDER` prefix means the board is skipped silently.
+- **Scores:** `src/browser/boardScores.js`. The DEEPEST encoding is `floor * 1,000,000 - steps` (steps capped at 999,999), `largerIsBetter`. `leaderboardId(ids, season, board)` is at `:132`, and dev builds use `dev_{board}_s{season}` (`:165`).
+- **Submission:** `mazeworld.html` `onRunRecorded` → `src/browser/pgsQueue.js` enqueue (`:124`) → `flush()` → `provider.submitScore` (`:386`), one acked board at a time. Standing is fetched on the deep board (`:428-432`). The provider is `src/browser/playGames.js` (`@modbender/capacitor-play-games` 0.5.0).
+- **No service account yet:** `docs/RELEASING.md` "Uploading from the CLI (not set up yet)" and `C:/Users/Dell/.play/` does not exist.
+
+**Part A: provision the boards by script (Claude does this, user approves)**
+
+- **API:** Google's Play Games Services **Publishing / Games Configuration API**. `POST https://www.googleapis.com/games/v1configuration/applications/{applicationId}/leaderboards` (`leaderboardConfigurations.insert`), plus `list` / `get` / `update` / `delete`. OAuth scope `https://www.googleapis.com/auth/androidpublisher`. The body is `{ scoreOrder: "LARGER_IS_BETTER", draft: { name: { translations: [{ locale: "en-US", value }] }, scoreFormat: { numberFormatType: "NUMERIC", numDecimalPlaces: 0 }, sortRank } }`. Leave `scoreMin` / `scoreMax` empty to match the Season-1 boards. The response carries the new board's `id` (`CgkI...`), which is how the IDs are captured.
+- **One-time user setup:** a Google Cloud service account plus a JSON key stored outside the repo (`C:/Users/Dell/.play/service-account.json`), with the Games Configuration API enabled in that project. Then invite the service account in Play Console → Users and permissions, with the permission that covers Play Games Services configuration. Confirm the exact permission name at planning. **The same key unlocks `tools/play-upload.mjs`** (the CLI AAB upload that RELEASING.md defers), so plan the two together.
+- **Script:** `tools/pgs-leaderboards.mjs`, build tooling only; `googleapis` or plain `fetch` + `google-auth-library` as a devDependency; nothing ships in the app. It reads the sub-class list from `content/classes.js` so the list is never retyped. It is **idempotent**: `list` first and skip any board whose name already exists, so a rerun never duplicates. `--dry-run` prints the plan. It writes the returned IDs into `content/leaderboards.js` (or prints the block for review).
+- **Naming:** follow the Season-1 convention (`PLAY-GAMES-SETUP.md` §7: *DEEPEST, Season 1*). For example *DEEPEST, Wizard* (all-time) or *Wizard, Season 1* (seasonal). Decide with the seasons question below.
+- **Publishing:** the API creates **draft** leaderboards. Testers see drafts; everyone else sees them only after the user presses **Publish** on the Play Games Services config in Play Console. Keep that as a manual user step and add it to the runbook. Ordering cannot be changed once published, so the dry-run output is the review gate.
+- **Fallback:** if the service-account route is blocked, drive Play Console's "Create leaderboard" form in the user's signed-in Chrome (claude-in-chrome) and scrape each ID from the board's page. It's slower and more fragile.
+
+**Part B: submit to the sub-class boards**
+
+- Extend the `LEADERBOARD_IDS` shape to carry sub-class boards, keyed by the `content/classes.js` sub names. The unit suite asserts every sub-class has an ID or a `PLACEHOLDER`.
+- `pgsQueue` submits the existing DEEPEST score (same `boardScore` encoding and score tag) to the run's sub-class board, as well as the main DEEPEST board. Acks are tracked per board so a retry never double-submits. Dev IDs become `dev_deep_{sub}_s{season}`.
+- Old queued entries without sub-class boards load tolerantly (greenfield rule: no dual path; old saves tolerant-load only).
+
+**Part C: global LINEAGE returns**
+
+- The global LINEAGE view for a picked sub-class reads **that sub-class's board** (top page + the player's own standing), not the DEEPEST sample. Race stays a client-side filter from the score tag on that board's rows. This is honest per sub-class; the race split is still a sample, and the copy should say so.
+- This reverses or extends Phase 81's "LINEAGE ME-only". **It depends on Phase 81 landing first** (ME | ALL | FRIENDS scopes).
+
+**Open decisions (for milestone discussion):**
+
+- **Seasonal or all-time sub-class boards?** Play Games caps a game at **70 leaderboards**. All-time: 5 + 24 = 29 total, room left for future seasons of the 5 main boards. Per-season: 24 new boards each season, so Season 2 = 58 and Season 3 goes past the cap. Claude recommends **all-time** (personal bests are already all-time locally).
+- Race boards too (6 more)? Race × sub-class (144) is impossible under the cap.
+- Board icons: `imageConfigurations.upload` (`LEADERBOARD_ICON`) could reuse the sub-class PNG art. Optional.
+- Does "you placed X" also report the sub-class standing on the death card?
+
+**Constraints:** shell and tooling only, so the engine is untouched and there are zero parity fixtures. The service-account key never enters the repo or `www/`. No new runtime SDK (the ads/analytics audit stays clean). Needs a signed-in Pixel 7 check (submission lands on the sub-class board; LINEAGE ALL/FRIENDS), batched into the milestone-close checklist.
+
+**Sources:** [leaderboardConfigurations.insert](https://developer.android.com/games/services/publishing/api/leaderboardConfigurations/insert) · [LeaderboardConfiguration resource](https://developer.android.com/games/services/publishing/api/leaderboardConfigurations) · [70-leaderboard limit](https://developers.google.com/games/services/common/concepts/leaderboards)
+
+Plans:
+
+- [ ] TBD (promote with /gsd-new-milestone when ready — user wants this as its own milestone)
