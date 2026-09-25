@@ -2768,3 +2768,71 @@ counts a refused-but-validated action), so both files were updated to assert
 the same non-negative-integer coercion `validateSave` uses. Neither file
 touches `test/parity/` or moves a fixture.
 
+## Phase 72: roll-direction sign fixes (ROLL-01) — measured per plan
+
+`docs/ROLL-LEDGER.md` (72-01) audits every die check and its modifiers and
+names four known fixes: (a) the parley insult must be the LAST need term on
+every foe swing (72-04, this section), (b) Fridgian frenzy's second swing
+narrows the hero's own normal to-hit by one instead of a canon hard-set
+(72-05), (c) rolling a Skeleton's die's best face shatters it outright
+(72-06), and (d) the Thief `evasion` dial's sign, which was inverted — a
+positive value made a Thief EASIER to hit (72-04, this section). Each
+landing plan measures and declares its own moved set below; the F5 parley-
+dial sign fix (`parleyNeedModFor`, discovered mid-audit) is 72-07's.
+
+### Plan 04 — Thief evasion sign + the insult is the last term on the member branch: measured zero
+
+**The rule.** Two independent fixes, both on the foe's to-hit side. (d)
+`engine/derived.js#foeToHitVs`/`#foeToHitBreakdown`: `CLASS_MITIGATION.
+Thief.evasion` (vs hero only) is now SUBTRACTED from the foe's need
+(`h -= classEvasionFor(c)`) instead of added — a positive evasion now
+makes a Thief harder to hit, matching its name. (a)
+`engine/combat.js#foeTurn`'s party-member branch: the `C.parleyInsulted`
+block moves from BEFORE the member's own Sidestep/Smoke override to AFTER
+it, so it becomes the last need term before the `mRoll > mNeed` miss test —
+matching the hero branch and `pursuitStrike`, which already applied it
+last. Both are pure need-arithmetic edits; zero new rng draws, zero
+reordering of existing draws.
+
+**The predictor.** Fix (d): `CLASS_MITIGATION.Thief.evasion` is `0` at
+identity (`engine/difficulty.js` DIALS, unchanged by this plan), and
+`h -= 0` is identical to `h += 0` — a structural no-op at every site
+regardless of class/vs. Fix (a): the member branch only runs when
+`pickFoeTarget` finds a live party member (`state.party` populated,
+`combat.allies` non-empty) — none of the six parity fixture files ever
+builds a party (the Phase 53 JOIN-02 guard already proves no replay site
+ever meets a Joiner, and no fixture hand-authors a `party`/`allies` array
+either), so the member branch this plan reorders never executes against
+any of the 31 replay sites. Predicted moved set for both fixes: empty.
+
+**The live-scan results — measured, not assumed.**
+1. `node --test test/parity/*.test.js`: **46 tests, 46 pass, 0 fail.**
+2. `node tools/initiative-fixture-scan.mjs | diff --strip-trailing-cr - tools/initiative-fixture-scan-output.txt`: empty.
+3. `node tools/worn-fixture-scan.mjs | diff --strip-trailing-cr - tools/worn-fixture-scan-output.txt`: empty.
+4. `git diff --stat -- test/parity/fixtures/ test/parity/harness/comparables.js test/parity/prototype-master.js.txt`: empty.
+5. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+6. `node --test test/parity/fixture-inventory.test.js`: **5 tests, 5 pass, 0 fail** (the roster is unchanged).
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s new
+`ROLL-01 (Phase 72)` test pins both facts: part (a) the declared set
+(holders whose `record.phase` split on `+` includes `"72"`) is exactly
+`ROLL01_EXPECTED_HOLDERS` (currently `[]` — 72-05/06/07 extend it as their
+own fixes land); part (b) replays all 31 sites (the JOIN-02
+`replaySiteEvents` shape) and asserts zero `memberStruck` events and zero
+`member`-carrying `foeMissed` events anywhere — the positive proof that no
+replay site's engine state ever reaches the member branch this plan edits,
+so the reorder (and the evasion sign) cannot have moved a fixture.
+
+**Byte-identical elsewhere.** `test/parity/harness/comparables.js` is
+untouched — neither fix touches serialized `state` at all (evasion is read
+from `DIALS`, never stored per-character; the insult reorder only changes
+WHEN an existing `C.parleyInsulted` flag is read, never adds a field). The
+Smoke `txt` string (content/abilities.js, content/skills.js) this plan's
+Task 2 reworded is NOT serialized into `state` — `c.abilities` stores only
+string ids (`entry.active`/`id`) and `c.skills` stores only key/level pairs
+(`engine/character.js`), never the descriptive `txt` — confirmed by grep
+before editing, per the plan's own gate. No new event type is introduced
+(the reorder only moves an existing `needMods` push), so no new
+`EVENT_NARRATION`/`LINE_FOR` coverage entry was needed beyond the wording
+update already required by the text fix itself.
+

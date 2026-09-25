@@ -581,12 +581,13 @@ export function foeAccuracyFor() {
 }
 
 /**
- * classEvasionFor(c) — CLASS_MITIGATION.Thief.evasion, added to the foe's
- * to-hit need ONLY for `vs === "hero"` (the hero's own body, never a party
- * member) and ONLY for a Thief (engine/derived.js#foeToHitVs/
- * #foeToHitBreakdown). Identity: 0 (canon). Direction: negative = easier to
- * dodge (the first candidate manual notch is -1 — "the base Thief has no
- * innate evasion today").
+ * classEvasionFor(c) — CLASS_MITIGATION.Thief.evasion, subtracted from the
+ * foe's to-hit need ONLY for `vs === "hero"` (the hero's own body, never a
+ * party member) and ONLY for a Thief (engine/derived.js#foeToHitVs/
+ * #foeToHitBreakdown). Identity: 0 (canon). Direction: up = the Thief is
+ * harder to hit (the foe lands on fewer faces); the first candidate manual
+ * notch is +1. Phase 72, ROLL-01 (d), user ruling 2026-09-24 — a positive
+ * evasion value now makes the Thief harder to hit, not easier.
  */
 export function classEvasionFor(c) {
   if (!c || c.cls !== "Thief") return 0;

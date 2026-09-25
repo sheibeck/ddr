@@ -948,7 +948,9 @@ function pursuitStrike(state, rng, events) {
     if (need !== before) needMods.push({ name: "penalty", delta: need - before });
   }
   if (C.parleyInsulted) {
-    // PARLEY-02 / D-06 / D-20 (review WR-01): the parting strike is a foe swing too — post-draw, zero extra draws
+    // PARLEY-02 / D-06 / D-20 (review WR-01): the parting strike is a foe
+    // swing too — post-draw, zero extra draws. Insult is the last term
+    // (Phase 72 ROLL-01 (a)).
     const before = need;
     need += 1;
     needMods.push({ name: "insulted", delta: need - before });
@@ -2443,12 +2445,6 @@ export function foeTurn(state, rng, events = []) {
           mNeed = Math.min(mNeed, C.foeToHitPenalty);
           if (mNeed !== before) mNeedMods.push({ name: "penalty", delta: mNeed - before });
         }
-        if (C.parleyInsulted) {
-          // PARLEY-02 / D-06 / D-20: insulted aggro, post-draw arithmetic, zero extra draws
-          const before = mNeed;
-          mNeed += 1;
-          mNeedMods.push({ name: "insulted", delta: mNeed - before });
-        }
         // Phase 38 (ABIL-05): a member is its own body — its OWN Sidestep/
         // Smoke shift its own need, exactly like the hero's equivalent terms
         // in foeToHitVs("hero") (which this "member" vs never reads). Pure
@@ -2464,6 +2460,17 @@ export function foeTurn(state, rng, events = []) {
           const before = mNeed;
           mNeed = 1;
           if (mNeed !== before) mNeedMods.push({ name: "Smoke", delta: mNeed - before });
+        }
+        if (C.parleyInsulted) {
+          // PARLEY-02 / D-06 / D-20 + Phase 72 ROLL-01 (a), user ruling
+          // 2026-09-24: the insult is the LAST need term on every foe swing
+          // (hero branch, member branch and pursuitStrike), so an override
+          // (Smoke / Mirror / invisible / blind) resets the need first and
+          // the insult then adds its one face on top. Post-draw arithmetic,
+          // zero draws.
+          const before = mNeed;
+          mNeed += 1;
+          mNeedMods.push({ name: "insulted", delta: mNeed - before });
         }
         if (mRoll > mNeed) {
           // name the member as the intended target so a whiff at a party
@@ -2562,7 +2569,8 @@ export function foeTurn(state, rng, events = []) {
         if (need !== before) needMods.push({ name: "penalty", delta: need - before });
       }
       if (C.parleyInsulted) {
-        // PARLEY-02 / D-06 / D-20: same placement, same reasoning
+        // PARLEY-02 / D-06 / D-20: same placement, same reasoning. Insult is
+        // the last term (Phase 72 ROLL-01 (a)).
         const before = need;
         need += 1;
         needMods.push({ name: "insulted", delta: need - before });

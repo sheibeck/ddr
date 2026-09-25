@@ -53,7 +53,7 @@ export const ABILITIES = [
   { id: "silentStep", name: "Silent Step", cls: "Thief", source: "table", skillKey: "Silent Step", cd: 4, target: "foe", tag: "opener", txt: "nobody heard that: your next attack is an automatic critical, any round" },
   { id: "feint", name: "Feint", cls: "Thief", source: "table", skillKey: "Feint", cd: 3, target: "foe", tag: "damage", txt: "look left, stab right: this strike cannot miss and adds your level" },
   { id: "dirtyTrick", name: "Dirty Trick", cls: "Thief", source: "table", skillKey: "Dirty Trick", cd: 4, target: "foe", tag: "opener", txt: "sand, thumb, elbow: the target is blinded for two rounds" },
-  { id: "smoke", name: "Smoke", cls: "Thief", source: "table", skillKey: "Smoke", cd: "fight", target: "self", tag: "defensive", txt: "gone: for two rounds foes need a natural 1 to find you, and a flee during it just works" },
+  { id: "smoke", name: "Smoke", cls: "Thief", source: "table", skillKey: "Smoke", cd: "fight", target: "self", tag: "defensive", txt: "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works" },
   { id: "cutpurse", name: "Cutpurse", cls: "Thief", source: "pool", cd: "fight", target: "foe", tag: "damage", txt: "lift d10 × level gold off the target mid-fight; it has other problems" },
   { id: "poisonedEdge", name: "Poisoned Edge", cls: "Thief", source: "pool", cd: 5, target: "foe", tag: "damage", txt: "the blade weeps: d4 a round to the target for three rounds" },
   { id: "hamstring", name: "Hamstring", cls: "Thief", source: "pool", cd: "fight", target: "foe", tag: "opener", txt: "cut the tendon: the target's blows do half damage for the rest of the fight" },

@@ -648,7 +648,7 @@ export const EVENT_NARRATION = {
   lastStandCalled: (e) => `<span class="beat">${e.member ? `${e.member}: ` : ""}Under a quarter. ${e.attacks ?? 3} attacks this round. Make them count.</span>`,
   dirtyTrickLanded: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Sand, thumb, elbow. ${e.target ?? "it"} is blinded for ${e.rounds ?? 2} rounds.</span>`,
   foeSightReturned: (e) => `${e.name ?? "It"} blinks the sand out.`,
-  smokeThrown: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Gone. For two rounds they need a natural 1 to find you.</span>`,
+  smokeThrown: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.</span>`,
   cutpursed: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}You lift ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight. It has other problems.</span>`,
   poisonedEdgeApplied: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}The blade weeps into ${e.target ?? "it"}. ${e.rounds ?? 3} rounds of that.</span>`,
   // dotTick is generic on `by` — Phase 40 (SPELL-01, Ice) is the first spell

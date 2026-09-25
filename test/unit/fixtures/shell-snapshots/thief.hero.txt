@@ -75,7 +75,7 @@
     <small>
       text="special skill · active"
     <i>
-      text="gone: for two rounds foes need a natural 1 to find you, and a flee during it just works"
+      text="gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works"
     <span>
       text="once a fight"
   <li>

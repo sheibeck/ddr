@@ -136,7 +136,7 @@ const CATALOG_TXT = {
   silentStep: "nobody heard that: your next attack is an automatic critical, any round",
   feint: "look left, stab right: this strike cannot miss and adds your level",
   dirtyTrick: "sand, thumb, elbow: the target is blinded for two rounds",
-  smoke: "gone: for two rounds foes need a natural 1 to find you, and a flee during it just works",
+  smoke: "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works",
   cutpurse: "lift d10 × level gold off the target mid-fight; it has other problems",
   poisonedEdge: "the blade weeps: d4 a round to the target for three rounds",
   hamstring: "cut the tendon: the target's blows do half damage for the rest of the fight",
