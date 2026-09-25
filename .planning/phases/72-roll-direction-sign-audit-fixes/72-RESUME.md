@@ -5,7 +5,9 @@
 ## Where the run is
 - `/gsd-autonomous` is running milestone v2.1.
 - Phases 72, 81 and **73 are COMPLETE and pushed**. Phase 73 ended with 5,752/5,752 green, byte-identical parity, and an identical readout.
-- **NEXT: Phase 74 (Roll Display & Modifier Honesty).** Its CONTEXT exists: plan with `--skip-research`, then execute.
+- **IN FLIGHT: the Phase 74 planner** (a gsd-planner running in the background, dispatched ~12:42 local). It writes `.planning/phases/74-roll-display-modifier-honesty/74-*-PLAN.md` and commits `docs(74): create phase plan`.
+  - If it finished during the compact: check that the plans exist and are committed, then run `state.planned-phase --phase 74`, `roadmap.annotate-dependencies 74`, a commit, and execute Phase 74 wave by wave. Each plan is a gsd-executor (sonnet) in a worktree with a Monitor; then the merge, `npm test`, tracking, VERIFICATION and `phase.complete`.
+  - If no plans exist and it's no longer running: re-dispatch the Phase 74 planner, using the Phase 73 planner prompt pattern, with the edge-probe report at `<scratchpad>/cov74.json`.
 - **Remaining order:** 74, 75, 75.1, 75.2, 75.3, 76, 77, 78, 79, 80 (with a researcher), then the lifecycle.
 - Every phase has a committed CONTEXT.md, so every one skips discuss.
 
