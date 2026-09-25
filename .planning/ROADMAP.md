@@ -111,7 +111,7 @@ Plans:
   4. Content numbers that encode to-hit/AR/etc. are re-expressed in the new convention, and any roll-related value already in a saved game converts once, tolerantly, on load.
   5. Every event that carries a roll (`struck`, foe swings, soak, thrown spells, resistance, parley, traps, locks, climbs/leaps, cures, wake, drops, gates, summons, crits) natively carries the high-is-good `roll`, `target` and `dieN`.
 
-**Plans**: 7/10 plans executed
+**Plans**: 8/10 plans executed
 
 Plans:
 **Wave 1**
@@ -138,7 +138,7 @@ Plans:
 
 **Wave 6**
 
-- [ ] 73-08-PLAN.md — Flee (bonus folded into the threshold), parley, combat gates, drops and the foe ability gate; combat.js and foeAbilities.js guarded (wave 6)
+- [x] 73-08-PLAN.md — Flee (bonus folded into the threshold), parley, combat gates, drops and the foe ability gate; combat.js and foeAbilities.js guarded (wave 6)
 
 **Wave 7**
 
@@ -372,7 +372,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
-| 73. Engine Roll-High Mirror | v2.1 | 7/10 | In Progress|  |
+| 73. Engine Roll-High Mirror | v2.1 | 8/10 | In Progress|  |
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
