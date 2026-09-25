@@ -259,7 +259,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 81-04-PLAN.md — Panel restructure (BOARD-11/12/13/14): GRAVEYARD folded into ME, ME | ALL | FRIENDS with the ALL default when signed in, LINEAGE ME-only at the rail's end (wave 2)
+- [ ] 81-04-PLAN.md — Panel restructure (BOARD-11/12/13/14): ME | ALL | FRIENDS with the ALL default when signed in; LINEAGE and GRAVEYARD kept as ME-only boards at the rail's end (…, LINEAGE, GRAVEYARD); LINEAGE never reads the global sample; 81-03's GRAVEYARD doc lines corrected (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
