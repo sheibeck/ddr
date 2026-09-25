@@ -54,6 +54,14 @@ So Phase 78 depends on Phase 73/74 (it runs after them anyway, in numeric order)
   - A pure engine derived function (e.g. `heardSquares(state)`) supplies the squares, with no state change and no rng.
   - Acute Hearing keeps "never surprised". Its description states the new ability, written roll-high-aware. Phase 72 already dropped the dead "3 to hit the unseen" clause.
 
+### Movement setting — HUD-08 (user, 2026-09-25; added to v2.1 on request; todo `2026-09-25-setting-tap-to-move-or-on-screen-arrow-pad`)
+- A Settings choice, **Movement: TAP TO MOVE (default) | ARROWS**. With ARROWS, a second choice places the pad **BOTTOM LEFT | BOTTOM RIGHT** of the map. Both are stored in the settings record with a tolerant load (unknown values fall back to tap-to-move).
+- **Arrow mode:** a 4-way on-screen pad overlays the map in the chosen bottom corner. Each press takes ONE step through the same `stepNow(dir)` path (mazeworld.html ~L7697), so there's no second movement path. Hardware keyboard arrow keys also step while arrow mode is on.
+- Map taps NEVER move the party in arrow mode: tap-to-move is ENTIRELY disabled. Non-movement map taps (marks and the like) keep working unless they conflict.
+- **Auto-scroll:** `keepPartyInView()` (~L5657-5706) treats the pad's on-screen rect as a visible edge, so the map scrolls before the party slips under it. The pad may overlap the map otherwise.
+- **Defaults** (recommended, set by the orchestrator; the planner may refine): one step per press (no hold-to-repeat); the pad scales with the S/M/L text size; TalkBack labels like "Step north"; reduced motion honoured. The dead state, combat and open sheets disable the pad exactly as they disable map taps.
+- Presentation/shell only (the engine already takes one-step moves), so zero fixture moves.
+
 ### Claude's Discretion
 - The card layout, the fade implementation (CSS or canvas), the mark's visual (within the parchment palette and PNG-icons canon), and the exact voice lines.
 - Plan split: the climb card (engine + UI), dead state + final sheet, settings (font + drag), stairs fade, hearing, band 1. Several of these are independent.

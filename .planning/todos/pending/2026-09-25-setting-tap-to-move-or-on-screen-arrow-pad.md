@@ -2,6 +2,7 @@
 created: 2026-09-25T00:00:00.000Z
 title: Setting to choose tap-to-move or an on-screen arrow pad (bottom-left or bottom-right)
 area: ui
+resolves_phase: 78
 files:
   - src/browser/settings.js (settings schema, e.g. textSize S/M/L at ~L78/L101 — add movement + pad-side keys)
   - mazeworld.html:5657-5706 (keepPartyInView — the "stationary camera" edge rule; must treat the pad's rect as a visible edge)
