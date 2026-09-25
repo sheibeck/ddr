@@ -180,3 +180,14 @@ On the Pixel 7, swing at a foe and confirm the Oracle reads "<roll> vs 16–20" 
 ---
 *Phase: 73-engine-roll-high-mirror*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: engine/combat.js
+- FOUND: engine/foeDamage.js
+- FOUND: src/browser/eventNarration.js
+- FOUND: src/browser/rail.js
+- FOUND: .planning/phases/73-engine-roll-high-mirror/73-04-SUMMARY.md
+- FOUND: b0c7fe4 (Task 1 commit)
+- FOUND: 49b6d89 (Task 2 commit)
+- FOUND: fe8b62c (Task 3 commit)
