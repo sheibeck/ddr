@@ -6,13 +6,13 @@ current_phase: 74
 current_phase_name: Roll Display & Modifier Honesty
 status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-25T16:41:48.104Z"
+last_updated: "2026-09-25T17:29:38.814Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 73 complete, transitioned to Phase 74
 progress:
   total_phases: 13
   completed_phases: 3
-  total_plans: 23
+  total_plans: 24
   completed_plans: 23
   percent: 23
 ---
@@ -90,6 +90,7 @@ Last activity: 2026-09-25 — Phase 73 complete, transitioned to Phase 74
 | 260924-51h | v2.0 (Phase 70 POLISH-01): loop sfx/theme.mp3 from launch across the title area (title + roller + title-opened panels/sheets), streamed via HTMLAudioElement into the sfx gain path, fades at the map, Sound/background aware; theme.mp3 committed, AUD-06 = 30 clips + 1 music track | 2026-09-24 | c8e25d3 | [260924-51h-loop-theme-mp3-on-the-title-screen-v2-0](./quick/260924-51h-loop-theme-mp3-on-the-title-screen-v2-0/) |
 | 260924-c14 | v2.0: live Play Games APP_ID 517177834262 + Season-1 leaderboard IDs pasted (games-ids.xml, content/leaderboards.js); placeholder pins updated | 2026-09-24 | 96a0e93 | [260924-c14-paste-the-live-play-games-app-id-and-sea](./quick/260924-c14-paste-the-live-play-games-app-id-and-sea/) |
 | 260924-g8m | v2.0: flight/ether over water uses the dry footstep (audioCtx.onWater gated on moveCost > 1); UAT M34 updated | 2026-09-24 | 65c1a6f | [260924-g8m-keep-flight-over-water-silent](./quick/260924-g8m-keep-flight-over-water-silent/) |
+| 18 | Add achievement + icon inventory to 999.12 backlog item | 2026-09-25 | f5cec79 | — |
 
 ### Pending Todos
 
