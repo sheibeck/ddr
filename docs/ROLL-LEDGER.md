@@ -630,3 +630,52 @@ Copied live from `test/unit/roll-high-guard.test.js`'s `DRAW_INVENTORY` (73-10, 
 
 **Totals:** 31 `rollCheck` calls, 65 `amount` draws, 45 `selection` draws, 5 `mishap-on-1` draws, 8 `already-high` draws, 2 `primitive` draws — 156 `.d(` occurrences across the 24 `ENFORCED` files, every one tagged or routed through `rollCheck`, with zero shape/mirror/tag violations (`test/unit/roll-high-guard.test.js`, `ALL_ENFORCED = true`).
 
+## Phase 74 display closure (ROLL-02/03)
+
+**Closed:** 2026-09-25 (74-01 through 74-08). Every roll, range and modifier the player sees is now a direct, honest read of the engine's own roll-high numbers, closing ROADMAP Phase 74 success criteria 1-3 and this ledger's own `## Handoffs → Phase 74` item (O3, `needModsClause`) and `## The device trigger`.
+
+### (a) The sign rule
+
+Every displayed modifier is signed from the PLAYER's side: `+` is always better for the player, `−` (U+2212) is always worse — on EVERY surface, including a foe's own line. The engine's `mods` deltas stay signed for the ROLLER (unchanged, per Phase 73's field contract); `src/browser/rollRange.js`'s `playerDelta(delta, roller)` is the ONE place a delta is flipped, keyed on an explicit roller:
+
+| Roller | `playerDelta` | Example |
+|---|---|---|
+| `ROLLERS.you` (the hero's own roll) | passthrough, unchanged | `afraid −3` (a real penalty reads as a real minus) |
+| `ROLLERS.ally` (a party member's/summon's own roll) | passthrough, unchanged | same convention as `you` |
+| `ROLLERS.foe` (a foe's roll against the hero or a member) | negated | `Sidestep +2` (the engine's stored delta is `−2`, favorable to the hero, so it negates to a player-signed `+2`) |
+
+### (b) The non-event ("right now") surfaces
+
+`src/browser/rollOdds.js` (74-04) is the ONE module every non-event odds reading is computed through — `heroHitOdds`, `heroHitOddsVs`, `foeHitOddsVs`, `fleeOdds` — each a pure read of the engine's own derived functions (`engine/derived.js#toHit`/`afraidNeed`/`strikeDie`/`foeDie`/`fleeBreakdown`, and 74-01's pure extraction `targetStrikeFaces`/`heroStrikeFacesVs`/`foeSwingVsHero`), formatted only through `rollRange.js`. Zero fixtures moved for 74-01's extraction (the same arithmetic, same order, pulled into three named functions `engine/combat.js` now calls instead of inlining).
+
+One example per consuming surface:
+- The hero sheet's TO HIT row (`heroTab.js`, 74-04): `heroHitOdds(state).text` — "16–20 (d20)" for a level-1 Human Fighter on a Club.
+- The combat menu's STRIKE sub (`combatMenu.js`, 74-04): filled from the SAME sheet value, so the two can never disagree.
+- Foe details' two-way odds line (`foeDetails.js`, 74-06): "You hit it on 17–20 (d20) · it hits you on 16–20 (d20; Sidestep +2, insulted −1)".
+- The hero condition chips' measured effect (`conditionEffects.js`, 74-07): "−3 to hit (now 19–20)" for Afraid, diffed against a what-if state with the condition dropped — never a restated formula.
+- Item/loot/store/find comparisons (`upgradeWhy.js`/`viewModels.js#lootCompare`, 74-05): "−2 to hit, worse than your Club".
+
+### (c) The O3 / needModsClause handoff — CLOSED by 74-03
+
+`needModsClause` (the old module-private formatter this ledger's `## Handoffs → Phase 74` flagged) is deleted outright. Every Oracle/rail roll line (`eventNarration.js`/`narrationLines.js`) now imports and calls `rollRange.js`'s shared `modsClause`/`modsText` directly with an explicit roller, so a foe-need `+` and a hero-need `+` can never again mean opposite things on screen.
+
+### (d) The device trigger — CLOSED by 74-05
+
+The dropped heavy weapon's "−2 to hit" now reads "−2 to hit, worse than your Club" everywhere it appears (`lootCompare`, `EVENT_NARRATION.purchaseBagged`, `LINE_FOR.purchaseBagged`) — the exact case that opened this ledger's `## The device trigger` section.
+
+### (e) The consistency guard
+
+`test/unit/roll-sign-consistency.test.js` (74-08) is the build-failing guard: 11 tests drive the real engine (`playerStrike`/`foeTurn`/`flee`) and assert the SAME player-signed token appears on every surface for insulted/Guard/Sidestep, Weaken, Battle Roar, Elven, afraid, a weapon comparison, flee and heights; a range-format pin for the level-1 class ranges; and a source scan proving exactly one formatter (`rollRange.js`) exists in `src/browser/`. Sanity-checked with a temporary roller flip on `foeMissed` (4 of 11 tests failed, then reverted byte-identical) — the guard has teeth.
+
+### (f) Hooks left for Phase 77 and Phase 78
+
+- Phase 77 (CMBUI-13 effect indicators): reuse `rollRange.js`'s formatter and `rollOdds.js` directly; `conditionEffects.js`'s `WHAT_IF` map and `foeDetails.js`'s `foeConditionEffect` are both designed to take a new ability-timer key (Smoke/Sidestep/Battle Roar) as one more entry, not a second what-if mechanism.
+- Phase 78 (the climb card): reuses this phase's range format (`rangeText`/`facesRangeText`) for any climb/leap odds the card decides to show.
+
+### (g) What stays for Phase 79
+
+Beyond this ledger's existing `## Handoffs → Phase 79` list (Mirror Self/Crystal Staff/Weaken prose, the Lockpicks item text, Smoke's own text), Phase 74 leaves these authored-prose sites untouched, on purpose (this phase changes computed NUMBERS and SIGNS, never authored TEXT):
+- The Smoke and Battle Roar ability/spell narration prose (`eventNarration.js#battleRoarRaised`, `content/abilities.js`) — "for two rounds they all need two better to hit anyone on your side."
+- The "They need two better" chip and narration lines for the Anklet/Cloak of Invisibility (`eventNarration.js`/`narrationLines.js`'s `unseen` lines, `content/treasure-tables.js`).
+- The authored `CONDITION_EXPLAIN` sentences (mazeworld.html's classic script) and `FOE_CONDITION_DESC` sentences (`src/browser/foeConditions.js`) — every chip's own one-line description, distinct from this phase's computed effect clause that now precedes it.
+- Every bestiary note phrased as a face count ("hittable only on a 4," etc.) not already flagged in the existing Phase 79 list.
