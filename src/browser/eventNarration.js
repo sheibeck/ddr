@@ -537,14 +537,14 @@ export const EVENT_NARRATION = {
   },
   allyMissed: (e) =>
     e.target
-      ? `${e.name ?? "Your ally"} swings${e.weapon ? ` a ${e.weapon}` : ""} at ${e.target} and misses.${e.roll != null ? ` <span class="roll">${e.roll} vs ${e.need ?? "?"}.</span>` : ""}${e.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : ""}`
+      ? `${e.name ?? "Your ally"} swings${e.weapon ? ` a ${e.weapon}` : ""} at ${e.target} and misses.${e.roll != null ? ` <span class="roll">${e.roll} vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}.</span>` : ""}${e.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : ""}`
       : `${e.name ?? "Your ally"} swings and misses.`,
   allyDeparted: (e) => `${e.name ?? "Your ally"} slips away, obligation met.`,
   // DFB-05 (Phase 25.1): a Magic User party member's cast — allyCast is the
   // announcement (Oracle-only; narrationLines.js's ORACLE_ONLY entry), always
   // followed in the same action by exactly one of allySpellHit/allySpellMissed.
   allyCast: (e) =>
-    `${e.name ?? "Your ally"} casts <span class="hit">${e.spell ?? "a spell"}</span> at ${e.target ?? "the nearest foe"}.${e.roll != null ? ` <span class="roll">${e.roll} vs ${e.need ?? "?"}${e.bonus ? ` (+${e.bonus})` : ""}.</span>` : ""}`,
+    `${e.name ?? "Your ally"} casts <span class="hit">${e.spell ?? "a spell"}</span> at ${e.target ?? "the nearest foe"}.${e.roll != null ? ` <span class="roll">${e.roll} vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}.</span>` : ""}`,
   allySpellHit: (e) => {
     const who = e.name ?? "Your ally";
     const sp = e.spell ?? "The spell";
@@ -788,7 +788,7 @@ export const EVENT_NARRATION = {
   dozed: (e) => `${e.target ?? "It"} dozes off for ${e.rounds ?? 0} rounds.`,
   nothingToThrowAt: () => `<span class="miss">Nothing here to throw it at.</span>`,
   spellThrown: (e) =>
-    `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}.`,
+    `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}.`,
   spellHit: (e) =>
     `<span class="hit">Hit.</span> <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (×${e.mult})` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
   frozenSolid: (e) => `<span class="hit">${e.target ?? "It"} freezes solid.</span>`,
