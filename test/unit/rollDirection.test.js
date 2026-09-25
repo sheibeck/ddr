@@ -13,12 +13,11 @@
 // not identity) — every row that needs a specific dial value applies it
 // itself via setDialsForTuning and restores the shipped DIALS afterward.
 //
-// One bug group remains PENDING (node:test's `todo` option, naming the
-// fixing plan): the Skeleton shatter mechanic (72-06, six rows split from
-// the plan's five listed ids — the sixth pins the "even on your last life"
-// case). The party-member insult-ordering bug and the Thief evasion sign
-// inversion (both 72-04) and the Fridgian frenzy second-swing math (72-05,
-// two rows) are now green. Every other row passes today.
+// Every known bug group is now green: the party-member insult-ordering bug
+// and the Thief evasion sign inversion (both 72-04), the Fridgian frenzy
+// second-swing math (72-05, two rows), and the Skeleton shatter mechanic
+// (72-06, six rows split from the plan's five listed ids — the sixth pins
+// the "even on your last life" case). No `todo` rows remain in this file.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -1178,23 +1177,23 @@ test("[ally-strike:ally-level-die] a higher-level summon strikes no worse than a
   assertBonus(withMod, without, { strict: false, label: "ally-strike:ally-level-die" });
 });
 
-// --- Skeleton shatter (PENDING, 72-06) --------------------------------------
+// --- Skeleton shatter (landed, 72-06) ----------------------------------------
 //
 // "Rolling max on your dice triggers the shatter" (user ruling 2026-09-24):
 // any to-hit roll against a Skeleton that shows its die's own best face
-// destroys it outright, including its second (kill-twice) life. Today the
-// engine has no such rule — a best-face roll just lands an ordinary hit — so
-// every row below is RED: `wins` is asserted at 1 (the post-fix claim), but
-// today's engine lands the SAME ordinary hit on several faces and never
-// actually shatters the Skeleton in one call. wp is set high enough that no
-// single ordinary hit is ever lethal on its own, so a wins > 1 reading below
-// would mean "landed a hit", never "shattered it".
+// destroys it outright, including its second (kill-twice) life —
+// engine/combat.js#shatterIfBest. `wins` is asserted at 1: only the best
+// face shatters it in one call. wp is set high enough that no single
+// ordinary hit is ever lethal on its own, so a wins > 1 reading below would
+// mean "landed a hit", never "shattered it". See
+// test/unit/skeleton-shatter.test.js for the full event/draw-count coverage
+// of this mechanic.
 
 function skeletonFoe(wp = 60) {
   return foeFrom("Walking Dead", 2, "Skeleton", { wp });
 }
 
-test('[shatter:hero-strike] "a 1 shatters it" — the hero\'s own strike, content/bestiary.js:151', { todo: "fixed by 72-06" }, () => {
+test('[shatter:hero-strike] "a 1 shatters it" — the hero\'s own strike, content/bestiary.js:151', () => {
   const build = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [skeletonFoe()]));
   const result = faceOdds(
     (rng) => {
@@ -1208,7 +1207,7 @@ test('[shatter:hero-strike] "a 1 shatters it" — the hero\'s own strike, conten
   assert.equal(result.wins, 1, "[shatter:hero-strike] only the best face may shatter the Skeleton in one strike");
 });
 
-test('[shatter:hero-strike-second-life] the shatter also destroys the SECOND (kill-twice) life outright', { todo: "fixed by 72-06" }, () => {
+test('[shatter:hero-strike-second-life] the shatter also destroys the SECOND (kill-twice) life outright', () => {
   const build = () => {
     const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [skeletonFoe()]));
     s.combat.foes[0].lives = 1; // already on its last life
@@ -1226,7 +1225,7 @@ test('[shatter:hero-strike-second-life] the shatter also destroys the SECOND (ki
   assert.equal(result.wins, 1, "[shatter:hero-strike-second-life] only the best face may shatter the Skeleton's last life outright");
 });
 
-test("[shatter:member-strike] a party member's own strike can shatter the Skeleton", { todo: "fixed by 72-06" }, () => {
+test("[shatter:member-strike] a party member's own strike can shatter the Skeleton", () => {
   const build = () => memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, skeletonFoe());
   const result = faceOdds(
     (rng) => {
@@ -1240,7 +1239,7 @@ test("[shatter:member-strike] a party member's own strike can shatter the Skelet
   assert.equal(result.wins, 1, "[shatter:member-strike] only the best face may shatter the Skeleton");
 });
 
-test("[shatter:ally-strike] a summoned ally's own strike can shatter the Skeleton", { todo: "fixed by 72-06" }, () => {
+test("[shatter:ally-strike] a summoned ally's own strike can shatter the Skeleton", () => {
   const build = () => {
     const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
     inCombat(s, [skeletonFoe()], { ally: { name: "A tall grey silence", lvl: 3, rounds: 5 } });
@@ -1258,7 +1257,7 @@ test("[shatter:ally-strike] a summoned ally's own strike can shatter the Skeleto
   assert.equal(result.wins, 1, "[shatter:ally-strike] only the best face may shatter the Skeleton");
 });
 
-test('[shatter:thrown] the hero\'s thrown attack spell (Fireball) can shatter the Skeleton', { todo: "fixed by 72-06" }, () => {
+test('[shatter:thrown] the hero\'s thrown attack spell (Fireball) can shatter the Skeleton', () => {
   const fireballIdx = SPELLS.findIndex((sp) => sp.n === "Fireball");
   const build = () => {
     const s = heroState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 });
@@ -1278,7 +1277,7 @@ test('[shatter:thrown] the hero\'s thrown attack spell (Fireball) can shatter th
   assert.equal(result.wins, 1, "[shatter:thrown] only the best face may shatter the Skeleton");
 });
 
-test('[shatter:ally-thrown] a Magic User party member\'s own thrown spell can shatter the Skeleton', { todo: "fixed by 72-06" }, () => {
+test('[shatter:ally-thrown] a Magic User party member\'s own thrown spell can shatter the Skeleton', () => {
   const build = () => {
     const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
     const idx = withMember(s, { cls: "Magic User", sub: "Wizard", race: "Human" });

@@ -23,12 +23,13 @@
 // plan needing to implement magic itself.
 //
 // Most BESTIARY creature `sp.*` flags (poison/disease/steals/enthrall/awe/
-// grapple/entangle/possess/raise/shriek/quills/critOn/loot/song/pack/
+// grapple/entangle/possess/raise/shriek/quills/loot/song/pack/
 // age/pursues/seesInvis/noTurn/never_melee/dark/daggerOnly/
 // caster/breaks/every, etc.) are flavor-only in the frozen prototype — grep
 // confirms none of them are ever read anywhere in mazeworld.html's live
 // logic (only `sp.note` feeds the UI). Only `sp.atk`, `sp.dmg`, `sp.toHit`,
-// `sp.fast`, `sp.magicOnly`, `sp.noArmor`, `sp.twice` (via `lives`), and —
+// `sp.fast`, `sp.magicOnly`, `sp.noArmor`, `sp.twice` (via `lives`),
+// `sp.shatterOnBest` (Phase 72, ROLL-01 (c) — see shatterIfBest below), and —
 // since Phase 52 (DMG-02) — `sp.strikesAs` have any mechanical effect, and
 // this module implements exactly those, matching
 // the prototype's ACTUAL behavior rather than the aspirational flavor text
@@ -52,7 +53,7 @@
 
 import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
-import { rollDice } from "./dice.js";
+import { rollDice, isBestFace } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
 import { checkLevel } from "./character.js";
 import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
@@ -671,6 +672,17 @@ export function playerStrike(state, rng, events = []) {
       continue;
     }
 
+    // Phase 72 (ROLL-01 (c)): a landed strike on its die's best face
+    // shatters a shatter-flagged foe (the Skeleton) outright — skip the
+    // damage roll entirely. Excludes a Con Artist's opening warning blow
+    // (`!C.opened2` here reads the SAME "is this the opener" state
+    // `opening` below computes, before this call sets it) — that blow deals
+    // no injury by rule, so there is nothing to shatter on.
+    if (!(c.sub === "Con Artist" && !C.opened2) && shatterIfBest(state, t, roll, dieN, "you", rng, events)) {
+      C.opened2 = true;
+      continue;
+    }
+
     let dmg = weaponDamage(c, rng);
     if (AS && AS.bonusDmg) dmg += AS.bonusDmg;
     // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Cloak of
@@ -901,6 +913,31 @@ export function killFoe(state, f, rng, events = []) {
   }
   checkLevel(state, rng, events);
   return events;
+}
+
+/**
+ * shatterIfBest(state, t, roll, dieN, by, rng, events, extra = {}) — Phase 72
+ * (ROLL-01 (c), user ruling 2026-09-24): "rolling max on your dice triggers
+ * the shatter." Any to-hit roll aimed at a shatter-flagged foe (`t.sp.shatterOnBest`,
+ * the Skeleton) that shows the striking die's best face (`isBestFace`)
+ * destroys it outright, both lives — see docs/ROLL-LEDGER.md `## Skeleton
+ * shatter scope` for exactly which strikers count. Returns `false` (a no-op)
+ * unless the target is a live, shatter-flagged foe AND the roll is the die's
+ * best face; a caller MUST check the to-hit already LANDED before calling
+ * this (a Con Artist's no-injury opener is excluded by its own caller, not
+ * here). On a shatter: pushes `{ type: "foeShattered", target: t.name, by,
+ * ...extra }`, sets `t.lives = 1` (so `killFoe` takes both the current and
+ * the kill-twice life in the same call) and `t.wp = 0`, calls `killFoe`, and
+ * returns `true`. Draws NO weapon-damage or spell-damage dice — the caller
+ * MUST skip its own damage roll on a shatter.
+ */
+export function shatterIfBest(state, t, roll, dieN, by, rng, events, extra = {}) {
+  if (!t || !t.alive || !t.sp || !t.sp.shatterOnBest || !isBestFace(roll, dieN)) return false;
+  events.push({ type: "foeShattered", target: t.name, by, ...extra });
+  t.lives = 1;
+  t.wp = 0;
+  killFoe(state, t, rng, events);
+  return true;
 }
 
 /**
@@ -1472,14 +1509,21 @@ export function allyTurn(state, rng, events = []) {
   if (!C || !C.ally) return events;
   const t = liveFoes(state)[0];
   if (!t) return events;
-  const roll = rng.d(STRIKE_DICE[C.ally.lvl - 1]);
+  const dieN = STRIKE_DICE[C.ally.lvl - 1];
+  const roll = rng.d(dieN);
   if (roll <= 5) {
-    const d = C.ally.lvl * C.ally.lvl + rng.d(6);
-    // D-06/D-20: an ally's blow is physical (soakable) and never matches a
-    // multiplier row (no cls on a summoned/party ally this phase).
-    const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
-    if (!hit.soaked) events.push({ type: "allyStruck", name: C.ally.name, target: t.name, dmg: hit.applied });
-    if (t.wp <= 0) killFoe(state, t, rng, events);
+    // Phase 72 (ROLL-01 (c)): a landed summoned-ally strike on its die's
+    // best face shatters a shatter-flagged foe (the Skeleton) outright —
+    // skip the damage roll. The `--C.ally.rounds` countdown below still
+    // runs either way.
+    if (!shatterIfBest(state, t, roll, dieN, C.ally.name, rng, events)) {
+      const d = C.ally.lvl * C.ally.lvl + rng.d(6);
+      // D-06/D-20: an ally's blow is physical (soakable) and never matches a
+      // multiplier row (no cls on a summoned/party ally this phase).
+      const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
+      if (!hit.soaked) events.push({ type: "allyStruck", name: C.ally.name, target: t.name, dmg: hit.applied });
+      if (t.wp <= 0) killFoe(state, t, rng, events);
+    }
   } else {
     events.push({ type: "allyMissed", name: C.ally.name });
   }
@@ -1534,8 +1578,13 @@ export function alliesTurn(state, rng, events = []) {
       // pre-25.1 LEGACY strike — an entry with no persistent sheet
       // (defensive; every real member has one). Byte-identical to before.
       const t = foes[0];
-      const roll = rng.d(STRIKE_DICE[clamp(ally.lvl, 1, 5) - 1]);
+      const legacyDieN = STRIKE_DICE[clamp(ally.lvl, 1, 5) - 1];
+      const roll = rng.d(legacyDieN);
       if (roll <= 5) {
+        // Phase 72 (ROLL-01 (c)): a landed legacy-ally strike on its die's
+        // best face shatters a shatter-flagged foe (the Skeleton) outright —
+        // skip the damage roll.
+        if (shatterIfBest(state, t, roll, legacyDieN, ally.name, rng, events)) continue;
         const d = ally.lvl * ally.lvl + rng.d(6);
         // D-06/D-20: a party member's blow is physical (soakable) and never
         // matches a multiplier row (no cls on a legacy C.allies entry).
@@ -1826,6 +1875,10 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
     });
     return;
   }
+  // Phase 72 (ROLL-01 (c)): a landed member strike on its die's best face
+  // shatters a shatter-flagged foe (the Skeleton) outright — skip the
+  // damage roll.
+  if (shatterIfBest(state, t, roll, strikeDie(view), ally.name, rng, events)) return;
   let dmg = weaponDamage(view, rng);
   if (mod && mod.bonusDmg) dmg += mod.bonusDmg;
   const noCrit = view.sub === "Guard" || view.sub === "Soldier";
@@ -1899,6 +1952,10 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     const roll = rng.d(dieN);
     events.push({ type: "allyCast", ...base, roll, need, bonus });
     if (roll - bonus <= need) {
+      // Phase 72 (ROLL-01 (c)): a landed member thrown attack spell on its
+      // die's best face shatters a shatter-flagged foe (the Skeleton)
+      // outright — skip the spell-damage roll.
+      if (shatterIfBest(state, t, roll, dieN, ally.name, rng, events, { spell: sp.n })) return;
       const mult = Math.max(1, view.level - sp.lvl);
       const dmg = rollDice(rng, sp.dmg) * mult + eff(view, "spellDmg");
       const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: view.sub }, rng, events);
