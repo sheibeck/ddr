@@ -103,7 +103,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 ### Content & voice (VOX)
 
-- [ ] **VOX-04**: Every sub-class and race description names both its advantage(s) and its disadvantage(s), including school gates such as the Summoner's no offense spells before level 3. (todo 2026-09-21 sub-class-descriptions)
+- [ ] **VOX-04**: Every sub-class and race description names both its advantage(s) and its disadvantage(s), including school gates and weaknesses such as the Summoner's half-strength healing (its offense gate was removed 2026-09-25, RULES-03). (todo 2026-09-21 sub-class-descriptions)
 - [ ] **VOX-05**: Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why. The sarcastic, family-friendly voice stays, but no joke hides the fact. (todo 2026-09-23 narrative-pass)
 
 ### Android & Play (DROID)
