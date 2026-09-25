@@ -299,10 +299,12 @@ test("Stealth/backstab gates read armorBulk: Studded (bulk 1) still backstabs, P
   assert.ok(plateEvents.some((e) => e.type === "backstabDenied"), "Plate (bulk 2) must deny the backstab");
 });
 
-test("flee: fleeRolled carries mods (not bulk/bonus); success is roll + mods >= 14 (a Fighter in Plate needs a natural 16)", () => {
+test("flee: fleeRolled carries mods (not bulk/bonus); success is roll >= 14 - mods (a Fighter in Plate needs a natural 16)", () => {
   // Phase 42 (FLEE-01/FLEE-02): need is 14 (was 11); the old bulk/bonus
   // fields are gone from the event — every modifier (armor included) is
-  // now named in `mods`, mirroring foeToHitBreakdown's shape.
+  // now named in `mods`, mirroring foeToHitBreakdown's shape. Phase 73
+  // (ROLL-05): flee is already roll-high — the bonus folds into `atLeast`
+  // (14 - bonus) instead of adding to the roll; `total`/`need` are gone.
   const state = fixedState({ c: fixedFighter({ cls: "Fighter", sub: "Knight", armor: "Plate" }) });
   state.combat = fixedCombat([fixedFoe()], { tracked: false });
   // a failed flee runs a full foeTurn afterward, so pad with filler draws.
@@ -310,9 +312,10 @@ test("flee: fleeRolled carries mods (not bulk/bonus); success is roll + mods >= 
   const rolled = events.find((e) => e.type === "fleeRolled");
   assert.ok(rolled);
   assert.deepStrictEqual(rolled.mods, [{ name: "Plate", delta: -2 }]);
-  assert.equal(rolled.total, 10);
-  assert.equal(rolled.need, 14);
-  assert.ok(events.some((e) => e.type === "fleeFailed"), "roll 12 - 2 = 10 < 14: fails");
+  assert.equal(rolled.roll, 12);
+  assert.equal(rolled.atLeast, 16);
+  assert.equal(rolled.dieN, 20);
+  assert.ok(events.some((e) => e.type === "fleeFailed"), "roll 12 < atLeast 16 (14 - (-2)): fails");
 
   const state2 = fixedState({ c: fixedFighter({ cls: "Fighter", sub: "Knight", armor: "Plate" }) });
   state2.combat = fixedCombat([fixedFoe()], { tracked: false });
