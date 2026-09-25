@@ -2951,3 +2951,88 @@ prototype-master.js.txt` hash is unchanged
 edited. No new event type is introduced, so no new `EVENT_NARRATION`/
 `LINE_FOR` coverage entry is needed.
 
+### Plan 06 — the Skeleton shatters on its best face (ROLL-01 (c)): measured
+
+**The rule and its scope.** Per the user's 2026-09-24 ruling ("rolling max
+on your dice triggers the shatter") and `docs/ROLL-LEDGER.md`'s `## Skeleton
+shatter scope`: any to-hit roll aimed at a shatter-flagged foe
+(`sp.shatterOnBest`, today only the Skeleton) whose roll is the striking
+die's best face (`engine/dice.js#isBestFace`, today `roll === 1`) destroys
+it outright, both lives at once, drawing no weapon-damage or spell-damage
+dice. In scope: hero weapon strikes (ability strikes and auto-hit openers
+included), party-member strikes, summoned and legacy ally strikes, and
+hero/member thrown attack spells (`engine/combat.js#shatterIfBest`, called
+from `playerStrike`, `memberStrike`, `alliesTurn`'s legacy branch,
+`allyTurn`, `allyCast`, and `engine/magic.js#castSpell`'s thrown branch). A
+Con Artist's no-injury opening warning blow is the one exception — it never
+shatters, because by rule it deals no injury. `content/bestiary.js`: the
+Skeleton's roll-under crit key (`critOn: 1`) is renamed to `shatterOnBest:
+true` (no digit, so the flag is unaffected by Phase 73's mirror); M&M's
+"criticals on a 1" clause is dropped (every foe already crits on a best
+roll, so the claim promised nothing special) and its `critOn` key is
+removed entirely.
+
+**The predictor.** This section's own generated roster block (above) shows
+every replay site rolls only Beasts lvl 1 (Bat/Rat, Shriek, Viper) or Humans
+lvl 1 (Ned) — the complete parity-exposed bestiary surface stated under
+"Parity-exposed bestiary surface" — and none dispatches a Vampire summon
+(the one foe ability that can ever put a Skeleton on the board,
+`engine/foeAbilities.js` ~L180-203). The bestiary edit touches only the
+Skeleton and M&M rows, neither of which any fixture ever rolls. Predicted
+moved set: **zero**.
+
+**The live-scan results — measured, not assumed.**
+1. `node --test test/parity/*.test.js`: **47 tests, 47 pass, 0 fail** (unchanged from Plan 05's count).
+2. `node tools/initiative-fixture-scan.mjs | diff --strip-trailing-cr - tools/initiative-fixture-scan-output.txt`: empty.
+3. `node tools/worn-fixture-scan.mjs | diff --strip-trailing-cr - tools/worn-fixture-scan-output.txt`: empty.
+4. `node --test test/parity/fixture-inventory.test.js`: **5 tests, 5 pass, 0 fail** (the roster is unchanged).
+5. `git diff --stat <plan-base>..HEAD -- test/parity/fixtures/ test/parity/harness/comparables.js test/parity/prototype-master.js.txt`: empty.
+6. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s
+`ROLL-01 (Phase 72)` test is extended with part (c): the same 31-site
+replay that already proves zero `memberStruck`/member-`foeMissed` events
+also asserts zero `foeShattered` events across every replay site —
+`ROLL01_EXPECTED_HOLDERS` stays `[]` (72-06 also measures a zero moved set,
+same as 72-04/05).
+
+#### Moved set — declared records
+
+**Empty — a measured zero.** No holder's `divergence.phase` gains a `+72`
+from this plan.
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+#### Draw-count pins
+
+**None moved.** `test/determinism/foe-abilities.test.js`'s `walking-dead-t5`
+row is the one candidate this plan's own Task 2 named (its forced tier-5
+encounter DOES summon a Skeleton via the Vampire's `vampireSummon` ability —
+the one place in the whole test suite a Skeleton is ever reachable outside
+`content/bestiary.js` itself). Re-run live against the Task-1-fixed engine:
+`node --test test/determinism/foe-abilities.test.js` is **13/13 green, zero
+pin edits** — the pinned seed's summoned Skeleton is never struck on its
+die's best face within the fight's natural resolution (or the 12-visit
+window), so `shatterIfBest` never fires against it and every `totalDraws`/
+`attacks`/`foeNames`/`outcome`/per-visit pin in that file is unchanged.
+`test/unit/foe-turn-draw-count.test.js` (the other file Plan 05 already
+checked) carries no Skeleton encounter at all and is untouched.
+
+#### Byte-identical elsewhere
+
+`test/parity/harness/comparables.js` is untouched — `shatterOnBest`/`lives`/
+`wp` are already-serialized fields (no new shape), and the new
+`foeShattered` event is not read by any `*Comparable()` function.
+`test/parity/prototype-master.js.txt` hash is unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`) — the frozen prototype is never
+edited. The content key rename (`critOn` → `shatterOnBest`) is not
+serialized into any fixture or save — `state.combat` is nulled on every
+save load (`engine/saveState.js`), so no saved foe ever carries the old
+key. The new `foeShattered` event type has its own `EVENT_NARRATION`
+(`src/browser/eventNarration.js`) and `LINE_FOR` (`src/browser/
+narrationLines.js`) entries, satisfying both coverage guards
+(`test/unit/formatEventsCoverage.test.js`, `test/unit/
+narrationLinesCoverage.test.js`).
+
