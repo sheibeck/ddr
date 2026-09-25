@@ -59,6 +59,11 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // foe-side/thrown lines convert in 73-05/73-07) formats its range through
 // rangeText here, so no two surfaces ever write a range differently.
 import { rangeText, rollVsText, modsClause, signedText, ROLLERS } from "./rollRange.js";
+// RULES-07 (Phase 75): afflictionRolled reads the row's own `phobia` flag by
+// roll so a mind-row (5-6) narrates honestly instead of printing "Disease." —
+// pure content data, no engine/ import, same discipline as the flavor.js
+// import above.
+import { AFFLICTIONS } from "../../content/afflictions.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -935,8 +940,17 @@ export const EVENT_NARRATION = {
   // clean sentence ("Something is wrong with you. Poison.") while the Oracle
   // log still shows the roll. `kind` is the REAL diagnosis (Poison/Disease),
   // never the renamed "Ailment" dispatch bucket, so the two never contradict.
-  afflictionRolled: (e) =>
-    `Something is wrong with you. <span class="roll">The die turns up ${e.roll ?? "?"}.</span> ${e.kind ?? "Something has its hooks in you"}.`,
+  // RULES-07 (Phase 75, user kept canon 2026-09-25: AFFLICTIONS rows 5-6 stay
+  // a disease of the mind that gives a phobia — the engine and content are
+  // unchanged, only the words). The roll clause stays inside the span per
+  // this file's convention; the row is read by roll (`AFFLICTIONS[roll-1]`),
+  // never by `e.kind` alone, so a mind row never prints "Disease." A missing
+  // or out-of-range roll falls back to today's wording rather than guess.
+  afflictionRolled: (e) => {
+    const row = AFFLICTIONS[(e.roll ?? 0) - 1];
+    const clause = row?.phobia ? "Not your body — your nerve." : `${e.kind ?? "Something has its hooks in you"}.`;
+    return `Something is wrong with you. <span class="roll">The die turns up ${e.roll ?? "?"}.</span> ${clause}`;
+  },
   phobiaAcquired: (e) => `<span class="hurt">A new fear settles in: ${e.name ?? "something"}.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   afflictionCaught: (e) => `<span class="hurt">${e.kind ?? "It"}: it takes hold.</span> −${e.first ?? 0} hp.`,
@@ -988,8 +1002,18 @@ export const EVENT_NARRATION = {
             : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
   // Phase 61 (STORE-02): an additive `replaced` (the traded-in weapon/armor
   // piece) appends one clause; the no-replaced text stays byte-identical.
+  // RULES-08 (Phase 75): an additive `destroyed`/`discarded` (the outgoing
+  // piece was already destroyed, not a trade-in — the two are mutually
+  // exclusive, `replaced` is never set alongside `destroyed`) pairs in voice
+  // with itemUnequipped's own destroyed line below.
   itemTaken: (e) =>
-    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.${e.replaced?.n ? ` The shopkeeper keeps your old ${e.replaced.n}.` : ""}`,
+    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.${
+      e.destroyed && e.discarded?.n
+        ? ` Your old ${e.discarded.n} was already in pieces. You leave it where it fell.`
+        : e.replaced?.n
+          ? ` The shopkeeper keeps your old ${e.replaced.n}.`
+          : ""
+    }`,
   itemUsed: (e) => `You use ${e.item?.n ?? "something"}.`,
   // Phase 24 (IDENT-07): a Pilfer's "cannot use a single magic item that
   // doesn't heal" bad — the refusal fires before any side effect.
@@ -1074,8 +1098,19 @@ export const EVENT_NARRATION = {
   // worn item; the no-replaced line stays byte-identical. 260918-wy1
   // (jewelry-merge): the slot renders through slotWord — jewelry1/jewelry2
   // both read "jewelry", never a raw key.
+  // RULES-08 (Phase 75): an additive `destroyed`/`discarded` (the piece being
+  // swapped out was already destroyed) takes priority over `replaced` (they
+  // never co-occur — armor's destroyed branch never sets `replaced`, and
+  // `replaced` only ever names a live cloak/jewelry piece); the destroyed
+  // clause pairs in voice with itemUnequipped's own destroyed line below.
   itemEquipped: (e) =>
-    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${slotWord(e.slot)})` : ""}. Whether that was wise is between you and the maze.${e.replaced?.n ? ` ${e.replaced.n} goes back in the bag — the maze is not a jeweller.` : ""}`,
+    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${slotWord(e.slot)})` : ""}. Whether that was wise is between you and the maze.${
+      e.destroyed && e.discarded?.n
+        ? ` Your old ${e.discarded.n} was already in pieces. You leave it where it fell.`
+        : e.replaced?.n
+          ? ` ${e.replaced.n} goes back in the bag — the maze is not a jeweller.`
+          : ""
+    }`,
   // Phase 28 (ARMOR-03): a destroyed piece never re-enters the bag — narrate
   // that honestly instead of the usual stow-and-improvise line. 260918-wy1:
   // the slot renders through slotWord here too.

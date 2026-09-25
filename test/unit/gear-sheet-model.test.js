@@ -157,6 +157,29 @@ test("Destroyed armor on a full bag: DISCARD (not UNEQUIP), enabled, run unequip
   assert.deepStrictEqual(discard.run, { type: "unequipSlot", slot: "armor" });
 });
 
+// RULES-08 (Phase 75): the WORN-side twin of the "Bag armor card over
+// destroyed worn armor" test below — a destroyed worn piece with a FITTING
+// bag armor card produces an ENABLED SWAP FOR candidate whose sub leads with
+// the discarded warning, then the usual comparison line.
+test("Destroyed worn armor with a fitting bag armor card: SWAP FOR sub leads with the discarded warning, then the comparison line", () => {
+  const chain = { kind: "armor", n: "Chain", armor: "Chain", ar: 18, wp: 24, left: 24, cls: "FTM" };
+  const c = fixedChar({ armor: "Mail", ar: 12, armorWP: 0, armorMax: 40, items: [chain] });
+  const model = gearSheetModel(st(c), { from: "worn", slot: "armor" });
+  const swap = model.actions.find((a) => a.key === "swap:0");
+  assert.ok(swap, "expected a SWAP FOR candidate for the fitting Chain armor");
+  assert.equal(swap.enabled, true);
+  assert.equal(swap.sub, `${GEAR_SHEET_COPY.sub.discarded} ${lootCompare(c, chain).line}`);
+});
+
+test("LIVE worn armor with a fitting bag armor card: SWAP FOR sub stays exactly the comparison line (no discarded warning)", () => {
+  const chain = { kind: "armor", n: "Chain", armor: "Chain", ar: 18, wp: 24, left: 24, cls: "FTM" };
+  const c = fixedChar({ armor: "Mail", ar: 12, armorWP: 30, armorMax: 30, items: [chain] });
+  const model = gearSheetModel(st(c), { from: "worn", slot: "armor" });
+  const swap = model.actions.find((a) => a.key === "swap:0");
+  assert.ok(swap);
+  assert.equal(swap.sub, lootCompare(c, chain).line);
+});
+
 test("Cloak-of-Armor-only armor slot: label ARMOR · EMPTY, title magicPlate, EQUIP actions for bag armor (none -> NOTHING TO EQUIP)", () => {
   const studded = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
   const c = fixedChar({
