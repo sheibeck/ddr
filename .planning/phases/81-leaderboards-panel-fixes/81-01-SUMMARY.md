@@ -140,3 +140,16 @@ None - no external service configuration required.
 ---
 *Phase: 81-leaderboards-panel-fixes*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/81-leaderboards-panel-fixes/81-DEBUG.md`
+- FOUND: `test/unit/board-death-paths.test.js`
+- FOUND: `test/unit/board-global-trace.test.js`
+- FOUND: `.planning/phases/81-leaderboards-panel-fixes/81-01-SUMMARY.md`
+- FOUND commit `e69e1e8` (Task 1: BOARD-15 local trace)
+- FOUND commit `0a32cfc` (Task 2: BOARD-16/09/10 global trace)
+- FOUND commit `c42ced4` (Task 3: Root causes table, fix routing, device-session gate)
+- `node --test test/unit/board-death-paths.test.js test/unit/board-global-trace.test.js` exits 0 (8 + 4 pass, 7 todo, 0 fail)
+- `npm test` exits with 5663 pass / 7 fail (the known worktree-only CRLF doc-ledger tests, docs/CLASS-PASS.md + docs/FLEE.md) / 7 todo — no new production failures
+- Each of the three task commits touches only its declared files (verified via `git log --name-only`); no production code (`engine/`, `src/`, `content/`, `mazeworld.html`) was modified
