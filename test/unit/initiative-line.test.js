@@ -109,7 +109,7 @@ const WHY_BRANCHES = [
   { why: "slow", first: "foe", phrases: ["they go first"] },
   { why: "foreseen", first: "you", phrases: ["Foresight", "you go first"] },
   { why: "acuteHearing", first: "you", phrases: ["Acute Hearing", "you go first"] },
-  { why: "senses", first: "you", phrases: ["Nothing gets the jump on you"] },
+  { why: "senses", first: "you", phrases: ["You felt them coming"] },
   { why: "knight", first: "foe", phrases: ["A Knight's welcome"] },
   { why: "courtMage", first: "foe", phrases: ["Court Mage"] },
   { why: undefined, first: "you", phrases: ["You go first."] },

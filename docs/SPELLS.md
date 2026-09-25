@@ -418,6 +418,16 @@ at `endCombat` exactly as before (unconditional reset, unchanged) — "till
 your next fight ends" is now a literal engine guarantee, not just flavor
 text.
 
+> **RULES-05 update (Phase 75, user 2026-09-25):** the waiver above stopped
+> a FORCED foe-first roll, but left the fair d20 pair as a coin flip — a
+> sensed character could still LOSE that roll and go second, which
+> contradicted "nothing gets the jump on you" outright (a device report: a
+> depth-8 Court Mage with senses up lost initiative 2 vs 17 in the dark and
+> died). `c.senses` now joins `foreseen`/`acuteHearing` in the UNCONDITIONAL
+> "you go first" branch of `resolveInitiative`'s ternary — see "Phase 75
+> (RULES-05, RULES-14)" below for the full account, including the dark-crit
+> waiver and the verdict line's new wording.
+
 ### The endCombat expiry lines
 
 `engine/combat.js#endCombat` now narrates the expiry of any of the three
@@ -752,6 +762,90 @@ Done in v1.6 — Phase 44 (DEAD-01/DEAD-02) deleted the classic `SPELLS` table d
 | ROADMAP SC-4: Map the Floor's window is legible and re-fogs only what it alone showed | Plan 04 (the mechanism) + Plan 05 (the map tint) | `test/unit/map-reveal.test.js`; `test/unit/mapMarks.test.js` |
 | ROADMAP SC-5: a scroll's refusal is visible and names the level needed | Plan 03 | `test/unit/spell-utility.test.js` (the `readScroll` gate matrix, including `scrollTooAdvanced`) |
 | ROADMAP SC-6: Shield's pool + rounds are visible on the Hero sheet and as a map-HUD chip, outside combat too | Plan 05 (the Hero-tab row) + Plan 03/31's pre-existing `conditionsOf` ward chip (no-combat proof added this plan) | `test/unit/conditions.test.js`; `test/unit/shell-spells-40.test.js` |
+
+## Phase 75 (RULES-05, RULES-14) — Sense Presence & Bubble rules changes (2026-09-25)
+
+Two combat-spell rules corrected against the game's own text, landed in Plan
+06 of Phase 75 (`engine-rules-character-economy-grimoire-combat-bugs`). This
+file is still never rewritten wholesale — the table above stays the Phase 40
+record; only these two spells' RUNTIME rules move again, here.
+
+### RULES-05: Sense Presence wins initiative outright
+
+Phase 40 (see "Sense Presence's rules change" above) waived Sense Presence's
+FORCED foe-first clause but left the roll itself a fair coin-flip — a Court
+Mage with senses up could still lose the d20 pair and go second, which
+contradicted the spell's own "nothing gets the jump on you" text (a device
+report: a depth-8 Court Mage with senses up lost initiative 2 vs 17 in the
+dark and died). `engine/combat.js#resolveInitiative` now joins `c.senses` to
+the unconditional "you go first" branch, beside Foresight and Acute Hearing:
+`foreseen || acuteHearing || c.senses`. The two initiative d20s are still
+always drawn — this is a branch change, never a draw-count change, so no
+fixture moves (no replay fixture ever casts Sense Presence). The `why`
+chain's order is unchanged (Foresight, then Acute Hearing, then senses), so
+a foreseen-AND-sensed hero still reports `why: "foreseen"`.
+
+The dark rules also honour senses now, matching the spell's own "full skill
+in the dark" text: `fight()`'s `combatInDark` push ("You cannot see what you
+are fighting") and `playerStrike`'s dark no-crit clause both gain a
+`&& !c.senses` term, mirroring `derived.js#toHit`'s existing dark-cap waiver
+(unchanged by this phase). `narrationLines.js#initiativeVerdictText`'s
+`"senses"` case now reads "You felt them coming. You go first." on both the
+Oracle and the rail/fight log.
+
+### RULES-14: Bubble is a one-shot mirror, not a bigger Shield
+
+Bubble used to be strictly better than Shield (100 hp for 12 rounds, PLUS a
+reflect) — the user's own verdict. It is now a one-shot mirror: the NEXT
+blow that reaches the caster's damage pipeline (a foe swing, a pursuit
+strike, or a foe ability bolt — everything `applyFoeDamageToPlayer` already
+sees) is reflected in FULL at its attacker through `damageFoe` (`kind:
+"reflect"`) — the caster takes none of it — then the ward pops into a plain
+25 hp pool (`popPool`, the user's recommended half-of-Shield value) for the
+REST of that round only. There is no more 12-round duration: an armed
+mirror's `rounds` is `null` and never ticks; the popped pool's `rounds` is
+always `1`, so `foeTurn`'s per-foeTurn tail tick always fades it at the end
+of the SAME foe turn it popped in (`wardFaded`) — "a small soak pool for
+that round," literally.
+
+`content/spells.js`'s Bubble row: `{ kind: "ward", mirror: true, popPool: 25
+}` — the old `pool`/`rounds`/`reflect` keys are gone (greenfield). Shield is
+completely unchanged (`{ pool: 50, rounds: 5 }`, no reflect key ever). The
+old "reflect the ward's soaked SHARE" branch in `applyFoeDamageToPlayer` is
+deleted outright — the new mirror check sits at the very TOP of the
+pipeline, ahead of Hardiness, the Fridgian hide, the Pendant of Fortitude's
+`halfNext`, and Brace, so the FULL blow reflects and none of those
+single-charge buffers is spent on a mirrored blow. A reflect that kills the
+attacker still runs `killFoe` and the swing loop continues to the next foe,
+exactly as the old reflect-kill contract did.
+
+`c.ward`'s shape while armed: `{ name: "Bubble", mirror: true, pool: 0,
+popPool: 25, rounds: null }`. After the pop: `{ name: "Bubble", pool: 25,
+rounds: 1 }` — from there it behaves exactly like Shield's own absorb/
+shatter path (`wardAbsorbed`/`wardShattered`). `engine/derived.js#
+conditionsOf`'s ward chip now also fires for an armed mirror (`pool > 0 ||
+mirror`), carrying `mirror: true` and no `remaining` (rounds is `null`); the
+shell's chip reads the ward's own name (falling back to "Shield") and shows
+"next hit" for an armed mirror instead of the pool/rounds text.
+`engine/magic.js`'s Earthquake self-damage check (`if (!c.ward)`) is
+unchanged — it still counts an armed OR popped Bubble as "warded," since
+`c.ward` is truthy in both states.
+
+An old save whose `c.ward` still carries `{ reflect: true, ... }`
+(pre-Phase-75) tolerant-loads as the armed mirror
+(`engine/saveState.js#sanitizeWard`, `popPool` read from the LIVE SPELLS
+Bubble row); any other ward simply loses a stray `reflect` key. Measured: no
+parity fixture ever casts Bubble or Shield (`test/parity/
+FIXTURE-INVENTORY.md`'s roster never reaches a `wardRaised` event), so this
+phase moves zero fixtures. A 200-seed bot readout (Bubble is the bot's
+ward-opener) is recorded before/after in `tools/readouts/75-06-before.txt`
+/ `tools/readouts/75-06-after.txt`.
+
+**Phase 75.1 handoff:** RULES-10's fumbled Bubble scroll can land the spell
+on a FOE instead of the caster. The mirror lives only on the HERO's own
+damage pipeline (`applyFoeDamageToPlayer`) — Phase 75.1 must add a matching
+foe-side mirror check to `engine/foeDamage.js#damageFoe` (or an equivalent
+foe-ward seam) before a fumbled Bubble can protect a foe the same way.
 
 ## Out of scope / next
 
