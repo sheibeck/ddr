@@ -193,7 +193,10 @@ test("the classic eff(key) duplicate is retired; heroTab.js imports eff(c, key) 
   assert.equal((CODE.match(/function eff\(key\) \{/g) || []).length, 0);
   assert.equal((CODE.match(/window\.__mzEff/g) || []).length, 0);
   const heroSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n");
-  assert.match(heroSrc, /import \{ strikeDie, toHit, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight \} from "\.\.\/\.\.\/engine\/derived\.js";/);
+  // Phase 74 (ROLL-02): `toHit` was dropped from this import line — nothing
+  // else in heroTab.js reads it since #s-hit/the TO HIT stat row both moved
+  // to heroHitOdds(state) (src/browser/rollOdds.js).
+  assert.match(heroSrc, /import \{ strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight \} from "\.\.\/\.\.\/engine\/derived\.js";/);
   assert.match(heroSrc, /eff\(c, "dmg"\)/);
 });
 

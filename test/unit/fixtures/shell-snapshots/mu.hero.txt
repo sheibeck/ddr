@@ -20,7 +20,7 @@
   text="d20"
 ## #s-hit
 <div id="s-hit">
-  text="1–3"
+  text="18–20 (d20)"
 ## #s-dmg
 <div id="s-dmg">
   text="1² + d6"
