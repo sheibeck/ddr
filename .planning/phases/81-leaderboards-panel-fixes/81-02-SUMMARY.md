@@ -174,3 +174,12 @@ None - no external service configuration required.
 ---
 *Phase: 81-leaderboards-panel-fixes*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: src/browser/boardScores.js
+- FOUND: engine/records.js
+- FOUND: .planning/phases/81-leaderboards-panel-fixes/81-02-SUMMARY.md
+- FOUND: commit e61d170 (Task 1)
+- FOUND: commit 0ce3d09 (Task 2)
+- FOUND: commit 1d8bd01 (SUMMARY.md)
