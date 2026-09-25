@@ -57,6 +57,7 @@ function entry(n, overrides = {}) {
     tag: "v1.2.8.3.0.7.22.431.19.4688.1180.Hilda_Ferrow",
     scores: { deep: 6999569, days: 22007, kills: 19007, purse: 4688 },
     acked: [],
+    fails: 0,
     ...overrides,
   };
 }
@@ -83,7 +84,7 @@ test("constants and emptyQueue()", () => {
 
 // --- queueEntryFor --------------------------------------------------------------
 
-test("queueEntryFor builds { hash, season, tag, scores, acked: [] } from the summary", () => {
+test("queueEntryFor builds { hash, season, tag, scores, acked: [], fails: 0 } from the summary", () => {
   const s = summary();
   const e = queueEntryFor(s);
   assert.deepStrictEqual(e, {
@@ -92,6 +93,7 @@ test("queueEntryFor builds { hash, season, tag, scores, acked: [] } from the sum
     tag: encodeTag(s),
     scores: { ...boardScores(s) },
     acked: [],
+    fails: 0,
   });
 });
 
@@ -182,6 +184,39 @@ test("ackBoard with an unknown hash or a board outside SUBMIT_BOARDS returns q u
   assert.equal(ackBoard(q, hashN(1), "combo"), q);
   assert.equal(ackBoard(q, hashN(1), "yard"), q);
   assert.equal(ackBoard(q, hashN(1), "bogus"), q);
+});
+
+test("ackBoard resets that entry's fails count to 0 on a successful ack (Phase 81, BOARD-16, R-16a)", () => {
+  const q = queueOf([entry(1, { fails: 5 }), entry(2, { fails: 2 })]);
+  const a = ackBoard(q, hashN(1), "deep");
+  assert.equal(a.entries[0].fails, 0);
+  assert.equal(a.entries[1].fails, 2, "an unrelated entry's fails is untouched");
+});
+
+// --- sanitizeEntry's `fails` field (Phase 81, BOARD-16, R-16a) -------------------
+
+test("sanitizeQueue: a missing fails count sanitizes to 0, a non-negative safe integer survives, and garbage sanitizes to 0", () => {
+  const raw = queueOf([
+    entry(1, { fails: undefined }),
+    entry(2, { fails: 7 }),
+    entry(3, { fails: -1 }),
+    entry(4, { fails: 1.5 }),
+    entry(5, { fails: "3" }),
+    entry(6, { fails: null }),
+  ]);
+  delete raw.entries[0].fails; // a stored entry with no fails key at all (pre-Phase-81 shape)
+  const out = sanitizeQueue(raw);
+  assert.deepStrictEqual(
+    out.entries.map((e) => [e.hash, e.fails]),
+    [
+      [hashN(1), 0],
+      [hashN(2), 7],
+      [hashN(3), 0],
+      [hashN(4), 0],
+      [hashN(5), 0],
+      [hashN(6), 0],
+    ],
+  );
 });
 
 // --- settleQueue -----------------------------------------------------------------

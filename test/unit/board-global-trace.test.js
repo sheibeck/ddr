@@ -176,19 +176,25 @@ test("R-16a leaderboard routing: submitScore receives the Season-1 DEEPEST id fr
   assert.equal(call.leaderboardId, LEADERBOARD_IDS[1].deep, "the exact Season-1 DEEPEST leaderboard id was submitted to");
 });
 
-test("R-16a queue wedge: one permanently-rejected entry must not block every later run's submission across repeated flushes", {
-  todo: "R-16a: one permanently rejected entry blocks every later submission",
-}, async () => {
+test("R-16a queue wedge: one permanently-rejected entry must not block every later run's submission across repeated flushes", async () => {
   const s1 = makeSummary({ floor: 9, seed: 1, hash: undefined });
   const s2 = makeSummary({ floor: 10, seed: 2, hash: undefined });
   const s1DeepId = LEADERBOARD_IDS[1].deep;
+  // Every run's DEEPEST submission targets the SAME season-1 leaderboard id
+  // (it is one board shared by every player) — so "the first queued run's
+  // submission always fails" must key on that run's own encoded score, not
+  // on the shared leaderboardId alone (which every run's deep submission
+  // shares).
+  const s1DeepScore = queueEntryFor(s1).scores.deep;
 
   // The FIRST queued run's DEEPEST submission always fails, forever; every
-  // other board/run would succeed. pgsQueue.js#run()'s `break outer` on the
-  // first failure means s2's submission is never even attempted today.
+  // other board/run (including s2's OWN deep submission, to the same
+  // leaderboard id but a different score) would succeed. pgsQueue.js#run()'s
+  // `break outer` on the first failure means s2's submission is never even
+  // attempted today.
   const provider = {
     submitScore: async ({ leaderboardId, score }) => {
-      if (leaderboardId === s1DeepId) return { ok: false };
+      if (leaderboardId === s1DeepId && score === s1DeepScore) return { ok: false };
       return { ok: true, newBest: true };
     },
     loadStanding: async () => ({ ok: false }),

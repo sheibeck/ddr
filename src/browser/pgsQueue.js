@@ -10,9 +10,11 @@
 // the injected storage (window.mzStorage in the shell), never GameState.
 //
 // Record: { v: 1, entries: Entry[], done: string[] }
-//   Entry = { hash, season, tag, scores: { deep, days, kills, purse }, acked: string[] }
+//   Entry = { hash, season, tag, scores: { deep, days, kills, purse }, acked: string[], fails }
 // `done` is the ledger of fully submitted run hashes, so a run that already
-// finished can never be enqueued again. Ordering is insertion order only.
+// finished can never be enqueued again. Ordering is insertion order only,
+// except that run() (below) reorders a flush's own working copy — never the
+// stored order — to move a repeatedly-failing entry behind fresher ones.
 //
 // The tag is built by scoreTag.js#encodeTag and carries no epitaph (67 D-18).
 //
@@ -21,6 +23,16 @@
 // below, and an ack for it is skipped — it never counts toward or blocks
 // settling. An entry acked on every SUBMIT_BOARDS id plus the retired one
 // still settles as done.
+//
+// Phase 81 (BOARD-16, R-16a): each entry also carries an optional `fails`
+// count (a missing count sanitizes to 0). run()'s per-flush loop still stops
+// at the very first failed submission within that flush — the offline
+// backoff behavior is unchanged — but a submission failure now bumps only
+// THAT entry's own `fails` first. At the START of every flush, any entry
+// whose `fails` has reached 3 or more is reordered behind every entry with
+// fewer failures (stable order otherwise), so a single permanently-rejected
+// run can no longer wedge every run queued after it forever. `fails` resets
+// to 0 the moment one of that entry's boards is acked.
 //
 // The record operations are pure: every function returns new objects, never
 // mutates its input and never throws. createSubmissionQueue (at the end) is
@@ -55,6 +67,11 @@ function isScore(n) {
   return Number.isSafeInteger(n) && n >= 0;
 }
 
+/** cleanFails(n) — module-private (Phase 81, BOARD-16, R-16a): a non-negative safe integer, else 0. */
+function cleanFails(n) {
+  return Number.isSafeInteger(n) && n >= 0 ? n : 0;
+}
+
 /** emptyQueue() — a fresh { v: 1, entries: [], done: [] }. */
 export function emptyQueue() {
   return { v: 1, entries: [], done: [] };
@@ -72,11 +89,13 @@ function withQueue(entries, done) {
  * tolerantly, since only SUBMIT_BOARDS scores are copied. An acked
  * RETIRED_BOARDS id is likewise skipped tolerantly; any other unknown acked
  * id still rejects the whole entry (BOARD-17: only retired ids are
- * tolerated, garbage still fails closed).
+ * tolerated, garbage still fails closed). Phase 81 (BOARD-16, R-16a): a
+ * missing `fails` count sanitizes to 0; a non-negative safe integer is kept,
+ * anything else (garbage, negative, non-integer) also sanitizes to 0.
  */
 function sanitizeEntry(raw) {
   if (!isPlainObject(raw)) return null;
-  const { hash, season, tag, scores, acked } = raw;
+  const { hash, season, tag, scores, acked, fails } = raw;
   if (!isValidHash(hash) || !isSeason(season)) return null;
   if (typeof tag !== "string" || !TAG_RE.test(tag)) return null;
   if (!isPlainObject(scores)) return null;
@@ -92,7 +111,7 @@ function sanitizeEntry(raw) {
     if (!SUBMIT_BOARDS.includes(board)) return null;
     if (!cleanAcked.includes(board)) cleanAcked.push(board);
   }
-  return { hash, season, tag, scores: cleanScores, acked: cleanAcked };
+  return { hash, season, tag, scores: cleanScores, acked: cleanAcked, fails: cleanFails(fails) };
 }
 
 /**
@@ -125,15 +144,15 @@ export function sanitizeQueue(raw) {
 
 /**
  * queueEntryFor(summary) — one run's entry: its hash and season, the score
- * tag and the five board scores, nothing acked yet. Null for a missing or
- * invalid hash or a season that is not an integer of at least 1.
+ * tag and the five board scores, nothing acked yet, `fails` at 0. Null for a
+ * missing or invalid hash or a season that is not an integer of at least 1.
  */
 export function queueEntryFor(summary) {
   try {
     if (!isPlainObject(summary)) return null;
     const { hash, season } = summary;
     if (!isValidHash(hash) || !isSeason(season)) return null;
-    return { hash, season, tag: encodeTag(summary), scores: { ...boardScores(summary) }, acked: [] };
+    return { hash, season, tag: encodeTag(summary), scores: { ...boardScores(summary) }, acked: [], fails: 0 };
   } catch {
     return null;
   }
@@ -154,15 +173,43 @@ export function enqueueEntry(q, e) {
 
 /**
  * ackBoard(q, hash, board) — the queue with `board` added once to that
- * entry's acked list. `q` itself for an unknown hash, a board outside
- * SUBMIT_BOARDS, or a board already acked.
+ * entry's acked list, and its `fails` count reset to 0 (Phase 81, BOARD-16,
+ * R-16a: any successful board submission clears the entry's failure streak).
+ * `q` itself for an unknown hash, a board outside SUBMIT_BOARDS, or a board
+ * already acked.
  */
 export function ackBoard(q, hash, board) {
   if (!SUBMIT_BOARDS.includes(board)) return q;
   const i = q.entries.findIndex((e) => e.hash === hash);
   if (i < 0 || q.entries[i].acked.includes(board)) return q;
-  const entries = q.entries.map((e, j) => (j === i ? { ...e, acked: [...e.acked, board] } : e));
+  const entries = q.entries.map((e, j) => (j === i ? { ...e, acked: [...e.acked, board], fails: 0 } : e));
   return withQueue(entries, [...q.done]);
+}
+
+/**
+ * bumpFails(q, hash) — module-private (Phase 81, BOARD-16, R-16a): the
+ * queue with that entry's `fails` count incremented by one. `q` itself for
+ * an unknown hash.
+ */
+function bumpFails(q, hash) {
+  const i = q.entries.findIndex((e) => e.hash === hash);
+  if (i < 0) return q;
+  const entries = q.entries.map((e, j) => (j === i ? { ...e, fails: cleanFails(e.fails) + 1 } : e));
+  return withQueue(entries, [...q.done]);
+}
+
+/**
+ * flushOrder(entries) — module-private (Phase 81, BOARD-16, R-16a): entries
+ * whose `fails` is under 3 first (their own relative order kept), then
+ * entries whose `fails` has reached 3 or more (their own relative order kept
+ * among themselves). A single permanently-rejected run's submissions are
+ * deferred behind fresher runs on the very next flush, instead of wedging
+ * them forever. Never mutates `entries`.
+ */
+function flushOrder(entries) {
+  const fresh = entries.filter((e) => cleanFails(e.fails) < 3);
+  const stuck = entries.filter((e) => cleanFails(e.fails) >= 3);
+  return [...fresh, ...stuck];
 }
 
 /**
@@ -377,8 +424,10 @@ export function createSubmissionQueue({
       if (gen !== myGen) return "aborted";
     }
 
-    // The entries present now; one enqueued mid-flush is left to the follow-up flush.
-    const hashes = queue.entries.map((e) => e.hash);
+    // The entries present now, reordered so a repeatedly-failing entry
+    // (fails >= 3) is deferred behind every fresher one (Phase 81, BOARD-16,
+    // R-16a) — one enqueued mid-flush is left to the follow-up flush.
+    const hashes = flushOrder(queue.entries).map((e) => e.hash);
     const submitted = [];
     let status = "ok";
 
@@ -407,6 +456,11 @@ export function createSubmissionQueue({
           failures += 1;
           nextAllowedAt = clock() + backoffDelay(failures);
           status = "failed";
+          // Phase 81 (BOARD-16, R-16a): only THIS entry's own failure streak
+          // bumps — the offline stop-at-first-failure backoff behavior above
+          // (failures/nextAllowedAt) is unchanged.
+          queue = bumpFails(queue, hash);
+          await persist();
           break outer;
         }
         queue = ackBoard(queue, hash, board);
