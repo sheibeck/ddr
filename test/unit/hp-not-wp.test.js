@@ -52,6 +52,14 @@ import { FOE_CONDITION_COPY, FOE_CONDITION_DESC } from "../../src/browser/foeCon
 import { FOE_DETAILS_COPY } from "../../src/browser/foeDetails.js";
 // Phase 71 (D-07): the what-happened strip's label, busy label and chip.
 import { ROUND_STRIP_COPY } from "../../src/browser/fightLog.js";
+// Phase 74 (ROLL-02/03), 74-08: the new copy banks this phase's display
+// closure adds — walked the same way as every other presentation COPY bank.
+import { CONDITION_EFFECT_COPY } from "../../src/browser/conditionEffects.js";
+import { MOD_LABEL, ROLL_COPY } from "../../src/browser/rollRange.js";
+// Renamed on import (SAFETY_ALLOWLIST/SAFETY_BANNED): this file already
+// declares its own local PLAYER_WP `ALLOWLIST` const below — the two are
+// unrelated allowlists (wp/WP tokens vs. the safety-wordlist corpus).
+import { BANNED as SAFETY_BANNED, ALLOWLIST as SAFETY_ALLOWLIST } from "../../content/safety-wordlist.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -168,6 +176,9 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     ROUND_STRIP_COPY,
     // Phase 68 (PLACE-01/02): the global standing quips and the placement copy.
     GLOBAL_STANDING_LINES, PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,
+    // Phase 74 (ROLL-02/03), 74-08: the hero condition-chip effect copy and
+    // rollRange.js's own mod-relabel and template banks.
+    CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY,
   };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {
@@ -177,6 +188,30 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     }
   }
   assert.deepStrictEqual(offenders, [], `Player-facing wp/WP in presentation COPY:\n${offenders.join("\n")}`);
+});
+
+// ─── Phase 74 (ROLL-02/03), 74-08: BANNED/ALLOWLIST voice scan over the new banks ─
+//
+// Mirrors test/unit/upgrade-why.test.js's own BANNED/ALLOWLIST voice-scan
+// pattern: every leaf of this phase's new copy banks, plus the standing
+// FOE_DETAILS_COPY/COMBAT_MENU_COPY/UPGRADE_WHY_COPY banks (already walked
+// for wp/WP above), is also clear of a BANNED safety-wordlist term.
+
+function bannedWordRegex() {
+  const escaped = SAFETY_BANNED.filter((w) => !SAFETY_ALLOWLIST.includes(w)).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return new RegExp(`\\b(${escaped.join("|")})\\b`, "i");
+}
+
+test("voice: CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY, FOE_DETAILS_COPY, COMBAT_MENU_COPY and UPGRADE_WHY_COPY leaves are clear of a BANNED safety-wordlist term", () => {
+  const bannedRe = bannedWordRegex();
+  const banks = { CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY, FOE_DETAILS_COPY, COMBAT_MENU_COPY, UPGRADE_WHY_COPY };
+  const offenders = [];
+  for (const [bankName, bank] of Object.entries(banks)) {
+    for (const [leafPath, value] of collectStringLeaves(bank)) {
+      if (bannedRe.test(value)) offenders.push(`${bankName}.${leafPath} -> "${value}"`);
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `BANNED safety-wordlist term in Phase 74 copy banks:\n${offenders.join("\n")}`);
 });
 
 // ─── (c) content banks (note/txt/txt2) ─────────────────────────────────────
