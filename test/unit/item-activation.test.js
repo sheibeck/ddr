@@ -207,18 +207,24 @@ test("useItem on a Pendant of Fortitude sets c.halfNext and starts an instant CO
 
 // --- useItem: charges+recharge (staves) ---------------------------------
 
+// RULES-13 (Phase 75, Plan 09): a staff's power works only while wielded —
+// both tests re-pinned from a bag-index `useItem(state, 0, …)` call to the
+// wielded form (`c.weapon`/`c.staff` set, `useItem(state, { slot: "weapon" }, …)`).
+// The charge/recharge bookkeeping asserted below is byte-identical to the
+// pre-75-09 bag-use form; only HOW the staff is addressed changed.
+
 test("useItem on a Pine Staff spends its one charge, starts a 100-square recharge, and a second use is refused recharging", () => {
   const staff = { kind: "staff", n: "Pine Staff", use: "fire", charges: 1 };
-  const state = fixedState({ c: { cls: "Magic User", items: [staff] } });
+  const state = fixedState({ c: { cls: "Magic User", weapon: "Pine Staff", staff, items: [] } });
   // wp high enough that the fireball never kills it (no killFoe draws to budget).
   state.combat = { foes: [{ name: "Rat", type: "Beasts", wp: 999, maxWP: 999, alive: true, asleep: 0, sp: {}, lives: 1 }], round: 1, target: 0 };
   // n=d6=1 ball; dmg=d10=6+4=10, armor-soak d20=1 (no sp.ar -> miss the soak branch entirely).
-  const events = useItem(state, 0, fakeRng([1, 6, 1]), []);
+  const events = useItem(state, { slot: "weapon" }, fakeRng([1, 6, 1]), []);
   assert.equal(staff.charges, 0);
   assert.deepStrictEqual(state.c.timers["charges:Pine Staff"], { cadence: "squares", left: 100, phase: "cooldown" });
   assert.ok(events.some((e) => e.type === "itemBurned"));
 
-  const events2 = useItem(state, 0, fakeRng([]), []);
+  const events2 = useItem(state, { slot: "weapon" }, fakeRng([]), []);
   assert.deepStrictEqual(events2, [
     { type: "useRefused", item: staff, reason: "recharging", left: 100, charges: 0, max: 1 },
   ]);
@@ -227,8 +233,8 @@ test("useItem on a Pine Staff spends its one charge, starts a 100-square recharg
 
 test("useItem on a Crystal Staff spends a charge, starts the recharge cooldown immediately (it has none already running), and rolls a d10+5 timed invis effect", () => {
   const staff = { kind: "staff", n: "Crystal Staff", use: "invis", charges: 2 };
-  const state = fixedState({ c: { cls: "Magic User", items: [staff] } });
-  const events = useItem(state, 0, fakeRng([10]), []); // d10 = 10 -> 15 squares
+  const state = fixedState({ c: { cls: "Magic User", weapon: "Crystal Staff", staff, items: [] } });
+  const events = useItem(state, { slot: "weapon" }, fakeRng([10]), []); // d10 = 10 -> 15 squares
   assert.equal(staff.charges, 1);
   // The staff still has a spare charge, but recharging is CONTINUOUS while
   // below max — no recharge was already counting down, so this spend starts

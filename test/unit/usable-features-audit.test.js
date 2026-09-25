@@ -217,18 +217,23 @@ CASES.push({
 });
 
 // §4 Staves — outside/inside combat (MU), non-MU (wrongClass), cooldown.
+// RULES-13 (Phase 75, Plan 09): a staff's power works only while wielded —
+// the outside-combat/in-combat POWER cases are re-pinned from a bag-index
+// `useItem(state, 0, …)` call to the wielded form (`c.weapon`/`c.staff`,
+// `useItem(state, { slot: "weapon" }, …)`); the expected outcomes
+// (combatOnly for a targeted kind outside combat, ok success in combat) are
+// unchanged — only HOW the staff is addressed changed. The
+// non-Magic-User/wrongClass case stays bagged (by index): wrongClass fires
+// on the earlier rung regardless of wield state, so it needs no change.
 for (const st of STAVES) {
   CASES.push({
     name: `staff outside combat (MU): ${st.n}`,
     run: () => {
       // Phase 39 (GEAR-02): a real content staff name needs a positive
       // charge for itemReady's staff branch — read the max from content.
-      // 260918-w4n: `worn: {}` is planted on the FIRST staff case to prove a
-      // staff has no worn slot — a bagged staff on a worn-slot-model hero is
-      // NEVER refused notWorn (slotFor(staff) is always null).
       const item = { kind: "staff", n: st.n, use: st.use, charges: TREASURE_ACTIVATION_OF[st.n].charges };
-      const state = fixedState({ c: { cls: "Magic User", items: [item], ...(st === STAVES[0] ? { worn: {} } : {}) } });
-      const events = TARGETED_KINDS.has(st.use) ? useItem(state, 0, fakeRng([]), [], NOW) : useItem(state, 0, makeRng(200 + STAVES.indexOf(st)), [], NOW);
+      const state = fixedState({ c: { cls: "Magic User", weapon: st.n, staff: item, items: [], ...(st === STAVES[0] ? { worn: {} } : {}) } });
+      const events = TARGETED_KINDS.has(st.use) ? useItem(state, { slot: "weapon" }, fakeRng([]), [], NOW) : useItem(state, { slot: "weapon" }, makeRng(200 + STAVES.indexOf(st)), [], NOW);
       return { events, state };
     },
     expect: TARGETED_KINDS.has(st.use) ? { refused: { type: "useRefused", reason: "combatOnly" } } : { ok: true },
@@ -237,9 +242,9 @@ for (const st of STAVES) {
     name: `staff in combat (MU): ${st.n}`,
     run: () => {
       const item = { kind: "staff", n: st.n, use: st.use, charges: TREASURE_ACTIVATION_OF[st.n].charges };
-      const state = fixedState({ c: { cls: "Magic User", items: [item] } });
+      const state = fixedState({ c: { cls: "Magic User", weapon: st.n, staff: item, items: [] } });
       state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
-      return { events: useItem(state, 0, makeRng(300 + STAVES.indexOf(st)), [], NOW), state };
+      return { events: useItem(state, { slot: "weapon" }, makeRng(300 + STAVES.indexOf(st)), [], NOW), state };
     },
     expect: { ok: true },
   });
@@ -253,16 +258,29 @@ for (const st of STAVES) {
     },
     expect: { refused: { type: "useRefused", reason: "wrongClass" } },
   });
+  CASES.push({
+    // RULES-13 (Phase 75, Plan 09): a BAGGED staff's power is inert, for a
+    // Magic User who owns it but has not wielded it — new coverage.
+    name: `staff bagged, unwielded (MU): ${st.n} is refused notWielded`,
+    run: () => {
+      const item = { kind: "staff", n: st.n, use: st.use, charges: TREASURE_ACTIVATION_OF[st.n].charges };
+      const state = fixedState({ c: { cls: "Magic User", items: [item] } });
+      return { events: useItem(state, 0, fakeRng([]), [], NOW), state };
+    },
+    expect: { refused: { type: "useRefused", reason: "notWielded" } },
+  });
 }
 CASES.push({
   // Phase 39 (GEAR-02): a staff refuses "recharging" (never "cooldown",
   // which is a duration+cooldown jewelry/cloak's own reason) with a positive
   // integer squares-left, once its charge pool is empty.
+  // RULES-13 (Phase 75, Plan 09): re-pinned to the wielded form — a bagged
+  // empty staff would now be refused notWielded first.
   name: "an empty staff is refused recharging with a positive integer left",
   run: () => {
     const item = { kind: "staff", n: "Rowan Staff", use: "dome", charges: 0 };
-    const state = fixedState({ c: { cls: "Magic User", items: [item] }, steps: 20 });
-    return { events: useItem(state, 0, fakeRng([]), [], NOW), state };
+    const state = fixedState({ c: { cls: "Magic User", weapon: "Rowan Staff", staff: item, items: [] }, steps: 20 });
+    return { events: useItem(state, { slot: "weapon" }, fakeRng([]), [], NOW), state };
   },
   expect: { refused: { type: "useRefused", reason: "recharging" } },
 });

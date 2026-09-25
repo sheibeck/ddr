@@ -68,15 +68,19 @@ const NOW = () => 12345;
 
 // --- combatOnly: every TARGETED_KINDS staff outside combat ----------------
 
+// RULES-13 (Phase 75, Plan 09): a staff's power works only while wielded —
+// re-pinned to wield each staff (`c.weapon`/`c.staff`, `{ slot: "weapon" }`)
+// so the refusal ladder reaches combatOnly instead of stopping at
+// notWielded; the "stays carried" bag assertion is dropped since a wielded
+// staff is never in `c.items`.
 test("every TARGETED_KINDS staff refuses combatOnly outside combat — zero draws, item untouched", () => {
   assert.deepStrictEqual([...TARGETED_KINDS].sort(), ["fire", "freeze", "gas", "stone", "weaken"]);
   for (const kind of TARGETED_KINDS) {
     const staff = { kind: "staff", n: `Test ${kind} Staff`, use: kind };
-    const state = fixedState({ c: { cls: "Magic User", items: [staff] } }); // combat: null
-    const events = useItem(state, 0, fakeRng([]), [], NOW);
+    const state = fixedState({ c: { cls: "Magic User", weapon: staff.n, staff, items: [] } }); // combat: null
+    const events = useItem(state, { slot: "weapon" }, fakeRng([]), [], NOW);
     assert.deepStrictEqual(events, [{ type: "useRefused", item: staff, reason: "combatOnly" }]);
     assert.equal(staff.usedAt, undefined, "usedAt never set on a refusal");
-    assert.equal(state.c.items.length, 1, "the staff stays carried");
   }
 });
 
@@ -177,12 +181,14 @@ test("Amulet of Stone on 5 foes stones only 4 (aoe:4), leaving combat open with 
 
 // --- item kills close the encounter through the normal cleared path -------
 
+// RULES-13 (Phase 75, Plan 09): re-pinned to the wielded form — a bagged
+// Oak Staff is now inert (notWielded), so this test wields it first.
 test("Oak Staff (aoe default 2) on 2 foes clears the encounter", () => {
   // Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
   const OAK_STAFF = { kind: "staff", n: "Oak Staff", use: "stone", charges: 1 };
   const foes = [fixedFoe({ name: "A", wp: 10, maxWP: 10, type: "Humans" }), fixedFoe({ name: "B", wp: 10, maxWP: 10, type: "Humans" })];
-  const state = fixedState({ c: { cls: "Magic User", items: [OAK_STAFF] }, combat: fixedCombat(foes) });
-  const events = useItem(state, 0, makeRng(3), [], NOW);
+  const state = fixedState({ c: { cls: "Magic User", weapon: "Oak Staff", staff: OAK_STAFF, items: [] }, combat: fixedCombat(foes) });
+  const events = useItem(state, { slot: "weapon" }, makeRng(3), [], NOW);
   assert.ok(events.some((e) => e.type === "encounterCleared"));
   assert.ok(events.some((e) => e.type === "combatEnded"));
   assert.equal(state.combat, null);
@@ -199,12 +205,14 @@ test("the Pine Staff's fire kill on the last foe clears the encounter", () => {
   assert.equal(state.combat, null);
 });
 
+// RULES-13 (Phase 75, Plan 09): re-pinned to the wielded form for both
+// staves — a bagged staff is now inert (notWielded).
 test("a freeze/gas use with no kill leaves combat open", () => {
   // Phase 39 (GEAR-02): a real content staff name needs a charge to itemReady.
   const freezeStaff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
   const foe = fixedFoe({ wp: 20, maxWP: 20 });
-  const state = fixedState({ c: { cls: "Magic User", items: [freezeStaff] }, combat: fixedCombat([foe]) });
-  const events = useItem(state, 0, fakeRng([]), [], NOW);
+  const state = fixedState({ c: { cls: "Magic User", weapon: "Birch Staff", staff: freezeStaff, items: [] }, combat: fixedCombat([foe]) });
+  const events = useItem(state, { slot: "weapon" }, fakeRng([]), [], NOW);
   assert.notEqual(state.combat, null);
   assert.equal(state.combat.foes[0].alive, true);
   assert.equal(state.combat.foes[0].asleep, 99);
@@ -212,8 +220,8 @@ test("a freeze/gas use with no kill leaves combat open", () => {
 
   const gasStaff = { kind: "staff", n: "Test Gas Staff", use: "gas" };
   const foe2 = fixedFoe({ wp: 20, maxWP: 20 });
-  const state2 = fixedState({ c: { cls: "Magic User", items: [gasStaff] }, combat: fixedCombat([foe2]) });
-  const events2 = useItem(state2, 0, fakeRng([]), [], NOW);
+  const state2 = fixedState({ c: { cls: "Magic User", weapon: "Test Gas Staff", staff: gasStaff, items: [] }, combat: fixedCombat([foe2]) });
+  const events2 = useItem(state2, { slot: "weapon" }, fakeRng([]), [], NOW);
   assert.notEqual(state2.combat, null);
   assert.equal(events2.some((e) => e.type === "encounterCleared"), false);
 });
