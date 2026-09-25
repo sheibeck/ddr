@@ -18,7 +18,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 const DOC_PATH = path.join(REPO_ROOT, "docs", "FLEE.md");
-const doc = fs.readFileSync(DOC_PATH, "utf8");
+const doc = fs.readFileSync(DOC_PATH, "utf8").replace(/\r\n/g, "\n"); // CRLF-tolerant: core.autocrlf checkouts
 
 /** h2s(text) -> the list of `## ` heading lines, in document order. */
 function h2s(text) {

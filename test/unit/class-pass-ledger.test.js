@@ -37,7 +37,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 const DOC_PATH = path.join(REPO_ROOT, "docs", "CLASS-PASS.md");
-const doc = fs.readFileSync(DOC_PATH, "utf8");
+const doc = fs.readFileSync(DOC_PATH, "utf8").replace(/\r\n/g, "\n"); // CRLF-tolerant: core.autocrlf checkouts
 
 const before = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "before.json"), "utf8"));
 const beforeDeep = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "class-pass", "before-depth20.json"), "utf8"));
