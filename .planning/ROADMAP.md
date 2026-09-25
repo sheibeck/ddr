@@ -722,6 +722,9 @@ Plans:
 - **Every race:** reach 5 with each race in `content/races.js`: Human, Elven, Dwarven, Wilmsry, Fridgian, Troll.
 - **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
+- **Survivor (tiered):** live for X days in a single run. Tier thresholds are decided at planning, calibrated from bot/sim day counts.
+- **Hoarder (tiered):** gain X coin. Decide at planning whether it counts one run or lifetime, and whether it's coin earned or coin held.
+- **Party Animal:** accept 10 Joiners in total, counted across all your delves.
 
 **Design principle: tiers and breadcrumbs (user, 2026-09-25):**
 
