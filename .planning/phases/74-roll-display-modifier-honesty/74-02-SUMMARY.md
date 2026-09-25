@@ -118,3 +118,10 @@ None - no external service configuration required.
 ---
 *Phase: 74-roll-display-modifier-honesty*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: src/browser/rollRange.js
+- FOUND: test/unit/rollRange.test.js
+- FOUND: .planning/phases/74-roll-display-modifier-honesty/74-02-SUMMARY.md
+- FOUND commits: ee33c04, f2d4a15, 59d58bd, 1e42a7d, 0172e50 (all present in `git log`)
