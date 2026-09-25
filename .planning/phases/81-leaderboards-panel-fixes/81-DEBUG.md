@@ -49,3 +49,218 @@ graveyard stone whose hash the bests record does not hold back in — a
 backstop that fixes the reported symptom regardless of which of H-15f's exact
 triggers actually fired on the device, and costs nothing when the two stores
 already agree (the common case, per every test in this file).
+
+## R-09
+
+**Symptom (device, 2026-09-25):** the friend's own #1 entry showed the tag
+"Friend", never "YOU", on his own device.
+
+**Root cause (CONFIRMED):** `src/browser/globalBoards.js:76-91` `toGlobalEntry`
+marks a row `you` only when `s.playerId !== "" && s.playerId === me`, and that
+`playerId` comes from `normalizeScore` (`src/browser/playGames.js:169-180`)
+reading `s.scoreHolder.playerId` — but `scoreHolder` itself is an OPTIONAL
+field the plugin's Kotlin serializer OMITS (never sends as `null`, simply
+absent) whenever Play Games reports none:
+`LeaderboardsModule.kt:159 putIfPresent("scoreHolder", scoreHolder?.toJsObject())`.
+A public/friends top-scores row with no `scoreHolder` therefore ALWAYS
+decodes to `playerId: ""`, which can never equal the account's own non-empty
+id — even when the row genuinely IS the signed-in player's own entry. Pinned
+by both invariant tests in `test/unit/board-global-trace.test.js` (payload
+shape (i): no `scoreHolder` at all; shape (ii): a `scoreHolder.playerId` that
+differs from the account id while `loadCurrentPlayerScore`'s OWN result for
+the same board carries the identical rank/rawScore/scoreTag) — both `todo`,
+both fail today (`youRows.length` is 0, not 1).
+
+**Fix direction (routed to 81-06, per `81-06-PLAN.md`'s own truths):** YOU is
+keyed on the player's own leaderboard score record (`loadPlayerScore`'s
+result for the SAME board/collection/allTime span) — when a row and that
+record both carry a `playerId`, the ids decide; when either is empty, the
+SAME rank + the SAME raw score + the SAME score tag decide (all three, exact,
+no rounding); the account id alone is only the last-resort fallback.
+
+## R-10
+
+**Symptom (device, 2026-09-25):** the friend's sole entry (rank #1) was shown
+twice — once in the ranked list, once again under "NOT IN THE TOP TEN · YOUR
+BEST RUN".
+
+**Root cause (CONFIRMED — a direct consequence of R-09, not a second, separate
+bug):** `src/browser/boardsView.js:555-561` `buildGlobalRows` only skips
+pinning `snap.you` a second time when `snap.entries.some((e) => e.you ===
+true)` is already true. Because R-09's `playerId` mismatch means the listed
+row's `you` flag is `false` even for the player's own entry, this condition
+is NEVER satisfied for an affected row, so the SAME entry is rendered twice:
+once as an ordinary (un-tagged) listed row, once again as the pinned "YOU"
+row under the divider. Pinned by the `todo` "R-10 shown-twice" test in
+`test/unit/board-global-trace.test.js`, which feeds the exact R-09 shape (i)
+snapshot into `boardsView` and asserts the rendered row count is 1 — it is 2
+today.
+
+**Fix direction (routed to 81-06, same file, same `you` fix as R-09):** once
+`toGlobalEntry`/the entries pass correctly resolve `you` for the player's own
+listed row (R-09's fix), `buildGlobalRows`'s existing "already listed" check
+works unmodified — no separate R-10 code change is needed beyond R-09's own.
+
+## R-16a
+
+**Symptom (device, 2026-09-25):** the friend's depth-11 DEEPEST score never
+reached the user's ALL board at all (not merely displayed wrong).
+
+**Confirmed defects, both pinned as `todo` tests in
+`test/unit/board-global-trace.test.js`:**
+
+1. **The queue wedge.** `src/browser/pgsQueue.js:373-419` `run()`'s
+   `outer: for (const hash of hashes) { for (const board of SUBMIT_BOARDS) {
+   ... if (!res || res.ok !== true) { ...; break outer; } ... } }` — the
+   `break outer` on the FIRST failed board submission of the FIRST queued run
+   exits BOTH loops, abandoning every later run's submissions entirely for
+   this flush. Because the failed entry stays first (un-acked, un-removed)
+   and `hashes` is recomputed fresh from `queue.entries` on every flush, the
+   SAME run blocks the SAME later run on every subsequent retry too — a
+   single permanently-rejected board (a stale/placeholder id, a
+   server-side rejection, ...) on entry #1 permanently wedges every entry
+   queued after it, forever. Pinned: "R-16a queue wedge" — fails today
+   (`state.pending` still includes the second run's hash after four
+   repeated forced flushes).
+2. **Every score encoding and routing check passes** (not a defect): DEEPEST
+   scores stay safe integers in strict floor order under worst-case adversarial
+   steps assignment (a depth-9 run at the steps cap still ranks below a
+   depth-10 run at zero steps); a 40+-character worst-case name with
+   apostrophes, an accented letter and a hyphen still encodes to a tag inside
+   the shared `A-Za-z0-9._~-`, ≤64-character alphabet both `pgsQueue.js`'s
+   `TAG_RE` and `playGames.js`'s `TAG_OK` accept; `submitScore` is routed to
+   the exact Season-1 DEEPEST id (`content/leaderboards.js` `LEADERBOARD_IDS[1].deep`,
+   `CgkIlvbN0YYPEAIQAg`). None of these are the cause.
+
+**Fix direction (routed to 81-06):** `pgsQueue.js#run()` must not let one
+run's failed board abort every OTHER run's submissions in the same flush —
+only that one run's remaining boards (and only for THAT run) should be
+deferred to the next flush.
+
+## R-16b
+
+**Symptom (device, 2026-09-25):** the friend saw the user's depth-9 entry,
+but the user could not see the friend's newer depth-11 entry — consistent
+with the user's client simply never re-fetching after the friend's score
+landed.
+
+**Confirmed defects, both pinned as `todo` tests:**
+
+1. **`forceReload` is hard-coded `false`, with no way to override it.**
+   `src/browser/playGames.js:362-382` `loadTopScores` calls
+   `PlayGames.loadTopScores({ ..., forceReload: false })` unconditionally —
+   the function's own options destructure (`{ leaderboardId, collection,
+   maxResults }`) does not even accept a `forceReload` field, so no caller
+   anywhere in the stack can ask Play Games to bypass ITS OWN cache. Pinned:
+   "R-16b forceReload" — fails today (the recorded plugin call's
+   `forceReload` is `false`, never `true`).
+2. **`createGlobalBoards`'s cache has no invalidation hook tied to the
+   player's own submission or a panel reopen.** `src/browser/globalBoards.js:41`
+   `GLOBAL_TTL_MS` (300000 ms, 5 minutes) serves a cached snapshot for the
+   whole window; the only mutator is `clear()` (`:303-306`), which wipes
+   EVERY board/scope/season at once and is called from exactly two sites —
+   `mazeworld.html:7151` and `:7155`, both inside `onAccountForPgs`, fired
+   ONLY on a Compete-off toggle or a sign-out transition. `mazeworld.html:7104-7108`
+   `onRunRecorded` (the death → queue-enqueue path) and
+   `boardsPanel.js:842-851` `openFromTab`/`openFromTitle` (a fresh panel
+   open) never call `clear()` or anything narrower. Pinned: "R-16b cache
+   invalidation" — fails today (`view()` still returns 0 entries immediately
+   after a successful `submitScore()` that added exactly one).
+
+**Fix direction (routed to 81-06):** either a `forceReload: true` option
+`loadTopScores`/`view()` can pass through the first read after a submission
+or panel reopen, or a per-key `invalidate({ board, scope, season })` method
+on the `createGlobalBoards` controller (narrower than today's whole-cache
+`clear()`) that the queue's `onFlushed` and the panel's open path both call.
+
+## R-16c
+
+**Symptom (device, 2026-09-25):** "not in the top ten" was shown for the
+friend even though he should have ranked #1 among the two visible players.
+
+**Google's own rule** (https://developer.android.com/games/pgs/leaderboards,
+read 2026-09-24): *"If your player has not chosen to share their gameplay
+activity publicly, they won't appear in this leaderboard."* This is a
+DIFFERENT situation from a player who IS ranked, merely outside the visible
+top ten — the withheld case carries no rank at all
+(`LeaderboardVariant.playerRank`'s sentinel is OMITTED by
+`putUnlessSentinel`, `LeaderboardsModule.kt:142`), decoding to `rank: null`
+via `rankOf` (`playGames.js:142-144`) and `globalBoards.js:76-91`'s
+`toGlobalEntry`.
+
+**Confirmed defect (pinned, `todo`):** `src/browser/boardsView.js:508-533`
+`globalRow`'s pinned-row branch and `boardsView.js:654-669`
+`buildGlobalStanding` both treat a `rank: null` "you" record IDENTICALLY to
+a `rank: 47`-style genuinely-ranked-but-off-list record — both pin under the
+exact same `BOARDS_PANEL_COPY.divider` string, `"NOT IN THE TOP TEN · YOUR
+BEST RUN"` (`content/boards.js:164`). The UI cannot distinguish "you have a
+rank, it's just not on this page" from "Play Games will not compute a rank
+for you at all because you haven't opted into public sharing" — both read as
+the same honest-sounding but, for the withheld case, subtly misleading
+sentence. Pinned: "R-16c public visibility" — fails today (`withheldRow.divider
+=== rankedRow.divider`).
+
+**This is a real, but narrower, contributing defect** — it explains the
+COPY the friend saw, not necessarily why his score was missing from the
+list in the first place (that is better explained by R-16a's queue wedge,
+or R-16b's stale cache, either of which independently explains "his score
+never reached the user's device at all"). All three are routed to 81-06.
+
+## Assumption delta
+
+**Question:** is the signed-in id from the same API family as the score
+rows' ids?
+
+**Answer: CONFIRMED — yes, same family, but the row-level id is frequently
+ABSENT, not merely differently-shaped.**
+
+- The account id comes from `PlayersClient.getCurrentPlayer()` via the
+  sign-in result: `SignInModule.kt:70-82` `resolveWithPlayer` calls
+  `plugin.players.currentPlayer()` and serializes it with
+  `Pgs.kt:215-217` `Player.toJsObject()`, which `put("playerId", playerId)`
+  UNCONDITIONALLY (never `putIfPresent` — always present when signed in).
+- The row ids come from `LeaderboardScore.getScoreHolder().getPlayerId()`,
+  the SAME underlying Play Games player id family, but
+  `LeaderboardsModule.kt:159` serializes it with `putIfPresent("scoreHolder",
+  scoreHolder?.toJsObject())` — OMITTED, not `null` and not a differently-typed
+  id, whenever Play Games reports no score holder for that row (which its own
+  documentation and this session's Kotlin read both indicate happens for
+  privacy/visibility reasons independent of whether the row is the caller's
+  own).
+- `globalBoards.js:211` (`const me = meId() || (mine ? str(mine.playerId) :
+  "")`) already prefers the account id over the player's own record's id when
+  computing the STANDALONE "you" snapshot object — but this preference is
+  NEVER applied to the LISTED rows in `top.scores`, which is exactly the gap
+  R-09 pins.
+
+**81-06's `assumption_delta_decision` (primary noun: the player's own
+leaderboard score record, decision: promote) is CONFIRMED** by this session's
+evidence: the fix belongs on the LISTED-rows path (matching a row to the
+player's own record — `loadPlayerScore`'s result — by id when both carry one,
+else by rank+rawScore+tag), not on the account-id path (which was already
+correct and is not the gap).
+
+## Device session
+
+**Decision: Device session NOT NEEDED.**
+
+Every root cause this session found (R-09, R-10, R-16a, R-16b, R-16c) is
+CONFIRMED by reading the vendored plugin's Kotlin source
+(`node_modules/@modbender/capacitor-play-games/android/.../{Pgs,LeaderboardsModule,SignInModule}.kt`)
+alongside this repo's own JS, and each is independently reproduced by a
+failing `node --test` pin — no two of them have mutually exclusive fixes (all
+five route to the same `src/browser/globalBoards.js`/`playGames.js`/
+`boardsView.js`/`pgsQueue.js` family in 81-06, and R-10's fix IS R-09's fix).
+R-15's single leading hypothesis (H-15f) is device-only to trigger by its
+very nature (an OS process suspension mid-write), but its fix
+(`reconcileBests` boot-time reconciliation) is correct and cheap regardless
+of confirming the exact trigger on a device — a device session could not add
+evidence a code read plus a passing/failing test pin does not already give.
+
+Per the plan's own ESSENTIAL test (two or more surviving explanations whose
+fixes are mutually exclusive, with no code/plugin-source/Google-doc evidence
+separating them): that condition never held for any R-id this session
+examined. Confirmation instead happens where the plan's own fallback says it
+should: the post-phase Play internal-testing push the orchestrator offers
+(ask-first rule, `docs/RELEASING.md`), and the milestone-close two-device
+checklist (user + friend, both signed in) 81-06 adds as a human check.
