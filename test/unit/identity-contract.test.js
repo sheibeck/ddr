@@ -334,15 +334,26 @@ const CONTRACT = [
       },
     },
     bad: {
-      // RULES-03 (Phase 75, user 2026-09-25): the offense gate is retired —
-      // "they already have a negative of summons having a chance to turn on
-      // them." Re-pinned from the retired gate (a Summoner could once hold
-      // Freeze and never cast it) to the summon backfire itself: a Summoner
-      // casting Summon draws a d8 first, and a natural 1 turns the summon on
-      // its caster instead of raising an ally. 75-10 later re-pins this
-      // entry again, to the Summoner's healing weakness.
-      name: "the summon backfire — casting Summon draws a d8 first, and a 1 turns it on you",
+      // RULES-03 (Phase 75, user 2026-09-25): re-pinned a second time — the
+      // Summoner's stated weakness is now its own halved healing (its own
+      // healing-school spells restore floor(amount * 0.5), minimum 1; the
+      // chart-driven MU_CHART.Summoner.healMul flag, never a name check).
+      // The summon backfire (a natural 1 on Summon's own d8 turns the
+      // summon on its caster) stays a live rule and is kept as an extra
+      // assertion in this same entry, since the user kept it.
+      name: "healing spells it casts restore half (floor, minimum 1); the summon backfire stays",
       run() {
+        const heal = SPELLS.find((sp) => sp.n === "Heal");
+        const healer = hero("Summoner");
+        healer.c.level = 1;
+        healer.c.grimoire = ["Heal"];
+        healer.c.wp = 10;
+        const healEvents = castSpell(healer, SPELLS.indexOf(heal), fakeRng([8]), []);
+        // d10 rolls 8 -> floor(8 * 0.5) = 4, never the Wizard/Cleric's 8.
+        assert.equal(healer.c.wp, 14);
+        expectEvent(healEvents, "healed");
+        assert.ok(healEvents.some((e) => e.type === "healed" && e.amount === 4 && e.halved === true));
+
         const summon = SPELLS.find((sp) => sp.n === "Summon");
 
         const backfire = hero("Summoner");

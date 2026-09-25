@@ -36,7 +36,9 @@ deterministically granted it, and the Phase 23
 `SPELL_LEVEL_OVERRIDES.Summoner = { Summon: 1 }` entry is retired — Summon
 is spell level 2 for everyone again, and the Summoner's offense gate stays
 3 (its documented "bad" — the user's own point: add a new spell, don't
-touch the existing gate).
+touch the existing gate). **Superseded by Phase 75 (RULES-03, see the
+Summoner section below):** the offense gate is removed outright, and the
+Summoner's "bad" is now its own halved healing.
 
 The once-a-day rule (standing ruling, 2026-09-18) governs any spell whose
 effect has a squares cadence: it must be usable at least once per 100-square
@@ -453,7 +455,9 @@ gated higher than its printed level, permanently uncastable until the
 caster's level caught up — five reachable level-1 cases (40-RESEARCH.md
 "Scroll Scribing Bug"): Warlock+Heal (healing gate 3), Court Mage+Map the
 Floor (divination gate 4), Apprentice+Map the Floor (divination gate 3),
-Illusionist+Shield (protection gate 3), Summoner+Freeze (offense gate 3).
+Illusionist+Shield (protection gate 3), Summoner+Freeze (offense gate 3 —
+**superseded by Phase 75**, the offense gate is removed; see the Summoner
+section below).
 
 The scribe gate is now exactly `canCast`'s own two checks:
 `spellLevelFor(c.sub, sp) <= c.level && c.level >= schoolGate(c.sub, sp.s)`.
@@ -846,6 +850,34 @@ on a FOE instead of the caster. The mirror lives only on the HERO's own
 damage pipeline (`applyFoeDamageToPlayer`) — Phase 75.1 must add a matching
 foe-side mirror check to `engine/foeDamage.js#damageFoe` (or an equivalent
 foe-ward seam) before a fumbled Bubble can protect a foe the same way.
+
+### Summoner (Phase 75, RULES-03)
+
+Two Phase 75 changes together replace the Summoner's original trade-off
+(the retired offense gate, see the superseded lines above and in the
+scroll-rule section below):
+
+- **The offense gate is removed.** A level-1 Summoner rolls and casts
+  offense normally — `MU_CHART.Summoner` carries no `gate` key at all, so
+  `schoolGate("Summoner", "offense")` reads the default `1`.
+- **Its own healing spells restore half.** Any healing-school spell the
+  Summoner ITSELF casts (Heal, Major Heal, and its own Regeneration tick,
+  each round) restores `floor(amount * 0.5)`, minimum 1 — applied LAST,
+  after the Cleric's +3 bonus and a heal2x race's doubling. This is a
+  chart data flag (`MU_CHART.Summoner.healMul: 0.5`), read by
+  `engine/derived.js#healMulFor`/`applyCasterHealMul`, never a name check.
+  Potions, staff heals, and a heal cast by anyone else ON the Summoner are
+  unaffected; the summon backfire (one Summon in eight turns turns on its
+  caster) stays. The Oracle and rail show the true, halved amount — the
+  `healed`/`regenerated` events carry an additive `halved: true` only when
+  the amount actually changed. No parity fixture moves (the only
+  `magic#heal` fixture is cast by a Wizard); measured, with a 200-seed
+  readout before/after in `tools/readouts/75-10-before.txt` /
+  `tools/readouts/75-10-after.txt`.
+
+The two Phase 40 lines above stating "the Summoner's offense gate stays 3"
+and "Summoner+Freeze (offense gate 3)" are **superseded by Phase 75** —
+kept as history of the Phase 40 design, not current behavior.
 
 ## Out of scope / next
 
