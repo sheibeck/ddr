@@ -25,7 +25,10 @@ It is shell-only, apart from `engine/records.js`'s board list and bests (no pari
 - **BOARD-09:** on ALL and FRIENDS the signed-in player's own score is tagged **YOU**, never FRIEND. ROOT-CAUSE the `playerId` mismatch (`globalBoards.js:80`: `you = playerId !== "" && playerId === me`) rather than papering over it, e.g. by comparing display names.
 - **BOARD-10:** the "not in the top ten / your best run" standing card appears ONLY when the player is ranked but off the visible list. It never appears when their row is already shown (device: sole entry, rank #1, shown twice).
 - **BOARD-13:** LINEAGE is ME-only. Its tab shows only while ME is selected, it moves to the END of the board rail, and it never reads the global DEEPEST sample. (Play Games keeps one best score per player per board, so a global lineage view can't be honest.)
-- **BOARD-14:** remove GRAVEYARD (tab, copy, view branch), because ME covers it. ME rows keep each run's tap-to-expand details, epitaph included. The stored run history still feeds ME and LINEAGE, and old saves load tolerantly.
+- **BOARD-14 (REVERSED by the user 2026-09-25): KEEP GRAVEYARD.** The planner flagged that ME boards are top-ten lists, so removing GRAVEYARD would leave weaker runs listed nowhere; the user answered "Let's keep the graveyard then".
+  - GRAVEYARD becomes a ME-only board like LINEAGE: its tab shows only while ME is selected, and it sits at the END of the rail beside LINEAGE (…, LINEAGE, GRAVEYARD, matching the user's original "push it to the end by graveyard").
+  - It lists every stored run with its tap-to-expand details (epitaph included), exactly as today. ME rows keep their details too.
+  - Under ALL/FRIENDS it never appears (it is local history). Old saves load tolerantly.
 - **BOARD-17:** remove LEANEST everywhere:
   - `engine/records.js` (`BOARD_IDS`, `RANKED_BOARDS`, `compareRuns`, bests);
   - `src/browser/boardScores.js` (`SUBMIT_BOARDS`, `SCORE_ORDER`, `boardScore`, `scoreFallback`);

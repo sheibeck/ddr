@@ -244,7 +244,7 @@ Plans:
   1. The panel shows three scope chips — ME | ALL | FRIENDS — and every board can be viewed under each; signed in with Compete ON it opens on ALL, signed out or Compete OFF it opens on ME with ALL/FRIENDS showing the sign-in note.
   2. On ALL and FRIENDS the signed-in player's own score is tagged YOU — never FRIEND — with the `playerId` mismatch root-caused and fixed, and the "not in the top ten / your best run" card appears only when the player is ranked but off the visible list.
   3. LINEAGE appears only under ME, sits at the end of the board rail, and never reads the global DEEPEST sample.
-  4. The GRAVEYARD board is gone; ME rows keep each run's tap-to-expand details (epitaph included), the stored run history still feeds ME and LINEAGE, and old saves load cleanly.
+  4. The GRAVEYARD board stays as a ME-only board at the end of the rail beside LINEAGE, listing every stored run with its tap-to-expand details (epitaph included); ME rows keep their details too, the stored run history still feeds ME, LINEAGE and GRAVEYARD, and old saves load cleanly. (Amended 2026-09-25: the user reversed the removal.)
   5. Every finished run lands on each ME board it qualifies for (a depth-10 run tops a depth-9 one on DEEPEST), and a signed-in player's score reaches Play Games and shows on another player's ALL board after a refresh. Both root causes are found with `/gsd-debug` before fixing.
   6. The LEANEST board is gone from the rail, the local records and Play Games submission; old bests and queued runs that carry a `lean` entry load cleanly and nothing is ever submitted to the Season-1 LEANEST board again.
 
