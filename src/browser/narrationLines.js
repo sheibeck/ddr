@@ -1642,8 +1642,16 @@ export const LINE_FOR = {
   itemRejected: (e) => block(equipRejectText(e)),
   // Phase 61 (STORE-02): an additive `replaced` (the traded-in weapon/armor
   // piece) appends one clause; the no-replaced text stays byte-identical.
+  // RULES-08 (Phase 75): an additive `destroyed`/`discarded` names the
+  // outgoing piece as gone, mirroring eventNarration.js's Oracle pair.
   itemTaken: (e) => ({
-    text: `Equipped: ${e?.item?.n ?? "something"}.${e?.replaced?.n ? ` The shopkeeper keeps your old ${e.replaced.n}.` : ""}`,
+    text: `Equipped: ${e?.item?.n ?? "something"}.${
+      e?.destroyed && e?.discarded?.n
+        ? ` ${e.discarded.n} was already destroyed — gone, not kept.`
+        : e?.replaced?.n
+          ? ` The shopkeeper keeps your old ${e.replaced.n}.`
+          : ""
+    }`,
     tone: "hit",
     priority: PRIORITY.other,
   }),
@@ -1732,8 +1740,17 @@ export const LINE_FOR = {
   // 260918-wy1 (jewelry-merge): the slot renders through `slotWord` — a
   // jewelry1/jewelry2 key reads "(jewelry)", never the raw key; weapon/armor
   // are unaffected (slotWord passes them through unchanged).
+  // RULES-08 (Phase 75): an additive `destroyed`/`discarded` names the old
+  // piece as gone (destroyed, never `replaced` — the two are mutually
+  // exclusive), mirroring eventNarration.js's Oracle pair.
   itemEquipped: (e) => ({
-    text: `Equipped: ${e?.item?.n ?? "something"}${e?.slot ? ` (${slotWord(e.slot)})` : ""}.${e?.replaced?.n ? ` ${e.replaced.n} goes back in the bag.` : ""}`,
+    text: `Equipped: ${e?.item?.n ?? "something"}${e?.slot ? ` (${slotWord(e.slot)})` : ""}.${
+      e?.destroyed && e?.discarded?.n
+        ? ` ${e.discarded.n} was already destroyed — gone, not kept.`
+        : e?.replaced?.n
+          ? ` ${e.replaced.n} goes back in the bag.`
+          : ""
+    }`,
     tone: "hit",
     priority: PRIORITY.other,
   }),

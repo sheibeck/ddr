@@ -60,6 +60,11 @@ export const GEAR_SHEET_COPY = Object.freeze({
     fills: "Fills the slot and frees a bag slot.",
     comesOff: "{name} comes off and goes to the bag.",
     scrap: "{name} is scrap. It stays behind.",
+    // RULES-08 (Phase 75, 75-CONTEXT's wording): the WORN-slot SWAP FOR
+    // warning when the worn armor being replaced is destroyed — prefixes the
+    // candidate's own comparison line (GSCR-07's sub) rather than replacing
+    // it, so the player still sees what the swap is worth.
+    discarded: "Your worn armor is destroyed — it will be discarded.",
     drop: "Gone for good. Frees a slot immediately.",
     nothing: "Nothing in the bag fits this slot. Find something, or live without.",
   }),
@@ -209,7 +214,16 @@ export function gearSheetModel(state, target) {
         });
       }
 
-      for (const card of fits) actions.push(candidate(card, slot, "swap"));
+      for (const card of fits) {
+        const cand = candidate(card, slot, "swap");
+        // RULES-08 (Phase 75): a destroyed worn armor piece is about to be
+        // discarded, not stowed — warn on every ENABLED SWAP FOR candidate
+        // (a greyed one keeps its own refusal reason instead).
+        if (slot === "armor" && armorD.destroyed && cand.enabled) {
+          cand.sub = `${GEAR_SHEET_COPY.sub.discarded} ${cand.sub}`;
+        }
+        actions.push(cand);
+      }
     } else {
       for (const card of fits) actions.push(candidate(card, slot, "equip"));
       if (!fits.length) {

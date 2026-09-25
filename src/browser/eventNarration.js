@@ -1002,8 +1002,18 @@ export const EVENT_NARRATION = {
             : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
   // Phase 61 (STORE-02): an additive `replaced` (the traded-in weapon/armor
   // piece) appends one clause; the no-replaced text stays byte-identical.
+  // RULES-08 (Phase 75): an additive `destroyed`/`discarded` (the outgoing
+  // piece was already destroyed, not a trade-in — the two are mutually
+  // exclusive, `replaced` is never set alongside `destroyed`) pairs in voice
+  // with itemUnequipped's own destroyed line below.
   itemTaken: (e) =>
-    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.${e.replaced?.n ? ` The shopkeeper keeps your old ${e.replaced.n}.` : ""}`,
+    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}.${
+      e.destroyed && e.discarded?.n
+        ? ` Your old ${e.discarded.n} was already in pieces. You leave it where it fell.`
+        : e.replaced?.n
+          ? ` The shopkeeper keeps your old ${e.replaced.n}.`
+          : ""
+    }`,
   itemUsed: (e) => `You use ${e.item?.n ?? "something"}.`,
   // Phase 24 (IDENT-07): a Pilfer's "cannot use a single magic item that
   // doesn't heal" bad — the refusal fires before any side effect.
@@ -1088,8 +1098,19 @@ export const EVENT_NARRATION = {
   // worn item; the no-replaced line stays byte-identical. 260918-wy1
   // (jewelry-merge): the slot renders through slotWord — jewelry1/jewelry2
   // both read "jewelry", never a raw key.
+  // RULES-08 (Phase 75): an additive `destroyed`/`discarded` (the piece being
+  // swapped out was already destroyed) takes priority over `replaced` (they
+  // never co-occur — armor's destroyed branch never sets `replaced`, and
+  // `replaced` only ever names a live cloak/jewelry piece); the destroyed
+  // clause pairs in voice with itemUnequipped's own destroyed line below.
   itemEquipped: (e) =>
-    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${slotWord(e.slot)})` : ""}. Whether that was wise is between you and the maze.${e.replaced?.n ? ` ${e.replaced.n} goes back in the bag — the maze is not a jeweller.` : ""}`,
+    `<span class="hit">Equipped:</span> ${e.item?.n ?? "something"}${e.slot ? ` (${slotWord(e.slot)})` : ""}. Whether that was wise is between you and the maze.${
+      e.destroyed && e.discarded?.n
+        ? ` Your old ${e.discarded.n} was already in pieces. You leave it where it fell.`
+        : e.replaced?.n
+          ? ` ${e.replaced.n} goes back in the bag — the maze is not a jeweller.`
+          : ""
+    }`,
   // Phase 28 (ARMOR-03): a destroyed piece never re-enters the bag — narrate
   // that honestly instead of the usual stow-and-improvise line. 260918-wy1:
   // the slot renders through slotWord here too.
