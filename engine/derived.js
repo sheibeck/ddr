@@ -7,7 +7,7 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES } from "../content/index.js";
 import { rollDice, rollCheck, atLeastFor } from "./dice.js";
 import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor } from "./difficulty.js";
 // 260918-w4n: `remaining`/`isReady` are no longer read here — isFlying and
@@ -250,19 +250,56 @@ export function slotFor(it) {
  * through their own LIVE `item:<name>` timer record (`itemEffectActive`),
  * which already carries its own identity via the record's key, so no
  * separate name lookup is needed. `carriedItems` itself is still needed by
- * the staffCharges condition chip and `narrateTimerTransitions` (a staff is
- * always bagged now, but the union stays harmless). Returns a NEW array
- * (`c.items` first, in order, then the truthy `c.worn` values); never
- * mutates `c`. Defensive: a missing/non-array `c.items` and a missing/non-
- * object `c.worn` both contribute nothing rather than throwing. 260918-wy1
- * (jewelry-merge): shape-agnostic by construction — `Object.values(c.worn)`
- * reads whichever concrete keys are populated (jewelry1/jewelry2/cloak)
- * without caring which family they belong to, so this needed no change.
+ * the staffCharges condition chip and `narrateTimerTransitions` (their
+ * `carriedItems(c).find((x) => x.n === key)` lookup must find a WIELDED
+ * staff's recharge record too, not just a bagged one). Returns a NEW array
+ * (`c.items` first, in order, then the truthy `c.worn` values, then —
+ * RULES-13, Phase 75 — the wielded staff via `wieldedStaff(c)`, when one is
+ * held; never duplicated, since a wielded staff is never ALSO in `c.items`);
+ * never mutates `c`. Defensive: a missing/non-array `c.items` and a missing/
+ * non-object `c.worn` both contribute nothing rather than throwing.
+ * 260918-wy1 (jewelry-merge): shape-agnostic by construction —
+ * `Object.values(c.worn)` reads whichever concrete keys are populated
+ * (jewelry1/jewelry2/cloak) without caring which family they belong to, so
+ * this needed no change.
  */
 export function carriedItems(c) {
   const items = c && Array.isArray(c.items) ? c.items : [];
   const worn = c && c.worn && typeof c.worn === "object" ? Object.values(c.worn).filter(Boolean) : [];
-  return [...items, ...worn];
+  const staff = wieldedStaff(c);
+  return staff ? [...items, ...worn, staff] : [...items, ...worn];
+}
+
+/**
+ * weaponRow(name) — RULES-13 (Phase 75, user 2026-09-25): the ONE row lookup
+ * that resolves a weapon-slot NAME (c.weapon, or a candidate item's `base`)
+ * to its combat-stats row — `WEAPONS[name]` for an ordinary weapon, or
+ * `STAFF_WEAPON` when `name` is one of the eight `STAFF_NAMES` (a wielded
+ * magic staff fights as a flat d8 melee weapon, plus the hero's usual damage
+ * modifiers). `null` for "Fists", an unrecognized name, or a missing/
+ * undefined name — never throws on a tampered `c.weapon`. Every engine read
+ * of "what weapon am I holding" — weaponNeedMod, weaponCrit, weaponDamage,
+ * expectedStrike, gearCompareParts's `have` side, and combat.js's WEAPON_MAX
+ * read — goes through this ONE lookup, so a wielded staff behaves like a d8
+ * weapon everywhere without restating the staff branch five times. Pure, no
+ * rng.
+ */
+export function weaponRow(name) {
+  if (WEAPONS[name]) return WEAPONS[name];
+  if (STAFF_NAMES.includes(name)) return STAFF_WEAPON;
+  return null;
+}
+
+/**
+ * wieldedStaff(c) — RULES-13 (Phase 75, user 2026-09-25): the currently-
+ * WIELDED staff object (with its live charges), or `null` when none is
+ * wielded. `c.staff` and `c.weapon` must agree (`c.staff.n === c.weapon`) —
+ * a mismatch (a tampered or stale save mid-migration) reads as "no staff
+ * wielded" here; engine/saveState.js's own tolerant load is what actually
+ * repairs a mismatch on disk. Pure, no rng, never mutates `c`.
+ */
+export function wieldedStaff(c) {
+  return c && c.staff && c.staff.n === c.weapon ? c.staff : null;
 }
 
 /**
@@ -922,7 +959,7 @@ export function classNeed(c) {
  */
 export function weaponNeedMod(x) {
   const base = typeof x === "string" ? x : x && x.weapon;
-  const w = WEAPONS[base];
+  const w = weaponRow(base);
   return w ? w.need || 0 : 0;
 }
 
@@ -933,7 +970,7 @@ export function weaponNeedMod(x) {
  * `c.weapon` name). Pure, no rng.
  */
 export function weaponCrit(c) {
-  const w = c && WEAPONS[c.weapon];
+  const w = c && weaponRow(c.weapon);
   return w ? w.crit || 1 : 1;
 }
 
@@ -1055,7 +1092,7 @@ export function noCritFor(c) {
 }
 
 export function expectedStrike(c, base, bonus = 0, prof = 0) {
-  const w = WEAPONS[base];
+  const w = weaponRow(base);
   if (!w) return 0;
   const R = RACES[c.race];
   const need = Math.max(1, classNeed(c) + weaponNeedMod(base));
@@ -1115,7 +1152,7 @@ export function gearCompareParts(c, it) {
       crit: noCrit ? 0 : gotW.crit || 1,
       strike: expectedStrike(c, it.base, it.bonus || 0, 0),
     };
-    const haveW = WEAPONS[c.weapon];
+    const haveW = weaponRow(c.weapon);
     const have = haveW
       ? {
           lab: haveW.lab + (c.magicWpn ? " +" + c.magicWpn : ""),
@@ -1448,7 +1485,7 @@ export function foeSwingVsHero(state, f) {
  * replaced by the content weapon's `dice`/`halve` notation.
  */
 export function weaponDamage(c, rng) {
-  const w = WEAPONS[c.weapon] || WEAPONS["Club"];
+  const w = weaponRow(c.weapon) || WEAPONS["Club"];
   const R = RACES[c.race];
   const base = w.halve ? Math.ceil(rollDice(rng, w.dice) / 2) : rollDice(rng, w.dice);
   let d = c.level * c.level + base + c.prof + c.magicWpn;

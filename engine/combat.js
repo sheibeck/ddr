@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
@@ -837,7 +837,12 @@ export function playerStrike(state, rng, events = []) {
       continue;
     }
     if (c.sub === "Ninja" && subAuto) {
-      dmg = c.level * c.level + (WEAPON_MAX[c.weapon] || 6) + c.prof;
+      // RULES-13 (Phase 75): a Ninja is a Thief and can never wield a magic
+      // staff (equipItem's staff branch is MU-only), so this fallback is
+      // defensive, not reachable in play — kept via weaponRow anyway, so a
+      // tampered/stale c.weapon naming a staff still resolves to its 8, not
+      // the bare-hands 6.
+      dmg = c.level * c.level + (WEAPON_MAX[c.weapon] || weaponRow(c.weapon)?.max || 6) + c.prof;
       events.push({ type: "ninjaFirstStrike" });
     }
     if (c.sub === "Cutthroat" && !C.cut) {
