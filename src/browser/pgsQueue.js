@@ -10,11 +10,17 @@
 // the injected storage (window.mzStorage in the shell), never GameState.
 //
 // Record: { v: 1, entries: Entry[], done: string[] }
-//   Entry = { hash, season, tag, scores: { deep, lean, days, kills, purse }, acked: string[] }
+//   Entry = { hash, season, tag, scores: { deep, days, kills, purse }, acked: string[] }
 // `done` is the ledger of fully submitted run hashes, so a run that already
 // finished can never be enqueued again. Ordering is insertion order only.
 //
 // The tag is built by scoreTag.js#encodeTag and carries no epitaph (67 D-18).
+//
+// Phase 81 (BOARD-17): a stored entry's score for a RETIRED_BOARDS id (the
+// retired squares-per-floor board) is dropped tolerantly by sanitizeEntry
+// below, and an ack for it is skipped — it never counts toward or blocks
+// settling. An entry acked on every SUBMIT_BOARDS id plus the retired one
+// still settles as done.
 //
 // The record operations are pure: every function returns new objects, never
 // mutates its input and never throws. createSubmissionQueue (at the end) is
@@ -22,7 +28,7 @@
 // run-recorded listener (68-07).
 
 import { encodeTag } from "./scoreTag.js";
-import { boardScores, leaderboardId, SUBMIT_BOARDS } from "./boardScores.js";
+import { boardScores, leaderboardId, RETIRED_BOARDS, SUBMIT_BOARDS } from "./boardScores.js";
 import { isValidHash } from "../../engine/records.js";
 
 export const PGS_QUEUE_KEY = "ddr.pgsqueue.v1";
@@ -61,7 +67,12 @@ function withQueue(entries, done) {
 
 /**
  * sanitizeEntry(raw) — module-private: a clean copy of one stored entry, or
- * null when any field fails its shape. Duplicate acks are deduped.
+ * null when any field fails its shape. Duplicate acks are deduped. A stored
+ * score for a RETIRED_BOARDS id (e.g. an old lean score) is dropped
+ * tolerantly, since only SUBMIT_BOARDS scores are copied. An acked
+ * RETIRED_BOARDS id is likewise skipped tolerantly; any other unknown acked
+ * id still rejects the whole entry (BOARD-17: only retired ids are
+ * tolerated, garbage still fails closed).
  */
 function sanitizeEntry(raw) {
   if (!isPlainObject(raw)) return null;
@@ -77,6 +88,7 @@ function sanitizeEntry(raw) {
   if (!Array.isArray(acked)) return null;
   const cleanAcked = [];
   for (const board of acked) {
+    if (RETIRED_BOARDS.includes(board)) continue;
     if (!SUBMIT_BOARDS.includes(board)) return null;
     if (!cleanAcked.includes(board)) cleanAcked.push(board);
   }

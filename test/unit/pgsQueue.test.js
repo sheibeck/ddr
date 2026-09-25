@@ -55,7 +55,7 @@ function entry(n, overrides = {}) {
     hash: hashN(n),
     season: 1,
     tag: "v1.2.8.3.0.7.22.431.19.4688.1180.Hilda_Ferrow",
-    scores: { deep: 6999569, lean: 61571, days: 22007, kills: 19007, purse: 4688 },
+    scores: { deep: 6999569, days: 22007, kills: 19007, purse: 4688 },
     acked: [],
     ...overrides,
   };
@@ -308,7 +308,7 @@ test("sanitizeQueue drops entries with a malformed scores object", () => {
     entry(2, { scores: null }),
     entry(3, { scores: missing }),
     entry(4, { scores: { ...s, deep: -1 } }),
-    entry(5, { scores: { ...s, lean: 1.5 } }),
+    entry(5, { scores: { ...s, deep: 1.5 } }),
     entry(6, { scores: { ...s, days: Number.MAX_SAFE_INTEGER + 1 } }),
     entry(7, { scores: { ...s, kills: "19007" } }),
     entry(8, { scores: { ...s, purse: NaN } }),
@@ -317,14 +317,17 @@ test("sanitizeQueue drops entries with a malformed scores object", () => {
   assert.deepStrictEqual(sanitizeQueue(queueOf([...bad, good])).entries, [good]);
   const extra = sanitizeQueue(queueOf([entry(10, { scores: { ...s, combo: 5 } })])).entries[0];
   assert.deepStrictEqual(extra.scores, s, "extra score keys are stripped");
+  // BOARD-17: an old stored score for the retired lean id is dropped tolerantly, not rejected.
+  const retiredScore = sanitizeQueue(queueOf([entry(11, { scores: { ...s, lean: 61571 } })])).entries[0];
+  assert.deepStrictEqual(retiredScore.scores, s, "a retired-board score is dropped, the entry is kept");
 });
 
 test("sanitizeQueue drops an entry whose acked list has an unknown board, and dedupes duplicates", () => {
   const out = sanitizeQueue(
-    queueOf([entry(1, { acked: ["deep", "combo"] }), entry(2, { acked: "deep" }), entry(3, { acked: ["deep", "lean", "deep"] })]),
+    queueOf([entry(1, { acked: ["deep", "combo"] }), entry(2, { acked: "deep" }), entry(3, { acked: ["deep", "days", "deep"] })]),
   );
   assert.deepStrictEqual(out.entries.map((e) => e.hash), [hashN(3)]);
-  assert.deepStrictEqual(out.entries[0].acked, ["deep", "lean"]);
+  assert.deepStrictEqual(out.entries[0].acked, ["deep", "days"]);
 });
 
 test("sanitizeQueue keeps the first of two entries with one hash", () => {
@@ -353,10 +356,10 @@ test("sanitizeQueue caps entries at 50, keeping the newest", () => {
 
 test("PGS-04 precision: scores up to 999,999,999,999 survive the JSON round trip exactly, in insertion order", () => {
   let q = emptyQueue();
-  const big = { deep: 999999999999, lean: 0, days: 999999999999, kills: 123456789012, purse: 999999999 };
+  const big = { deep: 999999999999, days: 999999999999, kills: 123456789012, purse: 999999999 };
   q = enqueueEntry(q, entry(3, { scores: big })).queue;
   q = enqueueEntry(q, entry(1)).queue;
-  q = enqueueEntry(q, entry(2, { acked: ["lean", "deep"] })).queue;
+  q = enqueueEntry(q, entry(2, { acked: ["days", "deep"] })).queue;
   q = { ...q, done: [hashN(40), hashN(41)] };
   const back = sanitizeQueue(JSON.parse(JSON.stringify(q)));
   assert.deepStrictEqual(back, q);
@@ -369,6 +372,38 @@ test("PGS-04 precision: scores up to 999,999,999,999 survive the JSON round trip
 test("a real summary's entry survives the JSON round trip through sanitizeQueue", () => {
   const q = enqueueEntry(emptyQueue(), queueEntryFor(summary({ floor: 999, steps: 99999, day: 9999, kills: 9999, gold: 999999 }))).queue;
   assert.deepStrictEqual(sanitizeQueue(JSON.parse(JSON.stringify(q))), q);
+});
+
+// --- BOARD-17: LEANEST retired — an old queued entry loads tolerantly ------------------
+
+test("BOARD-17 (a): a stored lean score and an acked [deep, lean] sanitize to four scores and acked [deep]", () => {
+  const raw = entry(1, { scores: { ...entry(1).scores, lean: 61571 }, acked: ["deep", "lean"] });
+  const out = sanitizeQueue(queueOf([raw])).entries[0];
+  assert.deepStrictEqual(out.scores, { deep: 6999569, days: 22007, kills: 19007, purse: 4688 });
+  assert.deepStrictEqual(out.acked, ["deep"]);
+});
+
+test("BOARD-17 (b): an entry acked on every current board plus lean settles as done through settleQueue(sanitizeQueue(raw))", () => {
+  const raw = entry(1, { acked: [...SUBMIT_BOARDS, "lean"] });
+  const settled = settleQueue(sanitizeQueue(queueOf([raw])));
+  assert.deepStrictEqual(settled.entries, []);
+  assert.deepStrictEqual(settled.done, [hashN(1)]);
+});
+
+test("BOARD-17 (c): an acked garbage id that is neither current nor retired still drops the whole entry", () => {
+  const raw = entry(1, { acked: ["deep", "not-a-real-board"] });
+  const out = sanitizeQueue(queueOf([raw]));
+  assert.deepStrictEqual(out.entries, []);
+});
+
+test("BOARD-17 (d): sanitizeQueue is idempotent over an old lean-carrying record", () => {
+  const raw = queueOf([
+    entry(1, { scores: { ...entry(1).scores, lean: 61571 }, acked: ["deep", "lean"] }),
+    entry(2, { acked: [...SUBMIT_BOARDS, "lean"] }),
+  ]);
+  const once = sanitizeQueue(raw);
+  const twice = sanitizeQueue(once);
+  assert.deepStrictEqual(once, twice);
 });
 
 test("source pin: the storage key appears once; no DOM, clock or randomness in the pure operations", () => {

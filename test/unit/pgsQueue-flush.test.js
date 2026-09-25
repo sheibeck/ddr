@@ -18,7 +18,7 @@ import {
   emptyQueue,
 } from "../../src/browser/pgsQueue.js";
 import { createFakePlayGames } from "../../src/browser/playGames.js";
-import { SUBMIT_BOARDS, boardScores, scoreOrdersFor } from "../../src/browser/boardScores.js";
+import { SUBMIT_BOARDS, devLeaderboardIds, boardScores, scoreOrdersFor } from "../../src/browser/boardScores.js";
 import { encodeTag } from "../../src/browser/scoreTag.js";
 import { runHash } from "../../engine/records.js";
 
@@ -235,7 +235,7 @@ test("flush with Compete OFF makes no provider call", async () => {
 
 // --- the happy path ---------------------------------------------------------------
 
-test("a Compete-ON death is stored before the first submit, then five boards submit in order with the tag", async () => {
+test("a Compete-ON death is stored before the first submit, then four boards submit in order with the tag", async () => {
   const h = harness();
   const s = summary(1);
   const scores = boardScores(s);
@@ -254,7 +254,7 @@ test("a Compete-ON death is stored before the first submit, then five boards sub
   await h.q.waitForPending();
   assert.ok(checkedFirst);
   const subs = h.fake.submissions();
-  assert.deepStrictEqual(subs.map((x) => BOARD_OF(x.leaderboardId)), ["deep", "lean", "days", "kills", "purse"]);
+  assert.deepStrictEqual(subs.map((x) => BOARD_OF(x.leaderboardId)), ["deep", "days", "kills", "purse"]);
   for (const x of subs) {
     const b = BOARD_OF(x.leaderboardId);
     assert.equal(x.leaderboardId, `dev_${b}_s1`);
@@ -279,10 +279,9 @@ test("D-02 ack-before-next: board N's ack is in storage before board N+1's submi
   await h.q.waitForPending();
   assert.deepStrictEqual(seen, [
     { board: "deep", acked: [] },
-    { board: "lean", acked: ["deep"] },
-    { board: "days", acked: ["deep", "lean"] },
-    { board: "kills", acked: ["deep", "lean", "days"] },
-    { board: "purse", acked: ["deep", "lean", "days", "kills"] },
+    { board: "days", acked: ["deep"] },
+    { board: "kills", acked: ["deep", "days"] },
+    { board: "purse", acked: ["deep", "days", "kills"] },
   ]);
 });
 
@@ -313,11 +312,11 @@ test("D-02: enqueuing the same run twice, or after it completed, submits nothing
   const [a, b] = await Promise.all([h.q.enqueue(s), h.q.enqueue(s)]);
   assert.deepStrictEqual([a, b].sort(), [false, true]);
   await h.q.waitForPending();
-  assert.equal(h.fake.submissions().length, 5);
+  assert.equal(h.fake.submissions().length, 4);
   assert.equal(await h.q.enqueue(s), false, "already done");
   await h.q.flush({ force: true });
   await h.q.waitForPending();
-  assert.equal(h.fake.submissions().length, 5);
+  assert.equal(h.fake.submissions().length, 4);
 });
 
 test("the done ledger survives a restart: a new queue over the same storage refuses the finished run", async () => {
@@ -335,7 +334,7 @@ test("the done ledger survives a restart: a new queue over the same storage refu
   });
   assert.equal(await again.enqueue(s), false);
   await again.waitForPending();
-  assert.equal(h.fake.submissions().length, 5);
+  assert.equal(h.fake.submissions().length, 4);
 });
 
 // --- signed out ---------------------------------------------------------------------
@@ -364,7 +363,7 @@ test("signed out with Compete ON: queued with zero provider calls, flushed after
   sw.signedIn = true;
   await restarted.flush({ force: true });
   await restarted.waitForPending();
-  assert.equal(h.fake.submissions().length, 5);
+  assert.equal(h.fake.submissions().length, 4);
   assert.equal(restarted.state().size, 0);
 });
 
@@ -403,7 +402,7 @@ test("offline: the first submit fails, failures 1, nextAllowedAt now + 30 s; the
   assert.equal(st.failures, 0);
   assert.equal(st.nextAllowedAt, 0);
   assert.equal(st.size, 0);
-  assert.equal(h.fake.submissions().length, 5);
+  assert.equal(h.fake.submissions().length, 4);
 });
 
 test("PGS-04 boundary: consecutive failures back off 30 s, 60 s, 120 s, 240 s, 480 s, 600 s", async () => {
@@ -434,7 +433,7 @@ test("a partial failure after deep succeeded keeps deep acked; the retry sends o
   await h.q.flush({ force: true });
   await h.q.waitForPending();
   const subs = h.fake.submissions().map((x) => BOARD_OF(x.leaderboardId));
-  assert.deepStrictEqual(subs, ["deep", "lean", "days", "kills", "purse"], "deep was sent exactly once");
+  assert.deepStrictEqual(subs, ["deep", "days", "kills", "purse"], "deep was sent exactly once");
   assert.equal(h.q.state().size, 0);
 });
 
@@ -472,7 +471,7 @@ test("PGS-06: with mixed seasons only the current season's ids are ever written"
   await h.q.flush({ force: true });
   await h.q.waitForPending();
   const subs = h.fake.submissions();
-  assert.equal(subs.length, 5);
+  assert.equal(subs.length, 4);
   for (const x of subs) assert.ok(x.leaderboardId.endsWith("_s2"), x.leaderboardId);
   assert.deepStrictEqual(h.drops, [1]);
   assert.deepStrictEqual(h.store.stored().done, [current.hash]);
@@ -488,24 +487,24 @@ test("a season-1 death enqueued into a season-2 queue is dropped, never sent", a
 
 // --- placeholders (D-14) ------------------------------------------------------------
 
-test("D-14: a placeholder DEEPEST id skips that board silently; the other four submit and the entry stays queued", async () => {
+test("D-14: a placeholder DEEPEST id skips that board silently; the other three submit and the entry stays queued", async () => {
   const ids = idsFor([1]);
   ids[1].deep = "PLACEHOLDER_DEEPEST_S1";
   const h = harness({ ids });
   const s = summary(1);
   await assert.doesNotReject(() => h.q.enqueue(s));
   await h.q.waitForPending();
-  assert.deepStrictEqual(h.fake.submissions().map((x) => BOARD_OF(x.leaderboardId)), ["lean", "days", "kills", "purse"]);
+  assert.deepStrictEqual(h.fake.submissions().map((x) => BOARD_OF(x.leaderboardId)), ["days", "kills", "purse"]);
   const q = h.store.stored();
   assert.deepStrictEqual(q.entries.map((e) => e.hash), [s.hash]);
-  assert.deepStrictEqual(q.entries[0].acked, ["lean", "days", "kills", "purse"]);
+  assert.deepStrictEqual(q.entries[0].acked, ["days", "kills", "purse"]);
   assert.equal(h.flushed.length, 0, "no DEEPEST submission, no report");
   assert.equal(h.fake.calls().filter((c) => c === "loadStanding").length, 0);
   assert.equal(h.q.state().failures, 0, "a skip is not a failure");
 
   await h.q.flush({ force: true });
   await h.q.waitForPending();
-  assert.equal(h.fake.submissions().length, 4, "the acked boards are never resent");
+  assert.equal(h.fake.submissions().length, 3, "the acked boards are never resent");
 });
 
 test("D-14: a missing season map skips every board without throwing", async () => {
@@ -514,6 +513,28 @@ test("D-14: a missing season map skips every board without throwing", async () =
   await h.q.waitForPending();
   assert.equal(h.w.started.length, 0);
   assert.equal(h.q.state().size, 1);
+});
+
+// --- BOARD-17: LEANEST retired ------------------------------------------------------
+
+test("BOARD-17: an old stored entry with a lean score and a lean ack submits the remaining boards, never a lean id", async () => {
+  const ids = devLeaderboardIds();
+  assert.ok(!("lean" in ids[1]), "the dev id map has no lean id to submit to");
+  const s = summary(1);
+  const stale = {
+    hash: s.hash,
+    season: 1,
+    tag: encodeTag(s),
+    scores: { ...boardScores(s), lean: 61571 },
+    acked: ["deep", "lean"],
+  };
+  const h = harness({ initial: storedEntryQueue([stale]) });
+  await h.q.flush({ force: true });
+  await h.q.waitForPending();
+  const boards = h.fake.submissions().map((x) => BOARD_OF(x.leaderboardId));
+  assert.deepStrictEqual(boards, ["days", "kills", "purse"], "deep was already acked, lean is dropped, the rest submit");
+  for (const x of h.fake.submissions()) assert.notEqual(BOARD_OF(x.leaderboardId), "lean");
+  assert.deepStrictEqual(h.store.stored().done, [s.hash]);
 });
 
 // --- single flight -------------------------------------------------------------------
@@ -536,9 +557,9 @@ test("two flush() calls while one is in flight share one promise; an enqueue mea
   await p1;
   await h.q.waitForPending();
   const byHash = h.w.started.map((o) => o.tag);
-  assert.equal(h.fake.submissions().length, 10);
-  assert.deepStrictEqual(byHash.slice(0, 5), Array(5).fill(encodeTag(first)), "the first run's boards all go first");
-  assert.deepStrictEqual(byHash.slice(5), Array(5).fill(encodeTag(second)), "then the follow-up flush sends the second");
+  assert.equal(h.fake.submissions().length, 8);
+  assert.deepStrictEqual(byHash.slice(0, 4), Array(4).fill(encodeTag(first)), "the first run's boards all go first");
+  assert.deepStrictEqual(byHash.slice(4), Array(4).fill(encodeTag(second)), "then the follow-up flush sends the second");
   assert.equal(h.flushed.length, 2, "two flushes, each reporting its own DEEPEST");
   assert.equal(h.flushed[0].submitted[0].hash, first.hash);
   assert.equal(h.flushed[1].submitted[0].hash, second.hash);
@@ -631,11 +652,11 @@ test("a rejecting setItem never rejects enqueue, flush or purge; the in-memory a
     assert.equal(await h.q.enqueue(s), true);
   });
   await assert.doesNotReject(() => h.q.waitForPending());
-  assert.equal(h.fake.submissions().length, 5);
+  assert.equal(h.fake.submissions().length, 4);
   assert.equal(await h.q.enqueue(s), false);
   await assert.doesNotReject(() => h.q.flush({ force: true }));
   await h.q.waitForPending();
-  assert.equal(h.fake.submissions().length, 5);
+  assert.equal(h.fake.submissions().length, 4);
   await assert.doesNotReject(() => h.q.purge());
 });
 
@@ -651,7 +672,7 @@ test("a storage without setItem/getItem functions never throws", async () => {
   });
   await assert.doesNotReject(() => q.enqueue(summary(1)));
   await assert.doesNotReject(() => q.waitForPending());
-  assert.equal(fake.submissions().length, 5);
+  assert.equal(fake.submissions().length, 4);
 });
 
 // --- waitForPending ----------------------------------------------------------------
@@ -663,8 +684,8 @@ test("waitForPending() waits for the enqueue write, every ack write and a purge 
   h.q.enqueue(s); // deliberately not awaited
   await h.q.waitForPending();
   assert.equal(h.store.ctl.settled, h.store.ctl.issued, "every write settled");
-  assert.equal(h.fake.submissions().length, 5, "the flush the enqueue started was also awaited");
-  assert.ok(h.store.ctl.issued >= 6, "the entry write and five acks");
+  assert.equal(h.fake.submissions().length, 4, "the flush the enqueue started was also awaited");
+  assert.ok(h.store.ctl.issued >= 5, "the entry write and four acks");
 
   h.q.purge(); // not awaited
   await h.q.waitForPending();
@@ -706,7 +727,7 @@ test("a throwing onFlushed or onSeasonDrop never breaks the flush", async () => 
   });
   await assert.doesNotReject(() => q.enqueue(summary(2, { season: 2 })));
   await q.waitForPending();
-  assert.equal(fake.submissions().length, 5);
+  assert.equal(fake.submissions().length, 4);
   assert.equal(q.state().size, 0);
 });
 
