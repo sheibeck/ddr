@@ -96,31 +96,33 @@ each line names the section that details it.
 3. Copy the APP_ID (section 4).
 4. Add every closed-testing tester and yourself to Testers, or enable the closed-testing track
    there (section 5).
-5. Create the five Season-1 leaderboards: DEEPEST, LEANEST, LONGEST, BUTCHERY and PURSE
+5. Create the four Season-1 leaderboards: DEEPEST, LONGEST, BUTCHERY and PURSE
    (section 7).
-6. Send Claude the APP_ID and the five leaderboard IDs, or paste them yourself into
+6. Send Claude the APP_ID and the four leaderboard IDs, or paste them yourself into
    `games-ids.xml` and `content/leaderboards.js` `LEADERBOARD_IDS[1]` (sections 4 and 8).
 7. Rebuild and upload with a versionCode bump, `npm run play:release` (`docs/RELEASING.md`).
-8. Check with a tester account: sign-in, then one death on all five boards (section 11).
+8. Check with a tester account: sign-in, then one death on all four boards (section 11).
 9. Publish the Play Games configuration (section 12).
 10. Enter the Data safety answers from `store-listing/LISTING.md`, with the privacy URL
     https://darktierstudios.com/privacy/apps and the delete-data URL
     https://darktierstudios.com/privacy/delete-data (Play Console → **App content**).
-11. Later, once per season, create the next five boards and bump the season (section 9).
+11. Later, once per season, create the next four boards and bump the season (section 9).
 
 Two facts to keep in mind while doing it:
 
-- **LINEAGE and GRAVEYARD get no PGS board (D-19).** LINEAGE is derived from a DEEPEST sample,
-  and GRAVEYARD is local only. Five boards per season, no more.
-- **The cap.** PGS allows 70 leaderboards per game, for its whole lifetime. Five boards per
-  season lasts 14 seasons. Old seasons' boards are never deleted.
+- **LINEAGE and GRAVEYARD get no PGS board.** Since v2.1, LINEAGE is ME-only (BOARD-13), and
+  GRAVEYARD was folded into the ME scope (BOARD-14). Neither ever had, or will have, a Play
+  Games board.
+- **The cap.** PGS allows 70 leaderboards per game, for its whole lifetime. Four boards per
+  season, with Season 1 counted as five spent (it briefly included the now-retired LEANEST,
+  section 13), leaves 65 — 16 more seasons of four. Old seasons' boards are never deleted.
 
-## 7. Leaderboards (one set of five per season)
+## 7. Leaderboards (one set of four per season)
 
 1. **Play Games Services** → **Setup and management** → **Leaderboards** → **Create
    leaderboard**, once for each row below.
 2. Name each one with its board name and season, typed exactly as: *DEEPEST, Season 1*,
-   *LEANEST, Season 1*, *LONGEST, Season 1*, *BUTCHERY, Season 1*, *PURSE, Season 1*.
+   *LONGEST, Season 1*, *BUTCHERY, Season 1*, *PURSE, Season 1*.
 3. Set **Ordering** exactly as in the table (the console may label it **Sort order**). It is
    fixed once the leaderboard is published and cannot be changed afterwards; a wrong ordering
    means a new leaderboard and one fewer of the 70.
@@ -132,7 +134,6 @@ Two facts to keep in mind while doing it:
 | Board | Internal key | Ordering | Submitted score |
 |---|---|---|---|
 | DEEPEST | `deep` | Larger is better | the floor times 1,000,000, minus the steps walked (steps capped at 999,999): deeper wins, and on the same floor fewer steps wins |
-| LEANEST | `lean` | Smaller is better | the squares walked per floor descended, times 1,000, rounded (a floor-0 death counts as one floor) |
 | LONGEST | `days` | Larger is better | the day times 1,000, plus the floor (capped at 999) as the tiebreak |
 | BUTCHERY | `kills` | Larger is better | the kills times 1,000, plus the floor (capped at 999) as the tiebreak |
 | PURSE | `gold` | Larger is better | the gold carried, as is |
@@ -140,9 +141,7 @@ Two facts to keep in mind while doing it:
 The number the console shows is an ordering key, not what players see. Rows read their
 displayed values (floor, steps, day, kills, gold and the rest) from the score tag (section 10).
 
-**The LEANEST limit.** One integer cannot also break ties by depth, so two runs with the same
-squares-per-floor rate rank equally whatever floor they reached. This is accepted: the local
-board still breaks that tie by depth.
+See section 13 for the retired LEANEST board.
 
 ## 8. Where the IDs go
 
@@ -160,16 +159,17 @@ in one at a time.
 
 When a balance change moves the depth curve (D-15):
 
-1. Create five new leaderboards in the console, as in section 7, named for the new season.
+1. Create four new leaderboards in the console, as in section 7, named for the new season.
 2. In `content/leaderboards.js`, add a new `LEADERBOARD_IDS` entry for the next season number
-   with the five new IDs (section 8).
+   with the four new IDs (section 8).
 3. Bump `SEASON` in `content/season.js` and add a line to its season changelog.
 4. Never edit or delete an older season's entry. Old boards stay readable from the panel's
    season picker and are never written again.
 
 The unit suite fails if `SEASON` has no `LEADERBOARD_IDS` entry, so step 2 cannot be forgotten.
-Remember the cap: 70 leaderboards per game, so five per season lasts 14 seasons. The fourteenth
-season takes boards 66 to 70, the last five; there is no fifteenth set of five.
+Remember the cap: 70 leaderboards per game. Season 1 spent five (it briefly included the
+now-retired LEANEST, section 13), leaving 65 for four boards a season — 16 more seasons. The
+sixteenth of those takes the last four of the 70; there is no seventeenth set of four.
 
 ## 10. How the score tag is built (Phase 68)
 
@@ -195,8 +195,10 @@ Every submission carries a score tag, which is where a global row's details come
   short cause line from the cause code instead; your own runs keep their full epitaphs.
 - **A tag that fails to decode** still shows the player's handle and the board's value (read
   back from the raw score), so a row is never blank.
-- **LINEAGE global (D-19).** Client-side grouping of a top-N DEEPEST fetch by race + class,
-  the best entry per combo, with an honest "sampled" footnote. No per-combo boards, ever.
+- **LINEAGE is ME-only, since v2.1 (BOARD-13).** There is no global lineage view and no
+  per-combo board: Play Games keeps one best score per player per board, so a global lineage
+  view could only ever show each player's all-time deepest character, never a true per-combo
+  best. Per-sub-class global boards are backlog 999.11, not this release.
 - **Submissions.** The plugin (0.5.0) resolves a submission only after the server write, and
   PGS has no offline queue, so the game keeps its own durable submission queue.
 
@@ -212,8 +214,8 @@ If the chip stays the "nobody" glyph, re-check in order: the credential's SHA-1 
 signing key's (section 3), the APP_ID replaced the placeholder and the build was rebuilt
 (section 4), and the account is on the Testers list (section 5).
 
-**The leaderboard check.** Once the five IDs are in and the build is rebuilt (section 8), one
-tester death appears on all five boards. In the console, each board's score view shows the
+**The leaderboard check.** Once the four IDs are in and the build is rebuilt (section 8), one
+tester death appears on all four boards. In the console, each board's score view shows the
 run's v1 tag, for example `v1.2.8.3.0.7.22.431.19.4688.1180.Hilda_Ferrow` (a level 3 Dwarven
 Pickpocket killed in combat on floor 7, day 22, after 431 steps, 19 kills and 4,688 gold). That
 run's scores are:
@@ -221,7 +223,6 @@ run's scores are:
 | Board | Score | Why |
 |---|---|---|
 | DEEPEST | 6,999,569 | 7 × 1,000,000 − 431 |
-| LEANEST | 61,571 | 431 ÷ 7 × 1,000, rounded: the squares-per-floor rate times 1,000 |
 | LONGEST | 22,007 | 22 × 1,000 + 7 |
 | BUTCHERY | 19,007 | 19 × 1,000 + 7 |
 | PURSE | 4,688 | the gold, as is |
@@ -255,3 +256,26 @@ anyone else simply stays signed out.
 Source: Google's "Test and publish your game",
 https://developer.android.com/games/pgs/console/publish (page last updated 2026-06-16, read
 2026-09-24). The path and wording above match the page as read that day.
+
+## 13. Retired boards
+
+| Season | Board | Internal key | ID | Retired in |
+|---|---|---|---|---|
+| 1 | LEANEST | `lean` | `CgkIlvbN0YYPEAIQAw` | v2.1 (BOARD-17) |
+
+**Why it was retired (v2.1, BOARD-17).** Steps per floor let a 1-step death top it (a floor-0
+death counts as one floor on Play Games, so a single-step death on floor 1 could sit at the
+top), and "deepest floor, then fewest steps" is exactly DEEPEST's own ordering — so no honest
+LEANEST board remained once that overlap was seen.
+
+**When to delete it.** Delete it only AFTER the update that stops submitting to it is live on
+the track the testers use. Deleting it earlier would orphan any runs still queued for it.
+Path: Play Console → **Delve, Die, Repeat** → **Grow users** → **Play Games Services** →
+**Setup and management** → **Leaderboards** → **LEANEST, Season 1** → delete.
+
+**If the console refuses to delete it.** Some published leaderboards cannot be deleted once
+live. If that happens here, leave it: nothing submits to it again, and it still counts toward
+the 70-board cap either way.
+
+The code carries no ID for it any more — `content/leaderboards.js` has no `lean` entry as of
+v2.1.

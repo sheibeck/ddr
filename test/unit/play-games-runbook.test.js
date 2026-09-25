@@ -46,7 +46,6 @@ const REQUIRED = [
   "content/leaderboards.js",
   "LEADERBOARD_IDS",
   "content/season.js",
-  "Smaller is better",
   "Larger is better",
   "PLACEHOLDER",
   "tamper",
@@ -111,19 +110,30 @@ function checklistItems(text) {
   return items;
 }
 
-test("the leaderboards table gives each board its ordering (LEANEST the only smaller-is-better one)", () => {
+test("the leaderboards table has the four live boards, every one larger-is-better, and no LEANEST row", () => {
   const rows = section(/Leaderboards/).split("\n");
   const row = (name) => {
     const found = rows.filter((l) => l.startsWith(`| ${name} `));
     assert.equal(found.length, 1, `exactly one table row for ${name}`);
     return found[0];
   };
-  assert.match(row("LEANEST"), /Smaller is better/);
-  assert.doesNotMatch(row("LEANEST"), /Larger is better/);
   for (const name of ["DEEPEST", "LONGEST", "BUTCHERY", "PURSE"]) {
     assert.match(row(name), /Larger is better/, `${name} is larger-is-better`);
     assert.doesNotMatch(row(name), /Smaller is better/, `${name} is not smaller-is-better`);
   }
+  assert.equal(
+    rows.some((l) => l.startsWith("| LEANEST ")),
+    false,
+    "the retired LEANEST board has no row in the §7 table",
+  );
+});
+
+test("section 13 names the retired board, when to delete it and the cap", () => {
+  const s13 = section(/^## 13\. /);
+  assert.match(s13, /^## 13\. Retired boards/);
+  assert.match(s13, /CgkIlvbN0YYPEAIQAw/);
+  assert.match(s13, /\bafter\b/i);
+  assert.match(s13, /\b70\b/);
 });
 
 test("section 6 is an order of operations whose steps run in acting order", () => {
@@ -172,7 +182,7 @@ test("section 12 publishes the configuration, with the path, the delay and its d
 
 test("the numbered sections run 1, 2, 3 ... with no gap and no repeat", () => {
   const nums = [...DOC.matchAll(/^## (\d+)\./gm)].map((m) => Number(m[1]));
-  assert.ok(nums.length >= 12, `expected at least 12 numbered sections, found ${nums.length}`);
+  assert.ok(nums.length >= 13, `expected at least 13 numbered sections, found ${nums.length}`);
   nums.forEach((n, i) => assert.equal(n, i + 1, `section heading #${i + 1} is numbered ${n}`));
   const headings = DOC.split("\n").filter((l) => l.startsWith("## "));
   assert.equal(headings.length, nums.length, 'every "## " heading is numbered');
