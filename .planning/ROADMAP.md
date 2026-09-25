@@ -110,14 +110,14 @@ Plans:
   4. Content numbers that encode to-hit/AR/etc. are re-expressed in the new convention, and any roll-related value already in a saved game converts once, tolerantly, on load.
   5. Every event that carries a roll (`struck`, foe swings, soak, thrown spells, resistance, parley, traps, locks, climbs/leaps, cures, wake, drops, gates, summons, crits) natively carries the high-is-good `roll`, `target` and `dieN`.
 
-**Plans**: 10 plans
+**Plans**: 3/10 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 73-01-PLAN.md — The roll-high helper (`rollCheck`/`atLeastFor`/`rollFields` in engine/dice.js) and the build-failing guard, enforced on the 17 conversion-free engine files (wave 1)
-- [ ] 73-02-PLAN.md — Proof baselines on the untouched engine: bot-sweep state pins, the pre-switch save, the 200-seed baseline readout (checked against Phase 72's AFTER), and the runtime roll invariant (wave 1)
-- [ ] 73-03-PLAN.md — The shared range formatter (src/browser/rollRange.js, "17 vs 18–20") and the per-site mirror verdicts plus event-field contract in docs/ROLL-LEDGER.md (wave 1)
+- [x] 73-01-PLAN.md — The roll-high helper (`rollCheck`/`atLeastFor`/`rollFields` in engine/dice.js) and the build-failing guard, enforced on the 17 conversion-free engine files (wave 1)
+- [x] 73-02-PLAN.md — Proof baselines on the untouched engine: bot-sweep state pins, the pre-switch save, the 200-seed baseline readout (checked against Phase 72's AFTER), and the runtime roll invariant (wave 1)
+- [x] 73-03-PLAN.md — The shared range formatter (src/browser/rollRange.js, "17 vs 18–20") and the per-site mirror verdicts plus event-field contract in docs/ROLL-LEDGER.md (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -344,7 +344,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
-| 73. Engine Roll-High Mirror | v2.1 | 0/– | Not started | - |
+| 73. Engine Roll-High Mirror | v2.1 | 3/10 | In Progress|  |
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
