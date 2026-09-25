@@ -3152,6 +3152,10 @@ const CONDITION_EXPLAIN = {
   // ahead of this sentence at tap time — see WAIVER_LABEL below.
   darkness: "Ground you have not walked yet shows only the one square around you while this counts down, and every strike is harder to land. A torch or an amulet of light burns it away early.",
   afraid: "A penalty on every roll until it passes. Nobody is proud of this.",
+  // RULES-14 (Phase 75): Shield still reads the plain pool sentence below.
+  // An armed Bubble mirror's own explanation is appended at tap time (see
+  // paintConditions) — this stays the fallback for a popped pool and for
+  // Shield.
   ward: "A pool of hit points that is not yours, soaking blows until it runs dry.",
   foeEffect: "Something they did to you. It wears off in a few rounds, which is more than most things do.",
   affliction: "It takes a bite out of you on a schedule. Find a cure before it finds the rest.",
@@ -3199,8 +3203,15 @@ const WAIVER_LABEL = {
  * non-item chip (the spell might/ward/darkness/afraid/foeEffect/affliction
  * rows) falls straight through to the plain CONDITION_EXPLAIN sentence,
  * unchanged from before this plan.
+ *
+ * RULES-14 (Phase 75): an armed Bubble mirror's ward chip (a ward chip with
+ * `cn.mirror` set) reads its OWN sentence instead of the plain Shield-soak
+ * line — the mirror has nothing to do with a soak pool until it pops.
  */
 function explainCondition(cn, label) {
+  if (cn.key === "ward" && cn.mirror) {
+    return "The next blow that lands goes back to whoever threw it; then a small pool for the rest of the round.";
+  }
   const itemName = cn.source || cn.item;
   const tail = CONDITION_EXPLAIN[cn.key] || CONDITION_EXPLAIN.default;
   if (!itemName) return tail;
@@ -3250,6 +3261,10 @@ function paintConditions(c) {
     let label = cn.key === "affliction" ? (cn.kind || "Afflicted")
       : cn.key === "foeEffect" ? (FOE_EFFECT_LABEL[cn.kind] || CONDITION_COPY.foeEffect.label)
       : cn.key === "itemCooldown" || cn.key === "staffCharges" ? cn.item
+      // RULES-14 (Phase 75): the ward chip reads the ward's OWN name
+      // (Shield or Bubble), falling back to "Shield" for a legacy/malformed
+      // chip with no name.
+      : cn.key === "ward" ? (cn.name || CONDITION_COPY.ward.label)
       : (CONDITION_COPY[cn.key]?.label || cn.key);
     let detail = "";
     if (cn.key === "flight") {
@@ -3261,8 +3276,10 @@ function paintConditions(c) {
       detail = `${cn.remaining} sq`;
     } else if (cn.key === "ward") {
       // Phase 31 (CMB-04): both numbers on one chip, mirroring the flight
-      // special case above — "Shield 34 hp · 3 rds".
-      detail = `${cn.pool} hp · ${cn.remaining} rds`;
+      // special case above — "Shield 34 hp · 3 rds". RULES-14 (Phase 75):
+      // an armed Bubble mirror has no pool/rounds to show yet — it reads
+      // "next hit" until a blow lands and it pops into an ordinary pool.
+      detail = cn.mirror ? "next hit" : `${cn.pool} hp · ${cn.remaining} rds`;
     } else if (cn.key === "itemCooldown") {
       // Phase 39 (GEAR-02): a cooling duration+cooldown item.
       detail = `cd ${cn.remaining} sq`;

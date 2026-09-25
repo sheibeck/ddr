@@ -147,7 +147,10 @@ const BASE_EVENT = {
   tracked: true, roll: 7, target: "Viper", need: 5, critical: true, dmg: 6, spGained: 5,
   wp: 4, rations: 1, bonus: 2, song: "a tune", count: 2, n: 2, r: 2, member: "the companion",
   spell: "Heal", intel: 5, rounds: 3, rolls: 2, totalDamage: 8, nextEncounter: "encounter",
-  might: 3, pool: 50, reflect: true, short: 5, item: { n: "Dagger" }, table: 4,
+  // RULES-14 (Phase 75): reflect (a retired ward field, no builder reads it
+  // anymore) replaced by mirror/popPool — the wardRaised/wardReflected
+  // builders' new mirror-branch text.
+  might: 3, pool: 50, mirror: true, popPool: 25, short: 5, item: { n: "Dagger" }, table: 4,
   result: "something", spells: ["Heal"], what: "a cloak", gift: "Magic Weapon", first: 2,
   mult: 2, remaining: 1, motive: "Blood", level: 2, wpGain: 3, depth: 3, steps: 40, total: 8,
   troll: true, elfOrDwarf: true, untouchable: true,

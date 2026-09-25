@@ -882,7 +882,7 @@ test("applyFoeDamageToPlayer: Hardiness applies BEFORE halfNext", () => {
 });
 
 test("applyFoeDamageToPlayer: a ward absorbs the blow fully, no struckByFoe, zero draws", () => {
-  const state = fixedState({ c: { ward: { pool: 10, reflect: false, rounds: 3 } } });
+  const state = fixedState({ c: { ward: { pool: 10, rounds: 3 } } });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
@@ -895,7 +895,7 @@ test("applyFoeDamageToPlayer: a ward absorbs the blow fully, no struckByFoe, zer
 });
 
 test("applyFoeDamageToPlayer: a ward shatters partway and the remainder lands", () => {
-  const state = fixedState({ c: { ward: { pool: 3, reflect: false, rounds: 3 } } });
+  const state = fixedState({ c: { ward: { pool: 3, rounds: 3 } } });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
@@ -905,19 +905,23 @@ test("applyFoeDamageToPlayer: a ward shatters partway and the remainder lands", 
   assert.equal(state.c.wp, 53, "5 - 3 absorbed = 2 damage lands");
 });
 
-test("applyFoeDamageToPlayer: a ward reflect kills the FOE and returns died:false (Pitfall 1)", () => {
-  const state = fixedState({ c: { ward: { pool: 10, reflect: true, rounds: 3 } } });
+// RULES-14 (Phase 75, user 2026-09-25): Bubble is a one-shot mirror, re-pinned
+// from the old reflect-the-soaked-share shape. See test/unit/bubble-mirror.test.js
+// for the full mirror/pop-pool behaviour.
+test("applyFoeDamageToPlayer: an armed mirror reflects the whole blow, kills the FOE, and returns died:false (Pitfall 1)", () => {
+  const state = fixedState({ c: { ward: { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null } } });
   const foe = fixedFoe({ wp: 3, maxWP: 3 });
   state.combat = fixedCombat([foe]);
   const events = [];
   // killFoe's four draws: d6 sp(1), d10 coin(1), d20 item(20 -> none), d6 cook(1 -> none).
   const result = applyFoeDamageToPlayer(state, foe, fakeRng([1, 1, 20, 1]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(events.map((e) => e.type), ["wardReflected", "foeKilled"]);
-  assert.ok(events.some((e) => e.type === "wardReflected" && e.target === "Target" && e.amount === 5));
+  assert.ok(events.some((e) => e.type === "wardReflected" && e.target === "Target" && e.amount === 5 && e.mirror === true));
   assert.equal(foe.alive, false);
   assert.equal(state.c.wp, 55, "the hero took no damage from a foe's own reflect-death");
   assert.deepEqual(result, { died: false, onArmour: false, applied: 0 });
   assert.notEqual(state.combat, null, "state.combat is untouched — only the hero's own death nulls it");
+  assert.deepEqual(state.c.ward, { name: "Bubble", pool: 25, rounds: 1 }, "the mirror still pops even on a reflect-kill");
 });
 
 test("applyFoeDamageToPlayer: armour soaks the blow", () => {
@@ -994,8 +998,12 @@ test("applyFoeDamageToPlayer: the critical flag mirrors the die's top face (roll
 
 // --- foeTurn control flow through the helpers (Phase 17, FID-03) -----------
 
-test("foeTurn: a ward-reflect kill mid-swing continues to the next foe and still runs the ward tick", () => {
-  const state = fixedState({ c: { ward: { pool: 10, reflect: true, rounds: 3 }, mirror: 0 } });
+// RULES-14 (Phase 75): re-pinned for the armed-mirror shape. After the
+// reflect-kill the mirror pops into a 25 hp pool for the rest of THIS round
+// — since this foeTurn call is that same round, the tail tick always fades
+// it (rounds: 1 -> 0) before the call returns.
+test("foeTurn: an armed mirror reflect-kill mid-swing continues to the next foe, pops into a pool, and the tail tick fades that pool", () => {
+  const state = fixedState({ c: { ward: { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null }, mirror: 0 } });
   const foeA = fixedFoe({ name: "A", wp: 3, maxWP: 3 });
   const foeB = fixedFoe({ name: "B", wp: 10, maxWP: 10 });
   state.combat = fixedCombat([foeA, foeB]);
@@ -1003,18 +1011,17 @@ test("foeTurn: a ward-reflect kill mid-swing continues to the next foe and still
   // killFoe's four draws (d6 sp=1, d10 coin=1, d20 item=20, d6 cook=1).
   // B: to-hit d20(7) > need(5) -> miss.
   const events = foeTurn(state, fakeRng([3, 4, 1, 1, 20, 1, 7]), []);
-  assert.deepEqual(events.map((e) => e.type), ["wardReflected", "foeKilled", "foeMissed"]);
+  assert.deepEqual(events.map((e) => e.type), ["wardReflected", "foeKilled", "foeMissed", "wardFaded"]);
   assert.equal(foeA.alive, false);
   assert.equal(foeB.alive, true);
   assert.equal(foeB.wp, 10);
   assert.equal(state.c.wp, 55, "the hero took no damage");
-  assert.equal(state.c.ward.pool, 5);
-  assert.equal(state.c.ward.rounds, 2, "the end-of-turn ward tick ran");
+  assert.equal(state.c.ward, null, "the popped pool faded at the tail of this same foe turn");
   assert.equal(state.dead, false);
 });
 
 test("foeTurn: the hero dying mid-loop returns immediately — remaining foes never swing and the ward tick is skipped", () => {
-  const state = fixedState({ c: { wp: 1, ward: { pool: 0, reflect: false, rounds: 3 }, mirror: 0 } });
+  const state = fixedState({ c: { wp: 1, ward: { pool: 0, rounds: 3 }, mirror: 0 } });
   const foeA = fixedFoe({ name: "A" });
   const foeB = fixedFoe({ name: "B" });
   state.combat = fixedCombat([foeA, foeB]);
@@ -1025,7 +1032,7 @@ test("foeTurn: the hero dying mid-loop returns immediately — remaining foes ne
 });
 
 test("foeTurn: a partial ward absorb shatters the ward and the remainder lands", () => {
-  const state = fixedState({ c: { ward: { pool: 3, reflect: false, rounds: 3 } } });
+  const state = fixedState({ c: { ward: { pool: 3, rounds: 3 } } });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = foeTurn(state, fakeRng([3, 4]), []);
@@ -1542,8 +1549,12 @@ test("allyTurn (F1, summon): a daggerOnly foe is untouchable to a summoned ally 
   assert.equal(state.combat.ally.rounds, 1, "the departure countdown still ticks on a miss");
 });
 
-test("applyFoeDamageToPlayer: a reflected blow onto an armoured foe can be soaked — pool spent, no wardReflected, foe unhurt, died:false", () => {
-  const state = fixedState({ c: { ward: { pool: 10, reflect: true, rounds: 3 } } });
+// RULES-14 (Phase 75): re-pinned — a mirrored blow can still be soaked by
+// the foe's own natural armor exactly as any reflect does today (no
+// wardReflected pushed since damageFoe's own `soaked` flag came back true),
+// and the mirror still pops into the plain pool regardless.
+test("applyFoeDamageToPlayer: a mirrored blow onto an armoured foe can be soaked — no wardReflected, foe unhurt, died:false, still pops", () => {
+  const state = fixedState({ c: { ward: { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null } } });
   const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });
   state.combat = fixedCombat([foe]);
   const events = [];
@@ -1553,7 +1564,7 @@ test("applyFoeDamageToPlayer: a reflected blow onto an armoured foe can be soake
   // raw draw 5 mirrors to face 16 on a d20; atLeastFor(ar 12, 20) = 9.
   assert.deepStrictEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 5, roll: 16, atLeast: 9, dieN: 20 }]);
   assert.equal(foe.wp, 10);
-  assert.equal(state.c.ward.pool, 5);
+  assert.deepEqual(state.c.ward, { name: "Bubble", pool: 25, rounds: 1 }, "the mirror still pops even when the foe's own armor soaks the reflect");
   assert.equal(state.c.wp, 55);
 });
 
@@ -1612,14 +1623,14 @@ test("applyFoeDamageToPlayer: applied reports the landed amount; ignoresArmor:tr
 });
 
 test("applyFoeDamageToPlayer: a warded drain heals nothing — applied is the post-ward amount", () => {
-  const state1 = fixedState({ c: { ward: { pool: 10, reflect: false, rounds: 3 } } });
+  const state1 = fixedState({ c: { ward: { pool: 10, rounds: 3 } } });
   const foe1 = fixedFoe();
   const events1 = [];
   const result1 = applyFoeDamageToPlayer(state1, foe1, fakeRng([]), events1, { dmg: 4, ignoresArmor: true, ability: "vampireDrain" });
   assert.equal(result1.applied, 0);
   assert.deepStrictEqual(events1, [{ type: "wardAbsorbed", amount: 4, remaining: 6 }]);
 
-  const state2 = fixedState({ c: { ward: { pool: 10, reflect: false, rounds: 3 } } });
+  const state2 = fixedState({ c: { ward: { pool: 10, rounds: 3 } } });
   const foe2 = fixedFoe();
   const events2 = [];
   const result2 = applyFoeDamageToPlayer(state2, foe2, fakeRng([]), events2, { dmg: 15, ignoresArmor: true, ability: "vampireDrain" });
@@ -1780,7 +1791,7 @@ test("foeTurn: a pending summon joins at the top, before regen, and acts as an o
 test("startCombat+fight: a foe killed by ward reflection during its opening turn ends the encounter (no stranded combat)", () => {
   let hits = 0;
   for (let seed = 1; seed <= 400 && hits < 3; seed++) {
-    const state = fixedState({ c: { sub: "Samurai", ward: { pool: 100, reflect: true, rounds: 12, name: "Bubble" } } });
+    const state = fixedState({ c: { sub: "Samurai", ward: { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null } } });
     const rng = makeRng(seed);
     const events = startCombat(state, false, "Beasts", rng, []);
     fight(state, rng, events);

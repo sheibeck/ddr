@@ -1471,7 +1471,9 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       return events;
     }
     case "dome": {
-      c.ward = { pool: 100, rounds: 99, reflect: false, name: it.n };
+      // RULES-14 (Phase 75): the false `reflect` key is dropped — no ward
+      // ever carries one again (greenfield).
+      c.ward = { pool: 100, rounds: 99, name: it.n };
       break;
     }
     case "freeze": {

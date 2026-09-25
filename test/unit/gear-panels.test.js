@@ -96,6 +96,7 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
       spellCharges: "Spell charges",
       spellChargesValue: "{k} / {max}",
       wardValue: "{pool} hp left · {rounds} rds",
+      wardMirrorValue: "next hit",
       strength: "Strength",
       strengthValue: "+{n} damage",
       regen: "Regeneration",

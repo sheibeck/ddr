@@ -290,14 +290,20 @@ test("bolt through the pipeline (D-02): armor soak d20 applies to a bolt, Hardin
   assert.deepEqual(eventsB.map((e) => e.type), ["foeCast", "foeBolted"]);
   assert.equal(eventsB[1].dmg, 3);
 
-  const warded = fixedState({ c: { ward: { pool: 10, reflect: true, rounds: 3 } } });
+  // RULES-14 (Phase 75, user 2026-09-25): re-pinned for the armed-mirror
+  // shape — a foe ability bolt triggers the mirror exactly like a plain
+  // swing, then the mirror pops and immediately fades at this same
+  // foeTurn's tail tick (rounds: 1 -> 0).
+  const warded = fixedState({ c: { ward: { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null } } });
   const foeC = fixedFoe({ abilities: ["krupkeFreeze"], wp: 10, maxWP: 10 });
   warded.combat = fixedCombat([foeC]);
   const eventsC = foeTurn(warded, fakeRng([1, 4]), []);
-  assert.deepEqual(eventsC.map((e) => e.type), ["foeCast", "wardReflected"]);
+  assert.deepEqual(eventsC.map((e) => e.type), ["foeCast", "wardReflected", "wardFaded"]);
   assert.equal(eventsC[1].amount, 4);
+  assert.equal(eventsC[1].mirror, true);
   assert.equal(foeC.wp, 6);
   assert.equal(eventsC.some((e) => e.type === "foeBolted"), false);
+  assert.equal(warded.c.ward, null, "the popped pool faded at the tail of this same foe turn");
 });
 
 // --- 9/10: drain (D-11) --------------------------------------------------------
@@ -313,7 +319,7 @@ test("drain (D-11): no soak roll on an armoured hero; heals the foe by the appli
   assert.deepEqual(events[2], { type: "foeDrained", name: "Target", ability: "vampireDrain", stolen: 5, wp: 65, maxWP: 65 });
   assert.equal(armored.c.wp, 48);
 
-  const warded = fixedState({ c: { ward: { pool: 20, reflect: false, rounds: 3 } } });
+  const warded = fixedState({ c: { ward: { pool: 20, rounds: 3 } } });
   const foe2 = fixedFoe({ abilities: ["vampireDrain"], wp: 60, maxWP: 65 });
   warded.combat = fixedCombat([foe2]);
   const events2 = foeTurn(warded, fakeRng([2, 3, 4]), []);

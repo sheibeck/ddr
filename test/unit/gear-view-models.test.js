@@ -778,6 +778,21 @@ test("gearKitRows, running effects: order is Rations, Shield, Strength, Regenera
   ]);
 });
 
+// RULES-14 (Phase 75, deviation Rule 1): an armed Bubble mirror's row reads
+// "next hit" instead of interpolating wardValue against a null rounds.
+test("gearKitRows: an armed Bubble mirror reads the ward row as 'Bubble — next hit'; a popped pool reads the plain pool/rounds shape", () => {
+  const armed = fixedChar({
+    rations: 0, kills: 0,
+    ward: { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null },
+  });
+  const armedRow = gearKitRows(st(armed)).find((r) => r.label === "Bubble");
+  assert.deepStrictEqual(armedRow, { label: "Bubble", value: "next hit" });
+
+  const popped = fixedChar({ rations: 0, kills: 0, ward: { name: "Bubble", pool: 25, rounds: 1 } });
+  const poppedRow = gearKitRows(st(popped)).find((r) => r.label === "Bubble");
+  assert.deepStrictEqual(poppedRow, { label: "Bubble", value: "25 hp left · 1 rds" });
+});
+
 test("gearKitRows: no row is ever labelled Potions, Scrolls or Wilmst", () => {
   const c = fixedChar({ potions: 5, scrolls: 3, gold: 999, rations: 1, kills: 0 });
   const labels = gearKitRows(st(c)).map((r) => r.label);

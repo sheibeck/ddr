@@ -106,7 +106,12 @@ export const SPELLS = [
   { n: "Summon", lvl: 2, s: "special", kind: "summon", niche: "summon", txt: "summon · one ally · fights beside you d4+2 rounds", combatOnly: false },
   { n: "Fireball", lvl: 3, s: "offense", kind: "thrown", dmg: { n: 2, sides: 10, bonus: 4 }, niche: "burst", txt: "burst · one foe · 2d10+4", combatOnly: true },
   { n: "Major Heal", lvl: 3, s: "healing", kind: "heal", dmg: { n: 3, sides: 10, bonus: 0 }, niche: "healing", txt: "healing · you · 3d10 hp", combatOnly: false },
-  { n: "Bubble", lvl: 3, s: "protection", kind: "ward", pool: 100, rounds: 12, reflect: true, niche: "defensive", txt: "defensive · you · soaks 100 hp and reflects, 12 rounds", combatOnly: false },
+  // RULES-14 (Phase 75, user 2026-09-25): Bubble was a strictly-better
+  // Shield (100 hp, 12 rounds, PLUS a reflect). It is now a one-shot mirror
+  // instead — the next blow bounces back in full, then a small pop pool for
+  // the rest of that round. See engine/magic.js's ward branch and
+  // engine/combat.js#applyFoeDamageToPlayer's mirror check.
+  { n: "Bubble", lvl: 3, s: "protection", kind: "ward", mirror: true, popPool: 25, niche: "defensive", txt: "defensive · you · the next blow bounces back at whoever threw it, then a 25 hp film for the rest of that round", combatOnly: false },
   { n: "Sense Danger", lvl: 3, s: "divination", kind: "foresee", niche: "sight", txt: "sight · the next encounter · names it before you meet it, and you act first", combatOnly: false },
   { n: "Turn Walking Dead", lvl: 2, s: "protection", kind: "turn", niche: "answer", txt: "answer · every Walking Dead of your level or lower · sent back", combatOnly: true },
   { n: "Plane Gate", lvl: 3, s: "protection", kind: "gate", niche: "answer", txt: "answer · d6 Demons or Walking Dead · vanquished to The Planes", combatOnly: true },

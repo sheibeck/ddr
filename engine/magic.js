@@ -413,8 +413,18 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     c.mirror = rng.d(6); // roll:amount
     events.push({ type: "mirrorSelf", rounds: c.mirror });
   } else if (sp.kind === "ward") {
-    c.ward = { pool: sp.pool, rounds: sp.rounds, reflect: !!sp.reflect, name: sp.n };
-    events.push({ type: "wardRaised", spell: sp.n, pool: sp.pool, reflect: !!sp.reflect });
+    // RULES-14 (Phase 75, user 2026-09-25): a mirror spell (Bubble) raises
+    // an ARMED mirror — pool 0, rounds null (never ticks until it pops; see
+    // combat.js#applyFoeDamageToPlayer/foeTurn's tail tick) — instead of a
+    // soak pool. Every other ward spell (Shield) is unchanged: no reflect
+    // key is ever set again.
+    if (sp.mirror) {
+      c.ward = { name: sp.n, mirror: true, pool: 0, popPool: sp.popPool, rounds: null };
+      events.push({ type: "wardRaised", spell: sp.n, pool: 0, mirror: true, popPool: sp.popPool });
+    } else {
+      c.ward = { pool: sp.pool, rounds: sp.rounds, name: sp.n };
+      events.push({ type: "wardRaised", spell: sp.n, pool: sp.pool });
+    }
   } else if (sp.kind === "might") {
     c.might = rollDice(rng, sp.dmg);
     if (!c.strengthBoost) {
