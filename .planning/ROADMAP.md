@@ -248,7 +248,23 @@ Plans:
   5. Every finished run lands on each ME board it qualifies for (a depth-10 run tops a depth-9 one on DEEPEST), and a signed-in player's score reaches Play Games and shows on another player's ALL board after a refresh. Both root causes are found with `/gsd-debug` before fixing.
   6. The LEANEST board is gone from the rail, the local records and Play Games submission; old bests and queued runs that carry a `lean` entry load cleanly and nothing is ever submitted to the Season-1 LEANEST board again.
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 81-01-PLAN.md — Root-cause session, debug first (BOARD-15/16, confirms the BOARD-09 identity): death-path and submit/fetch trace pins, 81-DEBUG.md root causes, fix routing and the device-session gate (wave 1)
+- [ ] 81-02-PLAN.md — Retire LEANEST in code (BOARD-17): RETIRED_BOARDS, four-board submission and records, tolerant load of old bests and queued entries (wave 1)
+- [ ] 81-03-PLAN.md — LEANEST docs (BOARD-17): four-board runbook, §13 Retired boards with the delete-after-ship step, release notes and the post-push console checklist (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 81-04-PLAN.md — Panel restructure (BOARD-11/12/13/14): GRAVEYARD folded into ME, ME | ALL | FRIENDS with the ALL default when signed in, LINEAGE ME-only at the rail's end (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 81-05-PLAN.md — Local recording fix (BOARD-15): the routed R-15 fixes plus reconcileBests at boot, every death-path pin green (wave 3)
+- [ ] 81-06-PLAN.md — Global boards fix (BOARD-09/10/16): YOU from the player's own leaderboard record, the pin rule and the hidden-score note, forceReload plus invalidate after a submission and on every panel open, the routed queue/tag fixes (wave 3)
 **UI hint**: yes
 **Device check**: yes — needs a signed-in Google Play Games build (YOU tag, standing card, ALL default, ME/ALL/FRIENDS switching, LINEAGE under ME only), batched into the milestone-close Pixel 7 checklist.
 
