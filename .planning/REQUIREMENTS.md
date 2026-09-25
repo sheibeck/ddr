@@ -52,6 +52,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [ ] **BOARD-14**: The GRAVEYARD board is removed, because ME covers it. Its tab, copy and view branch go away. The run history that feeds ME and LINEAGE stays stored, and old saves load tolerantly. Nothing a player could see on GRAVEYARD is lost: ME rows keep the run's tap-to-expand details. (user ruling 2026-09-24)
 - [ ] **BOARD-15**: Every finished run is recorded on every ME board it qualifies for, on every death path (combat, trap, starvation, abandon, a resumed save). Device: a depth-10 run showed in the Graveyard but not on the player's own DEEPEST board above their depth-9 run. The root cause is found with `/gsd-debug` before the fix, and a test pins each death path. (device report 2026-09-25; todo 2026-09-25 leaderboards-lose-runs)
 - [ ] **BOARD-16**: A signed-in player's qualifying score reaches Play Games and appears on every other player's ALL board after a refresh. Device: a friend's depth-11 DEEPEST score never showed on the user's ALL board, while the friend saw the user's depth-9 entry. The submission (queue, response, leaderboard ID, encoding) and the fetch (collection, time span, cache staleness) are traced end to end, the root cause is fixed, and the fix is confirmed with two signed-in devices in the batched device checklist. (device report 2026-09-25)
+- [ ] **BOARD-17**: The LEANEST board is removed. Steps per floor lets a 1-step death top it (a floor-0 death counts as one floor on Play Games, and a 1-step death on floor 1 tops the local board), and "deepest floor, then the fewest steps" is exactly DEEPEST's ordering, so no honest LEANEST remains. Remove `lean` from `engine/records.js` (`BOARD_IDS`, `RANKED_BOARDS`, `compareRuns`, bests), `src/browser/boardScores.js` (`SUBMIT_BOARDS`, `SCORE_ORDER`, `boardScore`, `scoreFallback`), `content/leaderboards.js`, `content/boards.js`, the board rail and `docs/PLAY-GAMES-SETUP.md` §7. An old `ddr.bests.v1` with a `lean` list and queued `pgsQueue` entries with a `lean` score load tolerantly, and the `lean` part is dropped, never submitted. After the update ships, the user deletes the Season-1 LEANEST board (`CgkIlvbN0YYPEAIQAw`) in Play Console. (user ruling 2026-09-24; moved from backlog 999.11)
 
 ### Darkness (DARK) — backlog 999.8
 
@@ -170,8 +171,9 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | BOARD-14 | Phase 81 | Pending |
 | BOARD-15 | Phase 81 | Pending |
 | BOARD-16 | Phase 81 | Pending |
+| BOARD-17 | Phase 81 | Pending |
 
-**Coverage:** 49 requirements. Mapped: 49/49 ✓
+**Coverage:** 50 requirements. Mapped: 50/50 ✓
 
 ---
 *Requirements defined: 2026-09-24*

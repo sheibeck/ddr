@@ -49,7 +49,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
 - [ ] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep
 - [ ] **Phase 80: Android Release Build & Tooling** - R8 minify/shrink, edge-to-edge and large-screen handling, and the fit tool's replay-resume fix
-- [ ] **Phase 81: Leaderboards Panel Fixes** - YOU tag, standing card, ME | ALL | FRIENDS scopes with ALL default when signed in, LINEAGE ME-only, GRAVEYARD removed
+- [ ] **Phase 81: Leaderboards Panel Fixes** - YOU tag, standing card, ME | ALL | FRIENDS scopes with ALL default when signed in, LINEAGE ME-only, GRAVEYARD and LEANEST removed
 
 ## Phase Details
 
@@ -237,8 +237,8 @@ Plans:
 ### Phase 81: Leaderboards Panel Fixes
 
 **Goal**: The Leaderboards panel shows the signed-in player accurately, filters every board by ME | ALL | FRIENDS, and drops the boards Play Games cannot back honestly.
-**Depends on**: Nothing (shell-only: `src/browser/boardsView.js`, `boardsPanel.js`, `globalBoards.js`, `content/boards.js`, plus `engine/records.js` `BOARD_IDS`; zero parity fixtures)
-**Requirements**: BOARD-09, BOARD-10, BOARD-11, BOARD-12, BOARD-13, BOARD-14, BOARD-15, BOARD-16
+**Depends on**: Nothing (shell-only: `src/browser/boardsView.js`, `boardsPanel.js`, `globalBoards.js`, `content/boards.js`, `boardScores.js`, `content/leaderboards.js`, plus `engine/records.js` `BOARD_IDS`; zero parity fixtures)
+**Requirements**: BOARD-09, BOARD-10, BOARD-11, BOARD-12, BOARD-13, BOARD-14, BOARD-15, BOARD-16, BOARD-17
 **Success Criteria** (what must be TRUE):
 
   1. The panel shows three scope chips — ME | ALL | FRIENDS — and every board can be viewed under each; signed in with Compete ON it opens on ALL, signed out or Compete OFF it opens on ME with ALL/FRIENDS showing the sign-in note.
@@ -246,6 +246,7 @@ Plans:
   3. LINEAGE appears only under ME, sits at the end of the board rail, and never reads the global DEEPEST sample.
   4. The GRAVEYARD board is gone; ME rows keep each run's tap-to-expand details (epitaph included), the stored run history still feeds ME and LINEAGE, and old saves load cleanly.
   5. Every finished run lands on each ME board it qualifies for (a depth-10 run tops a depth-9 one on DEEPEST), and a signed-in player's score reaches Play Games and shows on another player's ALL board after a refresh. Both root causes are found with `/gsd-debug` before fixing.
+  6. The LEANEST board is gone from the rail, the local records and Play Games submission; old bests and queued runs that carry a `lean` entry load cleanly and nothing is ever submitted to the Season-1 LEANEST board again.
 
 **Plans**: TBD
 **UI hint**: yes
@@ -582,7 +583,7 @@ Plans:
 - **Considered and parked:** "fewest steps to reach floor 5 / 10 / 15 / 20" speedrun boards. The user liked the idea, but it adds 4 boards per season, and the user wants fewer boards, not more. Keep it as an idea only.
 - **Scope of the removal:** drop `lean` from `RANKED_BOARDS` / `BOARD_IDS` (`engine/records.js`), `SUBMIT_BOARDS` / `SCORE_ORDER` / `boardScore` / `scoreFallback` (`src/browser/boardScores.js`), the `lean` key of every `LEADERBOARD_IDS` season entry, `content/boards.js` copy, the panel's board rail, the bests record's `lean` list (tolerant-load: an old `ddr.bests.v1` with a `lean` list loads cleanly and drops it), and queued `pgsQueue` entries' `lean` scores (dropped on load, never submitted). Also update `docs/PLAY-GAMES-SETUP.md` §7 (board table and "The LEANEST limit").
 - **The live Season-1 LEANEST board** (`CgkIlvbN0YYPEAIQAw`): stop submitting to it, then delete it in Play Console (or by the script's `delete` mode) once the update without it is out. That frees one slot under the 70 cap.
-- **Could land earlier:** this is a board removal like Phase 81's GRAVEYARD removal and closes a live exploit, so it could be folded into **Phase 81** (v2.1) instead of waiting for this milestone. Decide at v2.1 Phase 81 planning.
+- **Moved to v2.1 Phase 81 as BOARD-17** (user, 2026-09-24): it closes a live exploit and is the same kind of removal as GRAVEYARD. This milestone starts with LEANEST already gone; the season sets above assume 28 boards.
 
 **Open decisions (for milestone discussion):**
 
