@@ -356,6 +356,7 @@ function scopeCapableBuildView() {
       label: "L",
       source: "S",
       scopes: [
+        { id: "local", label: "ME", on: input.scope === "local", dim: false },
         { id: "all", label: "ALL", on: input.scope === "all", dim: true },
         { id: "friends", label: "FRIENDS", on: input.scope === "friends", dim: true },
       ],
@@ -369,26 +370,29 @@ function scopeCapableBuildView() {
   });
 }
 
-test("the ALL chip's onclick sets scope all; again returns to local; ALL then FRIENDS gives friends; a board switch keeps the current scope; a scope change resets scrollTop", () => {
+test("Phase 81 (BOARD-12): the ALL chip's onclick sets scope all; tapping it again KEEPS all (no toggle); the ME chip returns local; ALL then FRIENDS gives friends; a board switch keeps the current scope; a scope change resets scrollTop", () => {
   const { host, panel } = setup({ buildView: scopeCapableBuildView() });
   panel.openFromTab();
   const bodyEl = host.querySelector(".mw-bd-body");
   bodyEl.scrollTop = 10;
 
-  const allChip = () => host.querySelector(".mw-bd-scopes").querySelectorAll(".mw-bd-scope-chip").find((c) => c.dataset.scope === "all");
-  const friendsChip = () => host.querySelector(".mw-bd-scopes").querySelectorAll(".mw-bd-scope-chip").find((c) => c.dataset.scope === "friends");
+  const chip = (id) => host.querySelector(".mw-bd-scopes").querySelectorAll(".mw-bd-scope-chip").find((c) => c.dataset.scope === id);
 
-  allChip().onclick();
+  chip("all").onclick();
   assert.equal(panel.state().scope, "all");
+  assert.equal(panel.state().scopePicked, true);
   assert.equal(host.querySelector(".mw-bd-body").scrollTop, 0, "a scope change resets scrollTop");
 
   host.querySelector(".mw-bd-body").scrollTop = 5;
-  allChip().onclick();
+  chip("all").onclick();
+  assert.equal(panel.state().scope, "all", "tapping the already-active chip keeps that scope (no hidden toggle)");
+
+  chip("local").onclick();
   assert.equal(panel.state().scope, "local");
 
-  allChip().onclick();
+  chip("all").onclick();
   assert.equal(panel.state().scope, "all");
-  friendsChip().onclick();
+  chip("friends").onclick();
   assert.equal(panel.state().scope, "friends");
 
   const railEl = host.querySelector(".mw-bd-rail");
@@ -564,11 +568,11 @@ test("refresh() re-renders only while the panel is open", () => {
   assert.equal(buildView.calls.length, afterOpen + 1);
 });
 
-test("state() returns a frozen snapshot with entry/board/scope/open/hasHero/season/lineage", () => {
+test("state() returns a frozen snapshot with entry/board/scope/open/hasHero/season/lineage/scopePicked", () => {
   const { panel } = setup();
   panel.openFromTitle({ hasHero: true });
   const s = panel.state();
-  assert.deepStrictEqual(s, { entry: "title", board: "yard", scope: "local", open: null, hasHero: true, season: 1, lineage: null });
+  assert.deepStrictEqual(s, { entry: "title", board: "yard", scope: "local", open: null, hasHero: true, season: 1, lineage: null, scopePicked: true });
   assert.ok(Object.isFrozen(s));
 });
 
@@ -764,7 +768,7 @@ test("picker centring: reset renders scroll each row toward its on chip ('smooth
   }
 });
 
-test("LINEAGE (D-13): global() is asked exactly { board: 'combo', scope, season } — once per render, nothing new on a chip tap", () => {
+test("Phase 81 (BOARD-13): global() is never called with board combo or yard over a full session of taps, signed in", () => {
   const inner = lineageBuildView();
   const buildView = (input) => {
     const view = inner(input);
@@ -774,6 +778,7 @@ test("LINEAGE (D-13): global() is asked exactly { board: 'combo', scope, season 
       label: "L",
       source: "S",
       scopes: [
+        { id: "local", label: "ME", on: input.scope === "local", dim: false },
         { id: "all", label: "ALL", on: input.scope === "all", dim: false },
         { id: "friends", label: "FRIENDS", on: input.scope === "friends", dim: false },
       ],
@@ -784,12 +789,28 @@ test("LINEAGE (D-13): global() is asked exactly { board: 'combo', scope, season 
   const global = spy();
   global.ret = { status: "ready", entries: [] };
   const { host, panel } = setup({ buildView, identity: SIGNED_IN, global, prefs: fakePrefs({ [BOARDS_LAST_KEY]: "combo" }) });
+
   panel.openFromTab();
-  assert.equal(global.calls.length, 0, "the local scope asks nothing");
+  // Signed in defaults to ALL (BOARD-11); the stored combo board is ME-only
+  // (BOARD-13), so it resolves to DEEPEST before global() is ever asked.
+  assert.equal(panel.state().scope, "all");
+  assert.equal(panel.state().board, "deep");
+  assert.deepStrictEqual(global.calls, [[{ board: "deep", scope: "all", season: 1 }]]);
+
+  scopeChip(host, "local").onclick();
+  railChip(host, "combo").onclick();
+  assert.equal(panel.state().board, "combo");
+
   scopeChip(host, "all").onclick();
-  assert.deepStrictEqual(global.calls, [[{ board: "combo", scope: "all", season: 1 }]]);
-  pickChip(host, "sub", "Knight").onclick();
-  assert.deepStrictEqual(global.calls, [[{ board: "combo", scope: "all", season: 1 }], [{ board: "combo", scope: "all", season: 1 }]]);
+  // Leaving ME while LINEAGE is on moves the panel to DEEPEST and stores it.
+  assert.equal(panel.state().board, "deep");
+
+  scopeChip(host, "friends").onclick();
+
+  for (const [call] of global.calls) {
+    assert.notEqual(call.board, "combo");
+    assert.notEqual(call.board, "yard");
+  }
 });
 
 // ─── Phase 68 (D-05..D-08): the global, seasons and onFriendsConsent seams ──
@@ -821,7 +842,7 @@ function scopeChip(host, id) {
   return host.querySelector(".mw-bd-scopes").querySelectorAll(".mw-bd-scope-chip").find((c) => c.dataset.scope === id);
 }
 
-test("global(): called only when signed in, on ALL/FRIENDS, off GRAVEYARD — its answer reaches buildView as global", () => {
+test("global(): called only when signed in, on ALL/FRIENDS, off a ME-only board — its answer reaches buildView as global; signed in defaults to ALL (BOARD-11) so it is asked immediately on open", () => {
   const buildView = globalBuildView();
   const answer = Object.freeze({ status: "ready", entries: [] });
   const global = spy();
@@ -829,10 +850,8 @@ test("global(): called only when signed in, on ALL/FRIENDS, off GRAVEYARD — it
   const { host, panel } = setup({ buildView, identity: SIGNED_IN, global });
 
   panel.openFromTab();
-  assert.equal(global.calls.length, 0, "local scope asks nothing");
-  assert.equal(lastBuildInput(buildView).global, null);
-
-  scopeChip(host, "all").onclick();
+  // Phase 81 (BOARD-11): signed in with Compete ON, the panel opens on ALL.
+  assert.equal(panel.state().scope, "all");
   assert.equal(global.calls.length, 1);
   assert.deepStrictEqual(global.calls[0], [{ board: "deep", scope: "all", season: 1 }]);
   assert.equal(lastBuildInput(buildView).global, answer);
@@ -840,12 +859,20 @@ test("global(): called only when signed in, on ALL/FRIENDS, off GRAVEYARD — it
   scopeChip(host, "friends").onclick();
   assert.deepStrictEqual(global.calls[1], [{ board: "deep", scope: "friends", season: 1 }]);
 
+  // Phase 81 (BOARD-13/BOARD-14): the GRAVEYARD and LINEAGE rail chips are
+  // ignored while a global scope (ALL/FRIENDS) is on — no board change, no
+  // new global() call.
   host.querySelector(".mw-bd-rail").children.find((c) => c.dataset.board === "yard").onclick();
-  assert.equal(global.calls.length, 2, "GRAVEYARD stays local (D-17)");
-  assert.equal(lastBuildInput(buildView).global, null);
+  assert.equal(panel.state().board, "deep");
+  assert.equal(global.calls.length, 2);
 
   host.querySelector(".mw-bd-rail").children.find((c) => c.dataset.board === "combo").onclick();
-  assert.deepStrictEqual(global.calls[2], [{ board: "combo", scope: "friends", season: 1 }]);
+  assert.equal(panel.state().board, "deep");
+  assert.equal(global.calls.length, 2, "GRAVEYARD/LINEAGE never reach global()");
+
+  scopeChip(host, "local").onclick();
+  assert.equal(global.calls.length, 2, "the local (ME) scope asks nothing");
+  assert.equal(lastBuildInput(buildView).global, null);
 });
 
 test("global(): signed out (or Compete OFF), opening ALL and FRIENDS calls global zero times", () => {

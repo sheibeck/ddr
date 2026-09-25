@@ -22,6 +22,7 @@ import {
   BOARD_TOP_N,
   BOARD_IDS,
   RANKED_BOARDS,
+  ME_ONLY_BOARDS,
   compareRuns,
   boardValue,
   lineageKey,
@@ -265,7 +266,7 @@ test("lineageRuns (Phase 70, D-12): non-array gives [], filters to the lineage, 
 // --- board table constants ---------------------------------------------------
 
 test("BOARD_IDS and RANKED_BOARDS match the panel's tab order and are frozen (LEANEST retired, BOARD-17)", () => {
-  assert.deepStrictEqual(BOARD_IDS, ["deep", "combo", "days", "kills", "purse", "yard"]);
+  assert.deepStrictEqual(BOARD_IDS, ["deep", "days", "kills", "purse", "combo", "yard"]);
   assert.deepStrictEqual(RANKED_BOARDS, ["deep", "days", "kills", "purse"]);
   assert.ok(!BOARD_IDS.includes("lean"));
   assert.ok(!RANKED_BOARDS.includes("lean"));
@@ -273,6 +274,11 @@ test("BOARD_IDS and RANKED_BOARDS match the panel's tab order and are frozen (LE
   assert.ok(Object.isFrozen(RANKED_BOARDS));
   assert.ok(Object.isFrozen(RUN_HASH_FIELDS));
   assert.equal(BOARD_TOP_N, 10);
+});
+
+test("ME_ONLY_BOARDS is exactly combo, yard, and frozen (Phase 81, BOARD-13/BOARD-14)", () => {
+  assert.deepStrictEqual(ME_ONLY_BOARDS, ["combo", "yard"]);
+  assert.ok(Object.isFrozen(ME_ONLY_BOARDS));
 });
 
 test("RUN_HASH_FIELDS is exactly the 15 names in the pinned order", () => {

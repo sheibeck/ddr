@@ -352,5 +352,5 @@ test("PLAYER_WP self-check: excludes code identifiers, matches real player copy"
 
 test("Phase 68: BOARDS_PANEL_COPY.global is covered by the BOARDS_PANEL_COPY walk", () => {
   const leaves = collectStringLeaves(BOARDS_PANEL_COPY).map(([p]) => p);
-  assert.ok(leaves.includes("global.scope.all") && leaves.includes("global.sampledFoot"));
+  assert.ok(leaves.includes("global.scope.all") && leaves.includes("global.ofWorld"));
 });

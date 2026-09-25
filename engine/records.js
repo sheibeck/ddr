@@ -65,15 +65,27 @@ export function runHash(run) {
 export const BOARD_TOP_N = 10;
 
 /**
- * BOARD_IDS — the panel's tabs, in tab order. LEANEST was retired (Phase 81,
+ * BOARD_IDS — the panel's rail order. LEANEST was retired (Phase 81,
  * BOARD-17: a 1-step death could top a steps-per-floor board, and "deepest,
  * then fewest steps" is exactly DEEPEST's own ordering, leaving no honest
- * LEANEST). 81-04 finalizes tab order and drops GRAVEYARD.
+ * LEANEST). LINEAGE and GRAVEYARD moved to the end of the rail as the
+ * ME_ONLY_BOARDS (Phase 81, BOARD-13/BOARD-14 — GRAVEYARD's removal was
+ * reversed by the user's ruling of 2026-09-25, "Let's keep the graveyard
+ * then").
  */
-export const BOARD_IDS = Object.freeze(["deep", "combo", "days", "kills", "purse", "yard"]);
+export const BOARD_IDS = Object.freeze(["deep", "days", "kills", "purse", "combo", "yard"]);
 
 /** RANKED_BOARDS — the boards a bests record keeps a top-ten list for. */
 export const RANKED_BOARDS = Object.freeze(["deep", "days", "kills", "purse"]);
+
+/**
+ * ME_ONLY_BOARDS — the local-only boards (LINEAGE, GRAVEYARD). Play Games
+ * keeps one best score per player per board, so neither can be honest
+ * globally: LINEAGE would show only the player's single best-lineage run per
+ * scope, and GRAVEYARD is local run history, not a ranking. They are shown
+ * only under the ME scope, at the rail's end (Phase 81, BOARD-13/BOARD-14).
+ */
+export const ME_ONLY_BOARDS = Object.freeze(["combo", "yard"]);
 
 /** num(x) — a finite number, else 0 (missing/NaN/Infinity fields never crash an ordering). */
 function num(x) {

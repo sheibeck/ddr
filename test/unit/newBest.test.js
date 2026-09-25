@@ -161,5 +161,5 @@ test("src/browser/newBest.js is pure: no Math.random, no document, exactly one c
 });
 
 test("BOARD_COPY key order matches the panel's tab order used for row ordering (LEANEST retired, BOARD-17)", () => {
-  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "combo", "days", "kills", "purse", "yard"]);
+  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "days", "kills", "purse", "combo", "yard"]);
 });

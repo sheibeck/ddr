@@ -127,17 +127,20 @@ opener. The scrim tap and the Android back button both close it too.
 `renderGearSheet` before the first `boot()`; the classic script's
 `openGearSheet`/`refreshGearSheet` are its only callers.
 
-### Leaderboards panel (Phase 66)
+### Leaderboards panel (Phase 66; restructured Phase 81, BOARD-11..BOARD-14)
 
 `src/browser/boardsView.js` exports `boardsView(input)` — the D-15 pure
 view-model seam. Given `{ bests, graves, total, board, scope, open, entry,
 hasHero, signedIn, recentHash }` it returns everything the panel renders:
-the header (title, scope line, INTERRED count), the identity strip (`null`
-on GRAVEYARD, otherwise the signed-out glyph/label/source and dimmed ALL/
-FRIENDS chips), the seven-chip board rail, the active board's mark/title/
-rule line, the body (`rows` | `empty` | `note`), the standing card and the
-footnote. It is a pure function of its input — no DOM, no storage read —
-built entirely from `engine/records.js` and `content/boards.js`.
+the header (title, scope line, INTERRED count), the identity strip (shown on
+every board, GRAVEYARD included — three scope chips, ME | ALL | FRIENDS, ME
+never dimmed, ALL/FRIENDS dimmed while signed out or Compete OFF), the board
+rail (DEEPEST, LONGEST, BUTCHERY, PURSE, then LINEAGE and GRAVEYARD — the
+ME-only boards, `engine/records.js` `ME_ONLY_BOARDS` — shown only while ME
+is on), the active board's mark/title/rule line, the body (`rows` | `empty` |
+`note`), the standing card and the footnote. It is a pure function of its
+input — no DOM, no storage read — built entirely from `engine/records.js`
+and `content/boards.js`.
 
 `src/browser/boardsPanel.js` exports `renderBoardsPanel(host, view,
 handlers)` (a persistent-skeleton DOM renderer reusing its `.mw-bd` root and
@@ -150,14 +153,20 @@ isTitleOpen, centreRail, refresh, state }`.
 Two entry modes:
 
 - **Tab** (`openFromTab`/`onDeadTab`) — the game tab bar stays visible with
-  DEAD active, no chevron, no dock. Opens on the board last viewed (the
-  `ddr.boards.last.v1` per-viewer convenience key, read/written through the
-  injected `prefs`, always inside try/catch), falling back to DEEPEST.
+  DEAD active, no chevron, no dock. Opens on the default scope (ALL when
+  signed in with Compete ON, else ME — BOARD-11) and re-evaluates that
+  default on every `refresh()` until a scope chip is tapped (`scopePicked`).
+  Opens on the board last viewed (the `ddr.boards.last.v1` per-viewer
+  convenience key, read/written through the injected `prefs`, always inside
+  try/catch), falling back to DEEPEST, and forced off a ME-only board when
+  the resolved scope is not ME.
 - **Title** (`openFromTitle`) — a ◀ back chevron appears in the header, the
   bottom dock shows BACK TO TITLE / ROLL A NEW HERO / BACK TO THE DUNGEON,
   and `body[data-boards-entry="title"]` hides the game tab bar and the rail.
-  Always opens on GRAVEYARD. `back()`/the dock route through the panel's
-  `onRoute(action, { hasHero })` callback ("title" | "dungeon" | "roll").
+  Always opens on GRAVEYARD under ME, with the scope fixed for that session
+  even when signed in with Compete ON (the button names a ME-only board).
+  `back()`/the dock route through the panel's `onRoute(action, { hasHero })`
+  callback ("title" | "dungeon" | "roll").
 
 `window.__mzBoards` is the one bridge — `{ onDeadTab }` — assigned by the
 module script; the classic script's `showTab`'s `name === "dead"` branch is
@@ -166,9 +175,9 @@ its only caller. The panel reads only the adapter's in-memory
 that just happened already shows when the DEAD tab opens.
 
 Phases 67 (Play Games sign-in, the account chip) and 68 (global/friends
-boards, submissions) add real sources behind this same `boardsView` seam —
-the signed-out identity strip and dimmed ALL/FRIENDS chips this phase ships
-are the deliberate placeholder those phases bring to life.
+boards, submissions) add real sources behind this same `boardsView` seam.
+LINEAGE never reads a global sample (Phase 81, BOARD-13 — it is ME-only), and
+GRAVEYARD never asks the global controller at all (Phase 81, BOARD-14).
 
 ### Play Games account (Phase 67)
 
@@ -303,8 +312,10 @@ scores (DEEPEST, LONGEST, BUTCHERY, PURSE; LINEAGE and GRAVEYARD are never
 submitted) and resolves leaderboard IDs per season and board from
 `content/leaderboards.js`. Those IDs are placeholders until the Play
 Console setup in Phase 69, and a placeholder or missing ID skips its board
-silently. LEANEST was retired in v2.1 (BOARD-17): since v2.1, LINEAGE is
-ME-only and GRAVEYARD is folded into ME.
+silently. LEANEST was retired in v2.1 (BOARD-17). LINEAGE and GRAVEYARD are
+ME-only boards at the end of the rail (BOARD-13/BOARD-14) — neither is ever
+submitted to Play Games, and GRAVEYARD still lists every stored run with its
+epitaph, exactly as before.
 
 **The queue.** `src/browser/pgsQueue.js` exports
 `createSubmissionQueue({ storage, provider, ids, season, isCompeting,

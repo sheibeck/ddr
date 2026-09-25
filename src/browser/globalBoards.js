@@ -11,15 +11,19 @@
 //
 //   GlobalSnapshot = frozen {
 //     status: "loading" | "ready" | "unreachable" | "consent" | "closed",
-//     board: "deep" | "combo" | "days" | "kills" | "purse",
+//     board: "deep" | "days" | "kills" | "purse",
 //     scope: "all" | "friends",
 //     season: number,
 //     entries: GlobalEntry[]   (ranked order as returned; [] unless status is "ready"),
 //     you: GlobalEntry | null  (the player's own score on this board and scope),
 //     total: number | null     (the collection's score count when Play Games reports it),
-//     sampled: number | null   (combo only: how many DEEPEST scores the sample read),
 //     stale: boolean           (a cached result shown after a failed refresh)
 //   }
+//
+// Phase 81 (BOARD-13): LINEAGE ("combo") is retired from this module — it is
+// a ME-only board (engine/records.js ME_ONLY_BOARDS) and never reaches
+// view(); the signed-in DEEPEST-sample filtering and the `sampled` field are
+// gone.
 //   GlobalEntry = frozen { key, rank, handle, playerId, you, friend, rawScore, run }
 //
 // An entry's key is "g:" + (playerId or "anon") + ":" + its index; the
@@ -45,9 +49,6 @@ export const GLOBAL_RETRY_MS = 30000;
 
 /** Rows fetched for ALL and FRIENDS (D-05, D-06). */
 export const TOP_N = 10;
-
-/** DEEPEST scores read for the LINEAGE sample (D-09; the plugin's per-call ceiling, no paging). */
-export const LINEAGE_SAMPLE_N = 25;
 
 /** rankOf(n) — an integer rank >= 1, else null. */
 function rankOf(n) {
@@ -91,10 +92,10 @@ export function toGlobalEntry(score, index, { meId = "", scope = "all" } = {}) {
 }
 
 /**
- * snapshotOf({ status, board, scope, season, entries, you, total, sampled,
- * stale }) — a deep-frozen GlobalSnapshot. Defaults: entries [], you null,
- * total null, sampled null, stale false. Entries are forced to [] unless the
- * status is "ready"; their order is kept exactly.
+ * snapshotOf({ status, board, scope, season, entries, you, total, stale }) —
+ * a deep-frozen GlobalSnapshot. Defaults: entries [], you null, total null,
+ * stale false. Entries are forced to [] unless the status is "ready"; their
+ * order is kept exactly.
  */
 export function snapshotOf({
   status,
@@ -104,7 +105,6 @@ export function snapshotOf({
   entries = [],
   you = null,
   total = null,
-  sampled = null,
   stale = false,
 } = {}) {
   const rows = status === "ready" && Array.isArray(entries) ? entries.map((e) => Object.freeze(e)) : [];
@@ -116,17 +116,18 @@ export function snapshotOf({
     entries: Object.freeze(rows),
     you: you && typeof you === "object" ? Object.freeze(you) : null,
     total: countOf(total),
-    sampled: countOf(sampled),
     stale: stale === true,
   });
 }
 
 /**
- * The boards the global panel can show (GRAVEYARD stays local, D-17). LEANEST
- * was retired (Phase 81, BOARD-17): it never had a Play Games leaderboard to
- * fetch from, so its removal here is presentation-only.
+ * The boards the global panel can show. LINEAGE ("combo") and GRAVEYARD
+ * ("yard") are ME-only (Phase 81, BOARD-13/BOARD-14, engine/records.js
+ * ME_ONLY_BOARDS) and never reach this module. LEANEST was retired (Phase
+ * 81, BOARD-17): it never had a Play Games leaderboard to fetch from, so its
+ * removal here is presentation-only.
  */
-const GLOBAL_BOARDS = Object.freeze(["deep", "combo", "days", "kills", "purse"]);
+const GLOBAL_BOARDS = Object.freeze(["deep", "days", "kills", "purse"]);
 
 /** The global scopes ("local" is the Phase 66 view and never reaches here). */
 const GLOBAL_SCOPES = Object.freeze(["all", "friends"]);
@@ -142,9 +143,10 @@ const GLOBAL_SCOPES = Object.freeze(["all", "friends"]);
  *
  * view({ board, scope, season }) answers synchronously from an in-memory
  * cache keyed by "season|board|scope" and starts at most one fetch per key:
- *   - null while inactive, for GRAVEYARD, the local scope or anything unknown;
- *   - "closed" (no call) when the board's id is missing or a placeholder
- *     (D-14; LINEAGE reads DEEPEST, so a placeholder DEEPEST closes it too);
+ *   - null while inactive, for a ME-only board (LINEAGE, GRAVEYARD; Phase 81,
+ *     BOARD-13/BOARD-14 — neither ever reaches this function), the local
+ *     scope or anything unknown;
+ *   - "closed" (no call) when the board's id is missing or a placeholder;
  *   - "loading" on the first ask, then "ready" once the fetch settles;
  *   - a cached snapshot for GLOBAL_TTL_MS, after which the next view() still
  *     returns it and starts one background refresh;
@@ -196,18 +198,17 @@ export function createGlobalBoards({
   };
 
   // load(id, req) — one fetch's outcome: { consent: true }, { ok: false } or
-  // { ok: true, entries, you, total, sampled }. May reject; start() maps a
-  // rejection to a failure.
-  async function load(id, { board, scope }) {
+  // { ok: true, entries, you, total }. May reject; start() maps a rejection
+  // to a failure.
+  async function load(id, { scope }) {
     const collection = scope === "friends" ? "friends" : "public";
     if (scope === "friends") {
       const access = await provider.friendsAccess({ request: false });
       if (access === "required") return { consent: true };
       if (access !== "granted") return { ok: false };
     }
-    const combo = board === "combo";
     const [top, own] = await Promise.all([
-      provider.loadTopScores({ leaderboardId: id, collection, maxResults: combo ? LINEAGE_SAMPLE_N : TOP_N }),
+      provider.loadTopScores({ leaderboardId: id, collection, maxResults: TOP_N }),
       provider.loadPlayerScore({ leaderboardId: id, collection }),
     ]);
     if (!top || typeof top !== "object" || top.ok !== true) return { ok: false };
@@ -215,7 +216,7 @@ export function createGlobalBoards({
     const me = meId() || (mine ? str(mine.playerId) : "");
     const entries = (Array.isArray(top.scores) ? top.scores : []).map((s, i) => toGlobalEntry(s, i, { meId: me, scope }));
     const you = mine ? Object.freeze({ ...toGlobalEntry(mine, 0, { meId: me, scope }), key: "g:you", you: true, friend: false }) : null;
-    return { ok: true, entries, you, total: top.total, sampled: combo ? entries.length : null };
+    return { ok: true, entries, you, total: top.total };
   }
 
   // settle(key, entry, gen, outcome) — writes one fetch's outcome into its
@@ -236,8 +237,8 @@ export function createGlobalBoards({
       entry.fetchedAt = t;
       entry.retryAt = null;
     } else if (outcome && outcome.ok === true) {
-      const { entries, you, total, sampled } = outcome;
-      entry.snapshot = snapshotOf({ status: "ready", board, scope, season, entries, you, total, sampled });
+      const { entries, you, total } = outcome;
+      entry.snapshot = snapshotOf({ status: "ready", board, scope, season, entries, you, total });
       entry.fetchedAt = t;
       entry.retryAt = null;
     } else {
@@ -268,7 +269,7 @@ export function createGlobalBoards({
     let entry = cache.get(key);
     if (!entry) {
       const req = Object.freeze({ board, scope, season });
-      const id = leaderboardId(ids, season, board === "combo" ? "deep" : board);
+      const id = leaderboardId(ids, season, board);
       const status = id === null ? "closed" : "loading";
       entry = { req, id, snapshot: snapshotOf({ status, ...req }), fetchedAt: null, retryAt: null, inFlight: false };
       cache.set(key, entry);

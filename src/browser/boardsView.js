@@ -14,23 +14,31 @@
 // this same seam: the `global` input is a GlobalSnapshot as 68-05's
 // src/browser/globalBoards.js produces it (status loading | ready |
 // unreachable | consent | closed, board, scope, season, entries, you, total,
-// sampled, stale), consumed here as plain data — this module never imports
-// or calls the controller. Global rows decode their values from the score
-// tag (D-16), falling back to scoreFallback on the raw score when a tag does
-// not decode, and never carry an epitaph (67 D-18). `season`/`seasons` add
-// the SEASON label and the older-season picker (D-08). Signed out (which is
-// also Compete OFF) every view is the local Phase 66 view; GRAVEYARD is local
-// in every state (D-17).
+// stale), consumed here as plain data — this module never imports or calls
+// the controller. Global rows decode their values from the score tag
+// (D-16), falling back to scoreFallback on the raw score when a tag does not
+// decode, and never carry an epitaph (67 D-18). `season`/`seasons` add the
+// SEASON label and the older-season picker (D-08). Signed out (which is also
+// Compete OFF) every view is the local Phase 66 view.
 //
-// Phase 70 (POLISH-04; D-09..D-13): LINEAGE is one race + sub-class at a
+// Phase 70 (POLISH-04; D-09..D-11): LINEAGE is one race + sub-class at a
 // time. The `lineage` input is the panel's picker selection and `hero` the
 // active hero's { race, sub } (already gated by the controller);
 // resolveLineage turns them, the most recent run and the content order into
-// the selected lineage (D-11). Local LINEAGE lists that lineage's ten
-// deepest runs by engine/records.js lineageRuns — the same order prune keeps
-// them by (D-12); signed in, the cached DEEPEST sample is filtered to it
-// (D-13). The view carries `picker` (the RACE and SUB-CLASS chip rows) on
+// the selected lineage (D-11). LINEAGE lists that lineage's ten deepest runs
+// by engine/records.js lineageRuns — the same order prune keeps them by
+// (D-12). The view carries `picker` (the RACE and SUB-CLASS chip rows) on
 // LINEAGE only.
+//
+// Phase 81 (BOARD-11..BOARD-14): three scope chips, ME | ALL | FRIENDS, show
+// on every board (GRAVEYARD included); the scope defaults to ALL when signed
+// in, ME otherwise. LINEAGE and GRAVEYARD are ME-only boards (the
+// engine/records.js ME_ONLY_BOARDS list) at the rail's end — a ME-only board
+// requested with a non-local scope resolves to DEEPEST before this module's
+// body/standing/global logic ever runs, so LINEAGE never reads a global
+// sample (retired: signed-in filtering of the cached DEEPEST sample, and the
+// `sampled` field) and GRAVEYARD (whose removal was reversed by the user's
+// ruling of 2026-09-25) never asks the global controller.
 
 import {
   compareRuns,
@@ -40,6 +48,7 @@ import {
   lineageKey,
   lineageRuns,
   BOARD_IDS,
+  ME_ONLY_BOARDS,
 } from "../../engine/records.js";
 import {
   BOARD_COPY,
@@ -420,7 +429,7 @@ function buildGraveyardRows(graves) {
 
 const G = BOARDS_PANEL_COPY.global;
 const GLOBAL_STATUSES = Object.freeze(["loading", "ready", "unreachable", "consent", "closed"]);
-const UNREACHABLE = Object.freeze({ status: "unreachable", entries: Object.freeze([]), you: null, total: null, sampled: null });
+const UNREACHABLE = Object.freeze({ status: "unreachable", entries: Object.freeze([]), you: null, total: null });
 
 /** isObj(v) — a non-null, non-array object. */
 function isObj(v) {
@@ -431,7 +440,7 @@ function isObj(v) {
  * readSnapshot(global) — the snapshot guard. Anything that is not an object
  * with a known status reads as unreachable; entries count only on a ready
  * snapshot, and non-object entries are dropped; a non-object `you` is null;
- * total and sampled are non-negative integers or null. Never mutates.
+ * total is a non-negative integer or null. Never mutates.
  */
 function readSnapshot(global) {
   if (!isObj(global) || !GLOBAL_STATUSES.includes(global.status)) return UNREACHABLE;
@@ -442,7 +451,6 @@ function readSnapshot(global) {
     entries: ready && Array.isArray(global.entries) ? global.entries.filter(isObj) : [],
     you: ready && isObj(global.you) ? global.you : null,
     total: count(global.total),
-    sampled: count(global.sampled),
   };
 }
 
@@ -551,71 +559,6 @@ function buildGlobalRows(board, snap, openKey) {
   return finalize(rows, openKey, { skipCut: true });
 }
 
-/**
- * ofLineageRun(run, key) — true when a decoded tag's race and sub are content
- * ids forming `key`. Foreign or unknown strings never match (T-70-05).
- */
-function ofLineageRun(run, key) {
-  return !!run && isRace(rf(run, "race")) && isSub(rf(run, "sub")) && lineageKey(run) === key;
-}
-
-/**
- * buildGlobalLineageView(sel, snap, openKey) — D-13: the cached DEEPEST
- * sample filtered to the selected lineage, in sample order, ranked 1..n (the
- * lineage position, never the worldwide DEEPEST rank) and cut to ten. The
- * player's own entry of this lineage that is not shown is pinned last under
- * the divider (only when a row is shown): ranked by its position among the
- * matches when it is in the sample, unranked when only snap.you carries it.
- * No match gives the global lineage empty note; the footnote says the list
- * is filtered from the top n deepest.
- */
-function buildGlobalLineageView(sel, snap, openKey) {
-  const key = lineageKey(sel);
-  const sampled = snap.sampled !== null ? snap.sampled : snap.entries.length;
-  const matches = snap.entries.filter((e) => ofLineageRun(entryRun(e), key));
-  const shown = matches.slice(0, 10);
-  const rows = shown.map((e, i) => ({ ...globalRow("combo", e, i), rank: String(i + 1) }));
-
-  if (rows.length > 0) {
-    const youIdx = matches.findIndex((e) => e.you === true);
-    if (youIdx >= shown.length) {
-      rows.push({ ...globalRow("combo", matches[youIdx], null), rank: String(youIdx + 1) });
-    } else if (youIdx === -1 && snap.you && ofLineageRun(entryRun(snap.you), key)) {
-      rows.push({ ...globalRow("combo", snap.you, null), rank: "" });
-    }
-  }
-
-  return {
-    body: rows.length
-      ? { kind: "rows", rows: finalize(rows, openKey, { skipCut: true }) }
-      : { kind: "empty", line: fill(G.lineageEmpty, { lineage: lineageName(sel), n: sampled }) },
-    standing: buildGlobalLineageStanding(key, snap, matches),
-    footnote: fill(G.sampledFoot, { n: sampled }),
-  };
-}
-
-/**
- * buildGlobalLineageStanding(key, snap, matches) — the player's own entry
- * (snap.you, else the listed entry marked you): NO ENTRY when there is none,
- * the not-this-lineage card when it is of another lineage, otherwise its
- * ordinal among the lineage's matches (the dash when not in the sample).
- */
-function buildGlobalLineageStanding(key, snap, matches) {
-  const listed = snap.entries.find((e) => e.you === true) || null;
-  const you = snap.you || listed;
-  if (!you) return noGlobalEntry();
-  const run = entryRun(you);
-  if (!ofLineageRun(run, key)) {
-    return { label: BOARDS_PANEL_COPY.standing.noEntry, place: BOARDS_PANEL_COPY.standing.noPlace, note: G.noLineage };
-  }
-  const label = String(rf(run, "name") || globalHandle(you)).toUpperCase() + BOARDS_PANEL_COPY.sep + BOARD_COPY.combo.unitLabel;
-  const ofLine = fill(G.ofLineage, { n: matches.length });
-  const idx = matches.findIndex((e) => e.you === true);
-  if (idx === -1) return { label, place: BOARDS_PANEL_COPY.standing.noPlace, note: ofLine };
-  const place = idx + 1;
-  return { label, place: ordinal(place), note: ofLine + " " + globalQuip(place, "combo") };
-}
-
 /** globalQuip(place, board) — GLOBAL_STANDING_LINES by band (1 / top 10 / top 100 / the rest), picked from the place and the board index. */
 function globalQuip(place, board) {
   const bank =
@@ -640,7 +583,7 @@ function noGlobalEntry() {
  * player's own score (snap.you, else the listed entry marked you), its
  * reported rank (the list position when missing) out of the board's total
  * (the entry count when unknown), plus a banded quip. NO ENTRY when absent.
- * LINEAGE has its own card (buildGlobalLineageStanding, Phase 70 D-13).
+ * LINEAGE never reaches this function (Phase 81, BOARD-13: ME-only).
  */
 function buildGlobalStanding(board, scope, snap) {
   const listed = snap.entries.findIndex((e) => e.you === true);
@@ -665,10 +608,13 @@ function buildGlobalStanding(board, scope, snap) {
  * (D-06, D-07): loading / unreachable / closed are in-panel notes with no
  * card, consent is the note plus the SHOW MY FRIENDS action, ready is the
  * rows (or the empty note) with the real-rank card. Nothing blocks and
- * nothing is a modal or a rail card. On LINEAGE a ready snapshot is filtered
- * to the selected lineage `sel` (Phase 70, D-13).
+ * nothing is a modal or a rail card.
+ *
+ * Phase 81 (BOARD-13): LINEAGE is ME-only and never reaches this function —
+ * a ME-only board with a non-local scope resolves to DEEPEST before
+ * boardsView() ever calls this.
  */
-function buildGlobalView(board, scope, global, openKey, sel) {
+function buildGlobalView(board, scope, global, openKey) {
   const snap = readSnapshot(global);
   const note = (line) => ({ body: { kind: "note", line }, standing: null, footnote: BOARD_FOOTNOTES.ranked });
   switch (snap.status) {
@@ -683,7 +629,6 @@ function buildGlobalView(board, scope, global, openKey, sel) {
         footnote: BOARD_FOOTNOTES.ranked,
       };
     case "ready": {
-      if (board === "combo") return buildGlobalLineageView(sel, snap, openKey);
       const empty = { kind: "empty", line: G.empty };
       const rows = buildGlobalRows(board, snap, openKey);
       return {
@@ -752,7 +697,6 @@ function playerName(player) {
 }
 
 function buildStrip(boardId, scope, signedIn, player) {
-  if (boardId === "yard") return null;
   const dim = signedIn !== true;
   let head;
   if (signedIn === true) {
@@ -775,15 +719,25 @@ function buildStrip(boardId, scope, signedIn, player) {
   }
   return {
     ...head,
+    // Phase 81 (BOARD-12): three scope chips, ME | ALL | FRIENDS, on every
+    // board (GRAVEYARD included). ME is never dimmed; ALL/FRIENDS dim while
+    // signed out or Compete OFF.
     scopes: [
+      { id: "local", label: BOARDS_PANEL_COPY.chips.me, on: scope === "local", dim: false },
       { id: "all", label: BOARDS_PANEL_COPY.chips.all, on: scope === "all", dim },
       { id: "friends", label: BOARDS_PANEL_COPY.chips.friends, on: scope === "friends", dim },
     ],
   };
 }
 
-function buildRail(boardId) {
-  return BOARD_IDS.map((id) => ({ id, tab: BOARD_COPY[id].tab, on: id === boardId, col: BOARD_COPY[id].col }));
+/**
+ * buildRail(boardId, scope) — BOARD_IDS in rail order, minus the ME-only
+ * boards (LINEAGE, GRAVEYARD) unless the scope is local (Phase 81,
+ * BOARD-13/BOARD-14).
+ */
+function buildRail(boardId, scope) {
+  const ids = scope === "local" ? BOARD_IDS : BOARD_IDS.filter((id) => !ME_ONLY_BOARDS.includes(id));
+  return ids.map((id) => ({ id, tab: BOARD_COPY[id].tab, on: id === boardId, col: BOARD_COPY[id].col }));
 }
 
 function buildBoardHead(boardId) {
@@ -886,23 +840,30 @@ const SCOPES = ["local", "all", "friends"];
  * null while not ready — and the footnote), `season` (default 1) and
  * `seasons` (default [season]) for header.season { label, picker }, and the
  * body kind "consent" { line, action: { id: "friendsConsent", label } }.
- * Phase 70 (D-09..D-13) adds `lineage` ({ race?, sub? } or null — the
+ * Phase 70 (D-09..D-11) adds `lineage` ({ race?, sub? } or null — the
  * panel's picker selection) and `hero` ({ race, sub } or null — the active
  * hero, already gated by the controller), and the output `picker`: null off
  * LINEAGE; on LINEAGE { race, sub, rows: [race row, sub row] }, each row
  * { kind, label, chips: [{ id, label, on }] }. LINEAGE's body, standing and
- * (signed in) footnote are for that one race + sub-class.
+ * footnote are for that one race + sub-class (Phase 81, BOARD-13: local
+ * only — LINEAGE is ME-only and never reads `global`).
  */
 export function boardsView(input = {}) {
   const raw = input && typeof input === "object" ? input : {};
 
   const bests = sanitizeBests(raw.bests);
   const rawGraves = Array.isArray(raw.graves) ? raw.graves : [];
-  const board = BOARD_IDS.includes(raw.board) ? raw.board : "deep";
-  const scope = SCOPES.includes(raw.scope) ? raw.scope : "local";
   const entry = raw.entry === "title" ? "title" : "tab";
   const hasHero = raw.hasHero === true;
   const signedIn = raw.signedIn === true;
+  // Phase 81 (BOARD-11/BOARD-12): an explicit local/all/friends scope wins;
+  // otherwise the default follows sign-in — ALL when signed in, ME (local)
+  // when signed out.
+  const scope = SCOPES.includes(raw.scope) ? raw.scope : signedIn ? "all" : "local";
+  // Phase 81 (BOARD-13/BOARD-14): a ME-only board (LINEAGE, GRAVEYARD)
+  // requested with a non-local scope falls back to DEEPEST.
+  const board =
+    BOARD_IDS.includes(raw.board) && !(ME_ONLY_BOARDS.includes(raw.board) && scope !== "local") ? raw.board : "deep";
   // A player only counts while signedIn is exactly true; anything that is not
   // an object is treated as no player (playerName falls back to the unnamed line).
   const player = signedIn && raw.player && typeof raw.player === "object" ? raw.player : null;
@@ -949,7 +910,7 @@ export function boardsView(input = {}) {
   } else if (!signedIn) {
     body = { kind: "note", line: scope === "all" ? BOARDS_PANEL_COPY.note.all : BOARDS_PANEL_COPY.note.friends };
   } else {
-    globalView = buildGlobalView(board, scope, raw.global, openKey, sel);
+    globalView = buildGlobalView(board, scope, raw.global, openKey);
     body = globalView.body;
   }
 
@@ -969,7 +930,7 @@ export function boardsView(input = {}) {
   return {
     header: buildHeader(entry, board, interredCount, { signedIn, scope, season, seasons }),
     strip: buildStrip(board, scope, signedIn, player),
-    rail: buildRail(board),
+    rail: buildRail(board, scope),
     board: buildBoardHead(board),
     picker: sel ? buildPicker(sel) : null,
     body,

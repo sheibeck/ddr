@@ -67,7 +67,7 @@ function collectLeaves(obj, pathLabel = "") {
 // ─── BOARD_COPY key order + Phase 65 fields untouched ───────────────────────
 
 test("Object.keys(BOARD_COPY) equals the panel's tab order (LEANEST retired, BOARD-17)", () => {
-  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "combo", "days", "kills", "purse", "yard"]);
+  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "days", "kills", "purse", "combo", "yard"]);
 });
 
 test("BOARD_COPY tab/title/unit/unitOne match their Phase 65 values", () => {
@@ -157,8 +157,10 @@ test("BOARDS_PANEL_COPY carries the D-01/D-06/D-07/D-12 fields the plan specifie
   assert.equal(BOARDS_PANEL_COPY.head.interred, "INTERRED");
   assert.equal(BOARDS_PANEL_COPY.strip.label, "PLAY GAMES · SIGNED OUT");
   assert.equal(BOARDS_PANEL_COPY.strip.source, "Your dead only");
+  assert.equal(BOARDS_PANEL_COPY.chips.me, "ME");
   assert.equal(BOARDS_PANEL_COPY.chips.all, "ALL");
   assert.equal(BOARDS_PANEL_COPY.chips.friends, "FRIENDS");
+  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.chips), ["me", "all", "friends"]);
   assert.equal(BOARDS_PANEL_COPY.empty, "Nobody of yours has qualified for this board yet.");
   assert.equal(BOARDS_PANEL_COPY.standing.noEntry, "NO ENTRY");
   assert.equal(BOARDS_PANEL_COPY.dock.title, "BACK TO TITLE");
@@ -230,11 +232,9 @@ const GLOBAL_PINS = {
   noEntry: "Nothing of yours on this board yet this season.",
   ofWorld: "of {n} interred worldwide.",
   ofFriends: "of {n} among friends.",
-  // Phase 70 (D-09, D-13): the per-lineage global lines; ofSampled retired.
-  ofLineage: "of {n} of this lineage in the sample.",
-  noLineage: "Nothing of yours of this lineage in the sample. The world keeps only your best corpse.",
-  lineageEmpty: "No {lineage} made the top {n} deepest this season. Somebody has to fall that far first.",
-  sampledFoot: "Filtered from the top {n} deepest corpses in the world. Rare lineages may be buried further down.",
+  // Phase 81 (BOARD-13): the per-lineage global lines (ofLineage, noLineage,
+  // lineageEmpty, sampledFoot) are gone — LINEAGE is ME-only and never reads
+  // a global sample.
 };
 
 test("BOARDS_PANEL_COPY.global is deep-frozen and sits after note", () => {
