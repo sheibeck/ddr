@@ -164,13 +164,13 @@ Plans:
   2. Every displayed modifier is signed from the player's point of view — "+2" always reads better, "−2" always reads worse — across item/loot/store/find comparisons, the hero sheet, spell/ability text, condition chips and the fight log's need breakdown.
   3. The same modifier never shows opposite signs on two different surfaces.
 
-**Plans**: 8 plans
+**Plans**: 2/8 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 74-01-PLAN.md — Pure extraction: the hero per-target and foe-swing to-hit chains become engine/derived.js helpers the engine itself calls (byte-identical, equivalence-tested), so displays read the same function (wave 1)
-- [ ] 74-02-PLAN.md — The ONE formatter in src/browser/rollRange.js: roller-keyed signed modifiers, faces-to-range, die names, "16–20 (d20; mods)" (wave 1)
+- [x] 74-01-PLAN.md — Pure extraction: the hero per-target and foe-swing to-hit chains become engine/derived.js helpers the engine itself calls (byte-identical, equivalence-tested), so displays read the same function (wave 1)
+- [x] 74-02-PLAN.md — The ONE formatter in src/browser/rollRange.js: roller-keyed signed modifiers, faces-to-range, die names, "16–20 (d20; mods)" (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -400,7 +400,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
-| 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
+| 74. Roll Display & Modifier Honesty | v2.1 | 2/8 | In Progress|  |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
