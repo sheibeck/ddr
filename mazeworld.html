@@ -2276,7 +2276,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 
         <dl class="stats">
           <dt>To strike</dt><dd class="em" id="s-die">d20</dd>
-          <dt>To hit</dt><dd class="em" id="s-hit">1–5</dd>
+          <dt>To hit</dt><dd class="em" id="s-hit">—</dd>
           <dt>Damage</dt><dd id="s-dmg">—</dd>
           <dt>Armor</dt><dd id="s-arm">—</dd>
           <dt>Intelligence</dt><dd id="s-int">—</dd>
@@ -3316,9 +3316,16 @@ function paintConditions(c) {
     // Phase 57 (LAYOUT-06), USER RULING 2026-09-22: the darkness chip's tap
     // card leads with the named waiver when one is open, then the plain
     // rule; every other chip's card is explainCondition(cn, label) unchanged.
-    const explainText = darkWaiver
+    // Phase 74 (ROLL-02/03), plan 74-07: the chip's measured effect leads
+    // the tap card ("−3 to hit (now 19–20). …"), from window.__mzConditionEffect
+    // (bridged from src/browser/conditionEffects.js#conditionEffectText). A
+    // chip with no to-hit effect (haste, might, ward, regen, flight, an
+    // item-cooldown/staff-charges chip, a weakening foeEffect) reads no lead
+    // at all — optional chaining, so a missing bridge also reads as no lead.
+    const effectLead = window.__mzConditionEffect?.(cn, S);
+    const explainText = (effectLead ? `${effectLead}. ` : "") + (darkWaiver
       ? `The dark is on you, but ${WAIVER_LABEL[darkWaiver]} is keeping it off the map. ${CONDITION_EXPLAIN.darkness}`
-      : explainCondition(cn, label);
+      : explainCondition(cn, label));
     // Phase 71 (D-16, R-28/R-29/R-31): while the combat screen is up the
     // same sentence goes on the combat-legal condition card (the rail is
     // otherwise hidden in a fight); anywhere else it is the unchanged typed
@@ -6192,6 +6199,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // the SAME way mapViewRadius itself does, rather than reimplementing them.
   import { inDark, revealRadius, skill, eff } from "./engine/derived.js";
   import { vignetteFor, waiverFor } from "./src/browser/darknessView.js";
+  // Phase 74 (ROLL-02/03), plan 74-07 — a SEPARATE import line (same
+  // precedent as every other bridged-only import in this block) so the
+  // pinned `conditionsOf, hasTool, mapViewRadius, inViewWindow` line above
+  // stays byte-identical. Bridged below as window.__mzConditionEffect.
+  import { conditionEffectText } from "./src/browser/conditionEffects.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
@@ -6228,6 +6240,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // same read-only-helper bridge pattern every window.__mz* read-only helper
   // below uses). No rng, no mutation — safe to call every paint().
   window.__mzConditionsOf = conditionsOf;
+
+  // Phase 74 (ROLL-02/03), plan 74-07: the chip's effect from the player's
+  // side, measured from the engine (74-CONTEXT "Condition chips state their
+  // effect from your side, with the resulting range where one exists") — a
+  // pure read-only bridge (same pattern as __mzConditionsOf above), so
+  // paintConditions can lead a chip's tap card with its measured effect.
+  window.__mzConditionEffect = conditionEffectText;
 
   // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): a
   // read-only bridge (same pattern as __mzConditionsOf above) so the shell's

@@ -112,7 +112,15 @@ function rig({ reducedMotion = true } = {}) {
 
 // ─── (a) the chit card in combat ───────────────────────────────────────────
 
-test("(a) combat + Afraid: the chip's tap raises one kind 'cond' card, the label in capitals and the out-of-combat sentence, over the combat screen", () => {
+// Phase 74 (ROLL-02/03), plan 74-07: the chip-tap card now leads with the
+// chip's measured effect. This hero is a level-3 Human Fighter Soldier
+// (strike die d10; its weapon "Sword" is not a WEAPONS key, so need 0),
+// so the Afraid lead here reads "−3 to hit (now 9–10)" — pinned below and
+// cross-checked against window.__mzConditionEffect (the real bridge) so a
+// drift in the engine's own numbers fails this test, not silently passes.
+const AFRAID_LEAD = "−3 to hit (now 9–10)";
+
+test("(a) combat + Afraid: the chip's tap raises one kind 'cond' card, the label in capitals and the effect lead + out-of-combat sentence, over the combat screen", () => {
   const r = rig();
   r.w.__mzState.set(combatState());
   r.sandbox.paint();
@@ -124,8 +132,16 @@ test("(a) combat + Afraid: the chip's tap raises one kind 'cond' card, the label
   assert.equal(card?.kind, "cond");
   assert.equal(card.title, "AFRAID");
   assert.equal(card.lines.length, 1);
-  assert.equal(card.lines[0].text, r.explain(r.descriptor("afraid"), "Afraid"));
-  assert.equal(card.lines[0].text, vm.runInContext("CONDITION_EXPLAIN.afraid", r.sandbox.context), "the same CONDITION_EXPLAIN source");
+  assert.equal(
+    card.lines[0].text,
+    `${r.w.__mzConditionEffect(r.descriptor("afraid"), r.w.__mzState.get())}. ${r.explain(r.descriptor("afraid"), "Afraid")}`
+  );
+  assert.equal(card.lines[0].text, `${AFRAID_LEAD}. ${r.explain(r.descriptor("afraid"), "Afraid")}`);
+  assert.equal(
+    card.lines[0].text,
+    `${AFRAID_LEAD}. ${vm.runInContext("CONDITION_EXPLAIN.afraid", r.sandbox.context)}`,
+    "the same CONDITION_EXPLAIN source"
+  );
   r.renderRail();
   assert.equal(r.railEl().hidden, false);
   assert.equal(r.railEl().dataset.over, "combat");

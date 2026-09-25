@@ -107,6 +107,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderActionArea / renderEncounter — combat header/foe-card/YOUR LOT/overlay content)"]),
     purpose: "Bridges the pure combat header/foe-list/your-lot/overlay/menu view-model builders for renderEncounter's combat branch.",
   }),
+  __mzConditionEffect: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: paintConditions — the chip-tap effect sentence)"]),
+    purpose: "Bridges the pure conditionEffectText so a condition chip's tap card states its to-hit effect from the player's side, measured from the engine.",
+  }),
   __mzConditionsOf: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: paint — top-of-screen condition tracker)"]),
