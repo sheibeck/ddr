@@ -5743,6 +5743,148 @@ The Phase 54 historical dial table (`## v1.2 retune (Phase 27)`'s own BEFORE/AFT
 - **Thief `evasion`** — the historical table's "first candidate Thief evasion −1" now reads **+1** (a positive evasion value is harder to hit, matching the dial's own name) after fix (d)'s sign flip (72-04). The historical row is left unedited (it is a record of what shipped at the time, not a live spec); this note is the correction.
 - **`PARLEY_NEED_MOD`** — the historical table's `FLEE_NEED_MOD / PARLEY_NEED_MOD … harder` annotation is now TRUE for both dials (it was already true for `FLEE_NEED_MOD`; `PARLEY_NEED_MOD` was silently inverted until F5, 72-07). Both dials share one direction now: up = harder, down = easier, for flee and parley alike.
 
+## v2.1 roll-high mirror (Phase 73) — bot readout
+
+### Change under measurement
+
+Phase 73 (ROLL-05) switches the whole ENGINE — not a display adapter — to roll-high: every CHECK now reads the same rng draw `r` on an N-sided die as `roll = (N+1) - r`, and succeeds when `roll >= atLeast` (the lowest winning face). Every modifier folds into the threshold as a signed bonus to the roller, the two pre-existing roll-high exceptions (flee, initiative) keep their modifiers aligned to the same convention, and content numbers (weapon `need`, `sp.toHit`, `sp.ar`, and the like) keep their old values — counts of winning faces — so no save requires a conversion step. This is a **representation change only**: the same `rng.d(N)` draw fires in the same position, in the same order, for every seed, so every outcome is predicted to be byte-identical to the pre-phase engine. See `docs/ROLL-LEDGER.md`'s `## Phase 73 mirror verdicts (ROLL-05)` for the full per-site conversion table and `test/parity/FIXTURE-INVENTORY.md`'s `## Phase 73: engine roll-high mirror (ROLL-05)` section for the measured-zero proof this readout is the third leg of (alongside the byte-identical parity suite and the unchanged Phase 72 direction tests).
+
+### Parameters
+
+`node tools/tune-difficulty.mjs --seeds=200` (solo bot, `--start-depth=1`, no `--party`) — identical parameters to the Phase 72 H2 above, so this readout is directly comparable to that one's own AFTER block.
+
+### AFTER — commit ad78215 (all nine Phase 73 conversion plans, 73-01 through 73-09, landed)
+
+```
+tune-difficulty: 200 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+Action-count distribution:
+  min=212  p50=886  p90=20000  max=20000
+
+Death-cause breakdown:
+  cut down by a Werebeast 25 (12.5%)
+  starved in the dark  18 (9.0%)
+  undone by a trap     11 (5.5%)
+  cut down by a Dante  10 (5.0%)
+  spent by the dungeon itself 8 (4.0%)
+  cut down by a Blumble 7 (3.5%)
+  cut down by a Cave Bear 7 (3.5%)
+  cut down by a Vampire 7 (3.5%)
+  cut down by a Drarl  6 (3.0%)
+  cut down by a Poltergeist 6 (3.0%)
+  came up short on a leap 6 (3.0%)
+  cut down by a Craig  6 (3.0%)
+  cut down by a Drudge 4 (2.0%)
+  cut down by a Spectre 4 (2.0%)
+  cut down by a Drake  4 (2.0%)
+  cut down by a Herman 4 (2.0%)
+  cut down by a Floater 3 (1.5%)
+  fell off a wall      3 (1.5%)
+  cut down by a Skeleton 3 (1.5%)
+  cut down by a Frank  3 (1.5%)
+  cut down by a Shadow 3 (1.5%)
+  cut down by a Rinkle 3 (1.5%)
+  cut down by a Google 3 (1.5%)
+  cut down by a Primp  3 (1.5%)
+  cut down by a Djinni 2 (1.0%)
+  cut down by a Trachea 2 (1.0%)
+  cut down by a Bones  2 (1.0%)
+  cut down by a Stink Bug 2 (1.0%)
+  cut down by a Drat   2 (1.0%)
+  cut down by a Ghoul  2 (1.0%)
+  cut down by a Ghost  1 (0.5%)
+  cut down by a Dread Lock 1 (0.5%)
+  cut down by a China Wolf 1 (0.5%)
+  cut down by a Hair   1 (0.5%)
+  cut down by a Ned    1 (0.5%)
+  cut down by a Sterling 1 (0.5%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=571  successes=365 (63.9%)  failures=206  refused=0  exhausted=0
+  runs with >=1 attempt: 79 of 200
+  SP from parley: 1949 of 119425 total SP (1.6%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 80.6%  >=10: 24.6%  >=20: 1.1%  >=30: 0.6%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=53  p50=115  p90=136  max=165
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 62/2075 (3.0%)
+  6-10: 93/1035 (9.0%)
+  11-20: 156/340 (45.9%)
+  21-30: 41/66 (62.1%)
+  31-50: 19/40 (47.5%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=646  foeBolted=259  foeDrained=19  foeDebuffed=58  foeHealed=0  foeSummoned=4
+  heroResisted=276  heroResistFailed=115
+  ability damage: 1367 of 32475 total damage taken (4.2%)
+
+Stuck: 25 of 200 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=200  startDepth=1
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 2:2  3:18  4:14  5:13  6:28  7:23  8:11  9:23  10:13  11:5  12:4  13:7  14:5  15:4  17:1  18:2  28:1  40:1
+  mean death depth=7.87  floors gained p50=6 mean=6.87  encounters survived mean=17.01
+  reach: >=5 80.6%  >=8 44.0%  >=9 37.7%  >=10 24.6%  >=13 12.0%  >=16 2.9%  >=20 1.1%
+  band share of deaths: Filter 1-4 19.4% | Wall 5-8 42.9% | Breakaway 9-15 34.9% | Endgame 16-20 1.7% | beyond 20 1.1%
+  top causes — Filter: cut down by a Dante 7, cut down by a Poltergeist 6, cut down by a Cave Bear 4, spent by the dungeon itself 3, starved in the dark 3
+  top causes — Wall: cut down by a Werebeast 21, starved in the dark 8, cut down by a Blumble 7, undone by a trap 5, came up short on a leap 3
+  top causes — Breakaway: starved in the dark 7, cut down by a Craig 6, cut down by a Drarl 6, cut down by a Vampire 6, cut down by a Drake 4
+  top causes — Endgame: came up short on a leap 1, cut down by a Drudge 1, cut down by a Vampire 1
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):
+  L=1  reached=200  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=100.0%  target p_L=98.8%  target S_L=98.8%  dS=+1.2  PASS
+  L=2  reached=200  deaths=2 (combat 0 / dot 1 / starvation-exhaustion 1 / other 0)  p_L=99.0%  S_L=99.0%  target p_L=96.3%  target S_L=95.1%  dS=+3.9  PASS
+  L=3  reached=198  deaths=18 (combat 15 / dot 1 / starvation-exhaustion 2 / other 0)  p_L=90.9%  S_L=90.0%  target p_L=93.1%  target S_L=88.6%  dS=+1.4  PASS
+  L=4  reached=177  deaths=14 (combat 9 / dot 5 / starvation-exhaustion 0 / other 0)  p_L=92.1%  S_L=82.9%  target p_L=89.9%  target S_L=79.7%  dS=+3.2  PASS
+  L=5  reached=160  deaths=13 (combat 7 / dot 3 / starvation-exhaustion 3 / other 0)  p_L=91.9%  S_L=76.1%  target p_L=86.9%  target S_L=69.2%  dS=+6.9  PASS
+  L=6  reached=144  deaths=28 (combat 22 / dot 2 / starvation-exhaustion 4 / other 0)  p_L=80.6%  S_L=61.3%  target p_L=84.3%  target S_L=58.4%  dS=+2.9  PASS
+  L=7  reached=114  deaths=23 (combat 18 / dot 4 / starvation-exhaustion 1 / other 0)  p_L=79.8%  S_L=49.0%  target p_L=82.2%  target S_L=48.0%  dS=+1.0  PASS
+  L=8  reached=85  deaths=11 (combat 7 / dot 4 / starvation-exhaustion 0 / other 0)  p_L=87.1%  S_L=42.6%  target p_L=80.6%  target S_L=38.7%  dS=+3.9  PASS
+  L=9  reached=74  deaths=23 (combat 19 / dot 1 / starvation-exhaustion 3 / other 0)  p_L=68.9%  S_L=29.4%  target p_L=79.5%  target S_L=30.8%  dS=-1.4  PASS
+  L=10  reached=49  deaths=13 (combat 7 / dot 5 / starvation-exhaustion 1 / other 0)  p_L=73.5%  S_L=21.6%  target p_L=78.9%  target S_L=24.3%  dS=-2.7  PASS
+  L=11  reached=34  deaths=5 (combat 5 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=85.3%  S_L=18.4%  target p_L=78.7%  target S_L=19.1%  dS=-0.7  PASS
+  L=12  reached=29  deaths=4 (combat 4 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=86.2%  S_L=15.9%  target p_L=78.8%  target S_L=15.1%  dS=+0.8  PASS
+  L=13  reached=24  deaths=7 (combat 5 / dot 0 / starvation-exhaustion 2 / other 0)  p_L=70.8%  S_L=11.2%  target p_L=79.1%  target S_L=11.9%  dS=-0.7  tail
+  L=14  reached=16  deaths=5 (combat 5 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=68.8%  S_L=7.7%  target p_L=79.6%  target S_L=9.5%  dS=-1.8  tail
+  L=15  reached=11  deaths=4 (combat 3 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=63.6%  S_L=4.9%  target p_L=80.2%  target S_L=7.6%  dS=-2.7  tail
+  L=16  reached=7  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=4.9%  target p_L=81.0%  target S_L=6.2%  dS=-1.3  tail
+  L=17  reached=7  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=85.7%  S_L=4.2%  target p_L=81.8%  target S_L=5.0%  dS=-0.8  tail
+  L=18  reached=6  deaths=2 (combat 1 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=66.7%  S_L=2.8%  target p_L=82.7%  target S_L=4.2%  dS=-1.4  tail
+  L=19  reached=4  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=83.6%  target S_L=3.5%  dS=-0.7  tail
+  L=20  reached=3  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=2.8%  target p_L=84.5%  target S_L=3.0%  dS=-0.2  tail
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):
+  Fighter  n=69  p50=7  reach5=81.0%  reach10=19.0%  reach20=0.0%  dmgTaken/fight=11.90  rounds/fight=4.87  foeMiss=65.5%  casts(def/off)=0/0  potions/run=1.09  backstabs/run=0.00  flees/run=2.43
+  Thief  n=72  p50=8  reach5=90.2%  reach10=32.8%  reach20=1.6%  dmgTaken/fight=7.45  rounds/fight=3.26  foeMiss=70.0%  casts(def/off)=0/0  potions/run=2.04  backstabs/run=10.04  flees/run=3.51
+  Magic User  n=59  p50=6  reach5=68.6%  reach10=21.6%  reach20=2.0%  dmgTaken/fight=8.15  rounds/fight=3.00  foeMiss=66.4%  casts(def/off)=270/1412  potions/run=3.59  backstabs/run=0.00  flees/run=1.34
+
+Outcome: 175 dead, 25 stuck (hit maxActions=20000; excluded from depth stats)
+
+EXIT=0
+```
+
+L=21+ info-only rows and the Pace table are trimmed for length, matching the Phase 72 H2's own AFTER block trim (both are unaffected by a representation-only change) — the fully untrimmed run was verified byte-for-byte against `tools/roll-high-baseline-readout.txt` via `node tools/readout-compare.mjs --exact` before trimming for this record.
+
+### Reading
+
+This readout is **identical, byte for byte (after CRLF normalisation), to the Phase 73 base readout** (`tools/roll-high-baseline-readout.txt`, recorded at the phase's start commit before any conversion plan landed) — verified via `node tools/readout-compare.mjs --exact tools/roll-high-baseline-readout.txt <this-run>`, which reports zero differing lines across the full untrimmed transcript (200 seeds, every section, including the trimmed-here L=21+ rows and Pace table).
+
+It is also identical to **every recorded line of the Phase 72 `### AFTER — commit d2adfd6` block above**, verified via `node tools/readout-compare.mjs --recorded docs/DIFFICULTY-RETUNE.md "### AFTER — commit d2adfd6" <this-run>`, which confirms every one of that block's non-blank lines (the Phase 72 fixes already baked in) appears, in order, in this run — because Phase 73's base commit IS Phase 72's close commit, the two readouts describe the exact same engine state read two different ways.
+
+**No difficulty change and no retune owed.** This is exactly the outcome CONTEXT Area 3 predicts for a representation-only mirror: every `rng.d(N)` draw fires in the same position, in the same order, for every one of the 200 seeds, and every check's outcome (`roll >= atLeast`) is the arithmetic mirror of the old outcome (`r <= need`) for the SAME raw draw `r` — there is no path by which reading the die differently could move a death depth, a reach percentage, a per-floor survival number, or a death-cause count. This readout is the third and final proof (alongside the byte-identical parity suite and the unchanged Phase 72 direction tests) that Phase 73 changed representation, never outcome.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
