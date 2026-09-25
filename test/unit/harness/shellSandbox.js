@@ -47,6 +47,9 @@ import {
   dropShelfItems,
 } from "../../../src/browser/viewModels.js";
 import { bagUsage, renderGearTab, renderCarriedList } from "../../../src/browser/gearTab.js";
+// Phase 74 (ROLL-02/03), plan 74-07 — wired below as window.__mzConditionEffect,
+// the module script's own bridge target.
+import { conditionEffectText } from "../../../src/browser/conditionEffects.js";
 // Phase 63 (GSCR-07..10, GRULE-02) — the GEAR action sheet's DOM renderer,
 // wired below as window.__mzGearSheet exactly as the module script assigns it.
 import { renderGearSheet } from "../../../src/browser/gearSheet.js";
@@ -176,6 +179,7 @@ function wireBridges(context, { dressing = null } = {}) {
   w.__mzNightlyEats = nightlyEats;
   w.__mzPartyCap = PARTY_CAP;
   w.__mzConditionsOf = conditionsOf;
+  w.__mzConditionEffect = conditionEffectText;
   w.__mzEther = { itemEffectActive, inStone };
   w.__mzMapView = { mapViewRadius, inViewWindow };
   w.__mzInputGuards = { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled };
