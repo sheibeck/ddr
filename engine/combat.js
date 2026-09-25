@@ -1028,32 +1028,38 @@ function pursuitStrike(state, rng, events) {
   const c = state.c;
   const C = state.combat;
   const dieN = foeDie(c, pursuer);
-  const roll = rng.d(dieN);
-  let need = foeToHitVs(state);
+  // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and now
+  // sits above the strike draw, since atLeastFor(faces, dieN) must be ready
+  // before rollCheck fires. `need` -> `faces`.
+  let faces = foeToHitVs(state);
   // Phase 25 (FEED-01, additive payload): the passive breakdown, plus this
   // site's own post-mods (blind/penalty/insulted) recorded the same way —
   // narration-only, zero new draws.
-  const needMods = foeToHitBreakdown(state).mods.slice();
+  const mods = foeToHitBreakdown(state).mods.slice();
   if (pursuer.blind) {
-    const before = need;
-    need = 1;
-    if (need !== before) needMods.push({ name: "blind", delta: need - before });
+    const before = faces;
+    faces = 1;
+    if (faces !== before) mods.push({ name: "blind", delta: faces - before });
   }
   if (C.foeToHitPenalty) {
-    const before = need;
-    need = Math.min(need, C.foeToHitPenalty);
-    if (need !== before) needMods.push({ name: "penalty", delta: need - before });
+    const before = faces;
+    faces = Math.min(faces, C.foeToHitPenalty);
+    if (faces !== before) mods.push({ name: "penalty", delta: faces - before });
   }
   if (C.parleyInsulted) {
     // PARLEY-02 / D-06 / D-20 (review WR-01): the parting strike is a foe
     // swing too — post-draw, zero extra draws. Insult is the last term
     // (Phase 72 ROLL-01 (a)).
-    const before = need;
-    need += 1;
-    needMods.push({ name: "insulted", delta: need - before });
+    const before = faces;
+    faces += 1;
+    mods.push({ name: "insulted", delta: faces - before });
   }
-  if (roll > need) {
-    events.push({ type: "foeMissed", name: pursuer.name, roll, need, ...(needMods.length ? { needMods } : {}) });
+  // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit die,
+  // in the same draw position the old roll-under draw sat.
+  const check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
+  const { roll, atLeast } = check;
+  if (!check.ok) {
+    events.push({ type: "foeMissed", name: pursuer.name, roll, atLeast, dieN, ...(mods.length ? { mods } : {}) });
     return { died: false };
   }
   // Phase 21 (D-02): flat foePower bonus on the lvl*lvl base — absent at depth <= 5, 0 draws
@@ -1064,7 +1070,10 @@ function pursuitStrike(state, rng, events) {
   // a local BEFORE the crit decision is applied to the sum — the SAME single
   // draw, in the SAME position, so the draw count/shape is unchanged; only
   // whether it is added once or twice into the final sum changes.
-  const crit = roll === 1 || (roll <= 2 && c.sub === "Soldier");
+  // Phase 73 (ROLL-05): the mirrored crit rule — the top face always crits,
+  // the top TWO faces crit for a Soldier — byte-identical to the old
+  // `roll === 1 || (roll <= 2 && Soldier)`.
+  const crit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
   const dice = pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6);
   const curve = difficultyCurve(state.floor.depth);
   let dmg = foeHitFor(foeLevelBase(pursuer) + (crit ? 2 * dice : dice), curve);
@@ -1076,7 +1085,7 @@ function pursuitStrike(state, rng, events) {
   // (pursuitStrike is a single strike, never part of foeTurn's per-visit
   // budget) — Infinity at the identity value (0, off), a structural no-op.
   dmg = Math.min(dmg, Math.max(0, roundDamageCapFor(c.level)));
-  return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, need, needMods });
+  return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, atLeast, dieN, mods });
 }
 
 /**
@@ -2252,16 +2261,19 @@ export function pickFoeTarget(state, rng, foe = null) {
 }
 
 /**
- * applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need }) — the
- * hero-damage pipeline a landed foe swing runs through, from Hardiness
- * onward: Hardiness reduction, the Pendant of Fortitude's single-charge
- * `c.halfNext` halving, ward absorb/reflect/shatter (a reflected blow can
- * kill the FOE instead of the hero), armor soak (`rng.d(20)` via
- * `armorSoak(c)`, gated on worn/effective armour), the `struckByFoe` event,
- * and `die()` on lethal. Verbatim port of foeTurn's former hero-damage branch
- * (formerly lines 904-981) — the to-hit roll, raw damage computation,
- * weakened halving, and critical doubling stay inline in foeTurn and are
- * passed in via `{ dmg, roll, need }`.
+ * applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atLeast, dieN,
+ * mods }) — the hero-damage pipeline a landed foe swing runs through, from
+ * Hardiness onward: Hardiness reduction, the Pendant of Fortitude's
+ * single-charge `c.halfNext` halving, ward absorb/reflect/shatter (a
+ * reflected blow can kill the FOE instead of the hero), armor soak (a
+ * roll-high check against `soakAr`'s top faces via `armorSoak(c)`, gated on
+ * worn/effective armour), the `struckByFoe` event, and `die()` on lethal.
+ * Verbatim port of foeTurn's former hero-damage branch (formerly
+ * lines 904-981) — the to-hit roll, raw damage computation, weakened
+ * halving, and critical doubling stay inline in foeTurn and are passed in
+ * via `{ dmg, roll, atLeast, dieN, mods }` (Phase 73, ROLL-05: `need`/
+ * `needMods` -> `atLeast`+`dieN`/`mods`; the caller's own `roll` is already
+ * the mirrored, high-is-good face).
  *
  * Returns `{ died, onArmour }`:
  *   - `died: true` fires ONLY on the `c.wp <= 0` branch, after `die()` has
@@ -2299,7 +2311,7 @@ export function pickFoeTarget(state, rng, foe = null) {
  *     branch — reflect-kill, `dmg <= 0`, armor-soaked — and the final landed
  *     `dmg` on both tail returns).
  */
-export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, need, needMods, ignoresArmor, ability }) {
+export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atLeast, dieN, mods, ignoresArmor, ability }) {
   const c = state.c;
   const R = RACES[c.race];
   // Phase 25 (FEED-01, additive payload): what passive soak actually reduced
@@ -2406,9 +2418,15 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
   // capped at 20 (a d20's own ceiling). Identity (soakAr === av.ar) on every
   // fixture.
   const soakAr = abilityEffectActive(c, "taunt") ? Math.min(20, av.ar * 2) : av.ar;
+  // Phase 73 (ROLL-05): the soak die reads roll-high through rollCheck; the
+  // gate and soakAr's Taunt doubling above are unchanged, so the draw fires
+  // in exactly the same position for exactly the same characters. `soakCheck`
+  // stays null when the draw is skipped, and carries the failed check when
+  // the blow gets through (struckByFoe narrates it via `soak` below).
+  let soakCheck = null;
   if (av.wp > 0 && av.ar > 0 && !ignores) {
-    const soak = rng.d(20);
-    if (soak <= soakAr) {
+    soakCheck = rollCheck(rng, 20, atLeastFor(soakAr, 20));
+    if (soakCheck.ok) {
       onArmour = true;
       blocked = dmg;
       // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, race pass / IDENT-09):
@@ -2443,6 +2461,9 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
       ...(R.armorWear && wear > 0 ? { halved: true } : {}),
       ...(underMin ? { underMin: true } : {}),
       ...(av.magic ? { magic: true } : {}),
+      // Phase 73 (ROLL-05): the soak die's own triple — additive, narration
+      // only.
+      ...rollFields(soakCheck),
     });
     return { died: false, onArmour: true, applied: 0 };
   }
@@ -2459,20 +2480,32 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, nee
       ...(Object.keys(soaked).length ? { soaked } : {}),
     });
   } else {
+    // Phase 73 (ROLL-05): the mirrored crit rule — `critical` is the top
+    // face for ANY foe (byte-identical to the old `roll === 1`); a Soldier's
+    // second-highest face is its own `soldierCrit`, byte-identical to the
+    // old `roll === 2 && Soldier`. `critAtLeast` (the top-face threshold this
+    // foe needed) is only narrated when one of the two fired.
+    const critical = isBestFace(roll, dieN);
+    const soldierCrit = roll === dieN - 1 && c.sub === "Soldier";
     events.push({
       type: "struckByFoe",
       name: foe.name,
       roll,
-      need,
+      atLeast,
+      dieN,
       dmg,
       ignoresArmor: !!ignores,
-      critical: roll === 1,
+      critical,
       // Phase 25 (FEED-01, additive payload): conditional trailing fields —
       // absent for a plain hero, so the pinned key order/shape above never
       // moves for the parity/combat.test.js fixtures.
       ...(Object.keys(soaked).length ? { soaked } : {}),
-      ...(needMods && needMods.length ? { needMods } : {}),
-      ...(roll === 2 && c.sub === "Soldier" ? { soldierCrit: true } : {}),
+      // Phase 73 (ROLL-05): the failed soak die's own triple, when one was
+      // drawn — absent when armour never rolled (no armour, or ignoresArmor).
+      ...(soakCheck ? { soak: rollFields(soakCheck) } : {}),
+      ...(mods && mods.length ? { mods } : {}),
+      ...(critical || soldierCrit ? { critAtLeast: atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN) } : {}),
+      ...(soldierCrit ? { soldierCrit: true } : {}),
     });
   }
   if (c.wp <= 0) {
@@ -2792,30 +2825,36 @@ export function foeTurn(state, rng, events = []) {
       }
 
       const dieN = foeDie(c, f);
-      const roll = rng.d(dieN);
-      let need = foeToHitVs(state);
+      // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and
+      // now sits above the strike draw, since atLeastFor(faces, dieN) must be
+      // ready before rollCheck fires. `need` -> `faces`.
+      let faces = foeToHitVs(state);
       // Phase 25 (FEED-01, additive payload): the passive breakdown, plus
       // this site's own post-mods recorded the same way — narration only.
-      const needMods = foeToHitBreakdown(state).mods.slice();
+      const mods = foeToHitBreakdown(state).mods.slice();
       if (f.blind) {
-        const before = need;
-        need = 1;
-        if (need !== before) needMods.push({ name: "blind", delta: need - before });
+        const before = faces;
+        faces = 1;
+        if (faces !== before) mods.push({ name: "blind", delta: faces - before });
       }
       if (C.foeToHitPenalty) {
-        const before = need;
-        need = Math.min(need, C.foeToHitPenalty);
-        if (need !== before) needMods.push({ name: "penalty", delta: need - before });
+        const before = faces;
+        faces = Math.min(faces, C.foeToHitPenalty);
+        if (faces !== before) mods.push({ name: "penalty", delta: faces - before });
       }
       if (C.parleyInsulted) {
         // PARLEY-02 / D-06 / D-20: same placement, same reasoning. Insult is
         // the last term (Phase 72 ROLL-01 (a)).
-        const before = need;
-        need += 1;
-        needMods.push({ name: "insulted", delta: need - before });
+        const before = faces;
+        faces += 1;
+        mods.push({ name: "insulted", delta: faces - before });
       }
-      if (roll > need) {
-        events.push({ type: "foeMissed", name: f.name, roll, need, ...(needMods.length ? { needMods } : {}) });
+      // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit
+      // die, in the same draw position the old roll-under draw sat.
+      const check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
+      const { roll, atLeast } = check;
+      if (!check.ok) {
+        events.push({ type: "foeMissed", name: f.name, roll, atLeast, dieN, ...(mods.length ? { mods } : {}) });
         // Phase 38 (ABIL-01, Riposte) — "for one round every foe that misses
         // you eats your weapon damage": hero-branch misses ONLY (a miss on a
         // member never triggers this — that branch `continue`s well above,
@@ -2844,7 +2883,10 @@ export function foeTurn(state, rng, events = []) {
       // weakened/shrunk/hamstrung halvings and the applyFoeDamageToPlayer
       // pipeline (Hardiness/hide/halfNext/ward/soak) keep their existing
       // order, untouched.
-      const crit = roll === 1 || (roll <= 2 && c.sub === "Soldier");
+      // Phase 73 (ROLL-05): the mirrored crit rule — the top face always
+      // crits, the top TWO faces crit for a Soldier — byte-identical to the
+      // old `roll === 1 || (roll <= 2 && Soldier)`.
+      const crit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
       const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6);
       let dmg = foeHitFor(foeLevelBase(f) + (crit ? 2 * dice : dice), curve);
       if (C.weakened) dmg = Math.ceil(dmg / 2);
@@ -2862,7 +2904,7 @@ export function foeTurn(state, rng, events = []) {
       dmg = Math.min(dmg, Math.max(0, roundDamageCapFor(c.level) - dealtThisVisit));
       dealtThisVisit += dmg;
 
-      const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, need, needMods });
+      const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, atLeast, dieN, mods });
       if (hit.died) return events;
     }
     // Phase 38 (ABIL-01, Dirty Trick) — the blindFor countdown, at the END

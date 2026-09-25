@@ -740,10 +740,10 @@ test("foeTurn: a landed critical hit damages the player, and wp<=0 triggers die(
   const state = fixedState({ c: { wp: 1, maxWP: 55 } });
   const foe = fixedFoe({ name: "Ogre", wp: 10, maxWP: 10 });
   state.combat = fixedCombat([foe]);
-  // foeDie=20-sided; roll=1 (hit + natural-1 critical) vs need=5; dmg =
-  // lvl^2(1) + 2*d6(6) = 13 -- lethal against 1 wp. Phase 52 (DMG-02,
-  // 2026-09-20): a crit doubles the DICE only (was 14 under the old
-  // whole-sum-doubling rule: 2*(1+6)).
+  // foeDie=20-sided; raw draw 1 mirrors to roll=20 (the top face — hit +
+  // critical) vs atLeast=16 (5 faces); dmg = lvl^2(1) + 2*d6(6) = 13 --
+  // lethal against 1 wp. Phase 52 (DMG-02, 2026-09-20): a crit doubles the
+  // DICE only (was 14 under the old whole-sum-doubling rule: 2*(1+6)).
   const rng = fakeRng([1, 6]);
   const events = foeTurn(state, rng, []);
   assert.equal(state.dead, true);
@@ -755,7 +755,7 @@ test("foeTurn: armor soaks a blow that lands under the character's AR", () => {
   const state = fixedState({ c: { wp: 55, maxWP: 55, ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" } });
   const foe = fixedFoe({ wp: 10, maxWP: 10 });
   state.combat = fixedCombat([foe]);
-  // foeDie roll=3 (hit, no crit) vs need=5; dmg = 1 + d6(4) = 5; armor soak
+  // foeDie raw draw 3 mirrors to roll=18 (hit, no crit) vs atLeast=16; dmg = 1 + d6(4) = 5; armor soak
   // roll d20=10 <= ar(15) -> the armor takes it, player wp untouched.
   const rng = fakeRng([3, 4, 10]);
   const events = foeTurn(state, rng, []);
@@ -782,7 +782,7 @@ test("foeTurn: a Leather-wearer holding the Cloak of Armor soaks as Plate — AR
   });
   const foe = fixedFoe({ wp: 10, maxWP: 10 });
   state.combat = fixedCombat([foe]);
-  // foeDie roll=3 (hit, no crit) vs need=5; dmg = 1 + d6(4) = 5; armor soak
+  // foeDie raw draw 3 mirrors to roll=18 (hit, no crit) vs atLeast=16; dmg = 1 + d6(4) = 5; armor soak
   // roll d20=12 — this is the crux: 12 > Leather's ar 6 (would have hit the
   // player) but 12 <= the cloak's Plate ar 15, so it lands on the (magical,
   // non-degrading) plate instead.
@@ -831,21 +831,30 @@ test("applyFoeDamageToPlayer: a plain hit with no armour lands on the hero, key 
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(result, { died: false, onArmour: false, applied: 5 });
   assert.equal(state.c.wp, 50);
   const struck = events.find((e) => e.type === "struckByFoe");
-  assert.deepStrictEqual(struck, { type: "struckByFoe", name: "Target", roll: 3, need: 5, dmg: 5, ignoresArmor: false, critical: false });
-  assert.deepEqual(Object.keys(struck), ["type", "name", "roll", "need", "dmg", "ignoresArmor", "critical"], "event key order pinned");
+  assert.deepStrictEqual(struck, {
+    type: "struckByFoe",
+    name: "Target",
+    roll: 18,
+    atLeast: 16,
+    dieN: 20,
+    dmg: 5,
+    ignoresArmor: false,
+    critical: false,
+  });
+  assert.deepEqual(Object.keys(struck), ["type", "name", "roll", "atLeast", "dieN", "dmg", "ignoresArmor", "critical"], "event key order pinned");
 });
 
 test("applyFoeDamageToPlayer: Hardiness reduces damage by 3, floored at 1", () => {
   const state = fixedState({ c: { skills: { Hardiness: 1 } } });
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), [], { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), [], { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.equal(state.c.wp, 53, "5 - 3 = 2 damage");
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), [], { dmg: 2, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), [], { dmg: 2, roll: 18, atLeast: 16, dieN: 20 });
   assert.equal(state.c.wp, 52, "floor(1): 2 - 3 would be negative, clamped to 1 damage, never 0 or less");
 });
 
@@ -854,7 +863,7 @@ test("applyFoeDamageToPlayer: halfNext (Pendant of Fortitude) ceil-halves once t
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.equal(state.c.wp, 52, "ceil(5/2) = 3 damage");
   assert.equal(state.c.halfNext, false, "single-charge buffer clears after use");
   assert.deepEqual(events.map((e) => e.type), ["damageHalved", "struckByFoe"]);
@@ -865,7 +874,7 @@ test("applyFoeDamageToPlayer: Hardiness applies BEFORE halfNext", () => {
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   // Hardiness: 5 -> 2; halfNext: ceil(2/2) -> 1.
   assert.equal(state.c.wp, 54);
   const struck = events.find((e) => e.type === "struckByFoe");
@@ -877,7 +886,7 @@ test("applyFoeDamageToPlayer: a ward absorbs the blow fully, no struckByFoe, zer
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(events, [{ type: "wardAbsorbed", amount: 5, remaining: 5 }]);
   assert.equal(state.c.wp, 55, "the hero took no damage");
   assert.equal(state.c.ward.pool, 5);
@@ -890,7 +899,7 @@ test("applyFoeDamageToPlayer: a ward shatters partway and the remainder lands", 
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(events.map((e) => e.type), ["wardAbsorbed", "wardShattered", "struckByFoe"]);
   assert.equal(state.c.ward, null);
   assert.equal(state.c.wp, 53, "5 - 3 absorbed = 2 damage lands");
@@ -902,7 +911,7 @@ test("applyFoeDamageToPlayer: a ward reflect kills the FOE and returns died:fals
   state.combat = fixedCombat([foe]);
   const events = [];
   // killFoe's four draws: d6 sp(1), d10 coin(1), d20 item(20 -> none), d6 cook(1 -> none).
-  const result = applyFoeDamageToPlayer(state, foe, fakeRng([1, 1, 20, 1]), events, { dmg: 5, roll: 3, need: 5 });
+  const result = applyFoeDamageToPlayer(state, foe, fakeRng([1, 1, 20, 1]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(events.map((e) => e.type), ["wardReflected", "foeKilled"]);
   assert.ok(events.some((e) => e.type === "wardReflected" && e.target === "Target" && e.amount === 5));
   assert.equal(foe.alive, false);
@@ -917,7 +926,7 @@ test("applyFoeDamageToPlayer: armour soaks the blow", () => {
   state.combat = fixedCombat([foe]);
   const events = [];
   const rng = fakeRng([10]);
-  const result = applyFoeDamageToPlayer(state, foe, rng, events, { dmg: 5, roll: 3, need: 5 });
+  const result = applyFoeDamageToPlayer(state, foe, rng, events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(result, { died: false, onArmour: true, applied: 0 });
   assert.ok(events.some((e) => e.type === "armorSoaked" && e.name === "Target" && e.amount === 5));
   assert.equal(state.c.armorWP, 15);
@@ -931,7 +940,7 @@ test("applyFoeDamageToPlayer: an armour soak roll that fails lets the blow throu
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  const result = applyFoeDamageToPlayer(state, foe, fakeRng([16]), events, { dmg: 5, roll: 3, need: 5 });
+  const result = applyFoeDamageToPlayer(state, foe, fakeRng([16]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.equal(state.c.wp, 50);
   assert.ok(events.some((e) => e.type === "struckByFoe" && e.dmg === 5));
   assert.equal(result.onArmour, false);
@@ -942,7 +951,7 @@ test("applyFoeDamageToPlayer: armour destroyed at 0 wp emits armorDestroyed and 
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([10]), events, { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([10]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.equal(state.c.armorWP, 0);
   assert.deepEqual(events.map((e) => e.type), ["armorDestroyed", "armorSoaked"]);
 });
@@ -952,7 +961,7 @@ test("applyFoeDamageToPlayer: a noArmor foe skips the soak draw entirely", () =>
   const foe = fixedFoe({ sp: { noArmor: true } });
   state.combat = fixedCombat([foe]);
   const events = [];
-  const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.equal(state.c.wp, 50);
   assert.ok(events.some((e) => e.type === "struckByFoe" && e.ignoresArmor === true));
   assert.equal(result.onArmour, false);
@@ -963,7 +972,7 @@ test("applyFoeDamageToPlayer: lethal damage returns died:true and die() ran", ()
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
+  const result = applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(result, { died: true, onArmour: false, applied: 5 });
   assert.equal(state.dead, true);
   assert.equal(state.combat, null);
@@ -971,12 +980,12 @@ test("applyFoeDamageToPlayer: lethal damage returns died:true and die() ran", ()
   assert.equal(events[1].cause, "combat");
 });
 
-test("applyFoeDamageToPlayer: the critical flag mirrors roll===1 and dmg is applied verbatim (no re-doubling)", () => {
+test("applyFoeDamageToPlayer: the critical flag mirrors the die's top face (roll===dieN) and dmg is applied verbatim (no re-doubling)", () => {
   const state = fixedState();
   const foe = fixedFoe();
   state.combat = fixedCombat([foe]);
   const events = [];
-  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 14, roll: 1, need: 5 });
+  applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 14, roll: 20, atLeast: 16, dieN: 20 });
   const struck = events.find((e) => e.type === "struckByFoe");
   assert.equal(struck.critical, true);
   assert.equal(struck.dmg, 14);
@@ -1153,15 +1162,16 @@ test("D-05: the second parley in the same encounter is refused with parleyExhaus
   assert.deepStrictEqual(state, snapshot, "no further state change on a re-sent parley");
 });
 
-test("D-06/D-20: parleyInsulted widens the foe's need by exactly 1 on the hero branch, the roll is untouched", () => {
+test("D-06/D-20: parleyInsulted widens the foe's atLeast by one more top face on the hero branch, the mirrored roll is untouched", () => {
   const baseline = fixedState();
   const foe = fixedFoe({ type: "Beasts", lvl: 1 });
   baseline.combat = fixedCombat([foe]);
   const baselineEvents = foeTurn(baseline, fakeRng([6, 3]), []);
   const missed = baselineEvents.find((e) => e.type === "foeMissed");
-  assert.ok(missed, "baseline: foeToHitVs is 5, roll 6 misses");
-  assert.equal(missed.need, 5);
-  assert.equal(missed.roll, 6);
+  assert.ok(missed, "baseline: foeToHitVs is 5 faces (atLeast 16 of 20), the mirrored roll 15 misses");
+  assert.equal(missed.atLeast, 16);
+  assert.equal(missed.dieN, 20);
+  assert.equal(missed.roll, 15, "raw draw 6 mirrors to 21 - 6 = 15");
   assert.equal(baseline.c.wp, 55);
 
   const insulted = fixedState();
@@ -1169,9 +1179,9 @@ test("D-06/D-20: parleyInsulted widens the foe's need by exactly 1 on the hero b
   insulted.combat = fixedCombat([insultedFoe], { parleyInsulted: true });
   const insultedEvents = foeTurn(insulted, fakeRng([6, 3]), []);
   const struck = insultedEvents.find((e) => e.type === "struckByFoe");
-  assert.ok(struck, "insulted: need widens to 6, the same roll 6 now hits");
-  assert.ok(struck.need === 6, "D-06/D-20: struck.need === 6 (5 + the insulted +1)");
-  assert.equal(struck.roll, 6, "the narrated roll is the literal die, unmodified");
+  assert.ok(struck, "insulted: atLeast widens by one more top face (16 -> 15), the same mirrored roll 15 now hits");
+  assert.ok(struck.atLeast === 15, "D-06/D-20: struck.atLeast === 15 (one more top face than the baseline's 16)");
+  assert.equal(struck.roll, 15, "the narrated roll is the mirrored face, unmodified by the insult");
   assert.equal(struck.dmg, 4, "1 + d6(3)");
   assert.equal(insulted.c.wp, 51);
 });
@@ -1536,7 +1546,7 @@ test("applyFoeDamageToPlayer: a reflected blow onto an armoured foe can be soake
   state.combat = fixedCombat([foe]);
   const events = [];
   const rng = fakeRng([5]);
-  const result = applyFoeDamageToPlayer(state, foe, rng, events, { dmg: 5, roll: 3, need: 5 });
+  const result = applyFoeDamageToPlayer(state, foe, rng, events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(result, { died: false, onArmour: false, applied: 0 });
   // raw draw 5 mirrors to face 16 on a d20; atLeastFor(ar 12, 20) = 9.
   assert.deepStrictEqual(events, [{ type: "foeArmorSoaked", name: "Target", amount: 5, roll: 16, atLeast: 9, dieN: 20 }]);
@@ -1579,7 +1589,7 @@ test("foeTurn: an acid tick on a halfDmg foe is halved (ceil)", () => {
 test("applyFoeDamageToPlayer: applied reports the landed amount; ignoresArmor:true skips the soak d20; ability switches the event to foeBolted", () => {
   const armoredState = fixedState({ c: { ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" } });
   const foe = fixedFoe();
-  let result = applyFoeDamageToPlayer(armoredState, foe, fakeRng([10]), [], { dmg: 5, roll: 3, need: 5 });
+  let result = applyFoeDamageToPlayer(armoredState, foe, fakeRng([10]), [], { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.deepEqual(result, { died: false, onArmour: true, applied: 0 });
 
   const events1 = [];
@@ -1594,7 +1604,7 @@ test("applyFoeDamageToPlayer: applied reports the landed amount; ignoresArmor:tr
   assert.deepStrictEqual(events2, [{ type: "foeBolted", name: "Target", ability: "krupkeFreeze", dmg: 5, ignoresArmor: false }]);
 
   const events3 = [];
-  applyFoeDamageToPlayer(unarmoredState, foe, fakeRng([]), events3, { dmg: 5, roll: 3, need: 5 });
+  applyFoeDamageToPlayer(unarmoredState, foe, fakeRng([]), events3, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   assert.equal(events3[0].type, "struckByFoe");
   assert.equal(events3[0].dmg, 5);
 });

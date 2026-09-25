@@ -452,10 +452,10 @@ test("PARLEY-02 / D-06: a failed parley sets the insult, which persists every ro
   foe.asleep = 0;
   state.c.wp = 55;
   const t1 = foeTurn(state, fakeRng([6, 3]), []);
-  assert.ok(t1.some((e) => e.type === "struckByFoe" && e.need === 6));
+  assert.ok(t1.some((e) => e.type === "struckByFoe" && e.atLeast === 15));
   state.c.wp = 55;
   const t2 = foeTurn(state, fakeRng([6, 3]), []);
-  assert.ok(t2.some((e) => e.type === "struckByFoe" && e.need === 6));
+  assert.ok(t2.some((e) => e.type === "struckByFoe" && e.atLeast === 15));
 
   endCombat(state, []);
   assert.equal(state.combat, null);
@@ -723,25 +723,31 @@ test("D-19 old-save probe: mid-fight flags round-trip losslessly through JSON an
 // type at fluency >= 1 (and for Con Artists / Wilmsry) — so an insulted group
 // with a pursuer is reachable. The parting strike on a flee exit gets the same
 // post-draw `need += 1` as the two foeTurn sites; the roll itself is untouched.
-test("PARLEY-02 / D-06 / D-20 (WR-01): parleyInsulted widens pursuitStrike's need by exactly 1, zero extra draws", () => {
+test("PARLEY-02 / D-06 / D-20 (WR-01): parleyInsulted widens pursuitStrike's atLeast by one more top face, zero extra draws", () => {
   const probe = fixedState();
   probe.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })]);
   const probeEvents = flee(probe, fakeRng([15, 20]), []);
   const probeMiss = probeEvents.find((e) => e.type === "foeMissed");
-  assert.ok(probeMiss, "roll 20 misses the baseline pursuit");
-  const N = probeMiss.need;
+  assert.ok(probeMiss, "raw draw 20 mirrors to roll 1, missing the baseline pursuit");
+  const { dieN, atLeast } = probeMiss;
+  // The raw draw that mirrors to exactly one face under the baseline's
+  // atLeast (a miss) — and, once the insult removes one face, exactly on
+  // the widened atLeast (a hit), same literal draw.
+  const rawJustUnder = dieN + 2 - atLeast;
 
   const baseline = fixedState();
   baseline.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })]);
-  const baseEvents = flee(baseline, fakeRng([15, N + 1]), []);
+  const baseEvents = flee(baseline, fakeRng([15, rawJustUnder]), []);
   assert.deepEqual(baseEvents.map((e) => e.type), ["fleeRolled", "foePursued", "foeMissed", "fled", "combatEnded"]);
-  assert.equal(baseEvents.find((e) => e.type === "foeMissed").need, N);
+  const baseMiss = baseEvents.find((e) => e.type === "foeMissed");
+  assert.equal(baseMiss.atLeast, atLeast);
+  assert.equal(baseMiss.roll, atLeast - 1);
 
   const insulted = fixedState();
   insulted.combat = fixedCombat([fixedFoe({ sp: { pursues: true, noArmor: true } })], { parleyInsulted: true });
-  const insEvents = flee(insulted, fakeRng([15, N + 1, 4]), []);
+  const insEvents = flee(insulted, fakeRng([15, rawJustUnder, 4]), []);
   assert.deepEqual(insEvents.map((e) => e.type), ["fleeRolled", "foePursued", "struckByFoe", "fled", "combatEnded"]);
   const struck = insEvents.find((e) => e.type === "struckByFoe");
-  assert.equal(struck.need, N + 1, "N + the insulted +1");
-  assert.equal(struck.roll, N + 1, "the same literal roll");
+  assert.equal(struck.atLeast, atLeast - 1, "one more top face than the baseline");
+  assert.equal(struck.roll, atLeast - 1, "the same mirrored roll, now landing on the widened range");
 });
