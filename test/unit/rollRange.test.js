@@ -27,6 +27,9 @@ import {
   modsClause,
   ROLL_COPY,
   toHitText,
+  facesRangeText,
+  dieText,
+  hitRangeText,
 } from "../../src/browser/rollRange.js";
 
 test("rangeText: a wide winning range reads lo–hi with the U+2013 en dash", () => {
@@ -210,4 +213,67 @@ test("ROLLERS, MOD_LABEL and ROLL_COPY are frozen", () => {
   assert.ok(Object.isFrozen(ROLLERS));
   assert.ok(Object.isFrozen(MOD_LABEL));
   assert.ok(Object.isFrozen(ROLL_COPY));
+});
+
+// ─── Phase 74 Plan 02, Task 2: facesRangeText / dieText / hitRangeText ───
+
+test("facesRangeText: converts a winning-faces count to the lo–hi range the way atLeastFor does", () => {
+  assert.equal(facesRangeText(5, 20), "16–20");
+  assert.equal(facesRangeText(4, 20), "17–20");
+  assert.equal(facesRangeText(3, 20), "18–20");
+  assert.equal(facesRangeText(2, 20), "19–20");
+  assert.equal(facesRangeText(5, 6), "2–6");
+  assert.equal(facesRangeText(5, 12), "8–12");
+});
+
+test("facesRangeText: a single winning face reads as just the face", () => {
+  assert.equal(facesRangeText(1, 20), "20");
+});
+
+test("facesRangeText: 0 or fewer winning faces reads 'nothing'", () => {
+  assert.equal(facesRangeText(0, 20), "nothing");
+  assert.equal(facesRangeText(-1, 20), "nothing");
+});
+
+test("facesRangeText: a faces count at or above dieN reads the full die as 1–N", () => {
+  assert.equal(facesRangeText(20, 20), "1–20");
+  assert.equal(facesRangeText(25, 20), "1–20");
+});
+
+test("facesRangeText: a non-finite faces or dieN reads '?'", () => {
+  assert.equal(facesRangeText(NaN, 20), "?");
+  assert.equal(facesRangeText(5, undefined), "?");
+});
+
+test("dieText: names the die, or 'd?' for a non-finite count", () => {
+  assert.equal(dieText(20), "d20");
+  assert.equal(dieText(undefined), "d?");
+});
+
+test("hitRangeText: the range plus the die, with a mods clause only when mods is non-empty", () => {
+  assert.equal(hitRangeText(5, 20), "16–20 (d20)");
+  assert.equal(
+    hitRangeText(4, 20, { mods: [{ name: "Sidestep", delta: -2 }, { name: "insulted", delta: 1 }], roller: "foe" }),
+    "17–20 (d20; Sidestep +2, insulted −1)"
+  );
+  assert.equal(hitRangeText(3, 20, { mods: [], roller: "foe" }), "18–20 (d20)");
+  assert.equal(hitRangeText(1, 8), "8 (d8)");
+});
+
+test("facesRangeText/hitRangeText output never contains an ASCII hyphen-minus, a '%' sign, or a digit immediately followed by '+'", () => {
+  const samples = [
+    facesRangeText(5, 20),
+    facesRangeText(4, 20),
+    facesRangeText(1, 20),
+    facesRangeText(0, 20),
+    hitRangeText(5, 20),
+    hitRangeText(4, 20, { mods: [{ name: "Sidestep", delta: -2 }, { name: "insulted", delta: 1 }], roller: "foe" }),
+    hitRangeText(3, 20, { mods: [], roller: "foe" }),
+    hitRangeText(1, 8),
+  ];
+  for (const s of samples) {
+    assert.ok(!s.includes("-"), `expected no ASCII hyphen-minus in "${s}"`);
+    assert.ok(!s.includes("%"), `expected no percent sign in "${s}"`);
+    assert.doesNotMatch(s, /\d\+/, `expected no digit immediately followed by '+' in "${s}"`);
+  }
 });
