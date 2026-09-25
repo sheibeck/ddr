@@ -109,7 +109,47 @@ Plans:
   4. Content numbers that encode to-hit/AR/etc. are re-expressed in the new convention, and any roll-related value already in a saved game converts once, tolerantly, on load.
   5. Every event that carries a roll (`struck`, foe swings, soak, thrown spells, resistance, parley, traps, locks, climbs/leaps, cures, wake, drops, gates, summons, crits) natively carries the high-is-good `roll`, `target` and `dieN`.
 
-**Plans**: TBD
+**Plans**: 10 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 73-01-PLAN.md — The roll-high helper (`rollCheck`/`atLeastFor`/`rollFields` in engine/dice.js) and the build-failing guard, enforced on the 17 conversion-free engine files (wave 1)
+- [ ] 73-02-PLAN.md — Proof baselines on the untouched engine: bot-sweep state pins, the pre-switch save, the 200-seed baseline readout (checked against Phase 72's AFTER), and the runtime roll invariant (wave 1)
+- [ ] 73-03-PLAN.md — The shared range formatter (src/browser/rollRange.js, "17 vs 18–20") and the per-site mirror verdicts plus event-field contract in docs/ROLL-LEDGER.md (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 73-04-PLAN.md — Hero strike, Philly, crits, frenzy and the foe's armor soak on rollCheck; struck/strikeMissed in the final line shape; rail dice line (wave 2)
+
+**Wave 3**
+
+- [ ] 73-05-PLAN.md — Member, legacy and summoned-ally strikes and thrown spells on rollCheck; isBestFace flips to the top face (wave 3)
+
+**Wave 4**
+
+- [ ] 73-06-PLAN.md — Resistance on rollCheck, magic mishaps reported on the 1; magic.js and derived.js guarded (wave 4)
+
+**Wave 5**
+
+- [ ] 73-07-PLAN.md — Foe swings (hero and member), pursuit, foe crits and the hero soak on rollCheck; the old need clause retired (wave 5)
+
+**Wave 6**
+
+- [ ] 73-08-PLAN.md — Flee (bonus folded into the threshold), parley, combat gates, drops and the foe ability gate; combat.js and foeAbilities.js guarded (wave 6)
+
+**Wave 7**
+
+- [ ] 73-09-PLAN.md — Traps, locks, climbs, leaps, cures, wake and the murder check; the guard covers all of engine/ and the invariant is complete (wave 7)
+
+**Wave 8**
+
+- [ ] 73-10-PLAN.md — Close-out: the three proofs recorded (parity, direction tests, identical 200-seed readout), the ledger finalized with Phase 74/79 handoffs, and the comment sweep (wave 8)
+
+**Cross-cutting constraints:**
+
+- Byte-identical outcomes: zero regenerated fixtures, zero new divergence records or carve-outs; the Phase 72 direction tests, the ledger-sync test, the state pins and the pre-switch save run unedited. A moved result means a mis-flipped site: fix the site, never the evidence
+- Each conversion plan ships one vertical slice (engine sites, event fields, the event-driven lines that print them, the tests that assert them), so every wave merges green; combat.js and the narration files force the waves to run in series
 
 ### Phase 74: Roll Display & Modifier Honesty
 
