@@ -16,7 +16,7 @@
 - [ ] **RULES-04**: The combat SPELLS menu lists only spells the hero can cast now. Level- or school-locked spells are hidden, not shown greyed. (same todo, user ruling)
 - [ ] **RULES-05**: With Sense Presence active, the hero wins initiative outright, the "You cannot see what you are fighting" line does not fire, and crits are allowed in the dark. (todo 2026-09-23 sense-presence)
 - [ ] **RULES-06**: The HP a trap shows the player equals the HP it actually takes. A hero cannot die to a trap the Oracle reports as −1 HP. Root-cause it with `/gsd-debug` before fixing. (todo 2026-09-22 trap-death-at-21-hp)
-- [ ] **RULES-07**: An ailment roll of 5–6 gives the Disease it narrates, not a phobia. (todo 2026-09-23 ailment-roll-5-6)
+- [ ] **RULES-07**: An ailment roll of 5–6 narrates what it actually gives. Canon rows 5–6 are a disease of the mind that gives a phobia; the Oracle and the rail say so in voice and never announce a "Disease" the hero doesn't get. (todo 2026-09-23 ailment-roll-5-6; user kept canon 2026-09-25, amended from "gives the Disease it narrates")
 - [ ] **RULES-08**: When new armor replaces a destroyed piece, the player is told the old piece was destroyed and is gone. It never silently vanishes on a swap. (todo 2026-09-23 destroyed-armor)
 - [ ] **RULES-09**: A Pilfer can use magic items under the normal rules. The heal-only refusal is gone. Instead, every time a Pilfer uses a magic item (use-activated jewelry, cloaks and staves) it rolls a d20, and on a 1 the use fails, the item explodes for d10 damage to the Pilfer (armor does not soak it), and it turns to dust. Scrolls and potions are not magic items for this rule; a Pilfer drinks potions normally. The player is told so. Tools never fumble. The fumble draw comes from a derived rng stream. The Pilfer blurb states both sides. (user, 2026-09-24; todo 2026-09-24 pilfer-bad-becomes-fumbling)
 - [ ] **RULES-10**: Anyone can attempt to read any scroll. Magic Users, and any character with the Runes/Signs skill, always succeed and never fumble. Everyone else makes an intelligence roll (d20 against their own intel, with no intel-12 floor); a success casts the scroll's spell and a failure casts nothing, except that a read that rolls below half the required target is a FUMBLE: a harmful spell takes effect on the reader instead of its target, and a beneficial spell takes effect on the targeted enemy instead of the reader (a fumbled Shield scroll shields the foe you're targeting). A fumbled area-damage spell hits the reader and everyone in the reader's party. Outside combat, a fumble has no effect. The scroll is consumed either way, and both outcomes are narrated. The class/skill gate and the Pilfer lockout in `canRead` go away. A Pilfer reads scrolls under this rule; the RULES-09 fumble never applies to scrolls. The roll comes from a derived rng stream. (user, 2026-09-24; todo 2026-09-24 anyone-reads-scrolls-on-an-intelligence-roll)
@@ -26,13 +26,14 @@
 Context: the engine rolls UNDER a need on a d20 (a caster hits on 1–3), so a bonus must WIDEN the range and a penalty must NARROW it. On device, a dropped weapon read "-2 to hit". The user read that as worse, but it may have been better. User ruling: players should read + as good and − as bad, and see rolls as bigger-is-better. **Engine ruling (user, 2026-09-24): switch the ENGINE to roll-high, not a display adapter.** A display-only flip would drift, because every new roll and line would have to remember to translate. The switch mirrors the die: each check draws the same `r` and reads the roll as `(N+1) − r` against a high target, so every seed resolves exactly as before and the parity suite must stay byte-identical. A moved fixture means a site was flipped wrong. Order: the ROLL-01 sign fixes land first, then the mirror.
 
 Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.md`, 34 sites):
+
 - Nearly every check is roll-under. Flee (`d20+X ≥ 14`) and initiative are already roll-high.
 - All weapon, spell, ability, armor and condition modifiers found change the need with the correct sign. A heavy weapon's "−2 to hit" really is worse.
 - The hero's strike die shrinks with level (d20→d6), so the flip is `(N+1)−roll` on an N-sided die, not always `21−roll`.
 - About 55–65 player-facing strings encode direction. `needModsClause` prints deltas that read in opposite senses on hero-need and foe-need lines.
 - Events carry roll and need for about 80% of checks. `struck` and the foe swings lack `dieN`, and soak, climb/leap, cure and wake events carry no roll.
 
-- [ ] **ROLL-01**: An audited ledger covers every modifier from weapons, armor, spells, abilities, items, races, sub-classes, conditions and terrain, on every roll (to-hit both ways, soak, saves/resistance, initiative, climbs, flee, parley, traps). Every bonus widens the success range and every penalty narrows it. Each sign bug found is fixed under the engine gate, with any moved fixtures declared and regenerated. Known at scoping:
+- [x] **ROLL-01**: An audited ledger covers every modifier from weapons, armor, spells, abilities, items, races, sub-classes, conditions and terrain, on every roll (to-hit both ways, soak, saves/resistance, initiative, climbs, flee, parley, traps). Every bonus widens the success range and every penalty narrows it. Each sign bug found is fixed under the engine gate, with any moved fixtures declared and regenerated. Known at scoping:
   - (a) `parleyInsulted +1` lands after the Smoke/Mirror/invisible/blind "natural 1" overrides on the hero branch (combat.js ~:2554-2564), so an insulted foe hits a Smoked hero on 1–2. The member branch orders it the other way.
   - (b) Fridgian frenzy's second swing hard-sets need 3 and skips the dark cap (~:611).
   - (c) Bestiary `critOn: 1` ("a 1 shatters it", Skeleton) is never read by the engine. Wire it in, or drop the claim.
@@ -122,7 +123,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ROLL-01 | Phase 72 | Pending |
+| ROLL-01 | Phase 72 | Complete |
 | ROLL-05 | Phase 73 | Pending |
 | ROLL-02 | Phase 74 | Pending |
 | ROLL-03 | Phase 74 | Pending |

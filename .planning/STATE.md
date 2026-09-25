@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 72
-current_phase_name: Roll-Direction Sign Audit & Fixes
-status: executing
+current_phase: 73
+current_phase_name: Engine Roll-High Mirror
+status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-24T23:31:24.997Z"
+last_updated: "2026-09-25T03:35:02.009Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 72 execution started
+last_activity_desc: Phase 72 complete, transitioned to Phase 73
 progress:
   total_phases: 11
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 7
-  completed_plans: 0
-  percent: 0
+  completed_plans: 7
+  percent: 9
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 72 (Roll-Direction Sign Audit & Fixes) — EXECUTING
-Plan: 1 of 7
-Status: Executing Phase 72
-Last activity: 2026-09-24 — Phase 72 execution started
+Phase: 73 — Engine Roll-High Mirror
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-24 — Phase 72 complete, transitioned to Phase 73
 
 ## Ground Truth (durable facts every session needs)
 
@@ -144,6 +144,7 @@ detail; the backlog phases are the index.
 - 2026-09-24 (user, at roadmap approval): Leaderboards reworked. Scope chips ME | ALL | FRIENDS (ALL default when signed in with Compete ON); LINEAGE becomes ME-only at the end of the rail (Play Games keeps one best score per player per board, so a global lineage view cannot be honest; per-sub-class global boards deferred); the GRAVEYARD board is removed (ME covers it). BOARD-09..14 split out of Phase 78 into their own Phase 81.
 - 2026-09-24 (user): LEANEST board dropped (1-step deaths top a steps-per-floor board; "deepest, then fewest steps" is DEEPEST). Added as BOARD-17 to Phase 81. Per-sub-class leaderboards + global LINEAGE captured as backlog 999.11, to be promoted as its own milestone (Google Play Games only, rolling 28-board season sets, boards created by script via the Games Configuration API).
 - Phase 75.1 inserted after Phase 75: Pilfer Fumbles & Scroll Reading — RULES-09/10 moved out of Phase 75 into their own phase (user, 2026-09-24)
+- Run order changed (user, 2026-09-25): Phase 81 (Leaderboards, live Play bugs) runs right after Phase 72, then 73 → 80 in order. Discuss for every phase 73–81 was collected up front (all CONTEXT.md files written); RULES-07 amended to keep canon (ailment 5–6 = phobia, narrated honestly); Phase 78 now depends on 73/74 (climb card became an engine pending decision).
 
 ## Deferred Items
 

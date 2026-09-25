@@ -39,7 +39,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 **Roll-high ruling (user, 2026-09-24):** the engine itself switches to roll-high rather than gaining a display adapter (Phase 73, ROLL-05) — every seed must resolve identically to before the switch, so the parity suite staying byte-identical is the proof. The sign/ordering audit (Phase 72, ROLL-01) lands first so the mirror is built on already-correct modifiers, and every phase after the mirror (RULES, DARK, SAV, CMBUI's roll-showing indicators) is written directly in the roll-high convention instead of being rewritten later.
 
-- [ ] **Phase 72: Roll-Direction Sign Audit & Fixes** - the audited ledger of every roll modifier's sign, with the three known bugs fixed under the engine gate, landing before the roll-high mirror
+- [x] **Phase 72: Roll-Direction Sign Audit & Fixes** - the audited ledger of every roll modifier's sign, with the three known bugs fixed under the engine gate, landing before the roll-high mirror (completed 2026-09-24)
 - [ ] **Phase 73: Engine Roll-High Mirror** - the engine itself switches every die check to roll-high; the full parity suite proves it byte-identical
 - [ ] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers
 - [ ] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
@@ -66,7 +66,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. The bestiary `critOn: 1` claim (Skeleton, "a 1 shatters it") is either wired into the engine or removed from the text.
   5. Every fixture the fixes move is measured, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated — nothing else moves.
 
-**Plans**: 6/7 plans executed
+**Plans**: 7/7 plans executed
 
 Plans:
 **Wave 1**
@@ -89,7 +89,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 72-07-PLAN.md — Close-out: F5 parley-dial sign + ruled findings, AFTER bot readout, final ledger, ledger↔test sync guard (wave 5)
+- [x] 72-07-PLAN.md — Close-out: F5 parley-dial sign + ruled findings, AFTER bot readout, final ledger, ledger↔test sync guard (wave 5)
 
 **Cross-cutting constraints:**
 
@@ -136,7 +136,7 @@ Plans:
   2. A red-dot wilmst cache pays a bounded cut (~100 × depth) instead of buying out the store, a newly rolled Summoner's grimoire holds no spell from a school gated above its level, and the combat SPELLS menu hides (never just greys) anything level- or school-locked.
   3. A hero with Sense Presence active always wins initiative outright, never sees "You cannot see what you are fighting," and can land crits in the dark.
   4. A trap the Oracle reports as "−1 HP" can never kill the hero — the fix follows an explicit `/gsd-debug` root-cause session before it lands, not a guess.
-  5. An ailment roll of 5–6 always gives the Disease it narrates, and replacing a destroyed armor piece with a new one always tells the player the old piece was destroyed and is gone.
+  5. An ailment roll of 5–6 always narrates what it gives (canon: a phobia, a disease of the mind — user ruling 2026-09-25), and replacing a destroyed armor piece with a new one always tells the player the old piece was destroyed and is gone.
 
 **Plans**: TBD
 **UI hint**: yes
@@ -190,7 +190,7 @@ Plans:
 ### Phase 78: HUD, Dead State & Climb Decisions
 
 **Goal**: The HUD tells the truth at a glance, the dead state locks down cleanly, settings behave as expected, and crossing a wall or crevice is a decision the player makes before any dice are rolled.
-**Depends on**: Nothing (shell/presentation-only, zero fixture moves)
+**Depends on**: Phase 73, Phase 74 (amended 2026-09-25: the climb card became an ENGINE pending decision (engine-gated, harness reconcile) and shows odds in the Phase 74 range format; the rest stays shell-only)
 **Requirements**: HUD-01, HUD-02, HUD-03, HUD-04, HUD-05, HUD-06, HUD-07, CLIMB-01, CLIMB-02
 **Success Criteria** (what must be TRUE):
 
@@ -268,7 +268,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 6/7 | In Progress|  |
+| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
 | 73. Engine Roll-High Mirror | v2.1 | 0/– | Not started | - |
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
