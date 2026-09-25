@@ -159,6 +159,7 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     noEntry: "Nothing of yours on this board yet this season.",
     ofWorld: "of {n} interred worldwide.",
     ofFriends: "of {n} among friends.",
+    hiddenYou: "Play Games won't show your score here — your profile keeps game activity private.",
   }),
   empty: "Nobody of yours has qualified for this board yet.",
   divider: "NOT IN THE TOP TEN · YOUR BEST RUN",

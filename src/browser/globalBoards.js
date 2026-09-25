@@ -24,6 +24,15 @@
 // a ME-only board (engine/records.js ME_ONLY_BOARDS) and never reaches
 // view(); the signed-in DEEPEST-sample filtering and the `sampled` field are
 // gone.
+//
+// Phase 81 (BOARD-09, R-09/R-10): YOU comes from the signed-in player's own
+// leaderboard score record (the loadPlayerScore result for this same board,
+// collection and all-time span, passed to toGlobalEntry as `mine`) — see
+// isOwnRecord below. The account id (meId) is only the fallback used when no
+// own record came back at all. A listed row's scoreHolder is an OPTIONAL
+// field the plugin omits whenever Play Games reports none — including for
+// the player's own row — so matching on playerId alone (the pre-Phase-81
+// behavior) silently missed the player's own entry.
 //   GlobalEntry = frozen { key, rank, handle, playerId, you, friend, rawScore, run }
 //
 // An entry's key is "g:" + (playerId or "anon") + ":" + its index; the
@@ -66,19 +75,45 @@ function str(x) {
 }
 
 /**
- * toGlobalEntry(score, index, { meId, scope }) — one normalized Play Games
- * score ({ rank, rawScore, tag, handle, playerId, friend }) as a frozen
- * GlobalEntry. `you` is true when the score's playerId is the signed-in
- * player's (an empty id never matches); in the friends scope every non-you
- * row is a friend. Remote values are untrusted (T-68-07): the rank must be an
- * integer from 1, the raw score a finite number, the handle a string, and
- * the tag goes through the never-throw decodeTag.
+ * isOwnRecord(score, mine, meId) — Phase 81 (BOARD-09, R-09): true when the
+ * listed `score` is the signed-in player's own leaderboard record, per the
+ * confirmed assumption_delta_decision (81-DEBUG.md's "## Assumption delta"):
+ * the player's own leaderboard score record (`mine`, loadPlayerScore's
+ * result for this same board/collection/allTime span) decides — by id when
+ * both `score` and `mine` carry a non-empty playerId, else by an exact
+ * rank + rawScore + tag match. `meId` (the signed-in account id) is only the
+ * fallback used when no own record came back at all (`mine` is not an
+ * object). Never throws.
  */
-export function toGlobalEntry(score, index, { meId = "", scope = "all" } = {}) {
+export function isOwnRecord(score, mine, meId) {
+  const s = score && typeof score === "object" ? score : {};
+  if (mine && typeof mine === "object") {
+    const sId = str(s.playerId);
+    const mId = str(mine.playerId);
+    if (sId !== "" && mId !== "") return sId === mId;
+    return (
+      rankOf(s.rank) !== null &&
+      rankOf(s.rank) === rankOf(mine.rank) &&
+      s.rawScore === mine.rawScore &&
+      str(s.tag) === str(mine.tag)
+    );
+  }
+  return str(s.playerId) !== "" && s.playerId === str(meId);
+}
+
+/**
+ * toGlobalEntry(score, index, { meId, mine, scope }) — one normalized Play
+ * Games score ({ rank, rawScore, tag, handle, playerId, friend }) as a
+ * frozen GlobalEntry. `you` is isOwnRecord(score, mine, meId) (Phase 81,
+ * BOARD-09); in the friends scope every non-you row is a friend. Remote
+ * values are untrusted (T-68-07): the rank must be an integer from 1, the
+ * raw score a finite number, the handle a string, and the tag goes through
+ * the never-throw decodeTag.
+ */
+export function toGlobalEntry(score, index, { meId = "", mine = null, scope = "all" } = {}) {
   const s = score && typeof score === "object" ? score : {};
   const playerId = str(s.playerId);
-  const me = str(meId);
-  const you = playerId !== "" && playerId === me;
+  const you = isOwnRecord(s, mine, meId);
   return Object.freeze({
     key: `g:${playerId || "anon"}:${index}`,
     rank: rankOf(s.rank),
@@ -214,7 +249,19 @@ export function createGlobalBoards({
     if (!top || typeof top !== "object" || top.ok !== true) return { ok: false };
     const mine = own && own.ok === true && own.score && typeof own.score === "object" ? own.score : null;
     const me = meId() || (mine ? str(mine.playerId) : "");
-    const entries = (Array.isArray(top.scores) ? top.scores : []).map((s, i) => toGlobalEntry(s, i, { meId: me, scope }));
+    // Phase 81 (BOARD-09, R-09/R-10): match every row against the player's
+    // own record (`mine`), not the account id alone, then keep only the
+    // FIRST match as YOU — an adjacency tie on rank+rawScore+tag must never
+    // mark two rows YOU (R-10: the same entry rendered once listed, once
+    // pinned, is exactly this kind of double-match).
+    let seenYou = false;
+    const entries = (Array.isArray(top.scores) ? top.scores : []).map((s, i) => {
+      const e = toGlobalEntry(s, i, { meId: me, mine, scope });
+      if (e.you !== true) return e;
+      if (seenYou) return Object.freeze({ ...e, you: false, friend: scope === "friends" ? true : e.friend });
+      seenYou = true;
+      return e;
+    });
     const you = mine ? Object.freeze({ ...toGlobalEntry(mine, 0, { meId: me, scope }), key: "g:you", you: true, friend: false }) : null;
     return { ok: true, entries, you, total: top.total };
   }
