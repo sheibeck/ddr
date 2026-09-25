@@ -27,9 +27,6 @@ import {
   modsClause,
   ROLL_COPY,
   toHitText,
-  facesRangeText,
-  dieText,
-  hitRangeText,
 } from "../../src/browser/rollRange.js";
 
 test("rangeText: a wide winning range reads lo–hi with the U+2013 en dash", () => {
