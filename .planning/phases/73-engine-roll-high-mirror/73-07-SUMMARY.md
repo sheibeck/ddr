@@ -178,3 +178,14 @@ On the Pixel 7 (once this wave's build is installed):
 ---
 *Phase: 73-engine-roll-high-mirror*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: engine/combat.js
+- FOUND: src/browser/eventNarration.js
+- FOUND: src/browser/narrationLines.js
+- FOUND: test/parity/roll-high-invariant.test.js
+- FOUND: .planning/phases/73-engine-roll-high-mirror/73-07-SUMMARY.md
+- FOUND: 1a2f05e (Task 1 commit)
+- FOUND: b42e262 (Task 2 commit)
+- FOUND: ba01cc6 (Task 3 commit)
