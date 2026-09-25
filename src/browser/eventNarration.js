@@ -452,20 +452,18 @@ export const EVENT_NARRATION = {
         : e.reason === "smoke"
           ? `<span class="hit">You leave through the smoke. Nobody follows.</span>`
           : `<span class="hit">You get clear.</span>`,
-  // Phase 42 (FLEE-02): the roll, every named modifier and the need,
+  // Phase 42 (FLEE-02): the roll, every named modifier and the range,
   // narrated BEFORE the outcome line (`fled`/`fleeFailed` keep their own
   // entries above/below). Reuses `modsText` (the same "Guard −1" format
   // foeToHitBreakdown's narration already uses) so every modifier surface
   // in the app speaks the same vocabulary. Null-safe (`e?.mods ?? []`) — the
   // voice scan invokes every builder with sparse event variants. Phase 73
-  // (ROLL-05): flee is already-high (unconverted this phase; see
-  // ROLL-LEDGER.md) — its own `roll`/`need` fields are untouched.
+  // (ROLL-05): flee is already roll-high — the raw d20 IS the roll, and its
+  // bonus is folded into the threshold (`atLeast`); `total`/`need` are gone.
   fleeRolled: (e) => {
     const roll = e?.roll ?? "?";
     const mods = e?.mods ?? [];
-    const total = e?.total ?? e?.roll ?? "?";
-    const need = e?.need ?? "?";
-    return `Flee: rolled <span class="roll">${roll}</span>${mods.length ? ` (${modsText(mods)})` : ""} — ${total} against ${need}.`;
+    return `Flee: rolled <span class="roll">${roll}</span> vs ${rangeText(e?.atLeast, e?.dieN)}${modsClause(mods)}.`;
   },
   fleeFailed: () => `<span class="miss">You do not make it.</span>`,
   // Phase 20 (D-12/D-14): the wilmsryVsMagical refusal is now reachable (a
@@ -485,9 +483,11 @@ export const EVENT_NARRATION = {
             ? `<span class="miss">They are not listening yet.</span> Fight! first.`
             : `<span class="miss">Not this time, not with them.</span>`,
   // Phase 20 (D-14): appends the fluency bonus (2 per point) whenever it is
-  // non-zero, e.g. "need 15 (+2 <the literal below>)".
+  // non-zero, e.g. "vs 8–20 (+2 for the tongue)". Phase 73 (ROLL-05): the
+  // range replaces the old bare `need` — the roll and the winning range both
+  // read roll-high now.
   parleyRolled: (e) =>
-    `Talk it down: <span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${e.fluency ? ` (+${e.fluency * 2} for the tongue)` : ""}.`,
+    `Talk it down: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${e.fluency ? ` (+${e.fluency * 2} for the tongue)` : ""}.`,
   // Phase 20 (D-06): a failed parley marks the group insulted for the rest
   // of the fight — unmistakable, never silent.
   parleyInsulted: () => `<span class="miss">You have made it personal.</span> They will be aiming with real intent from here on.`,

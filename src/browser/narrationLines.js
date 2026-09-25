@@ -48,6 +48,10 @@ import { ABILITY_BY_ID } from "../../content/abilities.js";
 // lets the rail's purchaseBagged line reuse the SAME formatter
 // eventNarration.js's Oracle line does, rather than restating it.
 import { upgradeWhyText } from "./upgradeWhy.js";
+// Phase 73 (ROLL-05): rollRange.js is the ONE place a winning range is
+// formatted ("16–20") — like upgradeWhy.js, it carries zero imports of its
+// own, so pulling it in here does not trip T-25-23's engine-import guard.
+import { rangeText, rollVsText } from "./rollRange.js";
 
 /**
  * TONES — the tone-family vocabulary every narration line (and the
@@ -759,7 +763,8 @@ function fleeChain(events, consumed) {
 /**
  * parleyChain(events, consumed) — `parleyRolled` + (`goldGained` why
  * "parley" | `parleyFailed` | `beastsSoothed`) fold into ONE line: the
- * outcome's own text plus `(${roll} vs ${need})`.
+ * outcome's own text plus `(${roll} vs ${range})` (Phase 73, ROLL-05: via
+ * rollVsText, roll-high).
  */
 function parleyChain(events, consumed) {
   const built = [];
@@ -774,7 +779,7 @@ function parleyChain(events, consumed) {
         consumed.add(i);
         consumed.add(j);
         const b = LINE_FOR[oe.type](oe);
-        built.push({ text: `${b.text} (${e.roll} vs ${e.need})`, tone: b.tone, priority: b.priority, idx: i });
+        built.push({ text: `${b.text} (${rollVsText(e.roll, e.atLeast, e.dieN)})`, tone: b.tone, priority: b.priority, idx: i });
         break;
       }
       if (oe.type === "parleyRolled") break;
@@ -1185,12 +1190,16 @@ export const LINE_FOR = {
   },
   // Phase 42 (FLEE-02): named modifiers replace the old flat "+bonus" —
   // null-safe (`e?.mods ?? []`) for the voice scan's sparse-event calls.
+  // Phase 73 (ROLL-05): flee is already roll-high — the roll and its
+  // winning range (bonus already folded into `atLeast`) replace the old
+  // roll/total/need triple.
   fleeRolled: (e) => {
-    const roll = e?.roll ?? "?";
     const mods = e?.mods ?? [];
-    const total = e?.total ?? e?.roll ?? "?";
-    const need = e?.need ?? "?";
-    return { text: `Flee: ${roll}${mods.length ? ` (${fleeModsText(mods)})` : ""} = ${total} vs ${need}`, tone: "beat", priority: PRIORITY.other };
+    return {
+      text: `Flee: ${rollVsText(e?.roll, e?.atLeast, e?.dieN)}${mods.length ? ` (${fleeModsText(mods)})` : ""}`,
+      tone: "beat",
+      priority: PRIORITY.other,
+    };
   },
   fleeFailed: () => ({ text: "You do not make it.", tone: "miss", priority: PRIORITY.you }),
   parleyRefused: (e) => {
@@ -1206,7 +1215,9 @@ export const LINE_FOR = {
     };
     return block(map[e?.reason] ?? "Not this time, not with them.");
   },
-  parleyRolled: (e) => ({ text: `Talk it down: ${e?.roll ?? "?"} vs ${e?.need ?? "?"}`, tone: "beat", priority: PRIORITY.other }),
+  // Phase 73 (ROLL-05): the winning range (roll-high) replaces the old bare
+  // `need` — see rollRange.js#rollVsText.
+  parleyRolled: (e) => ({ text: `Talk it down: ${rollVsText(e?.roll, e?.atLeast, e?.dieN)}`, tone: "beat", priority: PRIORITY.other }),
   parleyInsulted: () => ({ text: "You have made it personal.", tone: "hurt", priority: PRIORITY.them }),
   parleyExhausted: () => block("You already said your piece."),
   goldGained: (e) => {
