@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
@@ -653,18 +653,11 @@ export function playerStrike(state, rng, events = []) {
     // extra attack, haste, Ambidextrous, Last Stand), which keeps the
     // normal to-hit.
     let faces = a === 1 && frenzyFired ? Math.max(1, toHit(state) - 1) : toHit(state);
-    // Phase 40 (SPELL-01, Stupidity): a stupid foe is hit exactly like a
-    // dozing one — it never reacts, so the same 5-winning-faces floor applies.
-    if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 winning faces to hit a dozing (or stupid) creature
-    if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
-    if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // one more winning face to strike
-    if (t.sp && t.sp.magicOnly && !c.magicWpn) faces = 0; // only magic touches it
-    // Phase 72 (ROLL-01, finding F3, user ruling 2026-09-24): the Shadow's
-    // "only a dagger or magic touches it" (sp.daggerOnly) becomes real — a
-    // strike needs a dagger or a magic weapon, otherwise the target is
-    // untouchable, exactly like magicOnly above. DECLARED CANON DIVERGENCE:
-    // the prototype leaves daggerOnly inert (no engine site ever read it).
-    if (t.sp && t.sp.daggerOnly && !c.magicWpn && c.weapon !== "Dagger") faces = 0; // only a dagger or magic touches it
+    // Phase 74 (ROLL-02): the five per-target terms (dozing/stupid floor,
+    // sp.toHit cap, sp.fast, magicOnly, daggerOnly) now live in the ONE
+    // helper engine/derived.js#targetStrikeFaces — see its JSDoc for the
+    // full per-term rationale (Phase 40 Stupidity, Phase 72 F3 daggerOnly).
+    faces = targetStrikeFaces(c, t, faces);
     // Phase 38 (ABIL-02, need_shift_spec): Overhead Blow's party-agnostic
     // "you need two better to land it" self-penalty — a transient descriptor
     // term, zero draws, applied BEFORE Afraid so Afraid's own penalty stacks
@@ -1056,32 +1049,11 @@ function pursuitStrike(state, rng, events) {
   const c = state.c;
   const C = state.combat;
   const dieN = foeDie(c, pursuer);
-  // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and now
-  // sits above the strike draw, since atLeastFor(faces, dieN) must be ready
-  // before rollCheck fires. `need` -> `faces`.
-  let faces = foeToHitVs(state);
-  // Phase 25 (FEED-01, additive payload): the passive breakdown, plus this
-  // site's own post-mods (blind/penalty/insulted) recorded the same way —
-  // narration-only, zero new draws.
-  const mods = foeToHitBreakdown(state).mods.slice();
-  if (pursuer.blind) {
-    const before = faces;
-    faces = 1;
-    if (faces !== before) mods.push({ name: "blind", delta: faces - before });
-  }
-  if (C.foeToHitPenalty) {
-    const before = faces;
-    faces = Math.min(faces, C.foeToHitPenalty);
-    if (faces !== before) mods.push({ name: "penalty", delta: faces - before });
-  }
-  if (C.parleyInsulted) {
-    // PARLEY-02 / D-06 / D-20 (review WR-01): the parting strike is a foe
-    // swing too — post-draw, zero extra draws. Insult is the last term
-    // (Phase 72 ROLL-01 (a)).
-    const before = faces;
-    faces += 1;
-    mods.push({ name: "insulted", delta: faces - before });
-  }
+  // Phase 74 (ROLL-02): the base need, the passive breakdown and the
+  // blind/penalty/insulted post-mods chain now live in the ONE helper
+  // engine/derived.js#foeSwingVsHero — see its JSDoc for the full ordering
+  // rationale (Phase 72 ROLL-01 (a): insulted is applied last).
+  const { faces, mods } = foeSwingVsHero(state, pursuer);
   // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit die,
   // in the same draw position the previous draw sat.
   const check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
@@ -2882,30 +2854,11 @@ export function foeTurn(state, rng, events = []) {
       }
 
       const dieN = foeDie(c, f);
-      // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and
-      // now sits above the strike draw, since atLeastFor(faces, dieN) must be
-      // ready before rollCheck fires. `need` -> `faces`.
-      let faces = foeToHitVs(state);
-      // Phase 25 (FEED-01, additive payload): the passive breakdown, plus
-      // this site's own post-mods recorded the same way — narration only.
-      const mods = foeToHitBreakdown(state).mods.slice();
-      if (f.blind) {
-        const before = faces;
-        faces = 1;
-        if (faces !== before) mods.push({ name: "blind", delta: faces - before });
-      }
-      if (C.foeToHitPenalty) {
-        const before = faces;
-        faces = Math.min(faces, C.foeToHitPenalty);
-        if (faces !== before) mods.push({ name: "penalty", delta: faces - before });
-      }
-      if (C.parleyInsulted) {
-        // PARLEY-02 / D-06 / D-20: same placement, same reasoning. Insult is
-        // the last term (Phase 72 ROLL-01 (a)).
-        const before = faces;
-        faces += 1;
-        mods.push({ name: "insulted", delta: faces - before });
-      }
+      // Phase 74 (ROLL-02): the base need, the passive breakdown and the
+      // blind/penalty/insulted post-mods chain now live in the ONE helper
+      // engine/derived.js#foeSwingVsHero — see its JSDoc for the full
+      // ordering rationale (Phase 72 ROLL-01 (a): insulted is applied last).
+      const { faces, mods } = foeSwingVsHero(state, f);
       // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit
       // die, in the same draw position the previous draw sat.
       const check = rollCheck(rng, dieN, atLeastFor(faces, dieN));

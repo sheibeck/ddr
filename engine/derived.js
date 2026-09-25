@@ -1351,6 +1351,83 @@ export function foeToHitBreakdown(state, vs = "hero") {
 }
 
 /**
+ * targetStrikeFaces(c, t, faces) — Phase 74 (ROLL-02): the FIVE per-target
+ * terms `engine/combat.js#playerStrike` applies to its base `faces` before
+ * Overhead Blow/Afraid, lifted verbatim (same order, same floors) so the
+ * display reads the same rule the engine rolls against. `c` is the wielder:
+ * this reads only `c.magicWpn` and `c.weapon`, never mutates `c`/`t`.
+ *
+ * In order: a dozing (`t.asleep > 0`) or stupid target floors `faces` at 5
+ * (Phase 40, SPELL-01, Stupidity — p.27: 5 winning faces to hit a dozing or
+ * stupid creature); `t.sp.toHit` caps `faces` down (hard to hit); `t.sp.fast`
+ * removes one winning face (floor 1); `t.sp.magicOnly` without `c.magicWpn`
+ * zeroes `faces` (untouchable without a magic weapon); `t.sp.daggerOnly`
+ * without `c.magicWpn` and without `c.weapon === "Dagger"` also zeroes
+ * `faces` — Phase 72 (ROLL-01, finding F3, user ruling 2026-09-24):
+ * DECLARED CANON DIVERGENCE, the prototype leaves `daggerOnly` inert (no
+ * engine site ever read it before Phase 72). A plain `t` (no matching `sp`
+ * fields) returns `faces` unchanged. Pure, zero rng.
+ */
+export function targetStrikeFaces(c, t, faces) {
+  if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 winning faces to hit a dozing (or stupid) creature
+  if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
+  if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // one more winning face to strike
+  if (t.sp && t.sp.magicOnly && !c.magicWpn) faces = 0; // only magic touches it
+  if (t.sp && t.sp.daggerOnly && !c.magicWpn && c.weapon !== "Dagger") faces = 0; // only a dagger or magic touches it
+  return faces;
+}
+
+/**
+ * heroStrikeFacesVs(state, t) — Phase 74 (ROLL-02): the winning faces of the
+ * hero's NORMAL swing against `t` right now — `afraidNeed(state,
+ * targetStrikeFaces(state.c, t, toHit(state)))`, exactly the chain
+ * `playerStrike` runs for its base (non-frenzy, non-ability) swing. The
+ * frenzy swing (Fridgian, second attack) and ability descriptors (Overhead
+ * Blow) are deliberately excluded — they apply only to a specific attack,
+ * not to "right now" odds a display would show before a swing is chosen.
+ * Pure, zero rng.
+ */
+export function heroStrikeFacesVs(state, t) {
+  return afraidNeed(state, targetStrikeFaces(state.c, t, toHit(state)));
+}
+
+/**
+ * foeSwingVsHero(state, f) — Phase 74 (ROLL-02): the foe `f`'s winning faces
+ * and mods list for its swing against the hero, built exactly as
+ * `engine/combat.js#pursuitStrike` and `foeTurn`'s hero branch build them —
+ * base `foeToHitVs(state)`, mods copied from `foeToHitBreakdown(state).mods`,
+ * then blind (override to 1), the combat's `foeToHitPenalty` cap, and the
+ * insult (+1, applied LAST — Phase 72 ROLL-01 (a)) — recording `{ name,
+ * delta }` entries named "blind"/"penalty"/"insulted", pushed only when the
+ * value actually changed for blind/penalty (insulted always pushes, matching
+ * both call sites). Deltas are signed for the FOE (the roller), same
+ * convention as `foeToHitBreakdown`. `state.combat` may be missing/null — the
+ * two combat-wide terms (penalty, insulted) are then skipped and this never
+ * throws. Returns `{ faces, mods }`. Pure, zero rng, never mutates `state`/`f`.
+ */
+export function foeSwingVsHero(state, f) {
+  let faces = foeToHitVs(state);
+  const mods = foeToHitBreakdown(state).mods.slice();
+  if (f && f.blind) {
+    const before = faces;
+    faces = 1;
+    if (faces !== before) mods.push({ name: "blind", delta: faces - before });
+  }
+  const C = state.combat;
+  if (C && C.foeToHitPenalty) {
+    const before = faces;
+    faces = Math.min(faces, C.foeToHitPenalty);
+    if (faces !== before) mods.push({ name: "penalty", delta: faces - before });
+  }
+  if (C && C.parleyInsulted) {
+    const before = faces;
+    faces += 1;
+    mods.push({ name: "insulted", delta: faces - before });
+  }
+  return { faces, mods };
+}
+
+/**
  * weaponDamage(c, rng) — a single strike's damage. The weapon's dice notation
  * is resolved here via the injected rng (the ONLY randomness in this module),
  * so this stays deterministic given (c, rng). Ports mazeworld.html
