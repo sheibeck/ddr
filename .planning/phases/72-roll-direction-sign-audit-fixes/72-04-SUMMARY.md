@@ -151,3 +151,15 @@ On the Pixel 7, use Smoke in a fight after a failed parley and confirm the Smoke
 ---
 *Phase: 72-roll-direction-sign-audit-fixes*
 *Completed: 2026-09-24*
+
+## Self-Check: PASSED
+
+- FOUND: engine/derived.js
+- FOUND: engine/combat.js
+- FOUND: test/parity/FIXTURE-INVENTORY.md
+- FOUND: test/parity/divergence-records.test.js
+- FOUND: .planning/phases/72-roll-direction-sign-audit-fixes/72-04-SUMMARY.md
+- FOUND commit c8cd666 (Task 1)
+- FOUND commit 6484f48 (Task 2)
+- FOUND commit cae934e (Task 3)
+- FOUND commit 99cb26d (SUMMARY commit)
