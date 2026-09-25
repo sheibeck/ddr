@@ -36,7 +36,7 @@
 
 import { newRun, addPartyMember } from "../../../engine/state.js";
 import { rollCharacter } from "../../../engine/character.js";
-import { BESTIARY } from "../../../content/index.js";
+import { BESTIARY, ARMORS } from "../../../content/index.js";
 
 /**
  * probeRng({ face, isProbe, fill, pick }) — a deterministic rng surface that
@@ -325,4 +325,17 @@ export function withMember(state, { cls, sub, race, seed = 2 } = {}) {
   if (member.level === undefined) member.level = 1;
   addPartyMember(state, member);
   return state.party.length - 1;
+}
+
+/**
+ * armorFrom(name) — 72-03: a real `content/armors.js#ARMORS` row, looked up
+ * by name — the exact fields `engine/items.js#takeItem`'s armor branch
+ * copies onto `c` (`armor`/`ar`/`armorMin`/`armorMax`/`armorWP`). A row's own
+ * content values, never a hand-typed roll-convention number. Throws on an
+ * unknown name (a typo here must fail loudly).
+ */
+export function armorFrom(name) {
+  const row = ARMORS.find((a) => a.name === name);
+  if (!row) throw new Error(`armorFrom: no "${name}" in ARMORS`);
+  return row;
 }
