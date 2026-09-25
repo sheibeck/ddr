@@ -387,7 +387,9 @@ test("CANON-05: a slow foe adds exactly one strike die — lethal 7 vs baseline 
   const events = playerStrike(state, rng, []);
   assert.equal(rng.draws, 7, "one extra strike die vs the 6-draw plain-foe baseline");
   const struck = events.find((e) => e.type === "struck");
-  assert.equal(struck.roll, 2);
+  // raw draws 7, 2 mirror to faces 14, 19 on a d20 — the better (higher) of
+  // the two is kept, byte-identical to the old "keep the lower raw face" rule.
+  assert.equal(struck.roll, 19);
 });
 
 test("CANON-05: a slow all-miss action draws 3 vs the non-slow 2", () => {

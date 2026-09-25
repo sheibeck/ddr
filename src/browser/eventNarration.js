@@ -54,6 +54,11 @@ import { slotWord, initiativeVerdictText } from "./narrationLines.js";
 // it here does not violate this module's presentation-only contract
 // (upgradeWhy.js carries no engine/ import of its own).
 import { upgradeWhyText } from "./upgradeWhy.js";
+// Phase 73 (ROLL-05): the ONE place a roll-high winning range is written —
+// every event-driven roll line this plan converts (strikeMissed/struck; the
+// foe-side/thrown lines convert in 73-05/73-07) formats its range through
+// rangeText here, so no two surfaces ever write a range differently.
+import { rangeText } from "./rollRange.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -78,14 +83,27 @@ function soakedText(soaked) {
   return parts.length ? ` (${parts.join(", ")})` : "";
 }
 
-/** needModsText(mods) — "Guard −1" / "Agility −1, Guard −1" */
-function needModsText(mods) {
+/** modsText(mods) — "Guard −1" / "Agility −1, Guard −1" (Phase 73, ROLL-05:
+ * renamed from needModsText — the values are unchanged, still signed bonuses
+ * to the roller; only the name lost its roll-under "need" framing). */
+function modsText(mods) {
   return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
 }
 
-/** needModsClause(mods, need) — " (needs 4: Guard −1)" appended right after "vs N"; "" when absent. */
+/** needModsClause(mods, need) — " (needs 4: Guard −1)" appended right after
+ * "vs N"; "" when absent. Phase 73 (ROLL-05): kept AS-IS for the foe-side and
+ * thrown-spell lines below, which still carry the old roll-under `need`
+ * field until 73-05/73-07 convert them. */
 function needModsClause(mods, need) {
-  return mods && mods.length ? ` (needs ${need ?? "?"}: ${needModsText(mods)})` : "";
+  return mods && mods.length ? ` (needs ${need ?? "?"}: ${modsText(mods)})` : "";
+}
+
+/** modsClause(mods) — " (Guard −1, insulted +1)" appended right after the
+ * roll-high range ("vs 16–20"); "" when absent. Phase 73 (ROLL-05): the
+ * roll-high counterpart of needModsClause, used by every converted line —
+ * the threshold is already visible in the range, so no "needs N:" prefix. */
+function modsClause(mods) {
+  return mods && mods.length ? ` (${modsText(mods)})` : "";
 }
 
 // Phase 41 (TERR-05): the short `trigger` key engine/phobias.js pushes on
@@ -384,7 +402,7 @@ export const EVENT_NARRATION = {
   strikeMissed: (e) =>
     e.untouchable
       ? `<span class="miss">${e.target ?? "It"} cannot be touched like that.</span>`
-      : `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
+      : `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
   backstabDenied: () => `<span class="miss">Heavy armor gives you away.</span>`,
   stealthStrike: () => `<span class="hit">They never saw you. Critical.</span>`,
@@ -404,10 +422,11 @@ export const EVENT_NARRATION = {
       silentStep: "Not a sound. Critical!",
     };
     const critText = e.critical ? `<span class="hit">${CRIT_BY_TEXT[e.critBy] ?? "Critical!"}</span> ` : "";
-    // Phase 31 (Afraid): needModsClause names the -3 afraid penalty when
+    // Phase 31 (Afraid): modsClause names the -3 afraid penalty when
     // present; `e.afraid` appends the pulled-blow line (absent for every
-    // non-afraid strike, byte-identical to before).
-    return `<span class="roll">${e.roll ?? "?"}</span> vs ${e.need ?? "?"}${needModsClause(e.needMods, e.need)}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
+    // non-afraid strike, byte-identical to before). Phase 73 (ROLL-05): the
+    // range replaces the old "vs N" single number.
+    return `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
   },
   foeRevived: (e) => `<span class="miss">${e.name ?? "It"} gets back up.</span>`,
   foeKilled: (e) => `<span class="hit">${e.name ?? "It"} falls.</span> +<span class="roll">${e.spGained ?? 0}</span> XP.`,
@@ -443,16 +462,18 @@ export const EVENT_NARRATION = {
           : `<span class="hit">You get clear.</span>`,
   // Phase 42 (FLEE-02): the roll, every named modifier and the need,
   // narrated BEFORE the outcome line (`fled`/`fleeFailed` keep their own
-  // entries above/below). Reuses `needModsText` (the same "Guard −1" format
+  // entries above/below). Reuses `modsText` (the same "Guard −1" format
   // foeToHitBreakdown's narration already uses) so every modifier surface
   // in the app speaks the same vocabulary. Null-safe (`e?.mods ?? []`) — the
-  // voice scan invokes every builder with sparse event variants.
+  // voice scan invokes every builder with sparse event variants. Phase 73
+  // (ROLL-05): flee is already-high (unconverted this phase; see
+  // ROLL-LEDGER.md) — its own `roll`/`need` fields are untouched.
   fleeRolled: (e) => {
     const roll = e?.roll ?? "?";
     const mods = e?.mods ?? [];
     const total = e?.total ?? e?.roll ?? "?";
     const need = e?.need ?? "?";
-    return `Flee: rolled <span class="roll">${roll}</span>${mods.length ? ` (${needModsText(mods)})` : ""} — ${total} against ${need}.`;
+    return `Flee: rolled <span class="roll">${roll}</span>${mods.length ? ` (${modsText(mods)})` : ""} — ${total} against ${need}.`;
   },
   fleeFailed: () => `<span class="miss">You do not make it.</span>`,
   // Phase 20 (D-12/D-14): the wilmsryVsMagical refusal is now reachable (a

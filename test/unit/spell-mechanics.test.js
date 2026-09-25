@@ -430,7 +430,8 @@ test("Stupidity: playerStrike floors need at 5 vs a stupid foe (the same floor a
   const events = playerStrike(state, looseRng([5], 20), []);
   const struck = events.find((e) => e.type === "struck");
   assert.ok(struck, "a stupid foe is struck at the floored need");
-  assert.equal(struck.need, 5);
+  assert.equal(struck.atLeast, 16);
+  assert.equal(struck.dieN, 20);
 });
 
 test("Shrink: a shrunk foe's hero-target melee damage is halved, and quartered when also weakened", () => {

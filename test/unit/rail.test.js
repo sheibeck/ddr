@@ -205,14 +205,20 @@ test("RAIL_DIRECT is a strict subset of ORACLE_ONLY and disjoint from LINE_FOR's
 // (cause-first rewrite, see docs/CLARITY.md) — it no longer carries dice, so
 // rollLineFor must yield null for it; `struck` (a genuine dice roll) takes
 // over as the roll-span example.
-test("rollLineFor: narration roll span first, else numeric event.roll(+need)(+hurt), else null — hurt alone never fabricates", () => {
+test("rollLineFor: narration roll span first, else numeric event.roll(+range)(+hurt), else null — hurt alone never fabricates", () => {
   assert.equal(rollLineFor({ type: "trapSprung", name: "Pit", dmg: 4 }, narrateEvent), null);
+  // Phase 73 (ROLL-05): the old {roll:4, need:5} shape mirrors to
+  // {roll:17, atLeast:16, dieN:20} on a d20 — struck now carries a range.
   assert.equal(
-    rollLineFor({ type: "struck", roll: 4, need: 5, target: "Rat", dmg: 3 }, narrateEvent),
-    "4 vs 5. You hit Rat for 3 hp."
+    rollLineFor({ type: "struck", roll: 17, atLeast: 16, dieN: 20, target: "Rat", dmg: 3 }, narrateEvent),
+    "17 vs 16–20. You hit Rat for 3 hp."
   );
   assert.equal(rollLineFor({ type: "fellClimbing", hurt: 3 }, narrateEvent), null);
-  assert.equal(rollLineFor({ type: "fellClimbing", hurt: 3, roll: 7, need: 4 }, () => ""), "roll 7 · 4 to clear · −3 hp");
+  // (b): atLeast+dieN both numbers appends the roll-high range.
+  assert.equal(rollLineFor({ type: "fellClimbing", hurt: 3, roll: 7, atLeast: 4, dieN: 20 }, () => ""), "roll 7 vs 4–20 · −3 hp");
+  // Phase 73 (ROLL-05): the old `need` field is no longer honoured at all —
+  // an unconverted event's stray `need` produces no clause.
+  assert.equal(rollLineFor({ type: "fellClimbing", hurt: 3, roll: 7, need: 4 }, () => ""), "roll 7 · −3 hp");
   assert.equal(rollLineFor({ type: "x", roll: 12 }, () => ""), "roll 12");
   assert.equal(rollLineFor({ type: "x", hurt: 3 }, () => ""), null);
   assert.equal(rollLineFor(null, () => ""), null);

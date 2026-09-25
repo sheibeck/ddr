@@ -478,14 +478,16 @@ test("applyFoeDamageToPlayer: magic plate (Cloak of Armor) never wears — wear:
 
 // --- 6. struck: need + critBy --------------------------------------------
 
-test("playerStrike: struck carries need = toHit(state); critBy absent when not critical (Soldier's noCrit)", () => {
+test("playerStrike: struck carries atLeast/dieN derived from toHit(state); critBy absent when not critical (Soldier's noCrit)", () => {
   const state = fixedState({ c: { sub: "Soldier" } });
   const foe = fixedFoe({ wp: 100, maxWP: 100 });
   state.combat = fixedCombat([foe]);
-  const need = toHit(state);
-  const events = playerStrike(state, fakeRng([need, 4, ...FILL]), []);
+  const faces = toHit(state);
+  assert.equal(faces, 5, "sanity: a Fighter/Soldier needs 5 winning faces unafraid");
+  const events = playerStrike(state, fakeRng([faces, 4, ...FILL]), []);
   const struck = events.find((e) => e.type === "struck");
-  assert.equal(struck.need, need);
+  assert.equal(struck.dieN, 20);
+  assert.equal(struck.atLeast, 16, "atLeastFor(5, 20) = 16");
   assert.equal("critBy" in struck, false);
 });
 
@@ -681,11 +683,13 @@ test("EVENT_NARRATION.struckByFoe: soaked + needMods render; the unflagged sente
 });
 
 test("EVENT_NARRATION.strikeMissed: appends the quip after the roll and the plain miss sentence; absent quip renders identically to before", () => {
-  const withQuip = EVENT_NARRATION.strikeMissed({ type: "strikeMissed", target: "Dante", roll: 7, need: 5, quip: "Wide. Impressively wide." });
-  assert.match(withQuip, /<span class="roll">7<\/span> vs 5\. .*You miss Dante\.<\/span> Wide\. Impressively wide\.$/);
+  // Phase 73 (ROLL-05): the old {roll:7, need:5} shape mirrors to
+  // {roll:7, atLeast:16, dieN:20} — atLeastFor(5, 20) = 16.
+  const withQuip = EVENT_NARRATION.strikeMissed({ type: "strikeMissed", target: "Dante", roll: 7, atLeast: 16, dieN: 20, quip: "Wide. Impressively wide." });
+  assert.match(withQuip, /<span class="roll">7<\/span> vs 16–20\. .*You miss Dante\.<\/span> Wide\. Impressively wide\.$/);
 
-  const noQuip = EVENT_NARRATION.strikeMissed({ type: "strikeMissed", target: "Dante", roll: 7, need: 5 });
-  assert.equal(noQuip, '<span class="roll">7</span> vs 5. <span class="miss">You miss Dante.</span>');
+  const noQuip = EVENT_NARRATION.strikeMissed({ type: "strikeMissed", target: "Dante", roll: 7, atLeast: 16, dieN: 20 });
+  assert.equal(noQuip, '<span class="roll">7</span> vs 16–20. <span class="miss">You miss Dante.</span>');
 });
 
 test("EVENT_NARRATION: rested/scrollRefused/equipRejected render the new fields in voice", () => {

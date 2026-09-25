@@ -259,14 +259,15 @@ test("abilityStrike: finishUnder fires on a noCrit sub too (Soldier) — the fin
 
 // --- 5. dmgMul / needShift (Overhead Blow) -----------------------------------
 
-test("abilityStrike: needShift widens the strikeMissed need and names the overhead needMods entry", () => {
-  const state = fixedState({ c: fixedFighter({ sub: "Knight" }) }); // need 5
+test("abilityStrike: needShift widens the strikeMissed atLeast and names the overhead mods entry", () => {
+  const state = fixedState({ c: fixedFighter({ sub: "Knight" }) }); // 5 faces
   state.combat = fixedCombat([fixedFoe()], { abilityStrike: { key: "overheadBlow", dmgMul: 2, needShift: -2 } });
   const events = playerStrike(state, fakeRng([4, ...FILL]), []);
   const missed = events.find((e) => e.type === "strikeMissed");
-  assert.ok(missed, "roll 4 vs a shifted need of 3 should miss");
-  assert.equal(missed.need, 3);
-  assert.ok(missed.needMods.some((m) => m.name === "overhead" && m.delta === -2));
+  assert.ok(missed, "the mirrored face (17) vs a shifted atLeast of 18 should miss");
+  assert.equal(missed.atLeast, 18);
+  assert.equal(missed.dieN, 20);
+  assert.ok(missed.mods.some((m) => m.name === "overhead" && m.delta === -2));
   assert.equal(missed.via, "overheadBlow");
 });
 
@@ -292,10 +293,11 @@ test("abilityStrike: needShift floors at 1 rather than reviving an untouchable/n
   const events = playerStrike(state, fakeRng([1, 4, ...FILL]), []);
   const struck = events.find((e) => e.type === "struck");
   assert.ok(struck);
-  assert.equal(struck.need, 1);
+  assert.equal(struck.atLeast, 20);
+  assert.equal(struck.dieN, 20);
 });
 
-test("abilityStrike: needShift never revives a magicOnly foe with no magic weapon (need stays 0)", () => {
+test("abilityStrike: needShift never revives a magicOnly foe with no magic weapon (atLeast stays out of reach)", () => {
   const state = fixedState({ c: fixedFighter({ sub: "Knight", magicWpn: 0 }) });
   const foe = fixedFoe({ sp: { magicOnly: true } });
   state.combat = fixedCombat([foe], { abilityStrike: { key: "overheadBlow", needShift: -2 } });
@@ -303,7 +305,8 @@ test("abilityStrike: needShift never revives a magicOnly foe with no magic weapo
   const missed = events.find((e) => e.type === "strikeMissed");
   assert.ok(missed);
   assert.equal(missed.untouchable, true);
-  assert.equal(missed.need, 0);
+  assert.equal(missed.atLeast, 21);
+  assert.equal(missed.dieN, 20);
 });
 
 // --- 6. attacks (Last Stand / frenzy Math.max) -------------------------------

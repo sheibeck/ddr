@@ -21,6 +21,7 @@
 // import this seam; importing back would create a cycle).
 
 import { DAMAGE_MULTIPLIERS } from "../content/index.js";
+import { rollCheck, atLeastFor, rollFields } from "./dice.js";
 
 /**
  * multiplierFor(source, foe) — CANON-04 (D-11) pure lookup over
@@ -87,16 +88,19 @@ export function damageFoe(state, foe, rawDmg, source, rng, events) {
   // ignores the soak (D-07).
   const physical = source.kind !== "spell";
   //
-  // DETERMINISM GATE: this `rng.d(20)` is the module's ONLY rng draw, and it
-  // fires ONLY when ALL THREE of these hold: (a) the damage is physical
-  // (not a spell), (b) the source is not a critical hit, and (c) the foe
-  // has `sp.ar > 0`. Every fixture-exposed creature (Bat/Rat, Shriek,
-  // Viper, Dante) lacks `sp.ar`, so this branch draws zero rng for them —
-  // the parity suite stays byte-identical with no call site routed here.
+  // DETERMINISM GATE: this rollCheck is the module's ONLY rng draw (one
+  // rng.d(20), read roll-high through the ONE check helper, Phase 73
+  // ROLL-05), and it fires ONLY when ALL THREE of these hold: (a) the
+  // damage is physical (not a spell), (b) the source is not a critical
+  // hit, and (c) the foe has `sp.ar > 0`. Every fixture-exposed creature
+  // (Bat/Rat, Shriek, Viper, Dante) lacks `sp.ar`, so this branch draws
+  // zero rng for them — the parity suite stays byte-identical with no call
+  // site routed here.
+  let soakCheck = null;
   if (physical && !source.crit && foe.sp && foe.sp.ar > 0) {
-    const roll = rng.d(20);
-    if (roll <= foe.sp.ar) {
-      events.push({ type: "foeArmorSoaked", name: foe.name, amount: dmg });
+    soakCheck = rollCheck(rng, 20, atLeastFor(foe.sp.ar, 20));
+    if (soakCheck.ok) {
+      events.push({ type: "foeArmorSoaked", name: foe.name, amount: dmg, ...rollFields(soakCheck) });
       return { applied: 0, soaked: true, mult };
     }
   }
@@ -104,6 +108,10 @@ export function damageFoe(state, foe, rawDmg, source, rng, events) {
   // (4) The blow lands. The seam pushes no event of its own here — callers
   // own their own damage event (struck/allyStruck/spellHit/...) and should
   // skip pushing it when `soaked` came back true (18-03/18-04 wire that).
+  // Phase 73 (ROLL-05): when the foe's armor die WAS drawn and failed, the
+  // failed soak triple rides along on `soak` so a landed-blow caller (e.g.
+  // playerStrike's struck) can still report it; absent when no soak draw
+  // happened at all (no sp.ar, a crit, or a spell).
   foe.wp -= dmg;
-  return { applied: dmg, soaked: false, mult };
+  return { applied: dmg, soaked: false, mult, ...(soakCheck ? { soak: rollFields(soakCheck) } : {}) };
 }
