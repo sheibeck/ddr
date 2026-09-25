@@ -1663,6 +1663,32 @@ export function canLearn(sub, sp) {
 }
 
 /**
+ * healMulFor(sub) — RULES-03 (Phase 75, user 2026-09-25): reads the caster's
+ * own healMul chart flag (a data-driven multiplier, never a name check).
+ * Only the Summoner row carries one (0.5); every other row — and an
+ * unknown/undefined sub — defaults to 1 (no change). A non-finite or
+ * non-positive value on the row (should never happen) also falls back to 1.
+ */
+export function healMulFor(sub) {
+  const mul = MU_CHART[sub]?.healMul;
+  return Number.isFinite(mul) && mul > 0 ? mul : 1;
+}
+
+/**
+ * applyCasterHealMul(sub, amount) — RULES-03 (Phase 75): applies healMulFor
+ * LAST, after every other modifier (the Cleric +3 bonus, a heal2x race's
+ * doubling) has already been folded into `amount`. At mul === 1 the amount
+ * passes through unchanged (byte-identical to every non-Summoner caster
+ * today). Otherwise floors the product and guarantees a minimum of 1 — a
+ * Summoner's own healing spell can never restore zero.
+ */
+export function applyCasterHealMul(sub, amount) {
+  const mul = healMulFor(sub);
+  if (mul === 1) return amount;
+  return Math.max(1, Math.floor(amount * mul));
+}
+
+/**
  * spellLevelFor(sub, sp) — DELIBERATE RULES CHANGE (Phase 23, 2026-09-14,
  * IDENT-03/IDENT-04): the EFFECTIVE spell level to use for a (sub, spell)
  * pair's level-gate check, reading content/spell-level-overrides.js's

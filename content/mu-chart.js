@@ -30,10 +30,15 @@ export const MU_CHART = {
   },
   // RULES-03, Phase 75, user 2026-09-25: the offense gate is removed — a
   // level-1 Summoner rolls and casts offense normally. The trade-off is the
-  // summon backfire (one Summon in eight turns turns on you), and, from
-  // 75-10, halved healing.
+  // summon backfire (one Summon in eight turns turns on you), plus (75-10)
+  // a healing weakness: healMul is read by engine/derived.js#healMulFor,
+  // which halves (floor, minimum 1) any healing-school spell the Summoner
+  // itself casts (Heal/Major Heal, and its own Regeneration tick). This is
+  // a chart data flag, never a name check — no other row carries healMul,
+  // so healMulFor(sub) defaults to 1 for everyone else.
   "Summoner": {
     offense: 0, protection: 2, healing: 0, divination: 4, special: 1, illusion: null,
+    healMul: 0.5,
   },
   "Apprentice": {
     offense: 0, protection: 0, healing: 0, divination: 0, special: 0, illusion: 0,
