@@ -1,18 +1,27 @@
 # v2.1 autonomous-run resume point
 
-**Updated:** 2026-09-25 ~14:10 local, Phase 74 wave 1 in flight, Phase 75 planner in flight.
+**Updated:** 2026-09-25 ~15:45 local, Phase 75 wave 1 in flight, Phase 80 planner in flight.
 
 ## Where the run is
 - `/gsd-autonomous` is running milestone v2.1.
-- Phases 72, 81 and 73 are COMPLETE and pushed.
-- **Phase 74 is EXECUTING.** It has 8 plans in 4 waves: W1 is 74-01 and 74-02; W2 is 74-03, 74-04 and 74-05; W3 is 74-06 and 74-07; W4 is 74-08. The plans are committed (7cb462b and 7053e67).
-  - Wave 1 was dispatched at base 7053e67. Its manifest is `<scratchpad>/wave-74-1.json`.
-  - After a compact, check `git worktree list` and the `agent-*` branches for SUMMARYs. Merge each finished wave with `worktree.cleanup-wave`, run `npm test`, run `roadmap.update-plan-progress`, then dispatch the next wave. Copy the executor prompt pattern from `<scratchpad>/last-executor-prompt.txt`.
-  - The orchestrator ACCEPTED 74-01 editing engine/derived.js and combat.js as a byte-identical extraction, as the planner proposed.
-- **IN FLIGHT: the Phase 75 planner**, a background gsd-planner in NO-COMMIT mode. When it finishes, run the gates (requirements, decision coverage, plan-structure), then `state.planned-phase 75`, `annotate-dependencies`, and commit `docs(75): create phase plan`. Execute 75 only after 74 is complete.
-- **Remaining order:** 74, 75, 75.1, 75.2, 75.3, 76, 77, 78, 79, 80 (with a researcher), then the lifecycle.
-- The edge-probe reports are pre-built: `<scratchpad>/cov<phase>.json` for 75, 75.1, 75.2, 75.3 and 76-80.
-- Every phase has a committed CONTEXT.md, so every one skips discuss.
+- Phases 72, 81, 73 and **74 are COMPLETE and pushed**. Master was 5,986/5,986 green at 4076858.
+- **Phase 75 is EXECUTING.** It has 13 plans in 6 waves: W1 is 01-04, W2 is 05-06, W3 is 07-08, W4 is 09-10, W5 is 11-12, and W6 is 13. The plans are committed (29c950c).
+  - Wave 1 was dispatched at base 4076858. Its manifest is `<scratchpad>/wave-75-1.json`, and it is watched by `<scratchpad>/watch.sh <base> <stall-min> <ids>`.
+  - 75-01 is the RULES-06 root-cause debug session. 75-08 (the fix) depends on its documented Fix inputs.
+  - Readouts go to `tools/readouts/75-NN-{before,after}.txt`. Only 75-13 writes `docs/DIFFICULTY-RETUNE.md`.
+  - After a compact:
+    1. Check `git worktree list` and the `agent-*` branches for SUMMARYs.
+    2. Merge each finished wave with `worktree.cleanup-wave`. It blocks on worktree-only line-ending noise in the shell snapshots, so run `git checkout -- test/unit/fixtures/shell-snapshots/` in the worktree first. If it reports branch_mismatch on a rerun, merge manually.
+    3. Run `npm test`, then `roadmap.update-plan-progress`, then dispatch the next wave. The prompt pattern is in `<scratchpad>/last-executor-prompt.txt`.
+- **Phase 80 research is committed** (619dd4c). **IN FLIGHT: the Phase 80 planner** (no-commit mode). When it returns, run the gates, `annotate-dependencies 80`, and commit `docs(80): create phase plan`. Phase 80 executes LAST.
+- Accepted Phase 75 planner calls:
+  - RULES-03 legality = the school gate only; canon grants are kept.
+  - The cache pays 100 × depth.
+  - A wielded staff is not magic vs magic-only foes.
+  - A Summoner's Heal scroll heals half.
+- **Remaining order:** 75, 75.1, 75.2, 75.3, 76, 77, 78, 79, 80, then the lifecycle.
+- The edge-probe reports are pre-built: `<scratchpad>/cov<phase>.json` for every remaining phase.
+- `boot:check` is environment-flaky on this machine. Rerun it once before judging.
 
 ## Captures (all routed and committed)
 - Also added after the Phase 73 start: Phase 75 RULES-12 (a tile interrupted by a wanderer is resolved after the fight), RULES-13 (a magic staff is a wielded d8 weapon for Magic Users), RULES-14 (Bubble reflects the next attack and keeps a small pool), and RULES-15 (no rations, no spell refill). Phase 75.3 (deep-floor difficulty) covers RULES-16/17/18: foe count, the curve from floor 12, and control spells at depth. Phase 77 gets CMBUI-14 (combat ITEMS shows EQUIPPED and greys out gear) and Dazed honesty. Phase 78 gets HUD-09 (the full-bag find card), and the new-day refill line was folded into the charge rail item.
