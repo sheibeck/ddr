@@ -59,6 +59,7 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 export const ENFORCED = [
   "engine/abilities.js",
   "engine/character.js",
+  "engine/derived.js",
   "engine/dice.js",
   "engine/economy.js",
   "engine/maze.js",
@@ -70,6 +71,7 @@ export const ENFORCED = [
   "engine/engine.js",
   "engine/events.js",
   "engine/foeDamage.js",
+  "engine/magic.js",
   "engine/phobias.js",
   "engine/records.js",
   "engine/rng.js",
@@ -93,6 +95,7 @@ export const ALL_ENFORCED = false;
 export const DRAW_INVENTORY = {
   "engine/abilities.js": { rollCheck: 0, amount: 2, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/character.js": { rollCheck: 0, amount: 3, selection: 13, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
+  "engine/derived.js": { rollCheck: 1, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/dice.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 2 },
   "engine/economy.js": { rollCheck: 0, amount: 0, selection: 1, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/maze.js": { rollCheck: 0, amount: 1, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
@@ -104,6 +107,7 @@ export const DRAW_INVENTORY = {
   "engine/engine.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/events.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/foeDamage.js": { rollCheck: 1, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
+  "engine/magic.js": { rollCheck: 1, amount: 17, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
   "engine/phobias.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/records.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/rng.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

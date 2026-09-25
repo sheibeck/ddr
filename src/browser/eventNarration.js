@@ -556,7 +556,7 @@ export const EVENT_NARRATION = {
   },
   allySpellMissed: (e) =>
     e.resisted
-      ? `<span class="miss">${e.target ?? "The foe"} shrugs off ${e.name ?? "your ally"}'s ${e.spell ?? "spell"}.</span>${e.roll != null ? ` <span class="roll">${e.roll} against its wits.</span>` : ""}`
+      ? `<span class="miss">${e.target ?? "The foe"} shrugs off ${e.name ?? "your ally"}'s ${e.spell ?? "spell"}.</span>${e.roll != null ? ` <span class="roll">${e.roll} vs ${rangeText(e.atLeast, e.dieN)}.</span>` : ""}`
       : `<span class="miss">${e.name ?? "Your ally"}'s ${e.spell ?? "spell"} goes wide of ${e.target ?? "the foe"}.</span> The maze absorbs the effort without comment.`,
   // PARTY-04/PARTY-05 (Phase 8): a foe lands on a party member instead of you —
   // better them than you, frankly. `name` is the foe, `member` the companion.
@@ -632,9 +632,9 @@ export const EVENT_NARRATION = {
       ? `<span class="hit">The room settles. You are no longer dazed.</span>`
       : `<span class="hit">Your strength comes back. It was only borrowed.</span>`,
   heroResisted: (e) =>
-    `<span class="hit">You think very hard about not being affected, and it works.</span> <span class="roll">${e.roll ?? "?"} vs intel ${e.intel ?? "?"}.</span>`,
+    `<span class="hit">You think very hard about not being affected, and it works.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
   heroResistFailed: (e) =>
-    `You try to shrug it off. <span class="roll">${e.roll ?? "?"} vs intel ${e.intel ?? "?"}.</span> <span class="miss">You do not.</span>`,
+    `You try to shrug it off. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span> <span class="miss">You do not.</span>`,
   foePursued: (e) => `<span class="hurt">${e.name ?? "It"} follows you out. Of course it does.</span>`,
   foeOutOfSpells: (e) => `${e.name ?? "It"} gestures grandly. Nothing happens. <span class="miss">It appears to be out of spells.</span>`,
 
@@ -721,8 +721,9 @@ export const EVENT_NARRATION = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   backfireSelfDamage: (e) =>
     `<span class="hurt">Backfire: ${e.spell ?? "The spell"} went wrong in your hands — the ${e.sub ?? "Apprentice"} tax, one time in eight.</span> −${e.amount ?? 0} hp.`,
-  spellResisted: (e) => `${e.target ?? "It"} shrugs it off. <span class="roll">${e.roll ?? "?"}</span> vs intel ${e.intel ?? "?"}.`,
-  resistFailed: (e) => `${e.target ?? "It"} tries to resist and fails. <span class="roll">${e.roll ?? "?"}</span>.`,
+  spellResisted: (e) =>
+    `${e.target ?? "It"} shrugs it off. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
+  resistFailed: (e) => `${e.target ?? "It"} tries to resist and fails. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)}.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   summonBackfired: (e) =>
     `<span class="hurt">Summoning: ${e.spell ?? "The spell"} answered, then turned on you — a ${e.sub ?? "Summoner"}'s doubled creatures come with a grudge.</span> −${e.amount ?? 0} hp.`,

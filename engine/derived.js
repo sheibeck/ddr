@@ -8,7 +8,7 @@
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
 import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD } from "../content/index.js";
-import { rollDice } from "./dice.js";
+import { rollDice, rollCheck, atLeastFor } from "./dice.js";
 import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor } from "./difficulty.js";
 // 260918-w4n: `remaining`/`isReady` are no longer read here — isFlying and
 // conditionsOf's flight chip now read purely through itemEffectActive/
@@ -32,10 +32,12 @@ export const DEATH_PANIC_THRESHOLD = 0.25; // near-death: at/below 25% of maxWP
 // (engine/combat.js#fight) sets `combat.afraid = AFRAID_ROUNDS`: for that
 // many ROUNDS (ticked once per foeTurn call at the foeTurn tail, cleared
 // unconditionally when the combat ends at endCombat), the player's strike
-// to-hit RANGE SHRINKS by AFRAID_TO_HIT_PENALTY — the game's to-hit is a LOW
-// range (a strike lands on roll <= need), so a SMALLER need is HARDER to hit;
-// see afraidNeed below, floor 1, and an untouchable (need 0) foe is never
-// made hittable by fear — and the player's already-rolled weapon damage is
+// to-hit RANGE SHRINKS by AFRAID_TO_HIT_PENALTY — a to-hit "need" is a count
+// of winning faces on the strike die (Phase 73, ROLL-05: the engine reads the
+// check roll-high, a strike lands on roll >= atLeastFor(need, dieN)), so a
+// SMALLER need is FEWER winning faces, HARDER to hit; see afraidNeed below,
+// floor 1, and an untouchable (need 0) foe is never made hittable by fear —
+// and the player's already-rolled weapon damage is
 // halved (AFRAID_DMG_DIV, Math.ceil, floor 1; see afraidDamage below). Every
 // other action stays fully available while afraid — nothing is ever refused
 // for fear (see refuseIfPending in engine/combat.js, which never fires on an
@@ -872,8 +874,10 @@ export function inViewWindow(state, x, y) {
 }
 
 /**
- * classNeed(c) — the class/race/sub part of the player's to-hit need, with NO
- * weapon, combat, or darkness term. Byte-identical arithmetic to toHit(state)'s
+ * classNeed(c) — the class/race/sub part of the player's to-hit need (a
+ * count of winning faces on the strike die — Phase 73, ROLL-05, the engine
+ * reads the check roll-high via `atLeastFor(need, dieN)`), with NO weapon,
+ * combat, or darkness term. Byte-identical arithmetic to toHit(state)'s
  * former first four lines (mazeworld.html toHit(), lines 1452-1462): Fighter
  * 5 / Thief 4 / Magic User 3 base, Elves floor at 5 whatever their class,
  * Acrobat strikes as a fighter with the dagger (5), Cleric floors at 4.
@@ -894,10 +898,12 @@ export function classNeed(c) {
  * weaponNeedMod(x) — Phase 39 (GEAR-01): a weapon's to-hit NEED modifier —
  * `x` is either a weapon base name (string) or a character object (reads
  * `x.weapon`). Returns `WEAPONS[base].need` (an integer in {-2,-1,0,1}), or 0
- * for "Fists"/an unrecognized base — the to-hit is a LOW range (a strike
- * lands on roll <= need), so this modifier is added directly to the need: a
- * light weapon's `need: +1` raises the target number (easier to hit), a
- * heavy weapon's `need: -1`/`-2` lowers it (harder to hit) — the SAME
+ * for "Fists"/an unrecognized base — `need` is a count of winning faces on
+ * the strike die (Phase 73, ROLL-05: the engine reads the check roll-high,
+ * `atLeastFor(need, dieN)` widens or narrows the winning range from the top),
+ * so this modifier is added directly to the need: a light weapon's
+ * `need: +1` adds a winning face (easier to hit), a heavy weapon's
+ * `need: -1`/`-2` removes winning faces (harder to hit) — the SAME
  * direction the Phase 31 `afraidNeed` penalty already shrinks the need in.
  * Pure, no rng.
  */
@@ -937,13 +943,16 @@ export function armorBulk(c) {
  * fleeBreakdown(c) — Phase 42 (FLEE-01/FLEE-02): the ONE flee-need rule,
  * mirroring foeToHitBreakdown's `{ name, delta }` shape so every surface
  * (the fight log, the rail, the combat submenu) narrates the SAME
- * modifier list without re-deriving the formula. Builds `mods` in this
- * fixed order, pushing an entry ONLY when it is non-zero: Thief (+5, "the
- * whole trade") -> class (content/flee.js#FLEE_CLASS_MOD) -> race
- * (content/flee.js#FLEE_RACE_MOD) -> armor (-armorBulk(c), only when bulk >
- * 0). A race/class missing from its table (a tampered save) contributes 0,
- * never throws. `bonus` is the sum of every mods[].delta; `need` is the
- * fixed content/flee.js#FLEE_NEED. Pure, no rng.
+ * modifier list without re-deriving the formula. Flee was ALREADY read
+ * roll-high before Phase 73 (`d20 + bonus >= need`) — the mirror leaves this
+ * function untouched; its caller folds `bonus` into the threshold the same
+ * way every other modifier does. Builds `mods` in this fixed order, pushing
+ * an entry ONLY when it is non-zero: Thief (+5, "the whole trade") -> class
+ * (content/flee.js#FLEE_CLASS_MOD) -> race (content/flee.js#FLEE_RACE_MOD)
+ * -> armor (-armorBulk(c), only when bulk > 0). A race/class missing from
+ * its table (a tampered save) contributes 0, never throws. `bonus` is the
+ * sum of every mods[].delta; `need` is the fixed content/flee.js#FLEE_NEED
+ * (the lowest winning roll, already read high). Pure, no rng.
  */
 export function fleeBreakdown(c) {
   const mods = [];
@@ -1112,9 +1121,12 @@ export function gearCompareParts(c, it) {
 }
 
 /**
- * toHit(state) — the die value the player needs to land a blow. Reads state.c,
- * state.combat (inspired) and state.floor (darkness); ports mazeworld.html
- * toHit() (lines 1452-1462).
+ * toHit(state) — the player's to-hit NEED: a count of winning faces on the
+ * strike die (Phase 73, ROLL-05: the engine reads the check roll-high via
+ * `rollCheck(rng, dieN, atLeastFor(need, dieN))` — a bigger need is more
+ * winning faces, always better for the roller). Reads state.c, state.combat
+ * (inspired) and state.floor (darkness); ports mazeworld.html toHit() (lines
+ * 1452-1462).
  *
  * Phase 39 (GEAR-01): the class/race/sub term is now classNeed(c) (factored
  * out, byte-identical arithmetic); a weapon's own to-hit modifier
@@ -1139,12 +1151,13 @@ export function toHit(state) {
 /**
  * afraidNeed(state, need) — Phase 31 (user ruling 2026-09-16): the Afraid
  * to-hit penalty, applied as the LAST modifier after every other need rule
- * (frenzy/asleep/hard-to-hit/fast/magicOnly/darkness). The game's to-hit is
- * a LOW range (a strike lands on roll <= need), so the penalty SHRINKS the
- * target number — the PENALTY IS SUBTRACTED FROM THE NEED, never added to
- * the die roll. Floor 1; an untouchable foe (need 0, e.g. magicOnly without
- * a magic weapon) is never made hittable by fear (the `need > 0` guard).
- * Pure, zero rng.
+ * (frenzy/asleep/hard-to-hit/fast/magicOnly/darkness). `need` is a count of
+ * winning faces on the strike die (Phase 73, ROLL-05: the engine reads the
+ * check roll-high, `atLeastFor(need, dieN)`), so the penalty SHRINKS the
+ * winning range from the top — THE PENALTY IS SUBTRACTED FROM THE FACE
+ * COUNT, never added to the die roll. Floor 1; an untouchable foe (need 0,
+ * e.g. magicOnly without a magic weapon) is never made hittable by fear (the
+ * `need > 0` guard). Pure, zero rng.
  */
 export function afraidNeed(state, need) {
   if (!(state.combat && state.combat.afraid > 0 && need > 0)) return need;
@@ -1162,11 +1175,13 @@ export function afraidDamage(state, dmg) {
 
 /**
  * memberToHit(m) — DFB-05 (Phase 25.1): the class/race/sub part of `toHit`
- * for a PARTY MEMBER sheet (`m`), not the hero. Deliberately omits every
- * hero-only term toHit(state) reads (combat.inspired, eff(c,"toHit"), the
- * dazed/darkness overrides) — a member fights on its own sheet's class/race/
- * sub alone. `?? 5` keeps the pre-25.1 "hit on 5" fallback for a sheet with
- * no recognized class (mirrors alliesTurn's legacy path). Pure read, no rng.
+ * (a count of winning faces on the strike die — Phase 73, ROLL-05, read
+ * roll-high via `atLeastFor(need, dieN)`) for a PARTY MEMBER sheet (`m`), not
+ * the hero. Deliberately omits every hero-only term toHit(state) reads
+ * (combat.inspired, eff(c,"toHit"), the dazed/darkness overrides) — a member
+ * fights on its own sheet's class/race/sub alone. `?? 5` keeps the pre-25.1
+ * "hit on 5" fallback for a sheet with no recognized class (mirrors
+ * alliesTurn's legacy path). Pure read, no rng.
  */
 export function memberToHit(m) {
   let h = CLASSES[m.cls]?.toHit ?? 5;
@@ -1189,9 +1204,11 @@ export function foeDie(c, f) {
 }
 
 /**
- * foeToHitVs(state, vs) — what a creature needs to land on this
- * character. Reads state.c and state.floor; ports mazeworld.html
- * foeToHitVs() (lines 1473-1483).
+ * foeToHitVs(state, vs) — the foe's to-hit need against this character: a
+ * count of winning faces on the foe's strike die (Phase 73, ROLL-05, read
+ * roll-high via `atLeastFor(need, dieN)` — a bigger need is more winning
+ * faces, always better for the foe). Reads state.c and state.floor; ports
+ * mazeworld.html foeToHitVs() (lines 1473-1483).
  *
  * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-06): "the profession
  * is standing there" made real — a Guard is flat-out harder to land a blow
@@ -1242,7 +1259,8 @@ export function foeToHitVs(state, vs = "hero") {
 
 /**
  * foeToHitBreakdown(state, vs) — Phase 25 (FEED-01, additive
- * payload): a narration-only breakdown of foeToHitVs's own arithmetic,
+ * payload): a narration-only breakdown of foeToHitVs's own arithmetic (the
+ * foe's need is a count of winning faces, read roll-high — see foeToHitVs),
  * reproducing every step in the SAME order and recording a `{ name, delta }`
  * entry for every step that actually changed the running value (delta =
  * after − before, so an override such as Acrobat's `h = 3` records `3 -
@@ -1416,24 +1434,34 @@ export function intelBonus(c) {
  * `combat.js` would create an import cycle once both callers exist.
  *
  * Canon rule (p.25): a target with intel >= 12 gets a resistance check — a
- * single d20 that resists the effect on a roll strictly less than its
- * intel. Below that threshold, NOTHING is rolled at all — this early-out is
- * the DETERMINISM GATE: callers are expected to invoke this only when a
- * resistible spell/ability is actually firing, so the draw stays fully
- * gated (e.g. the cast-damage parity fixture's Shriek has intel 1, so it
- * never enters the `rolled` branch and consumes zero extra rng).
+ * single d20 that resists the effect on 22 − intel through 20 (`intel - 1`
+ * winning faces, the top of the die). Below that threshold, NOTHING is
+ * rolled at all — this early-out is the DETERMINISM GATE: callers are
+ * expected to invoke this only when a resistible spell/ability is actually
+ * firing, so the draw stays fully gated (e.g. the cast-damage parity
+ * fixture's Shriek has intel 1, so it never enters the `rolled` branch and
+ * consumes zero extra rng).
  *
- * Returns `{ rolled, resisted, roll }`: `rolled` is an additive field beyond
- * p.25's `{ resisted, roll }` so a caller can tell "no roll happened"
- * (intel < 12) apart from "rolled and failed to resist" (`roll` would
- * otherwise be indistinguishable from `undefined` in an untyped caller).
- * Pure w.r.t. everything but the single gated rng.d(20) draw; never mutates
- * its arguments.
+ * Phase 73 (ROLL-05): the draw itself now goes through the ONE roll-high
+ * check helper below (`rollCheck` on a d20, threshold `atLeastFor(intel - 1,
+ * 20)`) — draws exactly the same single d20, in the same position, as the
+ * old `rng.d(20)`; the mirrored `roll` (dieN + 1 − the raw draw) resists at
+ * `roll >= atLeast`, which is `raw <= intel - 1`, i.e. `raw < intel` —
+ * byte-identical to the old `roll < intel` reading for every possible draw.
+ *
+ * Returns `{ rolled, resisted, roll, atLeast, dieN }`: `rolled` is an
+ * additive field beyond p.25's `{ resisted, roll }` so a caller can tell "no
+ * roll happened" (intel < 12) apart from "rolled and failed to resist"
+ * (`roll` would otherwise be indistinguishable from `undefined` in an
+ * untyped caller); `atLeast`/`dieN` are the roll-high triple every
+ * roll-carrying event now spreads (see engine/dice.js#rollFields). Pure
+ * w.r.t. everything but the single gated rng.d(20) draw; never mutates its
+ * arguments.
  */
 export function resistRoll(rng, intel) {
   if ((intel ?? 0) < 12) return { rolled: false, resisted: false, roll: undefined };
-  const roll = rng.d(20);
-  return { rolled: true, resisted: roll < intel, roll };
+  const check = rollCheck(rng, 20, atLeastFor(intel - 1, 20));
+  return { rolled: true, resisted: check.ok, roll: check.roll, atLeast: check.atLeast, dieN: check.dieN };
 }
 
 /**
