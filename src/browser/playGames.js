@@ -101,6 +101,14 @@ function toPlayer(info) {
 const FAILED = Object.freeze({ ok: false });
 
 /**
+ * friendsAccess's own loadFriends call never needs Play Games' cache
+ * bypassed (D-06: it is a silent, cheap consent check, never a scores
+ * read) — named rather than inlined so only loadTopScores ever forwards a
+ * caller-controlled forceReload (Phase 81, BOARD-16).
+ */
+const FRIENDS_ACCESS_FORCE_RELOAD = false;
+
+/**
  * TAG_OK — module-private: the score tag's alphabet, the URI unreserved
  * characters, 0..64 long (D-01; kept local so this module does not depend on
  * the tag encoder).
@@ -354,13 +362,18 @@ export function createPlayGames({
   }
 
   /**
-   * loadTopScores({ leaderboardId, collection, maxResults }) — the all-time
-   * top scores of the public or friends collection (D-05, D-06), maxResults
-   * clamped to 1..25: { ok: true, scores, total } where total is that
-   * collection's all-time score count, or null.
+   * loadTopScores({ leaderboardId, collection, maxResults, forceReload }) —
+   * the all-time top scores of the public or friends collection (D-05, D-06),
+   * maxResults clamped to 1..25: { ok: true, scores, total } where total is
+   * that collection's all-time score count, or null. Phase 81 (BOARD-16,
+   * R-16b): `forceReload` forwards to the plugin exactly as
+   * `opts.forceReload === true` — omitted or falsy stays `false` (Play
+   * Games' own cache may serve a stale read); a caller (globalBoards.js's
+   * load()) passes `true` to bypass it after the player's own submission or
+   * on reopening the panel.
    */
   async function loadTopScores(opts) {
-    const { leaderboardId, collection, maxResults } = optsOf(opts);
+    const { leaderboardId, collection, maxResults, forceReload } = optsOf(opts);
     if (!isBoardId(leaderboardId)) return FAILED;
     const c = collectionOf(collection);
     return timed(async (PlayGames) => {
@@ -369,7 +382,7 @@ export function createPlayGames({
         timeSpan: "allTime",
         collection: c,
         maxResults: clampResults(maxResults),
-        forceReload: false,
+        forceReload: forceReload === true,
       });
       if (!result || typeof result !== "object" || !Array.isArray(result.scores)) return FAILED;
       const variant = variantOf(result.leaderboard, c);
@@ -430,7 +443,7 @@ export function createPlayGames({
   async function friendsAccess(opts) {
     const request = optsOf(opts).request === true;
     const call = async (PlayGames) =>
-      accessOf(await PlayGames.loadFriends({ pageSize: 1, forceReload: false, resolve: request }));
+      accessOf(await PlayGames.loadFriends({ pageSize: 1, forceReload: FRIENDS_ACCESS_FORCE_RELOAD, resolve: request }));
     if (!request) return timed(call, "unavailable");
     try {
       const { PlayGames } = await ready();

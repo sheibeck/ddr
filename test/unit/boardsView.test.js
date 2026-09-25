@@ -989,6 +989,49 @@ test("global ALL: the player's best outside the top ten is pinned last under the
   for (const row of rows.slice(0, 10)) assert.equal(row.divider, "");
 });
 
+// ─── Phase 81 (BOARD-10, R-10, R-16c): the pin rule's exact boundaries ──────
+
+test("BOARD-10 pin rule: ten listed rows (ranks 1..10), own rank 10 (a tie at the cut) gives no pin", () => {
+  const entries = Array.from({ length: 10 }, (_, i) => gEntry(i, { rank: i + 1 }, { floor: 10 - i }));
+  const you = gEntry(99, { key: "g:you", you: true, rank: 10 }, { floor: 1 });
+  const view = gView({ global: snap({ entries, you, total: 40 }) });
+  assert.equal(view.body.rows.length, 10, "no pinned row for a rank tied with the cut");
+  assert.ok(view.body.rows.every((r) => !r.divider));
+});
+
+test("BOARD-10 pin rule: ten listed rows, own rank 11 gives a pin, last, under the divider", () => {
+  const entries = Array.from({ length: 10 }, (_, i) => gEntry(i, { rank: i + 1 }, { floor: 10 - i }));
+  const you = gEntry(99, { key: "g:you", you: true, rank: 11 }, { floor: 1 });
+  const view = gView({ global: snap({ entries, you, total: 40 }) });
+  assert.equal(view.body.rows.length, 11);
+  const pinned = view.body.rows[10];
+  assert.equal(pinned.divider, BOARDS_PANEL_COPY.divider);
+  assert.equal(pinned.you, true);
+});
+
+test("BOARD-10 pin rule: a sole entry at rank 1 that is the player's own record renders once, tagged YOU, no divider (the device replay)", () => {
+  const solo = gEntry(0, { rank: 1, you: true, key: "g:you" }, { floor: 12 });
+  const view = gView({ global: snap({ entries: [solo], you: solo, total: 1 }) });
+  assert.equal(view.body.rows.length, 1);
+  assert.equal(view.body.rows[0].tag, "YOU");
+  assert.equal(view.body.rows[0].divider, "");
+});
+
+test("BOARD-10 pin rule / R-16c: an own record with a null rank (Play Games withheld it from the public list) gives no pinned row, and the standing card shows the honest hidden-score note with the dash place", () => {
+  const rival = gEntry(0, { rank: 1 }, { floor: 9 });
+  const withheld = gEntry(1, { key: "g:you", you: true, rank: null }, { floor: 4 });
+  const view = gView({ global: snap({ entries: [rival], you: withheld, total: 40 }) });
+  assert.equal(view.body.rows.length, 1, "no pinned row for a withheld (null-rank) own record");
+  assert.equal(view.standing.note, G.hiddenYou);
+  assert.equal(view.standing.place, BOARDS_PANEL_COPY.standing.noPlace);
+});
+
+test("BOARD-10 pin rule: an empty board (no listed rows) never pins, even with an off-list own record", () => {
+  const you = gEntry(0, { key: "g:you", you: true, rank: 3 }, { floor: 9 });
+  const view = gView({ global: snap({ entries: [], you, total: 3 }) });
+  assert.equal(view.body.kind, "empty");
+});
+
 test("global rows: PURSE groups digits, decoded from the tag", () => {
   const e = gEntry(0, {}, { floor: 7, steps: 431, gold: 1234567 });
   const purse = gView({ board: "purse", global: snap({ board: "purse", entries: [e] }) }).body.rows[0];

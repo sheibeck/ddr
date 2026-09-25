@@ -574,6 +574,13 @@ function defaultSeasons() {
  * ME: a board or scope change that would leave one showing under ALL/FRIENDS
  * instead moves the panel to DEEPEST and stores it; global() is never asked
  * for either.
+ *
+ * Phase 81 (BOARD-16, R-16b): the optional `onOpen()` seam is called, inside
+ * try/catch, at the START of both openFromTab() and openFromTitle() — before
+ * the first render of each open — so the shell can invalidate the global
+ * boards controller's cache (globalBoards.invalidate()) and have the very
+ * first render of a freshly-opened panel see a due-for-refetch snapshot. A
+ * missing or throwing onOpen never breaks the open.
  */
 export function createBoardsPanel({
   host,
@@ -587,6 +594,7 @@ export function createBoardsPanel({
   seasons = defaultSeasons,
   onFriendsConsent = null,
   hero = noHero,
+  onOpen = null,
 }) {
   const doc = host.ownerDocument;
 
@@ -872,7 +880,17 @@ export function createBoardsPanel({
     return entry === "title";
   }
 
+  /** callOnOpen() — Phase 81 (BOARD-16): the onOpen seam, never breaking an open. */
+  function callOnOpen() {
+    try {
+      if (typeof onOpen === "function") onOpen();
+    } catch {
+      // a throwing onOpen must never break the panel open.
+    }
+  }
+
   function openFromTab() {
+    callOnOpen();
     entry = "tab";
     // Phase 81 (BOARD-11): opens on the default scope (ALL signed in with
     // Compete ON, else ME) and leaves it re-evaluated by refresh() until a
@@ -891,6 +909,7 @@ export function createBoardsPanel({
   }
 
   function openFromTitle({ hasHero: h } = {}) {
+    callOnOpen();
     entry = "title";
     hasHero = !!h;
     board = "yard"; // D-04: VIEW THE DEAD opens GRAVEYARD under ME (Phase 81, BOARD-14).

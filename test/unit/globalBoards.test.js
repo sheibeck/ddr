@@ -25,6 +25,7 @@ import {
   toGlobalEntry,
   snapshotOf,
   createGlobalBoards,
+  isOwnRecord,
 } from "../../src/browser/globalBoards.js";
 import { encodeTag, decodeTag } from "../../src/browser/scoreTag.js";
 import { devLeaderboardIds, scoreOrdersFor } from "../../src/browser/boardScores.js";
@@ -137,6 +138,47 @@ test("toGlobalEntry: a non-object score still yields a harmless row", () => {
     rawScore: 0,
     run: null,
   });
+});
+
+// ─── isOwnRecord (Phase 81, BOARD-09/R-09) ──────────────────────────────────
+
+test("isOwnRecord: matching non-empty ids decide, even off a rank/rawScore/tag mismatch", () => {
+  const mine = { rank: 1, rawScore: 100, tag: "t", playerId: "me" };
+  assert.equal(isOwnRecord({ rank: 9, rawScore: 1, tag: "x", playerId: "me" }, mine, "acct"), true);
+});
+
+test("isOwnRecord: a row whose id equals the account id while the own record carries a different non-empty id gives false (the own record wins)", () => {
+  const mine = { rank: 1, rawScore: 100, tag: "t", playerId: "internal-77" };
+  assert.equal(isOwnRecord({ rank: 1, rawScore: 100, tag: "t", playerId: "acct" }, mine, "acct"), false);
+});
+
+test("isOwnRecord: with no scoreHolder on either side, the rank+rawScore+tag triple decides, exact only", () => {
+  const mine = { rank: 4, rawScore: 8999569, tag: "v1.x", playerId: "" };
+  assert.equal(isOwnRecord({ rank: 4, rawScore: 8999569, tag: "v1.x", playerId: "" }, mine, "acct"), true);
+  assert.equal(isOwnRecord({ rank: 5, rawScore: 8999569, tag: "v1.x", playerId: "" }, mine, "acct"), false, "rank off by one");
+  assert.equal(isOwnRecord({ rank: 4, rawScore: 8999568, tag: "v1.x", playerId: "" }, mine, "acct"), false, "rawScore off by one");
+  assert.equal(isOwnRecord({ rank: 4, rawScore: 8999569, tag: "v1.y", playerId: "" }, mine, "acct"), false, "a different tag");
+  assert.equal(isOwnRecord({ rank: null, rawScore: 8999569, tag: "v1.x", playerId: "" }, mine, "acct"), false, "an empty playerId never matches by id alone, and a null rank never matches by fallback");
+});
+
+test("isOwnRecord: no own record falls back to the account id; an empty account id never matches", () => {
+  assert.equal(isOwnRecord({ rank: 1, rawScore: 100, tag: "t", playerId: "acct" }, null, "acct"), true);
+  assert.equal(isOwnRecord({ rank: 1, rawScore: 100, tag: "t", playerId: "" }, null, "acct"), false);
+  assert.equal(isOwnRecord({ rank: 1, rawScore: 100, tag: "t", playerId: "acct" }, null, ""), false);
+});
+
+test("isOwnRecord never throws on a non-object score or mine", () => {
+  assert.equal(isOwnRecord(null, null, "acct"), false);
+  assert.equal(isOwnRecord(undefined, { rank: 1 }, "acct"), false);
+  assert.equal(isOwnRecord("junk", "junk", "acct"), false);
+});
+
+test("toGlobalEntry: `mine` decides `you` exactly as isOwnRecord does", () => {
+  const mine = { rank: 2, rawScore: 800, tag: TAG, playerId: "" };
+  const e = toGlobalEntry({ rank: 2, rawScore: 800, tag: TAG, playerId: "" }, 0, { meId: "me", mine, scope: "all" });
+  assert.equal(e.you, true);
+  const other = toGlobalEntry({ rank: 3, rawScore: 700, tag: TAG, playerId: "" }, 1, { meId: "me", mine, scope: "all" });
+  assert.equal(other.you, false);
 });
 
 // ─── snapshotOf ─────────────────────────────────────────────────────────────
@@ -304,10 +346,10 @@ const deepAll = Object.freeze({ board: "deep", scope: "all", season: 1 });
 
 // ─── createGlobalBoards ─────────────────────────────────────────────────────
 
-test("createGlobalBoards returns a frozen { view, requestFriendsAccess, clear }", () => {
+test("createGlobalBoards returns a frozen { view, requestFriendsAccess, clear, invalidate }", () => {
   const { gb } = rig();
   assert.ok(Object.isFrozen(gb));
-  assert.deepEqual(Object.keys(gb).sort(), ["clear", "requestFriendsAccess", "view"]);
+  assert.deepEqual(Object.keys(gb).sort(), ["clear", "invalidate", "requestFriendsAccess", "view"]);
 });
 
 test("inactive (signed out or Compete OFF): view() is null and nothing touches the provider", async () => {
@@ -345,7 +387,7 @@ test("first view() is loading and starts exactly one top-10 and one player-score
   assert.deepEqual([...first.entries], []);
   assert.equal(r.gb.view(deepAll), first, "a second view() before settling starts nothing and returns the same snapshot");
   assert.deepEqual(r.args, [
-    ["loadTopScores", { leaderboardId: DEEP, collection: "public", maxResults: 10 }],
+    ["loadTopScores", { leaderboardId: DEEP, collection: "public", maxResults: 10, forceReload: true }],
     ["loadPlayerScore", { leaderboardId: DEEP, collection: "public" }],
   ]);
   assert.equal(r.changes(), 0);
@@ -425,6 +467,53 @@ test("with no signed-in id yet, the player score's own playerId marks the matchi
   await flush();
   const snap = r.gb.view(deepAll);
   assert.deepEqual(snap.entries.filter((e) => e.you).map((e) => e.rank), [2]);
+});
+
+test("BOARD-09 adjacency: two rows tied on rank+rawScore+tag give at most one YOU", async () => {
+  const own = { rank: 1, rawScore: 1000, tag: TAG, playerId: "" };
+  const provider = stub({
+    loadTopScores: async () => ({
+      ok: true,
+      scores: [
+        { rank: 1, rawScore: 1000, tag: TAG, handle: "A", playerId: "", friend: false },
+        { rank: 1, rawScore: 1000, tag: TAG, handle: "B", playerId: "", friend: false },
+      ],
+      total: 2,
+    }),
+    loadPlayerScore: async () => ({ ok: true, score: own }),
+  });
+  const r = rig({ provider, meId: "acct1" });
+  r.gb.view(deepAll);
+  await flush();
+  const snap = r.gb.view(deepAll);
+  const youRows = snap.entries.filter((e) => e.you === true);
+  assert.equal(youRows.length, 1, "an adjacency tie must never mark two rows YOU");
+  assert.equal(snap.entries[0].you, true, "the first matching row keeps YOU");
+  assert.equal(snap.entries[1].you, false, "the second matching row is cleared");
+});
+
+test("BOARD-09 FRIENDS: a de-duplicated (cleared) entry reads friend true; the true YOU row never also reads friend", async () => {
+  const own = { rank: 1, rawScore: 1000, tag: TAG, playerId: "" };
+  const provider = stub({
+    loadTopScores: async () => ({
+      ok: true,
+      scores: [
+        { rank: 1, rawScore: 1000, tag: TAG, handle: "A", playerId: "", friend: true },
+        { rank: 1, rawScore: 1000, tag: TAG, handle: "B", playerId: "", friend: true },
+      ],
+      total: 2,
+    }),
+    loadPlayerScore: async () => ({ ok: true, score: own }),
+    friendsAccess: async () => "granted",
+  });
+  const r = rig({ provider, meId: "acct1" });
+  const friendsReq = { board: "deep", scope: "friends", season: 1 };
+  r.gb.view(friendsReq);
+  await flush();
+  const snap = r.gb.view(friendsReq);
+  assert.equal(snap.entries.filter((e) => e.you).length, 1);
+  assert.equal(snap.entries.filter((e) => e.friend).length, 1, "only the cleared duplicate reads as a friend");
+  assert.ok(snap.entries.every((e) => e.friend !== e.you));
 });
 
 test("TTL: the same snapshot for 5 minutes, then one background refresh that replaces it", async () => {
@@ -554,7 +643,7 @@ test("FRIENDS with consent granted: a silent access check, then the friends top 
   await flush();
   assert.deepEqual(r.args, [
     ["friendsAccess", { request: false }],
-    ["loadTopScores", { leaderboardId: DEEP, collection: "friends", maxResults: 10 }],
+    ["loadTopScores", { leaderboardId: DEEP, collection: "friends", maxResults: 10, forceReload: true }],
     ["loadPlayerScore", { leaderboardId: DEEP, collection: "friends" }],
   ]);
   const snap = r.gb.view(friends);
@@ -642,6 +731,59 @@ test("requestFriendsAccess resolves unavailable when the provider throws", async
     }),
   });
   assert.equal(await r.gb.requestFriendsAccess(), "unavailable");
+});
+
+// ─── invalidate() (Phase 81, BOARD-16, R-16b) ───────────────────────────────
+
+test("invalidate() while ready: the next view() returns the cached snapshot and starts exactly one fetch; the fetch settling fires onChange once", async () => {
+  const r = rig();
+  r.gb.view(deepAll);
+  await flush();
+  const ready = r.gb.view(deepAll);
+  assert.equal(r.args.length, 2);
+  r.gb.invalidate();
+  assert.equal(r.args.length, 2, "invalidate() itself never touches the provider");
+  const sameSnapshotWhileRefetching = r.gb.view(deepAll);
+  assert.equal(sameSnapshotWhileRefetching, ready, "the cached snapshot is still returned while the refetch runs");
+  assert.equal(r.args.length, 4, "exactly one fetch started");
+  const before = r.changes();
+  await flush();
+  assert.equal(r.changes(), before + 1);
+  const fresh = r.gb.view(deepAll);
+  assert.equal(fresh.status, "ready");
+});
+
+test("invalidate() while a fetch is in flight: the first view() after that fetch settles starts another fetch", async () => {
+  const r = rig();
+  r.gb.view(deepAll); // starts the first fetch
+  r.gb.invalidate();
+  assert.equal(r.gb.view(deepAll).status, "loading", "no second fetch starts while the first is in flight");
+  assert.equal(r.args.length, 2);
+  await flush();
+  assert.equal(r.gb.view(deepAll).status, "ready", "the settled fetch's own snapshot is returned first");
+  assert.equal(r.args.length, 4, "the next view() after settling starts the invalidated refetch");
+});
+
+test("invalidate() inside an active retry backoff: no fetch before retryAt", async () => {
+  const r = rig({ online: false });
+  r.gb.view(deepAll);
+  await flush();
+  assert.equal(r.gb.view(deepAll).status, "unreachable");
+  const afterFirstFailure = r.args.length;
+  r.gb.invalidate();
+  assert.equal(r.gb.view(deepAll).status, "unreachable", "still within the backoff window");
+  assert.equal(r.args.length, afterFirstFailure, "invalidate() never bypasses an active retry backoff");
+  r.advance(30001);
+  r.gb.view(deepAll);
+  assert.equal(r.args.length, afterFirstFailure + 2, "the backoff's own retry runs once it expires");
+});
+
+test("invalidate() while inactive: zero provider calls, and view() stays null", async () => {
+  const r = rig({ active: false });
+  r.gb.invalidate();
+  await flush();
+  assert.deepEqual(r.args, []);
+  assert.equal(r.gb.view(deepAll), null);
 });
 
 test("a fetch that settles after the player stopped competing is discarded", async () => {

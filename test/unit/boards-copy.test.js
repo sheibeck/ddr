@@ -235,6 +235,9 @@ const GLOBAL_PINS = {
   // Phase 81 (BOARD-13): the per-lineage global lines (ofLineage, noLineage,
   // lineageEmpty, sampledFoot) are gone — LINEAGE is ME-only and never reads
   // a global sample.
+  // Phase 81 (BOARD-10, R-16c): the honest note for a record Play Games
+  // withholds from the public list entirely (no rank at all).
+  hiddenYou: "Play Games won't show your score here — your profile keeps game activity private.",
 };
 
 test("BOARDS_PANEL_COPY.global is deep-frozen and sits after note", () => {

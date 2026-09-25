@@ -6368,6 +6368,10 @@ window.__mzClassicBoot = async function classicBoot() {
     onFriendsConsent: () => { globalBoards?.requestFriendsAccess()?.catch?.(() => {}); },
     // Phase 70 (D-11): LINEAGE defaults to the living hero's race + sub-class (null when absent or dead).
     hero: () => { const st = window.__mzState?.get?.(); return st && st.c && !st.dead ? { race: st.c.race, sub: st.c.sub } : null; },
+    // Phase 81 (BOARD-16, R-16b): every fresh panel open marks the global
+    // boards cache due for a refetch, so a friend's score that landed since
+    // the last look is never served from a pre-open snapshot.
+    onOpen: () => { globalBoards?.invalidate(); },
   });
   window.__mzBoards = Object.freeze({ onDeadTab: boardsPanel.onDeadTab });
 
@@ -7112,6 +7116,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // parked rail card. A null standing (the read failed) shows nothing.
   function handlePgsFlush(result) {
     const submitted = Array.isArray(result?.submitted) ? result.submitted.filter((e) => e && typeof e.hash === "string") : [];
+    // Phase 81 (BOARD-16, R-16b): invalidate before the standing checks
+    // below, so any submission this flush made is never served from a
+    // pre-submission snapshot — even when the standing read itself failed.
+    if (submitted.length > 0) globalBoards?.invalidate();
     const standing = result?.standing;
     if (!standing || typeof standing !== "object" || submitted.length === 0) return;
     const { rank, total } = standing;

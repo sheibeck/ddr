@@ -436,6 +436,11 @@ function isObj(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
+/** globalRankOf(n) — an integer rank >= 1, else null (Phase 81, BOARD-10/R-16c). */
+function globalRankOf(n) {
+  return Number.isSafeInteger(n) && n >= 1 ? n : null;
+}
+
 /**
  * readSnapshot(global) — the snapshot guard. Anything that is not an object
  * with a known status reads as unreachable; entries count only on a ready
@@ -549,12 +554,24 @@ function globalRow(board, entry, index) {
 /**
  * buildGlobalRows(board, snap, openKey) — the snapshot's entries in the
  * order Play Games returned them (never re-sorted), plus the player's own
- * best pinned last under the divider when no listed entry is theirs (D-05).
+ * best pinned last under the divider (D-05).
+ *
+ * Phase 81 (BOARD-10, R-10): the pin appears only when ALL of — the board
+ * has at least one listed row; no listed row is already YOU; the own
+ * record's rank is a genuine integer rank (a `null` rank — Play Games
+ * withholding the player from the public list, R-16c — is never pinned as
+ * though it were merely off-list, see buildGlobalStanding's hidden-score
+ * note instead); and that rank is strictly greater than every listed row's
+ * integer rank (or the listed count, when none carries one).
  */
 function buildGlobalRows(board, snap, openKey) {
   const rows = snap.entries.map((e, i) => globalRow(board, e, i));
-  if (rows.length > 0 && snap.you && !snap.entries.some((e) => e.you === true)) {
-    rows.push(globalRow(board, snap.you, null));
+  const alreadyListed = snap.entries.some((e) => e.you === true);
+  const youRank = snap.you ? globalRankOf(snap.you.rank) : null;
+  if (rows.length > 0 && snap.you && !alreadyListed && youRank !== null) {
+    const listedRanks = snap.entries.map((e) => globalRankOf(e.rank)).filter((r) => r !== null);
+    const threshold = listedRanks.length > 0 ? Math.max(...listedRanks) : snap.entries.length;
+    if (youRank > threshold) rows.push(globalRow(board, snap.you, null));
   }
   return finalize(rows, openKey, { skipCut: true });
 }
@@ -584,18 +601,28 @@ function noGlobalEntry() {
  * reported rank (the list position when missing) out of the board's total
  * (the entry count when unknown), plus a banded quip. NO ENTRY when absent.
  * LINEAGE never reaches this function (Phase 81, BOARD-13: ME-only).
+ *
+ * Phase 81 (BOARD-10, R-16c): when the player's own record exists, is not
+ * one of the listed rows and carries no rank at all (Play Games withheld it
+ * from the public list — a different situation from a genuinely ranked but
+ * off-list record), the card reads the honest hidden-score note instead of
+ * an ordinary "of N interred" line.
  */
 function buildGlobalStanding(board, scope, snap) {
   const listed = snap.entries.findIndex((e) => e.you === true);
   const you = snap.you || (listed !== -1 ? snap.entries[listed] : null);
   if (!you) return noGlobalEntry();
   const run = entryRun(you);
+  const who = String(rf(run, "name") || globalHandle(you)).toUpperCase();
+  const label = who + BOARDS_PANEL_COPY.sep + BOARD_COPY[board].unitLabel;
+
+  if (snap.you && listed === -1 && globalRankOf(snap.you.rank) === null) {
+    return { label, place: BOARDS_PANEL_COPY.standing.noPlace, note: G.hiddenYou };
+  }
 
   let place = null;
   if (Number.isInteger(you.rank) && you.rank > 0) place = you.rank;
   else if (listed !== -1) place = listed + 1;
-  const who = String(rf(run, "name") || globalHandle(you)).toUpperCase();
-  const label = who + BOARDS_PANEL_COPY.sep + BOARD_COPY[board].unitLabel;
   const total = Math.max(snap.total !== null ? snap.total : snap.entries.length, place || 0);
   const ofLine = fill(scope === "friends" ? G.ofFriends : G.ofWorld, { n: total.toLocaleString("en-US") });
   if (place === null) return { label, place: BOARDS_PANEL_COPY.standing.noPlace, note: ofLine };

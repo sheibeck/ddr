@@ -287,6 +287,8 @@ function recordingBoards() {
       return Promise.resolve("granted");
     },
     clear: () => calls.push(["clear"]),
+    // Phase 81 (BOARD-16, R-16b): the onOpen seam and handlePgsFlush both call this.
+    invalidate: () => calls.push(["invalidate"]),
   };
 }
 
@@ -387,6 +389,10 @@ test("(S2) SOURCE: the four Phase 68 lets are declared before the Leaderboards p
   assert.match(panel, /seasons: \(\) => \(\{ current: SEASON, all: knownSeasons\(\) \}\),/);
   assert.match(panel, /onFriendsConsent: \(\) => /);
   assert.equal(occurrences(HTML, "onFriendsConsent:"), 1);
+  // Phase 81 (BOARD-16, R-16b): the panel's onOpen seam invalidates the
+  // global boards cache on every fresh open.
+  assert.match(panel, /onOpen: \(\) => \{ globalBoards\?\.invalidate\(\); \},/);
+  assert.equal(occurrences(HTML, "onOpen:"), 1);
 });
 
 test("(S3) SOURCE: the queue gets window.mzStorage, the IDs map and the SEASON; the death listener, online and visibility triggers are wired", () => {
@@ -406,6 +412,15 @@ test("(S3) SOURCE: the queue gets window.mzStorage, the IDs map and the SEASON; 
   assert.match(g, /ids: pgsIds,/);
   assert.match(g, /isActive: \(\) => account\.identity\(\)\.signedIn === true,/);
   assert.match(g, /onChange: \(\) => boardsPanel\.refresh\(\),/);
+  // Phase 81 (BOARD-16, R-16b): handlePgsFlush invalidates the global boards
+  // cache first, whenever this flush submitted anything — before the
+  // standing checks, so it runs even when the standing read itself failed.
+  const flushFn = sliceBetween(MODULE, "function handlePgsFlush(result) {", "\n  }");
+  assert.match(flushFn, /if \(submitted\.length > 0\) globalBoards\?\.invalidate\(\);/);
+  assert.ok(
+    flushFn.indexOf("globalBoards?.invalidate();") < flushFn.indexOf("const standing = result?.standing;"),
+    "invalidate() runs before the standing checks",
+  );
   assert.equal(occurrences(HTML, "setRunRecordedListener(onRunRecorded)"), 1);
   assert.match(MODULE, /account\.subscribe\(onAccountForPgs\);/);
   assert.match(MODULE, /pgsQueue\.load\(\);/);

@@ -24,6 +24,15 @@
 // a ME-only board (engine/records.js ME_ONLY_BOARDS) and never reaches
 // view(); the signed-in DEEPEST-sample filtering and the `sampled` field are
 // gone.
+//
+// Phase 81 (BOARD-09, R-09/R-10): YOU comes from the signed-in player's own
+// leaderboard score record (the loadPlayerScore result for this same board,
+// collection and all-time span, passed to toGlobalEntry as `mine`) — see
+// isOwnRecord below. The account id (meId) is only the fallback used when no
+// own record came back at all. A listed row's scoreHolder is an OPTIONAL
+// field the plugin omits whenever Play Games reports none — including for
+// the player's own row — so matching on playerId alone (the pre-Phase-81
+// behavior) silently missed the player's own entry.
 //   GlobalEntry = frozen { key, rank, handle, playerId, you, friend, rawScore, run }
 //
 // An entry's key is "g:" + (playerId or "anon") + ":" + its index; the
@@ -66,19 +75,45 @@ function str(x) {
 }
 
 /**
- * toGlobalEntry(score, index, { meId, scope }) — one normalized Play Games
- * score ({ rank, rawScore, tag, handle, playerId, friend }) as a frozen
- * GlobalEntry. `you` is true when the score's playerId is the signed-in
- * player's (an empty id never matches); in the friends scope every non-you
- * row is a friend. Remote values are untrusted (T-68-07): the rank must be an
- * integer from 1, the raw score a finite number, the handle a string, and
- * the tag goes through the never-throw decodeTag.
+ * isOwnRecord(score, mine, meId) — Phase 81 (BOARD-09, R-09): true when the
+ * listed `score` is the signed-in player's own leaderboard record, per the
+ * confirmed assumption_delta_decision (81-DEBUG.md's "## Assumption delta"):
+ * the player's own leaderboard score record (`mine`, loadPlayerScore's
+ * result for this same board/collection/allTime span) decides — by id when
+ * both `score` and `mine` carry a non-empty playerId, else by an exact
+ * rank + rawScore + tag match. `meId` (the signed-in account id) is only the
+ * fallback used when no own record came back at all (`mine` is not an
+ * object). Never throws.
  */
-export function toGlobalEntry(score, index, { meId = "", scope = "all" } = {}) {
+export function isOwnRecord(score, mine, meId) {
+  const s = score && typeof score === "object" ? score : {};
+  if (mine && typeof mine === "object") {
+    const sId = str(s.playerId);
+    const mId = str(mine.playerId);
+    if (sId !== "" && mId !== "") return sId === mId;
+    return (
+      rankOf(s.rank) !== null &&
+      rankOf(s.rank) === rankOf(mine.rank) &&
+      s.rawScore === mine.rawScore &&
+      str(s.tag) === str(mine.tag)
+    );
+  }
+  return str(s.playerId) !== "" && s.playerId === str(meId);
+}
+
+/**
+ * toGlobalEntry(score, index, { meId, mine, scope }) — one normalized Play
+ * Games score ({ rank, rawScore, tag, handle, playerId, friend }) as a
+ * frozen GlobalEntry. `you` is isOwnRecord(score, mine, meId) (Phase 81,
+ * BOARD-09); in the friends scope every non-you row is a friend. Remote
+ * values are untrusted (T-68-07): the rank must be an integer from 1, the
+ * raw score a finite number, the handle a string, and the tag goes through
+ * the never-throw decodeTag.
+ */
+export function toGlobalEntry(score, index, { meId = "", mine = null, scope = "all" } = {}) {
   const s = score && typeof score === "object" ? score : {};
   const playerId = str(s.playerId);
-  const me = str(meId);
-  const you = playerId !== "" && playerId === me;
+  const you = isOwnRecord(s, mine, meId);
   return Object.freeze({
     key: `g:${playerId || "anon"}:${index}`,
     rank: rankOf(s.rank),
@@ -139,7 +174,8 @@ const GLOBAL_SCOPES = Object.freeze(["all", "friends"]);
  * map (content/leaderboards.js, or the dev map in the browser loop),
  * `isActive()` is true only while signed in with Compete ON, `playerId()`
  * the signed-in player's id, `onChange()` the panel's redraw hook and
- * `now()` the clock. Returns a frozen { view, requestFriendsAccess, clear }.
+ * `now()` the clock. Returns a frozen
+ * { view, requestFriendsAccess, clear, invalidate }.
  *
  * view({ board, scope, season }) answers synchronously from an in-memory
  * cache keyed by "season|board|scope" and starts at most one fetch per key:
@@ -161,6 +197,9 @@ const GLOBAL_SCOPES = Object.freeze(["all", "friends"]);
  * requestFriendsAccess() is the only path that shows Play Games' consent
  * screen (D-06); one request at a time. "granted" drops the friends
  * snapshots and calls onChange so the next view() fetches rows.
+ *
+ * invalidate() (Phase 81, BOARD-16, R-16b) marks every cache entry due for a
+ * refetch on the next view() without starting one itself.
  */
 export function createGlobalBoards({
   provider,
@@ -173,6 +212,12 @@ export function createGlobalBoards({
   const cache = new Map();
   let generation = 0;
   let consentAsk = null;
+  // Phase 81 (BOARD-16, R-16b): a controller-wide epoch. invalidate() bumps
+  // it; each cache entry records the epoch its last fetch began with
+  // (start()); view() treats an entry whose epoch is behind the controller's
+  // as due for a refetch, same as a TTL expiry, but never bypassing an
+  // active retry backoff.
+  let epoch = 0;
 
   const active = () => {
     try {
@@ -208,13 +253,28 @@ export function createGlobalBoards({
       if (access !== "granted") return { ok: false };
     }
     const [top, own] = await Promise.all([
-      provider.loadTopScores({ leaderboardId: id, collection, maxResults: TOP_N }),
+      // Phase 81 (BOARD-16, R-16b): always bypass Play Games' own cache —
+      // this controller runs its own TTL/invalidation, so a stale plugin-side
+      // read must never shadow it.
+      provider.loadTopScores({ leaderboardId: id, collection, maxResults: TOP_N, forceReload: true }),
       provider.loadPlayerScore({ leaderboardId: id, collection }),
     ]);
     if (!top || typeof top !== "object" || top.ok !== true) return { ok: false };
     const mine = own && own.ok === true && own.score && typeof own.score === "object" ? own.score : null;
     const me = meId() || (mine ? str(mine.playerId) : "");
-    const entries = (Array.isArray(top.scores) ? top.scores : []).map((s, i) => toGlobalEntry(s, i, { meId: me, scope }));
+    // Phase 81 (BOARD-09, R-09/R-10): match every row against the player's
+    // own record (`mine`), not the account id alone, then keep only the
+    // FIRST match as YOU — an adjacency tie on rank+rawScore+tag must never
+    // mark two rows YOU (R-10: the same entry rendered once listed, once
+    // pinned, is exactly this kind of double-match).
+    let seenYou = false;
+    const entries = (Array.isArray(top.scores) ? top.scores : []).map((s, i) => {
+      const e = toGlobalEntry(s, i, { meId: me, mine, scope });
+      if (e.you !== true) return e;
+      if (seenYou) return Object.freeze({ ...e, you: false, friend: scope === "friends" ? true : e.friend });
+      seenYou = true;
+      return e;
+    });
     const you = mine ? Object.freeze({ ...toGlobalEntry(mine, 0, { meId: me, scope }), key: "g:you", you: true, friend: false }) : null;
     return { ok: true, entries, you, total: top.total };
   }
@@ -252,9 +312,12 @@ export function createGlobalBoards({
     changed();
   }
 
-  // start(key, entry) — begins the one fetch for this key.
+  // start(key, entry) — begins the one fetch for this key, recording the
+  // epoch it began with (Phase 81, BOARD-16: invalidate() compares against
+  // this to decide whether a settled fetch is stale).
   function start(key, entry) {
     entry.inFlight = true;
+    entry.entryEpoch = epoch;
     const gen = generation;
     load(entry.id, entry.req).then(
       (outcome) => settle(key, entry, gen, outcome),
@@ -271,16 +334,43 @@ export function createGlobalBoards({
       const req = Object.freeze({ board, scope, season });
       const id = leaderboardId(ids, season, board);
       const status = id === null ? "closed" : "loading";
-      entry = { req, id, snapshot: snapshotOf({ status, ...req }), fetchedAt: null, retryAt: null, inFlight: false };
+      entry = {
+        req,
+        id,
+        snapshot: snapshotOf({ status, ...req }),
+        fetchedAt: null,
+        retryAt: null,
+        inFlight: false,
+        entryEpoch: epoch,
+      };
       cache.set(key, entry);
       if (id !== null) start(key, entry);
       return entry.snapshot;
     }
     if (entry.id === null || entry.inFlight) return entry.snapshot;
     const t = now();
-    const due = entry.retryAt !== null ? t > entry.retryAt : t - entry.fetchedAt > GLOBAL_TTL_MS;
+    // Phase 81 (BOARD-16, R-16b): due on the usual TTL expiry, OR when
+    // invalidate() bumped the controller epoch past this entry's own — but
+    // never ahead of an active retry backoff (retryAt still gates both).
+    const due =
+      entry.retryAt !== null
+        ? t > entry.retryAt
+        : t - entry.fetchedAt > GLOBAL_TTL_MS || entry.entryEpoch < epoch;
     if (due) start(key, entry);
     return entry.snapshot;
+  }
+
+  /**
+   * invalidate() — Phase 81 (BOARD-16, R-16b): marks every cache entry due
+   * for a refetch on the next view() (the shell calls it after a flush that
+   * submitted a score, and on every Leaderboards panel open) without
+   * starting a fetch itself or calling the provider, and without bypassing
+   * an active retry backoff. An entry already in flight when this runs is
+   * refetched on the first view() after it settles (its own entryEpoch, set
+   * when THAT fetch began, is already behind the bumped epoch).
+   */
+  function invalidate() {
+    epoch++;
   }
 
   function requestFriendsAccess() {
@@ -310,5 +400,5 @@ export function createGlobalBoards({
     cache.clear();
   }
 
-  return Object.freeze({ view, requestFriendsAccess, clear });
+  return Object.freeze({ view, requestFriendsAccess, clear, invalidate });
 }

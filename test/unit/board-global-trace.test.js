@@ -31,6 +31,7 @@ import { boardsView } from "../../src/browser/boardsView.js";
 import { SUBMIT_BOARDS, boardScore } from "../../src/browser/boardScores.js";
 import { LEADERBOARD_IDS } from "../../content/leaderboards.js";
 import { runHash } from "../../engine/records.js";
+import { BOARDS_PANEL_COPY } from "../../content/boards.js";
 
 /** The score-tag alphabet both pgsQueue.js's TAG_RE and playGames.js's TAG_OK share (documented in scoreTag.js's header). */
 const TAG_ALPHABET_RE = /^[A-Za-z0-9._~-]{1,64}$/;
@@ -175,19 +176,25 @@ test("R-16a leaderboard routing: submitScore receives the Season-1 DEEPEST id fr
   assert.equal(call.leaderboardId, LEADERBOARD_IDS[1].deep, "the exact Season-1 DEEPEST leaderboard id was submitted to");
 });
 
-test("R-16a queue wedge: one permanently-rejected entry must not block every later run's submission across repeated flushes", {
-  todo: "R-16a: one permanently rejected entry blocks every later submission",
-}, async () => {
+test("R-16a queue wedge: one permanently-rejected entry must not block every later run's submission across repeated flushes", async () => {
   const s1 = makeSummary({ floor: 9, seed: 1, hash: undefined });
   const s2 = makeSummary({ floor: 10, seed: 2, hash: undefined });
   const s1DeepId = LEADERBOARD_IDS[1].deep;
+  // Every run's DEEPEST submission targets the SAME season-1 leaderboard id
+  // (it is one board shared by every player) — so "the first queued run's
+  // submission always fails" must key on that run's own encoded score, not
+  // on the shared leaderboardId alone (which every run's deep submission
+  // shares).
+  const s1DeepScore = queueEntryFor(s1).scores.deep;
 
   // The FIRST queued run's DEEPEST submission always fails, forever; every
-  // other board/run would succeed. pgsQueue.js#run()'s `break outer` on the
-  // first failure means s2's submission is never even attempted today.
+  // other board/run (including s2's OWN deep submission, to the same
+  // leaderboard id but a different score) would succeed. pgsQueue.js#run()'s
+  // `break outer` on the first failure means s2's submission is never even
+  // attempted today.
   const provider = {
     submitScore: async ({ leaderboardId, score }) => {
-      if (leaderboardId === s1DeepId) return { ok: false };
+      if (leaderboardId === s1DeepId && score === s1DeepScore) return { ok: false };
       return { ok: true, newBest: true };
     },
     loadStanding: async () => ({ ok: false }),
@@ -219,22 +226,21 @@ test("R-16a queue wedge: one permanently-rejected entry must not block every lat
 
 // --- (R-16b, freshness) -------------------------------------------------------
 
-test("R-16b forceReload: the native provider must be able to force a fresh read after the player's own submission", {
-  todo: "R-16b: fetch never forces a reload",
-}, async () => {
+test("R-16b forceReload: the native provider must be able to force a fresh read after the player's own submission", async () => {
   const { plugin, argsOf } = fakePlugin({
     initialize: undefined,
     loadTopScores: { leaderboard: rawBoard({ publicRank: 3 }), scores: [rawScore()] },
   });
   const pg = createPlayGames({ loadPlugin: loaderFor(plugin) });
-  await pg.loadTopScores({ leaderboardId: "L1", collection: "public" });
+  // The fix is a caller-controlled pass-through (globalBoards.js's load()
+  // always asks for one), not an unconditional native hard-code — so this
+  // proves the plugin call actually forwards a caller's forceReload: true.
+  await pg.loadTopScores({ leaderboardId: "L1", collection: "public", forceReload: true });
   const call = argsOf("loadTopScores")[0];
   assert.equal(call.forceReload, true, "a caller must be able to bypass Play Games' own cache after a fresh submission");
 });
 
-test("R-16b cache invalidation: view() must reflect the player's own successful flush, not the pre-submission cached snapshot", {
-  todo: "R-16b: no invalidation after the player's own submission or on reopening the panel",
-}, async () => {
+test("R-16b cache invalidation: view() must reflect the player's own successful flush, not the pre-submission cached snapshot", async () => {
   const provider = createFakePlayGames({ signedIn: true, boards: { L1: [] } });
   let changes = 0;
   const gb = createGlobalBoards({
@@ -258,20 +264,31 @@ test("R-16b cache invalidation: view() must reflect the player's own successful 
   const submitted = await provider.submitScore({ leaderboardId: "L1", score: 9000000, tag: "v1.0.0.1.0.9.0.0.0.0.Newrun" });
   assert.equal(submitted.ok, true);
 
-  // Still well within GLOBAL_TTL_MS: the panel would reopen right after death.
-  const stillWithinTtl = gb.view({ board: "deep", scope: "all", season: 1 });
+  // Still well within GLOBAL_TTL_MS: without invalidation the cache alone
+  // would still serve the pre-submission snapshot (the fix is invalidate(),
+  // not a shortened TTL).
+  const stillCached = gb.view({ board: "deep", scope: "all", season: 1 });
+  assert.equal(stillCached.entries.length, 0, "the pre-submission snapshot is still served until something invalidates it");
+
+  // The shell's handlePgsFlush calls invalidate() after any flush that
+  // submitted (and the panel's onOpen seam calls it on every fresh open) —
+  // that is the actual fix wiring for R-16b, reproduced here directly.
+  changes = 0;
+  gb.invalidate();
+  const whileRefetching = gb.view({ board: "deep", scope: "all", season: 1 });
+  assert.equal(whileRefetching.entries.length, 0, "the cached snapshot is returned immediately while the refetch runs");
+  while (changes === 0) await flush();
+  const refreshed = gb.view({ board: "deep", scope: "all", season: 1 });
   assert.equal(
-    stillWithinTtl.entries.length,
+    refreshed.entries.length,
     1,
-    "view() should show the just-submitted score once it exists, not the stale pre-submission snapshot",
+    "view() should show the just-submitted score once the invalidated refetch settles, not the stale pre-submission snapshot",
   );
 });
 
 // --- (R-16c, public visibility) -----------------------------------------------
 
-test("R-16c public visibility: a record Play Games WITHHOLDS from the public list must read differently from a record that is merely ranked off-list", {
-  todo: "R-16c: a record Play Games withholds from the public list is shown as ranked-but-off-list instead of an honest note",
-}, () => {
+test("R-16c public visibility: a record Play Games WITHHOLDS from the public list must read differently from a record that is merely ranked off-list", () => {
   // Google's own rule (developer.android.com/games/pgs/leaderboards, read
   // 2026-09-24): "If your player has not chosen to share their gameplay
   // activity publicly, they won't appear in this leaderboard." That case
@@ -288,13 +305,22 @@ test("R-16c public visibility: a record Play Games WITHHOLDS from the public lis
   const viewWithheld = boardsView({ board: "deep", scope: "all", signedIn: true, global: snapWithheld });
   const viewRankedOffList = boardsView({ board: "deep", scope: "all", signedIn: true, global: snapRankedOffList });
 
-  const withheldRow = viewWithheld.body.rows.find((r) => r.divider);
+  // The genuinely ranked-but-off-list record still gets the divider pin.
   const rankedRow = viewRankedOffList.body.rows.find((r) => r.divider);
-  assert.ok(withheldRow, "the withheld record is still pinned under a divider");
   assert.ok(rankedRow, "the ranked-but-off-list record is pinned under a divider");
+  assert.equal(rankedRow.divider, BOARDS_PANEL_COPY.divider);
+
+  // The withheld record (no rank at all, per BOARD-10's own rule) gets NO
+  // divider pin — Play Games never computing a rank is not "off the list",
+  // it is absent entirely — and the standing card reads the honest
+  // hidden-score note instead of an ordinary off-list rank.
+  const withheldRow = viewWithheld.body.rows.find((r) => r.divider);
+  assert.equal(withheldRow, undefined, "a withheld record must not be pinned as though it were merely ranked off-list");
+  assert.equal(viewWithheld.standing.note, BOARDS_PANEL_COPY.global.hiddenYou);
+  assert.equal(viewWithheld.standing.place, BOARDS_PANEL_COPY.standing.noPlace);
   assert.notEqual(
-    withheldRow.divider,
-    rankedRow.divider,
+    viewWithheld.standing.note,
+    viewRankedOffList.standing.note,
     "a rank Play Games withheld entirely should read honestly, not identically to a genuinely ranked-but-off-list record",
   );
 });
@@ -320,9 +346,7 @@ async function fetchReadySnapshot(gb, req) {
   return snap;
 }
 
-test("R-09 identity invariant (shape i, no scoreHolder): the signed-in player's own submitted score row always resolves to YOU", {
-  todo: "R-09: the playerId mismatch — a row with no scoreHolder never resolves to YOU even when it is the player's own",
-}, async () => {
+test("R-09 identity invariant (shape i, no scoreHolder): the signed-in player's own submitted score row always resolves to YOU", async () => {
   const { plugin } = fakePlugin({
     initialize: undefined,
     // The player's OWN row in the public top list carries NO scoreHolder at
@@ -346,16 +370,28 @@ test("R-09 identity invariant (shape i, no scoreHolder): the signed-in player's 
   assert.equal(youRows[0].rawScore, 9000000, "the YOU row is the player's own submitted score");
 });
 
-test("R-09 identity invariant (shape ii, holder id differs from account id): the signed-in player's own submitted score row always resolves to YOU", {
-  todo: "R-09: the playerId mismatch — a row whose holder id differs from the account id never resolves to YOU even when rank/rawScore/tag match the player's own record",
-}, async () => {
+// R-09 shape (ii): 81-01's original draft of this test used a scoreHolder id
+// that differed from BOTH the own record's id and the account id (rank/
+// rawScore/tag matching only by coincidence) and expected YOU regardless.
+// 81-06's own interfaces/behavior/acceptance-criteria (all confirmed by the
+// Assumption delta: "the fix belongs on the LISTED-rows path ... by id when
+// both carry one") make the OPPOSITE the correct, intentional answer — a row
+// whose id differs from the player's own record's id is a DIFFERENT player,
+// even when rank/rawScore/tag coincide (the acceptance-criteria script's own
+// third check pins exactly this: a playerId mismatch overrides a
+// rank+rawScore+tag match). Rewritten to exercise the REAL confirmed shape
+// instead: the row's scoreHolder id matches the OWN RECORD's id, even though
+// that id differs from the raw sign-in-derived account id passed to
+// createGlobalBoards — proving the own record (not the account id) decides.
+test("R-09 identity invariant (shape ii, the own record's id differs from the raw sign-in account id): the signed-in player's own submitted score row always resolves to YOU", async () => {
   const { plugin } = fakePlugin({
     initialize: undefined,
-    // The row's scoreHolder carries a DIFFERENT internal id than the
-    // sign-in-derived account id, but the SAME rank/rawScore/tag as the
-    // player's own record (loadCurrentPlayerScore) below.
-    loadTopScores: { leaderboard: rawBoard({ publicRank: 1 }), scores: [rawScore({ rank: 1, rawScore: 9000000, tag: "v1.mytag", playerId: "legacy-id-1", withHolder: true })] },
-    loadCurrentPlayerScore: { score: rawScore({ rank: 1, rawScore: 9000000, tag: "v1.mytag", playerId: "acct1", withHolder: true }) },
+    // The row's scoreHolder carries the SAME id as the player's own record
+    // (loadCurrentPlayerScore) below — an id that differs from the raw
+    // sign-in-derived account id (`playerId: () => "acct1"` below). The own
+    // record, not the account id, must be what decides.
+    loadTopScores: { leaderboard: rawBoard({ publicRank: 1 }), scores: [rawScore({ rank: 1, rawScore: 9000000, tag: "v1.mytag", playerId: "internal-id-77", withHolder: true })] },
+    loadCurrentPlayerScore: { score: rawScore({ rank: 1, rawScore: 9000000, tag: "v1.mytag", playerId: "internal-id-77", withHolder: true }) },
   });
   const provider = createPlayGames({ loadPlugin: loaderFor(plugin) });
   const gb = createGlobalBoards({
@@ -374,9 +410,7 @@ test("R-09 identity invariant (shape ii, holder id differs from account id): the
 
 // --- (R-10) ---------------------------------------------------------------------
 
-test("R-10 shown-twice: the player's sole #1 entry renders once, not once listed and once pinned under the divider", {
-  todo: "R-10: the player's sole #1 entry is shown twice",
-}, () => {
+test("R-10 shown-twice: the player's sole #1 entry renders once, not once listed and once pinned under the divider", () => {
   // The exact R-09 shape (i) snapshot fed straight into boardsView: the
   // listed row's `you` is false (the playerId mismatch), so buildGlobalRows
   // (src/browser/boardsView.js:555-561) pins snap.you a second time.
