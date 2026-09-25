@@ -5,9 +5,8 @@
 ## Where the run is
 - `/gsd-autonomous` is running milestone v2.1 (11 phases: 72, 73, 74, 75, 75.1, 76, 77, 78, 79, 80, 81). This is Phase 72 of 11.
 - Phase 72 execution (`/gsd-execute-phase 72 --no-transition`) has 7 plans in 5 waves.
-  - Waves 1–3 are merged and green, with plans 72-01 to 72-05 complete. The post-merge `npm test` after wave 3 gave 5,621 pass, 0 fail, 7 todo.
-  - **Wave 4, 72-06 (Skeleton shatter, fix (c))** is executing in worktree `.claude/worktrees/agent-a651d85b703f5a1a6`, branch `worktree-agent-a651d85b703f5a1a6`, base `904269c`. Its wave manifest is at `<scratchpad>/wave-72-4.json`.
-  - Wave 5, **72-07**, comes next: F1 members/allies obey per-target rules, F2 drop the Acute Hearing clause, F3 Shadow daggerOnly, F5 the PARLEY_NEED_MOD sign, the AFTER bot readout, the final ledger and the ledger-sync guard.
+  - Waves 1–4 are merged and green, with plans 72-01 to 72-06 complete. The post-merge `npm test` after wave 4 gave 5,643 pass, 0 fail, 1 todo (F5, 72-07's).
+  - **NEXT: wave 5, 72-07** (not yet dispatched; the base is master HEAD): F1 members/allies obey per-target rules, F2 drop the Acute Hearing clause, F3 Shadow daggerOnly, F5 the PARLEY_NEED_MOD sign, the AFTER bot readout, the final ledger and the ledger-sync guard.
 - After Phase 72:
   1. Write an orchestrator `72-VERIFICATION.md` (status passed + `human_verification` list) per the deferred-UAT protocol, then run `phase.complete`.
   2. Then Phase 73: smart discuss → plan (`--skip-research`) → execute.
