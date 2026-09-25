@@ -164,7 +164,7 @@ Plans:
   2. Every displayed modifier is signed from the player's point of view — "+2" always reads better, "−2" always reads worse — across item/loot/store/find comparisons, the hero sheet, spell/ability text, condition chips and the fight log's need breakdown.
   3. The same modifier never shows opposite signs on two different surfaces.
 
-**Plans**: 2/8 plans executed
+**Plans**: 5/8 plans executed
 
 Plans:
 **Wave 1**
@@ -174,9 +174,9 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 74-03-PLAN.md — Oracle, fight-log, dice-reveal and rail roll lines re-signed from the player's side (foe lines negated); heights/water "−N on the climb/leap"; voice sample (wave 2)
-- [ ] 74-04-PLAN.md — src/browser/rollOdds.js; hero sheet "16–20 (d20)"; combat menu STRIKE "Hit 16–20 (d20)" and FLEE range; hero snapshots re-pinned (wave 2)
-- [ ] 74-05-PLAN.md — Item/loot/store/find comparisons say which way ("−2 to hit, worse than your Club"), crit ranges on the strike die; store snapshot re-pinned (wave 2)
+- [x] 74-03-PLAN.md — Oracle, fight-log, dice-reveal and rail roll lines re-signed from the player's side (foe lines negated); heights/water "−N on the climb/leap"; voice sample (wave 2)
+- [x] 74-04-PLAN.md — src/browser/rollOdds.js; hero sheet "16–20 (d20)"; combat menu STRIKE "Hit 16–20 (d20)" and FLEE range; hero snapshots re-pinned (wave 2)
+- [x] 74-05-PLAN.md — Item/loot/store/find comparisons say which way ("−2 to hit, worse than your Club"), crit ranges on the strike die; store snapshot re-pinned (wave 2)
 
 **Wave 3**
 
@@ -400,7 +400,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
-| 74. Roll Display & Modifier Honesty | v2.1 | 2/8 | In Progress|  |
+| 74. Roll Display & Modifier Honesty | v2.1 | 5/8 | In Progress|  |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
