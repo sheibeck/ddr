@@ -674,8 +674,10 @@ test("EVENT_NARRATION.struckByFoe: soaked + mods render; the unflagged sentence 
     mods: [{ name: "Guard", delta: -1 }],
   });
   assert.match(decorated, /hide soaked 2/);
-  assert.match(decorated, /Guard/);
-  assert.match(decorated, /[−-]1/);
+  // Phase 74 (ROLL-02/03): a foe's Guard −1 (worse odds for the foe, better
+  // for the player) re-signs to "(Guard +1)" on this foe-rolled line — the
+  // exact player-view sign, not a loose digit match.
+  assert.match(decorated, /\(Guard \+1\)/);
 
   const plain = EVENT_NARRATION.struckByFoe({
     type: "struckByFoe",
