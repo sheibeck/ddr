@@ -456,35 +456,37 @@ test("battleRoar: starts its timer and narrates battleRoarRaised with member (ro
 // 5. foeTurn member-branch hooks: Sidestep/Smoke need shifts, Riposte, Brace
 // ---------------------------------------------------------------------------
 
-test("foeTurn member branch: the member's OWN Sidestep shifts its own need (-2, floor 1)", () => {
+test("foeTurn member branch: the member's OWN Sidestep shifts its own atLeast (mFaces -2, floor 1)", () => {
   const foe = fixedFoe({ wp: 30, maxWP: 30 });
   const sheet = classedMember({ abilities: [] });
   startEffect(sheet, "ability:sidestep", { rounds: 2 });
   const ally = fixedAlly();
   const state = fixedState({ party: [sheet] });
   state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
-  // pool pick 2 -> member; mRoll 4 vs need 3 (5 - 2) -> miss.
+  // pool pick 2 -> member; mFaces 3 (5 - 2), atLeast 18; raw draw 4 mirrors to
+  // roll 17 -> miss.
   const events = foeTurn(state, fakeRng([2, 4]), []);
   const missed = events.find((e) => e.type === "foeMissed");
   assert.ok(missed);
   assert.equal(missed.member, "Ada");
-  assert.equal(missed.need, 3);
-  assert.ok(missed.needMods.some((m) => m.name === "Sidestep" && m.delta === -2));
+  assert.equal(missed.atLeast, 18);
+  assert.ok(missed.mods.some((m) => m.name === "Sidestep" && m.delta === -2));
 });
 
-test("foeTurn member branch: the member's OWN Smoke overrides its own need to 1", () => {
+test("foeTurn member branch: the member's OWN Smoke overrides its own atLeast to the top face", () => {
   const foe = fixedFoe({ wp: 30, maxWP: 30 });
   const sheet = classedMember({ abilities: [] });
   startEffect(sheet, "ability:smoke", { rounds: 2 });
   const ally = fixedAlly();
   const state = fixedState({ party: [sheet] });
   state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
-  // pool pick 2 -> member; mRoll 2 vs need 1 -> miss.
+  // pool pick 2 -> member; mFaces 1 (Smoke override), atLeast 20; raw draw 2
+  // mirrors to roll 19 -> miss.
   const events = foeTurn(state, fakeRng([2, 2]), []);
   const missed = events.find((e) => e.type === "foeMissed");
   assert.ok(missed);
-  assert.equal(missed.need, 1);
-  assert.ok(missed.needMods.some((m) => m.name === "Smoke"));
+  assert.equal(missed.atLeast, 20);
+  assert.ok(missed.mods.some((m) => m.name === "Smoke"));
 });
 
 test("foeTurn member branch: the member's OWN Riposte counters a miss on THAT member", () => {

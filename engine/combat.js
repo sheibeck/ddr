@@ -2699,23 +2699,25 @@ export function foeTurn(state, rng, events = []) {
         // hero-only machinery), no die(). Same to-hit shape, then straight to
         // the member's own `wp`; a member at 0 wp is downed + departs.
         const mDieN = foeDie(c, f);
-        const mRoll = rng.d(mDieN);
         // Phase 38 (ABIL-02): a party member is its own body — Battle Roar
         // (party-wide) still applies, but Sidestep/Smoke (the hero's own
         // body) do not, hence `vs = "member"`.
-        let mNeed = foeToHitVs(state, "member");
+        // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng)
+        // and now sits above the strike draw. `mNeed` -> `mFaces`,
+        // `mNeedMods` -> `mMods`.
+        let mFaces = foeToHitVs(state, "member");
         // Phase 25 (FEED-01, additive payload): same breakdown + post-mods
         // pattern as the hero branch below — narration only, 0 new draws.
-        const mNeedMods = foeToHitBreakdown(state, "member").mods.slice();
+        const mMods = foeToHitBreakdown(state, "member").mods.slice();
         if (f.blind) {
-          const before = mNeed;
-          mNeed = 1;
-          if (mNeed !== before) mNeedMods.push({ name: "blind", delta: mNeed - before });
+          const before = mFaces;
+          mFaces = 1;
+          if (mFaces !== before) mMods.push({ name: "blind", delta: mFaces - before });
         }
         if (C.foeToHitPenalty) {
-          const before = mNeed;
-          mNeed = Math.min(mNeed, C.foeToHitPenalty);
-          if (mNeed !== before) mNeedMods.push({ name: "penalty", delta: mNeed - before });
+          const before = mFaces;
+          mFaces = Math.min(mFaces, C.foeToHitPenalty);
+          if (mFaces !== before) mMods.push({ name: "penalty", delta: mFaces - before });
         }
         // Phase 38 (ABIL-05): a member is its own body — its OWN Sidestep/
         // Smoke shift its own need, exactly like the hero's equivalent terms
@@ -2724,14 +2726,14 @@ export function foeTurn(state, rng, events = []) {
         // fixture (no fixture carries a party).
         const mSheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
         if (mSheet && abilityEffectActive(mSheet, "sidestep")) {
-          const before = mNeed;
-          mNeed = Math.max(1, mNeed - 2);
-          if (mNeed !== before) mNeedMods.push({ name: "Sidestep", delta: mNeed - before });
+          const before = mFaces;
+          mFaces = Math.max(1, mFaces - 2);
+          if (mFaces !== before) mMods.push({ name: "Sidestep", delta: mFaces - before });
         }
         if (mSheet && abilityEffectActive(mSheet, "smoke")) {
-          const before = mNeed;
-          mNeed = 1;
-          if (mNeed !== before) mNeedMods.push({ name: "Smoke", delta: mNeed - before });
+          const before = mFaces;
+          mFaces = 1;
+          if (mFaces !== before) mMods.push({ name: "Smoke", delta: mFaces - before });
         }
         if (C.parleyInsulted) {
           // PARLEY-02 / D-06 / D-20 + Phase 72 ROLL-01 (a), user ruling
@@ -2740,11 +2742,15 @@ export function foeTurn(state, rng, events = []) {
           // (Smoke / Mirror / invisible / blind) resets the need first and
           // the insult then adds its one face on top. Post-draw arithmetic,
           // zero draws.
-          const before = mNeed;
-          mNeed += 1;
-          mNeedMods.push({ name: "insulted", delta: mNeed - before });
+          const before = mFaces;
+          mFaces += 1;
+          mMods.push({ name: "insulted", delta: mFaces - before });
         }
-        if (mRoll > mNeed) {
+        // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit
+        // die, in the same draw position the old roll-under draw sat.
+        const mCheck = rollCheck(rng, mDieN, atLeastFor(mFaces, mDieN));
+        const { roll: mRoll, atLeast: mAtLeast } = mCheck;
+        if (!mCheck.ok) {
           // name the member as the intended target so a whiff at a party
           // member reads distinctly from a whiff at the hero (PARTY: Oracle
           // shows who was targeted). `member` field is additive + only set in
@@ -2753,9 +2759,10 @@ export function foeTurn(state, rng, events = []) {
             type: "foeMissed",
             name: f.name,
             roll: mRoll,
-            need: mNeed,
+            atLeast: mAtLeast,
+            dieN: mDieN,
             member: member.name,
-            ...(mNeedMods.length ? { needMods: mNeedMods } : {}),
+            ...(mMods.length ? { mods: mMods } : {}),
           });
           // Phase 38 (ABIL-05, Riposte) — "for one round every foe that
           // misses you eats your weapon damage": a miss on THIS member with
@@ -2780,9 +2787,12 @@ export function foeTurn(state, rng, events = []) {
         // sum — see foeLevelBase's JSDoc above and the hero-branch twin below
         // for the full rationale. Same single draw, same position — 0 draw-
         // shape change.
-        const mCrit = mRoll === 1;
+        // Phase 73 (ROLL-05): the mirrored crit rule — the top face of the
+        // member's own strike die always crits, byte-identical to the old
+        // `mRoll === 1`.
+        const mCritical = isBestFace(mRoll, mDieN);
         const mDice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6);
-        let mDmg = foeHitFor(foeLevelBase(f) + (mCrit ? 2 * mDice : mDice), curve);
+        let mDmg = foeHitFor(foeLevelBase(f) + (mCritical ? 2 * mDice : mDice), curve);
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
         // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
         // too (a shrunk-AND-weakened foe is quartered, ceil applied twice —
@@ -2816,9 +2826,11 @@ export function foeTurn(state, rng, events = []) {
           member: member.name,
           dmg: mDmg,
           roll: mRoll,
-          need: mNeed,
-          critical: mRoll === 1,
-          ...(mNeedMods.length ? { needMods: mNeedMods } : {}),
+          atLeast: mAtLeast,
+          dieN: mDieN,
+          critical: mCritical,
+          ...(mCritical ? { critAtLeast: mDieN } : {}),
+          ...(mMods.length ? { mods: mMods } : {}),
         });
         if (member.wp <= 0) downMember(state, member, events);
         continue;

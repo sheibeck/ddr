@@ -284,25 +284,26 @@ test("foeTurn: struckByFoe carries mods on a landed hit against a Guard hero", (
   assert.deepEqual(struck.mods, [{ name: "Guard", delta: -1 }]);
 });
 
-test("foeTurn: the member branch (memberStruck + its miss) carries needMods too — the hero's own passives still apply", () => {
+test("foeTurn: the member branch (memberStruck + its miss) carries mods too — the hero's own passives still apply", () => {
   const foeHit = fixedFoe({ lvl: 1, wp: 30 });
   const allyHit = fixedAlly({ wp: 12, maxWP: 20 });
   const hitState = fixedState({ c: { sub: "Guard" }, party: [fixedMember({ wp: 12 })] });
   hitState.combat = fixedCombat([foeHit], { allies: [allyHit] });
-  // pick d(2)=2 -> member; to-hit roll 3 (<= need 4) hits; dmg die d6 = 4.
+  // pick d(2)=2 -> member; mFaces = 4 (Guard), atLeast = 17; raw draw 3 mirrors
+  // to roll 18 (>=17) hits; dmg die d6 = 4.
   const evHit = foeTurn(hitState, fakeRng([2, 3, 4]), []);
   const ms = evHit.find((e) => e.type === "memberStruck");
-  assert.deepEqual(ms.needMods, [{ name: "Guard", delta: -1 }]);
-  assert.equal(ms.need, 4);
+  assert.deepEqual(ms.mods, [{ name: "Guard", delta: -1 }]);
+  assert.equal(ms.atLeast, 17);
 
   const foeMiss = fixedFoe({ lvl: 1, wp: 30 });
   const allyMiss = fixedAlly({ wp: 12, maxWP: 20 });
   const missState = fixedState({ c: { sub: "Guard" }, party: [fixedMember({ wp: 12 })] });
   missState.combat = fixedCombat([foeMiss], { allies: [allyMiss] });
-  // pick d(2)=2 -> member; to-hit roll 5 (> need 4) misses.
+  // pick d(2)=2 -> member; raw draw 5 mirrors to roll 16 (<17) misses.
   const evMiss = foeTurn(missState, fakeRng([2, 5]), []);
   const missed = evMiss.find((e) => e.type === "foeMissed" && e.member);
-  assert.deepEqual(missed.needMods, [{ name: "Guard", delta: -1 }]);
+  assert.deepEqual(missed.mods, [{ name: "Guard", delta: -1 }]);
 });
 
 test("flee: pursuitStrike's foeMissed carries mods for a Guard hero (module-private, exercised via flee)", () => {
