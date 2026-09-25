@@ -135,12 +135,14 @@ test("(c) a Darkness-phobic character with Hardiness: the mitigation d2 is drawn
   const withHardiness = fixedState({ c: { phobia: "Darkness", phobiaType: null, skills: { Hardiness: 1 } } });
   withHardiness.floor.g[withHardiness.floor.py][withHardiness.floor.px].dark = true;
   startCombat(withHardiness, true, "Beasts", fakeRng([1]), []);
-  const eventsA = fight(withHardiness, fakeRng([15, 5, 2]), []); // d2=2 -> no shrug
+  const eventsA = fight(withHardiness, fakeRng([15, 5, 2]), []); // raw d2=2 -> mirrored roll 1 < atLeast 2 -> no shrug
   assert.equal(withHardiness.combat.afraid, 2);
   const joinedIdxA = eventsA.findIndex((e) => e.type === "combatJoined");
   const afraidIdxA = eventsA.findIndex((e) => e.type === "phobiaAfraid");
   assert.ok(joinedIdxA >= 0 && afraidIdxA > joinedIdxA, "phobiaAfraid follows combatJoined");
-  assert.deepStrictEqual(eventsA[afraidIdxA], { type: "phobiaAfraid", rounds: 2 });
+  // Phase 73 (ROLL-05): a DRAWN-but-failed Hardiness shrug now adds the
+  // roll-high triple to phobiaAfraid.
+  assert.deepStrictEqual(eventsA[afraidIdxA], { type: "phobiaAfraid", rounds: 2, roll: 1, atLeast: 2, dieN: 2 });
 
   const withoutHardiness = fixedState({ c: { phobia: "Darkness", phobiaType: null } });
   withoutHardiness.floor.g[withoutHardiness.floor.py][withoutHardiness.floor.px].dark = true;

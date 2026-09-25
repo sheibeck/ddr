@@ -206,17 +206,21 @@ test("exhaustive d20 enumeration: base rates match the CONTEXT anchors and the p
 
 // --- 4. flee()'s fleeRolled event shape -------------------------------------
 
-test("flee: the ordinary path pushes exactly one fleeRolled with exactly {type,roll,mods,total,need}, no bonus/bulk key, preceding fled/fleeFailed", () => {
+test("flee: the ordinary path pushes exactly one fleeRolled with exactly {type,roll,atLeast,dieN,mods}, no total/need/bonus/bulk key, preceding fled/fleeFailed", () => {
   const state = fixedState({ c: fixedFighter({ cls: "Thief", race: "Elven", armor: "Leather" }) });
   state.combat = fixedCombat([fixedFoe()]);
-  const events = flee(state, fakeRng([8]), []); // 8 + 6 = 14 >= 14
+  // Phase 73 (ROLL-05): flee is already roll-high — the raw d20 IS the
+  // roll, no mirror; 8 >= atLeast(14 - bonus(6) = 8) escapes.
+  const events = flee(state, fakeRng([8]), []);
   const rolledEvents = events.filter((e) => e.type === "fleeRolled");
   assert.equal(rolledEvents.length, 1);
   const rolled = rolledEvents[0];
-  assert.deepStrictEqual(Object.keys(rolled).sort(), ["mods", "need", "roll", "total", "type"].sort());
+  assert.deepStrictEqual(Object.keys(rolled).sort(), ["atLeast", "dieN", "mods", "roll", "type"].sort());
   assert.equal(rolled.roll, 8);
-  assert.equal(rolled.need, 14);
-  assert.equal(rolled.total, rolled.roll + fleeBreakdown(state.c).bonus);
+  assert.equal(rolled.dieN, 20);
+  assert.equal(rolled.atLeast, 14 - fleeBreakdown(state.c).bonus);
+  assert.ok(!("total" in rolled), "the old total field is retired");
+  assert.ok(!("need" in rolled), "the old need field is retired");
   assert.ok(!("bonus" in rolled), "the old additive bonus field is retired");
   assert.ok(!("bulk" in rolled), "the old bulk field is retired");
   const rolledIdx = events.findIndex((e) => e.type === "fleeRolled");
@@ -262,12 +266,12 @@ test("flee: Samurai refusal, Cloaker unseen vanish, tracked round-1 withdrawal a
 
 // --- 6. narration (Task 2, FLEE-02): EVENT_NARRATION / LINE_FOR / fightLogLinesFor ---
 
-test("narration: EVENT_NARRATION.fleeRolled renders the roll, every named modifier and the need, BEFORE the outcome", () => {
-  const full = narrateEvent({ type: "fleeRolled", roll: 8, mods: [{ name: "Thief", delta: 5 }, { name: "Mail", delta: -1 }], total: 12, need: 14 });
-  assert.equal(full, 'Flee: rolled <span class="roll">8</span> (Thief +5, Mail −1) — 12 against 14.');
+test("narration: EVENT_NARRATION.fleeRolled renders the roll, its winning range and every named modifier, BEFORE the outcome", () => {
+  const full = narrateEvent({ type: "fleeRolled", roll: 8, atLeast: 10, dieN: 20, mods: [{ name: "Thief", delta: 5 }, { name: "Mail", delta: -1 }] });
+  assert.equal(full, 'Flee: rolled <span class="roll">8</span> vs 10–20 (Thief +5, Mail −1).');
 
-  const noMods = narrateEvent({ type: "fleeRolled", roll: 8, mods: [], total: 8, need: 14 });
-  assert.equal(noMods, 'Flee: rolled <span class="roll">8</span> — 8 against 14.');
+  const noMods = narrateEvent({ type: "fleeRolled", roll: 8, atLeast: 14, dieN: 20, mods: [] });
+  assert.equal(noMods, 'Flee: rolled <span class="roll">8</span> vs 14–20.');
 
   const sparse = narrateEvent({ type: "fleeRolled" });
   assert.doesNotThrow(() => sparse);
@@ -275,35 +279,35 @@ test("narration: EVENT_NARRATION.fleeRolled renders the roll, every named modifi
 });
 
 test("narration: LINE_FOR.fleeRolled matches the fold's own text; null-safe on a sparse event", () => {
-  const full = LINE_FOR.fleeRolled({ roll: 8, mods: [{ name: "Thief", delta: 5 }, { name: "Mail", delta: -1 }], total: 12, need: 14 });
-  assert.equal(full.text, "Flee: 8 (Thief +5, Mail −1) = 12 vs 14");
+  const full = LINE_FOR.fleeRolled({ roll: 8, atLeast: 10, dieN: 20, mods: [{ name: "Thief", delta: 5 }, { name: "Mail", delta: -1 }] });
+  assert.equal(full.text, "Flee: 8 vs 10–20 (Thief +5, Mail −1)");
   assert.equal(full.tone, "beat");
 
-  const noMods = LINE_FOR.fleeRolled({ roll: 8, mods: [], total: 8, need: 14 });
-  assert.equal(noMods.text, "Flee: 8 = 8 vs 14");
+  const noMods = LINE_FOR.fleeRolled({ roll: 8, atLeast: 14, dieN: 20, mods: [] });
+  assert.equal(noMods.text, "Flee: 8 vs 14–20");
 
   assert.doesNotThrow(() => LINE_FOR.fleeRolled({}));
 });
 
 test("narration: fightLogLinesFor folds fleeRolled+outcome into ONE line, roll first, whose tap-reveal is the Oracle sentence with dice", () => {
   const events = [
-    { type: "fleeRolled", roll: 9, mods: [{ name: "Thief", delta: 5 }], total: 14, need: 14 },
+    { type: "fleeRolled", roll: 9, atLeast: 9, dieN: 20, mods: [{ name: "Thief", delta: 5 }] },
     { type: "fled", reason: "escaped" },
   ];
   const lines = fightLogLinesFor("flee", events, {});
   assert.equal(lines.length, 1);
-  assert.ok(lines[0].text.startsWith("Flee: 9 (Thief +5) = 14 vs 14."), "the roll/modifiers/need lead the outcome text");
+  assert.ok(lines[0].text.startsWith("Flee: 9 vs 9–20 (Thief +5)."), "the roll/range/modifiers lead the outcome text");
   assert.ok(lines[0].roll.startsWith("Flee: rolled"), "the tap-reveal is the Oracle's own fleeRolled sentence, dice kept");
   assert.ok(lines[0].roll.includes("Thief +5"));
 });
 
 test("narration: linesForAction's flee fold reads the SAME mods list every surface reads (no re-derivation)", () => {
   const events = [
-    { type: "fleeRolled", roll: 3, mods: [], total: 3, need: 14 },
+    { type: "fleeRolled", roll: 3, atLeast: 14, dieN: 20, mods: [] },
     { type: "fleeFailed" },
   ];
   const out = linesForAction("flee", events, {});
   assert.equal(out.length, 1);
-  assert.equal(out[0].text, "Flee: 3 = 3 vs 14. You do not make it.");
+  assert.equal(out[0].text, "Flee: 3 vs 14–20. You do not make it.");
   assert.equal(out[0].tone, "miss");
 });

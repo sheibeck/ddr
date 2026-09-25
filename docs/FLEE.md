@@ -109,24 +109,28 @@ flat, silent 25-point gap the player never sees explained).
 The ordinary flee roll pushes exactly one event:
 
 ```js
-{ type: "fleeRolled", roll, mods: [{ name, delta }, ...], total, need }
+{ type: "fleeRolled", roll, atLeast, dieN: 20, mods: [{ name, delta }, ...] }
 ```
 
-The old `bonus`/`bulk` keys are **retired** (greenfield — this is the only
-shape the event ever carries now). `mods` is built in a fixed order — Thief
-→ class → race → armor — pushing an entry only when it is non-zero, mirroring
-`engine/derived.js#foeToHitBreakdown`'s `{ name, delta }` shape so every
-narration surface reads the SAME list instead of re-deriving the formula:
+Phase 73 (ROLL-05) folds the bonus into the threshold instead of adding it to
+the roll: `roll` is the raw d20 (flee was already roll-high — no mirror), and
+`atLeast = 14 - bonus` is the lowest winning face; success is `roll >=
+atLeast`. The old `total`/`need`/`bonus`/`bulk` keys are **retired**
+(greenfield — this is the only shape the event ever carries now). `mods` is
+built in a fixed order — Thief → class → race → armor — pushing an entry only
+when it is non-zero, mirroring `engine/derived.js#foeToHitBreakdown`'s
+`{ name, delta }` shape so every narration surface reads the SAME list
+instead of re-deriving the formula:
 
 - **Oracle sentence** (`src/browser/eventNarration.js`):
-  `Flee: rolled <span class="roll">8</span> (Thief +5, Mail −1) — 12 against
-  14.` — the roll, every named modifier, and the need, all before the
+  `Flee: rolled <span class="roll">8</span> vs 10–20 (Thief +5, Mail −1).` —
+  the roll, its winning range, and every named modifier, all before the
   `fled`/`fleeFailed` line resolves.
 - **Fight-log fold** (`src/browser/narrationLines.js#fleeChain`): one line per
-  attempt, ROLL FIRST — `Flee: 9 (Thief +5) = 14 vs 14. You get clear.` — by
+  attempt, ROLL FIRST — `Flee: 9 vs 9–20 (Thief +5). You get clear.` — by
   reusing `LINE_FOR.fleeRolled`'s own text rather than restating the format.
-- **Rail line** (`LINE_FOR.fleeRolled`): `Flee: 8 (Thief +5, Mail −1) = 12 vs
-  14` (no parenthetical when there are no modifiers).
+- **Rail line** (`LINE_FOR.fleeRolled`): `Flee: 8 vs 10–20 (Thief +5, Mail
+  −1)` (no parenthetical when there are no modifiers).
 - **Rail** (`RAIL_FAMILY.fleeRolled`): `{ icon: "·", title: "FLEE", tone:
   "info" }` — a family entry for completeness; the fight log is the real
   destination for this combat-only event.

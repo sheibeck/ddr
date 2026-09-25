@@ -117,11 +117,11 @@ test("probe FEED-02 adjacency: strikeRefused names the spell and produces no str
 });
 
 test("probe FEED-02 adjacency: withdrawalDenied + fleeRolled + fleeFailed order block line before the outcome", () => {
-  // Phase 42 (FLEE-01): need is now 14 (was 11); the payload carries `mods`/
-  // `total`, not the old `bonus` field.
+  // Phase 42 (FLEE-01): need is now 14 (was 11). Phase 73 (ROLL-05): the
+  // payload carries `atLeast`/`dieN`/`mods`, not the old `total`/`need`.
   const events = [
     { type: "withdrawalDenied", reason: "masterOfArms" },
-    { type: "fleeRolled", roll: 3, mods: [], total: 3, need: 14 },
+    { type: "fleeRolled", roll: 3, atLeast: 14, dieN: 20, mods: [] },
     { type: "fleeFailed" },
   ];
   const out = linesForAction("flee", events, {});
@@ -486,34 +486,34 @@ test("encounter start: knightBigFoe renders as its own clause", () => {
 
 test("chains: fleeRolled + fled folds the roll into one hit line, roll first (Phase 42, FLEE-02)", () => {
   const events = [
-    { type: "fleeRolled", roll: 9, mods: [{ name: "Thief", delta: 5 }], total: 14, need: 14 },
+    { type: "fleeRolled", roll: 9, atLeast: 9, dieN: 20, mods: [{ name: "Thief", delta: 5 }] },
     { type: "fled", reason: "escaped" },
   ];
   const out = linesForAction("flee", events, {});
   assert.equal(out.length, 1);
-  assert.equal(out[0].text, "Flee: 9 (Thief +5) = 14 vs 14. You get clear.");
+  assert.equal(out[0].text, "Flee: 9 vs 9–20 (Thief +5). You get clear.");
   assert.equal(out[0].tone, "hit");
 });
 
 test("chains: fleeRolled + fleeFailed folds the roll into one miss line, roll first (Phase 42, FLEE-02)", () => {
   const events = [
-    { type: "fleeRolled", roll: 3, mods: [], total: 3, need: 14 },
+    { type: "fleeRolled", roll: 3, atLeast: 14, dieN: 20, mods: [] },
     { type: "fleeFailed" },
   ];
   const out = linesForAction("flee", events, {});
   assert.equal(out.length, 1);
-  assert.equal(out[0].text, "Flee: 3 = 3 vs 14. You do not make it.");
+  assert.equal(out[0].text, "Flee: 3 vs 14–20. You do not make it.");
   assert.equal(out[0].tone, "miss");
 });
 
 test("chains: parleyRolled + parleyFailed folds the roll into one line", () => {
   const events = [
-    { type: "parleyRolled", roll: 15, need: 9, fluency: 0 },
+    { type: "parleyRolled", roll: 15, atLeast: 12, dieN: 20, fluency: 0 },
     { type: "parleyFailed" },
   ];
   const out = linesForAction("parley", events, {});
   assert.equal(out.length, 1);
-  assert.ok(out[0].text.includes("(15 vs 9)"));
+  assert.ok(out[0].text.includes("(15 vs 12–20)"));
 });
 
 test("chains: chestLockRolled + chestOpened folds the roll into one line", () => {

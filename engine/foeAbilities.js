@@ -24,7 +24,7 @@
 // declarations cross it, resolved at call time, so the cycle is inert.
 
 import { FOE_ABILITIES, BESTIARY } from "../content/index.js";
-import { rollDice } from "./dice.js";
+import { rollDice, rollFields } from "./dice.js";
 import { resistRoll } from "./derived.js";
 import { difficultyCurve, abilityCadenceFor } from "./difficulty.js";
 import { pickFoeTarget, applyFoeDamageToPlayer, downMember, liveFoes } from "./combat.js";
@@ -115,9 +115,15 @@ function heroResist(rng, c, f, a, events) {
 }
 
 /**
- * resolveFoeAbility(state, f, a, rng, events) — fires a ready ability
+ * resolveFoeAbility(state, f, a, rng, events, gate) — fires a ready ability
  * (D-06: `foeCast` telegraph pushed first, always, before any effect event),
  * marks its cooldown/uses usage, then dispatches by kind:
+ *
+ * Phase 73 (ROLL-05): the optional 6th argument `gate` is the foeTurn
+ * ability-gate's own rollCheck result (engine/combat.js), or `null` for a
+ * never_melee foe (whose ability always fires with no gate draw) or a
+ * direct test/tool call that bypasses the gate entirely. When present, its
+ * roll-high triple is spread onto `foeCast` for the parity invariant/Oracle.
  *
  *   - heal (D-02): `rollDice(rng, a.dmg)` amount, `f.wp` capped at
  *     `f.maxWP` by direct assignment (never the foeDamage seam) —
@@ -158,10 +164,10 @@ function heroResist(rng, c, f, a, events) {
  * Discretion: reinforcements are already tier-limited weak foes; scaling
  * them is a 21-04 option only if the DR round asks).
  */
-export function resolveFoeAbility(state, f, a, rng, events) {
+export function resolveFoeAbility(state, f, a, rng, events, gate = null) {
   const c = state.c;
   const cad = abilityCadenceFor(a, difficultyCurve(state.floor.depth));
-  events.push({ type: "foeCast", name: f.name, ability: a.id, kind: a.kind, txt: a.txt });
+  events.push({ type: "foeCast", name: f.name, ability: a.id, kind: a.kind, txt: a.txt, ...(gate ? rollFields(gate) : {}) });
   if (a.every !== undefined) {
     if (!f.cd) f.cd = {};
     f.cd[a.id] = cad.every;
@@ -208,7 +214,7 @@ export function resolveFoeAbility(state, f, a, rng, events) {
   if (a.kind === "debuff") {
     // hero-only (D-09/D-10) — never pickFoeTarget.
     if (RESISTIBLE.has(a.kind) && heroResist(rng, c, f, a, events)) return { died: false };
-    c.foeEffect = { kind: a.effect, rounds: rng.d(4) };
+    c.foeEffect = { kind: a.effect, rounds: rng.d(4) }; // roll:amount
     events.push({ type: "foeDebuffed", name: f.name, ability: a.id, kind: a.effect, rounds: c.foeEffect.rounds });
     return { died: false };
   }

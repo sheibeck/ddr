@@ -1,15 +1,16 @@
 // test/unit/bag-cap-gate.test.js
 //
 // Phase 29 (LOOT-04/LOOT-05): the single bag-cap gate and bag content. Pins
-// slotItems/clampCarry/BAG_ORDER/BAG_FLOORS/BAG_DROP_UNDER/BAG_ITEMS (Task 1),
+// slotItems/clampCarry/BAG_ORDER/BAG_FLOORS/BAG_DROP_FACES/BAG_ITEMS (Task 1),
 // then stowItem/canStow/bagCap/weaponUpgradeDelta/armorUpgradeDelta/
 // bagUpgradeTier/bagItemFor plus the store's pre-pay stow gate (Task 2).
+// Phase 73 (ROLL-05): the drop-swap export was renamed to BAG_DROP_FACES (same value).
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import { slotItems, clampCarry, takesBagSlot, BAG_FREE_KINDS } from "../../engine/derived.js";
-import { BAGS, BAG_ORDER, BAG_FLOORS, BAG_DROP_UNDER, BAG_ITEMS } from "../../content/bags.js";
+import { BAGS, BAG_ORDER, BAG_FLOORS, BAG_DROP_FACES, BAG_ITEMS } from "../../content/bags.js";
 import {
   bagCap,
   canStow,
@@ -143,11 +144,11 @@ test("BAGS is unchanged (its four tiers)", () => {
   });
 });
 
-test("BAG_ORDER / BAG_FLOORS / BAG_DROP_UNDER / BAG_ITEMS shape", () => {
+test("BAG_ORDER / BAG_FLOORS / BAG_DROP_FACES / BAG_ITEMS shape", () => {
   assert.deepStrictEqual(BAG_ORDER, ["small", "medium", "large", "exlarge"]);
   assert.deepStrictEqual(BAG_FLOORS, { medium: 2, large: 5, exlarge: 9 });
-  assert.equal(Number.isInteger(BAG_DROP_UNDER), true);
-  assert.ok(BAG_DROP_UNDER >= 1 && BAG_DROP_UNDER <= 20);
+  assert.equal(Number.isInteger(BAG_DROP_FACES), true);
+  assert.ok(BAG_DROP_FACES >= 1 && BAG_DROP_FACES <= 20);
   for (const tier of ["medium", "large", "exlarge"]) {
     const item = BAG_ITEMS[tier];
     assert.equal(item.kind, "bag");

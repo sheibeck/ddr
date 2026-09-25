@@ -465,30 +465,33 @@ test("PARLEY-02 / D-06: a failed parley sets the insult, which persists every ro
 
 // --- Test 7: Con Artist odds at even/uneven level ---------------------------
 
-test("PARLEY-03 / D-07: Con Artist need is 13 at even level vs a solo foe and 12 one level down", () => {
+test("PARLEY-03 / D-07: Con Artist faces (atLeast) is 13 (8 of 20) at even level vs a solo foe and 12 (9 of 20) one level down", () => {
   const s1 = fixedState({ c: { sub: "Con Artist" } });
   s1.combat = fixedCombat([fixedFoe({ type: "Beasts", lvl: 1 })]);
   const e1 = parley(s1, fakeRng([1, 3]), []);
   const r1 = e1.find((e) => e.type === "parleyRolled");
-  assert.equal(r1.need, 13);
+  // Phase 73 (ROLL-05): the old `need` (13) is the SAME faces count, now
+  // read as atLeast = 21 - faces on a d20.
+  assert.equal(r1.atLeast, 8);
+  assert.equal(r1.dieN, 20);
   assert.equal(r1.fluency, 0);
 
   const s2 = fixedState({ c: { sub: "Con Artist" } });
   s2.combat = fixedCombat([fixedFoe({ type: "Beasts", lvl: 2 })]);
   const e2 = parley(s2, fakeRng([1, 3]), []);
   const r2 = e2.find((e) => e.type === "parleyRolled");
-  assert.equal(r2.need, 12);
-  assert.ok(r1.need === 13, "restated: need, 13 at even level vs a solo lvl-1 foe");
+  assert.equal(r2.atLeast, 9);
+  assert.ok(r1.atLeast === 8, "restated: atLeast 8 (13 faces) at even level vs a solo lvl-1 foe");
 });
 
 // --- Test 8: the D-08 clamp ---------------------------------------------
 
-test("PARLEY-03 / D-08: need clamps at 17 — inactive at bonus 8, active at bonus 12, and 18 still fails", () => {
+test("PARLEY-03 / D-08: faces clamps at 17 (atLeast 4) — inactive at bonus 8, active at bonus 12, and a raw draw of 18 still fails", () => {
   const s1 = fixedState({ c: { sub: "Con Artist", race: "Wilmsry" } });
   s1.combat = fixedCombat([fixedFoe({ type: "Beasts", lvl: 1 })]);
   const e1 = parley(s1, fakeRng([17, 3]), []);
-  assert.equal(e1.find((e) => e.type === "parleyRolled").need, 17);
-  assert.ok(e1.some((e) => e.type === "spGained"), "clamp inactive here: 17 succeeds");
+  assert.equal(e1.find((e) => e.type === "parleyRolled").atLeast, 4);
+  assert.ok(e1.some((e) => e.type === "spGained"), "clamp inactive here: raw 17 (mirrored roll 4) succeeds");
 
   // Phase 38 (ABIL-02): fluency now maxes at 1 (a tongue item alone — the
   // planted Language skill below is a no-op), so bonus tops out at
@@ -497,14 +500,14 @@ test("PARLEY-03 / D-08: need clamps at 17 — inactive at bonus 8, active at bon
   const s2 = fixedState({ c: { sub: "Con Artist", race: "Wilmsry", skills: { Language: 1 }, items: [HELM] } });
   s2.combat = fixedCombat([fixedFoe({ type: "Beasts", lvl: 1 })]);
   const e2 = parley(s2, fakeRng([17, 3]), []);
-  assert.equal(e2.find((e) => e.type === "parleyRolled").need, 17, "clamped from 19 down to 17");
+  assert.equal(e2.find((e) => e.type === "parleyRolled").atLeast, 4, "clamped from faces 19 down to 17 (atLeast 4)");
   assert.ok(e2.some((e) => e.type === "spGained"), "still succeeds at the ceiling");
 
   const s3 = fixedState({ c: { sub: "Con Artist", race: "Wilmsry", skills: { Language: 1 }, items: [HELM] } });
   s3.combat = fixedCombat([fixedFoe({ type: "Beasts", lvl: 1, asleep: 3 })]);
   const e3 = parley(s3, fakeRng([18, 15, 10]), []);
-  assert.equal(e3.find((e) => e.type === "parleyRolled").need, 17);
-  assert.ok(e3.some((e) => e.type === "parleyFailed"), "18 vs need 17 fails — no auto-win");
+  assert.equal(e3.find((e) => e.type === "parleyRolled").atLeast, 4);
+  assert.ok(e3.some((e) => e.type === "parleyFailed"), "raw 18 (mirrored roll 3) vs atLeast 4 fails — no auto-win");
 });
 
 // --- Test 9: fluency bonus term ---------------------------------------------
@@ -514,18 +517,20 @@ test("PARLEY-03 / D-08: need clamps at 17 — inactive at bonus 8, active at bon
 // A planted (retired) Language skill alongside the Helm still reads exactly
 // like the Helm alone (need 11, fluency 1), never the old need-13 tier.
 test("LANG-01 / D-10 (Phase 38): fluency adds +2 at its single reachable tier and is reported on parleyRolled", () => {
+  // Phase 73 (ROLL-05): atLeast = 21 - faces, where `faces` is the SAME
+  // number the old `need` was.
   const cases = [
-    { lang: false, helm: false, need: 9, fluency: 0 },
-    { lang: true, helm: false, need: 9, fluency: 0, note: "a retired Language skill alone is a no-op" },
-    { lang: false, helm: true, need: 11, fluency: 1 },
-    { lang: true, helm: true, need: 11, fluency: 1, note: "Helm + retired Language is still just fluency 1" },
+    { lang: false, helm: false, atLeast: 12, fluency: 0 },
+    { lang: true, helm: false, atLeast: 12, fluency: 0, note: "a retired Language skill alone is a no-op" },
+    { lang: false, helm: true, atLeast: 10, fluency: 1 },
+    { lang: true, helm: true, atLeast: 10, fluency: 1, note: "Helm + retired Language is still just fluency 1" },
   ];
-  for (const { lang, helm, need, fluency: flu } of cases) {
+  for (const { lang, helm, atLeast, fluency: flu } of cases) {
     const state = fixedState({ c: { sub: "Bard", skills: lang ? { Language: 1 } : {}, items: helm ? [HELM] : [] } });
     state.combat = fixedCombat([fixedFoe({ type: "Humans", lvl: 1 })]);
     const events = parley(state, fakeRng([1, 3, 1]), []);
     const rolled = events.find((e) => e.type === "parleyRolled");
-    assert.equal(rolled.need, need, `lang=${lang} helm=${helm}`);
+    assert.equal(rolled.atLeast, atLeast, `lang=${lang} helm=${helm}`);
     assert.equal(rolled.fluency, flu, `lang=${lang} helm=${helm}`);
   }
 });
@@ -679,8 +684,10 @@ test("D-21 seed-303 pin: the one parity-exposed parley now reads need 17 / sp 5 
   assert.deepStrictEqual(counting.log, ["d20=5", "d6=4", "d6=5"]);
   assert.equal(counting.draws, 3);
 
+  // Phase 73 (ROLL-05): the raw draw is unchanged (d20=5) — only the
+  // reading flips: roll = 21 - 5 = 16, atLeast = 21 - 17(old need) = 4.
   const rolled = events.find((e) => e.type === "parleyRolled");
-  assert.deepStrictEqual(rolled, { type: "parleyRolled", roll: 5, need: 17, fluency: 0 });
+  assert.deepStrictEqual(rolled, { type: "parleyRolled", roll: 16, atLeast: 4, dieN: 20, fluency: 0 });
   const gained = events.find((e) => e.type === "spGained");
   assert.deepStrictEqual(gained, { type: "spGained", amount: 5, reason: "parley" });
   assert.ok(events.some((e) => e.type === "combatEnded"));

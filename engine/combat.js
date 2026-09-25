@@ -64,7 +64,7 @@ import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
 import { difficultyCurve, foeCountFor, foeWpFor, foeHitFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
-import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_UNDER, ABILITY_BY_ID, ONCE_A_FIGHT } from "../content/index.js";
+import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
 // DURATION_ROUNDS mapping and foe-flag appliers verbatim — the SAME
 // combat.js <-> foeAbilities.js cycle precedent above applies here
@@ -182,8 +182,8 @@ export function resolveInitiative(state, rng) {
   if (!C) return undefined;
   const c = state.c;
   const R = RACES[c.race];
-  const mine = rng.d(20);
-  const theirs = rng.d(20);
+  const mine = rng.d(20); // roll:already-high
+  const theirs = rng.d(20); // roll:already-high
   const samurai = c.sub === "Samurai";
   const slow = !!R.slow;
   const knightBig = knightFacesBigFoe(state);
@@ -248,10 +248,13 @@ export function startCombat(state, wandering, forced, rng, events = []) {
   // retired `D(4) <= 2 ? 1 : D(4) <= 3 ? 2 : 3` ternary — the second D(4) is
   // only rolled if the first roll was > 2 (foeCountFor's own thunk). A
   // wandering encounter still draws nothing here.
-  const n = wandering ? 1 : foeCountFor(rng.d(4), () => rng.d(4));
+  const n = wandering ? 1 : foeCountFor(rng.d(4), () => rng.d(4)); // roll:selection
   const foes = [];
   for (let i = 0; i < n; i++) {
-    const lvl = clamp(maxLvl - (rng.d(4) <= tierSpreadFor() ? 1 : 0), 1, 5);
+    // Phase 73 (ROLL-05): the tier-bleed d4 mirrors — "one tier lower" fires
+    // on the SAME faces (tierSpreadFor()), read as the top faces of the d4
+    // instead of the bottom ones; byte-identical for every raw draw.
+    const lvl = clamp(maxLvl - (rollCheck(rng, 4, atLeastFor(tierSpreadFor(), 4)).ok ? 1 : 0), 1, 5);
     // LO-02: no `||` fallback needed here — `lvl` is always clamped to
     // [1,5] above, and every BESTIARY category has exactly 5 tiers
     // (confirmed by 01-VERIFICATION.md's creature count audit), so
@@ -366,17 +369,27 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       f.alive = false;
       f.fled = true;
       events.push({ type: "foeFled", name: f.name, reason: "knight" });
-    } else if (c.sub === "Con Artist" && f.lvl <= 1 && rng.d(6) <= 4) {
-      f.alive = false;
-      f.fled = true;
-      events.push({ type: "foeFled", name: f.name, reason: "conArtist" });
+    } else if (c.sub === "Con Artist" && f.lvl <= 1) {
+      // Phase 73 (ROLL-05): the die is drawn under the exact same
+      // short-circuited condition as before (Con Artist, foe lvl <= 1); only
+      // the winning face moved from the bottom 4 faces to the top 4.
+      const conArtistCheck = rollCheck(rng, 6, atLeastFor(4, 6));
+      if (conArtistCheck.ok) {
+        f.alive = false;
+        f.fled = true;
+        events.push({ type: "foeFled", name: f.name, reason: "conArtist", ...rollFields(conArtistCheck) });
+      }
       // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-06): the
       // Court Mage's boredom kill widens from a 1-in-12 chance to 1-in-6
-      // (d12 <= 2) — same single draw, nothing else in this branch changes.
-    } else if (c.sub === "Court Mage" && rng.d(12) <= 2) {
-      f.lives = 1;
-      events.push({ type: "foeBored", name: f.name });
-      killFoe(state, f, rng, events);
+      // (2 of 12 faces) — same single draw, nothing else in this branch
+      // changes. Phase 73 (ROLL-05): now the top 2 faces of the d12.
+    } else if (c.sub === "Court Mage") {
+      const courtMageCheck = rollCheck(rng, 12, atLeastFor(2, 12));
+      if (courtMageCheck.ok) {
+        f.lives = 1;
+        events.push({ type: "foeBored", name: f.name, ...rollFields(courtMageCheck) });
+        killFoe(state, f, rng, events);
+      }
     }
   }
   if (!liveFoes(state).length) {
@@ -480,15 +493,24 @@ export function fight(state, rng, events = []) {
   const armed = !!(c.fearArmed && typeof c.fearArmed === "object" && c.fearArmed.phobia === c.phobia);
   const armedTrigger = armed ? c.fearArmed.trigger : null;
   if ("fearArmed" in c) delete c.fearArmed;
-  if (
-    (c.phobiaType === type || (c.phobia === "Darkness" && inDark(state)) || nearDeathPanic || armed) &&
-    !(skill(c, "Hardiness") && rng.d(2) === 1)
-  ) {
+  // Phase 73 (ROLL-05): the phobia trigger condition is computed once (pure,
+  // 0 draws); the Hardiness shrug d2 is then drawn ONLY when that condition
+  // holds AND the hero has Hardiness — same single gated draw as before, now
+  // reading the top face (2 of 2) as the shrug instead of the bottom one.
+  const phobiaCondition = c.phobiaType === type || (c.phobia === "Darkness" && inDark(state)) || nearDeathPanic || armed;
+  const hardinessShrug = phobiaCondition && skill(c, "Hardiness") ? rollCheck(rng, 2, atLeastFor(1, 2)) : null;
+  if (phobiaCondition && !(hardinessShrug && hardinessShrug.ok)) {
     state.combat.afraid = AFRAID_ROUNDS;
     // additive spread: byte-identical `{type, rounds}` shape when not armed
     // (every parity fixture — none ever carries fearArmed); an armed trigger
-    // adds `trigger` so the shell can narrate "Still rattled from ...".
-    events.push({ type: "phobiaAfraid", rounds: AFRAID_ROUNDS, ...(armedTrigger ? { trigger: armedTrigger } : {}) });
+    // adds `trigger` so the shell can narrate "Still rattled from ...", and a
+    // drawn (but failed) Hardiness shrug adds the roll-high triple.
+    events.push({
+      type: "phobiaAfraid",
+      rounds: AFRAID_ROUNDS,
+      ...(armedTrigger ? { trigger: armedTrigger } : {}),
+      ...(hardinessShrug ? rollFields(hardinessShrug) : {}),
+    });
   }
   if (inDark(state) && !skill(c, "Night Vision")) events.push({ type: "combatInDark" });
   if (first === "foe") {
@@ -899,7 +921,7 @@ export function killFoe(state, f, rng, events = []) {
   f.alive = false;
   f.wp = 0;
   c.kills = (c.kills || 0) + 1;
-  const roll = rng.d(6);
+  const roll = rng.d(6); // roll:amount
   // PARLEY-01 / D-01 (Phase 20): same draw, same call site, same arithmetic —
   // now shared with parley() via engine/derived.js#killSpFor.
   const gained = killSpFor(c, f, roll);
@@ -928,7 +950,7 @@ export function killFoe(state, f, rng, events = []) {
   const purse = { Humans: 12, Demons: 8, Magical: 8, "Walking Dead": 6, "Lair Beasts": 3, Beasts: 1 }[f.type] || 4;
   // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE, applied POST-DRAW —
   // identity (1) is a no-op.
-  const coin = lootFor(Math.round((rng.d(10) * f.lvl * purse) / LOOT_DIVISOR));
+  const coin = lootFor(Math.round((rng.d(10) * f.lvl * purse) / LOOT_DIVISOR)); // roll:amount
   if (coin > 0) gainWilmst(state, coin, "off the body", rng, events);
   // DETERMINISM GATE (Phase 29, LOOT-01/05): the gate d20 and every
   // rollTreasureItem draw below are UNCHANGED and still sit first, in the
@@ -938,11 +960,17 @@ export function killFoe(state, f, rng, events = []) {
   // ONLY when bagUpgradeTier(state) is non-null (depth >= 2 with an upgrade
   // tier available) — never true on a depth-1 fixture (RESEARCH "LOOT-05
   // guard safety"), so every parity fixture draws exactly as before.
-  if (rng.d(20) <= 2 + f.lvl) {
+  // Phase 73 (ROLL-05): both gates now read roll-high through rollCheck —
+  // same draws, same positions, same short-circuit (the bag gate only draws
+  // when `tier` is truthy). offerLoot's optional 4th argument carries the
+  // roll-high triple(s) for the parity invariant/Oracle.
+  const lootCheck = rollCheck(rng, 20, atLeastFor(2 + f.lvl, 20));
+  if (lootCheck.ok) {
     let drop = rollTreasureItem(rng, state.floor.depth, c);
     const tier = bagUpgradeTier(state);
-    if (tier && rng.d(20) <= BAG_DROP_UNDER) drop = bagItemFor(tier);
-    offerLoot(state, drop, events);
+    const bagCheck = tier ? rollCheck(rng, 20, atLeastFor(BAG_DROP_FACES, 20)) : null;
+    if (bagCheck && bagCheck.ok) drop = bagItemFor(tier);
+    offerLoot(state, drop, events, { ...rollFields(lootCheck), ...(bagCheck ? { bag: rollFields(bagCheck) } : {}) });
   }
 
   if (f.type === "Beasts" || f.type === "Lair Beasts") {
@@ -951,7 +979,7 @@ export function killFoe(state, f, rng, events = []) {
       c.wp = Math.min(c.maxWP, c.wp + fed);
       c.rations++;
       events.push({ type: "cooked", wp: fed, rations: 1 });
-    } else if (rng.d(6) >= 4) {
+    } else if (rng.d(6) >= 4) { // roll:already-high
       c.rations++;
       events.push({ type: "cooked", wp: 0, rations: 1 });
     }
@@ -1074,7 +1102,7 @@ function pursuitStrike(state, rng, events) {
   // the top TWO faces crit for a Soldier — byte-identical to the old
   // `roll === 1 || (roll <= 2 && Soldier)`.
   const crit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
-  const dice = pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6);
+  const dice = pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6); // roll:amount
   const curve = difficultyCurve(state.floor.depth);
   let dmg = foeHitFor(foeLevelBase(pursuer) + (crit ? 2 * dice : dice), curve);
   if (C.weakened) dmg = Math.ceil(dmg / 2);
@@ -1092,8 +1120,10 @@ function pursuitStrike(state, rng, events) {
  * flee(state, rng, events) — the escape action. Ports mazeworld.html flee()
  * (lines 2684-2697): Samurai never runs, a Cloaker gets away for free while
  * unseen, a tracked round-1 withdrawal is clean (denied for a Master of
- * Arms), otherwise d20 + fleeBreakdown(c).bonus vs 14, with every modifier
- * named in fleeRolled (DELIBERATE RULES CHANGE, Phase 42, 2026-09-18,
+ * Arms), otherwise a raw d20 vs `atLeast = 14 - fleeBreakdown(c).bonus`
+ * (Phase 73, ROLL-05: flee was ALREADY roll-high — no mirror, only the
+ * bonus folding into the threshold), with every modifier named in
+ * fleeRolled (DELIBERATE RULES CHANGE, Phase 42, 2026-09-18,
  * FLEE-01/FLEE-02, docs/FLEE.md — was "d20 (+5 Thief) vs 11"); failure is
  * unchanged: it triggers a foeTurn and advances the round. Phase 19
  * (CANON-02/D-19): a live pursuing foe gets one
@@ -1172,11 +1202,16 @@ export function flee(state, rng, events = []) {
   // flee need/modifiers — every surface (this event, the fight log,
   // the rail, the combat submenu) reads the SAME `mods` list rather than
   // re-deriving the formula.
+  // Phase 73 (ROLL-05): flee is ALREADY roll-high (today's `roll + bonus >=
+  // need` reads high-is-good with no mirror needed) — only the bonus moves,
+  // folded into the threshold instead of added to the roll. `atLeast = need
+  // - bonus` is byte-identical arithmetic: `roll + bonus >= need` <=>
+  // `roll >= need - bonus`. `total`/`need` are retired from the event.
   const { need, mods, bonus } = fleeBreakdown(c);
-  const roll = rng.d(20);
-  const total = roll + bonus;
-  events.push({ type: "fleeRolled", roll, mods, total, need });
-  if (total >= need) {
+  const roll = rng.d(20); // roll:already-high
+  const atLeast = need - bonus;
+  events.push({ type: "fleeRolled", roll, atLeast, dieN: 20, mods });
+  if (roll >= atLeast) {
     if (pursuitStrike(state, rng, events).died) return events;
     forfeitLoot(state, "fled", events);
     events.push({ type: "fled", reason: "escaped" });
@@ -1262,8 +1297,9 @@ export function canParley(state) {
 
 /**
  * parley(state, rng, events) — talk the encounter down. Ports mazeworld.html
- * parley() (lines 2715-2734): a d20 vs 9+bonus, awarding half the skill
- * points (and a Humans-only bonus payout) on success, ending combat cleanly.
+ * parley() (lines 2715-2734): a d20 read roll-high (Phase 73, ROLL-05) vs
+ * the top `9+bonus` faces, awarding half the skill points (and a
+ * Humans-only bonus payout) on success, ending combat cleanly.
  *
  * DELIBERATE RULES CHANGE (Phase 20, PARLEY-01/02/03, D-01..D-08): the
  * literal `x 2.5` SP multiplier is retired in favor of a STRUCTURAL half of
@@ -1331,26 +1367,29 @@ export function parley(state, rng, events = []) {
     2 * flu + // D-10
     c.level -
     top;
-  const roll = rng.d(20);
-  // Phase 72 (ROLL-01, finding F5): parley succeeds on roll <= need, so the
-  // dial is subtracted — a positive value is harder, as documented; identity
-  // 0 is a structural no-op. (The Phase 54 BAND-02 USER RULING D wiring
-  // added the dial instead, which made a positive value EASIER — the
-  // opposite of its own JSDoc; fixed without a ruling per CONTEXT's
-  // text-backed/local rule, since the dial is 0 at identity and no fixture
-  // moves.)
-  const need = Math.min(9 + bonus, 17) - parleyNeedModFor(); // D-08: an 85% ceiling — no stack is an auto-win
-  events.push({ type: "parleyRolled", roll, need, fluency: flu });
-  if (roll <= need) {
+  // Phase 72 (ROLL-01, finding F5): parley succeeds on the top `faces` of
+  // the d20, so the dial is subtracted — a positive value is harder, as
+  // documented; identity 0 is a structural no-op. (The Phase 54 BAND-02 USER
+  // RULING D wiring added the dial instead, which made a positive value
+  // EASIER — the opposite of its own JSDoc; fixed without a ruling per
+  // CONTEXT's text-backed/local rule, since the dial is 0 at identity and no
+  // fixture moves.) Phase 73 (ROLL-05): `faces` is the SAME number the old
+  // `need` was — a count of winning faces — now read via rollCheck/
+  // atLeastFor instead of a roll-under comparison, at the exact same draw
+  // position.
+  const faces = Math.min(9 + bonus, 17) - parleyNeedModFor(); // D-08: an 85% ceiling — no stack is an auto-win
+  const check = rollCheck(rng, 20, atLeastFor(faces, 20));
+  events.push({ type: "parleyRolled", ...rollFields(check), fluency: flu });
+  if (check.ok) {
     // D-01/D-02: parley's payout is now STRUCTURALLY half of the same
     // combat-equivalent killFoe pays (killSpFor), not a second formula.
-    const combatEquivalent = liveFoes(state).reduce((sum, f) => sum + killSpFor(c, f, rng.d(6)), 0);
+    const combatEquivalent = liveFoes(state).reduce((sum, f) => sum + killSpFor(c, f, rng.d(6)), 0); // roll:amount
     const sp = heroSpFor(Math.round(combatEquivalent * 0.5));
     c.sp += sp;
     events.push({ type: "spGained", amount: sp, reason: "parley" });
-    if (C.type === "Humans" && rng.d(6) === 6) {
+    if (C.type === "Humans" && rng.d(6) === 6) { // roll:already-high
       // D-03: was >= 4 (50%); the AMOUNT formula stays untouched (economy owns it).
-      const wm = rng.d(6) * 100 * state.floor.depth;
+      const wm = rng.d(6) * 100 * state.floor.depth; // roll:amount
       c.gold += wm;
       events.push({ type: "goldGained", amount: wm, why: "parley" });
     }
@@ -1414,14 +1453,14 @@ export function sing(state, rng, events = []) {
   } else if (song.lvl === 2) {
     C.inspired = 1;
   } else if (song.lvl === 3) {
-    const n = rng.d(6);
+    const n = rng.d(6); // roll:amount
     foes.slice(0, n).forEach((f) => {
       if (f.lvl <= c.level) f.asleep = 24;
     });
     events.push({ type: "lullabyRolled", n });
   } else if (song.lvl === 4) {
-    const n = rng.d(12);
-    const r = rng.d(8);
+    const n = rng.d(12); // roll:amount
+    const r = rng.d(8); // roll:amount
     foes.slice(0, n).forEach((f) => {
       if (f.lvl <= c.level) f.asleep = r;
     });
@@ -1606,7 +1645,7 @@ export function allyTurn(state, rng, events = []) {
     // skip the damage roll. The `--C.ally.rounds` countdown below still
     // runs either way.
     if (!shatterIfBest(state, t, roll, dieN, C.ally.name, rng, events)) {
-      const d = C.ally.lvl * C.ally.lvl + rng.d(6);
+      const d = C.ally.lvl * C.ally.lvl + rng.d(6); // roll:amount
       // D-06/D-20: an ally's blow is physical (soakable) and never matches a
       // multiplier row (no cls on a summoned/party ally this phase).
       const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
@@ -1704,7 +1743,7 @@ export function alliesTurn(state, rng, events = []) {
         // best face shatters a shatter-flagged foe (the Skeleton) outright —
         // skip the damage roll.
         if (shatterIfBest(state, t, roll, legacyDieN, ally.name, rng, events)) continue;
-        const d = ally.lvl * ally.lvl + rng.d(6);
+        const d = ally.lvl * ally.lvl + rng.d(6); // roll:amount
         // D-06/D-20: a party member's blow is physical (soakable) and never
         // matches a multiplier row (no cls on a legacy C.allies entry).
         const hit = damageFoe(state, t, d, { kind: "ally", crit: false }, rng, events);
@@ -1900,13 +1939,13 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
       events.push({ type: "marked", target: t.name, member: ally.name });
       return;
     case "cutpurse": {
-      const amount = rng.d(10) * ally.lvl;
+      const amount = rng.d(10) * ally.lvl; // roll:amount
       events.push({ type: "cutpursed", target: t.name, amount, member: ally.name });
       gainWilmst(state, amount, "cutpurse", rng, events);
       return;
     }
     case "secondWind": {
-      const heal = rng.d(8) + ally.lvl;
+      const heal = rng.d(8) + ally.lvl; // roll:amount
       const before = ally.wp;
       ally.wp = Math.min(ally.maxWP, ally.wp + heal);
       events.push({ type: "memberSecondWind", name: ally.name, amount: ally.wp - before });
@@ -2163,7 +2202,7 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     // (party-wide duration lives in one place) — its own d4+1 draw, after
     // the resist roll above.
     const C = state.combat;
-    const rounds = rng.d(4) + 1;
+    const rounds = rng.d(4) + 1; // roll:amount
     if (C) {
       C.weakened = true;
       C.foeToHitPenalty = 3;
@@ -2171,7 +2210,7 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     }
     events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
   } else {
-    t.asleep = Math.max(t.asleep || 0, rng.d(4));
+    t.asleep = Math.max(t.asleep || 0, rng.d(4)); // roll:amount
     events.push({ type: "allySpellHit", ...base, effect: "asleep", rounds: t.asleep });
   }
 }
@@ -2255,7 +2294,7 @@ export function pickFoeTarget(state, rng, foe = null) {
     return s && abilityEffectActive(s, "taunt");
   });
   if (taunter) return taunter;
-  const pick = rng.d(liveMembers.length + 1);
+  const pick = rng.d(liveMembers.length + 1); // roll:selection
   if (foe && foe.intel <= 3 && state.c?.sub === "Bard") return null;
   return pick > 1 ? liveMembers[pick - 2] : null;
 }
@@ -2566,7 +2605,7 @@ export function foeTurn(state, rng, events = []) {
     C.pendingFoes = null;
   }
   if (c.regen) {
-    const r = rng.d(8);
+    const r = rng.d(8); // roll:amount
     if (c.wp < c.maxWP) {
       c.wp = Math.min(c.maxWP, c.wp + r);
       events.push({ type: "regenerated", amount: r });
@@ -2669,8 +2708,14 @@ export function foeTurn(state, rng, events = []) {
       tickAbilityCooldowns(state, f);
       const ready = firstReadyAbility(state, f);
       const neverMelee = !!(f.sp && f.sp.never_melee);
-      if (ready && (neverMelee || rng.d(6) <= 4)) {
-        if (resolveFoeAbility(state, f, ready, rng, events).died) return events;
+      // Phase 73 (ROLL-05): the gate is drawn under the exact same
+      // short-circuited condition as before (ready AND not never_melee) —
+      // `gate` is null (no draw) when never_melee short-circuits it, exactly
+      // like the old `neverMelee ||` skip. resolveFoeAbility spreads the
+      // gate's roll-high triple onto foeCast when it fired.
+      const gate = ready && !neverMelee ? rollCheck(rng, 6, atLeastFor(4, 6)) : null;
+      if (ready && (neverMelee || gate.ok)) {
+        if (resolveFoeAbility(state, f, ready, rng, events, gate).died) return events;
         continue;
       }
       if (neverMelee) {
@@ -2791,7 +2836,7 @@ export function foeTurn(state, rng, events = []) {
         // member's own strike die always crits, byte-identical to the old
         // `mRoll === 1`.
         const mCritical = isBestFace(mRoll, mDieN);
-        const mDice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6);
+        const mDice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount
         let mDmg = foeHitFor(foeLevelBase(f) + (mCritical ? 2 * mDice : mDice), curve);
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
         // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
@@ -2899,7 +2944,7 @@ export function foeTurn(state, rng, events = []) {
       // crits, the top TWO faces crit for a Soldier — byte-identical to the
       // old `roll === 1 || (roll <= 2 && Soldier)`.
       const crit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
-      const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6);
+      const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount
       let dmg = foeHitFor(foeLevelBase(f) + (crit ? 2 * dice : dice), curve);
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved

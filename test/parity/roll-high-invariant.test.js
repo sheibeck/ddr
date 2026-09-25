@@ -113,6 +113,45 @@ const OUTCOME = {
   struckByFoe: () => true, // a struckByFoe event only fires once the foe's own to-hit check succeeded
   memberStruck: () => true, // a memberStruck event only fires once the foe's own to-hit check succeeded (against a member)
   armorSoaked: () => true, // an armorSoaked event only fires once the hero's armor soak check succeeded
+  // 73-08 rows: flee, parley, the startCombat/fight gates, the kill drops
+  // and the foe ability gate.
+  // fleeRolled announces the roll BEFORE its outcome is known — the real
+  // outcome is whichever of fled/fleeFailed follows in the SAME action,
+  // before the next fleeRolled (mirrors spellThrown's own pattern above).
+  fleeRolled: (e, following) => {
+    for (const ev of following) {
+      if (ev.type === "fleeRolled") break;
+      if (ev.type === "fleeFailed") return false;
+    }
+    return true;
+  },
+  // parleyRolled likewise announces the roll before its outcome; the real
+  // outcome is whichever of parleyFailed/spGained("parley")/beastsSoothed
+  // follows, before the next parleyRolled.
+  parleyRolled: (e, following) => {
+    for (const ev of following) {
+      if (ev.type === "parleyRolled") break;
+      if (ev.type === "parleyFailed") return false;
+    }
+    return true;
+  },
+  // foeFled (reason "conArtist") only carries atLeast when the Con Artist
+  // weak-foe flee die was drawn and it succeeded; foeFled's "knight"/
+  // "lowHp" reasons carry no roll fields at all, so I3 never runs on them.
+  foeFled: () => true,
+  // foeBored only ever carries atLeast on a landed Court Mage boredom kill.
+  foeBored: () => true,
+  // phobiaAfraid only carries atLeast when the Hardiness shrug die was
+  // drawn AND it FAILED — a successful shrug never pushes phobiaAfraid at
+  // all (the fear never lands).
+  phobiaAfraid: () => false,
+  // lootDropped only carries atLeast on a landed kill-drop gate (its nested
+  // `bag` triple, when present, is covered by NESTED_CHECKS/I2 instead).
+  lootDropped: () => true,
+  // foeCast only carries atLeast when the ability gate's own die was drawn
+  // (never_melee skips the gate entirely) AND it succeeded — the ability
+  // never fires off a failed gate.
+  foeCast: () => true,
 };
 
 /**

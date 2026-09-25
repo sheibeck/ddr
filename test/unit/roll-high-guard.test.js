@@ -51,14 +51,14 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 /* ---------------- ENFORCED list & ratchet -------------------------------- */
 
-// The 17 files this plan enforces: the six conversion-free files this
-// plan's Task 2 tags, engine/dice.js (the helper's own home), and the ten
-// files with zero `.d(` calls in code (verified live at this plan's writing
-// — see the guard's own `dice`/inventory tests below, which re-verify this
-// on every run rather than trusting this comment).
+// 73-08 adds engine/combat.js and engine/foeAbilities.js — every remaining
+// check site in both (flee, parley, the startCombat/fight gates, the kill
+// drops, the foe ability gate) now converts through rollCheck, and every
+// other raw draw in both files carries a tag.
 export const ENFORCED = [
   "engine/abilities.js",
   "engine/character.js",
+  "engine/combat.js",
   "engine/derived.js",
   "engine/dice.js",
   "engine/economy.js",
@@ -70,6 +70,7 @@ export const ENFORCED = [
   "engine/effects.js",
   "engine/engine.js",
   "engine/events.js",
+  "engine/foeAbilities.js",
   "engine/foeDamage.js",
   "engine/magic.js",
   "engine/phobias.js",
@@ -79,10 +80,11 @@ export const ENFORCED = [
   "engine/state.js",
 ];
 
-// Flips true in 73-09, once combat.js, derived.js, encounters.js,
-// foeAbilities.js, magic.js and movement.js have all converted their check
-// sites and joined ENFORCED. engine/foeDamage.js (73-04) is the first of
-// these seven to convert.
+// Flips true in 73-09, once encounters.js and movement.js have converted
+// their remaining check sites (traps, locks, climbs, leaps, cures, wake) and
+// joined ENFORCED — the only two files left. engine/foeDamage.js (73-04),
+// engine/derived.js/engine/magic.js (73-06) and engine/combat.js/
+// engine/foeAbilities.js (this plan) are already fully converted.
 export const ALL_ENFORCED = false;
 
 // Per-enforced-file draw-tag counts, keyed by the SAME kind vocabulary the
@@ -95,6 +97,7 @@ export const ALL_ENFORCED = false;
 export const DRAW_INVENTORY = {
   "engine/abilities.js": { rollCheck: 0, amount: 2, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/character.js": { rollCheck: 0, amount: 3, selection: 13, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
+  "engine/combat.js": { rollCheck: 22, amount: 17, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
   "engine/derived.js": { rollCheck: 1, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/dice.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 2 },
   "engine/economy.js": { rollCheck: 0, amount: 0, selection: 1, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
@@ -106,6 +109,7 @@ export const DRAW_INVENTORY = {
   "engine/effects.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/engine.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/events.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
+  "engine/foeAbilities.js": { rollCheck: 0, amount: 1, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/foeDamage.js": { rollCheck: 1, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/magic.js": { rollCheck: 1, amount: 17, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
   "engine/phobias.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

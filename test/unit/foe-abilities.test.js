@@ -121,7 +121,18 @@ test("gate: kit with a ready bolt — d6 1..4 casts (foeCast then foeBolted), 5.
   state.combat = fixedCombat([foe]);
   const events = foeTurn(state, fakeRng([4, 6]), []);
   assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted"]);
-  assert.deepStrictEqual(events[0], { type: "foeCast", name: "Target", ability: "krupkeFreeze", kind: "bolt", txt: krupkeFreezeTxt });
+  // Phase 73 (ROLL-05): the ability gate's own d6 (raw 4, dieN 6, atLeast 3
+  // for 4 faces) now spreads its roll-high triple onto foeCast.
+  assert.deepStrictEqual(events[0], {
+    type: "foeCast",
+    name: "Target",
+    ability: "krupkeFreeze",
+    kind: "bolt",
+    txt: krupkeFreezeTxt,
+    roll: 3,
+    atLeast: 3,
+    dieN: 6,
+  });
   assert.equal(events[1].dmg, 6);
   assert.equal(events[1].ignoresArmor, false);
   assert.equal(state.c.wp, 49);
