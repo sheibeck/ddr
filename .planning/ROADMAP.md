@@ -164,7 +164,34 @@ Plans:
   2. Every displayed modifier is signed from the player's point of view — "+2" always reads better, "−2" always reads worse — across item/loot/store/find comparisons, the hero sheet, spell/ability text, condition chips and the fight log's need breakdown.
   3. The same modifier never shows opposite signs on two different surfaces.
 
-**Plans**: TBD
+**Plans**: 8 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 74-01-PLAN.md — Pure extraction: the hero per-target and foe-swing to-hit chains become engine/derived.js helpers the engine itself calls (byte-identical, equivalence-tested), so displays read the same function (wave 1)
+- [ ] 74-02-PLAN.md — The ONE formatter in src/browser/rollRange.js: roller-keyed signed modifiers, faces-to-range, die names, "16–20 (d20; mods)" (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 74-03-PLAN.md — Oracle, fight-log, dice-reveal and rail roll lines re-signed from the player's side (foe lines negated); heights/water "−N on the climb/leap"; voice sample (wave 2)
+- [ ] 74-04-PLAN.md — src/browser/rollOdds.js; hero sheet "16–20 (d20)"; combat menu STRIKE "Hit 16–20 (d20)" and FLEE range; hero snapshots re-pinned (wave 2)
+- [ ] 74-05-PLAN.md — Item/loot/store/find comparisons say which way ("−2 to hit, worse than your Club"), crit ranges on the strike die; store snapshot re-pinned (wave 2)
+
+**Wave 3**
+
+- [ ] 74-06-PLAN.md — Foe details "You hit it on … · it hits you on …" with live modifiers; foe condition effects with their ranges (wave 3)
+- [ ] 74-07-PLAN.md — Hero condition chips state their effect from the engine ("−3 to hit (now 19–20)"); conditionEffects.js and its bridge (wave 3)
+
+**Wave 4**
+
+- [ ] 74-08-PLAN.md — The cross-surface sign consistency guard and range-format pin, copy banks walked by the standing scans, the ROLL-LEDGER display closure and the whole-phase gates (wave 4)
+
+**Cross-cutting constraints:**
+
+- Presentation only: engine behaviour byte-identical (74-01 is a pure extraction proven by parity, pins and direction tests); no content file, parity fixture or state pin moves; only mu.hero.txt, thief.hero.txt and thief-store.store.txt shell snapshots are re-pinned, each declared
+- Authored roll-direction prose stays for Phase 79; Phase 77 reuses the formatter, conditionEffects.js WHAT_IF and foeConditionEffect
+
 **UI hint**: yes
 
 ### Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs
