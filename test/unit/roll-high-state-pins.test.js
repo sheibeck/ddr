@@ -25,10 +25,10 @@ const PINNED = {
   "solo-2": { actions: 228, dead: true, depth: 3, hash: "313c882857480646f718002b28be35b055ba7f2e108c85de4abbf27229f510cf" },
   "solo-thief-pilfer": { actions: 400, dead: false, depth: 5, hash: "b28dc99a46cfa585f2a2e418ef68d12c580736553ce7ab2adc97d1d1c89bcae4" },
   "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "444ec2ca839587b2249e6f89828a40fef887b2668b935c228a510e99c4ac4207" },
-  "party-1": { actions: 400, dead: false, depth: 4, hash: "14b4060e1eec60920671b869b82f7093e54724056fa62a459a1917e5ba8ca2f8" },
-  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "213ac7e5df6296cc1ace75eb871f9f4b97cfd3552cfd2bb584c6432c2e813178" },
+  "party-1": { actions: 400, dead: false, depth: 4, hash: "a647d76350383f515141f3ba3e9ec1e1054902edc9d5f9af23776ec1d48d51e8" },
+  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "1ad4462f4a8b7017cc14d5bf5f566677f8efda6d0cd4f6fab06cfb94b928370d" },
   "deep-8": { actions: 300, dead: false, depth: 10, hash: "76a994c885de2f9fba705545d14025ec507236d0dc726f53f70b1b7171523f0a" },
-  "deep-14": { actions: 300, dead: false, depth: 16, hash: "daa321f960da8822d2b329a55a1bb7662cfd2686990b9c07e7810631c15ea6f9" },
+  "deep-14": { actions: 300, dead: false, depth: 16, hash: "bffefbe12745404f111858147dee4ad5156b7b09a87fc9986d3faf1022cbe8c6" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

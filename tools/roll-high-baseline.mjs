@@ -120,12 +120,13 @@ function runSave() {
     hash: stateHash(continued.state),
   };
 
+  const baseCommit = gitShortHead();
   const fixture = {
-    baseCommit: gitShortHead(),
+    baseCommit,
     rollLogicUnchangedSince: "c3513b0",
     note:
-      "This save was written by the pre-switch engine at the commit recorded above. " +
-      "`git diff --stat c3513b0 <baseCommit> -- engine/` touches only engine/records.js " +
+      `This save was written by the pre-switch engine at commit ${baseCommit} (recorded above). ` +
+      `\`git diff --stat c3513b0 ${baseCommit} -- engine/\` touches only engine/records.js ` +
       "(Phase 81 leaderboard bookkeeping) — the roll logic itself is unchanged since the " +
       "Phase 72 close (c3513b0). The switch keeps every stored number's meaning, so no " +
       "migration exists and none is needed. A failure means a check was flipped wrong or a " +

@@ -1,0 +1,3649 @@
+{
+  "baseCommit": "724033b",
+  "rollLogicUnchangedSince": "c3513b0",
+  "note": "This save was written by the pre-switch engine at commit 724033b (recorded above). `git diff --stat c3513b0 724033b -- engine/` touches only engine/records.js (Phase 81 leaderboard bookkeeping) — the roll logic itself is unchanged since the Phase 72 close (c3513b0). The switch keeps every stored number's meaning, so no migration exists and none is needed. A failure means a check was flipped wrong or a stored field changed meaning. Never regenerate this fixture in Phase 73.",
+  "seed": 909,
+  "opts": {
+    "party": true,
+    "startDepth": 3,
+    "maxActions": 400
+  },
+  "save": {
+    "version": 1,
+    "seed": 909,
+    "rngState": 2218544701,
+    "c": {
+      "cls": "Thief",
+      "sub": "Acrobat",
+      "race": "Elven",
+      "intel": 20,
+      "level": 3,
+      "sp": 501,
+      "maxWP": 37,
+      "wp": 37,
+      "skills": {
+        "Acute Hearing": 1,
+        "Heft": 1,
+        "Locks": 1
+      },
+      "vp": 0,
+      "weapon": "Dagger",
+      "prof": 1,
+      "magicWpn": 0,
+      "armor": "Leather",
+      "ar": 6,
+      "armorMin": 1,
+      "armorWP": 15,
+      "armorMax": 15,
+      "patches": 0,
+      "temperament": "Patient",
+      "motive": "A grudge",
+      "phobia": "Bodies of water",
+      "phobiaType": null,
+      "potions": 2,
+      "rations": 8,
+      "gold": 950,
+      "scrolls": 0,
+      "affliction": null,
+      "joiner": {
+        "name": "Denn of Ash Alley",
+        "race": "Wilmsry",
+        "sub": "Apprentice",
+        "cls": "Magic User",
+        "lvl": 3,
+        "wp": 77,
+        "maxWP": 77
+      },
+      "items": [],
+      "grimoire": [],
+      "spellsUsed": 0,
+      "kills": 0,
+      "might": 0,
+      "ward": null,
+      "regen": false,
+      "mirror": 0,
+      "foresight": false,
+      "darkFor": 0,
+      "bag": "small",
+      "abilities": [
+        "smoke",
+        "poisonedEdge",
+        "hamstring",
+        "cutpurse"
+      ],
+      "name": "Caelith Silverbough",
+      "worn": {
+        "cloak": {
+          "kind": "cloak",
+          "n": "Cloak of Strength",
+          "eff": {
+            "noCrit": 1
+          },
+          "txt": "used, no critical damage lands on you for fifty squares; then fifty squares of ordinary luck"
+        }
+      }
+    },
+    "floor": {
+      "g": [
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null,
+            "dark": false
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "climb"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "gorge",
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": "one",
+            "dir": "S"
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": "dot"
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "dot"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": true,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "dot"
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "chest"
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "trap"
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "dot"
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "dark": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "climb"
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "tele"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "trap"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "one",
+            "dir": "E"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "tele"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "dot"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "one",
+            "dir": "E"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "dot"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "chest"
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "dot"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "exit"
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "water": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "water": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "gorge"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": "dot"
+          },
+          {
+            "wall": false,
+            "seen": false,
+            "feat": null,
+            "water": true
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ],
+        [
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          },
+          {
+            "wall": true,
+            "seen": false,
+            "feat": null
+          }
+        ]
+      ],
+      "px": 1,
+      "py": 7,
+      "depth": 3
+    },
+    "day": 1,
+    "steps": 6,
+    "acts": 6,
+    "combat": null,
+    "store": null,
+    "beats": null,
+    "party": [
+      {
+        "cls": "Magic User",
+        "sub": "Apprentice",
+        "race": "Wilmsry",
+        "intel": 6,
+        "level": 3,
+        "sp": 0,
+        "maxWP": 77,
+        "wp": 77,
+        "skills": {},
+        "vp": 0,
+        "weapon": "Quarter Staff",
+        "prof": 0,
+        "magicWpn": 0,
+        "armor": "Cloth",
+        "ar": 3,
+        "armorMin": 1,
+        "armorWP": 12,
+        "armorMax": 12,
+        "patches": 0,
+        "temperament": "Patient",
+        "motive": "Status",
+        "phobia": "Bodies of water",
+        "phobiaType": null,
+        "potions": 2,
+        "rations": 6,
+        "gold": 50,
+        "scrolls": 1,
+        "affliction": null,
+        "joiner": null,
+        "items": [],
+        "grimoire": [
+          "Turn Walking Dead",
+          "Mirror Self",
+          "Shield",
+          "Strength",
+          "Freeze",
+          "Lesser Summon",
+          "Noxious Vapor"
+        ],
+        "spellsUsed": 0,
+        "kills": 0,
+        "might": 0,
+        "ward": null,
+        "regen": false,
+        "mirror": 0,
+        "foresight": false,
+        "darkFor": 0,
+        "bag": "small",
+        "abilities": [],
+        "name": "Denn of Ash Alley",
+        "lvl": 3
+      }
+    ],
+    "pendingFind": null,
+    "pendingHazard": null,
+    "pendingLoot": [],
+    "dead": false,
+    "dev": true,
+    "storeRoll": false,
+    "deathNote": "",
+    "epitaph": "",
+    "pendingJoiner": null
+  },
+  "dispatched": [
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "fight"
+    },
+    {
+      "type": "useAbility",
+      "key": "hamstring",
+      "target": 0
+    },
+    {
+      "type": "takeAllLoot"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "useTool",
+      "tool": "ladder",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "fight"
+    },
+    {
+      "type": "useAbility",
+      "key": "hamstring",
+      "target": 1
+    },
+    {
+      "type": "useAbility",
+      "key": "poisonedEdge"
+    },
+    {
+      "type": "useAbility",
+      "key": "cutpurse",
+      "target": 2
+    },
+    {
+      "type": "attack"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "fight"
+    },
+    {
+      "type": "useAbility",
+      "key": "hamstring",
+      "target": 0
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "takeFind"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "fight"
+    },
+    {
+      "type": "parley"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "fight"
+    },
+    {
+      "type": "useAbility",
+      "key": "hamstring",
+      "target": 0
+    },
+    {
+      "type": "useAbility",
+      "key": "poisonedEdge"
+    },
+    {
+      "type": "useAbility",
+      "key": "cutpurse",
+      "target": 0
+    },
+    {
+      "type": "attack"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "useTool",
+      "tool": "rope",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "takeFind"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "drinkPotion"
+    },
+    {
+      "type": "drinkPotion"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "W"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "S"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "N"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    },
+    {
+      "type": "move",
+      "dir": "E"
+    }
+  ],
+  "expected": {
+    "actions": 300,
+    "dead": false,
+    "depth": 4,
+    "hash": "731f679a1244287c1b9b230f83c001e621183aa728f1e422cb132514afe45890"
+  }
+}

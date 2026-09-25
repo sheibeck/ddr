@@ -25,23 +25,38 @@ export { forceParty, serializeRun };
 /**
  * EXTRA_VOLATILE_FIELDS — wall-clock (or otherwise run-to-run-unstable)
  * fields beyond the two stripVolatileFields already strips (`deathAt`,
- * `graves[].when`). Investigated at Phase 73's base (git rev-parse --short
- * HEAD, recorded in roll-high-state-pins.test.js's header): Phase 81's
- * engine/records.js is the only engine file that changed since the Phase 72
- * close (c3513b0), and its one wall-clock-adjacent export, `runHash()`, is a
- * pure FNV-1a hash over content fields (RUN_HASH_FIELDS explicitly excludes
- * `when`) — deterministic, not a new volatile field. This list is empty
- * today; the generator's double-run check (below) is the safety net if a
- * later plan's engine edit ever introduces a genuinely nondeterministic
- * field — that field gets added here, named, with a one-line reason, never
+ * `graves[].when`), PLUS fields known to be pure save/load REPRESENTATION
+ * artifacts — present one way live, a different (but semantically identical)
+ * way after a round trip, with zero gameplay-outcome difference. Investigated
+ * at Phase 73's base (git rev-parse --short HEAD, recorded in
+ * roll-high-state-pins.test.js's header): Phase 81's engine/records.js is
+ * the only engine file that changed since the Phase 72 close (c3513b0), and
+ * its one wall-clock-adjacent export, `runHash()`, is a pure FNV-1a hash
+ * over content fields (RUN_HASH_FIELDS explicitly excludes `when`) —
+ * deterministic, not a new volatile field.
+ *
+ * - `pendingJoiner` — engine/saveState.js's validateSave/rehydrate never
+ *   carry this field through a save/load round trip at all (unlike
+ *   `pendingFind`/`pendingHazard`, which ARE explicitly reset to `null` on
+ *   load). A live value of `null` (set by encounters.js#resolveJoiner, e.g.
+ *   forceParty's own write-path) becomes an ABSENT key after loadSave —
+ *   `undefined` and `null` both mean "no pending Joiner decision" to every
+ *   engine/UI reader, so this is pure JSON-representation noise, not an
+ *   outcome divergence. Pre-existing engine/saveState.js behavior, outside
+ *   this plan's "no engine/ changes" scope — discovered while building
+ *   Task 2's save-compat round-trip check.
+ *
+ * The generator's double-run check (below) is the separate safety net for a
+ * later plan's engine edit introducing a genuinely NONdeterministic field —
+ * that field gets added here too, named, with a one-line reason, never
  * silently ignored.
  */
-export const EXTRA_VOLATILE_FIELDS = Object.freeze([]);
+export const EXTRA_VOLATILE_FIELDS = Object.freeze(["pendingJoiner"]);
 
 /**
  * deleteExtraVolatileFields(node) — deletes every EXTRA_VOLATILE_FIELDS key
  * found anywhere in the object graph, mirroring stripVolatileFields's own
- * "wherever that key appears" reach. A no-op today (the list is empty).
+ * "wherever that key appears" reach.
  */
 function deleteExtraVolatileFields(node) {
   if (EXTRA_VOLATILE_FIELDS.length === 0) return node;
@@ -164,13 +179,35 @@ export function loadSave(raw) {
 }
 
 /**
+ * dispatchOne(state, action) — the ONE place this harness folds a targeted
+ * `useAbility` action's pre-dispatch `combat.target` write in, mirroring
+ * tools/lib/tuning-bot.mjs#playRun's own loop body exactly: a `useAbility`
+ * action carrying an integer `target` writes `state.combat.target` BEFORE
+ * dispatching the bare `{ type: "useAbility", key }` (no `target` field —
+ * `validateAction` only requires `key`). Shared by `botSteps` (recording)
+ * and `replaySteps` (replay), so the target write is REDONE identically on
+ * replay from the recorded action's own `target` field — not something
+ * `dispatched` has to separately encode.
+ */
+function dispatchOne(state, action) {
+  let toDispatch = action;
+  if (action.type === "useAbility" && Number.isInteger(action.target) && state.combat) {
+    state.combat.target = action.target;
+    toDispatch = { type: "useAbility", key: action.key };
+  }
+  return applyAction(state, toDispatch);
+}
+
+/**
  * botSteps(state, seed, opts, count) — mirrors playRun's own dispatch shape
- * EXACTLY (same decideAction/policyRng construction, same useAbility target
- * write before dispatch), applying `count` actions starting from `state`
- * (NOT from a fresh newRun — this resumes an already-loaded run). Returns
- * `{ state, dispatched }`, where `dispatched` is the list of action objects
- * actually applied (the useAbility rewrite already folded in), so
- * `replaySteps` below can re-apply it verbatim with no extra bookkeeping.
+ * EXACTLY (same decideAction/policyRng construction, the same
+ * dispatchOne target-write-then-dispatch above), applying `count` actions
+ * starting from `state` (NOT from a fresh newRun — this resumes an already-
+ * loaded run). Returns `{ state, dispatched }`, where `dispatched` is the
+ * list of ORIGINAL action objects decideAction produced (target field
+ * included, when present) — `replaySteps` below re-derives the exact same
+ * combat.target write from each entry via the same `dispatchOne`, so a
+ * replay is exact.
  *
  * `policyRng` is seeded the SAME way playRun seeds it (`seed ^ 0x9e3779b9`)
  * — the harness's OWN seed argument, not `state.seed`, exactly mirroring
@@ -183,13 +220,8 @@ export function botSteps(state, seed, opts, count) {
   let cur = state;
   for (let i = 0; i < count && !cur.dead; i++) {
     const action = decideAction(cur, policyRng, ctx);
-    let toDispatch = action;
-    if (action.type === "useAbility" && Number.isInteger(action.target) && cur.combat) {
-      cur.combat.target = action.target;
-      toDispatch = { type: "useAbility", key: action.key };
-    }
-    const { state: next } = applyAction(cur, toDispatch);
-    dispatched.push(toDispatch);
+    const { state: next } = dispatchOne(cur, action);
+    dispatched.push(action);
     cur = next;
   }
   return { state: cur, dispatched };
@@ -197,14 +229,15 @@ export function botSteps(state, seed, opts, count) {
 
 /**
  * replaySteps(state, dispatched) — re-applies a `dispatched` list (from
- * botSteps or a fixture) verbatim via applyAction, in order, returning the
- * final state. No policy rng involved — every decision was already baked
- * into `dispatched` by botSteps.
+ * botSteps or a fixture) via the SAME `dispatchOne` botSteps used to record
+ * it, in order, returning the final state. No policy rng involved — every
+ * decision (including which target, if any) was already baked into each
+ * `dispatched` entry by botSteps; dispatchOne just redoes the target write.
  */
 export function replaySteps(state, dispatched) {
   let cur = state;
   for (const action of dispatched) {
-    const { state: next } = applyAction(cur, action);
+    const { state: next } = dispatchOne(cur, action);
     cur = next;
   }
   return cur;
