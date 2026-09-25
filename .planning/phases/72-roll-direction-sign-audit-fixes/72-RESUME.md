@@ -1,14 +1,17 @@
 # v2.1 autonomous-run resume point
 
-**Updated:** 2026-09-25, after Phase 73 wave 1 merged (master 5,751/5,751 green).
+**Updated:** 2026-09-25 ~14:10 local, Phase 74 wave 1 in flight, Phase 75 planner in flight.
 
 ## Where the run is
 - `/gsd-autonomous` is running milestone v2.1.
-- Phases 72, 81 and **73 are COMPLETE and pushed**. Phase 73 ended with 5,752/5,752 green, byte-identical parity, and an identical readout.
-- **IN FLIGHT: the Phase 74 planner** (a gsd-planner running in the background, dispatched ~12:42 local). It writes `.planning/phases/74-roll-display-modifier-honesty/74-*-PLAN.md` and commits `docs(74): create phase plan`.
-  - If it finished during the compact: check that the plans exist and are committed, then run `state.planned-phase --phase 74`, `roadmap.annotate-dependencies 74`, a commit, and execute Phase 74 wave by wave. Each plan is a gsd-executor (sonnet) in a worktree with a Monitor; then the merge, `npm test`, tracking, VERIFICATION and `phase.complete`.
-  - If no plans exist and it's no longer running: re-dispatch the Phase 74 planner, using the Phase 73 planner prompt pattern, with the edge-probe report at `<scratchpad>/cov74.json`.
+- Phases 72, 81 and 73 are COMPLETE and pushed.
+- **Phase 74 is EXECUTING.** It has 8 plans in 4 waves: W1 is 74-01 and 74-02; W2 is 74-03, 74-04 and 74-05; W3 is 74-06 and 74-07; W4 is 74-08. The plans are committed (7cb462b and 7053e67).
+  - Wave 1 was dispatched at base 7053e67. Its manifest is `<scratchpad>/wave-74-1.json`.
+  - After a compact, check `git worktree list` and the `agent-*` branches for SUMMARYs. Merge each finished wave with `worktree.cleanup-wave`, run `npm test`, run `roadmap.update-plan-progress`, then dispatch the next wave. Copy the executor prompt pattern from `<scratchpad>/last-executor-prompt.txt`.
+  - The orchestrator ACCEPTED 74-01 editing engine/derived.js and combat.js as a byte-identical extraction, as the planner proposed.
+- **IN FLIGHT: the Phase 75 planner**, a background gsd-planner in NO-COMMIT mode. When it finishes, run the gates (requirements, decision coverage, plan-structure), then `state.planned-phase 75`, `annotate-dependencies`, and commit `docs(75): create phase plan`. Execute 75 only after 74 is complete.
 - **Remaining order:** 74, 75, 75.1, 75.2, 75.3, 76, 77, 78, 79, 80 (with a researcher), then the lifecycle.
+- The edge-probe reports are pre-built: `<scratchpad>/cov<phase>.json` for 75, 75.1, 75.2, 75.3 and 76-80.
 - Every phase has a committed CONTEXT.md, so every one skips discuss.
 
 ## Captures (all routed and committed)
