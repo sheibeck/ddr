@@ -156,3 +156,17 @@ None - no external service configuration required.
 ---
 *Phase: 74-roll-display-modifier-honesty*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: src/browser/upgradeWhy.js
+- FOUND: src/browser/viewModels.js
+- FOUND: test/unit/upgrade-why.test.js
+- FOUND: test/unit/lootCompare.test.js
+- FOUND: test/unit/gear-sheet-dom.test.js
+- FOUND: test/unit/gear-sheet-model.test.js
+- FOUND: test/unit/store-rows.test.js
+- FOUND: test/unit/store-delivery.test.js
+- FOUND: test/unit/fixtures/shell-snapshots/thief-store.store.txt
+- FOUND: .planning/phases/74-roll-display-modifier-honesty/74-05-SUMMARY.md
+- FOUND commits: a80aafb, 5d221aa (all present in `git log`)
