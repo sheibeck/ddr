@@ -813,7 +813,7 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   // (a LOW roll wakes you), so this stays UNMIRRORED — the raw draw IS the
   // roll (already-high). The hero's quiet check reads `roll >= wakeOn + 1`;
   // every hour that fails it wakes the party. Same eight draws, same order,
-  // same threshold, just read roll-high instead of roll-under.
+  // same threshold — only the reading direction changed (Phase 73).
   const wakeOn = wanderWakeFacesFor(c.sub);
   const wakeRolls = [];
   let woke = 0;

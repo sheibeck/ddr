@@ -696,13 +696,13 @@ export function playerStrike(state, rng, events = []) {
 
     // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike
     // die. `faces` converts to the lowest winning face via atLeastFor; the
-    // draw happens in exactly the same position the old roll-under draw
-    // sat, so every seed resolves identically.
+    // draw happens in exactly the same position the previous draw sat, so
+    // every seed resolves identically.
     let check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
     // CANON-05 (D-12, p.36): Philly's `slow` gives the player two dice, and
     // keeps the HIGHER of the two mirrored faces — byte-identical to the old
-    // "two dice, keep the lower raw face" rule (a lower raw face mirrors to
-    // a higher roll-high face). DETERMINISM GATE: the second die is drawn
+    // rule, which kept the lower raw face of the two (a lower raw face
+    // mirrors to a higher roll-high face). DETERMINISM GATE: the second die is drawn
     // ONLY when `t.sp.slow` is truthy; Philly is the sole carrier and is not
     // fixture-exposed, so every other strike draws exactly one die, unchanged.
     if (t.sp && t.sp.slow) {
@@ -1083,7 +1083,7 @@ function pursuitStrike(state, rng, events) {
     mods.push({ name: "insulted", delta: faces - before });
   }
   // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit die,
-  // in the same draw position the old roll-under draw sat.
+  // in the same draw position the previous draw sat.
   const check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
   const { roll, atLeast } = check;
   if (!check.ok) {
@@ -1375,8 +1375,7 @@ export function parley(state, rng, events = []) {
   // CONTEXT's text-backed/local rule, since the dial is 0 at identity and no
   // fixture moves.) Phase 73 (ROLL-05): `faces` is the SAME number the old
   // `need` was — a count of winning faces — now read via rollCheck/
-  // atLeastFor instead of a roll-under comparison, at the exact same draw
-  // position.
+  // atLeastFor, at the exact same draw position.
   const faces = Math.min(9 + bonus, 17) - parleyNeedModFor(); // D-08: an 85% ceiling — no stack is an auto-win
   const check = rollCheck(rng, 20, atLeastFor(faces, 20));
   events.push({ type: "parleyRolled", ...rollFields(check), fluency: flu });
@@ -1627,12 +1626,12 @@ export function allyTurn(state, rng, events = []) {
   if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
   if (t.sp && t.sp.daggerOnly) faces = 0; // only a dagger or magic touches it
   // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike die,
-  // in the same draw position the old roll-under draw sat — the strike die,
-  // then (for Philly) a second draw, same as before.
+  // in the same draw position the previous draw sat — the strike die, then
+  // (for Philly) a second draw, same as before.
   let check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
   // CANON-05 (D-12, p.36): Philly's `slow` gives two dice and keeps the
-  // HIGHER of the two mirrored faces — byte-identical to the old "two dice,
-  // keep the lower raw face" rule.
+  // HIGHER of the two mirrored faces — byte-identical to the old rule,
+  // which kept the lower raw face of the two.
   if (t.sp && t.sp.slow) {
     const second = rollCheck(rng, dieN, check.atLeast);
     const better = Math.max(check.roll, second.roll);
@@ -2430,8 +2429,9 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
   }
   if (dmg <= 0) return { died: false, onArmour: false, applied: 0 };
 
-  // p.44: roll d20; at or under your AR the blow lands on the armour
-  // instead of you
+  // p.44: roll d20 — at or above the mirrored AR threshold (atLeastFor
+  // (soakAr, 20), Phase 73 ROLL-05) the blow lands on the armour instead
+  // of you.
   let onArmour = false;
   let blocked = 0;
   let wear = 0;
@@ -2792,7 +2792,7 @@ export function foeTurn(state, rng, events = []) {
           mMods.push({ name: "insulted", delta: mFaces - before });
         }
         // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit
-        // die, in the same draw position the old roll-under draw sat.
+        // die, in the same draw position the previous draw sat.
         const mCheck = rollCheck(rng, mDieN, atLeastFor(mFaces, mDieN));
         const { roll: mRoll, atLeast: mAtLeast } = mCheck;
         if (!mCheck.ok) {
@@ -2907,7 +2907,7 @@ export function foeTurn(state, rng, events = []) {
         mods.push({ name: "insulted", delta: faces - before });
       }
       // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit
-      // die, in the same draw position the old roll-under draw sat.
+      // die, in the same draw position the previous draw sat.
       const check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
       const { roll, atLeast } = check;
       if (!check.ok) {
