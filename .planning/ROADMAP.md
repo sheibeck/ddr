@@ -49,7 +49,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
 - [ ] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep
 - [ ] **Phase 80: Android Release Build & Tooling** - R8 minify/shrink, edge-to-edge and large-screen handling, and the fit tool's replay-resume fix
-- [ ] **Phase 81: Leaderboards Panel Fixes** - YOU tag, standing card, ME | ALL | FRIENDS scopes with ALL default when signed in, LINEAGE ME-only, GRAVEYARD and LEANEST removed
+- [x] **Phase 81: Leaderboards Panel Fixes** - YOU tag, standing card, ME | ALL | FRIENDS scopes with ALL default when signed in, LINEAGE ME-only, GRAVEYARD and LEANEST removed (completed 2026-09-25)
 
 ## Phase Details
 
@@ -248,7 +248,7 @@ Plans:
   5. Every finished run lands on each ME board it qualifies for (a depth-10 run tops a depth-9 one on DEEPEST), and a signed-in player's score reaches Play Games and shows on another player's ALL board after a refresh. Both root causes are found with `/gsd-debug` before fixing.
   6. The LEANEST board is gone from the rail, the local records and Play Games submission; old bests and queued runs that carry a `lean` entry load cleanly and nothing is ever submitted to the Season-1 LEANEST board again.
 
-**Plans**: 4/6 plans executed
+**Plans**: 6/6 plans executed
 
 Plans:
 **Wave 1**
@@ -263,8 +263,8 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 81-05-PLAN.md — Local recording fix (BOARD-15): the routed R-15 fixes plus reconcileBests at boot, every death-path pin green (wave 3)
-- [ ] 81-06-PLAN.md — Global boards fix (BOARD-09/10/16): YOU from the player's own leaderboard record, the pin rule and the hidden-score note, forceReload plus invalidate after a submission and on every panel open, the routed queue/tag fixes (wave 3)
+- [x] 81-05-PLAN.md — Local recording fix (BOARD-15): the routed R-15 fixes plus reconcileBests at boot, every death-path pin green (wave 3)
+- [x] 81-06-PLAN.md — Global boards fix (BOARD-09/10/16): YOU from the player's own leaderboard record, the pin rule and the hidden-score note, forceReload plus invalidate after a submission and on every panel open, the routed queue/tag fixes (wave 3)
 
 **UI hint**: yes
 **Device check**: yes — needs a signed-in Google Play Games build (YOU tag, standing card, ALL default, ME/ALL/FRIENDS switching, LINEAGE under ME only), batched into the milestone-close Pixel 7 checklist.
@@ -295,7 +295,7 @@ Plans:
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 0/– | Not started | - |
-| 81. Leaderboards Panel Fixes | v2.1 | 4/6 | In Progress|  |
+| 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |
