@@ -248,7 +248,7 @@ Plans:
   5. Every finished run lands on each ME board it qualifies for (a depth-10 run tops a depth-9 one on DEEPEST), and a signed-in player's score reaches Play Games and shows on another player's ALL board after a refresh. Both root causes are found with `/gsd-debug` before fixing.
   6. The LEANEST board is gone from the rail, the local records and Play Games submission; old bests and queued runs that carry a `lean` entry load cleanly and nothing is ever submitted to the Season-1 LEANEST board again.
 
-**Plans**: 3/6 plans executed
+**Plans**: 4/6 plans executed
 
 Plans:
 **Wave 1**
@@ -259,7 +259,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 81-04-PLAN.md — Panel restructure (BOARD-11/12/13/14): ME | ALL | FRIENDS with the ALL default when signed in; LINEAGE and GRAVEYARD kept as ME-only boards at the rail's end (…, LINEAGE, GRAVEYARD); LINEAGE never reads the global sample; 81-03's GRAVEYARD doc lines corrected (wave 2)
+- [x] 81-04-PLAN.md — Panel restructure (BOARD-11/12/13/14): ME | ALL | FRIENDS with the ALL default when signed in; LINEAGE and GRAVEYARD kept as ME-only boards at the rail's end (…, LINEAGE, GRAVEYARD); LINEAGE never reads the global sample; 81-03's GRAVEYARD doc lines corrected (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -295,7 +295,7 @@ Plans:
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 0/– | Not started | - |
-| 81. Leaderboards Panel Fixes | v2.1 | 3/6 | In Progress|  |
+| 81. Leaderboards Panel Fixes | v2.1 | 4/6 | In Progress|  |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
 | 67. Play Games Integration & Account Chip | v2.0 | 8/8 | Complete    | 2026-09-24 |

@@ -46,11 +46,11 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 - [ ] **BOARD-09**: On the global boards, the signed-in player's own score is tagged **YOU**, never FRIEND, in both the All and Friends scopes. Today the row is tagged "FRIEND" because `you` is set only when the score's `playerId` equals the signed-in id (`globalBoards.js:80`) and that match fails on device. Root-cause the id mismatch; don't paper over it.
 - [ ] **BOARD-10**: When the player's own score is already inside the shown top ten, the "not in the top ten / your best run" standing card does not appear. It appears only when the player is ranked but off the visible list. (Device: sole entry, rank #1, shown twice.)
-- [ ] **BOARD-11**: When signed in with Compete ON, the Leaderboards panel opens on **ALL**. Today it defaults to `"local"` (`boardsView.js:911`), so neither ALL nor FRIENDS is selected. Signed out or Compete OFF keeps the local view.
+- [x] **BOARD-11**: When signed in with Compete ON, the Leaderboards panel opens on **ALL**. Today it defaults to `"local"` (`boardsView.js:911`), so neither ALL nor FRIENDS is selected. Signed out or Compete OFF keeps the local view.
 
-- [ ] **BOARD-12**: The Leaderboards panel has three scope chips, **ME | ALL | FRIENDS**, and every board can be filtered by them. ME is the local list of the player's own runs (today's hidden `"local"` scope, with no chip to return to it). Signed out or with Compete OFF, ALL and FRIENDS keep today's sign-in note and ME stays the default. BOARD-11's ALL default applies when signed in with Compete ON. (user ruling 2026-09-24)
-- [ ] **BOARD-13**: LINEAGE is a ME-only board. Its tab is shown only while ME is selected, it moves to the end of the board rail, and it no longer reads the global DEEPEST sample. The reason is that Play Games keeps one best score per player per board, so a global lineage view could only ever show each player's all-time deepest character. (user ruling 2026-09-24)
-- [ ] **BOARD-14**: The GRAVEYARD board STAYS (user reversal 2026-09-25: ME boards are top-ten lists, so removing it would leave weaker runs listed nowhere). It becomes a ME-only board like LINEAGE: shown only while ME is selected, placed at the end of the rail beside LINEAGE (…, LINEAGE, GRAVEYARD), listing every stored run with its tap-to-expand details (epitaph included). Old saves load tolerantly. (was: "GRAVEYARD is removed", user ruling 2026-09-24)
+- [x] **BOARD-12**: The Leaderboards panel has three scope chips, **ME | ALL | FRIENDS**, and every board can be filtered by them. ME is the local list of the player's own runs (today's hidden `"local"` scope, with no chip to return to it). Signed out or with Compete OFF, ALL and FRIENDS keep today's sign-in note and ME stays the default. BOARD-11's ALL default applies when signed in with Compete ON. (user ruling 2026-09-24)
+- [x] **BOARD-13**: LINEAGE is a ME-only board. Its tab is shown only while ME is selected, it moves to the end of the board rail, and it no longer reads the global DEEPEST sample. The reason is that Play Games keeps one best score per player per board, so a global lineage view could only ever show each player's all-time deepest character. (user ruling 2026-09-24)
+- [x] **BOARD-14**: The GRAVEYARD board STAYS (user reversal 2026-09-25: ME boards are top-ten lists, so removing it would leave weaker runs listed nowhere). It becomes a ME-only board like LINEAGE: shown only while ME is selected, placed at the end of the rail beside LINEAGE (…, LINEAGE, GRAVEYARD), listing every stored run with its tap-to-expand details (epitaph included). Old saves load tolerantly. (was: "GRAVEYARD is removed", user ruling 2026-09-24)
 - [ ] **BOARD-15**: Every finished run is recorded on every ME board it qualifies for, on every death path (combat, trap, starvation, abandon, a resumed save). Device: a depth-10 run showed in the Graveyard but not on the player's own DEEPEST board above their depth-9 run. The root cause is found with `/gsd-debug` before the fix, and a test pins each death path. (device report 2026-09-25; todo 2026-09-25 leaderboards-lose-runs)
 - [ ] **BOARD-16**: A signed-in player's qualifying score reaches Play Games and appears on every other player's ALL board after a refresh. Device: a friend's depth-11 DEEPEST score never showed on the user's ALL board, while the friend saw the user's depth-9 entry. The submission (queue, response, leaderboard ID, encoding) and the fetch (collection, time span, cache staleness) are traced end to end, the root cause is fixed, and the fix is confirmed with two signed-in devices in the batched device checklist. (device report 2026-09-25)
 - [x] **BOARD-17**: The LEANEST board is removed. Steps per floor lets a 1-step death top it (a floor-0 death counts as one floor on Play Games, and a 1-step death on floor 1 tops the local board), and "deepest floor, then the fewest steps" is exactly DEEPEST's ordering, so no honest LEANEST remains. Remove `lean` from `engine/records.js` (`BOARD_IDS`, `RANKED_BOARDS`, `compareRuns`, bests), `src/browser/boardScores.js` (`SUBMIT_BOARDS`, `SCORE_ORDER`, `boardScore`, `scoreFallback`), `content/leaderboards.js`, `content/boards.js`, the board rail and `docs/PLAY-GAMES-SETUP.md` §7. An old `ddr.bests.v1` with a `lean` list and queued `pgsQueue` entries with a `lean` score load tolerantly, and the `lean` part is dropped, never submitted. After the update ships, the user deletes the Season-1 LEANEST board (`CgkIlvbN0YYPEAIQAw`) in Play Console. (user ruling 2026-09-24; moved from backlog 999.11)
@@ -159,7 +159,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | CLIMB-02 | Phase 78 | Pending |
 | BOARD-09 | Phase 81 | Pending |
 | BOARD-10 | Phase 81 | Pending |
-| BOARD-11 | Phase 81 | Pending |
+| BOARD-11 | Phase 81 | Complete |
 | VOX-04 | Phase 79 | Pending |
 | ROLL-04 | Phase 79 | Pending |
 | VOX-05 | Phase 79 | Pending |
@@ -167,9 +167,9 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | DROID-02 | Phase 80 | Pending |
 | DROID-03 | Phase 80 | Pending |
 | TOOL-01 | Phase 80 | Pending |
-| BOARD-12 | Phase 81 | Pending |
-| BOARD-13 | Phase 81 | Pending |
-| BOARD-14 | Phase 81 | Pending |
+| BOARD-12 | Phase 81 | Complete |
+| BOARD-13 | Phase 81 | Complete |
+| BOARD-14 | Phase 81 | Complete |
 | BOARD-15 | Phase 81 | Pending |
 | BOARD-16 | Phase 81 | Pending |
 | BOARD-17 | Phase 81 | Complete |
