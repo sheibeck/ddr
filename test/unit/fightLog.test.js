@@ -83,10 +83,12 @@ test("oracleDetailText: keeps dice, strips tags; empty when no roll span; empty 
 // ─── Test 4: fightLogLinesFor — narrative line with roll ──────────────────
 
 test("fightLogLinesFor: a struck event yields one narrative line whose roll is the roll-bearing Oracle sentence", () => {
-  const lines = fightLogLinesFor("attack", [{ type: "struck", target: "Giant Rat", roll: 7, need: 12, dmg: 5 }]);
+  // Phase 73 (ROLL-05): the old {roll:7, need:12} shape mirrors to
+  // {roll:14, atLeast:9, dieN:20} on a d20.
+  const lines = fightLogLinesFor("attack", [{ type: "struck", target: "Giant Rat", roll: 14, atLeast: 9, dieN: 20, dmg: 5 }]);
   assert.equal(lines.length, 1);
   assert.equal(lines[0].tone, "narrative");
-  assert.equal(lines[0].roll, "7 vs 12. You hit Giant Rat for 5 hp.");
+  assert.equal(lines[0].roll, "14 vs 9–20. You hit Giant Rat for 5 hp.");
   assert.ok(FIGHT_LOG_TONES.includes(lines[0].tone));
 });
 

@@ -34,6 +34,9 @@
 
 import { PRIORITY, ORACLE_ONLY, LINE_FOR, narrativeLineText, oracleDetailText } from "./narrationLines.js";
 import { narrateEvent } from "./eventNarration.js";
+// Phase 73 (ROLL-05): the ONE roll-high winning-range formatter — see
+// rollLineFor's (b) branch below.
+import { rangeText } from "./rollRange.js";
 // Phase 38 (ABIL-01/03) — abilityPoolCard (below) reads the catalog's own
 // name/txt for the level-1 pool-pick narration; pure content data, same
 // discipline as eventNarration.js's existing content/flavor.js import.
@@ -447,10 +450,13 @@ export function railFamilyFor(type, tone, priority) {
  * rollLineFor(event, narrate) — the generic roll-line rule (decision 1):
  * (a) the Oracle's own sentence when its narration carries a roll span
  * (dice kept, tags stripped, via oracleDetailText); (b) else a generic
- * "roll N [· M to clear] [· −K hp]" line built from a numeric event.roll
- * (need/hurt appended only when present); (c) else null. `hurt` alone
- * NEVER fabricates a dice line — only a numeric `roll` unlocks the generic
- * line.
+ * "roll N [vs lo–hi] [· −K hp]" line built from a numeric event.roll (the
+ * roll-high range appended only when event.atLeast/event.dieN are both
+ * numbers, via rangeText; hurt appended only when present); (c) else null.
+ * `hurt` alone NEVER fabricates a dice line — only a numeric `roll` unlocks
+ * the generic line. Phase 73 (ROLL-05): the old `need` branch is gone — no
+ * converted event carries `need` anymore, and every unconverted roll event
+ * still has an Oracle roll span, so branch (a) always handles those.
  */
 export function rollLineFor(event, narrate) {
   const narrateFn = typeof narrate === "function" ? narrate : narrateEvent;
@@ -458,7 +464,7 @@ export function rollLineFor(event, narrate) {
   if (sentence) return sentence;
   if (!event || typeof event.roll !== "number") return null;
   let line = `roll ${event.roll}`;
-  if (typeof event.need === "number") line += ` · ${event.need} to clear`;
+  if (typeof event.atLeast === "number" && typeof event.dieN === "number") line += ` vs ${rangeText(event.atLeast, event.dieN)}`;
   if (typeof event.hurt === "number") line += ` · −${event.hurt} hp`;
   return line;
 }

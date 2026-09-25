@@ -683,11 +683,13 @@ test("EVENT_NARRATION.struckByFoe: soaked + needMods render; the unflagged sente
 });
 
 test("EVENT_NARRATION.strikeMissed: appends the quip after the roll and the plain miss sentence; absent quip renders identically to before", () => {
-  const withQuip = EVENT_NARRATION.strikeMissed({ type: "strikeMissed", target: "Dante", roll: 7, need: 5, quip: "Wide. Impressively wide." });
-  assert.match(withQuip, /<span class="roll">7<\/span> vs 5\. .*You miss Dante\.<\/span> Wide\. Impressively wide\.$/);
+  // Phase 73 (ROLL-05): the old {roll:7, need:5} shape mirrors to
+  // {roll:7, atLeast:16, dieN:20} — atLeastFor(5, 20) = 16.
+  const withQuip = EVENT_NARRATION.strikeMissed({ type: "strikeMissed", target: "Dante", roll: 7, atLeast: 16, dieN: 20, quip: "Wide. Impressively wide." });
+  assert.match(withQuip, /<span class="roll">7<\/span> vs 16–20\. .*You miss Dante\.<\/span> Wide\. Impressively wide\.$/);
 
-  const noQuip = EVENT_NARRATION.strikeMissed({ type: "strikeMissed", target: "Dante", roll: 7, need: 5 });
-  assert.equal(noQuip, '<span class="roll">7</span> vs 5. <span class="miss">You miss Dante.</span>');
+  const noQuip = EVENT_NARRATION.strikeMissed({ type: "strikeMissed", target: "Dante", roll: 7, atLeast: 16, dieN: 20 });
+  assert.equal(noQuip, '<span class="roll">7</span> vs 16–20. <span class="miss">You miss Dante.</span>');
 });
 
 test("EVENT_NARRATION: rested/scrollRefused/equipRejected render the new fields in voice", () => {

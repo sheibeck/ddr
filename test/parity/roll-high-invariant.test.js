@@ -8,11 +8,11 @@
 // converts them; 73-09 sets COMPLETE = true. The event-field contract is
 // documented in docs/ROLL-LEDGER.md `### Event fields (Phase 73)` (73-03).
 //
-// This plan (73-02) adds the test SHELL only: OUTCOME is empty, COMPLETE is
-// false, so none of I1-I6 can fire against TODAY's events (no event yet
-// carries `atLeast` — that field doesn't exist until a later plan renames
-// `need`). The self-test below proves the rule FUNCTIONS themselves are
-// correct, independent of what the untouched engine emits today.
+// 73-02 added the test SHELL (OUTCOME empty, COMPLETE false). 73-04 adds the
+// first real rows: the hero's own strike/miss, the frenzy trigger, and the
+// foe's natural-armor soak of the hero's blow. COMPLETE stays false until
+// 73-09 converts the last event family. The self-test below proves the rule
+// FUNCTIONS themselves are correct, independent of what OUTCOME contains.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -46,16 +46,29 @@ const ENCOUNTERS_FIXTURE = readFixture("action-script.encounters.json");
  * boolean`, returning whether the ROLLER succeeded, where `following` is
  * the rest of the SAME action's events (for pre-outcome events such as
  * spellThrown/fleeRolled, whose real outcome is a later event in the same
- * group). Empty in this plan — 73-04 through 73-09 add rows as each event
- * family converts to the roll-high `atLeast` shape.
+ * group). 73-05 through 73-09 add more rows as each event family converts
+ * to the roll-high `atLeast` shape.
+ *
+ * 73-04 rows: the hero's own strike (struck/strikeMissed), the frenzy
+ * trigger, and the foe's natural-armor soak of the hero's blow. Each event
+ * type only ever fires on ONE side of its own check, so the outcome is a
+ * constant (never computed from `following`) — I3 still cross-checks it
+ * against `event.roll >= event.atLeast` for every non-auto event.
  */
-const OUTCOME = {};
+const OUTCOME = {
+  struck: () => true, // a struck event only fires once the hero's blow landed
+  strikeMissed: () => false, // a strikeMissed event only fires once the hero's blow missed
+  frenzy: () => true, // a frenzy event only fires once the frenzy-trigger check succeeded
+  foeArmorSoaked: () => true, // a foeArmorSoaked event only fires once the foe's natural-armor soak succeeded
+};
 
 /**
  * NESTED_CHECKS — nested keys that carry their own `{ roll, atLeast, dieN }`
  * triple (`soak`, `bag`), each with an outcome function `(nested) =>
- * boolean`. No event emitted by the untouched engine nests either key
- * today (confirmed by grep) — pure forward scaffolding for later plans.
+ * boolean`. Since 73-04, a landed `struck` event nests a failed `soak`
+ * triple (`nested.roll < nested.atLeast` — a landed blow means the foe's
+ * armor soak did NOT succeed); `bag` remains forward scaffolding for a
+ * later plan.
  */
 const NESTED_CHECKS = {
   soak: (nested) => nested.roll >= nested.atLeast,
