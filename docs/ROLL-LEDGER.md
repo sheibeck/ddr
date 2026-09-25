@@ -468,3 +468,116 @@ The Phase 72 BEFORE/AFTER bot readouts live in `docs/DIFFICULTY-RETUNE.md` under
 
 **Headline (200 seeds, solo bot, `--start-depth=1`):** death-depth p50 unchanged at 7 (min 1→2, p90 12→13, max 30→40 — tail noise); reach ≥5 80.5%→80.6%, ≥10 23.6%→24.6%, ≥20 1.1%→1.1% (flat); stuck runs 26→25 of 200; per-floor survival keeps its PASS verdict for floors 1-12 unchanged. The curve is statistically flat — see `docs/DIFFICULTY-RETUNE.md`'s own `### Reading (BEFORE → AFTER)` for the full table and the per-fix reachability reasoning (F1 is inert in this solo-bot readout since it never populates a party; F3's Shadow death-share moving 1→3 of 200 is the one line plausibly touched by a real mechanical change; F5 and (d) are literal no-ops at identity). **No difficulty retune is owed by this phase.**
 
+## Phase 73 mirror verdicts (ROLL-05)
+
+**Recorded:** 2026-09-25 (73-03). Every site in `## Site inventory` above, plus the not-a-check appendix's chargen/tool/premium draws, gets a mirror verdict for Phase 73's engine switch to roll-high. **The rule (CONTEXT Area 1):** high is good for whoever rolls, and a 1 is always the worst face. Only a CHECK whose winning faces sit at the BOTTOM of the die today gets mirrored. A check already read high (flee, initiative, cooking `>= 4`, the chest scroll `>= 3`, the climb fall-avoid `> 2`, the Humans parley payout `=== 6`) stays as it is. A mishap gate that fires on a natural 1 (the Apprentice/doubled backfire, the vapor kill-save, the Sorcerer spell-loss, the rare d20 travel murder check) stays on the 1 — "1 is always the worst face" is the same convention either way, so these need no mirror. SELECTION and AMOUNT draws (table picks, damage, durations) are not checks and are untouched. A roll with no obvious roller (a loot drop, the bag-upgrade gate, the wandering wake, the rare d20 travel event) is read from the HERO's side, so a high roll is good news for the hero; that is why the loot/bag drops mirror (good news moves to the top) while the wandering wake does not (the bad news already sits at the bottom, oriented against the hero).
+
+**The mechanism:** `engine/dice.js#rollCheck` (73-01) draws exactly the same `rng.d(N)` call, in the same order, as today's engine — it changes only how the draw is READ. A raw draw `r` on an N-sided die becomes `roll = N + 1 - r`; a roll-under `need` of `k` winning faces becomes a roll-high `atLeast = N + 1 - k` (`atLeastFor(faces, N) = N + 1 - faces`, 73-01). Because `r` is unchanged and every comparison flips consistently, every seed resolves identically — the parity suite stays byte-identical, and the 200-seed bot readout (`## Bot readout` above) must match unchanged once every site below has been converted.
+
+### Verdict per site
+
+The `#` column matches `## Site inventory`'s numbering; `3b` and `A1`-`A3` are new rows this phase's mirror scope adds (the startCombat tier-bleed gate, and three of the appendix's selection draws called out for the corrections below). `Status` holds `planned` on every row; 73-10 fills it in once every conversion plan (the `Plan` column) has landed.
+
+| # | Site | Verdict | Roll-high check | Event(s) carrying roll/atLeast/dieN | Plan | Status |
+|---|---|---|---|---|---|---|
+| 1 | combat.js#resolveInitiative 2×d20 | ALREADY HIGH (contested, `mine >= theirs`, the hero wins ties) | both draws tagged already-high | combatJoined keeps mine/theirs (contested, no atLeast) | 73-08 | planned |
+| 2 | Tracking | REMOVED (Phase 38) | — | — | — | planned |
+| 3 | combat.js#startCombat foe count d4 + difficulty.js#foeCountFor | NOT A CHECK (selection: the count table) | draws and the `firstRoll <= 2` dispatch tagged selection | — | 73-01 / 73-08 | planned |
+| 3b | combat.js#startCombat tier bleed `rng.d(4) <= tierSpreadFor()` | MIRROR (hero-side: a lower-tier foe is good news) | rollCheck(rng, 4, atLeastFor(tierSpreadFor(), 4)) | none | 73-08 | planned |
+| 4 | Con Artist weak-foe flee d6 `<= 4` | MIRROR | rollCheck(rng, 6, atLeastFor(4, 6)) = 3–6 | foeFled {reason: "conArtist"} | 73-08 | planned |
+| 5 | Court Mage boredom d12 `<= 2` | MIRROR | rollCheck(rng, 12, atLeastFor(2, 12)) = 11–12 | foeBored | 73-08 | planned |
+| 6 | fight phobia Hardiness shrug d2 `=== 1` | MIRROR | rollCheck(rng, 2, atLeastFor(1, 2)) = 2 | phobiaAfraid (when the shrug die was drawn and failed) | 73-08 | planned |
+| 7 | playerStrike frenzy trigger d8 `<= 5` | MIRROR | rollCheck(rng, 8, atLeastFor(5, 8)) = 4–8 | frenzy | 73-04 | planned |
+| 8 | playerStrike strike die (Philly two dice) | MIRROR | rollCheck(rng, dieN, atLeastFor(faces, dieN)); Philly keeps Math.max of two mirrored faces | struck / strikeMissed | 73-04 | planned |
+| 9 | Stealth crit `<= 2` | MIRROR | roll >= atLeastFor(2, dieN) | struck.critAtLeast | 73-04 | planned |
+| 10 | Ninja crit `<= 2` | MIRROR | roll >= atLeastFor(2, dieN) | struck.critAtLeast | 73-04 | planned |
+| 11 | weapon crit `<= weaponCrit(c)` | MIRROR | roll >= atLeastFor(weaponCrit(c), dieN) | struck.critAtLeast | 73-04 | planned |
+| 12 | killFoe loot drop d20 `<= 2 + f.lvl` | MIRROR (hero-side good news) | rollCheck(rng, 20, atLeastFor(2 + f.lvl, 20)) | lootDropped (kill drop) | 73-08 | planned |
+| 13 | killFoe bag drop d20 `<= BAG_DROP_UNDER` | MIRROR; the constant is renamed BAG_DROP_FACES | rollCheck(rng, 20, atLeastFor(BAG_DROP_FACES, 20)) | lootDropped.bag (nested) | 73-08 | planned |
+| 14 | killFoe cooking d6 `>= 4` | ALREADY HIGH | tagged already-high | — | 73-08 | planned |
+| 15 | pursuitStrike | MIRROR | rollCheck(rng, foeDie, atLeastFor(faces, dieN)) | foeMissed / struckByFoe | 73-07 | planned |
+| 16 | pursuit Soldier crit-taken | MIRROR | roll >= atLeastFor(Soldier ? 2 : 1, dieN) | struckByFoe.critAtLeast | 73-07 | planned |
+| 17 | flee d20 `roll + bonus >= need` | ALREADY HIGH; the bonus folds into the threshold: roll >= need - bonus | raw draw tagged already-high | fleeRolled {roll, atLeast, dieN, mods} (total removed) | 73-08 | planned |
+| 18 | parley d20 `<= min(9+bonus,17) - dial` | MIRROR | rollCheck(rng, 20, atLeastFor(faces, 20)) | parleyRolled | 73-08 | planned |
+| 19 | parley Humans payout d6 `=== 6` | ALREADY HIGH | tagged already-high | — | 73-08 | planned |
+| 20 | allyTurn summon strike | MIRROR | rollCheck on STRIKE_DICE[lvl-1]; Philly Math.max | allyStruck / allyMissed | 73-05 | planned |
+| 21 | alliesTurn legacy strike | MIRROR | same | allyStruck / allyMissed | 73-05 | planned |
+| 22 | memberStrike (+ member crit on the best face) | MIRROR | rollCheck(rng, dieN, atLeastFor(faces, dieN)); crit isBestFace | allyStruck / allyMissed | 73-05 | planned |
+| 23 | allyCast thrown `roll - bonus <= need` | MIRROR, bonus folded | rollCheck(rng, dieN, atLeastFor(need + bonus, dieN)) | allyCast | 73-05 | planned |
+| 24 | applyFoeDamageToPlayer hero armor soak d20 `<= soakAr` | MIRROR | rollCheck(rng, 20, atLeastFor(soakAr, 20)) | armorSoaked (success); struckByFoe.soak (failure) | 73-07 | planned |
+| 25 | foeTurn ability gate d6 `<= 4` | MIRROR (the foe is the roller; using its ability is its success) | rollCheck(rng, 6, atLeastFor(4, 6)) = 3–6 | foeCast | 73-08 | planned |
+| 26 | foeTurn member branch | MIRROR | rollCheck(rng, mDieN, atLeastFor(faces, mDieN)) | foeMissed {member} / memberStruck | 73-07 | planned |
+| 27 | member crit natural best | MIRROR | roll === dieN (isBestFace) | memberStruck.critAtLeast | 73-07 | planned |
+| 28 | foeTurn hero branch | MIRROR | rollCheck(rng, dieN, atLeastFor(faces, dieN)) | foeMissed / struckByFoe | 73-07 | planned |
+| 29 | hero Soldier crit-taken | MIRROR | roll >= atLeastFor(Soldier ? 2 : 1, dieN) | struckByFoe.critAtLeast | 73-07 | planned |
+| 30 | springTrap dodge d20 `<= nimble` | MIRROR | rollCheck(rng, 20, atLeastFor(nimble, 20)) | trapAvoided (success); trapSprung, trapDisarmed (failure) | 73-09 | planned |
+| 31 | openChest scroll d6 `>= 3` | ALREADY HIGH | tagged already-high | — | 73-09 | planned |
+| 32 | openChest tiered lock d10 | MIRROR | rollCheck(rng, 10, atLeastFor(need, 10)) | chestLockRolled | 73-09 | planned |
+| 33 | openChest bare lock d20 | MIRROR | rollCheck(rng, 20, atLeastFor(need, 20)) | chestLockRolled | 73-09 | planned |
+| 34 | foeDamage.js natural-armor soak d20 `<= sp.ar` | MIRROR | rollCheck(rng, 20, atLeastFor(foe.sp.ar, 20)) | foeArmorSoaked (success); struck.soak, allyStruck.soak (failure) | 73-04 | planned |
+| 35 | castSpell Apprentice backfire d8 `=== 1` | MISHAP ON 1 | tagged mishap-on-1 | spellBackfired {roll: 1, atLeast: 2, dieN: 8} | 73-06 | planned |
+| 36 | castSpell doubled backfire d8 `=== 1` | MISHAP ON 1 | tagged mishap-on-1 | summonBackfired {roll: 1, atLeast: 2, dieN: 8} | 73-06 | planned |
+| 37 | castSpell thrown `roll - bonus <= target` | MIRROR, bonus folded | rollCheck(rng, dieN, atLeastFor(target + bonus, dieN)) | spellThrown | 73-05 | planned |
+| 38 | castSpell vapor roll d6 | NOT A CHECK (selection: the outcome table) | tagged selection | vaporRolled keeps its table roll | 73-06 | planned |
+| 39 | castSpell vapor kill-save d10 `!== 1` | MISHAP ON 1 (the foe's save; a 1 fails) | tagged mishap-on-1 | none | 73-06 | planned |
+| 40 | movement climb d10 + penalties `<= success` | MIRROR, penalties folded | rollCheck(rng, 10, atLeastFor(success - penalty, 10)) per segment | climbedOver / fellClimbing (roll and rolls) | 73-09 | planned |
+| 41 | climb fall-avoid d20 `> 2` | ALREADY HIGH | tagged already-high | — (hurt) | 73-09 | planned |
+| 42 | movement leap d10 + penalties, fail `> need` | MIRROR, penalties folded | rollCheck(rng, 10, atLeastFor(need - penalty, 10)) | leaptOver / fellInGorge | 73-09 | planned |
+| 43 | newDay affliction cure d20 `<= 10 (+4)` | MIRROR | rollCheck(rng, 20, atLeastFor(10 + hardiness, 20)) | afflictionCured / afflictionLingers | 73-09 | planned |
+| 44 | newDay wandering wake d20 `<= wakeOn`, ×8 | ALREADY ORIENTED (bad news sits at the bottom): the hero's quiet check is roll >= wakeOn + 1, no mirror | raw draws tagged already-high | wanderingMonster {rolls, atLeast, dieN} | 73-09 | planned |
+| 45 | cutthroatMurderCheck d20 `=== 1` (the rare d20 travel event) | MISHAP ON 1 (bad news for the hero on the 1) | tagged mishap-on-1 | joinerMurdered {roll: 1, atLeast: 2, dieN: 20} | 73-09 | planned |
+| 46 | derived.js#resistRoll d20 `< intel` | MIRROR | rollCheck(rng, 20, atLeastFor(intel - 1, 20)) = 22 - intel | spellResisted, resistFailed, heroResisted, heroResistFailed, allySpellMissed {resisted: true} | 73-06 | planned |
+| 47 | items.js#rollTreasureItem `rng.d(12) === 1` | NOT A CHECK (selection: the treasure is Lockpicks; correction below) | tagged selection | — | 73-01 | planned |
+| 48 | character.js#checkLevel Sorcerer spell loss d8 `=== 1` | MISHAP ON 1 | tagged mishap-on-1 | none (no event today) | 73-01 | planned |
+| A1 | items.js tool-loot gate `toolRng.d(8) === 1`, weighted tool pick, and the r<=3/5/7/9 category ladder | NOT A CHECK (selection) | every draw and ladder line tagged selection | — | 73-01 | planned |
+| A2 | economy.js premium `rng.d(2) === 1` | NOT A CHECK (selection) | tagged selection | — | 73-01 | planned |
+| A3 | every other appendix draw | NOT A CHECK (selection or amount, per the appendix) | tagged | selection events keep a bare table roll | per file | planned |
+
+### Event fields (Phase 73)
+
+Every roll-carrying event's field contract, and its outcome rule for `test/parity/roll-high-invariant.test.js`'s runtime check that every roll-carrying event satisfies `1 <= roll <= dieN` and its success/failure equals `roll >= atLeast`.
+
+- Every roll-carrying event carries `roll` (the high-is-good face), `atLeast` (the lowest winning face — the threshold gets its own name because `target` already names the victim on about 48 event pushes) and `dieN`. `need` is removed from every roll-carrying event. Events that are not rolls keep their own `need` (hunger's ration count, the spell-level gates).
+- `mods` replaces `needMods`: `{ name, delta }` with the same values, signed for the ROLLER (+1 face = +1 to hit). Phase 74 re-signs them from the player's side.
+- `rolls`: an array of faces when one event reports several draws of the same check (climb segments, the eight wake hours).
+- `critAtLeast`: present when a critical came from the die (weapon crit, Stealth, Ninja, a foe's natural best, the Soldier's extra face).
+- `auto: true`: the to-hit comparison was bypassed (an auto-hit opener or ability); the roll is still reported.
+- Nested `soak` / `bag`: a second check reported on the same event, `{ roll, atLeast, dieN }` (a failed armor soak on a landed blow; the bag-upgrade gate on a loot drop).
+
+| Event | Roller | Outcome rule | Plan |
+|---|---|---|---|
+| struck / strikeMissed | hero | SUCCESS on struck, FAILURE on strikeMissed | 73-04 |
+| allyStruck / allyMissed | member / summon / legacy ally | SUCCESS on allyStruck, FAILURE on allyMissed | 73-05 |
+| memberStruck | member (foe's roll) | SUCCESS | 73-07 |
+| foeMissed / struckByFoe | foe vs hero or member | SUCCESS on struckByFoe, FAILURE on foeMissed | 73-07 |
+| frenzy | hero (Fridgian trigger) | SUCCESS | 73-04 |
+| foeShattered | hero/member/ally (shatter-on-best) | SUCCESS | 73-04 |
+| foeArmorSoaked / struck.soak / allyStruck.soak | foe (nested soak) | SUCCESS on foeArmorSoaked, FAILURE on a nested soak | 73-04 |
+| armorSoaked / struckByFoe.soak | hero (nested soak) | SUCCESS on armorSoaked, FAILURE on a nested soak | 73-07 |
+| trapAvoided / trapSprung / trapDisarmed | hero | SUCCESS on trapAvoided, FAILURE on trapSprung/trapDisarmed | 73-09 |
+| leaptOver / fellInGorge | hero | SUCCESS on leaptOver, FAILURE on fellInGorge | 73-09 |
+| climbedOver / fellClimbing | hero | SUCCESS on climbedOver, FAILURE on fellClimbing | 73-09 |
+| afflictionCured / afflictionLingers | hero | SUCCESS on afflictionCured, FAILURE on afflictionLingers | 73-09 |
+| foeFled | foe (hero-side good news) | SUCCESS | 73-08 |
+| foeBored | foe (hero-side good news) | SUCCESS | 73-08 |
+| lootDropped (+ nested bag) | n/a (hero-side good news) | SUCCESS; a nested bag SUCCESS when the dropped item is a bag | 73-08 |
+| foeCast | foe (its own success) | SUCCESS | 73-08 |
+| spellResisted / resistFailed | resistor (hero or foe) | SUCCESS on spellResisted, FAILURE on resistFailed | 73-06 |
+| heroResisted / heroResistFailed | hero (resisting a foe's effect) | SUCCESS on heroResisted, FAILURE on heroResistFailed | 73-06 |
+| allySpellMissed {resisted} | member (resisted by a foe) | SUCCESS when resisted is true, else FAILURE | 73-06 |
+| spellThrown / spellMissed (same target) | hero | succeeds unless spellMissed for the same target follows in the same action before the next event of the same type | 73-05 |
+| allyCast / allySpellMissed {resisted: false} | member (MU) | succeeds unless allySpellMissed{resisted:false} follows the same way | 73-05 |
+| fleeRolled / fleeFailed | hero | succeeds unless fleeFailed follows in the same action before the next fleeRolled | 73-08 |
+| parleyRolled / parleyFailed | hero | succeeds unless parleyFailed follows in the same action before the next parleyRolled | 73-08 |
+| chestLockRolled | hero | SUCCESS when `opened` | 73-09 |
+| wanderingMonster {rolls, atLeast, dieN} | n/a (hero-side bad news, already oriented) | `hours` equals the count of `rolls` below `atLeast` | 73-09 |
+| phobiaAfraid | hero (Hardiness shrug failed) | FAILURE | 73-08 |
+| spellBackfired / summonBackfired | hero (mishap on 1) | FAILURE | 73-06 |
+| joinerMurdered | n/a (mishap on 1, bad news for the hero) | FAILURE | 73-09 |
+
+### Corrections to the Phase 72 inventory
+
+- **Site 47 correction (confirmed against `engine/items.js:249-251` at this plan's HEAD):** `rollTreasureItem`'s `if (!hasPicks(c || {}) && rng.d(12) === 1) { return { kind: "picks", n: "Lockpicks", txt: "1–5 on d10 against any lock" }; }` is a treasure-kind SELECTION — the draw decides WHICH item drops (Lockpicks), not whether an item is worn down. There is no lockpick-wear mechanic anywhere in the engine; site 47's earlier "lockpick wear" label was a misreading of this gate. CONTEXT's outcome for it (stays on the 1, a mishap-shaped gate in narration) holds either way, because the item text itself ("1–5 on d10 against any lock") is authored prose carried forward to Phase 79 (ROLL-04), not this phase.
+- **The appendix's "tier-drop gate" (startCombat) is a binary good-news gate for the hero**, so it is classified as a CHECK and mirrored (row 3b above: `rng.d(4) <= tierSpreadFor()`, a lower-tier foe is good news for the hero); the foe COUNT draw (row 3, the d4 table pick that decides how many foes appear) stays a SELECTION — the two draws share a function (`startCombat`) but are different mechanics.
+- **A player-facing roll-under string lives in `engine/items.js`** (the Lockpicks item text "1–5 on d10 against any lock", the same string site 47 returns). It is authored prose describing a game rule to the player, not an engine comparison this phase converts, so it goes to Phase 79 (ROLL-04) alongside every other roll-direction phrasing fix, not here.
+
