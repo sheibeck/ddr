@@ -23,9 +23,9 @@ import assert from "node:assert/strict";
 
 import { playerStrike } from "../../engine/combat.js";
 import { castSpell } from "../../engine/magic.js";
-import { strikeDie, canCast, castableAttackSpells } from "../../engine/derived.js";
+import { strikeDie, canCast, castableAttackSpells, schoolGate } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
-import { SPELLS, STRIKE_DICE, SUB_NOTE } from "../../content/index.js";
+import { SPELLS, STRIKE_DICE, SUB_NOTE, CLASSES } from "../../content/index.js";
 
 const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 const spellByName = (n) => SPELLS.find((sp) => sp.n === n);
@@ -153,11 +153,27 @@ test("IDENT-01: a level-locked attack spell (Fireball, lvl 3) does not count as 
   assert.ok(events.some((e) => e.type === "struck"));
 });
 
-test("IDENT-01: a school-locked attack spell does not count as castable (Summoner's offense gates at level 3)", () => {
-  const summonerState = fixedState({ c: { sub: "Summoner", level: 1, grimoire: ["Stun"] } });
-  assert.deepStrictEqual(castableAttackSpells(summonerState), [], "Summoner offense is gated to level 3");
-  assert.equal(canCast(summonerState, spellByName("Stun")), false);
+// RULES-03 (Phase 75, user 2026-09-25): the Summoner's offense school gate
+// is retired — a level-1 Summoner holding an offense spell IS castable now
+// (test/unit/grimoire-legality.test.js's "schoolGate('Summoner', 'offense')
+// is 1" pin and test/unit/identity-contract.test.js's re-pinned Summoner
+// "bad" entry cover that directly). Re-pinned here to (a) a spell-LEVEL
+// lock, which canCast still enforces regardless of any school gate, and
+// (b) a sweep proving no MU_CHART sub-class gates the offense school any
+// more.
+test("IDENT-01: a level-locked attack spell (Summon, lvl 2 for the Summoner) does not count as castable at level 1", () => {
+  const summonerState = fixedState({ c: { sub: "Summoner", level: 1, grimoire: ["Summon"] } });
+  assert.deepStrictEqual(castableAttackSpells(summonerState), [], "Summon is not an attack-kind spell, so it never counts here regardless");
+  assert.equal(canCast(summonerState, spellByName("Summon")), false, "Summon needs level 2 (a spell-LEVEL lock, IDENT-03/Phase 40)");
+});
 
+test("RULES-03: no MU_CHART sub-class gates the offense school any more", () => {
+  for (const sub of CLASSES["Magic User"].subs) {
+    assert.equal(schoolGate(sub, "offense"), 1, `${sub}: offense must not be gated`);
+  }
+});
+
+test("IDENT-01: a Wizard holding a non-damage offense spell (Stun, control-kind) still refuses to melee", () => {
   const wizardState = fixedState({ c: { sub: "Wizard", level: 1, grimoire: ["Stun"], spellsUsed: 0 } });
   wizardState.combat = fixedCombat([fixedFoe({ wp: 10 })]);
   const events = playerStrike(wizardState, fakeRng([]), []);

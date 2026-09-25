@@ -66,8 +66,13 @@ function countingRng(inner) {
 
 // Pinned per-sub rollGrimoire draw counts, restated from
 // test/unit/chargen-rng-pin.test.js so this file is self-contained.
+//
+// RULES-03 (Phase 75, user 2026-09-25): Summoner re-measured live, 31 -> 36
+// — see test/unit/chargen-rng-pin.test.js's own comment on this constant
+// for the full cause (the offense gate's removal widens the day-one `spare`
+// pool).
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
-  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 31,
+  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 36,
   Cleric: 34, Illusionist: 34, "Court Mage": 34, Apprentice: 38,
 };
 
@@ -121,23 +126,33 @@ test("SPELL-04 (was IDENT-02): every Magic User sub, including the Summoner, has
 });
 
 // Phase 40: the Phase 23 SPELL_LEVEL_OVERRIDES.Summoner row is retired —
-// Summon is spell level 2 for the Summoner again (castableAttackSpells
-// stays [] — the offense gate of 3 is untouched); the Summoner's day-one
-// damage source is now the granted Lesser Summon.
-test("IDENT-03 (Phase 40): Summon needs level 2 again for the Summoner; Lesser Summon is granted and castable; castableAttackSpells stays []", () => {
+// Summon is spell level 2 for the Summoner again (a spell-LEVEL lock, still
+// enforced by canCast regardless of the offense gate); the Summoner's
+// day-one damage source is now the granted Lesser Summon.
+//
+// RULES-03 (Phase 75, user 2026-09-25): the Summoner's offense SCHOOL gate
+// is retired (content/mu-chart.js) — castableAttackSpells(state) NO LONGER
+// stays [] unconditionally; whether it is empty now depends only on whether
+// this seed's widened day-one book happens to hold a castable attack-kind
+// spell (Doze/Freeze/Stun/Weaken), same as any other sub. Summon's own
+// LEVEL lock (spellLevelFor 2) is untouched either way.
+test("IDENT-03 (Phase 40) + RULES-03 (Phase 75): Summon needs level 2 again for the Summoner (a level lock, unrelated to the retired offense gate); Lesser Summon is granted and castable", () => {
   const Summon = spellByName("Summon");
   const LesserSummon = spellByName("Lesser Summon");
   for (const seed of SEEDS) {
     const state = newRun(seed, [], { force: { sub: "Summoner" } });
-    assert.deepStrictEqual(
-      castableAttackSpells(state),
-      [],
-      `Summoner seed ${seed}: expected no castable attack spell, got ${JSON.stringify(castableAttackSpells(state).map((s) => s.n))}`,
-    );
     assert.ok(state.c.grimoire.includes("Summon"), `Summoner seed ${seed}: grimoire missing Summon`);
-    assert.equal(canCast(state, Summon), false, `Summoner seed ${seed}: Summon should need level 2 (Phase 40 retires the level-1 override)`);
+    assert.equal(canCast(state, Summon), false, `Summoner seed ${seed}: Summon should need level 2 (a spell-LEVEL lock, IDENT-03/Phase 40)`);
     assert.ok(state.c.grimoire.includes("Lesser Summon"), `Summoner seed ${seed}: grimoire missing the granted Lesser Summon`);
     assert.ok(canCast(state, LesserSummon), `Summoner seed ${seed}: Lesser Summon should be castable at level 1`);
+    // Every candidate castableAttackSpells returns (if any) must actually be
+    // in the grimoire and castable — the offense gate no longer forces this
+    // list to be empty, but it must never include Summon (a summon-kind
+    // spell, not an attack kind) or a school-locked spell.
+    for (const sp of castableAttackSpells(state)) {
+      assert.ok(state.c.grimoire.includes(sp.n), `Summoner seed ${seed}: castableAttackSpells returned "${sp.n}", not in the grimoire`);
+      assert.equal(canCast(state, sp), true, `Summoner seed ${seed}: castableAttackSpells returned "${sp.n}", which canCast rejects`);
+    }
   }
 });
 
@@ -166,7 +181,18 @@ test("no duplicate spell names in any rolled grimoire, across all 8 Magic User s
 // file's own 200-seed sweep, split by special-school access.
 test("adjacency: the new algorithm differs from the old by a measured, bounded number of spells", () => {
   const NO_SPECIAL_SCHOOL = ["Warlock", "Cleric", "Court Mage"]; // never see Lesser Summon
-  const NO_SPECIAL_BOUND = 1; // pre-Phase-40 bound: at most one damage/attack top-up spell differs
+  // RULES-03 (Phase 75, user 2026-09-25): NO_SPECIAL_BOUND re-measured live,
+  // 1 -> 2 — Warlock/Cleric/Court Mage all carry a school gate now enforced
+  // at grant time (engine/character.js#grantableAt); skipping a gated spell
+  // while walking `low`/`high` can, at most, swap out one entry AND change
+  // the book's LENGTH by one more slot in a seed where the walk reaches one
+  // further eligible entry than the old ungated slice would have (measured
+  // worst case: Warlock, seed 657278). SPECIAL_BOUND is UNCHANGED — Wizard
+  // (the measured worst case for that bound) carries no school gate at all
+  // (content/mu-chart.js has no `gate` key for it), so grantableAt never
+  // filters anything for it; its bound is still entirely the pre-existing
+  // Phase-40 derived-splice confound documented above.
+  const NO_SPECIAL_BOUND = 2;
   const SPECIAL_BOUND = 7; // measured worst case (Wizard, seed 190057) — the derived-row reshuffle confound above
 
   for (const sub of MU_SUBS) {

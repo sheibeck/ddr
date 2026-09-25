@@ -58,8 +58,13 @@ function countingRng(inner) {
 
 // Restated from test/unit/chargen-rng-pin.test.js so this file is
 // self-contained (mirrors test/unit/guaranteed-attack-spell.test.js).
+//
+// RULES-03 (Phase 75, user 2026-09-25): Summoner re-measured live, 31 -> 36
+// — see test/unit/chargen-rng-pin.test.js's own comment on this constant
+// for the full cause (the offense gate's removal widens the day-one `spare`
+// pool).
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
-  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 31,
+  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 36,
   Cleric: 34, Illusionist: 34, "Court Mage": 34, Apprentice: 38,
 };
 
@@ -163,14 +168,16 @@ test("no duplicate names in any rolled grimoire, across all 8 Magic User subs x 
   }
 });
 
-// --- the Summoner's offense gate stays locked (the "bad") ------------------
+// --- the Summoner's offense gate is retired (RULES-03) ---------------------
 
-test("castableAttackSpells(summonerState) is still [] at level 1 (offense gate 3, untouched); canCast(Summon) is false at L1, true at L2", async () => {
-  const { castableAttackSpells } = await import("../../engine/derived.js");
+test("RULES-03 (Phase 75): schoolGate('Summoner', 'offense') is 1 and a level-1 Summoner holding Freeze passes canCast; Summon (spell level 2) still needs level 2 — a spell-LEVEL lock, not a school gate", async () => {
+  const { schoolGate } = await import("../../engine/derived.js");
+  assert.equal(schoolGate("Summoner", "offense"), 1, "the offense gate is removed from content/mu-chart.js");
   const state = newRun(1, [], { force: { sub: "Summoner" } });
-  assert.deepStrictEqual(castableAttackSpells(state), []);
+  state.c.grimoire = ["Freeze", "Summon"];
+  assert.equal(canCast(state, byName("Freeze")), true, "a level-1 Summoner can now cast offense");
   const summon = byName("Summon");
-  assert.equal(canCast(state, summon), false, "Summon needs level 2 again");
+  assert.equal(canCast(state, summon), false, "Summon needs level 2 again (spellLevelFor, unrelated to the retired gate)");
   state.c.level = 2;
   assert.equal(canCast(state, summon), true);
 });

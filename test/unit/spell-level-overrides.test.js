@@ -138,11 +138,15 @@ test("castableAttackSpells: Wizard L1 with only utility spells returns []", () =
 });
 
 // Phase 40: Summon is spell level 2 again for the Summoner (no override), so
-// canCast(Summon) is now ALSO false at level 1 — castableAttackSpells stays
-// [] regardless (offense gate 3 is untouched either way).
-test("castableAttackSpells: Summoner L1 with Stun/Summon returns [] (offense gate 3); canCast(Summon) is now also false (Phase 40 retires the level-1 override)", () => {
+// canCast(Summon) is still false at level 1 (a spell-LEVEL lock).
+//
+// RULES-03 (Phase 75, user 2026-09-25): the Summoner's offense SCHOOL gate is
+// retired (content/mu-chart.js) — Stun (offense, gate 1 now) IS castable at
+// level 1, so castableAttackSpells returns [Stun], not [].
+test("castableAttackSpells: Summoner L1 with Stun/Summon returns [Stun] (RULES-03: the offense gate is removed); canCast(Summon) is still false (a spell-LEVEL lock, IDENT-03/Phase 40)", () => {
   const state = stateFor("Summoner", 1, ["Stun", "Summon"]);
-  assert.deepStrictEqual(castableAttackSpells(state), []);
+  const names = castableAttackSpells(state).map((sp) => sp.n);
+  assert.deepStrictEqual(names, ["Stun"]);
   const summon = SPELLS.find((sp) => sp.n === "Summon");
   assert.equal(canCast(state, summon), false);
 });

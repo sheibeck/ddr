@@ -334,13 +334,29 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "gated out of offense at level one even when a spell is known",
+      // RULES-03 (Phase 75, user 2026-09-25): the offense gate is retired —
+      // "they already have a negative of summons having a chance to turn on
+      // them." Re-pinned from the retired gate (a Summoner could once hold
+      // Freeze and never cast it) to the summon backfire itself: a Summoner
+      // casting Summon draws a d8 first, and a natural 1 turns the summon on
+      // its caster instead of raising an ally. 75-10 later re-pins this
+      // entry again, to the Summoner's healing weakness.
+      name: "the summon backfire — casting Summon draws a d8 first, and a 1 turns it on you",
       run() {
-        assert.equal(schoolGate("Summoner", "offense"), 3);
-        const freeze = SPELLS.find((sp) => sp.n === "Freeze");
-        const state = hero("Summoner");
-        state.c.grimoire = ["Freeze"];
-        assert.equal(canCast(state, freeze), false, "level 1 < the offense gate of 3");
+        const summon = SPELLS.find((sp) => sp.n === "Summon");
+
+        const backfire = hero("Summoner");
+        backfire.c.level = 2;
+        backfire.c.grimoire = ["Summon"];
+        const backfireEvents = castSpell(backfire, SPELLS.indexOf(summon), fakeRng([1, 4]), []);
+        expectEvent(backfireEvents, "summonBackfired");
+
+        const safe = hero("Summoner");
+        safe.c.level = 2;
+        safe.c.grimoire = ["Summon"];
+        const safeEvents = castSpell(safe, SPELLS.indexOf(summon), fakeRng([2, 3]), []);
+        assert.equal(safeEvents.some((e) => e.type === "summonBackfired"), false);
+        expectEvent(safeEvents, "allyPending");
       },
     },
   },
