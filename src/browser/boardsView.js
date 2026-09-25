@@ -34,7 +34,6 @@
 
 import {
   compareRuns,
-  leanRate,
   normalizeStone,
   sortGraveyard,
   sanitizeBests,
@@ -155,14 +154,12 @@ function statChips(run) {
   ];
 }
 
-/** valueText(board, run) — the value half of a ranked row (deep/lean/days/kills/purse). */
+/** valueText(board, run) — the value half of a ranked row (deep/days/kills/purse). */
 function valueText(board, run) {
   switch (board) {
     case "deep":
     case "combo":
       return String(num(rf(run, "floor")));
-    case "lean":
-      return `${num(rf(run, "floor"))}${BOARDS_PANEL_COPY.sep}${num(rf(run, "steps"))}`;
     case "days":
       return String(num(rf(run, "day")));
     case "kills":
@@ -177,10 +174,6 @@ function valueText(board, run) {
 /** metricFor(board, run) — the bar's ranking metric (D-13's min-max rule). */
 function metricFor(board, run) {
   switch (board) {
-    case "lean": {
-      const rate = leanRate(run);
-      return Number.isFinite(rate) ? -rate : Number.NEGATIVE_INFINITY;
-    }
     case "days":
       return num(rf(run, "day"));
     case "kills":
@@ -482,8 +475,8 @@ function globalTag(entry) {
 /**
  * fallbackCell(board, rawScore) — the minimal row's value (D-16) recovered
  * from the raw score by scoreFallback: DEEPEST the floor, LONGEST the days,
- * BUTCHERY the kills, PURSE the grouped gold, LEANEST the squares-per-floor
- * rate to one decimal. A raw score scoreFallback rejects shows the dash.
+ * BUTCHERY the kills, PURSE the grouped gold. A raw score scoreFallback
+ * rejects shows the dash.
  */
 function fallbackCell(board, rawScore) {
   const unit = BOARD_COPY[board].unitLabel;
@@ -492,8 +485,6 @@ function fallbackCell(board, rawScore) {
   switch (board) {
     case "deep":
       return { val: String(fb.floor), unit, metric: fb.floor };
-    case "lean":
-      return { val: fb.rate.toFixed(1), unit: G.leanRateUnit, metric: -fb.rate };
     case "days":
       return { val: String(fb.day), unit, metric: fb.day };
     case "kills":

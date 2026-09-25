@@ -10,6 +10,9 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
 import {
   RUN_HASH_FIELDS,
@@ -20,7 +23,6 @@ import {
   BOARD_IDS,
   RANKED_BOARDS,
   compareRuns,
-  leanRate,
   boardValue,
   lineageKey,
   lineageRuns,
@@ -31,6 +33,9 @@ import {
   normalizeStone,
   sortGraveyard,
 } from "../../engine/records.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const SRC = path.resolve(__dirname, "..", "..", "engine", "records.js");
 
 // --- deterministic generators (no Math.random) ------------------------------
 
@@ -174,60 +179,10 @@ test("compareRuns deep: floor desc, then steps asc", () => {
   assert.equal(compareRuns("deep", { floor: 5, steps: 100 }, { floor: 5, steps: 100 }), 0);
 });
 
-// --- compareRuns lean (Phase 66, D-09): squares per floor, not a DEEPEST duplicate --
-
-test("compareRuns lean: squares per floor asc — a lower rate wins even at a shallower floor", () => {
-  assert.ok(
-    compareRuns("lean", { floor: 4, steps: 40 }, { floor: 2, steps: 30 }) < 0,
-    "10 per floor beats 15 per floor",
-  );
-  assert.ok(
-    compareRuns("lean", { floor: 9, steps: 900 }, { floor: 1, steps: 22 }) > 0,
-    "100 per floor loses to 22 per floor",
-  );
-});
-
-test("compareRuns lean: an equal rate (cross-multiplied, no rounding) ties to the deeper floor, then fewer steps", () => {
-  assert.ok(
-    compareRuns("lean", { floor: 4, steps: 80 }, { floor: 2, steps: 40 }) < 0,
-    "both rate 20; the deeper run (a) wins",
-  );
-  assert.ok(
-    compareRuns("lean", { floor: 3, steps: 1 }, { floor: 6, steps: 2 }) > 0,
-    "1/3 vs 2/6 is the rounding trap — cross-multiplication keeps them tied, and the deeper run (b) wins",
-  );
-});
-
-test("compareRuns lean: a placed run always beats an unplaced one; two unplaced runs fall to fewer steps", () => {
-  assert.ok(compareRuns("lean", { floor: 1, steps: 500 }, { floor: 0, steps: 0 }) < 0);
-  assert.ok(compareRuns("lean", { floor: 0, steps: 5 }, { floor: 0, steps: 9 }) < 0);
-});
-
-test("compareRuns lean: a full tie returns 0, and 200 generated pairs (including missing/NaN/Infinity fields) never return NaN", () => {
-  assert.equal(compareRuns("lean", {}, {}), 0);
-
-  const gen = seededGen(2026);
-  const weird = [undefined, null, NaN, Infinity, -Infinity, "x", {}, 0];
-  function weirdOrNumber() {
-    const pick = weird[Math.floor(gen() * weird.length)];
-    return gen() < 0.5 ? pick : gen() * 30;
-  }
-  for (let i = 0; i < 200; i++) {
-    const a = { floor: weirdOrNumber(), steps: weirdOrNumber() };
-    const b = { floor: weirdOrNumber(), steps: weirdOrNumber() };
-    const result = compareRuns("lean", a, b);
-    assert.ok(!Number.isNaN(result), `pair ${i} (${JSON.stringify(a)}, ${JSON.stringify(b)}) produced NaN`);
-  }
-});
-
-// --- leanRate ------------------------------------------------------------------
-
-test("leanRate: steps/floor when placed, Infinity when unplaced or non-object", () => {
-  assert.equal(leanRate({ floor: 4, steps: 40 }), 10);
-  assert.equal(leanRate({ floor: 0, steps: 5 }), Infinity);
-  assert.equal(leanRate(null), Infinity);
-  assert.equal(leanRate({}), Infinity);
-});
+// BOARD-17 (Phase 81): LEANEST (squares-per-floor) is retired. compareRuns
+// and boardValue no longer have a "lean" case — an old ddr.bests.v1's lean
+// list loads tolerantly through sanitizeBests (see the BOARD-17 section
+// below), not through compareRuns/boardValue directly.
 
 test("compareRuns days: day desc, then floor desc on a tie", () => {
   assert.ok(compareRuns("days", { day: 9, floor: 1 }, { day: 8, floor: 20 }) < 0);
@@ -268,15 +223,15 @@ test("compareRuns: an unknown board id returns 0", () => {
   assert.equal(compareRuns("no-such-board", { floor: 9 }, { floor: 1 }), 0);
 });
 
-test("boardValue maps each board to its headline number", () => {
+test("boardValue maps each board to its headline number, and the retired lean id to 0 (BOARD-17)", () => {
   const run = { floor: 3, day: 4, kills: 5, gold: 6 };
   assert.equal(boardValue("deep", run), 3);
-  assert.equal(boardValue("lean", run), 3);
   assert.equal(boardValue("combo", run), 3);
   assert.equal(boardValue("yard", run), 3);
   assert.equal(boardValue("days", run), 4);
   assert.equal(boardValue("kills", run), 5);
   assert.equal(boardValue("purse", run), 6);
+  assert.equal(boardValue("lean", run), 0);
   assert.equal(boardValue("no-such-board", run), 0);
 });
 
@@ -309,9 +264,11 @@ test("lineageRuns (Phase 70, D-12): non-array gives [], filters to the lineage, 
 
 // --- board table constants ---------------------------------------------------
 
-test("BOARD_IDS and RANKED_BOARDS match the mock's tab order and are frozen", () => {
-  assert.deepStrictEqual(BOARD_IDS, ["deep", "lean", "combo", "days", "kills", "purse", "yard"]);
-  assert.deepStrictEqual(RANKED_BOARDS, ["deep", "lean", "days", "kills", "purse"]);
+test("BOARD_IDS and RANKED_BOARDS match the panel's tab order and are frozen (LEANEST retired, BOARD-17)", () => {
+  assert.deepStrictEqual(BOARD_IDS, ["deep", "combo", "days", "kills", "purse", "yard"]);
+  assert.deepStrictEqual(RANKED_BOARDS, ["deep", "days", "kills", "purse"]);
+  assert.ok(!BOARD_IDS.includes("lean"));
+  assert.ok(!RANKED_BOARDS.includes("lean"));
   assert.ok(Object.isFrozen(BOARD_IDS));
   assert.ok(Object.isFrozen(RANKED_BOARDS));
   assert.ok(Object.isFrozen(RUN_HASH_FIELDS));
@@ -366,7 +323,7 @@ test("emptyBests returns a fresh, deep-equal object on every call", () => {
   const expected = {
     v: 1,
     runs: {},
-    boards: { deep: [], lean: [], days: [], kills: [], purse: [] },
+    boards: { deep: [], days: [], kills: [], purse: [] },
     last: null,
   };
   const a = emptyBests();
@@ -396,7 +353,7 @@ test("updateBests(emptyBests(), s1) records the first run across every board, wi
   assert.equal(record.last, s1.hash);
 });
 
-test("updateBests: a strictly deeper same-combo run announces deep, lean and combo, but not days/kills/purse when those are not beaten", () => {
+test("updateBests: a strictly deeper same-combo run announces deep and combo, but not days/kills/purse when those are not beaten", () => {
   const s1 = makeSummary({ floor: 5, steps: 100, day: 10, kills: 5, gold: 200 });
   const { record: r1 } = updateBests(emptyBests(), s1);
 
@@ -404,7 +361,7 @@ test("updateBests: a strictly deeper same-combo run announces deep, lean and com
   const { newBests, first } = updateBests(r1, s2);
 
   assert.equal(first, false);
-  assert.deepStrictEqual(newBests, ["deep", "lean", "combo"]);
+  assert.deepStrictEqual(newBests, ["deep", "combo"]);
 });
 
 test("updateBests: a run beating every ranked board from a NEW combo announces all boards but never a first-of-combo lineage", () => {
@@ -418,7 +375,7 @@ test("updateBests: a run beating every ranked board from a NEW combo announces a
   const { record: r2, newBests, first } = updateBests(r1, s2);
 
   assert.equal(first, false);
-  assert.deepStrictEqual(newBests, ["deep", "lean", "days", "kills", "purse"]);
+  assert.deepStrictEqual(newBests, ["deep", "days", "kills", "purse"]);
   assert.ok(r2.runs[s2.hash], "the first run of a new lineage is held");
   assert.ok(!("lineage" in r2));
 });
@@ -571,33 +528,6 @@ test("updateBests: the deepest run survives a 70-run graveyard fold and every bo
   assert.ok(!("lineage" in rec));
 });
 
-test("updateBests (Phase 66, D-09): the lean list of a mixed sequence is ordered by rate, and newBests includes lean only when strictly better (or an equal rate at a deeper floor)", () => {
-  let rec = emptyBests();
-
-  const s1 = makeSummary({ floor: 10, steps: 200, name: "Mid" }); // rate 20
-  rec = updateBests(rec, s1).record;
-
-  const s2 = makeSummary({ floor: 4, steps: 40, name: "Best" }); // rate 10 — strictly better
-  const r2 = updateBests(rec, s2);
-  assert.ok(r2.newBests.includes("lean"), "a strictly better rate is a new lean best");
-  rec = r2.record;
-
-  const s3 = makeSummary({ floor: 20, steps: 800, name: "Worst" }); // rate 40 — worse, goes last
-  const r3 = updateBests(rec, s3);
-  assert.ok(!r3.newBests.includes("lean"), "a worse rate never announces lean");
-  rec = r3.record;
-
-  const rates = rec.boards.lean.map((h) => leanRate(rec.runs[h]));
-  for (let i = 1; i < rates.length; i++) {
-    assert.ok(rates[i - 1] <= rates[i], "boards.lean is ordered by rate ascending");
-  }
-  assert.equal(rec.runs[rec.boards.lean[0]].name, "Best");
-
-  const s4 = makeSummary({ floor: 8, steps: 80, name: "Tie-deeper" }); // rate 10, deeper than s2 (floor 4)
-  const r4 = updateBests(rec, s4);
-  assert.ok(r4.newBests.includes("lean"), "an equal rate at a deeper floor still takes #1 on lean");
-});
-
 // --- sanitizeBests ---------------------------------------------------------------
 
 test("sanitizeBests coerces invalid inputs to emptyBests", () => {
@@ -619,7 +549,7 @@ test("sanitizeBests drops dangling hashes, caps a 14-hash list at 10, drops unkn
     runs: validRuns,
     boards: {
       deep: [...hashes, "deadbeef"],
-      lean: [],
+      lean: hashes.slice(0, 5), // BOARD-17: a legacy lean list is never read
       unknownBoard: ["00000000"],
     },
     last: null,
@@ -628,6 +558,7 @@ test("sanitizeBests drops dangling hashes, caps a 14-hash list at 10, drops unkn
   assert.equal(result.boards.deep.length, 10, "capped at 10");
   assert.ok(!result.boards.deep.includes("deadbeef"), "dangling hash dropped");
   assert.deepStrictEqual(result.boards.days, [], "missing board key becomes []");
+  assert.ok(!("lean" in result.boards), "BOARD-17: a legacy lean list is dropped, not read");
   assert.ok(!("unknownBoard" in result.boards), "unknown board key dropped");
 });
 
@@ -668,31 +599,13 @@ test("sanitizeBests(updateBests(emptyBests(), s).record) round-trips through JSO
 
 // --- sanitizeBests re-ranks (Phase 66, D-09) --------------------------------------
 
-test("sanitizeBests re-ranks a hand-built boards.lean list stored in the retired depth order", () => {
-  const runA = makeSummary({ floor: 10, steps: 300, name: "A" }); // rate 30
-  const runB = makeSummary({ floor: 6, steps: 60, name: "B" }); // rate 10 — should rank first
-  const runC = makeSummary({ floor: 2, steps: 40, name: "C" }); // rate 20 — should rank second
-  const raw = {
-    v: 1,
-    runs: { [runA.hash]: runA, [runB.hash]: runB, [runC.hash]: runC },
-    boards: { deep: [], lean: [runA.hash, runB.hash, runC.hash], days: [], kills: [], purse: [] },
-    last: null,
-  };
-  const result = sanitizeBests(raw);
-  assert.deepStrictEqual(
-    result.boards.lean.map((h) => result.runs[h].name),
-    ["B", "C", "A"],
-    "re-ranked by squares-per-floor ascending, not the stored depth order",
-  );
-});
-
 test("sanitizeBests is idempotent over its own output, and leaves an updateBests-produced record unchanged", () => {
   const runA = makeSummary({ floor: 10, steps: 300, name: "A" });
   const runB = makeSummary({ floor: 6, steps: 60, name: "B" });
   const raw = {
     v: 1,
     runs: { [runA.hash]: runA, [runB.hash]: runB },
-    boards: { deep: [], lean: [runA.hash, runB.hash], days: [], kills: [], purse: [] },
+    boards: { deep: [runA.hash, runB.hash], days: [], kills: [], purse: [] },
     last: null,
   };
   const once = sanitizeBests(raw);
@@ -708,21 +621,106 @@ test("sanitizeBests is idempotent over its own output, and leaves an updateBests
   assert.deepStrictEqual(sanitizeBests(rec), rec, "a record already produced by updateBests is unchanged by sanitizeBests");
 });
 
-test("sanitizeBests keeps stored order for two runs tied on every ordering key", () => {
+test("sanitizeBests keeps stored order for two runs tied on every ordering key (BOARD-17 ordering)", () => {
   const runA = makeSummary({ floor: 5, steps: 50, name: "First" });
-  const runB = makeSummary({ floor: 5, steps: 50, name: "Second", cause: "trap" }); // ties lean, differs only in cause
+  const runB = makeSummary({ floor: 5, steps: 50, name: "Second", cause: "trap" }); // ties on deep, differs only in cause
   const raw = {
     v: 1,
     runs: { [runA.hash]: runA, [runB.hash]: runB },
-    boards: { deep: [], lean: [runA.hash, runB.hash], days: [], kills: [], purse: [] },
+    boards: { deep: [runA.hash, runB.hash], days: [], kills: [], purse: [] },
     last: null,
   };
   const result = sanitizeBests(raw);
   assert.deepStrictEqual(
-    result.boards.lean.map((h) => result.runs[h].name),
+    result.boards.deep.map((h) => result.runs[h].name),
     ["First", "Second"],
     "a full tie keeps the stored order (stable sort)",
   );
+});
+
+// --- BOARD-17 (Phase 81): LEANEST is retired — an old ddr.bests.v1 with a lean ---
+// --- list loads tolerantly through sanitizeBests, the list dropped, never read ---
+
+test("BOARD-17 boundary: an old ddr.bests.v1 with a full ten-hash lean list loads with the lean list dropped", () => {
+  const runs = {};
+  const leanHashes = [];
+  for (let i = 0; i < 10; i++) {
+    const s = makeSummary({ floor: 1 + i, steps: 900 - i * 10, name: `Lean${i}` });
+    runs[s.hash] = s;
+    leanHashes.push(s.hash);
+  }
+  const deepRun = makeSummary({ floor: 50, steps: 1, name: "Deep" });
+  runs[deepRun.hash] = deepRun;
+  const raw = {
+    v: 1,
+    runs,
+    boards: { deep: [deepRun.hash], lean: leanHashes, days: [], kills: [], purse: [] },
+    last: null,
+  };
+  const result = sanitizeBests(raw);
+  assert.ok(!("lean" in result.boards), "the lean list is gone");
+  assert.deepStrictEqual(Object.keys(result.boards).sort(), [...RANKED_BOARDS].sort());
+});
+
+test("BOARD-17 empty: lean: [] and no lean key load deep-equal", () => {
+  const runA = makeSummary({ floor: 5, name: "A" });
+  const withEmptyLean = {
+    v: 1,
+    runs: { [runA.hash]: runA },
+    boards: { deep: [runA.hash], lean: [], days: [], kills: [], purse: [] },
+    last: null,
+  };
+  const withoutLean = {
+    v: 1,
+    runs: { [runA.hash]: runA },
+    boards: { deep: [runA.hash], days: [], kills: [], purse: [] },
+    last: null,
+  };
+  assert.deepStrictEqual(sanitizeBests(withEmptyLean), sanitizeBests(withoutLean));
+});
+
+test("BOARD-17 idempotency: sanitizeBests(sanitizeBests(raw)) deep-equals one pass over an old lean-carrying record", () => {
+  const runA = makeSummary({ floor: 10, steps: 5, name: "A" });
+  const runB = makeSummary({ floor: 5, steps: 50, name: "B" });
+  const raw = {
+    v: 1,
+    runs: { [runA.hash]: runA, [runB.hash]: runB },
+    boards: { deep: [runA.hash], lean: [runB.hash, runA.hash], days: [], kills: [], purse: [] },
+    last: null,
+  };
+  const once = sanitizeBests(raw);
+  const twice = sanitizeBests(once);
+  assert.deepStrictEqual(once, twice);
+});
+
+test("BOARD-17: a run held only by the old lean list, outside its lineage's ten best, is pruned; one also held by deep is kept", () => {
+  let rec = emptyBests();
+  // Fill the "Troll Acrobat" lineage's top ten with distinct, deeper runs so
+  // the lean-only run below (floor 1) never makes the lineage cut either.
+  for (let i = 0; i < 10; i++) {
+    const s = makeSummary({ floor: 20 + i, steps: 1, race: "Troll", sub: "Acrobat", cls: "Thief", name: `T${i}` });
+    rec = updateBests(rec, s).record;
+  }
+  const leanOnly = makeSummary({ floor: 1, steps: 999, race: "Troll", sub: "Acrobat", cls: "Thief", name: "LeanOnly" });
+  const alsoDeep = makeSummary({ floor: 200, steps: 1, race: "Troll", sub: "Acrobat", cls: "Thief", name: "AlsoDeep" });
+  const withLegacyLean = {
+    ...rec,
+    runs: { ...rec.runs, [leanOnly.hash]: leanOnly, [alsoDeep.hash]: alsoDeep },
+    boards: { ...rec.boards, deep: [alsoDeep.hash, ...rec.boards.deep], lean: [leanOnly.hash] },
+  };
+  const result = sanitizeBests(withLegacyLean);
+  assert.ok(!result.runs[leanOnly.hash], "the lean-only run is pruned once the lean list is dropped");
+  assert.ok(result.runs[alsoDeep.hash], "the run also held by deep survives");
+});
+
+test("BOARD-17 precision: compareRuns' body contains no division operator outside comments (the squares-per-floor rate was the last division)", () => {
+  const src = fs.readFileSync(SRC, "utf8");
+  const match = src.match(/export function compareRuns\(board, a, b\) \{[\s\S]*?\n\}/);
+  assert.ok(match, "compareRuns function body found in engine/records.js");
+  const body = match[0]
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*$/gm, "");
+  assert.ok(!body.includes("/"), "no division operator in compareRuns");
 });
 
 // --- backfillBests ---------------------------------------------------------------

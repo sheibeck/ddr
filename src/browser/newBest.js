@@ -27,8 +27,6 @@ export function newBestValueText(board, summary) {
   switch (board) {
     case "deep":
       return `floor ${n(s.floor)}`;
-    case "lean":
-      return `floor ${n(s.floor)}${SEP}${n(s.steps)} ${BOARD_COPY.lean.unit}`;
     case "combo":
       // Phase 70 (D-10): a lineage is race + sub-class, the same key LINEAGE ranks by.
       return `${s.race || ""} ${s.sub || ""}${SEP}floor ${n(s.floor)}`;

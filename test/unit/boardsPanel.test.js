@@ -121,6 +121,12 @@ test("openFromTab(): prefs null opens deep; a stored known id opens that board; 
   }
 });
 
+test("BOARD-17: a stored ddr.boards.last.v1 holding the retired lean id opens DEEPEST (readStoredBoard validates against BOARD_IDS)", () => {
+  const { panel } = setup({ prefs: fakePrefs({ [BOARDS_LAST_KEY]: "lean" }) });
+  panel.openFromTab();
+  assert.equal(panel.state().board, "deep");
+});
+
 test("openFromTab(): entry is tab, scope local, open null, and it clears the title marker", () => {
   const { doc, host, panel } = setup();
   doc.document.body.dataset.boardsEntry = "title";
@@ -386,7 +392,7 @@ test("the ALL chip's onclick sets scope all; again returns to local; ALL then FR
   assert.equal(panel.state().scope, "friends");
 
   const railEl = host.querySelector(".mw-bd-rail");
-  railEl.children.find((c) => c.dataset.board === "lean").onclick();
+  railEl.children.find((c) => c.dataset.board === "days").onclick();
   assert.equal(panel.state().scope, "friends", "a board switch must keep the current scope");
 });
 

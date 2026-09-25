@@ -53,7 +53,6 @@ function makeView(overrides = {}) {
     },
     rail: [
       { id: "deep", tab: "DEEPEST", on: true, col: "#d3c49f" },
-      { id: "lean", tab: "LEANEST", on: false, col: "#e8c97a" },
       { id: "combo", tab: "LINEAGE", on: false, col: "#b9a4ef" },
       { id: "days", tab: "LONGEST", on: false, col: "#8fb08a" },
       { id: "kills", tab: "BUTCHERY", on: false, col: "#e07260" },
@@ -310,13 +309,13 @@ test("strip: re-rendering signed out after signed in swaps the avatar back to th
 
 // ─── rail ───────────────────────────────────────────────────────────────
 
-test("rail: seven .mw-bd-chip buttons in view order; the on chip alone gets inline colours; onclick calls onBoard(id)", () => {
+test("rail: six .mw-bd-chip buttons in view order (LEANEST retired, BOARD-17); the on chip alone gets inline colours; onclick calls onBoard(id)", () => {
   const view = makeView();
   const onBoard = spy();
   const { root } = renderFresh(view, { onBoard });
   const rail = root.querySelector(".mw-bd-rail");
   const chips = rail.querySelectorAll(".mw-bd-chip");
-  assert.equal(chips.length, 7);
+  assert.equal(chips.length, 6);
   chips.forEach((chip, i) => {
     const entry = view.rail[i];
     assert.equal(chip.dataset.board, entry.id);
@@ -331,7 +330,7 @@ test("rail: seven .mw-bd-chip buttons in view order; the on chip alone gets inli
       assert.equal(chip.style.background, undefined);
     }
   });
-  chips[2].onclick();
+  chips[1].onclick();
   assert.deepStrictEqual(onBoard.calls, [["combo"]]);
 });
 
