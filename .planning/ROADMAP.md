@@ -164,7 +164,7 @@ Plans:
   2. Every displayed modifier is signed from the player's point of view — "+2" always reads better, "−2" always reads worse — across item/loot/store/find comparisons, the hero sheet, spell/ability text, condition chips and the fight log's need breakdown.
   3. The same modifier never shows opposite signs on two different surfaces.
 
-**Plans**: 5/8 plans executed
+**Plans**: 7/8 plans executed
 
 Plans:
 **Wave 1**
@@ -180,8 +180,8 @@ Plans:
 
 **Wave 3**
 
-- [ ] 74-06-PLAN.md — Foe details "You hit it on … · it hits you on …" with live modifiers; foe condition effects with their ranges (wave 3)
-- [ ] 74-07-PLAN.md — Hero condition chips state their effect from the engine ("−3 to hit (now 19–20)"); conditionEffects.js and its bridge (wave 3)
+- [x] 74-06-PLAN.md — Foe details "You hit it on … · it hits you on …" with live modifiers; foe condition effects with their ranges (wave 3)
+- [x] 74-07-PLAN.md — Hero condition chips state their effect from the engine ("−3 to hit (now 19–20)"); conditionEffects.js and its bridge (wave 3)
 
 **Wave 4**
 
@@ -400,7 +400,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
-| 74. Roll Display & Modifier Honesty | v2.1 | 5/8 | In Progress|  |
+| 74. Roll Display & Modifier Honesty | v2.1 | 7/8 | In Progress|  |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
