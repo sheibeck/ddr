@@ -192,3 +192,20 @@ None - no external service configuration required.
 ---
 *Phase: 81-leaderboards-panel-fixes*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: engine/records.js
+- FOUND: content/boards.js
+- FOUND: src/browser/boardsView.js
+- FOUND: src/browser/boardsPanel.js
+- FOUND: src/browser/globalBoards.js
+- FOUND: docs/PLAY-GAMES-SETUP.md
+- FOUND: docs/RELEASING.md
+- FOUND: docs/SHELL-MODULES.md
+- FOUND: .planning/phases/81-leaderboards-panel-fixes/81-04-SUMMARY.md
+- FOUND commit `e3b1765` (Tasks 1-3 code + tests)
+- FOUND commit `a217d03` (Task 3 docs)
+- `npm test` exits with 5661 pass / 7 fail / 7 todo — the 7 failures are the known worktree-only CRLF doc-ledger tests (docs/CLASS-PASS.md, docs/FLEE.md), and the 7 todos are 81-01's pre-existing R-id pins owned by 81-06; no new production failures
+- `node --test "test/parity/**/*.test.js"` exits 0 (49/49 pass, includes fixture-inventory.test.js) — no parity fixture moved
+- All of this plan's own acceptance-criteria inline scripts (Task 1/2/3) exit 0
