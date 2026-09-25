@@ -185,11 +185,12 @@ test("CONDITION_TONE/CONDITION_EXPLAIN carry the three new item-driven chip keys
 // ─── 6. Hero tab: engine-routed to-hit/strike-die ─────────────────────────
 
 // The sheet's "s-die"/"s-hit" writes live in heroTab.js, which imports
-// strikeDie/toHit directly — the bridge and the classic-script duplicate
+// strikeDie directly and heroHitOdds (Phase 74, ROLL-02) from
+// src/browser/rollOdds.js — the bridge and the classic-script duplicate
 // are both pinned absent below.
-test('Hero tab: "s-die"/"s-hit" read strikeDie(c)/toHit(state) directly in heroTab.js, not the classic duplicates', () => {
+test('Hero tab: "s-die"/"s-hit" read strikeDie(c)/heroHitOdds(state) directly in heroTab.js, not the classic duplicates', () => {
   assert.match(HERO_SRC, /"s-die"\)\.textContent = "d" \+ strikeDie\(c\);/);
-  assert.match(HERO_SRC, /"s-hit"\)\.textContent = "1–" \+ toHit\(state\);/);
+  assert.match(HERO_SRC, /"s-hit"\)\.textContent = heroHitOdds\(state\)\.text;/);
   assert.equal((CODE.match(/"s-die"\)/g) || []).length, 0, "the classic script must no longer write #s-die");
   assert.equal((CODE.match(/"s-hit"\)/g) || []).length, 0, "the classic script must no longer write #s-hit");
 });

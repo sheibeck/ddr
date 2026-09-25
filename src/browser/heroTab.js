@@ -21,11 +21,12 @@ import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, ABILI
 // SUB_NOTE for the dossier; ROMAN for the level/Company-panel readouts) —
 // a SEPARATE import line so the line above stays byte-identical.
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN } from "../../content/index.js";
-import { strikeDie, toHit, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight } from "../../engine/derived.js";
+import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { armorDisplay } from "./viewModels.js";
+import { heroHitOdds } from "./rollOdds.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
 // script keeps for the HUD's own wp readout (mazeworld.html's copy stays,
@@ -171,12 +172,13 @@ export function characterSheetViewModel(state) {
 
   const stats = [
     { key: "toStrike", label: "TO STRIKE", value: `d${strikeDie(c)}` },
-    // Phase 31 (roll-direction audit Finding 2): LOW-roll-good — a strike
-    // lands on d <= toHit, so the sheet shows the hitting range 1-N exactly
-    // as the prototype's Hero tab (mazeworld.html: "1-" + toHit()); the old
-    // plus suffix implied the opposite polarity (roll-direction audit
-    // Finding 2, Phase 31).
-    { key: "toHit", label: "TO HIT", value: `1–${toHit(state)}` },
+    // Phase 74 (ROLL-02, roll-display honesty): roll-HIGH — a strike lands
+    // on the current strike die's own winning range, so the sheet shows the
+    // real range from the engine's own heroHitOdds(state) (src/browser/
+    // rollOdds.js), Afraid included ("16–20 (d20)"), never a re-derived
+    // formula. Supersedes the Phase 31 low-roll "1–N" reading (that era's
+    // engine still rolled low; Phase 73 flipped the engine to roll-high).
+    { key: "toHit", label: "TO HIT", value: heroHitOdds(state).text },
     { key: "damage", label: "DAMAGE", value: `${damage.min}–${damage.max}`, min: damage.min, max: damage.max },
     { key: "armor", label: "ARMOR", value: `${armor.label.toUpperCase()} · ${armor.sub}`, under: armor.under },
     // RULE-01 (04.1-04): intelBonus(c) is the SAME derived.js helper openChest
@@ -369,9 +371,10 @@ export function grimoireViewModel(state) {
 // Moved verbatim from the classic script's paint()/the module script's
 // renderGrimoire, with `host.ownerDocument` replacing `document`, `state`/
 // `state.c` replacing the classic S/c, and direct content/engine imports
-// (ROMAN, strikeDie, toHit, eff) in place of a presentation bridge. Every id
-// this function writes lives inside the `#screen-hero` markup section. No
-// window/document globals — host, host.ownerDocument and deps only.
+// (ROMAN, strikeDie, heroHitOdds, eff) in place of a presentation bridge.
+// Every id this function writes lives inside the `#screen-hero` markup
+// section. No window/document globals — host, host.ownerDocument and deps
+// only.
 
 /**
  * skillTable(cls) — the special-skill description pool for a class, read by
@@ -590,7 +593,7 @@ function renderPartyRoster(doc, state, deps) {
  * comment for the full write list. Moved verbatim from the classic script's
  * paint() with `host.ownerDocument` replacing `document`, `state`/`state.c`
  * replacing the classic S/c, and direct content/engine imports (ROMAN,
- * strikeDie, toHit, eff) in place of a presentation bridge. No
+ * strikeDie, heroHitOdds, eff) in place of a presentation bridge. No
  * window/document globals — host, host.ownerDocument and deps only.
  */
 export function renderHeroTab(host, state, deps = {}) {
@@ -608,10 +611,12 @@ export function renderHeroTab(host, state, deps = {}) {
   fill.classList.toggle("low", pct < 34);
 
   // Phase 39 (GEAR-01), Plan 05 — routed through the engine's own
-  // strikeDie(c)/toHit(state) directly so the Hero tab shows the weapon's
-  // real need modifier and Acuteness's crit-die swap.
+  // strikeDie(c) directly so the Hero tab shows the weapon's real need
+  // modifier and Acuteness's crit-die swap. Phase 74 (ROLL-02): #s-hit now
+  // reads the SAME roll-high range helper the sheet's own TO HIT stat row
+  // reads above (src/browser/rollOdds.js) — the two can never disagree.
   doc.getElementById("s-die").textContent = "d" + strikeDie(c);
-  doc.getElementById("s-hit").textContent = "1–" + toHit(state);
+  doc.getElementById("s-hit").textContent = heroHitOdds(state).text;
   const w = WEAPONS[c.weapon] || WEAPONS["Club"];
   const R = RACES[c.race];
   const bonus = c.prof + c.magicWpn + (R.dmg || 0) + (R.wpnBonus || 0) + eff(c, "dmg");

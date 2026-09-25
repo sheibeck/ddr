@@ -15,10 +15,11 @@ import assert from "node:assert/strict";
 
 import { newRun } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
-import { strikeDie, toHit, upkeep, weaponDamage } from "../../engine/derived.js";
+import { strikeDie, upkeep, weaponDamage } from "../../engine/derived.js";
 import { THRESHOLDS, ABILITY_BY_ID } from "../../content/index.js";
 import { startCooldown } from "../../engine/effects.js";
 import { characterSheetViewModel } from "../../src/browser/heroTab.js";
+import { heroHitOdds } from "../../src/browser/rollOdds.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
@@ -48,12 +49,12 @@ test("characterSheetViewModel(state): TO STRIKE / TO HIT / ARMOR / INTELLIGENCE 
   const vm = characterSheetViewModel(state);
 
   assert.equal(statByKey(vm, "toStrike").value, `d${strikeDie(state.c)}`);
-  // Phase 31 (roll-direction audit Finding 2): LOW-roll-good — the sheet
-  // shows the hitting range 1-N (en dash), matching the prototype's own
-  // Hero tab text, not a HIGH-good-implying "N+" suffix.
-  assert.equal(statByKey(vm, "toHit").value, `1–${toHit(state)}`);
-  assert.ok(statByKey(vm, "toHit").value.startsWith("1–"));
-  assert.ok(statByKey(vm, "toHit").value.endsWith(`${toHit(state)}`));
+  // Phase 74 (ROLL-02, roll-display honesty): roll-HIGH — the sheet shows
+  // the current strike die's own winning range (Afraid included), the SAME
+  // value heroHitOdds(state) (src/browser/rollOdds.js) returns; supersedes
+  // the Phase 31 low-roll "1–N" reading (that era's engine still rolled low;
+  // Phase 73 flipped the engine to roll-high).
+  assert.equal(statByKey(vm, "toHit").value, heroHitOdds(state).text);
   // Phase 28 (ARMOR-02/04): the ARMOR stat now reads through the shared
   // armorDisplay(c) formatter, showing durability (seed 42 wears Studded
   // 18/18) so the sheet can never disagree with the line/gear panel.
@@ -68,6 +69,25 @@ test("characterSheetViewModel(state): TO STRIKE / TO HIT / ARMOR / INTELLIGENCE 
 
   // NEXT LEVEL: the sp threshold for the next skill level, from THRESHOLDS.
   assert.equal(statByKey(vm, "nextLevel").value, THRESHOLDS[state.c.level]);
+});
+
+test("characterSheetViewModel(state): 74-CONTEXT specifics — a level-1 Human Magic User, Thief and Fighter on a Club read the class range on d20", () => {
+  // 74-CONTEXT "Specific Ideas": "On a d20 a caster needs 18–20, a thief
+  // 17–20 and a fighter 16–20." Each state starts from a real newRun (so
+  // every other c/state field — timers, floor, combat — is genuine engine
+  // output) with only race/cls/sub/level/weapon overridden to pin the exact
+  // class case.
+  const mu = newRun(1);
+  Object.assign(mu.c, { race: "Human", cls: "Magic User", sub: "Wizard", level: 1, weapon: "Club" });
+  assert.equal(statByKey(characterSheetViewModel(mu), "toHit").value, "18–20 (d20)");
+
+  const thief = newRun(1);
+  Object.assign(thief.c, { race: "Human", cls: "Thief", sub: "Pilfer", level: 1, weapon: "Club" });
+  assert.equal(statByKey(characterSheetViewModel(thief), "toHit").value, "17–20 (d20)");
+
+  const fighter = newRun(1);
+  Object.assign(fighter.c, { race: "Human", cls: "Fighter", sub: "Soldier", level: 1, weapon: "Club" });
+  assert.equal(statByKey(characterSheetViewModel(fighter), "toHit").value, "16–20 (d20)");
 });
 
 test("characterSheetViewModel(state): NEXT LEVEL reads MAX at the top skill level (no THRESHOLDS entry beyond level 5)", () => {
