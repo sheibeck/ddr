@@ -49,6 +49,11 @@ export const COMBAT_MENU_COPY = Object.freeze({
   abilitiesSub: "{ready}/{n} READY",
   noSpells: "NOTHING IN THE GRIMOIRE",
   noSpellsDesc: "Not one spell. Bold.",
+  // Phase 75 (RULES-04, user ruling 2026-09-21): the book holds spells, but
+  // every one is level- or school-locked right now (hidden rows, below) —
+  // distinct from noSpells (an empty grimoire).
+  noCastable: "NOTHING YOU CAN CAST YET",
+  noCastableDesc: "Your book holds spells above your level or school. Grow into them.",
   noItems: "NOTHING TO USE",
   noItemsDesc: "The bag is quieter than you are.",
   potion: "POTION",
@@ -170,7 +175,20 @@ function combatMenuViewModelUnlocked(state) {
       accent: false,
       opens: "spells",
     };
-    const spellRows = SPELLS.filter((sp) => (c.grimoire || []).includes(sp.n)).map((sp) => {
+    // Phase 75 (RULES-04, user ruling 2026-09-21): the combat SPELLS submenu
+    // HIDES a level- or school-locked spell (canCast(state, sp) === false) —
+    // it never appears as a greyed row here. This is the ONE legality read;
+    // the menu re-derives no level or school formula of its own — it reads
+    // engine/derived.js#canCast exactly the way engine/magic.js does, so a
+    // later change to that gate (e.g. Phase 75's Summoner offense-gate
+    // removal) flows through with no edit here. A spell that IS castable but
+    // merely out of charges stays listed, disabled — "no charges" is
+    // information the player needs, unlike a lock the player cannot act on.
+    // The Hero-tab Grimoire (heroTab.js#grimoireViewModel) is untouched and
+    // still lists every spell the book holds, locked or not.
+    const grimoireSpells = SPELLS.filter((sp) => (c.grimoire || []).includes(sp.n));
+    const castableSpells = grimoireSpells.filter((sp) => canCast(state, sp));
+    const spellRows = castableSpells.map((sp) => {
       const idx = SPELLS.indexOf(sp);
       return {
         id: `spell-${idx}`,
@@ -178,19 +196,23 @@ function combatMenuViewModelUnlocked(state) {
         cost: `LVL ${sp.lvl}`,
         desc: sp.txt || "",
         // Phase 40 (SPELL-01): the same niche/nicheLabel pair the Hero-tab
-        // Grimoire rows carry (src/browser/viewModels.js#grimoireViewModel) —
+        // Grimoire rows carry (src/browser/heroTab.js#grimoireViewModel) —
         // desc stays sp.txt, unchanged.
         niche: sp.niche,
         nicheLabel: NICHE_LABELS[sp.niche] ?? sp.niche,
-        enabled: canCast(state, sp) && charges > 0,
+        enabled: charges > 0,
         dispatch: { type: "castSpell", idx },
       };
     });
+    let noSpellRow = null;
+    if (!spellRows.length) {
+      noSpellRow = grimoireSpells.length
+        ? { id: "none", label: COMBAT_MENU_COPY.noCastable, cost: "", desc: COMBAT_MENU_COPY.noCastableDesc, enabled: false, dispatch: null }
+        : { id: "none", label: COMBAT_MENU_COPY.noSpells, cost: "", desc: COMBAT_MENU_COPY.noSpellsDesc, enabled: false, dispatch: null };
+    }
     submenus.spells = {
       title: `${heroName} · SPELLS · ${charges} CHARGES`,
-      rows: spellRows.length
-        ? spellRows
-        : [{ id: "none", label: COMBAT_MENU_COPY.noSpells, cost: "", desc: COMBAT_MENU_COPY.noSpellsDesc, enabled: false, dispatch: null }],
+      rows: spellRows.length ? spellRows : [noSpellRow],
     };
   } else if (isBard) {
     secondAction = {
