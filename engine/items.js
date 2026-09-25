@@ -508,8 +508,18 @@ export function takeItem(state, it, events = []) {
     }
     // Phase 61 (STORE-02): additive `replaced`, mirroring the weapon branch
     // above — computed before the equip mutation.
+    // RULES-08 (Phase 75): additive `discarded`/`destroyed`, computed
+    // alongside `replaced`, before the same mutation — wornArmorItem already
+    // returns null for a destroyed piece, so `replaced` and `destroyedPiece`
+    // are mutually exclusive (never both set on the same event).
     const replaced = wornArmorItem(c);
-    events.push({ type: "itemTaken", item: it, ...(replaced ? { replaced } : {}) });
+    const destroyedPiece = destroyedArmorPiece(c);
+    events.push({
+      type: "itemTaken",
+      item: it,
+      ...(replaced ? { replaced } : {}),
+      ...(destroyedPiece ? { discarded: destroyedPiece, destroyed: true } : {}),
+    });
     c.armor = it.armor;
     c.ar = it.ar;
     c.armorMin = it.min;
@@ -698,6 +708,21 @@ function wornArmorItem(c) {
 }
 
 /**
+ * destroyedArmorPiece(c) — RULES-08 (Phase 75, Phase 25 additive-payload
+ * pattern; pairs with unequipSlot's destroyed flag below): the ONE shared
+ * descriptor for a worn-but-destroyed armor piece (armor set and not
+ * "Nothing", ar > 0, armorWP <= 0 — the same guard wornArmorItem's null
+ * branch already enforces). Returns `{ kind: "armor", n, armor, ar, left: 0
+ * }`, or null when the worn piece is live (or there is none). MUST be read
+ * BEFORE any equip mutation touches c.armor/c.ar/c.armorWP — every caller
+ * below reads it in that order. Pure, no rng, no mutation.
+ */
+function destroyedArmorPiece(c) {
+  if (!c.armor || c.armor === "Nothing" || !(c.ar > 0) || c.armorWP > 0) return null;
+  return { kind: "armor", n: c.armor, armor: c.armor, ar: c.ar, left: 0 };
+}
+
+/**
  * takeFind(state, events) — ACCEPT the pending find (ECON-03). Adds
  * state.pendingFind to the bag if a slot is free; on a FULL bag keeps the item
  * pending and pushes `bagFull` (the UI then offers keep/drop, ECON-04). Found
@@ -800,6 +825,9 @@ export function equipItem(state, i, events = [], target = null) {
       events.push({ type: "equipRejected", item: it, reason: armorReason });
       return events;
     }
+    // RULES-08 (Phase 75): read the outgoing piece's destroyed state BEFORE
+    // the equip mutation below — additive only, no new event type, no rng.
+    const destroyedPiece = destroyedArmorPiece(c);
     const worn = wornArmorItem(c);
     c.armor = it.armor;
     c.ar = it.ar;
@@ -809,7 +837,7 @@ export function equipItem(state, i, events = [], target = null) {
     c.patches = it.patches ?? 0;
     if (worn) c.items[i] = worn;
     else c.items.splice(i, 1);
-    events.push({ type: "itemEquipped", item: it, slot: "armor" });
+    events.push({ type: "itemEquipped", item: it, slot: "armor", ...(destroyedPiece ? { discarded: destroyedPiece, destroyed: true } : {}) });
     return events;
   }
 
@@ -892,8 +920,10 @@ export function unequipSlot(state, slot, events = []) {
           ? (c.worn && c.worn[slot]) || null
           : null;
   if (slot === "armor" && !worn && c.armor && c.armor !== "Nothing" && c.ar > 0 && c.armorWP <= 0) {
-    const destroyedName = c.armor;
-    const destroyedAr = c.ar;
+    // RULES-08 (Phase 75): the descriptor now comes from the shared helper —
+    // read BEFORE the mutation below, exactly as before; the event stays
+    // byte-identical.
+    const piece = destroyedArmorPiece(c);
     c.armor = "Nothing";
     c.ar = 0;
     c.armorMin = 0;
@@ -902,7 +932,7 @@ export function unequipSlot(state, slot, events = []) {
     c.patches = 0;
     events.push({
       type: "itemUnequipped",
-      item: { kind: "armor", n: destroyedName, armor: destroyedName, ar: destroyedAr, left: 0 },
+      item: piece,
       slot: "armor",
       destroyed: true,
     });
@@ -1028,6 +1058,9 @@ export function takeLoot(state, i, equip = false, events = []) {
     events.push({ type: "equipRejected", item: it, reason });
     return events;
   }
+  // RULES-08 (Phase 75): read the outgoing piece's destroyed state BEFORE the
+  // equip mutation below — additive only, no new event type, no rng.
+  const destroyedPiece = destroyedArmorPiece(c);
   const worn = wornArmorItem(c);
   if (worn && !stowItem(state, worn, events, true)) return events;
   c.armor = it.armor;
@@ -1037,7 +1070,7 @@ export function takeLoot(state, i, equip = false, events = []) {
   c.armorWP = it.left ?? it.wp;
   c.patches = it.patches ?? 0;
   pile.splice(i, 1);
-  events.push({ type: "itemEquipped", item: it, slot: "armor" });
+  events.push({ type: "itemEquipped", item: it, slot: "armor", ...(destroyedPiece ? { discarded: destroyedPiece, destroyed: true } : {}) });
   return events;
 }
 
