@@ -594,7 +594,14 @@ test("STORE-02 (Phase 61): the holders declaring Phase 61 are exactly the measur
 // no replay site's `state.party`/`combat.allies` is ever populated (the
 // JOIN-02 guard above already proves no site ever meets a Joiner, and none
 // of the six fixture files hand-builds a party either), so the member
-// branch this plan touches never runs against any of the 31 sites.
+// branch this plan touches never runs against any of the 31 sites. 72-05
+// (Fridgian frenzy's second swing, ROLL-01 (b)) also measures zero — the
+// one Fridgian hero whose action script reaches a second strike
+// (`combat#lose`, seed 14) fires frenzy 4 times, and all 4 resulting
+// swing-2 rolls land on the same side of both the old hard-set need (3)
+// and the new measured need, so no hit/miss outcome flips (see
+// test/parity/FIXTURE-INVENTORY.md's Plan 05 section for the full
+// predictor table and live-scan confirmation).
 const ROLL01_EXPECTED_HOLDERS = [];
 
 test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measured moved set; no replay site reaches the member branch", () => {
