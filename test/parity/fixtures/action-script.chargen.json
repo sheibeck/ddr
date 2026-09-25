@@ -400,12 +400,13 @@
       "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "24": {
-      "phase": "40+54",
+      "phase": "40+54+75",
       "requirements": [
         "SPELL-04",
         "SPELL-05",
         "FID-06",
-        "BAND-02"
+        "BAND-02",
+        "RULES-03"
       ],
       "fields": [
         "grimoire",
@@ -430,21 +431,22 @@
           "Heal",
           "Strength",
           "Stupidity",
-          "Map the Floor",
           "Sense Presence",
+          "Weaken",
           "Freeze"
         ],
         "maxWP": 39,
         "wp": 39,
         "rations": 6
       },
-      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. RULES-03 (Phase 75, user 2026-09-25): the Apprentice's divination gate is 3 — Map the Floor (divination) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Weaken (offense, ungated) instead — zero new/reordered rng draws, matching test/unit/chargen-rng-pin.test.js's unmoved cursor for this seed. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "29": {
-      "phase": "40+54",
+      "phase": "40+54+75",
       "requirements": [
         "SPELL-05",
-        "BAND-02"
+        "BAND-02",
+        "RULES-03"
       ],
       "fields": [
         "grimoire",
@@ -469,18 +471,18 @@
       "after": {
         "grimoire": [
           "Map the Floor",
-          "Shield",
           "Strength",
           "Acid",
           "Insane",
           "Freeze",
+          "Doze",
           "Sense Danger"
         ],
         "maxWP": 36,
         "wp": 36,
         "rations": 6
       },
-      "rationale": "Phase 40 (SPELL-05): pure rename at the same table position — Detect Magic becomes Map the Floor. The Warlock cannot learn the special school (content/mu-chart.js: special: null), so Lesser Summon is never in its learnable pool and this is the ONLY change; Freeze already satisfied the day-one damage guarantee before and after this phase. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "Phase 40 (SPELL-05): pure rename at the same table position — Detect Magic becomes Map the Floor. The Warlock cannot learn the special school (content/mu-chart.js: special: null), so Lesser Summon is never in its learnable pool; Freeze already satisfied the day-one damage guarantee before and after this phase. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. RULES-03 (Phase 75, user 2026-09-25): the Warlock's protection gate is 4 — Shield (protection) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Doze (offense, ungated) instead. Zero new/reordered rng draws. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
     },
     "32": {
       "phase": "38+54",

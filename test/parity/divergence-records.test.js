@@ -707,3 +707,27 @@ test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measure
   assert.equal(allyEventCount, 0, "expected zero allyStruck/allyMissed events across every replay site (F1 code paths are unreachable — no fixture ever populates a party or a summon)");
   assert.equal(shadowEncounterCount, 0, "expected zero Shadow encounters across every replay site (F3's daggerOnly branch is unreachable)");
 });
+
+// Phase 75 (RULES-03, Plan 05, user 2026-09-25): the Summoner's offense
+// school gate is removed (content/mu-chart.js), and grant-time legality
+// (engine/character.js#grantableAt) is wired into all four grimoire grant
+// paths. Two chargen-seed `divergences` records (24, 29) and one combat
+// `chargenDivergence` record (lose-apprentice) are the measured moved set —
+// see test/parity/FIXTURE-INVENTORY.md's Phase 75 Plan 05 section for the
+// full predictor/live-scan accounting (seed 15, the Summoner, was PREDICTED
+// but measured NOT to move — its grimoire is byte-identical to the
+// pre-existing Phase 40 declared value). Unlike every single-kind guard
+// above, this covers all three record kinds (divergences/divergence/
+// chargenDivergence) — a Phase-75 declaration can land on any of them.
+const RULES75_EXPECTED_HOLDERS = [
+  "action-script.chargen.json#seed-24",
+  "action-script.chargen.json#seed-29",
+  "action-script.combat.json#lose-apprentice",
+].sort();
+
+test("RULES-03 (Phase 75): the holders declaring Phase 75 are exactly the measured moved set", () => {
+  const declared = new Set(
+    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("75")).map(({ holderId }) => holderId),
+  );
+  assert.deepStrictEqual([...declared].sort(), RULES75_EXPECTED_HOLDERS);
+});
