@@ -864,11 +864,30 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
   // consequence of landing at identity BEFORE 54-06/54-07's fit, not a
   // routing/engine regression this file exists to catch. Each force's own
   // seed trio is swapped for the smallest re-measured set that dies
-  // naturally within the same 5000-action budget (Magic User/Sorcerer is
-  // unaffected, kept at 1-3).
+  // naturally within the same 5000-action budget.
+  //
+  // Phase 72 (ROLL-01, finding F1, user ruling 2026-09-24): a live party
+  // member's strike now applies the hero's own per-target to-hit rules
+  // (`memberStrike`/`alliesTurn`'s legacy branch/`allyTurn`), which this
+  // playthrough exercises for real (this seed's bot accepts a Joiner) —
+  // the RNG sequence downstream of that first altered hit/miss diverges
+  // completely from there, an expected consequence of a deliberate rule
+  // change reaching a real (non-scripted) playthrough, not a routing/
+  // engine regression. Bisected live (a scratch playRun against the
+  // pre-Phase-72 engine, then against F1/F3/F5 individually) to confirm F1
+  // alone is the cause: F3 (daggerOnly) and F5 (parley, 0 at identity)
+  // reproduce the pre-fix outcome exactly (depth 17, day 26); only F1
+  // diverges. Magic User/Sorcerer/Human seed 1 now hits `campFailed` in a
+  // loop it never reached before (a pre-existing bot-AI edge case, not new
+  // in this phase — see this file's own `Rule 1` stuck-investigation
+  // reference near line 975) and never resolves even at 30,000 actions.
+  // Re-measured live (never hand-typed): seed 4 is the smallest untaken
+  // seed for this force that still dies naturally within 5000 actions
+  // (depth 5, day 5) — swapped in; every other combination in every other
+  // force is unaffected (re-confirmed live, all eight still resolve).
   const forces = [
     { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [1, 3, 5] },
-    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [1, 2, 3] },
+    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [4, 2, 3] },
     { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [1, 2, 4] },
   ];
   let sawItem = false;

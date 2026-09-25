@@ -1462,6 +1462,67 @@ test("alliesTurn: a party member's strike is routed through the seam (soakable)"
   assert.equal(foe.wp, 10);
 });
 
+// --- Phase 72 (ROLL-01, finding F1, user ruling 2026-09-24): member/legacy/
+// summon strikes obey the hero's own per-target to-hit rules --------------
+//
+// The odds-based direction rows for the CLASSED member path live in
+// test/unit/rollDirection.test.js ([member-strike:per-target-rules]); these
+// are functional regression tests for all three F1 sites (classed member,
+// the pre-25.1 legacy branch, and the summoned C.ally), each proving a
+// magicOnly/daggerOnly foe is untouchable with no magic weapon (need forced
+// to 0 — even the die's own best face misses), the SAME clamp
+// playerStrike's own [hero-strike:magic-only]/[hero-strike:dagger-only]
+// rows prove.
+
+test("memberStrike (F1, classed): a daggerOnly foe (Shadow) is untouchable to a classed member with a Club and no magic weapon", () => {
+  const state = fixedState({ party: [{ cls: "Fighter", race: "Human", sub: "Soldier", level: 1, weapon: "Club", magicWpn: 0, wp: 20, maxWP: 20 }] });
+  const foe = fixedFoe({ sp: { daggerOnly: true }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe], { allies: [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Fighter", wp: 20, maxWP: 20 }] });
+  const rng = fakeRng([1]); // the die's own best face — would hit under the pre-F1 flat memberToHit need
+  const events = alliesTurn(state, rng, []);
+  assert.ok(events.some((e) => e.type === "allyMissed"), "F3: daggerOnly leaves a classed member's blow untouchable without a dagger or magic weapon");
+  assert.equal(foe.wp, 20, "no damage landed");
+});
+
+test("memberStrike (F1, classed): the same Shadow, hittable once the member's own sheet carries a Dagger", () => {
+  const state = fixedState({ party: [{ cls: "Fighter", race: "Human", sub: "Soldier", level: 1, weapon: "Dagger", magicWpn: 0, wp: 20, maxWP: 20 }] });
+  const foe = fixedFoe({ sp: { daggerOnly: true }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe], { allies: [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Fighter", wp: 20, maxWP: 20 }] });
+  const rng = fakeRng([1, 3]); // best strike face, then the dagger's own damage die
+  const events = alliesTurn(state, rng, []);
+  assert.ok(events.some((e) => e.type === "allyStruck"), "F3: a Dagger lands on the same Shadow");
+});
+
+test("alliesTurn (F1, legacy branch): a magicOnly foe is untouchable to a legacy ally with no persistent sheet", () => {
+  const state = fixedState(); // no state.party -> the classed lookup misses -> legacy path
+  const foe = fixedFoe({ sp: { magicOnly: true }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe], { allies: [{ partyIdx: 0, name: "Bear", lvl: 1, wp: 20, maxWP: 20 }] });
+  const rng = fakeRng([1]); // the die's own best face — would hit under the pre-F1 flat need-5
+  const events = alliesTurn(state, rng, []);
+  assert.ok(events.some((e) => e.type === "allyMissed"), "F1: magicOnly leaves a legacy ally's blow untouchable (it carries no weapon of its own)");
+  assert.equal(foe.wp, 20, "no damage landed");
+});
+
+test("alliesTurn (F1, legacy branch): a fast foe (Pogo-like) is a strict penalty, one face narrower than the flat need-5", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { fast: true }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe], { allies: [{ partyIdx: 0, name: "Bear", lvl: 1, wp: 20, maxWP: 20 }] });
+  const rng = fakeRng([5]); // the old flat need-5 would hit on this face; fast narrows to need 4
+  const events = alliesTurn(state, rng, []);
+  assert.ok(events.some((e) => e.type === "allyMissed"), "F1: fast narrows a legacy ally's need by one face");
+});
+
+test("allyTurn (F1, summon): a daggerOnly foe is untouchable to a summoned ally with no weapon of its own", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ sp: { daggerOnly: true }, wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe], { ally: { lvl: 1, rounds: 2, name: "A tall grey silence" } });
+  const rng = fakeRng([1]); // the die's own best face — would hit under the pre-F1 flat need-5
+  const events = allyTurn(state, rng, []);
+  assert.ok(events.some((e) => e.type === "allyMissed"), "F3: daggerOnly leaves a summoned ally's blow untouchable");
+  assert.equal(foe.wp, 20, "no damage landed");
+  assert.equal(state.combat.ally.rounds, 1, "the departure countdown still ticks on a miss");
+});
+
 test("applyFoeDamageToPlayer: a reflected blow onto an armoured foe can be soaked — pool spent, no wardReflected, foe unhurt, died:false", () => {
   const state = fixedState({ c: { ward: { pool: 10, reflect: true, rounds: 3 } } });
   const foe = fixedFoe({ sp: { ar: 12 }, wp: 10, maxWP: 10 });

@@ -609,13 +609,27 @@ test("STORE-02 (Phase 61): the holders declaring Phase 61 are exactly the measur
 // ability that could ever put a Skeleton on the board), so the new
 // `shatterOnBest`-gated code path this plan adds is provably unreachable by
 // every one of the 31 replay sites (see FIXTURE-INVENTORY.md's Plan 06
-// section for the full predictor and live-scan confirmation).
+// section for the full predictor and live-scan confirmation). 72-07's F5
+// (PARLEY_NEED_MOD subtracted instead of added) also measures zero — the
+// dial defaults to 0 in every fixture, and `Math.min(...) - 0` is byte-
+// identical to `Math.min(...) + 0`, so the sign change is a structural
+// no-op regardless of whether a fixture ever calls parley. 72-07's F1
+// (member/legacy/summon strikes gain the hero's per-target to-hit rules)
+// also measures zero, by the SAME reasoning as 72-04's member-branch proof
+// above: no fixture ever populates `state.party`/`combat.allies`/
+// `combat.ally`, so `memberStrike`/`alliesTurn`'s legacy branch/`allyTurn`
+// never run against any of the 31 sites (see part (d) below). 72-07's F3
+// (the Shadow's `sp.daggerOnly` becomes real) also measures zero — the
+// "Parity-exposed bestiary surface" quoted above is the complete roster
+// every fixture can ever roll, and it contains no Shadow (nor any other
+// `daggerOnly`/`magicOnly`/`toHit`/`fast`/`slow`-flagged foe), so the new
+// daggerOnly branch playerStrike/memberStrike/the legacy branch/allyTurn
+// gained is provably unreachable too (see part (e) below).
 const ROLL01_EXPECTED_HOLDERS = [];
 
-test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measured moved set; no replay site reaches the member branch or shatters a foe", () => {
-  // Part (a): the declared set — legitimately empty for 72-04/05/06, exactly
-  // like JOIN-02's own empty-set precedent above. 72-07 extends
-  // ROLL01_EXPECTED_HOLDERS with its own measured set as it lands.
+test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measured moved set; no replay site reaches the member branch, shatters a foe, strikes as an ally, or meets a Shadow", () => {
+  // Part (a): the declared set — legitimately empty for 72-04/05/06/07,
+  // exactly like JOIN-02's own empty-set precedent above.
   const declared = new Set(
     RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("72")).map(
       ({ holderId }) => holderId,
@@ -632,15 +646,32 @@ test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measure
   // Part (c) (72-06, ROLL-01 (c)): the same 31-site replay also asserts zero
   // `foeShattered` events — no replay site ever meets a shatter-flagged foe
   // (the Skeleton), so `shatterIfBest` never fires against any fixture.
+  //
+  // Part (d) (72-07, F1): the same 31-site replay also asserts zero
+  // `allyStruck`/`allyMissed` events — these only ever originate from
+  // `memberStrike`, `alliesTurn`'s legacy branch, or `allyTurn`, none of
+  // which ever run without a populated `state.party`/`combat.allies`/
+  // `combat.ally` — proving F1's per-target-rule additions to all three
+  // functions are unreachable by every one of the 31 sites.
+  //
+  // Part (e) (72-07, F3): the same 31-site replay also asserts no
+  // `encounterStarted` event ever names a Shadow among its foes — proving
+  // F3's new daggerOnly branch is unreachable too.
   let totalSites = 0;
   let memberStruckCount = 0;
   let memberMissedCount = 0;
   let foeShatteredCount = 0;
+  let allyEventCount = 0;
+  let shadowEncounterCount = 0;
 
   const tally = (events) => {
     memberStruckCount += events.filter((e) => e.type === "memberStruck").length;
     memberMissedCount += events.filter((e) => e.type === "foeMissed" && e.member).length;
     foeShatteredCount += events.filter((e) => e.type === "foeShattered").length;
+    allyEventCount += events.filter((e) => e.type === "allyStruck" || e.type === "allyMissed").length;
+    shadowEncounterCount += events.filter(
+      (e) => e.type === "encounterStarted" && Array.isArray(e.foes) && e.foes.some((f) => f.name === "Shadow"),
+    ).length;
   };
 
   for (const seed of CHARGEN_FIXTURE.seeds) {
@@ -673,4 +704,6 @@ test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measure
   assert.equal(memberStruckCount, 0, "expected zero memberStruck events across every replay site (no fixture carries a party)");
   assert.equal(memberMissedCount, 0, "expected zero member-targeted foeMissed events across every replay site");
   assert.equal(foeShatteredCount, 0, "expected zero foeShattered events across every replay site (no fixture ever meets a shatter-flagged foe)");
+  assert.equal(allyEventCount, 0, "expected zero allyStruck/allyMissed events across every replay site (F1 code paths are unreachable — no fixture ever populates a party or a summon)");
+  assert.equal(shadowEncounterCount, 0, "expected zero Shadow encounters across every replay site (F3's daggerOnly branch is unreachable)");
 });

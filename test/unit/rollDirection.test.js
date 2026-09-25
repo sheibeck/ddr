@@ -401,6 +401,32 @@ test("[hero-strike:magic-only] the same Ghost, hittable once the hero carries a 
   assert.ok(result.wins > 0, "[hero-strike:magic-only] a magic weapon must land on at least one face");
 });
 
+test('[hero-strike:dagger-only] a Shadow ("only a dagger or magic touches it") is untouchable with a plain club, finding F3', () => {
+  const noDagger = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [foeFrom("Magical", 2, "Shadow")]));
+  const result = faceOdds((rng) => landed(noDagger(), rng), { label: "hero-strike:dagger-only (no dagger, no magic)" });
+  assert.equal(result.wins, 0, "[hero-strike:dagger-only] an untouchable foe must win on ZERO faces");
+});
+
+test("[hero-strike:dagger-only] the same Shadow, hittable once the hero carries a Dagger", () => {
+  const withDagger = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [foeFrom("Magical", 2, "Shadow")]));
+    s.c.weapon = "Dagger";
+    return s;
+  };
+  const result = faceOdds((rng) => landed(withDagger(), rng), { label: "hero-strike:dagger-only (dagger)" });
+  assert.ok(result.wins > 0, "[hero-strike:dagger-only] a Dagger must land on at least one face");
+});
+
+test("[hero-strike:dagger-only] the same Shadow, hittable once the hero carries a magic weapon (no dagger required)", () => {
+  const withMagic = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [foeFrom("Magical", 2, "Shadow")]));
+    s.c.magicWpn = 1;
+    return s;
+  };
+  const result = faceOdds((rng) => landed(withMagic(), rng), { label: "hero-strike:dagger-only (magic weapon)" });
+  assert.ok(result.wins > 0, "[hero-strike:dagger-only] a magic weapon must land on at least one face");
+});
+
 test('[hero-strike:overhead-blow] "you need two better to land it" — a strict self-penalty, engine/abilities.js:188', () => {
   const overhead = () => {
     const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
@@ -1159,6 +1185,37 @@ test("[member-strike:level-die] a level-2 member strikes on a smaller die than a
   const withMod = faceOdds((rng) => memberLanded(lvl2(), rng), { label: "member-strike:level-die" });
   const without = faceOdds((rng) => memberLanded(lvl1(), rng), { label: "member-strike:level-die (baseline)" });
   assertBonus(withMod, without, { label: "member-strike:level-die" });
+});
+
+// --- Member per-target to-hit rules (finding F1, user ruling 2026-09-24) ---
+//
+// A party member's own strike (memberStrike) now applies the SAME
+// per-target rules playerStrike does — this row mirrors
+// [hero-strike:magic-only]/[hero-strike:fast]'s exact odds contract for a
+// member's own strike instead of the hero's.
+
+test('[member-strike:per-target-rules] a Ghost ("only magic touches it") is untouchable to a member with no magic weapon', () => {
+  const noMagic = () => memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, foeFrom("Demons", 4, "Ghost"));
+  const result = faceOdds((rng) => memberLanded(noMagic(), rng), { label: "member-strike:per-target-rules (no magic weapon)" });
+  assert.equal(result.wins, 0, "[member-strike:per-target-rules] an untouchable foe must win on ZERO faces for a member too");
+});
+
+test("[member-strike:per-target-rules] the same Ghost, hittable once the member's own sheet carries a magic weapon", () => {
+  const withMagic = () => {
+    const s = memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, foeFrom("Demons", 4, "Ghost"));
+    s.party[s.combat.allies[0].partyIdx].magicWpn = 1;
+    return s;
+  };
+  const result = faceOdds((rng) => memberLanded(withMagic(), rng), { label: "member-strike:per-target-rules (magic weapon)" });
+  assert.ok(result.wins > 0, "[member-strike:per-target-rules] a member's own magic weapon must land on at least one face");
+});
+
+test('[member-strike:per-target-rules] a Pogo ("fast — strike one higher") is a strict penalty for a member too', () => {
+  const pogo = () => memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, foeFrom("Lair Beasts", 1, "Pogo"));
+  const plain = () => memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => memberLanded(pogo(), rng), { label: "member-strike:per-target-rules (fast)" });
+  const without = faceOdds((rng) => memberLanded(plain(), rng), { label: "member-strike:per-target-rules (fast, baseline)" });
+  assertPenalty(withMod, without, { label: "member-strike:per-target-rules (fast)" });
 });
 
 test("[ally-strike:ally-level-die] a higher-level summon strikes no worse than a lower-level one, engine/combat.js#allyTurn", () => {

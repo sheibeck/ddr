@@ -55,7 +55,7 @@
 <div id="s-skills">
   html=""
   <li>
-    html="<b>Acute Hearing</b><i>never surprised; 3 to hit the unseen</i>"
+    html="<b>Acute Hearing</b><i>never surprised</i>"
   <li>
     html="<b>Night Vision</b><i>darkness costs you nothing</i>"
 ## #s-abilities

@@ -13,11 +13,10 @@
 // not identity) unless a row explicitly probes a dial itself via
 // setDialsForTuning and restores the shipped DIALS afterward.
 //
-// One row is PENDING (node:test's `todo` option, naming the fixing plan):
-// [parley:parley-need-mod] — PARLEY_NEED_MOD is documented "up = harder" but
-// today it is ADDED to a roll-under need, making parley EASIER (finding
-// F5). 72-07 fixes the sign; this row's only required edit there is
-// deleting the `todo` option. Every other row passes today.
+// Every row in this file is green — [parley:parley-need-mod] (finding F5,
+// PARLEY_NEED_MOD was ADDED to a roll-under need, making parley EASIER on a
+// positive value, the opposite of its own JSDoc) was fixed by 72-07: the
+// dial is now SUBTRACTED, matching "up = harder". No row keeps a `todo`.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -598,7 +597,6 @@ test('[parley:ceiling] "an 85% ceiling — no stack is an auto-win", engine/comb
 
 test(
   '[parley:parley-need-mod] "up = harder" (engine/difficulty.js#parleyNeedModFor JSDoc; docs/DIFFICULTY-RETUNE.md) — PARLEY_NEED_MOD:1 must be a PENALTY (finding F5, fixed by 72-07)',
-  { todo: "fixed by 72-07 (F5)" },
   () => {
     const build = () => {
       const s = inCombat(heroState({ cls: "Thief", sub: "Con Artist", race: "Human", level: 1 }), [foeFrom("Humans", 1, "Ned")]);
