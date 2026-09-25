@@ -144,3 +144,13 @@ None for this plan — this is a pure, display-invisible extraction (no engine o
 ---
 *Phase: 74-roll-display-modifier-honesty*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: engine/derived.js
+- FOUND: engine/combat.js
+- FOUND: test/unit/odds-helpers.test.js
+- FOUND: .planning/phases/74-roll-display-modifier-honesty/74-01-SUMMARY.md
+- FOUND: adbe151 (Task 1 commit)
+- FOUND: a593be6 (Task 2 commit)
+- FOUND: 8efd0de (SUMMARY commit)
