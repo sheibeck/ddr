@@ -11,7 +11,7 @@
 //
 //   GlobalSnapshot = frozen {
 //     status: "loading" | "ready" | "unreachable" | "consent" | "closed",
-//     board: "deep" | "lean" | "combo" | "days" | "kills" | "purse",
+//     board: "deep" | "combo" | "days" | "kills" | "purse",
 //     scope: "all" | "friends",
 //     season: number,
 //     entries: GlobalEntry[]   (ranked order as returned; [] unless status is "ready"),
@@ -121,8 +121,12 @@ export function snapshotOf({
   });
 }
 
-/** The boards the global panel can show (GRAVEYARD stays local, D-17). */
-const GLOBAL_BOARDS = Object.freeze(["deep", "lean", "combo", "days", "kills", "purse"]);
+/**
+ * The boards the global panel can show (GRAVEYARD stays local, D-17). LEANEST
+ * was retired (Phase 81, BOARD-17): it never had a Play Games leaderboard to
+ * fetch from, so its removal here is presentation-only.
+ */
+const GLOBAL_BOARDS = Object.freeze(["deep", "combo", "days", "kills", "purse"]);
 
 /** The global scopes ("local" is the Phase 66 view and never reaches here). */
 const GLOBAL_SCOPES = Object.freeze(["all", "friends"]);

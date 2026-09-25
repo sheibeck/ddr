@@ -24,11 +24,8 @@ const MOCK_RULE = {
   yard: "Everyone you have rolled and lost, deepest first, with what was said over them. Not ranked against anybody.",
 };
 
-const OLD_LEAN_RULE = "Depth first, then economy: the lowest floor reached, and among equals, whoever walked the fewest squares to get there.";
-
 const MOCK_MARK_COL = {
   deep: { mark: "▼", col: "#d3c49f" },
-  lean: { mark: "▪", col: "#e8c97a" },
   combo: { mark: "◆", col: "#b9a4ef" },
   days: { mark: "⧗", col: "#8fb08a" },
   kills: { mark: "✕", col: "#e07260" },
@@ -69,14 +66,13 @@ function collectLeaves(obj, pathLabel = "") {
 
 // ─── BOARD_COPY key order + Phase 65 fields untouched ───────────────────────
 
-test("Object.keys(BOARD_COPY) still equals the mock tab order", () => {
-  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "lean", "combo", "days", "kills", "purse", "yard"]);
+test("Object.keys(BOARD_COPY) equals the panel's tab order (LEANEST retired, BOARD-17)", () => {
+  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "combo", "days", "kills", "purse", "yard"]);
 });
 
 test("BOARD_COPY tab/title/unit/unitOne match their Phase 65 values", () => {
   const pinned = {
     deep: { tab: "DEEPEST", title: "DEEPEST DESCENT", unit: "floor" },
-    lean: { tab: "LEANEST", title: "DEEPEST, FEWEST STEPS", unit: "sq" },
     combo: { tab: "LINEAGE", title: "BY RACE & SUB-CLASS", unit: "floor" },
     days: { tab: "LONGEST", title: "LONGEST HELD OUT", unit: "days", unitOne: "day" },
     kills: { tab: "BUTCHERY", title: "MOST KILLS", unit: "kills", unitOne: "kill" },
@@ -110,15 +106,11 @@ test("Every board's mark and col match the mock verbatim (D-11)", () => {
   }
 });
 
-test("The six non-LEANEST rule lines equal the mock strings verbatim", () => {
+test("Every remaining board's rule line equals the mock string verbatim (LEANEST retired, BOARD-17)", () => {
   for (const [id, rule] of Object.entries(MOCK_RULE)) {
     assert.equal(BOARD_COPY[id].rule, rule, `${id}.rule`);
   }
-});
-
-test("LEANEST's rule is the re-voice, not the mock's old duplicated-ordering line, and mentions per-floor", () => {
-  assert.notEqual(BOARD_COPY.lean.rule, OLD_LEAN_RULE);
-  assert.match(BOARD_COPY.lean.rule, /per floor/i);
+  assert.ok(!("lean" in BOARD_COPY));
 });
 
 // ─── BOARD_FOOTNOTES ─────────────────────────────────────────────────────────
@@ -235,7 +227,6 @@ const GLOBAL_PINS = {
   friend: "FRIEND",
   anon: "A nameless delver",
   foe: "foe",
-  leanRateUnit: "SQ / FLOOR",
   noEntry: "Nothing of yours on this board yet this season.",
   ofWorld: "of {n} interred worldwide.",
   ofFriends: "of {n} among friends.",

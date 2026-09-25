@@ -121,11 +121,11 @@ test("(A1) BEHAVIOUR: __mzShowTab(\"dead\") leaves #screen-dead holding exactly 
   assert.equal(root.querySelector(".mw-bd-interred-n").textContent, "37");
 });
 
-test("(A2) BEHAVIOUR: the rail carries all seven chips, and DEEPEST is the default active chip", () => {
+test("(A2) BEHAVIOUR: the rail carries all six chips (LEANEST retired, BOARD-17), and DEEPEST is the default active chip", () => {
   const runs = twelveRuns();
   const { root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
   const chips = root.querySelectorAll(".mw-bd-chip");
-  assert.equal(chips.length, 7);
+  assert.equal(chips.length, 6);
   const active = chips.filter((c) => c.dataset.on === "1");
   assert.equal(active.length, 1);
   assert.equal(active[0].dataset.board, "deep");
@@ -166,24 +166,24 @@ test("(A6) BEHAVIOUR: the in-game DEAD tab keeps the HUD and the condition strip
 
 // ═══════════════════════ (B) board memory (D-04) ════════════════════════════
 
-test("(B1) BEHAVIOUR: tapping the LEANEST chip makes it active and stores \"lean\" under ddr.boards.last.v1", () => {
+test("(B1) BEHAVIOUR: tapping the LONGEST chip makes it active and stores \"days\" under ddr.boards.last.v1 (LEANEST retired, BOARD-17)", () => {
   const runs = twelveRuns();
   const { sandbox, screenDead, root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  const leanChip = root.querySelectorAll(".mw-bd-chip").find((c) => c.dataset.board === "lean");
-  assert.ok(leanChip, "expected a LEANEST chip");
-  leanChip.onclick();
+  const daysChip = root.querySelectorAll(".mw-bd-chip").find((c) => c.dataset.board === "days");
+  assert.ok(daysChip, "expected a LONGEST chip");
+  daysChip.onclick();
 
   const after = screenDead.querySelector(".mw-bd");
   const active = after.querySelectorAll(".mw-bd-chip").filter((c) => c.dataset.on === "1");
   assert.equal(active.length, 1);
-  assert.equal(active[0].dataset.board, "lean");
-  assert.equal(sandbox.context.window.localStorage.getItem("ddr.boards.last.v1"), "lean");
+  assert.equal(active[0].dataset.board, "days");
+  assert.equal(sandbox.context.window.localStorage.getItem("ddr.boards.last.v1"), "days");
 });
 
 test("(B2) BEHAVIOUR: the DEAD tab reopens on the last board viewed after a detour through the map", () => {
   const runs = twelveRuns();
   const { sandbox, screenDead, root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  root.querySelectorAll(".mw-bd-chip").find((c) => c.dataset.board === "lean").onclick();
+  root.querySelectorAll(".mw-bd-chip").find((c) => c.dataset.board === "days").onclick();
 
   sandbox.context.window.__mzShowTab("maze");
   sandbox.context.window.__mzShowTab("dead");
@@ -191,7 +191,7 @@ test("(B2) BEHAVIOUR: the DEAD tab reopens on the last board viewed after a deto
   const reopened = screenDead.querySelector(".mw-bd");
   const active = reopened.querySelectorAll(".mw-bd-chip").filter((c) => c.dataset.on === "1");
   assert.equal(active.length, 1);
-  assert.equal(active[0].dataset.board, "lean");
+  assert.equal(active[0].dataset.board, "days");
 });
 
 // ═══════════════════════ (C) row tap-expand (D-13) ══════════════════════════

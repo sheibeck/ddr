@@ -1,12 +1,15 @@
 // src/browser/boardScores.js
 //
-// Phase 68 (PGS-03, PGS-06; D-01, D-14, D-16, D-17): the five submitted
-// boards' Play Games score encodings and the per-season leaderboard ID
-// lookup. Pure: no DOM, no storage, no clock, no randomness; never throws.
+// Phase 68 (PGS-03, PGS-06; D-01, D-14, D-16, D-17): the submitted boards'
+// Play Games score encodings and the per-season leaderboard ID lookup. Pure:
+// no DOM, no storage, no clock, no randomness; never throws.
 //
-// Only deep, lean, days, kills and purse are submitted. GRAVEYARD stays local
+// Only deep, days, kills and purse are submitted. GRAVEYARD stays local
 // (D-17) and LINEAGE is built from a DEEPEST sample (67 D-19), so neither has
-// a score here nor an ID in content/leaderboards.js.
+// a score here nor an ID in content/leaderboards.js. The retired
+// squares-per-floor board (BOARD-17, Phase 81) is never submitted either: a
+// 1-step death could top a steps-per-floor board, and "deepest, then fewest
+// steps" is exactly DEEPEST's own ordering, leaving no honest LEANEST.
 //
 // A leaderboard score is one integer, so each board folds its tiebreak into
 // it (D-16). The raw number is an ordering key only: global rows show the
@@ -16,13 +19,20 @@
 import { RANKED_BOARDS } from "../../engine/records.js";
 import { LEADERBOARD_IDS, LEADERBOARD_PLACEHOLDER_PREFIX } from "../../content/leaderboards.js";
 
-/** The boards submitted to Play Games, in engine/records.js RANKED_BOARDS order. */
-export const SUBMIT_BOARDS = Object.freeze([...RANKED_BOARDS]);
+/**
+ * RETIRED_BOARDS — board ids once submitted to Play Games and retired
+ * (Phase 81, BOARD-17): never submitted again. An old queued pgsQueue entry
+ * carrying a score or ack for one of these is dropped on load
+ * (src/browser/pgsQueue.js#sanitizeEntry), tolerantly and silently.
+ */
+export const RETIRED_BOARDS = Object.freeze(["lean"]);
+
+/** The boards submitted to Play Games: RANKED_BOARDS minus RETIRED_BOARDS. */
+export const SUBMIT_BOARDS = Object.freeze(RANKED_BOARDS.filter((b) => !RETIRED_BOARDS.includes(b)));
 
 /** Each board's Play Games scoreOrder (fixed once a board is published). */
 export const SCORE_ORDER = Object.freeze({
   deep: "largerIsBetter",
-  lean: "smallerIsBetter",
   days: "largerIsBetter",
   kills: "largerIsBetter",
   purse: "largerIsBetter",
@@ -51,14 +61,11 @@ function isObject(v) {
  * boardScore(board, summary) — the integer submitted to `board` for a run
  * summary (D-16):
  *   deep  = floor x 1,000,000 - steps (steps clamped to 0..999,999; never below 0)
- *   lean  = round(1000 x steps / max(floor, 1)), smaller is better
  *   days  = day x 1000 + min(floor, 999)
  *   kills = kills x 1000 + min(floor, 999)
  *   purse = gold
- * LEANEST's single score cannot also break ties by depth: equal
- * squares-per-floor rates rank equally whatever the floor.
  * @returns {number|null} a non-negative safe integer, or null for combo,
- *   yard and any unknown board
+ *   yard, the retired board and any other unknown board
  */
 export function boardScore(board, summary) {
   const s = isObject(summary) ? summary : {};
@@ -68,8 +75,6 @@ export function boardScore(board, summary) {
       const steps = Math.min(DEEP_STEP_CAP, int(s.steps));
       return Math.max(0, floor * DEEP_FLOOR_UNIT - steps);
     }
-    case "lean":
-      return Math.round((TIEBREAK_UNIT * int(s.steps)) / Math.max(floor, 1));
     case "days":
       return int(s.day) * TIEBREAK_UNIT + Math.min(floor, TIEBREAK_FLOOR_CAP);
     case "kills":
@@ -81,7 +86,7 @@ export function boardScore(board, summary) {
   }
 }
 
-/** boardScores(summary) — a frozen { deep, lean, days, kills, purse } of boardScore values. */
+/** boardScores(summary) — a frozen { deep, days, kills, purse } of boardScore values. */
 export function boardScores(summary) {
   const out = {};
   for (const board of SUBMIT_BOARDS) out[board] = boardScore(board, summary);
@@ -91,9 +96,9 @@ export function boardScores(summary) {
 /**
  * scoreFallback(board, rawScore) — the displayable fields a raw score still
  * carries when its tag does not decode: deep → { floor, steps }, days →
- * { day, floor }, kills → { kills, floor }, purse → { gold }, lean →
- * { rate } (squares per floor). Null for a raw score that is not a
- * non-negative safe integer, and for combo, yard or an unknown board.
+ * { day, floor }, kills → { kills, floor }, purse → { gold }. Null for a raw
+ * score that is not a non-negative safe integer, and for combo, yard, the
+ * retired board or any other unknown board.
  */
 export function scoreFallback(board, rawScore) {
   if (!Number.isSafeInteger(rawScore) || rawScore < 0) return null;
@@ -102,8 +107,6 @@ export function scoreFallback(board, rawScore) {
       const floor = Math.ceil(rawScore / DEEP_FLOOR_UNIT);
       return Object.freeze({ floor, steps: floor * DEEP_FLOOR_UNIT - rawScore });
     }
-    case "lean":
-      return Object.freeze({ rate: rawScore / TIEBREAK_UNIT });
     case "days":
       return Object.freeze({ day: Math.floor(rawScore / TIEBREAK_UNIT), floor: rawScore % TIEBREAK_UNIT });
     case "kills":

@@ -4,13 +4,18 @@
 // orderings and values live in engine/records.js; this file holds only
 // player-facing copy. Phase 66 (BOARD-02/03/07/08) adds each board's `mark`,
 // `col` and `unitLabel` from the imported mock (D-11) and adopts the mock's
-// rule lines verbatim (LEANEST re-voiced for its Phase 66 squares-per-floor
-// re-rank, D-09 — engine/records.js owns the comparator change). The
-// lowercase `unit`/`unitOne` fields stay exactly as Phase 65 left them: they
-// feed the death-panel's NEW PERSONAL BEST announcement (src/browser/
-// newBest.js), which is untouched by this phase. `content/` holds no
-// functions — the `{token}` placeholders below (n, name, floor, steps,
-// epitaph) are filled by the view model (66-04), never here.
+// rule lines verbatim. The lowercase `unit`/`unitOne` fields stay exactly as
+// Phase 65 left them: they feed the death-panel's NEW PERSONAL BEST
+// announcement (src/browser/newBest.js), which is untouched by this phase.
+// `content/` holds no functions — the `{token}` placeholders below (n, name,
+// floor, steps, epitaph) are filled by the view model (66-04), never here.
+//
+// Phase 81 (BOARD-17): LEANEST (squares walked per floor) was retired by the
+// user's ruling — a 1-step death could top a steps-per-floor board, and
+// "deepest, then fewest steps" is exactly DEEPEST's own ordering, leaving no
+// honest LEANEST. `BOARD_COPY.lean` and `BOARDS_PANEL_COPY.global.leanRateUnit`
+// are gone; `BOARD_COPY`'s key order is now deep, combo, days, kills, purse,
+// yard.
 
 export const BOARD_COPY = {
   deep: {
@@ -21,15 +26,6 @@ export const BOARD_COPY = {
     unitLabel: "FLOOR",
     rule: "Lowest floor reached before dying. Ties broken by the fewer squares walked to get there.",
     unit: "floor",
-  },
-  lean: {
-    tab: "LEANEST",
-    title: "DEEPEST, FEWEST STEPS",
-    mark: "▪",
-    col: "#e8c97a",
-    unitLabel: "FLOOR · SQ",
-    rule: "Squares walked per floor descended. Efficiency, of a sort.",
-    unit: "sq",
   },
   combo: {
     tab: "LINEAGE",
@@ -151,7 +147,6 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     friend: "FRIEND",
     anon: "A nameless delver",
     foe: "foe",
-    leanRateUnit: "SQ / FLOOR",
     noEntry: "Nothing of yours on this board yet this season.",
     ofWorld: "of {n} interred worldwide.",
     ofFriends: "of {n} among friends.",

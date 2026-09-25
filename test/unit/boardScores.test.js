@@ -1,10 +1,15 @@
 // test/unit/boardScores.test.js
 //
-// Phase 68 (PGS-03, PGS-06; D-01, D-14, D-15, D-16, D-17): the five submitted
+// Phase 68 (PGS-03, PGS-06; D-01, D-14, D-15, D-16, D-17): the submitted
 // boards' score encodings, the per-season leaderboard ID map and its lookup.
-// Pins the D-16 worked examples, the clamps and rounding, LEANEST's
-// equal-rate limit, the minimal-row fallback round-trip, the id rules, and
-// the D-15 guard: bumping SEASON without adding that season's IDs fails here.
+// Pins the D-16 worked examples, the clamps and rounding, the minimal-row
+// fallback round-trip, the id rules, and the D-15 guard: bumping SEASON
+// without adding that season's IDs fails here.
+//
+// Phase 81 (BOARD-17): LEANEST is retired. RETIRED_BOARDS holds its id; every
+// four-board expectation below reflects the removal, plus a concurrency
+// check that no SUBMIT_BOARDS id maps through leaderboardId to the retired
+// Season-1 console id.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -13,6 +18,7 @@ import { SEASON } from "../../content/season.js";
 import { LEADERBOARD_IDS, LEADERBOARD_PLACEHOLDER_PREFIX } from "../../content/leaderboards.js";
 import { RANKED_BOARDS } from "../../engine/records.js";
 import {
+  RETIRED_BOARDS,
   SUBMIT_BOARDS,
   SCORE_ORDER,
   SCORE_INPUT_CAP,
@@ -27,7 +33,11 @@ import {
   scoreOrdersFor,
 } from "../../src/browser/boardScores.js";
 
-const FIVE = ["deep", "lean", "days", "kills", "purse"];
+const FOUR = ["deep", "days", "kills", "purse"];
+/** The Season-1 console id for the retired LEANEST board. Never referenced
+ * outside this test file — code comments must not repeat it either
+ * (src/browser/boardScores.js's header). */
+const RETIRED_SEASON_1_ID = "CgkIlvbN0YYPEAIQAw";
 
 function isDeepFrozen(v) {
   if (v === null || typeof v !== "object") return true;
@@ -46,23 +56,23 @@ function makeRng(seed) {
 
 // --- content/leaderboards.js ----------------------------------------------------
 
-test("LEADERBOARD_IDS is deep-frozen with season 1's five live Play Console IDs", () => {
+test("LEADERBOARD_IDS is deep-frozen with season 1's four live Play Console IDs (LEANEST retired, BOARD-17)", () => {
   assert.ok(isDeepFrozen(LEADERBOARD_IDS));
   assert.equal(LEADERBOARD_PLACEHOLDER_PREFIX, "PLACEHOLDER");
   assert.deepEqual({ ...LEADERBOARD_IDS[1] }, {
     deep: "CgkIlvbN0YYPEAIQAg",
-    lean: "CgkIlvbN0YYPEAIQAw",
     days: "CgkIlvbN0YYPEAIQBA",
     kills: "CgkIlvbN0YYPEAIQBQ",
     purse: "CgkIlvbN0YYPEAIQBg",
   });
+  assert.deepEqual(Object.keys(LEADERBOARD_IDS[1]), FOUR, "four IDs");
   for (const id of Object.values(LEADERBOARD_IDS[1])) assert.ok(!id.startsWith(LEADERBOARD_PLACEHOLDER_PREFIX), "season 1 has no placeholder left");
 });
 
-test("every season entry is keyed by a season number and has exactly the five boards", () => {
+test("every season entry is keyed by a season number and has exactly the four boards", () => {
   for (const [k, v] of Object.entries(LEADERBOARD_IDS)) {
     assert.match(k, /^[1-9]\d*$/);
-    assert.deepEqual(Object.keys(v).sort(), [...FIVE].sort(), `season ${k}`);
+    assert.deepEqual(Object.keys(v).sort(), [...FOUR].sort(), `season ${k}`);
     for (const id of Object.values(v)) assert.equal(typeof id, "string");
   }
 });
@@ -74,23 +84,31 @@ test("D-15 guard: the current SEASON has an entry in LEADERBOARD_IDS", () => {
 
 // --- boards and order ------------------------------------------------------------
 
-test("SUBMIT_BOARDS is the five ranked boards, frozen, and matches RANKED_BOARDS", () => {
-  assert.deepEqual([...SUBMIT_BOARDS], FIVE);
-  assert.deepEqual([...SUBMIT_BOARDS], [...RANKED_BOARDS]);
+test("SUBMIT_BOARDS is the four ranked boards, frozen, and equals RANKED_BOARDS minus RETIRED_BOARDS", () => {
+  assert.deepEqual([...SUBMIT_BOARDS], FOUR);
+  assert.deepEqual([...SUBMIT_BOARDS], RANKED_BOARDS.filter((b) => !RETIRED_BOARDS.includes(b)));
   assert.ok(Object.isFrozen(SUBMIT_BOARDS));
   assert.ok(!SUBMIT_BOARDS.includes("combo"));
   assert.ok(!SUBMIT_BOARDS.includes("yard"));
+  assert.ok(!SUBMIT_BOARDS.includes("lean"));
 });
 
-test("SCORE_ORDER uses the plugin's order strings, smaller is better only for lean", () => {
+test("RETIRED_BOARDS holds exactly the one retired id and is frozen (BOARD-17)", () => {
+  assert.ok(Object.isFrozen(RETIRED_BOARDS));
+  assert.deepEqual([...RETIRED_BOARDS], ["lean"]);
+  assert.equal(RETIRED_BOARDS.length, 1);
+});
+
+test("SCORE_ORDER uses the plugin's order strings over the four submitted boards", () => {
   assert.ok(Object.isFrozen(SCORE_ORDER));
   assert.deepEqual({ ...SCORE_ORDER }, {
     deep: "largerIsBetter",
-    lean: "smallerIsBetter",
     days: "largerIsBetter",
     kills: "largerIsBetter",
     purse: "largerIsBetter",
   });
+  assert.equal(Object.keys(SCORE_ORDER).length, 4);
+  assert.ok(!("lean" in SCORE_ORDER));
 });
 
 // --- boardScore --------------------------------------------------------------------
@@ -108,16 +126,9 @@ test("deep ties on floor are broken by fewer steps", () => {
   assert.ok(boardScore("deep", { floor: 8, steps: 999999 }) > boardScore("deep", { floor: 7, steps: 0 }));
 });
 
-test("lean: round(1000 x steps / max(floor, 1)), rounding half up", () => {
-  assert.equal(boardScore("lean", { floor: 8, steps: 1 }), 125);
-  assert.equal(boardScore("lean", { floor: 16, steps: 1 }), 63);
-  assert.equal(boardScore("lean", { floor: 3, steps: 1 }), 333);
-  assert.equal(boardScore("lean", { floor: 0, steps: 7 }), 7000);
-  assert.equal(boardScore("lean", { floor: 1, steps: 7 }), 7000);
-});
-
-test("lean: equal squares-per-floor rates at different depths score the same (the single-score limit)", () => {
-  assert.equal(boardScore("lean", { floor: 2, steps: 10 }), boardScore("lean", { floor: 4, steps: 20 }));
+test("boardScore and scoreFallback return null for the retired LEANEST id (BOARD-17)", () => {
+  assert.equal(boardScore("lean", { floor: 8, steps: 1 }), null);
+  assert.equal(scoreFallback("lean", 125), null);
 });
 
 test("days, kills and purse encodings", () => {
@@ -128,14 +139,14 @@ test("days, kills and purse encodings", () => {
   assert.equal(boardScore("purse", { gold: 4688 }), 4688);
 });
 
-test("combo, yard and unknown boards return null", () => {
+test("combo, yard, the retired id and unknown boards return null", () => {
   const s = { floor: 7, steps: 431, day: 22, kills: 19, gold: 4688 };
-  for (const b of ["combo", "yard", "nope", "", undefined, null]) assert.equal(boardScore(b, s), null, String(b));
+  for (const b of ["combo", "yard", "lean", "nope", "", undefined, null]) assert.equal(boardScore(b, s), null, String(b));
 });
 
 test("missing fields count as 0 and odd inputs are truncated or zeroed", () => {
-  for (const b of FIVE) assert.equal(boardScore(b, {}), 0, b);
-  for (const b of FIVE) assert.equal(boardScore(b, null), 0, b);
+  for (const b of FOUR) assert.equal(boardScore(b, {}), 0, b);
+  for (const b of FOUR) assert.equal(boardScore(b, null), 0, b);
   assert.equal(boardScore("purse", { gold: 7.9 }), 7);
   assert.equal(boardScore("purse", { gold: NaN }), 0);
   assert.equal(boardScore("purse", { gold: Infinity }), 0);
@@ -147,7 +158,7 @@ test("every score at the input cap and beyond is a non-negative safe integer", (
   assert.equal(SCORE_INPUT_CAP, 999999999);
   for (const v of [999999999, 1e15, 1e300]) {
     const s = { floor: v, steps: v, day: v, kills: v, gold: v };
-    for (const b of FIVE) {
+    for (const b of FOUR) {
       const score = boardScore(b, s);
       assert.ok(Number.isSafeInteger(score) && score >= 0, `${b} @ ${v}: ${score}`);
     }
@@ -161,13 +172,13 @@ test("identical board fields encode identical scores", () => {
   assert.deepEqual({ ...boardScores(a) }, { ...boardScores(b) });
 });
 
-test("boardScores is a frozen object over the five boards in order", () => {
+test("boardScores is a frozen object over the four boards in order", () => {
   const all = boardScores({ floor: 7, steps: 431, day: 22, kills: 19, gold: 4688 });
   assert.ok(Object.isFrozen(all));
-  assert.deepEqual(Object.keys(all), FIVE);
-  assert.deepEqual({ ...all }, { deep: 6999569, lean: 61571, days: 22007, kills: 19007, purse: 4688 });
+  assert.deepEqual(Object.keys(all), FOUR);
+  assert.deepEqual({ ...all }, { deep: 6999569, days: 22007, kills: 19007, purse: 4688 });
   const empty = boardScores({});
-  for (const b of FIVE) assert.ok(Number.isSafeInteger(empty[b]) && empty[b] >= 0);
+  for (const b of FOUR) assert.ok(Number.isSafeInteger(empty[b]) && empty[b] >= 0);
 });
 
 // --- scoreFallback -----------------------------------------------------------------
@@ -177,7 +188,6 @@ test("scoreFallback recovers the displayed fields from a raw score", () => {
   assert.deepEqual({ ...scoreFallback("days", 22007) }, { day: 22, floor: 7 });
   assert.deepEqual({ ...scoreFallback("kills", 19007) }, { kills: 19, floor: 7 });
   assert.deepEqual({ ...scoreFallback("purse", 4688) }, { gold: 4688 });
-  assert.deepEqual({ ...scoreFallback("lean", 125) }, { rate: 0.125 });
   assert.ok(Object.isFrozen(scoreFallback("deep", 6999569)));
 });
 
@@ -187,6 +197,7 @@ test("scoreFallback rejects bad raw scores and unsubmitted boards", () => {
   }
   assert.equal(scoreFallback("combo", 7), null);
   assert.equal(scoreFallback("yard", 7), null);
+  assert.equal(scoreFallback("lean", 7), null);
   assert.equal(scoreFallback("nope", 7), null);
 });
 
@@ -224,24 +235,31 @@ test("isRealLeaderboardId accepts console and dev ids, rejects placeholders and 
 
 test("leaderboardId returns null for placeholders and returns a real id when present", () => {
   // Season 1's shipped IDs are live (2026-09-24): every board resolves to its own ID.
-  for (const b of FIVE) assert.equal(leaderboardId(LEADERBOARD_IDS, SEASON, b), LEADERBOARD_IDS[SEASON][b]);
-  const placeholders = { 1: { deep: "PLACEHOLDER_DEEPEST_S1", lean: "PLACEHOLDER_LEANEST_S1", days: "PLACEHOLDER_LONGEST_S1", kills: "PLACEHOLDER_BUTCHERY_S1", purse: "PLACEHOLDER_PURSE_S1" } };
-  for (const b of FIVE) assert.equal(leaderboardId(placeholders, 1, b), null);
-  const live = { 1: { deep: "CgkI4a-Rz8YUEAIQAQ", lean: "PLACEHOLDER_LEANEST_S1", days: "", kills: "x y", purse: 7 } };
+  for (const b of FOUR) assert.equal(leaderboardId(LEADERBOARD_IDS, SEASON, b), LEADERBOARD_IDS[SEASON][b]);
+  const placeholders = { 1: { deep: "PLACEHOLDER_DEEPEST_S1", days: "PLACEHOLDER_LONGEST_S1", kills: "PLACEHOLDER_BUTCHERY_S1", purse: "PLACEHOLDER_PURSE_S1" } };
+  for (const b of FOUR) assert.equal(leaderboardId(placeholders, 1, b), null);
+  const live = { 1: { deep: "CgkI4a-Rz8YUEAIQAQ", days: "", kills: "x y", purse: 7 } };
   assert.equal(leaderboardId(live, 1, "deep"), "CgkI4a-Rz8YUEAIQAQ");
-  assert.equal(leaderboardId(live, 1, "lean"), null);
   assert.equal(leaderboardId(live, 1, "days"), null);
   assert.equal(leaderboardId(live, 1, "kills"), null);
   assert.equal(leaderboardId(live, 1, "purse"), null);
 });
 
-test("leaderboardId returns null for a missing season, LINEAGE/GRAVEYARD, or a non-object map", () => {
-  const live = { 1: { deep: "CgkI4a-Rz8YUEAIQAQ", combo: "CgkIcombo", yard: "CgkIyard" } };
+test("leaderboardId returns null for the retired LEANEST id, a missing season, LINEAGE/GRAVEYARD, or a non-object map", () => {
+  const live = { 1: { deep: "CgkI4a-Rz8YUEAIQAQ", lean: "CgkIlvbN0YYPEAIQAw", combo: "CgkIcombo", yard: "CgkIyard" } };
   assert.equal(leaderboardId(live, 2, "deep"), null);
+  assert.equal(leaderboardId(live, 1, "lean"), null, "BOARD-17: never resolves to the retired id");
   assert.equal(leaderboardId(live, 1, "combo"), null);
   assert.equal(leaderboardId(live, 1, "yard"), null);
   for (const m of [null, undefined, 42, "x"]) assert.equal(leaderboardId(m, 1, "deep"), null);
   assert.equal(leaderboardId({ 1: "not an object" }, 1, "deep"), null);
+});
+
+test("BOARD-17 concurrency: no SUBMIT_BOARDS id maps through leaderboardId to the retired Season-1 console id", () => {
+  for (const b of SUBMIT_BOARDS) {
+    assert.notEqual(leaderboardId(LEADERBOARD_IDS, SEASON, b), RETIRED_SEASON_1_ID, b);
+  }
+  assert.equal(leaderboardId(LEADERBOARD_IDS, SEASON, "lean"), null);
 });
 
 test("knownSeasons lists the numbered season entries ascending", () => {
@@ -255,10 +273,11 @@ test("devLeaderboardIds builds dev ids for every known season", () => {
   const dev = devLeaderboardIds();
   assert.ok(isDeepFrozen(dev));
   assert.deepEqual(JSON.parse(JSON.stringify(dev)), {
-    1: { deep: "dev_deep_s1", lean: "dev_lean_s1", days: "dev_days_s1", kills: "dev_kills_s1", purse: "dev_purse_s1" },
+    1: { deep: "dev_deep_s1", days: "dev_days_s1", kills: "dev_kills_s1", purse: "dev_purse_s1" },
   });
   const two = devLeaderboardIds({ 1: {}, 2: {} });
-  assert.equal(two[2].lean, "dev_lean_s2");
+  assert.equal(two[2].deep, "dev_deep_s2");
+  assert.ok(!("lean" in two[2]));
 });
 
 test("leaderboardIdsFor picks the console map natively and the dev map in the browser", () => {
@@ -273,14 +292,12 @@ test("scoreOrdersFor maps every real id to its order and skips placeholders", ()
   assert.ok(Object.isFrozen(orders));
   assert.deepEqual({ ...orders }, {
     dev_deep_s1: "largerIsBetter",
-    dev_lean_s1: "smallerIsBetter",
     dev_days_s1: "largerIsBetter",
     dev_kills_s1: "largerIsBetter",
     dev_purse_s1: "largerIsBetter",
   });
   assert.deepEqual({ ...scoreOrdersFor(LEADERBOARD_IDS) }, {
     CgkIlvbN0YYPEAIQAg: "largerIsBetter",
-    CgkIlvbN0YYPEAIQAw: "smallerIsBetter",
     CgkIlvbN0YYPEAIQBA: "largerIsBetter",
     CgkIlvbN0YYPEAIQBQ: "largerIsBetter",
     CgkIlvbN0YYPEAIQBg: "largerIsBetter",

@@ -218,7 +218,7 @@ test("getBests() reflects a new death synchronously, before any await (the synch
   });
 });
 
-test("a deeper run announces new bests on deep and lean; a shallower run after that announces nothing", async () => {
+test("a deeper run announces new bests on deep (and days where it qualifies); a shallower run after that announces nothing", async () => {
   await withFakeLocalStorage(async () => {
     await loadBests();
 
@@ -233,9 +233,10 @@ test("a deeper run announces new bests on deep and lean; a shallower run after t
     const deeperReport = takeDeathRecord();
     // A tie on day/kills is itself broken by floor desc (compareRuns), so a
     // deeper run with unchanged day/kills can ALSO take #1 on those boards —
-    // the behavior only requires deep/lean to be among the boards beaten.
+    // the behavior only requires deep to be among the boards beaten (BOARD-17:
+    // LEANEST is retired, so it is never in newBests).
     assert.ok(deeperReport.newBests.includes("deep"), "deeper floor beats DEEPEST");
-    assert.ok(deeperReport.newBests.includes("lean"), "deeper floor beats LEANEST");
+    assert.ok(!deeperReport.newBests.includes("lean"), "LEANEST is retired and never announced");
 
     await startNewRun(3);
     getState().floor.depth = 1; // shallower

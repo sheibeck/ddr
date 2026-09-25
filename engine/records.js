@@ -64,11 +64,16 @@ export function runHash(run) {
 /** BOARD_TOP_N — every ranked board keeps at most this many entries. */
 export const BOARD_TOP_N = 10;
 
-/** BOARD_IDS — the mock's seven tabs, in tab order. */
-export const BOARD_IDS = Object.freeze(["deep", "lean", "combo", "days", "kills", "purse", "yard"]);
+/**
+ * BOARD_IDS — the panel's tabs, in tab order. LEANEST was retired (Phase 81,
+ * BOARD-17: a 1-step death could top a steps-per-floor board, and "deepest,
+ * then fewest steps" is exactly DEEPEST's own ordering, leaving no honest
+ * LEANEST). 81-04 finalizes tab order and drops GRAVEYARD.
+ */
+export const BOARD_IDS = Object.freeze(["deep", "combo", "days", "kills", "purse", "yard"]);
 
-/** RANKED_BOARDS — the five boards a bests record keeps a top-ten list for. */
-export const RANKED_BOARDS = Object.freeze(["deep", "lean", "days", "kills", "purse"]);
+/** RANKED_BOARDS — the boards a bests record keeps a top-ten list for. */
+export const RANKED_BOARDS = Object.freeze(["deep", "days", "kills", "purse"]);
 
 /** num(x) — a finite number, else 0 (missing/NaN/Infinity fields never crash an ordering). */
 function num(x) {
@@ -83,11 +88,12 @@ function field(o, k) {
 /**
  * compareRuns(board, a, b) — negative when a ranks above b, 0 on a full tie.
  * deep/combo/yard: floor desc, then steps asc.
- * lean: squares per floor asc (cross-multiplied), then floor desc, then
- * steps asc; an unplaced run (floor below 1) ranks last (Phase 66, D-09 —
- * LEANEST is squares-per-floor, not a DEEPEST duplicate).
  * days: day desc, then floor desc. kills: kills desc, then floor desc.
  * purse: gold desc only. An unknown board id always returns 0.
+ *
+ * LEANEST (squares-per-floor) was retired (Phase 81, BOARD-17): a 1-step
+ * death could top a steps-per-floor board, and "deepest, then fewest steps"
+ * is exactly DEEPEST's own ordering above, leaving no honest LEANEST.
  */
 export function compareRuns(board, a, b) {
   switch (board) {
@@ -95,23 +101,6 @@ export function compareRuns(board, a, b) {
     case "combo":
     case "yard":
       return num(field(b, "floor")) - num(field(a, "floor")) || num(field(a, "steps")) - num(field(b, "steps"));
-    case "lean": {
-      const af = num(field(a, "floor"));
-      const bf = num(field(b, "floor"));
-      const as = num(field(a, "steps"));
-      const bs = num(field(b, "steps"));
-      const aPlaced = af >= 1;
-      const bPlaced = bf >= 1;
-      if (aPlaced !== bPlaced) return aPlaced ? -1 : 1;
-      if (aPlaced && bPlaced) {
-        // Cross-multiplied rate compare (as/af vs bs/bf) so no division or
-        // floating-point rounding ever decides the order — the 1/3 vs 2/6
-        // case must not tie by rounding.
-        const rate = as * bf - bs * af;
-        if (rate !== 0) return rate;
-      }
-      return bf - af || as - bs;
-    }
     case "days":
       return num(field(b, "day")) - num(field(a, "day")) || num(field(b, "floor")) - num(field(a, "floor"));
     case "kills":
@@ -123,24 +112,10 @@ export function compareRuns(board, a, b) {
   }
 }
 
-/**
- * leanRate(run) — the LEANEST metric (Phase 66, D-09): squares walked per
- * floor descended (steps / floor), read by the panel's value bar and by
- * Phase 68's submission. Number.POSITIVE_INFINITY when the run has no valid
- * floor (below 1), so an unplaced run never divides by zero. boardValue
- * ("lean") stays the floor — the row still displays "floor · sq".
- */
-export function leanRate(run) {
-  const floor = num(field(run, "floor"));
-  const steps = num(field(run, "steps"));
-  return floor >= 1 ? steps / floor : Number.POSITIVE_INFINITY;
-}
-
 /** boardValue(board, run) — the headline number a board's row displays. */
 export function boardValue(board, run) {
   switch (board) {
     case "deep":
-    case "lean":
     case "combo":
     case "yard":
       return num(field(run, "floor"));
@@ -240,7 +215,7 @@ export function emptyBests() {
   return {
     v: 1,
     runs: {},
-    boards: { deep: [], lean: [], days: [], kills: [], purse: [] },
+    boards: { deep: [], days: [], kills: [], purse: [] },
     last: null,
   };
 }
@@ -250,15 +225,20 @@ export function emptyBests() {
  * BestsRecord, dropping every entry that fails its own shape check.
  *
  * Phase 66 (D-09): re-ranks every stored list by its board's current
- * comparator, so an older record whose LEANEST list was stored in the
- * retired depth order loads re-ranked; a list already in order is unchanged
- * (Array.prototype.sort is stable), so this is idempotent and needs no
- * record version bump.
+ * comparator, so an older record whose lists were stored in a retired order
+ * loads re-ranked; a list already in order is unchanged (Array.prototype.sort
+ * is stable), so this is idempotent and needs no record version bump.
  *
  * Phase 70 (D-12): a legacy Phase 65 `lineage` {count, best} map is ignored
  * — a tolerant load with no version bump. The record is rebuilt from v,
  * runs, boards and last only, and prune re-derives the per-lineage keep set
  * from the held runs.
+ *
+ * Phase 81 (BOARD-17): LEANEST is retired. `raw.boards.lean` (if present) is
+ * ignored below — RANKED_BOARDS no longer names it, so the loop simply never
+ * reads it — with no version bump. A run held only by the old lean list is
+ * released by prune() unless another RANKED_BOARDS list or the run's
+ * lineage's ten best still holds it.
  */
 export function sanitizeBests(raw) {
   try {
@@ -274,7 +254,7 @@ export function sanitizeBests(raw) {
       }
     }
 
-    const boards = { deep: [], lean: [], days: [], kills: [], purse: [] };
+    const boards = { deep: [], days: [], kills: [], purse: [] };
     if (isPlainObject(raw.boards)) {
       for (const board of RANKED_BOARDS) {
         const list = raw.boards[board];

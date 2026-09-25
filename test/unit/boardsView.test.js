@@ -246,14 +246,6 @@ test("Ranked rows: PURSE value is en-US digit-grouped", () => {
   assert.equal(view.body.rows[0].unit, "WILMST");
 });
 
-test("Ranked rows: LEANEST value is 'floor · steps' and unit is FLOOR · SQ", () => {
-  const s1 = makeSummary({ floor: 9, steps: 312 });
-  const rec = recordWith([s1]);
-  const view = boardsView({ bests: rec, graves: [], total: 1, board: "lean", entry: "tab" });
-  assert.equal(view.body.rows[0].val, "9 · 312");
-  assert.equal(view.body.rows[0].unit, "FLOOR · SQ");
-});
-
 test("Stats: exactly FLOOR/DAYS/SQUARES/KILLS/EXP/WILMST with en-US-grouped gold, missing numbers render '0'", () => {
   const s1 = makeSummary({ floor: 5, day: 3, steps: 500, kills: 2, sp: 50, gold: 1234 });
   const rec = recordWith([s1]);
@@ -267,17 +259,6 @@ test("Stats: exactly FLOOR/DAYS/SQUARES/KILLS/EXP/WILMST with en-US-grouped gold
     stats.map((s) => s.v),
     ["5", "3", "500", "2", "50", "1,234"]
   );
-});
-
-test("LEANEST order in the rows follows squares per floor: a lean 22-step floor-1 run outranks a 900-step floor-9 run", () => {
-  const efficient = makeSummary({ floor: 1, steps: 22, name: "Lean" });
-  const grinder = makeSummary({ floor: 9, steps: 900, name: "Grinder" });
-  const rec = recordWith([efficient, grinder]);
-  const view = boardsView({ bests: rec, graves: [], total: 2, board: "lean", entry: "tab" });
-  assert.equal(view.body.rows[0].headline, "Lean");
-
-  const deepView = boardsView({ bests: rec, graves: [], total: 2, board: "deep", entry: "tab" });
-  assert.equal(deepView.body.rows[0].headline, "Grinder", "DEEPEST must rank the deeper run first, unlike LEANEST");
 });
 
 test("LINEAGE rows (Phase 70, D-09): only the selected race + sub-class, lineageRuns order, Phase 66 rows keyed by run hash", () => {
@@ -340,7 +321,7 @@ test("LINEAGE_RACES / LINEAGE_SUBS: the 6 races and 24 sub-classes in content or
 });
 
 test("picker (D-09): null off LINEAGE; on LINEAGE a RACE row of 6 then a SUB-CLASS row of 24, upper-cased, exactly one chip on per row", () => {
-  for (const board of ["deep", "lean", "days", "kills", "purse", "yard"]) {
+  for (const board of ["deep", "days", "kills", "purse", "yard"]) {
     assert.equal(boardsView({ board, entry: "tab" }).picker, null, board);
   }
   const view = boardsView({ board: "combo", entry: "tab", lineage: { race: "Dwarven", sub: "Court Mage" } });
@@ -408,16 +389,6 @@ test("GRAVEYARD row content: headline is the name, name slot is the level line, 
   assert.equal(row.detail, "No prayers answered.");
   assert.equal(row.val, "2 · 88");
   assert.equal(row.unit, "FLOOR · SQ");
-});
-
-test("Value bars: min-max over the listed rows, an unplaced LEANEST run gets the minimum 3, negated rate makes the best rate fullest", () => {
-  const fast = makeSummary({ floor: 5, steps: 50, name: "Fast" });
-  const slow = makeSummary({ floor: 5, steps: 500, name: "Slow", seed: 2 });
-  const rec = recordWith([fast, slow]);
-  const view = boardsView({ bests: rec, graves: [], total: 2, board: "lean", entry: "tab" });
-  assert.equal(view.body.rows[0].headline, "Fast");
-  assert.equal(view.body.rows[0].barPct, 100);
-  assert.equal(view.body.rows[1].barPct, 3);
 });
 
 test("Value bars: when every metric is equal (including a single row) every bar is 100", () => {
@@ -634,7 +605,7 @@ test("standing quip: deterministic — the same hash and board always pick the s
   assert.equal(view1.standing.note, view2.standing.note);
 });
 
-test("A full run of all seven boards on a 12-run fixture: DEEPEST and LEANEST orders differ, GRAVEYARD holds all unranked, LINEAGE lists the selected lineage", () => {
+test("A full run of every board on a 12-run fixture (LEANEST retired, BOARD-17): GRAVEYARD holds all unranked, LINEAGE lists the selected lineage", () => {
   const races = ["Human", "Dwarven", "Elven"];
   const subs = ["Knight", "Pickpocket"];
   const runs = [];
@@ -655,13 +626,6 @@ test("A full run of all seven boards on a 12-run fixture: DEEPEST and LEANEST or
   }
   const rec = recordWith(runs);
   const graves = runs.map((r) => ({ ...r }));
-
-  const deepView = boardsView({ bests: rec, graves, total: 12, board: "deep", entry: "tab" });
-  const leanView = boardsView({ bests: rec, graves, total: 12, board: "lean", entry: "tab" });
-  assert.notDeepStrictEqual(
-    deepView.body.rows.map((r) => r.key),
-    leanView.body.rows.map((r) => r.key)
-  );
 
   const yardView = boardsView({ bests: rec, graves, total: 12, board: "yard", entry: "tab" });
   assert.equal(yardView.body.rows.length, 12);
@@ -998,11 +962,8 @@ test("global ALL: the player's best outside the top ten is pinned last under the
   for (const row of rows.slice(0, 10)) assert.equal(row.divider, "");
 });
 
-test("global rows: LEANEST shows 'floor · steps', PURSE groups digits, both decoded from the tag", () => {
+test("global rows: PURSE groups digits, decoded from the tag", () => {
   const e = gEntry(0, {}, { floor: 7, steps: 431, gold: 1234567 });
-  const lean = gView({ board: "lean", global: snap({ board: "lean", entries: [e] }) }).body.rows[0];
-  assert.equal(lean.val, "7 · 431");
-  assert.equal(lean.unit, BOARD_COPY.lean.unitLabel);
   const purse = gView({ board: "purse", global: snap({ board: "purse", entries: [e] }) }).body.rows[0];
   assert.equal(purse.val, "999,999", "gold is capped by the tag's field cap");
   const days = gView({ board: "days", global: snap({ board: "days", entries: [e] }) }).body.rows[0];
@@ -1018,7 +979,6 @@ test("global rows: a tag that does not decode gives a minimal row from the raw s
     { board: "days", rawScore: boardScore("days", { day: 12, floor: 5 }), val: "12", unit: BOARD_COPY.days.unitLabel },
     { board: "kills", rawScore: boardScore("kills", { kills: 9, floor: 5 }), val: "9", unit: BOARD_COPY.kills.unitLabel },
     { board: "purse", rawScore: 1234567, val: "1,234,567", unit: BOARD_COPY.purse.unitLabel },
-    { board: "lean", rawScore: 61571, val: "61.6", unit: G.leanRateUnit },
     { board: "deep", rawScore: -1, val: "—", unit: "FLOOR" },
     { board: "purse", rawScore: 1.5, val: "—", unit: BOARD_COPY.purse.unitLabel },
   ];
@@ -1079,8 +1039,8 @@ test("global standing: the real rank with worldwide / among-friends counts and a
   const noTotal = gView({ global: snap({ entries, you, total: null }) }).standing;
   assert.ok(noTotal.note.startsWith("of 3 interred worldwide. "), noTotal.note);
 
-  const lean = gView({ board: "lean", global: snap({ board: "lean", entries, you, total: 50 }) }).standing;
-  assert.equal(lean.label, "BROM IRONFOOT · " + BOARD_COPY.lean.unitLabel);
+  const days = gView({ board: "days", global: snap({ board: "days", entries, you, total: 50 }) }).standing;
+  assert.equal(days.label, "BROM IRONFOOT · " + BOARD_COPY.days.unitLabel);
 
   // 68-05: a ready snapshot can carry you null when only the player-score call
   // failed; the listed entry marked you still places the player.

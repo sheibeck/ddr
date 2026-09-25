@@ -316,7 +316,7 @@ test("createGlobalBoards returns a frozen { view, requestFriendsAccess, clear }"
 
 test("inactive (signed out or Compete OFF): view() is null and nothing touches the provider", async () => {
   const r = rig({ active: false });
-  for (const board of ["deep", "lean", "combo", "days", "kills", "purse"]) {
+  for (const board of ["deep", "combo", "days", "kills", "purse"]) {
     for (const scope of ["all", "friends"]) assert.equal(r.gb.view({ board, scope, season: 1 }), null);
   }
   assert.equal(await r.gb.requestFriendsAccess(), "unavailable");
@@ -545,7 +545,7 @@ test("a placeholder or missing id gives closed with zero calls; a placeholder DE
   await flush();
   assert.deepEqual(r.args, []);
   assert.equal(r.changes(), 0);
-  assert.equal(r.gb.view({ board: "lean", scope: "all", season: 1 }).status, "loading");
+  assert.equal(r.gb.view({ board: "days", scope: "all", season: 1 }).status, "loading");
   assert.equal(r.args.length, 2, "the other boards still fetch");
 });
 
