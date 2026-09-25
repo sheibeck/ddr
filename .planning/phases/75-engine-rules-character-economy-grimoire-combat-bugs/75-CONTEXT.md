@@ -67,6 +67,15 @@ Character creation, HP growth, spell legality, initiative, traps, ailments and a
   - The Gear sheet's EQUIP / SWAP INTO note for armor says "your worn armor is destroyed — it will be discarded" when it applies.
   - One test per path, using the destroyed-unequip test as the template.
 
+### Wanderer on an icon step — RULES-12 (user, 2026-09-25; todo `2026-09-25-resolve-the-tile-after-a-wanderer-interrupts-the-step`)
+- `engine/movement.js:523` returns before the feature dispatch when the step's `newDay` wandering check started combat, so the icon is left unresolved under the hero.
+- The fix:
+  - record `state.pendingTile = {x, y}`;
+  - on combat end with the hero alive AND still on that tile, resolve the feature through the same dispatch, after loot/find, narrated;
+  - if they fled off it, the feature stays for later;
+  - if they died, nothing.
+- A declared canon divergence: measure, declare and regenerate the moved fixtures, and carve `pendingTile` out of the comparables or reconcile it. Phase 76 must persist `pendingTile` across a relaunch.
+
 ### Engine gate (standing)
 - Pure and deterministic. New rolls come from a derived stream.
 - Measure moved fixtures, declare each in `test/parity/FIXTURE-INVENTORY.md`, and regenerate only those. Carve new serialized fields out of the three `*Comparable()` functions.

@@ -38,7 +38,7 @@
 - **A resumed fight picks up at a clean round boundary:** the player's turn in the current round, with foes, HP, the round number, active effects (hero and foe, including `c.foeEffect`, the timers and per-round flags), cooldowns and foe order all intact.
   - `beats` (UI animation state) is NOT restored.
   - The Oracle adds a short in-voice resume line (e.g. "Still here. Still fighting.").
-- **What survives a relaunch:** `combat`, `store` (same stock and prices), `pendingFind` and `pendingHazard`. `pendingLoot` already survives (LOOT-06).
+- **What survives a relaunch:** `combat`, `store` (same stock and prices), `pendingFind`, `pendingHazard`, and `pendingTile` (new in Phase 75, RULES-12). `pendingLoot` already survives (LOOT-06).
   - Carry each through `validateSave` and `rehydrate` (`engine/saveState.js` ~L735-745 currently nulls combat/store/beats/pendingFind/pendingHazard, copying the 1994 prototype's load).
 - **Save & Quit mid-fight is allowed.** It resumes into the same fight, and force-closing can no longer escape one. Every combat action is already persisted by dispatch. Confirm the save after each action includes the live combat.
 - **Old saves:** if a stored `combat`/`store`/pending value validates, resume it. If not, drop it as today (tolerant load, never a crash).
