@@ -19,18 +19,30 @@
 // and encounters.test.js do").
 //
 // No production file changed by this plan — every case below is a PASSING
-// pin of already-correct, already-fixed behavior. Nothing here is marked
-// { todo: true } because this session's Verdict is "no NEW cause confirmed"
-// (see the debug file's Phase 75 ### Verdict) — the 2026-09-22 root cause
-// and its fix are re-verified, not superseded.
+// pin of already-correct, already-fixed behavior. Nothing here is left as a
+// pending/skipped case because this session's Verdict is "no NEW cause
+// confirmed" (see the debug file's Phase 75 ### Verdict) — the 2026-09-22
+// root cause and its fix are re-verified, not superseded.
+//
+// Phase 75, plan 75-08 — 75-01's own ### Fix inputs says no code fix is
+// required (the Verdict is the "no reproduction of a NEW cause" branch), so
+// this plan adds only the two RULES-06 boundary cases Task 1's own
+// <behavior> names (a hero at dmg+1 hp survives a trap of dmg with exactly
+// 1 hp; a hero at exactly dmg hp dies, cause "trap", and the trapSprung
+// line prints dmg) plus the engine-scale sweep Task 2's own <behavior>
+// names (promoting 75-01's ad hoc "75-01-trap-death-repro.mjs" scratchpad
+// technique into a permanent, committed guard) — appended at the end of
+// this file, below the three tests 75-01 already pinned.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import { springTrap } from "../../engine/encounters.js";
+import { newRun } from "../../engine/state.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { fightLogLinesFor } from "../../src/browser/fightLog.js";
 import { planBeat, beatOffsets, beatEndMs } from "../../src/browser/combatBeat.js";
+import { playRun, RUN_FLAGS } from "../../tools/lib/tuning-bot.mjs";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 // Phase 54-07: this suite's damage pins are canon-mechanic numbers, so it
@@ -172,7 +184,7 @@ test("RULES-06 (Phase 75 re-verification): planBeat's last hero-hp frame still e
 // this transient frame is never the one on screen at an actionable moment
 // (combat-beat-shell.test.js's own test (4) already proves the action
 // buttons stay disarmed for the WHOLE beat), so it cannot itself explain a
-// death. Not a { todo: true } case — nothing here needs to change; this is
+// death. Not a case left pending for a future fix — nothing here needs to change; this is
 // a passing pin of a already-understood, already-bounded limitation.
 
 test("RULES-06 (Phase 75 finding): an intermediate (not-last) K-of-M fold frame still under-counts — the true value returns on the very next line, and the ROUND's own last frame is always correct regardless", () => {
@@ -215,4 +227,224 @@ test("RULES-06 (Phase 75 finding): an intermediate (not-last) K-of-M fold frame 
   const offsets = beatOffsets(plan.texts, () => 0);
   const endMs = beatEndMs(plan.texts, () => 0);
   assert.ok(offsets[1] < endMs, "the fold's own offset must fall strictly before the beat's own end — it is never the settled, actionable frame");
+});
+
+// ── (4)/(5) Phase 75, plan 75-08 — Task 1's own boundary cases ────────────
+// (a hero with dmg + 1 hp survives a trap of dmg with exactly 1 hp; a hero
+// with exactly dmg hp dies, cause "trap", and the trapSprung line prints
+// dmg). Same fakeRng/fixedState technique as case (1) above — dodge roll 20
+// mirrors to roll 1 (rollCheck's roll-high mirror, engine/dice.js: `roll =
+// dieN + 1 - r`), always a miss; trap-kind roll 2 always picks the SAME
+// "Falling Rocks" (d20, no `times` multiplier, no Hardiness/Cat Burglar on
+// this fixedFighter) trap case (1) already uses, so the final damage roll
+// alone sets `dmg` (no scaleHazard surprise at this depth/identity-dials
+// setting — case (1)/(2) already establish that).
+
+test("RULES-06 boundary (Phase 75, plan 75-08): a hero at dmg+1 hp survives a trap of dmg with exactly 1 hp left", () => {
+  const state = fixedState({ c: { sub: "Thief", wp: 6 } }); // dmg (5) + 1
+  const events = springTrap(state, fakeRng([20, 2, 5]), []);
+  const sprung = events.find((e) => e.type === "trapSprung");
+  assert.equal(sprung.dmg, 5, "sanity: this scripted roll must reproduce a dmg-5 trap");
+  assert.equal(state.c.wp, 1, "a hero at dmg+1 hp must survive with exactly 1 hp left");
+  assert.equal(state.dead, false);
+});
+
+test("RULES-06 boundary (Phase 75, plan 75-08): a hero at exactly dmg hp dies, cause \"trap\", and the trapSprung line prints dmg", () => {
+  const state = fixedState({ c: { sub: "Thief", wp: 5 } }); // exactly dmg (5)
+  const events = springTrap(state, fakeRng([20, 2, 5]), []);
+  const sprung = events.find((e) => e.type === "trapSprung");
+  assert.equal(sprung.dmg, 5, "sanity: this scripted roll must reproduce the SAME dmg-5 trap as the survive case above");
+  assert.equal(state.c.wp, 0, "a hero at exactly dmg hp must be reduced to exactly 0, never negative");
+  assert.equal(state.dead, true);
+  const died = events.find((e) => e.type === "died");
+  assert.ok(died, "sanity: a lethal trap must push a died event");
+  assert.equal(died.cause, "trap", "the death's own cause must be \"trap\", not a generic/unnamed cause");
+  const line = EVENT_NARRATION.trapSprung(sprung);
+  assert.match(line, /−5 hp/, "the trapSprung line must still print the SAME dmg (5), even on the killing blow");
+});
+
+// ── (6) Phase 75, plan 75-08, Task 2 — the engine-scale standing guard ────
+//
+// Promotes 75-01's own ad hoc scratchpad reproduction (500 seeds / ~197k
+// actions, run once by hand, `75-01-trap-death-repro.mjs`, never committed —
+// see .planning/debug/trap-death-21hp-oracle-minus1.md's "### Phase 75
+// session") into a permanent, committed guard, bounded to a small seed set
+// so it runs in well under this plan's own 60s budget (this plan's own
+// <flagged_assumptions>: "The engine guard's seed sweep is sized to run in
+// under 60 seconds inside npm test. The full 500-seed reproduction stays a
+// scratch tool, as in 75-01."). Drives the REAL engine (`applyAction`,
+// never a hand-built event) through the tuning bot's own decideAction
+// policy, from `newRun(seed, [], { startDepth: 2 })`, exactly as 75-01's
+// own reproduction did.
+
+const SWEEP_SEEDS = 45;
+const SWEEP_MAX_ACTIONS = 300;
+const SWEEP_START_DEPTH = 2;
+
+/**
+ * LOSS_FIELDS — every engine site that both mutates the HERO's own `c.wp`
+ * DOWNWARD AND narrates the amount removed on a matching numeric event
+ * field (a full `grep -n "c\.wp -="` sweep of every engine/*.js site, this
+ * plan, cross-checked by direct code read against each site's own event
+ * push). Every one of these sites subtracts its narrated amount directly —
+ * unlike a GAIN (see GAIN_TYPES below), a hero's hp loss is never silently
+ * clamped away below the narrated figure (the ONE clamp on the loss side,
+ * death.js#die()'s floor-at-0 on a lethal blow, is handled separately
+ * below, not folded into this map) — so `narratedHeroLossDelta` can sum
+ * these fields and expect EXACT agreement with the real hp drop.
+ */
+const LOSS_FIELDS = {
+  trapSprung: "dmg", // engine/encounters.js#springTrap
+  struckByFoe: "dmg", // engine/combat.js — a foe's landed blow on the hero
+  foeBolted: "dmg", // engine/combat.js/foeAbilities.js — a foe-ability bolt (excluded below when `member`-tagged: that shape targets a party member, not the hero)
+  trappedPanic: "loss", // engine/movement.js — the >=1hp clamp is baked INTO this field's own value before it is narrated
+  afflictionTick: "loss", // engine/movement.js — same >=1hp pre-narration clamp
+  afflictionCaught: "first", // engine/encounters.js#catchAffliction's first tick
+  fellClimbing: "hurt", // engine/movement.js
+  fellInGorge: "hurt", // engine/movement.js
+  insanitySelfHarm: "loss", // engine/encounters.js#goInsane
+  backfireSelfDamage: "amount", // engine/magic.js — an Apprentice's 1-in-8 mishap
+  summonBackfired: "amount", // engine/magic.js — a doubled Summoner's 1-in-8 mishap
+  earthquakeSelfDamage: "amount", // engine/magic.js — Earthquake's unwarded self-hit
+  deathCast: "cost", // engine/magic.js — the Death spell's own fixed fee
+  wentHungry: "cost", // engine/movement.js — an unfed night's upkeep
+};
+// GAIN_TYPES — every event type this plan's own calibration runs observed
+// narrating a HERO wp GAIN. Deliberately NOT summed into the accounting
+// check below (unlike LOSS_FIELDS): most of these sites narrate the RAW
+// pre-clamp roll (a potion/food/heal's own die result), not the actual,
+// possibly-smaller delta once `Math.min(c.maxWP, c.wp + amt)` clamps it
+// near full health — `rested` is the one gain site that already narrates
+// its OWN post-clamp value, but distinguishing it from the rest here would
+// add complexity this guard's own risk surface (RULES-06 is about
+// UNDER-narrated LOSSES causing a surprise death, never an over-narrated
+// gain) does not need. Any action carrying one of these types is excluded
+// from the per-action accounting check (documented, tallied as
+// `skippedActions`, never silently mis-summed).
+const GAIN_TYPES = new Set([
+  "healed", "secondWindHealed", "foodFound", "faerieBoon", "floorRegen",
+  "cloakRegenerated", "potionDrunk", "rested", "cooked", "regenerated",
+  "leveled", // a level-up's own wpGain also raises c.wp — same clamp-shaped exclusion
+]);
+// NEUTRAL_TYPES — every OTHER event type this plan's own calibration runs
+// actually observed co-occurring with an hp-changing action, confirmed by
+// direct code read to never itself touch the HERO's own `c.wp` (a foe's own
+// wp, a party member's own wp, a roll/selection/narration-only event, or a
+// non-wp resource such as gold/rations). A type in neither this set nor the
+// two above is UNCLASSIFIED, per `narratedHeroLossDelta` below.
+const NEUTRAL_TYPES = new Set([
+  "frenzy", "strikeMissed", "combatJoined", "moved", "encounterRolled",
+  "dayBegan", "rationsEaten", "trapPoisoned", "afflictionCured", "spGained",
+  "floorChanged", "foeMissed", "struck", "foeKilled", "goldGained",
+  "draggedOver", "foeArmorSoaked", "dirtyTrickLanded", "backstab",
+  "trapDoubled", "wanderingMonster", "encounterStarted", "waterFear",
+  "afflictionRolled", "afflictionPassed", "phobiaTriggered", "heightsFear",
+  "phobiaAfraid", "combatInDark", "mirrorSelf", "allyMissed", "allyStruck",
+  "mirrorFaded", "memberSwept", "memberStruck", "braced", "allyDeparted",
+  "braceHeld", "spellChargeRecovered", "spellMissed", "heroResistFailed",
+  "faerieMet", "foeRevived", "armorSoaked", "armorDestroyed", "itemCooled",
+  "riposteReady", "fleeRolled", "fleeFailed", "afflictionLingers",
+  "battleRoarRaised", "swept", "sweptFoe", "died", "chestLockRolled",
+  "scrollFound", "findOffered", "allyJoined", "spellHit",
+  "frozenSolid", "fearPassed", "poisonedEdgeApplied", "dotTick",
+  "foeSightReturned", "lootDropped", "parleyRolled", "parleyFailed",
+  "parleyInsulted", "spellBackfired", "pommelStruck", "allyCast",
+  "allySpellHit", "foeSlept", "foeDebuffed", "trapAvoided",
+  "abilityLearned", "foeFled", "encounterCleared", "insanityRolled",
+  "armorPatched", "foeStunned", "leaptOver", "conArtistOpener",
+  "trapDisarmed", "chestOpened", "wardRaised", "regenerationCast",
+]);
+
+/**
+ * narratedHeroLossDelta(events) — sums LOSS_FIELDS across `events`,
+ * restricted to the HERO's own wp (a `foeBolted` event carrying a `member`
+ * field targets a PARTY MEMBER, not the hero, and is excluded). Returns
+ * `{ loss, hasGain, unclassified }`: `loss` is the positive sum of every
+ * confirmed hero hp-loss field; `hasGain` is true when a GAIN_TYPES event is
+ * present (excludes the action from the strict check — see GAIN_TYPES'
+ * own doc comment); `unclassified` is true when any event's type is outside
+ * every set above (LOSS_FIELDS ∪ GAIN_TYPES ∪ NEUTRAL_TYPES), meaning this
+ * action's total cannot be safely checked either.
+ */
+function narratedHeroLossDelta(events) {
+  let loss = 0;
+  let hasGain = false;
+  let unclassified = false;
+  for (const e of events) {
+    if (!e || typeof e.type !== "string") continue;
+    if (e.type === "foeBolted" && e.member) continue; // targets a party member, not the hero
+    if (Object.prototype.hasOwnProperty.call(LOSS_FIELDS, e.type)) {
+      const v = e[LOSS_FIELDS[e.type]];
+      if (typeof v === "number" && Number.isFinite(v)) loss += v;
+      continue;
+    }
+    if (GAIN_TYPES.has(e.type)) {
+      hasGain = true;
+      continue;
+    }
+    if (!NEUTRAL_TYPES.has(e.type)) unclassified = true;
+  }
+  return { loss, hasGain, unclassified };
+}
+
+test("RULES-06 (Phase 75 standing guard, plan 75-08): an engine-scale sweep — every trapSprung's dmg equals the hp it removed, a trap death only happens at or under that dmg, and every checkable loss-only action's narrated total matches its real hp change", () => {
+  const t0 = Date.now();
+  let trapSprungCount = 0;
+  let checkedActions = 0;
+  let skippedActions = 0;
+
+  for (let seed = 1; seed <= SWEEP_SEEDS; seed++) {
+    // The SAME newRun call playRun makes internally (RUN_FLAGS, no force) —
+    // pure/deterministic, so this read of the hero's OWN starting hp (before
+    // policyRng ever advances) matches playRun's own first action's before-
+    // state exactly.
+    let hpBefore = newRun(seed, [], { startDepth: SWEEP_START_DEPTH, ...RUN_FLAGS }).c.wp;
+
+    playRun(seed, { startDepth: SWEEP_START_DEPTH, maxActions: SWEEP_MAX_ACTIONS }, (events, state) => {
+      const hpAfter = state.c.wp;
+      const actualDelta = hpAfter - hpBefore;
+      const { loss, hasGain, unclassified } = narratedHeroLossDelta(events);
+
+      for (const e of events) {
+        if (e.type !== "trapSprung") continue;
+        trapSprungCount++;
+        // A trapSprung is ALWAYS the event that fires die("trap") on lethal
+        // (engine/encounters.js#springTrap). When it is the ONLY hp-loss
+        // event this action (no co-occurring hazard, no gain, nothing
+        // unclassified), the hero's hp must drop by EXACTLY its own dmg
+        // (clamped at 0, never negative), and a death this action must
+        // only happen when hpBefore was at most dmg.
+        if (!unclassified && !hasGain && loss === e.dmg) {
+          assert.equal(hpAfter, Math.max(0, hpBefore - e.dmg), `seed ${seed}: trapSprung dmg ${e.dmg} must remove exactly that much hp from ${hpBefore} (got ${hpAfter})`);
+          if (hpAfter <= 0) {
+            assert.ok(hpBefore <= e.dmg, `seed ${seed}: a trap death must only happen when hp-before (${hpBefore}) was at most its dmg (${e.dmg})`);
+          }
+        }
+      }
+
+      if (unclassified || hasGain) {
+        skippedActions++;
+      } else if (loss > 0 || actualDelta !== 0) {
+        checkedActions++;
+        if (state.dead) {
+          // death.js#die() clamps c.wp to exactly 0 regardless of overkill —
+          // an overkill blow's narrated loss legitimately reads LARGER than
+          // the clamped actual change (75-01's own (ii) count, "explained,
+          // not a bug"); assert the clamp landed and the narrated loss was
+          // at least enough to be lethal, not a strict equality.
+          assert.equal(hpAfter, 0, `seed ${seed}: a dead hero's c.wp must clamp to exactly 0`);
+          assert.ok(hpBefore - loss <= 0, `seed ${seed}: a lethal action's narrated loss (${loss}) must be sufficient to explain the death from ${hpBefore} hp`);
+        } else {
+          assert.equal(actualDelta, -loss, `seed ${seed}: the hp change (${actualDelta}) must equal the narrated loss (-${loss})`);
+        }
+      }
+
+      hpBefore = hpAfter;
+    });
+  }
+
+  assert.ok(trapSprungCount >= 20, `sweep must observe at least 20 trapSprung events to be non-vacuous — saw ${trapSprungCount}`);
+  assert.ok(checkedActions > 0, "sweep must actually check at least one action's hp accounting, not skip everything");
+  assert.ok(skippedActions >= 0, "sanity: skippedActions is a non-negative tally");
+  assert.ok(Date.now() - t0 < 60000, `sweep must stay under this plan's own 60s budget — took ${Date.now() - t0}ms`);
 });

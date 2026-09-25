@@ -1,8 +1,8 @@
 ---
-status: root_cause_found
+status: resolved
 trigger: "DATA_START My Elven Ninja walked into a trap with 21 hitpoints to spare, Oracle shows I took -1 hitpoint, but I died. So, -1 hp took 21 hitpoints in actuality. / I was only floor 2 for the trap, btw DATA_END"
 created: 2026-09-22T23:25:00Z
-updated: 2026-09-25T00:00:00Z
+updated: 2026-09-25T12:00:00Z
 ---
 
 ## Symptoms
@@ -341,3 +341,80 @@ computing a parallel true-cumulative array off the full `events` array
 rather than the folded `lineEvents` subset. This is NOT required — the
 Verdict already establishes this window is never actionable — but would
 close the cosmetic gap entirely if 75-08 has budget for it.
+
+### Resolution (Phase 75)
+
+**Root cause:** the SAME cause the 2026-09-22 session found and fixed —
+`src/browser/combatBeat.js#planBeat`'s `heroHp` array, before that fix,
+under-counted a K-of-M multi-swing fold's true damage on an ending round's
+LAST line (the one frame guaranteed on screen the instant before a beat
+settles), letting the YOUR LOT hero card show far more hp than
+`state.c.wp` actually held, right before a subsequent, correctly-narrated
+hazard (a small trap) could then be genuinely fatal against the true, much
+lower hp. 75-01's Phase 75 session (re-verification, a 500-seed/197k-action
+engine-scale reproduction, and an 8-path shell-level audit) confirmed this
+cause fully explains the reported symptom's shape and found **no new,
+different root cause** on current master (Phases 73/74 did not reopen the
+gap). Per the Verdict, **no production code change was required** — the
+2026-09-22 fix (`src/browser/combatBeat.js`, already shipped) still holds.
+
+**Fix:** none (no production file touched this plan — `engine/`, `content/`,
+`src/` and `mazeworld.html` are byte-identical to this plan's own dispatch
+base). 75-08's job, per 75-01's own Fix inputs, was to make the two standing
+guards CONTEXT.md names PERMANENT and MECHANICAL rather than true-only-today:
+
+1. **Every visible HP readout equals `state.c.wp` wherever the player can
+   act.** Promoted into `test/unit/hp-surface-guard.test.js` (new file): a
+   real `createBeatRunner` driven against the real classic shell
+   (`test/unit/harness/shellSandbox.js`), reproducing 75-01's own
+   "75-01-shell-audit.mjs" scratchpad technique, across all eight named
+   beat-ending paths (natural settle, hurry, tab switch, flee, a kill, a
+   superseded dispatch, the over-panel dismiss, reduced motion), under a
+   deliberately worst-case two-swing-foe fold AND a three-foe-landing
+   collapse (narrationLines.js#enemyRound's other fold shape) — 9 passing
+   cases, zero mismatches.
+2. **No hp loss goes un-narrated or mis-narrated.** Promoted into a new
+   engine-scale sweep in `test/unit/trap-death-repro.test.js`: the tuning
+   bot's own `decideAction`/`applyAction` policy, driven from
+   `newRun(seed, [], { startDepth: 2 })` over 45 seeds / up to 300 actions
+   each, asserting (a) every `trapSprung`'s `dmg` removes exactly that much
+   hp when it is the round's only hp-affecting event, (b) a trap death only
+   happens when hp-before was at most that `dmg`, and (c) every checkable
+   loss-only action's narrated total matches its real hp change (a curated
+   registry of every engine site that both mutates the hero's own `c.wp`
+   downward and narrates a matching numeric field; a GAIN-carrying or
+   otherwise-unclassified action is excluded from the strict check, tallied
+   as `skippedActions`, never silently mis-summed — see the test file's own
+   `LOSS_FIELDS`/`GAIN_TYPES`/`NEUTRAL_TYPES` doc comments for the full
+   reasoning, including why gain-side clamping is out of this guard's own
+   risk surface). Observed 50 real `trapSprung` events (>=20 required) and
+   377 checked actions, zero mismatches.
+
+**Files changed:** `test/unit/trap-death-repro.test.js` (2 new RULES-06
+boundary cases — a hero at dmg+1 hp survives with exactly 1 hp, a hero at
+exactly dmg hp dies with cause "trap" and the same dmg printed — plus the
+engine-scale sweep above); `test/unit/hp-surface-guard.test.js` (new — the
+8-path shell audit plus the three-foe-landing fold case);
+`.planning/debug/trap-death-21hp-oracle-minus1.md` (this closing section).
+
+**Verification:**
+- `node --test test/unit/trap-death-repro.test.js` — 7/7 pass (the sweep
+  runs in ~13-14s, well under this plan's own 60s budget).
+- `node --test test/unit/hp-surface-guard.test.js` — 9/9 pass.
+- `node --test test/unit/combat-beat.test.js test/unit/combat-beat-shell.test.js "test/parity/**/*.test.js"` —
+  all green (31 combat-beat, 9 combat-beat-shell, 54 parity).
+- `npm test` — 6088/6088 pass, 0 failures, 0 skipped.
+- `git diff --stat <this-plan's-dispatch-base>` touches only the two test
+  files above plus this debug doc; `git diff --quiet <base> -- test/parity/fixtures test/parity/prototype-master.js.txt`
+  exits 0 (no parity fixture moved).
+
+**Standing guards:** both now run on every `npm test`, so a future
+regression on any of the eight named HP-readout paths, or a future engine
+hp-loss site added without a matching narrated field, is caught by a test,
+not a field report.
+
+**Human check for the milestone device round (Pixel 7):** at milestone
+close, confirm on a real device that a floor-2 trap at about 21 HP never
+kills on a "−1 HP" line, and that after a fight in which a foe swings
+twice, the YOUR LOT card and the top HP bar agree with each other (per this
+plan's own `<verification><human-check>`).
