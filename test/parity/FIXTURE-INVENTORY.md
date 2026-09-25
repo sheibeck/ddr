@@ -2836,3 +2836,118 @@ before editing, per the plan's own gate. No new event type is introduced
 `EVENT_NARRATION`/`LINE_FOR` coverage entry was needed beyond the wording
 update already required by the text fix itself.
 
+### Plan 05 — Fridgian frenzy's second swing (ROLL-01 (b), declared canon divergence): measured moved set (0)
+
+**The rule.** `engine/combat.js#playerStrike`'s canon hard-set frenzy-swing
+need (`need = a === 1 && R.frenzy ? 3 : toHit(state)`) is replaced with the
+hero's own normal to-hit narrowed by one face, floored at 1
+(`Math.max(1, toHit(state) - 1)`), and gated on a local `frenzyFired`
+boolean captured at the frenzy-trigger draw (F4, user ruling 2026-09-24,
+applied in the same edit) rather than the Fridgian race flag alone — a
+Fridgian's OTHER second attacks (Barbarian, haste, Ambidextrous, Last
+Stand) keep the normal to-hit. Every per-target rule already applied after
+the need line (dozing/stupid, `sp.toHit`, `sp.fast`, `sp.magicOnly`,
+Overhead Blow's `needShift`, Afraid, and — since it now reads
+`toHit(state)` instead of bypassing it — the dark cap) still applies, in
+the same order. Consequences: a Fighter's frenzy swing IMPROVES over canon
+(need 3 → 4 in the light), a Magic User's WORSENS (need 3 → 2); in the
+dark the frenzy swing can no longer beat the dark-capped normal swing (the
+old hard-set 3 ignored the cap entirely). Zero new rng draws, zero
+reordering of existing draws — only which need value the SAME already-drawn
+roll is compared against changes.
+
+**The predictor.** A scratch replay (`newRun` → `applyStartCombat`/
+`applyAction` per action, the same dispatch `test/parity/harness/
+comparables.js`/`divergence-records.test.js#replaySiteEvents` use, never a
+committed tool) over every COMBAT_FIXTURE and MAGIC_FIXTURE scenario on the
+Task-1-fixed engine, tallying `frenzy` events and, for each one, the very
+next `struck`/`strikeMissed` event in that action's own event list (swing
+2). The OLD canon need for every one of these rows is always the hard-set
+constant `3` (the pre-fix code read `a === 1 && R.frenzy`, true for every
+second swing that follows an actual frenzy trigger, race-gated only). A
+swing FLIPS exactly when `(roll <= 3) !== (roll's actual new-engine
+outcome)`.
+
+| Scenario (seed) | Frenzy events | Swing-2 rows | roll → oldNeed=3 / newNeed | old outcome (would-be) | new outcome (measured) | Flips? |
+|---|---|---|---|---|---|---|
+| `combat#win` (3) | 0 | — | — | — | — | — |
+| `combat#lose` (14) | 4 | 4 | 1 → 3/1 | would-hit | struck | no |
+| `combat#lose` (14) | " | " | 6 → 3/4 | would-miss | strikeMissed | no |
+| `combat#lose` (14) | " | " | 7 → 3/4 | would-miss | strikeMissed | no |
+| `combat#lose` (14) | " | " | 2 → 3/4 | would-hit | struck | no |
+| `combat#lose-apprentice` (127) | 0 | — | — | — | — | — |
+| `combat#lose-plain` (1119) | 0 | — | — | — | — | — |
+| `combat#flee` (17) | 0 | — | — | — | — | — |
+| `combat#parley` (303) | 0 | — | — | — | — | — |
+| `magic#cast-damage` (8) | 0 | — | — | — | — | — |
+| `magic#heal` (7) | 0 | — | — | — | — | — |
+| `magic#potion` (1) | 0 | — | — | — | — | — |
+| `magic#scroll` (7) | 0 | — | — | — | — | — |
+
+`combat#lose` (seed 14, the only Fridgian hero whose action script reaches
+a second strike — Fighter Soldier Fridgian, matching this plan's `<context>`
+interfaces note) is the sole exposed site: frenzy fires 4 times across its
+action script, and every one of the 4 resulting swing-2 rolls happens to
+land on the SAME side of both the old need (3) and the new, per-swing
+measured need (1 or 4 depending on which action) — none of the 4 flips
+hit↔miss. Every other combat/magic scenario's Fridgian either never draws
+the frenzy die reachably (`flee`, seed 17 — a Fridgian whose script never
+lands a strike) or is not a Fridgian at all. Predicted moved set: **zero**.
+
+**The live-scan results — measured, not assumed.**
+1. `node --test test/parity/*.test.js`: **47 tests, 47 pass, 0 fail** (unchanged from Plan 04's count).
+2. `node tools/initiative-fixture-scan.mjs | diff --strip-trailing-cr - tools/initiative-fixture-scan-output.txt`: empty.
+3. `node tools/worn-fixture-scan.mjs | diff --strip-trailing-cr - tools/worn-fixture-scan-output.txt`: empty.
+4. `git diff --stat <plan-base>..HEAD -- test/parity/fixtures/ tools/initiative-fixture-scan-output.txt tools/worn-fixture-scan-output.txt`: empty — no fixture or scan-output regeneration was needed, confirming the predictor's zero.
+5. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+
+#### Moved set — declared records
+
+**Empty — a measured zero, not an assumed one**, exactly like Plan 04's own
+zero above. No holder's `divergence.phase` gains a `+72` from this plan;
+`ROLL01_EXPECTED_HOLDERS` in `test/parity/divergence-records.test.js` stays
+`[]` after this plan (72-06/07 may still extend it with their own measured
+sets).
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+#### Draw-count pins
+
+One pin moved, live-measured (never hand-typed): `test/unit/
+foe-turn-draw-count.test.js`'s `FULL_FIGHTS` row for **seed 17/Beasts**
+(this is a DIFFERENT seed-17 replay than the `combat#flee` parity fixture
+above — this one is `runFullFight`'s own natural-resolution loop against a
+Fridgian hero via `newRun(17)` forced into a Beasts encounter, not the
+parity fixture's short scripted action list). The frenzy swing lands
+differently across the fight's full natural resolution (still "won"),
+resolving it in fewer rounds:
+
+| Pin | Old | New | Measured via |
+|---|---|---|---|
+| `FULL_FIGHTS` seed 17/Beasts `totalDraws` | 88 | 70 | `runFullFight(17, "Beasts")`, re-run live against the Task-1-fixed engine |
+| `FULL_FIGHTS` seed 17/Beasts `attacks` | 12 | 9 | same live run |
+| `FULL_FIGHTS` seed 17/Beasts `foeNames`/`outcome` | unchanged | unchanged | same live run — `["Viper","Shriek","Shriek"]`, `"won"` |
+
+Every other pin in that file — every Section 1/3/4/5/6 per-`foeTurn` pin,
+the `OPENER_DRAWS` table (opener-only draws happen entirely inside
+`startCombat`+`fight`, before any `playerStrike` call, so the frenzy edit
+cannot touch them), and the other six `FULL_FIGHTS` rows — is
+byte-identical (`git diff <plan-base>..HEAD -- test/unit/
+foe-turn-draw-count.test.js` touches only the one row's two numbers plus
+its own comment). `test/determinism/foe-abilities.test.js` (the other
+candidate this plan's own Task 1 named) is untouched: `node --test
+test/determinism/foe-abilities.test.js` is 13/13 green with zero pin edits
+— none of its fixed foe-ability fights carry a Fridgian hero.
+
+#### Byte-identical elsewhere
+
+`test/parity/harness/comparables.js` is untouched — the frenzy fix touches
+only need arithmetic already read by the existing `struck`/`strikeMissed`
+event shape (`need`, `roll`), no new field. `test/parity/
+prototype-master.js.txt` hash is unchanged
+(`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`) — the frozen prototype is never
+edited. No new event type is introduced, so no new `EVENT_NARRATION`/
+`LINE_FOR` coverage entry is needed.
+

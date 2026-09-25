@@ -409,6 +409,8 @@ The `## New findings` table above has four NEEDS-RULING rows: F1, F2, F3, F4 (F5
 
 Each finding's `## New findings` Proposed disposition row already reflects the ruling above (both were written from the same source, `72-RULINGS.md`); no further edit to that table is needed.
 
+**F4 applied (2026-09-24):** landed by 72-05 in the same edit as known fix (b) — `engine/combat.js#playerStrike` gates the narrowed frenzy need on a local `frenzyFired` boolean captured at the trigger draw, not the Fridgian race flag, so a Fridgian's non-frenzy second attack (Barbarian, haste, Ambidextrous, Last Stand) uses the normal to-hit; `test/unit/rollDirection.test.js`'s two frenzy rows are green.
+
 ## Skeleton shatter scope
 
 Per CONTEXT's Claude's Discretion for known fix (c) ("which to-hit rolls count as 'your dice' against a Skeleton"): **"your dice" means every drawn to-hit die aimed at a shatter-flagged foe (`sp.shatterOnBest`) whose strike LANDS** — the hero's weapon strikes (including ability strikes and auto-hit openers, because the die is still drawn even though the comparison is bypassed), party-member strikes, summoned and legacy ally strikes, and hero and member thrown attack spells (`castSpell`/`allyCast`).

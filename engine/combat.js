@@ -594,8 +594,10 @@ export function playerStrike(state, rng, events = []) {
   // never a corpse) — no corpse lookup, no whiff roll. This REMOVES one
   // rng.d(10) draw whenever a Fridgian frenzies with a dead foe present; the
   // sole parity consequence is the declared combat/lose (seed 14) divergence.
+  let frenzyFired = false;
   if (R.frenzy && rng.d(8) <= 5) {
     attacks = Math.max(attacks, 2);
+    frenzyFired = true;
     events.push({ type: "frenzy" });
   }
 
@@ -608,7 +610,18 @@ export function playerStrike(state, rng, events = []) {
     // carrier and is not fixture-exposed, so every other strike draws
     // exactly one die, unchanged.
     if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(dieN));
-    let need = a === 1 && R.frenzy ? 3 : toHit(state);
+    // DELIBERATE RULES CHANGE (Phase 72, ROLL-01 (b), user ruling
+    // 2026-09-24): the 1994 rules hard-set the frenzy swing's need to a
+    // constant that ignored the dark cap and dazed. The swing is now the
+    // hero's normal to-hit narrowed by one face (floor 1): a fighter's
+    // frenzy swing improves on canon, a magic user's worsens. Zero rng
+    // change. Declared in test/parity/FIXTURE-INVENTORY.md (Phase 72, Plan
+    // 05). F4 (user ruling 2026-09-24, applied here in the same edit): the
+    // narrowed need applies ONLY to the actual frenzy swing — `frenzyFired`
+    // this call — never to a Fridgian's other second attack (Barbarian
+    // extra attack, haste, Ambidextrous, Last Stand), which keeps the
+    // normal to-hit.
+    let need = a === 1 && frenzyFired ? Math.max(1, toHit(state) - 1) : toHit(state);
     // Phase 40 (SPELL-01, Stupidity): a stupid foe is hit exactly like a
     // dozing one — it never reacts, so the same need-5 floor applies.
     if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
