@@ -727,6 +727,42 @@ Plans:
 - **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
 - **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. The tier thresholds are decided at planning.
 
+- **Fallen Joiners (tiered, user):** X Joiners have died in your service, counted across all delves. Name idea: *Human Shields*.
+- **Fallen summons (tiered, user):** X of your summons have died. Name idea: *Disposable Help*.
+- **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
+
+**Brainstorm (Claude, 2026-09-25, for the milestone discussion; every one keys off an engine event or death cause that already exists):**
+
+- **Death-cause collection.** The death causes are the `content/epitaphs.js` keys: combat, starve, trap, fall, gorge, teleport, maze, quake, potion, insanity, poison, backfire, summon, entombed.
+  - *Well-Rounded:* die of every cause.
+  - Hidden one-offs, each with a hint breadcrumb:
+    - *Just One More Bite* (gorge)
+    - *Friendly Fire* (your own spell backfires; also `backfireSelfDamage`)
+    - *Read the Fine Print* (killed by your own summon; also `summonBackfired`)
+    - *Buried Talent* (entombed)
+    - *Poor Aim* (teleported into trouble)
+- **Dying with regrets:**
+  - *You Can't Take It With You:* die with X coin unspent.
+  - *Saving It For Later:* die holding an undrunk healing potion.
+  - *Speedrun:* die within your first N steps.
+- **Tiered event counters:**
+  - *Tactical Retreat Enthusiast:* flee X times (`fled`).
+  - *Tripwire Connoisseur:* spring X traps (`trapSprung`).
+  - *Bomb Squad:* disarm X traps (`trapDisarmed`).
+  - *Get Off My Lawn:* turn X Walking Dead (`walkingDeadTurned`).
+  - *Cartographer:* fully map X floors (`floorMapped`).
+- **Social disasters:**
+  - *Diplomatic Incident:* insult a foe in parley (`parleyInsulted`).
+  - *Riveting Company:* a foe gets bored and leaves (`foeBored`).
+  - *It's Not You, It's Me:* dismiss a Joiner (`joinerDismissed`).
+  - Something for `joinerMurdered`, once planning confirms what that event covers.
+- **Collectors:**
+  - *Collected Neuroses:* acquire X distinct phobias (`phobiaAcquired`).
+  - *Fashion Victim:* lose X armor pieces to wear (`armorDestroyed`).
+  - *Retail Therapy:* spend X coin at the store, lifetime.
+- **Faerie roulette:** *Fairy Godmother* (a `faerieBoon`) and *Fairy Godmugger* (a `faerieBane`).
+- **Clutch:** *Just a Flesh Wound:* win a fight on 1 HP.
+
 **Design principle: tiers and breadcrumbs (user, 2026-09-25):**
 
 - **Tier the counters.** Counting achievements come in escalating tiers (deaths 50 / 100 / 200 / 500). Apply the same idea to kill counts and similar tracks, so there is always a next rung in sight.
