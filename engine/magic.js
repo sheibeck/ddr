@@ -22,7 +22,7 @@
 import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage } from "./derived.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -506,6 +506,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       const roll = rng.d(dieN);
       events.push({ type: "spellThrown", spell: sp.n, target: t.name, roll, need: target, bonus, ...(afraidMods.length ? { needMods: afraidMods } : {}) });
       if (roll - bonus <= target) {
+        // Phase 72 (ROLL-01 (c)): a landed hero thrown attack spell on its
+        // die's best face shatters a shatter-flagged foe (the Skeleton)
+        // outright — skip the spell-damage roll.
+        if (shatterIfBest(state, t, roll, dieN, "you", rng, events, { spell: sp.n })) continue;
         // p.26: area, duration and effect are multiplied by (caster level − spell level)
         const mult = Math.max(1, c.level - sp.lvl);
         // Phase 31 Afraid: halves the hero's thrown-spell damage (post-roll

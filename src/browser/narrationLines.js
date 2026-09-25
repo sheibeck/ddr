@@ -1161,6 +1161,14 @@ export const LINE_FOR = {
   },
   foeRevived: (e) => ({ text: `${e?.name ?? "It"} gets back up.`, tone: "dodge", priority: PRIORITY.them }),
   foeKilled: (e) => ({ text: `${e?.name ?? "It"} falls (+${e?.spGained ?? 0} XP).`, tone: "hit", priority: PRIORITY.you }),
+  // Phase 72 (ROLL-01 (c)): a landed best-face strike shatters a
+  // shatter-flagged foe (the Skeleton) outright, both lives at once. Safe on
+  // a bare `{ type }` payload (the coverage guard).
+  foeShattered: (e) => ({
+    text: `${e?.by === "you" ? "Your" : `${e?.by ?? "Something"}'s`} best roll lands clean. ${e?.target ?? "It"} comes apart, both lives at once, and nobody is sweeping up.`,
+    tone: "hit",
+    priority: PRIORITY.feature,
+  }),
   cooked: (e) => ({
     text: (e?.wp ?? 0) > 0 ? `Cooked: +${e.wp} hp, +${e?.rations ?? 1} ration.` : `Salvaged +${e?.rations ?? 1} ration.`,
     tone: "hit",

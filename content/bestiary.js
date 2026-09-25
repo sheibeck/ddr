@@ -121,7 +121,8 @@ export const BESTIARY = {
       { n: "Dog Face", sz: "S", i: 8, wp: 6, sp: { dmg: { n: 1, sides: 6, bonus: 0 }, note: "packs; the leader carries a d8 sword" } },
       { n: "Goblin", sz: "S", i: 5, wp: 4, sp: { note: "never retreats, and carries wilmst" } },
       { n: "Hobgoblin", sz: "S", i: 7, wp: 5, sp: { dmg: { n: 1, sides: 6, bonus: 1 }, loot: true, note: "always has something magical in its lair" } },
-      { n: "M&M", sz: "S", i: 6, wp: 3, sp: { critOn: 1, note: "deaf; criticals on a 1" } },
+      // DELIBERATE RULES CHANGE (Phase 72, ROLL-01 (c), user ruling 2026-09-24): every foe is already crittable on a best roll, so the claim promised nothing special; dropped.
+      { n: "M&M", sz: "S", i: 6, wp: 3, sp: { note: "deaf" } },
       { n: "Pogo", sz: "S", i: 1, wp: 4, sp: { dmg: { n: 1, sides: 6, bonus: 4 }, fast: true, note: "+4 damage, and fast — strike one higher" } },
     ],
     [
@@ -148,7 +149,8 @@ export const BESTIARY = {
     [{ n: "Philly", sz: "H", i: 3, wp: 5, sp: { twice: true, slow: true, dmg: { n: 1, sides: 4, bonus: 2 }, note: "you have to kill it twice" } }],
     [
       { n: "Google", sz: "H", i: 2, wp: 19, sp: { ar: 15, dmg: { n: 1, sides: 8, bonus: 0 }, note: "rusted plate and a long sword" } },
-      { n: "Skeleton", sz: "H", i: 2, wp: 6, sp: { twice: true, toHit: 4, critOn: 1, note: "kill it twice; a 1 shatters it" } },
+      // DELIBERATE RULES CHANGE (Phase 72, ROLL-01 (c), user ruling 2026-09-24): the shatter is now wired via sp.shatterOnBest, not just a flavor-only note.
+      { n: "Skeleton", sz: "H", i: 2, wp: 6, sp: { twice: true, toHit: 4, shatterOnBest: true, note: "kill it twice; your best roll shatters it" } },
     ],
     [
       { n: "Ghoul", sz: "H", i: 2, wp: 15, sp: { raise: true, dmg: { n: 1, sides: 6, bonus: 0 }, note: "raises the ghouls you have already killed" } },

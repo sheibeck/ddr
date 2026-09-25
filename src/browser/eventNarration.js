@@ -411,6 +411,12 @@ export const EVENT_NARRATION = {
   },
   foeRevived: (e) => `<span class="miss">${e.name ?? "It"} gets back up.</span>`,
   foeKilled: (e) => `<span class="hit">${e.name ?? "It"} falls.</span> +<span class="roll">${e.spGained ?? 0}</span> XP.`,
+  // Phase 72 (ROLL-01 (c)): a landed best-face strike shatters a
+  // shatter-flagged foe outright, both lives at once — no damage roll, no
+  // XP-bearing foeKilled reprise needed here (foeKilled still narrates the
+  // kill separately). Safe on a bare `{ type }` payload (the coverage guard).
+  foeShattered: (e) =>
+    `<span class="hit">${e.by === "you" ? "Your" : `${e.by ?? "Something"}'s`} best roll lands clean. ${e.target ?? "It"} comes apart, both lives at once, and nobody is sweeping up.</span>`,
   cooked: (e) =>
     (e.wp ?? 0) > 0
       ? `You cook what is left. <span class="hit">+${e.wp} hp, +${e.rations ?? 1} ration.</span>`

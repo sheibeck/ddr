@@ -601,13 +601,21 @@ test("STORE-02 (Phase 61): the holders declaring Phase 61 are exactly the measur
 // swing-2 rolls land on the same side of both the old hard-set need (3)
 // and the new measured need, so no hit/miss outcome flips (see
 // test/parity/FIXTURE-INVENTORY.md's Plan 05 section for the full
-// predictor table and live-scan confirmation).
+// predictor table and live-scan confirmation). 72-06 (the Skeleton shatter,
+// ROLL-01 (c)) also measures zero — test/parity/FIXTURE-INVENTORY.md's
+// "Parity-exposed bestiary surface" is exactly Beasts lvl 1 (Bat/Rat,
+// Shriek, Viper) and Humans lvl 1 (Ned): no replay site ever meets a
+// Skeleton or an M&M, and none dispatches a Vampire summon (the one foe
+// ability that could ever put a Skeleton on the board), so the new
+// `shatterOnBest`-gated code path this plan adds is provably unreachable by
+// every one of the 31 replay sites (see FIXTURE-INVENTORY.md's Plan 06
+// section for the full predictor and live-scan confirmation).
 const ROLL01_EXPECTED_HOLDERS = [];
 
-test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measured moved set; no replay site reaches the member branch", () => {
-  // Part (a): the declared set — legitimately empty for 72-04, exactly like
-  // JOIN-02's own empty-set precedent above. 72-05/06/07 extend
-  // ROLL01_EXPECTED_HOLDERS with their own measured sets as they land.
+test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measured moved set; no replay site reaches the member branch or shatters a foe", () => {
+  // Part (a): the declared set — legitimately empty for 72-04/05/06, exactly
+  // like JOIN-02's own empty-set precedent above. 72-07 extends
+  // ROLL01_EXPECTED_HOLDERS with its own measured set as it lands.
   const declared = new Set(
     RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("72")).map(
       ({ holderId }) => holderId,
@@ -620,13 +628,19 @@ test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measure
   // `member` field. Both event shapes only ever originate from foeTurn's
   // member branch (engine/combat.js), which only ever runs when
   // pickFoeTarget finds a live party member — no fixture ever carries one.
+  //
+  // Part (c) (72-06, ROLL-01 (c)): the same 31-site replay also asserts zero
+  // `foeShattered` events — no replay site ever meets a shatter-flagged foe
+  // (the Skeleton), so `shatterIfBest` never fires against any fixture.
   let totalSites = 0;
   let memberStruckCount = 0;
   let memberMissedCount = 0;
+  let foeShatteredCount = 0;
 
   const tally = (events) => {
     memberStruckCount += events.filter((e) => e.type === "memberStruck").length;
     memberMissedCount += events.filter((e) => e.type === "foeMissed" && e.member).length;
+    foeShatteredCount += events.filter((e) => e.type === "foeShattered").length;
   };
 
   for (const seed of CHARGEN_FIXTURE.seeds) {
@@ -658,4 +672,5 @@ test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measure
   assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
   assert.equal(memberStruckCount, 0, "expected zero memberStruck events across every replay site (no fixture carries a party)");
   assert.equal(memberMissedCount, 0, "expected zero member-targeted foeMissed events across every replay site");
+  assert.equal(foeShatteredCount, 0, "expected zero foeShattered events across every replay site (no fixture ever meets a shatter-flagged foe)");
 });
