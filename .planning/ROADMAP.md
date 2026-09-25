@@ -170,7 +170,7 @@ Plans:
 
 **Goal**: Character creation, HP growth, spell legality, initiative, traps, ailments and armor destruction follow the rules the game claims, written in the roll-high convention from the start.
 **Depends on**: Phase 73 (written directly on top of the roll-high mirror so nothing here needs rewriting later)
-**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08, RULES-12, RULES-13
+**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08, RULES-12, RULES-13, RULES-14
 **Success Criteria** (what must be TRUE):
 
   1. Pulling multiple Table-4 "+HP" dots grows a character's max HP linearly, not compounding (×1.6 each time), and the toll row takes its share from that same non-inflated pool.
@@ -182,6 +182,8 @@ Plans:
   6. When a wandering monster interrupts a step onto an icon, the icon resolves after the fight if the hero is still on it.
 
   7. A Magic User can wield a magic staff as a d8 melee weapon, and its power works only while it is wielded.
+
+  8. Bubble reflects the next attack back at the attacker and pops, leaving a small soak pool for that round; it is no longer a bigger Shield.
 
 **Plans**: TBD
 **UI hint**: yes

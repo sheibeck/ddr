@@ -85,6 +85,14 @@ Character creation, HP growth, spell legality, initiative, traps, ailments and a
 - Measure, declare and regenerate the fixtures where a staff was used from the bag. Old saves keep bag staves in the bag, with no auto-equip.
 - Update the Gear tab, item text and docs.
 
+### Bubble rework — RULES-14 (user, 2026-09-25; todo `2026-09-25-bubble-reflects-the-next-attack-with-a-small-pool`)
+- Bubble (`content/spells.js:109`, today a 100 hp / 12-round reflecting ward, a strictly bigger Shield) becomes a ONE-SHOT MIRROR:
+  - the NEXT blow that would land on the caster is fully reflected at the attacker, and the caster takes none;
+  - then it pops, leaving a small soak pool (recommend 25 hp; set it against Shield's 50 and the readout) for the rest of that round;
+  - no 12-round duration. Shield is unchanged.
+- A declared canon-era rules change: measure, declare and regenerate the fixtures where Bubble was cast, and take a bot readout. Update the spell text, `docs/SPELLS.md` and the Grimoire.
+- Check the shared ward code with Shield, member casts, a fumbled Bubble scroll landing on a foe (RULES-10), and ward-ignoring foe abilities.
+
 ### Engine gate (standing)
 - Pure and deterministic. New rolls come from a derived stream.
 - Measure moved fixtures, declare each in `test/parity/FIXTURE-INVENTORY.md`, and regenerate only those. Carve new serialized fields out of the three `*Comparable()` functions.

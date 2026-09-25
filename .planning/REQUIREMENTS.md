@@ -23,6 +23,7 @@
 - [ ] **RULES-11**: Hero size matters (user, 2026-09-25). Race sets the starting size (Elven and Dwarven Small, Troll Large, the rest Human-size, from the existing race data). Items and potions step it: the Gauntlet of the Giant and Enlarge are each exactly +1 size step, and Enlarge's separate +4 damage is removed. Each step up gives +2 damage and makes foes hit you one face more easily; each step down gives -2 damage and makes foes need one face more. Rules that care about a creature being big or small read the hero's size too. Item text states exactly what a step does, with no ceiling promise. (todo 2026-09-25 hero-size-means-nothing-beyond-damage)
 - [ ] **RULES-12**: When a wandering monster interrupts the step that lands on an icon (a dot, trap, chest, teleporter or other feature), the icon resolves after the fight if the hero is still standing on it, instead of being left unresolved under the hero. (user, 2026-09-25; todo 2026-09-25 resolve-the-tile-after-a-wanderer)
 - [ ] **RULES-13**: A magic staff is a Magic User's equippable melee weapon (weapon slot, d8 base damage), and its charged power works ONLY while it is wielded; a staff in the bag is inert. This reverses the 2026-09-18 "usable but not equipable" staff amendment. Old saves keep bag staves as bag staves. (user, 2026-09-25; todo 2026-09-25 magic-staff-is-an-equippable-d8-melee-weapon)
+- [ ] **RULES-14**: Bubble is no longer a bigger Shield. It fully reflects the NEXT blow that would hit the caster back at the attacker (the caster takes none), then pops, leaving a small soak pool (about 25 hp; final value set in plan) for the rest of that round. Shield keeps its 50 hp / 5 rounds. (user, 2026-09-25; todo 2026-09-25 bubble-reflects-the-next-attack)
 
 ### Roll direction & modifier honesty (ROLL) — user, 2026-09-24
 
@@ -143,6 +144,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | RULES-08 | Phase 75 | Pending |
 | RULES-12 | Phase 75 | Pending |
 | RULES-13 | Phase 75 | Pending |
+| RULES-14 | Phase 75 | Pending |
 | RULES-09 | Phase 75.1 | Pending |
 | RULES-10 | Phase 75.1 | Pending |
 | RULES-11 | Phase 75.2 | Pending |
