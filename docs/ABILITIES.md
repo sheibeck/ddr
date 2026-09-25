@@ -56,7 +56,7 @@ cooldown); `target` is `foe` / `self` / `foes`; `tag` is `opener` / `damage`
 | silentStep | Silent Step | Thief | table | 4 | foe | opener | nobody heard that: your next attack is an automatic critical, any round |
 | feint | Feint | Thief | table | 3 | foe | damage | look left, stab right: this strike cannot miss and adds your level |
 | dirtyTrick | Dirty Trick | Thief | table | 4 | foe | opener | sand, thumb, elbow: the target is blinded for two rounds |
-| smoke | Smoke | Thief | table | fight | self | defensive | gone: for two rounds foes need a natural 1 to find you, and a flee during it just works |
+| smoke | Smoke | Thief | table | fight | self | defensive | gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works |
 | cutpurse | Cutpurse | Thief | pool | fight | foe | damage | lift d10 × level gold off the target mid-fight; it has other problems |
 | poisonedEdge | Poisoned Edge | Thief | pool | 5 | foe | damage | the blade weeps: d4 a round to the target for three rounds |
 | hamstring | Hamstring | Thief | pool | fight | foe | opener | cut the tendon: the target's blows do half damage for the rest of the fight |

@@ -50,6 +50,6 @@ export const THIEF_SKILLS = {
   "Heft": { cost: 5, txt: "+2 damage, mail armour, half upkeep" },
   "Acute Hearing": { cost: 5, txt: "never surprised; 3 to hit the unseen" },
   "Dirty Trick": { cost: 3, active: "dirtyTrick", txt: "sand, thumb, elbow: the target is blinded for two rounds" },
-  "Smoke": { cost: 4, active: "smoke", txt: "gone: for two rounds foes need a natural 1 to find you, and a flee during it just works" },
+  "Smoke": { cost: 4, active: "smoke", txt: "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works" },
   "Silent Step": { cost: 6, active: "silentStep", txt: "nobody heard that: your next attack is an automatic critical, any round" },
 };

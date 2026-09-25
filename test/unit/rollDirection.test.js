@@ -1024,7 +1024,6 @@ test("[foe-vs-member:hero-only-terms] the HERO's own Sidestep/Smoke leave a memb
 
 test(
   '[foe-vs-member:insult-after-member-smoke] the member\'s own Smoke plus insulted should give exactly two faces, like [foe-vs-hero:insult-after-smoke] — engine/combat.js#foeTurn member branch ~L2446-2467 applies insult BEFORE the member\'s own Sidestep/Smoke (72-04 moves it to the end)',
-  { todo: "fixed by 72-04" },
   () => {
     const build = () => {
       const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());

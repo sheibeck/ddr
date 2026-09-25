@@ -19,6 +19,8 @@ import { makeRng } from "../../engine/rng.js";
 import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js";
 import { RACES, ENC_TYPES } from "../../content/index.js";
 import { setIdentityDials } from "./harness/identityDials.js";
+import { startEffect } from "../../engine/effects.js";
+import { faceOdds, heroState, withMember, inCombat, foeFrom } from "./harness/rollOdds.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
 // this file's own pins are canon-mechanic numbers written before the fit
@@ -386,6 +388,52 @@ test("PARLEY-02 / D-06 / D-20: parleyInsulted widens the MEMBER branch mNeed by 
   assert.equal(struck.dmg, 4);
   assert.equal(insultedAlly.wp, 8);
   assert.equal(insulted.c.wp, 55, "hero untouched");
+});
+
+// --- Test 5b: Phase 72 ROLL-01 (a) — the insult lands AFTER the member's own Smoke --
+
+test("Phase 72 ROLL-01 (a): the member branch applies the insult after the member's own Smoke", () => {
+  // A member with a live Smoke (overrides mNeed to 1) and a live Taunt (a
+  // zero-draw deterministic target, per pickFoeTarget's taunter branch), plus
+  // an insulted foe. Smoke, then insulted last: mNeed = 1 + 1 = 2.
+  const state = fixedState({ party: [fixedMember({ wp: 12 })] });
+  const ally = fixedAlly({ wp: 12, maxWP: 20 });
+  state.combat = fixedCombat([fixedFoe({ lvl: 1, wp: 30 })], { allies: [ally], parleyInsulted: true });
+  startEffect(state.party[0], "ability:smoke", { rounds: 2 });
+  startEffect(state.party[0], "ability:taunt", { rounds: 1 });
+
+  const events = foeTurn(state, fakeRng([2, 3]), []);
+  const struck = events.find((e) => e.type === "memberStruck");
+  assert.ok(struck, "Smoke (need 1) + insulted (+1) = need 2, so a roll of 2 lands");
+  assert.equal(struck.need, 2, "1 (Smoke override) + 1 (insulted)");
+  assert.ok(struck.needMods && struck.needMods.length >= 2, "needMods carries both Smoke and insulted");
+  const names = struck.needMods.map((m) => m.name);
+  assert.equal(names[names.length - 1], "insulted", "insulted is the LAST need term");
+  const smokeIdx = names.indexOf("Smoke");
+  assert.ok(smokeIdx >= 0 && smokeIdx < names.length - 1, "Smoke precedes insulted");
+
+  // Through the odds harness: a Smoked, insulted member is found on exactly
+  // two faces of the foe's die (it was one before the fix).
+  const build = () => {
+    const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+    const idx = withMember(s, { cls: "Fighter", sub: "Guard", race: "Human" });
+    const sheet = s.party[idx];
+    startEffect(sheet, "ability:smoke", { rounds: 2 });
+    startEffect(sheet, "ability:taunt", { rounds: 1 });
+    inCombat(s, [foeFrom("Humans", 1, "Ned")], {
+      allies: [{ partyIdx: idx, name: sheet.name, lvl: sheet.level ?? 1, sub: sheet.sub, wp: sheet.wp, maxWP: sheet.maxWP }],
+      parleyInsulted: true,
+    });
+    return s;
+  };
+  const foeHitsMember = (s, rng) => {
+    const ev = [];
+    foeTurn(s, rng, ev);
+    const miss = ev.find((e) => e.type === "foeMissed" && e.member);
+    return !miss;
+  };
+  const result = faceOdds((rng) => foeHitsMember(build(), rng), { label: "parley-smoke-insult" });
+  assert.equal(result.wins, 2, "insulted-plus-member-smoked must win on exactly two faces");
 });
 
 // --- Test 6: a failed parley's insult persists every round and dies with combat --
