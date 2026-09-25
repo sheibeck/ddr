@@ -586,3 +586,69 @@ test("STORE-02 (Phase 61): the holders declaring Phase 61 are exactly the measur
   }
   assert.equal(otherPurchaseBaggedCount, 0, "expected zero purchaseBagged events outside the economy script");
 });
+
+// Phase 72 (ROLL-01): the roll-direction sign audit's known fixes. Each
+// fixing plan (72-04, 72-05, 72-06, 72-07) measures its OWN moved set and
+// extends this constant; 72-04 (Thief evasion sign + the member-branch
+// insult reorder) measures zero — evasion is 0 at identity everywhere, and
+// no replay site's `state.party`/`combat.allies` is ever populated (the
+// JOIN-02 guard above already proves no site ever meets a Joiner, and none
+// of the six fixture files hand-builds a party either), so the member
+// branch this plan touches never runs against any of the 31 sites.
+const ROLL01_EXPECTED_HOLDERS = [];
+
+test("ROLL-01 (Phase 72): the holders declaring Phase 72 are exactly the measured moved set; no replay site reaches the member branch", () => {
+  // Part (a): the declared set — legitimately empty for 72-04, exactly like
+  // JOIN-02's own empty-set precedent above. 72-05/06/07 extend
+  // ROLL01_EXPECTED_HOLDERS with their own measured sets as they land.
+  const declared = new Set(
+    RECORDS.filter(({ kind, record }) => kind === "divergence" && String(record.phase ?? "").split("+").includes("72")).map(
+      ({ holderId }) => holderId,
+    ),
+  );
+  assert.deepStrictEqual([...declared].sort(), [...ROLL01_EXPECTED_HOLDERS].sort());
+
+  // Part (b): the positive proof — replay every one of the 31 replay sites
+  // and assert zero memberStruck events and zero foeMissed events carrying a
+  // `member` field. Both event shapes only ever originate from foeTurn's
+  // member branch (engine/combat.js), which only ever runs when
+  // pickFoeTarget finds a live party member — no fixture ever carries one.
+  let totalSites = 0;
+  let memberStruckCount = 0;
+  let memberMissedCount = 0;
+
+  const tally = (events) => {
+    memberStruckCount += events.filter((e) => e.type === "memberStruck").length;
+    memberMissedCount += events.filter((e) => e.type === "foeMissed" && e.member).length;
+  };
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    newRun(seed); // chargen never dispatches an action at all
+  }
+
+  totalSites++;
+  tally(replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions).events);
+
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions).events);
+  }
+
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions).events);
+  }
+
+  totalSites++;
+  tally(replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true }).events);
+
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions).events);
+  }
+
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+  assert.equal(memberStruckCount, 0, "expected zero memberStruck events across every replay site (no fixture carries a party)");
+  assert.equal(memberMissedCount, 0, "expected zero member-targeted foeMissed events across every replay site");
+});
