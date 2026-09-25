@@ -62,6 +62,14 @@ So Phase 78 depends on Phase 73/74 (it runs after them anyway, in numeric order)
 - **Defaults** (recommended, set by the orchestrator; the planner may refine): one step per press (no hold-to-repeat); the pad scales with the S/M/L text size; TalkBack labels like "Step north"; reduced motion honoured. The dead state, combat and open sheets disable the pad exactly as they disable map taps.
 - Presentation/shell only (the engine already takes one-step moves), so zero fixture moves.
 
+### Full-bag find card — HUD-09 (user, 2026-09-25; todo `2026-09-25-full-bag-find-card-hides-the-item-being-looted`)
+- With a full bag the find card lists every bag item as a drop choice. With a large bag this overflows the rail and pushes the found item off the top, and the map-side rail can't scroll (only `#mw-rail[data-over="combat"]` has overflow).
+- The fix:
+  - the found item (name, stats line, description) and TAKE / LEAVE stay pinned;
+  - the drop list is a bounded, scrollable region inside the card, with each row showing name plus the Gear-tab stat line;
+  - the same rule applies to any other card listing N bag items.
+- Pin it with a shell test at max bag size and text size L.
+
 ### Claude's Discretion
 - The card layout, the fade implementation (CSS or canvas), the mark's visual (within the parchment palette and PNG-icons canon), and the exact voice lines.
 - Plan split: the climb card (engine + UI), dead state + final sheet, settings (font + drag), stairs fade, hearing, band 1. Several of these are independent.

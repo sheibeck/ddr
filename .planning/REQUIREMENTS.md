@@ -87,6 +87,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [ ] **HUD-06**: A stairs descent fades to black under the stairs sound, then fades in on the new floor, and honours reduced motion. (todo 2026-09-24 stairs-descent-fades)
 - [ ] **HUD-07**: Acute Hearing gains "hear the next room": map squares next to the party that hold an encounter show a faint "something's there" mark before the party steps in. It replaces the dead "3 to hit the unseen" clause Phase 72 removes, the skill keeps "never surprised", and its description states the new ability. (user ruling 2026-09-24, Phase 72 finding F2)
 - [ ] **HUD-08**: A Movement setting chooses TAP TO MOVE (the default) or ARROWS. ARROWS shows a 4-way on-screen pad in the bottom-left or bottom-right of the map (a second setting). In arrow mode map taps never move the party, each press takes one step through the same step path, hardware arrow keys also step, and the map auto-scrolls treating the pad as an edge so the party is never hidden under it. (user, 2026-09-25; todo 2026-09-25 setting-tap-to-move-or-on-screen-arrow-pad)
+- [ ] **HUD-09**: With a full bag, the find card keeps the found item (name, stats, TAKE / LEAVE) pinned in view, and the list of bag items to drop scrolls inside the card, so a large bag never pushes the loot off-screen. (user, 2026-09-25; todo 2026-09-25 full-bag-find-card)
 
 ### Climbs & leaps (CLIMB) — user ruling 2026-09-24, option B
 
@@ -161,6 +162,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | HUD-06 | Phase 78 | Pending |
 | HUD-07 | Phase 78 | Pending |
 | HUD-08 | Phase 78 | Pending |
+| HUD-09 | Phase 78 | Pending |
 | CLIMB-01 | Phase 78 | Pending |
 | CLIMB-02 | Phase 78 | Pending |
 | BOARD-09 | Phase 81 | Complete |
