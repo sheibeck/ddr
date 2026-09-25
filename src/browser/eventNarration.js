@@ -58,7 +58,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // every event-driven roll line this plan converts (strikeMissed/struck; the
 // foe-side/thrown lines convert in 73-05/73-07) formats its range through
 // rangeText here, so no two surfaces ever write a range differently.
-import { rangeText } from "./rollRange.js";
+import { rangeText, rollVsText } from "./rollRange.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -837,7 +837,8 @@ export const EVENT_NARRATION = {
 
   /* ---------------- encounters.js ---------------- */
 
-  trapAvoided: (e) => `<span class="hit">You clock it a half-step early.</span> <span class="roll">${e.roll ?? "?"} vs ${e.need ?? "?"}.</span>`,
+  // Phase 73 (ROLL-05): the roll-high triple, via rollVsText.
+  trapAvoided: (e) => `<span class="hit">You clock it a half-step early.</span> <span class="roll">${rollVsText(e.roll, e.atLeast, e.dieN)}.</span>`,
   trapDisarmed: () => `<span class="hit">A Pilfer's hands already knew where not to put themselves.</span>`,
   trapDoubled: () => `<span class="hurt">Cat Burglar's luck holds — for the trap. It hits twice as hard.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -845,7 +846,8 @@ export const EVENT_NARRATION = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   trapPoisoned: () => `<span class="hurt">Trap: it leaves something behind that outlasts the bruise.</span>`,
   chestOpened: () => `<span class="hit">The box gives up its secrets.</span>`,
-  chestLockRolled: (e) => `<span class="roll">Lock: ${e.roll ?? "?"} vs ${e.need ?? "?"}.</span>`,
+  // Phase 73 (ROLL-05): only the drawn face is styled; the range reads plain.
+  chestLockRolled: (e) => `Lock: <span class="roll">${Number.isFinite(e.roll) ? e.roll : "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}.`,
   chestLocked: () => `<span class="miss">Not today. The lock wins this round.</span>`,
   scrollFound: () => `<span class="hit">A scroll, tucked in with the loot.</span>`,
   encounterRolled: (e) => `<span class="roll">Table ${e.table ?? "?"}, roll ${e.roll ?? "?"}:</span> The dice decide — ${e.result ?? "something"}.`,

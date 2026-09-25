@@ -294,10 +294,22 @@ test("audit pin: clampCarry caps c.rations at BAGS[c.bag].rations", () => {
 // block's rng.d(6) plus two now-gone comment lines that happened to contain
 // the string "rng." — re-verify against the live file if this ever moves
 // again rather than hand-adjusting).
-test("draw-count pin: engine/movement.js's rng.-bearing line count is unchanged by rations work (grep -c parity, 19 post-260918-w4n)", () => {
+//
+// Phase 73-09 (ROLL-05, deviation — this file is not in the plan's file
+// list, but its literal line-count pin moved again when the climb/leap
+// checks converted from inline `rng.d(10) + penalty + armorBulk(...)`
+// comparisons to `rollCheck(rng, 10, atLeastFor(...))` calls): re-measured
+// live at 18 — the climb/leap draws still fire (same count, same position,
+// per the plan's own byte-identical-outcomes guarantee), but the raw
+// `rng.d(10) + hPenalty` / `rng.d(10) + wPenalty` comparison lines that used
+// to contain the literal string "rng." twice on the SAME two lines are gone,
+// replaced by `rollCheck(rng, 10, ...)` calls whose own lines still contain
+// "rng." once each — net one fewer matching line. Re-verify against the
+// live file if this ever moves again rather than hand-adjusting.
+test("draw-count pin: engine/movement.js's rng.-bearing line count is unchanged by rations work (grep -c parity, 18 post-73-09)", () => {
   const src = fs.readFileSync(path.join(REPO_ROOT, "engine", "movement.js"), "utf8");
   const lineCount = src.split("\n").filter((l) => l.includes("rng.")).length;
-  assert.equal(lineCount, 19, "eatsFor/rationsEaten/wentHungry are all additive reads/pushes, never a new rng draw");
+  assert.equal(lineCount, 18, "eatsFor/rationsEaten/wentHungry are all additive reads/pushes, never a new rng draw");
 });
 
 // ─── narration (Task 2): exact Oracle strings, line texts, RATION_RULE_LINE ─

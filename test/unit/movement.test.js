@@ -825,7 +825,9 @@ test("move: dot/trap/chest feature tiles are consumed and dispatch to the real e
     open(state.floor.g, 5, 4, { feat: "trap" });
     const events = move(state, "N", fakeRng([5]), []);
     assert.equal(state.floor.g[4][5].feat, null, "trap is consumed");
-    assert.ok(events.some((e) => e.type === "trapAvoided" && e.roll === 5 && e.need === 5));
+    // Phase 73 (ROLL-05): nimble=5 -> atLeast = 20+1-5 = 16; raw 5 mirrors to
+    // roll = 20+1-5 = 16 (16 >= 16 avoids, matching the pre-mirror raw 5 <= nimble 5).
+    assert.ok(events.some((e) => e.type === "trapAvoided" && e.roll === 16 && e.atLeast === 16));
   }
   // chest: no Locks skill and no lockpicks -> tier 0 -> the bare d20 branch;
   // a roll of 9 (> 8) leaves it locked, so no further rolls are drawn.

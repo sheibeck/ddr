@@ -27,7 +27,7 @@
 // a function body invoked at runtime, never at module-evaluation time.
 
 import { skill, skillTier, canLearn, intelBonus, itemEffectActive } from "./derived.js";
-import { rollDice } from "./dice.js";
+import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, lootFor, classTrapAvoidFor, remapEncounterResult } from "./difficulty.js";
 import { checkLevel, rollCharacter, grantLevelAbilities } from "./character.js";
@@ -68,16 +68,19 @@ export function springTrap(state, rng, events = []) {
   // Phase 54 (BAND-02, USER RULING D): CLASS_MITIGATION.Thief.trapAvoid —
   // identity 0 is a structural no-op.
   const nimble = 5 + (c.sub === "Acrobat" ? 3 : 0) + classTrapAvoidFor(c);
-  const dodge = rng.d(20);
-  if (dodge <= nimble) {
-    events.push({ type: "trapAvoided", roll: dodge, need: nimble });
+  // Phase 73 (ROLL-05): the dodge check reads roll-high through rollCheck —
+  // same single rng.d(20) draw, same position, now read as `roll >= atLeast`
+  // instead of the old `raw <= nimble`.
+  const check = rollCheck(rng, 20, atLeastFor(nimble, 20));
+  if (check.ok) {
+    events.push({ type: "trapAvoided", ...rollFields(check) });
     return events;
   }
   if (c.sub === "Pilfer") {
-    events.push({ type: "trapDisarmed", reason: "pilfer" });
+    events.push({ type: "trapDisarmed", reason: "pilfer", ...rollFields(check) });
     return events;
   }
-  const r = rng.d(8);
+  const r = rng.d(8); // roll:selection — the trap-kind pick, unaffected by the dodge check above
   const tr = TRAPS[r - 1];
   let dmg = rollDice(rng, tr.dmg);
   if (tr.times) dmg *= tr.times;
@@ -90,7 +93,10 @@ export function springTrap(state, rng, events = []) {
   // draws; the global HAZARD_SCALE dial (floor 1 included — identity 1).
   dmg = scaleHazard(dmg, difficultyCurve(state.floor.depth));
   c.wp -= dmg;
-  events.push({ type: "trapSprung", roll: r, name: tr.n, dmg });
+  // Phase 73 (ROLL-05): the old `roll` was the trap-kind pick (r) — that
+  // stays a tagged selection draw whose result is `name`; the event's
+  // roll/atLeast/dieN triple now reports the dodge check above instead.
+  events.push({ type: "trapSprung", ...rollFields(check), name: tr.n, dmg });
   if (tr.poison) {
     // The prototype's inline closure (`loss:()=>2*D(6)`) is AFFLICTIONS[0]'s
     // exact dice notation ({n:2,sides:6,bonus:0}, kind "Poison", per 1) —
@@ -127,15 +133,15 @@ export function openChest(state, rng, events = []) {
     opened = true;
     events.push({ type: "chestOpened", reason: "pilfer" });
   } else if (tier) {
-    const need = [0, 5, 7, 8][Math.min(tier, 3)] + intelBonus(c);
-    const roll = rng.d(10);
-    opened = roll <= need;
-    events.push({ type: "chestLockRolled", roll, need, dieN: 10, picks: hasPicks(c), opened });
+    const faces = [0, 5, 7, 8][Math.min(tier, 3)] + intelBonus(c);
+    const check = rollCheck(rng, 10, atLeastFor(faces, 10));
+    opened = check.ok;
+    events.push({ type: "chestLockRolled", ...rollFields(check), picks: hasPicks(c), opened });
   } else {
-    const need = 8 + intelBonus(c);
-    const roll = rng.d(20);
-    opened = roll <= need;
-    events.push({ type: "chestLockRolled", roll, need, dieN: 20, picks: false, opened });
+    const faces = 8 + intelBonus(c);
+    const check = rollCheck(rng, 20, atLeastFor(faces, 20));
+    opened = check.ok;
+    events.push({ type: "chestLockRolled", ...rollFields(check), picks: false, opened });
   }
   if (!opened) {
     events.push({ type: "chestLocked" });
@@ -144,8 +150,8 @@ export function openChest(state, rng, events = []) {
   if (!(c.sub === "Pilfer")) events.push({ type: "chestOpened" });
   // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE, applied POST-DRAW —
   // identity (1) is a no-op.
-  gainWilmst(state, lootFor(Math.round(((rng.d(10) + 6) * 100 * state.floor.depth) / LOOT_DIVISOR)), "chest", rng, events);
-  if (rng.d(6) >= 3) {
+  gainWilmst(state, lootFor(Math.round(((rng.d(10) + 6) * 100 * state.floor.depth) / LOOT_DIVISOR)), "chest", rng, events); // roll:amount
+  if (rng.d(6) >= 3) { // roll:already-high — the chest scroll, already read high
     c.scrolls = (c.scrolls || 0) + 1;
     events.push({ type: "scrollFound" });
   }
@@ -183,8 +189,8 @@ export function offerFind(state, it, events = []) {
  * encounterDot() (lines 2114-2138).
  */
 export function encounterDot(state, rng, events = []) {
-  const t = rng.d(8);
-  const r = rng.d(10);
+  const t = rng.d(8); // roll:selection
+  const r = rng.d(10); // roll:selection
   // Phase 54 (BAND-02, USER RULING D): DOT_MIX/FIGHT_SHARE — the SAME two
   // draws, remapped AFTER both rolls (zero new draws). `rolled` is only
   // added to the event when the remap actually changed the cell (identity
@@ -354,7 +360,7 @@ export function findFood(state, rng, events = []) {
   // (the "any food = +1 ration" rule is removed from BOTH acquisition
   // paths together, per 04.1-CONTEXT.md).
   const c = state.c;
-  const f = FOODS[rng.d(6) - 1];
+  const f = FOODS[rng.d(6) - 1]; // roll:amount
   c.wp = Math.min(c.maxWP, c.wp + f.wp);
   events.push({ type: "foodFound", name: f.n, wp: f.wp });
   return events;
@@ -374,7 +380,7 @@ export function findGrimoire(state, rng, events = []) {
   }
   const learnable = SPELLS.filter((sp) => canLearn(c.sub, sp) && !c.grimoire.includes(sp.n));
   rng.shuffle(learnable);
-  const got = learnable.slice(0, Math.max(1, rng.d(4))).map((sp) => sp.n);
+  const got = learnable.slice(0, Math.max(1, rng.d(4))).map((sp) => sp.n); // roll:amount
   c.grimoire.push(...got);
   events.push({ type: "grimoireLearned", spells: got });
   return events;
@@ -408,7 +414,7 @@ export function findGear(state, kind, rng, events = []) {
  */
 export function findMisc(state, rng, events = []) {
   const c = state.c;
-  const what = MISC_MAGIC[rng.d(10) - 1];
+  const what = MISC_MAGIC[rng.d(10) - 1]; // roll:selection
   events.push({ type: "miscMagicRolled", what });
   // ECON-03 (Phase 13): OFFER a rolled item (potion/cloak/staff/jewelry)
   // instead of auto-adding it. Each roller still draws the same rng in the same
@@ -416,7 +422,7 @@ export function findMisc(state, rng, events = []) {
   // (findGrimoire — sells/learns, no carried item) branches are NOT item adds,
   // so they keep their immediate resolution — nothing to offer.
   if (what === "Potion") {
-    const p = POTIONS[rng.d(10) - 1];
+    const p = POTIONS[rng.d(10) - 1]; // roll:selection
     offerFind(state, { kind: "potion", n: `${p.n} potion (${p.col.toLowerCase()})`, txt: p.txt, eff2: p.eff, uses: 1 }, events);
   } else if (what === "Scroll") {
     c.scrolls = (c.scrolls || 0) + 1;
@@ -427,14 +433,14 @@ export function findMisc(state, rng, events = []) {
     // 260918-w4n: the dropped healing cloak leaves CLOAKS at 7 rows — this
     // draws rng.d(CLOAKS.length) (still ONE gen.next() draw, rng cursor
     // unchanged) instead of the old literal d8.
-    offerFind(state, Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1]), events);
+    offerFind(state, Object.assign({ kind: "cloak" }, CLOAKS[rng.d(CLOAKS.length) - 1]), events); // roll:selection
   } else if (what === "Staff") {
     // Phase 39 (GEAR-02): rollStaff (engine/items.js) is the one staff
     // constructor now — same single rng.d(8) draw, charge pool instead of
     // the retired every:250 cooldown.
     offerFind(state, rollStaff(rng), events);
   } else if (what === "Jewelry") {
-    offerFind(state, Object.assign({ kind: "jewel" }, JEWELRY[rng.d(8) - 1]), events);
+    offerFind(state, Object.assign({ kind: "jewel" }, JEWELRY[rng.d(8) - 1]), events); // roll:selection
   }
   return events;
 }
@@ -446,7 +452,7 @@ export function findMisc(state, rng, events = []) {
  */
 export function meetFaerie(state, rng, events = []) {
   const c = state.c;
-  const r = rng.d(8);
+  const r = rng.d(8); // roll:selection — SELECTION_ROLL_EVENTS covers faerieMet's bare roll
   const gift = FAERIE[r - 1];
   events.push({ type: "faerieMet", roll: r, gift });
   if (gift === "+1 Level" || gift === "+2 Level") {
@@ -454,12 +460,12 @@ export function meetFaerie(state, rng, events = []) {
     c.sp = Math.max(c.sp, THRESHOLDS[Math.min(4, c.level - 1 + n)]);
     checkLevel(state, rng, events);
   } else if (gift === "+d20 Base HP") {
-    const a = rng.d(20);
+    const a = rng.d(20); // roll:amount
     c.maxWP += a;
     c.wp += a;
     events.push({ type: "faerieBoon", amount: a });
   } else if (gift === "-d10 Base HP") {
-    const a = rng.d(10);
+    const a = rng.d(10); // roll:amount
     c.maxWP = Math.max(5, c.maxWP - a);
     c.wp = Math.min(c.wp, c.maxWP);
     events.push({ type: "faerieBane", amount: a });
@@ -473,7 +479,7 @@ export function meetFaerie(state, rng, events = []) {
     findMisc(state, rng, events);
   } else if (gift === "d10 x 100 wilmst") {
     // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE — identity (1) no-op.
-    gainWilmst(state, lootFor(rng.d(10) * 100), "faerie", rng, events);
+    gainWilmst(state, lootFor(rng.d(10) * 100), "faerie", rng, events); // roll:amount
   }
   return events;
 }
@@ -529,11 +535,11 @@ export function meetJoiner(state, rng, events = []) {
   // c.joiner, pendingJoiner, joinerMet/joinerRefused) takes this ONE binding —
   // the pre-cap value is remembered nowhere. No explicit [1,5] clamp needed:
   // state.floor.depth >= 1 and the table is 1-5, so min() already bounds it.
-  const lvl = Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], state.floor.depth);
+  const lvl = Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], state.floor.depth); // roll:selection
   const joinerChar = rollCharacter(rng);
-  const wp = 20 * lvl + rng.d(20);
+  const wp = 20 * lvl + rng.d(20); // roll:amount
   // eslint-disable-next-line no-unused-vars -- consumed for RNG-order fidelity only
-  const discardedMaxWP = 20 * lvl + rng.d(20);
+  const discardedMaxWP = 20 * lvl + rng.d(20); // roll:amount
   // Phase 38 (ABIL-05): the Joiner's own level-pool picks, from a DERIVED
   // stream keyed by name+depth (never the main `rng`) — zero draws off this
   // function's four fixed draws above, so they stay byte-identical. Rolled
@@ -630,17 +636,17 @@ export function dismissJoiner(state, i = 0, events = []) {
  */
 export function catchAffliction(state, rng, events = []) {
   const c = state.c;
-  const r = rng.d(8);
+  const r = rng.d(8); // roll:selection — SELECTION_ROLL_EVENTS covers afflictionRolled's bare roll
   const a = AFFLICTIONS[r - 1];
   events.push({ type: "afflictionRolled", roll: r, kind: a.kind });
   if (a.phobia) {
-    const ph = PHOBIAS[rng.d(10) - 1];
+    const ph = PHOBIAS[rng.d(10) - 1]; // roll:selection
     c.phobia = ph.n;
     c.phobiaType = ph.t;
     events.push({ type: "phobiaAcquired", name: ph.n });
     return events;
   }
-  c.affliction = { kind: a.kind, loss: a.loss, per: a.per, left: rng.d(20) };
+  c.affliction = { kind: a.kind, loss: a.loss, per: a.per, left: rng.d(20) }; // roll:amount
   const first = Math.min(rollDice(rng, a.loss), Math.max(0, c.wp - 1));
   c.wp -= first;
   events.push({ type: "afflictionCaught", kind: a.kind, first });
@@ -654,7 +660,7 @@ export function catchAffliction(state, rng, events = []) {
  */
 export function goInsane(state, rng, events = []) {
   const c = state.c;
-  const r = rng.d(6);
+  const r = rng.d(6); // roll:selection — SELECTION_ROLL_EVENTS covers insanityRolled's bare roll
   events.push({ type: "insanityRolled", roll: r, result: INSANITY[r - 1] });
   if (r === 1) {
     const before = c.wp;
@@ -665,7 +671,7 @@ export function goInsane(state, rng, events = []) {
   } else if (r === 3) {
     teleport(state, rng, events);
   } else if (r === 5) {
-    c.might = rng.d(10);
+    c.might = rng.d(10); // roll:amount
     events.push({ type: "insanityRage", amount: c.might });
   }
   if (c.wp <= 0) die(state, "insanity", null, rng, events);
@@ -675,7 +681,7 @@ export function goInsane(state, rng, events = []) {
 /** newPhobia(state, rng, events) — ports mazeworld.html newPhobia() (lines 2240-2245). */
 export function newPhobia(state, rng, events = []) {
   const c = state.c;
-  const ph = PHOBIAS[rng.d(10) - 1];
+  const ph = PHOBIAS[rng.d(10) - 1]; // roll:selection
   c.phobia = ph.n;
   c.phobiaType = ph.t;
   events.push({ type: "phobiaAcquired", name: ph.n });
