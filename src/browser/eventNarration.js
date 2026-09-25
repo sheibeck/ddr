@@ -58,7 +58,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // every event-driven roll line this plan converts (strikeMissed/struck; the
 // foe-side/thrown lines convert in 73-05/73-07) formats its range through
 // rangeText here, so no two surfaces ever write a range differently.
-import { rangeText, rollVsText } from "./rollRange.js";
+import { rangeText, rollVsText, modsClause, signedText, ROLLERS } from "./rollRange.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -67,11 +67,11 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // renders as visible text, never a live tag.
 const escapeHtml = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-// Phase 25 (FEED-01, additive payload) shared render helpers — both are pure
-// string builders over the new additive event fields, reused by every
-// combat-narration entry below that can carry `soaked`/`needMods`. Neither
-// throws on a missing/empty input (mirrors this module's `??`/`?.` defense
-// convention), so the coverage guard's bare `{type}` calls stay safe.
+// Phase 25 (FEED-01, additive payload) shared render helper — a pure string
+// builder over the additive `soaked` event field, reused by every
+// combat-narration entry below that can carry it. Never throws on a
+// missing/empty input (mirrors this module's `??`/`?.` defense convention),
+// so the coverage guard's bare `{type}` calls stay safe.
 
 /** soakedText(soaked) — " (hide soaked 2)" / " (Hardiness soaked 3, ward soaked 4)" / "" */
 function soakedText(soaked) {
@@ -83,20 +83,21 @@ function soakedText(soaked) {
   return parts.length ? ` (${parts.join(", ")})` : "";
 }
 
-/** modsText(mods) — "Guard −1" / "Agility −1, Guard −1" (Phase 73, ROLL-05:
- * renamed from needModsText — the values are unchanged, still signed bonuses
- * to the roller; only the name lost its roll-under "need" framing). */
-function modsText(mods) {
-  return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
-}
-
-/** modsClause(mods) — " (Guard −1, insulted +1)" appended right after the
- * roll-high range ("vs 16–20"); "" when absent. Phase 73 (ROLL-05): every
- * foe-swing and member-branch line now reads this — the threshold is
- * already visible in the range, so no "needs N:" prefix is needed. */
-function modsClause(mods) {
-  return mods && mods.length ? ` (${modsText(mods)})` : "";
-}
+// Phase 74 (ROLL-02/03, "Roll Display & Modifier Honesty" — 74-CONTEXT's
+// "Modifier signs everywhere", user-accepted 2026-09-25): every displayed
+// modifier is signed from the PLAYER's side — + is always better for the
+// player, − is always worse. The engine's own `mods` deltas stay signed for
+// the ROLLER (a hero/ally roll's delta reads as-is; a foe roll's delta must
+// be negated so a bonus to the foe still reads as a minus to the player).
+// src/browser/rollRange.js's modsClause (imported above) is the ONE place
+// that flip happens — keyed on an explicit roller passed at every call site
+// below: ROLLERS.you for the hero's own rolls (strikeMissed, struck,
+// spellThrown, fleeRolled), ROLLERS.ally for a party member's/summon's own
+// roll (allyMissed, allyCast), ROLLERS.foe for a foe's roll against the hero
+// or a member (memberStruck, foeMissed, struckByFoe). The stored event
+// `mods` values themselves are NEVER mutated by any call here. The
+// module-private modsText/modsClause this file used to define are gone —
+// every call site below imports the shared, roller-aware versions instead.
 
 // Phase 41 (TERR-05): the short `trigger` key engine/phobias.js pushes on
 // every `phobiaTriggered` event (and stashes on `c.fearArmed.trigger`) maps
@@ -187,9 +188,14 @@ export const EVENT_NARRATION = {
   // PHOBIA-01 (04.1-06): the three formerly-inert movement-triggered phobias
   // — deadpan, no exclamation, matching the module's established tone.
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  heightsFear: (e) => `<span class="beat">Heights: your stomach reaches the ground well before your feet do.</span> +${e?.penalty ?? 0} on a roll you wanted low.`,
+  // Phase 74 (ROLL-02/03): the trailing clause reads the player-signed cost
+  // of the check — a phobia's `penalty` is a positive number of winning
+  // faces it removes, so the displayed sign is always negative (the missing
+  // "0" case still reads "0", never "−0").
+  heightsFear: (e) => `<span class="beat">Heights: your stomach reaches the ground well before your feet do.</span> ${signedText(-(e?.penalty ?? 0))} on the climb.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  waterFear: (e) => `<span class="beat">Bodies of water: something down there may be wet. That is enough.</span> +${e?.penalty ?? 0} on a roll you wanted low.`,
+  // Phase 74 (ROLL-02/03): see heightsFear's comment above for the sign rule.
+  waterFear: (e) => `<span class="beat">Bodies of water: something down there may be wet. That is enough.</span> ${signedText(-(e?.penalty ?? 0))} on the leap.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   trappedPanic: (e) => `<span class="hurt">${e?.phobia ?? "Being trapped"}: four walls and one door you already used.</span> −${e?.loss ?? 0} hp.`,
   // Phase 41 (TERR-04/05, user-ratified Key Decision 2026-09-18: "arm Afraid
@@ -394,7 +400,7 @@ export const EVENT_NARRATION = {
   strikeMissed: (e) =>
     e.untouchable
       ? `<span class="miss">${e.target ?? "It"} cannot be touched like that.</span>`
-      : `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
+      : `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
   backstabDenied: () => `<span class="miss">Heavy armor gives you away.</span>`,
   stealthStrike: () => `<span class="hit">They never saw you. Critical.</span>`,
@@ -418,7 +424,7 @@ export const EVENT_NARRATION = {
     // present; `e.afraid` appends the pulled-blow line (absent for every
     // non-afraid strike, byte-identical to before). Phase 73 (ROLL-05): the
     // range replaces the old "vs N" single number.
-    return `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
+    return `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
   },
   foeRevived: (e) => `<span class="miss">${e.name ?? "It"} gets back up.</span>`,
   foeKilled: (e) => `<span class="hit">${e.name ?? "It"} falls.</span> +<span class="roll">${e.spGained ?? 0}</span> XP.`,
@@ -463,7 +469,7 @@ export const EVENT_NARRATION = {
   fleeRolled: (e) => {
     const roll = e?.roll ?? "?";
     const mods = e?.mods ?? [];
-    return `Flee: rolled <span class="roll">${roll}</span> vs ${rangeText(e?.atLeast, e?.dieN)}${modsClause(mods)}.`;
+    return `Flee: rolled <span class="roll">${roll}</span> vs ${rangeText(e?.atLeast, e?.dieN)}${modsClause(mods, ROLLERS.you)}.`;
   },
   fleeFailed: () => `<span class="miss">You do not make it.</span>`,
   // Phase 20 (D-12/D-14): the wilmsryVsMagical refusal is now reachable (a
@@ -487,7 +493,7 @@ export const EVENT_NARRATION = {
   // range replaces the old bare `need` — the roll and the winning range both
   // read roll-high now.
   parleyRolled: (e) =>
-    `Talk it down: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${e.fluency ? ` (+${e.fluency * 2} for the tongue)` : ""}.`,
+    `Talk it down: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${e.fluency ? ` (${signedText(e.fluency * 2)} for the tongue)` : ""}.`,
   // Phase 20 (D-06): a failed parley marks the group insulted for the rest
   // of the fight — unmistakable, never silent.
   parleyInsulted: () => `<span class="miss">You have made it personal.</span> They will be aiming with real intent from here on.`,
@@ -529,14 +535,14 @@ export const EVENT_NARRATION = {
   },
   allyMissed: (e) =>
     e.target
-      ? `${e.name ?? "Your ally"} swings${e.weapon ? ` a ${e.weapon}` : ""} at ${e.target} and misses.${e.roll != null ? ` <span class="roll">${e.roll} vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}.</span>` : ""}${e.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : ""}`
+      ? `${e.name ?? "Your ally"} swings${e.weapon ? ` a ${e.weapon}` : ""} at ${e.target} and misses.${e.roll != null ? ` <span class="roll">${e.roll} vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.ally)}.</span>` : ""}${e.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : ""}`
       : `${e.name ?? "Your ally"} swings and misses.`,
   allyDeparted: (e) => `${e.name ?? "Your ally"} slips away, obligation met.`,
   // DFB-05 (Phase 25.1): a Magic User party member's cast — allyCast is the
   // announcement (Oracle-only; narrationLines.js's ORACLE_ONLY entry), always
   // followed in the same action by exactly one of allySpellHit/allySpellMissed.
   allyCast: (e) =>
-    `${e.name ?? "Your ally"} casts <span class="hit">${e.spell ?? "a spell"}</span> at ${e.target ?? "the nearest foe"}.${e.roll != null ? ` <span class="roll">${e.roll} vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}.</span>` : ""}`,
+    `${e.name ?? "Your ally"} casts <span class="hit">${e.spell ?? "a spell"}</span> at ${e.target ?? "the nearest foe"}.${e.roll != null ? ` <span class="roll">${e.roll} vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.ally)}.</span>` : ""}`,
   allySpellHit: (e) => {
     const who = e.name ?? "Your ally";
     const sp = e.spell ?? "The spell";
@@ -553,7 +559,7 @@ export const EVENT_NARRATION = {
   // PARTY-04/PARTY-05 (Phase 8): a foe lands on a party member instead of you —
   // better them than you, frankly. `name` is the foe, `member` the companion.
   memberStruck: (e) =>
-    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} turns on ${e.member ?? "your companion"} for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
+    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.foe)}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} turns on ${e.member ?? "your companion"} for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
   // PARTY-05: a member hits 0 hp — they do not die a hero's death, they simply
   // decide this dungeon is no longer their problem and leave the run.
   memberDowned: (e) => `<span class="hurt">${e.name ?? "Your companion"} goes down, and what is left of them wants no further part of this.</span>`,
@@ -561,7 +567,7 @@ export const EVENT_NARRATION = {
   acidTick: (e) => `Acid eats at ${e.target ?? "it"}: <span class="roll">${e.dmg ?? 0}</span> hp.`,
   foeSlept: (e) => `${e.name ?? "It"} sleeps through it.`,
   foeMissed: (e) =>
-    `${e.name ?? "It"} swings${e.member ? ` at ${e.member}` : ""}, <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}, and misses.`,
+    `${e.name ?? "It"} swings${e.member ? ` at ${e.member}` : ""}, <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.foe)}, and misses.`,
   wardReflected: (e) => `<span class="hit">The ward throws ${e.amount ?? 0} back at ${e.target ?? "it"}.</span>`,
   wardAbsorbed: (e) => `The ward eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
@@ -589,7 +595,7 @@ export const EVENT_NARRATION = {
   // Dice-first fight-log convention (Phase 34) — unchanged by CLAR-01: the
   // foe's name IS the cause and the fight log already folds this line.
   struckByFoe: (e) =>
-    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
+    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.foe)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
   // Phase 40 (SPELL-02): endCombat's own expiry narration for a
@@ -781,7 +787,7 @@ export const EVENT_NARRATION = {
   dozed: (e) => `${e.target ?? "It"} dozes off for ${e.rounds ?? 0} rounds.`,
   nothingToThrowAt: () => `<span class="miss">Nothing here to throw it at.</span>`,
   spellThrown: (e) =>
-    `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods)}.`,
+    `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}.`,
   spellHit: (e) =>
     `<span class="hit">Hit.</span> <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (×${e.mult})` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
   frozenSolid: (e) => `<span class="hit">${e.target ?? "It"} freezes solid.</span>`,

@@ -340,8 +340,8 @@ const ORACLE_CASES = [
     [{ type: "afflictionCaught", kind: "Poison", first: 3 }, "Poison: it takes hold. −3 hp."],
     [{ type: "afflictionTick", kind: "Poison", loss: 2 }, "Poison: still in you. −2 hp."],
     [{ type: "afflictionTick", kind: "Disease", loss: 0 }, "Disease: it has taken everything it can. You are on one hp."],
-    [{ type: "heightsFear", penalty: 2 }, "Heights: your stomach reaches the ground well before your feet do. +2 on a roll you wanted low."],
-    [{ type: "waterFear", penalty: 1 }, "Bodies of water: something down there may be wet. That is enough. +1 on a roll you wanted low."],
+    [{ type: "heightsFear", penalty: 2 }, "Heights: your stomach reaches the ground well before your feet do. −2 on the climb."],
+    [{ type: "waterFear", penalty: 1 }, "Bodies of water: something down there may be wet. That is enough. −1 on the leap."],
     [{ type: "waded", cost: 2 }, "Water: 2 squares a step, and it smells worse."],
     [
       { type: "summonBackfired", amount: 9, spell: "Summon", sub: "Summoner" },
