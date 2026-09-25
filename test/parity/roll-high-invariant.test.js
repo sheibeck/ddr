@@ -89,6 +89,22 @@ const OUTCOME = {
     }
     return true;
   },
+  // 73-06 rows: resistance (resistRoll, both directions) and the magic
+  // mishaps. Every one of these fires on only ONE side of its own check, so
+  // (like the 73-04 rows above) the outcome is a constant.
+  spellResisted: () => true, // the FOE's own resist check succeeded
+  resistFailed: () => false, // the FOE's own resist check failed
+  heroResisted: () => true, // the HERO's own resist check succeeded
+  heroResistFailed: () => false, // the HERO's own resist check failed
+  // allySpellMissed only ever carries atLeast/roll on its resisted:true form
+  // (the target's OWN resist roll); the resisted:false form (the caster's
+  // own to-hit miss) carries no roll fields, so I3 never evaluates this row
+  // for it — see allyCast's own OUTCOME fn above for that outcome instead.
+  allySpellMissed: () => true,
+  // the Apprentice/doubled-summon backfire mishap gates fire on a natural 1
+  // (roll 1, atLeast 2, dieN 8) — the caster's own safety check FAILED.
+  spellBackfired: () => false,
+  summonBackfired: () => false,
 };
 
 /**
