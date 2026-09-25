@@ -334,9 +334,11 @@ test("picker (D-09): null off LINEAGE; on LINEAGE a RACE row of 6 then a SUB-CLA
   assert.deepStrictEqual(p.rows[1].chips.find((c) => c.id === "Court Mage"), { id: "Court Mage", label: "COURT MAGE", on: true });
   for (const row of p.rows) assert.equal(row.chips.filter((c) => c.on).length, 1);
   assert.equal(p.rows[0].chips.find((c) => c.on).id, "Dwarven");
-  // Signed in on ALL the picker is the same.
+  // Phase 81 (BOARD-13): LINEAGE is ME-only — requesting combo with a
+  // non-local scope resolves to DEEPEST, with no picker.
   const g = boardsView({ board: "combo", scope: "all", entry: "tab", signedIn: true, lineage: { race: "Dwarven", sub: "Court Mage" } });
-  assert.deepStrictEqual(g.picker, p);
+  assert.equal(g.board.id, "deep");
+  assert.equal(g.picker, null);
 });
 
 test("resolveLineage (D-11): picker per field, else hero, else the most recent run, else Human + Wizard", () => {
@@ -449,9 +451,17 @@ test("header interred: raised to the stone count when total is lower, and never 
   assert.equal(missing.header.interred, 2);
 });
 
-test("strip: null on GRAVEYARD; elsewhere the signed-out glyph/label/source and dimmed ALL/FRIENDS chips", () => {
-  const yardView = boardsView({ bests: null, graves: [], board: "yard", entry: "tab" });
-  assert.equal(yardView.strip, null);
+test("strip: shown on every board including GRAVEYARD (Phase 81, BOARD-12); the signed-out glyph/label/source, ME never dimmed, dimmed ALL/FRIENDS", () => {
+  const yardView = boardsView({ bests: null, graves: [], board: "yard", scope: "local", entry: "tab" });
+  assert.notEqual(yardView.strip, null);
+  assert.deepStrictEqual(
+    yardView.strip.scopes.map((s) => ({ id: s.id, on: s.on, dim: s.dim })),
+    [
+      { id: "local", on: true, dim: false },
+      { id: "all", on: false, dim: true },
+      { id: "friends", on: false, dim: true },
+    ]
+  );
 
   const view = boardsView({ bests: null, graves: [], board: "deep", scope: "all", entry: "tab" });
   assert.equal(view.strip.glyph, "?");
@@ -460,13 +470,14 @@ test("strip: null on GRAVEYARD; elsewhere the signed-out glyph/label/source and 
   assert.deepStrictEqual(
     view.strip.scopes.map((s) => ({ id: s.id, on: s.on, dim: s.dim })),
     [
+      { id: "local", on: false, dim: false },
       { id: "all", on: true, dim: true },
       { id: "friends", on: false, dim: true },
     ]
   );
 });
 
-test("body: a ranked board with scope all/friends replaces rows with an in-panel note, even with no data; GRAVEYARD ignores scope", () => {
+test("body: a ranked board with scope all/friends replaces rows with an in-panel note, even with no data; GRAVEYARD requested with a non-local scope resolves to DEEPEST (Phase 81, BOARD-14)", () => {
   const allView = boardsView({ bests: null, graves: [], board: "deep", scope: "all", entry: "tab" });
   assert.deepStrictEqual(allView.body, { kind: "note", line: BOARDS_PANEL_COPY.note.all });
 
@@ -475,7 +486,8 @@ test("body: a ranked board with scope all/friends replaces rows with an in-panel
 
   const graves = [legacyStone({ floor: 1 })];
   const yardScopedView = boardsView({ bests: null, graves, board: "yard", scope: "all", entry: "tab" });
-  assert.equal(yardScopedView.body.kind, "rows");
+  assert.equal(yardScopedView.board.id, "deep");
+  assert.deepStrictEqual(yardScopedView.body, { kind: "note", line: BOARDS_PANEL_COPY.note.all });
 });
 
 test("body: row.open reflects view.open by key", () => {
@@ -487,16 +499,26 @@ test("body: row.open reflects view.open by key", () => {
   assert.equal(closedView.body.rows[0].open, false);
 });
 
-test("rail: seven entries in BOARD_IDS order with each board's tab/colour, whatever board is active", () => {
-  const view = boardsView({ bests: null, graves: [], board: "kills", entry: "tab" });
+test("rail: six chips under ME (local) ending LINEAGE, GRAVEYARD, in BOARD_IDS order with each board's tab/colour; four under ALL and under FRIENDS (Phase 81, BOARD-13/BOARD-14)", () => {
+  const localView = boardsView({ bests: null, graves: [], board: "kills", scope: "local", entry: "tab" });
   assert.deepStrictEqual(
-    view.rail.map((r) => r.id),
+    localView.rail.map((r) => r.id),
     BOARD_IDS
   );
-  for (const entry of view.rail) {
+  assert.deepStrictEqual(localView.rail.slice(-2).map((r) => r.id), ["combo", "yard"]);
+  for (const entry of localView.rail) {
     assert.equal(entry.tab, BOARD_COPY[entry.id].tab);
     assert.equal(entry.col, BOARD_COPY[entry.id].col);
     assert.equal(entry.on, entry.id === "kills");
+  }
+
+  for (const scope of ["all", "friends"]) {
+    const view = boardsView({ bests: null, graves: [], board: "kills", scope, entry: "tab" });
+    assert.deepStrictEqual(
+      view.rail.map((r) => r.id),
+      ["deep", "days", "kills", "purse"],
+      scope
+    );
   }
 });
 
@@ -722,6 +744,7 @@ test("signed in: DEEPEST strip carries the display name, its initials avatar, PL
     label: "Lanternjaw",
     source: "PLAY GAMES · SIGNED IN",
     scopes: [
+      { id: "local", label: "ME", on: true, dim: false },
       { id: "all", label: "ALL", on: false, dim: false },
       { id: "friends", label: "FRIENDS", on: false, dim: false },
     ],
@@ -755,6 +778,7 @@ test("signed out (false, missing, or truthy-but-not-true), even with a player: t
         label: "PLAY GAMES · SIGNED OUT",
         source: "Your dead only",
         scopes: [
+          { id: "local", label: "ME", on: false, dim: false },
           { id: "all", label: "ALL", on: true, dim: true },
           { id: "friends", label: "FRIENDS", on: false, dim: true },
         ],
@@ -777,13 +801,17 @@ test("signed in: local still lists the player's own rows; all/friends never show
   }
 });
 
-test("GRAVEYARD: strip null and scope ignored, signed in or out", () => {
+test("GRAVEYARD requested with a non-local scope resolves to DEEPEST (Phase 81, BOARD-14), signed in or out", () => {
   const graves = [legacyStone({ floor: 1 })];
   for (const signedIn of [true, false]) {
     const view = boardsView({ bests: null, graves, board: "yard", scope: "friends", entry: "tab", signedIn, player: LIVE_PLAYER });
-    assert.equal(view.strip, null);
-    assert.equal(view.body.kind, "rows");
+    assert.notEqual(view.strip, null);
+    assert.equal(view.board.id, "deep");
   }
+  // GRAVEYARD under the local scope still lists the stones.
+  const local = boardsView({ bests: null, graves, board: "yard", scope: "local", entry: "tab", signedIn: true, player: LIVE_PLAYER });
+  assert.equal(local.board.id, "yard");
+  assert.equal(local.body.kind, "rows");
 });
 
 test("signed in: header, rows, standing, footnote, rail, board and dock equal the signed-out view for the same data", () => {
@@ -886,7 +914,6 @@ function snap(overrides = {}) {
     entries: [],
     you: null,
     total: null,
-    sampled: null,
     stale: false,
     ...overrides,
   });
@@ -1120,106 +1147,22 @@ test("PGS-05 empty: a null, undefined or malformed global input on a signed-in g
   assert.equal(mixed.body.rows.length, 1);
 });
 
-test("LINEAGE global (D-13): the sample filtered to the selected race + sub-class, sample order, ranks 1..n, filtered footnote", () => {
+test("LINEAGE is ME-only (Phase 81, BOARD-13): a signed-in view requested with board combo and scope all resolves to board deep with no picker, and reads the ordinary DEEPEST global view — never a lineage-filtered sample", () => {
   const entries = [
     gEntry(0, { handle: "Alpha" }, { race: "Dwarven", sub: "Pickpocket", floor: 9 }),
     gEntry(1, { handle: "Bravo" }, { race: "Human", sub: "Soldier", floor: 8 }),
-    gEntry(2, { handle: "Charlie" }, { race: "Dwarven", sub: "Cutthroat", floor: 7 }),
-    gEntry(3, { handle: "Delta", run: null, rawScore: 6000000 }),
-    gEntry(4, { handle: "Echo" }, { race: "Gnome", sub: "Soldier", floor: 6 }),
-    gEntry(5, { handle: "Foxtrot" }, { race: "Human", sub: "Soldier", floor: 5 }),
   ];
-  const you = gEntry(1, { key: "g:you", you: true }, { race: "Human", sub: "Soldier", floor: 8 });
-  const view = gView({ board: "combo", lineage: { race: "Human", sub: "Soldier" }, global: snap({ board: "combo", entries, you, sampled: 25 }) });
+  const view = gView({ board: "combo", lineage: { race: "Human", sub: "Soldier" }, global: snap({ entries }) });
+  assert.equal(view.board.id, "deep");
+  assert.equal(view.picker, null);
   assert.equal(view.body.kind, "rows");
-  const rows = view.body.rows;
-  // snap.you is of this lineage but no sample entry is marked you: pinned last, unranked.
-  assert.deepStrictEqual(rows.map((r) => r.headline), ["Bravo", "Foxtrot", "Delver1"]);
-  assert.deepStrictEqual(rows.map((r) => r.rank), ["1", "2", ""], "the lineage position, never the worldwide rank");
-  assert.equal(rows[2].divider, BOARDS_PANEL_COPY.divider);
-  assert.equal(rows[0].line, "HUMAN SOLDIER · LVL III");
-  assert.equal(rows[0].val, "8");
-  assert.equal(rows[0].unit, "FLOOR");
-  assert.ok(rows.every((r) => !/remembers/.test(r.detail)), "global rows carry no epitaph");
-  assert.equal(view.footnote, "Filtered from the top 25 deepest corpses in the world. Rare lineages may be buried further down.");
-
-  // Standing: no entry marked you in the sample, so the dash with the lineage count.
-  assert.equal(view.standing.label, "BROM IRONFOOT · FLOOR");
-  assert.equal(view.standing.place, "—");
-  assert.equal(view.standing.note, "of 2 of this lineage in the sample.");
-
-  // The player's entry is listed: placed among the matches with a quip.
-  const listedEntries = entries.map((e, i) => (i === 5 ? { ...e, you: true } : e));
-  const listed = gView({ board: "combo", lineage: { race: "Human", sub: "Soldier" }, global: snap({ board: "combo", entries: listedEntries, you, sampled: 25 }) });
-  assert.equal(listed.standing.place, "2ND");
-  assert.ok(listed.standing.note.startsWith("of 2 of this lineage in the sample. "), listed.standing.note);
-  assert.ok(GLOBAL_STANDING_LINES.ten.includes(listed.standing.note.slice("of 2 of this lineage in the sample. ".length)));
-
-  // The player's entry is of another lineage.
-  const other = gView({
-    board: "combo",
-    lineage: { race: "Human", sub: "Soldier" },
-    global: snap({ board: "combo", entries, you: gEntry(9, { key: "g:you", you: true }, { race: "Troll", sub: "Wizard" }), sampled: 25 }),
-  });
-  assert.deepStrictEqual(other.standing, { label: "NO ENTRY", place: "—", note: G.noLineage });
-
-  // No player entry at all.
-  const none = gView({ board: "combo", lineage: { race: "Human", sub: "Soldier" }, global: snap({ board: "combo", entries, sampled: 25 }) });
-  assert.deepStrictEqual(none.standing, { label: "NO ENTRY", place: "—", note: G.noEntry });
+  assert.deepStrictEqual(view.body.rows.map((r) => r.headline), ["Alpha", "Bravo"]);
+  assert.equal(view.footnote, BOARD_FOOTNOTES.ranked);
 });
 
-test("LINEAGE global pin (D-13): the player's own entry of this lineage outside the shown ten is pinned under the divider", () => {
-  const entries = [];
-  for (let i = 0; i < 12; i++) entries.push(gEntry(i, { handle: `H${i}` }, { race: "Elven", sub: "Wizard", floor: 20 - i }));
-  const inSample = entries.map((e, i) => (i === 11 ? { ...e, you: true } : e));
-  const rows = gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries: inSample, sampled: 25 }) }).body.rows;
-  assert.equal(rows.length, 11);
-  assert.deepStrictEqual(rows.slice(0, 10).map((r) => r.rank), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
-  assert.equal(rows[10].rank, "12", "its position among the matches");
-  assert.equal(rows[10].divider, BOARDS_PANEL_COPY.divider);
-  assert.equal(rows[10].tag, G.you);
-  assert.equal(rows[10].you, true);
-
-  // Only snap.you carries it (not in the sample): pinned unranked.
-  const you = gEntry(40, { key: "g:you", you: true, rank: 400 }, { race: "Elven", sub: "Wizard", floor: 2 });
-  const onlyYou = gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries, you, sampled: 25 }) }).body.rows;
-  assert.equal(onlyYou.length, 11);
-  assert.equal(onlyYou[10].rank, "");
-  assert.equal(onlyYou[10].key, "g:you");
-
-  // snap.you of another lineage is never pinned.
-  const foreign = gEntry(40, { key: "g:you", you: true }, { race: "Troll", sub: "Wizard" });
-  assert.equal(gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries, you: foreign, sampled: 25 }) }).body.rows.length, 10);
-
-  // A shown you entry is not pinned twice.
-  const shownYou = entries.map((e, i) => (i === 3 ? { ...e, you: true } : e));
-  const shown = gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries: shownYou, you, sampled: 25 }) }).body.rows;
-  assert.equal(shown.length, 10);
-});
-
-test("PGS-05 adjacency and empty: equal LINEAGE entries keep sample order; unknown strings never match; no match shows the lineage empty note", () => {
-  const entries = [
-    gEntry(0, { handle: "First" }, { race: "Elven", sub: "Wizard", floor: 5 }),
-    gEntry(1, { handle: "Other" }, { race: "Elven", sub: "Warlock", floor: 5 }),
-    gEntry(2, { handle: "Second" }, { race: "Elven", sub: "Wizard", floor: 5 }),
-    gEntry(3, { handle: "Foreign", run: { race: "Elven ", sub: "Wizard", floor: 5 } }),
-    gEntry(4, { handle: "Nulled", run: null }),
-  ];
-  const rows = gView({ board: "combo", lineage: { race: "Elven", sub: "Wizard" }, global: snap({ board: "combo", entries, sampled: 5 }) }).body.rows;
-  assert.deepStrictEqual(rows.map((r) => r.headline), ["First", "Second"]);
-
-  const empty = gView({ board: "combo", lineage: { race: "Troll", sub: "Acrobat" }, global: snap({ board: "combo", entries, sampled: 5 }) });
-  assert.deepStrictEqual(empty.body, { kind: "empty", line: "No Troll Acrobat made the top 5 deepest this season. Somebody has to fall that far first." });
-  assert.equal(empty.footnote, "Filtered from the top 5 deepest corpses in the world. Rare lineages may be buried further down.");
-  assert.deepStrictEqual(empty.standing, { label: "NO ENTRY", place: "—", note: G.noEntry });
-
-  const none = gView({ board: "combo", global: snap({ board: "combo", entries: [], sampled: 0 }) });
-  assert.deepStrictEqual(none.body, { kind: "empty", line: "No Human Wizard made the top 0 deepest this season. Somebody has to fall that far first." });
-});
-
-test("header season: 'SEASON n' on every view; the picker shows only with two seasons, signed in, on a global scope off GRAVEYARD", () => {
+test("header season: 'SEASON n' on every view; the picker shows only with two seasons, signed in, on a global scope off the local scope", () => {
   assert.deepStrictEqual(boardsView({}).header.season, { label: "SEASON 1", picker: null });
-  assert.deepStrictEqual(boardsView({ board: "yard" }).header.season, { label: "SEASON 1", picker: null });
+  assert.deepStrictEqual(boardsView({ board: "yard", scope: "local" }).header.season, { label: "SEASON 1", picker: null });
   assert.deepStrictEqual(gView({ seasons: [1] }).header.season, { label: "SEASON 1", picker: null });
   assert.deepStrictEqual(gView({ season: 2, seasons: [1, 2] }).header.season, {
     label: "SEASON 2",
@@ -1228,7 +1171,10 @@ test("header season: 'SEASON n' on every view; the picker shows only with two se
       { n: 2, label: "SEASON 2", on: true },
     ],
   });
-  assert.equal(gView({ season: 2, seasons: [1, 2], board: "yard" }).header.season.picker, null);
+  // Phase 81 (BOARD-13/BOARD-14): requesting a ME-only board (LINEAGE,
+  // GRAVEYARD) on a global scope resolves to DEEPEST first, so the season
+  // picker still shows for that resolved board.
+  assert.notEqual(gView({ season: 2, seasons: [1, 2], board: "yard" }).header.season.picker, null);
   assert.equal(gView({ season: 2, seasons: [1, 2], scope: "local" }).header.season.picker, null);
   assert.equal(gView({ season: 2, seasons: [1, 2], signedIn: false }).header.season.picker, null);
   // a malformed season or seasons input falls back to season 1 / [season].
@@ -1240,7 +1186,10 @@ test("header scope line: signed in, ALL and FRIENDS name the global scopes; othe
   assert.equal(gView({}).header.scopeLine, G.scope.all);
   assert.equal(gView({ scope: "friends" }).header.scopeLine, G.scope.friends);
   assert.equal(gView({ scope: "local" }).header.scopeLine, BOARDS_PANEL_COPY.scope.ranked);
-  assert.equal(gView({ board: "yard" }).header.scopeLine, BOARDS_PANEL_COPY.scope.yard);
+  // Phase 81 (BOARD-14): requesting GRAVEYARD on ALL resolves to DEEPEST, so
+  // the global ALL scope line shows, not the local yard line.
+  assert.equal(gView({ board: "yard" }).header.scopeLine, G.scope.all);
+  assert.equal(boardsView({ board: "yard", scope: "local" }).header.scopeLine, BOARDS_PANEL_COPY.scope.yard);
   assert.equal(gView({ signedIn: false }).header.scopeLine, BOARDS_PANEL_COPY.scope.ranked);
 });
 
@@ -1257,13 +1206,18 @@ test("signed out (D-07): any global input is ignored — the view equals the no-
   assert.deepStrictEqual(boardsView({ board: "deep", scope: "friends", global }).body, { kind: "note", line: BOARDS_PANEL_COPY.note.friends });
 });
 
-test("GRAVEYARD stays local in every state (D-17): signed in with a global snapshot on ALL, it lists the stones", () => {
+test("GRAVEYARD is ME-only (Phase 81, BOARD-14): yard requested with scope all and signed in resolves to DEEPEST with no stones listed, and yard under the local scope lists the stones", () => {
   const graves = [legacyStone({ floor: 1 })];
-  const view = gView({ board: "yard", graves, global: snap({ entries: [gEntry(0)] }) });
-  assert.equal(view.body.kind, "rows");
-  assert.equal(view.body.rows[0].headline, "Old One");
-  assert.equal(view.standing.label, "INTERRED");
-  assert.equal(view.footnote, BOARD_FOOTNOTES.yard);
+  const allView = gView({ board: "yard", graves, global: snap({ entries: [gEntry(0)] }) });
+  assert.equal(allView.board.id, "deep");
+  assert.ok(!allView.body.rows?.some((r) => r.headline === "Old One"));
+
+  const localView = boardsView({ bests: null, graves, board: "yard", scope: "local", entry: "tab", signedIn: true, player: LIVE_PLAYER });
+  assert.equal(localView.board.id, "yard");
+  assert.equal(localView.body.kind, "rows");
+  assert.equal(localView.body.rows[0].headline, "Old One");
+  assert.equal(localView.standing.label, "INTERRED");
+  assert.equal(localView.footnote, BOARD_FOOTNOTES.yard);
 });
 
 test("Purity with a global snapshot: deep-frozen input is never mutated and two calls are deepStrictEqual", () => {
@@ -1288,7 +1242,7 @@ test("Purity with a global snapshot: deep-frozen input is never mutated and two 
     board: "combo",
     lineage: { race: "Dwarven", sub: "Pickpocket" },
     hero: { race: "Troll", sub: "Acrobat" },
-    global: snap({ board: "combo", entries: [gEntry(0), gEntry(1)], sampled: 2 }),
+    global: snap({ board: "combo", entries: [gEntry(0), gEntry(1)] }),
   });
   assert.deepStrictEqual(boardsView(combo), boardsView(combo));
   assert.equal(boardsView(combo).body.rows.length, 2);

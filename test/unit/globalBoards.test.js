@@ -22,7 +22,6 @@ import {
   GLOBAL_TTL_MS,
   GLOBAL_RETRY_MS,
   TOP_N,
-  LINEAGE_SAMPLE_N,
   toGlobalEntry,
   snapshotOf,
   createGlobalBoards,
@@ -51,11 +50,10 @@ const score = (over = {}) =>
 
 // ─── constants ──────────────────────────────────────────────────────────────
 
-test("constants: 5-minute TTL, 30-second retry, top 10, 25-score LINEAGE sample", () => {
+test("constants: 5-minute TTL, 30-second retry, top 10 (Phase 81, BOARD-13: no LINEAGE sample size — LINEAGE is ME-only and never reaches this module)", () => {
   assert.equal(GLOBAL_TTL_MS, 300000);
   assert.equal(GLOBAL_RETRY_MS, 30000);
   assert.equal(TOP_N, 10);
-  assert.equal(LINEAGE_SAMPLE_N, 25);
 });
 
 // ─── toGlobalEntry ──────────────────────────────────────────────────────────
@@ -155,23 +153,22 @@ test("snapshotOf: defaults and deep freeze", () => {
       entries: [],
       you: null,
       total: null,
-      sampled: null,
       stale: false,
     },
   );
+  assert.ok(!("sampled" in s), "Phase 81 (BOARD-13): sampled is gone — LINEAGE never reaches this module");
   assert.ok(Object.isFrozen(s));
   assert.ok(Object.isFrozen(s.entries));
 });
 
-test("snapshotOf: a ready snapshot keeps its entries, you, total, sampled and stale", () => {
+test("snapshotOf: a ready snapshot keeps its entries, you, total and stale", () => {
   const entries = [0, 1].map((i) => toGlobalEntry(score({ rank: i + 1, playerId: `p${i}` }), i, { meId: "me", scope: "all" }));
   const you = toGlobalEntry(score({ playerId: "me" }), 0, { meId: "me", scope: "all" });
-  const s = snapshotOf({ status: "ready", board: "combo", scope: "all", season: 1, entries, you, total: 40, sampled: 2, stale: true });
+  const s = snapshotOf({ status: "ready", board: "deep", scope: "all", season: 1, entries, you, total: 40, stale: true });
   assert.equal(s.entries.length, 2);
   assert.equal(s.entries[0], entries[0]);
   assert.equal(s.you, you);
   assert.equal(s.total, 40);
-  assert.equal(s.sampled, 2);
   assert.equal(s.stale, true);
   assert.ok(Object.isFrozen(s.entries));
   assert.ok(s.entries.every((e) => Object.isFrozen(e)));
@@ -187,10 +184,9 @@ test("snapshotOf: entries are forced to [] unless the status is ready", () => {
   }
 });
 
-test("snapshotOf: junk total, sampled and stale fall back to their defaults", () => {
-  const s = snapshotOf({ status: "ready", board: "deep", scope: "all", season: 1, total: -1, sampled: 1.5, stale: "yes" });
+test("snapshotOf: junk total and stale fall back to their defaults", () => {
+  const s = snapshotOf({ status: "ready", board: "deep", scope: "all", season: 1, total: -1, stale: "yes" });
   assert.equal(s.total, null);
-  assert.equal(s.sampled, null);
   assert.equal(s.stale, false);
 });
 
@@ -326,9 +322,11 @@ test("inactive (signed out or Compete OFF): view() is null and nothing touches t
   assert.equal(r.changes(), 0);
 });
 
-test("GRAVEYARD, the local scope and unknown boards or scopes return null with no call", async () => {
+test("GRAVEYARD, LINEAGE (combo — both ME-only, Phase 81, BOARD-13/BOARD-14), the local scope and unknown boards or scopes return null with no call", async () => {
   const r = rig();
   assert.equal(r.gb.view({ board: "yard", scope: "all", season: 1 }), null);
+  assert.equal(r.gb.view({ board: "combo", scope: "all", season: 1 }), null);
+  assert.equal(r.gb.view({ board: "combo", scope: "friends", season: 1 }), null);
   assert.equal(r.gb.view({ board: "deep", scope: "local", season: 1 }), null);
   assert.equal(r.gb.view({ board: "tallest", scope: "all", season: 1 }), null);
   assert.equal(r.gb.view({ board: "deep", scope: "everyone", season: 1 }), null);
@@ -365,7 +363,7 @@ test("first view() is loading and starts exactly one top-10 and one player-score
   assert.equal(ready.entries[1].friend, false);
   assert.ok(ready.entries.every((e) => e.you === false));
   assert.equal(ready.total, 13);
-  assert.equal(ready.sampled, null);
+  assert.ok(!("sampled" in ready));
   assert.equal(ready.stale, false);
   assert.equal(r.args.length, 2);
 });
@@ -532,14 +530,14 @@ test("a provider that throws or rejects gives unreachable and never breaks view(
   assert.equal(r.gb.view(deepAll).status, "unreachable");
 });
 
-test("a placeholder or missing id gives closed with zero calls; a placeholder DEEPEST also closes LINEAGE", async () => {
+test("a placeholder or missing id gives closed with zero calls (LINEAGE/combo is already null — Phase 81, BOARD-13 — before any placeholder check applies)", async () => {
   const ids = { 1: { ...IDS[1], deep: "PLACEHOLDER_DEEPEST_S1" } };
   const r = rig({ ids });
   const closed = r.gb.view(deepAll);
   assert.equal(closed.status, "closed");
   assert.deepEqual([...closed.entries], []);
   assert.equal(r.gb.view(deepAll), closed);
-  assert.equal(r.gb.view({ board: "combo", scope: "all", season: 1 }).status, "closed");
+  assert.equal(r.gb.view({ board: "combo", scope: "all", season: 1 }), null);
   assert.equal(r.gb.view({ board: "deep", scope: "friends", season: 1 }).status, "closed");
   assert.equal(r.gb.view({ board: "deep", scope: "all", season: 7 }).status, "closed");
   await flush();
@@ -547,41 +545,6 @@ test("a placeholder or missing id gives closed with zero calls; a placeholder DE
   assert.equal(r.changes(), 0);
   assert.equal(r.gb.view({ board: "days", scope: "all", season: 1 }).status, "loading");
   assert.equal(r.args.length, 2, "the other boards still fetch");
-});
-
-test("LINEAGE reads the top 25 DEEPEST scores as a sample and the player's DEEPEST score as you", async () => {
-  const r = rig({ boards: { [DEEP]: [...rivals(30, { top: 2000 }), mine(100)] } });
-  const combo = { board: "combo", scope: "all", season: 1 };
-  assert.equal(r.gb.view(combo).status, "loading");
-  assert.deepEqual(r.args, [
-    ["loadTopScores", { leaderboardId: DEEP, collection: "public", maxResults: 25 }],
-    ["loadPlayerScore", { leaderboardId: DEEP, collection: "public" }],
-  ]);
-  await flush();
-  const snap = r.gb.view(combo);
-  assert.equal(snap.status, "ready");
-  assert.equal(snap.board, "combo");
-  assert.equal(snap.entries.length, 25);
-  assert.equal(snap.sampled, 25);
-  assert.equal(snap.total, 31);
-  assert.equal(snap.you.rank, 31);
-  assert.equal(snap.you.key, "g:you");
-  assert.ok(snap.entries.every((e) => e.run !== null));
-  // LINEAGE and DEEPEST are separate cache keys over the same leaderboard.
-  assert.equal(r.gb.view(deepAll).status, "loading");
-  await flush();
-  assert.equal(r.gb.view(deepAll).entries.length, 10);
-  assert.equal(r.gb.view(deepAll).sampled, null);
-});
-
-test("LINEAGE with fewer scores than the sample size reports the count it read", async () => {
-  const r = rig({ boards: { [DEEP]: rivals(4) } });
-  const combo = { board: "combo", scope: "all", season: 1 };
-  r.gb.view(combo);
-  await flush();
-  const snap = r.gb.view(combo);
-  assert.equal(snap.sampled, 4);
-  assert.equal(snap.you, null);
 });
 
 test("FRIENDS with consent granted: a silent access check, then the friends top 10 and the player's friends score", async () => {

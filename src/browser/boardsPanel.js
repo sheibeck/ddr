@@ -14,7 +14,7 @@
 // stateful controller (entry modes, board memory, scope/row toggles, back
 // routing, rail centring), following roller.js's frozen-factory shape.
 
-import { BOARD_IDS } from "../../engine/records.js";
+import { BOARD_IDS, ME_ONLY_BOARDS } from "../../engine/records.js";
 
 /**
  * BOARDS_CLASSES — every class name renderBoardsPanel emits, in no
@@ -546,8 +546,8 @@ function defaultSeasons() {
  *
  * Phase 68 (D-05..D-08) adds three optional seams: `global({ board, scope,
  * season })` answers the global snapshot (68-07 passes the global-boards
- * controller's view), asked only while signed in on ALL / FRIENDS off
- * GRAVEYARD — signed out or Compete OFF it is never called; `seasons()`
+ * controller's view), asked only while signed in on a global scope off a
+ * ME-only board — signed out or Compete OFF it is never called; `seasons()`
  * answers { current, all } for the SEASON label and the older-season picker;
  * `onFriendsConsent()` runs from the in-panel SHOW MY FRIENDS button. The
  * panel still reaches Play Games only through these injected functions, and
@@ -561,8 +561,19 @@ function defaultSeasons() {
  * open (so the view re-defaults: hero, most recent run, first in content
  * order), is pinned from each rendered view.picker, survives board, scope,
  * season, row and refresh renders while the panel is open, and changes only
- * through onLineage(kind, id). global() is asked exactly as before — LINEAGE
- * filters the same cached DEEPEST sample (D-13).
+ * through onLineage(kind, id).
+ *
+ * Phase 81 (BOARD-11..BOARD-14): the strip carries three chips, ME | ALL |
+ * FRIENDS — no hidden toggle; onScope(id) sets the scope directly and marks
+ * scopePicked. openFromTab opens on defaultScope() (ALL signed in with
+ * Compete ON, else ME) and refresh() keeps re-applying it while scopePicked
+ * is false, so an identity change mid-session moves the default scope until
+ * the player taps a chip. openFromTitle's GRAVEYARD entry fixes the scope to
+ * ME for that session (a ME-only board names the title's button). LINEAGE
+ * and GRAVEYARD (engine/records.js ME_ONLY_BOARDS) are reachable only under
+ * ME: a board or scope change that would leave one showing under ALL/FRIENDS
+ * instead moves the panel to DEEPEST and stores it; global() is never asked
+ * for either.
  */
 export function createBoardsPanel({
   host,
@@ -613,9 +624,9 @@ export function createBoardsPanel({
     return { current, all };
   }
 
-  /** readGlobal(signedIn) — the global snapshot, asked only when signed in on a global scope off GRAVEYARD; null otherwise or on a throw. */
+  /** readGlobal(signedIn) — the global snapshot, asked only when signed in on a global scope off a ME-only board (LINEAGE, GRAVEYARD); null otherwise or on a throw. */
   function readGlobal(signedIn) {
-    if (!signedIn || scope === "local" || board === "yard" || typeof global !== "function") return null;
+    if (!signedIn || scope === "local" || ME_ONLY_BOARDS.includes(board) || typeof global !== "function") return null;
     try {
       const answer = global({ board, scope, season });
       return answer === undefined ? null : answer;
@@ -644,6 +655,15 @@ export function createBoardsPanel({
   let hasHero = false;
   let season = 1; // Phase 68 (D-08): the viewed season; reset to the current one on every open.
   let lineage = null; // Phase 70 (D-11): the LINEAGE selection { race, sub }; null re-defaults, on every open.
+  // Phase 81 (BOARD-11): true once the scope has been fixed for this panel
+  // session — by a scope chip tap, or by openFromTitle's ME-only GRAVEYARD
+  // entry. While false, refresh() keeps re-applying defaultScope().
+  let scopePicked = false;
+
+  /** defaultScope() — ALL when signed in with Compete ON, ME (local) otherwise (BOARD-11). */
+  function defaultScope() {
+    return readIdentity().signedIn ? "all" : "local";
+  }
 
   function readStoredBoard() {
     if (!prefs) return null;
@@ -776,14 +796,27 @@ export function createBoardsPanel({
 
   const handlers = {
     onBoard(id) {
-      if (!BOARD_IDS.includes(id)) return;
+      // Phase 81 (BOARD-13/BOARD-14): a ME-only board (LINEAGE, GRAVEYARD)
+      // is reachable only while the local scope is on.
+      if (!BOARD_IDS.includes(id) || (ME_ONLY_BOARDS.includes(id) && scope !== "local")) return;
       board = id;
       open = null;
       storeBoard(id);
       render({ reset: true });
     },
     onScope(id) {
-      scope = scope === id ? "local" : id;
+      // Phase 81 (BOARD-12): ME | ALL | FRIENDS — no hidden toggle. Tapping
+      // the already-active chip keeps that scope; an id outside the three
+      // known scopes is ignored.
+      if (id !== "local" && id !== "all" && id !== "friends") return;
+      scope = id;
+      scopePicked = true;
+      // Phase 81 (BOARD-13/BOARD-14): leaving the local scope while a
+      // ME-only board is on moves the panel to DEEPEST and stores it.
+      if (ME_ONLY_BOARDS.includes(board) && scope !== "local") {
+        board = "deep";
+        storeBoard(board);
+      }
       open = null;
       render({ reset: true });
     },
@@ -841,8 +874,15 @@ export function createBoardsPanel({
 
   function openFromTab() {
     entry = "tab";
-    board = readStoredBoard() || "deep";
-    scope = "local";
+    // Phase 81 (BOARD-11): opens on the default scope (ALL signed in with
+    // Compete ON, else ME) and leaves it re-evaluated by refresh() until a
+    // scope chip is tapped.
+    scope = defaultScope();
+    scopePicked = false;
+    // Phase 81 (BOARD-13/BOARD-14): the stored board is forced to DEEPEST
+    // when it is ME-only and the resolved scope is not local.
+    const stored = readStoredBoard() || "deep";
+    board = ME_ONLY_BOARDS.includes(stored) && scope !== "local" ? "deep" : stored;
     open = null;
     season = readSeasons().current;
     lineage = null; // Phase 70 (D-11): re-default on every open.
@@ -853,8 +893,12 @@ export function createBoardsPanel({
   function openFromTitle({ hasHero: h } = {}) {
     entry = "title";
     hasHero = !!h;
-    board = "yard"; // D-04: the title's button reads "View the Dead".
+    board = "yard"; // D-04: VIEW THE DEAD opens GRAVEYARD under ME (Phase 81, BOARD-14).
+    // Phase 81 (BOARD-11 flagged assumption): the title's button names a
+    // ME-only board, so it fixes the scope to ME (local) for this session,
+    // even when signed in with Compete ON.
     scope = "local";
+    scopePicked = true;
     open = null;
     season = readSeasons().current;
     lineage = null; // Phase 70 (D-11): re-default on every open.
@@ -870,12 +914,43 @@ export function createBoardsPanel({
     openFromTab();
   }
 
+  /**
+   * refresh() — Phase 81 (BOARD-11): while scopePicked is false (no scope
+   * chip tapped, and not opened from the title's GRAVEYARD entry),
+   * re-applies defaultScope() on every refresh — an identity change (sign
+   * in/out, Compete toggle) mid-session moves ALL <-> ME. When the default
+   * scope changed, the ME-only guard re-applies, open resets and the render
+   * resets; otherwise this is a plain non-reset render, as before.
+   */
   function refresh() {
-    if (entry !== null) render({ reset: false });
+    if (entry === null) return;
+    if (!scopePicked) {
+      const next = defaultScope();
+      if (next !== scope) {
+        scope = next;
+        if (ME_ONLY_BOARDS.includes(board) && scope !== "local") {
+          board = "deep";
+          storeBoard(board);
+        }
+        open = null;
+        render({ reset: true });
+        return;
+      }
+    }
+    render({ reset: false });
   }
 
   function state() {
-    return Object.freeze({ entry, board, scope, open, hasHero, season, lineage: lineage ? Object.freeze({ ...lineage }) : null });
+    return Object.freeze({
+      entry,
+      board,
+      scope,
+      open,
+      hasHero,
+      season,
+      lineage: lineage ? Object.freeze({ ...lineage }) : null,
+      scopePicked,
+    });
   }
 
   return Object.freeze({ openFromTab, openFromTitle, onDeadTab, back, isTitleOpen, centreRail, refresh, state });

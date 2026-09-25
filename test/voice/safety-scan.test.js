@@ -471,7 +471,7 @@ test("Flavor banks: all remaining authored player-facing copy is family-friendly
 test("Phase 68: BOARDS_PANEL_COPY.global and the placement banks are in the authored-string walk", () => {
   const labels = new Set(collectAuthoredStrings().map(([label]) => label));
   for (const l of [
-    "BOARDS_PANEL_COPY.global.scope.all", "BOARDS_PANEL_COPY.global.sampledFoot",
+    "BOARDS_PANEL_COPY.global.scope.all", "BOARDS_PANEL_COPY.global.ofWorld",
     "PLACEMENT_LINES.rest.0", "PLACEMENT_CARD.many.0", "SEASON_DROP_LINES.many", "GLOBAL_STANDING_LINES.first.0",
   ]) {
     assert.ok(labels.has(l), `missing ${l}`);

@@ -14,8 +14,13 @@
 // user's ruling — a 1-step death could top a steps-per-floor board, and
 // "deepest, then fewest steps" is exactly DEEPEST's own ordering, leaving no
 // honest LEANEST. `BOARD_COPY.lean` and `BOARDS_PANEL_COPY.global.leanRateUnit`
-// are gone; `BOARD_COPY`'s key order is now deep, combo, days, kills, purse,
-// yard.
+// are gone.
+//
+// Phase 81 (BOARD-13/BOARD-14): GRAVEYARD and LINEAGE are ME-only boards (the
+// engine/records.js ME_ONLY_BOARDS list) — GRAVEYARD's removal was reversed
+// by the user's ruling of 2026-09-25, "Let's keep the graveyard then".
+// `BOARD_COPY`'s key order now matches BOARD_IDS: deep, days, kills, purse,
+// combo, yard.
 
 export const BOARD_COPY = {
   deep: {
@@ -25,15 +30,6 @@ export const BOARD_COPY = {
     col: "#d3c49f",
     unitLabel: "FLOOR",
     rule: "Lowest floor reached before dying. Ties broken by the fewer squares walked to get there.",
-    unit: "floor",
-  },
-  combo: {
-    tab: "LINEAGE",
-    title: "BY RACE & SUB-CLASS",
-    mark: "◆",
-    col: "#b9a4ef",
-    unitLabel: "FLOOR",
-    rule: "One race, one sub-class, the ten deepest of them. Ties go to whoever walked less.",
     unit: "floor",
   },
   days: {
@@ -64,6 +60,15 @@ export const BOARD_COPY = {
     unitLabel: "WILMST",
     rule: "Wilmst carried at the moment of death. All of it still down there.",
     unit: "wilmst",
+  },
+  combo: {
+    tab: "LINEAGE",
+    title: "BY RACE & SUB-CLASS",
+    mark: "◆",
+    col: "#b9a4ef",
+    unitLabel: "FLOOR",
+    rule: "One race, one sub-class, the ten deepest of them. Ties go to whoever walked less.",
+    unit: "floor",
   },
   yard: {
     tab: "GRAVEYARD",
@@ -101,9 +106,12 @@ export const BOARD_FOOTNOTES = {
 // Phase 70 (D-09, D-13): LINEAGE is one race + sub-class at a time. `lineage`
 // holds the RACE / SUB-CLASS picker labels and the local empty note; the
 // `{lineage}` token (the "Race Sub" display name) joins the token set, filled
-// by the view model. `standing.ofLineage` and `global.ofLineage / noLineage /
-// lineageEmpty` place the player within one lineage, and `global.sampledFoot`
-// says honestly that the list is filtered from the top n deepest.
+// by the view model. `standing.ofLineage` places the player within one
+// lineage (local scope only).
+//
+// Phase 81 (BOARD-13): LINEAGE is ME-only — signed-in filtering of a global
+// DEEPEST sample was retired. `global.ofLineage`, `noLineage`, `lineageEmpty`
+// and `sampledFoot` are gone; LINEAGE never reads the global scope.
 export const BOARDS_PANEL_COPY = Object.freeze({
   head: Object.freeze({
     title: "LEADERBOARDS",
@@ -124,6 +132,7 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     }),
   }),
   chips: Object.freeze({
+    me: "ME",
     all: "ALL",
     friends: "FRIENDS",
   }),
@@ -150,10 +159,6 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     noEntry: "Nothing of yours on this board yet this season.",
     ofWorld: "of {n} interred worldwide.",
     ofFriends: "of {n} among friends.",
-    ofLineage: "of {n} of this lineage in the sample.",
-    noLineage: "Nothing of yours of this lineage in the sample. The world keeps only your best corpse.",
-    lineageEmpty: "No {lineage} made the top {n} deepest this season. Somebody has to fall that far first.",
-    sampledFoot: "Filtered from the top {n} deepest corpses in the world. Rare lineages may be buried further down.",
   }),
   empty: "Nobody of yours has qualified for this board yet.",
   divider: "NOT IN THE TOP TEN · YOUR BEST RUN",
