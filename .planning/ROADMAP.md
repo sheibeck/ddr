@@ -238,13 +238,14 @@ Plans:
 
 **Goal**: The Leaderboards panel shows the signed-in player accurately, filters every board by ME | ALL | FRIENDS, and drops the boards Play Games cannot back honestly.
 **Depends on**: Nothing (shell-only: `src/browser/boardsView.js`, `boardsPanel.js`, `globalBoards.js`, `content/boards.js`, plus `engine/records.js` `BOARD_IDS`; zero parity fixtures)
-**Requirements**: BOARD-09, BOARD-10, BOARD-11, BOARD-12, BOARD-13, BOARD-14
+**Requirements**: BOARD-09, BOARD-10, BOARD-11, BOARD-12, BOARD-13, BOARD-14, BOARD-15, BOARD-16
 **Success Criteria** (what must be TRUE):
 
   1. The panel shows three scope chips — ME | ALL | FRIENDS — and every board can be viewed under each; signed in with Compete ON it opens on ALL, signed out or Compete OFF it opens on ME with ALL/FRIENDS showing the sign-in note.
   2. On ALL and FRIENDS the signed-in player's own score is tagged YOU — never FRIEND — with the `playerId` mismatch root-caused and fixed, and the "not in the top ten / your best run" card appears only when the player is ranked but off the visible list.
   3. LINEAGE appears only under ME, sits at the end of the board rail, and never reads the global DEEPEST sample.
   4. The GRAVEYARD board is gone; ME rows keep each run's tap-to-expand details (epitaph included), the stored run history still feeds ME and LINEAGE, and old saves load cleanly.
+  5. Every finished run lands on each ME board it qualifies for (a depth-10 run tops a depth-9 one on DEEPEST), and a signed-in player's score reaches Play Games and shows on another player's ALL board after a refresh. Both root causes are found with `/gsd-debug` before fixing.
 
 **Plans**: TBD
 **UI hint**: yes

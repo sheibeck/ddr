@@ -93,6 +93,7 @@ Last activity: 2026-09-24 — Phase 72 execution started
 
 ### Pending Todos
 
+- 2026-09-25 — **Leaderboards lose runs** (user + friend, on device; v2.1 BOARD-15/16, Phase 81): a depth-10 run missing from the player's own DEEPEST board (Graveyard only); a friend's depth-11 score never shows on the user's ALL board; the friend's "not in the top ten" card is wrong — `todos/pending/2026-09-25-leaderboards-lose-runs-locally-and-globally.md`
 - 2026-09-24 — **Pilfer bad becomes fumbling** (user, added to v2.1 as RULES-09, Phase 75.1): drop the heal-only lockout; a Pilfer uses magic items normally but a rolled 1 destroys the item — `todos/pending/2026-09-24-pilfer-bad-becomes-fumbling-destroys-a-magic-item-on-a-1.md`
 - 2026-09-24 — **Anyone reads scrolls on an intelligence roll** (user, v2.1 RULES-10, Phase 75.1): Magic Users always succeed, everyone else rolls d20 vs intel, scroll consumed either way — `todos/pending/2026-09-24-anyone-reads-scrolls-on-an-intelligence-roll-scroll-always-consumed.md`
 - 2026-09-24 — **Stairs descent fades to black** (user): fade to black while the stairs clip plays, swap floors while dark, fade in on the new level; lock input during it; reduced-motion fallback — `todos/pending/2026-09-24-stairs-descent-fades-to-black-with-the-stairs-sound-then-fades-in.md`

@@ -50,6 +50,8 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [ ] **BOARD-12**: The Leaderboards panel has three scope chips, **ME | ALL | FRIENDS**, and every board can be filtered by them. ME is the local list of the player's own runs (today's hidden `"local"` scope, with no chip to return to it). Signed out or with Compete OFF, ALL and FRIENDS keep today's sign-in note and ME stays the default. BOARD-11's ALL default applies when signed in with Compete ON. (user ruling 2026-09-24)
 - [ ] **BOARD-13**: LINEAGE is a ME-only board. Its tab is shown only while ME is selected, it moves to the end of the board rail, and it no longer reads the global DEEPEST sample. The reason is that Play Games keeps one best score per player per board, so a global lineage view could only ever show each player's all-time deepest character. (user ruling 2026-09-24)
 - [ ] **BOARD-14**: The GRAVEYARD board is removed, because ME covers it. Its tab, copy and view branch go away. The run history that feeds ME and LINEAGE stays stored, and old saves load tolerantly. Nothing a player could see on GRAVEYARD is lost: ME rows keep the run's tap-to-expand details. (user ruling 2026-09-24)
+- [ ] **BOARD-15**: Every finished run is recorded on every ME board it qualifies for, on every death path (combat, trap, starvation, abandon, a resumed save). Device: a depth-10 run showed in the Graveyard but not on the player's own DEEPEST board above their depth-9 run. The root cause is found with `/gsd-debug` before the fix, and a test pins each death path. (device report 2026-09-25; todo 2026-09-25 leaderboards-lose-runs)
+- [ ] **BOARD-16**: A signed-in player's qualifying score reaches Play Games and appears on every other player's ALL board after a refresh. Device: a friend's depth-11 DEEPEST score never showed on the user's ALL board, while the friend saw the user's depth-9 entry. The submission (queue, response, leaderboard ID, encoding) and the fetch (collection, time span, cache staleness) are traced end to end, the root cause is fixed, and the fix is confirmed with two signed-in devices in the batched device checklist. (device report 2026-09-25)
 
 ### Darkness (DARK) — backlog 999.8
 
@@ -166,8 +168,10 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | BOARD-12 | Phase 81 | Pending |
 | BOARD-13 | Phase 81 | Pending |
 | BOARD-14 | Phase 81 | Pending |
+| BOARD-15 | Phase 81 | Pending |
+| BOARD-16 | Phase 81 | Pending |
 
-**Coverage:** 47 requirements. Mapped: 47/47 ✓
+**Coverage:** 49 requirements. Mapped: 49/49 ✓
 
 ---
 *Requirements defined: 2026-09-24*
