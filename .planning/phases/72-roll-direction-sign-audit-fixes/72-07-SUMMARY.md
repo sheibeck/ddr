@@ -170,3 +170,17 @@ Rolling up this phase's device checks (72-04/05/06 plus this plan's own F1/F2/F3
 ---
 *Phase: 72-roll-direction-sign-audit-fixes*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: engine/combat.js
+- FOUND: engine/difficulty.js
+- FOUND: content/skills.js
+- FOUND: test/unit/roll-ledger-sync.test.js
+- FOUND: docs/ROLL-LEDGER.md
+- FOUND: docs/DIFFICULTY-RETUNE.md
+- FOUND: .planning/phases/72-roll-direction-sign-audit-fixes/72-07-SUMMARY.md
+- FOUND commit d2adfd6 (Task 1)
+- FOUND commit 2b4ef81 (Task 2)
+- FOUND commit 606a8f5 (Task 3)
+- FOUND commit f82aed3 (SUMMARY commit)
