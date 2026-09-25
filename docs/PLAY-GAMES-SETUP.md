@@ -110,9 +110,12 @@ each line names the section that details it.
 
 Two facts to keep in mind while doing it:
 
-- **LINEAGE and GRAVEYARD get no PGS board.** Since v2.1, LINEAGE is ME-only (BOARD-13), and
-  GRAVEYARD was folded into the ME scope (BOARD-14). Neither ever had, or will have, a Play
-  Games board.
+- **LINEAGE and GRAVEYARD get no PGS board.** Since Play Games keeps one best score per
+  player per board, neither can be honest globally, so both are ME-only boards at the end of
+  the rail (…, LINEAGE, GRAVEYARD). LINEAGE is ME-only per BOARD-13; GRAVEYARD is ME-only per
+  BOARD-14, kept by the user's ruling of 2026-09-25 ("Let's keep the graveyard then") — it
+  lists every stored run with its epitaph, exactly as before. Neither ever had, or will have,
+  a Play Games board.
 - **The cap.** PGS allows 70 leaderboards per game, for its whole lifetime. Four boards per
   season, with Season 1 counted as five spent (it briefly included the now-retired LEANEST,
   section 13), leaves 65 — 16 more seasons of four. Old seasons' boards are never deleted.

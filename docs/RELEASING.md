@@ -32,7 +32,9 @@ Leaderboards panel fixes). Family-friendly deadpan, no internal ids:
 - The Leaderboards panel now has ME | ALL | FRIENDS; signed in, it opens on ALL.
 - Your own score is tagged YOU and appears once.
 - The boards refresh when you open them.
-- LEANEST and GRAVEYARD are gone; your own dead are all still under ME, epitaphs included.
+- LEANEST is gone.
+- LINEAGE and GRAVEYARD now live under ME at the end of the board rail, and GRAVEYARD still
+  lists every stored run with its epitaph.
 - Every finished run lands on your own boards.
 
 ## After the push: console checklist
