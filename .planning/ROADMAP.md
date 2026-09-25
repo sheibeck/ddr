@@ -170,7 +170,7 @@ Plans:
 
 **Goal**: Character creation, HP growth, spell legality, initiative, traps, ailments and armor destruction follow the rules the game claims, written in the roll-high convention from the start.
 **Depends on**: Phase 73 (written directly on top of the roll-high mirror so nothing here needs rewriting later)
-**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08, RULES-12
+**Requirements**: RULES-01, RULES-02, RULES-03, RULES-04, RULES-05, RULES-06, RULES-07, RULES-08, RULES-12, RULES-13
 **Success Criteria** (what must be TRUE):
 
   1. Pulling multiple Table-4 "+HP" dots grows a character's max HP linearly, not compounding (×1.6 each time), and the toll row takes its share from that same non-inflated pool.
@@ -180,6 +180,8 @@ Plans:
   5. An ailment roll of 5–6 always narrates what it gives (canon: a phobia, a disease of the mind — user ruling 2026-09-25), and replacing a destroyed armor piece with a new one always tells the player the old piece was destroyed and is gone.
 
   6. When a wandering monster interrupts a step onto an icon, the icon resolves after the fight if the hero is still on it.
+
+  7. A Magic User can wield a magic staff as a d8 melee weapon, and its power works only while it is wielded.
 
 **Plans**: TBD
 **UI hint**: yes

@@ -76,6 +76,15 @@ Character creation, HP growth, spell legality, initiative, traps, ailments and a
   - if they died, nothing.
 - A declared canon divergence: measure, declare and regenerate the moved fixtures, and carve `pendingTile` out of the comparables or reconcile it. Phase 76 must persist `pendingTile` across a relaunch.
 
+### Magic staff as a wielded weapon — RULES-13 (user, 2026-09-25; todo `2026-09-25-magic-staff-is-an-equippable-d8-melee-weapon-for-magic-users`)
+- REVERSES the 2026-09-18 staff amendment (`content/treasure-tables.js` ~L77-83).
+- A magic staff (the six STAVES_ROWS) is equipped by a Magic User in the WEAPON slot and fights as a d8 melee weapon (need 0, crit 1 unless canon says otherwise), plus the usual damage modifiers.
+- Its charged power is usable ONLY while wielded; a bagged staff is inert. Charges and recharge are unchanged.
+- Equip swaps the old weapon to the bag. Non-MUs can't equip one.
+- Combat ITEMS (CMBUI-14) greys a bagged staff and shows a wielded one as EQUIPPED.
+- Measure, declare and regenerate the fixtures where a staff was used from the bag. Old saves keep bag staves in the bag, with no auto-equip.
+- Update the Gear tab, item text and docs.
+
 ### Engine gate (standing)
 - Pure and deterministic. New rolls come from a derived stream.
 - Measure moved fixtures, declare each in `test/parity/FIXTURE-INVENTORY.md`, and regenerate only those. Carve new serialized fields out of the three `*Comparable()` functions.

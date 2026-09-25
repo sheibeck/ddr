@@ -22,6 +22,7 @@
 - [ ] **RULES-10**: Anyone can attempt to read any scroll. Magic Users, and any character with the Runes/Signs skill, always succeed and never fumble. Everyone else makes an intelligence roll (d20 against their own intel, with no intel-12 floor); a success casts the scroll's spell and a failure casts nothing, except that a read that rolls below half the required target is a FUMBLE: a harmful spell takes effect on the reader instead of its target, and a beneficial spell takes effect on the targeted enemy instead of the reader (a fumbled Shield scroll shields the foe you're targeting). A fumbled area-damage spell hits the reader and everyone in the reader's party. Outside combat, a fumble has no effect. The scroll is consumed either way, and both outcomes are narrated. The class/skill gate and the Pilfer lockout in `canRead` go away. A Pilfer reads scrolls under this rule; the RULES-09 fumble never applies to scrolls. The roll comes from a derived rng stream. (user, 2026-09-24; todo 2026-09-24 anyone-reads-scrolls-on-an-intelligence-roll)
 - [ ] **RULES-11**: Hero size matters (user, 2026-09-25). Race sets the starting size (Elven and Dwarven Small, Troll Large, the rest Human-size, from the existing race data). Items and potions step it: the Gauntlet of the Giant and Enlarge are each exactly +1 size step, and Enlarge's separate +4 damage is removed. Each step up gives +2 damage and makes foes hit you one face more easily; each step down gives -2 damage and makes foes need one face more. Rules that care about a creature being big or small read the hero's size too. Item text states exactly what a step does, with no ceiling promise. (todo 2026-09-25 hero-size-means-nothing-beyond-damage)
 - [ ] **RULES-12**: When a wandering monster interrupts the step that lands on an icon (a dot, trap, chest, teleporter or other feature), the icon resolves after the fight if the hero is still standing on it, instead of being left unresolved under the hero. (user, 2026-09-25; todo 2026-09-25 resolve-the-tile-after-a-wanderer)
+- [ ] **RULES-13**: A magic staff is a Magic User's equippable melee weapon (weapon slot, d8 base damage), and its charged power works ONLY while it is wielded; a staff in the bag is inert. This reverses the 2026-09-18 "usable but not equipable" staff amendment. Old saves keep bag staves as bag staves. (user, 2026-09-25; todo 2026-09-25 magic-staff-is-an-equippable-d8-melee-weapon)
 
 ### Roll direction & modifier honesty (ROLL) — user, 2026-09-24
 
@@ -141,6 +142,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | RULES-07 | Phase 75 | Pending |
 | RULES-08 | Phase 75 | Pending |
 | RULES-12 | Phase 75 | Pending |
+| RULES-13 | Phase 75 | Pending |
 | RULES-09 | Phase 75.1 | Pending |
 | RULES-10 | Phase 75.1 | Pending |
 | RULES-11 | Phase 75.2 | Pending |
