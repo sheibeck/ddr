@@ -629,3 +629,689 @@ test('[hero-crit:silent-step] a forced crit (Silent Step\'s own descriptor) alwa
   const result = faceOdds((rng) => heroCrit(build(), rng), { label: "hero-crit:silent-step" });
   assert.equal(result.wins, result.n, "[hero-crit:silent-step] a forced crit must win on every face");
 });
+
+// =============================================================================
+// TASK 2 — foe-side, member/ally, ordering/identity rows, and the RED pending
+// rows for the four known bugs.
+// =============================================================================
+
+// --- Foe against the hero ---------------------------------------------------
+
+test('[foe-vs-hero:elven] "easy to hit" (content/races.js:23, deliberate Phase 31) — a strict bonus to the FOE', () => {
+  const elven = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Elven" }), [NEUTRAL_FOE()]);
+  const human = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(elven(), rng), { label: "foe-vs-hero:elven" });
+  const without = faceOdds((rng) => foeHitsHero(human(), rng), { label: "foe-vs-hero:elven (baseline)" });
+  assertBonus(withMod, without, { label: "foe-vs-hero:elven" });
+});
+
+test("[foe-vs-hero:acrobat] Acrobat harder to hit (need 3, not 5), a strict penalty to the foe", () => {
+  const acrobat = () => inCombat(heroState({ cls: "Thief", sub: "Acrobat", race: "Human" }), [NEUTRAL_FOE()]);
+  const pickpocket = () => inCombat(heroState({ cls: "Thief", sub: "Pickpocket", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(acrobat(), rng), { label: "foe-vs-hero:acrobat" });
+  const without = faceOdds((rng) => foeHitsHero(pickpocket(), rng), { label: "foe-vs-hero:acrobat (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-hero:acrobat" });
+});
+
+test('[foe-vs-hero:guard] "the profession is standing there" (Phase 24) — a strict penalty to the foe', () => {
+  const guard = () => inCombat(heroState({ cls: "Fighter", sub: "Guard", race: "Human" }), [NEUTRAL_FOE()]);
+  const soldier = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(guard(), rng), { label: "foe-vs-hero:guard" });
+  const without = faceOdds((rng) => foeHitsHero(soldier(), rng), { label: "foe-vs-hero:guard (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-hero:guard" });
+});
+
+test('[foe-vs-hero:gear-foe-to-hit] Anklet of Invisibility, "foes need two better to land" — a strict penalty to the foe', () => {
+  const anklet = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "item:Anklet of Invisibility", { rounds: 50 });
+    return s;
+  };
+  const plain = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(anklet(), rng), { label: "foe-vs-hero:gear-foe-to-hit" });
+  const without = faceOdds((rng) => foeHitsHero(plain(), rng), { label: "foe-vs-hero:gear-foe-to-hit (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-hero:gear-foe-to-hit" });
+});
+
+test("[foe-vs-hero:foe-accuracy] the FOE_ACCURACY dial — identity is a no-op, a positive value is a strict bonus to the foe", () => {
+  const build = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const identity = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:foe-accuracy (identity)" });
+  const identityExplicit = (() => {
+    const restore = setDialsForTuning({ FOE_ACCURACY: DIALS.FOE_ACCURACY });
+    const result = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:foe-accuracy (identity, explicit)" });
+    restore();
+    return result;
+  })();
+  assertSame(identityExplicit, identity, { label: "foe-vs-hero:foe-accuracy (identity is a no-op)" });
+  const bumped = (() => {
+    const restore = setDialsForTuning({ FOE_ACCURACY: 1 });
+    const result = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:foe-accuracy (+1)" });
+    restore();
+    return result;
+  })();
+  assertBonus(bumped, identity, { label: "foe-vs-hero:foe-accuracy" });
+});
+
+test('[foe-vs-hero:battle-roar] the hero\'s OWN live Battle Roar timer — a strict penalty to the foe, engine/derived.js#foeToHitVs ~L1230', () => {
+  const roaring = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "ability:battleRoar", { rounds: 2 });
+    return s;
+  };
+  const plain = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(roaring(), rng), { label: "foe-vs-hero:battle-roar" });
+  const without = faceOdds((rng) => foeHitsHero(plain(), rng), { label: "foe-vs-hero:battle-roar (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-hero:battle-roar" });
+});
+
+test('[foe-vs-hero:party-battle-roar] a MEMBER\'s own Battle Roar covers the hero too, engine/derived.js#foeToHitVs ~L1230', () => {
+  const roaringMember = () => {
+    const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+    const idx = withMember(s, { cls: "Fighter", sub: "Guard", race: "Human" });
+    const sheet = s.party[idx];
+    startEffect(sheet, "ability:battleRoar", { rounds: 2 });
+    inCombat(s, [NEUTRAL_FOE()], { allies: [{ partyIdx: idx, name: sheet.name, lvl: sheet.level ?? 1, sub: sheet.sub, wp: sheet.wp, maxWP: sheet.maxWP }] });
+    return s;
+  };
+  const noMember = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  // A LIVE (non-taunting) party member makes pickFoeTarget draw a pool-pick
+  // die FIRST (engine/combat.js#pickFoeTarget) — fill(0,2)=1 selects the
+  // hero (pick > 1 is a member), so the row's own probed draw is the SECOND
+  // one, index 1. The baseline has no party at all, so pickFoeTarget draws
+  // nothing and the to-hit die stays index 0.
+  const withMod = faceOdds((rng) => foeHitsHero(roaringMember(), rng), { isProbe: (i) => i === 1, label: "foe-vs-hero:party-battle-roar" });
+  const without = faceOdds((rng) => foeHitsHero(noMember(), rng), { label: "foe-vs-hero:party-battle-roar (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-hero:party-battle-roar" });
+});
+
+test('[foe-vs-hero:sidestep] the hero\'s own live Sidestep timer — a strict penalty to the foe', () => {
+  const sidestepping = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "ability:sidestep", { rounds: 2 });
+    return s;
+  };
+  const plain = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(sidestepping(), rng), { label: "foe-vs-hero:sidestep" });
+  const without = faceOdds((rng) => foeHitsHero(plain(), rng), { label: "foe-vs-hero:sidestep (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-hero:sidestep" });
+});
+
+test('[foe-vs-hero:smoke] a live Smoke timer gives the foe exactly one winning face', () => {
+  const smoked = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "ability:smoke", { rounds: 2 });
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsHero(smoked(), rng), { label: "foe-vs-hero:smoke" });
+  assert.equal(result.wins, 1, "[foe-vs-hero:smoke] the foe must win on exactly one face");
+});
+
+test('[foe-vs-hero:mirror-self] c.mirror ("foes need a 1 to hit") gives the foe exactly one winning face', () => {
+  const mirrored = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+    s.c.mirror = 3;
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsHero(mirrored(), rng), { label: "foe-vs-hero:mirror-self" });
+  assert.equal(result.wins, 1, "[foe-vs-hero:mirror-self] the foe must win on exactly one face");
+});
+
+test('[foe-vs-hero:invisibility] a live invis item effect gives the foe exactly one winning face', () => {
+  const invisible = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "item:Invisible", { rounds: 90 });
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsHero(invisible(), rng), { label: "foe-vs-hero:invisibility" });
+  assert.equal(result.wins, 1, "[foe-vs-hero:invisibility] the foe must win on exactly one face");
+});
+
+test("[foe-vs-hero:blind] a blinded foe still gives itself exactly one winning face", () => {
+  const build = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+    s.combat.foes[0].blind = true;
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:blind" });
+  assert.equal(result.wins, 1, "[foe-vs-hero:blind] the foe must win on exactly one face");
+});
+
+test('[foe-vs-hero:weaken] a live Weaken cast ("they hit on a 3") is a strict penalty to the foe for a base-5 hero', () => {
+  const weakenIdx = SPELLS.findIndex((sp) => sp.n === "Weaken");
+  const weakened = () => {
+    const s = inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 }), [foeFrom("Humans", 1, "Ned")]);
+    s.c.scrollCast = true; // bypass the grimoire/level/school gate — we are testing the EFFECT, not chargen
+    castSpell(s, weakenIdx, probeRng({ isProbe: () => false, fill: () => 1 }), []);
+    assert.ok(s.combat.foeToHitPenalty, "[foe-vs-hero:weaken] the cast must leave a live foeToHitPenalty");
+    return s;
+  };
+  const plain = () => inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 }), [foeFrom("Humans", 1, "Ned")]);
+  const withMod = faceOdds((rng) => foeHitsHero(weakened(), rng), { label: "foe-vs-hero:weaken" });
+  const without = faceOdds((rng) => foeHitsHero(plain(), rng), { label: "foe-vs-hero:weaken (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-hero:weaken" });
+});
+
+test("[foe-vs-hero:insult] a live parleyInsulted flag is exactly one more winning face on the same die", () => {
+  const plainBuild = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const insultBuild = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()], { parleyInsulted: true });
+  const without = faceOdds((rng) => foeHitsHero(plainBuild(), rng), { label: "foe-vs-hero:insult (baseline)" });
+  const withMod = faceOdds((rng) => foeHitsHero(insultBuild(), rng), { label: "foe-vs-hero:insult" });
+  assert.equal(withMod.n, without.n, "[foe-vs-hero:insult] the insult must not change the die size");
+  assert.equal(withMod.wins, without.wins + 1, "[foe-vs-hero:insult] the insult must be exactly one more winning face");
+});
+
+test('[foe-vs-hero:insult-after-smoke] Smoke overrides to the single best face, THEN the insult adds one — exactly two faces (passing today)', () => {
+  const build = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()], { parleyInsulted: true });
+    startEffect(s.c, "ability:smoke", { rounds: 2 });
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:insult-after-smoke" });
+  assert.equal(result.wins, 2, "[foe-vs-hero:insult-after-smoke] insulted-plus-smoked must win on exactly two faces");
+});
+
+test('[foe-vs-hero:insult-after-mirror] Mirror Self overrides, then the insult adds one — exactly two faces (passing today)', () => {
+  const build = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()], { parleyInsulted: true });
+    s.c.mirror = 3;
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:insult-after-mirror" });
+  assert.equal(result.wins, 2, "[foe-vs-hero:insult-after-mirror] insulted-plus-mirrored must win on exactly two faces");
+});
+
+test('[foe-vs-hero:insult-after-invisibility] a live invis effect overrides, then the insult adds one — exactly two faces (passing today)', () => {
+  const build = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()], { parleyInsulted: true });
+    startEffect(s.c, "item:Invisible", { rounds: 90 });
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:insult-after-invisibility" });
+  assert.equal(result.wins, 2, "[foe-vs-hero:insult-after-invisibility] insulted-plus-invisible must win on exactly two faces");
+});
+
+test('[foe-vs-hero:insult-after-blind] a blinded foe overrides, then the insult adds one — exactly two faces (passing today)', () => {
+  const build = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()], { parleyInsulted: true });
+    s.combat.foes[0].blind = true;
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:insult-after-blind" });
+  assert.equal(result.wins, 2, "[foe-vs-hero:insult-after-blind] insulted-plus-blind must win on exactly two faces");
+});
+
+test('[foe-vs-hero:dwarven-foe-strike-step] "foes strike at a better die" against a Dwarf, content/races.js:29', () => {
+  const dwarf = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Dwarven" }), [NEUTRAL_FOE()]);
+  const human = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(dwarf(), rng), { label: "foe-vs-hero:dwarven-foe-strike-step" });
+  const without = faceOdds((rng) => foeHitsHero(human(), rng), { label: "foe-vs-hero:dwarven-foe-strike-step (baseline)" });
+  assertBonus(withMod, without, { label: "foe-vs-hero:dwarven-foe-strike-step" });
+});
+
+test("[foe-vs-hero:foe-level-die] a higher-tier foe strikes no worse than a lower-tier one of the same need, engine/derived.js#foeDie", () => {
+  const highTier = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [foeFrom("Walking Dead", 2, "Skeleton")]);
+  const lowTier = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [foeFrom("Walking Dead", 1, "Philly")]);
+  const withMod = faceOdds((rng) => foeHitsHero(highTier(), rng), { label: "foe-vs-hero:foe-level-die" });
+  const without = faceOdds((rng) => foeHitsHero(lowTier(), rng), { label: "foe-vs-hero:foe-level-die (baseline)" });
+  assertBonus(withMod, without, { strict: false, label: "foe-vs-hero:foe-level-die" });
+});
+
+test(
+  '[foe-vs-hero:thief-evasion] a positive evasion dial should make a Thief HARDER to hit (a penalty to the foe), engine/difficulty.js#classEvasionFor ~L591 (72-04 flips the sign)',
+  { todo: "fixed by 72-04" },
+  () => {
+    const thief = () => inCombat(heroState({ cls: "Thief", sub: "Pickpocket", race: "Human" }), [NEUTRAL_FOE()]);
+    const nonThief = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+
+    const identity = faceOdds((rng) => foeHitsHero(thief(), rng), { label: "thief-evasion (identity)" });
+    let restore = setDialsForTuning({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief } } });
+    const identityExplicit = faceOdds((rng) => foeHitsHero(thief(), rng), { label: "thief-evasion (identity, explicit)" });
+    restore();
+    assertSame(identityExplicit, identity, { label: "thief-evasion (identity is a no-op)" });
+
+    restore = setDialsForTuning({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: 1 } } });
+    const bumped = faceOdds((rng) => foeHitsHero(thief(), rng), { label: "thief-evasion (+1)" });
+    const bumpedNonThief = faceOdds((rng) => foeHitsHero(nonThief(), rng), { label: "thief-evasion (+1, non-Thief)" });
+    restore();
+    const nonThiefBaseline = faceOdds((rng) => foeHitsHero(nonThief(), rng), { label: "thief-evasion (baseline, non-Thief)" });
+
+    assertPenalty(bumped, identity, { label: "foe-vs-hero:thief-evasion" });
+    assertSame(bumpedNonThief, nonThiefBaseline, { label: "foe-vs-hero:thief-evasion (non-Thief unaffected)" });
+  },
+);
+
+// --- Foe crit against the hero -----------------------------------------------
+
+test('[foe-crit-vs-hero:soldier] "a BAD trait" — a Soldier hero widens the FOE\'s crit window to 1-2', () => {
+  // NEUTRAL_FOE (Ned) carries no `abilities` kit and no `sp.atk` — every
+  // Humans-tier-2 row carries one or the other, either of which would
+  // insert an extra, unprobed draw ahead of the row's own probed to-hit
+  // roll.
+  // Bare armor (ar 0) so a landed blow is never soaked into an `armorSoaked`
+  // event instead of `struckByFoe` — a soaked blow carries no crit flag at
+  // all, which would silently zero out this row regardless of the sign
+  // under test.
+  const bareArmor = (s) => {
+    s.c.armor = "Nothing";
+    s.c.ar = 0;
+    s.c.armorWP = 0;
+    s.c.armorMax = 0;
+    return s;
+  };
+  const soldier = () => bareArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+  const knight = () => bareArmor(inCombat(heroState({ cls: "Fighter", sub: "Knight", race: "Human" }), [NEUTRAL_FOE()]));
+  const withMod = faceOdds((rng) => foeCritOnHero(soldier(), rng), { label: "foe-crit-vs-hero:soldier" });
+  const without = faceOdds((rng) => foeCritOnHero(knight(), rng), { label: "foe-crit-vs-hero:soldier (baseline)" });
+  assertBonus(withMod, without, { label: "foe-crit-vs-hero:soldier" });
+});
+
+// --- Foe against a party member ---------------------------------------------
+
+/** memberCombatState(heroOpts, memberOpts, foe) — builds a live encounter with
+ * one taunting party member (a zero-draw, deterministic foeTurn target, per
+ * pickFoeTarget's own taunt short-circuit), so every foe-vs-member row always
+ * exercises the MEMBER branch. */
+function memberCombatState(heroOpts, memberOpts, foe) {
+  const s = heroState(heroOpts);
+  const idx = withMember(s, memberOpts);
+  const sheet = s.party[idx];
+  startEffect(sheet, "ability:taunt", { rounds: 1 });
+  inCombat(s, [foe], { allies: [{ partyIdx: idx, name: sheet.name, lvl: sheet.level ?? 1, sub: sheet.sub, wp: sheet.wp, maxWP: sheet.maxWP }] });
+  return s;
+}
+
+test('[foe-vs-member:battle-roar] a party member\'s own Battle Roar is a strict penalty to the foe', () => {
+  const roaringMember = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+    startEffect(s.party[0], "ability:battleRoar", { rounds: 2 });
+    return s;
+  };
+  const plain = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(roaringMember(), rng), { label: "foe-vs-member:battle-roar" });
+  const without = faceOdds((rng) => foeHitsMember(plain(), rng), { label: "foe-vs-member:battle-roar (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-member:battle-roar" });
+});
+
+test("[foe-vs-member:member-sidestep] a member's own Sidestep is a strict penalty to the foe", () => {
+  const sidestepping = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+    startEffect(s.party[0], "ability:sidestep", { rounds: 2 });
+    return s;
+  };
+  const plain = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(sidestepping(), rng), { label: "foe-vs-member:member-sidestep" });
+  const without = faceOdds((rng) => foeHitsMember(plain(), rng), { label: "foe-vs-member:member-sidestep (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-member:member-sidestep" });
+});
+
+test("[foe-vs-member:member-smoke] a member's own Smoke gives the foe exactly one winning face", () => {
+  const smoked = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+    startEffect(s.party[0], "ability:smoke", { rounds: 2 });
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsMember(smoked(), rng), { label: "foe-vs-member:member-smoke" });
+  assert.equal(result.wins, 1, "[foe-vs-member:member-smoke] the foe must win on exactly one face");
+});
+
+test("[foe-vs-member:blind] a blinded foe against a member still gives itself exactly one winning face", () => {
+  const build = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+    s.combat.foes[0].blind = true;
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsMember(build(), rng), { label: "foe-vs-member:blind" });
+  assert.equal(result.wins, 1, "[foe-vs-member:blind] the foe must win on exactly one face");
+});
+
+test('[foe-vs-member:weaken] a live Weaken cast is a strict penalty to the foe attacking a member', () => {
+  const weakenIdx = SPELLS.findIndex((sp) => sp.n === "Weaken");
+  const weakened = () => {
+    const s = memberCombatState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 }, { cls: "Fighter", sub: "Guard", race: "Human" }, foeFrom("Humans", 1, "Ned"));
+    s.c.scrollCast = true;
+    // castSpell's own tail runs afterPlayerAction (the cast IS the round's
+    // action) — on a disposable rng, so it never touches the row's real
+    // probed rng, but it DOES run one full foeTurn against this same
+    // combat, which can tick the member's own one-round taunt timer past
+    // its effect phase. Refreshed here so the row's own explicit foeTurn
+    // call below still deterministically targets the member.
+    castSpell(s, weakenIdx, probeRng({ isProbe: () => false, fill: () => 1 }), []);
+    startEffect(s.party[0], "ability:taunt", { rounds: 1 });
+    return s;
+  };
+  const plain = () => memberCombatState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 }, { cls: "Fighter", sub: "Guard", race: "Human" }, foeFrom("Humans", 1, "Ned"));
+  const withMod = faceOdds((rng) => foeHitsMember(weakened(), rng), { label: "foe-vs-member:weaken" });
+  const without = faceOdds((rng) => foeHitsMember(plain(), rng), { label: "foe-vs-member:weaken (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-member:weaken" });
+});
+
+test("[foe-vs-member:insult] a live parleyInsulted flag is exactly one more winning face against a member", () => {
+  const plainBuild = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const insultBuild = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+    s.combat.parleyInsulted = true;
+    return s;
+  };
+  const without = faceOdds((rng) => foeHitsMember(plainBuild(), rng), { label: "foe-vs-member:insult (baseline)" });
+  const withMod = faceOdds((rng) => foeHitsMember(insultBuild(), rng), { label: "foe-vs-member:insult" });
+  assert.equal(withMod.n, without.n, "[foe-vs-member:insult] the insult must not change the die size");
+  assert.equal(withMod.wins, without.wins + 1, "[foe-vs-member:insult] the insult must be exactly one more winning face");
+});
+
+test("[foe-vs-member:foe-accuracy] the FOE_ACCURACY dial — identity is a no-op, a positive value is a strict bonus to the foe", () => {
+  const build = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const identity = faceOdds((rng) => foeHitsMember(build(), rng), { label: "foe-vs-member:foe-accuracy (identity)" });
+  const bumped = (() => {
+    const restore = setDialsForTuning({ FOE_ACCURACY: 1 });
+    const result = faceOdds((rng) => foeHitsMember(build(), rng), { label: "foe-vs-member:foe-accuracy (+1)" });
+    restore();
+    return result;
+  })();
+  assertBonus(bumped, identity, { label: "foe-vs-member:foe-accuracy" });
+});
+
+test("[foe-vs-member:hero-only-terms] the HERO's own Sidestep/Smoke leave a member's own odds unchanged — scope, per foeToHitVs's vs rule", () => {
+  const heroEffects = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+    startEffect(s.c, "ability:sidestep", { rounds: 2 });
+    startEffect(s.c, "ability:smoke", { rounds: 2 });
+    return s;
+  };
+  const plain = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(heroEffects(), rng), { label: "foe-vs-member:hero-only-terms" });
+  const without = faceOdds((rng) => foeHitsMember(plain(), rng), { label: "foe-vs-member:hero-only-terms (baseline)" });
+  assertSame(withMod, without, { label: "foe-vs-member:hero-only-terms" });
+});
+
+test(
+  '[foe-vs-member:insult-after-member-smoke] the member\'s own Smoke plus insulted should give exactly two faces, like [foe-vs-hero:insult-after-smoke] — engine/combat.js#foeTurn member branch ~L2446-2467 applies insult BEFORE the member\'s own Sidestep/Smoke (72-04 moves it to the end)',
+  { todo: "fixed by 72-04" },
+  () => {
+    const build = () => {
+      const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+      startEffect(s.party[0], "ability:smoke", { rounds: 2 });
+      s.combat.parleyInsulted = true;
+      return s;
+    };
+    const result = faceOdds((rng) => foeHitsMember(build(), rng), { label: "foe-vs-member:insult-after-member-smoke" });
+    assert.equal(result.wins, 2, "[foe-vs-member:insult-after-member-smoke] insulted-plus-member-smoked must win on exactly two faces");
+  },
+);
+
+test("[foe-crit-vs-member:natural-best] a landed blow on a member crits on exactly one face", () => {
+  const build = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const result = faceOdds((rng) => foeCritOnMember(build(), rng), { label: "foe-crit-vs-member:natural-best" });
+  assert.equal(result.wins, 1, "[foe-crit-vs-member:natural-best] the member crit window must be exactly one face");
+});
+
+// --- Pursuit (a successful flee against a live sp.pursues Spectre) ---------
+
+function pursuitState(extra = {}) {
+  const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+  inCombat(s, [foeFrom("Demons", 4, "Spectre")], extra);
+  return s;
+}
+
+test("[pursuit:blind] a blinded pursuer wins on exactly one face", () => {
+  const build = () => {
+    const s = pursuitState();
+    s.combat.foes[0].blind = true;
+    return s;
+  };
+  const result = faceOdds((rng) => pursuitLanded(build(), rng), { isProbe: (i) => i === 1, fill: alwaysMax, label: "pursuit:blind" });
+  assert.equal(result.wins, 1, "[pursuit:blind] a blinded pursuer must win on exactly one face");
+});
+
+test("[pursuit:weaken] a live Weaken cast is a strict penalty to the pursuer", () => {
+  const weakenIdx = SPELLS.findIndex((sp) => sp.n === "Weaken");
+  const weakened = () => {
+    const s = heroState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 });
+    inCombat(s, [foeFrom("Demons", 4, "Spectre")]);
+    s.c.scrollCast = true;
+    castSpell(s, weakenIdx, probeRng({ isProbe: () => false, fill: () => 1 }), []);
+    return s;
+  };
+  const plain = () => {
+    const s = heroState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 });
+    inCombat(s, [foeFrom("Demons", 4, "Spectre")]);
+    return s;
+  };
+  const opts = { isProbe: (i) => i === 1, fill: alwaysMax };
+  const withMod = faceOdds((rng) => pursuitLanded(weakened(), rng), { ...opts, label: "pursuit:weaken" });
+  const without = faceOdds((rng) => pursuitLanded(plain(), rng), { ...opts, label: "pursuit:weaken (baseline)" });
+  assertPenalty(withMod, without, { label: "pursuit:weaken" });
+});
+
+test("[pursuit:insult] a live parleyInsulted flag is exactly one more winning face for the pursuer", () => {
+  const opts = { isProbe: (i) => i === 1, fill: alwaysMax };
+  const plain = faceOdds((rng) => pursuitLanded(pursuitState(), rng), { ...opts, label: "pursuit:insult (baseline)" });
+  const insulted = faceOdds((rng) => pursuitLanded(pursuitState({ parleyInsulted: true }), rng), { ...opts, label: "pursuit:insult" });
+  assert.equal(insulted.n, plain.n, "[pursuit:insult] the insult must not change the die size");
+  assert.equal(insulted.wins, plain.wins + 1, "[pursuit:insult] the insult must be exactly one more winning face");
+});
+
+test("[pursuit:insult-after-blind] a blinded pursuer, insulted, wins on exactly two faces", () => {
+  const build = () => {
+    const s = pursuitState({ parleyInsulted: true });
+    s.combat.foes[0].blind = true;
+    return s;
+  };
+  const result = faceOdds((rng) => pursuitLanded(build(), rng), { isProbe: (i) => i === 1, fill: alwaysMax, label: "pursuit:insult-after-blind" });
+  assert.equal(result.wins, 2, "[pursuit:insult-after-blind] a blinded-and-insulted pursuer must win on exactly two faces");
+});
+
+// --- Member and ally strikes (roller = the member/ally) ---------------------
+
+function memberStrikeState(memberOpts, foe, { round = 2 } = {}) {
+  const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }); // hero identity is inert here — memberToHit reads the MEMBER's own sheet
+  const idx = withMember(s, memberOpts);
+  const sheet = s.party[idx];
+  sheet.abilities = [];
+  sheet.spellsUsed = 999; // exhaust any Magic User charges — falls to the plain staff swing
+  sheet.weapon = "Club"; // isolate the class/race/sub axis from weapon choice
+  s.combat = {
+    foes: [foe],
+    type: foe.type,
+    round,
+    target: 0,
+    spellOpen: false,
+    tracked: false,
+    pending: false,
+    allies: [{ partyIdx: idx, name: sheet.name, lvl: sheet.level ?? 1, sub: sheet.sub, wp: sheet.wp, maxWP: sheet.maxWP }],
+  };
+  return s;
+}
+
+test('[member-strike:class-fighter] a Fighter member hits more easily than an MU member, engine/derived.js#memberToHit', () => {
+  const fighter = () => memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const mage = () => memberStrikeState({ cls: "Magic User", sub: "Wizard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => memberLanded(fighter(), rng), { label: "member-strike:class-fighter" });
+  const without = faceOdds((rng) => memberLanded(mage(), rng), { label: "member-strike:class-fighter (baseline)" });
+  assertBonus(withMod, without, { label: "member-strike:class-fighter" });
+});
+
+test("[member-strike:elven] an Elven member floors at 5, engine/derived.js#memberToHit", () => {
+  const elven = () => memberStrikeState({ cls: "Magic User", sub: "Wizard", race: "Elven" }, NEUTRAL_FOE());
+  const human = () => memberStrikeState({ cls: "Magic User", sub: "Wizard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => memberLanded(elven(), rng), { label: "member-strike:elven" });
+  const without = faceOdds((rng) => memberLanded(human(), rng), { label: "member-strike:elven (baseline)" });
+  assertBonus(withMod, without, { label: "member-strike:elven" });
+});
+
+test("[member-strike:acrobat] an Acrobat member strikes as a fighter, engine/derived.js#memberToHit", () => {
+  const acrobat = () => memberStrikeState({ cls: "Thief", sub: "Acrobat", race: "Human" }, NEUTRAL_FOE());
+  const pickpocket = () => memberStrikeState({ cls: "Thief", sub: "Pickpocket", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => memberLanded(acrobat(), rng), { label: "member-strike:acrobat" });
+  const without = faceOdds((rng) => memberLanded(pickpocket(), rng), { label: "member-strike:acrobat (baseline)" });
+  assertBonus(withMod, without, { label: "member-strike:acrobat" });
+});
+
+test("[member-strike:cleric] a Cleric member rolls 4, not 3, engine/derived.js#memberToHit", () => {
+  const cleric = () => memberStrikeState({ cls: "Magic User", sub: "Cleric", race: "Human" }, NEUTRAL_FOE());
+  const plainMU = () => memberStrikeState({ cls: "Magic User", sub: "Wizard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => memberLanded(cleric(), rng), { label: "member-strike:cleric" });
+  const without = faceOdds((rng) => memberLanded(plainMU(), rng), { label: "member-strike:cleric (baseline)" });
+  assertBonus(withMod, without, { label: "member-strike:cleric" });
+});
+
+test("[member-strike:level-die] a level-2 member strikes on a smaller die than a level-1 member, engine/combat.js#memberStrike", () => {
+  const lvl2 = () => {
+    const s = memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+    s.combat.allies[0].lvl = 2;
+    return s;
+  };
+  const lvl1 = () => memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => memberLanded(lvl2(), rng), { label: "member-strike:level-die" });
+  const without = faceOdds((rng) => memberLanded(lvl1(), rng), { label: "member-strike:level-die (baseline)" });
+  assertBonus(withMod, without, { label: "member-strike:level-die" });
+});
+
+test("[ally-strike:ally-level-die] a higher-level summon strikes no worse than a lower-level one, engine/combat.js#allyTurn", () => {
+  const highLevel = () => {
+    const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+    inCombat(s, [NEUTRAL_FOE()], { ally: { name: "A tall grey silence", lvl: 3, rounds: 5 } });
+    return s;
+  };
+  const lowLevel = () => {
+    const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+    inCombat(s, [NEUTRAL_FOE()], { ally: { name: "A tall grey silence", lvl: 1, rounds: 5 } });
+    return s;
+  };
+  const withMod = faceOdds((rng) => allyLanded(highLevel(), rng), { label: "ally-strike:ally-level-die" });
+  const without = faceOdds((rng) => allyLanded(lowLevel(), rng), { label: "ally-strike:ally-level-die (baseline)" });
+  assertBonus(withMod, without, { strict: false, label: "ally-strike:ally-level-die" });
+});
+
+// --- Skeleton shatter (PENDING, 72-06) --------------------------------------
+//
+// "Rolling max on your dice triggers the shatter" (user ruling 2026-09-24):
+// any to-hit roll against a Skeleton that shows its die's own best face
+// destroys it outright, including its second (kill-twice) life. Today the
+// engine has no such rule — a best-face roll just lands an ordinary hit — so
+// every row below is RED: `wins` is asserted at 1 (the post-fix claim), but
+// today's engine lands the SAME ordinary hit on several faces and never
+// actually shatters the Skeleton in one call. wp is set high enough that no
+// single ordinary hit is ever lethal on its own, so a wins > 1 reading below
+// would mean "landed a hit", never "shattered it".
+
+function skeletonFoe(wp = 60) {
+  return foeFrom("Walking Dead", 2, "Skeleton", { wp });
+}
+
+test('[shatter:hero-strike] "a 1 shatters it" — the hero\'s own strike, content/bestiary.js:151', { todo: "fixed by 72-06" }, () => {
+  const build = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [skeletonFoe()]));
+  const result = faceOdds(
+    (rng) => {
+      const s = build();
+      const foe = s.combat.foes[0];
+      playerStrike(s, rng, []);
+      return foe.alive === false;
+    },
+    { label: "shatter:hero-strike" },
+  );
+  assert.equal(result.wins, 1, "[shatter:hero-strike] only the best face may shatter the Skeleton in one strike");
+});
+
+test('[shatter:hero-strike-second-life] the shatter also destroys the SECOND (kill-twice) life outright', { todo: "fixed by 72-06" }, () => {
+  const build = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [skeletonFoe()]));
+    s.combat.foes[0].lives = 1; // already on its last life
+    return s;
+  };
+  const result = faceOdds(
+    (rng) => {
+      const s = build();
+      const foe = s.combat.foes[0];
+      playerStrike(s, rng, []);
+      return foe.alive === false;
+    },
+    { label: "shatter:hero-strike-second-life" },
+  );
+  assert.equal(result.wins, 1, "[shatter:hero-strike-second-life] only the best face may shatter the Skeleton's last life outright");
+});
+
+test("[shatter:member-strike] a party member's own strike can shatter the Skeleton", { todo: "fixed by 72-06" }, () => {
+  const build = () => memberStrikeState({ cls: "Fighter", sub: "Guard", race: "Human" }, skeletonFoe());
+  const result = faceOdds(
+    (rng) => {
+      const s = build();
+      const foe = s.combat.foes[0];
+      alliesTurn(s, rng, []);
+      return foe.alive === false;
+    },
+    { label: "shatter:member-strike" },
+  );
+  assert.equal(result.wins, 1, "[shatter:member-strike] only the best face may shatter the Skeleton");
+});
+
+test("[shatter:ally-strike] a summoned ally's own strike can shatter the Skeleton", { todo: "fixed by 72-06" }, () => {
+  const build = () => {
+    const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+    inCombat(s, [skeletonFoe()], { ally: { name: "A tall grey silence", lvl: 3, rounds: 5 } });
+    return s;
+  };
+  const result = faceOdds(
+    (rng) => {
+      const s = build();
+      const foe = s.combat.foes[0];
+      allyTurn(s, rng, []);
+      return foe.alive === false;
+    },
+    { label: "shatter:ally-strike" },
+  );
+  assert.equal(result.wins, 1, "[shatter:ally-strike] only the best face may shatter the Skeleton");
+});
+
+test('[shatter:thrown] the hero\'s thrown attack spell (Fireball) can shatter the Skeleton', { todo: "fixed by 72-06" }, () => {
+  const fireballIdx = SPELLS.findIndex((sp) => sp.n === "Fireball");
+  const build = () => {
+    const s = heroState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 });
+    inCombat(s, [skeletonFoe()]);
+    s.c.scrollCast = true;
+    return s;
+  };
+  const result = faceOdds(
+    (rng) => {
+      const s = build();
+      const foe = s.combat.foes[0];
+      castSpell(s, fireballIdx, rng, []);
+      return foe.alive === false;
+    },
+    { label: "shatter:thrown" },
+  );
+  assert.equal(result.wins, 1, "[shatter:thrown] only the best face may shatter the Skeleton");
+});
+
+test('[shatter:ally-thrown] a Magic User party member\'s own thrown spell can shatter the Skeleton', { todo: "fixed by 72-06" }, () => {
+  const build = () => {
+    const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+    const idx = withMember(s, { cls: "Magic User", sub: "Wizard", race: "Human" });
+    const sheet = s.party[idx];
+    sheet.abilities = [];
+    sheet.level = 5;
+    sheet.grimoire = ["Fireball"];
+    sheet.spellsUsed = 0;
+    const foe = skeletonFoe();
+    s.combat = {
+      foes: [foe],
+      type: foe.type,
+      round: 2,
+      target: 0,
+      spellOpen: false,
+      tracked: false,
+      pending: false,
+      allies: [{ partyIdx: idx, name: sheet.name, lvl: sheet.level, sub: sheet.sub, wp: sheet.wp, maxWP: sheet.maxWP }],
+    };
+    return s;
+  };
+  const result = faceOdds(
+    (rng) => {
+      const s = build();
+      const foe = s.combat.foes[0];
+      alliesTurn(s, rng, []);
+      return foe.alive === false;
+    },
+    { label: "shatter:ally-thrown" },
+  );
+  assert.equal(result.wins, 1, "[shatter:ally-thrown] only the best face may shatter the Skeleton");
+});
