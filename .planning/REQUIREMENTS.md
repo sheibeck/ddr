@@ -75,6 +75,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [ ] **CMBUI-11**: Reading a scroll in combat that casts its spell never narrates a level refusal. At most, it says the spell is too advanced to copy into the book. (todo 2026-09-21 scroll-read-in-combat)
 - [ ] **CMBUI-12**: The last (oldest) row of THE FIGHT SO FAR sheet can be tapped to reveal its roll, like every other row. (todo 2026-09-24 last-fight-log-row)
 - [ ] **CMBUI-13**: During a fight, every active ability or spell effect is shown on the hero (YOUR LOT) or on the foe it affects. This covers Smoke, Sidestep, Battle Roar, Riposte, Taunt, Shield, Sense Presence and every other timed or conditional effect. Each indicator shows its rounds remaining, gives a description on tap, and clears when the effect ends. (user, 2026-09-24: "Abilities and spells all need to have some sort of active indicator while in combat.")
+- [ ] **CMBUI-14**: The combat ITEMS list marks equipped gear EQUIPPED, and greys out (with a reason) bag gear that only works when worn (jewelry, cloaks, staves), since it can't be used mid-fight. Bag potions and consumables stay usable, and the USABLE count counts only enabled rows. (user, 2026-09-25; todo 2026-09-25 combat-items-mark-equipped)
 
 ### HUD & shell (HUD)
 
@@ -151,6 +152,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | CMBUI-11 | Phase 77 | Pending |
 | CMBUI-12 | Phase 77 | Pending |
 | CMBUI-13 | Phase 77 | Pending |
+| CMBUI-14 | Phase 77 | Pending |
 | HUD-01 | Phase 78 | Pending |
 | HUD-02 | Phase 78 | Pending |
 | HUD-03 | Phase 78 | Pending |

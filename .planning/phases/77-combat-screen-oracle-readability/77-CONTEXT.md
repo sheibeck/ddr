@@ -51,6 +51,12 @@ Everything the player reads during a fight is legible, correctly ordered and hon
 
 ### Readability fixes — CMBUI-07..12 (user accepted 2026-09-25)
 - **User report 2026-09-25:** Lesser Summon (lvl 1, SPELLS row 32) must list with the level-1 spells. The CMBUI-08 sort covers it; pin it with a test. (The "summon missing from YOUR LOT" report was WITHDRAWN by the user: it does show.)
+- **CMBUI-14 (user, 2026-09-25; todo `2026-09-25-combat-items-mark-equipped-grey-out-unusable-bag-gear`):** in the combat ITEMS submenu (`combatMenu.js` ~L254-326):
+  - worn rows show EQUIPPED;
+  - bag rows whose activation needs the item worn (jewelry, cloak, staff) are DISABLED with a reason ("NOT EQUIPPED · can't swap mid-fight");
+  - bag potions and consumables stay enabled;
+  - the "N USABLE" header counts only enabled rows.
+  Presentation only.
 - **CMBUI-07/08:**
   - Every combat submenu row (spells, abilities, items, social) GROWS to fit its full label and description on the Pixel 7, with no clipping and no truncation. Today `.cb-row-label` has `overflow:hidden` and the list is capped at `max-height 206px`.
   - Spell rows sort by spell level ascending, then A–Z. (Level-locked spells are already hidden by Phase 75's RULES-04.)

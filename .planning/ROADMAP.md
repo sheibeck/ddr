@@ -232,13 +232,15 @@ Plans:
 
 **Goal**: Everything the player reads during a fight is legible, correctly ordered, honest, and shows what effects are currently live on them or their foe.
 **Depends on**: Phase 74 (the roll-high display convention must be in place before combat-screen indicators show roll data)
-**Requirements**: CMBUI-07, CMBUI-08, CMBUI-09, CMBUI-10, CMBUI-11, CMBUI-12, CMBUI-13
+**Requirements**: CMBUI-07, CMBUI-08, CMBUI-09, CMBUI-10, CMBUI-11, CMBUI-12, CMBUI-13, CMBUI-14
 **Success Criteria** (what must be TRUE):
 
   1. Every combat submenu row (spells, abilities, items, social) grows to fit its text on the Pixel 7 with no clipped label or description, and spell rows sort by level ascending then alphabetically.
   2. Each foe card shows the foe's bestiary family after its name, and the Oracle prints combat lines in the order they happened (adjacent identical lines still fold).
   3. Reading a scroll in combat that successfully casts its spell never narrates a level refusal, and the last (oldest) row of THE FIGHT SO FAR can be tapped to reveal its roll like every other row.
   4. Every active ability or spell effect (Smoke, Sidestep, Battle Roar, Riposte, Taunt, Shield, Sense Presence and every other timed or conditional effect) shows an indicator on the hero (YOUR LOT) or the foe it affects, with rounds remaining, a tap-for-description, and it clears when the effect ends.
+
+  5. In combat, the ITEMS list marks equipped gear EQUIPPED and greys out bag gear that only works when worn, with the reason shown.
 
 **Plans**: TBD
 **UI hint**: yes
