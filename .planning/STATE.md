@@ -4,9 +4,9 @@ milestone: v2.1
 milestone_name: Bug Fixes
 current_phase: 74
 current_phase_name: Roll Display & Modifier Honesty
-status: planning
+status: executing
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-25T17:29:38.814Z"
+last_updated: "2026-09-25T17:41:59.569Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 73 complete, transitioned to Phase 74
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 Phase: 74 — Roll Display & Modifier Honesty
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-09-25 — Phase 73 complete, transitioned to Phase 74
 
 ## Ground Truth (durable facts every session needs)
