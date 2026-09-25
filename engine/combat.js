@@ -56,7 +56,7 @@
 
 import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
-import { rollDice, isBestFace } from "./dice.js";
+import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
 import { checkLevel } from "./character.js";
 import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
@@ -599,21 +599,26 @@ export function playerStrike(state, rng, events = []) {
   // rng.d(10) draw whenever a Fridgian frenzies with a dead foe present; the
   // sole parity consequence is the declared combat/lose (seed 14) divergence.
   let frenzyFired = false;
-  if (R.frenzy && rng.d(8) <= 5) {
-    attacks = Math.max(attacks, 2);
-    frenzyFired = true;
-    events.push({ type: "frenzy" });
+  // Phase 73 (ROLL-05): the frenzy trigger reads roll-high through the ONE
+  // check helper — 5 of the d8's 8 faces still win (atLeastFor(5, 8) = 4),
+  // the same odds as the old `rng.d(8) <= 5`, one draw, same position.
+  if (R.frenzy) {
+    const frenzyCheck = rollCheck(rng, 8, atLeastFor(5, 8));
+    if (frenzyCheck.ok) {
+      attacks = Math.max(attacks, 2);
+      frenzyFired = true;
+      events.push({ type: "frenzy", ...rollFields(frenzyCheck) });
+    }
   }
 
   for (let a = 0; a < attacks && t.alive; a++) {
     const dieN = strikeDie(c);
-    let roll = rng.d(dieN);
-    // CANON-05 (D-12, p.36): Philly's `slow` gives the player two dice, keep
-    // the lower (low = hit) — player-favorable. DETERMINISM GATE: the second
-    // die is drawn ONLY when `t.sp.slow` is truthy; Philly is the sole
-    // carrier and is not fixture-exposed, so every other strike draws
-    // exactly one die, unchanged.
-    if (t.sp && t.sp.slow) roll = Math.min(roll, rng.d(dieN));
+    // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and
+    // now sits ABOVE the strike draw, since atLeastFor(faces, dieN) must be
+    // ready before rollCheck fires. Locals renamed to the roll-high
+    // reading: the old `need` (a count of winning faces) is now `faces`;
+    // the combined need-modifier list is now `mods`.
+    //
     // DELIBERATE RULES CHANGE (Phase 72, ROLL-01 (b), user ruling
     // 2026-09-24): the 1994 rules hard-set the frenzy swing's need to a
     // constant that ignored the dark cap and dazed. The swing is now the
@@ -625,39 +630,39 @@ export function playerStrike(state, rng, events = []) {
     // this call — never to a Fridgian's other second attack (Barbarian
     // extra attack, haste, Ambidextrous, Last Stand), which keeps the
     // normal to-hit.
-    let need = a === 1 && frenzyFired ? Math.max(1, toHit(state) - 1) : toHit(state);
+    let faces = a === 1 && frenzyFired ? Math.max(1, toHit(state) - 1) : toHit(state);
     // Phase 40 (SPELL-01, Stupidity): a stupid foe is hit exactly like a
-    // dozing one — it never reacts, so the same need-5 floor applies.
-    if (t.asleep > 0 || t.stupid) need = Math.max(need, 5); // p.27: 5 to hit a dozing (or stupid) creature
-    if (t.sp && t.sp.toHit !== undefined) need = Math.min(need, t.sp.toHit); // hard to hit
-    if (t.sp && t.sp.fast) need = Math.max(1, need - 1); // "roll 1 higher to strike"
-    if (t.sp && t.sp.magicOnly && !c.magicWpn) need = 0; // only magic touches it
+    // dozing one — it never reacts, so the same 5-winning-faces floor applies.
+    if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 winning faces to hit a dozing (or stupid) creature
+    if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
+    if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // one more winning face to strike
+    if (t.sp && t.sp.magicOnly && !c.magicWpn) faces = 0; // only magic touches it
     // Phase 72 (ROLL-01, finding F3, user ruling 2026-09-24): the Shadow's
     // "only a dagger or magic touches it" (sp.daggerOnly) becomes real — a
     // strike needs a dagger or a magic weapon, otherwise the target is
     // untouchable, exactly like magicOnly above. DECLARED CANON DIVERGENCE:
     // the prototype leaves daggerOnly inert (no engine site ever read it).
-    if (t.sp && t.sp.daggerOnly && !c.magicWpn && c.weapon !== "Dagger") need = 0; // only a dagger or magic touches it
+    if (t.sp && t.sp.daggerOnly && !c.magicWpn && c.weapon !== "Dagger") faces = 0; // only a dagger or magic touches it
     // Phase 38 (ABIL-02, need_shift_spec): Overhead Blow's party-agnostic
     // "you need two better to land it" self-penalty — a transient descriptor
     // term, zero draws, applied BEFORE Afraid so Afraid's own penalty stacks
     // on top of it like any other need rule. Floors at 1 (never revives an
     // untouchable need-0 foe, mirroring Afraid's own floor below); a no-op
-    // (need unchanged) when magicOnly has already zeroed need.
+    // (faces unchanged) when magicOnly has already zeroed faces.
     let abilityMods = [];
-    if (AS && AS.needShift && need > 0) {
-      const before = need;
-      need = Math.max(1, need + AS.needShift);
-      abilityMods = need !== before ? [{ name: "overhead", delta: need - before }] : [];
+    if (AS && AS.needShift && faces > 0) {
+      const before = faces;
+      faces = Math.max(1, faces + AS.needShift);
+      abilityMods = faces !== before ? [{ name: "overhead", delta: faces - before }] : [];
     }
-    // Phase 31 Afraid — pure arithmetic on already-rolled values, zero rng;
+    // Phase 31 Afraid — pure arithmetic on the winning-face count, zero rng;
     // false (afraidMods empty) for every non-phobia fixture. The LAST
     // modifier, after every other need rule; never revives an untouchable
-    // (need 0) foe.
-    const needBeforeAfraid = need;
-    need = afraidNeed(state, need);
-    const afraidMods = need !== needBeforeAfraid ? [{ name: "afraid", delta: need - needBeforeAfraid }] : [];
-    const needMods = [...abilityMods, ...afraidMods];
+    // (0 faces) foe.
+    const facesBeforeAfraid = faces;
+    faces = afraidNeed(state, faces);
+    const afraidMods = faces !== facesBeforeAfraid ? [{ name: "afraid", delta: faces - facesBeforeAfraid }] : [];
+    const mods = [...abilityMods, ...afraidMods];
     // Phase 38 (ABIL-02, strike_descriptor_spec): `subAuto` is the ORIGINAL
     // sub-class auto-hit (Cat Burglar/Ninja opener, which also claims
     // C.opened); `auto` additionally honours a descriptor's autoHit without
@@ -666,16 +671,35 @@ export function playerStrike(state, rng, events = []) {
     const subAuto = (c.sub === "Cat Burglar" || c.sub === "Ninja") && !C.opened;
     if (subAuto) C.opened = true;
     const auto = subAuto || !!(AS && AS.autoHit);
-    const hit = auto || (need > 0 && roll <= need);
+
+    // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike
+    // die. `faces` converts to the lowest winning face via atLeastFor; the
+    // draw happens in exactly the same position the old roll-under draw
+    // sat, so every seed resolves identically.
+    let check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
+    // CANON-05 (D-12, p.36): Philly's `slow` gives the player two dice, and
+    // keeps the HIGHER of the two mirrored faces — byte-identical to the old
+    // "two dice, keep the lower raw face" rule (a lower raw face mirrors to
+    // a higher roll-high face). DETERMINISM GATE: the second die is drawn
+    // ONLY when `t.sp.slow` is truthy; Philly is the sole carrier and is not
+    // fixture-exposed, so every other strike draws exactly one die, unchanged.
+    if (t.sp && t.sp.slow) {
+      const second = rollCheck(rng, dieN, check.atLeast);
+      const better = Math.max(check.roll, second.roll);
+      check = { roll: better, atLeast: check.atLeast, dieN, ok: better >= check.atLeast };
+    }
+    const roll = check.roll;
+
+    // faces === 0 gives atLeast = dieN + 1, which no roll can ever reach —
+    // this IS the old `need > 0` gate, folded into check.ok.
+    const hit = auto || check.ok;
     if (!hit) {
       events.push({
         type: "strikeMissed",
         target: t.name,
-        roll,
-        need,
-        dieN,
-        untouchable: need === 0,
-        ...(needMods.length ? { needMods } : {}),
+        ...rollFields(check),
+        untouchable: faces === 0,
+        ...(mods.length ? { mods } : {}),
         ...(AS ? { via: AS.key } : {}),
       });
       continue;
@@ -687,7 +711,11 @@ export function playerStrike(state, rng, events = []) {
     // (`!C.opened2` here reads the SAME "is this the opener" state
     // `opening` below computes, before this call sets it) — that blow deals
     // no injury by rule, so there is nothing to shatter on.
-    if (!(c.sub === "Con Artist" && !C.opened2) && shatterIfBest(state, t, roll, dieN, "you", rng, events)) {
+    // Phase 73 transitional: 73-05 flips isBestFace and passes roll — until
+    // then isBestFace still reads the old roll-under best face (`roll ===
+    // 1`), so this call mirrors the new roll-high `roll` back to the old raw
+    // face it corresponds to.
+    if (!(c.sub === "Con Artist" && !C.opened2) && shatterIfBest(state, t, dieN + 1 - roll, dieN, "you", rng, events)) {
       C.opened2 = true;
       continue;
     }
@@ -706,16 +734,21 @@ export function playerStrike(state, rng, events = []) {
     const noCrit =
       c.sub === "Guard" || c.sub === "Soldier" || (inDark(state) && !skill(c, "Night Vision")) || eff(c, "noCrit") > 0;
     // Phase 39 (GEAR-01): the crit RANGE is now weapon-driven — a precise
-    // blade (Rapier/Katana/Wakazashi/Ninja-to/Dagger, crit:2) doubles on a 1
-    // OR a 2; every other weapon still doubles only on a natural 1
-    // (weaponCrit(c) defaults to 1 for an unrecognized/Fists weapon, so this
-    // is byte-identical to the old `roll === 1` rule for every weapon that
-    // is not one of the five precise blades).
-    let crit = roll <= weaponCrit(c) && !noCrit;
+    // blade (Rapier/Katana/Wakazashi/Ninja-to/Dagger, crit:2) doubles on the
+    // die's top TWO faces; every other weapon still doubles only on the top
+    // face (weaponCrit(c) defaults to 1 for an unrecognized/Fists weapon, so
+    // this mirrors the old `roll === 1` rule to the top face for every
+    // weapon that is not one of the five precise blades).
+    let crit = roll >= atLeastFor(weaponCrit(c), dieN) && !noCrit;
     // Phase 25 (FEED-01, additive payload): why THIS crit is a crit, so the
     // Oracle can name the reason instead of a bare "Critical!"; later
     // assignments win (most-specific reason, matching code order below).
     let critBy = crit ? "roll" : null;
+    // Phase 73 (ROLL-05): the lowest winning face for the crit that landed —
+    // only set for a die-driven crit (critBy "roll"/"stealth"/"ninja");
+    // backstab/cutthroat/a forced crit are unconditional and carry no
+    // threshold of their own.
+    let critAtLeast = crit ? atLeastFor(weaponCrit(c), dieN) : undefined;
     const opening = !C.opened2;
     C.opened2 = true;
 
@@ -752,19 +785,22 @@ export function playerStrike(state, rng, events = []) {
     // opener event. No rng change (crit only doubles already-rolled damage
     // that is then discarded by the bail), so determinism/parity are intact.
     if (opening && !noCrit && !heavy && c.sub !== "Con Artist") {
-      if (skill(c, "Stealth") && roll <= 2 && armorBulk(c) < 2) {
+      if (skill(c, "Stealth") && roll >= atLeastFor(2, dieN) && armorBulk(c) < 2) {
         crit = true;
         critBy = "stealth";
+        critAtLeast = atLeastFor(2, dieN);
         events.push({ type: "stealthStrike" });
       } else if (c.cls === "Thief") {
         crit = true;
         critBy = "backstab";
+        critAtLeast = undefined;
         events.push({ type: "backstab" });
       }
     }
-    if (c.sub === "Ninja" && !opening && roll <= 2) {
+    if (c.sub === "Ninja" && !opening && roll >= atLeastFor(2, dieN)) {
       crit = true;
       critBy = "ninja";
+      critAtLeast = atLeastFor(2, dieN);
     }
     // a Con Artist's first blow is a warning, not an injury
     if (opening && c.sub === "Con Artist") {
@@ -778,6 +814,7 @@ export function playerStrike(state, rng, events = []) {
     if (c.sub === "Cutthroat" && !C.cut) {
       crit = true;
       critBy = "cutthroat";
+      critAtLeast = undefined;
       C.cut = true;
     }
     // Phase 38 (ABIL-02, strike_descriptor_spec item 5): a forced crit obeys
@@ -792,6 +829,7 @@ export function playerStrike(state, rng, events = []) {
       if (!noCrit && !deniedByHeavy) {
         crit = true;
         critBy = AS.key;
+        critAtLeast = undefined;
       } else if (deniedByHeavy && !heavyBackstabDenied) {
         events.push({ type: "backstabDenied", reason: "heavyArmor" });
         heavyBackstabDenied = true;
@@ -825,13 +863,14 @@ export function playerStrike(state, rng, events = []) {
       events.push({
         type: "struck",
         target: t.name,
-        roll,
-        need,
+        ...rollFields(check),
         dmg: landed.applied,
         critical: crit,
         ...(crit && critBy ? { critBy } : {}),
-        ...(needMods.length ? { needMods } : {}),
+        ...(crit && critBy && critAtLeast != null ? { critAtLeast } : {}),
+        ...(mods.length ? { mods } : {}),
         ...(afraidMods.length ? { afraid: true } : {}),
+        ...(auto ? { auto: true } : {}),
         ...(AS ? { via: AS.key } : {}),
       });
     if (t.wp <= 0) killFoe(state, t, rng, events);

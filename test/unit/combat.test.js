@@ -1366,28 +1366,32 @@ test("playerStrike: a critical ignores the soak (D-07) — no d20 drawn", () => 
   assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 3 draws total — no soak roll for a crit, no round-advance roll");
 });
 
-test("playerStrike: slow — two dice, the lower kept: a 7 then a 2 hits with struck.roll === 2 (D-12)", () => {
+test("playerStrike: slow — two dice, the better mirrored face kept: raw draws 7 then 2 hit with struck.roll === 19 (D-12)", () => {
   const state = fixedState();
   const foe = fixedFoe({ sp: { slow: true }, wp: 20, maxWP: 20 });
   state.combat = fixedCombat([foe]);
   // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+  // raw draws 7, 2 mirror to faces 14, 19 on a d20 — the higher mirrored face
+  // (19) is kept, byte-identical to the old "keep the lower raw face" rule.
   const rng = fakeRng([7, 2, 4, 7]);
   const events = playerStrike(state, rng, []);
   const struck = events.find((e) => e.type === "struck");
-  assert.equal(struck.roll, 2, "the lower of the two strike dice is kept");
+  assert.equal(struck.roll, 19, "the better (higher) of the two mirrored faces is kept");
   assert.equal(struck.dmg, 5);
   assert.equal(foe.wp, 15);
 });
 
-test("playerStrike: slow — both dice above need: strikeMissed with roll 7 (the lower), then the foe turn", () => {
+test("playerStrike: slow — the better mirrored face still misses: strikeMissed with roll 14 (raw draws 7 and 9), then the foe turn", () => {
   const state = fixedState();
   const foe = fixedFoe({ sp: { slow: true }, wp: 20, maxWP: 20 });
   state.combat = fixedCombat([foe]);
   // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
+  // raw draws 7, 9 mirror to faces 14, 12 on a d20 — the better (14) is kept,
+  // still short of atLeast 16.
   const rng = fakeRng([7, 9, 7]);
   const events = playerStrike(state, rng, []);
   const missed = events.find((e) => e.type === "strikeMissed");
-  assert.equal(missed.roll, 7, "the lower of the two strike dice (7 vs 9) is kept");
+  assert.equal(missed.roll, 14, "the better of the two mirrored faces (14 vs 12) is kept");
   assert.equal(foe.wp, 20);
   assert.throws(() => rng.d(20), /sequence exhausted/, "exactly 3 draws for a slow foe");
 
@@ -1628,7 +1632,7 @@ test("playerStrike: weakened halves the hero's damage (ceil) before the seam; a 
   const foe3 = fixedFoe({ wp: 20, maxWP: 20 });
   state3.combat = fixedCombat([foe3]);
   const events3 = playerStrike(state3, fakeRng([4, 7]), []);
-  assert.ok(events3.some((e) => e.type === "strikeMissed" && e.need === 3));
+  assert.ok(events3.some((e) => e.type === "strikeMissed" && e.atLeast === 18 && e.dieN === 20));
 });
 
 test("foeTurn: foeEffect ticks at the end of a foeTurn that did NOT apply it, fades at 0, and endCombat clears a set one without adding the key", () => {

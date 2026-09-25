@@ -127,7 +127,7 @@ test("(i) afraidNeed shrinks the need by AFRAID_TO_HIT_PENALTY, floor 1, and nev
 
 // --- (ii) A roll that hits unafraid misses afraid --------------------------
 
-test("(ii) the SAME roll that hits unafraid (need 5, roll 5) misses afraid (need 2) — one fewer die drawn (no damage roll)", () => {
+test("(ii) the SAME raw draw that hits unafraid (5 faces, mirrored roll 16 vs atLeast 16) misses afraid (2 faces, atLeast 19) — one fewer die drawn (no damage roll)", () => {
   const unafraidState = fixedState();
   unafraidState.combat = fixedCombat([fixedFoe({ wp: 10, maxWP: 10 })]);
   // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
@@ -135,18 +135,21 @@ test("(ii) the SAME roll that hits unafraid (need 5, roll 5) misses afraid (need
   const unafraidEvents = playerStrike(unafraidState, unafraidRng, []);
   const struck = unafraidEvents.find((e) => e.type === "struck");
   assert.ok(struck, "unafraid: the roll hits");
-  assert.equal(struck.need, 5);
-  assert.equal("needMods" in struck, false, "no afraid needMods when not afraid");
+  assert.equal(struck.atLeast, 16);
+  assert.equal(struck.dieN, 20);
+  assert.equal(struck.roll, 16, "raw draw 5 mirrors to face 16 on a d20");
+  assert.equal("mods" in struck, false, "no afraid mods when not afraid");
 
   const afraidState = fixedState();
   afraidState.combat = fixedCombat([fixedFoe({ wp: 10, maxWP: 10 })], { afraid: 2 });
   const afraidRng = countingRng(fakeRng([5, 20])); // roll, foe-die-miss -- NO damage die, no round-advance draws
   const afraidEvents = playerStrike(afraidState, afraidRng, []);
   const missed = afraidEvents.find((e) => e.type === "strikeMissed");
-  assert.ok(missed, "afraid: the SAME roll(5) now misses (need 2)");
-  assert.equal(missed.need, 2);
-  assert.equal(missed.roll, 5);
-  assert.deepStrictEqual(missed.needMods, [{ name: "afraid", delta: -3 }]);
+  assert.ok(missed, "afraid: the SAME raw draw (5, mirrored to face 16) now misses (atLeast widens to 19)");
+  assert.equal(missed.atLeast, 19);
+  assert.equal(missed.dieN, 20);
+  assert.equal(missed.roll, 16);
+  assert.deepStrictEqual(missed.mods, [{ name: "afraid", delta: -3 }]);
   assert.equal(afraidState.combat.foes[0].wp, 10, "the foe took no damage");
 
   assert.equal(unafraidRng.draws - 1, afraidRng.draws, "the afraid run draws exactly one fewer die (no damage roll)");

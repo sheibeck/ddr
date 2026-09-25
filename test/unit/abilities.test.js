@@ -341,7 +341,7 @@ test("overheadBlow: double damage, need shifted -2 (harder to land)", () => {
   const events = useAbility(state, "overheadBlow", fakeRng([3, 4, ...FILL]), []);
   const struck = events.find((e) => e.type === "struck");
   assert.ok(struck);
-  assert.ok(struck.needMods.some((m) => m.name === "overhead" && m.delta === -2));
+  assert.ok(struck.mods.some((m) => m.name === "overhead" && m.delta === -2));
 });
 
 test("lastStand: three strike attempts in one dispatch", () => {
