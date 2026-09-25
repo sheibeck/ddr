@@ -265,7 +265,16 @@ export function encounterDot(state, rng, events = []) {
 // Phase 21 (TUNE-04, D-13): also read by engine/state.js#newRun's dev
 // start-at-depth purse — exported (was module-private) so the dev branch
 // reuses this exact row rather than duplicating the constant.
-export const WILMST_CACHE_PER_DEPTH = 300;
+// RULES-02 (Phase 75, user 2026-09-25): a flat cut, 300 -> 100 per floor
+// depth — a chest's average payout (~115) makes 300*depth wildly outstrip
+// every other single find; 100*depth keeps the cache in a good-chest
+// neighborhood without ever letting one pull buy out the store. Still
+// through lootFor(WILMST_CACHE_PER_DEPTH * depth) — no new rng draw, same
+// as always (only this constant changed; the kill purse, chests, the
+// faerie's gold and LOOT_SCALE itself are untouched). The dev start-at-depth
+// purse (engine/state.js#newRun) reads this SAME exported constant, so it
+// follows the cut automatically — engine/state.js itself is not edited.
+export const WILMST_CACHE_PER_DEPTH = 100;
 
 /**
  * tableFour(state, result, rng, events) — Table 4 on p.45, a straight list

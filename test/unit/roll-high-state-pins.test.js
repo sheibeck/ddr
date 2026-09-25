@@ -27,8 +27,17 @@ const PINNED = {
   "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "444ec2ca839587b2249e6f89828a40fef887b2668b935c228a510e99c4ac4207" },
   "party-1": { actions: 400, dead: false, depth: 4, hash: "a647d76350383f515141f3ba3e9ec1e1054902edc9d5f9af23776ec1d48d51e8" },
   "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "1ad4462f4a8b7017cc14d5bf5f566677f8efda6d0cd4f6fab06cfb94b928370d" },
-  "deep-8": { actions: 300, dead: false, depth: 10, hash: "76a994c885de2f9fba705545d14025ec507236d0dc726f53f70b1b7171523f0a" },
-  "deep-14": { actions: 300, dead: false, depth: 16, hash: "bffefbe12745404f111858147dee4ad5156b7b09a87fc9986d3faf1022cbe8c6" },
+  // "deep-8" and "deep-14" re-pinned (Phase 75, Plan 02, 2026-09-25): RULES-02
+  // deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100 (engine/encounters.js).
+  // Both 300-action deep-start sweeps reach a "wilmst cache" tableFour row
+  // within their run, so their final c.gold (and thus this state hash) moves.
+  // Verified with a side-by-side dump of both engine builds: actions/dead/
+  // depth/wp/maxWP/sp/level are byte-identical on both sides — ONLY c.gold
+  // differs (deep-8: 2585 -> 985; deep-14: 5711 -> 2911), matching the
+  // declared economy cut exactly, not a check-site flip. Regenerated via
+  // `node tools/roll-high-baseline.mjs pins`.
+  "deep-8": { actions: 300, dead: false, depth: 10, hash: "f589b848893968abbb195f8c7ab05f422ccf9f7f759307494a446caeb666ebd6" },
+  "deep-14": { actions: 300, dead: false, depth: 16, hash: "68598e3d89c5f13798f21a13af02144dc9e43c5ea05548b4cb6b189a22df41bc" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {
