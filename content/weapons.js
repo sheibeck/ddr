@@ -12,21 +12,25 @@
 // content/misc-tables.js per the plan's artifact placement.
 //
 // Phase 39 (GEAR-01, 39-01-PLAN.md): two new axes, re-priced/re-diced rows.
-// `need` (-2|-1|0|1) is a to-hit MODIFIER on the NEED, not the roll — the
-// game's to-hit is a LOW range (a strike lands on roll <= need), so a light
-// weapon's bonus is `need: +1` (raises the need, easier to hit) and a heavy
-// weapon's penalty is `need: -1` or `-2` (lowers the need, harder to hit).
-// This is the exact arithmetic direction the Phase 31 `afraidNeed` penalty
-// already uses ("penalties shrink the need") — the user's "+ to hit as a
-// penalty" framing is the SAME rule read from the die's side: a bigger
-// number to roll under is a bonus, a smaller one is a penalty. Every class's
-// base need floors at 1 after this modifier (engine/derived.js#toHit); no
-// legal (class, weapon) pair ever produces a base need below 2 — proved by
-// test/unit/gear-axes.test.js's floor-guarantee test. `crit` (1|2) sets the
-// die-roll range that doubles damage: precise blades (Rapier, Katana,
-// Wakazashi, Ninja-to, Dagger) crit on a roll of 1 OR 2; every other weapon
-// (including the Whip, a light weapon that is NOT a blade) crits only on a
-// natural 1, unchanged from before this phase.
+// `need` (-2|-1|0|1) is a to-hit MODIFIER on the winning-face count — the
+// persisted field keeps its old name and its old VALUE, a count of winning
+// faces, which engine/dice.js#atLeastFor converts into a roll-high
+// threshold (Phase 73, ROLL-05). A light weapon's bonus is `need: +1` (one
+// more winning face at the top of the die, easier to hit) and a heavy
+// weapon's penalty is `need: -1` or `-2` (fewer winning faces, harder to
+// hit). This is the exact arithmetic direction the Phase 31 `afraidNeed`
+// penalty already uses ("penalties shrink the face count") — the user's "+
+// to hit as a penalty" framing is the SAME rule read from the die's side: a
+// bigger `need` widens the top of the die that hits, a smaller one narrows
+// it. Every class's base need floors at 1 after this modifier
+// (engine/derived.js#toHit); no legal (class, weapon) pair ever produces a
+// base need below 2 — proved by test/unit/gear-axes.test.js's
+// floor-guarantee test. `crit` (1|2) sets the winning-face count that
+// doubles damage: precise blades (Rapier, Katana, Wakazashi, Ninja-to,
+// Dagger) crit on the die's top face (crit:1) or its top two faces
+// (crit:2); every other weapon (including the Whip, a light weapon that is
+// NOT a blade) crits only on the die's single best face, unchanged since
+// before Phase 73.
 //
 // The 24 keys, their object-literal ORDER, and every `cls` string are kept
 // byte-for-byte identical to the pre-phase table — this is load-bearing, not

@@ -61,10 +61,26 @@ const RACE_NAMES = Object.keys(RACES);
 const SPELL_NAMES = SPELLS.map((s) => s.n);
 const ROMAN = ["I", "II", "III", "IV", "V"];
 
+// Phase 73 (ROLL-05): the roll-carrying vocabulary every builder now reads —
+// `roll` (the mirrored, high-is-good face, 1..dieN), `atLeast` (the lowest
+// winning face, 1..dieN+1 so "nothing" is exercised too), `dieN` (fixed at
+// 20 — the common check die every builder above formats through
+// rollRange.js), `rolls` (a several-draws array, e.g. climb segments/wake
+// hours), `mods` (one or two signed `{name, delta}` terms, signed for the
+// ROLLER), and `critAtLeast` (a top-face crit threshold). The old roll-under
+// `need`/`total` fields are gone — no event carries them anymore.
+const MOD_NAMES = ["weapon", "class", "dark-cap", "insulted", "fluency", "armor-bulk"];
+
 // A representative, randomly-filled event carrying every field any builder
 // reads. Re-rolled per line so tone variety across a run is visible.
 function sampleEvent(type) {
   const foe = pick(FOES);
+  const dieN = 20;
+  const modCount = 1 + (rng() < 0.5 ? 1 : 0);
+  const mods = Array.from({ length: modCount }, () => ({
+    name: pick(MOD_NAMES),
+    delta: (rng() < 0.5 ? -1 : 1) * (1 + Math.floor(rng() * 3)),
+  }));
   return {
     type,
     side: pick(["approach", "exit"]), hurt: 1 + Math.floor(rng() * 12), loss: Math.floor(rng() * 8),
@@ -72,16 +88,18 @@ function sampleEvent(type) {
     amount: 1 + Math.floor(rng() * 25), cost: 1 + Math.floor(rng() * 6), hours: 1 + Math.floor(rng() * 8),
     reason: pick(["parley", "descend", "wizard", "cloaker", "tracked", "other"]),
     foes: [{ name: foe }, { name: pick(FOES) }], name: foe, member: pick(CHAR_NAMES),
-    tracked: rng() < 0.5, roll: 1 + Math.floor(rng() * 20), target: pick(FOES), need: 1 + Math.floor(rng() * 20),
+    tracked: rng() < 0.5, roll: 1 + Math.floor(rng() * dieN), target: pick(FOES),
+    atLeast: 1 + Math.floor(rng() * (dieN + 1)), dieN, rolls: Array.from({ length: 1 + Math.floor(rng() * 3) }, () => 1 + Math.floor(rng() * dieN)),
+    mods, critAtLeast: dieN - Math.floor(rng() * 2),
     critical: rng() < 0.3, dmg: 1 + Math.floor(rng() * 30), spGained: Math.floor(rng() * 50), wp: Math.floor(rng() * 20),
     rations: 1 + Math.floor(rng() * 3), bonus: Math.floor(rng() * 4), song: "a tune", count: 1 + Math.floor(rng() * 6),
     n: 1 + Math.floor(rng() * 6), r: 1 + Math.floor(rng() * 4), spell: pick(SPELL_NAMES), intel: 1 + Math.floor(rng() * 10),
-    rounds: 1 + Math.floor(rng() * 6), rolls: 1 + Math.floor(rng() * 8), totalDamage: Math.floor(rng() * 40),
+    rounds: 1 + Math.floor(rng() * 6), totalDamage: Math.floor(rng() * 40),
     nextEncounter: "encounter", might: 1 + Math.floor(rng() * 8), pool: 50, reflect: rng() < 0.5, short: 1 + Math.floor(rng() * 50),
     item: { n: pick(["Dagger", "Katana", "Cloak of Speed", "Ring of Power"]) }, table: 1 + Math.floor(rng() * 8),
     result: "something odd", spells: [pick(SPELL_NAMES), pick(SPELL_NAMES)], what: "a cloak", gift: "Magic Weapon",
     first: Math.floor(rng() * 5), mult: pick([1, 2, 3]), remaining: Math.floor(rng() * 4), level: 1 + Math.floor(rng() * 5),
-    wpGain: 1 + Math.floor(rng() * 6), depth: 1 + Math.floor(rng() * 5), steps: Math.floor(rng() * 2000), total: Math.floor(rng() * 40),
+    wpGain: 1 + Math.floor(rng() * 6), depth: 1 + Math.floor(rng() * 5), steps: Math.floor(rng() * 2000),
     troll: rng() < 0.3, elfOrDwarf: rng() < 0.3, untouchable: rng() < 0.2,
   };
 }
