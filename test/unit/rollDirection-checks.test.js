@@ -427,3 +427,393 @@ test('[initiative:senses] c.senses waives every forced-foe rule, engine/combat.j
   assert.equal(without.wins, 0, "[initiative:senses] the baseline forced-foe Samurai must never win initiative");
   assertBonus(withMod, without, { label: "initiative:senses" });
 });
+
+// =============================================================================
+// TASK 2 — flee, parley, traps, locks, climbs, leaps, cure, wake, drops, plus
+// the F5 pending row.
+// =============================================================================
+
+// --- Flee [hero]: fled, over a plain content foe without pursues -------------
+
+test('[flee:thief] "the whole trade" — Thief +5, content/flee.js:22, engine/derived.js#fleeBreakdown ~L950', () => {
+  const thief = () => noArmor(inCombat(heroState({ cls: "Thief", sub: "Pickpocket", race: "Human" }), [NEUTRAL_FOE()]));
+  const fighter = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+  const withMod = faceOdds((rng) => fled(thief(), rng), { label: "flee:thief" });
+  const without = faceOdds((rng) => fled(fighter(), rng), { label: "flee:thief (baseline)" });
+  assertBonus(withMod, without, { label: "flee:thief" });
+});
+
+test('[flee:class-mod] "robes and no footwork" — Magic User -1, content/flee.js:25', () => {
+  const mu = () => noArmor(inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Human" }), [NEUTRAL_FOE()]));
+  const fighter = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+  const withMod = faceOdds((rng) => fled(mu(), rng), { label: "flee:class-mod" });
+  const without = faceOdds((rng) => fled(fighter(), rng), { label: "flee:class-mod (baseline)" });
+  assertPenalty(withMod, without, { label: "flee:class-mod" });
+});
+
+test('[flee:race-mod-elven] "light and quick" — Elven +1, content/flee.js:32', () => {
+  const elven = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Elven" }), [NEUTRAL_FOE()]));
+  const human = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+  const withMod = faceOdds((rng) => fled(elven(), rng), { label: "flee:race-mod-elven" });
+  const without = faceOdds((rng) => fled(human(), rng), { label: "flee:race-mod-elven (baseline)" });
+  assertBonus(withMod, without, { label: "flee:race-mod-elven" });
+});
+
+test('[flee:race-mod-heavy] Dwarven "not built for a sprint" -1, content/flee.js:33', () => {
+  const dwarven = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Dwarven" }), [NEUTRAL_FOE()]));
+  const human = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+  const withMod = faceOdds((rng) => fled(dwarven(), rng), { label: "flee:race-mod-heavy" });
+  const without = faceOdds((rng) => fled(human(), rng), { label: "flee:race-mod-heavy (baseline)" });
+  assertPenalty(withMod, without, { label: "flee:race-mod-heavy" });
+});
+
+test('[flee:armor-bulk] a bulk-2 ARMORS row narrows the escape roll, engine/derived.js#fleeBreakdown ~L955', () => {
+  const plate = () => withArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]), "Plate");
+  const bare = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+  const withMod = faceOdds((rng) => fled(plate(), rng), { label: "flee:armor-bulk" });
+  const without = faceOdds((rng) => fled(bare(), rng), { label: "flee:armor-bulk (baseline)" });
+  assertPenalty(withMod, without, { label: "flee:armor-bulk" });
+});
+
+test('[flee:flee-need-mod] FLEE_NEED_MOD — identity a no-op, "up = harder" a strict penalty, engine/difficulty.js#fleeNeedModFor', () => {
+  const build = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+  const identity = faceOdds((rng) => fled(build(), rng), { label: "flee:flee-need-mod (identity)" });
+  const identityExplicit = (() => {
+    const restore = setDialsForTuning({ FLEE_NEED_MOD: DIALS.FLEE_NEED_MOD });
+    const result = faceOdds((rng) => fled(build(), rng), { label: "flee:flee-need-mod (identity, explicit)" });
+    restore();
+    return result;
+  })();
+  assertSame(identityExplicit, identity, { label: "flee:flee-need-mod (identity is a no-op)" });
+  const bumped = (() => {
+    const restore = setDialsForTuning({ FLEE_NEED_MOD: 1 });
+    const result = faceOdds((rng) => fled(build(), rng), { label: "flee:flee-need-mod (+1)" });
+    restore();
+    return result;
+  })();
+  assertPenalty(bumped, identity, { label: "flee:flee-need-mod" });
+});
+
+test('[flee:smoke] "a flee during it just works" — no draw requested, engine/combat.js#flee ~L1057', () => {
+  const build = () => {
+    const s = noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+    startEffect(s.c, "ability:smoke", { rounds: 2 });
+    return s;
+  };
+  assert.throws(() => faceOdds((rng) => fled(build(), rng), { label: "flee:smoke" }));
+  const events = [];
+  flee(build(), probeRng({ isProbe: () => false }), events);
+  assert.ok(events.some((e) => e.type === "fled"), "[flee:smoke] a live Smoke must flee unconditionally");
+});
+
+// --- Parley [hero]: success means no parleyFailed ----------------------------
+
+/** talker(...) — a Human hero, unarmoured, against a lone tier-1 Human foe;
+ * `helm` starts a live Helm of Knowledge (fluency 1, opens TALKATIVE). */
+function talker({ cls = "Fighter", sub = "Guard", race = "Human", level = 1, helm = false } = {}) {
+  const s = inCombat(heroState({ cls, sub, race, level }), [foeFrom("Humans", 1, "Ned")]);
+  noArmor(s);
+  if (helm) startEffect(s.c, "item:Helm of Knowledge", { rounds: 50 });
+  return s;
+}
+
+test('[parley:con-artist] a Con Artist always talks, vs a Helm-wearing plain Thief sub, engine/combat.js#parley ~L1219', () => {
+  const conArtist = () => talker({ cls: "Thief", sub: "Con Artist" });
+  const helmThief = () => talker({ cls: "Thief", sub: "Pickpocket", helm: true });
+  const withMod = faceOdds((rng) => parleySucceeded(conArtist(), rng), { label: "parley:con-artist" });
+  const without = faceOdds((rng) => parleySucceeded(helmThief(), rng), { label: "parley:con-artist (baseline)" });
+  assertBonus(withMod, without, { label: "parley:con-artist" });
+});
+
+test('[parley:woodsman] a Woodsman talks down Beasts, vs a Helm-wearing plain Fighter sub, engine/combat.js#parley ~L1220', () => {
+  const beastsFoe = () => foeFrom("Beasts", 1, "Viper");
+  const woodsman = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Woodsman", race: "Human", level: 1 }), [beastsFoe()]));
+  const helmGuard = () => {
+    const s = noArmor(inCombat(heroState({ cls: "Fighter", sub: "Guard", race: "Human", level: 1 }), [beastsFoe()]));
+    startEffect(s.c, "item:Helm of Knowledge", { rounds: 50 });
+    return s;
+  };
+  const withMod = faceOdds((rng) => parleySucceeded(woodsman(), rng), { label: "parley:woodsman" });
+  const without = faceOdds((rng) => parleySucceeded(helmGuard(), rng), { label: "parley:woodsman (baseline)" });
+  assertBonus(withMod, without, { label: "parley:woodsman" });
+});
+
+test('[parley:wilmsry] "noted for their bargaining" — Wilmsry +4, vs a Helm-wearing plain Human, engine/combat.js#parley ~L1221', () => {
+  const wilmsry = () => talker({ race: "Wilmsry" });
+  const helmHuman = () => talker({ helm: true });
+  const withMod = faceOdds((rng) => parleySucceeded(wilmsry(), rng), { label: "parley:wilmsry" });
+  const without = faceOdds((rng) => parleySucceeded(helmHuman(), rng), { label: "parley:wilmsry (baseline)" });
+  assertBonus(withMod, without, { label: "parley:wilmsry" });
+});
+
+test('[parley:elven-humans] "a good omen" — Elven vs Humans +3, vs a Helm-wearing plain Human, engine/combat.js#parley ~L1222', () => {
+  const elven = () => talker({ race: "Elven" });
+  const helmHuman = () => talker({ helm: true });
+  const withMod = faceOdds((rng) => parleySucceeded(elven(), rng), { label: "parley:elven-humans" });
+  const without = faceOdds((rng) => parleySucceeded(helmHuman(), rng), { label: "parley:elven-humans (baseline)" });
+  assertBonus(withMod, without, { label: "parley:elven-humans" });
+});
+
+test('[parley:fluency] a live Helm of Knowledge adds 2*fluency, engine/combat.js#parley ~L1223', () => {
+  const conArtist = (helm) => talker({ cls: "Thief", sub: "Con Artist", helm });
+  const withMod = faceOdds((rng) => parleySucceeded(conArtist(true), rng), { label: "parley:fluency" });
+  const without = faceOdds((rng) => parleySucceeded(conArtist(false), rng), { label: "parley:fluency (baseline)" });
+  assertBonus(withMod, without, { label: "parley:fluency" });
+});
+
+test('[parley:level] "+ c.level" — level 3 vs level 1, engine/combat.js#parley ~L1224', () => {
+  const conArtist = (level) => talker({ cls: "Thief", sub: "Con Artist", level });
+  const withMod = faceOdds((rng) => parleySucceeded(conArtist(3), rng), { label: "parley:level (3)" });
+  const without = faceOdds((rng) => parleySucceeded(conArtist(1), rng), { label: "parley:level (1)" });
+  assertBonus(withMod, without, { label: "parley:level" });
+});
+
+test('[parley:top-foe-level] "- top" — a tougher foe is harder to talk down, engine/combat.js#parley ~L1224', () => {
+  const build = (tier, name) => {
+    const s = inCombat(heroState({ cls: "Thief", sub: "Con Artist", race: "Human", level: 1 }), [foeFrom("Humans", tier, name)]);
+    return noArmor(s);
+  };
+  const withMod = faceOdds((rng) => parleySucceeded(build(2, "China Wolf"), rng), { label: "parley:top-foe-level (tier2)" });
+  const without = faceOdds((rng) => parleySucceeded(build(1, "Ned"), rng), { label: "parley:top-foe-level (tier1)" });
+  assertPenalty(withMod, without, { label: "parley:top-foe-level" });
+});
+
+test('[parley:ceiling] "an 85% ceiling — no stack is an auto-win", engine/combat.js#parley ~L1229', () => {
+  // Con Artist (4) + Wilmsry (4) + level 5 (the engine's own level cap,
+  // content/classes.js#CLASSES gain tables only go to index 4) against a
+  // tier-1 foe already clears the 9+bonus ceiling (9+12=21 -> capped 17).
+  // Stacking a live Helm of Knowledge on top (+2 more fluency) proves the
+  // cap absorbs it: never worsening, never above 17/20.
+  const maxed = (helm) => {
+    const s = inCombat(heroState({ cls: "Thief", sub: "Con Artist", race: "Wilmsry", level: 5 }), [foeFrom("Humans", 1, "Ned")]);
+    noArmor(s);
+    if (helm) startEffect(s.c, "item:Helm of Knowledge", { rounds: 50 });
+    return s;
+  };
+  const stack = faceOdds((rng) => parleySucceeded(maxed(false), rng), { label: "parley:ceiling (stack)" });
+  assert.ok(stack.wins < stack.n, "[parley:ceiling] a maximal stack must never win on every face (the 85% ceiling)");
+  const stackPlus = faceOdds((rng) => parleySucceeded(maxed(true), rng), { label: "parley:ceiling (stack+)" });
+  assertBonus(stackPlus, stack, { strict: false, label: "parley:ceiling (non-worsening beyond the cap)" });
+});
+
+test(
+  '[parley:parley-need-mod] "up = harder" (engine/difficulty.js#parleyNeedModFor JSDoc; docs/DIFFICULTY-RETUNE.md) — PARLEY_NEED_MOD:1 must be a PENALTY (finding F5, fixed by 72-07)',
+  { todo: "fixed by 72-07 (F5)" },
+  () => {
+    const build = () => {
+      const s = inCombat(heroState({ cls: "Thief", sub: "Con Artist", race: "Human", level: 1 }), [foeFrom("Humans", 1, "Ned")]);
+      return noArmor(s);
+    };
+    const identity = faceOdds((rng) => parleySucceeded(build(), rng), { label: "parley:parley-need-mod (identity)" });
+    const identityExplicit = (() => {
+      const restore = setDialsForTuning({ PARLEY_NEED_MOD: DIALS.PARLEY_NEED_MOD });
+      const result = faceOdds((rng) => parleySucceeded(build(), rng), { label: "parley:parley-need-mod (identity, explicit)" });
+      restore();
+      return result;
+    })();
+    assertSame(identityExplicit, identity, { label: "parley:parley-need-mod (identity is a no-op)" });
+    const bumped = (() => {
+      const restore = setDialsForTuning({ PARLEY_NEED_MOD: 1 });
+      const result = faceOdds((rng) => parleySucceeded(build(), rng), { label: "parley:parley-need-mod (+1)" });
+      restore();
+      return result;
+    })();
+    assertPenalty(bumped, identity, { label: "parley:parley-need-mod" });
+  },
+);
+
+// --- Trap [hero]: trapAvoided --------------------------------------------------
+
+test('[trap:acrobat] an Acrobat dodges better, +3 nimble, engine/encounters.js#springTrap ~L66', () => {
+  const acrobat = () => heroState({ cls: "Thief", sub: "Acrobat", race: "Human" });
+  const pickpocket = () => heroState({ cls: "Thief", sub: "Pickpocket", race: "Human" });
+  const withMod = faceOdds((rng) => trapAvoided(acrobat(), rng), { label: "trap:acrobat" });
+  const without = faceOdds((rng) => trapAvoided(pickpocket(), rng), { label: "trap:acrobat (baseline)" });
+  assertBonus(withMod, without, { label: "trap:acrobat" });
+});
+
+test('[trap:thief-trap-avoid] CLASS_MITIGATION.Thief.trapAvoid — identity a no-op, a Thief bonus, a non-Thief unaffected, engine/difficulty.js#classTrapAvoidFor', () => {
+  const withAvoid = (v) => setDialsForTuning({ CLASS_MITIGATION: { Thief: { evasion: 0, fleeBonus: DIALS.CLASS_MITIGATION.Thief.fleeBonus, trapAvoid: v, killSpeed: 1 } } });
+  const thiefBuild = () => heroState({ cls: "Thief", sub: "Pickpocket", race: "Human" });
+  const identity = faceOdds((rng) => trapAvoided(thiefBuild(), rng), { label: "trap:thief-trap-avoid (identity)" });
+  const bumped = (() => {
+    const restore = withAvoid(1);
+    const result = faceOdds((rng) => trapAvoided(thiefBuild(), rng), { label: "trap:thief-trap-avoid (+1)" });
+    restore();
+    return result;
+  })();
+  assertBonus(bumped, identity, { label: "trap:thief-trap-avoid (Thief)" });
+
+  const nonThiefBuild = () => heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+  const nonThiefIdentity = faceOdds((rng) => trapAvoided(nonThiefBuild(), rng), { label: "trap:thief-trap-avoid (non-Thief identity)" });
+  const nonThiefBumped = (() => {
+    const restore = withAvoid(1);
+    const result = faceOdds((rng) => trapAvoided(nonThiefBuild(), rng), { label: "trap:thief-trap-avoid (non-Thief +1)" });
+    restore();
+    return result;
+  })();
+  assertSame(nonThiefBumped, nonThiefIdentity, { label: "trap:thief-trap-avoid (non-Thief, no-op)" });
+});
+
+// --- Locks [hero]: chestLockRolled.opened -------------------------------------
+
+function lockBuild({ sub = "Pickpocket", locksTier, picks, intel = 10 } = {}) {
+  const s = heroState({ cls: "Thief", sub, race: "Human" });
+  s.c.intel = intel;
+  s.c.skills = {};
+  if (locksTier) s.c.skills.Locks = locksTier;
+  s.c.items = picks ? [{ kind: "picks", n: "Lockpicks" }] : [];
+  return s;
+}
+
+test('[lock:locks-tier] Locks tier 1 opens more often than none, engine/encounters.js#openChest ~L119', () => {
+  const withMod = faceOdds((rng) => lockOpened(lockBuild({ locksTier: 1 }), rng), { label: "lock:locks-tier" });
+  const without = faceOdds((rng) => lockOpened(lockBuild({}), rng), { label: "lock:locks-tier (baseline)" });
+  assertBonus(withMod, without, { label: "lock:locks-tier" });
+});
+
+test('[lock:locks-tier-2] Locks tier 2 opens more often than tier 1, engine/encounters.js#openChest ~L119', () => {
+  const withMod = faceOdds((rng) => lockOpened(lockBuild({ locksTier: 2 }), rng), { label: "lock:locks-tier-2" });
+  const without = faceOdds((rng) => lockOpened(lockBuild({ locksTier: 1 }), rng), { label: "lock:locks-tier-2 (baseline)" });
+  assertBonus(withMod, without, { label: "lock:locks-tier-2" });
+});
+
+test('[lock:lockpicks] lockpicks open more often than bare hands, engine/items.js#hasPicks', () => {
+  const withMod = faceOdds((rng) => lockOpened(lockBuild({ picks: true }), rng), { label: "lock:lockpicks" });
+  const without = faceOdds((rng) => lockOpened(lockBuild({}), rng), { label: "lock:lockpicks (baseline)" });
+  assertBonus(withMod, without, { label: "lock:lockpicks" });
+});
+
+test('[lock:intel-bonus] a smarter character needs an easier number — a stat, engine/derived.js#intelBonus', () => {
+  const withMod = faceOdds((rng) => lockOpened(lockBuild({ intel: 20 }), rng), { label: "lock:intel-bonus" });
+  const without = faceOdds((rng) => lockOpened(lockBuild({ intel: 10 }), rng), { label: "lock:intel-bonus (baseline)" });
+  assertBonus(withMod, without, { label: "lock:intel-bonus" });
+});
+
+test('[lock:pilfer] a Pilfer opens with no lock-roll draw requested, engine/encounters.js#openChest ~L118', () => {
+  // A Pilfer still draws for gold/scroll/treasure afterward (a real chest
+  // still pays out) — only the LOCK ROLL itself is skipped, so this row
+  // checks for the absence of a `chestLockRolled` event directly rather
+  // than through the vacuous-probe pattern (which would trip on the
+  // gold/treasure draws that legitimately follow).
+  const events = [];
+  openChest(lockBuild({ sub: "Pilfer" }), probeRng({ isProbe: () => false }), events);
+  assert.ok(events.some((e) => e.type === "chestOpened" && e.reason === "pilfer"), "[lock:pilfer] a Pilfer must open");
+  assert.ok(!events.some((e) => e.type === "chestLockRolled"), "[lock:pilfer] a Pilfer must never roll the lock");
+});
+
+// --- Climb [hero]: a clean crossing, every climb d10 probed at the same face ---
+
+function climbBuild({ phobia, armor, hardiness } = {}) {
+  const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+  const cell = s.floor.g[s.floor.py][s.floor.px + 1];
+  cell.wall = false;
+  cell.feat = "climb";
+  noArmor(s);
+  if (armor) withArmor(s, armor);
+  s.c.phobia = phobia ?? "Darkness"; // a neutral phobia — never Heights/Bodies of water
+  if (hardiness) s.c.skills.Hardiness = 1;
+  return s;
+}
+
+test('[climb:heights] Heights phobia narrows the climb roll, engine/movement.js ~L259', () => {
+  const withMod = faceOdds((rng) => climbedClean(climbBuild({ phobia: "Heights" }), rng), { isProbe: (i, sides) => sides === 10, label: "climb:heights" });
+  const without = faceOdds((rng) => climbedClean(climbBuild({}), rng), { isProbe: (i, sides) => sides === 10, label: "climb:heights (baseline)" });
+  assertPenalty(withMod, without, { label: "climb:heights" });
+});
+
+test('[climb:hardiness-halving] Hardiness halves the Heights penalty, non-worsening, engine/movement.js#heightsPenalty ~L59', () => {
+  const withMod = faceOdds((rng) => climbedClean(climbBuild({ phobia: "Heights", hardiness: true }), rng), { isProbe: (i, sides) => sides === 10, label: "climb:hardiness-halving" });
+  const without = faceOdds((rng) => climbedClean(climbBuild({ phobia: "Heights" }), rng), { isProbe: (i, sides) => sides === 10, label: "climb:hardiness-halving (baseline)" });
+  assertBonus(withMod, without, { strict: false, label: "climb:hardiness-halving" });
+});
+
+test('[climb:armor-bulk] armor bulk narrows the climb roll, engine/movement.js ~L270', () => {
+  const withMod = faceOdds((rng) => climbedClean(climbBuild({ armor: "Plate" }), rng), { isProbe: (i, sides) => sides === 10, label: "climb:armor-bulk" });
+  const without = faceOdds((rng) => climbedClean(climbBuild({}), rng), { isProbe: (i, sides) => sides === 10, label: "climb:armor-bulk (baseline)" });
+  assertPenalty(withMod, without, { label: "climb:armor-bulk" });
+});
+
+// --- Leap [hero] ---------------------------------------------------------------
+
+function leapBuild({ phobia, armor } = {}) {
+  const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+  const cell = s.floor.g[s.floor.py][s.floor.px + 1];
+  cell.wall = false;
+  cell.feat = "gorge";
+  noArmor(s);
+  if (armor) withArmor(s, armor);
+  s.c.phobia = phobia ?? "Darkness";
+  return s;
+}
+
+test('[leap:water] Bodies-of-water phobia narrows the leap roll, engine/movement.js ~L277', () => {
+  const withMod = faceOdds((rng) => leapedClean(leapBuild({ phobia: "Bodies of water" }), rng), { isProbe: (i, sides) => sides === 10, label: "leap:water" });
+  const without = faceOdds((rng) => leapedClean(leapBuild({}), rng), { isProbe: (i, sides) => sides === 10, label: "leap:water (baseline)" });
+  assertPenalty(withMod, without, { label: "leap:water" });
+});
+
+test('[leap:armor-bulk] armor bulk narrows the leap roll, engine/movement.js ~L285', () => {
+  const withMod = faceOdds((rng) => leapedClean(leapBuild({ armor: "Plate" }), rng), { isProbe: (i, sides) => sides === 10, label: "leap:armor-bulk" });
+  const without = faceOdds((rng) => leapedClean(leapBuild({}), rng), { isProbe: (i, sides) => sides === 10, label: "leap:armor-bulk (baseline)" });
+  assertPenalty(withMod, without, { label: "leap:armor-bulk" });
+});
+
+// --- Cure [hero]: an affliction-cured event -------------------------------------
+
+test('[cure:hardiness] Hardiness +4 to the affliction cure roll, engine/movement.js#newDay ~L708', () => {
+  const build = (hardiness) => {
+    const s = heroState({ cls: "Fighter", sub: "Soldier", race: "Human" });
+    s.c.rations = 999;
+    s.c.affliction = { kind: "Poison", loss: { n: 2, sides: 6, bonus: 0 }, per: 1, left: 10 };
+    if (hardiness) s.c.skills.Hardiness = 1;
+    return s;
+  };
+  const withMod = faceOdds((rng) => afflictionCured(build(true), rng), { isProbe: (i) => i === 1, label: "cure:hardiness" });
+  const without = faceOdds((rng) => afflictionCured(build(false), rng), { isProbe: (i) => i === 1, label: "cure:hardiness (baseline)" });
+  assertBonus(withMod, without, { label: "cure:hardiness" });
+});
+
+// --- Wake [the dungeon, which is bad for the hero] ------------------------------
+
+function wakeBuild(sub) {
+  const s = heroState({ cls: "Fighter", sub, race: "Human" });
+  s.c.rations = 999;
+  return s;
+}
+
+test('[wake:bard] "creatures ... come for you first" — a BAD trait, engine/difficulty.js#wanderWakeFacesFor', () => {
+  const opts = { isProbe: (i) => i === 1, fill: () => 20 };
+  const withMod = faceOdds((rng) => wanderTriggered(wakeBuild("Bard"), rng), { ...opts, label: "wake:bard" });
+  const without = faceOdds((rng) => wanderTriggered(wakeBuild("Soldier"), rng), { ...opts, label: "wake:bard (baseline)" });
+  assertBonus(withMod, without, { label: "wake:bard" });
+});
+
+test('[wake:wander-rate] WANDER_RATE — identity reproduces "===1", a wider face count is a strict bonus to the dungeon, engine/difficulty.js#wanderWakeFacesFor', () => {
+  const opts = { isProbe: (i) => i === 1, fill: () => 20 };
+  const build = () => wakeBuild("Soldier");
+  const identity = faceOdds((rng) => wanderTriggered(build(), rng), { ...opts, label: "wake:wander-rate (identity)" });
+  const identityExplicit = (() => {
+    const restore = setDialsForTuning({ WANDER_RATE: DIALS.WANDER_RATE });
+    const result = faceOdds((rng) => wanderTriggered(build(), rng), { ...opts, label: "wake:wander-rate (identity, explicit)" });
+    restore();
+    return result;
+  })();
+  assertSame(identityExplicit, identity, { label: "wake:wander-rate (identity is a no-op)" });
+  const bumped = (() => {
+    const restore = setDialsForTuning({ WANDER_RATE: DIALS.WANDER_RATE + 1 });
+    const result = faceOdds((rng) => wanderTriggered(build(), rng), { ...opts, label: "wake:wander-rate (+1)" });
+    restore();
+    return result;
+  })();
+  assertBonus(bumped, identity, { label: "wake:wander-rate" });
+});
+
+// --- Drop [the hero wants loot] --------------------------------------------------
+
+test('[drop:foe-level] "a tougher foe carries better loot" — a tier-2 foe drops more often, engine/combat.js#killFoe ~L871', () => {
+  const build = (tier, name) => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [foeFrom("Humans", tier, name)]);
+  const withMod = faceOdds((rng) => lootDropped(build(2, "China Wolf"), rng), { isProbe: (i) => i === 2, label: "drop:foe-level (tier2)" });
+  const without = faceOdds((rng) => lootDropped(build(1, "Ned"), rng), { isProbe: (i) => i === 2, label: "drop:foe-level (tier1)" });
+  assertBonus(withMod, without, { label: "drop:foe-level" });
+});
