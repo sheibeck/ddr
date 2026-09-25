@@ -209,3 +209,26 @@ None — no external service configuration required.
 ---
 *Phase: 75-engine-rules-character-economy-grimoire-combat-bugs*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: engine/items.js
+- FOUND: src/browser/eventNarration.js
+- FOUND: src/browser/narrationLines.js
+- FOUND: docs/USABLE-FEATURES-AUDIT.md
+- FOUND: test/unit/staff-wield.test.js
+- FOUND: test/unit/item-activation.test.js
+- FOUND: test/unit/item-combat-gate.test.js
+- FOUND: test/unit/item-wiring.test.js
+- FOUND: test/unit/items.test.js
+- FOUND: test/unit/usable-features-audit.test.js
+- FOUND: test/unit/worn-slots.test.js
+- FOUND: tools/lib/tuning-bot.mjs
+- FOUND: test/unit/bot-tactics.test.js
+- FOUND: tools/readouts/75-09-before.txt
+- FOUND: tools/readouts/75-09-after.txt
+- FOUND commit: b9bb8a1 (feat: Task 1 — a bagged staff is inert, and says so)
+- FOUND commit: 49d2ca6 (test: Task 2 — re-pin every bag-staff test to the new rule)
+- FOUND commit: fbff054 (feat: Task 3a — the bot wields its staff and uses it by slot)
+- FOUND commit: 73c8dd7 (docs: Task 3b — before/after 200-seed readouts)
+- FOUND commit: 7d1dfe4 (docs: this SUMMARY)
