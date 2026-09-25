@@ -66,13 +66,13 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. The bestiary `critOn: 1` claim (Skeleton, "a 1 shatters it") is either wired into the engine or removed from the text.
   5. Every fixture the fixes move is measured, declared with before/after in `test/parity/FIXTURE-INVENTORY.md`, and regenerated — nothing else moves.
 
-**Plans**: 7 plans
+**Plans**: 2/7 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 72-01-PLAN.md — Roll ledger audit (docs/ROLL-LEDGER.md, extends Phase 31's 34 sites) + BEFORE bot readout + batched rulings checkpoint for NEEDS-RULING findings (wave 1)
-- [ ] 72-02-PLAN.md — Odds harness (test/unit/harness/rollOdds.js) + combat direction test rows, with RED pending rows for the four known bugs (wave 1)
+- [x] 72-01-PLAN.md — Roll ledger audit (docs/ROLL-LEDGER.md, extends Phase 31's 34 sites) + BEFORE bot readout + batched rulings checkpoint for NEEDS-RULING findings (wave 1)
+- [x] 72-02-PLAN.md — Odds harness (test/unit/harness/rollOdds.js) + combat direction test rows, with RED pending rows for the four known bugs (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -266,7 +266,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 0/7 | Planned | - |
+| 72. Roll-Direction Sign Audit & Fixes | v2.1 | 2/7 | In Progress|  |
 | 73. Engine Roll-High Mirror | v2.1 | 0/– | Not started | - |
 | 74. Roll Display & Modifier Honesty | v2.1 | 0/– | Not started | - |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 0/– | Not started | - |

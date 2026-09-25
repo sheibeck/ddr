@@ -3,15 +3,16 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
 current_phase: 72
-status: planning
+current_phase_name: Roll-Direction Sign Audit & Fixes
+status: executing
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-24T22:12:49.714Z"
+last_updated: "2026-09-24T23:31:24.997Z"
 last_activity: 2026-09-24
-last_activity_desc: ROADMAP.md created for v2.1 (Phases 72-81, 44/44 requirements mapped; roll-high engine mirror sequenced as Phase 73 per user ruling)
+last_activity_desc: Phase 72 execution started
 progress:
   total_phases: 11
   completed_phases: 0
-  total_plans: 0
+  total_plans: 7
   completed_plans: 0
   percent: 0
 ---
@@ -23,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as Play 2.0.0 / vc10 and archived; open Pixel 7 UAT batches: v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v2.1 Bug Fixes roadmapped (Phases 72-81, 44/44 requirements mapped) — plan Phase 72 next
+**Current focus:** Phase 72 — Roll-Direction Sign Audit & Fixes
 
 ## Current Position
 
-Phase: 72 (not started)
-Plan: —
-Status: Roadmap created — ready for /gsd-plan-phase 72
-Last activity: 2026-09-24 — ROADMAP.md created for v2.1 (Phases 72-81, 44/44 requirements mapped; roll-high engine mirror sequenced as Phase 73 per user ruling)
+Phase: 72 (Roll-Direction Sign Audit & Fixes) — EXECUTING
+Plan: 1 of 7
+Status: Executing Phase 72
+Last activity: 2026-09-24 — Phase 72 execution started
 
 ## Ground Truth (durable facts every session needs)
 
