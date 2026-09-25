@@ -1128,7 +1128,9 @@ test("parley: a Con Artist can always parley, and success ends combat with skill
   const rng = fakeRng([10, 3, 2]);
   const events = parley(state, rng, []);
   assert.ok(events.some((e) => e.type === "spGained" && e.reason === "parley" && e.amount === 8));
-  assert.ok(events.some((e) => e.type === "parleyRolled" && e.need === 13 && e.fluency === 0));
+  // Phase 73 (ROLL-05): the old `need` (13) is the same faces count, now
+  // read as atLeast = 21 - 13 = 8 on a d20.
+  assert.ok(events.some((e) => e.type === "parleyRolled" && e.atLeast === 8 && e.dieN === 20 && e.fluency === 0));
   assert.equal(state.combat, null);
 });
 

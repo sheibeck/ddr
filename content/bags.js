@@ -37,10 +37,13 @@ export const BAG_ORDER = ["small", "medium", "large", "exlarge"];
 // caps above.
 export const BAG_FLOORS = { medium: 2, large: 5, exlarge: 9 };
 
-// BAG_DROP_UNDER — on a successful treasure drop at or past a tier's floor,
-// one extra d20 at or under this value swaps the rolled item for the bag
-// instead (engine/combat.js#killFoe, Plan 02). TUNING KNOB.
-export const BAG_DROP_UNDER = 3;
+// BAG_DROP_FACES — on a successful treasure drop at or past a tier's floor,
+// one extra d20 landing in this many top faces swaps the rolled item for the
+// bag instead (engine/combat.js#killFoe, Plan 02). Phase 73 (ROLL-05)
+// renamed this export (the old name described the bottom-of-the-die
+// reading) — the value is unchanged, and it is never persisted, so the
+// rename carries no save/parity risk. TUNING KNOB.
+export const BAG_DROP_FACES = 3;
 
 // BAG_ITEMS — the takeable `kind:"bag"` item for each upgrade tier. Slot
 // counts intentionally mirror BAGS[tier].slots (asserted in

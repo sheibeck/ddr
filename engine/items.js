@@ -948,15 +948,18 @@ export function unequipSlot(state, slot, events = []) {
    UNGATED (declining is never a gear change). */
 
 /**
- * offerLoot(state, it, events) — the ONE producer (killFoe, Task 2):
- * appends `it` to state.pendingLoot and narrates `lootDropped` — replaces
- * the legacy mid-fight auto-take entirely. Never touches c.items. Pure, no
- * rng.
+ * offerLoot(state, it, events, rollInfo) — the ONE producer (killFoe, Task
+ * 2): appends `it` to state.pendingLoot and narrates `lootDropped` —
+ * replaces the legacy mid-fight auto-take entirely. Never touches c.items.
+ * Pure, no rng of its own. Phase 73 (ROLL-05): the optional 4th argument
+ * (killFoe's `{ ...rollFields(lootCheck), bag? }`) is spread onto
+ * `lootDropped` for the parity invariant/Oracle — absent (`{}`) for a
+ * caller with no roll-check to report, so a plain call stays byte-identical.
  */
-export function offerLoot(state, it, events = []) {
+export function offerLoot(state, it, events = [], rollInfo = {}) {
   state.pendingLoot = state.pendingLoot || [];
   state.pendingLoot.push(it);
-  events.push({ type: "lootDropped", name: it.n, kind: it.kind });
+  events.push({ type: "lootDropped", name: it.n, kind: it.kind, ...rollInfo });
   return events;
 }
 

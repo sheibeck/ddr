@@ -431,7 +431,7 @@ test("killFoe: depth 2, small bag — draws exactly 7; a low 7th roll swaps in a
   const state = fixedCombatState({ floor: { depth: 2 } });
   const foe = fixedFoe({ type: "Humans", lvl: 1, wp: 0 });
   state.combat = fixedCombat([foe]);
-  const rng = countingRng([1, 1, 1, 5, 6, 1, 1]); // + bag-swap d20 <= BAG_DROP_UNDER
+  const rng = countingRng([1, 1, 1, 5, 6, 1, 1]); // + bag-swap d20 lands in the top BAG_DROP_FACES faces
   killFoe(state, foe, rng, []);
   assert.equal(rng.calls, 7);
   assert.equal(state.pendingLoot.length, 1);
