@@ -711,11 +711,7 @@ export function playerStrike(state, rng, events = []) {
     // (`!C.opened2` here reads the SAME "is this the opener" state
     // `opening` below computes, before this call sets it) — that blow deals
     // no injury by rule, so there is nothing to shatter on.
-    // Phase 73 transitional: 73-05 flips isBestFace and passes roll — until
-    // then isBestFace still reads the old roll-under best face (`roll ===
-    // 1`), so this call mirrors the new roll-high `roll` back to the old raw
-    // face it corresponds to.
-    if (!(c.sub === "Con Artist" && !C.opened2) && shatterIfBest(state, t, dieN + 1 - roll, dieN, "you", rng, events)) {
+    if (!(c.sub === "Con Artist" && !C.opened2) && shatterIfBest(state, t, roll, dieN, "you", rng, events)) {
       C.opened2 = true;
       continue;
     }
@@ -975,14 +971,16 @@ export function killFoe(state, f, rng, events = []) {
  * best face; a caller MUST check the to-hit already LANDED before calling
  * this (a Con Artist's no-injury opener is excluded by its own caller, not
  * here). On a shatter: pushes `{ type: "foeShattered", target: t.name, by,
- * ...extra }`, sets `t.lives = 1` (so `killFoe` takes both the current and
+ * roll, atLeast: dieN, dieN, ...extra }` (every caller now passes the
+ * mirrored roll-high roll; the lowest winning face for a shatter IS the top
+ * face, `dieN`), sets `t.lives = 1` (so `killFoe` takes both the current and
  * the kill-twice life in the same call) and `t.wp = 0`, calls `killFoe`, and
  * returns `true`. Draws NO weapon-damage or spell-damage dice — the caller
  * MUST skip its own damage roll on a shatter.
  */
 export function shatterIfBest(state, t, roll, dieN, by, rng, events, extra = {}) {
   if (!t || !t.alive || !t.sp || !t.sp.shatterOnBest || !isBestFace(roll, dieN)) return false;
-  events.push({ type: "foeShattered", target: t.name, by, ...extra });
+  events.push({ type: "foeShattered", target: t.name, by, roll, atLeast: dieN, dieN, ...extra });
   t.lives = 1;
   t.wp = 0;
   killFoe(state, t, rng, events);
@@ -2105,11 +2103,22 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     // (research Pitfall 2).
     const freeze = sp.onHit === "freeze";
     const dieN = freeze ? 10 : 8;
-    const need = freeze ? 6 : 4;
-    const bonus = schoolBonus(view.sub, sp.s) + eff(view, "throw");
-    const roll = rng.d(dieN);
-    events.push({ type: "allyCast", ...base, roll, need, bonus });
-    if (roll - bonus <= need) {
+    // Phase 73 (ROLL-05): `need` -> `faces`; the school and throw bonuses
+    // fold into the threshold the same way every other per-target term does
+    // — `atLeastFor(faces + bonus, dieN)` is byte-identical to the old
+    // `roll - bonus <= need`.
+    const faces = freeze ? 6 : 4;
+    const schoolMod = schoolBonus(view.sub, sp.s);
+    const throwMod = eff(view, "throw");
+    const bonus = schoolMod + throwMod;
+    const mods = [
+      ...(schoolMod ? [{ name: "school", delta: schoolMod }] : []),
+      ...(throwMod ? [{ name: "throw", delta: throwMod }] : []),
+    ];
+    const check = rollCheck(rng, dieN, atLeastFor(faces + bonus, dieN));
+    const roll = check.roll;
+    events.push({ type: "allyCast", ...base, ...rollFields(check), ...(mods.length ? { mods } : {}) });
+    if (check.ok) {
       // Phase 72 (ROLL-01 (c)): a landed member thrown attack spell on its
       // die's best face shatters a shatter-flagged foe (the Skeleton)
       // outright — skip the spell-damage roll.

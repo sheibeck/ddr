@@ -20,7 +20,7 @@
 // finally SETS them.
 
 import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage } from "./derived.js";
-import { rollDice } from "./dice.js";
+import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest } from "./combat.js";
 import { maxCharges } from "./movement.js";
@@ -476,8 +476,14 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       events.push({ type: "dozed", target: t.name, rounds: t.asleep });
     }
   } else {
-    // thrown: d8, 4 to hit, plus the offensive bonus from the subclass chart
-    const bonus = schoolBonus(c.sub, sp.s) + eff(c, "throw");
+    // thrown: d8, 4 winning faces, plus the offensive bonus from the
+    // subclass chart. Phase 73 (ROLL-05): the school and throw bonuses fold
+    // into the threshold via atLeastFor(faces + bonus, dieN), exactly like
+    // every other per-target modifier — byte-identical to the old
+    // `roll - bonus <= target`.
+    const schoolMod = schoolBonus(c.sub, sp.s);
+    const throwMod = eff(c, "throw");
+    const bonus = schoolMod + throwMod;
     // Phase 40 (SPELL-01, research Pitfall 2): Lightning's own `aoe` data
     // flag drives the every-foe case below — replaces the old name-keyed
     // special case (a direct comparison against the literal spell name
@@ -496,16 +502,22 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       // is byte-identical to before this phase.
       const freeze = sp.onHit === "freeze";
       const dieN = freeze ? 10 : 8;
-      // Phase 31 Afraid — to-hit is a LOW range, so the target SHRINKS
-      // (4 → 1, Freeze 6 → 3), never the roll; pure arithmetic, zero rng;
-      // fixture-visible only on the declared cast-damage record, where
-      // d10 = 1 still lands (need 6 → 3, roll 1 still <= 3).
+      // Phase 31 Afraid — to-hit is a count of winning faces, so the target
+      // SHRINKS (4 → 1, Freeze 6 → 3), never the roll; pure arithmetic, zero
+      // rng; fixture-visible only on the declared cast-damage record, where
+      // a mirrored top-face roll still lands under the narrowed threshold.
       const baseTarget = freeze ? 6 : 4;
       const target = afraidNeed(state, baseTarget);
       const afraidMods = target !== baseTarget ? [{ name: "afraid", delta: target - baseTarget }] : [];
-      const roll = rng.d(dieN);
-      events.push({ type: "spellThrown", spell: sp.n, target: t.name, roll, need: target, bonus, ...(afraidMods.length ? { needMods: afraidMods } : {}) });
-      if (roll - bonus <= target) {
+      const schoolThrowMods = [
+        ...(schoolMod ? [{ name: "school", delta: schoolMod }] : []),
+        ...(throwMod ? [{ name: "throw", delta: throwMod }] : []),
+      ];
+      const mods = [...afraidMods, ...schoolThrowMods];
+      const check = rollCheck(rng, dieN, atLeastFor(target + bonus, dieN));
+      const roll = check.roll;
+      events.push({ type: "spellThrown", spell: sp.n, target: t.name, ...rollFields(check), ...(mods.length ? { mods } : {}) });
+      if (check.ok) {
         // Phase 72 (ROLL-01 (c)): a landed hero thrown attack spell on its
         // die's best face shatters a shatter-flagged foe (the Skeleton)
         // outright — skip the spell-damage roll.

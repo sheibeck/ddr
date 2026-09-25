@@ -53,12 +53,12 @@ function alwaysOneRng() {
   };
 }
 
-test("isBestFace(roll, dieN) — today's roll-under reading: a natural 1", () => {
-  assert.equal(isBestFace(1, 20), true);
-  assert.equal(isBestFace(2, 20), false);
-  assert.equal(isBestFace(20, 20), false);
-  assert.equal(isBestFace(1, 6), true);
-  assert.equal(isBestFace(6, 6), false);
+test("isBestFace(roll, dieN) — Phase 73's roll-high reading: the die's top face", () => {
+  assert.equal(isBestFace(20, 20), true);
+  assert.equal(isBestFace(1, 20), false);
+  assert.equal(isBestFace(19, 20), false);
+  assert.equal(isBestFace(6, 6), true);
+  assert.equal(isBestFace(1, 6), false);
 });
 
 // --- Hero strike ------------------------------------------------------------
