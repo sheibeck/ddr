@@ -1,0 +1,345 @@
+[
+  {
+    "id": "depth",
+    "name": "Depth",
+    "tier": 1,
+    "file_play": "play/ach_depth_t1.png",
+    "file_ingame": "ingame/ach_depth_t1.png"
+  },
+  {
+    "id": "depth",
+    "name": "Depth",
+    "tier": 2,
+    "file_play": "play/ach_depth_t2.png",
+    "file_ingame": "ingame/ach_depth_t2.png"
+  },
+  {
+    "id": "depth",
+    "name": "Depth",
+    "tier": 3,
+    "file_play": "play/ach_depth_t3.png",
+    "file_ingame": "ingame/ach_depth_t3.png"
+  },
+  {
+    "id": "unicorn",
+    "name": "Unicorn!",
+    "tier": null,
+    "file_play": "play/ach_unicorn.png",
+    "file_ingame": "ingame/ach_unicorn.png"
+  },
+  {
+    "id": "fully_dressed",
+    "name": "Fully Dressed",
+    "tier": null,
+    "file_play": "play/ach_fully_dressed.png",
+    "file_ingame": "ingame/ach_fully_dressed.png"
+  },
+  {
+    "id": "naked_ambition",
+    "name": "Naked Ambition",
+    "tier": null,
+    "file_play": "play/ach_naked_ambition.png",
+    "file_ingame": "ingame/ach_naked_ambition.png"
+  },
+  {
+    "id": "teetotaler",
+    "name": "Teetotaler",
+    "tier": null,
+    "file_play": "play/ach_teetotaler.png",
+    "file_ingame": "ingame/ach_teetotaler.png"
+  },
+  {
+    "id": "read_the_label",
+    "name": "Read the Label",
+    "tier": null,
+    "file_play": "play/ach_read_the_label.png",
+    "file_ingame": "ingame/ach_read_the_label.png"
+  },
+  {
+    "id": "frequent_flier",
+    "name": "Frequent Flier",
+    "tier": 1,
+    "file_play": "play/ach_frequent_flier_t1.png",
+    "file_ingame": "ingame/ach_frequent_flier_t1.png"
+  },
+  {
+    "id": "frequent_flier",
+    "name": "Frequent Flier",
+    "tier": 2,
+    "file_play": "play/ach_frequent_flier_t2.png",
+    "file_ingame": "ingame/ach_frequent_flier_t2.png"
+  },
+  {
+    "id": "frequent_flier",
+    "name": "Frequent Flier",
+    "tier": 3,
+    "file_play": "play/ach_frequent_flier_t3.png",
+    "file_ingame": "ingame/ach_frequent_flier_t3.png"
+  },
+  {
+    "id": "frequent_flier",
+    "name": "Frequent Flier",
+    "tier": 4,
+    "file_play": "play/ach_frequent_flier_t4.png",
+    "file_ingame": "ingame/ach_frequent_flier_t4.png"
+  },
+  {
+    "id": "special_snowflake",
+    "name": "Special Snowflake",
+    "tier": null,
+    "file_play": "play/ach_special_snowflake.png",
+    "file_ingame": "ingame/ach_special_snowflake.png"
+  },
+  {
+    "id": "kills_beasts",
+    "name": "Body Count: Beasts",
+    "tier": null,
+    "file_play": "play/ach_kills_beasts.png",
+    "file_ingame": "ingame/ach_kills_beasts.png"
+  },
+  {
+    "id": "kills_demons",
+    "name": "Body Count: Demons",
+    "tier": null,
+    "file_play": "play/ach_kills_demons.png",
+    "file_ingame": "ingame/ach_kills_demons.png"
+  },
+  {
+    "id": "kills_humans",
+    "name": "Body Count: Humans",
+    "tier": null,
+    "file_play": "play/ach_kills_humans.png",
+    "file_ingame": "ingame/ach_kills_humans.png"
+  },
+  {
+    "id": "kills_lair_beasts",
+    "name": "Body Count: Lair Beasts",
+    "tier": null,
+    "file_play": "play/ach_kills_lair_beasts.png",
+    "file_ingame": "ingame/ach_kills_lair_beasts.png"
+  },
+  {
+    "id": "kills_magical",
+    "name": "Body Count: Magical",
+    "tier": null,
+    "file_play": "play/ach_kills_magical.png",
+    "file_ingame": "ingame/ach_kills_magical.png"
+  },
+  {
+    "id": "kills_walking_dead",
+    "name": "Body Count: Walking Dead",
+    "tier": null,
+    "file_play": "play/ach_kills_walking_dead.png",
+    "file_ingame": "ingame/ach_kills_walking_dead.png"
+  },
+  {
+    "id": "race_human",
+    "name": "Human",
+    "tier": null,
+    "file_play": "play/ach_race_human.png",
+    "file_ingame": "ingame/ach_race_human.png"
+  },
+  {
+    "id": "race_elven",
+    "name": "Elven",
+    "tier": null,
+    "file_play": "play/ach_race_elven.png",
+    "file_ingame": "ingame/ach_race_elven.png"
+  },
+  {
+    "id": "race_dwarven",
+    "name": "Dwarven",
+    "tier": null,
+    "file_play": "play/ach_race_dwarven.png",
+    "file_ingame": "ingame/ach_race_dwarven.png"
+  },
+  {
+    "id": "race_wilmsry",
+    "name": "Wilmsry",
+    "tier": null,
+    "file_play": "play/ach_race_wilmsry.png",
+    "file_ingame": "ingame/ach_race_wilmsry.png"
+  },
+  {
+    "id": "race_fridgian",
+    "name": "Fridgian",
+    "tier": null,
+    "file_play": "play/ach_race_fridgian.png",
+    "file_ingame": "ingame/ach_race_fridgian.png"
+  },
+  {
+    "id": "race_troll",
+    "name": "Troll",
+    "tier": null,
+    "file_play": "play/ach_race_troll.png",
+    "file_ingame": "ingame/ach_race_troll.png"
+  },
+  {
+    "id": "class_magic_user",
+    "name": "Magic User",
+    "tier": null,
+    "file_play": "play/ach_class_magic_user.png",
+    "file_ingame": "ingame/ach_class_magic_user.png"
+  },
+  {
+    "id": "class_fighter",
+    "name": "Fighter",
+    "tier": null,
+    "file_play": "play/ach_class_fighter.png",
+    "file_ingame": "ingame/ach_class_fighter.png"
+  },
+  {
+    "id": "class_thief",
+    "name": "Thief",
+    "tier": null,
+    "file_play": "play/ach_class_thief.png",
+    "file_ingame": "ingame/ach_class_thief.png"
+  },
+  {
+    "id": "tourist",
+    "name": "Tourist",
+    "tier": null,
+    "file_play": "play/ach_tourist.png",
+    "file_ingame": "ingame/ach_tourist.png"
+  },
+  {
+    "id": "survivor",
+    "name": "Survivor",
+    "tier": 1,
+    "file_play": "play/ach_survivor_t1.png",
+    "file_ingame": "ingame/ach_survivor_t1.png"
+  },
+  {
+    "id": "survivor",
+    "name": "Survivor",
+    "tier": 2,
+    "file_play": "play/ach_survivor_t2.png",
+    "file_ingame": "ingame/ach_survivor_t2.png"
+  },
+  {
+    "id": "survivor",
+    "name": "Survivor",
+    "tier": 3,
+    "file_play": "play/ach_survivor_t3.png",
+    "file_ingame": "ingame/ach_survivor_t3.png"
+  },
+  {
+    "id": "survivor",
+    "name": "Survivor",
+    "tier": 4,
+    "file_play": "play/ach_survivor_t4.png",
+    "file_ingame": "ingame/ach_survivor_t4.png"
+  },
+  {
+    "id": "hoarder",
+    "name": "Hoarder",
+    "tier": 1,
+    "file_play": "play/ach_hoarder_t1.png",
+    "file_ingame": "ingame/ach_hoarder_t1.png"
+  },
+  {
+    "id": "hoarder",
+    "name": "Hoarder",
+    "tier": 2,
+    "file_play": "play/ach_hoarder_t2.png",
+    "file_ingame": "ingame/ach_hoarder_t2.png"
+  },
+  {
+    "id": "hoarder",
+    "name": "Hoarder",
+    "tier": 3,
+    "file_play": "play/ach_hoarder_t3.png",
+    "file_ingame": "ingame/ach_hoarder_t3.png"
+  },
+  {
+    "id": "hoarder",
+    "name": "Hoarder",
+    "tier": 4,
+    "file_play": "play/ach_hoarder_t4.png",
+    "file_ingame": "ingame/ach_hoarder_t4.png"
+  },
+  {
+    "id": "party_animal",
+    "name": "Party Animal",
+    "tier": 1,
+    "file_play": "play/ach_party_animal_t1.png",
+    "file_ingame": "ingame/ach_party_animal_t1.png"
+  },
+  {
+    "id": "party_animal",
+    "name": "Party Animal",
+    "tier": 2,
+    "file_play": "play/ach_party_animal_t2.png",
+    "file_ingame": "ingame/ach_party_animal_t2.png"
+  },
+  {
+    "id": "party_animal",
+    "name": "Party Animal",
+    "tier": 3,
+    "file_play": "play/ach_party_animal_t3.png",
+    "file_ingame": "ingame/ach_party_animal_t3.png"
+  },
+  {
+    "id": "party_animal",
+    "name": "Party Animal",
+    "tier": 4,
+    "file_play": "play/ach_party_animal_t4.png",
+    "file_ingame": "ingame/ach_party_animal_t4.png"
+  },
+  {
+    "id": "human_shields",
+    "name": "Human Shields",
+    "tier": 1,
+    "file_play": "play/ach_human_shields_t1.png",
+    "file_ingame": "ingame/ach_human_shields_t1.png"
+  },
+  {
+    "id": "human_shields",
+    "name": "Human Shields",
+    "tier": 2,
+    "file_play": "play/ach_human_shields_t2.png",
+    "file_ingame": "ingame/ach_human_shields_t2.png"
+  },
+  {
+    "id": "human_shields",
+    "name": "Human Shields",
+    "tier": 3,
+    "file_play": "play/ach_human_shields_t3.png",
+    "file_ingame": "ingame/ach_human_shields_t3.png"
+  },
+  {
+    "id": "human_shields",
+    "name": "Human Shields",
+    "tier": 4,
+    "file_play": "play/ach_human_shields_t4.png",
+    "file_ingame": "ingame/ach_human_shields_t4.png"
+  },
+  {
+    "id": "disposable_help",
+    "name": "Disposable Help",
+    "tier": 1,
+    "file_play": "play/ach_disposable_help_t1.png",
+    "file_ingame": "ingame/ach_disposable_help_t1.png"
+  },
+  {
+    "id": "disposable_help",
+    "name": "Disposable Help",
+    "tier": 2,
+    "file_play": "play/ach_disposable_help_t2.png",
+    "file_ingame": "ingame/ach_disposable_help_t2.png"
+  },
+  {
+    "id": "disposable_help",
+    "name": "Disposable Help",
+    "tier": 3,
+    "file_play": "play/ach_disposable_help_t3.png",
+    "file_ingame": "ingame/ach_disposable_help_t3.png"
+  },
+  {
+    "id": "disposable_help",
+    "name": "Disposable Help",
+    "tier": 4,
+    "file_play": "play/ach_disposable_help_t4.png",
+    "file_ingame": "ingame/ach_disposable_help_t4.png"
+  }
+]
