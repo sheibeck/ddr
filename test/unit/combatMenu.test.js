@@ -14,6 +14,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { characterSheetViewModel } from "../../src/browser/heroTab.js";
 import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 import { canCast } from "../../engine/derived.js";
 import { canParley } from "../../engine/combat.js";
@@ -87,7 +88,7 @@ test("Fighter (Soldier): the default grid — STRIKE sub-line, ABILITIES fallbac
   assert.equal(vm.actions[0].key, "strike");
   assert.equal(vm.actions[0].label, "1 · STRIKE");
   assert.equal(vm.actions[0].enabled, true);
-  assert.match(vm.actions[0].sub, /^d\d+, 1–\d+ to hit · \d+–\d+ dmg$/);
+  assert.match(vm.actions[0].sub, /^Hit (\d+–\d+|\d+) \(d\d+\) · \d+–\d+ dmg$/);
   assert.deepEqual(vm.actions[0].dispatch, { type: "attack" });
 
   assert.deepEqual(vm.actions[1], { key: "abilities", num: 2, label: "2 · ABILITIES", sub: "NOTHING UP YOUR SLEEVE", enabled: false, accent: false, opens: null });
@@ -108,8 +109,17 @@ test("Fighter (Soldier): the default grid — STRIKE sub-line, ABILITIES fallbac
   ]);
 
   // Reused below: a Fighter's flee cost has no Thief +5.
-  // Phase 42 (FLEE-01): need is now 14 (was 11).
-  assert.equal(vm.submenus.social.rows[0].cost, "d20, 14+");
+  // Phase 74 (ROLL-02): the honest winning range on the d20 (need 14, no
+  // bonus, per engine/derived.js#fleeBreakdown).
+  assert.equal(vm.submenus.social.rows[0].cost, "14–20 (d20)");
+});
+
+test("Phase 74 (ROLL-02): the STRIKE sub's range is exactly characterSheetViewModel's toHit value for the same state", () => {
+  const state = fixedState({ combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  const sheet = characterSheetViewModel(state);
+  const toHit = sheet.stats.find((s) => s.key === "toHit").value;
+  assert.equal(vm.actions[0].sub, `Hit ${toHit} · ${sheet.stats.find((s) => s.key === "damage").value} dmg`);
 });
 
 // ─── Bard: ABILITIES opens Sing ────────────────────────────────────────────
@@ -178,12 +188,13 @@ test("Magic User with an empty grimoire: SPELLS submenu is the single disabled N
 // ─── Thief: SOCIAL flee cost bonus, WITHDRAW, PARLEY ───────────────────────
 
 test("Thief (Pilfer): FLEE carries the +5 Thief bonus; a tracked round-1 combat becomes a clean WITHDRAW", () => {
-  // Phase 42 (FLEE-01/FLEE-02): need is now 14 (was 11); the desc names the
-  // Thief +5 modifier instead of staying silent.
+  // Phase 74 (ROLL-02/ROLL-03): the honest winning range (need 14, +5 Thief
+  // bonus -> atLeast 9) and the desc's Thief +5 modifier, both through
+  // fleeOdds(c) (src/browser/rollOdds.js).
   const c = { cls: "Thief", sub: "Pilfer" };
   const normal = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
   assert.deepEqual(normal.submenus.social.rows[0], {
-    id: "flee", label: "FLEE", cost: "d20+5, 14+", desc: `${COMBAT_MENU_COPY.fleeDesc} (Thief +5)`, enabled: true, dispatch: { type: "flee" },
+    id: "flee", label: "FLEE", cost: "9–20 (d20)", desc: `${COMBAT_MENU_COPY.fleeDesc} (Thief +5)`, enabled: true, dispatch: { type: "flee" },
   });
 
   const withdrawState = fixedState({ c, combat: fixedCombat([], { tracked: true, round: 1 }) });
@@ -199,10 +210,10 @@ test("Thief (Pilfer): FLEE carries the +5 Thief bonus; a tracked round-1 combat 
   assert.equal(parleyRow.enabled, canParley(withdrawState));
 });
 
-test("Troll Fighter in Plate (Phase 42, FLEE-01/FLEE-02): FLEE cost/desc name both the race and armor penalty", () => {
+test("Troll Fighter in Plate (Phase 74, ROLL-02/ROLL-03): FLEE cost/desc name both the race and armor penalty", () => {
   const c = { cls: "Fighter", race: "Troll", armor: "Plate" };
   const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
-  assert.equal(vm.submenus.social.rows[0].cost, "d20−3, 14+");
+  assert.equal(vm.submenus.social.rows[0].cost, "17–20 (d20)");
   assert.ok(vm.submenus.social.rows[0].desc.endsWith("(Troll −1, Plate −2)"));
 });
 

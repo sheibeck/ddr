@@ -15,11 +15,12 @@
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel } from "./heroTab.js";
 import { itemRowState } from "./gearTab.js";
-import { canCast, WORN_SLOTS, fleeBreakdown, activationFor } from "../../engine/derived.js";
+import { canCast, WORN_SLOTS, activationFor } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
+import { fleeOdds } from "./rollOdds.js";
 
 /** COMBAT_MENU_COPY — every literal string this module emits (voice-scanned by test/unit/combatMenu.test.js). */
 export const COMBAT_MENU_COPY = Object.freeze({
@@ -28,6 +29,11 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // round's beats are still playing (design/COMBAT-V2-NOTES.md, section 4).
   resolving: "HOLD · THE DICE ARE STILL OUT",
   strike: "1 · STRIKE",
+  // Phase 74 (ROLL-02): the honest roll-high range on the current strike
+  // die, filled from the sheet's own toHit stat value (statValue("toHit"))
+  // and damage value — the same values characterSheetViewModel shows, so
+  // the menu and the hero sheet can never disagree.
+  strikeSub: "Hit {range} · {dmg} dmg",
   spells: "2 · SPELLS",
   abilities: "2 · ABILITIES",
   items: "3 · ITEMS",
@@ -61,13 +67,6 @@ export const COMBAT_MENU_COPY = Object.freeze({
   parleyDesc: "Talk it down. An insult is permanent.",
   back: "BACK",
 });
-
-/** fleeModsText(mods) — "Thief +5" / "Troll −1, Plate −2" (Phase 42, FLEE-02;
- * mirrors eventNarration.js's needModsText format so this row's honest cost
- * speaks the same modifier vocabulary as the fight log/rail). */
-function fleeModsText(mods) {
-  return (mods || []).map((m) => `${m.name} ${m.delta < 0 ? "−" : "+"}${Math.abs(m.delta)}`).join(", ");
-}
 
 /**
  * abilityRows(c) — Phase 38 (ABIL-01/04): one row per `c.abilities` catalog
@@ -144,7 +143,10 @@ function combatMenuViewModelUnlocked(state) {
     const row = sheet.stats.find((s) => s.key === key);
     return row ? row.value : "";
   };
-  const strikeSub = `${statValue("toStrike")}, ${statValue("toHit")} to hit · ${statValue("damage")} dmg`;
+  // Phase 74 (ROLL-02): filled from the sheet's own toHit/damage values —
+  // the SAME statValue("toHit") the hero sheet's TO HIT row shows — so the
+  // menu and the sheet can never disagree.
+  const strikeSub = COMBAT_MENU_COPY.strikeSub.replace("{range}", statValue("toHit")).replace("{dmg}", statValue("damage"));
 
   const isCaster = c.cls === "Magic User";
   const isBard = c.sub === "Bard";
@@ -338,20 +340,24 @@ function combatMenuViewModelUnlocked(state) {
   // ─── slot 4: SOCIAL (FLEE/WITHDRAW, PARLEY) ────────────────────────────
   // Cost mirrors engine/derived.js#fleeBreakdown for display only — the
   // engine still rolls; a round-1 tracked encounter gets a clean,
-  // guaranteed WITHDRAW instead of a roll (engine/combat.js). Phase 42
-  // (FLEE-01/FLEE-02): the honest per-character need/modifiers replace the
-  // old hard-coded "11+"/"+5" strings.
+  // guaranteed WITHDRAW instead of a roll (engine/combat.js). Phase 74
+  // (ROLL-02/ROLL-03): the cost is the honest winning range on the d20
+  // (fleeOdds(c).text, "9–20 (d20)"), and the desc's modifier list is the
+  // ONE player-signed formatter (rollRange.js's modsText, via
+  // fleeOdds(c).modsText) — supersedes the Phase 42 "d20+5, 14+" reading.
   const withdraw = !!(C.tracked && C.round === 1);
-  const fb = fleeBreakdown(c);
-  const net = fb.bonus === 0 ? "" : fb.bonus > 0 ? `+${fb.bonus}` : `−${Math.abs(fb.bonus)}`;
+  const flee = fleeOdds(c);
   const fleeRow = {
     id: "flee",
     label: withdraw ? COMBAT_MENU_COPY.withdraw : COMBAT_MENU_COPY.flee,
-    cost: withdraw ? COMBAT_MENU_COPY.withdrawCost : `d20${net}, ${fb.need}+`,
-    desc: withdraw ? COMBAT_MENU_COPY.withdrawDesc : fb.mods.length ? `${COMBAT_MENU_COPY.fleeDesc} (${fleeModsText(fb.mods)})` : COMBAT_MENU_COPY.fleeDesc,
+    cost: withdraw ? COMBAT_MENU_COPY.withdrawCost : flee.text,
+    desc: withdraw ? COMBAT_MENU_COPY.withdrawDesc : flee.modsText ? `${COMBAT_MENU_COPY.fleeDesc} (${flee.modsText})` : COMBAT_MENU_COPY.fleeDesc,
     enabled: true,
     dispatch: { type: "flee" },
   };
+  // PARLEY keeps its flat "d20" cost: there is no engine-derived parley
+  // faces function (Phase 74, ROLL-02) — this row prints no range or
+  // modifier today, unlike STRIKE/FLEE above.
   const parleyRow = {
     id: "parley",
     label: COMBAT_MENU_COPY.parley,
