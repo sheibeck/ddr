@@ -60,6 +60,35 @@ const OUTCOME = {
   strikeMissed: () => false, // a strikeMissed event only fires once the hero's blow missed
   frenzy: () => true, // a frenzy event only fires once the frenzy-trigger check succeeded
   foeArmorSoaked: () => true, // a foeArmorSoaked event only fires once the foe's natural-armor soak succeeded
+  // 73-05 rows: member/legacy/summoned-ally strikes and thrown attack spells
+  // (hero + member).
+  allyStruck: () => true, // an allyStruck event only fires once a member/ally/summon's blow landed
+  allyMissed: () => false, // an allyMissed event only fires once a member/ally/summon's blow missed
+  foeShattered: () => true, // a shatter only fires on a landed blow showing the die's best face (atLeast = dieN)
+  // spellThrown announces the roll BEFORE its outcome is known — the real
+  // outcome is whichever of spellHit/spellMissed follows in the SAME
+  // action, for the SAME target, before the next spellThrown (an AOE cast
+  // pushes one spellThrown per target in sequence).
+  spellThrown: (e, following) => {
+    for (const ev of following) {
+      if (ev.type === "spellThrown") break;
+      if (ev.type === "spellMissed" && ev.target === e.target) return false;
+    }
+    return true;
+  },
+  // allyCast only carries atLeast for a thrown spell (status/stun/weaken
+  // casts push a bare allyCast with no roll fields, so I3 never runs on
+  // them). Its real outcome is whichever of allySpellHit/allySpellMissed
+  // follows in the same action, before the next allyCast — a resisted miss
+  // (resisted: true) is a DIFFERENT check (the target's resist roll), not
+  // this cast's own to-hit, so only an unresisted allySpellMissed counts.
+  allyCast: (e, following) => {
+    for (const ev of following) {
+      if (ev.type === "allyCast") break;
+      if (ev.type === "allySpellMissed" && ev.resisted === false) return false;
+    }
+    return true;
+  },
 };
 
 /**

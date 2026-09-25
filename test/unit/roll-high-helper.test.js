@@ -112,7 +112,9 @@ test("rollDice is unchanged: sums n rng.d(sides) draws plus a flat bonus", () =>
   assert.deepEqual(rng.draws, [6, 6, 6]);
 });
 
-test("isBestFace is untouched by this plan: isBestFace(1, 20) is still true", () => {
-  assert.equal(isBestFace(1, 20), true);
-  assert.equal(isBestFace(20, 20), false);
+// Phase 73-05 flipped isBestFace to the roll-high reading (roll === dieN);
+// test/unit/skeleton-shatter.test.js now owns the isBestFace contract test.
+test("isBestFace: the die's top face is the roller's best face (Phase 73-05, ROLL-05)", () => {
+  assert.equal(isBestFace(20, 20), true);
+  assert.equal(isBestFace(1, 20), false);
 });

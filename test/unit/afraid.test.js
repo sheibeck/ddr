@@ -401,18 +401,24 @@ test("(x) a thrown spell's need shrinks by 3 while afraid — the same roll that
   // — no round-advance draws, initiative is rolled once, Phase 51.
   const eventsA = castSpell(stateA, SPELL_IDX.Fireball, fakeRng([4, 5, 5, 7]), []);
   const thrownA = eventsA.find((e) => e.type === "spellThrown");
-  assert.equal(thrownA.need, 4);
-  assert.equal("needMods" in thrownA, false, "no afraid needMods when not afraid");
+  // faces 4 -> atLeastFor(4, 8) = 5; raw draw 4 mirrors to roll 5 (5 >= 5 hits).
+  assert.equal(thrownA.roll, 5);
+  assert.equal(thrownA.atLeast, 5);
+  assert.equal(thrownA.dieN, 8);
+  assert.equal("mods" in thrownA, false, "no afraid mods when not afraid");
   assert.ok(eventsA.some((e) => e.type === "spellHit"));
 
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans" });
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Fireball"], wp: 40, maxWP: 40 } });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
-  // the SAME roll (4) now misses (need shrinks to 1); no damage roll drawn.
+  // the SAME raw draw (4) now misses: faces shrinks 4 -> 1, atLeastFor(1, 8) = 8;
+  // the mirrored roll (5) no longer reaches the die's top face.
   const eventsB = castSpell(stateB, SPELL_IDX.Fireball, fakeRng([4, 7]), []);
   const thrownB = eventsB.find((e) => e.type === "spellThrown");
-  assert.equal(thrownB.need, 1);
-  assert.deepStrictEqual(thrownB.needMods, [{ name: "afraid", delta: -3 }]);
+  assert.equal(thrownB.roll, 5);
+  assert.equal(thrownB.atLeast, 8);
+  assert.equal(thrownB.dieN, 8);
+  assert.deepStrictEqual(thrownB.mods, [{ name: "afraid", delta: -3 }]);
   assert.ok(eventsB.some((e) => e.type === "spellMissed"));
   assert.equal(foeB.wp, 999, "the foe took no damage");
 });
@@ -426,18 +432,24 @@ test("(x) Freeze's need shrinks 6 -> 3 while afraid — a d10 roll of 3 lands, a
   // the sole foe dies, so afterPlayerAction clears with zero further draws.
   const eventsA = castSpell(stateA, SPELL_IDX.Freeze, fakeRng([3, 4, 1, 1, 20]), []);
   const thrownA = eventsA.find((e) => e.type === "spellThrown");
-  assert.equal(thrownA.need, 3);
-  assert.ok(eventsA.some((e) => e.type === "frozenSolid"), "roll 3 <= need 3 lands");
+  // faces shrinks 6 -> 3 (afraid), atLeastFor(3, 10) = 8; raw draw 3 mirrors
+  // to roll 8 (8 >= 8 lands).
+  assert.equal(thrownA.roll, 8);
+  assert.equal(thrownA.atLeast, 8);
+  assert.equal(thrownA.dieN, 10);
+  assert.ok(eventsA.some((e) => e.type === "frozenSolid"), "the mirrored top face lands");
 
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans", lvl: 1 });
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Freeze"], wp: 40, maxWP: 40 } });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
-  // roll d10=4 (need 3, misses: 4>3); tail: foe miss(7) — no round-advance
-  // draws, initiative is rolled once, Phase 51.
+  // raw draw 4 mirrors to roll 7 (7 < atLeast 8, misses); tail: foe miss(7) —
+  // no round-advance draws, initiative is rolled once, Phase 51.
   const eventsB = castSpell(stateB, SPELL_IDX.Freeze, fakeRng([4, 7]), []);
   const thrownB = eventsB.find((e) => e.type === "spellThrown");
-  assert.equal(thrownB.need, 3);
-  assert.ok(eventsB.some((e) => e.type === "spellMissed"), "roll 4 > need 3 misses");
+  assert.equal(thrownB.roll, 7);
+  assert.equal(thrownB.atLeast, 8);
+  assert.equal(thrownB.dieN, 10);
+  assert.ok(eventsB.some((e) => e.type === "spellMissed"), "roll 7 < atLeast 8 misses");
   assert.equal(foeB.wp, 999, "the foe took no damage");
 });
 

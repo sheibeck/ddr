@@ -75,14 +75,14 @@ export function rollFields(chk) {
 
 /**
  * isBestFace(roll, dieN) — the best face of an N-sided die for the ROLLER.
- * Today's roll-under engine: a natural 1. Phase 73 (the roll-high mirror)
- * redefines it as `roll === dieN`; `dieN` is taken now so that stays a
- * one-line change. No rng.
+ * Phase 73 (ROLL-05, the roll-high mirror): the top face of an N-sided die
+ * is the roller's best face — `roll === dieN`. Every caller now passes the
+ * mirrored (roll-high) `roll` a rollCheck draw produced. No rng.
  *
  * @param {number} roll
  * @param {number} dieN
  * @returns {boolean}
  */
 export function isBestFace(roll, dieN) {
-  return roll === 1;
+  return roll === dieN;
 }
