@@ -779,6 +779,63 @@ Plans:
 - **Bot / sim:** decide whether the headless bot tracks achievements (probably not, but depth-reach rates from the sim help calibrate how hard each one is).
 - **More ideas welcome:** the user's list is a starting point. Brainstorm more in the game's voice during discussion.
 
+**Achievement and icon inventory (Claude, 2026-09-25, for icon generation):**
+
+Icons are required. Play Games treats each tier as its own achievement, and every achievement needs its own uploaded icon (512×512). So **icon files = achievements**. Art is cheaper than that: draw one picture per achievement line and make each tier by adding one of 4 reusable tier frames (bronze / silver / gold / mythic). Play Games generates the greyed-out locked version itself. The same pictures, shrunk down, serve the in-game list. The repo has no race, class or monster art to reuse, so every picture is new.
+
+*The user's list:*
+
+| Achievement | Tiers | Icon files | Pictures |
+|---|---|---|---|
+| Depth 5 / 10 / 15 | 3 | 3 | 1 (descent) |
+| Unicorn! (depth 20) | 1 | 1 | 1 (its own art) |
+| Fully Dressed | 1 | 1 | 1 |
+| Naked Ambition | 1 | 1 | 1 |
+| Teetotaler | 1 | 1 | 1 |
+| Frequent Flier (die 50/100/200/500) | 4 | 4 | 1 |
+| Read the Label (Death potion) | 1 | 1 | 1 |
+| Body counts: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead | 1 each (100 kills) | 6 | 6 |
+| Every race: Human, Elven, Dwarven, Wilmsry, Fridgian, Troll | — | 6 | 6 |
+| Every class: Magic User, Fighter, Thief | — | 3 | 3 |
+| Tourist (all 24 sub-classes) | 1 | 1 | 1 |
+| Special Snowflake | 1 | 1 | 1 |
+| Survivor (X days) | TBD | ~4 | 1 |
+| Hoarder (X coin) | TBD | ~4 | 1 |
+| Party Animal (X Joiners) | TBD | ~4 | 1 |
+| Human Shields (fallen Joiners) | TBD | ~4 | 1 |
+| Disposable Help (fallen summons) | TBD | ~4 | 1 |
+| **Total** | | **49** (44 at 3 tiers) | **29** |
+
+*The Claude brainstorm (not yet agreed):*
+
+| Group | Achievements | Icon files | Pictures |
+|---|---|---|---|
+| Death causes | Well-Rounded, Just One More Bite, Friendly Fire, Read the Fine Print, Buried Talent, Poor Aim | 6 | 6 |
+| Dying with regrets | You Can't Take It With You, Saving It For Later, Speedrun | 3 | 3 |
+| Tiered counters | Tactical Retreat Enthusiast, Tripwire Connoisseur, Bomb Squad, Get Off My Lawn, Cartographer | 20 (4 tiers) | 5 |
+| Social disasters | Diplomatic Incident, Riveting Company, It's Not You It's Me, one for `joinerMurdered` | 4 | 4 |
+| Collectors | Collected Neuroses, Fashion Victim, Retail Therapy (tiered) | 12 (4 tiers) | 3 |
+| Faerie | Fairy Godmother, Fairy Godmugger | 2 | 2 |
+| Clutch | Just a Flesh Wound | 1 | 1 |
+| **Total** | | **48** (40 at 3 tiers) | **24** |
+
+*Scenarios:*
+
+| What ships | Icon files | Pictures |
+|---|---|---|
+| User's list as written | 44–49 | 29 |
+| User's list, kill counts tiered ×4 | ~67 | 29 |
+| User's list + full brainstorm | ~84–97 | 53 |
+| Tier frames (made once, reused) | — | +4 |
+
+Minimum art job: **29 pictures + 4 tier frames**, exported as about **49 icon files**.
+
+*Decisions that move the counts:*
+
+- **Tier counts** for Survivor, Hoarder, Party Animal, Human Shields, Disposable Help and the kill counts. Each extra tier adds one icon file per track, but no new picture.
+- **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (29 pictures become 22).
+- **Points:** Play Games gives each game 1,000 points in total. Across 50–90 achievements that is roughly 10–20 points each, which argues for short tier ladders.
+
 **Constraints:** offline-first (no network needed to earn an achievement); no new runtime SDK beyond the existing Play Games plugin; family-friendly copy; needs a signed-in Pixel 7 check (unlock toast plus the Play Games popup), batched into the milestone-close checklist.
 
 Plans:
