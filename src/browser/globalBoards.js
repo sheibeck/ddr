@@ -174,7 +174,8 @@ const GLOBAL_SCOPES = Object.freeze(["all", "friends"]);
  * map (content/leaderboards.js, or the dev map in the browser loop),
  * `isActive()` is true only while signed in with Compete ON, `playerId()`
  * the signed-in player's id, `onChange()` the panel's redraw hook and
- * `now()` the clock. Returns a frozen { view, requestFriendsAccess, clear }.
+ * `now()` the clock. Returns a frozen
+ * { view, requestFriendsAccess, clear, invalidate }.
  *
  * view({ board, scope, season }) answers synchronously from an in-memory
  * cache keyed by "season|board|scope" and starts at most one fetch per key:
@@ -196,6 +197,9 @@ const GLOBAL_SCOPES = Object.freeze(["all", "friends"]);
  * requestFriendsAccess() is the only path that shows Play Games' consent
  * screen (D-06); one request at a time. "granted" drops the friends
  * snapshots and calls onChange so the next view() fetches rows.
+ *
+ * invalidate() (Phase 81, BOARD-16, R-16b) marks every cache entry due for a
+ * refetch on the next view() without starting one itself.
  */
 export function createGlobalBoards({
   provider,
@@ -208,6 +212,12 @@ export function createGlobalBoards({
   const cache = new Map();
   let generation = 0;
   let consentAsk = null;
+  // Phase 81 (BOARD-16, R-16b): a controller-wide epoch. invalidate() bumps
+  // it; each cache entry records the epoch its last fetch began with
+  // (start()); view() treats an entry whose epoch is behind the controller's
+  // as due for a refetch, same as a TTL expiry, but never bypassing an
+  // active retry backoff.
+  let epoch = 0;
 
   const active = () => {
     try {
@@ -243,7 +253,10 @@ export function createGlobalBoards({
       if (access !== "granted") return { ok: false };
     }
     const [top, own] = await Promise.all([
-      provider.loadTopScores({ leaderboardId: id, collection, maxResults: TOP_N }),
+      // Phase 81 (BOARD-16, R-16b): always bypass Play Games' own cache —
+      // this controller runs its own TTL/invalidation, so a stale plugin-side
+      // read must never shadow it.
+      provider.loadTopScores({ leaderboardId: id, collection, maxResults: TOP_N, forceReload: true }),
       provider.loadPlayerScore({ leaderboardId: id, collection }),
     ]);
     if (!top || typeof top !== "object" || top.ok !== true) return { ok: false };
@@ -299,9 +312,12 @@ export function createGlobalBoards({
     changed();
   }
 
-  // start(key, entry) — begins the one fetch for this key.
+  // start(key, entry) — begins the one fetch for this key, recording the
+  // epoch it began with (Phase 81, BOARD-16: invalidate() compares against
+  // this to decide whether a settled fetch is stale).
   function start(key, entry) {
     entry.inFlight = true;
+    entry.entryEpoch = epoch;
     const gen = generation;
     load(entry.id, entry.req).then(
       (outcome) => settle(key, entry, gen, outcome),
@@ -318,16 +334,43 @@ export function createGlobalBoards({
       const req = Object.freeze({ board, scope, season });
       const id = leaderboardId(ids, season, board);
       const status = id === null ? "closed" : "loading";
-      entry = { req, id, snapshot: snapshotOf({ status, ...req }), fetchedAt: null, retryAt: null, inFlight: false };
+      entry = {
+        req,
+        id,
+        snapshot: snapshotOf({ status, ...req }),
+        fetchedAt: null,
+        retryAt: null,
+        inFlight: false,
+        entryEpoch: epoch,
+      };
       cache.set(key, entry);
       if (id !== null) start(key, entry);
       return entry.snapshot;
     }
     if (entry.id === null || entry.inFlight) return entry.snapshot;
     const t = now();
-    const due = entry.retryAt !== null ? t > entry.retryAt : t - entry.fetchedAt > GLOBAL_TTL_MS;
+    // Phase 81 (BOARD-16, R-16b): due on the usual TTL expiry, OR when
+    // invalidate() bumped the controller epoch past this entry's own — but
+    // never ahead of an active retry backoff (retryAt still gates both).
+    const due =
+      entry.retryAt !== null
+        ? t > entry.retryAt
+        : t - entry.fetchedAt > GLOBAL_TTL_MS || entry.entryEpoch < epoch;
     if (due) start(key, entry);
     return entry.snapshot;
+  }
+
+  /**
+   * invalidate() — Phase 81 (BOARD-16, R-16b): marks every cache entry due
+   * for a refetch on the next view() (the shell calls it after a flush that
+   * submitted a score, and on every Leaderboards panel open) without
+   * starting a fetch itself or calling the provider, and without bypassing
+   * an active retry backoff. An entry already in flight when this runs is
+   * refetched on the first view() after it settles (its own entryEpoch, set
+   * when THAT fetch began, is already behind the bumped epoch).
+   */
+  function invalidate() {
+    epoch++;
   }
 
   function requestFriendsAccess() {
@@ -357,5 +400,5 @@ export function createGlobalBoards({
     cache.clear();
   }
 
-  return Object.freeze({ view, requestFriendsAccess, clear });
+  return Object.freeze({ view, requestFriendsAccess, clear, invalidate });
 }

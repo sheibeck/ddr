@@ -220,22 +220,21 @@ test("R-16a queue wedge: one permanently-rejected entry must not block every lat
 
 // --- (R-16b, freshness) -------------------------------------------------------
 
-test("R-16b forceReload: the native provider must be able to force a fresh read after the player's own submission", {
-  todo: "R-16b: fetch never forces a reload",
-}, async () => {
+test("R-16b forceReload: the native provider must be able to force a fresh read after the player's own submission", async () => {
   const { plugin, argsOf } = fakePlugin({
     initialize: undefined,
     loadTopScores: { leaderboard: rawBoard({ publicRank: 3 }), scores: [rawScore()] },
   });
   const pg = createPlayGames({ loadPlugin: loaderFor(plugin) });
-  await pg.loadTopScores({ leaderboardId: "L1", collection: "public" });
+  // The fix is a caller-controlled pass-through (globalBoards.js's load()
+  // always asks for one), not an unconditional native hard-code — so this
+  // proves the plugin call actually forwards a caller's forceReload: true.
+  await pg.loadTopScores({ leaderboardId: "L1", collection: "public", forceReload: true });
   const call = argsOf("loadTopScores")[0];
   assert.equal(call.forceReload, true, "a caller must be able to bypass Play Games' own cache after a fresh submission");
 });
 
-test("R-16b cache invalidation: view() must reflect the player's own successful flush, not the pre-submission cached snapshot", {
-  todo: "R-16b: no invalidation after the player's own submission or on reopening the panel",
-}, async () => {
+test("R-16b cache invalidation: view() must reflect the player's own successful flush, not the pre-submission cached snapshot", async () => {
   const provider = createFakePlayGames({ signedIn: true, boards: { L1: [] } });
   let changes = 0;
   const gb = createGlobalBoards({
@@ -259,12 +258,25 @@ test("R-16b cache invalidation: view() must reflect the player's own successful 
   const submitted = await provider.submitScore({ leaderboardId: "L1", score: 9000000, tag: "v1.0.0.1.0.9.0.0.0.0.Newrun" });
   assert.equal(submitted.ok, true);
 
-  // Still well within GLOBAL_TTL_MS: the panel would reopen right after death.
-  const stillWithinTtl = gb.view({ board: "deep", scope: "all", season: 1 });
+  // Still well within GLOBAL_TTL_MS: without invalidation the cache alone
+  // would still serve the pre-submission snapshot (the fix is invalidate(),
+  // not a shortened TTL).
+  const stillCached = gb.view({ board: "deep", scope: "all", season: 1 });
+  assert.equal(stillCached.entries.length, 0, "the pre-submission snapshot is still served until something invalidates it");
+
+  // The shell's handlePgsFlush calls invalidate() after any flush that
+  // submitted (and the panel's onOpen seam calls it on every fresh open) —
+  // that is the actual fix wiring for R-16b, reproduced here directly.
+  changes = 0;
+  gb.invalidate();
+  const whileRefetching = gb.view({ board: "deep", scope: "all", season: 1 });
+  assert.equal(whileRefetching.entries.length, 0, "the cached snapshot is returned immediately while the refetch runs");
+  while (changes === 0) await flush();
+  const refreshed = gb.view({ board: "deep", scope: "all", season: 1 });
   assert.equal(
-    stillWithinTtl.entries.length,
+    refreshed.entries.length,
     1,
-    "view() should show the just-submitted score once it exists, not the stale pre-submission snapshot",
+    "view() should show the just-submitted score once the invalidated refetch settles, not the stale pre-submission snapshot",
   );
 });
 

@@ -652,6 +652,15 @@ test("loadTopScores reads the all-time window and resolves normalized scores wit
   assert.equal(f.argsOf("loadTopScores")[1][0].collection, "friends");
 });
 
+test("loadTopScores: forceReload forwards to the plugin exactly as opts.forceReload === true (Phase 81, BOARD-16, R-16b)", async () => {
+  const f = fakePlugin({ results: { loadTopScores: { leaderboard: rawBoard(), scores: [], stale: false } } });
+  const pg = createPlayGames({ loadPlugin: loaderFor(f.plugin) });
+  await pg.loadTopScores({ leaderboardId: "L1", collection: "public", maxResults: 10, forceReload: true });
+  await pg.loadTopScores({ leaderboardId: "L1", collection: "public", maxResults: 10, forceReload: "yes" });
+  const forwarded = f.argsOf("loadTopScores").map(([o]) => o.forceReload);
+  assert.deepEqual(forwarded, [true, false], "only a literal true forwards true");
+});
+
 test("loadTopScores clamps maxResults to 1..25 (10 for a non-number) and sends any non-friends collection as public", async () => {
   const f = fakePlugin();
   const pg = createPlayGames({ loadPlugin: loaderFor(f.plugin) });

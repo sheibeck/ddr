@@ -346,10 +346,10 @@ const deepAll = Object.freeze({ board: "deep", scope: "all", season: 1 });
 
 // ─── createGlobalBoards ─────────────────────────────────────────────────────
 
-test("createGlobalBoards returns a frozen { view, requestFriendsAccess, clear }", () => {
+test("createGlobalBoards returns a frozen { view, requestFriendsAccess, clear, invalidate }", () => {
   const { gb } = rig();
   assert.ok(Object.isFrozen(gb));
-  assert.deepEqual(Object.keys(gb).sort(), ["clear", "requestFriendsAccess", "view"]);
+  assert.deepEqual(Object.keys(gb).sort(), ["clear", "invalidate", "requestFriendsAccess", "view"]);
 });
 
 test("inactive (signed out or Compete OFF): view() is null and nothing touches the provider", async () => {
@@ -387,7 +387,7 @@ test("first view() is loading and starts exactly one top-10 and one player-score
   assert.deepEqual([...first.entries], []);
   assert.equal(r.gb.view(deepAll), first, "a second view() before settling starts nothing and returns the same snapshot");
   assert.deepEqual(r.args, [
-    ["loadTopScores", { leaderboardId: DEEP, collection: "public", maxResults: 10 }],
+    ["loadTopScores", { leaderboardId: DEEP, collection: "public", maxResults: 10, forceReload: true }],
     ["loadPlayerScore", { leaderboardId: DEEP, collection: "public" }],
   ]);
   assert.equal(r.changes(), 0);
@@ -643,7 +643,7 @@ test("FRIENDS with consent granted: a silent access check, then the friends top 
   await flush();
   assert.deepEqual(r.args, [
     ["friendsAccess", { request: false }],
-    ["loadTopScores", { leaderboardId: DEEP, collection: "friends", maxResults: 10 }],
+    ["loadTopScores", { leaderboardId: DEEP, collection: "friends", maxResults: 10, forceReload: true }],
     ["loadPlayerScore", { leaderboardId: DEEP, collection: "friends" }],
   ]);
   const snap = r.gb.view(friends);
@@ -731,6 +731,59 @@ test("requestFriendsAccess resolves unavailable when the provider throws", async
     }),
   });
   assert.equal(await r.gb.requestFriendsAccess(), "unavailable");
+});
+
+// ─── invalidate() (Phase 81, BOARD-16, R-16b) ───────────────────────────────
+
+test("invalidate() while ready: the next view() returns the cached snapshot and starts exactly one fetch; the fetch settling fires onChange once", async () => {
+  const r = rig();
+  r.gb.view(deepAll);
+  await flush();
+  const ready = r.gb.view(deepAll);
+  assert.equal(r.args.length, 2);
+  r.gb.invalidate();
+  assert.equal(r.args.length, 2, "invalidate() itself never touches the provider");
+  const sameSnapshotWhileRefetching = r.gb.view(deepAll);
+  assert.equal(sameSnapshotWhileRefetching, ready, "the cached snapshot is still returned while the refetch runs");
+  assert.equal(r.args.length, 4, "exactly one fetch started");
+  const before = r.changes();
+  await flush();
+  assert.equal(r.changes(), before + 1);
+  const fresh = r.gb.view(deepAll);
+  assert.equal(fresh.status, "ready");
+});
+
+test("invalidate() while a fetch is in flight: the first view() after that fetch settles starts another fetch", async () => {
+  const r = rig();
+  r.gb.view(deepAll); // starts the first fetch
+  r.gb.invalidate();
+  assert.equal(r.gb.view(deepAll).status, "loading", "no second fetch starts while the first is in flight");
+  assert.equal(r.args.length, 2);
+  await flush();
+  assert.equal(r.gb.view(deepAll).status, "ready", "the settled fetch's own snapshot is returned first");
+  assert.equal(r.args.length, 4, "the next view() after settling starts the invalidated refetch");
+});
+
+test("invalidate() inside an active retry backoff: no fetch before retryAt", async () => {
+  const r = rig({ online: false });
+  r.gb.view(deepAll);
+  await flush();
+  assert.equal(r.gb.view(deepAll).status, "unreachable");
+  const afterFirstFailure = r.args.length;
+  r.gb.invalidate();
+  assert.equal(r.gb.view(deepAll).status, "unreachable", "still within the backoff window");
+  assert.equal(r.args.length, afterFirstFailure, "invalidate() never bypasses an active retry backoff");
+  r.advance(30001);
+  r.gb.view(deepAll);
+  assert.equal(r.args.length, afterFirstFailure + 2, "the backoff's own retry runs once it expires");
+});
+
+test("invalidate() while inactive: zero provider calls, and view() stays null", async () => {
+  const r = rig({ active: false });
+  r.gb.invalidate();
+  await flush();
+  assert.deepEqual(r.args, []);
+  assert.equal(r.gb.view(deepAll), null);
 });
 
 test("a fetch that settles after the player stopped competing is discarded", async () => {

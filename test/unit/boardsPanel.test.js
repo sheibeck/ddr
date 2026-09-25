@@ -89,7 +89,8 @@ function setup(overrides = {}) {
   if (Object.prototype.hasOwnProperty.call(overrides, "identity")) params.identity = overrides.identity;
   // Phase 68: the global/seasons/onFriendsConsent seams, likewise only when given.
   // Phase 70 (D-11): the hero seam, likewise only when given.
-  for (const key of ["global", "seasons", "onFriendsConsent", "hero"]) {
+  // Phase 81 (BOARD-16): the onOpen seam, likewise only when given.
+  for (const key of ["global", "seasons", "onFriendsConsent", "hero", "onOpen"]) {
     if (Object.prototype.hasOwnProperty.call(overrides, key)) params[key] = overrides[key];
   }
   const panel = createBoardsPanel(params);
@@ -169,6 +170,40 @@ test("every open passes scope local, open null, signedIn false and player null t
   assert.equal(lastInput.open, null);
   assert.equal(lastInput.signedIn, false);
   assert.equal(lastInput.player, null);
+});
+
+// ─── Phase 81 (BOARD-16): the injected onOpen() seam ────────────────────
+
+test("onOpen(): called once at the start of openFromTab() and once at the start of openFromTitle(), each time before that open's first render", () => {
+  const buildView = makeBuildView();
+  const onOpen = spy();
+  const { panel } = setup({ buildView, onOpen });
+  panel.openFromTab();
+  assert.equal(onOpen.calls.length, 1);
+  panel.openFromTitle({ hasHero: false });
+  assert.equal(onOpen.calls.length, 2);
+});
+
+test("onOpen(): a throwing onOpen never breaks the open", () => {
+  const onOpen = () => {
+    throw new Error("boom");
+  };
+  const { panel } = setup({ onOpen });
+  assert.doesNotThrow(() => panel.openFromTab());
+  assert.equal(panel.state().entry, "tab");
+  assert.doesNotThrow(() => panel.openFromTitle({ hasHero: false }));
+  assert.equal(panel.state().entry, "title");
+});
+
+test("onOpen(): missing/non-function seam never breaks the open; onDeadTab() re-entering title mode does not call it again", () => {
+  const { panel } = setup(); // no onOpen given
+  assert.doesNotThrow(() => panel.openFromTab());
+  const onOpen = spy();
+  const { panel: panel2 } = setup({ onOpen });
+  panel2.openFromTitle({ hasHero: false });
+  assert.equal(onOpen.calls.length, 1);
+  panel2.onDeadTab(); // already in title mode: only re-centres, no fresh open
+  assert.equal(onOpen.calls.length, 1);
 });
 
 // ─── Phase 67 (D-08): the injected identity() seam ──────────────────────
