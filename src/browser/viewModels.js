@@ -7,7 +7,7 @@
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
 import { WEAPONS, ARMORS, BAGS } from "../../content/index.js";
-import { armorSoak, takesBagSlot, gearCompareParts, activationFor } from "../../engine/derived.js";
+import { armorSoak, takesBagSlot, gearCompareParts, activationFor, strikeDie } from "../../engine/derived.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap } from "../../engine/items.js";
 import { storeBuyRefusal } from "../../engine/economy.js";
 import { upgradeWhyText, UPGRADE_WHY_COPY } from "./upgradeWhy.js";
@@ -365,7 +365,11 @@ export function lootCompare(c, it) {
     const legal = reason === null;
     const upgrade = delta > 0;
     const equipNow = legal && upgrade;
-    const why = legal ? upgradeWhyText(gearCompareParts(c, it)) : null;
+    // Phase 74 (ROLL-02/03): the die and the wielded weapon's own name so
+    // upgradeWhyText can state which way the to-hit change goes ("your
+    // Club") and write the crit-range term on the hero's own strike die.
+    const haveName = WEAPONS[c.weapon] ? c.weapon : UPGRADE_WHY_COPY.bareHands;
+    const why = legal ? upgradeWhyText(gearCompareParts(c, it), { dieN: strikeDie(c), haveName }) : null;
     const line = !legal
       ? `can't use (${refusalText(reason, WEAPONS[it.base]?.cls ?? "")})`
       : `${why}${UPGRADE_WHY_COPY.sep}${upgrade ? UPGRADE_WHY_COPY.upgrade : UPGRADE_WHY_COPY.notUpgrade}`;

@@ -127,7 +127,10 @@ test("Spiked Staff acceptance: a level-3 Quarter-Staff Magic User buys a Spiked 
   assert.deepStrictEqual(events.map((e) => e.type), ["bought", "purchaseBagged"]);
   const pb = events.find((e) => e.type === "purchaseBagged");
   assert.deepStrictEqual(pb.why, gearCompareParts(preC, item));
-  assert.equal(upgradeWhyText(pb.why), "d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing");
+  // Phase 74 (ROLL-02/03): purchaseBagged carries only the compare parts,
+  // no hero die/name in reach, so upgradeWhyText(pb.why) with no opts reads
+  // the die-free "worse than yours" and no crit term.
+  assert.equal(upgradeWhyText(pb.why), "d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing");
   assert.equal(after.c.gold, 400);
   assert.equal(after.c.weapon, "Quarter Staff");
   assert.ok(after.c.items.some((i) => i.n === "Spiked Staff"));
@@ -425,7 +428,11 @@ test("narration: LINE_FOR.purchaseBagged reads the exact CONTEXT-pinned Spiked S
   const item = weaponItem("Spiked Staff", { txt: "d8" });
   const why = gearCompareParts(magicUser, item);
   const evt = { type: "purchaseBagged", item, why };
-  assert.equal(LINE_FOR.purchaseBagged(evt).text, "Into the bag: Spiked Staff — not an upgrade: d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing.");
+  // Phase 74 (ROLL-02/03): no hero die/name in reach, so "worse than yours".
+  assert.equal(
+    LINE_FOR.purchaseBagged(evt).text,
+    "Into the bag: Spiked Staff — not an upgrade: d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing.",
+  );
 });
 
 test("narration: EVENT_NARRATION.purchaseBagged (Oracle) contains the same explanation", () => {
@@ -433,7 +440,7 @@ test("narration: EVENT_NARRATION.purchaseBagged (Oracle) contains the same expla
   const item = weaponItem("Spiked Staff", { txt: "d8" });
   const why = gearCompareParts(magicUser, item);
   const evt = { type: "purchaseBagged", item, why };
-  assert.match(EVENT_NARRATION.purchaseBagged(evt), /d8 vs your d6 · −1 to hit · 4\.1 vs 5\.0 a swing/);
+  assert.match(EVENT_NARRATION.purchaseBagged(evt), /d8 vs your d6 · −1 to hit, worse than yours · 4\.1 vs 5\.0 a swing/);
 });
 
 test("narration: both purchaseBagged builders survive a bare {type} call and a string `why` (the voice-scan BASE_EVENT shape) with no explanation clause, never throwing", () => {

@@ -330,7 +330,9 @@ function spikedStaffState(combat) {
 test("Acceptance: Spiked Staff bag sheet — exact why, exact action labels, DROP confirm/run", () => {
   const state = spikedStaffState(false);
   const model = gearSheetModel(state, { from: "bag", i: 0, n: "Spiked Staff" });
-  assert.equal(model.why, "d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing · not an upgrade");
+  // Phase 74 (ROLL-02/03): the to-hit term now states which way it goes and
+  // names the wielded weapon (Quarter Staff).
+  assert.equal(model.why, "d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 a swing · not an upgrade");
   assert.deepStrictEqual(model.actions.map((a) => a.label), ["SWAP INTO WEAPON", "DROP"]);
   const drop = model.actions.find((a) => a.key === "drop");
   assert.equal(drop.confirm, true);
