@@ -658,17 +658,20 @@ test("takeItem/equipItem: an Acrobat's weapon rejection reports reason 'acrobat'
 
 // --- 10. narration clauses --------------------------------------------
 
-test("EVENT_NARRATION.struckByFoe: soaked + needMods render; the unflagged sentence is byte-identical to before", () => {
+test("EVENT_NARRATION.struckByFoe: soaked + mods render; the unflagged sentence is byte-identical to before", () => {
+  // Phase 73 (ROLL-05): the old {roll:3, need:4} shape mirrors to
+  // {roll:18, atLeast:17, dieN:20} — atLeastFor(4, 20) = 17.
   const decorated = EVENT_NARRATION.struckByFoe({
     type: "struckByFoe",
     name: "Dante",
-    roll: 3,
-    need: 4,
+    roll: 18,
+    atLeast: 17,
+    dieN: 20,
     dmg: 4,
     ignoresArmor: false,
     critical: false,
     soaked: { hide: 2 },
-    needMods: [{ name: "Guard", delta: -1 }],
+    mods: [{ name: "Guard", delta: -1 }],
   });
   assert.match(decorated, /hide soaked 2/);
   assert.match(decorated, /Guard/);
@@ -677,13 +680,14 @@ test("EVENT_NARRATION.struckByFoe: soaked + needMods render; the unflagged sente
   const plain = EVENT_NARRATION.struckByFoe({
     type: "struckByFoe",
     name: "Dante",
-    roll: 3,
-    need: 4,
+    roll: 18,
+    atLeast: 17,
+    dieN: 20,
     dmg: 4,
     ignoresArmor: false,
     critical: false,
   });
-  assert.equal(plain, '<span class="roll">3</span> vs 4. Dante hits you for <span class="hurt">4 hp</span>.');
+  assert.equal(plain, '<span class="roll">18</span> vs 17–20. Dante hits you for <span class="hurt">4 hp</span>.');
 });
 
 test("EVENT_NARRATION.strikeMissed: appends the quip after the roll and the plain miss sentence; absent quip renders identically to before", () => {
