@@ -87,11 +87,11 @@ test("consistency: round2(got.strike - have.strike) === weaponUpgradeDelta(c, it
 
 // ─── The Spiked Staff case, pinned to the CONTEXT-measured exact string ───
 
-test("Spiked Staff: level-3 Human Wizard (Quarter Staff, prof 0) reads the exact CONTEXT string", () => {
+test("Spiked Staff: level-3 Human Wizard (Quarter Staff, prof 0) reads the exact CONTEXT string (no opts: 'worse than yours')", () => {
   const it = { kind: "weapon", base: "Spiked Staff", bonus: 0, n: "Spiked Staff", txt: "d8" };
   const parts = gearCompareParts(magicUser, it);
   const text = upgradeWhyText(parts);
-  assert.equal(text, "d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing");
+  assert.equal(text, "d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing");
   assert.equal(weaponUpgradeDelta(magicUser, it) > 0, false, "the Spiked Staff must NOT be an upgrade for this hero (the verdict CONTEXT reasons about)");
 });
 
@@ -101,7 +101,7 @@ test("same weapon (Quarter Staff vs Quarter Staff, prof 0): no dice/to-hit/crit 
   assert.equal(text, "5.0 vs 5.0 a swing");
 });
 
-test("Rapier vs Quarter Staff for a hero who can crit: '+1 to hit' and 'crits on 1–2 vs your 1'", () => {
+test("Rapier vs Quarter Staff for a hero who can crit, dieN 20 + haveName: '+1 to hit, better than your Quarter Staff' and 'crits on 19–20 vs your 20' (roll-high, Phase 73)", () => {
   const canCrit = newRun(11).c;
   canCrit.cls = "Fighter";
   canCrit.sub = null; // not Guard/Soldier -> can crit
@@ -109,23 +109,63 @@ test("Rapier vs Quarter Staff for a hero who can crit: '+1 to hit' and 'crits on
   canCrit.prof = 0;
   canCrit.magicWpn = 0;
   const it = { kind: "weapon", base: "Rapier", bonus: 0, n: "Rapier", txt: "d6" };
-  const text = upgradeWhyText(gearCompareParts(canCrit, it));
-  assert.match(text, /\+1 to hit/);
-  assert.match(text, /crits on 1–2 vs your 1/);
+  const text = upgradeWhyText(gearCompareParts(canCrit, it), { dieN: 20, haveName: "Quarter Staff" });
+  assert.match(text, /\+1 to hit, better than your Quarter Staff/);
+  assert.match(text, /crits on 19–20 vs your 20/);
 });
 
-test("a Guard (noCrit) comparing Rapier vs Quarter Staff has no 'crits on' term", () => {
+test("the same crit term on a d12 reads 'crits on 11–12 vs your 12'", () => {
+  const canCrit = newRun(11).c;
+  canCrit.cls = "Fighter";
+  canCrit.sub = null;
+  canCrit.weapon = "Quarter Staff";
+  canCrit.prof = 0;
+  canCrit.magicWpn = 0;
   const it = { kind: "weapon", base: "Rapier", bonus: 0, n: "Rapier", txt: "d6" };
-  const text = upgradeWhyText(gearCompareParts(guard, it));
+  const text = upgradeWhyText(gearCompareParts(canCrit, it), { dieN: 12 });
+  assert.match(text, /crits on 11–12 vs your 12/);
+});
+
+test("with no dieN, no 'crits on' term appears at all", () => {
+  const canCrit = newRun(11).c;
+  canCrit.cls = "Fighter";
+  canCrit.sub = null;
+  canCrit.weapon = "Quarter Staff";
+  canCrit.prof = 0;
+  canCrit.magicWpn = 0;
+  const it = { kind: "weapon", base: "Rapier", bonus: 0, n: "Rapier", txt: "d6" };
+  const text = upgradeWhyText(gearCompareParts(canCrit, it));
   assert.doesNotMatch(text, /crits on/);
 });
 
-test("bare-handed (Fists) buying a Spiked Staff: starts 'd8 vs your bare hands', has '−1 to hit', no crit term", () => {
-  const it = { kind: "weapon", base: "Spiked Staff", bonus: 0, n: "Spiked Staff", txt: "d8" };
-  const text = upgradeWhyText(gearCompareParts(bareHanded, it));
-  assert.ok(text.startsWith("d8 vs your bare hands"), text);
-  assert.match(text, /−1 to hit/);
+test("a Guard (noCrit) comparing Rapier vs Quarter Staff has no 'crits on' term even with a dieN", () => {
+  const it = { kind: "weapon", base: "Rapier", bonus: 0, n: "Rapier", txt: "d6" };
+  const text = upgradeWhyText(gearCompareParts(guard, it), { dieN: 20 });
   assert.doesNotMatch(text, /crits on/);
+});
+
+test("bare-handed (Fists) buying a Spiked Staff with { haveName: 'bare hands' }: starts 'd8 vs your bare hands', has '−1 to hit, worse than your bare hands', no crit term", () => {
+  const it = { kind: "weapon", base: "Spiked Staff", bonus: 0, n: "Spiked Staff", txt: "d8" };
+  const text = upgradeWhyText(gearCompareParts(bareHanded, it), { dieN: 20, haveName: "bare hands" });
+  assert.ok(text.startsWith("d8 vs your bare hands"), text);
+  assert.match(text, /−1 to hit, worse than your bare hands/);
+  assert.doesNotMatch(text, /crits on/);
+});
+
+test("no output contains the pre-mirror '1–2' crit range, a hyphen-minus sign on a number, or a percent sign", () => {
+  const samples = [
+    upgradeWhyText(gearCompareParts(magicUser, { kind: "weapon", base: "Spiked Staff", bonus: 0, n: "Spiked Staff", txt: "d8" })),
+    upgradeWhyText(gearCompareParts(guard, { kind: "weapon", base: "Rapier", bonus: 0, n: "Rapier", txt: "d6" }), { dieN: 20 }),
+    upgradeWhyText(gearCompareParts(bareHanded, { kind: "weapon", base: "Spiked Staff", bonus: 0, n: "Spiked Staff", txt: "d8" }), {
+      dieN: 20,
+      haveName: "bare hands",
+    }),
+  ];
+  for (const s of samples) {
+    assert.doesNotMatch(s, /1–2/);
+    assert.doesNotMatch(s, /-\d/);
+    assert.doesNotMatch(s, /%/);
+  }
 });
 
 test("a Knight-style hero with prof 2 comparing a Long Sword (same weapon) ends 'loses your +2 practiced bonus'", () => {
@@ -202,7 +242,7 @@ test("noCritFor(c): true for Guard/Soldier or a live noCrit effect, false otherw
 
 // ─── Module purity: no imports, no rng, frozen copy ────────────────────
 
-test("upgradeWhy.js source has no import statement and no Math.random/Date.now", async () => {
+test("upgradeWhy.js source has exactly ONE import statement (from ./rollRange.js) and no Math.random/Date.now", async () => {
   const fs = await import("node:fs");
   const path = await import("node:path");
   const url = await import("node:url");
@@ -219,7 +259,9 @@ test("upgradeWhy.js source has no import statement and no Math.random/Date.now",
     })
     .join("\n");
   const src = noLineComments.replace(/\/\*[\s\S]*?\*\//g, "");
-  assert.doesNotMatch(src, /^\s*import\s/m, "upgradeWhy.js must have zero import statements");
+  const importLines = src.split("\n").filter((line) => /^\s*import\s/.test(line));
+  assert.equal(importLines.length, 1, `upgradeWhy.js must have exactly one import statement, found:\n${importLines.join("\n")}`);
+  assert.match(importLines[0], /from\s+"\.\/rollRange\.js"/, "upgradeWhy.js's one import must be from ./rollRange.js");
   assert.doesNotMatch(src, /Math\.random/);
   assert.doesNotMatch(src, /Date\.now/);
 });
