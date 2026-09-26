@@ -36,10 +36,12 @@ import {
   formatEvents,
   startNewRun,
   takeBootWornReport,
+  takeBootResumeEvents,
 } from "../../src/browser/engineAdapter.js";
 import { flush as flushStorage } from "../../src/browser/storage.js";
 import { newRun } from "../../engine/engine.js";
 import { serializeRun } from "../../engine/saveState.js";
+import { startCombat } from "../../engine/combat.js";
 import { openStore } from "../../engine/economy.js";
 import { makeRng } from "../../engine/rng.js";
 import { MISS_LINES } from "../../src/browser/missLines.js";
@@ -113,6 +115,70 @@ test("boot(freshSeed) fails closed to a fresh run on a corrupt save", async () =
     // fresh roll itself still creates c.worn unconditionally.
     assert.ok("worn" in state.c);
     assert.equal(takeBootWornReport(), null);
+  });
+});
+
+// --- SAV-06/SAV-07 (Phase 76, plan 76-04): the one-shot boot resume events ---
+// takeBootResumeEvents() mirrors takeBootWornReport(): boot() computes
+// engine/saveState.js#resumeEventsFor once on the rehydrate path, and the
+// shell's boot path (76-05) reads it exactly once.
+
+test("SAV-06 (Phase 76): takeBootResumeEvents() is null after a fresh boot with no save, and after a corrupt-save fallback", async () => {
+  await withFakeLocalStorage(async (store) => {
+    await boot(4242);
+    assert.equal(takeBootResumeEvents(), null, "no save was rehydrated");
+    store.setItem(SAVE_KEY, "{not json");
+    await boot(777);
+    assert.equal(takeBootResumeEvents(), null, "the corrupt-save fallback rehydrated nothing");
+  });
+});
+
+test("SAV-06 (Phase 76): takeBootResumeEvents() is [] after rehydrating a quiet save (no fight, no store)", async () => {
+  await withFakeLocalStorage(async (store) => {
+    store.setItem(SAVE_KEY, JSON.stringify(serializeRun(newRun(99))));
+    await boot(1);
+    assert.deepStrictEqual(takeBootResumeEvents(), []);
+    assert.equal(takeBootResumeEvents(), null, "consumed on read — a second call returns null");
+  });
+});
+
+test("SAV-06 (Phase 76): takeBootResumeEvents() reports a pending fight once (round 1, pending, living foe count)", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const original = newRun(99);
+    startCombat(original, false, null, makeRng(original.rngState));
+    assert.ok(original.combat && original.combat.pending, "the encounter step is up");
+    const foes = original.combat.foes.filter((f) => f.alive).length;
+    store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
+    await boot(1);
+    assert.deepStrictEqual(takeBootResumeEvents(), [{ type: "fightResumed", round: 1, pending: true, foes }]);
+    assert.equal(takeBootResumeEvents(), null, "consumed on read — a second call returns null");
+  });
+});
+
+test("SAV-07 (Phase 76): takeBootResumeEvents() reports an open store once", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const original = newRun(99);
+    openStore(original, makeRng(original.rngState));
+    store.setItem(SAVE_KEY, JSON.stringify(serializeRun(original)));
+    await boot(1);
+    assert.deepStrictEqual(takeBootResumeEvents(), [{ type: "storeResumed" }]);
+    assert.equal(takeBootResumeEvents(), null);
+  });
+});
+
+test("SAV-06 (Phase 76): initRun() and startNewRun() after a boot that resumed a fight leave takeBootResumeEvents() null", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const original = newRun(99);
+    startCombat(original, false, null, makeRng(original.rngState));
+    const raw = JSON.stringify(serializeRun(original));
+    store.setItem(SAVE_KEY, raw);
+    await boot(1);
+    initRun(5);
+    assert.equal(takeBootResumeEvents(), null, "initRun clears the unread resume events");
+    store.setItem(SAVE_KEY, raw);
+    await boot(1);
+    await startNewRun(6);
+    assert.equal(takeBootResumeEvents(), null, "startNewRun (through initRun) clears them too");
   });
 });
 
