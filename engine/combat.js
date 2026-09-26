@@ -63,7 +63,7 @@ import { checkLevel } from "./character.js";
 import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
-import { difficultyCurve, foeCountFor, foeWpFor, foeHitFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor } from "./difficulty.js";
+import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
@@ -240,10 +240,20 @@ export function rollInitiative(state, rng) {
  * never of the hero's level — out-leveling the dungeon is how a strong run
  * breaks away. Reads the ONE global curve for this encounter
  * (`difficultyCurve`, 0 draws) and applies: `foeCountFor` (the canon d4/d4
- * draw shape, no level-keyed cap), a copy-time wp scale (`foeWpFor`), and
- * the tier bleed via `tierSpreadFor()`. The old `dmgBonus` key/whole-lvl-base
- * scaling is retired — `foeHitFor` scales the WHOLE hit at the damage sites
- * instead (see foeTurn/pursuitStrike below).
+ * draw shape, no level-keyed cap, reshaped by depth per RULES-16 below), a
+ * copy-time wp scale (`foeWpFor`), and the tier bleed via `tierSpreadFor()`.
+ * The old `dmgBonus` key/whole-lvl-base scaling is retired — `foeHitFor`
+ * scales the WHOLE hit at the damage sites instead (see foeTurn/
+ * pursuitStrike below).
+ *
+ * DELIBERATE RULES CHANGE (Phase 75.3, RULES-16, user ruling 2026-09-25):
+ * the foe count grows with depth — floors 1-4 unchanged, floors 5-9 solo
+ * only on a first d4 of 1, floors 10-19 never start a fight solo, floors
+ * 20+ always bring at least 3 — via `foeCountFor`'s third argument
+ * (`state.floor.depth`), with the SAME one-or-two d4 draws as before. A
+ * wandering fight draws no count die at all and sizes itself at
+ * `foeCountMinFor(state.floor.depth)` (the depth floor, whole) in place of
+ * the old fixed 1.
  */
 export function startCombat(state, wandering, forced, rng, events = []) {
   const c = state.c;
@@ -255,11 +265,17 @@ export function startCombat(state, wandering, forced, rng, events = []) {
   // until a future source assigns it.
   let tracked = false;
   const maxLvl = curve.foeLevel;
-  // NOTE: this call can consume ONE or TWO d4 rolls, exactly like the
-  // retired `D(4) <= 2 ? 1 : D(4) <= 3 ? 2 : 3` ternary — the second D(4) is
-  // only rolled if the first roll was > 2 (foeCountFor's own thunk). A
-  // wandering encounter still draws nothing here.
-  const n = wandering ? 1 : foeCountFor(rng.d(4), () => rng.d(4)); // roll:selection
+  // RULES-16 (Phase 75.3): the SAME one-or-two d4 selection draws as always
+  // (foeCountFor's own thunk still fires only when the first roll is > 2,
+  // exactly like the retired `D(4) <= 2 ? 1 : D(4) <= 3 ? 2 : 3` ternary),
+  // now reshaped by the floor depth (foeCountFor's third argument): solo
+  // fights fade with depth (floors 1-4 unchanged, 5-9 solo only on a first
+  // roll of 1, 10-19 never solo, 20+ always at least 3). A wandering
+  // encounter (engine/movement.js#newDay) draws nothing here and takes the
+  // depth minimum whole (foeCountMinFor) instead of a fixed 1; every other
+  // caller (engine/encounters.js#encounterDot, every dot and Lair Beast
+  // cell) draws the count normally.
+  const n = wandering ? foeCountMinFor(state.floor.depth) : foeCountFor(rng.d(4), () => rng.d(4), state.floor.depth); // roll:selection
   const foes = [];
   for (let i = 0; i < n; i++) {
     // Phase 73 (ROLL-05): the tier-bleed d4 mirrors — "one tier lower" fires

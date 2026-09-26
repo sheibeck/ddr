@@ -3708,3 +3708,83 @@ This closes the Phase 75.2 fixture story: all five plans measured zero
 moved parity fixtures — proven by a standing, teeth-tested 31-site replay
 guard, not asserted by omission — and the prototype master is
 byte-identical to Phase 75.1's own close.
+
+## Phase 75.3: deep-floor encounter scaling (RULES-16..18) — measured per plan
+
+### Plan 01 — foe count by depth (RULES-16)
+
+**The rule.** `engine/difficulty.js#foeCountFor(firstRoll, drawSecond, depth)`
+keeps the EXACT canon draw shape (one d4, a second only when the first is
+> 2) and reshapes what the result MEANS at depth, via the new
+`FOE_COUNT_DEPTH` dial (`{ soloOnlyOnOneFrom: 5, atLeastTwoFrom: 10,
+atLeastThreeFrom: 20 }`, user-ruled 2026-09-25, not fitted): floors 1-4 are
+today's count verbatim; floors 5-9 are solo only on a first roll of 1 (a
+first roll of 2 is raised to 2); floors 10-19 never start solo (the whole
+result floors at 2 via the new `foeCountMinFor(depth)`); floors 20+ always
+bring at least 3 (the table's own ceiling, so "at least 3" is exactly 3). A
+wandering fight (`engine/combat.js#startCombat`'s `wandering` branch) draws
+no count die at all, today or after this plan — it now sizes itself at
+`foeCountMinFor(state.floor.depth)` (1 on floors 1-9, 2 on 10-19, 3 on 20+)
+in place of the old fixed 1. `startCombat` has exactly two callers:
+`engine/encounters.js#encounterDot` (every dot and Lair Beast cell) and
+`engine/movement.js#newDay` (the wandering monster).
+
+**The predictor.** Every parity fixture's fixture-exposed fight is on floor
+1 (`test/parity/fixtures/action-script.combat.json`'s win/lose/
+lose-apprentice/lose-plain/flee/parley scenarios, `action-script.magic.json`'s
+`cast-damage`) — the ONE depth `FOE_COUNT_DEPTH`'s lowest rung
+(`soloOnlyOnOneFrom: 5`) never reaches. No fixture ever calls `startCombat`
+from a wandering path either (`action-script.movement.json`'s own script
+never triggers a wandering-monster wake). Prediction: **zero moved
+fixtures.**
+
+**Measured.**
+
+```
+$ node --test "test/parity/**/*.test.js"
+# tests 60
+# pass 60
+# fail 0
+
+$ git diff --quiet 5f09cec3e2b808b6d553d6db82a0c8dce998c10a -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js
+(exit 0 — clean)
+
+$ git hash-object test/parity/prototype-master.js.txt
+a1f4d0dc29782218d8e5aab65bc5989c33f917f0 (unchanged — the same hash Phase 75.2 closed with)
+```
+
+Zero fixtures moved, exactly as predicted. No new serialized field exists —
+a foe count is still a plain integer roster length; `FOE_COUNT_DEPTH` is a
+`DIALS` dial read only by `foeCountFor`/`foeCountMinFor`, so
+`comparables.js` is untouched.
+
+**Bot-baseline artifacts moved instead (not parity fixtures).** Two
+`test/unit/roll-high-state-pins.test.js` pins moved — "deep-8" (a solo
+start at floor 8) and "deep-14" (a solo start at floor 14) — both bisected
+live (a scratch harness running each pin's own seed/opts once under the
+shipped `FOE_COUNT_DEPTH` and once with it forced to its identity value
+`{0,0,0}`, which `test/unit/foe-count-depth.test.js`'s own identity test
+proves reproduces today's count at every depth): each run's FIRST
+`encounterStarted` event (floor 8 and floor 14 respectively, both
+non-wandering) is exactly the fight whose count changed — "deep-8" from 1
+to 2 (a first roll of 2, raised by `soloOnlyOnOneFrom: 5`), "deep-14" from 1
+to 2 (a first roll of 1, floored by `atLeastTwoFrom: 10`) — with every
+earlier fight in each run's own log (there are none; this is each run's
+opening encounter) unaffected. Both re-pinned with a RULES-16 rationale
+comment in that file. Every OTHER pin (`solo-1`, `solo-2`,
+`solo-thief-pilfer`, `solo-magicuser-sorcerer`, `party-1`,
+`party-fighter-knight`) re-measured byte-identical — none of those six runs'
+own 400-action budgets happen to roll a first-roll-2 or first-roll-1
+count-changing fight at floor 5+ before their budget or death ends the run.
+`test/unit/foe-turn-draw-count.test.js` and `test/unit/roll-high-save-
+compat.test.js` (whose pre-switch save continuation ends on floor 4, never
+reaching `soloOnlyOnOneFrom`'s floor-5 rung) both re-measured byte-identical.
+
+**BEFORE/AFTER 200-seed readouts.** Deferred to Phase 79.1 per user ruling
+2026-09-26 ("bot balance runs happen ONCE at the milestone end") — this
+plan's own `tools/readouts/75.3-01-{before,after}.txt` acceptance criterion,
+including the "median below 5 is flagged" readout check, is not run this
+plan. The engine rule ships at its planned, user-ruled values
+(`soloOnlyOnOneFrom: 5`, `atLeastTwoFrom: 10`, `atLeastThreeFrom: 20`)
+unmeasured against the depth-20/floor-5-7 target until that milestone-close
+sweep.

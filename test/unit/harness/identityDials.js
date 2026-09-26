@@ -34,6 +34,7 @@ export const IDENTITY_DIALS = {
   FOE_HIT_SCALE: { base: 1, perDepth: 0 },
   FOE_HP_SCALE: { base: 1, perDepth: 0 },
   FOE_COUNT_SKEW: 0,
+  FOE_COUNT_DEPTH: { soloOnlyOnOneFrom: 0, atLeastTwoFrom: 0, atLeastThreeFrom: 0 },
   ROUND_DAMAGE_CEILING: 0,
   ABILITY_THREAT: { base: 1, perDepth: 0 },
   HERO_HP_SCALE: 1,

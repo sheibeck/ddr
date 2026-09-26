@@ -45,7 +45,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 // ─── USER RULING D: the remove list is GONE — no floor-range name survives ──
 
-test("USER RULING D/G: DIALS is frozen and its key set is exactly the global model's 26 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key)", () => {
+test("USER RULING D/G, RULES-16 (Phase 75.3): DIALS is frozen and its key set is exactly the global model's 27 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key; FOE_COUNT_DEPTH added, Phase 75.3)", () => {
   assert.equal(Object.isFrozen(DIALS), true);
   const keys = Object.keys(DIALS).sort();
   assert.deepStrictEqual(keys, [
@@ -60,6 +60,7 @@ test("USER RULING D/G: DIALS is frozen and its key set is exactly the global mod
     "ENCOUNTER_DOTS",
     "FLEE_NEED_MOD",
     "FOE_ACCURACY",
+    "FOE_COUNT_DEPTH",
     "FOE_COUNT_SKEW",
     "FOE_HIT_SCALE",
     "FOE_HP_SCALE",
@@ -88,6 +89,7 @@ const IDENTITY_COLUMN = {
   FOE_HIT_SCALE: { base: 1, perDepth: 0 },
   FOE_HP_SCALE: { base: 1, perDepth: 0 },
   FOE_COUNT_SKEW: 0,
+  FOE_COUNT_DEPTH: { soloOnlyOnOneFrom: 0, atLeastTwoFrom: 0, atLeastThreeFrom: 0 },
   ROUND_DAMAGE_CEILING: 0,
   ABILITY_THREAT: { base: 1, perDepth: 0 },
   HERO_HP_SCALE: 1,
@@ -136,7 +138,7 @@ function withIdentity(overrides, fn) {
   }
 }
 
-test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3): DIALS deepStrictEqual the merge of the identity column and fit/best.json (the shipped values are the evaluated ones, no rounding, no hand-tidying)", () => {
+test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3), RULES-16 (Phase 75.3): DIALS deepStrictEqual the merge of the identity column, the Phase 54 fit/best.json and the Phase 75.3 dial overlay (the shipped values are the evaluated ones, no rounding, no hand-tidying)", () => {
   // The fit artifact lives in Phase 54's directory, which /gsd-complete-milestone
   // MOVES into .planning/milestones/v1.7-phases/ when the milestone is archived.
   // Try the live location first, then the archive, so archiving a milestone never
@@ -149,8 +151,19 @@ test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3): DIALS deepStrictEq
   ].find((p) => fs.existsSync(p));
   assert.ok(bestPath, "fit/best.json not found in .planning/phases/ or .planning/milestones/v1.7-phases/");
   const best = JSON.parse(fs.readFileSync(bestPath, "utf8"));
-  const merged = { ...IDENTITY_COLUMN, ...best };
-  assert.deepStrictEqual(Object.keys(DIALS).sort(), Object.keys(merged).sort(), "DIALS and the identity+best.json merge must cover the exact same key set");
+
+  // Phase 75.3's own dial overlay — same fallback shape (live path, then a
+  // future milestone archive) as the Phase 54 lookup above.
+  const overlayRel = ["75.3-deep-floor-encounter-scaling", "fit", "best.json"];
+  const overlayPath = [
+    path.join(planning, "phases", ...overlayRel),
+    path.join(planning, "milestones", "v2.1-phases", ...overlayRel),
+  ].find((p) => fs.existsSync(p));
+  assert.ok(overlayPath, "75.3's fit/best.json not found in .planning/phases/ or .planning/milestones/v2.1-phases/");
+  const overlay = JSON.parse(fs.readFileSync(overlayPath, "utf8"));
+
+  const merged = { ...IDENTITY_COLUMN, ...best, ...overlay };
+  assert.deepStrictEqual(Object.keys(DIALS).sort(), Object.keys(merged).sort(), "DIALS and the identity+best.json+overlay merge must cover the exact same key set");
   assert.deepStrictEqual(DIALS, merged);
 });
 

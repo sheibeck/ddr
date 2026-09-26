@@ -141,7 +141,25 @@ const PINNED = {
   // the "party-fighter-knight" comment block above) — a Gauntlet of the
   // Giant's rewritten `txt`, not a decision change; "deep-14" re-measured
   // byte-identical (no Gauntlet/Enlarge within its own action budget).
-  "deep-8": { actions: 93, dead: true, depth: 9, hash: "d1401713f00e25c27a73855a55e7dfa0fbda4c7ffe979904235583951617569c" },
+  // "deep-8" re-pinned YET AGAIN (Phase 75.3, Plan 01, 2026-09-26, RULES-16):
+  // "solo fights fade with depth" — a floor-8 fight (the 5-9 band) that used
+  // to draw a first d4 of 2 (solo, no second draw) now RAISES that same
+  // first roll to 2 foes (soloOnlyOnOneFrom: 5); this run's own FIRST
+  // encounterStarted event (floor 8, non-wandering) is exactly that fight —
+  // bisected live (a scratch harness running this run once under the
+  // shipped dials and once with FOE_COUNT_DEPTH forced to its identity
+  // {0,0,0}, which this plan's own foe-count-depth.test.js proves reproduces
+  // today's count at every depth) confirms the two logs agree on every
+  // earlier fight (there are none — this is action 0's first encounter) and
+  // diverge at this one fight alone: 1 foe under identity, 2 foes under the
+  // shipped RULES-16 dial. `actions`/`dead`/`depth` all moved too (250/true/10
+  // vs the prior 93/true/9) — an EXPECTED outcome shift, not a bug: a
+  // tougher floor-8 opener changes how the rest of this 300-action-budget
+  // run plays out, which is this phase's entire point (the user's own
+  // Troll-Summoner complaint was exactly "too many solo fights past floor
+  // 5"). Regenerated via `node tools/roll-high-baseline.mjs pins` (hashed
+  // identically twice).
+  "deep-8": { actions: 250, dead: true, depth: 10, hash: "4ad84fadec4eed1bb45908ccea142ed06a9d318a81f06c723834e9a5d1011b45" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll
@@ -161,7 +179,21 @@ const PINNED = {
   // `readScroll` path is byte-identical to before this phase). Regenerated
   // via `node tools/roll-high-baseline.mjs pins` (each hashed identically
   // twice).
-  "deep-14": { actions: 300, dead: false, depth: 16, hash: "f1fe52d54e780e0ddf6157179b3c8b1b54b5f5dc81b787a74b925629db0d20dd" },
+  // "deep-14" re-pinned YET AGAIN (Phase 75.3, Plan 01, 2026-09-26, RULES-16):
+  // "solo fights fade with depth" — a floor-14 fight (the 10-19 band, "never
+  // solo") that used to draw a first d4 of 1 (canon solo, 1 foe) now floors
+  // at 2 via `foeCountMinFor` (atLeastTwoFrom: 10); this run's own FIRST
+  // encounterStarted event (floor 14, non-wandering) is exactly that fight —
+  // bisected the same way as "deep-8" above (a scratch harness comparing the
+  // shipped dials against FOE_COUNT_DEPTH forced to identity {0,0,0}): the
+  // two logs agree on every earlier fight (there are none — action 0's first
+  // encounter) and diverge at this one fight alone: 1 foe under identity, 2
+  // under the shipped dial. `actions`/`dead`/`depth` all moved too (52/true/14
+  // vs the prior 300/false/16) — an EXPECTED outcome shift (a harder floor-14
+  // opener kills this run 52 actions in, instead of surviving 300 and
+  // reaching floor 16), not a bug. Regenerated via `node
+  // tools/roll-high-baseline.mjs pins` (hashed identically twice).
+  "deep-14": { actions: 52, dead: true, depth: 14, hash: "be6f151aaf66ebb692f35bfca80ec48476b486db5a2b05e42f3f73efe3b3989c" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {
