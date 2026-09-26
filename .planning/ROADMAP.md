@@ -330,7 +330,7 @@ Plans:
   4. From floor 12, foe HP and hit climb on a steeper slope and the roster keeps escalating past today's level-5 tier cap, with slopes set by bot readouts.
   5. From floor 12, foes increasingly resist or shake off Freeze, Stone, Doze and Weaken, so a control-lock rotation no longer carries a caster to depth 40.
 
-**Plans**: 2/6 plans executed
+**Plans**: 3/6 plans executed
 
 Plans:
 **Wave 1**
@@ -340,7 +340,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 75.3-03-PLAN.md — The deep curve (RULES-17): a knee after floor 12 on foe HP and hit, and titled elite variants of tier-5 foes from floor 16; floors 1-12 proven unchanged (wave 2)
+- [x] 75.3-03-PLAN.md — The deep curve (RULES-17): a knee after floor 12 on foe HP and hit, and titled elite variants of tier-5 foes from floor 16; floors 1-12 proven unchanged (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -635,7 +635,7 @@ Plans:
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 13/13 | Complete    | 2026-09-25 |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
-| 75.3. Deep-Floor Encounter Scaling | v2.1 | 2/6 | In Progress|  |
+| 75.3. Deep-Floor Encounter Scaling | v2.1 | 3/6 | In Progress|  |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
