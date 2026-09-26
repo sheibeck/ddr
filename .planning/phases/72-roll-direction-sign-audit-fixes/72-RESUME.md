@@ -14,7 +14,7 @@
   - 75.3 (7 plans; ruled strict tail targets; plan 06 is the checkpointed sweep)
   - 76 (5 plans)
   - 80 (6 plans; executes LAST)
-- **IN FLIGHT: the Phase 76 planner revision** (no-commit mode), for the user rulings:
+- Phase 76 plans revised and committed for the rulings (light lifts combat dark; pending Joiner persists).
   - a lit torch or the Amulet lifts the IN-FIGHT dark penalties too;
   - a pending Joiner offer persists across a relaunch.
   When it returns, gate and commit it.
