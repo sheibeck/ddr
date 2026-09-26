@@ -254,6 +254,15 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
   // otherwise escape a final-state-only check. No existing test destructures
   // this field, so its addition is additive/backward-compatible.
   let staffEverSet = !!(state.c && state.c.staff);
+  // Phase 75.1 (RULES-09/RULES-10, Plan 08): heroOutEverSet/heroBlindEverSet/
+  // heroShrunkEverSet track whether state.combat.heroOut/heroBlind/heroShrunk
+  // was ever truthy at ANY point across the whole replay — mirroring
+  // staffEverSet's own established pattern exactly, since these fields live
+  // on the combat sub-object and endCombat clears it (a final-state-only
+  // check would miss a mid-fight set-then-cleared value).
+  let heroOutEverSet = !!(state.combat && state.combat.heroOut);
+  let heroBlindEverSet = !!(state.combat && state.combat.heroBlind);
+  let heroShrunkEverSet = !!(state.combat && state.combat.heroShrunk);
   for (const action of actions) {
     let result;
     if (action.type === "startCombat") {
@@ -270,8 +279,21 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
     if (state.floor.depth > maxDepthEver) maxDepthEver = state.floor.depth;
     if (state.pendingJoiner) pendingJoinerEver = true;
     if (state.c && state.c.staff) staffEverSet = true;
+    if (state.combat && state.combat.heroOut) heroOutEverSet = true;
+    if (state.combat && state.combat.heroBlind) heroBlindEverSet = true;
+    if (state.combat && state.combat.heroShrunk) heroShrunkEverSet = true;
   }
-  return { state, events: allEvents, pendingJoinerEver, maxDepthEver, eventsAtDepth2Plus, staffEverSet };
+  return {
+    state,
+    events: allEvents,
+    pendingJoinerEver,
+    maxDepthEver,
+    eventsAtDepth2Plus,
+    staffEverSet,
+    heroOutEverSet,
+    heroBlindEverSet,
+    heroShrunkEverSet,
+  };
 }
 
 test("JOIN-02: the holders declaring Phase 53 are exactly the measured moved set — zero, and no replay site ever meets a Joiner", () => {
@@ -873,4 +895,132 @@ test("RULES-05/06/12/13/15 exposure guard has teeth: a doctored event list is ca
   // FAIL against this doctored list.
   assert.throws(() => assert.equal(counts.wardRaised, 0), assert.AssertionError);
   assert.throws(() => assert.equal(counts.halvedHeal, 0), assert.AssertionError);
+});
+
+// Phase 75.1 (RULES-09/RULES-10, Plan 08 — the phase's own close-out guard):
+// the Pilfer magic-item fumble (75.1-01), the scroll-fumble content table
+// (75.1-02, no engine code), the foe-side mechanics (75.1-03: ward, armed
+// Bubble, Mirror Self, Strength, Regeneration), the reader-side mechanics
+// (75.1-04: the burn, the heavy blow, turn loss, hero Blind/Shrink), the
+// fumble resolver (75.1-05) and the intelligence read in readScroll (75.1-06)
+// each independently measured ZERO moved fixtures — see every plan's own
+// SUMMARY.md ("zero fixtures moved... git diff --quiet against the plan base
+// for test/parity/fixtures/prototype-master.js.txt both exit 0") and this
+// plan's own FIXTURE-INVENTORY.md Phase 75.1 section for the full per-plan
+// predictor/measurement accounting this guard proves the positive side of.
+// No replay site's chargen ever rolls a Pilfer into a jewel/cloak/staff use,
+// and no fixture's action script ever has ANYONE attempt a scroll read
+// outside the one already-declared Wizard `magic#heal` scenario (which keeps
+// its unchanged, automatic magicUser path — the bot never reads a scroll in
+// combat, per this phase's own flagged assumption). The declared Phase 75.1
+// set stays legitimately EMPTY (mirroring JOIN-02's own "measured zero, still
+// proven" discipline) — none of these plans declared a divergence record.
+const RULES751_EXPECTED_HOLDERS = [];
+
+/**
+ * countPhase751Exposure(events) -> the per-event-type counts the 31-site
+ * Phase 75.1 exposure guard below tallies, extracted as its own pure
+ * function (mirroring countPhase75Exposure's own established shape) so a
+ * dedicated "does this guard have teeth" test can feed it a doctored event
+ * list without needing a live engine replay.
+ */
+function countPhase751Exposure(events) {
+  return {
+    pilferFumbled: events.filter((e) => e.type === "pilferFumbled").length,
+    scrollDeciphered: events.filter((e) => e.type === "scrollDeciphered").length,
+    scrollGarbled: events.filter((e) => e.type === "scrollGarbled").length,
+    scrollFumbled: events.filter((e) => e.type === "scrollFumbled").length,
+    fumbleOnReader: events.filter((e) => e.type === "fumbleOnReader").length,
+    fumbleOnSide: events.filter((e) => e.type === "fumbleOnSide").length,
+    fumbleOnFoe: events.filter((e) => e.type === "fumbleOnFoe").length,
+    selfDotTick: events.filter((e) => e.type === "selfDotTick").length,
+    fumbleHeavyBlow: events.filter((e) => e.type === "fumbleHeavyBlow").length,
+    heroLostTurn: events.filter((e) => e.type === "heroLostTurn").length,
+    heroCameTo: events.filter((e) => e.type === "heroCameTo").length,
+    foeWardSoaked: events.filter((e) => e.type === "foeWardSoaked").length,
+    foeWardBroken: events.filter((e) => e.type === "foeWardBroken").length,
+    foeWardFaded: events.filter((e) => e.type === "foeWardFaded").length,
+    foeBubbleCaught: events.filter((e) => e.type === "foeBubbleCaught").length,
+    foeBubbleRebound: events.filter((e) => e.type === "foeBubbleRebound").length,
+    foeMirrorFaded: events.filter((e) => e.type === "foeMirrorFaded").length,
+    foeRegenerated: events.filter((e) => e.type === "foeRegenerated").length,
+  };
+}
+
+test("RULES-09/RULES-10 (Phase 75.1): every one of the 31 replay sites measures zero exposure to the Pilfer-fumble/scroll-fumble mechanics", () => {
+  let totalSites = 0;
+  const totals = Object.fromEntries(Object.keys(countPhase751Exposure([])).map((k) => [k, 0]));
+  let heroOutEverSetAnywhere = false;
+  let heroBlindEverSetAnywhere = false;
+  let heroShrunkEverSetAnywhere = false;
+
+  const tally = (r) => {
+    const counts = countPhase751Exposure(r.events);
+    for (const key of Object.keys(totals)) totals[key] += counts[key];
+    if (r.heroOutEverSet) heroOutEverSetAnywhere = true;
+    if (r.heroBlindEverSet) heroBlindEverSetAnywhere = true;
+    if (r.heroShrunkEverSet) heroShrunkEverSetAnywhere = true;
+  };
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    newRun(seed); // chargen never dispatches an action at all, let alone starts combat
+  }
+
+  totalSites++;
+  tally(replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions));
+
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions));
+  }
+
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions));
+  }
+
+  totalSites++;
+  tally(replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true }));
+
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions));
+  }
+
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+  for (const key of Object.keys(totals)) {
+    assert.equal(totals[key], 0, `expected zero ${key} events across every replay site`);
+  }
+  assert.equal(heroOutEverSetAnywhere, false, "expected combat.heroOut to never be set across any replay site");
+  assert.equal(heroBlindEverSetAnywhere, false, "expected combat.heroBlind to never be set across any replay site");
+  assert.equal(heroShrunkEverSetAnywhere, false, "expected combat.heroShrunk to never be set across any replay site");
+
+  const declared = new Set(
+    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("75.1")).map(({ holderId }) => holderId),
+  );
+  assert.deepStrictEqual(
+    [...declared].sort(),
+    RULES751_EXPECTED_HOLDERS,
+    "the declared Phase 75.1 set is exactly RULES751_EXPECTED_HOLDERS (legitimately empty — no fixture moved)",
+  );
+});
+
+test("RULES-09/RULES-10 exposure guard has teeth: a doctored event list carrying one pilferFumbled and one scrollFumbled is caught by the same counting function", () => {
+  const doctored = [
+    { type: "pilferFumbled" },
+    { type: "scrollFumbled" },
+    // Controls that must NOT be counted: unrelated event types entirely.
+    { type: "itemUsed" },
+    { type: "scrollDeciphered", extra: false },
+  ];
+  const counts = countPhase751Exposure(doctored);
+  assert.equal(counts.pilferFumbled, 1);
+  assert.equal(counts.scrollFumbled, 1);
+  assert.equal(counts.scrollDeciphered, 1);
+  assert.equal(counts.scrollGarbled, 0);
+  // Prove the zero-count assertions the real guard makes would genuinely
+  // FAIL against this doctored list.
+  assert.throws(() => assert.equal(counts.pilferFumbled, 0), assert.AssertionError);
+  assert.throws(() => assert.equal(counts.scrollFumbled, 0), assert.AssertionError);
 });

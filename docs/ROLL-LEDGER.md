@@ -679,3 +679,32 @@ Beyond this ledger's existing `## Handoffs → Phase 79` list (Mirror Self/Cryst
 - The "They need two better" chip and narration lines for the Anklet/Cloak of Invisibility (`eventNarration.js`/`narrationLines.js`'s `unseen` lines, `content/treasure-tables.js`).
 - The authored `CONDITION_EXPLAIN` sentences (mazeworld.html's classic script) and `FOE_CONDITION_DESC` sentences (`src/browser/foeConditions.js`) — every chip's own one-line description, distinct from this phase's computed effect clause that now precedes it.
 - Every bestiary note phrased as a face count ("hittable only on a 4," etc.) not already flagged in the existing Phase 79 list.
+
+## Phase 75.1 check sites (RULES-09, RULES-10)
+
+Two new derived-stream check sites join the roll-high engine (Phase 73's
+convention: `roll = (N+1) - r`, `atLeast` is the winning threshold),
+closing this phase's own two new mechanics. Neither reads a mid-check
+modifier — both are plain, unmodified `rollCheck` draws.
+
+| Site | Draw | atLeast | Fumble face | Stream |
+|---|---|---|---|---|
+| Pilfer steady hands (`engine/items.js#pilferFumbleRng`, 75.1-01) | d20 | 2 (any face but a 1 succeeds) | 1 | `pilferFumble` |
+| Scroll read (`engine/magic.js#scrollReadRng`, 75.1-06) | d20 | `22 − intel` (reading faces `intel − 1`) | below `ceil(atLeast / 2)` | `scrollRead` |
+
+- **Pilfer steady hands.** `rollCheck(fumbleRng, 20, atLeastFor(19, 20))` — a
+  roll of exactly 1 is the only failing face (`atLeast 2`); the d10 blast
+  that follows a fumble draws from the SAME `pilferFumble` stream,
+  sequentially, never the main rng.
+- **Scroll read.** `rollCheck(scrollRng, 20, bands.atLeast)` where
+  `bands.atLeast = 22 − intel` (so the winning faces are `intel − 1` in
+  count, matching the pre-Phase-73 roll-under shape `roll < intel`); a roll
+  below `bands.fumbleAtLeast` (`ceil(atLeast / 2)`) is a fumble rather than
+  a plain failure. Every draw the fumble effects themselves make (the
+  area/helpful/harmful resolver in `engine/scrollFumble.js`) reuses this
+  SAME `scrollRead` stream — no third stream for the fumble's own
+  aftermath.
+- **The heavy blow.** The ONE replacement for every instant-kill scroll
+  fumble (`engine/combat.js#fumbleHeavyBlow`, 75.1-04/75.1-05) draws its
+  d10 (`+ depth`, unsoaked) from its OWN derived stream, `fumbleBlow` — not
+  `scrollRead` — keyed on `(main cursor, "fumbleBlow", state.acts, C.round)`.
