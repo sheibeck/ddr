@@ -1096,3 +1096,29 @@ Minimum art job: **29 pictures + 4 tier frames**, exported as about **49 icon fi
 Plans:
 
 - [ ] TBD (promote with /gsd-new-milestone when ready — user wants this as its own milestone)
+
+### Phase 999.13: Our own leaderboards instead of Google Play Games boards (BACKLOG)
+
+**Goal:** [Captured 2026-09-26, user] Stop relying on Google Play Games leaderboards and run our own global boards. The user's reasoning: "with the privacy being defaulted to on, the competition is ghost-town". Play Games hides a player's scores from other players unless their profile visibility allows it, so the ALL and FRIENDS boards look empty. Players must still be able to opt out; the Compete toggle stays. Our boards should be public by default, and Compete OFF means nothing is ever sent.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Decisions this needs before planning (discuss-phase):**
+
+- **The backend is new territory.** PROJECT.md says the game is offline-first: "the offline constraint relaxes only for opted-in players", and signed-out play makes zero network calls. That rule survives, since only Compete-ON players talk to the server. But a server the author runs is new: hosting, cost, uptime and moderation. Candidates:
+  - a small serverless endpoint (e.g. Cloudflare Workers + D1, or Supabase), called with plain `fetch`
+  - **no** new client SDK: CLAUDE.md bans analytics SDKs, and Firebase counts as one
+- **Identity.** Either keep Play Games sign-in only for the player id and display name, dropping only its leaderboards, or use an anonymous install id plus a chosen handle. Chosen handles need the family-friendly filter (`content/safety-wordlist.js`) and a way to report or rename a bad one.
+- **Cheating.** A client-submitted score is trivially forged. The engine is deterministic and serializable, and `buildRunSummary` already carries the seed, the rules/season version, an action count and a hash. So the server can check the run cheaply, or fully replay the seed plus the action log for top-N entries.
+- **Scopes.** ME stays local. ALL comes from our server. FRIENDS has no source without Play Games' friends list. Choose one: keep Play Games only for friends, drop FRIENDS, or add friend codes.
+- **Store compliance.** The Data Safety form and the privacy policy change, because a score, a handle and an id now leave the device and go to our server, not Google's. The Compete opt-out copy is updated too.
+- **Migration.** Keep or retire the Season-1 Play Games boards, and decide what happens to queued `pgsQueue` entries. Play Games achievements (999.12) can stay on Play Games regardless.
+
+**What it touches / supersedes:**
+
+- The shell leaderboard stack: `src/browser/playGames.js`, `globalBoards.js`, `pgsQueue.js`, `boardScores.js`, `boardsPanel.js`, `boardsView.js`, `account.js`, `accountChip.js`; plus `content/leaderboards.js` (the Play Games board ids). The Phase 81 panel (ME | ALL | FRIENDS, YOU tag, standing card) is kept as the UI; only its global data source changes.
+- **Supersedes most of 999.11.** Per-sub-class boards and an honest global LINEAGE become server queries over one run table, and no Play Console board has to be created for each. Review 999.11 when this is promoted.
+- Engine untouched: this is shell and server work, with zero parity fixtures.
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog or /gsd-new-milestone when ready)
