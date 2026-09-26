@@ -46,12 +46,23 @@ export { forceParty, serializeRun };
  *   this plan's "no engine/ changes" scope — discovered while building
  *   Task 2's save-compat round-trip check.
  *
+ * - `pendingTile` — RULES-12 (Phase 75, user 2026-09-25): engine/saveState.js's
+ *   rehydrate/validateSave NOW always reset this to `null` on load, mirroring
+ *   `pendingHazard`'s own reset (both transient, engine-only decision state
+ *   with no meaning across a load). The frozen pre-switch save fixture below
+ *   predates this field entirely — it was captured before Phase 75 ever
+ *   introduced it, so its raw JSON carries no such key at all. `undefined`
+ *   (absent) and `null` both mean "no wandering-monster-interrupted tile is
+ *   pending" to every engine/UI reader, so a pre-Phase-75 fixture gaining the
+ *   key on load is pure JSON-representation noise, not an outcome
+ *   divergence — the exact same category as `pendingJoiner` above.
+ *
  * The generator's double-run check (below) is the separate safety net for a
  * later plan's engine edit introducing a genuinely NONdeterministic field —
  * that field gets added here too, named, with a one-line reason, never
  * silently ignored.
  */
-export const EXTRA_VOLATILE_FIELDS = Object.freeze(["pendingJoiner"]);
+export const EXTRA_VOLATILE_FIELDS = Object.freeze(["pendingJoiner", "pendingTile"]);
 
 /**
  * deleteExtraVolatileFields(node) — deletes every EXTRA_VOLATILE_FIELDS key

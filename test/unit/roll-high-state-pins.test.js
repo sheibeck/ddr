@@ -38,9 +38,26 @@ const PINNED = {
   // byte-identical, and "deep-14" (a Thief, unaffected by any Magic User
   // change) stays byte-identical too. Regenerated via
   // `node tools/roll-high-baseline.mjs pins` (each hashed identically twice).
+  //
+  // "solo-thief-pilfer" re-pinned again (Phase 75, Plan 12, 2026-09-25):
+  // RULES-12's `resolvePendingTile` (a tile a wandering-monster check
+  // interrupted mid-step now resolves once the fight settles, instead of
+  // being silently dropped forever) changes a bot-visible OUTCOME for this
+  // one Thief run — a resumed tile's feature firing where it previously
+  // never did shifts the run's depth (5 -> 4) within 400 actions. Every
+  // OTHER label re-measured byte-identical (RULES-15's fed-only book
+  // refill never actually fires within any of these seeds' 400/300/93-
+  // action budgets, and RULES-12 never fires for the other seven either) —
+  // confirmed by re-running `node tools/roll-high-baseline.mjs pins` after
+  // adding `pendingTile` to `EXTRA_VOLATILE_FIELDS`
+  // (test/unit/harness/rollHighBaseline.js) so the field's mere PRESENCE
+  // (vs. absence on a state that never set it) never itself moves a hash —
+  // see that file's own doc comment for the "pure JSON-representation
+  // noise" precedent (`pendingJoiner`). Regenerated via `node
+  // tools/roll-high-baseline.mjs pins` (each hashed identically twice).
   "solo-1": { actions: 400, dead: false, depth: 5, hash: "ce883a88443d0e1a2ff1547974c0f9ce5c2a647f479e9ef8de4d7bf4644f8ca6" },
   "solo-2": { actions: 400, dead: false, depth: 4, hash: "b4daf5d20b7f4d3b36d55c1790f53f0d9610d64e3c45a9d81e3700e451ee3e4f" },
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 5, hash: "b28dc99a46cfa585f2a2e418ef68d12c580736553ce7ab2adc97d1d1c89bcae4" },
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "2dfc0fb87017ec650a504d6db93a39f4a1cf4435bf3b95dc27d6810c430ddbde" },
   "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "444ec2ca839587b2249e6f89828a40fef887b2668b935c228a510e99c4ac4207" },
   "party-1": { actions: 400, dead: false, depth: 4, hash: "ab7a42cbfcc8f9cad5845ce73e5f51b59a1942f4cb0ff25c1e2a78591c0aa61d" },
   "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "1ad4462f4a8b7017cc14d5bf5f566677f8efda6d0cd4f6fab06cfb94b928370d" },
@@ -48,7 +65,9 @@ const PINNED = {
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
   // the RULES-03 comment block above; "deep-14" (a Thief) is unaffected by
-  // either plan's change and keeps its Plan 02 value.
+  // either plan's change and keeps its Plan 02 value. Both re-measured
+  // byte-identical again by Plan 12 — see the "solo-thief-pilfer" comment
+  // block above.
   "deep-8": { actions: 93, dead: true, depth: 9, hash: "74fedc2dd92b7a34da2bc505dcd7c2575b43726e24b6b07e23b39c5f40f9cace" },
   "deep-14": { actions: 300, dead: false, depth: 16, hash: "68598e3d89c5f13798f21a13af02144dc9e43c5ea05548b4cb6b189a22df41bc" },
 };
