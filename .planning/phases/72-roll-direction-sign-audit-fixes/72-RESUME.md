@@ -1,32 +1,41 @@
 # v2.1 autonomous-run resume point
 
-**Updated:** 2026-09-26 ~00:30 local, Phase 75 complete, Phase 75.1 wave 1 in flight.
+**Updated:** 2026-09-26 ~04:30 local, all phases planned; 75.1 wave 4 in flight.
 
 ## Where the run is
 - `/gsd-autonomous` is running milestone v2.1.
-- **Complete and pushed:** 72, 81, 73, 74 and 75. Phase 75 closed at 738e624b: 6,218 green, parity 56/56.
-- **Phase 75.1 is EXECUTING.** It has 9 plans in 7 waves: W1 01+02, W2 03, W3 04, W4 05+09, W5 06, W6 07, W7 08.
-  - Wave 1 was dispatched at base 738e624b. Its manifest is `<scratchpad>/wave-75.1-1.json`.
-  - Watch it with `<scratchpad>/watch.sh <base> <stall-min> <ids>`.
-  - The executor prompt pattern is in `<scratchpad>/last-executor-prompt.txt`. Add the phase's CONTEXT user rulings to the orchestrator notes.
-- **Planned and committed (each executes after the previous phase merges):**
-  - 75.2 (5 plans; race signatures survive size; Joiners get size)
-  - 75.3 (7 plans; ruled strict tail targets; plan 06 is the checkpointed sweep)
-  - 76 (5 plans)
-  - 80 (6 plans; executes LAST)
-- Phase 76 plans revised and committed for the rulings (light lifts combat dark; pending Joiner persists).
-  - a lit torch or the Amulet lifts the IN-FIGHT dark penalties too;
-  - a pending Joiner offer persists across a relaunch.
-  When it returns, gate and commit it.
-- **Still to plan:** 77, 78, 79. The edge reports are in `<scratchpad>/cov<phase>.json`.
+- **Complete and pushed:** 72, 81, 73, 74 and 75.
+- **Phase 75.1 is EXECUTING** (9 plans in 7 waves). Waves 1–3 are merged, with master at 6,306 green.
+  - Wave 4 (75.1-05 and 75.1-09) was dispatched at base 6ebcae3. Its manifest is `<scratchpad>/wave-75.1-4.json`.
+  - Still to run: W5 06, W6 07, W7 08.
+- **EVERY remaining phase is PLANNED and committed.** Each executes after the previous phase merges, in this order:
+  - 75.2: 5 plans
+  - 75.3: 7 plans. Plan 06 is the checkpointed sweep against the ruled tail targets.
+  - 76: 5 plans
+  - 77: 8 plans
+  - 78: 9 plans
+  - 79: 13 plans
+  - 80: 6 plans, last
+- **User rulings made during planning** are in each phase's CONTEXT ("rulings after planning" sections):
+  - 75.1 fumble severity
+  - 75.2 race signatures and Joiners
+  - 75.3 hold, knee, wanderers and tail targets
+  - 76 combat light and the Joiner persisting
+  - 78 HUD-07 option A and the dead map viewable
+- **At milestone close:**
+  1. Publish `docs/narrative-pass/review.html` (79-13) as an artifact.
+  2. The user judges the insanity death-cause tone at review (79-06).
+  3. Run the batched Pixel 7 checklist.
+  4. Build the debug APK.
+  5. Offer a Play internal push, asking first.
 - **USER-APPROVED PENDING EDIT:** after plan 80-02 lands, update the `.claude/CLAUDE.md` stack table: `@capacitor/status-bar` becomes the Capacitor 8 core SystemBars plugin. Also run `npm ci` in the main checkout after 80-02 merges.
 - **Merge recipe:**
-  1. In each worktree, run `git -C <wt> checkout -- test/unit/fixtures/shell-snapshots/` to clear line-ending noise.
+  1. In each worktree, run `git -C <wt> checkout -- test/unit/fixtures/shell-snapshots/`.
   2. Run `worktree.cleanup-wave`. If a rerun reports branch_mismatch, merge manually.
-  3. Run `npm test`, parity and boot:check. boot:check is environment-flaky, so rerun it once before judging.
+  3. Run `npm test`, parity and boot:check. boot:check is flaky, so rerun it once before judging.
   4. Run `update-plan-progress` for each merged plan, then commit.
-- **Never `cd` into a worktree;** use `git -C`.
-- The user asked for an ETA at ~21:30 on 2026-09-25. Answer given: ~40–50 h remaining. Option offered: run Phase 80 in parallel. The user did not take it.
+  5. At phase end: write the VERIFICATION, run `requirements.mark-complete` and `phase.complete`, run `state.planned-phase` for the next phase, then commit and push.
+- Watch executors with `<scratchpad>/watch.sh <base> <stall-min> <ids>`. The executor prompt pattern is in `<scratchpad>/last-executor-prompt.txt`. **Never `cd` into a worktree.**
 
 ## Captures (all routed and committed)
 - Also added after the Phase 73 start: Phase 75 RULES-12 (a tile interrupted by a wanderer is resolved after the fight), RULES-13 (a magic staff is a wielded d8 weapon for Magic Users), RULES-14 (Bubble reflects the next attack and keeps a small pool), and RULES-15 (no rations, no spell refill). Phase 75.3 (deep-floor difficulty) covers RULES-16/17/18: foe count, the curve from floor 12, and control spells at depth. Phase 77 gets CMBUI-14 (combat ITEMS shows EQUIPPED and greys out gear) and Dazed honesty. Phase 78 gets HUD-09 (the full-bag find card), and the new-day refill line was folded into the charge rail item.
