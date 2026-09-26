@@ -545,7 +545,7 @@ Plans:
 ### Phase 80: Android Release Build & Tooling
 
 **Goal**: The release build is optimized and store-clean on modern Android and large screens, and the tuning tool's replay-resume is trustworthy.
-**Depends on**: Phase 79.1 (the release build and emulator checks need the finished and tuned code; user ruling 2026-09-26)
+**Depends on**: CODE part (80-01/02/03/06): nothing; it runs in parallel with the gameplay phases. BUILD part (80-04/05): Phase 79.1, because the one release build packages the finished and tuned code (user rulings 2026-09-26).
 **Requirements**: DROID-01, DROID-02, DROID-03, TOOL-01
 **Success Criteria** (what must be TRUE):
 
@@ -557,23 +557,20 @@ Plans:
 **Plans**: 0/6 plans executed
 
 Plans:
-**Wave 1**
+**Wave 1: CODE PART, no builds; runs in parallel with the gameplay phases**
 
-- [ ] 80-01-PLAN.md — Turn on R8 for the release build (minify, resource shrinking, obfuscation) on the pinned AGP 8.13.0 toolchain, prove it with a real release build, and document the deobfuscation mapping (wave 1)
-- [ ] 80-03-PLAN.md — Give tablets, foldables and Chromebooks a deliberate, documented layout: declare the app a game so Android 16 keeps honouring the portrait lock, and present the shell as one centred, phone-width portrait column with p... (wave 1)
-- [ ] 80-06-PLAN.md — Prove TOOL-01 end to end through the real CLI: a fit resumed from its JSONL log retraces the live walk exactly, including after an infeasible (+Infinity) point, and per-block stdout is appended, never truncated (wave 1)
+- [ ] 80-01-PLAN.md — CODE PART, no build: configure R8 for the release build (minify, resource shrinking, obfuscation) on AGP 8.13.0 with defensive keep rules and a keep.xml, add the tested deprecated-API scanner that 80-04 runs on the single relea...
+- [ ] 80-02-PLAN.md — CODE PART, no build: uninstall @capacitor/status-bar and style the bars through Capacitor 8's core SystemBars plugin, regenerating the native plugin list with cap sync, with source and behaviour tests; the release build that pr...
+- [ ] 80-03-PLAN.md — CODE PART, no build: give tablets, foldables and Chromebooks a deliberate, documented layout by declaring the app a game (so Android 16 keeps honouring the portrait lock) and presenting the shell as one centred, phone-width por...
+- [ ] 80-06-PLAN.md — CODE PART, no build: prove TOOL-01 end to end through the real CLI (a fit resumed from its JSONL log retraces the live walk exactly, including after an infeasible +Infinity point), make per-block stdout append-only by construct...
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2: BUILD PART, the one release build; milestone end, after Phase 79.1**
 
-- [ ] 80-02-PLAN.md — Remove the deprecated status-bar colour path from the shipped app by uninstalling @capacitor/status-bar and styling the bars through Capacitor 8's core SystemBars plugin, then prove the native plugin list and the R8 r... (wave 2)
+- [ ] 80-04-PLAN.md — BUILD PART (milestone end, after Phase 79.1): make Phase 80's ONE release build and run every build-dependent check against it (R8 keeps, the embedded mapping, shrink survivors, the status-bar plugin gone, the deprecated-API sc...
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Wave 3: BUILD PART, the emulator pass on that same build**
 
-- [ ] 80-04-PLAN.md — Audit the actual R8 release artifact for deprecated window and system-UI API calls and for the merged manifest's large-screen attributes, with a reusable, tested scanner, and document edge-to-edge handling and the aud... (wave 3)
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
-- [ ] 80-05-PLAN.md — Run the emulator pass CONTEXT asked for: an R8 release smoke, edge-to-edge in gesture and 3-button navigation and with a display cutout, and the tablet and foldable large-screen behaviour, with screenshots in the phas... (wave 4)
+- [ ] 80-05-PLAN.md — BUILD PART (milestone end, after Phase 79.1): run the emulator pass on 80-04's single release build without rebuilding: an R8 release smoke, edge-to-edge in gesture and 3-button navigation and with a display cutout, and the tab...
 
 **UI hint**: yes
 **Device check**: yes — DROID-02/03 recommended for `--research-phase` (Android 15/16 edge-to-edge + large-screen handling); needs device checks in both navigation modes plus an emulator tablet/foldable, batched into the milestone-close Pixel 7 checklist.
