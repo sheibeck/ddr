@@ -372,7 +372,7 @@ Plans:
   3. A player who Saves & quits, or whose app is killed, mid-fight relaunches into the exact same fight — same foes, HP, round and active effects — and force-closing can no longer be used to escape a fight.
   4. A player who relaunches with the store open returns to the same store with the same stock.
 
-**Plans**: 4/6 plans executed
+**Plans**: 5/6 plans executed
 
 Plans:
 **Wave 1**
@@ -387,7 +387,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 76-05-PLAN.md — Finish the phase: the Oracle says the fight (or the shop) is still on after a relaunch, the persistence half's measurement is recorded beside the darkness half's in FIXTURE-INVENTORY.md, every gate is run at the phase... (wave 3)
+- [x] 76-05-PLAN.md — Finish the phase: the Oracle says the fight (or the shop) is still on after a relaunch, the persistence half's measurement is recorded beside the darkness half's in FIXTURE-INVENTORY.md, every gate is run at the phase... (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -652,7 +652,7 @@ Plans:
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
-| 76. Darkness Unification & Relaunch Persistence | v2.1 | 4/6 | In Progress|  |
+| 76. Darkness Unification & Relaunch Persistence | v2.1 | 5/6 | In Progress|  |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
