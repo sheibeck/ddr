@@ -546,13 +546,43 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   checkTerrainPhobias(state, events);
 
   const cell = f.g[ny][nx];
-  if (state.combat) return events; // a wandering monster already found you (01-08)
+  if (state.combat) {
+    // RULES-12 (Phase 75, user 2026-09-25, DECLARED CANON DIVERGENCE — the
+    // prototype simply drops the tile it was standing on when a wandering
+    // monster interrupts the step): newDay's own wandering-monster check
+    // (crossings(100) above) may have started this fight ON THE VERY STEP
+    // that would otherwise have dispatched the destination cell's feature —
+    // record the tile so `resolvePendingTile` (below) can finish the job
+    // once the fight, and any spoils/find/store it leaves behind, are
+    // settled and the hero is still standing here. `cell.feat` can only be
+    // dot/trap/chest/tele/exit/gate at this point — climb/gorge/one-way
+    // tiles are already resolved (or refused) earlier in this function, and
+    // nothing is ever scattered into a wall cell (260919-00d) — so no
+    // `cell.wall` guard is needed here, unlike the plain dispatch below.
+    if (cell.feat) state.pendingTile = { x: nx, y: ny, depth: state.floor.depth };
+    return events; // a wandering monster already found you (01-08)
+  }
   // 260919-00d: nothing is ever placed in rock — genFloor only scatters
   // features onto carved (non-wall) cells, so a wall cell's `feat` is
   // always null anyway; this gate STATES the rule explicitly (rather than
   // leaving it to that scatter) since a wall cell is now reachable at all,
   // and only while ethereal.
   if (cell.wall) return events;
+  resolveFeature(state, cell, rng, events);
+
+  return events;
+}
+
+/**
+ * resolveFeature(state, cell, rng, events) — RULES-12 (Phase 75): the ONE
+ * feature dispatch for a destination cell, extracted verbatim (same
+ * statements, same order) from `move`'s own tail so `move` and the resumed
+ * `resolvePendingTile` below always resolve a tile identically. Dispatches
+ * dot/trap/chest/tele/exit/gate; a cell with no feature (or one already
+ * cleared) is a no-op. The "gate" branch is legacy-save compatibility only
+ * — see this file's header comment.
+ */
+export function resolveFeature(state, cell, rng, events = []) {
   if (cell.feat === "dot") {
     cell.feat = null;
     encounterDot(state, rng, events);
@@ -575,7 +605,51 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
     // the ONLY run terminator even for a legacy save mid-floor.
     descend(state, rng, events);
   }
+  return events;
+}
 
+/**
+ * resolvePendingTile(state, rng, events) — RULES-12 (Phase 75, user
+ * 2026-09-25): resolves a tile `move` above had to leave under the hero
+ * when a newDay wandering-monster check started a fight on the same step
+ * that would otherwise have dispatched the destination cell's feature.
+ * Called from `engine/engine.js#applyAction` after EVERY dispatched
+ * action, so it fires on the first action for which every guard below is
+ * satisfied — often the very action that ends the fight, sometimes a later
+ * one (a spoils pile, a find or an open store must settle first).
+ *
+ * A no-op when nothing is pending. Clears `state.pendingTile` and does
+ * NOTHING else when the hero died this fight — there is nothing left to
+ * resolve. Otherwise WAITS (leaves `state.pendingTile` untouched, changes
+ * nothing else) while combat, a non-empty `state.pendingLoot` pile, a
+ * `state.pendingFind` prompt, or an open `state.store` is still up — a
+ * feature dispatch must never interrupt any of those. Once every guard
+ * clears, this ALWAYS clears `state.pendingTile` FIRST (so it can never
+ * fire twice for the same tile) and then either resolves the feature — the
+ * hero is alive, still standing on that exact `{x, y, depth}`, and the cell
+ * still carries a feature: pushes `tileResumed { feat }` and calls the SAME
+ * `resolveFeature` dispatch `move` itself uses — or leaves it for later (the
+ * hero walked off, descended to a different floor, or the feature was
+ * somehow already cleared): no event, no dispatch, the feature (if any)
+ * stays on the map.
+ */
+export function resolvePendingTile(state, rng, events = []) {
+  const pending = state.pendingTile;
+  if (!pending) return events;
+  if (state.dead) {
+    state.pendingTile = null;
+    return events;
+  }
+  if (state.combat || (state.pendingLoot && state.pendingLoot.length) || state.pendingFind || state.store) {
+    return events;
+  }
+  state.pendingTile = null;
+  const f = state.floor;
+  if (f.depth !== pending.depth || f.px !== pending.x || f.py !== pending.y) return events;
+  const cell = f.g[pending.y] && f.g[pending.y][pending.x];
+  if (!cell || !cell.feat) return events;
+  events.push({ type: "tileResumed", feat: cell.feat });
+  resolveFeature(state, cell, rng, events);
   return events;
 }
 
@@ -657,7 +731,6 @@ export function nightlyEats(state) {
 export function newDay(state, camped, rng, events = [], now = Date.now) {
   const c = state.c;
   state.day++;
-  c.spellsUsed = 0;
   c.might = 0;
   if (c.strengthBoost) {
     c.maxWP -= c.strengthBoost;
@@ -667,6 +740,16 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   const R = RACES[c.race];
   let cost = upkeep(c);
   const eats = nightlyEats(state);
+  // RULES-15 (Phase 75, user 2026-09-25, DECLARED CANON DIVERGENCE — the
+  // prototype refills every spell book unconditionally at the top of its own
+  // newDay): read whether ANY book (the hero's or a live member's) currently
+  // has spent charges BEFORE the fed/unfed branch below decides whether to
+  // refill them or leave them exactly as they are. Read-only — the actual
+  // resets move into the fed branch, right after `rationsEaten`, below;
+  // nothing here mutates `c.spellsUsed`/`m.spellsUsed` yet.
+  const heroBookSpent = c.spellsUsed > 0;
+  const memberBookSpent = !!(state.party?.length && state.party.some((m) => m.spellsUsed > 0));
+  const anyBookSpent = heroBookSpent || memberBookSpent;
   // PARTY-10 (Phase 11, party-LOCAL balance): a joiner is a real resource cost,
   // not free power — the canon counterweight is that a party EATS MORE. Each
   // LIVE party member folds its own hunger into the daily food math: the

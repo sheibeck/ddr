@@ -1087,6 +1087,14 @@ export const LINE_FOR = {
     tone: "hurt",
     priority: PRIORITY.feature,
   }),
+  // RULES-12 (Phase 75, user 2026-09-25): the rail's own copy of the tile a
+  // wandering monster interrupted, resolving now that the fight (and any
+  // spoils/find/store) is settled. Mirrors eventNarration.js's own clause map.
+  tileResumed: (e) => ({
+    text: `Settled — ${{ dot: "the dropped coin", trap: "the trap", chest: "the chest", tele: "the teleporter", exit: "the stairs down", gate: "the stairs down" }[e?.feat] || "the tile"}.`,
+    tone: "beat",
+    priority: PRIORITY.feature,
+  }),
   // Phase 25.1 (DFB-06): still an amber block, priority 0, non-empty for a
   // bare payload; on the camp action the narrative ctx (NARRATIVE_ACTIONS)
   // shows the Oracle sentence instead — this is the fallback/coverage text.

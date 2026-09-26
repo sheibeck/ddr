@@ -298,6 +298,20 @@ export const EVENT_NARRATION = {
   // byte-identical.
   wanderingMonster: (e) =>
     `Something in the dark takes an interest in you. <span class="roll">${e.hours ?? 0} of 8 night-hours disturbed.</span>${e.bard ? " Something too stupid to know better heard the singing." : ""}`,
+  // RULES-12 (Phase 75, user 2026-09-25, DECLARED CANON DIVERGENCE — the
+  // prototype simply drops a tile the wandering-monster check interrupted):
+  // the fight (and any spoils/find/store after it) has settled, the hero is
+  // still standing on the tile, and the feature it was holding under its
+  // boots resolves now, keyed on `feat` — the SAME six values move()'s own
+  // destination-cell dispatch reads. The feature's own event follows
+  // immediately after this one, narrating what actually happened.
+  tileResumed: (e) => {
+    const clause =
+      { dot: "the dropped coin", trap: "the trap", chest: "the chest", tele: "the teleporter", exit: "the stairs down", gate: "the stairs down" }[
+        e?.feat
+      ] || "the tile";
+    return `<span class="beat">With that settled — ${clause}.</span>`;
+  },
   // Phase 25.1 (DFB-06): the refusal states the numbers — the hero's need,
   // what's on hand, and (when a party exists) who else is eating. A bare
   // `{type}` payload (the coverage test's shape) renders "?" rather than

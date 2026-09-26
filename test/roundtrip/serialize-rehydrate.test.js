@@ -307,6 +307,22 @@ for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
   });
 }
 
+// RULES-12 (Phase 75, user 2026-09-25): a pending tile (the record a
+// newDay wandering-monster check leaves under the hero — see
+// engine/movement.js#resolvePendingTile) round-trips losslessly too, the
+// same sibling proof pendingLoot's own test above gives.
+test("Phase 75 (RULES-12): a state carrying a pendingTile record round-trips losslessly and idempotently", () => {
+  const state = newRun(1);
+  state.pendingTile = { x: state.floor.px, y: state.floor.py, depth: state.floor.depth };
+
+  const stripped = stripVolatileFields(state);
+  const rehydrated = JSON.parse(JSON.stringify(stripped));
+  assert.deepStrictEqual(rehydrated, stripped, "a pendingTile record must round-trip losslessly");
+
+  const again = JSON.parse(JSON.stringify(stripVolatileFields(JSON.parse(JSON.stringify(stripped)))));
+  assert.deepStrictEqual(again, stripped, "double round-trip is idempotent");
+});
+
 // "win fixture round-trip" test DELIBERATELY RETIRED in 03-02 (endless
 // descent): the win path is no longer a reachable run terminator, so there
 // is no win-path state left to prove round-trips (Phase 46, DEAD-04, later
