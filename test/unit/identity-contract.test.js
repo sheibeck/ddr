@@ -54,7 +54,7 @@ import { rollCheck, atLeastFor } from "../../engine/dice.js";
 import { meetJoiner, resolveJoiner, springTrap, openChest } from "../../engine/encounters.js";
 import { priceFor, sellPriceFor } from "../../engine/economy.js";
 import { newDay, makeCamp, cutthroatMurderCheck } from "../../engine/movement.js";
-import { castSpell, canRead } from "../../engine/magic.js";
+import { castSpell } from "../../engine/magic.js";
 import { makeRng } from "../../engine/rng.js";
 import { startEffect } from "../../engine/effects.js";
 import { CLASSES, RACES, ARMORS, ENC_TYPES, WEAPON_MAX, SPELLS, STRIKE_DICE } from "../../content/index.js";

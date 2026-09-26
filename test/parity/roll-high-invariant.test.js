@@ -109,6 +109,15 @@ const OUTCOME = {
   // only ever fires on the FAILED side of its own steady-hands check (a
   // successful use never pushes pilferFumbled at all).
   pilferFumbled: () => false,
+  // RULES-10 (Phase 75.1): an "intel" scroll reader's own d20, on its own
+  // derived stream. scrollDeciphered only fires on the SUCCEEDED side
+  // (roll >= atLeast); scrollGarbled/scrollFumbled both only ever fire on
+  // the FAILED side of the same check (one above the fumble band, one
+  // below it) — a Magic User/Runes reader never carries roll fields on
+  // scrollRead at all, so I3 never runs on those.
+  scrollDeciphered: () => true,
+  scrollGarbled: () => false,
+  scrollFumbled: () => false,
   // 73-07 rows: the foe's own to-hit rolls (hero branch, member branch,
   // pursuit) and the hero's own armor soak. Each fires on only ONE side of
   // its own check, so the outcome is a constant, exactly like the 73-04/06

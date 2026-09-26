@@ -308,10 +308,12 @@ test("useItem: a Cat Burglar using the same Strength potion is NOT refused", () 
   assert.equal(potionMight(state.c), 8);
 });
 
-test("canRead: a Pilfer still cannot read scrolls (unchanged)", async () => {
-  const { canRead } = await import("../../engine/magic.js");
+test("readScroll: a Pilfer now reads under the intelligence rule — never refused (RULES-10, Phase 75.1: canRead is gone)", async () => {
+  const { readScroll } = await import("../../engine/magic.js");
   const state = fixedState({ c: { sub: "Pilfer", cls: "Thief", scrolls: 1 } });
-  assert.equal(canRead(state), false);
+  const events = readScroll(state, makeRng(1), []);
+  assert.equal(state.c.scrolls, 0, "the scroll is consumed either way");
+  assert.ok(!events.some((e) => e.type === "scrollRefused"), "never refused for being a Pilfer");
 });
 
 /* ============================================================
