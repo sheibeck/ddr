@@ -330,13 +330,13 @@ Plans:
   4. From floor 12, foe HP and hit climb on a steeper slope and the roster keeps escalating past today's level-5 tier cap, with slopes set by bot readouts.
   5. From floor 12, foes increasingly resist or shake off Freeze, Stone, Doze and Weaken, so a control-lock rotation no longer carries a caster to depth 40.
 
-**Plans**: 0/6 plans executed
+**Plans**: 2/6 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 75.3-01-PLAN.md — Foe count grows with depth (RULES-16) with the same draws: floors 1-4 as today, 5-9 solo only on a d4 of 1, 10+ never solo (wandering included), 20+ three; FOE_COUNT_DEPTH dial; BEFORE/AFTER readouts, flag if the median drops below 5 (wave 1)
-- [ ] 75.3-02-PLAN.md — Deep-floor instruments: the bot's opt-in control rotation, the fit tool's tail objective on deep-start slices, and the phase BEFORE from depths 12/20/30/40 plus the rotation Sorcerer and a Troll Summoner (wave 1)
+- [x] 75.3-01-PLAN.md — Foe count grows with depth (RULES-16) with the same draws: floors 1-4 as today, 5-9 solo only on a d4 of 1, 10+ never solo (wandering included), 20+ three; FOE_COUNT_DEPTH dial; BEFORE/AFTER readouts, flag if the median drops below 5 (wave 1)
+- [x] 75.3-02-PLAN.md — Deep-floor instruments: the bot's opt-in control rotation, the fit tool's tail objective on deep-start slices, and the phase BEFORE from depths 12/20/30/40 plus the rotation Sorcerer and a Troll Summoner (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -635,7 +635,7 @@ Plans:
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 13/13 | Complete    | 2026-09-25 |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
-| 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
+| 75.3. Deep-Floor Encounter Scaling | v2.1 | 2/6 | In Progress|  |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
