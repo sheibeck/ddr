@@ -68,11 +68,14 @@ function comparable(state) {
   // Phase 46 (DEAD-04): strip the prototype-side win flag too — see
   // harness/comparables.js's Phase 46 rationale (a retired-field carve-out,
   // stripRetiredCounterFields precedent).
+  // RULES-12 (Phase 75): strip `state.pendingTile` too — an eighth analog,
+  // mirroring harness movementComparable; always null on this fixture (no
+  // replay site here emits wanderingMonster while stepping onto a feature).
   state = reconcilePendingFight(state);
   // Phase 65 (RUN-01): strip `state.acts` too, the run's validated-action
   // counter (engine/engine.js#applyAction). Engine-only bookkeeping with no
   // prototype-side equivalent, and a plain strip (no reconcile).
-  const { beats, seed, rngState, version, won, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, acts, ...rest } = state;
+  const { beats, seed, rngState, version, won, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, pendingTile, acts, ...rest } = state;
   // Phase 40 (SPELL-05, Plan 04): strip the new engine-only spellSeen
   // provenance flag too (see harness stripSpellSeen) — mirrored here
   // because this file keeps its own local comparable(). No movement

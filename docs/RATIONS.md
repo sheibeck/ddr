@@ -68,6 +68,37 @@ Two sources, cross-checked:
   adopt — it IS the prototype's `FOODS` bank (Chicken, Bread, Water, Ale,
   Meat, …), already ported verbatim; nothing further to reconcile.
 
+## Spell books refill only on a fed day (RULES-15, Phase 75)
+
+**Declared canon divergence** (user, 2026-09-25; `docs/DIFFICULTY-RETUNE.md` and
+`test/parity/FIXTURE-INVENTORY.md` carry the fixture-impact record). The
+prototype refills the hero's spell book (and, engine-only, every live
+member's) unconditionally at the top of `newDay` — before it even checks
+whether the party ate. The engine now moves both refills INSIDE the fed
+branch, right after `rationsEaten`, beside the rest heal:
+
+- A **fed** night (`c.rations >= nightlyEats(state)`) — camping, or the
+  automatic 100-square day, either one — refills every spent book to full,
+  exactly as before. `rationsEaten` carries `refilled: true` when a book
+  actually had spent charges to refill.
+- An **unfed** night refills NOTHING. A spent book stays exactly as spent as
+  it was the moment before. If the hero survives the hunger, `wentHungry`
+  carries `booksKept: true` and both the Oracle and the rail say why: "No
+  supper, no sleep worth the name. Your book stays empty." A hero who starves
+  to death that same tick gets no book line at all — the `died` event
+  supersedes it.
+- Rations exactly equal to `nightlyEats(state)` still count as fed (refills
+  every book); one ration short refills none.
+- The Magic User's 20-square trickle (`engine/movement.js#move`, one spent
+  charge back every 20 squares while any remain spent) is **unchanged** —
+  this rule only touches the once-a-day full refill, never the per-step one.
+- The Make Camp sheet's own copy (`mazeworld.html#MAP_COPY.camp.copy`) now
+  says plainly that eating is what buys the full book, not just the rest.
+
+This is a genuine gameplay divergence, not a fidelity bug — a starving Magic
+User (or a starving member) now feels the cost of an empty larder past the
+next fight, not just past the next sunrise.
+
 ## Missing prototype rules found
 
 None. Every ration/upkeep rule the frozen prototype implements (R1, R4-R9)

@@ -729,6 +729,13 @@ export function validateSave(raw, options = {}) {
     // pendingFind above; a tampered/stale save-side value is never trusted
     // (T-39-11) — the engine re-derives the decision on the next step.
     pendingHazard: null,
+    // RULES-12 (Phase 75, user 2026-09-25): pendingTile is transient run
+    // state too — always reset to null on load, exactly like pendingHazard
+    // just above. Combat itself does not survive a relaunch until Phase 76
+    // (SAV-06) persists them together, so a save carrying a mid-resolution
+    // tile has nothing left to resume it with; the feature (if the cell
+    // still has one) simply waits for the next ordinary step onto it.
+    pendingTile: null,
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };
@@ -819,6 +826,9 @@ export function rehydrate(obj) {
     // reset to null on load, exactly like pendingFind just above (mirrors
     // validateSave's own reset above).
     pendingHazard: null,
+    // RULES-12 (Phase 75, user 2026-09-25): pendingTile mirrors
+    // validateSave's own reset above — see its comment there.
+    pendingTile: null,
     // Phase 29 (LOOT-06): pendingLoot is PERSISTENT run state (unlike
     // pendingFind just above) — the player must still get their loot screen
     // back on resume, so it is carried through here, never reset.

@@ -216,6 +216,18 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     // to `null` on load (engine/saveState.js). The parity harness strips
     // this top-level field the same way it strips pendingFind.
     pendingHazard: null,
+    // RULES-12 (Phase 75, user 2026-09-25): the tile a newDay wandering-
+    // monster check interrupted mid-step — a top-level sibling of
+    // pendingFind/pendingHazard (NOT a field on `c`), an EIGHTH analog of
+    // party/pendingJoiner/pendingFind/pendingLoot/dev/storeRoll/
+    // pendingHazard. `{ x, y, depth }` while a feature dispatch is waiting
+    // on a fight (and any spoils/find/store) to settle, else `null`.
+    // Initialized to `null` here as a plain assignment (NO rng draw) —
+    // transient like pendingHazard/pendingFind: reset to `null` on load
+    // (engine/saveState.js) until Phase 76 (SAV-06) persists it together
+    // with the live fight it was waiting on. The parity harness strips this
+    // top-level field the same way it strips pendingHazard.
+    pendingTile: null,
     // Phase 29 (LOOT-01/06): the end-of-combat drop pile — a top-level
     // sibling of pendingFind, initialized to a plain empty array (NO rng
     // draw, so the seeded chargen cursor the determinism/parity suites pin

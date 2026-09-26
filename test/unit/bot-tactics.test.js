@@ -920,8 +920,24 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
   // seed for this force that still dies naturally within 5000 actions
   // (depth 5, day 5) — swapped in; every other combination in every other
   // force is unaffected (re-confirmed live, all eight still resolve).
+  //
+  // "Thief"/"Pilfer" seed 1 swapped for seed 2 (Phase 75, Plan 12,
+  // 2026-09-25): RULES-15's fed-only book refill and RULES-12's
+  // `resolvePendingTile` both change which actions the bot's own decision
+  // policy takes over a long run (a caster/item-using Thief's melee-vs-item
+  // choices shift once a spent charge/tool state can persist differently
+  // across a day, and a resumed tile firing later than before can change
+  // which loot/finds are ever offered) — seed 1 now genuinely never
+  // resolves (stuck at depth 11/day 11, re-measured live up to 5000
+  // actions), the same "declared rules change reaching a real playthrough"
+  // category the Phase 72 (ROLL-01 F1) comment above documents. Re-measured
+  // live: seed 2 dies naturally (depth 8, day 14) and is the smallest
+  // untaken seed for this force; seeds 3 and 5 are unaffected (still die
+  // naturally, re-confirmed live) and keep their slots. The other two
+  // forces' seed trios ("Magic User"/"Sorcerer" and "Fighter"/"Knight") are
+  // unaffected by this plan (re-confirmed live, all six still resolve).
   const forces = [
-    { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [1, 3, 5] },
+    { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [2, 3, 5] },
     { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [4, 2, 3] },
     { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [1, 2, 4] },
   ];

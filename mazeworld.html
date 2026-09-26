@@ -3102,7 +3102,10 @@ const COMBAT_COPY = {
 // this one for the stair-down overlay.
 const MAP_COPY = {
   camp: {
-    copy: "Eight hours asleep in a corridor that has already killed better people than you. One ration. We roll to see what wanders past.",
+    // RULES-15 (Phase 75, user 2026-09-25): eating is what refills the book
+    // — states the rule plainly, not just the rest and the wandering-monster
+    // roll.
+    copy: "Eight hours asleep in a corridor that has already killed better people than you. One ration buys the sleep and a full spell book. We roll to see what wanders past.",
     sleep: "SLEEP\n1 RATION",
     walk: "WALK\nON",
   },

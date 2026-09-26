@@ -535,7 +535,14 @@ export function movementComparable(state) {
   // Phase 65 (RUN-01): strip `state.acts` too, the run's validated-action
   // counter (engine/engine.js#applyAction). Engine-only bookkeeping with no
   // prototype-side equivalent, and a plain strip (no reconcile).
-  const { beats, seed, rngState, version, won, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, acts, ...state0 } = state;
+  // RULES-12 (Phase 75): strip `state.pendingTile` too — an EIGHTH analog of
+  // party/pendingJoiner/pendingFind/pendingLoot/dev/storeRoll/pendingHazard:
+  // transient decision state (engine/movement.js's wandering-monster-
+  // interrupted-tile record), always null on every fixture and the bot
+  // (measured — no replay site emits wanderingMonster while stepping onto a
+  // feature), no prototype-side equivalent. A plain strip (no reconcile
+  // needed — always null here).
+  const { beats, seed, rngState, version, won, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, pendingTile, acts, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing (no-op when none pending). See reconcilePendingFind.
   // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST (drops happen
@@ -631,7 +638,10 @@ export function combatComparable(state) {
   // Phase 65 (RUN-01): strip `state.acts` too, the run's validated-action
   // counter (engine/engine.js#applyAction). Engine-only bookkeeping with no
   // prototype-side equivalent, and a plain strip (no reconcile).
-  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, acts, ...state0 } = state;
+  // RULES-12 (Phase 75): strip `state.pendingTile` too — see
+  // movementComparable's rationale above (eighth analog of party/
+  // pendingJoiner/pendingFind/pendingLoot/dev/storeRoll/pendingHazard).
+  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, pendingTile, acts, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find (no-op when none pending).
   // Phase 29 (LOOT-01/06): reconcile a deferred loot pile FIRST — see
   // movementComparable's rationale above (drops happen in the fight, a find
@@ -1163,7 +1173,10 @@ export function economyComparable(state) {
   // Phase 65 (RUN-01): strip `state.acts` too, the run's validated-action
   // counter (engine/engine.js#applyAction). Engine-only bookkeeping with no
   // prototype-side equivalent, and a plain strip (no reconcile).
-  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, acts, ...state0 } = state;
+  // RULES-12 (Phase 75): strip `state.pendingTile` too — see
+  // movementComparable's rationale above (eighth analog of party/
+  // pendingJoiner/pendingFind/pendingLoot/dev/storeRoll/pendingHazard).
+  const { beats, seed, rngState, version, won, lastExchange, exchangeN, party, pendingJoiner, pendingFind, pendingLoot, dev, storeRoll, pendingHazard, pendingTile, acts, ...state0 } = state;
   // ECON-03/04/05 (Phase 13): reconcile a deferred find to the prototype's
   // auto-take before comparing — the `chest` (seed 2) and `faerie` (seed 38)
   // encounters fixtures drive a find path; no-op elsewhere. See reconcilePendingFind.

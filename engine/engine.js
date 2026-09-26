@@ -16,7 +16,7 @@
 import { newRun } from "./state.js";
 import { validateAction } from "./actions.js";
 import { makeRng } from "./rng.js";
-import { move, makeCamp, useTool } from "./movement.js";
+import { move, makeCamp, useTool, resolvePendingTile } from "./movement.js";
 import { fight, playerStrike, flee, parley, sing } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useAbility } from "./abilities.js";
@@ -181,6 +181,14 @@ export function applyAction(state, action) {
     default:
       break;
   }
+
+  // RULES-12 (Phase 75): after EVERY dispatched action (not just "move"),
+  // give a tile a wandering monster interrupted a chance to finish
+  // resolving — a spoils pile emptied by takeAllLoot/leaveAllLoot, a fight
+  // ended by flee/attack/a spell kill, a find/store closing, all funnel
+  // through here. A no-op when `next.pendingTile` is null (every fixture,
+  // every action that never sets it). See resolvePendingTile's own JSDoc.
+  if (next.pendingTile) resolvePendingTile(next, rng, events);
 
   // Persist the RNG cursor after any handler use (a no-op today for handlers
   // that don't roll, since getState() returns the unchanged cursor).

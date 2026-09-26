@@ -38,6 +38,10 @@ function isQuiet(state) {
     !state.pendingJoiner &&
     !state.pendingFind &&
     !state.pendingHazard &&
+    // RULES-12 (Phase 75, Plan 12): pendingTile is a ninth transient
+    // decision field, mirroring pendingHazard just above — never snapshot
+    // mid-resolution.
+    !state.pendingTile &&
     (!state.pendingLoot || state.pendingLoot.length === 0)
   );
 }

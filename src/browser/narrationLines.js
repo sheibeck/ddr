@@ -1081,10 +1081,24 @@ export const LINE_FOR = {
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost — a cost, so it is
   // narrated (never ORACLE_ONLY), not just bookkeeping.
   rationsEaten: (e) => ({ text: `Rations: −${e?.eats ?? 0} (${e?.left ?? 0} left).`, tone: "beat", priority: PRIORITY.other }),
-  wentHungry: (e) => ({ text: `Hunger: no rations (−${e?.cost ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // RULES-15 (Phase 75, user 2026-09-25): the rail line still says WHY a
+  // spent book stays empty — mirrors eventNarration.js's own `booksKept` clause.
+  wentHungry: (e) => ({
+    text: `Hunger: no rations (−${e?.cost ?? 0} hp).${e?.booksKept ? " Book stays empty." : ""}`,
+    tone: "hurt",
+    priority: PRIORITY.other,
+  }),
   wanderingMonster: (e) => ({
     text: `Camp disturbed.${e?.bard ? " · Bard: the singing carried" : ""}`,
     tone: "hurt",
+    priority: PRIORITY.feature,
+  }),
+  // RULES-12 (Phase 75, user 2026-09-25): the rail's own copy of the tile a
+  // wandering monster interrupted, resolving now that the fight (and any
+  // spoils/find/store) is settled. Mirrors eventNarration.js's own clause map.
+  tileResumed: (e) => ({
+    text: `Settled — ${{ dot: "the dropped coin", trap: "the trap", chest: "the chest", tele: "the teleporter", exit: "the stairs down", gate: "the stairs down" }[e?.feat] || "the tile"}.`,
+    tone: "beat",
     priority: PRIORITY.feature,
   }),
   // Phase 25.1 (DFB-06): still an amber block, priority 0, non-empty for a
