@@ -11,6 +11,15 @@
 // NEVER regenerate this fixture in Phase 73 (`node tools/roll-high-
 // baseline.mjs save` is for the pre-switch engine only — the whole point is
 // a snapshot from BEFORE the switch to compare against).
+//
+// RULES-11 (Phase 75.2, Plan 02, 2026-09-26): the fixture's own
+// `expected.hash` (ONLY — never `save`/`dispatched`) was re-recorded; see
+// the fixture JSON's own `note` field for the full bisection. Root cause:
+// dispatched index 192 sets `pendingFind` to an Enlarge potion whose `txt`
+// carries content/potions.js's rewritten wording — `pendingFind` is part
+// of the serialized/hashed state, so a purely cosmetic content edit moves
+// the hash even though the potion is never drunk within this fixture's own
+// budget (`dead`/`depth`/`actions` are unchanged: false/4/300).
 
 import test from "node:test";
 import assert from "node:assert/strict";

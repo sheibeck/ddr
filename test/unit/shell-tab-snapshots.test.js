@@ -45,6 +45,18 @@
 //     the compare line instead of trailing after it. Food, rations, the
 //     sealed scroll and repair keep their engine sub byte-for-byte (R-07).
 //
+// Phase 75.2 (RULES-11), Plan 02: ONE declared regeneration —
+// thief-store.store's Enlarge potion row's italic text moves from "one
+// size up, +4 damage, 50 squares" to "one size larger for fifty squares:
+// +2 damage, and one face easier for foes to hit" (content/potions.js's
+// rewritten Enlarge txt — Enlarge is now exactly a +1 size step, its
+// separate might-kind damage payload removed). Confirmed via
+// `git diff --name-only` at regeneration time: every other of the eight
+// committed fixtures (mu-store.store, mu.gear, mu.hero, thief.gear,
+// thief.gear-sheet-bag, thief.gear-sheet-worn, thief.hero) is byte-for-byte
+// unchanged — none of them ever renders an Enlarge potion or a Gauntlet of
+// the Giant row.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

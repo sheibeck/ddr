@@ -111,15 +111,37 @@ const PINNED = {
   "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "3371e1f8bfdce95fed2d9bc4ea7d854e1718c9c6a69de3cae070f8bb80fd4cbc" },
   "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "444ec2ca839587b2249e6f89828a40fef887b2668b935c228a510e99c4ac4207" },
   "party-1": { actions: 400, dead: false, depth: 4, hash: "ab7a42cbfcc8f9cad5845ce73e5f51b59a1942f4cb0ff25c1e2a78591c0aa61d" },
-  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "9669a284892cfc0a815fb19b689a5b6bb2e9f021a23a4f024288fbb27f00b70d" },
+  // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
+  // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
+  // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
+  // carried Enlarge potion or Gauntlet of the Giant) confirmed NEITHER run
+  // ever fires an `itemEffectStarted` for either item; the sole divergence
+  // is the Gauntlet of the Giant's rewritten `txt` field (content/
+  // treasure-tables.js — "one size larger... +2 damage, and one face
+  // easier for foes to hit", replacing the old "mind the ceilings"
+  // wording), carried verbatim in this harness's full, unstripped state
+  // hash once the item enters the bag: "party-fighter-knight" picks one up
+  // at bot action 111 (still unused at action 400); "deep-8" at bot action
+  // 16 (still unused at action 93, when the run ends in death). Every
+  // OTHER label re-measured byte-identical (no other pin's hero or party
+  // ever carries a Gauntlet of the Giant or an Enlarge potion within its
+  // own action budget). `actions`/`dead`/`depth` are UNCHANGED for both —
+  // only the hash moved, exactly as expected for a purely cosmetic content
+  // edit reaching a real playthrough's serialized state. Regenerated via
+  // `node tools/roll-high-baseline.mjs pins` (each hashed identically
+  // twice).
+  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "a5f8ac7c4d2e9d54d599662239472d803d01336ca8a0c71044c48b9ba35366ce" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
   // the RULES-03 comment block above; "deep-14" (a Thief) is unaffected by
   // either plan's change and keeps its Plan 02 value. Both re-measured
   // byte-identical again by Plan 12 — see the "solo-thief-pilfer" comment
-  // block above.
-  "deep-8": { actions: 93, dead: true, depth: 9, hash: "74fedc2dd92b7a34da2bc505dcd7c2575b43726e24b6b07e23b39c5f40f9cace" },
+  // block above. "deep-8" re-pinned YET AGAIN by Phase 75.2, Plan 02 (see
+  // the "party-fighter-knight" comment block above) — a Gauntlet of the
+  // Giant's rewritten `txt`, not a decision change; "deep-14" re-measured
+  // byte-identical (no Gauntlet/Enlarge within its own action budget).
+  "deep-8": { actions: 93, dead: true, depth: 9, hash: "d1401713f00e25c27a73855a55e7dfa0fbda4c7ffe979904235583951617569c" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll

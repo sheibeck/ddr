@@ -109,6 +109,12 @@ every other combat action; a genuinely free action once Fight! is pressed).
 the "Pilfer" column below is allowed for every row (identical to any other
 sub-class); the superseded per-row `useRefused pilfer` refusal is gone.
 
+**RULES-11 (Phase 75.2, Plan 02, user ruling 2026-09-25):** Enlarge no
+longer carries a `might`-kind damage payload — it is exactly ONE size
+step (`act.kind: "enlarge"`, `eff: { size: 1 }`), stacking with a live
+Gauntlet of the Giant record to +2 steps; see §4's jewelry section for the
+Gauntlet's own matching row.
+
 | Potion | eff | Explore | Combat | Pending | Pilfer |
 |---|---|---|---|---|---|
 | Healing | heal | `healed` | `healed` | `useRefused notFought` | allowed |
@@ -117,7 +123,7 @@ sub-class); the superseded per-row `useRefused pilfer` refusal is gone.
 | Xtra Healing | full | `healed` | `healed` | `useRefused notFought` | allowed |
 | Strength | strength | `itemUsed` (might+8) | same | `useRefused notFought` | allowed |
 | Cure Disease | disease | `cured` | `cured` | `useRefused notFought` | allowed |
-| Enlarge | enlarge | `itemUsed` (might+4) | same | `useRefused notFought` | allowed |
+| Enlarge | enlarge | `itemUsed` (size +1, 50 squares) | same | `useRefused notFought` | allowed |
 | Acuteness | acute | `itemUsed` (acute=d8) | same | `useRefused notFought` | allowed |
 | Death | death | `died` | `died` | `useRefused notFought` | allowed |
 | Invisible | invis | `itemUsed` (invis=100) | same | `useRefused notFought` | allowed |

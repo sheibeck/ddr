@@ -1,7 +1,7 @@
 {
   "baseCommit": "724033b",
   "rollLogicUnchangedSince": "c3513b0",
-  "note": "This save was written by the pre-switch engine at commit 724033b (recorded above). `git diff --stat c3513b0 724033b -- engine/` touches only engine/records.js (Phase 81 leaderboard bookkeeping) — the roll logic itself is unchanged since the Phase 72 close (c3513b0). The switch keeps every stored number's meaning, so no migration exists and none is needed. A failure means a check was flipped wrong or a stored field changed meaning. Never regenerate this fixture in Phase 73.",
+  "note": "This save was written by the pre-switch engine at commit 724033b (recorded above). `git diff --stat c3513b0 724033b -- engine/` touches only engine/records.js (Phase 81 leaderboard bookkeeping) — the roll logic itself is unchanged since the Phase 72 close (c3513b0). The switch keeps every stored number's meaning, so no migration exists and none is needed. A failure means a check was flipped wrong or a stored field changed meaning. Never regenerate this fixture in Phase 73. RULES-11 (Phase 75.2, Plan 02, 2026-09-26): `expected.hash` re-recorded ONLY — `save`/`dispatched` untouched. Bisected live: dispatched index 192 (a `move E`) sets `pendingFind` to an Enlarge potion whose `txt` is content/potions.js's rewritten wording (\"one size larger for fifty squares: +2 damage, and one face easier for foes to hit\", replacing \"one size up, +4 damage, 50 squares\") — this txt string is part of the serialized/hashed state, so the hash moves from that action onward even though `dead`/`depth`/`actions` (false/4/300) are unchanged and the potion is never used within the fixture's own 300-action budget. A purely cosmetic content edit reaching a real recorded continuation, not a decision/outcome change.",
   "seed": 909,
   "opts": {
     "party": true,
@@ -3644,6 +3644,6 @@
     "actions": 300,
     "dead": false,
     "depth": 4,
-    "hash": "731f679a1244287c1b9b230f83c001e621183aa728f1e422cb132514afe45890"
+    "hash": "43b71a386bc07ac0e06e997636bd8c08fe66a96886e61f9f01ad7538428310fd"
   }
 }
