@@ -268,7 +268,23 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
   let heroOutEverSet = !!(state.combat && state.combat.heroOut);
   let heroBlindEverSet = !!(state.combat && state.combat.heroBlind);
   let heroShrunkEverSet = !!(state.combat && state.combat.heroShrunk);
+  // Phase 75.3 (RULES-16..18, Plan 07): fightDepths records the floor of
+  // every fight the replay starts (an encounterStarted event, or a combat
+  // that was absent before the action and present after it), and
+  // foeFlagsEver records whether any live combat foe ever carried a Phase
+  // 75.3 field (elite, held, resisted) at ANY point — endCombat clears the
+  // combat, so a final-state-only check would miss it. Additive: no older
+  // test destructures these fields.
+  const fightDepths = [];
+  const foeFlagsEver = { elite: false, held: false, resisted: false };
+  const noteFoeFlags = (combat) => {
+    for (const f of (combat && combat.foes) || []) {
+      for (const key of Object.keys(foeFlagsEver)) if (f && f[key]) foeFlagsEver[key] = true;
+    }
+  };
+  noteFoeFlags(state.combat);
   for (const action of actions) {
+    const hadCombat = !!state.combat;
     let result;
     if (action.type === "startCombat") {
       result = applyStartCombat(state, action.wandering, action.forced);
@@ -287,6 +303,8 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
     if (state.combat && state.combat.heroOut) heroOutEverSet = true;
     if (state.combat && state.combat.heroBlind) heroBlindEverSet = true;
     if (state.combat && state.combat.heroShrunk) heroShrunkEverSet = true;
+    if (events.some((e) => e.type === "encounterStarted") || (!hadCombat && state.combat)) fightDepths.push(state.floor.depth);
+    noteFoeFlags(state.combat);
   }
   return {
     state,
@@ -298,6 +316,8 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
     heroOutEverSet,
     heroBlindEverSet,
     heroShrunkEverSet,
+    fightDepths,
+    foeFlagsEver,
   };
 }
 
@@ -1152,4 +1172,115 @@ test("RULES-11 exposure guard has teeth: a doctored event list carrying one gian
   // FAIL against this doctored list.
   assert.throws(() => assert.equal(counts.itemEffectStartedGiant, 0), assert.AssertionError);
   assert.throws(() => assert.equal(counts.sizeMods, 0), assert.AssertionError);
+});
+
+// Phase 75.3 (RULES-16..18, Plan 07 — the phase's own close-out guard):
+// the depth-aware foe count (75.3-01, first rung at floor 5), the knee and
+// the elites (75.3-03, floor 13 and 16 on), and control at depth (75.3-04,
+// 75.3-05, floor 13 on) each measured ZERO moved fixtures — see every
+// plan's own SUMMARY.md and test/parity/FIXTURE-INVENTORY.md's Phase 75.3
+// section (its "Phase 75.3 — summary" names this guard). The positive side:
+// no replay site ever starts a fight on floor 5 or deeper (the shallowest
+// floor any Phase 75.3 rule reads), no combat foe ever carries `elite`,
+// `held` or `resisted` (the three parity carve-outs this phase added), and
+// no event is controlResisted, controlHeld, foeStillHeld or foeHoldBroken.
+// A site that meets any of these must be declared by a Phase 75.3 record;
+// the declared set stays legitimately EMPTY.
+const RULES753_EXPECTED_HOLDERS = [];
+const RULES753_FIRST_FLOOR = 5;
+
+/**
+ * countPhase753Exposure(events) -> the per-event-type counts the 31-site
+ * Phase 75.3 exposure guard below tallies (mirroring countPhase751Exposure's
+ * shape), so the "has teeth" test can feed it a doctored event list. An
+ * encounterStarted whose foe map carries an elite rank counts too.
+ */
+function countPhase753Exposure(events) {
+  return {
+    controlResisted: events.filter((e) => e.type === "controlResisted").length,
+    controlHeld: events.filter((e) => e.type === "controlHeld").length,
+    foeStillHeld: events.filter((e) => e.type === "foeStillHeld").length,
+    foeHoldBroken: events.filter((e) => e.type === "foeHoldBroken").length,
+    eliteEncounter: events.filter((e) => e.type === "encounterStarted" && Array.isArray(e.foes) && e.foes.some((f) => f && f.elite)).length,
+  };
+}
+
+test("RULES-16/17/18 (Phase 75.3): no replay site fights on floor 5 or deeper, no foe carries elite/held/resisted, and no control-at-depth event fires, unless a Phase 75.3 record declares it", () => {
+  let totalSites = 0;
+  const totals = Object.fromEntries(Object.keys(countPhase753Exposure([])).map((k) => [k, 0]));
+  const deepFights = [];
+  const flagged = [];
+  let fightsSeen = 0;
+
+  const tally = (holderId, r) => {
+    fightsSeen += r.fightDepths.length;
+    const counts = countPhase753Exposure(r.events);
+    for (const key of Object.keys(totals)) totals[key] += counts[key];
+    for (const d of r.fightDepths) if (d >= RULES753_FIRST_FLOOR) deepFights.push(`${holderId}@floor${d}`);
+    for (const [key, seen] of Object.entries(r.foeFlagsEver)) if (seen) flagged.push(`${holderId}:${key}`);
+  };
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    newRun(seed); // chargen never dispatches an action at all, let alone starts combat
+  }
+
+  totalSites++;
+  tally("action-script.movement.json#script", replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions));
+
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    tally(`action-script.combat.json#${scenario.name}`, replaySiteEvents(scenario.seed, scenario.actions));
+  }
+
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    tally(`action-script.magic.json#${scenario.name}`, replaySiteEvents(scenario.seed, scenario.actions));
+  }
+
+  totalSites++;
+  tally("action-script.economy.json#script", replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true }));
+
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    tally(`action-script.encounters.json#${scenario.name}`, replaySiteEvents(scenario.seed, scenario.actions));
+  }
+
+  const declared = new Set(
+    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("75.3")).map(({ holderId }) => holderId),
+  );
+  assert.deepStrictEqual(
+    [...declared].sort(),
+    RULES753_EXPECTED_HOLDERS,
+    "the declared Phase 75.3 set is exactly RULES753_EXPECTED_HOLDERS (legitimately empty — no fixture moved)",
+  );
+
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+  // Not vacuous: every fight-starting site (FIGHT_SITE_SEEDS, above) is seen starting one.
+  assert.ok(fightsSeen >= FIGHT_SITE_SEEDS.length, `expected at least ${FIGHT_SITE_SEEDS.length} fights across the replay sites, saw ${fightsSeen}`);
+  const undeclared = (list) => list.filter((entry) => !declared.has(entry.split(/[@:]/)[0]));
+  assert.deepStrictEqual(undeclared(deepFights), [], `a replay site starts a fight on floor ${RULES753_FIRST_FLOOR}+ with no Phase 75.3 record`);
+  assert.deepStrictEqual(undeclared(flagged), [], "a replay site's foe carries a Phase 75.3 field (elite/held/resisted) with no Phase 75.3 record");
+  for (const key of Object.keys(totals)) {
+    assert.equal(totals[key], 0, `expected zero ${key} events across every replay site`);
+  }
+});
+
+test("RULES-16/17/18 exposure guard has teeth: a doctored event list carrying a controlResisted event (and an elite encounter) is caught by the same counting function", () => {
+  const doctored = [
+    { type: "controlResisted", target: "Ogre", effect: "freeze", source: "Freeze", roll: 17, atLeast: 13, dieN: 20, depth: 20 },
+    { type: "encounterStarted", foes: [{ name: "Grim Ogre", elite: 2 }, { name: "Rat" }] },
+    // Controls that must NOT be counted: an encounter with no elite, and an
+    // unrelated event type.
+    { type: "encounterStarted", foes: [{ name: "Rat" }] },
+    { type: "frozenSolid", target: "Rat" },
+  ];
+  const counts = countPhase753Exposure(doctored);
+  assert.equal(counts.controlResisted, 1);
+  assert.equal(counts.eliteEncounter, 1);
+  assert.equal(counts.controlHeld, 0);
+  // Prove the zero-count assertions the real guard makes would genuinely
+  // FAIL against this doctored list.
+  assert.throws(() => assert.equal(counts.controlResisted, 0), assert.AssertionError);
+  assert.throws(() => assert.equal(counts.eliteEncounter, 0), assert.AssertionError);
 });

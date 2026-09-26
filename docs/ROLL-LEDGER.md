@@ -780,3 +780,84 @@ second, unaudited size read is caught by the same scanning primitive
 ("has teeth"), proving the guard would fail on a future size rule that
 skips this seam — its own failure message names the fix: read size through
 `sizeAxisStep` and add the new rule's row to this table (S15+).
+
+## Phase 75.3 control at depth (RULES-18)
+
+**Closed:** 2026-09-26 (75.3-04 and 75.3-05; audited and guarded by
+75.3-07). From floor 13 (the knee, `CONTROL_AT_DEPTH.kneeDepth` 12, the
+same knee as RULES-17's curve), foes increasingly shake off control. Every
+control in the audit below first meets a resist: a roll-high d20 drawn from
+the `controlResist` derived stream (never the main rng), where the foe
+resists on `roll >= 21 - faces` and
+`faces = min(resistCap, 19, resistPerDepth × (depth - kneeDepth))` (1 face
+at floor 13, growing by 1 a floor to the `resistCap` of 15 at floor 27; the
+19 is a structural ceiling, never a dial, so a d20's top face always lands
+the control). At or below the knee there are 0 faces and no roll at all.
+A landed Freeze, Ice's last tick, Petrify, the stone items and Stupidity
+HOLD the foe (`foe.held = { kind, left }`) for `holdRounds` (3) instead of
+killing, removing or locking it for the whole fight; `foeTurn`'s held skip
+counts it down and breaks it. Only the indefinite controls are capped (the
+Birch and Cedar staves' 99-round sleep, the Lullaby's 24, Blind, the Walnut
+Staff's weaken, all to `holdRounds`); short rolled durations keep their
+roll. A lethal Freeze still kills. Every draw a control site makes of its
+own stays in its old position, so the main rng is at the same cursor
+whichever way the resist goes.
+
+### Depth-resist site
+
+| Site | Draw | Resistor | Resisted when | Direction row | Stream | Events |
+|---|---|---|---|---|---|---|
+| `engine/derived.js#controlResistCheck` (wrapping `controlResistRoll`), reached only through `engine/combat.js#resistControl` | d20 (`rollCheck`) | the foe | `roll >= 21 - faces` (`atLeast = 21 - faces`), faces by floor as above | `[resist:depth]` (Modifier ledger, 75.3-04) | `controlResist`, keyed `(main cursor, "controlResist", "<effect>:<source>", acts, round, foe index)` | `controlResisted` (with the roll, `atLeast`, `dieN`, depth); `controlHeld`, `foeStillHeld`, `foeHoldBroken` for the hold |
+
+A resist is never silent: `resistControl` either returns false with no
+mutation (a miss, or no roll at the knee or above it) or marks
+`foe.resisted = effect` (the Unmoved chip) and pushes `controlResisted`.
+
+### The control audit (copied from 75.3-04-PLAN.md, "The control audit", with each row's verdict)
+
+"Past the knee" means floor 13 and deeper at the shipped values.
+
+| Id | Effect | Source | Where | Rule past the knee | Verdict | Landed |
+|---|---|---|---|---|---|---|
+| C1 | freeze | Freeze (hero) | magic.js castSpell thrown `onHit` | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold; a blow that leaves the foe at 0 hp still kills | 75.3-05 |
+| C2 | freeze | Freeze (Joiner) | combat.js allyCast | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold | 75.3-04 |
+| C3 | freeze | Ice's last tick | combat.js foeTurn dot payoff | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold | 75.3-04 |
+| C4 | freeze (asleep 99) | Birch Staff | items.js freeze | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)` | 75.3-05 |
+| C5 | stone | Petrify | magic.js petrify | resist; a stone hold instead of the removal | APPLIED: resist, then a stone hold | 75.3-05 |
+| C6 | stone | Oak Staff, Amulet of Stone | items.js stone | resist per foe; a stone hold instead of the kill | APPLIED: resist per target, then a stone hold; `foeStoned` names only the killed foes | 75.3-05 |
+| C7 | sleep | Doze | magic.js status | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-05 |
+| C8 | sleep | Stun | magic.js stun | resist per foe (its d4 stays) | APPLIED: resist per foe; `stunned.count` counts only the foes that slept | 75.3-05 |
+| C9 | sleep | Doze / Stun (Joiner) | combat.js allyCast | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-04 |
+| C10 | sleep | Noxious Vapor's sleep outcome | magic.js vapor | resist per foe (its d6+2 stays) | APPLIED: resist per foe | 75.3-05 |
+| C11 | sleep | Insane's sleep face | magic.js insane | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-05 |
+| C12 | sleep | Cedar Staff gas | items.js gas | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)` | 75.3-05 |
+| C13 | sleep | Bard's Lullaby and Thunder songs | combat.js sing | resist per foe; the Lullaby's 24 capped, Thunder's d8 stays | APPLIED: resist per foe; the Lullaby lasts `controlCapRounds(depth, 24)` | 75.3-04 |
+| C14 | weaken | Weaken (hero) | magic.js weaken | one resist for the room (its d4+1 stays) | APPLIED: one resist keyed on the aimed foe; shaken off, every live foe is marked Unmoved | 75.3-05 |
+| C15 | weaken | Weaken (Joiner) | combat.js allyCast | one resist for the room (its d4+1 stays) | APPLIED: one resist for the room, as C14 | 75.3-04 |
+| C16 | weaken | Walnut Staff | items.js weaken | one resist for the room; timed (was the whole fight) | APPLIED: one resist for the room; a landed weaken starts a `holdRounds` `spell:weaken` timer | 75.3-05 |
+| C17 | stupid | Stupidity | magic.js stupid | resist; a stupid hold (was the whole fight) | APPLIED: resist, then a stupid hold | 75.3-05 |
+| C18 | blind | Blind | magic.js blind | resist; timed blind (was the whole fight) | APPLIED: resist; a landed Blind lasts `blindFor` = `holdRounds` and `blinded` carries `rounds` | 75.3-05 |
+| C19 | shrink | Shrink | magic.js shrink | resist per foe (an instant halving; nothing to cap) | APPLIED: resist per foe; `shrunk.count` counts only the halved | 75.3-05 |
+| X1 | kill outright | Death | magic.js death | OUT: an instant kill, not control (flagged) | OUT (flagged for the user) | — |
+| X2 | kill / flee faces | Noxious Vapor's face 4, Insane's faces 1, 3, 6 | magic.js | OUT: chaos-table outcomes (flagged) | OUT (flagged for the user) | — |
+| X3 | sent away | Turn Walking Dead, Plane Gate | magic.js | OUT: answers, not control (flagged) | OUT (flagged for the user) | — |
+| X4 | hp to 1 | Bard's level-5 song | combat.js sing | OUT: damage, not control (flagged) | OUT (flagged for the user) | — |
+| X5 | one turn / two rounds | Pommel Strike, Dirty Trick | abilities.js | OUT: short ability effects | OUT; exempt in the guard (`applyPommel`, `applyDirtyTrick`) | — |
+| X6 | debuffs | Hamstring, Mark, Acid, Poisoned Edge | abilities.js, magic.js | OUT: damage and debuffs, not control | OUT | — |
+| X7 | on the hero | foe abilities (c.foeEffect) | foeAbilities.js | OUT: the hero's own intel resist governs | OUT | — |
+| X8 | weaken | a fumbled Weaken scroll (Phase 75.1) | scrollFumble.js resolveHarmful, case `weakened` | OUT: a fumble effect (the scroll misfiring), not the hero's control | OUT; exempt in the guard (`resolveHarmful`). Found by 75.3-07's scan. It sets the same `C.weakened` / `C.foeToHitPenalty` / `spell:weaken` fields the hero's own landed Weaken sets on the foes, while its `fumbleOnReader` event narrates the reader being weakened: flagged for the user, not changed | — |
+
+**The standing guard.** `test/unit/control-at-depth-rules.test.js`
+(75.3-07) scans every comment-stripped `engine/*.js` file and fails when a
+foe-control assignment (`asleep` or `held` set to a live value, or
+`stupid`, `frozen`, `blind`, `shrunk`, `stunned` or `weakened` set true)
+sits in a function that does not also call `resistControl(`, outside the
+audited exemptions (`holdFoe` itself, whose callers resist first; X5's
+`applyPommel` and `applyDirtyTrick`; X8's `resolveHarmful`). It also pins
+`controlResistCheck(` to `combat.js#resistControl`, `controlResistRoll(` to
+`derived.js#controlResistCheck`, and the one `"controlResist"` stream to
+`derived.js#controlResistCheck`, and checks this section lists C1-C19 and
+X1-X8. Doctored sources prove it has teeth. Its failure message names the
+fix: send the new control through `resistControl` (and `holdFoe` for a
+hold) and add its row here (C20+), or an X row plus a guard exemption for a
+control deliberately outside the rule.

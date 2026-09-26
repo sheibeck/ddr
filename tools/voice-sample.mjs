@@ -194,9 +194,34 @@ for (const kind of SIZE_ITEM_KINDS) {
   lines.push("");
 }
 
+// RULES-18 (Phase 75.3, Plan 07): the four control-at-depth events, from
+// constant fields (zero rng() calls, placed after every random sample so
+// nothing above reshuffles). One deep Freeze, shaken off with its roll; one
+// that lands as a three-round hold, ticks down and breaks; and the stone
+// hold's break, so every hold word shows at least once.
+const CONTROL_AT_DEPTH_SAMPLES = [
+  { type: "controlResisted", target: "Grim Stalka Beast", effect: "freeze", source: "Freeze", roll: 17, atLeast: 13, dieN: 20, depth: 20 },
+  { type: "controlHeld", target: "Grim Stalka Beast", kind: "frozen", rounds: 3, source: "Freeze" },
+  { type: "foeStillHeld", name: "Grim Stalka Beast", kind: "frozen", left: 2 },
+  { type: "foeHoldBroken", name: "Grim Stalka Beast", kind: "frozen" },
+  { type: "controlHeld", target: "Dread Vampire", kind: "stone", rounds: 3, source: "Petrify" },
+  { type: "foeStillHeld", name: "Dread Vampire", kind: "stone", left: 1 },
+  { type: "foeHoldBroken", name: "Dread Vampire", kind: "stone" },
+];
+lines.push(rule("═"));
+lines.push("## CONTROL AT DEPTH — deterministic sample (RULES-18, Phase 75.3)");
+lines.push(rule("═"));
+lines.push("");
+for (const event of CONTROL_AT_DEPTH_SAMPLES) {
+  lines.push(`▶ ${event.type}${event.kind ? ` (${event.kind})` : ""}`);
+  lines.push(`    ${stripMarkup(EVENT_NARRATION[event.type](event))}`);
+  lines.push("");
+}
+
 const totalLines = Object.keys(EVENT_NARRATION).length * SAMPLES_PER_TYPE +
   Object.values(EPITAPHS).reduce((n, a) => n + a.length, 0) +
-  SIZE_ITEM_KINDS.length;
+  SIZE_ITEM_KINDS.length +
+  CONTROL_AT_DEPTH_SAMPLES.length;
 lines.push(rule("═"));
 lines.push(`Total rendered voice lines: ${totalLines}`);
 lines.push(rule("═"));
