@@ -123,7 +123,7 @@ export const DRAW_INVENTORY = {
   "engine/records.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/rng.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/saveState.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
-  "engine/scrollFumble.js": { rollCheck: 0, amount: 0, selection: 1, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
+  "engine/scrollFumble.js": { rollCheck: 0, amount: 1, selection: 1, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
   "engine/state.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
 };
 

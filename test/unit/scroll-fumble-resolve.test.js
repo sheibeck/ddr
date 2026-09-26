@@ -300,26 +300,238 @@ test("after a Doze fumble with left 2, the next two hero dispatches are lost tur
 });
 
 // ══════════════════════════════════════════════════════════════════════════
+// Task 2 — the area branch
+// ══════════════════════════════════════════════════════════════════════════
+
+test("area damage (Earthquake, once): one roll times the level multiplier hits every member, the ally, then the reader in order", () => {
+  const state = fixedState({ c: { level: 1, wp: 100 } });
+  const memberA = { partyIdx: 0, name: "Ada", lvl: 1, sub: "Soldier", wp: 30, maxWP: 30 };
+  const memberB = { partyIdx: 1, name: "Bram", lvl: 1, sub: "Fighter", wp: 5, maxWP: 5 };
+  state.party = [{ status: "active" }, { status: "active" }];
+  state.combat = fixedCombat([fixedFoe()], {
+    allies: [memberA, memberB],
+    ally: { lvl: 1, rounds: 2, name: "Bear" },
+  });
+  const events = resolveScrollFumble(state, spellRow("Earthquake"), fakeRng([1, 2, 3]), fakeRng([]));
+  // rollDice(3d10+8) = 1+2+3+8 = 14, mult = max(1, 1-4) = 1
+  assert.equal(memberA.wp, 30 - 14);
+  assert.equal(memberB.wp, 0, "downed at 0");
+  assert.equal(state.party[1].status, "downed");
+  assert.equal(state.combat.ally, null, "the summoned ally is unmade");
+  assert.equal(state.c.wp, 100 - 14);
+  const sides = events.filter((e) => e.type === "fumbleOnSide");
+  assert.deepEqual(sides.map((e) => e.who), ["member", "member", "ally", "reader"]);
+  assert.ok(sides.every((e) => e.amount === undefined || e.amount === 14));
+});
+
+test("area damage (Lightning): rolls separately for each victim", () => {
+  const state = fixedState({ c: { level: 1, wp: 50 } });
+  const memberA = { partyIdx: 0, name: "Ada", lvl: 1, sub: "Soldier", wp: 50, maxWP: 50 };
+  state.combat = fixedCombat([fixedFoe()], {
+    allies: [memberA],
+    ally: { lvl: 1, rounds: 2, name: "Bear" },
+  });
+  resolveScrollFumble(state, spellRow("Lightning"), fakeRng([1, 2]), fakeRng([]));
+  // rollDice(1d10+6) per damage-taking victim: member 1+6=7, reader 2+6=8 —
+  // the ally is unmade by any hit and draws no magnitude of its own.
+  assert.equal(memberA.wp, 50 - 7);
+  assert.equal(state.combat.ally, null);
+  assert.equal(state.c.wp, 50 - 8);
+});
+
+test("area volley (Fireballs): bolt k lands on victim k mod 3; a downed member's later bolt is spent without effect", () => {
+  const state = fixedState({ c: { wp: 50 } });
+  const member = { partyIdx: 0, name: "Ada", lvl: 1, sub: "Soldier", wp: 5, maxWP: 5 };
+  state.party = [{ status: "active" }];
+  state.combat = fixedCombat([fixedFoe()], {
+    allies: [member],
+    ally: { lvl: 1, rounds: 2, name: "Bear" },
+  });
+  // n=4 bolts, dmg d10+2: bolt0->member (3+2=5, downs exactly), bolt1->ally (1+2=3, unmade),
+  // bolt2->reader (2+2=4), bolt3->member again but ALREADY downed — no draw.
+  const rng = fakeRng([4, 3, 1, 2]);
+  resolveScrollFumble(state, spellRow("Fireballs"), rng, fakeRng([]));
+  assert.equal(member.wp, 0);
+  assert.equal(state.combat.ally, null);
+  assert.equal(state.c.wp, 50 - 4);
+});
+
+test("with no party and no ally, all Fireballs bolts land on the reader, and Earthquake hits only the reader", () => {
+  const volleyState = fixedState({ c: { wp: 100 } });
+  volleyState.combat = fixedCombat([fixedFoe()]);
+  resolveScrollFumble(volleyState, spellRow("Fireballs"), fakeRng([3, 1, 2, 3]), fakeRng([]));
+  // n=3 bolts, each (d10+2): 1+2=3, 2+2=4, 3+2=5 -> total 12
+  assert.equal(volleyState.c.wp, 100 - 12);
+
+  const quakeState = fixedState({ c: { level: 1, wp: 100 } });
+  quakeState.combat = fixedCombat([fixedFoe()]);
+  resolveScrollFumble(quakeState, spellRow("Earthquake"), fakeRng([1, 2, 3]), fakeRng([]));
+  assert.equal(quakeState.c.wp, 100 - 14);
+});
+
+test("a downed member (wp 0 before the fumble) is not a victim", () => {
+  const state = fixedState({ c: { level: 1, wp: 100 } });
+  const downed = { partyIdx: 0, name: "Ada", lvl: 1, sub: "Soldier", wp: 0, maxWP: 20 };
+  state.combat = fixedCombat([fixedFoe()], { allies: [downed] });
+  const events = resolveScrollFumble(state, spellRow("Earthquake"), fakeRng([1, 2, 3]), fakeRng([]));
+  assert.equal(events.some((e) => e.type === "fumbleOnSide" && e.who === "member"), false);
+  assert.equal(downed.wp, 0, "untouched — never resolved as a victim");
+});
+
+test("the reader dying during Fireballs stops the rest — no further bolts drawn", () => {
+  const state = fixedState({ c: { wp: 3 } });
+  state.combat = fixedCombat([fixedFoe()]);
+  // n=3 bolts, but the very first bolt (d10+2 = 3+2 = 5) already kills the
+  // solo reader; the fakeRng sequence holds only enough values for the
+  // count draw and ONE bolt draw — an attempted second bolt draw would throw.
+  const events = resolveScrollFumble(state, spellRow("Fireballs"), fakeRng([3, 3]), fakeRng([]));
+  assert.equal(state.dead, true);
+  assert.ok(events.some((e) => e.type === "died"));
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// Task 2 — the helpful branch
+// ══════════════════════════════════════════════════════════════════════════
+
+test("helpful heal: Heal and Major Heal restore the target foe by their dice, capped at maxWP", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ wp: 90, maxWP: 100 });
+  state.combat = fixedCombat([foe]);
+  const events = resolveScrollFumble(state, spellRow("Heal"), fakeRng([9]), fakeRng([]));
+  assert.equal(foe.wp, 99);
+  assert.deepEqual(events.find((e) => e.type === "fumbleOnFoe"), { type: "fumbleOnFoe", spell: "Heal", target: "Target", effect: "heal", amount: 9 });
+
+  const state2 = fixedState();
+  const foe2 = fixedFoe({ wp: 95, maxWP: 100 });
+  state2.combat = fixedCombat([foe2]);
+  resolveScrollFumble(state2, spellRow("Major Heal"), fakeRng([9, 9, 9]), fakeRng([]));
+  assert.equal(foe2.wp, 100, "capped at maxWP even though 27 was rolled");
+});
+
+test("the target is C.foes[C.target] after normalizeTarget, even when another foe is first in the list", () => {
+  const state = fixedState();
+  const dead = fixedFoe({ name: "Corpse", alive: false });
+  const live = fixedFoe({ name: "Live One", wp: 50, maxWP: 100 });
+  state.combat = fixedCombat([dead, live], { target: 0 });
+  const events = resolveScrollFumble(state, spellRow("Heal"), fakeRng([5]), fakeRng([]));
+  assert.equal(state.combat.target, 1);
+  assert.equal(live.wp, 55);
+  assert.equal(events.find((e) => e.type === "fumbleOnFoe").target, "Live One");
+});
+
+test("helpful ward: Shield gives the target a { pool 50, rounds 5, name } ward; Bubble gives an armed mirror ward", () => {
+  const shieldState = fixedState();
+  const shieldFoe = fixedFoe();
+  shieldState.combat = fixedCombat([shieldFoe]);
+  resolveScrollFumble(shieldState, spellRow("Shield"), fakeRng([]), fakeRng([]));
+  assert.deepEqual(shieldFoe.ward, { pool: 50, rounds: 5, name: "Shield" });
+
+  const bubbleState = fixedState();
+  const bubbleFoe = fixedFoe();
+  bubbleState.combat = fixedCombat([bubbleFoe]);
+  resolveScrollFumble(bubbleState, spellRow("Bubble"), fakeRng([]), fakeRng([]));
+  assert.deepEqual(bubbleFoe.ward, { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null });
+});
+
+test("helpful regen/senses: Regeneration sets regen; Sense Presence sets senses", () => {
+  const regenState = fixedState();
+  const regenFoe = fixedFoe();
+  regenState.combat = fixedCombat([regenFoe]);
+  resolveScrollFumble(regenState, spellRow("Regeneration"), fakeRng([]), fakeRng([]));
+  assert.equal(regenFoe.regen, true);
+
+  const sensesState = fixedState();
+  const sensesFoe = fixedFoe();
+  sensesState.combat = fixedCombat([sensesFoe]);
+  resolveScrollFumble(sensesState, spellRow("Sense Presence"), fakeRng([]), fakeRng([]));
+  assert.equal(sensesFoe.senses, 1);
+});
+
+test("helpful mirror: Mirror Self sets mirror to its own d6 (the table's rounds field, not the spell's dmg)", () => {
+  const state = fixedState();
+  const foe = fixedFoe();
+  state.combat = fixedCombat([foe]);
+  resolveScrollFumble(state, spellRow("Mirror Self"), fakeRng([4]), fakeRng([]));
+  assert.equal(foe.mirror, 4);
+});
+
+test("helpful might: Strength sets might to its d10 and doubles maxWP/wp once; a second fumble refreshes might but does not double again", () => {
+  const state = fixedState();
+  const foe = fixedFoe({ wp: 20, maxWP: 20 });
+  state.combat = fixedCombat([foe]);
+  resolveScrollFumble(state, spellRow("Strength"), fakeRng([7]), fakeRng([]));
+  assert.equal(foe.might, 7);
+  assert.equal(foe.maxWP, 40);
+  assert.equal(foe.wp, 40);
+  assert.equal(foe.strengthBoost, 20);
+
+  resolveScrollFumble(state, spellRow("Strength"), fakeRng([3]), fakeRng([]));
+  assert.equal(foe.might, 3, "refreshed");
+  assert.equal(foe.maxWP, 40, "never doubled again");
+});
+
+test("helpful summon: Summon/Phantom Host/Lesser Summon queue one Demons reinforcement at the right tier", () => {
+  for (const [name, level, expectedTier] of [["Summon", 3, 3], ["Phantom Host", 6, 5], ["Lesser Summon", 3, 2]]) {
+    const state = fixedState({ c: { level } });
+    const foe = fixedFoe();
+    state.combat = fixedCombat([foe]);
+    const events = resolveScrollFumble(state, spellRow(name), fakeRng([]), fakeRng([]));
+    assert.equal(state.combat.pendingFoes.length, 1);
+    assert.equal(state.combat.pendingFoes[0].foe.lvl, expectedTier, name);
+    const ev = events.find((e) => e.type === "fumbleOnFoe");
+    assert.equal(ev.joined, true);
+    assert.equal(ev.reinforcement, state.combat.pendingFoes[0].foe.name);
+  }
+});
+
+test("helpful summon: a pending summon or four live foes means it wanders off instead (joined false)", () => {
+  const pendingState = fixedState();
+  pendingState.combat = fixedCombat([fixedFoe()], { pendingFoes: [{ by: "someone", foe: fixedFoe({ name: "Already Coming" }) }] });
+  const pendingEvents = resolveScrollFumble(pendingState, spellRow("Summon"), fakeRng([]), fakeRng([]));
+  assert.equal(pendingEvents.find((e) => e.type === "fumbleOnFoe").joined, false);
+  assert.equal(pendingState.combat.pendingFoes.length, 1, "unchanged — nothing new queued");
+
+  const fullState = fixedState();
+  fullState.combat = fixedCombat([fixedFoe(), fixedFoe({ name: "B" }), fixedFoe({ name: "C" }), fixedFoe({ name: "D" })]);
+  const fullEvents = resolveScrollFumble(fullState, spellRow("Summon"), fakeRng([]), fakeRng([]));
+  assert.equal(fullEvents.find((e) => e.type === "fumbleOnFoe").joined, false);
+  assert.equal(fullState.combat.pendingFoes, undefined);
+});
+
+test("helpful wasted: Map the Floor and Sense Danger change no state and say the scroll was wasted", () => {
+  for (const name of ["Map the Floor", "Sense Danger"]) {
+    const state = fixedState();
+    const foe = fixedFoe();
+    state.combat = fixedCombat([foe]);
+    const before = JSON.stringify(foe);
+    const events = resolveScrollFumble(state, spellRow(name), fakeRng([]), fakeRng([]));
+    assert.equal(JSON.stringify(foe), before);
+    assert.deepEqual(events.find((e) => e.type === "fumbleOnFoe"), { type: "fumbleOnFoe", spell: name, target: "Target", effect: "wasted" });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════
 // Cross-cutting
 // ══════════════════════════════════════════════════════════════════════════
 
-test("every harmful row of SCROLL_FUMBLE resolves without throwing, and yields at least one fumble event naming the reader", () => {
-  // Task 2 (this same plan) extends this loop to every row once the area
-  // and helpful branches land — for now, only "harmful" is wired.
+test("every row of SCROLL_FUMBLE resolves without throwing, and yields at least one fumble event naming a victim", () => {
   let seedCounter = 1;
-  const harmfulNames = Object.entries(SCROLL_FUMBLE)
-    .filter(([, e]) => e.side === "harmful")
-    .map(([n]) => n);
-  for (const name of harmfulNames) {
+  for (const [name] of Object.entries(SCROLL_FUMBLE)) {
     const state = fixedState({ c: { level: 3, wp: 500 } });
-    state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })], { round: 3 });
+    const member = { partyIdx: 0, name: "Ada", lvl: 1, sub: "Soldier", wp: 500, maxWP: 500 };
+    state.party = [{ status: "active" }];
+    state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })], {
+      allies: [member],
+      ally: { lvl: 1, rounds: 2, name: "Bear" },
+      round: 3,
+    });
     const rng = makeRng(seedCounter++);
     const srng = makeRng(seedCounter++);
     let events;
     assert.doesNotThrow(() => {
       events = resolveScrollFumble(state, spellRow(name), srng, rng);
     }, name);
-    const named = events.some((e) => e.type === "fumbleOnReader" || e.type === "fumbleHeavyBlow");
+    const named = events.some((e) => e.type === "fumbleOnReader" || e.type === "fumbleOnSide" || e.type === "fumbleOnFoe" || e.type === "fumbleHeavyBlow");
     assert.ok(named, `${name} produced no victim-naming event: ${JSON.stringify(events)}`);
   }
 });

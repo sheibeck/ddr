@@ -32,8 +32,9 @@
 import { SCROLL_FUMBLE } from "../content/index.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
-import { fumbleHeavyBlow, HERO_OUT_MAX } from "./combat.js";
+import { liveFoes, normalizeTarget, downMember, fumbleHeavyBlow, HERO_OUT_MAX } from "./combat.js";
 import { startEffect } from "./effects.js";
+import { buildReinforcement, SUMMON_MAX_LIVE } from "./foeAbilities.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -147,19 +148,195 @@ function resolveHarmful(state, sp, entry, srng, rng, events, now) {
 }
 
 /**
+ * resolveArea(state, sp, entry, srng, rng, events, now) — an area-damage
+ * spell hits the reader AND everyone on the reader's side: every live party
+ * member, then the summoned ally, then the reader, each as if targeted.
+ * Earthquake (`entry.once`) rolls ONE amount for everyone; Lightning rolls
+ * separately per victim. Fireballs (`entry.effect === "volley"`) spreads its
+ * own d8 bolts round-robin over the SAME [members..., ally?, reader] order —
+ * a victim already downed/unmade/dead when their slot comes up again spends
+ * that bolt for nothing (no draw, mirroring castSpell's own volley `if
+ * (!t.alive) continue;` precedent). A party member loses the hp and is
+ * downed through downMember at 0; the summoned ally (no hit points) is
+ * unmade by ANY hit, however small; the reader is resolved last, and a
+ * lethal hit on the reader ends the resolution at once.
+ */
+function resolveArea(state, sp, entry, srng, rng, events, now) {
+  const c = state.c;
+  const C = state.combat;
+  const mult = Math.max(1, c.level - sp.lvl);
+  const members = (C.allies || []).filter((m) => m.wp > 0);
+  const ally = C.ally || null;
+
+  const hitMember = (member, amount) => {
+    member.wp -= amount;
+    events.push({ type: "fumbleOnSide", spell: sp.n, who: "member", name: member.name, amount });
+    if (member.wp <= 0) downMember(state, member, events);
+  };
+  const hitAlly = () => {
+    events.push({ type: "fumbleOnSide", spell: sp.n, who: "ally", name: C.ally.name, unmade: true });
+    C.ally = null;
+  };
+  const hitReader = (amount) => {
+    c.wp -= amount;
+    events.push({ type: "fumbleOnSide", spell: sp.n, who: "reader", name: "you", amount });
+    if (c.wp <= 0) {
+      die(state, "scrollFumble", sp.n, rng, events, now);
+      return true;
+    }
+    return false;
+  };
+
+  if (entry.effect === "damage") {
+    if (entry.once) {
+      const amount = rollDice(srng, sp.dmg) * mult;
+      for (const m of members) hitMember(m, amount);
+      if (ally) hitAlly();
+      hitReader(amount);
+    } else {
+      for (const m of members) hitMember(m, rollDice(srng, sp.dmg) * mult);
+      if (ally) hitAlly();
+      hitReader(rollDice(srng, sp.dmg) * mult);
+    }
+    return events;
+  }
+
+  // volley (Fireballs): round-robin d8 bolts over [members..., ally?, reader]
+  const order = [];
+  for (const m of members) order.push({ kind: "member", ref: m });
+  if (ally) order.push({ kind: "ally" });
+  order.push({ kind: "reader" });
+  const n = srng.d(8); // roll:amount
+  let allyAlive = !!ally;
+  for (let k = 0; k < n && order.length; k++) {
+    const v = order[k % order.length];
+    if (v.kind === "member" && v.ref.wp <= 0) continue;
+    if (v.kind === "ally" && !allyAlive) continue;
+    if (v.kind === "reader" && c.wp <= 0) continue;
+    const amount = rollDice(srng, sp.dmg);
+    if (v.kind === "member") {
+      hitMember(v.ref, amount);
+    } else if (v.kind === "ally") {
+      hitAlly();
+      allyAlive = false;
+    } else if (hitReader(amount)) {
+      return events; // the reader dying stops the rest
+    }
+  }
+  return events;
+}
+
+/**
+ * resolveHelpful(state, sp, entry, srng, rng, events, now) — a helpful spell
+ * takes effect on the combat's CURRENT target (after normalizeTarget), using
+ * the 75.1-03 foe-side field shapes and the spell row's own numbers:
+ *
+ *   - heal: restores the spell's dice, capped at maxWP.
+ *   - regen: sets `regen`.
+ *   - ward: Shield's plain pool/rounds, or Bubble's armed mirror
+ *     (pool 0, rounds null, popPool) — the SAME two shapes
+ *     engine/magic.js#castSpell's own ward branch raises on the hero.
+ *   - might: sets `might` to the spell's own dice, doubling maxWP/wp once
+ *     (a second fumble refreshes `might` but never doubles again).
+ *   - mirror: sets `mirror` to the row's own `rounds` dice (Mirror Self has
+ *     no `dmg` of its own — the fumble table names the d6 instead).
+ *   - senses: sets `senses` — no further engine rule of its own.
+ *   - summon: queues one Demons reinforcement (via the shared
+ *     foeAbilities.js#buildReinforcement helper) at the summon's own tier
+ *     (Lesser Summon: one under the reader's level, 1..3; Summon/Phantom
+ *     Host: the reader's level, at most 5 — never doubled), UNLESS a summon
+ *     is already pending or the room already holds SUMMON_MAX_LIVE live
+ *     foes, in which case it wanders off instead.
+ *   - wasted: Map the Floor, Sense Danger — changes nothing.
+ *
+ * With no live foe to target (every foe already fled/dead), pushes
+ * fumbleOnFoe with a null target and effect "wasted" instead of throwing.
+ */
+function resolveHelpful(state, sp, entry, srng, rng, events, now) {
+  const C = state.combat;
+  normalizeTarget(C);
+  const t = C.foes[C.target];
+  if (!t) {
+    events.push({ type: "fumbleOnFoe", spell: sp.n, target: null, effect: "wasted" });
+    return events;
+  }
+  switch (entry.effect) {
+    case "heal": {
+      const amount = rollDice(srng, sp.dmg);
+      const before = t.wp;
+      t.wp = Math.min(t.maxWP, t.wp + amount);
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "heal", amount: t.wp - before });
+      break;
+    }
+    case "regen": {
+      t.regen = true;
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "regen" });
+      break;
+    }
+    case "ward": {
+      if (sp.mirror) {
+        t.ward = { name: sp.n, mirror: true, pool: 0, popPool: sp.popPool, rounds: null };
+        events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "ward", mirror: true, popPool: sp.popPool });
+      } else {
+        t.ward = { pool: sp.pool, rounds: sp.rounds, name: sp.n };
+        events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "ward", pool: sp.pool, rounds: sp.rounds });
+      }
+      break;
+    }
+    case "might": {
+      t.might = rollDice(srng, sp.dmg);
+      if (!t.strengthBoost) {
+        t.strengthBoost = t.maxWP;
+        t.maxWP += t.strengthBoost;
+        t.wp += t.strengthBoost;
+      }
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "might", might: t.might });
+      break;
+    }
+    case "mirror": {
+      t.mirror = rollDice(srng, entry.rounds);
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "mirror", rounds: t.mirror });
+      break;
+    }
+    case "senses": {
+      t.senses = 1;
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "senses" });
+      break;
+    }
+    case "summon": {
+      const capped = (C.pendingFoes && C.pendingFoes.length) || liveFoes(state).length >= SUMMON_MAX_LIVE;
+      if (capped) {
+        events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "summon", joined: false });
+      } else {
+        const tier = sp.lesser ? Math.max(1, Math.min(3, state.c.level - 1)) : Math.min(5, state.c.level);
+        const foe = buildReinforcement("Demons", tier, srng);
+        C.pendingFoes = [{ by: "you", foe }];
+        events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "summon", joined: true, reinforcement: foe.name });
+      }
+      break;
+    }
+    case "wasted": {
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "wasted" });
+      break;
+    }
+  }
+  return events;
+}
+
+/**
  * resolveScrollFumble(state, sp, srng, rng, events, now) — see the module
  * header. `sp` is the SPELLS row (content/spells.js) the reader fumbled;
- * `SCROLL_FUMBLE[sp.n]` is the ONE thing read to decide which branch runs,
- * and which of its effect kinds. Task 2 (this same plan) adds the area and
- * helpful branches below the harmful one; only "harmful" is wired so far.
- * Never called outside combat by design — a missing `state.combat` (or an
- * unclassified spell name, unreachable in real play — every scroll-castable
- * spell has a row) is a safe no-op.
+ * `SCROLL_FUMBLE[sp.n]` is the ONE thing read to decide which of the three
+ * branches above runs, and which of their effect kinds. Never called outside
+ * combat by design — a missing `state.combat` (or an unclassified spell
+ * name, unreachable in real play — every scroll-castable spell has a row)
+ * is a safe no-op.
  */
 export function resolveScrollFumble(state, sp, srng, rng, events = [], now = Date.now) {
   if (!state.combat) return events;
   const entry = SCROLL_FUMBLE[sp.n];
   if (!entry) return events;
   if (entry.side === "harmful") return resolveHarmful(state, sp, entry, srng, rng, events, now);
-  return events;
+  if (entry.side === "area") return resolveArea(state, sp, entry, srng, rng, events, now);
+  return resolveHelpful(state, sp, entry, srng, rng, events, now);
 }
