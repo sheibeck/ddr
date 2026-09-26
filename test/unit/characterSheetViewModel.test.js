@@ -129,6 +129,21 @@ test("characterSheetViewModel(state): DAMAGE row is a static min-max descriptor 
   }
 });
 
+test("characterSheetViewModel(state): DAMAGE row's bracket also holds for a Troll (RULES-11, Phase 75.2 — this file's existing Human case above never exercises the size term)", () => {
+  const state = newRun(42);
+  state.c.race = "Troll"; // seed 42's own Human race, swapped to exercise sizeDamage(c)
+  const vm = characterSheetViewModel(state);
+  const damage = statByKey(vm, "damage");
+  const testRng = makeRng(999);
+  for (let i = 0; i < 200; i++) {
+    const rolled = weaponDamage(state.c, testRng);
+    assert.ok(
+      rolled >= damage.min && rolled <= damage.max,
+      `weaponDamage() rolled ${rolled}, outside view-model bracket [${damage.min}, ${damage.max}] for a Troll`
+    );
+  }
+});
+
 test("characterSheetViewModel(state): calling the view-model NEVER advances state.rngState (DAMAGE must not call weaponDamage(c, rng) on the live rng)", () => {
   const state = newRun(1234);
   const before = structuredClone(state.rngState);
