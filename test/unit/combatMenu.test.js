@@ -16,7 +16,7 @@ import assert from "node:assert/strict";
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { characterSheetViewModel, grimoireViewModel } from "../../src/browser/heroTab.js";
 import { SPELLS, NICHE_LABELS } from "../../content/index.js";
-import { canCast } from "../../engine/derived.js";
+import { canCast, spellLevelFor } from "../../engine/derived.js";
 import { canParley } from "../../engine/combat.js";
 // RULES-10 (Phase 75.1, plan 75.1-07): the ITEMS SCROLL row's own desc now
 // appends scrollReadOdds(state) — asserted against the real function output
@@ -151,7 +151,13 @@ test("Bard: ABILITIES opens SING, ready vs. counting-down", () => {
 // for combat only. A spell that IS castable but out of charges stays
 // listed, disabled. The Hero-tab Grimoire (grimoireViewModel) is untouched.
 
-test("Magic User (Wizard): SPELLS sub-line, submenu title, rows in SPELLS order, castable rows only", () => {
+// Phase 77 (CMBUI-08, user device report 2026-09-21: "make sure spells are in
+// level order, then alphabetical"): SPELLS rows sort by the spell's EFFECTIVE
+// level (engine/derived.js#spellLevelFor, the level canCast gates on)
+// ascending, then by name A to Z; the LVL label shows that same effective
+// level. Re-pinned from "rows in SPELLS order" (before: HEAL, FREEZE; after:
+// FREEZE, HEAL). Each row's id and dispatch idx stay its own SPELLS index.
+test("Magic User (Wizard): SPELLS sub-line, submenu title, rows by level then name, castable rows only", () => {
   const c = { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal", "Freeze", "Lightning"], spellsUsed: 0 };
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
@@ -169,7 +175,10 @@ test("Magic User (Wizard): SPELLS sub-line, submenu title, rows in SPELLS order,
   const lightning = SPELLS.find((sp) => sp.n === "Lightning");
   assert.equal(canCast(state, lightning), false, "Lightning is above level 1 — canCast must refuse it");
 
-  const castable = SPELLS.filter((sp) => c.grimoire.includes(sp.n) && canCast(state, sp));
+  const castable = SPELLS.filter((sp) => c.grimoire.includes(sp.n) && canCast(state, sp)).sort(
+    (a, b) => spellLevelFor(c.sub, a) - spellLevelFor(c.sub, b) || (a.n.toUpperCase() < b.n.toUpperCase() ? -1 : 1),
+  );
+  assert.deepEqual(vm.submenus.spells.rows.map((r) => r.label), ["FREEZE", "HEAL"], "CMBUI-08: level 1, A to Z");
   assert.equal(vm.submenus.spells.rows.length, castable.length);
   assert.equal(vm.submenus.spells.rows.length, 2, "Lightning has no row at all — hidden, not greyed");
   castable.forEach((sp, i) => {
@@ -177,7 +186,7 @@ test("Magic User (Wizard): SPELLS sub-line, submenu title, rows in SPELLS order,
     const idx = SPELLS.indexOf(sp);
     assert.equal(row.id, `spell-${idx}`);
     assert.equal(row.label, sp.n.toUpperCase());
-    assert.equal(row.cost, `LVL ${sp.lvl}`);
+    assert.equal(row.cost, `LVL ${spellLevelFor(c.sub, sp)}`);
     assert.equal(row.desc, sp.txt || "");
     assert.deepEqual(row.dispatch, { type: "castSpell", idx });
     assert.equal(row.enabled, true, `${sp.n}: castable with charges left must be enabled`);
@@ -247,12 +256,68 @@ test("RULES-04: with every charge spent, a castable spell's row stays listed, di
   for (const row of vm.submenus.spells.rows) assert.equal(row.enabled, false, `${row.label}: out of charges must be disabled, not hidden`);
 });
 
-test("RULES-04 ordering: visible rows keep their relative SPELLS order — hiding a row never reorders the others", () => {
+// CMBUI-08 re-pin (Phase 77): was "visible rows keep their relative SPELLS
+// order" (HEAL, FREEZE, ACID); the visible rows now read by effective level,
+// then name (FREEZE, HEAL, ACID). Hiding a locked row still never reorders
+// the others: the sort key is the row's own level and name.
+test("RULES-04 + CMBUI-08 ordering: visible rows read by level then name — hiding a row never reorders the others", () => {
   const c = { cls: "Magic User", sub: "Wizard", level: 2, grimoire: ["Heal", "Freeze", "Acid"], spellsUsed: 0 };
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
-  const expectedOrder = SPELLS.filter((sp) => c.grimoire.includes(sp.n)).map((sp) => sp.n.toUpperCase());
-  assert.deepEqual(vm.submenus.spells.rows.map((r) => r.label), expectedOrder);
+  assert.deepEqual(vm.submenus.spells.rows.map((r) => r.label), ["FREEZE", "HEAL", "ACID"]);
+  assert.deepEqual(vm.submenus.spells.rows.map((r) => r.cost), ["LVL 1", "LVL 1", "LVL 2"]);
+  // Level 1: Acid is hidden; the two level-1 rows keep the same order.
+  const low = combatMenuViewModel(fixedState({ c: { ...c, level: 1 }, combat: fixedCombat([]) }));
+  assert.deepEqual(low.submenus.spells.rows.map((r) => r.label), ["FREEZE", "HEAL"]);
+});
+
+test("CMBUI-08: a Wizard's rows read LVL 1 A to Z, then LVL 2, then LVL 4; each row casts its own SPELLS index", () => {
+  const c = { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Lightning", "Freeze", "Heal", "Doze", "Acid"], spellsUsed: 0 };
+  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
+  const rows = vm.submenus.spells.rows;
+  assert.deepEqual(rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 DOZE", "LVL 1 FREEZE", "LVL 1 HEAL", "LVL 2 ACID", "LVL 4 LIGHTNING"]);
+  for (const row of rows) {
+    const idx = SPELLS.findIndex((sp) => sp.n.toUpperCase() === row.label);
+    assert.ok(idx >= 0);
+    assert.equal(row.id, `spell-${idx}`, `${row.label}: id is its own SPELLS index`);
+    assert.deepEqual(row.dispatch, { type: "castSpell", idx }, `${row.label}: a tap casts the spell the row names`);
+  }
+});
+
+test("CMBUI-08 (user, 2026-09-25): a Summoner's Lesser Summon lists among the level-1 spells in name order, before level-2 Summon", () => {
+  const c = { cls: "Magic User", sub: "Summoner", level: 2, grimoire: ["Summon", "Weaken", "Lesser Summon", "Doze", "Acid"], spellsUsed: 0 };
+  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
+  const rows = vm.submenus.spells.rows;
+  assert.deepEqual(rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 DOZE", "LVL 1 LESSER SUMMON", "LVL 1 WEAKEN", "LVL 2 ACID", "LVL 2 SUMMON"]);
+  const lesser = rows.find((r) => r.label === "LESSER SUMMON");
+  assert.deepEqual(lesser.dispatch, { type: "castSpell", idx: SPELLS.findIndex((sp) => sp.n === "Lesser Summon") });
+  // A level-1 Summoner: Lesser Summon still sits in name order among its peers.
+  const low = combatMenuViewModel(fixedState({ c: { ...c, level: 1 }, combat: fixedCombat([]) }));
+  assert.deepEqual(low.submenus.spells.rows.map((r) => r.label), ["DOZE", "LESSER SUMMON", "WEAKEN"]);
+});
+
+test("CMBUI-08: an Illusionist's Phantom Host (effective level 1, base 3) reads LVL 1 and sorts with the level-1 spells", () => {
+  const phantom = SPELLS.find((sp) => sp.n === "Phantom Host");
+  assert.equal(phantom.lvl, 3, "Phantom Host's printed level is 3");
+  assert.equal(spellLevelFor("Illusionist", phantom), 1, "the Illusionist's effective level is 1");
+  const c = { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Blind", "Acid", "Phantom Host", "Mirror Self"], spellsUsed: 0 };
+  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
+  assert.deepEqual(vm.submenus.spells.rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 MIRROR SELF", "LVL 1 PHANTOM HOST", "LVL 2 ACID", "LVL 3 BLIND"]);
+  // A level-1 Illusionist can cast it, and it reads LVL 1.
+  const low = combatMenuViewModel(fixedState({ c: { ...c, level: 1 }, combat: fixedCombat([]) }));
+  assert.deepEqual(low.submenus.spells.rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 MIRROR SELF", "LVL 1 PHANTOM HOST"]);
+});
+
+test("CMBUI-08: out of charges, every row stays listed and disabled in the same sorted order", () => {
+  const c = { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Lightning", "Freeze", "Heal", "Doze", "Acid"], spellsUsed: 999 };
+  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
+  assert.deepEqual(vm.submenus.spells.rows.map((r) => r.label), ["DOZE", "FREEZE", "HEAL", "ACID", "LIGHTNING"]);
+  for (const row of vm.submenus.spells.rows) assert.equal(row.enabled, false);
+});
+
+test("CMBUI-08: spell names are unique in SPELLS (case-insensitively), so no two rows ever compare equal", () => {
+  const names = SPELLS.map((sp) => sp.n.toUpperCase());
+  assert.equal(new Set(names).size, names.length);
 });
 
 test("RULES-04 all-locked: a level-1 Sorcerer whose book is only Heal shows one disabled row with the noCastable copy, distinct from noSpells", () => {

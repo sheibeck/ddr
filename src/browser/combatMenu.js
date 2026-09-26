@@ -15,7 +15,7 @@
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel } from "./heroTab.js";
 import { itemRowState } from "./gearTab.js";
-import { canCast, WORN_SLOTS, activationFor, wieldedStaff } from "../../engine/derived.js";
+import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
@@ -206,14 +206,28 @@ function combatMenuViewModelUnlocked(state) {
     // information the player needs, unlike a lock the player cannot act on.
     // The Hero-tab Grimoire (heroTab.js#grimoireViewModel) is untouched and
     // still lists every spell the book holds, locked or not.
+    //
+    // Phase 77 (CMBUI-08, user device report 2026-09-21: "spells are in level
+    // order, then alphabetical"; the 2026-09-25 Lesser Summon report): the
+    // visible rows sort by the spell's EFFECTIVE level for this sub-class
+    // (spellLevelFor(c.sub, sp), the same level canCast gates on) ascending,
+    // then by the upper-cased name compared by code unit (names are ASCII and
+    // unique in SPELLS), then by SPELLS index as a final safety tie-break.
+    // The LVL label reads that same effective level, so the list never reads
+    // out of order (the Illusionist's Phantom Host: base 3, effective 1).
+    // Sorting reorders rows only: each row's id and dispatch idx stay its own
+    // SPELLS index, so a tap casts the spell the row names, and the RULES-04
+    // hidden rows stay hidden.
     const grimoireSpells = SPELLS.filter((sp) => (c.grimoire || []).includes(sp.n));
-    const castableSpells = grimoireSpells.filter((sp) => canCast(state, sp));
-    const spellRows = castableSpells.map((sp) => {
-      const idx = SPELLS.indexOf(sp);
+    const castableSpells = grimoireSpells
+      .filter((sp) => canCast(state, sp))
+      .map((sp) => ({ sp, lvl: spellLevelFor(c.sub, sp), name: sp.n.toUpperCase(), idx: SPELLS.indexOf(sp) }))
+      .sort((a, b) => a.lvl - b.lvl || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) || a.idx - b.idx);
+    const spellRows = castableSpells.map(({ sp, idx }) => {
       return {
         id: `spell-${idx}`,
         label: sp.n.toUpperCase(),
-        cost: `LVL ${sp.lvl}`,
+        cost: `LVL ${spellLevelFor(c.sub, sp)}`,
         desc: sp.txt || "",
         // Phase 40 (SPELL-01): the same niche/nicheLabel pair the Hero-tab
         // Grimoire rows carry (src/browser/heroTab.js#grimoireViewModel) —
