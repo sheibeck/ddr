@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die, forfeitLoot } from "./death.js";
@@ -2619,8 +2619,12 @@ export function foeTurn(state, rng, events = []) {
   if (c.regen) {
     const r = rng.d(8); // roll:amount
     if (c.wp < c.maxWP) {
-      c.wp = Math.min(c.maxWP, c.wp + r);
-      events.push({ type: "regenerated", amount: r });
+      // RULES-03 (Phase 75, user 2026-09-25): the Summoner's healing
+      // weakness applies to its own Regeneration tick too, through the same
+      // chart-driven helper — the draw itself is unchanged.
+      const regen = applyCasterHealMul(c.sub, r);
+      c.wp = Math.min(c.maxWP, c.wp + regen);
+      events.push({ type: "regenerated", amount: regen, ...(regen !== r ? { halved: true } : {}) });
     }
   }
   for (const f of C.foes) {

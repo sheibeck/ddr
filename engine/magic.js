@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage } from "./derived.js";
+import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest } from "./combat.js";
@@ -471,8 +471,14 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else if (sp.kind === "heal") {
     let amt = rollDice(rng, sp.dmg) + (c.sub === "Cleric" ? 3 : 0);
     if (RACES[c.race].heal2x) amt *= 2;
-    c.wp = Math.min(c.maxWP, c.wp + amt);
-    events.push({ type: "healed", amount: amt, spell: sp.n });
+    // RULES-03 (Phase 75, user 2026-09-25): the Summoner's healing weakness
+    // — applyCasterHealMul reads the chart's healMul flag (never a name
+    // check) and applies LAST, after the Cleric bonus and a heal2x race's
+    // doubling, so a heal2x Summoner rolling 5 restores 5 (doubled to 10,
+    // then halved). No new rng draw.
+    const healed = applyCasterHealMul(c.sub, amt);
+    c.wp = Math.min(c.maxWP, c.wp + healed);
+    events.push({ type: "healed", amount: healed, spell: sp.n, ...(healed !== amt ? { halved: true } : {}) });
   } else if (sp.kind === "death") {
     // Phase 43 (CLAR-01, additive): DEATH_SPELL_FEE names the cause for the
     // narration; fixtures compare state, so this moves none. Value-identical
