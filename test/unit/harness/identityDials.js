@@ -31,10 +31,15 @@ import { setDialsForTuning } from "../../../engine/difficulty.js";
 export const IDENTITY_DIALS = {
   FOE_LEVEL: { base: 0.6, perDepth: 0.2 },
   TIER_SPREAD: 1,
-  FOE_HIT_SCALE: { base: 1, perDepth: 0 },
-  FOE_HP_SCALE: { base: 1, perDepth: 0 },
+  // RULES-17 (Phase 75.3): identity knee — perDepthAfter === perDepth (both
+  // 0) means the knee never fires (mirrors test/difficulty/difficulty.test.js's
+  // own IDENTITY_COLUMN).
+  FOE_HIT_SCALE: { base: 1, perDepth: 0, kneeDepth: 12, perDepthAfter: 0 },
+  FOE_HP_SCALE: { base: 1, perDepth: 0, kneeDepth: 12, perDepthAfter: 0 },
   FOE_COUNT_SKEW: 0,
   FOE_COUNT_DEPTH: { soloOnlyOnOneFrom: 0, atLeastTwoFrom: 0, atLeastThreeFrom: 0 },
+  // RULES-17 (Phase 75.3): identity switches elites off entirely (maxRank 0).
+  FOE_ELITE: { maxRank: 0, hpPerRank: 0, hitPerRank: 0 },
   ROUND_DAMAGE_CEILING: 0,
   ABILITY_THREAT: { base: 1, perDepth: 0 },
   HERO_HP_SCALE: 1,

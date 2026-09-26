@@ -91,15 +91,33 @@ export const DIALS = deepFreeze({
    * {1,0}/{0.6,0.02} -> { base: 0.6, perDepth: 0.01 } — fit/fit-log.jsonl
    * #13 (score 2.7113, PASS); the walk moved `perDepth` down from the
    * cycle-2 start's 0.02 to 0.01 (evaluation #11), a small easing on the
-   * dominant damage term's depth slope. */
-  FOE_HIT_SCALE: { base: 0.6, perDepth: 0.01 },
+   * dominant damage term's depth slope.
+   * RULES-17 (Phase 75.3, user ruling 2026-09-25): a second, steeper slope
+   * from `kneeDepth` — `scaleField` (below) evaluates
+   * `base + perDepth*kneeDepth + perDepthAfter*(d - kneeDepth)` once `d` is
+   * past `kneeDepth`, else the SAME expression as before (byte-identical for
+   * every d <= kneeDepth). Identity: `perDepthAfter === perDepth` (or a
+   * missing knee pair entirely, HAZARD_SCALE/ABILITY_THREAT's own shape) —
+   * the knee never engages, so the single-slope expression runs at every
+   * depth with no drift. Direction: ↑ (perDepthAfter) = harder past the
+   * knee. `kneeDepth: 12`: user-ruled 2026-09-25 (floor 13 is the first
+   * harder floor — the Phase 54 fit boundary) — NEVER searched by any fit.
+   * `perDepthAfter: 0.02`: set by 75.3-06's checkpointed tail sweep; this
+   * plan's start value is twice the pre-knee slope (0.01), deliberately
+   * mild. */
+  FOE_HIT_SCALE: { base: 0.6, perDepth: 0.01, kneeDepth: 12, perDepthAfter: 0.02 },
   /** FOE_HP_SCALE — scales a foe's starting wp/maxWP at copy time. Identity:
    * `{ base: 1, perDepth: 0 }`. Direction: ↑ = longer fights (harder).
    * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): base identity/
    * start 1/0.8 -> 0.9 — fit/fit-log.jsonl #13 (score 2.7113, PASS).
    * perDepth: held (available) — Phase 54 fit did not search this dial;
-   * shipped at its start value 0.015. */
-  FOE_HP_SCALE: { base: 0.9, perDepth: 0.015 },
+   * shipped at its start value 0.015.
+   * RULES-17 (Phase 75.3, user ruling 2026-09-25): the SAME knee shape as
+   * FOE_HIT_SCALE above (see its JSDoc for the formula/identity/direction).
+   * `kneeDepth: 12`: user-ruled 2026-09-25; NEVER searched. `perDepthAfter:
+   * 0.03`: set by 75.3-06's checkpointed tail sweep; this plan's start value
+   * is twice the pre-knee slope (0.015). */
+  FOE_HP_SCALE: { base: 0.9, perDepth: 0.015, kneeDepth: 12, perDepthAfter: 0.03 },
   /** FOE_COUNT_SKEW — an index into FOE_COUNT_TABLE (below) shifting
    * P(1/2/3 foes) once the canon d4 roll is > 2; row 0 is canon. Identity: 0
    * (canon draw shape, no level-keyed cap). Direction: ↑ = more bodies.
@@ -123,6 +141,20 @@ export const DIALS = deepFreeze({
    * Deferred: "Fitting the thresholds with the tuning bot: possible later
    * as a dial; not requested now"). */
   FOE_COUNT_DEPTH: { soloOnlyOnOneFrom: 5, atLeastTwoFrom: 10, atLeastThreeFrom: 20 },
+  /** FOE_ELITE — RULES-17 (Phase 75.3, user ruling 2026-09-25): "the roster
+   * keeps escalating past the level-5 tier" — the bestiary has exactly 5
+   * tiers per family, so a foe whose FOE_LEVEL line would pass 5 becomes a
+   * tier-5 foe of ELITE RANK (level above 5) instead of raising a clamp
+   * (`foeTierFor` below). `maxRank` caps the rank a foe may reach; `hpPerRank`/
+   * `hitPerRank` are the PER-RANK multipliers `foeWpFor`/`foeHitFor` (below)
+   * apply on top of the depth curve's own `foeHpScale`/`foeHitScale`.
+   * Identity: `{ maxRank: 0, hpPerRank: 0, hitPerRank: 0 }` (`maxRank: 0`
+   * switches elites off entirely — `foeTierFor` reproduces today's tier pick
+   * at every depth). Direction: ↑ = harder (more/stronger elites).
+   * held (available) — `maxRank`/`hitPerRank` are start values, not fitted;
+   * `hpPerRank` is searched by 75.3-06's checkpointed tail sweep. Start
+   * values 10 / 0.1 / 0.05: a mild elite bonus on top of the knee. */
+  FOE_ELITE: { maxRank: 10, hpPerRank: 0.1, hitPerRank: 0.05 },
   /** ROUND_DAMAGE_CEILING — a fraction of a level-appropriate hero's MEAN
    * max HP that ONE foe may deal per foeTurn visit, across all its swings
    * (frenzy/sp.atk included); 0 = off. Identity: 0 (no ceiling — canon
@@ -399,11 +431,32 @@ export function isBreather(depth) {
 /**
  * scaleField(dial, d) — evaluates a `{ base, perDepth }` dial at depth `d`.
  * `perDepth === 0` returns `base` EXACTLY (no arithmetic drift — this is
- * what makes FOE_HIT_SCALE/FOE_HP_SCALE/HAZARD_SCALE/ABILITY_THREAT's
- * identity column structural, not a rounding accident). Not exported —
- * internal helper only.
+ * what makes HAZARD_SCALE/ABILITY_THREAT's identity column structural, not a
+ * rounding accident).
+ *
+ * RULES-17 (Phase 75.3, user ruling 2026-09-25): a dial MAY also carry a
+ * knee (`kneeDepth`, `perDepthAfter` — FOE_HIT_SCALE/FOE_HP_SCALE today).
+ * Only when BOTH knee fields are finite, `perDepthAfter !== perDepth` (the
+ * identity/no-op case) and `d > kneeDepth` does the join fire:
+ * `base + perDepth*kneeDepth + perDepthAfter*(d - kneeDepth)` — the SAME
+ * value the single-slope expression would give AT `d === kneeDepth` (the two
+ * branches meet exactly there, no jump), then a steeper (or shallower) slope
+ * beyond it. Every other case — no knee fields on the dial at all
+ * (HAZARD_SCALE/ABILITY_THREAT), `perDepthAfter === perDepth` (identity,
+ * e.g. `setDialsForTuning`'s tuning override), or `d <= kneeDepth` — falls
+ * through to the existing single-slope expression, including its
+ * `perDepth === 0` fast path, byte-identical to before this dial ever
+ * carried a knee. Not exported — internal helper only.
  */
 function scaleField(dial, d) {
+  if (
+    Number.isFinite(dial.kneeDepth) &&
+    Number.isFinite(dial.perDepthAfter) &&
+    dial.perDepthAfter !== dial.perDepth &&
+    d > dial.kneeDepth
+  ) {
+    return dial.base + dial.perDepth * dial.kneeDepth + dial.perDepthAfter * (d - dial.kneeDepth);
+  }
   return dial.perDepth === 0 ? dial.base : dial.base + dial.perDepth * d;
 }
 
@@ -424,6 +477,36 @@ export function foeLevelFor(depth) {
  */
 export function tierSpreadFor() {
   return live.TIER_SPREAD;
+}
+
+/**
+ * foeTierFor(depth, bled) — RULES-17 (Phase 75.3, user ruling 2026-09-25):
+ * the roster keeps escalating past the level-5 tier as ELITE variants of
+ * tier-5 foes (the bestiary has exactly 5 tiers per family — no new
+ * authoring), rather than raising the level clamp. `bled` is the SAME
+ * tier-bleed d4 check `startCombat` already rolls (`rollCheck(rng, 4,
+ * atLeastFor(tierSpreadFor(), 4)).ok`) — this function draws NOTHING itself.
+ *
+ * Reads FOE_LEVEL's own line UNCLAMPED (`raw`) to find how far past 5 it
+ * would go; `rankBeforeBleed` clamps that overflow to `live.FOE_ELITE.
+ * maxRank` (0 switches elites off — the identity value). When
+ * `rankBeforeBleed` is 0 (either `raw <= 5`, i.e. depths 1-15 at the shipped
+ * dials, or `maxRank` is 0), this returns EXACTLY today's tier pick —
+ * `{ lvl: clamp(foeLevelFor(d) - (bled ? 1 : 0), 1, 5), eliteRank: 0 }` — the
+ * SAME bleed-lowers-the-LEVEL rule that has always applied. Once an elite is
+ * in play (`rankBeforeBleed > 0`), the foe's tier stays 5 (it never drops a
+ * tier again) and the SAME bleed check instead lowers its RANK by one
+ * (floored at 0) — "the tier-bleed d4 now lowers an elite's rank before its
+ * tier." Pure; 0 draws.
+ */
+export function foeTierFor(depth, bled) {
+  const d = safeDepth(depth);
+  const raw = Math.round(live.FOE_LEVEL.base + live.FOE_LEVEL.perDepth * d);
+  const rankBeforeBleed = Math.min(Math.max(0, raw - 5), live.FOE_ELITE.maxRank);
+  if (rankBeforeBleed <= 0) {
+    return { lvl: Math.max(1, Math.min(5, foeLevelFor(d) - (bled ? 1 : 0))), eliteRank: 0 };
+  }
+  return { lvl: 5, eliteRank: bled ? Math.max(0, rankBeforeBleed - 1) : rankBeforeBleed };
 }
 
 /**
@@ -498,23 +581,38 @@ export function foeCountMinFor(depth) {
 }
 
 /**
- * foeWpFor(baseWp, curve) — copy-time wp/maxWP scaling. The strict `=== 1`
- * fast path (via curve.foeHpScale) makes identity structural even for a
- * non-integer wp.
+ * foeWpFor(baseWp, curve, eliteRank = 0) — copy-time wp/maxWP scaling. The
+ * strict `=== 1` fast path (via curve.foeHpScale) makes identity structural
+ * even for a non-integer wp, at `eliteRank` 0 (the default — every
+ * pre-Phase-75.3 two-argument caller keeps this exact behavior).
+ *
+ * RULES-17 (Phase 75.3, user ruling 2026-09-25): an elite (`eliteRank > 0`,
+ * from `foeTierFor`) multiplies the depth-scaled wp by
+ * `(1 + FOE_ELITE.hpPerRank * eliteRank)` INSIDE the one `Math.round`, still
+ * floored at 1 — one rounding, never two.
  */
-export function foeWpFor(baseWp, curve) {
+export function foeWpFor(baseWp, curve, eliteRank = 0) {
+  if (eliteRank > 0) return Math.max(1, Math.round(baseWp * curve.foeHpScale * (1 + live.FOE_ELITE.hpPerRank * eliteRank)));
   return curve.foeHpScale === 1 ? baseWp : Math.max(1, Math.round(baseWp * curve.foeHpScale));
 }
 
 /**
- * foeHitFor(raw, curve) — USER RULING D: scales the WHOLE foe hit
- * (`foeLevelBase(f) + (crit ? 2*dice : dice)`) at the hero/member/pursuit
+ * foeHitFor(raw, curve, eliteRank = 0) — USER RULING D: scales the WHOLE foe
+ * hit (`foeLevelBase(f) + (crit ? 2*dice : dice)`) at the hero/member/pursuit
  * damage sites, replacing the retired flat-bonus helper this module's header
  * history paragraph names (which only scaled the `lvl^2` term, leaving the
  * dominant dice terms — Werebeast 2xd10, Dante x3, Drake 2d10+4 —
- * untouched, so the old ladder saturated).
+ * untouched, so the old ladder saturated). `eliteRank` defaults to 0 (every
+ * pre-Phase-75.3 two-argument caller keeps this exact behavior).
+ *
+ * RULES-17 (Phase 75.3, user ruling 2026-09-25): an elite (`eliteRank > 0`)
+ * multiplies by `(1 + FOE_ELITE.hitPerRank * eliteRank)` INSIDE the one
+ * `Math.round`, still floored at 1 — one rounding, never two.
+ * `ROUND_DAMAGE_CEILING` (roundDamageCapFor) still caps one foe's damage per
+ * visit AFTER this.
  */
-export function foeHitFor(raw, curve) {
+export function foeHitFor(raw, curve, eliteRank = 0) {
+  if (eliteRank > 0) return Math.max(1, Math.round(raw * curve.foeHitScale * (1 + live.FOE_ELITE.hitPerRank * eliteRank)));
   return curve.foeHitScale === 1 ? raw : Math.max(1, Math.round(raw * curve.foeHitScale));
 }
 

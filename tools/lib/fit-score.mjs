@@ -240,6 +240,17 @@ export const HELD_DIALS = [
   { path: ["FOE_COUNT_DEPTH", "soloOnlyOnOneFrom"], start: 5, releaseIf: "user-ruled (RULES-16); fitting deferred" },
   { path: ["FOE_COUNT_DEPTH", "atLeastTwoFrom"], start: 10, releaseIf: "user-ruled (RULES-16); fitting deferred" },
   { path: ["FOE_COUNT_DEPTH", "atLeastThreeFrom"], start: 20, releaseIf: "user-ruled (RULES-16); fitting deferred" },
+  // RULES-17 (Phase 75.3, Plan 03): the knee join is a user ruling
+  // (2026-09-25 — floor 13 is the first harder floor, the Phase 54 fit
+  // boundary), never a fit coordinate; the two tail slopes and the elite HP
+  // bonus are start values 75.3-06's checkpointed tail sweep will search.
+  { path: ["FOE_HIT_SCALE", "kneeDepth"], start: 12, releaseIf: "user-ruled (2026-09-25); never searched" },
+  { path: ["FOE_HIT_SCALE", "perDepthAfter"], start: 0.02, releaseIf: "searched by 75.3-06's tail sweep" },
+  { path: ["FOE_HP_SCALE", "kneeDepth"], start: 12, releaseIf: "user-ruled (2026-09-25); never searched" },
+  { path: ["FOE_HP_SCALE", "perDepthAfter"], start: 0.03, releaseIf: "searched by 75.3-06's tail sweep" },
+  { path: ["FOE_ELITE", "maxRank"], start: 10, releaseIf: "held (available); start value, not fitted" },
+  { path: ["FOE_ELITE", "hpPerRank"], start: 0.1, releaseIf: "searched by 75.3-06's tail sweep" },
+  { path: ["FOE_ELITE", "hitPerRank"], start: 0.05, releaseIf: "held (available); start value, not fitted" },
   { path: ["ROUND_DAMAGE_CEILING"], start: 0.5, releaseIf: "held (available); [0.3, 1.0] if released" },
   { path: ["ABILITY_THREAT", "base"], start: 1.0, releaseIf: "held (available); base [0.6, 1.2] if released" },
   { path: ["ABILITY_THREAT", "perDepth"], start: 0, releaseIf: "held (available)" },
