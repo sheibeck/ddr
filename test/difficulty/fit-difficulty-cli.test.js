@@ -93,7 +93,7 @@ function rowLines(text) {
 // SECOND candidate ever evaluated (n=2) rejected. All logs/transcripts live
 // in a fresh os.tmpdir() directory — nothing is written inside the repo, and
 // no test in this file passes --out.
-const SHARED_FLAGS = ["--search", `--start=${START_DIALS_PATH}`, "--seeds=2", "--workers=1", "--max-actions=1500", "--force-infeasible=2"];
+const SHARED_FLAGS = ["--search", `--start=${START_DIALS_PATH}`, "--seeds=2", "--workers=1", "--max-actions=300", "--force-infeasible=2"];
 
 test(
   "a fit resumed across two blocks (with a forced-infeasible n=2) retraces the live walk exactly, and per-block stdout is appended not truncated",
@@ -185,7 +185,7 @@ test(
 test("--search without --force-infeasible has no seam reason and a finite score at n=2 (exit 0)", () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "fit-difficulty-cli-"));
   const log = path.join(tmpDir, "seam-off.jsonl");
-  const result = run(["--search", `--start=${START_DIALS_PATH}`, "--seeds=2", "--workers=1", "--max-actions=1500", "--budget=2", `--log=${log}`]);
+  const result = run(["--search", `--start=${START_DIALS_PATH}`, "--seeds=2", "--workers=1", "--max-actions=300", "--budget=2", `--log=${log}`]);
   assert.equal(result.status, 0, `run without --force-infeasible failed: ${result.stderr}`);
   const row2 = rowsByN(readJsonlRaw(log)).get(2);
   assert.ok(row2, "n=2 must be logged");
@@ -195,6 +195,6 @@ test("--search without --force-infeasible has no seam reason and a finite score 
 });
 
 test("--force-infeasible without --search exits 2", () => {
-  const result = run(["--force-infeasible=2", "--seeds=2", "--workers=1", "--max-actions=1500"]);
+  const result = run(["--force-infeasible=2", "--seeds=2", "--workers=1", "--max-actions=300"]);
   assert.equal(result.status, 2, "--force-infeasible must be refused (exit 2) outside --search");
 });

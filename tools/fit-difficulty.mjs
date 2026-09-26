@@ -30,7 +30,7 @@
 // Run:
 //   node tools/fit-difficulty.mjs --dials=fit/start.json --seeds=200 --workers=4
 //   node tools/fit-difficulty.mjs --dials='{}' --seeds=20            (identity)
-//   node tools/fit-difficulty.mjs --search --start=fit/start.json --budget=80 --out=fit/best.json
+//   node tools/fit-difficulty.mjs --search --start=fit/start.json --budget=80 --out=fit/best.json --transcript=fit/transcript.txt
 //   node tools/fit-difficulty.mjs --objective=tail --dials='{}' --workers=4 --log=fit/tail.jsonl
 //   node tools/fit-difficulty.mjs --objective=tail --fresh=always --dials='{}' --workers=4
 //
@@ -54,6 +54,20 @@
 // diagnosis, want it unconditionally). `--search --objective=tail` walks
 // TAIL_SEARCH_PLAN with the exact same resumable/JSONL/runSearch machinery
 // the default objective uses.
+//
+// Phase 80 (TOOL-01, 2026-09-26): `--transcript=<path>` is the TOOL-OWNED,
+// append-only per-block stdout record (tools/lib/fit-resume.mjs#
+// appendTranscript) — every line this script prints to stdout (the block
+// header, each #n row, the BEST line) is ALSO appended there, so a later
+// block can never truncate an earlier block's lines no matter how its shell
+// redirect is spelled; this is the recommended way to capture a block's
+// transcript (the `>>` guidance above still holds as a belt-and-suspenders
+// fallback). `--force-infeasible=<n,...>` is a TEST-SEAM-ONLY flag (refused
+// outside --search) that marks the listed candidate numbers rejected — using
+// the exact rejection shape a real class-fairness rejection produces — so a
+// cheap `npm test` search (whose class pools are always far below
+// CLASS_POOL_MIN_N, and therefore never genuinely infeasible) can still
+// exercise the real Infinity/null replay round trip end to end.
 //
 // Flags:
 //   --dials=<json|path>   a single evaluation against this partial DIALS
@@ -80,6 +94,12 @@
 //   --out=<path>           write the best (or the single evaluation's) dial
 //                          set as JSON here
 //   --max-actions=N        per-run action cap (default BOT_DEFAULTS.maxActions)
+//   --transcript=<path>    the tool-owned, append-only per-block stdout
+//                          record — every line this script prints is also
+//                          appended here (recommended over relying on `>>`)
+//   --force-infeasible=<n,...>  TEST SEAM ONLY: --search only, marks the
+//                          listed candidate numbers rejected regardless of
+//                          the real classConstraints result
 
 import fs from "node:fs";
 import path from "node:path";
@@ -89,7 +109,7 @@ import { playRun, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";
 import { survivalReadout, classIdentityReadout, paceReadout } from "./lib/band-readout.mjs";
 import { setDialsForTuning } from "../engine/difficulty.js";
 import { SEARCH_PLAN, scoreSurvival, classConstraints, applyStep, evalRow, formatEvalLine } from "./lib/fit-score.mjs";
-import { readLog, appendLog, makeResumableEvaluate, runSearch } from "./lib/fit-resume.mjs";
+import { readLog, appendLog, appendTranscript, makeResumableEvaluate, runSearch } from "./lib/fit-resume.mjs";
 import { TAIL_SLICES, TAIL_SEARCH_PLAN, summarizeSlice, scoreTail, tailEvalRow, formatTailEvalLine } from "./lib/tail-score.mjs";
 
 // --- worker thread branch ---------------------------------------------------
@@ -234,6 +254,8 @@ function usage() {
     "  --log=<path.jsonl>    append every evaluation as one JSON line (resumable)",
     "  --out=<path>          write the best/single dial set as JSON here",
     "  --max-actions=N       per-run action cap (default BOT_DEFAULTS.maxActions)",
+    "  --transcript=<path>   the tool-owned, append-only per-block stdout record",
+    "  --force-infeasible=<n,...>  TEST SEAM ONLY: --search only, forces the listed candidate numbers rejected",
   ].join("\n");
 }
 
@@ -261,6 +283,8 @@ function parseArgs(argv) {
     log: null,
     out: null,
     maxActions: BOT_DEFAULTS.maxActions,
+    transcript: null,
+    forceInfeasible: [],
   };
   for (const arg of argv) {
     const eqIdx = arg.indexOf("=");
@@ -302,6 +326,16 @@ function parseArgs(argv) {
       case "--max-actions":
         opts.maxActions = parseInt(value, 10);
         break;
+      case "--transcript":
+        opts.transcript = value;
+        break;
+      case "--force-infeasible":
+        opts.forceInfeasible = (value || "").split(",").filter(Boolean).map((v) => {
+          const n = parseInt(v, 10);
+          if (!Number.isInteger(n) || n <= 0 || String(n) !== v.trim()) fail(`--force-infeasible must be a comma-separated list of positive integers, got: ${value}`);
+          return n;
+        });
+        break;
       default:
         fail(`Unknown flag: ${flag}`);
     }
@@ -311,6 +345,12 @@ function parseArgs(argv) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
+  // Phase 80 (TOOL-01): --force-infeasible is a TEST SEAM ONLY flag — refuse
+  // it outside --search rather than silently accept a flag that would never
+  // do anything (a single evaluation has no candidate numbers to force).
+  if (opts.forceInfeasible.length && !opts.search) {
+    fail("--force-infeasible requires --search (test seam only)");
+  }
   const botOpts = { ...BOT_DEFAULTS, maxActions: opts.maxActions };
   const seeds = seedList(opts.seeds);
 
@@ -325,12 +365,31 @@ async function main() {
   const formatLine = isTail ? formatTailEvalLine : formatEvalLine;
   const searchPlan = isTail ? TAIL_SEARCH_PLAN : SEARCH_PLAN;
 
+  // Phase 80 (TOOL-01): emit(line) is the ONE place every stdout line passes
+  // through — it prints to stdout exactly as before AND appends the same
+  // line to --transcript (a no-op when --transcript is absent), so the
+  // transcript is always byte-identical to what a `>>`-redirected stdout
+  // would have accumulated, but owned by the tool rather than the shell.
+  function emit(line) {
+    console.log(line);
+    appendTranscript(opts.transcript, line);
+  }
+
+  // Peeked once, up front, so the block header can report resume-from before
+  // any marker/row is appended; the --search branch below reuses this same
+  // Map rather than re-reading the log.
+  const loggedByN = readLog(opts.log);
+  const resumeFrom = loggedByN.size ? Math.max(...loggedByN.keys()) : null;
+  emit(
+    `== fit-difficulty block ${new Date().toISOString()} mode=${opts.search ? "search" : "single"} objective=${opts.objective} budget=${opts.search ? opts.budget : "-"} seeds=${opts.seeds} log=${opts.log || "none"} resume-from=${resumeFrom === null ? "none" : resumeFrom}`
+  );
+
   if (!opts.search) {
     // --- single evaluation -------------------------------------------------
     const dials = opts.dials === null ? {} : readJsonArg(opts.dials);
     const result = await evaluateOne(dials);
     const row = makeRow(1, dials, { ...result, walkPass: 1 });
-    console.log(formatLine(row));
+    emit(formatLine(row));
     appendLog(opts.log, row);
     if (opts.out) {
       const dir = path.dirname(opts.out);
@@ -344,9 +403,8 @@ async function main() {
 
   // --- --search: bounded coordinate descent, resumable -----------------------
   const startDials = opts.start ? readJsonArg(opts.start) : {};
-  const loggedByN = readLog(opts.log);
   if (loggedByN.size) {
-    appendLog(opts.log, { resumed: true, fromN: Math.max(...loggedByN.keys()) });
+    appendLog(opts.log, { resumed: true, fromN: resumeFrom });
   }
 
   const startedAt = Date.now();
@@ -354,12 +412,29 @@ async function main() {
     loggedByN,
     budget: opts.budget,
     onRow: (row) => {
-      console.log(formatLine(row));
+      emit(formatLine(row));
       appendLog(opts.log, row);
     },
     realEvaluate: async (candN, dials) => {
       const result = await evaluateOne(dials);
-      return makeRow(candN, dials, { ...result, walkPass: 1 });
+      const row = makeRow(candN, dials, { ...result, walkPass: 1 });
+      // Phase 80 (TOOL-01) TEST SEAM ONLY: force the listed candidate
+      // numbers rejected, using the exact rejection shape a real
+      // classConstraints failure produces (fit-score.mjs#evalRow /
+      // tail-score.mjs#tailEvalRow), so a cheap search (whose class pools
+      // are always far below CLASS_POOL_MIN_N) can still exercise the real
+      // Infinity/null replay round trip. No-op whenever the flag is absent.
+      if (opts.forceInfeasible.includes(candN)) {
+        const reasons = [...(row.constraints?.reasons || []), "forced infeasible by --force-infeasible (test seam)"];
+        return {
+          ...row,
+          score: Infinity,
+          verdict: "MISS",
+          constraints: { ...row.constraints, ok: false, reasons },
+          reason: reasons.join("; "),
+        };
+      }
+      return row;
     },
   });
   let n = 0;
@@ -372,14 +447,14 @@ async function main() {
   const { best, stopped } = await runSearch({ startDials, evaluate: countingEvaluate, searchPlan, applyStep });
 
   if (best) {
-    console.log(`BEST #${best.n} score=${best.score === Infinity ? "+Infinity" : best.score.toFixed(4)} dials=${JSON.stringify(best.dials)}`);
+    emit(`BEST #${best.n} score=${best.score === Infinity ? "+Infinity" : best.score.toFixed(4)} dials=${JSON.stringify(best.dials)}`);
     if (opts.out) {
       const dir = path.dirname(opts.out);
       if (dir && dir !== ".") fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(opts.out, JSON.stringify(best.dials, null, 2));
     }
   } else {
-    console.log("BEST: none (budget exhausted before the first evaluation completed)");
+    emit("BEST: none (budget exhausted before the first evaluation completed)");
   }
   process.stderr.write(`elapsed: ${((Date.now() - startedAt) / 1000).toFixed(1)}s  workers=${opts.workers}  evaluations=${n}  stopped=${stopped}\n`);
   process.exit(0);
