@@ -1,53 +1,59 @@
 # v2.1 autonomous-run resume point
 
-**Updated:** 2026-09-26 ~04:30 local, all phases planned; 75.1 wave 4 in flight.
+**Updated:** 2026-09-26 ~16:40 local (compact point).
 
-## Where the run is
+## Where the run is (compact point 2026-09-26 ~16:40 local)
 - `/gsd-autonomous` is running milestone v2.1.
-- **Complete and pushed:** 72, 81, 73, 74 and 75.
-- **Phase 75.1 is EXECUTING** (9 plans in 7 waves). Waves 1–3 are merged, with master at 6,306 green.
-  - Wave 4 (75.1-05 and 75.1-09) was dispatched at base 6ebcae3. Its manifest is `<scratchpad>/wave-75.1-4.json`.
-  - Still to run: W5 06, W6 07, W7 08.
-- **EVERY remaining phase is PLANNED and committed.** Each executes after the previous phase merges, in this order:
-  - 75.2: 5 plans
-  - 75.3: 7 plans. Plan 06 is the checkpointed sweep against the ruled tail targets.
-  - 76: 5 plans
-  - 77: 8 plans
-  - 78: 9 plans
-  - 79: 13 plans
-  - 80: 6 plans, last
-- **User rulings made during planning** are in each phase's CONTEXT ("rulings after planning" sections):
-  - 75.1 fumble severity
-  - 75.2 race signatures and Joiners
-  - 75.3 hold, knee, wanderers and tail targets
-  - 76 combat light and the Joiner persisting
-  - 78 HUD-07 option A and the dead map viewable
+- **Complete and pushed:** 72, 81, 73, 74, 75, 75.1 and 75.2 (75.2 closed at 5f09cec3).
+
+### Phase 75.3 (EXECUTING, 6 plans; 75.3-06 moved to 79.1)
+- Waves 1 and 2 are merged: 01 (foe count by depth), 02 (tools) and 03 (curve + elites). Master was 6,563 green before the 80 split commit a32fb95.
+- **75.3-04 (control at depth) is DONE but NOT MERGED.**
+  - Branch: `worktree-agent-a6fb26a7737bfd582`. Worktree: `.claude/worktrees/agent-a6fb26a7737bfd582`. Base: a53405f.
+  - Manifest: `<scratchpad>/wave-75.3-3.json`. Its npm test was 6598 green.
+  - NEXT: merge it (`worktree.cleanup-wave --manifest <scratchpad>/wave-75.3-3.json`), run npm test and parity, then `roadmap.update-plan-progress 75.3 75.3-04 complete`.
+- Remaining: wave 4 = 75.3-05 (hero spells, scrolls and items under the resist rule; the bot treats Freeze as a hold), then wave 5 = 75.3-07 (non-bot close-out only).
+- Then 75.3's VERIFICATION, `phase.complete 75.3`, and `state.planned-phase 76`.
+
+### Phase 80 CODE part (IN FLIGHT, parallel with the gameplay chain)
+- Four worktree executors were dispatched at base a32fb95 (manifest `<scratchpad>/wave-80-1.json`):
+  - 80-01 (R8 config + API scanner): agent add4ee435865f0c87
+  - 80-02 (SystemBars swap): a30a2555408c795c8
+  - 80-03 (letterbox CSS): ae911d6e883e6612d
+  - 80-06 (fit-tool CLI test): aeb8c305be0e18d4a
+- When they return, merge the wave (cleanup-wave; manual `merge --no-ff` if blocked), then run npm test.
+- **After 80-02 merges, the orchestrator must:**
+  1. Run `npm ci` in the main checkout.
+  2. Update the `.claude/CLAUDE.md` stack table: `@capacitor/status-bar` becomes the Capacitor 8 core SystemBars plugin (user-approved).
+- Phase 80 BUILD part (80-04: the ONE release build; 80-05: the emulator pass) runs ONLY after Phase 79.1. Both plans gate on 79.1-VERIFICATION.md.
+
+### Order after 75.3
+76 → 77 → 78 → 79 → **79.1** (NEW: the milestone-end bot pass + deep-floor tuning sweep; plan it from `79.1/SOURCE-75.3-06-sweep-plan.md` plus the deferred readouts) → 80 BUILD part → lifecycle.
+- 76, 77, 78, 79 and 80 are planned and committed. 79.1 still needs planning, with its CONTEXT written.
+
+### User rulings from this session (all in memory and in the phase CONTEXTs)
+- Bots run only at the milestone end (79.1).
+- No full test suite after build-only steps.
+- Code first, then ONE release build.
+- The Phase 80 code part may run in parallel.
+- Phase-specific rulings are in each CONTEXT's "rulings after planning" section.
+
+### Standing mechanics
+- **Worktree isolation is flaky:** the harness sometimes refuses its own worktree while its checkout is still running. Fallback: dispatch WITHOUT isolation (a `<sequential_execution>` block on master, one at a time), and clean up refused worktrees with `git worktree unlock`, `remove -f -f`, `prune` and `branch -D`.
+- A lingering executor background process can lock a worktree. Fix: TaskStop that agent, then remove the worktree with `node fs.rmSync`.
+- Merge recipe:
+  1. `git -C <wt> checkout -- test/unit/fixtures/shell-snapshots/`
+  2. cleanup-wave
+  3. npm test, parity, boot:check (rerun once if it fails)
+  4. `update-plan-progress`, then commit
+- Stall watch: `<scratchpad>/watch.sh <base> <stall-min> <agent ids...>`. The executor prompt pattern is in `<scratchpad>/last-executor-prompt.txt`, and the Phase 80 variant in `<scratchpad>/p80.txt`.
+- **Never `cd` into a worktree;** use `git -C`.
+- Floor-11 survival miss (Phase 75.1): flagged for the user and checked at 79.1.
 - **At milestone close:**
-  1. Publish `docs/narrative-pass/review.html` (79-13) as an artifact.
-  2. The user judges the insanity death-cause tone at review (79-06).
+  1. Publish the 79 review page.
+  2. The user judges the insanity death-cause tone.
   3. Run the batched Pixel 7 checklist.
-  4. Build the debug APK.
-  5. Offer a Play internal push, asking first.
-- **WORKTREE ISOLATION PROBLEM (2026-09-26 ~12:00):** Agent(isolation="worktree") keeps refusing its own new worktree ("git could not be run to resolve it"), because its checkout takes about 2 min and the harness verifies too early.
-  - FALLBACK: dispatch executors WITHOUT isolation (sequential mode on master). One executor at a time; multi-plan waves run serially. The prompt uses a `<sequential_execution>` block: confirm HEAD/base/clean on master first, no stash/reset/branch ops, no STATE/ROADMAP writes.
-  - Do not run tree-modifying git ops while it runs. After each refused attempt, remove the leftover locked worktree and branch (`git worktree unlock`, `remove -f -f`, `prune`, `branch -D`).
-  - Retry isolation later for multi-plan waves.
-- **USER RULING (2026-09-26): BOTS ONLY AT THE MILESTONE END.** No per-plan or per-phase bot readouts, per-race runs, deep slices or fit sweeps. They all run once in the NEW **Phase 79.1** (Milestone Balance Check & Deep-Floor Tuning), after 79 and before 80 (tuned values are code).
-  - Plan 75.3-06 (the sweep) was moved to `79.1/SOURCE-75.3-06-sweep-plan.md`. 75.3 now has 6 plans, and 75.3-07 is wave 5 with no readouts.
-  - When dispatching 75.2-02, 75.2-05, 75.3-01..05, 75.3-07, 76-01 and 78-01, add to the orchestrator notes: "SKIP every bot readout (tune-difficulty / tune-classes / fit / 1,000-seed / deep slices). The user ruled they run once in Phase 79.1. Record each readout acceptance criterion as 'deferred to Phase 79.1 (user ruling 2026-09-26)' in SUMMARY." The tooling code in 75.3-02 (the bot rotation flag, tail-score, the fit mode and their tests) still lands; only its BEFORE readouts are skipped.
-  - Cheap checks stay per wave: npm test (bot state-pin tests included), parity and boot:check.
-- **USER RULING (2026-09-26), Phase 80 test scope:** a build changes no code, so do NOT run the full `npm test` after Android-only build steps.
-  - Run the suite (in the executor and in the post-merge gate) only after plans that edit code: 80-02 (nativeChrome.js/package.json), 80-03 (mazeworld.html CSS) and 80-06 (the fit tool).
-  - 80-01 (R8 config), 80-04 (the artifact audit) and 80-05 (the emulator pass) only build and verify the build output.
-  - Phase 80 stays LAST. Its build and emulator checks need the finished code, so it cannot run in parallel with the gameplay phases (the user was right; the parallel suggestion is withdrawn).
-- **USER-APPROVED PENDING EDIT:** after plan 80-02 lands, update the `.claude/CLAUDE.md` stack table: `@capacitor/status-bar` becomes the Capacitor 8 core SystemBars plugin. Also run `npm ci` in the main checkout after 80-02 merges.
-- **Merge recipe:**
-  1. In each worktree, run `git -C <wt> checkout -- test/unit/fixtures/shell-snapshots/`.
-  2. Run `worktree.cleanup-wave`. If a rerun reports branch_mismatch, merge manually.
-  3. Run `npm test`, parity and boot:check. boot:check is flaky, so rerun it once before judging.
-  4. Run `update-plan-progress` for each merged plan, then commit.
-  5. At phase end: write the VERIFICATION, run `requirements.mark-complete` and `phase.complete`, run `state.planned-phase` for the next phase, then commit and push.
-- Watch executors with `<scratchpad>/watch.sh <base> <stall-min> <ids>`. The executor prompt pattern is in `<scratchpad>/last-executor-prompt.txt`. **Never `cd` into a worktree.**
+  4. Offer a Play internal push (ask first).
 
 ## Captures (all routed and committed)
 - Also added after the Phase 73 start: Phase 75 RULES-12 (a tile interrupted by a wanderer is resolved after the fight), RULES-13 (a magic staff is a wielded d8 weapon for Magic Users), RULES-14 (Bubble reflects the next attack and keeps a small pool), and RULES-15 (no rations, no spell refill). Phase 75.3 (deep-floor difficulty) covers RULES-16/17/18: foe count, the curve from floor 12, and control spells at depth. Phase 77 gets CMBUI-14 (combat ITEMS shows EQUIPPED and greys out gear) and Dazed honesty. Phase 78 gets HUD-09 (the full-bag find card), and the new-day refill line was folded into the charge rail item.
