@@ -67,6 +67,19 @@ import { AFFLICTIONS } from "../../content/afflictions.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+// RULES-18 (Phase 75.3, Plan 04): the four control-at-depth events
+// (controlResisted/controlHeld/foeStillHeld/foeHoldBroken) share these two
+// word maps — an effect name (freeze/stone/sleep/weaken/stupid/blind/shrink,
+// engine/combat.js's own `resistControl` vocabulary) reads as a noun phrase
+// ("the frost", not "the freeze"), and a held `kind` (frozen/stone/stupid,
+// `holdFoe`'s vocabulary) reads as its own short adjective. Both fall back
+// to a generic word rather than printing the raw engine string verbatim.
+const CONTROL_EFFECT_WORD = Object.freeze({
+  freeze: "the frost", stone: "the stone", sleep: "the sleep", weaken: "the weakening",
+  stupid: "the stupidity", blind: "the blindness", shrink: "the shrinking",
+});
+const CONTROL_HOLD_WORD = Object.freeze({ frozen: "frozen solid", stone: "turned to stone", stupid: "stupefied" });
+
 // Phase 25.1 (DFB-04): a member/newcomer name is interpolated TWICE into
 // markup for the joinerLeft snark line — escape so a name containing '<'
 // renders as visible text, never a live tag.
@@ -919,6 +932,19 @@ export const EVENT_NARRATION = {
   spellHit: (e) =>
     `<span class="hit">Hit.</span> <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (×${e.mult})` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
   frozenSolid: (e) => `<span class="hit">${e.target ?? "It"} freezes solid.</span>`,
+  // RULES-18 (Phase 75.3, Plan 04): past floor 12, a control (Freeze, Ice's
+  // last tick, a Joiner's Doze/Stun/Weaken, a Bard song) increasingly gets
+  // shrugged off outright — this is that resist, always its own Oracle line
+  // and roll so a resisted control never passes silently. The roll prints
+  // through rollRange.js's ONE range formatter.
+  controlResisted: (e) =>
+    `<span class="miss">${e.target ?? "It"} shrugs off ${CONTROL_EFFECT_WORD[e.effect] ?? "the effect"}${e.source ? ` from ${e.source}` : ""}.</span> <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}.`,
+  // The other half: an "indefinite" control (would have lasted the fight, or
+  // ended the foe outright) holds for a few rounds instead, past the knee.
+  controlHeld: (e) =>
+    `<span class="hit">${e.target ?? "It"} is ${CONTROL_HOLD_WORD[e.kind] ?? "held fast"} — ${e.rounds ?? "?"} rounds, not forever.</span>${e.source ? ` (${e.source})` : ""}`,
+  foeStillHeld: (e) => `${e.name ?? "It"} is still ${CONTROL_HOLD_WORD[e.kind] ?? "held"}. <span class="roll">${e.left ?? "?"}</span> to go.`,
+  foeHoldBroken: (e) => `<span class="beat">${e.name ?? "It"} shakes free and stands.</span>`,
   spellMissed: (e) => `<span class="miss">Missed ${e.target ?? "it"}.</span>`,
   potionDrunk: (e) =>
     `<span class="hit">+${e.amount ?? 0} hp</span> (${plural(e.remaining ?? 0, "potion")} left).${e.doubled ? ` (${e.doubled}: twice the dose, as promised.)` : ""}`,

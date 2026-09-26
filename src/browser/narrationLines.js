@@ -1594,6 +1594,22 @@ export const LINE_FOR = {
     priority: PRIORITY.you,
   }),
   frozenSolid: (e) => ({ text: `${e?.target ?? "It"} frozen solid.`, tone: "magic", priority: PRIORITY.you }),
+  // RULES-18 (Phase 75.3, Plan 04): the four control-at-depth events' rail
+  // twins of eventNarration.js's own lines — the SAME word maps, kept as a
+  // short local copy here (this module never imports from eventNarration.js;
+  // see its own no-cycle discipline note near the top of this file).
+  controlResisted: (e) => ({
+    text: `${e?.target ?? "It"} shrugs off ${{ freeze: "the frost", stone: "the stone", sleep: "the sleep", weaken: "the weakening", stupid: "the stupidity", blind: "the blindness", shrink: "the shrinking" }[e?.effect] ?? "the effect"}.`,
+    tone: "miss",
+    priority: PRIORITY.them,
+  }),
+  controlHeld: (e) => ({
+    text: `${e?.target ?? "It"} held ${e?.rounds ?? "?"} rounds.`,
+    tone: "magic",
+    priority: PRIORITY.them,
+  }),
+  foeStillHeld: (e) => ({ text: `${e?.name ?? "It"} still held (${e?.left ?? "?"}).`, tone: "dodge", priority: PRIORITY.them }),
+  foeHoldBroken: (e) => ({ text: `${e?.name ?? "It"} breaks free.`, tone: "hurt", priority: PRIORITY.them }),
   spellMissed: (e) => ({ text: `${e?.spell ?? "It"} misses ${e?.target ?? "it"}.`, tone: "miss", priority: PRIORITY.you }),
   // Phase 25 (FEED-01): `doubled` names the heal2x race when the dose was doubled.
   potionDrunk: (e) => ({

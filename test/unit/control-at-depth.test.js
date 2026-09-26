@@ -43,6 +43,9 @@ import {
   controlHoldRoundsFor,
   controlCapRounds,
 } from "../../engine/difficulty.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
+import { foeConditionChips } from "../../src/browser/foeConditions.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq`; throws on underflow.
  * `getState` is a FIXED stub (default 0) — deliberately NOT a real cursor —
@@ -594,4 +597,46 @@ test("Bard Thunder (C13): floor 20, eligible foes resist or keep their rolled sl
   assert.equal("resisted" in ineligible, false);
   assert.equal(ineligible.asleep, 0);
   assert.ok(events.some((e) => e.type === "thunderRolled"));
+});
+
+// ---------------------------------------------------------------------------
+// Task 3: narration and chips (fuller coverage lives in test/unit/foe-
+// conditions.test.js and the eventNarration/narrationLines coverage suites —
+// this section proves the specific behaviour block claims for this plan).
+// ---------------------------------------------------------------------------
+
+test("EVENT_NARRATION.controlResisted: names the target and the effect, reads 'shrugs off', prints the roll and range, no percent sign; survives a bare payload", () => {
+  const out = EVENT_NARRATION.controlResisted({ target: "Wraith", effect: "freeze", source: "Freeze", roll: 17, atLeast: 13, dieN: 20, depth: 20 });
+  assert.ok(out.includes("Wraith"));
+  assert.ok(out.includes("frost"));
+  assert.ok(out.includes("shrugs off"));
+  assert.ok(out.includes("17"));
+  assert.ok(out.includes("13–20"));
+  assert.equal(out.includes("%"), false);
+  for (const type of ["controlResisted", "controlHeld", "foeStillHeld", "foeHoldBroken"]) {
+    const bare = EVENT_NARRATION[type]({ type });
+    assert.ok(typeof bare === "string" && bare.trim().length > 0, `${type} must survive a bare payload`);
+  }
+});
+
+test("LINE_FOR: the four events carry their own tones (miss/magic/dodge/hurt)", () => {
+  assert.equal(LINE_FOR.controlResisted({ type: "controlResisted" }).tone, "miss");
+  assert.equal(LINE_FOR.controlHeld({ type: "controlHeld" }).tone, "magic");
+  assert.equal(LINE_FOR.foeStillHeld({ type: "foeStillHeld" }).tone, "dodge");
+  assert.equal(LINE_FOR.foeHoldBroken({ type: "foeHoldBroken" }).tone, "hurt");
+});
+
+test("chips: a held foe shows 'Stone · n' / 'Frozen · n' / 'Stupefied · n' (tone good); an unmoved foe shows 'Unmoved' (tone bad) naming the effect", () => {
+  const stoneChip = foeConditionChips(fixedFoe({ held: { kind: "stone", left: 2 } }), fixedState())[0];
+  assert.equal(stoneChip.text, "Stone · 2");
+  assert.equal(stoneChip.tone, "good");
+  const frozenChip = foeConditionChips(fixedFoe({ held: { kind: "frozen", left: 1 } }), fixedState())[0];
+  assert.equal(frozenChip.text, "Frozen · 1");
+  const stupidChip = foeConditionChips(fixedFoe({ held: { kind: "stupid", left: 3 } }), fixedState())[0];
+  assert.equal(stupidChip.text, "Stupefied · 3");
+
+  const unmovedChip = foeConditionChips(fixedFoe({ resisted: "weaken" }), fixedState())[0];
+  assert.equal(unmovedChip.text, "Unmoved");
+  assert.equal(unmovedChip.tone, "bad");
+  assert.ok(unmovedChip.desc.includes("weaken"));
 });

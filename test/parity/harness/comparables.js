@@ -631,7 +631,13 @@ export function stripFoeAbilityState(combat) {
     // equivalent — engine-only, never on a floor-1 fixture foe (the first
     // elite floor is 16, far past every fixture's own floor-1 fights) — a
     // structural tripwire, exactly like the abilities/cd/uses strip above.
-    const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, elite, ...rest } = f;
+    // RULES-18 (Phase 75.3, Plan 04): `held`/`resisted` are brand-new
+    // per-foe fields (a past-the-knee control hold, and the mark a resisted
+    // control leaves) with NO prototype-side equivalent — engine-only, never
+    // on a floor-1 fixture foe (the first resist face is floor 13, far past
+    // every fixture's own floor-1 fights) — a structural tripwire, exactly
+    // like the abilities/cd/uses/elite strip above.
+    const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, elite, held, resisted, ...rest } = f;
     return rest;
   });
   return { ...combatRest, foes };
