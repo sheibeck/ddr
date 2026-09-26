@@ -4037,3 +4037,58 @@ Freeze, a Petrify and an Oak Staff stone on every floor 1-12 are today's
 kill with no resist roll and no hold. The rotation readouts
 (`tools/readouts/75.3-05-rotation-{before,after}.txt`) and the 200-seed
 natural-after are deferred to Phase 79.1 (user ruling 2026-09-26).
+
+### Phase 75.3 — summary
+
+Consolidates each plan's predictor, measurement and declared moves above
+(Plans 01, 03, 04 and 05, from their own SUMMARY.md files), plus Plan 02,
+which touched only `tools/` (the bot's opt-in control rotation, the tail
+scorer, the fit tool's tail objective) and no `engine/*.js` file, so it
+could not expose a parity replay site. The checkpointed tail sweep
+(formerly Plan 06) moved to Phase 79.1 and changed nothing here. Plan 07
+(this close) touched no engine file.
+
+| Plan | Predictor | Measured | Declared parity moves |
+|---|---|---|---|
+| 01 (foe count by depth, RULES-16) | every fixture-exposed fight is on floor 1, below the first rung (`soloOnlyOnOneFrom` 5); no fixture starts a wandering fight | 60/60, 0 fail; hash unchanged | **zero** (two bot-baseline state pins moved instead, `deep-8` and `deep-14`, bisected live against the identity dial and re-pinned with a RULES-16 rationale; not parity fixtures) |
+| 02 (bot control rotation, tail scorer, fit tail objective) | tools only; no `engine/*.js` file touched | not applicable (no replay site can be exposed) | **zero**, the only possible outcome |
+| 03 (the knee and the elites, RULES-17) | every fixture fight is on floor 1, far below the knee (12) and the first elite floor (16) | 60/60, 0 fail; hash unchanged | **zero** (bot-baseline pins: zero moved, including `deep-14`, predicted to move and measured unchanged) |
+| 04 (control at depth, combat.js sites, RULES-18) | `controlResistFacesFor(1) === controlHoldRoundsFor(1) === 0`, so every new branch is a no-op on floor 1 and no derived stream is built | 60/60, 0 fail; hash unchanged | **zero** (bot-baseline pins: zero moved) |
+| 05 (control at depth, hero spells and items, RULES-18) | the magic fixture's Freeze and scroll casts are on floor 1; no fixture kit carries a Birch/Oak/Cedar Staff or an Amulet of Stone | 60/60, 0 fail; hash unchanged | **zero** (one declared shell-snapshot regeneration, `mu.hero.txt`, the Stupidity grimoire text: a separate fixture family; bot-baseline pins: zero moved) |
+
+**Carve-outs.** Three foe fields were added to
+`test/parity/harness/comparables.js#stripFoeAbilityState` in this phase:
+`elite` (Plan 03, the elite rank a foe carries from floor 16) and `held` and
+`resisted` (Plan 04, the hold and the Unmoved mark). None is ever set on a
+floor-1 foe, so none is ever non-empty at a replay site; the exposure guard
+below proves it rather than relying on the carve-out.
+
+**Measured at this close (75.3-07).** `node tools/fixture-inventory.mjs`
+replays to the same roster as the generated table above
+(`node --test test/parity/fixture-inventory.test.js` 5/5), and
+`git diff --stat 5f09cec3 -- test/parity/fixtures test/parity/prototype-master.js.txt`
+is empty: no parity fixture moved across the whole phase.
+
+**Prototype master hash across the whole phase:**
+`git hash-object test/parity/prototype-master.js.txt` ->
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`, unchanged from the phase base
+(`5f09cec3`, Phase 75.2's close) through every Phase 75.3 plan.
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s
+"RULES-16/17/18 (Phase 75.3)" exposure guard (75.3-07) replays every one of
+the 31 sites (asserting the count, and that at least the seven
+fight-starting sites are seen starting a fight) and asserts that no site
+starts a fight on floor 5 or deeper (the shallowest floor any Phase 75.3
+rule reads), that no combat foe ever carries `elite`, `held` or `resisted`
+at any point in the replay, and that no event is `controlResisted`,
+`controlHeld`, `foeStillHeld`, `foeHoldBroken` or an `encounterStarted`
+with an elite foe, unless a Phase 75.3 divergence record declares the site.
+A companion "has teeth" test feeds the same counting function a doctored
+event list carrying a `controlResisted` event and an elite encounter and
+confirms the zero assertions would fail. The declared Phase 75.3 set stays
+exactly `RULES753_EXPECTED_HOLDERS`: legitimately EMPTY, matching every
+plan's measured zero above.
+
+This closes the Phase 75.3 fixture story: every plan measured zero moved
+parity fixtures, a standing teeth-tested 31-site guard proves it, and the
+prototype master is byte-identical to the phase base.
