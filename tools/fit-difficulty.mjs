@@ -31,6 +31,8 @@
 //   node tools/fit-difficulty.mjs --dials=fit/start.json --seeds=200 --workers=4
 //   node tools/fit-difficulty.mjs --dials='{}' --seeds=20            (identity)
 //   node tools/fit-difficulty.mjs --search --start=fit/start.json --budget=80 --out=fit/best.json
+//   node tools/fit-difficulty.mjs --objective=tail --dials='{}' --workers=4 --log=fit/tail.jsonl
+//   node tools/fit-difficulty.mjs --objective=tail --fresh=always --dials='{}' --workers=4
 //
 // A backgrounded `--search` run's stdout should always be redirected with
 // `>>` (append), never `>` (truncate) — USER RULING G "Adjustment 3(d)": a
@@ -38,15 +40,38 @@
 // against the SAME `--log`, and a truncating redirect would silently
 // discard every earlier block's console transcript on each re-run.
 //
+// Phase 75.3 (RULES-17/RULES-18): `--objective=tail` swaps the evaluator
+// from the default floors-1-12 survival objective (tools/lib/fit-score.mjs,
+// unchanged, byte-for-byte the same behavior as before this flag existed)
+// to the deep-floor tail scorer's own objective (imported below) — every
+// non-fresh TAIL_SLICE (deep12/deep20/deep30/deep40, rot20/rot30/rot40,
+// troll20) is played through the SAME playSeedsWithWorkers pool this file
+// already uses, with that slice's own `startDepth`/`force`/
+// `controlRotation`/seed count. `--fresh` controls the 1,000-seed fresh
+// (floor-1) slice: "gate" (default) runs it only once a candidate meets
+// every slice target (cheap to check — see evaluateTailCandidate's own
+// header); "always" runs it every time (the phase BEFORE/AFTER rows, and
+// diagnosis, want it unconditionally). `--search --objective=tail` walks
+// TAIL_SEARCH_PLAN with the exact same resumable/JSONL/runSearch machinery
+// the default objective uses.
+//
 // Flags:
 //   --dials=<json|path>   a single evaluation against this partial DIALS
 //                         override (inline JSON or a path to a JSON file)
+//   --objective=<survival|tail>  which evaluator to run (default survival;
+//                         the survival path is unchanged by this flag)
+//   --fresh=<gate|always> --objective=tail only: gate the 1,000-seed fresh
+//                         slice on every slice target passing (default), or
+//                         always run it
 //   --search              bounded coordinate descent (see the module header
-//                         of tools/lib/fit-score.mjs#SEARCH_PLAN)
+//                         of tools/lib/fit-score.mjs#SEARCH_PLAN, or
+//                         TAIL_SEARCH_PLAN under --objective=tail)
 //   --start=<path>        the search's starting dial set (default: DIALS
 //                         identity, i.e. `{}`)
 //   --budget=N            max evaluations for --search (default 80)
-//   --seeds=N              seeds per evaluation (default 200)
+//   --seeds=N              seeds per evaluation (default 200; --objective=tail
+//                          ignores this — each TAIL_SLICE carries its own
+//                          seed count)
 //   --workers=N            worker_threads count (default 4)
 //   --log=<path.jsonl>     append every evaluation as one JSON line here
 //                          (an existing log RESUMES a --search run; ALWAYS
@@ -65,6 +90,7 @@ import { survivalReadout, classIdentityReadout, paceReadout } from "./lib/band-r
 import { setDialsForTuning } from "../engine/difficulty.js";
 import { SEARCH_PLAN, scoreSurvival, classConstraints, applyStep, evalRow, formatEvalLine } from "./lib/fit-score.mjs";
 import { readLog, appendLog, makeResumableEvaluate, runSearch } from "./lib/fit-resume.mjs";
+import { TAIL_SLICES, TAIL_SEARCH_PLAN, summarizeSlice, scoreTail, tailEvalRow, formatTailEvalLine } from "./lib/tail-score.mjs";
 
 // --- worker thread branch ---------------------------------------------------
 //
@@ -153,16 +179,57 @@ async function evaluateCandidate(dials, seeds, opts, workerCount) {
   return { survival, scored, classIdentity, constraints, pace, elapsedMs };
 }
 
+/**
+ * evaluateTailCandidate(dials, botOpts, workerCount, freshMode) — Phase 75.3
+ * (RULES-17/RULES-18): plays every non-fresh TAIL_SLICE (imported below)
+ * through the SAME playSeedsWithWorkers pool `evaluateCandidate` uses, each
+ * with ITS OWN `startDepth`/`force`/`controlRotation` and seed count
+ * (`i*7919+1`, same list shape as `seedList` above — a fresh per-slice seed
+ * list, since each slice's own seed count differs). Builds a
+ * `summarizeSlice` summary per slice, then decides whether to ALSO run the
+ * 1,000-seed `fresh` slice: `freshMode === "always"` always runs it;
+ * otherwise (`"gate"`, the default) it runs only when `scoreTail` over the
+ * non-fresh summaries already scores 0 — i.e. every slice target is met
+ * (a slice miss always scores > 0 via the scorer's own lexicographic
+ * factor, and `fresh` being absent from `summaries` never itself
+ * contributes to that score — see `scoreTail`'s own header). Returns
+ * `{ summaries, elapsedMs }` — the exact shape `tailEvalRow` expects.
+ */
+async function evaluateTailCandidate(dials, botOpts, workerCount, freshMode) {
+  const startedAt = Date.now();
+  const summaries = {};
+  for (const slice of TAIL_SLICES) {
+    if (slice.stage === "fresh") continue; // handled below, after the gate check
+    const sliceSeeds = seedList(slice.seeds);
+    const sliceOpts = { ...botOpts, startDepth: slice.startDepth, force: slice.force, controlRotation: slice.controlRotation };
+    const rows = await playSeedsWithWorkers(dials, sliceSeeds, sliceOpts, workerCount);
+    summaries[slice.id] = summarizeSlice(rows);
+  }
+  const gateCheck = scoreTail(summaries); // fresh absent -> gateCheck.score reflects the slice tier ONLY
+  const runFresh = freshMode === "always" || gateCheck.score === 0;
+  if (runFresh) {
+    const freshSlice = TAIL_SLICES.find((s) => s.stage === "fresh");
+    const freshSeeds = seedList(freshSlice.seeds);
+    const freshOpts = { ...botOpts, startDepth: freshSlice.startDepth };
+    const rows = await playSeedsWithWorkers(dials, freshSeeds, freshOpts, workerCount);
+    summaries.fresh = summarizeSlice(rows);
+  }
+  const elapsedMs = Date.now() - startedAt;
+  return { summaries, elapsedMs };
+}
+
 // --- CLI ---------------------------------------------------------------------
 
 function usage() {
   return [
     "Usage: node tools/fit-difficulty.mjs [options]",
     "  --dials=<json|path>  a single evaluation against this partial DIALS override",
+    "  --objective=<survival|tail>  which evaluator to run (default survival)",
+    "  --fresh=<gate|always>  --objective=tail only: gate the 1,000-seed fresh slice (default gate)",
     "  --search              bounded coordinate descent: Ruling F's spellPower coordinate first, then the core 10",
     "  --start=<path>        the search's starting dial set (default: {})",
     "  --budget=N            max evaluations for --search (default 80)",
-    "  --seeds=N             seeds per evaluation (default 200)",
+    "  --seeds=N             seeds per evaluation (default 200; ignored under --objective=tail)",
     "  --workers=N           worker_threads count (default 4)",
     "  --log=<path.jsonl>    append every evaluation as one JSON line (resumable)",
     "  --out=<path>          write the best/single dial set as JSON here",
@@ -184,6 +251,8 @@ function readJsonArg(value) {
 function parseArgs(argv) {
   const opts = {
     dials: null,
+    objective: "survival",
+    fresh: "gate",
     search: false,
     start: null,
     budget: 80,
@@ -200,6 +269,14 @@ function parseArgs(argv) {
     switch (flag) {
       case "--dials":
         opts.dials = value;
+        break;
+      case "--objective":
+        if (value !== "survival" && value !== "tail") fail(`--objective must be survival or tail, got: ${value}`);
+        opts.objective = value;
+        break;
+      case "--fresh":
+        if (value !== "gate" && value !== "always") fail(`--fresh must be gate or always, got: ${value}`);
+        opts.fresh = value;
         break;
       case "--search":
         opts.search = true;
@@ -237,19 +314,30 @@ async function main() {
   const botOpts = { ...BOT_DEFAULTS, maxActions: opts.maxActions };
   const seeds = seedList(opts.seeds);
 
+  // Phase 75.3 (RULES-17/RULES-18): --objective=tail swaps the evaluator/
+  // row-builder/line-formatter/search-plan; the default ("survival") path
+  // below is otherwise IDENTICAL to before this flag existed.
+  const isTail = opts.objective === "tail";
+  const evaluateOne = isTail
+    ? (dials) => evaluateTailCandidate(dials, botOpts, opts.workers, opts.fresh)
+    : (dials) => evaluateCandidate(dials, seeds, botOpts, opts.workers);
+  const makeRow = isTail ? tailEvalRow : evalRow;
+  const formatLine = isTail ? formatTailEvalLine : formatEvalLine;
+  const searchPlan = isTail ? TAIL_SEARCH_PLAN : SEARCH_PLAN;
+
   if (!opts.search) {
     // --- single evaluation -------------------------------------------------
     const dials = opts.dials === null ? {} : readJsonArg(opts.dials);
-    const result = await evaluateCandidate(dials, seeds, botOpts, opts.workers);
-    const row = evalRow(1, dials, { ...result, walkPass: 1 });
-    console.log(formatEvalLine(row));
+    const result = await evaluateOne(dials);
+    const row = makeRow(1, dials, { ...result, walkPass: 1 });
+    console.log(formatLine(row));
     appendLog(opts.log, row);
     if (opts.out) {
       const dir = path.dirname(opts.out);
       if (dir && dir !== ".") fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(opts.out, JSON.stringify(dials, null, 2));
     }
-    process.stderr.write(`elapsed: ${(result.elapsedMs / 1000).toFixed(1)}s  workers=${opts.workers}  seeds=${opts.seeds}\n`);
+    process.stderr.write(`elapsed: ${(result.elapsedMs / 1000).toFixed(1)}s  workers=${opts.workers}  seeds=${opts.seeds}  objective=${opts.objective}\n`);
     process.exit(0);
     return;
   }
@@ -266,12 +354,12 @@ async function main() {
     loggedByN,
     budget: opts.budget,
     onRow: (row) => {
-      console.log(formatEvalLine(row));
+      console.log(formatLine(row));
       appendLog(opts.log, row);
     },
     realEvaluate: async (candN, dials) => {
-      const result = await evaluateCandidate(dials, seeds, botOpts, opts.workers);
-      return evalRow(candN, dials, { ...result, walkPass: 1 });
+      const result = await evaluateOne(dials);
+      return makeRow(candN, dials, { ...result, walkPass: 1 });
     },
   });
   let n = 0;
@@ -281,7 +369,7 @@ async function main() {
     return row;
   };
 
-  const { best, stopped } = await runSearch({ startDials, evaluate: countingEvaluate, searchPlan: SEARCH_PLAN, applyStep });
+  const { best, stopped } = await runSearch({ startDials, evaluate: countingEvaluate, searchPlan, applyStep });
 
   if (best) {
     console.log(`BEST #${best.n} score=${best.score === Infinity ? "+Infinity" : best.score.toFixed(4)} dials=${JSON.stringify(best.dials)}`);
