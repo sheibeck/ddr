@@ -51,7 +51,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // Phase 73 (ROLL-05): rollRange.js is the ONE place a winning range is
 // formatted ("16–20") — like upgradeWhy.js, it carries zero imports of its
 // own, so pulling it in here does not trip T-25-23's engine-import guard.
-import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS } from "./rollRange.js";
+import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS, bottomRangeText } from "./rollRange.js";
 // RULES-07 (Phase 75): afflictionRolled's rail line reads the row's own
 // `phobia` flag by roll, mirroring eventNarration.js — pure content data
 // (not engine/), same discipline as the ABILITY_BY_ID import above.
@@ -1603,11 +1603,12 @@ export const LINE_FOR = {
   }),
   scrollRead: (e) => ({ text: `You unroll: ${e?.spell ?? "something unreadable"}.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 25 (FEED-02): a scroll refusal always names its reason; unknown/
-  // absent reason still gets a voiced fallback.
+  // absent reason still gets a voiced fallback. RULES-10 (Phase 75.1):
+  // "pilfer"/"noRunes" are retired — canRead is gone, and that reader now
+  // READS (scrollDeciphered/scrollGarbled/scrollFumbled below), never
+  // refuses.
   scrollRefused: (e) => {
     const map = {
-      pilfer: "A Pilfer's hands know locks, not letters.",
-      noRunes: "The runes mean nothing to you.",
       noScrolls: "You have no scroll to read.",
       // Phase 31 (CMB-01): Fight! not yet pressed.
       notFought: "Fight! first. The scroll will keep.",
@@ -1619,6 +1620,17 @@ export const LINE_FOR = {
   // the level needed; the scroll still casts once for free right after.
   scrollTooAdvanced: (e) => ({ text: `${e?.spell ?? "It"} needs level ${e?.need ?? "?"}; you are ${e?.have ?? "?"}.`, tone: "miss", priority: PRIORITY.you }),
   scrollCast: (e) => ({ text: `The scroll casts: ${e?.spell ?? "something"}.`, tone: "magic", priority: PRIORITY.you }),
+  // RULES-10 (Phase 75.1) — an "intel" reader's own d20. scrollDeciphered
+  // reads like heroResisted (roll vs range, intel); scrollGarbled never
+  // names the spell and never reads as a refusal; scrollFumbled names the
+  // spell and the fumble band via bottomRangeText.
+  scrollDeciphered: (e) => ({ text: `You puzzle it out (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}, intel ${e?.intel ?? "?"}).`, tone: "magic", priority: PRIORITY.you }),
+  scrollGarbled: (e) => ({ text: `You squint at runes you can't make out (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}). Crumbles.`, tone: "miss", priority: PRIORITY.you }),
+  scrollFumbled: (e) => ({
+    text: `You read ${e?.spell ?? "the spell"} wrong (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}, fumble ${bottomRangeText(e?.fumbleAtLeast)}).${e?.fizzled ? " Fizzles — dust." : ""}`,
+    tone: "hurt",
+    priority: PRIORITY.you,
+  }),
 
   /* ---------------- economy.js ---------------- */
 

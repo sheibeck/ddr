@@ -209,10 +209,12 @@ test("(iii) weakened then afraid compose: Math.ceil(Math.ceil(w/2)/2)", () => {
 // --- (iv) Never a lost action, never refused for fear ----------------------
 
 test("(iv) an afraid character can strike, cast, drink, read, use, flee, parley, and sing — never refused for fear", () => {
+  // RULES-10 (Phase 75.1): "pilfer"/"noRunes" are retired from
+  // scrollRefused — canRead is gone, so those reasons never fire.
   const FEAR_FREE_VOCAB = new Set([
     "notFought", "cooldown", "wrongClass", "combatOnly", "exploreOnly", "noTarget",
-    "pilfer", "wizard", "samurai", "ninja", "masterOfArms", "exhausted",
-    "noScrolls", "noRunes", "tried", "wilmsryVsMagical", "walkingDead", "magical",
+    "wizard", "samurai", "ninja", "masterOfArms", "exhausted",
+    "noScrolls", "tried", "wilmsryVsMagical", "walkingDead", "magical",
   ]);
   const assertNeverFearRefused = (events) => {
     for (const e of events) {

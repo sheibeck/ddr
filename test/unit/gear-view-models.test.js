@@ -29,7 +29,6 @@ import {
   gearKitRows,
 } from "../../src/browser/gearTab.js";
 import { armorDisplay, bagArmorText, usableBy, dropShelfItems } from "../../src/browser/viewModels.js";
-import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { newRun } from "../../engine/state.js";
 import { maxCharges } from "../../engine/movement.js";
@@ -739,16 +738,19 @@ test("gearConsumablesModel, scrolls: a readable Magic User gets SCROLLS ×N, ver
   assert.equal(scrollRow.reason, "");
 });
 
-test("gearConsumablesModel: a Pilfer Thief gets scroll reason === LINE_FOR.scrollRefused({reason:'pilfer'}).text; a Fighter without Runes/Signs gets 'noRunes'", () => {
+// RULES-10 (Phase 75.1): canRead is gone — a Pilfer Thief and a Fighter
+// without Runes/Signs now READ under the intelligence rule, so their SCROLLS
+// row is enabled with no refusal reason, exactly like a Magic User's.
+test("gearConsumablesModel: a Pilfer Thief and a Fighter without Runes/Signs both get an enabled SCROLLS row with no reason", () => {
   const pilfer = fixedChar({ cls: "Thief", sub: "Pilfer", scrolls: 1 });
   const pilferRow = gearConsumablesModel(st(pilfer)).rows.find((r) => r.key === "scroll");
-  assert.equal(pilferRow.enabled, false);
-  assert.equal(pilferRow.reason, LINE_FOR.scrollRefused({ reason: "pilfer" }).text);
+  assert.equal(pilferRow.enabled, true);
+  assert.equal(pilferRow.reason, "");
 
   const fighter = fixedChar({ cls: "Fighter", scrolls: 1 });
   const fighterRow = gearConsumablesModel(st(fighter)).rows.find((r) => r.key === "scroll");
-  assert.equal(fighterRow.enabled, false);
-  assert.equal(fighterRow.reason, LINE_FOR.scrollRefused({ reason: "noRunes" }).text);
+  assert.equal(fighterRow.enabled, true);
+  assert.equal(fighterRow.reason, "");
 });
 
 test("gearConsumablesModel: potions 3 + 3 buff items + scrolls 2 gives heldText '8 HELD'", () => {

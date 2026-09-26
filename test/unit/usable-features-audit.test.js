@@ -325,21 +325,27 @@ CASES.push({
   },
   expect: { refused: { type: "scrollRefused", reason: "noScrolls" } },
 });
+// RULES-10 (Phase 75.1): canRead is gone — a Pilfer, and any Fighter with no
+// Runes/Signs, now READS under the intelligence rule (rolling on its own
+// derived stream) instead of refusing; see test/unit/scroll-read.test.js for
+// the full reader/band/outcome coverage. Neither scrollGarbled nor
+// scrollFumbled is a REFUSAL_TYPES member, so `expect: { ok: true }` here
+// asserts exactly "never refused for being a Pilfer / having no Runes".
 CASES.push({
-  name: "scroll: a Pilfer is refused pilfer",
+  name: "scroll: a Pilfer reads under the intelligence rule (never refused)",
   run: () => {
     const state = fixedState({ c: { sub: "Pilfer", scrolls: 1 } });
     return { events: readScroll(state, fakeRng([]), []), state };
   },
-  expect: { refused: { type: "scrollRefused", reason: "pilfer" } },
+  expect: { ok: true },
 });
 CASES.push({
-  name: "scroll: no Magic-User class and no Runes/Signs is refused noRunes",
+  name: "scroll: no Magic-User class and no Runes/Signs still reads under the intelligence rule (never refused)",
   run: () => {
     const state = fixedState({ c: { cls: "Fighter", scrolls: 1 } });
     return { events: readScroll(state, fakeRng([]), []), state };
   },
-  expect: { refused: { type: "scrollRefused", reason: "noRunes" } },
+  expect: { ok: true },
 });
 CASES.push({
   name: "scroll: Fight!-pending refuses notFought",

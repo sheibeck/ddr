@@ -111,8 +111,15 @@ test("reason-specific refusal text differs from the generic fallback", () => {
   assert.notEqual(useCooldown, useFallback);
 
   const scrollFallback = LINE_FOR.scrollRefused({ type: "scrollRefused", reason: "definitelyNotAReason" }).text;
-  const pilferScroll = LINE_FOR.scrollRefused({ type: "scrollRefused", reason: "pilfer" }).text;
-  assert.notEqual(pilferScroll, scrollFallback);
+  const noScrollsRefusal = LINE_FOR.scrollRefused({ type: "scrollRefused", reason: "noScrolls" }).text;
+  assert.notEqual(noScrollsRefusal, scrollFallback);
+
+  // RULES-10 (Phase 75.1): a plain failure (scrollGarbled) never reads as a
+  // refusal, never names the spell — only the reading range/intel.
+  const scrollGarbled = LINE_FOR.scrollGarbled({ type: "scrollGarbled", spell: "Heal", roll: 4, atLeast: 8, dieN: 20, intel: 14, fumbleAtLeast: 4 }).text;
+  assert.doesNotMatch(scrollGarbled, /refuse/i);
+  assert.doesNotMatch(scrollGarbled, /\bHeal\b/);
+  assert.match(scrollGarbled, /8/);
 
   const joinerFallback = LINE_FOR.joinerRefused({ type: "joinerRefused", reason: "definitelyNotAReason" }).text;
   const wilmsryRefusal = LINE_FOR.joinerRefused({ type: "joinerRefused", reason: "wilmsry" }).text;

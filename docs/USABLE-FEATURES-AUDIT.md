@@ -31,7 +31,7 @@ never a generic "you can't do that."
 | `wrongClass` | `useRefused`, `actionRefused` | a staff used by a non-Magic-User; Sing attempted by a non-Bard | `useRefused`, `actionRefused` |
 | `noCharges` | (its own event, not this reason string) | see `noChargesLeft` below | `noChargesLeft` |
 | `noTarget` | (mostly its own dedicated event) | a targeted effect with nothing to target | `nothingToThrowAt`, `insaneNoTarget`, `nothingToTurn`, `gateRefused` — **unreachable for the four common targeted kinds (thrown/acid/blind/petrify) in combat**: `castSpell` retargets a dead `C.target` onto the first live foe exactly like `playerStrike`, the same way a Strike never whiffs on a corpse |
-| `pilfer` | `scrollRefused` | a Pilfer cannot read a scroll (RULES-10, unchanged by Phase 75.1). **Superseded for `useRefused` by Phase 75.1 (RULES-09):** the heal-only refusal is gone — a Pilfer uses every magic item under the normal rules; see `pilferFumbled` below for the new risk | `scrollRefused` |
+| `pilfer` | *(superseded, Phase 75.1)* | **Superseded by Phase 75.1 (RULES-09/RULES-10):** the `useRefused pilfer` heal-only refusal AND the `scrollRefused pilfer` refusal are BOTH gone — a Pilfer uses every magic item under the normal rules (see `pilferFumbled` below for its new risk) and reads every scroll under the same intelligence rule as everyone else (see the Scrolls section below) | *(retired)* |
 | *(its own event, not a reason string)* | `pilferFumbled` | (RULES-09, Phase 75.1) a Pilfer's use of a jewel/cloak/staff rolls a derived d20; on a 1 the use fails, the item explodes for a d10 to the Pilfer only (no armor/ward soak) and turns to dust — potions, scrolls and tools never roll this die | `pilferFumbled` |
 | notWorn | useRefused | (Phase 37, GEAR-03; 260918-w4n) a cloak/jewelry activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use. A staff is NEVER refused this way (it has no `c.worn` slot; see `notWielded` below for its own bag-use refusal) | useRefused |
 | `notWielded` | `useRefused` | (RULES-13, Phase 75, user 2026-09-25) a staff addressed by BAG INDEX that is not the currently-wielded one (`wieldedStaff(c) !== it`) — a staff's charged power works only while equipped into the weapon slot; reverses the 2026-09-18 bag-use amendment. The wielded staff, addressed via `{ slot: "weapon" }`, is unaffected | `useRefused` |
@@ -197,15 +197,32 @@ independently of the cloak/jewelry worn-slot model. A staff left in
 two pieces, any combination of the 8 JEWELRY rows — plus one cloak; see
 `docs/GEAR-SLOTS.md` §8 for the full model.
 
-**Scrolls:** `readScroll` — no scrolls → `scrollRefused noScrolls`; a Pilfer
-→ `scrollRefused pilfer`; no Magic-User class and no Runes/Signs skill →
-`scrollRefused noRunes`; Fight!-pending → `scrollRefused notFought`. An
-afraid reader's scroll still casts normally — never `scrollRefused` for
-fear. A combat-only spell unrolled outside combat is still consumed (the
-scroll and its narration stay spent) but the CAST itself refuses
-`castRefused combatOnly` (the guard lives inside `castSpell`, reached via
-`readScroll`'s internal call) — `spellsUsed` is restored to its pre-scroll
-value either way.
+**Scrolls (RULES-10, Phase 75.1 — `canRead` is gone):** `readScroll` — no
+scrolls → `scrollRefused noScrolls`; Fight!-pending →
+`scrollRefused notFought`. Those are the ONLY two `scrollRefused` reasons
+left: **anyone** may now attempt any scroll, and the scroll is consumed on
+every attempt, success or failure. `scrollReaderOf(c)` picks the path: a
+Magic User always reads automatically (`scrollRead {reader:"magicUser"}`,
+unchanged); a non-Magic-User carrying Runes/Signs also reads automatically
+(`scrollRead {reader:"runes"}`, no grimoire copy); everyone else — including
+a Pilfer, whose old blanket refusal is retired — rolls their own
+intelligence (`scrollRead {reader:"intel"}`) on a d20 via a derived stream
+(`scrollReadRng`), against `scrollReadBands(c.intel)` (no intel-12 floor: low
+intel just means worse odds, all the way down). At or above the target it
+decrypts (`scrollDeciphered`) and casts free; below that but at or above
+half the target (rounded up) it garbles (`scrollGarbled` — a plain failure,
+never worded as a refusal, never naming the spell, casts nothing); below
+half it fumbles (`scrollFumbled` — outside combat it just fizzles,
+`fizzled: true`; in combat `engine/scrollFumble.js#resolveScrollFumble` turns
+it against the reader, their whole side, or the combat's targeted foe). A
+plain failure or a fumble in combat still spends the reader's turn (the foes
+act) exactly like a successful read would. An afraid reader's scroll still
+casts (or garbles/fumbles) normally — never `scrollRefused` for fear. A
+combat-only spell unrolled outside combat is still consumed (the scroll and
+its narration stay spent) but the CAST itself refuses `castRefused
+combatOnly` (the guard lives inside `castSpell`, reached via `readScroll`'s
+internal call) — `spellsUsed` is restored to its pre-scroll value either
+way.
 
 **Scroll scribing gate (Phase 40, SPELL-07):** a scroll's spell is copied
 into a Magic User's grimoire ONLY when it is already castable — the exact

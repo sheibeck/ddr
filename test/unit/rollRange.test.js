@@ -11,6 +11,10 @@
 // the faces-to-range/die-name/full-hit-range helpers (facesRangeText/
 // dieText/hitRangeText). Every example here is transcribed from
 // 74-02-PLAN.md's <behavior> lists.
+//
+// RULES-10 (Phase 75.1): extends the contract once more with
+// bottomRangeText — the fumble-band formatter every scroll-fumble line
+// prints through.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -30,6 +34,7 @@ import {
   facesRangeText,
   dieText,
   hitRangeText,
+  bottomRangeText,
 } from "../../src/browser/rollRange.js";
 
 test("rangeText: a wide winning range reads lo–hi with the U+2013 en dash", () => {
@@ -275,5 +280,33 @@ test("facesRangeText/hitRangeText output never contains an ASCII hyphen-minus, a
     assert.ok(!s.includes("-"), `expected no ASCII hyphen-minus in "${s}"`);
     assert.ok(!s.includes("%"), `expected no percent sign in "${s}"`);
     assert.doesNotMatch(s, /\d\+/, `expected no digit immediately followed by '+' in "${s}"`);
+  }
+});
+
+// --- bottomRangeText (RULES-10, Phase 75.1) --------------------------------
+
+test("bottomRangeText: the faces strictly below a cutoff, U+2013 dash", () => {
+  assert.equal(bottomRangeText(4), "1–3");
+  assert.equal(bottomRangeText(11), "1–10");
+});
+
+test("bottomRangeText: a cutoff of 2 reads the single face '1'", () => {
+  assert.equal(bottomRangeText(2), "1");
+});
+
+test("bottomRangeText: a cutoff at or below 1 reads 'nothing' (no face is below the worst)", () => {
+  assert.equal(bottomRangeText(1), "nothing");
+  assert.equal(bottomRangeText(0), "nothing");
+  assert.equal(bottomRangeText(-3), "nothing");
+});
+
+test("bottomRangeText: a missing or non-numeric input reads '?'", () => {
+  assert.equal(bottomRangeText(undefined), "?");
+  assert.equal(bottomRangeText(NaN), "?");
+});
+
+test("bottomRangeText output never contains an ASCII hyphen-minus", () => {
+  for (const s of [bottomRangeText(4), bottomRangeText(11), bottomRangeText(2), bottomRangeText(1), bottomRangeText(undefined)]) {
+    assert.ok(!s.includes("-"), `expected no ASCII hyphen-minus in "${s}"`);
   }
 });
