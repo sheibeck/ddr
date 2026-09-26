@@ -3788,3 +3788,83 @@ plan. The engine rule ships at its planned, user-ruled values
 (`soloOnlyOnOneFrom: 5`, `atLeastTwoFrom: 10`, `atLeastThreeFrom: 20`)
 unmeasured against the depth-20/floor-5-7 target until that milestone-close
 sweep.
+
+### Plan 03 — the deep curve and elites (RULES-17)
+
+**The rule.** `engine/difficulty.js#scaleField` evaluates `FOE_HIT_SCALE`/
+`FOE_HP_SCALE` on a second, steeper slope past floor 12 (`kneeDepth: 12`,
+user-ruled 2026-09-25 — floor 13 is the first harder floor, the Phase 54
+fit boundary): `base + perDepth*kneeDepth + perDepthAfter*(d - kneeDepth)`
+once `d > kneeDepth`, byte-identical to the existing single-slope
+expression at or below it. `foeTierFor(depth, bled)` keeps the roster
+escalating past the level-5 tier as ELITE variants of tier-5 foes (no new
+hand-authored foe types) rather than raising the clamp — a foe whose
+`FOE_LEVEL` line would pass 5 becomes a tier-5 foe of elite rank, titled
+via `content/bestiary.js#ELITE_TITLES` (Dread/Grim/Dire/Very Dire/
+Unreasonably Dire) through `engine/combat.js#eliteName`; the SAME
+tier-bleed d4 that has always lowered a foe's level now lowers an elite's
+rank instead, once one is in play. `foeWpFor`/`foeHitFor` gained an
+optional `eliteRank` argument (default 0, today's exact behavior). The
+first elite floor is 16, at the shipped dials (`FOE_LEVEL { base: 0.9,
+perDepth: 0.29 }`, `FOE_ELITE.maxRank: 10`).
+
+**The predictor.** Every parity fixture's fixture-exposed fight is on
+floor 1 (see Plan 01's own predictor above) — nowhere near floor 12 (the
+knee) or floor 16 (the first elite floor). No fixture ever starts a fight
+above floor 1. Prediction: **zero moved fixtures.**
+
+**Measured.**
+
+```
+$ node --test "test/parity/**/*.test.js"
+# tests 60
+# pass 60
+# fail 0
+
+$ git diff --quiet bde09dfb... -- test/parity/fixtures test/parity/prototype-master.js.txt
+(exit 0 — clean)
+
+$ git hash-object test/parity/prototype-master.js.txt
+a1f4d0dc29782218d8e5aab65bc5989c33f917f0 (unchanged — the same hash Plan 01/02 closed with)
+```
+
+Zero fixtures moved, exactly as predicted.
+
+**The `elite` carve-out.** A brand-new per-foe field (`f.elite`, present
+only for a rank above 0) is carved out of `test/parity/harness/
+comparables.js#stripFoeAbilityState`'s destructure, mirroring the
+`abilities`/`cd`/`uses` carve-out immediately above it — engine-only, no
+prototype-side equivalent, and never present on a floor-1 fixture foe (the
+first elite floor is 16, far past any fixture's own floor-1 fights).
+
+**Bot-baseline artifacts: zero moved, contrary to this plan's own
+prediction.** `node --test test/unit/roll-high-state-pins.test.js` (9/9
+pass) — including "deep-14" (a solo start already at floor 14, ABOVE the
+knee, which this plan expected to move since its very first fight now
+reads a scaled `FOE_HIT_SCALE`/`FOE_HP_SCALE`). Re-running the pin harness
+directly (`node -e "...pinRun(...)"`) confirmed the computed hash is
+byte-identical to the pinned value: this run's own death (52 actions,
+floor 14) happens to round to the SAME integer outcomes under the new
+knee slope as under the old single slope, at this specific seed/opts — an
+empirically measured zero, not a predicted one. "deep-8" (a solo start at
+floor 8, never crossing floor 12 within its own 250-action budget) was
+never expected to move and did not. No pin was regenerated this plan.
+
+**BEFORE/AFTER deep-start readouts (--start-depth 12/20, 200 seeds).**
+Deferred to Phase 79.1 per user ruling 2026-09-26 ("bot balance runs
+happen ONCE, at the milestone end") — this plan's own
+`tools/readouts/75.3-03-{before,after,natural-after}.txt` acceptance
+criterion is not run this plan; no bot-run readout file was created.
+Floors 1-12 being unchanged is instead proven DETERMINISTICALLY (never by
+a bot run), per the orchestrator's own explicit instruction for this
+plan: `test/unit/deep-curve.test.js`'s own tests assert `difficultyCurve(d)
+.foeHpScale`/`.foeHitScale` are `===` to today's single-slope expression
+for every `d` from 1 to 12 (and that the fitted `FITTED_CURVE_PINS` table
+in `test/difficulty/difficulty.test.js` is unchanged for depths 2-12 and
+recomputed only for 13+); `foeTierFor(d, bled)` for `d` 1-15 returns
+exactly today's tier pick, rank 0. The engine ships at its planned,
+deliberately mild start values (`FOE_HIT_SCALE.perDepthAfter: 0.02`,
+`FOE_HP_SCALE.perDepthAfter: 0.03`, `FOE_ELITE { maxRank: 10, hpPerRank:
+0.1, hitPerRank: 0.05 }`); 75.3-06's checkpointed tail sweep sets the
+final slopes against the deep-start slices at Phase 79.1's milestone
+close.
