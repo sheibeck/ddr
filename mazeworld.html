@@ -6148,6 +6148,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // node/the browser dev loop.
   import "./src/browser/storage.js";
   import { boot, dispatch, startNewRun, waitForPending, takeBootWornReport } from "./src/browser/engineAdapter.js";
+  // Phase 76 (SAV-06/SAV-07): the boot-time resume events and their Oracle
+  // formatter, on their own line so the pinned line above stays byte-identical.
+  import { takeBootResumeEvents, formatEvents } from "./src/browser/engineAdapter.js";
   // Phase 65 (RUN-04): the death-panel new-best parcel — takeDeathRecord()
   // (engineAdapter.js) and newBestView() (src/browser/newBest.js) turn a
   // died event into the classic renderCombatOver's NEW PERSONAL BEST block.
@@ -7508,6 +7511,13 @@ window.__mzClassicBoot = async function classicBoot() {
     window.logLine(
       `${engineState.c.name}, ${engineState.c.race} ${engineState.c.sub}, skill level ${ROMAN[engineState.c.level - 1]}, on floor ${engineState.floor.depth} of the dungeon.`,
     );
+    // SAV-06/SAV-07 (Phase 76): the Oracle's resume line. A relaunch into a
+    // live fight or an open store says so here, once, in voice (fightResumed /
+    // storeResumed via EVENT_NARRATION). Oracle only, per the card-vs-rail
+    // ruling: a relaunch is a minor event. The fight or store overlay itself
+    // comes back through paint() -> renderEncounter() from the rehydrated S.
+    // One-shot read: null (fresh boot) and [] (a quiet save) log nothing.
+    for (const line of formatEvents(takeBootResumeEvents() || [])) window.logLine(line);
   }
   window.paint();
   window.draw();
