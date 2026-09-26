@@ -16,7 +16,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { readLog, appendLog, rehydrateRow, makeResumableEvaluate, runSearch } from "../../tools/lib/fit-resume.mjs";
+import { readLog, appendLog, rehydrateRow, makeResumableEvaluate, runSearch, appendTranscript } from "../../tools/lib/fit-resume.mjs";
 
 function tmpLogPath() {
   return path.join(fs.mkdtempSync(path.join(os.tmpdir(), "fit-resume-")), "log.jsonl");
@@ -49,6 +49,31 @@ test("readLog: rehydrates every logged Infinity-serialized-as-null score before 
 test("readLog: a missing log file returns an empty Map", () => {
   assert.equal(readLog(null).size, 0);
   assert.equal(readLog(path.join(os.tmpdir(), "does-not-exist-fit-resume.jsonl")).size, 0);
+});
+
+// --- appendTranscript --------------------------------------------------------
+//
+// Phase 80 (TOOL-01): the tool-owned, append-only per-block stdout record —
+// a re-run block can never truncate an earlier block's lines whatever the
+// shell redirect, because the tool itself owns the append.
+
+test("appendTranscript: appends a line plus a newline; a second call leaves the first line intact before it", () => {
+  const transcriptPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "fit-transcript-")), "transcript.txt");
+  appendTranscript(transcriptPath, "first line");
+  appendTranscript(transcriptPath, "second line");
+  assert.equal(fs.readFileSync(transcriptPath, "utf8"), "first line\nsecond line\n");
+});
+
+test("appendTranscript: a null path is a no-op that does not throw", () => {
+  assert.doesNotThrow(() => appendTranscript(null, "anything"));
+});
+
+test("appendTranscript: creates a missing parent directory", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fit-transcript-"));
+  const nestedPath = path.join(dir, "nested", "deeper", "transcript.txt");
+  assert.ok(!fs.existsSync(path.dirname(nestedPath)), "sanity: the parent directory must not already exist");
+  appendTranscript(nestedPath, "hello");
+  assert.equal(fs.readFileSync(nestedPath, "utf8"), "hello\n");
 });
 
 // --- the walk-level regression: a resumed search reproduces the original --

@@ -20,6 +20,11 @@
 // probe off the path the ORIGINAL (non-resumed) walk would have taken.
 // `rehydrateRow` undoes the coercion the moment a row comes off disk, before
 // it can re-enter any comparison.
+//
+// Phase 80 (TOOL-01, 2026-09-26): `appendTranscript` gives
+// tools/fit-difficulty.mjs a TOOL-OWNED, append-only per-block stdout record
+// (--transcript), so a later block can never truncate an earlier block's
+// lines no matter how its shell redirect is spelled.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -59,6 +64,21 @@ export function appendLog(logPath, obj) {
   const dir = path.dirname(logPath);
   if (dir && dir !== ".") fs.mkdirSync(dir, { recursive: true });
   fs.appendFileSync(logPath, `${JSON.stringify(obj)}\n`);
+}
+
+/**
+ * appendTranscript(transcriptPath, line) — the tool-owned, append-only
+ * per-block stdout record (TOOL-01): appends `line` plus a newline to
+ * `transcriptPath`, creating its parent directory if needed. A `null` path
+ * is a no-op (never throws) — this is what makes a re-run block unable to
+ * truncate an earlier block's lines whatever the shell redirect, because the
+ * TOOL itself owns the append, not the shell.
+ */
+export function appendTranscript(transcriptPath, line) {
+  if (!transcriptPath) return;
+  const dir = path.dirname(transcriptPath);
+  if (dir && dir !== ".") fs.mkdirSync(dir, { recursive: true });
+  fs.appendFileSync(transcriptPath, `${line}\n`);
 }
 
 /**
