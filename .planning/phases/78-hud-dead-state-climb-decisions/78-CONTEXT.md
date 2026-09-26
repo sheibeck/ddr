@@ -74,6 +74,10 @@ So Phase 78 depends on Phase 73/74 (it runs after them anyway, in numeric order)
 ### Claude's Discretion
 - The card layout, the fade implementation (CSS or canvas), the mark's visual (within the parchment palette and PNG-icons canon), and the exact voice lines.
 - Plan split: the climb card (engine + UI), dead state + final sheet, settings (font + drag), stairs fade, hearing, band 1. Several of these are independent.
+### Rulings after planning (user, 2026-09-26)
+- **HUD-07 hearing (option A):** Acute Hearing marks every UNRESOLVED encounter dot within 3 squares, through walls, that the map isn't currently showing. The mark is a faint "something's there" that never says what it is. Traps and chests stay silent, and there is no peeking at the dice. This replaces the unbuildable "squares next to the party" wording.
+- **HUD-02 dead map:** after death the MAP tab stays VIEWABLE but read-only. You can look at the map where you died, but every map tap, mark and camp action is inert. The rest of the dead-state lockdown stands as written.
+
 </decisions>
 
 <code_context>
