@@ -46,7 +46,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
  (completed 2026-09-25)
 
 - [x] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire (completed 2026-09-26)
-- [ ] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules
+- [x] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules (completed 2026-09-26)
 - [ ] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth, a steeper foe curve and tier past floor 12, and control spells lose their lock at depth
 - [ ] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store
 - [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
@@ -295,7 +295,7 @@ Plans:
   4. The Gauntlet of the Giant and the Enlarge potion are both exactly a +1 size step (Enlarge's separate +4 damage is gone), and their text states exactly what a step does, with no ceiling promise.
   5. Moved fixtures are measured, declared and regenerated, and a bot readout before and after is recorded.
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -313,7 +313,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 75.2-05-PLAN.md — Close Phase 75.2's engine gate: write the size-rule audit into the roll ledger and guard it, finish the fixture story with a standing exposure guard, record every balance readout (overall and per race) in the difficul... (wave 4)
+- [x] 75.2-05-PLAN.md — Close Phase 75.2's engine gate: write the size-rule audit into the roll ledger and guard it, finish the fixture story with a standing exposure guard, record every balance readout (overall and per race) in the difficul... (wave 4)
 
 **UI hint**: yes
 
@@ -634,7 +634,7 @@ Plans:
 | 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 13/13 | Complete    | 2026-09-25 |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
-| 75.2. Hero Size Matters | v2.1 | 4/5 | In Progress|  |
+| 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
