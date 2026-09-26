@@ -9,7 +9,8 @@
 
 import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES, SIZE_STEP_OF, SIZE_NAMES, SIZE_NAME_ORIGIN } from "../content/index.js";
 import { rollDice, rollCheck, atLeastFor } from "./dice.js";
-import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor } from "./difficulty.js";
+import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor, controlResistFacesFor } from "./difficulty.js";
+import { derivedRng } from "./rng.js";
 // 260918-w4n: `remaining`/`isReady` are no longer read here — isFlying and
 // conditionsOf's flight chip now read purely through itemEffectActive/
 // liveItemEffects (this module's own timer-only model); item readiness
@@ -1806,6 +1807,55 @@ export function resistRoll(rng, intel) {
   if ((intel ?? 0) < 12) return { rolled: false, resisted: false, roll: undefined };
   const check = rollCheck(rng, 20, atLeastFor(intel - 1, 20));
   return { rolled: true, resisted: check.ok, roll: check.roll, atLeast: check.atLeast, dieN: check.dieN };
+}
+
+/**
+ * controlResistRoll(rng, faces) — RULES-18 (Phase 75.3, user ruling
+ * 2026-09-25): the ONE resist check a past-the-knee control (Freeze, Stone,
+ * Doze/Sleep, Weaken, Stupid) rolls against, roll-high on `rollCheck`'s d20 —
+ * `resisted = roll >= 21 - faces` (`atLeastFor(faces, 20)`). At `faces <= 0`
+ * (at or below `CONTROL_AT_DEPTH.kneeDepth`, or the identity dial) this draws
+ * NOTHING and returns `{ rolled: false, resisted: false, roll: undefined }` —
+ * the same "no roll at all below the gate" shape `resistRoll` above uses for
+ * `intel < 12`, so a caller can tell "no roll happened" apart from "rolled
+ * and failed to resist". Otherwise `{ rolled: true, resisted, roll, atLeast,
+ * dieN }` — the SAME roll-high triple `rollFields` spreads. Pure w.r.t.
+ * everything but the single gated draw; never mutates `rng`'s caller-visible
+ * state beyond that one draw.
+ */
+export function controlResistRoll(rng, faces) {
+  if (!(faces > 0)) return { rolled: false, resisted: false, roll: undefined };
+  const check = rollCheck(rng, 20, atLeastFor(faces, 20));
+  return { rolled: true, resisted: check.ok, roll: check.roll, atLeast: check.atLeast, dieN: check.dieN };
+}
+
+/**
+ * controlResistCheck(state, rng, purpose, idx) — RULES-18: the derived-stream
+ * wrapper `engine/combat.js#resistControl` calls at every past-the-knee
+ * control site. Reads `controlResistFacesFor(state.floor.depth)`; at 0 faces
+ * (floor <= `CONTROL_AT_DEPTH.kneeDepth`, or the identity dial) this returns
+ * immediately WITHOUT building a derived stream at all — a spy on the main
+ * `rng` sees zero calls, and the main cursor (`rng.getState()`) is byte-
+ * identical before and after, exactly like `controlResistRoll`'s own 0-faces
+ * gate. Otherwise it builds a FRESH, keyed stream — `derivedRng(<the main
+ * rng's cursor, or 0 for a test double with no getState>, "controlResist",
+ * purpose, <state.acts, or 0>, <the combat round, or 0>, idx)`, the SAME
+ * idiom `engine/items.js#pilferFumbleRng` established — and draws
+ * `controlResistRoll` from THAT stream, never the caller's `rng`. The same
+ * `(state, purpose, idx)` always yields the same result (deterministic,
+ * reproducible in a test without re-using the live rng instance); a
+ * different `idx` (a different target/foe) draws independently. Returns
+ * `{ rolled, resisted, roll, atLeast, dieN, faces }` — `controlResistRoll`'s
+ * own shape, plus the resolved `faces` count for narration/testing.
+ */
+export function controlResistCheck(state, rng, purpose, idx) {
+  const faces = controlResistFacesFor(state.floor?.depth);
+  if (faces <= 0) return { rolled: false, resisted: false, roll: undefined, faces };
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  const round = (state.combat && Number.isInteger(state.combat.round)) ? state.combat.round : 0;
+  const stream = derivedRng(cursor, "controlResist", purpose, acts, round, idx);
+  return { ...controlResistRoll(stream, faces), faces };
 }
 
 /**

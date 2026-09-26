@@ -251,6 +251,14 @@ export const HELD_DIALS = [
   { path: ["FOE_ELITE", "maxRank"], start: 10, releaseIf: "held (available); start value, not fitted" },
   { path: ["FOE_ELITE", "hpPerRank"], start: 0.1, releaseIf: "searched by 75.3-06's tail sweep" },
   { path: ["FOE_ELITE", "hitPerRank"], start: 0.05, releaseIf: "held (available); start value, not fitted" },
+  // RULES-18 (Phase 75.3, Plan 04): the SAME knee-shaped precedent as
+  // FOE_HIT_SCALE/FOE_HP_SCALE above — kneeDepth/holdRounds are user rulings
+  // (2026-09-25), never fit coordinates; resistPerDepth is a start value
+  // 75.3-06's checkpointed tail sweep will search; resistCap is held.
+  { path: ["CONTROL_AT_DEPTH", "kneeDepth"], start: 12, releaseIf: "user-ruled (2026-09-25); never searched" },
+  { path: ["CONTROL_AT_DEPTH", "resistPerDepth"], start: 1, releaseIf: "searched by 75.3-06's tail sweep" },
+  { path: ["CONTROL_AT_DEPTH", "resistCap"], start: 15, releaseIf: "held (available); start value, not fitted" },
+  { path: ["CONTROL_AT_DEPTH", "holdRounds"], start: 3, releaseIf: "user-ruled (2026-09-25); never searched" },
   { path: ["ROUND_DAMAGE_CEILING"], start: 0.5, releaseIf: "held (available); [0.3, 1.0] if released" },
   { path: ["ABILITY_THREAT", "base"], start: 1.0, releaseIf: "held (available); base [0.6, 1.2] if released" },
   { path: ["ABILITY_THREAT", "perDepth"], start: 0, releaseIf: "held (available)" },

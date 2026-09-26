@@ -2,5 +2,6 @@
   "FOE_COUNT_DEPTH": { "soloOnlyOnOneFrom": 5, "atLeastTwoFrom": 10, "atLeastThreeFrom": 20 },
   "FOE_HIT_SCALE": { "base": 0.6, "perDepth": 0.01, "kneeDepth": 12, "perDepthAfter": 0.02 },
   "FOE_HP_SCALE": { "base": 0.9, "perDepth": 0.015, "kneeDepth": 12, "perDepthAfter": 0.03 },
-  "FOE_ELITE": { "maxRank": 10, "hpPerRank": 0.1, "hitPerRank": 0.05 }
+  "FOE_ELITE": { "maxRank": 10, "hpPerRank": 0.1, "hitPerRank": 0.05 },
+  "CONTROL_AT_DEPTH": { "kneeDepth": 12, "resistPerDepth": 1, "resistCap": 15, "holdRounds": 3 }
 }

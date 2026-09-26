@@ -326,6 +326,7 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 |---|---|---|---|---|---|---|---|
 | `[resist:intel]` | resist | `intel` stat | stat | a smarter resistor shrugs off more effects, p.25 canon | `resisted = roll < intel`; a higher intel widens the resisting range | wider resist range for a higher-intel character | OK |
 | `[resist:intel-gate]` | resist | `intel >= 12` gate | stat | below the threshold, resistance is never rolled for | no draw at all below the gate | no resist attempt below intel 12 | OK |
+| `[resist:depth]` | resist | floor depth past CONTROL_AT_DEPTH.kneeDepth | depth | RULES-18 (Phase 75.3, user ruling 2026-09-25): from floor 12, foes increasingly RESIST control | roll-high: `resisted = roll >= 21 - faces`, faces growing with depth past the knee | wider resist range for a deeper foe past the knee | OK (RULES-18, Phase 75.3) |
 | `[initiative:samurai]` | initiative | Samurai forced-foe | sub-class | Samurai never gets the jump on a fight's first round (a documented BAD trait) | forces `first="foe"` | the foe always acts first | OK |
 | `[initiative:fridgian-slow]` | initiative | Fridgian `slow` forced-foe | race | Fridgians are slow to react | forces `first="foe"` | the foe always acts first | OK |
 | `[initiative:knight-big-foe]` | initiative | Knight vs a big foe, forced-foe | sub-class | a Knight is cautious against a large foe | forces `first="foe"` | the foe always acts first | OK |

@@ -40,6 +40,10 @@ export const IDENTITY_DIALS = {
   FOE_COUNT_DEPTH: { soloOnlyOnOneFrom: 0, atLeastTwoFrom: 0, atLeastThreeFrom: 0 },
   // RULES-17 (Phase 75.3): identity switches elites off entirely (maxRank 0).
   FOE_ELITE: { maxRank: 0, hpPerRank: 0, hitPerRank: 0 },
+  // RULES-18 (Phase 75.3, Plan 04): identity — resistPerDepth/resistCap/
+  // holdRounds all 0 means no resist face and no hold cap at any depth
+  // (mirrors test/difficulty/difficulty.test.js's own IDENTITY_COLUMN).
+  CONTROL_AT_DEPTH: { kneeDepth: 12, resistPerDepth: 0, resistCap: 0, holdRounds: 0 },
   ROUND_DAMAGE_CEILING: 0,
   ABILITY_THREAT: { base: 1, perDepth: 0 },
   HERO_HP_SCALE: 1,
