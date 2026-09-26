@@ -245,13 +245,13 @@ Plans:
   3. A read that rolls below half the required target is a fumble. A harmful spell hits the reader instead of its target, and an area-damage spell hits the reader and their whole party. A helpful spell lands on the targeted enemy (a fumbled Shield shields that foe). Outside combat a fumble has no effect.
   4. The Pilfer's and every affected class's descriptions state the new rules, both outcomes are narrated in voice, the new rolls come from derived rng streams, and every moved fixture is declared and regenerated.
 
-**Plans**: 0/9 plans executed
+**Plans**: 2/9 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 75.1-01-PLAN.md — Replace the Pilfer's heal-only lockout with a fumble risk (RULES-09): a Pilfer uses jewelry, cloaks and staves like anyone else, but each use rolls a d20, and on a 1 the use fails, the item explodes for d10 to the Pil... (wave 1)
-- [ ] 75.1-02-PLAN.md — Decide and pin, per spell, what a fumbled scroll does (RULES-10's classification, Claude's discretion in 75.1-CONTEXT): which side it lands on (harmful to the reader, area on the reader's side, helpful to the targeted... (wave 1)
+- [x] 75.1-01-PLAN.md — Replace the Pilfer's heal-only lockout with a fumble risk (RULES-09): a Pilfer uses jewelry, cloaks and staves like anyone else, but each use rolls a d20, and on a 1 the use fails, the item explodes for d10 to the Pil... (wave 1)
+- [x] 75.1-02-PLAN.md — Decide and pin, per spell, what a fumbled scroll does (RULES-10's classification, Claude's discretion in 75.1-CONTEXT): which side it lands on (harmful to the reader, area on the reader's side, helpful to the targeted... (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -530,7 +530,7 @@ Plans:
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
 | 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 13/13 | Complete    | 2026-09-25 |
-| 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
+| 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 2/9 | In Progress|  |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
