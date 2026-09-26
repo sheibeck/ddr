@@ -12,3 +12,5 @@
   depth resist; it is recorded as audit row X8 (a fumble effect, exempt in
   test/unit/control-at-depth-rules.test.js). Needs a user ruling on whether the fumble should set the
   hero-side debuff instead.
+
+**Resolved (2026-09-26):** user ruling "weaken the reader", routed to Phase 76 (76-CONTEXT; plan 76-06's dispatch).

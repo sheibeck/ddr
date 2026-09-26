@@ -96,3 +96,9 @@
 - **The bot plays the new rule (greenfield).** Declare any moved state pins and fixtures with a traced cause.
 - **NO bot balance readouts in this phase** (user ruling 2026-09-26: bots run only at the milestone end, in Phase 79.1). This applies to every plan here, including 76-01's "measured readouts". 79.1 measures the balance effect.
 - Todo: `.planning/todos/pending/2026-09-26-map-the-floor-lasts-only-until-you-move.md`.
+
+### 2026-09-26: A fumbled Weaken scroll weakens the READER (carried by plan 76-06's dispatch)
+- Found by 75.3-07's control guard (ROLL-LEDGER audit row X8). `engine/scrollFumble.js#resolveHarmful`, case `weakened`, sets the foe-side fields a landed hero Weaken sets (`C.weakened`, `C.foeToHitPenalty = 3`, the `spell:weaken` timer). So the "harmful" fumble helps the reader, while `fumbleOnReader` narrates the reader being weakened.
+- **User ruling: weaken the reader.** The fumble puts the existing hero-side debuff on the reader: `c.foeEffect` of kind `weakened`, the same one a foe's Weaken inflicts (engine/combat.js), for the spell's duration. It leaves the foe-side fields alone. The Oracle line stays true.
+- Out of combat (a scroll read on the map), the fumble behaves the way other combat-only fumble effects already do there; follow the Phase 75.1 precedent in scrollFumble.js.
+- Update ROLL-LEDGER row X8 and the exemption in `test/unit/control-at-depth-rules.test.js`: the fumble no longer sets foe control, so the exemption should go if the guard allows. Declare any moved pin or fixture with a traced cause.

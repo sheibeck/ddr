@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 75.3
-current_phase_name: Deep-Floor Encounter Scaling
+current_phase: 76
+current_phase_name: Darkness Unification & Relaunch Persistence
 status: executing
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-26T17:06:08.129Z"
+last_updated: "2026-09-26T22:31:52.054Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 75.2 complete, transitioned to Phase 75.3
+last_activity_desc: Phase 75.3 complete, transitioned to Phase 76
 progress:
   total_phases: 14
-  completed_phases: 7
-  total_plans: 106
-  completed_plans: 58
-  percent: 50
+  completed_phases: 8
+  total_plans: 107
+  completed_plans: 68
+  percent: 57
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 75.3 — Deep-Floor Encounter Scaling
+Phase: 76 — Darkness Unification & Relaunch Persistence
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-09-26 — Phase 75.2 complete, transitioned to Phase 75.3
+Last activity: 2026-09-26 — Phase 75.3 complete, transitioned to Phase 76
 
 ## Ground Truth (durable facts every session needs)
 
