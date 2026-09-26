@@ -28,6 +28,7 @@ import assert from "node:assert/strict";
 
 import { castSpell, readScroll } from "../../engine/magic.js";
 import { useItem } from "../../engine/items.js";
+import { foeTurn } from "../../engine/combat.js";
 import { controlResistCheck } from "../../engine/derived.js";
 import { DIALS, controlHoldRoundsFor } from "../../engine/difficulty.js";
 import { SPELLS } from "../../content/index.js";
@@ -437,4 +438,139 @@ test("a scroll of Freeze read in combat on floor 20 meets the same rule (castSpe
 test("the held dial is what the spells read: controlHoldRoundsFor(20) is CONTROL_AT_DEPTH.holdRounds, and 0 through floor 12", () => {
   assert.equal(controlHoldRoundsFor(20), DIALS.CONTROL_AT_DEPTH.holdRounds);
   for (let d = 1; d <= DIALS.CONTROL_AT_DEPTH.kneeDepth; d++) assert.equal(controlHoldRoundsFor(d), 0);
+});
+
+// ---------------------------------------------------------------------------
+// Task 2: the control items (engine/items.js#useItem) and the honest texts.
+// ---------------------------------------------------------------------------
+
+/** The five item scenarios: [item, foes]. Staves are wielded (RULES-13);
+ * the Amulet of Stone is a legacy bag use (no `c.worn`). */
+const ITEM_SCENARIOS = {
+  Birch: [() => ({ kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 }), 3],
+  Cedar: [() => ({ kind: "staff", n: "Cedar Staff", use: "gas", charges: 1 }), 3],
+  Oak: [() => ({ kind: "staff", n: "Oak Staff", use: "stone", charges: 1 }), 3],
+  Walnut: [() => ({ kind: "staff", n: "Walnut Staff", use: "weaken", charges: 2 }), 2],
+  Amulet: [() => ({ n: "Amulet of Stone", use: "stone", every: 100, aoe: 4 }), 5],
+};
+
+function useScenario(key, depth, acts = 0, seq = PAD(40)) {
+  const [make, nFoes] = ITEM_SCENARIOS[key];
+  const it = make();
+  const s = spellState(depth, "Doze", 1, nFoes);
+  s.acts = acts;
+  if (it.kind === "staff") {
+    s.c.weapon = it.n;
+    s.c.staff = it;
+  } else {
+    s.c.items = [it];
+  }
+  const rng = fakeRng(seq);
+  const events = useItem(s, it.kind === "staff" ? { slot: "weapon" } : 0, rng, [], () => 0);
+  return { s, rng, events };
+}
+
+// Pre-plan engine (base 15d08ab), floor 12 — see the header.
+const PRE_PLAN_ITEMS_FLOOR_12 = {
+  Birch: { n: 0, ev: ["itemUsed"], cast: [], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 99 }, { wp: 30, maxWP: 30, alive: true, asleep: 99 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: ["charges:Birch Staff"] },
+  Cedar: { n: 0, ev: ["itemUsed"], cast: [], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 99 }, { wp: 30, maxWP: 30, alive: true, asleep: 99 }, { wp: 30, maxWP: 30, alive: true, asleep: 99 }], weakened: false, timers: ["charges:Cedar Staff"] },
+  Oak: { n: 8, ev: ["itemUsed", "foeStoned", "foeKilled", "goldGained", "cooked", "foeKilled", "goldGained", "cooked"], cast: [{ type: "foeStoned", names: ["F1", "F2"] }], foes: [{ wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: ["charges:Oak Staff"] },
+  Walnut: { n: 0, ev: ["itemUsed"], cast: [], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: true, timers: ["charges:Walnut Staff"] },
+  Amulet: { n: 16, ev: ["itemUsed", "foeStoned", "foeKilled", "goldGained", "cooked", "foeKilled", "goldGained", "cooked", "foeKilled", "goldGained", "cooked", "foeKilled", "goldGained", "cooked"], cast: [{ type: "foeStoned", names: ["F1", "F2", "F3", "F4"] }], foes: [{ wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: ["item:Amulet of Stone"] },
+};
+
+test("floor 12: every control item matches the pre-plan engine exactly (events, foes, draws)", () => {
+  for (const key of Object.keys(ITEM_SCENARIOS)) {
+    const { s, rng, events } = useScenario(key, 12);
+    assert.deepEqual(digest(s, events, rng), PRE_PLAN_ITEMS_FLOOR_12[key], key);
+  }
+});
+
+test("Birch Staff (C4) floor 20: the first target resists (awake, Unmoved), the second sleeps 3 (not 99); no main draw either way", () => {
+  const acts = findActs(20, [["freeze:Birch Staff", 0, true], ["freeze:Birch Staff", 1, false]]);
+  const { s, rng, events } = useScenario("Birch", 20, acts);
+  const [f1, f2, f3] = s.combat.foes;
+  assert.equal(f1.asleep, 0);
+  assert.equal(f1.resisted, "freeze");
+  assert.equal(f2.asleep, 3);
+  assert.equal(f3.asleep, 0, "outside the staff's two squares");
+  assert.equal(events.filter((e) => e.type === "controlResisted").length, 1);
+  assert.equal(rng.count(), 0);
+});
+
+test("Cedar Staff (C12) floor 20: every non-resisting foe sleeps 3 (not 99); a resisting one stays awake", () => {
+  const acts = findActs(20, [["sleep:Cedar Staff", 0, false], ["sleep:Cedar Staff", 1, true], ["sleep:Cedar Staff", 2, false]]);
+  const { s, rng } = useScenario("Cedar", 20, acts);
+  assert.deepEqual(s.combat.foes.map((f) => f.asleep), [3, 0, 3]);
+  assert.equal(s.combat.foes[1].resisted, "sleep");
+  assert.equal(rng.count(), 0);
+});
+
+test("Oak Staff and Amulet of Stone (C6) floor 20: a non-resisting target is held as stone and alive, and foeStoned never names it", () => {
+  const acts = findActs(20, [["stone:Oak Staff", 0, false], ["stone:Oak Staff", 1, true]]);
+  const { s, rng, events } = useScenario("Oak", 20, acts);
+  const [f1, f2] = s.combat.foes;
+  assert.equal(f1.alive, true);
+  assert.deepEqual(f1.held, { kind: "stone", left: 3 }, "an item is a free action: no foe turn spends the hold yet");
+  assert.equal(f2.alive, true);
+  assert.equal(f2.resisted, "stone");
+  assert.equal(events.some((e) => e.type === "foeStoned"), false);
+  assert.equal(events.some((e) => e.type === "foeKilled"), false);
+  assert.equal(rng.count(), 0, "nothing died, so none of killFoe's draws");
+
+  const actsA = findActs(20, [0, 1, 2, 3].map((i) => ["stone:Amulet of Stone", i, false]));
+  const a = useScenario("Amulet", 20, actsA);
+  assert.deepEqual(a.s.combat.foes.map((f) => f.held?.kind ?? null), ["stone", "stone", "stone", "stone", null]);
+  assert.equal(a.s.combat.foes.every((f) => f.alive), true);
+  assert.equal(a.events.filter((e) => e.type === "controlHeld").length, 4);
+  assert.equal(a.events.some((e) => e.type === "foeStoned"), false);
+});
+
+test("Walnut Staff (C16): floor 20 resisted -> no weakened flag, every live foe Unmoved; landed -> a 3-round spell:weaken timer that clears the flag; floor 12 -> the fight, no timer", () => {
+  const actsR = findActs(20, [["weaken:Walnut Staff", 0, true]]);
+  const r = useScenario("Walnut", 20, actsR);
+  assert.equal(!!r.s.combat.weakened, false);
+  assert.deepEqual(r.s.combat.foes.map((f) => f.resisted), ["weaken", "weaken"]);
+  assert.equal(r.s.c.timers["spell:weaken"], undefined);
+
+  const actsL = findActs(20, [["weaken:Walnut Staff", 0, false]]);
+  const l = useScenario("Walnut", 20, actsL);
+  assert.equal(l.s.combat.weakened, true);
+  assert.equal(l.s.c.timers["spell:weaken"].left, 3);
+  const rng = fakeRng(PAD(40));
+  const ticks = [1, 2, 3].map(() => {
+    const ev = foeTurn(l.s, rng, []);
+    return { weakened: !!l.s.combat.weakened, faded: ev.some((e) => e.type === "weakenFaded") };
+  });
+  assert.deepEqual(ticks, [
+    { weakened: true, faded: false },
+    { weakened: true, faded: false },
+    { weakened: false, faded: true },
+  ]);
+
+  const t = useScenario("Walnut", 12);
+  assert.equal(t.s.combat.weakened, true);
+  assert.equal(t.s.c.timers["spell:weaken"], undefined, "at or below the knee the weaken lasts the fight");
+});
+
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+test("texts: every spell and item whose promise changes past the knee names floor kneeDepth and holdRounds (as a word), from the dial itself", () => {
+  const { kneeDepth, holdRounds } = DIALS.CONTROL_AT_DEPTH;
+  const floorWords = `past floor ${kneeDepth}`;
+  const roundWords = `${NUMBER_WORDS[holdRounds]} rounds`;
+  for (const n of ["Freeze", "Ice", "Stupidity", "Blind", "Petrify"]) {
+    const sp = SPELLS.find((x) => x.n === n);
+    assert.ok(sp.txt.includes(floorWords), `${n}: "${sp.txt}" names ${floorWords}`);
+    assert.ok(sp.txt.includes(roundWords), `${n}: "${sp.txt}" names ${roundWords}`);
+  }
+  // The Walnut Staff's text ("all hits on the weakened do double damage")
+  // never promised a duration, so it carries no clause (its timed weaken
+  // past the knee is taught by the weakenFaded line in play).
+  const items = [...STAVES.filter((s) => ["Birch Staff", "Oak Staff", "Cedar Staff"].includes(s.n)), JEWELRY.find((j) => j.n === "Amulet of Stone")];
+  assert.equal(items.length, 4);
+  for (const it of items) {
+    assert.ok(it.txt.includes(floorWords), `${it.n}: "${it.txt}" names ${floorWords}`);
+    assert.ok(it.txt.includes(roundWords), `${it.n}: "${it.txt}" names ${roundWords}`);
+  }
 });

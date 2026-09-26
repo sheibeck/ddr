@@ -84,7 +84,7 @@ export const SPELLS = [
   { n: "Shield", lvl: 1, s: "protection", kind: "ward", pool: 50, rounds: 5, niche: "defensive", txt: "defensive · you · soaks 50 hp for 5 rounds", combatOnly: false },
   { n: "Strength", lvl: 1, s: "offense", kind: "might", dmg: { n: 1, sides: 10, bonus: 0 }, niche: "buff", txt: "buff · you · +d10 damage till tomorrow", combatOnly: false },
   { n: "Doze", lvl: 1, s: "offense", kind: "status", niche: "control", txt: "control · one foe · asleep d4 rounds", combatOnly: true },
-  { n: "Freeze", lvl: 1, s: "offense", kind: "thrown", dmg: { n: 1, sides: 6, bonus: 0 }, onHit: "freeze", niche: "burst", txt: "burst · one foe · d6, and frozen solid on a hit", combatOnly: true },
+  { n: "Freeze", lvl: 1, s: "offense", kind: "thrown", dmg: { n: 1, sides: 6, bonus: 0 }, onHit: "freeze", niche: "burst", txt: "burst · one foe · d6, and frozen solid on a hit; past floor 12 the ice holds three rounds, then it is just cold and angry", combatOnly: true },
   // Phase 40 (SPELL-05, Plan 04): `squares` is the reveal window the engine
   // reads (engine/magic.js's reveal branch -> a c.timers["spell:reveal"]
   // record) — the once-a-day rule caps it at <=100; the txt above already
@@ -94,14 +94,14 @@ export const SPELLS = [
   { n: "Stun", lvl: 1, s: "offense", kind: "stun", niche: "control", txt: "control · up to d6 foes · asleep d4 rounds", combatOnly: true },
   { n: "Weaken", lvl: 1, s: "offense", kind: "weaken", niche: "control", txt: "control · every foe · they hit on a 3 and do half, d4+1 rounds", combatOnly: true },
   { n: "Acid", lvl: 2, s: "offense", kind: "acid", dmg: { n: 2, sides: 6, bonus: 2 }, niche: "dot", txt: "damage over time · one foe · 2d6+2 a round, d6 rounds", combatOnly: true },
-  { n: "Stupidity", lvl: 2, s: "offense", kind: "stupid", niche: "control", txt: "control · one foe · does nothing at all for the rest of the fight", combatOnly: true },
-  { n: "Blind", lvl: 3, s: "offense", kind: "blind", niche: "control", txt: "control · one foe · blind for life, which in here means the fight", combatOnly: true },
+  { n: "Stupidity", lvl: 2, s: "offense", kind: "stupid", niche: "control", txt: "control · one foe · does nothing at all for the rest of the fight; past floor 12, only for three rounds", combatOnly: true },
+  { n: "Blind", lvl: 3, s: "offense", kind: "blind", niche: "control", txt: "control · one foe · blind for life, which in here means the fight; past floor 12, life lasts three rounds", combatOnly: true },
   { n: "Shrink", lvl: 3, s: "offense", kind: "shrink", niche: "control", txt: "control · up to d6 foes · half hp and half damage, the fight", combatOnly: true },
-  { n: "Ice", lvl: 3, s: "offense", kind: "dot", dmg: { n: 1, sides: 6, bonus: 0 }, niche: "dot", txt: "damage over time · one foe · d6 a round for d4+1 rounds, then frozen solid", combatOnly: true },
+  { n: "Ice", lvl: 3, s: "offense", kind: "dot", dmg: { n: 1, sides: 6, bonus: 0 }, niche: "dot", txt: "damage over time · one foe · d6 a round for d4+1 rounds, then frozen solid; past floor 12, frozen for three rounds", combatOnly: true },
   { n: "Earthquake", lvl: 4, s: "offense", kind: "quake", dmg: { n: 3, sides: 10, bonus: 8 }, niche: "multi", txt: "multi-target · every foe and you · 3d10+8, half to you unless warded", combatOnly: true },
   { n: "Noxious Vapor", lvl: 4, s: "offense", kind: "vapor", niche: "chaos", txt: "chaos · every foe · a d6 of very bad outcomes", combatOnly: true },
   { n: "Fireballs", lvl: 4, s: "offense", kind: "volley", dmg: { n: 1, sides: 10, bonus: 2 }, niche: "multi", txt: "multi-target · d8 bolts · d10+2 each, spread across the foes", combatOnly: true },
-  { n: "Petrify", lvl: 5, s: "offense", kind: "petrify", niche: "control", txt: "control · one foe · stone for five days; no spoils", combatOnly: true },
+  { n: "Petrify", lvl: 5, s: "offense", kind: "petrify", niche: "control", txt: "control · one foe · stone for five days; no spoils; past floor 12, five days shrink to three rounds", combatOnly: true },
   { n: "Insane", lvl: 2, s: "offense", kind: "insane", niche: "chaos", txt: "chaos · one foe · rolls on the madness table", combatOnly: true },
   { n: "Summon", lvl: 2, s: "special", kind: "summon", niche: "summon", txt: "summon · one ally · fights beside you d4+2 rounds", combatOnly: false },
   { n: "Fireball", lvl: 3, s: "offense", kind: "thrown", dmg: { n: 2, sides: 10, bonus: 4 }, niche: "burst", txt: "burst · one foe · 2d10+4", combatOnly: true },

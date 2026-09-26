@@ -164,7 +164,7 @@ const JEWELRY_ROWS = [
     // Once-a-day rule: every 200 -> 100 (the AoE stone effect itself is
     // instant, so effect+cd is just the cd).
     n: "Amulet of Stone", slot: "jewelry", eff: {}, use: "stone", every: 100, aoe: 4,
-    txt: "turns up to 4 squares of opponents to stone, once every 100 squares",
+    txt: "turns up to 4 squares of opponents to stone, once every 100 squares; past floor 12, the stone wears off in three rounds",
     act: { kind: "stone", effect: 0 },
   },
 ];
@@ -246,7 +246,7 @@ const STAVES_ROWS = [
     act: { kind: "dome", charges: 2, recharge: 100 },
   },
   {
-    n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents indefinitely",
+    n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents indefinitely; past floor 12, indefinitely means three rounds",
     act: { kind: "freeze", charges: 2, recharge: 100 },
   },
   {
@@ -254,7 +254,7 @@ const STAVES_ROWS = [
     act: { kind: "weaken", charges: 2, recharge: 80 },
   },
   {
-    n: "Oak Staff", use: "stone", txt: "turns 2 squares of opponents to stone",
+    n: "Oak Staff", use: "stone", txt: "turns 2 squares of opponents to stone; past floor 12, the stone wears off in three rounds",
     act: { kind: "stone", charges: 1, recharge: 100 },
   },
   {
@@ -270,7 +270,7 @@ const STAVES_ROWS = [
     act: { kind: "fire", charges: 1, recharge: 100 },
   },
   {
-    n: "Cedar Staff", use: "gas", txt: "knocks out 3 squares of enemies for a day",
+    n: "Cedar Staff", use: "gas", txt: "knocks out 3 squares of enemies for a day; past floor 12, a day is three rounds",
     act: { kind: "gas", charges: 1, recharge: 100 },
   },
 ];

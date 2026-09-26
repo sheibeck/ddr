@@ -57,6 +57,16 @@
 // unchanged — none of them ever renders an Enlarge potion or a Gauntlet of
 // the Giant row.
 //
+// Phase 75.3 (RULES-18), Plan 05: ONE declared regeneration — mu.hero's
+// grimoire row for Stupidity gains its control-at-depth clause, "does
+// nothing at all for the rest of the fight" -> "...for the rest of the
+// fight; past floor 12, only for three rounds" (content/spells.js's honest
+// text: past the knee Stupidity is a three-round hold). Confirmed via
+// `git diff --stat` at regeneration time: every other of the eight
+// committed fixtures is byte-for-byte unchanged — none of them renders a
+// Freeze, Ice, Blind, Petrify, Birch/Walnut/Oak/Cedar Staff or Amulet of
+// Stone row.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a
