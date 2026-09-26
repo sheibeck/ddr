@@ -4172,3 +4172,100 @@ ever in the dark with a light waiver live unless a Phase 76 record declares
 it, with the declared set exactly `DARK76_EXPECTED_HOLDERS` (legitimately
 empty). A companion "has teeth" test proves the count catches a lit torch
 or Night Vision in the dark.
+
+### Plans 03–05 — relaunch persistence (SAV-06/07): measured zero
+
+**The rule.** `engine/saveState.js#validateSave` and `#rehydrate` now carry
+a validated `combat`, `store`, `pendingFind`, `pendingHazard` (checked
+against its neighbour cell on the saved floor), `pendingTile` (on the
+current floor) and `pendingJoiner` offer through the load *wholesale*: each
+sanitizer returns the raw object or null, and never copies or deletes keys.
+One that fails validation loads as null and the rest of the save loads as
+before (tolerant load, never a crash). One builder,
+`resumedSubState(obj, combat, floor)`, serves both chains. When a save holds
+both a valid fight and a valid store, the fight wins and the store drops. A
+fight with allies drops when the tolerant party load dropped any member.
+The fight's hero-side state (a genuine `c.foeEffect`, the rounds-cadence
+`c.timers` records) survives only with the fight: `clearFoeEffect` and
+`clearStaleTimers` take `fightSurvives`, and without a surviving fight they
+clear exactly as before. `beats` is always null after a load. There is no
+STATE_VERSION bump, and the load never advances the rng. A declared canon
+divergence: the 1994 prototype's load nulled the fight, the store and the
+pending decisions. The shell side (76-04, 76-05) is presentation only:
+`engineAdapter.js#takeBootResumeEvents()` hands boot's
+`resumeEventsFor(state)` result to `mazeworld.html` once, and the Oracle
+logs the `fightResumed` / `storeResumed` line under "Delve resumed."
+
+**The predictor.** The loader never runs inside a parity replay (every
+fixture script drives `applyAction` from a fresh `newRun`, and no parity
+harness calls `validateSave` or `rehydrate`), and no new serialized field
+exists (the carried values were already on `GameState` and already written
+by `serializeRun`). So the predicted moved set is zero fixtures and zero
+comparable carve-outs.
+
+**The live-scan results, measured at the phase head (after 76-05's
+commits).**
+
+1. `node --test "test/parity/**/*.test.js"`: **64 tests, 64 pass, 0 fail**
+   (62/62 at 76-03's close, before 76-01's two guard tests merged).
+2. `git diff --stat e090d1da -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js`:
+   empty. `e090d1da` is the phase base (the commit before 76-01's and
+   76-03's first commits).
+3. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `git diff --stat e090d1da -- test/unit/fixtures`: empty. No shell
+   snapshot, roll-high state pin or pre-switch save moved in the persistence
+   plans.
+
+**The loader change 76-04 made (Rule 1, `engine/saveState.js#sanitizeWorn`).**
+A load no longer clamps an over-cap purse (gold or rations). Live play never
+clamps a gain, so every relaunch used to cut the excess (the resume walk
+caught `c.gold 2494 -> 2000` mid-fight). The clamp now runs only when an
+old-save gear migration spills an item into the bag, its documented purpose.
+No fixture moved; `worn-migration.test.js` still passes, and
+`test/roundtrip/resume-roundtrip.test.js` names the case.
+
+#### Declared test-pin flips (reset-on-load → resume)
+
+| File | Test | Old assertion | New assertion | Pointer |
+|---|---|---|---|---|
+| test/persistence/resume-mid-encounter.test.js | (a) SAV-06 (Phase 76): relaunch mid-combat | `booted.combat === null` | `booted.combat` deep-equals the saved combat; a `move` after the relaunch is refused (combat still up, px/py unchanged) | 76-03 |
+| test/persistence/resume-mid-encounter.test.js | (b) SAV-07 (Phase 76): relaunch mid-store | `booted.store === null` | `booted.store` deep-equals the saved store | 76-03 |
+| test/unit/pending-tile.test.js | SAV-06 (Phase 76): validateSave/rehydrate keep a saved pendingTile on the current floor, and drop one from another floor | `pendingTile === null` | `{x:3,y:3,depth:1}` survives both chains; `depth: 2` loads null | 76-03 |
+| test/unit/tools.test.js | newRun/validateSave/rehydrate: pendingHazard starts null; one inconsistent with the floor loads as null | "always null" | kept as the drop case, with a precondition that the E neighbour is not a climb | 76-03 |
+| test/unit/tools.test.js | SAV-06 (Phase 76): a pendingHazard matching its neighbour cell survives (new) | none | a matching hazard survives both chains | 76-03 |
+| test/unit/effects.test.js | SAV-06 (Phase 76): with a surviving fight, rehydrate/validateSave keep the rounds record too (new) | none | the rounds and squares records both survive with a fight; a tampered map is still dropped | 76-03 |
+| test/unit/loot-pile.test.js | SAV-06 (Phase 76): a pending find and the loot pile both survive the load | `pendingFind === null` | `pendingFind` deep-equals the saved find | 76-03 |
+| test/unit/carry-model.test.js | serialization round-trip preserves c.bag and a null pendingFind | message "reset to null on rehydrate" | same assertion (a null find), reworded | 76-03 |
+| test/unit/carry-model.test.js | SAV-06 (Phase 76): a valid pendingFind survives rehydrate; a nameless one loads as null | `pendingFind === null` | the valid find survives; a nameless find loads null | 76-03 |
+| test/unit/parley.test.js | D-19 old-save probe: survive with the combat on load | `rehydrated.combat === null` | the combat survives with `parleyTried` and `parleyInsulted` true | 76-03 |
+
+`test/unit/harness/rollHighBaseline.js`'s comments were reworded; its
+`EXTRA_VOLATILE_FIELDS` entries are unchanged.
+
+#### The new standing guards
+
+- `test/unit/save-resume.test.js` (76-03, 16 tests): every sanitizer's keep
+  and drop cases, fight-wins-over-store, the dropped-ally rule, the
+  fight-conditional `foeEffect` / timers clears, `beats` always null, and
+  `resumeEventsFor`.
+- `test/roundtrip/resume-roundtrip.test.js` (76-04, 7 tests, about 19 s): a
+  generic key-path diff of live vs relaunched state
+  (`rehydrate(validateSave(JSON.stringify(serializeRun(state))).value)`)
+  over every parity script scenario and a 16-run bot corpus, plus a
+  next-action determinism probe. Corpus counts: 7,097 bot steps, 742 states
+  walked and probed; 679 fights (165 with allies, 13 with an elite, 290
+  joined past round 2, 9 with a hero effect), 4 open stores, 53 finds, 1
+  hazard, 0 pending tiles (pinned by 76-03's unit test instead), 5 Joiner
+  offers. Also the precision, non-vacuity floors, over-cap purse and
+  old-shape fight cases.
+- `test/persistence/resume-mid-encounter.test.js` (rewritten by 76-03,
+  extended by 76-04, 8 tests): relaunch mid-fight and mid-store through the
+  real adapter, a save after every combat action, a relaunch after every
+  round on the same dice, the encounter-step and killing-blow boundaries, a
+  store purchase across two relaunches, and a Joiner offer accepted after a
+  relaunch.
+- `test/unit/engineAdapter.test.js` (76-04, 5 cases): the one-shot
+  `takeBootResumeEvents()` contract.
+- `test/unit/shell-resume-line.test.js` (76-05): the boot-time Oracle
+  resume line, Oracle only, with the pinned engineAdapter import line
+  byte-identical.
