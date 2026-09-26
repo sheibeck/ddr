@@ -481,7 +481,11 @@ async function runViewport(viewportSpec, { chromePath, pageUrl, devtoolsPort, ke
 
     const measurement = await cdp.evaluate(EXPR.measure);
 
-    if (shotsDir) {
+    // phone-max exists only to pin the COLUMN_PX boundary in the layout
+    // measurement (it is visually identical to "phone" — both full-width);
+    // screenshots are captured for phone/tablet/foldable/chromebook only,
+    // matching the plan's eight committed PNGs.
+    if (shotsDir && viewportSpec.name !== "phone-max") {
       const titleShot = await cdp.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(shotsDir, `browser-${viewportSpec.name}-title.png`), Buffer.from(titleShot.data, "base64"));
       await cdp.evaluate(EXPR.hideTitle);
