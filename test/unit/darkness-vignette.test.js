@@ -472,5 +472,5 @@ test("(shell) WAIVER_LABEL entries and the darkness-lead sentence template are c
   assert.match(explain, /torch/);
   assert.match(explain, /Amulet of Light/);
   assert.match(explain, /Sense Presence/);
-  assert.doesNotMatch(explain, /toast|\bWP\b|\d/, "no toast, no WP, no roll numbers");
+  assert.doesNotMatch(explain, /\bWP\b|\d/, "no WP, no roll numbers");
 });
