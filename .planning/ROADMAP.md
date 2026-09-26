@@ -247,7 +247,7 @@ Plans:
   3. A read that rolls below half the required target is a fumble. A harmful spell hits the reader instead of its target, and an area-damage spell hits the reader and their whole party. A helpful spell lands on the targeted enemy (a fumbled Shield shields that foe). Outside combat a fumble has no effect.
   4. The Pilfer's and every affected class's descriptions state the new rules, both outcomes are narrated in voice, the new rolls come from derived rng streams, and every moved fixture is declared and regenerated.
 
-**Plans**: 4/9 plans executed
+**Plans**: 6/9 plans executed
 
 Plans:
 **Wave 1**
@@ -265,8 +265,8 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 75.1-05-PLAN.md — Turn a fumbled scroll against its reader (RULES-10): one resolver that reads the 75.1-02 table and applies the harmful, area or helpful effect on the right side, using the foe-side (75.1-03) and reader-side (75.1-04) ... (wave 4)
-- [ ] 75.1-09-PLAN.md — Give the hero-cannot-act state (75.1-04) its shell: a combat menu with one way forward, LET THE ROUND PLAY; the bridge that sends it to the engine; a "Can't act" chip, and "Blinded" and "Shrunk" chips for hero Blind a... (wave 4)
+- [x] 75.1-05-PLAN.md — Turn a fumbled scroll against its reader (RULES-10): one resolver that reads the 75.1-02 table and applies the harmful, area or helpful effect on the right side, using the foe-side (75.1-03) and reader-side (75.1-04) ... (wave 4)
+- [x] 75.1-09-PLAN.md — Give the hero-cannot-act state (75.1-04) its shell: a combat menu with one way forward, LET THE ROUND PLAY; the bridge that sends it to the engine; a "Can't act" chip, and "Blinded" and "Shrunk" chips for hero Blind a... (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -612,7 +612,7 @@ Plans:
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
 | 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 13/13 | Complete    | 2026-09-25 |
-| 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 4/9 | In Progress|  |
+| 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 6/9 | In Progress|  |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
