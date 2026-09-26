@@ -973,20 +973,22 @@ export function strikeDie(c) {
 
 /**
  * inDark(state) — is the player standing on an unlit square? Reads state.floor;
- * ports mazeworld.html inDark() (lines 1463-1466).
+ * ports mazeworld.html inDark() (lines 1463-1466). This is PHYSICAL darkness
+ * only: it says nothing about whether a light is holding the dark back.
  *
  * DELIBERATE RULES CHANGE (04.1-05, 2026-09-09, PHOBIA-01): extended to ALSO
  * return true while the persistent darkness counter (`state.c.darkFor`, set
  * by engine/encounters.js's fallDark and decremented per step by
  * engine/movement.js) is active, regardless of the current tile's own
- * `.dark` flag. This is the single hook every darkness consumer already
- * reads (revealRadius below, toHit's in-dark cap, foeToHitVs's silent-thief
- * clause, combat.js's combatInDark/no-crit-in-dark/Darkness-phobia freeze),
- * so extending it here makes the persistent state flow through all of them
- * for free — and every Night Vision waiver keeps working unchanged, since
- * those checks already wrap inDark() rather than reading tile.dark
- * directly. Pure read of already-computed state; no rng, so
- * determinism/parity are unaffected.
+ * `.dark` flag. Pure read of already-computed state; no rng.
+ *
+ * DARK-01 (Phase 76): every hero-side dark PENALTY now reads `darkLimited`
+ * below (in the dark AND no light waiver) — revealRadius, mapViewRadius,
+ * toHit's dark cap, combat.js's combatInDark / no-crit-in-the-dark / the
+ * Darkness phobia's fight-join trigger, and phobias.js#regionActive's
+ * Darkness arm. The remaining direct inDark readers are the physical-darkness
+ * reads that are not penalties: items.js (a torch used while not dark is
+ * refused) and darkLimited itself.
  */
 export function inDark(state) {
   const f = state.floor;
@@ -1010,33 +1012,88 @@ export function inStone(state) {
 }
 
 /**
- * revealRadius(state) — the fog-of-war reveal radius for the player's current
- * position: 1 on a dark tile without Night Vision, 2 otherwise, plus any
- * `sight` effect (e.g. the Amulet of Light, `eff: { sight: 1 }`). Ports
- * mazeworld.html reveal()'s radius line verbatim (line 838): `r = ((g[py][px].dark
- * && !skill("Night Vision")) ? 1 : 2) + eff("sight")`. Reads state.floor
- * (via inDark) and state.c; no RNG.
+ * DARK_WAIVERS — DARK-01 (Phase 76, user rulings 2026-09-22 and 2026-09-25):
+ * the lights that hold the dark back, in the fixed precedence darkWaiver
+ * reports them — most-durable-first (the Phase 57 chip-naming rationale):
+ * Night Vision is innate and never runs out, the Amulet of Light is a worn
+ * 50-square effect, and a lit torch is the shortest-lived. The keys are the
+ * shell's own waiver labels (mazeworld.html#WAIVER_LABEL). Frozen.
  */
-export function revealRadius(state) {
-  return (inDark(state) && !skill(state.c, "Night Vision") ? 1 : 2) + eff(state.c, "sight");
+export const DARK_WAIVERS = Object.freeze(["nightVision", "amuletLight", "litTorch"]);
+
+/**
+ * darkWaiver(c) — DARK-01 (Phase 76): the ONE darkness-waiver predicate for
+ * the map and the fight. Returns the first live waiver in DARK_WAIVERS order
+ * — `"nightVision"` (`skill(c, "Night Vision")`), `"amuletLight"` (a live
+ * Amulet of Light, `eff(c, "light") > 0`) or `"litTorch"` (a lit torch,
+ * `itemEffectActive(c, "lit")`) — or null when none holds. A cooling torch or
+ * Amulet record (cooldown phase, or `left: 0`) is no light. Sense Presence
+ * (`c.senses`) is NOT a light: it stays a separate fight-only relief beside
+ * this predicate (toHit's cap, combatInDark, the dark crit ban), so it never
+ * widens the reveal while walking. A missing or non-object `c` returns null
+ * (never throws — `skill` would). Pure, zero rng, mutates nothing.
+ */
+export function darkWaiver(c) {
+  if (!c || typeof c !== "object") return null;
+  if (skill(c, "Night Vision")) return "nightVision";
+  if (eff(c, "light") > 0) return "amuletLight";
+  if (itemEffectActive(c, "lit")) return "litTorch";
+  return null;
 }
 
-// Phase 41 (TERR-03) — DARK_VIEW_RADIUS: while standing on a dark square
-// without Night Vision, a light effect (e.g. the Amulet of Light) or a lit
-// torch, the map shows only the 3x3 window around the party (Chebyshev
-// distance <= 1) — a pure RENDER filter, never a mutation of `cell.seen`/
-// `cell.spellSeen`. The waiver set is the SAME one revealRadius (Night
-// Vision) and engine/movement.js's darkFor-dispel check (`eff(c, "light") >
-// 0`) already use, plus a lit torch (`itemEffectActive(c, "lit")`) — "a
-// light effect" means one thing everywhere in this codebase.
+/** darkWaived(c) — DARK-01: is any light holding the dark back? `darkWaiver(c) !== null`. */
+export function darkWaived(c) {
+  return darkWaiver(c) !== null;
+}
+
+/**
+ * darkLimited(state) — DARK-01 (Phase 76): is the hero in the dark with no
+ * light waiver? `inDark(state) && !darkWaived(state.c)`. Every hero-side dark
+ * penalty reads this one rule, so a light means the same thing on the map
+ * and in a fight: revealRadius, mapViewRadius (and so inViewWindow), toHit's
+ * dark cap, engine/combat.js's combatInDark line, its no-crit-in-the-dark
+ * rule and the Darkness phobia's fight-join trigger, and
+ * engine/phobias.js#regionActive's Darkness arm. A declared canon divergence:
+ * the 1994 reveal line and in-fight dark rules waived only on Night Vision;
+ * a lit torch or a live Amulet now lights the way and the fight too. Pure,
+ * zero rng, mutates nothing.
+ */
+export function darkLimited(state) {
+  return inDark(state) && !darkWaived(state && state.c);
+}
+
+/**
+ * revealRadius(state) — the fog-of-war reveal radius for the player's current
+ * position: 1 while `darkLimited` (in the dark with no light), 2 otherwise,
+ * plus any `sight` effect (e.g. the Amulet of Light, `eff: { sight: 1 }`),
+ * which stays a separate additive. Reads state.floor and state.c; no RNG.
+ *
+ * DARK-01 (Phase 76, user rulings 2026-09-22 and 2026-09-25): a declared
+ * canon divergence from mazeworld.html reveal()'s radius line (line 838,
+ * `r = ((g[py][px].dark && !skill("Night Vision")) ? 1 : 2) + eff("sight")`),
+ * which waived only on Night Vision. A lit torch now reveals 2 squares as you
+ * walk and a live Amulet 3 — the SAME waiver mapViewRadius reads, so the two
+ * radii can never disagree.
+ */
+export function revealRadius(state) {
+  return (darkLimited(state) ? 1 : 2) + eff(state.c, "sight");
+}
+
+// Phase 41 (TERR-03) — DARK_VIEW_RADIUS: while the hero is `darkLimited` (in
+// the dark with no light waiver), the map shows only the 3x3 window around
+// the party (Chebyshev distance <= 1) — a pure RENDER filter, never a
+// mutation of `cell.seen`/`cell.spellSeen`. DARK-01 (Phase 76): the waiver
+// set is darkWaiver's (Night Vision, a live Amulet of Light, a lit torch),
+// the same one revealRadius and the fight's dark penalties now read. Before
+// Phase 76 revealRadius waived only on Night Vision, so a torch widened the
+// render window but not the reveal (the 2026-09-21 device report).
 export const DARK_VIEW_RADIUS = 1;
 
 /**
  * mapViewRadius(state) — TERR-03: `Infinity` (show every already-`seen`
- * cell) unless the player is currently in the dark (`inDark(state)`) and
- * carries none of the three waivers above (Night Vision, a live Amulet of
- * Light, or a lit torch), in which case `DARK_VIEW_RADIUS` (1) — a 3x3
- * window. The shell (`draw()`) re-reads this fresh on EVERY paint — never a
+ * cell) unless the hero is `darkLimited` (in the dark with no light waiver —
+ * DARK-01, Phase 76: the one predicate revealRadius shares), in which case
+ * `DARK_VIEW_RADIUS` (1) — a 3x3 window. The shell (`draw()`) re-reads this fresh on EVERY paint — never a
  * stored flag (research Pitfall 4) — so leaving the dark square restores
  * the full explored view for free: nothing was ever taken away from
  * `seen`, only hidden at render time. Map the Floor's `spellSeen` window
@@ -1045,12 +1102,7 @@ export const DARK_VIEW_RADIUS = 1;
  * (CONTEXT routine decision). Pure, zero rng, mutates nothing.
  */
 export function mapViewRadius(state) {
-  if (!inDark(state)) return Infinity;
-  const c = state.c;
-  if (skill(c, "Night Vision")) return Infinity;
-  if (eff(c, "light") > 0) return Infinity;
-  if (itemEffectActive(c, "lit")) return Infinity;
-  return DARK_VIEW_RADIUS;
+  return darkLimited(state) ? DARK_VIEW_RADIUS : Infinity;
 }
 
 /**
@@ -1343,7 +1395,10 @@ export function toHit(state) {
   // Phase 19 D-10: dazed — you need 2 lower to hit, never below 1; the
   // weakened kind is applied at playerStrike's damage line in combat.js, not here.
   if (c.foeEffect && c.foeEffect.kind === "dazed" && c.foeEffect.rounds > 0) h = Math.max(1, h - 2);
-  if (inDark(state) && !skill(c, "Night Vision") && !c.senses) h = Math.min(h, 2);
+  // DARK-01 (Phase 76, user ruling 2026-09-25 "combat too"): the dark cap
+  // reads the one darkness waiver (darkLimited: Night Vision, a live Amulet,
+  // a lit torch); Sense Presence stays a fight-only relief beside it.
+  if (darkLimited(state) && !c.senses) h = Math.min(h, 2);
   // RULES-10 (Phase 75.1, hero Blind): a fumbled Blind on the READER —
   // mirrors a blind FOE's own override (foeSwingVsHero/foeTurn set that
   // foe's swing to exactly 1 winning face) applied to the hero's own weapon

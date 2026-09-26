@@ -6578,6 +6578,55 @@ finished milestone code:
 
 No dial was retuned in response to any number, and none is recorded here.
 
+## v2.1 darkness unification (Phase 76) — bot readout
+
+**USER RULING (2026-09-26):** bot balance runs happen once, at the
+milestone close (Phase 79.1), after all of the milestone's code has landed.
+This section records what Phase 76 changed for the dark and where its
+readout now lives. It is not a readout record: no `tune-difficulty`,
+`tune-classes` or `fit-difficulty` run happened in this phase, so it quotes
+no BEFORE or AFTER block and gives no verdict. Phase 79.1 writes those.
+
+### Change under measurement (76-01, DARK-01)
+
+- **One darkness waiver for the map and the fight.**
+  `engine/derived.js#darkLimited` (in the dark, `inDark`, with no light
+  waiver: Night Vision, a live Amulet of Light or a lit torch, in that
+  precedence, `DARK_WAIVERS`) now drives every hero-side dark penalty.
+- **The reveal and the render window.** `revealRadius` is
+  `(darkLimited ? 1 : 2) + eff("sight")` and `mapViewRadius` is
+  `DARK_VIEW_RADIUS` exactly when `darkLimited`. A lit torch now reveals 2
+  squares as you walk (was 1) and a live Amulet 3 (was 2). Before, only Night
+  Vision widened the reveal, while the torch and the Amulet widened only the
+  render window.
+- **The fight (user ruling 2026-09-25, "combat too").** toHit's dark cap
+  (`Math.min(h, 2)`), the `combatInDark` line, the no-crit-in-the-dark rule
+  and the Darkness phobia (the fight-join trigger and the terrain arm in
+  `engine/phobias.js#regionActive`) all read `darkLimited`. A lit torch or a
+  live Amulet now lifts them all, and Night Vision now also stops the
+  Darkness phobia. Sense Presence (`c.senses`) keeps lifting the cap, the
+  line and the crit ban as a fight-only relief layered beside the predicate.
+- **Direction.** The dark got kinder to light carriers on purpose. The
+  tuning bot lights a carried torch, or a ready worn Amulet, whenever it
+  stands in the dark (`tools/lib/tuning-bot.mjs#chooseFieldItem`), so the
+  shift reaches the bot.
+
+### Measured without a bot readout
+
+- The parity fixtures, the eight roll-high state pins, the pre-switch save
+  and the bot-tactics seeds are all byte-identical (see
+  `test/parity/FIXTURE-INVENTORY.md`'s Phase 76 section, Plan 01).
+- `engine/difficulty.js` and `content/` are byte-identical to the plan base
+  (`e090d1da`). No dial was retuned and nothing was nerfed to compensate.
+
+### Deferred to Phase 79.1
+
+The 200-seed `tools/tune-difficulty.mjs` readout that measures this shift
+(mean death depth, the reach lines, the floor bands) runs once in Phase
+79.1, against the finished milestone code. The user judges the kinder dark
+there. If a difficulty band fails then, the rule is to stop and report: no
+band is loosened and no compensating nerf is made.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases

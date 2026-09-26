@@ -121,11 +121,16 @@ test("darkness: entering a .dark tile fires once; c.darkFor keeps the region act
   assert.equal(state.c.phobiaState["Darkness"], true);
 });
 
-test("darkness: Night Vision does NOT suppress the trigger", () => {
+// DARK-01 (Phase 76, user ruling 2026-09-25: "Night Vision and Sense
+// Presence keep lifting them too"): the Darkness arm reads the one darkness
+// waiver (engine/derived.js#darkLimited), so Night Vision now stops the
+// trigger. Before Phase 76 this pinned the opposite.
+test("darkness: Night Vision suppresses the trigger (DARK-01)", () => {
   const state = fixedState({ c: { phobia: "Darkness", phobiaType: null, skills: { "Night Vision": 1 } } });
   open(state.floor.g, 5, 4, { dark: true });
   const e = move(state, "N", fakeRng([]), []);
-  assert.ok(e.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "dark"), "Night Vision waives the reveal/to-hit penalties, never the phobia trigger itself");
+  assert.equal(e.some((ev) => ev.type === "phobiaTriggered"), false, "Night Vision holds the dark back, so there is nothing to be afraid of");
+  assert.equal(state.c.fearArmed, undefined);
 });
 
 // --- Being trapped -------------------------------------------------------------

@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -511,7 +511,9 @@ export function fight(state, rng, events = []) {
   // character (a character carries exactly one `c.phobia` value, and only
   // Darkness/Death ever have `phobiaType: null` in the PHOBIAS catalog) — a
   // type-matched phobia (`c.phobiaType === type`), Darkness-in-the-dark
-  // (`inDark(state)`), or a Death-phobic character at/below
+  // (`darkLimited(state)` since DARK-01, Phase 76 — in the dark with no
+  // light: Night Vision, a live Amulet or a lit torch stop it; with a waiver
+  // live the gated Hardiness d2 below is not drawn), or a Death-phobic character at/below
   // DEATH_PANIC_THRESHOLD (25%) of `c.maxWP` (`nearDeathPanic`) — so this
   // can never double-trigger or double-roll Hardiness for a single
   // character. Because the left side of the `&&` short-circuits,
@@ -552,7 +554,7 @@ export function fight(state, rng, events = []) {
   // 0 draws); the Hardiness shrug d2 is then drawn ONLY when that condition
   // holds AND the hero has Hardiness — same single gated draw as before, now
   // reading the top face (2 of 2) as the shrug instead of the bottom one.
-  const phobiaCondition = c.phobiaType === type || (c.phobia === "Darkness" && inDark(state)) || nearDeathPanic || armed;
+  const phobiaCondition = c.phobiaType === type || (c.phobia === "Darkness" && darkLimited(state)) || nearDeathPanic || armed;
   const hardinessShrug = phobiaCondition && skill(c, "Hardiness") ? rollCheck(rng, 2, atLeastFor(1, 2)) : null;
   if (phobiaCondition && !(hardinessShrug && hardinessShrug.ok)) {
     state.combat.afraid = AFRAID_ROUNDS;
@@ -569,8 +571,10 @@ export function fight(state, rng, events = []) {
   }
   // RULES-05 (Phase 75): Sense Presence is "full skill in the dark" — an
   // active senses waiver stops this line firing, mirroring derived.js#toHit's
-  // existing dark-cap waiver.
-  if (inDark(state) && !skill(c, "Night Vision") && !c.senses) events.push({ type: "combatInDark" });
+  // existing dark-cap waiver. DARK-01 (Phase 76, user ruling 2026-09-25
+  // "combat too"): the line reads the one darkness waiver (darkLimited), so
+  // a lit torch or a live Amulet lifts it exactly like Night Vision.
+  if (darkLimited(state) && !c.senses) events.push({ type: "combatInDark" });
   if (first === "foe") {
     foeTurn(state, rng, events);
     // BUG FIX (Phase 26 gap closure, 2026-09-15): the opening foe turn can
@@ -817,10 +821,12 @@ export function playerStrike(state, rng, events = []) {
     // for every character not carrying the cloak (eff noCrit === 0).
     // RULES-05 (Phase 75): Sense Presence waives the dark no-crit ban too —
     // "full skill in the dark," matching toHit's existing dark-cap waiver.
+    // DARK-01 (Phase 76): the dark term reads the one darkness waiver
+    // (darkLimited), so a lit torch or a live Amulet restores crits too.
     const noCrit =
       c.sub === "Guard" ||
       c.sub === "Soldier" ||
-      (inDark(state) && !skill(c, "Night Vision") && !c.senses) ||
+      (darkLimited(state) && !c.senses) ||
       eff(c, "noCrit") > 0;
     // Phase 39 (GEAR-01): the crit RANGE is now weapon-driven — a precise
     // blade (Rapier/Katana/Wakazashi/Ninja-to/Dagger, crit:2) doubles on the

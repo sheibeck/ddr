@@ -28,7 +28,7 @@
 // and pushes `phobiaTriggered` events — zero rng draws anywhere in this
 // file. A cycle-free leaf: imports ONLY from ./derived.js.
 
-import { inDark, DEATH_PANIC_THRESHOLD } from "./derived.js";
+import { darkLimited, DEATH_PANIC_THRESHOLD } from "./derived.js";
 
 /** TERRAIN_PHOBIAS — the five phobias this region model governs (the five
  * `t: null` entries in content/flavor.js#PHOBIAS). The five type-matched
@@ -115,7 +115,11 @@ export function regionActive(state, phobia) {
     const cell = f.g[f.py] && f.g[f.py][f.px];
     return !!(cell && cell.water === true);
   }
-  if (phobia === "Darkness") return inDark(state);
+  // DARK-01 (Phase 76, user ruling 2026-09-25): the Darkness arm reads the
+  // one darkness waiver (darkLimited), so lighting a torch inside a dark
+  // region reads as leaving it, and one burning out there re-arms on the
+  // next step. Night Vision and a live Amulet stop it too.
+  if (phobia === "Darkness") return darkLimited(state);
   if (phobia === "Being trapped") return isDeadEnd(f, f.px, f.py);
   return false;
 }

@@ -203,13 +203,17 @@ test("HI-01: the Amulet of Light's LIVE sight:1 effect widens a lit tile's revea
   assertSeenSquare(state.floor.g, 5, 4, 3);
 });
 
-test("HI-01: LIVE sight:1 on a dark tile without Night Vision still only widens the dark 1 to a 2 (5x5)", () => {
+// DARK-01 (Phase 76, user ruling 2026-09-22): the LIVE Amulet is itself a
+// darkness waiver now (engine/derived.js#darkLimited), so a dark tile no
+// longer shrinks its reveal: the waiver restores 2 and its sight:1 stays
+// additive, 3 (7x7). Before Phase 76 this pinned 2 (5x5).
+test("HI-01 + DARK-01: a LIVE Amulet of Light on a dark tile without Night Vision waives the dark and keeps sight:1, radius 3 (7x7)", () => {
   const state = fixedState({
     c: { items: [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }], timers: liveAmuletOfLight() },
   });
   open(state.floor.g, 5, 4, { dark: true });
   move(state, "N", fakeRng([]), []);
-  assertSeenSquare(state.floor.g, 5, 4, 2);
+  assertSeenSquare(state.floor.g, 5, 4, 3);
 });
 
 // --- one-way doors ----------------------------------------------------
