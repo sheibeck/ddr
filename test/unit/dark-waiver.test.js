@@ -287,7 +287,8 @@ test("fight matrix: the no-crit-in-the-dark rule follows darkLimited (Sense Pres
 function joinState(c, { dark = true } = {}) {
   const state = fixedState({ c });
   state.floor.g[5][5].dark = dark;
-  state.combat = { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false };
+  // `pending: true` — the encounter is waiting on Fight!, so fight() joins it.
+  state.combat = { foes: [], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false, pending: true };
   return state;
 }
 
@@ -300,6 +301,7 @@ test("fight: combatInDark fires in the unlit dark and not with a lit torch, a li
     ["Night Vision", { skills: { "Night Vision": 1 } }],
   ]) {
     const events = fight(joinState(c), fakeRng([20, 1]), []);
+    assert.ok(events.some((e) => e.type === "combatJoined"), `${name}: the fight joined`);
     assert.equal(events.some((e) => e.type === "combatInDark"), false, `${name} lifts the line`);
   }
   const senses = fight(joinState({ senses: 1 }), fakeRng([1, 20]), []);
@@ -325,6 +327,7 @@ test("fight: a Darkness-phobic hero joining in the dark is afraid with no waiver
     // fakeRng([20, 1]) supplies exactly the two initiative draws: the phobia
     // does not fire, and no Hardiness draw is ever asked for.
     const events = fight(state, fakeRng([20, 1]), []);
+    assert.ok(events.some((e) => e.type === "combatJoined"), `${name}: the fight joined`);
     assert.ok(!state.combat.afraid, `${name}: not afraid`);
     assert.equal(events.some((e) => e.type === "phobiaAfraid"), false, `${name}: no phobiaAfraid`);
   }

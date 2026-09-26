@@ -157,7 +157,7 @@ test("end-to-end: the counter zeroed on a lit tile composes to the off level", (
 
 test("end-to-end: a running counter WITH a lit torch composes to the off level too — mapViewRadius (not revealRadius) is what vignetteFor must be fed", () => {
   const state = fixedState({ c: { darkFor: 30, timers: { "item:Torch": { cadence: "squares", left: 40, phase: "effect" } } } });
-  assert.equal(revealRadius(state), 1, "sanity: revealRadius stays at 1 under the torch waiver — the divergence this plan exists to explain");
+  assert.equal(revealRadius(state), 2, "sanity: DARK-01 (Phase 76) — the torch waiver now widens revealRadius to 2 as well; the two radii no longer diverge");
   const result = vignetteFor(inDark(state), mapViewRadius(state));
   assert.equal(result.on, true, "the counter is still running");
   assert.equal(result.level, "off", "but the map is rendering everything, so the vignette must not lie by dimming it");

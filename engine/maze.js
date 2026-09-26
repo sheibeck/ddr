@@ -218,8 +218,9 @@ export function genFloor(depth, rng) {
  * parameter (default 2, the non-dark/no-bonus case) — every real call site
  * (move/teleport/descend in engine/movement.js, newRun in engine/state.js)
  * now computes and passes the true radius via engine/derived.js's
- * revealRadius(state) (HI-01), matching the prototype's dark/Night
- * Vision/sight behavior exactly.
+ * revealRadius(state) (HI-01), which since Phase 76 (DARK-01, a declared
+ * canon divergence) also waives the dark on a lit torch or a live Amulet of
+ * Light, not only on Night Vision; the `sight` additive is unchanged.
  *
  * Phase 40 (SPELL-05, Plan 04) graduation: a cell this reveal actually
  * touches loses its `spellSeen` provenance flag (engine/magic.js's reveal

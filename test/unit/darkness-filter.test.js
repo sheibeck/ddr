@@ -209,15 +209,21 @@ test("Phase 57 characterisation: the mirror case — darkFor 0 on a .dark tile �
   assert.equal(inViewWindow(state, 3, 3), false);
 });
 
-test("Phase 57 characterisation: darkFor running WITH a lit torch — the waiver divergence that is the confirmed explanation of the 2026-09-21 device report", () => {
+// DARK-01 (Phase 76, user rulings 2026-09-22 and 2026-09-25): the three
+// cases below were Phase 57 characterisations of the waiver DIVERGENCE (the
+// render window waived on a torch or the Amulet, the reveal only on Night
+// Vision). One predicate (engine/derived.js#darkLimited) now drives both, so
+// they pin the unified answers instead.
+
+test("Phase 76 (DARK-01): darkFor running WITH a lit torch — the torch lights the reveal AND the render window", () => {
   const state = fixedState({ c: { darkFor: 30, timers: { "item:Torch": { cadence: "squares", left: 40, phase: "effect" } } } });
-  assert.equal(inDark(state), true, "the counter is still running — the player is still 'in the dark'");
-  assert.equal(revealRadius(state), 1, "revealRadius waives ONLY on Night Vision — a torch does not touch it");
-  assert.equal(mapViewRadius(state), Infinity, "mapViewRadius waives on a lit torch too — the map shows everything");
-  assert.equal(inViewWindow(state, 3, 3), true, "the whole explored room renders, even though inDark is true and revealRadius is 1");
+  assert.equal(inDark(state), true, "the counter is still running — the player is still physically in the dark");
+  assert.equal(revealRadius(state), 2, "a lit torch now lights your way as you walk (was 1 before DARK-01)");
+  assert.equal(mapViewRadius(state), Infinity, "and the map shows everything, by the same rule");
+  assert.equal(inViewWindow(state, 3, 3), true);
 });
 
-test("Phase 57 characterisation: darkFor running WITH a live Amulet of Light — the same divergence", () => {
+test("Phase 76 (DARK-01): darkFor running WITH a live Amulet of Light — the waiver plus its sight:1 additive", () => {
   const state = fixedState({
     c: {
       darkFor: 30,
@@ -226,15 +232,15 @@ test("Phase 57 characterisation: darkFor running WITH a live Amulet of Light —
     },
   });
   assert.equal(inDark(state), true);
-  assert.equal(revealRadius(state), 2, "the Amulet's own sight:1 effect DOES widen revealRadius (eff(c,\"sight\") is added unconditionally)");
+  assert.equal(revealRadius(state), 3, "the Amulet waives the dark (2) and keeps its own sight:1 additive (was 2 before DARK-01)");
   assert.equal(mapViewRadius(state), Infinity);
   assert.equal(inViewWindow(state, 3, 3), true);
 });
 
-test("Phase 57 characterisation: darkFor running WITH Night Vision — the one waiver revealRadius ALSO respects", () => {
+test("Phase 76 (DARK-01): darkFor running WITH Night Vision — the same one waiver", () => {
   const state = fixedState({ c: { darkFor: 30, skills: { "Night Vision": 1 } } });
   assert.equal(inDark(state), true);
-  assert.equal(revealRadius(state), 2, "Night Vision is the ONE waiver revealRadius itself respects");
+  assert.equal(revealRadius(state), 2, "Night Vision waives the reveal, as it always did");
   assert.equal(mapViewRadius(state), Infinity);
   assert.equal(inViewWindow(state, 3, 3), true);
 });
