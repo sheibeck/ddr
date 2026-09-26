@@ -10,21 +10,21 @@
 
 ### Engine rules (RULES)
 
-- [ ] **RULES-01**: A Table-4 "+HP" dot raises max HP by a non-compounding amount. Repeated pulls grow the pool linearly rather than ×1.6 each time, and the toll row takes its share from that non-inflated pool. (todo 2026-09-21 table-4-hp-dots)
-- [ ] **RULES-02**: A red-dot wilmst cache pays a cut amount (about 100 × depth, the final value set in plan). One cache no longer buys out the store. (todo 2026-09-21 red-dot-wilmst-cache)
-- [ ] **RULES-03**: The Summoner's offense school gate is REMOVED (user, 2026-09-25: "They already have a negative of summons having a chance to turn on them"), so a level-1 Summoner can roll and cast offense spells. Its new weakness (user, 2026-09-25): healing spells the Summoner casts restore half (floor, min 1), on any target; potions and others' heals are unaffected; the summon backfire stays. For the six sub-classes that keep a gate, a grimoire never holds a spell from a school gated above the hero's level. (todos 2026-09-21 summoner-rolls-freeze, 2026-09-25 summoner-loses-its-offense-gate)
-- [ ] **RULES-04**: The combat SPELLS menu lists only spells the hero can cast now. Level- or school-locked spells are hidden, not shown greyed. (same todo, user ruling)
-- [ ] **RULES-05**: With Sense Presence active, the hero wins initiative outright, the "You cannot see what you are fighting" line does not fire, and crits are allowed in the dark. (todo 2026-09-23 sense-presence)
-- [ ] **RULES-06**: The HP a trap shows the player equals the HP it actually takes. A hero cannot die to a trap the Oracle reports as −1 HP. Root-cause it with `/gsd-debug` before fixing. (todo 2026-09-22 trap-death-at-21-hp)
-- [ ] **RULES-07**: An ailment roll of 5–6 narrates what it actually gives. Canon rows 5–6 are a disease of the mind that gives a phobia; the Oracle and the rail say so in voice and never announce a "Disease" the hero doesn't get. (todo 2026-09-23 ailment-roll-5-6; user kept canon 2026-09-25, amended from "gives the Disease it narrates")
-- [ ] **RULES-08**: When new armor replaces a destroyed piece, the player is told the old piece was destroyed and is gone. It never silently vanishes on a swap. (todo 2026-09-23 destroyed-armor)
+- [x] **RULES-01**: A Table-4 "+HP" dot raises max HP by a non-compounding amount. Repeated pulls grow the pool linearly rather than ×1.6 each time, and the toll row takes its share from that non-inflated pool. (todo 2026-09-21 table-4-hp-dots)
+- [x] **RULES-02**: A red-dot wilmst cache pays a cut amount (about 100 × depth, the final value set in plan). One cache no longer buys out the store. (todo 2026-09-21 red-dot-wilmst-cache)
+- [x] **RULES-03**: The Summoner's offense school gate is REMOVED (user, 2026-09-25: "They already have a negative of summons having a chance to turn on them"), so a level-1 Summoner can roll and cast offense spells. Its new weakness (user, 2026-09-25): healing spells the Summoner casts restore half (floor, min 1), on any target; potions and others' heals are unaffected; the summon backfire stays. For the six sub-classes that keep a gate, a grimoire never holds a spell from a school gated above the hero's level. (todos 2026-09-21 summoner-rolls-freeze, 2026-09-25 summoner-loses-its-offense-gate)
+- [x] **RULES-04**: The combat SPELLS menu lists only spells the hero can cast now. Level- or school-locked spells are hidden, not shown greyed. (same todo, user ruling)
+- [x] **RULES-05**: With Sense Presence active, the hero wins initiative outright, the "You cannot see what you are fighting" line does not fire, and crits are allowed in the dark. (todo 2026-09-23 sense-presence)
+- [x] **RULES-06**: The HP a trap shows the player equals the HP it actually takes. A hero cannot die to a trap the Oracle reports as −1 HP. Root-cause it with `/gsd-debug` before fixing. (todo 2026-09-22 trap-death-at-21-hp)
+- [x] **RULES-07**: An ailment roll of 5–6 narrates what it actually gives. Canon rows 5–6 are a disease of the mind that gives a phobia; the Oracle and the rail say so in voice and never announce a "Disease" the hero doesn't get. (todo 2026-09-23 ailment-roll-5-6; user kept canon 2026-09-25, amended from "gives the Disease it narrates")
+- [x] **RULES-08**: When new armor replaces a destroyed piece, the player is told the old piece was destroyed and is gone. It never silently vanishes on a swap. (todo 2026-09-23 destroyed-armor)
 - [ ] **RULES-09**: A Pilfer can use magic items under the normal rules. The heal-only refusal is gone. Instead, every time a Pilfer uses a magic item (use-activated jewelry, cloaks and staves) it rolls a d20, and on a 1 the use fails, the item explodes for d10 damage to the Pilfer (armor does not soak it), and it turns to dust. Scrolls and potions are not magic items for this rule; a Pilfer drinks potions normally. The player is told so. Tools never fumble. The fumble draw comes from a derived rng stream. The Pilfer blurb states both sides. (user, 2026-09-24; todo 2026-09-24 pilfer-bad-becomes-fumbling)
 - [ ] **RULES-10**: Anyone can attempt to read any scroll. Magic Users, and any character with the Runes/Signs skill, always succeed and never fumble. Everyone else makes an intelligence roll (d20 against their own intel, with no intel-12 floor); a success casts the scroll's spell and a failure casts nothing, except that a read that rolls below half the required target is a FUMBLE: a harmful spell takes effect on the reader instead of its target, and a beneficial spell takes effect on the targeted enemy instead of the reader (a fumbled Shield scroll shields the foe you're targeting). A fumbled area-damage spell hits the reader and everyone in the reader's party. Outside combat, a fumble has no effect. The scroll is consumed either way, and both outcomes are narrated. The class/skill gate and the Pilfer lockout in `canRead` go away. A Pilfer reads scrolls under this rule; the RULES-09 fumble never applies to scrolls. The roll comes from a derived rng stream. (user, 2026-09-24; todo 2026-09-24 anyone-reads-scrolls-on-an-intelligence-roll)
 - [ ] **RULES-11**: Hero size matters (user, 2026-09-25). Race sets the starting size (Elven and Dwarven Small, Troll Large, the rest Human-size, from the existing race data). Items and potions step it: the Gauntlet of the Giant and Enlarge are each exactly +1 size step, and Enlarge's separate +4 damage is removed. Each step up gives +2 damage and makes foes hit you one face more easily; each step down gives -2 damage and makes foes need one face more. Rules that care about a creature being big or small read the hero's size too. Item text states exactly what a step does, with no ceiling promise. (todo 2026-09-25 hero-size-means-nothing-beyond-damage)
-- [ ] **RULES-12**: When a wandering monster interrupts the step that lands on an icon (a dot, trap, chest, teleporter or other feature), the icon resolves after the fight if the hero is still standing on it, instead of being left unresolved under the hero. (user, 2026-09-25; todo 2026-09-25 resolve-the-tile-after-a-wanderer)
-- [ ] **RULES-13**: A magic staff is a Magic User's equippable melee weapon (weapon slot, d8 base damage), and its charged power works ONLY while it is wielded; a staff in the bag is inert. This reverses the 2026-09-18 "usable but not equipable" staff amendment. Old saves keep bag staves as bag staves. (user, 2026-09-25; todo 2026-09-25 magic-staff-is-an-equippable-d8-melee-weapon)
-- [ ] **RULES-14**: Bubble is no longer a bigger Shield. It fully reflects the NEXT blow that would hit the caster back at the attacker (the caster takes none), then pops, leaving a small soak pool (about 25 hp; final value set in plan) for the rest of that round. Shield keeps its 50 hp / 5 rounds. (user, 2026-09-25; todo 2026-09-25 bubble-reflects-the-next-attack)
-- [ ] **RULES-15**: A new day (making camp, or every 100 squares) refills spell books ONLY when the party eats. With too few rations nobody's book refills, and the Oracle and rail say why ("You need a good night's sleep"). The per-20-squares trickle is unchanged. (user, 2026-09-25; todo 2026-09-25 no-rations-no-spell-recovery)
+- [x] **RULES-12**: When a wandering monster interrupts the step that lands on an icon (a dot, trap, chest, teleporter or other feature), the icon resolves after the fight if the hero is still standing on it, instead of being left unresolved under the hero. (user, 2026-09-25; todo 2026-09-25 resolve-the-tile-after-a-wanderer)
+- [x] **RULES-13**: A magic staff is a Magic User's equippable melee weapon (weapon slot, d8 base damage), and its charged power works ONLY while it is wielded; a staff in the bag is inert. This reverses the 2026-09-18 "usable but not equipable" staff amendment. Old saves keep bag staves as bag staves. (user, 2026-09-25; todo 2026-09-25 magic-staff-is-an-equippable-d8-melee-weapon)
+- [x] **RULES-14**: Bubble is no longer a bigger Shield. It fully reflects the NEXT blow that would hit the caster back at the attacker (the caster takes none), then pops, leaving a small soak pool (about 25 hp; final value set in plan) for the rest of that round. Shield keeps its 50 hp / 5 rounds. (user, 2026-09-25; todo 2026-09-25 bubble-reflects-the-next-attack)
+- [x] **RULES-15**: A new day (making camp, or every 100 squares) refills spell books ONLY when the party eats. With too few rations nobody's book refills, and the Oracle and rail say why ("You need a good night's sleep"). The per-20-squares trickle is unchanged. (user, 2026-09-25; todo 2026-09-25 no-rations-no-spell-recovery)
 - [ ] **RULES-16**: The number of foes grows with depth. Floors 1-4 keep today's 50% solo fights; floors 5-9 are solo only on a d4 of 1; from floor 10 a fight has at least 2 foes, and from floor 20 at least 3. The existing draws are kept, and a before/after 200-seed readout is taken against the depth-20 target. (user, 2026-09-25: a Troll Summoner on floor 23 kept getting solo fights; todo 2026-09-25 deep-floor-solo-fights)
 - [ ] **RULES-17**: Deep floors keep getting harder. From floor 12, foe HP and hit scale climb on a steeper second slope, and the foe roster keeps escalating past today's level-5 cap (a higher cap or elite variants). The slopes are set by 200-seed bot readouts against the depth-20 unicorn / floor 5-7 average target. (user, 2026-09-25: a friend's Sorcerer at depth 42 meets ~14 hp foes; todo 2026-09-25 deep-floors-barely-get-harder)
 - [ ] **RULES-18**: Control spells lose their lock at depth. From floor 12, foes increasingly resist or shake off Freeze, Stone, Doze, Weaken and similar control (a depth-scaled roll-high resistance, with capped durations if needed), so a freeze-lock rotation can't carry a caster to depth 40. (user, 2026-09-25; same todo)
@@ -138,18 +138,18 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | ROLL-05 | Phase 73 | Complete |
 | ROLL-02 | Phase 74 | Complete |
 | ROLL-03 | Phase 74 | Complete |
-| RULES-01 | Phase 75 | Pending |
-| RULES-02 | Phase 75 | Pending |
-| RULES-03 | Phase 75 | Pending |
-| RULES-04 | Phase 75 | Pending |
-| RULES-05 | Phase 75 | Pending |
-| RULES-06 | Phase 75 | Pending |
-| RULES-07 | Phase 75 | Pending |
-| RULES-08 | Phase 75 | Pending |
-| RULES-12 | Phase 75 | Pending |
-| RULES-13 | Phase 75 | Pending |
-| RULES-14 | Phase 75 | Pending |
-| RULES-15 | Phase 75 | Pending |
+| RULES-01 | Phase 75 | Complete |
+| RULES-02 | Phase 75 | Complete |
+| RULES-03 | Phase 75 | Complete |
+| RULES-04 | Phase 75 | Complete |
+| RULES-05 | Phase 75 | Complete |
+| RULES-06 | Phase 75 | Complete |
+| RULES-07 | Phase 75 | Complete |
+| RULES-08 | Phase 75 | Complete |
+| RULES-12 | Phase 75 | Complete |
+| RULES-13 | Phase 75 | Complete |
+| RULES-14 | Phase 75 | Complete |
+| RULES-15 | Phase 75 | Complete |
 | RULES-09 | Phase 75.1 | Pending |
 | RULES-10 | Phase 75.1 | Pending |
 | RULES-11 | Phase 75.2 | Pending |
