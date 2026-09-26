@@ -368,7 +368,22 @@ Plans:
   3. A player who Saves & quits, or whose app is killed, mid-fight relaunches into the exact same fight — same foes, HP, round and active effects — and force-closing can no longer be used to escape a fight.
   4. A player who relaunches with the store open returns to the same store with the same stock.
 
-**Plans**: TBD
+**Plans**: 0/5 plans executed
+
+Plans:
+**Wave 1**
+
+- [ ] 76-01-PLAN.md — Make one darkness-waiver rule govern both what the party reveals as it walks and what the map renders (DARK-01) (wave 1)
+- [ ] 76-03-PLAN.md — Make the load keep what the player was in the middle of (SAV-06, SAV-07): a live fight, an open store, a pending find, a pending hazard decision and a pending tile (RULES-12's Phase 76 handoff) (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 76-02-PLAN.md — Make every darkness surface the player sees read the one rule from 76-01 (DARK-02): the DARK chip and its tap card, the map vignette, and per-tile dark painting (wave 2)
+- [ ] 76-04-PLAN.md — Prove the relaunch end to end (SAV-06, SAV-07) and hand the shell its resume line (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 76-05-PLAN.md — Finish the phase: the Oracle says the fight (or the shop) is still on after a relaunch, the persistence half's measurement is recorded beside the darkness half's in FIXTURE-INVENTORY.md, every gate is run at the phase... (wave 3)
 **Device check**: yes — relaunch-mid-fight and relaunch-mid-store batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
 
 ### Phase 77: Combat Screen & Oracle Readability
