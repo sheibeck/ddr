@@ -18,6 +18,11 @@ import url from "node:url";
 // engine-only (no prototype sandbox needed; this proves no replay site
 // EVER meets a Joiner, not byte-parity).
 import { newRun, applyAction } from "../../engine/engine.js";
+// Phase 75.2 (RULES-11, Plan 05): sizeAxisStep is the ONE seam a fight's
+// starting hero's own size reads through (test/unit/hero-size-rules.test.js
+// guards this engine-wide) — the exposure guard below reads it directly,
+// never re-deriving race/mask logic of its own.
+import { sizeAxisStep } from "../../engine/derived.js";
 import { applyStartCombat } from "./harness/comparables.js";
 import { makeRng } from "../../engine/rng.js";
 import { openStore } from "../../engine/economy.js";
@@ -1023,4 +1028,128 @@ test("RULES-09/RULES-10 exposure guard has teeth: a doctored event list carrying
   // FAIL against this doctored list.
   assert.throws(() => assert.equal(counts.pilferFumbled, 0), assert.AssertionError);
   assert.throws(() => assert.equal(counts.scrollFumbled, 0), assert.AssertionError);
+});
+
+// Phase 75.2 (RULES-11, Plan 05 — the phase's own close-out guard): race
+// sets a hero's base size step, items step it further, and the resolved
+// step moves weapon damage and a foe's winning faces (see
+// test/parity/FIXTURE-INVENTORY.md's Phase 75.2 section for the full
+// per-plan predictor/measurement accounting this guard proves the positive
+// side of). 75.2-01's own predictor: every parity replay hero with a live
+// race field is Human, Wilmsry or Fridgian (raceSizeStep 0 — no possible
+// exposure) EXCEPT five chargen-only seeds that never fight — no replay
+// site's action script ever dispatches a startCombat with a sized (Elven/
+// Dwarven/Troll) hero. The declared Phase 75.2 set stays legitimately EMPTY
+// (mirroring JOIN-02/RULES-09/RULES-10's own "measured zero, still proven"
+// discipline) — none of the phase's five plans declared a divergence
+// record.
+const RULES112_EXPECTED_HOLDERS = [];
+
+// The seven replay sites whose OWN action script ever dispatches a
+// startCombat action — every other site (chargen, movement, economy, the
+// non-combat magic/encounters scenarios) never fights at all, so a fight-
+// starting hero's OWN size can only ever be exposed at one of these seven.
+const FIGHT_SITE_SEEDS = [
+  { holderId: "action-script.combat.json#win", seed: 3 },
+  { holderId: "action-script.combat.json#lose", seed: 14 },
+  { holderId: "action-script.combat.json#lose-apprentice", seed: 127 },
+  { holderId: "action-script.combat.json#lose-plain", seed: 1119 },
+  { holderId: "action-script.combat.json#flee", seed: 17 },
+  { holderId: "action-script.combat.json#parley", seed: 303 },
+  { holderId: "action-script.magic.json#cast-damage", seed: 8 },
+];
+
+/**
+ * countPhase752Exposure(events) -> the per-event-type counts the 31-site
+ * Phase 75.2 exposure guard below tallies, extracted as its own pure
+ * function (mirroring countPhase751Exposure's own established shape) so a
+ * dedicated "does this guard have teeth" test can feed it a doctored event
+ * list without needing a live engine replay.
+ */
+function countPhase752Exposure(events) {
+  return {
+    itemEffectStartedGiant: events.filter((e) => e.type === "itemEffectStarted" && e.kind === "giant").length,
+    itemEffectStartedEnlarge: events.filter((e) => e.type === "itemEffectStarted" && e.kind === "enlarge").length,
+    sizeMods: events.filter((e) => Array.isArray(e.mods) && e.mods.some((m) => m && m.name === "size")).length,
+  };
+}
+
+test("RULES-11 (Phase 75.2): no site that fights starts with a sized hero, no size-stepping item ever starts across any replay site, and no event ever carries a size mod", () => {
+  // Part (a): no fight-starting site's OWN hero (newRun(seed).c, before any
+  // action runs) carries a non-zero size axis — proven directly against
+  // engine/derived.js#sizeAxisStep, never a re-derived race/mask check.
+  for (const { holderId, seed } of FIGHT_SITE_SEEDS) {
+    const c = newRun(seed).c;
+    assert.equal(sizeAxisStep(c, "dmg"), 0, `${holderId} (seed ${seed}): the fight-starting hero's own damage size axis must be 0 (Human/Wilmsry/Fridgian only)`);
+    assert.equal(sizeAxisStep(c, "face"), 0, `${holderId} (seed ${seed}): the fight-starting hero's own face size axis must be 0 (Human/Wilmsry/Fridgian only)`);
+  }
+
+  // Part (b): across every one of the 31 replay sites, zero itemEffectStarted
+  // events of kind giant/enlarge, and zero events carrying a size mod.
+  let totalSites = 0;
+  const totals = Object.fromEntries(Object.keys(countPhase752Exposure([])).map((k) => [k, 0]));
+  const tally = (events) => {
+    const counts = countPhase752Exposure(events);
+    for (const key of Object.keys(totals)) totals[key] += counts[key];
+  };
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    newRun(seed); // chargen never dispatches an action at all, let alone starts combat
+  }
+
+  totalSites++;
+  tally(replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions).events);
+
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions).events);
+  }
+
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions).events);
+  }
+
+  totalSites++;
+  tally(replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true }).events);
+
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    tally(replaySiteEvents(scenario.seed, scenario.actions).events);
+  }
+
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+  for (const key of Object.keys(totals)) {
+    assert.equal(totals[key], 0, `expected zero ${key} events across every replay site`);
+  }
+
+  const declared = new Set(
+    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("75.2")).map(({ holderId }) => holderId),
+  );
+  assert.deepStrictEqual(
+    [...declared].sort(),
+    RULES112_EXPECTED_HOLDERS,
+    "the declared Phase 75.2 set is exactly RULES112_EXPECTED_HOLDERS (legitimately empty — no fixture moved)",
+  );
+});
+
+test("RULES-11 exposure guard has teeth: a doctored event list carrying one giant itemEffectStarted and one size mod is caught by the same counting function", () => {
+  const doctored = [
+    { type: "itemEffectStarted", kind: "giant" },
+    { type: "itemEffectStarted", kind: "enlarge" },
+    { type: "foeMissed", mods: [{ name: "size", delta: 1 }] },
+    // Controls that must NOT be counted: unrelated event types, and a mods
+    // array whose entries are all unrelated to size.
+    { type: "itemUsed" },
+    { type: "foeMissed", mods: [{ name: "Guard", delta: -1 }] },
+  ];
+  const counts = countPhase752Exposure(doctored);
+  assert.equal(counts.itemEffectStartedGiant, 1);
+  assert.equal(counts.itemEffectStartedEnlarge, 1);
+  assert.equal(counts.sizeMods, 1);
+  // Prove the zero-count assertions the real guard makes would genuinely
+  // FAIL against this doctored list.
+  assert.throws(() => assert.equal(counts.itemEffectStartedGiant, 0), assert.AssertionError);
+  assert.throws(() => assert.equal(counts.sizeMods, 0), assert.AssertionError);
 });

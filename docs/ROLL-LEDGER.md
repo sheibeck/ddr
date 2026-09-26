@@ -713,3 +713,69 @@ modifier — both are plain, unmodified `rollCheck` draws.
   fumble (`engine/combat.js#fumbleHeavyBlow`, 75.1-04/75.1-05) draws its
   d10 (`+ depth`, unsoaked) from its OWN derived stream, `fumbleBlow` — not
   `scrollRead` — keyed on `(main cursor, "fumbleBlow", state.acts, C.round)`.
+
+## Phase 75.2 hero size (RULES-11)
+
+**Closed:** 2026-09-26 (75.2-01 through 75.2-05). Race sets a character's
+base size step (`content/races.js`'s existing `size` field, keyed through
+`SIZE_STEP_OF`) and any live size-stepping item (the Gauntlet of the Giant,
+Enlarge) adds to it; each resolved step moves weapon damage by
+`SIZE_DAMAGE_PER_STEP` (2) and a foe's winning faces against that body by
+`SIZE_FACES_PER_STEP` (1), floored the same way every other damage/face
+term already is. **The signature rule** (user ruling 2026-09-25, "Race
+signatures and Joiners"): when a race's own BASE size step and one of that
+race's own defining traits push the SAME axis (damage or face) in OPPOSITE
+directions, the race trait wins and that axis of the base step is dropped
+for that race — recorded as `sizeAxes` masks on the Dwarven (`{dmg:false}`,
+protects the Dwarven `+2` damage trait) and Elven (`{face:false}`, protects
+the Elven thin-boned `+1 foeToHit` trait) rows; Human, Wilmsry, Fridgian and
+Troll carry no mask. **Item steps are never masked** — they always apply in
+full, on both axes, on top of the resolved race base. The foe's need is
+signed for the foe as `{name:"size", delta}` in `mods`, so Phase 74's
+formatter shows it correctly from the player's own side on every surface.
+**Joiners get size too, by the identical rule**, read from the Joiner's own
+sheet (never the hero's, and vice versa). Zero new rng draws — every size
+term is pure arithmetic over already-derived race/item state.
+
+### Size modifier sites
+
+| Site | Reads | Notes |
+|---|---|---|
+| Hero damage | `engine/derived.js#weaponDamage`, `#expectedStrike` (via `sizeDamage(c)`) | The damage axis (`sizeAxisStep(c, "dmg")`), signature mask applied to the race base only; item steps always in full |
+| Foe vs hero | `engine/derived.js#foeToHitVs`, `#foeToHitBreakdown`, `#foeSwingVsHero` | `[foe-vs-hero:size-large]`, `[foe-vs-hero:size-small]`, `[foe-vs-hero:size-item]`, `[foe-vs-hero:size-signature]` — the face axis (`sizeAxisStep(c, "face")`), `vs === "hero"` only |
+| Foe vs member | `engine/combat.js#foeTurn`'s member branch | `[foe-vs-member:size]` — a Joiner's OWN race's face axis, read from the member's own sheet, never the hero's |
+
+### The size-rule audit (copied verbatim from 75.2-01-PLAN.md, "The size-rule audit")
+
+| Id | Rule | Where | Keys on today | Hero-size reading | Verdict |
+|---|---|---|---|---|---|
+| S1 | Weapon damage per size step | engine/derived.js#weaponDamage, #expectedStrike | the Gauntlet's item effect only | race base (damage axis, unless masked) plus items, ±2 per step, floor 1 | APPLIED here |
+| S2 | How easily foes hit you | engine/derived.js#foeToHitVs, #foeToHitBreakdown (vs hero); engine/combat.js#foeTurn member branch | nothing | race base (face axis, unless masked) plus items, ±1 foe face per step, `size` mod | APPLIED here (hero and Joiners) |
+| S3 | Knight: foes under 5 hp flee | engine/combat.js#startCombat | foe maxWP < 5 | the text keys on hit points ("Nothing under 5 hp") | NO CHANGE (hit-point rule; user ruling: audit only) |
+| S4 | Knight: foes with 20+ hp act first | engine/combat.js#knightFacesBigFoe, #resolveInitiative | foe maxWP ≥ 20 | the text keys on hit points ("20 hit points or more") | NO CHANGE (hit-point rule; user ruling: audit only) |
+| S5 | Stink Bug "small: strike as one level lower" | content/bestiary.js note | inert: no engine read; only its `sp.toHit` is live | a Small hero striking a level lower would add a penalty beyond the ruled step | NO CHANGE (inert note; Phase 79 candidate) |
+| S6 | Foe size `sz` (T/S/H/L/XL/B/G) | engine/combat.js#startCombat, engine/foeAbilities.js summon (`size: picked.sz`), foe card and foe details | display only, no rule reads it | the hero sheet shows SIZE the same way (75.2-03) | DISPLAY PARITY |
+| S7 | Shrink ("two sizes down") | engine/magic.js shrink branch; 75.1's hero Shrink (`combat.heroShrunk`) | halves hp and blows; never touches `f.size` | hero Shrink mirrors the foe spell and takes no size step (user ruling) | NO SIZE STEP; composes (half of the size-adjusted blow) |
+| S8 | Elven thin bones (`foeToHit: 1`) | content/races.js, foeToHitVs | race | Small's face axis would oppose it | SIGNATURE WINS: `sizeAxes: { face: false }` drops Small's face axis; Small's −2 damage applies |
+| S9 | Dwarven `dmg: 2` | content/races.js, weaponDamage | race | Small's damage axis would oppose it | SIGNATURE WINS: `sizeAxes: { dmg: false }` drops Small's damage axis; Small's harder-to-hit face applies |
+| S10 | Troll `dmg: 6`, `wpnBonus: 3` | content/races.js, weaponDamage | race | Large points the same way | STACKS: +11 damage, one face easier to hit |
+| S11 | Flee race mods (Dwarven "short-legged", Troll "Large") | content/flee.js | race (comments cite build) | race-keyed; an item step does not change flee odds | NO CHANGE |
+| S12 | Dwarven `foeStrikeStep` | engine/derived.js#foeDie | race | not a size rule | NO CHANGE |
+| S13 | Lesser Summon "one small ally" | content/spells.js | flavor | none | NO CHANGE |
+| S14 | Gauntlet of the Giant, Enlarge | content/treasure-tables.js, content/potions.js | `eff: { size: 1 }` / a separate damage payload | exactly +1 step each, in full on both axes | APPLIED in 75.2-02 |
+
+**The standing guard.** `test/unit/hero-size-rules.test.js` (75.2-05) scans
+every comment-stripped `engine/*.js` file and asserts the ONLY
+`eff(sheet, "size")` call sits inside `derived.js#itemSizeStep`, the ONLY
+`SIZE_STEP_OF` read sits inside `derived.js#raceSizeStep`, the ONLY
+`sizeAxes` read sits inside `derived.js#sizeAxisStep`, and every
+`sizeAxisStep(` call site is one of `derived.js`'s own
+`heroSize`/`sizeDamage`/`foeToHitVs`/`foeToHitBreakdown` or
+`combat.js#foeTurn`'s member branch — plus that no engine file ever reads
+`.size` off a foe-like binding (a foe's own size lives on `.sz`, read only
+by the two `picked.sz` record builders) and that `sizeAxisStep` itself never
+names a race to decide its own mask. A doctored source string carrying a
+second, unaudited size read is caught by the same scanning primitive
+("has teeth"), proving the guard would fail on a future size rule that
+skips this seam — its own failure message names the fix: read size through
+`sizeAxisStep` and add the new rule's row to this table (S15+).

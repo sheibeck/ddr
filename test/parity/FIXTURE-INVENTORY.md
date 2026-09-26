@@ -3667,3 +3667,44 @@ anything:
 test/unit/roll-high-save-compat.test.js test/unit/bot-tactics.test.js`: all
 green after the two re-pins and the one expected-hash re-record.
 
+
+### Phase 75.2 — summary
+
+Consolidates every plan's own predictor/measurement/declared-moves
+accounting above (Plans 01 and 02, verbatim from their own SUMMARY.md's own
+readouts) plus Plans 03 and 04, which never touched `engine/*.js` at all —
+neither could possibly expose a parity replay site by construction, the
+same "zero fixtures moved, the only possible outcome" reasoning Phase 75.1's
+presentation-only plans already established in this file.
+
+| Plan | Predictor | Measured | Declared parity moves |
+|---|---|---|---|
+| 01 (the size step, the signature masks, damage/foe-odds terms) | every parity replay hero with a live race field is Human/Wilmsry/Fridgian except five chargen-only seeds that never fight | 58/58, 0 fail; hash unchanged | **zero** (two bot-baseline state pins and one bot-tactics no-stall seed moved instead, bisected live and re-pinned/re-seeded — not parity fixtures) |
+| 02 (the Gauntlet and Enlarge, one size step each) | no engine mechanic reads a potion's/jewelry item's `txt`; no parity replay site holds a live Enlarge/Gauntlet effect | 58/58, 0 fail; hash unchanged | **zero** (one declared shell-snapshot regeneration — `thief-store.store.txt` — plus two re-pinned bot-baseline state pins and one re-recorded save-compat `expected.hash`, all bisected live to the items' rewritten `txt`, never a decision change — none are parity fixtures) |
+| 03 (the SIZE row, the size-honest damage bracket) | UI-only (`src/browser/heroTab.js`, `mazeworld.html`) — touches no `engine/*.js` file | not applicable — no parity replay site can be exposed by a UI-only change | **zero**, the only possible outcome (two declared DOM shell-snapshot regenerations — `thief.hero.txt`, `mu.hero.txt` — a wholly separate fixture family from `test/parity/fixtures/`) |
+| 04 (stepped-size chips, Oracle/rail lines, race notes, sign guard) | UI/content-only (`mazeworld.html`, `src/browser/eventNarration.js`, `src/browser/narrationLines.js`, `content/races.js`, `content/flavor.js`) — touches no `engine/*.js` file | not applicable — no parity replay site can be exposed by a UI/content-only change | **zero**, the only possible outcome (no fixture of any family moved — race-note strings are static content, never embedded in serialized character state) |
+
+**Prototype master hash across the whole phase:**
+`git hash-object test/parity/prototype-master.js.txt` ->
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0` — unchanged from Phase 75.1's own
+close through every one of this phase's five plans.
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s
+"RULES-11 (Phase 75.2)" exposure guard (75.2-05) replays every one of the 31
+sites and asserts that no site that fights (`action-script.combat.json`'s
+win/lose/lose-apprentice/lose-plain/flee/parley scenarios and
+`action-script.magic.json`'s `cast-damage` scenario — the seven sites whose
+own action script ever dispatches a `startCombat`) starts with a hero whose
+`sizeAxisStep(c, "dmg")` or `sizeAxisStep(c, "face")` is non-zero (all seven
+seeds are confirmed Human, Wilmsry or Fridgian, `raceSizeStep` 0), that zero
+`itemEffectStarted` events of kind `giant`/`enlarge` fire across any replay
+site, and that zero events anywhere carry a `size` entry in their `mods`. A
+companion "has teeth" test feeds the same counting function a doctored
+event list carrying one `size` mod and confirms it would genuinely fail. The
+declared Phase 75.2 set stays exactly `RULES112_EXPECTED_HOLDERS` —
+legitimately EMPTY, matching every plan's own measured-zero above.
+
+This closes the Phase 75.2 fixture story: all five plans measured zero
+moved parity fixtures — proven by a standing, teeth-tested 31-site replay
+guard, not asserted by omission — and the prototype master is
+byte-identical to Phase 75.1's own close.
