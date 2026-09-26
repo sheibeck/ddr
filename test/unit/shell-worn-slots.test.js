@@ -195,8 +195,10 @@ test("the classic eff(key) duplicate is retired; heroTab.js imports eff(c, key) 
   const heroSrc = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "heroTab.js"), "utf8").replace(/\r\n/g, "\n");
   // Phase 74 (ROLL-02): `toHit` was dropped from this import line — nothing
   // else in heroTab.js reads it since #s-hit/the TO HIT stat row both moved
-  // to heroHitOdds(state) (src/browser/rollOdds.js).
-  assert.match(heroSrc, /import \{ strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight \} from "\.\.\/\.\.\/engine\/derived\.js";/);
+  // to heroHitOdds(state) (src/browser/rollOdds.js). RULES-13 (Phase 75):
+  // `weaponRow` joined the line — both weapon reads now route through it,
+  // not a raw WEAPONS[c.weapon] lookup.
+  assert.match(heroSrc, /import \{ strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight, weaponRow \} from "\.\.\/\.\.\/engine\/derived\.js";/);
   assert.match(heroSrc, /eff\(c, "dmg"\)/);
 });
 
@@ -217,7 +219,10 @@ test("Bridges: derived.js import carries conditionsOf/hasTool/mapViewRadius/inVi
   assert.equal((CODE.match(/window\.__mzWornKeysOf = WORN_KEYS_OF;/g) || []).length, 0);
   assert.ok(CODE.indexOf("window.__mzConditionsOf = conditionsOf;") !== -1, "__mzConditionsOf still assigned");
   // gearTab.js's own direct imports of slotFor/WORN_SLOTS/WORN_KEYS_OF.
-  assert.match(GEAR_SRC, /import \{ WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor \} from "\.\.\/\.\.\/engine\/derived\.js";/);
+  // RULES-13 (Phase 75): weaponRow/wieldedStaff joined the same line — the
+  // weapon row and every bag-card family/swap check now read the wielded
+  // staff too, not just an ordinary WEAPONS lookup.
+  assert.match(GEAR_SRC, /import \{ WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor, weaponRow, wieldedStaff \} from "\.\.\/\.\.\/engine\/derived\.js";/);
 });
 
 test("Bridge: window.mzEquipItem forwards an optional targeted swap key (260918-wy1)", () => {

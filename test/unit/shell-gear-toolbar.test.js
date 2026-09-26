@@ -140,8 +140,11 @@ test("UIF-01: the Use-button pin (every activatable item) is untouched", () => {
   // 260918-w4n (use-activated-only): the gate moved from a raw `it.use`
   // string to the ONE row-state rule (st.kind !== "none"). Phase 47
   // (SHELL-01), Plan 03: this now lives in src/browser/gearTab.js.
-  assert.equal((CODE.match(/st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 0);
-  assert.equal((GEAR_SRC.match(/st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 1);
+  // RULES-13 (Phase 75): the gate ALSO excludes `it.kind === "staff"` now —
+  // a bagged staff's power is inert, so this shared list never offers it a
+  // Use button either, for any host.
+  assert.equal((CODE.match(/st\.kind !== "none" && it\.kind !== "staff"\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 0);
+  assert.equal((GEAR_SRC.match(/st\.kind !== "none" && it\.kind !== "staff"\) li\.appendChild\(mkBtn\("Use"/g) || []).length, 1);
 });
 
 test("UIF-01: .mw-gear-actions carries display:flex, width:100% and touch-action:manipulation; no transition/animation token anywhere in the two new CSS rules", () => {

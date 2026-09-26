@@ -132,6 +132,14 @@ a `kind` fallback for a name not in the table, else `null`.
 > sanitizeWorn`) — never re-injected on a save that never had a `worn` key.
 > See `.planning/quick/260918-w4n-magic-items-are-use-activated-only-no-pa/`
 > for the full ruling and conversion table.
+>
+> **REVERSED by RULES-13 (Phase 75, user 2026-09-25):** the "staff should not
+> be an equipment slot" ruling above is overturned — a magic staff is now a
+> Magic User's WIELDED WEAPON again, but through the `c.weapon`/`c.staff`
+> pair, never a `c.worn`/`WORN_SLOTS`/`SLOT_OF` entry (that reasoning above
+> stays accurate and unchanged — a staff is still never one of the six/five/
+> three worn KEYS this file's slot taxonomy describes). See §9 below for the
+> current rule, kept here as history rather than deleted.
 
 **The slot is never spread onto a rolled item object.** `slot` lives only
 on the private `*_ROWS` arrays — the exported `JEWELRY`/`CLOAKS`/`STAVES`
@@ -480,3 +488,80 @@ alike, never by a hard-coded slot name. The bot never calls `equipItem`; it
 acquires via `takeFind`/`takeLoot`/buy, all of which route through
 `autoWearSlot` -> first free jewelry key, so it wears up to two pieces and
 stows the third.
+
+## §9. RULES-13 (Phase 75): a staff is a Magic User's wielded weapon
+
+**User ruling, verbatim (2026-09-25):** "treat a staff as an equipable melee
+weapon for magic users. D8 base damage. Staves should no longer be usable
+from inventory, but only if equipped." This REVERSES the 260918-w4n
+amendment in §2/§4 above (kept there as history, marked reversed) — a magic
+staff is once again equipable, but through a NEW, separate mechanism from
+the pre-260918-w4n one: the `c.weapon`/`c.staff` weapon-slot pair
+(`engine/derived.js#weaponRow`/`wieldedStaff`), never a `c.worn`/
+`WORN_SLOTS`/`SLOT_OF` entry. `SLOT_OF` stays exactly 15 entries (8 JEWELRY
++ 7 CLOAKS) — this rule adds no worn-slot taxonomy at all.
+
+- **A wielded staff is a flat d8 melee weapon** — need 0, crit 1, max 8
+  (`content/treasure-tables.js#STAFF_WEAPON`), plus the hero's usual damage
+  modifiers (level², prof, magicWpn — always 0 for a staff, race dmg/
+  wpnBonus, might, Heft, `eff("dmg")`). It is never a "magic weapon" against
+  a magic-only/dagger-only foe; its magic is its charged power, not an
+  enchantment.
+- **Its charged power (freeze, dome, heal, fire, etc.) works ONLY while
+  wielded.** A bagged staff is inert — `useItem` on it (reached by bag
+  index) is refused `useRefused { reason: "notWielded" }` before any side
+  effect (no charge spent, no cooldown started, no die drawn). The wielded
+  staff is used via `useItem({ slot: "weapon" })`, exactly like a worn
+  cloak/jewel's `{ slot }` form.
+- **Charges and recharge are UNCHANGED** — the same `act.charges`/
+  `act.recharge` pool from `content/activations.js`, still ticking on the
+  squares cadence whether the staff is bagged or wielded (a bagged staff
+  still recharges; it just cannot be USED while bagged).
+- **Equipping swaps the old weapon to the bag** — `equipItem`'s staff branch
+  is Magic User only (`equipRejected { reason: "wrongClass" }` otherwise); a
+  direct swap into the weapon slot, displacing whatever was worn (an
+  ordinary weapon or a previously-wielded staff) into the freed bag slot.
+  The store never sells staves, and never trades a wielded staff away for a
+  purchased weapon (`economy.js#gearUpgrades`).
+- **Old saves keep a bagged staff bagged — no auto-equip.**
+  `engine/saveState.js#sanitizeStaff` (wired outermost in both
+  `validateSave` and `rehydrate`) never wears a staff onto load; it only
+  ever repairs a tampered/mismatched `c.staff`/`c.weapon` pair back toward
+  "no staff wielded" (`c.weapon` resets to `"Fists"` when it names a staff
+  with no valid `c.staff` behind it).
+- **Every legality read comes from the engine, never a restated rule** — the
+  Gear tab, the gear sheet, the hero sheet and combat ITEMS (below) all read
+  `wieldedStaff(c)`/`weaponRow(name)` directly:
+  - **Gear tab WEAPON row:** a wielded staff fills the row (name, `d8`, its
+    own USE cell — `itemRowState`'s READY/charges/cooldown text — dispatching
+    `{ type: "useItem", slot: "weapon" }`) and UNEQUIP returns it to the bag;
+    the empty-weapon check (`emptySlotRows`) now reads `weaponRow(c.weapon)`,
+    so a wielded staff is never mistaken for a bare-fisted hero.
+  - **Gear tab BAG card:** for a Magic User, a bagged staff is a
+    WEAPON-family card (`EQUIP TO WEAPON`, or `WEAPON · SWAP` once a weapon
+    or another staff is already held) with NO use cell; for anyone else it
+    carries no family at all, and its "(usable by Magic Users — not you)"
+    suffix (the existing `usableBy` rule) says who can wield it.
+  - **Gear sheet:** the WORN weapon sheet for a wielded staff offers USE,
+    UNEQUIP and SWAP FOR every bag weapon OR staff (`fits` already filters
+    on `family === "weapon"`, which now includes both); a bagged staff's
+    sheet offers EQUIP TO / SWAP INTO WEAPON (Magic User) and DROP — never
+    USE, for anyone.
+  - **Item stat lines** (`viewModels.js#itemStatLines`) lead a staff's list
+    with the wield line ("Wielded: d8 weapon; its power works only in
+    hand."), then its effect text, then its charges — shown identically
+    whether the staff is bagged or worn, since `wornItemFor(c, "weapon")`
+    returns the SAME wielded object `itemStatLines` already formats.
+  - **The hero sheet's weapon damage line** reads `weaponRow(c.weapon)`, not
+    a raw `WEAPONS[c.weapon]` lookup — a wielded staff shows its true d8
+    range instead of silently falling back to the Club.
+  - **Combat ITEMS:** a bagged staff's row is disabled with `NOT WIELDED` and
+    a dry line to wield it outside the fight, and does not count toward the
+    "N USABLE" badge; a wielded staff gets its own row (`worn-weapon`,
+    "EQUIPPED · " followed by `itemRowState`'s own text), dispatching
+    `{ type: "useItem", slot: "weapon" }`, enabled, and counted. Phase 77's
+    CMBUI-14 reuses the same `notWielded`/`equipped` copy keys for jewelry
+    and cloaks.
+- **Presentation only.** No `test/parity` fixture moved for this rule's
+  surface work — every surface reads the engine's existing `wieldedStaff`/
+  `weaponRow` (landed by 75-07/75-09), never a restated legality check.

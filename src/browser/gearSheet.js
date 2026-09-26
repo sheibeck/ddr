@@ -20,6 +20,16 @@
 // list (`stats`), read from viewModels.js#itemStatLines — the ONE formatter
 // the store rows read too — through wornItemFor for a worn slot. The note
 // never repeats a stat the list already shows (R-06).
+//
+// RULES-13 (Phase 75): a wielded/bagged magic staff needs NO branch of its
+// own here — gearWornModel's weapon row already reports a wielded staff as
+// filled with its own use cell, and gearBagCardsModel already gives a
+// Magic User's bagged staff family: "weapon" (never a USE cell). Both flow
+// through this file's existing WORN "SWAP FOR" / BAG "EQUIP TO / SWAP INTO
+// WEAPON" branches untouched — equipRun already omits `slot` for the
+// weapon family, so a staff equip/swap dispatches exactly like an ordinary
+// weapon's. lootCompare(c, it) for a staff card (viewModels.js) is the
+// Magic User gate only, never a need/crit/weight comparison.
 
 import { WORN_FAMILY_OF, WORN_KEYS_OF } from "../../engine/derived.js";
 import { gearLockReason } from "../../engine/items.js";
