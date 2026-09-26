@@ -189,6 +189,16 @@ Batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol
 - 80-04 (BUILD part) can proceed once 79.1's VERIFICATION.md gates open — its R8 audit should now find zero status-bar classes in the shrunk output, and its merged-manifest check has one fewer plugin's manifest to reconcile.
 - 80-05's emulator pass should exercise both nav modes and a cutout against the `SystemBars` config landed here.
 
+## Self-Check: PASSED
+
+- FOUND: src/browser/nativeChrome.js
+- FOUND: test/unit/android-system-bars.test.js
+- FOUND: capacitor.config.json
+- FOUND: .planning/phases/80-android-release-build-tooling/80-02-SUMMARY.md
+- FOUND commit 058628c0 (Task 1)
+- FOUND commit 55755114 (Task 2)
+- FOUND commit 70993c20 (docs: SUMMARY)
+
 ---
 *Phase: 80-android-release-build-tooling*
 *Completed: 2026-09-26*
