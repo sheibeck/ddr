@@ -189,7 +189,8 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     beats: null,
     // PARTY-02/PARTY-08 (Phase 7): a persistent, serialized roster of full
     // rollCharacter()-shaped sheets, a SIBLING of `c`/`combat` (NOT a field on
-    // `c` and NOT on `combat` — rehydrate nulls combat). Initialized as a plain
+    // `c` and NOT on `combat` — the roster outlives any one fight; a resumed
+    // fight's allies point back at it by partyIdx, SAV-06). Initialized as a plain
     // empty array here, exactly like `beats`/`store` above, so it adds NO rng
     // draw and does not shift the seeded chargen cursor the determinism/parity
     // suites pin. The party is INERT in combat this phase; members are appended
@@ -201,8 +202,9 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     // keep/drop choice" stash — a NEW top-level nullable field, a SIBLING of
     // `combat`/`store`/`pendingJoiner` (NOT a field on `c`). Initialized to
     // `null` here as a plain assignment (NO rng draw, so the seeded chargen
-    // cursor the determinism/parity suites pin is untouched) and nulled on
-    // rehydrate like `combat`/`store`. The data model only in this phase; the
+    // cursor the determinism/parity suites pin is untouched). Like
+    // `combat`/`store`, it survives a relaunch when valid and loads as null
+    // when not (SAV-06/SAV-07, Phase 76). The data model only in this phase; the
     // gated find/keep/drop action handlers that populate and consume it land in
     // Phase 13. The parity harness strips this top-level field the same way it
     // strips `party`/`pendingJoiner`.
@@ -212,8 +214,9 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     // analog of party/pendingJoiner/pendingFind/pendingLoot/dev/storeRoll.
     // `{ feat, dir, tool, declined }` while a climbable wall/gorge tile is
     // being decided, else `null`. Initialized to `null` here as a plain
-    // assignment (NO rng draw) — transient like pendingFind, always reset
-    // to `null` on load (engine/saveState.js). The parity harness strips
+    // assignment (NO rng draw) — like pendingFind, it survives a relaunch
+    // while it still matches its neighbour cell and loads as `null`
+    // otherwise (engine/saveState.js, SAV-06/07, Phase 76). The parity harness strips
     // this top-level field the same way it strips pendingFind.
     pendingHazard: null,
     // RULES-12 (Phase 75, user 2026-09-25): the tile a newDay wandering-
@@ -222,16 +225,16 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     // party/pendingJoiner/pendingFind/pendingLoot/dev/storeRoll/
     // pendingHazard. `{ x, y, depth }` while a feature dispatch is waiting
     // on a fight (and any spoils/find/store) to settle, else `null`.
-    // Initialized to `null` here as a plain assignment (NO rng draw) —
-    // transient like pendingHazard/pendingFind: reset to `null` on load
-    // (engine/saveState.js) until Phase 76 (SAV-06) persists it together
-    // with the live fight it was waiting on. The parity harness strips this
+    // Initialized to `null` here as a plain assignment (NO rng draw). Like
+    // pendingHazard/pendingFind, it survives a relaunch when valid (on the
+    // loaded floor) alongside the live fight it was waiting on, and loads as
+    // `null` otherwise (engine/saveState.js, SAV-06/07, Phase 76). The parity harness strips this
     // top-level field the same way it strips pendingHazard.
     pendingTile: null,
     // Phase 29 (LOOT-01/06): the end-of-combat drop pile — a top-level
     // sibling of pendingFind, initialized to a plain empty array (NO rng
     // draw, so the seeded chargen cursor the determinism/parity suites pin
-    // is untouched). UNLIKE pendingFind (transient, reset on load), this IS
+    // is untouched). Like pendingFind (validated on load since Phase 76), this IS
     // serialized (engine/saveState.js) and survives a save/resume cycle —
     // the player must still get their loot screen back. The parity harness
     // destructures it out of all three *Comparable() fns and reconciles it

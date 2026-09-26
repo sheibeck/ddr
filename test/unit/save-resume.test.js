@@ -52,7 +52,7 @@ function fightState(seed = 7, forced = null) {
 /** A newRun with an open store, rng cursor advanced. */
 function storeState(seed = 7) {
   const s = newRun(seed);
-  s.c.gold = 5000;
+  s.c.gold = 1000; // within every bag's purse cap (clampCarry runs on load)
   const rng = makeRng(s.rngState);
   openStore(s, rng);
   s.rngState = rng.getState();
@@ -166,11 +166,10 @@ test("each broken combat invariant drops the fight, and the save still loads wit
   const s = fightState();
   const party2 = newRun(7);
   addPartyMember(party2, member(3));
-  addPartyMember(party2, member(4));
   const rng = makeRng(party2.rngState);
   startCombat(party2, false, null, rng);
   party2.rngState = rng.getState();
-  assert.equal(party2.combat.allies.length, 2);
+  assert.equal(party2.combat.allies.length, 1);
 
   const cases = [
     ["combat not an object", s, (r) => (r.combat = "fight")],
@@ -197,10 +196,9 @@ test("each broken combat invariant drops the fight, and the save still loads wit
     [
       "a valid allies list but one party member dropped by the tolerant party load",
       party2,
-      (r) => {
-        r.combat.allies.splice(1, 1);
-        r.party[1] = null;
-      },
+      // partyIdx 0 still indexes the one surviving member, but the load
+      // dropped a member, so the index can no longer be trusted
+      (r) => r.party.unshift(null),
     ],
   ];
   for (const [name, base, mutate] of cases) {
