@@ -81,12 +81,37 @@ const PINNED = {
   // RULES-10 rationale (the bot now reads a scroll for every class); this
   // Pilfer's own first scroll read lands at bot step 138 (`reader:
   // "intel"`), the outcome shape unchanged (400 actions, not dead, depth 4).
+  //
+  // "solo-2" and "party-fighter-knight" re-pinned (Phase 75.2, Plan 01,
+  // 2026-09-26, RULES-11): size is now a real stat — a Dwarven character's
+  // own face axis (unmasked; only the Dwarven damage axis is protected by
+  // the signature rule) shaves one winning face off every foe trying to
+  // land a blow on that body. "solo-2" is a forced-nothing chargen roll
+  // whose seed lands a Dwarven Apprentice (verified: `newRun(202).c.race
+  // === "Dwarven"`); its hero's own first foe swing carrying a `{name:
+  // "size", delta: -1}` mod fires at bot action 9 (bisected live via
+  // playRun's own onStep hook, scanning for the first event whose `mods`
+  // include a "size" entry) — the depth shifts (4 -> 5) from there.
+  // "party-fighter-knight" forces a Human Fighter/Knight hero, but its
+  // seed's own Joiner (recruited by forceParty's real meetJoiner/
+  // resolveJoiner draw) is Dwarven ("Hilda Stonecut", verified live); the
+  // FIRST size-mod event is a `foeMissed` against THAT member at bot action
+  // 100 (engine/combat.js#foeTurn's member branch, this plan's own new
+  // term) — the hero's own race is unaffected (Human, size step 0), so this
+  // is exactly the Joiner symmetry rule ("a Joiner gets size too... by the
+  // same rule") reaching a real playthrough, not a hero-side change. Every
+  // OTHER label re-measured byte-identical twice (no other pin's hero or
+  // party carries a Dwarven/Elven/Troll within its own action budget —
+  // solo-1/solo-thief-pilfer/solo-magicuser-sorcerer/party-1/deep-8/deep-14
+  // are all Human/Wilmsry/Fridgian heroes with no sized party member).
+  // Regenerated via `node tools/roll-high-baseline.mjs pins` (each hashed
+  // identically twice).
   "solo-1": { actions: 400, dead: false, depth: 5, hash: "ce883a88443d0e1a2ff1547974c0f9ce5c2a647f479e9ef8de4d7bf4644f8ca6" },
-  "solo-2": { actions: 400, dead: false, depth: 4, hash: "b4daf5d20b7f4d3b36d55c1790f53f0d9610d64e3c45a9d81e3700e451ee3e4f" },
+  "solo-2": { actions: 400, dead: false, depth: 5, hash: "3cabf90ff81313a86fd89ec3add5d7927a515afeb9df2a57c9a4729fc6cc975a" },
   "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "3371e1f8bfdce95fed2d9bc4ea7d854e1718c9c6a69de3cae070f8bb80fd4cbc" },
   "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "444ec2ca839587b2249e6f89828a40fef887b2668b935c228a510e99c4ac4207" },
   "party-1": { actions: 400, dead: false, depth: 4, hash: "ab7a42cbfcc8f9cad5845ce73e5f51b59a1942f4cb0ff25c1e2a78591c0aa61d" },
-  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "1ad4462f4a8b7017cc14d5bf5f566677f8efda6d0cd4f6fab06cfb94b928370d" },
+  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "9669a284892cfc0a815fb19b689a5b6bb2e9f021a23a4f024288fbb27f00b70d" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see

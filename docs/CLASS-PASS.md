@@ -1095,12 +1095,14 @@ are deliberately left as-is and flagged as a v1.3 spell-audit candidate.
 | Ninja | The opener always lands for max weapon damage; a later roll of 2 crits | You never speak — canParley is false unconditionally |
 | Con Artist | Can talk anyone down except Magical/Walking Dead; a weak foe leaves before the fight starts | The opening blow is a warning, not an injury |
 | Acrobat | Harder to land a blow on, easier to land one | A dagger, and only a dagger |
-| Elven | Strikes a die better and hits at 5 whatever the class | 0.6x wp and easier to hit |
-| Dwarven | +2 damage; armour built to be hit wears at half the rate | Foes strike at a better die |
+| Elven | Strikes a die better and hits at 5 whatever the class | 0.6x hp and easier to hit (thin-boned, and small size never offsets it); small: 2 less damage |
+| Dwarven | +2 damage (small size never takes it); armour built to be hit wears at half the rate; small: one face harder for foes to hit | Foes strike at a better die |
 | Wilmsry | Camp heals twice as fast; parleys Beasts at fluency 0 | Half skill points; Magic User Joiners refuse to travel with them |
 | Fridgian | Frenzy never wastes its second swing; thick hide soaks 2 from every blow | Never wears armor, always strikes last |
-| Troll | 75 wp regardless of class; +9 damage | Prices triple, eats two rations a night |
+| Troll | 75 hp regardless of class; +11 damage (+9 troll, +2 large) | Prices triple, eats two rations a night; large: one face easier for foes to hit |
 | Human | *(neutral — no race modifier anywhere)* | *(neutral)* |
+
+Phase 75.2 (RULES-11): race sets a size step; a race's base step never cancels its own defining trait (the signature rule), and the rows above state each race's net effect.
 
 ### Fidelity posture (FID-07)
 
