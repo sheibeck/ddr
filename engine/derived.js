@@ -735,6 +735,23 @@ export function isFlying(state) {
  *   - darkness   {polarity:"bad", remaining:<sq left>}    — the persistent Darkness/phobia state
  *   - fearArmed  {polarity:"bad", phobia, trigger}         — Phase 41 (TERR-05): an ARMED terrain phobia waiting for the next fight; cleared when fight() consumes it
  *   - afraid     {polarity:"bad", remaining:<rounds>, phobia:<fear name>} — Phase 31 (user ruling 2026-09-16): the Afraid penalty from a triggered phobia in the CURRENT combat, only while combat.afraid > 0 (a Hardiness shrug-off shows nothing)
+ *   - heroOut/heroBlind/heroShrunk {polarity:"bad"} — RULES-10 (Phase 75.1): a fumbled scroll's effect on the reader (see the block below)
+ *
+ * CMBUI-13 (Phase 77, the user's "no indication ... that [Smoke]'s active"):
+ * every hero effect that changes a roll or the flow of a fight now has a
+ * descriptor. Each is APPENDED at a fixed place — no older descriptor gains
+ * a field or moves relative to another:
+ *   - ability {polarity:"good", ability:<id>, remaining:<rounds>, cadence:"rounds"} — one per live `ability:<id>` c.timers record in phase "effect" with left > 0 (Sidestep, Battle Roar, Riposte, Taunt, Smoke — engine/abilities.js DURATION_ROUNDS), insertion order, right after the live item effects; fight-only (abilityEffectActive's own test)
+ *   - braced {polarity:"good"} — Brace's C.braced, until the next landed blow consumes it; fight-only; after reveal
+ *   - inspired {polarity:"good", amount:<to-hit plus>} — the Bard's level-2 song, C.inspired (toHit adds it), the rest of the fight; fight-only
+ *   - halfNext {polarity:"good"} — an armed Pendant of Fortitude (engine/items.js), halves the next landed blow; shows anywhere
+ *   - strengthBoost {polarity:"good", amount:<hp added>} — the Strength spell's doubled hit points (engine/magic.js), until the day ends; shows anywhere
+ *   - nightVision {polarity:"good"} — a fight where inDark holds and Night Vision is the waiver (darkWaiver) holding the dark back; fight-only; ends the good block, before itemCooldown/staffCharges
+ *   - fightDark {polarity:"bad"} — a fight on a dark square with toHit's dark cap live (darkLimited and no Sense Presence) and NO darkFor counter running (its `darkness` chip covers that case); fight-only
+ *   - insulted {polarity:"bad"} — a failed parley's C.parleyInsulted grudge, the rest of the fight
+ *   - selfDot {polarity:"bad", remaining:<rounds>, by:<"acid"|"ice">, spell:<name>} — a fumbled Acid/Ice burning the reader (engine/scrollFumble.js C.selfDot), only while left > 0; ends the bad block
+ * A party member's own chips come from the sibling memberConditionsOf, with
+ * the same shape (one source; no second enumerator anywhere).
  *
  * Only currently-active conditions are included; a character with none set
  * yields an empty array. 260918-w4n: there is no more dedicated flight
@@ -773,6 +790,12 @@ export function conditionsOf(state) {
     }
     out.push(chip);
   }
+
+  // CMBUI-13 (Phase 77): one chip per LIVE duration ability on the hero
+  // (Sidestep, Battle Roar, Riposte, Taunt, Smoke — engine/abilities.js's
+  // DURATION_ROUNDS), in c.timers insertion order, only in a fight. The
+  // same helper reads a party member's own sheet in memberConditionsOf.
+  if (state && state.combat) for (const chip of liveAbilityChips(c.timers)) out.push(chip);
 
   if (c.might > 0) out.push({ key: "might", polarity: "good" });
   // Phase 31 (CMB-04): the Shield chip — c.ward is the same field the
@@ -821,6 +844,17 @@ export function conditionsOf(state) {
   if (rev && rev.phase === "effect" && rev.left > 0) {
     out.push({ key: "reveal", polarity: "good", remaining: rev.left, cadence: "squares" });
   }
+
+  // CMBUI-13 (Phase 77): the good effects that had no chip, appended in a
+  // fixed order before the cooldown/charges chips. braced/inspired/
+  // nightVision are fight-only (they live on state.combat, or only matter in
+  // a fight); halfNext and strengthBoost live on `c` and show anywhere.
+  const inFight = !!(state && state.combat);
+  if (inFight && state.combat.braced) out.push({ key: "braced", polarity: "good" });
+  if (inFight && state.combat.inspired > 0) out.push({ key: "inspired", polarity: "good", amount: state.combat.inspired });
+  if (c.halfNext) out.push({ key: "halfNext", polarity: "good" });
+  if (c.strengthBoost > 0) out.push({ key: "strengthBoost", polarity: "good", amount: c.strengthBoost });
+  if (inFight && state.c && inDark(state) && darkWaiver(c) === "nightVision") out.push({ key: "nightVision", polarity: "good" });
 
   // Phase 39 (GEAR-02): one `itemCooldown` chip per duration+cooldown item
   // CURRENTLY cooling (an `item:<key>` record in `phase: "cooldown"`),
@@ -911,7 +945,76 @@ export function conditionsOf(state) {
   if (state && state.combat && state.combat.heroBlind) out.push({ key: "heroBlind", polarity: "bad" });
   if (state && state.combat && state.combat.heroShrunk) out.push({ key: "heroShrunk", polarity: "bad" });
 
+  // CMBUI-13 (Phase 77): the bad fight effects that had no chip. fightDark
+  // is emitted only while the darkFor counter is NOT running (its own
+  // `darkness` chip already covers the fight then — one cause, one chip) and
+  // only while toHit's dark cap is live (darkLimited, and no Sense
+  // Presence). All three are fight-only; pure reads.
+  if (inFight) {
+    const C = state.combat;
+    if (!(c.darkFor > 0) && state.c && darkLimited(state) && !c.senses) out.push({ key: "fightDark", polarity: "bad" });
+    if (C.parleyInsulted) out.push({ key: "insulted", polarity: "bad" });
+    if (C.selfDot && typeof C.selfDot === "object" && C.selfDot.left > 0) {
+      out.push({ key: "selfDot", polarity: "bad", remaining: C.selfDot.left, by: C.selfDot.by, spell: C.selfDot.spell });
+    }
+  }
+
   return out;
+}
+
+/**
+ * liveAbilityChips(timers) — CMBUI-13 (Phase 77): the one ability-chip
+ * builder conditionsOf and memberConditionsOf share. One `{ key: "ability",
+ * ability, polarity: "good", remaining, cadence: "rounds" }` per
+ * `ability:<id>` record in phase "effect" with `left` above 0 (the SAME test
+ * abilityEffectActive makes), in insertion order. An immediate ability's
+ * plain cooldown, a duration ability's cooldown phase, and a spent record
+ * give nothing. A missing or non-object map gives []. Pure.
+ */
+function liveAbilityChips(timers) {
+  const out = [];
+  if (!timers || typeof timers !== "object" || Array.isArray(timers)) return out;
+  for (const id of Object.keys(timers)) {
+    if (!id.startsWith("ability:")) continue;
+    const rec = timers[id];
+    if (!rec || typeof rec !== "object" || rec.phase !== "effect" || !(rec.left > 0)) continue;
+    out.push({ key: "ability", ability: id.slice("ability:".length), polarity: "good", remaining: rec.left, cadence: "rounds" });
+  }
+  return out;
+}
+
+/**
+ * memberConditionsOf(state, partyIdx) — CMBUI-13 (Phase 77): the party
+ * member's sibling of conditionsOf, with the SAME descriptor shape (ONE
+ * source, no parallel chip system: YOUR LOT's member chip row reads this and
+ * nothing else). Lists, in order:
+ *   - ability {polarity:"good", ability:<id>, remaining:<rounds>, cadence:"rounds"}
+ *     — one per live duration ability on `state.party[partyIdx].timers`
+ *     (engine/combat.js#startMemberAbilityTimer), insertion order;
+ *   - braced  {polarity:"good"} — the member's own Brace, the
+ *     `state.combat.allies` entry with this partyIdx carrying `braced`
+ *     (engine/combat.js#resolveMemberAbility; consumed by the next landed blow
+ *     in foeTurn's member branch).
+ * Fight-only: a missing combat gives []. A missing member, a bad index, a
+ * sheet with no timers and a malformed state give [] and never throw. Pure:
+ * no rng, no mutation, no new serialized field.
+ */
+export function memberConditionsOf(state, partyIdx) {
+  try {
+    if (!state || typeof state !== "object") return [];
+    const C = state.combat;
+    if (!C || typeof C !== "object") return [];
+    const party = state.party;
+    if (!Array.isArray(party) || !Number.isInteger(partyIdx) || partyIdx < 0 || partyIdx >= party.length) return [];
+    const m = party[partyIdx];
+    if (!m || typeof m !== "object") return [];
+    const out = liveAbilityChips(m.timers);
+    const entry = Array.isArray(C.allies) ? C.allies.find((a) => a && typeof a === "object" && a.partyIdx === partyIdx) : null;
+    if (entry && entry.braced) out.push({ key: "braced", polarity: "good" });
+    return out;
+  } catch {
+    return [];
+  }
 }
 
 /**
