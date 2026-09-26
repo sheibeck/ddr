@@ -47,6 +47,9 @@ export const TAG_CAUSES = Object.freeze([
   "quake", "potion", "insanity", "poison", "abandon", "entombed",
   // RULES-09 (Phase 75.1): appended, never inserted — a Pilfer's magic-item fumble.
   "pilferFumble",
+  // RULES-10 (Phase 75.1): appended, never inserted — a fumbled scroll's harm
+  // landing on the reader.
+  "scrollFumble",
 ]);
 
 /** The largest value each numeric field carries; anything above encodes the cap. */

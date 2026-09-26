@@ -160,6 +160,17 @@ export const EPITAPHS = {
     "The {foe} came with a lifetime warranty. This voided it.",
     "Curiosity, a {foe}, and an unforgiving d10.",
   ],
+  // RULES-10 (Phase 75.1, user rulings 2026-09-25): a fumbled scroll's harm
+  // landing on the READER instead of its target — never an automatic death
+  // (the heavy blow and the burn are both ordinary hp loss through this same
+  // death path), so these read as an honest mishap, not a killing blow.
+  // Deadpan, family-friendly: the reading went wrong, not the reader.
+  scrollFumble: [
+    "Read a {foe} scroll aloud. The scroll listened to itself and did not like what it heard.",
+    "Held the wrong end of a {foe} scroll. There is, it turns out, a wrong end.",
+    "A {foe} scroll, read with tremendous confidence and a middling grasp of the runes.",
+    "The scroll said {foe}. It meant it about the reader.",
+  ],
 };
 
 // Death-note templates (mazeworld.html's CAUSE_TEXT, formerly functions).
@@ -187,6 +198,10 @@ export const CAUSE_TEXT = {
   entombed: "became a permanent architectural feature",
   // RULES-09 (Phase 75.1): a Pilfer's magic-item fumble blast.
   pilferFumble: "fiddled with a {foe} until it came apart",
+  // RULES-10 (Phase 75.1): a fumbled scroll's harm landing on the reader —
+  // the heavy blow (every instant-kill fumble) or the burn running them out
+  // of hp, either way real hp loss through this one death path.
+  scrollFumble: "undone by their own {foe} scroll",
 };
 
 // Per-cause list of {placeholder} token names CAUSE_TEXT[cause] requires.
@@ -207,4 +222,5 @@ export const CAUSE_TEXT_TOKENS = {
   abandon: [],
   entombed: [],
   pilferFumble: ["foe"],
+  scrollFumble: ["foe"],
 };

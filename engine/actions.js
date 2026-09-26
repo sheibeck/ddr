@@ -70,6 +70,9 @@ export const ACTION_TYPES = new Set([
   // goes through the existing `useItem` action instead (it is a
   // useItem-activatable consumable, not a movement-tile tool).
   "useTool",
+  // RULES-10 (Phase 75.1): the ONE action a hero who cannot act (C.heroOut)
+  // may take. No payload, like "fight" — no validate case needed.
+  "loseTurn",
 ]);
 
 const DIRS = new Set(["N", "S", "E", "W"]);

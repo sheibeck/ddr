@@ -3183,6 +3183,14 @@ const CONDITION_EXPLAIN = {
   tongue: "You understand them perfectly. Whether that helps is up to them.",
   brace: "No critical lands on you. Ordinary hits still count.",
   plate: "Weightless plate over whatever you wear. It still will not make you graceful.",
+  // RULES-10 (Phase 75.1, plan 04): the reader-side fumble effects — a
+  // fumbled scroll turning against its own reader. The engine already
+  // exposes each as data (engine/derived.js#conditionsOf); 75.1-09 builds
+  // their own chip label/tone and the LET THE ROUND PLAY action bridge —
+  // this plain sentence is the fallback tap explanation until then.
+  heroOut: "You cannot act while this counts down. The fight keeps moving without you.",
+  heroBlind: "Only the very best swing of the die lands, for the rest of this fight.",
+  heroShrunk: "Half-sized. Your own blows land for half, for the rest of this fight.",
   default: "A condition. The maze does not explain itself further.",
 };
 

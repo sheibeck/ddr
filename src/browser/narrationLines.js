@@ -1368,6 +1368,13 @@ export const LINE_FOR = {
   sensesFaded: () => ({ text: "Your senses dull back to normal.", tone: "beat", priority: PRIORITY.other }),
   regenFaded: () => ({ text: "The wounds stop closing on their own.", tone: "beat", priority: PRIORITY.other }),
 
+  // RULES-10 (Phase 75.1) — the reader's own burn, the heavy-blow fumble
+  // replacement, and the hero-cannot-act countdown/recovery.
+  selfDotTick: (e) => ({ text: `${e?.spell ?? "The scroll"} burns you (−${e?.amount ?? 0} hp, ${e?.left ?? 0} left).`, tone: "hurt", priority: PRIORITY.you }),
+  fumbleHeavyBlow: (e) => ({ text: `${e?.spell ?? "The scroll"}: ${e?.how ?? "a hard knock"} instead (−${e?.amount ?? 0} hp). Shaken.`, tone: "hurt", priority: PRIORITY.you }),
+  heroLostTurn: (e) => ({ text: `You cannot act (${e?.kind ?? "out"}), ${e?.left ?? 0} turn${e?.left === 1 ? "" : "s"} left.`, tone: "hurt", priority: PRIORITY.you }),
+  heroCameTo: () => ({ text: "You can act again.", tone: "hit", priority: PRIORITY.you }),
+
   /* ---------------- foe abilities (engine/foeAbilities.js) ---------------- */
 
   foeCast: (e) => ({ text: `${e?.name ?? "It"}: ${e?.txt ?? "something unpleasant"}`, tone: "dodge", priority: PRIORITY.them }),
@@ -1472,6 +1479,8 @@ export const LINE_FOR = {
       notFought: "Fight! first.",
       cooldown: `Your voice needs ${e?.left ?? "more"} more squares.`,
       wrongClass: "Only a Bard sings here.",
+      // RULES-10 (Phase 75.1): loseTurn with no C.heroOut to spend.
+      notOut: "There is no turn to lose.",
     };
     return block(map[e?.reason] ?? "Not now.");
   },

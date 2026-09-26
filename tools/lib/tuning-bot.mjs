@@ -1009,6 +1009,12 @@ export function decideAction(state, policyRng, ctx) {
   if (state.combat) {
     // CMB-01 (Phase 31): the bot presses Fight! like a player would.
     if (state.combat.pending) return { type: "fight" };
+    // RULES-10 (Phase 75.1): the hero cannot act while heroOut is set — a
+    // safety rule, not a strategy choice. The bot never reads a scroll in
+    // combat itself (75.1-06), so it can never fumble one of these onto
+    // itself, but must still handle heroOut if something else ever applies
+    // it (a future readout, a hand-built fixture, a save from a real run).
+    if (state.combat.heroOut) return { type: "loseTurn" };
     const c = state.c;
     const C = state.combat;
     const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;

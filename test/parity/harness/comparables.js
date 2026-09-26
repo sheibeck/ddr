@@ -611,10 +611,20 @@ export function stripFoeDamageClosures(combat) {
  * tripwire, exactly like the abilities/cd/uses strip immediately below: a
  * no-op on every current fixture, that keeps a future fumble-driving
  * fixture (or a determinism test reusing this comparable) from ever
- * reaching the diff on this genuine, permanent, deliberate divergence. */
+ * reaching the diff on this genuine, permanent, deliberate divergence.
+ *
+ * RULES-10 (Phase 75.1, plan 04): the READER-side fumble fields —
+ * `selfDot` (the burn), `heroOut` (the hero-cannot-act state), `heroBlind`
+ * and `heroShrunk` — are ALL combat-level (never on a foe) and, exactly like
+ * `pendingFoes` above, engine-only with no prototype-side equivalent and set
+ * NOWHERE in today's engine (only 75.1-05's resolver will ever write one).
+ * Carved out here beside `pendingFoes` for the same structural-tripwire
+ * reason: a no-op on every current fixture that keeps a future
+ * fumble-driving fixture from ever reaching the diff on this permanent,
+ * deliberate divergence. */
 export function stripFoeAbilityState(combat) {
   if (!combat || !Array.isArray(combat.foes)) return combat;
-  const { pendingFoes, ...combatRest } = combat;
+  const { pendingFoes, selfDot, heroOut, heroBlind, heroShrunk, ...combatRest } = combat;
   const foes = combatRest.foes.map((f) => {
     const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, ...rest } = f;
     return rest;

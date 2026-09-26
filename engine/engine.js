@@ -17,7 +17,7 @@ import { newRun } from "./state.js";
 import { validateAction } from "./actions.js";
 import { makeRng } from "./rng.js";
 import { move, makeCamp, useTool, resolvePendingTile } from "./movement.js";
-import { fight, playerStrike, flee, parley, sing } from "./combat.js";
+import { fight, playerStrike, flee, parley, sing, loseTurn } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useAbility } from "./abilities.js";
 import { useItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot, takeLoot, leaveLoot, takeAllLoot, leaveAllLoot } from "./items.js";
@@ -58,7 +58,27 @@ export function applyAction(state, action) {
   const rng = makeRng(next.rngState);
   const events = [];
 
+  // RULES-10 (Phase 75.1, user ruling 2026-09-25): while the hero cannot act
+  // (C.heroOut — a fumbled Doze/Stun/Stupidity/Insane, or Noxious Vapor's
+  // sleep), every hero COMBAT action becomes loseTurn instead — no input can
+  // act for a hero who cannot, and every input still advances the fight (see
+  // engine/combat.js#loseTurn's own JSDoc for the soft-lock rationale).
+  // Movement, store, inventory and the "fight"/"loseTurn" actions themselves
+  // are untouched — a pending (not-yet-joined) combat has no heroOut yet.
+  const HERO_OUT_CONVERTED_TYPES = new Set([
+    "attack", "castSpell", "drinkPotion", "readScroll", "useItem", "useAbility", "flee", "parley", "sing",
+  ]);
+  if (next.combat && next.combat.heroOut && HERO_OUT_CONVERTED_TYPES.has(action.type)) {
+    loseTurn(next, rng, events);
+  } else
   switch (action.type) {
+    case "loseTurn":
+      // RULES-10 (Phase 75.1): the ONE action a hero who cannot act may
+      // take — see engine/combat.js#loseTurn. Also reachable directly (not
+      // just via the conversion above), and itself a no-op refusal when
+      // C.heroOut is absent.
+      loseTurn(next, rng, events);
+      break;
     case "move":
       move(next, action.dir, rng, events);
       break;
