@@ -19,7 +19,7 @@
 // dev loop playable while later plans extract the rest of the rules.
 
 import { newRun, applyAction } from "../../engine/engine.js";
-import { validateSave, rehydrate, serializeRun } from "../../engine/saveState.js";
+import { validateSave, rehydrate, serializeRun, resumeEventsFor } from "../../engine/saveState.js";
 import { bury, buildRunSummary } from "../../engine/death.js";
 // Phase 65 (RUN-02/RUN-03): the pure bests-record operations — this adapter
 // owns the durable ddr.bests.v1 storage, engine/records.js owns the shape.
@@ -107,6 +107,16 @@ let currentState = null;
 // corrupt save, or a save that already carried worn); [] when it migrated
 // but nothing was wearable.
 let bootWornReport = null;
+
+// SAV-06/SAV-07 (Phase 76): the one-shot boot-time resume events
+// (engine/saveState.js#resumeEventsFor, computed once when boot() rehydrates
+// a save). Adapter-side, module-level, NEVER serialized, the same posture as
+// bootWornReport above. Cleared to null the moment takeBootResumeEvents()
+// reads it, and by initRun(), so the shell narrates a resumed fight or
+// store at most once per boot. null when boot() rehydrated nothing (no
+// save, or a corrupt save that fell back to a fresh run); [] for a quiet
+// save.
+let bootResumeEvents = null;
 
 // Phase 25 (FEED-05): the presentation-side rotation counter for the
 // fledgling-miss quip corpus (missLines.js#decorateMisses). Deliberately a
@@ -337,6 +347,24 @@ export function takeBootWornReport() {
   return report;
 }
 
+/**
+ * takeBootResumeEvents() — SAV-06/SAV-07 (Phase 76): returns the boot-time
+ * resume events exactly once, then resets them to null (consumed on read,
+ * like takeBootWornReport()). `null` when boot() rehydrated nothing this
+ * boot (no save, a corrupt save that fell back to a fresh run) or a run was
+ * started since (initRun/startNewRun); `[]` for a quiet save;
+ * `[{ type: "fightResumed", round, pending, foes }]` for a resumed fight or
+ * `[{ type: "storeResumed" }]` for a resumed store (both narrated by
+ * EVENT_NARRATION, Oracle only). 76-05's boot path in mazeworld.html is the
+ * intended caller: it formats these through formatEvents() into the
+ * Oracle's resume line.
+ */
+export function takeBootResumeEvents() {
+  const events = bootResumeEvents;
+  bootResumeEvents = null;
+  return events;
+}
+
 // CR-02 (02-REVIEW.md): storage.js's flush() can only await writes that have
 // already reached its own writeQueues Map — a caller mid-way through a
 // read-then-write sequence (persistGrave() below awaits storage.getItem()
@@ -390,6 +418,8 @@ export function initRun(seed, exclude = [], options = {}) {
   // takeDeathRecord() must never hand a later run's caller a stale report
   // from the run this one just replaced.
   deathRecord = null;
+  // SAV-06/SAV-07 (Phase 76): a new run never inherits unread resume events.
+  bootResumeEvents = null;
   currentState = newRun(seed, exclude, options);
   return currentState;
 }
@@ -619,6 +649,9 @@ export async function boot(freshSeed) {
     if (check.ok) {
       bootWornReport = check.wornReport;
       currentState = rehydrate(check.value);
+      // SAV-06/SAV-07 (Phase 76): what this load resumed, for the shell's
+      // one Oracle resume line (pure, zero rng).
+      bootResumeEvents = resumeEventsFor(currentState);
       return currentState;
     }
   }
