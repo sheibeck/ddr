@@ -4896,7 +4896,7 @@ The governing principle (user, 2026-09-21, orchestrator's reading, ratified at p
 | `HERO_REGEN_PER_FLOOR` | `heroRegenFor` in `descend` (hero only, once per arrival) | 0 | 0.25 | [0, 0.5] (0.1) | 8 | easier |
 | `HAZARD_SCALE { base, perDepth }` | `scaleHazard` (traps, falls, leaps — floor 1 included) | `{ 1, 0 }` | `{ base: 0.5, perDepth: 0.02 }` | base [0.3, 1.0] (0.1); perDepth held at 0.02 (available) | 9 (base) | harder |
 | `ENCOUNTER_DOTS { base, perDepth }` | `difficultyCurve.dots` (breather = base) | `{ 9, 1 }` (= canon 9 + d) | `{ base: 7, perDepth: 0.3 }` (7 -> 13 at 20) | base [5, 10] (1); perDepth held at 0.3 (available) | 10 (base) | harder |
-| `LOOT_SCALE` | `lootFor` at kill purse / chest / wilmst cache / faerie | 1 | 0.8 ("already too much money") | held (available); [0.4, 1.5] if released | — | easier |
+| `LOOT_SCALE` | `lootFor` at kill purse / chest / faerie (Phase 75, RULES-02: the wilmst cache is its OWN `WILMST_CACHE_PER_DEPTH` constant, 100 × depth — it still passes THROUGH `lootFor`, but no longer rides `LOOT_SCALE` alone; see `## v2.1 engine rules (Phase 75)` below) | 1 | 0.8 ("already too much money") | held (available); [0.4, 1.5] if released | — | easier |
 | `CAMP_HEAL_FRACTION` | `campHealFor` in `newDay` (fed night; same d10 as variance; doublers stay) | none — 0.17 mean-matched | 0.2 | held (available); [0.15, 0.5] if released | — | easier |
 | `ROUND_DAMAGE_CEILING` | `roundDamageCapFor(c.level)` — per foe per visit, all swings, post-scale, pre-pipeline | 0 (off) | 0.5 (of `heroMeanMaxWpFor(level)`: 21 at L1, 30 at L5 with HERO_HP_SCALE 1) | held (available); [0.3, 1.0] if released | — | harder |
 | `FOE_COUNT_SKEW` | `FOE_COUNT_TABLE[skew]` on the second d4 (canon draw shape) | 0 (P 1/2/3 = .500/.375/.125) | 1 (.625/.250/.125) | held (available); 0..4 if released | — | easier |
@@ -5884,6 +5884,291 @@ This readout is **identical, byte for byte (after CRLF normalisation), to the Ph
 It is also identical to **every recorded line of the Phase 72 `### AFTER — commit d2adfd6` block above**, verified via `node tools/readout-compare.mjs --recorded docs/DIFFICULTY-RETUNE.md "### AFTER — commit d2adfd6" <this-run>`, which confirms every one of that block's non-blank lines (the Phase 72 fixes already baked in) appears, in order, in this run — because Phase 73's base commit IS Phase 72's close commit, the two readouts describe the exact same engine state read two different ways.
 
 **No difficulty change and no retune owed.** This is exactly the outcome CONTEXT Area 3 predicts for a representation-only mirror: every `rng.d(N)` draw fires in the same position, in the same order, for every one of the 200 seeds, and every check's outcome (`roll >= atLeast`) is the arithmetic mirror of the old outcome (`r <= need`) for the SAME raw draw `r` — there is no path by which reading the die differently could move a death depth, a reach percentage, a per-floor survival number, or a death-cause count. This readout is the third and final proof (alongside the byte-identical parity suite and the unchanged Phase 72 direction tests) that Phase 73 changed representation, never outcome.
+
+## v2.1 engine rules (Phase 75) — bot readouts
+
+### Change under measurement
+
+Six balance-moving Phase 75 plans, each committing its own before/after
+readout independently (parallel waves never collided on this shared
+ledger — this section consolidates them once, from the committed files):
+
+- **75-02 (RULES-01/RULES-02):** the wilmst cache cut, `WILMST_CACHE_PER_DEPTH` 300 → 100 (still through `lootFor`); RULES-01 was verified, not fixed (no engine change).
+- **75-05 (RULES-03, first half):** the Summoner's offense school gate removed (`content/mu-chart.js`), plus grant-time legality (`grantableAt`) wired into all four grimoire grant paths for the six subs that keep a gate.
+- **75-06 (RULES-05/RULES-14):** Sense Presence wins initiative outright and lifts the dark penalties; Bubble becomes a one-shot mirror (reflect the next blow, then a 25 hp/1-round pool) instead of a bigger Shield.
+- **75-09 (RULES-13, bag-inert half):** a bagged staff's charged power is inert (`notWielded` refusal); the tuning bot equips and wields its own staff.
+- **75-10 (RULES-03, second half):** the Summoner's healing-school spells (cast or regenerated) restore half, floored, minimum 1 (`healMul: 0.5`).
+- **75-12 (RULES-12/RULES-15):** a wanderer-interrupted feature tile resumes after the fight instead of being dropped; spell books refill only on a fed day.
+
+### Parameters
+
+`node tools/tune-difficulty.mjs --seeds=200` (solo bot, `--start-depth=1`, no `--party`) — the same command and dial set the Phase 72/73 sections above use.
+
+### Plan 02 — BEFORE
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.87  floors gained p50=6 mean=6.87  encounters survived mean=17.01
+  reach: >=5 80.6%  >=8 44.0%  >=9 37.7%  >=10 24.6%  >=13 12.0%  >=16 2.9%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=68.6%  reach10=21.6%  reach20=2.0%  dmgTaken/fight=8.15  rounds/fight=3.00  foeMiss=66.4%  casts(def/off)=270/1412  potions/run=3.59  backstabs/run=0.00  flees/run=1.34
+
+Outcome: 175 dead, 25 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Plan 02 — AFTER
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.88  floors gained p50=6 mean=6.88  encounters survived mean=16.99
+  reach: >=5 80.6%  >=8 44.6%  >=9 37.7%  >=10 24.6%  >=13 12.0%  >=16 2.9%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=68.6%  reach10=21.6%  reach20=2.0%  dmgTaken/fight=8.15  rounds/fight=3.00  foeMiss=66.4%  casts(def/off)=270/1412  potions/run=3.59  backstabs/run=0.00  flees/run=1.34
+
+Outcome: 175 dead, 25 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading.** The death-depth/reach/verdict/Magic-User/Outcome lines are noise-identical (the one visible move, `reach8` 44.0%→44.6%, is a single-run tail flip at n=200). This matches 75-02's own SUMMARY exactly: RULES-01 needed no engine change (verified only), and RULES-02's cache cut is a pure gold-on-hand lever the solo-bot mean-death-depth proxy was never going to see — 75-02's own before/after economy readout (Pace table) is where the real effect shows: gold-on-hand at L20 falls 11584→9664, L10 3325→2878, with the survival curve held flat by design.
+
+### Plan 05 — BEFORE
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.88  floors gained p50=6 mean=6.88  encounters survived mean=16.99
+  reach: >=5 80.6%  >=8 44.6%  >=9 37.7%  >=10 24.6%  >=13 12.0%  >=16 2.9%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=68.6%  reach10=21.6%  reach20=2.0%  dmgTaken/fight=8.15  rounds/fight=3.00  foeMiss=66.4%  casts(def/off)=270/1412  potions/run=3.59  backstabs/run=0.00  flees/run=1.34
+
+Outcome: 175 dead, 25 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Plan 05 — AFTER
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.84  floors gained p50=6 mean=6.84  encounters survived mean=16.76
+  reach: >=5 80.2%  >=8 44.1%  >=9 37.3%  >=10 24.9%  >=13 10.7%  >=16 2.8%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=68.5%  reach10=22.2%  reach20=1.9%  dmgTaken/fight=8.02  rounds/fight=2.96  foeMiss=65.0%  casts(def/off)=262/1450  potions/run=3.69  backstabs/run=0.00  flees/run=1.00
+
+Outcome: 177 dead, 23 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading.** p50 death depth is unchanged at 7; mean drifts 7.88→7.84 (noise). The Magic User pool's `casts(def/off)` moves 270/1412→262/1450 — more offense casts overall, exactly the expected direction once a level-1 Summoner can cast offense from the start — with no material survival shift (reach5/reach10 both move under 1pp). Matches 75-05's own SUMMARY: "death-depth p50 unchanged at 7... no material balance shift."
+
+### Plan 06 — BEFORE
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.88  floors gained p50=6 mean=6.88  encounters survived mean=16.99
+  reach: >=5 80.6%  >=8 44.6%  >=9 37.7%  >=10 24.6%  >=13 12.0%  >=16 2.9%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=68.6%  reach10=21.6%  reach20=2.0%  dmgTaken/fight=8.15  rounds/fight=3.00  foeMiss=66.4%  casts(def/off)=270/1412  potions/run=3.59  backstabs/run=0.00  flees/run=1.34
+
+Outcome: 175 dead, 25 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Plan 06 — AFTER
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.85  floors gained p50=6 mean=6.85  encounters survived mean=16.89
+  reach: >=5 80.2%  >=8 43.5%  >=9 37.3%  >=10 24.9%  >=13 11.9%  >=16 2.8%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=67.9%  reach10=20.8%  reach20=1.9%  dmgTaken/fight=8.01  rounds/fight=2.92  foeMiss=66.1%  casts(def/off)=246/1417  potions/run=3.53  backstabs/run=0.00  flees/run=1.20
+
+Outcome: 177 dead, 23 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading.** Mean death depth 7.88→7.85 (noise); the Magic User pool's `dmgTaken/fight` moves 8.15(75-02 base)→8.01 slightly DOWN, consistent with the intended shape of the Bubble nerf (a reflected blow now costs the caster nothing at all, vs. the old ward's partial soak) landing alongside the Sense Presence buff (fewer surprise-lost initiatives in the dark). Matches 75-06's own SUMMARY: "mean death depth 7.88 → 7.85... the Bubble nerf is noise-level at the aggregate difficulty-curve level."
+
+### Plan 09 — BEFORE
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.79  floors gained p50=6 mean=6.79  encounters survived mean=16.66
+  reach: >=5 79.2%  >=8 43.3%  >=9 37.1%  >=10 25.3%  >=13 10.7%  >=16 2.8%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=65.5%  reach10=21.8%  reach20=1.8%  dmgTaken/fight=8.02  rounds/fight=2.93  foeMiss=64.7%  casts(def/off)=237/1444  potions/run=3.61  backstabs/run=0.00  flees/run=0.90
+
+Outcome: 178 dead, 22 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Plan 09 — AFTER
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=12  max=28
+
+  mean death depth=7.51  floors gained p50=6 mean=6.51  encounters survived mean=15.90
+  reach: >=5 78.0%  >=8 42.2%  >=9 35.8%  >=10 23.7%  >=13 9.8%  >=16 2.3%  >=20 0.6%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=60.0%  reach10=16.0%  reach20=0.0%  dmgTaken/fight=7.94  rounds/fight=3.25  foeMiss=65.6%  casts(def/off)=224/1255  potions/run=3.49  backstabs/run=0.00  flees/run=0.86
+
+Outcome: 173 dead, 27 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading.** The one measurable move of the six plans: mean death depth 7.79→7.51 (−0.28), Magic User reach5 65.5%→60.0% and reach10 21.8%→16.0%, both down. This is the expected, one-action-later cost of a Magic User's bagged staff no longer benefiting from its charged power until the bot's own new equip step wields it — 75-09's own SUMMARY calls this "a small, expected difficulty effect... well inside the readout's own informational-proxy framing," and the per-floor-survival verdict stays "all floors 1-12 inside the pass band" both before and after.
+
+### Plan 10 — BEFORE
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.79  floors gained p50=6 mean=6.79  encounters survived mean=16.66
+  reach: >=5 79.2%  >=8 43.3%  >=9 37.1%  >=10 25.3%  >=13 10.7%  >=16 2.8%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=65.5%  reach10=21.8%  reach20=1.8%  dmgTaken/fight=8.02  rounds/fight=2.93  foeMiss=64.7%  casts(def/off)=237/1444  potions/run=3.61  backstabs/run=0.00  flees/run=0.90
+
+Outcome: 178 dead, 22 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Plan 10 — AFTER
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=40
+
+  mean death depth=7.79  floors gained p50=6 mean=6.79  encounters survived mean=16.65
+  reach: >=5 79.2%  >=8 43.3%  >=9 37.1%  >=10 25.3%  >=13 10.7%  >=16 2.8%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=65.5%  reach10=21.8%  reach20=1.8%  dmgTaken/fight=8.02  rounds/fight=2.90  foeMiss=64.5%  casts(def/off)=235/1442  potions/run=3.61  backstabs/run=0.00  flees/run=0.90
+
+Outcome: 178 dead, 22 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading.** Byte-for-byte flat on every reach/verdict/Outcome line; the Magic User pool's `casts(def/off)` moves by 2 casts of noise (237/1444→235/1442). Matches 75-10's own SUMMARY: "Death-depth distribution is identical... well within run-to-run seed noise for a 200-seed sample, not a balance regression." The Summoner healing weakness is real but too thin a slice of a 59-Magic-User sample to move the pool aggregate.
+
+### Plan 12 — BEFORE
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=12  max=28
+
+  mean death depth=7.51  floors gained p50=6 mean=6.51  encounters survived mean=15.89
+  reach: >=5 78.0%  >=8 42.2%  >=9 35.8%  >=10 23.7%  >=13 9.8%  >=16 2.3%  >=20 0.6%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=60.0%  reach10=16.0%  reach20=0.0%  dmgTaken/fight=7.93  rounds/fight=3.22  foeMiss=65.3%  casts(def/off)=222/1253  potions/run=3.49  backstabs/run=0.00  flees/run=0.86
+
+Outcome: 173 dead, 27 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Plan 12 — AFTER
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=12  max=28
+
+  mean death depth=7.54  floors gained p50=6 mean=6.54  encounters survived mean=16.32
+  reach: >=5 78.2%  >=8 42.0%  >=9 35.6%  >=10 23.6%  >=13 9.8%  >=16 2.3%  >=20 1.1%
+
+  reach-20: 1.0% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Magic User  n=59  p50=6  reach5=59.2%  reach10=16.3%  reach20=0.0%  dmgTaken/fight=8.21  rounds/fight=3.30  foeMiss=65.2%  casts(def/off)=199/1214  potions/run=3.54  backstabs/run=0.00  flees/run=0.85
+
+Outcome: 174 dead, 26 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading.** Mean death depth ticks UP 7.51→7.54 — the interrupted-tile resume (RULES-12) hands back a chest/dot/exit a bot playthrough would otherwise have lost, a small net-positive that outweighs the fed-only book refill's (RULES-15) small net-negative on a starving Magic User. Matches 75-12's own SUMMARY: "no meaningful difficulty-curve shift... both readouts pass every floor-1–12 survival band."
+
+### Phase 75 — BEFORE (75-02 base)
+
+```
+  min=2  p50=7  p90=13  max=40
+
+Reach table (% of runs reaching floor N):
+  >=5: 80.6%  >=10: 24.6%  >=20: 1.1%  >=30: 0.6%  >=50: 0.0%
+
+  mean death depth=7.87  floors gained p50=6 mean=6.87  encounters survived mean=17.01
+  reach: >=5 80.6%  >=8 44.0%  >=9 37.7%  >=10 24.6%  >=13 12.0%  >=16 2.9%  >=20 1.1%
+
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Fighter  n=69  p50=7  reach5=81.0%  reach10=19.0%  reach20=0.0%  dmgTaken/fight=11.90  rounds/fight=4.87  foeMiss=65.5%  casts(def/off)=0/0  potions/run=1.09  backstabs/run=0.00  flees/run=2.43
+  Thief  n=72  p50=8  reach5=90.2%  reach10=32.8%  reach20=1.6%  dmgTaken/fight=7.45  rounds/fight=3.26  foeMiss=70.0%  casts(def/off)=0/0  potions/run=2.04  backstabs/run=10.04  flees/run=3.51
+  Magic User  n=59  p50=6  reach5=68.6%  reach10=21.6%  reach20=2.0%  dmgTaken/fight=8.15  rounds/fight=3.00  foeMiss=66.4%  casts(def/off)=270/1412  potions/run=3.59  backstabs/run=0.00  flees/run=1.34
+
+Outcome: 175 dead, 25 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Phase 75 — FINAL
+
+```
+  min=2  p50=7  p90=12  max=28
+
+Reach table (% of runs reaching floor N):
+  >=5: 78.2%  >=10: 23.6%  >=20: 1.1%  >=30: 0.0%  >=50: 0.0%
+
+  mean death depth=7.54  floors gained p50=6 mean=6.54  encounters survived mean=16.32
+  reach: >=5 78.2%  >=8 42.0%  >=9 35.6%  >=10 23.6%  >=13 9.8%  >=16 2.3%  >=20 1.1%
+
+  reach-20: 1.0% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Fighter  n=69  p50=7  reach5=81.0%  reach10=25.4%  reach20=0.0%  dmgTaken/fight=11.91  rounds/fight=4.83  foeMiss=64.9%  casts(def/off)=0/0  potions/run=1.10  backstabs/run=0.00  flees/run=2.48
+  Thief  n=72  p50=8  reach5=90.3%  reach10=27.4%  reach20=3.2%  dmgTaken/fight=7.40  rounds/fight=3.36  foeMiss=70.1%  casts(def/off)=0/0  potions/run=2.07  backstabs/run=10.19  flees/run=3.82
+  Magic User  n=59  p50=6  reach5=59.2%  reach10=16.3%  reach20=0.0%  dmgTaken/fight=8.21  rounds/fight=3.30  foeMiss=65.2%  casts(def/off)=199/1214  potions/run=3.54  backstabs/run=0.00  flees/run=0.85
+
+Outcome: 174 dead, 26 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Reading — the phase BEFORE → FINAL, against the depth-20 unicorn and the floor 5–7 average target
+
+The whole-phase move, end to end: mean death depth 7.87→7.54 (−0.33), p50 held flat at 7 the entire way, reach-20 1.5%→1.0% (still inside the informational 1.0-2.0% unicorn band this ledger's own Phase 27 target table names — "the unicorn; the bot's number is a rarity floor"), and the per-floor-survival verdict is "all floors 1-12 inside the pass band" at both ends. Fighter and Thief both trend slightly EASIER (Fighter reach10 19.0%→25.4%, Thief reach20 1.6%→3.2%), while Magic User trends HARDER (reach5 68.6%→59.2%, reach10 21.6%→16.3%, reach20 2.0%→0.0%) — almost entirely the RULES-13 staff-inert cost measured in Plan 09's own reading above, since the Summoner-side RULES-03 changes (75-05/75-10) roughly cancel each other (an easier day-one offense spell against a harder healing spell) within the same 59-Magic-User pool.
+
+**Against the depth-20 unicorn:** reach-20 stays inside the 1.0-2.0% band this ledger's Phase 27 target table already calls the unicorn rate — unchanged in kind (still rare, still celebrated, never expected) across the whole phase.
+
+**Against the floor 5–7 average run ending:** p50 death depth is 7 at every single measurement point across all six plans and the whole-phase BEFORE/FINAL — never left the floor 5–7 band for even one plan. Mean death depth ranges 7.51-7.88 across the phase, sitting at or just above the top of that band throughout, consistent with the pre-Phase-75 baseline (mean 7.87) and never crossing meaningfully out of it. **No flag for the user is needed** — the average run ending held inside floors 5-7 (by p50) for the whole phase, and this plan does not retune any dial regardless.
 
 ## v1.2 retune (Phase 27) — TUNE-05..07
 

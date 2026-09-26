@@ -4,7 +4,7 @@ Generated deterministically (seed 0x5eed1e) by tools/voice-sample.mjs
 Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 ══════════════════════════════════════════════════════════════════════════════
 
-## ORACLE / EVENT LOG — 274 event types × 3 samples
+## ORACLE / EVENT LOG — 275 event types × 3 samples
 
 ▶ oneWayBlocked
     You are through. That door is furniture now — there is no coming back.
@@ -152,7 +152,7 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Rations: you eat 1. −1 ration, 0 left.
 
 ▶ wentHungry
-    Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −3 hp.
+    Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −3 hp. No supper, no sleep worth the name. Your book stays empty.
     Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −6 hp.
     Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −3 hp.
 
@@ -160,6 +160,11 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Something in the dark takes an interest in you. 6 of 8 night-hours disturbed.
     Something in the dark takes an interest in you. 7 of 8 night-hours disturbed.
     Something in the dark takes an interest in you. 7 of 8 night-hours disturbed.
+
+▶ tileResumed
+    With that settled — the chest.
+    With that settled — the tile.
+    With that settled — the tile.
 
 ▶ campFailed
     You eat ? a night. You have ?. Find rations first.
@@ -172,24 +177,24 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You teleport to an unknown location on this floor… the dungeon does not offer refunds.
 
 ▶ spGained
-    That is worth 13 13 experience points.
-    Talking your way out is worth 16 16 experience points.
-    Surviving the floor is worth 15 15 experience points.
+    Surviving the floor is worth 22 22 experience points.
+    That is worth 16 16 experience points.
+    That is worth 5 5 experience points.
 
 ▶ floorChanged
+    Floor 4. The air gets worse, and takes it personally.
     Floor 1. The air gets worse, and takes it personally.
-    Floor 4. The air gets worse, and takes it personally.
-    Floor 4. The air gets worse, and takes it personally.
+    Floor 3. The air gets worse, and takes it personally.
 
 ▶ leveled
-    Skill level 5 (+4 hp).
-    Skill level 4 (+5 hp).
-    Skill level 3 (+5 hp).
+    Skill level 3 (+6 hp).
+    Skill level 3 (+2 hp).
+    Skill level 4 (+6 hp).
 
 ▶ abilityLearned
+    New trick: Hair —
+    New trick: Poltergeist —
     New trick: Google —
-    New trick: Shriek —
-    New trick: Cave Bear —
 
 ▶ died
     You have died.
@@ -197,12 +202,12 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You have died.
 
 ▶ encounterStarted
-    An encounter. Wolf, Zombie.
-    An encounter. Sterling, Hobgoblin.
-    An encounter. Poltergeist, Bat/Rat.
+    An encounter. Flube, Zit.
+    An encounter. Drekk, Stink Bug.
+    An encounter. Gremlin, Wolf.
 
 ▶ combatJoined
-    Initiative — you ?, them ?. They go first.
+    Initiative — you ?, them ?. You felt them coming. You go first.
     Initiative — you ?, them ?. They go first.
     Initiative — you ?, them ?. They go first.
 
@@ -212,24 +217,24 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     They have not noticed you yet.
 
 ▶ allyJoined
-    Primp falls in beside you.
-    Skeleton falls in beside you.
-    Ned falls in beside you.
+    Poltergeist falls in beside you.
+    Blumble falls in beside you.
+    Pogo falls in beside you.
 
 ▶ warlockBoost
-    The Warlock's presence stiffens the dead. +20 hp to every corpse in the room.
-    The Warlock's presence stiffens the dead. +20 hp to every corpse in the room.
-    The Warlock's presence stiffens the dead. +16 hp to every corpse in the room.
+    The Warlock's presence stiffens the dead. +25 hp to every corpse in the room.
+    The Warlock's presence stiffens the dead. +17 hp to every corpse in the room.
+    The Warlock's presence stiffens the dead. +24 hp to every corpse in the room.
 
 ▶ foeFled
-    Shriek thinks better of it and leaves.
-    Sterling thinks better of it and leaves.
-    Drekk thinks better of it and leaves.
+    Drake thinks better of it and leaves.
+    M&M thinks better of it and leaves.
+    Skeleton thinks better of it and leaves.
 
 ▶ foeBored
-    Drake loses interest entirely.
-    M&M loses interest entirely.
-    Skeleton loses interest entirely.
+    Shriek loses interest entirely.
+    Stalka Beast loses interest entirely.
+    Spectre loses interest entirely.
 
 ▶ encounterCleared
     Nothing left standing.
@@ -237,9 +242,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Nothing left standing.
 
 ▶ phobiaAfraid
-    Your phobia has you shaking. Harder to hit and softer blows for 1 rounds. You can still swing — you just will not enjoy it.
-    Your phobia has you shaking. Harder to hit and softer blows for 6 rounds. You can still swing — you just will not enjoy it.
     Your phobia has you shaking. Harder to hit and softer blows for 4 rounds. You can still swing — you just will not enjoy it.
+    Your phobia has you shaking. Harder to hit and softer blows for 1 rounds. You can still swing — you just will not enjoy it.
+    Your phobia has you shaking. Harder to hit and softer blows for 2 rounds. You can still swing — you just will not enjoy it.
 
 ▶ combatInDark
     You cannot see what you are fighting.
@@ -248,7 +253,7 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 
 ▶ strikeRefused
     You hold back.
-    You hold back.
+    A Wizard does not stoop to fisticuffs while Fireballs is still in the book.
     You hold back.
 
 ▶ fearPassed
@@ -262,14 +267,14 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Something in your blood takes over. Frenzy.
 
 ▶ strikeMissed
-    16 vs 19–20 (dark-cap −2, dark-cap +2). You miss Craig.
-    15 vs 2–20 (weapon +3). You miss Zit.
-    5 vs 15–20 (fluency −3). You miss Pogo.
+    9 vs 6–20 (dark-cap +1). You miss Dog Face.
+    6 vs 15–20 (dark-cap −3, dark-cap −2). You miss Google.
+    13 vs 18–20 (class −2, dark-cap +1). You miss Craig.
 
 ▶ deathTouch
     One touch. Dog Face drops.
-    One touch. Google drops.
-    One touch. Craig drops.
+    One touch. Krupke drops.
+    One touch. Stink Bug drops.
 
 ▶ backstabDenied
     Heavy armor gives you away.
@@ -297,29 +302,29 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     One perfect opening strike.
 
 ▶ struck
-    3 vs 10–20 (armor-bulk −1). You hit Craig for 17 hp.
-    10 vs 19–20 (dark-cap +2). Critical! You hit Stink Bug for 11 hp.
-    13 vs 5–20 (dark-cap +3, dark-cap +2). You hit Stink Bug for 1 hp.
+    2 vs nothing (dark-cap −3, weapon +3). You hit Bat/Rat for 18 hp.
+    16 vs 5–20 (armor-bulk +3). You hit Bat/Rat for 17 hp.
+    2 vs 10–20 (armor-bulk −1). You hit China Wolf for 8 hp.
 
 ▶ foeRevived
-    Vampire gets back up.
-    Viper gets back up.
-    Herman gets back up.
+    Rinkle gets back up.
+    Krupke gets back up.
+    Floater gets back up.
 
 ▶ foeKilled
-    Rinkle falls. +34 XP.
-    Krupke falls. +35 XP.
-    Floater falls. +41 XP.
+    Ned falls. +47 XP.
+    Primp falls. +36 XP.
+    Zombie falls. +19 XP.
 
 ▶ foeShattered
-    Something's best roll lands clean. Floater comes apart, both lives at once, and nobody is sweeping up.
-    Something's best roll lands clean. Werebeast comes apart, both lives at once, and nobody is sweeping up.
-    Something's best roll lands clean. Floater comes apart, both lives at once, and nobody is sweeping up.
+    Something's best roll lands clean. Pogo comes apart, both lives at once, and nobody is sweeping up.
+    Something's best roll lands clean. Ghoul comes apart, both lives at once, and nobody is sweeping up.
+    Something's best roll lands clean. Cave Bear comes apart, both lives at once, and nobody is sweeping up.
 
 ▶ cooked
-    You cook what is left. +13 hp, +2 ration.
-    You cook what is left. +11 hp, +2 ration.
     You salvage a ration off the carcass. +3 ration.
+    You cook what is left. +11 hp, +3 ration.
+    You cook what is left. +7 hp, +1 ration.
 
 ▶ fleeRefused
     A Samurai does not run.
@@ -337,14 +342,14 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You can always vanish — as long as nobody has seen your face. They have now seen your face.
 
 ▶ fled
-    You vanish. Clean escape.
     You slip away before it even sees you.
+    You get clear.
     You get clear.
 
 ▶ fleeRolled
-    Flee: rolled 10 vs 7–20 (dark-cap −1, class +1).
-    Flee: rolled 7 vs 16–20 (insulted +2).
-    Flee: rolled 4 vs 10–20 (fluency −2, fluency −1).
+    Flee: rolled 20 vs 16–20 (insulted −3, fluency +2).
+    Flee: rolled 19 vs 2–20 (weapon +3, class −1).
+    Flee: rolled 14 vs 10–20 (dark-cap −3).
 
 ▶ fleeFailed
     You do not make it.
@@ -357,9 +362,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Not this time, not with them.
 
 ▶ parleyRolled
-    Talk it down: 2 vs 3–20.
-    Talk it down: 4 vs 3–20.
-    Talk it down: 20 vs 6–20.
+    Talk it down: 4 vs 10–20.
+    Talk it down: 2 vs 4–20.
+    Talk it down: 11 vs 2–20.
 
 ▶ parleyInsulted
     You have made it personal. They will be aiming with real intent from here on.
@@ -372,9 +377,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You already said your piece. They are done listening; try the pointy end.
 
 ▶ goldGained
-    +15 wilmst.
-    +18 wilmst.
-    +7 wilmst.
+    +11 wilmst.
+    +4 wilmst.
+    +5 wilmst.
 
 ▶ parleyFailed
     They are not buying it.
@@ -387,9 +392,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You strike up "a tune".
 
 ▶ beastsSoothed
-    4 calm right down.
-    4 calm right down.
-    5 calm right down.
+    3 calm right down.
+    3 calm right down.
+    3 calm right down.
 
 ▶ songIgnored
     They do not care for music.
@@ -398,13 +403,13 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 
 ▶ lullabyRolled
     2 nod off.
+    6 nod off.
     3 nod off.
-    2 nod off.
 
 ▶ thunderRolled
-    Thunder rolls; 2 freeze for 1 rounds.
-    Thunder rolls; 6 freeze for 2 rounds.
-    Thunder rolls; 3 freeze for 3 rounds.
+    Thunder rolls; 2 freeze for 3 rounds.
+    Thunder rolls; 5 freeze for 3 rounds.
+    Thunder rolls; 5 freeze for 3 rounds.
 
 ▶ combatEnded
     The fight is over.
@@ -412,74 +417,74 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     The fight is over.
 
 ▶ allyStruck
-    Primp lands a hit on Shriek for 2 hp.
-    Dante lands a hit on Herman for 3 hp.
-    Bones lands a hit on Werebeast for 15 hp.
+    Skeleton lands a hit on Goblin for 4 hp.
+    Drarl lands a hit on Shadow for 20 hp.
+    Skeleton lands a hit on Drarl for 15 hp.
 
 ▶ allyMissed
-    Skeleton swings at Goblin and misses. 3 vs 13–20 (weapon −2).
-    Drarl swings at Shadow and misses. 20 vs 9–20 (class +1, weapon +2).
-    Skeleton swings at Drarl and misses. 16 vs 5–20 (dark-cap +1, armor-bulk −1).
+    Hair swings at Ned and misses. 13 vs 9–20 (class −3, insulted −2).
+    Hobgoblin swings at Shriek and misses. 16 vs 17–20 (dark-cap −2, weapon −3).
+    Sterling swings at Werebeast and misses. 12 vs 7–20 (weapon +1, weapon −3).
 
 ▶ allyDeparted
-    Hair slips away, obligation met.
-    Hobgoblin slips away, obligation met.
-    Sterling slips away, obligation met.
+    Drudge slips away, obligation met.
+    Poltergeist slips away, obligation met.
+    Goblin slips away, obligation met.
 
 ▶ allyCast
-    Drudge casts Lesser Summon at Wolf. 4 vs 15–20 (class +3).
-    Poltergeist casts Weaken at Bat/Rat. 20 vs 5–20 (insulted +1).
-    Goblin casts Death at Pogo. 14 vs 17–20 (class +3, weapon −3).
+    Wolf casts Summon at Frank. 10 vs 11–20 (fluency −1, weapon +1).
+    Spectre casts Sense Danger at Google. 15 vs 12–20 (dark-cap +3, weapon +3).
+    Krupke casts Lightning at Philly. 4 vs 10–20 (dark-cap +3).
 
 ▶ allySpellHit
-    Wolf's Summon hits Frank for 30 hp.
-    Spectre's Sense Danger hits Google for 4 hp.
-    Krupke's Lightning hits Philly for 9 hp.
+    Floater's Mangle hits Drat for 2 hp.
+    Rast's Sense Danger hits Herman for 23 hp.
+    Drake's Bubble hits Drake for 7 hp.
 
 ▶ allySpellMissed
-    Floater's Mangle goes wide of Drat. The maze absorbs the effort without comment.
-    Rast's Sense Danger goes wide of Herman. The maze absorbs the effort without comment.
-    Drake's Bubble goes wide of Drake. The maze absorbs the effort without comment.
+    Dante's Doze goes wide of Herman. The maze absorbs the effort without comment.
+    Floater's Sense Danger goes wide of Wolf. The maze absorbs the effort without comment.
+    Werebeast's Mangle goes wide of Dog Face. The maze absorbs the effort without comment.
 
 ▶ memberStruck
-    16 vs 4–20 (class −3). Dante turns on Ysolde for 11 hp.
-    5 vs 20 (weapon +3, armor-bulk +3). Floater turns on Fenna for 3 hp.
-    3 vs 17–20 (weapon +1). Werebeast turns on Thalorin for 15 hp.
+    4 vs 2–20 (class +1, armor-bulk +2). Philly turns on Gnarl for 21 hp.
+    11 vs 15–20 (armor-bulk −1, fluency −1). Primp turns on Greenmantle for 28 hp.
+    17 vs 1–20 (fluency +1). Ghoul turns on Shear for 4 hp.
 
 ▶ memberDowned
-    Philly goes down, and what is left of them wants no further part of this.
-    Primp goes down, and what is left of them wants no further part of this.
+    Sterling goes down, and what is left of them wants no further part of this.
     Ghoul goes down, and what is left of them wants no further part of this.
+    Bat/Rat goes down, and what is left of them wants no further part of this.
 
 ▶ regenerated
-    +25 hp knits itself shut.
-    +5 hp knits itself shut.
-    +23 hp knits itself shut.
+    +6 hp knits itself shut.
+    +21 hp knits itself shut.
+    +10 hp knits itself shut.
 
 ▶ acidTick
-    Acid eats at Goblin: 1 hp.
-    Acid eats at Cave Bear: 16 hp.
-    Acid eats at Sterling: 5 hp.
+    Acid eats at Blumble: 26 hp.
+    Acid eats at Spectre: 28 hp.
+    Acid eats at Zombie: 15 hp.
 
 ▶ foeSlept
-    Gremlin sleeps through it.
-    Vampire sleeps through it.
-    Blumble sleeps through it.
+    Rast sleeps through it.
+    Zombie sleeps through it.
+    Bat/Rat sleeps through it.
 
 ▶ foeMissed
-    Rast swings at Ysolde, 18 vs 5–20 (dark-cap +1), and misses.
-    Zombie swings at Yrliss, 17 vs 15–20 (armor-bulk −3, fluency +3), and misses.
-    Bat/Rat swings at Esk, 7 vs 8–20 (weapon +1, armor-bulk +1), and misses.
+    Krupke swings at Copperbraid, 10 vs 11–20 (fluency +3, fluency +2), and misses.
+    Zit swings at Lightfoot, 15 vs 2–20 (dark-cap −2), and misses.
+    Hair swings at Stormcaller, 17 vs 13–20 (armor-bulk +2, insulted −2), and misses.
 
 ▶ wardReflected
-    The ward throws 13 back at Drarl.
-    The ward throws 22 back at Krupke.
-    The ward throws 17 back at Vampire.
+    The bubble catches it and sends it back — 3 to Primp. Pop. A thin film holds for the rest of the round.
+    The ward throws 12 back at Undead.
+    The ward throws 8 back at M&M.
 
 ▶ wardAbsorbed
-    The ward eats 3 (3 left).
-    The ward eats 12 (2 left).
-    The ward eats 8 (1 left).
+    The ward eats 22 (0 left).
+    The ward eats 22 (3 left).
+    The ward eats 1 (2 left).
 
 ▶ wardShattered
     The ward shatters.
@@ -492,24 +497,24 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Your armor gives out.
 
 ▶ armorSoaked
-    Your armor takes 22 from M&M so you do not have to.
-    Your armor takes 3 from Drat so you do not have to.
-    Your armor takes 16 from Wolf so you do not have to.
+    Your armor takes 22 from Dante so you do not have to.
+    Your armor takes 14 from Cave Bear so you do not have to.
+    Your armor takes 1 from Rast so you do not have to.
 
 ▶ foeArmorSoaked
-    Your blow rings off Dante's armor. It looks bored.
-    Your blow rings off Cave Bear's armor. It looks bored.
-    Your blow rings off Rast's armor. It looks bored.
+    Your blow rings off Blumble's armor. It looks bored.
+    Your blow rings off Drarl's armor. It looks bored.
+    Your blow rings off Bat/Rat's armor. It looks bored.
 
 ▶ damageHalved
-    The pendant drinks half of Blumble's blow before it reaches you.
-    The pendant drinks half of Drarl's blow before it reaches you.
-    The pendant drinks half of Bat/Rat's blow before it reaches you.
+    The pendant drinks half of Sterling's blow before it reaches you.
+    The pendant drinks half of Werebeast's blow before it reaches you.
+    The pendant drinks half of Dante's blow before it reaches you.
 
 ▶ struckByFoe
-    1 vs 9–20 (armor-bulk +2). Sterling hits you for 22 hp.
-    15 vs 13–20 (insulted +1). Werebeast hits you for 21 hp.
-    7 vs 18–20 (armor-bulk −2, armor-bulk −2). Dante hits you for 28 hp.
+    15 vs 7–20 (class −2, weapon −2). Drarl hits you for 22 hp.
+    8 vs 3–20 (fluency −3). M&M hits you for 22 hp.
+    18 vs 13–20 (armor-bulk +2, armor-bulk +1). Sterling hits you for 23 hp.
 
 ▶ wardFaded
     The ward fades.
@@ -532,34 +537,34 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     The wounds stop closing on their own.
 
 ▶ foeCast
-    Cave Bear does something unpleasant and magical.
-    Blumble does something unpleasant and magical.
-    Ghost does something unpleasant and magical.
+    Undead does something unpleasant and magical.
+    Gremlin does something unpleasant and magical.
+    Werebeast does something unpleasant and magical.
 
 ▶ foeBolted
-    Undead: it lands on Caelan. −8 hp. Better them than you.
-    Gremlin: it lands on Mabb. −29 hp. Better them than you.
-    Werebeast: it lands on Hesper. −6 hp. Better them than you.
+    Viper: it lands on the Grim. −1 hp. Better them than you.
+    Stink Bug: it lands on the Steady. −18 hp. Better them than you.
+    Bones: it lands on Aelric. −26 hp. Better them than you.
 
 ▶ foeDrained
-    Viper: it drinks 0 hp of yours and looks better for it.
-    Stink Bug: it drinks 0 hp of yours and looks better for it.
-    Bones: it drinks 0 hp of yours and looks better for it.
+    Cave Bear: it drinks 0 hp of yours and looks better for it.
+    Rast: it drinks 0 hp of yours and looks better for it.
+    Rinkle: it drinks 0 hp of yours and looks better for it.
 
 ▶ foeDebuffed
-    Your arms feel like someone else's. Weakened for 2 rounds.
+    Your arms feel like someone else's. Weakened for 4 rounds.
+    Your arms feel like someone else's. Weakened for 4 rounds.
     Your arms feel like someone else's. Weakened for 3 rounds.
-    Your arms feel like someone else's. Weakened for 5 rounds.
 
 ▶ foeHealed
-    Dread Lock knits itself back together. +6 hp. Rude.
-    Rinkle knits itself back together. +17 hp. Rude.
-    Craig knits itself back together. +25 hp. Rude.
+    Hobgoblin knits itself back together. +6 hp. Rude.
+    China Wolf knits itself back together. +14 hp. Rude.
+    Poltergeist knits itself back together. +14 hp. Rude.
 
 ▶ foeSummoned
-    Hobgoblin shuffles in, late and unbothered.
-    China Wolf shuffles in, late and unbothered.
-    Poltergeist shuffles in, late and unbothered.
+    Floater shuffles in, late and unbothered.
+    Undead shuffles in, late and unbothered.
+    Google shuffles in, late and unbothered.
 
 ▶ foeEffectFaded
     Your strength comes back. It was only borrowed.
@@ -567,159 +572,159 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Your strength comes back. It was only borrowed.
 
 ▶ heroResisted
-    You think very hard about not being affected, and it works. 20 vs 3–20 (intel 1).
-    You think very hard about not being affected, and it works. 17 vs 12–20 (intel 4).
-    You think very hard about not being affected, and it works. 19 vs 6–20 (intel 1).
+    You think very hard about not being affected, and it works. 11 vs 9–20 (intel 5).
+    You think very hard about not being affected, and it works. 11 vs 14–20 (intel 7).
+    You think very hard about not being affected, and it works. 8 vs 1–20 (intel 1).
 
 ▶ heroResistFailed
-    You try to shrug it off. 11 vs 9–20 (intel 5). You do not.
-    You try to shrug it off. 11 vs 14–20 (intel 7). You do not.
-    You try to shrug it off. 8 vs 1–20 (intel 1). You do not.
+    You try to shrug it off. 13 vs 10–20 (intel 2). You do not.
+    You try to shrug it off. 8 vs 20 (intel 1). You do not.
+    You try to shrug it off. 7 vs 7–20 (intel 6). You do not.
 
 ▶ foePursued
-    Dante follows you out. Of course it does.
-    Philly follows you out. Of course it does.
-    Werebeast follows you out. Of course it does.
+    Djinni follows you out. Of course it does.
+    Pogo follows you out. Of course it does.
+    Bat/Rat follows you out. Of course it does.
 
 ▶ foeOutOfSpells
-    Djinni gestures grandly. Nothing happens. It appears to be out of spells.
-    Pogo gestures grandly. Nothing happens. It appears to be out of spells.
-    Bat/Rat gestures grandly. Nothing happens. It appears to be out of spells.
+    Undead gestures grandly. Nothing happens. It appears to be out of spells.
+    Ghost gestures grandly. Nothing happens. It appears to be out of spells.
+    Werebeast gestures grandly. Nothing happens. It appears to be out of spells.
 
 ▶ abilityUsed
-    You call Undead.
-    You call Ghost.
-    You call Werebeast.
+    You call Poltergeist.
+    You call Ned.
+    You call Shriek.
 
 ▶ abilityRefused
-    Poltergeist refuses you.
-    Ned refuses you.
-    Shriek refuses you.
+    Floater refuses you.
+    Bat/Rat refuses you.
+    Dread Lock refuses you.
 
 ▶ pommelStruck
-    the Slow: The pommel finds Skeleton's temple. It will need a moment.
-    Darrun: The pommel finds Blumble's temple. It will need a moment.
-    Vale: The pommel finds Trachea's temple. It will need a moment.
+    the Frugal: The pommel finds Ghoul's temple. It will need a moment.
+    Sera: The pommel finds Philly's temple. It will need a moment.
+    Wenna: The pommel finds Zombie's temple. It will need a moment.
 
 ▶ foeStunned
-    Zombie spends its turn remembering where it is.
-    Bones spends its turn remembering where it is.
-    Blumble spends its turn remembering where it is.
+    Pogo spends its turn remembering where it is.
+    Floater spends its turn remembering where it is.
+    Trachea spends its turn remembering where it is.
 
 ▶ battleRoarRaised
-    Nimwen: Loud enough. For two rounds they all need two better to hit anyone on your side.
-    Cobbleknee: Loud enough. For two rounds they all need two better to hit anyone on your side.
-    Signy: Loud enough. For two rounds they all need two better to hit anyone on your side.
+    Silverbough: Loud enough. For two rounds they all need two better to hit anyone on your side.
+    Thugra: Loud enough. For two rounds they all need two better to hit anyone on your side.
+    Vane: Loud enough. For two rounds they all need two better to hit anyone on your side.
 
 ▶ sidestepped
-    Silverbough: Not where the blade is. Two rounds of that.
-    Thugra: Not where the blade is. Two rounds of that.
-    Vane: Not where the blade is. Two rounds of that.
+    Boulderback: Not where the blade is. Two rounds of that.
+    Boulderback: Not where the blade is. Two rounds of that.
+    the Quiet: Not where the blade is. Two rounds of that.
 
 ▶ secondWindHealed
-    You remember why you came. +22 hp.
-    You remember why you came. +2 hp.
-    You remember why you came. +13 hp.
+    You remember why you came. +16 hp.
+    You remember why you came. +19 hp.
+    You remember why you came. +3 hp.
 
 ▶ swept
-    One wide arc — 12 to everything still standing.
-    One wide arc — 6 to everything still standing.
-    One wide arc — 18 to everything still standing.
+    One wide arc — 17 to everything still standing.
+    One wide arc — 14 to everything still standing.
+    One wide arc — 30 to everything still standing.
 
 ▶ sweptFoe
-    Bat/Rat takes 17.
-    Flube takes 14.
-    Sterling takes 30.
+    Dog Face takes 9.
+    Zit takes 9.
+    Frank takes 15.
 
 ▶ braced
-    Krung: Braced. The next one lands on your terms.
-    Nose-Gone: Braced. The next one lands on your terms.
-    Mabb: Braced. The next one lands on your terms.
+    Sootheart: Braced. The next one lands on your terms.
+    the Thrifty: Braced. The next one lands on your terms.
+    Flintback: Braced. The next one lands on your terms.
 
 ▶ braceHeld
-    Sootheart: Braced — Frank's blow lands half as hard (−0).
-    the Thrifty: Braced — Trachea's blow lands half as hard (−0).
-    Flintback: Braced — Craig's blow lands half as hard (−0).
+    of Low Ward: Braced — Hair's blow lands half as hard (−0).
+    Corrin: Braced — Rast's blow lands half as hard (−0).
+    Snowfell: Braced — Shriek's blow lands half as hard (−0).
 
 ▶ riposteReady
-    of Low Ward: Every miss is an invitation.
-    Corrin: Every miss is an invitation.
-    Snowfell: Every miss is an invitation.
+    Fairwater: Every miss is an invitation.
+    Mira: Every miss is an invitation.
+    Nimwen: Every miss is an invitation.
 
 ▶ riposted
-    Philly misses, and pays 21 for it.
-    Stalka Beast misses, and pays 9 for it.
-    Poltergeist misses, and pays 20 for it.
+    Krupke misses, and pays 14 for it.
+    Dog Face misses, and pays 1 for it.
+    China Wolf misses, and pays 16 for it.
 
 ▶ taunted
-    the Patient: Every foe looks at you. Armour doubles. Good luck.
-    Aldric: Every foe looks at you. Armour doubles. Good luck.
-    Snork: Every foe looks at you. Armour doubles. Good luck.
+    Osk: Every foe looks at you. Armour doubles. Good luck.
+    Darrun: Every foe looks at you. Armour doubles. Good luck.
+    Ulba: Every foe looks at you. Armour doubles. Good luck.
 
 ▶ lastStandCalled
-    Osk: Under a quarter. 3 attacks this round. Make them count.
-    Darrun: Under a quarter. 3 attacks this round. Make them count.
-    Ulba: Under a quarter. 3 attacks this round. Make them count.
+    the Mossy: Under a quarter. 3 attacks this round. Make them count.
+    Silverbough: Under a quarter. 3 attacks this round. Make them count.
+    Krung: Under a quarter. 3 attacks this round. Make them count.
 
 ▶ dirtyTrickLanded
-    the Mossy: Sand, thumb, elbow. Hobgoblin is blinded for 4 rounds.
-    Silverbough: Sand, thumb, elbow. Viper is blinded for 6 rounds.
-    Krung: Sand, thumb, elbow. Krupke is blinded for 1 rounds.
+    Snowfell: Sand, thumb, elbow. Craig is blinded for 6 rounds.
+    the Frugal: Sand, thumb, elbow. Stalka Beast is blinded for 5 rounds.
+    Frostborn: Sand, thumb, elbow. Ned is blinded for 5 rounds.
 
 ▶ foeSightReturned
-    Stink Bug blinks the sand out.
-    Flube blinks the sand out.
-    Undead blinks the sand out.
+    Skeleton blinks the sand out.
+    Rinkle blinks the sand out.
+    Gremlin blinks the sand out.
 
 ▶ smokeThrown
-    Dagna: Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.
-    Ulfar: Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.
-    Durn: Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.
+    Vazka: Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.
+    Willowshade: Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.
+    Hodrin: Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.
 
 ▶ cutpursed
-    Vazka: You lift 21 wilmst off Ghoul mid-fight. It has other problems.
-    Willowshade: You lift 3 wilmst off Frank mid-fight. It has other problems.
-    Hodrin: You lift 22 wilmst off Craig mid-fight. It has other problems.
+    Tamsin: You lift 5 wilmst off Primp mid-fight. It has other problems.
+    Brunna: You lift 25 wilmst off Werebeast mid-fight. It has other problems.
+    Nose-Gone: You lift 12 wilmst off Primp mid-fight. It has other problems.
 
 ▶ poisonedEdgeApplied
-    Tamsin: The blade weeps into Primp. 6 rounds of that.
-    Brunna: The blade weeps into Werebeast. 1 rounds of that.
-    Nose-Gone: The blade weeps into Primp. 4 rounds of that.
+    Sylwen: The blade weeps into Krupke. 1 rounds of that.
+    Flintback: The blade weeps into Skeleton. 6 rounds of that.
+    Cedric: The blade weeps into Goblin. 2 rounds of that.
 
 ▶ dotTick
-    Krupke takes 10 from the poison.
-    Skeleton takes 1 from the poison.
-    Goblin takes 13 from the poison.
+    Dread Lock takes 13 from the poison.
+    Blumble takes 15 from the poison.
+    Shadow takes 16 from the poison.
 
 ▶ hamstrung
-    Willowshade: Tendon cut. Dread Lock hits half as hard from here on.
-    Snowfell: Tendon cut. Blumble hits half as hard from here on.
-    Garrick: Tendon cut. Shadow hits half as hard from here on.
+    Quen: Tendon cut. Philly hits half as hard from here on.
+    Marsh: Tendon cut. Drake hits half as hard from here on.
+    the Heavy: Tendon cut. Hobgoblin hits half as hard from here on.
 
 ▶ marked
-    Quen: Studied. Every blow on Philly lands +2.
-    Marsh: Studied. Every blow on Drake lands +2.
-    the Heavy: Studied. Every blow on Hobgoblin lands +2.
+    Aelwyn: Studied. Every blow on Skeleton lands +2.
+    Fenna: Studied. Every blow on Herman lands +2.
+    Frostleaf: Studied. Every blow on Ghost lands +2.
 
 ▶ memberAbilityUsed
-    Poltergeist calls it.
-    M&M calls it.
-    Shadow calls it.
+    China Wolf calls it.
+    Shriek calls it.
+    Dog Face calls it.
 
 ▶ memberSecondWind
-    China Wolf remembers why they came. +7 hp.
-    Shriek remembers why they came. +7 hp.
-    Dog Face remembers why they came. +1 hp.
+    Viper remembers why they came. +19 hp.
+    Drekk remembers why they came. +8 hp.
+    Dante remembers why they came. +2 hp.
 
 ▶ memberSwept
-    Viper sweeps — 16 to everything still standing.
-    Drekk sweeps — 10 to everything still standing.
-    Dante sweeps — 13 to everything still standing.
+    Gremlin sweeps — 29 to everything still standing.
+    Cave Bear sweeps — 15 to everything still standing.
+    Floater sweeps — 29 to everything still standing.
 
 ▶ memberRiposted
-    Craig misses Gremlin, and pays 29 for it.
-    Shadow misses Cave Bear, and pays 15 for it.
-    Stink Bug misses Floater, and pays 29 for it.
+    Wolf misses Viper, and pays 11 for it.
+    Google misses Sterling, and pays 2 for it.
+    Krupke misses Bat/Rat, and pays 17 for it.
 
 ▶ noChargesLeft
     Nothing left to cast with.
@@ -727,24 +732,24 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Nothing left to cast with.
 
 ▶ spellNotKnown
-    You do not know Strength.
-    You do not know Lightning.
-    You do not know Stupidity.
+    You do not know Death.
+    You do not know Turn Walking Dead.
+    You do not know Earthquake.
 
 ▶ spellAboveLevel
-    Death needs level ?; you are ?.
-    Turn Walking Dead needs level ?; you are ?.
-    Earthquake needs level ?; you are ?.
+    Lesser Summon needs level ?; you are ?.
+    Strength needs level ?; you are ?.
+    Acid needs level ?; you are ?.
 
 ▶ spellSchoolLocked
-    Lesser Summon is not open to you yet.
-    Strength is not open to you yet.
+    Bubble is not open to you yet.
     Acid is not open to you yet.
+    Mangle is not open to you yet.
 
 ▶ castRefused
+    Death refuses you.
     Bubble refuses you.
-    Acid refuses you.
-    Mangle refuses you.
+    Strength refuses you.
 
 ▶ actionRefused
     Not now.
@@ -752,49 +757,49 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Not now.
 
 ▶ spellBackfired
-    Major Heal goes wrong.
-    Heal goes wrong.
-    Ice goes wrong.
+    Strength goes wrong.
+    Doze goes wrong.
+    Mangle goes wrong.
 
 ▶ backfireSelfDamage
-    Backfire: Strength went wrong in your hands — the Apprentice tax, one time in eight. −23 hp.
-    Backfire: Doze went wrong in your hands — the Apprentice tax, one time in eight. −25 hp.
-    Backfire: Mangle went wrong in your hands — the Apprentice tax, one time in eight. −11 hp.
+    Backfire: Strength went wrong in your hands — the Apprentice tax, one time in eight. −5 hp.
+    Backfire: Fireball went wrong in your hands — the Apprentice tax, one time in eight. −1 hp.
+    Backfire: Sense Danger went wrong in your hands — the Apprentice tax, one time in eight. −1 hp.
 
 ▶ spellResisted
-    Shriek shrugs it off. 3 vs 12–20 (intel 1).
-    Goblin shrugs it off. 10 vs 8–20 (intel 7).
-    Goblin shrugs it off. 13 vs nothing (intel 1).
+    Floater shrugs it off. 1 vs 5–20 (intel 4).
+    Cave Bear shrugs it off. 3 vs 18–20 (intel 3).
+    Flube shrugs it off. 10 vs 17–20 (intel 8).
 
 ▶ resistFailed
-    Floater tries to resist and fails. 1 vs 5–20.
-    Cave Bear tries to resist and fails. 3 vs 18–20.
-    Flube tries to resist and fails. 10 vs 17–20.
+    Craig tries to resist and fails. 18 vs 6–20.
+    Google tries to resist and fails. 17 vs 6–20.
+    Google tries to resist and fails. 14 vs 12–20.
 
 ▶ summonBackfired
-    Summoning: Fireball answered, then turned on you — a Summoner's doubled creatures come with a grudge. −6 hp.
-    Summoning: Heal answered, then turned on you — a Summoner's doubled creatures come with a grudge. −19 hp.
-    Summoning: Insane answered, then turned on you — a Summoner's doubled creatures come with a grudge. −3 hp.
+    Summoning: Shield answered, then turned on you — a Summoner's doubled creatures come with a grudge. −8 hp.
+    Summoning: Earthquake answered, then turned on you — a Summoner's doubled creatures come with a grudge. −23 hp.
+    Summoning: Noxious Vapor answered, then turned on you — a Summoner's doubled creatures come with a grudge. −2 hp.
 
 ▶ allySummoned
-    Herman answers the call.
-    Craig answers the call.
+    Dante answers the call.
     Goblin answers the call.
+    Stink Bug answers the call.
 
 ▶ allyPending
-    Dante is coming, once there is a fight to join.
-    Goblin is coming, once there is a fight to join.
-    Stink Bug is coming, once there is a fight to join.
+    Trachea is coming, once there is a fight to join.
+    Werebeast is coming, once there is a fight to join.
+    Rinkle is coming, once there is a fight to join.
 
 ▶ stunned
     2 freeze in place.
     3 freeze in place.
-    3 freeze in place.
+    6 freeze in place.
 
 ▶ weakened
-    They hit softer now, for 1 rounds.
+    They hit softer now, for 3 rounds.
+    They hit softer now, for 6 rounds.
     They hit softer now, for 5 rounds.
-    They hit softer now, for 2 rounds.
 
 ▶ weakenFaded
     Their arms remember how to swing.
@@ -802,64 +807,64 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Their arms remember how to swing.
 
 ▶ stupefied
-    Hair forgets what it is doing.
-    Cave Bear forgets what it is doing.
-    Trachea forgets what it is doing.
+    Dog Face forgets what it is doing.
+    Stink Bug forgets what it is doing.
+    Poltergeist forgets what it is doing.
 
 ▶ foeStupefied
-    Hobgoblin stands there, thinking about nothing.
-    Viper stands there, thinking about nothing.
-    Ghost stands there, thinking about nothing.
+    China Wolf stands there, thinking about nothing.
+    Hair stands there, thinking about nothing.
+    Undead stands there, thinking about nothing.
 
 ▶ blinded
-    Goblin cannot see a thing.
-    Poltergeist cannot see a thing.
-    Vampire cannot see a thing.
+    Zit cannot see a thing.
+    Cave Bear cannot see a thing.
+    Djinni cannot see a thing.
 
 ▶ shrunk
+    3 shrink to half size.
+    2 shrink to half size.
     5 shrink to half size.
-    3 shrink to half size.
-    3 shrink to half size.
 
 ▶ acidApplied
-    Krupke starts to dissolve. 5 rounds of it.
-    Cave Bear starts to dissolve. 5 rounds of it.
-    China Wolf starts to dissolve. 4 rounds of it.
+    Werebeast starts to dissolve. 6 rounds of it.
+    Philly starts to dissolve. 3 rounds of it.
+    Herman starts to dissolve. 5 rounds of it.
 
 ▶ iceApplied
-    Ice climbs Werebeast: d6 a round for 6 rounds, then it stops moving.
-    Ice climbs Philly: d6 a round for 3 rounds, then it stops moving.
-    Ice climbs Herman: d6 a round for 5 rounds, then it stops moving.
+    Ice climbs Herman: d6 a round for 3 rounds, then it stops moving.
+    Ice climbs Dread Lock: d6 a round for 5 rounds, then it stops moving.
+    Ice climbs Drat: d6 a round for 4 rounds, then it stops moving.
 
 ▶ earthquake
     The floor heaves. 6 to everyone in the room.
-    The floor heaves. 23 to everyone in the room.
-    The floor heaves. 19 to everyone in the room.
+    The floor heaves. 5 to everyone in the room.
+    The floor heaves. 14 to everyone in the room.
 
 ▶ earthquakeSelfDamage
-    Earthquake: the floor does not take sides. −6 hp.
-    Earthquake: the floor does not take sides. −5 hp.
-    Earthquake: the floor does not take sides. −14 hp.
+    Earthquake: the floor does not take sides. −21 hp.
+    Earthquake: the floor does not take sides. −2 hp.
+    Earthquake: the floor does not take sides. −16 hp.
 
 ▶ vaporRolled
     Noxious vapor: 7.
-    Noxious vapor: 9.
-    Noxious vapor: 9.
+    Noxious vapor: 7.
+    Noxious vapor: 19.
 
 ▶ volley
-    13 shots, 21 total damage.
-    11,5 shots, 30 total damage.
-    11,5 shots, 30 total damage.
+    6,11,17 shots, 16 total damage.
+    11,20 shots, 10 total damage.
+    11,7 shots, 38 total damage.
 
 ▶ petrified
-    Sterling turns to stone.
-    Goblin turns to stone.
-    Zombie turns to stone.
+    Krupke turns to stone.
+    Drat turns to stone.
+    Viper turns to stone.
 
 ▶ walkingDeadTurned
-    6 of the dead turn and flee.
-    3 of the dead turn and flee.
-    3 of the dead turn and flee.
+    4 of the dead turn and flee.
+    5 of the dead turn and flee.
+    5 of the dead turn and flee.
 
 ▶ nothingToTurn
     Nothing here to turn.
@@ -867,9 +872,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Nothing here to turn.
 
 ▶ planeGated
-    5 are gated straight back out.
-    2 are gated straight back out.
-    3 are gated straight back out.
+    1 are gated straight back out.
+    4 are gated straight back out.
+    6 are gated straight back out.
 
 ▶ gateRefused
     There is no plane here worth opening.
@@ -897,19 +902,19 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You get a bad feeling about the next encounter.
 
 ▶ mirrorSelf
-    A mirror image holds for 5 rounds.
     A mirror image holds for 4 rounds.
     A mirror image holds for 1 rounds.
+    A mirror image holds for 4 rounds.
 
 ▶ wardRaised
-    Plane Gate raises a ward: 50 points, reflecting.
-    Shrink raises a ward: 50 points.
-    Regeneration raises a ward: 50 points.
+    A bubble shimmers around you. The next blow goes back where it came from.
+    Petrify raises a ward: 50 points.
+    Fireball raises a ward: 50 points.
 
 ▶ strengthCast
+    Might surges: +5.
     Might surges: +4.
-    Might surges: +7.
-    Might surges: +2.
+    Might surges: +3.
 
 ▶ regenerationCast
     Wounds start closing on their own.
@@ -922,24 +927,24 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     There is no one here to turn insane at.
 
 ▶ insaneRolled
-    Insanity takes Undead: 19.
-    Insanity takes Ghoul: 1.
-    Insanity takes Blumble: 13.
+    Insanity takes Krupke: 19.
+    Insanity takes Drat: 16.
+    Insanity takes Herman: 18.
 
 ▶ insaneStruckAlly
-    The maddened thing turns on Krupke for 14 hp.
-    The maddened thing turns on Drat for 29 hp.
-    The maddened thing turns on Herman for 6 hp.
+    The maddened thing turns on Undead for 6 hp.
+    The maddened thing turns on Primp for 17 hp.
+    The maddened thing turns on Stalka Beast for 1 hp.
 
 ▶ insaneFled
-    Undead bolts, mad with fear.
-    Primp bolts, mad with fear.
-    Stalka Beast bolts, mad with fear.
+    Stink Bug bolts, mad with fear.
+    Zit bolts, mad with fear.
+    Djinni bolts, mad with fear.
 
 ▶ healed
-    +7 hp from Phantom Host.
-    +14 hp from Insane.
-    +16 hp from Sense Danger.
+    +2 hp from Acid.
+    +17 hp from Mangle.
+    +22 hp from Mangle.
 
 ▶ deathSpellTooWeak
     Death: the fee is 25 hp, and you would not survive paying it.
@@ -947,14 +952,14 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Death: the fee is 25 hp, and you would not survive paying it.
 
 ▶ deathCast
-    Death: the spell takes its fee first. −2 hp.
-    Death: the spell takes its fee first. −2 hp.
-    Death: the spell takes its fee first. −6 hp.
+    Death: the spell takes its fee first. −3 hp.
+    Death: the spell takes its fee first. −3 hp.
+    Death: the spell takes its fee first. −4 hp.
 
 ▶ dozed
-    Drekk dozes off for 4 rounds.
-    Zit dozes off for 2 rounds.
-    Flube dozes off for 2 rounds.
+    Zit dozes off for 5 rounds.
+    Dread Lock dozes off for 3 rounds.
+    Dread Lock dozes off for 4 rounds.
 
 ▶ nothingToThrowAt
     Nothing here to throw it at.
@@ -962,34 +967,34 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Nothing here to throw it at.
 
 ▶ spellThrown
-    Heal at Poltergeist: 15 vs 3–20 (weapon −3, insulted +1).
-    Insane at Ghost: 3 vs 16–20 (weapon −3).
-    Turn Walking Dead at Dog Face: 1 vs 3–20 (dark-cap −1).
+    Major Heal at Herman: 2 vs 17–20 (fluency −3, class +1).
+    Shield at Drarl: 17 vs 2–20 (class −3).
+    Fireballs at Poltergeist: 16 vs 10–20 (insulted +1).
 
 ▶ spellHit
-    Hit. 16 hp (×3).
-    Hit. 21 hp (×3).
-    Hit. 7 hp.
+    Hit. 11 hp.
+    Hit. 3 hp (×2).
+    Hit. 21 hp (×2).
 
 ▶ frozenSolid
-    Dog Face freezes solid.
-    Frank freezes solid.
+    Blumble freezes solid.
     Dante freezes solid.
+    Trachea freezes solid.
 
 ▶ spellMissed
-    Missed Blumble.
-    Missed Dante.
-    Missed Trachea.
+    Missed Krupke.
+    Missed Hair.
+    Missed Herman.
 
 ▶ potionDrunk
-    +13 hp (2 potions left).
-    +11 hp (2 potions left).
-    +14 hp (2 potions left).
+    +2 hp (3 potions left).
+    +18 hp (0 potions left).
+    +22 hp (3 potions left).
 
 ▶ scrollRead
-    You unroll a scroll: Lightning.
-    You unroll a scroll: Plane Gate.
-    You unroll a scroll: Weaken.
+    You unroll a scroll: Doze.
+    You unroll a scroll: Insane.
+    You unroll a scroll: Phantom Host.
 
 ▶ scrollRefused
     It stays rolled.
@@ -997,48 +1002,48 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     It stays rolled.
 
 ▶ scrollCopiedToGrimoire
-    Ice copied into your grimoire.
-    Freeze copied into your grimoire.
-    Fireballs copied into your grimoire.
+    Major Heal copied into your grimoire.
+    Stupidity copied into your grimoire.
+    Mirror Self copied into your grimoire.
 
 ▶ scrollTooAdvanced
-    Major Heal needs level ?; you are ?. The scroll reads itself once and crumbles.
-    Stupidity needs level ?; you are ?. The scroll reads itself once and crumbles.
-    Mirror Self needs level ?; you are ?. The scroll reads itself once and crumbles.
+    Noxious Vapor needs level ?; you are ?. The scroll reads itself once and crumbles.
+    Doze needs level ?; you are ?. The scroll reads itself once and crumbles.
+    Mangle needs level ?; you are ?. The scroll reads itself once and crumbles.
 
 ▶ scrollCast
-    The scroll casts itself: Noxious Vapor.
-    The scroll casts itself: Doze.
-    The scroll casts itself: Mangle.
+    The scroll casts itself: Fireballs.
+    The scroll casts itself: Stun.
+    The scroll casts itself: Regeneration.
 
 ▶ storeOpened
-    The shop is open.
-    The shop is open. (Trolls pay triple.)
+    The shop is open. (A discount, as always.)
+    The shop is open. (A discount, as always.)
     The shop is open.
 
 ▶ buyFailed
     You are short 22 wilmst.
-    You are short 15 wilmst.
-    You are short 29 wilmst.
+    You are short 36 wilmst.
+    You are short 23 wilmst.
 
 ▶ bought
+    Bought: [object Object]. −3 wilmst.
     Bought: [object Object]. −2 wilmst.
-    Bought: [object Object]. −6 wilmst.
-    Bought: [object Object]. −2 wilmst.
+    Bought: [object Object]. −3 wilmst.
 
 ▶ purchaseBagged
+    Into the bag: Dagger. Not an upgrade. It is yours all the same; equip it from Gear if you know something the arithmetic does not.
     Into the bag: Cloak of Speed. Not an upgrade. It is yours all the same; equip it from Gear if you know something the arithmetic does not.
-    Into the bag: Katana. Not an upgrade. It is yours all the same; equip it from Gear if you know something the arithmetic does not.
     Into the bag: Ring of Power. Not an upgrade. It is yours all the same; equip it from Gear if you know something the arithmetic does not.
 
 ▶ rationsBought
-    Stocked up: +12 rations. At least someone is planning ahead.
     Stocked up: +18 rations. At least someone is planning ahead.
-    Stocked up: +12 rations. At least someone is planning ahead.
+    Stocked up: +25 rations. At least someone is planning ahead.
+    Stocked up: +5 rations. At least someone is planning ahead.
 
 ▶ itemSold
-    Sold: Cloak of Speed for 0 wilmst. The shopkeeper's smile suggests you got the worse end of it.
-    Sold: Cloak of Speed for 0 wilmst. The shopkeeper's smile suggests you got the worse end of it.
+    Sold: Katana for 0 wilmst. The shopkeeper's smile suggests you got the worse end of it.
+    Sold: Dagger for 0 wilmst. The shopkeeper's smile suggests you got the worse end of it.
     Sold: Katana for 0 wilmst. The shopkeeper's smile suggests you got the worse end of it.
 
 ▶ storeLeft
@@ -1047,9 +1052,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You leave the shop.
 
 ▶ trapAvoided
-    You clock it a half-step early. 8 vs 11–20.
-    You clock it a half-step early. 2 vs 6–20.
-    You clock it a half-step early. 15 vs 19–20.
+    You clock it a half-step early. 5 vs 10–20.
+    You clock it a half-step early. 16 vs 13–20.
+    You clock it a half-step early. 4 vs 11–20.
 
 ▶ trapDisarmed
     A Pilfer's hands already knew where not to put themselves.
@@ -1062,9 +1067,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Cat Burglar's luck holds — for the trap. It hits twice as hard.
 
 ▶ trapSprung
-    Trap: Zombie finds you first. −4 hp.
-    Trap: Bat/Rat finds you first. −4 hp.
-    Trap: Werebeast finds you first. −14 hp.
+    Trap: Cave Bear finds you first. −1 hp.
+    Trap: Google finds you first. −12 hp.
+    Trap: Drat finds you first. −18 hp.
 
 ▶ trapPoisoned
     Trap: it leaves something behind that outlasts the bruise.
@@ -1077,9 +1082,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     The box gives up its secrets.
 
 ▶ chestLockRolled
-    Lock: 18 vs 4–20.
-    Lock: 5 vs 18–20.
-    Lock: 20 vs 1–20.
+    Lock: 12 vs 6–20.
+    Lock: 20 vs 14–20.
+    Lock: 5 vs 11–20.
 
 ▶ chestLocked
     Not today. The lock wins this round.
@@ -1092,9 +1097,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     A scroll, tucked in with the loot.
 
 ▶ encounterRolled
-    Table 7, roll 2: The dice decide — something odd.
-    Table 2, roll 19: The dice decide — something odd.
-    Table 4, roll 6: The dice decide — something odd.
+    Table 6, roll 8: The dice decide — something odd.
+    Table 7, roll 20: The dice decide — something odd.
+    Table 2, roll 2: The dice decide — something odd.
 
 ▶ tableFour
     something odd
@@ -1107,9 +1112,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     something odd
 
 ▶ foodFound
-    Drat (+17 hp).
-    Floater (+12 hp).
-    Gremlin (+5 hp).
+    Shriek (+10 hp).
+    Sterling (+9 hp).
+    Skeleton (+1 hp).
 
 ▶ grimoireSold
     You cannot use it, so you sell it.
@@ -1117,9 +1122,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You cannot use it, so you sell it.
 
 ▶ grimoireLearned
-    New spells: Strength, Petrify.
-    New spells: Sense Danger, Strength.
-    New spells: Sense Danger, Acid.
+    New spells: Stupidity, Petrify.
+    New spells: Phantom Host, Plane Gate.
+    New spells: Petrify, Turn Walking Dead.
 
 ▶ faerieMet
     A faerie blinks into being, takes your measure, and decides.
@@ -1127,44 +1132,44 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     A faerie blinks into being, takes your measure, and decides.
 
 ▶ faerieBoon
+    +20 base hp.
+    +16 base hp.
     +18 base hp.
-    +7 base hp.
-    +7 base hp.
 
 ▶ faerieBane
-    Faerie: it took against you. −20 base hp.
-    Faerie: it took against you. −16 base hp.
-    Faerie: it took against you. −18 base hp.
+    Faerie: it took against you. −11 base hp.
+    Faerie: it took against you. −13 base hp.
+    Faerie: it took against you. −15 base hp.
 
 ▶ joinerMet
-    Skeleton, a stranger, joins you for a while.
-    Viper, a stranger, joins you for a while.
-    Sterling, a stranger, joins you for a while.
+    Drudge, a stranger, joins you for a while.
+    Blumble, a stranger, joins you for a while.
+    Drarl, a stranger, joins you for a while.
 
 ▶ joinerJoined
-    Drudge falls in beside you, already quietly revising their life expectancy downward.
-    Blumble falls in beside you, already quietly revising their life expectancy downward.
-    Drarl falls in beside you, already quietly revising their life expectancy downward.
+    Rast falls in beside you, already quietly revising their life expectancy downward.
+    Herman falls in beside you, already quietly revising their life expectancy downward.
+    Poltergeist falls in beside you, already quietly revising their life expectancy downward.
 
 ▶ joinerLeft
-    Rast leaves without a fuss. Somewhere out there is a longer life expectancy, and Rast intends to find it.
-    Herman takes one look at the new arrival, does the arithmetic, and walks.
-    Poltergeist takes one look at the new arrival, does the arithmetic, and walks.
+    Drarl has heard how this ends and would rather it end for someone else.
+    Werebeast leaves without a fuss. Somewhere out there is a longer life expectancy, and Werebeast intends to find it.
+    Stink Bug leaves without a fuss. Somewhere out there is a longer life expectancy, and Stink Bug intends to find it.
 
 ▶ joinerDeclined
-    You wave Drarl off. The dungeon will find another use for them soon enough.
-    You wave Werebeast off. The dungeon will find another use for them soon enough.
-    You wave Stink Bug off. The dungeon will find another use for them soon enough.
+    You wave Gremlin off. The dungeon will find another use for them soon enough.
+    You wave Pogo off. The dungeon will find another use for them soon enough.
+    You wave Gremlin off. The dungeon will find another use for them soon enough.
 
 ▶ joinerMurdered
-    Cutthroat: Somewhere between floors, Gremlin had an accident. You were the accident.
-    Cutthroat: Travelling beside a Cutthroat is mostly arithmetic, and Pogo has just been subtracted.
-    Cutthroat: Gremlin stopped to admire the stonework on the way down. That is the official version, and you are sticking to it.
+    Cutthroat: Travelling beside a Cutthroat is mostly arithmetic, and Shadow has just been subtracted.
+    Cutthroat: Djinni did not make it down the stairs. The stairs were not the problem.
+    Cutthroat: Flube did not make it down the stairs. The stairs were not the problem.
 
 ▶ joinerDismissed
-    Shadow thanks you for the opportunity and means none of it.
-    Djinni thanks you for the opportunity and means none of it.
-    Flube takes the news well, by which we mean they were already walking away.
+    Google thanks you for the opportunity and means none of it.
+    Hobgoblin goes without a word, having saved several for the tavern.
+    Undead thanks you for the opportunity and means none of it.
 
 ▶ dismissRefused
     Nobody answers to that number.
@@ -1177,34 +1182,34 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Word has reached the Joiners. The Joiners have reached the exit.
 
 ▶ afflictionRolled
-    Something is wrong with you. The die turns up 11. Poison.
-    Something is wrong with you. The die turns up 5. Poison.
-    Something is wrong with you. The die turns up 17. Poison.
+    Something is wrong with you. The die turns up 5. Not your body — your nerve.
+    Something is wrong with you. The die turns up 2. Poison.
+    Something is wrong with you. The die turns up 20. Poison.
 
 ▶ phobiaAcquired
-    A new fear settles in: Stink Bug.
-    A new fear settles in: Google.
-    A new fear settles in: Craig.
+    A new fear settles in: Floater.
+    A new fear settles in: Undead.
+    A new fear settles in: Frank.
 
 ▶ afflictionCaught
-    Disease: it takes hold. −2 hp.
-    Poison: it takes hold. −2 hp.
-    Poison: it takes hold. −3 hp.
+    Disease: it takes hold. −3 hp.
+    Disease: it takes hold. −0 hp.
+    Poison: it takes hold. −0 hp.
 
 ▶ insanityRolled
-    Insanity. It something odd. d6 → 15.
-    Insanity. It something odd. d6 → 6.
-    Insanity. It something odd. d6 → 13.
+    Insanity. It something odd. d6 → 12.
+    Insanity. It something odd. d6 → 16.
+    Insanity. It something odd. d6 → 8.
 
 ▶ insanitySelfHarm
-    Insanity: you turn on yourself. −3 hp.
-    Insanity: you turn on yourself. −3 hp.
-    Insanity: you turn on yourself. −7 hp.
+    Insanity: you turn on yourself. −5 hp.
+    Insanity: you turn on yourself. −1 hp.
+    Insanity: you turn on yourself. −4 hp.
 
 ▶ insanityRage
-    Rage: +25 might.
-    Rage: +14 might.
-    Rage: +12 might.
+    Rage: +20 might.
+    Rage: +6 might.
+    Rage: +22 might.
 
 ▶ darknessFell
     The dark closes in around you.
@@ -1239,17 +1244,17 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 ▶ itemGiven
     Received: Cloak of Speed.
     Received: Dagger.
-    Received: Dagger.
+    Received: Ring of Power.
 
 ▶ itemRejected
     Not for the likes of you. Cloak of Speed refuses your hands.
-    Not for the likes of you. Dagger refuses your hands.
     Not for the likes of you. Ring of Power refuses your hands.
+    Not for the likes of you. Dagger refuses your hands.
 
 ▶ itemTaken
+    Equipped: Ring of Power. Your old Leather was already in pieces. You leave it where it fell.
+    Equipped: Katana.
     Equipped: Cloak of Speed.
-    Equipped: Ring of Power.
-    Equipped: Dagger.
 
 ▶ itemUsed
     You use Ring of Power.
@@ -1257,14 +1262,14 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You use Cloak of Speed.
 
 ▶ useRefused
-    Ring of Power does not heal, so as far as a Pilfer is concerned it does not work.
+    Dagger is in your bag, doing what things in bags do: nothing. Wield it first.
     Katana does not heal, so as far as a Pilfer is concerned it does not work.
     Cloak of Speed does not heal, so as far as a Pilfer is concerned it does not work.
 
 ▶ cured
     Cured of Poison.
     Cured of Poison.
-    Cured of Disease.
+    Cured of Poison.
 
 ▶ foeStoned
     It turn to stone. Statues don't hit back.
@@ -1282,8 +1287,8 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Nothing happens.
 
 ▶ itemConsumed
-    Spent: Katana. One use, as advertised.
-    Spent: Katana. One use, as advertised.
+    Spent: Ring of Power. One use, as advertised.
+    Spent: Ring of Power. One use, as advertised.
     Spent: Katana. One use, as advertised.
 
 ▶ itemEffectStarted
@@ -1302,52 +1307,52 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     [object Object] is ready again.
 
 ▶ staffRecharged
-    [object Object] hums. 1/5.
-    [object Object] hums. 1/5.
-    [object Object] hums. 1/5.
+    [object Object] hums. 2/5.
+    [object Object] hums. 4/5.
+    [object Object] hums. 5/5.
 
 ▶ findOffered
-    Something's here for the taking: Hair. Your call.
-    Something's here for the taking: Ghoul. Your call.
-    Something's here for the taking: Zit. Your call.
+    Something's here for the taking: Frank. Your call.
+    Something's here for the taking: Floater. Your call.
+    Something's here for the taking: Skeleton. Your call.
 
 ▶ findTaken
-    Into the bag it goes: Cloak of Speed. You'll regret the weight eventually.
+    Into the bag it goes: Katana. You'll regret the weight eventually.
     Into the bag it goes: Ring of Power. You'll regret the weight eventually.
     Into the bag it goes: Ring of Power. You'll regret the weight eventually.
 
 ▶ findLeft
-    You leave Katana where it lay. The dungeon respects restraint from no one.
+    You leave Cloak of Speed where it lay. The dungeon respects restraint from no one.
     You leave Ring of Power where it lay. The dungeon respects restraint from no one.
-    You leave Ring of Power where it lay. The dungeon respects restraint from no one.
+    You leave Dagger where it lay. The dungeon respects restraint from no one.
 
 ▶ bagFull
-    No room. The bag is stuffed; drop something before taking Cloak of Speed.
     No room. The bag is stuffed; drop something before taking Ring of Power.
-    No room. The bag is stuffed; drop something before taking Dagger.
+    No room. The bag is stuffed; drop something before taking Katana.
+    No room. The bag is stuffed; drop something before taking Ring of Power.
 
 ▶ bagUpgraded
-    A bigger bag. Ring of Power holds more slots — more room to make worse decisions in.
     A bigger bag. Katana holds more slots — more room to make worse decisions in.
-    A bigger bag. Ring of Power holds more slots — more room to make worse decisions in.
+    A bigger bag. Katana holds more slots — more room to make worse decisions in.
+    A bigger bag. Dagger holds more slots — more room to make worse decisions in.
 
 ▶ itemDropped
     You drop Katana. Lighter, poorer, wiser — pick two.
     You drop Katana. Lighter, poorer, wiser — pick two.
-    You drop Dagger. Lighter, poorer, wiser — pick two.
+    You drop Katana. Lighter, poorer, wiser — pick two.
 
 ▶ itemEquipped
-    Equipped: Katana. Whether that was wise is between you and the maze.
-    Equipped: Katana. Whether that was wise is between you and the maze.
-    Equipped: Katana. Whether that was wise is between you and the maze.
+    Equipped: Ring of Power. Whether that was wise is between you and the maze. Your old Leather was already in pieces. You leave it where it fell.
+    Equipped: Dagger. Whether that was wise is between you and the maze.
+    Equipped: Cloak of Speed. Whether that was wise is between you and the maze.
 
 ▶ itemUnequipped
-    You stow your gear — Ring of Power back in the bag, and you back to improvising.
     You stow your gear — Dagger back in the bag, and you back to improvising.
+    You stow your gear — Katana back in the bag, and you back to improvising.
     You stow your gear — Cloak of Speed back in the bag, and you back to improvising.
 
 ▶ equipRejected
-    Not for the likes of you. Dagger refuses your hands.
+    Not for the likes of you. Katana refuses your hands.
     Not for the likes of you. Katana refuses your hands.
     Not for the likes of you. Cloak of Speed refuses your hands.
 
@@ -1357,19 +1362,19 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Not the moment to change outfits. You fight in what you walked in wearing.
 
 ▶ lootDropped
-    Something falls out of the fight: Zombie. It will wait. It has nowhere else to be.
-    Something falls out of the fight: Viper. It will wait. It has nowhere else to be.
-    Something falls out of the fight: Zombie. It will wait. It has nowhere else to be.
+    Something falls out of the fight: Primp. It will wait. It has nowhere else to be.
+    Something falls out of the fight: Floater. It will wait. It has nowhere else to be.
+    Something falls out of the fight: Philly. It will wait. It has nowhere else to be.
 
 ▶ lootTaken
+    Into the bag: Katana. Your back sends its regards.
     Into the bag: Dagger. Your back sends its regards.
-    Into the bag: Cloak of Speed. Your back sends its regards.
-    Into the bag: Ring of Power. Your back sends its regards.
+    Into the bag: Dagger. Your back sends its regards.
 
 ▶ lootLeft
-    You leave Katana on the floor. Someone will be thrilled. Not you.
     You leave Dagger on the floor. Someone will be thrilled. Not you.
     You leave Dagger on the floor. Someone will be thrilled. Not you.
+    You leave Ring of Power on the floor. Someone will be thrilled. Not you.
 
 ▶ lootForfeited
     Fled: the loot stays with them — the spoils.
@@ -1380,73 +1385,73 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 ## DEATH EPITAPHS — every bucket
 ══════════════════════════════════════════════════════════════════════════════
 
-▶ combat  (cause note: "cut down by a Bones")
-    Killed by a Trachea. The Trachea has since been promoted.
-    Died as Larkin lived: needing a 5 and rolling whatever that was.
-    The Krupke was not the strongest thing in the room. It is now.
+▶ combat  (cause note: "cut down by a Dante")
+    Killed by a M&M. The M&M has since been promoted.
+    Died as Aeryth lived: needing a 5 and rolling whatever that was.
+    The Poltergeist was not the strongest thing in the room. It is now.
     Fought to the last breath, which arrived punctually in round four.
-    A Bard of skill level V, undone by something called a Stink Bug. Put it on the stone. All of it.
-    Ormar had 1486 wilmst and no plan. The Floater had a plan.
-    Last recorded thought: “it’s nearly dead.” True of someone in the room, just not the Bones.
-    Died on floor 5 doing what Sten loved, which was evidently standing very still.
+    A Knight of skill level III, undone by something called a Djinni. Put it on the stone. All of it.
+    Gnarl had 2468 wilmst and no plan. The Undead had a plan.
+    Last recorded thought: “it’s nearly dead.” True of someone in the room, just not the Stink Bug.
+    Died on floor 1 doing what Anvilborn loved, which was evidently standing very still.
     The Game Master notes that running was, throughout, an option.
-    Survived 35 days and spent the final nine seconds of them badly.
-    Came in for Adventure. The Dante came in for lunch.
-    It took 148 experience points to get here and one honest d20 to leave.
-    Not the worst delver on floor 5. Merely the most finished.
-    The Poltergeist would like to thank the dice, the Game Master, and above all the Silent.
-    Cause of death: a Hair, some arithmetic, and a firm refusal to withdraw.
-    Went toe to toe with a Drudge and lost by roughly one toe.
+    Survived 34 days and spent the final nine seconds of them badly.
+    Came in for Love. The Ghost came in for lunch.
+    It took 403 experience points to get here and one honest d20 to leave.
+    Not the worst delver on floor 4. Merely the most finished.
+    The Floater would like to thank the dice, the Game Master, and above all Rosa.
+    Cause of death: a Frank, some arithmetic, and a firm refusal to withdraw.
+    Went toe to toe with a Craig and lost by roughly one toe.
 
 ▶ starve  (cause note: "starved in the dark")
     Packed a grimoire, three potions and a good cloak. Packed no lunch.
-    Cost of living: 4 hp a day. Darrun fell behind on the payments.
-    The dungeon did not kill Nine-Teeth. The dungeon simply outlasted a stomach.
-    Died on day 38 holding 3322 wilmst and absolutely nothing to spend it on.
+    Cost of living: 4 hp a day. Ormar fell behind on the payments.
+    The dungeon did not kill Garrick. The dungeon simply outlasted a stomach.
+    Died on day 33 holding 2079 wilmst and absolutely nothing to spend it on.
     There was food two corridors away. There is always food two corridors away.
     Starved to death carrying a weapon worth more than most farms.
     Final act: counting the rations. The count was zero. It had been for some time.
     A troll’s appetite in a dungeon with no kitchen. This was always the ending.
-    Not eaten — merely unfed. Winterborn learned the difference slowly.
+    Not eaten — merely unfed. Durn learned the difference slowly.
     Death by budgeting.
 
 ▶ trap  (cause note: "undone by a trap")
     Stepped on the one flagstone in the corridor with an opinion.
     The trap had waited four hundred years for precisely this level of confidence.
-    1–5 on a d20 avoids it. Elandor rolled the way Elandor always rolled.
-    A Cutthroat with no eye for traps, in a dungeon assembled chiefly out of traps.
+    1–5 on a d20 avoids it. Bront rolled the way Bront always rolled.
+    A Samurai with no eye for traps, in a dungeon assembled chiefly out of traps.
     Located the trap using the traditional method.
     The Game Master did not even look up.
     Whoever built this floor was clearly paid by the corpse.
     It was well marked. In a language. Somewhere. Probably.
 
 ▶ fall  (cause note: "fell off a wall")
-    Climbing was there to be learned. Halden spent the points on Cooking.
+    Climbing was there to be learned. Ketill spent the points on Cooking.
     Went up the wall beautifully. Came down it considerably faster.
-    Gravity remains undefeated on floor 2.
+    Gravity remains undefeated on floor 1.
     Needed a 6 on a d10, three separate times. Managed two.
-    The wall is still standing. Rosa is being scraped off it.
+    The wall is still standing. Orba is being scraped off it.
     A short climb and an even shorter career.
 
 ▶ gorge  (cause note: "came up short on a leap")
     Cleared eleven feet of a twelve-foot gap. So very nearly.
-    Leaping is a d10 roll. Larkin treated it as a formality.
-    The crevice is not deep. It is simply deeper than Nix was tall.
-    Jumped on day 39. Landed shortly afterwards, and at length.
+    Leaping is a d10 roll. Silverbough treated it as a formality.
+    The crevice is not deep. It is simply deeper than Icebound was tall.
+    Jumped on day 9. Landed shortly afterwards, and at length.
     The gap did not move. This was checked. Twice.
 
 ▶ teleport  (cause note: "materialised inside a wall")
     Teleported d20 squares. Required d20 minus four.
     Arrived somewhere. Arrived inside it.
-    The dungeon does not check its destinations, and neither did Larkin.
+    The dungeon does not check its destinations, and neither did Vott.
 
 ▶ maze  (cause note: "spent by the dungeon itself")
     Table four giveth. Table four overwhelmingly taketh.
     No monster, no trap, no fall. A red dot and a bad attitude.
-    The dungeon deducted Mira the way a bank deducts a service charge.
+    The dungeon deducted Aerion the way a bank deducts a service charge.
     Killed by a d8, a d10, and an indifferent universe.
     Some floors have creatures. This one had paperwork.
-    Aelwyn walked onto a dot, and the dot walked back.
+    Alys walked onto a dot, and the dot walked back.
 
 ▶ quake  (cause note: "buried by their own earthquake")
     Cast an earthquake indoors. Reader, the ceiling was also indoors.
@@ -1455,20 +1460,20 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Brought the house down, and then the house returned the favour.
 
 ▶ potion  (cause note: "poisoned by an unlabelled bottle")
-    The colour was listed as “??”. Flintback was thirsty.
+    The colour was listed as “??”. Corrin was thirsty.
     Fifty wilmst — the cheapest item on the table and the priciest decision on it.
-    One bottle in ten is Death. Gutrumble tested this thoroughly. Once.
-    Drank an unlabelled potion on floor 1. The reviews are in.
+    One bottle in ten is Death. Rook tested this thoroughly. Once.
+    Drank an unlabelled potion on floor 5. The reviews are in.
 
 ▶ insanity  (cause note: "dead by their own hand")
     Rolled a 1 on the madness table and won the argument with themselves.
-    The corridor whispered something. Osk took it entirely on board.
-    Nothing attacked Snork. Nothing needed to.
+    The corridor whispered something. Mabb took it entirely on board.
+    Nothing attacked Icevein. Nothing needed to.
     Cause of death: one d6, honestly interpreted.
 
 ▶ poison  (cause note: "carried off by poison")
-    Poison is patient. Bertram was merely available.
-    There was a cure. It cost 100 wilmst. Runa had 1017 and no store in sight.
+    Poison is patient. the Grim was merely available.
+    There was a cure. It cost 100 wilmst. Icebound had 1844 and no store in sight.
     Died on an instalment plan, two hp per square.
     Not a dramatic death — but a beautifully documented one.
 
@@ -1480,33 +1485,33 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 
 ▶ summon  (cause note: "eaten by their own summoning")
     Called something up. It arrived. It had questions.
-    One time in eight the summoning turns around. the Frugal beat the odds in the wrong direction.
+    One time in eight the summoning turns around. Elenya beat the odds in the wrong direction.
     Read the opening paragraph of the ritual with tremendous conviction.
     The Summoner’s own notes cover this outcome. On the following page.
 
 ▶ won  (cause note: "—")
-    Walked out through the Gate on day 23. The Game Master has requested a recount.
-    Reached the Gate with 55 experience points and a limp, and retired to lie about both.
-    Went in for Experience. Came out with Experience and a permanent flinch.
+    Walked out through the Gate on day 25. The Game Master has requested a recount.
+    Reached the Gate with 1686 experience points and a limp, and retired to lie about both.
+    Went in for Fame. Came out with Fame and a permanent flinch.
     Survived all five floors and will now be insufferable at parties for life.
     Escaped. Statistically speaking, this did not occur.
 
 ▶ abandon  (cause note: "abandoned mid-delve by their own player")
-    Not slain by the dungeon. Simply left here, on floor 2, by someone who kept walking.
+    Not slain by the dungeon. Simply left here, on floor 3, by someone who kept walking.
     Still breathing when last seen. That was, apparently, the problem.
-    Roderic did not die down here. Roderic was abandoned down here. There is a difference, and the difference is you.
-    The dungeon offers no shortage of ways to end a delver. Sabel is the rare case where a person chose one.
+    Greenmantle did not die down here. Greenmantle was abandoned down here. There is a difference, and the difference is you.
+    The dungeon offers no shortage of ways to end a delver. Faelin is the rare case where a person chose one.
     Filed under: abandoned, not deceased. Even the paperwork thinks this is a bit much.
-    Walked in on day 23 with 640 experience points and a future. Walked out alone, without Blackkettle.
+    Walked in on day 40 with 1631 experience points and a future. Walked out alone, without of Ash Alley.
     No trap. No monster. No fall. Just a decision, made on floor 2.
-    The Game Master would like it on record that the Bold was still perfectly capable of dying properly.
+    The Game Master would like it on record that Grull was still perfectly capable of dying properly.
 
 ▶ entombed  (cause note: "became a permanent architectural feature")
     Became a permanent architectural feature.
     The cloak wore off. The wall did not.
-    Walked through walls for a living. Retired inside one, on floor 3.
-    Mira is now load-bearing. The dungeon thanks Mira for the support.
+    Walked through walls for a living. Retired inside one, on floor 2.
+    Nell is now load-bearing. The dungeon thanks Nell for the support.
 
 ══════════════════════════════════════════════════════════════════════════════
-Total rendered voice lines: 917
+Total rendered voice lines: 920
 ══════════════════════════════════════════════════════════════════════════════

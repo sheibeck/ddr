@@ -3261,6 +3261,109 @@ combat/magic/economy/encounters scenario, is byte-identical to its
 pre-Plan-05 value; `test/parity/divergence-records.test.js`'s
 `RULES75_EXPECTED_HOLDERS` guard pins this exact three-holder set.
 
-Later Phase 75 plans record their own measurements in their own
-subsections here, consolidated into one Phase-wide summary by 75-13.
+### Plans 02, 04, 06, 07, 08, 09, 10, 12 — measured zero
+
+Every other Phase 75 plan measured zero moved fixtures. Each plan's own
+predictor (why no replay site reaches the new code path) and its own
+measurement command/result are pulled here verbatim from that plan's own
+SUMMARY.md, so this subsection is a consolidation record, not a re-derivation.
+
+**Plan 02 (RULES-01/RULES-02 — HP-growth pin + the wilmst cache cut,
+`WILMST_CACHE_PER_DEPTH` 300 → 100).** Predictor: the ONLY parity scenario
+that touches the tableFour cache row (`encounters#tablefour`, seed 3) rolls
+the "+25 HP" dot, never the wilmst cache row — RULES-01 needed no engine
+change at all (verified, not fixed), and RULES-02's constant cut has no
+site to move. Measurement: `node --test "test/parity/**/*.test.js"` — 53
+tests, 53 pass, 0 fail; `git diff --quiet <plan-base> -- test/parity/fixtures
+test/parity/prototype-master.js.txt` exits 0.
+
+**Plan 04 (RULES-07/RULES-08 — honest ailment 5-6 narration + destroyed-armor
+swap honesty).** Predictor: both fixes are presentation-only (`afflictionRolled`
+reads `AFFLICTIONS[e.roll-1].phobia` off the roll already carried by the
+existing event; the destroyed-armor payload is additive on `itemEquipped`/
+`itemTaken` and only appears when the OUTGOING piece was already destroyed at
+equip-time) — `engine/encounters.js` and `content/afflictions.js` are
+byte-for-byte unchanged, and no replay site's action script ever equips over
+an already-destroyed worn armor piece. Measurement: `node --test
+"test/parity/**/*.test.js"` — 53 tests, 53 pass, 0 fail, zero fixture diff.
+
+**Plan 06 (RULES-05/RULES-14 — Sense Presence wins initiative + Bubble as a
+one-shot mirror).** Predictor: no replay site's chargen ever rolls `c.senses`
+onto a hero, and no magic/combat/encounters scenario ever casts Bubble (the
+magic fixture's only two spells are Freeze and Heal) — both new branches
+(`resolveInitiative`'s senses term, `applyFoeDamageToPlayer`'s mirror check)
+are structurally unreachable. Measurement: `node --test
+"test/parity/**/*.test.js"` — 53 tests, 53 pass, 0 fail; `git diff --quiet`
+against the plan base for fixtures/prototype-master.js.txt both exit 0.
+
+**Plan 07 (RULES-13, engine half — the staff wield model).** Predictor: no
+replay site's chargen ever rolls a magic staff into a hero's starting kit,
+and no action script ever dispatches an `equipItem`/`takeLoot` staff branch
+— the new `weaponRow`/`wieldedStaff` machinery is present but unexercised by
+any of the 31 sites. Measurement: `node --test "test/parity/**/*.test.js"` —
+54 tests, 54 pass, 0 fail, zero fixtures moved (measured via `git diff
+--quiet` against the plan base).
+
+**Plan 08 (RULES-06 — trap-death-21hp standing guards, no production code
+change).** 75-01's Verdict found the root cause already fixed by the
+2026-09-22 `combatBeat.js` last-frame pin; this plan added only test files
+and closed the debug doc. Predictor: no production file changed, so no
+parity fixture could move by construction. Measurement: `git diff --stat
+<plan-base>` touches only `test/unit/trap-death-repro.test.js`,
+`test/unit/hp-surface-guard.test.js` and the debug doc; `git diff --quiet
+<plan-base> -- test/parity/fixtures test/parity/prototype-master.js.txt`
+exits 0.
+
+**Plan 09 (RULES-13, bag-inert half — a bagged staff's power is inert; the
+bot wields its own).** Predictor: same as Plan 07 — no replay site's chargen
+ever rolls a staff, so the new `notWielded` refusal rung and the bot's
+equip-a-staff step are both unreachable by any of the 31 sites. Measurement:
+`node --test "test/parity/**/*.test.js"` — 54 tests, 54 pass, 0 fail; `git
+diff --quiet` against the plan base for fixtures/prototype-master.js.txt
+both exit 0.
+
+**Plan 10 (RULES-03, second half — the Summoner's healing weakness,
+`healMul: 0.5`).** Predictor: the fixture set's ONE `magic#heal` parity
+scenario (seed 7) casts Heal as a Wizard, confirmed live via
+`newRun(7).c.sub`, never a Summoner — `applyCasterHealMul`'s halving branch
+in both `castSpell`'s heal branch and `foeTurn`'s regeneration tick is
+unreachable by any of the 31 sites. Measurement: `node --test
+"test/parity/**/*.test.js"` — 54 tests, 54 pass, 0 fail; `git diff --quiet
+<plan-base> -- test/parity/fixtures test/parity/prototype-master.js.txt`
+exits 0.
+
+**Plan 12 (RULES-12/RULES-15 — an interrupted tile resumes after the fight;
+spell books refill only on a fed day).** Predictor: a live exposure scan of
+every parity fixture/scenario confirmed no replay site's `newDay` check ever
+starts a fight ON a feature tile (so `state.pendingTile` is never set and
+`resolvePendingTile` never fires), and the movement fixture's one
+day-boundary crossing is fed with zero spent spell-book charges (so the
+fed/unfed refill branches produce byte-identical results either way).
+Measurement: `git diff --quiet <plan-base> -- test/parity/fixtures
+test/parity/prototype-master.js.txt` exits 0; the three per-domain parity
+test files' own local `comparable()` copies were each extended with the same
+`pendingTile` carve-out as the shared harness (Rule 3 — see the plan's own
+SUMMARY.md deviation #1), confirmed by `node --test
+"test/parity/**/*.test.js"` — 54/54.
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s
+"RULES-05/06/12/13/15 (Phase 75, Plans 02/04/06/07/08/09/10/12)" test
+(75-13) replays all 31 sites and asserts zero `wardRaised`/`wardReflected`/
+`sensesGained`/`combatInDark`/`wanderingMonster`/`tileResumed` events, zero
+`healed`/`regenerated` events carrying `halved: true`, zero `wentHungry`
+events carrying `booksKept: true`, and that `state.c.staff` is never set at
+any point across any replay — proving every predictor above, not merely
+asserting it. A companion "exposure guard has teeth" test feeds the same
+counting function a doctored event list and confirms every count would
+genuinely fail a zero-assertion, so the guard is proven to catch a real
+regression, not just pass by construction. The declared Phase 75 set stays
+exactly `RULES75_EXPECTED_HOLDERS` (Plan 05's three holders — see above);
+none of these eight plans added a fourth. `git hash-object
+test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0`
+(unchanged across the whole phase).
+
+This closes the Phase 75 fixture story: Plan 05's three declared moves are
+the ONLY fixture edits the whole phase made; every other rule change
+measured zero, proven by a standing, teeth-tested replay guard rather than
+asserted by omission.
 

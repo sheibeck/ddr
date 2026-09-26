@@ -248,6 +248,12 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
   const eventsAtDepth2Plus = [];
   let pendingJoinerEver = !!state.pendingJoiner;
   let maxDepthEver = state.floor.depth;
+  // Phase 75 (RULES-13, Plan 09): staffEverSet tracks whether state.c.staff
+  // was ever truthy at ANY point across the whole replay (not just the
+  // final state) — a staff wielded then unequipped mid-script would
+  // otherwise escape a final-state-only check. No existing test destructures
+  // this field, so its addition is additive/backward-compatible.
+  let staffEverSet = !!(state.c && state.c.staff);
   for (const action of actions) {
     let result;
     if (action.type === "startCombat") {
@@ -263,8 +269,9 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
     if (state.floor.depth >= 2) eventsAtDepth2Plus.push(...events);
     if (state.floor.depth > maxDepthEver) maxDepthEver = state.floor.depth;
     if (state.pendingJoiner) pendingJoinerEver = true;
+    if (state.c && state.c.staff) staffEverSet = true;
   }
-  return { state, events: allEvents, pendingJoinerEver, maxDepthEver, eventsAtDepth2Plus };
+  return { state, events: allEvents, pendingJoinerEver, maxDepthEver, eventsAtDepth2Plus, staffEverSet };
 }
 
 test("JOIN-02: the holders declaring Phase 53 are exactly the measured moved set — zero, and no replay site ever meets a Joiner", () => {
@@ -730,4 +737,140 @@ test("RULES-03 (Phase 75): the holders declaring Phase 75 are exactly the measur
     RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("75")).map(({ holderId }) => holderId),
   );
   assert.deepStrictEqual([...declared].sort(), RULES75_EXPECTED_HOLDERS);
+});
+
+/**
+ * countPhase75Exposure(events) -> the per-event-type counts the 31-site
+ * exposure guard below tallies, extracted as its own pure function so a
+ * dedicated "does this guard have teeth" test (below) can feed it a
+ * doctored event list without needing a live engine replay.
+ */
+function countPhase75Exposure(events) {
+  return {
+    wardRaised: events.filter((e) => e.type === "wardRaised").length,
+    wardReflected: events.filter((e) => e.type === "wardReflected").length,
+    sensesGained: events.filter((e) => e.type === "sensesGained").length,
+    combatInDark: events.filter((e) => e.type === "combatInDark").length,
+    wanderingMonster: events.filter((e) => e.type === "wanderingMonster").length,
+    tileResumed: events.filter((e) => e.type === "tileResumed").length,
+    halvedHeal: events.filter((e) => (e.type === "healed" || e.type === "regenerated") && e.halved).length,
+    booksKept: events.filter((e) => e.type === "wentHungry" && e.booksKept).length,
+  };
+}
+
+// 75-13: the Phase 75 close-out sibling guard — a 31-site exposure replay
+// proving the "measured zero" claim for every OTHER Phase 75 plan
+// (02/04/06/07/08/09/10/12; see test/parity/FIXTURE-INVENTORY.md's "Plans
+// 02, 04, 06, 07, 08, 09, 10, 12 — measured zero" subsection for the full
+// per-plan predictor/measurement accounting this test proves the positive
+// side of). No fixture ever: raises or reflects a ward (no site casts
+// Shield or Bubble — RULES-05/RULES-14, 75-06), gains senses (no site casts
+// Sense Presence — RULES-05, 75-06), fights in the dark (no site's
+// startCombat ever sets combat.inDark — RULES-05, 75-06), meets a wandering
+// monster mid-step or resumes a pending tile (RULES-12, 75-12), wields a
+// staff at any point in the replay (RULES-13, 75-07/75-09), goes hungry
+// with a spent-and-kept book (RULES-15, 75-12), or heals/regenerates with
+// the Summoner's halved flag set (RULES-03 second half, 75-10 — no fixture
+// ever rolls a Summoner into a heal-casting seat). The declared set stays
+// exactly RULES75_EXPECTED_HOLDERS (Plan 05's three holders) — none of
+// these eight plans added a fourth.
+test("RULES-05/06/12/13/15 (Phase 75, Plans 02/04/06/07/08/09/10/12): every one of the 31 replay sites measures zero exposure to the other Phase-75 rule changes", () => {
+  let totalSites = 0;
+  const totals = { wardRaised: 0, wardReflected: 0, sensesGained: 0, combatInDark: 0, wanderingMonster: 0, tileResumed: 0, halvedHeal: 0, booksKept: 0 };
+  let staffEverSetAnywhere = false;
+
+  const tally = (events, staffEverSet) => {
+    const counts = countPhase75Exposure(events);
+    for (const key of Object.keys(totals)) totals[key] += counts[key];
+    if (staffEverSet) staffEverSetAnywhere = true;
+  };
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    const state = newRun(seed); // chargen never dispatches an action at all
+    if (state.c && state.c.staff) staffEverSetAnywhere = true;
+  }
+
+  totalSites++;
+  {
+    const r = replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions);
+    tally(r.events, r.staffEverSet);
+  }
+
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    const r = replaySiteEvents(scenario.seed, scenario.actions);
+    tally(r.events, r.staffEverSet);
+  }
+
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    const r = replaySiteEvents(scenario.seed, scenario.actions);
+    tally(r.events, r.staffEverSet);
+  }
+
+  totalSites++;
+  {
+    const r = replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true });
+    tally(r.events, r.staffEverSet);
+  }
+
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    const r = replaySiteEvents(scenario.seed, scenario.actions);
+    tally(r.events, r.staffEverSet);
+  }
+
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+  assert.equal(totals.wardRaised, 0, "expected zero wardRaised events (no fixture casts Shield or Bubble)");
+  assert.equal(totals.wardReflected, 0, "expected zero wardReflected events (no fixture carries an armed mirror)");
+  assert.equal(totals.sensesGained, 0, "expected zero sensesGained events (no fixture casts Sense Presence)");
+  assert.equal(totals.combatInDark, 0, "expected zero combatInDark events (no fixture starts combat in the dark)");
+  assert.equal(totals.wanderingMonster, 0, "expected zero wanderingMonster events (no fixture's newDay check interrupts a feature tile)");
+  assert.equal(totals.tileResumed, 0, "expected zero tileResumed events (RULES-12's resolvePendingTile never fires)");
+  assert.equal(totals.halvedHeal, 0, "expected zero halved healed/regenerated events (no fixture ever rolls a Summoner into a heal-casting seat)");
+  assert.equal(totals.booksKept, 0, "expected zero wentHungry events carrying booksKept (no fixture reaches an unfed day with a spent book)");
+  assert.equal(staffEverSetAnywhere, false, "expected c.staff to never be set across any replay site (no fixture equips or wields a staff)");
+
+  const declared = new Set(
+    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("75")).map(({ holderId }) => holderId),
+  );
+  assert.deepStrictEqual([...declared].sort(), RULES75_EXPECTED_HOLDERS, "the declared Phase 75 set is still exactly RULES75_EXPECTED_HOLDERS after this sibling guard's replay");
+});
+
+// 75-13 (teeth proof): the plan's own must-have requires proving the guard
+// above would actually FAIL on a non-zero count, not just that it currently
+// reads zero on real fixtures — a doctored event list run through the same
+// counting function makes that assertion concrete without needing a live
+// engine replay.
+test("RULES-05/06/12/13/15 exposure guard has teeth: a doctored event list is caught by the same counting function", () => {
+  const doctored = [
+    { type: "wardRaised" },
+    { type: "wardReflected" },
+    { type: "sensesGained" },
+    { type: "combatInDark" },
+    { type: "wanderingMonster" },
+    { type: "tileResumed" },
+    { type: "healed", halved: true },
+    { type: "regenerated", halved: true },
+    { type: "wentHungry", booksKept: true },
+    // Controls that must NOT be counted: same event types without the
+    // Phase-75 flag, and an unrelated event type entirely.
+    { type: "healed", halved: false },
+    { type: "wentHungry", booksKept: false },
+    { type: "itemUsed" },
+  ];
+  const counts = countPhase75Exposure(doctored);
+  assert.equal(counts.wardRaised, 1);
+  assert.equal(counts.wardReflected, 1);
+  assert.equal(counts.sensesGained, 1);
+  assert.equal(counts.combatInDark, 1);
+  assert.equal(counts.wanderingMonster, 1);
+  assert.equal(counts.tileResumed, 1);
+  assert.equal(counts.halvedHeal, 2, "both the halved healed and the halved regenerated event must count");
+  assert.equal(counts.booksKept, 1);
+  // Prove the zero-count assertions the real guard makes would genuinely
+  // FAIL against this doctored list.
+  assert.throws(() => assert.equal(counts.wardRaised, 0), assert.AssertionError);
+  assert.throws(() => assert.equal(counts.halvedHeal, 0), assert.AssertionError);
 });

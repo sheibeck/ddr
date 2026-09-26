@@ -71,9 +71,30 @@ const ROMAN = ["I", "II", "III", "IV", "V"];
 // `need`/`total` fields are gone — no event carries them anymore.
 const MOD_NAMES = ["weapon", "class", "dark-cap", "insulted", "fluency", "armor-bulk"];
 
+// Phase 75 (75-13): a handful of event types carry a NEW field-driven
+// branch (RULES-05/07/08/12/13/14/15) that the closed vocabularies above
+// never randomly reach on their own (a rolled `feat`/`why`/`mirror`/
+// `destroyed`/`booksKept`/`reason:"notWielded"` is a needle in a wide
+// haystack). SAMPLE_OVERRIDES names, per event type, a field patch applied
+// to exactly the FIRST of that type's SAMPLES_PER_TYPE samples (index 0) —
+// every other sample keeps the fully-random draw above, so tone variety
+// across the remaining lines is untouched. This guarantees the human voice
+// skim always shows each new branch at least once, deterministically.
+const SAMPLE_OVERRIDES = {
+  useRefused: { reason: "notWielded" },
+  wentHungry: { booksKept: true },
+  wardRaised: { mirror: true },
+  wardReflected: { mirror: true },
+  afflictionRolled: { roll: 5 },
+  tileResumed: { feat: "chest" },
+  itemEquipped: { destroyed: true, discarded: { n: "Leather" } },
+  itemTaken: { destroyed: true, discarded: { n: "Leather" } },
+  combatJoined: { why: "senses" },
+};
+
 // A representative, randomly-filled event carrying every field any builder
 // reads. Re-rolled per line so tone variety across a run is visible.
-function sampleEvent(type) {
+function sampleEvent(type, sampleIndex = 0) {
   const foe = pick(FOES);
   const dieN = 20;
   const modCount = 1 + (rng() < 0.5 ? 1 : 0);
@@ -81,7 +102,7 @@ function sampleEvent(type) {
     name: pick(MOD_NAMES),
     delta: (rng() < 0.5 ? -1 : 1) * (1 + Math.floor(rng() * 3)),
   }));
-  return {
+  const base = {
     type,
     side: pick(["approach", "exit"]), hurt: 1 + Math.floor(rng() * 12), loss: Math.floor(rng() * 8),
     kind: pick(["Poison", "Disease"]), charges: 1 + Math.floor(rng() * 5), max: 5, day: 1 + Math.floor(rng() * 30),
@@ -102,6 +123,8 @@ function sampleEvent(type) {
     wpGain: 1 + Math.floor(rng() * 6), depth: 1 + Math.floor(rng() * 5), steps: Math.floor(rng() * 2000),
     troll: rng() < 0.3, elfOrDwarf: rng() < 0.3, untouchable: rng() < 0.2,
   };
+  if (sampleIndex === 0 && SAMPLE_OVERRIDES[type]) return { ...base, ...SAMPLE_OVERRIDES[type] };
+  return base;
 }
 
 function fillEpitaph(tmpl) {
@@ -131,7 +154,7 @@ for (const [type, fn] of Object.entries(EVENT_NARRATION)) {
   lines.push(`▶ ${type}`);
   for (let i = 0; i < SAMPLES_PER_TYPE; i++) {
     let out;
-    try { out = stripMarkup(fn(sampleEvent(type))); } catch (e) { out = `‹builder threw: ${e.message}›`; }
+    try { out = stripMarkup(fn(sampleEvent(type, i))); } catch (e) { out = `‹builder threw: ${e.message}›`; }
     lines.push(`    ${out}`);
   }
   lines.push("");
