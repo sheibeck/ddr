@@ -1817,6 +1817,38 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-roller-cta.mw-roller-ready{background:var(--mw-gold-btn);color:var(--paper);border:none;cursor:pointer;box-shadow:0 5px 0 var(--mw-btn-border)}
 .mw-roller-cta.mw-roller-ready:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border);transform:translateY(4px)}
 </style>
+<style id="mw-letterbox">
+/* BEGIN mw-letterbox (Phase 80, DROID-03)
+   Decision: one centred 480 CSS px portrait column over #080705 gutters
+   on anything wider than a phone; phones are untouched because every
+   rule below sits inside a min-width:481px media query. 480 (COLUMN_PX)
+   and 481 (BREAKPOINT_PX) change together with the matching constants in
+   tools/letterbox-check.mjs.
+
+   Why body, not #app: the title screen, roller screen, the bottom
+   sheets and the HUD menu scrim are position:fixed overlays with
+   inset:0, so each resolves against the nearest ancestor that
+   establishes a containing block for fixed descendants. `contain:layout`
+   on html>body makes body that containing block, so every one of those
+   overlays — and any fixed overlay a later phase adds — lands inside
+   this column automatically, with zero per-overlay CSS.
+
+   Why :root and html>body (not a lone `body{...}` rule): these
+   selectors win regardless of where the other style blocks above set
+   body's own margin/background, so a gameplay-phase edit elsewhere in
+   this file cannot silently reorder this rule out of effect.
+
+   Taps need no change: src/browser/controls.js#screenToCell already
+   computes clientX/clientY relative to .mw-maze-viewport's own
+   getBoundingClientRect(), so centring the column costs nothing there.
+
+   See docs/ANDROID-DISPLAY.md for the full decision record, the
+   corrected Android 16 large-screen mechanism, and the Play Console
+   display-configuration warning verdict.
+*/
+@media (min-width:481px){ :root{background:#080705} html>body{max-width:480px;margin:0 auto;contain:layout;box-shadow:0 0 0 1px var(--rule),0 0 40px rgba(0,0,0,.6)} }
+/* END mw-letterbox */
+</style>
 </head>
 <body>
 

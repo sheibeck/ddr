@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Phase 80 (DROID-03): declaring the app a game (the appCategory
+         attribute below, value "game") keeps Android 16 (targetSdk 36)
+         honouring the portrait lock below on displays with smallest width
+         >= 600dp — for apps targeting API 36, Android 16 otherwise ignores
+         orientation/resizability/aspect-ratio restrictions on those large
+         displays, EXCEPT for apps declared as games via this attribute.
+         See docs/ANDROID-DISPLAY.md. -->
     <application
         android:allowBackup="true"
+        android:appCategory="game"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
