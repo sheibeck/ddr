@@ -766,6 +766,18 @@ export function conditionsOf(state) {
     out.push({ key: "afraid", polarity: "bad", remaining: state.combat.afraid, phobia: c.phobia });
   }
 
+  // RULES-10 (Phase 75.1, hero-cannot-act / hero Blind / hero Shrink): a
+  // fumbled Doze/Stun/Stupidity/Insane (or Noxious Vapor's sleep) sets
+  // C.heroOut; a fumbled Blind/Shrink sets C.heroBlind/C.heroShrunk. All
+  // three are combat-scoped — never survive a save (combat is always null on
+  // load) — and clear at endCombat like every other combat-only condition
+  // above. Pure reads, no rng, no mutation.
+  if (state && state.combat && state.combat.heroOut) {
+    out.push({ key: "heroOut", polarity: "bad", kind: state.combat.heroOut.kind, remaining: state.combat.heroOut.left });
+  }
+  if (state && state.combat && state.combat.heroBlind) out.push({ key: "heroBlind", polarity: "bad" });
+  if (state && state.combat && state.combat.heroShrunk) out.push({ key: "heroShrunk", polarity: "bad" });
+
   return out;
 }
 
@@ -1195,6 +1207,15 @@ export function toHit(state) {
   // weakened kind is applied at playerStrike's damage line in combat.js, not here.
   if (c.foeEffect && c.foeEffect.kind === "dazed" && c.foeEffect.rounds > 0) h = Math.max(1, h - 2);
   if (inDark(state) && !skill(c, "Night Vision") && !c.senses) h = Math.min(h, 2);
+  // RULES-10 (Phase 75.1, hero Blind): a fumbled Blind on the READER —
+  // mirrors a blind FOE's own override (foeSwingVsHero/foeTurn set that
+  // foe's swing to exactly 1 winning face) applied to the hero's own weapon
+  // to-hit instead. LAST term, so it wins over every other modifier above;
+  // heroStrikeFacesVs/rollOdds.heroHitOdds read it here too, so the hero
+  // sheet and the combat menu never disagree with what playerStrike rolls
+  // against. Thrown spells (castSpell's own to-hit, when any exists), party
+  // members and flee are unaffected — none of them call toHit(state).
+  if (state.combat && state.combat.heroBlind) h = 1;
   return h;
 }
 

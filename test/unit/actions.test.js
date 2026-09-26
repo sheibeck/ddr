@@ -54,3 +54,13 @@ test("validateAction rejects a bad useTool.dir", () => {
   assert.equal(validateAction({ type: "useTool", tool: "ladder", dir: "NE" }).ok, false);
   assert.equal(validateAction({ type: "useTool", tool: "ladder" }).ok, false);
 });
+
+// --- RULES-10 (Phase 75.1): loseTurn (no payload) ---------------------------
+
+test("ACTION_TYPES includes loseTurn", () => {
+  assert.ok(ACTION_TYPES.has("loseTurn"));
+});
+
+test("validateAction accepts a bare loseTurn action (no payload, like fight)", () => {
+  assert.equal(validateAction({ type: "loseTurn" }).ok, true);
+});

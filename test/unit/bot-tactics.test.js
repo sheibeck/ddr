@@ -245,6 +245,13 @@ test("chooseAbility: a self-targeted or numeric-cooldown foe-targeted ability ca
 
 // --- decideAction wiring -----------------------------------------------
 
+test("decideAction: loseTurn while state.combat.heroOut is set — a safety rule, not a strategy choice (RULES-10)", () => {
+  const ctx = makeBotContext();
+  const combat = { ...fight("Beasts", 1, 1), heroOut: { kind: "asleep", left: 2, spell: "Doze" } };
+  const state = mkState({ combat, c: fighter({ abilities: ["pommelStrike"] }) });
+  assert.deepStrictEqual(decideAction(state, fixedPolicyRng, ctx), { type: "loseTurn" });
+});
+
 test("decideAction: a Fighter, round 1, opener ready, full hp, no potions returns useAbility; never fires for a Magic User", () => {
   const ctx = makeBotContext();
   const combat = fight("Beasts", 1, 1);

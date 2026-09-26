@@ -900,6 +900,12 @@ export function playerStrike(state, rng, events = []) {
     // C.weakened halving below (same ceil rounding, opposite direction) —
     // pure read, 0 draws, false for every fixture.
     if (c.foeEffect && c.foeEffect.kind === "weakened" && c.foeEffect.rounds > 0) dmg = Math.ceil(dmg / 2);
+    // RULES-10 (Phase 75.1, hero Shrink): a fumbled Shrink halves the hero's
+    // OWN landed weapon damage for the rest of the fight — the mirror of a
+    // shrunk FOE's own halved blows (foeTurn's hero/member branches).
+    // Current hp only; max hp never changes (75.1-CONTEXT's flagged
+    // assumption). Pure read, 0 draws; false on every fixture.
+    if (C.heroShrunk) dmg = Math.ceil(dmg / 2);
     // Phase 31 Afraid — pure arithmetic on already-rolled values, zero rng;
     // false (afraidMods empty, dmg unchanged) for every non-phobia fixture.
     dmg = afraidDamage(state, dmg);
@@ -2595,6 +2601,17 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
 }
 
 /**
+ * HERO_OUT_MAX — RULES-10 (Phase 75.1, user ruling 2026-09-25, second
+ * ruling): every turn-loss scroll fumble (Doze, Stun, Stupidity, Insane, and
+ * Noxious Vapor's sleep) lasts AT MOST this many hero turns — a deliberate,
+ * scroll-fumble-only exception to Phase 31's "penalties, never a no-actions
+ * state" ruling. `loseTurn` below clamps `C.heroOut.left` into `[1,
+ * HERO_OUT_MAX]` on every call, so a tampered or miscomputed value can never
+ * outlast the fight.
+ */
+export const HERO_OUT_MAX = 4;
+
+/**
  * fumbleHeavyBlow(state, spell, how, rng, events, now) — RULES-10 (Phase
  * 75.1, user ruling 2026-09-25): "no scroll fumble kills outright." The ONE
  * replacement for every instant-kill fumble effect (Death, Petrify, Freeze's
@@ -2627,6 +2644,48 @@ export function fumbleHeavyBlow(state, spell, how, rng, events = [], now = Date.
     return { died: true };
   }
   return { died: false };
+}
+
+/**
+ * loseTurn(state, rng, events) — RULES-10 (Phase 75.1, user rulings
+ * 2026-09-25): the ONE action a hero who cannot act (`C.heroOut`) may take.
+ * Mirrors the rules a FOE's own asleep/stupid skip already follows: nothing
+ * in the engine ever wakes a sleeping/stunned/stupid foe on a hit, so the
+ * hero's own `heroOut` is likewise never shortened by a foe's swing — only
+ * this action's own countdown ever clears it. Foes hit an out hero exactly
+ * as they would an acting one (no easier-hit bonus) — see
+ * derived.js#foeSwingVsHero/foeToHitVs, neither of which reads `heroOut` at
+ * all.
+ *
+ * Without `C.heroOut` (in or out of combat), pushes `actionRefused { action:
+ * "loseTurn", reason: "notOut" }` and returns, drawing and changing nothing.
+ * Otherwise: clamps `left` into `[1, HERO_OUT_MAX]`, pushes `heroLostTurn`
+ * naming the kind/spell and the turns left AFTER this one, spends the turn,
+ * and — when `left` reaches 0 — clears `C.heroOut` and pushes `heroCameTo`.
+ * Then runs `afterPlayerAction` exactly like every other player combat
+ * action, so the summon, the party and the foes all still take their turns —
+ * "the fight must stay resolvable" (75.1-CONTEXT) falls out of this call
+ * being, in every way that matters, just another action that reaches
+ * afterPlayerAction. Zero rng draws, whether refused or spent.
+ */
+export function loseTurn(state, rng, events = []) {
+  const C = state.combat;
+  if (!C || !C.heroOut) {
+    events.push({ type: "actionRefused", action: "loseTurn", reason: "notOut" });
+    return events;
+  }
+  const { kind, spell } = C.heroOut;
+  const left = clamp(C.heroOut.left, 1, HERO_OUT_MAX) - 1;
+  if (left <= 0) {
+    delete C.heroOut;
+    events.push({ type: "heroLostTurn", kind, spell, left: 0 });
+    events.push({ type: "heroCameTo", kind });
+  } else {
+    C.heroOut.left = left;
+    events.push({ type: "heroLostTurn", kind, spell, left });
+  }
+  afterPlayerAction(state, rng, events);
+  return events;
 }
 
 /**

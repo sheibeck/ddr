@@ -234,6 +234,9 @@ function payloadTable(c) {
     parley: [{}],
     sing: [{}],
     readScroll: [{}],
+    // RULES-10 (Phase 75.1): the ONE action a hero who cannot act may take —
+    // no payload, like fight/attack.
+    loseTurn: [{}],
     buyItem: [{ idx: 0 }],
     leaveStore: [{}],
     useItem: [...[0, 1, 2, 3].map((i) => ({ i })), ...WORN_SLOTS.map((slot) => ({ slot }))],
