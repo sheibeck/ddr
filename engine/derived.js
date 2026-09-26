@@ -7,7 +7,7 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES, SIZE_STEP_OF, SIZE_NAMES, SIZE_NAME_ORIGIN } from "../content/index.js";
 import { rollDice, rollCheck, atLeastFor } from "./dice.js";
 import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor } from "./difficulty.js";
 // 260918-w4n: `remaining`/`isReady` are no longer read here — isFlying and
@@ -45,6 +45,124 @@ export const DEATH_PANIC_THRESHOLD = 0.25; // near-death: at/below 25% of maxWP
 export const AFRAID_ROUNDS = 2;
 export const AFRAID_TO_HIT_PENALTY = 3;
 export const AFRAID_DMG_DIV = 2;
+
+// TUNING KNOBS — Size (Phase 75.2, RULES-11, user ruling 2026-09-25, "Hero
+// Size Matters"): a character's size is now a real stat — the total step is
+// race base (content/races.js's SIZE_STEP_OF, keyed by the row's own `size`
+// string) plus any live item size effect (`eff(c, "size")`). Each step UP
+// adds SIZE_DAMAGE_PER_STEP damage to every strike and SIZE_FACES_PER_STEP
+// winning face to every foe trying to land a blow on that body; each step
+// DOWN subtracts the same (floored elsewhere: weaponDamage/expectedStrike's
+// existing Math.max(1, ...), foeToHitVs/foeToHitBreakdown's existing
+// Math.max(1, ...)). Race signatures survive size (user ruling, "Race
+// signatures and Joiners"): a race's OWN base step is dropped on whichever
+// axis that race's own defining trait already pushes the opposite way (see
+// content/races.js's `sizeAxes` and sizeAxisStep below) — the size step then
+// only adds, it never cancels a race's defining trait. Item size steps are
+// NEVER masked: they always apply in full on both axes. A Joiner gets size
+// from its own race, by the same rule (sizeAxisStep(memberSheet, axis)).
+export const SIZE_DAMAGE_PER_STEP = 2;
+export const SIZE_FACES_PER_STEP = 1;
+
+/**
+ * raceSizeStep(sheet) — RULES-11 (Phase 75.2): a character's race's BASE
+ * size step — SIZE_STEP_OF of the race row's own `size` string. 0 for an
+ * unknown race, a race row with no `size`, or an unrecognized `size` string
+ * (never throws on a tampered save). The ONLY `SIZE_STEP_OF` read in this
+ * engine. Pure, no rng.
+ */
+export function raceSizeStep(sheet) {
+  const R = sheet && RACES[sheet.race];
+  const size = R && R.size;
+  return (size && SIZE_STEP_OF[size]) || 0;
+}
+
+/**
+ * itemSizeStep(sheet) — RULES-11 (Phase 75.2): the sum of every currently
+ * LIVE item size effect (`eff(sheet, "size")`, e.g. a used Gauntlet of the
+ * Giant) — the ONLY size `eff` call in this engine. 0 with no live
+ * size-stepping item. Pure, no rng.
+ */
+export function itemSizeStep(sheet) {
+  return eff(sheet, "size");
+}
+
+/**
+ * sizeStepOf(sheet) — RULES-11 (Phase 75.2): the character's TOTAL size
+ * step — race base plus items, used only for the displayed size NAME
+ * (sizeName below, heroSize's `step`) — never itself an axis-masked value
+ * (the mask only matters for damage/to-hit, not for naming the size). Pure,
+ * no rng.
+ */
+export function sizeStepOf(sheet) {
+  return raceSizeStep(sheet) + itemSizeStep(sheet);
+}
+
+/**
+ * sizeAxisStep(sheet, axis) — RULES-11 (Phase 75.2), the signature rule
+ * (user ruling 2026-09-25, "Race signatures and Joiners"): the size step
+ * that actually applies to `axis` ("dmg" or "face") right now — the race's
+ * OWN base step UNLESS the race row's own `sizeAxes[axis] === false` (that
+ * axis is masked because the race's own defining trait on that axis already
+ * pushes the opposite way — content/races.js's SIZE_AXIS_TRAITS/`sizeAxes`),
+ * plus the item step (never masked). The ONLY `sizeAxes` read in this
+ * engine — a signature is read from content data, never a race-name check.
+ * Tolerant of a missing race, race row, or `sizeAxes` (unmasked) and an
+ * unknown `axis` key (masked reads false, contributing 0 from the base).
+ * Pure, no rng.
+ */
+export function sizeAxisStep(sheet, axis) {
+  const R = sheet && RACES[sheet.race];
+  const masked = !!(R && R.sizeAxes && R.sizeAxes[axis] === false);
+  const base = masked ? 0 : raceSizeStep(sheet);
+  return base + itemSizeStep(sheet);
+}
+
+/**
+ * sizeName(step) — RULES-11 (Phase 75.2): the displayed size name for a
+ * total step — SIZE_NAMES at SIZE_NAME_ORIGIN + step, clamped to the
+ * array's own ends for a step beyond either extreme (e.g. a Troll using
+ * both the Gauntlet and Enlarge reads "Giant", clamped, not an out-of-range
+ * index). Pure, no rng.
+ */
+export function sizeName(step) {
+  const idx = clamp(SIZE_NAME_ORIGIN + (step || 0), 0, SIZE_NAMES.length - 1);
+  return SIZE_NAMES[idx];
+}
+
+/**
+ * heroSize(c) — RULES-11 (Phase 75.2): a character's full size readout —
+ * `step` (total, race + items), `base` (race only), `name`
+ * (sizeName(step)), `baseName` (sizeName(base)), `dmgStep`
+ * (sizeAxisStep(c, "dmg")), `faceStep` (sizeAxisStep(c, "face")). Pure, no
+ * rng.
+ */
+export function heroSize(c) {
+  const base = raceSizeStep(c);
+  const step = sizeStepOf(c);
+  return {
+    step,
+    base,
+    name: sizeName(step),
+    baseName: sizeName(base),
+    dmgStep: sizeAxisStep(c, "dmg"),
+    faceStep: sizeAxisStep(c, "face"),
+  };
+}
+
+/**
+ * sizeDamage(c) — RULES-11 (Phase 75.2): the flat damage term a
+ * character's current size contributes to a strike — SIZE_DAMAGE_PER_STEP
+ * times the DAMAGE axis's own resolved step (sizeAxisStep(c, "dmg"), the
+ * signature mask already applied). Read by weaponDamage/expectedStrike in
+ * place of the old Gauntlet-only flat size line (Phase 15, ECON-08); the same
+ * function serves a Joiner's own member view (weaponDamage(memberView(sheet,
+ * ally), rng)) since it reads only the passed-in sheet's own race/timers.
+ * Pure, no rng.
+ */
+export function sizeDamage(c) {
+  return SIZE_DAMAGE_PER_STEP * sizeAxisStep(c, "dmg");
+}
 
 // --- skills (state-scoped, not global) -------------------------------------
 
@@ -1119,7 +1237,11 @@ export function expectedStrike(c, base, bonus = 0, prof = 0) {
   if (skill(c, "Heft")) flat += 2;
   if (c.sub === "Master of Arms") flat += 2;
   flat += eff(c, "dmg");
-  flat += 2 * eff(c, "size");
+  // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): the
+  // same size term weaponDamage applies (see its own comment below) — the
+  // race base's damage axis unless the race's signature masks it, plus any
+  // live item step, in full.
+  flat += sizeDamage(c);
   if (c.sub === "Guard" && c.level < 4) flat -= 4 - c.level;
   return (hitP + critP) * Math.max(1, flat + avg + bonus + prof);
 }
@@ -1301,6 +1423,18 @@ export function foeDie(c, f) {
  * member's own Battle Roar (`partyEffectActive`) — a Joiner's Battle Roar
  * covers the whole side exactly like the hero's. False on every fixture (no
  * fixture carries a party).
+ *
+ * Phase 75.2 (RULES-11, "Hero Size Matters", user ruling 2026-09-25): size
+ * is now a real stat — `vs === "hero"` adds SIZE_FACES_PER_STEP times the
+ * FACE axis's own resolved step (sizeAxisStep(c, "face")): the race's own
+ * base step (content/races.js's `size`) unless the race's signature masks
+ * it (content/races.js's `sizeAxes` — the Elven thin-boned trait survives
+ * Small being harder to hit; the Dwarven Small face axis still applies),
+ * plus any live item step (the Gauntlet of the Giant, Enlarge), in full.
+ * Placed right after Guard, before gear — see foeToHitBreakdown's matching
+ * term for the exact ordering this function mirrors silently. A Joiner's
+ * own size is a SEPARATE term read from the member's own sheet in
+ * engine/combat.js#foeTurn's member branch, never through this function.
  */
 export function foeToHitVs(state, vs = "hero") {
   const c = state.c;
@@ -1309,6 +1443,15 @@ export function foeToHitVs(state, vs = "hero") {
   if (R.foeToHit) h += R.foeToHit;
   if (c.sub === "Acrobat") h = 3;
   if (c.sub === "Guard") h -= 1;
+  // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): each
+  // applied size step moves a foe's winning faces against the HERO'S OWN
+  // body by SIZE_FACES_PER_STEP — the race's own face axis (signature mask
+  // applied, sizeAxisStep) plus any live item step, in full. `vs === "hero"`
+  // only, like Sidestep/Smoke just below — a Joiner's own size is read
+  // separately, on the member's own sheet, in engine/combat.js#foeTurn's
+  // member branch (never through this function, which never sees a
+  // member's sheet). Zero draws — pure arithmetic.
+  if (vs === "hero") h += SIZE_FACES_PER_STEP * sizeAxisStep(c, "face");
   h += eff(c, "foeToHit");
   // Phase 54 (BAND-02, USER RULING D): FOE_ACCURACY (both vs "hero" and
   // "member") + CLASS_MITIGATION.Thief.evasion (vs "hero" only — the hero's
@@ -1344,6 +1487,14 @@ export function foeToHitVs(state, vs = "hero") {
  * mutation) — this is a narration helper, not a second source of truth:
  * foeToHitVs's own body is left untouched (zero risk) rather than delegating
  * to this function.
+ *
+ * Phase 75.2 (RULES-11, "Hero Size Matters"): the SAME size term
+ * foeToHitVs applies (see its own JSDoc) is recorded here as a single
+ * `{ name: "size", delta }` entry, right after Guard and before gear,
+ * pushed only when the resolved face step is non-zero — an Elf's mods carry
+ * no size entry (the signature mask drops the face axis for a race whose
+ * base step would otherwise apply), a Troll's read `[..., { name: "size",
+ * delta: 1 }]`, a Dwarf's `[..., { name: "size", delta: -1 }]`.
  */
 export function foeToHitBreakdown(state, vs = "hero") {
   const c = state.c;
@@ -1364,6 +1515,19 @@ export function foeToHitBreakdown(state, vs = "hero") {
     const before = h;
     h -= 1;
     if (h !== before) mods.push({ name: "Guard", delta: h - before });
+  }
+  // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): the
+  // SAME size term foeToHitVs applies above, recorded as a single "size"
+  // entry only when the resolved face step is non-zero — `vs === "hero"`
+  // only (a Joiner's own size is a separate term on the member's own sheet,
+  // engine/combat.js#foeTurn's member branch).
+  if (vs === "hero") {
+    const sizeDelta = SIZE_FACES_PER_STEP * sizeAxisStep(c, "face");
+    if (sizeDelta) {
+      const before = h;
+      h += sizeDelta;
+      if (h !== before) mods.push({ name: "size", delta: h - before });
+    }
   }
   const gear = eff(c, "foeToHit");
   if (gear) {
@@ -1472,14 +1636,17 @@ export function heroStrikeFacesVs(state, t) {
  * foeSwingVsHero(state, f) — Phase 74 (ROLL-02): the foe `f`'s winning faces
  * and mods list for its swing against the hero, built exactly as
  * `engine/combat.js#pursuitStrike` and `foeTurn`'s hero branch build them —
- * base `foeToHitVs(state)`, mods copied from `foeToHitBreakdown(state).mods`,
- * then blind (override to 1), the combat's `foeToHitPenalty` cap, and the
- * insult (+1, applied LAST — Phase 72 ROLL-01 (a)) — recording `{ name,
- * delta }` entries named "blind"/"penalty"/"insulted", pushed only when the
- * value actually changed for blind/penalty (insulted always pushes, matching
- * both call sites). Deltas are signed for the FOE (the roller), same
- * convention as `foeToHitBreakdown`. `state.combat` may be missing/null — the
- * two combat-wide terms (penalty, insulted) are then skipped and this never
+ * base `foeToHitVs(state)`, mods copied from `foeToHitBreakdown(state).mods`
+ * (Phase 75.2, RULES-11: this copy is where a non-zero "size" entry rides
+ * along, signed for the foe — a Troll's `+1`, a Dwarf's `-1`, an Elf's
+ * absent, its signature mask having dropped the face axis), then blind
+ * (override to 1), the combat's `foeToHitPenalty` cap, and the insult (+1,
+ * applied LAST — Phase 72 ROLL-01 (a)) — recording `{ name, delta }` entries
+ * named "blind"/"penalty"/"insulted", pushed only when the value actually
+ * changed for blind/penalty (insulted always pushes, matching both call
+ * sites). Deltas are signed for the FOE (the roller), same convention as
+ * `foeToHitBreakdown`. `state.combat` may be missing/null — the two
+ * combat-wide terms (penalty, insulted) are then skipped and this never
  * throws. Returns `{ faces, mods }`. Pure, zero rng, never mutates `state`/`f`.
  */
 export function foeSwingVsHero(state, f) {
@@ -1532,15 +1699,22 @@ export function weaponDamage(c, rng) {
   // does not change RNG consumption order or affect determinism/parity.
   if (c.sub === "Master of Arms") d += 2;
   d += eff(c, "dmg");
-  // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Gauntlet of
-  // the Giant (content/treasure-tables.js, eff:{size:1}, "one size larger")
-  // was inert — the player's `size` effect was READ NOWHERE (combat.js:128
-  // `size:` is the FOE's size). Wired here as the design-call "small damage
-  // benefit" (CONTEXT §8): a giant's reach/mass adds a flat +2 per size step
-  // to every strike, mirroring the existing eff("dmg")/Heft additives just
-  // above. Pure read of `c` (no rng), so RNG consumption order/parity are
-  // unaffected for every character not carrying the Gauntlet (eff size === 0).
-  d += 2 * eff(c, "size");
+  // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25):
+  // size is now a real stat, replacing the Phase 15 (ECON-08) Gauntlet-only
+  // line this comment used to sit on. sizeDamage(c) = SIZE_DAMAGE_PER_STEP x
+  // the DAMAGE axis's own resolved step: the race's OWN base step (from
+  // content/races.js's `size` field) counts here UNLESS the race's
+  // signature masks it (content/races.js's `sizeAxes` — the Dwarven +2
+  // survives Small's -2, the Elven thin bones survive despite Small's -2
+  // applying in full), and any live item size step (the Gauntlet of the
+  // Giant, Enlarge) always counts in full on top of the resolved base. A
+  // step down is floored by the Math.max(1, d) below, exactly like the old
+  // line. The same function serves a Joiner's own member view
+  // (weaponDamage(memberView(sheet, ally), rng), engine/combat.js) — a
+  // member's own race/mask sets a member's own size damage, never the
+  // hero's. Pure read of `c` (no rng); parity-unaffected for every character
+  // whose resolved size axis is 0.
+  d += sizeDamage(c);
   if (c.sub === "Guard" && c.level < 4) d -= 4 - c.level;
   if (c.sub === "Sorcerer") d = Math.min(d, 9); // a Sorcerer's arm is not the point
   return Math.max(1, d);

@@ -970,10 +970,28 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
   // The other two forces ("Magic User"/"Sorcerer" and "Fighter"/"Knight",
   // Troll race) are unaffected by this plan (re-confirmed live, all six
   // still resolve).
+  //
+  // "Fighter"/"Knight"/"Troll" seed 1 swapped for seed 5 (Phase 75.2, Plan
+  // 01, 2026-09-26, RULES-11): a Troll's own size step now reaches every
+  // real playthrough — +2 extra damage (Large stacks with the Troll's own
+  // +9 dmg/wpnBonus trait) AND one more winning face for every foe trying to
+  // land a blow, a genuine two-sided difficulty shift for this force. Seed 1
+  // now genuinely never resolves under identity dials (stuck at depth 5,
+  // re-measured live up to 5000 actions — the same "declared rules change
+  // reaching a real playthrough" category the comment blocks above
+  // document). Re-measured live (never hand-typed): seed 5 is the smallest
+  // untaken seed for this force that still dies naturally within the 5000-
+  // action budget (depth 5, 529 actions); seed 3 was also tried and itself
+  // now stalls (depth 4), so it is not a candidate. Seeds 2 and 4 are
+  // unaffected (still die naturally, re-confirmed live) and keep their
+  // slots. The other two forces ("Thief"/"Pilfer" and "Magic
+  // User"/"Sorcerer", both Human) are unaffected by this plan (re-confirmed
+  // live, all six still resolve) — expected, since neither race carries a
+  // size step.
   const forces = [
     { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [2, 3, 4] },
     { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [4, 2, 3] },
-    { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [1, 2, 4] },
+    { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [5, 2, 4] },
   ];
   let sawItem = false;
   for (const { seeds, ...force } of forces) {

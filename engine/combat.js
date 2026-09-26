@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -2956,6 +2956,27 @@ export function foeTurn(state, rng, events = []) {
         // Phase 25 (FEED-01, additive payload): same breakdown + post-mods
         // pattern as the hero branch below — narration only, 0 new draws.
         const mMods = foeToHitBreakdown(state, "member").mods.slice();
+        // Phase 38 (ABIL-05): a member is its own body — its OWN Sidestep/
+        // Smoke shift its own need, exactly like the hero's equivalent terms
+        // in foeToHitVs("hero") (which this "member" vs never reads). Pure
+        // reads of the member's own persistent sheet.timers; false on every
+        // fixture (no fixture carries a party). Hoisted above the blind
+        // check (Phase 75.2) so the size term below can read it first.
+        const mSheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
+        // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25):
+        // a Joiner's own size — its own race's face axis (signature mask
+        // applied, sizeAxisStep) plus any live item step — raises or lowers
+        // the foe's faces against THIS member, floored at 1, before blind/
+        // penalty/Sidestep/Smoke/insult. A member's own size never reaches
+        // the hero's odds (foeToHitVs("hero") never reads a member's sheet)
+        // and the hero's own size never reaches a member's (this branch
+        // never reads state.c). Damage already moves inside weaponDamage on
+        // the member view (memberStrike/foeTurn's riposte call). Zero draws.
+        if (mSheet) {
+          const before = mFaces;
+          mFaces = Math.max(1, mFaces + SIZE_FACES_PER_STEP * sizeAxisStep(mSheet, "face"));
+          if (mFaces !== before) mMods.push({ name: "size", delta: mFaces - before });
+        }
         if (f.blind) {
           const before = mFaces;
           mFaces = 1;
@@ -2966,12 +2987,6 @@ export function foeTurn(state, rng, events = []) {
           mFaces = Math.min(mFaces, C.foeToHitPenalty);
           if (mFaces !== before) mMods.push({ name: "penalty", delta: mFaces - before });
         }
-        // Phase 38 (ABIL-05): a member is its own body — its OWN Sidestep/
-        // Smoke shift its own need, exactly like the hero's equivalent terms
-        // in foeToHitVs("hero") (which this "member" vs never reads). Pure
-        // reads of the member's own persistent sheet.timers; false on every
-        // fixture (no fixture carries a party).
-        const mSheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
         if (mSheet && abilityEffectActive(mSheet, "sidestep")) {
           const before = mFaces;
           mFaces = Math.max(1, mFaces - 2);

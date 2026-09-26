@@ -3504,3 +3504,73 @@ measured zero moved parity fixtures — proven by a standing, teeth-tested
 31-site replay guard, not asserted by omission — and the prototype master is
 byte-identical to Phase 75's own close.
 
+## Phase 75.2: hero size (RULES-11) — measured per plan
+
+RULES-11 ("Hero Size Matters", user ruling 2026-09-25) makes race-based size
+a real stat: a race's own base step (`content/races.js`'s `size` field) now
+moves weapon damage (`SIZE_DAMAGE_PER_STEP` per step) and the foe's winning
+faces against that body (`SIZE_FACES_PER_STEP` per step), UNLESS the race's
+own signature (`sizeAxes`) drops one axis to protect a defining trait
+(Dwarven's damage axis, Elven's face axis) — an item's own step always
+applies in full, on both axes, never masked.
+
+### Plan 01 — the size step
+
+**The rule.** `engine/derived.js#sizeAxisStep(sheet, axis)` resolves the
+race's base step (`raceSizeStep`, `content/races.js`'s `SIZE_STEP_OF`)
+unless the race row's own `sizeAxes[axis] === false`, plus any live item
+size step (`itemSizeStep`, `eff(c, "size")`), never masked. `weaponDamage`/
+`expectedStrike` read `sizeDamage(c)` (the damage axis) in place of the old
+Gauntlet-only line; `foeToHitVs`/`foeToHitBreakdown` read the face axis
+(hero only, `vs === "hero"`); `engine/combat.js#foeTurn`'s member branch
+reads a Joiner's OWN sheet the same way. Dwarven `sizeAxes: {dmg:false}`
+(protects the Dwarven +2 dmg trait); Elven `sizeAxes: {face:false}`
+(protects the Elven thin-boned +1 `foeToHit` trait); Human/Wilmsry/
+Fridgian/Troll carry no mask.
+
+**The predictor.** Every parity replay hero with a live race field is
+Human, Wilmsry or Fridgian (`raceSizeStep` 0 — no possible change) EXCEPT
+five chargen-only seeds that never fight: seeds 4 (Elven), 6 (Dwarven), 13
+(Wilmsry — unaffected regardless), 35 (Troll), and `encounters#faerie` seed
+38 (Elven) — none of these five ever calls `startCombat` within the
+fixture's own action list (`action-script.chargen.json` never scripts a
+fight; the encounters fixture's `faerie` scenario is
+`springTrap`/`encounterDot`-only). No other parity replay site (combat/
+magic/movement/economy) ever rolls an Elven/Dwarven/Troll hero. Prediction:
+**zero moved fixtures.**
+
+**Measured.**
+
+```
+$ node --test "test/parity/**/*.test.js"
+# tests 58
+# pass 58
+# fail 0
+
+$ git diff --quiet 9fce6f1e9bc20aac2dea3f16c6bc7af441584805 -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js
+(exit 0 — clean)
+
+$ git hash-object test/parity/prototype-master.js.txt
+a1f4d0dc29782218d8e5aab65bc5989c33f917f0 (unchanged — the same hash Phase 75.1 closed with)
+```
+
+Zero fixtures moved, exactly as predicted. No new serialized field exists
+— size is derived from a race row's own existing `size` field plus an
+existing item-timer effect (`eff(c, "size")`); `sizeAxes` is content, read
+only by `engine/derived.js#sizeAxisStep` — so `comparables.js` is untouched.
+
+**Bot-baseline artifacts moved instead (not parity fixtures).** Two
+`test/unit/roll-high-state-pins.test.js` pins ("solo-2": a Dwarven
+Apprentice; "party-fighter-knight": a Human Fighter/Knight whose recruited
+Joiner is Dwarven) and one `test/unit/bot-tactics.test.js` no-stall seed
+(Fighter/Knight/Troll, seed 1 → 5) moved — each bisected live (`playRun`'s
+own `onStep` hook) to this plan's own size rule and re-pinned/re-seeded with
+a RULES-11 rationale comment in those files — not a parity divergence.
+`test/unit/foe-turn-draw-count.test.js` and `test/unit/roll-high-save-
+compat.test.js` (the Elven Thief Acrobat pre-switch save, seed 909) both
+re-measured byte-identical: the save's own 300-action recorded continuation
+never lands a weapon strike or takes a foe swing that would expose the
+Elven damage/face terms within its own budget, so its `expected` needed no
+re-recording despite the plan's own interfaces flagging it as a likely
+mover.
+

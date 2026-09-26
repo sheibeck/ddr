@@ -1,0 +1,240 @@
+=== race Elven ===
+tune-classes: 24 cells x 10 seeds (240 runs) — start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+#  class  sub  race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+1  Fighter  Barbarian  Elven  10  3  7.29  7.0  11.0  85.7  14.3  18.29  2.43  881.71  cut down by a Herman(2),cut down by a Poltergeist(1),cut down by a Shadow(1)
+2  Thief  Pilfer  Elven  10  1  6.89  5.0  18.0  66.7  11.1  14.00  1.89  762.11  cut down by a Dante(2),cut down by a China Wolf(1),cut down by a Drarl(1)
+3  Thief  Con Artist  Elven  10  0  6.70  7.0  8.0  100.0  0.0  4.20  1.90  744.50  starved in the dark(4),undone by a trap(2),cut down by a Flube(1)
+4  Thief  Acrobat  Elven  10  3  6.57  5.0  14.0  71.4  14.3  12.86  2.14  766.57  cut down by a Google(2),cut down by a China Wolf(1),cut down by a Djinni(1)
+5  Fighter  Samurai  Elven  10  2  6.50  7.0  10.0  87.5  12.5  15.38  2.13  751.88  cut down by a Blumble(1),cut down by a Drat(1),cut down by a Frank(1)
+6  Thief  Ninja  Elven  10  4  5.83  6.0  10.0  66.7  16.7  14.67  1.67  603.67  cut down by a Dante(1),cut down by a Poltergeist(1),cut down by a Skeleton(1)
+7  Fighter  Knight  Elven  10  1  5.78  6.0  9.0  77.8  0.0  8.33  1.67  654.56  cut down by a Werebeast(3),cut down by a Cave Bear(1),cut down by a China Wolf(1)
+8  Magic User  Sorcerer  Elven  10  1  5.78  6.0  9.0  77.8  0.0  11.89  1.78  639.44  spent by the dungeon itself(2),cut down by a Djinni(1),cut down by a Ghoul(1)
+9  Magic User  Court Mage  Elven  10  0  5.70  5.0  16.0  70.0  10.0  13.90  2.00  629.00  cut down by a Drarl(1),cut down by a Frank(1),cut down by a Google(1)
+10  Thief  Cat Burglar  Elven  10  2  5.63  5.0  10.0  75.0  12.5  10.00  1.50  563.63  undone by a trap(4),came up short on a leap(1),cut down by a Cave Bear(1)
+11  Magic User  Cleric  Elven  10  0  5.50  6.0  10.0  60.0  10.0  11.80  2.00  599.10  cut down by a Google(2),cut down by a Rinkle(2),cut down by a China Wolf(1)
+12  Thief  Cloaker  Elven  10  1  5.44  6.0  9.0  66.7  0.0  11.78  1.89  622.22  undone by a trap(4),cut down by a China Wolf(1),cut down by a Drarl(1)
+13  Fighter  Soldier  Elven  10  2  5.38  6.0  7.0  75.0  0.0  11.25  1.88  565.00  cut down by a Poltergeist(2),cut down by a Cave Bear(1),cut down by a Drat(1)
+14  Fighter  Guard  Elven  10  1  5.11  6.0  7.0  55.6  0.0  10.56  1.56  590.78  cut down by a Flube(1),cut down by a Frank(1),cut down by a Google(1)
+15  Fighter  Woodsman  Elven  10  1  5.11  4.0  14.0  44.4  11.1  7.00  1.56  557.00  cut down by a Poltergeist(3),cut down by a Cave Bear(1),cut down by a Dante(1)
+16  Thief  Cutthroat  Elven  10  1  5.00  6.0  7.0  66.7  0.0  10.78  1.67  534.22  undone by a trap(2),cut down by a Blumble(1),cut down by a Dante(1)
+17  Magic User  Illusionist  Elven  10  1  5.00  4.0  11.0  44.4  11.1  9.22  1.56  612.11  cut down by a Dante(2),starved in the dark(2),undone by a trap(2)
+18  Fighter  Bard  Elven  10  0  4.70  5.0  8.0  50.0  0.0  7.40  1.30  523.80  cut down by a Poltergeist(3),came up short on a leap(1),cut down by a Blumble(1)
+19  Magic User  Wizard  Elven  10  0  4.60  4.0  10.0  40.0  10.0  9.20  1.40  585.40  cut down by a Poltergeist(3),cut down by a Hair(2),cut down by a Cave Bear(1)
+20  Fighter  Master of Arms  Elven  10  1  4.56  4.0  6.0  44.4  0.0  13.67  1.44  521.56  cut down by a Poltergeist(2),cut down by a Dante(1),cut down by a Google(1)
+21  Magic User  Warlock  Elven  10  2  4.38  4.0  11.0  25.0  12.5  11.25  1.50  522.13  cut down by a Dante(3),came up short on a leap(1),cut down by a Poltergeist(1)
+22  Thief  Pickpocket  Elven  10  0  4.30  4.0  9.0  30.0  0.0  9.90  1.30  508.10  cut down by a China Wolf(1),cut down by a Dante(1),cut down by a Djinni(1)
+23  Magic User  Apprentice  Elven  10  2  4.00  3.0  8.0  25.0  0.0  7.38  1.63  427.00  cut down by a Trachea(2),cut down by a China Wolf(1),cut down by a Google(1)
+24  Magic User  Summoner  Elven  10  1  3.44  3.0  5.0  22.2  0.0  5.67  1.00  409.44  cut down by a Poltergeist(3),spent by the dungeon itself(2),cut down by a Drekk(1)
+
+BY CLASS:
+class  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Thief  80  12  5.76  5.0  9.0  67.6  5.9  10.71  1.74  636.62  undone by a trap(13),starved in the dark(9),cut down by a Dante(5)
+Fighter  80  11  5.48  5.0  8.0  63.8  4.3  11.17  1.71  621.16  cut down by a Poltergeist(11),cut down by a Google(6),cut down by a Shadow(5)
+Magic User  80  7  4.84  4.0  9.0  46.6  6.8  10.12  1.62  557.22  cut down by a Poltergeist(9),undone by a trap(6),cut down by a Dante(5)
+
+BY SUBCLASS:
+sub  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Barbarian  10  3  7.29  7.0  11.0  85.7  14.3  18.29  2.43  881.71  cut down by a Herman(2),cut down by a Poltergeist(1),cut down by a Shadow(1)
+Pilfer  10  1  6.89  5.0  18.0  66.7  11.1  14.00  1.89  762.11  cut down by a Dante(2),cut down by a China Wolf(1),cut down by a Drarl(1)
+Con Artist  10  0  6.70  7.0  8.0  100.0  0.0  4.20  1.90  744.50  starved in the dark(4),undone by a trap(2),cut down by a Flube(1)
+Acrobat  10  3  6.57  5.0  14.0  71.4  14.3  12.86  2.14  766.57  cut down by a Google(2),cut down by a China Wolf(1),cut down by a Djinni(1)
+Samurai  10  2  6.50  7.0  10.0  87.5  12.5  15.38  2.13  751.88  cut down by a Blumble(1),cut down by a Drat(1),cut down by a Frank(1)
+Ninja  10  4  5.83  6.0  10.0  66.7  16.7  14.67  1.67  603.67  cut down by a Dante(1),cut down by a Poltergeist(1),cut down by a Skeleton(1)
+Knight  10  1  5.78  6.0  9.0  77.8  0.0  8.33  1.67  654.56  cut down by a Werebeast(3),cut down by a Cave Bear(1),cut down by a China Wolf(1)
+Sorcerer  10  1  5.78  6.0  9.0  77.8  0.0  11.89  1.78  639.44  spent by the dungeon itself(2),cut down by a Djinni(1),cut down by a Ghoul(1)
+Court Mage  10  0  5.70  5.0  16.0  70.0  10.0  13.90  2.00  629.00  cut down by a Drarl(1),cut down by a Frank(1),cut down by a Google(1)
+Cat Burglar  10  2  5.63  5.0  10.0  75.0  12.5  10.00  1.50  563.63  undone by a trap(4),came up short on a leap(1),cut down by a Cave Bear(1)
+Cleric  10  0  5.50  6.0  10.0  60.0  10.0  11.80  2.00  599.10  cut down by a Google(2),cut down by a Rinkle(2),cut down by a China Wolf(1)
+Cloaker  10  1  5.44  6.0  9.0  66.7  0.0  11.78  1.89  622.22  undone by a trap(4),cut down by a China Wolf(1),cut down by a Drarl(1)
+Soldier  10  2  5.38  6.0  7.0  75.0  0.0  11.25  1.88  565.00  cut down by a Poltergeist(2),cut down by a Cave Bear(1),cut down by a Drat(1)
+Guard  10  1  5.11  6.0  7.0  55.6  0.0  10.56  1.56  590.78  cut down by a Flube(1),cut down by a Frank(1),cut down by a Google(1)
+Woodsman  10  1  5.11  4.0  14.0  44.4  11.1  7.00  1.56  557.00  cut down by a Poltergeist(3),cut down by a Cave Bear(1),cut down by a Dante(1)
+Cutthroat  10  1  5.00  6.0  7.0  66.7  0.0  10.78  1.67  534.22  undone by a trap(2),cut down by a Blumble(1),cut down by a Dante(1)
+Illusionist  10  1  5.00  4.0  11.0  44.4  11.1  9.22  1.56  612.11  cut down by a Dante(2),starved in the dark(2),undone by a trap(2)
+Bard  10  0  4.70  5.0  8.0  50.0  0.0  7.40  1.30  523.80  cut down by a Poltergeist(3),came up short on a leap(1),cut down by a Blumble(1)
+Wizard  10  0  4.60  4.0  10.0  40.0  10.0  9.20  1.40  585.40  cut down by a Poltergeist(3),cut down by a Hair(2),cut down by a Cave Bear(1)
+Master of Arms  10  1  4.56  4.0  6.0  44.4  0.0  13.67  1.44  521.56  cut down by a Poltergeist(2),cut down by a Dante(1),cut down by a Google(1)
+Warlock  10  2  4.38  4.0  11.0  25.0  12.5  11.25  1.50  522.13  cut down by a Dante(3),came up short on a leap(1),cut down by a Poltergeist(1)
+Pickpocket  10  0  4.30  4.0  9.0  30.0  0.0  9.90  1.30  508.10  cut down by a China Wolf(1),cut down by a Dante(1),cut down by a Djinni(1)
+Apprentice  10  2  4.00  3.0  8.0  25.0  0.0  7.38  1.63  427.00  cut down by a Trachea(2),cut down by a China Wolf(1),cut down by a Google(1)
+Summoner  10  1  3.44  3.0  5.0  22.2  0.0  5.67  1.00  409.44  cut down by a Poltergeist(3),spent by the dungeon itself(2),cut down by a Drekk(1)
+
+BY RACE:
+race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Elven  240  30  5.35  5.0  9.0  59.0  5.7  10.66  1.69  603.94  cut down by a Poltergeist(25),undone by a trap(20),starved in the dark(15)
+
+POOLED (all cells, run-weighted over completed runs):
+n  stuck  mean  p50  p90  >=5%  >=10%  >=20%  kills  lvl  actions  top causes
+240  30  5.35  5.0  9.0  59.0  5.7  0.0  10.66  1.69  603.94  cut down by a Poltergeist(25),undone by a trap(20),starved in the dark(15)
+
+Class spread (recorded, not a target):
+  Thief  p50Depth min=4.0 (Pickpocket/Elven) max=7.0 (Con Artist/Elven)  reach5 min=30.0 (Pickpocket/Elven) max=100.0 (Con Artist/Elven)
+  Fighter  p50Depth min=4.0 (Woodsman/Elven) max=7.0 (Barbarian/Elven)  reach5 min=44.4 (Woodsman/Elven) max=87.5 (Samurai/Elven)
+  Magic User  p50Depth min=3.0 (Summoner/Elven) max=6.0 (Sorcerer/Elven)  reach5 min=22.2 (Summoner/Elven) max=77.8 (Sorcerer/Elven)
+
+* Fighter Samurai Fridgian omitted: canon-impossible: Fridges don't wear any armor (the prototype rerolls the sub)
+Stuck: 30 of 240 runs hit maxActions=5000 (own bucket; excluded from depth stats)
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=10  workers=4  startDepth=1
+elapsed: 84.4s  workers=4  runs=240
+=== race Dwarven ===
+tune-classes: 24 cells x 10 seeds (240 runs) — start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+#  class  sub  race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+1  Thief  Ninja  Dwarven  10  1  10.22  8.0  25.0  100.0  33.3  27.89  2.89  1135.89  cut down by a Drarl(2),cut down by a Sterling(2),came up short on a leap(1)
+2  Thief  Pilfer  Dwarven  10  2  9.13  8.0  25.0  75.0  37.5  17.75  2.38  1111.50  came up short on a leap(1),cut down by a Blumble(1),cut down by a China Wolf(1)
+3  Thief  Acrobat  Dwarven  10  1  8.67  8.0  14.0  77.8  44.4  19.56  2.78  991.89  cut down by a Vampire(2),cut down by a Ghoul(1),cut down by a Poltergeist(1)
+4  Fighter  Woodsman  Dwarven  10  3  8.43  6.0  14.0  85.7  42.9  17.43  2.71  1026.29  cut down by a Djinni(2),cut down by a Werebeast(2),cut down by a China Wolf(1)
+5  Thief  Pickpocket  Dwarven  10  0  8.00  7.0  19.0  90.0  20.0  19.10  2.50  929.10  cut down by a Primp(2),cut down by a Shadow(2),cut down by a Cave Bear(1)
+6  Magic User  Warlock  Dwarven  10  0  8.00  7.0  15.0  80.0  30.0  24.50  2.40  1004.50  cut down by a Frank(2),starved in the dark(2),undone by a trap(2)
+7  Fighter  Knight  Dwarven  10  1  7.89  9.0  12.0  88.9  11.1  13.67  2.33  939.89  cut down by a Drake(2),cut down by a Bones(1),cut down by a Craig(1)
+8  Fighter  Soldier  Dwarven  10  2  7.63  7.0  13.0  75.0  37.5  16.25  2.25  856.75  cut down by a Drarl(2),cut down by a Frank(1),cut down by a Herman(1)
+9  Thief  Cloaker  Dwarven  10  2  7.50  9.0  10.0  87.5  25.0  16.38  2.50  906.75  undone by a trap(3),spent by the dungeon itself(2),cut down by a Blumble(1)
+10  Fighter  Guard  Dwarven  10  1  7.22  7.0  10.0  88.9  22.2  16.44  2.22  871.00  starved in the dark(2),cut down by a Blumble(1),cut down by a Ghost(1)
+11  Thief  Con Artist  Dwarven  10  1  7.11  7.0  10.0  88.9  22.2  5.33  2.11  759.11  cut down by a Undead(2),came up short on a leap(1),cut down by a Drake(1)
+12  Thief  Cutthroat  Dwarven  10  1  7.00  6.0  12.0  88.9  11.1  17.11  2.33  814.22  cut down by a Trachea(2),cut down by a Werebeast(2),cut down by a Blumble(1)
+13  Fighter  Master of Arms  Dwarven  10  0  6.80  7.0  10.0  80.0  10.0  15.60  2.30  804.20  cut down by a Blumble(2),came up short on a leap(1),cut down by a Drarl(1)
+14  Magic User  Wizard  Dwarven  10  0  6.80  5.0  20.0  50.0  30.0  16.40  1.90  854.40  cut down by a Poltergeist(2),cut down by a Djinni(1),cut down by a Google(1)
+15  Magic User  Cleric  Dwarven  10  3  6.57  7.0  9.0  85.7  0.0  16.43  2.29  750.29  cut down by a Cave Bear(1),cut down by a Drake(1),cut down by a Rast(1)
+16  Fighter  Samurai  Dwarven  10  2  6.50  8.0  8.0  75.0  0.0  16.25  2.00  717.63  cut down by a Werebeast(3),cut down by a Cave Bear(1),cut down by a Frank(1)
+17  Magic User  Court Mage  Dwarven  10  1  6.44  7.0  11.0  77.8  11.1  14.33  2.33  712.00  cut down by a Poltergeist(2),undone by a trap(2),cut down by a Dante(1)
+18  Fighter  Barbarian  Dwarven  10  1  6.44  6.0  12.0  77.8  22.2  14.78  1.89  721.33  cut down by a Dante(2),cut down by a Poltergeist(2),cut down by a Blumble(1)
+19  Fighter  Bard  Dwarven  10  0  6.30  6.0  13.0  90.0  10.0  11.70  1.90  781.50  cut down by a Blumble(1),cut down by a Dante(1),cut down by a Drake(1)
+20  Thief  Cat Burglar  Dwarven  10  2  6.25  6.0  12.0  75.0  12.5  12.63  2.00  704.88  spent by the dungeon itself(2),undone by a trap(2),cut down by a Dante(1)
+21  Magic User  Sorcerer  Dwarven  10  6  5.50  7.0  8.0  75.0  0.0  9.25  1.75  574.75  cut down by a Blumble(1),cut down by a Cave Bear(1),cut down by a China Wolf(1)
+22  Magic User  Illusionist  Dwarven  10  1  4.56  5.0  9.0  55.6  0.0  9.44  1.44  528.00  cut down by a Poltergeist(2),cut down by a Blumble(1),cut down by a Craig(1)
+23  Magic User  Apprentice  Dwarven  10  1  4.33  4.0  8.0  33.3  0.0  8.44  1.56  441.56  starved in the dark(2),cut down by a Dante(1),cut down by a Ghoul(1)
+24  Magic User  Summoner  Dwarven  10  1  3.56  3.0  7.0  22.2  0.0  6.89  1.11  433.00  spent by the dungeon itself(2),cut down by a China Wolf(1),cut down by a Ghoul(1)
+
+BY CLASS:
+class  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Thief  80  10  8.00  7.0  13.0  85.7  25.7  17.06  2.44  919.80  cut down by a Werebeast(6),spent by the dungeon itself(6),undone by a trap(6)
+Fighter  80  10  7.10  7.0  12.0  82.9  18.6  15.13  2.19  834.66  cut down by a Werebeast(9),cut down by a Blumble(5),cut down by a Poltergeist(5)
+Magic User  80  13  5.76  5.0  10.0  58.2  10.4  13.63  1.85  674.19  cut down by a Poltergeist(6),starved in the dark(6),undone by a trap(6)
+
+BY SUBCLASS:
+sub  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Ninja  10  1  10.22  8.0  25.0  100.0  33.3  27.89  2.89  1135.89  cut down by a Drarl(2),cut down by a Sterling(2),came up short on a leap(1)
+Pilfer  10  2  9.13  8.0  25.0  75.0  37.5  17.75  2.38  1111.50  came up short on a leap(1),cut down by a Blumble(1),cut down by a China Wolf(1)
+Acrobat  10  1  8.67  8.0  14.0  77.8  44.4  19.56  2.78  991.89  cut down by a Vampire(2),cut down by a Ghoul(1),cut down by a Poltergeist(1)
+Woodsman  10  3  8.43  6.0  14.0  85.7  42.9  17.43  2.71  1026.29  cut down by a Djinni(2),cut down by a Werebeast(2),cut down by a China Wolf(1)
+Pickpocket  10  0  8.00  7.0  19.0  90.0  20.0  19.10  2.50  929.10  cut down by a Primp(2),cut down by a Shadow(2),cut down by a Cave Bear(1)
+Warlock  10  0  8.00  7.0  15.0  80.0  30.0  24.50  2.40  1004.50  cut down by a Frank(2),starved in the dark(2),undone by a trap(2)
+Knight  10  1  7.89  9.0  12.0  88.9  11.1  13.67  2.33  939.89  cut down by a Drake(2),cut down by a Bones(1),cut down by a Craig(1)
+Soldier  10  2  7.63  7.0  13.0  75.0  37.5  16.25  2.25  856.75  cut down by a Drarl(2),cut down by a Frank(1),cut down by a Herman(1)
+Cloaker  10  2  7.50  9.0  10.0  87.5  25.0  16.38  2.50  906.75  undone by a trap(3),spent by the dungeon itself(2),cut down by a Blumble(1)
+Guard  10  1  7.22  7.0  10.0  88.9  22.2  16.44  2.22  871.00  starved in the dark(2),cut down by a Blumble(1),cut down by a Ghost(1)
+Con Artist  10  1  7.11  7.0  10.0  88.9  22.2  5.33  2.11  759.11  cut down by a Undead(2),came up short on a leap(1),cut down by a Drake(1)
+Cutthroat  10  1  7.00  6.0  12.0  88.9  11.1  17.11  2.33  814.22  cut down by a Trachea(2),cut down by a Werebeast(2),cut down by a Blumble(1)
+Master of Arms  10  0  6.80  7.0  10.0  80.0  10.0  15.60  2.30  804.20  cut down by a Blumble(2),came up short on a leap(1),cut down by a Drarl(1)
+Wizard  10  0  6.80  5.0  20.0  50.0  30.0  16.40  1.90  854.40  cut down by a Poltergeist(2),cut down by a Djinni(1),cut down by a Google(1)
+Cleric  10  3  6.57  7.0  9.0  85.7  0.0  16.43  2.29  750.29  cut down by a Cave Bear(1),cut down by a Drake(1),cut down by a Rast(1)
+Samurai  10  2  6.50  8.0  8.0  75.0  0.0  16.25  2.00  717.63  cut down by a Werebeast(3),cut down by a Cave Bear(1),cut down by a Frank(1)
+Court Mage  10  1  6.44  7.0  11.0  77.8  11.1  14.33  2.33  712.00  cut down by a Poltergeist(2),undone by a trap(2),cut down by a Dante(1)
+Barbarian  10  1  6.44  6.0  12.0  77.8  22.2  14.78  1.89  721.33  cut down by a Dante(2),cut down by a Poltergeist(2),cut down by a Blumble(1)
+Bard  10  0  6.30  6.0  13.0  90.0  10.0  11.70  1.90  781.50  cut down by a Blumble(1),cut down by a Dante(1),cut down by a Drake(1)
+Cat Burglar  10  2  6.25  6.0  12.0  75.0  12.5  12.63  2.00  704.88  spent by the dungeon itself(2),undone by a trap(2),cut down by a Dante(1)
+Sorcerer  10  6  5.50  7.0  8.0  75.0  0.0  9.25  1.75  574.75  cut down by a Blumble(1),cut down by a Cave Bear(1),cut down by a China Wolf(1)
+Illusionist  10  1  4.56  5.0  9.0  55.6  0.0  9.44  1.44  528.00  cut down by a Poltergeist(2),cut down by a Blumble(1),cut down by a Craig(1)
+Apprentice  10  1  4.33  4.0  8.0  33.3  0.0  8.44  1.56  441.56  starved in the dark(2),cut down by a Dante(1),cut down by a Ghoul(1)
+Summoner  10  1  3.56  3.0  7.0  22.2  0.0  6.89  1.11  433.00  spent by the dungeon itself(2),cut down by a China Wolf(1),cut down by a Ghoul(1)
+
+BY RACE:
+race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Dwarven  240  33  6.97  6.0  12.0  75.8  18.4  15.29  2.16  811.51  cut down by a Werebeast(17),undone by a trap(16),cut down by a Poltergeist(14)
+
+POOLED (all cells, run-weighted over completed runs):
+n  stuck  mean  p50  p90  >=5%  >=10%  >=20%  kills  lvl  actions  top causes
+240  33  6.97  6.0  12.0  75.8  18.4  1.4  15.29  2.16  811.51  cut down by a Werebeast(17),undone by a trap(16),cut down by a Poltergeist(14)
+
+Class spread (recorded, not a target):
+  Thief  p50Depth min=6.0 (Cat Burglar/Dwarven) max=9.0 (Cloaker/Dwarven)  reach5 min=75.0 (Pilfer/Dwarven) max=100.0 (Ninja/Dwarven)
+  Fighter  p50Depth min=6.0 (Woodsman/Dwarven) max=9.0 (Knight/Dwarven)  reach5 min=75.0 (Soldier/Dwarven) max=90.0 (Bard/Dwarven)
+  Magic User  p50Depth min=3.0 (Summoner/Dwarven) max=7.0 (Warlock/Dwarven)  reach5 min=22.2 (Summoner/Dwarven) max=85.7 (Cleric/Dwarven)
+
+* Fighter Samurai Fridgian omitted: canon-impossible: Fridges don't wear any armor (the prototype rerolls the sub)
+Stuck: 33 of 240 runs hit maxActions=5000 (own bucket; excluded from depth stats)
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=10  workers=4  startDepth=1
+elapsed: 98.4s  workers=4  runs=240
+=== race Troll ===
+tune-classes: 24 cells x 10 seeds (240 runs) — start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+#  class  sub  race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+1  Magic User  Warlock  Troll  10  1  13.67  13.0  23.0  100.0  77.8  36.89  4.00  1797.00  cut down by a Drarl(2),cut down by a Vampire(2),cut down by a Craig(1)
+2  Thief  Acrobat  Troll  10  0  11.20  12.0  17.0  100.0  60.0  24.70  3.20  1268.90  cut down by a Herman(2),spent by the dungeon itself(2),cut down by a Drudge(1)
+3  Magic User  Sorcerer  Troll  10  0  11.00  10.0  22.0  100.0  50.0  28.00  3.30  1334.60  cut down by a Drudge(2),starved in the dark(2),undone by a trap(2)
+4  Thief  Cutthroat  Troll  10  1  10.33  9.0  23.0  100.0  33.3  18.89  3.11  1234.33  cut down by a Werebeast(3),starved in the dark(3),cut down by a Spectre(1)
+5  Thief  Ninja  Troll  10  0  9.50  10.0  18.0  100.0  50.0  29.70  2.80  1174.90  starved in the dark(2),cut down by a Craig(1),cut down by a Drake(1)
+6  Thief  Pilfer  Troll  10  0  9.30  9.0  17.0  100.0  40.0  24.70  3.00  1195.80  starved in the dark(6),cut down by a Ghost(1),cut down by a Herman(1)
+7  Thief  Cloaker  Troll  10  1  9.22  9.0  16.0  100.0  44.4  19.89  2.78  1047.00  starved in the dark(3),cut down by a Bones(2),cut down by a Drarl(1)
+8  Thief  Con Artist  Troll  10  1  9.00  9.0  11.0  100.0  33.3  6.22  2.56  996.33  cut down by a Blumble(2),cut down by a Stink Bug(2),cut down by a Poltergeist(1)
+9  Magic User  Cleric  Troll  10  4  8.33  9.0  12.0  83.3  33.3  19.00  2.83  894.17  cut down by a Blumble(1),cut down by a Ghoul(1),cut down by a Poltergeist(1)
+10  Magic User  Court Mage  Troll  10  2  8.25  10.0  11.0  87.5  50.0  20.50  3.00  968.75  starved in the dark(2),cut down by a Blumble(1),cut down by a Drarl(1)
+11  Magic User  Wizard  Troll  10  0  7.80  6.0  17.0  70.0  40.0  17.20  2.50  1012.80  starved in the dark(3),cut down by a Blumble(1),cut down by a Drarl(1)
+12  Thief  Cat Burglar  Troll  10  1  7.67  8.0  9.0  100.0  0.0  18.33  2.33  893.67  starved in the dark(3),undone by a trap(2),cut down by a Ghost(1)
+13  Fighter  Samurai  Troll  10  1  7.56  7.0  10.0  88.9  22.2  19.89  2.44  799.44  cut down by a Blumble(1),cut down by a Drarl(1),cut down by a Drudge(1)
+14  Thief  Pickpocket  Troll  10  1  7.00  7.0  11.0  88.9  11.1  15.67  2.22  820.22  starved in the dark(3),fell off a wall(2),cut down by a Craig(1)
+15  Magic User  Apprentice  Troll  10  1  6.78  6.0  10.0  88.9  11.1  12.67  2.33  760.22  cut down by a Blumble(2),cut down by a Drarl(1),cut down by a Herman(1)
+16  Fighter  Woodsman  Troll  10  2  6.75  7.0  12.0  75.0  12.5  11.13  2.00  747.13  starved in the dark(2),cut down by a Flube(1),cut down by a Google(1)
+17  Magic User  Summoner  Troll  10  1  6.67  6.0  10.0  88.9  11.1  13.22  2.00  761.78  cut down by a Blumble(1),cut down by a China Wolf(1),cut down by a Drarl(1)
+18  Fighter  Barbarian  Troll  10  1  6.67  6.0  10.0  66.7  11.1  17.33  2.11  711.00  spent by the dungeon itself(2),cut down by a Dante(1),cut down by a Drarl(1)
+19  Fighter  Master of Arms  Troll  10  3  6.57  7.0  9.0  85.7  0.0  17.29  2.00  734.57  cut down by a Werebeast(2),starved in the dark(2),cut down by a Drudge(1)
+20  Fighter  Knight  Troll  10  1  6.33  6.0  9.0  77.8  0.0  11.00  1.89  690.89  starved in the dark(4),cut down by a Werebeast(2),cut down by a Cave Bear(1)
+21  Fighter  Soldier  Troll  10  1  6.22  5.0  11.0  77.8  11.1  16.00  1.78  723.56  cut down by a Dante(2),starved in the dark(2),came up short on a leap(1)
+22  Fighter  Guard  Troll  10  0  6.10  7.0  9.0  80.0  0.0  13.40  2.00  747.30  cut down by a Poltergeist(2),cut down by a Zombie(2),came up short on a leap(1)
+23  Fighter  Bard  Troll  10  1  5.67  5.0  12.0  55.6  11.1  9.44  1.89  576.00  starved in the dark(3),cut down by a Shadow(2),cut down by a Cave Bear(1)
+24  Magic User  Illusionist  Troll  10  2  5.25  5.0  10.0  50.0  12.5  11.63  1.63  734.63  cut down by a China Wolf(1),cut down by a Drekk(1),cut down by a Google(1)
+
+BY CLASS:
+class  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Thief  80  5  9.19  9.0  13.0  98.7  34.7  20.03  2.76  1084.27  starved in the dark(21),spent by the dungeon itself(7),cut down by a Werebeast(6)
+Magic User  80  11  8.55  8.0  13.0  84.1  36.2  20.12  2.71  1048.36  starved in the dark(10),cut down by a Blumble(7),cut down by a Drarl(6)
+Fighter  80  10  6.47  6.0  9.0  75.7  8.6  14.39  2.01  715.71  starved in the dark(15),cut down by a Shadow(6),cut down by a Werebeast(6)
+
+BY SUBCLASS:
+sub  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Warlock  10  1  13.67  13.0  23.0  100.0  77.8  36.89  4.00  1797.00  cut down by a Drarl(2),cut down by a Vampire(2),cut down by a Craig(1)
+Acrobat  10  0  11.20  12.0  17.0  100.0  60.0  24.70  3.20  1268.90  cut down by a Herman(2),spent by the dungeon itself(2),cut down by a Drudge(1)
+Sorcerer  10  0  11.00  10.0  22.0  100.0  50.0  28.00  3.30  1334.60  cut down by a Drudge(2),starved in the dark(2),undone by a trap(2)
+Cutthroat  10  1  10.33  9.0  23.0  100.0  33.3  18.89  3.11  1234.33  cut down by a Werebeast(3),starved in the dark(3),cut down by a Spectre(1)
+Ninja  10  0  9.50  10.0  18.0  100.0  50.0  29.70  2.80  1174.90  starved in the dark(2),cut down by a Craig(1),cut down by a Drake(1)
+Pilfer  10  0  9.30  9.0  17.0  100.0  40.0  24.70  3.00  1195.80  starved in the dark(6),cut down by a Ghost(1),cut down by a Herman(1)
+Cloaker  10  1  9.22  9.0  16.0  100.0  44.4  19.89  2.78  1047.00  starved in the dark(3),cut down by a Bones(2),cut down by a Drarl(1)
+Con Artist  10  1  9.00  9.0  11.0  100.0  33.3  6.22  2.56  996.33  cut down by a Blumble(2),cut down by a Stink Bug(2),cut down by a Poltergeist(1)
+Cleric  10  4  8.33  9.0  12.0  83.3  33.3  19.00  2.83  894.17  cut down by a Blumble(1),cut down by a Ghoul(1),cut down by a Poltergeist(1)
+Court Mage  10  2  8.25  10.0  11.0  87.5  50.0  20.50  3.00  968.75  starved in the dark(2),cut down by a Blumble(1),cut down by a Drarl(1)
+Wizard  10  0  7.80  6.0  17.0  70.0  40.0  17.20  2.50  1012.80  starved in the dark(3),cut down by a Blumble(1),cut down by a Drarl(1)
+Cat Burglar  10  1  7.67  8.0  9.0  100.0  0.0  18.33  2.33  893.67  starved in the dark(3),undone by a trap(2),cut down by a Ghost(1)
+Samurai  10  1  7.56  7.0  10.0  88.9  22.2  19.89  2.44  799.44  cut down by a Blumble(1),cut down by a Drarl(1),cut down by a Drudge(1)
+Pickpocket  10  1  7.00  7.0  11.0  88.9  11.1  15.67  2.22  820.22  starved in the dark(3),fell off a wall(2),cut down by a Craig(1)
+Apprentice  10  1  6.78  6.0  10.0  88.9  11.1  12.67  2.33  760.22  cut down by a Blumble(2),cut down by a Drarl(1),cut down by a Herman(1)
+Woodsman  10  2  6.75  7.0  12.0  75.0  12.5  11.13  2.00  747.13  starved in the dark(2),cut down by a Flube(1),cut down by a Google(1)
+Summoner  10  1  6.67  6.0  10.0  88.9  11.1  13.22  2.00  761.78  cut down by a Blumble(1),cut down by a China Wolf(1),cut down by a Drarl(1)
+Barbarian  10  1  6.67  6.0  10.0  66.7  11.1  17.33  2.11  711.00  spent by the dungeon itself(2),cut down by a Dante(1),cut down by a Drarl(1)
+Master of Arms  10  3  6.57  7.0  9.0  85.7  0.0  17.29  2.00  734.57  cut down by a Werebeast(2),starved in the dark(2),cut down by a Drudge(1)
+Knight  10  1  6.33  6.0  9.0  77.8  0.0  11.00  1.89  690.89  starved in the dark(4),cut down by a Werebeast(2),cut down by a Cave Bear(1)
+Soldier  10  1  6.22  5.0  11.0  77.8  11.1  16.00  1.78  723.56  cut down by a Dante(2),starved in the dark(2),came up short on a leap(1)
+Guard  10  0  6.10  7.0  9.0  80.0  0.0  13.40  2.00  747.30  cut down by a Poltergeist(2),cut down by a Zombie(2),came up short on a leap(1)
+Bard  10  1  5.67  5.0  12.0  55.6  11.1  9.44  1.89  576.00  starved in the dark(3),cut down by a Shadow(2),cut down by a Cave Bear(1)
+Illusionist  10  2  5.25  5.0  10.0  50.0  12.5  11.63  1.63  734.63  cut down by a China Wolf(1),cut down by a Drekk(1),cut down by a Google(1)
+
+BY RACE:
+race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Troll  240  26  8.09  8.0  12.0  86.4  26.6  18.21  2.50  952.14  starved in the dark(46),cut down by a Werebeast(17),spent by the dungeon itself(13)
+
+POOLED (all cells, run-weighted over completed runs):
+n  stuck  mean  p50  p90  >=5%  >=10%  >=20%  kills  lvl  actions  top causes
+240  26  8.09  8.0  12.0  86.4  26.6  1.9  18.21  2.50  952.14  starved in the dark(46),cut down by a Werebeast(17),spent by the dungeon itself(13)
+
+Class spread (recorded, not a target):
+  Thief  p50Depth min=7.0 (Pickpocket/Troll) max=12.0 (Acrobat/Troll)  reach5 min=88.9 (Pickpocket/Troll) max=100.0 (Pilfer/Troll)
+  Magic User  p50Depth min=5.0 (Illusionist/Troll) max=13.0 (Warlock/Troll)  reach5 min=50.0 (Illusionist/Troll) max=100.0 (Warlock/Troll)
+  Fighter  p50Depth min=5.0 (Soldier/Troll) max=7.0 (Guard/Troll)  reach5 min=55.6 (Bard/Troll) max=88.9 (Samurai/Troll)
+
+* Fighter Samurai Fridgian omitted: canon-impossible: Fridges don't wear any armor (the prototype rerolls the sub)
+Stuck: 26 of 240 runs hit maxActions=5000 (own bucket; excluded from depth stats)
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=10  workers=4  startDepth=1
+elapsed: 101.1s  workers=4  runs=240

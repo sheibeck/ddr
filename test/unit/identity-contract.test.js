@@ -1133,7 +1133,7 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "0.6x wp and easier to hit",
+      name: "0.6x hp and easier to hit (thin-boned, and small size never offsets it); small: 2 less damage",
       run() {
         const elven = hero("Soldier", "Elven", 7);
         const control = hero("Soldier", "Human", 7);
@@ -1142,12 +1142,24 @@ const CONTRACT = [
         // Finding 1): Elves are EASIER to hit: the foe's need is one HIGHER
         // than a Human's (hit on roll <= need) — the prototype's foeToHit −1
         // inverted this (see content/races.js's Elven comment).
+        //
+        // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25):
+        // race signatures survive size — Small's harder-to-hit face axis
+        // would oppose the thin-boned +1 above, so it is DROPPED for Elven
+        // (the +1 stands alone, unchanged from before this plan); Small's
+        // −2 damage axis is NOT opposed by anything Elven-specific, so it
+        // applies in full.
         assert.equal(
           foeToHitVs(elven),
           foeToHitVs(control) + 1,
           "Elves are EASIER to hit: the foe's need is one HIGHER than a Human's (hit on roll <= need)",
         );
         assert.ok(foeToHitVs(elven) > foeToHitVs(control));
+        assert.equal(
+          weaponDamage(withWeapon(elven, "Club").c, fakeRng([3])),
+          weaponDamage(withWeapon(control, "Club").c, fakeRng([3])) - 2,
+          "small: 2 less damage (the damage axis is not masked for Elven)",
+        );
       },
     },
   },
@@ -1156,10 +1168,16 @@ const CONTRACT = [
     key: "Dwarven",
     kind: "race",
     good: {
-      name: "+2 damage; armour built to be hit wears at half the rate",
+      name: "+2 damage (small size never takes it); armour built to be hit wears at half the rate; small: one face harder for foes to hit",
       run() {
         const dwarven = withWeapon(hero("Soldier", "Dwarven"), "Club", 0, 0);
         const control = withWeapon(hero("Soldier", "Human"), "Club", 0, 0);
+        // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25):
+        // race signatures survive size — Small's −2 damage axis would
+        // oppose this row's own +2 dmg trait, so it is DROPPED for Dwarven
+        // (the +2 is unchanged from before this plan); Small's harder-to-hit
+        // face axis is NOT opposed by anything Dwarven-specific, so it
+        // applies in full (assert below).
         assert.equal(weaponDamage(dwarven.c, fakeRng([3])), weaponDamage(control.c, fakeRng([3])) + 2);
 
         const state = hero("Soldier", "Dwarven");
@@ -1179,6 +1197,12 @@ const CONTRACT = [
         oneOver.c.armorMax = 15;
         applyFoeDamageToPlayer(oneOver, fixedFoe(), fakeRng([1]), [], { dmg: 4, roll: 3, need: 5 });
         assert.equal(oneOver.c.armorWP, 13, "15 - ceil(4*0.5)=2 = 13");
+
+        assert.equal(
+          foeToHitVs(hero("Soldier", "Dwarven")),
+          foeToHitVs(hero("Soldier", "Human")) - 1,
+          "small: one face harder for foes to hit",
+        );
       },
     },
     bad: {
@@ -1278,16 +1302,20 @@ const CONTRACT = [
     key: "Troll",
     kind: "race",
     good: {
-      name: "75 wp regardless of class; +9 damage",
+      name: "75 hp regardless of class; +11 damage (+9 troll, +2 large)",
       run() {
         const troll = withWeapon(hero("Soldier", "Troll"), "Club", 0, 0);
         assert.equal(troll.c.maxWP, 75);
         const control = withWeapon(hero("Soldier", "Human"), "Club", 0, 0);
-        assert.equal(weaponDamage(troll.c, fakeRng([3])), weaponDamage(control.c, fakeRng([3])) + 9);
+        // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25):
+        // Large points the SAME way as the Troll's own +9 (dmg+wpnBonus)
+        // trait, so nothing is masked — the two stack: +9 troll, +2 large,
+        // +11 total.
+        assert.equal(weaponDamage(troll.c, fakeRng([3])), weaponDamage(control.c, fakeRng([3])) + 11);
       },
     },
     bad: {
-      name: "prices triple, eats two rations a night",
+      name: "prices triple, eats two rations a night; large: one face easier for foes to hit",
       run() {
         assert.equal(priceFor(100, "Troll"), 300);
         assert.equal(RACES.Troll.eats, 2);
@@ -1295,6 +1323,12 @@ const CONTRACT = [
         state.c.rations = 1;
         const events = makeCamp(state, fakeRng([]), []);
         expectEvent(events, "campFailed", { reason: "noRations" });
+
+        assert.equal(
+          foeToHitVs(hero("Soldier", "Troll")),
+          foeToHitVs(hero("Soldier", "Human")) + 1,
+          "large: one face easier for foes to hit",
+        );
       },
     },
   },
