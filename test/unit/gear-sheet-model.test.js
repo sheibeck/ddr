@@ -444,19 +444,32 @@ test("USE sub by phase: ready, cooling (12/1), effect (23/1), staff charges, tor
   const effect1 = st(fixedChar({ worn: { jewelry1: RING_OF_POWER }, timers: { "item:Ring of Power": { cadence: "squares", left: 1, phase: "effect" } } }));
   assert.equal(gearSheetModel(effect1, { from: "worn", slot: "jewelry1" }).actions[0].sub, "Already running — 1 square left.");
 
-  const staff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 1 };
-  const staffState = st(fixedChar({ cls: "Magic User", items: [staff], timers: { "charges:Poplar Staff": { cadence: "squares", left: 20, phase: "cooldown" } } }));
-  const staffModel = gearSheetModel(staffState, { from: "bag", i: 0, n: "Poplar Staff" });
-  const staffUse = staffModel.actions.find((a) => a.key === "use");
-  const cardsForStaff = gearBagCardsModel(staffState);
-  assert.equal(staffUse.sub, `Charges ${cardsForStaff[0].use.sub}.`);
-  assert.equal(staffUse.enabled, true);
-
   const torch = toolItem("torch");
   const torchModel = gearSheetModel(st(fixedChar({ items: [torch] })), { from: "bag", i: 0, n: "Torch" });
   const torchUse = torchModel.actions.find((a) => a.key === "use");
   assert.equal(torchUse.sub, "One use. Then it is a memory.");
   assert.equal(torchUse.enabled, true);
+});
+
+// RULES-13 (Phase 75, user 2026-09-25): reverses the pre-Phase-75 "a bagged
+// staff's bag sheet offers USE" reading above — a bagged staff's power is
+// inert (75-09's `notWielded` refusal), so its bag sheet never carries a
+// "use" action, for ANY class. A Magic User's card instead carries a
+// SWAP INTO WEAPON action (this fixture already holds an Axe); a Fighter's
+// card carries only DROP.
+test("RULES-13: a bagged staff's sheet never carries USE — a Magic User gets SWAP INTO WEAPON, a Fighter gets only DROP", () => {
+  const staff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 1 };
+
+  const muModel = gearSheetModel(st(fixedChar({ cls: "Magic User", items: [staff] })), { from: "bag", i: 0, n: "Poplar Staff" });
+  assert.equal(muModel.actions.find((a) => a.key === "use"), undefined, "no USE action for a Magic User's bagged staff");
+  const swapAction = muModel.actions.find((a) => a.key === "slot:weapon");
+  assert.equal(swapAction.label, "SWAP INTO WEAPON", "the fixture already holds an Axe");
+  assert.equal(swapAction.enabled, true);
+  assert.deepStrictEqual(swapAction.run, { type: "equipItem", i: 0 }, "a weapon-slot equip run never carries a slot key");
+
+  const fighterModel = gearSheetModel(st(fixedChar({ cls: "Fighter", items: [staff] })), { from: "bag", i: 0, n: "Poplar Staff" });
+  assert.equal(fighterModel.actions.find((a) => a.key === "use"), undefined, "no USE action for a Fighter's bagged staff either");
+  assert.deepStrictEqual(fighterModel.actions.map((a) => a.key), ["drop"], "a Fighter's staff sheet offers only DROP");
 });
 
 // ═══════════════════════ Run-shape and confirm sweeps ══════════════════════
@@ -628,11 +641,15 @@ test("Edge GSCR-08/empty: a bag-only item with no activation (a rope) yields exa
   assert.equal(gearSheetModel(st(c), { from: "bag", i: 5, n: "Rope" }), null);
 });
 
-test("Edge GSCR-08/ordering: a bag-only activatable (a Magic User's staff) yields [use, drop], USE first and DROP last", () => {
+// RULES-13 (Phase 75, user 2026-09-25): re-pinned from the pre-Phase-75
+// [use, drop] shape — a Magic User's bagged staff is now a WEAPON-family
+// card, never USE. This fixture's default weapon (Axe) is already held, so
+// the WEAPON-slot action is a SWAP, not an EQUIP.
+test("Edge GSCR-08/ordering: a bag-only activatable (a Magic User's staff) yields [slot:weapon, drop], SWAP first and DROP last", () => {
   const staff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 3 };
   const c = fixedChar({ cls: "Magic User", items: [staff] });
   const model = gearSheetModel(st(c), { from: "bag", i: 0, n: "Poplar Staff" });
-  assert.deepStrictEqual(model.actions.map((a) => a.key), ["use", "drop"]);
+  assert.deepStrictEqual(model.actions.map((a) => a.key), ["slot:weapon", "drop"]);
 });
 
 // ═══════════════════════ Edge GSCR-09 (reasons) ════════════════════════════

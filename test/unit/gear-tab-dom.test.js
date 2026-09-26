@@ -433,22 +433,41 @@ test("BAG cards: a jewel with both keys worn gets 'JEWELRY · SWAP' (tag-swap); 
   assert.ok(!ropeTop.children.some((n) => n.className.includes("mw-gear-tag")), "expected no .mw-gear-tag on the rope card");
 });
 
-test("BAG cards: a bag-only staff carries a USE cell (READY, dispatches useItem(index)); a bagged jewel carries none", () => {
+// RULES-13 (Phase 75, user 2026-09-25): reverses the pre-Phase-75 reading
+// that a bag-only staff "carries a USE cell" — a bagged staff's power is
+// inert (75-09's engine-side `notWielded` refusal), so NO class's bagged
+// staff card ever carries a USE cell. richChar()'s default is a Fighter, who
+// additionally gets no family/tag at all (it cannot wield one).
+test("BAG cards: RULES-13 — a Fighter's bag-only staff carries NO USE cell and no family/tag; a bagged jewel also carries none", () => {
   const state = { c: richChar() };
-  const { doc, deps } = renderFresh(state);
+  const { doc } = renderFresh(state);
   const bagEl = doc.document.getElementById("gear-bag");
   const staffI = state.c.items.indexOf(STAFF_ITEM);
   const staffCard = bagEl.children.find((li) => li.dataset.i === String(staffI));
   const useCell = staffCard.children.find((n) => n.className === "mw-gear-use");
-  assert.ok(useCell, "expected a USE cell on the bag-only staff card");
-  const btn = useCell.children.find((n) => n.tagName === "button");
-  assert.equal(btn.textContent, GEAR_COPY.use.use);
-  btn.onclick();
-  assert.deepStrictEqual(deps.useItem.calls, [[staffI]]);
+  assert.equal(useCell, undefined, "RULES-13: a bagged staff never gets a USE cell");
+  const top = staffCard.children.find((n) => n.className === "mw-gear-card-main").children.find((n) => n.className === "mw-gear-card-top");
+  assert.ok(!top.children.some((n) => n.className.includes("mw-gear-tag")), "a Fighter's bagged staff has no family — no WEAPON tag");
 
   const jewelI = state.c.items.indexOf(BAGGED_JEWEL);
   const jewelCard = bagEl.children.find((li) => li.dataset.i === String(jewelI));
   assert.ok(!jewelCard.children.some((n) => n.className === "mw-gear-use"), "expected no USE cell on a bagged, worn-slot-family jewel");
+});
+
+// RULES-13 (Phase 75): a Magic User's bagged staff IS a WEAPON-family card
+// (EQUIP TO / SWAP INTO WEAPON lives on the sheet, not here) — still never a
+// USE cell.
+test("BAG cards: RULES-13 — a Magic User's bag-only staff carries the WEAPON tag, still no USE cell", () => {
+  const state = { c: richChar({ cls: "Magic User" }) };
+  const { doc } = renderFresh(state);
+  const bagEl = doc.document.getElementById("gear-bag");
+  const staffI = state.c.items.indexOf(STAFF_ITEM);
+  const staffCard = bagEl.children.find((li) => li.dataset.i === String(staffI));
+  const useCell = staffCard.children.find((n) => n.className === "mw-gear-use");
+  assert.equal(useCell, undefined, "RULES-13: never a USE cell, even for a Magic User");
+  const top = staffCard.children.find((n) => n.className === "mw-gear-card-main").children.find((n) => n.className === "mw-gear-card-top");
+  const tag = top.children.find((n) => n.className.includes("mw-gear-tag"));
+  assert.equal(tag.textContent, "WEAPON" + GEAR_COPY.swap, "richChar's default weapon (Axe) is already held, so this reads WEAPON · SWAP");
 });
 
 test("BAG cards open the sheet: each card's onclick opens ({ from: \"bag\", i: card.i, n: card.name }, \"gear-open-bag-<i>\"), and is an accessible opener with the opens-hint", () => {

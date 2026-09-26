@@ -6,8 +6,8 @@
 // Pitfall 1, never the design mockup's throwaway state-object field names.
 // No DOM, no Math.random, no rng draws that touch the live state's rngState.
 
-import { WEAPONS, ARMORS, BAGS } from "../../content/index.js";
-import { armorSoak, takesBagSlot, gearCompareParts, activationFor, strikeDie } from "../../engine/derived.js";
+import { WEAPONS, ARMORS, BAGS, STAFF_WEAPON } from "../../content/index.js";
+import { armorSoak, takesBagSlot, gearCompareParts, activationFor, strikeDie, wieldedStaff } from "../../engine/derived.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap } from "../../engine/items.js";
 import { storeBuyRefusal } from "../../engine/economy.js";
 import { upgradeWhyText, UPGRADE_WHY_COPY } from "./upgradeWhy.js";
@@ -199,6 +199,11 @@ export const ITEM_STAT_COPY = Object.freeze({
     charges: "Charges",
     slots: "Bag slots",
     usable: "Usable by",
+    // RULES-13 (Phase 75): a staff's wield line — its own stat, distinct
+    // from `effect` (the item's charged power) and shown on both the bag
+    // and worn read of the same item (wornItemFor(c, "weapon") returns the
+    // wielded staff, so itemStatLines formats it identically either way).
+    wield: "Wield",
   }),
   text: Object.freeze({
     bonus: "{lab} +{n}",
@@ -208,6 +213,7 @@ export const ITEM_STAT_COPY = Object.freeze({
     enchanted: "enchanted",
     charges: "{n}/{max} charges",
     slots: "{n} slots",
+    wield: "Wielded: {lab} weapon; its power works only in hand.",
   }),
 });
 
@@ -291,6 +297,14 @@ export function itemStatLines(item, c = null) {
     return Object.freeze(lines);
   }
 
+  // RULES-13 (Phase 75): a staff (bag or wielded — wornItemFor(c, "weapon")
+  // returns the wielded object itself) states what wielding does BEFORE its
+  // effect and charges, so a bagged staff never reads as if its power
+  // already works.
+  if (item.kind === "staff") {
+    const wield = ITEM_STAT_COPY.text.wield.replace("{lab}", STAFF_WEAPON.lab);
+    lines.push(statLine("wield", wield, wield));
+  }
   if (typeof item.txt === "string" && item.txt) lines.push(statLine("effect", item.txt, item.txt));
   if (item.kind === "staff") {
     const act = activationFor(item);
@@ -322,6 +336,11 @@ export function itemStatLines(item, c = null) {
 export function wornItemFor(c, slot) {
   if (!c || typeof c !== "object") return null;
   if (slot === "weapon") {
+    // RULES-13 (Phase 75): a wielded staff (its LIVE charges included) is
+    // the weapon slot's real item now — the same object gearBagCardsModel
+    // would show if it were bagged instead, so both formatters agree.
+    const staff = wieldedStaff(c);
+    if (staff) return staff;
     if (!c.weapon || !WEAPONS[c.weapon]) return null;
     return { kind: "weapon", n: c.weapon, base: c.weapon, bonus: c.magicWpn || 0 };
   }
@@ -401,6 +420,31 @@ export function lootCompare(c, it) {
     // sub is deliberately blank — it.txt would just repeat the slot count.
     // Phase 43 (CLAR-02, additive field): a bag is never class-restricted, so usable is always "".
     return { kind: "bag", legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line, sub: "", why: null, usable: usableBy(it, c) };
+  }
+
+  // RULES-13 (Phase 75): a staff's own gearSheet/gearTab compare card — the
+  // Magic User class gate is its ONLY legality (never a need/crit/weight
+  // comparison, since every staff fights identically, flat d8 — there is no
+  // "upgrade" verdict to draw), and the line IS the wield explainer
+  // (ITEM_STAT_COPY.text.wield), the same text itemStatLines shows, so a
+  // legal staff card's "why" line never disagrees with its own stat list.
+  if (it.kind === "staff") {
+    const legal = c.cls === "Magic User";
+    const line = legal
+      ? ITEM_STAT_COPY.text.wield.replace("{lab}", STAFF_WEAPON.lab)
+      : `can't use (${refusalText("wrongClass", "M")})`;
+    return {
+      kind: "staff",
+      legal,
+      reason: legal ? null : "wrongClass",
+      delta: null,
+      upgrade: null,
+      equipNow: false,
+      line,
+      sub: it.txt ?? "",
+      why: null,
+      usable: usableBy(it, c),
+    };
   }
 
   // Phase 43 (CLAR-02, additive field): the fallthrough (jewel/cloak/potion/tool/etc) is never class-restricted.

@@ -124,15 +124,21 @@ test("armour: a warded (premium) piece carries the enchanted mark after its dura
   assert.equal(lines[0].text, `AR ${PREMIUM_MAIL.ar}`);
 });
 
-test("staff: its effect text, then its charges, then usable-by (Magic Users)", () => {
+// RULES-13 (Phase 75, user 2026-09-25): a staff's stat list now leads with
+// the wield line ("Wielded: d8 weapon; its power works only in hand.") —
+// shown for the SAME item object whether it is bagged or wielded (both read
+// through this one formatter), then its effect text, then its charges, then
+// usable-by. Re-pinned from the pre-Phase-75 [effect, charges, usable] shape.
+test("staff: the wield line, then its effect text, then its charges, then usable-by (Magic Users)", () => {
   const c = fixedChar({ cls: "Magic User" });
   const lines = itemStatLines(STAFF, c);
-  assert.deepStrictEqual(lines.map((l) => l.key), ["effect", "charges", "usable"]);
-  assert.equal(lines[0].text, STAFF.txt);
-  assert.match(lines[1].text, /^\d+\/\d+ charges$/);
-  assert.equal(lines[2].text, usableBy(STAFF, c));
+  assert.deepStrictEqual(lines.map((l) => l.key), ["wield", "effect", "charges", "usable"]);
+  assert.equal(lines[0].text, ITEM_STAT_COPY.text.wield.replace("{lab}", "d8"));
+  assert.equal(lines[1].text, STAFF.txt);
+  assert.match(lines[2].text, /^\d+\/\d+ charges$/);
+  assert.equal(lines[3].text, usableBy(STAFF, c));
   const spent = { ...STAFF, charges: 0 };
-  assert.match(itemStatLines(spent, c)[1].text, /^0\/\d+ charges$/);
+  assert.match(itemStatLines(spent, c)[2].text, /^0\/\d+ charges$/);
 });
 
 test("cloak, jewel, potion, tool, lockpicks: the item's own effect text, and nothing else", () => {

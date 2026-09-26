@@ -125,7 +125,10 @@ test("CMB-02: renderCarriedList's use branch no longer gates the Use button on i
   // string to the ONE row-state rule (st.kind !== "none") — see
   // src/browser/gearTab.js#itemRowState. Phase 47 (SHELL-01), Plan 03:
   // renderCarriedList itself lives in gearTab.js now.
-  assert.match(GEAR_SRC, /st\.kind !== "none"\) li\.appendChild\(mkBtn\("Use"/);
+  // RULES-13 (Phase 75): the gate ALSO excludes `it.kind === "staff"` now —
+  // a bagged staff's power is inert (75-09's `notWielded` refusal), so this
+  // shared list never offers it a Use button either, for any host.
+  assert.match(GEAR_SRC, /st\.kind !== "none" && it\.kind !== "staff"\) li\.appendChild\(mkBtn\("Use"/);
 });
 
 test("Phase 34/39: the ITEMS/ABILITIES rows never hide on readiness — combatMenu.js lists the Sing row and carried usables with enabled flags, never filters them", () => {

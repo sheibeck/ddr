@@ -189,7 +189,12 @@ test("Weapon swap dispatch: equipItem is called with exactly one argument, no un
   assert.equal(log[1].length, 2);
 });
 
-test("Bag staff USE: logs closeGearSheet then useItem(i)", () => {
+// RULES-13 (Phase 75, user 2026-09-25): reverses the pre-Phase-75 "bag staff
+// USE" reading — a bagged staff is a WEAPON-family card now, never USE. This
+// fixture's default weapon (Axe) is already held, so the row is
+// "slot:weapon" (SWAP INTO WEAPON), which dispatches equipItem with no slot
+// key (a weapon-slot equip never carries one).
+test("Bag staff SWAP INTO WEAPON: logs closeGearSheet then equipItem(i) — never USE", () => {
   const staff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 3 };
   const c = fixedChar({ cls: "Magic User", items: [staff] });
   const state = st(c);
@@ -197,8 +202,9 @@ test("Bag staff USE: logs closeGearSheet then useItem(i)", () => {
   const { deps, log } = makeDeps();
   const { doc, host } = mountHost();
   renderGearSheet(host, state, target, deps);
-  findButton(doc, "use").onclick();
-  assert.deepStrictEqual(log, [["closeGearSheet"], ["useItem", 0]]);
+  assert.equal(findButton(doc, "use"), undefined, "RULES-13: no USE action for a bagged staff");
+  findButton(doc, "slot:weapon").onclick();
+  assert.deepStrictEqual(log, [["closeGearSheet"], ["equipItem", 0]]);
 });
 
 test("Greyed: the thief fixture's jewelry1 UNEQUIP (full bag) carries data-off/aria-disabled, has no click handler, and its sub reads the bag-full line", () => {

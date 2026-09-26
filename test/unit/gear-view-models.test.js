@@ -560,7 +560,12 @@ test("gearBagCardsModel, jewel card: JEWELRY with only jewelry1 worn; JEWELRY ·
   assert.equal(gearBagCardsModel(st(cloakWorn))[0].tag, "CLOAK · SWAP");
 });
 
-test("gearBagCardsModel, bag-only items: rope gives family null/tag ''/use null/useRef null; a staff gets a use cell; the torch reads consumable", () => {
+// RULES-13 (Phase 75, user 2026-09-25): reverses the pre-Phase-75 reading
+// that a bagged staff "gets a use cell" — a bagged staff's power is inert
+// (75-09's engine-side `notWielded` refusal), so it never carries a USE cell
+// anywhere, for ANY class. A Fighter's bagged staff (this test's fixedChar
+// default class) also carries no family at all — it cannot wield one.
+test("gearBagCardsModel, bag-only items: rope gives family null/tag ''/use null/useRef null; a Fighter's bagged staff is the same (RULES-13: never a use cell); the torch reads consumable", () => {
   const rope = { kind: "tool", n: "Rope", tool: "rope" };
   const staff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 3 };
   const torch = { kind: "tool", n: "Torch", tool: "torch", use: "light" };
@@ -575,11 +580,31 @@ test("gearBagCardsModel, bag-only items: rope gives family null/tag ''/use null/
   assert.equal(ropeCard.useRef, null);
 
   const staffCard = cards.find((card) => card.name === "Poplar Staff");
-  assert.deepStrictEqual(staffCard.use, gearUseCell(stt, staff));
-  assert.equal(staffCard.useRef, 1);
+  assert.equal(staffCard.family, null, "a Fighter cannot wield a staff — no family");
+  assert.equal(staffCard.tag, "");
+  assert.equal(staffCard.use, null, "RULES-13: a bagged staff never gets a use cell, even though itemRowState reads it ready");
+  assert.equal(staffCard.useRef, null);
 
   const torchCard = cards.find((card) => card.name === "Torch");
   assert.equal(torchCard.use.phase, "consumable");
+});
+
+// RULES-13 (Phase 75): a Magic User's bagged staff is a WEAPON-family card
+// instead — EQUIP TO / SWAP INTO WEAPON lives on the sheet (gear-sheet-model
+// tests), not a USE cell here.
+test("gearBagCardsModel, RULES-13: a Magic User's bagged staff is family 'weapon' (SWAP tagged once a weapon is held), never a use cell", () => {
+  const staff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 3 };
+
+  const bareHanded = fixedChar({ cls: "Magic User", weapon: "Fists", items: [staff] });
+  const bareCard = gearBagCardsModel(st(bareHanded))[0];
+  assert.equal(bareCard.family, "weapon");
+  assert.equal(bareCard.tag, "WEAPON");
+  assert.equal(bareCard.use, null);
+  assert.equal(bareCard.useRef, null);
+
+  const wielding = fixedChar({ cls: "Magic User", weapon: "Quarter Staff", items: [staff] });
+  const swapCard = gearBagCardsModel(st(wielding))[0];
+  assert.equal(swapCard.tag, "WEAPON · SWAP");
 });
 
 test("gearBagCardsModel: a bagged jewel/cloak has use null even though itemRowState reads it ready (equippable gear only works from its worn slot)", () => {

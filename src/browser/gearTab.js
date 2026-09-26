@@ -15,7 +15,7 @@
 // window.__mz* bridges (itemRowState/bagArmorText/slotFor/WORN_KEYS_OF/
 // sellPriceFor/lootCompare) replaced by direct imports.
 
-import { WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor } from "../../engine/derived.js";
+import { WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor, weaponRow, wieldedStaff } from "../../engine/derived.js";
 import { isReady, remaining } from "../../engine/effects.js";
 import { bagCap, canStow, slotItems } from "../../engine/items.js";
 import { canRead } from "../../engine/magic.js";
@@ -166,12 +166,16 @@ export const GEAR_COPY = Object.freeze({
  * slot and therefore no empty-slot row at all. No code change needed for the
  * jewelry merge — this loop already reads `WORN_SLOTS` (now three keys) and
  * `GEAR_COPY.empty[slot]` (now keyed by jewelry1/jewelry2/cloak) generically.
- * Pure, no rng, no mutation.
+ * RULES-13 (Phase 75): the weapon row's "is it filled" test reads
+ * `weaponRow(c.weapon)` (WEAPONS OR the wielded-staff row), not a raw
+ * `WEAPONS[c.weapon]` lookup — a wielded staff fills the slot exactly like
+ * an ordinary weapon; the weapon row is never one of the empty-slot rows
+ * while a staff is wielded. Pure, no rng, no mutation.
  */
 export function emptySlotRows(c) {
   if (!c || typeof c !== "object") return [];
   const rows = [];
-  if (!(c.weapon && WEAPONS[c.weapon])) rows.push({ slot: "weapon", text: GEAR_COPY.empty.weapon });
+  if (!(c.weapon && weaponRow(c.weapon))) rows.push({ slot: "weapon", text: GEAR_COPY.empty.weapon });
   const armor = armorDisplay(c);
   if (!armor.worn && !armor.magic) rows.push({ slot: "armor", text: GEAR_COPY.empty.armor });
   for (const slot of WORN_SLOTS) {
@@ -317,6 +321,25 @@ export function gearWornModel(state) {
       if (empties.has("weapon")) {
         return { key, label, filled: false, name: GEAR_COPY.emptyName, note: GEAR_COPY.empty.weapon, value: GEAR_COPY.noValue, use: null, useRef: null, unequip: null };
       }
+      // RULES-13 (Phase 75): a wielded staff IS the weapon row now — its
+      // name, `weaponRow`'s "d8" value, its own USE cell (through the SAME
+      // itemRowState/gearUseCell every other activatable row reads) and an
+      // UNEQUIP that returns it to the bag, exactly like an ordinary weapon.
+      const staff = wieldedStaff(c);
+      if (staff) {
+        const use = gearUseCell(state, staff);
+        return {
+          key,
+          label,
+          filled: true,
+          name: staff.n,
+          note: staff.txt ?? "",
+          value: weaponRow(c.weapon).lab,
+          use,
+          useRef: use ? { slot: "weapon" } : null,
+          unequip: { slot: "weapon", blocked: usage.full },
+        };
+      }
       const magic = c.magicWpn || 0;
       const value = WEAPONS[c.weapon].lab + (magic ? ` +${magic}` : "");
       const note = magic ? GEAR_COPY.weaponMagic.replace("{n}", magic) : GEAR_COPY.weaponMundane;
@@ -394,17 +417,34 @@ export function gearBagMeterModel(state) {
  * cloak/jewel/weapon/armor never gets one here). `desc` is `it.txt`
  * (`bagArmorText(it)` for armor — Phase 28 ARMOR-03, live durability, never
  * the frozen txt) plus the `usableBy(it, c)` suffix. Pure, null-safe.
+ *
+ * RULES-13 (Phase 75): a staff's family is "weapon" for a Magic User only
+ * (`slotFor` never resolves one — a staff has no worn-slot family of its
+ * own) — a Fighter/Thief's bagged staff carries no family at all, matching
+ * the engine's own `wrongClass` gate. Every staff card — Magic User or not —
+ * gets NO use cell (`gearUseCell` is never called for one): a bagged staff's
+ * power is inert (RULES-13's engine half, 75-09's `notWielded` refusal), so
+ * offering USE here would only ever be refused.
  */
 export function gearBagCardsModel(state) {
   const c = (state && state.c) || {};
   return dropShelfItems(c).map(({ it, i }) => {
-    const family = it.kind === "weapon" ? "weapon" : it.kind === "armor" ? "armor" : slotFor(it);
+    const family =
+      it.kind === "weapon"
+        ? "weapon"
+        : it.kind === "armor"
+          ? "armor"
+          : it.kind === "staff"
+            ? (c.cls === "Magic User" ? "weapon" : null)
+            : slotFor(it);
     let swap = false;
-    if (family === "weapon") swap = !!(c.weapon && WEAPONS[c.weapon]);
+    // weaponRow (not a raw WEAPONS lookup) so a currently-wielded staff also
+    // reads as "the weapon slot is occupied" for the swap tag.
+    if (family === "weapon") swap = !!(c.weapon && weaponRow(c.weapon));
     else if (family === "armor") swap = armorDisplay(c).worn;
     else if (family) swap = (WORN_KEYS_OF[family] || []).every((k) => c.worn && c.worn[k]);
     const tag = family ? GEAR_COPY.family[family] + (swap ? GEAR_COPY.swap : "") : "";
-    const use = family ? null : gearUseCell(state, it);
+    const use = it.kind === "staff" ? null : family ? null : gearUseCell(state, it);
     const useRef = use ? i : null;
     const base = it.kind === "armor" ? bagArmorText(it) : (it.txt ?? "");
     const usable = usableBy(it, c);
@@ -717,10 +757,21 @@ export function renderCarriedList(container, state, items, opts = {}, deps = {})
         // wait/refusal. 260918-w4n: gated on st.kind !== "none" (the ONE
         // row-state rule) instead of a raw `it.use` string — a bagged
         // cloak/jewel still shows Use (the tap yields the engine's notWorn
-        // rail line); a bagged staff's Use tap simply works for a Magic User.
-        if (st.kind !== "none") li.appendChild(mkBtn("Use", () => deps.useItem?.(i)));
+        // rail line). RULES-13 (Phase 75, reverses the 260918-w4n reading
+        // above): a bagged staff never gets a Use button at all — its power
+        // is inert until wielded (75-09's `notWielded` refusal), so a tap
+        // here would only ever be refused.
+        if (st.kind !== "none" && it.kind !== "staff") li.appendChild(mkBtn("Use", () => deps.useItem?.(i)));
       } else if (a === "equip") {
         if (it.kind === "weapon" || it.kind === "armor") li.appendChild(mkBtn("Equip", () => deps.equipItem?.(i)));
+        // RULES-13 (Phase 75): a staff is a Magic User's WEAPON-slot item —
+        // the same direct-equip rule as an ordinary bag weapon (no swap
+        // confirm; the engine swaps the outgoing weapon to the bag itself),
+        // gated to Magic User only. A non-Magic-User gets no equip action
+        // here, matching the bag card's own family-less staff.
+        else if (it.kind === "staff") {
+          if (state.c.cls === "Magic User") li.appendChild(mkBtn("Equip", () => deps.equipItem?.(i)));
+        }
         // Phase 37 (GEAR-03), rewritten 260918-wy1 (jewelry-merge) — a bag
         // cloak/jewel in the worn model gets Equip (a key of its family is
         // free) or the swap confirm (every key of its family is occupied —

@@ -21,7 +21,7 @@ import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, ABILI
 // SUB_NOTE for the dossier; ROMAN for the level/Company-panel readouts) —
 // a SEPARATE import line so the line above stays byte-identical.
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN } from "../../content/index.js";
-import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight } from "../../engine/derived.js";
+import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight, weaponRow } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
@@ -54,7 +54,11 @@ function skillTableFor(cls) {
  * the abilityStrike descriptor, not a standing bonus this bracket can show).
  */
 function damageBracket(c) {
-  const w = WEAPONS[c.weapon] || WEAPONS["Club"];
+  // RULES-13 (Phase 75): weaponRow(c.weapon) (WEAPONS OR the wielded-staff
+  // row) mirrors engine/derived.js#weaponDamage's own read exactly — a
+  // wielded staff shows its flat d8 here too; the Club fallback now applies
+  // only to Fists or a name neither table recognizes.
+  const w = weaponRow(c.weapon) || WEAPONS["Club"];
   const R = RACES[c.race];
 
   const diceMin = w.dice.n * 1 + w.dice.bonus;
@@ -617,7 +621,9 @@ export function renderHeroTab(host, state, deps = {}) {
   // reads above (src/browser/rollOdds.js) — the two can never disagree.
   doc.getElementById("s-die").textContent = "d" + strikeDie(c);
   doc.getElementById("s-hit").textContent = heroHitOdds(state).text;
-  const w = WEAPONS[c.weapon] || WEAPONS["Club"];
+  // RULES-13 (Phase 75): weaponRow(c.weapon), not a raw WEAPONS lookup, so
+  // a wielded staff's flat d8 shows on the sheet's damage line too.
+  const w = weaponRow(c.weapon) || WEAPONS["Club"];
   const R = RACES[c.race];
   const bonus = c.prof + c.magicWpn + (R.dmg || 0) + (R.wpnBonus || 0) + eff(c, "dmg");
   doc.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
