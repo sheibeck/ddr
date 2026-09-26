@@ -150,6 +150,16 @@ export const EPITAPHS = {
     "Walked through walls for a living. Retired inside one, on floor {floor}.",
     "{name} is now load-bearing. The dungeon thanks {name} for the support.",
   ],
+  // RULES-09 (Phase 75.1, user 2026-09-24/25): a Pilfer's use-activated
+  // magic-item fumble — the item explodes for a d10 in the Pilfer's own
+  // hands and turns to dust. Deadpan, family-friendly, never a diagnosis:
+  // the fidgeting is voice, not a label.
+  pilferFumble: [
+    "Took a {foe} apart to see how it worked. It did not want to be seen how it worked.",
+    "One use in twenty, a {foe} comes apart in your hands. This was the twentieth-ish.",
+    "The {foe} came with a lifetime warranty. This voided it.",
+    "Curiosity, a {foe}, and an unforgiving d10.",
+  ],
 };
 
 // Death-note templates (mazeworld.html's CAUSE_TEXT, formerly functions).
@@ -175,6 +185,8 @@ export const CAUSE_TEXT = {
   abandon: "abandoned mid-delve by their own player",
   // 260919-00d: the Cloak of Ether's window ending inside solid rock.
   entombed: "became a permanent architectural feature",
+  // RULES-09 (Phase 75.1): a Pilfer's magic-item fumble blast.
+  pilferFumble: "fiddled with a {foe} until it came apart",
 };
 
 // Per-cause list of {placeholder} token names CAUSE_TEXT[cause] requires.
@@ -194,4 +206,5 @@ export const CAUSE_TEXT_TOKENS = {
   poison: [],
   abandon: [],
   entombed: [],
+  pilferFumble: ["foe"],
 };

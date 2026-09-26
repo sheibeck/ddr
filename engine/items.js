@@ -34,7 +34,7 @@ import {
   inDark,
   wieldedStaff,
 } from "./derived.js";
-import { rollDice } from "./dice.js";
+import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { startEffect, startCooldown, isReady, remaining } from "./effects.js";
 import { die } from "./death.js";
 import { derivedRng } from "./rng.js";
@@ -1319,6 +1319,44 @@ export function narrateTimerTransitions(state, transitions, events = []) {
 }
 
 /**
+ * PILFER_FUMBLE_KINDS — RULES-09 (Phase 75.1, user 2026-09-24/25): the three
+ * use-activated magic-item kinds a Pilfer's fumble risk applies to (jewelry,
+ * cloaks, staves). Potions, scrolls and `kind:"tool"` items are NEVER in
+ * this set — they never fumble, no matter who uses them. Frozen; exactly
+ * these three, nothing more (a test pins the exact contents).
+ */
+export const PILFER_FUMBLE_KINDS = Object.freeze(["jewel", "cloak", "staff"]);
+
+/**
+ * pilferFumbles(c, it) — RULES-09: true only when `c` is a Pilfer AND `it`
+ * is one of PILFER_FUMBLE_KINDS. A staff always resolves true here even
+ * though a Pilfer (a Thief) can never actually wield one (useItem's
+ * wrongClass refusal fires first, before this predicate is ever consulted)
+ * — this function answers "does the kind carry fumble risk", not "is this
+ * particular use reachable". Pure, no rng.
+ */
+export function pilferFumbles(c, it) {
+  return !!(c && c.sub === "Pilfer" && it && PILFER_FUMBLE_KINDS.includes(it.kind));
+}
+
+/**
+ * pilferFumbleRng(state, rng, it) — RULES-09: the ONE derived rng stream a
+ * Pilfer's fumble check (and, on a fumble, its d10 blast) draws from —
+ * `derivedRng(<main rng cursor, or 0 for a test double with no getState>,
+ * "pilferFumble", <state.acts when a non-negative integer, else 0>, it.n)`.
+ * Never touches the caller's main `rng` — a non-fumbling Pilfer use leaves
+ * the main rng cursor exactly where a non-Pilfer's identical use would.
+ * Deterministic: the same (cursor, acts, item name) always yields the same
+ * first draw, so a test can predict the blast from a fresh call with the
+ * same key rather than re-using the live instance.
+ */
+export function pilferFumbleRng(state, rng, it) {
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  return derivedRng(cursor, "pilferFumble", acts, it.n);
+}
+
+/**
  * useItem(state, ref, rng, events, now) — triggers a carried OR worn item's
  * effect. Ports mazeworld.html useItem() (lines 1963-1995). `ref` addresses
  * the item two ways: a non-negative bag index (the original form,
@@ -1337,10 +1375,18 @@ export function narrateTimerTransitions(state, transitions, events = []) {
  * 2026-09-18 bag-use amendment) -> notWorn (a bagged cloak/jewelry
  * activatable in the worn-slot model — "activatables must be worn to work";
  * 260918-w4n: a staff is NOT a slot item, `slotFor` returns null for one, so
- * this gate never fires for a staff) -> pilfer -> combatOnly (a targeted kind
- * outside combat) -> cooldown (itemReady). Every reason its own event, never
- * a silent no-op (Phase 25.1 DFB-06). A legacy state (no `c.worn`) never sees
- * `notWorn` — bag-use of a cloak/jewelry stays exactly as today.
+ * this gate never fires for a staff) -> combatOnly (a targeted kind outside
+ * combat) -> notDark (the torch) -> cooldown (itemReady). Every reason its
+ * own event, never a silent no-op (Phase 25.1 DFB-06). A legacy state (no
+ * `c.worn`) never sees `notWorn` — bag-use of a cloak/jewelry stays exactly
+ * as today.
+ *
+ * RULES-09 (Phase 75.1, user 2026-09-24/25): the IDENT-07 Pilfer heal-only
+ * refusal that used to sit here is GONE — a Pilfer uses every item under the
+ * normal rules. In its place, the LAST step before `itemUsed` fires
+ * (`pilferFumbles` below) draws a d20 fumble check for a Pilfer's jewel/
+ * cloak/staff use; every refusal above it (including this ladder's own
+ * `itemReady`) still refuses first and still draws nothing.
  *
  * 260918-w4n (use-activated-only, user ruling 2026-09-18): `kind` resolves
  * as `it.eff2` for a potion, else `it.use ?? activationFor(it)?.kind` — every
@@ -1407,22 +1453,6 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     return events;
   }
 
-  // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-07): a Pilfer's
-  // "cannot use a single magic item that doesn't heal" bad, enforced. Heal-
-  // kind is discretionarily scoped to the two wp-restoring potion effects
-  // (Healing "heal", Xtra Healing "full") — cures, buffs, staves, cloaks and
-  // every other `use:` item are refused BEFORE any side effect, so a refused
-  // use leaves the timers/inventory/rng completely untouched. drinkPotion (the
-  // separate generic healing-draught action) and canRead (engine/magic.js)
-  // already gate a Pilfer independently and are untouched by this change.
-  // Quick 260918 (user bug report): a `kind:"tool"` consumable (the Torch,
-  // content/tools.js) is mundane kit, not a magic item — the Pilfer's bad
-  // never touches it, so a Pilfer lights a torch like anyone else.
-  if (c.sub === "Pilfer" && it.kind !== "tool" && kind !== "heal" && kind !== "full") {
-    events.push({ type: "useRefused", item: it, reason: "pilfer" });
-    return events;
-  }
-
   // CMB-03 (Phase 31): a targeted attack item used outside combat used to
   // silently fizzle (foes = [], every forEach/for a no-op) while STILL
   // burning its cooldown and, for `fire`, drawing a narratively-invisible
@@ -1474,6 +1504,37 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       });
     }
     return events;
+  }
+
+  // RULES-09 (Phase 75.1, user 2026-09-24/25): the LAST refusal-ladder step,
+  // right before `itemUsed` fires — a Pilfer's use of a jewel/cloak/staff
+  // risks a fumble. Both draws come from the SAME derived stream
+  // (pilferFumbleRng): the d20 steady-hands check (rollCheck, atLeastFor(19,
+  // 20) — only a roll of 1 fails), then, only on a fumble, the d10 blast. A
+  // non-fumbling Pilfer use falls straight through unchanged (itemUsed still
+  // fires below, the item still works) — the main rng cursor is untouched
+  // either way, so a Pilfer's ordinary use costs the SAME main-rng draws a
+  // non-Pilfer's identical use would.
+  if (pilferFumbles(c, it)) {
+    const fumbleRng = pilferFumbleRng(state, rng, it);
+    const chk = rollCheck(fumbleRng, 20, atLeastFor(19, 20));
+    if (!chk.ok) {
+      const dmg = fumbleRng.d(10); // roll:amount
+      c.wp -= dmg;
+      // The item is gone — dusted, no armor/ward soak (the Apprentice
+      // backfire precedent: this is the Pilfer's own hands, not a hit).
+      if (slot) delete c.worn[slot];
+      else c.items.splice(i, 1);
+      events.push({
+        type: "pilferFumbled",
+        item: it.n,
+        ...(slot ? { slot } : { index: i }),
+        ...rollFields(chk),
+        dmg,
+      });
+      if (c.wp <= 0) die(state, "pilferFumble", it.n, rng, events, now);
+      return events;
+    }
   }
 
   events.push({ type: "itemUsed", item: it });

@@ -45,6 +45,8 @@ export const TAG_SUBS = Object.freeze([
 export const TAG_CAUSES = Object.freeze([
   "combat", "starve", "trap", "teleport", "fall", "gorge", "backfire", "summon", "maze",
   "quake", "potion", "insanity", "poison", "abandon", "entombed",
+  // RULES-09 (Phase 75.1): appended, never inserted — a Pilfer's magic-item fumble.
+  "pilferFumble",
 ]);
 
 /** The largest value each numeric field carries; anything above encodes the cap. */
