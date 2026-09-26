@@ -1081,7 +1081,13 @@ export const LINE_FOR = {
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost — a cost, so it is
   // narrated (never ORACLE_ONLY), not just bookkeeping.
   rationsEaten: (e) => ({ text: `Rations: −${e?.eats ?? 0} (${e?.left ?? 0} left).`, tone: "beat", priority: PRIORITY.other }),
-  wentHungry: (e) => ({ text: `Hunger: no rations (−${e?.cost ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // RULES-15 (Phase 75, user 2026-09-25): the rail line still says WHY a
+  // spent book stays empty — mirrors eventNarration.js's own `booksKept` clause.
+  wentHungry: (e) => ({
+    text: `Hunger: no rations (−${e?.cost ?? 0} hp).${e?.booksKept ? " Book stays empty." : ""}`,
+    tone: "hurt",
+    priority: PRIORITY.other,
+  }),
   wanderingMonster: (e) => ({
     text: `Camp disturbed.${e?.bard ? " · Bard: the singing carried" : ""}`,
     tone: "hurt",

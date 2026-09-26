@@ -279,13 +279,19 @@ export const EVENT_NARRATION = {
   },
   // Phase 43 (CLAR-01/03/05): hunger names need/have/mouths and the Heft
   // halving — rewritten from the old "No rations." to cause-first, cost-last.
+  // RULES-15 (Phase 75, user 2026-09-25): the `booksKept` clause names WHY a
+  // spent spell book stays empty — an unfed day never refills it (the fed
+  // branch's own refill is the only source of a fresh charge). Omitted when
+  // there was nothing to keep empty (no spent charges) or the hero did not
+  // survive the hunger (that day's own `died` line already says everything
+  // that needs saying).
   wentHungry: (e) => {
     const need = e?.need ?? 1;
     const have = e?.have ?? 0;
     const mouths = e?.mouths ?? 1;
     const cost = e?.cost ?? 0;
     const eatClause = mouths > 1 ? "the party eats" : "you eat";
-    return `<span class="hurt">Hunger: nobody packed — ${eatClause} ${need} a night, and you had ${have}.</span> Cost of living −${cost} hp${e?.heft ? " (Heft: half, as promised)" : ""}.`;
+    return `<span class="hurt">Hunger: nobody packed — ${eatClause} ${need} a night, and you had ${have}.</span> Cost of living −${cost} hp${e?.heft ? " (Heft: half, as promised)" : ""}.${e?.booksKept ? " No supper, no sleep worth the name. Your book stays empty." : ""}`;
   },
   // A1 sibling + P3 (04.2 Text batch): same stripRollDetail defect as
   // afflictionRolled — the old "check: <roll>N</roll> of 8 hours disturbed."

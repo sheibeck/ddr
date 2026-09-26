@@ -770,11 +770,6 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
   if (state.party?.length) {
     for (const m of state.party) {
       cost += upkeep(m);
-      // DFB-05 (Phase 25.1): a member's spell charges recover per day, like
-      // the hero's `c.spellsUsed = 0` above. Conditional so a sheet without
-      // the field (a Fighter/Thief member) never gains one — no new
-      // serialized field on a member that was never a Magic User.
-      if (m.spellsUsed) m.spellsUsed = 0;
     }
   }
   events.push({ type: "dayBegan", day: state.day, camped: !!camped });
@@ -789,7 +784,22 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
       { name: c.name, race: c.race, eats: eatsFor(c), hero: true },
       ...(state.party ?? []).map((m) => ({ name: m.name, race: m.race, eats: eatsFor(m) })),
     ];
-    events.push({ type: "rationsEaten", eats, left: c.rations, eaters });
+    events.push({ type: "rationsEaten", eats, left: c.rations, eaters, ...(anyBookSpent ? { refilled: true } : {}) });
+    // RULES-15 (Phase 75, user 2026-09-25, DECLARED CANON DIVERGENCE): the
+    // hero's and every live member's spell book refills ONLY here, inside
+    // the fed branch, beside the rest heal — moved out of the top of newDay
+    // (hero) and the upkeep loop above (members), which used to reset both
+    // unconditionally regardless of whether the party ate. `refilled: true`
+    // on `rationsEaten` just above already named the cause; this is the
+    // mutation itself. A no-op on a book that was already empty (0 spent
+    // charges never becomes -0), so a Fighter/Thief member (no `spellsUsed`
+    // field at all) is untouched, exactly as before.
+    c.spellsUsed = 0;
+    if (state.party?.length) {
+      for (const m of state.party) {
+        if (m.spellsUsed) m.spellsUsed = 0;
+      }
+    }
     // DELIBERATE RULES CHANGE (Phase 54, USER RULING D): a rested night
     // heals a fraction of maxWP (CAMP_HEAL_FRACTION) — hero-keyed, no depth
     // term; the d10 stays as variance so the draw count is unchanged.
@@ -873,9 +883,25 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
     }
   } else {
     c.wp -= cost;
+    // RULES-15 (Phase 75, user 2026-09-25): an unfed day refills NO book —
+    // the hero's/every member's `spellsUsed` is left exactly as it was
+    // (the refill above never ran). `booksKept` fires only when there was
+    // something to keep empty (a book with spent charges) AND the hero
+    // survives the hunger — a hero who starves to death this same tick
+    // (checked below) gets no book line at all, mirroring how `die()`
+    // supersedes every other narration for that day.
+    const survivesHunger = c.wp > 0;
     // Phase 43 (CLAR-01/03/05, additive): hunger names need/have/mouths and
     // the Heft halving; fixtures compare state, so this moves none.
-    events.push({ type: "wentHungry", cost, need: eats, have: c.rations, mouths: 1 + (state.party?.length ?? 0), ...(skill(c, "Heft") ? { heft: true } : {}) });
+    events.push({
+      type: "wentHungry",
+      cost,
+      need: eats,
+      have: c.rations,
+      mouths: 1 + (state.party?.length ?? 0),
+      ...(skill(c, "Heft") ? { heft: true } : {}),
+      ...(anyBookSpent && survivesHunger ? { booksKept: true } : {}),
+    });
     if (c.wp <= 0) {
       die(state, "starve", null, rng, events, now);
       return events;
