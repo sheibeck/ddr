@@ -789,14 +789,18 @@ test("HARN-02: observe sets fleeBlocked/strikeBlocked on refusal events, clears 
   assert.strictEqual(ctx.parleyBlocked, false);
 });
 
-test("HARN-02: readScroll out of combat when canRead; a Pilfer never reads; no scrolls carried is a no-op", () => {
+// RULES-10 (Phase 75.1): canRead is gone — the bot reads a carried scroll
+// out of combat for EVERY class (a fumble there just fizzles, so it is safe
+// for a non-Magic-User/non-Runes reader too); only "no scrolls carried"
+// stays a no-op.
+test("HARN-02: readScroll out of combat for every class; no scrolls carried is a no-op", () => {
   const ctx = makeBotContext();
 
   const readerState = mkState({ c: mu({ sub: "Sorcerer", grimoire: [], scrolls: 1 }) });
   assert.deepStrictEqual(decideAction(readerState, fixedPolicyRng, ctx), { type: "readScroll" });
 
   const pilferState = mkState({ c: { cls: "Thief", sub: "Pilfer", scrolls: 1 } });
-  assert.strictEqual(decideAction(pilferState, fixedPolicyRng, ctx).type, "move");
+  assert.deepStrictEqual(decideAction(pilferState, fixedPolicyRng, ctx), { type: "readScroll" });
 
   const noScrollsState = mkState({ c: mu({ sub: "Sorcerer", grimoire: [], scrolls: 0 }) });
   assert.strictEqual(decideAction(noScrollsState, fixedPolicyRng, ctx).type, "move");

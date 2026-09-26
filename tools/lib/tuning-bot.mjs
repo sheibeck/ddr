@@ -15,8 +15,7 @@
 // plus READ-ONLY helpers with an existing precedent (both tools already
 // import canParley from engine/combat.js): canCast (engine/derived.js),
 // maxCharges (engine/movement.js), songReady/liveFoes (engine/combat.js,
-// Phase 22 HARN-02), canRead (engine/magic.js, Phase 22 HARN-02),
-// SPELLS/RACES (content/index.js). Phase 42 (BAL-01 second half) adds:
+// Phase 22 HARN-02), SPELLS/RACES (content/index.js). Phase 42 (BAL-01 second half) adds:
 // isReady (engine/effects.js); itemReady/toolIndex/TARGETED_KINDS
 // (engine/items.js); inDark/itemEffectActive/activationFor/
 // DEATH_PANIC_THRESHOLD (engine/derived.js); ABILITY_BY_ID (content/index.js).
@@ -32,7 +31,6 @@ import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
 import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS, wieldedStaff } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
-import { canRead } from "../../engine/magic.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
 import { isReady } from "../../engine/effects.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
@@ -1161,10 +1159,13 @@ export function decideAction(state, policyRng, ctx) {
     }
   }
   // HARN-02 / Claude's Discretion: read a carried scroll out of combat when
-  // able. `useItem` is deliberately NOT used for potions here — found
+  // able. RULES-10 (Phase 75.1): canRead is gone — anyone (every class) now
+  // reads a carried scroll out of combat; a fumble out here just fizzles
+  // (safe), so the bot reads for every class, not only a Magic User/Runes
+  // holder. `useItem` is deliberately NOT used for potions here — found
   // potions are unidentified (one of the ten is Death), so a blind quaff is
   // not human-like; kept simple per 22-CONTEXT.md.
-  if (c.scrolls > 0 && canRead(state)) return { type: "readScroll" };
+  if (c.scrolls > 0) return { type: "readScroll" };
 
   // Phase 42 (BAL-01 second half): Map the Floor, once per floor, when
   // charges are plentiful — a Magic User banks the rest for combat

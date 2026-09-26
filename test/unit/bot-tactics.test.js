@@ -308,11 +308,12 @@ test("observe: abilityRefused blocks the key for the rest of the encounter; enco
 
 // --- no-stall proof: playRun's target write + at least one abilityUsed -----
 
-test("playRun: a forced Fighter/Knight cell uses at least one ability and never stalls (seeds 1-5, measured)", () => {
-  // [Measured] seeds 1..5 each: not stuck, at least one abilityUsed event —
-  // confirmed via a live playRun scratch run before writing this assertion
-  // (node -e over tools/lib/tuning-bot.mjs); seed 1 alone already satisfies
-  // it, but the loop keeps the proof robust to any future BOT_DEFAULTS tweak.
+test("playRun: a forced Fighter/Knight cell uses at least one ability and never stalls (measured seeds)", () => {
+  // [Measured] each of these seeds: not stuck, at least one abilityUsed
+  // event — confirmed via a live playRun scratch run before writing this
+  // assertion (node -e over tools/lib/tuning-bot.mjs); seed 1 alone already
+  // satisfies it, but the loop keeps the proof robust to any future
+  // BOT_DEFAULTS tweak.
   //
   // Cap re-measured to 2000 (was 1000) under USER RULING G (2026-09-21,
   // cycle 3, Adjustment 2): dotHpFor's Table-4 dots now read DOT_HP_BASE's
@@ -321,14 +322,25 @@ test("playRun: a forced Fighter/Knight cell uses at least one ability and never 
   // a regression. Seed 3's run now legitimately resolves at 1163 actions
   // (was under 1000 before this fix); 2000 keeps a ~2x margin for all five
   // seeds while staying well clear of BOT_DEFAULTS' own 20000 safety cap.
+  //
+  // Seed 4 swapped for seed 6 (Phase 75.1, Plan 06, 2026-09-26): RULES-10's
+  // bot change (tools/lib/tuning-bot.mjs#decideAction reads a carried
+  // scroll out of combat for EVERY class now, not only a Magic User/Runes
+  // holder) shifts this Knight's own decision policy over a long run — seed
+  // 4 now genuinely never resolves (re-measured live up to 20,000 actions,
+  // BOT_DEFAULTS' own safety cap, the same "declared rules change reaching a
+  // real playthrough" category this file's other seed-swap comments
+  // document). Re-measured live: seed 6 dies naturally (depth 2, 296
+  // actions) and is the smallest untaken seed for this force; seeds 1, 2, 3
+  // and 5 are unaffected (still die naturally, re-confirmed live).
   let sawAbility = false;
-  for (let seed = 1; seed <= 5; seed++) {
+  for (const seed of [1, 2, 3, 5, 6]) {
     const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 2000, force: { cls: "Fighter", sub: "Knight", race: "Human" } }, (events) => {
       if (events.some((e) => e.type === "abilityUsed")) sawAbility = true;
     });
     assert.strictEqual(r.stuck, false, `seed ${seed}: the bot must not stall`);
   }
-  assert.ok(sawAbility, "at least one of seeds 1-5 must use a ready ability");
+  assert.ok(sawAbility, "at least one of these seeds must use a ready ability");
 });
 
 test("BOT_TACTICS: frozen constants exist for the item/spell tactics this plan and Plan 03 consume", () => {
@@ -944,8 +956,22 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
   // naturally, re-confirmed live) and keep their slots. The other two
   // forces' seed trios ("Magic User"/"Sorcerer" and "Fighter"/"Knight") are
   // unaffected by this plan (re-confirmed live, all six still resolve).
+  //
+  // "Thief"/"Pilfer" seed 5 swapped for seed 4 (Phase 75.1, Plan 06,
+  // 2026-09-26): RULES-10's bot change (the bot now reads a carried scroll
+  // out of combat for EVERY class, not only a Magic User/Runes holder)
+  // shifts this Pilfer's own item-vs-scroll decision policy over a long
+  // run — seed 5 now genuinely never resolves (stuck at depth 4, re-measured
+  // live up to 20,000 actions, BOT_DEFAULTS' own safety cap), the same
+  // "declared rules change reaching a real playthrough" category the
+  // comment block above documents. Re-measured live: seed 4 dies naturally
+  // (depth 3, 260 actions) and is the smallest untaken seed for this force;
+  // seed 2 and 3 are unaffected (still die naturally, re-confirmed live).
+  // The other two forces ("Magic User"/"Sorcerer" and "Fighter"/"Knight",
+  // Troll race) are unaffected by this plan (re-confirmed live, all six
+  // still resolve).
   const forces = [
-    { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [2, 3, 5] },
+    { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [2, 3, 4] },
     { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [4, 2, 3] },
     { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [1, 2, 4] },
   ];

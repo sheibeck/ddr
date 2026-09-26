@@ -75,9 +75,15 @@ const PINNED = {
   // pin ever exercises a Pilfer's non-heal item use within its own action
   // budget). Regenerated via `node tools/roll-high-baseline.mjs pins`
   // (each hashed identically twice).
+  //
+  // "solo-thief-pilfer" re-pinned YET AGAIN (Phase 75.1, Plan 06,
+  // 2026-09-26) — see the "deep-14" comment block below for the full
+  // RULES-10 rationale (the bot now reads a scroll for every class); this
+  // Pilfer's own first scroll read lands at bot step 138 (`reader:
+  // "intel"`), the outcome shape unchanged (400 actions, not dead, depth 4).
   "solo-1": { actions: 400, dead: false, depth: 5, hash: "ce883a88443d0e1a2ff1547974c0f9ce5c2a647f479e9ef8de4d7bf4644f8ca6" },
   "solo-2": { actions: 400, dead: false, depth: 4, hash: "b4daf5d20b7f4d3b36d55c1790f53f0d9610d64e3c45a9d81e3700e451ee3e4f" },
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "cbc2eb2768e9586b2437c032c5a23b082e20116391b02ede004dfaed32bd6e4b" },
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "3371e1f8bfdce95fed2d9bc4ea7d854e1718c9c6a69de3cae070f8bb80fd4cbc" },
   "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "444ec2ca839587b2249e6f89828a40fef887b2668b935c228a510e99c4ac4207" },
   "party-1": { actions: 400, dead: false, depth: 4, hash: "ab7a42cbfcc8f9cad5845ce73e5f51b59a1942f4cb0ff25c1e2a78591c0aa61d" },
   "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "1ad4462f4a8b7017cc14d5bf5f566677f8efda6d0cd4f6fab06cfb94b928370d" },
@@ -89,7 +95,26 @@ const PINNED = {
   // byte-identical again by Plan 12 — see the "solo-thief-pilfer" comment
   // block above.
   "deep-8": { actions: 93, dead: true, depth: 9, hash: "74fedc2dd92b7a34da2bc505dcd7c2575b43726e24b6b07e23b39c5f40f9cace" },
-  "deep-14": { actions: 300, dead: false, depth: 16, hash: "68598e3d89c5f13798f21a13af02144dc9e43c5ea05548b4cb6b189a22df41bc" },
+  // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
+  // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
+  // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll
+  // out of combat for EVERY class, not only a Magic User/Runes-Signs holder.
+  // Both moved labels are Thieves (solo-thief-pilfer: a forced Pilfer;
+  // deep-14: an Acrobat) — NEITHER is a Magic User, so this is not a STOP.
+  // Bisected live (playRun's own onStep hook, watching for the first
+  // `scrollRead` event): solo-thief-pilfer's first scroll read lands at bot
+  // step 138 (`reader: "intel"`), deep-14's at step 168 (`reader: "intel"`)
+  // — in both cases the FIRST divergence-causing event is exactly this
+  // plan's own new intel-read roll, previously unreachable for either
+  // character (the old canRead-gated bot never dispatched `readScroll` for
+  // a non-Magic-User/non-Runes reader at all). Every OTHER label re-measured
+  // byte-identical (no other pin's Thief/Fighter ever carries a scroll
+  // within its own action budget, and every Magic User label — solo-1,
+  // solo-2, solo-magicuser-sorcerer, party-1 — is unaffected, since its own
+  // `readScroll` path is byte-identical to before this phase). Regenerated
+  // via `node tools/roll-high-baseline.mjs pins` (each hashed identically
+  // twice).
+  "deep-14": { actions: 300, dead: false, depth: 16, hash: "f1fe52d54e780e0ddf6157179b3c8b1b54b5f5dc81b787a74b925629db0d20dd" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

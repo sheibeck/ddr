@@ -340,8 +340,7 @@ test("voice: a bare {type} renders a non-empty string for the three new events o
   for (const type of ["scrollDeciphered", "scrollGarbled", "scrollFumbled"]) {
     assert.ok(EVENT_NARRATION[type]({ type }).length > 0, `EVENT_NARRATION.${type} produced no text from a bare {type}`);
     const line = LINE_FOR[type]({ type });
-    const text = line && "text" in line ? line.text : line?.toasts?.[0]?.text;
-    assert.ok(text && text.length > 0, `LINE_FOR.${type} produced no text from a bare {type}`);
+    assert.ok(line && line.text && line.text.length > 0, `LINE_FOR.${type} produced no text from a bare {type}`);
   }
 });
 
