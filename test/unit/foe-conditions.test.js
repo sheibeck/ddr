@@ -310,6 +310,11 @@ const NOT_A_CONDITION = Object.freeze({
   ward: "RULES-10 (Phase 75.1): the foe's own Shield pool / Bubble mirror — CMBUI-13 (Phase 77) draws its indicator",
   rebound: "RULES-10 (Phase 75.1): a caught blow queued to throw back at the foe's own next turn — engine bookkeeping, not a chip",
   mirror: "RULES-10 (Phase 75.1): the foe's own Mirror Self — CMBUI-13 (Phase 77) draws its indicator",
+  // RULES-10 (Phase 75.1, plan 04, Task 1): the reader's own burn — this
+  // table (src/browser/foeConditions.js) is FOE-card chips only; the hero's
+  // own burn is combat-scoped bookkeeping, narrated via selfDotTick, not a
+  // foe chip.
+  selfDot: "RULES-10 (Phase 75.1): the reader's own burn — combat-scoped bookkeeping narrated via selfDotTick, not a foe chip",
 });
 
 function stripComments(src) {

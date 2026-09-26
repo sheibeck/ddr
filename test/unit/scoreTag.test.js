@@ -81,7 +81,7 @@ test("the index lists are frozen literals in their pinned orders", () => {
   ]);
   assert.deepEqual([...TAG_CAUSES], [
     "combat", "starve", "trap", "teleport", "fall", "gorge", "backfire", "summon", "maze",
-    "quake", "potion", "insanity", "poison", "abandon", "entombed", "pilferFumble",
+    "quake", "potion", "insanity", "poison", "abandon", "entombed", "pilferFumble", "scrollFumble",
   ]);
   assert.deepEqual({ ...TAG_FIELD_CAPS }, {
     level: 99, floor: 999, day: 9999, steps: 99999, kills: 9999, gold: 999999, sp: 999999,
@@ -295,10 +295,10 @@ test("a 64-character tag decodes; the First L. name keeps its dot", () => {
 });
 
 test("out-of-range indices decode to empty strings, and an empty name is allowed", () => {
-  // RULES-09 (Phase 75.1): the cause index bumps from 15 to 16 — TAG_CAUSES
-  // grew by one entry ("pilferFumble", index 15), so 15 is no longer out of
-  // range.
-  const d = decodeTag("v1.6.24.3.16.7.22.431.19.4688.1180.");
+  // RULES-09/RULES-10 (Phase 75.1): the cause index bumps from 16 to 17 —
+  // TAG_CAUSES grew by a second entry ("scrollFumble", index 16), so 16 is no
+  // longer out of range.
+  const d = decodeTag("v1.6.24.3.17.7.22.431.19.4688.1180.");
   assert.ok(d);
   assert.equal(d.race, "");
   assert.equal(d.sub, "");

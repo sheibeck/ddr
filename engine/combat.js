@@ -2595,6 +2595,41 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
 }
 
 /**
+ * fumbleHeavyBlow(state, spell, how, rng, events, now) — RULES-10 (Phase
+ * 75.1, user ruling 2026-09-25): "no scroll fumble kills outright." The ONE
+ * replacement for every instant-kill fumble effect (Death, Petrify, Freeze's
+ * frozen-solid payoff, Noxious Vapor's kill-on-a-face) — a heavy, UNSOAKED
+ * blow (a d10 from its own derived stream, plus the current floor's depth —
+ * never the main rng) plus the Afraid condition, raised to at least
+ * AFRAID_ROUNDS (never lowered — a hero already more Afraid than this stays
+ * that way). The blow bypasses armor, ward and Hardiness entirely (it never
+ * touches applyFoeDamageToPlayer's pipeline above) and is real hp loss
+ * through the normal death path — it CAN still kill an already-wounded
+ * reader, but never on its own account: a hero with more than `10 +
+ * state.floor.depth` hp always survives it, whatever the d10 shows.
+ *
+ * `how` names what actually happened for the event/narration (e.g.
+ * "frozen") — the fumble table's own flavor, not a new mechanic per spell.
+ * Returns `{ died }`, mirroring every other lethal-branch contract in this
+ * module.
+ */
+export function fumbleHeavyBlow(state, spell, how, rng, events = [], now = Date.now) {
+  const c = state.c;
+  const C = state.combat;
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const blowRng = derivedRng(cursor, "fumbleBlow", state.acts || 0, (C && C.round) || 0);
+  const amount = blowRng.d(10) + state.floor.depth; // roll:amount
+  c.wp -= amount;
+  if (C) C.afraid = Math.max(C.afraid || 0, AFRAID_ROUNDS);
+  events.push({ type: "fumbleHeavyBlow", spell, how, amount, depth: state.floor.depth, afraid: C ? C.afraid : AFRAID_ROUNDS });
+  if (c.wp <= 0) {
+    die(state, "scrollFumble", spell, rng, events, now);
+    return { died: true };
+  }
+  return { died: false };
+}
+
+/**
  * foeTurn(state, rng, events) — every live foe's attack. Step order (Phase
  * 19 additions marked *NEW*, Phase 38 additions marked *ABIL*, Phase 40
  * additions marked *SPELL*): *NEW* a queued summon joins C.foes -> regen tick
@@ -2671,6 +2706,37 @@ export function foeTurn(state, rng, events = []) {
       const regen = applyCasterHealMul(c.sub, r);
       c.wp = Math.min(c.maxWP, c.wp + regen);
       events.push({ type: "regenerated", amount: regen, ...(regen !== r ? { halved: true } : {}) });
+    }
+  }
+  // RULES-10 (Phase 75.1, the reader's burn): a fumbled Acid or Ice landing
+  // on the READER (not a foe) burns c.wp directly once per foeTurn — no
+  // armor, ward or Hardiness soak (this is poison working from the inside,
+  // not a blow landing on you), drawn from its own derived stream, never the
+  // main rng, so a fight with no selfDot draws and narrates identically to
+  // before. Placed right after the hero's own regeneration tick, one tier up
+  // from the per-foe acid/dot ticks immediately below (the hero's own
+  // condition ticks first, mirroring c.regen's own position above it).
+  if (C.selfDot && C.selfDot.left > 0) {
+    const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+    const selfDotRng = derivedRng(cursor, "selfDot", C.round);
+    const burn = rollDice(selfDotRng, C.selfDot.dmg);
+    c.wp -= burn;
+    C.selfDot.left--;
+    events.push({ type: "selfDotTick", spell: C.selfDot.spell, by: C.selfDot.by, amount: burn, left: C.selfDot.left });
+    if (c.wp <= 0) {
+      die(state, "scrollFumble", C.selfDot.spell, rng, events);
+      return events;
+    }
+    if (C.selfDot.left <= 0) {
+      const { spell, then } = C.selfDot;
+      delete C.selfDot;
+      // "then 'heavy'" (Ice): the last tick leaves the hero standing, so the
+      // promised freeze lands as the heavy blow instead of an automatic
+      // death — never both a burn AND a separate kill for the same fumble.
+      if (then === "heavy") {
+        const blow = fumbleHeavyBlow(state, spell, "frozen", rng, events);
+        if (blow.died) return events;
+      }
     }
   }
   for (const f of C.foes) {
