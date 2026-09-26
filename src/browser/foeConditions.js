@@ -19,8 +19,15 @@
 //
 // House label style: one capitalised word ("Hamstrung", "Marked"), with
 // " · n" appended when the effect is timed ("Blind · 2", "Acid · 3",
-// "Weakened · 2"). A foe debuff is tone "good" (good for the player);
-// Frenzied, the one foe buff, is tone "bad".
+// "Weakened · 2"). A foe debuff is tone "good" (good for the player); a foe
+// BUFF is tone "bad": Frenzied, Unmoved, and the gifts a fumbled helpful
+// scroll hands a foe.
+//
+// Phase 77 (CMBUI-13) completes the foe side: every per-foe field Phase
+// 75.1's resolveScrollFumble sets (the ward as Shielded or Bubbled, the
+// Bubble's Rebound, Mirror Self, Strength, Regeneration, Sense Presence) is
+// a chip here, so a foe the player's own fumble made stronger shows it on
+// its card like any other condition.
 //
 // Phase 71 (D-16, R-30): each condition also carries a one-line
 // description (FOE_CONDITION_DESC), and every chip carries it as `desc`.
@@ -62,6 +69,15 @@ export const FOE_CONDITION_COPY = Object.freeze({
   stone: "Stone",
   held: "Held",
   unmoved: "Unmoved",
+  // Phase 77 (CMBUI-13): the gifts a fumbled helpful scroll hands the
+  // targeted foe (engine/scrollFumble.js#resolveHelpful, RULES-10).
+  shielded: "Shielded",
+  bubbled: "Bubbled",
+  rebound: "Rebound",
+  mirror: "Mirrored",
+  might: "Strong",
+  regen: "Regenerating",
+  senses: "Senses",
 });
 
 /** FOE_CONDITION_DESC — one deadpan line per FOE_CONDITION_COPY key (the
@@ -108,6 +124,39 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // resistControl (engine/combat.js) — a control shaken off outright; %s is
   // filled in by descFor with the effect's own word.
   unmoved: "It shook off %s. Deeper foes do so more often.",
+  // Phase 77 (CMBUI-13) — the fumble gifts. Each line was written from the
+  // resolver that applies it (engine/scrollFumble.js#resolveHelpful) and the
+  // engine code that consumes it (read only), and states no hidden number.
+  // Applied: resolveHelpful's plain ward { pool, rounds } (Shield). Consumed:
+  // engine/foeDamage.js#damageFoe soaks every blow from the pool before the
+  // armour soak, deleting it when emptied; engine/combat.js#foeTurn's tail
+  // ticks its rounds down and deletes it at 0.
+  shielded: "Your shield scroll picked the wrong side: it soaks up blows before they reach it, until it breaks or the count runs out.",
+  // Applied: resolveHelpful's armed ward { mirror: true, popPool } (Bubble).
+  // Consumed: damageFoe catches the next blow whole, stores a blow from your
+  // side as `rebound`, then pops into a plain pool for the rest of the round
+  // (the Shielded chip); foeTurn never ticks an armed one down.
+  bubbled: "Your bubble, on its side now: the next blow at it is caught whole, sent back if you threw it, and then it thins to a film for the rest of the round.",
+  // Applied: damageFoe stores a caught hero-side blow as `rebound`. Consumed:
+  // foeTurn's head throws it back through applyFoeDamageToPlayer, then
+  // deletes it (a foe that died first just drops it).
+  rebound: "Its bubble caught your blow whole, and it throws that same blow straight back at you when the foes next move.",
+  // Applied: resolveHelpful's `mirror` (the fumble row's rounds dice).
+  // Consumed: engine/derived.js#targetStrikeFaces (and allyTurn/memberStrike's
+  // inline copies) cap every strike at it to the top face; foeTurn's tail
+  // ticks it down (foeMirrorFaded).
+  mirror: "Copies of it everywhere, and only one is real: every strike at it, yours or your party's, lands only on the very top roll until the count runs out.",
+  // Applied: resolveHelpful's `might` (Strength's own dice) plus the
+  // one-time `strengthBoost` that adds its whole maximum again. Consumed:
+  // engine/combat.js#foeLevelBase adds `might` to every blow it lands (hero,
+  // party and pursuit alike), for the rest of the fight.
+  might: "Your Strength went to it instead: it gained a second helping of hit points on the spot, and every blow it lands hits harder for the rest of the fight.",
+  // Applied: resolveHelpful's `regen = true`. Consumed: foeTurn heals it a
+  // little each round below its maximum, ahead of the asleep/stunned skips.
+  regen: "It knits itself back together a little every round, even while it naps, for the rest of the fight.",
+  // Applied: resolveHelpful's `senses = 1`. Consumed: nowhere — a foe's
+  // senses have no rule once a fight is joined (75.1-03).
+  senses: "It can sense your presence now. Since it is already fighting you, this changes nothing at all.",
 });
 
 /** posInt(n) — n when it is a whole number above zero, else null. */
@@ -137,7 +186,8 @@ const RESIST_EFFECT_WORD = Object.freeze({
 
 /**
  * FOE_CONDITIONS — frozen, ordered. Each entry:
- *   key      the engine field (or, for Weakened, the combat-wide flag) it shows
+ *   key      the engine field (or, for Weakened, the combat-wide flag; for
+ *            the ward, one key per shape: shielded/bubbled) it shows
  *   label    its FOE_CONDITION_COPY label (labelFor overrides it per foe)
  *   tone     "good" for a foe debuff, "bad" for a foe buff
  *   fields   every engine field the entry reads (the coverage guard's list)
@@ -183,8 +233,34 @@ export const FOE_CONDITIONS = Object.freeze(
     { key: "stupid", label: C.stupid, desc: D.stupid, tone: "good", fields: ["stupid"], when: (f) => !!f.stupid, rounds: none },
     { key: "shrunk", label: C.shrunk, desc: D.shrunk, tone: "good", fields: ["shrunk"], when: (f) => !!f.shrunk, rounds: none },
     { key: "fixated", label: C.fixated, desc: D.fixated, tone: "good", fields: ["fixated"], when: (f) => !!f.fixated, rounds: none },
-    // The one foe BUFF: it swings twice.
+    // A foe BUFF: it swings twice.
     { key: "frenzied", label: C.frenzied, desc: D.frenzied, tone: "bad", fields: ["frenzied"], when: (f) => !!f.frenzied, rounds: none },
+    // Phase 77 (CMBUI-13) — the gifts a fumbled helpful scroll hands the
+    // targeted foe (engine/scrollFumble.js#resolveHelpful, RULES-10). Every
+    // one is a foe BUFF, so tone "bad", like Frenzied.
+    //
+    // The foe's ward, in its two shapes (the SAME two the hero's own ward
+    // takes). A plain pool — Shield's { pool, rounds }, or a popped Bubble's
+    // one-round film — soaks in engine/foeDamage.js#damageFoe and ticks down
+    // in engine/combat.js#foeTurn's tail.
+    {
+      key: "shielded", label: C.shielded, desc: D.shielded, tone: "bad", fields: ["ward"],
+      when: (f) => !!f.ward && !f.ward.mirror && typeof f.ward.pool === "number" && f.ward.pool > 0,
+      rounds: (f) => posInt(f.ward.rounds),
+    },
+    // An armed Bubble { mirror: true } waits for a blow (damageFoe catches it
+    // whole); it is never ticked down, so it has no count.
+    { key: "bubbled", label: C.bubbled, desc: D.bubbled, tone: "bad", fields: ["ward"], when: (f) => !!f.ward && f.ward.mirror === true, rounds: none },
+    // damageFoe's caught hero-side blow, thrown back at the top of foeTurn.
+    { key: "rebound", label: C.rebound, desc: D.rebound, tone: "bad", fields: ["rebound"], when: (f) => typeof f.rebound === "number" && f.rebound > 0, rounds: none },
+    // Mirror Self's rounds: targetStrikeFaces caps every strike at the top face; foeTurn ticks it.
+    { key: "mirror", label: C.mirror, desc: D.mirror, tone: "bad", fields: ["mirror"], when: (f) => posInt(f.mirror) !== null, rounds: (f) => posInt(f.mirror) },
+    // Strength: `might` feeds foeLevelBase; `strengthBoost` is the one-time hit-point doubling.
+    { key: "might", label: C.might, desc: D.might, tone: "bad", fields: ["might", "strengthBoost"], when: (f) => posInt(f.might) !== null || posInt(f.strengthBoost) !== null, rounds: none },
+    // Regeneration: foeTurn's per-foe heal below its maximum.
+    { key: "regen", label: C.regen, desc: D.regen, tone: "bad", fields: ["regen"], when: (f) => !!f.regen, rounds: none },
+    // Sense Presence: no rule reads a foe's senses mid-fight; shown because the player caused it.
+    { key: "senses", label: C.senses, desc: D.senses, tone: "bad", fields: ["senses"], when: (f) => !!f.senses, rounds: none },
     // Weaken is COMBAT-WIDE (C.weakened halves every foe's damage); its
     // duration lives on the hero's own c.timers["spell:weaken"] record.
     { key: "weakened", label: C.weakened, desc: D.weakened, tone: "good", fields: ["weakened"], when: (f, s) => !!(s && s.combat && s.combat.weakened), rounds: (f, s) => weakenLeft(s) },

@@ -23,6 +23,7 @@ import assert from "node:assert/strict";
 
 import { foeDetailsCard, FOE_DETAILS_COPY, detailsLabel, foeConditionEffect } from "../../src/browser/foeDetails.js";
 import { foeConditionChips } from "../../src/browser/foeConditions.js";
+import { heroHitOddsVs } from "../../src/browser/rollOdds.js";
 import { FOE_GLYPHS } from "../../src/browser/combatPanel.js";
 import { RAIL_HOLD } from "../../src/browser/rail.js";
 import { BESTIARY, ENC_TYPES } from "../../content/bestiary.js";
@@ -489,6 +490,54 @@ test("(Phase 74) the long-press effect line for a Weakened fight reads the effec
   const [weak] = foeConditionChips(ned, state);
   const lines = effectLines(foeDetailsCard(0, state));
   assert.deepEqual(lines, [`Weakened · 2 — it hits you only on 18–20 (d20). ${weak.desc}`]);
+});
+
+// ─── Phase 77 (CMBUI-13): the fumble gifts on the long press ──────────────
+
+test("(Phase 77) a mirrored foe's long-press line gives the range you now hit it on, measured by heroHitOddsVs", () => {
+  const ned = pick("Humans", "Ned");
+  ned.mirror = 2; // engine/scrollFumble.js#resolveHelpful's fumbled Mirror Self
+  const state = fullHeroState(ned);
+  const range = heroHitOddsVs(state, ned).text;
+  assert.equal(foeConditionEffect({ key: "mirror" }, ned, state), `you hit it only on ${range}`);
+  // The mirror cap is the top face only, so the measured range is the die's last face.
+  assert.equal(range, "20 (d20)");
+  const [mirrored] = foeConditionChips(ned, state);
+  assert.equal(mirrored.text, "Mirrored · 2");
+  assert.deepEqual(effectLines(foeDetailsCard(0, state)), [`Mirrored · 2 — you hit it only on ${range}. ${mirrored.desc}`]);
+});
+
+test("(Phase 77) a held foe states the hero's floored-at-5 odds, like a dozing one (a level-1 Magic User)", () => {
+  const held = pick("Humans", "Ned");
+  held.held = { kind: "frozen", left: 2 };
+  const state = fullHeroState(held, { c: { cls: "Magic User", sub: "Wizard" } });
+  const range = heroHitOddsVs(state, held).text;
+  assert.equal(range, "16–20 (d20)");
+  assert.equal(foeConditionEffect({ key: "held" }, held, state), `you hit it on ${range}`);
+});
+
+test("(Phase 77) every other fumble gift has no to-hit effect and keeps '<text> — <desc>'", () => {
+  const ned = pick("Humans", "Ned");
+  const state = fullHeroState(ned);
+  for (const key of ["shielded", "bubbled", "rebound", "might", "regen", "senses", "resisted"]) {
+    assert.equal(foeConditionEffect({ key }, ned, state), null, key);
+  }
+  const f = pick("Beasts", "Wolf");
+  Object.assign(f, { ward: { pool: 12, rounds: 3, name: "Shield" }, rebound: 4, might: 5, strengthBoost: 10, regen: true, senses: 1 });
+  const full = fullHeroState(f);
+  const chips = foeConditionChips(f, full);
+  assert.deepEqual(chips.map((c) => c.text), ["Shielded · 3", "Rebound", "Strong", "Regenerating", "Senses"]);
+  assert.deepEqual(effectLines(foeDetailsCard(0, full)), chips.map((c) => `${c.text} — ${c.desc}`));
+});
+
+test("(Phase 77) a mirrored foe with no full hero drops the clause and never throws", () => {
+  const ned = pick("Humans", "Ned");
+  ned.mirror = 2;
+  const state = stateWith([ned]);
+  assert.doesNotThrow(() => foeConditionEffect({ key: "mirror" }, ned, state));
+  assert.equal(foeConditionEffect({ key: "mirror" }, ned, state), null);
+  const [mirrored] = foeConditionChips(ned, state);
+  assert.deepEqual(effectLines(foeDetailsCard(0, state)), [`Mirrored · 2 — ${mirrored.desc}`]);
 });
 
 test("(Phase 74) a chip with no to-hit effect keeps '<text> — <desc>' exactly as today, even on a full hero", () => {
