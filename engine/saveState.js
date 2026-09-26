@@ -532,8 +532,10 @@ const LEGACY_JEWELRY_KEYS = Object.freeze(["ring", "bracelet", "amulet", "helm"]
  * current content authors one, but the same discipline as before).
  * `clampCarry(c)` runs immediately after the fold so an over-cap bag drops
  * the appended overflow pieces exactly like any other overflow item — a
- * no-op without `c.bag`. No dual path: every load runs this, whether or not
- * the save ever had `c.worn` (the whole block is itself gated on `"worn" in
+ * no-op without `c.bag`. SAV-06/SAV-07 (Phase 76): it runs ONLY when a fold
+ * appended a piece to the bag, so a save with nothing to fold keeps its
+ * gold and rations exactly as saved. No dual path: every load runs this,
+ * whether or not the save ever had `c.worn` (the whole block is itself gated on `"worn" in
  * c`, so a save with no `c.worn` at all is untouched, exactly as before).
  */
 function sanitizeWorn(c) {
@@ -545,10 +547,18 @@ function sanitizeWorn(c) {
         const it = c.worn[slot];
         if (!it || typeof it !== "object" || Array.isArray(it)) delete c.worn[slot];
       }
+      // SAV-06/SAV-07 (Phase 76, plan 76-04): `spilled` records whether a
+      // fold below actually appended a piece to the bag. Only then does the
+      // clamp run, so a current save (nothing to fold) loads its gold and
+      // rations exactly as saved. Live play never clamps gold on a gain
+      // (items.js#gainWilmst; only sellItem clamps), so an unconditional
+      // clamp here cut a deep hero's over-cap purse on every relaunch.
+      let spilled = false;
       if (c.worn.staff) {
         c.items = Array.isArray(c.items) ? c.items : [];
         c.items.push(c.worn.staff);
         delete c.worn.staff;
+        spilled = true;
       }
       for (const legacyKey of LEGACY_JEWELRY_KEYS) {
         const it = c.worn[legacyKey];
@@ -559,6 +569,7 @@ function sanitizeWorn(c) {
           } else {
             c.items = Array.isArray(c.items) ? c.items : [];
             c.items.push(it);
+            spilled = true;
           }
         }
         delete c.worn[legacyKey];
@@ -566,7 +577,7 @@ function sanitizeWorn(c) {
       for (const slot of Object.keys(c.worn)) {
         if (!WORN_SLOTS.includes(slot)) delete c.worn[slot];
       }
-      clampCarry(c);
+      if (spilled) clampCarry(c);
     }
   }
   return c;
