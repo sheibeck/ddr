@@ -33,8 +33,10 @@ import url from "node:url";
 import { boot, initRun, getState, dispatch } from "../../src/browser/engineAdapter.js";
 import { flush as flushStorage } from "../../src/browser/storage.js";
 import { serializeRun } from "../../engine/saveState.js";
+import { newRun, applyAction } from "../../engine/engine.js";
 import { startCombat } from "../../engine/combat.js";
-import { openStore } from "../../engine/economy.js";
+import { openStore, storeBuyRefusal } from "../../engine/economy.js";
+import { meetJoiner } from "../../engine/encounters.js";
 import { offerLoot } from "../../engine/items.js";
 import { makeRng } from "../../engine/rng.js";
 import { stripVolatileFields } from "../parity/harness/diffState.js";
@@ -130,6 +132,156 @@ test("(b) SAV-07 (Phase 76): relaunch mid-store — the booted store deep-equals
     assert.deepStrictEqual(booted.store, snapshot.store, "SAV-07: the same stock, prices and sold flags");
     assert.deepStrictEqual(booted.floor, snapshot.floor, "the same floor and position");
     assert.equal(booted.c.name, snapshot.c.name, "the same hero");
+  });
+});
+
+// ─── SAV-06/SAV-07 (Phase 76, plan 76-04): every round is saved, every ───
+// ─── relaunch resumes it exactly, and the fight cannot be escaped ────────
+
+// Seed 4254 (found by trying seeds 4240-4299): a depth-1 Fighter whose
+// startCombat fight lasts seven attacks and whose last attack kills the last
+// foe and drops a spoils pile, so one run covers the encounter step, several
+// joined rounds and the killing blow.
+const FIGHT_SEED = 4254;
+
+/** JSON-plain copy, for comparing live values with saved ones. */
+const jsonCopy = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+
+/** The unbroken reference fight: the same seed and steps with no relaunch. */
+function referenceFight(seed, maxAttacks) {
+  let s = newRun(seed);
+  startCombat(s, false, null, makeRng(s.rngState));
+  const steps = [jsonCopy(s.combat)];
+  s = applyAction(s, { type: "fight" }).state;
+  steps.push(jsonCopy(s.combat));
+  for (let n = 0; n < maxAttacks && s.combat; n++) {
+    s = applyAction(s, { type: "attack" }).state;
+    steps.push(jsonCopy(s.combat));
+  }
+  return { steps, final: s };
+}
+
+test("SAV-06 (Phase 76): every combat dispatch persists the live fight, a relaunch after every round resumes the identical fight (effects, timers, no beats), a move after it is refused, and the relaunched fight plays out exactly like the unbroken one", async () => {
+  await withFakeLocalStorage(async (store) => {
+    const ref = referenceFight(FIGHT_SEED, 20);
+    assert.ok(ref.steps.length >= 5, "the reference fight lasts several rounds");
+    assert.equal(ref.steps.at(-1), null, "the reference fight ends");
+
+    initRun(FIGHT_SEED);
+    const s = getState();
+    startCombat(s, false, null, makeRng(s.rngState));
+    const actions = [{ type: "fight" }, ...Array.from({ length: ref.steps.length - 2 }, () => ({ type: "attack" }))];
+
+    // The encounter step itself: a refused move persists it, and a relaunch
+    // resumes the encounter with pending true, round 1.
+    dispatch({ type: "move", dir: "N" });
+    {
+      const { snapshot, booted } = await relaunch(store);
+      assert.deepStrictEqual(snapshot.combat, ref.steps[0], "the save carries the encounter step");
+      assert.equal(booted.combat.pending, true, "SAV-06 boundary: the encounter resumes pending");
+      assert.equal(booted.combat.round, 1, "SAV-06 boundary: the encounter resumes at round 1");
+    }
+
+    let joinedPastRound2 = false;
+    for (let i = 0; i < actions.length; i++) {
+      const live = dispatch(actions[i]).state;
+      assert.deepStrictEqual(jsonCopy(live.combat), ref.steps[i + 1], `step ${i + 1}: the relaunched fight follows the unbroken fight exactly`);
+      await flushStorage();
+      const saved = JSON.parse(store.get(SAVE_KEY));
+      assert.deepStrictEqual(saved.combat ?? null, jsonCopy(live.combat) ?? null, `step ${i + 1}: the flushed save's combat JSON-equals the live combat`);
+
+      const liveCombat = jsonCopy(live.combat) ?? null;
+      const liveFoeEffect = jsonCopy(live.c.foeEffect) ?? null;
+      const liveTimers = jsonCopy(live.c.timers) ?? null;
+      const liveLoot = jsonCopy(live.pendingLoot) ?? null;
+      const { booted } = await relaunch(store);
+      assert.deepStrictEqual(jsonCopy(booted.combat) ?? null, liveCombat, `step ${i + 1}: the relaunch resumes the identical fight`);
+      assert.equal(booted.beats ?? null, null, `step ${i + 1}: no animation state is restored`);
+
+      if (liveCombat) {
+        if (!liveCombat.pending && liveCombat.round > 2) joinedPastRound2 = true;
+        assert.deepStrictEqual(jsonCopy(booted.c.foeEffect) ?? null, liveFoeEffect, `step ${i + 1}: the hero-side foe effect survives`);
+        assert.deepStrictEqual(jsonCopy(booted.c.timers) ?? null, liveTimers, `step ${i + 1}: every c.timers record survives`);
+        const { px, py } = booted.floor;
+        dispatch({ type: "move", dir: "N" }); // force-closing cannot escape the fight
+        assert.ok(getState().combat, `step ${i + 1}: the fight is still up after the relaunch`);
+        assert.equal(getState().floor.px, px, `step ${i + 1}: the move is refused (x)`);
+        assert.equal(getState().floor.py, py, `step ${i + 1}: the move is refused (y)`);
+      } else {
+        // SAV-06 boundary: the killing blow saves combat null, so the
+        // relaunch shows the spoils and no fight.
+        assert.equal(booted.combat, null, "the killing blow saved no fight");
+        assert.deepStrictEqual(jsonCopy(booted.pendingLoot) ?? null, liveLoot, "the spoils pile survives the relaunch");
+        assert.ok(liveLoot && liveLoot.length > 0, "this seed's killing blow drops a spoils pile");
+      }
+    }
+    assert.ok(joinedPastRound2, "the fight was relaunched past round 2");
+    assert.equal(getState().combat, null, "the fight ended");
+    assert.deepStrictEqual(plain(getState()).c, plain(ref.final).c, "the hero ends the relaunched fight exactly as in the unbroken one");
+  });
+});
+
+// Seed 4246: a depth-1 run with 50 gold whose store sells several lines it
+// can afford (found by trying seeds 4246-4251).
+test("SAV-07 (Phase 76): a store purchase then a relaunch keeps the line sold, the gold spent and every other line and price unchanged; a second relaunch gives the identical store", async () => {
+  await withFakeLocalStorage(async (store) => {
+    initRun(4246);
+    const s = getState();
+    openStore(s, makeRng(s.rngState));
+    const idx = s.store.stock.findIndex((line) => !line.sold && !storeBuyRefusal(s.c, line));
+    assert.ok(idx >= 0, "an affordable line exists");
+    const before = jsonCopy(s.store);
+    const { events } = dispatch({ type: "buyItem", idx });
+    assert.ok(events.some((e) => e.type === "bought"), "the purchase went through");
+    const liveGold = getState().c.gold;
+    const liveStore = jsonCopy(getState().store);
+
+    const { booted } = await relaunch(store);
+    assert.ok(booted.store, "the store is still open after the relaunch");
+    assert.equal(booted.store.stock[idx].sold, true, "the bought line stays sold");
+    assert.equal(booted.c.gold, liveGold, "the gold stays spent");
+    assert.ok(liveGold < 50, "gold was actually spent");
+    booted.store.stock.forEach((line, i) => {
+      if (i === idx) return;
+      assert.deepStrictEqual(jsonCopy(line), before.stock[i], `line ${i} is unchanged (name, price, sold flag)`);
+    });
+    assert.deepStrictEqual(jsonCopy(booted.store), liveStore, "the whole store deep-equals the live one");
+
+    dispatch({ type: "move", dir: "N" }); // refused while shopping; it persists
+    const again = await relaunch(store);
+    assert.deepStrictEqual(jsonCopy(again.booted.store), liveStore, "a second relaunch gives the identical store");
+  });
+});
+
+// Seed 4247: an Elven hero meets a Fighter Joiner, so no Wilmsry refusal
+// (found by trying seeds 4246-4251).
+test("SAV-06 (Phase 76, user ruling 2026-09-25): a pending Joiner offer survives a relaunch, and accepting or declining it afterwards behaves exactly as before", async () => {
+  await withFakeLocalStorage(async (store) => {
+    initRun(4247);
+    const s = getState();
+    meetJoiner(s, makeRng(s.rngState));
+    assert.ok(s.pendingJoiner, "the offer is up");
+    dispatch({ type: "attack" }); // a no-op with no fight up; it persists
+    const liveBefore = structuredClone(getState());
+    const { snapshot, booted } = await relaunch(store);
+    assert.ok(snapshot.pendingJoiner, "the save carries the offer");
+    assert.deepStrictEqual(booted.pendingJoiner, snapshot.pendingJoiner, "the booted offer deep-equals the saved one");
+    assert.deepStrictEqual(jsonCopy(booted.pendingJoiner), jsonCopy(liveBefore.pendingJoiner), "the booted offer deep-equals the live one");
+
+    for (const accept of [true, false]) {
+      const fromLive = applyAction(structuredClone(liveBefore), { type: "resolveJoiner", accept });
+      const fromBoot = applyAction(structuredClone(booted), { type: "resolveJoiner", accept });
+      assert.deepStrictEqual(plain(fromBoot.state), plain(fromLive.state), `resolveJoiner accept=${accept}: the same next state`);
+      assert.deepStrictEqual(fromBoot.events, fromLive.events, `resolveJoiner accept=${accept}: the same events`);
+    }
+
+    const partyBefore = (booted.party || []).length;
+    const saved = jsonCopy(booted.pendingJoiner);
+    const { events } = dispatch({ type: "resolveJoiner", accept: true });
+    assert.ok(events.some((e) => e.type === "joinerJoined"), "the Joiner joins");
+    assert.equal(getState().party.length, partyBefore + 1, "the party gains exactly one member");
+    assert.deepStrictEqual(jsonCopy(getState().party.at(-1)), saved, "the party gains exactly that Joiner");
+    assert.equal(getState().pendingJoiner, null, "the offer is resolved");
   });
 });
 
