@@ -4092,3 +4092,83 @@ plan's measured zero above.
 This closes the Phase 75.3 fixture story: every plan measured zero moved
 parity fixtures, a standing teeth-tested 31-site guard proves it, and the
 prototype master is byte-identical to the phase base.
+
+## Phase 76: darkness unification and relaunch persistence (DARK-01/02, SAV-06/07) — measured per plan
+
+Each plan records its own subsection below (76-05 adds the persistence one).
+
+### Plan 01 — one darkness waiver for the map and the fight (DARK-01): measured
+
+**The rule.** `engine/derived.js#darkLimited(state)` is
+`inDark(state) && !darkWaived(state.c)`, where `darkWaiver(c)` names the
+first live light in `DARK_WAIVERS` order (Night Vision, a live Amulet of
+Light, a lit torch) or null. `revealRadius`, `mapViewRadius` (and so
+`inViewWindow`), toHit's dark cap, `combat.js`'s `combatInDark` line, its
+no-crit-in-the-dark rule, the Darkness phobia's fight-join trigger and
+`phobias.js#regionActive`'s Darkness arm all read it. Sense Presence stays a
+fight-only relief beside it. A declared canon divergence: the 1994 reveal
+line and in-fight dark rules waived only on Night Vision.
+
+**The predictor.** Old and new behaviour can differ only in a state where
+the hero is physically in the dark with a light waiver live: (a) a live
+Amulet or a lit torch and no Night Vision (the reveal, the render window,
+the cap, the line and the crit ban change there), or (b) a Darkness-phobic
+hero with any waiver, Night Vision included (the phobia changes there).
+The live replay at the plan base (`e090d1da`), with a temporary in-engine
+probe (reverted before the first real edit) at every `revealRadius`,
+`mapViewRadius`, `toHit`, fight-join, strike and `regionActive` call,
+counted per parity fixture scenario:
+
+| Fixture | Scenarios | (a) light, no Night Vision | (b) Darkness phobia, any waiver | Dark states of any kind |
+|---|---|---|---|---|
+| action-script.chargen.json | 14 seeds | 0 | 0 | 0 |
+| action-script.movement.json | script | 0 | 0 | 0 |
+| action-script.combat.json | win, lose, lose-apprentice, lose-plain, flee, parley | 0 | 0 | 0 |
+| action-script.magic.json | cast-damage, heal, potion, scroll | 0 | 0 | 0 |
+| action-script.economy.json | script | 0 | 0 | 0 |
+| action-script.encounters.json | trap, chest, tablefour, faerie, affliction | 0 | 0 | 0 |
+
+Predicted moved set: zero parity fixtures.
+
+**The live-scan results, measured after the change (`32fba0be`).**
+
+1. `node --test "test/parity/**/*.test.js"`: **62 tests, 62 pass, 0 fail**
+   before this plan's guard was added (64 with it).
+2. `git diff --stat e090d1da -- test/parity/fixtures test/parity/prototype-master.js.txt`: empty.
+3. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node tools/fixture-inventory.mjs` replays to the same roster, and
+   `node --test test/parity/fixture-inventory.test.js` is 5/5.
+
+**The bot pins (causation, per label).** The same probe replayed every
+roll-high `PIN_RUNS` label, the pre-switch save and the bot-tactics seeds
+at the plan base. Differing calls:
+
+| Surface | Differing calls at the base | Result after the change |
+|---|---|---|
+| `party-fighter-knight` (seed 606) | 6 reveal calls, a live Amulet in the dark (floors 2 and 3) | pin byte-identical: the wider reveals only marked cells the run saw anyway, so the final state hash is unchanged |
+| `deep-14` (seed 808) | 0 (Night Vision in the dark on floor 14, but no Darkness phobia) | byte-identical |
+| solo-1, solo-2, solo-thief-pilfer, solo-magicuser-sorcerer, party-1, deep-8 | 0 | byte-identical |
+| pre-switch save (`roll-high-save-compat`) | 0 | `expected` unchanged |
+| bot-tactics seeds 3, 4, 5 | seed 3: 56 reveal calls; seed 4: 25 reveal, 1 fight join; seed 5: 136 reveal, 4 fight joins, 10 toHit, 6 strikes (a lit torch or live Amulet in the dark, no Night Vision) | every bot-tactics assertion still holds; no seed swapped |
+
+`test/unit/roll-high-state-pins.test.js`, `test/unit/roll-high-save-compat.test.js`,
+`test/unit/fixtures/roll-high/pre-switch-save.json` and
+`test/unit/bot-tactics.test.js` are unchanged. `npm test` is 6,715/6,715
+green after the change, with no band or survival test failing.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.** No holder's `divergence.phase` names 76.
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Byte-identical elsewhere.** No comparable carve-out was added
+(`test/parity/harness/comparables.js` is untouched), and no shell snapshot
+moved. **The standing guard:** `test/parity/divergence-records.test.js`'s
+"DARK-01 (Phase 76)" test replays all 31 sites and asserts that none is
+ever in the dark with a light waiver live unless a Phase 76 record declares
+it, with the declared set exactly `DARK76_EXPECTED_HOLDERS` (legitimately
+empty). A companion "has teeth" test proves the count catches a lit torch
+or Night Vision in the dark.

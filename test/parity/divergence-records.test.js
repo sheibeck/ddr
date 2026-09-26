@@ -22,7 +22,7 @@ import { newRun, applyAction } from "../../engine/engine.js";
 // starting hero's own size reads through (test/unit/hero-size-rules.test.js
 // guards this engine-wide) — the exposure guard below reads it directly,
 // never re-deriving race/mask logic of its own.
-import { sizeAxisStep } from "../../engine/derived.js";
+import { sizeAxisStep, inDark, darkWaiver } from "../../engine/derived.js";
 import { applyStartCombat } from "./harness/comparables.js";
 import { makeRng } from "../../engine/rng.js";
 import { openStore } from "../../engine/economy.js";
@@ -283,6 +283,20 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
     }
   };
   noteFoeFlags(state.combat);
+  // Phase 76 (DARK-01, Plan 01): darkStates counts every state (the initial
+  // one and each post-action one) where the hero is physically in the dark;
+  // darkWaivedStates counts those with a light waiver live (Night Vision, a
+  // live Amulet, a lit torch) — the ONLY states where the old and the new
+  // darkness rule can differ. Additive: no older test destructures them.
+  let darkStates = 0;
+  const darkWaivedStates = [];
+  const noteDark = (s) => {
+    if (!s.floor || !inDark(s)) return;
+    darkStates++;
+    const w = darkWaiver(s.c);
+    if (w) darkWaivedStates.push(w);
+  };
+  noteDark(state);
   for (const action of actions) {
     const hadCombat = !!state.combat;
     let result;
@@ -305,6 +319,7 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
     if (state.combat && state.combat.heroShrunk) heroShrunkEverSet = true;
     if (events.some((e) => e.type === "encounterStarted") || (!hadCombat && state.combat)) fightDepths.push(state.floor.depth);
     noteFoeFlags(state.combat);
+    noteDark(state);
   }
   return {
     state,
@@ -318,6 +333,8 @@ function replaySiteEvents(seed, actions, { bumpGold = false } = {}) {
     heroShrunkEverSet,
     fightDepths,
     foeFlagsEver,
+    darkStates,
+    darkWaivedStates,
   };
 }
 
@@ -1283,4 +1300,72 @@ test("RULES-16/17/18 exposure guard has teeth: a doctored event list carrying a 
   // FAIL against this doctored list.
   assert.throws(() => assert.equal(counts.controlResisted, 0), assert.AssertionError);
   assert.throws(() => assert.equal(counts.eliteEncounter, 0), assert.AssertionError);
+});
+
+// Phase 76 (DARK-01, Plan 01): one darkness waiver (engine/derived.js#
+// darkLimited) now drives the reveal, the render window, toHit's dark cap,
+// combatInDark, the dark crit ban and both Darkness-phobia triggers. Old and
+// new rules differ ONLY in a state where the hero is in the dark with a
+// light waiver live (a lit torch or a live Amulet change the map and the
+// fight; Night Vision changes the Darkness phobia). The Plan 01 exposure
+// replay measured ZERO such states at every one of the 31 replay sites (and,
+// with an in-engine probe at every reveal/toHit/join/strike call, zero dark
+// states of any kind) — see test/parity/FIXTURE-INVENTORY.md's Phase 76
+// section. The declared Phase 76 set stays legitimately EMPTY; a site that
+// meets a waived-dark state must be declared by a Phase 76 record.
+const DARK76_EXPECTED_HOLDERS = [];
+
+test("DARK-01 (Phase 76): no replay site is ever in the dark with a light waiver live, unless a Phase 76 record declares it", () => {
+  let totalSites = 0;
+  const waived = [];
+  const tally = (holderId, r) => {
+    for (const w of r.darkWaivedStates) waived.push(`${holderId}:${w}`);
+  };
+
+  for (const seed of CHARGEN_FIXTURE.seeds) {
+    totalSites++;
+    const s = newRun(seed); // chargen dispatches nothing; its start square is never dark
+    assert.equal(inDark(s) && darkWaiver(s.c) !== null, false, `chargen seed ${seed} starts waived in the dark`);
+  }
+
+  totalSites++;
+  tally("action-script.movement.json#script", replaySiteEvents(MOVEMENT_FIXTURE.seed, MOVEMENT_FIXTURE.actions));
+  for (const scenario of COMBAT_FIXTURE.scenarios) {
+    totalSites++;
+    tally(`action-script.combat.json#${scenario.name}`, replaySiteEvents(scenario.seed, scenario.actions));
+  }
+  for (const scenario of MAGIC_FIXTURE.scenarios) {
+    totalSites++;
+    tally(`action-script.magic.json#${scenario.name}`, replaySiteEvents(scenario.seed, scenario.actions));
+  }
+  totalSites++;
+  tally("action-script.economy.json#script", replaySiteEvents(ECONOMY_FIXTURE.seed, ECONOMY_FIXTURE.actions, { bumpGold: true }));
+  for (const scenario of ENCOUNTERS_FIXTURE.scenarios) {
+    totalSites++;
+    tally(`action-script.encounters.json#${scenario.name}`, replaySiteEvents(scenario.seed, scenario.actions));
+  }
+
+  const declared = new Set(
+    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("76")).map(({ holderId }) => holderId),
+  );
+  assert.deepStrictEqual(
+    [...declared].sort(),
+    DARK76_EXPECTED_HOLDERS,
+    "the declared Phase 76 set is exactly DARK76_EXPECTED_HOLDERS (legitimately empty — no fixture moved)",
+  );
+  assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+  const undeclared = waived.filter((entry) => !declared.has(entry.split(":")[0]));
+  assert.deepStrictEqual(undeclared, [], "a replay site is in the dark with a light waiver live and no Phase 76 record");
+});
+
+test("DARK-01 exposure guard has teeth: a waived-dark state is counted, an unlit or lit one is not", () => {
+  const cell = (dark) => ({ wall: false, dark, seen: true, feat: null });
+  const mk = (dark, c) => ({ c: { skills: {}, timers: {}, darkFor: 0, ...c }, floor: { g: [[cell(dark)]], px: 0, py: 0, depth: 1 } });
+  const torch = { timers: { "item:Torch": { cadence: "squares", left: 40, phase: "effect" } } };
+  const count = (s) => (inDark(s) && darkWaiver(s.c) !== null ? 1 : 0);
+  assert.equal(count(mk(true, torch)), 1, "a lit torch in the dark is a waived-dark state");
+  assert.equal(count(mk(true, { skills: { "Night Vision": 1 } })), 1, "Night Vision in the dark is too (the phobia differs there)");
+  assert.equal(count(mk(true, {})), 0, "the unlit dark: old and new rules agree");
+  assert.equal(count(mk(false, torch)), 0, "a lit square: nothing to waive");
+  assert.throws(() => assert.equal(count(mk(true, torch)), 0), assert.AssertionError);
 });
