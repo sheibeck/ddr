@@ -456,7 +456,7 @@ where noted above:
 | Cloak of Ether | ether | 10 | 80 | 260919-00d: 10-square wall-walk window; cd unchanged (10 + 80 <= 100) |
 | Cloak of Flying | fly | 20 | 50 | canon "once every 50" — the row has no `every` field, so `act.cd: 50` is the explicit override; 260918-w4n removes the auto-activation on a climb/gorge tile — a ready-but-unstarted Cloak of Flying is not flying, only `useItem` on the worn cloak starts the record |
 | Ring of Power (260918-w4n) | power | 50 | 50 | `{ dmg: 1 }` while live — outside the orchestrator's originally-proposed list, but inside the rule as the user stated it ("ring... amulet, etc") |
-| Gauntlet of the Giant (260918-w4n) | giant | 50 | 50 | `{ size: 1 }` while live |
+| Gauntlet of the Giant (260918-w4n) | giant | 50 | 50 | `{ size: 1 }` while live — RULES-11 (Phase 75.2, Plan 02): a +1 size step, race base plus items, never masked; +2 damage, one face easier for foes to hit |
 | Amulet of Light (260918-w4n) | glow | 50 | 50 | `{ sight: 1, light: 1 }` while live; dispels `c.darkFor` the instant it is used |
 | Anklet of Invisibility (260918-w4n) | unseen | 50 | 50 | `{ foeToHit: -2 }` while live |
 | Helm of Knowledge (260918-w4n) | tongue | 50 | 50 | `{ tongue: 1 }` while live |
@@ -493,7 +493,7 @@ duration text verbatim:
 |---|---|---|---|
 | Speed | haste | 50 squares | |
 | Strength | might | 25 squares | `might: 8` |
-| Enlarge | might | 50 squares | `might: 4` |
+| Enlarge | enlarge | 50 squares | `eff: { size: 1 }` — RULES-11 (Phase 75.2, Plan 02, user ruling 2026-09-25): no longer a `might`-kind payload; exactly a +1 size step (+2 damage, one face easier for foes to hit), stacking with a live Gauntlet of the Giant record to +2 steps |
 | Acuteness | acute | `{ n: 1, sides: 8, bonus: 0 }` rounds | `cadence: "rounds"` |
 | Invisible | invis | 100 squares | canon text says "a day"; the prototype set 100 — kept |
 
@@ -546,10 +546,15 @@ the pool is full, never all at once.
 
 ### New events
 
-`itemEffectStarted { item, kind, left, cadence, might? }` — a use started a
-timed effect (kind-keyed narration: haste/invis/ether/acute/might/fly each
-get their own line; an unrecognized kind falls back to "{item}: {n}
-squares."). `itemEffectFaded { item, kind }` — an effect record expired
+`itemEffectStarted { item, kind, left, cadence, might?, size?, step?, sizeDmg? }`
+— a use started a timed effect (kind-keyed narration: haste/invis/ether/
+acute/might/fly each get their own line; an unrecognized kind falls back
+to "{item}: {n} squares."). RULES-11 (Phase 75.2, Plan 02): `size`/`step`/
+`sizeDmg` appear only for a size-stepping item (the Gauntlet of the
+Giant, Enlarge) — `size` is the hero's CURRENT total size name
+(`heroSize(c).name`, after the record starts), `step` is that ITEM's own
+±1 step, `sizeDmg` is `SIZE_DAMAGE_PER_STEP × step`. `itemEffectFaded {
+item, kind }` — an effect record expired
 (from either the `item:` phase-effect->deleted OR phase-effect->cooldown
 transition — a duration+cooldown item narrates the SAME event whether it is
 now fully spent or has simply moved into its cooldown). `itemCooled { item
@@ -884,7 +889,7 @@ shell's copy tables and tap explanation onto that shape (`mazeworld.html`'s
 | `lit` (the torch) | `Lit` | `{n} sq` | good |
 | `itemCooldown` | the item's OWN name (`cn.item`, no fixed label) | `cd {n} sq` | odd |
 | `staffCharges` | the staff's OWN name (`cn.item`) | `{charges}/{max} · {n} sq` | odd |
-| `might` (now ALSO a timed Strength/Enlarge potion effect, not only the untimed spell buff) | `Strong` | `{n} sq` when the chip carries a live `remaining` (a potion effect); nothing when it doesn't (the spell buff, lasts the day, unchanged) | good |
+| `might` (now ALSO a timed Strength potion effect, not only the untimed spell buff — RULES-11, Phase 75.2, Plan 02: Enlarge no longer contributes here, it is a size step instead, see the `giant`/`enlarge` size-chip fields below) | `Strong` | `{n} sq` when the chip carries a live `remaining` (a potion effect); nothing when it doesn't (the spell buff, lasts the day, unchanged) | good |
 | `acute` | `Acute` | `{n} rds` in combat, `{n} sq` outside — now read from the chip's OWN `cadence` field (Acuteness's potion activation declares `cadence:"rounds"`), not a live-`S.combat` guess | good |
 
 Tapping any chip pushes a one-line rail explanation via

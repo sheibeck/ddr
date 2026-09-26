@@ -33,6 +33,8 @@ import {
   hasTool,
   inDark,
   wieldedStaff,
+  heroSize,
+  SIZE_DAMAGE_PER_STEP,
 } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { startEffect, startCooldown, isReady, remaining } from "./effects.js";
@@ -1256,6 +1258,13 @@ export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas
  * (the Pendant's `half`) starts a bare cooldown record instead; an instant
  * effect with NO `cd` (every staff kind except Crystal) starts nothing
  * further — the charge spend above is the item's only c.timers footprint.
+ *
+ * RULES-11 (Phase 75.2, Plan 02): when the activation's `eff` carries a
+ * numeric `size` (the Gauntlet of the Giant, Enlarge, and any future
+ * size-stepping item), the started event also carries `size` (the
+ * character's own `heroSize(c).name` AFTER the record starts — the
+ * resulting total, race + every live item step), `step` (this ITEM's own
+ * step, always ±1) and `sizeDmg` (SIZE_DAMAGE_PER_STEP × that item step).
  */
 function applyActivation(state, it, rng, events) {
   const c = state.c;
@@ -1273,6 +1282,11 @@ function applyActivation(state, it, rng, events) {
     startEffect(c, itemTimerId(it), opts);
     const started = { type: "itemEffectStarted", item: it.n, kind: act.kind, left, cadence };
     if (act.kind === "might" && typeof act.might === "number") started.might = act.might;
+    if (act.eff && typeof act.eff.size === "number") {
+      started.size = heroSize(c).name;
+      started.step = act.eff.size;
+      started.sizeDmg = SIZE_DAMAGE_PER_STEP * act.eff.size;
+    }
     events.push(started);
   } else if (act.cd) {
     startCooldown(c, itemTimerId(it), { squares: act.cd });

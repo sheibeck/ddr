@@ -3574,3 +3574,96 @@ Elven damage/face terms within its own budget, so its `expected` needed no
 re-recording despite the plan's own interfaces flagging it as a likely
 mover.
 
+### Plan 02 — the Gauntlet and Enlarge
+
+**The rule.** Enlarge loses its separate `might`-kind damage payload —
+`ACTIVATION_OF.Enlarge` is now `{ kind: "enlarge", effect: 50, eff: {
+size: 1 } }`, exactly one size step through the same `eff(c, "size")` seam
+Plan 01's Gauntlet already used. `engine/items.js#applyActivation` and
+`engine/derived.js#conditionsOf` now carry `size`/`step`/`sizeDmg` (event)
+and `step`/`size` (chip) for any activation whose `eff` carries a numeric
+`size` — a pure additive read, no rng, no new c.timers shape (the item's
+own `item:<name>` effect record is unchanged: `{cadence, left, phase,
+cd?}`).
+
+**The predictor.** No engine mechanic reads a potion's or a jewelry item's
+`txt` field — both items' rewritten text (dropping the "mind the
+ceilings"/"one size up, +4 damage" wording) is purely cosmetic. No
+serialized state shape changes: `c.timers["item:Enlarge"]` was already the
+`{cadence, left, phase}` shape before this plan (only the *lookup* of what
+that record MEANS, via `ACTIVATION_OF.Enlarge`, changed) — an existing live
+record round-trips through save/load with zero engine changes (proven by
+`test/unit/size-items.test.js`'s old-save test: `newRun` + a hand-set live
+`item:Enlarge` record + `serializeRun`/`validateSave` reads back as a +1
+size step, `potionMight` 0). Prediction: **zero moved parity fixtures** — no
+parity replay site was found holding a live Enlarge potion effect or a
+Gauntlet-of-the-Giant record (2026-09-25 scan, reconfirmed by the measured
+zero below), so `REWORDED_TXT_ITEMS` needed no new carve-out for either
+item's `txt`.
+
+**Measured.**
+
+```
+$ node --test "test/parity/**/*.test.js"
+# tests 58
+# pass 58
+# fail 0
+
+$ git diff --quiet ac7aac77ebf210531215ac83fa290eb4cb384ade -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js
+(exit 0 — clean)
+
+$ git hash-object test/parity/prototype-master.js.txt
+a1f4d0dc29782218d8e5aab65bc5989c33f917f0 (unchanged — the same hash Phase 75.1/75.2-01 closed with)
+```
+
+Zero fixtures moved, exactly as predicted. `comparables.js` untouched — no
+new serialized field, no `REWORDED_TXT_ITEMS`/`stripCloakArmorTxt` carve-out
+needed for either item's `txt` (no replay site carries one).
+
+**One declared shell-snapshot regeneration (not a parity fixture).**
+`test/unit/fixtures/shell-snapshots/thief-store.store.txt`'s Enlarge potion
+row moved (its rendered italic text follows `content/potions.js`'s
+rewritten `txt`), regenerated via `MZ_SNAPSHOT_UPDATE=1 node --test
+test/unit/shell-tab-snapshots.test.js` and declared in that file's own
+header comment (Phase 75.2, Plan 02, RULES-11); confirmed via
+`git diff --name-only` that none of the other seven committed fixtures
+moved.
+
+**Bot-baseline artifacts moved instead (not parity fixtures) — NOT a
+decision/outcome change, purely the rewritten `txt` reaching a serialized
+state that has no cosmetic-text carve-out the way `comparables.js`'s
+`REWORDED_TXT_ITEMS` gives the parity harness.** Two
+`test/unit/roll-high-state-pins.test.js` pins ("party-fighter-knight" and
+"deep-8") and the `test/unit/fixtures/roll-high/pre-switch-save.json`
+save-compat fixture's `expected.hash` all moved; `test/unit/bot-tactics.test.js`
+did NOT move (Enlarge's kind rename, `might` → `enlarge`, changes nothing
+there — `chooseCombatItem`'s round-1 buff tier reads the activation's
+`kind` generically via `itemEffectActive(c, act.kind)`, never hardcoding
+`"might"`). Each bisected live (a scratch `playRun`/`replaySteps`, scanning
+every step's `c.items`/`c.worn`/`store.stock`/`pendingFind`/`pendingLoot`
+for an Enlarge-potion or Gauntlet-of-the-Giant item) before regenerating
+anything:
+- "party-fighter-knight" (seed 606) and "deep-8" (seed 707): NEITHER run
+  ever fires an `itemEffectStarted` for either item (confirmed: no
+  gameplay decision differs) — the sole divergence is a carried Gauntlet
+  of the Giant's rewritten `txt`, picked up at bot action 111
+  (party-fighter-knight, still unused at action 400) and bot action 16
+  (deep-8, still unused at action 93, when the run ends in death).
+  `actions`/`dead`/`depth` UNCHANGED for both; only the hash moved.
+  Regenerated via `node tools/roll-high-baseline.mjs pins` (each hashed
+  identically twice); rationale in
+  `test/unit/roll-high-state-pins.test.js`'s own comment blocks.
+- The pre-switch save (seed 909, an Elven Thief Acrobat, party): dispatched
+  index 192 (a `move E`) sets `pendingFind` to an Enlarge potion whose
+  `txt` is the rewritten wording — `pendingFind` is part of the serialized/
+  hashed state, so the hash moves from that action onward even though the
+  potion is never drunk within the fixture's own 300-action budget.
+  `dead`/`depth`/`actions` (false/4/300) UNCHANGED. Re-recorded ONLY
+  `expected.hash` in the fixture JSON (never `save`/`dispatched`); full
+  rationale in the fixture's own `note` field and
+  `test/unit/roll-high-save-compat.test.js`'s header comment.
+
+`node --test test/unit/roll-high-state-pins.test.js
+test/unit/roll-high-save-compat.test.js test/unit/bot-tactics.test.js`: all
+green after the two re-pins and the one expected-hash re-record.
+

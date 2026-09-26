@@ -157,6 +157,24 @@ test("conditionsOf: a live flight record, then ward, might, mirror/senses/regen/
   assert.deepStrictEqual(keys(conds), ["flight", "might", "ward", "mirror", "senses", "regen", "foresight", "reveal"]);
 });
 
+// RULES-11 (Phase 75.2, Plan 02): a live size-stepping item (the Gauntlet
+// of the Giant, Enlarge, or any future size item) carries `step` (the
+// item's own ±1) and `size` (the hero's CURRENT total size name,
+// heroSize(c).name) on its chip; no other item's chip ever gets these
+// fields.
+test("conditionsOf: a live Gauntlet record carries step and the hero's current size name; a plain haste chip carries neither", () => {
+  const conds = conditionsOf({
+    c: cleanChar({ race: "Human", timers: { "item:Gauntlet of the Giant": rec("squares", 30, 50) } }),
+  });
+  assert.deepStrictEqual(conds, [
+    { key: "giant", polarity: "good", remaining: 30, cadence: "squares", source: "Gauntlet of the Giant", step: 1, size: "Large" },
+  ]);
+
+  const hasteConds = conditionsOf({ c: cleanChar({ timers: { "item:Cloak of Speed": rec("squares", 34, 50) } }) });
+  assert.equal("step" in hasteConds[0], false);
+  assert.equal("size" in hasteConds[0], false);
+});
+
 test("conditionsOf: BAD affliction names its kind", () => {
   assert.deepEqual(conditionsOf({ c: cleanChar({ affliction: { kind: "Poison", left: 10 } }) }), [
     { key: "affliction", polarity: "bad", kind: "Poison" },
