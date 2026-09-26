@@ -6378,6 +6378,84 @@ MISS), and correcting it is an engine-change decision reserved for the
 user, not something an executor infers from one readout. Every other floor
 (1-10, 12-19) stays inside its own target band at both BEFORE and FINAL.
 
+## v2.1 hero size (Phase 75.2) — bot readouts
+
+**ORCHESTRATOR RULING (2026-09-26, mid-milestone):** bot balance readouts
+across v2.1 now run ONCE, at the milestone's own close (Phase 79.1), not
+per-phase. This section is therefore a short stub, not the full BEFORE/
+AFTER/FINAL record every earlier phase section in this ledger carries —
+**the final readout and every per-race verdict are deferred to Phase 79.1**
+and are not written here. Every plan's own SUMMARY.md already carries this
+same note against its own readout acceptance criteria.
+
+### The rule under measurement
+
+RULES-11 ("Hero Size Matters", user ruling 2026-09-25): a character's size
+is now a real stat. Race sets the base step (`content/races.js`'s existing
+`size` field); a live size-stepping item (the Gauntlet of the Giant,
+Enlarge — each exactly a +1 step) adds to it. Each resolved step moves
+weapon damage by `SIZE_DAMAGE_PER_STEP` (±2) and a foe's winning faces
+against that body by `SIZE_FACES_PER_STEP` (±1), UNLESS a race's own
+defining trait already pushes that same axis the opposite way — the
+signature masks (`content/races.js`'s `sizeAxes`): Dwarven keeps its own
+`+2` damage trait (the base step's damage axis is dropped, its face axis
+still applies — net `+2` damage, one face harder to hit); Elven keeps its
+own thin-boned `foeToHit` trait (the base step's face axis is dropped, its
+damage axis still applies — net `−2` damage, unchanged face); Troll's Large
+step points the SAME way as its own traits on both axes (net `+11` damage,
+one face easier to hit). A Joiner gets size the same way, from its own
+race. 75.2-02 removes Enlarge's separate `might`-kind damage payload so the
+item delivers exactly what its own text now says.
+
+### BEFORE (75.2-01, captured at the phase base, commit `9fce6f1e`)
+
+Already committed and unchanged since 75.2-01 landed:
+`tools/readouts/75.2-01-before.txt` (200-seed solo, `--start-depth=1`) and
+`tools/readouts/75.2-01-races-before.txt` (per-race `tune-classes`, 10
+seeds/24 cells each, Elven/Dwarven/Troll). Headline numbers, quoted
+verbatim from those two committed files:
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=12  max=19
+
+  mean death depth=7.60  floors gained p50=6 mean=6.60  encounters survived mean=16.59
+  reach: >=5 78.5%  >=8 48.0%  >=9 37.9%  >=10 25.4%  >=13 9.6%  >=16 1.7%  >=20 0.0%
+
+  reach-20: 0.0% (band 3.0-5.0%, reported — tail)
+  verdict: floors outside the pass band: 11 (dS -4.0)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=200  startDepth=1
+Outcome: 177 dead, 23 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+Per-race BEFORE (pooled, `tools/readouts/75.2-01-races-before.txt`,
+`tune-classes --race <Race> --seeds 10 --workers 4`, `startDepth=1`):
+
+```
+race     n    stuck  mean  p50  p90
+Elven    240  30     5.35  5.0  9.0
+Dwarven  240  33     6.97  6.0  12.0
+Troll    240  26     8.09  8.0  12.0
+
+Bot: exploreBudget=50  maxActions=5000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=10  workers=4  startDepth=1
+```
+
+No BEFORE/AFTER readout exists for 75.2-02 (the Gauntlet/Enlarge item
+rewrite) — per the same orchestrator ruling, none was captured; 75.2-02's
+own SUMMARY.md flags the bot rarely meets either item within a 200-seed
+sweep (a round-1 hard-fight buff and a worn buff respectively), so this is
+expected to be the smaller of the phase's two balance moves.
+
+### Deferred
+
+Per the orchestrator ruling above: **the phase FINAL readout, the AFTER
+readout for both plans, and every per-race verdict (Elven/Dwarven/Troll,
+before vs. after) are deferred to Phase 79.1 (user ruling 2026-09-26)** —
+this section records only what was already measured at the phase's own
+BEFORE point. No dial in this repository was retuned in response to any
+number in this section, per the checkpointed fit protocol.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases

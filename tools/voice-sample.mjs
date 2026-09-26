@@ -69,7 +69,7 @@ const ROMAN = ["I", "II", "III", "IV", "V"];
 // hours), `mods` (one or two signed `{name, delta}` terms, signed for the
 // ROLLER), and `critAtLeast` (a top-face crit threshold). The old roll-under
 // `need`/`total` fields are gone — no event carries them anymore.
-const MOD_NAMES = ["weapon", "class", "dark-cap", "insulted", "fluency", "armor-bulk"];
+const MOD_NAMES = ["weapon", "class", "dark-cap", "insulted", "fluency", "armor-bulk", "size"];
 
 // Phase 75 (75-13): a handful of event types carry a NEW field-driven
 // branch (RULES-05/07/08/12/13/14/15) that the closed vocabularies above
@@ -122,6 +122,12 @@ function sampleEvent(type, sampleIndex = 0) {
     first: Math.floor(rng() * 5), mult: pick([1, 2, 3]), remaining: Math.floor(rng() * 4), level: 1 + Math.floor(rng() * 5),
     wpGain: 1 + Math.floor(rng() * 6), depth: 1 + Math.floor(rng() * 5), steps: Math.floor(rng() * 2000),
     troll: rng() < 0.3, elfOrDwarf: rng() < 0.3, untouchable: rng() < 0.2,
+    // RULES-11 (Phase 75.2): constant fields, no new random draw (adding one
+    // here would reshuffle every sample after it) — `size` (the character's
+    // CURRENT resulting size name), `step` (this item's own +1) and
+    // `sizeDmg` (the matching damage delta) mirror 75.2-02's own
+    // itemEffectStarted/conditionsOf payload shape exactly.
+    size: "Large", step: 1, sizeDmg: 2,
   };
   if (sampleIndex === 0 && SAMPLE_OVERRIDES[type]) return { ...base, ...SAMPLE_OVERRIDES[type] };
   return base;
@@ -170,8 +176,27 @@ for (const [bucket, arr] of Object.entries(EPITAPHS)) {
   lines.push("");
 }
 
+// RULES-11 (Phase 75.2, Plan 05): a short, fully deterministic block (fixed
+// fields, zero rng() calls — inserting one earlier in this file would
+// reshuffle every random sample above) proving the Gauntlet of the
+// Giant/Enlarge start lines render their size fields honestly, no restated
+// formula. Both kinds are mechanically identical (each exactly a +1 step),
+// so one shared field set renders both.
+const SIZE_ITEM_KINDS = ["giant", "enlarge"];
+lines.push(rule("═"));
+lines.push("## SIZE ITEMS — giant/enlarge deterministic sample (RULES-11, Phase 75.2)");
+lines.push(rule("═"));
+lines.push("");
+for (const kind of SIZE_ITEM_KINDS) {
+  const event = { type: "itemEffectStarted", kind, left: 50, size: "Large", step: 1, sizeDmg: 2 };
+  lines.push(`▶ itemEffectStarted (${kind})`);
+  lines.push(`    ${stripMarkup(EVENT_NARRATION.itemEffectStarted(event))}`);
+  lines.push("");
+}
+
 const totalLines = Object.keys(EVENT_NARRATION).length * SAMPLES_PER_TYPE +
-  Object.values(EPITAPHS).reduce((n, a) => n + a.length, 0);
+  Object.values(EPITAPHS).reduce((n, a) => n + a.length, 0) +
+  SIZE_ITEM_KINDS.length;
 lines.push(rule("═"));
 lines.push(`Total rendered voice lines: ${totalLines}`);
 lines.push(rule("═"));

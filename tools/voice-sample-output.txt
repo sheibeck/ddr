@@ -267,9 +267,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Something in your blood takes over. Frenzy.
 
 ▶ strikeMissed
-    9 vs 6–20 (dark-cap +1). You miss Dog Face.
+    9 vs 6–20 (insulted +1). You miss Dog Face.
     6 vs 15–20 (dark-cap −3, dark-cap −2). You miss Google.
-    13 vs 18–20 (class −2, dark-cap +1). You miss Craig.
+    13 vs 18–20 (dark-cap −2, dark-cap +1). You miss Craig.
 
 ▶ deathTouch
     One touch. Dog Face drops.
@@ -304,7 +304,7 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 ▶ struck
     2 vs nothing (dark-cap −3, weapon +3). You hit Bat/Rat for 18 hp.
     16 vs 5–20 (armor-bulk +3). You hit Bat/Rat for 17 hp.
-    2 vs 10–20 (armor-bulk −1). You hit China Wolf for 8 hp.
+    2 vs 10–20 (size −1). You hit China Wolf for 8 hp.
 
 ▶ foeRevived
     Rinkle gets back up.
@@ -347,7 +347,7 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     You get clear.
 
 ▶ fleeRolled
-    Flee: rolled 20 vs 16–20 (insulted −3, fluency +2).
+    Flee: rolled 20 vs 16–20 (fluency −3, armor-bulk +2).
     Flee: rolled 19 vs 2–20 (weapon +3, class −1).
     Flee: rolled 14 vs 10–20 (dark-cap −3).
 
@@ -422,7 +422,7 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Skeleton lands a hit on Drarl for 15 hp.
 
 ▶ allyMissed
-    Hair swings at Ned and misses. 13 vs 9–20 (class −3, insulted −2).
+    Hair swings at Ned and misses. 13 vs 9–20 (class −3, fluency −2).
     Hobgoblin swings at Shriek and misses. 16 vs 17–20 (dark-cap −2, weapon −3).
     Sterling swings at Werebeast and misses. 12 vs 7–20 (weapon +1, weapon −3).
 
@@ -433,8 +433,8 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 
 ▶ allyCast
     Wolf casts Summon at Frank. 10 vs 11–20 (fluency −1, weapon +1).
-    Spectre casts Sense Danger at Google. 15 vs 12–20 (dark-cap +3, weapon +3).
-    Krupke casts Lightning at Philly. 4 vs 10–20 (dark-cap +3).
+    Spectre casts Sense Danger at Google. 15 vs 12–20 (insulted +3, weapon +3).
+    Krupke casts Lightning at Philly. 4 vs 10–20 (insulted +3).
 
 ▶ allySpellHit
     Floater's Mangle hits Drat for 2 hp.
@@ -448,8 +448,8 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
 
 ▶ memberStruck
     4 vs 2–20 (class +1, armor-bulk +2). Philly turns on Gnarl for 21 hp.
-    11 vs 15–20 (armor-bulk −1, fluency −1). Primp turns on Greenmantle for 28 hp.
-    17 vs 1–20 (fluency +1). Ghoul turns on Shear for 4 hp.
+    11 vs 15–20 (size −1, armor-bulk −1). Primp turns on Greenmantle for 28 hp.
+    17 vs 1–20 (armor-bulk +1). Ghoul turns on Shear for 4 hp.
 
 ▶ memberDowned
     Sterling goes down, and what is left of them wants no further part of this.
@@ -472,9 +472,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Bat/Rat sleeps through it.
 
 ▶ foeMissed
-    Krupke swings at Copperbraid, 10 vs 11–20 (fluency +3, fluency +2), and misses.
-    Zit swings at Lightfoot, 15 vs 2–20 (dark-cap −2), and misses.
-    Hair swings at Stormcaller, 17 vs 13–20 (armor-bulk +2, insulted −2), and misses.
+    Krupke swings at Copperbraid, 10 vs 11–20 (armor-bulk +3, armor-bulk +2), and misses.
+    Zit swings at Lightfoot, 15 vs 2–20 (insulted −2), and misses.
+    Hair swings at Stormcaller, 17 vs 13–20 (size +2, fluency −2), and misses.
 
 ▶ wardReflected
     The bubble catches it and sends it back — 3 to Primp. Pop. A thin film holds for the rest of the round.
@@ -537,9 +537,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     The pendant drinks half of Ghost's blow before it reaches you.
 
 ▶ struckByFoe
-    3 vs 18–20 (armor-bulk +2, fluency −3). Critical! Undead hits you for 8 hp.
-    19 vs 14–20 (insulted −1). Gremlin hits you for 29 hp.
-    3 vs 16–20 (armor-bulk +1, armor-bulk +3). Werebeast hits you for 6 hp.
+    3 vs 18–20 (size +2, fluency −3). Critical! Undead hits you for 8 hp.
+    19 vs 14–20 (fluency −1). Gremlin hits you for 29 hp.
+    3 vs 16–20 (size +1, size +3). Werebeast hits you for 6 hp.
 
 ▶ wardFaded
     The ward fades.
@@ -1037,9 +1037,9 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     Nothing here to throw it at.
 
 ▶ spellThrown
-    Lightning at Primp: 3 vs 17–20 (armor-bulk −3).
+    Lightning at Primp: 3 vs 17–20 (size −3).
     Earthquake at Hair: 10 vs 1–20 (class −3, weapon +3).
-    Regeneration at Sterling: 8 vs 5–20 (weapon −1, insulted +1).
+    Regeneration at Sterling: 8 vs 5–20 (class −1, fluency +1).
 
 ▶ spellHit
     Hit. 4 hp.
@@ -1615,5 +1615,15 @@ Source: src/browser/eventNarration.js EVENT_NARRATION + content/epitaphs.js
     The scroll said Floater. It meant it about the reader.
 
 ══════════════════════════════════════════════════════════════════════════════
-Total rendered voice lines: 982
+## SIZE ITEMS — giant/enlarge deterministic sample (RULES-11, Phase 75.2)
+══════════════════════════════════════════════════════════════════════════════
+
+▶ itemEffectStarted (giant)
+    50 squares one size larger: you are Large. +2 damage, and one face easier for foes to hit. You are, on reflection, a bigger target.
+
+▶ itemEffectStarted (enlarge)
+    50 squares one size larger: you are Large. +2 damage, and one face easier for foes to hit. You are, on reflection, a bigger target.
+
+══════════════════════════════════════════════════════════════════════════════
+Total rendered voice lines: 984
 ══════════════════════════════════════════════════════════════════════════════
