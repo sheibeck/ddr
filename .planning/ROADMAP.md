@@ -293,7 +293,25 @@ Plans:
   4. The Gauntlet of the Giant and the Enlarge potion are both exactly a +1 size step (Enlarge's separate +4 damage is gone), and their text states exactly what a step does, with no ceiling promise.
   5. Moved fixtures are measured, declared and regenerated, and a bot readout before and after is recorded.
 
-**Plans**: TBD
+**Plans**: 0/5 plans executed
+
+Plans:
+**Wave 1**
+
+- [ ] 75.2-01-PLAN.md — Make size a real stat in the engine (RULES-11): race sets a base step, items add to it, and every step changes weapon damage by 2 and the foe's winning faces by 1, except that a race's base step never cancels one of t... (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 75.2-02-PLAN.md — Make the Gauntlet of the Giant and the Enlarge potion deliver what their text promises (RULES-11): each is exactly one size step for its duration, Enlarge loses its separate damage payload, and both texts state exactl... (wave 2)
+- [ ] 75.2-03-PLAN.md — Show the hero's size on the hero sheet and make the sheet's damage honest about it (RULES-11): a SIZE row with the size name and, when it matters, what it does to damage and to the foe's odds from the player's side; t... (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 75.2-04-PLAN.md — Make every surface say what size does (RULES-11): the chip for a live Gauntlet or Enlarge is labelled with the hero's resulting size and explains exactly what a step does; the Oracle and the rail narrate the start of ... (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 75.2-05-PLAN.md — Close Phase 75.2's engine gate: write the size-rule audit into the roll ledger and guard it, finish the fixture story with a standing exposure guard, record every balance readout (overall and per race) in the difficul... (wave 4)
 **UI hint**: yes
 
 ### Phase 75.3: Deep-Floor Encounter Scaling (INSERTED)
