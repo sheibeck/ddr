@@ -1,22 +1,35 @@
 // test/unit/foe-fumble-mechanics.test.js
 //
-// RULES-10 (Phase 75.1, plan 03, Task 1) — the foe ward (Shield pool) and
-// armed Bubble (catch/pop/rebound) in the one foe-damage seam and foeTurn's
-// tail. Every mechanic is engine-only today — no resolver sets these fields
-// yet (that lands in 75.1-05) — so every test here builds the field directly
-// on a fixture foe/state, mirroring test/unit/bubble-mirror.test.js's own
-// direct-construction pattern for the hero's mirror equivalent. Task 2 (foe
-// Mirror Self / Strength / Regeneration) appends its own tests below this
-// file's Task 1 section in a later commit.
+// RULES-10 (Phase 75.1, plan 03) — the foe-side effects a helpful fumbled
+// scroll can hand the TARGETED enemy: a foe ward (Shield pool) and an armed
+// Bubble (catch/pop/rebound) in the one foe-damage seam and foeTurn's tail;
+// foe Mirror Self (the strike cap every striker obeys); foe Strength
+// (`might`, folded into foeLevelBase's shared term); and foe Regeneration.
+// Every mechanic is engine-only today — no resolver sets these fields yet
+// (that lands in 75.1-05) — so every test here builds the field directly on
+// a fixture foe/state, mirroring test/unit/bubble-mirror.test.js's own
+// direct-construction pattern for the hero's mirror equivalent.
 //
-// Local fixtures mirror test/unit/bubble-mirror.test.js verbatim, per this
-// suite's established per-file convention (no cross-import of test helpers).
+// Local fixtures mirror test/unit/bubble-mirror.test.js and
+// test/unit/party-combat.test.js verbatim, per this suite's established
+// per-file convention (no cross-import of test helpers).
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import { damageFoe } from "../../engine/foeDamage.js";
-import { foeTurn } from "../../engine/combat.js";
+import { applyFoeDamageToPlayer, foeTurn, allyTurn, alliesTurn, playerStrike, flee, foeLevelBase } from "../../engine/combat.js";
+import { targetStrikeFaces, heroStrikeFacesVs } from "../../engine/derived.js";
+import { derivedRng } from "../../engine/rng.js";
+import { setIdentityDials } from "./harness/identityDials.js";
+
+// Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
+// every might/regen test below computes an EXPECTED delta through the same
+// curve the engine reads (foeHitFor/foeLevelBase/roundDamageCapFor), so it
+// runs under the explicit identity override every other file in this family
+// uses (test/unit/harness/identityDials.js) to keep that arithmetic simple
+// and stable across a later fit.
+setIdentityDials();
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count. Throws if the sequence underflows — this doubles
@@ -80,6 +93,27 @@ function fixedFoe(overrides = {}) {
 
 function fixedCombat(foes, overrides = {}) {
   return { foes, type: foes[0]?.type || "Beasts", round: 1, target: 0, spellOpen: false, tracked: false, ...overrides };
+}
+
+/** A combat-scoped ally entry as startCombat's sync produces it. */
+function fixedAlly(overrides = {}) {
+  return { partyIdx: 0, name: "Ada", lvl: 1, sub: "Fighter", wp: 20, maxWP: 20, ...overrides };
+}
+
+/** A persistent roster member (a rollCharacter-shaped sheet; `level` not `lvl`). */
+function fixedMember(overrides = {}) {
+  return { name: "Ada", level: 1, sub: "Fighter", cls: "Fighter", race: "Human", wp: 20, maxWP: 20, status: "ok", ...overrides };
+}
+
+/** DFB-05: a fully class-shaped party sheet — Knight + Club + prof 2, so
+ * alliesTurn's classed branch (memberStrike) fires instead of the legacy
+ * fallback. */
+function classedMember(overrides = {}) {
+  return fixedMember({
+    cls: "Fighter", sub: "Knight", race: "Human", weapon: "Club", prof: 2, magicWpn: 0, might: 0,
+    items: [], skills: {}, armor: "Studded", grimoire: [], spellsUsed: 0,
+    ...overrides,
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -257,4 +291,192 @@ test("inertness: a plain foe (no ward/rebound) takes damage through damageFoe ex
   assert.deepEqual(result, { applied: 7, soaked: false, mult: 1 });
   assert.equal(foe.wp, 992);
   assert.deepEqual(events, []);
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// Task 2: foe Mirror Self, foe Strength (might), foe Regeneration.
+// ══════════════════════════════════════════════════════════════════════════
+
+// --- Mirror Self: targetStrikeFaces + heroStrikeFacesVs ------------------
+
+test("targetStrikeFaces: Mirror Self caps an ordinary target's faces to 1", () => {
+  const c = fixedFighter();
+  const t = fixedFoe({ mirror: 1 });
+  assert.equal(targetStrikeFaces(c, t, 5), 1);
+});
+
+test("targetStrikeFaces: Mirror Self never revives an already-untouchable (magicOnly) foe — 0 stays 0", () => {
+  const c = fixedFighter({ magicWpn: 0 });
+  const t = fixedFoe({ sp: { magicOnly: true }, mirror: 5 });
+  assert.equal(targetStrikeFaces(c, t, 5), 0);
+});
+
+test("heroStrikeFacesVs: reports the same Mirror Self cap the strike itself rolls against", () => {
+  const state = fixedState();
+  const t = fixedFoe({ mirror: 3, wp: 999, maxWP: 999 });
+  assert.equal(heroStrikeFacesVs(state, t), 1);
+});
+
+test("playerStrike: a mirrored foe caps to the top face and the miss event carries a negative 'Mirror Self' mod", () => {
+  const foe = fixedFoe({ mirror: 3, wp: 999, maxWP: 999 });
+  const state = fixedState();
+  state.combat = fixedCombat([foe]);
+  // toHit(state) baseline is 5 for a plain Fighter/Soldier on a Club; mirror
+  // caps it to 1 -> atLeastFor(1, 20) = 20 (only the die's top face hits).
+  // raw draw 2 mirrors to face 19 — one short — a clean miss. playerStrike's
+  // own miss then falls through to afterPlayerAction's foeTurn (the foe's
+  // own turn) — a huge second raw draw guarantees ITS swing misses too.
+  const events = playerStrike(state, fakeRng([2, 999]), []);
+  const missed = events.find((e) => e.type === "strikeMissed");
+  assert.ok(missed, "the strike missed under the cap");
+  assert.equal(missed.roll, 19);
+  assert.equal(missed.atLeast, 20);
+  assert.deepEqual(missed.mods, [{ name: "Mirror Self", delta: -4 }]);
+});
+
+test("allyTurn: a mirrored foe caps a summoned ally's strike to the die's top face", () => {
+  const foe = fixedFoe({ mirror: 3, wp: 999, maxWP: 999 });
+  const state = fixedState();
+  state.combat = fixedCombat([foe], { ally: { lvl: 1, name: "Summon", rounds: 5 } });
+  // dieN 20 (STRIKE_DICE[0]); faces floor 5 capped to 1 by mirror ->
+  // atLeastFor(1,20)=20. raw draw 5 mirrors to face 16 — short of 20, a miss
+  // under the cap (it would have HIT at the uncapped faces-5 threshold, 16).
+  const events = allyTurn(state, fakeRng([5]), []);
+  assert.ok(events.some((e) => e.type === "allyMissed"));
+  assert.equal(foe.wp, 999, "the mirror cap turned what would have been a hit into a miss");
+});
+
+test("alliesTurn (legacy branch): a mirrored foe caps a legacy ally's strike to the top face", () => {
+  const foe = fixedFoe({ mirror: 3, wp: 999, maxWP: 999 });
+  const state = fixedState({ party: [] });
+  state.combat = fixedCombat([foe], { allies: [{ partyIdx: 0, name: "Legacy", lvl: 1, wp: 20, maxWP: 20 }] });
+  const events = alliesTurn(state, fakeRng([5]), []);
+  assert.ok(events.some((e) => e.type === "allyMissed"));
+  assert.equal(foe.wp, 999);
+});
+
+test("alliesTurn (memberStrike): a class-fighting party member's strike is also capped to the mirrored foe's top face", () => {
+  const foe = fixedFoe({ mirror: 3, type: "Humans", wp: 999, maxWP: 999 });
+  const state = fixedState({ party: [classedMember()] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+  // memberToHit(Fighter/Human)=5, capped to 1 by mirror -> atLeastFor(1,20)=20.
+  // raw draw 5 mirrors to face 16 — short of 20, a miss under the cap.
+  const events = alliesTurn(state, fakeRng([5]), []);
+  assert.ok(events.some((e) => e.type === "allyMissed"));
+  assert.equal(foe.wp, 999);
+});
+
+test("foeTurn: a foe's own Mirror Self (mirror 2) lasts two foeTurns, fading once with foeMirrorFaded at 0", () => {
+  const foe = fixedFoe({ wp: 999, maxWP: 999, mirror: 2 });
+  const state = fixedState();
+  state.combat = fixedCombat([foe]);
+  let events = foeTurn(state, fakeRng([999]), []);
+  assert.equal(foe.mirror, 1);
+  assert.equal(events.some((e) => e.type === "foeMirrorFaded"), false);
+  events = foeTurn(state, fakeRng([999]), []);
+  assert.equal(foe.mirror, 0);
+  assert.ok(events.some((e) => e.type === "foeMirrorFaded" && e.name === "Target"));
+});
+
+// --- Foe Strength (might), via foeLevelBase -------------------------------
+
+test("foeLevelBase: might adds flat atop the level-base (or strikesAs) term, a pure 0 when absent", () => {
+  assert.equal(foeLevelBase({ lvl: 1 }), 1);
+  assert.equal(foeLevelBase({ lvl: 1, might: 7 }), 8);
+  assert.equal(foeLevelBase({ lvl: 2, might: 0 }), 4);
+  assert.equal(foeLevelBase({ lvl: 2, sp: { strikesAs: 5 }, might: 7 }), 32);
+});
+
+test("foeTurn (hero branch): a foe with might 7 deals exactly 7 more on a landed blow than the same foe without it", () => {
+  const dmgFor = (might) => {
+    const foe = fixedFoe({ wp: 999, maxWP: 999, ...(might ? { might } : {}) });
+    const state = fixedState();
+    state.combat = fixedCombat([foe]);
+    // raw 5 -> roll 16, hits (atLeastFor(5,20)=16); dmg dice draw 4.
+    const events = foeTurn(state, fakeRng([5, 4]), []);
+    return events.find((e) => e.type === "struckByFoe").dmg;
+  };
+  assert.equal(dmgFor(7) - dmgFor(0), 7);
+});
+
+test("foeTurn (member branch): a foe with might 7 deals exactly 7 more on a landed blow against a party member than without it", () => {
+  const dmgFor = (might) => {
+    const foe = fixedFoe({ wp: 999, maxWP: 999, ...(might ? { might } : {}) });
+    const state = fixedState({ party: [fixedMember()] });
+    state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
+    // pickFoeTarget: one live member -> pool size 2; raw pick 2 targets it.
+    // to-hit raw 5 -> roll 16, hits (atLeastFor(5,20)=16); dmg dice draw 4.
+    const events = foeTurn(state, fakeRng([2, 5, 4]), []);
+    return events.find((e) => e.type === "memberStruck").dmg;
+  };
+  assert.equal(dmgFor(7) - dmgFor(0), 7);
+});
+
+test("pursuitStrike (via flee): a foe with might 7 deals exactly 7 more than the same foe without it", () => {
+  const dmgFor = (might) => {
+    const state = fixedState({ c: { sub: "Cloaker" } });
+    const foe = fixedFoe({ sp: { pursues: true }, wp: 999, maxWP: 999, ...(might ? { might } : {}) });
+    state.combat = fixedCombat([foe], { pending: false, opened2: false });
+    const events = [];
+    flee(state, fakeRng([5, 4]), events);
+    return events.find((e) => e.type === "struckByFoe").dmg;
+  };
+  assert.equal(dmgFor(7) - dmgFor(0), 7);
+});
+
+// --- Foe Regeneration ------------------------------------------------------
+
+test("foeTurn: a live foe with regen below maxWP regains a capped d8 each visit, narrated with amount/wp/maxWP", () => {
+  const foe = fixedFoe({ regen: true, wp: 10, maxWP: 30 });
+  const state = fixedState();
+  state.combat = fixedCombat([foe]);
+  // predicted from the SAME derived key the engine draws — a fresh, pure
+  // call to the same helper, mirroring items.js#pilferFumbleRng's own
+  // "a test can predict it from a fresh call with the same key" pattern.
+  const expectedRoll = derivedRng(0, "foeRegen", state.combat.round, 0).d(8);
+  const healed = Math.min(30 - 10, expectedRoll);
+  // a huge raw draw on the foe's OWN swing this turn -> guaranteed miss.
+  const events = foeTurn(state, fakeRng([999]), []);
+  assert.equal(foe.wp, 10 + healed);
+  assert.deepEqual(events.find((e) => e.type === "foeRegenerated"), {
+    type: "foeRegenerated", name: "Target", amount: healed, wp: 10 + healed, maxWP: 30,
+  });
+});
+
+test("foeTurn: a foe with regen at full hp draws nothing and narrates nothing for it", () => {
+  const foe = fixedFoe({ regen: true, wp: 30, maxWP: 30 });
+  const state = fixedState();
+  state.combat = fixedCombat([foe]);
+  const events = foeTurn(state, fakeRng([999]), []);
+  assert.equal(events.some((e) => e.type === "foeRegenerated"), false);
+  assert.equal(foe.wp, 30);
+});
+
+test("foeTurn: an asleep foe still regenerates, ahead of the sleep skip, drawing zero main-rng", () => {
+  const foe = fixedFoe({ regen: true, wp: 10, maxWP: 30, asleep: 1 });
+  const state = fixedState();
+  state.combat = fixedCombat([foe]);
+  const expectedRoll = derivedRng(0, "foeRegen", state.combat.round, 0).d(8);
+  const healed = Math.min(30 - 10, expectedRoll);
+  // fakeRng([]) throws on any draw — an asleep foe never swings, so this
+  // proves regen drew ONLY from its own derived stream, never the main rng.
+  const events = foeTurn(state, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "foeRegenerated" && e.amount === healed));
+  assert.ok(events.some((e) => e.type === "foeSlept"));
+  assert.equal(foe.wp, 10 + healed);
+  assert.equal(foe.asleep, 0);
+});
+
+// --- Inertness (Task 2) ----------------------------------------------------
+
+test("inertness: a plain foe (no ward/rebound/mirror/might/regen) strikes and is struck with the exact same draws and damage as before", () => {
+  const foe = fixedFoe({ wp: 999, maxWP: 999 });
+  const state = fixedState();
+  state.combat = fixedCombat([foe]);
+  // to-hit raw draw 5 -> roll 16 hits (atLeastFor(5,20)=16); dmg dice draw 4.
+  // fakeRng's throw-on-underflow proves NOTHING beyond these two draws fires.
+  const events = foeTurn(state, fakeRng([5, 4]), []);
+  const struck = events.find((e) => e.type === "struckByFoe");
+  assert.ok(struck);
+  assert.equal(struck.dmg, foeLevelBase(foe) + 4, "might is a pure 0 no-op — identical to the pre-Phase-75.1 formula");
 });

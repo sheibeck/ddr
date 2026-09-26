@@ -57,6 +57,7 @@
 import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
+import { derivedRng } from "./rng.js";
 import { die, forfeitLoot } from "./death.js";
 import { checkLevel } from "./character.js";
 import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
@@ -667,10 +668,25 @@ export function playerStrike(state, rng, events = []) {
     // normal to-hit.
     let faces = a === 1 && frenzyFired ? Math.max(1, toHit(state) - 1) : toHit(state);
     // Phase 74 (ROLL-02): the five per-target terms (dozing/stupid floor,
-    // sp.toHit cap, sp.fast, magicOnly, daggerOnly) now live in the ONE
-    // helper engine/derived.js#targetStrikeFaces — see its JSDoc for the
-    // full per-term rationale (Phase 40 Stupidity, Phase 72 F3 daggerOnly).
+    // sp.toHit cap, sp.fast, magicOnly, daggerOnly) plus (Phase 75.1,
+    // RULES-10) the sixth Mirror Self cap now live in the ONE helper
+    // engine/derived.js#targetStrikeFaces — see its JSDoc for the full
+    // per-term rationale (Phase 40 Stupidity, Phase 72 F3 daggerOnly).
+    const preTargetFaces = faces;
     faces = targetStrikeFaces(c, t, faces);
+    // RULES-10 (Phase 75.1, foe Mirror Self): targetStrikeFaces already
+    // applied the cap as its own sixth (and final) term above — this only
+    // NAMES it for the strike event, by recomputing what faces would have
+    // been WITHOUT the mirror term (a second, zero-draw call to the same
+    // pure helper). Pushed only when the mirror term itself actually
+    // changed the result — never for a magic-only foe already zeroed by an
+    // earlier term (mirror is a no-op there, per targetStrikeFaces' own
+    // floor).
+    let mirrorMods = [];
+    if (t.mirror > 0) {
+      const withoutMirror = targetStrikeFaces(c, { ...t, mirror: 0 }, preTargetFaces);
+      if (faces !== withoutMirror) mirrorMods = [{ name: "Mirror Self", delta: faces - withoutMirror }];
+    }
     // Phase 38 (ABIL-02, need_shift_spec): Overhead Blow's party-agnostic
     // "you need two better to land it" self-penalty — a transient descriptor
     // term, zero draws, applied BEFORE Afraid so Afraid's own penalty stacks
@@ -690,7 +706,7 @@ export function playerStrike(state, rng, events = []) {
     const facesBeforeAfraid = faces;
     faces = afraidNeed(state, faces);
     const afraidMods = faces !== facesBeforeAfraid ? [{ name: "afraid", delta: faces - facesBeforeAfraid }] : [];
-    const mods = [...abilityMods, ...afraidMods];
+    const mods = [...mirrorMods, ...abilityMods, ...afraidMods];
     // Phase 38 (ABIL-02, strike_descriptor_spec): `subAuto` is the ORIGINAL
     // sub-class auto-hit (Cat Burglar/Ninja opener, which also claims
     // C.opened); `auto` additionally honours a descriptor's autoHit without
@@ -1043,10 +1059,19 @@ export function shatterIfBest(state, t, roll, dieN, by, rng, events, extra = {})
  * curve's whole-hit scale (`foeHitFor`, applied at the three call sites
  * below) is keyed to DEPTH, not to this term — this stays a pure read of the
  * foe's own level-base, 0 draws.
+ *
+ * RULES-10 (Phase 75.1, foe Strength): a foe carrying `might` (a fumbled
+ * Strength) adds it flat, ONCE per landed blow, on top of the level-base
+ * term — never crit-doubled (the crit doubling at each call site applies
+ * only to the dice term added alongside this base). `f.might` is `0` on
+ * every foe today (only 75.1-05's resolver will ever set it), and
+ * `src/browser/foeDetails.js`'s synthetic `{ lvl, sp }` foes carry no
+ * `might` key at all — `f.might || 0` reads `0` for both, so this is a
+ * pure, additive, zero-draw no-op absent the field.
  */
 export function foeLevelBase(f) {
-  if (f.sp && f.sp.strikesAs) return f.sp.strikesAs * f.sp.strikesAs;
-  return f.lvl * f.lvl;
+  const base = f.sp && f.sp.strikesAs ? f.sp.strikesAs * f.sp.strikesAs : f.lvl * f.lvl;
+  return base + (f.might || 0);
 }
 
 /**
@@ -1620,6 +1645,7 @@ export function allyTurn(state, rng, events = []) {
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
   if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
   if (t.sp && t.sp.daggerOnly) faces = 0; // only a dagger or magic touches it
+  if (t.mirror > 0) faces = Math.min(faces, 1); // RULES-10 (Phase 75.1): Mirror Self — the top face only
   // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike die,
   // in the same draw position the previous draw sat — the strike die, then
   // (for Philly) a second draw, same as before.
@@ -1723,6 +1749,7 @@ export function alliesTurn(state, rng, events = []) {
       if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
       if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
       if (t.sp && t.sp.daggerOnly) faces = 0; // only a dagger or magic touches it
+      if (t.mirror > 0) faces = Math.min(faces, 1); // RULES-10 (Phase 75.1): Mirror Self — the top face only
       // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike
       // die, then (for Philly) a second draw — same draw order as before.
       let check = rollCheck(rng, legacyDieN, atLeastFor(faces, legacyDieN));
@@ -2035,6 +2062,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
   if (t.sp && t.sp.magicOnly && !view.magicWpn) faces = 0; // only magic touches it
   if (t.sp && t.sp.daggerOnly && !view.magicWpn && view.weapon !== "Dagger") faces = 0; // only a dagger or magic touches it
+  if (t.mirror > 0) faces = Math.min(faces, 1); // RULES-10 (Phase 75.1): Mirror Self — the top face only
   if (mod && mod.needShift) faces = Math.max(1, faces + mod.needShift);
   // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike die,
   // then (for Philly) a second draw — same draw order as before (the strike
@@ -2693,6 +2721,21 @@ export function foeTurn(state, rng, events = []) {
       }
     }
     if (!f.alive) continue;
+    // RULES-10 (Phase 75.1, foe Regeneration): a live foe carrying `regen`
+    // (a fumbled Regeneration) regains a d8 each of its own foeTurn visits,
+    // capped at `maxWP`, drawn from a PER-FOE derived stream keyed on the
+    // round and this foe's own index in `C.foes` — never the main rng, so a
+    // regen-less fight's draw sequence is untouched. An asleep or stupid or
+    // stunned foe (checked below) still regenerates — this sits BEFORE
+    // every one of those skips, mirroring the acid/dot ticks above it.
+    // Nothing is drawn at full hp.
+    if (f.regen && f.wp < f.maxWP) {
+      const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+      const foeRegenRng = derivedRng(cursor, "foeRegen", C.round, C.foes.indexOf(f));
+      const amount = Math.min(f.maxWP - f.wp, foeRegenRng.d(8)); // roll:amount
+      f.wp += amount;
+      events.push({ type: "foeRegenerated", name: f.name, amount, wp: f.wp, maxWP: f.maxWP });
+    }
     if (f.asleep > 0) {
       f.asleep--;
       events.push({ type: "foeSlept", name: f.name });
@@ -3015,6 +3058,12 @@ export function foeTurn(state, rng, events = []) {
       events.push({ type: "foeWardFaded", name: f.name });
       delete f.ward;
     }
+  }
+  // RULES-10 (Phase 75.1, foe Mirror Self tick): each LIVE foe's own Mirror
+  // Self (`foe.mirror`) ticks down independently, beside the ward tick
+  // above and the hero's own c.mirror tick, fading with foeMirrorFaded.
+  for (const f of C.foes) {
+    if (f.alive && f.mirror > 0 && --f.mirror <= 0) events.push({ type: "foeMirrorFaded", name: f.name });
   }
   // Phase 39 (GEAR-02): the retired per-foeTurn c.acute countdown —
   // Acuteness is now a rounds-cadence c.timers effect record, ticked by the

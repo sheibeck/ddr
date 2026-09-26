@@ -101,7 +101,7 @@ export const ALL_ENFORCED = true;
 export const DRAW_INVENTORY = {
   "engine/abilities.js": { rollCheck: 0, amount: 2, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/character.js": { rollCheck: 0, amount: 3, selection: 13, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
-  "engine/combat.js": { rollCheck: 22, amount: 17, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
+  "engine/combat.js": { rollCheck: 22, amount: 18, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
   "engine/derived.js": { rollCheck: 1, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/dice.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 2 },
   "engine/economy.js": { rollCheck: 0, amount: 0, selection: 1, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
