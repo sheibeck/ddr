@@ -553,6 +553,26 @@ test("Walnut Staff (C16): floor 20 resisted -> no weakened flag, every live foe 
   assert.equal(t.s.c.timers["spell:weaken"], undefined, "at or below the knee the weaken lasts the fight");
 });
 
+test("floors 1-12: a Freeze, a Petrify and an Oak Staff stone are today's kill / removal on every floor — no resist roll, no hold", () => {
+  for (let depth = 1; depth <= 12; depth++) {
+    const fr = castScenario("Freeze", depth);
+    assert.equal(fr.s.combat.foes[0].alive, false, `Freeze depth ${depth}`);
+    assert.ok(fr.events.some((e) => e.type === "frozenSolid"), `Freeze depth ${depth}`);
+    const pe = castScenario("Petrify", depth);
+    assert.equal(pe.s.combat.foes[0].alive, false, `Petrify depth ${depth}`);
+    assert.ok(pe.events.some((e) => e.type === "petrified"), `Petrify depth ${depth}`);
+    const oak = useScenario("Oak", depth);
+    assert.deepEqual(oak.events.find((e) => e.type === "foeStoned").names, ["F1", "F2"], `Oak depth ${depth}`);
+    for (const run of [fr, pe, oak]) {
+      assert.equal(run.events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false, `depth ${depth}`);
+      assert.equal(run.s.combat?.foes.some((f) => "held" in f || "resisted" in f) ?? false, false, `depth ${depth}`);
+    }
+    const probe = { getState: () => 0 };
+    const r = controlResistCheck({ floor: { depth }, acts: 0, combat: { round: 1 } }, probe, "freeze:Freeze", 0);
+    assert.equal(r.rolled, false, `no resist roll at depth ${depth}`);
+  }
+});
+
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
 
 test("texts: every spell and item whose promise changes past the knee names floor kneeDepth and holdRounds (as a word), from the dial itself", () => {

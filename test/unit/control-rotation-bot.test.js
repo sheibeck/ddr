@@ -18,7 +18,8 @@ import url from "node:url";
 
 import { chooseSpell, makeBotContext, botLine, BOT_DEFAULTS } from "../../tools/lib/tuning-bot.mjs";
 import { SPELLS } from "../../content/index.js";
-import { setIdentityDials } from "./harness/identityDials.js";
+import { setIdentityDials, withIdentity } from "./harness/identityDials.js";
+import { DIALS } from "../../engine/difficulty.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
 // this file's pins are canon-mechanic numbers, so it runs under the same
@@ -145,4 +146,59 @@ test("both tune CLIs accept --control-rotation (source check — neither exports
   assert.match(tuneClasses, /opts\.controlRotation\s*=\s*true/);
   assert.match(tuneDifficulty, /--control-rotation/);
   assert.match(tuneDifficulty, /opts\.controlRotation\s*=\s*true/);
+});
+
+// ---------------------------------------------------------------------------
+// Phase 75.3, Plan 05 (RULES-18): the default bot plays the new Freeze. Past
+// the knee a landed Freeze holds instead of killing, so chooseSpell scores it
+// as a DISABLE (Stun's 230 / 450, allowed against one foe) and
+// hasCastableKillTier ignores it; the opt-in rotation still ranks it first at
+// every depth (it replays the exploit). These run under the SHIPPED
+// CONTROL_AT_DEPTH (holdRounds 3 past floor 12) on top of this file's
+// identity default — the identity dial never holds, so it cannot show the
+// change.
+// ---------------------------------------------------------------------------
+
+const SHIPPED_CONTROL = { CONTROL_AT_DEPTH: DIALS.CONTROL_AT_DEPTH };
+
+/** atDepth(state, depth) — chooseSpell reads state.floor.depth for the hold dial. */
+function atDepth(state, depth) {
+  return { ...state, floor: { depth } };
+}
+
+test("RULES-18 default bot: Freeze + Fireball vs one foe picks Freeze (KILL 410) on floor 12 and Fireball on floor 20", () => {
+  withIdentity(SHIPPED_CONTROL, () => {
+    const ctx = makeBotContext();
+    const base = mkState(mu({ grimoire: ["Freeze", "Fireball"] }), fight(1));
+    assert.deepStrictEqual(chooseSpell(atDepth(base, 12), ctx), { idx: idx("Freeze"), tier: "kill", score: 410 });
+    const deep = chooseSpell(atDepth(base, 20), ctx);
+    assert.equal(deep.idx, idx("Fireball"));
+    assert.equal(deep.tier, "damage");
+  });
+});
+
+test("RULES-18 default bot: past the knee a lone castable Freeze scores Stun's DISABLE (230 offensive, 450 defensive), even against one foe", () => {
+  withIdentity(SHIPPED_CONTROL, () => {
+    const ctx = makeBotContext();
+    const one = atDepth(mkState(mu({ grimoire: ["Freeze"] }), fight(1)), 20);
+    assert.deepStrictEqual(chooseSpell(one, ctx), { idx: idx("Freeze"), tier: "disable", score: 230 });
+    // Two foes and no castable KILL tier (Freeze no longer counts): defensive.
+    const two = atDepth(mkState(mu({ grimoire: ["Freeze"] }), fight(2)), 20);
+    assert.deepStrictEqual(chooseSpell(two, ctx), { idx: idx("Freeze"), tier: "disable", score: 450 });
+    assert.equal(ctx.lastSpellMode, "defensive");
+    // Floor 12: Freeze is still the castable KILL, so two foes stay offensive.
+    const twoShallow = atDepth(mkState(mu({ grimoire: ["Freeze"] }), fight(2)), 12);
+    assert.deepStrictEqual(chooseSpell(twoShallow, ctx), { idx: idx("Freeze"), tier: "kill", score: 410 });
+    assert.equal(ctx.lastSpellMode, "offensive");
+  });
+});
+
+test("RULES-18 rotation: with controlRotation on, Freeze + Fireball vs one foe picks Freeze (455) on floor 12 and floor 20 alike", () => {
+  withIdentity(SHIPPED_CONTROL, () => {
+    const ctx = makeBotContext({ controlRotation: true });
+    const base = mkState(mu({ grimoire: ["Freeze", "Fireball"] }), fight(1));
+    for (const depth of [12, 20]) {
+      assert.deepStrictEqual(chooseSpell(atDepth(base, depth), ctx), { idx: idx("Freeze"), tier: "rotation", score: 455 }, `depth ${depth}`);
+    }
+  });
 });
