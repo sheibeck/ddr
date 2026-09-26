@@ -252,8 +252,12 @@ function attackLine(foe, sp, state) {
       // The engine's own helpers, fed plain sanitized values (never the live foe).
       const base = foeLevelBase({ lvl, sp: strikesAs !== null ? { strikesAs } : {} });
       const curve = difficultyCurve(rd(rd(state, "floor"), "depth"));
-      const lo = foeHitFor(base + d.n + d.bonus, curve);
-      const hi = foeHitFor(base + d.n * d.sides + d.bonus, curve);
+      // RULES-17 (Phase 75.3): an elite's own rank, read through this
+      // module's sanitising helpers — 0 when absent, so a plain foe's range
+      // is unchanged.
+      const eliteRank = num(rd(foe, "elite")) ?? 0;
+      const lo = foeHitFor(base + d.n + d.bonus, curve, eliteRank);
+      const hi = foeHitFor(base + d.n * d.sides + d.bonus, curve, eliteRank);
       return Number.isFinite(lo) && Number.isFinite(hi) ? { lo, hi } : null;
     }, null);
     if (range) parts.push(range.lo === range.hi ? fill(C.hitsForOne, { n: range.lo }) : fill(C.hitsFor, range));
