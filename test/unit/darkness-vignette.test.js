@@ -15,7 +15,10 @@ import url from "node:url";
 
 import { VIGNETTE_LEVELS, vignetteFor, waiverFor } from "../../src/browser/darknessView.js";
 import { GW, GH } from "../../engine/maze.js";
-import { inDark, revealRadius, mapViewRadius, skill, eff } from "../../engine/derived.js";
+import { inDark, revealRadius, mapViewRadius, darkWaiver, darkWaived, DARK_WAIVERS } from "../../engine/derived.js";
+import { conditionEffectText } from "../../src/browser/conditionEffects.js";
+import { createFakeClock } from "./harness/fakeClock.js";
+import { ARM_DELAY_MS } from "../../src/browser/inputGuards.js";
 import { stripHtml } from "../../tools/ident-sweep.mjs";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
@@ -78,25 +81,33 @@ test("vignetteFor: on is exactly inDark coerced to boolean", () => {
   assert.equal(vignetteFor(undefined, 1).on, false);
 });
 
-// ─── waiverFor ──────────────────────────────────────────────────────────────
+// ─── waiverFor (DARK-02, Phase 76: the single-key contract) ─────────────────
+//
+// waiverFor takes the engine's ONE answer (engine/derived.js#darkWaiver) and
+// returns it when it is a DARK_WAIVERS key, else null. Precedence lives only
+// in the engine now; the shell never recomputes the rule.
 
-test("waiverFor: null when no waiver flag is live", () => {
-  assert.equal(waiverFor({ nightVision: false, amuletLight: false, litTorch: false }), null);
-  assert.equal(waiverFor({}), null);
-  assert.equal(waiverFor(undefined), null);
+test("waiverFor: returns each DARK_WAIVERS key unchanged", () => {
+  for (const key of DARK_WAIVERS) assert.equal(waiverFor(key), key);
+  assert.equal(waiverFor("litTorch"), "litTorch");
+  assert.equal(waiverFor("nightVision"), "nightVision");
+  assert.equal(waiverFor("amuletLight"), "amuletLight");
+});
+
+test("waiverFor: null for no waiver, an unknown key, or the retired flags-object form; never throws", () => {
   assert.equal(waiverFor(null), null);
+  assert.equal(waiverFor(undefined), null);
+  assert.equal(waiverFor("bogus"), null);
+  assert.equal(waiverFor(""), null);
+  assert.equal(waiverFor({ litTorch: true }), null, "greenfield: the Phase 57 flags object is gone");
+  assert.equal(waiverFor(42), null);
+  assert.doesNotThrow(() => waiverFor(Symbol("x")));
 });
 
-test("waiverFor: names the single live waiver", () => {
-  assert.equal(waiverFor({ nightVision: true }), "nightVision");
-  assert.equal(waiverFor({ amuletLight: true }), "amuletLight");
-  assert.equal(waiverFor({ litTorch: true }), "litTorch");
-});
-
-test("waiverFor: fixed precedence when several are live at once — nightVision, then amuletLight, then litTorch", () => {
-  assert.equal(waiverFor({ nightVision: true, amuletLight: true, litTorch: true }), "nightVision");
-  assert.equal(waiverFor({ amuletLight: true, litTorch: true }), "amuletLight");
-  assert.equal(waiverFor({ nightVision: false, amuletLight: false, litTorch: true }), "litTorch");
+test("waiverFor: composes with the engine's darkWaiver, so the chip names exactly what the engine reports", () => {
+  assert.equal(waiverFor(darkWaiver({ skills: { "Night Vision": 1 }, items: [], timers: {} })), "nightVision");
+  assert.equal(waiverFor(darkWaiver({ skills: {}, items: [], timers: {} })), null);
+  assert.equal(waiverFor(darkWaiver(null)), null);
 });
 
 // ─── No rule duplication (documentation-level cross-check; the real gate is
@@ -163,6 +174,42 @@ test("end-to-end: a running counter WITH a lit torch composes to the off level t
   assert.equal(result.level, "off", "but the map is rendering everything, so the vignette must not lie by dimming it");
 });
 
+// ─── DARK-02 agreement table: one radius, one waiver ──────────────────────
+
+const TORCH_LIT = { "item:Torch": { cadence: "squares", left: 40, phase: "effect" } };
+const TORCH_COOLING = { "item:Torch": { cadence: "squares", left: 0, cd: 40, phase: "cooldown" } };
+const AMULET_ITEMS = [{ n: "Amulet of Light", eff: { sight: 1, light: 1 } }];
+const AMULET_LIVE = { "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } };
+
+const WAIVER_CASES = [
+  { name: "no waiver", c: {}, key: null },
+  { name: "Night Vision", c: { skills: { "Night Vision": 1 } }, key: "nightVision" },
+  { name: "a live Amulet of Light", c: { items: AMULET_ITEMS, timers: AMULET_LIVE }, key: "amuletLight" },
+  { name: "a lit torch", c: { timers: TORCH_LIT }, key: "litTorch" },
+  { name: "a cooling torch", c: { timers: TORCH_COOLING }, key: null },
+];
+
+test("DARK-02 agreement table: the vignette is close exactly when inDark && !darkWaived, the same condition under which revealRadius is 1", () => {
+  for (const wc of WAIVER_CASES) {
+    for (const darkFor of [30, 0]) {
+      for (const darkTile of [false, true]) {
+        const state = fixedState({ c: { darkFor, ...structuredClone(wc.c) } });
+        if (darkTile) state.floor.g[5][5].dark = true;
+        const label = `${wc.name}, darkFor ${darkFor}, ${darkTile ? "dark" : "lit"} tile`;
+        assert.equal(darkWaiver(state.c), wc.key, `${label}: the engine's waiver`);
+        const limited = inDark(state) && !darkWaived(state.c);
+        const level = vignetteFor(inDark(state), mapViewRadius(state)).level;
+        assert.equal(level, limited ? "close" : "off", `${label}: vignette level`);
+        assert.equal(revealRadius(state) === 1, limited, `${label}: revealRadius is 1 exactly when the dark limits`);
+      }
+    }
+  }
+});
+
+test("DARK-02 adjacency: a mapViewRadius of exactly 1 is the close vignette", () => {
+  assert.equal(vignetteFor(true, 1).level, "close");
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL SECTION (Task 2) — through test/unit/harness/shellSandbox.js's
 // loadShellSandbox, proving paintVignette()/paintConditions' waiver clause
@@ -170,7 +217,7 @@ test("end-to-end: a running counter WITH a lit torch composes to the off level t
 // ═══════════════════════════════════════════════════════════════════════════
 
 function darknessBridge() {
-  return { inDark, revealRadius, mapViewRadius, vignetteFor, waiverFor, skill, eff };
+  return { inDark, revealRadius, mapViewRadius, darkWaiver, vignetteFor, waiverFor };
 }
 
 /**
@@ -268,6 +315,80 @@ test("(shell) no waiver: the darkness chip names none, and the vignette is at th
   assert.doesNotMatch(detail, /torch|amulet|night vision/i, `expected no waiver named, got: ${detail}`);
 });
 
+/**
+ * tapDarknessCard(state, { withBridge }) — paints with a fake clock, taps the
+ * DARK chip past its arm delay and returns the tap card's text (the rail
+ * line or the combat condition card, whichever the shell routes to) plus the
+ * chip's detail.
+ */
+function tapDarknessCard(state, { withBridge = true } = {}) {
+  const clock = createFakeClock({ start: 100000 });
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, clock });
+  const w = sandbox.context.window;
+  if (withBridge) w.__mzDarkness = darknessBridge();
+  let captured = null;
+  w.mzRailLine = (title, line) => { captured = line; };
+  w.mzConditionCard = (title, line) => { captured = line; };
+  sandbox.setState(state);
+  sandbox.paint();
+  const chip = darknessChip(doc);
+  assert.ok(chip, "the darkness chip must be painted");
+  clock.advance(ARM_DELAY_MS + 10);
+  chip.onclick();
+  return { text: captured, detail: chipDetailText(chip) };
+}
+
+test("(shell) DARK-02 a lit torch: the tap card names the torch and says it is holding the dark back", () => {
+  const { text, detail } = tapDarknessCard(baseThiefWithDarkness(30, { timers: structuredClone(TORCH_LIT) }));
+  assert.match(detail, /your torch is holding it back/);
+  assert.match(text, /The dark is on you, but your torch is holding it back\./);
+  assert.doesNotMatch(text, /off the map/, "the old render-only wording is gone");
+  assert.doesNotMatch(text, /to hit/, "a lit torch lifts the dark's to-hit cap, so the card leads with no penalty");
+});
+
+test("(shell) DARK-02 no light: the tap card leads with the to-hit penalty and names no waiver", () => {
+  const { text, detail } = tapDarknessCard(baseThiefWithDarkness(30));
+  assert.doesNotMatch(detail, /torch|amulet|night vision/i);
+  assert.match(text, /to hit/, `expected a to-hit lead, got: ${text}`);
+  assert.doesNotMatch(text, /is holding it back/);
+});
+
+test("(shell) DARK-02 ordering: Night Vision AND a lit torch, and the chip names night vision (the engine's precedence), every time", () => {
+  for (let i = 0; i < 3; i++) {
+    const state = baseThiefWithDarkness(30, { skills: { "Night Vision": 1 }, timers: structuredClone(TORCH_LIT) });
+    const detail = chipDetailText(darknessChip(paintDarkness(state)));
+    assert.match(detail, /your night vision is holding it back/);
+    assert.doesNotMatch(detail, /torch/);
+  }
+});
+
+test("(shell) DARK-02 a COOLING torch: the vignette is close and the chip names no waiver", () => {
+  const doc = paintDarkness(baseThiefWithDarkness(30, { timers: structuredClone(TORCH_COOLING) }));
+  assert.equal(doc.document.getElementById("mw-vignette").dataset.dark, "close");
+  assert.doesNotMatch(chipDetailText(darknessChip(doc)), /torch|amulet|night vision|holding/i);
+});
+
+test("(shell) DARK-02 empty: the bridge withheld, so paint() throws nothing, the vignette is off and the chip names no waiver", () => {
+  const state = baseThiefWithDarkness(30, { timers: structuredClone(TORCH_LIT) });
+  let doc;
+  assert.doesNotThrow(() => { doc = paintDarkness(state, { withBridge: false }); });
+  assert.equal(doc.document.getElementById("mw-vignette").dataset.dark, "off");
+  assert.doesNotMatch(chipDetailText(darknessChip(doc)), /holding/);
+});
+
+test("DARK-02 empty: a hero with no skills and no timers names no waiver", () => {
+  assert.equal(waiverFor(darkWaiver({})), null);
+  assert.equal(waiverFor(darkWaiver({ skills: {}, timers: {} })), null);
+});
+
+test("DARK-02 fight truth: conditionEffectText's darkness lead names the to-hit penalty with no light, and none under a lit torch or a live Amulet", () => {
+  const cn = { key: "darkness", remaining: 30 };
+  assert.match(conditionEffectText(cn, baseThiefWithDarkness(30)) || "", /to hit/);
+  assert.equal(conditionEffectText(cn, baseThiefWithDarkness(30, { timers: structuredClone(TORCH_LIT) })), null);
+  assert.equal(conditionEffectText(cn, baseThiefWithDarkness(30, { items: AMULET_ITEMS, timers: structuredClone(AMULET_LIVE) })), null);
+});
+
 test("(shell) chip-agreement: the darkness chip and the vignette appear together and clear together on the same paint", () => {
   const state = baseThiefWithDarkness(30);
   const doc1 = paintDarkness(state);
@@ -306,7 +427,7 @@ test("(shell) paintVignette's body references mapViewRadius and does NOT referen
   assert.ok(end !== -1 && end > start, "no closing brace found after paintVignette");
   const body = stripped.slice(start, end);
   assert.match(body, /mapViewRadius/, "paintVignette must reference mapViewRadius");
-  assert.doesNotMatch(body, /revealRadius/, "paintVignette must NOT reference revealRadius (USER RULING 2026-09-22)");
+  assert.doesNotMatch(body, /revealRadius/, "paintVignette reads the one radius, mapViewRadius (DARK-02: it shares revealRadius's waiver, so there is nothing else to read)");
 });
 
 test("(shell) no motion added: neither .mw-vignette attribute rule contains a transition or animation declaration", () => {
@@ -338,5 +459,18 @@ test("(shell) WAIVER_LABEL entries and the darkness-lead sentence template are c
   for (const leaf of leaves) {
     assert.deepStrictEqual(findBannedTerms(leaf), [], `Banned copy in WAIVER_LABEL: "${leaf}"`);
   }
-  assert.deepStrictEqual(findBannedTerms("The dark is on you, but your torch is keeping it off the map."), []);
+  assert.deepStrictEqual(findBannedTerms("The dark is on you, but your torch is holding it back."), []);
+  // DARK-02 (Phase 76): the rewritten explain copy tells the map AND the
+  // fight truth, in voice.
+  const m = RAW_HTML.match(/\n  darkness: "([^"]+)",/);
+  assert.ok(m, "CONDITION_EXPLAIN.darkness not found");
+  const explain = m[1];
+  assert.deepStrictEqual(findBannedTerms(explain), [], `Banned copy in CONDITION_EXPLAIN.darkness: ${explain}`);
+  assert.match(explain, /strike/i, "the explain copy names the fight");
+  assert.match(explain, /critical/i);
+  assert.match(explain, /Night Vision/);
+  assert.match(explain, /torch/);
+  assert.match(explain, /Amulet of Light/);
+  assert.match(explain, /Sense Presence/);
+  assert.doesNotMatch(explain, /\bWP\b|\d/, "no WP, no roll numbers");
 });

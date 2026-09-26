@@ -80,14 +80,18 @@ test("draw(): the visible() definition appears once, and if (!visible(x, y)) con
 
 // ─── (4) the Phase 40 fill-line pin + the water override line ─────────────
 
-test("draw(): the Phase 40 spellSeen/dark fill-line pin is unchanged, and the water override line immediately follows it", () => {
-  assert.match(CODE, /ctx\.fillStyle = c\.spellSeen \? P\.floorSpell : \(c\.dark \? P\.floorDark : P\.floor\);/);
+// DARK-02 (Phase 76): both lines gained the waived-dark tint (darkLit, read
+// once per paint from window.__mzDarkness.darkWaiver); spellSeen still
+// comes first, and the water line still follows the fill line.
+test("draw(): the spellSeen/dark fill-line pin (DARK-02: with the waived-dark tint), and the water override line immediately follows it", () => {
+  assert.match(CODE, /ctx\.fillStyle = c\.spellSeen \? P\.floorSpell : \(c\.dark \? \(darkLit \? P\.floorDarkLit : P\.floorDark\) : P\.floor\);/);
   const region = sliceBetween(
     CODE,
-    "ctx.fillStyle = c.spellSeen ? P.floorSpell : (c.dark ? P.floorDark : P.floor);",
+    "ctx.fillStyle = c.spellSeen ? P.floorSpell : (c.dark ? (darkLit ? P.floorDarkLit : P.floorDark) : P.floor);",
     "ctx.fillRect(X, Y, CELL, CELL);"
   );
-  assert.match(region, /if \(c\.water && !c\.spellSeen\) ctx\.fillStyle = c\.dark \? P\.waterDark : P\.water;/);
+  assert.match(region, /if \(c\.water && !c\.spellSeen\) ctx\.fillStyle = c\.dark \? \(darkLit \? P\.waterDarkLit : P\.waterDark\) : P\.water;/);
+  assert.match(CODE, /const darkLit = !!window\.__mzDarkness\?\.darkWaiver\?\.\(S\.c\);/);
 });
 
 function sliceBetween(source, startMarker, endMarker) {
@@ -105,6 +109,11 @@ test("draw(): the fallback P literal's water/waterDark hexes equal the real MAP_
   assert.ok(fallbackMatch, "fallback palette literal must carry water/waterDark");
   assert.equal(fallbackMatch[1], MAP_PALETTE.water, "the fallback water hex must equal the real module's MAP_PALETTE.water");
   assert.equal(fallbackMatch[2], MAP_PALETTE.waterDark, "the fallback waterDark hex must equal the real module's MAP_PALETTE.waterDark");
+  // DARK-02 (Phase 76): the waived-dark tint pair rides the same fallback.
+  const litMatch = CODE.match(/const P = M \? M\.MAP_PALETTE : \{[^}]*floorDarkLit: "(#[0-9a-fA-F]{6})", waterDarkLit: "(#[0-9a-fA-F]{6})"[^}]*\};/);
+  assert.ok(litMatch, "fallback palette literal must carry floorDarkLit/waterDarkLit");
+  assert.equal(litMatch[1], MAP_PALETTE.floorDarkLit);
+  assert.equal(litMatch[2], MAP_PALETTE.waterDarkLit);
 });
 
 // ─── (6) fearArmed chip copy/tone/explain ──────────────────────────────────

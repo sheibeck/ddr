@@ -229,7 +229,7 @@ replaced; the arm applies to it like the other four.
 | Phobia | Trigger key | Region model | Re-arm rule | Existing mechanic kept |
 |---|---|---|---|---|
 | Bodies of water | `water` | `cell.water === true` at the hero's tile | leaving the water cell | none (no prior standalone mechanic) |
-| Darkness | `dark` | `inDark(state)` (tile `.dark` OR `c.darkFor > 0`) | leaving dark (`inDark` false) | none (`heightsFear`/`waterFear` are Heights/Water only) |
+| Darkness | `dark` | `darkLimited(state)` (tile `.dark` OR `c.darkFor > 0`, with no light; Phase 76 DARK-01) | leaving the dark or lighting it (`darkLimited` false) | none (`heightsFear`/`waterFear` are Heights/Water only) |
 | Heights | `heights` | a tile-key string on the ATTEMPTED climb/gorge tile | more than 1 square (Manhattan) from that tile | `heightsPenalty` still lands on the climb roll itself |
 | Being trapped | `deadEnd` | `isDeadEnd(f, px, py)` (<=1 open orthogonal neighbour) | leaving the dead end | `trappedPanic`'s flat hp loss (its own per-tile debounce, unchanged) |
 | Death | `nearDeath` | hp <= 25% of maxWP (`DEATH_PANIC_THRESHOLD`) | hp climbs back ABOVE 50% (`DEATH_REARM_FRACTION`) | `fight()`'s existing `nearDeathPanic` start-of-combat check, unaffected |
@@ -330,17 +330,17 @@ character (`test/unit/phobia-triggers.test.js`).
 PURE render-time filter, never a mutation of `cell.seen`/`cell.spellSeen`:
 
 - `mapViewRadius(state)` returns `Infinity` (show every already-`seen` cell)
-  UNLESS the player is currently `inDark(state)` (a `.dark` tile, or
-  `c.darkFor > 0` — the persistent-darkness counter) AND carries none of the
-  established waivers, in which case it returns `DARK_VIEW_RADIUS` (`1` — a
+  UNLESS `darkLimited(state)` — the player is currently `inDark(state)` (a
+  `.dark` tile, or `c.darkFor > 0`, the persistent-darkness counter) AND no
+  light waiver holds — in which case it returns `DARK_VIEW_RADIUS` (`1` — a
   3x3 window).
-- **The waiver set is the SAME one every other darkness consumer in this
-  codebase already uses** — "a light effect" means one thing everywhere:
-  Night Vision (`skill(c, "Night Vision")`, `revealRadius`'s own waiver),
-  a live Amulet of Light (`eff(c, "light") > 0`, the exact same read
-  `engine/movement.js`'s `darkFor`-dispel check uses), or a lit torch
+- **The waiver is the ONE rule every darkness consumer reads** (Phase 76,
+  DARK-01/02; see "One rule for the map and the fight" below):
+  `engine/derived.js#darkWaiver(c)` names Night Vision (`skill(c, "Night
+  Vision")`), a live Amulet of Light (`eff(c, "light") > 0`, the exact same
+  read `engine/movement.js`'s `darkFor`-dispel check uses) or a lit torch
   (`itemEffectActive(c, "lit")`, the Torch's `ACTIVATION_OF.Torch = { kind:
-  "lit", effect: 40 }` record).
+  "lit", effect: 40 }` record), in that precedence.
 - `inViewWindow(state, x, y)` is `true` for every cell when the radius is
   `Infinity`; when it is `1`, `true` only for the 3x3 cells around the
   party (Chebyshev distance <= 1 from `state.floor.px/py`) — `false` for
@@ -364,6 +364,44 @@ and gates BOTH the floor-fill loop (after `if (!c.seen) continue;`) and the
 feature-icon pass (after `if (!c.seen || !c.feat) continue;`) on it. The
 party marker, glow and `positionCanvas()` are untouched — the party is
 always inside its own window.
+
+### One rule for the map and the fight (Phase 76, DARK-01/02)
+
+One predicate decides what the dark does, everywhere:
+
+- `engine/derived.js#darkWaiver(c)` returns the first live light in
+  `DARK_WAIVERS` order (`"nightVision"`, `"amuletLight"`, `"litTorch"`) or
+  `null`. A cooling torch or Amulet record is no light. `darkWaived(c)` is
+  `darkWaiver(c) !== null`.
+- `engine/derived.js#darkLimited(state)` is `inDark(state) &&
+  !darkWaived(state.c)`: in the dark with no light holding it back.
+- **On the map:** while `darkLimited`, `revealRadius` is 1 (what new cells
+  enter `seen` as you walk) and `mapViewRadius` is `DARK_VIEW_RADIUS` (what
+  already-seen cells render). Night Vision, a lit torch or a live Amulet of
+  Light waives both at once, so the two radii can never disagree. `sight`
+  (the Amulet's `eff: { sight: 1 }`) still adds on top of the reveal radius
+  as its own separate additive.
+- **In a fight:** while `darkLimited`, toHit's dark cap, the `combatInDark`
+  line, the no-crit-in-the-dark rule and the Darkness phobia's triggers
+  (the fight-join trigger and `engine/phobias.js#regionActive`) apply; a
+  light lifts every one of them.
+- **Sense Presence** (`c.senses`) is a fight-only relief, not a light: it
+  lifts the dark cap, the `combatInDark` line and the crit ban, but it
+  never widens the map and is never a `darkWaiver` key.
+- **The surfaces that read it** (all through `window.__mzDarkness`, which
+  bridges `darkWaiver`; the shell recomputes nothing):
+  - the DARK chip names the light holding the dark back ("your night
+    vision", "your Amulet of Light", "your torch") through
+    `src/browser/darknessView.js#waiverFor`, which passes the engine's key
+    through or returns null; its tap card says the light "is holding it
+    back" and then states the map-and-fight rule;
+  - the map vignette (`vignetteFor(inDark, mapViewRadius)`) is `close`
+    exactly when `darkLimited`, `off` otherwise;
+  - `draw()`'s per-tile painting: a seen `.dark` cell paints
+    `MAP_PALETTE.floorDark` (a dark pool `waterDark`) with no light, and the
+    faint warm `floorDarkLit` (a dark pool `waterDarkLit`) while any light
+    is live, so the player still sees the area is dark and the light is
+    doing the work. A spell-revealed cell keeps `floorSpell` either way.
 
 ### The water palette (TERR-01)
 

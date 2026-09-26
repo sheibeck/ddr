@@ -839,10 +839,18 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
 // ambient prop layer draws beneath every feature. This is the SHA-256 of
 // draw()'s own comment-stripped body AFTER both changes, computed the same
 // one-off way.
+//
+// DRAW_SHA256 (Phase 76, Plan 02 re-pin, DARK-02): the waived-dark tint.
+// Exactly three changes, no motion: the fallback palette literal gains
+// floorDarkLit/waterDarkLit; one statement, `const darkLit =
+// !!window.__mzDarkness?.darkWaiver?.(S.c);`, follows visible(); and the
+// floor fill line and the water override line pick floorDarkLit/
+// waterDarkLit for a `.dark` cell while darkLit is true. Previous digest
+// d8550d9858c85c58f637a89ef878a7a6d1cf8ce0886d8b7f2af0c452bdb2c043.
 const PAINT_SHA256 = "7fe5fedd02d31a20cbf6f069884f2b542a130060f51395a19b551e2824dc4b14";
-const DRAW_SHA256 = "d8550d9858c85c58f637a89ef878a7a6d1cf8ce0886d8b7f2af0c452bdb2c043";
+const DRAW_SHA256 = "455c2b5f6b201611cf4585d05da8df9d285e95082e8d165b0308020e187feef3";
 
-test("reduced-motion/audit: modularity — paint() is re-pinned for Phase 63 Plan 04 (the one gearSheetTarget-gated refreshGearSheet() call, nothing else); draw() is re-pinned for Phase 59 Plan 05 (the canvas party-marker paint removed by Plan 03, the one dressing-layer call added by Plan 05, nothing else) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
+test("reduced-motion/audit: modularity — paint() is re-pinned for Phase 63 Plan 04 (the one gearSheetTarget-gated refreshGearSheet() call, nothing else); draw() is re-pinned for Phase 76 Plan 02 (Phase 59's party-paint removal and dressing-layer call, plus DARK-02's waived-dark tint, nothing else) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
   const stripped = stripHtml(raw);
 
@@ -871,5 +879,5 @@ test("reduced-motion/audit: modularity — paint() is re-pinned for Phase 63 Pla
   const drawHash = crypto.createHash("sha256").update(drawBody, "utf8").digest("hex");
 
   assert.equal(paintHash, PAINT_SHA256, "paint()'s comment-stripped body must match Phase 63 Plan 04's re-pin exactly — the one gearSheetTarget-gated refreshGearSheet() call, nothing else");
-  assert.equal(drawHash, DRAW_SHA256, "draw()'s comment-stripped body must match Phase 59 Plan 03's re-pin exactly — the canvas party paint removed, nothing added");
+  assert.equal(drawHash, DRAW_SHA256, "draw()'s comment-stripped body must match Phase 76 Plan 02's re-pin exactly — the Phase 59 changes plus the DARK-02 waived-dark tint, nothing else");
 });

@@ -45,6 +45,15 @@ export const MAP_PALETTE = Object.freeze({
   // sight floor.
   water: "#2f5f7a",
   waterDark: "#1f3a4a",
+  // DARK-02 (Phase 76): a `.dark` cell while a light source (Night Vision, a
+  // live Amulet of Light, a lit torch — engine/derived.js#darkWaiver) holds
+  // the dark back. A faint warm "lit by your light" shade strictly between
+  // floorDark and floor (and between waterDark and water, in relative
+  // luminance: floor 0.039 < 0.061 < 0.108, water 0.038 < 0.061 < 0.102), so
+  // the area still reads as dark and the player can see the light doing the
+  // work. Pinned in test/unit/mapMarks.test.js.
+  floorDarkLit: "#4f4531",
+  waterDarkLit: "#2d4a57",
   border: "#443a26",
   party: "#f4dc94",
   partyGlow: "rgba(232,201,122,.55)",

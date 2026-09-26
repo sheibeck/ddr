@@ -143,8 +143,10 @@ test("foeStatusBadges: reads the table through window.__mzFoeConditions; foeCond
 
 // ─── (e) draw(): spellSeen tint + fallback palette parity ─────────────────
 
-test("draw(): a spellSeen cell paints P.floorSpell; the fallback palette literal's hex matches MAP_PALETTE.floorSpell", () => {
-  assert.match(CODE, /ctx\.fillStyle = c\.spellSeen \? P\.floorSpell : \(c\.dark \? P\.floorDark : P\.floor\);/);
+// DARK-02 (Phase 76): the fill line gained the waived-dark tint; spellSeen
+// still takes priority over it.
+test("draw(): a spellSeen cell paints P.floorSpell (ahead of the DARK-02 waived-dark tint); the fallback palette literal's hex matches MAP_PALETTE.floorSpell", () => {
+  assert.match(CODE, /ctx\.fillStyle = c\.spellSeen \? P\.floorSpell : \(c\.dark \? \(darkLit \? P\.floorDarkLit : P\.floorDark\) : P\.floor\);/);
   assert.equal((CODE.match(/floorSpell/g) || []).length >= 2, true, "expected floorSpell in both the fallback literal and draw()'s read");
   const fallbackMatch = CODE.match(/const P = M \? M\.MAP_PALETTE : \{[^}]*floorSpell: "(#[0-9a-fA-F]{6})"[^}]*\};/);
   assert.ok(fallbackMatch, "fallback palette literal must carry floorSpell");

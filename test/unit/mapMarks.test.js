@@ -87,6 +87,38 @@ test("MAP_PALETTE.water/waterDark: two distinct 6-digit hex shades; the palette 
   assert.equal(MAP_PALETTE.floorSpell, "#4e5a6a");
 });
 
+// DARK-02 (Phase 76) — the waived-dark tint: a dark cell while a light
+// holds the dark back. A real middle shade (relative luminance strictly
+// between the dark and lit neighbours), distinct from every other key, with
+// the palette still frozen and every prior key/value unchanged.
+function relLuminance(hex) {
+  const lin = (v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+test("MAP_PALETTE.floorDarkLit/waterDarkLit: 6-digit hexes strictly between their dark and lit neighbours in luminance, distinct from every other key; prior keys unchanged", () => {
+  const P = MAP_PALETTE;
+  assert.match(P.floorDarkLit, /^#[0-9a-fA-F]{6}$/);
+  assert.match(P.waterDarkLit, /^#[0-9a-fA-F]{6}$/);
+  const L = relLuminance;
+  assert.ok(L(P.floorDark) < L(P.floorDarkLit) && L(P.floorDarkLit) < L(P.floor), "floorDark < floorDarkLit < floor");
+  assert.ok(L(P.waterDark) < L(P.waterDarkLit) && L(P.waterDarkLit) < L(P.water), "waterDark < waterDarkLit < water");
+  for (const key of Object.keys(P)) {
+    if (key !== "floorDarkLit") assert.notEqual(P.floorDarkLit.toLowerCase(), String(P[key]).toLowerCase(), `floorDarkLit must differ from ${key}`);
+    if (key !== "waterDarkLit") assert.notEqual(P.waterDarkLit.toLowerCase(), String(P[key]).toLowerCase(), `waterDarkLit must differ from ${key}`);
+  }
+  assert.equal(Object.isFrozen(P), true);
+  assert.equal(P.floor, "#645c48");
+  assert.equal(P.floorDark, "#3d372a");
+  assert.equal(P.floorSpell, "#4e5a6a");
+  assert.equal(P.water, "#2f5f7a");
+  assert.equal(P.waterDark, "#1f3a4a");
+});
+
 // ─── MARKS_LEGEND: move-verbatim proof ─────────────────────────────────────
 
 // Literal copy of the old mazeworld.html MARKS_LEGEND table (icon -> key),
