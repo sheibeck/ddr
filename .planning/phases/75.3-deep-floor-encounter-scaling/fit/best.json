@@ -1,0 +1,3 @@
+{
+  "FOE_COUNT_DEPTH": { "soloOnlyOnOneFrom": 5, "atLeastTwoFrom": 10, "atLeastThreeFrom": 20 }
+}

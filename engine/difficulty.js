@@ -106,6 +106,23 @@ export const DIALS = deepFreeze({
    * held (available) — Phase 54 fit did not search this dial; shipped at
    * its start value 1 (0..4 if released). */
   FOE_COUNT_SKEW: 1,
+  /** FOE_COUNT_DEPTH — RULES-16 (Phase 75.3, user ruling 2026-09-25):
+   * "Solo fights fade with depth" — floors 1-4 stay exactly as today
+   * (canon draw shape via FOE_COUNT_TABLE); floors 5-9 are solo only on a
+   * first d4 of 1 (a first roll of 2 is raised to 2 foes); floors 10-19
+   * never start a fight solo (raised to at least 2); floors 20+ always
+   * bring at least 3 (the table already tops out at 3, so this is exactly
+   * 3). Three rungs, each a depth threshold: `soloOnlyOnOneFrom` (a first
+   * roll of 2 stops being solo from this depth), `atLeastTwoFrom` (the
+   * count floor rises to 2), `atLeastThreeFrom` (the count floor rises to
+   * 3). Identity: `{ soloOnlyOnOneFrom: 0, atLeastTwoFrom: 0,
+   * atLeastThreeFrom: 0 }` (0 = "this rung never applies" — every rung off
+   * reproduces today's count at every depth, since a threshold of 0 is
+   * never `>= 1`). Direction: ↓ (lower thresholds) = more bodies sooner.
+   * held (available) — user-ruled values, not fitted (75.3-CONTEXT
+   * Deferred: "Fitting the thresholds with the tuning bot: possible later
+   * as a dial; not requested now"). */
+  FOE_COUNT_DEPTH: { soloOnlyOnOneFrom: 5, atLeastTwoFrom: 10, atLeastThreeFrom: 20 },
   /** ROUND_DAMAGE_CEILING — a fraction of a level-appropriate hero's MEAN
    * max HP that ONE foe may deal per foeTurn visit, across all its swings
    * (frenzy/sp.atk included); 0 = off. Identity: 0 (no ceiling — canon
@@ -424,16 +441,60 @@ export const FOE_COUNT_TABLE = Object.freeze([
 ]);
 
 /**
- * foeCountFor(firstRoll, drawSecond) — USER RULING D: replaces the retired
- * level-keyed `cap = c.level <= 2 ? 2 : 3` ternary chain with a weighted
- * pick that keeps the CANON DRAW SHAPE verbatim: `drawSecond` (a thunk) is
- * called ONLY when `firstRoll > 2` — one d4 on the common path, two only
- * when the first roll warrants it, exactly like the retired
- * `rng.d(4) <= 2 ? 1 : rng.d(4) <= 3 ? 2 : 3` ternary.
+ * rungLiveAt(threshold, d) — a FOE_COUNT_DEPTH rung is live when its
+ * threshold is above 0 (0 means "this rung never applies", the identity
+ * value) AND the already-sanitised depth `d` has reached it. Not exported —
+ * internal helper only.
  */
-export function foeCountFor(firstRoll, drawSecond) {
-  if (firstRoll <= 2) return 1; // roll:selection
-  return FOE_COUNT_TABLE[live.FOE_COUNT_SKEW][drawSecond() - 1];
+function rungLiveAt(threshold, d) {
+  return threshold > 0 && d >= threshold;
+}
+
+/**
+ * foeCountFor(firstRoll, drawSecond, depth = 1) — USER RULING D: replaces
+ * the retired level-keyed `cap = c.level <= 2 ? 2 : 3` ternary chain with a
+ * weighted pick that keeps the CANON DRAW SHAPE verbatim: `drawSecond` (a
+ * thunk) is called ONLY when `firstRoll > 2` — one d4 on the common path,
+ * two only when the first roll warrants it, exactly like the retired
+ * `rng.d(4) <= 2 ? 1 : rng.d(4) <= 3 ? 2 : 3` ternary.
+ *
+ * RULES-16 (Phase 75.3, user ruling 2026-09-25): `depth` reshapes the SAME
+ * two draws, never adding a third. Floors 1-4 (no FOE_COUNT_DEPTH rung
+ * live): unchanged — `firstRoll <= 2` is always 1, `firstRoll > 2` reads the
+ * table as-is. From `soloOnlyOnOneFrom`, a `firstRoll` of 2 stops being solo
+ * (raised to 2, no draw added) and a table result is raised to at least 2 as
+ * well; from `atLeastTwoFrom` the WHOLE result floors at 2 via
+ * `foeCountMinFor`; from `atLeastThreeFrom` it floors at 3. `depth` defaults
+ * to 1 (omitting it, as every pre-Phase-75.3 two-argument caller does, keeps
+ * today's count exactly — test/parity/divergence-records.test.js's BAND-02
+ * guard calls this with two arguments and must keep passing untouched).
+ */
+export function foeCountFor(firstRoll, drawSecond, depth = 1) {
+  const d = safeDepth(depth);
+  const soloOnlyOnOne = rungLiveAt(live.FOE_COUNT_DEPTH.soloOnlyOnOneFrom, d);
+  let result;
+  if (firstRoll <= 2) { // roll:selection — a table pick on an already-drawn face, not a magnitude check
+    result = !soloOnlyOnOne || firstRoll === 1 ? 1 : 2;
+  } else {
+    result = FOE_COUNT_TABLE[live.FOE_COUNT_SKEW][drawSecond() - 1];
+    if (soloOnlyOnOne) result = Math.max(2, result);
+  }
+  return Math.max(result, foeCountMinFor(d));
+}
+
+/**
+ * foeCountMinFor(depth) — RULES-16 (Phase 75.3): the floor EVERY count
+ * (drawn or wandering) may never fall below at this depth — 3 once
+ * `atLeastThreeFrom` is live, else 2 once `atLeastTwoFrom` is live, else 1.
+ * Pure, no rng. Two uses: `foeCountFor`'s own final clamp above, and a
+ * wandering fight's WHOLE size (engine/combat.js#startCombat draws no count
+ * die for a wandering encounter at all — this is its entire roster size).
+ */
+export function foeCountMinFor(depth) {
+  const d = safeDepth(depth);
+  if (rungLiveAt(live.FOE_COUNT_DEPTH.atLeastThreeFrom, d)) return 3;
+  if (rungLiveAt(live.FOE_COUNT_DEPTH.atLeastTwoFrom, d)) return 2;
+  return 1;
 }
 
 /**
