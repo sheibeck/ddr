@@ -1329,14 +1329,15 @@ export function narrateTimerTransitions(state, transitions, events = []) {
  * resolution (loot, victory checks) is wired by the combat slice (01-08)
  * when it calls into a live `state.combat`.
  *
- * CMB-02/03 (Phase 31) + Phase 37 (GEAR-03): the full refusal ladder, every
- * step BEFORE `itemUsed` fires (so a refused use never burns a
- * cooldown/charge, never consumes the item, never draws): pending fight ->
- * wrongClass (a staff used by a non-caster) -> notWorn (a bagged cloak/
- * jewelry activatable in the worn-slot model — "activatables must be worn to
- * work"; 260918-w4n: a staff is NOT a slot item, `slotFor` returns null for
- * one, so this gate never fires for a staff — it is addressed by bag index
- * and passes straight through) -> pilfer -> combatOnly (a targeted kind
+ * CMB-02/03 (Phase 31) + Phase 37 (GEAR-03) + RULES-13 (Phase 75): the full
+ * refusal ladder, every step BEFORE `itemUsed` fires (so a refused use never
+ * burns a cooldown/charge, never consumes the item, never draws): pending
+ * fight -> wrongClass (a staff used by a non-caster) -> notWielded (a staff
+ * reached by bag index that is not the wielded one — RULES-13, reverses the
+ * 2026-09-18 bag-use amendment) -> notWorn (a bagged cloak/jewelry
+ * activatable in the worn-slot model — "activatables must be worn to work";
+ * 260918-w4n: a staff is NOT a slot item, `slotFor` returns null for one, so
+ * this gate never fires for a staff) -> pilfer -> combatOnly (a targeted kind
  * outside combat) -> cooldown (itemReady). Every reason its own event, never
  * a silent no-op (Phase 25.1 DFB-06). A legacy state (no `c.worn`) never sees
  * `notWorn` — bag-use of a cloak/jewelry stays exactly as today.
@@ -1373,6 +1374,21 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // before that gate existed); refuse the USE too, before any side effect.
   if (it.kind === "staff" && c.cls !== "Magic User") {
     events.push({ type: "useRefused", item: it, reason: "wrongClass" });
+    return events;
+  }
+
+  // RULES-13 (Phase 75, user 2026-09-25): a staff's charged power works ONLY
+  // while it is wielded. Reverses the 2026-09-18 bag-use amendment
+  // (260918-w4n) for this one kind — a staff reached by BAG INDEX (`i`, not
+  // `{slot:"weapon"}`) is never the wielded staff (`wieldedStaff(c)` reads
+  // `c.staff`, which `carriedItems` keeps out of `c.items`); refuse it here,
+  // before any side effect, so no charge is spent, no cooldown starts and no
+  // die is drawn. Gated on `wieldedStaff(c) !== it` (not merely "addressed by
+  // index") per 75-07's own handoff note, so a future resolution change here
+  // stays correct by construction rather than by the current item-storage
+  // shape alone.
+  if (it.kind === "staff" && wieldedStaff(c) !== it) {
+    events.push({ type: "useRefused", item: it, reason: "notWielded" });
     return events;
   }
 

@@ -32,7 +32,8 @@ never a generic "you can't do that."
 | `noCharges` | (its own event, not this reason string) | see `noChargesLeft` below | `noChargesLeft` |
 | `noTarget` | (mostly its own dedicated event) | a targeted effect with nothing to target | `nothingToThrowAt`, `insaneNoTarget`, `nothingToTurn`, `gateRefused` — **unreachable for the four common targeted kinds (thrown/acid/blind/petrify) in combat**: `castSpell` retargets a dead `C.target` onto the first live foe exactly like `playerStrike`, the same way a Strike never whiffs on a corpse |
 | `pilfer` | `useRefused`, `scrollRefused` | a Pilfer cannot use a non-heal magic item or read a scroll | `useRefused`, `scrollRefused` |
-| notWorn | useRefused | (Phase 37, GEAR-03; 260918-w4n) a cloak/jewelry activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use. A staff is NEVER refused this way (it has no worn slot — it is used from the bag by index, always) | useRefused |
+| notWorn | useRefused | (Phase 37, GEAR-03; 260918-w4n) a cloak/jewelry activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use. A staff is NEVER refused this way (it has no `c.worn` slot; see `notWielded` below for its own bag-use refusal) | useRefused |
+| `notWielded` | `useRefused` | (RULES-13, Phase 75, user 2026-09-25) a staff addressed by BAG INDEX that is not the currently-wielded one (`wieldedStaff(c) !== it`) — a staff's charged power works only while equipped into the weapon slot; reverses the 2026-09-18 bag-use amendment. The wielded staff, addressed via `{ slot: "weapon" }`, is unaffected | `useRefused` |
 | `exploreOnly` | *(reserved)* | no current engine emitter uses this reason — every existing combat-flavored action is gated the other direction (`combatOnly`), not this one | — |
 | `abilityRefused` reasons | `abilityRefused` | (Phase 38, ABIL-01/04) the ABILITIES submenu's own ladder: `unknown` (not in the catalog, or not owned) · `cooldown {left}` (rounds remaining — the canon "Your arm has opinions." line) · `notInCombat` (no active encounter) · `noTarget` (structurally unreachable in combat, same reasoning as `castSpell`'s own retarget) · `notLowEnough` (Last Stand above a quarter hp, payload `have`/`max`) — plus the shared `notFought` above. Every reason names the ability; rows stay TAPPABLE on cooldown (never disabled) — the dispatch itself is the refusal | `abilityRefused` |
 
@@ -123,18 +124,23 @@ every other combat action; a genuinely free action once Fight! is pressed).
 regardless of combat state. None of the eight carry an `every` cooldown in
 current content data (only cloaks/jewelry do), so a staff is always ready
 once class-eligible; the `cooldown {left}` mechanism is still exercised (a
-future staff, or a save carrying one, could set `every`).
+future staff, or a save carrying one, could set `every`). RULES-13 (Phase
+75, Plan 09): a staff's charged power works ONLY while WIELDED
+(`c.weapon`/`c.staff`, addressed via `useItem({ slot: "weapon" })`) — the
+"Outside combat (MU)" / "In combat (MU)" columns below assume the staff is
+wielded. Addressed by BAG INDEX instead, any staff (any class, any combat
+state) is refused `notWielded` before any side effect — see §1.
 
-| Staff | use | Outside combat (MU) | In combat (MU) | Non-MU |
-|---|---|---|---|---|
-| Rowan Staff | dome | works (ward set) | works | `wrongClass` |
-| Birch Staff | freeze | `useRefused combatOnly` | works (up to 2 asleep) | `wrongClass` |
-| Walnut Staff | weaken | `useRefused combatOnly` | works (`weakened`) | `wrongClass` |
-| Oak Staff | stone | `useRefused combatOnly` | works (`foeStoned`, up to 2) | `wrongClass` |
-| Crystal Staff | invis | works (invis=100) | works | `wrongClass` |
-| Poplar Staff | heal | works (`healed`) | works | `wrongClass` |
-| Pine Staff | fire | `useRefused combatOnly` | works (`itemBurned`) | `wrongClass` |
-| Cedar Staff | gas | `useRefused combatOnly` | works (up to all asleep) | `wrongClass` |
+| Staff | use | Outside combat (MU, wielded) | In combat (MU, wielded) | Non-MU | Bagged, unwielded (any class) |
+|---|---|---|---|---|---|
+| Rowan Staff | dome | works (ward set) | works | `wrongClass` | `useRefused notWielded` |
+| Birch Staff | freeze | `useRefused combatOnly` | works (up to 2 asleep) | `wrongClass` | `useRefused notWielded` |
+| Walnut Staff | weaken | `useRefused combatOnly` | works (`weakened`) | `wrongClass` | `useRefused notWielded` |
+| Oak Staff | stone | `useRefused combatOnly` | works (`foeStoned`, up to 2) | `wrongClass` | `useRefused notWielded` |
+| Crystal Staff | invis | works (invis=100) | works | `wrongClass` | `useRefused notWielded` |
+| Poplar Staff | heal | works (`healed`) | works | `wrongClass` | `useRefused notWielded` |
+| Pine Staff | fire | `useRefused combatOnly` | works (`itemBurned`) | `wrongClass` | `useRefused notWielded` |
+| Cedar Staff | gas | `useRefused combatOnly` | works (up to all asleep) | `wrongClass` | `useRefused notWielded` |
 
 **Cloaks (7 — the dropped healing cloak was removed by the user on
 2026-09-18, quick 260918-w4n; CLOAKS was 8):** 260918-w4n (use-activated-
@@ -165,11 +171,16 @@ anywhere in JEWELRY either. Pendant of Fortitude (`use:"half"`, every 100,
 200, `aoe:4`) is `TARGETED_KINDS` — `useRefused combatOnly` outside combat;
 in combat, stones up to 4 foes (§6, CMB-06).
 
-**Staff amendment (260918-w4n):** a staff is not equipable at all — it has
-no worn slot anywhere. A staff lives in `c.items` (one bag slot) and is
-used from the bag by index — never "worn"; the eight staves above are
-unaffected otherwise (charges/recharge unchanged, `wrongClass` for a
-non-Magic-User).
+**Staff amendment, REVERSED (RULES-13, Phase 75, user 2026-09-25):** the
+260918-w4n amendment above ("a staff is not equipable at all") is reversed.
+A Magic User equips a staff into the WEAPON slot (`equipItem`/`takeLoot`,
+displacing the current weapon to the bag); it fights as a flat d8 melee
+weapon (need 0, crit 1, max 8) and its charged power is usable ONLY from
+that wielded slot (`useItem({ slot: "weapon" })`). A staff is still never a
+`c.worn` entry — it lives on the scalar `c.weapon`/`c.staff` pair, tracked
+independently of the cloak/jewelry worn-slot model. A staff left in
+`c.items` (unequipped) is refused `notWielded` when used by bag index — see
+§1 and the table above. Charges/recharge are unchanged either way.
 
 **Jewelry merge (260918-wy1):** the former four jewelry sub-slots
 (ring/bracelet/amulet/helm) are gone — `WORN_SLOTS` is now three keys:

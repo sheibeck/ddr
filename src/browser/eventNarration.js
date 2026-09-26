@@ -1045,6 +1045,9 @@ export const EVENT_NARRATION = {
     // Phase 37 (GEAR-03): a cloak/jewelry/staff activatable used from the
     // BAG in the new worn-slot model — activatables must be worn to work.
     if (e.reason === "notWorn") return `<span class="miss">${item} is in your bag,</span> doing what things in bags do: nothing. Wear it first.`;
+    // RULES-13 (Phase 75, user 2026-09-25): a staff's power works only while
+    // wielded — a bagged one is inert, same voice as notWorn.
+    if (e.reason === "notWielded") return `<span class="miss">${item} is in your bag,</span> doing what things in bags do: nothing. Wield it first.`;
     if (e.reason === "combatOnly") return `<span class="miss">${item} wants a target.</span> Save it for a fight.`;
     if (e.reason === "exploreOnly") return `<span class="miss">${item} needs quieter surroundings.</span>`;
     if (e.reason === "noTarget") return `<span class="miss">Nothing left to aim at.</span>`;

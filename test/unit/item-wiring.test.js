@@ -267,8 +267,10 @@ test("Amulet of Stone petrifies up to 4 foes (per-item aoe:4); a plain stone sou
 
   // Phase 31 (CMB-02): a staff now refuses a non-Magic-User (wrongClass) —
   // use a Magic User caster here to keep exercising the aoe-count logic.
-  const staff = fixedState({ c: { cls: "Magic User", items: [OAK_STAFF] }, combat: fixedCombat(makeFoes()) });
-  useItem(staff, 0, makeRng(7), []);
+  // RULES-13 (Phase 75, Plan 09): a staff's power works only while wielded —
+  // wield OAK_STAFF ({slot:"weapon"}) instead of addressing it by bag index.
+  const staff = fixedState({ c: { cls: "Magic User", weapon: "Oak Staff", staff: OAK_STAFF, items: [] }, combat: fixedCombat(makeFoes()) });
+  useItem(staff, { slot: "weapon" }, makeRng(7), []);
   assert.equal(staff.combat.foes.filter((f) => f.alive).length, 3, "a default stone source (Oak Staff) hits only 2");
 });
 

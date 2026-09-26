@@ -226,34 +226,39 @@ test("useItem heals and consumes a single-use potion", () => {
   assert.ok(events.some((e) => e.type === "itemConsumed"));
 });
 
+// RULES-13 (Phase 75, Plan 09): a staff's power works only while wielded —
+// re-pinned from a bag-index `useItem(state, 0, …)` call to the wielded
+// form (`c.weapon`/`c.staff`, `useItem(state, { slot: "weapon" }, …)`); the
+// charges/recharge bookkeeping asserted below is unchanged.
 test("useItem spends a staff's charge and starts its recharge cooldown (Phase 39, GEAR-02)", () => {
   // Phase 31 (CMB-02): a staff refuses a non-Magic-User first — use a Magic
   // User caster so this keeps exercising the charges/recharge model itself.
   const staff = { kind: "staff", use: "dome", charges: 2, n: "Rowan Staff" };
-  const state = fixedState({ c: { cls: "Magic User", items: [staff] }, steps: 10 });
-  useItem(state, 0, makeRng(3));
-  assert.equal(state.c.items[0].charges, 1, "one charge spent");
+  const state = fixedState({ c: { cls: "Magic User", weapon: "Rowan Staff", staff, items: [] }, steps: 10 });
+  useItem(state, { slot: "weapon" }, makeRng(3));
+  assert.equal(state.c.staff.charges, 1, "one charge spent");
   assert.ok(state.c.ward, "dome effect should have applied");
   assert.deepStrictEqual(state.c.timers["charges:Rowan Staff"], { cadence: "squares", left: 100, phase: "cooldown" });
 
+  const emptyStaff = { kind: "staff", use: "dome", charges: 0, n: "Rowan Staff" };
   const state2 = fixedState({
-    c: { cls: "Magic User", items: [{ kind: "staff", use: "dome", charges: 0, n: "Rowan Staff" }] },
+    c: { cls: "Magic User", weapon: "Rowan Staff", staff: emptyStaff, items: [] },
     steps: 20,
   });
-  const events = useItem(state2, 0, makeRng(3));
+  const events = useItem(state2, { slot: "weapon" }, makeRng(3));
   assert.equal(state2.c.ward, null, "no charge left — no effect applied");
   // Phase 39 (GEAR-02): the two named refusals — a staff at 0 charges gets
   // "recharging" (never "cooldown", which is a duration+cooldown item's own reason).
   assert.equal(events.length, 1, "exactly one event — the recharging refusal");
   assert.deepStrictEqual(events[0], {
     type: "useRefused",
-    item: state2.c.items[0],
+    item: state2.c.staff,
     reason: "recharging",
     left: 0,
     charges: 0,
     max: 2,
   });
-  assert.equal(state2.c.items[0].charges, 0, "charges untouched by a refused use");
+  assert.equal(state2.c.staff.charges, 0, "charges untouched by a refused use");
 });
 
 test("useItem's potion of death kills the character via engine/death.js", () => {

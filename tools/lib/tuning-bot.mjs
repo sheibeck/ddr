@@ -30,7 +30,7 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
-import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS } from "../../engine/derived.js";
+import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS, wieldedStaff } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canRead } from "../../engine/magic.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
@@ -774,9 +774,12 @@ export function hardFight(state) {
  *       already active, or the first ready worn buff (haste/brace/plate/
  *       unseen/power/giant, in WORN_SLOTS order) whose kind is not already
  *       live;
- *   (3) "staff" — a Magic User's ready BAGGED staff (a staff has no worn
- *       slot any more — 260918-w4n staff amendment): a targeted kind at
- *       `staffMinFoes`+ live foes, `dome` or `heal` below `potionThreshold`.
+ *   (3) "staff" — a Magic User's ready WIELDED staff (RULES-13, Phase 75,
+ *       Plan 09: the 260918-w4n "no worn slot" amendment is reversed — a
+ *       staff equips into the weapon slot, `wieldedStaff(c)`, dispatched by
+ *       `{ slot: "weapon" }`; a bagged staff's power is inert, so this never
+ *       reads one): a targeted kind at `staffMinFoes`+ live foes, `dome` or
+ *       `heal` below `potionThreshold`.
  * Every candidate passes `itemReady` (covers the death-potion/no-charges/
  * cooldown cases) and is skipped when `ctx.itemBlocked` already carries its
  * `itemLabel`; a Pilfer is skipped entirely for the buff tier (a non-heal
@@ -836,21 +839,23 @@ export function chooseCombatItem(state, ctx) {
     if (buffFound) return { action: { type: "useItem", slot: buffFound.slot }, reason: "buff" };
   }
 
-  // (3) a Magic User's ready BAGGED staff (260918-w4n: a staff has no worn
-  // slot any more — the first `kind === "staff"` item in c.items, by index).
+  // (3) a Magic User's ready WIELDED staff (RULES-13, Phase 75, Plan 09: a
+  // bagged staff's power is inert now — the bot only ever wields staves out
+  // of combat (the out-of-combat equip-a-staff step in `decideAction`), so
+  // this reads `wieldedStaff(c)` and dispatches by slot, never by bag index;
+  // a bagged staff is simply never picked here).
   if (c.cls === "Magic User") {
-    const staffIdx = items.findIndex((it) => it && it.kind === "staff");
-    const staff = staffIdx === -1 ? null : items[staffIdx];
+    const staff = wieldedStaff(c);
     if (staff && eligible(staff)) {
       const kind = activationFor(staff)?.kind;
       if (TARGETED_KINDS.has(kind) && liveFoes(state).length >= BOT_TACTICS.staffMinFoes) {
-        return { action: { type: "useItem", i: staffIdx }, reason: "staff" };
+        return { action: { type: "useItem", slot: "weapon" }, reason: "staff" };
       }
       if (kind === "dome" && ratio < ctx.opts.potionThreshold && !c.ward) {
-        return { action: { type: "useItem", i: staffIdx }, reason: "staff" };
+        return { action: { type: "useItem", slot: "weapon" }, reason: "staff" };
       }
       if (kind === "heal" && ratio < ctx.opts.potionThreshold) {
-        return { action: { type: "useItem", i: staffIdx }, reason: "staff" };
+        return { action: { type: "useItem", slot: "weapon" }, reason: "staff" };
       }
     }
   }
@@ -955,7 +960,10 @@ function preHazardFlight(state, ctx, dir) {
  * loot pile the bot has ignored since v1.3); (j) decline every pending
  * Joiner (D-20); (k) take/leave a pending find; (l) buy the best affordable
  * weapon/armor upgrade via `chooseStorePurchase` (Phase 39, GEAR-01), else
- * leave the store; (m) drink below potionThreshold; (n) camp below
+ * leave the store; (staff) RULES-13 (Phase 75, Plan 09): a Magic User with a
+ * bagged staff and none currently wielded equips it (`equipItem`) —
+ * "first staff wins," checked right after the store step, before the field-
+ * item/potion/camp checks; (m) drink below potionThreshold; (n) camp below
  * campThreshold (rations permitting); (torch) Phase 42 (BAL-01 second half):
  * `chooseFieldItem` — light a carried torch while in the dark; (o) Summon out
  * of combat (HARN-02) when no ally is pending and charges exceed half of
@@ -1110,6 +1118,19 @@ export function decideAction(state, policyRng, ctx) {
 
   const c = state.c;
   const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
+  // RULES-13 (Phase 75, Plan 09): out of combat, a Magic User carrying a
+  // BAGGED staff with none currently wielded equips it — "first staff wins"
+  // (75-CONTEXT.md's flagged assumption, Claude's Discretion): the bot keeps
+  // the FIRST staff it finds and never swaps it for a second bagged one, and
+  // never swaps a wielded staff away for a mundane weapon (a staff's d8
+  // already matches the best MU-legal weapon, plus its charged power) —
+  // `chooseStorePurchase`'s weapon pass never fires while wielding one
+  // either (`economy.js#gearUpgrades`), so this is the bot's only staff-
+  // equip path.
+  if (c.cls === "Magic User" && !wieldedStaff(c) && Array.isArray(c.items)) {
+    const staffIdx = c.items.findIndex((it) => it && it.kind === "staff");
+    if (staffIdx !== -1) return { type: "equipItem", i: staffIdx };
+  }
   // Phase 42 (BAL-01 second half) + 260918-w4n: light a carried torch (or a
   // ready worn Amulet of Light) while in the dark, and try a free ready worn
   // Cloak of Regeneration BEFORE a potion or a camp — moved ahead of the

@@ -533,65 +533,100 @@ test("chooseCombatItem: round-1 worn buff tier walks WORN_SLOTS order and skips 
   assert.deepStrictEqual(chooseCombatItem(jewelry2Fires, ctx), { action: { type: "useItem", slot: "jewelry2" }, reason: "buff" });
 });
 
-// --- chooseCombatItem: a Magic User's BAGGED staff (260918-w4n: a staff
-// has no worn slot any more — it is always addressed by bag index) --------
+// --- chooseCombatItem: a Magic User's WIELDED staff (RULES-13, Phase 75,
+// Plan 09: a staff equips into the weapon slot; a bagged staff's power is
+// inert, so chooseCombatItem now reads wieldedStaff(c) and dispatches by
+// { slot: "weapon" } — never by bag index) -------------------------------
 
-test("chooseCombatItem: a Magic User's bagged targeted staff fires at staffMinFoes+ live foes", () => {
+test("chooseCombatItem: a Magic User's wielded targeted staff fires at staffMinFoes+ live foes", () => {
   const ctx = makeBotContext();
   const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
 
-  const oneFoe = mkState({ combat: fight("Beasts", 1, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
+  const oneFoe = mkState({ combat: fight("Beasts", 1, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, weapon: "Birch Staff", staff, items: [], worn: {}, timers: {} } });
   assert.strictEqual(chooseCombatItem(oneFoe, ctx), null);
 
-  const twoFoes = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
-  assert.deepStrictEqual(chooseCombatItem(twoFoes, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
+  const twoFoes = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, weapon: "Birch Staff", staff, items: [], worn: {}, timers: {} } });
+  assert.deepStrictEqual(chooseCombatItem(twoFoes, ctx), { action: { type: "useItem", slot: "weapon" }, reason: "staff" });
 
-  // a Fighter never fires a staff (class-gated at the top of the check)
+  // a Fighter never fires a staff (class-gated at the top of the check) —
+  // a Fighter can't wield one at all, so this stays a bagged staff.
   const fighterWithStaff = mkState({ combat: fight("Beasts", 2, 2), c: fighter({ items: [staff] }) });
   assert.strictEqual(chooseCombatItem(fighterWithStaff, ctx), null);
 
   // an empty staff (0 charges) is never ready (itemReady's own charge gate)
   const emptyStaff = { ...staff, charges: 0 };
-  const noCharges = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [emptyStaff], worn: {}, timers: {} } });
+  const noCharges = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, weapon: "Birch Staff", staff: emptyStaff, items: [], worn: {}, timers: {} } });
   assert.strictEqual(chooseCombatItem(noCharges, ctx), null);
+
+  // a BAGGED (unwielded) staff is never picked here at all — its power is
+  // inert now, so chooseCombatItem must find nothing.
+  const bagged = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
+  assert.strictEqual(chooseCombatItem(bagged, ctx), null);
 });
 
-test("chooseCombatItem: a bagged dome/heal staff fires below potionThreshold; dome is skipped with an active ward", () => {
+test("chooseCombatItem: a wielded dome/heal staff fires below potionThreshold; dome is skipped with an active ward", () => {
   const ctx = makeBotContext();
   const domeStaff = { kind: "staff", n: "Rowan Staff", use: "dome", charges: 2 };
   const healStaff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 3 };
   const combat = fight("Beasts", 1, 2);
-  const muC = (over) => ({ cls: "Magic User", sub: "Sorcerer", wp: 10, maxWP: 40, potions: 0, worn: {}, timers: {}, ...over }); // 0.25 < potionThreshold 0.6 (USER RULING D)
+  const muC = (over) => ({ cls: "Magic User", sub: "Sorcerer", wp: 10, maxWP: 40, potions: 0, worn: {}, timers: {}, items: [], ...over }); // 0.25 < potionThreshold 0.6 (USER RULING D)
 
-  const domeReady = mkState({ combat, c: muC({ items: [domeStaff], ward: null }) });
-  assert.deepStrictEqual(chooseCombatItem(domeReady, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
+  const domeReady = mkState({ combat, c: muC({ weapon: "Rowan Staff", staff: domeStaff, ward: null }) });
+  assert.deepStrictEqual(chooseCombatItem(domeReady, ctx), { action: { type: "useItem", slot: "weapon" }, reason: "staff" });
 
-  const domeAlreadyUp = mkState({ combat, c: muC({ items: [domeStaff], ward: { pool: 50 } }) });
+  const domeAlreadyUp = mkState({ combat, c: muC({ weapon: "Rowan Staff", staff: domeStaff, ward: { pool: 50 } }) });
   assert.strictEqual(chooseCombatItem(domeAlreadyUp, ctx), null);
 
-  const healReady = mkState({ combat, c: muC({ items: [healStaff], ward: null }) });
-  assert.deepStrictEqual(chooseCombatItem(healReady, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
+  const healReady = mkState({ combat, c: muC({ weapon: "Poplar Staff", staff: healStaff, ward: null }) });
+  assert.deepStrictEqual(chooseCombatItem(healReady, ctx), { action: { type: "useItem", slot: "weapon" }, reason: "staff" });
 });
 
-test("chooseCombatItem: a bagged staff is read by index regardless of the worn-slot model (legacy or c.worn present)", () => {
+test("chooseCombatItem: a wielded staff resolves via wieldedStaff(c) regardless of the worn-slot model (legacy or c.worn present)", () => {
   const ctx = makeBotContext();
   const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
   const combat = fight("Beasts", 2, 2);
 
-  const legacy = mkState({ combat, c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], timers: {} } });
+  const legacy = mkState({ combat, c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, weapon: "Birch Staff", staff, items: [], timers: {} } });
   assert.ok(!("worn" in legacy.c));
-  assert.deepStrictEqual(chooseCombatItem(legacy, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
+  assert.deepStrictEqual(chooseCombatItem(legacy, ctx), { action: { type: "useItem", slot: "weapon" }, reason: "staff" });
 
-  const wornModel = mkState({ combat, c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
-  assert.deepStrictEqual(chooseCombatItem(wornModel, ctx), { action: { type: "useItem", i: 0 }, reason: "staff" });
+  const wornModel = mkState({ combat, c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, weapon: "Birch Staff", staff, items: [], worn: {}, timers: {} } });
+  assert.deepStrictEqual(chooseCombatItem(wornModel, ctx), { action: { type: "useItem", slot: "weapon" }, reason: "staff" });
 });
 
 test("chooseCombatItem: a torch/staff/cloak label in ctx.itemBlocked is skipped", () => {
   const ctx = makeBotContext();
   ctx.itemBlocked.add("Birch Staff");
   const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
-  const state = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], worn: {}, timers: {} } });
+  const state = mkState({ combat: fight("Beasts", 2, 2), c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, weapon: "Birch Staff", staff, items: [], worn: {}, timers: {} } });
   assert.strictEqual(chooseCombatItem(state, ctx), null);
+});
+
+// --- decideAction: out of combat, a Magic User wields its staff (RULES-13,
+// Phase 75, Plan 09) -------------------------------------------------------
+
+test("decideAction: out of combat, a Magic User with a bagged staff and none wielded equips it", () => {
+  const ctx = makeBotContext();
+  const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
+  const state = mkState({ c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, items: [staff], timers: {} } });
+  assert.deepStrictEqual(decideAction(state, fixedPolicyRng, ctx), { type: "equipItem", i: 0 });
+});
+
+test("decideAction: with a staff already wielded, a second bagged staff is left alone (no equipItem pick)", () => {
+  const ctx = makeBotContext();
+  const wielded = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
+  const second = { kind: "staff", n: "Oak Staff", use: "stone", charges: 1 };
+  const state = mkState({ c: { cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, weapon: "Birch Staff", staff: wielded, items: [second], timers: {} } });
+  const action = decideAction(state, fixedPolicyRng, ctx);
+  assert.notEqual(action.type, "equipItem");
+});
+
+test("decideAction: a non-Magic-User never equips a bagged staff", () => {
+  const ctx = makeBotContext();
+  const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
+  const state = mkState({ c: fighter({ items: [staff] }) });
+  const action = decideAction(state, fixedPolicyRng, ctx);
+  assert.notEqual(action.type, "equipItem");
 });
 
 // --- decideAction: buff/staff sit after drinkPotion, before talk-first -----

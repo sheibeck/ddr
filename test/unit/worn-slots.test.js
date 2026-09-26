@@ -634,19 +634,24 @@ test("applyAction: { type: equipItem, i, slot: jewelry2 } performs the targeted 
  * dispatch + actions validation + LINE_FOR/Oracle copy
  * ============================================================ */
 
-test("useItem slot form: a worn staff heals, spends its one charge, and a second immediate use refuses recharging (Phase 39, GEAR-02)", () => {
+// RULES-13 (Phase 75, Plan 09): re-pinned from the OLD "staff" worn-slot
+// key (a Phase-39-era test fixture that predates RULES-13 — a staff is
+// NEVER a `c.worn` entry) to the real wielded form: `c.weapon`/`c.staff`,
+// addressed by `{ slot: "weapon" }`. The charges/recharge/heal bookkeeping
+// asserted below is unchanged.
+test("useItem slot form: a wielded staff heals, spends its one charge, and a second immediate use refuses recharging (Phase 39, GEAR-02)", () => {
   const staff = { ...POPLAR_STAFF(), charges: 1 };
-  const state = hero({ c: { cls: "Magic User", worn: { staff }, wp: 20, maxWP: 55 } });
+  const state = hero({ c: { cls: "Magic User", weapon: "Poplar Staff", staff, items: [], wp: 20, maxWP: 55 } });
   const rng = fakeRng([5]);
-  const events = useItem(state, { slot: "staff" }, rng, [], () => 12345);
-  assert.equal(state.c.worn.staff, staff);
+  const events = useItem(state, { slot: "weapon" }, rng, [], () => 12345);
+  assert.equal(state.c.staff, staff);
   assert.deepStrictEqual(state.c.items, []);
   assert.equal(staff.charges, 0);
   const types = events.map((e) => e.type);
   assert.ok(types.includes("itemUsed"));
   assert.ok(types.includes("healed"));
 
-  const events2 = useItem(state, { slot: "staff" }, rng, [], () => 12345);
+  const events2 = useItem(state, { slot: "weapon" }, rng, [], () => 12345);
   assert.equal(events2.length, 1);
   assert.equal(events2[0].type, "useRefused");
   assert.equal(events2[0].reason, "recharging");
@@ -734,11 +739,15 @@ test("validateAction: useItem accepts { i } or { slot } but not both, and reject
   assert.equal(validateAction({ type: "useItem", i: 0, slot: "cloak" }).ok, false);
 });
 
-test("applyAction reaches a BAGGED staff through engine.js's bag-index dispatch (260918-w4n: no worn slot exists for a staff)", () => {
+// RULES-13 (Phase 75, Plan 09): a bagged staff is inert now — this test
+// still proves engine.js's bag-index dispatch REACHES the staff (it is
+// addressed and evaluated, not skipped), but the ladder now refuses it
+// notWielded instead of using it, before any side effect.
+test("applyAction reaches a BAGGED staff through engine.js's bag-index dispatch (260918-w4n: no worn slot exists for a staff; RULES-13: it is inert)", () => {
   const staff = POPLAR_STAFF();
   const state = hero({ c: { cls: "Magic User", worn: {}, items: [staff], wp: 20, maxWP: 55 } });
   const result = applyAction(state, { type: "useItem", i: 0 });
-  assert.ok(result.events.some((e) => e.type === "itemUsed"));
+  assert.deepStrictEqual(result.events, [{ type: "useRefused", item: staff, reason: "notWielded" }]);
 });
 
 test("validateAction: a useItem action naming slot 'staff' is rejected outright — a staff has no worn slot", () => {
