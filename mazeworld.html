@@ -3063,7 +3063,12 @@ const CONDITION_COPY = {
   // CLOAKS kinds — one chip per LIVE record, via the generic detail branch
   // below (each carries a squares count like haste/invis above).
   power: { label: "Empowered", unit: "sq" },
-  giant: { label: "Giant-handed", unit: "sq" },
+  // RULES-11 (Phase 75.2, Plan 04): the giant/enlarge rows' own label is now
+  // a plain fallback — paintConditions' label chain below labels a LIVE
+  // size-stepping chip with the hero's own resulting size name (cn.size,
+  // e.g. "Large"/"Huge") first; this label only shows if a chip somehow
+  // carries no cn.size.
+  giant: { label: "Enlarged", unit: "sq" },
   enlarge: { label: "Enlarged", unit: "sq" },
   glow: { label: "Alight", unit: "sq" },
   unseen: { label: "Unseen", unit: "sq" },
@@ -3191,8 +3196,12 @@ const CONDITION_EXPLAIN = {
   fearArmed: "Something out there got to you. The next fight opens Afraid — harder to hit, softer blows — until it passes.",
   // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
   power: "One more point of damage on every swing, for a while. The ring calls it generosity.",
-  giant: "One size larger. Mind the ceilings.",
-  enlarge: "One size larger for a while: +2 damage, and one face easier for foes to hit.",
+  // RULES-11 (Phase 75.2, Plan 04): states exactly what a size step does —
+  // no overhead-clearance promise, no shrinking-back promise. Both the
+  // Gauntlet of the Giant (giant) and Enlarge (enlarge) are exactly a +1
+  // size step, so they share the same sentence.
+  giant: "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
+  enlarge: "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
   glow: "You are your own lantern. The dark is filing a complaint.",
   unseen: "They need two better to land a blow, and they know it.",
   tongue: "You understand them perfectly. Whether that helps is up to them.",
@@ -3292,6 +3301,16 @@ function paintConditions(c) {
       // (Shield or Bubble), falling back to "Shield" for a legacy/malformed
       // chip with no name.
       : cn.key === "ward" ? (cn.name || CONDITION_COPY.ward.label)
+      // RULES-11 (Phase 75.2, Plan 04): a live size-stepping item's chip
+      // (the Gauntlet of the Giant, Enlarge, or any future size item) is
+      // labelled with the hero's CURRENT resulting size (cn.size, e.g.
+      // "Large"/"Huge" — engine/derived.js#conditionsOf's own size field),
+      // not the item's own fixed CONDITION_COPY label — two live size items
+      // on the same hero show two chips with the SAME size name, each
+      // counting its own item down. A chip carrying no cn.size (any other
+      // item) falls through to the plain CONDITION_COPY/generic path below,
+      // unchanged.
+      : (typeof cn.size === "string" && cn.size) ? cn.size
       : (CONDITION_COPY[cn.key]?.label || cn.key);
     let detail = "";
     if (cn.key === "flight") {

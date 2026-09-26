@@ -1211,7 +1211,18 @@ export const EVENT_NARRATION = {
       lit: `<span class="hit">Forty squares of carrying a light.</span>`,
       // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
       power: `<span class="hit">+1 damage for ${n} squares. The ring approves.</span>`,
-      giant: `<span class="hit">${n} squares of being one size too large for the corridor.</span>`,
+      // RULES-11 (Phase 75.2, Plan 04): the Gauntlet of the Giant and
+      // Enlarge each narrate their start from the event's own size fields
+      // (75.2-02's itemEffectStarted `size`/`sizeDmg`) — never a restated
+      // formula. An event carrying no `size` (should not happen for either
+      // kind, but defensive) falls back to the plain line. No overhead-
+      // clearance/corridor promise — that promise is dropped (75.2-CONTEXT).
+      giant: e.size
+        ? `<span class="hit">${n} squares one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
+        : `<span class="hit">One size larger for ${n} squares.</span>`,
+      enlarge: e.size
+        ? `<span class="hit">${n} squares one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
+        : `<span class="hit">One size larger for ${n} squares.</span>`,
       glow: `<span class="hit">Fifty squares of being your own lantern.</span>`,
       unseen: `<span class="hit">Unseen for ${n} squares. They need two better.</span>`,
       tongue: `<span class="hit">${n} squares of perfect fluency. Do not waste it on small talk.</span>`,

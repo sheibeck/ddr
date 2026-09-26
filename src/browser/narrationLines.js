@@ -1832,7 +1832,15 @@ export const LINE_FOR = {
       lit: `Forty squares of carrying a light.`,
       // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
       power: `+1 damage for ${n} squares. The ring approves.`,
-      giant: `${n} squares of being one size too large for the corridor.`,
+      // RULES-11 (Phase 75.2, Plan 04): mirrors eventNarration.js's own
+      // giant/enlarge lines — narrated from the event's own size fields,
+      // never a restated formula; no overhead-clearance/corridor promise.
+      giant: e?.size
+        ? `${n} squares one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
+        : `One size larger for ${n} squares.`,
+      enlarge: e?.size
+        ? `${n} squares one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
+        : `One size larger for ${n} squares.`,
       glow: `Fifty squares of being your own lantern.`,
       unseen: `Unseen for ${n} squares. They need two better.`,
       tongue: `${n} squares of perfect fluency. Do not waste it on small talk.`,
