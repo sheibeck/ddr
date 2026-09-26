@@ -373,12 +373,12 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 76-01-PLAN.md — Make one darkness-waiver rule govern both what the party reveals as it walks and what the map renders (DARK-01) (wave 1)
-- [ ] 76-03-PLAN.md — Make the load keep what the player was in the middle of (SAV-06, SAV-07): a live fight, an open store, a pending find, a pending hazard decision and a pending tile (RULES-12's Phase 76 handoff) (wave 1)
+- [ ] 76-01-PLAN.md — Make one darkness-waiver rule govern what the party reveals as it walks, what the map renders, and every in-fight dark penalty (DARK-01 plus the "combat too" ruling), with measured readouts and declared pin moves (wave 1)
+- [ ] 76-03-PLAN.md — Make the load keep what the player was in the middle of (SAV-06, SAV-07): a live fight, an open store, a pending find, a pending hazard decision, a pending tile (RULES-12's Phase 76 handoff) and a pending Joiner offer (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 76-02-PLAN.md — Make every darkness surface the player sees read the one rule from 76-01 (DARK-02): the DARK chip and its tap card, the map vignette, and per-tile dark painting (wave 2)
+- [ ] 76-02-PLAN.md — Make every darkness surface the player sees read the one rule from 76-01 (DARK-02): the DARK chip and its tap card, the map vignette and per-tile dark painting, with copy that tells the map and fight truth (wave 2)
 - [ ] 76-04-PLAN.md — Prove the relaunch end to end (SAV-06, SAV-07) and hand the shell its resume line (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
