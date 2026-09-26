@@ -28,6 +28,10 @@
   3. Run the batched Pixel 7 checklist.
   4. Build the debug APK.
   5. Offer a Play internal push, asking first.
+- **WORKTREE ISOLATION PROBLEM (2026-09-26 ~12:00):** Agent(isolation="worktree") keeps refusing its own new worktree ("git could not be run to resolve it"), because its checkout takes about 2 min and the harness verifies too early.
+  - FALLBACK: dispatch executors WITHOUT isolation (sequential mode on master). One executor at a time; multi-plan waves run serially. The prompt uses a `<sequential_execution>` block: confirm HEAD/base/clean on master first, no stash/reset/branch ops, no STATE/ROADMAP writes.
+  - Do not run tree-modifying git ops while it runs. After each refused attempt, remove the leftover locked worktree and branch (`git worktree unlock`, `remove -f -f`, `prune`, `branch -D`).
+  - Retry isolation later for multi-plan waves.
 - **USER RULING (2026-09-26): BOTS ONLY AT THE MILESTONE END.** No per-plan or per-phase bot readouts, per-race runs, deep slices or fit sweeps. They all run once in the NEW **Phase 79.1** (Milestone Balance Check & Deep-Floor Tuning), after 79 and before 80 (tuned values are code).
   - Plan 75.3-06 (the sweep) was moved to `79.1/SOURCE-75.3-06-sweep-plan.md`. 75.3 now has 6 plans, and 75.3-07 is wave 5 with no readouts.
   - When dispatching 75.2-02, 75.2-05, 75.3-01..05, 75.3-07, 76-01 and 78-01, add to the orchestrator notes: "SKIP every bot readout (tune-difficulty / tune-classes / fit / 1,000-seed / deep slices). The user ruled they run once in Phase 79.1. Record each readout acceptance criterion as 'deferred to Phase 79.1 (user ruling 2026-09-26)' in SUMMARY." The tooling code in 75.3-02 (the bot rotation flag, tail-score, the fit mode and their tests) still lands; only its BEFORE readouts are skipped.
