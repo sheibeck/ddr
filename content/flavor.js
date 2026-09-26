@@ -21,13 +21,26 @@ export const PHOBIAS = [
   { n: "Fire", t: "Demons" }, { n: "Sorcery", t: "Magical" }, { n: "Crowds", t: "Humans" },
 ];
 
+// RULES-11 (Phase 75.2, Plan 04, user ruling 2026-09-25): the Elven,
+// Dwarven and Troll entries below are extended to state the net truth
+// under the size rule and the user's race-signature ruling (a race's own
+// defining trait always survives its own base size step; only an axis the
+// trait does not already claim can move). Every existing claim that is
+// still true is kept unchanged; only the size clause is new.
 export const RACE_NOTE = {
   "Human": "No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable.",
-  "Elven": "Thin-boned, easy to hit, and carrying not much more than half a person's Hit Points — but you strike a die better than anyone has a right to. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
-  "Dwarven": "Two extra damage, a wilmst a day to feed, and every creature down here swings at you like it has been practising — but your armour shrugs off wear at half the rate everyone else's does. Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
+  // Small's face axis is masked (thin-boned/easy-to-hit already claims it),
+  // so being small costs a fixed 2 damage and touches nothing else.
+  "Elven": "Thin-boned, easy to hit, and carrying not much more than half a person's Hit Points — but you strike a die better than anyone has a right to, and hit on a 5 whatever the class. Small costs you two points of damage and nothing else; the size rule has nothing left to add to how thin-boned or easy to hit you already were. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
+  // Small's damage axis is masked (the +2 already claims it), so being
+  // small only makes the Dwarf one face harder to hit — the +2 is untouched.
+  "Dwarven": "Two extra damage, a wilmst a day to feed, and every creature down here swings at you like it has been practising — but your armour shrugs off wear at half the rate everyone else's does, and being small makes you one face harder to hit besides. Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
   "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight — not one of them will so much as travel with you — which most Wilmsry take as proof they are doing something right.",
   "Fridgian": "You will not wear armour, though your hide alone soaks two points off every blow that lands. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest — and unlike the stories, neither swing is ever wasted on something already dead. The Game Master has notes about you.",
-  "Troll": "Seventy-five Hit Points, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple.",
+  // Large points the same way as the Troll's own +9 (dmg+wpnBonus), so
+  // nothing is masked: both axes stack in full (+11 damage, one face
+  // easier to hit).
+  "Troll": "Seventy-five Hit Points, +11 damage per swing (nine Troll, two more for being Large), and an appetite that goes through two rations a night. The strongest thing on most floors, one face easier for anything to hit, and the first to starve on all of them. Everything you own cost triple.",
 };
 
 // RULES-10 (Phase 75.1, plan 75.1-07): each note gains one short clause

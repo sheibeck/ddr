@@ -383,6 +383,88 @@ function stripComments(source) {
 // to agree" failure mode 74-03/74-04's summaries warn against.
 const BANNED_FORMATTER_NAMES = ["modsText", "modsClause", "needModsText", "needModsClause", "signedNeed", "critRange", "fleeModsText"];
 
+// ─── Scenario 12: size (RULES-11, Phase 75.2, Plan 04) ─────────────────────
+//
+// 75.2-CONTEXT's display rule ("condition chips show a stepped size while
+// it lasts") plus Phase 74's standing "the same modifier never shows two
+// signs" rule, extended to the size term 75.2-01/02/03 added: a Troll's
+// size (Large, both axes unmasked — races.js's sizeAxes comment) reads
+// "size −1" (foes find a Troll easier to hit — bad for the player); a
+// Dwarf's size (Small, only the face axis unmasked — the +2 damage
+// signature survives) reads "size +1" (foes find a Dwarf harder to hit —
+// good for the player); an Elf's size (Small, the face axis IS masked —
+// the thin-boned signature survives) carries no size token at all — its
+// "Elven −1" token is the race's OWN trait, unmoved by this plan. A live
+// Gauntlet of the Giant on a Human reads the same "vs their swings" clause
+// on the chip that the Troll/Dwarf/Elf read on the Oracle/foe-details line.
+
+test("size: a Troll's size reads 'size −1' on the Oracle line, the fight-log reveal, the foe details odds line and the hero sheet's SIZE detail", () => {
+  const driveState = fullHeroState(plainFoe(), { c: { race: "Troll" } });
+  const events = foeTurn(driveState, fakeRng([20]), []);
+  const e = events.find((ev) => ev.type === "foeMissed" || ev.type === "struckByFoe");
+  assert.ok(e, "expected a foeMissed or struckByFoe event");
+
+  const oracleHtml = EVENT_NARRATION[e.type](e);
+  const revealText = oracleDetailText(oracleHtml);
+
+  const cardState = fullHeroState(plainFoe(), { c: { race: "Troll" } });
+  const card = foeDetailsCard(0, cardState);
+  const oddsLine = card.lines.map((l) => l.text).find((t) => t.includes("it hits you on"));
+  assert.ok(oddsLine, "expected an odds line on the foe details card");
+
+  for (const [label, text] of [
+    ["Oracle", oracleHtml],
+    ["fight-log reveal", revealText],
+    ["foe details odds line", oddsLine],
+  ]) {
+    assertModifier(text, "size −1", label);
+  }
+
+  const sheetState = fullHeroState(plainFoe(), { c: { race: "Troll" } });
+  const sizeRow = characterSheetViewModel(sheetState).stats.find((s) => s.key === "size");
+  assert.ok(sizeRow, "expected a SIZE stats row");
+  assert.ok(sizeRow.detail.includes("−1 vs their swings"), `expected "−1 vs their swings" in "${sizeRow.detail}"`);
+});
+
+test("size: a Dwarven hero's size reads 'size +1' on the Oracle line and the foe details odds line", () => {
+  const driveState = fullHeroState(plainFoe(), { c: { race: "Dwarven" } });
+  const events = foeTurn(driveState, fakeRng([20]), []);
+  const e = events.find((ev) => ev.type === "foeMissed" || ev.type === "struckByFoe");
+  assert.ok(e, "expected a foeMissed or struckByFoe event");
+  assertModifier(EVENT_NARRATION[e.type](e), "size +1", "Oracle");
+
+  const cardState = fullHeroState(plainFoe(), { c: { race: "Dwarven" } });
+  const card = foeDetailsCard(0, cardState);
+  const oddsLine = card.lines.map((l) => l.text).find((t) => t.includes("it hits you on"));
+  assertModifier(oddsLine, "size +1", "foe details odds line");
+});
+
+test("size: an Elven hero's own race trait reads 'Elven −1' with no size token at all — the signature mask keeps size off the Elf's foe roll", () => {
+  const driveState = fullHeroState(plainFoe(), { c: { race: "Elven" } });
+  const events = foeTurn(driveState, fakeRng([20]), []);
+  const e = events.find((ev) => ev.type === "foeMissed" || ev.type === "struckByFoe");
+  assert.ok(e, "expected a foeMissed or struckByFoe event");
+  const oracleHtml = EVENT_NARRATION[e.type](e);
+  assertModifier(oracleHtml, "Elven −1", "Oracle");
+  assert.deepEqual(signedTokens(oracleHtml, ["size"]), [], "no size token on the Oracle line");
+
+  const cardState = fullHeroState(plainFoe(), { c: { race: "Elven" } });
+  const card = foeDetailsCard(0, cardState);
+  const oddsLine = card.lines.map((l) => l.text).find((t) => t.includes("it hits you on"));
+  assertModifier(oddsLine, "Elven −1", "foe details odds line");
+  assert.deepEqual(signedTokens(oddsLine, ["size"]), [], "no size token on the foe details odds line");
+});
+
+test("size: a Human with a live Gauntlet of the Giant record reads '−1 vs their swings' on the chip's measured effect", () => {
+  const state = fullHeroState(plainFoe(), { c: { race: "Human" } });
+  state.c.timers["item:Gauntlet of the Giant"] = { cadence: "squares", left: 50, phase: "effect", cd: 50 };
+  const cn = conditionsOf(state).find((d) => d.key === "giant");
+  assert.ok(cn, "expected a giant condition descriptor");
+  const effectText = conditionEffectText(cn, state);
+  assert.ok(effectText, "expected a measured giant effect");
+  assert.equal(effectText, "−1 vs their swings");
+});
+
 test("one formatter: no src/browser/*.js file except rollRange.js defines a local modifier-sign formatter or a local sign ternary on a modifier delta", () => {
   const browserDir = path.join(REPO_ROOT, "src", "browser");
   const files = fs

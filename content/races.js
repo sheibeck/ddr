@@ -28,7 +28,10 @@ export const RACES = {
     // (test/unit/hero-size.test.js) derives this exact mask from
     // SIZE_AXIS_TRAITS.face (`foeToHit`) and this row's own base step sign.
     sizeAxes: { face: false },
-    note: "Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit.",
+    // RULES-11 (Phase 75.2, Plan 04): states the net truth under the size
+    // rule — the masked face axis leaves "easy to hit" exactly as it was;
+    // the damage axis is NOT masked, so being small also costs 2 damage.
+    note: "Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit, and being small costs it 2 damage.",
   },
   "Dwarven": {
     // armorWear: fraction of a soaked blow charged to armour durability,
@@ -42,7 +45,10 @@ export const RACES = {
     // mask from SIZE_AXIS_TRAITS.dmg (`dmg`/`wpnBonus`) and this row's own
     // base step sign.
     sizeAxes: { dmg: false },
-    note: "+2 damage and 1 hp/day upkeep; foes strike at a better die; armor wears at half the rate.",
+    // RULES-11 (Phase 75.2, Plan 04): states the net truth under the size
+    // rule — the masked damage axis leaves the +2 untouched; the face axis
+    // is NOT masked, so being small also makes it one face harder to hit.
+    note: "+2 damage and 1 hp/day upkeep; foes strike at a better die; armor wears at half the rate; being small makes it one face harder to hit.",
   },
   "Wilmsry": {
     size: "Human", upkeep: 4, heal2x: true, spMul: 0.5,
@@ -55,7 +61,10 @@ export const RACES = {
   },
   "Troll": {
     size: "Large", upkeep: 15, flatWP: 75, dmg: 6, wpnBonus: 3, eats: 2,
-    note: "75 hp regardless of class and +9 damage, but eats two rations a night.",
+    // RULES-11 (Phase 75.2, Plan 04): Large points the SAME way as the
+    // Troll's own +9 (dmg+wpnBonus) trait, so nothing is masked — both
+    // axes stack in full: +11 damage total, and one face easier to hit.
+    note: "75 hp regardless of class and +11 damage (being large adds 2), but eats two rations a night and is one face easier to hit.",
   },
 };
 
