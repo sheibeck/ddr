@@ -49,6 +49,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [x] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules (completed 2026-09-26)
 - [x] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth, a steeper foe curve and tier past floor 12, and control spells lose their lock at depth
  (completed 2026-09-26)
+
 - [ ] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store
 - [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
@@ -371,7 +372,7 @@ Plans:
   3. A player who Saves & quits, or whose app is killed, mid-fight relaunches into the exact same fight — same foes, HP, round and active effects — and force-closing can no longer be used to escape a fight.
   4. A player who relaunches with the store open returns to the same store with the same stock.
 
-**Plans**: 2/6 plans executed
+**Plans**: 4/6 plans executed
 
 Plans:
 **Wave 1**
@@ -381,8 +382,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 76-02-PLAN.md — Make every darkness surface the player sees read the one rule from 76-01 (DARK-02): the DARK chip and its tap card, the map vignette and per-tile dark painting, with copy that tells the map and fight truth (wave 2)
-- [ ] 76-04-PLAN.md — Prove the relaunch end to end (SAV-06, SAV-07) and hand the shell its resume line (wave 2)
+- [x] 76-02-PLAN.md — Make every darkness surface the player sees read the one rule from 76-01 (DARK-02): the DARK chip and its tap card, the map vignette and per-tile dark painting, with copy that tells the map and fight truth (wave 2)
+- [x] 76-04-PLAN.md — Prove the relaunch end to end (SAV-06, SAV-07) and hand the shell its resume line (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -651,7 +652,7 @@ Plans:
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
-| 76. Darkness Unification & Relaunch Persistence | v2.1 | 2/6 | In Progress|  |
+| 76. Darkness Unification & Relaunch Persistence | v2.1 | 4/6 | In Progress|  |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
