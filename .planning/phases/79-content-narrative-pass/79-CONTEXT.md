@@ -25,7 +25,7 @@ Every piece of in-game text reads honestly and consistently in the game's voice:
 ### Blurbs and roll phrasing (user accepted 2026-09-25)
 - **VOX-04 blurbs:** keep each `SUB_NOTE`/`RACE_NOTE`'s sarcastic prose, and add a compact MECHANICAL FOOTER under each blurb, generated FROM the rules tables so prose and rules can never drift.
   - The tables are `MU_CHART` bonuses and school gates, `spell-level-overrides.js`, the race modifiers, and the Phase 24 IDENT table / `docs/CLASS-PASS.md`.
-  - A unit test pins that every sub-class with a gate names its level in the footer (the Summoner: "no offense spell until level 3"), and that every sub-class and race states at least one advantage and one disadvantage.
+  - A unit test pins that every sub-class with a gate names its level in the footer (the Summoner: "half-strength healing (the offense gate was removed 2026-09-25)"), and that every sub-class and race states at least one advantage and one disadvantage.
   - Both the roller reel and the Hero tab read `SUB_NOTE`. Where the footer shows on each is the planner's call, within space limits.
   - Phase 75.1's new Pilfer bad (fumbling magic items) and scroll rules are already in their blurbs; verify they're consistent.
 - **ROLL-04 phrasing:**

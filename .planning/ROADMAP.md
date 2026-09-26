@@ -483,11 +483,43 @@ Plans:
 **Requirements**: VOX-04, ROLL-04, VOX-05
 **Success Criteria** (what must be TRUE):
 
-  1. Every sub-class and race description states both its advantage(s) and disadvantage(s), including school gates such as the Summoner's no-offense-spells-before-level-3.
+  1. Every sub-class and race description states both its advantage(s) and disadvantage(s), including gates and weaknesses such as the Summoner's half-strength healing (its offense gate was removed 2026-09-25, RULES-03).
   2. No player-facing string still encodes roll-under phrasing ("1–N", "need N", "natural 1", "−3 on to-hit") — a doc-synced test pins that none remains.
   3. Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why, while staying sarcastic and family-friendly.
 
-**Plans**: TBD
+**Plans**: 0/13 plans executed
+
+Plans:
+**Wave 1**
+
+- [ ] 79-01-PLAN.md — Build the tooling the whole narrative pass runs on, and capture the phase base before anything changes (VOX-05's inventory, ROLL-04's scanner; CONTEXT "Claude's Discretion": "the inventory tooling (e.g (wave 1)
+- [ ] 79-02-PLAN.md — Make every number a gain line or a Table 4 line prints the number that actually happened (the two routed number-honesty todos, under VOX-05 rubric point 4: "accurate to what the engine actually did") (wave 1)
+- [ ] 79-03-PLAN.md — Make every sub-class and race description name both what it is good at and what it pays for (VOX-04), with a compact footer generated from the rules tables under each blurb, and bring the blurbs themselves in line wit... (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 79-04-PLAN.md — Run the narrative pass over the fight: every Oracle line, rail line and fight-log line an engine/combat.js event produces, plus the fight log's own copy (VOX-05), fixing the roll-under phrases the scan assigns here (R... (wave 2)
+- [ ] 79-05-PLAN.md — Rewrite the rules text in content/ so it reads bigger-is-better and agrees with the engine (ROLL-04), and run the rubric over every other item, spell, skill, ability and foe text (VOX-05) (wave 2)
+- [ ] 79-06-PLAN.md — Run the narrative pass over the lines a player reads when a run ends and when they compare it: death causes, epitaphs, leaderboard and placement copy, account copy and the quip banks (VOX-05), fixing any roll phrasing... (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 79-07-PLAN.md — Run the narrative pass over the combat screen's own copy: chips and their tap descriptions, the long-press foe card, the combat menu, YOUR LOT and the foe cards, and mazeworld.html's condition and combat copy (VOX-05)... (wave 3)
+- [ ] 79-08-PLAN.md — Run the narrative pass over the powers: every Oracle and rail line a spell, ability, foe ability or scroll event produces (VOX-05), fixing the roll-under phrases the scan assigns here (ROLL-04) (wave 3)
+- [ ] 79-09-PLAN.md — Run the narrative pass over the panels a player reads between steps: the Hero tab, the Gear tab and its sheet, the store and loot comparisons, the Leaderboards panel and the final sheet (VOX-05), and clear any roll ph... (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 79-10-PLAN.md — Run the narrative pass over the map, the title and roller, Settings, the ☰ menu and everything else left in mazeworld.html and the small shell modules (VOX-05), including the legend's roll-under lock line (ROLL-04) (wave 4)
+- [ ] 79-11-PLAN.md — Run the narrative pass over the world: every Oracle and rail line from movement, encounters, traps, hazards, the day, rations, items, the store, Joiners and the relaunch, plus the rail cards themselves (VOX-05), fixin... (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 79-12-PLAN.md — Lock the pass in: the doc-synced ROLL-04 guard, the extended voice guards (safety, HP-not-WP, stale terms, the sign guard), a corpus-wide hygiene and twin guard, and the closure of every item the rewrite plans handed ... (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 79-13-PLAN.md — Produce the review page the user reads at milestone close, prove every changed line is on it, refresh the voice sample, and close the phase with the gates and one Pixel 7 checklist (VOX-05's review model; VOX-04 and R... (wave 6)
 
 ### Phase 80: Android Release Build & Tooling
 
