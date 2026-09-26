@@ -45,7 +45,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 // ─── USER RULING D: the remove list is GONE — no floor-range name survives ──
 
-test("USER RULING D/G, RULES-16 (Phase 75.3): DIALS is frozen and its key set is exactly the global model's 27 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key; FOE_COUNT_DEPTH added, Phase 75.3)", () => {
+test("USER RULING D/G, RULES-16/17 (Phase 75.3): DIALS is frozen and its key set is exactly the global model's 28 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key; FOE_COUNT_DEPTH added, Plan 01; FOE_ELITE added, Plan 03)", () => {
   assert.equal(Object.isFrozen(DIALS), true);
   const keys = Object.keys(DIALS).sort();
   assert.deepStrictEqual(keys, [
@@ -62,6 +62,7 @@ test("USER RULING D/G, RULES-16 (Phase 75.3): DIALS is frozen and its key set is
     "FOE_ACCURACY",
     "FOE_COUNT_DEPTH",
     "FOE_COUNT_SKEW",
+    "FOE_ELITE",
     "FOE_HIT_SCALE",
     "FOE_HP_SCALE",
     "FOE_LEVEL",
@@ -86,10 +87,16 @@ test("USER RULING D/G, RULES-16 (Phase 75.3): DIALS is frozen and its key set is
 const IDENTITY_COLUMN = {
   FOE_LEVEL: { base: 0.6, perDepth: 0.2 },
   TIER_SPREAD: 1,
-  FOE_HIT_SCALE: { base: 1, perDepth: 0 },
-  FOE_HP_SCALE: { base: 1, perDepth: 0 },
+  // RULES-17 (Phase 75.3): the identity knee — perDepthAfter === perDepth
+  // (both 0) means scaleField's knee branch never fires (identity/no-op
+  // case), so this reproduces canon at every depth exactly like before this
+  // dial carried a knee.
+  FOE_HIT_SCALE: { base: 1, perDepth: 0, kneeDepth: 12, perDepthAfter: 0 },
+  FOE_HP_SCALE: { base: 1, perDepth: 0, kneeDepth: 12, perDepthAfter: 0 },
   FOE_COUNT_SKEW: 0,
   FOE_COUNT_DEPTH: { soloOnlyOnOneFrom: 0, atLeastTwoFrom: 0, atLeastThreeFrom: 0 },
+  // RULES-17 (Phase 75.3): identity switches elites off entirely (maxRank 0).
+  FOE_ELITE: { maxRank: 0, hpPerRank: 0, hitPerRank: 0 },
   ROUND_DAMAGE_CEILING: 0,
   ABILITY_THREAT: { base: 1, perDepth: 0 },
   HERO_HP_SCALE: 1,
@@ -285,21 +292,28 @@ const FITTED_CURVE_PINS = {
   10: { depth: 10, breather: false, dots: 10, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 0.7, foeHpScale: 1.05, hazardScale: 0.8, abilityThreat: 1 },
   11: { depth: 11, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 4, foeHitScale: 0.71, foeHpScale: 1.065, hazardScale: 0.82, abilityThreat: 1 },
   12: { depth: 12, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 0.72, foeHpScale: 1.08, hazardScale: 0.84, abilityThreat: 1 },
-  13: { depth: 13, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.73, foeHpScale: 1.095, hazardScale: 0.86, abilityThreat: 1 },
-  14: { depth: 14, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.74, foeHpScale: 1.11, hazardScale: 0.88, abilityThreat: 1 },
-  15: { depth: 15, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.75, foeHpScale: 1.125, hazardScale: 0.9, abilityThreat: 1 },
-  16: { depth: 16, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 0.76, foeHpScale: 1.14, hazardScale: 0.92, abilityThreat: 1 },
-  17: { depth: 17, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.77, foeHpScale: 1.155, hazardScale: 0.94, abilityThreat: 1 },
-  18: { depth: 18, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.78, foeHpScale: 1.17, hazardScale: 0.96, abilityThreat: 1 },
-  19: { depth: 19, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.79, foeHpScale: 1.185, hazardScale: 0.98, abilityThreat: 1 },
-  20: { depth: 20, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.8, foeHpScale: 1.2, hazardScale: 1, abilityThreat: 1 },
-  21: { depth: 21, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 0.81, foeHpScale: 1.215, hazardScale: 1.02, abilityThreat: 1 },
-  22: { depth: 22, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.82, foeHpScale: 1.23, hazardScale: 1.04, abilityThreat: 1 },
-  23: { depth: 23, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.83, foeHpScale: 1.245, hazardScale: 1.06, abilityThreat: 1 },
-  24: { depth: 24, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.84, foeHpScale: 1.26, hazardScale: 1.08, abilityThreat: 1 },
-  25: { depth: 25, breather: false, dots: 15, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.85, foeHpScale: 1.275, hazardScale: 1.1, abilityThreat: 1 },
-  35: { depth: 35, breather: false, dots: 18, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.95, foeHpScale: 1.425, hazardScale: 1.3, abilityThreat: 1 },
-  50: { depth: 50, breather: false, dots: 22, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.1, foeHpScale: 1.65, hazardScale: 1.6, abilityThreat: 1 },
+  // RULES-17 (Phase 75.3): depths 13+ are past kneeDepth 12 — foeHitScale/
+  // foeHpScale now read the SECOND slope (0.72 + 0.02*(d-12) /
+  // 1.08 + 0.03*(d-12)); every OTHER field (dots/darkBlobs/darkRadius/
+  // waterPools/storeTier/foeLevel/hazardScale/abilityThreat) is untouched —
+  // HAZARD_SCALE/ABILITY_THREAT carry no knee. Depths 2-12 above are
+  // UNCHANGED from before this plan (the knee's own identity below its own
+  // threshold).
+  13: { depth: 13, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.74, foeHpScale: 1.11, hazardScale: 0.86, abilityThreat: 1 },
+  14: { depth: 14, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.76, foeHpScale: 1.14, hazardScale: 0.88, abilityThreat: 1 },
+  15: { depth: 15, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.78, foeHpScale: 1.17, hazardScale: 0.9, abilityThreat: 1 },
+  16: { depth: 16, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 0.8, foeHpScale: 1.2, hazardScale: 0.92, abilityThreat: 1 },
+  17: { depth: 17, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.82, foeHpScale: 1.23, hazardScale: 0.94, abilityThreat: 1 },
+  18: { depth: 18, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.84, foeHpScale: 1.26, hazardScale: 0.96, abilityThreat: 1 },
+  19: { depth: 19, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.86, foeHpScale: 1.29, hazardScale: 0.98, abilityThreat: 1 },
+  20: { depth: 20, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.88, foeHpScale: 1.32, hazardScale: 1, abilityThreat: 1 },
+  21: { depth: 21, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 0.9, foeHpScale: 1.35, hazardScale: 1.02, abilityThreat: 1 },
+  22: { depth: 22, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.92, foeHpScale: 1.38, hazardScale: 1.04, abilityThreat: 1 },
+  23: { depth: 23, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.94, foeHpScale: 1.41, hazardScale: 1.06, abilityThreat: 1 },
+  24: { depth: 24, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.96, foeHpScale: 1.44, hazardScale: 1.08, abilityThreat: 1 },
+  25: { depth: 25, breather: false, dots: 15, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.98, foeHpScale: 1.47, hazardScale: 1.1, abilityThreat: 1 },
+  35: { depth: 35, breather: false, dots: 18, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.18, foeHpScale: 1.77, hazardScale: 1.3, abilityThreat: 1 },
+  50: { depth: 50, breather: false, dots: 22, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.48, foeHpScale: 2.22, hazardScale: 1.6, abilityThreat: 1 },
 };
 
 function roundedCurve(curve) {

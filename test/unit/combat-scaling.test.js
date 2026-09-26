@@ -145,8 +145,10 @@ function fixedFoe(overrides = {}) {
 test("USER RULING G (cycle 3, fitted DIALS): DIALS pins used by combat wiring are at their SHIPPED (fitted/held) values — fit/best.json, docs/DIFFICULTY-RETUNE.md's dial table", () => {
   assert.deepStrictEqual(DIALS.FOE_LEVEL, { base: 0.9, perDepth: 0.29 });
   assert.equal(DIALS.TIER_SPREAD, 1);
-  assert.deepStrictEqual(DIALS.FOE_HIT_SCALE, { base: 0.6, perDepth: 0.01 });
-  assert.deepStrictEqual(DIALS.FOE_HP_SCALE, { base: 0.9, perDepth: 0.015 });
+  // RULES-17 (Phase 75.3, Plan 03): both dials gained the knee pair.
+  assert.deepStrictEqual(DIALS.FOE_HIT_SCALE, { base: 0.6, perDepth: 0.01, kneeDepth: 12, perDepthAfter: 0.02 });
+  assert.deepStrictEqual(DIALS.FOE_HP_SCALE, { base: 0.9, perDepth: 0.015, kneeDepth: 12, perDepthAfter: 0.03 });
+  assert.deepStrictEqual(DIALS.FOE_ELITE, { maxRank: 10, hpPerRank: 0.1, hitPerRank: 0.05 });
   assert.equal(DIALS.FOE_COUNT_SKEW, 1);
   assert.equal(DIALS.ROUND_DAMAGE_CEILING, 0.5);
 });
@@ -181,7 +183,11 @@ test("wiring at depth 5 / 20: lvl === curve.foeLevel or curve.foeLevel - 1 (the 
       assert.equal(state.combat.foes.length, 2);
       for (const f of state.combat.foes) {
         assert.ok(f.lvl === curve.foeLevel || f.lvl === curve.foeLevel - 1, `depth ${depth}: lvl ${f.lvl} must be curve.foeLevel (${curve.foeLevel}) or one lower`);
-        assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve));
+        // RULES-17 (Phase 75.3, Plan 03): at depth 20 an elite (f.elite) may
+        // be in play — foeWpFor's third argument reproduces it; f.elite is
+        // undefined at depth 5 (below the first elite floor), and `|| 0`
+        // reads that as rank 0, byte-identical to the pre-elite call.
+        assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve, f.elite || 0));
         assert.equal("dmgBonus" in f, false);
       }
     }
@@ -357,7 +363,9 @@ test("startCombat at depth 1000 stays bounded: foe.lvl in [1,5], wp === foeWpFor
   startCombat(state, false, "Beasts", rng, []);
   for (const f of state.combat.foes) {
     assert.ok(f.lvl >= 1 && f.lvl <= 5, `foe level ${f.lvl} must stay in [1,5]`);
-    assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve));
+    // RULES-17 (Phase 75.3, Plan 03): depth 1000 saturates FOE_ELITE.maxRank
+    // — f.elite || 0 reproduces whatever rank startCombat actually drew.
+    assert.equal(f.wp, foeWpFor(BESTIARY.Beasts[f.lvl - 1][0].wp, curve, f.elite || 0));
     assert.equal("dmgBonus" in f, false);
   }
 });

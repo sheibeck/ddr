@@ -173,3 +173,16 @@ export const ENC_ALIAS = {
   "Lair Beast": "Lair Beasts", "Beasts": "Beasts", "Demons": "Demons",
   "Humans": "Humans", "Magical": "Magical", "Walking Dead": "Walking Dead",
 };
+
+/**
+ * ELITE_TITLES — RULES-17 (Phase 75.3, user ruling 2026-09-25): the roster
+ * keeps escalating past the level-5 tier as ELITE VARIANTS of existing
+ * tier-5 foes (no new hand-authored foe types — the bestiary already has
+ * exactly 5 tiers per family). `engine/combat.js#eliteName` prefixes rank 1
+ * through 5+ with these titles in order (rank above 5 reuses the last one).
+ * Every death cause reads "cut down by a <foe>" (content/epitaphs.js;
+ * tools/lib/band-readout.mjs classifies combat deaths by that exact
+ * prefix) — a vowel-initial title would read "a Elder", so every title
+ * here starts with a consonant. Frozen; never mutated.
+ */
+export const ELITE_TITLES = Object.freeze(["Dread", "Grim", "Dire", "Very Dire", "Unreasonably Dire"]);

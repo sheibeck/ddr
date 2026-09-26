@@ -63,9 +63,9 @@ import { checkLevel } from "./character.js";
 import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
-import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor } from "./difficulty.js";
+import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
-import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT } from "../content/index.js";
+import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT, ELITE_TITLES } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
 // DURATION_ROUNDS mapping and foe-flag appliers verbatim — the SAME
 // combat.js <-> foeAbilities.js cycle precedent above applies here
@@ -130,6 +130,20 @@ export function normalizeTarget(combat) {
  */
 export function knightFacesBigFoe(state) {
   return state.c.sub === "Knight" && !!state.combat && state.combat.foes.some((f) => f.alive && f.maxWP >= 20);
+}
+
+/**
+ * eliteName(name, rank) — RULES-17 (Phase 75.3, user ruling 2026-09-25): an
+ * elite foe's title-then-bestiary-name. `rank <= 0` returns `name`
+ * unchanged (a plain foe never carries a title). `rank > 0` prefixes
+ * `ELITE_TITLES[min(rank, ELITE_TITLES.length) - 1]` and a space — rank
+ * above the title table's own length reuses its last (most dire) title.
+ * Pure; 0 draws.
+ */
+export function eliteName(name, rank) {
+  if (!rank || rank <= 0) return name;
+  const title = ELITE_TITLES[Math.min(rank, ELITE_TITLES.length) - 1];
+  return `${title} ${name}`;
 }
 
 /**
@@ -264,7 +278,6 @@ export function startCombat(state, wandering, forced, rng, events = []) {
   // both still read it) but nothing sets it true anymore; it is dormant
   // until a future source assigns it.
   let tracked = false;
-  const maxLvl = curve.foeLevel;
   // RULES-16 (Phase 75.3): the SAME one-or-two d4 selection draws as always
   // (foeCountFor's own thunk still fires only when the first roll is > 2,
   // exactly like the retired `D(4) <= 2 ? 1 : D(4) <= 3 ? 2 : 3` ternary),
@@ -281,16 +294,24 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     // Phase 73 (ROLL-05): the tier-bleed d4 mirrors — "one tier lower" fires
     // on the SAME faces (tierSpreadFor()), read as the top faces of the d4
     // instead of the bottom ones; byte-identical for every raw draw.
-    const lvl = clamp(maxLvl - (rollCheck(rng, 4, atLeastFor(tierSpreadFor(), 4)).ok ? 1 : 0), 1, 5);
+    const bled = rollCheck(rng, 4, atLeastFor(tierSpreadFor(), 4)).ok;
+    // RULES-17 (Phase 75.3): the SAME bleed check now also lowers an
+    // elite's rank before its tier (foeTierFor's own JSDoc has the full
+    // formula) — no new draw, the tier-5 roster is still the one BESTIARY
+    // draws from once a foe's level would pass 5.
+    const { lvl, eliteRank } = foeTierFor(state.floor.depth, bled);
     // LO-02: no `||` fallback needed here — `lvl` is always clamped to
     // [1,5] above, and every BESTIARY category has exactly 5 tiers
     // (confirmed by 01-VERIFICATION.md's creature count audit), so
     // BESTIARY[type][lvl - 1] can never be undefined.
     const roster = BESTIARY[type][lvl - 1];
     const picked = rng.pick(roster);
-    const wp = foeWpFor(picked.wp, curve);
+    // RULES-17 (Phase 75.3): an elite's wp carries the per-rank HP bonus and
+    // its name carries the rank's title — the SAME draws, a titled/scaled
+    // copy of the SAME picked bestiary row.
+    const wp = foeWpFor(picked.wp, curve, eliteRank);
     foes.push({
-      name: picked.n,
+      name: eliteName(picked.n, eliteRank),
       type,
       lvl,
       size: picked.sz,
@@ -307,6 +328,11 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       // byte-identical for parity. `f.abilities` (present vs absent) is the
       // structural zero-draw gate foeTurn reads below.
       ...(picked.abilities ? { abilities: picked.abilities.slice() } : {}),
+      // RULES-17 (Phase 75.3): `elite` is present ONLY for an elite
+      // (eliteRank > 0) — absent on every plain foe, so a pre-Phase-75.3
+      // fixture (floor 1, well below the first elite floor) never carries
+      // this key at all.
+      ...(eliteRank > 0 ? { elite: eliteRank } : {}),
     });
   }
   // CMB-01 (Phase 31): the ENCOUNTER step ends here with `pending: true` —
@@ -334,7 +360,9 @@ export function startCombat(state, wandering, forced, rng, events = []) {
     // consumer (e.g. a combat-start rail card or report) that reads this event
     // instead of live state. Safe/additive: no existing event-shape
     // assertion pins this array to exactly {name, lvl, wp}.
-    foes: foes.map((f) => ({ name: f.name, lvl: f.lvl, wp: f.wp, maxWP: f.maxWP })),
+    // RULES-17 (Phase 75.3): `elite` carried the SAME conditional way as the
+    // foe literal above — present only for an elite.
+    foes: foes.map((f) => ({ name: f.name, lvl: f.lvl, wp: f.wp, maxWP: f.maxWP, ...(f.elite ? { elite: f.elite } : {}) })),
     // CMB-01 (Phase 31): `first` is no longer known at encounter time — it
     // moved to `fight`'s `combatJoined` event (see above).
     samuraiNeverFirst: c.sub === "Samurai",
@@ -1146,7 +1174,9 @@ function pursuitStrike(state, rng, events) {
   const crit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
   const dice = pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6); // roll:amount
   const curve = difficultyCurve(state.floor.depth);
-  let dmg = foeHitFor(foeLevelBase(pursuer) + (crit ? 2 * dice : dice), curve);
+  // RULES-17 (Phase 75.3): an elite pursuer's parting strike carries its own
+  // per-rank hit bonus too — `pursuer.elite || 0` is 0 for every plain foe.
+  let dmg = foeHitFor(foeLevelBase(pursuer) + (crit ? 2 * dice : dice), curve, pursuer.elite || 0);
   if (C.weakened) dmg = Math.ceil(dmg / 2);
   // Phase 40 (SPELL-01, Shrink) — a shrunk pursuer's parting strike is
   // halved too, same rule as its ordinary melee swing.
@@ -3070,7 +3100,9 @@ export function foeTurn(state, rng, events = []) {
         // `mRoll === 1`.
         const mCritical = isBestFace(mRoll, mDieN);
         const mDice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount
-        let mDmg = foeHitFor(foeLevelBase(f) + (mCritical ? 2 * mDice : mDice), curve);
+        // RULES-17 (Phase 75.3): an elite's blow carries its own per-rank
+        // hit bonus too — `f.elite || 0` is 0 for every plain foe.
+        let mDmg = foeHitFor(foeLevelBase(f) + (mCritical ? 2 * mDice : mDice), curve, f.elite || 0);
         if (C.weakened) mDmg = Math.ceil(mDmg / 2);
         // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
         // too (a shrunk-AND-weakened foe is quartered, ceil applied twice —
@@ -3159,7 +3191,9 @@ export function foeTurn(state, rng, events = []) {
       // old `roll === 1 || (roll <= 2 && Soldier)`.
       const crit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
       const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount
-      let dmg = foeHitFor(foeLevelBase(f) + (crit ? 2 * dice : dice), curve);
+      // RULES-17 (Phase 75.3): an elite's blow carries its own per-rank hit
+      // bonus too — `f.elite || 0` is 0 for every plain foe.
+      let dmg = foeHitFor(foeLevelBase(f) + (crit ? 2 * dice : dice), curve, f.elite || 0);
       if (C.weakened) dmg = Math.ceil(dmg / 2);
       // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
       // too, hero side (see the member-branch twin above for the

@@ -214,6 +214,24 @@ test("(b) the defence line is omitted when nothing applies; the default d6 and a
   assert.ok(bt[2].includes(`${flat}–${flat}`) || bt[2].includes(`hits for ${flat} `), bt[2]);
 });
 
+test("(b) RULES-17 (Phase 75.3): an elite foe's hits-for range includes the elite factor; a plain foe's range is unchanged", () => {
+  const ned = pick("Humans", "Ned");
+  const curve = difficultyCurve(20);
+  const base = foeLevelBase(ned);
+  const plainCard = foeDetailsCard(0, stateWith([ned], { floor: { depth: 20 } }));
+  const plainRange = texts(plainCard)[2];
+  assert.ok(plainRange.includes(`${foeHitFor(base + 1, curve)}–${foeHitFor(base + 6, curve)}`), plainRange);
+
+  const eliteFoe = { ...pick("Humans", "Ned"), elite: 2 };
+  const eliteCard = foeDetailsCard(0, stateWith([eliteFoe], { floor: { depth: 20 } }));
+  const eliteRange = texts(eliteCard)[2];
+  const eliteLo = foeHitFor(base + 1, curve, 2);
+  const eliteHi = foeHitFor(base + 6, curve, 2);
+  assert.ok(eliteRange.includes(`${eliteLo}–${eliteHi}`), eliteRange);
+  // The elite factor genuinely moves the range — it is not silently ignored.
+  assert.notEqual(eliteHi, foeHitFor(base + 6, curve));
+});
+
 test("(b) defence labels: magic-only, dagger-only, half damage; strikesAs feeds the range", () => {
   const ghost = texts(foeDetailsCard(0, stateWith([pick("Demons", "Ghost")])));
   assert.ok(ghost[2].includes(FOE_DETAILS_COPY.magicOnly), ghost[2]);

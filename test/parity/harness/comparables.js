@@ -626,7 +626,12 @@ export function stripFoeAbilityState(combat) {
   if (!combat || !Array.isArray(combat.foes)) return combat;
   const { pendingFoes, selfDot, heroOut, heroBlind, heroShrunk, ...combatRest } = combat;
   const foes = combatRest.foes.map((f) => {
-    const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, ...rest } = f;
+    // RULES-17 (Phase 75.3): `elite` is a brand-new per-foe field (a foe's
+    // elite rank, present only above rank 0) with NO prototype-side
+    // equivalent — engine-only, never on a floor-1 fixture foe (the first
+    // elite floor is 16, far past every fixture's own floor-1 fights) — a
+    // structural tripwire, exactly like the abilities/cd/uses strip above.
+    const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, elite, ...rest } = f;
     return rest;
   });
   return { ...combatRest, foes };
