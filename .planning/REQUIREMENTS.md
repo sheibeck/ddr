@@ -67,6 +67,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 - [ ] **DARK-01**: One shared darkness-waiver predicate drives both `revealRadius` and `mapViewRadius`. A lit torch, the Amulet or Night Vision widens what you reveal as you walk as well as what is rendered.
 - [ ] **DARK-02**: The DARK chip, the map vignette and per-tile dark painting all read from the unified rule, so a light source means the same thing on every surface.
+- [ ] **DARK-03**: Map the Floor lasts only until you move. The whole-floor reveal holds while the hero stands still. The first step ends it and re-fogs every cell the spell showed; cells the hero walked or revealed normally stay seen. Only movement ends the window, and a recast refreshes it. The spell text, the chip and the Oracle lines say so ("you lose focus"). (user, 2026-09-26; todo 2026-09-26 map-the-floor-lasts-only-until-you-move)
 
 ### Relaunch persistence (SAV) — backlog 999.10
 
@@ -158,6 +159,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | RULES-18 | Phase 75.3 | Pending |
 | DARK-01 | Phase 76 | Pending |
 | DARK-02 | Phase 76 | Pending |
+| DARK-03 | Phase 76 | Pending |
 | SAV-06 | Phase 76 | Pending |
 | SAV-07 | Phase 76 | Pending |
 | CMBUI-07 | Phase 77 | Pending |
@@ -196,7 +198,7 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | BOARD-16 | Phase 81 | Complete |
 | BOARD-17 | Phase 81 | Complete |
 
-**Coverage:** 50 requirements. Mapped: 50/50 ✓
+**Coverage:** 51 requirements. Mapped: 51/51 ✓
 
 ---
 *Requirements defined: 2026-09-24*

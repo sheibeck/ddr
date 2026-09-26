@@ -362,7 +362,7 @@ Plans:
 
 **Goal**: One shared darkness rule governs everything the player experiences as dark, and saving or force-closing never lets a player escape a live fight or an open store.
 **Depends on**: Phase 75.3 (shares the engine fixture gate; sequenced after the RULES phases to avoid overlapping fixture claims)
-**Requirements**: DARK-01, DARK-02, SAV-06, SAV-07
+**Requirements**: DARK-01, DARK-02, DARK-03, SAV-06, SAV-07
 **Success Criteria** (what must be TRUE):
 
   1. A lit torch, the Amulet, or Night Vision widens what a player reveals while walking by the same rule that widens what is rendered — `revealRadius` and `mapViewRadius` never disagree again.
@@ -370,7 +370,7 @@ Plans:
   3. A player who Saves & quits, or whose app is killed, mid-fight relaunches into the exact same fight — same foes, HP, round and active effects — and force-closing can no longer be used to escape a fight.
   4. A player who relaunches with the store open returns to the same store with the same stock.
 
-**Plans**: 0/5 plans executed
+**Plans**: 0/6 plans executed
 
 Plans:
 **Wave 1**
@@ -386,6 +386,10 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [ ] 76-05-PLAN.md — Finish the phase: the Oracle says the fight (or the shop) is still on after a relaunch, the persistence half's measurement is recorded beside the darkness half's in FIXTURE-INVENTORY.md, every gate is run at the phase... (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 76-06-PLAN.md — Make Map the Floor last only until the hero moves (wave 4)
 
 **Device check**: yes — relaunch-mid-fight and relaunch-mid-store batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
 
