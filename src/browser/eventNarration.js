@@ -670,6 +670,53 @@ export const EVENT_NARRATION = {
     `<span class="hurt">You cannot act (${e.kind ?? "out"}). The round goes on without you.</span> ${e.left ?? 0} turn${e.left === 1 ? "" : "s"} of it left.`,
   heroCameTo: () => `<span class="hit">You can act again.</span>`,
 
+  // RULES-10 (Phase 75.1, plan 05) — resolveScrollFumble's three outcome
+  // events, each naming who a fumble hit: fumbleOnReader (harmful effects
+  // NOT already covered by fumbleHeavyBlow's or selfDotTick's own lines —
+  // damage, out, blind, shrink, weakened, vapor's sleeping face, or none),
+  // fumbleOnSide (the area branch's members/ally/reader) and fumbleOnFoe
+  // (the helpful branch's targeted foe). Deadpan, family-friendly — a
+  // fumble is funny, never gory.
+  fumbleOnReader: (e) => {
+    switch (e.effect) {
+      case "damage":
+        return `<span class="hurt">${e.spell ?? "The scroll"} turns on you instead: <span class="roll">−${e.amount ?? 0} hp</span>.</span>`;
+      case "dot":
+        return `<span class="hurt">${e.spell ?? "The scroll"} leaves something burning on you, ${e.rounds ?? 0} round${e.rounds === 1 ? "" : "s"} of it.</span>`;
+      case "out":
+      case "vapor":
+        return `<span class="hurt">${e.spell ?? "The scroll"} takes you out of the fight, ${e.kind ?? "out"} for ${e.rounds ?? 0} turn${e.rounds === 1 ? "" : "s"}.</span>`;
+      case "blind":
+        return `<span class="hurt">${e.spell ?? "The scroll"} blinds you for the rest of the fight.</span>`;
+      case "shrink":
+        return `<span class="hurt">${e.spell ?? "The scroll"} shrinks you, <span class="roll">−${e.loss ?? 0} hp</span>, for the rest of the fight.</span>`;
+      case "weakened":
+        return `<span class="hurt">${e.spell ?? "The scroll"} weakens you, ${e.rounds ?? 0} round${e.rounds === 1 ? "" : "s"} of it.</span>`;
+      default:
+        return `<span class="beat">${e.spell ?? "The scroll"} fumbles and does nothing to you. Small mercies.</span>`;
+    }
+  },
+  fumbleOnSide: (e) => {
+    if (e.who === "reader") {
+      return `<span class="hurt">${e.spell ?? "The scroll"} catches you too: <span class="roll">−${e.amount ?? 0} hp</span>.</span>`;
+    }
+    if (e.unmade) {
+      return `<span class="hurt">${e.spell ?? "The scroll"} unmakes ${e.name ?? "your summoned ally"}.</span>`;
+    }
+    return `<span class="hurt">${e.spell ?? "The scroll"} catches ${e.name ?? "your companion"} too: <span class="roll">−${e.amount ?? 0} hp</span>.</span>`;
+  },
+  fumbleOnFoe: (e) => {
+    if (e.effect === "wasted") {
+      return `<span class="beat">${e.spell ?? "The scroll"} is wasted on ${e.target ?? "the wrong side"}.</span>`;
+    }
+    if (e.effect === "summon") {
+      return e.joined
+        ? `<span class="miss">${e.spell ?? "The scroll"} calls up ${e.reinforcement ?? "something"} to fight beside ${e.target ?? "it"}.</span>`
+        : `<span class="beat">${e.spell ?? "The scroll"} tries to call for help for ${e.target ?? "it"}, but nothing answers.</span>`;
+    }
+    return `<span class="miss">${e.spell ?? "The scroll"} helps ${e.target ?? "it"} instead.</span>`;
+  },
+
   // Phase 19 (FOE-01..09, D-16): foe abilities — telegraph first, effect
   // second. Every builder here defends a bare `{ type }` call (the coverage
   // guard's own invocation shape) and never leaks an engine identifier

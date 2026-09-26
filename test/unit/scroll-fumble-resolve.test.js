@@ -20,6 +20,10 @@ import { buildReinforcement, SUMMON_MAX_LIVE } from "../../engine/foeAbilities.j
 import { makeRng } from "../../engine/rng.js";
 import { SCROLL_FUMBLE, SPELLS } from "../../content/index.js";
 import { applyAction } from "../../engine/engine.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
+
+const stripMarkup = (s) => String(s).replace(/<[^>]*>/g, " ");
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count. `.pick()` always takes the first element. Throws if
@@ -558,4 +562,76 @@ test("acceptance: resolveScrollFumble and SUMMON_MAX_LIVE exist exactly once", (
   // the right type, complementing the plan's own grep checks.
   assert.equal(typeof resolveScrollFumble, "function");
   assert.equal(typeof SUMMON_MAX_LIVE, "number");
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// Task 3 — voice: both the Oracle and the rail name the victim (and the
+// amount, where one applies) for a sample of every effect and every `who`.
+// ══════════════════════════════════════════════════════════════════════════
+
+test("voice: fumbleOnReader names the reader ('you') and the amount, on both the Oracle and the rail", () => {
+  const samples = [
+    { effect: "damage", spell: "Fireball", amount: 15 },
+    { effect: "dot", spell: "Acid", rounds: 4 },
+    { effect: "out", spell: "Doze", kind: "asleep", rounds: 3 },
+    { effect: "vapor", spell: "Noxious Vapor", kind: "asleep", rounds: 2 },
+    { effect: "blind", spell: "Blind" },
+    { effect: "shrink", spell: "Shrink", loss: 10 },
+    { effect: "weakened", spell: "Weaken", rounds: 3 },
+    { effect: "none", spell: "Plane Gate" },
+  ];
+  for (const s of samples) {
+    const ev = { type: "fumbleOnReader", ...s };
+    const oracle = stripMarkup(EVENT_NARRATION.fumbleOnReader(ev));
+    const rail = LINE_FOR.fumbleOnReader(ev, {}).text;
+    assert.ok(oracle.toLowerCase().includes("you"), `Oracle line for ${s.effect} names you: "${oracle}"`);
+    assert.ok(rail.toLowerCase().includes("you"), `rail line for ${s.effect} names you: "${rail}"`);
+    if (s.amount !== undefined) {
+      assert.ok(oracle.includes(String(s.amount)), `Oracle line for ${s.effect} states the amount: "${oracle}"`);
+      assert.ok(rail.includes(String(s.amount)), `rail line for ${s.effect} states the amount: "${rail}"`);
+    }
+    if (s.loss !== undefined) {
+      assert.ok(oracle.includes(String(s.loss)), `Oracle line for ${s.effect} states the loss: "${oracle}"`);
+      assert.ok(rail.includes(String(s.loss)), `rail line for ${s.effect} states the loss: "${rail}"`);
+    }
+  }
+});
+
+test("voice: fumbleOnSide names each who (you, the member, the unmade ally) and the amount, on both the Oracle and the rail", () => {
+  const samples = [
+    { who: "member", spell: "Earthquake", name: "Ada", amount: 14 },
+    { who: "ally", spell: "Earthquake", name: "Bear", unmade: true },
+    { who: "reader", spell: "Earthquake", amount: 14 },
+  ];
+  for (const s of samples) {
+    const ev = { type: "fumbleOnSide", ...s };
+    const oracle = stripMarkup(EVENT_NARRATION.fumbleOnSide(ev));
+    const rail = LINE_FOR.fumbleOnSide(ev, {}).text;
+    const expectedName = s.who === "reader" ? "you" : s.name;
+    assert.ok(oracle.toLowerCase().includes(expectedName.toLowerCase()), `Oracle line for who=${s.who} names ${expectedName}: "${oracle}"`);
+    assert.ok(rail.toLowerCase().includes(expectedName.toLowerCase()), `rail line for who=${s.who} names ${expectedName}: "${rail}"`);
+    if (s.amount !== undefined) {
+      assert.ok(oracle.includes(String(s.amount)), `Oracle line for who=${s.who} states the amount: "${oracle}"`);
+      assert.ok(rail.includes(String(s.amount)), `rail line for who=${s.who} states the amount: "${rail}"`);
+    }
+  }
+});
+
+test("voice: fumbleOnFoe names the target foe, on both the Oracle and the rail", () => {
+  const samples = [
+    { effect: "heal", spell: "Heal", target: "Orc", amount: 9 },
+    { effect: "ward", spell: "Shield", target: "Orc" },
+    { effect: "summon", spell: "Summon", target: "Orc", joined: true, reinforcement: "Gremlin" },
+    { effect: "summon", spell: "Summon", target: "Orc", joined: false },
+    { effect: "wasted", spell: "Map the Floor", target: "Orc" },
+  ];
+  for (const s of samples) {
+    const ev = { type: "fumbleOnFoe", ...s };
+    const oracle = stripMarkup(EVENT_NARRATION.fumbleOnFoe(ev));
+    const rail = LINE_FOR.fumbleOnFoe(ev, {}).text;
+    if (s.joined !== false) {
+      assert.ok(oracle.toLowerCase().includes(s.target.toLowerCase()), `Oracle line for ${s.effect} names the foe: "${oracle}"`);
+      assert.ok(rail.toLowerCase().includes(s.target.toLowerCase()), `rail line for ${s.effect} names the foe: "${rail}"`);
+    }
+  }
 });

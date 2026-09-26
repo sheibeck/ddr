@@ -1375,6 +1375,45 @@ export const LINE_FOR = {
   heroLostTurn: (e) => ({ text: `You cannot act (${e?.kind ?? "out"}), ${e?.left ?? 0} turn${e?.left === 1 ? "" : "s"} left.`, tone: "hurt", priority: PRIORITY.you }),
   heroCameTo: () => ({ text: "You can act again.", tone: "hit", priority: PRIORITY.you }),
 
+  // RULES-10 (Phase 75.1, plan 05) — resolveScrollFumble's three outcome
+  // events. Tone "hurt" for the reader's side, "miss" for the foe's gain —
+  // mirroring the plan's own voice direction.
+  fumbleOnReader: (e) => {
+    const rounds = e?.rounds ?? 0;
+    const texts = {
+      damage: `${e?.spell ?? "The scroll"} turns on you (−${e?.amount ?? 0} hp).`,
+      dot: `${e?.spell ?? "The scroll"} burns you, ${rounds} round${rounds === 1 ? "" : "s"} of it.`,
+      out: `${e?.spell ?? "The scroll"} takes you out (${e?.kind ?? "out"}), ${rounds} turn${rounds === 1 ? "" : "s"}.`,
+      vapor: `${e?.spell ?? "The scroll"} takes you out (${e?.kind ?? "out"}), ${rounds} turn${rounds === 1 ? "" : "s"}.`,
+      blind: `${e?.spell ?? "The scroll"} blinds you for the fight.`,
+      shrink: `${e?.spell ?? "The scroll"} shrinks you (−${e?.loss ?? 0} hp) for the fight.`,
+      weakened: `${e?.spell ?? "The scroll"} weakens you, ${rounds} round${rounds === 1 ? "" : "s"}.`,
+    };
+    return { text: texts[e?.effect] ?? `${e?.spell ?? "The scroll"} fumbles and does nothing to you.`, tone: "hurt", priority: PRIORITY.you };
+  },
+  fumbleOnSide: (e) => ({
+    text:
+      e?.who === "reader"
+        ? `${e?.spell ?? "The scroll"} catches you too (−${e?.amount ?? 0} hp).`
+        : e?.unmade
+          ? `${e?.spell ?? "The scroll"} unmakes ${e?.name ?? "your ally"}.`
+          : `${e?.spell ?? "The scroll"} catches ${e?.name ?? "your companion"} too (−${e?.amount ?? 0} hp).`,
+    tone: "hurt",
+    priority: PRIORITY.you,
+  }),
+  fumbleOnFoe: (e) => ({
+    text:
+      e?.effect === "wasted"
+        ? `${e?.spell ?? "The scroll"} is wasted on ${e?.target ?? "the wrong side"}.`
+        : e?.effect === "summon"
+          ? e?.joined
+            ? `${e?.spell ?? "The scroll"} calls up ${e?.reinforcement ?? "something"} for ${e?.target ?? "it"}.`
+            : `${e?.spell ?? "The scroll"} calls for help — nothing answers.`
+          : `${e?.spell ?? "The scroll"} helps ${e?.target ?? "it"} instead.`,
+    tone: "miss",
+    priority: PRIORITY.them,
+  }),
+
   /* ---------------- foe abilities (engine/foeAbilities.js) ---------------- */
 
   foeCast: (e) => ({ text: `${e?.name ?? "It"}: ${e?.txt ?? "something unpleasant"}`, tone: "dodge", priority: PRIORITY.them }),
