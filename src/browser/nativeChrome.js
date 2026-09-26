@@ -13,8 +13,9 @@
 //     pause/appStateChange handler has no guarantee of completing before the
 //     OS suspends/kills the process.
 //   - registerNativeChrome({...}): the native-only wiring that reaches
-//     `@capacitor/app` (and, for chrome finalized in 02-04,
-//     `@capacitor/splash-screen`/`@capacitor/status-bar`/
+//     `@capacitor/app` (and, for chrome finalized in 02-04 and migrated to
+//     the core SystemBars plugin in 80-02,
+//     `@capacitor/splash-screen`/`@capacitor/core`'s `SystemBars`/
 //     `@capacitor/screen-orientation`) via GUARDED DYNAMIC import() calls
 //     ONLY — every dependency is also directly injectable (matching
 //     src/browser/storage.js's own posture) so `node --test` and the plain
@@ -22,7 +23,7 @@
 //     Called exactly once, from mazeworld.html's trailing module, and only
 //     when `window.Capacitor?.isNativePlatform?.()` is true.
 //
-//     CR-03 (02-REVIEW.md): the splash-hide/status-bar/orientation chrome
+//     CR-03 (02-REVIEW.md): the splash-hide/SystemBars/orientation chrome
 //     runs BEFORE the `@capacitor/app` import/back-button/lifecycle wiring
 //     (deliberately reordered from the plugin's declaration order above) —
 //     since capacitor.config.json sets "launchAutoHide": false,
@@ -110,7 +111,7 @@ export async function flushOnBackground(storage, waitForPending) {
  * '@capacitor/app' import fails" regression tests force a deterministic
  * rejection without depending on whether the real package happens to be
  * resolvable in the environment `node --test` runs in (unlike
- * `@capacitor/splash-screen`/`@capacitor/status-bar`/
+ * `@capacitor/splash-screen`/`@capacitor/core`'s `SystemBars`/
  * `@capacitor/screen-orientation`, the real `@capacitor/app` web
  * implementation touches `document` during its own module evaluation/setup,
  * which throws unpredictably depending on whether node_modules has it
@@ -136,10 +137,12 @@ async function loadApp(injectedApp) {
 }
 
 /**
- * registerNativeChrome({ App, SplashScreen, StatusBar, ScreenOrientation,
+ * registerNativeChrome({ App, SplashScreen, SystemBars, ScreenOrientation,
  * storage, getGameContext }) — wires the Android back button and app
- * lifecycle listeners (PLT-02/PLT-03), plus (stubbed here, finalized in
- * 02-04) splash/status-bar/orientation chrome. Every plugin object is
+ * lifecycle listeners (PLT-02/PLT-03), plus (finalized in 02-04, migrated
+ * from the retired @capacitor/status-bar plugin to the core SystemBars
+ * plugin in 80-02/DROID-02) splash/bar-style/orientation chrome. Every
+ * plugin object is
  * injectable for testing; when omitted, it is reached via a dynamic
  * import() so `node --test`/the browser dev loop (where isNativePlatform()
  * is false and this function is never called at all) never attempt to
@@ -188,7 +191,7 @@ export function __resetNativeChromeRegistrationForTests() {
 export async function registerNativeChrome({
   App: injectedApp,
   SplashScreen: injectedSplashScreen,
-  StatusBar: injectedStatusBar,
+  SystemBars: injectedSystemBars,
   ScreenOrientation: injectedScreenOrientation,
   storage,
   waitForPending,
@@ -199,7 +202,7 @@ export async function registerNativeChrome({
   if (registered) return;
   registered = true;
 
-  // CR-03 (02-REVIEW.md): splash-hide/status-bar/orientation chrome runs
+  // CR-03 (02-REVIEW.md): splash-hide/SystemBars/orientation chrome runs
   // FIRST and independently of the '@capacitor/app' import below. Because
   // capacitor.config.json sets "launchAutoHide": false, SplashScreen.hide()
   // below is the ONLY thing that ever hides the native splash screen — if it
@@ -215,21 +218,22 @@ export async function registerNativeChrome({
     /* splash-screen plugin unavailable/not yet configured — non-fatal */
   }
   try {
-    const StatusBar = injectedStatusBar || (await import("@capacitor/status-bar")).StatusBar;
-    // 04-05: recolored for the dark "torch-lit ledger" theme (04-CONTEXT.md
-    // "Visual theme & fidelity" — supersedes 02-04's light-parchment
-    // #EFE7D6 setup). Style.Dark = "light text/icons for dark backgrounds"
-    // (StatusBar's own naming is inverted from what it sounds like) — matches
-    // mazeworld.html's --paper-2 (#1b170f) dark ground now extending under
-    // the status bar. setBackgroundColor is treated as best-effort only
-    // (04-RESEARCH.md Pitfall 3 — Android 15+ edge-to-edge can silently
-    // ignore it): the real guarantee is mazeworld.html's own dark HUD band
-    // extending to y=0 with safe-area-aware padding on its CONTENT, not this
-    // call succeeding.
-    await StatusBar?.setStyle?.({ style: "DARK" });
-    await StatusBar?.setBackgroundColor?.({ color: "#1b170f" });
+    const SystemBars = injectedSystemBars || (await import("@capacitor/core")).SystemBars;
+    // DROID-02 (80-02, 80-RESEARCH.md "Edge-to-Edge / DROID-02"): the core
+    // SystemBars plugin (auto-registered by Bridge.registerAllPlugins(), no
+    // separate npm dependency) draws the app edge-to-edge under transparent
+    // bars and injects --safe-area-inset-* for mazeworld.html's existing
+    // var(--safe-area-inset-*, env(safe-area-inset-*)) fallbacks. DARK means
+    // light bar icons for the dark parchment theme. Android 15 deprecated
+    // window bar-colour APIs, so no colour is ever set here — the retired
+    // @capacitor/status-bar plugin used to set a colour from its own native
+    // load() on every launch REGARDLESS of whether this JS called it, which
+    // is why the package was uninstalled entirely (80-02 Task 2), not just
+    // stopped being called. capacitor.config.json sets the same "DARK" style
+    // for the first native frame, before this call ever runs.
+    await SystemBars?.setStyle?.({ style: "DARK" });
   } catch {
-    /* status-bar plugin unavailable/not yet configured — non-fatal */
+    /* SystemBars unavailable/not yet configured — non-fatal */
   }
   try {
     const ScreenOrientation = injectedScreenOrientation || (await import("@capacitor/screen-orientation")).ScreenOrientation;
@@ -241,7 +245,7 @@ export async function registerNativeChrome({
   // CR-03: the '@capacitor/app' import is guarded the same way as the three
   // plugins above — if it rejects, the back-button/lifecycle wiring below is
   // simply unavailable for this launch (silently reintroducing PLT-02/PLT-03
-  // regressions for that session), but the splash/status-bar/orientation
+  // regressions for that session), but the splash/SystemBars/orientation
   // chrome above has ALREADY run, so the app is never soft-locked on the
   // splash screen because of it.
   let App;

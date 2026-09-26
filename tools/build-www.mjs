@@ -59,14 +59,15 @@ const WWW = path.join(ROOT, "www");
 // The exact @capacitor/* packages this project installs (Task 1's
 // npm-install allow-list) — every one gets vendored so later plans (02-03
 // wires storage.js's dynamic import('@capacitor/preferences'); 02-04 wires
-// App/SplashScreen/StatusBar/ScreenOrientation in nativeChrome.js) resolve
-// without needing to touch this script again.
+// App/SplashScreen/ScreenOrientation in nativeChrome.js; 80-02/DROID-02
+// migrates bar styling from the retired @capacitor/status-bar plugin to the
+// core SystemBars plugin, so @capacitor/core stays vendored for that too)
+// resolve without needing to touch this script again.
 const CAPACITOR_PACKAGES = [
   "@capacitor/core",
   "@capacitor/preferences",
   "@capacitor/app",
   "@capacitor/splash-screen",
-  "@capacitor/status-bar",
   "@capacitor/screen-orientation",
   // 04-09: haptics — vendored + import-mapped exactly like the other
   // plugins so src/browser/haptics.js's guarded dynamic import

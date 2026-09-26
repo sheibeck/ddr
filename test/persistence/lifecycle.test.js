@@ -139,14 +139,14 @@ test("registerNativeChrome also wires a backButton listener (disabling Capacitor
   assert.ok(fakeApp._listeners.has("backButton"), "registerNativeChrome must register a backButton listener");
 });
 
-test("registerNativeChrome never throws when SplashScreen/StatusBar/ScreenOrientation are omitted (chrome finalized in 02-04)", async () => {
+test("registerNativeChrome never throws when SplashScreen/SystemBars/ScreenOrientation are omitted (chrome finalized in 02-04)", async () => {
   const fakeApp = makeFakeApp();
   const storage = { flush: async () => {} };
   await assert.doesNotReject(() => registerNativeChrome({ App: fakeApp, storage, getGameContext: () => ({}) }));
 });
 
 // CR-03 (02-REVIEW.md): the '@capacitor/app' import must be guarded exactly
-// like SplashScreen/StatusBar/ScreenOrientation above it — a rejection must
+// like SplashScreen/SystemBars/ScreenOrientation above it — a rejection must
 // NOT prevent SplashScreen.hide() from running, or (because
 // capacitor.config.json sets launchAutoHide:false) the native splash screen
 // is never hidden and the app appears permanently frozen even though the
@@ -155,7 +155,7 @@ test("registerNativeChrome never throws when SplashScreen/StatusBar/ScreenOrient
 // These tests force the '@capacitor/app' import to fail deterministically
 // via nativeChrome.js's test-only `globalThis.__mzAppImportOverride` hook,
 // rather than relying on the real `@capacitor/app` package being
-// unresolvable under `node --test` — unlike SplashScreen/StatusBar/
+// unresolvable under `node --test` — unlike SplashScreen/SystemBars/
 // ScreenOrientation, the real `@capacitor/app` web implementation touches
 // `document` during its own module setup, which throws unpredictably
 // depending on whether node_modules has it installed (it does, in this
@@ -196,7 +196,7 @@ test(
 );
 
 test(
-  "CR-03: registerNativeChrome resolves (does not throw/reject) when the '@capacitor/app' import fails, even with no SplashScreen/StatusBar/ScreenOrientation injected either",
+  "CR-03: registerNativeChrome resolves (does not throw/reject) when the '@capacitor/app' import fails, even with no SplashScreen/SystemBars/ScreenOrientation injected either",
   withFailingAppImport(async () => {
     const storage = { flush: async () => {} };
     const result = await registerNativeChrome({ storage, getGameContext: () => ({}) });
@@ -205,14 +205,17 @@ test(
 );
 
 test(
-  "CR-03: StatusBar/ScreenOrientation are still attempted (not skipped) even when the '@capacitor/app' import later fails",
+  "CR-03: SystemBars/ScreenOrientation are still attempted (not skipped) even when the '@capacitor/app' import later fails",
   withFailingAppImport(async () => {
-    let statusBarStyleSet = false;
-    const fakeStatusBar = {
-      async setStyle() {
-        statusBarStyleSet = true;
+    let styleSetArg = null;
+    let backgroundColorCalled = false;
+    const fakeSystemBars = {
+      async setStyle(arg) {
+        styleSetArg = arg;
       },
-      async setBackgroundColor() {},
+      async setBackgroundColor() {
+        backgroundColorCalled = true;
+      },
     };
     let orientationLocked = false;
     const fakeScreenOrientation = {
@@ -222,15 +225,40 @@ test(
     };
     const storage = { flush: async () => {} };
     await registerNativeChrome({
-      StatusBar: fakeStatusBar,
+      SystemBars: fakeSystemBars,
       ScreenOrientation: fakeScreenOrientation,
       storage,
       getGameContext: () => ({}),
     });
-    assert.equal(statusBarStyleSet, true, "status-bar chrome still runs even though @capacitor/app import failed");
+    assert.deepEqual(styleSetArg, { style: "DARK" }, "SystemBars chrome still runs even though @capacitor/app import failed");
+    assert.equal(backgroundColorCalled, false, "no background-colour call is ever made (DROID-02 — bar colours are deprecated)");
     assert.equal(orientationLocked, true, "orientation-lock chrome still runs even though @capacitor/app import failed");
   })
 );
+
+// DROID-02: registerNativeChrome styles the bars through the core SystemBars
+// plugin (never @capacitor/status-bar, retired this plan) with exactly one
+// DARK setStyle call and no colour call of any kind.
+test("DROID-02: registerNativeChrome calls SystemBars.setStyle exactly once with { style: \"DARK\" } and never calls a background-colour method", async () => {
+  const fakeApp = makeFakeApp();
+  const storage = { flush: async () => {} };
+  let setStyleCalls = 0;
+  let lastStyleArg = null;
+  let backgroundColorCalled = false;
+  const fakeSystemBars = {
+    async setStyle(arg) {
+      setStyleCalls += 1;
+      lastStyleArg = arg;
+    },
+    async setBackgroundColor() {
+      backgroundColorCalled = true;
+    },
+  };
+  await registerNativeChrome({ App: fakeApp, SystemBars: fakeSystemBars, storage, getGameContext: () => ({}) });
+  assert.equal(setStyleCalls, 1, "SystemBars.setStyle is called exactly once");
+  assert.deepEqual(lastStyleArg, { style: "DARK" });
+  assert.equal(backgroundColorCalled, false, "no background-colour spy is ever called");
+});
 
 // WR-02 (02-REVIEW.md): a second registerNativeChrome() call in the same
 // process must be a no-op, not a second independent set of listeners with

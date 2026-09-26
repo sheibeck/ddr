@@ -10,6 +10,10 @@
       "androidSplashResourceName": "splash_screen",
       "launchAutoHide": false,
       "backgroundColor": "#EFE7D6"
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK"
     }
   }
 }
