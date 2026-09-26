@@ -313,6 +313,44 @@ test("[hero-strike:senses] a live c.senses waives the dark cap exactly like Nigh
   assertBonus(withMod, without, { label: "hero-strike:senses" });
 });
 
+// DARK-01 (Phase 76, user ruling 2026-09-25 "combat too"): a light that
+// lights the map lights the fight — engine/derived.js#darkLimited is the one
+// predicate toHit's dark cap reads, so a lit torch or a live Amulet of Light
+// waives the cap exactly like Night Vision.
+test("[hero-strike:torch] a lit torch waives the dark cap (DARK-01), engine/derived.js#toHit via darkLimited", () => {
+  const withTorch = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+    s.floor.g[s.floor.py][s.floor.px].dark = true;
+    s.c.timers = { ...(s.c.timers || {}), "item:Torch": { cadence: "squares", left: 40, phase: "effect" } };
+    return s;
+  };
+  const withoutTorch = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+    s.floor.g[s.floor.py][s.floor.px].dark = true;
+    return s;
+  };
+  const withMod = faceOdds((rng) => landed(withTorch(), rng), { label: "hero-strike:torch" });
+  const without = faceOdds((rng) => landed(withoutTorch(), rng), { label: "hero-strike:torch (baseline)" });
+  assertBonus(withMod, without, { label: "hero-strike:torch" });
+});
+
+test("[hero-strike:amulet-light] a live Amulet of Light waives the dark cap (DARK-01), engine/derived.js#toHit via darkLimited", () => {
+  const withAmulet = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+    s.floor.g[s.floor.py][s.floor.px].dark = true;
+    s.c.timers = { ...(s.c.timers || {}), "item:Amulet of Light": { cadence: "squares", left: 50, cd: 50, phase: "effect" } };
+    return s;
+  };
+  const withoutAmulet = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+    s.floor.g[s.floor.py][s.floor.px].dark = true;
+    return s;
+  };
+  const withMod = faceOdds((rng) => landed(withAmulet(), rng), { label: "hero-strike:amulet-light" });
+  const without = faceOdds((rng) => landed(withoutAmulet(), rng), { label: "hero-strike:amulet-light (baseline)" });
+  assertBonus(withMod, without, { label: "hero-strike:amulet-light" });
+});
+
 test('[hero-strike:dozing] "5 to hit a dozing creature" (p.27) — a bonus against an MU\'s normally-worse need', () => {
   const dozing = () => {
     const s = withClub(inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Human" }), [NEUTRAL_FOE()]));
@@ -598,6 +636,18 @@ test("[hero-crit:dark] darkness without Night Vision suppresses every critical, 
   };
   const result = faceOdds((rng) => heroCrit(build(), rng), { label: "hero-crit:dark" });
   assert.equal(result.wins, 0, "[hero-crit:dark] darkness without Night Vision must suppress every critical");
+});
+
+test("[hero-crit:light] a lit torch in the dark restores the Rapier's crits (DARK-01), engine/combat.js#playerStrike via darkLimited", () => {
+  const build = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Knight", race: "Human" }), [NEUTRAL_FOE()]));
+    s.floor.g[s.floor.py][s.floor.px].dark = true;
+    s.c.weapon = "Rapier";
+    s.c.timers = { ...(s.c.timers || {}), "item:Torch": { cadence: "squares", left: 40, phase: "effect" } };
+    return s;
+  };
+  const result = faceOdds((rng) => heroCrit(build(), rng), { label: "hero-crit:light" });
+  assert.ok(result.wins > 0, "[hero-crit:light] a lit torch must let a precise blade crit in the dark");
 });
 
 test('[hero-crit:stealth] "critical on a 2 when you open a fight", content/skills.js:28', () => {
