@@ -601,6 +601,108 @@ test("state.combat === null never throws with a populated c.abilities", () => {
   assert.doesNotThrow(() => combatMenuViewModel(fixedState({ c, combat: null })));
 });
 
+// ─── RULES-10 (Phase 75.1, plan 09): the hero-cannot-act shape ─────────────
+
+test("heroOut (asleep, 2 left): the prompt names asleep and 2 turns; slot 1 is the only enabled action, dispatching loseTurn; slots 2-4 and every submenu row are disabled", () => {
+  const state = fixedState({ combat: fixedCombat([], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } }) });
+  const vm = combatMenuViewModel(state);
+
+  assert.match(vm.prompt, /ASLEEP/);
+  assert.match(vm.prompt, /2 TURNS/);
+
+  assert.equal(vm.actions.length, 4);
+  assert.equal(vm.actions[0].enabled, true);
+  assert.equal(vm.actions[0].label, COMBAT_MENU_COPY.letRoundPlay);
+  assert.deepEqual(vm.actions[0].dispatch, { type: "loseTurn" });
+  assert.equal(vm.actions[0].accent, true);
+
+  for (const action of vm.actions.slice(1)) {
+    assert.equal(action.enabled, false, `${action.key}: must be disabled while heroOut is set`);
+  }
+
+  for (const [key, sm] of Object.entries(vm.submenus)) {
+    for (const row of sm.rows) {
+      assert.equal(row.enabled, false, `submenu ${key} row ${row.id}: must be disabled while heroOut is set`);
+    }
+  }
+});
+
+test("heroOut (stupefied, 4 left): the prompt names stupefied and 4 turns", () => {
+  const state = fixedState({ combat: fixedCombat([], { heroOut: { kind: "stupefied", left: 4, spell: "Stupidity" } }) });
+  const vm = combatMenuViewModel(state);
+  assert.match(vm.prompt, /STUPEFIED/);
+  assert.match(vm.prompt, /4 TURNS/);
+});
+
+test("heroOut (maddened, 1 left): the singular turn word is used, not '1 TURNS'", () => {
+  const state = fixedState({ combat: fixedCombat([], { heroOut: { kind: "maddened", left: 1, spell: "Insane" } }) });
+  const vm = combatMenuViewModel(state);
+  assert.match(vm.prompt, /MADDENED/);
+  assert.match(vm.prompt, /1 TURN LEFT/);
+  assert.doesNotMatch(vm.prompt, /1 TURNS/);
+});
+
+test("heroOut: combatMenuViewModel(state, { locked: true }) also locks the single action; unlocked it stays enabled", () => {
+  const state = fixedState({ combat: fixedCombat([], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } }) });
+  const locked = combatMenuViewModel(state, { locked: true });
+  assert.equal(locked.prompt, COMBAT_MENU_COPY.resolving);
+  for (const action of locked.actions) assert.equal(action.locked, true);
+
+  const unlocked = combatMenuViewModel(state);
+  assert.equal(unlocked.actions[0].enabled, true);
+  assert.equal(unlocked.actions[0].locked, undefined);
+});
+
+test("heroOut: a Magic User/Bard/Thief in the out state all collapse to the same one-action shape (the class branch above still ran, but is overridden)", () => {
+  const casterState = fixedState({
+    c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal"], spellsUsed: 0 },
+    combat: fixedCombat([], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } }),
+  });
+  const bardState = fixedState({ c: { sub: "Bard" }, combat: fixedCombat([], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } }) });
+  for (const state of [casterState, bardState]) {
+    const vm = combatMenuViewModel(state);
+    assert.equal(vm.actions[0].label, COMBAT_MENU_COPY.letRoundPlay);
+    assert.deepEqual(vm.actions[0].dispatch, { type: "loseTurn" });
+    assert.equal(vm.actions[1].enabled, false);
+  }
+});
+
+test("heroOut absent: the view model is exactly the plan-base output for Fighter, Magic User, Bard and Thief fixtures (the unlocked shape never changes when heroOut is unset)", () => {
+  const fixtures = [
+    fixedState({ combat: fixedCombat([]) }),
+    fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal"], spellsUsed: 0 }, combat: fixedCombat([]) }),
+    fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }),
+    fixedState({ c: { cls: "Thief", sub: "Pilfer" }, combat: fixedCombat([]) }),
+  ];
+  for (const state of fixtures) {
+    const vm = combatMenuViewModel(state);
+    assert.notEqual(vm.actions[0].label, COMBAT_MENU_COPY.letRoundPlay);
+    assert.notDeepEqual(vm.actions[0].dispatch, { type: "loseTurn" });
+    assert.equal(vm.actions[1].enabled === false && vm.actions[2].enabled === false && vm.actions[3].enabled === false, false, "at least one of slots 2-4 stays enabled without heroOut");
+  }
+});
+
+test("hero Blind/Shrink cost no turns: a heroBlind or heroShrunk hero (no heroOut) gets the normal four-action menu", () => {
+  const blindState = fixedState({ combat: fixedCombat([], { heroBlind: true }) });
+  const blindVm = combatMenuViewModel(blindState);
+  assert.notEqual(blindVm.actions[0].label, COMBAT_MENU_COPY.letRoundPlay);
+  assert.equal(blindVm.actions[0].enabled, true);
+  assert.equal(blindVm.actions[3].enabled, true);
+
+  const shrunkState = fixedState({ combat: fixedCombat([], { heroShrunk: true }) });
+  const shrunkVm = combatMenuViewModel(shrunkState);
+  assert.notEqual(shrunkVm.actions[0].label, COMBAT_MENU_COPY.letRoundPlay);
+  assert.equal(shrunkVm.actions[0].enabled, true);
+  assert.equal(shrunkVm.actions[3].enabled, true);
+});
+
+test("heroOut: once the state is spent (C.heroOut cleared), the normal four-action menu returns", () => {
+  const state = fixedState({ combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.notEqual(vm.actions[0].label, COMBAT_MENU_COPY.letRoundPlay);
+  assert.equal(vm.actions[0].dispatch.type, "attack");
+});
+
 // ─── Voice scan ─────────────────────────────────────────────────────────────
 
 const ALLOW = new Set(ALLOWLIST.map((w) => w.toLowerCase()));
@@ -615,11 +717,18 @@ function findBannedTerms(text) {
   return hits;
 }
 
-test("COMBAT_MENU_COPY: every string leaf is non-empty and clear of content/safety-wordlist.js BANNED", () => {
+// RULES-10 (Phase 75.1, plan 09): COMBAT_MENU_COPY.heroOutKind is a nested
+// frozen kind-to-word map (asleep/stupefied/maddened), not a flat string
+// leaf like every other entry — this walk flattens one level deep so the
+// scan still covers every string this module actually emits.
+test("COMBAT_MENU_COPY: every string leaf (including heroOutKind's nested map) is non-empty and clear of content/safety-wordlist.js BANNED", () => {
   for (const [key, value] of Object.entries(COMBAT_MENU_COPY)) {
-    assert.ok(typeof value === "string" && value.length > 0, `${key} must be a non-empty string`);
-    const hits = findBannedTerms(value);
-    assert.deepEqual(hits, [], `${key} ("${value}") must be clear of BANNED terms`);
+    const leaves = value && typeof value === "object" ? Object.entries(value) : [[key, value]];
+    for (const [leafKey, leaf] of leaves) {
+      assert.ok(typeof leaf === "string" && leaf.length > 0, `${key}.${leafKey} must be a non-empty string`);
+      const hits = findBannedTerms(leaf);
+      assert.deepEqual(hits, [], `${key}.${leafKey} ("${leaf}") must be clear of BANNED terms`);
+    }
   }
 });
 

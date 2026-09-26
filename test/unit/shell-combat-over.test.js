@@ -351,11 +351,18 @@ test("Phase 34 (whole-phase voice scan): every COMBAT_COPY string leaf is non-em
   }
 });
 
-test("Phase 34 (whole-phase voice scan): every COMBAT_MENU_COPY value is non-empty and clear of BANNED", () => {
+// RULES-10 (Phase 75.1, plan 09): COMBAT_MENU_COPY.heroOutKind is a nested
+// frozen kind-to-word map (asleep/stupefied/maddened), not a flat string
+// leaf like every other entry — flattened one level deep here, mirroring
+// test/unit/combatMenu.test.js's own identical fix.
+test("Phase 34 (whole-phase voice scan): every COMBAT_MENU_COPY value (including heroOutKind's nested map) is non-empty and clear of BANNED", () => {
   for (const [key, val] of Object.entries(COMBAT_MENU_COPY)) {
-    assert.ok(typeof val === "string" && val.length > 0, `COMBAT_MENU_COPY.${key} must be a non-empty string`);
-    const offenders = findBannedTerms(val);
-    assert.deepStrictEqual(offenders, [], `Banned copy in COMBAT_MENU_COPY.${key}: ${JSON.stringify(offenders)} (text: "${val}")`);
+    const leaves = val && typeof val === "object" ? Object.entries(val) : [[key, val]];
+    for (const [leafKey, leaf] of leaves) {
+      assert.ok(typeof leaf === "string" && leaf.length > 0, `COMBAT_MENU_COPY.${key}.${leafKey} must be a non-empty string`);
+      const offenders = findBannedTerms(leaf);
+      assert.deepStrictEqual(offenders, [], `Banned copy in COMBAT_MENU_COPY.${key}.${leafKey}: ${JSON.stringify(offenders)} (text: "${leaf}")`);
+    }
   }
 });
 
