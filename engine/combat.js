@@ -2616,6 +2616,24 @@ export function foeTurn(state, rng, events = []) {
     }
     C.pendingFoes = null;
   }
+  // RULES-10 (Phase 75.1, foe-side Bubble rebound): a blow the hero's side
+  // threw at a foe's armed mirror was caught and stored as `f.rebound`
+  // (engine/foeDamage.js#damageFoe) — thrown back at the TOP of this foe's
+  // very next turn, ignoring armor, through the same hero-damage pipeline
+  // any other foe swing uses (so the hero's own ward, Hardiness and death
+  // path all apply). Checked before the regen tick and before any foe acts.
+  // A foe that died before its next turn drops its rebound silently — no
+  // event, no damage. A lethal rebound returns at once, mirroring every
+  // other lethal branch in this function.
+  for (const f of C.foes) {
+    if (!f.rebound) continue;
+    const amount = f.rebound;
+    delete f.rebound;
+    if (!f.alive) continue;
+    events.push({ type: "foeBubbleRebound", name: f.name, amount });
+    const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg: amount, ignoresArmor: true, ability: "Bubble" });
+    if (hit.died) return events;
+  }
   if (c.regen) {
     const r = rng.d(8); // roll:amount
     if (c.wp < c.maxWP) {
@@ -2985,6 +3003,19 @@ export function foeTurn(state, rng, events = []) {
     c.ward = null;
   }
   if (c.mirror > 0 && --c.mirror <= 0) events.push({ type: "mirrorFaded" });
+  // RULES-10 (Phase 75.1, foe-side ward tick): each LIVE foe's OWN ward
+  // ticks down beside the hero's, in the very same tail. An armed Bubble
+  // mirror (`foe.ward.mirror`) is never ticked here — it stays armed until
+  // a blow lands (engine/foeDamage.js#damageFoe) or the fight ends; only a
+  // plain or popped pool (a numeric `rounds`) counts down, fading with
+  // foeWardFaded at 0.
+  for (const f of C.foes) {
+    if (!f.alive) continue;
+    if (f.ward && !f.ward.mirror && typeof f.ward.rounds === "number" && --f.ward.rounds <= 0) {
+      events.push({ type: "foeWardFaded", name: f.name });
+      delete f.ward;
+    }
+  }
   // Phase 39 (GEAR-02): the retired per-foeTurn c.acute countdown —
   // Acuteness is now a rounds-cadence c.timers effect record, ticked by the
   // shared tickRounds(c) call below (with the rest of the tail) and cleared
