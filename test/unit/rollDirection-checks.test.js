@@ -39,7 +39,8 @@ import { playerStrike, foeTurn, flee, parley, killFoe, resolveInitiative, allies
 import { castSpell } from "../../engine/magic.js";
 import { startEffect } from "../../engine/effects.js";
 import { setDialsForTuning, DIALS } from "../../engine/difficulty.js";
-import { resistRoll } from "../../engine/derived.js";
+import { resistRoll, controlResistRoll } from "../../engine/derived.js";
+import { controlResistFacesFor } from "../../engine/difficulty.js";
 import { springTrap, openChest } from "../../engine/encounters.js";
 import { move, newDay } from "../../engine/movement.js";
 import { SPELLS } from "../../content/index.js";
@@ -346,6 +347,16 @@ test('[resist:intel] a higher intel resists more often — a stat, not a thresho
 
 test('[resist:intel-gate] intel < 12 never rolls and never resists, engine/derived.js#resistRoll ~L1428', () => {
   assert.throws(() => faceOdds((rng) => resistRoll(rng, 11).resisted, { label: "resist:intel-gate" }));
+});
+
+// RULES-18 (Phase 75.3, Plan 04): a deeper foe resists a past-the-knee
+// control more often — controlResistFacesFor's own winning-face count grows
+// with depth, and controlResistRoll is the SAME roll-high shape resistRoll
+// above uses (rollCheck on a d20). Modeled directly on [resist:intel].
+test('[resist:depth] a deeper foe resists more often, engine/difficulty.js#controlResistFacesFor + engine/derived.js#controlResistRoll', () => {
+  const withMod = faceOdds((rng) => controlResistRoll(rng, controlResistFacesFor(20)).resisted, { label: "resist:depth (floor 20)" });
+  const without = faceOdds((rng) => controlResistRoll(rng, controlResistFacesFor(13)).resisted, { label: "resist:depth (floor 13)" });
+  assertBonus(withMod, without, { label: "resist:depth" });
 });
 
 // --- Initiative [hero]: jointOdds over the two d20s; success = first === "you" ---

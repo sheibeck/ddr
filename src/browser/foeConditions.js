@@ -53,6 +53,15 @@ export const FOE_CONDITION_COPY = Object.freeze({
   fixated: "Fixated",
   frenzied: "Frenzied",
   weakened: "Weakened",
+  // RULES-18 (Phase 75.3, Plan 04): past floor 12, a landed Freeze/Stone/
+  // Stupidity HOLDS the foe a few rounds instead of ending it outright (or
+  // locking it forever) — the Held chip (labelFor picks this, "Frozen" or
+  // "Stupefied" by kind); a foe that shakes a control off entirely shows
+  // Unmoved instead. `held` is this table's own generic fallback label
+  // (labelFor always overrides it in practice).
+  stone: "Stone",
+  held: "Held",
+  unmoved: "Unmoved",
 });
 
 /** FOE_CONDITION_DESC — one deadpan line per FOE_CONDITION_COPY key (the
@@ -87,6 +96,18 @@ export const FOE_CONDITION_DESC = Object.freeze({
   frenzied: "The madness went the wrong way. It swings twice as often for the rest of the fight.",
   // C.weakened: foeTurn and the pursuit roll halve every foe's damage until it fades.
   weakened: "Every one of them does half damage while it lasts. They are not taking it well.",
+  // RULES-18 (Phase 75.3, Plan 04): holdFoe (engine/combat.js) — a control
+  // that would have lasted the whole fight (or ended it outright) past floor
+  // 12; the foe's own turn skips run down alongside the chip's count. Kept
+  // generic across kind (frozen/stone/stupid all read the same rule) so this
+  // never contradicts the permanent "Frozen"/"Stupefied" chips' own text.
+  held: "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers.",
+  // Reserved for a future permanent Stone/Petrify chip (mirrors Frozen's own
+  // "fairly final" phrasing); not yet read by any chip this plan lands.
+  stone: "Turned to stone. As conditions go, this one is fairly permanent.",
+  // resistControl (engine/combat.js) — a control shaken off outright; %s is
+  // filled in by descFor with the effect's own word.
+  unmoved: "It shook off %s. Deeper foes do so more often.",
 });
 
 /** posInt(n) — n when it is a whole number above zero, else null. */
@@ -104,6 +125,15 @@ function weakenLeft(state) {
 const C = FOE_CONDITION_COPY;
 const D = FOE_CONDITION_DESC;
 const none = () => null;
+
+/** RESIST_EFFECT_WORD — RULES-18 (Phase 75.3, Plan 04): the noun phrase the
+ * Unmoved chip's description names, one per `foe.resisted` value
+ * (engine/combat.js's own control-effect vocabulary). Falls back to a
+ * generic phrase for an effect this table has not been taught yet. */
+const RESIST_EFFECT_WORD = Object.freeze({
+  freeze: "the freeze", stone: "the stone", sleep: "the sleep", weaken: "the weakening",
+  stupid: "the stupidity", blind: "the blindness", shrink: "the shrinking",
+});
 
 /**
  * FOE_CONDITIONS — frozen, ordered. Each entry:
@@ -128,6 +158,16 @@ export const FOE_CONDITIONS = Object.freeze(
     { key: "marked", label: C.marked, desc: D.marked, tone: "good", fields: ["marked"], when: (f) => !!f.marked, rounds: none },
     // Sleep/Doze spells, Sing, items: a countdown decremented each foe turn.
     { key: "asleep", label: C.asleep, desc: D.asleep, tone: "good", fields: ["asleep"], when: (f) => f.asleep === true || posInt(f.asleep) !== null, rounds: (f) => posInt(f.asleep) },
+    // RULES-18 (Phase 75.3, Plan 04): holdFoe's `{ kind, left }` record — a
+    // past-the-knee Freeze/Stone/Stupidity holds instead of ending the foe
+    // outright; the label reuses the matching permanent condition's own
+    // house label (kind "stone" is new — no permanent Stone chip exists yet).
+    {
+      key: "held", label: C.held, desc: D.held, tone: "good", fields: ["held"],
+      labelFor: (f) => (f.held.kind === "stone" ? C.stone : f.held.kind === "stupid" ? C.stupid : C.frozen),
+      when: (f) => !!f.held && posInt(f.held.left) !== null,
+      rounds: (f) => posInt(f.held.left),
+    },
     // Freeze/Ice/Petrify. The engine clears it on a foe that stands back up.
     { key: "frozen", label: C.frozen, desc: D.frozen, tone: "good", fields: ["frozen"], when: (f) => !!f.frozen, rounds: none },
     // The Acid spell's `{ rounds, dmg }` record.
@@ -148,6 +188,16 @@ export const FOE_CONDITIONS = Object.freeze(
     // Weaken is COMBAT-WIDE (C.weakened halves every foe's damage); its
     // duration lives on the hero's own c.timers["spell:weaken"] record.
     { key: "weakened", label: C.weakened, desc: D.weakened, tone: "good", fields: ["weakened"], when: (f, s) => !!(s && s.combat && s.combat.weakened), rounds: (f, s) => weakenLeft(s) },
+    // RULES-18 (Phase 75.3, Plan 04): resistControl marks `foe.resisted` with
+    // the effect it just shook off — the ONE foe-card sign a control was
+    // even attempted; tone "bad" (unlike every other entry here) because a
+    // resist is bad news for the player, not good.
+    {
+      key: "resisted", label: C.unmoved, desc: D.unmoved, tone: "bad", fields: ["resisted"],
+      descFor: (f) => D.unmoved.replace("%s", RESIST_EFFECT_WORD[f.resisted] ?? "the effect"),
+      when: (f) => !!f.resisted,
+      rounds: none,
+    },
   ].map((e) => Object.freeze({ ...e, fields: Object.freeze([...e.fields]) })),
 );
 

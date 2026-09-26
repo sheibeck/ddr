@@ -45,13 +45,14 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 // ─── USER RULING D: the remove list is GONE — no floor-range name survives ──
 
-test("USER RULING D/G, RULES-16/17 (Phase 75.3): DIALS is frozen and its key set is exactly the global model's 28 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key; FOE_COUNT_DEPTH added, Plan 01; FOE_ELITE added, Plan 03)", () => {
+test("USER RULING D/G, RULES-16/17/18 (Phase 75.3): DIALS is frozen and its key set is exactly the global model's 29 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key; FOE_COUNT_DEPTH added, Plan 01; FOE_ELITE added, Plan 03; CONTROL_AT_DEPTH added, Plan 04)", () => {
   assert.equal(Object.isFrozen(DIALS), true);
   const keys = Object.keys(DIALS).sort();
   assert.deepStrictEqual(keys, [
     "ABILITY_THREAT",
     "CAMP_HEAL_FRACTION",
     "CLASS_MITIGATION",
+    "CONTROL_AT_DEPTH",
     "DARK_BLOBS",
     "DARK_BLOB_CAP",
     "DARK_RADIUS",
@@ -97,6 +98,9 @@ const IDENTITY_COLUMN = {
   FOE_COUNT_DEPTH: { soloOnlyOnOneFrom: 0, atLeastTwoFrom: 0, atLeastThreeFrom: 0 },
   // RULES-17 (Phase 75.3): identity switches elites off entirely (maxRank 0).
   FOE_ELITE: { maxRank: 0, hpPerRank: 0, hitPerRank: 0 },
+  // RULES-18 (Phase 75.3, Plan 04): identity — no resist face, no hold cap,
+  // at any depth.
+  CONTROL_AT_DEPTH: { kneeDepth: 12, resistPerDepth: 0, resistCap: 0, holdRounds: 0 },
   ROUND_DAMAGE_CEILING: 0,
   ABILITY_THREAT: { base: 1, perDepth: 0 },
   HERO_HP_SCALE: 1,

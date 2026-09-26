@@ -3868,3 +3868,104 @@ deliberately mild start values (`FOE_HIT_SCALE.perDepthAfter: 0.02`,
 0.1, hitPerRank: 0.05 }`); 75.3-06's checkpointed tail sweep sets the
 final slopes against the deep-start slices at Phase 79.1's milestone
 close.
+
+### Plan 04 — control at depth, combat sites (RULES-18)
+
+**The rule.** `engine/difficulty.js#CONTROL_AT_DEPTH` (`{ kneeDepth: 12,
+resistPerDepth: 1, resistCap: 15, holdRounds: 3 }`, the SAME knee as
+RULES-17's, user-ruled 2026-09-25) drives `controlResistFacesFor(depth)` (0
+at or below floor 12, else `min(resistCap, 19, round(resistPerDepth * (d -
+kneeDepth)))` — the 19 ceiling is structural, never released) and
+`controlHoldRoundsFor(depth)`/`controlCapRounds(depth, n)` (0/`n` at or
+below the knee, else `holdRounds`/`min(n, holdRounds)`). `engine/derived.js#
+controlResistRoll`/`controlResistCheck` are the roll-high resist check
+itself, on a derived stream (`derivedRng(<main cursor>, "controlResist",
+purpose, acts, round, idx)`, the SAME idiom `engine/items.js#pilferFumbleRng`
+established) that never advances the main rng and never builds a stream at
+all at 0 faces. `engine/combat.js#resistControl`/`#holdFoe` are the two
+entry points every control site below calls; a held foe (`f.held = { kind,
+left }`) skips exactly `left` of its own `foeTurn` visits (checked after the
+dead-foe skip, before the asleep skip — decrementing `f.asleep` alongside so
+two controls never stack end to end) and is hit like a dozing foe (at least
+5 faces, `targetStrikeFaces`/the allyTurn/alliesTurn-legacy/memberStrike
+to-hit lines).
+
+Every audit-table site this plan owns (C2, C3, C9, C13, C15 — see this
+plan's PLAN.md "control audit" table; 75.3-05 owns C1/C4-C8/C10-C12/C14/
+C16-C19, the hero's own spells and items): a Joiner's Freeze (`allyCast`'s
+thrown branch — a blow that already drops the foe to 0 hp still kills as
+today; otherwise a resist, then a hold instead of the kill once
+`controlHoldRoundsFor(depth) > 0`), a Joiner's Doze/Stun and Weaken
+(`allyCast`'s status/weaken branch — the d4/d4+1 main draw always happens,
+after the existing intel resist, with the SAME rolled duration on a landed
+effect; Weaken's resist is one roll for the whole room, marking every live
+foe `resisted`), Ice's last tick (`foeTurn`'s dot payoff — a resist falls
+through to the foe's normal turn, a miss holds it, at or below the knee it
+freezes and dies exactly as today), and the Bard's Lullaby and Thunder
+(`sing()` — a resist per eligible foe; the Lullaby's 24 is capped to
+`controlHoldRoundsFor(depth)`, Thunder's own rolled `d8` stays uncapped
+since it was never indefinite). Four new events narrate every resist and
+hold (`controlResisted`/`controlHeld`/`foeStillHeld`/`foeHoldBroken`, both
+an Oracle line through `rollRange.js#rangeText` and a rail line); the Held
+and Unmoved foe-card chips (`src/browser/foeConditions.js`) read `f.held`/
+`f.resisted`.
+
+**The predictor.** Every parity fixture's fixture-exposed fight is on floor
+1 (see Plan 01's own predictor above) — nowhere near floor 13 (the first
+resist face). No fixture's `allyCast`/`sing`/Ice-dot path ever reaches a
+resist or hold branch (`controlResistFacesFor(1) === 0`, so every one of
+this plan's new call sites is a byte-identical no-op at floor 1).
+Prediction: **zero moved fixtures.**
+
+**Measured.**
+
+```
+$ node --test "test/parity/**/*.test.js"
+# tests 60
+# pass 60
+# fail 0
+
+$ git diff --quiet a53405f9a7ce7a0ce3b0d840c67efb83a366c92f -- test/parity/fixtures test/parity/prototype-master.js.txt
+(exit 0 — clean)
+
+$ git hash-object test/parity/prototype-master.js.txt
+a1f4d0dc29782218d8e5aab65bc5989c33f917f0 (unchanged — the same hash Plan 03 closed with)
+```
+
+Zero fixtures moved, exactly as predicted.
+
+**The `held`/`resisted` carve-out.** Two brand-new per-foe fields (`f.held`,
+`f.resisted`, present only past floor 12) are carved out of `test/parity/
+harness/comparables.js#stripFoeAbilityState`'s destructure, mirroring the
+`elite` carve-out immediately above them — engine-only, no prototype-side
+equivalent, and never present on a floor-1 fixture foe (the first resist
+face is floor 13).
+
+**Bot-baseline artifacts: zero moved.** `node --test
+test/unit/roll-high-state-pins.test.js` (9/9 pass, zero moved) — including
+"deep-14" (a solo start already at floor 14, above the knee): its own
+death happens before any control effect is ever applied against it in that
+specific seed/opts' own draw sequence, so this plan's new resist/hold
+branches are never entered for that run — a measured (not predicted) zero,
+the same category as Plan 03's own "deep-14" finding. No pin was
+regenerated this plan.
+
+**BEFORE/AFTER deep-start readouts and the 200-seed natural-after
+comparison (`tools/readouts/75.3-04-natural-after.txt` against
+`tools/readouts/75.3-01-after.txt`'s floors 1-12).** Deferred to Phase 79.1
+per user ruling 2026-09-26 ("bot balance runs happen ONCE, at the milestone
+end") — this plan's own readout acceptance criterion is not run this plan;
+no `tools/readouts/75.3-04-*.txt` file was created. Floors 1-12 being
+unchanged is instead proven DETERMINISTICALLY: `controlResistFacesFor(d)`
+and `controlHoldRoundsFor(d)` are both `0` for every `d` in `1..12`
+(`test/unit/control-at-depth.test.js`'s own boundary test), which makes
+every one of this plan's new combat.js branches (`resistControl`'s
+0-faces early return, `controlHoldRoundsFor(depth) > 0`'s false branch)
+byte-identical to the pre-plan code at those depths — the SAME
+"floor 12 and shallower reproduce today's exact behavior" guarantee Plan
+03's own knee carries, proven the same way (deterministic `===` checks
+against the pre-plan expression, never a bot run). The engine ships at its
+planned, user-ruled start values (`CONTROL_AT_DEPTH { kneeDepth: 12,
+resistPerDepth: 1, resistCap: 15, holdRounds: 3 }`); 75.3-06's checkpointed
+tail sweep sets `resistPerDepth`'s final value against the deep-start
+slices at Phase 79.1's milestone close.

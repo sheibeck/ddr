@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP } from "./derived.js";
+import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, inDark, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -63,7 +63,7 @@ import { checkLevel } from "./character.js";
 import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
-import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor } from "./difficulty.js";
+import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor, controlHoldRoundsFor, controlCapRounds } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT, ELITE_TITLES } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
@@ -1071,6 +1071,54 @@ export function killFoe(state, f, rng, events = []) {
 }
 
 /**
+ * resistControl(state, foe, effect, source, idx, rng, events) — RULES-18
+ * (Phase 75.3, user ruling 2026-09-25): the ONE resist gate every past-the-
+ * knee control site in this file (audit ids C2, C3, C9, C13, C15) calls
+ * before landing Freeze, Doze/Stun, Weaken or a Bard song's sleep. Reads
+ * `engine/derived.js#controlResistCheck` — a derived-stream, roll-high check
+ * that draws NOTHING from the caller's own `rng` (the main cursor is
+ * untouched either way) and returns `false` with no roll and no event at or
+ * below `CONTROL_AT_DEPTH.kneeDepth` (floor 12 and shallower stay exactly as
+ * today). On a resist: marks `foe.resisted = effect` (read by
+ * src/browser/foeConditions.js's Unmoved chip) and pushes `{ type:
+ * "controlResisted", target: foe.name, effect, source, roll, atLeast, dieN,
+ * depth }`, then returns `true` — the caller MUST stop there (the foe stands,
+ * untouched by the control). On a miss (rolled and failed, or never rolled
+ * at all): returns `false` with no mutation and no event — the caller
+ * proceeds to land the control (or, for an indefinite one, to `holdFoe`
+ * below).
+ */
+export function resistControl(state, foe, effect, source, idx, rng, events) {
+  const depth = state.floor?.depth;
+  const result = controlResistCheck(state, rng, `${effect}:${source}`, idx);
+  if (!result.rolled) return false;
+  if (result.resisted) {
+    foe.resisted = effect;
+    events.push({ type: "controlResisted", target: foe.name, effect, source, roll: result.roll, atLeast: result.atLeast, dieN: result.dieN, depth });
+    return true;
+  }
+  return false;
+}
+
+/**
+ * holdFoe(state, foe, kind, source, events) — RULES-18: the "hold instead of
+ * a kill/lock forever" half of the control audit's past-the-knee rule. Sets
+ * `foe.held = { kind, left: controlHoldRoundsFor(depth) }` — `kind` one of
+ * "frozen"/"stone"/"stupid" (src/browser/foeConditions.js's Held chip reads
+ * it, `foeTurn`'s own held-skip below counts it down) — and pushes `{ type:
+ * "controlHeld", target: foe.name, kind, rounds: left, source }`. The caller
+ * MUST have already confirmed `resistControl` missed and
+ * `controlHoldRoundsFor(depth) > 0` (never called at or below the knee,
+ * where the cap is 0 and the old "lasts forever"/"kills outright" behavior
+ * still applies).
+ */
+export function holdFoe(state, foe, kind, source, events) {
+  const left = controlHoldRoundsFor(state.floor?.depth);
+  foe.held = { kind, left };
+  events.push({ type: "controlHeld", target: foe.name, kind, rounds: left, source });
+}
+
+/**
  * shatterIfBest(state, t, roll, dieN, by, rng, events, extra = {}) — Phase 72
  * (ROLL-01 (c), user ruling 2026-09-24): "rolling max on your dice triggers
  * the shatter." Any to-hit roll aimed at a shatter-flagged foe (`t.sp.shatterOnBest`,
@@ -1525,15 +1573,32 @@ export function sing(state, rng, events = []) {
     C.inspired = 1;
   } else if (song.lvl === 3) {
     const n = rng.d(6); // roll:amount
+    const depth = state.floor.depth;
     foes.slice(0, n).forEach((f) => {
-      if (f.lvl <= c.level) f.asleep = 24;
+      if (f.lvl <= c.level) {
+        // RULES-18 (Phase 75.3, audit C13): past the knee, each eligible foe
+        // gets its own resist roll before the Lullaby lands; a landed sleep
+        // caps at controlHoldRoundsFor(depth) instead of the full 24 (a no-op
+        // at or below the knee — controlCapRounds returns 24 unchanged).
+        const idx = C.foes.indexOf(f);
+        if (resistControl(state, f, "sleep", song.n, idx, rng, events)) return;
+        f.asleep = controlCapRounds(depth, 24);
+      }
     });
     events.push({ type: "lullabyRolled", n });
   } else if (song.lvl === 4) {
     const n = rng.d(12); // roll:amount
     const r = rng.d(8); // roll:amount
+    const depth = state.floor.depth;
     foes.slice(0, n).forEach((f) => {
-      if (f.lvl <= c.level) f.asleep = r;
+      if (f.lvl <= c.level) {
+        // RULES-18 (Phase 75.3, audit C13): a resist per eligible foe; a
+        // landed sleep keeps its own rolled `r` (Thunder's duration was
+        // already short — nothing to cap).
+        const idx = C.foes.indexOf(f);
+        if (resistControl(state, f, "sleep", song.n, idx, rng, events)) return;
+        f.asleep = r;
+      }
     });
     events.push({ type: "thunderRolled", n, r });
   } else {
@@ -1692,7 +1757,7 @@ export function allyTurn(state, rng, events = []) {
   // sits above the strike draw, since atLeastFor(faces, dieN) must be ready
   // before rollCheck fires. `need` -> `faces`.
   let faces = 5;
-  if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or stupid) creature
+  if (t.asleep > 0 || t.stupid || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (stupid, or held — RULES-18) creature
   if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
   if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
@@ -1796,7 +1861,7 @@ export function alliesTurn(state, rng, events = []) {
       // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and
       // now sits above the strike draw. `need` -> `faces`.
       let faces = 5;
-      if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or stupid) creature
+      if (t.asleep > 0 || t.stupid || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (stupid, or held — RULES-18) creature
       if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
       if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
       if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
@@ -2109,7 +2174,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and now
   // sits above the strike draw. `need` -> `faces`.
   let faces = memberToHit(view);
-  if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or stupid) creature
+  if (t.asleep > 0 || t.stupid || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (stupid, or held — RULES-18) creature
   if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
   if (t.sp && t.sp.magicOnly && !view.magicWpn) faces = 0; // only magic touches it
@@ -2248,13 +2313,36 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
       const mult = Math.max(1, view.level - sp.lvl);
       const dmg = rollDice(rng, sp.dmg) * mult + eff(view, "spellDmg");
       const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: view.sub }, rng, events);
-      events.push({ type: "allySpellHit", ...base, effect: freeze ? "frozen" : "damage", dmg: hit.applied });
       if (freeze) {
+        // RULES-18 (Phase 75.3, audit C2): a blow that already drops the
+        // target to 0 hp still kills outright, exactly as today. Otherwise,
+        // past the knee, a resist first, then a hold instead of the kill;
+        // at or below the knee (controlHoldRoundsFor 0) this falls through
+        // to the frozen-solid kill exactly as before this plan.
+        if (t.wp <= 0) {
+          events.push({ type: "allySpellHit", ...base, effect: "frozen", dmg: hit.applied });
+          t.frozen = true;
+          killFoe(state, t, rng, events);
+          if (t.alive) t.frozen = false; // kill-twice revived it — a standing foe is not frozen
+          return;
+        }
+        const idx = state.combat.foes.indexOf(t);
+        if (resistControl(state, t, "freeze", sp.n, idx, rng, events)) {
+          events.push({ type: "allySpellHit", ...base, effect: "damage", dmg: hit.applied });
+          return;
+        }
+        if (controlHoldRoundsFor(state.floor.depth) > 0) {
+          events.push({ type: "allySpellHit", ...base, effect: "damage", dmg: hit.applied });
+          holdFoe(state, t, "frozen", sp.n, events);
+          return;
+        }
+        events.push({ type: "allySpellHit", ...base, effect: "frozen", dmg: hit.applied });
         t.frozen = true;
         killFoe(state, t, rng, events);
         if (t.alive) t.frozen = false; // kill-twice revived it — a standing foe is not frozen
         return;
       }
+      events.push({ type: "allySpellHit", ...base, effect: "damage", dmg: hit.applied });
       if (t.wp <= 0) killFoe(state, t, rng, events);
     } else {
       events.push({ type: "allySpellMissed", ...base, resisted: false });
@@ -2270,13 +2358,26 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     events.push({ type: "allySpellMissed", ...base, resisted: true, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN });
     return;
   }
+  // RULES-18 (Phase 75.3, audit C9/C15): the d4 (or d4+1) is drawn in its
+  // existing position, whether or not the target resists — the control
+  // resist check itself is a derived stream and never touches this draw.
+  const idx = state.combat.foes.indexOf(t);
   if (sp.kind === "weaken") {
     // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
     // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
     // (party-wide duration lives in one place) — its own d4+1 draw, after
     // the resist roll above.
-    const C = state.combat;
     const rounds = rng.d(4) + 1; // roll:amount
+    // RULES-18 (audit C15): Weaken is one roll for the whole room, keyed on
+    // the target the caster aimed at (75.3-CONTEXT's flagged assumption) —
+    // a resist marks every live foe Unmoved and starts nothing.
+    if (resistControl(state, t, "weaken", sp.n, idx, rng, events)) {
+      state.combat.foes.forEach((f) => {
+        if (f.alive) f.resisted = "weaken";
+      });
+      return;
+    }
+    const C = state.combat;
     if (C) {
       C.weakened = true;
       C.foeToHitPenalty = 3;
@@ -2284,7 +2385,9 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     }
     events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
   } else {
-    t.asleep = Math.max(t.asleep || 0, rng.d(4)); // roll:amount
+    const rolled = rng.d(4); // roll:amount
+    if (resistControl(state, t, "sleep", sp.n, idx, rng, events)) return;
+    t.asleep = Math.max(t.asleep || 0, rolled);
     events.push({ type: "allySpellHit", ...base, effect: "asleep", rounds: t.asleep });
   }
 }
@@ -2883,15 +2986,42 @@ export function foeTurn(state, rng, events = []) {
       // and dies through killFoe (pays like any other kill), mirroring the
       // thrown Freeze branch's own frozen/killFoe/revive lines exactly.
       // Zero extra draws before killFoe's own.
+      // RULES-18 (Phase 75.3, audit C3): past the knee, a resist lets the
+      // foe fall through to its normal turn below; a miss holds it instead
+      // of killing it (the held skip, just past the dead-foe check, takes
+      // this turn); at or below the knee (controlHoldRoundsFor 0) this falls
+      // through to the frozen-solid kill exactly as before this plan.
       if (dotRanOut && by === "ice" && f.alive) {
-        f.frozen = true;
-        events.push({ type: "frozenSolid", target: f.name });
-        killFoe(state, f, rng, events);
-        if (f.alive) f.frozen = false; // kill-twice revived it — a standing foe is not frozen
-        continue;
+        const idx = C.foes.indexOf(f);
+        if (resistControl(state, f, "freeze", "Ice", idx, rng, events)) {
+          // resisted: fall through to the foe's normal turn below.
+        } else if (controlHoldRoundsFor(state.floor.depth) > 0) {
+          holdFoe(state, f, "frozen", "Ice", events); // the held skip below takes this turn
+        } else {
+          f.frozen = true;
+          events.push({ type: "frozenSolid", target: f.name });
+          killFoe(state, f, rng, events);
+          if (f.alive) f.frozen = false; // kill-twice revived it — a standing foe is not frozen
+          continue;
+        }
       }
     }
     if (!f.alive) continue;
+    // RULES-18 (Phase 75.3): a held foe (holdFoe, past-the-knee Freeze/
+    // Stone/Stupidity) skips exactly `left` of its own visits, its asleep
+    // count running down alongside so two controls never stack end to end
+    // (checked after the dead-foe skip, before the asleep skip below).
+    if (f.held) {
+      if (f.asleep > 0) f.asleep--;
+      f.held.left--;
+      if (f.held.left > 0) {
+        events.push({ type: "foeStillHeld", name: f.name, kind: f.held.kind, left: f.held.left });
+      } else {
+        events.push({ type: "foeHoldBroken", name: f.name, kind: f.held.kind });
+        delete f.held;
+      }
+      continue;
+    }
     // RULES-10 (Phase 75.1, foe Regeneration): a live foe carrying `regen`
     // (a fumbled Regeneration) regains a d8 each of its own foeTurn visits,
     // capped at `maxWP`, drawn from a PER-FOE derived stream keyed on the

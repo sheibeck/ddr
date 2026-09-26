@@ -155,6 +155,31 @@ export const DIALS = deepFreeze({
    * `hpPerRank` is searched by 75.3-06's checkpointed tail sweep. Start
    * values 10 / 0.1 / 0.05: a mild elite bonus on top of the knee. */
   FOE_ELITE: { maxRank: 10, hpPerRank: 0.1, hitPerRank: 0.05 },
+  /** CONTROL_AT_DEPTH — RULES-18 (Phase 75.3, user ruling 2026-09-25): "from
+   * floor 12, foes increasingly RESIST control" — Freeze, Stone, Doze/Sleep,
+   * Weaken, Stupid and the like. Past `kneeDepth`, `controlResistFacesFor`
+   * (below) grows the resist check's winning faces by `resistPerDepth` per
+   * floor past the knee, capped at `resistCap` (and, structurally, at 19 —
+   * control can always land on a d20's top face); `controlHoldRoundsFor`
+   * gives an "indefinite" control (a Freeze/Stone kill, Stupidity, Blind,
+   * the Walnut Staff's weaken, the Birch/Cedar staves' 99-round sleep, the
+   * Lullaby's 24) `holdRounds` turns past the knee instead. Design rulings
+   * (user, 2026-09-25, 75.3-CONTEXT "Design rulings after planning"): a
+   * landed Freeze, Ice's last tick, Petrify and the stone staves HOLD the
+   * foe for `holdRounds` (3 at the start value) instead of killing it past
+   * the knee; the knee is the SAME as RULES-17's (`kneeDepth: 12` — floor 12
+   * stays exactly as tuned, floor 13 is the first harder floor, the Phase 54
+   * fit boundary). Identity: `{ kneeDepth: 12, resistPerDepth: 0, resistCap:
+   * 0, holdRounds: 0 }` — `resistPerDepth`/`resistCap`/`holdRounds` all 0
+   * means `controlResistFacesFor` is 0 at every depth (no roll, ever) and
+   * `controlHoldRoundsFor` is 0 at every depth (no cap, ever) — the knee
+   * itself never needs to switch off since both dependent dials already are.
+   * Direction: ↑ (resistPerDepth/resistCap) = harder to control past the
+   * knee; ↓ (holdRounds) = a landed control lasts fewer turns.
+   * `kneeDepth`/`holdRounds`: user-ruled, NEVER searched. `resistCap`: held
+   * (available), a start value. `resistPerDepth`: searched by 75.3-06's
+   * checkpointed tail sweep. */
+  CONTROL_AT_DEPTH: { kneeDepth: 12, resistPerDepth: 1, resistCap: 15, holdRounds: 3 },
   /** ROUND_DAMAGE_CEILING — a fraction of a level-appropriate hero's MEAN
    * max HP that ONE foe may deal per foeTurn visit, across all its swings
    * (frenzy/sp.atk included); 0 = off. Identity: 0 (no ceiling — canon
@@ -507,6 +532,51 @@ export function foeTierFor(depth, bled) {
     return { lvl: Math.max(1, Math.min(5, foeLevelFor(d) - (bled ? 1 : 0))), eliteRank: 0 };
   }
   return { lvl: 5, eliteRank: bled ? Math.max(0, rankBeforeBleed - 1) : rankBeforeBleed };
+}
+
+/**
+ * controlResistFacesFor(depth) — RULES-18 (Phase 75.3, user ruling
+ * 2026-09-25): the resist check's winning faces on a d20 (roll-high),
+ * `min(resistCap, 19, max(0, round(resistPerDepth * (depth - kneeDepth))))`
+ * at or below `kneeDepth`, else 0. The `19` ceiling is structural, not a dial
+ * — a d20's own top face always wins for the controller no matter how far
+ * `resistCap` is released, so control can never become impossible. Pure, no
+ * rng. `safeDepth` first, so a corrupted/non-integer depth never poisons this
+ * with NaN/Infinity.
+ */
+export function controlResistFacesFor(depth) {
+  const d = safeDepth(depth);
+  const K = live.CONTROL_AT_DEPTH;
+  if (d <= K.kneeDepth) return 0;
+  return Math.min(K.resistCap, 19, Math.max(0, Math.round(K.resistPerDepth * (d - K.kneeDepth))));
+}
+
+/**
+ * controlHoldRoundsFor(depth) — RULES-18: the number of rounds an
+ * "indefinite" control (a Freeze/Stone kill, Stupidity, Blind, the Walnut
+ * Staff's weaken, the Birch/Cedar staves' 99-round sleep, the Lullaby's 24)
+ * holds for past `kneeDepth`, instead of lasting the whole fight (or ending
+ * it outright) — `CONTROL_AT_DEPTH.holdRounds` past the knee, else 0. Pure,
+ * no rng.
+ */
+export function controlHoldRoundsFor(depth) {
+  const d = safeDepth(depth);
+  const K = live.CONTROL_AT_DEPTH;
+  return d > K.kneeDepth ? K.holdRounds : 0;
+}
+
+/**
+ * controlCapRounds(depth, n) — RULES-18: caps an indefinite control's
+ * duration `n` at `controlHoldRoundsFor(depth)` rounds once that cap is live
+ * (> 0); returns `n` unchanged at or below the knee (cap 0, "no cap" — never
+ * `Math.min(n, 0)`, which would zero out a landed control's duration
+ * entirely). A control with its own SHORT rolled duration (Doze/Stun/Weaken/
+ * Vapor's sleep/Insane's sleep/Thunder) never calls this — only the
+ * "would have lasted the whole fight" rows do. Pure, no rng.
+ */
+export function controlCapRounds(depth, n) {
+  const hold = controlHoldRoundsFor(depth);
+  return hold > 0 ? Math.min(n, hold) : n;
 }
 
 /**
