@@ -863,12 +863,71 @@ test('[foe-vs-hero:insult-after-blind] a blinded foe overrides, then the insult 
   assert.equal(result.wins, 2, "[foe-vs-hero:insult-after-blind] insulted-plus-blind must win on exactly two faces");
 });
 
-test('[foe-vs-hero:dwarven-foe-strike-step] "foes strike at a better die" against a Dwarf, content/races.js:29', () => {
-  const dwarf = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Dwarven" }), [NEUTRAL_FOE()]);
+// Phase 75.2 (RULES-11) reworks this row: a plain Dwarf now ALSO carries the
+// new size face penalty (Small, harder to hit — see [foe-vs-hero:size-small]
+// below), which would confound a row that claims to isolate "foes strike at
+// a better die" alone. A live Gauntlet record lifts the Dwarf's own face
+// step to 0 (the item step always applies in full, cancelling the race's
+// own -1), so this row now measures ONLY foeDie's better-die effect against
+// a same-face-step Human — the bracketed id is kept, the title says why.
+test('[foe-vs-hero:dwarven-foe-strike-step] "foes strike at a better die" against a Dwarf (face step 0, via a live Gauntlet record, isolating it from the Dwarf\'s own size face penalty), content/races.js:29', () => {
+  const dwarf = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Dwarven" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "item:Gauntlet of the Giant", { squares: 50, cd: 50 });
+    return s;
+  };
   const human = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
   const withMod = faceOdds((rng) => foeHitsHero(dwarf(), rng), { label: "foe-vs-hero:dwarven-foe-strike-step" });
   const without = faceOdds((rng) => foeHitsHero(human(), rng), { label: "foe-vs-hero:dwarven-foe-strike-step (baseline)" });
   assertBonus(withMod, without, { label: "foe-vs-hero:dwarven-foe-strike-step" });
+});
+
+// --- Size (Phase 75.2, RULES-11) — each applied size step is one foe face,
+// signed for the roller; a race's signature face axis survives its own base
+// step (content/races.js's sizeAxes); an item step always applies in full.
+
+test('[foe-vs-hero:size-large] a Troll is one face easier for a foe to hit than a Human (Large stacks with the Troll traits) — a strict bonus to the foe', () => {
+  const troll = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Troll" }), [NEUTRAL_FOE()]);
+  const human = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(troll(), rng), { label: "foe-vs-hero:size-large" });
+  const without = faceOdds((rng) => foeHitsHero(human(), rng), { label: "foe-vs-hero:size-large (baseline)" });
+  assertBonus(withMod, without, { label: "foe-vs-hero:size-large" });
+});
+
+test('[foe-vs-hero:size-small] a plain Dwarf is one face harder for a foe to hit than the same Dwarf with a live Gauntlet record (which lifts the face step to 0; same race, same foe die) — a strict penalty to the foe', () => {
+  const plain = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Dwarven" }), [NEUTRAL_FOE()]);
+  const geared = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Dwarven" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "item:Gauntlet of the Giant", { squares: 50, cd: 50 });
+    return s;
+  };
+  const withMod = faceOdds((rng) => foeHitsHero(plain(), rng), { label: "foe-vs-hero:size-small" });
+  const without = faceOdds((rng) => foeHitsHero(geared(), rng), { label: "foe-vs-hero:size-small (baseline, face step 0)" });
+  assertPenalty(withMod, without, { label: "foe-vs-hero:size-small" });
+});
+
+test('[foe-vs-hero:size-item] a Human with a live Gauntlet record is one face easier for a foe to hit than a plain Human — a strict bonus to the foe', () => {
+  const geared = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "item:Gauntlet of the Giant", { squares: 50, cd: 50 });
+    return s;
+  };
+  const plain = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(geared(), rng), { label: "foe-vs-hero:size-item" });
+  const without = faceOdds((rng) => foeHitsHero(plain(), rng), { label: "foe-vs-hero:size-item (baseline)" });
+  assertBonus(withMod, without, { label: "foe-vs-hero:size-item" });
+});
+
+test('[foe-vs-hero:size-signature] an Elf with a live Gauntlet record is one face easier for a foe to hit than a plain Elf — the item\'s face step lands in full even though the Elven base face axis is masked — a strict bonus to the foe', () => {
+  const geared = () => {
+    const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Elven" }), [NEUTRAL_FOE()]);
+    startEffect(s.c, "item:Gauntlet of the Giant", { squares: 50, cd: 50 });
+    return s;
+  };
+  const plain = () => inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Elven" }), [NEUTRAL_FOE()]);
+  const withMod = faceOdds((rng) => foeHitsHero(geared(), rng), { label: "foe-vs-hero:size-signature" });
+  const without = faceOdds((rng) => foeHitsHero(plain(), rng), { label: "foe-vs-hero:size-signature (baseline)" });
+  assertBonus(withMod, without, { label: "foe-vs-hero:size-signature" });
 });
 
 test("[foe-vs-hero:foe-level-die] a higher-tier foe strikes no worse than a lower-tier one of the same need, engine/derived.js#foeDie", () => {
@@ -941,6 +1000,14 @@ function memberCombatState(heroOpts, memberOpts, foe) {
   inCombat(s, [foe], { allies: [{ partyIdx: idx, name: sheet.name, lvl: sheet.level ?? 1, sub: sheet.sub, wp: sheet.wp, maxWP: sheet.maxWP }] });
   return s;
 }
+
+test('[foe-vs-member:size] a Troll party member is one face easier for a foe to hit than a Human member (a Joiner gets size from its own race, by the same rule) — a strict bonus to the foe', () => {
+  const troll = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Troll" }, NEUTRAL_FOE());
+  const human = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(troll(), rng), { label: "foe-vs-member:size" });
+  const without = faceOdds((rng) => foeHitsMember(human(), rng), { label: "foe-vs-member:size (baseline)" });
+  assertBonus(withMod, without, { label: "foe-vs-member:size" });
+});
 
 test('[foe-vs-member:battle-roar] a party member\'s own Battle Roar is a strict penalty to the foe', () => {
   const roaringMember = () => {

@@ -1423,6 +1423,18 @@ export function foeDie(c, f) {
  * member's own Battle Roar (`partyEffectActive`) — a Joiner's Battle Roar
  * covers the whole side exactly like the hero's. False on every fixture (no
  * fixture carries a party).
+ *
+ * Phase 75.2 (RULES-11, "Hero Size Matters", user ruling 2026-09-25): size
+ * is now a real stat — `vs === "hero"` adds SIZE_FACES_PER_STEP times the
+ * FACE axis's own resolved step (sizeAxisStep(c, "face")): the race's own
+ * base step (content/races.js's `size`) unless the race's signature masks
+ * it (content/races.js's `sizeAxes` — the Elven thin-boned trait survives
+ * Small being harder to hit; the Dwarven Small face axis still applies),
+ * plus any live item step (the Gauntlet of the Giant, Enlarge), in full.
+ * Placed right after Guard, before gear — see foeToHitBreakdown's matching
+ * term for the exact ordering this function mirrors silently. A Joiner's
+ * own size is a SEPARATE term read from the member's own sheet in
+ * engine/combat.js#foeTurn's member branch, never through this function.
  */
 export function foeToHitVs(state, vs = "hero") {
   const c = state.c;
@@ -1431,6 +1443,15 @@ export function foeToHitVs(state, vs = "hero") {
   if (R.foeToHit) h += R.foeToHit;
   if (c.sub === "Acrobat") h = 3;
   if (c.sub === "Guard") h -= 1;
+  // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): each
+  // applied size step moves a foe's winning faces against the HERO'S OWN
+  // body by SIZE_FACES_PER_STEP — the race's own face axis (signature mask
+  // applied, sizeAxisStep) plus any live item step, in full. `vs === "hero"`
+  // only, like Sidestep/Smoke just below — a Joiner's own size is read
+  // separately, on the member's own sheet, in engine/combat.js#foeTurn's
+  // member branch (never through this function, which never sees a
+  // member's sheet). Zero draws — pure arithmetic.
+  if (vs === "hero") h += SIZE_FACES_PER_STEP * sizeAxisStep(c, "face");
   h += eff(c, "foeToHit");
   // Phase 54 (BAND-02, USER RULING D): FOE_ACCURACY (both vs "hero" and
   // "member") + CLASS_MITIGATION.Thief.evasion (vs "hero" only — the hero's
@@ -1466,6 +1487,14 @@ export function foeToHitVs(state, vs = "hero") {
  * mutation) — this is a narration helper, not a second source of truth:
  * foeToHitVs's own body is left untouched (zero risk) rather than delegating
  * to this function.
+ *
+ * Phase 75.2 (RULES-11, "Hero Size Matters"): the SAME size term
+ * foeToHitVs applies (see its own JSDoc) is recorded here as a single
+ * `{ name: "size", delta }` entry, right after Guard and before gear,
+ * pushed only when the resolved face step is non-zero — an Elf's mods carry
+ * no size entry (the signature mask drops the face axis for a race whose
+ * base step would otherwise apply), a Troll's read `[..., { name: "size",
+ * delta: 1 }]`, a Dwarf's `[..., { name: "size", delta: -1 }]`.
  */
 export function foeToHitBreakdown(state, vs = "hero") {
   const c = state.c;
@@ -1486,6 +1515,19 @@ export function foeToHitBreakdown(state, vs = "hero") {
     const before = h;
     h -= 1;
     if (h !== before) mods.push({ name: "Guard", delta: h - before });
+  }
+  // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): the
+  // SAME size term foeToHitVs applies above, recorded as a single "size"
+  // entry only when the resolved face step is non-zero — `vs === "hero"`
+  // only (a Joiner's own size is a separate term on the member's own sheet,
+  // engine/combat.js#foeTurn's member branch).
+  if (vs === "hero") {
+    const sizeDelta = SIZE_FACES_PER_STEP * sizeAxisStep(c, "face");
+    if (sizeDelta) {
+      const before = h;
+      h += sizeDelta;
+      if (h !== before) mods.push({ name: "size", delta: h - before });
+    }
   }
   const gear = eff(c, "foeToHit");
   if (gear) {
@@ -1594,14 +1636,17 @@ export function heroStrikeFacesVs(state, t) {
  * foeSwingVsHero(state, f) — Phase 74 (ROLL-02): the foe `f`'s winning faces
  * and mods list for its swing against the hero, built exactly as
  * `engine/combat.js#pursuitStrike` and `foeTurn`'s hero branch build them —
- * base `foeToHitVs(state)`, mods copied from `foeToHitBreakdown(state).mods`,
- * then blind (override to 1), the combat's `foeToHitPenalty` cap, and the
- * insult (+1, applied LAST — Phase 72 ROLL-01 (a)) — recording `{ name,
- * delta }` entries named "blind"/"penalty"/"insulted", pushed only when the
- * value actually changed for blind/penalty (insulted always pushes, matching
- * both call sites). Deltas are signed for the FOE (the roller), same
- * convention as `foeToHitBreakdown`. `state.combat` may be missing/null — the
- * two combat-wide terms (penalty, insulted) are then skipped and this never
+ * base `foeToHitVs(state)`, mods copied from `foeToHitBreakdown(state).mods`
+ * (Phase 75.2, RULES-11: this copy is where a non-zero "size" entry rides
+ * along, signed for the foe — a Troll's `+1`, a Dwarf's `-1`, an Elf's
+ * absent, its signature mask having dropped the face axis), then blind
+ * (override to 1), the combat's `foeToHitPenalty` cap, and the insult (+1,
+ * applied LAST — Phase 72 ROLL-01 (a)) — recording `{ name, delta }` entries
+ * named "blind"/"penalty"/"insulted", pushed only when the value actually
+ * changed for blind/penalty (insulted always pushes, matching both call
+ * sites). Deltas are signed for the FOE (the roller), same convention as
+ * `foeToHitBreakdown`. `state.combat` may be missing/null — the two
+ * combat-wide terms (penalty, insulted) are then skipped and this never
  * throws. Returns `{ faces, mods }`. Pure, zero rng, never mutates `state`/`f`.
  */
 export function foeSwingVsHero(state, f) {

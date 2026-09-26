@@ -27,9 +27,12 @@ import {
   classNeed,
   weaponNeedMod,
   strikeDie,
+  foeToHitVs,
+  foeToHitBreakdown,
+  foeSwingVsHero,
 } from "../../engine/derived.js";
 import { RACES, SIZE_AXES, SIZE_AXIS_TRAITS, SIZE_STEP_OF } from "../../content/index.js";
-import { playerStrike } from "../../engine/combat.js";
+import { playerStrike, foeTurn } from "../../engine/combat.js";
 import { startEffect } from "../../engine/effects.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
@@ -332,4 +335,171 @@ test("Shrink composition: with C.heroShrunk, a Troll's landed blow in playerStri
   const struck = events.find((e) => e.type === "struck");
   assert.ok(struck, "the strike landed");
   assert.equal(struck.dmg, Math.ceil(expectedRaw / 2));
+});
+
+// =============================================================================
+// Task 2 — how easily foes hit you, hero and Joiner, with direction rows
+// (test/unit/rollDirection.test.js) and ledger rows (docs/ROLL-LEDGER.md)
+// =============================================================================
+
+/** needState(race, extra) — a fixedState whose `c` is soldierOverrides(race,
+ * extra) and whose combat holds exactly one plain foe — the rig every
+ * foeToHitVs/foeToHitBreakdown/foeSwingVsHero test below builds from. */
+function needState(race, extra = {}) {
+  const state = fixedState({ c: soldierOverrides(race, extra) });
+  state.combat = fixedCombat([fixedFoe()]);
+  return state;
+}
+
+/** memberState(heroRace, memberRace, memberSub) — a fixedState with a party
+ * of one (memberRace/memberSub), taunting (pickFoeTarget's own zero-draw
+ * short-circuit) so every foeTurn swing below targets the MEMBER branch,
+ * never the hero. */
+function memberState(heroRace, memberRace, memberSub = "Guard") {
+  const state = fixedState({ c: soldierOverrides(heroRace) });
+  const memberSheet = fixedFighter(soldierOverrides(memberRace, { sub: memberSub }));
+  startEffect(memberSheet, "ability:taunt", { rounds: 1 });
+  state.party = [memberSheet];
+  state.combat = fixedCombat([fixedFoe()], {
+    allies: [{ partyIdx: 0, name: memberSheet.name, lvl: memberSheet.level, sub: memberSheet.sub, wp: memberSheet.wp, maxWP: memberSheet.maxWP }],
+  });
+  return state;
+}
+
+test("foeToHitVs, level-1 Soldier vs a plain foe: Human 5, Troll 6, Dwarven 4, Elven 6", () => {
+  assert.equal(foeToHitVs(needState("Human")), 5);
+  assert.equal(foeToHitVs(needState("Troll")), 6);
+  assert.equal(foeToHitVs(needState("Dwarven")), 4);
+  assert.equal(foeToHitVs(needState("Elven")), 6);
+});
+
+test("foeToHitVs with a live Gauntlet record: Human 6, Dwarven 5, Elven 7", () => {
+  const human = needState("Human");
+  withGauntlet(human.c);
+  const dwarven = needState("Dwarven");
+  withGauntlet(dwarven.c);
+  const elven = needState("Elven");
+  withGauntlet(elven.c);
+  assert.equal(foeToHitVs(human), 6);
+  assert.equal(foeToHitVs(dwarven), 5);
+  assert.equal(foeToHitVs(elven), 7);
+});
+
+test('foeToHitBreakdown mods: Troll [size +1], Dwarven [size -1], Elven [Elven +1] (no size entry), Elven+Gauntlet [Elven +1, size +1], Human none', () => {
+  assert.deepEqual(foeToHitBreakdown(needState("Troll")).mods, [{ name: "size", delta: 1 }]);
+  assert.deepEqual(foeToHitBreakdown(needState("Dwarven")).mods, [{ name: "size", delta: -1 }]);
+  assert.deepEqual(foeToHitBreakdown(needState("Elven")).mods, [{ name: "Elven", delta: 1 }]);
+  const elvenGauntlet = needState("Elven");
+  withGauntlet(elvenGauntlet.c);
+  assert.deepEqual(foeToHitBreakdown(elvenGauntlet).mods, [
+    { name: "Elven", delta: 1 },
+    { name: "size", delta: 1 },
+  ]);
+  assert.deepEqual(foeToHitBreakdown(needState("Human")).mods, []);
+});
+
+test("ordering: a Troll Guard lists Guard before size", () => {
+  const state = needState("Troll", { sub: "Guard" });
+  assert.deepEqual(foeToHitBreakdown(state).mods, [
+    { name: "Guard", delta: -1 },
+    { name: "size", delta: 1 },
+  ]);
+});
+
+test("ordering: a Troll Acrobat reads 4 (the Acrobat override, then size)", () => {
+  const state = needState("Troll", { sub: "Acrobat" });
+  assert.equal(foeToHitVs(state), 4);
+});
+
+test("ordering: a Troll with Smoke, Mirror Self, or a live invis item reads 1 — the size term never survives an override", () => {
+  const smoke = needState("Troll");
+  startEffect(smoke.c, "ability:smoke", { rounds: 1 });
+  assert.equal(foeToHitVs(smoke), 1);
+
+  const mirror = needState("Troll", { mirror: 1 });
+  assert.equal(foeToHitVs(mirror), 1);
+
+  const invis = needState("Troll");
+  startEffect(invis.c, "item:Invisible", { rounds: 90 });
+  assert.equal(foeToHitVs(invis), 1);
+});
+
+test("floor adjacency: a Dwarven Guard with Battle Roar and Sidestep live reads 1, mods ending with floor", () => {
+  const state = needState("Dwarven", { sub: "Guard" });
+  startEffect(state.c, "ability:battleRoar", { rounds: 2 });
+  startEffect(state.c, "ability:sidestep", { rounds: 2 });
+  const { need, mods } = foeToHitBreakdown(state);
+  assert.equal(need, 1);
+  assert.equal(mods[mods.length - 1].name, "floor");
+});
+
+test('vs "member": foeToHitVs and its breakdown carry no size term from the hero', () => {
+  const troll = needState("Troll");
+  assert.equal(foeToHitVs(troll, "member"), 5, "no size term for vs=member (the plain 5, unaffected by the hero's own Large step)");
+  assert.deepEqual(foeToHitBreakdown(troll, "member").mods, []);
+});
+
+test("foeSwingVsHero(state, f) for a Troll includes the size mod", () => {
+  const state = needState("Troll");
+  const { mods } = foeSwingVsHero(state, state.combat.foes[0]);
+  assert.deepEqual(mods, [{ name: "size", delta: 1 }]);
+});
+
+test("foeTurn against a Troll emits struckByFoe/foeMissed with mods including size +1; against an Elf, mods carry no size entry", () => {
+  const trollState = needState("Troll");
+  // draw 1: to-hit (raw 1 mirrors to the top face — a guaranteed hit for any
+  // dieN/atLeastFor); draw 2: the damage die (rng.d(6)).
+  const trollEvents = foeTurn(trollState, fakeRng([1, 5]), []);
+  const trollHit = trollEvents.find((e) => e.type === "struckByFoe" || e.type === "foeMissed");
+  assert.ok(trollHit, "the Troll's swing resolved");
+  assert.ok(trollHit.mods && trollHit.mods.some((m) => m.name === "size" && m.delta === 1));
+
+  const elfState = needState("Elven");
+  const elfEvents = foeTurn(elfState, fakeRng([1, 5]), []);
+  const elfHit = elfEvents.find((e) => e.type === "struckByFoe" || e.type === "foeMissed");
+  assert.ok(elfHit, "the Elf's swing resolved");
+  assert.equal(elfHit.mods ? elfHit.mods.some((m) => m.name === "size") : false, false, "no size entry — the Elven face axis is masked");
+});
+
+test("draws: foeTurn against a Troll, a Dwarf, an Elf and a Human all draw the same count for the same scripted sequence", () => {
+  for (const race of ["Troll", "Dwarven", "Elven", "Human"]) {
+    const state = needState(race);
+    const rng = countingRng(fakeRng([1, 5]));
+    foeTurn(state, rng, []);
+    assert.equal(rng.draws, 2, race);
+  }
+});
+
+test("foeTurn member branch: a Troll member raises the foe's faces by 1 (size +1), a Dwarven member lowers them by 1 (size -1); an Elven member and a Human member add none; the hero's own race never reaches a member's faces through this term", () => {
+  const trollMember = memberState("Human", "Troll");
+  const trollEvents = foeTurn(trollMember, fakeRng([1, 5]), []);
+  const trollHit = trollEvents.find((e) => e.member);
+  assert.ok(trollHit, "the Troll member's swing resolved");
+  assert.ok(trollHit.mods && trollHit.mods.some((m) => m.name === "size" && m.delta === 1));
+
+  const dwarvenMember = memberState("Human", "Dwarven");
+  const dwarvenEvents = foeTurn(dwarvenMember, fakeRng([1, 5]), []);
+  const dwarvenHit = dwarvenEvents.find((e) => e.member);
+  assert.ok(dwarvenHit, "the Dwarven member's swing resolved");
+  assert.ok(dwarvenHit.mods && dwarvenHit.mods.some((m) => m.name === "size" && m.delta === -1));
+
+  const elvenMember = memberState("Human", "Elven");
+  const elvenEvents = foeTurn(elvenMember, fakeRng([1, 5]), []);
+  const elvenHit = elvenEvents.find((e) => e.member);
+  assert.ok(elvenHit, "the Elven member's swing resolved");
+  assert.equal(elvenHit.mods ? elvenHit.mods.some((m) => m.name === "size") : false, false);
+
+  const humanMember = memberState("Human", "Human");
+  const humanEvents = foeTurn(humanMember, fakeRng([1, 5]), []);
+  const humanHit = humanEvents.find((e) => e.member);
+  assert.ok(humanHit, "the Human member's swing resolved");
+  assert.equal(humanHit.mods ? humanHit.mods.some((m) => m.name === "size") : false, false);
+
+  // The hero's own race never reaches a member's faces through this term: a
+  // Troll HERO with a plain Human member reads no size mod on the swing.
+  const trollHeroHumanMember = memberState("Troll", "Human");
+  const mixedEvents = foeTurn(trollHeroHumanMember, fakeRng([1, 5]), []);
+  const mixedHit = mixedEvents.find((e) => e.member);
+  assert.ok(mixedHit, "the swing resolved");
+  assert.equal(mixedHit.mods ? mixedHit.mods.some((m) => m.name === "size") : false, false, "the hero's own Large step never reaches the member's odds");
 });
