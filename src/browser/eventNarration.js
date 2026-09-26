@@ -654,6 +654,22 @@ export const EVENT_NARRATION = {
   sensesFaded: () => `<span class="beat">Your senses dull back to normal.</span>`,
   regenFaded: () => `<span class="beat">The wounds stop closing on their own.</span>`,
 
+  // RULES-10 (Phase 75.1) — the reader's own burn: a fumbled Acid or Ice
+  // eating YOUR hp instead of a foe's, once per foeTurn. `spell` names what
+  // did it; `amount` the hp lost this tick; `left` the rounds still to run.
+  selfDotTick: (e) =>
+    `<span class="hurt">${e.spell ?? "The scroll"} is still burning you: <span class="roll">−${e.amount ?? 0} hp</span>.</span> ${e.left ?? 0} round${e.left === 1 ? "" : "s"} of it left.`,
+  // RULES-10 (Phase 75.1) — the ONE replacement for every instant-kill
+  // fumble: whatever the spell tried to do lands as a heavy, honest blow
+  // instead, plus Afraid. `how` names the flavor (frozen, stoned, …).
+  fumbleHeavyBlow: (e) =>
+    `<span class="hurt">${e.spell ?? "The scroll"} tried to be the end of you. Instead: ${e.how ?? "a hard knock"}, <span class="roll">−${e.amount ?? 0} hp</span>.</span> You are shaken.`,
+  // RULES-10 (Phase 75.1) — the hero-cannot-act state: the round goes on
+  // without you, and it will keep going until `left` reaches 0.
+  heroLostTurn: (e) =>
+    `<span class="hurt">You cannot act (${e.kind ?? "out"}). The round goes on without you.</span> ${e.left ?? 0} turn${e.left === 1 ? "" : "s"} of it left.`,
+  heroCameTo: () => `<span class="hit">You can act again.</span>`,
+
   // Phase 19 (FOE-01..09, D-16): foe abilities — telegraph first, effect
   // second. Every builder here defends a bare `{ type }` call (the coverage
   // guard's own invocation shape) and never leaks an engine identifier
@@ -767,6 +783,8 @@ export const EVENT_NARRATION = {
       notFought: `<span class="miss">Fight! first.</span>`,
       cooldown: `<span class="miss">Your voice needs ${e.left ?? "more"} more squares.</span>`,
       wrongClass: `<span class="miss">Only a Bard sings here.</span>`,
+      // RULES-10 (Phase 75.1): loseTurn with no C.heroOut to spend.
+      notOut: `<span class="miss">There is no turn to lose.</span>`,
     };
     return map[e.reason] ?? `<span class="miss">Not now.</span>`;
   },
