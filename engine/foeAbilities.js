@@ -33,7 +33,41 @@ const BY_ID = new Map(FOE_ABILITIES.map((a) => [a.id, a]));
 // The three kinds p.25's resistance check can ever apply to (FOE-07/D-07) —
 // heal and summon are unresisted/untargeted by design (D-02/D-12).
 const RESISTIBLE = new Set(["bolt", "drain", "debuff"]);
-const SUMMON_MAX_LIVE = 4; // FOE-04/D-12: a room never holds more than 4 live foes
+// FOE-04/D-12: a room never holds more than 4 live foes. Exported (Phase
+// 75.1, RULES-10) so engine/scrollFumble.js#resolveScrollFumble's helpful
+// branch shares the SAME cap when a fumbled Summon/Phantom Host/Lesser
+// Summon joins the foes as a reinforcement.
+export const SUMMON_MAX_LIVE = 4;
+
+/**
+ * buildReinforcement(type, tier, rng) — RULES-10 (Phase 75.1): the shared
+ * reinforcement-foe-record builder, extracted from resolveFoeAbility's own
+ * summon branch (below) so engine/scrollFumble.js's fumbled-Summon helpful
+ * branch can build a byte-identical record from the SAME bestiary tier —
+ * same fields, same values, same one `rng.pick` draw. `type` is a BESTIARY
+ * key (e.g. "Demons"), `tier` is the 1-based roster tier (BESTIARY[type][tier
+ * - 1]). No `abilities` key on the returned record — no recursion, exactly
+ * like the pre-extraction inline build.
+ */
+export function buildReinforcement(type, tier, rng) {
+  const roster = BESTIARY[type][tier - 1];
+  const picked = rng.pick(roster);
+  return {
+    name: picked.n,
+    type,
+    // WR-01 (19-REVIEW.md): lvl must match the roster TIER the stats were
+    // drawn from, not the summoner's own level.
+    lvl: tier,
+    size: picked.sz,
+    intel: picked.i,
+    wp: picked.wp,
+    maxWP: picked.wp,
+    alive: true,
+    asleep: 0,
+    sp: picked.sp || {},
+    lives: picked.sp && picked.sp.twice ? 2 : 1,
+  };
+}
 
 /**
  * tickAbilityCooldowns(state, f) — advances every `every`-bearing kit
@@ -186,26 +220,10 @@ export function resolveFoeAbility(state, f, a, rng, events, gate = null) {
   }
 
   if (a.kind === "summon") {
-    const roster = BESTIARY[a.effect.type][a.effect.tier - 1];
-    const picked = rng.pick(roster);
-    const foe = {
-      name: picked.n,
-      type: a.effect.type,
-      // WR-01 (19-REVIEW.md): lvl must match the roster TIER the stats were
-      // drawn from, not the summoner's own level — the summoner's level was
-      // silently inflating the reinforcement's to-hit die, melee damage, and
-      // XP payout (all keyed off f.lvl elsewhere in the engine) to the
-      // summoner's own tier instead of the declared weak tier.
-      lvl: a.effect.tier,
-      size: picked.sz,
-      intel: picked.i,
-      wp: picked.wp,
-      maxWP: picked.wp,
-      alive: true,
-      asleep: 0,
-      sp: picked.sp || {},
-      lives: picked.sp && picked.sp.twice ? 2 : 1,
-    };
+    // RULES-10 (Phase 75.1): the record build now lives in the shared,
+    // exported buildReinforcement helper (above) — byte-identical fields,
+    // values and one `rng.pick` draw to the pre-extraction inline build.
+    const foe = buildReinforcement(a.effect.type, a.effect.tier, rng);
     state.combat.pendingFoes = [{ by: f.name, foe }];
     events.push({ type: "foeSummoned", name: foe.name, by: f.name, pending: true });
     return { died: false };
