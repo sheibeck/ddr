@@ -44,6 +44,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [x] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers (completed 2026-09-25)
 - [x] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
  (completed 2026-09-25)
+
 - [ ] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire
 - [ ] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules
 - [ ] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth, a steeper foe curve and tier past floor 12, and control spells lose their lock at depth
@@ -246,7 +247,7 @@ Plans:
   3. A read that rolls below half the required target is a fumble. A harmful spell hits the reader instead of its target, and an area-damage spell hits the reader and their whole party. A helpful spell lands on the targeted enemy (a fumbled Shield shields that foe). Outside combat a fumble has no effect.
   4. The Pilfer's and every affected class's descriptions state the new rules, both outcomes are narrated in voice, the new rolls come from derived rng streams, and every moved fixture is declared and regenerated.
 
-**Plans**: 2/9 plans executed
+**Plans**: 3/9 plans executed
 
 Plans:
 **Wave 1**
@@ -256,7 +257,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 75.1-03-PLAN.md — Build the foe-side effects a fumbled helpful scroll can hand the targeted enemy (RULES-10: "a fumbled Shield shields that foe"): a foe Shield pool, a foe Bubble that catches a blow and throws it back, foe Mirror Self,... (wave 2)
+- [x] 75.1-03-PLAN.md — Build the foe-side effects a fumbled helpful scroll can hand the targeted enemy (RULES-10: "a fumbled Shield shields that foe"): a foe Shield pool, a foe Bubble that catches a blow and throws it back, foe Mirror Self,... (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -421,6 +422,7 @@ Plans:
 
 - [ ] 77-07-PLAN.md — Make the conditions honest in the rolls themselves: a dazed (or inspired, blinded, dark-capped) strike says so in its modifier list, and the moment you are dazed or weakened the Oracle and the fight log say what it do... (wave 3)
 - [ ] 77-08-PLAN.md — Draw CMBUI-13's live effect indicators on the player's side: a chip row under the hero and each party member in YOUR LOT, with a tap that explains what the effect does, how long it lasts and where it came from (wave 3)
+
 **UI hint**: yes
 **Device check**: yes — combat-screen legibility (submenu clipping, indicator readability) batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
 
@@ -549,7 +551,7 @@ Plans:
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
 | 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 13/13 | Complete    | 2026-09-25 |
-| 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 2/9 | In Progress|  |
+| 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 3/9 | In Progress|  |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
