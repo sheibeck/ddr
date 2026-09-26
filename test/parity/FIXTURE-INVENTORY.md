@@ -3367,3 +3367,140 @@ the ONLY fixture edits the whole phase made; every other rule change
 measured zero, proven by a standing, teeth-tested replay guard rather than
 asserted by omission.
 
+## Phase 75.1: Pilfer fumbles & scroll reading (RULES-09, RULES-10)
+
+Phase 75.1 closes two device todos the ROADMAP inserted after Phase 75: the
+Pilfer's heal-only `useItem` lockout becomes a fumble risk on use-activated
+magic items (RULES-09), and anyone may attempt a scroll on an intelligence
+roll (RULES-10). Every plan measures its own moved set independently, pulled
+here verbatim from that plan's own SUMMARY.md — this subsection is a
+consolidation record, not a re-derivation. **Every single plan measured
+zero.**
+
+**Plan 01 (RULES-09 — the Pilfer magic-item fumble in `engine/items.js#useItem`).**
+The rule. `PILFER_FUMBLE_KINDS` (`jewel`/`cloak`/`staff`) replaces the
+IDENT-07 heal-only refusal outright; a derived d20 roll of 1 fails the use,
+blasts the Pilfer for an unsoaked derived d10 and dusts the item. Predictor:
+no replay site's action script ever has a Pilfer use a non-heal-potion
+magic item — the fixture's one Pilfer scenario only ever drinks potions and
+picks locks (both untouched: potions never fumble under this rule, and
+`Pickpocket` isn't a `useItem` call at all). Measurement: `node --test
+"test/parity/**/*.test.js"` — 56/56, 0 fail; `git diff --quiet` against the
+plan base for `test/parity/fixtures`/`prototype-master.js.txt` both exit 0.
+**Zero fixtures moved** (one state pin, `solo-thief-pilfer`, moved instead —
+a `roll-high-state-pins.test.js` bot-baseline artifact, not a parity
+fixture; re-pinned with a bisected rationale in the plan's own commit).
+
+**Plan 02 (RULES-10, content only — `content/scroll-fumbles.js#SCROLL_FUMBLE`).**
+The rule. A pure content table classifying all 33 scroll-castable spells'
+fumble side (harmful/area/helpful) and effect, read by 75.1-05's resolver.
+Predictor: no engine code changed at all — `engine/*.js` is byte-identical
+to the plan base by construction, so no replay site could possibly expose
+this plan regardless of its own action script. Measurement: `node --test
+test/determinism/content-is-pure-data.test.js` — green (the new table is
+pure, serializable data); `node --test "test/parity/**/*.test.js"` — 56/56
+(unaffected, as predicted). **Zero fixtures moved** — the only possible
+outcome, since no `engine/` file was touched.
+
+**Plan 03 (RULES-10 — the foe-side fumble mechanics: ward, armed Bubble,
+Mirror Self, Strength, Regeneration).** The rule. Every mechanic a fumbled
+HELPFUL scroll can hand the combat's targeted foe, wired into
+`engine/foeDamage.js#damageFoe` and `engine/combat.js#foeTurn`, plus a sixth
+`targetStrikeFaces` term for Mirror Self. Predictor: every field this plan
+reads/writes (`foe.ward`, `foe.rebound`, `foe.mirror`, `foe.might`,
+`foe.regen`) is read-only from this plan's own code — nothing in the engine
+SETS any of them until 75.1-05's resolver exists, and no replay site's
+action script ever builds a foe carrying one of these fields by hand (they
+are not part of any chargen/encounter-roll bestiary spec). Measurement:
+`node --test "test/parity/**/*.test.js"` — 56/56, 0 fail; `git diff --quiet`
+against the plan base for fixtures/prototype-master.js.txt both exit 0.
+**Zero fixtures moved.**
+
+**Plan 04 (RULES-10 — the reader-side fumble mechanics: the burn, the heavy
+blow, turn loss, hero Blind/Shrink).** The rule. `C.selfDot`'s burn tick,
+`fumbleHeavyBlow` (the one replacement for every instant-kill fumble, per
+the user's 2026-09-25 ruling), `C.heroOut`/`loseTurn` (at most `d4` turns,
+never a soft lock), and hero Blind/Shrink working exactly like their
+foe-side twins. Predictor: every field this plan reads (`C.selfDot`,
+`C.heroOut`, `C.heroBlind`, `C.heroShrunk`) is likewise read-only until
+75.1-05/75.1-06 exist, and no replay site's `newRun`/action script ever sets
+any of them directly — they only ever originate from a scroll fumble, which
+no fixture reaches until Plan 06 wires the read path (and even then, only
+via a genuine intelligence-roll fumble, never a scripted one). Measurement:
+`node --test "test/parity/**/*.test.js"` — green; `git diff --quiet` against
+the plan base for fixtures/prototype-master.js.txt both exit 0. **Zero
+fixtures moved.**
+
+**Plan 05 (RULES-10 — `engine/scrollFumble.js#resolveScrollFumble`, the
+harmful/area/helpful dispatcher).** The rule. The one resolver that turns a
+fumbled scroll against its reader, the reader's whole side, or the combat's
+targeted foe, reading Plan 02's table and wiring straight into Plan 03's
+foe-side and Plan 04's reader-side mechanics. Predictor: the resolver is a
+new, freestanding export — `readScroll` does not call it yet (that is Plan
+06's own job) — so it is structurally unreachable from any replay site's
+action script regardless of what that script does. Measurement: `node
+--test "test/parity/**/*.test.js"` — 56/56, unchanged. **Zero fixtures
+moved** (the resolver produces zero parity drift by construction, not
+merely by absence of exposure).
+
+**Plan 06 (RULES-10 — the intelligence read in `readScroll`; `canRead` is
+gone).** The rule. `scrollReaderOf`/`scrollReadBands`/`scrollReadOutcome`
+(`engine/derived.js`) pick the reader path; a Magic User and a Runes/Signs
+holder still read automatically, everyone else — including a Pilfer — rolls
+intelligence on its own derived stream (`scrollReadRng`), with a plain
+failure crumbling honestly and a fumble handing off to Plan 05's resolver in
+combat (or fizzling outside it). Predictor: the fixture set's only replayed
+scroll read (`action-script.magic.json#magic#heal`, seed 7) casts Heal as a
+Wizard — confirmed live via `newRun(7).c.sub` — which takes the unchanged
+`magicUser` branch (automatic, no roll, byte-identical control flow to
+before this phase); no other replay site's action script ever dispatches a
+`readScroll` action at all. Measurement: `node --test
+"test/parity/**/*.test.js"` — 56/56; `git diff --quiet 9c8e1505 -- test/
+parity/fixtures test/parity/prototype-master.js.txt` clean. **Zero fixtures
+moved**, exactly as predicted (two `roll-high-state-pins.test.js` pins and
+two `bot-tactics.test.js` no-stall seeds moved instead — bot-baseline
+artifacts, not parity fixtures, both bisected live via `playRun`'s own
+`onStep` hook to this plan's new intel-read roll and re-pinned/re-seeded
+with a rationale, per the plan's own STOP condition never firing since
+neither moved pin's character was a Magic User).
+
+**Plans 07 and 09 (RULES-10, presentation only — the reader's odds and the
+hero-cannot-act combat menu shell).** The rule. `rollOdds.js#scrollReadOdds`
+appended to both SCROLLS-row descriptions (Plan 07); the combat menu's
+single LET THE ROUND PLAY action and the Can't act/Blinded/Shrunk chips
+(Plan 09). Predictor: both plans touch only `src/browser/*.js`,
+`content/*.js` copy and `mazeworld.html`'s shell wiring — no `engine/*.js`
+file changed at all, so no replay site (which only ever exercises the
+engine layer directly, never the DOM) could possibly be exposed. Measurement
+(both plans): `node --test "test/parity/**/*.test.js"` — 56/56, zero fixture
+diffs. **Zero fixtures moved** — the only possible outcome, since neither
+plan touched `engine/`. (Plan 07 DID deliberately regenerate three DOM
+shell-snapshot fixtures — `mu.gear.txt`, `mu.hero.txt`, `thief.hero.txt` —
+for the new odds text and CLASS_NOTE clause; these are `test/unit/fixtures/
+shell-snapshots/` DOM captures, a wholly separate fixture family from
+`test/parity/fixtures/`'s engine-parity JSON, and are declared in that
+plan's own SUMMARY.md, not this parity inventory.)
+
+**The standing guard.** `test/parity/divergence-records.test.js`'s
+"RULES-09/RULES-10 (Phase 75.1)" test (75.1-08) replays all 31 sites and
+asserts zero `pilferFumbled`/`scrollDeciphered`/`scrollGarbled`/
+`scrollFumbled`/`fumbleOnReader`/`fumbleOnSide`/`fumbleOnFoe`/`selfDotTick`/
+`fumbleHeavyBlow`/`heroLostTurn`/`heroCameTo`/`foeWardSoaked`/
+`foeWardBroken`/`foeWardFaded`/`foeBubbleCaught`/`foeBubbleRebound`/
+`foeMirrorFaded`/`foeRegenerated` events, and that `state.combat.heroOut`,
+`state.combat.heroBlind` and `state.combat.heroShrunk` are never set at any
+point across any replay — proving every predictor above, not merely
+asserting it. A companion "exposure guard has teeth" test feeds the same
+counting function a doctored event list carrying one `pilferFumbled` and one
+`scrollFumbled` and confirms both would genuinely fail a zero-assertion. The
+declared Phase 75.1 set stays exactly `RULES751_EXPECTED_HOLDERS` —
+legitimately EMPTY, since none of these nine plans declared a divergence
+record. `git hash-object test/parity/prototype-master.js.txt`:
+`a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged — the same hash Phase
+75 closed with).
+
+This closes the Phase 75.1 fixture story: every one of the nine plans
+measured zero moved parity fixtures — proven by a standing, teeth-tested
+31-site replay guard, not asserted by omission — and the prototype master is
+byte-identical to Phase 75's own close.
+
