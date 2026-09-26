@@ -206,14 +206,17 @@ CASES.push({
   },
   expect: { refused: { type: "useRefused", reason: "notFought" } },
 });
+// RULES-09 (Phase 75.1, user 2026-09-24/25): superseded — the heal-only
+// refusal is gone. A Pilfer's non-heal potion now takes effect exactly as
+// it would for anyone; potions never carry the RULES-09 fumble risk either.
 CASES.push({
-  name: "potion: a Pilfer using a non-heal potion is refused pilfer",
+  name: "potion: a Pilfer using a non-heal potion now takes effect, exactly as anyone else's",
   run: () => {
     const item = { kind: "potion", n: "Strength", eff2: "strength", uses: 1 };
     const state = fixedState({ c: { sub: "Pilfer", items: [item] } });
     return { events: useItem(state, 0, fakeRng([]), [], NOW), state };
   },
-  expect: { refused: { type: "useRefused", reason: "pilfer" } },
+  expect: { ok: true },
 });
 
 // §4 Staves — outside/inside combat (MU), non-MU (wrongClass), cooldown.

@@ -105,6 +105,10 @@ const OUTCOME = {
   // (roll 1, atLeast 2, dieN 8) — the caster's own safety check FAILED.
   spellBackfired: () => false,
   summonBackfired: () => false,
+  // RULES-09 (Phase 75.1): a Pilfer's magic-item fumble check — the event
+  // only ever fires on the FAILED side of its own steady-hands check (a
+  // successful use never pushes pilferFumbled at all).
+  pilferFumbled: () => false,
   // 73-07 rows: the foe's own to-hit rolls (hero branch, member branch,
   // pursuit) and the hero's own armor soak. Each fires on only ONE side of
   // its own check, so the outcome is a constant, exactly like the 73-04/06

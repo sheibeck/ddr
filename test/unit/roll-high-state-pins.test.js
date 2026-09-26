@@ -55,9 +55,29 @@ const PINNED = {
   // see that file's own doc comment for the "pure JSON-representation
   // noise" precedent (`pendingJoiner`). Regenerated via `node
   // tools/roll-high-baseline.mjs pins` (each hashed identically twice).
+  //
+  // "solo-thief-pilfer" re-pinned AGAIN (Phase 75.1, Plan 01, 2026-09-25):
+  // RULES-09 removes the IDENT-07 heal-only refusal — a Pilfer's non-heal
+  // magic-item use, which used to be a silent `useRefused {reason:"pilfer"}`
+  // no-op burning ZERO rng draws, now actually resolves (a real use, or a
+  // fumble), consuming real draws from the main rng cursor from that point
+  // on. Bisected live: this forced Pilfer's first such use is an Amulet of
+  // Light (`itemUsed`, kind "glow") at action 333 of 400 — exactly the
+  // "newly allowed use" this plan's own interfaces block anticipated. The
+  // outcome shape is unchanged (400 actions, not dead, depth 4) — only the
+  // downstream rng-consumed state differs. Confirmed by reverting ONLY
+  // tuning-bot.mjs's round-1-buff Pilfer skip in an isolated scratch copy
+  // and re-measuring: the hash did NOT change (chooseCombatItem's own
+  // "buff" branch never actually fires for this seed/force — no potion or
+  // worn buff item is in this run's starting kit), ruling out Plan 01's
+  // bot-tactics.mjs edit as the cause and isolating it to the engine's own
+  // useItem change. Every OTHER label re-measured byte-identical (no other
+  // pin ever exercises a Pilfer's non-heal item use within its own action
+  // budget). Regenerated via `node tools/roll-high-baseline.mjs pins`
+  // (each hashed identically twice).
   "solo-1": { actions: 400, dead: false, depth: 5, hash: "ce883a88443d0e1a2ff1547974c0f9ce5c2a647f479e9ef8de4d7bf4644f8ca6" },
   "solo-2": { actions: 400, dead: false, depth: 4, hash: "b4daf5d20b7f4d3b36d55c1790f53f0d9610d64e3c45a9d81e3700e451ee3e4f" },
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "2dfc0fb87017ec650a504d6db93a39f4a1cf4435bf3b95dc27d6810c430ddbde" },
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "cbc2eb2768e9586b2437c032c5a23b082e20116391b02ede004dfaed32bd6e4b" },
   "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "444ec2ca839587b2249e6f89828a40fef887b2668b935c228a510e99c4ac4207" },
   "party-1": { actions: 400, dead: false, depth: 4, hash: "ab7a42cbfcc8f9cad5845ce73e5f51b59a1942f4cb0ff25c1e2a78591c0aa61d" },
   "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "1ad4462f4a8b7017cc14d5bf5f566677f8efda6d0cd4f6fab06cfb94b928370d" },

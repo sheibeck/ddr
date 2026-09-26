@@ -281,15 +281,21 @@ test("useItem: a Pilfer may drink a Healing (heal) or Xtra Healing (full) potion
   assert.equal(state2.c.wp, 55, "healed to max");
 });
 
-test("useItem: a Pilfer using a Strength potion is refused (useRefused reason pilfer) — no side effect", () => {
+// RULES-09 (Phase 75.1, user 2026-09-24/25): superseded — the heal-only
+// refusal is gone. A Pilfer's non-heal potion now takes effect exactly as
+// it would for anyone; the fumble risk (a d20 draw on a 1) applies only to
+// use-activated jewelry/cloaks/staves, never to a potion.
+test("useItem: a Pilfer using a Strength potion now takes effect, exactly as it does for anyone — no fumble draw", () => {
   const strength = { kind: "potion", n: "Strength potion", eff2: "strength", uses: 1 };
   const state = fixedState({ c: { sub: "Pilfer", might: 0, items: [strength] } });
   const events = useItem(state, 0, fakeRng([]), []);
-  assert.ok(events.some((e) => e.type === "useRefused" && e.reason === "pilfer"));
-  assert.ok(!events.some((e) => e.type === "itemUsed"), "no itemUsed on a refusal");
-  assert.equal(state.c.might, 0, "no side effect applied");
-  assert.equal(state.c.items.length, 1, "item still carried");
-  assert.equal(state.c.items[0].usedAt, undefined, "usedAt never set on a refusal");
+  assert.ok(events.some((e) => e.type === "itemUsed"));
+  assert.ok(!events.some((e) => e.type === "useRefused"), "no refusal");
+  assert.ok(!events.some((e) => e.type === "pilferFumbled"), "a potion never fumbles, even for a Pilfer");
+  // Phase 39 (GEAR-02): the retired c.might += 8 write is now a timed
+  // c.timers effect record read through potionMight(c) — same as the Cat
+  // Burglar case just below.
+  assert.equal(potionMight(state.c), 8);
 });
 
 test("useItem: a Cat Burglar using the same Strength potion is NOT refused", () => {

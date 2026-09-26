@@ -782,9 +782,11 @@ export function hardFight(state) {
  *       `heal` below `potionThreshold`.
  * Every candidate passes `itemReady` (covers the death-potion/no-charges/
  * cooldown cases) and is skipped when `ctx.itemBlocked` already carries its
- * `itemLabel`; a Pilfer is skipped entirely for the buff tier (a non-heal
- * item — `useItem` would refuse it `pilfer`). All reads go through
- * `activationFor(it).kind` — never `it.use`. Pure, no rng.
+ * `itemLabel`. RULES-09 (Phase 75.1, superseded 260918-w4n note): a Pilfer
+ * buffs like anyone now — potions never fumble, and a worn buff risks the
+ * RULES-09 fumble, which a human bot-stand-in would accept for the round-1
+ * edge it buys. All reads go through `activationFor(it).kind` — never
+ * `it.use`. Pure, no rng.
  */
 export function chooseCombatItem(state, ctx) {
   const c = state.c;
@@ -813,8 +815,11 @@ export function chooseCombatItem(state, ctx) {
     if (bestIdx !== -1) return { action: { type: "useItem", i: bestIdx }, reason: "heal" };
   }
 
-  // (2) round-1 buff before a hard fight
-  if (C.round === 1 && hardFight(state) && c.sub !== "Pilfer") {
+  // (2) round-1 buff before a hard fight. RULES-09 (Phase 75.1): the Pilfer
+  // skip that used to sit here is gone — potions never fumble for anyone,
+  // and this tier's worn buffs (haste/brace/plate/unseen/power/giant) carry
+  // the same RULES-09 fumble risk for a Pilfer that any other use does.
+  if (C.round === 1 && hardFight(state)) {
     for (const eff2 of ["speed", "strength", "enlarge"]) {
       for (let i = 0; i < items.length; i++) {
         const it = items[i];

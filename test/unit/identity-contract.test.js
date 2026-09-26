@@ -49,7 +49,8 @@ import {
   canCast,
   spellLevelFor,
 } from "../../engine/derived.js";
-import { canEquipArmor, canEquipWeapon, armorRefusalReason, useItem, gainWilmst } from "../../engine/items.js";
+import { canEquipArmor, canEquipWeapon, armorRefusalReason, useItem, gainWilmst, pilferFumbleRng } from "../../engine/items.js";
+import { rollCheck, atLeastFor } from "../../engine/dice.js";
 import { meetJoiner, resolveJoiner, springTrap, openChest } from "../../engine/encounters.js";
 import { priceFor, sellPriceFor } from "../../engine/economy.js";
 import { newDay, makeCamp, cutthroatMurderCheck } from "../../engine/movement.js";
@@ -217,6 +218,34 @@ function expectEvent(events, type, fields = {}) {
   assert.ok(e, `expected an event of type "${type}" in ${JSON.stringify(events.map((x) => x.type))}`);
   for (const [k, v] of Object.entries(fields)) assert.equal(e[k], v, `event ${type}.${k}`);
   return e;
+}
+
+/**
+ * findPilferFumbleActs(itemName, wantFumble, maxActs) — RULES-09 (Phase
+ * 75.1): searches `state.acts` from 0 upward until `pilferFumbleRng`'s
+ * first d20 draw (via `rollCheck`, `atLeastFor(19, 20)`) matches
+ * `wantFumble` (true = a fumble, roll 1; false = roll >= 2). This suite's
+ * own action calls always thread `fakeRng` (no `getState`), so the derived
+ * stream's cursor input is always 0 — `acts` is the only search dimension.
+ * Never mocks derivedRng itself; bounded, throws past `maxActs`.
+ */
+function findPilferFumbleActs(itemName, wantFumble, maxActs = 5000) {
+  for (let acts = 0; acts <= maxActs; acts++) {
+    const stream = pilferFumbleRng({ acts }, {}, { n: itemName });
+    const isFumble = !rollCheck(stream, 20, atLeastFor(19, 20)).ok;
+    if (isFumble === wantFumble) return acts;
+  }
+  throw new Error(`no acts <= ${maxActs} gives wantFumble=${wantFumble} for "${itemName}"`);
+}
+
+/** predictPilferFumble(itemName, acts) — a FRESH pilferFumbleRng with the
+ * SAME key predicts the check and (on a fumble) the d10 blast, without
+ * re-using the live instance the real useItem() call draws from. */
+function predictPilferFumble(itemName, acts) {
+  const stream = pilferFumbleRng({ acts }, {}, { n: itemName });
+  const chk = rollCheck(stream, 20, atLeastFor(19, 20));
+  const dmg = chk.ok ? null : stream.d(10); // roll:amount (test-side prediction, mirrors useItem's own draw)
+  return { chk, dmg };
 }
 
 /* ============================================================
@@ -787,14 +816,24 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "cannot use a single item that does not heal",
+      // RULES-09 (Phase 75.1, user 2026-09-24/25): superseded — the
+      // heal-only refusal is retired. A Pilfer's new bad is a fumble risk:
+      // fiddling with a use-activated magic item, a d20 roll of 1 blows it
+      // up in their hands for a d10 and turns it to dust.
+      name: "fumbles a magic item on a 1 in 20: it blows up in their hands and turns to dust",
       run() {
-        const strength = { kind: "potion", n: "Strength potion", eff2: "strength", uses: 1 };
+        const ring = { kind: "jewel", n: "Ring of Power" };
+        const acts = findPilferFumbleActs(ring.n, true);
+        const { dmg } = predictPilferFumble(ring.n, acts);
         const state = hero("Pilfer");
-        state.c.items = [strength];
-        const events = useItem(state, 0, fakeRng([]), []);
-        expectEvent(events, "useRefused", { reason: "pilfer" });
-        assert.equal(state.c.might, 0, "no side effect on a refusal");
+        state.acts = acts;
+        state.c.worn = state.c.worn || {};
+        state.c.worn.jewelry1 = ring;
+        const beforeWp = state.c.wp;
+        const events = useItem(state, { slot: "jewelry1" }, fakeRng([]), []);
+        expectEvent(events, "pilferFumbled", { item: ring.n, slot: "jewelry1", dmg });
+        assert.equal(state.c.worn.jewelry1, undefined, "the item is gone from the worn slot");
+        assert.equal(state.c.wp, beforeWp - dmg, "hp dropped by exactly dmg");
       },
     },
   },

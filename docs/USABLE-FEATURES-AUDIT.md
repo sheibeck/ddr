@@ -31,7 +31,8 @@ never a generic "you can't do that."
 | `wrongClass` | `useRefused`, `actionRefused` | a staff used by a non-Magic-User; Sing attempted by a non-Bard | `useRefused`, `actionRefused` |
 | `noCharges` | (its own event, not this reason string) | see `noChargesLeft` below | `noChargesLeft` |
 | `noTarget` | (mostly its own dedicated event) | a targeted effect with nothing to target | `nothingToThrowAt`, `insaneNoTarget`, `nothingToTurn`, `gateRefused` — **unreachable for the four common targeted kinds (thrown/acid/blind/petrify) in combat**: `castSpell` retargets a dead `C.target` onto the first live foe exactly like `playerStrike`, the same way a Strike never whiffs on a corpse |
-| `pilfer` | `useRefused`, `scrollRefused` | a Pilfer cannot use a non-heal magic item or read a scroll | `useRefused`, `scrollRefused` |
+| `pilfer` | `scrollRefused` | a Pilfer cannot read a scroll (RULES-10, unchanged by Phase 75.1). **Superseded for `useRefused` by Phase 75.1 (RULES-09):** the heal-only refusal is gone — a Pilfer uses every magic item under the normal rules; see `pilferFumbled` below for the new risk | `scrollRefused` |
+| *(its own event, not a reason string)* | `pilferFumbled` | (RULES-09, Phase 75.1) a Pilfer's use of a jewel/cloak/staff rolls a derived d20; on a 1 the use fails, the item explodes for a d10 to the Pilfer only (no armor/ward soak) and turns to dust — potions, scrolls and tools never roll this die | `pilferFumbled` |
 | notWorn | useRefused | (Phase 37, GEAR-03; 260918-w4n) a cloak/jewelry activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use. A staff is NEVER refused this way (it has no `c.worn` slot; see `notWielded` below for its own bag-use refusal) | useRefused |
 | `notWielded` | `useRefused` | (RULES-13, Phase 75, user 2026-09-25) a staff addressed by BAG INDEX that is not the currently-wielded one (`wieldedStaff(c) !== it`) — a staff's charged power works only while equipped into the weapon slot; reverses the 2026-09-18 bag-use amendment. The wielded staff, addressed via `{ slot: "weapon" }`, is unaffected | `useRefused` |
 | `exploreOnly` | *(reserved)* | no current engine emitter uses this reason — every existing combat-flavored action is gated the other direction (`combatOnly`), not this one | — |
@@ -104,18 +105,22 @@ Every potion is a buff/heal/curse effect usable from Gear **anywhere** —
 outside combat, inside combat, and while pending (refused `notFought` like
 every other combat action; a genuinely free action once Fight! is pressed).
 
+**RULES-09 (Phase 75.1):** a potion never fumbles, for a Pilfer or anyone —
+the "Pilfer" column below is allowed for every row (identical to any other
+sub-class); the superseded per-row `useRefused pilfer` refusal is gone.
+
 | Potion | eff | Explore | Combat | Pending | Pilfer |
 |---|---|---|---|---|---|
-| Healing | heal | `healed` | `healed` | `useRefused notFought` | allowed (heals) |
-| Cure Poison | poison | `cured` | `cured` | `useRefused notFought` | `useRefused pilfer` |
-| Speed | speed | `itemUsed` (haste=50) | same | `useRefused notFought` | `useRefused pilfer` |
-| Xtra Healing | full | `healed` | `healed` | `useRefused notFought` | allowed (heals) |
-| Strength | strength | `itemUsed` (might+8) | same | `useRefused notFought` | `useRefused pilfer` |
-| Cure Disease | disease | `cured` | `cured` | `useRefused notFought` | `useRefused pilfer` |
-| Enlarge | enlarge | `itemUsed` (might+4) | same | `useRefused notFought` | `useRefused pilfer` |
-| Acuteness | acute | `itemUsed` (acute=d8) | same | `useRefused notFought` | `useRefused pilfer` |
-| Death | death | `died` | `died` | `useRefused notFought` | `useRefused pilfer` |
-| Invisible | invis | `itemUsed` (invis=100) | same | `useRefused notFought` | `useRefused pilfer` |
+| Healing | heal | `healed` | `healed` | `useRefused notFought` | allowed |
+| Cure Poison | poison | `cured` | `cured` | `useRefused notFought` | allowed |
+| Speed | speed | `itemUsed` (haste=50) | same | `useRefused notFought` | allowed |
+| Xtra Healing | full | `healed` | `healed` | `useRefused notFought` | allowed |
+| Strength | strength | `itemUsed` (might+8) | same | `useRefused notFought` | allowed |
+| Cure Disease | disease | `cured` | `cured` | `useRefused notFought` | allowed |
+| Enlarge | enlarge | `itemUsed` (might+4) | same | `useRefused notFought` | allowed |
+| Acuteness | acute | `itemUsed` (acute=d8) | same | `useRefused notFought` | allowed |
+| Death | death | `died` | `died` | `useRefused notFought` | allowed |
+| Invisible | invis | `itemUsed` (invis=100) | same | `useRefused notFought` | allowed |
 
 ## §4. Items with `use` (staves, cloaks, jewelry, scrolls, lockpicks)
 
@@ -141,6 +146,10 @@ state) is refused `notWielded` before any side effect — see §1.
 | Poplar Staff | heal | works (`healed`) | works | `wrongClass` | `useRefused notWielded` |
 | Pine Staff | fire | `useRefused combatOnly` | works (`itemBurned`) | `wrongClass` | `useRefused notWielded` |
 | Cedar Staff | gas | `useRefused combatOnly` | works (up to all asleep) | `wrongClass` | `useRefused notWielded` |
+
+**RULES-09 (Phase 75.1):** a staff is one of the three `PILFER_FUMBLE_KINDS`,
+but a Pilfer is a Thief — `wrongClass` always fires first, so a Pilfer's
+staff fumble is a flagged assumption, never reachable in play.
 
 **Cloaks (7 — the dropped healing cloak was removed by the user on
 2026-09-18, quick 260918-w4n; CLOAKS was 8):** 260918-w4n (use-activated-

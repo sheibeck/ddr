@@ -484,9 +484,10 @@ test("chooseCombatItem: round 1 of a hard fight pops Speed, then Strength, then 
   const round2State = mkState({ combat: roundTwo, c: fighter({ items: [potion("speed")] }) });
   assert.strictEqual(chooseCombatItem(round2State, ctx), null);
 
-  // a Pilfer never gets the buff pick (a non-heal/full item — useItem would refuse it "pilfer")
+  // RULES-09 (Phase 75.1): a Pilfer takes the buff pick like anyone now —
+  // potions never fumble, so the round-1 buff tier is unchanged for a Pilfer.
   const pilferState = mkState({ combat: hard, c: thief({ sub: "Pilfer", items: [potion("speed")] }) });
-  assert.strictEqual(chooseCombatItem(pilferState, ctx), null);
+  assert.deepStrictEqual(chooseCombatItem(pilferState, ctx), { action: { type: "useItem", i: 0 }, reason: "buff" });
 });
 
 test("chooseCombatItem: a ready worn Cloak of Speed is used at round 1 of a hard fight", () => {

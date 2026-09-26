@@ -47,7 +47,12 @@ export const SUB_NOTE = {
   "Bard": "Five songs, one every hundred squares, and dragons hand over gifts to hear them. Camp for the night and creatures too stupid to know better come looking twice as often, and once the fighting starts they come for you first — which, down here, is most of them.",
 
   "Pickpocket": "You take a percentage of everything: purses, shop stock, treasure nobody has opened yet. You have never been caught, but every shopkeeper in the maze remembers your face all the same — a quarter more to buy from them, a quarter less when you sell. You have never been thanked either.",
-  "Pilfer": "Traps disarm themselves in your presence and no sealed room has ever held you. Try to use anything that doesn't heal, though, and your own hands simply refuse — which the dungeon finds hilarious and stocks accordingly.",
+  // RULES-09 (Phase 75.1, user 2026-09-24/25): superseded — the heal-only
+  // refusal is gone. A Pilfer now uses rings, amulets, cloaks and staves
+  // like anyone, but can't quite leave them alone: about one use in twenty,
+  // whatever it was comes apart in your hands for a d10 of your own hp and
+  // is dust. Potions and scrolls you handle exactly like everyone else.
+  "Pilfer": "Traps disarm themselves in your presence and no sealed room has ever held you. Your hands, though, can't leave a magic ring, amulet or cloak alone — use one and, about one time in twenty, it comes apart right there for a d10 of your own hp and is dust. Potions and scrolls you handle like anyone else.",
   "Cat Burglar": "Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.",
   "Cutthroat": "Double damage on your first landed blow, and Joiners will walk beside you all the same — word travels, but so do they. One descent in twenty, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
   "Cloaker": "You can vanish for free, right up until you land your first blow — after that you flee like everyone else, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
