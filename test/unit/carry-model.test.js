@@ -76,7 +76,9 @@ test("newRun seeds a null top-level pendingFind (sibling of combat/store)", () =
   assert.ok("pendingFind" in state, "pendingFind must be a real top-level field");
 });
 
-test("serialization round-trip preserves c.bag and pendingFind (nulled on rehydrate)", () => {
+// SAV-06/SAV-07 (Phase 76): a fresh run's null pendingFind still loads as
+// null; the "reset on rehydrate" wording is gone (a valid find now survives).
+test("serialization round-trip preserves c.bag and a null pendingFind", () => {
   const original = newRun(99);
   assert.equal(original.c.bag, bagForClass(original.c.cls));
 
@@ -85,16 +87,21 @@ test("serialization round-trip preserves c.bag and pendingFind (nulled on rehydr
   const state = rehydrate(check.value);
 
   assert.equal(state.c.bag, original.c.bag, "a saved bag survives the round-trip verbatim");
-  assert.equal(state.pendingFind, null, "pendingFind is reset to null on rehydrate");
+  assert.equal(state.pendingFind, null, "a null pendingFind loads as null");
 });
 
-test("a non-null pendingFind is nulled on rehydrate (transient, like combat)", () => {
+// SAV-06/SAV-07 (Phase 76): FLIPPED from "a non-null pendingFind is nulled on
+// rehydrate" — a valid find survives a relaunch; a nameless one is dropped.
+test("SAV-06 (Phase 76): a valid pendingFind survives rehydrate; a nameless one loads as null", () => {
   const state = newRun(3);
   state.pendingFind = { kind: "cloak", n: "Cloak of Testing" };
   const check = validateSave(JSON.stringify(serializeRun(state)));
   assert.equal(check.ok, true);
   const rehydrated = rehydrate(check.value);
-  assert.equal(rehydrated.pendingFind, null);
+  assert.deepStrictEqual(rehydrated.pendingFind, { kind: "cloak", n: "Cloak of Testing" });
+
+  state.pendingFind = { kind: "cloak" };
+  assert.equal(rehydrate(validateSave(JSON.stringify(serializeRun(state))).value).pendingFind, null);
 });
 
 test("an old save missing c.bag migrates to the class-derived default", () => {

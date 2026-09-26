@@ -107,13 +107,16 @@ test("validateSave: no pendingLoot key -> []; tampered values degrade to []; mal
   assert.deepStrictEqual(withJunk.value.pendingLoot, [{ kind: "jewel", n: "A" }]);
 });
 
-test("the existing pendingFind-is-reset assertions still pass alongside pendingLoot", () => {
+// SAV-06/SAV-07 (Phase 76): FLIPPED from "pendingFind is still reset to null
+// on rehydrate" — a valid pending find now survives a relaunch alongside the
+// loot pile.
+test("SAV-06 (Phase 76): a pending find and the loot pile both survive the load", () => {
   const state = newRun(1);
   state.pendingFind = { kind: "cloak", n: "Cloak of Testing" };
   state.pendingLoot = [JEWEL("A")];
   const rehydrated = rehydrate(validateSave(JSON.stringify(serializeRun(state))).value);
-  assert.equal(rehydrated.pendingFind, null, "pendingFind is still reset to null on rehydrate");
-  assert.deepStrictEqual(rehydrated.pendingLoot, [JEWEL("A")], "pendingLoot survives, unlike pendingFind");
+  assert.deepStrictEqual(rehydrated.pendingFind, { kind: "cloak", n: "Cloak of Testing" }, "SAV-06: pendingFind survives the load");
+  assert.deepStrictEqual(rehydrated.pendingLoot, [JEWEL("A")], "pendingLoot survives too");
 });
 
 test("offerLoot: appends to pendingLoot, pushes lootDropped, never touches c.items", () => {

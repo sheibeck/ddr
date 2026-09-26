@@ -35,26 +35,25 @@ export { forceParty, serializeRun };
  * over content fields (RUN_HASH_FIELDS explicitly excludes `when`) —
  * deterministic, not a new volatile field.
  *
- * - `pendingJoiner` — engine/saveState.js's validateSave/rehydrate never
- *   carry this field through a save/load round trip at all (unlike
- *   `pendingFind`/`pendingHazard`, which ARE explicitly reset to `null` on
- *   load). A live value of `null` (set by encounters.js#resolveJoiner, e.g.
- *   forceParty's own write-path) becomes an ABSENT key after loadSave —
- *   `undefined` and `null` both mean "no pending Joiner decision" to every
- *   engine/UI reader, so this is pure JSON-representation noise, not an
- *   outcome divergence. Pre-existing engine/saveState.js behavior, outside
- *   this plan's "no engine/ changes" scope — discovered while building
- *   Task 2's save-compat round-trip check.
+ * - `pendingJoiner` — SAV-06/SAV-07 (Phase 76, user ruling 2026-09-25):
+ *   engine/saveState.js's validateSave/rehydrate now carry this field
+ *   through a save/load round trip whenever the save has the key (a valid
+ *   offer, or null), so a live value round-trips as-is. A save WITHOUT the
+ *   key (a fresh run, or the frozen pre-switch fixture below) still loads
+ *   without it — `undefined` and `null` both mean "no pending Joiner
+ *   decision" to every engine/UI reader. The entry stays as harmless noise
+ *   protection for that absent-vs-null representation difference; it hides
+ *   no outcome divergence.
  *
- * - `pendingTile` — RULES-12 (Phase 75, user 2026-09-25): engine/saveState.js's
- *   rehydrate/validateSave NOW always reset this to `null` on load, mirroring
- *   `pendingHazard`'s own reset (both transient, engine-only decision state
- *   with no meaning across a load). The frozen pre-switch save fixture below
+ * - `pendingTile` — RULES-12 (Phase 75) / SAV-06 (Phase 76):
+ *   engine/saveState.js's rehydrate/validateSave resume this when it is
+ *   valid on the loaded floor and load it as `null` otherwise — an ABSENT
+ *   key still loads as `null`. The frozen pre-switch save fixture below
  *   predates this field entirely — it was captured before Phase 75 ever
  *   introduced it, so its raw JSON carries no such key at all. `undefined`
  *   (absent) and `null` both mean "no wandering-monster-interrupted tile is
  *   pending" to every engine/UI reader, so a pre-Phase-75 fixture gaining the
- *   key on load is pure JSON-representation noise, not an outcome
+ *   key (as `null`) on load is pure JSON-representation noise, not an outcome
  *   divergence — the exact same category as `pendingJoiner` above.
  *
  * The generator's double-run check (below) is the separate safety net for a

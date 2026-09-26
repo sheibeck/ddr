@@ -26,7 +26,9 @@ import {
   freeWornKey,
 } from "./derived.js";
 import { ensureAbilities } from "./character.js";
-import { ACTIVATION_OF, SPELLS, STAFF_NAMES } from "../content/index.js";
+import { DIRV } from "./movement.js";
+import { STORE_EFFECTS } from "./economy.js";
+import { ACTIVATION_OF, SPELLS, STAFF_NAMES, BESTIARY, TOOLS } from "../content/index.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -154,25 +156,38 @@ function migrateCarry(c) {
 }
 
 /**
- * clearFoeEffect(c) — Phase 19 FID-04 (D-14 / RESEARCH Pitfall 5): `c.foeEffect`
- * is a combat-scoped debuff slot written only by engine/foeAbilities.js.
- * Since load always nulls `combat` (see rehydrate below), a debuff must
- * never survive a load either — a stale `weakened`/`dazed` value (or a
- * tampered non-object) would otherwise silently nerf the hero forever with
- * no fight left to tick it down.
- *
- * When `c` is a non-null, non-array object AND the `"foeEffect"` key is
- * PRESENT, this sets `c.foeEffect = null` (this also neutralises a
- * tampered non-object value like `"999"`, `-1`, or `[]`). When the key is
- * ABSENT this does NOTHING — a v1.0 save and a fresh run must not gain a
- * new key (the round-trip test is deepStrictEqual). Per-foe `abilities`/
- * `cd`/`uses` and `combat.pendingFoes` need no handling here because
- * `combat` is already unconditionally reset to null on every load. Mutates
- * and returns the passed `c`.
+ * isPlainObject(v) — module-private: a non-null, non-array object (the same
+ * check engine/effects.js keeps privately). Used by the resume sanitizers.
  */
-function clearFoeEffect(c) {
+function isPlainObject(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+/**
+ * clearFoeEffect(c, fightSurvives) — Phase 19 FID-04 (D-14 / RESEARCH
+ * Pitfall 5): `c.foeEffect` is a combat-scoped debuff slot written only by
+ * engine/foeAbilities.js (`{ kind, rounds }`).
+ *
+ * SAV-06 (Phase 76): the debuff survives a load exactly when the fight it
+ * belongs to does. With a surviving fight (`fightSurvives` true), a genuine
+ * `{ kind: string, rounds: number }` is kept (a relaunch must never clear a
+ * debuff in the hero's favour) and anything else present is nulled. With no
+ * surviving fight, a present value is nulled, as before — a stale
+ * `weakened`/`dazed` value (or a tampered non-object) would otherwise
+ * silently nerf the hero forever with no fight left to tick it down.
+ *
+ * When the `"foeEffect"` key is ABSENT this does NOTHING — a v1.0 save and a
+ * fresh run must not gain a new key (the round-trip test is
+ * deepStrictEqual). Per-foe `abilities`/`cd`/`uses` and
+ * `combat.pendingFoes` need no handling here: they ride the combat, which is
+ * resumed wholesale or dropped whole (sanitizeCombat). Mutates and returns
+ * the passed `c`.
+ */
+function clearFoeEffect(c, fightSurvives = false) {
   if (c && typeof c === "object" && !Array.isArray(c) && "foeEffect" in c) {
-    c.foeEffect = null;
+    const fe = c.foeEffect;
+    const genuine = isPlainObject(fe) && typeof fe.kind === "string" && typeof fe.rounds === "number";
+    if (!(fightSurvives && genuine)) c.foeEffect = null;
   }
   return c;
 }
@@ -217,27 +232,199 @@ function sanitizePhobiaFields(c) {
 }
 
 /**
- * clearStaleTimers(c) — Phase 36 (BAL foundation) load-tolerance for
- * `c.timers` (engine/effects.js), mirroring clearFoeEffect immediately
- * above: when `c` is a non-null, non-array object AND the `"timers"` key is
- * PRESENT, a non-plain-object value (a tampered string/array/number) is
- * deleted outright, and a genuine map has its rounds-cadence records
- * cleared via clearRoundTimers — combat is always reset to null on load
- * (see rehydrate below), so a combat-scoped rounds record must not survive
- * a load either, exactly clearFoeEffect's reasoning. Squares-cadence
- * records persist. When the key is ABSENT this does NOTHING — a save that
- * never had `c.timers` must not gain one (mirrors clearFoeEffect's
+ * clearStaleTimers(c, fightSurvives) — Phase 36 (BAL foundation) load-
+ * tolerance for `c.timers` (engine/effects.js), mirroring clearFoeEffect
+ * immediately above: when `c` is a non-null, non-array object AND the
+ * `"timers"` key is PRESENT, a non-plain-object value (a tampered
+ * string/array/number) is deleted outright, fight or no fight.
+ *
+ * SAV-06 (Phase 76): a genuine map keeps its rounds-cadence records when
+ * the fight survives this load (`fightSurvives` true) — a relaunch must
+ * never clear an in-fight effect or cooldown in either side's favour. With
+ * no surviving fight, the rounds-cadence records are cleared via
+ * clearRoundTimers as before (a combat-scoped rounds record must not
+ * outlive its fight, exactly clearFoeEffect's reasoning). Squares-cadence
+ * records persist either way. When the key is ABSENT this does NOTHING — a
+ * save that never had `c.timers` must not gain one (mirrors clearFoeEffect's
  * additive-with-default discipline). Mutates and returns the passed `c`.
  */
-function clearStaleTimers(c) {
+function clearStaleTimers(c, fightSurvives = false) {
   if (c && typeof c === "object" && !Array.isArray(c) && "timers" in c) {
     if (!c.timers || typeof c.timers !== "object" || Array.isArray(c.timers)) {
       delete c.timers;
-    } else {
+    } else if (!fightSurvives) {
       clearRoundTimers(c);
     }
   }
   return c;
+}
+
+// ─── SAV-06/SAV-07 (Phase 76): the resume sanitizers ────────────────────────
+//
+// A DECLARED CANON DIVERGENCE from the 1994 prototype's load(), which never
+// resumed a fight, a store or any pending decision (CONTEXT: "What survives
+// a relaunch"). Each sanitizer returns the RAW value itself when it is sound
+// (wholesale: no key is ever copied selectively or deleted, so every combat,
+// foe, ally and stock-line field — present or future — survives without
+// per-field code) or `null` when it is not, and never throws. The depth is
+// chosen so the NEXT action cannot throw on a structurally broken value:
+// src/browser/engineAdapter.js#dispatch's catch replaces the WHOLE run on a
+// throw, so a shallow check would turn a bad stored fight into a lost
+// character (T-76-01).
+
+/** A foe the next combat action can dereference: name, wp, maxWP, alive. */
+function isSoundFoe(f) {
+  return isPlainObject(f) && typeof f.name === "string" && Number.isFinite(f.wp) && Number.isFinite(f.maxWP) && typeof f.alive === "boolean";
+}
+
+/**
+ * sanitizeCombat(raw, party, partyIntact) — the stored `combat`, or null.
+ * Sound means: a plain object; a non-empty `foes` array of sound foes
+ * (isSoundFoe); at least one living foe or a non-empty `pendingFoes` (endCombat
+ * nulls a finished fight, so a live one always has one or the other); an
+ * integer `round` of at least 1; an integer `target` indexing `foes`; a
+ * `type` that is a BESTIARY key; `pending` absent or boolean; `ally` absent,
+ * null or a plain object; `pendingFoes` absent, null or an array whose every
+ * entry is a plain object carrying a sound `foe` (foeTurn pushes `p.foe`
+ * straight into `foes`); `allies` absent, or an array of plain objects with a
+ * finite `wp` whose integer `partyIdx` indexes the loaded `party` — and only
+ * when the tolerant party load dropped no member (`partyIntact`), since a
+ * dropped member shifts every later index onto the wrong sheet.
+ */
+function sanitizeCombat(raw, party, partyIntact) {
+  const C = raw;
+  if (!isPlainObject(C)) return null;
+  if (!Array.isArray(C.foes) || C.foes.length === 0 || !C.foes.every(isSoundFoe)) return null;
+  if (C.pendingFoes !== undefined && C.pendingFoes !== null) {
+    if (!Array.isArray(C.pendingFoes) || !C.pendingFoes.every((p) => isPlainObject(p) && isSoundFoe(p.foe))) return null;
+  }
+  const queued = Array.isArray(C.pendingFoes) && C.pendingFoes.length > 0;
+  if (!C.foes.some((f) => f.alive) && !queued) return null;
+  if (!Number.isInteger(C.round) || C.round < 1) return null;
+  if (!Number.isInteger(C.target) || C.target < 0 || C.target >= C.foes.length) return null;
+  if (typeof C.type !== "string" || !Object.prototype.hasOwnProperty.call(BESTIARY, C.type)) return null;
+  if (C.pending !== undefined && typeof C.pending !== "boolean") return null;
+  if (C.ally !== undefined && C.ally !== null && !isPlainObject(C.ally)) return null;
+  if (C.allies !== undefined) {
+    if (!partyIntact || !Array.isArray(C.allies)) return null;
+    const sound = C.allies.every(
+      (a) => isPlainObject(a) && Number.isFinite(a.wp) && Number.isInteger(a.partyIdx) && a.partyIdx >= 0 && a.partyIdx < party.length,
+    );
+    if (!sound) return null;
+  }
+  return C;
+}
+
+/**
+ * sanitizeStore(raw) — the stored `store`, or null. Sound means: a plain
+ * object; a non-empty `stock` array of plain-object lines, each with a string
+ * `n`, a finite `cost` of at least 0, an `effectId` that is a STORE_EFFECTS
+ * key (buyFrom looks it up), a boolean `sold`, and `effectParams` null or a
+ * plain object whose `item`, when present, is a plain object; a finite
+ * `haggle` in (0, 1]; a string `race`.
+ */
+function sanitizeStore(raw) {
+  if (!isPlainObject(raw)) return null;
+  const { stock, haggle, race } = raw;
+  if (!Array.isArray(stock) || stock.length === 0) return null;
+  const soundLine = (x) =>
+    isPlainObject(x) &&
+    typeof x.n === "string" &&
+    Number.isFinite(x.cost) &&
+    x.cost >= 0 &&
+    typeof x.effectId === "string" &&
+    Object.prototype.hasOwnProperty.call(STORE_EFFECTS, x.effectId) &&
+    typeof x.sold === "boolean" &&
+    (x.effectParams === null || (isPlainObject(x.effectParams) && (x.effectParams.item === undefined || isPlainObject(x.effectParams.item))));
+  if (!stock.every(soundLine)) return null;
+  if (!Number.isFinite(haggle) || haggle <= 0 || haggle > 1) return null;
+  if (typeof race !== "string") return null;
+  return raw;
+}
+
+/** sanitizePendingFind(raw) — a plain-object find with a string `n` (it is narrated), or null. */
+function sanitizePendingFind(raw) {
+  return isPlainObject(raw) && typeof raw.n === "string" ? raw : null;
+}
+
+/**
+ * sanitizePendingHazard(raw, floor) — `{ feat, dir, tool, declined }` with a
+ * string `feat`, a DIRV key `dir`, a TOOLS key `tool` and a boolean
+ * `declined`, AND the cell one step in `dir` from the party still carries
+ * that `feat` (engine/movement.js#move matches the record against it), or
+ * null.
+ */
+function sanitizePendingHazard(raw, floor) {
+  if (!isPlainObject(raw)) return null;
+  if (typeof raw.feat !== "string" || typeof raw.declined !== "boolean") return null;
+  if (typeof raw.dir !== "string" || !Object.prototype.hasOwnProperty.call(DIRV, raw.dir)) return null;
+  if (typeof raw.tool !== "string" || !Object.prototype.hasOwnProperty.call(TOOLS, raw.tool)) return null;
+  const [dx, dy] = DIRV[raw.dir];
+  const row = floor && Array.isArray(floor.g) ? floor.g[floor.py + dy] : undefined;
+  const cell = Array.isArray(row) ? row[floor.px + dx] : undefined;
+  return isPlainObject(cell) && cell.feat === raw.feat ? raw : null;
+}
+
+/**
+ * sanitizePendingTile(raw, floor) — `{ x, y, depth }` with integer fields,
+ * `depth` equal to the loaded floor's depth and an existing cell at `(x, y)`,
+ * or null. engine/movement.js#resolvePendingTile re-checks the position and
+ * the feature itself, so shape and depth are all the load needs.
+ */
+function sanitizePendingTile(raw, floor) {
+  if (!isPlainObject(raw)) return null;
+  if (!Number.isInteger(raw.x) || !Number.isInteger(raw.y) || !Number.isInteger(raw.depth)) return null;
+  if (!floor || raw.depth !== floor.depth || !Array.isArray(floor.g)) return null;
+  const row = floor.g[raw.y];
+  return Array.isArray(row) && isPlainObject(row[raw.x]) ? raw : null;
+}
+
+/**
+ * sanitizePendingJoiner(raw) — a Joiner offer with the minimal character
+ * shape the party load already demands (isValidCharacter) and a string
+ * `name`, carried wholesale (never re-rolled), or null.
+ */
+function sanitizePendingJoiner(raw) {
+  return isValidCharacter(raw) && typeof raw.name === "string" ? raw : null;
+}
+
+/**
+ * resumedSubState(obj, combat, floor) — the ONE builder both load chains use
+ * for what a relaunch resumes (SAV-06/SAV-07): `{ combat, store, pendingFind,
+ * pendingHazard, pendingTile }`, plus `pendingJoiner` ONLY when the raw save
+ * carries that key (newRun never writes it, so a fresh run must not gain it).
+ * `combat` is the already-sanitized fight (the caller computes it first so
+ * the `c` chain knows whether a fight survives). A store never opens mid-
+ * fight, so a surviving fight drops the store. `floor` is the sanitized
+ * floor the hazard and tile checks read.
+ */
+function resumedSubState(obj, combat, floor) {
+  const sub = {
+    combat,
+    store: combat ? null : sanitizeStore(obj.store),
+    pendingFind: sanitizePendingFind(obj.pendingFind),
+    pendingHazard: sanitizePendingHazard(obj.pendingHazard, floor),
+    pendingTile: sanitizePendingTile(obj.pendingTile, floor),
+  };
+  if ("pendingJoiner" in obj) sub.pendingJoiner = sanitizePendingJoiner(obj.pendingJoiner);
+  return sub;
+}
+
+/**
+ * resumeEventsFor(state) — SAV-06/SAV-07 (Phase 76): the Oracle's resume
+ * beat for a freshly loaded state. Pure: zero rng, never mutates `state`.
+ * `[{ type: "fightResumed", round, pending, foes }]` for a live combat
+ * (`foes` = the living foe count; `pending` true while the fight is not yet
+ * joined), `[{ type: "storeResumed" }]` for an open store, `[]` otherwise.
+ */
+export function resumeEventsFor(state) {
+  const C = state && state.combat;
+  if (C) {
+    const foes = Array.isArray(C.foes) ? C.foes.filter((f) => f && f.alive).length : 0;
+    return [{ type: "fightResumed", round: C.round, pending: !!C.pending, foes }];
+  }
+  if (state && state.store) return [{ type: "storeResumed" }];
+  return [];
 }
 
 /**
@@ -317,9 +504,9 @@ const LEGACY_JEWELRY_KEYS = Object.freeze(["ring", "bracelet", "amulet", "helm"]
  * this does NOTHING — creation is `reconcileWorn`'s job, which both load
  * chains run unconditionally since Phase 45 (HEDGE-02). Runs on BOTH load
  * chains (validateSave/rehydrate)
- * BEFORE any rule reads `c.worn` — `combat` is always reset to null on load,
- * but `c.worn` is persistent run state, so a tampered value must be
- * neutralised, not merely combat-scoped like `foeEffect`.
+ * BEFORE any rule reads `c.worn` — `c.worn` is persistent run state, not
+ * combat-scoped like `foeEffect` (which lives or dies with the resumed fight,
+ * SAV-06), so a tampered value must always be neutralised.
  *
  * 260918-w4n (staff amendment, tolerant load): a v1.5 save's `c.worn.staff`
  * is folded back into the bag — a staff has no worn slot any more. After the
@@ -662,14 +849,32 @@ export function validateSave(raw, options = {}) {
   // (Phase 75): sanitizeStaff runs OUTERMOST of all — after sanitizeWard —
   // repairing/dropping a tampered or stale c.staff/c.weapon pair last, once
   // every other field on `c` has already settled.
+  // SAV-06 (Phase 76): the party and the resumed fight are settled FIRST, so
+  // the `c` chain below knows whether a fight survives this load
+  // (clearFoeEffect/clearStaleTimers keep the fight's hero-side state only
+  // then). Phase 38 (ABIL-05): each party member gets the same tolerant-load
+  // rebuild, keyed joiner:<name>:0 (see ensurePartyAbilities's JSDoc).
+  const party = ensurePartyAbilities(sanitizeParty(obj.party));
+  const partyIntact = !Array.isArray(obj.party) || party.length === obj.party.length;
+  const combat = sanitizeCombat(obj.combat, party, partyIntact);
+  const fightSurvives = !!combat;
+
   const migratedC = sanitizeStaff(
     sanitizeWard(
       foldLegacyCounters(
-        ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), seed),
+        ensureCharacterAbilities(
+          sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)), fightSurvives)), fightSurvives)),
+          seed,
+        ),
         steps,
       ),
     ),
   );
+  // Phase 40 (SPELL-05, Plan 04) / Phase 41 (TERR-01): see the floor comment
+  // in the value literal below. Computed here so the resumed pending hazard
+  // and tile are checked against the SAME sanitized floor the run loads with.
+  const floor = sanitizeWaterCells(clearStaleSpellSeen(obj.floor, migratedC));
+  const resumed = resumedSubState(obj, combat, floor);
 
   const value = {
     version: STATE_VERSION,
@@ -680,9 +885,9 @@ export function validateSave(raw, options = {}) {
     // Phase 36 (BAL foundation): clear a present-but-stale c.timers rounds
     // record / drop a tampered value (see clearStaleTimers); never injected.
     // Phase 37 (GEAR-04): neutralise a present-but-tampered c.worn (see
-    // sanitizeWorn) before reconcileWorn below ever reads it. pendingFind
-    // is transient (like combat/store) — not carried through
-    // validateSave's value; rehydrate() nulls it below. Phase 38 (ABIL-02):
+    // sanitizeWorn) before reconcileWorn below ever reads it. SAV-06 (Phase
+    // 76): clearFoeEffect/clearStaleTimers keep the fight's hero-side state
+    // when the fight survives this load. Phase 38 (ABIL-02):
     // ensureCharacterAbilities is the tolerant-load rebuild for c.abilities
     // (a no-op once the field is already an array). Phase 39 (GEAR-02):
     // foldLegacyCounters runs LAST of all — the retired haste/invis/ether/
@@ -699,19 +904,25 @@ export function validateSave(raw, options = {}) {
     // after clearStaleSpellSeen (which never touches `water`) is order-
     // independent in practice, but outermost matches this chain's own
     // "newest migration wraps the previous one" convention.
-    floor: sanitizeWaterCells(clearStaleSpellSeen(obj.floor, migratedC)),
+    floor,
     day,
     steps,
     // Phase 65 (RUN-01): absent on a pre-Phase-65 save, so it loads as 0 and
     // counts from the load point. A tampered value (negative, fractional,
     // NaN, non-number) is never trusted and also loads as 0.
     acts: Number.isInteger(obj.acts) && obj.acts >= 0 ? obj.acts : 0,
-    // Phase 38 (ABIL-05): each party member gets the same tolerant-load
-    // rebuild, keyed joiner:<name>:0 (see ensurePartyAbilities's JSDoc).
-    party: ensurePartyAbilities(sanitizeParty(obj.party)),
+    // Phase 38 (ABIL-05): see the party local above.
+    party,
+    // SAV-06/SAV-07 (Phase 76, DECLARED CANON DIVERGENCE from the 1994
+    // load): a live fight, an open store, a pending find, a pending hazard
+    // decision and a pending tile are resumed when valid and dropped (null)
+    // when not — see resumedSubState and the sanitizers above. A pending
+    // Joiner offer rides along only when the save carries the key.
+    combat: resumed.combat,
+    store: resumed.store,
+    pendingFind: resumed.pendingFind,
     // Phase 29 (LOOT-06): pendingLoot is PERSISTENT run state (the player
-    // must still get their loot screen on resume) — carried through here,
-    // unlike pendingFind (transient, nulled by rehydrate below).
+    // must still get their loot screen on resume) — carried through here.
     pendingLoot: sanitizeLoot(obj.pendingLoot),
     dead: !!obj.dead,
     // Phase 46 (DEAD-04): the retired run-terminator flag is deliberately
@@ -724,21 +935,22 @@ export function validateSave(raw, options = {}) {
     // pre-Phase-33 save → false, so an old save keeps today's fixed store
     // stock and never gains the new draws mid-run.
     storeRoll: !!obj.storeRoll,
-    // Phase 39 (GEAR-05): pendingHazard is transient run state — always
-    // reset to null (rehydrate below mirrors this), exactly like
-    // pendingFind above; a tampered/stale save-side value is never trusted
-    // (T-39-11) — the engine re-derives the decision on the next step.
-    pendingHazard: null,
-    // RULES-12 (Phase 75, user 2026-09-25): pendingTile is transient run
-    // state too — always reset to null on load, exactly like pendingHazard
-    // just above. Combat itself does not survive a relaunch until Phase 76
-    // (SAV-06) persists them together, so a save carrying a mid-resolution
-    // tile has nothing left to resume it with; the feature (if the cell
-    // still has one) simply waits for the next ordinary step onto it.
-    pendingTile: null,
+    // Phase 39 (GEAR-05) / SAV-06 (Phase 76): the hazard pre-roll decision
+    // survives a relaunch only while it still matches the cell one step in
+    // its direction (sanitizePendingHazard); a tampered/stale value is never
+    // trusted (T-39-11) and loads as null — the engine re-derives the
+    // decision on the next step.
+    pendingHazard: resumed.pendingHazard,
+    // RULES-12 (Phase 75) / SAV-06 (Phase 76): the tile a wandering monster
+    // interrupted resumes with the fight it was waiting on, when it is on
+    // this floor (sanitizePendingTile); resolvePendingTile re-checks the rest.
+    pendingTile: resumed.pendingTile,
     deathNote: obj.deathNote || "",
     epitaph: obj.epitaph || "",
   };
+  // SAV-06 (Phase 76, user ruling 2026-09-25): the Joiner offer — only when
+  // the save carries the key, so a fresh run never gains it.
+  if ("pendingJoiner" in resumed) value.pendingJoiner = resumed.pendingJoiner;
   // MD-01: pass deathAt/lastWords through the validated value too, so a
   // terminal (dead) run's real save/load path — validateSave then
   // rehydrate() — doesn't lose them even though rehydrate() alone now
@@ -758,8 +970,12 @@ export function validateSave(raw, options = {}) {
 /**
  * rehydrate(obj) — turns a validated save (`validateSave(...).value`,
  * or an equally-shaped `serializeRun` output) into a GameState ready for
- * `applyAction`: combat/store/beats always reset to null (the prototype's
- * load() never resumed mid-combat or mid-store either).
+ * `applyAction`. SAV-06/SAV-07 (Phase 76, a DECLARED CANON DIVERGENCE from
+ * the prototype's load(), which never resumed mid-combat or mid-store): a
+ * live fight, an open store and the pending find/hazard/tile (plus a Joiner
+ * offer when the key is present) are resumed when valid and nulled when not,
+ * through the SAME resumedSubState builder validateSave uses. `beats` (UI
+ * animation state) is always null after a load.
  *
  * Reconciles `c.worn` unconditionally since Phase 45 (HEDGE-02) — a no-op
  * after `validateSave`'s own call (reconcileWorn returns null on a `c` that
@@ -779,14 +995,28 @@ export function rehydrate(obj) {
   // (Phase 75): sanitizeWard runs OUTERMOST here too, mirroring
   // validateSave's own composition exactly. RULES-13 (Phase 75):
   // sanitizeStaff runs OUTERMOST of all here too, mirroring validateSave.
+  // SAV-06 (Phase 76): mirrors validateSave — the party and the resumed fight
+  // first, so the `c` chain knows whether a fight survives.
+  const party = ensurePartyAbilities(sanitizeParty(obj.party));
+  const partyIntact = !Array.isArray(obj.party) || party.length === obj.party.length;
+  const combat = sanitizeCombat(obj.combat, party, partyIntact);
+  const fightSurvives = !!combat;
   const migratedC = sanitizeStaff(
     sanitizeWard(
       foldLegacyCounters(
-        ensureCharacterAbilities(sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)))))), obj.seed),
+        ensureCharacterAbilities(
+          sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)), fightSurvives)), fightSurvives)),
+          obj.seed,
+        ),
         obj.steps ?? 0,
       ),
     ),
   );
+  // Phase 41 (TERR-01): sanitizeWaterCells mirrors validateSave's own call —
+  // see its comment there. Computed before the literal so the resumed
+  // pending hazard and tile are checked against this same floor.
+  const floor = sanitizeWaterCells(clearStaleSpellSeen(obj.floor, migratedC));
+  const resumed = resumedSubState(obj, combat, floor);
   const state = {
     version: STATE_VERSION,
     seed: obj.seed,
@@ -794,10 +1024,10 @@ export function rehydrate(obj) {
     // ECON-01 (Phase 12): default a missing c.bag by class (migrateCarry),
     // mirroring the validateSave side so a save loaded through either entry
     // point lands with a bag. Phase 19 FID-04: null a present-but-stale
-    // c.foeEffect (see clearFoeEffect) — combat is already reset to null
-    // below, so a mid-combat debuff must not survive either. Phase 36 (BAL
-    // foundation): clear a present-but-stale c.timers rounds record / drop a
-    // tampered value (see clearStaleTimers); never injected. Phase 37
+    // c.foeEffect (see clearFoeEffect) — kept only with a surviving fight
+    // (SAV-06, Phase 76). Phase 36 (BAL foundation): clear a present-but-
+    // stale c.timers rounds record when no fight survives / drop a tampered
+    // value (see clearStaleTimers); never injected. Phase 37
     // (GEAR-04): neutralise a present-but-tampered c.worn (see sanitizeWorn)
     // before reconcileWorn below ever reads it. Phase 38
     // (ABIL-02): ensureCharacterAbilities mirrors validateSave's own call —
@@ -806,41 +1036,40 @@ export function rehydrate(obj) {
     // Phase 40 (SPELL-05, Plan 04): migrateSpellNames/clearStaleSpellSeen
     // mirror validateSave's own calls too — see migratedC above.
     c: migratedC,
-    // Phase 41 (TERR-01): sanitizeWaterCells mirrors validateSave's own call
-    // above — see its comment there.
-    floor: sanitizeWaterCells(clearStaleSpellSeen(obj.floor, migratedC)),
+    floor,
     day: obj.day ?? 1,
     steps: obj.steps ?? 0,
     // Phase 65 (RUN-01): absent on a pre-Phase-65 save, so it loads as 0 and
     // counts from the load point. A tampered value (negative, fractional,
     // NaN, non-number) is never trusted and also loads as 0.
     acts: Number.isInteger(obj.acts) && obj.acts >= 0 ? obj.acts : 0,
-    combat: null,
-    store: null,
+    // SAV-06/SAV-07 (Phase 76): the live fight and open store resume when
+    // valid and load as null when not (resumedSubState, shared with
+    // validateSave). `beats` is UI animation state and is never restored.
+    combat: resumed.combat,
+    store: resumed.store,
     beats: null,
-    // ECON-02 (Phase 12): pendingFind is transient run state — always reset to
-    // null on load, exactly like combat/store above (the prototype's load()
-    // never resumed a mid-find prompt either). Defaults a missing field to null.
-    pendingFind: null,
-    // Phase 39 (GEAR-05): pendingHazard is transient run state — always
-    // reset to null on load, exactly like pendingFind just above (mirrors
-    // validateSave's own reset above).
-    pendingHazard: null,
-    // RULES-12 (Phase 75, user 2026-09-25): pendingTile mirrors
-    // validateSave's own reset above — see its comment there.
-    pendingTile: null,
-    // Phase 29 (LOOT-06): pendingLoot is PERSISTENT run state (unlike
-    // pendingFind just above) — the player must still get their loot screen
-    // back on resume, so it is carried through here, never reset.
+    // ECON-02 (Phase 12) / SAV-06 (Phase 76): a pending find prompt resumes
+    // when valid (sanitizePendingFind); a missing or broken one loads as null.
+    pendingFind: resumed.pendingFind,
+    // Phase 39 (GEAR-05) / SAV-06 (Phase 76): the hazard decision resumes
+    // while it still matches its neighbour cell (sanitizePendingHazard).
+    pendingHazard: resumed.pendingHazard,
+    // RULES-12 (Phase 75) / SAV-06 (Phase 76): the interrupted tile resumes
+    // with its fight when it is on this floor (sanitizePendingTile).
+    pendingTile: resumed.pendingTile,
+    // Phase 29 (LOOT-06): pendingLoot is PERSISTENT run state — the player
+    // must still get their loot screen back on resume, so it is carried
+    // through here, never reset.
     pendingLoot: sanitizeLoot(obj.pendingLoot),
     // PARTY-02 (Phase 7): whitelist the persistent roster, mirroring dead
     // above. sanitizeParty fail-opens a missing party (pre-Phase-7 save) to []
     // and drops malformed members, so old saves load with `party: []` and zero
     // other data loss. serializeRun's state spread already persists it; this is
-    // the explicit read-back side. combat is still nulled (roster is persistent,
-    // combat sub-state is transient), so the party correctly survives reload.
+    // the explicit read-back side. A dropped member also drops a resumed
+    // fight that carries allies (sanitizeCombat's partyIntact rule).
     // Phase 38 (ABIL-05): ensurePartyAbilities mirrors validateSave's own call.
-    party: ensurePartyAbilities(sanitizeParty(obj.party)),
+    party,
     dead: !!obj.dead,
     // Phase 46 (DEAD-04): the retired run-terminator flag is deliberately
     // absent from this whitelist now — a stale save carrying it (any value)
@@ -862,6 +1091,9 @@ export function rehydrate(obj) {
   // reached a terminal state doesn't gain spurious `undefined` fields.
   if (obj.deathAt !== undefined) state.deathAt = obj.deathAt;
   if (obj.lastWords !== undefined) state.lastWords = obj.lastWords;
+  // SAV-06 (Phase 76, user ruling 2026-09-25): the Joiner offer — only when
+  // the save carries the key (never injected into a fresh run).
+  if ("pendingJoiner" in resumed) state.pendingJoiner = resumed.pendingJoiner;
   // Phase 45 (HEDGE-02): unconditional, mirroring validateSave's own call
   // above — a no-op (reconcileWorn returns null and touches nothing) when
   // state.c already carries an own `worn` key, so a save validateSave
