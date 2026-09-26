@@ -1621,10 +1621,12 @@ export function foeToHitBreakdown(state, vs = "hero") {
  * already-zeroed `faces` (a magic-only foe the striker cannot touch stays
  * untouchable; `Math.min(faces, 1)` is `0` when `faces` is already `0`). A
  * plain `t` (no matching `sp` fields, no `mirror`) returns `faces`
- * unchanged. Pure, zero rng.
+ * unchanged. RULES-18 (Phase 75.3): a held foe (`t.held`, engine/combat.js's
+ * timed Freeze/Stone/Stupidity hold past floor 12) is hit like a dozing foe,
+ * folded into the SAME first line as `asleep`/`stupid`. Pure, zero rng.
  */
 export function targetStrikeFaces(c, t, faces) {
-  if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 winning faces to hit a dozing (or stupid) creature
+  if (t.asleep > 0 || t.stupid || t.held) faces = Math.max(faces, 5); // p.27: 5 winning faces to hit a dozing (or stupid, or held) creature
   if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // one more winning face to strike
   if (t.sp && t.sp.magicOnly && !c.magicWpn) faces = 0; // only magic touches it
