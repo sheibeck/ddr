@@ -1110,7 +1110,7 @@ Plans:
   - **no** new client SDK: CLAUDE.md bans analytics SDKs, and Firebase counts as one
 - **Identity.** Either keep Play Games sign-in only for the player id and display name, dropping only its leaderboards, or use an anonymous install id plus a chosen handle. Chosen handles need the family-friendly filter (`content/safety-wordlist.js`) and a way to report or rename a bad one.
 - **Cheating.** A client-submitted score is trivially forged. The engine is deterministic and serializable, and `buildRunSummary` already carries the seed, the rules/season version, an action count and a hash. So the server can check the run cheaply, or fully replay the seed plus the action log for top-N entries.
-- **Scopes.** ME stays local. ALL comes from our server. FRIENDS has no source without Play Games' friends list. Choose one: keep Play Games only for friends, drop FRIENDS, or add friend codes.
+- **Scopes.** ME stays local and ALL comes from our server. FRIENDS comes from our own friends list: the user decided on 2026-09-26 to drop Google's friends list too. That work is **Phase 999.14**, which is built together with this item.
 - **Store compliance.** The Data Safety form and the privacy policy change, because a score, a handle and an id now leave the device and go to our server, not Google's. The Compete opt-out copy is updated too.
 - **Migration.** Keep or retire the Season-1 Play Games boards, and decide what happens to queued `pgsQueue` entries. Play Games achievements (999.12) can stay on Play Games regardless.
 
@@ -1122,3 +1122,27 @@ Plans:
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog or /gsd-new-milestone when ready)
+
+### Phase 999.14: Our own friends list (BACKLOG — pairs with 999.13)
+
+**Goal:** [Captured 2026-09-26, user] "to go along with our own leaderboards, we'll do our own friends list as well. This is better solution than relying on google infrastructure." The FRIENDS scope on the Leaderboards panel reads from a friends list that we host, not from the Play Games friends list and its separate consent prompt. Built together with 999.13, on the same server and identity.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Decisions this needs before planning (discuss together with 999.13):**
+
+- **How players find each other** with no Google contacts and no email: a short shareable friend code, a handle search, or both. An Android share-sheet link ("add me in Delve, Die, Repeat") is a cheap extra.
+- **Mutual or follow.** Mutual needs requests, accept, decline and remove. Follow is one-way, with no request to answer.
+- **Blocking and privacy.** Block and remove a friend. With Compete OFF the player can't be found or added, and nothing is sent.
+- **Family-friendly safety.** Handles pass `content/safety-wordlist.js`. There is no free-text messaging: a friends list only, never chat, which keeps the IARC rating and the moderation load low.
+- **Store compliance.** The friend relationships are stored on our server, so they go on the Data Safety form and in the privacy policy alongside 999.13's scores and handle.
+- **Offline.** Friend actions need the network; offline they show a short in-voice note, not an error. Signed-out or Compete-OFF play makes zero network calls, as today.
+
+**What it touches:**
+
+- It replaces the Play Games friends path: `requestFriendsAccess()` and the friends scope in `src/browser/globalBoards.js` (D-05..D-07), plus the `friend` flag on each row. The Phase 81 FRIENDS chip and the YOU/FRIEND tags stay as the UI.
+- It adds a small friends screen, reached from the ☰ account rows ("account-in-hamburger" ruling): your code, add by code, pending requests, and your friends list.
+- Engine untouched; shell and server work only, with zero parity fixtures.
+
+Plans:
+- [ ] TBD (promote with 999.13 via /gsd-review-backlog or /gsd-new-milestone)
