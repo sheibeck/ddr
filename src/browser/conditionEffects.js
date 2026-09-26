@@ -85,6 +85,11 @@ function itemSourceWhatIf(source, state) {
  *   - darkness: c.darkFor -> 0
  *   - mirror: c.mirror -> 0
  *   - senses: c.senses -> false
+ *   - heroBlind: state.combat.heroBlind -> false (RULES-10, Phase 75.1,
+ *     plan 09) — the hero's own Blind chip reads the live one-face range
+ *     against the unblinded one, the SAME way afraid's own faces diff
+ *     works, since derived.js#toHit reads C.heroBlind as its LAST term
+ *     (overriding every other modifier).
  *
  * Phase 77 (CMBUI-13) is expected to add its own ability-timer keys here
  * (Smoke/Sidestep/Battle Roar) rather than inventing a second what-if map.
@@ -95,6 +100,9 @@ export const WHAT_IF = Object.freeze({
   darkness: (state) => withC(state, { darkFor: 0 }),
   mirror: (state) => withC(state, { mirror: 0 }),
   senses: (state) => withC(state, { senses: false }),
+  // RULES-10 (Phase 75.1, plan 09): mirrors the afraid builder above exactly
+  // — a shallow what-if combat with heroBlind dropped.
+  heroBlind: (state) => (state.combat ? { ...state, combat: { ...state.combat, heroBlind: false } } : state),
 });
 
 /**

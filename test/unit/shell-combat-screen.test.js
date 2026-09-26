@@ -411,8 +411,12 @@ test("Phase 71 D-05: renderActionArea computes locked from __mzBeat.active and p
   assert.match(region, /const locked = !!window\.__mzBeat\?\.active\?\.\(\);/);
   assert.match(region, /window\.__mzCombatVM\.menu\(window\.__mzBeat\?\.view\?\.\(\)\?\.state \|\| S, \{ locked \}\)/);
   assert.match(region, /data-locked/);
-  // guardTap wiring is unchanged: strike + three openers + BACK.
-  assert.match(region, /guardTap\(document\.getElementById\("cb-strike"\), \(\) => window\.mzAttack\?\.\(\)\);/);
+  // guardTap wiring: strike + three openers + BACK. RULES-10 (Phase 75.1,
+  // plan 09): cb-strike now dispatches via pickCombatRow(vm.actions[0])
+  // (ordinarily attack, loseTurn while the hero cannot act) instead of a
+  // hardcoded window.mzAttack call — see test/unit/shell-combat-actions.test.js
+  // for the dedicated RULES-10 coverage of that change.
+  assert.match(region, /guardTap\(document\.getElementById\("cb-strike"\), \(\) => pickCombatRow\(vm\.actions\[0\]\)\);/);
   assert.match(region, /guardTap\(document\.getElementById\("cb-back"\)/);
 });
 
