@@ -370,13 +370,13 @@ Plans:
   3. A player who Saves & quits, or whose app is killed, mid-fight relaunches into the exact same fight — same foes, HP, round and active effects — and force-closing can no longer be used to escape a fight.
   4. A player who relaunches with the store open returns to the same store with the same stock.
 
-**Plans**: 0/6 plans executed
+**Plans**: 2/6 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 76-01-PLAN.md — Make one darkness-waiver rule govern what the party reveals as it walks, what the map renders, and every in-fight dark penalty (DARK-01 plus the "combat too" ruling), with measured readouts and declared pin moves (wave 1)
-- [ ] 76-03-PLAN.md — Make the load keep what the player was in the middle of (SAV-06, SAV-07): a live fight, an open store, a pending find, a pending hazard decision, a pending tile (RULES-12's Phase 76 handoff) and a pending Joiner offer (wave 1)
+- [x] 76-01-PLAN.md — Make one darkness-waiver rule govern what the party reveals as it walks, what the map renders, and every in-fight dark penalty (DARK-01 plus the "combat too" ruling), with measured readouts and declared pin moves (wave 1)
+- [x] 76-03-PLAN.md — Make the load keep what the player was in the middle of (SAV-06, SAV-07): a live fight, an open store, a pending find, a pending hazard decision, a pending tile (RULES-12's Phase 76 handoff) and a pending Joiner offer (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -637,7 +637,7 @@ Plans:
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
-| 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
+| 76. Darkness Unification & Relaunch Persistence | v2.1 | 2/6 | In Progress|  |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
