@@ -880,7 +880,9 @@ export const EVENT_NARRATION = {
   // (the cast-time `stupefied` line above narrates the moment it lands; this
   // one narrates every subsequent turn it does nothing).
   foeStupefied: (e) => `${e.name ?? "It"} stands there, thinking about nothing.`,
-  blinded: (e) => `<span class="hit">${e.target ?? "It"} cannot see a thing.</span>`,
+  // RULES-18 (Phase 75.3): past the knee the Blind spell is timed — `rounds`
+  // rides on the event and the line says so; without it, blind for the fight.
+  blinded: (e) => `<span class="hit">${e.target ?? "It"} cannot see a thing${e.rounds ? ` for ${e.rounds} rounds` : ""}.</span>`,
   shrunk: (e) => `<span class="hit">${e.count ?? 0} shrink to half size.</span>`,
   acidApplied: (e) => `${e.target ?? "It"} starts to dissolve. <span class="roll">${e.rounds ?? 0}</span> rounds of it.`,
   // Phase 40 (SPELL-01, Ice) — the cast-time line; combat.js#foeTurn's
