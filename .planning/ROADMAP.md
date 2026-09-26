@@ -42,7 +42,8 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [x] **Phase 72: Roll-Direction Sign Audit & Fixes** - the audited ledger of every roll modifier's sign, with the three known bugs fixed under the engine gate, landing before the roll-high mirror (completed 2026-09-24)
 - [x] **Phase 73: Engine Roll-High Mirror** - the engine itself switches every die check to roll-high; the full parity suite proves it byte-identical (completed 2026-09-25)
 - [x] **Phase 74: Roll Display & Modifier Honesty** - the Oracle, fight log, rail and every surface print the engine's own high-is-good rolls and consistently signed modifiers (completed 2026-09-25)
-- [x] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate (completed 2026-09-25)
+- [x] **Phase 75: Engine Rules — Character, Economy, Grimoire & Combat Bugs** - HP dots, the wilmst cache, the Summoner's grimoire, Sense Presence, the trap-death bug, ailments and destroyed armor, all under the greenfield engine gate
+ (completed 2026-09-25)
 - [ ] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire
 - [ ] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules
 - [ ] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth, a steeper foe curve and tier past floor 12, and control spells lose their lock at depth
@@ -401,7 +402,25 @@ Plans:
 
   5. In combat, the ITEMS list marks equipped gear EQUIPPED and greys out bag gear that only works when worn, with the reason shown.
 
-**Plans**: TBD
+**Plans**: 0/8 plans executed
+
+Plans:
+**Wave 1**
+
+- [ ] 77-01-PLAN.md — Make the combat submenus readable and honest: every row grows to fit its whole label and description on the Pixel 7 (CMBUI-07), spells list by level then name (CMBUI-08), and the ITEMS list says what is equipped and g... (wave 1)
+- [ ] 77-02-PLAN.md — Make the combat record read in the order things happened (CMBUI-10): the fight log's lines follow engine event order, and only identical back-to-back lines fold into "×N" (wave 1)
+- [ ] 77-03-PLAN.md — Build the data half of CMBUI-13's live effect indicators: the one enumerator knows every effect that is live on the hero or a party member, one table says how each is shown, a coverage guard fails the build when a new... (wave 1)
+- [ ] 77-04-PLAN.md — Finish the foe half of CMBUI-13: every effect a foe can carry this milestone, including the gifts a fumbled scroll hands it, shows as a chip on its card with a description on the long press (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 77-05-PLAN.md — Stop a successful scroll cast from reading like a refusal (CMBUI-11): the copy limit is said once, after the cast, as "too advanced to copy into your book", on every surface (wave 2)
+- [ ] 77-06-PLAN.md — Two combat-screen display fixes: each foe card names its bestiary family after the foe's name (CMBUI-09), and the oldest row of THE FIGHT SO FAR reveals its roll like every other row (CMBUI-12) (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 77-07-PLAN.md — Make the conditions honest in the rolls themselves: a dazed (or inspired, blinded, dark-capped) strike says so in its modifier list, and the moment you are dazed or weakened the Oracle and the fight log say what it do... (wave 3)
+- [ ] 77-08-PLAN.md — Draw CMBUI-13's live effect indicators on the player's side: a chip row under the hero and each party member in YOUR LOT, with a tap that explains what the effect does, how long it lasts and where it came from (wave 3)
 **UI hint**: yes
 **Device check**: yes — combat-screen legibility (submenu clipping, indicator readability) batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
 
