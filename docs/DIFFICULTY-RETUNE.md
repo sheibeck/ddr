@@ -6458,15 +6458,125 @@ number in this section, per the checkpointed fit protocol.
 
 ## v2.1 deep-floor encounter scaling (Phase 75.3) — bot readouts
 
-Stub (user ruling 2026-09-26: bot balance runs happen once, at the
-milestone close in Phase 79.1; 75.3-07 writes this section in full).
+**USER RULING (2026-09-26):** bot balance runs happen once, at the
+milestone close (Phase 79.1), after all of the milestone's code has landed.
+This section records what Phase 75.3 shipped and where each of its
+measurements now lives. It is not a readout record: no bot of any kind
+(`tune-difficulty`, `tune-classes` or `fit-difficulty`) ran in this phase,
+so this section quotes no readout block and gives no verdict against the
+tail targets. Phase 79.1 writes those.
 
-- 75.3-05 (RULES-18, the hero's control spells and items at depth; the bot
-  scores a past-the-knee Freeze as a disable, not a kill): no readout taken;
-  the control-rotation Sorcerer BEFORE/AFTER (from depths 20, 30, 40, and a
-  plain Sorcerer from 20) and the 200-seed natural-after are deferred to
-  Phase 79.1. Floors 1-12 unchanged is proven by deterministic tests
-  (pre-plan floor-12 digests, the state pins), not a bot run.
+### What shipped (the change under measurement)
+
+- **RULES-16, foe count by depth (75.3-01).** `FOE_COUNT_DEPTH` reshapes the
+  canon one-or-two-d4 foe-count draw by floor, with the same draws on every
+  path (no third draw, no new stream):
+
+  | Floors | Count rule | Wandering fight (`foeCountMinFor`) |
+  |---|---|---|
+  | 1-4 | canon: solo on a d4 of 1 or 2 (62.5% solo under the shipped `FOE_COUNT_SKEW`) | 1 |
+  | 5-9 | solo only on a d4 of 1 | 1 |
+  | 10-19 | at least 2 foes | 2 |
+  | 20+ | exactly 3 foes (the table's own ceiling) | 3 |
+
+  Authored fixed counts (named solo bosses, fixed rosters) keep theirs.
+- **RULES-17, the deep curve (75.3-03).** `FOE_HP_SCALE` and `FOE_HIT_SCALE`
+  gain a second, steeper slope past the knee (`kneeDepth` 12). Floors 1-12
+  are byte-identical to the single-slope expression; floor 13 is the first
+  harder floor. The roster keeps escalating past the level-5 tier as elite
+  variants of tier-5 foes (`foeTierFor`), never a raised clamp and never a
+  new hand-authored foe: each elite rank multiplies hp by
+  `1 + hpPerRank × rank` and its blow by `1 + hitPerRank × rank`, inside
+  the one rounding. Elites carry a title from `content/bestiary.js`'s
+  `ELITE_TITLES` (Dread, Grim, Dire, Very Dire, Unreasonably Dire; ranks
+  past 5 keep the last title). The tier-bleed d4 lowers an elite's rank
+  before its tier.
+- **RULES-18, control at depth (75.3-04, 75.3-05).** Past the knee, every
+  control in the audit (C1-C19, `docs/ROLL-LEDGER.md`'s
+  `## Phase 75.3 control at depth (RULES-18)`) first meets a roll-high d20
+  resist on the `controlResist` derived stream: resisted on
+  `roll >= 21 - faces`, with `faces = min(resistCap, 19, resistPerDepth ×
+  (depth - kneeDepth))` (never a main-rng draw, never a roll at or below
+  floor 12). A landed Freeze, Ice's last tick, Petrify and the stone items
+  HOLD the foe for `holdRounds` instead of killing or removing it; the
+  indefinite controls (Stupidity, Blind, the Walnut Staff's weaken, the
+  Birch and Cedar staves' 99-round sleep, the Lullaby's 24) last
+  `holdRounds`. Short rolled durations keep their roll. A lethal Freeze
+  still kills. The bot scores a past-the-knee Freeze as a disable, not a
+  kill. Four events (`controlResisted`, `controlHeld`, `foeStillHeld`,
+  `foeHoldBroken`) and two chips (Held, Unmoved) teach it.
+
+### Shipped dial values (read from `engine/difficulty.js`'s `DIALS`)
+
+These are the start values each plan shipped, carried in the Phase 75.3
+overlay (`.planning/phases/75.3-deep-floor-encounter-scaling/fit/best.json`).
+None was searched or fitted: the checkpointed tail sweep (formerly 75.3-06)
+moved to Phase 79.1.
+
+| Dial | Shipped value | Identity (pre-75.3) | Plan |
+|---|---|---|---|
+| `FOE_COUNT_DEPTH` | `{ soloOnlyOnOneFrom: 5, atLeastTwoFrom: 10, atLeastThreeFrom: 20 }` | all 0 | 75.3-01 |
+| `FOE_HP_SCALE` | `{ base: 0.9, perDepth: 0.015, kneeDepth: 12, perDepthAfter: 0.03 }` | no knee (`perDepthAfter` = `perDepth`) | 75.3-03 |
+| `FOE_HIT_SCALE` | `{ base: 0.6, perDepth: 0.01, kneeDepth: 12, perDepthAfter: 0.02 }` | no knee (`perDepthAfter` = `perDepth`) | 75.3-03 |
+| `FOE_ELITE` | `{ maxRank: 10, hpPerRank: 0.1, hitPerRank: 0.05 }` | `maxRank` 0 | 75.3-03 |
+| `CONTROL_AT_DEPTH` | `{ kneeDepth: 12, resistPerDepth: 1, resistCap: 15, holdRounds: 3 }` | 0 resist faces, 0 hold | 75.3-04 |
+
+What those values give by floor (computed from the engine helpers, not a
+bot run):
+
+| Floor | Foe hp scale | Foe hit scale | Elite rank (unbled) | Resist faces (of 20) | Hold rounds | Wandering count |
+|---|---|---|---|---|---|---|
+| 12 | 1.080 | 0.720 | 0 (tier 4) | 0 | 0 | 2 |
+| 13 | 1.110 | 0.740 | 0 (tier 5) | 1 | 3 | 2 |
+| 16 | 1.200 | 0.800 | 1 (Dread) | 4 | 3 | 2 |
+| 20 | 1.320 | 0.880 | 2 (Grim) | 8 | 3 | 3 |
+| 27 | 1.530 | 1.020 | 4 (Very Dire) | 15 (the cap) | 3 | 3 |
+| 30 | 1.620 | 1.080 | 5 (Unreasonably Dire) | 15 | 3 | 3 |
+| 40 | 1.920 | 1.280 | 8 (Unreasonably Dire) | 15 | 3 | 3 |
+
+### Readouts on file
+
+None. No `tools/readouts/75.3-0*.txt` file exists: every per-plan BEFORE
+and AFTER readout in 75.3-01 through 75.3-05 was skipped under the ruling
+above, and 75.3-07 took no FINAL readout. There is no
+`fit/tail-before.jsonl`, `fit/tail-log.jsonl` or `fit/tail-final.jsonl`
+either; the phase's `fit/` directory holds only the dial overlay
+`best.json`.
+
+Floors 1-12 unchanged is proven deterministically instead, by tests
+rather than a bot: `test/unit/deep-curve.test.js` (the knee equals the
+single-slope expression on floors 1-12), `test/difficulty/difficulty.test.js`
+(`FITTED_CURVE_PINS` byte-identical on depths 2-12),
+`test/unit/control-at-depth.test.js` and
+`test/unit/control-spells-depth.test.js` (0 resist faces and 0 hold on
+floors 1-12; floor-12 digests captured from the pre-plan engine), and
+`test/unit/roll-high-state-pins.test.js` (only `deep-8` and `deep-14`
+moved, both re-pinned by 75.3-01 with a RULES-16 rationale).
+
+### Deferred to Phase 79.1
+
+Everything this phase was to measure runs once, in Phase 79.1, against the
+finished milestone code:
+
+- the 200- and 1,000-seed natural readouts (per-band reach 5+, 10+, 20+;
+  the median death depth against the floor 5-7 average; the floors 13-20
+  tail, measured, not fitted);
+- the fair-bot deep slices from floors 12, 20, 30 and 40;
+- the builds: the Human Sorcerer on the Freeze/Weaken/Doze rotation from
+  20, 30 and 40, the plain Sorcerer from 20, and the Troll Summoner from 20
+  (ROADMAP criterion 5: does a control-lock rotation still carry a caster
+  deep?);
+- the checkpointed tail sweep over `FOE_HP_SCALE.perDepthAfter`,
+  `FOE_HIT_SCALE.perDepthAfter`, `FOE_ELITE.hpPerRank` and
+  `CONTROL_AT_DEPTH.resistPerDepth` (`fit-difficulty.mjs --objective=tail`,
+  built in 75.3-02), with its fit record;
+- the verdict against every tail target the user ruled on 2026-09-25
+  (75.3-CONTEXT, "Design rulings after planning"; `tools/lib/tail-score.mjs`
+  carries them verbatim as `TAIL_TARGETS`): "Living past floor 20 should
+  be exceedingly rare. 20 is the unicorn run. Player getting to depth 30
+  should basically never happen."
+
+No dial was retuned in response to any number, and none is recorded here.
 
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
