@@ -117,7 +117,7 @@ export const DRAW_INVENTORY = {
   "engine/events.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/foeAbilities.js": { rollCheck: 0, amount: 1, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/foeDamage.js": { rollCheck: 1, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
-  "engine/magic.js": { rollCheck: 1, amount: 17, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
+  "engine/magic.js": { rollCheck: 2, amount: 17, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
   "engine/movement.js": { rollCheck: 3, amount: 7, selection: 4, "mishap-on-1": 1, "already-high": 2, primitive: 0 },
   "engine/phobias.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/records.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

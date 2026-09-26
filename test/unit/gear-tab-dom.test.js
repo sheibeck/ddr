@@ -32,7 +32,6 @@ import {
   gearKitRows,
 } from "../../src/browser/gearTab.js";
 import { armorDisplay, dropShelfItems } from "../../src/browser/viewModels.js";
-import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { itemTimerId } from "../../engine/derived.js";
 import { toolItem } from "../../engine/items.js";
 
@@ -567,7 +566,9 @@ test("CONSUMABLES: a buff-potion group click dispatches useItem(firstIndex)", ()
   assert.deepStrictEqual(deps.useItem.calls, [[state.c.items.indexOf(BUFF_A)]]);
 });
 
-test("CONSUMABLES: a Magic User's scroll READ dispatches readScroll(); a Pilfer's READ is disabled with the engine's refusal line", () => {
+// RULES-10 (Phase 75.1): canRead is gone — a Pilfer's READ is now enabled
+// too, dispatching readScroll() exactly like a Magic User's.
+test("CONSUMABLES: a Magic User's and a Pilfer's scroll READ both dispatch readScroll()", () => {
   // Magic User — enabled READ.
   {
     const state = { c: fixedChar({ cls: "Magic User", scrolls: 2 }) };
@@ -579,15 +580,15 @@ test("CONSUMABLES: a Magic User's scroll READ dispatches readScroll(); a Pilfer'
     btn.onclick();
     assert.deepStrictEqual(deps.readScroll.calls, [[]]);
   }
-  // Pilfer — disabled READ with the engine's own reason line.
+  // Pilfer — also enabled, no refusal reason.
   {
     const state = { c: fixedChar({ cls: "Thief", sub: "Pilfer", scrolls: 3 }) };
-    const { doc } = renderFresh(state);
+    const { doc, deps } = renderFresh(state);
     const scrollLi = doc.document.getElementById("gear-cons").children.find((li) => li.dataset.key === "scroll");
     const btn = scrollLi.children.find((n) => n.tagName === "button");
-    assert.equal(btn.disabled, true);
-    const reasonEl = scrollLi.children.find((n) => n.className === "mw-gear-card-main").children.find((n) => n.className === "mw-gear-cons-tag");
-    assert.equal(reasonEl.textContent, LINE_FOR.scrollRefused({ reason: "pilfer" }).text);
+    assert.equal(btn.disabled, false);
+    btn.onclick();
+    assert.deepStrictEqual(deps.readScroll.calls, [[]]);
   }
 });
 

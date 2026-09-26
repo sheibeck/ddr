@@ -194,6 +194,20 @@ export function facesRangeText(faces, dieN) {
 }
 
 /**
+ * bottomRangeText(below) — RULES-10 (Phase 75.1): the faces STRICTLY BELOW
+ * a cutoff, the one formatter every scroll-fumble-band line prints its
+ * fumble range through: "1–3" for 4, "1" for 2, "nothing" at 1 or less (no
+ * face is below the worst possible face), "?" for a non-finite input. Always
+ * the U+2013 en dash, matching rangeText's own convention above.
+ */
+export function bottomRangeText(below) {
+  if (!Number.isFinite(below)) return "?";
+  if (below <= 1) return "nothing";
+  if (below === 2) return "1";
+  return `1–${below - 1}`;
+}
+
+/**
  * dieText(dieN) — "d20"; a non-finite dieN reads "d?".
  */
 export function dieText(dieN) {

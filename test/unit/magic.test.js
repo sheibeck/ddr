@@ -13,7 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { castSpell, drinkPotion, readScroll, canRead } from "../../engine/magic.js";
+import { castSpell, drinkPotion, readScroll } from "../../engine/magic.js";
 import { SPELLS } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
 import { setDialsForTuning } from "../../engine/difficulty.js";
@@ -456,14 +456,8 @@ test("drinkPotion: caps at maxWP", () => {
   assert.equal(state.c.wp, 40);
 });
 
-// --- canRead / readScroll -----------------------------------------------
-
-test("canRead: a Pilfer can never read a scroll; a Magic User always can", () => {
-  assert.equal(canRead(fixedState({ c: { sub: "Pilfer", cls: "Thief" } })), false);
-  assert.equal(canRead(fixedState({ c: { cls: "Magic User", sub: "Wizard" } })), true);
-  assert.equal(canRead(fixedState({ c: { cls: "Fighter", sub: "Knight", skills: {} } })), false);
-  assert.equal(canRead(fixedState({ c: { cls: "Fighter", sub: "Knight", skills: { "Runes/Signs": 1 } } })), true);
-});
+// --- readScroll (RULES-10, Phase 75.1: canRead is gone — see
+// test/unit/scroll-read.test.js for the full reader/band/outcome coverage) -
 
 test("readScroll: a learnable, unknown spell is copied into the grimoire instead of cast", () => {
   const state = fixedState({ c: { scrolls: 1, cls: "Magic User", sub: "Wizard", level: 5, grimoire: [] } });
@@ -486,21 +480,15 @@ test("readScroll: an already-known spell is cast for free, ignoring the charge e
   assert.ok(events.some((e) => e.type === "healed"));
 });
 
-test("readScroll: no scrolls or cannot read refuses out loud with a reason, zero draws, no mutation", () => {
+test("readScroll: no scrolls refuses out loud with a reason, zero draws, no mutation", () => {
   // Phase 25 (FEED-02): the old silent no-op is replaced by a named
-  // `scrollRefused` event — zero rng draws either way (fakeRng([]) throws on
-  // any draw), and neither branch mutates `c.scrolls`.
+  // `scrollRefused` event — zero rng draws (fakeRng([]) throws on any draw),
+  // and the refusal never mutates `c.scrolls`. RULES-10 (Phase 75.1): this is
+  // the ONLY scrollRefused reason left besides the pending-fight one — a
+  // Pilfer/no-Runes reader now READS (rolling intelligence), never refuses.
   const noScrolls = fixedState({ c: { scrolls: 0, cls: "Magic User" } });
   assert.deepStrictEqual(readScroll(noScrolls, fakeRng([]), []), [{ type: "scrollRefused", reason: "noScrolls" }]);
   assert.equal(noScrolls.c.scrolls, 0);
-
-  const cannotRead = fixedState({ c: { scrolls: 1, cls: "Thief", sub: "Pilfer" } });
-  assert.deepStrictEqual(readScroll(cannotRead, fakeRng([]), []), [{ type: "scrollRefused", reason: "pilfer" }]);
-  assert.equal(cannotRead.c.scrolls, 1);
-
-  const noRunes = fixedState({ c: { scrolls: 1, cls: "Fighter", sub: "Soldier" } });
-  assert.deepStrictEqual(readScroll(noRunes, fakeRng([]), []), [{ type: "scrollRefused", reason: "noRunes" }]);
-  assert.equal(noRunes.c.scrolls, 1);
 });
 
 // --- Phase 18: damageFoe routing (CANON-04 / CANON-03 / D-06) ---

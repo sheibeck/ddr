@@ -1619,6 +1619,58 @@ export function resistRoll(rng, intel) {
 }
 
 /**
+ * scrollReaderOf(c) — RULES-10 (Phase 75.1, user 2026-09-24/25): which of
+ * readScroll's three read paths a character takes. A Magic User always
+ * reads automatically ("magicUser" — the grimoire-copy/free-cast path,
+ * unchanged since Phase 40); a non-Magic-User carrying Runes/Signs also
+ * reads automatically, with no grimoire copy ("runes"); everyone else rolls
+ * their own intelligence ("intel") — including a Pilfer, whose old blanket
+ * refusal (`canRead`, retired by this phase) used to stop it outright. Pure,
+ * no rng.
+ */
+export function scrollReaderOf(c) {
+  if (c.cls === "Magic User") return "magicUser";
+  if (skill(c, "Runes/Signs")) return "runes";
+  return "intel";
+}
+
+/**
+ * scrollReadBands(intel) — RULES-10: the intelligence-read thresholds for an
+ * "intel" reader, on a d20, roll-high (Phase 73, ROLL-05). `atLeast` is the
+ * lowest winning face — `atLeastFor(intel - 1, 20)`, i.e. `22 - intel` —
+ * exactly `intel - 1` winning faces, mirroring today's `roll < intel`
+ * canon shape. There is NO intel-12 floor here — unlike `resistRoll` above
+ * (a foe/ability resistance gate), low intel just means worse odds, all the
+ * way down; a scroll reader with intel 1 practically never reads. A fumble
+ * is any roll BELOW half the target: `fumbleAtLeast = Math.ceil(atLeast /
+ * 2)` — a roll of EXACTLY half the target is a plain failure, never a
+ * fumble (the user's own worked example: intel 14 reads 8-20, fails 4-7,
+ * fumbles 1-3). `intel` is read as a finite number or 0 (a missing/absent
+ * intel reads as the worst possible reader: atLeast 22, fumbleAtLeast 11 —
+ * never reads, fumbles on 1-11). Pure, no rng.
+ */
+export function scrollReadBands(intel) {
+  const i = Number.isFinite(intel) ? intel : 0;
+  const atLeast = atLeastFor(i - 1, 20);
+  return { atLeast, fumbleAtLeast: Math.ceil(atLeast / 2), dieN: 20 };
+}
+
+/**
+ * scrollReadOutcome(check, bands) — RULES-10: "read" when the check
+ * succeeded (`check.ok`, the roll landed at or above `bands.atLeast`); else
+ * "garbled" (a plain failure — the scroll crumbles, nothing casts) when the
+ * roll is still at or above `bands.fumbleAtLeast`; else "fumbled" (a bad
+ * miss — the scroll turns on the reader in combat, or just fizzles outside
+ * it). Written roll-high throughout (the Phase 73 shape guard,
+ * test/unit/roll-high-guard.test.js, requires it) — every comparison reads
+ * `roll >= atLeast`, never `<`/`<=`. Pure, no rng.
+ */
+export function scrollReadOutcome(check, bands) {
+  if (check.ok) return "read";
+  return check.roll >= bands.fumbleAtLeast ? "garbled" : "fumbled";
+}
+
+/**
  * killSpFor(c, f, roll) — PARLEY-01 (Phase 20, D-01): the ONE kill-skill-
  * point formula shared by `engine/combat.js#killFoe` and `#parley`, so
  * parley's "half the skill points" is STRUCTURALLY half of the same number a

@@ -58,7 +58,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // every event-driven roll line this plan converts (strikeMissed/struck; the
 // foe-side/thrown lines convert in 73-05/73-07) formats its range through
 // rangeText here, so no two surfaces ever write a range differently.
-import { rangeText, rollVsText, modsClause, signedText, ROLLERS } from "./rollRange.js";
+import { rangeText, rollVsText, modsClause, signedText, ROLLERS, bottomRangeText } from "./rollRange.js";
 // RULES-07 (Phase 75): afflictionRolled reads the row's own `phobia` flag by
 // roll so a mind-row (5-6) narrates honestly instead of printing "Disease." —
 // pure content data, no engine/ import, same discipline as the flavor.js
@@ -924,18 +924,17 @@ export const EVENT_NARRATION = {
     `<span class="hit">+${e.amount ?? 0} hp</span> (${plural(e.remaining ?? 0, "potion")} left).${e.doubled ? ` (${e.doubled}: twice the dose, as promised.)` : ""}`,
   scrollRead: (e) => `You unroll a scroll: ${e.spell ?? "something unreadable"}.`,
   // Phase 25 (FEED-02): a scroll refuses to be read out loud, with a reason —
-  // never a silent no-op. `reason` is "noScrolls" | "pilfer" | "noRunes";
-  // any other/absent value falls to the generic "stays rolled" line.
+  // never a silent no-op. RULES-10 (Phase 75.1): "pilfer"/"noRunes" are
+  // retired — canRead is gone, and a Pilfer/no-Runes reader now READS
+  // (rolling intelligence: scrollDeciphered/scrollGarbled/scrollFumbled
+  // below), never refuses. `reason` is "noScrolls" | "notFought"; any other/
+  // absent value falls to the generic "stays rolled" line.
   scrollRefused: (e) =>
-    e.reason === "pilfer"
-      ? `<span class="miss">A Pilfer's hands know locks, not letters.</span> The scroll stays rolled.`
-      : e.reason === "noRunes"
-        ? `<span class="miss">The runes mean nothing to you.</span> The scroll stays rolled.`
-        : e.reason === "noScrolls"
-          ? `<span class="miss">You have no scroll to read.</span>`
-          : e.reason === "notFought"
-            ? `<span class="miss">Fight! first.</span> The scroll will keep.`
-            : `<span class="miss">It stays rolled.</span>`,
+    e.reason === "noScrolls"
+      ? `<span class="miss">You have no scroll to read.</span>`
+      : e.reason === "notFought"
+        ? `<span class="miss">Fight! first.</span> The scroll will keep.`
+        : `<span class="miss">It stays rolled.</span>`,
   scrollCopiedToGrimoire: (e) => `<span class="hit">${e.spell ?? "It"} copied into your grimoire.</span>`,
   // Phase 40 (SPELL-07): the scroll's spell is not yet scribable (level or
   // school gate not met) — it names the level needed and falls through to
@@ -943,6 +942,20 @@ export const EVENT_NARRATION = {
   scrollTooAdvanced: (e) =>
     `<span class="miss">${e.spell ?? "It"} needs level ${e.need ?? "?"}; you are ${e.have ?? "?"}. The scroll reads itself once and crumbles.</span>`,
   scrollCast: (e) => `The scroll casts itself: ${e.spell ?? "something"}.`,
+  // RULES-10 (Phase 75.1) — an "intel" reader's own d20, on its own derived
+  // stream. scrollDeciphered names the reading range (like heroResisted);
+  // scrollGarbled is a plain failure — never the spell's name, never worded
+  // as a refusal, just an honest "I couldn't make it out"; scrollFumbled
+  // names the spell and the fumble band (via bottomRangeText), and, outside
+  // combat, that it fizzled and the scroll is dust.
+  scrollDeciphered: (e) =>
+    `<span class="hit">You puzzle the runes out.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
+  scrollGarbled: (e) =>
+    `<span class="miss">You squint at runes you can't make out. The scroll crumbles.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
+  scrollFumbled: (e) =>
+    `<span class="hurt">You read ${e.spell ?? "the spell"} wrong.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)}, fumble ${bottomRangeText(e.fumbleAtLeast)} (intel ${e.intel ?? "?"}).</span>${
+      e.fizzled ? ` Out here there is nothing for it to land on. It fizzles — the scroll is dust.` : ""
+    }`,
 
   /* ---------------- economy.js ---------------- */
 

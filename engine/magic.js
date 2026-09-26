@@ -2,7 +2,7 @@
 //
 // The magic domain (ENG-01, ENG-05) — spellcasting across every SPELLS kind,
 // potions, and scrolls. Ports mazeworld.html's castSpell/drinkPotion/
-// canRead/readScroll (lines 2483-2794), replacing every D()/pick()-backed
+// readScroll (lines 2483-2794), replacing every D()/pick()-backed
 // Math.random() draw with the injected engine rng (in the prototype's exact
 // consumption order, including its short-circuiting `&&` guards that only
 // sometimes roll — e.g. Noxious Vapor's per-foe d10, only rolled when the d6
@@ -19,13 +19,15 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { skill, eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul } from "./derived.js";
+import { eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
+import { derivedRng } from "./rng.js";
+import { resolveScrollFumble } from "./scrollFumble.js";
 // Phase 40 (SPELL-01, Weaken): the ONE timer shape every v1.5 timer shares
 // (Phase 36) — Weaken's duration lives on a rounds-cadence `spell:weaken`
 // record, ticked by combat.js#foeTurn's shared tickRounds(c) tail exactly
@@ -618,22 +620,64 @@ export function drinkPotion(state, rng, events = []) {
 }
 
 /**
- * canRead(state) — can this character make use of a scroll at all? Ports
- * mazeworld.html canRead() (lines 2772-2775). A Pilfer never gets to use a
- * magic item; everyone else needs to be a Magic User or carry Runes/Signs.
+ * scrollReadRng(state, rng) — RULES-10 (Phase 75.1): the ONE derived rng
+ * stream an "intel" reader's d20 draws from — `derivedRng(<main rng cursor,
+ * or 0 for a test double with no getState>, "scrollRead", <state.acts when a
+ * non-negative integer, else 0>)`. Mirrors `items.js#pilferFumbleRng`'s own
+ * pattern exactly. Never touches the caller's main `rng` — the roll never
+ * reorders the main stream, so a Magic User/Runes reader's draws (which
+ * never call this) stay byte-identical to before this phase.
  */
-export function canRead(state) {
-  const c = state.c;
-  if (c.sub === "Pilfer") return false;
-  return c.cls === "Magic User" || skill(c, "Runes/Signs");
+export function scrollReadRng(state, rng) {
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  return derivedRng(cursor, "scrollRead", acts);
 }
 
 /**
- * readScroll(state, rng, events) — unrolls one carried scroll. Ports
+ * scrollFreeCast(state, sp, rng, events, now) — the "pays for itself and
+ * ignores your book" free cast every successful scroll read takes, shared by
+ * all three readers (magicUser/runes/a successful intel roll). Pushes
+ * `scrollCast`, then casts with the caster's own charge count zeroed and
+ * restored around the call — `castSpell` itself calls `afterPlayerAction`
+ * when `state.combat` is set.
+ */
+function scrollFreeCast(state, sp, rng, events, now) {
+  const c = state.c;
+  events.push({ type: "scrollCast", spell: sp.n });
+  const saved = c.spellsUsed;
+  c.spellsUsed = 0;
+  c.scrollCast = true; // a scroll pays for itself and ignores your book
+  castSpell(state, SPELLS.indexOf(sp), rng, events, now);
+  c.spellsUsed = saved;
+  c.scrollCast = false;
+}
+
+/**
+ * readScroll(state, rng, events, now) — unrolls one carried scroll. Ports
  * mazeworld.html readScroll() (lines 2776-2794): a random spell (capped by
  * floor depth), transferred straight into a Magic User's grimoire if it's
  * learnable AND already castable, otherwise cast for free (ignoring the
  * caster's own charge economy and grimoire/level gates via `scrollCast`).
+ *
+ * RULES-10 (Phase 75.1, user 2026-09-24/25): `canRead`'s blanket class/skill
+ * gate (and the Pilfer's own lockout inside it) is GONE — anyone may attempt
+ * any scroll, and the scroll is consumed on EVERY attempt, success or
+ * failure. `scrollReaderOf(c)` picks the read path:
+ *   - "magicUser": today's path, byte-identical (the grimoire-copy/
+ *     scrollTooAdvanced dance below, then the free cast) — no roll, no
+ *     scroll-stream draw.
+ *   - "runes": straight to the free cast, no roll, no grimoire copy (the
+ *     grimoire stays Magic-User-only).
+ *   - "intel": one d20 via `scrollReadRng` against `scrollReadBands(c.intel)`
+ *     — `scrollReadOutcome` picks "read" (casts free, `scrollDeciphered`),
+ *     "garbled" (a plain failure — `scrollGarbled`, nothing casts, the
+ *     reader's turn still spends in combat), or "fumbled" (`scrollFumbled`;
+ *     outside combat it just fizzles — `fizzled: true`, nothing else
+ *     changes; in combat `resolveScrollFumble` turns it against the reader/
+ *     their side/the target foe, then the reader's turn spends unless they
+ *     just died). A Pilfer reads under exactly this rule — the RULES-09 d10
+ *     item-fumble blast never applies to a scroll.
  *
  * DELIBERATE RULES CHANGE (Phase 40, SPELL-07, 2026-09-18): the prototype's
  * copy-to-grimoire condition checked only the spell's raw PRINTED level
@@ -655,43 +699,81 @@ export function canRead(state) {
  * migration): `canCast`'s existing `spellSchoolLocked`/`spellAboveLevel`
  * refusal already names the level needed the next time that spell is cast.
  */
-export function readScroll(state, rng, events = []) {
+export function readScroll(state, rng, events = [], now = Date.now) {
   const c = state.c;
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
   if (refuseIfPending(state, events, "scrollRefused")) return events;
-  // Phase 25 (FEED-02): the combined guard is split so each refusal names
-  // its own reason instead of failing silently — zero draws, no mutation,
-  // both checks sit BEFORE `c.scrolls--` and the rng.pick below.
+  // Phase 25 (FEED-02): a named refusal, never a silent no-op — zero draws,
+  // no mutation. This is the ONLY remaining scrollRefused reason besides the
+  // pending-fight one above (RULES-10 retires `canRead`'s "pilfer"/"noRunes"
+  // reasons entirely).
   if (!c.scrolls) {
     events.push({ type: "scrollRefused", reason: "noScrolls" });
-    return events;
-  }
-  if (!canRead(state)) {
-    events.push({ type: "scrollRefused", reason: c.sub === "Pilfer" ? "pilfer" : "noRunes" });
     return events;
   }
   c.scrolls--;
   const options = SPELLS.filter((sp) => sp.lvl <= Math.min(5, state.floor.depth + 1));
   const sp = rng.pick(options);
-  events.push({ type: "scrollRead", spell: sp.n });
-  // "Scrolls contain spells; transfer to grimoire erases scroll."
-  if (c.cls === "Magic User" && canLearn(c.sub, sp) && !c.grimoire.includes(sp.n)) {
-    const need = Math.max(spellLevelFor(c.sub, sp), schoolGate(c.sub, sp.s));
-    if (spellLevelFor(c.sub, sp) <= c.level && c.level >= schoolGate(c.sub, sp.s)) {
-      c.grimoire.push(sp.n);
-      events.push({ type: "scrollCopiedToGrimoire", spell: sp.n });
-      return events;
+  const reader = scrollReaderOf(c);
+
+  if (reader === "magicUser") {
+    events.push({ type: "scrollRead", spell: sp.n, reader });
+    // "Scrolls contain spells; transfer to grimoire erases scroll."
+    if (canLearn(c.sub, sp) && !c.grimoire.includes(sp.n)) {
+      const need = Math.max(spellLevelFor(c.sub, sp), schoolGate(c.sub, sp.s));
+      if (spellLevelFor(c.sub, sp) <= c.level && c.level >= schoolGate(c.sub, sp.s)) {
+        c.grimoire.push(sp.n);
+        events.push({ type: "scrollCopiedToGrimoire", spell: sp.n });
+        return events;
+      }
+      events.push({ type: "scrollTooAdvanced", spell: sp.n, need, have: c.level, school: sp.s });
+      // falls through to the free-cast path below — the scroll still pays
+      // for itself once, exactly as a spell the caster could never learn.
     }
-    events.push({ type: "scrollTooAdvanced", spell: sp.n, need, have: c.level, school: sp.s });
-    // falls through to the free-cast path below — the scroll still pays for
-    // itself once, exactly as a spell the caster could never learn at all.
+    scrollFreeCast(state, sp, rng, events, now);
+    return events;
   }
-  events.push({ type: "scrollCast", spell: sp.n });
-  const saved = c.spellsUsed;
-  c.spellsUsed = 0;
-  c.scrollCast = true; // a scroll pays for itself and ignores your book
-  castSpell(state, SPELLS.indexOf(sp), rng, events);
-  c.spellsUsed = saved;
-  c.scrollCast = false;
+
+  if (reader === "runes") {
+    events.push({ type: "scrollRead", spell: sp.n, reader });
+    scrollFreeCast(state, sp, rng, events, now);
+    return events;
+  }
+
+  // "intel": one d20 on its own derived stream, against the reader's own
+  // intelligence — no floor, no ceiling, everyone else reads this way.
+  events.push({ type: "scrollRead", spell: sp.n, reader });
+  const stream = scrollReadRng(state, rng);
+  const bands = scrollReadBands(c.intel);
+  const check = rollCheck(stream, bands.dieN, bands.atLeast);
+  const outcome = scrollReadOutcome(check, bands);
+
+  if (outcome === "read") {
+    events.push({ type: "scrollDeciphered", spell: sp.n, ...rollFields(check), intel: c.intel });
+    scrollFreeCast(state, sp, rng, events, now);
+    return events;
+  }
+  if (outcome === "garbled") {
+    events.push({ type: "scrollGarbled", spell: sp.n, ...rollFields(check), intel: c.intel, fumbleAtLeast: bands.fumbleAtLeast });
+    if (state.combat) afterPlayerAction(state, rng, events);
+    return events;
+  }
+  // "fumbled": a fizzle outside combat destroys nothing but the scroll
+  // already spent above; in combat the resolver turns it against the
+  // reader/their side/the foe, then the reader's turn spends (a no-op if
+  // the resolver just killed the reader — die() nulls state.combat).
+  const fizzled = !state.combat;
+  events.push({
+    type: "scrollFumbled",
+    spell: sp.n,
+    ...rollFields(check),
+    intel: c.intel,
+    fumbleAtLeast: bands.fumbleAtLeast,
+    ...(fizzled ? { fizzled: true } : {}),
+  });
+  if (state.combat) {
+    resolveScrollFumble(state, sp, stream, rng, events, now);
+    afterPlayerAction(state, rng, events);
+  }
   return events;
 }

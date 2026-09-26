@@ -18,15 +18,10 @@
 import { WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor, weaponRow, wieldedStaff } from "../../engine/derived.js";
 import { isReady, remaining } from "../../engine/effects.js";
 import { bagCap, canStow, slotItems } from "../../engine/items.js";
-import { canRead } from "../../engine/magic.js";
 import { maxCharges } from "../../engine/movement.js";
 import { sellPriceFor } from "../../engine/economy.js";
 import { WEAPONS } from "../../content/index.js";
 import { armorDisplay, bagArmorText, lootCompare, usableBy, dropShelfItems } from "./viewModels.js";
-// Phase 62 (GSCR-06) — gearConsumablesModel's SCROLLS row reads the engine's
-// own scroll refusal line (never a restated reason string); a separate
-// import line so it never collides with the pinned derived.js import above.
-import { LINE_FOR } from "./narrationLines.js";
 
 /**
  * bagUsage(c) — Phase 29 (LOOT-04): the ONE "used / slots" readout the
@@ -461,11 +456,11 @@ export function gearBagCardsModel(state) {
  * potion the combat menu would have refused (GSCR-06 prohibition). Then one
  * row per buff-potion NAME (`kind: "potion"` items in `c.items`, grouped, in
  * first-appearance order), always enabled — the engine's own refusal line
- * explains any tap on the rail. Then SCROLLS when `c.scrolls > 0`, `enabled`
- * === `canRead(state)`, its `reason` the engine's OWN
- * `LINE_FOR.scrollRefused` text (mirrors `engine/magic.js#readScroll`'s own
- * pilfer/noRunes ternary). `heldText` counts potions + buff items + scrolls.
- * Pure, null-safe.
+ * explains any tap on the rail. Then SCROLLS when `c.scrolls > 0` — RULES-10
+ * (Phase 75.1): `canRead` is gone, so this row is ALWAYS enabled with an
+ * empty reason (anyone may attempt a scroll now; the reader's own odds text
+ * on this row is 75.1-07's job, not this model's). `heldText` counts
+ * potions + buff items + scrolls. Pure, null-safe.
  */
 export function gearConsumablesModel(state) {
   const c = (state && state.c) || {};
@@ -511,10 +506,8 @@ export function gearConsumablesModel(state) {
   }
 
   if (c.scrolls > 0) {
-    const readable = canRead(state);
-    // Mirrors engine/magic.js#readScroll's own pilfer/noRunes ternary — the
-    // reason text is the engine's OWN refusal line, never restated here.
-    const reason = readable ? "" : LINE_FOR.scrollRefused({ reason: c.sub === "Pilfer" ? "pilfer" : "noRunes" }).text;
+    // RULES-10 (Phase 75.1): canRead is gone — anyone may attempt a scroll,
+    // so this row is always enabled with no refusal reason.
     rows.push({
       key: "scroll",
       name: GEAR_COPY.scrolls,
@@ -522,8 +515,8 @@ export function gearConsumablesModel(state) {
       qtyText: qtyText(c.scrolls),
       desc: GEAR_COPY.scrollDesc,
       verb: GEAR_COPY.use.read,
-      enabled: readable,
-      reason,
+      enabled: true,
+      reason: "",
       dispatch: { type: "readScroll" },
     });
   }

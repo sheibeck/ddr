@@ -603,17 +603,13 @@ test("drinkPotion: potionDrunk.doubled names a heal2x race; absent for a Human",
 
 // --- 8. scrollRefused --------------------------------------------------
 
-test("readScroll: scrollRefused reasons (noScrolls, pilfer, noRunes) draw zero rng and mutate nothing; a legal reader still reads", () => {
+// RULES-10 (Phase 75.1): canRead is gone — a Pilfer or a no-Runes Fighter now
+// READS (rolling intelligence via a separate derived stream), never refuses.
+// noScrolls is the only scrollRefused reason left besides the pending-fight
+// one; see test/unit/scroll-read.test.js for the full reader/band coverage.
+test("readScroll: scrollRefused noScrolls draws zero rng and mutates nothing; a legal reader still reads", () => {
   const noScrolls = fixedState({ c: { scrolls: 0 } });
   assert.deepEqual(readScroll(noScrolls, fakeRng([]), []), [{ type: "scrollRefused", reason: "noScrolls" }]);
-
-  const pilfer = fixedState({ c: { scrolls: 1, cls: "Thief", sub: "Pilfer" } });
-  assert.deepEqual(readScroll(pilfer, fakeRng([]), []), [{ type: "scrollRefused", reason: "pilfer" }]);
-  assert.equal(pilfer.c.scrolls, 1);
-
-  const noRunes = fixedState({ c: { scrolls: 1, cls: "Fighter", sub: "Soldier" } });
-  assert.deepEqual(readScroll(noRunes, fakeRng([]), []), [{ type: "scrollRefused", reason: "noRunes" }]);
-  assert.equal(noRunes.c.scrolls, 1);
 
   const reader = fixedState({ c: { scrolls: 1, cls: "Magic User", sub: "Wizard", level: 5, grimoire: [] } });
   const evReader = readScroll(reader, fakeRng([], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
@@ -621,7 +617,7 @@ test("readScroll: scrollRefused reasons (noScrolls, pilfer, noRunes) draw zero r
   assert.ok(!evReader.some((e) => e.type === "scrollRefused"));
 });
 
-test("readScroll: the noScrolls/pilfer/noRunes refusals draw exactly zero rng (countingRng proof)", () => {
+test("readScroll: the noScrolls refusal draws exactly zero rng (countingRng proof)", () => {
   const noScrolls = fixedState({ c: { scrolls: 0 } });
   const rng = countingRng(fakeRng([]));
   readScroll(noScrolls, rng, []);
@@ -704,7 +700,8 @@ test("EVENT_NARRATION.strikeMissed: appends the quip after the roll and the plai
 
 test("EVENT_NARRATION: rested/scrollRefused/equipRejected render the new fields in voice", () => {
   assert.match(EVENT_NARRATION.rested({ type: "rested", amount: 16, doubled: "Soldier" }), /Soldier/);
-  assert.match(EVENT_NARRATION.scrollRefused({ type: "scrollRefused", reason: "pilfer" }), /Pilfer/i);
+  // RULES-10 (Phase 75.1): the "pilfer"/"noRunes" scrollRefused reasons are
+  // retired — only "noScrolls"/"notFought" (and the generic fallback) remain.
   assert.ok(EVENT_NARRATION.scrollRefused({ type: "scrollRefused" }).length > 0);
   assert.match(EVENT_NARRATION.equipRejected({ type: "equipRejected", reason: "acrobat", item: { n: "Long Sword" } }), /dagger/i);
 });
