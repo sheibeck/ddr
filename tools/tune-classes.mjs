@@ -96,6 +96,7 @@ function usage() {
     "  --race X           force this race (case-insensitive)",
     "  --json             print the JSON report instead of the text matrix",
     "  --out PATH         also write the JSON report atomically to PATH",
+    "  --control-rotation play the friend's Freeze/Weaken/Doze control rotation (Phase 75.3, opt-in, off by default)",
   ].join("\n");
 }
 
@@ -170,6 +171,9 @@ function parseArgs(argv) {
         break;
       case "--out":
         opts.out = nextValue();
+        break;
+      case "--control-rotation":
+        opts.controlRotation = true;
         break;
       default:
         fail(`Unknown flag: ${flag}`);

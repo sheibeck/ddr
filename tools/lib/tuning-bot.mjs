@@ -441,6 +441,19 @@ function lowestCastableUtilitySpellIdx(state) {
  * foresee, senses, summon and mirror (handled by decideAction's opener rules,
  * not this table). On equal scores, prefer the higher `sp.lvl`, then the
  * lower SPELLS index (first found is kept).
+ *
+ * ROTATION (opt-in, Phase 75.3, `ctx.opts.controlRotation`): before the tiers
+ * above, a castable spell whose `onHit === "freeze"` data flag is set scores
+ * 455; a castable `kind === "weaken"` spell scores 452 unless the combat is
+ * already `C.weakened`; a castable `kind === "status"` or `kind === "stun"`
+ * spell scores 450 unless the current target's `asleep` is already above 0
+ * — every check is by data flag/kind, never by spell name, and these three
+ * bypass the DISABLE tier's two-live-foe gate (the rotation fires against a
+ * single foe too). All three still sit below the defensive HEAL tier
+ * (460 + expected heal), so a rotation caster still heals before it dies.
+ * This option exists to replay the friend's depth-42 Freeze/Weaken/Doze
+ * Sorcerer for a deep-floor readout (75.3-CONTEXT RULES-18) — it is NOT a
+ * claim that the rotation is good play, and it is off by default.
  */
 /**
  * hasCastableKillTier(state, ctx) — USER RULING D: is any of chooseSpell's
@@ -487,7 +500,24 @@ export function chooseSpell(state, ctx) {
     if (!canCast(state, sp)) continue;
     let score;
     let tier;
-    if (sp.onHit === "freeze") {
+    // ROTATION (opt-in, Phase 75.3): see chooseSpell's own JSDoc above — by
+    // data flag/kind, never by spell name, and never gated on nFoes.
+    if (ctx.opts.controlRotation && sp.onHit === "freeze") {
+      score = 455;
+      tier = "rotation";
+    } else if (ctx.opts.controlRotation && sp.kind === "weaken" && !(C && C.weakened)) {
+      score = 452;
+      tier = "rotation";
+    } else if (
+      ctx.opts.controlRotation &&
+      (sp.kind === "status" || sp.kind === "stun") &&
+      C &&
+      target &&
+      !(target.asleep > 0)
+    ) {
+      score = 450;
+      tier = "rotation";
+    } else if (sp.onHit === "freeze") {
       score = 410;
       tier = "kill";
     } else if (sp.kind === "death") {
@@ -1762,12 +1792,17 @@ export function sharedJson(results, opts) {
  * `seeds`/`workers` (tune-classes' worker_threads flags) are appended ONLY
  * when present on `opts` (so tune-difficulty/tune-economy's line, which
  * never sets `workers`, stays unchanged apart from the new trailing
- * `startDepth`), and `startDepth` is always appended last.
+ * `startDepth`), and `startDepth` is always appended last. Phase 75.3:
+ * `opts.controlRotation` (true only for an opt-in rotation run) inserts
+ * `  controlRotation=on` immediately before that trailing `startDepth`
+ * field, omitted entirely when falsy — every BEFORE/AFTER readout taken
+ * without the flag stays byte-for-byte unchanged.
  */
 export function botLine(opts) {
   let line = `Bot: exploreBudget=${opts.exploreBudget}  maxActions=${opts.maxActions}  party=${opts.party ? "on" : "off"}  flee=${opts.fleeThreshold}/${opts.casterFleeThreshold}(caster)  potion<${opts.potionThreshold}  camp<${opts.campThreshold}`;
   if (opts.seeds !== undefined) line += `  seeds=${opts.seeds}`;
   if (opts.workers !== undefined) line += `  workers=${opts.workers}`;
+  if (opts.controlRotation) line += `  controlRotation=on`;
   line += `  startDepth=${opts.startDepth}`;
   return line;
 }
