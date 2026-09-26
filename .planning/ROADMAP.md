@@ -459,7 +459,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 78-06-PLAN.md — The dead state locks down (HUD-02) and offers a read-only FINAL SHEET of the run that just ended (HUD-03), from the DEAD tab and the death card (wave 3)
+- [ ] 78-06-PLAN.md — The dead state locks down, with the MAP tab viewable read-only (HUD-02, amended 2026-09-26), and offers a read-only FINAL SHEET of the run that just ended (HUD-03), from the DEAD tab and the death card (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -471,7 +471,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 78-09-PLAN.md — Acute Hearing hears the next room (HUD-07, default pending the user's confirmation) and the phase close: voice sample, compiled Pixel 7 checklist, full gates (wave 6)
+- [ ] 78-09-PLAN.md — Acute Hearing hears the next room (HUD-07, option A ruled 2026-09-26: unresolved encounter dots within 3 squares, through walls) and the phase close: voice sample, compiled Pixel 7 checklist, full gates (wave 6)
 
 **UI hint**: yes
 **Device check**: yes — dead-state input lockdown, settings-sheet drag behaviour, the stairs fade and the climb card need a Pixel 7 pass, batched into the milestone-close checklist per the deferred-UAT protocol.
