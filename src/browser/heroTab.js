@@ -687,8 +687,17 @@ export function renderHeroTab(host, state, deps = {}) {
   // a wielded staff's flat d8 shows on the sheet's damage line too.
   const w = weaponRow(c.weapon) || WEAPONS["Club"];
   const R = RACES[c.race];
-  const bonus = c.prof + c.magicWpn + (R.dmg || 0) + (R.wpnBonus || 0) + eff(c, "dmg");
+  // RULES-11 (Phase 75.2, Plan 03): sizeDamage(c) joins the bonus sum so
+  // #s-dmg can never disagree with a real weaponDamage(c, rng) draw for a
+  // sized character.
+  const bonus = c.prof + c.magicWpn + (R.dmg || 0) + (R.wpnBonus || 0) + eff(c, "dmg") + sizeDamage(c);
   doc.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
+  // RULES-11 (Phase 75.2, Plan 03): the hero's size, read from the SAME
+  // sizeRowFor(c) characterSheetViewModel's stats row uses — skipped
+  // silently when the node is absent, like any optional node in this
+  // function.
+  const sizeEl = doc.getElementById("s-size");
+  if (sizeEl) sizeEl.textContent = sizeRowFor(c).text;
   // Phase 28 (ARMOR-02): durability + the cloak's effective plate come from
   // the shared formatter — this HUD line never showed durability before,
   // which was the reported "the line says wear, the panel shows no damage" bug.

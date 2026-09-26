@@ -149,7 +149,7 @@ test("paint() contains exactly one window.__mzTabs.hero(...) mount call, before 
   const iGear = region.indexOf("window.__mzTabs.gear(");
   assert.ok(iHero !== -1 && iGear !== -1 && iHero < iGear, "the hero mount call sits before the gear mount call");
   assert.equal(
-    (region.match(/"(s-level|s-name|s-tag|s-wp|s-wpmax|s-wpfill|s-die|s-hit|s-dmg|s-arm|s-int|s-sp|s-next|s-cost|s-rations|s-rations-n|s-trait|s-vp|s-skills|s-abilities|doss-who|doss)"/g) || []).length,
+    (region.match(/"(s-level|s-name|s-tag|s-wp|s-wpmax|s-wpfill|s-die|s-hit|s-dmg|s-size|s-arm|s-int|s-sp|s-next|s-cost|s-rations|s-rations-n|s-trait|s-vp|s-skills|s-abilities|doss-who|doss)"/g) || []).length,
     0,
     "paint() must carry no leftover Hero-tab id literal",
   );

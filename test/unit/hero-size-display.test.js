@@ -15,7 +15,8 @@ import { newRun } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { weaponDamage } from "../../engine/derived.js";
 import { startEffect } from "../../engine/effects.js";
-import { characterSheetViewModel, HERO_SIZE_COPY } from "../../src/browser/heroTab.js";
+import { characterSheetViewModel, renderHeroTab, HERO_SIZE_COPY } from "../../src/browser/heroTab.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
 
 /** soldier(race, extra) — a level-1 Fighter/Soldier on a Club, prof 0,
  * magicWpn 0, no skills — the plan's own canonical damage-case rig, matching
@@ -106,4 +107,16 @@ test("characterSheetViewModel(state): stats[] keeps toStrike, toHit, damage firs
   const keys = characterSheetViewModel(state).stats.map((s) => s.key);
   assert.deepEqual(keys.slice(0, 4), ["toStrike", "toHit", "damage", "size"]);
   assert.deepEqual(keys, ["toStrike", "toHit", "damage", "size", "armor", "intelligence", "skillPoints", "nextLevel", "upkeep"]);
+});
+
+// ─── Task 2: renderHeroTab writes #s-size and folds sizeDamage(c) into
+// #s-dmg's bonus ────────────────────────────────────────────────────────
+
+test("renderHeroTab: writes 'Large · +2 damage, −1 vs their swings' to #s-size and '1² + d6 + 11' to #s-dmg for a level-1 Club Troll Soldier with prof 0 and magicWpn 0", () => {
+  const state = soldier("Troll");
+  const { document } = createRecordingDocument();
+  const host = document.createElement("div");
+  renderHeroTab(host, state, {});
+  assert.equal(document.getElementById("s-size").textContent, "Large · +2 damage, −1 vs their swings");
+  assert.equal(document.getElementById("s-dmg").textContent, "1² + d6 + 11");
 });

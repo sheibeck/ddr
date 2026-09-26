@@ -531,9 +531,13 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
  * SNAPSHOT_IDS — the element ids the three surfaces' fixtures capture.
  */
 export const SNAPSHOT_IDS = Object.freeze({
+  // Phase 75.2 (RULES-11), Plan 03: "s-size" joins the list (the hero
+  // sheet's SIZE row, right after Damage) — the ONLY declared regenerations
+  // this wave are thief.hero.txt and mu.hero.txt, each gaining the new
+  // #s-size block.
   hero: [
     "s-level", "s-name", "s-tag", "s-wp", "s-wpmax", "s-wpfill",
-    "s-die", "s-hit", "s-dmg", "s-arm", "s-int", "s-sp", "s-next", "s-cost", "s-rations",
+    "s-die", "s-hit", "s-dmg", "s-size", "s-arm", "s-int", "s-sp", "s-next", "s-cost", "s-rations",
     "s-rations-n", "s-trait", "s-vp", "s-skills", "s-abilities", "s-grim-count", "s-grimoire",
     "doss-who", "doss", "hero-party", "hero-party-list",
   ],

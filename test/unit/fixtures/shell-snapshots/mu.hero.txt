@@ -24,6 +24,9 @@
 ## #s-dmg
 <div id="s-dmg">
   text="1² + d6"
+## #s-size
+<div id="s-size">
+  text="Human"
 ## #s-arm
 <div id="s-arm">
   text="Cloth · AR 3 · 12/12 hp"
