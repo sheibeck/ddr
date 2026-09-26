@@ -554,15 +554,15 @@ Plans:
   3. On a tablet, foldable or Chromebook, the game presents a deliberate, documented layout (such as a letterboxed portrait column) rather than a broken one, and Play's display-configuration warning is addressed or consciously accepted.
   4. A fit-tool run resumed from its JSONL log retraces the exact same walk as the live run, including after an infeasible (`+Infinity`) point, with per-block stdout appended rather than truncated.
 
-**Plans**: 0/6 plans executed
+**Plans**: 3/6 plans executed
 
 Plans:
 **Wave 1: CODE PART, no builds; runs in parallel with the gameplay phases**
 
 - [ ] 80-01-PLAN.md — CODE PART, no build: configure R8 for the release build (minify, resource shrinking, obfuscation) on AGP 8.13.0 with defensive keep rules and a keep.xml, add the tested deprecated-API scanner that 80-04 runs on the single relea...
-- [ ] 80-02-PLAN.md — CODE PART, no build: uninstall @capacitor/status-bar and style the bars through Capacitor 8's core SystemBars plugin, regenerating the native plugin list with cap sync, with source and behaviour tests; the release build that pr...
-- [ ] 80-03-PLAN.md — CODE PART, no build: give tablets, foldables and Chromebooks a deliberate, documented layout by declaring the app a game (so Android 16 keeps honouring the portrait lock) and presenting the shell as one centred, phone-width por...
-- [ ] 80-06-PLAN.md — CODE PART, no build: prove TOOL-01 end to end through the real CLI (a fit resumed from its JSONL log retraces the live walk exactly, including after an infeasible +Infinity point), make per-block stdout append-only by construct...
+- [x] 80-02-PLAN.md — CODE PART, no build: uninstall @capacitor/status-bar and style the bars through Capacitor 8's core SystemBars plugin, regenerating the native plugin list with cap sync, with source and behaviour tests; the release build that pr...
+- [x] 80-03-PLAN.md — CODE PART, no build: give tablets, foldables and Chromebooks a deliberate, documented layout by declaring the app a game (so Android 16 keeps honouring the portrait lock) and presenting the shell as one centred, phone-width por...
+- [x] 80-06-PLAN.md — CODE PART, no build: prove TOOL-01 end to end through the real CLI (a fit resumed from its JSONL log retraces the live walk exactly, including after an infeasible +Infinity point), make per-block stdout append-only by construct...
 
 **Wave 2: BUILD PART, the one release build; milestone end, after Phase 79.1**
 
@@ -637,7 +637,7 @@ Plans:
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
-| 80. Android Release Build & Tooling | v2.1 | 0/– | Not started | - |
+| 80. Android Release Build & Tooling | v2.1 | 3/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |
@@ -1121,6 +1121,7 @@ Plans:
 - Engine untouched: this is shell and server work, with zero parity fixtures.
 
 Plans:
+
 - [ ] TBD (promote with /gsd-review-backlog or /gsd-new-milestone when ready)
 
 ### Phase 999.14: Our own friends list (BACKLOG — pairs with 999.13)
@@ -1145,4 +1146,5 @@ Plans:
 - Engine untouched; shell and server work only, with zero parity fixtures.
 
 Plans:
+
 - [ ] TBD (promote with 999.13 via /gsd-review-backlog or /gsd-new-milestone)
