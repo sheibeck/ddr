@@ -215,7 +215,7 @@ Plans:
 
   9. A day without enough rations refills no spell books, and the player is told why.
 
-**Plans**: 10/13 plans executed
+**Plans**: 12/13 plans executed
 
 - [x] 75-01-PLAN.md
 - [x] 75-02-PLAN.md
@@ -227,8 +227,8 @@ Plans:
 - [x] 75-08-PLAN.md
 - [x] 75-09-PLAN.md
 - [x] 75-10-PLAN.md
-- [ ] 75-11-PLAN.md
-- [ ] 75-12-PLAN.md
+- [x] 75-11-PLAN.md
+- [x] 75-12-PLAN.md
 - [ ] 75-13-PLAN.md
 
 **UI hint**: yes
@@ -312,6 +312,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [ ] 75.2-05-PLAN.md — Close Phase 75.2's engine gate: write the size-rule audit into the roll ledger and guard it, finish the fixture story with a standing exposure guard, record every balance readout (overall and per race) in the difficul... (wave 4)
+
 **UI hint**: yes
 
 ### Phase 75.3: Deep-Floor Encounter Scaling (INSERTED)
@@ -512,7 +513,7 @@ Plans:
 | 72. Roll-Direction Sign Audit & Fixes | v2.1 | 7/7 | Complete    | 2026-09-24 |
 | 73. Engine Roll-High Mirror | v2.1 | 10/10 | Complete    | 2026-09-25 |
 | 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
-| 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 10/13 | In Progress|  |
+| 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 12/13 | In Progress|  |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 0/– | Not started | - |
 | 75.2. Hero Size Matters | v2.1 | 0/– | Not started | - |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
