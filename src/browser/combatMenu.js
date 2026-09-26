@@ -79,6 +79,18 @@ export const COMBAT_MENU_COPY = Object.freeze({
   parley: "PARLEY",
   parleyDesc: "Talk it down. An insult is permanent.",
   back: "BACK",
+  // RULES-10 (Phase 75.1, user ruling 2026-09-25): the hero-cannot-act shape.
+  // A fumbled Doze/Stun (asleep), Stupidity (stupefied) or Insane (maddened)
+  // — content/scroll-fumbles.js's own three `kind` values — replaces the
+  // whole grid with one honest action, LET THE ROUND PLAY. heroOutKind is
+  // the frozen kind-to-word map heroOutViewModel (below) reads; an
+  // unrecognized kind falls back to the raw value rather than throwing.
+  heroOutKind: Object.freeze({ asleep: "ASLEEP", stupefied: "STUPEFIED", maddened: "MADDENED" }),
+  heroOutPrompt: "CANNOT ACT · {kind} · {turns} LEFT",
+  heroOutReasonSub: "CANNOT ACT · {kind}",
+  heroOutTurn: "1 TURN",
+  heroOutTurns: "{n} TURNS",
+  letRoundPlay: "1 · LET THE ROUND PLAY",
 });
 
 /**
@@ -468,9 +480,60 @@ function combatMenuViewModelUnlocked(state) {
     dispatch: { type: "attack" },
   };
 
-  return {
+  const vm = {
     prompt: COMBAT_MENU_COPY.prompt,
     actions: [strikeAction, secondAction, itemsAction, socialAction],
     submenus,
   };
+
+  // RULES-10 (Phase 75.1, plan 09, user ruling 2026-09-25): while the hero
+  // cannot act (C.heroOut, at most HERO_OUT_MAX turns — engine/combat.js),
+  // the whole grid gives way to the one honest action. This is a
+  // POST-PROCESSING step on the otherwise-normal vm above (never a second
+  // code path re-deriving strike/spells/items/social), so every class
+  // branch above stays exactly as it is today, and "without heroOut the
+  // view model is unchanged" falls out for free.
+  return C.heroOut ? heroOutViewModel(vm, C.heroOut) : vm;
+}
+
+/**
+ * heroOutViewModel(vm, heroOut) — RULES-10 (Phase 75.1, plan 09, user
+ * rulings 2026-09-25): replaces an otherwise-normal `vm` with the
+ * hero-cannot-act shape. The prompt names the kind (asleep/stupefied/
+ * maddened) and the turns left; slot 1 becomes LET THE ROUND PLAY
+ * (accented, enabled, `dispatch: { type: "loseTurn" }`, sub naming the
+ * kind); slots 2-4 keep their own key/num/label so the grid's own shape
+ * never changes shape mid-fight, but are disabled with the same reason;
+ * every submenu row is disabled too (its own `dispatch` is left alone —
+ * engine/engine.js#applyAction's own hero-combat-action-to-loseTurn
+ * conversion makes any of them safe if one ever reaches the engine, so
+ * this is presentation-only, never a second safety net). Zero rng, zero
+ * mutation of `vm`.
+ */
+function heroOutViewModel(vm, heroOut) {
+  const kindWord = COMBAT_MENU_COPY.heroOutKind[heroOut.kind] || String(heroOut.kind).toUpperCase();
+  const turnsWord = heroOut.left === 1 ? COMBAT_MENU_COPY.heroOutTurn : COMBAT_MENU_COPY.heroOutTurns.replace("{n}", heroOut.left);
+  const prompt = COMBAT_MENU_COPY.heroOutPrompt.replace("{kind}", kindWord).replace("{turns}", turnsWord);
+  const reasonSub = COMBAT_MENU_COPY.heroOutReasonSub.replace("{kind}", kindWord);
+
+  const letRow = {
+    key: "strike",
+    num: 1,
+    label: COMBAT_MENU_COPY.letRoundPlay,
+    sub: kindWord,
+    enabled: true,
+    accent: true,
+    opens: null,
+    dispatch: { type: "loseTurn" },
+  };
+  const disable = (action) => ({ ...action, sub: reasonSub, enabled: false, opens: null });
+  const [, second, items, social] = vm.actions;
+  const actions = [letRow, disable(second), disable(items), disable(social)];
+
+  const submenus = {};
+  for (const [key, sm] of Object.entries(vm.submenus)) {
+    submenus[key] = { ...sm, rows: sm.rows.map((row) => ({ ...row, enabled: false })) };
+  }
+
+  return { prompt, actions, submenus };
 }

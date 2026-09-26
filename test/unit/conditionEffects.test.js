@@ -122,6 +122,25 @@ test("senses: a dark-tile hero with Sense Presence reads the dark cap being lift
   assert.equal(conditionEffectText({ key: "senses", remaining: undefined }, state), "+3 to hit (now 16–20)");
 });
 
+// ─── heroBlind (RULES-10, Phase 75.1, plan 09) ──────────────────────────
+
+test("heroBlind: a level-1 Human Fighter reads the one-face range against the engine's own faces", () => {
+  const state = fixedState({ combat: { heroBlind: true } });
+  const text = conditionEffectText({ key: "heroBlind" }, state);
+  assert.equal(text, "−4 to hit (now 20)");
+
+  // Prove it against the engine directly, not a hardcoded expectation.
+  const whatIf = { ...state, combat: { ...state.combat, heroBlind: false } };
+  const liveFaces = afraidNeed(state, toHit(state));
+  const whatIfFaces = afraidNeed(whatIf, toHit(whatIf));
+  assert.equal(liveFaces, 1);
+});
+
+test("heroBlind: a missing combat is defensive (no throw, no effect)", () => {
+  const state = fixedState({ combat: null });
+  assert.equal(conditionEffectText({ key: "heroBlind" }, state), null);
+});
+
 // ─── mirror / unseen (their roll) ───────────────────────────────────────
 
 test("mirror: a plain Human Soldier reads foes needing far more to land a blow", () => {

@@ -3068,6 +3068,14 @@ const CONDITION_COPY = {
   tongue: { label: "Fluent", unit: "sq" },
   brace: { label: "Braced", unit: "sq" },
   plate: { label: "Plated", unit: "sq" },
+  // RULES-10 (Phase 75.1, plan 09): the hero-cannot-act chip and its two
+  // fight-long twins (a fumbled Blind/Shrink turned against the reader).
+  // heroOut's `unit: "rds"` feeds the generic `typeof cn.remaining ===
+  // "number"` detail branch below — the same one every other timed chip
+  // above already uses, so no special case is needed here.
+  heroOut: { label: "Can't act", unit: "rds" },
+  heroBlind: { label: "Blinded" },
+  heroShrunk: { label: "Shrunk" },
 };
 
 // Phase 34 (CSCR-04/05) — every player-facing literal the shell itself adds
@@ -3135,7 +3143,11 @@ const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd
   // 260918-w4n: power/giant/brace/plate read as straightforward buffs
   // (good); glow/unseen/tongue read as "odd" like invis/ether above (a
   // strange-but-good state, not a plain good one).
-  power: "good", giant: "good", glow: "odd", unseen: "odd", tongue: "odd", brace: "good", plate: "good" };
+  power: "good", giant: "good", glow: "odd", unseen: "odd", tongue: "odd", brace: "good", plate: "good",
+  // RULES-10 (Phase 75.1, plan 09): all three read bad, exactly like
+  // foeEffect/affliction above (the fallback on cn.polarity would already
+  // land here, but every other bad-toned key above is explicit too).
+  heroOut: "bad", heroBlind: "bad", heroShrunk: "bad" };
 const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
   invis: "They swing at where you were. Enjoy it; it wears off.",
@@ -3183,14 +3195,15 @@ const CONDITION_EXPLAIN = {
   tongue: "You understand them perfectly. Whether that helps is up to them.",
   brace: "No critical lands on you. Ordinary hits still count.",
   plate: "Weightless plate over whatever you wear. It still will not make you graceful.",
-  // RULES-10 (Phase 75.1, plan 04): the reader-side fumble effects — a
-  // fumbled scroll turning against its own reader. The engine already
-  // exposes each as data (engine/derived.js#conditionsOf); 75.1-09 builds
-  // their own chip label/tone and the LET THE ROUND PLAY action bridge —
-  // this plain sentence is the fallback tap explanation until then.
-  heroOut: "You cannot act while this counts down. The fight keeps moving without you.",
+  // RULES-10 (Phase 75.1, plan 09): the reader-side fumble effects — a
+  // fumbled scroll turning against its own reader. heroOut states the three
+  // things the user's ruling requires the tap card say (the round goes on
+  // without you, nothing wakes you early, and foes hit you as usual);
+  // heroBlind's numeric lead comes from conditionEffectText (this sentence
+  // is only the tail); heroShrunk states the halving plainly.
+  heroOut: "The round goes on without you. Nothing wakes you early, and foes hit you exactly as they would if you could still swing back.",
   heroBlind: "Only the very best swing of the die lands, for the rest of this fight.",
-  heroShrunk: "Half-sized. Your own blows land for half, for the rest of this fight.",
+  heroShrunk: "Your own blows land for half, for the rest of this fight.",
   default: "A condition. The maze does not explain itself further.",
 };
 
@@ -4269,9 +4282,12 @@ function renderYourLot(host, vm) {
 // entry here already exists above (window.mzAttack/mzCastSpell/mzSing/
 // mzDrinkPotion/mzReadScroll/mzUseAbility/mzUseItem/mzFlee/mzParley — Phase
 // 38 (ABIL-01) added mzUseAbility, same pattern as every other bridge), this
-// object just routes to the right one by `type`.
+// object just routes to the right one by `type`. RULES-10 (Phase 75.1, plan
+// 09) adds loseTurn -> window.mzLoseTurn — the hero-cannot-act menu's own
+// LET THE ROUND PLAY row.
 const COMBAT_DISPATCH = {
   attack: () => window.mzAttack?.(),
+  loseTurn: () => window.mzLoseTurn?.(),
   castSpell: (d) => window.mzCastSpell?.(d.idx),
   sing: () => window.mzSing?.(),
   drinkPotion: () => window.mzDrinkPotion?.(),
@@ -4438,7 +4454,13 @@ function renderActionArea(host) {
     grid.appendChild(lockAction(btn));
   });
   host.appendChild(grid);
-  guardTap(document.getElementById("cb-strike"), () => window.mzAttack?.());
+  // RULES-10 (Phase 75.1, plan 09): slot 1 dispatches whatever
+  // vm.actions[0].dispatch names — ordinarily { type: "attack" } (routing to
+  // window.mzAttack, byte-identical to before this plan), but { type:
+  // "loseTurn" } while the hero cannot act (routing to window.mzLoseTurn).
+  // pickCombatRow is the SAME row-tap function every submenu row already
+  // uses, so slot 1 gets no second dispatch path of its own.
+  guardTap(document.getElementById("cb-strike"), () => pickCombatRow(vm.actions[0]));
   guardTap(document.getElementById("cb-spells"), () => openCombatMenu(vm.actions[1]));
   guardTap(document.getElementById("cb-items"), () => openCombatMenu(vm.actions[2]));
   guardTap(document.getElementById("cb-social"), () => openCombatMenu(vm.actions[3]));
@@ -8279,6 +8301,11 @@ window.__mzClassicBoot = async function classicBoot() {
     window.renderEncounter();
   }
   window.mzAttack = () => engineCombatAction("attack");
+  // RULES-10 (Phase 75.1, plan 09): the hero-cannot-act menu's ONE action —
+  // engine/combat.js#loseTurn plays the round exactly as any other combat
+  // action (beats, fight log, rail, sounds, paint), through the SAME
+  // engineCombatAction choke point every other bridge above uses.
+  window.mzLoseTurn = () => engineCombatAction("loseTurn");
   // Phase 31 (CMB-01): the "Fight!" gate release is now a REAL dispatch — the
   // engine's `fight` action rolls initiative and the pre-emptive turn NOW,
   // not before. engineCombatAction already handles the aftermath: noteCombat's

@@ -109,7 +109,11 @@ test("CSCR-05: the action area renders the 2x2 grid (STRIKE dispatches at once; 
   assert.match(region, /vm\.actions\[1\]/);
   assert.match(region, /vm\.actions\[2\]/);
   assert.match(region, /vm\.actions\[3\]/);
-  assert.match(region, /window\.mzAttack\?\.\(\)/);
+  // RULES-10 (Phase 75.1, plan 09): cb-strike now dispatches whatever
+  // vm.actions[0].dispatch names (through the SAME pickCombatRow every
+  // submenu row uses) — ordinarily attack, but loseTurn while the hero
+  // cannot act — rather than a hardcoded window.mzAttack call.
+  assert.match(region, /pickCombatRow\(vm\.actions\[0\]\)/);
 });
 
 // ─── b. Submenu ─────────────────────────────────────────────────────────────
@@ -141,13 +145,15 @@ test("CSCR-05: cbRow builds every field via textContent/className, guards a disp
 
 // ─── c. Dispatch table ──────────────────────────────────────────────────────
 
-test("CSCR-05/Phase 38 (ABIL-01): COMBAT_DISPATCH carries exactly the nine row-dispatch types, each mapped to its window.mz* bridge", () => {
+test("CSCR-05/Phase 38 (ABIL-01)/RULES-10 (Phase 75.1, plan 09): COMBAT_DISPATCH carries exactly the ten row-dispatch types, each mapped to its window.mz* bridge", () => {
   const start = CODE.indexOf("const COMBAT_DISPATCH = {");
   assert.ok(start !== -1, "const COMBAT_DISPATCH = { not found");
   const end = CODE.indexOf("\n};", start);
   const region = CODE.slice(start, end + "\n};".length);
   const expected = {
     attack: /attack:\s*\(\)\s*=>\s*window\.mzAttack\?\.\(\)/,
+    // RULES-10 (Phase 75.1, plan 09): the hero-cannot-act menu's ONE action.
+    loseTurn: /loseTurn:\s*\(\)\s*=>\s*window\.mzLoseTurn\?\.\(\)/,
     castSpell: /castSpell:\s*\(d\)\s*=>\s*window\.mzCastSpell\?\.\(d\.idx\)/,
     sing: /sing:\s*\(\)\s*=>\s*window\.mzSing\?\.\(\)/,
     drinkPotion: /drinkPotion:\s*\(\)\s*=>\s*window\.mzDrinkPotion\?\.\(\)/,
@@ -163,7 +169,7 @@ test("CSCR-05/Phase 38 (ABIL-01): COMBAT_DISPATCH carries exactly the nine row-d
     assert.match(region, re, `COMBAT_DISPATCH.${key} must map to the expected bridge`);
   }
   const keys = Object.keys(expected);
-  assert.equal(keys.length, 9);
+  assert.equal(keys.length, 10);
   assert.match(pickRegion(), /COMBAT_DISPATCH\[row\.dispatch\.type\]/);
 });
 
@@ -289,4 +295,47 @@ test("Phase 34: COMBAT_COPY carries this plan's two keys (fullHealth, noPotions)
   const region = copyRegion();
   assert.match(region, /fullHealth:/);
   assert.match(region, /noPotions:/);
+});
+
+// ─── j. RULES-10 (Phase 75.1, plan 09): the hero-cannot-act shell bridge ──
+
+test("RULES-10: window.mzLoseTurn is defined beside window.mzAttack as a call to engineCombatAction(\"loseTurn\")", () => {
+  const defIdx = CODE.indexOf('window.mzLoseTurn = () => engineCombatAction("loseTurn");');
+  assert.ok(defIdx !== -1, 'window.mzLoseTurn = () => engineCombatAction("loseTurn"); must be defined');
+  const engineCombatActionHits = CODE.match(/engineCombatAction\("loseTurn"\)/g) || [];
+  assert.equal(engineCombatActionHits.length, 1, 'expected engineCombatAction("loseTurn") exactly once');
+});
+
+test("RULES-10: window.mzLoseTurn appears exactly twice (its own definition, and the COMBAT_DISPATCH.loseTurn entry)", () => {
+  const hits = CODE.match(/window\.mzLoseTurn/g) || [];
+  assert.equal(hits.length, 2, `expected window.mzLoseTurn exactly twice, found ${hits.length}`);
+});
+
+test("RULES-10: CONDITION_COPY carries heroOut (label \"Can't act\", unit \"rds\"), heroBlind (\"Blinded\") and heroShrunk (\"Shrunk\")", () => {
+  const start = CODE.indexOf("const CONDITION_COPY = {");
+  assert.ok(start !== -1, "const CONDITION_COPY = { not found");
+  const end = CODE.indexOf("\n};", start);
+  const region = CODE.slice(start, end + "\n};".length);
+  assert.match(region, /heroOut:\s*\{\s*label:\s*"Can't act",\s*unit:\s*"rds"\s*\}/);
+  assert.match(region, /heroBlind:\s*\{\s*label:\s*"Blinded"\s*\}/);
+  assert.match(region, /heroShrunk:\s*\{\s*label:\s*"Shrunk"\s*\}/);
+});
+
+test("RULES-10: CONDITION_TONE reads heroOut/heroBlind/heroShrunk as \"bad\"", () => {
+  const start = CODE.indexOf("const CONDITION_TONE = {");
+  assert.ok(start !== -1, "const CONDITION_TONE = { not found");
+  const end = CODE.indexOf("};", start);
+  const region = CODE.slice(start, end + "};".length);
+  assert.match(region, /heroOut:\s*"bad"/);
+  assert.match(region, /heroBlind:\s*"bad"/);
+  assert.match(region, /heroShrunk:\s*"bad"/);
+});
+
+test("RULES-10: heroOut's tap text names the round going on without you, nothing waking you early, and foes hitting you as usual; heroShrunk's names the halving", () => {
+  const start = CODE.indexOf("const CONDITION_EXPLAIN = {");
+  assert.ok(start !== -1, "const CONDITION_EXPLAIN = { not found");
+  const end = CODE.indexOf("\n};", start);
+  const region = CODE.slice(start, end + "\n};".length);
+  assert.match(region, /heroOut:\s*"[^"]*round goes on without you[^"]*nothing wakes you early[^"]*foes hit you[^"]*"/i);
+  assert.match(region, /heroShrunk:\s*"[^"]*blows land for half[^"]*"/i);
 });
