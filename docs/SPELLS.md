@@ -500,6 +500,175 @@ new tests: 29 in the new `test/unit/spell-utility.test.js`, 3 in
 (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`); `git status --porcelain
 test/parity/fixtures` empty.
 
+## Scroll reading and fumbles (Phase 75.1, RULES-10)
+
+Plan 02 of Phase 75.1 (`pilfer-fumbles-scroll-reading`) replaces the old
+class/skill scroll gate (`canRead`, and the Pilfer's lockout) with an
+intelligence roll anyone can attempt, and pins — as pure content data, not
+engine logic — exactly what a fumbled scroll does to each of the 33 spells.
+This section documents the read rule; `engine/scrollFumble.js` (Plan 05)
+resolves it against the table below.
+
+### Who reads
+
+- **A Magic User** always succeeds: cast, plus the grimoire copy when
+  learnable. Unchanged from before this phase.
+- **A non-Magic-User holding Runes/Signs** always succeeds too, but gets
+  the free cast only — the grimoire copy stays Magic-User-only.
+- **Everyone else** rolls a d20 against their own intelligence. There is no
+  intel-12 floor (`resistRoll`'s gate is for foe abilities and does not
+  carry over here) — low intelligence just means worse odds.
+
+### The target, roll-high
+
+The lowest winning face is `22 − intel` (`intel − 1` winning faces —
+`resistRoll`'s own shape, minus its floor). A **fumble** is a roll below
+half that target: the reader avoids a fumble at `ceil(target / 2)` or
+better.
+
+Worked examples:
+
+| Intel | Target (lowest win) | Fumble band | Plain-failure band | Win band |
+|---|---|---|---|---|
+| 14 | 8 | 1–3 | 4–7 | 8–20 |
+| 13 | 9 | 1–4 | 5–8 | 9–20 |
+| 20 | 2 | never | 1 | 2–20 |
+| 1 | 21 | 1–10 | 11–20 | never |
+
+A roll landing exactly on `ceil(target / 2)` is a plain failure, not a
+fumble (intel 14: a roll of 4 against target 8 fails plainly). Intel 20
+can never fumble; intel 1 can never successfully read a scroll and fumbles
+on 1–10.
+
+### Consumption, fizzles and the Pilfer
+
+The scroll is consumed on **every** attempt, success or failure. A plain
+failure casts nothing (the reader squints at runes they can't make out
+while the scroll crumbles). A fumble **outside combat** simply fizzles: no
+effect, and the scroll is still destroyed. The intelligence roll is drawn
+from its own derived rng stream, so the main stream is never reordered. A
+Pilfer reads scrolls under this same rule, unchanged — the Pilfer's RULES-09
+d10 item-explosion blast never applies to scrolls.
+
+### The fumble table
+
+| # | Spell | kind | side | effect | extras |
+|---|-------|------|------|--------|--------|
+| 0 | Heal | heal | helpful | heal | |
+| 1 | Shield | ward | helpful | ward | |
+| 2 | Strength | might | helpful | might | |
+| 3 | Doze | status | harmful | out | kind "asleep", rounds d4 |
+| 4 | Freeze | thrown (onHit freeze) | harmful | heavy | how "frozen" |
+| 5 | Map the Floor | reveal | helpful | wasted | |
+| 6 | Mirror Self | mirror | helpful | mirror | rounds d6 |
+| 7 | Stun | stun | harmful | out | kind "asleep", rounds d4 |
+| 8 | Weaken | weaken | harmful | weakened | rounds d4+1 |
+| 9 | Acid | acid | harmful | dot | rounds d6 |
+| 10 | Stupidity | stupid | harmful | out | kind "stupefied", rounds d4 |
+| 11 | Blind | blind | harmful | blind | |
+| 12 | Shrink | shrink | harmful | shrink | |
+| 13 | Ice | dot | harmful | dot | rounds d4+1, then "heavy" |
+| 14 | Earthquake | quake | area | damage | once true |
+| 15 | Noxious Vapor | vapor | harmful | vapor | rounds d4 (the sleeping face) |
+| 16 | Fireballs | volley | area | volley | |
+| 17 | Petrify | petrify | harmful | heavy | how "stone" |
+| 18 | Insane | insane | harmful | out | kind "maddened", rounds d4 |
+| 19 | Summon | summon | helpful | summon | |
+| 20 | Fireball | thrown | harmful | damage | |
+| 21 | Major Heal | heal | helpful | heal | |
+| 22 | Bubble | ward | helpful | ward | |
+| 23 | Sense Danger | foresee | helpful | wasted | |
+| 24 | Turn Walking Dead | turn | harmful | none | |
+| 25 | Plane Gate | gate | harmful | none | |
+| 26 | Sense Presence | senses | helpful | senses | |
+| 27 | Phantom Host | summon | helpful | summon | |
+| 28 | Lightning | thrown (aoe all) | area | damage | |
+| 29 | Regeneration | regen | helpful | regen | |
+| 30 | Mangle | thrown | harmful | damage | |
+| 31 | Death | death | harmful | heavy | how "death" |
+| 32 | Lesser Summon | summon (lesser) | helpful | summon | |
+
+Pinned as `content/scroll-fumbles.js#SCROLL_FUMBLE`, keyed by each spell's
+exact name (`test/unit/scroll-fumble-table.test.js` fails on a rename or an
+unclassified addition).
+
+What each effect means:
+
+- harmful **damage**: the reader takes the spell's own damage expression as
+  `castSpell` computes it for a target (thrown: dice × `max(1, level −
+  spell level)`); it always lands — armor and wards do not soak it.
+- harmful **heavy** (no fumble kills outright): in place of an instant kill
+  (frozen solid, turned to stone, the Death spell), the reader takes `d10 +
+  depth` unsoaked damage from a derived stream and becomes Afraid; only the
+  normal death path can kill, so a wounded reader can die of it but never
+  automatically.
+- harmful **dot**: the reader burns for the spell's per-round dice for
+  `rounds` rounds; Ice's `then: "heavy"` lands the heavy blow (how "frozen")
+  if the burn runs out while the fight is still on.
+- harmful **out** (disabling spells cost turns, at most d4): the hero
+  cannot act and loses d4 turns (Doze, Stun, Stupidity, Insane). Nothing
+  wakes the hero early, foes hit the hero normally (no easier-hit bonus),
+  and it never outlasts the fight.
+- harmful **blind** (works as on a foe): the hero's weapon to-hit drops to
+  one winning face (the top face) for the rest of the fight — no turns are
+  lost.
+- harmful **shrink** (same ruling): current hp halved, rounding up (so it
+  cannot kill), and the hero's landed weapon damage halved for the rest of
+  the fight; max hp is untouched — no turns are lost.
+- harmful **weakened**: the hero's existing foe-inflicted hex (half damage)
+  for `rounds`.
+- harmful **vapor**: the vapor table as `castSpell` rolls it (level 5+
+  always 4, else a d6); a 4 is a heavy blow (how "vapor") unless a d10
+  shows 1; anything else puts the reader to sleep (out, asleep) for d4
+  turns (`castSpell`'s foe sleep is d6+2; every turn-loss fumble here is
+  capped at d4).
+- harmful **none**: Turn Walking Dead and Plane Gate have nothing to act on
+  in a living reader.
+- area **damage** / **volley**: every live party member, the summoned
+  ally and the reader, each as if targeted (Lightning rolls per target,
+  Earthquake once for all, Fireballs spreads d8 bolts in turn); a summoned
+  ally has no hit points, so any hit unmakes it.
+- helpful **heal** / **regen** / **ward** / **might** / **mirror** /
+  **senses** / **summon**: the targeted foe gains the spell's own effect
+  (heals, regenerates d8 a round, is warded by Shield or bubbled by Bubble,
+  gains Strength's damage and doubled hp, is mirrored so strikes need the
+  top face, gains senses, or gets the summoned creature as a
+  reinforcement).
+- helpful **wasted**: Map the Floor and Sense Danger give a foe nothing it
+  can use — the scroll is simply spent on the wrong side.
+
+### The severity rulings (user, 2026-09-25)
+
+- **No scroll fumble kills outright.** Freeze, Petrify and Death are
+  `heavy` (d10 + depth, unsoaked, plus Afraid) instead of an instant kill;
+  Ice's end-of-burn and Noxious Vapor's killing face resolve the same way.
+- **Disabling spells cost the hero turns, at most d4.** Doze, Stun,
+  Stupidity and Insane are `out` rows — a deliberate, scroll-fumble-only
+  exception to the Phase 31 "penalties, never a no-actions state" ruling.
+  No such effect may outlast the fight, and foes do **not** get an
+  easier-hit bonus against a hero who can't act.
+- **Blind and Shrink work on the hero as on a foe and cost no turns.**
+  Blind is a to-hit penalty; Shrink halves current hp and weapon damage.
+  Neither loses a turn.
+- **A fumbled Summon joins the foes** as a reinforcement, capped at 4 live
+  foes.
+
+### Remaining flagged calls (Claude's discretion, flagged for the user)
+
+- **Noxious Vapor's sleep is d4 on the hero**, not the foe-facing d6+2 —
+  every turn-loss fumble here is capped at d4. Flagged for the user.
+- **Hero Shrink never touches max hp** (a foe's max hp halves too, but on
+  the hero that would outlast the fight), and **hero Blind affects weapon
+  strikes only** (a blind foe's spells are unaffected). Flagged for the
+  user.
+- **Only area-damage spells are area.** Stun, Weaken, Shrink and Noxious
+  Vapor act on the reader alone. Flagged for the user.
+- **Fumbles always land and bypass armor and wards** (no to-hit roll), like
+  the Apprentice backfire. Flagged for the user.
+- **Helpful spells with nothing for a foe are wasted** (Map the Floor,
+  Sense Danger); Sense Presence gives the foe its senses flag, which has no
+  further mechanic once a fight has begun. Flagged for the user.
+
 ## Map the Floor — Key Decision: re-fog provenance (Plan 04)
 
 Plans 01-03 renamed the spell and reshaped everything ELSE about the

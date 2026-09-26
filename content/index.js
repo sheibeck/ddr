@@ -20,6 +20,7 @@ export * from "./foe-abilities.js";
 export * from "./damage-multipliers.js";
 export * from "./encounters.js";
 export * from "./spells.js";
+export * from "./scroll-fumbles.js";
 export * from "./mu-chart.js";
 export * from "./spell-level-overrides.js";
 export * from "./potions.js";
