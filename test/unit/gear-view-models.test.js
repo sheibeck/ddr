@@ -33,6 +33,10 @@ import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { newRun } from "../../engine/state.js";
 import { maxCharges } from "../../engine/movement.js";
 import { WEAPONS } from "../../content/index.js";
+// RULES-10 (Phase 75.1, plan 75.1-07): the SCROLLS row's desc now appends
+// scrollReadOdds(state) — asserted against the real function, never a
+// hand-typed string.
+import { scrollReadOdds } from "../../src/browser/rollOdds.js";
 
 // ─── fixtures ────────────────────────────────────────────────────────────
 
@@ -730,27 +734,37 @@ test("gearConsumablesModel, buff items: grouped by name in first-appearance orde
 
 test("gearConsumablesModel, scrolls: a readable Magic User gets SCROLLS ×N, verb READ, enabled true, reason ''", () => {
   const c = fixedChar({ cls: "Magic User", scrolls: 2 });
-  const scrollRow = gearConsumablesModel(st(c)).rows.find((r) => r.key === "scroll");
+  const state = st(c);
+  const scrollRow = gearConsumablesModel(state).rows.find((r) => r.key === "scroll");
   assert.equal(scrollRow.name, "SCROLLS");
   assert.equal(scrollRow.qtyText, "×2");
   assert.equal(scrollRow.verb, "READ");
   assert.equal(scrollRow.enabled, true);
   assert.equal(scrollRow.reason, "");
+  // 75.1-07 (RULES-10): the desc is the base description followed by the
+  // reader's own odds — a Magic User reads "without fail".
+  assert.equal(scrollRow.desc, `${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`);
+  assert.ok(scrollRow.desc.includes("without fail"));
 });
 
 // RULES-10 (Phase 75.1): canRead is gone — a Pilfer Thief and a Fighter
 // without Runes/Signs now READ under the intelligence rule, so their SCROLLS
 // row is enabled with no refusal reason, exactly like a Magic User's.
-test("gearConsumablesModel: a Pilfer Thief and a Fighter without Runes/Signs both get an enabled SCROLLS row with no reason", () => {
-  const pilfer = fixedChar({ cls: "Thief", sub: "Pilfer", scrolls: 1 });
-  const pilferRow = gearConsumablesModel(st(pilfer)).rows.find((r) => r.key === "scroll");
+test("gearConsumablesModel: a Pilfer Thief and a Fighter without Runes/Signs both get an enabled SCROLLS row with no reason, and their own honest odds", () => {
+  const pilfer = fixedChar({ cls: "Thief", sub: "Pilfer", scrolls: 1, intel: 11 });
+  const pilferState = st(pilfer);
+  const pilferRow = gearConsumablesModel(pilferState).rows.find((r) => r.key === "scroll");
   assert.equal(pilferRow.enabled, true);
   assert.equal(pilferRow.reason, "");
+  assert.equal(pilferRow.desc, `${GEAR_COPY.scrollDesc} ${scrollReadOdds(pilferState)}`);
+  assert.ok(pilferRow.desc.includes("backfires"));
 
-  const fighter = fixedChar({ cls: "Fighter", scrolls: 1 });
-  const fighterRow = gearConsumablesModel(st(fighter)).rows.find((r) => r.key === "scroll");
+  const fighter = fixedChar({ cls: "Fighter", scrolls: 1, intel: 14 });
+  const fighterState = st(fighter);
+  const fighterRow = gearConsumablesModel(fighterState).rows.find((r) => r.key === "scroll");
   assert.equal(fighterRow.enabled, true);
   assert.equal(fighterRow.reason, "");
+  assert.equal(fighterRow.desc, `${GEAR_COPY.scrollDesc} Reads on 8–20 (d20, intel 14); 1–3 backfires.`);
 });
 
 test("gearConsumablesModel: potions 3 + 3 buff items + scrolls 2 gives heldText '8 HELD'", () => {

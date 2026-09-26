@@ -22,6 +22,7 @@ import { maxCharges } from "../../engine/movement.js";
 import { sellPriceFor } from "../../engine/economy.js";
 import { WEAPONS } from "../../content/index.js";
 import { armorDisplay, bagArmorText, lootCompare, usableBy, dropShelfItems } from "./viewModels.js";
+import { scrollReadOdds } from "./rollOdds.js";
 
 /**
  * bagUsage(c) — Phase 29 (LOOT-04): the ONE "used / slots" readout the
@@ -458,9 +459,13 @@ export function gearBagCardsModel(state) {
  * first-appearance order), always enabled — the engine's own refusal line
  * explains any tap on the rail. Then SCROLLS when `c.scrolls > 0` — RULES-10
  * (Phase 75.1): `canRead` is gone, so this row is ALWAYS enabled with an
- * empty reason (anyone may attempt a scroll now; the reader's own odds text
- * on this row is 75.1-07's job, not this model's). `heldText` counts
- * potions + buff items + scrolls. Pure, null-safe.
+ * empty reason (anyone may attempt a scroll now). RULES-10 (Phase 75.1,
+ * plan 75.1-07): the row's `desc` is `GEAR_COPY.scrollDesc` followed by
+ * `scrollReadOdds(state)` — the reader's own honest odds (read-without-fail
+ * for a Magic User/Runes-Signs holder, or the intel range and fumble band
+ * for anyone else) shown BEFORE they tap READ, per RULES-10's own
+ * transparency prohibition. `heldText` counts potions + buff items +
+ * scrolls. Pure, null-safe.
  */
 export function gearConsumablesModel(state) {
   const c = (state && state.c) || {};
@@ -507,13 +512,15 @@ export function gearConsumablesModel(state) {
 
   if (c.scrolls > 0) {
     // RULES-10 (Phase 75.1): canRead is gone — anyone may attempt a scroll,
-    // so this row is always enabled with no refusal reason.
+    // so this row is always enabled with no refusal reason. 75.1-07: the
+    // reader's own odds (scrollReadOdds) are appended so they are visible
+    // BEFORE a tap, never only after a bad read.
     rows.push({
       key: "scroll",
       name: GEAR_COPY.scrolls,
       qty: c.scrolls,
       qtyText: qtyText(c.scrolls),
-      desc: GEAR_COPY.scrollDesc,
+      desc: `${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`,
       verb: GEAR_COPY.use.read,
       enabled: true,
       reason: "",
