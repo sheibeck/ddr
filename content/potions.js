@@ -33,9 +33,15 @@ export const POTIONS = [
   },
   { n: "Cure Disease", col: "Aqua", uses: { n: 1, sides: 6, bonus: 0 }, price: 100, eff: "disease", txt: "cures disease" },
   {
+    // RULES-11 (Phase 75.2, Plan 02, user ruling 2026-09-25): Enlarge is
+    // exactly ONE size step — its separate might-kind damage payload is
+    // gone. `act.eff.size: 1` applies through the same seam a used
+    // Gauntlet of the Giant does (engine/derived.js#itemSizeStep), never
+    // masked by a race's own signature; the text states exactly what a
+    // step does and nothing more (no overhead-clearance promise).
     n: "Enlarge", col: "Brown", uses: { n: 1, sides: 6, bonus: 0 }, price: 75, eff: "enlarge",
-    txt: "one size up, +4 damage, 50 squares",
-    act: { kind: "might", effect: 50, might: 4 },
+    txt: "one size larger for fifty squares: +2 damage, and one face easier for foes to hit",
+    act: { kind: "enlarge", effect: 50, eff: { size: 1 } },
   },
   {
     n: "Acuteness", col: "White", uses: { n: 1, sides: 4, bonus: 0 }, price: 800, eff: "acute",

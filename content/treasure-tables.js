@@ -117,9 +117,14 @@ const JEWELRY_ROWS = [
   },
   {
     // Use-activated (260918-w4n): worn + used, one size larger for 50
-    // squares, 50 to recover.
+    // squares, 50 to recover. RULES-11 (Phase 75.2, Plan 02, user ruling
+    // 2026-09-25): the text now states exactly what a size step does —
+    // +2 damage, one face easier for foes to hit — and drops the old
+    // overhead-clearance warning (no low-clearance map tiles exist) and
+    // the "shrinking back" wording (no such mechanic exists; the effect
+    // simply ends).
     n: "Gauntlet of the Giant", slot: "jewelry", eff: { size: 1 },
-    txt: "used, you are one size larger for fifty squares; mind the ceilings, then fifty squares of shrinking back",
+    txt: "used, you are one size larger for fifty squares: +2 damage, and one face easier for foes to hit; then fifty squares before it will do it again",
     act: { kind: "giant", effect: 50, cd: 50 },
   },
   {

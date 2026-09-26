@@ -21,6 +21,7 @@ import {
   liveItemEffects,
   itemEffectActive,
   potionMight,
+  sizeStepOf,
 } from "../../engine/derived.js";
 import { foldLegacyCounters, validateSave, serializeRun } from "../../engine/saveState.js";
 import { newRun } from "../../engine/engine.js";
@@ -266,13 +267,17 @@ test("useItem on a Speed potion consumes it and starts item:Speed with no cd", (
   assert.ok(events.some((e) => e.type === "itemConsumed"));
 });
 
-test("useItem on a Strength potion starts a timed might effect read through potionMight, additive across two doses", () => {
+// RULES-11 (Phase 75.2, Plan 02, user ruling 2026-09-25): Enlarge's
+// separate might payload is gone — it is now a +1 size step read through
+// sizeStepOf, not potionMight. Strength alone still drives potionMight.
+test("useItem on a Strength potion starts a timed might effect read through potionMight; Enlarge stacks a size step instead, not might", () => {
   const strength = () => ({ kind: "potion", n: "Strength potion", eff2: "strength", uses: 1 });
   const state = fixedState({ c: { items: [strength(), { kind: "potion", n: "Enlarge potion", eff2: "enlarge", uses: 1 }] } });
   useItem(state, 0, fakeRng([]), []);
   assert.equal(potionMight(state.c), 8);
   useItem(state, 0, fakeRng([]), []); // now index 0 is the Enlarge potion
-  assert.equal(potionMight(state.c), 8 + 4, "Strength + Enlarge stack additively");
+  assert.equal(potionMight(state.c), 8, "Enlarge no longer contributes might");
+  assert.equal(sizeStepOf(state.c), 1, "Enlarge is exactly a +1 size step");
 });
 
 test("useItem on an Acuteness potion rolls one d8 into a rounds-cadence effect (same single draw as before)", () => {

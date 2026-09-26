@@ -633,9 +633,11 @@ export function itemEffectActive(c, kind) {
 
 /**
  * potionMight(c) — Phase 39 (GEAR-02): the sum of `act.might` across every
- * live `kind: "might"` item effect on `c` (Strength/Enlarge potions) — the
- * timed replacement for the old never-expiring `c.might += 8/4` write.
- * Pure, no rng.
+ * live `kind: "might"` item effect on `c` (the Strength potion — the ONLY
+ * `might`-kind potion since RULES-11, Phase 75.2, Plan 02: Enlarge's
+ * separate might payload is gone, replaced by a size step read through
+ * `eff(c, "size")`/`sizeDamage` instead) — the timed replacement for the
+ * old never-expiring `c.might += 8` write. Pure, no rng.
  */
 export function potionMight(c) {
   let t = 0;
@@ -710,10 +712,14 @@ export function isFlying(state) {
  * (insertion order), the spell-`c.might` chip, ward, mirror, senses, regen,
  * foresight, reveal, flight, item cooldowns, staff charges, THEN the bad
  * block — each `{ key, polarity, ... }`:
- *   - haste/invis/acute/ether/might (Phase 39, GEAR-02, one chip per LIVE
- *     `c.timers` item effect, via liveItemEffects): {polarity:"good",
- *     remaining:<left>, cadence:"squares"|"rounds", source:<item display
- *     name>, might?:<amount, "might"-kind only>}
+ *   - haste/invis/acute/ether/might/enlarge/giant/… (Phase 39, GEAR-02, one
+ *     chip per LIVE `c.timers` item effect, via liveItemEffects):
+ *     {polarity:"good", remaining:<left>, cadence:"squares"|"rounds",
+ *     source:<item display name>, might?:<amount, "might"-kind only>,
+ *     step?:<the item's own ±1 size step>, size?:<the hero's CURRENT
+ *     size name, heroSize(c).name — RULES-11, Phase 75.2, Plan 02, only
+ *     when act.eff carries a numeric `size`, e.g. the Gauntlet of the
+ *     Giant or Enlarge>}
  *   - might  {polarity:"good"}                            — the SPELL's +damage, lasts the day (no count) — distinct from a potion's timed "might" chip above; both may appear together
  *   - ward   {polarity:"good", pool:<hp>, remaining?:<rounds>, name:<spell/item name>, mirror?:true} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape. RULES-14 (Phase 75): an ARMED Bubble mirror also fires this (pool 0, no `remaining`, `mirror: true`); a popped Bubble pool keeps the plain Shield shape
  *   - mirror {polarity:"good", remaining:<rounds>}         — Phase 40 (SPELL-02): Mirror Self — c.mirror counts down once per foeTurn; cleared at endCombat
@@ -756,6 +762,14 @@ export function conditionsOf(state) {
     }
     const chip = { key: act.kind, polarity: "good", remaining: rec.left, cadence: rec.cadence, source: key };
     if (act.kind === "might" && typeof act.might === "number") chip.might = act.might;
+    // RULES-11 (Phase 75.2, Plan 02): a live size-stepping item (the
+    // Gauntlet of the Giant, Enlarge, or any future size item) also
+    // carries the item's own step and the hero's CURRENT size name —
+    // never masked, read the same way applyActivation's started event is.
+    if (act.eff && typeof act.eff.size === "number") {
+      chip.step = act.eff.size;
+      chip.size = heroSize(c).name;
+    }
     out.push(chip);
   }
 
@@ -1686,9 +1700,11 @@ export function weaponDamage(c, rng) {
   if (R.dmg) d += R.dmg;
   if (R.wpnBonus) d += R.wpnBonus;
   if (c.might) d += c.might;
-  // Phase 39 (GEAR-02): the retired never-expiring c.might += 8/4 potion
-  // write — a live Strength/Enlarge potion effect now reads through
-  // c.timers (potionMight), additive alongside the spell's own c.might.
+  // Phase 39 (GEAR-02): the retired never-expiring c.might += 8 potion
+  // write — a live Strength potion effect now reads through c.timers
+  // (potionMight), additive alongside the spell's own c.might. RULES-11
+  // (Phase 75.2, Plan 02): Enlarge no longer contributes here — it is a
+  // size step, read below through sizeDamage(c) instead.
   d += potionMight(c);
   if (skill(c, "Heft")) d += 2;
   // DELIBERATE RULES CHANGE (04.1-02, 2026-09-09, RULE-02): the Master of
