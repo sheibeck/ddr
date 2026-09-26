@@ -89,6 +89,9 @@ export const FOE_DETAILS_COPY = deepFreeze({
   // long-press effect line, stated from the player's side.
   effectYou: "you hit it on {range}",
   effectIt: "it hits you only on {range}",
+  // Phase 77 (CMBUI-13): a chip that NARROWS the hero's own odds (a foe's
+  // fumbled Mirror Self caps every strike at the top face).
+  effectYouOnly: "you hit it only on {range}",
   swing: "1 swing",
   swings: "{n} swings",
   flat: "a flat {n}",
@@ -310,15 +313,24 @@ function resistLine(foe, type, name) {
 // roll — asleep/stupid floor the hero's own swing at 5 faces (the you-part
 // effect); blind/weakened move the foe's swing at the hero (the it-part
 // effect). Every other chip has no to-hit effect (null).
-const EFFECT_YOU_KEYS = new Set(["asleep", "stupid"]);
+//
+// Phase 77 (CMBUI-13): a held foe (RULES-18) is floored at 5 faces exactly
+// like a dozing one (engine/derived.js#targetStrikeFaces), so it joins the
+// you-part; a mirrored foe (a fumbled Mirror Self, RULES-10) caps the
+// hero's swing at the top face, stated as "you hit it only on {range}".
+// Shielded, Bubbled, Rebound, Strong, Regenerating and Senses move no
+// to-hit roll and stay null.
+const EFFECT_YOU_KEYS = new Set(["asleep", "stupid", "held"]);
+const EFFECT_YOU_ONLY_KEYS = new Set(["mirror"]);
 const EFFECT_IT_KEYS = new Set(["blind", "weakened"]);
 
 /**
  * foeConditionEffect(chip, foe, state) — Phase 74 (ROLL-02/03): a
  * foeConditionChips chip's to-hit effect, stated from the player's side
  * with its resulting range (74-CONTEXT condition chips), or null for a
- * chip with no to-hit effect. asleep/stupid read heroHitOddsVs(state,
- * foe).text ("you hit it on {range}"); blind/weakened read
+ * chip with no to-hit effect. asleep/stupid/held read heroHitOddsVs(state,
+ * foe).text ("you hit it on {range}"); mirror reads the same measured
+ * range as "you hit it only on {range}" (Phase 77); blind/weakened read
  * foeHitOddsVs(state, foe).plainText ("it hits you only on {range}") — the
  * plain range with no modifier clause, since the chip line already names
  * its own effect. Reads ONLY rollOdds.js, never a restated formula. Runs
@@ -331,6 +343,7 @@ export function foeConditionEffect(chip, foe, state) {
     if (!chip || typeof chip !== "object") return null;
     if (!state || typeof state.c !== "object" || state.c === null) return null;
     if (EFFECT_YOU_KEYS.has(chip.key)) return fill(C.effectYou, { range: heroHitOddsVs(state, foe).text });
+    if (EFFECT_YOU_ONLY_KEYS.has(chip.key)) return fill(C.effectYouOnly, { range: heroHitOddsVs(state, foe).text });
     if (EFFECT_IT_KEYS.has(chip.key)) return fill(C.effectIt, { range: foeHitOddsVs(state, foe).plainText });
     return null;
   }, null);
