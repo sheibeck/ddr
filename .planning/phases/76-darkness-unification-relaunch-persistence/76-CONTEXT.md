@@ -84,3 +84,15 @@
 
 - Balancing the easier dark: only if the user asks after reading the readout.
 </deferred>
+
+## User rulings after planning
+
+### 2026-09-26: Map the Floor lasts only until you move (added to this phase as plan 76-06)
+- User: "I think that revealing the dungeon spell should last only until you move. Then you lose focus and map stops being revealed. it's pretty powerful to be able to map your way around and move."
+- **Rule:** after a cast, the whole-floor reveal holds while the hero stands still. The hero's FIRST step (moving onto another square) ends the window, and the floor re-fogs through the existing `refogSpellSeen` sweep. Cells the hero actually walked or revealed normally stay seen, as today.
+- Only movement ends it. Opening tabs, casting, resting, camping, and a fight that starts on the same square keep the window. Recasting refreshes it.
+- The spell text, the reveal chip (no squares countdown: "until you move") and the `revealFaded` Oracle/rail line tell the new truth in voice ("you lose focus").
+- A scroll of Map the Floor follows the same rule, because it resolves through castSpell.
+- **The bot plays the new rule (greenfield).** Declare any moved state pins and fixtures with a traced cause.
+- **NO bot balance readouts in this phase** (user ruling 2026-09-26: bots run only at the milestone end, in Phase 79.1). This applies to every plan here, including 76-01's "measured readouts". 79.1 measures the balance effect.
+- Todo: `.planning/todos/pending/2026-09-26-map-the-floor-lasts-only-until-you-move.md`.
