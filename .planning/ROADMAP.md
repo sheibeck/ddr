@@ -443,7 +443,36 @@ Plans:
 
   8. With a full bag, the find card keeps the found item and TAKE / LEAVE in view while the drop list scrolls inside the card.
 
-**Plans**: TBD
+**Plans**: 0/9 plans executed
+
+Plans:
+**Wave 1**
+
+- [ ] 78-01-PLAN.md — Move the wall/crevice decision into the engine (CLIMB-01/02): every hazard step pauses with no dice drawn, `resolveHazard` commits (draw-identical to the old step) or turns back at no cost, one faces formula feeds the roll and `hazardOdds`, the bot commits, moved pins declared, readouts before and after (wave 1)
+- [ ] 78-02-PLAN.md — Settings behave (HUD-04/05): the text scale moves to the root so every `--mw-font-*` token and every screen's text (combat included) follows S/M/L, pinned by a token walker; a volume slider moves only on a sideways drag or a track tap (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 78-03-PLAN.md — The pre-roll decision card on the rail (CLIMB-01/02): CLIMB IT / LEAP IT with honest odds, USE LADDER / USE ROPE when carried, TURN BACK; the map locked while it is up; the post-fall retry card retired; one-and-done MARKS copy (wave 2)
+- [ ] 78-04-PLAN.md — Declare and guard the pre-roll decision: the parity exposure guard, the relaunch probe on `resolveHazard`, and the Phase 78 records in FIXTURE-INVENTORY, DIFFICULTY-RETUNE, TERRAIN and the roll ledger (wave 2)
+- [ ] 78-05-PLAN.md — The HUD tells the truth (HUD-01): band 1 reads "Race Sub-class · Lvl N"; a regained spell charge and a new day's book refill get rail lines with the count (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 78-06-PLAN.md — The dead state locks down (HUD-02) and offers a read-only FINAL SHEET of the run that just ended (HUD-03), from the DEAD tab and the death card (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 78-07-PLAN.md — The opt-in arrow pad (HUD-08): a Movement setting, one step per press through window.move, tap-to-move off in arrow mode, and a camera that treats the pad as an edge (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 78-08-PLAN.md — The stairs fade under the stairs sound, an instant cut with reduced motion (HUD-06); the full-bag find card keeps the loot in view with a scrolling drop list (HUD-09) (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 78-09-PLAN.md — Acute Hearing hears the next room (HUD-07, default pending the user's confirmation) and the phase close: voice sample, compiled Pixel 7 checklist, full gates (wave 6)
+
 **UI hint**: yes
 **Device check**: yes — dead-state input lockdown, settings-sheet drag behaviour, the stairs fade and the climb card need a Pixel 7 pass, batched into the milestone-close checklist per the deferred-UAT protocol.
 
