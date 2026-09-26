@@ -47,6 +47,11 @@
 ### Claude's Discretion
 - The predicate's name and module, the tint colour/alpha (within the parchment palette), the validation depth for a stored combat/store, and the resume-line wording (family-friendly, deadpan).
 - Plan split: the darkness and persistence halves are independent and can run in parallel waves.
+### Rulings after planning (user, 2026-09-25)
+- **A light source means the same in combat too.** A lit torch or the Amulet (the same `darkWaiver` that lights the map) also lifts the IN-FIGHT dark penalties: the to-hit cap, the no-crit rule, the thief's silent strike and the dark phobia. Night Vision and Sense Presence keep lifting them too. It is one predicate for map and combat. `combatInDark` reads the unified waiver, and balance readouts measure the shift. There is no compensation unless a difficulty band fails, in which case stop and report.
+- **A pending Joiner offer persists across a relaunch**, like the fight, store, find, hazard and pendingTile. It is validated through the tolerant loader, and an invalid offer is dropped.
+- Accepted planner defaults: the waived-dark tint shows on every dark tile while any light source is active; when one save holds both a valid fight and a valid store, the fight wins and the store is dropped; a fight whose party allies failed to load is dropped.
+
 </decisions>
 
 <code_context>
