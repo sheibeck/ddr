@@ -13,6 +13,19 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- DROID-02 (80-02): colorPrimaryDark is what AppCompat maps to the
+             status bar on Android 7-14 (edge-to-edge is not forced there,
+             so this is the actual bar colour on those OS versions — the
+             retired @capacitor/status-bar plugin used to paint this same
+             colour there via a deprecated call); android:windowBackground
+             is what the core SystemBars plugin paints behind the WebView on
+             Android 15+ edge-to-edge (the DayNight default is light in
+             light mode, which would flash light behind the dark parchment
+             UI). Neither of the Android-15-deprecated bar-colour theme
+             attributes (statusBarColor/navigationBarColor) is set here —
+             SystemBars owns those via WindowInsetsControllerCompat. -->
+        <item name="colorPrimaryDark">#1b170f</item>
+        <item name="android:windowBackground">#14110c</item>
     </style>
 
 
