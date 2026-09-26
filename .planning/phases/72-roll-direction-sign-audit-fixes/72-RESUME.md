@@ -28,6 +28,10 @@
   3. Run the batched Pixel 7 checklist.
   4. Build the debug APK.
   5. Offer a Play internal push, asking first.
+- **USER RULING (2026-09-26), Phase 80 test scope:** a build changes no code, so do NOT run the full `npm test` after Android-only build steps.
+  - Run the suite (in the executor and in the post-merge gate) only after plans that edit code: 80-02 (nativeChrome.js/package.json), 80-03 (mazeworld.html CSS) and 80-06 (the fit tool).
+  - 80-01 (R8 config), 80-04 (the artifact audit) and 80-05 (the emulator pass) only build and verify the build output.
+  - Phase 80 stays LAST. Its build and emulator checks need the finished code, so it cannot run in parallel with the gameplay phases (the user was right; the parallel suggestion is withdrawn).
 - **USER-APPROVED PENDING EDIT:** after plan 80-02 lands, update the `.claude/CLAUDE.md` stack table: `@capacitor/status-bar` becomes the Capacitor 8 core SystemBars plugin. Also run `npm ci` in the main checkout after 80-02 merges.
 - **Merge recipe:**
   1. In each worktree, run `git -C <wt> checkout -- test/unit/fixtures/shell-snapshots/`.
