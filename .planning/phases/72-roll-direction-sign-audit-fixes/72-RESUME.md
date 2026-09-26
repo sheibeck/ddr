@@ -1,28 +1,32 @@
 # v2.1 autonomous-run resume point
 
-**Updated:** 2026-09-25 ~15:45 local, Phase 75 wave 1 in flight, Phase 80 planner in flight.
+**Updated:** 2026-09-26 ~00:30 local, Phase 75 complete, Phase 75.1 wave 1 in flight.
 
 ## Where the run is
 - `/gsd-autonomous` is running milestone v2.1.
-- Phases 72, 81, 73 and **74 are COMPLETE and pushed**. Master was 5,986/5,986 green at 4076858.
-- **Phase 75 is EXECUTING.** It has 13 plans in 6 waves: W1 is 01-04, W2 is 05-06, W3 is 07-08, W4 is 09-10, W5 is 11-12, and W6 is 13. The plans are committed (29c950c).
-  - Wave 1 was dispatched at base 4076858. Its manifest is `<scratchpad>/wave-75-1.json`, and it is watched by `<scratchpad>/watch.sh <base> <stall-min> <ids>`.
-  - 75-01 is the RULES-06 root-cause debug session. 75-08 (the fix) depends on its documented Fix inputs.
-  - Readouts go to `tools/readouts/75-NN-{before,after}.txt`. Only 75-13 writes `docs/DIFFICULTY-RETUNE.md`.
-  - After a compact:
-    1. Check `git worktree list` and the `agent-*` branches for SUMMARYs.
-    2. Merge each finished wave with `worktree.cleanup-wave`. It blocks on worktree-only line-ending noise in the shell snapshots, so run `git checkout -- test/unit/fixtures/shell-snapshots/` in the worktree first. If it reports branch_mismatch on a rerun, merge manually.
-    3. Run `npm test`, then `roadmap.update-plan-progress`, then dispatch the next wave. The prompt pattern is in `<scratchpad>/last-executor-prompt.txt`.
-- Accepted Phase 75 planner calls:
-  - RULES-03 legality = the school gate only; canon grants are kept.
-  - The cache pays 100 × depth.
-  - A wielded staff is not magic vs magic-only foes.
-  - A Summoner's Heal scroll heals half.
-- **USER-APPROVED PENDING EDIT (2026-09-25):** after plan 80-02 lands, update `.claude/CLAUDE.md`'s stack table. Replace the `@capacitor/status-bar` row with Capacitor 8's core SystemBars plugin, which ships in `@capacitor/core` and needs no extra package. Also run `npm ci` in the main checkout after 80-02 merges.
-- Phase 80 is PLANNED (aa2129b): 6 plans in 4 waves.
-- **Remaining order:** 75, 75.1, 75.2, 75.3, 76, 77, 78, 79, 80, then the lifecycle.
-- The edge-probe reports are pre-built: `<scratchpad>/cov<phase>.json` for every remaining phase.
-- `boot:check` is environment-flaky on this machine. Rerun it once before judging.
+- **Complete and pushed:** 72, 81, 73, 74 and 75. Phase 75 closed at 738e624b: 6,218 green, parity 56/56.
+- **Phase 75.1 is EXECUTING.** It has 9 plans in 7 waves: W1 01+02, W2 03, W3 04, W4 05+09, W5 06, W6 07, W7 08.
+  - Wave 1 was dispatched at base 738e624b. Its manifest is `<scratchpad>/wave-75.1-1.json`.
+  - Watch it with `<scratchpad>/watch.sh <base> <stall-min> <ids>`.
+  - The executor prompt pattern is in `<scratchpad>/last-executor-prompt.txt`. Add the phase's CONTEXT user rulings to the orchestrator notes.
+- **Planned and committed (each executes after the previous phase merges):**
+  - 75.2 (5 plans; race signatures survive size; Joiners get size)
+  - 75.3 (7 plans; ruled strict tail targets; plan 06 is the checkpointed sweep)
+  - 76 (5 plans)
+  - 80 (6 plans; executes LAST)
+- **IN FLIGHT: the Phase 76 planner revision** (no-commit mode), for the user rulings:
+  - a lit torch or the Amulet lifts the IN-FIGHT dark penalties too;
+  - a pending Joiner offer persists across a relaunch.
+  When it returns, gate and commit it.
+- **Still to plan:** 77, 78, 79. The edge reports are in `<scratchpad>/cov<phase>.json`.
+- **USER-APPROVED PENDING EDIT:** after plan 80-02 lands, update the `.claude/CLAUDE.md` stack table: `@capacitor/status-bar` becomes the Capacitor 8 core SystemBars plugin. Also run `npm ci` in the main checkout after 80-02 merges.
+- **Merge recipe:**
+  1. In each worktree, run `git -C <wt> checkout -- test/unit/fixtures/shell-snapshots/` to clear line-ending noise.
+  2. Run `worktree.cleanup-wave`. If a rerun reports branch_mismatch, merge manually.
+  3. Run `npm test`, parity and boot:check. boot:check is environment-flaky, so rerun it once before judging.
+  4. Run `update-plan-progress` for each merged plan, then commit.
+- **Never `cd` into a worktree;** use `git -C`.
+- The user asked for an ETA at ~21:30 on 2026-09-25. Answer given: ~40–50 h remaining. Option offered: run Phase 80 in parallel. The user did not take it.
 
 ## Captures (all routed and committed)
 - Also added after the Phase 73 start: Phase 75 RULES-12 (a tile interrupted by a wanderer is resolved after the fight), RULES-13 (a magic staff is a wielded d8 weapon for Magic Users), RULES-14 (Bubble reflects the next attack and keeps a small pool), and RULES-15 (no rations, no spell refill). Phase 75.3 (deep-floor difficulty) covers RULES-16/17/18: foe count, the curve from floor 12, and control spells at depth. Phase 77 gets CMBUI-14 (combat ITEMS shows EQUIPPED and greys out gear) and Dazed honesty. Phase 78 gets HUD-09 (the full-bag find card), and the new-day refill line was folded into the charge rail item.
