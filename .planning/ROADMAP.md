@@ -295,7 +295,7 @@ Plans:
   4. The Gauntlet of the Giant and the Enlarge potion are both exactly a +1 size step (Enlarge's separate +4 damage is gone), and their text states exactly what a step does, with no ceiling promise.
   5. Moved fixtures are measured, declared and regenerated, and a bot readout before and after is recorded.
 
-**Plans**: 1/5 plans executed
+**Plans**: 3/5 plans executed
 
 Plans:
 **Wave 1**
@@ -304,8 +304,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 75.2-02-PLAN.md — Make the Gauntlet of the Giant and the Enlarge potion deliver what their text promises (RULES-11): each is exactly one size step for its duration, Enlarge loses its separate damage payload, and both texts state exactl... (wave 2)
-- [ ] 75.2-03-PLAN.md — Show the hero's size on the hero sheet and make the sheet's damage honest about it (RULES-11): a SIZE row with the size name and, when it matters, what it does to damage and to the foe's odds from the player's side; t... (wave 2)
+- [x] 75.2-02-PLAN.md — Make the Gauntlet of the Giant and the Enlarge potion deliver what their text promises (RULES-11): each is exactly one size step for its duration, Enlarge loses its separate damage payload, and both texts state exactl... (wave 2)
+- [x] 75.2-03-PLAN.md — Show the hero's size on the hero sheet and make the sheet's damage honest about it (RULES-11): a SIZE row with the size name and, when it matters, what it does to damage and to the foe's odds from the player's side; t... (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -634,7 +634,7 @@ Plans:
 | 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 13/13 | Complete    | 2026-09-25 |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
-| 75.2. Hero Size Matters | v2.1 | 1/5 | In Progress|  |
+| 75.2. Hero Size Matters | v2.1 | 3/5 | In Progress|  |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
