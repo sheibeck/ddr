@@ -20,6 +20,12 @@
 //   node tools/tune-difficulty.mjs --seeds=200 --party
 //   node tools/tune-difficulty.mjs --seeds=200 --max-actions=5000 --explore-budget=30
 //   node tools/tune-difficulty.mjs --seeds=50 --start-depth=20
+//   node tools/tune-difficulty.mjs --seeds=40 --start-depth=20 --control-rotation
+//
+// Phase 75.3 (RULES-18): `--control-rotation` plays the friend's Freeze/
+// Weaken/Doze control rotation (tools/lib/tuning-bot.mjs#chooseSpell's
+// opt-in ROTATION tier) instead of the default scoring table — off by
+// default, so every existing readout is unchanged.
 //
 // HARN-04 (22-CONTEXT.md "Start-at-depth for the bot"): `--start-depth=N`
 // reuses newRun's existing dev-only start-at-depth option exactly as the
@@ -213,6 +219,10 @@ function parseArgs(argv) {
       // opts.startDepth. Default comes from BOT_DEFAULTS.startDepth (1).
       const n = parseInt(arg.slice("--start-depth=".length), 10);
       if (Number.isFinite(n) && n >= 1) opts.startDepth = n;
+    } else if (arg === "--control-rotation") {
+      // Phase 75.3 (RULES-18): opt-in, off by default — see the module
+      // header and tools/lib/tuning-bot.mjs#chooseSpell's ROTATION tier.
+      opts.controlRotation = true;
     }
   }
   return opts;
