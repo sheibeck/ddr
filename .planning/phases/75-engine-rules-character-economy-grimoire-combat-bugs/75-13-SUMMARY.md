@@ -198,3 +198,16 @@ None - no external service configuration required.
 ---
 *Phase: 75-engine-rules-character-economy-grimoire-combat-bugs*
 *Completed: 2026-09-26*
+
+## Self-Check: PASSED
+
+- FOUND: docs/DIFFICULTY-RETUNE.md
+- FOUND: tools/readouts/75-13-final.txt
+- FOUND: test/parity/FIXTURE-INVENTORY.md
+- FOUND: test/parity/divergence-records.test.js
+- FOUND: tools/voice-sample.mjs
+- FOUND: tools/voice-sample-output.txt
+- FOUND: .planning/phases/75-engine-rules-character-economy-grimoire-combat-bugs/75-13-SUMMARY.md
+- FOUND commit: 2501ac76 (docs: Task 1 — the readout ledger)
+- FOUND commit: 1398c9a4 (test: Task 2 — fixture inventory, exposure guard, voice sample)
+- FOUND commit: 55161996 (docs: this SUMMARY)
