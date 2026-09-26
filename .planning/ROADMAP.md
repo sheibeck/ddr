@@ -327,7 +327,33 @@ Plans:
   4. From floor 12, foe HP and hit climb on a steeper slope and the roster keeps escalating past today's level-5 tier cap, with slopes set by bot readouts.
   5. From floor 12, foes increasingly resist or shake off Freeze, Stone, Doze and Weaken, so a control-lock rotation no longer carries a caster to depth 40.
 
-**Plans**: TBD
+**Plans**: 0/7 plans executed
+
+Plans:
+**Wave 1**
+
+- [ ] 75.3-01-PLAN.md — Foe count grows with depth (RULES-16) with the same draws: floors 1-4 as today, 5-9 solo only on a d4 of 1, 10+ never solo (wandering included), 20+ three; FOE_COUNT_DEPTH dial; BEFORE/AFTER readouts, flag if the median drops below 5 (wave 1)
+- [ ] 75.3-02-PLAN.md — Deep-floor instruments: the bot's opt-in control rotation, the fit tool's tail objective on deep-start slices, and the phase BEFORE from depths 12/20/30/40 plus the rotation Sorcerer and a Troll Summoner (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 75.3-03-PLAN.md — The deep curve (RULES-17): a knee after floor 12 on foe HP and hit, and titled elite variants of tier-5 foes from floor 16; floors 1-12 proven unchanged (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 75.3-04-PLAN.md — Control at depth (RULES-18), the rule and every combat.js site: a roll-high derived-stream resist that grows past floor 12, holds instead of freeze/stone kills, the Joiner / Ice / Bard-song sites, four narrated events, Held and Unmoved chips (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 75.3-05-PLAN.md — Control at depth on the hero's spells, scrolls and control items, honest texts, the bot playing Freeze as a hold at depth, rotation readouts before and after (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 75.3-06-PLAN.md — The checkpointed tail sweep against the user's ruled targets (unicorn at 20, depth 30 basically never, the rotation contained): the deep slopes, elite HP step and control resistance are set by readouts in blocks of 10, handing back on a failure pattern, then locked (wave 5, can hand back)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 75.3-07-PLAN.md — Close the phase: FINAL 200/1,000-seed and deep readouts, the DIFFICULTY-RETUNE.md record with rotation and depth-40 verdicts, the control audit in the roll ledger with a standing guard, the fixture close and exposure guard, voice sample, gates (wave 6)
 
 ### Phase 76: Darkness Unification & Relaunch Persistence
 
