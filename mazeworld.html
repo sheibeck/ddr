@@ -3064,6 +3064,7 @@ const CONDITION_COPY = {
   // below (each carries a squares count like haste/invis above).
   power: { label: "Empowered", unit: "sq" },
   giant: { label: "Giant-handed", unit: "sq" },
+  enlarge: { label: "Enlarged", unit: "sq" },
   glow: { label: "Alight", unit: "sq" },
   unseen: { label: "Unseen", unit: "sq" },
   tongue: { label: "Fluent", unit: "sq" },
@@ -3144,7 +3145,7 @@ const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd
   // 260918-w4n: power/giant/brace/plate read as straightforward buffs
   // (good); glow/unseen/tongue read as "odd" like invis/ether above (a
   // strange-but-good state, not a plain good one).
-  power: "good", giant: "good", glow: "odd", unseen: "odd", tongue: "odd", brace: "good", plate: "good",
+  power: "good", giant: "good", enlarge: "good", glow: "odd", unseen: "odd", tongue: "odd", brace: "good", plate: "good",
   // RULES-10 (Phase 75.1, plan 09): all three read bad, exactly like
   // foeEffect/affliction above (the fallback on cn.polarity would already
   // land here, but every other bad-toned key above is explicit too).
@@ -3191,6 +3192,7 @@ const CONDITION_EXPLAIN = {
   // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
   power: "One more point of damage on every swing, for a while. The ring calls it generosity.",
   giant: "One size larger. Mind the ceilings.",
+  enlarge: "One size larger for a while: +2 damage, and one face easier for foes to hit.",
   glow: "You are your own lantern. The dark is filing a complaint.",
   unseen: "They need two better to land a blow, and they know it.",
   tongue: "You understand them perfectly. Whether that helps is up to them.",
