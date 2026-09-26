@@ -3198,13 +3198,16 @@ const CONDITION_EXPLAIN = {
   ether: "Walls are a suggestion for the count shown. When it reaches zero, be standing in a corridor. The rock will not be.",
   might: "Extra damage until the day ends. Hit things.",
   flight: "Walls and crevices cost nothing while the charge holds. Then they cost the usual.",
-  // Phase 57 (LAYOUT-06): rewritten to state the actual rule — ground you
-  // have not walked shows only the one square around you (Phase 41's
-  // render window, driven by this same counter), and strikes are harder
-  // to land while it runs. When a waiver (Night Vision / a live Amulet of
-  // Light / a lit torch) is open, paintConditions prepends a named clause
-  // ahead of this sentence at tap time — see WAIVER_LABEL below.
-  darkness: "Ground you have not walked yet shows only the one square around you while this counts down, and every strike is harder to land. A torch or an amulet of light burns it away early.",
+  // DARK-02 (Phase 76, user ruling 2026-09-25 "combat too"): one rule for
+  // the map and the fight (engine/derived.js#darkWaiver / darkLimited). The
+  // dark limits what you see as you walk and what the map shows, caps your
+  // strikes, bans criticals and frightens the Darkness-phobic; Night Vision,
+  // a lit torch or a live Amulet of Light holds all of it back; Sense
+  // Presence is a fight-only relief, not a light; only the Amulet's light
+  // ends the counter (engine/movement.js). When a light is holding it back,
+  // paintConditions prepends a named clause ahead of this sentence at tap
+  // time — see WAIVER_LABEL below.
+  darkness: "While this counts down you see one square around you, the map shows no further, and in a fight every strike is harder to land, none of them critical, and anyone afraid of the dark gets to prove it. Night Vision, a lit torch or a live Amulet of Light holds all of it back, and the Amulet ends it outright. Sense Presence lets you fight at full skill anyway, but it lights nothing.",
   afraid: "A penalty on every roll until it passes. Nobody is proud of this.",
   // RULES-14 (Phase 75): Shield still reads the plain pool sentence below.
   // An armed Bubble mirror's own explanation is appended at tap time (see
@@ -3252,10 +3255,11 @@ const CONDITION_EXPLAIN = {
 };
 
 // Phase 57 (LAYOUT-06), USER RULING 2026-09-22 (waiver visibility) — display
-// copy for src/browser/darknessView.js#waiverFor's three stable keys. Named
-// in the darkness chip's countdown detail AND leads its tap card, so a
-// darkness counter running beside unrestricted vision is always explained
-// (the 2026-09-21 device report this phase closes).
+// copy for the three light-waiver keys. DARK-02 (Phase 76): the key now comes
+// from the engine's own darkWaiver(S.c) (engine/derived.js DARK_WAIVERS,
+// passed through src/browser/darknessView.js#waiverFor). Named in the
+// darkness chip's countdown detail AND leads its tap card, so a darkness
+// counter running beside a light is always explained.
 const WAIVER_LABEL = {
   nightVision: "your night vision",
   amuletLight: "your Amulet of Light",
@@ -3374,20 +3378,17 @@ function paintConditions(c) {
       detail = unit ? `${cn.remaining} ${unit}` : String(cn.remaining);
     }
     // Phase 57 (LAYOUT-06), USER RULING 2026-09-22 (waiver visibility): while
-    // c.darkFor is running AND a waiver is holding the dark back, name it —
-    // the countdown itself is untouched, only appended to. window.__mzDarkness
-    // is the ONE read of the engine's own three waiver checks (skill/eff/
-    // itemEffectActive); this never recomputes the rule locally. Fail-open:
+    // c.darkFor is running AND a light is holding the dark back, name it —
+    // the countdown itself is untouched, only appended to. DARK-02 (Phase
+    // 76): the key is the engine's ONE answer, darkWaiver(S.c) (bridged on
+    // window.__mzDarkness), the same predicate the reveal, the render window
+    // and the fight read; the shell computes no waiver of its own. Fail-open:
     // a missing bridge simply names no waiver, same as "none is open".
     let darkWaiver = null;
     if (cn.key === "darkness") {
       const dk = window.__mzDarkness;
-      darkWaiver = dk?.waiverFor?.({
-        nightVision: !!dk.skill?.(S.c, "Night Vision"),
-        amuletLight: !!(dk.eff?.(S.c, "light") > 0),
-        litTorch: !!window.__mzEther?.itemEffectActive(S.c, "lit"),
-      });
-      if (darkWaiver) detail += ` · ${WAIVER_LABEL[darkWaiver] || "something"} is holding it off the map`;
+      darkWaiver = dk?.waiverFor?.(dk.darkWaiver?.(S.c)) ?? null;
+      if (darkWaiver) detail += ` · ${WAIVER_LABEL[darkWaiver] || "something"} is holding it back`;
     }
     const btn = document.createElement("button");
     btn.type = "button";
@@ -3419,7 +3420,7 @@ function paintConditions(c) {
     // at all — optional chaining, so a missing bridge also reads as no lead.
     const effectLead = window.__mzConditionEffect?.(cn, S);
     const explainText = (effectLead ? `${effectLead}. ` : "") + (darkWaiver
-      ? `The dark is on you, but ${WAIVER_LABEL[darkWaiver]} is keeping it off the map. ${CONDITION_EXPLAIN.darkness}`
+      ? `The dark is on you, but ${WAIVER_LABEL[darkWaiver]} is holding it back. ${CONDITION_EXPLAIN.darkness}`
       : explainCondition(cn, label));
     // Phase 71 (D-16, R-28/R-29/R-31): while the combat screen is up the
     // same sentence goes on the combat-legal condition card (the rail is
@@ -3464,10 +3465,10 @@ function paintVignette(c) {
     el.dataset.dark = "off";
     return;
   }
-  // USER RULING 2026-09-22: fed mapViewRadius(S), NEVER revealRadius(S) — the
-  // two disagree under a waiver (a lit torch leaves revealRadius at 1 while
-  // mapViewRadius is Infinity), and this vignette explains what the map is
-  // RENDERING, which mapViewRadius governs.
+  // DARK-02 (Phase 76): revealRadius and mapViewRadius share one waiver
+  // (engine/derived.js#darkWaiver), so mapViewRadius is the one radius: the
+  // vignette closes in exactly when the dark limits what you reveal and what
+  // the map shows, and lifts the moment a light holds it back.
   const result = dk.vignetteFor(dk.inDark(S), dk.mapViewRadius(S));
   el.dataset.dark = result.level;
 }
@@ -6297,11 +6298,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // mapViewRadius, inViewWindow` import line stays byte-identical for
   // test/unit/shell-gear-39.test.js, shell-loot-screen.test.js and
   // shell-worn-slots.test.js. Bridged below (with mapViewRadius, already
-  // imported above) as window.__mzDarkness. skill/eff join the same bridge
-  // object (not a new bridge NAME) so paintConditions can compute the three
-  // waiver booleans (Night Vision / a live Amulet of Light / a lit torch)
-  // the SAME way mapViewRadius itself does, rather than reimplementing them.
-  import { inDark, revealRadius, skill, eff } from "./engine/derived.js";
+  // imported above) as window.__mzDarkness. DARK-02 (Phase 76): darkWaiver,
+  // the engine's ONE darkness-waiver predicate, joins the same bridge object
+  // (not a new bridge NAME), so the DARK chip, the vignette and draw()'s
+  // per-tile dark painting all read the answer the reveal, the render
+  // window and the fight read, and the shell computes no waiver of its own.
+  import { inDark, revealRadius, darkWaiver } from "./engine/derived.js";
   import { vignetteFor, waiverFor } from "./src/browser/darknessView.js";
   // Phase 74 (ROLL-02/03), plan 74-07 — a SEPARATE import line (same
   // precedent as every other bridged-only import in this block) so the
@@ -6367,14 +6369,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // rng, no mutation — same bridge pattern as __mzConditionsOf.
   window.__mzMapView = { mapViewRadius, inViewWindow };
 
-  // Phase 57 (LAYOUT-06) — bridges the engine's OWN inDark/revealRadius/
-  // mapViewRadius reads plus the pure darknessView.js vignette/waiver
-  // helpers, so paintVignette() and the DARK chip's waiver clause never
+  // Phase 57 (LAYOUT-06), DARK-02 (Phase 76) — bridges the engine's OWN
+  // inDark/revealRadius/mapViewRadius reads and its one darkWaiver predicate
+  // plus the pure darknessView.js vignette/waiver helpers, so paintVignette(),
+  // the DARK chip's waiver clause and draw()'s per-tile dark painting never
   // recompute the darkness rule themselves. Read-only engine reads, no rng,
-  // no mutation, fail-open at the call site (a missing bridge leaves the
-  // vignette at its off state rather than staying stuck dim — see
-  // paintVignette's own guard).
-  window.__mzDarkness = { inDark, revealRadius, mapViewRadius, vignetteFor, waiverFor, skill, eff };
+  // no mutation, fail-open at every call site (a missing bridge leaves the
+  // vignette off, names no waiver and paints dark tiles full dark).
+  window.__mzDarkness = { inDark, revealRadius, mapViewRadius, darkWaiver, vignetteFor, waiverFor };
 
   // Phase 32 (CMBUI-04/05): the classic renderEncounter()/keydown/
   // window.move guards (32-03) read the arm-delay and dismiss-settle

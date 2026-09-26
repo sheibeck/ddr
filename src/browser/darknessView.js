@@ -1,38 +1,34 @@
 // src/browser/darknessView.js
 //
 // Phase 57 (LAYOUT-06) — gives Table-7's `c.darkFor` counter a face on the
-// map. This module turns the engine's OWN `inDark(state)`/`revealRadius(state)`
-// (and the render filter's own `mapViewRadius(state)`) answers into a
-// vignette state. It RECEIVES those values as arguments and never computes
-// the rule itself — duplicating a rule in two places is how it drifts
-// (D-12; see engine/derived.js#inDark/revealRadius/mapViewRadius, which stay
-// the single source of truth). This module is pure and free of any browser
+// map. This module turns the engine's OWN `inDark(state)` and
+// `mapViewRadius(state)` answers into a vignette state, and the engine's own
+// `darkWaiver(c)` answer into the DARK chip's waiver key. It RECEIVES those
+// values as arguments and never computes the rule itself — duplicating a
+// rule in two places is how it drifts (D-12; engine/derived.js stays the
+// single source of truth). This module is pure and free of any browser
 // global, so it can be unit-tested with no shell/vm harness.
 //
+// Phase 76 (DARK-01/02) — one rule, one radius. engine/derived.js#darkWaiver
+// names the light holding the dark back (Night Vision, a live Amulet of
+// Light, a lit torch, in that precedence), and `darkLimited(state)` is "in
+// the dark with none of them". That one predicate drives what you reveal as
+// you walk (revealRadius), what the map renders (mapViewRadius and so
+// inViewWindow), the fight's dark penalties, and every darkness surface the
+// shell paints: the DARK chip and its tap card, this vignette, and draw()'s
+// per-tile dark painting. revealRadius and mapViewRadius can no longer
+// disagree, so the vignette reads the one radius and the chip names exactly
+// the key the engine reports. Sense Presence (`c.senses`) is a fight-only
+// relief, not a light, so it is never a waiver key here.
+//
 // The Phase 41 (TERR-03) render filter in engine/derived.js
-// (mapViewRadius/inViewWindow) is a SEPARATE, correct, and untouched
-// mechanism — it already hides cells outside a 3x3 area whenever the
-// party is in the dark with no waiver. This module is additive legibility
-// on top of it, not a replacement: see mazeworld.html's paintVignette(),
-// which calls vignetteFor() directly after paintConditions() so the DARK
-// chip and the vignette can never land on different frames.
-//
-// Why this module takes `mapViewRadius`, not `revealRadius` (USER RULING
-// 2026-09-22, 57-CONTEXT.md correction 3): `revealRadius` ports the 1994
-// `reveal()` line verbatim and is waived ONLY by Night Vision; `mapViewRadius`
-// is Phase 41's own render filter, waived by Night Vision, a live Amulet of
-// Light, AND a lit torch. The two disagree under a torch or Amulet — a lit
-// torch leaves `revealRadius` at 1 while `mapViewRadius` is `Infinity` — and
-// this vignette exists to explain what the map is RENDERING, which
-// `mapViewRadius` governs. Driving the vignette off `revealRadius` would dim
-// the screen while the map showed everything, which is the exact
-// contradiction LAYOUT-06 removes.
-//
-// Unifying the two mechanisms so they always agree is tracked as backlog
-// 999.8 (out of scope here — it would widen `revealRadius`, which changes
-// which cells enter `seen`, moving parity fixtures). When 999.8 lands,
-// `vignetteFor`'s second argument collapses back to a single radius and
-// `waiverFor`'s three-way split becomes two-way (Night Vision only).
+// (mapViewRadius/inViewWindow) is the mechanism that hides cells; this
+// module is additive legibility on top of it, not a replacement: see
+// mazeworld.html's paintVignette(), which calls vignetteFor() directly after
+// paintConditions() so the DARK chip and the vignette can never land on
+// different frames.
+
+import { DARK_WAIVERS } from "../../engine/derived.js";
 
 /**
  * VIGNETTE_LEVELS — the only three level strings `vignetteFor` can return,
@@ -44,6 +40,12 @@ export const VIGNETTE_LEVELS = Object.freeze(["off", "near", "close"]);
 /**
  * vignetteFor(inDark, mapViewRadius) — returns a frozen `{ on, radius, level }`.
  *
+ * The radius it reads is engine/derived.js#mapViewRadius. Since Phase 76
+ * (DARK-01/02) that radius shares its one waiver (darkWaiver) with
+ * revealRadius, so there is one radius and no choice of source: the
+ * vignette is `close` exactly when the hero is in the dark with no light
+ * holding it back (`darkLimited`), and `off` otherwise.
+ *
  * `on` is exactly `inDark` coerced to a boolean.
  *
  * `radius` is a display-friendly value: `mapViewRadius` coerced to a finite
@@ -51,18 +53,15 @@ export const VIGNETTE_LEVELS = Object.freeze(["off", "near", "close"]);
  * radius yields 1, never NaN). This field is always finite; it never carries
  * the raw Infinity a waived run produces.
  *
- * `level` is the three-way split this module exists for:
- *   - OFF  — `on` is false, OR the RAW `mapViewRadius` argument is
- *            non-finite (a waiver is open: Night Vision, a live Amulet of
- *            Light, or a lit torch all make `mapViewRadius` return
- *            `Infinity` — see engine/derived.js#mapViewRadius). The map is
- *            rendering everything, so dimming it would lie.
- *   - CLOSE — `on` is true AND the raw radius is finite and <= 1 (no
- *             waiver — the map really is showing only the 3x3 area).
- *   - NEAR  — `on` is true, the raw radius is finite, and it is > 1 (in the
- *             dark with a widened-but-still-finite area; not reachable
- *             from the shipped engine today, kept for forward
- *             compatibility with any future intermediate waiver).
+ * `level`:
+ *   - OFF   — `on` is false, OR the RAW radius is non-finite (a light is
+ *             holding the dark back, so mapViewRadius is `Infinity` and the
+ *             map shows everything; dimming it would lie).
+ *   - CLOSE — `on` is true AND the raw radius is finite and <= 1 (the dark
+ *             limits you to the 3x3 area around you).
+ *   - NEAR  — `on` is true, the raw radius is finite, and it is > 1. Not
+ *             reachable from the shipped engine; kept so the level split
+ *             stays total for any future intermediate radius.
  *
  * Total: every input combination, including undefined/NaN arguments, yields
  * a member of VIGNETTE_LEVELS and never throws.
@@ -83,29 +82,15 @@ export function vignetteFor(inDark, mapViewRadius) {
 }
 
 /**
- * WAIVERS — the stable keys `waiverFor` can return, in fixed precedence
- * order (first live wins) so the chip's named clause is deterministic when
- * more than one waiver happens to be true at once. Night Vision first (an
- * innate racial/skill trait — the most durable reason), then a live Amulet
- * of Light (a worn item effect), then a lit torch (the shortest-lived of
- * the three, a consumable-fuelled effect) — most-durable-first, so the
- * chip names the reason least likely to expire mid-conversation.
+ * waiverFor(waiver) — DARK-02 (Phase 76). Takes the engine's single answer,
+ * engine/derived.js#darkWaiver(c), and returns it when it is a DARK_WAIVERS
+ * key (`"nightVision"`, `"amuletLight"` or `"litTorch"`), else `null`. Two
+ * outcomes only: waived by that key, or not waived. Precedence lives in the
+ * engine alone (darkWaiver reports the first live light), so the chip names
+ * exactly what the reveal, the render window and the fight read. Anything
+ * else (null, undefined, an unknown string, an object) is `null`; it never
+ * throws.
  */
-const WAIVER_PRECEDENCE = Object.freeze(["nightVision", "amuletLight", "litTorch"]);
-
-/**
- * waiverFor(flags) — USER RULING 2026-09-22 (waiver visibility). Returns
- * the stable key (a WAIVER_PRECEDENCE member) naming which waiver is
- * holding the dark back, or `null` when none is. RECEIVES the three
- * already-computed booleans as an argument object
- * (`{ nightVision, amuletLight, litTorch }`) — this function never inspects
- * a character record itself, mirroring `vignetteFor`'s receives-answers
- * discipline. A missing/malformed argument yields `null`, never throws.
- */
-export function waiverFor(flags) {
-  if (!flags || typeof flags !== "object") return null;
-  for (const key of WAIVER_PRECEDENCE) {
-    if (flags[key]) return key;
-  }
-  return null;
+export function waiverFor(waiver) {
+  return typeof waiver === "string" && DARK_WAIVERS.includes(waiver) ? waiver : null;
 }
