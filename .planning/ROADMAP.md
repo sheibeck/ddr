@@ -47,7 +47,8 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 - [x] **Phase 75.1: Pilfer Fumbles & Scroll Reading** (INSERTED) - the Pilfer's d20 magic-item fumble (d10 blast, turns to dust), and scrolls for everyone on an intelligence roll with fumbles that backfire (completed 2026-09-26)
 - [x] **Phase 75.2: Hero Size Matters** (INSERTED) - race sets a hero's size, items step it; size changes damage, how easily you're hit, and size-based rules (completed 2026-09-26)
-- [x] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth, a steeper foe curve and tier past floor 12, and control spells lose their lock at depth (completed 2026-09-26)
+- [x] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth, a steeper foe curve and tier past floor 12, and control spells lose their lock at depth
+ (completed 2026-09-26)
 - [ ] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store
 - [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
@@ -540,11 +541,24 @@ Plans:
      - The rotation Sorcerer never outlasts the fair bot. Every target gets a PASS or MISS verdict.
   3. Floors 1–12 are measured, not refitted. The average run still ends on floors 5–7. Any band miss, including the floor-11 survival miss flagged in Phase 75.1, is reported to the user with 1,000-seed evidence rather than silently compensated.
 
-**Plans:** 0 plans
+**Plans:** 0/4 plans executed
 
 Plans:
+**Wave 1**
 
-- [ ] TBD (planned from the moved 75.3-06 sweep plan and every readout step deferred from Phases 75.2, 75.3, 76 and 78)
+- [ ] 79.1-01-PLAN.md — Take the milestone's pre-milestone BASELINE once: prove the committed Phase 72 BEFORE readout is the v2.0 200-seed natural run and copy it, then run, at the v2.0 tag in a scratch worktree, the three readouts that have... (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 79.1-02-PLAN.md — Tune the four deep-floor dials from Phase 75.3 against the user's ruled tail targets under the checkpointed fit protocol (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 79.1-03-PLAN.md — Lock the sweep's best dial set into the engine with a traced test, re-pin exactly what the new values move after tracing each move past floor 12, declare the moved set, and prove the whole suite green once (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 79.1-04-PLAN.md — Take the milestone-final readouts on the locked code, compute a PASS or MISS verdict for every ruled tail target and every band at 1,000 seeds, put any MISS in front of the user with its evidence, and write the whole ... (wave 4)
 
 ### Phase 80: Android Release Build & Tooling
 
