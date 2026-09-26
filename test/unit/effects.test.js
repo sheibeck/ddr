@@ -426,6 +426,27 @@ test("rehydrate/validateSave: a rounds record is cleared, a squares record survi
   assert.equal("timers" in noTimersValidate.c, false, "a save with no timers key must never gain one");
 });
 
+// SAV-06/SAV-07 (Phase 76): the no-fight clear above still holds; with a
+// fight that survives the load, its rounds-cadence records survive with it (a
+// relaunch never clears an in-fight effect or cooldown in either side's
+// favour). A tampered map is dropped either way.
+test("SAV-06 (Phase 76): with a surviving fight, rehydrate/validateSave keep the rounds record too", () => {
+  const state = withCombat(newRun(11), [fixedFoe()]);
+  state.c.timers = {
+    "ability:whirl": { cadence: "rounds", left: 4, phase: "effect" },
+    "item:Cloak of Light": { cadence: "squares", left: 4, phase: "effect" },
+  };
+  const serialized = serializeRun(state);
+  for (const loaded of [validateSave(JSON.stringify(serialized)).value, rehydrate(structuredClone(serialized))]) {
+    assert.ok(loaded.combat, "the fight survives");
+    assert.deepStrictEqual(loaded.c.timers["ability:whirl"], { cadence: "rounds", left: 4, phase: "effect" });
+    assert.deepStrictEqual(loaded.c.timers["item:Cloak of Light"], { cadence: "squares", left: 4, phase: "effect" });
+  }
+  const tamperedRaw = structuredClone(serialized);
+  tamperedRaw.c.timers = "tampered";
+  assert.equal("timers" in validateSave(JSON.stringify(tamperedRaw)).value.c, false);
+});
+
 test("draw-count invariance: a planted squares timer changes zero rng draws or events across 30 legal moves", () => {
   const seed = 7;
   const scriptDirs = (() => {

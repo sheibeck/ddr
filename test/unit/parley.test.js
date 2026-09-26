@@ -706,7 +706,9 @@ test("D-21 seed-303 pin: the one parity-exposed parley now reads need 17 / sp 5 
 
 // --- Test 15: old-save probe --------------------------------------------
 
-test("D-19 old-save probe: mid-fight flags round-trip losslessly through JSON and are dropped with the combat on load", () => {
+// SAV-06/SAV-07 (Phase 76): FLIPPED from "dropped with the combat on load" —
+// the fight now survives a relaunch wholesale, so its parley flags do too.
+test("D-19 old-save probe: mid-fight flags round-trip losslessly through JSON and survive with the combat on load", () => {
   const state = mk({ sub: "Con Artist" }, "Humans", { parleyTried: true, parleyInsulted: true });
   const roundTripped = JSON.parse(JSON.stringify(state));
   assert.equal(roundTripped.combat.parleyTried, true);
@@ -723,7 +725,9 @@ test("D-19 old-save probe: mid-fight flags round-trip losslessly through JSON an
   const check = validateSave(JSON.stringify(serializeRun(run)));
   assert.equal(check.ok, true);
   const rehydrated = rehydrate(check.value);
-  assert.equal(rehydrated.combat, null);
+  assert.ok(rehydrated.combat, "SAV-06: the fight survives the load");
+  assert.equal(rehydrated.combat.parleyTried, true);
+  assert.equal(rehydrated.combat.parleyInsulted, true);
   assert.deepStrictEqual(rehydrated.c, preSaveC, "the character is intact, minus nothing");
 });
 

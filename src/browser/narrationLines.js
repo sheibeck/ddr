@@ -197,6 +197,8 @@ export const ORACLE_ONLY = new Set([
   "grimoireSold", // the sell-flow's own confirmation is the UI signal
   "itemConsumed", // pure bookkeeping (a charge spent); the effect event itself already narrated
   "allyCast", // the allySpellHit/allySpellMissed sibling that always follows in the same action narrates the outcome and names the spell (one line per cast)
+  "fightResumed", // SAV-06 (Phase 76): the combat screen coming back IS the signal; a relaunch is a minor event (card-vs-rail ruling), Oracle line only
+  "storeResumed", // SAV-07 (Phase 76): the store screen coming back IS the signal; Oracle line only, no rail card
 ]);
 
 /**

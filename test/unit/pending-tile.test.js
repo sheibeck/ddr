@@ -385,19 +385,27 @@ test("resolveFeature dispatches every feature type move()'s own tail always has,
   assert.deepStrictEqual(events, []);
 });
 
-// --- D) save/load: pendingTile is transient, reset to null on load --------
+// --- D) save/load: pendingTile survives a relaunch when valid --------------
+// SAV-06/SAV-07 (Phase 76): FLIPPED from "always reset to null on load". A
+// pendingTile on the loaded floor now resumes with the fight it was waiting
+// on; one from another floor (or malformed) still loads as null. The full
+// validation matrix lives in test/unit/save-resume.test.js.
 
-test("validateSave/rehydrate always reset a saved pendingTile to null", () => {
+test("SAV-06 (Phase 76): validateSave/rehydrate keep a saved pendingTile on the current floor, and drop one from another floor", () => {
   const state = newRun(1);
   state.pendingTile = { x: 3, y: 3, depth: 1 };
   const saved = JSON.parse(JSON.stringify(state));
 
-  const validated = validateSave(saved);
+  const validated = validateSave(structuredClone(saved));
   assert.ok(validated.ok);
-  assert.equal(validated.value.pendingTile, null);
+  assert.deepStrictEqual(validated.value.pendingTile, { x: 3, y: 3, depth: 1 });
 
-  const rehydrated = rehydrate(saved);
-  assert.equal(rehydrated.pendingTile, null);
+  const rehydrated = rehydrate(structuredClone(saved));
+  assert.deepStrictEqual(rehydrated.pendingTile, { x: 3, y: 3, depth: 1 });
+
+  const otherFloor = { ...structuredClone(saved), pendingTile: { x: 3, y: 3, depth: 2 } };
+  assert.equal(validateSave(structuredClone(otherFloor)).value.pendingTile, null);
+  assert.equal(rehydrate(otherFloor).pendingTile, null);
 });
 
 // --- E) engine.js wiring: applyAction calls resolvePendingTile after EVERY dispatch ---

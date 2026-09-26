@@ -396,17 +396,37 @@ test("buyFrom: a full bag refuses the tool line with bagFull, no gold spent, ite
 
 // --- pendingHazard is transient, like pendingFind ---------------------------
 
-test("newRun/validateSave/rehydrate: pendingHazard is always null (transient, like pendingFind)", () => {
+// SAV-06/SAV-07 (Phase 76): FLIPPED from "always null on load". A hazard
+// decision that no longer matches its neighbour cell is still dropped (the
+// hand-made climb/E record below does not match newRun(1)'s floor); one that
+// does match now survives a relaunch.
+test("newRun/validateSave/rehydrate: pendingHazard starts null; one inconsistent with the floor loads as null", () => {
   const state = newRun(1);
   assert.equal(state.pendingHazard, null);
+  const { px, py } = state.floor;
+  assert.notEqual(state.floor.g[py][px + 1]?.feat, "climb", "precondition: the E neighbour is not a climb");
 
-  const tampered = { ...state, pendingHazard: { feat: "climb", dir: "E", tool: "ladder", declined: false } };
-  const validated = validateSave(tampered);
+  const tampered = { ...structuredClone(state), pendingHazard: { feat: "climb", dir: "E", tool: "ladder", declined: false } };
+  const validated = validateSave(structuredClone(tampered));
   assert.equal(validated.ok, true);
   assert.equal(validated.value.pendingHazard, null);
 
   const rehydrated = rehydrate(tampered);
   assert.equal(rehydrated.pendingHazard, null);
+});
+
+test("SAV-06 (Phase 76): a pendingHazard matching its neighbour cell survives validateSave and rehydrate", () => {
+  const state = newRun(1);
+  const { px, py } = state.floor;
+  const dir = state.floor.g[py][px + 1] ? "E" : "W";
+  const nx = dir === "E" ? px + 1 : px - 1;
+  state.floor.g[py][nx].feat = "climb";
+  state.pendingHazard = { feat: "climb", dir, tool: "ladder", declined: true };
+
+  const validated = validateSave(JSON.stringify(state));
+  assert.equal(validated.ok, true);
+  assert.deepStrictEqual(validated.value.pendingHazard, { feat: "climb", dir, tool: "ladder", declined: true });
+  assert.deepStrictEqual(rehydrate(structuredClone(state)).pendingHazard, { feat: "climb", dir, tool: "ladder", declined: true });
 });
 
 // --- the hazard pre-roll pending decision (ladder / rope) -------------------

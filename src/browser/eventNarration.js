@@ -1009,6 +1009,16 @@ export const EVENT_NARRATION = {
   itemSold: (e) =>
     `<span class="hit">Sold:</span> ${e.item?.n ?? "something"} for ${e.price ?? 0} wilmst. The shopkeeper's smile suggests you got the worse end of it.`,
   storeLeft: () => `<span class="beat">You leave the shop.</span>`,
+  // SAV-07 (Phase 76): a relaunch reopened the store exactly as it was left
+  // (engine/saveState.js#resumeEventsFor) — same stock, same prices.
+  storeResumed: () => `<span class="beat">The shopkeeper has not moved. Neither have the prices.</span>`,
+  // SAV-06 (Phase 76): a relaunch put the hero straight back into the fight
+  // (engine/saveState.js#resumeEventsFor). A fight not yet joined (`pending`)
+  // reads as the monsters waiting; one under way names the round.
+  fightResumed: (e) =>
+    e?.pending
+      ? `<span class="beat">They waited. Monsters can be very patient.</span>`
+      : `<span class="beat">Still here. Still fighting.${Number.isInteger(e?.round) ? ` Round ${e.round}, where you left it.` : ""}</span>`,
 
   /* ---------------- encounters.js ---------------- */
 

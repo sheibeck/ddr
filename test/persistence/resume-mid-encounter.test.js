@@ -1,8 +1,8 @@
 // test/persistence/resume-mid-encounter.test.js
 //
-// Phase 70 (POLISH-03, D-08), plan 70-04: what a mid-encounter Save & quit
-// resumes, pinned as TODAY's behaviour (user ruling 2026-09-24, option 3 —
-// DEFER the relaunch gap).
+// Phase 70 (POLISH-03, D-08), plan 70-04, REWRITTEN by Phase 76 plan 76-03
+// (SAV-06/SAV-07, backlog 999.10 closed): what a mid-encounter Save & quit
+// resumes.
 //
 // - In session: exact. SAVE & QUIT (window.mzAbandonRun) only shows the
 //   title over the untouched shell, and ENTER's resume branch only hides it
@@ -15,13 +15,14 @@
 //   GameState), so a relaunch rebuilds from the last dispatched GameState.
 //   - A pending loot pile survives (Phase 29 LOOT-06 keeps pendingLoot).
 //   - A dead save relaunches to the roller (hadSaveAtLaunch is false).
-//   - KNOWN LIMITATION: a live combat or an open store does NOT survive. The
-//     save file carries them, but engine/saveState.js#rehydrate resets
-//     combat and store to null on load (transient by design since Phase 1,
-//     as the prototype's own load did). The player comes back on the same
-//     tile with the fight or shop gone. Backlog item 999.10, "Keep live
-//     combat and open store through a relaunch". When 999.10 lands, flip
-//     cases (a) and (b) below to assert the sub-state survives.
+//   - SAV-06 (Phase 76): a live combat survives. engine/saveState.js's
+//     validateSave/rehydrate validate the stored fight and resume it
+//     wholesale (same foes, HP, round and effects), so force-closing can no
+//     longer escape a fight: a move after the relaunch is still refused.
+//   - SAV-07 (Phase 76): an open store survives with the same stock, prices
+//     and sold flags. A stored fight or store that fails validation is
+//     dropped and the rest of the save loads as before (tolerant load;
+//     pinned in test/unit/save-resume.test.js).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -92,9 +93,9 @@ test("(c) relaunch: a pending loot pile rehydrates intact, with the same floor, 
   });
 });
 
-// ─── (a)(b) KNOWN LIMITATION: combat and store are cleared on relaunch ───
+// ─── (a)(b) SAV-06/SAV-07 (Phase 76): combat and store survive a relaunch ─
 
-test("(a) KNOWN LIMITATION (backlog 999.10): relaunch mid-combat — the save carries state.combat, but saveState.js#rehydrate resets it to null; floor, position and hero survive", async () => {
+test("(a) SAV-06 (Phase 76): relaunch mid-combat — the booted combat deep-equals the saved one, and a move after the relaunch is still refused", async () => {
   await withFakeLocalStorage(async (store) => {
     initRun(4242);
     const s = getState();
@@ -104,14 +105,19 @@ test("(a) KNOWN LIMITATION (backlog 999.10): relaunch mid-combat — the save ca
     assert.ok(getState().combat, "the refused move leaves the combat up");
     const { snapshot, booted } = await relaunch(store);
     assert.ok(snapshot.combat, "the save file carries the live combat");
-    assert.equal(booted.combat, null, "999.10: rehydrate clears the combat today");
+    assert.deepStrictEqual(booted.combat, snapshot.combat, "SAV-06: the same fight, foes, HP and round");
     assert.deepStrictEqual(booted.floor, snapshot.floor, "the same floor and position");
     assert.equal(booted.c.name, snapshot.c.name, "the same hero");
     assert.equal(booted.dead, false);
+    const { px, py } = booted.floor;
+    dispatch({ type: "move", dir: "N" }); // force-closing no longer escapes the fight
+    assert.ok(getState().combat, "the fight is still up after the relaunch");
+    assert.equal(getState().floor.px, px, "the move is refused: x unchanged");
+    assert.equal(getState().floor.py, py, "the move is refused: y unchanged");
   });
 });
 
-test("(b) KNOWN LIMITATION (backlog 999.10): relaunch mid-store — the save carries state.store, but saveState.js#rehydrate resets it to null; floor, position and hero survive", async () => {
+test("(b) SAV-07 (Phase 76): relaunch mid-store — the booted store deep-equals the saved one (same stock, prices and sold flags)", async () => {
   await withFakeLocalStorage(async (store) => {
     initRun(4243);
     const s = getState();
@@ -121,7 +127,7 @@ test("(b) KNOWN LIMITATION (backlog 999.10): relaunch mid-store — the save car
     assert.ok(getState().store, "the refused move leaves the store open");
     const { snapshot, booted } = await relaunch(store);
     assert.ok(snapshot.store, "the save file carries the open store");
-    assert.equal(booted.store, null, "999.10: rehydrate clears the store today");
+    assert.deepStrictEqual(booted.store, snapshot.store, "SAV-07: the same stock, prices and sold flags");
     assert.deepStrictEqual(booted.floor, snapshot.floor, "the same floor and position");
     assert.equal(booted.c.name, snapshot.c.name, "the same hero");
   });
