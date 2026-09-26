@@ -27,6 +27,12 @@ import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { armorDisplay } from "./viewModels.js";
 import { heroHitOdds } from "./rollOdds.js";
+// RULES-11 (Phase 75.2, Plan 03) — a SEPARATE import line (the pinned line
+// above, test/unit/shell-worn-slots.test.js, stays byte-identical): the
+// size read seam 75.2-01 built (engine/derived.js) and the one signed-number
+// formatter (src/browser/rollRange.js) the SIZE row's detail clauses read.
+import { heroSize, sizeDamage, SIZE_FACES_PER_STEP } from "../../engine/derived.js";
+import { signedText, playerDelta, ROLLERS } from "./rollRange.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
 // script keeps for the HUD's own wp readout (mazeworld.html's copy stays,
@@ -46,7 +52,7 @@ function skillTableFor(cls) {
  * damageBracket(c) — a deterministic [min, max] damage range for the
  * character's current weapon, mirroring engine/derived.js's weaponDamage()
  * modifier stack EXACTLY (level^2 + prof + magicWpn + race dmg/wpnBonus +
- * might + Heft skill + eff("dmg") + Guard/Sorcerer adjustments) but
+ * might + Heft skill + eff("dmg") + size + Guard/Sorcerer adjustments) but
  * resolving the weapon's dice notation as a [min, max] range instead of
  * drawing from an rng — so the sheet NEVER advances GameState.rngState
  * (T-04-06). Reads only `c`. Phase 38 (ABIL-02): the retired Kata passive's
@@ -70,11 +76,17 @@ function damageBracket(c) {
   if (R.dmg) flat += R.dmg;
   if (R.wpnBonus) flat += R.wpnBonus;
   if (c.might) flat += c.might;
-  // Phase 39 (GEAR-02): a live Strength/Enlarge potion effect (c.timers),
-  // additive alongside the spell's own c.might.
+  // Phase 39 (GEAR-02, Strength only since 75.2-02): a live Strength potion
+  // effect (c.timers), additive alongside the spell's own c.might — Enlarge
+  // is a size step now (RULES-11), not a might record.
   flat += potionMight(c);
   if (skill(c, "Heft")) flat += 2;
   flat += eff(c, "dmg");
+  // RULES-11 (Phase 75.2, Plan 03): sizeDamage(c) in the SAME position
+  // weaponDamage applies it (right after eff(c, "dmg"), before the Guard/
+  // Sorcerer adjustments below) — the bracket can never disagree with a
+  // real weaponDamage(c, rng) draw for any size.
+  flat += sizeDamage(c);
   if (c.sub === "Guard" && c.level < 4) flat -= 4 - c.level;
 
   let min = Math.max(1, baseMin + flat);
@@ -85,6 +97,51 @@ function damageBracket(c) {
   }
   if (max < min) max = min;
   return { min, max };
+}
+
+/**
+ * HERO_SIZE_COPY — RULES-11 (Phase 75.2, Plan 03): every player-facing
+ * string sizeRowFor (below) builds from — a frozen literal like
+ * ABILITY_VIEW_COPY/RATIONS_COPY elsewhere in this module. `theirs` reuses
+ * Phase 74's "vs their swings" phrase (src/browser/conditionEffects.js's
+ * CONDITION_EFFECT_COPY.theirs) so the sheet and the condition chips read
+ * alike.
+ */
+export const HERO_SIZE_COPY = Object.freeze({
+  label: "SIZE",
+  damage: "{damage} damage",
+  theirs: "{theirs} vs their swings",
+  join: ", ",
+  born: "{base} by birth",
+  sep: " · ",
+});
+
+/**
+ * sizeRowFor(c) — RULES-11 (Phase 75.2, Plan 03): the hero sheet's SIZE row,
+ * reading only the engine's own size seam (engine/derived.js#heroSize/
+ * sizeDamage) and formatting every signed number through the ONE formatter
+ * (src/browser/rollRange.js#signedText/playerDelta) — never a restated
+ * formula. Per the user's signature ruling (75.2-CONTEXT "Race signatures
+ * and Joiners"), a damage clause appears only when sizeDamage(c) is
+ * non-zero, and a "vs their swings" clause only when the face step is
+ * non-zero — so a Dwarf's row never claims a damage loss and an Elf's never
+ * claims to be harder to hit. A "<race size> by birth" clause is appended
+ * when a live item step has moved the displayed name away from the race's
+ * own base size (e.g. a live Gauntlet of the Giant). Pure, no rng.
+ */
+function sizeRowFor(c) {
+  const hs = heroSize(c);
+  const clauses = [];
+  const dmg = sizeDamage(c);
+  if (dmg !== 0) clauses.push(HERO_SIZE_COPY.damage.replace("{damage}", signedText(dmg)));
+  if (hs.faceStep !== 0) {
+    const theirs = playerDelta(SIZE_FACES_PER_STEP * hs.faceStep, ROLLERS.foe);
+    clauses.push(HERO_SIZE_COPY.theirs.replace("{theirs}", signedText(theirs)));
+  }
+  const detail = clauses.join(HERO_SIZE_COPY.join);
+  const born = hs.name !== hs.baseName ? HERO_SIZE_COPY.born.replace("{base}", hs.baseName) : "";
+  const text = [hs.name, detail, born].filter(Boolean).join(HERO_SIZE_COPY.sep);
+  return { key: "size", label: HERO_SIZE_COPY.label, value: hs.name, step: hs.step, base: hs.baseName, detail, text };
 }
 
 /** nextLevelValue(c) — the sp threshold for the next skill level, or "MAX" past the top of THRESHOLDS. */
@@ -184,6 +241,11 @@ export function characterSheetViewModel(state) {
     // engine still rolled low; Phase 73 flipped the engine to roll-high).
     { key: "toHit", label: "TO HIT", value: heroHitOdds(state).text },
     { key: "damage", label: "DAMAGE", value: `${damage.min}–${damage.max}`, min: damage.min, max: damage.max },
+    // RULES-11 (Phase 75.2, Plan 03): the hero's size, stated as a net
+    // effect from the player's side (75.2-CONTEXT: "the hero sheet shows the
+    // size, e.g. 'SIZE Small'") — sizeRowFor(c) reads only the engine's own
+    // size seam, never a restated formula.
+    sizeRowFor(c),
     { key: "armor", label: "ARMOR", value: `${armor.label.toUpperCase()} · ${armor.sub}`, under: armor.under },
     // RULE-01 (04.1-04): intelBonus(c) is the SAME derived.js helper openChest
     // consumes for its lock-roll threshold — surfaced here as `lockBonus` so
