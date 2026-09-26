@@ -1074,8 +1074,18 @@ export const EVENT_NARRATION = {
     if (e.reason === "notFought") return `<span class="miss">Fight! first.</span> It will keep.`;
     // Phase 39 (GEAR-05): the torch used while not dark.
     if (e.reason === "notDark") return `<span class="miss">It is not dark.</span> Save the torch for when it is.`;
-    return `<span class="miss">${item} does not heal,</span> so as far as a Pilfer is concerned it does not work.`;
+    // RULES-09 (Phase 75.1): the Pilfer heal-only branch that used to live
+    // here is gone (superseded by pilferFumbled below) — this is now a
+    // generic fallback for any reason not named above.
+    return `<span class="miss">${item} does not work for you.</span>`;
   },
+  // RULES-09 (Phase 75.1, user 2026-09-24/25): a Pilfer's use-activated
+  // magic-item fumble — names the item, shows the steady-hands roll, states
+  // the hp lost with U+2212, and says the item is dust, in the fiddling-
+  // hands voice. Never names a diagnosis — the fidgeting is voice, not a
+  // label.
+  pilferFumbled: (e) =>
+    `<span class="hurt">${e.item ?? "It"} comes apart in your hands.</span> <span class="roll">${rollVsText(e.roll, e.atLeast, e.dieN)}.</span> −${e.dmg ?? 0} hp, and it is dust now.`,
   cured: (e) => `<span class="hit">Cured of ${e.kind ?? "it"}.</span>`,
   foeStoned: (e) => `<span class="hit">${(e.names ?? []).join(", ") || "It"} turn to stone.</span> Statues don't hit back.`,
   itemBurned: (e) => `<span class="roll">${e.total ?? 0}</span> fire damage spread across the room.`,

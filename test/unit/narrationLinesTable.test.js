@@ -77,8 +77,11 @@ test("reason-specific refusal text differs from the generic fallback", () => {
   assert.equal(LINE_FOR.equipRejected({ type: "equipRejected", reason: "wrongSlot" }).tone, "block");
 
   const useFallback = LINE_FOR.useRefused({ type: "useRefused", reason: "definitelyNotAReason" }).text;
-  const pilferUse = LINE_FOR.useRefused({ type: "useRefused", reason: "pilfer", item: { n: "Bomb" } }).text;
-  assert.notEqual(pilferUse, useFallback);
+  // RULES-09 (Phase 75.1): the useRefused "pilfer" reason is retired — a
+  // Pilfer's magic-item fumble is its own event/line now (pilferFumbled).
+  const pilferFumbled = LINE_FOR.pilferFumbled({ type: "pilferFumbled", item: "Bomb", dmg: 5 }).text;
+  assert.notEqual(pilferFumbled, useFallback);
+  assert.ok(pilferFumbled.includes("Bomb"));
 
   // Phase 31 (CMB-01): a castRefused notFought reason vs the generic fallback.
   const castFallback = LINE_FOR.castRefused({ type: "castRefused", reason: "definitelyNotAReason" }).text;

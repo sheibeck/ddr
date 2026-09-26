@@ -988,6 +988,13 @@ the mechanic.
   (`useRefused`, reason `pilfer`); drinkPotion and the existing scroll
   block (`canRead`) are untouched; rationale: "does not heal, so as far as
   a Pilfer is concerned it does not work" (IDENT-07).
+  **Superseded by Phase 75.1 (RULES-09, user 2026-09-24/25):** the
+  heal-only refusal is GONE — a Pilfer uses every jewel/cloak/staff/potion
+  under the normal rules. In its place, each Pilfer USE of a jewel, cloak or
+  staff rolls a derived d20; on a 1 the use fails, the item explodes for a
+  d10 to the Pilfer only (no armor/ward soak) and turns to dust
+  (`pilferFumbled`; `pilferFumble` death cause). Potions, scrolls and tools
+  never roll this die.
 - **Cloaker — bad made real: vanish only before the first landed blow.**
   The free vanish now gates on `!C.opened2`; once the Cloaker has struck
   this fight, `flee` falls through to the ordinary d20+5-vs-11 Thief roll
@@ -1081,7 +1088,7 @@ are deliberately left as-is and flagged as a v1.3 spell-audit candidate.
 | Samurai | Born in plate, wielding a magic katana | Never wins initiative, never runs |
 | Bard | Courtly enough to talk to anyone — parleys Humans at fluency 0 | Camp wakes wandering monsters twice as often; dumb foes come for the Bard |
 | Pickpocket | An extra take off every kill/chest | Shopkeepers know your face — buys x1.25, sells x0.75 |
-| Pilfer | Disarms every trap, opens every chest for free | Cannot use a single item that does not heal |
+| Pilfer | Disarms every trap, opens every chest for free | Fumbles a magic item on a 1 in 20: it blows up in their hands (d10) and turns to dust |
 | Cat Burglar | The first strike of any fight always lands | Every trap that catches them deals double damage |
 | Cutthroat | The first landed blow always crits, even in armor a backstab would refuse | One descent in twenty, the Joiner beside you does not reach the next floor |
 | Cloaker | A free vanish while nobody has seen your face | Once seen, the vanish is denied |

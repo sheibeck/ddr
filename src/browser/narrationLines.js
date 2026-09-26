@@ -219,6 +219,8 @@ export const FEATURE_EVENTS = [
   "goldGained",
   "trapDisarmed",
   "trapDoubled",
+  // RULES-09 (Phase 75.1): a Pilfer's use-activated magic-item fumble.
+  "pilferFumbled",
   "chestOpened",
   "chestLockRolled",
   "potionDuplicated",
@@ -1709,8 +1711,9 @@ export const LINE_FOR = {
   // a NEW "recharging" reason (an empty staff) gets its own line.
   useRefused: (e) => {
     const item = e?.item?.n ?? "That";
+    // RULES-09 (Phase 75.1): the Pilfer heal-only "pilfer" reason is
+    // retired — its own line is pilferFumbled below.
     const map = {
-      pilfer: `${item} does not heal. Pilfers use only healing.`,
       cooldown: `${item}: ${e?.left ?? "?"} squares. It is not a vending machine.`,
       recharging: `${item}: ${e?.left ?? "?"} squares to the next charge. Patience is also a spell.`,
       wrongClass: `${item} is a stick to anyone who is not a Magic User.`,
@@ -1729,6 +1732,9 @@ export const LINE_FOR = {
     };
     return block(map[e?.reason] ?? "That does not work for you.");
   },
+  // RULES-09 (Phase 75.1, user 2026-09-24/25): a Pilfer's use-activated
+  // magic-item fumble — names the item and the hp lost. Never a diagnosis.
+  pilferFumbled: (e) => ({ text: `${e?.item ?? "It"} comes apart (−${e?.dmg ?? 0} hp). Dust now.`, tone: "hurt", priority: PRIORITY.you }),
   cured: (e) => ({ text: `Cured of ${e?.kind ?? "it"}.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 31 (CMB-06): one line naming every stoned foe, ahead of the
   // per-foe foeKilled lines that follow.
