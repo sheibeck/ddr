@@ -1,21 +1,46 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Phase 80 DROID-01 — the real rules ship with the dependencies (Capacitor
+# core's and the Play Games plugin's own consumerProguardFiles, plus AGP's
+# bundled proguard-android.txt for the WebView JS bridge); this file mirrors
+# them so a dependency update that drops its own rules cannot silently break
+# the release. Verify any change against
+# android/app/build/outputs/mapping/release/mapping.txt using the
+# RELEASING.md verification recipe.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Mirrors node_modules/@capacitor/android/capacitor/proguard-rules.pro
+# (Capacitor core's own consumerProguardFiles entry).
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Rules for Capacitor v3 plugins and annotations
+-keep @com.getcapacitor.annotation.CapacitorPlugin public class * {
+    @com.getcapacitor.annotation.PermissionCallback <methods>;
+    @com.getcapacitor.annotation.ActivityCallback <methods>;
+    @com.getcapacitor.annotation.Permission <methods>;
+    @com.getcapacitor.PluginMethod public <methods>;
+}
+
+-keep public class * extends com.getcapacitor.Plugin { *; }
+
+# Rules for Capacitor v2 plugins and annotations
+# These are deprecated but can still be used with Capacitor for now
+-keep @com.getcapacitor.NativePlugin public class * {
+  @com.getcapacitor.PluginMethod public <methods>;
+}
+
+# Rules for Cordova plugins
+-keep public class * extends org.apache.cordova.* {
+  public <methods>;
+  public <fields>;
+}
+
+# Mirrors node_modules/@modbender/capacitor-play-games/android/consumer-rules.pro
+# (the plugin is instantiated reflectively by class name).
+-keep class com.idleflowgames.playgames.** { *; }
+
+# Mirrors AGP's default proguard-android.txt @JavascriptInterface rule.
+# Covers Capacitor's MessageHandler JS bridge and SystemBars'
+# CapacitorSystemBarsAndroidInterface.
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}

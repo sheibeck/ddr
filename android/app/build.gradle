@@ -53,8 +53,12 @@ android {
         }
     }
     buildTypes {
+        // Phase 80 DROID-01: R8 full mode (AGP 8 default) shrinks and
+        // obfuscates; the non-optimising default file is deliberate; the
+        // mapping ships inside the AAB (docs/RELEASING.md).
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (hasReleaseKeystore) {
                 signingConfig signingConfigs.release

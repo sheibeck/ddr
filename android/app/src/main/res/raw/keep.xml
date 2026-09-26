@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Phase 80 DROID-01 — the splash-screen plugin loads its drawable by NAME
+  (capacitor.config.json plugins.SplashScreen.androidSplashResourceName ==
+  "splash_screen"), via SplashScreen.java#getSplashDrawable's
+  getIdentifier(config.getResourceName(), "drawable", ...) call. The resource
+  shrinker cannot see a name-loaded resource reference, so it must be kept
+  explicitly here. splash.png (the base/land variants) is kept alongside it
+  since it shares the same "splash" family and is not referenced from any
+  layout/manifest R8's resource shrinker can trace.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/splash_screen,@drawable/splash" />
