@@ -80,6 +80,9 @@ import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, NEW_BES
 // copy and the season-drop Oracle line join the same walk; BOARDS_PANEL_COPY
 // .global rides the existing BOARDS_PANEL_COPY walk.
 import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../content/placement.js";
+// RULES-10 (Phase 75.1), 75.1-07: the scroll-reading odds copy bank joins
+// the same walk.
+import { SCROLL_ODDS_COPY } from "../../src/browser/rollOdds.js";
 // Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy joins the same walk.
 import { ACCOUNT_COPY } from "../../content/account.js";
 // Phase 70 (D-06): the ☰ menu's Save & quit / Abandon row copy joins the same walk.
@@ -450,6 +453,8 @@ function collectAuthoredStrings() {
     ["PLACEMENT_LINES", PLACEMENT_LINES],
     ["PLACEMENT_CARD", PLACEMENT_CARD],
     ["SEASON_DROP_LINES", SEASON_DROP_LINES],
+    // RULES-10 (Phase 75.1), 75.1-07: the scroll-reading odds copy bank.
+    ["SCROLL_ODDS_COPY", SCROLL_ODDS_COPY],
   ]) {
     (function walkPlacementCopy(obj, pathLabel) {
       for (const [k, v] of Object.entries(obj)) {

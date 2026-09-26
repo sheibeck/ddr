@@ -36,7 +36,11 @@ export const FIGHTER_SKILLS = {
   // test/unit/abilities-catalog.test.js.
   "Cooking": { cost: 3, txt: "eat any beast for a quarter of its hp" },
   "Pommel Strike": { cost: 1, active: "pommelStrike", txt: "the blunt end, to the temple: the target loses its next turn" },
-  "Runes/Signs": { cost: 2, txt: "read scrolls; without it they are waste paper" },
+  // RULES-10 (Phase 75.1, plan 75.1-07): rewritten — anyone may now attempt
+  // any scroll (canRead is gone), so Runes/Signs is no longer the gate; it
+  // is the guarantee. Cosmetic content change only; the engine never reads
+  // this string (skillTier reads only the {name: tier} map, never .txt).
+  "Runes/Signs": { cost: 2, txt: "reads any scroll without fail; without it, a scroll is an intelligence roll that can backfire" },
   "Battle Roar": { cost: 4, active: "battleRoar", txt: "loud enough to matter: for two rounds every foe needs two better to hit anyone on your side" },
   "Second Wind": { cost: 2, active: "secondWind", txt: "remember why you came: heal d8 + level" },
   "Sweep": { cost: 2, active: "sweep", txt: "one wide arc: every living foe takes half damage" },

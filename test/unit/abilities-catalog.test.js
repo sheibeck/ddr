@@ -69,7 +69,9 @@ test("Locks/Sewing keep their up-tier + txt2; the ten kept passives keep their e
     "FIGHTER_SKILLS.Ambidextrous": [FIGHTER_SKILLS, "Ambidextrous", "a second weapon at the end of every round"],
     // Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp.
     "FIGHTER_SKILLS.Cooking": [FIGHTER_SKILLS, "Cooking", "eat any beast for a quarter of its hp"],
-    "FIGHTER_SKILLS.Runes/Signs": [FIGHTER_SKILLS, "Runes/Signs", "read scrolls; without it they are waste paper"],
+    // RULES-10 (Phase 75.1, plan 75.1-07): rewritten — canRead is gone, so
+    // Runes/Signs is the automatic-read guarantee, not the gate.
+    "FIGHTER_SKILLS.Runes/Signs": [FIGHTER_SKILLS, "Runes/Signs", "reads any scroll without fail; without it, a scroll is an intelligence roll that can backfire"],
     "THIEF_SKILLS.Locks": [THIEF_SKILLS, "Locks", "1–5 on d10 to open a lock"],
     "THIEF_SKILLS.Sewing": [THIEF_SKILLS, "Sewing", "patch any armour, d6 back, 4 times"],
     "THIEF_SKILLS.Night Vision": [THIEF_SKILLS, "Night Vision", "darkness costs you nothing"],

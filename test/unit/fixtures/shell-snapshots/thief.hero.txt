@@ -104,7 +104,7 @@
   <section>
     html="<h3>Race</h3><p class=\"who\">Wilmsry</p><p>You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight — not one of them will so much as travel with you — which most Wilmsry take as proof they are doing something right.</p>"
   <section>
-    html="<h3>Class</h3><p class=\"who\">Thief</p><p>Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.</p>"
+    html="<h3>Class</h3><p class=\"who\">Thief</p><p>Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.</p>"
   <section>
     html="<h3>Subclass</h3><p class=\"who\">Cat Burglar</p><p>Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.</p>"
 ## #hero-party
