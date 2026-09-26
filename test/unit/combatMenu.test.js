@@ -18,6 +18,11 @@ import { characterSheetViewModel, grimoireViewModel } from "../../src/browser/he
 import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 import { canCast } from "../../engine/derived.js";
 import { canParley } from "../../engine/combat.js";
+// RULES-10 (Phase 75.1, plan 75.1-07): the ITEMS SCROLL row's own desc now
+// appends scrollReadOdds(state) — asserted against the real function output
+// rather than a hand-typed string, so this pin can never drift from the
+// module it is pinning.
+import { scrollReadOdds } from "../../src/browser/rollOdds.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 // Phase 38 (ABIL-01/04) — new imports for the ABILITIES-branch section below;
 // added as their own lines (never editing the pre-existing import above) so
@@ -346,7 +351,7 @@ test("ITEMS: potion + scroll + a carried item recharging, title and usable count
   assert.equal(vm.actions[2].sub, "2 usable");
   assert.deepEqual(vm.submenus.items.rows, [
     { id: "potion", label: "POTION", cost: "2 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: true, dispatch: { type: "drinkPotion" } },
-    { id: "scroll", label: "SCROLL", cost: "1 LEFT", desc: COMBAT_MENU_COPY.scrollDesc, enabled: true, dispatch: { type: "readScroll" } },
+    { id: "scroll", label: "SCROLL", cost: "1 LEFT", desc: `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(state)}`, enabled: true, dispatch: { type: "readScroll" } },
     { id: "item-0", label: "PINE STAFF", cost: COMBAT_MENU_COPY.notWielded, desc: COMBAT_MENU_COPY.notWieldedDesc, enabled: false, dispatch: { type: "useItem", i: 0 } },
   ]);
 });

@@ -56,6 +56,8 @@ import { ROUND_STRIP_COPY } from "../../src/browser/fightLog.js";
 // closure adds — walked the same way as every other presentation COPY bank.
 import { CONDITION_EFFECT_COPY } from "../../src/browser/conditionEffects.js";
 import { MOD_LABEL, ROLL_COPY } from "../../src/browser/rollRange.js";
+// RULES-10 (Phase 75.1), 75.1-07: the scroll-reading odds copy bank.
+import { SCROLL_ODDS_COPY } from "../../src/browser/rollOdds.js";
 // Renamed on import (SAFETY_ALLOWLIST/SAFETY_BANNED): this file already
 // declares its own local PLAYER_WP `ALLOWLIST` const below — the two are
 // unrelated allowlists (wp/WP tokens vs. the safety-wordlist corpus).
@@ -179,6 +181,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     // Phase 74 (ROLL-02/03), 74-08: the hero condition-chip effect copy and
     // rollRange.js's own mod-relabel and template banks.
     CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY,
+    // RULES-10 (Phase 75.1), 75.1-07: the scroll-reading odds copy bank.
+    SCROLL_ODDS_COPY,
   };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {
@@ -202,9 +206,9 @@ function bannedWordRegex() {
   return new RegExp(`\\b(${escaped.join("|")})\\b`, "i");
 }
 
-test("voice: CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY, FOE_DETAILS_COPY, COMBAT_MENU_COPY and UPGRADE_WHY_COPY leaves are clear of a BANNED safety-wordlist term", () => {
+test("voice: CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY, FOE_DETAILS_COPY, COMBAT_MENU_COPY, UPGRADE_WHY_COPY and SCROLL_ODDS_COPY leaves are clear of a BANNED safety-wordlist term", () => {
   const bannedRe = bannedWordRegex();
-  const banks = { CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY, FOE_DETAILS_COPY, COMBAT_MENU_COPY, UPGRADE_WHY_COPY };
+  const banks = { CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY, FOE_DETAILS_COPY, COMBAT_MENU_COPY, UPGRADE_WHY_COPY, SCROLL_ODDS_COPY };
   const offenders = [];
   for (const [bankName, bank] of Object.entries(banks)) {
     for (const [leafPath, value] of collectStringLeaves(bank)) {

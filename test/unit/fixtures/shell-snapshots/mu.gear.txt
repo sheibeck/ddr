@@ -137,7 +137,7 @@
         <span class="mw-gear-qty">
           text="×1"
       <div class="mw-gear-desc">
-        text="A random spell, read aloud. No refunds."
+        text="A random spell, read aloud. No refunds. Reads without fail (Magic User)."
     <button class="mw-gear-cons-btn" onclick>
       text="READ"
 ## #gear-kit-head

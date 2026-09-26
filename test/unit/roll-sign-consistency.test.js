@@ -38,6 +38,11 @@ import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { lootCompare } from "../../src/browser/viewModels.js";
 import { conditionEffectText } from "../../src/browser/conditionEffects.js";
 import { rangeText } from "../../src/browser/rollRange.js";
+// RULES-10 (Phase 75.1, plan 75.1-07): the scroll-reading odds this plan
+// puts on both SCROLLS rows — same rollOdds.js/rollRange.js one-formatter
+// discipline this whole guard file exists to enforce.
+import { gearConsumablesModel } from "../../src/browser/gearTab.js";
+import { scrollReaderOf, scrollReadBands } from "../../engine/derived.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -272,6 +277,29 @@ test("heights: heightsFear with penalty 2 shows '−2' on both the Oracle and th
   const e = { type: "heightsFear", penalty: 2 };
   assert.ok(stripTags(EVENT_NARRATION.heightsFear(e)).includes("−2"), "Oracle heightsFear should show −2");
   assert.ok(LINE_FOR.heightsFear(e).text.includes("−2"), "rail heightsFear should show −2");
+});
+
+// ─── Scenario 8b: the scroll reading range (RULES-10, Phase 75.1, 75.1-07) ──
+
+test("scroll reading range: the Gear tab SCROLLS row and the combat ITEMS SCROLL row agree, and their intel range equals rangeText(scrollReadBands(intel).atLeast, 20)", () => {
+  for (const intel of [3, 9, 14, 19]) {
+    // skills: {} clears any Runes/Signs newRun(1)'s real chargen might have
+    // rolled, so every case below genuinely takes the "intel" reader path.
+    const state = fullHeroState(plainFoe(), { c: { intel, skills: {} } });
+    assert.equal(scrollReaderOf(state.c), "intel", `intel ${intel} must take the intel reader path`);
+
+    const gearDesc = gearConsumablesModel({ ...state, c: { ...state.c, scrolls: 1 } }).rows.find((r) => r.key === "scroll").desc;
+    const menuDesc = combatMenuViewModel({ ...state, c: { ...state.c, scrolls: 1 } }).submenus.items.rows.find((r) => r.id === "scroll").desc;
+    assert.equal(gearDesc, menuDesc, `intel ${intel}: the Gear tab and combat ITEMS descriptions must agree`);
+
+    const bands = scrollReadBands(intel);
+    const expectedRange = rangeText(bands.atLeast, bands.dieN);
+    assert.ok(gearDesc.includes(expectedRange), `intel ${intel}: expected "${expectedRange}" in "${gearDesc}"`);
+
+    assert.ok(!gearDesc.includes("%"), `intel ${intel}: must not contain "%" -> "${gearDesc}"`);
+    assert.ok(!/\d\+(?!\d)/.test(gearDesc), `intel ${intel}: must not contain an "N+" shorthand -> "${gearDesc}"`);
+    assert.doesNotMatch(gearDesc, /\d-\d/, `intel ${intel}: must not use a hyphen-minus between digits -> "${gearDesc}"`);
+  }
 });
 
 // ─── Scenario 9: the range pin ──────────────────────────────────────────────

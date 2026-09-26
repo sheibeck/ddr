@@ -592,6 +592,31 @@ test("CONSUMABLES: a Magic User's and a Pilfer's scroll READ both dispatch readS
   }
 });
 
+// RULES-10 (Phase 75.1, plan 75.1-07): the SCROLLS row's description reads
+// the reader's own odds BEFORE they tap READ — a Magic User's row names
+// "without fail", a non-reader's row shows the honest intel range and
+// fumble band.
+test("CONSUMABLES: the SCROLLS row's .mw-gear-desc shows the reader's own odds — 'without fail' for a Magic User, the intel range for anyone else", () => {
+  {
+    const state = { c: fixedChar({ cls: "Magic User", scrolls: 2 }) };
+    const { doc } = renderFresh(state);
+    const scrollLi = doc.document.getElementById("gear-cons").children.find((li) => li.dataset.key === "scroll");
+    const main = scrollLi.children.find((n) => n.className === "mw-gear-card-main");
+    const desc = main.children.find((n) => n.className === "mw-gear-desc");
+    assert.ok(desc, "expected a .mw-gear-desc node on the SCROLLS row");
+    assert.ok(desc.textContent.includes("without fail (Magic User)"));
+  }
+  {
+    const state = { c: fixedChar({ cls: "Fighter", scrolls: 1, intel: 14 }) };
+    const { doc } = renderFresh(state);
+    const scrollLi = doc.document.getElementById("gear-cons").children.find((li) => li.dataset.key === "scroll");
+    const main = scrollLi.children.find((n) => n.className === "mw-gear-card-main");
+    const desc = main.children.find((n) => n.className === "mw-gear-desc");
+    assert.ok(desc.textContent.includes("8–20 (d20, intel 14)"));
+    assert.ok(desc.textContent.includes("1–3 backfires"));
+  }
+});
+
 // ─── ALSO ON YOU ────────────────────────────────────────────────────────
 
 test("ALSO ON YOU: #gear-kit-head reads ALSO ON YOU; #gear-kit renders one li per gearKitRows row (label text node, value span)", () => {

@@ -17,8 +17,9 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { heroHitOdds, heroHitOddsVs, foeHitOddsVs, fleeOdds } from "../../src/browser/rollOdds.js";
-import { toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown, heroStrikeFacesVs, foeSwingVsHero } from "../../engine/derived.js";
+import { heroHitOdds, heroHitOddsVs, foeHitOddsVs, fleeOdds, scrollReadOdds } from "../../src/browser/rollOdds.js";
+import { toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown, heroStrikeFacesVs, foeSwingVsHero, scrollReaderOf, scrollReadBands } from "../../engine/derived.js";
+import { rangeText } from "../../src/browser/rollRange.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -194,6 +195,61 @@ test("fleeOdds: atLeast always equals fleeBreakdown(c).need − fleeBreakdown(c)
   const fb = fleeBreakdown(c);
   assert.equal(odds.atLeast, fb.need - fb.bonus);
   assert.equal(odds.text, "17–20 (d20)");
+});
+
+// ─── scrollReadOdds (RULES-10, Phase 75.1, plan 75.1-07) ──────────────────
+
+test("scrollReadOdds: a Magic User reads without fail, naming Magic User", () => {
+  const mu = fixedState({ c: { cls: "Magic User", sub: "Wizard", intel: 11 } });
+  assert.equal(scrollReaderOf(mu.c), "magicUser");
+  assert.equal(scrollReadOdds(mu), "Reads without fail (Magic User).");
+});
+
+test("scrollReadOdds: a Fighter with Runes/Signs reads without fail, naming Runes/Signs", () => {
+  const runes = fixedState({ c: { skills: { "Runes/Signs": 1 }, intel: 11 } });
+  assert.equal(scrollReaderOf(runes.c), "runes");
+  assert.equal(scrollReadOdds(runes), "Reads without fail (Runes/Signs).");
+});
+
+test("scrollReadOdds: a Fighter with intel 14 reads the exact worked example", () => {
+  const state = fixedState({ c: { intel: 14 } });
+  assert.equal(scrollReaderOf(state.c), "intel");
+  assert.equal(scrollReadOdds(state), "Reads on 8–20 (d20, intel 14); 1–3 backfires.");
+});
+
+test("scrollReadOdds: intel 1 reads 'nothing' with a 1–10 fumble band; intel 20 shows no fumble band", () => {
+  const worst = fixedState({ c: { intel: 1 } });
+  assert.equal(scrollReadOdds(worst), "Reads on nothing (d20, intel 1); 1–10 backfires.");
+
+  const best = fixedState({ c: { intel: 20 } });
+  assert.equal(scrollReadOdds(best), "Reads on 2–20 (d20, intel 20).");
+  assert.ok(!scrollReadOdds(best).includes("backfires"));
+});
+
+test("scrollReadOdds: a Pilfer reads under the exact same intel rule as anyone else", () => {
+  const pilfer = fixedState({ c: { cls: "Thief", sub: "Pilfer", intel: 11 } });
+  assert.equal(scrollReaderOf(pilfer.c), "intel");
+  const bands = scrollReadBands(11);
+  const expected = `Reads on ${bands.atLeast}–20 (d20, intel 11); 1–${bands.fumbleAtLeast - 1} backfires.`;
+  assert.equal(scrollReadOdds(pilfer), expected);
+});
+
+test("scrollReadOdds: the reading range always equals rangeText(scrollReadBands(intel).atLeast, 20), for intel 3, 9, 14 and 19", () => {
+  for (const intel of [3, 9, 14, 19]) {
+    const state = fixedState({ c: { intel } });
+    const bands = scrollReadBands(intel);
+    const expectedRange = rangeText(bands.atLeast, bands.dieN);
+    assert.ok(scrollReadOdds(state).includes(expectedRange), `intel ${intel}: expected "${expectedRange}" in "${scrollReadOdds(state)}"`);
+  }
+});
+
+test("scrollReadOdds: no hyphen-minus between digits, no '%' and no 'N+' shorthand", () => {
+  for (const intel of [0, 1, 3, 9, 14, 19, 20]) {
+    const text = scrollReadOdds(fixedState({ c: { intel } }));
+    assert.ok(!text.includes("%"), `intel ${intel}: "${text}" must not contain "%"`);
+    assert.ok(!/\d\+(?!\d)/.test(text), `intel ${intel}: "${text}" must not contain an "N+" shorthand`);
+    assert.doesNotMatch(text, /\d-\d/, `intel ${intel}: "${text}" must not use a hyphen-minus between digits`);
+  }
 });
 
 // ─── purity ─────────────────────────────────────────────────────────────

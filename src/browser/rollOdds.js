@@ -4,17 +4,21 @@
 // every non-event "right now" odds reading is computed. Every function here
 // is a pure read of the engine's own derived functions
 // (engine/derived.js — toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown,
-// heroStrikeFacesVs, foeSwingVsHero) — NEVER a re-derived formula (per
-// 74-CONTEXT, "MUST NOT compute a displayed range from a restated to-hit
-// formula"). Every string is formatted only through src/browser/rollRange.js
-// (facesRangeText/hitRangeText/modsText/ROLLERS, 74-02) — the same
+// heroStrikeFacesVs, foeSwingVsHero, scrollReaderOf, scrollReadBands) —
+// NEVER a re-derived formula (per 74-CONTEXT, "MUST NOT compute a displayed
+// range from a restated to-hit formula"). Every string is formatted only
+// through src/browser/rollRange.js (facesRangeText/hitRangeText/modsText/
+// rangeText/bottomRangeText/dieText/ROLLERS, 74-02/75.1-06) — the same
 // range/sign rules every other roll surface in this phase uses, so this
 // module and the engine's own events can never disagree.
 //
 // Consumers: 74-04 (the hero sheet's TO HIT row and the combat menu's
 // STRIKE/FLEE rows), 74-06 (foe details' "right now" odds line), 74-07
-// (the hero condition-chip effects). Phase 77's CMBUI-13 effect indicators
-// are expected to reuse this module too rather than re-deriving anything.
+// (the hero condition-chip effects). 75.1-07 (RULES-10) adds
+// scrollReadOdds — the Gear tab's SCROLLS row and the combat ITEMS SCROLL
+// row both append it to their description. Phase 77's CMBUI-13 effect
+// indicators are expected to reuse this module too rather than re-deriving
+// anything.
 //
 // The only arithmetic in this file is fleeOdds's `need − bonus` (converted
 // to a winning-faces count for facesRangeText), which mirrors
@@ -25,8 +29,8 @@
 //
 // Pure, no DOM, no rng, no mutation of state/c/foe anywhere in this file.
 
-import { toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown, heroStrikeFacesVs, foeSwingVsHero } from "../../engine/derived.js";
-import { facesRangeText, hitRangeText, modsText, ROLLERS } from "./rollRange.js";
+import { toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown, heroStrikeFacesVs, foeSwingVsHero, scrollReaderOf, scrollReadBands } from "../../engine/derived.js";
+import { facesRangeText, hitRangeText, modsText, rangeText, bottomRangeText, dieText, ROLLERS } from "./rollRange.js";
 
 /**
  * heroHitOdds(state) — the hero's own "right now" to-hit range on their
@@ -109,4 +113,51 @@ export function fleeOdds(c) {
     text: hitRangeText(faces, dieN),
     modsText: modsText(fb.mods, ROLLERS.you),
   };
+}
+
+/**
+ * SCROLL_ODDS_COPY — RULES-10 (Phase 75.1): the frozen templates
+ * scrollReadOdds fills below. `autoMagicUser`/`autoRunes` are the two
+ * automatic-reader sentences (no roll at all — engine/derived.js#
+ * scrollReaderOf's "magicUser"/"runes" paths); `intel` is the roll-high
+ * reading-range clause every other reader gets, and `fumbleClause` is
+ * appended to it only when a fumble band actually exists (never an empty
+ * "; nothing backfires").
+ */
+export const SCROLL_ODDS_COPY = Object.freeze({
+  autoMagicUser: "Reads without fail (Magic User).",
+  autoRunes: "Reads without fail (Runes/Signs).",
+  intel: "Reads on {range} ({die}, intel {intel})",
+  fumbleClause: "; {range} backfires",
+});
+
+/**
+ * scrollReadOdds(state) — RULES-10 (Phase 75.1): the ONE place a scroll
+ * reader's own odds are computed, read purely off
+ * `engine/derived.js#scrollReaderOf(c)`/`scrollReadBands(c.intel)` and
+ * formatted only through `rollRange.js`'s `rangeText`/`bottomRangeText`/
+ * `dieText` — never a re-derived formula, exactly like every other function
+ * in this module. A `magicUser` or `runes` reader always reads "without
+ * fail", naming which; every other reader (an "intel" reader, including a
+ * Pilfer — the reader reads exactly like anyone else under this rule) gets
+ * "Reads on {range} (d20, intel {n})", with a trailing "; {range} backfires"
+ * clause appended only when the fumble band is non-empty (an intel of 20
+ * shows no fumble band at all; a missing/absent intel reads as 0, the worst
+ * possible reader). The two SCROLLS rows (gearTab.js's CONSUMABLES row and
+ * combatMenu.js's ITEMS row) both append this text to their existing
+ * description, so the two surfaces can never disagree.
+ */
+export function scrollReadOdds(state) {
+  const c = (state && state.c) || {};
+  const reader = scrollReaderOf(c);
+  if (reader === "magicUser") return SCROLL_ODDS_COPY.autoMagicUser;
+  if (reader === "runes") return SCROLL_ODDS_COPY.autoRunes;
+  const intel = Number.isFinite(c.intel) ? c.intel : 0;
+  const bands = scrollReadBands(c.intel);
+  const range = rangeText(bands.atLeast, bands.dieN);
+  const die = dieText(bands.dieN);
+  const base = SCROLL_ODDS_COPY.intel.replace("{range}", range).replace("{die}", die).replace("{intel}", String(intel));
+  const fumbleRange = bottomRangeText(bands.fumbleAtLeast);
+  const fumble = fumbleRange === "nothing" ? "" : SCROLL_ODDS_COPY.fumbleClause.replace("{range}", fumbleRange);
+  return `${base}${fumble}.`;
 }

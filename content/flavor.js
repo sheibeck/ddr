@@ -30,10 +30,14 @@ export const RACE_NOTE = {
   "Troll": "Seventy-five Hit Points, nine extra damage, and an appetite that goes through two rations a night. The strongest thing on most floors and the first to starve on all of them. Everything you own cost triple.",
 };
 
+// RULES-10 (Phase 75.1, plan 75.1-07): each note gains one short clause
+// stating the new scroll-reading rule (ROADMAP criterion 4). Fighter and
+// Thief never mentioned scrolls before this phase; a Magic User's clause
+// names the free ride they already had under the old rule too.
 export const CLASS_NOTE = {
-  "Fighter": "The best Hit Points in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake.",
-  "Thief": "Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans.",
-  "Magic User": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough.",
+  "Fighter": "The best Hit Points in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake. A scroll, for you, is an intelligence roll that can backfire — unless you paid for Runes/Signs.",
+  "Thief": "Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.",
+  "Magic User": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.",
 };
 
 export const SUB_NOTE = {

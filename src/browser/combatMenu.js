@@ -20,7 +20,7 @@ import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
-import { fleeOdds } from "./rollOdds.js";
+import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
 
 /** COMBAT_MENU_COPY — every literal string this module emits (voice-scanned by test/unit/combatMenu.test.js). */
 export const COMBAT_MENU_COPY = Object.freeze({
@@ -405,11 +405,15 @@ function combatMenuViewModelUnlocked(state) {
       },
     ];
     if (hasScroll) {
+      // RULES-10 (Phase 75.1, plan 75.1-07): the reader's own odds
+      // (scrollReadOdds, ./rollOdds.js) are appended so they are visible
+      // BEFORE a tap — the same text the Gear tab's SCROLLS row shows for
+      // the same state, so the two surfaces can never disagree.
       itemRows.push({
         id: "scroll",
         label: COMBAT_MENU_COPY.scroll,
         cost: `${c.scrolls} LEFT`,
-        desc: COMBAT_MENU_COPY.scrollDesc,
+        desc: `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(state)}`,
         enabled: true,
         dispatch: { type: "readScroll" },
       });
