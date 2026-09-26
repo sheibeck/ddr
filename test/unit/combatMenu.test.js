@@ -323,6 +323,11 @@ test("Troll Fighter in Plate (Phase 74, ROLL-02/ROLL-03): FLEE cost/desc name bo
 
 // ─── ITEMS: potion always present, scroll conditional, carried items, cooldowns ─
 
+// RULES-13 (Phase 75, user 2026-09-25): reverses the pre-Phase-75 reading
+// that a bagged staff's combat row stays enabled and tappable — a bagged
+// staff's power is inert (75-09's engine-side `notWielded` refusal), so its
+// row is now disabled with `notWielded`/`notWieldedDesc` and does not count
+// toward usableCount (2, not 3).
 test("ITEMS: potion + scroll + a carried item recharging, title and usable count", () => {
   // Phase 39 (GEAR-02): a real content staff (Pine Staff, pool 1) reads its
   // row state through itemRowState — a planted "charges:Pine Staff"
@@ -337,15 +342,12 @@ test("ITEMS: potion + scroll + a carried item recharging, title and usable count
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
 
-  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 3 USABLE");
-  assert.equal(vm.actions[2].sub, "3 usable");
+  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 2 USABLE");
+  assert.equal(vm.actions[2].sub, "2 usable");
   assert.deepEqual(vm.submenus.items.rows, [
     { id: "potion", label: "POTION", cost: "2 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: true, dispatch: { type: "drinkPotion" } },
     { id: "scroll", label: "SCROLL", cost: "1 LEFT", desc: COMBAT_MENU_COPY.scrollDesc, enabled: true, dispatch: { type: "readScroll" } },
-    // Phase 38 ruling, reused here (Rule: a row on cooldown stays tappable):
-    // enabled: true even while recharging — a tap reaches the engine's own
-    // "recharging" refusal line.
-    { id: "item-0", label: "PINE STAFF", cost: "0/1 · 94 SQ", desc: "a bolt", enabled: true, dispatch: { type: "useItem", i: 0 } },
+    { id: "item-0", label: "PINE STAFF", cost: COMBAT_MENU_COPY.notWielded, desc: COMBAT_MENU_COPY.notWieldedDesc, enabled: false, dispatch: { type: "useItem", i: 0 } },
   ]);
 });
 
@@ -381,7 +383,11 @@ test("ITEMS: nothing usable at all collapses to one disabled NOTHING TO USE row"
 // always a BAGGED item, addressed by index, alongside potions/scrolls. The
 // Ring of Power is use-activated now (the governing rule), so a WORN one
 // appears too — no more "passive worn item is never listed".
-test("ITEMS: a bagged activatable staff recharging appears after the potion row; a worn (use-activated) Ring of Power ALSO appears (worn-jewelry1)", () => {
+// RULES-13 (Phase 75, user 2026-09-25): re-pinned — the bagged staff's row
+// is now disabled with `notWielded`/`notWieldedDesc` (it can never be the
+// wielded one, reached by bag index) and no longer counts, so usableCount
+// drops to 1 (the worn Ring of Power only).
+test("ITEMS: a bagged activatable staff recharging appears after the potion row, disabled with NOT WIELDED; a worn (use-activated) Ring of Power ALSO appears (worn-jewelry1) and is the only counted row", () => {
   const c = {
     potions: 0, scrolls: 0, wp: 40,
     items: [fixedWornStaff({ charges: 1 })],
@@ -392,11 +398,11 @@ test("ITEMS: a bagged activatable staff recharging appears after the potion row;
   };
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
-  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 2 USABLE");
-  assert.equal(vm.actions[2].sub, "2 usable");
+  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
+  assert.equal(vm.actions[2].sub, "1 usable");
   assert.deepEqual(vm.submenus.items.rows, [
     { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
-    { id: "item-0", label: "POPLAR STAFF", cost: "1/3 · 17 SQ", desc: "1d20+10 wp to up to 6", enabled: true, dispatch: { type: "useItem", i: 0 } },
+    { id: "item-0", label: "POPLAR STAFF", cost: COMBAT_MENU_COPY.notWielded, desc: COMBAT_MENU_COPY.notWieldedDesc, enabled: false, dispatch: { type: "useItem", i: 0 } },
     { id: "worn-jewelry1", label: "RING OF POWER", cost: "READY", desc: "+1 damage", enabled: true, dispatch: { type: "useItem", slot: "jewelry1" } },
   ]);
 });
@@ -417,13 +423,72 @@ test("ITEMS: both worn jewelry keys appear as their own rows (worn-jewelry1 and 
   assert.ok(!vm.submenus.items.rows.some((r) => /worn-(ring|bracelet|amulet|helm)$/.test(r.id)));
 });
 
-test("ITEMS: a bagged activatable staff at full charges (no recharge record) reads READY", () => {
+// RULES-13 (Phase 75): re-pinned — a bagged staff's row is disabled with
+// NOT WIELDED regardless of its own charge state (full or recharging); its
+// power is inert until it is wielded, outside the fight.
+test("ITEMS: a bagged activatable staff at full charges (no recharge record) is still disabled with NOT WIELDED", () => {
   const c = { potions: 0, scrolls: 0, items: [fixedWornStaff()] };
   const state = fixedState({ c, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
   const row = vm.submenus.items.rows.find((r) => r.id === "item-0");
-  assert.equal(row.cost, "READY");
+  assert.equal(row.cost, COMBAT_MENU_COPY.notWielded);
+  assert.equal(row.enabled, false);
+});
+
+// RULES-13 (Phase 75, user 2026-09-25): a WIELDED staff (never in `c.items`,
+// so it never reaches the `carriedRows`/`notWielded` branch above) gets its
+// own row beside the worn rows — "EQUIPPED · " followed by itemRowState's
+// own text, dispatching by slot, enabled, and counted in usableCount.
+test("ITEMS: a wielded staff gets its own EQUIPPED row, dispatches by slot, and IS counted", () => {
+  const c = {
+    potions: 0, scrolls: 0, wp: 40,
+    weapon: "Birch Staff",
+    staff: { n: "Birch Staff", kind: "staff", use: "freeze", charges: 2, txt: "freezes up to 2 squares of opponents indefinitely" },
+    items: [],
+  };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
+  assert.equal(vm.actions[2].sub, "1 usable");
+  assert.deepEqual(vm.submenus.items.rows, [
+    { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
+    {
+      id: "worn-weapon",
+      label: "BIRCH STAFF",
+      cost: `${COMBAT_MENU_COPY.equipped} · READY`,
+      desc: "freezes up to 2 squares of opponents indefinitely",
+      enabled: true,
+      dispatch: { type: "useItem", slot: "weapon" },
+    },
+  ]);
+});
+
+// The same wielded staff, mid-recharge — its EQUIPPED row still reads
+// itemRowState's own recharging text, and still counts.
+test("ITEMS: a wielded, recharging staff still reads EQUIPPED · <itemRowState text> and still counts", () => {
+  const c = {
+    potions: 0, scrolls: 0, wp: 40,
+    weapon: "Birch Staff",
+    staff: { n: "Birch Staff", kind: "staff", use: "freeze", charges: 1 },
+    items: [],
+    timers: { "charges:Birch Staff": { cadence: "squares", left: 40, phase: "cooldown" } },
+  };
+  const state = fixedState({ c, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  const row = vm.submenus.items.rows.find((r) => r.id === "worn-weapon");
+  assert.equal(row.cost, `${COMBAT_MENU_COPY.equipped} · 1/2 · 40 SQ`);
   assert.equal(row.enabled, true);
+  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
+});
+
+// With no staff involved at all (the fixture default), every ITEMS row and
+// count is exactly as before this plan — the wielded-staff row simply never
+// appears.
+test("ITEMS: with no staff involved, no worn-weapon row appears and the count is unaffected", () => {
+  const state = fixedState({ c: { potions: 2, scrolls: 0, items: [] }, combat: fixedCombat([]) });
+  const vm = combatMenuViewModel(state);
+  assert.ok(!vm.submenus.items.rows.some((r) => r.id === "worn-weapon"));
+  assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
 });
 
 test("ITEMS: a worn row is appended AFTER any carried rows", () => {
