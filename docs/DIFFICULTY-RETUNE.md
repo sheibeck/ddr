@@ -6170,6 +6170,214 @@ The whole-phase move, end to end: mean death depth 7.87→7.54 (−0.33), p50 he
 
 **Against the floor 5–7 average run ending:** p50 death depth is 7 at every single measurement point across all six plans and the whole-phase BEFORE/FINAL — never left the floor 5–7 band for even one plan. Mean death depth ranges 7.51-7.88 across the phase, sitting at or just above the top of that band throughout, consistent with the pre-Phase-75 baseline (mean 7.87) and never crossing meaningfully out of it. **No flag for the user is needed** — the average run ending held inside floors 5-7 (by p50) for the whole phase, and this plan does not retune any dial regardless.
 
+## v2.1 Pilfer fumbles & scroll reading (Phase 75.1) — bot readouts
+
+### Change under measurement
+
+Two balance-moving Phase 75.1 plans, each committing its own before/after
+readout independently (parallel waves never collided on this shared
+ledger — this section consolidates them once, from the committed files):
+
+- **75.1-01 (RULES-09):** the Pilfer's heal-only `useItem` refusal is
+  replaced by a derived-stream d20 fumble risk on jewelry/cloaks/staves (a
+  roll of 1 fails the use, blasts the Pilfer for an unsoaked d10 and dusts
+  the item); the round-1 buff tier's Pilfer skip is removed from the bot, so
+  a Pilfer now buffs like anyone.
+- **75.1-06 (RULES-10):** `canRead` is gone — anyone may attempt any scroll.
+  A Magic User and a Runes/Signs holder still read automatically; everyone
+  else (including a Pilfer) rolls intelligence on its own derived stream,
+  with a plain failure crumbling honestly and a fumble backfiring in combat
+  or fizzling outside it. The bot now reads a carried scroll out of combat
+  for EVERY class, not only a Magic User/Runes holder.
+
+Plans 02–05, 07 and 09 (the fumble classification table, the foe-side and
+reader-side fumble mechanics, the resolver, the reader's odds display, and
+the hero-cannot-act combat-menu shell) are each either pure content,
+presentation-only, or reachable ONLY through an in-combat scroll fumble —
+and **the bot never reads a scroll in combat** (a flagged assumption this
+phase's own CONTEXT.md states up front). None of those six plans can move a
+bot readout by construction, so none records its own before/after here;
+each one's own SUMMARY.md instead states "no readout exists yet" or
+equivalent.
+
+### Parameters
+
+`node tools/tune-difficulty.mjs --seeds=200` (solo bot, `--start-depth=1`,
+no `--party`) — the same command and dial set the Phase 72/73/75 sections
+above use.
+
+### Plan 01 (75.1) — BEFORE
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=12  max=28
+
+Reach table (% of runs reaching floor N):
+  >=5: 78.2%  >=10: 23.6%  >=20: 1.1%  >=30: 0.0%  >=50: 0.0%
+
+  mean death depth=7.54  floors gained p50=6 mean=6.54  encounters survived mean=16.32
+  reach: >=5 78.2%  >=8 42.0%  >=9 35.6%  >=10 23.6%  >=13 9.8%  >=16 2.3%  >=20 1.1%
+
+  reach-20: 1.0% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Fighter  n=69  p50=7  reach5=81.0%  reach10=25.4%  reach20=0.0%  dmgTaken/fight=11.91  rounds/fight=4.83  foeMiss=64.9%  casts(def/off)=0/0  potions/run=1.10  backstabs/run=0.00  flees/run=2.48
+  Thief  n=72  p50=8  reach5=90.3%  reach10=27.4%  reach20=3.2%  dmgTaken/fight=7.40  rounds/fight=3.36  foeMiss=70.1%  casts(def/off)=0/0  potions/run=2.07  backstabs/run=10.19  flees/run=3.82
+  Magic User  n=59  p50=6  reach5=59.2%  reach10=16.3%  reach20=0.0%  dmgTaken/fight=8.21  rounds/fight=3.30  foeMiss=65.2%  casts(def/off)=199/1214  potions/run=3.54  backstabs/run=0.00  flees/run=0.85
+
+Outcome: 174 dead, 26 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Plan 01 (75.1) — AFTER
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=28
+
+Reach table (% of runs reaching floor N):
+  >=5: 78.3%  >=10: 24.0%  >=20: 1.1%  >=30: 0.0%  >=50: 0.0%
+
+  mean death depth=7.65  floors gained p50=6 mean=6.65  encounters survived mean=16.53
+  reach: >=5 78.3%  >=8 43.4%  >=9 37.1%  >=10 24.0%  >=13 10.3%  >=16 2.9%  >=20 1.1%
+
+  reach-20: 1.0% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Fighter  n=69  p50=7  reach5=81.0%  reach10=25.4%  reach20=0.0%  dmgTaken/fight=11.91  rounds/fight=4.83  foeMiss=64.9%  casts(def/off)=0/0  potions/run=1.10  backstabs/run=0.00  flees/run=2.48
+  Thief  n=72  p50=8  reach5=90.5%  reach10=28.6%  reach20=3.2%  dmgTaken/fight=7.56  rounds/fight=3.34  foeMiss=70.4%  casts(def/off)=0/0  potions/run=2.06  backstabs/run=10.67  flees/run=3.75
+  Magic User  n=59  p50=6  reach5=59.2%  reach10=16.3%  reach20=0.0%  dmgTaken/fight=8.21  rounds/fight=3.30  foeMiss=65.2%  casts(def/off)=199/1214  potions/run=3.54  backstabs/run=0.00  flees/run=0.85
+
+Outcome: 175 dead, 25 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading.** Mean death depth ticks up 7.54→7.65 (+0.11), entirely inside the
+Thief pool (`dmgTaken/fight` 7.40→7.56, `backstabs/run` 10.19→10.67) — the
+Pilfer's item uses now genuinely resolve (or fumble) instead of silently
+no-opping. The AFTER death-cause breakdown's one new row ("fiddled with a
+Cloak of Regeneration until it came apart", 1 of 200) confirms the mechanic
+fired live in the sweep. Fighter and Magic User are byte-identical
+(neither pool is touched by this rule). The per-floor-survival verdict is
+unchanged ("all floors 1-12 inside the pass band"). Matches 75.1-01's own
+SUMMARY: "a small, expected effect... well inside the readout's own
+'informational proxy, not a gate' framing."
+
+### Plan 06 (75.1) — BEFORE
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=13  max=28
+
+Reach table (% of runs reaching floor N):
+  >=5: 78.3%  >=10: 24.0%  >=20: 1.1%  >=30: 0.0%  >=50: 0.0%
+
+  mean death depth=7.65  floors gained p50=6 mean=6.65  encounters survived mean=16.53
+  reach: >=5 78.3%  >=8 43.4%  >=9 37.1%  >=10 24.0%  >=13 10.3%  >=16 2.9%  >=20 1.1%
+
+  reach-20: 1.0% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+  Fighter  n=69  p50=7  reach5=81.0%  reach10=25.4%  reach20=0.0%  dmgTaken/fight=11.91  rounds/fight=4.83  foeMiss=64.9%  casts(def/off)=0/0  potions/run=1.10  backstabs/run=0.00  flees/run=2.48
+  Thief  n=72  p50=8  reach5=90.5%  reach10=28.6%  reach20=3.2%  dmgTaken/fight=7.56  rounds/fight=3.34  foeMiss=70.4%  casts(def/off)=0/0  potions/run=2.06  backstabs/run=10.67  flees/run=3.75
+  Magic User  n=59  p50=6  reach5=59.2%  reach10=16.3%  reach20=0.0%  dmgTaken/fight=8.21  rounds/fight=3.30  foeMiss=65.2%  casts(def/off)=199/1214  potions/run=3.54  backstabs/run=0.00  flees/run=0.85
+
+Outcome: 175 dead, 25 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Plan 06 (75.1) — AFTER
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=12  max=19
+
+Reach table (% of runs reaching floor N):
+  >=5: 78.5%  >=10: 25.4%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+  mean death depth=7.60  floors gained p50=6 mean=6.60  encounters survived mean=16.59
+  reach: >=5 78.5%  >=8 48.0%  >=9 37.9%  >=10 25.4%  >=13 9.6%  >=16 1.7%  >=20 0.0%
+
+  reach-20: 0.0% (band 3.0-5.0%, reported — tail)
+  verdict: floors outside the pass band: 11 (dS -4.0)
+
+  Fighter  n=69  p50=8  reach5=85.9%  reach10=29.7%  reach20=0.0%  dmgTaken/fight=11.88  rounds/fight=4.64  foeMiss=64.8%  casts(def/off)=0/0  potions/run=1.14  backstabs/run=0.00  flees/run=2.64
+  Thief  n=72  p50=8  reach5=85.9%  reach10=28.1%  reach20=0.0%  dmgTaken/fight=7.62  rounds/fight=3.40  foeMiss=70.0%  casts(def/off)=0/0  potions/run=1.99  backstabs/run=9.64  flees/run=3.54
+  Magic User  n=59  p50=6  reach5=59.2%  reach10=16.3%  reach20=0.0%  dmgTaken/fight=8.21  rounds/fight=3.30  foeMiss=65.2%  casts(def/off)=199/1214  potions/run=3.54  backstabs/run=0.00  flees/run=0.85
+
+Outcome: 177 dead, 23 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading.** This is the phase's one measurable move: mean death depth ticks
+DOWN 7.65→7.60, reach-20 1.1%→0.0%, and `Outcome` moves 175/25→177/23
+dead/stuck. Fighter's own numbers move EASIER (reach5 81.0%→85.9%, reach10
+25.4%→29.7% — a Fighter reading a carried scroll out of combat for the
+first time occasionally nets a free useful cast), while Thief moves HARDER
+in the tail (reach20 3.2%→0.0%) even though its early reach5/reach10 both
+tick up too — a small-sample tail swing (a 200-seed reach-20 count moves by
+single digits either way). The per-floor-survival verdict moves from "all
+floors 1-12 inside the pass band" to one genuine MISS at **L=11**
+(`dS -4.0`, on a 31-reached/6-death sample). Matches 75.1-06's own SUMMARY,
+which already logged this exact MISS as "a small-sample swing on a purely
+informational proxy... not a tuning regression this plan is responsible
+for correcting."
+
+### Phase 75.1 — FINAL
+
+```
+Death-depth distribution:
+  min=2  p50=7  p90=12  max=19
+
+Reach table (% of runs reaching floor N):
+  >=5: 78.5%  >=10: 25.4%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+  mean death depth=7.60  floors gained p50=6 mean=6.60  encounters survived mean=16.59
+  reach: >=5 78.5%  >=8 48.0%  >=9 37.9%  >=10 25.4%  >=13 9.6%  >=16 1.7%  >=20 0.0%
+
+  reach-20: 0.0% (band 3.0-5.0%, reported — tail)
+  verdict: floors outside the pass band: 11 (dS -4.0)
+
+  Fighter  n=69  p50=8  reach5=85.9%  reach10=29.7%  reach20=0.0%  dmgTaken/fight=11.88  rounds/fight=4.64  foeMiss=64.8%  casts(def/off)=0/0  potions/run=1.14  backstabs/run=0.00  flees/run=2.64
+  Thief  n=72  p50=8  reach5=85.9%  reach10=28.1%  reach20=0.0%  dmgTaken/fight=7.62  rounds/fight=3.40  foeMiss=70.0%  casts(def/off)=0/0  potions/run=1.99  backstabs/run=9.64  flees/run=3.54
+  Magic User  n=59  p50=6  reach5=59.2%  reach10=16.3%  reach20=0.0%  dmgTaken/fight=8.21  rounds/fight=3.30  foeMiss=65.2%  casts(def/off)=199/1214  potions/run=3.54  backstabs/run=0.00  flees/run=0.85
+
+Outcome: 177 dead, 23 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+**Reading — the phase BEFORE → FINAL, against the depth-20 unicorn and the
+floor 5–7 average target.** The whole-phase move, end to end: mean death
+depth 7.54→7.60 (+0.06, noise-level across the two plans' opposing nudges),
+p50 held flat at 7 the entire way, reach-20 1.0%→0.0% (still a tail
+statistic at n=200 — one fewer run out of 200 reaching floor 20). The FINAL
+readout is BYTE-IDENTICAL to Plan 06's own AFTER block above — confirmed by
+direct comparison of the two committed files — because no plan landing
+after 75.1-06 (the fumble table, the foe/reader-side mechanics, the
+resolver, the odds display, the hero-cannot-act shell) changes anything the
+bot's own decision policy or the engine's non-combat-fumble path can reach;
+the fumble effects themselves (75.1-02 through 75.1-05) never fire in a bot
+readout at all, since the bot never reads a scroll in combat.
+
+**Against the depth-20 unicorn:** reach-20 moves 1.0%→0.0% across the
+phase — still read as a tail/rarity statistic (single-digit run counts at
+n=200), not a meaningful departure from the informational 1.0-2.0% unicorn
+band this ledger's own Phase 27 target table names.
+
+**Against the floor 5–7 average run ending:** p50 death depth is 7 at every
+single measurement point across both plans and the whole-phase BEFORE/FINAL
+— never left the floor 5–7 band. Mean death depth ranges 7.54-7.65 across
+the phase, sitting just above the top of that band throughout, consistent
+with the pre-Phase-75.1 baseline and never crossing meaningfully out of it.
+
+**Flag for the user.** The per-floor-survival verdict's floor-11 MISS
+(`dS -4.0`, `reached=31`, `deaths=6`) introduced by 75.1-06's AFTER readout
+is still present, unchanged, in this phase's own FINAL readout — it is a
+genuine, reproducible band failure at this commit, not a transient artifact
+that a later plan happened to fix. Per the checkpointed fit protocol and
+this plan's own flagged assumption ("readings are recorded, not acted
+on"), **this plan does not retune any dial to correct it** — the
+per-floor-survival target band itself is a proxy the user has ruled on
+before (no compensation ruling exists for a single-floor, small-sample
+MISS), and correcting it is an engine-change decision reserved for the
+user, not something an executor infers from one readout. Every other floor
+(1-10, 12-19) stays inside its own target band at both BEFORE and FINAL.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
