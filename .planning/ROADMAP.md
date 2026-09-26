@@ -295,7 +295,7 @@ Plans:
   4. The Gauntlet of the Giant and the Enlarge potion are both exactly a +1 size step (Enlarge's separate +4 damage is gone), and their text states exactly what a step does, with no ceiling promise.
   5. Moved fixtures are measured, declared and regenerated, and a bot readout before and after is recorded.
 
-**Plans**: 3/5 plans executed
+**Plans**: 4/5 plans executed
 
 Plans:
 **Wave 1**
@@ -309,7 +309,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 75.2-04-PLAN.md — Make every surface say what size does (RULES-11): the chip for a live Gauntlet or Enlarge is labelled with the hero's resulting size and explains exactly what a step does; the Oracle and the rail narrate the start of ... (wave 3)
+- [x] 75.2-04-PLAN.md — Make every surface say what size does (RULES-11): the chip for a live Gauntlet or Enlarge is labelled with the hero's resulting size and explains exactly what a step does; the Oracle and the rail narrate the start of ... (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -634,7 +634,7 @@ Plans:
 | 74. Roll Display & Modifier Honesty | v2.1 | 8/8 | Complete   | 2026-09-25 |
 | 75. Engine Rules — Character, Economy, Grimoire & Combat Bugs | v2.1 | 13/13 | Complete    | 2026-09-25 |
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
-| 75.2. Hero Size Matters | v2.1 | 3/5 | In Progress|  |
+| 75.2. Hero Size Matters | v2.1 | 4/5 | In Progress|  |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 0/– | Not started | - |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 0/– | Not started | - |
 | 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
