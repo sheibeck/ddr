@@ -330,7 +330,7 @@ Plans:
   4. From floor 12, foe HP and hit climb on a steeper slope and the roster keeps escalating past today's level-5 tier cap, with slopes set by bot readouts.
   5. From floor 12, foes increasingly resist or shake off Freeze, Stone, Doze and Weaken, so a control-lock rotation no longer carries a caster to depth 40.
 
-**Plans**: 0/7 plans executed
+**Plans**: 0/6 plans executed
 
 Plans:
 **Wave 1**
@@ -352,7 +352,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 75.3-06-PLAN.md — The checkpointed tail sweep against the user's ruled targets (unicorn at 20, depth 30 basically never, the rotation contained): the deep slopes, elite HP step and control resistance are set by readouts in blocks of 10, handing back on a failure pattern, then locked (wave 5, can hand back)
+- (75.3-06, the checkpointed tail sweep, MOVED to Phase 79.1: bots run only at the milestone end, user ruling 2026-09-26)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -521,10 +521,31 @@ Plans:
 
 - [ ] 79-13-PLAN.md — Produce the review page the user reads at milestone close, prove every changed line is on it, refresh the voice sample, and close the phase with the gates and one Pixel 7 checklist (VOX-05's review model; VOX-04 and R... (wave 6)
 
+### Phase 79.1: Milestone Balance Check & Deep-Floor Tuning (INSERTED)
+
+**Goal:** Once all v2.1 code is in, the bots run once as the final check of the whole milestone's balance. The deep-floor dials from Phase 75.3 are tuned by the checkpointed sweep against the ruled tail targets.
+**Depends on:** Phase 79 (all milestone code complete). Phase 80's release build follows this phase, because tuned dial values are code.
+**Requirements**: RULES-16, RULES-17, RULES-18 (tuning evidence and verdicts; the rules themselves land in Phase 75.3)
+**Why inserted:** user ruling 2026-09-26: "we should wait until all the fixes are in for a milestone before we run bots... should always be after milestone code is complete"; "bots always at the end only as a final check of all the code."
+**Success Criteria** (what must be TRUE):
+
+  1. One milestone-final bot readout set covers the fair bot at 200 and 1,000 seeds, per-race and per-class slices, the Freeze/Weaken/Doze rotation Sorcerer, and deep-start slices from floors 12, 20, 30 and 40. It is compared against the pre-milestone baseline and recorded in docs/DIFFICULTY-RETUNE.md.
+  2. The Phase 75.3 deep-floor dials (the HP and hit slope past the knee, and the elite HP per rank) are tuned by the checkpointed fit sweep against the ruled tail targets:
+     - Reach floor 20 at about 1% or less, floor 21+ under 0.5%, and floor 30 in at most 1 run per 1,000.
+     - From a floor-12 start, reach floor 20 at 5% or less. From a floor-20 start, the median gain is 2 or fewer, with floor 30 at 1% or less. From a floor-30 start, the median gain is 0.
+     - The rotation Sorcerer never outlasts the fair bot. Every target gets a PASS or MISS verdict.
+  3. Floors 1–12 are measured, not refitted. The average run still ends on floors 5–7. Any band miss, including the floor-11 survival miss flagged in Phase 75.1, is reported to the user with 1,000-seed evidence rather than silently compensated.
+
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (planned from the moved 75.3-06 sweep plan and every readout step deferred from Phases 75.2, 75.3, 76 and 78)
+
 ### Phase 80: Android Release Build & Tooling
 
 **Goal**: The release build is optimized and store-clean on modern Android and large screens, and the tuning tool's replay-resume is trustworthy.
-**Depends on**: Nothing (native/infra track, independent of the gameplay phases)
+**Depends on**: Phase 79.1 (the release build and emulator checks need the finished and tuned code; user ruling 2026-09-26)
 **Requirements**: DROID-01, DROID-02, DROID-03, TOOL-01
 **Success Criteria** (what must be TRUE):
 
