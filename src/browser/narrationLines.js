@@ -1544,7 +1544,7 @@ export const LINE_FOR = {
   stupefied: (e) => ({ text: `${e?.target ?? "It"} forgets what it is doing.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 40 (SPELL-01, Stupidity) — combat.js#foeTurn's per-round skip.
   foeStupefied: (e) => ({ text: `${e?.name ?? "It"} stands there, thinking about nothing.`, tone: "dodge", priority: PRIORITY.them }),
-  blinded: (e) => ({ text: `${e?.target ?? "It"} cannot see a thing.`, tone: "magic", priority: PRIORITY.you }),
+  blinded: (e) => ({ text: `${e?.target ?? "It"} cannot see a thing${e?.rounds ? ` for ${e.rounds} rounds` : ""}.`, tone: "magic", priority: PRIORITY.you }),
   shrunk: (e) => ({ text: `${e?.count ?? 0} shrink to half size.`, tone: "magic", priority: PRIORITY.you }),
   acidApplied: (e) => ({ text: `${e?.target ?? "It"} starts to dissolve (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   // Phase 40 (SPELL-01, Ice) — the cast-time line; dotTick's own `by` branch

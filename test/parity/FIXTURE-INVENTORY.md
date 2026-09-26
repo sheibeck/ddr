@@ -3969,3 +3969,71 @@ planned, user-ruled start values (`CONTROL_AT_DEPTH { kneeDepth: 12,
 resistPerDepth: 1, resistCap: 15, holdRounds: 3 }`); 75.3-06's checkpointed
 tail sweep sets `resistPerDepth`'s final value against the deep-start
 slices at Phase 79.1's milestone close.
+
+### Plan 05 — control at depth, hero spells and items (RULES-18)
+
+**The rule.** The same `CONTROL_AT_DEPTH` dial and the same two entry
+points (`engine/combat.js#resistControl`/`#holdFoe`) Plan 04 built, now at
+the control audit's remaining rows: `engine/magic.js#castSpell`'s Freeze
+(C1: a lethal blow still kills; otherwise a resist, then a frozen hold
+instead of the kill), Petrify (C5: a stone hold instead of the removal),
+Doze (C7), Stun (C8), Noxious Vapor's sleep (C10) and Insane's sleep face
+(C11) (a resist; the rolled d4 / d6+2 stays and is drawn in its old
+position either way), Weaken (C14: one resist for the room), Stupidity
+(C17: a stupid hold instead of the fight-long flag), Blind (C18: a timed
+`blindFor` instead of the whole fight) and Shrink (C19: a resist per foe);
+and `engine/items.js#useItem`'s Birch Staff (C4) and Cedar Staff (C12)
+(a resist per foe, asleep capped from 99 to `holdRounds`), Oak Staff and
+Amulet of Stone (C6: a resist per target, then a stone hold; `foeStoned`
+names only the foes the stone kills) and Walnut Staff (C16: one resist for
+the room, then a `holdRounds` `spell:weaken` timer). A scroll cast runs
+through `castSpell`, so it meets the same rule. Texts (Freeze, Ice,
+Stupidity, Blind, Petrify, the Birch/Oak/Cedar staves, the Amulet of
+Stone) name the knee and the three rounds.
+
+**The predictor.** Every fixture-exposed fight is on floor 1 (Plan 01's
+predictor); the magic fixture's Freeze and scroll casts are on floor 1, and
+`controlResistFacesFor(1) === controlHoldRoundsFor(1) === 0`, so every new
+branch is a byte-identical no-op there (no derived stream is built, no hold
+lands). The changed item texts: no fixture's starting kit or replayed state
+carries a Birch/Oak/Cedar Staff or an Amulet of Stone (no
+`REWORDED_TXT_ITEMS` carve-out needed). Prediction: **zero moved
+fixtures.**
+
+**Measured.**
+
+```
+$ node --test "test/parity/**/*.test.js"
+# tests 60
+# pass 60
+# fail 0
+
+$ git diff --quiet 15d08abfb68a758fde85897ed693434342bd7d4d -- test/parity/fixtures test/parity/prototype-master.js.txt
+(exit 0 — clean)
+
+$ git hash-object test/parity/prototype-master.js.txt
+a1f4d0dc29782218d8e5aab65bc5989c33f917f0 (unchanged)
+```
+
+Zero fixtures moved, exactly as predicted; the generated roster table
+(`tools/fixture-inventory.mjs`, checked by `fixture-inventory.test.js`) is
+unchanged.
+
+**Bot-baseline artifacts: zero moved.** `node --test
+test/unit/roll-high-state-pins.test.js` 9/9, no pin regenerated. One
+measured near-miss, resolved without a re-pin: a Walnut Staff text clause
+(beyond the plan's text list) moved "solo-thief-pilfer" (depth 4, 400
+actions, outcome identical) because the run's final state carries a
+Walnut Staff whose stored `txt` is hashed; traced by restoring only the
+pre-plan `content/treasure-tables.js` against the new engine (hash
+matched). The Walnut text never promised a duration, so the clause was
+dropped instead of re-pinning.
+
+**Floors 1-12 unchanged.** Proven deterministically:
+`test/unit/control-spells-depth.test.js` pins every one of the ten spell
+scenarios and five item scenarios at floor 12 to digests captured from the
+pre-plan engine (events, foe fields, main-draw count), and checks that a
+Freeze, a Petrify and an Oak Staff stone on every floor 1-12 are today's
+kill with no resist roll and no hold. The rotation readouts
+(`tools/readouts/75.3-05-rotation-{before,after}.txt`) and the 200-seed
+natural-after are deferred to Phase 79.1 (user ruling 2026-09-26).

@@ -50,7 +50,10 @@ import { derivedRng } from "./rng.js";
 // bookkeeping for stone/fire since killFoe didn't exist yet); now that
 // combat.js owns the real killFoe, useItem calls it for full parity (loot,
 // skill points, checkLevel) instead of the old bookkeeping-only stand-in.
-import { killFoe, refuseIfPending, liveFoes, endCombat } from "./combat.js";
+import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe } from "./combat.js";
+// RULES-18 (Phase 75.3): the control-at-depth dials the freeze / gas / stone /
+// weaken cases below read (difficulty.js imports nothing from engine/).
+import { controlHoldRoundsFor, controlCapRounds } from "./difficulty.js";
 // Phase 18 (D-09/CANON-01): the fire effect below routes through the shared
 // foe-damage seam. This edge is NOT part of the circular-import concern
 // above — engine/foeDamage.js imports only ../content/index.js, never
@@ -1654,11 +1657,33 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // below for the full rationale; the Amulet of Stone is the only item that
       // overrides it (aoe:4). NOTE: the item's DISPLAY NAME lives on `.n`, so
       // the count is carried on `.aoe`, NOT `.n` as the CONTEXT shorthand said.
-      foes.slice(0, it.aoe ?? 2).forEach((f) => (f.asleep = 99));
+      // RULES-18 (Phase 75.3, audit C4): past the knee each target gets its
+      // own resist, and a landed freeze sleeps controlHoldRoundsFor(depth)
+      // rounds instead of 99; at or below the knee exactly as before.
+      const freezeRounds = controlCapRounds(state.floor?.depth, 99);
+      foes.slice(0, it.aoe ?? 2).forEach((f) => {
+        if (resistControl(state, f, "freeze", it.n, combat.foes.indexOf(f), rng, events)) return;
+        f.asleep = freezeRounds;
+      });
       break;
     }
     case "weaken": {
-      if (combat) combat.weakened = true;
+      // RULES-18 (Phase 75.3, audit C16): one resist for the room, keyed on
+      // the first live foe; a resist marks every live foe Unmoved and weakens
+      // nothing. A landed weaken lasts the fight at or below the knee (exactly
+      // as before) and controlHoldRoundsFor(depth) rounds past it, through
+      // the same `spell:weaken` timer whose expiry (combat.js#foeTurn's tail)
+      // clears the flag and narrates weakenFaded.
+      if (combat) {
+        const aimed = foes[0];
+        if (aimed && resistControl(state, aimed, "weaken", it.n, combat.foes.indexOf(aimed), rng, events)) {
+          foes.forEach((f) => (f.resisted = "weaken"));
+        } else {
+          combat.weakened = true;
+          const weakenRounds = controlHoldRoundsFor(state.floor?.depth);
+          if (weakenRounds > 0) startEffect(c, "spell:weaken", { rounds: weakenRounds });
+        }
+      }
       break;
     }
     case "stone": {
@@ -1674,12 +1699,25 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // NOTE: the count is `it.aoe`, not `it.n` (the CONTEXT shorthand) — `.n`
       // is the item's display-name field throughout the codebase.
       const targets = foes.slice(0, it.aoe ?? 2);
+      // RULES-18 (Phase 75.3, audit C6): past the knee each target gets its
+      // own resist, then a stone HOLD (controlHoldRoundsFor rounds, the foe
+      // stays in the fight) instead of the kill; only the foes the stone
+      // actually kills are named below. At or below the knee no resist rolls
+      // and no hold lands, so `stoned` is every target — exactly as before.
+      const stoned = targets.filter((f) => {
+        if (resistControl(state, f, "stone", it.n, combat.foes.indexOf(f), rng, events)) return false;
+        if (controlHoldRoundsFor(state.floor?.depth) > 0) {
+          holdFoe(state, f, "stone", it.n, events);
+          return false;
+        }
+        return true;
+      });
       // CMB-06 (Phase 31): one foeStoned {names} line naming every stoned foe
       // in target order, pushed BEFORE the per-foe kill loop (Pitfall 5 —
       // never batch the kills themselves; each still pays through its own
       // killFoe call, exactly like a melee kill of the same foe).
-      if (targets.length) events.push({ type: "foeStoned", names: targets.map((f) => f.name) });
-      targets.forEach((f) => {
+      if (stoned.length) events.push({ type: "foeStoned", names: stoned.map((f) => f.name) });
+      stoned.forEach((f) => {
         f.wp = 0;
         killFoe(state, f, rng, events);
       });
@@ -1705,7 +1743,14 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       break;
     }
     case "gas": {
-      foes.forEach((f) => (f.asleep = 99));
+      // RULES-18 (Phase 75.3, audit C12): past the knee each foe gets its own
+      // resist, and a landed gas sleeps controlHoldRoundsFor(depth) rounds
+      // instead of 99; at or below the knee exactly as before.
+      const gasRounds = controlCapRounds(state.floor?.depth, 99);
+      foes.forEach((f) => {
+        if (resistControl(state, f, "sleep", it.n, combat.foes.indexOf(f), rng, events)) return;
+        f.asleep = gasRounds;
+      });
       break;
     }
     default:

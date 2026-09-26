@@ -1048,6 +1048,65 @@ The two Phase 40 lines above stating "the Summoner's offense gate stays 3"
 and "Summoner+Freeze (offense gate 3)" are **superseded by Phase 75** —
 kept as history of the Phase 40 design, not current behavior.
 
+## Phase 75.3 (RULES-18): control at depth
+
+User ruling 2026-09-25 (75.3-CONTEXT): from past floor 12, foes increasingly
+shrug off control, and the "forever" controls stop being forever. The dial
+is `CONTROL_AT_DEPTH` in `engine/difficulty.js`
+(`{ kneeDepth: 12, resistPerDepth: 1, resistCap: 15, holdRounds: 3 }`).
+
+- **The knee.** Floors 1-12 are exactly as before: no resist roll, no hold,
+  no draw. Floor 13 is the first floor where anything changes.
+- **The resist.** Past the knee, every control rolls a roll-high d20 for
+  the foe (`engine/derived.js#controlResistCheck`) whose winning faces grow
+  one per floor past the knee, from the start value (`resistPerDepth: 1`),
+  capped at `resistCap` and, structurally, at 19 (a d20's top face always
+  lands the control). The roll comes from its own derived stream, so the
+  main dice never move because of it. A foe that shakes a control off gets
+  an Oracle line (`controlResisted`, printing the roll and its range), a
+  rail line and an **Unmoved** chip. The existing intelligence resist
+  (`resistRoll`, intel 12+) still runs first and is unchanged.
+- **The hold.** Past the knee, a control that used to kill, remove or last
+  the whole fight holds the foe for `holdRounds` (three) rounds instead:
+  a Freeze or Ice payoff (held frozen), Petrify and the stone items (held as
+  stone), Stupidity (held stupid). A held foe skips its turns and shows a
+  **Held** chip; the cast's own dispatch spends the first held turn. A
+  Freeze blow that already drops the foe to 0 hp still kills, at any depth.
+  A stone-held foe that is later killed pays like any other kill; a floor
+  1-12 Petrify still removes the foe with no spoils.
+- **Timed instead of forever.** Blind lasts three rounds past the knee (the
+  existing `blindFor` countdown); the Birch Staff's freeze and the Cedar
+  Staff's gas sleep three rounds, not 99; the Walnut Staff's weaken runs on
+  a three-round `spell:weaken` timer instead of the whole fight.
+- **Short controls keep their dice.** Doze, Stun, Noxious Vapor's sleep and
+  Insane's sleep face keep their rolled durations; they only gain the
+  resist. Shrink resists per foe and halves the rest.
+- **One roll for the room.** Weaken (the spell, a Joiner's, and the Walnut
+  Staff) rolls once against the foe it was aimed at; a resist marks every
+  live foe Unmoved and weakens nobody.
+
+Which effects are in (the control audit, 75.3-04-PLAN.md): C1 Freeze, C2 a
+Joiner's Freeze, C3 Ice's last tick, C4 the Birch Staff, C5 Petrify, C6 the
+Oak Staff and Amulet of Stone, C7 Doze, C8 Stun, C9 a Joiner's Doze / Stun,
+C10 Noxious Vapor's sleep, C11 Insane's sleep face, C12 the Cedar Staff,
+C13 the Bard's Lullaby and Thunder, C14 Weaken, C15 a Joiner's Weaken, C16
+the Walnut Staff, C17 Stupidity, C18 Blind, C19 Shrink. Out: X1 Death (an
+instant kill), X2 Vapor's and Insane's kill / flee faces (chaos-table
+outcomes), X3 Turn Walking Dead and Plane Gate (answers, not control), X4
+the Bard's level-5 song, X5 Pommel Strike and Dirty Trick, X6 Hamstring,
+Mark, Acid and Poisoned Edge, X7 foe abilities on the hero.
+
+Texts: Freeze, Ice, Stupidity, Blind and Petrify, and the Birch, Oak and
+Cedar staves and the Amulet of Stone, each say what changes past floor 12
+and name the three rounds (the Walnut Staff's text never promised a
+duration, so it is unchanged; its timed weaken shows in play as the
+`weakenFaded` line) (`test/unit/control-spells-depth.test.js` ties
+the words to the dial; the Phase 40 txt tables above record the texts as
+they were then, without the clause). The resist itself is not written into every text;
+the Oracle, the rail and the Unmoved chip teach it in play. The bot plays
+the new rules: past the knee it scores Freeze as a disable, not a kill
+(`tools/lib/tuning-bot.mjs#chooseSpell`).
+
 ## Out of scope / next
 
 - Bot casting tactics by niche (choosing WHICH spell to cast for a given

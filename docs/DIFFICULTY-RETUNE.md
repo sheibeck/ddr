@@ -6456,6 +6456,18 @@ this section records only what was already measured at the phase's own
 BEFORE point. No dial in this repository was retuned in response to any
 number in this section, per the checkpointed fit protocol.
 
+## v2.1 deep-floor encounter scaling (Phase 75.3) — bot readouts
+
+Stub (user ruling 2026-09-26: bot balance runs happen once, at the
+milestone close in Phase 79.1; 75.3-07 writes this section in full).
+
+- 75.3-05 (RULES-18, the hero's control spells and items at depth; the bot
+  scores a past-the-knee Freeze as a disable, not a kill): no readout taken;
+  the control-rotation Sorcerer BEFORE/AFTER (from depths 20, 30, 40, and a
+  plain Sorcerer from 20) and the 200-seed natural-after are deferred to
+  Phase 79.1. Floors 1-12 unchanged is proven by deterministic tests
+  (pre-plan floor-12 digests, the state pins), not a bot run.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases

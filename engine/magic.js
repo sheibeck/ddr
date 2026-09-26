@@ -22,7 +22,7 @@
 import { eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -37,7 +37,7 @@ import { startEffect } from "./effects.js";
 // Phase 18 (D-09/CANON-01/03/04): every damage-to-foe site below routes
 // through the shared seam instead of decrementing foe.wp directly.
 import { damageFoe } from "./foeDamage.js";
-import { spellDamageFor } from "./difficulty.js";
+import { spellDamageFor, controlHoldRoundsFor } from "./difficulty.js";
 
 // p.25: a non-thrown spell can be resisted by an intelligent target. These
 // kinds are immune to that resistance check — ports mazeworld.html's inline
@@ -219,10 +219,18 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // Identity 1 (spellPowerFor) is a structural no-op.
     const n = spellDamageFor(rng.d(6) * Math.max(1, c.level - sp.lvl), c); // roll:amount
     const affected = liveFoes(state).slice(0, n);
+    // RULES-18 (Phase 75.3, audit C8): past the knee each affected foe gets
+    // its own resist; its d4 is drawn in the same position either way, and
+    // `count` is the number that actually slept (every affected foe at or
+    // below the knee, exactly as before).
+    let slept = 0;
     affected.forEach((f) => {
-      f.asleep = Math.max(f.asleep, rng.d(4)); // roll:amount
+      const rolled = rng.d(4); // roll:amount
+      if (resistControl(state, f, "sleep", sp.n, C.foes.indexOf(f), rng, events)) return;
+      f.asleep = Math.max(f.asleep, rolled);
+      slept++;
     });
-    events.push({ type: "stunned", count: Math.min(n, liveFoes(state).length) });
+    events.push({ type: "stunned", count: slept });
   } else if (sp.kind === "weaken") {
     // Phase 40 (SPELL-01, Weaken): a scope x duration axis, stated in the
     // grimoire's own txt ("every foe, d4+1 rounds") — today undefined in
@@ -238,15 +246,33 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // branch runs — the `if (C)` guard is defensive (engine V5 discipline),
     // not reachable-false in real play.
     const rounds = rng.d(4) + 1; // roll:amount
-    if (C) {
-      C.weakened = true;
-      C.foeToHitPenalty = 3;
-      startEffect(c, "spell:weaken", { rounds });
+    // RULES-18 (Phase 75.3, audit C14): one resist for the whole room, keyed
+    // on the foe the caster aimed at (the current target, else the first live
+    // foe); the d4 + 1 above is drawn either way. A resist marks every live
+    // foe Unmoved and starts nothing.
+    const aimed = C && (C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : liveFoes(state)[0]);
+    if (aimed && resistControl(state, aimed, "weaken", sp.n, C.foes.indexOf(aimed), rng, events)) {
+      C.foes.forEach((f) => {
+        if (f.alive) f.resisted = "weaken";
+      });
+    } else {
+      if (C) {
+        C.weakened = true;
+        C.foeToHitPenalty = 3;
+        startEffect(c, "spell:weaken", { rounds });
+      }
+      events.push({ type: "weakened", rounds });
     }
-    events.push({ type: "weakened", rounds });
   } else if (sp.kind === "stupid") {
     const t = C && liveFoes(state)[0];
-    if (t) {
+    // RULES-18 (Phase 75.3, audit C17): past the knee a resist first, then a
+    // stupid HOLD for controlHoldRoundsFor(depth) rounds instead of the
+    // fight-long flag; at or below the knee exactly as before.
+    if (t && resistControl(state, t, "stupid", sp.n, C.foes.indexOf(t), rng, events)) {
+      // shaken off: the foe keeps its wits (resistControl narrated it)
+    } else if (t && controlHoldRoundsFor(state.floor.depth) > 0) {
+      holdFoe(state, t, "stupid", sp.n, events);
+    } else if (t) {
       t.stupid = true;
       // DELIBERATE RULES CHANGE (Phase 40, SPELL-01, CONTEXT "Stupidity
       // (single, the fight)"): the old rng.d(10) nap is retired — Stupidity
@@ -257,19 +283,35 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     }
   } else if (sp.kind === "blind") {
     const t = C && C.foes[C.target];
-    if (t && t.alive) {
+    // RULES-18 (Phase 75.3, audit C18): past the knee a resist first, then a
+    // timed blind (the existing blindFor countdown, controlHoldRoundsFor
+    // rounds) instead of blind for the whole fight; at or below the knee
+    // exactly as before.
+    if (t && t.alive && !resistControl(state, t, "blind", sp.n, C.foes.indexOf(t), rng, events)) {
       t.blind = true;
-      events.push({ type: "blinded", target: t.name });
+      const hold = controlHoldRoundsFor(state.floor.depth);
+      if (hold > 0) {
+        t.blindFor = hold;
+        events.push({ type: "blinded", target: t.name, rounds: hold });
+      } else {
+        events.push({ type: "blinded", target: t.name });
+      }
     }
   } else if (sp.kind === "shrink") {
     const n = rng.d(6); // roll:amount
     const affected = liveFoes(state).slice(0, n);
+    // RULES-18 (Phase 75.3, audit C19): past the knee each affected foe gets
+    // its own resist; only those that did not resist are halved, and `count`
+    // counts the halved (every affected foe at or below the knee).
+    let halved = 0;
     affected.forEach((f) => {
+      if (resistControl(state, f, "shrink", sp.n, C.foes.indexOf(f), rng, events)) return;
       f.wp = Math.ceil(f.wp / 2);
       f.maxWP = Math.ceil(f.maxWP / 2);
       f.shrunk = true;
+      halved++;
     });
-    events.push({ type: "shrunk", count: affected.length });
+    events.push({ type: "shrunk", count: halved });
   } else if (sp.kind === "acid") {
     const t = C && C.foes[C.target];
     if (t && t.alive) {
@@ -327,7 +369,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         f.wp = 0;
         killFoe(state, f, rng, events);
       } else {
-        f.asleep = Math.max(f.asleep, rng.d(6) + 2); // roll:amount
+        // RULES-18 (Phase 75.3, audit C10): the sleep outcome's d6 + 2 is
+        // drawn in its existing position, then a per-foe resist past the knee.
+        const rolled = rng.d(6) + 2; // roll:amount
+        if (resistControl(state, f, "sleep", sp.n, C.foes.indexOf(f), rng, events)) return;
+        f.asleep = Math.max(f.asleep, rolled);
       }
     });
   } else if (sp.kind === "volley") {
@@ -350,7 +396,14 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     events.push({ type: "volley", rolls: n, totalDamage: tot });
   } else if (sp.kind === "petrify") {
     const t = C && C.foes[C.target];
-    if (t && t.alive) {
+    // RULES-18 (Phase 75.3, audit C5): past the knee a resist first, then a
+    // stone HOLD (the foe stays in the fight) instead of the removal; at or
+    // below the knee exactly as before (removed, no spoils).
+    if (t && t.alive && resistControl(state, t, "stone", sp.n, C.foes.indexOf(t), rng, events)) {
+      // shaken off: the foe stays flesh (resistControl narrated it)
+    } else if (t && t.alive && controlHoldRoundsFor(state.floor.depth) > 0) {
+      holdFoe(state, t, "stone", sp.n, events);
+    } else if (t && t.alive) {
       t.alive = false;
       t.frozen = true;
       t.wp = 0;
@@ -465,7 +518,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         t.fled = true;
         events.push({ type: "insaneFled", target: t.name });
       } else if (r === 4) {
-        t.asleep = rng.d(4); // roll:amount
+        // RULES-18 (Phase 75.3, audit C11): the d4 is drawn in its existing
+        // position, then a resist past the knee.
+        const rolled = rng.d(4); // roll:amount
+        if (!resistControl(state, t, "sleep", sp.n, C.foes.indexOf(t), rng, events)) t.asleep = rolled;
       } else if (r === 5) {
         t.frenzied = true;
       }
@@ -501,8 +557,13 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else if (sp.kind === "status") {
     const t = C && liveFoes(state)[0];
     if (t) {
-      t.asleep = rng.d(4); // roll:amount
-      events.push({ type: "dozed", target: t.name, rounds: t.asleep });
+      // RULES-18 (Phase 75.3, audit C7): the d4 is drawn in its existing
+      // position, then a resist past the knee (a resisted Doze sleeps nobody).
+      const rolled = rng.d(4); // roll:amount
+      if (!resistControl(state, t, "sleep", sp.n, C.foes.indexOf(t), rng, events)) {
+        t.asleep = rolled;
+        events.push({ type: "dozed", target: t.name, rounds: t.asleep });
+      }
     }
   } else {
     // thrown: d8, 4 winning faces, plus the offensive bonus from the
@@ -579,6 +640,19 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
           // FID-06 in this phase's Plan 04. Kill-twice note: a lives-2 creature now
           // shrugs off a Freeze once, per canon ("you have to kill it twice") — the
           // prototype let Freeze bypass the lives rule entirely.
+          // RULES-18 (Phase 75.3, audit C1): a blow that already dropped the
+          // target to 0 hp kills exactly as today. Otherwise, past the knee,
+          // a resist first (the foe stands, damaged), then a frozen HOLD for
+          // controlHoldRoundsFor(depth) rounds instead of the kill (nothing
+          // dies, so none of killFoe's reward draws happen); at or below the
+          // knee this falls through to the frozen-solid kill exactly as before.
+          if (t.wp > 0) {
+            if (resistControl(state, t, "freeze", sp.n, C.foes.indexOf(t), rng, events)) continue;
+            if (controlHoldRoundsFor(state.floor.depth) > 0) {
+              holdFoe(state, t, "frozen", sp.n, events);
+              continue;
+            }
+          }
           t.frozen = true;
           events.push({ type: "frozenSolid", target: t.name });
           killFoe(state, t, rng, events);
