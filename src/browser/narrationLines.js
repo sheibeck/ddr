@@ -1325,6 +1325,15 @@ export const LINE_FOR = {
   }),
   wardAbsorbed: (e) => ({ text: `The ward eats ${e?.amount ?? 0} (${e?.remaining ?? 0} left).`, tone: "hit", priority: PRIORITY.them }),
   wardShattered: () => ({ text: "The ward shatters.", tone: "hurt", priority: PRIORITY.them }),
+  // RULES-10 (Phase 75.1) — the foe-side ward/Bubble mirrors: a fumbled
+  // Shield or a popped fumbled Bubble on the FOE eats the hero's OWN blow,
+  // mirroring wardAbsorbed/wardShattered's own tone/priority pairing.
+  foeWardSoaked: (e) => ({ text: `${e?.name ?? "It"}'s ward drinks ${e?.amount ?? 0} (${e?.left ?? 0} left).`, tone: "miss", priority: PRIORITY.them }),
+  foeWardBroken: (e) => ({ text: `${e?.name ?? "It"}'s ward gives out.`, tone: "hit", priority: PRIORITY.them }),
+  foeBubbleCaught: (e) => ({ text: `${e?.name ?? "It"}'s bubble swallows your blow — ${e?.amount ?? 0} wasted.`, tone: "miss", priority: PRIORITY.them }),
+  // The telegraph for the throw-back; foeBolted (pushed right after, same
+  // action) carries the actual hp lost.
+  foeBubbleRebound: (e) => ({ text: `${e?.name ?? "It"}'s bubble throws it back at you.`, tone: "hurt", priority: PRIORITY.them }),
   armorDestroyed: () => ({ text: "Your armour gives out.", tone: "hurt", priority: PRIORITY.them }),
   // Phase 25 (FEED-01): `wear` is the real durability cost; `halved` names the
   // Dwarven mitigation. Phase 28 (ARMOR-05): `underMin`/`magic` are two more
@@ -1350,6 +1359,10 @@ export const LINE_FOR = {
   },
   wardFaded: () => ({ text: "The ward fades.", tone: "beat", priority: PRIORITY.other }),
   mirrorFaded: () => ({ text: "The mirror fades.", tone: "beat", priority: PRIORITY.other }),
+  // RULES-10 (Phase 75.1) — a foe's own ward/Mirror Self ticks fade exactly
+  // like the hero's above.
+  foeWardFaded: (e) => ({ text: `${e?.name ?? "It"}'s ward fades.`, tone: "beat", priority: PRIORITY.other }),
+  foeMirrorFaded: (e) => ({ text: `${e?.name ?? "It"}'s mirror fades.`, tone: "beat", priority: PRIORITY.other }),
   // Phase 40 (SPELL-02): endCombat's own expiry narration for a
   // still-running Regeneration/Sense Presence when the fight ends.
   sensesFaded: () => ({ text: "Your senses dull back to normal.", tone: "beat", priority: PRIORITY.other }),
@@ -1368,6 +1381,9 @@ export const LINE_FOR = {
   foeDrained: (e) => ({ text: `${e?.name ?? "It"} drains you (−${e?.stolen ?? 0} hp).`, tone: "hurt", priority: PRIORITY.them }),
   foeDebuffed: (e) => ({ text: `${e?.name ?? "It"}: you are ${e?.kind ?? "afflicted"} (${e?.rounds ?? "?"}).`, tone: "hurt", priority: PRIORITY.them }),
   foeHealed: (e) => ({ text: `${e?.name ?? "It"} heals (+${e?.amount ?? 0}).`, tone: "dodge", priority: PRIORITY.them }),
+  // RULES-10 (Phase 75.1) — a fumbled Regeneration on a foe, same
+  // tone/priority as foeHealed immediately above.
+  foeRegenerated: (e) => ({ text: `${e?.name ?? "It"} regenerates (+${e?.amount ?? 0}).`, tone: "dodge", priority: PRIORITY.them }),
   foeSummoned: (e) => ({
     text: e?.pending ? `${e?.by ?? e?.name ?? "It"} calls for help.` : `${e?.name ?? "Something"} joins the fight.`,
     tone: "dodge",

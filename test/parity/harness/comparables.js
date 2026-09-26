@@ -597,12 +597,26 @@ export function stripFoeDamageClosures(combat) {
  * no-op on a null/foes-less combat, or on a combat/foe that carries none of
  * these fields (every fixture today) — returned exactly as-is so the
  * `stripFoeDamageClosures` composition immediately below stays the sole
- * source of any actual foe-shape change for those fixtures. */
+ * source of any actual foe-shape change for those fixtures.
+ *
+ * RULES-10 (Phase 75.1, foe-side fumble effects): a fumbled helpful scroll's
+ * TARGETED-enemy fields — `ward` (Shield pool / armed-or-popped Bubble),
+ * `rebound` (a caught blow queued to throw back), `mirror` (Mirror Self),
+ * `might` (Strength), `strengthBoost` (75.1-05's own hp-doubling marker for
+ * the same fumble, carried alongside `might`), `regen` (Regeneration) and
+ * `senses` (Sense Presence — no further engine mechanic; left for Phase 77's
+ * indicator) — are ALL engine-only, with no prototype-side equivalent
+ * whatsoever, and are set NOWHERE in today's engine (only 75.1-05's
+ * resolver will ever write one). This is carved out purely as a STRUCTURAL
+ * tripwire, exactly like the abilities/cd/uses strip immediately below: a
+ * no-op on every current fixture, that keeps a future fumble-driving
+ * fixture (or a determinism test reusing this comparable) from ever
+ * reaching the diff on this genuine, permanent, deliberate divergence. */
 export function stripFoeAbilityState(combat) {
   if (!combat || !Array.isArray(combat.foes)) return combat;
   const { pendingFoes, ...combatRest } = combat;
   const foes = combatRest.foes.map((f) => {
-    const { abilities, cd, uses, ...rest } = f;
+    const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, ...rest } = f;
     return rest;
   });
   return { ...combatRest, foes };

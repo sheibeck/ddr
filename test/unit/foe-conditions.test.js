@@ -305,6 +305,11 @@ const NOT_A_CONDITION = Object.freeze({
   parleyInsulted: "the parley went badly; a fight-wide flag, not a foe status",
   pendingFoes: "summoned foes waiting to join the fight",
   pending: "the pre-join encounter marker",
+  // RULES-10 (Phase 75.1, plan 03): the foe-side fumble-effect fields land
+  // in state ahead of any indicator — CMBUI-13 (Phase 77) draws the chip.
+  ward: "RULES-10 (Phase 75.1): the foe's own Shield pool / Bubble mirror — CMBUI-13 (Phase 77) draws its indicator",
+  rebound: "RULES-10 (Phase 75.1): a caught blow queued to throw back at the foe's own next turn — engine bookkeeping, not a chip",
+  mirror: "RULES-10 (Phase 75.1): the foe's own Mirror Self — CMBUI-13 (Phase 77) draws its indicator",
 });
 
 function stripComments(src) {

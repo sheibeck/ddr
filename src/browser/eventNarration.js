@@ -603,6 +603,22 @@ export const EVENT_NARRATION = {
       : `<span class="hit">The ward throws ${e.amount ?? 0} back at ${e.target ?? "it"}.</span>`,
   wardAbsorbed: (e) => `The ward eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
   wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
+  // RULES-10 (Phase 75.1) — the foe-side mirror of the hero's own ward: a
+  // fumbled Shield or a popped fumbled Bubble sitting on the FOE eats the
+  // hero's own blow instead. `name` is the foe; the pool drains the same
+  // way the hero's own does (wardAbsorbed's own phrasing, mirrored).
+  foeWardSoaked: (e) => `<span class="miss">${e.name ?? "It"}'s ward drinks <span class="roll">${e.amount ?? 0}</span> of it — ${e.left ?? 0} left.</span>`,
+  foeWardBroken: (e) => `<span class="hit">${e.name ?? "It"}'s ward gives out.</span>`,
+  foeWardFaded: (e) => `<span class="beat">${e.name ?? "It"}'s ward fades.</span>`,
+  // RULES-10 (Phase 75.1) — a fumbled Bubble sitting on the FOE: the first
+  // blow it catches never touches its hp at all (your effort, wasted), then
+  // it pops into a small pool for the rest of that round (foeWardSoaked
+  // above narrates the pop pool's own absorbs the same way Shield's does).
+  foeBubbleCaught: (e) => `<span class="miss">${e.name ?? "It"}'s bubble swallows your blow whole — <span class="roll">${e.amount ?? 0}</span> wasted.</span>`,
+  // RULES-10 (Phase 75.1) — the caught blow is thrown back at the TOP of the
+  // foe's next turn; this line is the telegraph, and the existing foeBolted
+  // builder (pushed right after it, same action) states the hp actually lost.
+  foeBubbleRebound: (e) => `<span class="hurt">${e.name ?? "It"}'s bubble throws it back at you.</span>`,
   armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
   // Phase 28 (ARMOR-05): the same underMin/magic outcome flags narrationLines.js
   // reads, so the narration line and the Oracle can never disagree about which of
@@ -630,6 +646,9 @@ export const EVENT_NARRATION = {
     `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.foe)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
   wardFaded: () => `<span class="beat">The ward fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
+  // RULES-10 (Phase 75.1) — a foe's own fumbled Mirror Self, ticking down in
+  // foeTurn's tail exactly like the hero's c.mirror does above.
+  foeMirrorFaded: (e) => `<span class="beat">${e.name ?? "It"}'s mirror fades.</span>`,
   // Phase 40 (SPELL-02): endCombat's own expiry narration for a
   // still-running Regeneration/Sense Presence when the fight ends.
   sensesFaded: () => `<span class="beat">Your senses dull back to normal.</span>`,
@@ -653,6 +672,10 @@ export const EVENT_NARRATION = {
       ? `<span class="hurt">The room keeps moving after you stop. Dazed for ${e.rounds ?? "?"} rounds.</span>`
       : `<span class="hurt">Your arms feel like someone else's. Weakened for ${e.rounds ?? "?"} rounds.</span>`,
   foeHealed: (e) => `${e.name ?? "It"} knits itself back together. <span class="miss">+${e.amount ?? 0} hp.</span> Rude.`,
+  // RULES-10 (Phase 75.1) — a fumbled Regeneration on a foe: a d8 a turn,
+  // capped at its own maxWP, same snarky "good news for it" framing as
+  // foeHealed immediately above.
+  foeRegenerated: (e) => `${e.name ?? "It"} stitches itself up. <span class="miss">+${e.amount ?? 0} hp.</span> Inconsiderate.`,
   foeSummoned: (e) =>
     e.pending
       ? `<span class="miss">${e.by ?? "It"} calls, and something answers from a little way off.</span>`

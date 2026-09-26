@@ -1415,8 +1415,13 @@ export function foeToHitBreakdown(state, vs = "hero") {
  * without `c.magicWpn` and without `c.weapon === "Dagger"` also zeroes
  * `faces` — Phase 72 (ROLL-01, finding F3, user ruling 2026-09-24):
  * DECLARED CANON DIVERGENCE, the prototype leaves `daggerOnly` inert (no
- * engine site ever read it before Phase 72). A plain `t` (no matching `sp`
- * fields) returns `faces` unchanged. Pure, zero rng.
+ * engine site ever read it before Phase 72). Finally (Phase 75.1, RULES-10,
+ * foe Mirror Self): a target carrying `mirror > 0` (a fumbled Mirror Self)
+ * caps `faces` at 1 — the striker's own top face — but never RAISES an
+ * already-zeroed `faces` (a magic-only foe the striker cannot touch stays
+ * untouchable; `Math.min(faces, 1)` is `0` when `faces` is already `0`). A
+ * plain `t` (no matching `sp` fields, no `mirror`) returns `faces`
+ * unchanged. Pure, zero rng.
  */
 export function targetStrikeFaces(c, t, faces) {
   if (t.asleep > 0 || t.stupid) faces = Math.max(faces, 5); // p.27: 5 winning faces to hit a dozing (or stupid) creature
@@ -1424,6 +1429,7 @@ export function targetStrikeFaces(c, t, faces) {
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // one more winning face to strike
   if (t.sp && t.sp.magicOnly && !c.magicWpn) faces = 0; // only magic touches it
   if (t.sp && t.sp.daggerOnly && !c.magicWpn && c.weapon !== "Dagger") faces = 0; // only a dagger or magic touches it
+  if (t.mirror > 0) faces = Math.min(faces, 1); // RULES-10: Mirror Self — the top face only
   return faces;
 }
 

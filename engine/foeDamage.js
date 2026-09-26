@@ -74,6 +74,26 @@ export function damageFoe(state, foe, rawDmg, source, rng, events) {
   // (0) A non-positive raw hit changes nothing — no draw, no mutation.
   if (!(rawDmg > 0)) return { applied: 0, soaked: false, mult: 1 };
 
+  // RULES-10 (Phase 75.1, foe-side Bubble): an armed mirror ward on the FOE
+  // (a fumbled Bubble) catches the WHOLE raw blow — before any multiplier or
+  // soak, mirroring the hero's own armed-mirror early return at the top of
+  // applyFoeDamageToPlayer. The catch is stored as `foe.rebound` ONLY for a
+  // blow thrown from the hero's side (melee, spell, item, or a reflect) —
+  // an ally- or foe-sourced catch is absorbed only, since this seam cannot
+  // tell which party member struck and a summon has no hit points to throw
+  // a rebound back at. The ward itself pops into a plain `popPool`-hp pool
+  // for the rest of this round (rounds: 1), never ticked down as an armed
+  // mirror. This module still draws nothing and still touches `foe.wp`
+  // nowhere on this branch — the catch is a full absorb, not a hit.
+  if (foe.ward && foe.ward.mirror) {
+    events.push({ type: "foeBubbleCaught", name: foe.name, amount: rawDmg });
+    if (source.kind === "melee" || source.kind === "spell" || source.kind === "item" || source.kind === "reflect") {
+      foe.rebound = rawDmg;
+    }
+    foe.ward = { name: foe.ward.name, pool: foe.ward.popPool, rounds: 1 };
+    return { applied: 0, soaked: true, mult: 1 };
+  }
+
   // (1) CANON-04: damage-source x creature-type multiplier.
   const mult = multiplierFor(source, foe);
   let dmg = mult === 1 ? rawDmg : Math.round(rawDmg * mult);
@@ -81,6 +101,27 @@ export function damageFoe(state, foe, rawDmg, source, rng, events) {
   // (2) CANON-03 (D-10): Sterling's halfDmg halves ALL damage the foe
   // takes, rounding UP, after the multiplier and before the soak.
   if (foe.sp && foe.sp.halfDmg) dmg = Math.ceil(dmg / 2);
+
+  // RULES-10 (Phase 75.1, foe-side Shield): a plain (or popped-Bubble) ward
+  // pool on the foe absorbs the smaller of the pool and the remaining
+  // damage — after the multiplier and halfDmg, before the natural-armor
+  // soak (a magical buffer, not skin; the armor die below only ever sees
+  // what gets past it), mirroring applyFoeDamageToPlayer's own
+  // ward-before-armor order. An emptied pool is removed with
+  // foeWardBroken; a blow the pool fully absorbs returns here with
+  // `soaked: true` and `applied: 0` — the caller skips its own damage
+  // event exactly like the natural-armor soak below.
+  if (foe.ward && foe.ward.pool > 0) {
+    const warded = Math.min(foe.ward.pool, dmg);
+    foe.ward.pool -= warded;
+    dmg -= warded;
+    events.push({ type: "foeWardSoaked", name: foe.name, amount: warded, left: foe.ward.pool });
+    if (foe.ward.pool <= 0) {
+      events.push({ type: "foeWardBroken", name: foe.name });
+      delete foe.ward;
+    }
+    if (dmg <= 0) return { applied: 0, soaked: true, mult };
+  }
 
   // (3) CANON-01 (D-05/D-06/D-07): natural-armor d20 soak. Mirrors the
   // canon player rule (rulebook p.44 "Using Armor") — no durability pool
