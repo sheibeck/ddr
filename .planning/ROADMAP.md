@@ -493,7 +493,7 @@ Plans:
   2. No player-facing string still encodes roll-under phrasing ("1–N", "need N", "natural 1", "−3 on to-hit") — a doc-synced test pins that none remains.
   3. Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why, while staying sarcastic and family-friendly.
 
-**Plans**: 6/13 plans executed
+**Plans**: 9/13 plans executed
 
 Plans:
 **Wave 1**
@@ -510,9 +510,9 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 79-07-PLAN.md — Run the narrative pass over the combat screen's own copy: chips and their tap descriptions, the long-press foe card, the combat menu, YOUR LOT and the foe cards, and mazeworld.html's condition and combat copy (VOX-05)... (wave 3)
-- [ ] 79-08-PLAN.md — Run the narrative pass over the powers: every Oracle and rail line a spell, ability, foe ability or scroll event produces (VOX-05), fixing the roll-under phrases the scan assigns here (ROLL-04) (wave 3)
-- [ ] 79-09-PLAN.md — Run the narrative pass over the panels a player reads between steps: the Hero tab, the Gear tab and its sheet, the store and loot comparisons, the Leaderboards panel and the final sheet (VOX-05), and clear any roll ph... (wave 3)
+- [x] 79-07-PLAN.md — Run the narrative pass over the combat screen's own copy: chips and their tap descriptions, the long-press foe card, the combat menu, YOUR LOT and the foe cards, and mazeworld.html's condition and combat copy (VOX-05)... (wave 3)
+- [x] 79-08-PLAN.md — Run the narrative pass over the powers: every Oracle and rail line a spell, ability, foe ability or scroll event produces (VOX-05), fixing the roll-under phrases the scan assigns here (ROLL-04) (wave 3)
+- [x] 79-09-PLAN.md — Run the narrative pass over the panels a player reads between steps: the Hero tab, the Gear tab and its sheet, the store and loot comparisons, the Leaderboards panel and the final sheet (VOX-05), and clear any roll ph... (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -655,7 +655,7 @@ Plans:
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 9/9 | Complete    | 2026-09-27 |
-| 79. Content & Narrative Pass | v2.1 | 6/13 | In Progress|  |
+| 79. Content & Narrative Pass | v2.1 | 9/13 | In Progress|  |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
