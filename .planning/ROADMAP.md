@@ -449,7 +449,7 @@ Plans:
 
   8. With a full bag, the find card keeps the found item and TAKE / LEAVE in view while the drop list scrolls inside the card.
 
-**Plans**: 7/9 plans executed
+**Plans**: 8/9 plans executed
 
 Plans:
 **Wave 1**
@@ -473,7 +473,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 78-08-PLAN.md — The stairs fade under the stairs sound, an instant cut with reduced motion (HUD-06); the full-bag find card keeps the loot in view with a scrolling drop list (HUD-09) (wave 5)
+- [x] 78-08-PLAN.md — The stairs fade under the stairs sound, an instant cut with reduced motion (HUD-06); the full-bag find card keeps the loot in view with a scrolling drop list (HUD-09) (wave 5)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -654,7 +654,7 @@ Plans:
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
-| 78. HUD, Dead State & Climb Decisions | v2.1 | 7/9 | In Progress|  |
+| 78. HUD, Dead State & Climb Decisions | v2.1 | 8/9 | In Progress|  |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
