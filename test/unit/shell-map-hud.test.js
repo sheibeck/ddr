@@ -513,7 +513,7 @@ test('(h) PERF addendum 2026-09-17: the party pulse is paused/hidden while the e
 // ─── (i) canvas: draw() region positive/negative pins ─────────────────────
 
 test("(i) draw(): reads the palette from window.__mzMapMarks and the marks from the PNG pipeline (v1.3 canon restored 2026-09-16); Phase 59 (ANIM-01, D-01) — the party is no longer drawn here at all; positionCanvas() last", () => {
-  const region = drawRegion();
+  let region = drawRegion();
   for (const needle of [
     "window.__mzMapMarks",
     "P.fog",
@@ -538,6 +538,19 @@ test("(i) draw(): reads the palette from window.__mzMapMarks and the marks from 
   // Phase 59 (ANIM-01, D-01): the party marker is the DOM sprite now — the
   // four needles below moved here from the must-include list above; draw()
   // must never read/paint the party again.
+  //
+  // Phase 78 (HUD-07): the heard-ripple block (from `const heard =` to its
+  // `ctx.restore();`) fades its three rings with globalAlpha. That block is
+  // not the party paint, so it is cut out before the needles below run; the
+  // party's own globalAlpha glow stays banned everywhere else in draw().
+  const heardStart = region.indexOf("const heard = ");
+  assert.notEqual(heardStart, -1, "draw() carries the HUD-07 heard ripple block");
+  const heardEnd = region.indexOf("ctx.restore();", heardStart);
+  assert.notEqual(heardEnd, -1, "the heard ripple block restores the context");
+  const heardBlock = region.slice(heardStart, heardEnd);
+  assert.ok(heardBlock.includes("P.heard") && heardBlock.includes("ctx.arc("), "the heard block strokes P.heard arcs");
+  assert.ok(!heardBlock.includes("P.party") && !heardBlock.includes("markForCell(") && !heardBlock.includes("drawFeatureIcon") && !heardBlock.includes("fillText"), "the heard block draws no glyph, icon or party paint");
+  region = region.slice(0, heardStart) + region.slice(heardEnd);
   for (const gone of [
     "getComputedStyle",
     "globalAlpha",

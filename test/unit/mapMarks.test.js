@@ -146,12 +146,41 @@ const OLD_MARKS_LEGEND = [
   { key: "party", name: "YOU", desc: "The party marker. Whatever is nearby has already noticed you." },
 ];
 
-test("MARKS_LEGEND: 9 rows, in order, byte-identical name/desc to the old mazeworld.html table (crevice and wall as rewritten in Phase 78)", () => {
-  assert.equal(MARKS_LEGEND.length, 9);
+// Phase 78 (HUD-07) re-pin: a tenth row, `heard`, is appended after the nine
+// moved rows (which stay byte-identical, as above).
+test("MARKS_LEGEND: the nine moved rows, in order, byte-identical name/desc to the old mazeworld.html table (crevice and wall as rewritten in Phase 78), then the HUD-07 heard row", () => {
+  assert.equal(MARKS_LEGEND.length, 10);
   assert.deepEqual(
-    MARKS_LEGEND.map((r) => ({ key: r.key, name: r.name, desc: r.desc })),
+    MARKS_LEGEND.slice(0, 9).map((r) => ({ key: r.key, name: r.name, desc: r.desc })),
     OLD_MARKS_LEGEND
   );
+  assert.equal(MARKS_LEGEND[9].key, "heard");
+});
+
+// Phase 78 (HUD-07, user ruling 2026-09-26, option A): the heard row explains
+// the ripple and names nothing; it is not a feature, so it has no glyph and
+// legendFor never answers it; the MARKS sheet draws its swatch as the ripple.
+test("HUD-07: the HEARD legend row explains Acute Hearing's ripple, names no feature, and carries the ripple swatch", () => {
+  const row = MARKS_LEGEND.find((r) => r.key === "heard");
+  assert.ok(row);
+  assert.equal(row.name, "HEARD");
+  assert.equal(row.swatch, "ripple");
+  assert.match(row.desc, /Acute Hearing/);
+  assert.match(row.desc, /three squares/);
+  assert.match(row.desc, /walls/);
+  for (const named of [/encounter/i, /monster/i, /foe/i, /trap/i, /chest/i, /box/i, /joiner/i, /faerie/i]) {
+    assert.doesNotMatch(row.desc, named, `the heard row must not name ${named}`);
+  }
+  assert.equal(MARK_GLYPHS.heard, undefined, "the ripple is never a glyph");
+  assert.equal(legendFor("heard"), null, "no feature resolves to the heard row");
+  assert.equal(MARKS_LEGEND.filter((r) => r.swatch).length, 1, "only the heard row draws a swatch instead of a PNG icon");
+});
+
+test("HUD-07: MAP_PALETTE.heard is a pale parchment hex, distinct from the encounter mark's colour and from the fog", () => {
+  assert.match(MAP_PALETTE.heard, /^#[0-9a-fA-F]{6}$/);
+  assert.notEqual(MAP_PALETTE.heard.toLowerCase(), MARK_GLYPHS.encounter.color.toLowerCase());
+  assert.notEqual(MAP_PALETTE.heard.toLowerCase(), MAP_PALETTE.fog.toLowerCase());
+  assert.ok(relLuminance(MAP_PALETTE.heard) > relLuminance(MAP_PALETTE.floor), "a pale tone reads over the fog");
 });
 
 // Phase 78 (CLIMB-02): the crevice and wall rows describe the pre-roll

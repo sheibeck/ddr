@@ -257,8 +257,11 @@ export const BRIDGE = Object.freeze({
   }),
   __mzMapView: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: draw — the render-window radius/visibility predicate)"]),
-    purpose: "Bridges the pure render-window read so draw() only paints the currently-visible window; missing bridge falls back to showing everything.",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: draw — the render-window radius/visibility predicate, and the heard ripple from heardSquares)",
+      "mazeworld.html (classic: inspectAt — whether a held square is heard)",
+    ]),
+    purpose: "Bridges the pure render-window read so draw() only paints the currently-visible window (a missing bridge falls back to showing everything), plus Acute Hearing's pure heardSquares read (Phase 78, HUD-07; a missing bridge draws no ripple).",
   }),
   __mzMemberConditionsOf: Object.freeze({
     owner: "mazeworld.html (module)",

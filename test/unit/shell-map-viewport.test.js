@@ -184,8 +184,12 @@ test("(e) inspectAt(): looks up the cell, builds the hold-inspect card, reports 
   const region = inspectAtRegion();
   assert.match(region, /window\.__mzControls\.screenToCell\(clientX, clientY, rect, \{ x: px, y: py \}, cameraPan\(\), CELL, CANVAS_PAD\)/);
   // 260919-00d: extended with an ethereal option (kept the legend closure
-  // literal intact) rather than rewritten.
-  assert.match(region, /inspectCell\(c, \(feat\) => M\.legendFor\(feat\), \{ ethereal: !!window\.__mzEther\?\.itemEffectActive\(S\.c, "ether"\) \}\)/);
+  // literal intact) rather than rewritten. Phase 78 (HUD-07): extended again
+  // with the heard flag (from window.__mzMapView.heardSquares), and a heard
+  // square shows no mark glyph.
+  assert.match(region, /inspectCell\(c, \(feat\) => M\.legendFor\(feat\), \{ ethereal: !!window\.__mzEther\?\.itemEffectActive\(S\.c, "ether"\), heard \}\)/);
+  assert.match(region, /view\.heardSquares\(S\)\.some\(\(h\) => h\.x === cell\.x && h\.y === cell\.y\)/);
+  assert.match(region, /const mark = !heard && c && c\.seen && c\.feat \? M\.markForCell\(c\) : null;/);
   assert.match(
     region,
     /window\.mzRailLine\?\.\(card\.title, card\.line, card\.tone, card\.hold, mark \? mark\.glyph : "[^"]*", mark \? mark\.key : null\);/,

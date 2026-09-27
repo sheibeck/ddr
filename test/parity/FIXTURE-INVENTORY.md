@@ -4654,3 +4654,46 @@ carve-out and no shell snapshot moved in 78-04. **The standing guards:**
   requires deep-equal next states and events, and probes TURN BACK once the
   same way. Measured: 44 pending hazards sampled, all 44 commits drew a die,
   one TURN BACK probe, zero differences.
+
+### Plan 78-09 — heardSquares (HUD-07): measured zero
+
+(Plan 09 — heardSquares, as the plan names it.)
+
+**The rule.** `engine/derived.js` gains `HEARING_RANGE` (3) and the pure
+read `heardSquares(state)`: for a hero with Acute Hearing (not dead), every
+cell within 3 squares of the party (Chebyshev, walls ignored) that holds an
+unresolved encounter dot (`feat === "dot"`) and that the map is not showing
+(not `seen`, or outside the dark view window), in row-major order. Ruled
+option A by the user on 2026-09-26 (78-CONTEXT "Rulings after planning").
+The shell draws a faint ripple on each square. Acute Hearing's `txt` in
+`content/skills.js` now states the ability; the engine never reads it.
+
+**Why no fixture can move.** `heardSquares` writes nothing to the state and
+draws no die. No action handler, event or save field calls or reads it; only
+the shell's `draw()` and hold card do. `content/skills.js` changes a display
+string only. Predicted moved set: zero.
+
+**The live scan (measured at this plan's base, `5d4292a1`).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail.**
+2. `git diff --quiet 5d4292a1 -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js`
+   exits 0. No site was reconciled and no carve-out was added.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node tools/fixture-inventory.mjs` replays the roster unchanged, and
+   `node --test test/parity/fixture-inventory.test.js` passes (5/5); the
+   generated roster block above is not edited.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Shell snapshots.** Only `test/unit/fixtures/shell-snapshots/thief.hero.txt`
+moved, deliberately: the fixture Thief has Acute Hearing, so its Hero tab
+shows the new text. Regenerated with
+`MZ_SNAPSHOT_UPDATE=1 node --test test/unit/shell-tab-snapshots.test.js`;
+the CRLF-only rewrites of the other snapshots were reverted.

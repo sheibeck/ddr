@@ -1232,6 +1232,57 @@ export function inViewWindow(state, x, y) {
 }
 
 /**
+ * HEARING_RANGE — HUD-07 (Phase 78, user ruling 2026-09-26, option A): how
+ * far Acute Hearing reaches, as a Chebyshev distance from the party (the
+ * same metric engine/maze.js#reveal and inViewWindow use). Walls are
+ * ignored: it is hearing, so it works through them.
+ */
+export const HEARING_RANGE = 3;
+
+/**
+ * heardSquares(state) — HUD-07 (Phase 78), Acute Hearing's "hear the next
+ * room" (Phase 72 finding F2's replacement, user 2026-09-24; RULED option A
+ * by the user 2026-09-26, 78-CONTEXT "Rulings after planning"). Returns
+ * `[{ x, y }]`, in row-major order (y, then x), for every cell within
+ * HEARING_RANGE of the party (walls ignored) that holds an UNRESOLVED
+ * encounter dot (`feat === "dot"`) and that the map is not currently showing
+ * (not `seen`, or `seen` but outside the dark view window, inViewWindow).
+ * The party's own square is never returned.
+ *
+ * Why only dots: a dot's contents are not decided until the party steps on
+ * it (engine/encounters.js#encounterDot draws its table and row then), so
+ * "something alive is there" cannot be known without peeking at the dice.
+ * The ruling hears every unresolved dot and never says what it is. Traps,
+ * chests, teleporters, climbs, gorges, one-way doors and the exit are
+ * silent. The original CONTEXT wording (the four adjacent squares) was
+ * unbuildable: those squares are always already revealed.
+ *
+ * Hero only: a party member's own Acute Hearing adds nothing. A hero without
+ * the skill, a dead hero (`state.dead`, or wp at or below 0) or a missing
+ * state/floor returns []. Pure: no rng, no mutation, safe on a frozen state.
+ */
+export function heardSquares(state) {
+  const c = state && state.c;
+  const f = state && state.floor;
+  if (!c || !f || !Array.isArray(f.g)) return [];
+  if (state.dead === true || (typeof c.wp === "number" && c.wp <= 0)) return [];
+  if (!skill(c, "Acute Hearing")) return [];
+  const out = [];
+  for (let y = f.py - HEARING_RANGE; y <= f.py + HEARING_RANGE; y++) {
+    const row = f.g[y];
+    if (!row) continue;
+    for (let x = f.px - HEARING_RANGE; x <= f.px + HEARING_RANGE; x++) {
+      const cell = row[x];
+      if (!cell || cell.feat !== "dot") continue;
+      if (x === f.px && y === f.py) continue;
+      if (cell.seen && inViewWindow(state, x, y)) continue;
+      out.push({ x, y });
+    }
+  }
+  return out;
+}
+
+/**
  * classNeed(c) — the class/race/sub part of the player's to-hit need (a
  * count of winning faces on the strike die — Phase 73, ROLL-05, the engine
  * reads the check roll-high via `atLeastFor(need, dieN)`), with NO weapon,

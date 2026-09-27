@@ -180,6 +180,11 @@ export const RAIL_COPY = Object.freeze({
   // the moment of entry; this is what a HOLD on a water tile answers).
   water: { title: "WATER", line: "Two squares a step, and your boots never dry. Wade, or go around." },
   empty: { title: "EMPTY CORRIDOR", line: "Walked, lit, and entirely uninteresting. Enjoy it." },
+  // Phase 78 (HUD-07, user ruling 2026-09-26, option A): the hold-inspect
+  // card for a square Acute Hearing picked up (engine/derived.js#
+  // heardSquares). It says something is there and names nothing: no
+  // feature, no foe, no hint of which.
+  heard: { title: "HEARD", line: "Something is there. Your ears are sure of that much and nothing else." },
   joiner: { title: "COMPANY", yes: "TAKE THEM ALONG", no: "LEAVE THEM" },
   find: {
     title: "SOMETHING WORTH TAKING",

@@ -57,8 +57,11 @@ test("import: the ./engine/derived.js import line carries mapViewRadius and inVi
 
 // ─── (2) the window.__mzMapView bridge ─────────────────────────────────────
 
-test("bridge: window.__mzMapView = { mapViewRadius, inViewWindow }; exactly once", () => {
-  assert.equal((CODE.match(/window\.__mzMapView = \{ mapViewRadius, inViewWindow \};/g) || []).length, 1);
+// Phase 78 (HUD-07): the bridge gained heardSquares (Acute Hearing's pure
+// read) alongside the two render-window reads; still assigned exactly once.
+test("bridge: window.__mzMapView = { mapViewRadius, inViewWindow, heardSquares }; exactly once", () => {
+  assert.equal((CODE.match(/window\.__mzMapView = \{ mapViewRadius, inViewWindow, heardSquares \};/g) || []).length, 1);
+  assert.equal((CODE.match(/window\.__mzMapView = /g) || []).length, 1);
 });
 
 // ─── (3) draw()'s 3x3 render filter — both continue sites ─────────────────

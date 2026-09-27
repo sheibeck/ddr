@@ -1727,6 +1727,9 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-legend-row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:2px solid #241f16}
 /* PNG legend rows restored 2026-09-16 UAT (user reversed Phase 35 decision 3). */
 .mw-legend-row img{width:34px;height:34px;object-fit:contain;flex:none}
+/* Phase 78 (HUD-07): the HEARD row's swatch is the map's own ripple (three
+   faint parchment rings on the fog), drawn in CSS, never a glyph or icon. */
+.mw-legend-ripple{width:34px;height:34px;flex:none;border-radius:4px;background:radial-gradient(circle,transparent 0 3px,rgba(230,217,176,.5) 3px 4.5px,transparent 4.5px 7.5px,rgba(230,217,176,.35) 7.5px 9px,transparent 9px 12px,rgba(230,217,176,.2) 12px 13.5px,transparent 13.5px),#0b0a08}
 .mw-legend-row-name{
   font-family:var(--disp);font-size:calc(0.4375rem * var(--mw-text-scale));width:104px;flex:none;
   color:#e6ddc6;line-height:1.5;letter-spacing:.04em;text-transform:uppercase;
@@ -3178,7 +3181,7 @@ function draw() {
   // Phase 40 (SPELL-05): floorSpell (a spell-revealed cell's "borrowed
   // sight" tint) mirrors src/browser/mapMarks.js#MAP_PALETTE.floorSpell —
   // same hex, so a missing module never paints an undefined fillStyle.
-  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", floorSpell: "#4e5a6a", water: "#2f5f7a", waterDark: "#1f3a4a", floorDarkLit: "#4f4531", waterDarkLit: "#2d4a57", border: "#443a26", party: "#f4dc94" };
+  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", floorSpell: "#4e5a6a", water: "#2f5f7a", waterDark: "#1f3a4a", floorDarkLit: "#4f4531", waterDarkLit: "#2d4a57", border: "#443a26", heard: "#e6d9b0", party: "#f4dc94" };
   // TERR-03 — a dark square without Night Vision/light/torch shows only the
   // 3x3 around the party; explored cells outside it are fogged at RENDER
   // time only (`seen` untouched) and return the moment the player steps off
@@ -3262,6 +3265,31 @@ function draw() {
       const img = key && iconMap[key];
       if (iconReady(img)) iconsApi.drawFeatureIcon(ctx, img, x * CELL, y * CELL, CELL, c.dir, 0.75);
     }
+  }
+
+  // Phase 78 (HUD-07, user ruling 2026-09-26, option A): Acute Hearing's
+  // heard squares (engine/derived.js#heardSquares: unresolved encounter
+  // dots within three squares, through walls, that the map is not showing)
+  // each get a faint ripple over the fog — three thin parchment rings,
+  // never the encounter glyph, colour or icon, so it never says what is
+  // there. It is re-read every paint, so it is gone on the next paint once
+  // the square is shown or its encounter resolves. No animation. A missing
+  // bridge draws nothing.
+  const heard = (view && typeof view.heardSquares === "function" && view.heardSquares(S)) || [];
+  if (heard.length) {
+    ctx.save();
+    ctx.strokeStyle = P.heard;
+    ctx.lineWidth = 1.5;
+    for (const h of heard) {
+      const cx = h.x * CELL + CELL / 2, cy = h.y * CELL + CELL / 2;
+      for (let i = 1; i <= 3; i++) {
+        ctx.globalAlpha = 0.5 - 0.12 * i;
+        ctx.beginPath();
+        ctx.arc(cx, cy, CELL * 0.13 * i, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 
   // Phase 59 (ANIM-01, D-01): the party marker is the DOM sprite
@@ -6009,11 +6037,21 @@ function renderMarksLegend() {
   for (const row of M.MARKS_LEGEND) {
     const div = document.createElement("div");
     div.className = "mw-legend-row";
-    const img = document.createElement("img");
-    img.src = `./icons/optimized/${row.key}.png`;
-    img.alt = "";
-    img.setAttribute("aria-hidden", "true");
-    div.appendChild(img);
+    // Phase 78 (HUD-07): the HEARD row (swatch "ripple") draws the map's
+    // own ripple in CSS (.mw-legend-ripple); every feature row keeps its
+    // PNG icon.
+    if (row.swatch === "ripple") {
+      const sw = document.createElement("span");
+      sw.className = "mw-legend-ripple";
+      sw.setAttribute("aria-hidden", "true");
+      div.appendChild(sw);
+    } else {
+      const img = document.createElement("img");
+      img.src = `./icons/optimized/${row.key}.png`;
+      img.alt = "";
+      img.setAttribute("aria-hidden", "true");
+      div.appendChild(img);
+    }
     const name = document.createElement("span");
     name.className = "mw-legend-row-name";
     name.textContent = row.name;
@@ -6441,8 +6479,13 @@ function inspectAt(clientX, clientY) {
   // 260919-00d: while ethereal, a seen wall's hold-inspect card names the
   // fatal-end warning (RAIL_COPY.rockEther) instead of the plain SOLID ROCK
   // line — see tapStep.js#inspectCell's own doc comment for the full rule.
-  const card = window.__mzTapStep.inspectCell(c, (feat) => M.legendFor(feat), { ethereal: !!window.__mzEther?.itemEffectActive(S.c, "ether") });
-  const mark = c && c.seen && c.feat ? M.markForCell(c) : null;
+  // Phase 78 (HUD-07): a held square Acute Hearing picked up answers the
+  // HEARD card (something is there, nothing more) and shows no mark glyph,
+  // so a hold never names what waits there.
+  const view = window.__mzMapView;
+  const heard = !!(c && view && typeof view.heardSquares === "function" && view.heardSquares(S).some((h) => h.x === cell.x && h.y === cell.y));
+  const card = window.__mzTapStep.inspectCell(c, (feat) => M.legendFor(feat), { ethereal: !!window.__mzEther?.itemEffectActive(S.c, "ether"), heard });
+  const mark = !heard && c && c.seen && c.feat ? M.markForCell(c) : null;
   // No dispatch, no S mutation — a hold only reports, never moves.
   window.mzRailLine?.(card.title, card.line, card.tone, card.hold, mark ? mark.glyph : "·", mark ? mark.key : null);
 }
@@ -6898,6 +6941,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // so the pinned lines above stay byte-identical; the dispatch audioCtx's
   // onWater reads the engine's own wading rule (moveCost) below.
   import { moveCost } from "./engine/derived.js";
+  // Phase 78 (HUD-07) — a SEPARATE import line (same module, same
+  // precedent) so the pinned lines above stay byte-identical; Acute
+  // Hearing's heard squares, bridged below on window.__mzMapView.
+  import { heardSquares } from "./engine/derived.js";
   // Phase 57 (LAYOUT-06) — a SEPARATE import line (same module, same
   // precedent as the two above) so the pinned `conditionsOf, hasTool,
   // mapViewRadius, inViewWindow` import line stays byte-identical for
@@ -6986,7 +7033,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // everything" via the `!view` guard at draw()'s own call site, so the map
   // never goes blank if this module somehow failed to load). Read-only, no
   // rng, no mutation — same bridge pattern as __mzConditionsOf.
-  window.__mzMapView = { mapViewRadius, inViewWindow };
+  // Phase 78 (HUD-07): heardSquares rides the same bridge — draw() strokes
+  // the heard ripple from it and inspectAt() asks it whether a held square
+  // is heard. Pure, no rng; a missing bridge draws no ripple.
+  window.__mzMapView = { mapViewRadius, inViewWindow, heardSquares };
 
   // Phase 57 (LAYOUT-06), DARK-02 (Phase 76) — bridges the engine's OWN
   // inDark/revealRadius/mapViewRadius reads and its one darkWaiver predicate

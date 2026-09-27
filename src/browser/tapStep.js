@@ -97,12 +97,19 @@ export function resolveStep(pos, target, isOpen) {
  * unaffected by the flag. The module stays pure — `opts` is a plain
  * argument, never read from any ambient state.
  *
+ * Phase 78 (HUD-07, user ruling 2026-09-26, option A): `opts.heard === true`
+ * (the held square is one engine/derived.js#heardSquares returns for a hero
+ * with Acute Hearing) answers `RAIL_COPY.heard` — something is there, and
+ * nothing more — BEFORE every other branch, so neither the fog's UNWALKED
+ * card nor a seen-but-dark square's legend row can name what waits there.
+ *
  * @param {{seen?:boolean, wall?:boolean, feat?:string|null}|null|undefined} cell
  * @param {(feat: unknown) => {name:string, desc:string}|null} legendFor
- * @param {{ethereal?: boolean}} [opts]
+ * @param {{ethereal?: boolean, heard?: boolean}} [opts]
  * @returns {{title:string, line:string, tone:"dull"|"odd", hold:number}}
  */
 export function inspectCell(cell, legendFor, opts = {}) {
+  if (cell && opts && opts.heard === true) return { title: RAIL_COPY.heard.title, line: RAIL_COPY.heard.line, tone: "odd", hold: RAIL_HOLD.mark };
   if (!cell) return { title: RAIL_COPY.rock.title, line: RAIL_COPY.rock.line, tone: "dull", hold: RAIL_HOLD.dull };
   if (!cell.seen) return { title: RAIL_COPY.unwalked.title, line: RAIL_COPY.unwalked.line, tone: "dull", hold: RAIL_HOLD.dull };
   if (cell.wall) {
