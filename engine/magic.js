@@ -540,8 +540,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // doubling, so a heal2x Summoner rolling 5 restores 5 (doubled to 10,
     // then halved). No new rng draw.
     const healed = applyCasterHealMul(c.sub, amt);
+    const before = c.wp;
     c.wp = Math.min(c.maxWP, c.wp + healed);
-    events.push({ type: "healed", amount: healed, spell: sp.n, ...(healed !== amt ? { halved: true } : {}) });
+    // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+    // actually added after the clamp to max (additive, zero draws).
+    events.push({ type: "healed", amount: healed, spell: sp.n, ...(healed !== amt ? { halved: true } : {}), gained: c.wp - before });
   } else if (sp.kind === "death") {
     // Phase 43 (CLAR-01, additive): DEATH_SPELL_FEE names the cause for the
     // narration; fixtures compare state, so this moves none. Value-identical
@@ -690,10 +693,13 @@ export function drinkPotion(state, rng, events = []) {
   c.potions--;
   let amt = 2 * rng.d(10) + 5; // roll:amount
   if (RACES[c.race].heal2x) amt *= 2;
+  const before = c.wp;
   c.wp = Math.min(c.maxWP, c.wp + amt);
   // Phase 25 (FEED-01, additive payload): narrate a heal2x race's double —
   // narration only, the doubling arithmetic above is untouched.
-  events.push({ type: "potionDrunk", amount: amt, remaining: c.potions, ...(RACES[c.race].heal2x ? { doubled: c.race } : {}) });
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+  // actually added after the clamp to max (additive, zero draws).
+  events.push({ type: "potionDrunk", amount: amt, remaining: c.potions, ...(RACES[c.race].heal2x ? { doubled: c.race } : {}), gained: c.wp - before });
   if (state.combat) afterPlayerAction(state, rng, events);
   return events;
 }

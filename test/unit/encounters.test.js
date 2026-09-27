@@ -270,7 +270,9 @@ test("encounterDot: a plain Table Four row (e.g. '+10 HP') applies directly, no 
   assert.equal(state.c.wp, 40 + expectedHeal);
   assert.ok(events.some((e) => e.type === "encounterRolled" && e.result === "+10 HP"));
   // The tableFour beat now carries a prose sentence, not the raw cell string.
-  assert.ok(events.some((e) => e.type === "tableFour" && new RegExp(`${expectedHeal} hp`).test(e.result)));
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): the number moved out of
+  // the prose into the additive signed `amount` (the builder prints it).
+  assert.ok(events.some((e) => e.type === "tableFour" && e.amount === expectedHeal && e.stat === "hp" && e.row === "+10 HP" && !/\d/.test(e.result)));
 });
 
 test("encounterDot: 'Store' opens the shop with plain-data stock", () => {

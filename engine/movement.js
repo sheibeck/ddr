@@ -928,7 +928,10 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
     if (R.heal2x || c.sub === "Soldier") heal *= 2;
     const before = c.wp;
     c.wp = Math.min(c.maxWP, c.wp + heal);
-    if (c.wp > before) events.push({ type: "rested", amount: c.wp - before, ...(doubledBy ? { doubled: doubledBy } : {}) });
+    // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` — the one
+    // field every gain event carries (additive, zero draws); `amount`
+    // already was the clamped value here.
+    if (c.wp > before) events.push({ type: "rested", amount: c.wp - before, ...(doubledBy ? { doubled: doubledBy } : {}), gained: c.wp - before });
 
     // DELIBERATE RULES CHANGE (audit-batch1, 2026-09-09, A3): resting used to
     // auto-cure any affliction unconditionally, no roll, every fed night.
@@ -1267,7 +1270,10 @@ export function descend(state, rng, events = []) {
   if (regen > 0) {
     const before = state.c.wp;
     state.c.wp = Math.min(state.c.maxWP, state.c.wp + regen);
-    if (state.c.wp > before) events.push(floorRegen(state.c.wp - before));
+    // VOX-05 (Phase 79, plan 79-02): floorRegen(amount) carries `gained`
+    // (= amount, already the clamped value) — see engine/events.js.
+    const gained = state.c.wp - before;
+    if (gained > 0) events.push(floorRegen(gained));
   }
   // Phase 41 (TERR-04/05): floor-bound phobia regions die with the floor —
   // Death (hp-based) and any still-pending c.fearArmed both survive.

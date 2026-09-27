@@ -1073,9 +1073,12 @@ export function killFoe(state, f, rng, events = []) {
   if (f.type === "Beasts" || f.type === "Lair Beasts") {
     if (skill(c, "Cooking")) {
       const fed = Math.max(1, Math.round(f.maxWP / 4));
+      const before = c.wp;
       c.wp = Math.min(c.maxWP, c.wp + fed);
       c.rations++;
-      events.push({ type: "cooked", wp: fed, rations: 1 });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+      // actually added after the clamp to max (additive, zero draws).
+      events.push({ type: "cooked", wp: fed, rations: 1, gained: c.wp - before });
     } else if (rng.d(6) >= 4) { // roll:already-high
       c.rations++;
       events.push({ type: "cooked", wp: 0, rations: 1 });
@@ -2101,7 +2104,10 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
       const heal = rng.d(8) + ally.lvl; // roll:amount
       const before = ally.wp;
       ally.wp = Math.min(ally.maxWP, ally.wp + heal);
-      events.push({ type: "memberSecondWind", name: ally.name, amount: ally.wp - before });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` (the
+      // member's HP actually added) and `rolled` (the heal before the clamp)
+      // — additive, zero draws. `amount` already was the clamped value.
+      events.push({ type: "memberSecondWind", name: ally.name, amount: ally.wp - before, rolled: heal, gained: ally.wp - before });
       return;
     }
     case "sweep": {
@@ -2927,8 +2933,11 @@ export function foeTurn(state, rng, events = []) {
       // weakness applies to its own Regeneration tick too, through the same
       // chart-driven helper — the draw itself is unchanged.
       const regen = applyCasterHealMul(c.sub, r);
+      const before = c.wp;
       c.wp = Math.min(c.maxWP, c.wp + regen);
-      events.push({ type: "regenerated", amount: regen, ...(regen !== r ? { halved: true } : {}) });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+      // actually added after the clamp to max (additive, zero draws).
+      events.push({ type: "regenerated", amount: regen, ...(regen !== r ? { halved: true } : {}), gained: c.wp - before });
     }
   }
   // RULES-10 (Phase 75.1, the reader's burn): a fumbled Acid or Ice landing

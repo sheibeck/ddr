@@ -289,6 +289,15 @@ export function tableFour(state, result, rng, events = []) {
   // now carries a prose sentence in the game's deadpan voice so the beat reads
   // as a line, not a stat token. E10: rows already narrated by another event
   // (the "wilmst cache" row → goldGained) do NOT also push a redundant beat.
+  //
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): every tableFour event
+  // carries additive `row` (the cell it dispatched on), `stat` ("hp",
+  // "maxHp", "xp" or "armor") and, for a numeric row, the signed `amount`
+  // the row ACTUALLY made (HERO_HP_SCALE / HERO_SP_SCALE-scaled, clamped for
+  // a heal). The `result` prose keeps the voice and loses its number — the
+  // narration builder appends the signed amount (src/browser/rollRange.js
+  // #signedText). The heal row also carries its scaled heal as `rolled`, so
+  // a capped heal can say so. Zero draws; events are never serialized.
   switch (result) {
     // DELIBERATE RULES CHANGE (Phase 54, USER RULING D, amended by USER
     // RULING G 2026-09-21): the flat HP dots (DOT_HP_BASE) are scaled ONCE
@@ -297,20 +306,22 @@ export function tableFour(state, result, rng, events = []) {
     // XP dots ride HERO_SP_SCALE like kills.
     case "+10 HP": {
       const n = dotHpFor("small");
+      const before = c.wp;
       c.wp = Math.min(c.maxWP, c.wp + n);
-      events.push({ type: "tableFour", result: `The maze, for once, gives something back. ${n} hp.` });
+      const gained = c.wp - before;
+      events.push({ type: "tableFour", result: "The maze, for once, gives something back.", row: result, stat: "hp", amount: gained, rolled: n, gained });
       break;
     }
     case "-10 HP": {
       const n = dotHpFor("small");
       c.wp -= n;
-      events.push({ type: "tableFour", result: `Something unseen takes its cut — ${n} hp, gone.` });
+      events.push({ type: "tableFour", result: "Something unseen takes its cut.", row: result, stat: "hp", amount: -n });
       break;
     }
     case "+10 XP": {
       const n = heroSpFor(10);
       c.sp += n;
-      events.push({ type: "tableFour", result: `You are, marginally, wiser for the ordeal. ${n} experience.` });
+      events.push({ type: "tableFour", result: "You are, marginally, wiser for the ordeal.", row: result, stat: "xp", amount: n });
       checkLevel(state, rng, events);
       break;
     }
@@ -318,20 +329,20 @@ export function tableFour(state, result, rng, events = []) {
       const n = dotHpFor("large");
       c.maxWP += n;
       c.wp += n;
-      events.push({ type: "tableFour", result: `A rare kindness — you come away tougher. +${n} to your health, for keeps.` });
+      events.push({ type: "tableFour", result: "A rare kindness — you come away tougher, for keeps.", row: result, stat: "maxHp", amount: n, gained: n });
       break;
     }
     case "+25 XP": {
       const n = heroSpFor(25);
       c.sp += n;
-      events.push({ type: "tableFour", result: `A hard lesson, and you actually learned it. ${n} experience.` });
+      events.push({ type: "tableFour", result: "A hard lesson, and you actually learned it.", row: result, stat: "xp", amount: n });
       checkLevel(state, rng, events);
       break;
     }
     case "-15 HP": {
       const n = dotHpFor("mid");
       c.wp -= n;
-      events.push({ type: "tableFour", result: `The maze extracts a toll you did not agree to. ${n} hp.` });
+      events.push({ type: "tableFour", result: "The maze extracts a toll you did not agree to.", row: result, stat: "hp", amount: -n });
       break;
     }
     case "wilmst cache":
@@ -352,7 +363,7 @@ export function tableFour(state, result, rng, events = []) {
       c.ar = 0;
       c.armorWP = 0;
       c.armorMax = 0;
-      events.push({ type: "tableFour", result: "Your armour sloughs off in useless flakes. Whatever you were wearing, you no longer are." });
+      events.push({ type: "tableFour", result: "Your armour sloughs off in useless flakes. Whatever you were wearing, you no longer are.", row: result, stat: "armor" });
       break;
     default:
       events.push({ type: "tableFourNoop", result });
@@ -370,8 +381,11 @@ export function findFood(state, rng, events = []) {
   // paths together, per 04.1-CONTEXT.md).
   const c = state.c;
   const f = FOODS[rng.d(6) - 1]; // roll:amount
+  const before = c.wp;
   c.wp = Math.min(c.maxWP, c.wp + f.wp);
-  events.push({ type: "foodFound", name: f.n, wp: f.wp });
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+  // actually added after the clamp to max (additive, zero draws).
+  events.push({ type: "foodFound", name: f.n, wp: f.wp, gained: c.wp - before });
   return events;
 }
 
@@ -485,7 +499,9 @@ export function meetFaerie(state, rng, events = []) {
     const a = rng.d(20); // roll:amount
     c.maxWP += a;
     c.wp += a;
-    events.push({ type: "faerieBoon", amount: a });
+    // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` — the HP the
+    // raise added to current HP (additive, zero draws).
+    events.push({ type: "faerieBoon", amount: a, gained: a });
   } else if (gift === "-d10 Base HP") {
     const a = rng.d(10); // roll:amount
     c.maxWP = Math.max(5, c.maxWP - a);

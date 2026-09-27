@@ -829,7 +829,9 @@ test("move: dot/trap/chest feature tiles are consumed and dispatch to the real e
     // Phase 54 (BAND-02, USER RULING D): the flat "+10 HP" dot is now
     // dotHpFor("small", maxWP) — a fraction of the hero's own maxWP, not a
     // flat 10 — so the narrated number moves with maxWP.
-    assert.ok(events.some((e) => e.type === "tableFour" && /hp/.test(e.result)));
+    // VOX-05 (Phase 79, plan 79-02): the number left the prose for the
+    // additive `stat`/`amount` fields; already at max, the heal gains 0.
+    assert.ok(events.some((e) => e.type === "tableFour" && e.stat === "hp" && e.amount === 0));
     assert.equal(state.c.wp, 55, "the +10 HP row healed toward the cap (already at max)");
   }
   // trap: nimble = 5 (no Agility/Leaping skill, not an Acrobat); a dodge roll

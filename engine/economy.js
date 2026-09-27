@@ -221,7 +221,12 @@ export const STORE_EFFECTS = {
     // PURE HP healing — the old silent `c.rations++` side effect is removed.
     // Rations are bought separately via the dedicated buyRations effect below.
     const c = state.c;
+    const before = c.wp;
     c.wp = Math.min(c.maxWP, c.wp + params.wp);
+    // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): the meal's real HP
+    // gain rides on the purchase's own `bought` event as `gained` (buyFrom
+    // merges a returned field object) — additive, zero draws.
+    return { gained: c.wp - before };
   },
   buyRations(state, params, events) {
     // DELIBERATE RULES CHANGE (04.1-03, RATION-01): the dedicated, visible
@@ -598,9 +603,14 @@ export function buyFrom(state, idx, events = []) {
   }
   state.c.gold -= item.cost;
   item.sold = true;
-  events.push({ type: "bought", item: item.n, cost: item.cost });
+  const boughtEvent = { type: "bought", item: item.n, cost: item.cost };
+  events.push(boughtEvent);
   const effect = STORE_EFFECTS[item.effectId];
-  if (effect) effect(state, item.effectParams, events);
+  // VOX-05 (Phase 79, plan 79-02): an effect may return additive fields for
+  // the purchase event (eatRation's `gained`); every other effect returns
+  // nothing and the event is unchanged.
+  const extra = effect ? effect(state, item.effectParams, events) : null;
+  if (extra && typeof extra === "object") Object.assign(boughtEvent, extra);
   return events;
 }
 
