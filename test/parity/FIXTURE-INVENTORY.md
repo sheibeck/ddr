@@ -4774,8 +4774,9 @@ is found or bought, and a store row into `state.store`, so a reworded item
 reaches serialized state. The reworded items are Lockpicks, the Crystal
 Staff, the Cloak of Invisibility, the Anklet of Invisibility (already in
 `REWORDED_TXT_ITEMS` since 260918-w4n) and the Invisible potion. A foe's
-`sp.note` rides in a live fight's state (Bat/Rat, Viper, Zit, Stink Bug,
-Pogo, Trachea). The leap labels never reach state (only
+`sp.note` rides in a live fight's state (Zit, Stink Bug, Pogo, Trachea;
+none is a fixture-exposed row, and the fixture-exposed Bat/Rat and Viper
+notes were left byte-identical under Phase 18's D-14 rule). The leap labels never reach state (only
 `src/browser/rollOdds.js#gapText` reads them, for the climb card).
 
 **The live scan (measured at this plan's base, `d39625ee`).**

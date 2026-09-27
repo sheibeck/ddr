@@ -39,9 +39,9 @@
 export const BESTIARY = {
   "Beasts": [
     [
-      { n: "Bat/Rat", sz: "T", i: 1, wp: 1, sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 }, note: "two attacks, 1 hp each" } },
+      { n: "Bat/Rat", sz: "T", i: 1, wp: 1, sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 }, note: "two attacks, 1 wp each" } },
       { n: "Shriek", sz: "T", i: 1, wp: 3, sp: { shriek: true, note: "a scream deafens; half damage after" } },
-      { n: "Viper", sz: "S", i: 1, wp: 3, sp: { poison: true, note: "venom: 2 hp a round for d10 rounds" } },
+      { n: "Viper", sz: "S", i: 1, wp: 3, sp: { poison: true, note: "venom: 2 wp a round for d10 rounds" } },
     ],
     [
       { n: "Cave Bear", sz: "L", i: 4, wp: 25, sp: { dmg: { n: 1, sides: 8, bonus: 0 }, disease: true, note: "rabid — d8, and the bite carries it" } },
