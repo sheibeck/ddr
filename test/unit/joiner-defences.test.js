@@ -21,7 +21,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { foeSwingVsHero, foeDie, foeToHitVs, foeToHitBreakdown } from "../../engine/derived.js";
+import { foeSwingVsHero, foeDie, foeToHitVs, foeToHitBreakdown, PARTY_WIDE_ITEM_EFFECTS } from "../../engine/derived.js";
+import { ACTIVATION_OF, STAVES, JEWELRY, CLOAKS } from "../../content/index.js";
 import { foeTurn } from "../../engine/combat.js";
 import { startEffect } from "../../engine/effects.js";
 import { setDialsForTuning, DIALS } from "../../engine/difficulty.js";
@@ -189,6 +190,30 @@ test("zero new draws: every Joiner and hero decoration draws the same count on t
     counts.add(memberSwing(partyState(body, PLAIN_BODY)).draws);
   }
   assert.deepEqual([...counts], [2]);
+});
+
+test("tolerant load: a Joiner sheet with no race row reads as a blank body (the foe's base die, 5 faces), never the hero's, and never throws", () => {
+  const dwarfHero = BODIES.find((b) => b.name === "Dwarven");
+  const s = partyState(dwarfHero, PLAIN_BODY);
+  delete s.party[0].race;
+  let swing;
+  assert.doesNotThrow(() => {
+    swing = memberSwing(s);
+  });
+  const plain = memberSwing(partyState(PLAIN_BODY, PLAIN_BODY));
+  assert.deepEqual({ faces: swing.faces, dieN: swing.dieN }, { faces: 5, dieN: plain.dieN });
+});
+
+test("PARTY_WIDE_ITEM_EFFECTS names only real activations whose own content text covers the party (today: the Crystal Staff)", () => {
+  const rows = [...STAVES, ...JEWELRY, ...CLOAKS];
+  assert.ok(PARTY_WIDE_ITEM_EFFECTS.length >= 1);
+  for (const key of PARTY_WIDE_ITEM_EFFECTS) {
+    assert.ok(ACTIVATION_OF[key], `${key} is an activation key`);
+    const row = rows.find((r) => r.n === key);
+    assert.ok(row, `${key} is a treasure row`);
+    assert.match(row.txt, /\bparty\b|\bjoiner|\beveryone\b|your side/i, `${key}'s own text must say it covers the party: "${row.txt}"`);
+  }
+  assert.ok(!PARTY_WIDE_ITEM_EFFECTS.includes("Cloak of Invisibility"), "the Cloak says 'invisible' for you alone");
 });
 
 test('foeToHitVs(state, "member", sheet) and its breakdown agree for every body, and a missing sheet reads as a blank body', () => {

@@ -4758,3 +4758,77 @@ Prediction: **zero moved fixtures, zero moved state pins.**
 (`test/unit/fixtures/event-order/default-fold-corpus.json`) was regenerated
 as a declared change (`MZ_REGEN_EVENT_ORDER_CORPUS=1`): two recorded `rested`
 events gained the additive `gained: 2`; every recorded line is byte-identical.
+
+### Joiner defences (user ruling 2026-09-27)
+
+Quick fix 79-02b, base `90fa443e`. The ruling (79-CONTEXT.md, "Rulings after
+planning"): when a foe swings at a Joiner, only that Joiner's OWN race, size,
+class/sub-class and worn gear count; none of the hero's personal defences
+protect it; effects the content calls party-wide stay party-wide.
+
+**The rule.** `engine/derived.js#foeToHitVs(state, vs, sheet)` and
+`#foeToHitBreakdown` read every personal term from the body being swung at
+(the hero's sheet for `vs === "hero"`, the Joiner's own `sheet` for
+`vs === "member"`): race trait (`raceFoeToHit`), the Acrobat override, the
+Guard −1, size (`sizeAxisStep`), gear (`eff(body, "foeToHit")`), Thief
+evasion, Sidestep, Smoke, Mirror Self and invisibility. Party-wide terms:
+Battle Roar (the hero's or any live member's) and a hero-held
+`PARTY_WIDE_ITEM_EFFECTS` invisibility (the Crystal Staff). The member branch
+of `engine/combat.js#foeTurn` now reads `foeSwingVsMember(state, f, sheet)`
+(the same blind / Weaken cap / insult-last chain as `foeSwingVsHero`) and
+`foeDie(sheet, f)` (the Joiner's own `foeStrikeStep`). Zero new draws; every
+draw keeps its position.
+
+Removed from a Joiner's odds (the hero's, before): the Acrobat override, the
+Guard −1, gear `foeToHit`, Mirror Self, Cloak/potion invisibility, and the
+hero's race `foeStrikeStep` on the foe die. Also resolved: ROLL-LEDGER O2 (the
+member's Sidestep now sits before the Weaken cap, as the hero's does).
+
+**The predictor.** No parity replay carries a party (the member branch never
+runs on a fixture), so zero moved fixtures. The state pins move only where a
+Joiner is swung at while either body carries a changed term: a Dwarven
+Joiner (its own foe die), a Joiner beside an Acrobat or Guard hero, or a
+Joiner of those sub-classes.
+
+**The live scan (measured at base `90fa443e`, then after the fix).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+2. `git diff --quiet 90fa443e -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js`
+   exits 0. No site was reconciled and no carve-out was added.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node tools/fixture-inventory.mjs --json` is byte-identical before and
+   after; the generated roster block above is not edited.
+5. State pins (`test/unit/roll-high-state-pins.test.js`, 8 labels): **one
+   moved**, `party-fighter-knight` (below). The other seven re-measured
+   byte-identical (the solo and deep runs never take the member branch;
+   `party-1`'s Joiner carries no term this fix moves).
+6. The pre-switch save (`roll-high-save-compat.test.js`): **its `expected`
+   moved** (below); only `expected` was re-recorded, never `save` or
+   `dispatched`.
+7. `bot-tactics.test.js` (its measured `playRun` seeds),
+   `foe-turn-draw-count.test.js` and `test/determinism/**` pass unchanged.
+
+#### Moved set — declared records
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| `test/unit/roll-high-state-pins.test.js` | `party-fighter-knight`, seed 606 | Human Fighter/Knight; Joiner Hilda Stonecut, Dwarven Fighter/Woodsman | the pinned final state | bot step 99 (first divergence: Ned's swing at Hilda) | foe die d20 (the hero's race) → d12 (her own Dwarven `foeStrikeStep`), atLeast 17 → 9; depth 3 → 4 at 400 actions; hash `a5f8ac7c…` → `4f38e357…` | the Joiner's own foe die (`foeDie(sheet, f)`) |
+| `test/unit/fixtures/roll-high/pre-switch-save.json` `expected` | the save's continuation, 300 dispatched actions | Elven Thief/Acrobat; Joiner Denn of Ash Alley, Wilmsry Magic User/Apprentice | `expected` | dispatched index 98 (first divergence: Drekk's swing at Denn) | the hero's Acrobat override no longer shields Denn: faces 3 → 5 (atLeast 18 → 16), the same roll 17 now lands (4 damage); depth 4 → 3; hash `70f1de84…` → `ab8b28cb…` | the hero's Acrobat stays on the hero |
+
+Both traced live against an extracted base tree (`git archive 90fa443e`),
+diffing each step's events until the first divergence.
+
+**Re-pinned unit rows (declared).**
+- `test/unit/feedback-payload.test.js`, "the member branch … carries mods
+  too": it pinned the HERO's Guard −1 on the member's swing (the leak). The
+  member is now the Guard (same −1, same draws, same atLeast 17), and a Guard
+  hero's plain member is pinned mod-free (atLeast 16).
+- `test/unit/hero-size-rules.test.js`: the `sizeAxisStep(` caller audit drops
+  `combat.js#foeTurn` (a Joiner's size now reads through `foeToHitVs(state,
+  "member", sheet)`); the audited set is derived.js alone.
+
+**Wider informational sweep (not pinned).** 24 extra forced party runs
+(seeds 9000–9023, Acrobat/Guard/Knight/Illusionist heroes across all six
+races, 400 actions): 13 moved, 11 byte-identical. Balance is Phase 79.1's to
+measure (user ruling: no bot balance runs here).

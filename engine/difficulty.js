@@ -811,9 +811,10 @@ export function foeAccuracyFor() {
 
 /**
  * classEvasionFor(c) — CLASS_MITIGATION.Thief.evasion, subtracted from the
- * foe's to-hit need ONLY for `vs === "hero"` (the hero's own body, never a
- * party member) and ONLY for a Thief (engine/derived.js#foeToHitVs/
- * #foeToHitBreakdown). Identity: 0 (canon). Direction: up = the Thief is
+ * foe's to-hit need for the body being swung at, ONLY when that body is a
+ * Thief (engine/derived.js#foeToHitVs/#foeToHitBreakdown): the hero's own,
+ * or — Phase 79 quick fix 79-02b, user ruling 2026-09-27 — a Thief Joiner's
+ * own; a Thief hero's evasion never covers a Joiner. Identity: 0 (canon). Direction: up = the Thief is
  * harder to hit (the foe lands on fewer faces); the first candidate manual
  * notch is +1. Phase 72, ROLL-01 (d), user ruling 2026-09-24 — a positive
  * evasion value now makes the Thief harder to hit, not easier.

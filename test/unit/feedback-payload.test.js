@@ -284,10 +284,15 @@ test("foeTurn: struckByFoe carries mods on a landed hit against a Guard hero", (
   assert.deepEqual(struck.mods, [{ name: "Guard", delta: -1 }]);
 });
 
-test("foeTurn: the member branch (memberStruck + its miss) carries mods too — the hero's own passives still apply", () => {
+// Phase 79 quick fix 79-02b (user ruling 2026-09-27, "Joiners use only their
+// own defences"): re-pinned. This row used to pin the HERO's Guard −1 on the
+// member's swing ("the hero's own passives still apply") — the leak the
+// ruling removes. The member is now the Guard (the same −1, the same draws,
+// the same atLeast 17), and a Guard hero's plain member carries no mod.
+test("foeTurn: the member branch (memberStruck + its miss) carries mods too — the member's OWN passives, never the hero's", () => {
   const foeHit = fixedFoe({ lvl: 1, wp: 30 });
   const allyHit = fixedAlly({ wp: 12, maxWP: 20 });
-  const hitState = fixedState({ c: { sub: "Guard" }, party: [fixedMember({ wp: 12 })] });
+  const hitState = fixedState({ party: [fixedMember({ wp: 12, sub: "Guard" })] });
   hitState.combat = fixedCombat([foeHit], { allies: [allyHit] });
   // pick d(2)=2 -> member; mFaces = 4 (Guard), atLeast = 17; raw draw 3 mirrors
   // to roll 18 (>=17) hits; dmg die d6 = 4.
@@ -298,12 +303,20 @@ test("foeTurn: the member branch (memberStruck + its miss) carries mods too — 
 
   const foeMiss = fixedFoe({ lvl: 1, wp: 30 });
   const allyMiss = fixedAlly({ wp: 12, maxWP: 20 });
-  const missState = fixedState({ c: { sub: "Guard" }, party: [fixedMember({ wp: 12 })] });
+  const missState = fixedState({ party: [fixedMember({ wp: 12, sub: "Guard" })] });
   missState.combat = fixedCombat([foeMiss], { allies: [allyMiss] });
   // pick d(2)=2 -> member; raw draw 5 mirrors to roll 16 (<17) misses.
   const evMiss = foeTurn(missState, fakeRng([2, 5]), []);
   const missed = evMiss.find((e) => e.type === "foeMissed" && e.member);
   assert.deepEqual(missed.mods, [{ name: "Guard", delta: -1 }]);
+
+  // A Guard HERO's plain member: faces 5, atLeast 16, no mod (raw 3 -> 18 hits).
+  const heroGuard = fixedState({ c: { sub: "Guard" }, party: [fixedMember({ wp: 12 })] });
+  heroGuard.combat = fixedCombat([fixedFoe({ lvl: 1, wp: 30 })], { allies: [fixedAlly({ wp: 12, maxWP: 20 })] });
+  const evPlain = foeTurn(heroGuard, fakeRng([2, 3, 4]), []);
+  const plainHit = evPlain.find((e) => e.type === "memberStruck");
+  assert.equal(plainHit.atLeast, 16);
+  assert.equal(plainHit.mods, undefined);
 });
 
 test("flee: pursuitStrike's foeMissed carries mods for a Guard hero (module-private, exercised via flee)", () => {

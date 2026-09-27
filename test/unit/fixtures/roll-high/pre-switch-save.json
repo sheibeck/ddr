@@ -3643,7 +3643,7 @@
   "expected": {
     "actions": 300,
     "dead": false,
-    "depth": 4,
-    "hash": "70f1de8454f85da41a4853e5bb89dd990e7e9f30163ec64edcae05617f5d59c2"
+    "depth": 3,
+    "hash": "ab8b28cba4cfd0a3552985e9088718ab3bdb2f328239a56a305c4a869dbb03b5"
   }
 }
