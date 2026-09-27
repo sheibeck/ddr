@@ -39,6 +39,7 @@ import { conditionsOf, memberConditionsOf } from "../../engine/derived.js";
 import { DURATION_ROUNDS } from "../../engine/abilities.js";
 import { ABILITY_BY_ID } from "../../content/abilities.js";
 import { ACTIVATION_OF } from "../../content/activations.js";
+import { SCROLL_FUMBLE } from "../../content/scroll-fumbles.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { stripHtml } from "../../tools/ident-sweep.mjs";
 
@@ -218,7 +219,9 @@ test("chipSheetFacts: every lasts and source phrase", () => {
   assert.deepEqual(f({ key: "might", polarity: "good", remaining: 5, cadence: "squares", source: "Strength", might: 8 }), { lasts: "5 squares left", source: "from Strength", detail: "" });
   assert.deepEqual(f({ key: "ward", polarity: "good", pool: 0, name: "Bubble", mirror: true }).lasts, "until the next blow lands");
   assert.deepEqual(f({ key: "staffCharges", polarity: "good", item: "Oak Staff", charges: 2, max: 5, remaining: 9 }), { lasts: "2 of 5 charges left", source: "from Oak Staff", detail: "" });
-  assert.deepEqual(f({ key: "affliction", polarity: "bad", kind: "Poison" }), { lasts: "until something cures it", source: "from the dungeon's hospitality", detail: "" });
+  // VOX-05 (79-07): an affliction also runs out on its own (engine/movement.js
+  // counts c.affliction.left down), so its "how long" says so.
+  assert.deepEqual(f({ key: "affliction", polarity: "bad", kind: "Poison" }), { lasts: "until it runs its course or something cures it", source: "from the dungeon's hospitality", detail: "" });
   assert.deepEqual(f({ key: "nightVision", polarity: "good" }), { lasts: "for the rest of this fight", source: "from your own eyes", detail: "" });
   assert.deepEqual(f({ key: "afraid", polarity: "bad", remaining: 2, phobia: "Crowds" }).lasts, "2 more rounds");
   assert.deepEqual(f({ key: "heroOut", polarity: "bad", kind: "sleep", remaining: 1 }).source, "from a fumbled scroll");
@@ -540,12 +543,12 @@ const LABEL_RULES = Object.freeze({
   staffCharges: "names the recharging staff",
 });
 
-// House style: one capitalised word, a hyphen allowed. The one exception
-// keeps a label a user ruling already shipped.
+// House style: one capitalised word, a hyphen allowed. VOX-05 (79-07): the
+// last exception, heroOut's two-word "Can't act", became one word per kind
+// (Asleep/Stupefied/Maddened, "Helpless" as the fallback), so no label is
+// exempt any more; the map stays so a future ruling has one place to go.
 const ONE_WORD = /^[A-Z][a-z]+(?:-[A-Za-z][a-z]*)?$/;
-const LABEL_STYLE_EXEMPT = Object.freeze({
-  heroOut: "RULES-10 (Phase 75.1) shipped \"Can't act\", pinned by shell-combat-actions.test.js; a Phase 79 copy pass may shorten it",
-});
+const LABEL_STYLE_EXEMPT = Object.freeze({});
 
 test("(f) shell guard: every table key has a CONDITION_COPY label (or a documented label rule) and a CONDITION_EXPLAIN sentence of its own", () => {
   const labels = copyLabels();
@@ -569,6 +572,15 @@ test("(f) shell guard: every fight chip has a CONDITION_TONE, and every static f
     assert.match(label, ONE_WORD, `${e.key}'s label "${label}" is not one capitalised word`);
   }
   for (const [kind, label] of stringMap("FOE_EFFECT_LABEL")) assert.match(label, ONE_WORD, `FOE_EFFECT_LABEL.${kind}`);
+  // VOX-05 (79-07): heroOut's per-kind labels cover every kind a fumble can
+  // set (content/scroll-fumbles.js "out" rows, plus Noxious Vapor's asleep)
+  // and each is one word.
+  const kindsMatch = /heroOut:\s*\{[^}]*kinds:\s*(\{[^}]*\})/.exec(shellLiteral("CONDITION_COPY"));
+  assert.ok(kindsMatch, "CONDITION_COPY.heroOut carries a kinds map");
+  const heroOutKinds = new Map([...kindsMatch[1].matchAll(/(\w+):\s*"([^"]*)"/g)].map((m) => [m[1], m[2]]));
+  const fumbleKinds = new Set(["asleep", ...Object.values(SCROLL_FUMBLE).filter((r) => r.effect === "out").map((r) => r.kind)]);
+  assert.deepEqual([...heroOutKinds.keys()].sort(), [...fumbleKinds].sort());
+  for (const [kind, label] of heroOutKinds) assert.match(label, ONE_WORD, `CONDITION_COPY.heroOut.kinds.${kind}`);
   // CONDITION_TONE stays a subset of the CONDITION_COPY keys plus affliction.
   for (const key of tones.keys()) assert.ok(labels.has(key) || key === "affliction", `CONDITION_TONE.${key} has no CONDITION_COPY row`);
   assert.equal(labels.get("darkness"), "Dark", "CMBUI-13: 'In the dark' became one word");
