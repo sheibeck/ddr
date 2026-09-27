@@ -33,6 +33,7 @@ export * from "./tools.js";
 export * from "./misc-tables.js";
 export * from "./flee.js";
 export * from "./flavor.js";
+export * from "./identity.js";
 export * from "./epitaphs.js";
 export * from "./names.js";
 export * from "./season.js";

@@ -109,7 +109,7 @@ test("chart (deliberate): the engine reads schoolBonus only in the thrown-spell 
   // derived.js defines it; magic.js (the hero's thrown branch) and combat.js
   // (a member's thrown cast) are the only readers. A new reader means the
   // footer's BONUS_SCHOOLS rule has to be revisited.
-  assert.deepEqual(readers, { "combat.js": 2, "derived.js": 1, "magic.js": 2 });
+  assert.deepEqual(readers, { "combat.js": 1, "derived.js": 1, "magic.js": 1 });
   assert.deepEqual([...THROWN_SCHOOLS], ["offense"]);
   // Summoner divination +4 changes no roll, so it is not claimed.
   assert.ok(!identityFooter("sub", "Summoner").good.some((t) => /divination/.test(t)));
@@ -188,7 +188,7 @@ test("coverage: a scratch RACES field nobody phrased is reported", () => {
   assert.deepEqual(unphrasedRaceFields(scratch), ["zapFactor"]);
 });
 
-test("race lines: the size signature reads the engine's net truth (Dwarven +2 kept, one face harder; Elven 2 less damage, no size face line; Troll +9 and 2 more, one face easier)", () => {
+test("race lines: the size signature reads the engine's net truth (Dwarven +2 kept, one face harder; Elven 2 less damage, no size face line; Troll +11 with 2 of it for being large, one face easier)", () => {
   const dwarven = identityFooter("race", "Dwarven");
   assert.ok(dwarven.good.includes("+2 damage with every weapon"));
   assert.ok(dwarven.good.includes("being small makes you one face harder to hit"));
@@ -199,8 +199,8 @@ test("race lines: the size signature reads the engine's net truth (Dwarven +2 ke
   assert.ok(elven.bad.includes("foes land on one face more against you"));
   assert.ok(elven.bad.includes("60% of the usual HP, at every level"));
   const troll = identityFooter("race", "Troll");
-  assert.ok(troll.good.includes("+9 damage with every weapon"));
-  assert.ok(troll.good.includes("being large adds 2 damage"));
+  assert.ok(troll.good.includes("+11 damage with every weapon (2 of it for being large)"));
+  assert.ok(!troll.good.some((t) => t.startsWith("being large adds")), "the size share joins the damage line");
   assert.ok(troll.bad.includes("being large makes you one face easier to hit"));
 });
 
