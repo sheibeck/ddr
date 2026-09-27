@@ -228,6 +228,22 @@ test("(f) viewport region: the four Phase 33 pan/pinch literals are byte-intact"
   assert.match(region, /zoom = clampZoom\(pinch\.zoom \* \(d \/ pinch\.dist\)\); fit\(\); anchorCamOnParty\(pinch\.pan\); positionCanvas\(\);/);
 });
 
+// Phase 78 (HUD-02, the user's 2026-09-26 ruling: "You can look at the map
+// where you died, but every map tap, mark and camp action is inert"): the
+// pan gate was `if (!S || hasActiveEncounter()) return;` and is now
+// `if (!S || (hasActiveEncounter() && !deadMapLookOnly())) return;` — the one
+// exception is the dead map with the death card put aside, where a drag or a
+// pinch may start (camera only). tapStep keeps its own encounter gate and
+// inspectAt bails while dead, so a tap or a hold there still acts on nothing.
+test("(f) HUD-02: the pan gate lets only a look start on the put-aside dead map; tapStep and inspectAt stay shut while dead", () => {
+  const region = viewportRegion();
+  assert.match(region, /if \(!S \|\| \(hasActiveEncounter\(\) && !deadMapLookOnly\(\)\)\) return;/);
+  assert.doesNotMatch(region, /if \(!S \|\| hasActiveEncounter\(\)\) return;/);
+  assert.match(sliceBetween(CODE, "function deadMapLookOnly()", "(function initMazeViewportControls()"), /return !!\(S && S\.dead && mwDeadMapAside\);/);
+  assert.match(tapStepRegion(), /if \(!S \|\| hasActiveEncounter\(\)\) return;/);
+  assert.match(inspectAtRegion(), /if \(!S \|\| S\.dead\) return;/);
+});
+
 test("(f) pointermove sub-region never recenters or keeps in view (no per-tick reset)", () => {
   const region = pointermoveRegion();
   assert.doesNotMatch(region, /mzCenterMap/);

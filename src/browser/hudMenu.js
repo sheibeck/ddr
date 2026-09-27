@@ -170,9 +170,14 @@ const QUIT_ROW_IDS = Object.freeze({ saveQuit: "mw-menu-save-quit", abandon: "mw
  * SAVE & QUIT and ABANDON / NEW CHARACTER (the 70-03 quit-row ids).
  *
  * ctx is { encounter, dead, hero } (D-08, planner ruling R-A):
- *   - MARKS, SETTINGS, SAVE & QUIT and ABANDON are always enabled;
- *   - CENTRE MAP is disabled only while an over-map encounter covers the
- *     map (ctx.encounter strictly true) — there is no visible map to centre;
+ *   - SETTINGS, SAVE & QUIT and ABANDON are always enabled — the way back
+ *     to the title never closes, dead or alive (HUD-02's no-trap rule);
+ *   - MARKS is disabled while the hero is dead (ctx.dead strictly true).
+ *     Phase 78 (HUD-02, the user's words: "once the hero is dead ... camp,
+ *     marks and centre-map are inert");
+ *   - CENTRE MAP is disabled while an over-map encounter covers the map
+ *     (ctx.encounter strictly true) — there is no visible map to centre —
+ *     and, from Phase 78 (HUD-02), while the hero is dead;
  *   - MAKE CAMP, the one engine-refused row, is enabled only with a hero
  *     (ctx.hero strictly true) who is not dead and not mid-encounter. Its
  *     short-on-food dim (Phase 25.1 DFB-06) is a separate shell state and
@@ -186,8 +191,8 @@ export function hudMenuRowStates(ctx) {
   const dead = flag(ctx, "dead") === true;
   const hero = flag(ctx, "hero") === true;
   const enabled = {
-    marks: true,
-    centre: !encounter,
+    marks: !dead,
+    centre: !encounter && !dead,
     camp: hero && !dead && !encounter,
     settings: true,
     saveQuit: true,
