@@ -67,6 +67,8 @@ import { identityLine, identityParts, counterSlots } from "../../../src/browser/
 import { hudMenuNext, hudMenuRowStates } from "../../../src/browser/hudMenu.js";
 import { REDUCED_MOTION_QUERY, prefersReducedMotion, createPanelMotion } from "../../../src/browser/motion.js";
 import { createCameraGlide } from "../../../src/browser/cameraGlide.js";
+// Phase 78 (HUD-06) — the REAL stairs fade controller, wired below.
+import { createStairsFade } from "../../../src/browser/stairsFade.js";
 import { createTypewriter, typeDurationMs } from "../../../src/browser/typewriter.js";
 // Phase 59 (ANIM-01/02) — the REAL party-sprite controller (wired below),
 // and (only when a caller opts into `stubDraw: false`) what the REAL
@@ -227,6 +229,20 @@ function wireBridges(context, { dressing = null } = {}) {
     raf: (fn) => w.requestAnimationFrame(fn),
     cancelRaf: (id) => w.cancelAnimationFrame(id),
     reduced: () => prefersReducedMotion(w),
+  });
+  // Phase 78 (HUD-06) — the REAL stairs fade, built exactly as the module
+  // script builds it: setPhase writes #mw-fade's data-phase, timed by this
+  // sandbox's own scheduler (the fake clock when given, else the inert
+  // never-firing default) and the live reduced-motion predicate. Classic
+  // draw() and renderRail() read it; shell-stairs-fade.test.js drives it.
+  w.__mzStairsFade = createStairsFade({
+    setPhase: (phase) => {
+      const el = w.document.getElementById("mw-fade");
+      if (el) el.dataset.phase = phase;
+    },
+    reduced: () => prefersReducedMotion(w),
+    schedule: (fn, ms) => w.setTimeout(fn, ms),
+    cancel: (id) => w.clearTimeout(id),
   });
   // Phase 58 (MOTION-02) — the REAL panel-close helper, driven by this
   // sandbox's own scheduler (the fake clock's setTimeout/clearTimeout when

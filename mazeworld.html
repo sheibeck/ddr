@@ -518,6 +518,20 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-arrow-btn[data-step="S"]{grid-row:3;grid-column:2}
 .mw-arrow-btn[data-step="W"]{grid-row:2;grid-column:1}
 
+/* Phase 78 (HUD-06, user 2026-09-24): the stairs descent's fade to black.
+   A body-level, fixed, full-screen black layer over everything (the HUD,
+   the map, the rail, the arrow pad, the tab bar, the sheets at 55): at
+   rest it is transparent and lets every tap through; while a phase runs
+   ("out": about 0.6s to black under the stairs sound; "in": about 0.4s
+   back) it takes every tap and drag, so nothing walks in the dark. The
+   module script's window.__mzStairsFade (src/browser/stairsFade.js) writes
+   data-phase and owns the timing; a reduced-motion player never leaves
+   "idle" (an instant cut), and the blanket reduced-motion rule zeroes the
+   transitions besides. */
+.mw-fade{position:fixed;inset:0;z-index:60;background:#000;opacity:0;pointer-events:none;transition:none}
+.mw-fade[data-phase="out"]{opacity:1;pointer-events:auto;transition:opacity .6s ease-in}
+.mw-fade[data-phase="in"]{opacity:0;pointer-events:auto;transition:opacity .4s ease-out}
+
 /* Device-review revision #5: the encounter/feature-event panel as an
    OVER-MAP OVERLAY — absolutely positioned inside .mazebox (DR5: moved from
    .mw-maze-viewport, which only covered the canvas, to .mazebox itself —
@@ -2259,6 +2273,9 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
   </div>
 </div>
 
+<!-- Phase 78 (HUD-06): the stairs fade layer (see the .mw-fade CSS). -->
+<div class="mw-fade" id="mw-fade" data-phase="idle" aria-hidden="true"></div>
+
 <div id="app" class="mw-app">
   <h1 class="sr-only" id="mw-title">Delve, Die, Repeat</h1>
 
@@ -3123,6 +3140,10 @@ window.mzPartyShown = partyShown;
 // cell — draw() never throws even if a module somehow failed to load.
 function draw() {
   if (!S) return;
+  // Phase 78 (HUD-06): while the stairs fade darkens, the canvas keeps the
+  // OLD floor (and positionCanvas() below keeps the marker where it was);
+  // the fade's dark point draws the new floor and centres on it.
+  if (window.__mzStairsFade?.holding?.()) return;
   const { g } = S.floor;
   const size = CELL * GW;
   const M = window.__mzMapMarks;
@@ -5618,8 +5639,24 @@ function renderRail() {
   // Phase 71 (D-10, R-14; D-16, R-28): the combat cards (the foe card and
   // the status-chit card) are the one exception to "combat hides the rail";
   // every other card stays hidden in combat, as before (the v1.4 ruling).
-  railEl.hidden = !!((S.combat && !combatCardUp) || S.dead) || idle;
+  // Phase 78 (HUD-06): while the stairs fade runs, every card waits (the
+  // FLOOR n card, and any other card from the same dispatch), so the fade
+  // joins the one hidden predicate. Its branch below returns before the
+  // isNew bookkeeping, forgetting the shown key and any running hold or
+  // typing, so the fade's onDone re-render shows the card as new: its rise,
+  // announcement and full hold all start after the fade-in.
+  const fadeUp = !!window.__mzStairsFade?.active?.();
+  railEl.hidden = !!((S.combat && !combatCardUp) || S.dead) || idle || fadeUp;
   railEl.dataset.shown = railEl.hidden ? "0" : "1";
+  if (fadeUp) {
+    if (railEl.dataset.over) delete railEl.dataset.over;
+    lastRailKeyShown = "";
+    clearTimeout(railTimer);
+    railTimer = null;
+    window.__mzTypewriter?.cancel?.("rail");
+    window.mzSyncArrowPad?.();
+    return;
+  }
   // Phase 71 (R-14): over the combat screen the rail rises to the overlay's
   // z-index (the #mw-rail[data-over="combat"] CSS) and its bottom edge is
   // lifted to the top of the action area, measured now, so it never covers
@@ -6711,6 +6748,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // the math.
   import { prefersReducedMotion, onReducedMotionChange, createPanelMotion } from "./src/browser/motion.js";
   import { createCameraGlide } from "./src/browser/cameraGlide.js";
+  // Phase 78 (HUD-06) — the stairs descent's fade to black, bridged below as
+  // window.__mzStairsFade.
+  import { createStairsFade } from "./src/browser/stairsFade.js";
   // Phase 58 (MOTION-04/05) — the typed-text effect (D-13/D-14): rail cards,
   // the encounter overlay's line, and (Plan 58-06) fight-log rows type
   // themselves on at 12ms/char, capped at 700ms/block. Bridged below as
@@ -8039,6 +8079,24 @@ window.__mzClassicBoot = async function classicBoot() {
     cancelRaf: (id) => cancelAnimationFrame(id),
     reduced: () => prefersReducedMotion(window),
   });
+  // Phase 78 (HUD-06, user 2026-09-24: "taking the stairs down should feel
+  // like a descent, not a hard cut") — the stairs fade. setPhase writes
+  // #mw-fade's data-phase (its CSS transitions do the darkening); the
+  // reduced predicate is the shared one, so a reduced-motion player gets an
+  // instant cut (the controller never shows black) while the stairs clip
+  // still plays at dispatch. dispatchWithNarration starts it on every
+  // floorChanged dispatch; window.move refuses while active(); classic
+  // draw() holds the old floor while holding(); classic renderRail keeps
+  // the rail hidden while active().
+  window.__mzStairsFade = createStairsFade({
+    setPhase: (phase) => {
+      const el = document.getElementById("mw-fade");
+      if (el) el.dataset.phase = phase;
+    },
+    reduced: () => prefersReducedMotion(window),
+    schedule: (fn, ms) => setTimeout(fn, ms),
+    cancel: (id) => clearTimeout(id),
+  });
   // Phase 59 (ANIM-01/02) — the ONE party-marker controller: its idle loop
   // is pure CSS (see mazeworld.html's own .mw-party-sprite rules above);
   // this instance owns the retargetable step glide (ANIM-02, wired in Plan
@@ -8115,6 +8173,7 @@ window.__mzClassicBoot = async function classicBoot() {
     panelMotion.finishAll();
     typewriter.completeAll();
     beatRunner.hurry();
+    window.__mzStairsFade?.cancel?.(); // Phase 78 (HUD-06): a mid-fade flip lands on the new floor at once
   }
   // Phase 58 (MOTION-02, D-08) — the ONE shared, timer-driven panel close
   // helper every hidden-based D-05 close (the MARKS/Settings/camp sheets,
@@ -8453,6 +8512,27 @@ window.__mzClassicBoot = async function classicBoot() {
     } else {
       playForDispatch(action.type, result.events, audioCtx);
     }
+    // Phase 78 (HUD-06): a floor change fades to black under the stairs
+    // clip (just played above, from sfx.js's floorChanged -> stairs cue),
+    // swaps the new floor in while it is dark, then fades in. This is the
+    // shell's ONE dispatch call site, so it covers GO DOWN and every other
+    // floorChanged path (RULES-12's exit tile resumed after a fight or a
+    // loot pile). Started BEFORE the rail card push below, so renderRail
+    // keeps the FLOOR card hidden until the fade-in ends (onDone re-renders
+    // it, and its hold counts from then). S takes the new state now so the
+    // dark-point draw and centre read the new floor even on the reduced-
+    // motion instant cut, which runs both callbacks right here; every
+    // caller sets the same state again straight after.
+    if (result.events.some((e) => e.type === "floorChanged") && window.__mzStairsFade) {
+      window.__mzState.set(result.state);
+      window.__mzStairsFade.start(
+        () => {
+          window.draw?.();
+          window.mzCenterMap?.();
+        },
+        () => window.renderRail?.(),
+      );
+    }
     window.__mzCombatMenu = null;
     let lines = [];
     if (wasCombat || inCombat) {
@@ -8509,6 +8589,11 @@ window.__mzClassicBoot = async function classicBoot() {
     // through — re-assert the encounter/feature-overlay gate here too, so
     // no move can ever register while it's up, even from a call site that
     // forgets its own check.
+    // Phase 78 (HUD-06): nothing walks while the stairs fade runs — the
+    // keyboard, a queued tap-step and the arrow pad all funnel through
+    // here. hasActiveEncounter() is left alone (it also decides whether
+    // the encounter overlay shows).
+    if (window.__mzStairsFade?.active?.()) return;
     if (hasActiveEncounter()) return;
     // Phase 32 (CMBUI-05, design §6.3 rule 2): the ONE dismiss-settle guard —
     // a step that arrives within DISMISS_SETTLE_MS of the overlay closing
@@ -8679,7 +8764,10 @@ window.__mzClassicBoot = async function classicBoot() {
     // event types (moved/floorChanged/teleported), so this remains the
     // single shell hook.
     const jumped = events.some((e) => e.type === "floorChanged" || e.type === "teleported");
-    if (jumped) window.mzCenterMap?.();
+    // Phase 78 (HUD-06): a floor change centres at the fade's dark point
+    // (dispatchWithNarration's onDark), so only a teleport centres here.
+    const descended = events.some((e) => e.type === "floorChanged");
+    if (jumped && !descended) window.mzCenterMap?.();
     else if (events.some((e) => e.type === "moved")) window.mzKeepPartyInView?.();
     // Phase 59 (ANIM-02, D-03): the marker glide starts in the SAME tick as
     // the camera nudge above, with the same ~200ms ease-out — marker and

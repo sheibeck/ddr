@@ -255,8 +255,11 @@ test("(f) pointermove sub-region never recenters or keeps in view (no per-tick r
 });
 
 // Phase 67 (D-09): closeAccountSheet() is the 8th mzKeepPartyInView site.
-test("(f) camera call sites: mzCenterMap is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 10 (Phase 67: the account sheet's close; Phase 78 HUD-08: the arrow pad's place changing and a Movement/Pad settings write)", () => {
-  assert.equal((CODE.match(/window\.mzCenterMap\?\.\(\)/g) || []).length, 4);
+// Phase 78 (HUD-06, 78-08): mzCenterMap 4 -> 5 — a floor change centres at
+// the stairs fade's dark point (dispatchWithNarration's onDark); stepWith's
+// branch now centres only a teleport.
+test("(f) camera call sites: mzCenterMap is 5 (boot, 2 new-run paths, stepWith's teleported branch, the stairs fade's dark point — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 10 (Phase 67: the account sheet's close; Phase 78 HUD-08: the arrow pad's place changing and a Movement/Pad settings write)", () => {
+  assert.equal((CODE.match(/window\.mzCenterMap\?\.\(\)/g) || []).length, 5);
   assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 10);
 });
 
@@ -476,11 +479,15 @@ test("(m) keepPartyInView() reads the controls bridge fresh inside its own funct
   assert.equal((region.match(/const C = window\.__mzControls;/g) || []).length, 1);
 });
 
-test("(m) stepWith(): floorChanged/teleported centre; a plain moved keeps the party in view; in that order", () => {
+// Phase 78 (HUD-06, 78-08): re-pinned — a floor change centres at the
+// stairs fade's dark point instead (shell-stairs-fade.test.js), so only a
+// teleport centres here; `jumped` still gates the marker glide.
+test("(m) stepWith(): a teleport centres; a plain moved keeps the party in view; in that order", () => {
   const region = stepWithRegion();
   const order = [
     'e.type === "floorChanged" || e.type === "teleported"',
-    "if (jumped) window.mzCenterMap?.();",
+    'const descended = events.some((e) => e.type === "floorChanged");',
+    "if (jumped && !descended) window.mzCenterMap?.();",
     'else if (events.some((e) => e.type === "moved")) window.mzKeepPartyInView?.();',
   ];
   let cursor = -1;

@@ -277,9 +277,11 @@ test("(c) a shown rail card lifts the pad above the card's resting top edge; the
   assert.equal(r.keeps.length, 2, "the lift changing re-runs keep-in-view (the pad is an edge)");
 });
 
-test("(c) the classic renderRail (both exits after its data-shown write) and renderEncounter re-sync the pad, always optional-chained", () => {
+test("(c) the classic renderRail (all three exits after its data-shown write) and renderEncounter re-sync the pad, always optional-chained", () => {
   const rail = sliceBetween(CODE, "function renderRail() {", "function syncRailLive(text)");
-  assert.equal(count(rail, "window.mzSyncArrowPad?.();"), 2);
+  // Phase 78 (HUD-06, 78-08): the stairs fade's hold branch is a third exit
+  // after the data-shown write (was 2), and it re-syncs the pad too.
+  assert.equal(count(rail, "window.mzSyncArrowPad?.();"), 3);
   const shownAt = rail.indexOf('railEl.dataset.shown = railEl.hidden ? "0" : "1";');
   assert.ok(shownAt !== -1 && rail.indexOf("window.mzSyncArrowPad?.();") > shownAt, "the syncs follow the data-shown write");
   assert.match(rail.trimEnd(), /window\.mzSyncArrowPad\?\.\(\);\s*\}$/);

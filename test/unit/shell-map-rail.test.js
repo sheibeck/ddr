@@ -493,7 +493,9 @@ test("(o) 2026-09-17 UAT ruling (reverses the 2026-09-16 map-tab-only rule): sho
   // Phase 71 (D-10, R-14; D-16, R-28): the combat card kinds (the
   // long-press foe card and the status-chit card) are the only combat-legal
   // cards; every other card still hides while combat owns the screen.
-  assert.match(region, /railEl\.hidden = !!\(\(S\.combat && !combatCardUp\) \|\| S\.dead\) \|\| idle;/);
+  // Phase 78 (HUD-06, 78-08): the stairs fade joins the same predicate
+  // (`|| fadeUp`): a card waits under black and shows after the fade-in.
+  assert.match(region, /railEl\.hidden = !!\(\(S\.combat && !combatCardUp\) \|\| S\.dead\) \|\| idle \|\| fadeUp;/);
   assert.doesNotMatch(region, /mwActiveTab !== "maze"/);
   assert.doesNotMatch(region, /panelUp/);
 });

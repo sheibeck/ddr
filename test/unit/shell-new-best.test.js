@@ -201,7 +201,9 @@ test("RUN-04: .cb-over-best-head, .cb-over-best-row and .cb-over-best-quip CSS r
 test("RUN-04: the rail-hidden-while-dead predicate is unchanged verbatim", () => {
   // Phase 71 (D-10, R-14; D-16, R-28): the combat half gained the combat
   // card kinds' exception; S.dead still hides the rail unconditionally.
-  const hits = CODE.match(/railEl\.hidden = !!\(\(S\.combat && !combatCardUp\) \|\| S\.dead\) \|\| idle;/g) || [];
+  // Phase 78 (HUD-06, 78-08): the stairs fade adds `|| fadeUp` (a card waits
+  // under black); the dead half is unchanged.
+  const hits = CODE.match(/railEl\.hidden = !!\(\(S\.combat && !combatCardUp\) \|\| S\.dead\) \|\| idle \|\| fadeUp;/g) || [];
   assert.equal(hits.length, 1);
 });
 
