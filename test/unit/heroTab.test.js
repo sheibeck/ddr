@@ -16,6 +16,9 @@ import url from "node:url";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { BANNED } from "../../content/safety-wordlist.js";
 import * as heroTab from "../../src/browser/heroTab.js";
+import { footerLines } from "../../src/browser/identityFooter.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
+import { newRun } from "../../engine/state.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -209,6 +212,42 @@ test("paintConditions( is still called from paint() (the HUD condition strip sta
 });
 
 // ─── (11) voice safety of the copy moved into heroTab.js ─────────────────
+
+// ─── (12) VOX-04 (Phase 79, Plan 03): the dossier's identity footer ──────
+
+function renderDossier(sub, race) {
+  const { document } = createRecordingDocument();
+  const state = newRun(1, [], { force: { sub, race } });
+  heroTab.renderHeroTab(document.getElementById("screen-hero"), state, {});
+  const [raceSec, classSec, subSec] = document.getElementById("doss").children;
+  const rules = (sec) => sec.children.filter((el) => el.className === "doss-rules").map((el) => el.textContent);
+  return { race: rules(raceSec), cls: rules(classSec), sub: rules(subSec) };
+}
+
+test("VOX-04: a level-1 Human Summoner's dossier shows the neutral race line and the Summoner footer (half-strength healing), and the Class section none", () => {
+  const d = renderDossier("Summoner", "Human");
+  assert.deepEqual(d.race, footerLines("race", "Human"));
+  assert.equal(d.race.length, 1);
+  assert.deepEqual(d.cls, []);
+  assert.deepEqual(d.sub, footerLines("sub", "Summoner"));
+  assert.ok(d.sub.some((l) => /healing spells you cast heal at half strength/.test(l)));
+});
+
+test("VOX-04: a non-Human race's section carries its Good and Bad lines", () => {
+  const d = renderDossier("Knight", "Troll");
+  assert.deepEqual(d.race, footerLines("race", "Troll"));
+  assert.match(d.race[0], /^Good: /);
+  assert.match(d.race[1], /^Bad: /);
+  assert.deepEqual(d.sub, footerLines("sub", "Knight"));
+});
+
+test("VOX-04: the dossier footer is built with createElement + textContent from footerLines (no innerHTML in the footer)", () => {
+  const region = sliceBetween(HERO_STRIPPED, "function appendFooter(", "\n}");
+  assert.match(region, /createElement\("p"\)/);
+  assert.match(region, /\.textContent = /);
+  assert.doesNotMatch(region, /innerHTML/);
+  assert.ok((HERO_STRIPPED.match(/footerLines\(/g) || []).length >= 1);
+});
 
 test("Voice: the moved copy clears the family-friendly safety wordlist", () => {
   const bannedRe = BANNED.map((term) => new RegExp("\\b" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i"));

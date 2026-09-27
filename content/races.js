@@ -31,7 +31,10 @@ export const RACES = {
     // RULES-11 (Phase 75.2, Plan 04): states the net truth under the size
     // rule — the masked face axis leaves "easy to hit" exactly as it was;
     // the damage axis is NOT masked, so being small also costs 2 damage.
-    note: "Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit, and being small costs it 2 damage.",
+    // ROLL-04 (Phase 79, Plan 03): the strike die scales with level, so the
+    // to-hit floor speaks in faces (test/unit/identity-footer.test.js pins it
+    // to this row's own toHit).
+    note: "Strikes a die better and lands on its top five faces whatever the class — but thin-boned and easy to hit, and being small costs it 2 damage.",
   },
   "Dwarven": {
     // armorWear: fraction of a soaked blow charged to armour durability,

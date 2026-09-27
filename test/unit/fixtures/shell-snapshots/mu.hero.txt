@@ -126,10 +126,16 @@
   html=""
   <section>
     html="<h3>Race</h3><p class=\"who\">Human</p><p>No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable.</p>"
+    <p class="doss-rules">
+      text="No advantages and no disadvantages: every other race is measured against this one."
   <section>
-    html="<h3>Class</h3><p class=\"who\">Magic User</p><p>Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.</p>"
+    html="<h3>Class</h3><p class=\"who\">Magic User</p><p>Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and only your top three faces to hit — 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.</p>"
   <section>
-    html="<h3>Subclass</h3><p class=\"who\">Wizard</p><p>Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. Two wizards in a party fight each other; there is only one of you, which helps.</p>"
+    html="<h3>Subclass</h3><p class=\"who\">Wizard</p><p>Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.</p>"
+    <p class="doss-rules">
+      text="Good: every school of magic from level 1; your thrown offense spells land on three more faces."
+    <p class="doss-rules">
+      text="Bad: won't swing a weapon while a castable attack spell and a charge remain."
 ## #hero-party
 <div id="hero-party">
 ## #hero-party-list

@@ -33,6 +33,7 @@ import { heroHitOdds } from "./rollOdds.js";
 // formatter (src/browser/rollRange.js) the SIZE row's detail clauses read.
 import { heroSize, sizeDamage, SIZE_FACES_PER_STEP } from "../../engine/derived.js";
 import { signedText, playerDelta, ROLLERS } from "./rollRange.js";
+import { footerLines } from "./identityFooter.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
 // script keeps for the HUD's own wp readout (mazeworld.html's copy stays,
@@ -455,6 +456,18 @@ function skillTable(cls) {
   return cls === "Fighter" ? FIGHTER_SKILLS : cls === "Thief" ? THIEF_SKILLS : null;
 }
 
+// VOX-04 (Phase 79, Plan 03) — one `p.doss-rules` paragraph per footer line
+// under a dossier note, createElement + textContent only (the lines are
+// generated text and never parsed as markup).
+function appendFooter(doc, sec, lines) {
+  for (const line of lines) {
+    const p = doc.createElement("p");
+    p.className = "doss-rules";
+    p.textContent = line;
+    sec.appendChild(p);
+  }
+}
+
 // Phase 38 (ABIL-01/04) — the Hero-tab abilities list, mirroring the
 // s-skills block's position immediately above (special skills stays
 // passives-only, byte-identical). createElement/textContent only — T-38-11
@@ -742,13 +755,17 @@ export function renderHeroTab(host, state, deps = {}) {
   doc.getElementById("doss-who").textContent = `${c.race} ${c.sub}`;
   const doss = doc.getElementById("doss");
   doss.innerHTML = "";
-  for (const [label, who, text] of [
-    ["Race", c.race, RACE_NOTE[c.race]],
-    ["Class", c.cls, CLASS_NOTE[c.cls]],
-    ["Subclass", c.sub, SUB_NOTE[c.sub]]
+  // VOX-04 (Phase 79, Plan 03): the Race and Subclass notes each end with
+  // the mechanical footer (identityFooter.js#footerLines); the Class note
+  // carries none (VOX-04 names sub-classes and races).
+  for (const [label, who, text, footer] of [
+    ["Race", c.race, RACE_NOTE[c.race], footerLines("race", c.race)],
+    ["Class", c.cls, CLASS_NOTE[c.cls], []],
+    ["Subclass", c.sub, SUB_NOTE[c.sub], footerLines("sub", c.sub)]
   ]) {
     const sec = doc.createElement("section");
     sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
+    appendFooter(doc, sec, footer);
     doss.appendChild(sec);
   }
 
