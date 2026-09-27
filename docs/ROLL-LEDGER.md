@@ -883,3 +883,66 @@ control deliberately outside the rule.
 - **The card's odds.** The pre-roll climb card (78-03) reads `src/browser/rollOdds.js#hazardOddsText`, which formats `engine/movement.js#hazardOdds` through `rollRange.js`'s range format. `hazardOdds` takes its winning faces from `climbFacesFor` / `leapFacesFor`, the same helpers the roll itself calls, so the card and the roll can never disagree on a face, a penalty (Heights, Bodies of water, armour bulk) or the die.
 - **No new check site.** The climb, climb fall-avoid and leap checks keep their rows above (sites 40, 41 and 42, and their Phase 73 mirror verdicts: roll-high, main rng); only when the roll happens moved, from the step to the commit. The pause and TURN BACK draw nothing.
 - **Relaunch.** A pending climb or leap survives a relaunch unchanged, and the commit after it draws the same die (`test/roundtrip/resume-roundtrip.test.js`, CLIMB-02, 78-04).
+
+## Phase 79 roll phrasing closure (ROLL-04)
+
+**Closed:** 2026-09-27 (79-01 to 79-12). No player-facing string reads roll-under any more, and a doc-synced test pins it: `test/unit/roll-phrasing.test.js` runs every pattern below over the live narration corpus (`tools/lib/voice-corpus.mjs#buildCorpus`: every Oracle and rail builder rendered through the synthetic events, every registered copy bank, every content text field and the raw literal sweep of `src/browser`, `engine` and `mazeworld.html`) and fails on any hit outside the Exceptions table. It also fails when this section's pattern ids or exceptions differ from `tools/lib/voice-checks.mjs`, when an example here stops tripping its own pattern, when an exception stops matching a live string, when the corpus falls below its per-surface floors, and when the Closure list drops a handoff or the plan that closed it. `node tools/voice-inventory.mjs --roll-under --count` prints 0.
+
+### The phrasing rule
+
+Every check is roll-high (Phase 73): a higher face is always better, so a 1 is always the worst face.
+
+- **A fixed die states the Phase 74 range.** d20 checks and d10 locks and climbs: "foes find you only on a 20 (19–20 if you insulted them)", "6–10 on d10 against any lock", "16–20 on a d20 avoids it". The range is written by `src/browser/rollRange.js` (`rangeText`, `facesRangeText`).
+- **A die that scales speaks in faces.** The hero's strike die runs d20 to d6 with level and a foe's runs d20 to d8 with its level (`engine/derived.js#strikeDie`, `#foeDie`), so a face number would be wrong at most levels: "only their die's top face", "two fewer faces", "at best your die's top four faces hit it".
+- **A mishap on a low face is canon.** "A natural 1 fumbles the pick" and "a scroll fumbles on 1–3" name the worst faces as the bad outcome, which is roll-high phrasing.
+- **A signed modifier is Phase 74's display.** "+2 to hit" and "−2 to hit" are signed from the player's side and stay.
+
+### Patterns
+
+| Id | What it catches | Violation example | Roll-high replacement shape |
+|---|---|---|---|
+| `need-face` | a need phrase with a face count | "foes need a 1 to hit" | "foes hit you only on their die's top face" (scaling) or "only on a 20" (fixed) |
+| `natural-low` | a natural-low success phrase (a mishap on a 1 is canon) | "foes need a natural 1 to find you" | "foes find you only on their die's top face" |
+| `low-range` | a low range tied to a roll | "1–5 on d10 against any lock" | "6–10 on d10 against any lock" (the Phase 74 range) |
+| `or-under` | N or under, less, lower or below (a stat threshold such as "wit of 6 or under" is not a roll) | "hits on a 5 or under" | "hits on 16–20" or "its die's top five faces" |
+| `face-to-hit` | a bare face count to hit (a signed modifier is legal) | "a 5 to hit" | "your top five faces hit" |
+| `single-low-face` | a single low face that hits or crits | "hittable only on a 4" | "at best your die's top four faces hit it" |
+| `penalty-to-hit` | a penalty written on to-hit | "−3 on to-hit" | "−3 to hit (19–20 instead of 16–20)" (the signed display) |
+| `need-better` | need(s) N better | "every foe needs two better" | "every foe has two fewer faces that hit you" |
+
+### Exceptions
+
+| Key | Phrase | Reason |
+|---|---|---|
+| *(none)* | | |
+
+Every hit the patterns found at the phase base was a genuine roll-under phrase, so each was rewritten rather than excused. An exception is only ever for a phrase that is not about a roll.
+
+### Closure list
+
+Every item this ledger's `## Handoffs → Phase 79 (roll-direction phrasing)` list and `### (g) What stays for Phase 79` hand on, with the plan that closed it.
+
+| Item | Source | Closed by | How |
+|---|---|---|---|
+| Mirror Self | Handoffs → Phase 79 | 79-05, 79-08 | The spell text reads "foes hit you only on their die's top face (the top two faces if you insulted them)" (79-05); the Oracle and rail `mirrorSelf` lines say the same (79-08). |
+| Crystal Staff | Handoffs → Phase 79 | 79-05, 79-02b | The staff text reads "party invisible d10+5 squares: foes hit only on their die's top face (the top two faces if you insulted them)" (79-05). It stays party-wide: 79-02b's `PARTY_WIDE_ITEM_EFFECTS` keeps the staff's invisibility on every Joiner, so "party" is accurate. |
+| Weaken | Handoffs → Phase 79 | 79-05, 79-07, 79-08 | "no more than their die's top three faces hit" in the spell text (79-05), the foe chip's description (79-07) and the `weakened` lines (79-08). |
+| Acute Hearing | Handoffs → Phase 79 | 78-09 | Phase 78's new text ("never surprised; hears an encounter up to three squares away…") was written without a face count; the corpus scan confirms it. |
+| Bestiary face counts (Zit, Drat, Stink Bug) | Handoffs → Phase 79 | 79-05 | Zit and Stink Bug read "at best your die's top N faces hit it"; Drat's note ("natural mail; may break your weapon") was already digit-free. |
+| Skeleton and Shadow notes | Handoffs → Phase 79 | 72-06, 72-07 | Already digit-free before Phase 79 (recorded in the handoff itself); the corpus scan confirms it. |
+| Bare signed numbers (the device trigger) | Handoffs → Phase 79 | 74-05, 79-12 | 74-05 gave every signed weapon number its comparison ("−2 to hit, worse than your Club"); 79-12's `test/unit/authored-ranges.test.js` pins every signed number and face count the narration, chips, blurbs, legend and epitaphs state against the engine. |
+| Smoke | Handoffs → Phase 79 | 79-05, 79-04 | The ability and skill texts (79-05) and the `smokeThrown` lines (79-04) read "foes find you only on their die's top face (the top two if you insulted them)". |
+| Lockpicks | Handoffs → Phase 79 | 79-05 | `engine/items.js#rollTreasureItem` and `engine/economy.js#openStore` read "6–10 on d10 against any lock" and "opens boxes on 6–10". |
+| Smoke and Battle Roar narration | (g) What stays for Phase 79 | 79-04, 79-05 | `battleRoarRaised` and `sidestepped` read "every foe has two fewer faces to hit…" (79-04); the ability texts read the same (79-05). |
+| Invisibility lines (Anklet, Cloak) | (g) What stays for Phase 79 | 79-05, 79-11, 79-07, 79-12 | The Anklet's text (79-05), `itemEffectStarted` (79-11) and the `unseen` chip sentence (79-07) read "every foe has two fewer faces that hit you"; the Cloak and potion read "only on their die's top face". 79-12 relabels the Anklet's foe-swing modifier from "gear" to "unseen", the chip's own name (below). |
+| CONDITION_EXPLAIN and FOE_CONDITION_DESC | (g) What stays for Phase 79 | 79-07 | Every chip sentence was audited; the roll-under ones now speak in faces. |
+| Every other bestiary face count | (g) What stays for Phase 79 | 79-05 | Pogo reads "your die has one face fewer that hits it"; the size-rule audit's S5 Stink Bug note ("strike as one level lower") was replaced by the faces reading. |
+| Trap and lock ranges outside content | 79-01 base worklist | 79-06, 79-10 | The trap epitaph reads "16–20 on a d20 avoids it" (79-06); the MARKS legend reads "16–20 dodges it (13–20 for an Acrobat)" and "6–10 on a d10 opens it" (79-10). |
+| Class, sub-class and race blurbs | 79-01 base worklist | 79-03 | The Fighter, Magic User, Cleric, Acrobat, Guard, Soldier and Elven blurbs speak in faces ("your top five faces to hit — 16–20 on the d20 at skill level I"). |
+| The hidden rulebook-notes section | 79-10 handoff | 79-12 | Its "dodged on 1–5" line sat in a `<section hidden>` nothing ever showed; 79-12 deleted the stale section outright (greenfield). |
+
+### Corrections to earlier sections (append-only)
+
+- **(b), the condition chip example.** The chip's measured lead now reads "−3 to hit (19–20 instead of 16–20)" for Afraid (Phase 77, CMBUI-13), not "(now 19–20)". `test/unit/roll-sign-consistency.test.js` pins the "(… instead of …)" shape.
+- **Phase 77's audit gaps (77-07).** Acuteness swaps the strike die to a d6 rather than moving the face count, so it has no signed modifier; every roll line already prints the die and its range, and the chip's measured lead states it. Not a gap. The Anklet of Invisibility's foe-swing term (`engine/derived.js#foeToHitBreakdown`'s summed `foeToHit` gear effect, which only the Anklet carries) read "gear +2" on every roll line and the foe card; 79-12 relabels it "unseen +2" through `src/browser/rollRange.js#MOD_LABEL`, the name on the Anklet's own chip. `test/unit/roll-sign-consistency.test.js` fails if a second item ever gains a `foeToHit` effect and the label would stop being true.
+- **Phase 77's `heroOut` label (77-08).** "Can't act" states what happened to whom, so it passes the Phase 79 rubric and stays; its exemption from the one-word label style keeps its reason.

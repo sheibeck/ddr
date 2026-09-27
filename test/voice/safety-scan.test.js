@@ -102,6 +102,10 @@ import { WEAPONS } from "../../content/weapons.js";
 import { ARMORS } from "../../content/armors.js";
 import { FOODS } from "../../content/foods.js";
 import { ENCOUNTER_TABLES } from "../../content/encounters.js";
+// Phase 79 (VOX-04/05), 79-12: the whole narration corpus the narrative pass
+// ran on (every builder, bank, content field and raw literal, the 79-03
+// footers and the banks Phases 75.1-78 added).
+import { buildCorpus } from "../../tools/lib/voice-corpus.mjs";
 
 // ─── Matching logic (lives HERE, not in the pure-data wordlist) ─────────────
 
@@ -547,4 +551,31 @@ test("Allowlist is load-bearing: every entry rescues a real in-corpus collision"
 test("Safety wordlist is substantive (guards against an accidentally-empty list)", () => {
   assert.ok(BANNED.length > 100, `expected a substantial banned corpus; got ${BANNED.length}`);
   assert.ok(Array.isArray(ALLOWLIST) && ALLOWLIST.length > 0, "expected a non-empty allowlist for this corpus");
+});
+
+// ─── Corpus 4 (Phase 79, plan 79-12): the whole narration corpus ────────────
+// Every string tools/lib/voice-corpus.mjs#buildCorpus holds — each Oracle and
+// rail builder rendered across the narrative pass's synthetic events, every
+// registered copy bank (79-03's generated sub-class and race footers and every
+// bank Phases 75.1-78 added among them), every content text field, and the
+// raw literal sweep of src/browser, engine and mazeworld.html. A template
+// entry (a {token} left in its text) is filled with every closed-vocabulary
+// value, the same substitution Corpus 2 applies to the death copy.
+
+test("Corpus-wide (79-12): every string in the narration corpus, templates filled with the closed vocabularies, is family-friendly", async () => {
+  const corpus = await buildCorpus();
+  assert.ok(corpus.counts.texts > 2990, `the corpus should not be empty, saw ${corpus.counts.texts} texts`);
+  const offenders = [];
+  let filled = 0;
+  for (const e of corpus.entries) {
+    for (const text of e.texts) {
+      const renders = /\{[A-Za-z_]\w*\}/.test(text) ? [text.replace(/\{[A-Za-z_]\w*\}/g, "X"), ...SUBSTITUTIONS.map((v) => text.replace(/\{[A-Za-z_]\w*\}/g, v))] : [text];
+      if (renders.length > 1) filled++;
+      for (const r of renders) {
+        for (const { term, match } of findBannedTerms(r)) offenders.push(`${e.key} → "${match}" (category term #${BANNED.indexOf(term)}) in: ${r}`);
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `Banned copy in the narration corpus:\n${offenders.join("\n")}`);
+  assert.ok(filled > 0, "the corpus should carry template entries the closed vocabularies fill");
 });

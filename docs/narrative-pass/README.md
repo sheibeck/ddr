@@ -85,6 +85,19 @@ markup-stripped text.
 - **Family-friendly deadpan.** No profanity, gore or adult content; the
   darkness is in the wit, not the shock. `content/safety-wordlist.js` stays
   green (`--safety`).
+- **House spelling: British (79-12).** The player reads "armour", and the
+  rest of the -our family follows (honour, rumour, favour, colour). Counted
+  on the live corpus at 79-12's dispatch base (1968d3e8): "armour" 64
+  occurrences in 39 keys, "armor" 31 in 22; honour 2 / honor 1, rumour 3 /
+  rumor 1, favour 2, colour 1, centre 1, grey 3, and no other US form. The
+  majority won, and nothing in `.claude/CLAUDE.md` or the content set a
+  precedent the other way. Every player-facing "armor" became "armour"
+  (Oracle lines, panel labels such as ARMOUR RATING, the Hero sheet's
+  Armour row, the blurbs, footers and race notes, the engine's `armor` slot
+  word through `narrationLines.js#slotWord`). Item names are proper nouns
+  and ids that reach saved state, so the Cloak of Armor and the Faerie's
+  Magic Armor keep theirs, and code identifiers (`armorSoaked`, `c.armor`)
+  are untouched. `--hygiene`'s `house-spelling` rule holds it.
 - **A Pilfer's text never names a diagnosis.**
 - **Card versus rail line.** A dismissible card is for decisions and big
   updates; a minor event is a rail line with its narrative sentence.

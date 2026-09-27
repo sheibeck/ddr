@@ -67,6 +67,10 @@ import { HERO_CHIP_COPY } from "../../src/browser/heroConditions.js";
 // declares its own local PLAYER_WP `ALLOWLIST` const below — the two are
 // unrelated allowlists (wp/WP tokens vs. the safety-wordlist corpus).
 import { BANNED as SAFETY_BANNED, ALLOWLIST as SAFETY_ALLOWLIST } from "../../content/safety-wordlist.js";
+// Phase 79 (VOX-05), 79-12: the whole narration corpus, and the one bestiary-note renderer.
+import { buildCorpus } from "../../tools/lib/voice-corpus.mjs";
+import { PLAYER_WP_SOURCE } from "../../tools/lib/voice-checks.mjs";
+import { playerNote } from "../../src/browser/combatPanel.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -403,4 +407,42 @@ test("PLAYER_WP self-check: excludes code identifiers, matches real player copy"
 test("Phase 68: BOARDS_PANEL_COPY.global is covered by the BOARDS_PANEL_COPY walk", () => {
   const leaves = collectStringLeaves(BOARDS_PANEL_COPY).map(([p]) => p);
   assert.ok(leaves.includes("global.scope.all") && leaves.includes("global.ofWorld"));
+});
+
+// ─── (f) Phase 79 (VOX-05), plan 79-12: the whole narration corpus ────────
+//
+// Every string the Phase 79 narration corpus holds (tools/lib/
+// voice-corpus.mjs#buildCorpus: every Oracle and rail builder across the
+// synthetic events, every registered copy bank including the banks Phases
+// 75.1-78 added and 79-03's generated sub-class and race footers, every
+// content text field, and the raw literal sweep of src/browser, engine and
+// mazeworld.html) is free of a standalone wp/WP — the same PLAYER_WP, with
+// the corpus module's own copy asserted identical.
+//
+// A bestiary note is scanned as the player reads it: every surface that
+// prints one (the foe card meta line, the long-press foe card) routes it
+// through combatPanel.js#playerNote (pinned in combatPanel.test.js), which
+// rewrites the token to HP. The Bat/Rat and Viper notes keep "wp" in
+// content/bestiary.js because Phase 18's D-14 holds those fixture-exposed
+// rows byte-identical to the prototype.
+
+test("corpus-wide (79-12): no string in the narration corpus has a standalone wp/WP, bestiary notes as playerNote renders them", async () => {
+  assert.equal(PLAYER_WP_SOURCE, PLAYER_WP.source, "tools/lib/voice-checks.mjs's PLAYER_WP_SOURCE must be this file's PLAYER_WP");
+  const corpus = await buildCorpus();
+  assert.ok(corpus.counts.texts > 2990, `the corpus should not be empty, saw ${corpus.counts.texts} texts`);
+  const isBestiaryNote = (key) => key.startsWith("content:BESTIARY.") && key.endsWith(".sp.note");
+  const offenders = [];
+  let rendered = 0;
+  for (const e of corpus.entries) {
+    for (const raw of e.texts) {
+      const text = isBestiaryNote(e.key) ? playerNote(raw) : raw;
+      if (text !== raw) rendered++;
+      const m = text.match(PLAYER_WP);
+      if (m && !isAllowlisted(text)) offenders.push(`${e.key}: «${m[0]}» in "${text}"`);
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `standalone wp/WP in player-facing copy:\n${offenders.join("\n")}`);
+  // The playerNote rendering is load-bearing: it is what turns the two
+  // prototype-identical notes into HP (drop this if the notes are reworded).
+  assert.ok(rendered >= 1, "expected at least one bestiary note to need playerNote's HP rendering");
 });

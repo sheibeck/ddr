@@ -140,7 +140,7 @@ const JEWELRY_ROWS = [
     act: { kind: "half", effect: 0 },
   },
   {
-    // Use-activated (260918-w4n): worn + used, foes need two better to land
+    // Use-activated (260918-w4n): worn + used, every foe has two fewer faces that land
     // for 50 squares, 50 to fade back into view.
     n: "Anklet of Invisibility", slot: "jewelry", eff: { foeToHit: -2 },
     txt: "used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight",

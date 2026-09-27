@@ -93,10 +93,10 @@ test("reason-specific refusal text differs from the generic fallback", () => {
   assert.equal(slotWord("jewelry2"), "jewelry");
   assert.equal(slotWord("cloak"), "cloak");
   assert.equal(slotWord("weapon"), "weapon", "an unrecognized slot word passes through unchanged");
-  assert.equal(slotWord("armor"), "armor");
+  assert.equal(slotWord("armor"), "armour", "the armor slot key reads in the house spelling (79-12)");
 
   // itemEquipped renders "(jewelry)" for either jewelry key, never the raw
-  // key; weapon/armor stay byte-identical.
+  // key; weapon stays byte-identical, and the armor key reads "armour" (79-12).
   assert.equal(
     LINE_FOR.itemEquipped({ item: { n: "Anklet of Invisibility" }, slot: "jewelry2" }).text,
     "Equipped: Anklet of Invisibility (jewelry).",

@@ -158,7 +158,7 @@ test("EVENT_NARRATION.itemEquipped without the payload: byte-identical to today"
   const withReplaced = EVENT_NARRATION.itemEquipped({ item: { n: "Plate" }, slot: "armor", replaced: { n: "Leather" } });
   assert.equal(
     withReplaced,
-    `<span class="hit">Equipped:</span> Plate (armor). Whether that was wise is between you and the maze. Leather goes back in the bag — the maze is not a jeweller.`,
+    `<span class="hit">Equipped:</span> Plate (armour). Whether that was wise is between you and the maze. Leather goes back in the bag — the maze is not a jeweller.`,
   );
   const bare = EVENT_NARRATION.itemEquipped({ item: { n: "Plate" }, slot: "armor" });
   assert.doesNotMatch(bare, /pieces|destroyed/i);

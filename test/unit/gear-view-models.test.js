@@ -77,11 +77,11 @@ test("GEAR_WORN_ORDER is the frozen five-key display order", () => {
 
 // ─── gearHeaderModel ────────────────────────────────────────────────────
 
-test("gearHeaderModel: a bare Fighter reads ARMOR RATING 0, WILMST 0", () => {
+test("gearHeaderModel: a bare Fighter reads ARMOUR RATING 0, WILMST 0", () => {
   const c = fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0, gold: 0 });
   assert.deepStrictEqual(gearHeaderModel(st(c)), {
     stats: [
-      { key: "ar", label: "ARMOR RATING", value: 0, text: "0" },
+      { key: "ar", label: "ARMOUR RATING", value: 0, text: "0" },
       { key: "gold", label: "WILMST", value: 0, text: "0" },
     ],
   });
@@ -114,7 +114,7 @@ test("Edge GSCR-01/adjacency: AR and WILMST equal (both 0 bare) still returns tw
   const c = fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0, gold: 0 });
   const model = gearHeaderModel(st(c));
   assert.equal(model.stats.length, 2);
-  assert.equal(model.stats[0].label, "ARMOR RATING");
+  assert.equal(model.stats[0].label, "ARMOUR RATING");
   assert.equal(model.stats[1].label, "WILMST");
 });
 
@@ -135,7 +135,7 @@ test("Edge GSCR-01/encoding: gold 1234 -> '1,234' (toLocaleString); AR text is a
   assert.equal(model.stats[0].text, String(armorDisplay(c).ar));
 });
 
-test("Edge GSCR-01/ordering: stats[0] is always ARMOR RATING and stats[1] is always WILMST", () => {
+test("Edge GSCR-01/ordering: stats[0] is always ARMOUR RATING and stats[1] is always WILMST", () => {
   for (const c of [fixedChar(), fixedChar({ gold: 500 }), fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0 })]) {
     const model = gearHeaderModel(st(c));
     assert.equal(model.stats[0].key, "ar");
@@ -535,16 +535,16 @@ test("gearBagCardsModel, weapon card: WEAPON when bare-fisted, WEAPON · SWAP wh
   assert.equal(gearBagCardsModel(st(wielded))[0].tag, "WEAPON · SWAP");
 });
 
-test("gearBagCardsModel, armor card: ARMOR · SWAP when armor is worn, else ARMOR; desc starts with bagArmorText(it)", () => {
+test("gearBagCardsModel, armor card: ARMOUR · SWAP when armor is worn, else ARMOUR; desc starts with bagArmorText(it)", () => {
   const bagged = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
   const worn = fixedChar({ armor: "Mail", ar: 12, armorWP: 30, armorMax: 30, items: [bagged] });
   const cardWorn = gearBagCardsModel(st(worn))[0];
-  assert.equal(cardWorn.tag, "ARMOR · SWAP");
+  assert.equal(cardWorn.tag, "ARMOUR · SWAP");
   assert.ok(cardWorn.desc.startsWith(bagArmorText(bagged)));
 
   const unworn = fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0, items: [bagged] });
   const cardUnworn = gearBagCardsModel(st(unworn))[0];
-  assert.equal(cardUnworn.tag, "ARMOR");
+  assert.equal(cardUnworn.tag, "ARMOUR");
 });
 
 test("gearBagCardsModel, jewel card: JEWELRY with only jewelry1 worn; JEWELRY · SWAP with both jewelry keys worn; a cloak card reads CLOAK · SWAP when a cloak is worn", () => {

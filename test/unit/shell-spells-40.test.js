@@ -223,7 +223,7 @@ test("Voice: the new chip/kit-row copy clears the family-friendly safety wordlis
     // CMBUI-13 (plan 77-08): "how long" now follows on the tap card, so the sentence no longer repeats it.
     "You fight in the dark at full skill and nothing gets the jump on you.",
     "Wounds close on their own every round of this fight. It is not a licence.",
-    "You already know what the next encounter is. Whether that helps is up to you.",
+    "You act first in your next fight, whatever turns up. Whether the warning helps beyond that is up to you.",
     // Plan 76-06 (user ruling 2026-09-26): the reveal sentence is now the until-you-move truth.
     "You can see the whole floor for exactly as long as you stand still. One step and your focus breaks; whatever you never walked goes dark again.",
     "until you move",

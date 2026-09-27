@@ -1124,19 +1124,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .lastwords p{font-family:var(--mono);font-size:calc(0.71875rem * var(--mw-text-scale));line-height:1.45;color:var(--ink-soft);margin:0}
 .epitaph{font-family:var(--body)!important;font-style:italic;font-size:calc(0.9375rem * var(--mw-text-scale))!important;color:var(--ink-soft);text-wrap:balance;margin:0 0 14px!important}
 
-/* ---------- footer notes ---------- */
-.notes{margin-top:24px;border-top:2px solid var(--ink);padding-top:16px}
-.notes-lede{font-family:var(--body);font-size:calc(0.9375rem * var(--mw-text-scale));line-height:1.5;color:var(--ink-soft);max-width:66ch;margin:0 0 18px}
-.notes h2{font-family:var(--disp);font-size:calc(0.875rem * var(--mw-text-scale));letter-spacing:.2em;text-transform:uppercase;margin:0 0 12px;color:var(--ink-soft)}
-.notecols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px}
-.notecols h3{font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ditto);margin:0 0 6px}
-.notecols ul{margin:0;padding-left:18px;font-size:calc(0.90625rem * var(--mw-text-scale));color:var(--ink-soft);line-height:1.5}
-.notecols li{margin-bottom:5px}
-.notecols li b{color:var(--ink);font-weight:600}
-.notecols code{font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale));background:var(--paper-3);padding:1px 4px}
-.credit{margin-top:18px;font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));color:var(--ink-soft);letter-spacing:.04em}
-.credit a{color:var(--ditto)}
-
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 <style>
@@ -2541,7 +2528,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
           <dt>To hit</dt><dd class="em" id="s-hit">—</dd>
           <dt>Damage</dt><dd id="s-dmg">—</dd>
           <dt>Size</dt><dd id="s-size">—</dd>
-          <dt>Armor</dt><dd id="s-arm">—</dd>
+          <dt>Armour</dt><dd id="s-arm">—</dd>
           <dt>Intelligence</dt><dd id="s-int">—</dd>
           <dt>Experience points</dt><dd id="s-sp">0</dd>
           <dt>Next level</dt><dd id="s-next">201</dd>
@@ -2701,52 +2688,6 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
     <button type="button" class="mw-tab" id="mw-tab-dead" data-tab="dead" aria-current="false">DEAD</button>
   </nav>
 </div>
-
-<!-- Desktop-only "departs from the rulebook" credits/documentation section —
-     not part of any 04-UI-SPEC.md mobile screen; kept in the DOM (content
-     preserved, nothing deleted) but hidden from the mobile shell. -->
-<section class="notes" hidden>
-  <h2>Where this prototype departs from the rulebook</h2>
-  <p class="notes-lede">Every weapon, armour value, creature, spell, potion, trap, encounter, climb and leap now comes from the rulebook itself. This page lists only the places the prototype knowingly departs from it — the list to reconcile if you ever revise the PDF.</p>
-  <div class="notecols">
-    <div>
-      <h3>Made for one player</h3>
-      <ul>
-        <li><b>No Dungeon Master, no party.</b> Encounters roll themselves and "who gets it" always gets you. Party-only rules are therefore inert: the Cutthroat murdering a companion, the Court Mage's angry party members, two Wizards refusing to share a room, the Knight drawing fire off the group, an elf boosting morale.</li>
-        <li><b>Sleep mends you</b> — <code>d10 + 2×level</code> for a ration and eight hours, and camping is a button. The book has no natural healing because it assumes a Cleric in the party. Without this a solo delver has no way back up.</li>
-        <li><b>Experience points ×5.</b> <code>(d6 × creature level) ÷ party</code> is paced for a table playing over months; one player needs to reach level II inside a floor or two. The log prints the raw roll and the multiplier separately.</li>
-        <li><b>Spells run on <code>2×level + 2</code> charges</b>, one returning every 20 squares, instead of once per 100 squares. The book's cadence is a party's pace, not one caster's.</li>
-        <li><b>Magic Users start at 25 + d10 hp</b> rather than a flat 25. Twenty-five with no armour is one bad round, every time.</li>
-      </ul>
-    </div>
-    <div>
-      <h3>Balance decisions</h3>
-      <ul>
-        <li><b>Elves keep 0.6 of their Hit Points</b>, not half. A flat half on a 25-hp caster was a death sentence; the other elven rules are as written.</li>
-        <li><b>Trolls eat two rations a night</b> on top of the 15 hp cost of living. Otherwise 75 hp and +9 damage carried no real price.</li>
-        <li><b>Every Thief opens with a backstab</b> (doubled damage) and breaks away on <code>d20+5</code>. The class description is three-quarters stealth and back-stabbing, and the rules gave it no mechanic.</li>
-        <li><b>At most two creatures until skill level III.</b> Three level-one creatures on a fresh character is not a fight, it is a formality.</li>
-        <li><b>Forcing a locked box is 8-in-20</b>, and a failed attempt lets you smash it for half the coin and none of the glass. Lockpicks exist as an item so a non-thief has a route in.</li>
-        <li><b>Sewing patches any armour</b>, not only cloth and leather. The restriction mostly punished the one class that can take the skill.</li>
-        <li><b>Poison and disease stop at 1 hp</b> and clear with a night's rest. As written they run at up to 2d6 a square with only a Cure spell to stop them — which no solo delver has. They still take everything you had.</li>
-        <li><b>Two traps a floor, dodged on 1–5</b> (better if you are nimble), and the Spike pit does d10×5 rather than d10×10. The trap table is written for a party that can absorb one; at full strength it was killing a third of all characters outright.</li>
-        <li><b>Level V has only Beasts and a Vampire</b> in the book — the other four type headings on p.43 are empty. Floor five falls back to the level IV roster for those types.</li>
-      </ul>
-    </div>
-    <div>
-      <h3>Rulings on ambiguities</h3>
-      <ul>
-        <li><b>"Roll one die lower to strike"</b> for dwarves is read as the creature getting the better die, per the book's own worked example (a level 1 creature rolls d12 instead of d20).</li>
-        <li><b>Armour AR is a d20 soak roll</b> exactly as written on p.44, with damage going to the armour's HP when it exceeds the Min. Armour is therefore consumable, and store repair at a tenth of cost per point is the main money sink.</li>
-        <li><b>Creature damage</b> is <code>level² + d6</code> where a creature's description gives no weapon, and <code>level² + its own damage</code> where it does.</li>
-        <li><b>Level V creatures</b> for Demons, Humans, Lair Beasts and Magical fall back to the level IV roster, because those four headings on p.43 are empty in the book.</li>
-        <li><b>Win condition:</b> the book states none. Five floors and a Gate.</li>
-        <li><b>Skills are rolled, not chosen</b> — the game spends your value points at random, to match the rest of character creation. The book says only that you receive them.</li>
-      </ul>
-    </div>
-  </div>
-  <p class="credit">Built from the Mazeworld rulebook — <a href="https://darktierstudios.com/pdfs/mazeworld.pdf" target="_blank" rel="noopener">darktierstudios.com/pdfs/mazeworld.pdf</a>. Dark Tier Studios.</p>
-</section>
 
 <script>
 "use strict";

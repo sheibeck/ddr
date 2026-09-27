@@ -399,7 +399,7 @@ test("[hero-strike:stupid] the same floor, absorbed by a Fighter's already-5 nee
   assertSame(withMod, without, { label: "hero-strike:stupid (Fighter, clamp)" });
 });
 
-test('[hero-strike:hard-to-hit] a Zit ("hittable only on a 4") is a strict penalty for a Fighter', () => {
+test('[hero-strike:hard-to-hit] a Zit ("at best your die\'s top four faces hit it") is a strict penalty for a Fighter', () => {
   const zit = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [foeFrom("Beasts", 2, "Zit")]));
   const plain = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
   const withMod = faceOdds((rng) => landed(zit(), rng), { label: "hero-strike:hard-to-hit (Fighter)" });
@@ -465,7 +465,7 @@ test("[hero-strike:dagger-only] the same Shadow, hittable once the hero carries 
   assert.ok(result.wins > 0, "[hero-strike:dagger-only] a magic weapon must land on at least one face");
 });
 
-test('[hero-strike:overhead-blow] "you need two better to land it" — a strict self-penalty, engine/abilities.js:188', () => {
+test('[hero-strike:overhead-blow] "your die has two fewer faces that land it" — a strict self-penalty, engine/abilities.js:188', () => {
   const overhead = () => {
     const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
     s.combat.abilityStrike = { key: "overheadBlow", dmgMul: 2, needShift: -2 };
@@ -734,7 +734,7 @@ test('[foe-vs-hero:guard] "the profession is standing there" (Phase 24) — a st
   assertPenalty(withMod, without, { label: "foe-vs-hero:guard" });
 });
 
-test('[foe-vs-hero:gear-foe-to-hit] Anklet of Invisibility, "foes need two better to land" — a strict penalty to the foe', () => {
+test('[foe-vs-hero:gear-foe-to-hit] Anklet of Invisibility, "every foe has two fewer faces that hit you" — a strict penalty to the foe', () => {
   const anklet = () => {
     const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
     startEffect(s.c, "item:Anklet of Invisibility", { rounds: 50 });
@@ -819,7 +819,7 @@ test('[foe-vs-hero:smoke] a live Smoke timer gives the foe exactly one winning f
   assert.equal(result.wins, 1, "[foe-vs-hero:smoke] the foe must win on exactly one face");
 });
 
-test('[foe-vs-hero:mirror-self] c.mirror ("foes need a 1 to hit") gives the foe exactly one winning face', () => {
+test('[foe-vs-hero:mirror-self] c.mirror ("foes hit you only on their die\'s top face") gives the foe exactly one winning face', () => {
   const mirrored = () => {
     const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]);
     s.c.mirror = 3;
@@ -849,7 +849,7 @@ test("[foe-vs-hero:blind] a blinded foe still gives itself exactly one winning f
   assert.equal(result.wins, 1, "[foe-vs-hero:blind] the foe must win on exactly one face");
 });
 
-test('[foe-vs-hero:weaken] a live Weaken cast ("they hit on a 3") is a strict penalty to the foe for a base-5 hero', () => {
+test('[foe-vs-hero:weaken] a live Weaken cast ("no more than their die\'s top three faces hit") is a strict penalty to the foe for a base-5 hero', () => {
   const weakenIdx = SPELLS.findIndex((sp) => sp.n === "Weaken");
   const weakened = () => {
     const s = inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Human", level: 5 }), [foeFrom("Humans", 1, "Ned")]);
@@ -1259,7 +1259,7 @@ test("[foe-vs-member:invisibility] a member's own live invis item effect gives t
   assert.equal(result.wins, 1, "[foe-vs-member:invisibility] the foe must win on exactly one face");
 });
 
-test('[foe-vs-member:party-invisibility] the hero\'s Crystal Staff ("party invisible; enemies need a 1") gives the foe exactly one winning face against a member', () => {
+test('[foe-vs-member:party-invisibility] the hero\'s Crystal Staff ("party invisible: foes hit only on their die\'s top face") gives the foe exactly one winning face against a member', () => {
   const build = () => {
     const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Soldier", race: "Human" }, NEUTRAL_FOE());
     startEffect(s.c, "item:Crystal Staff", { squares: 10 });

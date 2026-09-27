@@ -3,6 +3,8 @@
 **Phase:** 38-melee-active-abilities
 **Date:** 2026-09-17
 
+> **Status (Phase 79, plan 79-12):** a design record. The `txt` column below quotes the Phase 38 catalog as it shipped then; several of those lines were rewritten roll-high in Phase 79 (Smoke, Sidestep, Battle Roar, Overhead Blow). `content/abilities.js` is the live text, and `test/unit/roll-phrasing.test.js` guards it.
+
 This ledger declares Phase 38's Special Skills reshape, the 20-entry active
 ability catalog, the level-pool mechanism, the FREE_SKILL same-position
 rule, and the full measured divergence table the reshape's parity carve-out

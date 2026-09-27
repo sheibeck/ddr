@@ -1,0 +1,1146 @@
+[
+  {
+    "key": "bank:MOD_LABEL.gear",
+    "surface": "other",
+    "trigger": "the Anklet of Invisibility's foe-swing modifier inside a roll line and the foe card's odds line (engine/derived.js#foeToHitBreakdown's summed foeToHit gear term)",
+    "before": "",
+    "after": "unseen",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The Anklet's term read \"gear +2\", which names no item; it now reads \"unseen +2\", the name on the Anklet's own chip (Phase 77's 77-07 audit gap)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Confirm before quit",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Where this prototype departs from the rulebook",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Every weapon, armour value, creature, spell, potion, trap, encounter, climb and leap now comes from the rulebook itself. This page lists only the places the prototype knowingly departs from it — the list to reconcile if you ever revise the PDF.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Made for one player",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "No Dungeon Master, no party.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Encounters roll themselves and \"who gets it\" always gets you. Party-only rules are therefore inert: the Cutthroat murdering a companion, the Court Mage's angry party members, two Wizards refusing to share a room, the Knight drawing fire off the group, an elf boosting morale.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Sleep mends you",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "d10 + 2×level",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "for a ration and eight hours, and camping is a button. The book has no natural healing because it assumes a Cleric in the party. Without this a solo delver has no way back up.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Experience points ×5.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "(d6 × creature level) ÷ party",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "is paced for a table playing over months; one player needs to reach level II inside a floor or two. The log prints the raw roll and the multiplier separately.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Spells run on",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "2×level + 2",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": ", one returning every 20 squares, instead of once per 100 squares. The book's cadence is a party's pace, not one caster's.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Magic Users start at 25 + d10 hp",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "rather than a flat 25. Twenty-five with no armour is one bad round, every time.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Balance decisions",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Elves keep 0.6 of their Hit Points",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": ", not half. A flat half on a 25-hp caster was a death sentence; the other elven rules are as written.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Trolls eat two rations a night",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "on top of the 15 hp cost of living. Otherwise 75 hp and +9 damage carried no real price.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Every Thief opens with a backstab",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "(doubled damage) and breaks away on",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": ". The class description is three-quarters stealth and back-stabbing, and the rules gave it no mechanic.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "At most two creatures until skill level III.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Three level-one creatures on a fresh character is not a fight, it is a formality.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Forcing a locked box is 8-in-20",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": ", and a failed attempt lets you smash it for half the coin and none of the glass. Lockpicks exist as an item so a non-thief has a route in.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Sewing patches any armour",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": ", not only cloth and leather. The restriction mostly punished the one class that can take the skill.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Poison and disease stop at 1 hp",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "and clear with a night's rest. As written they run at up to 2d6 a square with only a Cure spell to stop them — which no solo delver has. They still take everything you had.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Two traps a floor, dodged on 1–5",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "(better if you are nimble), and the Spike pit does d10×5 rather than d10×10. The trap table is written for a party that can absorb one; at full strength it was killing a third of all characters outright.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Level V has only Beasts and a Vampire",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "in the book — the other four type headings on p.43 are empty. Floor five falls back to the level IV roster for those types.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Rulings on ambiguities",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "\"Roll one die lower to strike\"",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "for dwarves is read as the creature getting the better die, per the book's own worked example (a level 1 creature rolls d12 instead of d20).",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Armour AR is a d20 soak roll",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "exactly as written on p.44, with damage going to the armour's HP when it exceeds the Min. Armour is therefore consumable, and store repair at a tenth of cost per point is the main money sink.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Creature damage",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "level² + d6",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "where a creature's description gives no weapon, and",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "level² + its own damage",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "where it does.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Level V creatures",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "for Demons, Humans, Lair Beasts and Magical fall back to the level IV roster, because those four headings on p.43 are empty in the book.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Win condition:",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "the book states none. Five floors and a Gate.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Skills are rolled, not chosen",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "— the game spends your value points at random, to match the rest of character creation. The book says only that you receive them.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": "Built from the Mazeworld rulebook —",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "mazeworld.html's hidden <section class=\"notes\"> (\"Where this prototype departs from the rulebook\"), never shown: nothing unhid it",
+    "before": ". Dark Tier Studios.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate)."
+  },
+  {
+    "key": "bank:CAUSE_TEXT.poison",
+    "surface": "death",
+    "trigger": "the cause-of-death line",
+    "before": "carried off by poison",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:CAUSE_TEXT.teleport",
+    "surface": "death",
+    "trigger": "the cause-of-death line",
+    "before": "materialised inside a wall",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:CLASS_NOTE.Thief",
+    "surface": "blurbs",
+    "trigger": "the class blurb (roller and Hero tab)",
+    "before": "Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.",
+    "after": "Forty Hit Points, studded leather at the very best (mail, if you learn Heft), and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "A Thief wears Studded by class (Studded is Fighter-and-Thief armour) and Mail with Heft, so \"leather at the very best\" undersold the class by two armours."
+  },
+  {
+    "key": "bank:EPITAPHS.poison.0",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Poison is patient. {name} was merely available.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:EPITAPHS.poison.1",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "There was a cure. It cost 100 wilmst. {name} had {gold} and no store in sight.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:EPITAPHS.poison.2",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Died on an instalment plan, two hp per square.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:EPITAPHS.poison.3",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Not a dramatic death — but a beautifully documented one.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:EPITAPHS.teleport.0",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Teleported d20 squares. Required d20 minus four.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:EPITAPHS.teleport.1",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Arrived somewhere. Arrived inside it.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:EPITAPHS.teleport.2",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "The dungeon does not check its destinations, and neither did {name}.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: no engine die() call passes this cause (poison stops at 1 hp and a teleport never kills), so the line could never show, and it would have been wrong if it did (\"two hp per square\")."
+  },
+  {
+    "key": "bank:EPITAPHS.won.0",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Walked out through the Gate on day {day}. The Game Master has requested a recount.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: there is no Gate exit, so no run ends as \"won\" and the line could never show; it would have been wrong if it did (\"all five floors\")."
+  },
+  {
+    "key": "bank:EPITAPHS.won.1",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Reached the Gate with {sp} experience points and a limp, and retired to lie about both.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: there is no Gate exit, so no run ends as \"won\" and the line could never show; it would have been wrong if it did (\"all five floors\")."
+  },
+  {
+    "key": "bank:EPITAPHS.won.2",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Went in for {motive}. Came out with {motive} and a permanent flinch.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: there is no Gate exit, so no run ends as \"won\" and the line could never show; it would have been wrong if it did (\"all five floors\")."
+  },
+  {
+    "key": "bank:EPITAPHS.won.3",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Survived all five floors and will now be insufferable at parties for life.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: there is no Gate exit, so no run ends as \"won\" and the line could never show; it would have been wrong if it did (\"all five floors\")."
+  },
+  {
+    "key": "bank:EPITAPHS.won.4",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Escaped. Statistically speaking, this did not occur.",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Deleted: there is no Gate exit, so no run ends as \"won\" and the line could never show; it would have been wrong if it did (\"all five floors\")."
+  },
+  {
+    "key": "bank:GEAR_COPY.armorRating",
+    "surface": "panels",
+    "trigger": "the Gear tab",
+    "before": "ARMOR RATING",
+    "after": "ARMOUR RATING",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:GEAR_COPY.empty.armor",
+    "surface": "panels",
+    "trigger": "the Gear tab",
+    "before": "armor — nothing. The wind is your armor, and the wind is not on your side.",
+    "after": "armour — nothing. The wind is your armour, and the wind is not on your side.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:GEAR_COPY.family.armor",
+    "surface": "panels",
+    "trigger": "the Gear tab",
+    "before": "ARMOR",
+    "after": "ARMOUR",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:GEAR_COPY.slot.armor",
+    "surface": "panels",
+    "trigger": "the Gear tab",
+    "before": "ARMOR",
+    "after": "ARMOUR",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:GEAR_SHEET_COPY.sub.discarded",
+    "surface": "panels",
+    "trigger": "the Gear tab's item action sheet",
+    "before": "Your worn armor is destroyed — it will be discarded.",
+    "after": "Your worn armour is destroyed — it will be discarded.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Dwarven",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: store prices halved; being small makes you one face harder to hit; a night without rations costs only 1 HP (a Human's costs 4); +2 damage with every weapon; armor wears at half the rate. Bad: foes strike on a die one size better.",
+    "after": "Good: store prices halved; being small makes you one face harder to hit; a night without rations costs only 1 HP (a Human's costs 4); +2 damage with every weapon; armour wears at half the rate. Bad: foes strike on a die one size better.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Fridgian",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: five times in eight, a frenzy adds a second swing that never wastes itself on a corpse; thick hide soaks 2 from every blow. Bad: can never wear armor; never wins initiative.",
+    "after": "Good: five times in eight, a frenzy adds a second swing that never wastes itself on a corpse; thick hide soaks 2 from every blow. Bad: can never wear armour; never wins initiative.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cutthroat",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: your first landed blow always crits, even in heavy armor. Bad: one descent in twenty, the Joiner beside you doesn't reach the next floor.",
+    "after": "Good: your first landed blow always crits, even in heavy armour. Bad: one descent in twenty, the Joiner beside you doesn't reach the next floor.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Master of Arms",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: +2 damage with every weapon; patches your own damaged armor every night in camp. Bad: can never talk a fight down; no clean withdrawal in round one.",
+    "after": "Good: +2 damage with every weapon; patches your own damaged armour every night in camp. Bad: can never talk a fight down; no clean withdrawal in round one.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Woodsman",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: can always talk to Beasts and Lair Beasts. Bad: no armor heavier than Studded.",
+    "after": "Good: can always talk to Beasts and Lair Beasts. Bad: no armour heavier than Studded.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cutthroat.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your first landed blow always crits, even in heavy armour",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Master of Arms.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "patches your own damaged armour every night in camp",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Woodsman.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "no armour heavier than Studded",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:SUB_NOTE.Bard",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "Five songs, one every hundred squares, and dragons hand over gifts to hear them. Camp for the night and creatures too stupid to know better come looking twice as often, and once the fighting starts they come for you first — which, down here, is most of them.",
+    "after": "Five songs, one every hundred squares, and every Human in here will at least hear you out before swinging. Camp for the night and creatures too stupid to know better come looking twice as often, and once the fighting starts they come for you first — which, down here, is most of them.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Nothing in the engine has dragons give a Bard gifts; the Bard's real edge is that every Human will parley, which the line now states."
+  },
+  {
+    "key": "bank:SUB_NOTE.Pilfer",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "Traps disarm themselves in your presence and no sealed room has ever held you. Your hands, though, can't leave a magic ring, amulet or cloak alone — use one and, about one time in twenty, it comes apart right there for a d10 of your own hp and is dust. Potions and scrolls you handle like anyone else.",
+    "after": "Traps disarm themselves in your presence and no sealed room has ever held you. Your hands, though, can't leave a magic ring, amulet, cloak or staff alone — use one and, about one time in twenty, it comes apart right there for a d10 of your own hp and is dust. Potions and scrolls you handle like anyone else.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "A Pilfer's fumble covers staves as well as rings, amulets and cloaks (PILFER_FUMBLE_KINDS), and the footer already said so; the prose now agrees."
+  },
+  {
+    "key": "bank:SUB_NOTE.Woodsman",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "No mail, no plate — the store won't offer it and your own hands won't take it — no shield, and a quarter staff you are genuinely superb with. You speak to every animal in here except dragons — a pity, as it is mostly dragons that want a word.",
+    "after": "No mail, no plate — the store won't offer it and your own hands won't take it — no shield, and a quarter staff you are genuinely superb with. You speak to every beast in here, the Drake included; whether it listens is the Drake's business.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "A Woodsman can parley every Beast and Lair Beast, the Drake included; there is no dragon exception in the engine, so the joke now rides on what really happens."
+  },
+  {
+    "key": "content:RACES.Dwarven.note",
+    "surface": "blurbs",
+    "trigger": "a race's rules note",
+    "before": "+2 damage and 1 hp/day upkeep; foes strike at a better die; armor wears at half the rate; being small makes it one face harder to hit.",
+    "after": "+2 damage and 1 hp/day upkeep; foes strike at a better die; armour wears at half the rate; being small makes it one face harder to hit.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "content:RACES.Fridgian.note",
+    "surface": "blurbs",
+    "trigger": "a race's rules note",
+    "before": "Never wears armor, strikes last, frenzies into a second wild swing that never wastes itself on a corpse; thick hide soaks 2 from every blow.",
+    "after": "Never wears armour, strikes last, frenzies into a second wild swing that never wastes itself on a corpse; thick hide soaks 2 from every blow.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "content:SPELLS.Sense Danger.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "sight · the next encounter · names it before you meet it, and you act first",
+    "after": "sight · your next fight · you act first, whatever turns up (the family it hints at is a hunch, not a promise)",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "The spell names a random family that is never tied to the next fight, so it cannot \"name it before you meet it\"; the text now promises only what the engine does (you act first) and calls the name a hunch."
+  },
+  {
+    "key": "oracle:armorDestroyed",
+    "surface": "oracle",
+    "trigger": "armorDestroyed — engine/combat.js#applyFoeDamageToPlayer",
+    "before": "Your armor gives out.",
+    "after": "Your armour gives out.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "oracle:armorSoaked",
+    "surface": "oracle",
+    "trigger": "armorSoaked — engine/combat.js#applyFoeDamageToPlayer",
+    "before": "Your armor takes 0 from it so you do not have to.",
+    "after": "Your armour takes 0 from it so you do not have to.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads British spellings (\"armour\", \"honour\", \"rumour\"), 79-12's decision by the corpus majority; the line is otherwise word for word."
+  },
+  {
+    "key": "oracle:backstabDenied",
+    "surface": "refusals",
+    "trigger": "backstabDenied — engine/combat.js#playerStrike",
+    "before": "Heavy armor gives you away: no sneak attack.",
+    "after": "Heavy armour gives you away: no sneak attack.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "oracle:foeArmorSoaked",
+    "surface": "oracle",
+    "trigger": "foeArmorSoaked — engine/foeDamage.js#damageFoe",
+    "before": "Your blow rings off the thing's armor. It looks bored.",
+    "after": "Your blow rings off the thing's armour. It looks bored.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "oracle:itemUnequipped",
+    "surface": "oracle",
+    "trigger": "itemUnequipped — engine/items.js#unequipSlot",
+    "before": "You peel off what is left of your Dagger and leave it where it falls. The bag declines the honor.",
+    "after": "You peel off what is left of your Dagger and leave it where it falls. The bag declines the honour.",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads British spellings (\"armour\", \"honour\", \"rumour\"), 79-12's decision by the corpus majority; the line is otherwise word for word."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "inline literal in src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "before": "",
+    "after": "armour wears at … the rate",
+    "reasons": [
+      "naming"
+    ],
+    "why": "House spelling: the player reads \"armour\" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word."
+  },
+  {
+    "key": "bank:INSANITY.0",
+    "surface": "foes",
+    "trigger": "what an insane foe does instead of fighting",
+    "before": "turns the blade on itself",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Out of the player corpus: since 79-11 no line prints the INSANITY table (the hero's insanityRolled line no longer shows the foe-side row). The table stays as engine data (goInsane stamps it as the event's result) and the safety scan still reads it."
+  },
+  {
+    "key": "bank:INSANITY.1",
+    "surface": "foes",
+    "trigger": "what an insane foe does instead of fighting",
+    "before": "strikes the nearest of its own",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Out of the player corpus: since 79-11 no line prints the INSANITY table (the hero's insanityRolled line no longer shows the foe-side row). The table stays as engine data (goInsane stamps it as the event's result) and the safety scan still reads it."
+  },
+  {
+    "key": "bank:INSANITY.2",
+    "surface": "foes",
+    "trigger": "what an insane foe does instead of fighting",
+    "before": "bolts into the dark",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Out of the player corpus: since 79-11 no line prints the INSANITY table (the hero's insanityRolled line no longer shows the foe-side row). The table stays as engine data (goInsane stamps it as the event's result) and the safety scan still reads it."
+  },
+  {
+    "key": "bank:INSANITY.3",
+    "surface": "foes",
+    "trigger": "what an insane foe does instead of fighting",
+    "before": "stands perfectly still",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Out of the player corpus: since 79-11 no line prints the INSANITY table (the hero's insanityRolled line no longer shows the foe-side row). The table stays as engine data (goInsane stamps it as the event's result) and the safety scan still reads it."
+  },
+  {
+    "key": "bank:INSANITY.4",
+    "surface": "foes",
+    "trigger": "what an insane foe does instead of fighting",
+    "before": "froths and swings twice",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Out of the player corpus: since 79-11 no line prints the INSANITY table (the hero's insanityRolled line no longer shows the foe-side row). The table stays as engine data (goInsane stamps it as the event's result) and the safety scan still reads it."
+  },
+  {
+    "key": "bank:INSANITY.5",
+    "surface": "foes",
+    "trigger": "what an insane foe does instead of fighting",
+    "before": "kneels and surrenders",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Out of the player corpus: since 79-11 no line prints the INSANITY table (the hero's insanityRolled line no longer shows the foe-side row). The table stays as engine data (goInsane stamps it as the event's result) and the safety scan still reads it."
+  },
+  {
+    "key": "rail:darknessFell",
+    "surface": "rail",
+    "trigger": "darknessFell { duration 30, nightVision } — engine/encounters.js#fallDark (the variant 79-12 added)",
+    "before": "The dark closes in.",
+    "after": "The dark closes in for 30 squares. Night Vision sees through it.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "79-11's rail line says how long the dark lasts and that Night Vision waives it; no synthetic event carried those fields, so 79-12's darknessFell variants now put them in the corpus and on the review page."
+  },
+  {
+    "key": "oracle:darknessFell",
+    "surface": "oracle",
+    "trigger": "darknessFell { duration 30, nightVision } — engine/encounters.js#fallDark (the variant 79-12 added)",
+    "before": "The dark closes in around you: you see only the squares beside you, and you fight worse in it.",
+    "after": "The dark closes in around you for 30 squares. Your Night Vision sees straight through it.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "79-11's Oracle line says how long the dark lasts and that Night Vision waives it; no synthetic event carried those fields, so 79-12's darknessFell variants now put them in the corpus and on the review page."
+  }
+]

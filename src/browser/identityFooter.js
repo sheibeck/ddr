@@ -184,10 +184,10 @@ export const RACE_FIELD_LINES = Object.freeze({
     if (!n) return [];
     return [entry("race-foe-strike-step", n > 0 ? "bad" : "good", `foes strike on a die ${countWord(Math.abs(n))} size${Math.abs(n) === 1 ? "" : "s"} ${n > 0 ? "better" : "worse"}`)];
   },
-  armorWear: (row) => (row.armorWear < 1 ? [entry("race-armor-wear", "good", `armor wears at ${fractionWord(row.armorWear)} the rate`)] : []),
+  armorWear: (row) => (row.armorWear < 1 ? [entry("race-armor-wear", "good", `armour wears at ${fractionWord(row.armorWear)} the rate`)] : []),
   heal2x: (row) => (row.heal2x ? [entry("race-heal2x", "good", "rest, potions and your own healing spells heal twice as much")] : []),
   spMul: (row) => (row.spMul < 1 ? [entry("race-sp-mul", "bad", `${fractionWord(row.spMul)} the experience from every kill`)] : []),
-  noArmor: (row) => (row.noArmor ? [entry("race-no-armor", "bad", "can never wear armor")] : []),
+  noArmor: (row) => (row.noArmor ? [entry("race-no-armor", "bad", "can never wear armour")] : []),
   // The five-in-eight odds are engine/combat.js's frenzy check,
   // rollCheck(rng, 8, atLeastFor(5, 8)); test/unit/identity-footer.test.js
   // pins that source so the number cannot drift.

@@ -16,7 +16,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripJs } from "../../tools/ident-sweep.mjs";
-import { IDENTITY_TRAITS, MU_CHART, SPELL_LEVEL_OVERRIDES, RACES, CLASSES, SPELLS, THRESHOLDS, WEAPONS, RACE_NOTE, CLASS_NOTE, SUB_NOTE, STRIKE_DICE } from "../../content/index.js";
+import { IDENTITY_TRAITS, MU_CHART, SPELL_LEVEL_OVERRIDES, RACES, CLASSES, SPELLS, THRESHOLDS, WEAPONS, RACE_NOTE, CLASS_NOTE, SUB_NOTE, STRIKE_DICE, BESTIARY } from "../../content/index.js";
 import { facesRangeText } from "../../src/browser/rollRange.js";
 import { classNeed, foeToHitVs, weaponDamage, healMulFor } from "../../engine/derived.js";
 import { identityFooter, footerLines, RACE_FIELD_LINES, RACE_COSMETIC_FIELDS, unphrasedRaceFields } from "../../src/browser/identityFooter.js";
@@ -421,6 +421,31 @@ test("accuracy pin: the Sorcerer, Master of Arms and Pilfer notes match the engi
   assert.match(SUB_NOTE.Pilfer, /a d10 of your own hp/);
 });
 
+// VOX-05 rubric 4 (plan 79-12, the lore claims 79-03 handed on): the Thief,
+// Woodsman, Bard and Pilfer prose now states what the engine does.
+test("accuracy pin (79-12): the Thief's armour, the Woodsman's beasts, the Bard's Humans and the Pilfer's staves match the engine", () => {
+  const items = stripJs(read("engine/items.js"));
+  // Thief: Studded is class-legal (cls "FT"), Mail only through Heft (AR 12 or less).
+  const ARMORS_SRC = read("content/armors.js");
+  assert.match(ARMORS_SRC, /name: "Studded", cost: 750, wp: 18, ar: 10, cls: "FT"/);
+  assert.match(ARMORS_SRC, /name: "Mail", cost: 1000, wp: 30, ar: 12, cls: "F"/);
+  assert.match(items, /c\.cls === "Thief" && skill\(c, "Heft"\) && it\.ar <= 12/);
+  assert.match(CLASS_NOTE.Thief, /^Forty Hit Points, studded leather at the very best \(mail, if you learn Heft\)/);
+  // Woodsman: parleys Beasts and Lair Beasts, and the Drake is a Beast.
+  const combat = stripJs(read("engine/combat.js"));
+  assert.match(combat, /c\.sub === "Woodsman" && \(t === "Beasts" \|\| t === "Lair Beasts"\)\) return true/);
+  assert.ok(BESTIARY.Beasts.flat().some((f) => f.n === "Drake"), "the Drake is in the Beasts table");
+  assert.match(SUB_NOTE.Woodsman, /You speak to every beast in here, the Drake included/);
+  assert.doesNotMatch(SUB_NOTE.Woodsman, /dragon/i, "no dragon exception the engine does not make");
+  // Bard: parleys Humans; nothing in the engine gives a Bard gifts from dragons.
+  assert.match(combat, /c\.sub === "Bard" && t === "Humans"\) return true/);
+  assert.match(SUB_NOTE.Bard, /every Human in here will at least hear you out/);
+  assert.doesNotMatch(SUB_NOTE.Bard, /dragon/i);
+  // Pilfer: jewelry, cloaks AND staves fumble.
+  assert.match(items, /PILFER_FUMBLE_KINDS = Object\.freeze\(\["jewel", "cloak", "staff"\]\)/);
+  assert.match(SUB_NOTE.Pilfer, /a magic ring, amulet, cloak or staff/);
+});
+
 test("ROLL-04: no class, sub-class or race blurb and no RACES note keeps a roll-under phrase", () => {
   const texts = [
     ...Object.entries(RACE_NOTE).map(([k, v]) => [`RACE_NOTE.${k}`, v]),
@@ -457,10 +482,20 @@ test("VOX-05: the 79-03 why-ledger parses, every row carries reasons and a why, 
     if (m) return footerLines(m[1], m[2]).join(" ");
     return undefined;
   };
+  // 79-12: a key a LATER plan's ledger also touches carries that plan's
+  // after (tools/lib/voice-checks.mjs#validateLedgers checks only the last
+  // plan to touch a key), so 79-03's own after is history for it.
+  const whyDir = path.join(REPO_ROOT, "docs", "narrative-pass", "why");
+  const laterKeys = new Set(
+    fs.readdirSync(whyDir)
+      .filter((f) => f.endsWith(".json") && f.replace(/\.json$/, "") > "79-03")
+      .flatMap((f) => JSON.parse(read(`docs/narrative-pass/why/${f}`).replace(/^﻿/, "")).map((r) => r.key)),
+  );
   for (const row of ledger) {
     for (const f of ["key", "surface", "trigger", "before", "after", "reasons", "why"]) assert.ok(f in row, `${row.key}: missing ${f}`);
     assert.ok(row.reasons.length > 0 && row.reasons.every((r) => REASONS.has(r)), `${row.key}: bad reasons`);
     assert.ok(row.why.trim().length > 0, `${row.key}: empty why`);
+    if (laterKeys.has(row.key)) continue;
     assert.equal(row.after, current(row.key), `${row.key}: ledger after is stale`);
   }
   const footers = ledger.filter((r) => r.key.startsWith("bank:IDENTITY_FOOTER.")).map((r) => r.key);

@@ -192,7 +192,6 @@ export const BANK_REGISTRY = Object.freeze([
   bank("content/flavor.js", "MOTIVES", "panels", "the hero's rolled motive"),
   bank("content/flavor.js", "TEMPERAMENTS", "panels", "the hero's rolled temperament"),
   bank("content/flavor.js", "PHOBIAS", "panels", "the hero's rolled phobia", { pick: ["n"] }),
-  bank("content/misc-tables.js", "INSANITY", "foes", "what an insane foe does instead of fighting"),
   bank("content/placement.js", "PLACEMENT_CARD", "rail-cards", "the deferred placement rail card"),
   bank("content/placement.js", "PLACEMENT_LINES", "boards", "the DEEPEST rank quip"),
   bank("content/placement.js", "SEASON_DROP_LINES", "boards", "the season-drop line"),
@@ -262,6 +261,8 @@ export const NON_COPY_EXPORTS = Object.freeze([
   nonCopy("content/damage-multipliers.js", "DAMAGE_MULTIPLIERS", "a rules table keyed by foe family ids"),
   nonCopy("content/encounters.js", "ENCOUNTER_TABLES", "engine dispatch keys, not copy (79-02 stops printing them)"),
   nonCopy("content/kit.js", "FREE_SKILL", "skill names (ids into the skill tables)"),
+  // 79-12: registered as a bank until 79-11 stopped printing it.
+  nonCopy("content/misc-tables.js", "INSANITY", "never printed since 79-11 (the hero's insanityRolled line no longer shows the foe-side row); engine/encounters.js#goInsane still stamps it as insanityRolled.result, so it stays as engine data, and test/voice/safety-scan.test.js still scans it"),
   nonCopy("content/kit.js", "KIT", "starting-kit weapon names (ids into WEAPONS)"),
   nonCopy("content/names.js", "NAMES", "character name vocabulary (proper nouns, safety-scanned)"),
   nonCopy("content/safety-wordlist.js", "ALLOWLIST", "the safety matcher's own word list"),

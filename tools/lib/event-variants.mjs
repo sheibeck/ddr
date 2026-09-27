@@ -40,7 +40,8 @@
 // no real event carries; each check's calibration (tools/lib/
 // voice-checks.mjs, the 79-01 SUMMARY) records the artifacts it met.
 //
-// FROZEN AFTER 79-01. The phase-base snapshot
+// FROZEN AFTER 79-01 (79-12 appended three `only`-scoped toggles at the
+// end of the list; see PHASE_79_TOGGLES). The phase-base snapshot
 // (docs/narrative-pass/corpus-base.json) was rendered through exactly this
 // list. If a later plan edited it, a builder's base and current renderings
 // could differ for reasons other than its text, and the why-ledger check
@@ -183,6 +184,15 @@ const PHASE_79_TOGGLES = [
   { only: ["tableFour"], row: "+25 HP", stat: "maxHp", amount: 21, result: "You feel sturdier than you have any right to." },
   { only: ["tableFour"], row: "+10 XP", stat: "xp", amount: 50, result: "You learn something, against your will." },
   { only: ["tableFour"], row: "-All armour", stat: "armor", amount: undefined, result: "Your armour decides it has had enough." },
+  // 79-12 (the one plan allowed to extend this list; appended, so every
+  // earlier toggle keeps its id): branches later plans added that no toggle
+  // reached. A store meal capped at full HP (79-02's `gained` below the
+  // meal's `meal` portion: "(worth 8, back to full)"), and 79-11's
+  // darknessFell duration and Night Vision clauses (engine/encounters.js
+  // #fallDark stamps `duration` and `nightVision`).
+  { only: ["bought"], gained: 3, meal: 8 },
+  { only: ["darknessFell"], duration: 30, nightVision: false },
+  { only: ["darknessFell"], duration: 30, nightVision: true },
 ];
 
 /**

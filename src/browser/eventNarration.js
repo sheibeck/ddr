@@ -543,7 +543,7 @@ export const EVENT_NARRATION = {
       : `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
   // VOX-05 (Phase 79, plan 79-04): the line says what the armour cost you.
-  backstabDenied: () => `<span class="miss">Heavy armor gives you away: no sneak attack.</span>`,
+  backstabDenied: () => `<span class="miss">Heavy armour gives you away: no sneak attack.</span>`,
   stealthStrike: () => `<span class="hit">They never saw you. Critical.</span>`,
   backstab: () => `<span class="hit">A blade in the back. Critical.</span>`,
   conArtistOpener: () => `<span class="beat">You had the perfect backstab lined up — and announced it instead. All flourish, no follow-through.</span>`,
@@ -754,20 +754,20 @@ export const EVENT_NARRATION = {
   // foe's next turn; this line is the telegraph, and the existing foeBolted
   // builder (pushed right after it, same action) states the hp actually lost.
   foeBubbleRebound: (e) => `<span class="hurt">${possessive(e.name, "Its")} bubble throws it back at you.</span>`,
-  armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
+  armorDestroyed: () => `<span class="hurt">Your armour gives out.</span>`,
   // Phase 28 (ARMOR-05): the same underMin/magic outcome flags narrationLines.js
   // reads, so the narration line and the Oracle can never disagree about which of
   // the four armorSoaked outcomes just happened.
   armorSoaked: (e) =>
     e.magic
-      ? `The cloak's plate takes ${e.amount ?? 0} from ${e.name ?? "it"}. Magic plate, light as a rumor, never wears — the maze's one honest bargain.`
+      ? `The cloak's plate takes ${e.amount ?? 0} from ${e.name ?? "it"}. Magic plate, light as a rumour, never wears — the maze's one honest bargain.`
       : e.underMin
-        ? `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to. Under its min — not even a scratch. No wear.`
-        : `Your armor takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.${e.wear ? ` It costs the armour ${e.wear}.` : ""}${e.halved ? " Dwarven steel takes the hit — half the wear." : ""}`,
+        ? `Your armour takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to. Under its min — not even a scratch. No wear.`
+        : `Your armour takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.${e.wear ? ` It costs the armour ${e.wear}.` : ""}${e.halved ? " Dwarven steel takes the hit — half the wear." : ""}`,
   // Phase 18 (CANON-01, D-08) — the FOE's natural armor ate the hero's/
   // ally's blow. `name` is the foe; `amount` is what it shrugged off (kept
   // short for the line).
-  foeArmorSoaked: (e) => `<span class="miss">Your blow rings off ${e.name ?? "the thing"}'s armor. It looks bored.</span>`,
+  foeArmorSoaked: (e) => `<span class="miss">Your blow rings off ${e.name ?? "the thing"}'s armour. It looks bored.</span>`,
   // Phase 15 item-wiring (ECON-08): the Pendant of Fortitude eats half of one
   // incoming blow, then spends itself. `name` is the foe whose hit was blunted.
   damageHalved: (e) => `<span class="hit">The pendant drinks half of ${possessive(e.name, "the")} blow before it reaches you.</span>`,
@@ -885,7 +885,7 @@ export const EVENT_NARRATION = {
   foeBolted: (e) =>
     e.member
       ? `<span class="hurt">${e.name ?? "It"}: it lands on ${e.member}.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}. Better them than you.`
-      : `<span class="hurt">${e.name ?? "It"}: it lands.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}${e.ignoresArmor ? ", and your armor was not consulted" : ""}.`,
+      : `<span class="hurt">${e.name ?? "It"}: it lands.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}${e.ignoresArmor ? ", and your armour was not consulted" : ""}.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-08): `stolen` is what the FOE healed (after its
   // own cap), not the hp you lost (foeBolted, pushed just before, states
@@ -1650,7 +1650,7 @@ export const EVENT_NARRATION = {
   // the slot renders through slotWord here too.
   itemUnequipped: (e) =>
     e.destroyed
-      ? `<span class="beat">You peel off what is left of your ${e.item?.n ?? "armor"}</span> and leave it where it falls. The bag declines the honor.`
+      ? `<span class="beat">You peel off what is left of your ${e.item?.n ?? "armour"}</span> and leave it where it falls. The bag declines the honour.`
       : `<span class="beat">You stow your ${e.slot ? slotWord(e.slot) : "gear"}</span> — ${e.item?.n ?? "it"} back in the bag, and you back to improvising.`,
   // Tried to wear/wield something your class, subclass, or race cannot.
   // Phase 24 (IDENT-07): a Woodsman gets its own clause; every other reason

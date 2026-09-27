@@ -296,7 +296,8 @@ test("roll-under: every dash variant and number word, case-insensitively", () =>
 });
 
 test("hygiene rules: each trips its violations and passes its clean lines; standing-wp is PLAYER_WP", () => {
-  assert.deepStrictEqual(HYGIENE_RULES.map((h) => h.id), ["leaked-value", "unfilled-token", "ascii-sign", "hyphen-range", "standalone-wp", "retired-name", "spacing"]);
+  // 79-12 added "house-spelling" (the British -our decision), the one rule after 79-01's seven.
+  assert.deepStrictEqual(HYGIENE_RULES.map((h) => h.id), ["leaked-value", "unfilled-token", "ascii-sign", "hyphen-range", "standalone-wp", "retired-name", "spacing", "house-spelling"]);
   for (const h of HYGIENE_RULES) {
     assert.ok(h.violation.length && h.clean.length);
     for (const v of h.violation) assert.ok(re(h).test(v), `${h.id} must catch ${JSON.stringify(v)}`);
@@ -394,6 +395,14 @@ test("validateLedgers: a two-plan chain, a new line, number-blind builder before
   assert.ok(stale.some((e) => /not in the current corpus/.test(e)));
   const cov = validateLedgers({ base: baseC, current, ledgers: [chain[0]] }, { coverage: true });
   assert.deepStrictEqual(cov.filter((e) => e.startsWith("coverage")), ["coverage: bank:X.c changed between base and current with no ledger row"]);
+});
+
+test("validateLedgers (79-12): a multi-line key's row may record its lines joined by a space, and only exactly that", () => {
+  const current = synthetic([E("bank:IDENTITY_FOOTER.sub.X", ["Good: a thing.", "Bad: another."])]);
+  const ok = [{ plan: "79-03", rows: [row({ key: "bank:IDENTITY_FOOTER.sub.X", surface: "blurbs", before: "", after: "Good: a thing. Bad: another." })] }];
+  assert.deepStrictEqual(validateLedgers({ base: synthetic([]), current, ledgers: ok }, { checkAfter: true }), []);
+  const wrong = [{ plan: "79-03", rows: [row({ key: "bank:IDENTITY_FOOTER.sub.X", surface: "blurbs", before: "", after: "Good: a thing.  Bad: another." })] }];
+  assert.ok(validateLedgers({ base: synthetic([]), current, ledgers: wrong }, { checkAfter: true }).some((e) => /not in the current corpus/.test(e)));
 });
 
 test("readLedgers: tolerates a BOM and CRLF, reads plans in order, and reports a parse error", () => {
