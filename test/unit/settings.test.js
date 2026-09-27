@@ -20,7 +20,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { readSettings, writeSetting, SETTINGS_DEFAULTS, SETTINGS_STORAGE_KEY } from "../../src/browser/settings.js";
+import { readSettings, writeSetting, SETTINGS_DEFAULTS, SETTINGS_STORAGE_KEY, textScaleForSize, effectiveTextScale } from "../../src/browser/settings.js";
 import { flush as flushStorage } from "../../src/browser/storage.js";
 
 async function withFakeLocalStorage(fn) {
@@ -421,4 +421,28 @@ test("Phase 71 (D-03): independence — writing a vol key changes no other key; 
     assert.equal(afterSound.volMusic, 100);
     assert.equal(afterSound.volEffects, 25);
   });
+});
+
+// Phase 78 (HUD-04): the text-size choice feeds the ONE root multiplier every
+// --mw-font-* token and scaled rem reads (test/unit/text-scale.test.js walks
+// the CSS side). Adjacency: S < M < L strictly; empty: a missing, unknown or
+// unreadable size is M (1.0); the final clamp holds at its inclusive bounds.
+test("Phase 78 (HUD-04): textScaleForSize is strictly S < M < L, and anything else is M", () => {
+  assert.ok(textScaleForSize("S") < textScaleForSize("M"));
+  assert.ok(textScaleForSize("M") < textScaleForSize("L"));
+  assert.equal(textScaleForSize("S"), 0.85);
+  assert.equal(textScaleForSize("M"), 1);
+  assert.equal(textScaleForSize("L"), 1.25);
+  for (const bad of [undefined, null, "", "XL", "m", 1, {}]) {
+    assert.equal(textScaleForSize(bad), 1, `${String(bad)} reads as M`);
+  }
+});
+
+test("Phase 78 (HUD-04): effectiveTextScale stays within 0.85..1.25 inclusive, and the default resolves to 1", () => {
+  assert.equal(effectiveTextScale("S", 1), 0.85);
+  assert.equal(effectiveTextScale("L", 1), 1.25);
+  assert.equal(effectiveTextScale("S", 0.01), 0.85);
+  assert.equal(effectiveTextScale("L", 50), 1.25);
+  assert.equal(effectiveTextScale(SETTINGS_DEFAULTS.textSize), 1);
+  assert.equal(effectiveTextScale(undefined), 1);
 });

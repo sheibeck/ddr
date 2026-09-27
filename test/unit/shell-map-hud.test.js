@@ -220,8 +220,10 @@ test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp
   assert.equal((HTML.match(/^\.mw-hud-wpfill\.mid\{background:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wpfill\.low\{background:#e05a48\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wp-text\.low\{color:#e05a48\}$/gm) || []).length, 1);
-  assert.equal((HTML.match(/--mw-font-hud-label:calc\(0\.40625rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
-  assert.equal((HTML.match(/--mw-font-hud-num:calc\(1rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
+  // Phase 78 (HUD-04): band 2's two tokens cap their own scale at 1.1 so the
+  // counters and the ☰ still fit 412px at L (was `* var(--mw-text-scale)`).
+  assert.equal((HTML.match(/--mw-font-hud-label:calc\(0\.40625rem \* min\(var\(--mw-text-scale\), 1\.1\)\)/g) || []).length, 1);
+  assert.equal((HTML.match(/--mw-font-hud-num:calc\(1rem \* min\(var\(--mw-text-scale\), 1\.1\)\)/g) || []).length, 1);
   assert.equal((HTML.match(/--mw-font-hud-ident:calc\(0\.8125rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
 });
 
