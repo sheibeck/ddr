@@ -6379,6 +6379,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // pinned `conditionsOf, hasTool, mapViewRadius, inViewWindow` line above
   // stays byte-identical. Bridged below as window.__mzConditionEffect.
   import { conditionEffectText } from "./src/browser/conditionEffects.js";
+  // Phase 77 (CMBUI-13) — separate import lines (same precedent as above) for
+  // the YOUR LOT chip rows; bridged below as window.__mzMemberConditionsOf
+  // and window.__mzHeroChips.
+  import { memberConditionsOf } from "./engine/derived.js";
+  import { lotChips, chipText, chipSheetFacts } from "./src/browser/heroConditions.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
@@ -6422,6 +6427,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // pure read-only bridge (same pattern as __mzConditionsOf above), so
   // paintConditions can lead a chip's tap card with its measured effect.
   window.__mzConditionEffect = conditionEffectText;
+
+  // Phase 77 (CMBUI-13): the party-member sibling of conditionsOf and the one
+  // hero/member chip table (heroConditions.js), bridged read-only (same
+  // pattern as __mzConditionsOf above) so the classic renderYourLot draws a
+  // chip row under the hero and each member from the SAME enumerator the HUD
+  // strip reads, and conditionTapText adds each chip's "how long" and "where
+  // from" facts. No rng, no mutation.
+  window.__mzMemberConditionsOf = memberConditionsOf;
+  window.__mzHeroChips = Object.freeze({ lotChips, chipText, chipSheetFacts });
 
   // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): a
   // read-only bridge (same pattern as __mzConditionsOf above) so the shell's

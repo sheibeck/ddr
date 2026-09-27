@@ -207,6 +207,11 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic/module: rail dark/hazard cards — torch retry, dark-fell gating)"]),
     purpose: "Bridges the pure carried-tool predicate so a hazard/dark rail card only offers a retry when the party actually carries the tool.",
   }),
+  __mzHeroChips: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderYourLot / conditionTapText)"]),
+    purpose: "Bridges src/browser/heroConditions.js's lotChips, chipText and chipSheetFacts (Phase 77, CMBUI-13): the one hero/member chip table, so YOUR LOT's chip rows and every condition chip's tap text (lasts and source) come from one source.",
+  }),
   __mzHudBands: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: paint — band 1's name/line split via identityParts, and the fixed-width counter slots)"]),
@@ -254,6 +259,11 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: draw — the render-window radius/visibility predicate)"]),
     purpose: "Bridges the pure render-window read so draw() only paints the currently-visible window; missing bridge falls back to showing everything.",
+  }),
+  __mzMemberConditionsOf: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze(["mazeworld.html (classic: renderYourLot / conditionTapText)"]),
+    purpose: "Bridges the pure engine/derived.js memberConditionsOf (Phase 77, CMBUI-13) so a party member's YOUR LOT chip row reads the same descriptor shape conditionsOf gives the hero.",
   }),
   __mzMotion: Object.freeze({
     owner: "mazeworld.html (module)",
