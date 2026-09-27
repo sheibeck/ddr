@@ -34,6 +34,7 @@ import { startCombat } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { SPELLS } from "../../content/index.js";
 import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js";
+import { playRun } from "../../tools/lib/tuning-bot.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const ENGINE_DIR = path.resolve(__dirname, "../../engine");
@@ -430,4 +431,29 @@ test("chip: the live window gives exactly { key: 'reveal', polarity: 'good' }; n
   assert.deepStrictEqual(conditionsOf(cast).find((c) => c.key === "reveal"), { key: "reveal", polarity: "good" });
   const stepped = stepSweepsOnce(cast, "chip");
   assert.equal(conditionsOf(stepped).some((c) => c.key === "reveal"), false);
+});
+
+// --- the bot plays the rule (no bot-code change) ----------------------------
+
+test("bot: a forced Magic User run that casts Map the Floor closes every window on its next move; every live window has left 1", () => {
+  // The PIN_RUNS "solo-magicuser-sorcerer" entry never casts Map the Floor
+  // (0 floorMapped events, measured at the plan base 2a5bf95), so this case
+  // pins its own seed: seed 3 is the smallest of seeds 1-20 whose forced
+  // Human Sorcerer run (maxActions 400) casts it (3 casts, measured live).
+  let windowOpen = false;
+  let mapped = 0;
+  let faded = 0;
+  const lefts = new Set();
+  playRun(3, { maxActions: 400, force: { cls: "Magic User", sub: "Sorcerer", race: "Human" } }, (events, state) => {
+    const types = events.map((e) => e.type);
+    mapped += types.filter((t) => t === "floorMapped").length;
+    faded += types.filter((t) => t === "revealFaded").length;
+    if (windowOpen && types.includes("moved")) assert.ok(types.includes("revealFaded"), `a move with a window open must sweep: ${types.join(",")}`);
+    const rec = state.c.timers && state.c.timers["spell:reveal"];
+    if (rec) lefts.add(rec.left);
+    windowOpen = !!(rec && rec.phase === "effect" && rec.left > 0);
+  });
+  assert.ok(mapped >= 1, "non-vacuous: the run casts Map the Floor");
+  assert.ok(faded >= 1, "non-vacuous: a window closes on a step");
+  assert.deepEqual([...lefts], [1], "every live window the run holds has left 1");
 });

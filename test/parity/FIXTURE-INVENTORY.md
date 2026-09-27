@@ -4269,3 +4269,93 @@ No fixture moved; `worn-migration.test.js` still passes, and
 - `test/unit/shell-resume-line.test.js` (76-05): the boot-time Oracle
   resume line, Oracle only, with the pinned engineAdapter import line
   byte-identical.
+
+### Plan 06 — Map the Floor lasts until you move (user ruling 2026-09-26): measured
+
+**The rule.** Map the Floor's window is one square (`content/spells.js`,
+`squares: 1`) on the existing Phase 40 squares timer, so the hero's first
+step after a cast produces the `spell:reveal` effect-to-null transition,
+`refogSpellSeen` runs and `revealFaded` fires. Only movement ends it:
+`engine/movement.js#move` is the one `tickSquares` call site in `engine/`.
+Casting, camping, a same-square fight, a flee attempt and a refused step keep
+the window; a recast rewrites the one-square record; a relaunch keeps it.
+`floorMapped` is `{ type, cells }` and the `reveal` chip is
+`{ key: "reveal", polarity: "good" }` (no countdown). Old saves:
+`engine/saveState.js#clampRevealWindow`, in both load chains, loads a live
+record with more than one square left as `left: 1`; a no-op for every state
+the new engine produces. No bot-code change (`tools/lib/tuning-bot.mjs` is
+untouched). No balance readout was taken (user ruling 2026-09-26: bots run
+once, in Phase 79.1).
+
+**The predictor.** At the plan base (`2a5bf95`), `floorMapped` events per
+surface: a temporary `console.log` probe in the reveal branch of
+`engine/magic.js` (reverted before the first real edit) for the parity suite,
+and a scratch `playRun` / replay counter for the bot surfaces.
+
+| Surface | floorMapped at the base |
+|---|---|
+| every parity fixture scenario (chargen 14 seeds, movement, combat ×6, magic ×4, economy, encounters ×5) | 0 |
+| PIN_RUNS: solo-1, solo-2, solo-thief-pilfer, solo-magicuser-sorcerer, party-1, party-fighter-knight, deep-8, deep-14 | 0 each |
+| pre-switch save replay (`roll-high-save-compat`) | 0 |
+| bot-tactics Fighter/Knight/Human seeds 1, 2, 3, 5, 6 (2000 actions) and 1-5 (1000 actions) | 0 each |
+| bot-tactics Thief/Pilfer/Human seeds 2, 3, 4; Fighter/Knight/Troll seeds 5, 2, 4 | 0 each |
+| bot-tactics Magic User/Sorcerer/Human seeds 4, 2, 3 | 2, 0, 7 |
+
+Predicted moved set: zero parity fixtures and zero state pins. Only the two
+casting bot-tactics seeds may move, and they only assert "not stuck".
+
+**The live-scan results, measured after the change.**
+
+1. `node --test "test/parity/**/*.test.js"`: **64 tests, 64 pass, 0 fail**.
+2. `git diff --stat 2a5bf95 -- test/parity/fixtures test/parity/prototype-master.js.txt`: empty.
+3. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node tools/fixture-inventory.mjs` replays to the same roster, and
+   `node --test test/parity/fixture-inventory.test.js` passes.
+
+**The moved set.**
+
+| Surface | Casts at the base | Result after the change |
+|---|---|---|
+| every PIN_RUNS label | 0 | measured zero: every final-state hash byte-identical (for example solo-magicuser-sorcerer `444ec2ca…`, deep-14 `be6f151a…`) |
+| pre-switch save replay | 0 | measured zero: `expected.hash` `43b71a38…` unchanged |
+| bot-tactics MU/Sorcerer seed 4 | 2 | moved (830 → 576 actions), still dies naturally: no swap |
+| bot-tactics MU/Sorcerer seed 3 | 7 | moved (972 → 551 actions), still dies naturally: no swap |
+| every other bot-tactics seed | 0 | byte-identical outcome |
+
+`test/unit/roll-high-state-pins.test.js`, `test/unit/roll-high-save-compat.test.js`,
+`test/unit/fixtures/roll-high/pre-switch-save.json` and
+`test/unit/bot-tactics.test.js` are unchanged. The recorded rail corpus
+`test/unit/fixtures/event-order/default-fold-corpus.json` carries no
+`floorMapped` or `revealFaded` line, so it did not move. No shell snapshot
+moved. `npm test` is 6,899/6,899 green after the change, with no band or
+survival test failing.
+
+#### Flipped unit pins
+
+| File | Test | Old assertion | New assertion |
+|---|---|---|---|
+| test/unit/map-reveal.test.js | the cast test | `floorMapped.squares === 40`; record `left: 40` | no `squares` key; record `left: 1` |
+| test/unit/map-reveal.test.js | the recast test | a recast refreshes to `left: 40` | a recast keeps the one-square window |
+| test/unit/map-reveal.test.js | the sweep test | no re-fog for 39 steps, one sweep on the 40th | one sweep on the first step, never a second |
+| test/unit/map-reveal.test.js | the step-20 recast test | the recast resets to 40, `left` 35 five steps later | the recast reopens a one-square window that the next step closes |
+| test/unit/map-reveal.test.js | the chip test | `{ key, polarity, remaining: 40, cadence: "squares" }` | `{ key: "reveal", polarity: "good" }`, gone after the first step |
+| test/unit/map-reveal.test.js | the narration test | floorMapped names 40 squares; revealFaded says "forgets" | no number; "still"; revealFaded and the rail say "focus" |
+| test/unit/map-reveal.test.js | the live-window round-trip | saved after one step | saved right after the cast |
+| test/unit/spell-table.test.js | SPELLS[5] squares | `squares === 40` | `squares === 1` |
+| test/unit/magic.test.js | the Map the Floor smoke test | `e.squares === 40` | no `squares` key |
+| test/unit/conditions.test.js | the order test and the fully-loaded test | reveal chip `remaining` 17 / 22 | `{ key: "reveal", polarity: "good" }` |
+| test/unit/shell-spells-40.test.js | CONDITION_COPY, the kit row, the voice test | `unit: "sq"`, "12 sq", the "on loan" sentence | `detail: "until you move"`, "until you move", the until-you-move sentence; plus a painted-chip sandbox test and a tap-card test |
+| test/unit/gear-view-models.test.js | gearKitRows running-effects order | "12 sq" | "until you move" |
+| test/unit/gear-panels.test.js | the GEAR_COPY literal | `revealValue: "{n} sq"` | `revealValue: "until you move"` |
+| test/unit/hero-conditions.test.js | lotChips input; chipSheetFacts | a countdown reveal chip; "1 square left" | `{ key: "reveal", polarity: "good" }`; "until you move" |
+
+**The new standing guard.** `test/unit/map-until-move.test.js` (16 tests):
+the spell row, the cast, the first step (and a water step), every
+same-square action, tabs never tick, the one tick site, recast, the stairs,
+a scroll, a relaunch (plain and mid-fight), the old-save clamp and its
+non-live shapes, the chip, and a forced Magic User bot run (seed 3) that
+proves every window closes on the next move with no bot-code change.
+
+**Byte-identical elsewhere.** No comparable carve-out was added
+(`test/parity/harness/comparables.js` is untouched); `stripSpellSeen` and
+`stripTimersField` already carve the flag and the timers out.
