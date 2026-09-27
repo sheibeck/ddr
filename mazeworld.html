@@ -1104,8 +1104,9 @@ html,body{height:100%}
    don't need more rails on the top; consolidate the buttons into a
    hamburger menu"): band 4 is retired outright. The HUD is now:
      1. Band 1 (.mw-hud-identity) — the name (#mw-hud-name, gold, never
-        truncated), then the race/class(sub)/level line (#mw-hud-line,
-        dimmed, ellipsis-truncating), then the x/y HP text
+        truncated), then the "Race Sub-class · Lvl N" line (#mw-hud-line,
+        dimmed: its race/sub-class span ellipsizes, its level span never
+        does — Phase 78 HUD-01), then the x/y HP text
         (#mw-hud-wp/.mw-hud-wp-text), then the DEV chip.
      2. The HP strip (.mw-hud-wptrack) — a full-width 4px bar directly
         under band 1, so the text and the bar can never collide (D-02: this
@@ -1125,7 +1126,14 @@ html,body{height:100%}
 .mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;display:flex;flex-direction:column}
 .mw-hud-identity{display:flex;align-items:baseline;gap:8px;padding:calc(9px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 10px;background:#241d12;overflow:hidden}
 .mw-hud-name{flex:none;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#e8c97a}
-.mw-hud-line{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#a89c82}
+.mw-hud-line{flex:1;min-width:0;display:flex;align-items:baseline;overflow:hidden;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#a89c82}
+/* Phase 78 (HUD-01, Plan 06): band 1's line is two spans. "Race Sub-class"
+   (#mw-hud-ident) is the part that shrinks and ellipsizes; " · Lvl N"
+   (#mw-hud-lvl) is flex:none, so the level is never the part that is cut.
+   white-space:pre keeps the separator's leading space, which a flex item
+   would otherwise drop. */
+.mw-hud-ident{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mw-hud-lvl{flex:none;white-space:pre}
 /* Phase 35 (MAP-01) / Phase 57 (LAYOUT-05/Plan 05): the x/y HP readout, a
    direct child of band 1 now (the .mw-hud-wp wrapper div retired — the
    strip below is the bar) — paint() writes the text and the strip's
@@ -1491,6 +1499,9 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
    the gold top border reads clearly as the SAME "active" signal the mock
    uses, not just a slightly different text color. */
 .mw-tab.active{color:var(--ditto);background:#241d12;border-top-color:var(--ditto);font-weight:700;letter-spacing:.08em}
+/* Phase 78 (HUD-02): a dead hero's HERO and GEAR tabs are inert — dimmed,
+   never hidden, so the bar keeps its shape and the player can see why. */
+.mw-tab:disabled{opacity:.35;cursor:default}
 
 .mw-empty{padding:22px 6px;text-align:center}
 .mw-empty-head{display:block;font-family:var(--disp);font-size:calc(0.75rem * var(--mw-text-scale));letter-spacing:.06em;color:var(--ink);margin:0 0 8px}
@@ -1657,6 +1668,35 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
   color:#e6ddc6;line-height:1.5;letter-spacing:.04em;text-transform:uppercase;
 }
 .mw-legend-row-desc{flex:1;font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale));font-weight:700;color:#a89c82;line-height:1.35}
+
+/* ---------- FINAL SHEET (Phase 78, HUD-03) ----------
+   The read-only look at the run that just ended, in the MARKS legend's own
+   sheet chrome (.mw-legend-sheet/-scrim/-panel/-head/-close, above — the
+   panel already scrolls at max-height 78vh). src/browser/finalSheet.js
+   draws the .mw-fs-* body with text only; long names, epitaphs and item
+   lines wrap inside the sheet (overflow-wrap:anywhere), never truncate. */
+.mw-final-sheet-body{padding-top:4px}
+.mw-fs{display:block;color:#e6ddc6}
+.mw-fs-sec{padding:12px 0;border-bottom:2px solid #241f16}
+.mw-fs-sec:last-child{border-bottom:0}
+.mw-fs-head{
+  margin:0 0 8px;font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));
+  letter-spacing:.08em;text-transform:uppercase;color:#c9bda0;
+}
+.mw-fs-name{margin:0 0 4px;font-family:var(--disp);font-size:calc(0.625rem * var(--mw-text-scale));line-height:1.5;color:#e8c97a;overflow-wrap:anywhere}
+.mw-fs-line,.mw-fs-note,.mw-fs-empty,.mw-fs-epitaph{
+  margin:2px 0;font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale));
+  line-height:1.4;color:#e6ddc6;overflow-wrap:anywhere;
+}
+.mw-fs-note{color:#a89c82}
+.mw-fs-empty{color:#8f856f;font-style:italic}
+.mw-fs-epitaph{font-style:italic}
+.mw-fs-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:3px 0}
+.mw-fs-k{
+  font-family:var(--disp);font-size:calc(0.4375rem * var(--mw-text-scale));line-height:1.6;
+  letter-spacing:.06em;text-transform:uppercase;color:#9a8f76;overflow-wrap:anywhere;
+}
+.mw-fs-v{font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale));font-weight:700;color:#e6ddc6;overflow-wrap:anywhere}
 
 /* ---------- Settings bottom sheet (04-DR9, completes UX-07) ----------
    Reuses the MARKS legend's own sheet chrome (.mw-legend-sheet/-scrim/
@@ -1976,6 +2016,25 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
   </div>
 </div>
 
+<!-- ============ FINAL SHEET (Phase 78, HUD-03) ============
+     The user's 2026-09-24 ruling: the DEAD screen offers the hero's
+     character sheet in READ-ONLY mode (stats, level, gear, grimoire and the
+     epitaph) for the run that just ended. Opened only while the hero is dead,
+     by window.mzOpenFinalSheet (the DEAD tab's dock and the death card's
+     FINAL SHEET button); src/browser/finalSheet.js draws the body as text
+     only. Close and the scrim are its only controls; the Android back
+     button closes it too. -->
+<div id="mw-final-sheet" class="mw-legend-sheet mw-final-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-final-sheet-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-label="Final sheet">
+    <div class="mw-legend-head">
+      <span>Final sheet</span>
+      <button type="button" class="mw-legend-close" id="mw-final-sheet-close" aria-label="Close">Close</button>
+    </div>
+    <div class="mw-final-sheet-body" id="mw-final-sheet-body"></div>
+  </div>
+</div>
+
 <!-- ============ SETTINGS BOTTOM SHEET (04-DR9, completes UX-07) ============
      Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
      -scrim/-panel/-head/-close, above) — opened by the SETTINGS row of the
@@ -2171,7 +2230,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
   <header class="mw-hud" id="mw-hud">
     <div class="mw-hud-identity">
       <span class="mw-hud-name" id="mw-hud-name"></span>
-      <span class="mw-hud-line" id="mw-hud-line"></span>
+      <span class="mw-hud-line" id="mw-hud-line"><span class="mw-hud-ident" id="mw-hud-ident"></span><span class="mw-hud-lvl" id="mw-hud-lvl"></span></span>
       <!-- Phase 35 (MAP-01, ruling 5) / Phase 57 (LAYOUT-05, Plan 05): the
            x/y HP text — paint() writes it and the strip's width/threshold
            classes below (the wrapper div retired; this is now a direct
@@ -2516,11 +2575,11 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 
   <!-- ============ 5-TAB BOTTOM NAV (UX; fixed, safe-area-padded) ============ -->
   <nav class="mw-tabbar" id="mw-tabbar">
-    <button type="button" class="mw-tab active" data-tab="maze" aria-current="true">MAP</button>
-    <button type="button" class="mw-tab" data-tab="hero" aria-current="false">HERO</button>
-    <button type="button" class="mw-tab" data-tab="gear" aria-current="false">GEAR</button>
-    <button type="button" class="mw-tab" data-tab="oracle" aria-current="false">ORACLE</button>
-    <button type="button" class="mw-tab" data-tab="dead" aria-current="false">DEAD</button>
+    <button type="button" class="mw-tab active" id="mw-tab-maze" data-tab="maze" aria-current="true">MAP</button>
+    <button type="button" class="mw-tab" id="mw-tab-hero" data-tab="hero" aria-current="false">HERO</button>
+    <button type="button" class="mw-tab" id="mw-tab-gear" data-tab="gear" aria-current="false">GEAR</button>
+    <button type="button" class="mw-tab" id="mw-tab-oracle" data-tab="oracle" aria-current="false">ORACLE</button>
+    <button type="button" class="mw-tab" id="mw-tab-dead" data-tab="dead" aria-current="false">DEAD</button>
   </nav>
 </div>
 
@@ -2611,6 +2670,42 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 // Pixel 7 2026-09-17); __mzState is assigned right after `let S`, so it is
 // the "state exists" sentinel.
 let mwActiveTab = "maze";
+// Phase 78 (HUD-02) — the dead-state lockdown. The user's words: "once the
+// hero is dead, only the Oracle, the DEAD/Leaderboards screen and the ☰ menu
+// ... accept input. Map taps, the other tabs, camp, marks and centre-map are
+// inert." Amended by the user's 2026-09-26 ruling: "after death the MAP tab
+// stays VIEWABLE but read-only. You can look at the map where you died, but
+// every map tap, mark and camp action is inert."
+//   - HERO and GEAR are the locked tabs: showTab refuses them while dead and
+//     syncDeadTabLock() (called from paint) sets disabled + aria-disabled on
+//     their buttons, clearing both for a live run.
+//   - mwDeadMapAside is a presentation-only shell flag (a plain `let`, never
+//     on S or window): set when the player leaves the MAP tab while dead,
+//     cleared for a live run. While it is set, renderEncounter puts the death
+//     card (THAT IS THAT) aside so the map where the hero died can be looked
+//     at; hasActiveEncounter() still counts S.dead, so every input gate stays
+//     shut and only a drag or a pinch (camera only) starts on that map.
+// Declared ahead of initTabs so its first showTab("maze") reads no TDZ binding.
+const DEAD_LOCKED_TABS = Object.freeze(["hero", "gear"]);
+let mwDeadMapAside = false;
+function deadNow() {
+  return window.__mzState?.get?.()?.dead === true;
+}
+function syncDeadTabLock() {
+  const dead = deadNow();
+  if (!dead) mwDeadMapAside = false;
+  for (const name of DEAD_LOCKED_TABS) {
+    const btn = document.getElementById(`mw-tab-${name}`);
+    if (!btn) continue;
+    if (dead) {
+      btn.disabled = true;
+      btn.setAttribute("aria-disabled", "true");
+    } else {
+      btn.disabled = false;
+      btn.removeAttribute("aria-disabled");
+    }
+  }
+}
 (function initTabs() {
   const tabs = Array.from(document.querySelectorAll(".mw-tab"));
   const screens = {
@@ -2626,6 +2721,13 @@ let mwActiveTab = "maze";
   const screensEl = document.getElementById("mw-screens");
   function showTab(name) {
     if (!screens[name]) return;
+    // Phase 78 (HUD-02): a dead hero's HERO and GEAR tabs are inert (their
+    // buttons are disabled too; this refuses a programmatic call). Leaving
+    // the MAP tab while dead puts the death card aside for the next visit
+    // (the 2026-09-26 ruling: the map where you died stays viewable).
+    const dead = deadNow();
+    if (dead && DEAD_LOCKED_TABS.includes(name)) return;
+    if (dead && mwActiveTab === "maze" && name !== "maze") mwDeadMapAside = true;
     // Phase 58 (MOTION-03, D-11): a tab switch lands the round the same
     // way a hurry tap does — nothing is lost.
     window.__mzBeat?.hurry?.();
@@ -2704,13 +2806,19 @@ let mwActiveTab = "maze";
     // assigns the bridge (a harmless no-op then). The viewport rect is
     // non-zero here because the screen was un-hidden two statements earlier.
     if (name === "maze") window.mzKeepPartyInView?.();
+    // Phase 78 (HUD-02): back on the MAP while dead, re-render the encounter
+    // so a put-aside death card stays aside (the bare map where they died).
+    // `dead` implies the state bridge exists, so S is past its TDZ here.
+    if (name === "maze" && dead) renderEncounter();
     // Phase 66 (BOARD-01, D-02/D-04/D-15): the DEAD tab opens the
     // module-owned Leaderboards panel, which reads the adapter's in-memory
     // bests and graveyard synchronously (a death is already folded in by the
     // time the tab opens), so there is no storage re-fetch here any more.
     // Optional-chained because the initial showTab("maze") runs before the
     // module script assigns window.__mzBoards.
-    if (name === "dead") window.__mzBoards?.onDeadTab?.();
+    // Phase 78 (HUD-03): it passes whether the hero is dead, so a dead
+    // hero's DEAD tab docks FINAL SHEET and BURY THEM.
+    if (name === "dead") window.__mzBoards?.onDeadTab?.({ dead });
   }
   for (const btn of tabs) btn.addEventListener("click", () => showTab(btn.dataset.tab));
   showTab("maze");
@@ -3219,7 +3327,7 @@ const COMBAT_COPY = {
     won: { title: "THEY ARE DOWN", line: "Every one of them. Try not to look smug.", btn: "BACK TO THE MAZE" },
     soothed: { title: "THEY STAND DOWN", line: "Words. Who knew.", btn: "BACK TO THE MAZE" },
     fled: { title: "YOU GOT OUT", line: "Not proud. Not dead either.", btn: "BACK TO THE MAZE" },
-    dead: { title: "THAT IS THAT", line: "The maze keeps the rest.", oracle: "REVIEW THE ORACLE", bury: "BURY THEM" },
+    dead: { title: "THAT IS THAT", line: "The maze keeps the rest.", oracle: "REVIEW THE ORACLE", sheet: "FINAL SHEET", bury: "BURY THEM" },
   },
 };
 
@@ -3735,17 +3843,23 @@ function paint() {
   // co-rendered "RATIONS n" label (never color-only).
   document.getElementById("m-rat-wrap").classList.toggle("warn", c.rations <= 2);
   // Phase 57 (LAYOUT-05), Plan 05: band 1's name (never truncated) and its
-  // race/class(sub)/level line (which does truncate) — split by the bridge's
-  // identityParts(c) into #mw-hud-name/#mw-hud-line. #mw-hud-line's title
+  // "Race Sub-class · Lvl N" line — split by the bridge's identityParts(c)
+  // into #mw-hud-name/#mw-hud-line. #mw-hud-line's title
   // carries the FULL identityLine(c) string so an ellipsised line is still
   // readable on a long-press. Fail-open: a missing bridge leaves the
   // existing text in place rather than throwing.
+  // Phase 78 (HUD-01, Plan 06): the line itself is two spans — the
+  // truncating "Race Sub-class" (#mw-hud-ident) and the never-truncated
+  // " · Lvl N" (#mw-hud-lvl) — so an ellipsis can never eat the level.
   const hudName = document.getElementById("mw-hud-name");
   const hudLine = document.getElementById("mw-hud-line");
-  if (hudName && hudLine && window.__mzHudBands) {
+  const hudIdent = document.getElementById("mw-hud-ident");
+  const hudLvl = document.getElementById("mw-hud-lvl");
+  if (hudName && hudLine && hudIdent && hudLvl && window.__mzHudBands) {
     const parts = window.__mzHudBands.identityParts(c);
     hudName.textContent = parts.name;
-    hudLine.textContent = parts.line;
+    hudIdent.textContent = parts.ident;
+    hudLvl.textContent = parts.lvl;
     hudLine.title = window.__mzHudBands.identityLine(c);
   }
   // Phase 47 (SHELL-01), Plan 03: the m-gold HUD write moved into
@@ -4935,6 +5049,10 @@ function renderRankLine(host, placement) {
 }
 
 function renderEncounter() {
+  // Phase 78 (HUD-02): the HERO/GEAR tab lock follows S.dead on every
+  // render (every paint reaches here): set for a dead hero; cleared, with the
+  // put-aside flag, for a live run.
+  syncDeadTabLock();
   const panel = document.getElementById("enc-panel");
   // Device-review revision #5: the panel is an OVERLAY over the map, shown
   // ONLY while something is actually happening (feature-tile narration,
@@ -4984,6 +5102,19 @@ function renderEncounter() {
     // Phase 58 (MOTION-04): the overlay just went away — the next time a
     // major overlay shows, even with identical content, it types again.
     lastMajorTypedKey = "";
+    return;
+  }
+  // Phase 78 (HUD-02, the user's 2026-09-26 ruling: "You can look at the map
+  // where you died, but every map tap, mark and camp action is inert"): once
+  // the player has left the MAP tab while dead, the death card is put aside
+  // and the overlay stays hidden, so the bare map shows. The encounter is
+  // still active (hasActiveEncounter() counts S.dead), so taps, holds and
+  // keys stay inert; the death card's actions live on the DEAD tab's dock
+  // and in the ☰ from here on.
+  if (S.dead && mwDeadMapAside) {
+    if (panel) hidePanel(panel);
+    document.getElementById("mw-party-pulse")?.classList.remove("covered");
+    if (window.__mzState) window.renderRail?.();
     return;
   }
   if (panel) showPanel(panel);
@@ -5044,6 +5175,14 @@ function renderEncounter() {
   // lines (decision 5: re-pin renderCombatOver, don't rebuild); there is no
   // separate Move-on card to dismiss first any more.
   if (!bv && S.dead) {
+    // Phase 78 (HUD-02): the one programmatic way onto the map from a locked
+    // tab. A death while HERO or GEAR is showing (a fatal potion drunk from
+    // the Gear tab, say) switches to the map, whose own re-render then draws
+    // this card; nothing else can reach a disabled tab.
+    if ((mwActiveTab === "hero" || mwActiveTab === "gear") && window.__mzShowTab) {
+      window.__mzShowTab("maze");
+      return;
+    }
     // Phase 34 (CSCR-07): THAT IS THAT — the mock's dark over-panel, not the
     // legacy death card markup. DR16 Fix 3 (read the Oracle before
     // dismissing) and DR4 group 3 (Confirm stays armed, no read-first lock)
@@ -5054,6 +5193,10 @@ function renderEncounter() {
       lines: S.beats && S.beats.preDeath && S.beats.groups && S.beats.groups.length ? S.beats.groups[0].lines : [],
       buttons: [
         { id: "btn-death-oracle", label: COMBAT_COPY.over.dead.oracle, cls: "secondary", onTap: () => window.__mzShowTab?.("oracle") },
+        // Phase 78 (HUD-03): FINAL SHEET — the read-only look at the run
+        // that just ended, offered here too since this is the first dead
+        // screen the player sees.
+        { id: "btn-death-sheet", label: COMBAT_COPY.over.dead.sheet, cls: "secondary", onTap: () => window.mzOpenFinalSheet?.() },
         { id: "btn-death-confirm", label: COMBAT_COPY.over.dead.bury, cls: "dead" },
       ],
     });
@@ -6095,7 +6238,9 @@ function tapStep(clientX, clientY) {
   window.move(res.dir);
 }
 function inspectAt(clientX, clientY) {
-  if (!S) return;
+  // Phase 78 (HUD-02): a hold on the dead map shows no inspect card — the
+  // map where you died is for looking at, and every map tap is inert.
+  if (!S || S.dead) return;
   const vp = document.getElementById("mw-maze-viewport");
   const rect = vp.getBoundingClientRect();
   const { px, py, g } = S.floor;
@@ -6118,6 +6263,14 @@ function inspectAt(clientX, clientY) {
 // overlay is up (over-map, see renderEncounter()), a drag on the viewport
 // underneath would be a confusing no-op, so panning is suppressed until the
 // overlay is dismissed.
+// Phase 78 (HUD-02, the user's 2026-09-26 ruling: "You can look at the map
+// where you died"): the one exception is the dead map with the death card put
+// aside — deadMapLookOnly() lets a drag or a pinch start there (they move only
+// `cam`/`zoom`, never S). A tap still reaches tapStep, which bails on
+// hasActiveEncounter(), and a hold reaches inspectAt, which bails while dead.
+function deadMapLookOnly() {
+  return !!(S && S.dead && mwDeadMapAside);
+}
 (function initMazeViewportControls() {
   const vp = document.getElementById("mw-maze-viewport");
   if (!vp) return;
@@ -6150,7 +6303,7 @@ function inspectAt(clientX, clientY) {
     // Phase 58 (MOTION-01, D-02): the finger wins — a touch freezes any
     // in-flight glide exactly where it is, before anything else runs.
     window.__mzCameraGlide?.cancel?.();
-    if (!S || hasActiveEncounter()) return;
+    if (!S || (hasActiveEncounter() && !deadMapLookOnly())) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { vp.setPointerCapture(e.pointerId); } catch (err) { /* off-element capture is non-fatal */ }
     if (pts.size >= 2) {
@@ -6326,7 +6479,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // it outside that swallowed span for any such source-assertion test.
   import { linesForAction } from "./src/browser/narrationLines.js";
   // NARRATIVE_ACTIONS gates ctx.narrate in dispatchWithNarration (move/camp/
-  // joiner lines carry the Oracle's own sentence).
+  // joiner lines, and Phase 78's wall/crevice crossings, carry the Oracle's
+  // own sentence).
   import { NARRATIVE_ACTIONS } from "./src/browser/narrationLines.js";
   // Phase 32 (CMBUI-02): PRIORITY.block keeps refusals as dull rail/log
   // entries even in combat; narrativeLineText is the card's defensive text
@@ -6342,6 +6496,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 78 (CLIMB-01/02) — the pre-roll wall/crevice decision card's pure
   // view model, bridged onto window.__mzRailVM.hazardCard below.
   import { hazardCardViewModel } from "./src/browser/hazardCard.js";
+  // Phase 78 (HUD-03) — the FINAL SHEET's pure, read-only view model and
+  // text-only renderer (window.mzOpenFinalSheet, below).
+  import { finalSheetViewModel, renderFinalSheet } from "./src/browser/finalSheet.js";
   // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
   // view-models and the four-action-grid/submenu view-model, bridged onto
   // window.__mzCombatVM below for the classic renderEncounter to consume.
@@ -7031,6 +7188,33 @@ window.__mzClassicBoot = async function classicBoot() {
   document.getElementById("mw-gear-btn")?.addEventListener("click", closeMenuThen(openSettingsSheet));
   document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
   document.getElementById("mw-settings-close")?.addEventListener("click", closeSettingsSheet);
+
+  // Phase 78 (HUD-03): the FINAL SHEET — the read-only look at the run that
+  // just ended (the user's 2026-09-24 ruling). It opens only while the hero
+  // is dead; the body is src/browser/finalSheet.js's text-only render of
+  // finalSheetViewModel(S), so nothing in it can dispatch. Close, the scrim
+  // and the Android back button (getGameContext below) close it.
+  function finalSheetOpen() {
+    const sheet = document.getElementById("mw-final-sheet");
+    return !!sheet && !sheet.hidden;
+  }
+  function openFinalSheet() {
+    const S = window.__mzState.get();
+    if (!S || S.dead !== true) return;
+    const sheet = document.getElementById("mw-final-sheet");
+    const body = document.getElementById("mw-final-sheet-body");
+    if (!sheet || !body) return;
+    renderFinalSheet(body, finalSheetViewModel(S));
+    body.scrollTop = 0;
+    panelMotion.open(sheet);
+  }
+  function closeFinalSheet() {
+    const sheet = document.getElementById("mw-final-sheet");
+    if (sheet && !sheet.hidden) panelMotion.close(sheet);
+  }
+  window.mzOpenFinalSheet = openFinalSheet;
+  document.getElementById("mw-final-sheet-scrim")?.addEventListener("click", closeFinalSheet);
+  document.getElementById("mw-final-sheet-close")?.addEventListener("click", closeFinalSheet);
 
   // Phase 67 (ACCT-02, D-09/D-10): the account bottom sheet. Phase 70
   // (D-03/D-04): only the title screen's corner chip opens it now, and it
@@ -8791,6 +8975,15 @@ window.__mzClassicBoot = async function classicBoot() {
       flushAccountCard();
     } else if (action === "roll") {
       window.mzStartRoll();
+    } else if (action === "finalSheet") {
+      // Phase 78 (HUD-03): the dead-hero dock's FINAL SHEET — a sheet over
+      // the panel, which stays where it is.
+      window.mzOpenFinalSheet?.();
+    } else if (action === "bury") {
+      // Phase 78 (HUD-03): the dock's BURY THEM — the same way back to the
+      // title the death card's own BURY THEM takes, from the map.
+      window.__mzShowTab?.("maze");
+      window.mzReturnToTitle();
     }
   }
 
@@ -8929,7 +9122,7 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen(),
+        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen() || finalSheetOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
@@ -8953,6 +9146,9 @@ window.__mzClassicBoot = async function classicBoot() {
           // returns at once — the rest of this handler would otherwise
           // clear the store/beats/stair underneath on the same press.
           if (hudMenuIsOpen()) { hudMenuEvent("escape"); return; }
+          // Phase 78 (HUD-03): the FINAL SHEET sits over the DEAD tab or the
+          // death card, so one back press closes only it.
+          if (finalSheetOpen()) { closeFinalSheet(); return; }
           // Phase 71 (71-06, D-07): THE FIGHT SO FAR sits over the combat
           // screen, so one back press closes only it; the fight underneath
           // is exactly as it was.

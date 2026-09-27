@@ -306,13 +306,22 @@ test("row states (D-08): an over-map encounter disables MAKE CAMP and CENTRE MAP
   });
 });
 
-test("row states (D-08): a dead hero disables MAKE CAMP; CENTRE MAP follows the encounter flag alone", () => {
-  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: true, encounter: false })), { ...ALL_ON, camp: false });
-  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: true, encounter: true })), {
-    ...ALL_ON,
-    centre: false,
-    camp: false,
-  });
+// Phase 78 (HUD-02): "once the hero is dead, only the Oracle, the DEAD/
+// Leaderboards screen and the ☰ menu (Settings, the way back to the title)
+// accept input ... camp, marks and centre-map are inert". Before 78-06 a dead
+// hero disabled MAKE CAMP only (MARKS stayed live and CENTRE MAP followed the
+// encounter flag alone); now MARKS, CENTRE MAP and MAKE CAMP are all off.
+test("row states (HUD-02): a dead hero disables MARKS, CENTRE MAP and MAKE CAMP; SETTINGS and both quit rows stay live", () => {
+  const DEAD = { ...ALL_ON, marks: false, centre: false, camp: false };
+  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: true, encounter: true })), DEAD);
+  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: true, encounter: false })), DEAD);
+  assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: false, dead: true, encounter: true })), DEAD);
+});
+
+test("row states (HUD-02): only a strictly-true dead flag locks MARKS", () => {
+  for (const dead of [false, undefined, null, 1, "true"]) {
+    assert.equal(enabledMap(hudMenuRowStates({ hero: true, dead, encounter: false })).marks, true, `dead=${String(dead)}`);
+  }
 });
 
 test("row states (D-08): no hero (hero not strictly true) disables MAKE CAMP only", () => {
@@ -321,11 +330,13 @@ test("row states (D-08): no hero (hero not strictly true) disables MAKE CAMP onl
   }
 });
 
-test("row states (D-08): MARKS, SETTINGS, SAVE & QUIT and ABANDON are always enabled", () => {
+// Phase 78 (HUD-02): MARKS left this always-on set (a dead hero locks it,
+// pinned above); SETTINGS and the two quit rows are the no-trap guarantee.
+test("row states (D-08, HUD-02): SETTINGS, SAVE & QUIT and ABANDON are always enabled, dead or alive", () => {
   const ctxs = [{ hero: true }, { hero: true, encounter: true }, { hero: true, dead: true }, { hero: false, dead: true, encounter: true }, {}];
   for (const ctx of ctxs) {
     const m = enabledMap(hudMenuRowStates(ctx));
-    for (const key of ["marks", "settings", "saveQuit", "abandon"]) assert.equal(m[key], true, `${key} ctx=${JSON.stringify(ctx)}`);
+    for (const key of ["settings", "saveQuit", "abandon"]) assert.equal(m[key], true, `${key} ctx=${JSON.stringify(ctx)}`);
   }
 });
 

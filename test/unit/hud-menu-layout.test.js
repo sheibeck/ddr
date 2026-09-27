@@ -448,7 +448,12 @@ test("(21) BEHAVIOUR (Phase 70 D-08, ruling R-B): on the in-game DEAD tab the �
 
 // ─── (14) the width budget at text size M fits a 411px Pixel 7 ──────────
 
-test("(14) the width budget at text sizes S/M/L (band-2 padding/gap, counters gap, item gap, the ☰'s width minus its negative inline-end margin, COUNTER_SLOT_CH's per-id slots): S 336.4 and M 377.8 fit a 411px Pixel 7, L is 446.8 (the pre-Phase-67 figure)", () => {
+// Phase 78 (HUD-04): band 2's two font tokens cap their scale at 1.1, so L
+// renders at 1.1, not 1.25. Before 78-06 this test computed L uncapped and
+// pinned 446.8 (which never fit); it now reads the cap from the tokens and
+// pins the capped L, 405.4, which fits 411. The uncapped figure is logged
+// for the record only.
+test("(14) the width budget at text sizes S/M/L (band-2 padding/gap, counters gap, item gap, the ☰'s width minus its negative inline-end margin, COUNTER_SLOT_CH's per-id slots): S 336.4, M 377.8 and the capped L 405.4 all fit a 411px Pixel 7", () => {
   const LABELS = ["DEPTH", "DAY", "SQUARES", "RATIONS"];
   const LABEL_ADVANCE_PX = 6.5; // Press Start 2P, 1em advance per glyph
   const NUMBER_ADVANCE_PX = 16 * 0.6; // Courier Prime Bold, 0.6em advance per digit
@@ -505,27 +510,44 @@ test("(14) the width budget at text sizes S/M/L (band-2 padding/gap, counters ga
     return labelsTotalPx * scale + numbersTotalPx * scale + labelNumberGaps * scale + itemGaps + bandHPadding + bandGap + btnFootprint;
   }
 
-  const totalS = totalAt(textScaleForSize("S"));
-  const totalM = totalAt(textScaleForSize("M"));
-  const totalL = totalAt(textScaleForSize("L"));
+  // Both band-2 tokens carry the same cap; read it rather than restate it.
+  const capOf = (token) => {
+    const m = HTML.match(new RegExp(`${token}:calc\\([\\d.]+rem \\* min\\(var\\(--mw-text-scale\\), ([\\d.]+)\\)\\)`));
+    assert.ok(m, `${token} caps its scale`);
+    return Number(m[1]);
+  };
+  const cap = capOf("--mw-font-hud-label");
+  assert.equal(capOf("--mw-font-hud-num"), cap, "band 2's two tokens share one cap");
+  const scaled = (size) => Math.min(textScaleForSize(size), cap);
+
+  const totalS = totalAt(scaled("S"));
+  const totalM = totalAt(scaled("M"));
+  const totalL = totalAt(scaled("L"));
+  const totalLUncapped = totalAt(textScaleForSize("L"));
   assert.equal(totalS.toFixed(1), "336.4");
   assert.equal(totalM.toFixed(1), "377.8");
-  assert.equal(totalL.toFixed(1), "446.8");
+  assert.equal(totalL.toFixed(1), "405.4");
   assert.ok(totalS <= 411, `band 2's width budget at S (${totalS.toFixed(1)}px) must fit a 411px Pixel 7`);
   assert.ok(totalM <= 411, `band 2's width budget at M (${totalM.toFixed(1)}px) must fit a 411px Pixel 7`);
+  assert.ok(totalL <= 411, `band 2's width budget at the capped L (${totalL.toFixed(1)}px) must fit a 411px Pixel 7`);
   // eslint-disable-next-line no-console
-  console.log(`hud-menu-layout (14): band 2 computes to S ${totalS.toFixed(1)}px / M ${totalM.toFixed(1)}px of 411.`);
+  console.log(`hud-menu-layout (14): band 2 computes to S ${totalS.toFixed(1)}px / M ${totalM.toFixed(1)}px / L ${totalL.toFixed(1)}px (capped at ${cap}) of 411.`);
   // eslint-disable-next-line no-console
-  console.log(`hud-menu-layout (14): band 2 at L computes to ${totalL.toFixed(1)}px — the pre-Phase-67 figure, logged and pinned (the device check).`);
+  console.log(`hud-menu-layout (14): band 2 at an uncapped L would be ${totalLUncapped.toFixed(1)}px — for the record; the cap keeps it off screen.`);
 });
 
 // ─── (15) BEHAVIOUR: band 1 through the bridge ───────────────────────────
 
-test("(15) BEHAVIOUR: paint() writes identityParts(c).name into #mw-hud-name, identityParts(c).line into #mw-hud-line, and identityLine(c) into #mw-hud-line's title", () => {
+// Phase 78 (HUD-01, Plan 06): #mw-hud-line holds two spans now, so paint()
+// writes identityParts(c).ident and .lvl into #mw-hud-ident/#mw-hud-lvl (it
+// wrote .line into #mw-hud-line); the two join to .line.
+test("(15) BEHAVIOUR: paint() writes identityParts(c).name into #mw-hud-name, .ident and .lvl into #mw-hud-line's two spans (#mw-hud-ident, #mw-hud-lvl), and identityLine(c) into #mw-hud-line's title", () => {
   const { doc } = freshSandbox(states.thief);
   const parts = identityParts(states.thief.c);
   assert.equal(doc.elementsById.get("mw-hud-name").textContent, parts.name);
-  assert.equal(doc.elementsById.get("mw-hud-line").textContent, parts.line);
+  assert.equal(doc.elementsById.get("mw-hud-ident").textContent, parts.ident);
+  assert.equal(doc.elementsById.get("mw-hud-lvl").textContent, parts.lvl);
+  assert.equal(parts.ident + parts.lvl, parts.line);
   assert.equal(doc.elementsById.get("mw-hud-line").title, identityLine(states.thief.c));
 });
 
@@ -685,14 +707,16 @@ test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead wit
     assert.ok(isOpen(doc), "combat: the ☰ opens");
     assertRows(doc, ["btn-camp", "mw-chip-centre"], "combat");
   }
-  // dead: opens, data-dead "1", camp + centre disabled
+  // dead: opens, data-dead "1", camp + centre disabled — and, from Phase 78
+  // (HUD-02: "camp, marks and centre-map are inert" once the hero is dead),
+  // MARKS too; before 78-06 this block expected MARKS enabled.
   {
     const { doc, sandbox } = freshSandbox(states.thief);
     sandbox.setState({ ...states.thief, dead: true });
     menuBtn(doc).onclick();
     assert.ok(isOpen(doc), "dead: the ☰ opens");
     assert.equal(rowEl(doc, "mw-menu-abandon").dataset.dead, "1", "dead: the last row reads NEW CHARACTER");
-    assertRows(doc, ["btn-camp", "mw-chip-centre"], "dead");
+    assertRows(doc, ["btn-camp", "mw-chip-centre", "mw-chip-marks"], "dead");
   }
   // a live, idle hero: all six enabled
   {

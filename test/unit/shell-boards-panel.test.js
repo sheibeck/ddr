@@ -21,6 +21,9 @@ import url from "node:url";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox } from "./harness/shellSandbox.js";
 import { emptyBests, updateBests, runHash } from "../../engine/records.js";
+import { newRun } from "../../engine/state.js";
+import { die } from "../../engine/death.js";
+import { makeRng } from "../../engine/rng.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -144,6 +147,39 @@ test("(A4) BEHAVIOUR: a tab-opened panel has no chevron and a hidden dock", () =
   assert.equal(root.querySelector(".mw-bd-dock").hidden, true);
 });
 
+// Phase 78 (HUD-03): showTab("dead") passes { dead } to onDeadTab, so a dead
+// hero's DEAD tab docks FINAL SHEET and BURY THEM; a live hero's stays hidden.
+function openDeadTabWith(state) {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, boards: { bests: null, graves: [], total: 0 } });
+  sandbox.setState(state);
+  sandbox.paint();
+  sandbox.context.window.__mzShowTab("dead");
+  const root = doc.elementsById.get("screen-dead").querySelector(".mw-bd");
+  return { doc, sandbox, root };
+}
+
+test("(A6) BEHAVIOUR (HUD-03): a dead hero's DEAD tab docks FINAL SHEET then BURY THEM, and each routes through onRoute", () => {
+  const s = newRun(5, [], { force: { cls: "Thief" } });
+  die(s, "combat", "a rat", makeRng(4), [], () => 1);
+  const { root, sandbox } = openDeadTabWith(s);
+  const dock = root.querySelector(".mw-bd-dock");
+  assert.equal(dock.hidden, false);
+  const btns = dock.querySelectorAll(".mw-bd-dock-btn");
+  assert.deepStrictEqual(btns.map((b) => [b.dataset.action, b.textContent, b.dataset.primary]), [
+    ["finalSheet", "FINAL SHEET", "0"],
+    ["bury", "BURY THEM", "1"],
+  ]);
+  btns[0].onclick();
+  btns[1].onclick();
+  assert.deepStrictEqual(sandbox.boardsRoutes.map((r) => r.action), ["finalSheet", "bury"]);
+});
+
+test("(A7) BEHAVIOUR (HUD-03): a live hero's DEAD tab keeps a hidden dock", () => {
+  const { root } = openDeadTabWith(newRun(5, [], { force: { cls: "Thief" } }));
+  assert.equal(root.querySelector(".mw-bd-dock").hidden, true);
+});
+
 test("(A5) BEHAVIOUR: a tab-opened panel never sets body[data-boards-entry]", () => {
   const runs = twelveRuns();
   const { sandbox } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
@@ -256,6 +292,9 @@ function callRouteFromBoards(action, opts) {
   const fakeWindow = {
     __mzShowTab: (name) => calls.push(["showTab", name]),
     mzStartRoll: () => calls.push(["mzStartRoll"]),
+    // Phase 78 (HUD-03): the dead-hero dock's two routes.
+    mzOpenFinalSheet: () => calls.push(["mzOpenFinalSheet"]),
+    mzReturnToTitle: () => calls.push(["mzReturnToTitle"]),
   };
   const showTitleScreen = (arg) => calls.push(["showTitleScreen", arg]);
   const surfaceWornReconcile = () => calls.push(["surfaceWornReconcile"]);
@@ -291,6 +330,14 @@ test('(E4) SOURCE: routeFromBoards("roll", ...) opens the character roller', () 
   assert.deepStrictEqual(callRouteFromBoards("roll", {}), [["mzStartRoll"]]);
 });
 
+test('(E6) SOURCE (HUD-03): routeFromBoards("finalSheet", ...) opens the FINAL SHEET and nothing else', () => {
+  assert.deepStrictEqual(callRouteFromBoards("finalSheet", { hasHero: false }), [["mzOpenFinalSheet"]]);
+});
+
+test('(E7) SOURCE (HUD-03): routeFromBoards("bury", ...) shows the map, then takes the death card\'s own way back to the title', () => {
+  assert.deepStrictEqual(callRouteFromBoards("bury", { hasHero: false }), [["showTab", "maze"], ["mzReturnToTitle"]]);
+});
+
 test('(E5) SOURCE: an unknown action calls nothing', () => {
   assert.deepStrictEqual(callRouteFromBoards("nope", {}), []);
 });
@@ -315,7 +362,9 @@ test("(F1) SOURCE: the classic graveyard renderers, its copy and its bridge are 
 });
 
 test("(F2) SOURCE: showTab's DEAD branch calls the boards bridge, refreshTitleDead reads getGraveyard(), and the module script carries the three Phase 66 import lines", () => {
-  assert.match(CODE, /if \(name === "dead"\) window\.__mzBoards\?\.onDeadTab\?\.\(\);/);
+  // Phase 78 (HUD-03): the call now carries { dead } (it was
+  // `onDeadTab?.();`), so a dead hero's tab docks FINAL SHEET and BURY THEM.
+  assert.match(CODE, /if \(name === "dead"\) window\.__mzBoards\?\.onDeadTab\?\.\(\{ dead \}\);/);
   const refreshTitleDeadRegion = sliceBetween(CODE, "function refreshTitleDead()", "function showTitleScreen(");
   assert.match(refreshTitleDeadRegion, /getGraveyard\(\)/);
   assert.match(CODE, /import \{ getBests, getGraveyard \} from "\.\/src\/browser\/engineAdapter\.js";/);

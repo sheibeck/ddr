@@ -506,6 +506,48 @@ test("onDeadTab() calls openFromTab() in tab state and before any open; in title
   assert.equal(buildView2.calls.length, afterOpen, "onDeadTab() in title mode must not call buildView again");
 });
 
+// Phase 78 (HUD-03): the shell feeds { dead } through onDeadTab; the view
+// gets it, the dead-hero dock's FINAL SHEET routes without closing the
+// panel (a sheet opens over it) and BURY THEM routes like any other exit.
+test("onDeadTab({ dead }) (HUD-03): the dead flag reaches buildView; a title open or a plain onDeadTab() clears it", () => {
+  const buildView = makeBuildView();
+  const { panel } = setup({ buildView });
+  panel.onDeadTab({ dead: true });
+  assert.equal(buildView.calls.at(-1)[0].dead, true);
+  panel.onDeadTab();
+  assert.equal(buildView.calls.at(-1)[0].dead, false);
+  panel.onDeadTab({ dead: "yes" });
+  assert.equal(buildView.calls.at(-1)[0].dead, false, "only a strict true counts");
+  panel.onDeadTab({ dead: true });
+  panel.openFromTitle({ hasHero: false });
+  assert.equal(buildView.calls.at(-1)[0].dead, false);
+});
+
+test("dead-hero dock (HUD-03): FINAL SHEET routes onRoute(\"finalSheet\") and keeps the panel open; BURY THEM routes onRoute(\"bury\"); both are ignored for a live hero", () => {
+  const onRoute = spy();
+  const deadDock = (input) => ({
+    ...makeBuildView()(input),
+    dock: input.entry === "tab" && input.dead ? [{ id: "finalSheet", label: "FINAL SHEET", primary: false }, { id: "bury", label: "BURY THEM", primary: true }] : null,
+  });
+  const { host, panel } = setup({ onRoute, buildView: deadDock });
+  panel.onDeadTab({ dead: true });
+  const btns = host.querySelector(".mw-bd-dock").querySelectorAll(".mw-bd-dock-btn");
+  assert.deepStrictEqual(btns.map((b) => b.dataset.action), ["finalSheet", "bury"]);
+  btns[0].onclick();
+  assert.deepStrictEqual(onRoute.calls, [["finalSheet", { hasHero: false }]]);
+  assert.equal(panel.state().entry, "tab", "FINAL SHEET leaves the panel open");
+  btns[1].onclick();
+  assert.deepStrictEqual(onRoute.calls.at(-1), ["bury", { hasHero: false }]);
+  assert.equal(panel.state().entry, null, "BURY THEM leaves the panel");
+
+  onRoute.calls.length = 0;
+  const { host: host2, panel: panel2 } = setup({ onRoute });
+  panel2.onDeadTab({ dead: false });
+  const handlersHost = host2.querySelector(".mw-bd-dock");
+  assert.equal(handlersHost.hidden, true, "a live hero's tab has no dock");
+  assert.deepStrictEqual(onRoute.calls, []);
+});
+
 // ─── centreRail / reduced motion ────────────────────────────────────────
 
 test("centreRail(): calls scrollTo({left, behavior:'auto'}) under reduced motion, 'smooth' otherwise; without scrollTo it assigns scrollLeft; within 2px it calls nothing", () => {

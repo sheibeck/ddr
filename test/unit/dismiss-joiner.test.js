@@ -204,9 +204,35 @@ test("FEATURE_EVENTS includes dismissRefused", () => {
   assert.ok(FEATURE_EVENTS.includes("dismissRefused"));
 });
 
-test("NARRATIVE_ACTIONS deep-equals the set of camp/dismissJoiner/move/resolveJoiner", async () => {
+// Phase 78 (CLIMB-01, a 78-03 follow-up): a wall or crevice crossing is its
+// own resolveHazard dispatch now, so it joins the set (before 78-06 the set
+// was camp/dismissJoiner/move/resolveJoiner) and its rail card carries the
+// Oracle's sentence, as a single crossing move's did.
+test("NARRATIVE_ACTIONS deep-equals the set of camp/dismissJoiner/move/resolveHazard/resolveJoiner", async () => {
   const { NARRATIVE_ACTIONS } = await import("../../src/browser/narrationLines.js");
-  assert.deepEqual([...NARRATIVE_ACTIONS].sort(), ["camp", "dismissJoiner", "move", "resolveJoiner"]);
+  assert.deepEqual([...NARRATIVE_ACTIONS].sort(), ["camp", "dismissJoiner", "move", "resolveHazard", "resolveJoiner"]);
+});
+
+test("NARRATIVE_ACTIONS (CLIMB-01): a real resolveHazard crossing's rail line is the Oracle's sentence, dice stripped, not the short table text", async () => {
+  const { NARRATIVE_ACTIONS, narrativeLineText } = await import("../../src/browser/narrationLines.js");
+  const { readFileSync } = await import("node:fs");
+  const GOLDEN = JSON.parse(readFileSync(new URL("./fixtures/hazard-commit/golden.json", import.meta.url), "utf8"));
+  const sc = GOLDEN.scenarios.find((x) => x.base === "fighter-s1");
+  const s = structuredClone(GOLDEN.bases[sc.base]);
+  s.floor.g[sc.y][sc.x].feat = "climb";
+  const paused = applyAction(s, sc.action).state;
+  assert.ok(paused.pendingHazard, "the engine paused at the wall");
+  const { events } = applyAction(paused, { type: "resolveHazard", cross: true });
+  // The shell's own rule (dispatchWithNarration): ctx.narrate only for NARRATIVE_ACTIONS.
+  const ctx = NARRATIVE_ACTIONS.has("resolveHazard") ? { narrate: narrateEvent } : {};
+  const narrated = linesForAction("resolveHazard", events, ctx, { withIdx: true });
+  const table = linesForAction("resolveHazard", events, {}, { withIdx: true });
+  assert.ok(narrated.length > 0, "the crossing produces a rail line");
+  const crossing = events.find((e) => LINE_FOR[e.type] && EVENT_NARRATION[e.type] && !["moved"].includes(e.type));
+  assert.ok(crossing, "a crossing event with both a table line and an Oracle sentence");
+  const oracle = narrativeLineText(narrateEvent(crossing));
+  assert.ok(narrated.some((l) => l.text === oracle), `the rail carries the Oracle's sentence: ${oracle}`);
+  assert.ok(!table.some((l) => l.text === oracle), "without the ctx it would have been the short table text");
 });
 
 /* ============================================================

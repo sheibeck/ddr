@@ -851,7 +851,13 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
 // floor fill line and the water override line pick floorDarkLit/
 // waterDarkLit for a `.dark` cell while darkLit is true. Previous digest
 // d8550d9858c85c58f637a89ef878a7a6d1cf8ce0886d8b7f2af0c452bdb2c043.
-const PAINT_SHA256 = "7fe5fedd02d31a20cbf6f069884f2b542a130060f51395a19b551e2824dc4b14";
+//
+// PAINT_SHA256 (Phase 78, Plan 06 re-pin, HUD-01): band 1's line is two
+// spans now, so paint()'s band-1 block writes identityParts(c).ident into
+// #mw-hud-ident and .lvl into #mw-hud-lvl (it wrote .line into #mw-hud-line),
+// reading the two span elements alongside the other two. No motion change.
+// Previous digest 7fe5fedd02d31a20cbf6f069884f2b542a130060f51395a19b551e2824dc4b14.
+const PAINT_SHA256 = "18f608035e48a2e92ec611a05893a6be0c493e8b6d23a3ae6eb1b1b9380848b5";
 const DRAW_SHA256 = "455c2b5f6b201611cf4585d05da8df9d285e95082e8d165b0308020e187feef3";
 
 test("reduced-motion/audit: modularity — paint() is re-pinned for Phase 63 Plan 04 (the one gearSheetTarget-gated refreshGearSheet() call, nothing else); draw() is re-pinned for Phase 76 Plan 02 (Phase 59's party-paint removal and dressing-layer call, plus DARK-02's waived-dark tint, nothing else) — both pinned by SHA-256, unchanged by any OTHER plan", () => {

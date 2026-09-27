@@ -214,8 +214,8 @@ export const BRIDGE = Object.freeze({
   }),
   __mzHudBands: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: paint — band 1's name/line split via identityParts, and the fixed-width counter slots)"]),
-    purpose: "Bridges the pure src/browser/hudBands.js identityLine/identityParts/counterSlots formatters (Phase 57, LAYOUT-05) so paint() renders band 1's identity line (split into a never-truncated name and a truncating race/class/level line, Plan 05) and band 2's fixed-width counters from ONE engine-agnostic source.",
+    consumers: Object.freeze(["mazeworld.html (classic: paint — band 1's name/ident/lvl split via identityParts, and the fixed-width counter slots)"]),
+    purpose: "Bridges the pure src/browser/hudBands.js identityLine/identityParts/counterSlots formatters (Phase 57, LAYOUT-05) so paint() renders band 1's identity line (split into a never-truncated name and a \"Race Sub-class · Lvl N\" line, Plan 05; Phase 78 HUD-01 splits that line into a truncating race/sub-class span and a never-truncated level span) and band 2's fixed-width counters from ONE engine-agnostic source.",
   }),
   __mzHudMenu: Object.freeze({
     owner: "mazeworld.html (module)",
@@ -335,8 +335,9 @@ export const BRIDGE = Object.freeze({
       "mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)",
       "mazeworld.html (classic: renderRail's auto-clear timer — holdForCard; the guarded #mw-rail body-tap dismiss handler — dismissKind)",
       "mazeworld.html (classic: renderRail's combat-legal hidden/data-over/hold decisions — isCombatCard, Phase 71 D-16)",
+      "mazeworld.html (classic: renderRail's first branch — hazardCard, the pre-roll wall/crevice decision card, Phase 78 CLIMB-01/02)",
     ]),
-    purpose: "Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. Phase 71 (D-16): isCombatCard names the card kinds (the long-press foe card and the status-chit card) that show over the combat screen.",
+    purpose: "Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. Phase 71 (D-16): isCombatCard names the card kinds (the long-press foe card and the status-chit card) that show over the combat screen. Phase 78 (CLIMB-01/02): hazardCard is src/browser/hazardCard.js#hazardCardViewModel, the wall/crevice card built from S.pendingHazard (CLIMB IT or LEAP IT with the engine's own odds, USE LADDER or USE ROPE while carried, TURN BACK).",
   }),
   __mzRations: Object.freeze({
     owner: "mazeworld.html (module)",

@@ -135,9 +135,12 @@ test("HUD-01 band-1 cap: band 1's --mw-font-hud-ident caps at 1.1 like band 2, s
   // Band 1's budget (13px Courier Prime Bold, 0.6em advance; 412px minus the
   // 28px padding and two 8px gaps): a typical "Thrain Anvilborn" with
   // "Dwarven Pickpocket · Lvl 3" and "18/18 HP" is 50 glyphs. At the capped
-  // L that is 50 x 8.58 = 429px of 368 (the line ellipsizes); at the
-  // uncapped L it was 487.5px. The fit rate over 2,000 rolled characters is
-  // in 78-05-SUMMARY (L 4.2% -> 29.3%, M 72.4%).
+  // L that is 50 x 8.58 = 429px of 368, so the line ellipsizes. Since 78-06
+  // (HUD-01) only the "Race Sub-class" span ellipsizes: " · Lvl N" is its
+  // own flex:none span, and test/unit/shell-map-hud.test.js (c2) proves the
+  // level fits at S, M and L for the longest names. 78-05 measured the
+  // single-span line over 2,000 rolls: the full line fit L 4.2% -> 29.3%
+  // with the cap, M 72.4%.
   const glyph = 13 * l * 0.6;
   assert.equal(glyph.toFixed(2), "8.58");
   console.log(`text-scale: band 1 at the capped L is ${glyph.toFixed(2)}px per glyph (uncapped ${(13 * 1.25 * 0.6).toFixed(2)}).`);

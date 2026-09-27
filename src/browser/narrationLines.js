@@ -110,11 +110,14 @@ export const CARD_EVENTS = new Set(["floorChanged", "leveled"]);
  * NARRATIVE_ACTIONS — Phase 25.1 (DFB-01 decision 2). The action types
  * whose direct-mapped lines carry the Oracle's own sentence (dice
  * stripped) instead of the terse Phase 25 table text: move, camp,
- * resolveJoiner, dismissJoiner (Phase 36, JOIN-01). The shell passes a
+ * resolveJoiner, dismissJoiner (Phase 36, JOIN-01), and resolveHazard
+ * (Phase 78, CLIMB-01: a wall or crevice crossing now arrives as its own
+ * resolveHazard dispatch instead of a move, so without it the crossing's
+ * rail card fell back to the short table text). The shell passes a
  * `ctx.narrate` hook ONLY for these action types — every other action
  * (combat, store, inventory) keeps the short Phase 25 table text unchanged.
  */
-export const NARRATIVE_ACTIONS = new Set(["move", "camp", "resolveJoiner", "dismissJoiner"]);
+export const NARRATIVE_ACTIONS = new Set(["move", "camp", "resolveJoiner", "dismissJoiner", "resolveHazard"]);
 
 // The exact roll-span regex the shell's stripRollDetail() uses (mazeworld.html)
 // so narrativeLineText strips dice detail identically to the over-map
@@ -467,7 +470,8 @@ export function slotWord(slot) {
 // line, and give the merged line its earliest event's idx.
 //
 // `ctx.narrate` (Phase 25.1, DFB-01 decision 2) — `(e) => html string | ""`,
-// supplied by the shell ONLY for NARRATIVE_ACTIONS (move/camp/resolveJoiner).
+// supplied by the shell ONLY for NARRATIVE_ACTIONS (move/camp/the two joiner
+// answers/resolveHazard).
 // In step 7 (the direct-mapped-event loop below), when `ctx.narrate` is a
 // function AND the event's type is not in CARD_EVENTS, the line text
 // becomes `narrativeLineText(ctx.narrate(e))` — the Oracle's own sentence,

@@ -776,7 +776,17 @@ function buildFootnote(boardId) {
   return boardId === "yard" ? BOARD_FOOTNOTES.yard : BOARD_FOOTNOTES.ranked;
 }
 
-function buildDock(entry, hasHero) {
+// Phase 78 (HUD-03): the in-game DEAD tab opened with a dead hero gets a
+// dock of its own — FINAL SHEET (the read-only look at the run that just
+// ended) and BURY THEM (the death card's own way back to the title). Every
+// other tab entry keeps no dock; the title entry keeps its own.
+function buildDock(entry, hasHero, dead) {
+  if (entry === "tab" && dead) {
+    return [
+      { id: "finalSheet", label: BOARDS_PANEL_COPY.dock.finalSheet, primary: false },
+      { id: "bury", label: BOARDS_PANEL_COPY.dock.bury, primary: true },
+    ];
+  }
   if (entry !== "title") return null;
   if (hasHero) return [{ id: "dungeon", label: BOARDS_PANEL_COPY.dock.dungeon, primary: true }];
   return [
@@ -860,6 +870,8 @@ const SCOPES = ["local", "all", "friends"];
  * player, recentHash } producing the whole Leaderboards panel's content. No
  * DOM, no storage, no clock, no randomness, no input mutation. See
  * 66-03-PLAN.md's `<interfaces>` block for the exact view shape this returns.
+ * Phase 78 (HUD-03) adds `dead` (strictly true only for the in-game DEAD tab
+ * opened with a dead hero): the dock becomes FINAL SHEET + BURY THEM.
  * Phase 67 (D-08) supplies signedIn and player ({ id, displayName } or null)
  * at this seam: signed in, the strip carries the display name, its avatar
  * and PLAY GAMES · SIGNED IN. Phase 68 adds `global` (a GlobalSnapshot or
@@ -963,6 +975,6 @@ export function boardsView(input = {}) {
     body,
     standing,
     footnote: globalView ? globalView.footnote : buildFootnote(board),
-    dock: buildDock(entry, hasHero),
+    dock: buildDock(entry, hasHero, raw.dead === true),
   };
 }
