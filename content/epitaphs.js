@@ -17,7 +17,7 @@
 export const EPITAPHS = {
   combat: [
     "Killed by a {foe}. The {foe} has since been promoted.",
-    "Died as {name} lived: needing a 5 and rolling whatever that was.",
+    "Died as {name} lived: needing a high roll and rolling whatever that was.",
     "The {foe} was not the strongest thing in the room. It is now.",
     "Fought to the last breath, which arrived punctually in round four.",
     "A {sub} of skill level {lvl}, undone by something called a {foe}. Put it on the stone. All of it.",
@@ -35,7 +35,7 @@ export const EPITAPHS = {
   ],
   starve: [
     "Packed a grimoire, three potions and a good cloak. Packed no lunch.",
-    "Cost of living: 4 hp a day. {name} fell behind on the payments.",
+    "Cost of living: hp, every day without a ration. {name} fell behind on the payments.",
     "The dungeon did not kill {name}. The dungeon simply outlasted a stomach.",
     "Died on day {day} holding {gold} wilmst and absolutely nothing to spend it on.",
     "There was food two corridors away. There is always food two corridors away.",
@@ -48,7 +48,7 @@ export const EPITAPHS = {
   trap: [
     "Stepped on the one flagstone in the corridor with an opinion.",
     "The trap had waited four hundred years for precisely this level of confidence.",
-    "1–5 on a d20 avoids it. {name} rolled the way {name} always rolled.",
+    "16–20 on a d20 avoids it. {name} rolled the way {name} always rolled.",
     "A {sub} with no eye for traps, in a dungeon assembled chiefly out of traps.",
     "Located the trap using the traditional method.",
     "The Game Master did not even look up.",
@@ -59,8 +59,8 @@ export const EPITAPHS = {
     "Climbing was there to be learned. {name} spent the points on Cooking.",
     "Went up the wall beautifully. Came down it considerably faster.",
     "Gravity remains undefeated on floor {floor}.",
-    "Needed a 6 on a d10, three separate times. Managed two.",
-    "The wall is still standing. {name} is being scraped off it.",
+    "Needed three good d10 rolls to top the wall. Managed two.",
+    "The wall is still standing. {name} is not.",
     "A short climb and an even shorter career.",
   ],
   gorge: [
@@ -95,10 +95,13 @@ export const EPITAPHS = {
     "One bottle in ten is Death. {name} tested this thoroughly. Once.",
     "Drank an unlabelled potion on floor {floor}. The reviews are in.",
   ],
+  // VOX-05 (79-06): madness is the cause, never the hero turning on
+  // themselves — family-friendly deadpan (the user rules on tone at the
+  // milestone-close review).
   insanity: [
-    "Rolled a 1 on the madness table and won the argument with themselves.",
-    "The corridor whispered something. {name} took it entirely on board.",
-    "Nothing attacked {name}. Nothing needed to.",
+    "Rolled on the madness table. The table won.",
+    "Lost their wits on floor {floor}. Everything else followed shortly after.",
+    "Nothing attacked {name}. Dungeon madness is cheaper than monsters, and much quieter.",
     "Cause of death: one d6, honestly interpreted.",
   ],
   poison: [
@@ -189,7 +192,8 @@ export const CAUSE_TEXT = {
   maze: "spent by the dungeon itself",
   quake: "buried by their own earthquake",
   potion: "poisoned by an unlabelled bottle",
-  insanity: "dead by their own hand",
+  // VOX-05 (79-06): was "dead by their own hand" (self-harm framing).
+  insanity: "lost to a fit of dungeon madness",
   poison: "carried off by poison",
   // Device-review Pass B1 item 3: voluntary abandonment, distinct from every
   // combat/hazard cause above — nobody and nothing killed them.
