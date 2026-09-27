@@ -194,9 +194,9 @@
   {
     "key": "oracle:bought",
     "surface": "oracle",
-    "trigger": "bought { gained 1, meal 4 } — a store meal eaten 1 hp below full",
-    "before": "Bought: [object Object]. −4 wilmst.",
-    "after": "Bought: [object Object]. −4 wilmst. +1 hp (worth 4, back to full).",
+    "trigger": "bought { gained 3 } — a store meal that restores 3 hp",
+    "before": "Bought: Rope. −4 wilmst.",
+    "after": "Bought: Rope. −4 wilmst. +3 hp.",
     "reasons": [
       "number",
       "accurate"
@@ -206,9 +206,9 @@
   {
     "key": "rail:bought",
     "surface": "rail",
-    "trigger": "bought { gained 1, meal 4 } — a store meal eaten 1 hp below full",
-    "before": "Bought: [object Object] (−4 wilmst).",
-    "after": "Bought: [object Object] (−4 wilmst). +1 hp, back to full.",
+    "trigger": "bought { gained 3 } — a store meal that restores 3 hp",
+    "before": "Bought: Rope (−4 wilmst).",
+    "after": "Bought: Rope (−4 wilmst). +3 hp.",
     "reasons": [
       "number",
       "accurate"
@@ -219,8 +219,8 @@
     "key": "oracle:tableFour",
     "surface": "oracle",
     "trigger": "tableFour { row '-15 HP', stat hp, amount −19 } — the Table 4 toll at depth 3",
-    "before": "something",
-    "after": "something −19 hp.",
+    "before": "The maze extracts a toll you did not agree to.",
+    "after": "The maze extracts a toll you did not agree to. −19 hp.",
     "reasons": [
       "number",
       "accurate"
@@ -231,8 +231,8 @@
     "key": "rail:tableFour",
     "surface": "rail",
     "trigger": "tableFour { row '-15 HP', stat hp, amount −19 } — the Table 4 toll at depth 3",
-    "before": "something",
-    "after": "something −19 hp.",
+    "before": "The maze extracts a toll you did not agree to.",
+    "after": "The maze extracts a toll you did not agree to. −19 hp.",
     "reasons": [
       "number",
       "accurate"
@@ -254,10 +254,10 @@
   },
   {
     "key": "raw:engine/encounters.js#tableFour",
-    "surface": "raw",
+    "surface": "oracle",
     "trigger": "tableFour's result prose for one Table 4 row",
-    "before": "`The maze, for once, gives something back. ${n} hp.`",
-    "after": "\"The maze, for once, gives something back.\"",
+    "before": "The maze, for once, gives something back. … hp.",
+    "after": "The maze, for once, gives something back.",
     "reasons": [
       "number",
       "accurate"
@@ -266,10 +266,10 @@
   },
   {
     "key": "raw:engine/encounters.js#tableFour",
-    "surface": "raw",
+    "surface": "oracle",
     "trigger": "tableFour's result prose for one Table 4 row",
-    "before": "`Something unseen takes its cut — ${n} hp, gone.`",
-    "after": "\"Something unseen takes its cut.\"",
+    "before": "Something unseen takes its cut — … hp, gone.",
+    "after": "Something unseen takes its cut.",
     "reasons": [
       "number",
       "accurate"
@@ -278,10 +278,10 @@
   },
   {
     "key": "raw:engine/encounters.js#tableFour",
-    "surface": "raw",
+    "surface": "oracle",
     "trigger": "tableFour's result prose for one Table 4 row",
-    "before": "`You are, marginally, wiser for the ordeal. ${n} experience.`",
-    "after": "\"You are, marginally, wiser for the ordeal.\"",
+    "before": "You are, marginally, wiser for the ordeal. … experience.",
+    "after": "You are, marginally, wiser for the ordeal.",
     "reasons": [
       "number",
       "accurate"
@@ -290,10 +290,10 @@
   },
   {
     "key": "raw:engine/encounters.js#tableFour",
-    "surface": "raw",
+    "surface": "oracle",
     "trigger": "tableFour's result prose for one Table 4 row",
-    "before": "`A rare kindness — you come away tougher. +${n} to your health, for keeps.`",
-    "after": "\"A rare kindness — you come away tougher, for keeps.\"",
+    "before": "A rare kindness — you come away tougher. +… to your health, for keeps.",
+    "after": "A rare kindness — you come away tougher, for keeps.",
     "reasons": [
       "number",
       "accurate"
@@ -302,10 +302,10 @@
   },
   {
     "key": "raw:engine/encounters.js#tableFour",
-    "surface": "raw",
+    "surface": "oracle",
     "trigger": "tableFour's result prose for one Table 4 row",
-    "before": "`A hard lesson, and you actually learned it. ${n} experience.`",
-    "after": "\"A hard lesson, and you actually learned it.\"",
+    "before": "A hard lesson, and you actually learned it. … experience.",
+    "after": "A hard lesson, and you actually learned it.",
     "reasons": [
       "number",
       "accurate"
@@ -314,10 +314,10 @@
   },
   {
     "key": "raw:engine/encounters.js#tableFour",
-    "surface": "raw",
+    "surface": "oracle",
     "trigger": "tableFour's result prose for one Table 4 row",
-    "before": "`The maze extracts a toll you did not agree to. ${n} hp.`",
-    "after": "\"The maze extracts a toll you did not agree to.\"",
+    "before": "The maze extracts a toll you did not agree to. … hp.",
+    "after": "The maze extracts a toll you did not agree to.",
     "reasons": [
       "number",
       "accurate"
