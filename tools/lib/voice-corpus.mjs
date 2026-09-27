@@ -1020,7 +1020,13 @@ export async function buildCorpus({ root = REPO_ROOT } = {}) {
       rawEntries.get(key).texts.push(h.text);
     }
   }
-  for (const e of rawEntries.values()) pushEntry(e);
+  // A {token} in a source literal is a template placeholder by construction
+  // (the literal is the source, not a rendering), so a raw entry holding one
+  // is a template entry like a {token} bank.
+  for (const e of rawEntries.values()) {
+    e.template = e.texts.some((t) => TOKEN_RE.test(t));
+    pushEntry(e);
+  }
   prof("raw");
 
   // Owners, then the fixed order.
@@ -1036,7 +1042,7 @@ export async function buildCorpus({ root = REPO_ROOT } = {}) {
 function shapeEntry(e) {
   const out = { key: e.key, surface: e.surface, owner: e.owner, source: e.source, trigger: e.trigger };
   if (e.kind === "builder") out.domain = e.domain;
-  if (e.kind === "bank" || e.kind === "content") out.template = !!e.template;
+  if (e.kind !== "builder") out.template = !!e.template;
   out.texts = e.texts;
   if (e.errors && e.errors.length) out.errors = e.errors;
   return out;

@@ -30,6 +30,15 @@
 //      `gained` equal to `amount`, below it, and 0; and tableFour's
 //      `row`/`stat`/`amount` for an hp loss, a capped hp gain, a maxHp gain,
 //      an xp gain and the armour row.
+//   5. Two corrections so a synthetic event reads like a real one:
+//      TYPE_FIELDS (per-type field shapes, where the shared base's `item`
+//      object would print "[object Object]") and `only` (a toggle scoped to
+//      the types whose field it really is, e.g. Table 4's negative amount).
+//
+// Everything this corpus reports for a builder is rendered from these
+// synthetic events, so an odd reading can be an artifact of a field value
+// no real event carries; each check's calibration (tools/lib/
+// voice-checks.mjs, the 79-01 SUMMARY) records the artifacts it met.
 //
 // FROZEN AFTER 79-01. The phase-base snapshot
 // (docs/narrative-pass/corpus-base.json) was rendered through exactly this
@@ -160,15 +169,41 @@ const PHASE_79_TOGGLES = [
   { g: 25 }, { key: "sidestep" }, { weapon: "Dagger" }, { source: "Freeze" }, { toHit: -2 },
   { round: 2 }, { fumbleAtLeast: 4 }, { via: "kata" }, { ability: "Kata" }, { foe: "Viper" }, { race: "Troll" },
   { txt: "a line of item text" }, { effect: "summon", spell: "Summon" },
+  // encounterRolled's own table cell: the Table 4 rows print their cell
+  // verbatim at the base ("The dice decide — -15 HP."). Scoped (`only`): on
+  // any other type the cell would land in an unrelated `result` field.
+  { only: ["encounterRolled"], table: 4, result: "-15 HP" }, { only: ["encounterRolled"], table: 4, result: "+25 XP" },
   // Wave-1 sibling 79-02's additive fields (the builders at the base ignore
   // them; once 79-02 lands they select its honest gain and Table 4 lines).
+  // The Table 4 rows are scoped to tableFour: a negative `amount` means
+  // something only there.
   { amount: 8, gained: 8 }, { amount: 8, gained: 3 }, { amount: 8, gained: 0 },
-  { row: "-15 HP", stat: "hp", amount: -19, result: "The maze extracts a toll you did not agree to." },
-  { row: "+10 HP", stat: "hp", amount: 3, result: "Something in the air knits you back together." },
-  { row: "+25 HP", stat: "maxHp", amount: 21, result: "You feel sturdier than you have any right to." },
-  { row: "+10 XP", stat: "xp", amount: 50, result: "You learn something, against your will." },
-  { row: "-All armour", stat: "armor", amount: undefined, result: "Your armour decides it has had enough." },
+  { only: ["tableFour"], row: "-15 HP", stat: "hp", amount: -19, result: "The maze extracts a toll you did not agree to." },
+  { only: ["tableFour"], row: "+10 HP", stat: "hp", amount: 3, result: "Something in the air knits you back together." },
+  { only: ["tableFour"], row: "+25 HP", stat: "maxHp", amount: 21, result: "You feel sturdier than you have any right to." },
+  { only: ["tableFour"], row: "+10 XP", stat: "xp", amount: 50, result: "You learn something, against your will." },
+  { only: ["tableFour"], row: "-All armour", stat: "armor", amount: undefined, result: "Your armour decides it has had enough." },
 ];
+
+/**
+ * TYPE_FIELDS — per-type field shapes applied over BASE_EVENT (before any
+ * toggle) where the safety scan's shared base disagrees with what the engine
+ * really emits. BASE_EVENT's `item` is an object (`{ n }`, the loot and
+ * equip events' shape), but these types carry the item's NAME as a string
+ * (engine/economy.js#buy, engine/items.js's activation ticks and the Pilfer
+ * fumble), so without this every rendering of them would read
+ * "[object Object]".
+ */
+export const TYPE_FIELDS = Object.freeze({
+  bought: Object.freeze({ item: "Rope" }),
+  itemCooled: Object.freeze({ item: "Ring of Power" }),
+  itemEffectFaded: Object.freeze({ item: "Cloak of Speed" }),
+  itemEffectStarted: Object.freeze({ item: "Cloak of Speed" }),
+  pilferFumbled: Object.freeze({ item: "Wand of Sparks" }),
+  // rationsEaten carries `eats` (engine/movement.js#newDay); the shared base only has it inside `eaters`.
+  rationsEaten: Object.freeze({ eats: 1 }),
+  staffRecharged: Object.freeze({ item: "Crystal Staff" }),
+});
 
 /** BRANCH_TOGGLES — the frozen, ordered list of field patches (see header). */
 export const BRANCH_TOGGLES = Object.freeze(
@@ -183,23 +218,32 @@ function deepFreeze(v) {
   return v;
 }
 
-// The variant payloads, built once and deep-frozen: a builder that tried to
-// mutate its event would throw (ES modules are strict) and the corpus would
-// record that variant under the entry's `errors`, rather than one rendering
-// silently leaking into the next.
-const VARIANT_PAYLOADS = Object.freeze([
-  Object.freeze({ id: "base", fields: deepFreeze(structuredClone(BASE_EVENT)) }),
-  ...BRANCH_TOGGLES.map((tog, i) => Object.freeze({ id: `t${i}`, fields: deepFreeze({ ...structuredClone(BASE_EVENT), ...structuredClone(tog) }) })),
-]);
+// The toggle patches without their `only` scope, deep-frozen once: a builder
+// that tried to mutate its event would throw (ES modules are strict) and the
+// corpus would record that variant under the entry's `errors`, rather than
+// one rendering silently leaking into the next.
+const PATCHES = Object.freeze(
+  BRANCH_TOGGLES.map((tog, i) => {
+    const { only, ...fields } = tog;
+    return Object.freeze({ id: `t${i}`, only: only ?? null, fields: deepFreeze(structuredClone(fields)) });
+  }),
+);
+const FROZEN_BASE = deepFreeze(structuredClone(BASE_EVENT));
 
 /**
  * variantsFor(type) — the fixed, ordered renderings of one event type:
  * `bare` (the `{ type }` alone, what the coverage guards call), `base`
- * (BASE_EVENT), then `t0`, `t1`, … (BASE_EVENT with each toggle applied).
- * Each event is a fresh top-level object over deep-frozen field values.
+ * (BASE_EVENT plus the type's TYPE_FIELDS), then `t0`, `t1`, … (that base
+ * with each toggle applied). A toggle scoped with `only` is skipped for
+ * every other type; the ids keep the toggle's index either way. Each event
+ * is a fresh top-level object over deep-frozen field values.
  */
 export function variantsFor(type) {
-  const out = [{ id: "bare", event: { type } }];
-  for (const v of VARIANT_PAYLOADS) out.push({ id: v.id, event: { type, ...v.fields } });
+  const typeFields = TYPE_FIELDS[type] ?? {};
+  const out = [{ id: "bare", event: { type } }, { id: "base", event: { type, ...FROZEN_BASE, ...typeFields } }];
+  for (const p of PATCHES) {
+    if (p.only && !p.only.includes(type)) continue;
+    out.push({ id: p.id, event: { type, ...FROZEN_BASE, ...typeFields, ...p.fields } });
+  }
   return out;
 }

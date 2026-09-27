@@ -11,7 +11,12 @@
 //     surface-then-key order;
 //   - floors: no surface, and not the text total, can quietly shrink, so an
 //     empty or truncated corpus never reads as clean;
-//   - domains (fight > powers > world) and the ownership rules.
+//   - domains (fight > powers > world) and the ownership rules;
+//   - the checks (tools/lib/voice-checks.mjs): every roll-under pattern and
+//     hygiene rule has teeth both ways (every dash variant, number word and
+//     case), scanTwins and scanSafety on synthetic corpora, the why-ledger
+//     validator on good, bad and chained ledgers, and the standing check of
+//     every docs/narrative-pass/why/*.json against the phase base.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -367,7 +372,7 @@ test("validateLedgers: well-formed rows pass; malformed rows, unknown reasons, e
       ],
     }],
   });
-  assert.equal(bad.length, 7, bad.join("\n"));
+  assert.equal(bad.length, 8, bad.join("\n")); // the off-scheme key also has no base rendering
   for (const re of [/unknown reason/, /empty why/, /neither a base rendering/, /missing/, /unknown surface/, /key scheme/, /the same/]) {
     assert.ok(bad.some((e) => re.test(e)), `expected an error matching ${re}`);
   }
