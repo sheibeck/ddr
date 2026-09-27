@@ -25,7 +25,9 @@
 //     pendingHazard, pendingTile, pendingJoiner) is walked, up to a per-run
 //     cap, and then probed: the same next action applied to the live and
 //     the loaded state must give the same next state and events (the fight
-//     continues on the same dice).
+//     continues on the same dice). A pending wall or crevice is probed with
+//     the commit (`resolveHazard`), and the first one also with TURN BACK
+//     (CLIMB-02, Phase 78-04).
 //
 // Dead states are not walked: a dead save relaunches to the roller
 // (mazeworld.html's hadSaveAtLaunch is false for `dead`), so it is never
@@ -116,7 +118,12 @@ function probeAction(s) {
   if (s.combat) return s.combat.pending ? { type: "fight" } : { type: "attack" };
   if (s.store) return { type: "leaveStore" };
   if (s.pendingFind) return { type: "leaveFind" };
-  if (s.pendingHazard) return { type: "move", dir: s.pendingHazard.dir };
+  // CLIMB-02 (Phase 78, 78-04): a pending wall or crevice is answered with
+  // the commit, not a re-step (since 78-01 a `move` toward it only re-pauses
+  // and draws nothing). The commit is the meaningful probe: no die was drawn
+  // before the relaunch, so the climb or leap roll after it must draw the
+  // very same die on the live and the reloaded state.
+  if (s.pendingHazard) return { type: "resolveHazard", cross: true };
   if (s.pendingJoiner) return { type: "resolveJoiner", accept: false };
   const dirs = legalDirs(s);
   return { type: "move", dir: dirs[0] || "N" };
@@ -219,6 +226,8 @@ function corpus() {
     explicitStore: 0,
     explicitJoiner: 0,
     probes: 0,
+    hazardCommitsRolled: 0,
+    hazardTurnBackProbes: 0,
   };
   const walkFailures = [];
   const precisionFailures = [];
@@ -259,16 +268,32 @@ function corpus() {
 
     // Resume determinism: the same next action on the live and the loaded
     // state gives the same next state and events.
-    const action = probeAction(state);
-    counts.probes++;
-    try {
-      const a = applyAction(structuredClone(state), action);
-      const b = applyAction(loaded, action);
-      const statePaths = diffPaths(stripVolatileFields(a.state), stripVolatileFields(b.state));
-      const eventPaths = diffPaths(stripVolatileFields(a.events), stripVolatileFields(b.events), "events");
-      if (statePaths.length || eventPaths.length) probeFailures.push({ label, step, action, paths: [...statePaths, ...eventPaths] });
-    } catch (err) {
-      probeFailures.push({ label, step, action, paths: [`probe threw: ${err.message}`] });
+    const probe = (action, from) => {
+      counts.probes++;
+      try {
+        const a = applyAction(structuredClone(state), action);
+        const b = applyAction(from, action);
+        const statePaths = diffPaths(stripVolatileFields(a.state), stripVolatileFields(b.state));
+        const eventPaths = diffPaths(stripVolatileFields(a.events), stripVolatileFields(b.events), "events");
+        if (statePaths.length || eventPaths.length) probeFailures.push({ label, step, action, paths: [...statePaths, ...eventPaths] });
+        return a;
+      } catch (err) {
+        probeFailures.push({ label, step, action, paths: [`probe threw: ${err.message}`] });
+        return null;
+      }
+    };
+    const committed = probe(probeAction(state), loaded);
+    if (state.pendingHazard) {
+      // CLIMB-02 (Phase 78): count the commit probes that really rolled (the
+      // commit drew a die, so the live and reloaded rolls were compared).
+      if (committed && (committed.state.rngState >>> 0) !== (state.rngState >>> 0)) counts.hazardCommitsRolled++;
+      // CLIMB-02: TURN BACK, probed the same way on the first sampled
+      // pending hazard (on a fresh relaunch: the commit above consumed the
+      // first loaded copy).
+      if (!counts.hazardTurnBackProbes) {
+        const back = probe({ type: "resolveHazard", cross: false }, relaunched(state));
+        if (back && !back.state.pendingHazard && back.events.some((e) => e.type === "turnedBack")) counts.hazardTurnBackProbes++;
+      }
     }
   };
 
@@ -349,6 +374,24 @@ test("SAV-06/SAV-07 (Phase 76) non-vacuity: the corpus saw enough fights (with a
   assert.ok(counts.store >= 1, `at least one open store (saw ${counts.store}, ${counts.explicitStore} of them explicit)`);
   assert.ok(counts.pendingJoiner >= 1, `at least one pending Joiner offer (saw ${counts.pendingJoiner}, ${counts.explicitJoiner} of them explicit)`);
   assert.ok(counts.combatWithElite >= 1, `the deep starts met an elite (saw ${counts.combatWithElite})`);
+});
+
+// CLIMB-02 (Phase 78, 78-04): the relaunch half of the pre-roll decision.
+// Since 78-01 every bot crossing pauses first, so the corpus meets real
+// pending walls and crevices; each one was probed above with the commit
+// (`resolveHazard { cross: true }`) on the live and the reloaded state, and
+// the first one also with TURN BACK. This test asserts that sampling was not
+// vacuous: a relaunch can never change a pending climb or leap roll.
+test("CLIMB-02 (Phase 78): the corpus sampled pending walls and crevices, and CLIMB IT / LEAP IT and TURN BACK play the same after a relaunch", () => {
+  const { counts, probeFailures } = corpus();
+  console.log(
+    `resume-roundtrip pending-hazard samples: ${counts.pendingHazard} (commits that rolled: ${counts.hazardCommitsRolled}, TURN BACK probes: ${counts.hazardTurnBackProbes})`,
+  );
+  assert.ok(counts.pendingHazard > 0, `the corpus sampled at least one pending hazard (saw ${counts.pendingHazard})`);
+  assert.ok(counts.hazardCommitsRolled > 0, `at least one commit probe drew a die (saw ${counts.hazardCommitsRolled})`);
+  assert.equal(counts.hazardTurnBackProbes, 1, "exactly one TURN BACK probe ran, and it cleared the record with a turnedBack event");
+  const hazardFailures = probeFailures.filter((f) => f.action && f.action.type === "resolveHazard");
+  assert.equal(hazardFailures.length, 0, `a relaunched pending hazard plays differently:\n${report(hazardFailures)}`);
 });
 
 test("SAV-06 (Phase 76): a relaunch keeps a purse above the bag's cap (the load only clamps a bag a legacy worn fold spilled into)", () => {
