@@ -185,11 +185,13 @@ test("every key in the window.__mzTables = Object.freeze({ ... }) literal has at
 
 // ─── (8) key literals live in heroTab.js, not the shell ──────────────────
 
-test('the literals "Spells are the trick.", "Send them off?", "DISMISS", "Combat only", "No spells learned yet." live in heroTab.js and not in the shell', () => {
+test('the literals "No abilities. Spells are the trick.", "Send them off?", "DISMISS", "Combat only", "No spells learned yet." live in heroTab.js and not in the shell', () => {
   // Quoted string-literal form ("DISMISS") — a bare substring search would
   // false-positive on the unrelated DISMISS_SETTLE_MS guard-timing constant,
   // which legitimately survives in the module script.
-  for (const literal of ['"Spells are the trick."', '"Send them off?"', '"DISMISS"', '"Combat only"', '"No spells learned yet."']) {
+  // VOX-05 (79-09): the Magic User abilities none-row now states the fact
+  // first ("No abilities."); previously the literal was "Spells are the trick.".
+  for (const literal of ['"No abilities. Spells are the trick."', '"Send them off?"', '"DISMISS"', '"Combat only"', '"No spells learned yet."']) {
     assert.ok(HERO_STRIPPED.includes(literal), `expected heroTab.js to carry the literal ${literal}`);
     assert.ok(!CLASSIC.includes(literal), `expected the classic script to carry zero copies of ${literal}`);
     assert.ok(!MOD.includes(literal), `expected the module script to carry zero copies of ${literal}`);
@@ -251,7 +253,7 @@ test("VOX-04: the dossier footer is built with createElement + textContent from 
 
 test("Voice: the moved copy clears the family-friendly safety wordlist", () => {
   const bannedRe = BANNED.map((term) => new RegExp("\\b" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i"));
-  for (const phrase of ["Spells are the trick.", "Send them off?", "DISMISS", "Combat only", "No spells learned yet."]) {
+  for (const phrase of ["No abilities. Spells are the trick.", "Send them off?", "DISMISS", "Combat only", "No spells learned yet."]) {
     for (const re of bannedRe) {
       assert.doesNotMatch(phrase, re, `"${phrase}" must not match banned term ${re}`);
     }

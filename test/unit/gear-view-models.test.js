@@ -687,13 +687,36 @@ test("gearConsumablesModel, nothing held: rows are exactly [heal] at ×0, heldTe
     name: "HEALING POTION",
     qty: 0,
     qtyText: "×0",
-    desc: "Heals. Wasted at full health.",
+    // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+    desc: "Heals 7–25 hp (double for a Wilmsry). Stays corked at full health.",
     verb: "USE",
     enabled: false,
     reason: "",
     dispatch: { type: "drinkPotion" },
   });
   assert.equal(model.heldText, "0 HELD");
+});
+
+// VOX-05 (79-09): the HEALING POTION row now names its amount, so the
+// number is pinned against the engine's own drinkPotion (engine/magic.js),
+// the authored-ranges style: the lowest and highest d10 faces give the
+// "7–25", and the one race that doubles it is the Wilmsry the text names.
+test("VOX-05 (79-09): GEAR_COPY.healingDesc's 7–25 hp and its Wilmsry double are drinkPotion's own range", async () => {
+  const { drinkPotion } = await import("../../engine/magic.js");
+  const { RACES } = await import("../../content/index.js");
+  const heal = (race, face) => {
+    const state = newRun(1);
+    Object.assign(state.c, { race, potions: 1, wp: 1, maxWP: 999 });
+    drinkPotion(state, { d: () => face });
+    return state.c.wp - 1;
+  };
+  const m = /^Heals (\d+)–(\d+) hp \(double for a (\w+)\)\./.exec(GEAR_COPY.healingDesc);
+  assert.ok(m, GEAR_COPY.healingDesc);
+  assert.equal(heal("Human", 1), Number(m[1]));
+  assert.equal(heal("Human", 10), Number(m[2]));
+  const doublers = Object.keys(RACES).filter((r) => RACES[r].heal2x);
+  assert.deepEqual(doublers, [m[3]]);
+  assert.equal(heal(m[3], 10), 2 * Number(m[2]));
 });
 
 test("gearConsumablesModel: heal.enabled agrees with the combat ITEMS potion row's own rule, at low HP and at full HP", () => {

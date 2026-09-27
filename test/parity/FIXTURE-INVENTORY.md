@@ -4960,3 +4960,43 @@ re-recorded).
 | Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
 |---|---|---|---|---|---|---|
 | *(none — carved out, not re-recorded)* | | | | | | |
+
+### Plan 79-09 — panel copy (VOX-05) and the hero sheet's damage range: measured
+
+**The change.** Presentation, plus one engine refactor that keeps every
+number. Copy: the Hero, Gear, Gear-sheet, store, loot-compare and
+upgrade-why panel strings in `src/browser/` (the why-ledger is
+`docs/narrative-pass/why/79-09.json`). Engine: `engine/derived.js` gains
+`weaponDamageTerms(c)` (every damage modifier, once) and
+`weaponDamageRange(c)` (the pure min/max), and `weaponDamage(c, rng)` now
+sums the same terms around its unchanged single `rollDice` draw, with the
+same Sorcerer cap and floor of 1 (todo
+2026-09-25-hero-sheet-damage-range-omits-some-bonuses). The Hero sheet reads
+them instead of restating the stack. No rule, draw, event or state field
+moves.
+
+**The predictor.** Zero moved fixtures, zero moved state pins: the
+refactored `weaponDamage` adds the same integers in a different grouping
+and draws the same dice in the same position; no panel string is compared
+by a parity comparable or hashed into a state pin.
+
+**The live scan (measured at this plan's base, `08969929`).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+2. `node tools/fixture-inventory.mjs` reproduces the generated roster block
+   above byte for byte; `git diff --quiet 08969929 -- test/parity content`
+   exits 0. No site was reconciled and no carve-out was added.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `npm test`: every state pin, `test/determinism/**` and the weaponDamage
+   unit pins (`character.test.js`, `abilities.test.js`,
+   `ability-strike.test.js`, `afraid.test.js`, `authored-ranges.test.js`)
+   pass unchanged.
+
+#### Moved set — declared records
+
+**Empty — no fixture record moved.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none)* | | | | | | |

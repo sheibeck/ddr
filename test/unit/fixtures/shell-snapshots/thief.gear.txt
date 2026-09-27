@@ -182,7 +182,7 @@
         <span class="mw-gear-qty">
           text="×2"
       <div class="mw-gear-desc">
-        text="Heals. Wasted at full health."
+        text="Heals 7–25 hp (double for a Wilmsry). Stays corked at full health."
     <button class="mw-gear-cons-btn" disabled>
       text="USE"
   <li class="mw-gear-card mw-gear-cons" data-key="potion:Healing potion">

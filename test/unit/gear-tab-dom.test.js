@@ -515,7 +515,8 @@ test("greenfield: no node under SNAPSHOT_IDS.gear carries an interim in-row acti
   }
 });
 
-test("BAG empty state: #gear-bag renders NOTHING LEFT TO CARRY when the bag is empty", () => {
+// VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+test("BAG empty state: #gear-bag renders THE BAG IS EMPTY when the bag is empty", () => {
   const state = { c: fixedChar({ bag: "small", items: [], worn: {} }) };
   const { doc } = renderFresh(state);
   const bagEl = doc.document.getElementById("gear-bag");

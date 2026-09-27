@@ -53,7 +53,7 @@
   html="<b>Leader</b>, driven by <b>knowledge</b>, afraid of <b>being trapped</b>. Heals twice as fast, learns half as quickly. Magic Users despise them."
 ## #s-vp
 <div id="s-vp">
-  text="12/12 vp"
+  text="12 of 12 points spent"
 ## #s-skills
 <div id="s-skills">
   html=""
