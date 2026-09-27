@@ -101,12 +101,13 @@ test("foeListViewModel: TARGET tag on a live targeted foe among 2+ alive; DOWN t
   assert.equal(vm.hint, "TAP A FOE TO AIM AT IT");
   assert.equal(vm.threat, "THEY STRIKE FIRST");
   assert.equal(vm.alive, 2);
+  // Phase 77 (CMBUI-09): each card carries its bestiary family (foeFamily).
   assert.deepEqual(vm.cards[0], {
-    i: 0, glyph: "◆", name: "GIANT RAT", meta: "S · INT 1 · BITES",
+    i: 0, glyph: "◆", name: "GIANT RAT", family: "BEASTS", meta: "S · INT 1 · BITES",
     wpLabel: "7 / 10", tag: "TARGET", tagTone: "target", pct: 70, alive: true, targeted: true, state: "target",
   });
   assert.deepEqual(vm.cards[2], {
-    i: 2, glyph: "☗", name: "SKELETON", meta: "M · INT 1",
+    i: 2, glyph: "☗", name: "SKELETON", family: "WALKING DEAD", meta: "M · INT 1",
     wpLabel: "—", tag: "DOWN", tagTone: "dead", pct: 0, alive: false, targeted: false, state: "dead",
   });
 });

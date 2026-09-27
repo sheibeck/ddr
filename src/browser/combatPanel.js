@@ -57,6 +57,32 @@ export function playerNote(text) {
   return String(text ?? "").replace(/(?<![\w.$-])(wp|WP)(?![\w:])/g, "HP");
 }
 
+/**
+ * foeFamily(foe) — Phase 77 (CMBUI-09): the foe's bestiary family for the
+ * foe card's name line ("ZIT · BEASTS"), or null.
+ *
+ * The family is the spawned foe record's own `type` (the BESTIARY key:
+ * Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead) upper-cased
+ * in the bestiary's own wording, and it comes ONLY from `type`, never from
+ * the name. A missing, non-string or unknown `type` gives null: the card
+ * then shows the name alone, exactly where foe details
+ * (src/browser/foeDetails.js#familyLine) prints FAMILY UNKNOWN. Both use
+ * the same `ENC_TYPES.includes(type)` test, so the card never reveals a
+ * family foe details would not (test/unit/foe-family-card.test.js pins the
+ * agreement). A future "hidden foe" state extends this one predicate.
+ *
+ * Never throws (a hostile `type` getter reads as unknown); pure.
+ */
+export function foeFamily(foe) {
+  let type;
+  try {
+    type = foe && typeof foe === "object" ? foe.type : undefined;
+  } catch {
+    return null;
+  }
+  return typeof type === "string" && ENC_TYPES.includes(type) ? type.toUpperCase() : null;
+}
+
 const pctFor = (wp, max) => (max > 0 ? Math.round(Math.max(0, Math.min(100, (wp / max) * 100))) : 0);
 
 /** combatHeaderViewModel(state) — { label, round, standing }. */
@@ -107,6 +133,8 @@ export function foeListViewModel(state, opts = {}) {
       i,
       glyph,
       name,
+      // Phase 77 (CMBUI-09): the bestiary family after the name, or null (unknown).
+      family: foeFamily(f),
       meta,
       wpLabel,
       tag,
