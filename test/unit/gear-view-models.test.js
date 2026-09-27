@@ -814,7 +814,8 @@ test("gearKitRows, running effects: order is Rations, Shield, Strength, Regenera
     { label: "Mirror Self", value: "3 rds" },
     { label: "Sense Presence", value: "till the fight ends" },
     { label: "Sense Danger", value: "armed" },
-    { label: "Map the Floor", value: "12 sq" },
+    // Plan 76-06 (user ruling 2026-09-26): the window lasts until you move — no countdown (was "12 sq").
+    { label: "Map the Floor", value: "until you move" },
     { label: "Kills", value: "3" },
   ]);
 });

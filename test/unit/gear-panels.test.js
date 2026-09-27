@@ -108,7 +108,8 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
       foresight: "Sense Danger",
       foresightValue: "armed",
       reveal: "Map the Floor",
-      revealValue: "{n} sq",
+      // Plan 76-06 (user ruling 2026-09-26): a fixed value, no squares countdown.
+      revealValue: "until you move",
       kills: "Kills",
     },
   });

@@ -25,6 +25,8 @@ import url from "node:url";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { MAP_PALETTE } from "../../src/browser/mapMarks.js";
 import { gearKitRows } from "../../src/browser/gearTab.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
+import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -64,7 +66,8 @@ test("CONDITION_COPY: the five new chip rows (mirror/senses/regen/foresight/reve
   assert.match(CODE, /senses: \{ label: "Senses" \}/);
   assert.match(CODE, /regen: \{ label: "Regenerating" \}/);
   assert.match(CODE, /foresight: \{ label: "Forewarned" \}/);
-  assert.match(CODE, /reveal: \{ label: "Mapped", unit: "sq" \}/);
+  // Plan 76-06 (user ruling 2026-09-26): a fixed "until you move" detail, no squares unit.
+  assert.match(CODE, /reveal: \{ label: "Mapped", detail: "until you move" \}/);
 });
 
 test("CONDITION_TONE: the five new chip keys", () => {
@@ -119,10 +122,57 @@ test("Hero-tab kit: Mirror Self / Sense Presence / Sense Danger (armed) / Map th
   assert.equal(byLabel["Mirror Self"], "3 rds");
   assert.equal(byLabel["Sense Presence"], "till the fight ends");
   assert.equal(byLabel["Sense Danger"], "armed");
-  assert.equal(byLabel["Map the Floor"], "12 sq");
+  // Plan 76-06 (user ruling 2026-09-26): the row reads a fixed value (was "12 sq").
+  assert.equal(byLabel["Map the Floor"], "until you move");
   const labels = rows.map((r) => r.label);
   assert.ok(labels.indexOf("Sense Danger") < labels.indexOf("Map the Floor"), "Sense Danger sits before Map the Floor");
   assert.ok(labels.indexOf("Map the Floor") < labels.indexOf("Kills"), "Map the Floor sits before Kills");
+});
+
+// Plan 76-06 (user ruling 2026-09-26): the painted reveal chip, through the
+// real paint() in the shell sandbox (modelled on darkness-vignette.test.js's
+// paintDarkness / chipDetailText). A live window reads "Mapped · until you
+// move" with no squares unit; no record, no chip.
+function paintState(state) {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc });
+  sandbox.setState(state);
+  sandbox.paint();
+  return doc;
+}
+
+function revealChip(doc) {
+  const host = doc.document.getElementById("mm-conditions");
+  return host.children.find((el) => el.dataset && el.dataset.key === "reveal") || null;
+}
+
+function chipPart(chip, className) {
+  const el = chip.children.find((x) => x.className === className);
+  return el ? el.textContent : null;
+}
+
+test("(shell) the reveal chip: a live window paints 'Mapped' with the fixed detail 'until you move'; no record, no chip", () => {
+  const live = structuredClone(fixedStates().thief);
+  live.c.timers = { ...(live.c.timers || {}), "spell:reveal": { cadence: "squares", left: 1, phase: "effect" } };
+  const chip = revealChip(paintState(live));
+  assert.ok(chip, "the reveal chip is painted");
+  // paintConditions sets the label as the button's own text, then appends the
+  // detail span (the recording DOM reads the label back as textContent).
+  assert.equal(chip.textContent, "Mapped");
+  const detail = chipPart(chip, "mw-cond-detail");
+  assert.equal(detail, "until you move");
+  assert.equal(/\bsq\b|\d/.test(detail), false, "no squares countdown on the chip");
+
+  const none = structuredClone(fixedStates().thief);
+  if (none.c.timers) delete none.c.timers["spell:reveal"];
+  assert.equal(revealChip(paintState(none)), null);
+});
+
+test("CONDITION_EXPLAIN.reveal: the tap card tells the until-you-move truth; the squares sentence is gone", () => {
+  assert.ok(
+    CODE.includes("You can see the whole floor for exactly as long as you stand still. One step and your focus breaks; whatever you never walked goes dark again."),
+  );
+  assert.equal(CODE.includes("When the squares run out"), false);
 });
 
 // ─── (d) foeStatusBadges: spell:weaken + f.dot ─────────────────────────────
@@ -173,7 +223,9 @@ test("Voice: the new chip/kit-row copy clears the family-friendly safety wordlis
     "You fight in the dark at full skill and nothing gets the jump on you, until this fight ends.",
     "Wounds close on their own every round of this fight. It is not a licence.",
     "You already know what the next encounter is. Whether that helps is up to you.",
-    "The floor is on loan. When the squares run out, the parts you never walked go dark again.",
+    // Plan 76-06 (user ruling 2026-09-26): the reveal sentence is now the until-you-move truth.
+    "You can see the whole floor for exactly as long as you stand still. One step and your focus breaks; whatever you never walked goes dark again.",
+    "until you move",
   ]) {
     const offenders = findBannedTerms(phrase);
     assert.deepStrictEqual(offenders, [], `Banned copy in "${phrase}": ${JSON.stringify(offenders)}`);

@@ -405,10 +405,22 @@ test("floorMapped/revealFaded: both have EVENT_NARRATION + LINE_FOR + RAIL_FAMIL
   assert.equal("detectMagic" in ORACLE_ONLY, false);
   assert.equal("detectMagic" in RAIL_FAMILY, false);
 
-  const mapped = EVENT_NARRATION.floorMapped({ squares: 40 });
-  assert.ok(/40/.test(mapped) && /squares/.test(mapped));
-  const faded = EVENT_NARRATION.revealFaded({});
-  assert.ok(/forgets/.test(faded));
+  // Plan 76-06 (user ruling 2026-09-26): floorMapped carries no squares count
+  // (the map holds while you stand still), and revealFaded is about losing
+  // focus when you move. Oracle and rail agree; tones are unchanged.
+  const mapped = EVENT_NARRATION.floorMapped({ type: "floorMapped", cells: 120 });
+  assert.ok(mapped.startsWith('<span class="hit">'), mapped);
+  assert.equal(/\d/.test(mapped), false, "no number of squares");
+  assert.match(mapped, /still/);
+  const faded = EVENT_NARRATION.revealFaded({ type: "revealFaded", cells: 80 });
+  assert.ok(faded.startsWith('<span class="beat">'), faded);
+  assert.match(faded, /focus/);
+  const railMapped = LINE_FOR.floorMapped({ type: "floorMapped", cells: 120 });
+  assert.equal(/\d/.test(railMapped.text), false, "no number on the rail either");
+  assert.equal(railMapped.tone, "magic");
+  const railFaded = LINE_FOR.revealFaded({ type: "revealFaded", cells: 80 });
+  assert.match(railFaded.text, /focus/i);
+  assert.equal(railFaded.tone, "beat");
 });
 
 // --- Task 2: the saveState boundary end to end ------------------------------
