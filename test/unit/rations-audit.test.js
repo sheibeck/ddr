@@ -351,18 +351,19 @@ test("narration: a bare rationsEaten payload renders a non-empty string without 
 });
 
 test("narration: wentHungry renders the exact Oracle sentence (solo, party, and the Heft clause)", () => {
+  // VOX-05 (79-11): the numbers first, the "nobody packed" joke after them.
   const t = (e) => narrativeLineText(narrateEvent(e));
   assert.equal(
     t({ type: "wentHungry", cost: 4, need: 1, have: 0, mouths: 1 }),
-    "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.",
+    "Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −4 hp.",
   );
   assert.equal(
     t({ type: "wentHungry", cost: 6, need: 3, have: 1, mouths: 2 }),
-    "Hunger: nobody packed — the party eats 3 a night, and you had 1. Cost of living −6 hp.",
+    "Hunger: the party eats 3 a night, and you had 1. Nobody packed enough. Cost of living −6 hp.",
   );
   assert.equal(
     t({ type: "wentHungry", cost: 2, need: 1, have: 0, mouths: 1, heft: true }),
-    "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −2 hp (Heft: half, as promised).",
+    "Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −2 hp (Heft: half, as promised).",
   );
 });
 
@@ -375,7 +376,8 @@ test("narration: a bare wentHungry payload renders without throwing and contains
 test("narration: LINE_FOR.rationsEaten/.wentHungry render the terse line texts", () => {
   assert.equal(LINE_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).text, "Rations: −3 (4 left).");
   assert.equal(LINE_FOR.rationsEaten({ type: "rationsEaten", eats: 3, left: 4 }).tone, "beat");
-  assert.equal(LINE_FOR.wentHungry({ type: "wentHungry", cost: 4 }).text, "Hunger: no rations (−4 hp).");
+  // VOX-05 (79-11): "no rations" was false when you had some, just not enough.
+  assert.equal(LINE_FOR.wentHungry({ type: "wentHungry", cost: 4 }).text, "Hunger: not enough rations (−4 hp).");
 });
 
 // ─── docs/RATIONS.md ledger pin ─────────────────────────────────────────────

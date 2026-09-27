@@ -360,6 +360,9 @@ const railFull = (gained, offered) => (Number.isFinite(offered) && gained > 0 &&
 // possessive, or the caller's fallback ("its", never "it's") for a bare event.
 const railPlural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const railPossessive = (name, fallback) => (name ? `${name}'s` : fallback);
+// VOX-05 (Phase 79, plan 79-11): the rail twin of eventNarration.js's
+// squaresText — "1 square", and no leaked "undefined squares".
+const railSquares = (n) => (Number.isFinite(n) ? railPlural(n, "square") : "a few squares");
 
 /** railTableFourTail(e) — todo 2026-09-26: the signed amount a Table 4 row actually made (rollRange.js#signedText). */
 function railTableFourTail(e) {
@@ -412,12 +415,16 @@ const CRIT_BY_TEXT = {
   silentStep: "Silent Step",
 };
 
+// VOX-05 (Phase 79, plan 79-11): wrongClass and tooHeavy say why in the
+// player's terms (tooHeavy is the class armour rule, engine/items.js#
+// armorRefusalReason, not weight: "Too heavy to carry." was wrong), and a
+// Woodsman's rule names plate too (anything heavier than Studded).
 const EQUIP_REJECT_TEXT = {
-  wrongClass: "Not for the likes of you.",
+  wrongClass: "Your class cannot use that.",
   notBetter: "Not an upgrade.",
   noArmor: "Fridgians wear no armour.",
-  woodsman: "No mail for a Woodsman.",
-  tooHeavy: "Too heavy to carry.",
+  woodsman: "No mail or plate for a Woodsman.",
+  tooHeavy: "Your class does not wear that armour.",
   acrobat: "An Acrobat carries a dagger. Only a dagger.",
   notEquippable: "That does not equip.",
   // 260918-wy1 (jewelry-merge): the two new equipItem refusals — an
@@ -1344,7 +1351,14 @@ export const LINE_FOR = {
     };
     return { text: lines[e?.trigger] ?? "Your phobia has noticed where you are.", tone: "hurt", priority: PRIORITY.other };
   },
-  afflictionTick: (e) => ({ text: `${e?.kind ?? "It"} (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-11): the Oracle twin's two branches, in short:
+  // a tick states what it took; a tick with nothing left to take says so,
+  // never "(−0 hp)".
+  afflictionTick: (e) => ({
+    text: (e?.loss ?? 0) > 0 ? `${e?.kind ?? "It"}: still in you (−${e.loss} hp).` : `${e?.kind ?? "It"}: nothing left to take. You are on one hp.`,
+    tone: "hurt",
+    priority: PRIORITY.other,
+  }),
   afflictionPassed: (e) => ({ text: `The ${e?.kind ?? "worst of it"} passes.`, tone: "hit", priority: PRIORITY.other }),
   afflictionCured: (e) => ({ text: `Cured of the ${e?.kind ?? "sickness"}.`, tone: "hit", priority: PRIORITY.other }),
   afflictionLingers: (e) => ({ text: `The ${e?.kind ?? "sickness"} lingers.`, tone: "hurt", priority: PRIORITY.other }),
@@ -1388,8 +1402,10 @@ export const LINE_FOR = {
   }),
   // RULES-15 (Phase 75, user 2026-09-25): the rail line still says WHY a
   // spent book stays empty — mirrors eventNarration.js's own `booksKept` clause.
+  // VOX-05 (Phase 79, plan 79-11): "no rations" was false when you had some,
+  // just fewer than the night needs.
   wentHungry: (e) => ({
-    text: `Hunger: no rations (−${e?.cost ?? 0} hp).${e?.booksKept ? " Book stays empty." : ""}`,
+    text: `Hunger: not enough rations (−${e?.cost ?? 0} hp).${e?.booksKept ? " Book stays empty." : ""}`,
     tone: "hurt",
     priority: PRIORITY.other,
   }),
@@ -1409,13 +1425,20 @@ export const LINE_FOR = {
   // Phase 25.1 (DFB-06): still an amber block, priority 0, non-empty for a
   // bare payload; on the camp action the narrative ctx (NARRATIVE_ACTIONS)
   // shows the Oracle sentence instead — this is the fallback/coverage text.
+  // VOX-05 (Phase 79, plan 79-11): the refusal names what it refused, and a
+  // party's `need` is the whole party's night, as on the Oracle twin.
   campFailed: (e) =>
-    block(e?.need != null && e?.have != null ? `You eat ${e.need} a night, you have ${e.have}. Find rations first.` : "Not enough food to make camp."),
+    block(
+      e?.need != null && e?.have != null
+        ? `Not enough food to make camp: ${e?.members?.length ? "the party eats" : "you eat"} ${e.need} a night, you have ${e.have}. Find rations first.`
+        : "Not enough food to make camp."
+    ),
   teleported: () => ({ text: "You teleport to an unknown location.", tone: "beat", priority: PRIORITY.other }),
   leveled: (e) => ({ text: `Skill level ${e?.level ?? "?"} (+${railGain(e, e?.wpGain)} hp).`, tone: "hit", priority: PRIORITY.feature }),
   // Phase 38 (ABIL-01/03): a level-pool ability roll, sibling of leveled
   // immediately above (both fold into the same SKILL LEVEL N card family).
-  abilityLearned: (e) => ({ text: `New trick: ${e?.name ?? "something"} — ${e?.txt ?? ""}`, tone: "hit", priority: PRIORITY.feature }),
+  // VOX-05 (Phase 79, plan 79-11): no dangling " — " when the event carries no text.
+  abilityLearned: (e) => ({ text: `New trick: ${e?.name ?? "something"}${e?.txt ? ` — ${e.txt}` : "."}`, tone: "hit", priority: PRIORITY.feature }),
 
   /* ---------------- combat.js ---------------- */
 
@@ -2161,7 +2184,8 @@ export const LINE_FOR = {
     } else if (e?.troll) {
       text += " (Trolls pay triple)";
     } else if (e?.elfOrDwarf) {
-      text += " (a discount, as always)";
+      // VOX-05 (Phase 79, plan 79-11): the discount says how much (priceFor: half).
+      text += " (half price, as always)";
     }
     return { text, tone, priority: PRIORITY.feature };
   },
@@ -2185,7 +2209,8 @@ export const LINE_FOR = {
     const why = upgradeWhyText(e?.why);
     return { text: `Into the bag: ${e?.item?.n ?? "something"} — not an upgrade${why ? `: ${why}` : ""}.`, tone: "beat", priority: PRIORITY.other };
   },
-  rationsBought: (e) => ({ text: `Stocked up: +${e?.amount ?? 1} rations.`, tone: "hit", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-11): "+1 ration", never "+1 rations".
+  rationsBought: (e) => ({ text: `Stocked up: +${railPlural(e?.amount ?? 1, "ration")}.`, tone: "hit", priority: PRIORITY.other }),
   itemSold: (e) => ({ text: `Sold: ${e?.item?.n ?? "something"} (${e?.price ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
 
   /* ---------------- encounters.js ---------------- */
@@ -2213,7 +2238,8 @@ export const LINE_FOR = {
   }),
   // Phase 73 (ROLL-05): the roll-high triple, via rollVsText.
   chestLockRolled: (e) => ({ text: `Lock: ${rollVsText(e?.roll, e?.atLeast, e?.dieN)}`, tone: "beat", priority: PRIORITY.other }),
-  chestLocked: () => ({ text: "The lock wins this round.", tone: "miss", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-11): one try per chest; the box stays shut.
+  chestLocked: () => ({ text: "The lock holds. The box stays shut for good.", tone: "miss", priority: PRIORITY.other }),
   scrollFound: () => ({ text: "A scroll, tucked in with the loot.", tone: "hit", priority: PRIORITY.other }),
   foodFound: (e) => ({
     text: railGain(e, e?.wp) > 0 ? `${e?.name ?? "Food"} (+${railGain(e, e?.wp)} hp${railFull(railGain(e, e?.wp), e?.wp)}).` : `${e?.name ?? "Food"}: you were already at full hp.`,
@@ -2244,7 +2270,9 @@ export const LINE_FOR = {
   joinerDeclined: (e) => ({ text: `You wave ${e?.name ?? "them"} off.`, tone: "beat", priority: PRIORITY.feature }),
   joinerRefused: (e) => {
     const map = {
-      wilmsry: `${e?.name ?? "The Joiner"} takes one look at a Wilmsry and leaves.`,
+      // VOX-05 (Phase 79, plan 79-11): the refusal names why (a Magic User
+      // will not travel with a Wilmsry), as the Oracle twin does.
+      wilmsry: `${e?.name ?? "The Joiner"}, a Magic User, takes one look at a Wilmsry and leaves.`,
     };
     return block(map[e?.reason] ?? "Word has reached the Joiners.");
   },
@@ -2258,11 +2286,23 @@ export const LINE_FOR = {
   phobiaAcquired: (e) => ({ text: `New fear: ${e?.name ?? "something"}.`, tone: "hurt", priority: PRIORITY.other }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   afflictionCaught: (e) => ({ text: `${e?.kind ?? "It"}: takes hold (−${e?.first ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
-  insanityRolled: (e) => ({ text: `Insanity — ${e?.result ?? "it comes apart"}.`, tone: "hurt", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-11): the hero's insanity, as on the Oracle twin
+  // (the table's foe-side row is no longer printed); faces 2, 4 and 6 do nothing.
+  insanityRolled: (e) => ({
+    text: `Insanity takes hold of you${e?.roll === 2 || e?.roll === 4 || e?.roll === 6 ? ", then lets go" : ""}.`,
+    tone: "hurt",
+    priority: PRIORITY.other,
+  }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   insanitySelfHarm: (e) => ({ text: `Insanity: you turn on yourself (−${e?.loss ?? 0} hp).`, tone: "hurt", priority: PRIORITY.other }),
-  insanityRage: (e) => ({ text: `Rage: +${e?.amount ?? 0} might.`, tone: "hurt", priority: PRIORITY.other }),
-  darknessFell: () => ({ text: "The dark closes in.", tone: "hurt", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-11): might is damage, until the day ends.
+  insanityRage: (e) => ({ text: `Rage: +${e?.amount ?? 0} damage on every blow until the day ends.`, tone: "hurt", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-11): how long, and Night Vision's waiver.
+  darknessFell: (e) => ({
+    text: `The dark closes in${Number.isFinite(e?.duration) ? ` for ${railPlural(e.duration, "square")}` : ""}.${e?.nightVision ? " Night Vision sees through it." : ""}`,
+    tone: "hurt",
+    priority: PRIORITY.other,
+  }),
   darknessLifted: () => ({ text: "The dark loosens its grip.", tone: "hit", priority: PRIORITY.other }),
   darknessDispelled: () => ({ text: "Your amulet burns the dark away.", tone: "hit", priority: PRIORITY.other }),
   // Phase 39 (GEAR-05): the torch — lights a live darkness (torchLit) and
@@ -2328,11 +2368,13 @@ export const LINE_FOR = {
     // RULES-09 (Phase 75.1): the Pilfer heal-only "pilfer" reason is
     // retired — its own line is pilferFumbled below.
     const map = {
-      cooldown: `${item}: ${e?.left ?? "?"} squares. It is not a vending machine.`,
+      // VOX-05 (Phase 79, plan 79-11): the count is time until it is ready.
+      cooldown: `${item}: ready again in ${e?.left ?? "?"} squares. It is not a vending machine.`,
       recharging: `${item}: ${e?.left ?? "?"} squares to the next charge. Patience is also a spell.`,
       wrongClass: `${item} is a stick to anyone who is not a Magic User.`,
       combatOnly: `${item} wants a target. Save it for a fight.`,
-      exploreOnly: `${item} needs quieter surroundings.`,
+      // VOX-05 (Phase 79, plan 79-11): the rule first, as on the Oracle twin.
+      exploreOnly: `${item} only works out of a fight. It needs quieter surroundings.`,
       noTarget: "Nothing left to aim at.",
       notFought: "Fight! first. It will keep.",
       // Phase 37 (GEAR-03): a cloak/jewelry/staff activatable used from the
@@ -2352,44 +2394,58 @@ export const LINE_FOR = {
   cured: (e) => ({ text: `Cured of ${e?.kind ?? "it"}.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 31 (CMB-06): one line naming every stoned foe, ahead of the
   // per-foe foeKilled lines that follow.
-  foeStoned: (e) => ({ text: `${(e?.names ?? []).join(", ") || "It"} turn to stone. Statues don't hit back.`, tone: "hit", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-11): one foe "turns", two or more "turn".
+  foeStoned: (e) => ({
+    text: `${(e?.names ?? []).join(", ") || "It"} ${(e?.names ?? []).length > 1 ? "turn" : "turns"} to stone. Statues don't hit back.`,
+    tone: "hit",
+    priority: PRIORITY.you,
+  }),
   itemBurned: (e) => ({ text: `${e?.total ?? 0} fire damage spread.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 39 (GEAR-02): the item activation model's four new events.
+  // VOX-05 (Phase 79, plan 79-11): the Oracle twin's counts (railSquares:
+  // "1 square", no "undefined squares") and its roll-high invis/unseen
+  // effects (ROLL-04), in the rail's short form.
   itemEffectStarted: (e) => {
     const n = e?.left;
+    const sq = railSquares(n);
     const map = {
-      haste: `Double attacks for ${n} squares.`,
-      invis: `Unseen for ${n} squares.`,
+      haste: `Double attacks for ${sq}.`,
+      invis: `Unseen for ${sq}: foes hit only on their die's top face (top two if insulted).`,
       // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19):
       // states the count and, in voice, that ending inside stone is fatal —
       // the same warning eventNarration.js's Oracle line carries.
-      ether: `${n} squares of walking through stone. Be in a corridor when it ends — the stone will not make room.`,
-      acute: `You strike on a d6 for ${n} rounds.`,
-      might: `+${e?.might ?? "?"} damage for ${n} squares.`,
+      ether: `${sq} of walking through stone. Be in a corridor when it ends — the stone will not make room.`,
+      acute: `You strike on a d6 for ${Number.isFinite(n) ? railPlural(n, "round") : "a few rounds"}.`,
+      might: `+${e?.might ?? "?"} damage for ${sq}.`,
       fly: `Twenty squares of not touching the floor.`,
       lit: `Forty squares of carrying a light.`,
       // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
-      power: `+1 damage for ${n} squares. The ring approves.`,
+      power: `+1 damage for ${sq}. The ring approves.`,
       // RULES-11 (Phase 75.2, Plan 04): mirrors eventNarration.js's own
       // giant/enlarge lines — narrated from the event's own size fields,
       // never a restated formula; no overhead-clearance/corridor promise.
       giant: e?.size
-        ? `${n} squares one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
-        : `One size larger for ${n} squares.`,
+        ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
+        : `One size larger for ${sq}.`,
       enlarge: e?.size
-        ? `${n} squares one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
-        : `One size larger for ${n} squares.`,
+        ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
+        : `One size larger for ${sq}.`,
       glow: `Fifty squares of being your own lantern.`,
-      unseen: `Unseen for ${n} squares. They need two better.`,
-      tongue: `${n} squares of perfect fluency. Do not waste it on small talk.`,
-      brace: `${n} squares with nothing critical landing on you.`,
-      plate: `${n} squares of weightless plate.`,
+      unseen: `Unseen for ${sq}: every foe has two fewer faces that hit you.`,
+      tongue: `${sq} of perfect fluency. Do not waste it on small talk.`,
+      brace: `${sq} with nothing critical landing on you.`,
+      plate: `${sq} of weightless plate.`,
     };
-    return { text: map[e?.kind] ?? `${e?.item ?? "It"}: ${n} squares.`, tone: "magic", priority: PRIORITY.you };
+    return { text: map[e?.kind] ?? `${e?.item ?? "It"} is in effect for ${sq}.`, tone: "magic", priority: PRIORITY.you };
   },
   itemEffectFaded: (e) => ({ text: `${e?.item ?? "It"} wears off.`, tone: "beat", priority: PRIORITY.other }),
   itemCooled: (e) => ({ text: `${e?.item ?? "It"} is ready again.`, tone: "hit", priority: PRIORITY.other }),
-  staffRecharged: (e) => ({ text: `${e?.item ?? "It"} hums. ${e?.charges ?? "?"}/${e?.max ?? "?"}.`, tone: "hit", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-11): the bare "2/5" now says what it counts.
+  staffRecharged: (e) => ({
+    text: `${e?.item ?? "It"} hums: a charge is back${Number.isFinite(e?.charges) && Number.isFinite(e?.max) ? ` (${e.charges}/${e.max})` : ""}.`,
+    tone: "hit",
+    priority: PRIORITY.other,
+  }),
   itemFizzled: () => ({ text: "Nothing happens.", tone: "miss", priority: PRIORITY.you }),
   // Phase 29 (LOOT-04): richer text when the event carries the have/slots
   // count (every current push site does); a bare {type} call (safety-scan

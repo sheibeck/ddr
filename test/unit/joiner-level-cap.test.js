@@ -323,9 +323,11 @@ test("SC3: joinerMet and joinerRefused render byte-identical through narrateEven
 
   // Literal snapshots against today's copy (read verbatim from the source
   // files while writing this test):
+  // VOX-05 (79-11): the meeting is an offer (the accept, decline or refusal
+  // follows), and it states the Joiner's level.
   assert.equal(
     narrateEvent({ type: "joinerMet", name: "Ada Brook", race: "Human", sub: "Guard", lvl: 2 }),
-    '<span class="hit">Ada Brook</span>, a Guard, joins you for a while.',
+    '<span class="hit">Ada Brook</span>, a level 2 Guard, offers to travel with you for a while.',
   );
   assert.equal(
     narrateEvent({ type: "joinerRefused", reason: "wilmsry", name: "Ada Brook", sub: "Apprentice", cls: "Magic User", lvl: 2 }),
@@ -333,7 +335,8 @@ test("SC3: joinerMet and joinerRefused render byte-identical through narrateEven
   );
   assert.equal(
     LINE_FOR.joinerRefused({ type: "joinerRefused", reason: "wilmsry", name: "Ada Brook", sub: "Apprentice", cls: "Magic User", lvl: 2 }).text,
-    "Ada Brook takes one look at a Wilmsry and leaves.",
+    // VOX-05 (79-11): the rail names why, as the Oracle does.
+    "Ada Brook, a Magic User, takes one look at a Wilmsry and leaves.",
   );
 });
 

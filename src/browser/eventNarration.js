@@ -67,6 +67,14 @@ import { AFFLICTIONS } from "../../content/afflictions.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+// VOX-05 (Phase 79, plan 79-11): an item effect's length, "1 square", never
+// "1 squares", and never a leaked "undefined squares" on an event with no
+// count.
+const squaresText = (n) => (Number.isFinite(n) ? plural(n, "square") : "a few squares");
+
+// VOX-05 (Phase 79, plan 79-11): "an Apprentice", never "a Apprentice".
+const withArticle = (word) => `${/^[aeiou]/i.test(String(word)) ? "an" : "a"} ${word}`;
+
 // VOX-05 (Phase 79, plan 79-04): a named foe's possessive, or the caller's
 // fallback when the event names no one ("its", never the "it's" a bare
 // `${e.name ?? "it"}'s` used to print).
@@ -342,7 +350,8 @@ export const EVENT_NARRATION = {
     gainOf(e, e.amount) > 0
       ? `<span class="hit">Flesh knits itself back — +${gainOf(e, e.amount)} hp.</span> Ask again in twenty squares.`
       : `<span class="miss">The cloak finds nothing to knit.</span> You were already at full hp. Ask again in twenty squares.`,
-  armorPatched: (e) => `${e.by ? `${e.by}: ` : ""}<span class="hit">+${e.amount ?? 0}</span> back into your kit.`,
+  // VOX-05 (Phase 79, plan 79-11): the +N is armour (the rail twin says so too).
+  armorPatched: (e) => `${e.by ? `${e.by}: ` : ""}<span class="hit">+${e.amount ?? 0} armour</span> patched back into your kit.`,
   potionDuplicated: () => `The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`,
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost, cause first — every
   // eater named (the hero as "you eat N", every member as "Name (race) eats
@@ -383,7 +392,9 @@ export const EVENT_NARRATION = {
     const mouths = e?.mouths ?? 1;
     const cost = e?.cost ?? 0;
     const eatClause = mouths > 1 ? "the party eats" : "you eat";
-    return `<span class="hurt">Hunger: nobody packed — ${eatClause} ${need} a night, and you had ${have}.</span> Cost of living −${cost} hp${e?.heft ? " (Heft: half, as promised)" : ""}.${e?.booksKept ? " No supper, no sleep worth the name. Your book stays empty." : ""}`;
+    // VOX-05 (Phase 79, plan 79-11): the fact first, the joke after it ("nobody
+    // packed" used to come before the numbers, and read false when you had some).
+    return `<span class="hurt">Hunger: ${eatClause} ${need} a night, and you had ${have}.</span> Nobody packed enough. Cost of living −${cost} hp${e?.heft ? " (Heft: half, as promised)" : ""}.${e?.booksKept ? " No supper, no sleep worth the name. Your book stays empty." : ""}`;
   },
   // A1 sibling + P3 (04.2 Text batch): same stripRollDetail defect as
   // afflictionRolled — the old "check: <roll>N</roll> of 8 hours disturbed."
@@ -414,11 +425,16 @@ export const EVENT_NARRATION = {
   // what's on hand, and (when a party exists) who else is eating. A bare
   // `{type}` payload (the coverage test's shape) renders "?" rather than
   // undefined/NaN.
+  // VOX-05 (Phase 79, plan 79-11): the refusal names what it refused (the
+  // camp), and `need` is the whole party's night (engine/movement.js#
+  // nightlyEats), so a party reads "the party eats N" with each member's
+  // share inside it, never "you eat N (Mira eats 1 more)".
   campFailed: (e) => {
-    const need = e.need ?? "?";
-    const have = e.have ?? "?";
-    const extra = (e.members ?? []).map((m) => `${m.name ?? "Your companion"} eats ${m.eats ?? 1} more`).join(", ");
-    return `<span class="miss">You eat ${need} a night${extra ? ` (${extra})` : ""}. You have ${have}.</span> Find rations first.`;
+    const members = e.members ?? [];
+    if (e.need == null || e.have == null) return `<span class="miss">Not enough food to make camp.</span> Find rations first.`;
+    const shares = members.map((m) => `${m.name ?? "Your companion"} eats ${m.eats ?? 1}`).join(", ");
+    const eaters = members.length ? `the party eats ${e.need} a night (${shares} of those)` : `you eat ${e.need} a night`;
+    return `<span class="miss">Not enough food to make camp: ${eaters}, and you have ${e.have}.</span> Find rations first.`;
   },
   teleported: () =>
     `<span class="beat">You teleport to an unknown location on this floor…</span> the dungeon does not offer refunds.`,
@@ -433,7 +449,8 @@ export const EVENT_NARRATION = {
   leveled: (e) => `<span class="hit">Skill level ${e.level ?? "?"}</span> (+${gainOf(e, e.wpGain)} hp).`,
   // Phase 38 (ABIL-01/03): a level-pool ability roll, folded as the SKILL
   // LEVEL N card's second line (see rail.js's matching family entry).
-  abilityLearned: (e) => `<span class="hit">New trick: ${e.name ?? "something"}</span> — ${e.txt ?? ""}`,
+  // VOX-05 (Phase 79, plan 79-11): no dangling " — " when the event carries no text.
+  abilityLearned: (e) => `<span class="hit">New trick: ${e.name ?? "something"}</span>${e.txt ? ` — ${e.txt}` : "."}`,
   died: () => `<span class="hurt">You have died.</span>`,
 
   /* ---------------- combat.js ---------------- */
@@ -1245,7 +1262,14 @@ export const EVENT_NARRATION = {
 
   /* ---------------- economy.js ---------------- */
 
-  storeOpened: (e) => `<span class="banner">The shop is open.</span>${e.troll ? " (Trolls pay triple.)" : e.elfOrDwarf ? " (A discount, as always.)" : ""}`,
+  // VOX-05 (Phase 79, plan 79-11): the discount says how much (engine/
+  // economy.js#priceFor: half), and a Pickpocket's markup and markdown
+  // (priceFor ×1.25, sellPriceFor ×0.75) are stated here too, as the rail twin
+  // already did.
+  storeOpened: (e) =>
+    `<span class="banner">The shop is open.</span>${e.troll ? " (Trolls pay triple.)" : e.elfOrDwarf ? " (Half price, as always.)" : ""}${
+      e.pickpocket ? " The shopkeeper knows a Pickpocket's face: you pay ×1.25 to buy, and get ×0.75 when you sell." : ""
+    }`,
   buyFailed: (e) => `<span class="miss">You are short ${e.short ?? 0} wilmst.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-02): a store meal adds the HP it really restored.
@@ -1288,16 +1312,22 @@ export const EVENT_NARRATION = {
 
   // Phase 73 (ROLL-05): the roll-high triple, via rollVsText.
   trapAvoided: (e) => `<span class="hit">You clock it a half-step early.</span> <span class="roll">${rollVsText(e.roll, e.atLeast, e.dieN)}.</span>`,
-  trapDisarmed: () => `<span class="hit">A Pilfer's hands already knew where not to put themselves.</span>`,
-  trapDoubled: () => `<span class="hurt">Cat Burglar's luck holds — for the trap. It hits twice as hard.</span>`,
+  // VOX-05 (Phase 79, plan 79-11): the fact first (disarmed; twice as hard),
+  // the joke after it.
+  trapDisarmed: () => `<span class="hit">Pilfer: trap disarmed.</span> Your hands already knew where not to put themselves.`,
+  trapDoubled: () => `<span class="hurt">Cat Burglar: the trap hits twice as hard.</span> The luck holds — for the trap.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   trapSprung: (e) => `<span class="hurt">Trap: ${e.name ?? "A trap"} finds you first.</span> −${e.dmg ?? 0} hp.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  trapPoisoned: () => `<span class="hurt">Trap: it leaves something behind that outlasts the bruise.</span>`,
+  // VOX-05 (Phase 79, plan 79-11): the line never said "poisoned".
+  trapPoisoned: () => `<span class="hurt">Trap: poisoned.</span> It leaves something behind that outlasts the bruise.`,
   chestOpened: () => `<span class="hit">The box gives up its secrets.</span>`,
   // Phase 73 (ROLL-05): only the drawn face is styled; the range reads plain.
   chestLockRolled: (e) => `Lock: <span class="roll">${Number.isFinite(e.roll) ? e.roll : "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}.`,
-  chestLocked: () => `<span class="miss">Not today. The lock wins this round.</span>`,
+  // VOX-05 (Phase 79, plan 79-11): a failed lock roll is the chest's only
+  // try (engine/movement.js#resolveFeature clears the tile first), so "this
+  // round" promised a retry that never comes.
+  chestLocked: () => `<span class="miss">The lock holds, and the box stays shut for good.</span> Not today, and not any other day.`,
   scrollFound: () => `<span class="hit">A scroll, tucked in with the loot.</span>`,
   // VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): a Table 4 row reads as
   // its effect ("a toll"), never as its canon cell ("-15 HP").
@@ -1323,7 +1353,15 @@ export const EVENT_NARRATION = {
   faerieBoon: (e) => `<span class="hit">+${gainOf(e, e.amount)} base hp.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   faerieBane: (e) => `<span class="hurt">Faerie: it took against you.</span> −${e.amount ?? 0} base hp.`,
-  joinerMet: (e) => `<span class="hit">${e.name ?? "Someone"}</span>, a ${e.sub ?? e.race ?? "stranger"}, joins you for a while.`,
+  // VOX-05 (Phase 79, plan 79-11): the meeting is an OFFER (engine/
+  // encounters.js#meetJoiner: the accept, decline or refusal follows), so it
+  // never says the stranger already joined; the level is stated, and the
+  // article agrees ("an Apprentice").
+  joinerMet: (e) => {
+    const who = e.sub ?? e.race ?? "stranger";
+    const what = Number.isFinite(e.lvl) ? `a level ${e.lvl} ${who}` : withArticle(who);
+    return `<span class="hit">${e.name ?? "Someone"}</span>, ${what}, offers to travel with you for a while.`;
+  },
   // PARTY-01/PARTY-09 (Phase 9): the accept/decline outcome of a recruitment.
   // Deadpan, dark-but-family-friendly — the humor is at everyone's expense,
   // especially the poor soul who just signed on.
@@ -1400,11 +1438,30 @@ export const EVENT_NARRATION = {
   phobiaAcquired: (e) => `<span class="hurt">A new fear settles in: ${e.name ?? "something"}.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   afflictionCaught: (e) => `<span class="hurt">${e.kind ?? "It"}: it takes hold.</span> −${e.first ?? 0} hp.`,
-  insanityRolled: (e) => `<span class="hurt">Insanity.</span> It ${e.result ?? "comes apart at the seams"}.${e.roll != null ? ` <span class="roll">d6 → ${e.roll}.</span>` : ""}`,
+  // VOX-05 (Phase 79, plan 79-11): this is the HERO's insanity (engine/
+  // encounters.js#goInsane), but the line printed the INSANITY table's
+  // foe-side row ("It strikes the nearest of its own") as if something else
+  // did it, and faces 2, 4 and 6 do nothing to you at all. A 1, 3 or 5 has
+  // its own line right after (insanitySelfHarm, teleported, insanityRage),
+  // so only the harmless faces add a clause.
+  insanityRolled: (e) =>
+    `<span class="hurt">Insanity takes hold of you.</span>${e.roll != null ? ` <span class="roll">d6 → ${e.roll}.</span>` : ""}${
+      e.roll === 2 || e.roll === 4 || e.roll === 6 ? " It lets go again before anything comes of it." : ""
+    }`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   insanitySelfHarm: (e) => `<span class="hurt">Insanity: you turn on yourself.</span> −${e?.loss ?? 0} hp.`,
-  insanityRage: (e) => `<span class="hurt">Rage: +${e.amount ?? 0} might.</span>`,
-  darknessFell: () => `<span class="beat">The dark closes in around you.</span>`,
+  // VOX-05 (Phase 79, plan 79-11): "might" is damage on every blow, and it
+  // lasts until the day ends (engine/movement.js#newDay clears c.might).
+  insanityRage: (e) => `<span class="hurt">Rage: +${e.amount ?? 0} damage on every blow until the day ends.</span>`,
+  // VOX-05 (Phase 79, plan 79-11): how long the dark lasts (engine/
+  // encounters.js#fallDark's `duration`) and what it costs, or that Night
+  // Vision waives it.
+  darknessFell: (e) => {
+    const how = Number.isFinite(e?.duration) ? ` for ${plural(e.duration, "square")}` : "";
+    return e?.nightVision
+      ? `<span class="beat">The dark closes in around you${how}.</span> Your Night Vision sees straight through it.`
+      : `<span class="beat">The dark closes in around you${how}: you see only the squares beside you, and you fight worse in it.</span>`;
+  },
   // PHOBIA-01 (04.1-05): the persistent darkness counter fallDark sets
   // (engine/encounters.js) clears at zero via engine/movement.js's per-step
   // tick — this is that "it lifts" line.
@@ -1436,16 +1493,10 @@ export const EVENT_NARRATION = {
   // which mislabeled a class/race refusal. `notBetter` keeps that exact
   // line; everything else (wrongClass/tooHeavy/noArmor/notEquippable/
   // unknown) now mirrors equipRejected's own generic refusal line.
-  itemRejected: (e) =>
-    e.reason === "woodsman"
-      ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
-      : e.reason === "acrobat"
-        ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
-        : e.reason === "haveOne"
-          ? `<span class="miss">You already carry one ${e.item?.n ?? "of those"}.</span> One is the limit; two is a hobby.`
-          : e.reason === "notBetter"
-            ? `<span class="miss">Not an upgrade.</span> ${e.item?.n ?? "something"}.`
-            : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
+  // VOX-05 (Phase 79, plan 79-11): itemRejected and equipRejected share one
+  // refusal reader (equipRefusalLine, below this table): every reason says
+  // why in the player's terms before the joke.
+  itemRejected: (e) => equipRefusalLine(e),
   // Phase 61 (STORE-02): an additive `replaced` (the traded-in weapon/armor
   // piece) appends one clause; the no-replaced text stays byte-identical.
   // RULES-08 (Phase 75): an additive `destroyed`/`discarded` (the outgoing
@@ -1470,7 +1521,8 @@ export const EVENT_NARRATION = {
   // below; a NEW "recharging" reason (an empty staff) gets its own line.
   useRefused: (e) => {
     const item = e.item?.n ?? "That";
-    if (e.reason === "cooldown") return `<span class="miss">${item}: ${e.left ?? "?"} squares.</span> It is not a vending machine.`;
+    // VOX-05 (Phase 79, plan 79-11): "3 squares" of what — until it is ready.
+    if (e.reason === "cooldown") return `<span class="miss">${item}: ready again in ${e.left ?? "?"} squares.</span> It is not a vending machine.`;
     if (e.reason === "recharging") return `<span class="miss">${item}: ${e.left ?? "?"} squares to the next charge.</span> Patience is also a spell.`;
     if (e.reason === "wrongClass") return `<span class="miss">${item} is a stick to anyone who is not a Magic User.</span>`;
     // Phase 37 (GEAR-03): a cloak/jewelry/staff activatable used from the
@@ -1480,7 +1532,8 @@ export const EVENT_NARRATION = {
     // wielded — a bagged one is inert, same voice as notWorn.
     if (e.reason === "notWielded") return `<span class="miss">${item} is in your bag,</span> doing what things in bags do: nothing. Wield it first.`;
     if (e.reason === "combatOnly") return `<span class="miss">${item} wants a target.</span> Save it for a fight.`;
-    if (e.reason === "exploreOnly") return `<span class="miss">${item} needs quieter surroundings.</span>`;
+    // VOX-05 (Phase 79, plan 79-11): the rule first, like castRefused's (79-08).
+    if (e.reason === "exploreOnly") return `<span class="miss">${item} only works out of a fight.</span> It needs quieter surroundings.`;
     if (e.reason === "noTarget") return `<span class="miss">Nothing left to aim at.</span>`;
     if (e.reason === "notFought") return `<span class="miss">Fight! first.</span> It will keep.`;
     // Phase 39 (GEAR-05): the torch used while not dark.
@@ -1498,7 +1551,11 @@ export const EVENT_NARRATION = {
   pilferFumbled: (e) =>
     `<span class="hurt">${e.item ?? "It"} comes apart in your hands.</span> <span class="roll">${rollVsText(e.roll, e.atLeast, e.dieN)}.</span> −${e.dmg ?? 0} hp, and it is dust now.`,
   cured: (e) => `<span class="hit">Cured of ${e.kind ?? "it"}.</span>`,
-  foeStoned: (e) => `<span class="hit">${(e.names ?? []).join(", ") || "It"} turn to stone.</span> Statues don't hit back.`,
+  // VOX-05 (Phase 79, plan 79-11): one foe "turns", two or more "turn".
+  foeStoned: (e) => {
+    const names = e.names ?? [];
+    return `<span class="hit">${names.join(", ") || "It"} ${names.length > 1 ? "turn" : "turns"} to stone.</span> Statues don't hit back.`;
+  },
   itemBurned: (e) => `<span class="roll">${e.total ?? 0}</span> fire damage spread across the room.`,
   itemFizzled: () => `<span class="miss">Nothing happens.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -1506,21 +1563,26 @@ export const EVENT_NARRATION = {
   // Phase 39 (GEAR-02): the item activation model's four new events — a use
   // starts an effect (itemEffectStarted, kind-keyed line), the tick sites
   // narrate the transitions (itemEffectFaded/itemCooled/staffRecharged).
+  // VOX-05 (Phase 79, plan 79-11): every count goes through squaresText ("1
+  // square", and no leaked "undefined squares" on an event with no count);
+  // invis and unseen state what they do in roll-high terms (ROLL-04), in the
+  // same words as their own item text (content/treasure-tables.js).
   itemEffectStarted: (e) => {
     const n = e.left;
+    const sq = squaresText(n);
     const map = {
-      haste: `<span class="hit">Double attacks for ${n} squares.</span>`,
-      invis: `<span class="hit">Unseen for ${n} squares. They swing at where you were.</span>`,
+      haste: `<span class="hit">Double attacks for ${sq}.</span>`,
+      invis: `<span class="hit">Unseen for ${sq}: foes hit only on their die's top face (the top two if you insulted them). They swing at where you were.</span>`,
       // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19):
       // states the count and, in voice, that ending inside stone is fatal.
-      ether: `<span class="hit">${n} squares of walking through stone. Be in a corridor when it ends — the stone will not make room.</span>`,
-      acute: `<span class="hit">You strike on a d6 for ${n} rounds.</span>`,
-      might: `<span class="hit">+${e.might ?? "?"} damage for ${n} squares. Hit things.</span>`,
+      ether: `<span class="hit">${sq} of walking through stone. Be in a corridor when it ends — the stone will not make room.</span>`,
+      acute: `<span class="hit">You strike on a d6 for ${Number.isFinite(n) ? plural(n, "round") : "a few rounds"}.</span>`,
+      might: `<span class="hit">+${e.might ?? "?"} damage for ${sq}. Hit things.</span>`,
       fly: `<span class="hit">Twenty squares of not touching the floor.</span>`,
       // Phase 39 (GEAR-05): the torch's lit effect.
       lit: `<span class="hit">Forty squares of carrying a light.</span>`,
       // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
-      power: `<span class="hit">+1 damage for ${n} squares. The ring approves.</span>`,
+      power: `<span class="hit">+1 damage for ${sq}. The ring approves.</span>`,
       // RULES-11 (Phase 75.2, Plan 04): the Gauntlet of the Giant and
       // Enlarge each narrate their start from the event's own size fields
       // (75.2-02's itemEffectStarted `size`/`sizeDmg`) — never a restated
@@ -1528,22 +1590,24 @@ export const EVENT_NARRATION = {
       // kind, but defensive) falls back to the plain line. No overhead-
       // clearance/corridor promise — that promise is dropped (75.2-CONTEXT).
       giant: e.size
-        ? `<span class="hit">${n} squares one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
-        : `<span class="hit">One size larger for ${n} squares.</span>`,
+        ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
+        : `<span class="hit">One size larger for ${sq}.</span>`,
       enlarge: e.size
-        ? `<span class="hit">${n} squares one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
-        : `<span class="hit">One size larger for ${n} squares.</span>`,
+        ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
+        : `<span class="hit">One size larger for ${sq}.</span>`,
       glow: `<span class="hit">Fifty squares of being your own lantern.</span>`,
-      unseen: `<span class="hit">Unseen for ${n} squares. They need two better.</span>`,
-      tongue: `<span class="hit">${n} squares of perfect fluency. Do not waste it on small talk.</span>`,
-      brace: `<span class="hit">${n} squares with nothing critical landing on you.</span>`,
-      plate: `<span class="hit">${n} squares of weightless plate.</span>`,
+      unseen: `<span class="hit">Unseen for ${sq}: every foe has two fewer faces that hit you.</span>`,
+      tongue: `<span class="hit">${sq} of perfect fluency. Do not waste it on small talk.</span>`,
+      brace: `<span class="hit">${sq} with nothing critical landing on you.</span>`,
+      plate: `<span class="hit">${sq} of weightless plate.</span>`,
     };
-    return map[e.kind] ?? `<span class="hit">${e.item ?? "It"}: ${n} squares.</span>`;
+    return map[e.kind] ?? `<span class="hit">${e.item ?? "It"} is in effect for ${sq}.</span>`;
   },
   itemEffectFaded: (e) => `<span class="beat">${e.item ?? "It"} wears off.</span>`,
   itemCooled: (e) => `<span class="hit">${e.item ?? "It"} is ready again.</span>`,
-  staffRecharged: (e) => `<span class="hit">${e.item ?? "It"} hums.</span> ${e.charges ?? "?"}/${e.max ?? "?"}.`,
+  // VOX-05 (Phase 79, plan 79-11): the bare "2/5" now says what it counts.
+  staffRecharged: (e) =>
+    `<span class="hit">${e.item ?? "It"} hums: a charge is back${Number.isFinite(e.charges) && Number.isFinite(e.max) ? ` (${e.charges}/${e.max})` : ""}.</span>`,
 
   /* ---------------- inventory actions (ECON-03/04/05, Phase 13) ----------------
      The find offer/accept/decline + bag keep/drop + equip/unequip lines. Deadpan,
@@ -1594,16 +1658,7 @@ export const EVENT_NARRATION = {
   // Phase 25 (FEED-02): an Acrobat's dagger-only rule gets its own clause.
   // 260918-wy1 (jewelry-merge): jewelryFull/wrongSlot each get their own
   // clause ahead of the generic fallback.
-  equipRejected: (e) =>
-    e.reason === "woodsman"
-      ? `<span class="miss">A Woodsman in ${e.item?.n ?? "that"} is a tree in a tin.</span> No.`
-      : e.reason === "acrobat"
-        ? `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`
-        : e.reason === "jewelryFull"
-          ? `<span class="miss">Two pieces of jewelry. That is the limit.</span> ${e.item?.n ?? "It"} waits in the bag until something comes off.`
-          : e.reason === "wrongSlot"
-            ? `<span class="miss">${e.item?.n ?? "That"} does not go there.</span> Try the slot it was made for.`
-            : `<span class="miss">Not for the likes of you.</span> ${e.item?.n ?? "That"} refuses your hands${e.reason === "noArmor" ? " — your kind wears no armour" : ""}.`,
+  equipRejected: (e) => equipRefusalLine(e),
   // Phase 61 (GRULE-01): the combat gear lock — equipItem/unequipSlot refuse
   // with the "outfit" line; the loot/find verbs (parked mid-fight by a
   // multi-foe kill or a lingering find) get their own "spoils can wait" line.
@@ -1635,6 +1690,45 @@ export const EVENT_NARRATION = {
     return `<span class="miss">Fled: the loot stays with them — ${names}.</span>`;
   },
 };
+
+/**
+ * equipRefusalLine(e) — VOX-05 (Phase 79, plan 79-11): the ONE Oracle
+ * reading of an itemRejected (a take or a store buy) or equipRejected (the
+ * Gear tab) refusal, keyed on the engine's own `reason`
+ * (engine/items.js#weaponRefusalReason/#armorRefusalReason, takeItem,
+ * stowItem, equipItem). Every reason says why in the player's terms, then the
+ * joke. `tooHeavy` is the class armour rule (the armour is not on your
+ * class's list), not weight; `wrongClass` is the class weapon rule, or a
+ * staff in a non-Magic User's hands; `notEquippable` is an item nothing
+ * wears or wields. An unknown reason keeps the generic refusal.
+ */
+function equipRefusalLine(e) {
+  const item = e?.item?.n;
+  switch (e?.reason) {
+    case "woodsman":
+      return `<span class="miss">A Woodsman wears no mail or plate.</span> A Woodsman in ${item ?? "that"} is a tree in a tin.`;
+    case "acrobat":
+      return `<span class="miss">An Acrobat carries a dagger. A dagger. That is the whole list.</span>`;
+    case "jewelryFull":
+      return `<span class="miss">Two pieces of jewelry. That is the limit.</span> ${item ?? "It"} waits in the bag until something comes off.`;
+    case "wrongSlot":
+      return `<span class="miss">${item ?? "That"} does not go there.</span> Try the slot it was made for.`;
+    case "haveOne":
+      return `<span class="miss">You already carry one ${item ?? "of those"}.</span> One is the limit; two is a hobby.`;
+    case "notBetter":
+      return `<span class="miss">Not an upgrade:</span> ${item ?? "it"} is no better than what you have.`;
+    case "wrongClass":
+      return `<span class="miss">Your class cannot use ${item ?? "that"}.</span> Not for the likes of you.`;
+    case "tooHeavy":
+      return `<span class="miss">Your class does not wear ${item ?? "that armour"}.</span> Not for the likes of you.`;
+    case "noArmor":
+      return `<span class="miss">Your kind wears no armour, so ${item ?? "it"} stays off.</span> Not for the likes of you.`;
+    case "notEquippable":
+      return `<span class="miss">${item ?? "That"} is not something you wear or wield.</span>`;
+    default:
+      return `<span class="miss">Not for the likes of you.</span> ${item ?? "That"} refuses your hands.`;
+  }
+}
 
 /**
  * stampScrollCopyNotes(events) — CMBUI-11 (Phase 77). A presentation-only
