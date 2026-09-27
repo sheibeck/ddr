@@ -8,8 +8,9 @@
 //      their imports; the three Phase 39 bridges Phase 47 retired
 //      (__mzToHit/__mzStrikeDie/__mzItemRowState) are pinned absent;
 //   2. window.mzUseTool + the stepNow -> stepWith(action) refactor;
-//   3. the hazard pre-roll decision card (S.pendingHazard branch) in
-//      renderRail, and the retry/dark cards' tool offers;
+//   3. the wall/crevice decision card (the S.pendingHazard branch, built by
+//      src/browser/hazardCard.js since Phase 78) in renderRail, the retired
+//      post-fall retry card, and the dark card's torch offer;
 //   4. the Gear-tab row builders in gearTab.js call itemRowState(state, it)
 //      directly and no longer carry the retired it.every cooldown expression;
 //   5. the chip copy tables (CONDITION_TONE/CONDITION_EXPLAIN) + the new
@@ -94,10 +95,15 @@ test("Bridges: hasTool/toolIndex imported and bridged read-only; toHit/strikeDie
 
 // ─── 2. window.mzUseTool + stepWith(action) refactor ──────────────────────
 
-test("window.mzUseTool dispatches useTool via stepWith, guarded by railLocked() like every other movement path", () => {
+// Phase 78 (CLIMB-01) re-pin: railLocked() now covers the pending hazard
+// itself, so the card's own tool button answers its record directly (a
+// pending hazard for this exact tool and dir, nothing covering the map)
+// instead of sitting behind the lock it would always trip.
+test("window.mzUseTool dispatches useTool via stepWith, only for its own live pending record", () => {
   assert.equal((CODE.match(/window\.mzUseTool = \(tool, dir\) => \{/g) || []).length, 1);
   const region = sliceBetween(CODE, "window.mzUseTool = (tool, dir) => {", "window.__mzDescend = ");
-  assert.match(region, /if \(railLocked\(\)\) \{ window\.mzRailPulse\?\.\(\); return; \}/);
+  assert.match(region, /const pend = s && s\.pendingHazard;/);
+  assert.match(region, /if \(!pend \|\| pend\.tool !== tool \|\| pend\.dir !== dir \|\| hasActiveEncounter\(\)\) return;/);
   assert.match(region, /stepWith\(\{ type: "useTool", tool, dir \}\);/);
 });
 
@@ -113,23 +119,29 @@ test("stepNow(dir) is a thin wrapper over stepWith({ type: 'move', dir }); stepW
 
 // ─── 3. Rail cards: hazard pre-roll, retry tool offer, dark ───────────────
 
-test("renderRail: the hazard pre-roll decision card wins over joiner/find, and its buttons dispatch mzUseTool/move", () => {
-  assert.match(CODE, /if \(S\.pendingHazard && !S\.pendingHazard\.declined && !S\.combat && !S\.store\) \{/);
-  const region = sliceBetween(CODE, "if (S.pendingHazard && !S.pendingHazard.declined", "} else if (S.pendingJoiner");
-  assert.match(region, /copy\.hazard\.title/);
-  assert.match(region, /copy\.hazard\.ladder/);
-  assert.match(region, /copy\.hazard\.rope/);
-  assert.match(region, /copy\.hazard\.climb/);
-  assert.match(region, /copy\.hazard\.leap/);
-  assert.match(region, /window\.mzUseTool\(tool, dir\)/);
-  assert.match(region, /window\.move\(dir\)/);
+// Phase 78 (CLIMB-01/02) re-pin: the Phase 39 tool-only pre-roll card
+// (USE LADDER / USE ROPE plus a roll button that sent a plain move) is now
+// the one decision card for every wall and crevice, built by
+// src/browser/hazardCard.js; its labels and tool offer are that module's
+// (pinned in test/unit/hazard-card.test.js), read here through the bridge.
+test("renderRail: the wall/crevice decision card wins over joiner/find, reads vm.hazardCard(S), and its buttons dispatch mzResolveHazard/mzUseTool", () => {
+  assert.match(CODE, /const hz = S\.pendingHazard && vm\.hazardCard \? vm\.hazardCard\(S\) : null;/);
+  const region = sliceBetween(CODE, "if (hz) {", "} else if (S.pendingJoiner");
+  assert.match(region, /title = hz\.title/);
+  assert.match(region, /hz\.buttons\.map/);
+  assert.match(region, /window\.mzUseTool\(b\.tool, hz\.dir\)/);
+  assert.match(region, /window\.mzResolveHazard\(true\)/);
+  assert.match(region, /window\.mzResolveHazard\(false\)/);
+  assert.doesNotMatch(region, /window\.move\(/);
+  assert.match(CODE, /hazardCard: hazardCardViewModel/);
+  assert.match(CODE, /import \{ hazardCardViewModel \} from "\.\/src\/browser\/hazardCard\.js";/);
 });
 
-test("renderRail: the climb retry card offers the matching tool when carried; the dark card offers USE TORCH", () => {
-  const retryRegion = sliceBetween(CODE, 'rail.pending && rail.pending.kind === "climb"', 'rail.pending && rail.pending.kind === "dark"');
-  assert.match(retryRegion, /pend\.feat === "gorge" \? copy\.hazard\.leap : pend\.feat === "climb" \? copy\.hazard\.climb : copy\.climb\.retry/);
-  assert.match(retryRegion, /window\.__mzHasTool\(S\.c, retryTool\)/);
-  assert.match(retryRegion, /window\.mzUseTool\(retryTool, pend\.dir\)/);
+// Phase 78 (CLIMB-02) re-pin: the post-fall retry card (and its tool
+// offer) is retired — one and done means a failed roll already crossed.
+test("renderRail: no post-fall retry card survives; the dark card offers USE TORCH", () => {
+  assert.doesNotMatch(CODE, /rail\.pending\.kind === "climb"/);
+  assert.doesNotMatch(CODE, /retryTool/);
 
   assert.match(CODE, /rail\.pending && rail\.pending\.kind === "dark" && S\.c\.darkFor > 0 && window\.__mzHasTool\(S\.c, "torch"\)/);
   const darkRegion = sliceBetween(CODE, 'rail.pending.kind === "dark" && S.c.darkFor', "} else if (rail.card)");

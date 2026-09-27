@@ -159,9 +159,10 @@ test("Phase 29 (LOOT-04): renderDropShelf is the one drop-shelf renderer (find c
 function pendingFindRegion() {
   const start = CODE.indexOf("if (S.pendingFind && !S.combat && !S.store)");
   // Phase 35 (MAP-04): the find prompt is a rail decision card now — its
-  // region ends at the next rail branch (the CLIMB IT card), not at the
+  // region ends at the next rail branch (the dark card's, since Phase 78
+  // (CLIMB-02) retired the post-fall retry branch), not at the
   // (now-unrelated) store guard.
-  const end = CODE.indexOf('if (rail.pending && rail.pending.kind === "climb") {');
+  const end = CODE.indexOf('if (rail.pending && rail.pending.kind === "dark"');
   assert.ok(start !== -1 && end !== -1 && end > start, "pendingFind region bounds found");
   return CODE.slice(start, end);
 }

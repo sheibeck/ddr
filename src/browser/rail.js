@@ -188,21 +188,11 @@ export const RAIL_COPY = Object.freeze({
     leave: "LEAVE IT",
     full: "Your bag is full ({have}/{slots}). Drop something to make room, or leave it.",
   },
-  climb: { retry: "CLIMB IT" },
-  // Phase 39 (GEAR-05), Plan 05 — the hazard pre-roll decision card (the
-  // pending-tool choice at a fresh wall/gorge tile) and the retry card's
-  // added tool button; RAIL_COPY.climb.retry (above) stays the plain
-  // CLIMB IT fallback when no `feat` is known. `dark.torch` is the
-  // Darkness card's USE TORCH offer.
-  hazard: {
-    title: "A CHOICE",
-    ladder: "USE LADDER",
-    rope: "USE ROPE",
-    climb: "CLIMB IT",
-    leap: "LEAP IT",
-    wall: "A wall. You could climb it. You could also not.",
-    crevice: "A crevice. Leaping is traditional. Rope is smarter.",
-  },
+  // Phase 78 (CLIMB-01/02): the post-fall retry card and the Phase 39
+  // tool-only pre-roll card are retired, and their copy with them. The
+  // wall/crevice decision card's copy (CLIMB IT / LEAP IT, USE LADDER /
+  // USE ROPE, TURN BACK) is src/browser/hazardCard.js#HAZARD_CARD_COPY.
+  // `dark.torch` is the Darkness card's USE TORCH offer.
   dark: { torch: "USE TORCH" },
   quit: { title: "BACK AGAIN TO QUIT", line: "Press back once more and this delve is abandoned. Nobody will write it down." },
   // Phase 37 (GEAR-04), rewritten 260918-wy1 (jewelry-merge): the one-shot
@@ -258,7 +248,8 @@ export const RAIL_FAMILY = Object.freeze({
   scrollFound: { icon: "▪", title: "A LOCKED BOX", tone: "good" },
   chestLocked: { icon: "▪", title: "THE LOCK HOLDS", tone: "bad" },
 
-  // Climb/crevice — already-rolled outcomes (decision 1); no pre-roll preview.
+  // Climb/crevice — already-rolled outcomes (decision 1). The pre-roll odds
+  // live on the Phase 78 decision card (src/browser/hazardCard.js), not here.
   climbedOver: { icon: "⧗", title: "CLIMBED", tone: "good" },
   leaptOver: { icon: "⧗", title: "CLEARED IT", tone: "good" },
   fellClimbing: { icon: "⧗", title: "FELL", tone: "bad" },
@@ -272,12 +263,16 @@ export const RAIL_FAMILY = Object.freeze({
   phasedThrough: { icon: "⧗", title: "OVER IT", tone: "odd" },
   // Phase 41 (TERR-02): entering water (once per wade, not per step).
   waded: { icon: "·", title: "WADING", tone: "odd" },
-  // Phase 39 (GEAR-05): the hazard pre-roll decision card (hazardChoice is
-  // ORACLE_ONLY on the line side — the card IS the UI, mirroring findOffered
-  // — but still gets a family entry here for Plan 05's dedicated card) and
-  // the spent-tool outcome.
+  // Phase 39 (GEAR-05): the pause at a wall or crevice (hazardChoice is
+  // ORACLE_ONLY on the line side: the decision card IS the UI, mirroring
+  // findOffered; Phase 78 builds that card in src/browser/hazardCard.js)
+  // and the spent-tool outcome.
   hazardChoice: { icon: "⧗", title: "A CHOICE", tone: "info" },
   toolUsed: { icon: "⧗", title: "OVER IT", tone: "good" },
+  // Phase 78 (CLIMB-02): TURN BACK on the decision card: nothing rolled,
+  // nothing spent, so a quiet line. Its icon comes from the event's own
+  // `.feat` at railCardFor's lookup site, like toolUsed and draggedOver.
+  turnedBack: { icon: "⧗", title: "TURNED BACK", tone: "dull" },
   // Phase 39 (GEAR-05): the torch — lighting a live darkness, and a LATER
   // Darkness result held off entirely by the same lit effect.
   torchLit: { icon: "◇", title: "LIT", tone: "good" },
@@ -383,7 +378,8 @@ export const RAIL_FAMILY = Object.freeze({
  * table is keyed by type only, with no room to branch per instance).
  * `railCardFor` below reads the raw event's own `.feat` field directly at
  * its one lookup site instead, exactly mirroring this table's own
- * climb-is-wall / gorge-is-crevice mapping.
+ * climb-is-wall / gorge-is-crevice mapping. Phase 54's draggedOver and
+ * Phase 78's turnedBack (CLIMB-02, TURN BACK's line) take the same route.
  */
 export const RAIL_FEATURE_ICON = Object.freeze({
   trapSprung: "trap",
@@ -526,13 +522,13 @@ export function railCardFor(type, events, folded, ctx = {}) {
   const hold = Math.max(...raw.map((l) => railFamilyFor(l.type, l.tone ?? "beat", l.priority).hold));
   const sorted = [...raw].sort((a, b) => b.idx - a.idx);
 
-  // Phase 39 (GEAR-05)/Phase 54 (BAND-02): toolUsed and draggedOver are the
-  // RAIL_FEATURE_ICON exceptions — their icon depends on the raw event's
-  // own `.feat` (climb -> wall, gorge -> crevice), not just its type (see
-  // the table's own header comment).
+  // Phase 39 (GEAR-05)/Phase 54 (BAND-02)/Phase 78 (CLIMB-02): toolUsed,
+  // draggedOver and turnedBack are the RAIL_FEATURE_ICON exceptions — their
+  // icon depends on the raw event's own `.feat` (climb -> wall, gorge ->
+  // crevice), not just its type (see the table's own header comment).
   const headEvent = evts[head.idx];
   const iconKey =
-    head.type === "toolUsed" || head.type === "draggedOver"
+    head.type === "toolUsed" || head.type === "draggedOver" || head.type === "turnedBack"
       ? headEvent?.feat === "climb"
         ? "wall"
         : "crevice"

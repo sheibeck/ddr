@@ -18,7 +18,10 @@
 // scrollReadOdds — the Gear tab's SCROLLS row and the combat ITEMS SCROLL
 // row both append it to their description. Phase 77's CMBUI-13 effect
 // indicators are expected to reuse this module too rather than re-deriving
-// anything.
+// anything. Phase 78 (CLIMB-01), 78-03 adds hazardOddsText: the pre-roll
+// wall/crevice card's odds (src/browser/hazardCard.js), read off
+// engine/movement.js#hazardOdds, which uses the same faces helpers the
+// climb and leap rolls themselves read.
 //
 // The only arithmetic in this file is fleeOdds's `need − bonus` (converted
 // to a winning-faces count for facesRangeText), which mirrors
@@ -30,6 +33,7 @@
 // Pure, no DOM, no rng, no mutation of state/c/foe anywhere in this file.
 
 import { toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown, heroStrikeFacesVs, foeSwingVsHero, scrollReaderOf, scrollReadBands } from "../../engine/derived.js";
+import { hazardOdds } from "../../engine/movement.js";
 import { facesRangeText, hitRangeText, modsText, rangeText, bottomRangeText, dieText, ROLLERS } from "./rollRange.js";
 
 /**
@@ -160,4 +164,108 @@ export function scrollReadOdds(state) {
   const fumbleRange = bottomRangeText(bands.fumbleAtLeast);
   const fumble = fumbleRange === "nothing" ? "" : SCROLL_ODDS_COPY.fumbleClause.replace("{range}", fumbleRange);
   return `${base}${fumble}.`;
+}
+
+/**
+ * HAZARD_ODDS_COPY — Phase 78 (CLIMB-01), 78-03: the frozen templates
+ * hazardOddsText fills below.
+ *   - `climb`: one d10 per 10 ft of wall. `{others}` is empty when every
+ *     wall kind reads the same range; otherwise it is `otherList` (each kind
+ *     whose range differs from the most common one, `otherEntry`-shaped,
+ *     "; "-joined).
+ *   - `leap`: one d10 against a gap the engine picks at commit time, so the
+ *     card shows the whole spread, from the narrowest gap to the widest.
+ *   - `rolls`: how many d10s the attempt takes (`one` for a single roll,
+ *     `many` fills `{list}` from hazardOdds's `rolls`, " or "-joined).
+ *   - `penalty`: the player-facing name of each hazardOdds penalty term.
+ *   - `ft`: a LEAP_TABLE gap label ("3-4 feet") as the card writes it.
+ */
+export const HAZARD_ODDS_COPY = Object.freeze({
+  climb: "{range} on a {die} for each 10 ft{others}, {rolls}",
+  otherList: " ({list})",
+  otherEntry: "{label}: {range}",
+  leap: "{narrow} on a {die} for a {narrowFt} gap, down to {wide} for {wideFt}, {rolls}",
+  rolls: Object.freeze({ one: "one roll", many: "{list} rolls", or: " or " }),
+  penalty: Object.freeze({ heights: "Heights", water: "Bodies of water", armorBulk: "armour" }),
+  ft: "{lo}–{hi} ft",
+});
+
+/** gapText(label) — a LEAP_TABLE `ft` label ("12-15 feet") as "12–15 ft"; any other label passes through. */
+function gapText(label) {
+  const m = /^(\d+)-(\d+) feet$/.exec(String(label));
+  return m ? HAZARD_ODDS_COPY.ft.replace("{lo}", m[1]).replace("{hi}", m[2]) : String(label);
+}
+
+/** rollsText(rolls) — hazardOdds's `rolls` list as "one roll" or "2 or 3 rolls". */
+function rollsText(rolls) {
+  const list = Array.isArray(rolls) ? rolls : [];
+  if (list.length === 1 && list[0] === 1) return HAZARD_ODDS_COPY.rolls.one;
+  return HAZARD_ODDS_COPY.rolls.many.replace("{list}", list.join(HAZARD_ODDS_COPY.rolls.or));
+}
+
+/**
+ * hazardOddsText(state, feat) — Phase 78 (CLIMB-01), 78-03: the pre-roll
+ * wall/crevice card's odds, read purely off engine/movement.js#hazardOdds
+ * (the same climbFacesFor/leapFacesFor helpers the roll reads, with every
+ * live penalty already folded into the faces) and formatted only through
+ * rollRange.js (facesRangeText, dieText, modsText). No face count is
+ * computed or adjusted here.
+ *
+ * The engine picks the wall kind and height, or the gap width, at commit
+ * time, so no single number is honest before the roll; the card shows the
+ * spread instead:
+ *   - a climb: the most common wall kind's range per 10 ft, every kind
+ *     whose range differs named after it, and the 2-or-3-roll note;
+ *   - a leap: the narrowest gap's range down to the widest's for the
+ *     hero's class, one roll.
+ * A case with no winning face reads "nothing" (facesRangeText's own rule).
+ *
+ * Returns null for an unknown feat or a missing hero; otherwise
+ * `{ feat, dieN, die, cases[{ label, faces, range }], range, others,
+ * wide, rolls, penalties, penaltyText, text }`:
+ *   - `range`: the climb's main range, or the leap's narrowest;
+ *   - `others`: the climb's differing kinds (`[{ label, range }]`, empty for
+ *     a leap); `wide`: the leap's widest range (null for a climb);
+ *   - `penalties`: hazardOdds's own list, passed through untouched;
+ *     `penaltyText`: the same, player-named and signed through modsText
+ *     ("Heights −2, armour −1"), "" when there are none.
+ */
+export function hazardOddsText(state, feat) {
+  if (!state || !state.c) return null;
+  const odds = hazardOdds(state, feat);
+  if (!odds.cases.length) return null;
+  const die = dieText(odds.dieN);
+  const cases = odds.cases.map((k) => ({ label: k.label, faces: k.faces, range: facesRangeText(k.faces, odds.dieN) }));
+  const rolls = rollsText(odds.rolls);
+  const penaltyText = modsText(
+    odds.penalties.map((p) => ({ name: HAZARD_ODDS_COPY.penalty[p.name] ?? p.name, delta: p.faces })),
+    ROLLERS.you,
+  );
+  const base = { feat: odds.feat, dieN: odds.dieN, die, cases, rolls, penalties: odds.penalties, penaltyText };
+  if (feat === "climb") {
+    // The most common range reads first (ties go to the table's order);
+    // each kind that reads differently is named after it.
+    const counts = new Map();
+    for (const k of cases) counts.set(k.range, (counts.get(k.range) || 0) + 1);
+    let range = cases[0].range;
+    for (const [r, n] of counts) if (n > counts.get(range)) range = r;
+    const others = cases.filter((k) => k.range !== range).map((k) => ({ label: k.label, range: k.range }));
+    const list = others.map((o) => HAZARD_ODDS_COPY.otherEntry.replace("{label}", o.label).replace("{range}", o.range)).join("; ");
+    const text = HAZARD_ODDS_COPY.climb
+      .replace("{range}", range)
+      .replace("{die}", die)
+      .replace("{others}", list ? HAZARD_ODDS_COPY.otherList.replace("{list}", list) : "")
+      .replace("{rolls}", rolls);
+    return { ...base, range, others, wide: null, text };
+  }
+  const narrow = cases[0];
+  const wide = cases[cases.length - 1];
+  const text = HAZARD_ODDS_COPY.leap
+    .replace("{narrow}", narrow.range)
+    .replace("{die}", die)
+    .replace("{narrowFt}", gapText(narrow.label))
+    .replace("{wide}", wide.range)
+    .replace("{wideFt}", gapText(wide.label))
+    .replace("{rolls}", rolls);
+  return { ...base, range: narrow.range, others: [], wide: wide.range, text };
 }

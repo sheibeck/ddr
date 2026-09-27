@@ -90,6 +90,14 @@ export const MARK_GLYPHS = Object.freeze({
  * MARKS_LEGEND — the nine legend rows moved verbatim from mazeworld.html's
  * prior MARKS_LEGEND table (name/desc byte-identical), keyed by `key`
  * (a MARK_GLYPHS key) in place of the old PNG-filename `icon` field.
+ *
+ * Phase 78 (CLIMB-02): the `crevice` and `wall` rows are rewritten (the
+ * only two that moved). Both used to describe the old retry-and-fall rule
+ * with a roll-under number. They now describe the pre-roll choice (climb
+ * it or leap it, a carried ladder or rope, or turn back, all before any
+ * die) and Phase 54's one and done (a failed roll still gets you across,
+ * hurt). The MARKS sheet and the hold-inspect card (tapStep.js#inspectCell,
+ * through legendFor) both read these rows.
  */
 export const MARKS_LEGEND = Object.freeze([
   Object.freeze({ key: "encounter", name: "ENCOUNTER", desc: "Something gets rolled for you the moment you touch it." }),
@@ -97,12 +105,16 @@ export const MARKS_LEGEND = Object.freeze([
   Object.freeze({ key: "onewaydoor", name: "ONE-WAY DOOR", desc: "Go where the arrow points. There is no coming back." }),
   Object.freeze({ key: "trap", name: "TRAP", desc: "A d6 out of you, before you knew it was there." }),
   Object.freeze({ key: "chest", name: "LOCKED BOX", desc: "1–5 on a d10 opens it. The rest costs you a pick." }),
-  Object.freeze({ key: "crevice", name: "CREVICE", desc: "Climb it, or fall, and be grateful for half the fall." }),
+  Object.freeze({
+    key: "crevice",
+    name: "CREVICE",
+    desc: "You choose before anything is rolled: leap it, use a rope if you have one, or turn back. A failed leap still gets you across, hurt.",
+  }),
   Object.freeze({ key: "descent", name: "DESCENT", desc: "The floor below, which is worse in every way." }),
   Object.freeze({
     key: "wall",
     name: "WALL",
-    desc: "Climb it on a d10 under your class's number, or fall and eat the difference.",
+    desc: "You choose before anything is rolled: climb it, use a ladder if you have one, or turn back. A failed climb still gets you over, hurt.",
   }),
   Object.freeze({ key: "party", name: "YOU", desc: "The party marker. Whatever is nearby has already noticed you." }),
 ]);

@@ -186,7 +186,9 @@ function isGuardedFileWide(id) {
 
 const FILE_WIDE_GUARDED_IDS = [
   "a-join-yes", "a-join-no", "a-find-take", "a-find-leave",
-  "mw-rail-climb", "mw-camp-sleep", "mw-camp-walk",
+  // Phase 78 (CLIMB-01/02): the wall/crevice decision card's buttons
+  // replace the retired post-fall retry button.
+  "a-hazard-cross", "a-hazard-tool", "a-hazard-back", "mw-camp-sleep", "mw-camp-walk",
   "mw-major-primary", "mw-major-secondary",
   "btn-death-oracle", "cb-over-btn", "a-loot-take-all", "a-loot-leave-all",
 ];
