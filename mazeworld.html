@@ -1794,7 +1794,10 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-fl-hint{margin:0;font-family:var(--disp);font-size:6px;color:#8f856f;line-height:1.7}
 .mw-fl-close{flex:none;min-height:40px;padding:7px 9px;font-family:var(--disp);font-size:7px;letter-spacing:0;color:#c9bda0;background:transparent;border:2px solid #4a4032;border-radius:0;box-shadow:none;cursor:pointer}
 .mw-fl-close:hover:not(:disabled),.mw-fl-close:active:not(:disabled){background:transparent;color:#c9bda0}
-.mw-fl-rows{flex:1;min-height:0;overflow-y:auto;padding:4px 12px 30px}
+/* Phase 77 (CMBUI-12): the rows keep a row's worth of bottom room plus the
+   safe-area inset, so the oldest (last) row can scroll clear of the
+   Android gesture area and its revealed dice line stays tappable. */
+.mw-fl-rows{flex:1;min-height:0;overflow-y:auto;padding:4px 12px 30px;padding-bottom:calc(72px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
 .mw-fl-round{margin-top:18px;font-family:var(--disp);font-size:6px;color:#8f856f;line-height:1.7}
 .mw-fl-group:first-child .mw-fl-round{margin-top:4px}
 .mw-fl-rows .cb-log-revealable:focus-visible{outline:2px solid #e8c97a;outline-offset:2px}
@@ -4025,6 +4028,9 @@ function renderFightLog(host) {
           window.__mzFightLog = window.__mzFightLogVM.toggle(window.__mzFightLog, r.id);
           roll.hidden = !roll.hidden;
           el.setAttribute("aria-expanded", roll.hidden ? "false" : "true");
+          // Phase 77 (CMBUI-12): a revealed dice line scrolls into view, so
+          // the oldest (last) row's roll never opens under the gesture bar.
+          if (!roll.hidden) roll.scrollIntoView?.({ block: "nearest" });
         };
         el.onkeydown = (e) => {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }

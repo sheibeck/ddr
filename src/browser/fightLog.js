@@ -48,15 +48,51 @@ export const FIGHT_LOG_TONES = Object.freeze(["narrative", "dull"]);
  *     refusal/rejection), else "narrative".
  *   - roll: the folded entry's FIRST constituent event's Oracle sentence
  *     (dice kept), via `oracleDetailText(narrateEvent(events[idx]))`, or
- *     null when that event has no roll span to reveal.
+ *     null when that event has no roll span to reveal. The one exception
+ *     is the encounter start (encounterStartRoll, below).
  */
 export function fightLogLinesFor(type, events, ctx = {}) {
   const lines = linesForAction(type, events, ctx, { limit: Infinity, withIdx: true, order: "event" });
   return lines.map((t) => ({
     text: narrativeLineText(t.text) || t.text,
     tone: t.priority === PRIORITY.block ? "dull" : "narrative",
-    roll: oracleDetailText(narrateEvent(events[t.idx])) || null,
+    roll: oracleDetailText(narrateEvent(events[t.idx])) || encounterStartRoll(events, t.idx),
   }));
+}
+
+/**
+ * encounterStartRoll(events, idx) — Phase 77 (CMBUI-12): the dice behind an
+ * encounter-start line, or null.
+ *
+ * The oldest row of a fight raised on a tile is the move's encounter-start
+ * line. Its own event (encounterStarted) has no roll span: the encounter
+ * table dice that raised the fight sit on the SAME action's encounterRolled
+ * event, which is ORACLE_ONLY and never has a line of its own. So that row
+ * had no roll and the sheet gave it no tap (the user's 2026-09-24 report:
+ * the bottom row of THE FIGHT SO FAR cannot be tapped for its dice).
+ *
+ * The rule: when `events[idx]` is an encounterStarted, its roll is the
+ * Oracle detail of the encounterRolled events of this same `events` list
+ * that come BEFORE it and after any earlier encounterStarted (so a second
+ * encounter in one action never claims the first one's dice), joined in
+ * order with " · ". R-23 holds: nothing is invented. A start with no such
+ * roll (a camp's wandering encounter, whose dice are its own
+ * wanderingMonster line) stays null, and a roll from another action is out
+ * of reach because only this action's `events` are read.
+ */
+function encounterStartRoll(events, idx) {
+  const e = events[idx];
+  if (!e || e.type !== "encounterStarted") return null;
+  const rolls = [];
+  for (let j = idx - 1; j >= 0; j--) {
+    const prev = events[j];
+    if (!prev) continue;
+    if (prev.type === "encounterStarted") break;
+    if (prev.type !== "encounterRolled") continue;
+    const text = oracleDetailText(narrateEvent(prev));
+    if (text) rolls.unshift(text);
+  }
+  return rolls.length ? rolls.join(" · ") : null;
 }
 
 /** emptyFightLog() — the fight log's zero state. */

@@ -266,7 +266,8 @@ test("CMBUI-12 (f): revealing a row scrolls its roll line into view (block neare
   const calls = [];
   roll.scrollIntoView = (opts) => calls.push(opts);
   oldest.onclick();
-  assert.deepEqual(calls, [{ block: "nearest" }], "the reveal scrolls the dice line into view");
+  // JSON compare: the options object is built in the sandbox's own realm.
+  assert.equal(JSON.stringify(calls), JSON.stringify([{ block: "nearest" }]), "the reveal scrolls the dice line into view");
   oldest.onclick();
   assert.equal(calls.length, 1, "hiding never scrolls");
 
