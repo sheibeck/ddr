@@ -137,7 +137,7 @@ test("lotChips: Smoke in a fight is a good ability chip with its rounds and sub"
 
 test("lotChips: keeps only fight entries, in input order; tone follows polarity; squares effects carry no rounds", () => {
   const conds = [
-    { key: "reveal", polarity: "good", remaining: 22, cadence: "squares" },
+    { key: "reveal", polarity: "good" }, // Plan 76-06: the reveal chip carries no countdown
     { key: "foeEffect", polarity: "bad", kind: "dazed", remaining: 2 },
     { key: "haste", polarity: "good", remaining: 34, cadence: "squares", source: "Cloak of Speed" },
     { key: "itemCooldown", polarity: "good", item: "Cloak of Speed", remaining: 4 },
@@ -205,7 +205,8 @@ test("chipSheetFacts: every lasts and source phrase", () => {
   assert.deepEqual(f({ key: "foeEffect", polarity: "bad", kind: "dazed", remaining: 2 }), { lasts: "2 more rounds", source: "from a foe's power", detail: "" });
   assert.deepEqual(f({ key: "fightDark", polarity: "bad" }), { lasts: "for the rest of this fight", source: "from the dark", detail: "" });
   assert.deepEqual(f({ key: "darkness", polarity: "bad", remaining: 12 }), { lasts: "12 squares left", source: "from the dark", detail: "" });
-  assert.equal(f({ key: "reveal", polarity: "good", remaining: 1, cadence: "squares" }).lasts, "1 square left");
+  // Plan 76-06 (user ruling 2026-09-26): Map the Floor lasts until you move; its chip has no countdown.
+  assert.deepEqual(f({ key: "reveal", polarity: "good" }), { lasts: "until you move", source: "from a spell", detail: "" });
   assert.deepEqual(f({ key: "haste", polarity: "good", remaining: 34, cadence: "squares", source: "Cloak of Speed" }), { lasts: "34 squares left", source: "from Cloak of Speed", detail: "" });
   assert.deepEqual(f({ key: "might", polarity: "good" }), { lasts: "until the day ends", source: "from a spell", detail: "" });
   assert.deepEqual(f({ key: "might", polarity: "good", remaining: 5, cadence: "squares", source: "Strength", might: 8 }), { lasts: "5 squares left", source: "from Strength", detail: "" });

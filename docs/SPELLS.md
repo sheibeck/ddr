@@ -824,6 +824,53 @@ orthogonal — the shell's `draw()` reads `cell.seen` fresh every paint
 needed. Plan 05 (this phase) paints spell-only cells in their own distinct
 map tint; Phase 41's later filter simply applies on top, unmodified.
 
+### Plan 76-06 amendment (user ruling 2026-09-26): the window lasts until you move
+
+The user: "revealing the dungeon spell should last only until you move. Then
+you lose focus and map stops being revealed. it's pretty powerful to be able
+to map your way around and move." (76-CONTEXT.md, "User rulings after
+planning".)
+
+- **The rule.** After a cast the whole floor stays shown while the hero stands
+  still. The hero's FIRST step onto another square ends the window and the
+  floor re-fogs; every cell the hero walked or saw normally stays seen. The
+  spell is a snapshot you study, not a map you navigate by.
+- **The seam.** `SPELLS[5].squares` is now **1**, on the same squares timer and
+  the same one sweep described above: the first step's `tickSquares` produces
+  the `spell:reveal` effect-to-null transition, `refogSpellSeen` runs and
+  `revealFaded` fires. Every step costs at least 1 (a water step costs 2), so
+  any step ends it. No new flag and no new expiry code.
+- **Only movement ends it.** `engine/movement.js#move` is the only `tickSquares`
+  call site in `engine/` (pinned by `test/unit/map-until-move.test.js`).
+  Casting any spell, reading a scroll, using an item, camping, a fight that
+  starts and ends on the same square, a flee attempt, a refused step (a wall
+  bump, a one-way door, the hazard-choice card) and opening any tab leave the
+  window alone. A teleport is not a step (it never ticks the window). Stepping
+  onto the stairs sweeps first, then descends.
+- **Recast** rewrites the one-square record: an open window stays open (and
+  marks nothing twice), a closed one reopens and the next step closes it. A
+  scroll of Map the Floor resolves through the same cast branch, so it follows
+  the same rule.
+- **Relaunch.** The squares-cadence record survives both load chains (squares
+  records are never cleared by `clearStaleTimers`), `clearStaleSpellSeen` keeps
+  the flags while the record is live, and 76-03's resumed fight carries a
+  window cast on the fight's square. The first step after the relaunch sweeps.
+- **Old saves.** `engine/saveState.js#clampRevealWindow`, wired into both load
+  chains next to `clearStaleTimers`, loads a live record with more than one
+  square left as `left: 1` (no event, no narration). Any other record shape is
+  left to the existing handling. It is a no-op for every state the new engine
+  produces.
+- **The event and the chip.** `floorMapped` is `{ type, cells }` (no squares
+  count). The `reveal` chip is `{ key: "reveal", polarity: "good" }` with no
+  countdown; the shell's `CONDITION_COPY.reveal` carries the fixed detail
+  "until you move", and the Gear kit row reads the same.
+- **Superseded above:** the 40-square numbers (`SPELLS[5].squares === 40`, the
+  "exact 40th step" wording), the recast-resets-to-40 refresh, the chip's
+  `remaining`/`cadence` fields and the once-a-day note (a one-square window
+  needs none). The Phase 40 rename table stays as the historical record.
+- **Balance.** Measured once in the Phase 79.1 end-of-milestone bot pass, not
+  here (user ruling 2026-09-26).
+
 ## UI (Plan 05)
 
 Plans 01-04 built every engine surface this phase promises; Plan 05 puts all

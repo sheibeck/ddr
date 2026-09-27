@@ -142,7 +142,8 @@ export const GEAR_COPY = Object.freeze({
     foresight: "Sense Danger",
     foresightValue: "armed",
     reveal: "Map the Floor",
-    revealValue: "{n} sq",
+    // Plan 76-06 (user ruling 2026-09-26): the window lasts until you move.
+    revealValue: "until you move",
     kills: "Kills",
   }),
 });
@@ -579,7 +580,7 @@ export function gearKitRows(state) {
   }
   const rev = c.timers && c.timers["spell:reveal"];
   if (rev && rev.phase === "effect" && rev.left > 0) {
-    rows.push({ label: GEAR_COPY.kit.reveal, value: GEAR_COPY.kit.revealValue.replace("{n}", rev.left) });
+    rows.push({ label: GEAR_COPY.kit.reveal, value: GEAR_COPY.kit.revealValue });
   }
   rows.push({ label: GEAR_COPY.kit.kills, value: String(c.kills || 0) });
   return rows;

@@ -902,9 +902,11 @@ export const EVENT_NARRATION = {
   sensesGained: () => `<span class="hit">Your senses sharpen.</span>`,
   // Phase 40 (SPELL-05, Plan 04): Map the Floor is now a time-boxed,
   // re-fogging reveal — the old permanent whole-floor reveal event is
-  // retired outright; floorMapped/revealFaded replace it.
-  floorMapped: (e) => `<span class="hit">The floor lays itself out in your head — every corridor on this level, for ${e.squares ?? 0} squares.</span>`,
-  revealFaded: () => `<span class="beat">The map forgets what it was told.</span>`,
+  // retired outright; floorMapped/revealFaded replace it. Plan 76-06 (user
+  // ruling 2026-09-26): the map lasts only until you move, so floorMapped
+  // prints no squares count and revealFaded is the hero losing focus.
+  floorMapped: () => `<span class="hit">The floor lays itself out in your head — every corridor on this level, for exactly as long as you hold still.</span>`,
+  revealFaded: () => `<span class="beat">You glance down to check your footing, and your focus breaks. The whole floor slips out of your head.</span>`,
   senseDanger: (e) => `<span class="beat">You get a bad feeling about the next ${e.nextEncounter ?? "encounter"}.</span>`,
   mirrorSelf: (e) => `<span class="hit">A mirror image holds for ${e.rounds ?? 0} rounds.</span>`,
   // RULES-14 (Phase 75): a mirror spell (Bubble) reads its own line —

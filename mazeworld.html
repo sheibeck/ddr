@@ -3100,12 +3100,14 @@ const CONDITION_COPY = {
   // effect but no chip (Mirror Self/Sense Presence/Regeneration/an armed
   // Sense Danger), plus Map the Floor's own re-fog window. The generic
   // `typeof cn.remaining === "number"` detail branch below already renders
-  // `${cn.remaining} ${unit}` for mirror/reveal — no special case needed.
+  // `${cn.remaining} ${unit}` for mirror — no special case needed. Plan
+  // 76-06 (user ruling 2026-09-26): Map the Floor lasts until the next step,
+  // so reveal carries no countdown; its row has a fixed `detail` instead.
   mirror: { label: "Mirrored", unit: "rds" },
   senses: { label: "Senses" },
   regen: { label: "Regenerating" },
   foresight: { label: "Forewarned" },
-  reveal: { label: "Mapped", unit: "sq" },
+  reveal: { label: "Mapped", detail: "until you move" },
   // Phase 41 (TERR-05): an armed terrain phobia waiting for the next fight;
   // the engine's conditionsOf emits {key:"fearArmed", phobia, trigger}, no
   // count — a flat chip like foresight above, no unit needed.
@@ -3245,7 +3247,7 @@ const CONDITION_EXPLAIN = {
   senses: "You fight in the dark at full skill and nothing gets the jump on you, until this fight ends.",
   regen: "Wounds close on their own every round of this fight. It is not a licence.",
   foresight: "You already know what the next encounter is. Whether that helps is up to you.",
-  reveal: "The floor is on loan. When the squares run out, the parts you never walked go dark again.",
+  reveal: "You can see the whole floor for exactly as long as you stand still. One step and your focus breaks; whatever you never walked goes dark again.",
   // Phase 41 (TERR-05).
   fearArmed: "Something out there got to you. The next fight opens Afraid — harder to hit, softer blows — until it passes.",
   // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
@@ -3395,6 +3397,9 @@ function paintConditions(c) {
     } else if (typeof cn.remaining === "number") {
       const unit = CONDITION_COPY[cn.key]?.unit || "";
       detail = unit ? `${cn.remaining} ${unit}` : String(cn.remaining);
+    } else if (CONDITION_COPY[cn.key]?.detail) {
+      // Plan 76-06: a row's fixed detail, for a chip with no countdown (reveal's "until you move").
+      detail = CONDITION_COPY[cn.key]?.detail;
     }
     // Phase 57 (LAYOUT-06), USER RULING 2026-09-22 (waiver visibility): while
     // c.darkFor is running AND a light is holding the dark back, name it —
