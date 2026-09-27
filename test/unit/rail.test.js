@@ -151,6 +151,17 @@ test("railFamilyFor: explicit RAIL_FAMILY entries carry the exact icon/title/ton
   // Phase 43 (CLAR-01/05): the fed-night ration cost — FED, not CAMP MADE
   // (rested owns that title by priority when a heal also happened).
   assert.deepEqual(railFamilyFor("rationsEaten", "beat", PRIORITY.other), { icon: "☾", title: "FED", tone: "good", hold: RAIL_HOLD.camp });
+  // CMBUI-11 (Phase 77): a scroll too advanced to copy still cast — its
+  // family is a note, not a refusal (was "TOO ADVANCED", tone dull).
+  assert.deepEqual(railFamilyFor("scrollTooAdvanced", "magic", PRIORITY.you), { icon: "▪", title: "NOT FOR THE BOOK", tone: "odd", hold: RAIL_HOLD.default });
+});
+
+test("CMBUI-11: a standalone scrollTooAdvanced heads a NOT FOR THE BOOK card whose one line is the copy note", () => {
+  const events = [{ type: "scrollTooAdvanced", spell: "Fireball", need: 3, have: 1, school: "offense" }];
+  const card = railCardFor("readScroll", events, linesForAction("readScroll", events, {}, { limit: Infinity, withIdx: true }));
+  assert.equal(card.title, "NOT FOR THE BOOK");
+  assert.equal(card.tone, "odd");
+  assert.deepEqual(card.lines.map((l) => l.text), ["Fireball: too advanced to copy into your book."]);
 });
 
 // ─── Test 3: railFamilyFor — the block/tone fallback ───────────────────────
