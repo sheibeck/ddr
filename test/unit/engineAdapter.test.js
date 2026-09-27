@@ -947,6 +947,37 @@ test("D-14: a normal run's death after a dev run still buries normally", async (
   });
 });
 
+// --- CMBUI-11 (Phase 77): dispatch applies stampScrollCopyNotes -----------
+
+test("CMBUI-11: dispatch stamps a too-advanced scroll's note and cast (after decorateMisses); the html says the cast, then the copy note, never 'needs level'", async () => {
+  await withFakeLocalStorage(async (store) => {
+    let hit = null;
+    for (let seed = 1; seed <= 600 && !hit; seed++) {
+      const s = newRun(seed);
+      Object.assign(s.c, { cls: "Magic User", sub: "Wizard", level: 1, wp: 999, maxWP: 999, scrolls: 1, grimoire: [] });
+      s.floor.depth = 4;
+      startCombat(s, false, null, makeRng(s.rngState));
+      if (!s.combat) continue;
+      store.setItem(SAVE_KEY, JSON.stringify(serializeRun(s)));
+      await boot(1);
+      dispatch({ type: "fight" });
+      if (!getState().combat || getState().combat.heroOut) continue;
+      const out = dispatch({ type: "readScroll" });
+      if (out.events.some((e) => e.type === "scrollTooAdvanced")) hit = out;
+    }
+    await flushStorage();
+    assert.ok(hit, "a seed rolled a too-advanced scroll spell mid-fight");
+    const i = hit.events.findIndex((e) => e.type === "scrollTooAdvanced");
+    assert.equal(hit.events[i].castFollows, true);
+    assert.equal(hit.events[i + 1].type, "scrollCast");
+    assert.deepEqual(hit.events[i + 1].tooAdvanced, { need: hit.events[i].need, have: hit.events[i].have });
+    const text = hit.html.map((h) => h.replace(/<[^>]+>/g, ""));
+    assert.equal(text.some((t) => /needs level/.test(t)), false);
+    const castLine = text.find((t) => t.startsWith("The scroll casts itself:"));
+    assert.ok(castLine && /too advanced to copy into your book/i.test(castLine), castLine);
+  });
+});
+
 function stripComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 }
