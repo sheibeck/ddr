@@ -35,7 +35,7 @@ export const PLACEMENT_LINES = Object.freeze({
   ]),
   rest: Object.freeze([
     "You placed {rank} of {total}. The {ahead} ahead of you are also dead.",
-    "You placed {rank} of {total}. Somewhere in the middle of the heap. It is warm there, at least.",
+    "You placed {rank} of {total}. Somewhere in the heap. It is warm in there, at least.",
     "You placed {rank} of {total}. Statistically, you happened.",
     "You placed {rank} of {total}. The ledger has room for everyone. That is its whole problem.",
   ]),

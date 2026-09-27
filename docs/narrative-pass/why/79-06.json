@@ -1,0 +1,137 @@
+[
+  {
+    "key": "bank:CAUSE_TEXT.insanity",
+    "surface": "death",
+    "trigger": "the cause-of-death line",
+    "before": "dead by their own hand",
+    "after": "lost to a fit of dungeon madness",
+    "reasons": ["fact", "joke"],
+    "why": "The old line framed a madness-table death as self-harm, which is past the family-friendly bar; it now names the madness as the cause."
+  },
+  {
+    "key": "bank:EPITAPHS.combat.1",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Died as {name} lived: needing a 5 and rolling whatever that was.",
+    "after": "Died as {name} lived: needing a high roll and rolling whatever that was.",
+    "reasons": ["roll-under"],
+    "why": "A bare face count as the need was roll-under phrasing; every check rolls high now."
+  },
+  {
+    "key": "bank:EPITAPHS.fall.3",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Needed a 6 on a d10, three separate times. Managed two.",
+    "after": "Needed three good d10 rolls to top the wall. Managed two.",
+    "reasons": ["roll-under", "accurate"],
+    "why": "The climb is roll-high and its winning faces change with the wall, fear of heights and armour, so no single face is right."
+  },
+  {
+    "key": "bank:EPITAPHS.fall.4",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "The wall is still standing. {name} is being scraped off it.",
+    "after": "The wall is still standing. {name} is not.",
+    "reasons": ["joke"],
+    "why": "The scraping image was gore; the deadpan contrast carries the joke on its own."
+  },
+  {
+    "key": "bank:EPITAPHS.insanity.0",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Rolled a 1 on the madness table and won the argument with themselves.",
+    "after": "Rolled on the madness table. The table won.",
+    "reasons": ["fact", "joke"],
+    "why": "Winning the argument with themselves read as self-harm; the madness table is now the thing that won."
+  },
+  {
+    "key": "bank:EPITAPHS.insanity.1",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "The corridor whispered something. {name} took it entirely on board.",
+    "after": "Lost their wits on floor {floor}. Everything else followed shortly after.",
+    "reasons": ["fact", "joke"],
+    "why": "Acting on a whisper implied the hero harmed themselves on instruction; it now states the madness and where it happened."
+  },
+  {
+    "key": "bank:EPITAPHS.insanity.2",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Nothing attacked {name}. Nothing needed to.",
+    "after": "Nothing attacked {name}. Dungeon madness is cheaper than monsters, and much quieter.",
+    "reasons": ["fact", "joke"],
+    "why": "The old punchline pointed at the hero as the killer; it now names dungeon madness as the cause."
+  },
+  {
+    "key": "bank:EPITAPHS.starve.1",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "Cost of living: 4 hp a day. {name} fell behind on the payments.",
+    "after": "Cost of living: hp, every day without a ration. {name} fell behind on the payments.",
+    "reasons": ["accurate"],
+    "why": "An unfed day costs the race's upkeep (1 for a Dwarf, 15 for a Troll, halved by Heft), so a flat 4 hp was wrong for many heroes."
+  },
+  {
+    "key": "bank:EPITAPHS.trap.2",
+    "surface": "death",
+    "trigger": "the epitaph on the death screen",
+    "before": "1–5 on a d20 avoids it. {name} rolled the way {name} always rolled.",
+    "after": "16–20 on a d20 avoids it. {name} rolled the way {name} always rolled.",
+    "reasons": ["roll-under"],
+    "why": "The trap dodge rolls high: a plain hero avoids it on 16–20, which the death-copy test reads off springTrap."
+  },
+  {
+    "key": "bank:BOARD_COPY.yard.rule",
+    "surface": "boards",
+    "trigger": "a board's title, rule and unit",
+    "before": "Everyone you have rolled and lost, deepest first, with what was said over them. Not ranked against anybody.",
+    "after": "Your sixty most recent dead, deepest first, with what was said over them. Not ranked against anybody.",
+    "reasons": ["accurate"],
+    "why": "The graveyard keeps only the newest sixty stones, so everyone was untrue past sixty deaths."
+  },
+  {
+    "key": "bank:BOARDS_PANEL_COPY.scope.ranked",
+    "surface": "boards",
+    "trigger": "the Leaderboards panel",
+    "before": "Your dead only. The world has not been told.",
+    "after": "Your dead only, from this phone. Nobody else is counted here.",
+    "reasons": ["accurate"],
+    "why": "The ME scope also shows with Compete on, when every death has been sent, so the world has been told; the line now says only what the view holds."
+  },
+  {
+    "key": "bank:STANDING_LINES.rest.2",
+    "surface": "boards",
+    "trigger": "the local standing quip",
+    "before": "Somewhere in the middle of the pile. Literally.",
+    "after": "Somewhere in the pile. Literally.",
+    "reasons": ["accurate"],
+    "why": "The band covers every place below tenth, including last, so the middle was not always true."
+  },
+  {
+    "key": "bank:GLOBAL_STANDING_LINES.ten.0",
+    "surface": "boards",
+    "trigger": "the global standing quip",
+    "before": "Top ten. Strangers are studying your corpse.",
+    "after": "Top ten. Other delvers are studying your corpse.",
+    "reasons": ["accurate"],
+    "why": "The same bank serves the FRIENDS board, where the people ahead are not strangers."
+  },
+  {
+    "key": "bank:PLACEMENT_LINES.rest.1",
+    "surface": "boards",
+    "trigger": "the DEEPEST rank quip",
+    "before": "You placed {rank} of {total}. Somewhere in the middle of the heap. It is warm there, at least.",
+    "after": "You placed {rank} of {total}. Somewhere in the heap. It is warm in there, at least.",
+    "reasons": ["accurate"],
+    "why": "The band covers every place below the top hundred, including last, so the middle was not always true."
+  },
+  {
+    "key": "bank:MISS_LINES.14",
+    "surface": "rail",
+    "trigger": "a fledgling's miss quip",
+    "before": "The dungeon rates that a two.",
+    "after": "The dungeon rates that two out of ten.",
+    "reasons": ["accurate", "natural"],
+    "why": "A bare 'a two' beside a miss read as the die face, which can contradict the roll shown; it now reads as a score."
+  }
+]
