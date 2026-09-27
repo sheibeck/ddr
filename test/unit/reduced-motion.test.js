@@ -338,9 +338,10 @@ function fixedFoeB(overrides = {}) {
 }
 
 /** A real, resolved, mid-fight round (rngState 32 — the same scenario
- * combat-beat-shell.test.js's own midFightRound() uses): the hero kills
- * Goblin Grunt (line 0) and Cave Rat strikes back (line 1); Cave Rat stays
- * alive, so `after.combat` is still set — no ending. */
+ * combat-beat-shell.test.js's own midFightRound() uses): the hero strikes
+ * Goblin Grunt (line 0), it falls (line 1), its coin (line 2), and Cave Rat
+ * strikes back (line 3) — CMBUI-10's event order, four lines; Cave Rat
+ * stays alive, so `after.combat` is still set — no ending. */
 function midFightRoundB() {
   const before = fixedStateB({ rngState: 32 });
   before.combat = {
@@ -798,7 +799,10 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
   assert.equal(w.__mzBeat.active(), false, "the whole beat must land synchronously");
   // Phase 71 (D-07, R-20): the rows are the what-happened strip's.
   const rows = Array.from(scn.sandbox.doc.document.getElementById("cb-summary").querySelectorAll(".cb-sum-line"));
-  assert.equal(rows.length, plan.count, "every line must be visible at once");
+  // CMBUI-10 (Phase 77): this round reads 4 event-order lines (3 under the
+  // old priority fold); the strip shows the round's last 3, all at once.
+  assert.equal(plan.count, 4);
+  assert.equal(rows.length, Math.min(plan.count, 3), "every line the strip holds must be visible at once");
   for (const row of rows) {
     assert.equal(row.getAttribute("aria-hidden"), null, "no row may be left mid-typed");
   }

@@ -93,7 +93,7 @@ function fixedFoe(overrides = {}) {
 }
 
 /** midFightRound() — combat-beat-shell's real, resolved, mid-fight round
- * (rngState 32): three fight-log lines, Cave Rat still standing, so the
+ * (rngState 32): four event-order fight-log lines (CMBUI-10; three under the old priority fold), Cave Rat still standing, so the
  * settle render draws the action grid again. */
 function midFightRound() {
   const before = fixedState({ rngState: 32 });
@@ -259,7 +259,7 @@ test("combat-lock (3)(4): beatHurryTap on a tap targeted at #cb-strike stops pro
   assert.equal(e.stopped, true, "the hurry stops propagation");
   assert.equal(e.prevented, true);
   assert.equal(sandbox.context.window.__mzBeat.active(), false, "the hurry ends the beat");
-  assert.equal(sandbox.context.window.__mzFightLog.entries.length, 3, "the whole round landed");
+  assert.equal(sandbox.context.window.__mzFightLog.entries.length, 4, "the whole round landed"); // CMBUI-10 (Phase 77): 4 event-order lines (was 3)
   assert.equal(strikes(), 0, "the tap never acts");
 
   clock.advance(ARM_DELAY_MS + 2000);
@@ -304,7 +304,7 @@ test("combat-lock (6): a direct #cb-strike tap one clock frame before the beat e
 
   clock.advance(48);
   assert.equal(sandbox.context.window.__mzBeat.active(), false, "the beat has settled");
-  assert.equal(sandbox.context.window.__mzFightLog.entries.length, 3, "the settle shows the whole round");
+  assert.equal(sandbox.context.window.__mzFightLog.entries.length, 4, "the settle shows the whole round"); // CMBUI-10 (Phase 77): 4 event-order lines (was 3)
   assert.equal(act(doc).getAttribute("data-locked"), null);
   assert.equal(strikes(), 0, "the pre-settle tap is never replayed by the settle");
   clock.advance(ARM_DELAY_MS + 2000);

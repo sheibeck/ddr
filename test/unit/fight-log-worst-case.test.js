@@ -10,10 +10,12 @@
 // 4-swing melee turn) plus three ability-kit foes (Stalka Beast/Djinni/
 // Krupke, straight off content/bestiary.js), swept over a deterministic
 // seed range. For every seed it asserts the fight log's line count EQUALS
-// the uncapped folded line count (`linesForAction(..., { limit: Infinity
-// })`) and that linesForAction's own default call (no opts) returns that
-// same uncapped count too — the default is Infinity, so there is nothing
-// left to cap — and tracks how many seeds reveal at least one line's dice
+// the uncapped folded line count (`linesForAction(..., { limit: Infinity,
+// order: "event" })` — CMBUI-10, Phase 77: the fight log reads the event
+// order) and that linesForAction's own default call (no opts, the rail's
+// priority fold) returns the same count as its explicit `{ limit: Infinity
+// }` twin — the default is Infinity, so there is nothing left to cap — and
+// tracks how many seeds reveal at least one line's dice
 // via a non-null `roll`. The two `fixed*` state-builder helpers are copied
 // verbatim from test/unit/foe-abilities.test.js (module-local there, not
 // exported).
@@ -141,12 +143,15 @@ function runScenario(scenarioName, buildState, action) {
     // which is uncapped too — there is no per-type cap left to hit.
     // Phase 34: log line count = folded count (refusals
     // included — they are dull entries in the log now, not filtered out).
-    const folded = linesForAction(action.type, events, {}, { limit: Infinity });
+    // CMBUI-10 (Phase 77): the fight log reads the fold's EVENT order, so
+    // its line count pins against the uncapped event-order fold (was the
+    // default priority fold).
+    const folded = linesForAction(action.type, events, {}, { limit: Infinity, order: "event" });
     const lines = fightLogLinesFor(action.type, events);
     assert.equal(
       lines.length,
       folded.length,
-      `seed ${seed}: fight-log line count must equal the uncapped folded line count (refusals included)`,
+      `seed ${seed}: fight-log line count must equal the uncapped event-order folded line count (refusals included)`,
     );
     for (const line of lines) {
       assert.ok(
@@ -155,10 +160,12 @@ function runScenario(scenarioName, buildState, action) {
       );
     }
 
+    // The rail's default call (the priority fold) is uncapped too.
     const defaultCall = linesForAction(action.type, events, {});
+    const priorityFold = linesForAction(action.type, events, {}, { limit: Infinity });
     assert.equal(
       defaultCall.length,
-      folded.length,
+      priorityFold.length,
       `seed ${seed}: the default call is uncapped too — it must return the same count as the explicit { limit: Infinity } fold`,
     );
 

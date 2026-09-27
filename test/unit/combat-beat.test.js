@@ -364,7 +364,13 @@ test("combatBeat: planBeat for an ending round builds the log via appendFightLog
 // round, where every line — including the last, the one on screen the
 // instant before the over-panel/settle takes over — renders from this
 // frame (D-09). planBeat now pins heroHp's last entry to the real final hp.
-test("combatBeat: planBeat's last hero-hp frame equals the real final hp, never an under-count from a fold's first-event-only sample (a foe with 2+ swings this round)", () => {
+test("combatBeat: planBeat's last hero-hp frame equals the real final hp, never an under-count from a fold's first-event-only sample (two identical back-to-back swings)", () => {
+  // CMBUI-10 (Phase 77): the fight log folds only back-to-back IDENTICAL
+  // lines now (the priority fold's "Ogre hits you 2 of 2 (17)" per-foe group
+  // is gone — two different hits read as two lines, each with its own
+  // frame). The under-count this pin guards can still happen through the
+  // " ×N" fold: two identical 8s read "Ogre hits you (8) ×2", whose idx
+  // names only the first swing.
   const foes = [
     { name: "Rat", alive: true, wp: 6, maxWP: 6, type: "Beasts" },
     { name: "Ogre", alive: true, wp: 20, maxWP: 20, type: "Beasts" },
@@ -374,26 +380,31 @@ test("combatBeat: planBeat's last hero-hp frame equals the real final hp, never 
     { type: "struck", target: "Rat", dmg: 5 },
     { type: "foeKilled", name: "Rat", spGained: 1 },
     { type: "struckByFoe", name: "Ogre", dmg: 8 },
-    { type: "struckByFoe", name: "Ogre", dmg: 9 },
+    { type: "struckByFoe", name: "Ogre", dmg: 8 },
   ];
   const ctx = {};
 
-  // sanity: the fold's TEXT already carries the true combined damage
-  // (8+9=17) — the bug is that heroHp's per-line math does not.
+  // sanity: the adjacent-identical fold reads the two swings as one "×2"
+  // line — the bug is that heroHp's per-line math samples only the first.
   const lines = fightLogLinesFor("attack", events, ctx);
-  const ogreLine = lines.find((l) => l.text.includes("Ogre"));
-  assert.ok(ogreLine, "sanity: Ogre's line must exist");
-  assert.match(ogreLine.text, /17/, "sanity: the folded line's text carries the TRUE combined damage (8+9=17)");
+  const ogreLines = lines.filter((l) => l.text.includes("Ogre"));
+  assert.equal(ogreLines.length, 1, "sanity: the two identical swings fold into one line");
+  assert.equal(ogreLines[0].text, "Ogre hits you (8) ×2", "sanity: the folded line names both swings");
 
-  const afterEnding = fixedState({ c: { wp: 55 - 17 }, combat: null }); // true final: 55 - 17 = 38
+  const afterEnding = fixedState({ c: { wp: 55 - 16 }, combat: null }); // true final: 55 - 16 = 39
   const plan = planBeat({ actionType: "attack", events, before, after: afterEnding, beforeLog: null, ctx });
   assert.ok(plan);
   assert.equal(plan.ending, true);
   assert.equal(
     plan.heroHp[plan.heroHp.length - 1],
-    38,
-    "the LAST frame must equal the real final hp (55-17=38), not an under-count from only the fold's first constituent event (55-8=47)"
+    39,
+    "the LAST frame must equal the real final hp (55-16=39), not an under-count from only the fold's first constituent event (55-8=47)"
   );
+
+  // and two DIFFERENT swings are two lines, each moving the hero's HP on its own frame
+  const split = [...events.slice(0, 2), { type: "struckByFoe", name: "Ogre", dmg: 8 }, { type: "struckByFoe", name: "Ogre", dmg: 9 }];
+  const splitPlan = planBeat({ actionType: "attack", events: split, before, after: fixedState({ c: { wp: 38 }, combat: null }), beforeLog: null, ctx });
+  assert.deepEqual(splitPlan.heroHp.slice(-2), [47, 38], "each swing's own frame (CMBUI-10: event order)");
 });
 
 test("combatBeat: planBeat never mutates before, after, beforeLog, afterLog or events — deep-frozen inputs do not throw", () => {

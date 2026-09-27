@@ -28,8 +28,11 @@ import url from "node:url";
 import { applyAction, newRun } from "../../engine/engine.js";
 import { foeTurn } from "../../engine/combat.js";
 import { startEffect } from "../../engine/effects.js";
-import { linesForAction, LINE_FOR, ORACLE_ONLY, NARRATIVE_ACTIONS } from "../../src/browser/narrationLines.js";
-import { narrateEvent } from "../../src/browser/eventNarration.js";
+import { linesForAction, LINE_FOR, ORACLE_ONLY, NARRATIVE_ACTIONS, oracleDetailText } from "../../src/browser/narrationLines.js";
+import { narrateEvent, EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { formatEvents } from "../../src/browser/engineAdapter.js";
+import { fightLogLinesFor } from "../../src/browser/fightLog.js";
+import { lineIdxsFor } from "../../src/browser/combatBeat.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const CORPUS_PATH = path.join(__dirname, "fixtures", "event-order", "default-fold-corpus.json");
@@ -545,6 +548,93 @@ test("CMBUI-10: the event order never drops a narrated event (every lineable eve
     // each line owns a contiguous run [idx, nextIdx); every lineable event falls in one run
     for (const { i } of lineable(c.events)) {
       assert.ok(firsts.some((f) => f <= i), `${c.name}: event ${i} (${c.events[i].type}) precedes every line`);
+    }
+  }
+});
+
+// ─── 3. The engine already emits in time order (pinned, never edited) ────────
+
+test("CMBUI-10 engine pin: a real `fight` pushes combatJoined before any opening foe swing (a Samurai: they go first)", () => {
+  let sawSwing = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const state = fixedState({ c: fixedFighter({ sub: "Samurai", wp: 400, maxWP: 400 }) });
+    state.combat = fixedCombat([ned(), ned(), ned()], { type: "Humans", pending: true });
+    const { events } = applyAction({ ...state, rngState: seed }, { type: "fight" });
+    const joined = events.findIndex((e) => e.type === "combatJoined");
+    const firstSwing = events.findIndex((e) => e.type === "struckByFoe" || e.type === "foeMissed");
+    assert.ok(joined !== -1, `seed ${seed}: combatJoined is pushed`);
+    if (firstSwing !== -1) {
+      sawSwing++;
+      assert.ok(joined < firstSwing, `seed ${seed}: Initiative (${joined}) comes before the first swing (${firstSwing})`);
+      const lines = fightLogLinesFor("fight", events);
+      assert.match(lines[0].text, /^Initiative — /, `seed ${seed}: the fight log opens on the Initiative line`);
+    }
+  }
+  assert.ok(sawSwing >= 10, `the Samurai sweep reached the opening swings (${sawSwing} seeds)`);
+});
+
+test("CMBUI-10 engine pin: a real riposte turn pushes foeMissed, then riposted, then foeKilled for the same foe", () => {
+  const events = riposteRound();
+  for (let i = 0; i < events.length; i++) {
+    if (events[i].type !== "riposted") continue;
+    const before = events.slice(0, i).map((e) => e.type).lastIndexOf("foeMissed");
+    const after = events.findIndex((e, j) => j > i && e.type === "foeKilled");
+    assert.ok(before !== -1 && events[before].name === events[i].target, "the miss that triggered it comes first");
+    assert.ok(after !== -1 && events[after].name === events[i].target, "the kill comes after");
+    const nextSwing = events.findIndex((e, j) => j > i && e.type === "foeMissed");
+    if (nextSwing !== -1) assert.ok(after < nextSwing, "the kill lands before the next foe swings");
+  }
+});
+
+// ─── 4. The Oracle tab (#log): one line per event, engine order, newest first ─
+
+test("CMBUI-10 Oracle pin: formatEvents is EVENT_NARRATION of each narrated event, in engine order (no folding)", () => {
+  const events = riposteRound();
+  const html = formatEvents(events);
+  const expected = events.filter((e) => e.type !== "moved" && typeof EVENT_NARRATION[e.type] === "function").map((e) => EVENT_NARRATION[e.type](e)).filter(Boolean);
+  assert.deepEqual(html, expected);
+  assert.equal(html.filter((h) => /misses/.test(h) && /Ned/.test(h)).length >= 3, true, "each miss keeps its own Oracle line");
+  // the same identical miss twice reads twice on the Oracle (the fold is the fight log's, never the Oracle's)
+  const miss = { type: "foeMissed", name: "Ned", roll: 3, atLeast: 12, dieN: 20 };
+  assert.equal(formatEvents([miss, miss]).length, 2);
+});
+
+test("CMBUI-10 Oracle pin: the shell's logLine inserts at logEl.firstChild (the Oracle reads newest first)", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "..", "mazeworld.html"), "utf8");
+  const m = src.match(/function logLine\(html\) \{[\s\S]*?\n\}/);
+  assert.ok(m, "logLine exists");
+  assert.match(m[0], /logEl\.insertBefore\(p, logEl\.firstChild\)/);
+});
+
+// ─── 5. The fight log and the beats share the event order ────────────────────
+
+test("CMBUI-10: fightLogLinesFor on the riposte round reads in time order; lineIdxsFor ascends, aligned 1:1", () => {
+  const events = riposteRound();
+  const lines = fightLogLinesFor("useAbility", events);
+  const idxs = lineIdxsFor("useAbility", events);
+  assert.equal(lines.length, idxs.length, "1:1 with the beat's idxs");
+  for (let k = 1; k < idxs.length; k++) assert.ok(idxs[k] > idxs[k - 1], "strictly ascending");
+  assert.deepEqual(lines.map((l) => l.text), evTexts("useAbility", events));
+  const kinds = lines.map((l) => (l.text.startsWith("Ned misses you") ? "miss" : /pays/.test(l.text) ? "pays" : /falls/.test(l.text) ? "falls" : "other")).filter((k) => k !== "other");
+  assert.deepEqual(kinds, ["miss", "pays", "falls", "miss", "pays", "falls", "miss", "pays", "falls"]);
+  // each line's dice come from its own (earliest) event
+  lines.forEach((l, k) => {
+    const want = oracleDetailText(narrateEvent(events[idxs[k]])) || null;
+    assert.equal(l.roll, want);
+  });
+  assert.ok(lines[0].roll, "the first miss reveals its own die");
+});
+
+test("CMBUI-10: fightLogLinesFor and lineIdxsFor stay aligned over the worst-case sweep", () => {
+  for (const [action, extra] of [[{ type: "fight" }, { pending: true }], [{ type: "attack" }, { first: "foe" }]]) {
+    for (let seed = 1; seed <= 40; seed++) {
+      const state = fixedState({ c: fixedFighter({ race: "Fridgian", maxWP: 400, wp: 400, potions: 0 }) });
+      state.combat = fixedCombat(worstCaseFoes(), extra);
+      const { events } = applyAction({ ...state, rngState: seed }, action);
+      const lines = fightLogLinesFor(action.type, events);
+      const idxs = lineIdxsFor(action.type, events);
+      assert.equal(lines.length, idxs.length, `seed ${seed}`);
+      assert.deepEqual(idxs, evLines(action.type, events).map((l) => l.idx), `seed ${seed}`);
     }
   }
 });
