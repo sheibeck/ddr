@@ -449,7 +449,7 @@ Plans:
 
   8. With a full bag, the find card keeps the found item and TAKE / LEAVE in view while the drop list scrolls inside the card.
 
-**Plans**: 6/9 plans executed
+**Plans**: 7/9 plans executed
 
 Plans:
 **Wave 1**
@@ -469,7 +469,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 78-07-PLAN.md — The opt-in arrow pad (HUD-08): a Movement setting, one step per press through window.move, tap-to-move off in arrow mode, and a camera that treats the pad as an edge (wave 4)
+- [x] 78-07-PLAN.md — The opt-in arrow pad (HUD-08): a Movement setting, one step per press through window.move, tap-to-move off in arrow mode, and a camera that treats the pad as an edge (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -654,7 +654,7 @@ Plans:
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
-| 78. HUD, Dead State & Climb Decisions | v2.1 | 6/9 | In Progress|  |
+| 78. HUD, Dead State & Climb Decisions | v2.1 | 7/9 | In Progress|  |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
