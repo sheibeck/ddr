@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck, raceFoeToHit } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -1073,9 +1073,12 @@ export function killFoe(state, f, rng, events = []) {
   if (f.type === "Beasts" || f.type === "Lair Beasts") {
     if (skill(c, "Cooking")) {
       const fed = Math.max(1, Math.round(f.maxWP / 4));
+      const before = c.wp;
       c.wp = Math.min(c.maxWP, c.wp + fed);
       c.rations++;
-      events.push({ type: "cooked", wp: fed, rations: 1 });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+      // actually added after the clamp to max (additive, zero draws).
+      events.push({ type: "cooked", wp: fed, rations: 1, gained: c.wp - before });
     } else if (rng.d(6) >= 4) { // roll:already-high
       c.rations++;
       events.push({ type: "cooked", wp: 0, rations: 1 });
@@ -2101,7 +2104,10 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
       const heal = rng.d(8) + ally.lvl; // roll:amount
       const before = ally.wp;
       ally.wp = Math.min(ally.maxWP, ally.wp + heal);
-      events.push({ type: "memberSecondWind", name: ally.name, amount: ally.wp - before });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` (the
+      // member's HP actually added) and `rolled` (the heal before the clamp)
+      // — additive, zero draws. `amount` already was the clamped value.
+      events.push({ type: "memberSecondWind", name: ally.name, amount: ally.wp - before, rolled: heal, gained: ally.wp - before });
       return;
     }
     case "sweep": {
@@ -2927,8 +2933,11 @@ export function foeTurn(state, rng, events = []) {
       // weakness applies to its own Regeneration tick too, through the same
       // chart-driven helper — the draw itself is unchanged.
       const regen = applyCasterHealMul(c.sub, r);
+      const before = c.wp;
       c.wp = Math.min(c.maxWP, c.wp + regen);
-      events.push({ type: "regenerated", amount: regen, ...(regen !== r ? { halved: true } : {}) });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+      // actually added after the clamp to max (additive, zero draws).
+      events.push({ type: "regenerated", amount: regen, ...(regen !== r ? { halved: true } : {}), gained: c.wp - before });
     }
   }
   // RULES-10 (Phase 75.1, the reader's burn): a fumbled Acid or Ice landing
@@ -3163,6 +3172,17 @@ export function foeTurn(state, rng, events = []) {
         // and the hero's own size never reaches a member's (this branch
         // never reads state.c). Damage already moves inside weaponDamage on
         // the member view (memberStrike/foeTurn's riposte call). Zero draws.
+        // Phase 79 (plan 79-02, todo 2026-09-25): the Joiner's OWN race
+        // to-be-hit trait (derived.js#raceFoeToHit — the Elven thin-boned
+        // +1), read from its own sheet exactly as foeToHitVs reads the
+        // hero's; foeToHitVs(state, "member") no longer carries the hero's.
+        // Named by the member's race, like the hero's own race mod. Zero draws.
+        const mRaceTrait = mSheet ? raceFoeToHit(mSheet) : 0;
+        if (mRaceTrait) {
+          const before = mFaces;
+          mFaces = Math.max(1, mFaces + mRaceTrait);
+          if (mFaces !== before) mMods.push({ name: mSheet.race, delta: mFaces - before });
+        }
         if (mSheet) {
           const before = mFaces;
           mFaces = Math.max(1, mFaces + SIZE_FACES_PER_STEP * sizeAxisStep(mSheet, "face"));

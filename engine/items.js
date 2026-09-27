@@ -1563,13 +1563,19 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   switch (kind) {
     case "heal": {
       const a = rng.d(10) + 2; // roll:amount
+      const before = c.wp;
       c.wp = Math.min(c.maxWP, c.wp + a);
-      events.push({ type: "healed", amount: a });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+      // actually added after the clamp to max (additive, zero draws).
+      events.push({ type: "healed", amount: a, gained: c.wp - before });
       break;
     }
     case "full": {
+      const before = c.wp;
       c.wp = c.maxWP;
-      events.push({ type: "healed", amount: c.maxWP });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+      // actually added after the clamp to max (additive, zero draws).
+      events.push({ type: "healed", amount: c.maxWP, gained: c.wp - before });
       break;
     }
     case "poison":
@@ -1614,7 +1620,9 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // bare 20-square cooldown (act.effect is 0, act.cd is 20).
       const amount = Math.min(c.maxWP - c.wp, rng.d(6)); // roll:amount
       c.wp = Math.min(c.maxWP, c.wp + amount);
-      events.push({ type: "cloakRegenerated", amount });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+      // actually added after the clamp to max (additive, zero draws).
+      events.push({ type: "cloakRegenerated", amount, gained: amount });
       break;
     }
     case "glow": {

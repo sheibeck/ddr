@@ -234,7 +234,9 @@ export function useAbility(state, key, rng, events = []) {
       const heal = rng.d(8) + c.level; // roll:amount
       const amount = Math.min(heal, c.maxWP - c.wp);
       c.wp += amount;
-      events.push({ type: "secondWindHealed", amount, rolled: heal });
+      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
+      // actually added after the clamp to max (additive, zero draws).
+      events.push({ type: "secondWindHealed", amount, rolled: heal, gained: amount });
       break;
     }
     case "sweep": {

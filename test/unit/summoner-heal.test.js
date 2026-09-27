@@ -135,7 +135,7 @@ test("castSpell: a Summoner's Heal (d10 -> 8) restores 4 and carries halved: tru
   const events = castSpell(state, SPELL_IDX.Heal, fakeRng([8]), []);
   assert.equal(state.c.wp, 14, "10 + floor(8*0.5) = 14");
   const healed = events.find((e) => e.type === "healed");
-  assert.deepEqual(healed, { type: "healed", amount: 4, spell: "Heal", halved: true });
+  assert.deepEqual(healed, { type: "healed", amount: 4, spell: "Heal", halved: true, gained: 4 });
 });
 
 test("castSpell: a Wizard's Heal (d10 -> 8) restores 8 with no halved key", () => {
@@ -143,7 +143,7 @@ test("castSpell: a Wizard's Heal (d10 -> 8) restores 8 with no halved key", () =
   const events = castSpell(state, SPELL_IDX.Heal, fakeRng([8]), []);
   assert.equal(state.c.wp, 18, "10 + 8 = 18");
   const healed = events.find((e) => e.type === "healed");
-  assert.deepEqual(healed, { type: "healed", amount: 8, spell: "Heal" });
+  assert.deepEqual(healed, { type: "healed", amount: 8, spell: "Heal", gained: 8 });
   assert.equal(Object.hasOwn(healed, "halved"), false);
 });
 
@@ -153,7 +153,7 @@ test("castSpell: a heal2x (Wilmsry) Summoner rolling 5 restores 5 — doubled to
   const events = castSpell(state, SPELL_IDX.Heal, fakeRng([5]), []);
   assert.equal(state.c.wp, 5);
   const healed = events.find((e) => e.type === "healed");
-  assert.deepEqual(healed, { type: "healed", amount: 5, spell: "Heal", halved: true });
+  assert.deepEqual(healed, { type: "healed", amount: 5, spell: "Heal", halved: true, gained: 5 });
 });
 
 test("castSpell: a Cleric's own +3 bonus is folded in before the (unrelated) mul — a non-Summoner Cleric heals normally", () => {
@@ -161,7 +161,7 @@ test("castSpell: a Cleric's own +3 bonus is folded in before the (unrelated) mul
   const events = castSpell(state, SPELL_IDX.Heal, fakeRng([8]), []);
   assert.equal(state.c.wp, 21, "10 + 8 + 3 = 21, no halving for a Cleric");
   const healed = events.find((e) => e.type === "healed");
-  assert.deepEqual(healed, { type: "healed", amount: 11, spell: "Heal" });
+  assert.deepEqual(healed, { type: "healed", amount: 11, spell: "Heal", gained: 11 });
 });
 
 test("castSpell: Heal still caps at maxWP after halving", () => {
@@ -180,7 +180,7 @@ test("readScroll: a Summoner reading a Heal scroll (d10 -> 8) restores 4", () =>
   const events = readScroll(state, fakeRng([8], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
   assert.equal(state.c.wp, 14);
   const healed = events.find((e) => e.type === "healed");
-  assert.deepEqual(healed, { type: "healed", amount: 4, spell: "Heal", halved: true });
+  assert.deepEqual(healed, { type: "healed", amount: 4, spell: "Heal", halved: true, gained: 4 });
 });
 
 // --- foeTurn's regeneration tick -----------------------------------------
@@ -191,7 +191,7 @@ test("foeTurn: a Summoner with c.regen (d8 -> 7) regains 3 with halved: true", (
   const events = foeTurn(state, fakeRng([7]), []);
   assert.equal(state.c.wp, 53, "50 + floor(7*0.5) = 53");
   const regen = events.find((e) => e.type === "regenerated");
-  assert.deepEqual(regen, { type: "regenerated", amount: 3, halved: true });
+  assert.deepEqual(regen, { type: "regenerated", amount: 3, halved: true, gained: 3 });
 });
 
 test("foeTurn: a Wizard with c.regen (d8 -> 7) regains 7 with no halved key", () => {
@@ -200,7 +200,7 @@ test("foeTurn: a Wizard with c.regen (d8 -> 7) regains 7 with no halved key", ()
   const events = foeTurn(state, fakeRng([7]), []);
   assert.equal(state.c.wp, 57, "50 + 7 = 57");
   const regen = events.find((e) => e.type === "regenerated");
-  assert.deepEqual(regen, { type: "regenerated", amount: 7 });
+  assert.deepEqual(regen, { type: "regenerated", amount: 7, gained: 7 });
   assert.equal(Object.hasOwn(regen, "halved"), false);
 });
 
@@ -213,7 +213,7 @@ test("drinkPotion: a Summoner's potion restores its full, unhalved amount", () =
   // reads applyCasterHealMul at all.
   assert.equal(state.c.wp, 25);
   const drunk = events.find((e) => e.type === "potionDrunk");
-  assert.deepEqual(drunk, { type: "potionDrunk", amount: 25, remaining: 0 });
+  assert.deepEqual(drunk, { type: "potionDrunk", amount: 25, remaining: 0, gained: 25 });
 });
 
 test("allyCast never casts a heal kind — ATTACK_SPELL_KINDS excludes 'heal'", () => {

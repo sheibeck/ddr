@@ -31,9 +31,13 @@ export const floorChanged = (depth) => ({ type: EVENT_TYPES.FLOOR_CHANGED, depth
 export const died = (cause) => ({ type: EVENT_TYPES.DIED, cause });
 
 /** leveled(level, wpGain) — the character reached a new skill level. */
-export const leveled = (level, wpGain) => ({ type: EVENT_TYPES.LEVELED, level, wpGain });
+// VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` — the HP the
+// level-up added to current HP (= wpGain; a raise, never clamped). Additive.
+export const leveled = (level, wpGain) => ({ type: EVENT_TYPES.LEVELED, level, wpGain, gained: wpGain });
 
 /** floorRegen(amount) — HERO_REGEN_PER_FLOOR healed the hero on arrival at
  * a new floor (Phase 54, BAND-02, USER RULING D). Only pushed when
  * `amount > 0` — identity (0) never fires. */
-export const floorRegen = (amount) => ({ type: EVENT_TYPES.FLOOR_REGEN, amount });
+// VOX-05 (Phase 79, plan 79-02): `gained` (= amount, the clamped HP) is the
+// one field every gain event carries. Additive.
+export const floorRegen = (amount) => ({ type: EVENT_TYPES.FLOOR_REGEN, amount, gained: amount });

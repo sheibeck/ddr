@@ -1,0 +1,327 @@
+[
+  {
+    "key": "oracle:healed",
+    "surface": "oracle",
+    "trigger": "healed { amount 2, gained 1 } — a Heal cast 1 hp below full",
+    "before": "+2 hp from Heal.",
+    "after": "+1 hp from Heal (2 rolled, back to full).",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "It printed the roll as the gain; it now leads with the HP actually restored and says the rest hit the ceiling."
+  },
+  {
+    "key": "rail:healed",
+    "surface": "rail",
+    "trigger": "healed { amount 2, gained 1 } — a Heal cast 1 hp below full",
+    "before": "+2 hp (Heal).",
+    "after": "+1 hp (Heal), back to full.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "It printed the roll as the gain; it now leads with the HP actually restored and says the rest hit the ceiling."
+  },
+  {
+    "key": "oracle:potionDrunk",
+    "surface": "oracle",
+    "trigger": "potionDrunk { amount 2, gained 1 } — a potion drunk 1 hp below full",
+    "before": "+2 hp (1 potion left).",
+    "after": "+1 hp (2 rolled, back to full; 1 potion left).",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "A potion near full printed the whole dose; it now leads with the HP it really restored, then the roll and 'back to full'."
+  },
+  {
+    "key": "rail:potionDrunk",
+    "surface": "rail",
+    "trigger": "potionDrunk { amount 2, gained 1 } — a potion drunk 1 hp below full",
+    "before": "Potion +2 hp (1 left)",
+    "after": "Potion +1 hp, back to full (1 left)",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "A potion near full printed the whole dose; it now leads with the HP it really restored, then the roll and 'back to full'."
+  },
+  {
+    "key": "oracle:regenerated",
+    "surface": "oracle",
+    "trigger": "regenerated { amount 2, gained 1 } — a Regeneration tick 1 hp below full",
+    "before": "+2 hp knits itself shut.",
+    "after": "+1 hp knits itself shut (2 rolled, back to full).",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The tick printed its roll; it now prints the HP that actually knit, and names the roll when full cut it short."
+  },
+  {
+    "key": "rail:regenerated",
+    "surface": "rail",
+    "trigger": "regenerated { amount 2, gained 1 } — a Regeneration tick 1 hp below full",
+    "before": "+2 hp knits shut.",
+    "after": "+1 hp knits shut, back to full.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The tick printed its roll; it now prints the HP that actually knit, and names the roll when full cut it short."
+  },
+  {
+    "key": "oracle:foodFound",
+    "surface": "oracle",
+    "trigger": "foodFound { wp 4, gained 1 } — food found 1 hp below full",
+    "before": "Viper (+4 hp).",
+    "after": "Viper (+1 hp; worth 4, back to full).",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "Found food printed its full value; it now prints what it restored and what it was worth."
+  },
+  {
+    "key": "rail:foodFound",
+    "surface": "rail",
+    "trigger": "foodFound { wp 4, gained 1 } — food found 1 hp below full",
+    "before": "Viper (+4 hp).",
+    "after": "Viper (+1 hp, back to full).",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "Found food printed its full value; it now prints what it restored and what it was worth."
+  },
+  {
+    "key": "oracle:secondWindHealed",
+    "surface": "oracle",
+    "trigger": "secondWindHealed { gained 0 } — a second wind at full hp",
+    "before": "You remember why you came. +2 hp.",
+    "after": "You remember why you came. You were already at full hp, so it is mostly a mood.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "At full hp it would have printed '+0 hp'; it now says nothing came back."
+  },
+  {
+    "key": "rail:secondWindHealed",
+    "surface": "rail",
+    "trigger": "secondWindHealed { gained 0 } — a second wind at full hp",
+    "before": "+2 hp.",
+    "after": "Second wind: you were already at full hp.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "At full hp it would have printed '+0 hp'; it now says nothing came back."
+  },
+  {
+    "key": "oracle:memberSecondWind",
+    "surface": "oracle",
+    "trigger": "memberSecondWind { gained 0 } — a Joiner's second wind at full hp",
+    "before": "Viper remembers why they came. +2 hp.",
+    "after": "Viper remembers why they came, already at full hp.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "At full hp it would have printed '+0 hp'; it now says the companion was already at full."
+  },
+  {
+    "key": "rail:memberSecondWind",
+    "surface": "rail",
+    "trigger": "memberSecondWind { gained 0 } — a Joiner's second wind at full hp",
+    "before": "Viper remembers why they came. +2 hp.",
+    "after": "Viper remembers why they came, already at full hp.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "At full hp it would have printed '+0 hp'; it now says the companion was already at full."
+  },
+  {
+    "key": "oracle:cooked",
+    "surface": "oracle",
+    "trigger": "cooked { wp 4, gained 1 } — a Cooking hero eats the beast 1 hp below full",
+    "before": "You cook what is left. +4 hp, +1 ration.",
+    "after": "You cook what is left. +1 hp (worth 4, back to full), +1 ration.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The meal printed its full portion; it now prints the HP it restored and what the portion was worth."
+  },
+  {
+    "key": "rail:cooked",
+    "surface": "rail",
+    "trigger": "cooked { wp 4, gained 1 } — a Cooking hero eats the beast 1 hp below full",
+    "before": "Cooked: +4 hp, +1 ration.",
+    "after": "Cooked: +1 hp (back to full), +1 ration.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The meal printed its full portion; it now prints the HP it restored and what the portion was worth."
+  },
+  {
+    "key": "oracle:cloakRegenerated",
+    "surface": "oracle",
+    "trigger": "cloakRegenerated { gained 0 } — the Cloak of Regeneration used at full hp",
+    "before": "Flesh knits itself back — +2 hp. Ask again in twenty squares.",
+    "after": "The cloak finds nothing to knit. You were already at full hp. Ask again in twenty squares.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "Used at full hp it printed '+0 hp'; it now says there was nothing to knit."
+  },
+  {
+    "key": "rail:cloakRegenerated",
+    "surface": "rail",
+    "trigger": "cloakRegenerated { gained 0 } — the Cloak of Regeneration used at full hp",
+    "before": "Flesh knits +2 hp.",
+    "after": "Cloak: you were already at full hp.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "Used at full hp it printed '+0 hp'; it now says there was nothing to knit."
+  },
+  {
+    "key": "oracle:bought",
+    "surface": "oracle",
+    "trigger": "bought { gained 1, meal 4 } — a store meal eaten 1 hp below full",
+    "before": "Bought: [object Object]. −4 wilmst.",
+    "after": "Bought: [object Object]. −4 wilmst. +1 hp (worth 4, back to full).",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "A store meal never said what it restored; the purchase line now adds the HP it really gave back."
+  },
+  {
+    "key": "rail:bought",
+    "surface": "rail",
+    "trigger": "bought { gained 1, meal 4 } — a store meal eaten 1 hp below full",
+    "before": "Bought: [object Object] (−4 wilmst).",
+    "after": "Bought: [object Object] (−4 wilmst). +1 hp, back to full.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "A store meal never said what it restored; the purchase line now adds the HP it really gave back."
+  },
+  {
+    "key": "oracle:tableFour",
+    "surface": "oracle",
+    "trigger": "tableFour { row '-15 HP', stat hp, amount −19 } — the Table 4 toll at depth 3",
+    "before": "something",
+    "after": "something −19 hp.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The row's number lived in the engine's prose with no sign; the line now prints the one signed amount the row really dealt."
+  },
+  {
+    "key": "rail:tableFour",
+    "surface": "rail",
+    "trigger": "tableFour { row '-15 HP', stat hp, amount −19 } — the Table 4 toll at depth 3",
+    "before": "something",
+    "after": "something −19 hp.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The row's number lived in the engine's prose with no sign; the line now prints the one signed amount the row really dealt."
+  },
+  {
+    "key": "oracle:encounterRolled",
+    "surface": "oracle",
+    "trigger": "encounterRolled { table 4, roll 7, result '-15 HP' } — the Table 4 toll row",
+    "before": "Table 4, roll 7: The dice decide — -15 HP.",
+    "after": "Table 4, roll 7: The dice decide — a toll.",
+    "reasons": [
+      "number",
+      "accurate",
+      "hygiene"
+    ],
+    "why": "The roll line printed the canon cell '-15 HP' (a hyphen-minus, and not the 19 the row deals at depth 3); it now names the row by its effect and leaves the number to the effect line."
+  },
+  {
+    "key": "raw:engine/encounters.js#tableFour",
+    "surface": "raw",
+    "trigger": "tableFour's result prose for one Table 4 row",
+    "before": "`The maze, for once, gives something back. ${n} hp.`",
+    "after": "\"The maze, for once, gives something back.\"",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The number moved out of the prose into the event's signed `amount`, which both narration surfaces print once, with its sign."
+  },
+  {
+    "key": "raw:engine/encounters.js#tableFour",
+    "surface": "raw",
+    "trigger": "tableFour's result prose for one Table 4 row",
+    "before": "`Something unseen takes its cut — ${n} hp, gone.`",
+    "after": "\"Something unseen takes its cut.\"",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The number moved out of the prose into the event's signed `amount`, which both narration surfaces print once, with its sign."
+  },
+  {
+    "key": "raw:engine/encounters.js#tableFour",
+    "surface": "raw",
+    "trigger": "tableFour's result prose for one Table 4 row",
+    "before": "`You are, marginally, wiser for the ordeal. ${n} experience.`",
+    "after": "\"You are, marginally, wiser for the ordeal.\"",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The number moved out of the prose into the event's signed `amount`, which both narration surfaces print once, with its sign."
+  },
+  {
+    "key": "raw:engine/encounters.js#tableFour",
+    "surface": "raw",
+    "trigger": "tableFour's result prose for one Table 4 row",
+    "before": "`A rare kindness — you come away tougher. +${n} to your health, for keeps.`",
+    "after": "\"A rare kindness — you come away tougher, for keeps.\"",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The number moved out of the prose into the event's signed `amount`, which both narration surfaces print once, with its sign."
+  },
+  {
+    "key": "raw:engine/encounters.js#tableFour",
+    "surface": "raw",
+    "trigger": "tableFour's result prose for one Table 4 row",
+    "before": "`A hard lesson, and you actually learned it. ${n} experience.`",
+    "after": "\"A hard lesson, and you actually learned it.\"",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The number moved out of the prose into the event's signed `amount`, which both narration surfaces print once, with its sign."
+  },
+  {
+    "key": "raw:engine/encounters.js#tableFour",
+    "surface": "raw",
+    "trigger": "tableFour's result prose for one Table 4 row",
+    "before": "`The maze extracts a toll you did not agree to. ${n} hp.`",
+    "after": "\"The maze extracts a toll you did not agree to.\"",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "The number moved out of the prose into the event's signed `amount`, which both narration surfaces print once, with its sign."
+  }
+]

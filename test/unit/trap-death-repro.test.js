@@ -315,23 +315,31 @@ const LOSS_FIELDS = {
   deathCast: "cost", // engine/magic.js — the Death spell's own fixed fee
   wentHungry: "cost", // engine/movement.js — an unfed night's upkeep
 };
-// GAIN_TYPES — every event type this plan's own calibration runs observed
-// narrating a HERO wp GAIN. Deliberately NOT summed into the accounting
-// check below (unlike LOSS_FIELDS): most of these sites narrate the RAW
-// pre-clamp roll (a potion/food/heal's own die result), not the actual,
-// possibly-smaller delta once `Math.min(c.maxWP, c.wp + amt)` clamps it
-// near full health — `rested` is the one gain site that already narrates
-// its OWN post-clamp value, but distinguishing it from the rest here would
-// add complexity this guard's own risk surface (RULES-06 is about
-// UNDER-narrated LOSSES causing a surprise death, never an over-narrated
-// gain) does not need. Any action carrying one of these types is excluded
-// from the per-action accounting check (documented, tallied as
-// `skippedActions`, never silently mis-summed).
+// GAIN_TYPES — every event type that narrates a HERO wp GAIN. Phase 79
+// (plan 79-02, VOX-05, todo 2026-09-25): each now carries an additive
+// `gained` — the HP actually added after the clamp to max (0 at full) — so
+// the sweep SUMS them instead of skipping the action (75-08 skipped them
+// because most of these narrated the raw pre-clamp roll). `bought` joins
+// the set for a store meal (its `gained` rides on the purchase event; any
+// other purchase has none and adds 0). A `memberSecondWind` heals a party
+// member, never the hero, so it is neutral here (like a member-tagged
+// foeBolted). tableFour is summed separately by `stat` and `amount` (see
+// heroTableFourDelta below).
 const GAIN_TYPES = new Set([
   "healed", "secondWindHealed", "foodFound", "faerieBoon", "floorRegen",
   "cloakRegenerated", "potionDrunk", "rested", "cooked", "regenerated",
-  "leveled", // a level-up's own wpGain also raises c.wp — same clamp-shaped exclusion
+  "leveled", // a level-up's own HP raise also raises c.wp (`gained` = wpGain)
+  "bought", // a store meal's `gained` (Phase 79); any other purchase adds 0
 ]);
+
+/** heroTableFourDelta(e) — a Table 4 row's signed change to the hero's
+ * CURRENT hp: `amount` for an "hp" row (a clamped heal or a toll) and for a
+ * "maxHp" row (which raises current hp by the same step); 0 for an "xp" or
+ * "armor" row. Phase 79 (plan 79-02, todo 2026-09-26). */
+function heroTableFourDelta(e) {
+  if (e.stat === "hp" || e.stat === "maxHp") return typeof e.amount === "number" ? e.amount : NaN;
+  return 0;
+}
 // NEUTRAL_TYPES — every OTHER event type this plan's own calibration runs
 // actually observed co-occurring with an hp-changing action, confirmed by
 // direct code read to never itself touch the HERO's own `c.wp` (a foe's own
@@ -359,21 +367,26 @@ const NEUTRAL_TYPES = new Set([
   "abilityLearned", "foeFled", "encounterCleared", "insanityRolled",
   "armorPatched", "foeStunned", "leaptOver", "conArtistOpener",
   "trapDisarmed", "chestOpened", "wardRaised", "regenerationCast",
+  "memberSecondWind", // Phase 79: heals a party member, never the hero
 ]);
 
 /**
  * narratedHeroLossDelta(events) — sums LOSS_FIELDS across `events`,
  * restricted to the HERO's own wp (a `foeBolted` event carrying a `member`
  * field targets a PARTY MEMBER, not the hero, and is excluded). Returns
- * `{ loss, hasGain, unclassified }`: `loss` is the positive sum of every
- * confirmed hero hp-loss field; `hasGain` is true when a GAIN_TYPES event is
- * present (excludes the action from the strict check — see GAIN_TYPES'
- * own doc comment); `unclassified` is true when any event's type is outside
- * every set above (LOSS_FIELDS ∪ GAIN_TYPES ∪ NEUTRAL_TYPES), meaning this
- * action's total cannot be safely checked either.
+ * `{ loss, gain, hasGain, unclassified }`: `loss` is the positive sum of
+ * every confirmed hero hp-loss field; `gain` is the summed hero `gained`
+ * (Phase 79) plus every Table 4 row's signed hero-hp `amount` (a toll is a
+ * negative amount, so it lowers `gain`); `hasGain` is true when a
+ * GAIN_TYPES or hp-moving tableFour event is present (these actions are now
+ * CHECKED, tallied as gain-bearing); `unclassified` is true when any event's
+ * type is outside every set above (LOSS_FIELDS ∪ GAIN_TYPES ∪
+ * NEUTRAL_TYPES ∪ tableFour), meaning this action's total cannot be safely
+ * checked.
  */
 function narratedHeroLossDelta(events) {
   let loss = 0;
+  let gain = 0;
   let hasGain = false;
   let unclassified = false;
   for (const e of events) {
@@ -385,18 +398,31 @@ function narratedHeroLossDelta(events) {
       continue;
     }
     if (GAIN_TYPES.has(e.type)) {
+      if (e.type === "bought" && !Object.prototype.hasOwnProperty.call(e, "gained")) continue; // a non-meal purchase moves no hp
       hasGain = true;
+      if (typeof e.gained === "number" && Number.isFinite(e.gained)) gain += e.gained;
+      else unclassified = true; // a gain event without its honest field cannot be checked
+      continue;
+    }
+    if (e.type === "tableFour") {
+      const d = heroTableFourDelta(e);
+      if (!Number.isFinite(d)) unclassified = true;
+      else if (e.stat === "hp" || e.stat === "maxHp") {
+        hasGain = true;
+        gain += d;
+      }
       continue;
     }
     if (!NEUTRAL_TYPES.has(e.type)) unclassified = true;
   }
-  return { loss, hasGain, unclassified };
+  return { loss, gain, hasGain, unclassified };
 }
 
-test("RULES-06 (Phase 75 standing guard, plan 75-08): an engine-scale sweep — every trapSprung's dmg equals the hp it removed, a trap death only happens at or under that dmg, and every checkable loss-only action's narrated total matches its real hp change", () => {
+test("RULES-06 (Phase 75 standing guard, plan 75-08; gains added Phase 79 plan 79-02): an engine-scale sweep — every trapSprung's dmg equals the hp it removed, a trap death only happens at or under that dmg, and every checkable action's narrated gains minus losses match its real hp change", () => {
   const t0 = Date.now();
   let trapSprungCount = 0;
   let checkedActions = 0;
+  let checkedGainActions = 0;
   let skippedActions = 0;
 
   for (let seed = 1; seed <= SWEEP_SEEDS; seed++) {
@@ -409,7 +435,7 @@ test("RULES-06 (Phase 75 standing guard, plan 75-08): an engine-scale sweep — 
     playRun(seed, { startDepth: SWEEP_START_DEPTH, maxActions: SWEEP_MAX_ACTIONS }, (events, state) => {
       const hpAfter = state.c.wp;
       const actualDelta = hpAfter - hpBefore;
-      const { loss, hasGain, unclassified } = narratedHeroLossDelta(events);
+      const { loss, gain, hasGain, unclassified } = narratedHeroLossDelta(events);
 
       for (const e of events) {
         if (e.type !== "trapSprung") continue;
@@ -428,20 +454,22 @@ test("RULES-06 (Phase 75 standing guard, plan 75-08): an engine-scale sweep — 
         }
       }
 
-      if (unclassified || hasGain) {
+      if (unclassified) {
         skippedActions++;
-      } else if (loss > 0 || actualDelta !== 0) {
+      } else if (loss > 0 || hasGain || actualDelta !== 0) {
         checkedActions++;
+        if (hasGain) checkedGainActions++;
+        const narrated = gain - loss;
         if (state.dead) {
           // death.js#die() clamps c.wp to exactly 0 regardless of overkill —
           // an overkill blow's narrated loss legitimately reads LARGER than
           // the clamped actual change (75-01's own (ii) count, "explained,
-          // not a bug"); assert the clamp landed and the narrated loss was
-          // at least enough to be lethal, not a strict equality.
+          // not a bug"); assert the clamp landed and the narrated net change
+          // was at least enough to be lethal, not a strict equality.
           assert.equal(hpAfter, 0, `seed ${seed}: a dead hero's c.wp must clamp to exactly 0`);
-          assert.ok(hpBefore - loss <= 0, `seed ${seed}: a lethal action's narrated loss (${loss}) must be sufficient to explain the death from ${hpBefore} hp`);
+          assert.ok(hpBefore + narrated <= 0, `seed ${seed}: a lethal action's narrated net (${narrated}) must be sufficient to explain the death from ${hpBefore} hp`);
         } else {
-          assert.equal(actualDelta, -loss, `seed ${seed}: the hp change (${actualDelta}) must equal the narrated loss (-${loss})`);
+          assert.equal(actualDelta, narrated, `seed ${seed}: the hp change (${actualDelta}) must equal the narrated gains minus losses (+${gain} −${loss})`);
         }
       }
 
@@ -451,6 +479,9 @@ test("RULES-06 (Phase 75 standing guard, plan 75-08): an engine-scale sweep — 
 
   assert.ok(trapSprungCount >= 20, `sweep must observe at least 20 trapSprung events to be non-vacuous — saw ${trapSprungCount}`);
   assert.ok(checkedActions > 0, "sweep must actually check at least one action's hp accounting, not skip everything");
+  // Phase 79 (plan 79-02): the gain half is live, not vacuous.
+  assert.ok(checkedGainActions >= 20, `sweep must check at least 20 gain-bearing actions — checked ${checkedGainActions}`);
+  console.log(`# trap-death sweep: ${checkedActions} actions checked (${checkedGainActions} gain-bearing), ${skippedActions} skipped, ${trapSprungCount} traps, ${Date.now() - t0}ms`);
   assert.ok(skippedActions >= 0, "sanity: skippedActions is a non-negative tally");
   assert.ok(Date.now() - t0 < 60000, `sweep must stay under this plan's own 60s budget — took ${Date.now() - t0}ms`);
 });

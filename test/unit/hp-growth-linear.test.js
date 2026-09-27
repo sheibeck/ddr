@@ -190,7 +190,9 @@ test("RULES-01 empty: a hero on 1 hp takes the toll's flat amount, the line prin
   const state = fixedState({ c: { wp: 1 } });
   const events = tableFour(state, "-15 HP", fakeRng([]), []);
   assert.equal(state.dead, true);
-  assert.ok(events.some((e) => e.type === "tableFour" && /15 hp/.test(e.result)), "the toll line prints the exact flat amount");
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): the flat amount moved
+  // out of the prose into the signed `amount` the line prints.
+  assert.ok(events.some((e) => e.type === "tableFour" && e.amount === -15 && !/\d/.test(e.result)), "the toll event carries the exact flat amount");
   assert.ok(events.some((e) => e.type === "died" && e.cause === "maze"), "death routes through die(state, 'maze')");
 });
 

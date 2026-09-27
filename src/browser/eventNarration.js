@@ -67,6 +67,46 @@ import { AFFLICTIONS } from "../../content/afflictions.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+// VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): every gain line leads with
+// the HP actually gained — the engine's additive `gained`, after the clamp
+// to max. A capped gain adds what was on offer and says the hero is back to
+// full; a gain of 0 says nothing came back instead of printing "+0". A
+// hand-built event with no `gained` falls back to its pre-clamp value, so
+// the coverage guard's bare `{ type }` calls still render.
+const gainOf = (e, offered) => (Number.isFinite(e?.gained) ? e.gained : Number.isFinite(offered) ? offered : 0);
+/** cappedNote(gained, offered, how) — " (8 rolled, back to full)" / " (worth 8, back to full)" / "" when nothing was capped. */
+const cappedNote = (gained, offered, how = "rolled") =>
+  Number.isFinite(offered) && gained > 0 && gained < offered ? ` (${how === "worth" ? `worth ${offered}` : `${offered} rolled`}, back to full)` : "";
+
+// VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): the table-roll line names
+// a Table 4 row by its EFFECT, never by its canon cell ("-15 HP" deals the
+// HERO_HP_SCALE-scaled amount, 19 at depth 3, and the effect line prints
+// that one number). Module-private presentation data: every cell holding a
+// digit or a sign maps here (test/unit/honest-gains.test.js pins it through
+// the rendered lines); every other cell (a foe family, Store, Faerie…)
+// reads as itself.
+const TABLE_FOUR_EFFECT = Object.freeze({
+  "+10 HP": "a small mercy",
+  "-10 HP": "a cut",
+  "+10 XP": "a lesson",
+  "+25 HP": "a rare kindness",
+  "+25 XP": "a hard lesson",
+  "-15 HP": "a toll",
+  "-All armour": "a wardrobe audit",
+});
+
+/** tableFourTail(e) — the signed amount a Table 4 row actually made, after its prose: " −19 hp." / " +31 max hp." / " +13 experience." / "" (armour, or a hand-built event with no amount). */
+function tableFourTail(e) {
+  if (!Number.isFinite(e?.amount)) return "";
+  if (e.stat === "hp") {
+    if (e.amount === 0) return " You were already at full hp, so it goes to waste.";
+    return ` <span class="${e.amount < 0 ? "hurt" : "hit"}">${signedText(e.amount)} hp</span>${e.amount > 0 ? cappedNote(e.amount, e.rolled, "worth") : ""}.`;
+  }
+  if (e.stat === "maxHp") return ` <span class="hit">${signedText(e.amount)} max hp.</span>`;
+  if (e.stat === "xp") return ` <span class="roll">${signedText(e.amount)} experience.</span>`;
+  return "";
+}
+
 // RULES-18 (Phase 75.3, Plan 04): the four control-at-depth events
 // (controlResisted/controlHeld/foeStillHeld/foeHoldBroken) share these two
 // word maps — an effect name (freeze/stone/sleep/weaken/stupid/blind/shrink,
@@ -277,14 +317,18 @@ export const EVENT_NARRATION = {
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
   // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR's arrival tick —
   // identity (0) never pushes this event.
-  floorRegen: (e) => `<span class="hit">A new floor, and the dungeon lets you keep +${e.amount ?? 0} hp of it.</span> Do not mistake this for kindness.`,
+  floorRegen: (e) => `<span class="hit">A new floor, and the dungeon lets you keep +${gainOf(e, e.amount)} hp of it.</span> Do not mistake this for kindness.`,
   rested: (e) =>
-    `Rest restores <span class="hit">+${e.amount ?? 0} hp</span>.${e.doubled ? ` (${e.doubled}: twice as fast, as promised.)` : ""}`,
+    `Rest restores <span class="hit">+${gainOf(e, e.amount)} hp</span>.${e.doubled ? ` (${e.doubled}: twice as fast, as promised.)` : ""}`,
   // 260918-w4n (use-activated-only): the Cloak of Healing is removed from
   // the game (the "cloakHealed" event type no longer exists anywhere) — the
   // Cloak of Regeneration is now use-activated, a flat d6 back ON USE, then
   // a 20-square cooldown, not a per-step tick.
-  cloakRegenerated: (e) => `<span class="hit">Flesh knits itself back — +${e.amount ?? 0} hp.</span> Ask again in twenty squares.`,
+  // VOX-05 (Phase 79, plan 79-02): used at full, the cloak says so.
+  cloakRegenerated: (e) =>
+    gainOf(e, e.amount) > 0
+      ? `<span class="hit">Flesh knits itself back — +${gainOf(e, e.amount)} hp.</span> Ask again in twenty squares.`
+      : `<span class="miss">The cloak finds nothing to knit.</span> You were already at full hp. Ask again in twenty squares.`,
   armorPatched: (e) => `${e.by ? `${e.by}: ` : ""}<span class="hit">+${e.amount ?? 0}</span> back into your kit.`,
   potionDuplicated: () => `The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`,
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost, cause first — every
@@ -370,7 +414,7 @@ export const EVENT_NARRATION = {
     return `${reason} is worth <span class="roll">${e.amount ?? 0}</span> ${plural(e.amount ?? 0, "experience point")}.`;
   },
   floorChanged: (e) => `<span class="banner">Floor ${e.depth ?? "?"}.</span> The air gets worse, and takes it personally.`,
-  leveled: (e) => `<span class="hit">Skill level ${e.level ?? "?"}</span> (+${e.wpGain ?? 0} hp).`,
+  leveled: (e) => `<span class="hit">Skill level ${e.level ?? "?"}</span> (+${gainOf(e, e.wpGain)} hp).`,
   // Phase 38 (ABIL-01/03): a level-pool ability roll, folded as the SKILL
   // LEVEL N card's second line (see rail.js's matching family entry).
   abilityLearned: (e) => `<span class="hit">New trick: ${e.name ?? "something"}</span> — ${e.txt ?? ""}`,
@@ -494,10 +538,13 @@ export const EVENT_NARRATION = {
   // kill separately). Safe on a bare `{ type }` payload (the coverage guard).
   foeShattered: (e) =>
     `<span class="hit">${e.by === "you" ? "Your" : `${e.by ?? "Something"}'s`} best roll lands clean. ${e.target ?? "It"} comes apart, both lives at once, and nobody is sweeping up.</span>`,
+  // VOX-05 (Phase 79, plan 79-02): the meal leads with the HP it really restored.
   cooked: (e) =>
-    (e.wp ?? 0) > 0
-      ? `You cook what is left. <span class="hit">+${e.wp} hp, +${e.rations ?? 1} ration.</span>`
-      : `You salvage a ration off the carcass. <span class="hit">+${e.rations ?? 1} ration.</span>`,
+    (e.wp ?? 0) <= 0
+      ? `You salvage a ration off the carcass. <span class="hit">+${e.rations ?? 1} ration.</span>`
+      : gainOf(e, e.wp) > 0
+        ? `You cook what is left. <span class="hit">+${gainOf(e, e.wp)} hp${cappedNote(gainOf(e, e.wp), e.wp, "worth")}, +${e.rations ?? 1} ration.</span>`
+        : `You cook what is left, but you were already at full hp. <span class="hit">+${e.rations ?? 1} ration.</span>`,
   // Phase 31 (CMB-01): notFought — Fight! not yet pressed — alongside the
   // existing samurai reason.
   fleeRefused: (e) =>
@@ -623,7 +670,10 @@ export const EVENT_NARRATION = {
   // PARTY-05: a member hits 0 hp — they do not die a hero's death, they simply
   // decide this dungeon is no longer their problem and leave the run.
   memberDowned: (e) => `<span class="hurt">${e.name ?? "Your companion"} goes down, and what is left of them wants no further part of this.</span>`,
-  regenerated: (e) => `<span class="hit">+${e.amount ?? 0} hp</span> knits itself shut.`,
+  regenerated: (e) =>
+    gainOf(e, e.amount) > 0
+      ? `<span class="hit">+${gainOf(e, e.amount)} hp</span> knits itself shut${cappedNote(gainOf(e, e.amount), e.amount)}.`
+      : `<span class="miss">Regeneration finds nothing to knit.</span> You were already at full hp.`,
   acidTick: (e) => `Acid eats at ${e.target ?? "it"}: <span class="roll">${e.dmg ?? 0}</span> hp.`,
   foeSlept: (e) => `${e.name ?? "It"} sleeps through it.`,
   foeMissed: (e) =>
@@ -824,7 +874,10 @@ export const EVENT_NARRATION = {
   foeStunned: (e) => `${e.name ?? "It"} spends its turn remembering where it is.`,
   battleRoarRaised: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Loud enough. For two rounds they all need two better to hit anyone on your side.</span>`,
   sidestepped: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Not where the blade is. Two rounds of that.</span>`,
-  secondWindHealed: (e) => `<span class="hit">You remember why you came. +${e.amount ?? 0} hp.</span>`,
+  secondWindHealed: (e) =>
+    gainOf(e, e.amount) > 0
+      ? `<span class="hit">You remember why you came. +${gainOf(e, e.amount)} hp${cappedNote(gainOf(e, e.amount), e.rolled)}.</span>`
+      : `<span class="hit">You remember why you came.</span> You were already at full hp, so it is mostly a mood.`,
   swept: (e) => `<span class="hit">One wide arc — ${e.dmg ?? 0} to everything still standing.</span>`,
   sweptFoe: (e) => `${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span>.`,
   braced: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced. The next one lands on your terms.</span>`,
@@ -847,7 +900,10 @@ export const EVENT_NARRATION = {
   // events (no hero equivalent exists for these; a hero's own equivalent use
   // reads "abilityUsed"/"secondWindHealed"/"swept"/"riposted" above).
   memberAbilityUsed: (e) => `<span class="beat">${e.name ?? "Your companion"} calls ${e.ability ?? "it"}.</span>`,
-  memberSecondWind: (e) => `<span class="hit">${e.name ?? "Your companion"} remembers why they came. +${e.amount ?? 0} hp.</span>`,
+  memberSecondWind: (e) =>
+    gainOf(e, e.amount) > 0
+      ? `<span class="hit">${e.name ?? "Your companion"} remembers why they came. +${gainOf(e, e.amount)} hp${cappedNote(gainOf(e, e.amount), e.rolled)}.</span>`
+      : `<span class="hit">${e.name ?? "Your companion"} remembers why they came,</span> already at full hp.`,
   memberSwept: (e) => `<span class="hit">${e.name ?? "Your companion"} sweeps — ${e.dmg ?? 0} to everything still standing.</span>`,
   memberRiposted: (e) => `${e.target ?? "It"} misses ${e.name ?? "your companion"}, and pays <span class="roll">${e.dmg ?? 0}</span> for it.`,
 
@@ -955,7 +1011,12 @@ export const EVENT_NARRATION = {
   insaneRolled: (e) => `Insanity takes ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span>.`,
   insaneStruckAlly: (e) => `The maddened thing turns on ${e.target ?? "an ally"} for <span class="roll">${e.dmg ?? 0}</span> hp.`,
   insaneFled: (e) => `<span class="beat">${e.target ?? "It"} bolts, mad with fear.</span>`,
-  healed: (e) => `<span class="hit">+${e.amount ?? 0} hp</span>${e.spell ? ` from ${e.spell}` : ""}.`,
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): the HP gained leads; a
+  // capped heal names its roll and says full; a heal at full says so.
+  healed: (e) =>
+    gainOf(e, e.amount) > 0
+      ? `<span class="hit">+${gainOf(e, e.amount)} hp</span>${e.spell ? ` from ${e.spell}` : ""}${cappedNote(gainOf(e, e.amount), e.amount)}.`
+      : `<span class="miss">${e.spell ?? "Healing"}: nothing to restore.</span> You were already at full hp.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   deathSpellTooWeak: (e) => `<span class="miss">Death: the fee is ${e?.fee ?? 25} hp, and you would not survive paying it.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -981,8 +1042,14 @@ export const EVENT_NARRATION = {
   foeStillHeld: (e) => `${e.name ?? "It"} is still ${CONTROL_HOLD_WORD[e.kind] ?? "held"}. <span class="roll">${e.left ?? "?"}</span> to go.`,
   foeHoldBroken: (e) => `<span class="beat">${e.name ?? "It"} shakes free and stands.</span>`,
   spellMissed: (e) => `<span class="miss">Missed ${e.target ?? "it"}.</span>`,
-  potionDrunk: (e) =>
-    `<span class="hit">+${e.amount ?? 0} hp</span> (${plural(e.remaining ?? 0, "potion")} left).${e.doubled ? ` (${e.doubled}: twice the dose, as promised.)` : ""}`,
+  potionDrunk: (e) => {
+    const g = gainOf(e, e.amount);
+    const left = `${plural(e.remaining ?? 0, "potion")} left`;
+    const doubled = e.doubled ? ` (${e.doubled}: twice the dose, as promised.)` : "";
+    if (g <= 0) return `<span class="miss">The potion finds nothing to fix.</span> You were already at full hp (${left}).${doubled}`;
+    const capped = Number.isFinite(e.amount) && g < e.amount ? `${e.amount} rolled, back to full; ` : "";
+    return `<span class="hit">+${g} hp</span> (${capped}${left}).${doubled}`;
+  },
   scrollRead: (e) => `You unroll a scroll: ${e.spell ?? "something unreadable"}.`,
   // Phase 25 (FEED-02): a scroll refuses to be read out loud, with a reason —
   // never a silent no-op. RULES-10 (Phase 75.1): "pilfer"/"noRunes" are
@@ -1030,7 +1097,13 @@ export const EVENT_NARRATION = {
   storeOpened: (e) => `<span class="banner">The shop is open.</span>${e.troll ? " (Trolls pay triple.)" : e.elfOrDwarf ? " (A discount, as always.)" : ""}`,
   buyFailed: (e) => `<span class="miss">You are short ${e.short ?? 0} wilmst.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  bought: (e) => `<span class="hit">Bought: ${e.item ?? "something"}.</span> −${e.cost ?? 0} wilmst.`,
+  // VOX-05 (Phase 79, plan 79-02): a store meal adds the HP it really restored.
+  bought: (e) => {
+    const base = `<span class="hit">Bought: ${e.item ?? "something"}.</span> −${e.cost ?? 0} wilmst.`;
+    if (!Number.isFinite(e.gained)) return base;
+    if (e.gained <= 0) return `${base} You were already at full hp; you eat it anyway.`;
+    return `${base} <span class="hit">+${e.gained} hp</span>${cappedNote(e.gained, e.meal, "worth")}.`;
+  },
   // Phase 61 (STORE-02/STORE-03): a legal buy that is NOT an upgrade is
   // charged and stowed rather than lost — the explanation reuses Plan 02's
   // upgradeWhyText/gearCompareParts formatter (`e.why` may be a string, e.g.
@@ -1075,10 +1148,18 @@ export const EVENT_NARRATION = {
   chestLockRolled: (e) => `Lock: <span class="roll">${Number.isFinite(e.roll) ? e.roll : "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}.`,
   chestLocked: () => `<span class="miss">Not today. The lock wins this round.</span>`,
   scrollFound: () => `<span class="hit">A scroll, tucked in with the loot.</span>`,
-  encounterRolled: (e) => `<span class="roll">Table ${e.table ?? "?"}, roll ${e.roll ?? "?"}:</span> The dice decide — ${e.result ?? "something"}.`,
-  tableFour: (e) => `<span class="beat">${e.result ?? "Something happens."}</span>`,
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): a Table 4 row reads as
+  // its effect ("a toll"), never as its canon cell ("-15 HP").
+  encounterRolled: (e) =>
+    `<span class="roll">Table ${e.table ?? "?"}, roll ${e.roll ?? "?"}:</span> The dice decide — ${TABLE_FOUR_EFFECT[e.result] ?? e.result ?? "something"}.`,
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): the engine's prose, then
+  // the signed amount the row actually made (rollRange.js#signedText, U+2212).
+  tableFour: (e) => `<span class="beat">${e.result ?? "Something happens."}</span>${tableFourTail(e)}`,
   tableFourNoop: (e) => `<span class="beat">${e.result ?? "Nothing much happens."}</span>`,
-  foodFound: (e) => `<span class="hit">${e.name ?? "Food"}</span> (+${e.wp ?? 0} hp).`,
+  foodFound: (e) =>
+    gainOf(e, e.wp) > 0
+      ? `<span class="hit">${e.name ?? "Food"}</span> (+${gainOf(e, e.wp)} hp${Number.isFinite(e.wp) && gainOf(e, e.wp) < e.wp ? `; worth ${e.wp}, back to full` : ""}).`
+      : `<span class="hit">${e.name ?? "Food"}</span>: you were already at full hp, so this one is for morale.`,
   grimoireSold: () => `You cannot use it, so you sell it.`,
   grimoireLearned: (e) => `<span class="hit">New spells:</span> ${(e.spells ?? []).join(", ") || "nothing new"}.`,
   // P1 (04.2 Text batch): `gift` is the raw FAERIE table key ("+d20 Base HP",
@@ -1088,7 +1169,7 @@ export const EVENT_NARRATION = {
   // the real outcome. So this is now just the teaser; the follow-up tells the
   // story. (Builder no longer reads e.gift — the field stays on the event.)
   faerieMet: () => `<span class="beat">A faerie blinks into being, takes your measure, and decides.</span>`,
-  faerieBoon: (e) => `<span class="hit">+${e.amount ?? 0} base hp.</span>`,
+  faerieBoon: (e) => `<span class="hit">+${gainOf(e, e.amount)} base hp.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   faerieBane: (e) => `<span class="hurt">Faerie: it took against you.</span> −${e.amount ?? 0} base hp.`,
   joinerMet: (e) => `<span class="hit">${e.name ?? "Someone"}</span>, a ${e.sub ?? e.race ?? "stranger"}, joins you for a while.`,
