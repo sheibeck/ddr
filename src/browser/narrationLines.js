@@ -947,6 +947,42 @@ function chestChain(events, consumed, eventOrder = false) {
   return built;
 }
 
+/** SCROLL_COPY_NOTE — CMBUI-11: the one copy-limit sentence said after a scroll's cast. */
+const SCROLL_COPY_NOTE = "Too advanced to copy into your book.";
+
+/**
+ * scrollCopyChain(events, consumed) — CMBUI-11 (Phase 77): a
+ * `scrollTooAdvanced` whose very next line event is a `scrollCast` of the
+ * same spell folds with it into ONE line, the cast first and the copy note
+ * after it: `${LINE_FOR.scrollCast(cast).text} Too advanced to copy into
+ * your book.` The engine pushes the note BEFORE the cast (it checks the copy
+ * before the free cast), so without this chain the fold read "Fireball needs
+ * level 3; you are 1." ahead of a scroll that cast anyway. The user's
+ * 2026-09-21 report: "I got a message saying it was a level 3 spell so I
+ * couldn't use it, but it actually successfully used the scroll."
+ *
+ * Keyed on adjacency in BOTH orders (the pair is one happening, not a roll
+ * reaching across the action for its outcome), and the merged line sits at
+ * the scrollTooAdvanced's idx, its earliest event (77-02's contiguity rule).
+ * A scrollTooAdvanced with no cast directly after it keeps its own plain
+ * note line. No `eventOrder` argument: both orders merge the same way.
+ */
+function scrollCopyChain(events, consumed) {
+  const built = [];
+  events.forEach((e, i) => {
+    if (consumed.has(i) || e.type !== "scrollTooAdvanced") return;
+    const j = nextLineIdx(events, i);
+    if (j === -1 || consumed.has(j)) return;
+    const cast = events[j];
+    if (cast.type !== "scrollCast" || cast.spell !== e.spell) return;
+    consumed.add(i);
+    consumed.add(j);
+    const b = LINE_FOR.scrollCast(cast);
+    built.push({ text: `${b.text} ${SCROLL_COPY_NOTE}`, tone: b.tone, priority: b.priority, idx: i });
+  });
+  return built;
+}
+
 /** ENCOUNTER_FOLLOWERS — the event types encounterStart's switch may fold in. */
 const ENCOUNTER_FOLLOWERS = new Set(["trackable", "allyJoined", "warlockBoost", "foeFled", "foeBored", "phobiaAfraid", "combatInDark"]);
 
@@ -1162,6 +1198,8 @@ export function linesForAction(type, events, ctx = {}, opts = {}) {
   built.push(...fleeChain(events, consumed, eventOrder));
   built.push(...parleyChain(events, consumed, eventOrder));
   built.push(...chestChain(events, consumed, eventOrder));
+  // CMBUI-11: the scroll's cast, then its copy note, as one line (both orders).
+  built.push(...scrollCopyChain(events, consumed));
   if (!eventOrder) killFold(events, consumed, built);
 
   events.forEach((e, idx) => {
@@ -1821,9 +1859,12 @@ export const LINE_FOR = {
     return block(map[e?.reason] ?? "It stays rolled.");
   },
   scrollCopiedToGrimoire: (e) => ({ text: `${e?.spell ?? "It"} copied into your grimoire.`, tone: "magic", priority: PRIORITY.you }),
-  // Phase 40 (SPELL-07): the scroll's own spell isn't scribable yet — names
-  // the level needed; the scroll still casts once for free right after.
-  scrollTooAdvanced: (e) => ({ text: `${e?.spell ?? "It"} needs level ${e?.need ?? "?"}; you are ${e?.have ?? "?"}.`, tone: "miss", priority: PRIORITY.you }),
+  // Phase 40 (SPELL-07): the scroll's own spell isn't scribable yet; the
+  // scroll still casts once for free right after. CMBUI-11 (Phase 77): a
+  // plain copy note, never "needs level N; you are M" (the cast succeeded).
+  // Directly followed by its scrollCast, scrollCopyChain folds the two into
+  // one cast-then-note line; this builder is the standalone fallback only.
+  scrollTooAdvanced: (e) => ({ text: `${e?.spell ?? "It"}: too advanced to copy into your book.`, tone: "magic", priority: PRIORITY.you }),
   scrollCast: (e) => ({ text: `The scroll casts: ${e?.spell ?? "something"}.`, tone: "magic", priority: PRIORITY.you }),
   // RULES-10 (Phase 75.1) — an "intel" reader's own d20. scrollDeciphered
   // reads like heroResisted (roll vs range, intel); scrollGarbled never
