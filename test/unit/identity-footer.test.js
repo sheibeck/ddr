@@ -16,7 +16,9 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripJs } from "../../tools/ident-sweep.mjs";
-import { IDENTITY_TRAITS, MU_CHART, SPELL_LEVEL_OVERRIDES, RACES, CLASSES, SPELLS, THRESHOLDS, WEAPONS } from "../../content/index.js";
+import { IDENTITY_TRAITS, MU_CHART, SPELL_LEVEL_OVERRIDES, RACES, CLASSES, SPELLS, THRESHOLDS, WEAPONS, RACE_NOTE, CLASS_NOTE, SUB_NOTE, STRIKE_DICE } from "../../content/index.js";
+import { facesRangeText } from "../../src/browser/rollRange.js";
+import { classNeed, foeToHitVs, weaponDamage, healMulFor } from "../../engine/derived.js";
 import { identityFooter, footerLines, RACE_FIELD_LINES, RACE_COSMETIC_FIELDS, unphrasedRaceFields } from "../../src/browser/identityFooter.js";
 import { checkLevel } from "../../engine/character.js";
 import { newRun } from "../../engine/state.js";
@@ -324,4 +326,143 @@ test("identity-proof: a Troll's store weapon line costs six times the base price
     }
   }
   assert.ok(checked > 0, "no Troll store offered a weapon over 20 seeds");
+});
+
+// ─── Task 2: the blurbs read roll-high and every number agrees with the engine ─
+
+const FACE_WORD = ["zero", "one", "two", "three", "four", "five", "six"];
+const D20 = STRIKE_DICE[0];
+
+function hero(sub, race = "Human") {
+  return newRun(1, [], { force: { sub, race } });
+}
+
+test("ROLL-04 pin: the Fighter note's face count, level-1 range and miss odds come from CLASSES.Fighter.toHit", () => {
+  const n = CLASSES.Fighter.toHit;
+  assert.ok(CLASS_NOTE.Fighter.includes(`your top ${FACE_WORD[n]} faces to hit — ${facesRangeText(n, D20)} on the d20 at skill level I`));
+  assert.equal((D20 - n) / D20, 3 / 4, "three swings in four miss");
+  assert.match(CLASS_NOTE.Fighter, /three swings in four hit nothing/);
+});
+
+test("ROLL-04 pin: the Magic User note's face count, level-1 range and miss odds come from CLASSES['Magic User'].toHit", () => {
+  const n = CLASSES["Magic User"].toHit;
+  assert.ok(CLASS_NOTE["Magic User"].includes(`only your top ${FACE_WORD[n]} faces to hit — ${facesRangeText(n, D20)} on the d20 at skill level I`));
+  assert.equal(D20 - n, 17);
+  assert.match(CLASS_NOTE["Magic User"], /seventeen swings in twenty are decorative/);
+});
+
+test("ROLL-04 pin: the Elven notes' face floor is RACES.Elven.toHit; the Dwarven note's night costs RACES.Dwarven.upkeep", () => {
+  const n = RACES.Elven.toHit;
+  assert.ok(RACE_NOTE.Elven.includes(`your top ${FACE_WORD[n]} faces land whatever the class`));
+  assert.ok(RACES.Elven.note.includes(`lands on its top ${FACE_WORD[n]} faces whatever the class`));
+  assert.equal(RACES.Dwarven.upkeep, 1);
+  assert.match(RACE_NOTE.Dwarven, /a single Hit Point a night when the rations run out/);
+  assert.equal(RACES.Dwarven.dmg, 2);
+  assert.match(RACE_NOTE.Dwarven, /^Two extra damage/);
+});
+
+test("ROLL-04 pin: the Guard note's damage and face numbers come from weaponDamage and foeToHitVs", () => {
+  const armed = (sub, level) => {
+    const s = hero(sub);
+    Object.assign(s.c, { weapon: "Club", prof: 0, magicWpn: 0, level });
+    return s;
+  };
+  const gap = (level) => weaponDamage(armed("Soldier", level).c, fakeRng([4])) - weaponDamage(armed("Guard", level).c, fakeRng([4]));
+  assert.equal(gap(1), 3, "three off at level one");
+  assert.equal(gap(2), 2, "one less each level");
+  assert.equal(gap(4), 0, "gone at four");
+  assert.equal(foeToHitVs(hero("Guard")), foeToHitVs(hero("Soldier")) - 1, "one face fewer");
+  assert.match(SUB_NOTE.Guard, /three damage off every blow at level one, one less each level until it is gone at four/);
+  assert.match(SUB_NOTE.Guard, /lands on one face fewer against you/);
+});
+
+test("ROLL-04 pin: the Acrobat's three faces and the Cleric's four are the engine's own numbers", () => {
+  assert.equal(foeToHitVs(hero("Acrobat")), 3);
+  assert.match(SUB_NOTE.Acrobat, /except on its top three faces/);
+  assert.equal(classNeed({ cls: "Magic User", sub: "Cleric", race: "Human" }), 4);
+  assert.equal(classNeed({ cls: "Magic User", sub: "Wizard", race: "Human" }), 3);
+  assert.match(SUB_NOTE.Cleric, /Your top four faces hit instead of three/);
+});
+
+test("ROLL-04 pin: the Soldier's and Ninja's two crit faces and the Con Artist's two in three are the engine's own checks", () => {
+  const combat = stripJs(read("engine/combat.js"));
+  assert.match(combat, /atLeastFor\(c\.sub === "Soldier" \? 2 : 1, dieN\)/);
+  assert.match(SUB_NOTE.Soldier, /^Foes crit you on their top two faces instead of one/);
+  assert.match(combat, /c\.sub === "Ninja" && !opening && roll >= atLeastFor\(2, dieN\)/);
+  assert.match(SUB_NOTE.Ninja, /your top two faces open something up/);
+  const i = combat.indexOf('c.sub === "Con Artist" && f.lvl <= 1');
+  assert.ok(i !== -1);
+  assert.match(combat.slice(i, i + 400), /rollCheck\(rng, 6, atLeastFor\(4, 6\)\)/, "four faces of six: two times in three");
+  assert.match(SUB_NOTE["Con Artist"], /any level-one foe declines to fight you two times in three/);
+});
+
+test("VOX-04 pin: the Summoner prose states the half-strength healing and the one-in-eight backfire the engine applies", () => {
+  assert.equal(healMulFor("Summoner"), 0.5);
+  assert.match(SUB_NOTE.Summoner, /heal at half strength/);
+  const magic = stripJs(read("engine/magic.js"));
+  assert.match(magic, /const doubledBackfireRoll = doubled \? rng\.d\(8\) : null;/);
+  assert.match(magic, /if \(doubledBackfireRoll === 1\)/);
+  assert.match(SUB_NOTE.Summoner, /one time in eight it arrives on the wrong side/);
+  assert.doesNotMatch(SUB_NOTE.Summoner, /offense/i, "the removed offense gate is never claimed");
+});
+
+test("accuracy pin: the Sorcerer, Master of Arms and Pilfer notes match the engine", () => {
+  const character = stripJs(read("engine/character.js"));
+  assert.match(character, /if \(sub === "Sorcerer"\) for \(const n2 of \["Freeze", "Fireball"\]\)/);
+  assert.match(character, /!\["Fireball", "Freeze", "Lightning"\]\.includes\(n2\)/);
+  assert.match(SUB_NOTE.Sorcerer, /^Freeze and Fireball in the book from day one and two more spells each level, with a one-in-eight chance per level of simply forgetting one that isn't fire, frost or lightning/);
+  const movement = stripJs(read("engine/movement.js"));
+  assert.match(movement, /events\.push\(\{ type: "armorPatched", amount: amt, by: "Master of Arms" \}\)/);
+  assert.match(SUB_NOTE["Master of Arms"], /every night in camp you hammer the dents out of your own armour/);
+  assert.doesNotMatch(SUB_NOTE["Master of Arms"], /plus three/i, "no unenforced +3 rule");
+  const items = stripJs(read("engine/items.js"));
+  assert.match(items, /rollCheck\(fumbleRng, 20, atLeastFor\(19, 20\)\)/, "the Pilfer fumbles on one face of twenty");
+  assert.match(SUB_NOTE.Pilfer, /about one time in twenty/);
+  assert.match(SUB_NOTE.Pilfer, /a d10 of your own hp/);
+});
+
+test("ROLL-04: no class, sub-class or race blurb and no RACES note keeps a roll-under phrase", () => {
+  const texts = [
+    ...Object.entries(RACE_NOTE).map(([k, v]) => [`RACE_NOTE.${k}`, v]),
+    ...Object.entries(CLASS_NOTE).map(([k, v]) => [`CLASS_NOTE.${k}`, v]),
+    ...Object.entries(SUB_NOTE).map(([k, v]) => [`SUB_NOTE.${k}`, v]),
+    ...Object.entries(RACES).map(([k, v]) => [`RACES.${k}.note`, v.note]),
+  ];
+  const n = "(\\d+|one|two|three|four|five|six)";
+  const patterns = [
+    new RegExp(`\\bneeds? (a |an )?${n}\\b`, "i"),
+    /\bnatural (1|one)\b/i,
+    new RegExp(`\\b${n} or (under|less|lower|below)\\b`, "i"),
+    new RegExp(`\\ba ${n} to hit\\b`, "i"),
+    new RegExp(`\\bon an? ${n}\\b`, "i"),
+    /\bneeds? (\w+ )?better\b/i,
+    /[−-]\d+ on to-hit/i,
+    /\b1[–—-]\d+\b/,
+  ];
+  for (const [key, text] of texts) {
+    for (const p of patterns) assert.doesNotMatch(text, p, `${key}: "${text}"`);
+  }
+});
+
+test("VOX-05: the 79-03 why-ledger parses, every row carries reasons and a why, and every row's `after` is the current text", () => {
+  const ledger = JSON.parse(read("docs/narrative-pass/why/79-03.json"));
+  assert.ok(Array.isArray(ledger) && ledger.length > 0);
+  const REASONS = new Set(["fact", "natural", "joke", "accurate", "roll-under", "number", "identity", "naming", "hygiene"]);
+  const current = (key) => {
+    let m = /^bank:(RACE_NOTE|CLASS_NOTE|SUB_NOTE)\.(.+)$/.exec(key);
+    if (m) return { RACE_NOTE, CLASS_NOTE, SUB_NOTE }[m[1]][m[2]];
+    m = /^content:RACES\.(.+)\.note$/.exec(key);
+    if (m) return RACES[m[1]].note;
+    m = /^bank:IDENTITY_FOOTER\.(sub|race)\.(.+)$/.exec(key);
+    if (m) return footerLines(m[1], m[2]).join(" ");
+    return undefined;
+  };
+  for (const row of ledger) {
+    for (const f of ["key", "surface", "trigger", "before", "after", "reasons", "why"]) assert.ok(f in row, `${row.key}: missing ${f}`);
+    assert.ok(row.reasons.length > 0 && row.reasons.every((r) => REASONS.has(r)), `${row.key}: bad reasons`);
+    assert.ok(row.why.trim().length > 0, `${row.key}: empty why`);
+    assert.equal(row.after, current(row.key), `${row.key}: ledger after is stale`);
+  }
+  const footers = ledger.filter((r) => r.key.startsWith("bank:IDENTITY_FOOTER.")).map((r) => r.key);
+  assert.equal(footers.length, ALL_SUBS.length + Object.keys(RACES).length, "one ledger row per footer");
 });

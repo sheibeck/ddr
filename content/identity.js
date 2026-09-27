@@ -52,7 +52,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     "Summoner": side(
       [
         trait("summoner-lesser", "Lesser Summon in the book and castable from day one", CONTRACT, "a small, safe summon on day one — Lesser Summon is guaranteed and castable at level 1"),
-        trait("summoner-doubled", "a full Summon arrives a level stronger and stays twice as long", "test/unit/casters-can-act.test.js", "IDENT-03: a level-2 Summoner summons in combat with the unchanged doubled formula"),
+        trait("summoner-doubled", "a full Summon arrives a level stronger, and its duration die counts double", "test/unit/casters-can-act.test.js", "IDENT-03: a level-2 Summoner summons in combat with the unchanged doubled formula"),
       ],
       [trait("summoner-backfire", "one full Summon in eight turns on you", CONTRACT, "the summon backfire stays")],
     ),
@@ -172,7 +172,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     "Acrobat": side(
       [
         trait("acrobat-dodge", "foes land only on their top three faces", CONTRACT, "harder to land a blow on, easier to land one"),
-        trait("acrobat-hit", "your top five faces hit, like a Fighter's", CONTRACT, "harder to land a blow on, easier to land one"),
+        trait("acrobat-hit", "your top five faces hit, like a Fighter's (six with the dagger)", CONTRACT, "harder to land a blow on, easier to land one"),
       ],
       [trait("acrobat-dagger", "a dagger and nothing else", CONTRACT, "a dagger, and only a dagger")],
     ),

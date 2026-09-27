@@ -1,0 +1,505 @@
+[
+  {
+    "key": "bank:RACE_NOTE.Elven",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Race section (heroTab.js#renderHeroTab)",
+    "before": "Thin-boned, easy to hit, and carrying not much more than half a person's Hit Points — but you strike a die better than anyone has a right to, and hit on a 5 whatever the class. Small costs you two points of damage and nothing else; the size rule has nothing left to add to how thin-boned or easy to hit you already were. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
+    "after": "Thin-boned, easy to hit, and carrying not much more than half a person's Hit Points — but you strike a die better than anyone has a right to, and your top five faces land whatever the class. Small costs you two points of damage and nothing else; the size rule has nothing left to add to how thin-boned or easy to hit you already were. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
+    "reasons": [
+      "roll-under",
+      "accurate"
+    ],
+    "why": "“hit on a 5” read as a single low face under the roll-high engine; the Elven floor is a count of winning faces (RACES.Elven.toHit = 5), so it now says “your top five faces land”. The joke and the size clause stay."
+  },
+  {
+    "key": "bank:RACE_NOTE.Dwarven",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Race section (heroTab.js#renderHeroTab)",
+    "before": "Two extra damage, a wilmst a day to feed, and every creature down here swings at you like it has been practising — but your armour shrugs off wear at half the rate everyone else's does, and being small makes you one face harder to hit besides. Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
+    "after": "Two extra damage, a single Hit Point a night when the rations run out, and every creature down here swings at you like it has been practising — but your armour shrugs off wear at half the rate everyone else's does, and being small makes you one face harder to hit besides. Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
+    "reasons": [
+      "accurate",
+      "fact"
+    ],
+    "why": "“a wilmst a day to feed” stated a gold cost that no rule charges; the Dwarven upkeep is 1 HP on a night without rations (a Human's is 4). Only that clause changed; the fair-trade joke stays."
+  },
+  {
+    "key": "bank:CLASS_NOTE.Fighter",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Class section (heroTab.js#renderHeroTab)",
+    "before": "The best Hit Points in the book, any armour you can lift, and a 5 to hit — which at skill level I still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake. A scroll, for you, is an intelligence roll that can backfire — unless you paid for Runes/Signs.",
+    "after": "The best Hit Points in the book, any armour you can lift, and your top five faces to hit — 16–20 on the d20 at skill level I, which still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake. A scroll, for you, is an intelligence roll that can backfire — unless you paid for Runes/Signs.",
+    "reasons": [
+      "roll-under",
+      "number"
+    ],
+    "why": "“a 5 to hit” is roll-under phrasing for a die that scales with level; now “your top five faces to hit”, with the level-1 d20 range 16–20 pinned to facesRangeText(CLASSES.Fighter.toHit, 20). The three-in-four joke is kept and pinned."
+  },
+  {
+    "key": "bank:CLASS_NOTE.Magic User",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Class section (heroTab.js#renderHeroTab)",
+    "before": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a 3 to hit — six swings in seven are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.",
+    "after": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and only your top three faces to hit — 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.",
+    "reasons": [
+      "roll-under",
+      "number"
+    ],
+    "why": "“a 3 to hit — six swings in seven” was roll-under and a loose ratio; now “only your top three faces to hit — 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative”, every number pinned to CLASSES['Magic User'].toHit."
+  },
+  {
+    "key": "bank:SUB_NOTE.Guard",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "No critical strike, ever, and three damage off the top until level four — but every creature down here needs one better than usual to land a blow on you. You are a professional. The profession is standing there.",
+    "after": "No critical strike, ever, and three damage off every blow at level one, one less each level until it is gone at four — but every creature down here lands on one face fewer against you. You are a professional. The profession is standing there.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "“needs one better” was roll-under, and “three damage off the top until level four” hid that the penalty shrinks each level; now it says three off at level one, one less each level, gone at four, and foes land on one face fewer. Pinned to weaponDamage and foeToHitVs."
+  },
+  {
+    "key": "bank:SUB_NOTE.Soldier",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "You take criticals on a 2 and deal them never. Serve to skill level III and they knight you, which is the army conceding that the first three levels were a waste of you.",
+    "after": "Foes crit you on their top two faces instead of one, and you deal criticals never. Serve to skill level III and they knight you, which is the army conceding that the first three levels were a waste of you.",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "“You take criticals on a 2” named a single low face; foes now crit a Soldier on their top two faces instead of one (atLeastFor(2, dieN) in engine/combat.js)."
+  },
+  {
+    "key": "bank:SUB_NOTE.Master of Arms",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "Plus two with every weapon ever forged, plus three with anything you have repaired yourself. You cannot parley — you attack creatures without question, literally — and once a fight has your scent there is no clean exit in round one either. The book files this under abilities.",
+    "after": "Plus two with every weapon ever forged, and every night in camp you hammer the dents out of your own armour. You cannot parley — you attack creatures without question, literally — and once a fight has your scent there is no clean exit in round one either. The book files this under abilities.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "“plus three with anything you have repaired yourself” is not a rule; what the engine does is patch the Master of Arms' own armour every night in camp (d6+3), so the clause says that."
+  },
+  {
+    "key": "bank:SUB_NOTE.Ninja",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "You never speak — literally; no fluency, no encounter, ever talks you out of a fight. Your opening strike lands for maximum damage and after that a 1 or a 2 opens something up. The silence isn't a vow, it's a tactic.",
+    "after": "You never speak — literally; no fluency, no encounter, ever talks you out of a fight. Your opening strike lands for maximum damage and after that your top two faces open something up. The silence isn't a vow, it's a tactic.",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "“a 1 or a 2 opens something up” named low faces; after the opener a Ninja crits on the top two faces (atLeastFor(2, dieN))."
+  },
+  {
+    "key": "bank:SUB_NOTE.Con Artist",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "You talk first, and anything with wit of 6 or under simply declines to fight you. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
+    "after": "You talk first, and any level-one foe declines to fight you two times in three. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
+    "reasons": [
+      "accurate",
+      "roll-under"
+    ],
+    "why": "“anything with wit of 6 or under simply declines to fight you” was wrong on both counts: the rule is a level-one foe leaving on four faces of a d6. Now “any level-one foe declines to fight you two times in three”."
+  },
+  {
+    "key": "bank:SUB_NOTE.Acrobat",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "Everything needs a 3 to lay a hand on you and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
+    "after": "Nothing lays a hand on you except on its top three faces, and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "“Everything needs a 3 to lay a hand on you” was roll-under; foes land on only their top three faces against an Acrobat (foeToHitVs = 3)."
+  },
+  {
+    "key": "bank:SUB_NOTE.Wizard",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. Two wizards in a party fight each other; there is only one of you, which helps.",
+    "after": "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "“Two wizards in a party fight each other” stated a rule the engine does not have; the closing joke now lands without claiming one."
+  },
+  {
+    "key": "bank:SUB_NOTE.Sorcerer",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "Two dozen spells to start and two more each level, nearly all of it fire, with a one-in-eight chance per level of simply forgetting the ones that aren't. Your arm caps out at 9 damage. Nobody hired the arm.",
+    "after": "Freeze and Fireball in the book from day one and two more spells each level, with a one-in-eight chance per level of simply forgetting one that isn't fire, frost or lightning. Your arm caps out at 9 damage. Nobody hired the arm.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "“Two dozen spells to start … nearly all of it fire” was false (a Sorcerer rolls the ordinary 4–10 and is granted Freeze and Fireball); the forgetting rule spares Freeze, Fireball and Lightning. The arm joke stays."
+  },
+  {
+    "key": "bank:SUB_NOTE.Cleric",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. A 4 to hit instead of a 3. The gods have rounded up.",
+    "after": "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. Your top four faces hit instead of three. The gods have rounded up.",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "“A 4 to hit instead of a 3” was roll-under; a Cleric's top four faces hit instead of a Magic User's three (classNeed)."
+  },
+  {
+    "key": "bank:SUB_NOTE.Summoner",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "You can call something up from your very first day. Everything you call arrives twice as strong and twice as long-lived, and one time in eight it arrives on the wrong side. The book declines to say whose fault that is.",
+    "after": "You can call something small up from your very first day. Anything bigger arrives stronger and longer-lived, and one time in eight it arrives on the wrong side. Your own healing spells, meanwhile, heal at half strength. The book declines to say whose fault any of that is.",
+    "reasons": [
+      "identity",
+      "accurate"
+    ],
+    "why": "The user's Pixel 7 report: the blurb hid the Summoner's real weakness. It now says its own healing spells heal at half strength (the 2026-09-25 ruling that replaced the offense gate), and that the day-one summon is the small one, since only the full Summon is doubled and can backfire."
+  },
+  {
+    "key": "content:RACES.Elven.note",
+    "surface": "blurbs",
+    "trigger": "Hero tab trait line (heroTab.js#renderHeroTab, #s-trait)",
+    "before": "Strikes a die better and hits on 5 whatever the class — but thin-boned and easy to hit, and being small costs it 2 damage.",
+    "after": "Strikes a die better and lands on its top five faces whatever the class — but thin-boned and easy to hit, and being small costs it 2 damage.",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "“hits on 5” was roll-under; the row's own toHit is a count of winning faces, so it “lands on its top five faces whatever the class”."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Wizard",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: every school of magic from level 1; your thrown offense spells land on three more faces. Bad: won't swing a weapon while a castable attack spell and a charge remain.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Warlock",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: copies a potion every night it has one; your thrown offense spells land on four more faces. Bad: every Walking Dead foe in the fight gains HP equal to your level; no protection spells until level 4; no healing spells until level 3; never learns special or illusion spells.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Sorcerer",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: starts with Freeze and Fireball in the book; learns two new spells at every level; your thrown offense spells land on four more faces. Bad: weapon damage never goes above 9; one level-up in eight forgets a spell that isn't Freeze, Fireball or Lightning; no healing spells until level 4; never learns illusion spells.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Summoner",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: Lesser Summon in the book and castable from day one; a full Summon arrives a level stronger, and its duration die counts double. Bad: one full Summon in eight turns on you; never learns illusion spells; healing spells you cast heal at half strength.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cleric",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: every healing spell heals 3 more; your top four faces hit, not a Magic User's three. Bad: no divination spells until level 3; never learns special or illusion spells.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Illusionist",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: you choose where every teleport lands; Phantom Host castable from level 1 (level 3 for everyone else). Bad: strikes on a d20 until level 3; no protection spells until level 3; never learns healing spells.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Court Mage",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: one foe in six dies of boredom before the fight starts; can always talk to Humans; your thrown offense spells land on two more faces. Bad: foes act first in round one; no divination spells until level 4; never learns special or illusion spells.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Apprentice",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: double experience from kills until level 3. Bad: one spell in eight backfires; no divination spells until level 3.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Knight",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: any foe under 5 HP flees before it can act. Bad: never wins initiative against a foe with 20 HP or more.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Guard",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: every foe lands on one face fewer against you. Bad: your blows deal 3 less at level 1, one less each level until level 4; your blows never crit.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Woodsman",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: can always talk to Beasts and Lair Beasts. Bad: no armor heavier than Studded.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Soldier",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: camp heals you twice as much; knighted at level 3. Bad: foes crit you on their top two faces, not just the top one; your blows never crit.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Barbarian",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: two attacks every strike. Bad: half the experience from every kill.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Master of Arms",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: +2 damage with every weapon; patches your own damaged armor every night in camp. Bad: can never talk a fight down; no clean withdrawal in round one.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Samurai",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: starts in plate with a magic katana (+2). Bad: never wins initiative and never flees.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Bard",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: can always talk to Humans; a song every 100 squares. Bad: camp wakes wandering monsters twice as often; dim-witted foes come for you first, even with a party beside you.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Pickpocket",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: an extra take from every kill and chest. Bad: shops charge you a quarter more and pay a quarter less.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Pilfer",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: disarms every trap and opens every chest for free. Bad: about one use in twenty, a magic ring, amulet, cloak or staff blows up in your hands for d10 HP and is gone.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cat Burglar",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: your first strike of every fight always lands. Bad: every trap that catches you deals double damage.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cutthroat",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: your first landed blow always crits, even in heavy armor. Bad: one descent in twenty, the Joiner beside you doesn't reach the next floor.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cloaker",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: vanishes from any fight for free until you land a blow. Bad: once you've struck, you flee on the ordinary roll like everyone else.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Ninja",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: your opening strike always lands for maximum damage; after that, your top two faces crit. Bad: can never talk a fight down.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Con Artist",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: can talk to anything but Magical foes and the Walking Dead; a level 1 foe leaves before the fight two times in three. Bad: your opening blow deals no damage.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Acrobat",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: foes land only on their top three faces; your top five faces hit, like a Fighter's (six with the dagger). Bad: a dagger and nothing else.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Human",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Race footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "No advantages and no disadvantages: every other race is measured against this one.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: the neutral race says plainly that it has neither an advantage nor a disadvantage."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Elven",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Race footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: store prices halved; can always talk to Humans, with a bonus; strikes on a die one size better (a d12 at level 1, not a d20); at least your top five faces hit, whatever the class. Bad: being small costs 2 damage; 60% of the usual HP, at every level; foes land on one face more against you.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Dwarven",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Race footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: store prices halved; being small makes you one face harder to hit; a night without rations costs only 1 HP (a Human's costs 4); +2 damage with every weapon; armor wears at half the rate. Bad: foes strike on a die one size better.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Wilmsry",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Race footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: can talk to anything but Magical foes and the Walking Dead; store prices 30% off; rest, potions and your own healing spells heal twice as much. Bad: Magic User Joiners refuse to travel with you; half the experience from every kill.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Fridgian",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Race footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: five times in eight, a frenzy adds a second swing that never wastes itself on a corpse; thick hide soaks 2 from every blow. Bad: can never wear armor; never wins initiative.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Troll",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Race footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "",
+    "after": "Good: starts with 75 HP whatever the class; +11 damage with every weapon (2 of it for being large). Bad: store prices triple; weapons cost double on top of that; being large makes you one face easier to hit; a night without rations costs 15 HP (a Human's costs 4); eats two rations a night.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  }
+]
