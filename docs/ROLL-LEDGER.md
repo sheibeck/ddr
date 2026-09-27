@@ -865,3 +865,11 @@ X1-X8. Doctored sources prove it has teeth. Its failure message names the
 fix: send the new control through `resistControl` (and `holdFoe` for a
 hold) and add its row here (C20+), or an X row plus a guard exemption for a
 control deliberately outside the rule.
+
+## Phase 78 note (CLIMB-01)
+
+**Closes** Phase 74's `(f) Hooks left for Phase 77 and Phase 78` climb-card item. Since 78-01 every step toward a wall or crevice pauses on one engine decision (`state.pendingHazard`, a `hazardChoice` event, no die drawn), and the roll runs only on the commit (`resolveHazard { cross: true }`), draw for draw the roll the old single step made.
+
+- **The card's odds.** The pre-roll climb card (78-03) reads `src/browser/rollOdds.js#hazardOddsText`, which formats `engine/movement.js#hazardOdds` through `rollRange.js`'s range format. `hazardOdds` takes its winning faces from `climbFacesFor` / `leapFacesFor`, the same helpers the roll itself calls, so the card and the roll can never disagree on a face, a penalty (Heights, Bodies of water, armour bulk) or the die.
+- **No new check site.** The climb, climb fall-avoid and leap checks keep their rows above (sites 40, 41 and 42, and their Phase 73 mirror verdicts: roll-high, main rng); only when the roll happens moved, from the step to the commit. The pause and TURN BACK draw nothing.
+- **Relaunch.** A pending climb or leap survives a relaunch unchanged, and the commit after it draws the same die (`test/roundtrip/resume-roundtrip.test.js`, CLIMB-02, 78-04).

@@ -4566,3 +4566,91 @@ Heights- and water-phobic heroes, Hardiness, Plate, a party, fatal falls;
 12 succeed, 24 fail and cross, 5 die) through `move` then `resolveHazard`
 and asserts the same state hash, rngState and events as the old single
 step.
+
+### Plan 78-04 — the pre-roll hazard decision, declared and guarded (CLIMB-01/02): measured zero
+
+This subsection is the phase's declaration of the pre-roll decision. The
+78-01 subsection above holds the per-plan measurement; this one states the
+divergence and names the guards that keep it measured. 78-04 changes no
+behaviour: `git diff --quiet c6de10db -- engine src` exits 0 (the plan base).
+
+**The rule (a declared canon divergence in movement timing).** The 1994
+prototype (`test/parity/prototype-master.js.txt`) rolls a climb or a leap on
+the step itself. Since 78-01 the engine pauses on that step instead:
+`state.pendingHazard = { feat, dir, tool }` and a `hazardChoice` event, with
+no die drawn. It rolls only on the commit, `resolveHazard { cross: true }`,
+and that roll makes exactly the draws, in exactly the order, that the
+prototype's step makes. So the two are draw-identical and differ only in
+when the roll happens. TURN BACK (`resolveHazard { cross: false }`) is a
+choice the prototype never offered; it draws nothing and costs nothing.
+
+**The predictor.** This is 78-01's exposure table above. Only a replay that
+steps toward a climb or gorge tile can move, and every one of the 31 parity
+replay sites (14 chargen seeds, movement, six combat, four magic, economy,
+five encounters) makes zero such steps. Predicted moved set: zero parity
+fixtures.
+
+**The live scan (measured at this plan's base, `c6de10db`).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**
+   (64 before this plan, plus the two tests in the new guard below).
+2. `git diff --stat e8bd4808 -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness`
+   (the phase base): empty. No site was reconciled.
+3. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node --test test/parity/fixture-inventory.test.js` passes; the
+   generated roster block above is unchanged.
+
+**Draw identity.** `test/unit/hazard-decision.test.js` replays the 41
+golden scenarios in `test/unit/fixtures/hazard-commit/golden.json`,
+captured on the phase base with the old single `move`. The scenarios sit on
+13 newRun bases and end 12 succeeded, 24 failed and crossed, 5 died. Each
+one runs through `move` then `resolveHazard { cross: true }` and must reach
+the same state hash (minus `acts` and `pendingHazard`), the same `rngState`
+and the same events (minus the one added `hazardChoice`).
+
+**Heights timing (declared).** `noteHeightsAttempt` runs only on a
+committed climb or leap. The pause and TURN BACK never arm Heights fear.
+Flight, ether and a spent tool still never reach it. Before Phase 78 it ran
+on the step (and, for a tool carrier, on the declined second step).
+`test/unit/phobia-triggers.test.js` pins both halves.
+
+**Bot pins and seeds (from 78-01).**
+
+| Label | Before | After | Cause |
+|---|---|---|---|
+| roll-high-state-pins `solo-1` | `ce883a88…` | `5ab327e8…` | 4 uncarried pauses; the same game, cut 4 actions short by the 400-action budget |
+| `solo-2` | `3cabf90f…` | `368ef81d…` | 3 pauses; same game, cut 3 short |
+| `solo-magicuser-sorcerer` | `444ec2ca…` | `3121f6b2…` | 7 pauses; same game, cut 7 short |
+| `party-1` | `ab7a42cb…` | `673f322d…` | 5 pauses; same game, cut 5 short |
+| `solo-thief-pilfer` | `3371e1f8…` | `5618fcf6…` | 3 pauses; identical to step 137, then the acts-keyed `scrollRead` stream fumbles a read that deciphered before |
+| `party-fighter-knight`, `deep-8`, `deep-14` | unchanged | unchanged | no hazard inside the budget |
+| pre-switch-save.json `expected.hash` | `43b71a38…` | `70f1de84…` | the recorded `move N` at index 233 now pauses at the wall (pauses at 233, 234, 237, 240); `dead`/`depth`/`actions` unchanged (false/4/300) |
+| bot-tactics and roll-high-invariant seeds | every assertion | every assertion | no seed swapped; route changes trace to acts-keyed streams (Knight/Human 5, Knight/Troll 4, Pilfer 2, 3, 4, invariant 9002, 9003) |
+
+No bot balance readout was taken for this change (user ruling 2026-09-26).
+Phase 79.1 owns it; see docs/DIFFICULTY-RETUNE.md's Phase 78 section.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.** No holder's `divergence.phase` names 78.
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Byte-identical elsewhere.** No fixture, no harness file, no comparable
+carve-out and no shell snapshot moved in 78-04. **The standing guards:**
+
+- `test/parity/hazard-exposure.test.js` replays all 31 sites on the engine
+  (the replay shape of `divergence-records.test.js`). It collects every
+  `hazardChoice` event and every set `pendingHazard`, by site and action
+  index, and asserts the set equals `MEASURED_HAZARD_SITES`, which is empty.
+  A fixture that ever reaches a wall or crevice fails there, and the message
+  names this reconcile decision. A teeth case steps a hero toward a
+  hand-set wall and crevice and is caught by the same collector.
+- `test/roundtrip/resume-roundtrip.test.js` (CLIMB-02, the relaunch half)
+  answers every sampled pending hazard in the Phase 76 bot corpus with
+  `resolveHazard { cross: true }` on the live and the reloaded state. It
+  requires deep-equal next states and events, and probes TURN BACK once the
+  same way. Measured: 44 pending hazards sampled, all 44 commits drew a die,
+  one TURN BACK probe, zero differences.
