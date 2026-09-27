@@ -21,6 +21,7 @@ import {
   TAP_MOVE_THRESHOLD_PX,
   TAP_MAX_DURATION_MS,
   keepInViewAxis,
+  keepInViewRect,
   EDGE_TRIGGER_CELLS,
 } from "../../src/browser/controls.js";
 
@@ -238,4 +239,111 @@ test("keepInViewAxis: post-nudge stability — the camera only moves toward the 
   const result = keepInViewAxis(cam, -1, 12);
   assert.equal(result, 1);
   assert.equal(-1 - (result - 6), 4);
+});
+
+// ─── keepInViewRect (Phase 78, HUD-08): the pad is an edge ──────────────────
+//
+// The same stationary-camera rule with the arrow pad's on-screen rect as an
+// extra visible edge. Every quantity is in cells; the obstacle is relative
+// to the viewport's top-left. With span {x:14, y:20} and cam {x:7, y:10} the
+// viewport's top-left sits on grid point {0, 0}, so a party's grid point IS
+// its viewport position in these cases.
+
+const SPAN = Object.freeze({ x: 14, y: 20 });
+const CAM = Object.freeze({ x: 7, y: 10 });
+// A 4 x 4-cell pad in each bottom corner (mirror images).
+const PAD_RIGHT = Object.freeze({ left: 10, top: 16, right: 14, bottom: 20 });
+const PAD_LEFT = Object.freeze({ left: 0, top: 16, right: 4, bottom: 20 });
+
+test("keepInViewRect: HUD-08 empty — a null obstacle gives exactly keepInViewAxis on each axis (tap mode's camera is unchanged)", () => {
+  for (const cam of [{ x: 7, y: 10 }, { x: -3.25, y: 40 }, { x: 12.5, y: 0.5 }]) {
+    for (const party of [{ x: 7.5, y: 10.5 }, { x: 0.5, y: 19.5 }, { x: 30, y: -8 }, { x: 13.2, y: 1.1 }]) {
+      for (const span of [{ x: 14, y: 20 }, { x: 5, y: 5 }, { x: 30.5, y: 11 }]) {
+        assert.deepEqual(keepInViewRect(cam, party, span, null), {
+          x: keepInViewAxis(cam.x, party.x, span.x),
+          y: keepInViewAxis(cam.y, party.y, span.y),
+        });
+      }
+    }
+  }
+});
+
+test("keepInViewRect: a malformed obstacle (non-finite, empty) is treated as no pad", () => {
+  const party = { x: 12.5, y: 14.5 };
+  const plain = keepInViewRect(CAM, party, SPAN, null);
+  for (const bad of [undefined, {}, { left: 10, top: 16, right: 10, bottom: 20 }, { left: NaN, top: 16, right: 14, bottom: 20 }]) {
+    assert.deepEqual(keepInViewRect(CAM, party, SPAN, bad), plain);
+  }
+});
+
+test("keepInViewRect: nothing near any edge returns the input camera unchanged", () => {
+  for (const pad of [null, PAD_RIGHT, PAD_LEFT]) {
+    assert.deepEqual(keepInViewRect(CAM, { x: 7.5, y: 8.5 }, SPAN, pad), { x: 7, y: 10 });
+  }
+});
+
+test("keepInViewRect: HUD-08 adjacency — walking down inside the pad's column scrolls at the pad's top edge, strictly", () => {
+  // Exactly EDGE_TRIGGER_CELLS (2) above the pad's top edge: no scroll.
+  assert.deepEqual(keepInViewRect(CAM, { x: 12, y: 16 - EDGE_TRIGGER_CELLS }, SPAN, PAD_RIGHT), { x: 7, y: 10 });
+  // Closer (1.5): the camera moves down the minimum to rest the margin above
+  // the pad, never centring on the party.
+  const party = { x: 12, y: 14.5 };
+  const next = keepInViewRect(CAM, party, SPAN, PAD_RIGHT);
+  assert.equal(next.x, 7, "the x axis is untouched");
+  assert.ok(next.y > CAM.y, "the camera scrolls down");
+  assert.notEqual(next.y, party.y, "never centred on the party");
+  const relY = party.y - (next.y - SPAN.y / 2);
+  const gap = PAD_RIGHT.top - relY;
+  assert.ok(gap > EDGE_TRIGGER_CELLS, `the party rests clear of the pad (gap ${gap})`);
+  // keepInViewAxis's own rest over the region above the pad: max(3, 16/3).
+  assert.ok(Math.abs(gap - Math.max(EDGE_TRIGGER_CELLS + 1, PAD_RIGHT.top / 3)) < 1e-9, `rest margin (gap ${gap})`);
+  // Post-nudge stability: the same party at the new camera stays put.
+  assert.deepEqual(keepInViewRect(next, party, SPAN, PAD_RIGHT), next);
+});
+
+test("keepInViewRect: walking down OUTSIDE the pad's column only reacts to the viewport's own bottom edge", () => {
+  // 1.5 cells above the pad's top edge, but beside it: nothing moves.
+  assert.deepEqual(keepInViewRect(CAM, { x: 5, y: 14.5 }, SPAN, PAD_RIGHT), { x: 7, y: 10 });
+  // Near the viewport's bottom edge: exactly keepInViewAxis's answer.
+  assert.deepEqual(keepInViewRect(CAM, { x: 5, y: 18.5 }, SPAN, PAD_RIGHT), { x: 7, y: keepInViewAxis(10, 18.5, 20) });
+});
+
+test("keepInViewRect: walking right inside the pad's row band reacts to the pad's left edge, strictly", () => {
+  assert.deepEqual(keepInViewRect(CAM, { x: 10 - EDGE_TRIGGER_CELLS, y: 18 }, SPAN, PAD_RIGHT), { x: 7, y: 10 });
+  const party = { x: 8.5, y: 18 };
+  const next = keepInViewRect(CAM, party, SPAN, PAD_RIGHT);
+  assert.equal(next.y, 10, "the y axis is untouched");
+  assert.ok(next.x > CAM.x, "the camera scrolls right");
+  const relX = party.x - (next.x - SPAN.x / 2);
+  assert.ok(PAD_RIGHT.left - relX > EDGE_TRIGGER_CELLS, "the party rests clear of the pad's left edge");
+  assert.deepEqual(keepInViewRect(next, party, SPAN, PAD_RIGHT), next);
+});
+
+test("keepInViewRect: a party already under the pad (after a drag) is brought back above it", () => {
+  const party = { x: 12, y: 18 };
+  const next = keepInViewRect(CAM, party, SPAN, PAD_RIGHT);
+  const relY = party.y - (next.y - SPAN.y / 2);
+  assert.ok(relY < PAD_RIGHT.top - EDGE_TRIGGER_CELLS, `the party is back above the pad (rel ${relY})`);
+});
+
+test("keepInViewRect: BOTTOM LEFT mirrors BOTTOM RIGHT, case for case (a pinned mirrored pair)", () => {
+  const mirrorX = (p) => ({ x: SPAN.x - p.x, y: p.y });
+  const cases = [
+    { x: 12, y: 14 }, // exactly the trigger above the pad: no scroll
+    { x: 12, y: 14.5 }, // inside the column, closer: scroll down
+    { x: 5, y: 14.5 }, // outside the column: nothing
+    { x: 5, y: 18.5 }, // outside the column, near the viewport bottom
+    { x: 8, y: 18 }, // row band, exactly the trigger from the inner edge
+    { x: 8.5, y: 18 }, // row band, closer: scroll toward the open side
+    { x: 12, y: 18 }, // under the pad
+  ];
+  for (const party of cases) {
+    const right = keepInViewRect(CAM, party, SPAN, PAD_RIGHT);
+    const left = keepInViewRect(CAM, mirrorX(party), SPAN, PAD_LEFT);
+    assert.ok(Math.abs(left.x - (SPAN.x - right.x)) < 1e-9, `x mirrors for ${JSON.stringify(party)}: ${left.x} vs ${SPAN.x - right.x}`);
+    assert.ok(Math.abs(left.y - right.y) < 1e-9, `y matches for ${JSON.stringify(party)}`);
+  }
+  // The inner side edge of a BOTTOM LEFT pad is its right edge.
+  const next = keepInViewRect(CAM, { x: 5.5, y: 18 }, SPAN, PAD_LEFT);
+  assert.ok(next.x < CAM.x, "walking left toward a BOTTOM LEFT pad scrolls left");
 });
