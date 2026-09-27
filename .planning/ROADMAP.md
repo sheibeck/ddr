@@ -52,7 +52,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 - [x] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store (completed 2026-09-26)
 - [x] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators (completed 2026-09-26)
-- [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
+- [x] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card (completed 2026-09-27)
 - [ ] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep
 - [ ] **Phase 80: Android Release Build & Tooling** - R8 minify/shrink, edge-to-edge and large-screen handling, and the fit tool's replay-resume fix
 - [x] **Phase 81: Leaderboards Panel Fixes** - YOU tag, standing card, ME | ALL | FRIENDS scopes with ALL default when signed in, LINEAGE ME-only, GRAVEYARD and LEANEST removed (completed 2026-09-25)
@@ -449,7 +449,7 @@ Plans:
 
   8. With a full bag, the find card keeps the found item and TAKE / LEAVE in view while the drop list scrolls inside the card.
 
-**Plans**: 8/9 plans executed
+**Plans**: 9/9 plans complete
 
 Plans:
 **Wave 1**
@@ -477,7 +477,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 78-09-PLAN.md — Acute Hearing hears the next room (HUD-07, option A ruled 2026-09-26: unresolved encounter dots within 3 squares, through walls) and the phase close: voice sample, compiled Pixel 7 checklist, full gates (wave 6)
+- [x] 78-09-PLAN.md — Acute Hearing hears the next room (HUD-07, option A ruled 2026-09-26: unresolved encounter dots within 3 squares, through walls) and the phase close: voice sample, compiled Pixel 7 checklist, full gates (wave 6)
 
 **UI hint**: yes
 **Device check**: yes — dead-state input lockdown, settings-sheet drag behaviour, the stairs fade and the climb card need a Pixel 7 pass, batched into the milestone-close checklist per the deferred-UAT protocol.
@@ -654,7 +654,7 @@ Plans:
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
-| 78. HUD, Dead State & Climb Decisions | v2.1 | 8/9 | In Progress|  |
+| 78. HUD, Dead State & Climb Decisions | v2.1 | 9/9 | Complete    | 2026-09-27 |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |

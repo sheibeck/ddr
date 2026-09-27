@@ -87,20 +87,20 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 ### HUD & shell (HUD)
 
-- [ ] **HUD-01**: The band-1 identity line reads "Race Sub-class · Lvl N" (e.g. "Dwarf Pickpocket · Lvl 3"), with no parent class and no parentheses. (todo 2026-09-22 hud-band-1)
-- [ ] **HUD-02**: Once the hero is dead, only the Oracle, the DEAD/Leaderboards screen and the ☰ menu (Settings, the way back to the title) accept input. Map taps, the other tabs, camp, marks and centre map are inert; the MAP tab stays viewable read-only (amended 2026-09-26). (todo 2026-09-22 hud-menu-cannot-open-while-dead)
-- [ ] **HUD-03**: From the DEAD screen, the player can open a read-only final character sheet (stats, gear, level) for the run that just ended. (user ruling 2026-09-24)
-- [ ] **HUD-04**: The Settings text-size choice (S/M/L) scales every `--mw-font-*` token. (todo 2026-09-23 text-size-setting)
-- [ ] **HUD-05**: Dragging or scrolling the settings sheet never changes a volume slider. A deliberate horizontal drag on a slider still sets its volume. (todo 2026-09-24 settings-sheet-drag-scrub)
-- [ ] **HUD-06**: A stairs descent fades to black under the stairs sound, then fades in on the new floor, and honours reduced motion. (todo 2026-09-24 stairs-descent-fades)
-- [ ] **HUD-07**: Acute Hearing gains "hear the next room": unresolved encounter dots within 3 squares (through walls) that the map isn't showing get a faint "something's there" mark that never says what it is (amended 2026-09-26: the adjacent squares are always revealed and dot contents aren't rolled until stepped on). It replaces the dead "3 to hit the unseen" clause Phase 72 removes, the skill keeps "never surprised", and its description states the new ability. (user ruling 2026-09-24, Phase 72 finding F2)
-- [ ] **HUD-08**: A Movement setting chooses TAP TO MOVE (the default) or ARROWS. ARROWS shows a 4-way on-screen pad in the bottom-left or bottom-right of the map (a second setting). In arrow mode map taps never move the party, each press takes one step through the same step path, hardware arrow keys also step, and the map auto-scrolls treating the pad as an edge so the party is never hidden under it. (user, 2026-09-25; todo 2026-09-25 setting-tap-to-move-or-on-screen-arrow-pad)
-- [ ] **HUD-09**: With a full bag, the find card keeps the found item (name, stats, TAKE / LEAVE) pinned in view, and the list of bag items to drop scrolls inside the card, so a large bag never pushes the loot off-screen. (user, 2026-09-25; todo 2026-09-25 full-bag-find-card)
+- [x] **HUD-01**: The band-1 identity line reads "Race Sub-class · Lvl N" (e.g. "Dwarf Pickpocket · Lvl 3"), with no parent class and no parentheses. (todo 2026-09-22 hud-band-1)
+- [x] **HUD-02**: Once the hero is dead, only the Oracle, the DEAD/Leaderboards screen and the ☰ menu (Settings, the way back to the title) accept input. Map taps, the other tabs, camp, marks and centre map are inert; the MAP tab stays viewable read-only (amended 2026-09-26). (todo 2026-09-22 hud-menu-cannot-open-while-dead)
+- [x] **HUD-03**: From the DEAD screen, the player can open a read-only final character sheet (stats, gear, level) for the run that just ended. (user ruling 2026-09-24)
+- [x] **HUD-04**: The Settings text-size choice (S/M/L) scales every `--mw-font-*` token. (todo 2026-09-23 text-size-setting)
+- [x] **HUD-05**: Dragging or scrolling the settings sheet never changes a volume slider. A deliberate horizontal drag on a slider still sets its volume. (todo 2026-09-24 settings-sheet-drag-scrub)
+- [x] **HUD-06**: A stairs descent fades to black under the stairs sound, then fades in on the new floor, and honours reduced motion. (todo 2026-09-24 stairs-descent-fades)
+- [x] **HUD-07**: Acute Hearing gains "hear the next room": unresolved encounter dots within 3 squares (through walls) that the map isn't showing get a faint "something's there" mark that never says what it is (amended 2026-09-26: the adjacent squares are always revealed and dot contents aren't rolled until stepped on). It replaces the dead "3 to hit the unseen" clause Phase 72 removes, the skill keeps "never surprised", and its description states the new ability. (user ruling 2026-09-24, Phase 72 finding F2)
+- [x] **HUD-08**: A Movement setting chooses TAP TO MOVE (the default) or ARROWS. ARROWS shows a 4-way on-screen pad in the bottom-left or bottom-right of the map (a second setting). In arrow mode map taps never move the party, each press takes one step through the same step path, hardware arrow keys also step, and the map auto-scrolls treating the pad as an edge so the party is never hidden under it. (user, 2026-09-25; todo 2026-09-25 setting-tap-to-move-or-on-screen-arrow-pad)
+- [x] **HUD-09**: With a full bag, the find card keeps the found item (name, stats, TAKE / LEAVE) pinned in view, and the list of bag items to drop scrolls inside the card, so a large bag never pushes the loot off-screen. (user, 2026-09-25; todo 2026-09-25 full-bag-find-card)
 
 ### Climbs & leaps (CLIMB) — user ruling 2026-09-24, option B
 
-- [ ] **CLIMB-01**: Stepping toward a wall or crevice square first shows a decision card: CLIMB IT / LEAP IT, USE LADDER / USE ROPE (when carried) and TURN BACK. No dice are rolled until the player commits.
-- [ ] **CLIMB-02**: TURN BACK leaves the hero where they stood at no cost (no step, time or roll), and no stale retry card ever appears after a crossing. The crevice/wall copy in `mapMarks.js` describes one-and-done.
+- [x] **CLIMB-01**: Stepping toward a wall or crevice square first shows a decision card: CLIMB IT / LEAP IT, USE LADDER / USE ROPE (when carried) and TURN BACK. No dice are rolled until the player commits.
+- [x] **CLIMB-02**: TURN BACK leaves the hero where they stood at no cost (no step, time or roll), and no stale retry card ever appears after a crossing. The crevice/wall copy in `mapMarks.js` describes one-and-done.
 
 ### Content & voice (VOX)
 
@@ -170,17 +170,17 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | CMBUI-12 | Phase 77 | Complete |
 | CMBUI-13 | Phase 77 | Complete |
 | CMBUI-14 | Phase 77 | Complete |
-| HUD-01 | Phase 78 | Pending |
-| HUD-02 | Phase 78 | Pending |
-| HUD-03 | Phase 78 | Pending |
-| HUD-04 | Phase 78 | Pending |
-| HUD-05 | Phase 78 | Pending |
-| HUD-06 | Phase 78 | Pending |
-| HUD-07 | Phase 78 | Pending |
-| HUD-08 | Phase 78 | Pending |
-| HUD-09 | Phase 78 | Pending |
-| CLIMB-01 | Phase 78 | Pending |
-| CLIMB-02 | Phase 78 | Pending |
+| HUD-01 | Phase 78 | Complete |
+| HUD-02 | Phase 78 | Complete |
+| HUD-03 | Phase 78 | Complete |
+| HUD-04 | Phase 78 | Complete |
+| HUD-05 | Phase 78 | Complete |
+| HUD-06 | Phase 78 | Complete |
+| HUD-07 | Phase 78 | Complete |
+| HUD-08 | Phase 78 | Complete |
+| HUD-09 | Phase 78 | Complete |
+| CLIMB-01 | Phase 78 | Complete |
+| CLIMB-02 | Phase 78 | Complete |
 | BOARD-09 | Phase 81 | Complete |
 | BOARD-10 | Phase 81 | Complete |
 | BOARD-11 | Phase 81 | Complete |
