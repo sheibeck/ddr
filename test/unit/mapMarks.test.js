@@ -123,24 +123,55 @@ test("MAP_PALETTE.floorDarkLit/waterDarkLit: 6-digit hexes strictly between thei
 
 // Literal copy of the old mazeworld.html MARKS_LEGEND table (icon -> key),
 // so this test proves the move is byte-identical, not just "close enough".
+// Phase 78 (CLIMB-02) re-pin: the crevice and wall rows are the two
+// deliberate rewrites since the move (the pre-roll choice and one and
+// done); every other row is still the moved text, byte for byte.
 const OLD_MARKS_LEGEND = [
   { key: "encounter", name: "ENCOUNTER", desc: "Something gets rolled for you the moment you touch it." },
   { key: "teleport", name: "TELEPORT", desc: "Thrown a d20 of squares somewhere you did not choose." },
   { key: "onewaydoor", name: "ONE-WAY DOOR", desc: "Go where the arrow points. There is no coming back." },
   { key: "trap", name: "TRAP", desc: "A d6 out of you, before you knew it was there." },
   { key: "chest", name: "LOCKED BOX", desc: "1–5 on a d10 opens it. The rest costs you a pick." },
-  { key: "crevice", name: "CREVICE", desc: "Climb it, or fall, and be grateful for half the fall." },
+  {
+    key: "crevice",
+    name: "CREVICE",
+    desc: "You choose before anything is rolled: leap it, use a rope if you have one, or turn back. A failed leap still gets you across, hurt.",
+  },
   { key: "descent", name: "DESCENT", desc: "The floor below, which is worse in every way." },
-  { key: "wall", name: "WALL", desc: "Climb it on a d10 under your class's number, or fall and eat the difference." },
+  {
+    key: "wall",
+    name: "WALL",
+    desc: "You choose before anything is rolled: climb it, use a ladder if you have one, or turn back. A failed climb still gets you over, hurt.",
+  },
   { key: "party", name: "YOU", desc: "The party marker. Whatever is nearby has already noticed you." },
 ];
 
-test("MARKS_LEGEND: 9 rows, in order, byte-identical name/desc to the old mazeworld.html table", () => {
+test("MARKS_LEGEND: 9 rows, in order, byte-identical name/desc to the old mazeworld.html table (crevice and wall as rewritten in Phase 78)", () => {
   assert.equal(MARKS_LEGEND.length, 9);
   assert.deepEqual(
     MARKS_LEGEND.map((r) => ({ key: r.key, name: r.name, desc: r.desc })),
     OLD_MARKS_LEGEND
   );
+});
+
+// Phase 78 (CLIMB-02): the crevice and wall rows describe the pre-roll
+// choice and one and done, never the retired retry-and-fall rule or a
+// roll-under number, and the hold-inspect card reads the same rows.
+test("CLIMB-02: the crevice and wall rows name the choice before any roll and the crossing on a failed roll; no 'or fall' outcome, no 'under your'", () => {
+  for (const [key, cross, tool, over] of [["crevice", "leap it", "rope", "across"], ["wall", "climb it", "ladder", "over"]]) {
+    const { desc } = MARKS_LEGEND.find((r) => r.key === key);
+    assert.match(desc, /before anything is rolled/, key);
+    assert.ok(desc.includes(cross), `${key}: ${cross}`);
+    assert.ok(desc.includes(tool), `${key}: ${tool}`);
+    assert.match(desc, /turn back/, key);
+    assert.match(desc, new RegExp(`still gets you ${over}, hurt`), key);
+    assert.doesNotMatch(desc, /or fall/i, `${key}: no fall-only outcome`);
+    assert.doesNotMatch(desc, /under your/i, `${key}: no roll-under phrasing`);
+    assert.doesNotMatch(desc, /(?<![\w.$-])(wp|WP)(?![\w:])/, key);
+  }
+  assert.equal(legendFor("climb").key, "wall");
+  assert.equal(legendFor("gorge").key, "crevice");
+  assert.equal(legendFor("climb").desc, MARKS_LEGEND.find((r) => r.key === "wall").desc);
 });
 
 // ─── markForCell ────────────────────────────────────────────────────────────

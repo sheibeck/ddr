@@ -161,7 +161,10 @@ const GUARDED_IDS = [
   // a-loot-take-all/a-loot-leave-all/btn-death-oracle/cb-over-btn.
   "mw-major-primary", "cb-strike", "cb-spells", "cb-items", "cb-social", "cb-back",
   "a-join-yes", "a-join-no", "a-loot-take-all", "a-loot-leave-all",
-  "a-find-take", "a-find-leave", "btn-death-oracle", "cb-over-btn", "mw-rail-climb",
+  // Phase 78 (CLIMB-01/02): the post-fall retry button is retired; the
+  // pre-roll wall/crevice card's three buttons take its place.
+  "a-find-take", "a-find-leave", "btn-death-oracle", "cb-over-btn",
+  "a-hazard-cross", "a-hazard-tool", "a-hazard-back",
 ];
 
 // A guarded id is wired one of three ways in renderEncounter:

@@ -97,7 +97,9 @@ function joinerBranch() {
   return sliceBetween(railRegion(), "if (S.pendingJoiner && !S.combat && !S.store) {", "if (S.pendingFind && !S.combat && !S.store) {");
 }
 function findBranch() {
-  return sliceBetween(railRegion(), "if (S.pendingFind && !S.combat && !S.store) {", 'if (rail.pending && rail.pending.kind === "climb") {');
+  // Phase 78 (CLIMB-02): the dark card's branch follows the find card now
+  // (the post-fall retry branch is retired).
+  return sliceBetween(railRegion(), "if (S.pendingFind && !S.combat && !S.store) {", 'if (rail.pending && rail.pending.kind === "dark"');
 }
 function noteCombatRegion() {
   return sliceBetween(CODE, "function noteCombat(", "function hapticForEvents");

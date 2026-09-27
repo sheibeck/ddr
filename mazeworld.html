@@ -3920,13 +3920,16 @@ function hidePanel(el, onHidden) {
 }
 
 // railLocked() (orchestrator decision 2, ruling 3): a pending rail decision
-// (joiner/find) or a pending obstacle (a failed climb/leap, stashed on
-// window.__mzRail.pending by stepNow below) locks EVERY movement entry path
-// — tap-to-move, keyboard arrows — GLOBALLY, not just the
-// direction that produced it. The mock's "walking away declines" is
+// (joiner/find), a pending wall/crevice decision (Phase 78, CLIMB-01:
+// S.pendingHazard, out of combat and store), or a presentation-only pending
+// offer (the dark card's USE TORCH, window.__mzRail.pending) locks EVERY
+// movement entry path — tap-to-move, keyboard arrows — GLOBALLY, not just
+// the direction that produced it. The mock's "walking away declines" is
 // rejected: there is no decline-by-ignoring here, only answer or pulse.
+// The wall/crevice card's own buttons (mzResolveHazard/mzUseTool) answer
+// their record directly, so this lock never refuses them.
 function railLocked() {
-  return !!(S && !S.combat && (S.pendingJoiner || S.pendingFind)) || !!(window.__mzRail && window.__mzRail.pending);
+  return !!(S && !S.combat && (S.pendingJoiner || S.pendingFind || (S.pendingHazard && !S.store))) || !!(window.__mzRail && window.__mzRail.pending);
 }
 
 // Phase 32 (CMBUI-04/05, design §6.3) — the two Date.now() tap-safety
@@ -5258,23 +5261,31 @@ function renderRail() {
   // bagFull refusal) still shows.
 
   let key, tone, icon, iconKey = null, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
-  if (S.pendingHazard && !S.pendingHazard.declined && !S.combat && !S.store) {
-    // The hazard pre-roll decision card (Phase 39, GEAR-05, Plan 05, CONTEXT
-    // Area 1 "both"): stepping onto a climbable wall while carrying a
-    // ladder, or a gorge while carrying a rope, PAUSES here before any roll
-    // — a fresh movement decision, so it wins over an older joiner/find
-    // card below (both of those are re-shown untouched on the NEXT paint
-    // once this one clears).
-    const pend = S.pendingHazard;
-    const { feat, dir, tool } = pend;
-    key = "hazard:" + feat + ":" + dir;
-    tone = "info"; icon = "⧗"; title = copy.hazard.title;
+  // Phase 78 (CLIMB-01/02): the pre-roll wall/crevice decision card, built
+  // from S.pendingHazard alone (null out of any pause, in combat, in a
+  // store, or dead), so a relaunch with the record saved shows the same card.
+  const hz = S.pendingHazard && vm.hazardCard ? vm.hazardCard(S) : null;
+  if (hz) {
+    // Every step toward a wall or crevice pauses here before any die is
+    // drawn (the user's "option B" ruling): CLIMB IT / LEAP IT with its
+    // odds, USE LADDER / USE ROPE only while the tool is carried, and TURN
+    // BACK (free), always last. A fresh movement decision, so it wins over
+    // an older joiner/find card below (both re-show untouched on the NEXT
+    // paint once this one clears). A decision card: it never auto-clears,
+    // and railLocked() keeps a body tap from dismissing it. The step's own
+    // narration (the hazardChoice line) heads it; on a relaunch, the
+    // card's own intro line does.
+    key = hz.key;
+    tone = "info"; icon = hz.icon; iconKey = hz.iconKey; title = hz.title;
     const narrated = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
-    lines = narrated.length ? narrated : [{ text: feat === "gorge" ? copy.hazard.crevice : copy.hazard.wall, roll: null }];
-    buttons = [
-      { id: "a-hazard-tool", label: tool === "ladder" ? copy.hazard.ladder : copy.hazard.rope, onTap: () => window.mzUseTool(tool, dir) },
-      { id: "a-hazard-roll", label: feat === "gorge" ? copy.hazard.leap : copy.hazard.climb, cls: "secondary", onTap: () => window.move(dir) },
-    ];
+    lines = [...(narrated.length ? narrated : [{ text: hz.intro, roll: null }]), ...hz.lines];
+    buttons = hz.buttons.map((b) =>
+      b.act === "cross"
+        ? { id: "a-hazard-cross", label: b.label, onTap: () => window.mzResolveHazard(true) }
+        : b.act === "tool"
+          ? { id: "a-hazard-tool", label: b.label, onTap: () => window.mzUseTool(b.tool, hz.dir) }
+          : { id: "a-hazard-back", label: b.label, cls: "secondary", onTap: () => window.mzResolveHazard(false) },
+    );
   } else if (S.pendingJoiner && !S.combat && !S.store) {
     // The joiner decision card (MAP-04) — the accept/decline prompt that
     // used to be renderEncounter's own over-map branch, now a rail card
@@ -5325,39 +5336,6 @@ function renderRail() {
       { id: "a-find-take", label: full ? copy.find.takeNow : copy.find.take, onTap: () => window.mzTakeFind?.() },
       { id: "a-find-leave", label: copy.find.leave, cls: "secondary", onTap: () => window.mzLeaveFind?.() },
     ];
-  } else if (rail.pending && rail.pending.kind === "climb") {
-    // The CLIMB IT retry card (decision 1/4, RESEARCH Pitfall 3): the climb
-    // roll already happened inside stepNow's dispatch — this only re-offers
-    // the SAME direction; the engine re-rolls synchronously inside move().
-    // No go-round, no pre-roll preview. Phase 39 (GEAR-05): when the
-    // matching tool is carried, USE LADDER/USE ROPE is ALSO offered — you
-    // fell, you're still standing there, the tool is still the way past.
-    const pend = rail.pending;
-    const base = rail.card || vm.lineCard("FELL", "", "bad", 0, "⧗");
-    key = "climb:" + rail.seq;
-    tone = base.tone; icon = base.icon; iconKey = base.iconKey ?? null; title = base.title; lines = base.lines;
-    const retryLabel = pend.feat === "gorge" ? copy.hazard.leap : pend.feat === "climb" ? copy.hazard.climb : copy.climb.retry;
-    buttons = [
-      {
-        id: "mw-rail-climb",
-        label: retryLabel,
-        onTap: () => {
-          window.__mzRail = { ...window.__mzRail, pending: null };
-          window.move(pend.dir);
-        },
-      },
-    ];
-    const retryTool = pend.feat === "gorge" ? "rope" : "ladder";
-    if (pend.feat && window.__mzHasTool(S.c, retryTool)) {
-      buttons.unshift({
-        id: "mw-rail-tool",
-        label: retryTool === "ladder" ? copy.hazard.ladder : copy.hazard.rope,
-        onTap: () => {
-          window.__mzRail = { ...window.__mzRail, pending: null };
-          window.mzUseTool(retryTool, pend.dir);
-        },
-      });
-    }
   } else if (rail.pending && rail.pending.kind === "dark" && S.c.darkFor > 0 && window.__mzHasTool(S.c, "torch")) {
     // The Darkness card's USE TORCH offer (Phase 39, GEAR-05, Plan 05): a
     // fresh darknessFell held off ONLY while a torch is actually carried
@@ -6356,6 +6334,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
   // destinations — rail or fight log").
   import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, holdForCard, railDismissKind, conditionCard, isCombatCard, wornReconcileCard, abilityPoolCard } from "./src/browser/rail.js";
+  // Phase 78 (CLIMB-01/02) — the pre-roll wall/crevice decision card's pure
+  // view model, bridged onto window.__mzRailVM.hazardCard below.
+  import { hazardCardViewModel } from "./src/browser/hazardCard.js";
   // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
   // view-models and the four-action-grid/submenu view-model, bridged onto
   // window.__mzCombatVM below for the classic renderEncounter to consume.
@@ -6801,7 +6782,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // next to window.mzRailPulse) reads dismissKind.
   // Phase 71 (D-16, R-28): isCombatCard joins it too — renderRail's
   // combat-legal test for the foe card and the status-chit card.
-  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY, holdForCard, dismissKind: railDismissKind, isCombatCard };
+  // Phase 78 (CLIMB-01/02): hazardCard joins it too — renderRail's
+  // pre-roll wall/crevice decision card, built from S.pendingHazard alone.
+  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY, holdForCard, dismissKind: railDismissKind, isCombatCard, hazardCard: hazardCardViewModel };
   window.__mzRail = emptyRail();
   // Phase 35 (MAP-05, decision 5) — the stair-down gate's own presentation
   // flag: { dir } while THE STAIR DOWN overlay is up, else null. Never a
@@ -8121,9 +8104,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.move (Phase 35, MAP-02/04/05): the single choke point every
   // movement path (tap-to-step, keyboard arrows) funnels through.
   // Orchestrator decision 2 / ruling 3: railLocked() sits AFTER the settle
-  // clause and BEFORE any dispatch — a pending rail decision or a failed
-  // climb refuses EVERY direction, pulsing the pending card instead of
-  // stepping. The stair-down gate (decision 5) sits AFTER railLocked() and
+  // clause and BEFORE any dispatch — a pending rail decision (a Joiner, a
+  // find, or Phase 78's wall/crevice card) refuses EVERY direction, pulsing
+  // the pending card instead of stepping. The stair-down gate (decision 5) sits AFTER railLocked() and
   // BEFORE stepNow(dir) — stepping onto an exit/gate tile shows THE STAIR
   // DOWN instead of dispatching; stepNow(dir) below is the actual
   // dispatching half, called both by a normal step and by GO DOWN
@@ -8145,15 +8128,34 @@ window.__mzClassicBoot = async function classicBoot() {
     stepNow(dir);
   };
 
-  // window.mzUseTool(tool, dir) (Phase 39, GEAR-05, Plan 05) — the hazard
-  // decision card's tool button (USE LADDER/USE ROPE) and the retry card's
-  // same offer: spends the tool via the engine's own useTool action,
-  // consuming the tile with no roll. Guarded by the SAME railLocked() gate
-  // every movement path already funnels through (a stale/duplicate tap
-  // pulses the pending card instead of double-dispatching).
+  // window.mzUseTool(tool, dir) (Phase 39, GEAR-05, Plan 05) — the
+  // decision card's tool button (USE LADDER/USE ROPE): spends the tool via
+  // the engine's own useTool action, crossing the tile with no roll.
+  // Phase 78 (CLIMB-01): railLocked() now covers the pending hazard itself,
+  // so this button can no longer sit behind it (it would refuse its own
+  // card). It answers ONLY its own record instead: a pending hazard for
+  // this exact tool and direction, with nothing covering the map. A stale
+  // or second tap finds no record (the engine cleared it on the crossing)
+  // and dispatches nothing.
   window.mzUseTool = (tool, dir) => {
-    if (railLocked()) { window.mzRailPulse?.(); return; }
+    const s = window.__mzState.get();
+    const pend = s && s.pendingHazard;
+    if (!pend || pend.tool !== tool || pend.dir !== dir || hasActiveEncounter()) return;
     stepWith({ type: "useTool", tool, dir });
+  };
+
+  // window.mzResolveHazard(cross) (Phase 78, CLIMB-01/02) — the decision
+  // card's CLIMB IT / LEAP IT (cross true: the engine rolls now, once, and
+  // a failed roll still crosses, hurt) and TURN BACK (cross false: free, no
+  // roll, no step). Same rule as mzUseTool above: it answers only a live
+  // pending hazard with nothing covering the map, so a double tap after the
+  // crossing dispatches nothing. Through stepWith, so the narration,
+  // haptics, paint, keep-in-view and the marker glide all run as for a
+  // step.
+  window.mzResolveHazard = (cross) => {
+    const s = window.__mzState.get();
+    if (!s || !s.pendingHazard || hasActiveEncounter()) return;
+    stepWith({ type: "resolveHazard", cross: cross === true });
   };
 
   // window.__mzDescend (Phase 35, MAP-05, decision 5) — THE STAIR DOWN's GO
@@ -8179,9 +8181,10 @@ window.__mzClassicBoot = async function classicBoot() {
   }
 
   // stepWith(action) (Phase 39, GEAR-05, Plan 05) — the action-agnostic
-  // dispatch body a plain move(dir) step AND a spent useTool share:
-  // dispatchWithNarration, noteCombat, haptics, the pending-obstacle/hazard/
-  // dark computation, the pre-death beat, narration stash, paint/draw/log,
+  // dispatch body a plain move(dir) step, a spent useTool and (Phase 78)
+  // the wall/crevice card's resolveHazard share:
+  // dispatchWithNarration, noteCombat, haptics, the pending dark-offer
+  // computation, the pre-death beat, narration stash, paint/draw/log,
   // and the moved-event recenter. `stepNow(dir)` (below) is the thin
   // move-shaped wrapper every existing call site keeps using.
   function stepWith(action) {
@@ -8203,28 +8206,19 @@ window.__mzClassicBoot = async function classicBoot() {
     window.__mzState.set(state);
     noteCombat(wasCombat, state, events);
     hapticForEvents(events); // UX-07: trap-sprung / level-up buzz on the move path
-    // Phase 35 (decision 2, ruling 3/4): a failed climb/leap holds the party
-    // on its square until a CLIMB IT retry succeeds — the pending flag is
-    // presentation-only (window.__mzRail, never S/state) and cleared by any
-    // success (climbedOver/leaptOver) or a death, both of which never set
-    // it in the first place. Phase 39 (GEAR-05): a carried matching tool
-    // widens this to the pre-roll hazard decision (the pending record's own
-    // `feat` names which retry label/tool applies — CLIMB IT/USE LADDER vs
-    // LEAP IT/USE ROPE), and a live darknessFell held off by NO torch stays
-    // silent (the dark card only appears when a torch is actually carried).
-    const fellClimb = events.some((e) => e.type === "fellClimbing");
-    const fellGorge = events.some((e) => e.type === "fellInGorge");
+    // The presentation-only pending offer (window.__mzRail.pending, never
+    // S/state): a live darknessFell with a torch carried raises the dark
+    // card's USE TORCH offer (Phase 39, GEAR-05); with NO torch it stays
+    // silent. Phase 78 (CLIMB-02): a fall (fellClimbing/fellInGorge) sets
+    // nothing here any more. Walls and crevices are one and done (Phase
+    // 54), so a failed roll has already crossed and there is nothing to
+    // retry; the only wall/crevice card is the pre-roll decision, derived
+    // from S.pendingHazard in renderRail.
     const darkFell = events.some((e) => e.type === "darknessFell");
     const torch = window.__mzHasTool(state.c, "torch");
     window.__mzRail = {
       ...(window.__mzRail || { seq: 0, card: null, pending: null }),
-      pending: state.dead
-        ? null
-        : fellClimb || fellGorge
-          ? { kind: "climb", dir: action.dir, feat: fellGorge ? "gorge" : "climb" }
-          : darkFell && torch
-            ? { kind: "dark" }
-            : null,
+      pending: state.dead ? null : darkFell && torch ? { kind: "dark" } : null,
     };
     // Death ON A MOVE — you stepped onto a tile and this one dispatch killed you
     // before you could see what happened: a combat ambush (foes won initiative +
@@ -8242,13 +8236,12 @@ window.__mzClassicBoot = async function classicBoot() {
     // accept/decline / Take-Leave buttons (see renderRail) — so DON'T build
     // an intermediate "Move on" beat for those; stash the stripped narration for
     // that prompt branch to show instead. Cleared to null on any move that has
-    // no pending prompt so it never leaks into a later prompt. Phase 39
-    // (GEAR-05): a fresh, un-declined pendingHazard is ALSO a rail decision
-    // (the hazard pre-roll card) — its own narration (if any) stashes the
-    // same way; a DECLINED pendingHazard has already shown its narration on
-    // the dispatch that declined it, so it is excluded here.
+    // no pending prompt so it never leaks into a later prompt. Phase 78
+    // (CLIMB-01): a pendingHazard is ALSO a rail decision (the pre-roll
+    // wall/crevice card), so the pause's own narration (the hazardChoice
+    // line) stashes the same way and heads that card.
     window.__mzPendingNarration =
-      (state.pendingJoiner || state.pendingFind || (state.pendingHazard && !state.pendingHazard.declined)) && html.length
+      (state.pendingJoiner || state.pendingFind || state.pendingHazard) && html.length
         ? stripRollDetail(html)
         : null;
     if (diedOnMove && html.length) {
@@ -8925,9 +8918,9 @@ window.__mzClassicBoot = async function classicBoot() {
       onBackground: () => setAppActive(false),
       onForeground: () => setAppActive(true),
       getGameContext: () => ({
-        // Phase 35 (ruling 3): a pending rail decision or a failed climb is
-        // NOT a modal — it is presentation state on window.__mzRail, never
-        // S/state, and the hardware back button can never skip it. The
+        // Phase 35 (ruling 3): a pending rail decision (a Joiner, a find,
+        // Phase 78's wall/crevice card, the dark card's torch offer) is
+        // NOT a modal — the hardware back button can never skip it. The
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).

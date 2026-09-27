@@ -17,9 +17,11 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { heroHitOdds, heroHitOddsVs, foeHitOddsVs, fleeOdds, scrollReadOdds } from "../../src/browser/rollOdds.js";
+import { heroHitOdds, heroHitOddsVs, foeHitOddsVs, fleeOdds, scrollReadOdds, hazardOddsText } from "../../src/browser/rollOdds.js";
+// Phase 78 (CLIMB-01): hazardOddsText reads the engine's own hazardOdds.
+import { hazardOdds } from "../../engine/movement.js";
 import { toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown, heroStrikeFacesVs, foeSwingVsHero, scrollReaderOf, scrollReadBands } from "../../engine/derived.js";
-import { rangeText } from "../../src/browser/rollRange.js";
+import { rangeText, facesRangeText } from "../../src/browser/rollRange.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -281,4 +283,76 @@ test("rollOdds.js source: no document/window/Math.random/Date.now", () => {
   assert.doesNotMatch(src, /window\./);
   assert.doesNotMatch(src, /Math\.random/);
   assert.doesNotMatch(src, /Date\.now/);
+});
+
+// ─── hazardOddsText (Phase 78, CLIMB-01, plan 78-03) ─────────────────────
+//
+// The pre-roll wall/crevice card's odds. Every range is checked against
+// engine/movement.js#hazardOdds's own faces (the helpers the roll itself
+// reads), formatted through rollRange.js's facesRangeText — never a
+// restated climb or leap formula.
+
+test("hazardOddsText: a Fighter at a wall, no penalties, reads 4–10 per 10 ft with rock named, 2 or 3 rolls, no penalty clause", () => {
+  const odds = hazardOddsText(fixedState(), "climb");
+  assert.equal(odds.die, "d10");
+  assert.equal(odds.range, "4–10");
+  assert.deepEqual(odds.others, [{ label: "rock", range: "5–10" }]);
+  assert.equal(odds.rolls, "2 or 3 rolls");
+  assert.equal(odds.penaltyText, "");
+  assert.equal(odds.text, "4–10 on a d10 for each 10 ft (rock: 5–10), 2 or 3 rolls");
+});
+
+test("hazardOddsText: a Magic User at a crevice reads the narrowest gap (2–10) down to the widest (10), one roll", () => {
+  const odds = hazardOddsText(fixedState({ c: { cls: "Magic User", sub: "Wizard" } }), "gorge");
+  assert.equal(odds.range, "2–10");
+  assert.equal(odds.wide, "10");
+  assert.equal(odds.rolls, "one roll");
+  assert.equal(odds.text, "2–10 on a d10 for a 3–4 ft gap, down to 10 for 12–15 ft, one roll");
+});
+
+test("hazardOddsText: Heights and heavy armour drop the faces and are named with U+2212; a case at 0 faces reads 'nothing'", () => {
+  const climb = hazardOddsText(fixedState({ c: { phobia: "Heights", armor: "Plate" } }), "climb");
+  assert.equal(climb.range, "8–10");
+  assert.deepEqual(climb.others, [{ label: "rock", range: "9–10" }]);
+  assert.equal(climb.penaltyText, "Heights −2, armour −2");
+  const leap = hazardOddsText(fixedState({ c: { cls: "Magic User", sub: "Wizard", armor: "Studded" } }), "gorge");
+  assert.equal(leap.wide, "nothing");
+  assert.equal(leap.penaltyText, "armour −1");
+  const water = hazardOddsText(fixedState({ c: { phobia: "Bodies of water" } }), "gorge");
+  assert.equal(water.penaltyText, "Bodies of water −2");
+  assert.doesNotMatch(`${climb.text} ${climb.penaltyText} ${leap.text}`, /-\d|\d-\d/, "no ASCII hyphen as a minus or a range");
+});
+
+test("hazardOddsText: every case's range equals facesRangeText of the engine's own faces, and the penalties are the engine's", () => {
+  const heroes = [
+    {},
+    { cls: "Thief", sub: "Pilfer" },
+    { cls: "Magic User", sub: "Wizard" },
+    { phobia: "Heights" },
+    { phobia: "Heights", skills: { Hardiness: 1 } },
+    { phobia: "Bodies of water" },
+    { armor: "Plate" },
+    { cls: "Magic User", sub: "Wizard", armor: "Plate", phobia: "Bodies of water" },
+  ];
+  for (const c of heroes) {
+    for (const feat of ["climb", "gorge"]) {
+      const state = fixedState({ c });
+      const eng = hazardOdds(state, feat);
+      const odds = hazardOddsText(state, feat);
+      const label = `${JSON.stringify(c)} ${feat}`;
+      assert.deepEqual(odds.cases.map((k) => k.range), eng.cases.map((k) => facesRangeText(k.faces, eng.dieN)), label);
+      assert.deepEqual(odds.penalties, eng.penalties, label);
+      for (const k of odds.cases) assert.ok(odds.text.includes(k.range) || feat === "gorge", `${label}: ${k.range} in the text`);
+      if (feat === "gorge") {
+        assert.equal(odds.range, facesRangeText(eng.cases[0].faces, eng.dieN), label);
+        assert.equal(odds.wide, facesRangeText(eng.cases[eng.cases.length - 1].faces, eng.dieN), label);
+      }
+    }
+  }
+});
+
+test("hazardOddsText: an unknown feat or no hero is null", () => {
+  assert.equal(hazardOddsText(fixedState(), "one"), null);
+  assert.equal(hazardOddsText({}, "climb"), null);
+  assert.equal(hazardOddsText(null, "climb"), null);
 });

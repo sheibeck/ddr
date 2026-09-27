@@ -231,19 +231,23 @@ test("(e) bridges: window.__mzRailVM/__mzRail/mzRailLine/renderRail/mzRailPulse 
 
 // ─── (f) renderRail ─────────────────────────────────────────────────────
 
-test("(f) renderRail: decision precedence (joiner < find < climb < card < idle), the key gate, armEncounterButtons, the generic guardTap wiring, the five action ids, zero innerHTML/listener-on-panel-body-card, one setTimeout whose delay comes from holdForCard", () => {
+// Phase 78 (CLIMB-01/02) re-pin: the pre-roll wall/crevice card (the `hz`
+// branch) now leads the precedence, and the post-fall retry branch is gone;
+// the dark card's USE TORCH branch sits where it was, after find.
+test("(f) renderRail: decision precedence (hazard < joiner < find < dark < card < idle), the key gate, armEncounterButtons, the generic guardTap wiring, the seven action ids, zero innerHTML/listener-on-panel-body-card, one setTimeout whose delay comes from holdForCard", () => {
   const region = railRegion();
   const idx = (needle) => region.indexOf(needle);
+  const hazardIdx = idx("if (hz) {");
   const joinerIdx = idx("if (S.pendingJoiner && !S.combat && !S.store) {");
   const findIdx = idx("if (S.pendingFind && !S.combat && !S.store) {");
-  const climbIdx = idx('if (rail.pending && rail.pending.kind === "climb") {');
+  const darkIdx = idx('if (rail.pending && rail.pending.kind === "dark"');
   const cardIdx = idx("if (rail.card) {");
   const idleKeyIdx = idx('key = "idle:"');
-  assert.ok([joinerIdx, findIdx, climbIdx, cardIdx, idleKeyIdx].every((i) => i !== -1), "every branch must be present");
-  assert.ok(joinerIdx < findIdx && findIdx < climbIdx && climbIdx < cardIdx && cardIdx < idleKeyIdx, "precedence order must be joiner < find < climb < card < idle");
+  assert.ok([hazardIdx, joinerIdx, findIdx, darkIdx, cardIdx, idleKeyIdx].every((i) => i !== -1), "every branch must be present");
+  assert.ok(hazardIdx < joinerIdx && joinerIdx < findIdx && findIdx < darkIdx && darkIdx < cardIdx && cardIdx < idleKeyIdx, "precedence order must be hazard < joiner < find < dark < card < idle");
   assert.match(region, /lastRailKeyShown/);
   assert.match(region, /armEncounterButtons\(\);/);
-  for (const id of ["a-join-yes", "a-join-no", "a-find-take", "a-find-leave", "mw-rail-climb"]) {
+  for (const id of ["a-join-yes", "a-join-no", "a-find-take", "a-find-leave", "a-hazard-cross", "a-hazard-tool", "a-hazard-back"]) {
     assert.match(region, new RegExp(`id: "${id}"`));
   }
   assert.doesNotMatch(region, /innerHTML/);
@@ -287,32 +291,69 @@ test("(h) find: window.__mzBagUsage/usage.have/usage.slots, the shared renderDro
   assert.match(region, /copy\.find\.takeNow/);
 });
 
-// ─── (i) climb ──────────────────────────────────────────────────────────
+// ─── (i) the wall/crevice decision card ─────────────────────────────────
+//
+// Phase 78 (CLIMB-01/02): the old (i) pinned the post-fall retry button
+// (a retry of window.move(pend.dir)); it is retired. Every wall or crevice
+// now pauses on the engine's own pending record, and the rail's card is
+// built from it by src/browser/hazardCard.js.
 
-test('(i) climb: id: "mw-rail-climb" retries window.move(pend.dir) and clears pending: null first', () => {
+test("(i.1) hazard card: renderRail reads vm.hazardCard(S) and maps its acts to mzResolveHazard(true) / mzUseTool(b.tool, hz.dir) / mzResolveHazard(false), TURN BACK secondary", () => {
   const region = railRegion();
-  assert.match(region, /id: "mw-rail-climb"/);
-  assert.match(region, /window\.move\(pend\.dir\)/);
-  const climbIdx = region.indexOf('id: "mw-rail-climb"');
-  const nextClimbIdx = region.indexOf("if (rail.card) {", climbIdx);
-  const climbButtonSlice = region.slice(climbIdx, nextClimbIdx === -1 ? undefined : nextClimbIdx);
-  assert.match(climbButtonSlice, /pending: null/);
+  assert.match(region, /const hz = S\.pendingHazard && vm\.hazardCard \? vm\.hazardCard\(S\) : null;/);
+  const hzRegion = sliceBetween(region, "if (hz) {", "} else if (S.pendingJoiner");
+  assert.match(hzRegion, /key = hz\.key;/);
+  assert.match(hzRegion, /\.\.\.hz\.lines/);
+  assert.match(hzRegion, /hz\.intro/);
+  assert.match(hzRegion, /window\.__mzPendingNarration/);
+  assert.match(hzRegion, /id: "a-hazard-cross", label: b\.label, onTap: \(\) => window\.mzResolveHazard\(true\)/);
+  assert.match(hzRegion, /id: "a-hazard-tool", label: b\.label, onTap: \(\) => window\.mzUseTool\(b\.tool, hz\.dir\)/);
+  assert.match(hzRegion, /id: "a-hazard-back", label: b\.label, cls: "secondary", onTap: \(\) => window\.mzResolveHazard\(false\)/);
+  assert.doesNotMatch(hzRegion, /window\.move\(/, "no card button sends a plain move (it would only re-pause)");
+});
+
+test("(i.2) CLIMB-02: the post-fall retry branch, its retry and tool button ids, its RAIL_COPY reads and its climb pending record are gone from the whole shell", () => {
+  assert.doesNotMatch(CODE, /rail\.pending\.kind === "climb"/);
+  assert.doesNotMatch(CODE, /mw-rail-climb/);
+  assert.doesNotMatch(CODE, /mw-rail-tool/);
+  assert.doesNotMatch(CODE, /a-hazard-roll/);
+  assert.doesNotMatch(CODE, /copy\.climb\b/);
+  assert.doesNotMatch(CODE, /copy\.hazard\b/);
+  assert.doesNotMatch(CODE, /kind: "climb"/);
+  assert.doesNotMatch(CODE, /pendingHazard\.declined/);
+});
+
+test("(i.3) mzResolveHazard dispatches resolveHazard through stepWith, only while a pending hazard is live and nothing covers the map; mzUseTool answers only its own record", () => {
+  assert.equal((CODE.match(/window\.mzResolveHazard = \(cross\) => \{/g) || []).length, 1);
+  const region = sliceBetween(CODE, "window.mzResolveHazard = (cross) => {", "window.__mzDescend = ");
+  assert.match(region, /if \(!s \|\| !s\.pendingHazard \|\| hasActiveEncounter\(\)\) return;/);
+  assert.match(region, /stepWith\(\{ type: "resolveHazard", cross: cross === true \}\);/);
+  const toolRegion = sliceBetween(CODE, "window.mzUseTool = (tool, dir) => {", "window.mzResolveHazard = ");
+  assert.match(toolRegion, /if \(!pend \|\| pend\.tool !== tool \|\| pend\.dir !== dir \|\| hasActiveEncounter\(\)\) return;/);
+  assert.match(toolRegion, /stepWith\(\{ type: "useTool", tool, dir \}\);/);
+  assert.doesNotMatch(toolRegion, /railLocked\(\)/, "railLocked covers the pending hazard, so the card's own button cannot sit behind it");
 });
 
 // ─── (j) lock ───────────────────────────────────────────────────────────
 
-test("(j.1) lock: railLocked() is the ONE global movement lock; hasActiveEncounter() no longer raises it for joiner/find", () => {
+test("(j.1) lock: railLocked() is the ONE global movement lock, covering joiner/find and (Phase 78, CLIMB-01) a pending hazard out of store; hasActiveEncounter() never raises it for them", () => {
   assert.equal((CODE.match(/^function railLocked\(\)/gm) || []).length, 1);
   const lockRegion = sliceBetween(CODE, "function railLocked()", "let encRenderedAt = 0;");
   assert.match(lockRegion, /S\.pendingJoiner/);
   assert.match(lockRegion, /S\.pendingFind/);
+  assert.match(lockRegion, /\(S\.pendingHazard && !S\.store\)/);
   assert.match(lockRegion, /window\.__mzRail\.pending/);
   const activeRegion = hasActiveRegion();
   assert.doesNotMatch(activeRegion, /pendingJoiner/);
   assert.doesNotMatch(activeRegion, /pendingFind/);
+  assert.doesNotMatch(activeRegion, /pendingHazard/);
 });
 
-test("(j.2) lock: engineMove/stepNow carry the exact Task 2 shapes — the lock clause after the settle clause, the climb-pending stash, preDeath survives", () => {
+// Phase 78 (CLIMB-02) re-pin: stepWith no longer stashes a climb/gorge
+// pending record on a fall (one and done: a failed roll has already
+// crossed); the dark card's torch offer is kept exactly as it was, and the
+// pending-narration stash reads state.pendingHazard alone.
+test("(j.2) lock: engineMove/stepNow carry the exact Task 2 shapes — the lock clause after the settle clause, the dark-only pending stash, preDeath survives", () => {
   const moveRegion = engineMoveRegion().replace(/\s+/g, " ");
   // Phase 35 Plan 04 (MAP-05, decision 5) re-pin: the stair-down gate
   // (stepTargetsExit) now sits between the railLocked() clause and
@@ -327,13 +368,12 @@ test("(j.2) lock: engineMove/stepNow carry the exact Task 2 shapes — the lock 
   // Phase 39 (GEAR-05), Plan 05: the pending shape widened to also stash a
   // hazard's own `feat` and, when no torch is carried, nothing at all for a
   // darknessFell.
-  assert.match(stepRegion, /const fellClimb = events\.some\(\(e\) => e\.type === "fellClimbing"\);/);
-  assert.match(stepRegion, /const fellGorge = events\.some\(\(e\) => e\.type === "fellInGorge"\);/);
+  assert.doesNotMatch(stepRegion, /e\.type === "fellClimbing"/);
+  assert.doesNotMatch(stepRegion, /e\.type === "fellInGorge"/);
   assert.match(stepRegion, /const darkFell = events\.some\(\(e\) => e\.type === "darknessFell"\);/);
   assert.match(stepRegion, /const torch = window\.__mzHasTool\(state\.c, "torch"\);/);
-  assert.match(stepRegion, /\{ kind: "climb", dir: action\.dir, feat: fellGorge \? "gorge" : "climb" \}/);
-  assert.match(stepRegion, /darkFell && torch/);
-  assert.match(stepRegion, /\{ kind: "dark" \}/);
+  assert.match(stepRegion, /pending: state\.dead \? null : darkFell && torch \? \{ kind: "dark" \} : null,/);
+  assert.match(stepRegion, /\(state\.pendingJoiner \|\| state\.pendingFind \|\| state\.pendingHazard\) && html\.length/);
   assert.match(stepRegion, /preDeath: true/);
   const stepNowRegionText = stepNowRegion();
   assert.match(stepNowRegionText, /stepWith\(\{ type: "move", dir \}\);/);

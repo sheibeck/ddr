@@ -65,7 +65,9 @@ function findRegion() {
   return sliceBetween(
     CODE,
     "if (S.pendingFind && !S.combat && !S.store)",
-    'if (rail.pending && rail.pending.kind === "climb") {',
+    // Phase 78 (CLIMB-02): the dark card's branch follows the find card now
+    // (the post-fall retry branch is retired).
+    'if (rail.pending && rail.pending.kind === "dark"',
   );
 }
 

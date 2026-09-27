@@ -92,6 +92,9 @@ import {
   isCombatCard,
   emptyRail,
 } from "../../../src/browser/rail.js";
+// Phase 78 (CLIMB-01/02): the wall/crevice decision card, wired into the
+// real __mzRailVM below exactly as the module script does.
+import { hazardCardViewModel } from "../../../src/browser/hazardCard.js";
 // Phase 58 (MOTION-03), Plan 06 — the fight-log/combat-panel/combat-menu
 // view-models (the module script's own __mzFightLogVM/__mzCombatVM bridge
 // shapes) and the pure+timed combat-beat core, wired below so
@@ -496,6 +499,8 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
       dismissKind: railDismissKind,
       // Phase 71 (D-16, R-28): the combat card kinds predicate renderRail reads.
       isCombatCard,
+      // Phase 78 (CLIMB-01/02): the wall/crevice decision card's view model.
+      hazardCard: hazardCardViewModel,
     };
     context.window.__mzRail = emptyRail();
   }

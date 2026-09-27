@@ -162,9 +162,10 @@ function pendingFindRegion() {
   // Phase 35 (MAP-04): the find prompt is a rail decision card now, living
   // (physically, in file order) AFTER renderEncounter's own store branch —
   // the old "if (S.store) {" end marker matches an EARLIER occurrence and
-  // breaks the region. The next rail branch (CLIMB IT) is the correct,
-  // content-based boundary.
-  const end = CODE.indexOf('if (rail.pending && rail.pending.kind === "climb") {');
+  // breaks the region. The next rail branch is the correct, content-based
+  // boundary: the dark card's, since Phase 78 (CLIMB-02) retired the
+  // post-fall retry branch that used to follow the find card.
+  const end = CODE.indexOf('if (rail.pending && rail.pending.kind === "dark"');
   assert.ok(start !== -1 && end !== -1 && end > start, "pendingFind region bounds found");
   return CODE.slice(start, end);
 }

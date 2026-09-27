@@ -365,6 +365,30 @@ test("RAIL_FEATURE_ICON: frozen, every key is a RAIL_FAMILY key, every value is 
   assert.equal(RAIL_FEATURE_ICON.joinerJoined, undefined);
 });
 
+// Phase 78 (CLIMB-02): TURN BACK's rail line (turnedBack) gets its own
+// TURNED BACK family, and — like toolUsed and draggedOver — its icon comes
+// from the event's own `.feat` (a climb is the wall, a gorge the crevice),
+// so it is NOT a RAIL_FEATURE_ICON key.
+test("turnedBack: its own TURNED BACK family (quiet tone), a feat-based icon like toolUsed/draggedOver, never a RAIL_FEATURE_ICON key", () => {
+  assert.deepEqual(railFamilyFor("turnedBack", "beat", PRIORITY.other), { icon: "⧗", title: "TURNED BACK", tone: "dull", hold: RAIL_HOLD.default });
+  assert.equal(RAIL_FEATURE_ICON.turnedBack, undefined);
+  for (const type of ["turnedBack", "toolUsed", "draggedOver"]) {
+    for (const [feat, icon] of [["climb", "wall"], ["gorge", "crevice"]]) {
+      const card = railCardFor("resolveHazard", [{ type, feat }], [{ text: "x", idx: 0, priority: PRIORITY.other, type, tone: "beat" }]);
+      assert.equal(card.iconKey, icon, `${type} on a ${feat}`);
+    }
+  }
+});
+
+// Phase 78 (CLIMB-02): the post-fall retry card and the Phase 39 tool-only
+// pre-roll card are gone; their copy left RAIL_COPY with them (the new
+// card's copy is src/browser/hazardCard.js#HAZARD_CARD_COPY).
+test("RAIL_COPY: the retired climb retry and hazard pre-roll copy is gone; the dark card's USE TORCH stays", () => {
+  assert.equal(RAIL_COPY.climb, undefined);
+  assert.equal(RAIL_COPY.hazard, undefined);
+  assert.equal(RAIL_COPY.dark.torch, "USE TORCH");
+});
+
 // ─── Test 12: emptyRail / railPush / railClear ─────────────────────────────
 
 test("emptyRail/railPush/railClear: seq discipline, pending preserved, never mutates the input", () => {
