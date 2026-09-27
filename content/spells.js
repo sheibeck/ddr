@@ -93,9 +93,9 @@ export const SPELLS = [
   // Floor lasts only until you move. The old once-a-day cap note no longer
   // applies.
   { n: "Map the Floor", lvl: 1, s: "divination", kind: "reveal", squares: 1, niche: "sight", txt: "sight · the whole floor · shown until you take a step, then your focus breaks", combatOnly: false },
-  { n: "Mirror Self", lvl: 1, s: "illusion", kind: "mirror", niche: "defensive", txt: "defensive · you · foes need a 1 to hit, d6 rounds", combatOnly: false },
+  { n: "Mirror Self", lvl: 1, s: "illusion", kind: "mirror", niche: "defensive", txt: "defensive · you · foes hit you only on their die's top face (the top two faces if you insulted them), d6 rounds", combatOnly: false },
   { n: "Stun", lvl: 1, s: "offense", kind: "stun", niche: "control", txt: "control · up to d6 foes · asleep d4 rounds", combatOnly: true },
-  { n: "Weaken", lvl: 1, s: "offense", kind: "weaken", niche: "control", txt: "control · every foe · they hit on a 3 and do half, d4+1 rounds", combatOnly: true },
+  { n: "Weaken", lvl: 1, s: "offense", kind: "weaken", niche: "control", txt: "control · every foe · no more than their die's top three faces hit, and they do half, d4+1 rounds", combatOnly: true },
   { n: "Acid", lvl: 2, s: "offense", kind: "acid", dmg: { n: 2, sides: 6, bonus: 2 }, niche: "dot", txt: "damage over time · one foe · 2d6+2 a round, d6 rounds", combatOnly: true },
   { n: "Stupidity", lvl: 2, s: "offense", kind: "stupid", niche: "control", txt: "control · one foe · does nothing at all for the rest of the fight; past floor 12, only for three rounds", combatOnly: true },
   { n: "Blind", lvl: 3, s: "offense", kind: "blind", niche: "control", txt: "control · one foe · blind for life, which in here means the fight; past floor 12, life lasts three rounds", combatOnly: true },

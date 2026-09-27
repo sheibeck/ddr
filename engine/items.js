@@ -254,7 +254,7 @@ function pickLootTool(toolRng, depth, c) {
  */
 export function rollTreasureItem(rng, depth, c) {
   if (!hasPicks(c || {}) && rng.d(12) === 1) { // roll:selection
-    return { kind: "picks", n: "Lockpicks", txt: "1–5 on d10 against any lock" };
+    return { kind: "picks", n: "Lockpicks", txt: "6–10 on d10 against any lock" };
   }
   if (typeof rng.getState === "function") {
     const toolRng = derivedRng(rng.getState(), "tool", depth);

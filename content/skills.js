@@ -25,9 +25,9 @@
 
 export const FIGHTER_SKILLS = {
   "Kata": { cost: 4, active: "kata", txt: "one perfect form: this strike cannot miss and adds your level in damage" },
-  "Stealth": { cost: 3, txt: "critical on a 2 when you open a fight; never in plate" },
+  "Stealth": { cost: 3, txt: "critical on your die's top two faces when you open a fight; never in plate" },
   "Death Touch": { cost: 4, active: "deathTouch", txt: "call it: your next landed blow doubles, and finishes anything under 15 hp" },
-  "Sidestep": { cost: 5, active: "sidestep", txt: "two rounds of not being where the blade is: every foe needs two better" },
+  "Sidestep": { cost: 5, active: "sidestep", txt: "two rounds of not being where the blade is: every foe has two fewer faces that hit you" },
   "Hardiness": { cost: 6, txt: "−3 to all damage taken; phobias halved" },
   "Ambidextrous": { cost: 4, txt: "a second weapon at the end of every round" },
   // Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp;
@@ -41,14 +41,14 @@ export const FIGHTER_SKILLS = {
   // is the guarantee. Cosmetic content change only; the engine never reads
   // this string (skillTier reads only the {name: tier} map, never .txt).
   "Runes/Signs": { cost: 2, txt: "reads any scroll without fail; without it, a scroll is an intelligence roll that can backfire" },
-  "Battle Roar": { cost: 4, active: "battleRoar", txt: "loud enough to matter: for two rounds every foe needs two better to hit anyone on your side" },
+  "Battle Roar": { cost: 4, active: "battleRoar", txt: "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side" },
   "Second Wind": { cost: 2, active: "secondWind", txt: "remember why you came: heal d8 + level" },
   "Sweep": { cost: 2, active: "sweep", txt: "one wide arc: every living foe takes half damage" },
 };
 
 export const THIEF_SKILLS = {
-  "Feint": { cost: 5, active: "feint", txt: "look left, stab right: this strike cannot miss and adds your level" },
-  "Locks": { cost: 2, up: 1, txt: "1–5 on d10 to open a lock", txt2: "1–7 on d10 to open a lock" },
+  "Feint": { cost: 5, active: "feint", txt: "look left, stab right: this strike cannot miss and adds your level in damage" },
+  "Locks": { cost: 2, up: 1, txt: "6–10 on d10 to open a lock", txt2: "4–10 on d10 to open a lock" },
   "Sewing": { cost: 4, up: 2, txt: "patch any armour, d6 back, 4 times", txt2: "patch any armour, d6+3 back, 6 times" },
   "Night Vision": { cost: 3, txt: "darkness costs you nothing" },
   "Heft": { cost: 5, txt: "+2 damage, mail armour, half upkeep" },
@@ -64,6 +64,6 @@ export const THIEF_SKILLS = {
   // draws a faint ripple). The engine never reads this string.
   "Acute Hearing": { cost: 5, txt: "never surprised; hears an encounter up to three squares away, walls or no walls, without learning what it is" },
   "Dirty Trick": { cost: 3, active: "dirtyTrick", txt: "sand, thumb, elbow: the target is blinded for two rounds" },
-  "Smoke": { cost: 4, active: "smoke", txt: "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works" },
+  "Smoke": { cost: 4, active: "smoke", txt: "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works" },
   "Silent Step": { cost: 6, active: "silentStep", txt: "nobody heard that: your next attack is an automatic critical, any round" },
 };

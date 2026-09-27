@@ -39,13 +39,13 @@
 export const BESTIARY = {
   "Beasts": [
     [
-      { n: "Bat/Rat", sz: "T", i: 1, wp: 1, sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 }, note: "two attacks, 1 wp each" } },
+      { n: "Bat/Rat", sz: "T", i: 1, wp: 1, sp: { atk: 2, dmg: { n: 0, sides: 0, bonus: 1 }, note: "two attacks, 1 hp each" } },
       { n: "Shriek", sz: "T", i: 1, wp: 3, sp: { shriek: true, note: "a scream deafens; half damage after" } },
-      { n: "Viper", sz: "S", i: 1, wp: 3, sp: { poison: true, note: "venom: 2 wp a round for d10 rounds" } },
+      { n: "Viper", sz: "S", i: 1, wp: 3, sp: { poison: true, note: "venom: 2 hp a round for d10 rounds" } },
     ],
     [
       { n: "Cave Bear", sz: "L", i: 4, wp: 25, sp: { dmg: { n: 1, sides: 8, bonus: 0 }, disease: true, note: "rabid — d8, and the bite carries it" } },
-      { n: "Zit", sz: "T", i: 6, wp: 4, sp: { acid: true, toHit: 4, note: "acid; hittable only on a 4" } },
+      { n: "Zit", sz: "T", i: 6, wp: 4, sp: { acid: true, toHit: 4, note: "acid; at best your die's top four faces hit it" } },
     ],
     [
       { n: "Drat", sz: "L", i: 10, wp: 26, sp: { ar: 12, toHit: 5, breaks: true, note: "natural mail; may break your weapon" } },
@@ -60,7 +60,7 @@ export const BESTIARY = {
       // sp.every stays inert (unread by engine code); the engine reads `every`
       // from the drakeBreath descriptor instead (CANON-02).
       { n: "Drake", sz: "B", i: 15, wp: 38, sp: { dmg: { n: 2, sides: 10, bonus: 4 }, every: 4, note: "breathes fire every four rounds" }, abilities: ["drakeBreath"] },
-      { n: "Stink Bug", sz: "S", i: 1, wp: 4, sp: { toHit: 2, phobia: true, note: "small: strike as one level lower, 2 to hit" } },
+      { n: "Stink Bug", sz: "S", i: 1, wp: 4, sp: { toHit: 2, phobia: true, note: "small and slippery: at best your die's top two faces hit it" } },
     ],
     [
       { n: "Dread Lock", sz: "XL", i: 4, wp: 40 },
@@ -123,11 +123,11 @@ export const BESTIARY = {
       { n: "Hobgoblin", sz: "S", i: 7, wp: 5, sp: { dmg: { n: 1, sides: 6, bonus: 1 }, loot: true, note: "always has something magical in its lair" } },
       // DELIBERATE RULES CHANGE (Phase 72, ROLL-01 (c), user ruling 2026-09-24): every foe is already crittable on a best roll, so the claim promised nothing special; dropped.
       { n: "M&M", sz: "S", i: 6, wp: 3, sp: { note: "deaf" } },
-      { n: "Pogo", sz: "S", i: 1, wp: 4, sp: { dmg: { n: 1, sides: 6, bonus: 4 }, fast: true, note: "+4 damage, and fast — strike one higher" } },
+      { n: "Pogo", sz: "S", i: 1, wp: 4, sp: { dmg: { n: 1, sides: 6, bonus: 4 }, fast: true, note: "+4 damage, and fast: your die has one face fewer that hits it" } },
     ],
     [
       { n: "Hair", sz: "H", i: 2, wp: 12, sp: { dmg: { n: 1, sides: 6, bonus: 0 }, note: "clubs, and a great deal of hair" } },
-      { n: "Trachea", sz: "S", i: 5, wp: 8, sp: { poison: true, dmg: { n: 1, sides: 10, bonus: 0 }, note: "+4 on its first hit; fighters do double to it" } },
+      { n: "Trachea", sz: "S", i: 5, wp: 8, sp: { poison: true, dmg: { n: 1, sides: 10, bonus: 0 }, note: "a d10 bite; fighters do double to it" } },
     ],
     [{ n: "Blumble", sz: "S", i: 4, wp: 16, sp: { quills: true, dmg: { n: 1, sides: 12, bonus: 0 }, note: "quills; cutting it only makes more of them" } }],
     [{ n: "Drarl", sz: "L", i: 9, wp: 19, sp: { acid: true, noArmor: true, note: "acid: mail and plate make it worse" } }],

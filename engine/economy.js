@@ -387,7 +387,7 @@ export function openStore(state, rng, events = []) {
   for (const f of [FOODS[0], FOODS[1], FOODS[5]]) add(`${f.n} (+${f.wp} hp)`, f.cost, "eatRation", { wp: f.wp });
   for (const p of [POTIONS[0], POTIONS[3], POTIONS[4], POTIONS[2]]) stock.push(potionLine(p));
   if (!hasPicks(c))
-    add("Set of lockpicks", 450, "giveLockpicks", { item: { kind: "picks", n: "Lockpicks", txt: "1–5 on d10 against any lock" } }, "opens boxes on 1–5");
+    add("Set of lockpicks", 450, "giveLockpicks", { item: { kind: "picks", n: "Lockpicks", txt: "6–10 on d10 against any lock" } }, "opens boxes on 6–10");
 
   // "The stores will all repair armor for 1/10 of the cost of your armor per point repaired."
   if (c.armorWP > 0 && c.armorWP < c.armorMax) {
