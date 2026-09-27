@@ -26,6 +26,7 @@ import {
   descend,
   maxCharges,
   nightlyEats,
+  resolveHazard,
 } from "../../engine/movement.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
@@ -33,6 +34,15 @@ import { fallDark } from "../../engine/encounters.js";
 import { inDark, revealRadius } from "../../engine/derived.js";
 import { difficultyCurve, scaleHazard, campHealFor, heroRegenFor, heroSpFor, setDialsForTuning, wanderWakeFacesFor } from "../../engine/difficulty.js";
 import { setIdentityDials, IDENTITY_DIALS } from "./harness/identityDials.js";
+
+/** moveAndCommit(state, dir, rng, events) — CLIMB-01 (Phase 78): a step
+ * toward a wall/crevice now pauses on the pre-roll decision (no dice, a lone
+ * hazardChoice); the commit (resolveHazard, cross true) runs the roll these
+ * tests exercise, with exactly the draws the old single step made. */
+function moveAndCommit(state, dir, rng, events = []) {
+  move(state, dir, rng, []);
+  return resolveHazard(state, true, rng, events);
+}
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
 // this file's own pins are canon-mechanic numbers written before the fit
@@ -258,7 +268,7 @@ test("move: a successful climb clears the feature and does not hurt the characte
   // pick(["rope","rock","wood"]) -> "rope" (arr[0]); feet = 10*(1+d(2)=1) = 20;
   // two 10ft rungs, each r = d(10) - climbBonus(0) <= rope.success(7).
   const rng = fakeRng([1, 5, 5]);
-  const events = move(state, "N", rng, []);
+  const events = moveAndCommit(state, "N", rng, []);
   assert.equal(state.c.wp, 55, "no fall damage on a clean climb");
   assert.equal(state.floor.g[4][5].feat, null, "the climb feature is consumed on success");
   assert.equal(state.floor.py, 4);
@@ -276,7 +286,7 @@ test("move: a failed climb hurts the character AND still crosses (one and done) 
   // feet = 10*(1+d(2)=1) = 20; first rung r = d(10)=9 > rope.success(7) -> fail;
   // fall check for g=0: d(20)=15 (>2, hurt rolls); fall damage d6 = 4.
   const rng = fakeRng([1, 9, 15, 4]);
-  const events = move(state, "N", rng, []);
+  const events = moveAndCommit(state, "N", rng, []);
   assert.equal(state.c.wp, 51, "took 4 wp of fall damage");
   assert.equal(state.floor.g[4][5].feat, null, "one and done: the feature is consumed even on a failed roll");
   assert.equal(state.floor.py, 4, "one and done: a failed-but-survived climb still crosses");
@@ -291,7 +301,7 @@ test("move: a fatal climb fall kills the character via die('fall')", () => {
   const state = fixedState({ c: { wp: 3 } });
   open(state.floor.g, 5, 4, { feat: "climb" });
   const rng = fakeRng([1, 9, 15, 4], { pick: (arr) => arr[0] }); // 4 wp of fall damage >= 3 wp
-  const events = move(state, "N", rng, []);
+  const events = moveAndCommit(state, "N", rng, []);
   assert.equal(state.dead, true);
   assert.equal(state.c.wp, 0, "die() zeroes wp regardless of how far the fall damage overshot");
   assert.ok(events.some((e) => e.type === "died" && e.cause === "fall"));
@@ -304,7 +314,7 @@ test("move: a failed gorge leap deals 2d6 fall damage AND still crosses (one and
   // LEAP_TABLE[d(4)-1=0] -> {ft:"3-4 feet", F:10, T:10, M:9}; Fighter needs <=10;
   // r = d(10) - leapBonus(0) = 10 draws to 11 (fail, > need 10); fall = d6+d6.
   const rng = fakeRng([1, 11, 3, 4]);
-  const events = move(state, "N", rng, []);
+  const events = moveAndCommit(state, "N", rng, []);
   assert.equal(state.c.wp, 48, "took 7 wp (3+4) of fall damage");
   assert.equal(state.floor.g[4][5].feat, null, "one and done: the feature is consumed even on a failed roll");
   assert.equal(state.floor.py, 4, "one and done: a failed-but-survived leap still crosses");
@@ -329,7 +339,7 @@ test("move: hazardScale is identity (1) at every depth by default; a synthetic H
     const state = fixedState({ floor: { depth: 5 } });
     open(state.floor.g, 5, 4, { feat: "gorge" });
     const rng = fakeRng([1, 11, 3, 4]);
-    const events = move(state, "N", rng, []);
+    const events = moveAndCommit(state, "N", rng, []);
     const expectedHurt = scaleHazard(7, difficultyCurve(5));
     assert.equal(expectedHurt, 4, "round(7 * 0.5) = 4 (measured via scaleHazard itself)");
     assert.equal(state.c.wp, 55 - expectedHurt);
@@ -344,7 +354,7 @@ test("move: a successful gorge leap clears the feature", () => {
   open(state.floor.g, 5, 4, { feat: "gorge" });
   // LEAP_TABLE[0]: Fighter needs <=10; r = d(10)=6 - leapBonus(0) = 6 <= 10 -> clear.
   const rng = fakeRng([1, 6]);
-  const events = move(state, "N", rng, []);
+  const events = moveAndCommit(state, "N", rng, []);
   assert.equal(state.c.wp, 55);
   assert.equal(state.floor.g[4][5].feat, null);
   assert.ok(events.some((e) => e.type === "leaptOver"));
@@ -367,7 +377,7 @@ test("move: a ready-but-unused Bracelet of Flight does NOT skip the climb roll �
   open(state.floor.g, 5, 4, { feat: "climb" });
   // Same sequence as the plain successful-climb test: pick -> "rope";
   // feet=10*(1+d(2)=1)=20; two 10ft rungs, each d(10)=5 <= rope.success(7).
-  const events = move(state, "N", fakeRng([1, 5, 5]), []);
+  const events = moveAndCommit(state, "N", fakeRng([1, 5, 5]), []);
   assert.ok(events.some((e) => e.type === "climbedOver"), "rolls the climb — the Bracelet is not flying while unused");
   assert.ok(!events.some((e) => e.type === "flownOver"));
   assert.equal(state.c.timers, undefined, "a ready-but-unused item starts no record");
@@ -378,7 +388,7 @@ test("move: a ready-but-unused Bracelet of Flight does NOT skip a gorge leap eit
   open(state.floor.g, 5, 4, { feat: "gorge" });
   // Same sequence as the plain successful-leap test: LEAP_TABLE[0], Fighter
   // needs <=10; d(10)=6 <= 10 -> clear.
-  const events = move(state, "N", fakeRng([1, 6]), []);
+  const events = moveAndCommit(state, "N", fakeRng([1, 6]), []);
   assert.ok(events.some((e) => e.type === "leaptOver"));
   assert.ok(!events.some((e) => e.type === "flownOver"));
 });
@@ -403,7 +413,7 @@ test("move: a worn+used (LIVE) Bracelet of Flight flies over a climb with zero r
 test("move: a ready Cloak of Flying with NO live record rolls the climb — the old auto-activation is removed", () => {
   const state = fixedState({ c: { items: [{ n: "Cloak of Flying", eff: { fly: 1 } }] } });
   open(state.floor.g, 5, 4, { feat: "climb" });
-  const events = move(state, "N", fakeRng([1, 5, 5]), []);
+  const events = moveAndCommit(state, "N", fakeRng([1, 5, 5]), []);
   assert.ok(events.some((e) => e.type === "climbedOver"));
   assert.ok(!events.some((e) => e.type === "flownOver"));
   assert.ok(!events.some((e) => e.type === "itemEffectStarted"));
@@ -447,7 +457,7 @@ test("move: while a Cloak of Flying is on cooldown, climb/gorge rolls resume nor
   open(state.floor.g, 5, 4, { feat: "climb" });
   // Same successful-climb roll sequence as the plain climb test above.
   const rng = fakeRng([1, 5, 5]);
-  const events = move(state, "N", rng, []);
+  const events = moveAndCommit(state, "N", rng, []);
   assert.ok(events.some((e) => e.type === "climbedOver"), "on cooldown, a real roll happens — not flownOver");
   assert.ok(!events.some((e) => e.type === "flownOver"));
   assert.equal(state.c.wp, 55, "the roll succeeded, so still no fall damage");
@@ -482,7 +492,7 @@ test("move: a Heights-phobic character fails a borderline climb an identical non
   open(nonPhobic.floor.g, 5, 4, { feat: "climb" });
   // pick(["rope","rock","wood"]) -> rope (success=7); feet=10*(1+d(2)=1)=20;
   // rung 1: r = d(10)=6 - climbBonus(0) + 0 = 6 <= 7 -> pass; rung 2: r=5<=7 -> pass.
-  const passEvents = move(nonPhobic, "N", fakeRng([1, 6, 5]), []);
+  const passEvents = moveAndCommit(nonPhobic, "N", fakeRng([1, 6, 5]), []);
   assert.equal(nonPhobic.c.wp, 55, "no penalty, no phobia -> clean climb");
   assert.ok(passEvents.some((e) => e.type === "climbedOver"));
   assert.ok(!passEvents.some((e) => e.type === "heightsFear"));
@@ -491,7 +501,7 @@ test("move: a Heights-phobic character fails a borderline climb an identical non
   open(phobic.floor.g, 5, 4, { feat: "climb" });
   // Identical roll (6), but +2 Heights penalty: r = 6 + 2 = 8 > 7 -> fails on
   // rung 1; fall check g=0: d(20)=15 (>2, hurt rolls); fall damage d6=4.
-  const failEvents = move(phobic, "N", fakeRng([1, 6, 15, 4]), []);
+  const failEvents = moveAndCommit(phobic, "N", fakeRng([1, 6, 15, 4]), []);
   assert.equal(phobic.c.wp, 51, "the SAME roll now fails and costs 4 fall wp");
   assert.ok(failEvents.some((e) => e.type === "fellClimbing" && e.hurt === 4));
   assert.ok(failEvents.some((e) => e.type === "heightsFear"));
@@ -502,7 +512,7 @@ test("move: Hardiness halves the Heights penalty enough to turn the same borderl
   open(state.floor.g, 5, 4, { feat: "climb" });
   // Halved penalty = round(2/2) = 1: rung 1 r = 6 + 1 = 7 <= 7 -> pass;
   // rung 2 r = 5 + 1 = 6 <= 7 -> pass.
-  const events = move(state, "N", fakeRng([1, 6, 5]), []);
+  const events = moveAndCommit(state, "N", fakeRng([1, 6, 5]), []);
   assert.equal(state.c.wp, 55, "Hardiness halves the penalty enough to clear the climb");
   assert.ok(events.some((e) => e.type === "climbedOver"));
   assert.ok(events.some((e) => e.type === "heightsFear"), "the fear still registers even though the roll passes");
@@ -512,7 +522,7 @@ test("move: a Bodies-of-water-phobic character fails a borderline gorge leap an 
   const nonPhobic = fixedState();
   open(nonPhobic.floor.g, 5, 4, { feat: "gorge" });
   // LEAP_TABLE[0]: Fighter needs <=10; r = d(10)=9 - leapBonus(0) + 0 = 9 <= 10 -> clear.
-  const passEvents = move(nonPhobic, "N", fakeRng([1, 9]), []);
+  const passEvents = moveAndCommit(nonPhobic, "N", fakeRng([1, 9]), []);
   assert.equal(nonPhobic.c.wp, 55);
   assert.ok(passEvents.some((e) => e.type === "leaptOver"));
   assert.ok(!passEvents.some((e) => e.type === "waterFear"));
@@ -520,7 +530,7 @@ test("move: a Bodies-of-water-phobic character fails a borderline gorge leap an 
   const phobic = fixedState({ c: { phobia: "Bodies of water", phobiaType: null } });
   open(phobic.floor.g, 5, 4, { feat: "gorge" });
   // Identical roll (9), but +2 water penalty: r = 9 + 2 = 11 > 10 -> fails; fall = d6+d6.
-  const failEvents = move(phobic, "N", fakeRng([1, 9, 3, 4]), []);
+  const failEvents = moveAndCommit(phobic, "N", fakeRng([1, 9, 3, 4]), []);
   assert.equal(phobic.c.wp, 48, "the SAME roll now fails and costs 7 (3+4) fall wp");
   assert.ok(failEvents.some((e) => e.type === "fellInGorge" && e.hurt === 7));
   assert.ok(failEvents.some((e) => e.type === "waterFear"));
@@ -530,7 +540,7 @@ test("move: Hardiness halves the Bodies-of-water penalty enough to turn the same
   const state = fixedState({ c: { phobia: "Bodies of water", phobiaType: null, skills: { Hardiness: 1 } } });
   open(state.floor.g, 5, 4, { feat: "gorge" });
   // Halved penalty = round(2/2) = 1: r = 9 + 1 = 10 <= 10 -> clear.
-  const events = move(state, "N", fakeRng([1, 9]), []);
+  const events = moveAndCommit(state, "N", fakeRng([1, 9]), []);
   assert.equal(state.c.wp, 55, "Hardiness halves the penalty enough to clear the leap");
   assert.ok(events.some((e) => e.type === "leaptOver"));
   assert.ok(events.some((e) => e.type === "waterFear"));

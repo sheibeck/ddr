@@ -42,7 +42,7 @@ import { setDialsForTuning, DIALS } from "../../engine/difficulty.js";
 import { resistRoll, controlResistRoll } from "../../engine/derived.js";
 import { controlResistFacesFor } from "../../engine/difficulty.js";
 import { springTrap, openChest } from "../../engine/encounters.js";
-import { move, newDay } from "../../engine/movement.js";
+import { move, newDay, resolveHazard } from "../../engine/movement.js";
 import { SPELLS } from "../../content/index.js";
 
 // ---------------------------------------------------------------------------
@@ -101,17 +101,21 @@ function lockOpened(state, rng) {
   return !!(rec && rec.opened);
 }
 
-/** climbedClean(state, rng) — every probed climb segment passed. */
+/** climbedClean(state, rng) — every probed climb segment passed. CLIMB-01
+ * (Phase 78): the step pauses on the pre-roll decision (no dice); the commit
+ * (resolveHazard, cross true) runs the roll. */
 function climbedClean(state, rng) {
   const events = [];
-  move(state, "E", rng, events);
+  move(state, "E", rng, []);
+  resolveHazard(state, true, rng, events);
   return events.some((e) => e.type === "climbedOver");
 }
 
-/** leapedClean(state, rng) — the leap roll passed. */
+/** leapedClean(state, rng) — the leap roll passed (CLIMB-01: after the commit, as above). */
 function leapedClean(state, rng) {
   const events = [];
-  move(state, "E", rng, events);
+  move(state, "E", rng, []);
+  resolveHazard(state, true, rng, events);
   return events.some((e) => e.type === "leaptOver");
 }
 

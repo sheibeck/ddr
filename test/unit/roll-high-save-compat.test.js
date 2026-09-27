@@ -20,6 +20,13 @@
 // of the serialized/hashed state, so a purely cosmetic content edit moves
 // the hash even though the potion is never drunk within this fixture's own
 // budget (`dead`/`depth`/`actions` are unchanged: false/4/300).
+//
+// CLIMB-01 (Phase 78, Plan 01, 2026-09-26): `expected.hash` re-recorded
+// again (ONLY — `dead`/`depth`/`actions` still false/4/300). Dispatched
+// index 233 is a recorded `move N` into a climbable wall the old engine
+// crossed in one step; a step toward a wall now pauses on the pre-roll
+// decision with no dice, and the recorded list holds no `resolveHazard`, so
+// the continuation plays out from the near side (see the fixture's `note`).
 
 import test from "node:test";
 import assert from "node:assert/strict";

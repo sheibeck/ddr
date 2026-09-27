@@ -4393,3 +4393,105 @@ rail corpus moved.
 | test/unit/scroll-fumble-resolve.test.js | (new) the weakened reader's blows | none | the reader's landed blow is half the unweakened twin's |
 | test/unit/scroll-fumble-resolve.test.js | (new) out of combat | none | a forced Weaken fumble read on the map fizzles and weakens nobody |
 | test/unit/control-at-depth-rules.test.js | EXEMPT and the non-vacuity site list | `scrollFumble.js#resolveHarmful` exempt and expected | removed from both |
+
+## Phase 78: HUD, dead state and climb decisions (CLIMB-01/02) — measured per plan
+
+Each plan records its own subsection below.
+
+### Plan 78-01 — the pre-roll wall/crevice decision (CLIMB-01/02): measured
+
+**The rule.** Every `engine/movement.js#move` toward a `climb` or `gorge`
+tile that is not crossed for free (no live flight, no live ether, not a
+`useTool` spend) sets `state.pendingHazard = { feat, dir, tool }` (`tool` is
+the one that would cross it: a ladder for a wall, a rope for a crevice) and
+pushes `hazardChoice { feat, dir, tool, carried }`, and does nothing else:
+no die, no step, no squares/day cadence, no reveal, no Heights fear. The
+new action `resolveHazard { cross }` (engine/actions.js validates a strict
+boolean) commits (`cross: true`, CLIMB IT / LEAP IT: re-enters `move` with
+`opts.commit`, so the roll runs with exactly the draws, in exactly the
+order, the old single step made) or turns back (`cross: false`: clears the
+record, pushes `turnedBack { feat, dir }`, costs nothing). `useTool` is
+unchanged. The Phase 39 tool-carrier-only pause and its `declined` retry
+flag are gone (greenfield: one path). A declared rules-timing change:
+`noteHeightsAttempt` now arms on the commit, not the step. The relaunch
+sanitizer (`engine/saveState.js#sanitizePendingHazard`) accepts the new
+record (the tool must match the feat) and tolerates an old save's `declined`
+flag. A declared canon divergence: the 1994 prototype rolled on the step.
+
+**The predictor.** Only a replay that steps toward a climb/gorge tile can
+move. At the plan base (`e8bd4808`), a temporary probe at the top of
+move's climb/gorge block (reverted before the first real edit) counted,
+per parity test file, while `node --test "test/parity/**/*.test.js"` ran:
+
+| Fixture | Scenarios | Climb/gorge steps at the base |
+|---|---|---|
+| action-script.chargen.json | 14 seeds | 0 |
+| action-script.movement.json | script | 0 |
+| action-script.combat.json | win, lose, lose-apprentice, lose-plain, flee, parley | 0 |
+| action-script.magic.json | cast-damage, heal, potion, scroll | 0 |
+| action-script.economy.json | script | 0 |
+| action-script.encounters.json | trap, chest, tablefour, faerie, affliction | 0 |
+| roll-high-invariant.test.js bot seeds 9001-9004 | 4 bot runs | 29 (all without the tool) |
+
+Predicted moved set: zero parity fixtures. The invariant test's bot seeds
+replay live (never pinned), so they move but assert only invariants.
+
+**The live-scan results, measured after the change.**
+
+1. `node --test "test/parity/**/*.test.js"`: **64 tests, 64 pass, 0 fail**
+   (roll-high-invariant included, its bot seeds now pausing and committing).
+2. `git diff --stat e8bd4808 -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness`:
+   empty. No harness reconcile was needed.
+3. `git hash-object test/parity/prototype-master.js.txt`: `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node tools/fixture-inventory.mjs` replays to the same roster at the base
+   and after the change (diffed), and `node --test test/parity/fixture-inventory.test.js`
+   passes.
+
+**The bot pins (causation, per label).** A scratch trace compared every
+step's full state hash (`acts` and `pendingHazard` aside) between a
+plan-base copy of the engine and the changed engine, with the bot's pause
+steps dropped:
+
+| Surface | Uncarried pauses | Result |
+|---|---|---|
+| `solo-1` (seed 101) | 4 | re-pinned: the same game step for step, cut 4 game actions short by the 400-action budget |
+| `solo-2` (seed 202) | 3 | re-pinned: same game, cut 3 short |
+| `solo-magicuser-sorcerer` (seed 404) | 7 | re-pinned: same game, cut 7 short |
+| `party-1` (seed 505) | 5 | re-pinned: same game, cut 5 short |
+| `solo-thief-pilfer` (seed 303) | 3 | re-pinned: identical to bot step 137, then the acts-keyed `scrollRead` derived stream (engine/magic.js) fumbles a read that deciphered before |
+| `party-fighter-knight`, `deep-8`, `deep-14` | 0 | byte-identical |
+| pre-switch save (`roll-high-save-compat`) | 4 (indices 233, 234, 237, 240) | `expected.hash` re-recorded ONLY; `dead`/`depth`/`actions` unchanged (false/4/300). The recorded list holds no `resolveHazard`, so its `move N` at 233 now pauses at the wall |
+| bot-tactics seeds (identity dials) | per run | every assertion holds; no seed swapped. Routes identical except Knight/Human seed 5 (a scroll read, acts-keyed) |
+
+Every divergence beyond a budget cut traces to an acts-keyed derived stream
+(`scrollRead`, the Pilfer fumble); each pause adds one validated action to
+`state.acts` (Phase 65's counter), which is bookkeeping, not time.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.** No holder's `divergence.phase` names 78.
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+#### Declared test moves
+
+| File | Test | Old assertion | New assertion |
+|---|---|---|---|
+| test/unit/roll-high-state-pins.test.js | solo-1, solo-2, solo-thief-pilfer, solo-magicuser-sorcerer, party-1 | the Phase 73-75.3 hashes | the re-pinned hashes (traced above; `actions`/`dead`/`depth` unchanged) |
+| test/unit/fixtures/roll-high/pre-switch-save.json | `expected.hash` | `43b71a38…` | `70f1de84…` |
+| test/unit/tools.test.js | the hazard pre-roll block | tool carriers pause once; a second move declines and rolls; a hero without the tool rolls at once | every hero pauses (`carried` true/false); a repeat move re-pauses; `resolveHazard` rolls; the record has no `declined` |
+| test/unit/phobia-triggers.test.js | Heights and the pause | the second (declined) move fires Heights | only the commit fires it; TURN BACK arms nothing (new) |
+| test/unit/save-resume.test.js | pendingHazard keep/drop | a `declined` boolean required | `{ feat, dir, tool }`, tool must match the feat; an old `declined` record still loads and commits (new) |
+| test/unit/bot-buy-policy.test.js | the pending-hazard handler | a declined record falls through to exploring | without the tool the bot commits (`resolveHazard`, cross true) |
+| test/unit/movement.test.js, clarity-cause-lines, gear-axes, one-and-done-lines, rollDirection-checks | every climb/leap roll test | one `move` rolls | `move` then `resolveHazard` (a local `moveAndCommit` helper), same dice |
+| test/unit/combat-gear-lock.test.js | payload table covers ACTION_TYPES | no `resolveHazard` | `resolveHazard` `{cross: true}` / `{cross: false}` |
+
+**The new standing guard.** `test/unit/hazard-decision.test.js` replays
+the 41 scenarios of `test/unit/fixtures/hazard-commit/golden.json` (captured
+on the plan base: Fighter, Thief and Magic User at a wall and a crevice,
+Heights- and water-phobic heroes, Hardiness, Plate, a party, fatal falls;
+12 succeed, 24 fail and cross, 5 die) through `move` then `resolveHazard`
+and asserts the same state hash, rngState and events as the old single
+step.

@@ -29,7 +29,7 @@ import {
 } from "../../engine/items.js";
 import { hasTool, itemEffectActive, inDark } from "../../engine/derived.js";
 import { openStore, buyFrom, sellPriceFor, storeTier } from "../../engine/economy.js";
-import { move, useTool, teleport, descend } from "../../engine/movement.js";
+import { move, useTool, teleport, descend, resolveHazard } from "../../engine/movement.js";
 import { fallDark } from "../../engine/encounters.js";
 import { validateSave, rehydrate } from "../../engine/saveState.js";
 
@@ -406,7 +406,7 @@ test("newRun/validateSave/rehydrate: pendingHazard starts null; one inconsistent
   const { px, py } = state.floor;
   assert.notEqual(state.floor.g[py][px + 1]?.feat, "climb", "precondition: the E neighbour is not a climb");
 
-  const tampered = { ...structuredClone(state), pendingHazard: { feat: "climb", dir: "E", tool: "ladder", declined: false } };
+  const tampered = { ...structuredClone(state), pendingHazard: { feat: "climb", dir: "E", tool: "ladder" } };
   const validated = validateSave(structuredClone(tampered));
   assert.equal(validated.ok, true);
   assert.equal(validated.value.pendingHazard, null);
@@ -415,21 +415,28 @@ test("newRun/validateSave/rehydrate: pendingHazard starts null; one inconsistent
   assert.equal(rehydrated.pendingHazard, null);
 });
 
+// CLIMB-01 (Phase 78): both records above/below use the new `{ feat, dir,
+// tool }` shape (the retired retry flag is gone).
 test("SAV-06 (Phase 76): a pendingHazard matching its neighbour cell survives validateSave and rehydrate", () => {
   const state = newRun(1);
   const { px, py } = state.floor;
   const dir = state.floor.g[py][px + 1] ? "E" : "W";
   const nx = dir === "E" ? px + 1 : px - 1;
   state.floor.g[py][nx].feat = "climb";
-  state.pendingHazard = { feat: "climb", dir, tool: "ladder", declined: true };
+  state.pendingHazard = { feat: "climb", dir, tool: "ladder" };
 
   const validated = validateSave(JSON.stringify(state));
   assert.equal(validated.ok, true);
-  assert.deepStrictEqual(validated.value.pendingHazard, { feat: "climb", dir, tool: "ladder", declined: true });
-  assert.deepStrictEqual(rehydrate(structuredClone(state)).pendingHazard, { feat: "climb", dir, tool: "ladder", declined: true });
+  assert.deepStrictEqual(validated.value.pendingHazard, { feat: "climb", dir, tool: "ladder" });
+  assert.deepStrictEqual(rehydrate(structuredClone(state)).pendingHazard, { feat: "climb", dir, tool: "ladder" });
 });
 
-// --- the hazard pre-roll pending decision (ladder / rope) -------------------
+// --- the hazard pre-roll pending decision (every hero, tool or not) ---------
+//
+// CLIMB-01 (Phase 78): the Phase 39 tool-carrier-only pause is now the ONE
+// pause for every hero at a wall or crevice. The record is `{ feat, dir,
+// tool }` (no retry flag), `hazardChoice` carries `carried`, a repeat move
+// just pauses again, and only resolveHazard (cross: true) rolls.
 
 test("move: a Ladder-carrying hero at a wall gets ONE pause — hazardChoice, no move, no roll, pendingHazard stashed", () => {
   const state = fixedState({ c: { items: [toolItem("ladder")] } });
@@ -437,27 +444,25 @@ test("move: a Ladder-carrying hero at a wall gets ONE pause — hazardChoice, no
   const events = move(state, "E", fakeRng([]), []);
   assert.deepStrictEqual(
     events.filter((e) => e.type === "hazardChoice"),
-    [{ type: "hazardChoice", feat: "climb", dir: "E", tool: "ladder" }],
+    [{ type: "hazardChoice", feat: "climb", dir: "E", tool: "ladder", carried: true }],
   );
   assert.equal(state.floor.px, 5, "position unchanged");
   assert.equal(state.steps, 0);
-  assert.deepStrictEqual(state.pendingHazard, { feat: "climb", dir: "E", tool: "ladder", declined: false });
+  assert.deepStrictEqual(state.pendingHazard, { feat: "climb", dir: "E", tool: "ladder" });
 });
 
-test("move: a second move(E) at the pending tile declines — no new hazardChoice, declined flips true, the roll runs", () => {
+test("CLIMB-01: a second move(E) at the pending tile just pauses again; resolveHazard(cross: true) runs the roll and the ladder is kept", () => {
   const state = fixedState({ c: { items: [toolItem("ladder")] } });
   open(state.floor.g, 6, 5, { feat: "climb" });
   move(state, "E", fakeRng([]), []); // the pending card
-  // Capture the pending record's OWN reference before the second move() —
-  // a SUCCESSFUL roll's normal step-tail reassigns state.pendingHazard to
-  // null (a genuine step resolves the decision), but never mutates the
-  // object itself, so `pend.declined` still reads true either way.
-  const pend = state.pendingHazard;
+  const again = move(state, "E", fakeRng([]), []); // no draw: fakeRng([]) throws on any
+  assert.deepStrictEqual(again.map((e) => e.type), ["hazardChoice"]);
   // pick "rope"; feet=10*(1+d(2)=1)=20; two rungs, both succeed (<=7).
-  const events = move(state, "E", fakeRng([1, 5, 5]), []);
+  const events = resolveHazard(state, true, fakeRng([1, 5, 5]), []);
   assert.equal(events.some((e) => e.type === "hazardChoice"), false);
-  assert.equal(pend.declined, true);
-  assert.ok(events.some((e) => e.type === "climbedOver" || e.type === "fellClimbing"));
+  assert.ok(events.some((e) => e.type === "climbedOver"));
+  assert.equal(state.c.items.some((it) => it.kind === "tool" && it.tool === "ladder"), true, "CLIMB IT keeps the ladder");
+  assert.equal(state.pendingHazard, null);
 });
 
 // DELIBERATE RULES CHANGE (Phase 54, 2026-09-21, USER RULING D, one-and-done):
@@ -467,15 +472,15 @@ test("move: a second move(E) at the pending tile declines — no new hazardChoic
 // resolved decision) always runs, whether the roll passed or failed. The old
 // "wall is still there to retry" / "a third move(E) rolls again" premise is
 // gone: there is no third roll, because there is no wall left.
-test("move: after a declined fellClimbing, the hero still crosses (one and done) — feat cleared, pendingHazard cleared, draggedOver fires", () => {
+test("move: after a committed fellClimbing, the hero still crosses (one and done) — feat cleared, pendingHazard cleared, draggedOver fires", () => {
   const state = fixedState({ c: { items: [toolItem("ladder")] } });
   open(state.floor.g, 6, 5, { feat: "climb" });
   move(state, "E", fakeRng([]), []); // the pending card
   // feet=20; first rung fails (9>7); fall check d20=15 (>2, hurt rolls); d6=4.
-  const failEvents = move(state, "E", fakeRng([1, 9, 15, 4]), []);
+  const failEvents = resolveHazard(state, true, fakeRng([1, 9, 15, 4]), []);
   assert.ok(failEvents.some((e) => e.type === "fellClimbing"));
   assert.ok(failEvents.some((e) => e.type === "draggedOver" && e.feat === "climb"), "a survived failure still crosses");
-  assert.equal(state.pendingHazard, null, "the genuine step tail resolves the decision — one and done, no retry to track");
+  assert.equal(state.pendingHazard, null, "the crossing resolves the decision — one and done, no retry to track");
   assert.equal(state.floor.g[5][6].feat, null, "one and done: the feature is consumed even on a failed roll");
   assert.equal(state.floor.px, 6, "one and done: the hero crossed despite the failed roll");
 });
@@ -484,7 +489,7 @@ test("move: moving to a free tile instead clears pendingHazard to null", () => {
   const state = fixedState({ c: { items: [toolItem("ladder")] } });
   open(state.floor.g, 6, 5, { feat: "climb" });
   open(state.floor.g, 5, 4); // a free tile to the north
-  move(state, "E", fakeRng([]), []); // the pending card (declines nothing yet)
+  move(state, "E", fakeRng([]), []); // the pending card
   assert.ok(state.pendingHazard);
   move(state, "N", fakeRng([]), []);
   assert.equal(state.pendingHazard, null);
@@ -496,36 +501,41 @@ test("move: a Rope-carrying hero at a gorge gets the same pending decision (feat
   const events = move(state, "E", fakeRng([]), []);
   assert.deepStrictEqual(
     events.filter((e) => e.type === "hazardChoice"),
-    [{ type: "hazardChoice", feat: "gorge", dir: "E", tool: "rope" }],
+    [{ type: "hazardChoice", feat: "gorge", dir: "E", tool: "rope", carried: true }],
   );
-  assert.deepStrictEqual(state.pendingHazard, { feat: "gorge", dir: "E", tool: "rope", declined: false });
+  assert.deepStrictEqual(state.pendingHazard, { feat: "gorge", dir: "E", tool: "rope" });
 });
 
-test("move: a hero carrying only a Ladder at a gorge gets NO pending state and rolls immediately (and vice versa)", () => {
+test("CLIMB-01: a hero carrying only the WRONG tool still pauses (carried: false for the matching one), and the commit rolls", () => {
   const ladderState = fixedState({ c: { items: [toolItem("ladder")] } });
   open(ladderState.floor.g, 6, 5, { feat: "gorge" });
+  const pause = move(ladderState, "E", fakeRng([]), []);
+  assert.deepStrictEqual(pause, [{ type: "hazardChoice", feat: "gorge", dir: "E", tool: "rope", carried: false }]);
   // LEAP_TABLE[d(4)-1=0]; Fighter need 10; r=d(10)=11 fails; fall d6+d6.
-  const events = move(ladderState, "E", fakeRng([1, 11, 3, 4]), []);
-  assert.equal(events.some((e) => e.type === "hazardChoice"), false);
+  const events = resolveHazard(ladderState, true, fakeRng([1, 11, 3, 4]), []);
   assert.equal(ladderState.pendingHazard, null);
   assert.ok(events.some((e) => e.type === "fellInGorge"));
 
   const ropeState = fixedState({ c: { items: [toolItem("rope")] } });
   open(ropeState.floor.g, 6, 5, { feat: "climb" });
-  const climbEvents = move(ropeState, "E", fakeRng([1, 9, 15, 4]), []);
-  assert.equal(climbEvents.some((e) => e.type === "hazardChoice"), false);
+  const climbPause = move(ropeState, "E", fakeRng([]), []);
+  assert.deepStrictEqual(climbPause, [{ type: "hazardChoice", feat: "climb", dir: "E", tool: "ladder", carried: false }]);
+  const climbEvents = resolveHazard(ropeState, true, fakeRng([1, 9, 15, 4]), []);
   assert.equal(ropeState.pendingHazard, null);
   assert.ok(climbEvents.some((e) => e.type === "fellClimbing"));
 });
 
-test("move: a hero with no tool sees byte-identical movement (no hazardChoice, no pendingHazard, rng consumed as before)", () => {
+test("CLIMB-01: a hero with no tool pauses too, and the commit draws exactly what the old single step drew", () => {
   const state = fixedState();
   open(state.floor.g, 6, 5, { feat: "climb" });
-  const rng = fakeRng([1, 5, 5]);
-  const events = move(state, "E", rng, []);
-  assert.equal(events.some((e) => e.type === "hazardChoice"), false);
+  const pause = move(state, "E", fakeRng([]), []);
+  assert.deepStrictEqual(pause, [{ type: "hazardChoice", feat: "climb", dir: "E", tool: "ladder", carried: false }]);
+  assert.deepStrictEqual(state.pendingHazard, { feat: "climb", dir: "E", tool: "ladder" });
+  const rng = fakeRng([1, 5, 5]); // throws if the commit draws one more or one fewer is left unread below
+  const events = resolveHazard(state, true, rng, []);
   assert.equal(state.pendingHazard, null);
   assert.ok(events.some((e) => e.type === "climbedOver"));
+  assert.throws(() => rng.d(10), /exhausted/, "the commit drew all three and nothing more");
 });
 
 // --- useTool ------------------------------------------------------------

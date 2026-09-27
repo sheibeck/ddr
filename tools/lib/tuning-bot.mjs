@@ -29,7 +29,7 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
-import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS, wieldedStaff } from "../../engine/derived.js";
+import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS, wieldedStaff, hasTool } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
 import { isReady } from "../../engine/effects.js";
@@ -1161,16 +1161,16 @@ export function decideAction(state, policyRng, ctx) {
   // fair-play policy accepts exactly one companion, never stacks a party).
   if (state.pendingJoiner) return { type: "resolveJoiner", accept: (state.party?.length ?? 0) === 0 };
   if (state.pendingFind) return ctx.findFull ? { type: "leaveFind" } : { type: "takeFind" };
-  // Phase 39 (GEAR-05): a pending hazard the bot is already carrying the
-  // matching tool for is answered in one dispatch (spend it) rather than
-  // declining and re-rolling — a pending-STATE handler, not a timing tactic
-  // (WHEN to pop an item is Phase 42's bot-tactics scope; this only answers
-  // a decision the engine itself already parked). A DECLINED pending record
-  // (the retry card) falls through — the bot has already said no once, so
-  // the normal movement/action chain below re-issues the same `move` and the
-  // roll runs.
-  if (state.pendingHazard && !state.pendingHazard.declined) {
-    return { type: "useTool", tool: state.pendingHazard.tool, dir: state.pendingHazard.dir };
+  // Phase 78 (CLIMB-01, CONTEXT: "The bot ... always committing, so the
+  // difficulty curve doesn't move"): every step toward a wall or crevice now
+  // parks a pre-roll decision, and the bot answers it on the very next
+  // action — spend the matching tool when it carries one (Phase 39's
+  // behaviour), otherwise commit (CLIMB IT / LEAP IT). It never turns back.
+  // A pending-STATE handler, not a timing tactic: it only answers a decision
+  // the engine itself parked. `hasTool` is read live, never stored.
+  if (state.pendingHazard) {
+    const { tool, dir } = state.pendingHazard;
+    return hasTool(state.c, tool) ? { type: "useTool", tool, dir } : { type: "resolveHazard", cross: true };
   }
   if (state.store) return chooseStorePurchase(state, ctx) ?? { type: "leaveStore" };
 
@@ -1399,7 +1399,16 @@ export function tallyUsage(tallies, action, events, before, after) {
  */
 export function observe(ctx, events, stateAfter = null) {
   let floorChangedThisStep = false;
+  // Phase 78 (CLIMB-01): a hero WITHOUT the tool used to cross a wall or
+  // crevice in one step; now that step pauses (a `hazardChoice` with
+  // `carried` false) and the commit crosses. The pause is not counted
+  // toward ctx.floorActions — its commit counts, as the old single step did
+  // — so the exploreBudget switch, and with it the bot's route and its
+  // policy-rng draws, land on the same step as before. A carried pause keeps
+  // counting, exactly as it did since Phase 39.
+  let uncountedPause = false;
   for (const e of events) {
+    if (e.type === "hazardChoice" && e.carried === false) uncountedPause = true;
     if (e.type === "floorChanged") floorChangedThisStep = true;
     else if (e.type === "bagFull") ctx.findFull = true;
     else if (e.type === "findTaken" || e.type === "findLeft") ctx.findFull = false;
@@ -1422,7 +1431,7 @@ export function observe(ctx, events, stateAfter = null) {
   if (floorChangedThisStep) {
     ctx.floorActions = 0;
     ctx.itemBlocked.clear(); // Phase 42: a torch/staff/cloak refusal doesn't survive a floor change either
-  } else ctx.floorActions++;
+  } else if (!uncountedPause) ctx.floorActions++;
 }
 
 /**

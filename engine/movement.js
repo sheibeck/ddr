@@ -67,7 +67,7 @@ const waterPenalty = (c) =>
  * formula for a climb segment on a CLIMB_TABLE wall `kind` ("rope" | "rock"
  * | "wood"): the table's success faces minus the Heights penalty and armour
  * bulk. `move`'s climb roll and `hazardOdds` (the pre-roll card's odds) both
- * read it, so the card can never disagree with the die. Pure, no rng.
+ * read it, so the card can never disagree with the die. Pure; draws nothing.
  */
 export function climbFacesFor(c, kind) {
   return CLIMB_TABLE[kind].success - heightsPenalty(c) - armorBulk(c);
@@ -77,14 +77,14 @@ export function climbFacesFor(c, kind) {
  * leapFacesFor(c, row) — Phase 78 (CLIMB-01): the ONE winning-faces formula
  * for a leap across a LEAP_TABLE `row`: the hero's class column (F/T/M)
  * minus the Bodies-of-water penalty and armour bulk. Shared by `move`'s leap
- * roll and `hazardOdds`. Pure, no rng.
+ * roll and `hazardOdds`. Pure; draws nothing.
  */
 export function leapFacesFor(c, row) {
   const need = c.cls === "Fighter" ? row.F : c.cls === "Thief" ? row.T : row.M;
   return need - waterPenalty(c) - armorBulk(c);
 }
 
-/** LEAP_FALL — a failed leap's hurt, `rng.d(6) + rng.d(6)` in `move` below. */
+/** LEAP_FALL — a failed leap's hurt: the two d6s `move`'s leap draws below. */
 const LEAP_FALL = Object.freeze({ n: 2, sides: 6, bonus: 0 });
 
 /**
