@@ -133,8 +133,20 @@ const OLD_MARKS_LEGEND = [
   { key: "encounter", name: "ENCOUNTER", desc: "Something gets rolled for you the moment you touch it." },
   { key: "teleport", name: "TELEPORT", desc: "Thrown a d20 of squares somewhere you did not choose." },
   { key: "onewaydoor", name: "ONE-WAY DOOR", desc: "Go where the arrow points. There is no coming back." },
-  { key: "trap", name: "TRAP", desc: "A d6 out of you, before you knew it was there." },
-  { key: "chest", name: "LOCKED BOX", desc: "1–5 on a d10 opens it. The rest costs you a pick." },
+  // VOX-05 (79-10): the trap and chest rows are rewritten (previously "A d6
+  // out of you, before you knew it was there." and "1–5 on a d10 opens it.
+  // The rest costs you a pick."); their numbers are pinned to the engine at
+  // the end of this file.
+  {
+    key: "trap",
+    name: "TRAP",
+    desc: "Step on it and a d20 decides: 16–20 dodges it (13–20 for an Acrobat). Fail and it goes off, anything from a d6 of darts to a spike pit's d10×5. Going around is free.",
+  },
+  {
+    key: "chest",
+    name: "LOCKED BOX",
+    desc: "With lockpicks or the Locks skill, 6–10 on a d10 opens it (more faces with practice or wits); bare hands need 13–20 on a d20. Fail and it stays shut for good.",
+  },
   {
     key: "crevice",
     name: "CREVICE",

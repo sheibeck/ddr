@@ -108,13 +108,30 @@ export const MARK_GLYPHS = Object.freeze({
  * explains Acute Hearing's ripple. It is not a feature, so it has no
  * MARK_GLYPHS entry and legendFor never returns it; `swatch: "ripple"` tells
  * the MARKS sheet to draw the ripple itself instead of a PNG icon.
+ *
+ * VOX-05 / ROLL-04 (Phase 79, plan 79-10): the `trap` and `chest` rows are
+ * rewritten. The trap row said "A d6 out of you, before you knew it was
+ * there", but the mark is only drawn on a square you can already see, the
+ * dodge is a d20 roll (engine/encounters.js#springTrap) and the table runs
+ * from a d6 to a spike pit's d10×5. The chest row read the retired roll-under
+ * "1–5 on a d10" and said a failure "costs you a pick", which it never does:
+ * openChest stops at chestLocked and the square is already cleared. Both
+ * ranges are pinned to the engine in test/unit/mapMarks.test.js.
  */
 export const MARKS_LEGEND = Object.freeze([
   Object.freeze({ key: "encounter", name: "ENCOUNTER", desc: "Something gets rolled for you the moment you touch it." }),
   Object.freeze({ key: "teleport", name: "TELEPORT", desc: "Thrown a d20 of squares somewhere you did not choose." }),
   Object.freeze({ key: "onewaydoor", name: "ONE-WAY DOOR", desc: "Go where the arrow points. There is no coming back." }),
-  Object.freeze({ key: "trap", name: "TRAP", desc: "A d6 out of you, before you knew it was there." }),
-  Object.freeze({ key: "chest", name: "LOCKED BOX", desc: "1–5 on a d10 opens it. The rest costs you a pick." }),
+  Object.freeze({
+    key: "trap",
+    name: "TRAP",
+    desc: "Step on it and a d20 decides: 16–20 dodges it (13–20 for an Acrobat). Fail and it goes off, anything from a d6 of darts to a spike pit's d10×5. Going around is free.",
+  }),
+  Object.freeze({
+    key: "chest",
+    name: "LOCKED BOX",
+    desc: "With lockpicks or the Locks skill, 6–10 on a d10 opens it (more faces with practice or wits); bare hands need 13–20 on a d20. Fail and it stays shut for good.",
+  }),
   Object.freeze({
     key: "crevice",
     name: "CREVICE",
