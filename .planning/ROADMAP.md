@@ -449,13 +449,13 @@ Plans:
 
   8. With a full bag, the find card keeps the found item and TAKE / LEAVE in view while the drop list scrolls inside the card.
 
-**Plans**: 0/9 plans executed
+**Plans**: 2/9 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 78-01-PLAN.md — Move the wall/crevice decision into the engine (CLIMB-01/02): every hazard step pauses with no dice drawn, `resolveHazard` commits (draw-identical to the old step) or turns back at no cost, one faces formula feeds the roll and `hazardOdds`, the bot commits, moved pins declared, readouts before and after (wave 1)
-- [ ] 78-02-PLAN.md — Settings behave (HUD-04/05): the text scale moves to the root so every `--mw-font-*` token and every screen's text (combat included) follows S/M/L, pinned by a token walker; a volume slider moves only on a sideways drag or a track tap (wave 1)
+- [x] 78-01-PLAN.md — Move the wall/crevice decision into the engine (CLIMB-01/02): every hazard step pauses with no dice drawn, `resolveHazard` commits (draw-identical to the old step) or turns back at no cost, one faces formula feeds the roll and `hazardOdds`, the bot commits, moved pins declared, readouts before and after (wave 1)
+- [x] 78-02-PLAN.md — Settings behave (HUD-04/05): the text scale moves to the root so every `--mw-font-*` token and every screen's text (combat included) follows S/M/L, pinned by a token walker; a volume slider moves only on a sideways drag or a track tap (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -654,7 +654,7 @@ Plans:
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
-| 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
+| 78. HUD, Dead State & Climb Decisions | v2.1 | 2/9 | In Progress|  |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
