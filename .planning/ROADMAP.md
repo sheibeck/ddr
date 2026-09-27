@@ -449,7 +449,7 @@ Plans:
 
   8. With a full bag, the find card keeps the found item and TAKE / LEAVE in view while the drop list scrolls inside the card.
 
-**Plans**: 2/9 plans executed
+**Plans**: 5/9 plans executed
 
 Plans:
 **Wave 1**
@@ -459,9 +459,9 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 78-03-PLAN.md — The pre-roll decision card on the rail (CLIMB-01/02): CLIMB IT / LEAP IT with honest odds, USE LADDER / USE ROPE when carried, TURN BACK; the map locked while it is up; the post-fall retry card retired; one-and-done MARKS copy (wave 2)
-- [ ] 78-04-PLAN.md — Declare and guard the pre-roll decision: the parity exposure guard, the relaunch probe on `resolveHazard`, and the Phase 78 records in FIXTURE-INVENTORY, DIFFICULTY-RETUNE, TERRAIN and the roll ledger (wave 2)
-- [ ] 78-05-PLAN.md — The HUD tells the truth (HUD-01): band 1 reads "Race Sub-class · Lvl N"; a regained spell charge and a new day's book refill get rail lines with the count (wave 2)
+- [x] 78-03-PLAN.md — The pre-roll decision card on the rail (CLIMB-01/02): CLIMB IT / LEAP IT with honest odds, USE LADDER / USE ROPE when carried, TURN BACK; the map locked while it is up; the post-fall retry card retired; one-and-done MARKS copy (wave 2)
+- [x] 78-04-PLAN.md — Declare and guard the pre-roll decision: the parity exposure guard, the relaunch probe on `resolveHazard`, and the Phase 78 records in FIXTURE-INVENTORY, DIFFICULTY-RETUNE, TERRAIN and the roll ledger (wave 2)
+- [x] 78-05-PLAN.md — The HUD tells the truth (HUD-01): band 1 reads "Race Sub-class · Lvl N"; a regained spell charge and a new day's book refill get rail lines with the count (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -654,7 +654,7 @@ Plans:
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
-| 78. HUD, Dead State & Climb Decisions | v2.1 | 2/9 | In Progress|  |
+| 78. HUD, Dead State & Climb Decisions | v2.1 | 5/9 | In Progress|  |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
