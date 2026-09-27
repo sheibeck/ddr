@@ -173,10 +173,12 @@ test("(b) CSS: .mw-rail's own values, the five tone rules, typography, action-bu
     );
   }
   assert.match(HTML, /\.mw-rail\[data-idle="1"\]\{background:#161209\}/);
-  assert.match(HTML, /\.mw-rail-title\{[^}]*font-size:8px/);
-  assert.match(HTML, /\.mw-rail-line\{[^}]*font-size:14\.5px/);
-  assert.match(HTML, /\.mw-rail-roll\{[^}]*font-size:13\.5px/);
-  assert.match(HTML, /\.mw-rail-peek\{[^}]*font-size:6px;color:#5f5849/);
+  // Phase 78 (HUD-04): the rail's text scales with the text size — 8px,
+  // 14.5px, 13.5px and 6px at M became their N/16 rem times the scale.
+  assert.match(HTML, /\.mw-rail-title\{[^}]*font-size:calc\(0\.5rem \* var\(--mw-text-scale\)\)/);
+  assert.match(HTML, /\.mw-rail-line\{[^}]*font-size:calc\(0\.90625rem \* var\(--mw-text-scale\)\)/);
+  assert.match(HTML, /\.mw-rail-roll\{[^}]*font-size:calc\(0\.84375rem \* var\(--mw-text-scale\)\)/);
+  assert.match(HTML, /\.mw-rail-peek\{[^}]*font-size:calc\(0\.375rem \* var\(--mw-text-scale\)\);color:#5f5849/);
   assert.match(HTML, /\.mw-rail-btn\{[^}]*box-shadow:0 4px 0 #6b5c3c/);
   assert.match(HTML, /\.mw-rail-btn\.secondary\{background:#241d12;color:#c9bda0;border:2px solid #4a4032/);
   assert.equal((HTML.match(/@keyframes mwpulse/g) || []).length, 1);

@@ -138,3 +138,110 @@ test("HUD-04 root write:applySettings sets --mw-text-scale on document.documentE
     "applySettings writes the effective scale on the root",
   );
 });
+
+// ─── Task 2: every screen's text scales, the combat screen included ────────
+
+// The only fixed sizes left: glyphs and icons sized to a fixed box (not
+// running text), and the dev-only readouts that never ship. Each entry is
+// the exact selector and value, with its reason.
+const ALLOWLIST = [
+  { selector: ".mw-major-icon", value: "54px", reason: "the major card's icon glyph (or its PNG), sized to the card's fixed icon box" },
+  { selector: ".mw-rail-icon", value: "20px", reason: "the rail's icon glyph (or its PNG), sized to the rail's fixed icon slot" },
+  { selector: ".mw-hud-menu-face", value: "18px", reason: "the ☰ glyph inside band 2's fixed 34px button face" },
+  { selector: ".mw-acct-initials", value: "10px", reason: "the account monogram inside the fixed 34px avatar disc it replaces the ☰ in" },
+  { selector: ".mw-acct-glyph", value: "15px", reason: "the '?' avatar glyph inside the title chip's fixed disc" },
+  { selector: '.mw-hud-menu-glyph[data-glyph="marks"]', value: "13px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
+  { selector: '.mw-hud-menu-glyph[data-glyph="centre"]', value: "14px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
+  { selector: '.mw-hud-menu-glyph[data-glyph="camp"]', value: "16px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
+  { selector: '.mw-hud-menu-glyph[data-glyph="settings"]', value: "15px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
+  { selector: "#mw-dev-perf", value: "10px", reason: "the dev-only frame-timing readout, never shown in a release build" },
+];
+// The `font:` shorthand's one fixed size (a dev-only chip).
+const SHORTHAND_ALLOWLIST = [
+  { selector: ".mw-dev-chip", reason: "the dev-only DEV chip, never shown in a release build" },
+];
+
+// The combat screen: the foe cards, YOUR LOT and its chips, the action area
+// and its submenus, the round strip, the over-panels, the encounter panel
+// and THE FIGHT SO FAR sheet. None of it may be allowlisted.
+const COMBAT_SELECTOR = /(^|[\s,>+~])(\.cb-|#cb-|\.enc-|#enc-|\.mw-fl-|#mw-fightlog)/;
+
+function fontSizeDeclarations() {
+  const out = [];
+  for (const rule of RULES) {
+    for (const d of rule.body.matchAll(/(?:^|;|\s)font-size\s*:\s*([^;]+)/g)) {
+      out.push({ selector: rule.selector, value: d[1].trim() });
+    }
+  }
+  return out;
+}
+
+function isScaled(value) {
+  const v = value.replace(/\s*!important$/, "");
+  if (/^var\(--mw-font-[a-z0-9-]+\)$/.test(v)) return true;
+  // A scaled expression: multiplies by the scale, and every length in it is
+  // rem (or a viewport unit inside a clamp) — never px, never em.
+  return /var\(--mw-text-scale\)/.test(v) && !/\d(px|em)\b/.test(v);
+}
+
+test("HUD-04 every font-size: each is a token, a scaled rem, or an allowlisted glyph size with a reason", () => {
+  const decls = fontSizeDeclarations();
+  assert.ok(decls.length > 200, `the walker found the shell's font sizes (${decls.length})`);
+  const used = new Set();
+  for (const d of decls) {
+    if (isScaled(d.value)) continue;
+    const entry = ALLOWLIST.find((a) => a.selector === d.selector && a.value === d.value);
+    assert.ok(entry, `${d.selector} { font-size:${d.value} } must scale with var(--mw-text-scale) or be allowlisted`);
+    assert.ok(entry.reason.length > 10, `${d.selector} carries a reason`);
+    used.add(entry.selector);
+  }
+  // No stale allowlist rows.
+  for (const a of ALLOWLIST) assert.ok(used.has(a.selector), `allowlist row ${a.selector} still matches a rule`);
+});
+
+test("HUD-04 font shorthand: no `font:` declaration carries a fixed size outside the allowlist", () => {
+  for (const rule of RULES) {
+    for (const d of rule.body.matchAll(/(?:^|;|\s)font\s*:\s*([^;]+)/g)) {
+      if (!/\d(px|em)\b/.test(d[1])) continue;
+      assert.ok(
+        SHORTHAND_ALLOWLIST.some((a) => a.selector === rule.selector),
+        `${rule.selector} { font:${d[1]} } carries a fixed size`,
+      );
+    }
+  }
+});
+
+test("HUD-04 combat: no combat-screen selector is allowlisted, and every combat font-size scales", () => {
+  for (const a of ALLOWLIST) assert.doesNotMatch(a.selector, COMBAT_SELECTOR, `${a.selector} is a combat selector`);
+  for (const a of SHORTHAND_ALLOWLIST) assert.doesNotMatch(a.selector, COMBAT_SELECTOR);
+  const combat = fontSizeDeclarations().filter((d) => COMBAT_SELECTOR.test(d.selector));
+  assert.ok(combat.length >= 40, `the combat screen's sizes were found (${combat.length})`);
+  for (const d of combat) assert.ok(isScaled(d.value), `${d.selector} { font-size:${d.value} } scales`);
+});
+
+test("HUD-04 combat spot pins: a submenu row label, an action label and a foe name read their scaled rem (exact at M)", () => {
+  const size = (selector) => {
+    const rule = RULES.find((r) => r.selector === selector);
+    assert.ok(rule, `${selector} rule found`);
+    return rule.body.match(/font-size:([^;]+)/)[1].trim();
+  };
+  assert.equal(size(".cb-row-label"), "calc(0.46875rem * var(--mw-text-scale))", "7.5px at M");
+  assert.equal(size(".cb-btn-label"), "calc(0.46875rem * var(--mw-text-scale))", "7.5px at M");
+  assert.equal(size(".cb-foe-name"), "calc(0.5rem * var(--mw-text-scale))", "8px at M");
+});
+
+test("HUD-04 adjacency: every scaled rem equals its old px at M (1rem is 16px) and grows strictly S < M < L", () => {
+  for (const d of fontSizeDeclarations()) {
+    const m = d.value.match(/^calc\(([\d.]+)rem \* var\(--mw-text-scale\)\)/);
+    if (!m) continue;
+    const px = Number(m[1]) * 16;
+    // Every converted size is a whole or half pixel at M.
+    assert.equal(px * 2, Math.round(px * 2), `${d.selector}: ${m[1]}rem is ${px}px at M`);
+    const [s, mid, l] = [0.85, 1, 1.25].map((k) => px * k);
+    assert.ok(s < mid && mid < l, `${d.selector}: S < M < L`);
+  }
+});
+
+test("HUD-04 encoding: no font size anywhere is written in em", () => {
+  for (const d of fontSizeDeclarations()) assert.doesNotMatch(d.value, /\d(\.\d+)?em\b/, `${d.selector}: ${d.value}`);
+});
