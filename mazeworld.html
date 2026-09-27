@@ -120,7 +120,12 @@
 
   /* UX-08 text scaling — ONE root multiplier every rem-based typography
      token below multiplies by; src/browser/settings.js#effectiveTextScale
-     sets this on #app at boot (S=0.85 / M=1.0 / L=1.25, OS-scale-clamped). */
+     (S=0.85 / M=1.0 / L=1.25, OS-scale-clamped) is written by the module
+     script's applySettings. Phase 78 (HUD-04): it is written HERE, on the
+     root element, not on #app — a custom property's var() resolves where
+     the property is declared, so a scale set only on #app left every token
+     below computed against this default 1. Declare no --mw-font-* token
+     anywhere but this :root rule (test/unit/text-scale.test.js walks them). */
   --mw-text-scale:1;
   --mw-font-micro:calc(0.5rem * var(--mw-text-scale));     /* Press Start 2P — HUD tags, tab labels, section headers */
   --mw-font-body:calc(0.9375rem * var(--mw-text-scale));   /* Courier Prime Bold — running/flavor text */
@@ -131,9 +136,17 @@
      — 6.5px Press Start 2P tags, 16px bold Courier Prime numbers — scoped to
      just the top HUD (.mw-hud-item/.mw-hud-item b, .mw-hud-wp-text) rather
      than repurposing the more general --mw-font-micro/--mw-font-data pair
-     above. Supersedes the Device-review round 4 19px HUD-number size. */
-  --mw-font-hud-label:calc(0.40625rem * var(--mw-text-scale)); /* Press Start 2P — mock's 6.5px HUD tags */
-  --mw-font-hud-num:calc(1rem * var(--mw-text-scale));         /* Courier Prime Bold — mock's 16px HUD numbers */
+     above. Supersedes the Device-review round 4 19px HUD-number size.
+     Phase 78 (HUD-04): these two tokens are band 2's alone (the counters),
+     and band 2 cannot hold its four counters plus the ☰ on a 412px screen
+     at the full L scale — measured headless at 412px, the counters want
+     366.6px at 1.25 but have 334px (412 minus the band's 28px padding, its
+     10px gap and the ☰'s 40px footprint), so RATIONS clipped. So band 2
+     caps its own scale at 1.1 (counters 326.5px, 7.5px to spare) while
+     every other token takes the full 1.25; S 0.85 < M 1 < L 1.1 stays
+     strictly increasing. */
+  --mw-font-hud-label:calc(0.40625rem * min(var(--mw-text-scale), 1.1)); /* Press Start 2P — mock's 6.5px HUD tags */
+  --mw-font-hud-num:calc(1rem * min(var(--mw-text-scale), 1.1));         /* Courier Prime Bold — mock's 16px HUD numbers */
   /* Phase 57 (LAYOUT-05), Plan 05: the 2026-09-22 mock's 13px band-1
      Courier Prime Bold size — the name and the race/class/level line share
      this token (design/Mazeworld Map.dc.html's own literal font-size:13px). */
@@ -6698,7 +6711,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // (ddr_splash.png) already contains the game name + tagline (user directive),
   // so there is no #mw-title-name heading to populate here anymore.
 
-  // UX-08 key_link: the shell's #app root sets --mw-text-scale from
+  // UX-08 key_link: the root element (Phase 78 HUD-04: document
+  // .documentElement, where the tokens are declared) sets --mw-text-scale from
   // settings.js's textScaleForSize(readSettings().textSize) (via
   // effectiveTextScale, which also clamps any OS font-scale input) so every
   // --mw-font-* rem token defined at :root scales together. No OS-scale
@@ -6746,9 +6760,12 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 59 (D-15/D-16): Set dressing gates both drawing (draw() reads
     // dressingArt.enabled() on every paint) and the lazy image load.
     dressingArt.setEnabled(settings.dressing === true);
-    const appEl = document.getElementById("app");
-    if (!appEl) return;
-    appEl.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
+    // Phase 78 (HUD-04): the scale lives on the ROOT element, where :root
+    // declares every --mw-font-* token, so each token resolves against the
+    // live scale on every screen — the title, the roller and the body-level
+    // sheets included, not just #app's subtree. Nothing reads the scale off
+    // #app, so the old #app write is gone.
+    document.documentElement.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
   }
 
   // 04-DR9: highlights the currently-selected option in each Settings-sheet
