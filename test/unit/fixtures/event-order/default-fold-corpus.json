@@ -565,12 +565,12 @@
    ],
    "lines": [
     {
-     "text": "Orc dozes off (2).",
+     "text": "Orc dozes off, 2 rounds.",
      "tone": "magic",
      "priority": 1
     },
     {
-     "text": "0 freeze in place.",
+     "text": "The stun puts nobody to sleep.",
      "tone": "magic",
      "priority": 1
     },
@@ -582,14 +582,14 @@
    ],
    "linesIdx": [
     {
-     "text": "Orc dozes off (2).",
+     "text": "Orc dozes off, 2 rounds.",
      "tone": "magic",
      "priority": 1,
      "idx": 1,
      "type": "dozed"
     },
     {
-     "text": "0 freeze in place.",
+     "text": "The stun puts nobody to sleep.",
      "tone": "magic",
      "priority": 1,
      "idx": 4,
