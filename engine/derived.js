@@ -47,6 +47,12 @@ export const AFRAID_ROUNDS = 2;
 export const AFRAID_TO_HIT_PENALTY = 3;
 export const AFRAID_DMG_DIV = 2;
 
+// Phase 19 D-10: while dazed (a foe's daze on the hero, `c.foeEffect.kind ===
+// "dazed"`), toHit takes this many winning faces away (floor 1). CMBUI-13
+// (Phase 77, plan 77-07): named so the foeDebuffed payload and the strike
+// `mods` state the engine's own number instead of copy typing it by hand.
+export const DAZED_TO_HIT_PENALTY = 2;
+
 // TUNING KNOBS — Size (Phase 75.2, RULES-11, user ruling 2026-09-25, "Hero
 // Size Matters"): a character's size is now a real stat — the total step is
 // race base (content/races.js's SIZE_STEP_OF, keyed by the row's own `size`
@@ -1499,7 +1505,7 @@ export function toHit(state) {
   h = Math.max(1, h);
   // Phase 19 D-10: dazed — you need 2 lower to hit, never below 1; the
   // weakened kind is applied at playerStrike's damage line in combat.js, not here.
-  if (c.foeEffect && c.foeEffect.kind === "dazed" && c.foeEffect.rounds > 0) h = Math.max(1, h - 2);
+  if (c.foeEffect && c.foeEffect.kind === "dazed" && c.foeEffect.rounds > 0) h = Math.max(1, h - DAZED_TO_HIT_PENALTY);
   // DARK-01 (Phase 76, user ruling 2026-09-25 "combat too"): the dark cap
   // reads the one darkness waiver (darkLimited: Night Vision, a live Amulet,
   // a lit torch); Sense Presence stays a fight-only relief beside it.
@@ -1514,6 +1520,46 @@ export function toHit(state) {
   // members and flee are unaffected — none of them call toHit(state).
   if (state.combat && state.combat.heroBlind) h = 1;
   return h;
+}
+
+/**
+ * toHitBreakdown(state) — CMBUI-13 (Phase 77, plan 77-07, "Dazed honesty",
+ * user 2026-09-25: "i was dazed in combat, but it seems like it doesn't do
+ * anything"): a narration-only breakdown of toHit's own arithmetic, the
+ * foeToHitBreakdown precedent applied to the hero's strike. It reproduces
+ * every toHit step in the SAME order and records a `{ name, delta }` entry
+ * for each live CONDITION step that actually changed the running value
+ * (delta = after − before, so an override records its real change):
+ *   - "inspired" (+combat.inspired, before the floor),
+ *   - "dazed"    (−DAZED_TO_HIT_PENALTY, floor 1),
+ *   - "dark"     (the dark cap: darkLimited and no Sense Presence),
+ *   - "blind"    (RULES-10 hero Blind: exactly one face).
+ * The sheet terms (class/race/sub, gear, weapon, the floor) are not
+ * conditions and are never listed. Each term is itemised as applied, even
+ * when a later term overrides it (hero Blind after a daze lists both).
+ *
+ * Returns `{ need, mods }`; `need` MUST always equal `toHit(state)`
+ * (test/unit/condition-roll-mods.test.js proves it by matrix). toHit's own
+ * body stays the source of truth and never delegates here. Pure: no rng, no
+ * mutation. engine/combat.js#playerStrike prepends `mods` to its strike
+ * event's modifier list (payload only; no roll, face or draw changes).
+ */
+export function toHitBreakdown(state) {
+  const c = state.c;
+  const mods = [];
+  const step = (name, before, after) => {
+    if (after !== before) mods.push({ name, delta: after - before });
+    return after;
+  };
+  let h = classNeed(c);
+  if (state.combat && state.combat.inspired) h = step("inspired", h, h + state.combat.inspired);
+  h += eff(c, "toHit");
+  h += weaponNeedMod(c);
+  h = Math.max(1, h);
+  if (c.foeEffect && c.foeEffect.kind === "dazed" && c.foeEffect.rounds > 0) h = step("dazed", h, Math.max(1, h - DAZED_TO_HIT_PENALTY));
+  if (darkLimited(state) && !c.senses) h = step("dark", h, Math.min(h, 2));
+  if (state.combat && state.combat.heroBlind) h = step("blind", h, 1);
+  return { need: h, mods };
 }
 
 /**

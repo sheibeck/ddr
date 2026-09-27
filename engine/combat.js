@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -695,6 +695,13 @@ export function playerStrike(state, rng, events = []) {
     }
   }
 
+  // CMBUI-13 (Phase 77, plan 77-07, "Dazed honesty"): the live condition
+  // terms toHit applied (inspired, dazed, the dark cap, hero Blind), named
+  // once per strike from the same state toHit reads. Payload only: the
+  // faces below still come from toHit itself, so no roll, face or draw
+  // changes. The frenzy second swing (toHit − 1) reads the same entries.
+  const conditionMods = toHitBreakdown(state).mods;
+
   for (let a = 0; a < attacks && t.alive; a++) {
     const dieN = strikeDie(c);
     // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and
@@ -754,7 +761,9 @@ export function playerStrike(state, rng, events = []) {
     const facesBeforeAfraid = faces;
     faces = afraidNeed(state, faces);
     const afraidMods = faces !== facesBeforeAfraid ? [{ name: "afraid", delta: faces - facesBeforeAfraid }] : [];
-    const mods = [...mirrorMods, ...abilityMods, ...afraidMods];
+    // CMBUI-13 (Phase 77): the condition entries come first, in toHit's
+    // own order, then the per-target Mirror Self, Overhead Blow and Afraid.
+    const mods = [...conditionMods, ...mirrorMods, ...abilityMods, ...afraidMods];
     // Phase 38 (ABIL-02, strike_descriptor_spec): `subAuto` is the ORIGINAL
     // sub-class auto-hit (Cat Burglar/Ninja opener, which also claims
     // C.opened); `auto` additionally honours a descriptor's autoHit without
