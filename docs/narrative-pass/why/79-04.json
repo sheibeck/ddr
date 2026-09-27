@@ -1,0 +1,443 @@
+[
+  {
+    "key": "oracle:allySpellHit",
+    "surface": "oracle",
+    "trigger": "allySpellHit with no spell name on the event",
+    "before": "Your ally's The spell hits the foe for 0 hp.",
+    "after": "Your ally's spell hits the foe for 0 hp.",
+    "reasons": ["hygiene", "natural"],
+    "why": "The fallback name was capitalised mid-sentence, so a nameless cast read \"Your ally's The spell\"."
+  },
+  {
+    "key": "oracle:backstabDenied",
+    "surface": "oracle",
+    "trigger": "backstabDenied — a Thief in heavy armour opens a fight or uses Silent Step",
+    "before": "Heavy armor gives you away.",
+    "after": "Heavy armor gives you away: no sneak attack.",
+    "reasons": ["fact"],
+    "why": "It said why but not what it cost, so it now names the lost sneak attack."
+  },
+  {
+    "key": "rail:backstabDenied",
+    "surface": "rail",
+    "trigger": "backstabDenied — a Thief in heavy armour opens a fight or uses Silent Step",
+    "before": "Heavy armour gave you away.",
+    "after": "Heavy armour gave you away: no sneak attack.",
+    "reasons": ["fact"],
+    "why": "The rail twin of the Oracle line, which now names the lost sneak attack."
+  },
+  {
+    "key": "oracle:battleRoarRaised",
+    "surface": "oracle",
+    "trigger": "battleRoarRaised — the hero or a Joiner uses Battle Roar",
+    "before": "Loud enough. For two rounds they all need two better to hit anyone on your side.",
+    "after": "For two rounds every foe has two fewer faces to hit anyone on your side. Loud enough.",
+    "reasons": ["roll-under", "joke"],
+    "why": "\"Need two better\" was roll-under phrasing for a die that scales with the foe's level, so it now speaks in faces, and the joke moves after the effect."
+  },
+  {
+    "key": "rail:battleRoarRaised",
+    "surface": "rail",
+    "trigger": "battleRoarRaised — the hero or a Joiner uses Battle Roar",
+    "before": "Loud enough. Two rounds of it.",
+    "after": "Foes have two fewer faces to hit your side, for two rounds.",
+    "reasons": ["fact"],
+    "why": "The rail line never said what the roar does; it now states the two faces it takes off every foe."
+  },
+  {
+    "key": "oracle:beastsSoothed",
+    "surface": "oracle",
+    "trigger": "beastsSoothed { count 2 } — a Bard's Soothe the Savage clears a Beasts encounter",
+    "before": "2 calm right down.",
+    "after": "2 beasts calm right down and wander off.",
+    "reasons": ["fact"],
+    "why": "A bare number did not say who calmed down or that they leave the fight, which the engine does."
+  },
+  {
+    "key": "rail:beastsSoothed",
+    "surface": "rail",
+    "trigger": "beastsSoothed { count 2 } — a Bard's Soothe the Savage clears a Beasts encounter",
+    "before": "2 stand down.",
+    "after": "2 beasts stand down and leave.",
+    "reasons": ["fact"],
+    "why": "The rail twin now names the beasts and that they leave."
+  },
+  {
+    "key": "oracle:braceHeld",
+    "surface": "oracle",
+    "trigger": "braceHeld — a braced hero or Joiner takes a landed blow",
+    "before": "Braced — it's blow lands half as hard (−0).",
+    "after": "Braced — the blow lands half as hard.",
+    "reasons": ["hygiene", "accurate"],
+    "why": "The hp the brace saved printed as a signed cost \"(−3)\"; a real event now reads \", 3 hp lighter\", and a nameless foe reads \"the blow\", not \"it's blow\"."
+  },
+  {
+    "key": "rail:braceHeld",
+    "surface": "rail",
+    "trigger": "braceHeld — a braced hero or Joiner takes a landed blow",
+    "before": "Braced — it's blow lands half as hard (−0).",
+    "after": "Braced — the blow lands half as hard.",
+    "reasons": ["hygiene", "accurate"],
+    "why": "The rail twin of the Oracle fix: the saving reads \", N hp lighter\", never a signed cost."
+  },
+  {
+    "key": "oracle:braced",
+    "surface": "oracle",
+    "trigger": "braced — the hero or a Joiner uses Brace",
+    "before": "Braced. The next one lands on your terms.",
+    "after": "Braced. The next blow that lands on you does half damage.",
+    "reasons": ["fact"],
+    "why": "The line never said what Brace does; it now states the halved next blow, and a Joiner's reads \"them\"."
+  },
+  {
+    "key": "rail:braced",
+    "surface": "rail",
+    "trigger": "braced — the hero or a Joiner uses Brace",
+    "before": "Braced. The next one lands on your terms.",
+    "after": "Braced. The next blow that lands on you does half damage.",
+    "reasons": ["fact"],
+    "why": "The rail twin of the Oracle line, which now states the halved next blow."
+  },
+  {
+    "key": "oracle:controlHeld",
+    "surface": "oracle",
+    "trigger": "controlHeld { rounds 1 } — a control past the knee holds for a few rounds",
+    "before": "Viper is held fast — 1 rounds, not forever.",
+    "after": "Viper is held fast — 1 round, not forever.",
+    "reasons": ["hygiene"],
+    "why": "A one-round hold printed \"1 rounds\"."
+  },
+  {
+    "key": "rail:controlHeld",
+    "surface": "rail",
+    "trigger": "controlHeld { rounds 1 } — a control past the knee holds for a few rounds",
+    "before": "Viper held 1 rounds.",
+    "after": "Viper held 1 round.",
+    "reasons": ["hygiene"],
+    "why": "A one-round hold printed \"1 rounds\"."
+  },
+  {
+    "key": "oracle:cutpursed",
+    "surface": "oracle",
+    "trigger": "cutpursed { member } — a Joiner's Cutpurse lifts coin off a foe",
+    "before": "the companion: You lift 8 wilmst off Viper mid-fight. It has other problems.",
+    "after": "the companion lifts 8 wilmst off Viper mid-fight, into your purse. It has other problems.",
+    "reasons": ["accurate", "fact"],
+    "why": "A Joiner's cutpurse read \"You lift\", but the Joiner took the coin and it goes into the hero's purse."
+  },
+  {
+    "key": "rail:cutpursed",
+    "surface": "rail",
+    "trigger": "cutpursed { member } — a Joiner's Cutpurse lifts coin off a foe",
+    "before": "the companion: You lift 8 wilmst off Viper.",
+    "after": "the companion lifts 8 wilmst off Viper for you.",
+    "reasons": ["accurate", "fact"],
+    "why": "The rail twin now credits the Joiner who lifted the coin."
+  },
+  {
+    "key": "oracle:damageHalved",
+    "surface": "oracle",
+    "trigger": "damageHalved with no foe name on the event",
+    "before": "The pendant drinks half of that's blow before it reaches you.",
+    "after": "The pendant drinks half of the blow before it reaches you.",
+    "reasons": ["hygiene", "natural"],
+    "why": "A nameless foe read \"that's blow\"."
+  },
+  {
+    "key": "rail:damageHalved",
+    "surface": "rail",
+    "trigger": "damageHalved with no foe name on the event",
+    "before": "The pendant halves that's blow.",
+    "after": "The pendant halves the blow.",
+    "reasons": ["hygiene", "natural"],
+    "why": "A nameless foe read \"that's blow\"."
+  },
+  {
+    "key": "oracle:dirtyTrickLanded",
+    "surface": "oracle",
+    "trigger": "dirtyTrickLanded — the hero or a Joiner blinds a foe with Dirty Trick",
+    "before": "Sand, thumb, elbow. Viper is blinded for 3 rounds.",
+    "after": "Viper is blinded for 3 rounds. Sand, thumb, elbow.",
+    "reasons": ["joke", "hygiene"],
+    "why": "The joke now follows the fact, a nameless foe starts its sentence with a capital, and one round reads \"1 round\"."
+  },
+  {
+    "key": "oracle:encounterStarted",
+    "surface": "oracle",
+    "trigger": "encounterStarted with no foe names on the event",
+    "before": "An encounter. something.",
+    "after": "An encounter. Something.",
+    "reasons": ["hygiene"],
+    "why": "The nameless fallback started its sentence in lower case."
+  },
+  {
+    "key": "oracle:foeBubbleRebound",
+    "surface": "oracle",
+    "trigger": "foeBubbleRebound with no foe name on the event",
+    "before": "It's bubble throws it back at you.",
+    "after": "Its bubble throws it back at you.",
+    "reasons": ["hygiene"],
+    "why": "A nameless foe read \"It's bubble\"."
+  },
+  {
+    "key": "rail:foeBubbleRebound",
+    "surface": "rail",
+    "trigger": "foeBubbleRebound with no foe name on the event",
+    "before": "It's bubble throws it back at you.",
+    "after": "Its bubble throws it back at you.",
+    "reasons": ["hygiene"],
+    "why": "A nameless foe read \"It's bubble\"."
+  },
+  {
+    "key": "oracle:foeMirrorFaded",
+    "surface": "oracle",
+    "trigger": "foeMirrorFaded with no foe name on the event",
+    "before": "It's mirror fades.",
+    "after": "Its mirror fades.",
+    "reasons": ["hygiene"],
+    "why": "A nameless foe read \"It's mirror\"."
+  },
+  {
+    "key": "rail:foeMirrorFaded",
+    "surface": "rail",
+    "trigger": "foeMirrorFaded with no foe name on the event",
+    "before": "It's mirror fades.",
+    "after": "Its mirror fades.",
+    "reasons": ["hygiene"],
+    "why": "A nameless foe read \"It's mirror\"."
+  },
+  {
+    "key": "oracle:foeWardFaded",
+    "surface": "oracle",
+    "trigger": "foeWardFaded with no foe name on the event",
+    "before": "It's ward fades.",
+    "after": "Its ward fades.",
+    "reasons": ["hygiene"],
+    "why": "A nameless foe read \"It's ward\"."
+  },
+  {
+    "key": "rail:foeWardFaded",
+    "surface": "rail",
+    "trigger": "foeWardFaded with no foe name on the event",
+    "before": "It's ward fades.",
+    "after": "Its ward fades.",
+    "reasons": ["hygiene"],
+    "why": "A nameless foe read \"It's ward\"."
+  },
+  {
+    "key": "oracle:frenzy",
+    "surface": "oracle",
+    "trigger": "frenzy — a Fridgian's frenzy roll lands",
+    "before": "Something in your blood takes over. Frenzy.",
+    "after": "Frenzy: something in your blood takes over, and you get a second wild swing.",
+    "reasons": ["fact"],
+    "why": "The Oracle line never said what the frenzy gives you; it now names the second swing, as the rail line already did."
+  },
+  {
+    "key": "oracle:fumbleHeavyBlow",
+    "surface": "oracle",
+    "trigger": "fumbleHeavyBlow — a fumbled Freeze, Petrify, Death or Noxious Vapor lands as a heavy blow",
+    "before": "Heal tried to be the end of you. Instead: a hard knock, −8 hp. You are shaken.",
+    "after": "Heal backfires as a heavy blow: −8 hp. It meant to be the end of you; you are merely shaken.",
+    "reasons": ["fact", "joke", "accurate"],
+    "why": "The fumble's flavor key printed as the outcome (\"Instead: death\", \"Instead: stone\"), so the line now states the heavy blow and its cost first, and jokes after."
+  },
+  {
+    "key": "rail:fumbleHeavyBlow",
+    "surface": "rail",
+    "trigger": "fumbleHeavyBlow — a fumbled Freeze, Petrify, Death or Noxious Vapor lands as a heavy blow",
+    "before": "Heal: a hard knock instead (−8 hp). Shaken.",
+    "after": "Heal backfires: a heavy blow (−8 hp). Shaken.",
+    "reasons": ["accurate"],
+    "why": "The rail twin printed the flavor key as the outcome (\"stone instead\"); it now says heavy blow."
+  },
+  {
+    "key": "oracle:lullabyRolled",
+    "surface": "oracle",
+    "trigger": "lullabyRolled { n 2 } — a Bard's Lullaby rolls how many foes it can reach",
+    "before": "2 nod off.",
+    "after": "The lullaby reaches up to 2 of them. Any not above your level nod off.",
+    "reasons": ["accurate", "fact"],
+    "why": "The d6 is how many foes the song can reach, not how many slept: higher-level foes and resisted sleeps stay awake."
+  },
+  {
+    "key": "rail:lullabyRolled",
+    "surface": "rail",
+    "trigger": "lullabyRolled { n 2 } — a Bard's Lullaby rolls how many foes it can reach",
+    "before": "2 nod off.",
+    "after": "Lullaby: up to 2 nod off.",
+    "reasons": ["accurate"],
+    "why": "The roll is a ceiling, not a count of foes that slept."
+  },
+  {
+    "key": "oracle:marked",
+    "surface": "oracle",
+    "trigger": "marked — the hero or a Joiner Marks a foe",
+    "before": "Studied. Every blow on Viper lands +2.",
+    "after": "Studied. Every blow on Viper does +2 damage from here on.",
+    "reasons": ["fact"],
+    "why": "\"Lands +2\" did not say +2 what; Mark adds 2 damage to every blow for the rest of the fight."
+  },
+  {
+    "key": "rail:marked",
+    "surface": "rail",
+    "trigger": "marked — the hero or a Joiner Marks a foe",
+    "before": "Every blow on Viper lands +2.",
+    "after": "Every blow on Viper does +2 damage.",
+    "reasons": ["fact"],
+    "why": "The rail twin now says the +2 is damage."
+  },
+  {
+    "key": "oracle:phobiaAfraid",
+    "surface": "oracle",
+    "trigger": "phobiaAfraid — a phobia makes the hero Afraid as a fight opens",
+    "before": "Your phobia has you shaking. Harder to hit and softer blows for 2 rounds. You can still swing — you just will not enjoy it.",
+    "after": "Your phobia has you shaking. For 2 rounds your swings land less often and hit softer. You can still swing — you just will not enjoy it.",
+    "reasons": ["accurate", "natural"],
+    "why": "\"Harder to hit\" read as if foes found you harder to hit; the penalty is on your own swings."
+  },
+  {
+    "key": "oracle:poisonedEdgeApplied",
+    "surface": "oracle",
+    "trigger": "poisonedEdgeApplied — the hero or a Joiner uses Poisoned Edge",
+    "before": "The blade weeps into Viper. 3 rounds of that.",
+    "after": "Viper is poisoned for 3 rounds. The blade weeps into it.",
+    "reasons": ["fact", "joke"],
+    "why": "The image stood in for the fact; the line now says the foe is poisoned, then keeps the image."
+  },
+  {
+    "key": "oracle:pommelStruck",
+    "surface": "oracle",
+    "trigger": "pommelStruck — the hero or a Joiner uses Pommel Strike",
+    "before": "The pommel finds Viper's temple. It will need a moment.",
+    "after": "The pommel finds Viper's temple. Viper loses its next turn, and will need a moment.",
+    "reasons": ["fact", "hygiene"],
+    "why": "The line never said the foe loses its next turn, and a nameless foe read \"it's temple\"."
+  },
+  {
+    "key": "rail:pommelStruck",
+    "surface": "rail",
+    "trigger": "pommelStruck — the hero or a Joiner uses Pommel Strike",
+    "before": "The pommel finds Viper's temple.",
+    "after": "The pommel finds Viper's temple: it loses its next turn.",
+    "reasons": ["fact", "hygiene"],
+    "why": "The rail twin now states the lost turn, and a nameless foe reads \"its temple\"."
+  },
+  {
+    "key": "oracle:riposteReady",
+    "surface": "oracle",
+    "trigger": "riposteReady — the hero or a Joiner uses Riposte",
+    "before": "Every miss is an invitation.",
+    "after": "For one round every foe that misses you takes your weapon's damage. Every miss is an invitation.",
+    "reasons": ["fact", "joke"],
+    "why": "The joke was the whole line; it now states the counter first, and a Joiner's reads \"them\"."
+  },
+  {
+    "key": "rail:riposteReady",
+    "surface": "rail",
+    "trigger": "riposteReady — the hero or a Joiner uses Riposte",
+    "before": "Every miss is an invitation.",
+    "after": "For one round every foe that misses you takes your weapon's damage.",
+    "reasons": ["fact"],
+    "why": "The rail line now states what Riposte does."
+  },
+  {
+    "key": "oracle:sidestepped",
+    "surface": "oracle",
+    "trigger": "sidestepped — the hero or a Joiner uses Sidestep",
+    "before": "Not where the blade is. Two rounds of that.",
+    "after": "For two rounds every foe has two fewer faces to hit you. Not where the blade is.",
+    "reasons": ["fact", "joke"],
+    "why": "The line never said what Sidestep does; it now states the two faces, and a Joiner's covers \"them\", not you."
+  },
+  {
+    "key": "rail:sidestepped",
+    "surface": "rail",
+    "trigger": "sidestepped — the hero or a Joiner uses Sidestep",
+    "before": "Not where the blade is. Two rounds of that.",
+    "after": "Foes have two fewer faces to hit you, for two rounds.",
+    "reasons": ["fact"],
+    "why": "The rail twin now states the effect."
+  },
+  {
+    "key": "oracle:smokeThrown",
+    "surface": "oracle",
+    "trigger": "smokeThrown — the hero or a Joiner uses Smoke",
+    "before": "Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.",
+    "after": "For two rounds a foe finds you only on its die's top face (the top two if you insulted them), and a run just works. Gone, as far as anyone can tell.",
+    "reasons": ["roll-under", "accurate"],
+    "why": "\"A natural 1\" was roll-under for a die that scales with the foe's level, so it now speaks in faces; the hero's own Smoke also names its free flee, and a Joiner's covers only the Joiner."
+  },
+  {
+    "key": "rail:smokeThrown",
+    "surface": "rail",
+    "trigger": "smokeThrown — the hero or a Joiner uses Smoke",
+    "before": "Gone. They need a natural 1 to find you (a 1–2 if you insulted them).",
+    "after": "Gone. Foes find you only on their die's top face (top two if insulted) for two rounds, and a run just works.",
+    "reasons": ["roll-under", "accurate"],
+    "why": "The rail twin of the Oracle fix: faces, not a roll-under face count."
+  },
+  {
+    "key": "oracle:spGained",
+    "surface": "oracle",
+    "trigger": "spGained { reason parley } — experience for talking your way out",
+    "before": "Talking your way out is worth 8 8 experience points.",
+    "after": "Talking your way out is worth 8 experience points.",
+    "reasons": ["hygiene"],
+    "why": "The count printed twice, once in a roll span and once in the phrase."
+  },
+  {
+    "key": "oracle:struck",
+    "surface": "oracle",
+    "trigger": "struck { critical, critBy ninja } — a Ninja's crit on the die's top two faces",
+    "before": "7 vs 12–20 (weapon +1, insulted −2). A Ninja's two. Critical! You hit Viper for 6 hp.",
+    "after": "7 vs 12–20 (weapon +1, insulted −2). A Ninja's top two faces. Critical! You hit Viper for 6 hp.",
+    "reasons": ["natural", "fact"],
+    "why": "\"A Ninja's two\" did not say two of what; a Ninja crits on the die's top two faces."
+  },
+  {
+    "key": "oracle:taunted",
+    "surface": "oracle",
+    "trigger": "taunted { member } — a Joiner uses Taunt",
+    "before": "the companion: Every foe looks at you. Armour doubles. Good luck.",
+    "after": "the companion: Every foe swings at them this round. Good luck to them.",
+    "reasons": ["accurate"],
+    "why": "A Joiner's Taunt pulls every swing onto the Joiner, and the armour doubling is the hero's own, so the Joiner's line no longer claims either for you."
+  },
+  {
+    "key": "rail:taunted",
+    "surface": "rail",
+    "trigger": "taunted { member } — a Joiner uses Taunt",
+    "before": "the companion: Every foe looks at you. Armour doubles.",
+    "after": "the companion: Every foe swings at them this round.",
+    "reasons": ["accurate"],
+    "why": "The rail twin of the Oracle fix for a Joiner's Taunt."
+  },
+  {
+    "key": "oracle:thunderRolled",
+    "surface": "oracle",
+    "trigger": "thunderRolled { n 2, r 2 } — a Bard's Cry of Thunder",
+    "before": "Thunder rolls; 2 freeze for 2 rounds.",
+    "after": "Thunder rolls: up to 2 of them freeze for 2 rounds. Any above your level shrug it off.",
+    "reasons": ["accurate"],
+    "why": "The d12 is how many foes the song can reach, not how many froze; higher-level foes are untouched."
+  },
+  {
+    "key": "rail:thunderRolled",
+    "surface": "rail",
+    "trigger": "thunderRolled { n 2, r 2 } — a Bard's Cry of Thunder",
+    "before": "Thunder rolls — 2 freeze (2).",
+    "after": "Thunder rolls — up to 2 freeze, 2 rounds.",
+    "reasons": ["accurate", "natural"],
+    "why": "The count is a ceiling, and the bare \"(2)\" now says it is rounds."
+  },
+  {
+    "key": "raw:engine/combat.js#SONGS",
+    "surface": "oracle",
+    "trigger": "the Bard song table's level-5 note (engine/combat.js#SONGS; no surface prints it today)",
+    "before": "equals reduced to 1 wp",
+    "after": "foes your level or lower drop to 1 hp",
+    "reasons": ["naming", "accurate"],
+    "why": "It said \"wp\" and \"equals\", but the song drops every foe at or below the hero's level to 1 hp."
+  }
+]

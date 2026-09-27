@@ -4773,6 +4773,17 @@ rng pick lands on a changed CAUSE_TEXT or EPITAPHS line. The parity
 comparables never reach a death on those buckets, so no parity fixture
 moves. A unit golden that hashes a whole death state can move.
 
+### Plan 79-04 — the fight domain's narration (VOX-05, ROLL-04): measured
+
+**The change.** Presentation only: the fight-domain Oracle and rail lines in
+`src/browser/eventNarration.js` and `src/browser/narrationLines.js`, plus
+one engine literal: the level-5 `txt` of `engine/combat.js#SONGS`
+("equals reduced to 1 wp" → "foes your level or lower drop to 1 hp").
+`sing()` reads only a song's `n` and `lvl`; the `txt` is never read, pushed
+on an event or serialized. No rule, draw or state field moves.
+
+**The predictor.** Zero moved fixtures, zero moved state pins.
+
 **The live scan (measured at this plan's base, `d39625ee`).**
 
 1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
@@ -4793,3 +4804,24 @@ state with the old epitaph text restored gives the old `d0c79dc8…` hash
 exactly, and the scenario's events and `rngState` assertions pass
 unchanged. Only that one `expected.hash` value was edited; the rest of the
 golden (captured on the pre-Phase-78 engine) is untouched.
+
+2. `git diff --quiet d39625ee -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js`
+   exits 0.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `test/unit/roll-high-state-pins.test.js`, `roll-high-save-compat.test.js`
+   and `foe-turn-draw-count.test.js` pass unchanged.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Other recorded artifacts.** The 77-02 event-order corpus
+(`test/unit/fixtures/event-order/default-fold-corpus.json`) was regenerated
+as a declared change (`MZ_REGEN_EVENT_ORDER_CORPUS=1`): the two recorded
+`riposteReady` lines (the `lines` and `linesIdx` copies of one case) now
+state the effect. No order, fold or other line moved.

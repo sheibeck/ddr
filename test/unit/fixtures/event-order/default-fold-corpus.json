@@ -70,7 +70,7 @@
      "priority": 2
     },
     {
-     "text": "Every miss is an invitation.",
+     "text": "For one round every foe that misses you takes your weapon's damage.",
      "tone": "hit",
      "priority": 3
     }
@@ -97,7 +97,7 @@
      "type": "riposted"
     },
     {
-     "text": "Every miss is an invitation.",
+     "text": "For one round every foe that misses you takes your weapon's damage.",
      "tone": "hit",
      "priority": 3,
      "idx": 0,

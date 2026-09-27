@@ -67,6 +67,11 @@ import { AFFLICTIONS } from "../../content/afflictions.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+// VOX-05 (Phase 79, plan 79-04): a named foe's possessive, or the caller's
+// fallback when the event names no one ("its", never the "it's" a bare
+// `${e.name ?? "it"}'s` used to print).
+const possessive = (name, fallback) => (name ? `${name}'s` : fallback);
+
 // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): every gain line leads with
 // the HP actually gained — the engine's additive `gained`, after the clamp
 // to max. A capped gain adds what was on offer and says the hero is back to
@@ -411,7 +416,10 @@ export const EVENT_NARRATION = {
     `<span class="beat">You teleport to an unknown location on this floor…</span> the dungeon does not offer refunds.`,
   spGained: (e) => {
     const reason = e.reason === "parley" ? "Talking your way out" : e.reason === "descend" ? "Surviving the floor" : "That";
-    return `${reason} is worth <span class="roll">${e.amount ?? 0}</span> ${plural(e.amount ?? 0, "experience point")}.`;
+    // VOX-05 (Phase 79, plan 79-04): the count prints once, outside a roll
+    // span, so the Oracle and the overlay's roll-stripped copy read the
+    // same sentence (it used to print "worth 8 8 experience points").
+    return `${reason} is worth ${plural(e.amount ?? 0, "experience point")}.`;
   },
   floorChanged: (e) => `<span class="banner">Floor ${e.depth ?? "?"}.</span> The air gets worse, and takes it personally.`,
   leveled: (e) => `<span class="hit">Skill level ${e.level ?? "?"}</span> (+${gainOf(e, e.wpGain)} hp).`,
@@ -423,7 +431,7 @@ export const EVENT_NARRATION = {
   /* ---------------- combat.js ---------------- */
 
   encounterStarted: (e) => {
-    const names = (e.foes ?? []).map((f) => f.name).join(", ") || "something";
+    const names = (e.foes ?? []).map((f) => f.name).join(", ") || "Something";
     let line = `<span class="banner">${e.wandering ? "A wandering encounter." : "An encounter."}</span> ${names}.`;
     // Phase 24 (IDENT-05): the two new never-first flags get their own
     // clause, appended after the existing banner/names text (unchanged when
@@ -475,7 +483,9 @@ export const EVENT_NARRATION = {
   // a no actions state", user ruling 2026-09-16): a triggered phobia is now
   // a −to-hit/half-damage penalty for e.rounds rounds — you can still swing.
   phobiaAfraid: (e) => {
-    const base = `<span class="hurt">Your phobia has you shaking.</span> Harder to hit and softer blows for ${e.rounds ?? 2} rounds. You can still swing — you just will not enjoy it.`;
+    // VOX-05 (Phase 79, plan 79-04): the penalty is on YOUR swings ("harder
+    // to hit" read as if foes found you harder to hit).
+    const base = `<span class="hurt">Your phobia has you shaking.</span> For ${plural(e.rounds ?? 2, "round")} your swings land less often and hit softer. You can still swing — you just will not enjoy it.`;
     // Phase 41 (TERR-05): when this fight opened Afraid from an ARMED
     // terrain trigger (engine/phobias.js's fourth OR-condition), name what
     // armed it — the same phrase phobiaTriggered's own line used.
@@ -496,7 +506,8 @@ export const EVENT_NARRATION = {
         : `<span class="miss">You hold back.</span>`,
   // Phase 31 (renamed from shookOffFrozen): the Afraid countdown reaching 0.
   fearPassed: () => `<span class="hit">The fear passes.</span> Your hands remember what they are for.`,
-  frenzy: () => `<span class="hurt">Something in your blood takes over. Frenzy.</span>`,
+  // VOX-05 (Phase 79, plan 79-04): the line names what the frenzy gives you.
+  frenzy: () => `<span class="hurt">Frenzy: something in your blood takes over, and you get a second wild swing.</span>`,
   // Phase 25 (FEED-05 Oracle half): `e.quip` is a PRESENTATION-ONLY field —
   // never set by the engine, only by 25-02's decorateMisses — appended after
   // the roll and the plain miss sentence so the Oracle keeps the roll first.
@@ -506,7 +517,8 @@ export const EVENT_NARRATION = {
       ? `<span class="miss">${e.target ?? "It"} cannot be touched like that.</span>`
       : `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
-  backstabDenied: () => `<span class="miss">Heavy armor gives you away.</span>`,
+  // VOX-05 (Phase 79, plan 79-04): the line says what the armour cost you.
+  backstabDenied: () => `<span class="miss">Heavy armor gives you away: no sneak attack.</span>`,
   stealthStrike: () => `<span class="hit">They never saw you. Critical.</span>`,
   backstab: () => `<span class="hit">A blade in the back. Critical.</span>`,
   conArtistOpener: () => `<span class="beat">You had the perfect backstab lined up — and announced it instead. All flourish, no follow-through.</span>`,
@@ -518,7 +530,8 @@ export const EVENT_NARRATION = {
     const CRIT_BY_TEXT = {
       stealth: "Unseen. Critical!",
       backstab: "From behind. Critical!",
-      ninja: "A Ninja's two. Critical!",
+      // VOX-05 (Phase 79, plan 79-04): a Ninja crits on the die's top two faces.
+      ninja: "A Ninja's top two faces. Critical!",
       cutthroat: "The Cutthroat's first blow. Critical!",
       deathTouch: "Called it. Critical!",
       silentStep: "Not a sound. Critical!",
@@ -619,10 +632,16 @@ export const EVENT_NARRATION = {
       : `<span class="hit">+${e.amount ?? 0} wilmst.</span>`,
   parleyFailed: () => `<span class="miss">They are not buying it.</span>`,
   sang: (e) => `You strike up "${e.song ?? "a tune"}".`,
-  beastsSoothed: (e) => `<span class="hit">${e.count ?? 0} calm right down.</span>`,
+  // VOX-05 (Phase 79, plan 79-04): the three song lines name who the song
+  // reached. Lullaby and Thunder roll how MANY foes the song can reach
+  // (engine/combat.js#sing: `foes.slice(0, n)`, and only a foe not above the
+  // hero's level) — "up to", never a count of foes that actually slept.
+  beastsSoothed: (e) =>
+    `<span class="hit">${(e.count ?? 0) === 1 ? "1 beast calms right down and wanders off" : `${e.count ?? 0} beasts calm right down and wander off`}.</span>`,
   songIgnored: () => `<span class="miss">They do not care for music.</span>`,
-  lullabyRolled: (e) => `<span class="roll">${e.n ?? 0}</span> nod off.`,
-  thunderRolled: (e) => `Thunder rolls; <span class="roll">${e.n ?? 0}</span> freeze for <span class="roll">${e.r ?? 0}</span> rounds.`,
+  lullabyRolled: (e) => `The lullaby reaches up to <span class="roll">${e.n ?? 0}</span> of them. Any not above your level nod off.`,
+  thunderRolled: (e) =>
+    `Thunder rolls: up to <span class="roll">${e.n ?? 0}</span> of them freeze for <span class="roll">${e.r ?? 0}</span> round${e.r === 1 ? "" : "s"}. Any above your level shrug it off.`,
   combatEnded: () => `<span class="beat">The fight is over.</span>`,
   // DFB-05 (Phase 25.1): extended additively — `weapon`/`crit`/`backstab` on
   // allyStruck and `target`/`roll`/`need`/`weapon` on allyMissed render only
@@ -652,7 +671,8 @@ export const EVENT_NARRATION = {
     `${e.name ?? "Your ally"} casts <span class="hit">${e.spell ?? "a spell"}</span> at ${e.target ?? "the nearest foe"}.${e.roll != null ? ` <span class="roll">${e.roll} vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.ally)}.</span>` : ""}`,
   allySpellHit: (e) => {
     const who = e.name ?? "Your ally";
-    const sp = e.spell ?? "The spell";
+    // VOX-05 (Phase 79, plan 79-04): a bare event read "Your ally's The spell".
+    const sp = e.spell ?? "spell";
     const t = e.target ?? "the foe";
     if (e.effect === "frozen") return `<span class="hit">${who}'s ${sp} — ${t} frozen solid.</span> It will keep.`;
     if (e.effect === "asleep") return `<span class="hit">${who}'s ${sp} — ${t} nods off.</span> <span class="roll">${e.rounds ?? "?"} rounds.</span>`;
@@ -694,7 +714,7 @@ export const EVENT_NARRATION = {
   // way the hero's own does (wardAbsorbed's own phrasing, mirrored).
   foeWardSoaked: (e) => `<span class="miss">${e.name ?? "It"}'s ward drinks <span class="roll">${e.amount ?? 0}</span> of it — ${e.left ?? 0} left.</span>`,
   foeWardBroken: (e) => `<span class="hit">${e.name ?? "It"}'s ward gives out.</span>`,
-  foeWardFaded: (e) => `<span class="beat">${e.name ?? "It"}'s ward fades.</span>`,
+  foeWardFaded: (e) => `<span class="beat">${possessive(e.name, "Its")} ward fades.</span>`,
   // RULES-10 (Phase 75.1) — a fumbled Bubble sitting on the FOE: the first
   // blow it catches never touches its hp at all (your effort, wasted), then
   // it pops into a small pool for the rest of that round (foeWardSoaked
@@ -703,7 +723,7 @@ export const EVENT_NARRATION = {
   // RULES-10 (Phase 75.1) — the caught blow is thrown back at the TOP of the
   // foe's next turn; this line is the telegraph, and the existing foeBolted
   // builder (pushed right after it, same action) states the hp actually lost.
-  foeBubbleRebound: (e) => `<span class="hurt">${e.name ?? "It"}'s bubble throws it back at you.</span>`,
+  foeBubbleRebound: (e) => `<span class="hurt">${possessive(e.name, "Its")} bubble throws it back at you.</span>`,
   armorDestroyed: () => `<span class="hurt">Your armor gives out.</span>`,
   // Phase 28 (ARMOR-05): the same underMin/magic outcome flags narrationLines.js
   // reads, so the narration line and the Oracle can never disagree about which of
@@ -720,7 +740,7 @@ export const EVENT_NARRATION = {
   foeArmorSoaked: (e) => `<span class="miss">Your blow rings off ${e.name ?? "the thing"}'s armor. It looks bored.</span>`,
   // Phase 15 item-wiring (ECON-08): the Pendant of Fortitude eats half of one
   // incoming blow, then spends itself. `name` is the foe whose hit was blunted.
-  damageHalved: (e) => `<span class="hit">The pendant drinks half of ${e.name ?? "that"}'s blow before it reaches you.</span>`,
+  damageHalved: (e) => `<span class="hit">The pendant drinks half of ${possessive(e.name, "the")} blow before it reaches you.</span>`,
   // Phase 25 (FEED-01, additive payload): `soldierCrit` renders exactly like
   // `critical` (a Soldier's second-highest face is a crit in every way that
   // matters to the Oracle); `mods`/`soaked` render only when present, so a
@@ -733,7 +753,7 @@ export const EVENT_NARRATION = {
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
   // RULES-10 (Phase 75.1) — a foe's own fumbled Mirror Self, ticking down in
   // foeTurn's tail exactly like the hero's c.mirror does above.
-  foeMirrorFaded: (e) => `<span class="beat">${e.name ?? "It"}'s mirror fades.</span>`,
+  foeMirrorFaded: (e) => `<span class="beat">${possessive(e.name, "Its")} mirror fades.</span>`,
   // Phase 40 (SPELL-02): endCombat's own expiry narration for a
   // still-running Regeneration/Sense Presence when the fight ends.
   sensesFaded: () => `<span class="beat">Your senses dull back to normal.</span>`,
@@ -747,8 +767,12 @@ export const EVENT_NARRATION = {
   // RULES-10 (Phase 75.1) — the ONE replacement for every instant-kill
   // fumble: whatever the spell tried to do lands as a heavy, honest blow
   // instead, plus Afraid. `how` names the flavor (frozen, stoned, …).
+  // VOX-05 (Phase 79, plan 79-04): the fact first — the fumble lands as a
+  // heavy blow and the hp it cost. `how` (frozen/stone/death/vapor) is the
+  // fumble table's flavor key, and "Instead: death" read as the opposite of
+  // what happened, so the line no longer prints it.
   fumbleHeavyBlow: (e) =>
-    `<span class="hurt">${e.spell ?? "The scroll"} tried to be the end of you. Instead: ${e.how ?? "a hard knock"}, <span class="roll">−${e.amount ?? 0} hp</span>.</span> You are shaken.`,
+    `<span class="hurt">${e.spell ?? "The scroll"} backfires as a heavy blow: <span class="roll">−${e.amount ?? 0} hp</span>.</span> It meant to be the end of you; you are merely shaken.`,
   // RULES-10 (Phase 75.1) — the hero-cannot-act state: the round goes on
   // without you, and it will keep going until `left` reaches 0.
   heroLostTurn: (e) =>
@@ -870,32 +894,60 @@ export const EVENT_NARRATION = {
   // carry an ADDITIVE `${e.member ? \`${e.member}: \` : ""}` prefix — present
   // only when a Joiner (not the hero) is the actor, so a hero-cast use stays
   // byte-identical to Plan 03's own text.
-  pommelStruck: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}The pommel finds ${e.target ?? "it"}'s temple. It will need a moment.</span>`,
+  // VOX-05 (Phase 79, plan 79-04): the ability lines below state the effect
+  // the engine applied (engine/abilities.js, engine/combat.js#
+  // resolveMemberAbility) before the joke; a Joiner's own use reads "them"
+  // where the hero's reads "you" (a Joiner's Sidestep, Smoke, Riposte and
+  // Brace cover the Joiner's own body, not the hero's).
+  pommelStruck: (e) =>
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}The pommel finds ${possessive(e.target, "its")} temple. ${e.target ?? "It"} loses its next turn, and will need a moment.</span>`,
   foeStunned: (e) => `${e.name ?? "It"} spends its turn remembering where it is.`,
-  battleRoarRaised: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Loud enough. For two rounds they all need two better to hit anyone on your side.</span>`,
-  sidestepped: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Not where the blade is. Two rounds of that.</span>`,
+  battleRoarRaised: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}For two rounds every foe has two fewer faces to hit anyone on your side. Loud enough.</span>`,
+  sidestepped: (e) =>
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}For two rounds every foe has two fewer faces to hit ${e.member ? "them" : "you"}. Not where the blade is.</span>`,
   secondWindHealed: (e) =>
     gainOf(e, e.amount) > 0
       ? `<span class="hit">You remember why you came. +${gainOf(e, e.amount)} hp${cappedNote(gainOf(e, e.amount), e.rolled)}.</span>`
       : `<span class="hit">You remember why you came.</span> You were already at full hp, so it is mostly a mood.`,
   swept: (e) => `<span class="hit">One wide arc — ${e.dmg ?? 0} to everything still standing.</span>`,
   sweptFoe: (e) => `${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span>.`,
-  braced: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced. The next one lands on your terms.</span>`,
-  braceHeld: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced — ${e.name ?? "it"}'s blow lands half as hard (−${e.soaked ?? 0}).</span>`,
-  riposteReady: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Every miss is an invitation.</span>`,
+  braced: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced. The next blow that lands on ${e.member ? "them" : "you"} does half damage.</span>`,
+  // `soaked` is the hp the brace took off the blow — a saving, so it no
+  // longer prints as a signed cost ("(−3)").
+  braceHeld: (e) =>
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced — ${possessive(e.name, "the")} blow lands half as hard${Number.isFinite(e.soaked) ? `, ${e.soaked} hp lighter` : ""}.</span>`,
+  riposteReady: (e) =>
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}For one round every foe that misses ${e.member ? "them" : "you"} takes ${e.member ? "their" : "your"} weapon's damage. Every miss is an invitation.</span>`,
   riposted: (e) => `${e.target ?? "It"} misses, and pays <span class="roll">${e.dmg ?? 0}</span> for it.`,
-  taunted: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Every foe looks at you. Armour doubles. Good luck.</span>`,
+  // A Joiner's Taunt pulls every swing onto the Joiner; the armour doubling
+  // is the hero's own (engine/combat.js#applyFoeDamageToPlayer).
+  taunted: (e) =>
+    e.member
+      ? `<span class="hit">${e.member}: Every foe swings at them this round. Good luck to them.</span>`
+      : `<span class="hit">Every foe looks at you. Armour doubles. Good luck.</span>`,
   lastStandCalled: (e) => `<span class="beat">${e.member ? `${e.member}: ` : ""}Under a quarter. ${e.attacks ?? 3} attacks this round. Make them count.</span>`,
-  dirtyTrickLanded: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Sand, thumb, elbow. ${e.target ?? "it"} is blinded for ${e.rounds ?? 2} rounds.</span>`,
+  dirtyTrickLanded: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}${e.target ?? "It"} is blinded for ${plural(e.rounds ?? 2, "round")}. Sand, thumb, elbow.</span>`,
   foeSightReturned: (e) => `${e.name ?? "It"} blinks the sand out.`,
-  smokeThrown: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them.</span>`,
-  cutpursed: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}You lift ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight. It has other problems.</span>`,
-  poisonedEdgeApplied: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}The blade weeps into ${e.target ?? "it"}. ${e.rounds ?? 3} rounds of that.</span>`,
+  // ROLL-04 (79-04): a foe's strike die scales with its level (engine/
+  // derived.js#foeDie), so Smoke speaks in faces, never "a natural 1". Only
+  // the hero's own Smoke lets a flee just work (engine/combat.js#flee).
+  smokeThrown: (e) =>
+    e.member
+      ? `<span class="hit">${e.member}: For two rounds a foe finds them only on its die's top face (the top two if you insulted them). Gone, as far as anyone can tell.</span>`
+      : `<span class="hit">For two rounds a foe finds you only on its die's top face (the top two if you insulted them), and a run just works. Gone, as far as anyone can tell.</span>`,
+  // A Joiner's cutpurse lifts the coin into the hero's purse (gainWilmst).
+  cutpursed: (e) =>
+    e.member
+      ? `<span class="hit">${e.member} lifts ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight, into your purse. It has other problems.</span>`
+      : `<span class="hit">You lift ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight. It has other problems.</span>`,
+  poisonedEdgeApplied: (e) =>
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}${e.target ?? "It"} is poisoned for ${plural(e.rounds ?? 3, "round")}. The blade weeps into it.</span>`,
   // dotTick is generic on `by` — Phase 40 (SPELL-01, Ice) is the first spell
   // to share this event shape with Poisoned Edge; the line names the source.
   dotTick: (e) => `${e.target ?? "It"} takes <span class="hurt">${e.dmg ?? 0}</span> from ${e.by === "ice" ? "the ice" : "the poison"}.`,
   hamstrung: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Tendon cut. ${e.target ?? "It"} hits half as hard from here on.</span>`,
-  marked: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Studied. Every blow on ${e.target ?? "it"} lands +2.</span>`,
+  // Mark's +2 is damage, on every blow from anyone (engine/combat.js).
+  marked: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Studied. Every blow on ${e.target ?? "it"} does +2 damage from here on.</span>`,
   // Plan 04 (ABIL-05): a Joiner's own ability use — the four new member-only
   // events (no hero equivalent exists for these; a hero's own equivalent use
   // reads "abilityUsed"/"secondWindHealed"/"swept"/"riposted" above).
@@ -1037,8 +1089,9 @@ export const EVENT_NARRATION = {
     `<span class="miss">${e.target ?? "It"} shrugs off ${CONTROL_EFFECT_WORD[e.effect] ?? "the effect"}${e.source ? ` from ${e.source}` : ""}.</span> <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}.`,
   // The other half: an "indefinite" control (would have lasted the fight, or
   // ended the foe outright) holds for a few rounds instead, past the knee.
+  // VOX-05 (Phase 79, plan 79-04): "1 round", never "1 rounds".
   controlHeld: (e) =>
-    `<span class="hit">${e.target ?? "It"} is ${CONTROL_HOLD_WORD[e.kind] ?? "held fast"} — ${e.rounds ?? "?"} rounds, not forever.</span>${e.source ? ` (${e.source})` : ""}`,
+    `<span class="hit">${e.target ?? "It"} is ${CONTROL_HOLD_WORD[e.kind] ?? "held fast"} — ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}, not forever.</span>${e.source ? ` (${e.source})` : ""}`,
   foeStillHeld: (e) => `${e.name ?? "It"} is still ${CONTROL_HOLD_WORD[e.kind] ?? "held"}. <span class="roll">${e.left ?? "?"}</span> to go.`,
   foeHoldBroken: (e) => `<span class="beat">${e.name ?? "It"} shakes free and stands.</span>`,
   spellMissed: (e) => `<span class="miss">Missed ${e.target ?? "it"}.</span>`,
