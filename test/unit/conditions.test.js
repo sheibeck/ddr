@@ -115,7 +115,9 @@ test("conditionsOf: mirror/senses/regen/foresight/reveal surface in fixed order 
   assert.deepStrictEqual(byKey(conds, "senses"), { key: "senses", polarity: "good" });
   assert.deepStrictEqual(byKey(conds, "regen"), { key: "regen", polarity: "good" });
   assert.deepStrictEqual(byKey(conds, "foresight"), { key: "foresight", polarity: "good" });
-  assert.deepStrictEqual(byKey(conds, "reveal"), { key: "reveal", polarity: "good", remaining: 17, cadence: "squares" });
+  // Plan 76-06 (user ruling 2026-09-26): the window lasts until you move, so
+  // the reveal chip carries no countdown (was remaining 17, cadence "squares").
+  assert.deepStrictEqual(byKey(conds, "reveal"), { key: "reveal", polarity: "good" });
 });
 
 test("conditionsOf: mirror/senses/regen/foresight are absent at 0/false/undefined", () => {
@@ -256,7 +258,8 @@ test("conditionsOf: a fully-loaded character enumerates good-then-bad in stable 
   assert.deepEqual(keys(conds), [
     "haste", "invis", "acute", "ether", "flight", "might", "mirror", "senses", "regen", "foresight", "reveal", "affliction", "darkness", "fearArmed",
   ]);
-  assert.equal(byKey(conds, "reveal").remaining, 22);
+  // Plan 76-06 (user ruling 2026-09-26): no countdown on the reveal chip (was remaining 22).
+  assert.deepStrictEqual(byKey(conds, "reveal"), { key: "reveal", polarity: "good" });
   // Good conditions all precede bad ones.
   const firstBad = conds.findIndex((x) => x.polarity === "bad");
   assert.ok(conds.slice(0, firstBad).every((x) => x.polarity === "good"));

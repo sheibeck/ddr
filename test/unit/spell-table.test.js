@@ -157,13 +157,14 @@ test("SPELLS: exactly the three deliberate data flags (onHit on Freeze, aoe on L
   }
 });
 
-// Phase 40 (SPELL-05), Plan 04: Map the Floor's reveal window. The txt
-// already states "40 squares" in voice; this pins the data field the engine
-// actually reads (engine/magic.js's reveal branch -> startEffect's
-// `squares` option), and that no other row carries it.
-test("SPELLS[5] (Map the Floor): squares === 40, and no other row carries a squares field", () => {
+// Phase 40 (SPELL-05), Plan 04: Map the Floor's reveal window — the data
+// field the engine actually reads (engine/magic.js's reveal branch ->
+// startEffect's `squares` option), and that no other row carries it.
+// Plan 76-06 (user ruling 2026-09-26): the window is ONE square (it was 40),
+// so the first step ends it — Map the Floor lasts only until you move.
+test("SPELLS[5] (Map the Floor): squares === 1, and no other row carries a squares field", () => {
   assert.equal(SPELLS[5].n, "Map the Floor");
-  assert.equal(SPELLS[5].squares, 40);
+  assert.equal(SPELLS[5].squares, 1);
   for (const sp of SPELLS) {
     if (sp.n === "Map the Floor") continue;
     assert.equal(sp.squares, undefined, `${sp.n} must not carry squares`);
