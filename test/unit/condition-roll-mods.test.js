@@ -30,7 +30,11 @@ import { newRun } from "../../engine/engine.js";
 import { playerStrike } from "../../engine/combat.js";
 import { toHit, toHitBreakdown, DAZED_TO_HIT_PENALTY } from "../../engine/derived.js";
 import { makeRng, hashString } from "../../engine/rng.js";
-import { RACES } from "../../content/index.js";
+import { resolveFoeAbility } from "../../engine/foeAbilities.js";
+import { foeTurn } from "../../engine/combat.js";
+import { RACES, FOE_ABILITIES } from "../../content/index.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 
 // ─── local fixtures ────────────────────────────────────────────────────────
 
@@ -301,4 +305,96 @@ test("measured zero: every strike's roll, faces, outcome, draw count and resulti
     }
     assert.equal(hashString(JSON.stringify(parts)).toString(16), STRIKE_DIGESTS[name], `${name}: the strike moved`);
   }
+});
+
+// ─── 4. the onset and fade lines say what the effect does (Task 2) ────────
+
+const plain = (html) => String(html ?? "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+const DJINNI_DAZE = FOE_ABILITIES.find((a) => a.id === "djinniDaze");
+const KRUPKE_WEAKEN = FOE_ABILITIES.find((a) => a.id === "krupkeWeaken");
+
+/** A real debuff through the engine's own resolver (intel 5: no resist
+ * roll), the rounds die scripted. */
+function realDebuff(ability, roundsFace) {
+  const state = strikeState({ c: { intel: 5 } });
+  const foe = plainFoe({ name: ability === DJINNI_DAZE ? "Djinni" : "Krupke" });
+  state.combat.foes = [foe];
+  const events = [];
+  resolveFoeAbility(state, foe, ability, fakeRng([roundsFace]), events);
+  const e = events.find((ev) => ev.type === "foeDebuffed");
+  assert.ok(e, "expected a foeDebuffed event");
+  return { state, e };
+}
+
+/** A real fade: the effect's last round ticks out on a foe turn. */
+function realFade(kind) {
+  const state = strikeState({ c: { intel: 5, foeEffect: { kind, rounds: 1 } } });
+  const events = foeTurn(state, fakeRng([...FILL]), []);
+  const e = events.find((ev) => ev.type === "foeEffectFaded");
+  assert.ok(e, "expected a foeEffectFaded event");
+  assert.equal(state.c.foeEffect, null);
+  return e;
+}
+
+test("foeDebuffed: a real Djinni daze carries toHit −DAZED_TO_HIT_PENALTY; a weakening carries no toHit field", () => {
+  const dazed = realDebuff(DJINNI_DAZE, 3);
+  assert.deepEqual(dazed.e, { type: "foeDebuffed", name: "Djinni", ability: "djinniDaze", kind: "dazed", rounds: 3, toHit: -DAZED_TO_HIT_PENALTY });
+  assert.deepEqual(dazed.state.c.foeEffect, { kind: "dazed", rounds: 3 }, "the state is unchanged by the payload");
+  const weak = realDebuff(KRUPKE_WEAKEN, 2);
+  assert.deepEqual(weak.e, { type: "foeDebuffed", name: "Krupke", ability: "krupkeWeaken", kind: "weakened", rounds: 2 });
+});
+
+test("onset: the Oracle and the fold name the daze as '−2 to hit' for N rounds, from the payload", () => {
+  const { e } = realDebuff(DJINNI_DAZE, 3);
+  const oracle = plain(EVENT_NARRATION.foeDebuffed(e));
+  assert.match(oracle, /−2 to hit for 3 rounds/, oracle);
+  assert.doesNotMatch(oracle, /\+2 to hit|-2 to hit/, "U+2212, never the opposite sign or a hyphen");
+  const fold = LINE_FOR.foeDebuffed(e, {});
+  assert.ok(fold.text.startsWith("Djinni"), fold.text);
+  assert.match(fold.text, /−2 to hit for 3 rounds/, fold.text);
+  // The number comes from the payload, never typed by hand.
+  const odd = { ...e, toHit: -5, rounds: 1 };
+  assert.match(plain(EVENT_NARRATION.foeDebuffed(odd)), /−5 to hit for 1 round\b/);
+  assert.match(LINE_FOR.foeDebuffed(odd, {}).text, /−5 to hit for 1 round\b/);
+});
+
+test("onset: a weakening says your blows do half damage for N rounds", () => {
+  const { e } = realDebuff(KRUPKE_WEAKEN, 2);
+  const oracle = plain(EVENT_NARRATION.foeDebuffed(e));
+  assert.match(oracle, /half damage for 2 rounds/, oracle);
+  const fold = LINE_FOR.foeDebuffed(e, {});
+  assert.ok(fold.text.startsWith("Krupke"), fold.text);
+  assert.match(fold.text, /half damage for 2 rounds/, fold.text);
+});
+
+test("fade: a real daze fading says the −2 to hit is gone; a weakening says full damage again", () => {
+  const dazed = realFade("dazed");
+  assert.deepEqual(dazed, { type: "foeEffectFaded", kind: "dazed", toHit: -DAZED_TO_HIT_PENALTY });
+  assert.match(plain(EVENT_NARRATION.foeEffectFaded(dazed)), /no longer −2 to hit/);
+  assert.match(LINE_FOR.foeEffectFaded(dazed, {}).text, /no longer −2 to hit/);
+  const weak = realFade("weakened");
+  assert.deepEqual(weak, { type: "foeEffectFaded", kind: "weakened" });
+  assert.match(plain(EVENT_NARRATION.foeEffectFaded(weak)), /full damage/);
+  assert.match(LINE_FOR.foeEffectFaded(weak, {}).text, /full damage/);
+});
+
+test("onset/fade: a bare { type } (an old event with no toHit) still reads a non-empty line, in words", () => {
+  for (const type of ["foeDebuffed", "foeEffectFaded"]) {
+    assert.ok(plain(EVENT_NARRATION[type]({ type })).length > 0, `${type} Oracle`);
+    assert.ok(LINE_FOR[type]({ type }, {}).text.trim().length > 0, `${type} fold`);
+    for (const kind of ["dazed", "weakened"]) {
+      assert.doesNotMatch(plain(EVENT_NARRATION[type]({ type, kind })), /undefined|NaN|\?/, `${type}/${kind} Oracle`);
+      assert.doesNotMatch(LINE_FOR[type]({ type, kind }, {}).text, /undefined|NaN|\?/, `${type}/${kind} fold`);
+    }
+  }
+});
+
+test("a fumbled Weaken on the reader (76-06) says what it does too: half damage, still 'weakens you'", () => {
+  const ev = { type: "fumbleOnReader", spell: "Weaken", effect: "weakened", rounds: 3 };
+  const oracle = plain(EVENT_NARRATION.fumbleOnReader(ev));
+  assert.match(oracle, /weakens you/);
+  assert.match(oracle, /half damage/);
+  const fold = LINE_FOR.fumbleOnReader(ev, {}).text;
+  assert.match(fold, /weakens you/);
+  assert.match(fold, /half damage/);
 });
