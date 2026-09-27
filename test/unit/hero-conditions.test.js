@@ -18,7 +18,12 @@
 //       timer id the engine starts is read by an entry, shown by the foe
 //       table, or on NOT_A_CONDITION with a reason; plus self-checks and a
 //       synthetic miss;
-//   (e) HERO_CHIP_COPY is frozen, voice-safe and says HP, never WP.
+//   (e) HERO_CHIP_COPY is frozen, voice-safe and says HP, never WP;
+//   (f) plan 77-08, the shell-table guard: every key this table lists has a
+//       label, a tone and an explanation in mazeworld.html's one copy table
+//       (CONDITION_COPY / CONDITION_TONE / CONDITION_EXPLAIN, with the
+//       documented per-kind label and explanation rules), and every
+//       DURATION_ROUNDS ability has an ABILITY_CHIP_LABEL.
 //
 // The guard reads the engine as text and never edits it.
 
@@ -35,6 +40,7 @@ import { DURATION_ROUNDS } from "../../engine/abilities.js";
 import { ABILITY_BY_ID } from "../../content/abilities.js";
 import { ACTIVATION_OF } from "../../content/activations.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+import { stripHtml } from "../../tools/ident-sweep.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -490,4 +496,113 @@ test("HERO_CHIP_COPY: frozen at every level, every leaf a non-empty string, clea
   // every lasts kind but rounds/squares has its own phrase; every source kind has one
   for (const k of LASTS.filter((k) => k !== "rounds" && k !== "squares")) assert.ok(HERO_CHIP_COPY.lasts[k], `lasts ${k}`);
   for (const k of SOURCES) assert.ok(HERO_CHIP_COPY.source[k], `source ${k}`);
+});
+
+// ─── (f) plan 77-08: the shell-table guard ─────────────────────────────────
+//
+// CMBUI-13 (plan 77-08): the chip's label and explanation live in the
+// shell's one copy table (mazeworld.html). This guard reads those tables as
+// text and fails when a key this table lists (or a DURATION_ROUNDS ability)
+// has no label, tone or explanation, so a new chip can never reach the HUD
+// strip or YOUR LOT as a raw key or the generic default sentence.
+
+const SHELL = stripHtml(fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n"));
+
+/** shellLiteral(name) — the `const NAME = { ... }` object literal's source (brace-matched). */
+function shellLiteral(name) {
+  const start = SHELL.indexOf(`const ${name} = {`);
+  assert.ok(start !== -1, `const ${name} = { not found in mazeworld.html`);
+  const braceStart = SHELL.indexOf("{", start);
+  let depth = 0;
+  let i = braceStart;
+  for (; i < SHELL.length; i++) {
+    if (SHELL[i] === "{") depth++;
+    else if (SHELL[i] === "}") { depth--; if (depth === 0) break; }
+  }
+  return SHELL.slice(braceStart, i + 1);
+}
+
+/** stringMap(name) — a flat `{ key: "text", ... }` literal as a Map. */
+function stringMap(name) {
+  return new Map([...shellLiteral(name).matchAll(/(\w+):\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g)].map((m) => [m[1], m[2]]));
+}
+
+/** copyLabels() — CONDITION_COPY's `key: { label: "..." }` rows as a Map. */
+function copyLabels() {
+  return new Map([...shellLiteral("CONDITION_COPY").matchAll(/(\w+):\s*\{\s*label:\s*"([^"]*)"/g)].map((m) => [m[1], m[2]]));
+}
+
+// Keys whose chip label is NOT a fixed CONDITION_COPY label: conditionLabel
+// names them from the descriptor itself (documented label rules).
+const LABEL_RULES = Object.freeze({
+  affliction: "names its own kind (Poison, Disease)",
+  itemCooldown: "names the cooling item",
+  staffCharges: "names the recharging staff",
+});
+
+// House style: one capitalised word, a hyphen allowed. The one exception
+// keeps a label a user ruling already shipped.
+const ONE_WORD = /^[A-Z][a-z]+(?:-[A-Za-z][a-z]*)?$/;
+const LABEL_STYLE_EXEMPT = Object.freeze({
+  heroOut: "RULES-10 (Phase 75.1) shipped \"Can't act\", pinned by shell-combat-actions.test.js; a Phase 79 copy pass may shorten it",
+});
+
+test("(f) shell guard: every table key has a CONDITION_COPY label (or a documented label rule) and a CONDITION_EXPLAIN sentence of its own", () => {
+  const labels = copyLabels();
+  const explain = stringMap("CONDITION_EXPLAIN");
+  assert.ok(explain.get("default"), "CONDITION_EXPLAIN keeps its default");
+  for (const e of HERO_CONDITIONS) {
+    if (LABEL_RULES[e.key]) assert.ok(!labels.get(e.key), `${e.key} is labelled by rule (${LABEL_RULES[e.key]}), not a fixed label`);
+    else assert.ok(labels.get(e.key), `${e.key} has no CONDITION_COPY label: the HUD strip would show the raw key`);
+    const sentence = explain.get(e.key);
+    assert.ok(sentence && sentence !== explain.get("default"), `${e.key} has no CONDITION_EXPLAIN sentence of its own`);
+  }
+});
+
+test("(f) shell guard: every fight chip has a CONDITION_TONE, and every static fight label is one capitalised word", () => {
+  const labels = copyLabels();
+  const tones = stringMap("CONDITION_TONE");
+  for (const e of HERO_CONDITIONS.filter((x) => x.fight)) {
+    assert.ok(["good", "bad", "warn", "odd"].includes(tones.get(e.key)), `${e.key} has no CONDITION_TONE`);
+    const label = labels.get(e.key);
+    if (LABEL_STYLE_EXEMPT[e.key]) continue;
+    assert.match(label, ONE_WORD, `${e.key}'s label "${label}" is not one capitalised word`);
+  }
+  for (const [kind, label] of stringMap("FOE_EFFECT_LABEL")) assert.match(label, ONE_WORD, `FOE_EFFECT_LABEL.${kind}`);
+  // CONDITION_TONE stays a subset of the CONDITION_COPY keys plus affliction.
+  for (const key of tones.keys()) assert.ok(labels.has(key) || key === "affliction", `CONDITION_TONE.${key} has no CONDITION_COPY row`);
+  assert.equal(labels.get("darkness"), "Dark", "CMBUI-13: 'In the dark' became one word");
+});
+
+test("(f) shell guard: every DURATION_ROUNDS ability has an ABILITY_CHIP_LABEL (one word), and nothing else does", () => {
+  const abilityLabels = stringMap("ABILITY_CHIP_LABEL");
+  assert.deepEqual([...abilityLabels.keys()].sort(), Object.keys(DURATION_ROUNDS).sort());
+  for (const [id, label] of abilityLabels) {
+    assert.match(label, ONE_WORD, `ABILITY_CHIP_LABEL.${id} "${label}"`);
+    assert.ok(ABILITY_BY_ID[id] && ABILITY_BY_ID[id].txt, `${id}'s tap sheet reads the ability's own content text`);
+  }
+});
+
+test("(f) shell guard: every foe-given effect kind has its own FOE_EFFECT_EXPLAIN sentence naming what it does", () => {
+  const kinds = [...stringMap("FOE_EFFECT_LABEL").keys()].sort();
+  const explain = stringMap("FOE_EFFECT_EXPLAIN");
+  assert.deepEqual([...explain.keys()].sort(), kinds);
+  assert.match(explain.get("weakened"), /half damage/, "Weakened says your blows do half damage");
+  assert.match(explain.get("dazed"), /hit/, "Dazed says it is harder to hit");
+});
+
+test("(f) shell guard: the new copy is clear of BANNED and says HP, never WP", () => {
+  const texts = [
+    ...stringMap("CONDITION_EXPLAIN"),
+    ...stringMap("FOE_EFFECT_EXPLAIN"),
+    ...stringMap("ABILITY_CHIP_LABEL"),
+    ...copyLabels(),
+  ];
+  for (const [k, value] of texts) {
+    for (const { term, re } of MATCHERS) {
+      const m = value.match(re);
+      assert.ok(!m || ALLOW.has(m[0].toLowerCase()), `${k} ("${value}") hits BANNED term ${term}`);
+    }
+    assert.ok(!PLAYER_WP_RULE.test(value), `${k} ("${value}") says WP; the player reads HP`);
+  }
 });

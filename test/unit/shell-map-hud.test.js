@@ -331,19 +331,27 @@ test("(f) paintConditions: createElement(button), data-tone from CONDITION_TONE 
   assert.match(region, /guardInfoTap\(btn, \(\) => \(combatScreenUp\(\)/);
   assert.match(region, /\? window\.mzConditionCard\?\.\(label\.toUpperCase\(\), explainText\)/);
   assert.match(region, /: window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·"\)\), condArmed\);/);
-  // Phase 39 (GEAR-02/GEAR-05), Plan 05: the tap explanation now routes
+  // Phase 39 (GEAR-02/GEAR-05), Plan 05: the tap explanation routes
   // through explainCondition(cn, label) — the item-sourced-chip-aware
-  // wrapper around the plain CONDITION_EXPLAIN[cn.key] fallback (which
-  // explainCondition itself still reads, just no longer inline here).
-  assert.match(region, /explainCondition\(cn, label\)/);
+  // wrapper around the plain CONDITION_EXPLAIN[cn.key] fallback.
+  // CMBUI-13 (Phase 77, plan 77-08): paintConditions now reads the chip's
+  // label and tap text from the two shared helpers YOUR LOT also calls,
+  // conditionLabel(cn) and conditionTapText(cn, label, state); the
+  // explainCondition call and the label chain moved into them.
+  assert.match(region, /const label = conditionLabel\(cn\);/);
+  assert.match(region, /const explainText = conditionTapText\(cn, label, S\);/);
+  const tapRegion = fnRegion("function conditionTapText(cn, label, state, opts = {})");
+  assert.match(tapRegion, /explainCondition\(cn, label\)/);
   assert.match(region, /lastCondKeyShown/);
   assert.match(region, /armEncounterButtons\(\);/);
   assert.equal((region.match(/innerHTML/g) || []).length, 2, 'exactly the two innerHTML clears (empty-branch + the "" reset before the loop)');
 
-  // The foeEffect/affliction label chain from foe-effect-chip.test.js stays byte-identical.
-  const afflictionIdx = region.indexOf('cn.key === "affliction"');
-  const foeEffectIdx = region.indexOf('cn.key === "foeEffect"');
-  const fallbackIdx = region.indexOf("(CONDITION_COPY[cn.key]?.label || cn.key)");
+  // The foeEffect/affliction label chain from foe-effect-chip.test.js stays
+  // byte-identical — CMBUI-13 (plan 77-08): now in conditionLabel(cn).
+  const labelRegion = fnRegion("function conditionLabel(cn)");
+  const afflictionIdx = labelRegion.indexOf('cn.key === "affliction"');
+  const foeEffectIdx = labelRegion.indexOf('cn.key === "foeEffect"');
+  const fallbackIdx = labelRegion.indexOf("(CONDITION_COPY[cn.key]?.label || cn.key)");
   assert.ok(afflictionIdx >= 0 && foeEffectIdx >= 0 && fallbackIdx >= 0, "one of the label-chain anchors is missing");
   assert.ok(foeEffectIdx > afflictionIdx && foeEffectIdx < fallbackIdx, "affliction, then foeEffect, then the generic fallback");
 });

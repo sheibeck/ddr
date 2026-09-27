@@ -50,6 +50,10 @@ import { bagUsage, renderGearTab, renderCarriedList } from "../../../src/browser
 // Phase 74 (ROLL-02/03), plan 74-07 — wired below as window.__mzConditionEffect,
 // the module script's own bridge target.
 import { conditionEffectText } from "../../../src/browser/conditionEffects.js";
+// Phase 77 (CMBUI-13) — wired below as window.__mzMemberConditionsOf and
+// window.__mzHeroChips, the module script's own bridge targets.
+import { memberConditionsOf } from "../../../engine/derived.js";
+import { lotChips, chipText, chipSheetFacts } from "../../../src/browser/heroConditions.js";
 // Phase 63 (GSCR-07..10, GRULE-02) — the GEAR action sheet's DOM renderer,
 // wired below as window.__mzGearSheet exactly as the module script assigns it.
 import { renderGearSheet } from "../../../src/browser/gearSheet.js";
@@ -180,6 +184,8 @@ function wireBridges(context, { dressing = null } = {}) {
   w.__mzPartyCap = PARTY_CAP;
   w.__mzConditionsOf = conditionsOf;
   w.__mzConditionEffect = conditionEffectText;
+  w.__mzMemberConditionsOf = memberConditionsOf;
+  w.__mzHeroChips = Object.freeze({ lotChips, chipText, chipSheetFacts });
   w.__mzEther = { itemEffectActive, inStone };
   w.__mzMapView = { mapViewRadius, inViewWindow };
   w.__mzInputGuards = { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled };

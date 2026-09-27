@@ -201,7 +201,8 @@ test("yourLotViewModel: solo hero card", () => {
   const vm = yourLotViewModel(state);
   assert.equal(vm.hint, "JUST YOU · NOBODY TO BLAME");
   assert.equal(vm.cards.length, 1);
-  assert.deepEqual(vm.cards[0], { kind: "hero", name: "TEST DELVER", wpLabel: "27/34", pct: 79, barTone: "ok", down: false, active: true, third: "SOLDIER" });
+  // Phase 77 (CMBUI-13): every card carries `chips` (empty with no opts.chipsFor).
+  assert.deepEqual(vm.cards[0], { kind: "hero", name: "TEST DELVER", wpLabel: "27/34", pct: 79, barTone: "ok", down: false, active: true, third: "SOLDIER", chips: [] });
 });
 
 test("yourLotViewModel: a Magic User hero's third line is its spell charges", () => {
@@ -225,7 +226,8 @@ test("yourLotViewModel: one party member", () => {
   const vm = yourLotViewModel(state);
   assert.equal(vm.hint, "YOUR LOT · EACH ROLLS THEIR OWN");
   assert.equal(vm.cards.length, 2);
-  assert.deepEqual(vm.cards[1], { kind: "member", name: "SIDEKICK", wpLabel: "12/20", pct: 60, barTone: "ok", down: false, active: false, third: "BARD" });
+  // Phase 77 (CMBUI-13): every card carries `chips` (empty with no opts.chipsFor).
+  assert.deepEqual(vm.cards[1], { kind: "member", name: "SIDEKICK", wpLabel: "12/20", pct: 60, barTone: "ok", down: false, active: false, third: "BARD", chips: [] });
 });
 
 test("yourLotViewModel: a downed member reads DOWN", () => {
@@ -252,8 +254,55 @@ test("yourLotViewModel: a summoned ally appends its own card", () => {
   const vm = yourLotViewModel(state);
   const allyCard = vm.cards[vm.cards.length - 1];
   assert.deepEqual(allyCard, {
-    kind: "ally", name: "BOUND DJINN", wpLabel: "3 ROUNDS", pct: 100, barTone: "ok", down: false, active: false, third: "SUMMONED · FIGHTS FOR YOU",
+    // Phase 77 (CMBUI-13): a summoned ally card never has a chip row.
+    kind: "ally", name: "BOUND DJINN", wpLabel: "3 ROUNDS", pct: 100, barTone: "ok", down: false, active: false, third: "SUMMONED · FIGHTS FOR YOU", chips: [],
   });
+});
+
+// ─── Phase 77 (CMBUI-13): YOUR LOT chips through opts.chipsFor ────────────
+
+test("yourLotViewModel (CMBUI-13): no opts gives every card chips: []", () => {
+  const state = fixedState({
+    party: [{ name: "Sidekick", sub: "Bard", wp: 12, maxWP: 20 }],
+    combat: fixedCombat([], { ally: { name: "Bound Djinn", rounds: 3, lvl: 2 } }),
+  });
+  const vm = yourLotViewModel(state);
+  assert.equal(vm.cards.length, 3);
+  for (const card of vm.cards) assert.deepEqual(card.chips, []);
+});
+
+test("yourLotViewModel (CMBUI-13): opts.chipsFor feeds the hero and each member, never the ally", () => {
+  const state = fixedState({
+    party: [
+      { name: "A", sub: "Fighter", wp: 10, maxWP: 20 },
+      { name: "B", sub: "Thief", wp: 10, maxWP: 20 },
+    ],
+    combat: fixedCombat([], { ally: { name: "Bound Djinn", rounds: 3, lvl: 2 } }),
+  });
+  const refs = [];
+  const chipsFor = (ref) => {
+    refs.push(ref);
+    return ref.kind === "hero" ? [{ text: "Smoke · 2" }] : [{ text: `Sidestep · ${ref.partyIdx + 1}` }];
+  };
+  const vm = yourLotViewModel(state, { chipsFor });
+  assert.deepEqual(refs, [{ kind: "hero" }, { kind: "member", partyIdx: 0 }, { kind: "member", partyIdx: 1 }]);
+  assert.deepEqual(vm.cards[0].chips, [{ text: "Smoke · 2" }]);
+  assert.deepEqual(vm.cards[1].chips, [{ text: "Sidestep · 1" }]);
+  assert.deepEqual(vm.cards[2].chips, [{ text: "Sidestep · 2" }]);
+  assert.equal(vm.cards[3].kind, "ally");
+  assert.deepEqual(vm.cards[3].chips, []);
+});
+
+test("yourLotViewModel (CMBUI-13): a throwing or non-array chipsFor gives that card []", () => {
+  const state = fixedState({ party: [{ name: "Sidekick", sub: "Bard", wp: 12, maxWP: 20 }] });
+  const vm = yourLotViewModel(state, {
+    chipsFor: (ref) => {
+      if (ref.kind === "hero") throw new Error("boom");
+      return "not an array";
+    },
+  });
+  assert.deepEqual(vm.cards[0].chips, []);
+  assert.deepEqual(vm.cards[1].chips, []);
 });
 
 // ─── encounterOverlaySpec ───────────────────────────────────────────────────

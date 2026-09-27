@@ -220,7 +220,8 @@ function findBannedTerms(text) {
 test("Voice: the new chip/kit-row copy clears the family-friendly safety wordlist", () => {
   for (const phrase of [
     "They swing at a reflection for a few rounds. Try not to look smug.",
-    "You fight in the dark at full skill and nothing gets the jump on you, until this fight ends.",
+    // CMBUI-13 (plan 77-08): "how long" now follows on the tap card, so the sentence no longer repeats it.
+    "You fight in the dark at full skill and nothing gets the jump on you.",
     "Wounds close on their own every round of this fight. It is not a licence.",
     "You already know what the next encounter is. Whether that helps is up to you.",
     // Plan 76-06 (user ruling 2026-09-26): the reveal sentence is now the until-you-move truth.

@@ -3,7 +3,10 @@
 // Phase 34 (CSCR-01/02/03/06) — the foe-card, YOUR LOT, header and MAJOR
 // OVERLAY (encounter gate) view-models. Chip text arrives through
 // `opts.chipsFor` so the shell's own `foeStatusBadges` stays the ONE chip
-// source (this module never re-derives condition chips).
+// source (this module never re-derives condition chips). Phase 77
+// (CMBUI-13): YOUR LOT's hero and member chips arrive the same way, built
+// by the shell from conditionsOf/memberConditionsOf through
+// heroConditions.js#lotChips.
 //
 // PRESENTATION ONLY, pure module: no DOM/global access, no timers, no
 // storage, no mutation of `state` anywhere in this file.
@@ -150,15 +153,35 @@ export function foeListViewModel(state, opts = {}) {
 }
 
 /**
- * yourLotViewModel(state) — { hint, cards, overflow }. `cards[0]` is
+ * lotChipsSafe(chipsFor, ref) — chipsFor(ref) when it returns an array,
+ * else [] (a throwing or malformed chip source never breaks YOUR LOT).
+ */
+function lotChipsSafe(chipsFor, ref) {
+  try {
+    const out = chipsFor(ref);
+    return Array.isArray(out) ? out : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * yourLotViewModel(state, opts = {}) — { hint, cards, overflow }. `cards[0]` is
  * always the hero (the active card — joiners auto-act, no turn cycling);
  * then every `state.party` member; then, when `state.combat.ally` is
  * present, a summoned-ally card. `overflow` is `cards.length > 3` (the
  * strip's `overflow-x:auto` data attribute — no `PARTY_CAP > 1` fixture
  * exists today, so a 3+-member scenario must feed a synthetic
  * `state.party`, per RESEARCH Pitfall 10).
+ *
+ * Phase 77 (CMBUI-13): every card carries `chips`. `opts.chipsFor(ref)`
+ * supplies them — `{ kind: "hero" }` for the hero, `{ kind: "member",
+ * partyIdx }` for each member — mirroring foeListViewModel: this module
+ * never derives chips itself. A summoned ally card always has `[]`; with no
+ * chipsFor, or when it throws or returns a non-array, a card gets `[]`.
  */
-export function yourLotViewModel(state) {
+export function yourLotViewModel(state, opts = {}) {
+  const chipsFor = typeof opts.chipsFor === "function" ? opts.chipsFor : () => [];
   const c = state.c;
   const heroWp = Math.max(0, c.wp);
   const heroDown = heroWp <= 0;
@@ -173,10 +196,11 @@ export function yourLotViewModel(state) {
     down: heroDown,
     active: true,
     third: heroThird,
+    chips: lotChipsSafe(chipsFor, { kind: "hero" }),
   };
 
   const party = state.party || [];
-  const memberCards = party.map((m) => {
+  const memberCards = party.map((m, partyIdx) => {
     const wp = Math.max(0, m.wp ?? 0);
     const max = m.maxWP || 1;
     const down = m.status === "downed" || wp <= 0;
@@ -190,6 +214,7 @@ export function yourLotViewModel(state) {
       down,
       active: false,
       third: String(m.sub || m.cls || "COMPANION").toUpperCase(),
+      chips: lotChipsSafe(chipsFor, { kind: "member", partyIdx }),
     };
   });
 
@@ -206,6 +231,7 @@ export function yourLotViewModel(state) {
       down: false,
       active: false,
       third: COMBAT_PANEL_COPY.allyThird,
+      chips: [],
     });
   }
 
