@@ -493,14 +493,14 @@ Plans:
   2. No player-facing string still encodes roll-under phrasing ("1–N", "need N", "natural 1", "−3 on to-hit") — a doc-synced test pins that none remains.
   3. Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why, while staying sarcastic and family-friendly.
 
-**Plans**: 0/13 plans executed
+**Plans**: 3/13 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 79-01-PLAN.md — Build the tooling the whole narrative pass runs on, and capture the phase base before anything changes (VOX-05's inventory, ROLL-04's scanner; CONTEXT "Claude's Discretion": "the inventory tooling (e.g (wave 1)
-- [ ] 79-02-PLAN.md — Make every number a gain line or a Table 4 line prints the number that actually happened (the two routed number-honesty todos, under VOX-05 rubric point 4: "accurate to what the engine actually did") (wave 1)
-- [ ] 79-03-PLAN.md — Make every sub-class and race description name both what it is good at and what it pays for (VOX-04), with a compact footer generated from the rules tables under each blurb, and bring the blurbs themselves in line wit... (wave 1)
+- [x] 79-01-PLAN.md — Build the tooling the whole narrative pass runs on, and capture the phase base before anything changes (VOX-05's inventory, ROLL-04's scanner; CONTEXT "Claude's Discretion": "the inventory tooling (e.g (wave 1)
+- [x] 79-02-PLAN.md — Make every number a gain line or a Table 4 line prints the number that actually happened (the two routed number-honesty todos, under VOX-05 rubric point 4: "accurate to what the engine actually did") (wave 1)
+- [x] 79-03-PLAN.md — Make every sub-class and race description name both what it is good at and what it pays for (VOX-04), with a compact footer generated from the rules tables under each blurb, and bring the blurbs themselves in line wit... (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -655,7 +655,7 @@ Plans:
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 9/9 | Complete    | 2026-09-27 |
-| 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
+| 79. Content & Narrative Pass | v2.1 | 3/13 | In Progress|  |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
