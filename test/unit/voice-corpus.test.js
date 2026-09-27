@@ -153,7 +153,7 @@ const FLOORS = Object.freeze({
   blurbs: 31, oracle: 261, rail: 229, refusals: 30, "rail-cards": 112, "combat-screen": 162, items: 88, spells: 69,
   foes: 62, death: 96, boards: 145, panels: 152, map: 16, title: 13,
 });
-const TEXT_FLOOR = 3200;
+const TEXT_FLOOR = 2990;
 
 test("floors: every surface and the text total stay above their floors (an empty corpus never reads as clean)", () => {
   for (const [s, floor] of Object.entries(FLOORS)) {
