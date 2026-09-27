@@ -5154,3 +5154,51 @@ make camp: you eat 1 a night, and you have 0. Find rations first." (was
 living −N hp." (was "Hunger: nobody packed — you eat …"), and `chestLocked`
 reads "The lock holds. The box stays shut for good." (was "The lock wins
 this round."). No event, order, fold or priority moved.
+
+### Plan 79-12 — the ROLL-04 closure, the corpus-wide voice guards and the handed-on fixes: measured zero
+
+**The rule.** Text, labels and test tooling only. No engine file changed
+(`git diff --quiet 1968d3e8 -- engine` exits 0). The player-facing edits:
+the house spelling (every "armor" the player reads is now "armour", plus
+"honour" and "rumour"), `src/browser/rollRange.js#MOD_LABEL.gear` ("unseen"),
+four blurbs (the Thief class note, the Woodsman, Bard and Pilfer notes), the
+Sense Danger spell text, the deletion of the never-shown rulebook-notes
+section in `mazeworld.html`, and the deletion of the unreachable teleport,
+poison and won epitaph buckets and the teleport and poison causes.
+
+**The predictor.** None of these strings reaches serialized state or a
+parity comparable: spell texts, class, sub-class and race notes, identity
+traits and footers are read only by the shell; `c.grimoire` holds spell
+names; the deleted epitaph buckets belong to causes no `die()` call passes,
+so every reachable `epitaphFor` pick (and its rng draw) is unchanged; the
+`armor` slot KEY is unchanged (only `narrationLines.js#slotWord`'s display
+word moved). `content/treasure-tables.js` changed one comment.
+
+**The live scan (measured at this plan's head, base `1968d3e8`).**
+
+1. `npm test` (the whole suite, parity included): every
+   `test/parity/**` test passes; `test/parity/fixture-inventory.test.js`
+   passes, and the generated roster block above is not edited.
+2. `git diff --quiet 1968d3e8 -- test/parity/fixtures test/parity/prototype-master.js.txt engine`
+   exits 0; `git hash-object test/parity/prototype-master.js.txt` is
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+3. No state pin moved (`roll-high-state-pins`, `roll-high-save-compat`,
+   `foe-turn-draw-count` and `test/determinism/**` pass unchanged). No
+   carve-out was added.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Other recorded artifacts.** Three shell snapshots were regenerated as a
+declared change (`MZ_SNAPSHOT_UPDATE=1 node --test
+test/unit/shell-tab-snapshots.test.js`), each only for copy this plan
+changed: `mu.gear.txt` and `thief.gear.txt` ("ARMOR RATING" → "ARMOUR
+RATING", the "ARMOR" slot label → "ARMOUR", and on the Thief's bag card
+"ARMOR · SWAP" → "ARMOUR · SWAP"), and `thief.hero.txt` (the Thief class
+note: "studded leather at the very best (mail, if you learn Heft)"). The
+77-02 event-order corpus did not move.

@@ -180,6 +180,19 @@ export const HYGIENE_RULES = Object.freeze([
   hyg("spacing", "doubled spaces, or a space before . , ; : ! (a lone ? is the unknown-value marker)", "\\S {2,}\\S| [.,;:!](?=\\s|$)", "",
     ["You win  again.", "You win .", "Well , fine.", "Stop !"],
     ["You win. Again.", "Floor 3 · day 2", "… of …", "HP ?", "Lock: ? vs ?"]),
+  // 79-12 (the house-spelling decision, docs/narrative-pass/README.md): the
+  // player reads "armour". Counted on the live corpus at dispatch base
+  // 1968d3e8, "armour" held 64 occurrences in 39 keys against "armor"'s 31
+  // in 22, so the majority won; the rest of the -our family was already
+  // British by the same count (honour 2 / honor 1, rumour 3 / rumor 1,
+  // favour 2, colour 1, no US form), so the rule holds the whole family.
+  // Item names that carry the word are proper nouns and ids that reach
+  // saved state (the Cloak of Armor, the Faerie's Magic Armor gift), so
+  // they keep their spelling; code identifiers (armorSoaked, c.armor) never
+  // match the word boundary.
+  hyg("house-spelling", "a US -or spelling in player copy (the house spelling is British: armour, honour, rumour, favour, colour; the Cloak of Armor and Magic Armor are names)", "(?<!\\bCloak of |\\bMagic |[.$-])\\b(?:armor|honor|rumor|favor|color|humor|behavior|valor)(?:s|ed|ing)?\\b", "i",
+    ["Your armor takes 2 so you do not have to.", "ARMOR RATING", "Heavy armor gives you away.", "The bag declines the honor.", "light as a rumor", "colored glass"],
+    ["Your armour takes 2 so you do not have to.", "ARMOUR RATING", "Cloak of Armor", "Magic Armor", "armorSoaked", "c.armor", "The bag declines the honour.", "favourite"]),
 ]);
 
 const exc = (key, rule, match, reason) => Object.freeze({ key, rule, match, reason });
@@ -198,6 +211,15 @@ const exc = (key, rule, match, reason) => Object.freeze({ key, rule, match, reas
  * section, which 79-12 deleted.
  */
 export const HYGIENE_EXCEPTIONS = Object.freeze([
+  // 79-12 (handed on by 79-05): the two bestiary notes Phase 18's D-14 holds
+  // byte-identical to the prototype (fixture-exposed rows, pinned in
+  // test/unit/content-tables.test.js). The player never reads them raw:
+  // every surface that prints a note (the foe card meta line, the long-press
+  // foe card) routes it through src/browser/combatPanel.js#playerNote, which
+  // rewrites the token to HP (pinned in test/unit/combatPanel.test.js;
+  // test/voice/narrative-hygiene.test.js proves the rendering is clean).
+  exc("content:BESTIARY.Bat/Rat.sp.note", "standalone-wp", "^two attacks, 1 wp each$", "prototype-identical note (Phase 18 D-14); every surface renders it through combatPanel.js#playerNote, which prints HP"),
+  exc("content:BESTIARY.Viper.sp.note", "standalone-wp", "^venom: 2 wp a round for d10 rounds$", "prototype-identical note (Phase 18 D-14); every surface renders it through combatPanel.js#playerNote, which prints HP"),
   exc("raw:engine/difficulty.js#DOT_MIX_FAMILIES", "ascii-sign", "^-\\d+ HP$", "an ENCOUNTER_TABLES cell used as a dispatch key inside the engine; never printed from here"),
 ]);
 
@@ -367,6 +389,10 @@ function textsByKey(corpus) {
 function textIn(texts, t, key) {
   if (!texts) return false;
   if (texts.includes(t)) return true;
+  // 79-12: a generated source renders one key as several lines (79-03's
+  // sub-class and race footers: "Good: …" and "Bad: …"); a row may record
+  // the whole footer as the lines joined by a space, exactly as they read.
+  if (texts.length > 1 && texts.join(" ") === t) return true;
   if (isBuilderKey(key)) {
     const s = skeleton(t);
     return texts.some((x) => skeleton(x) === s);

@@ -83,9 +83,53 @@ const SURFACE_DIRS = ["src", "engine", "content", "tools"];
  * A `//` or `/*` inside a real string is likewise never mistaken for a
  * comment opener, since quote-state is checked before comment-state.
  */
+/**
+ * templateEnd(src, i) — with `src[i]` a template literal's opening
+ * backtick, the index of its closing backtick (or the last index when the
+ * template never closes). Escapes are skipped; each `${…}` body is walked
+ * with its braces counted and its quoted strings and nested templates
+ * skipped whole, so a backtick inside `${…}` opens a nested template rather
+ * than closing this one.
+ */
+function templateEnd(src, i) {
+  const n = src.length;
+  let p = i + 1;
+  while (p < n) {
+    const ch = src[p];
+    if (ch === "\\") { p += 2; continue; }
+    if (ch === "`") return p;
+    if (ch === "$" && src[p + 1] === "{") { p = exprEnd(src, p + 2); continue; }
+    p++;
+  }
+  return n - 1;
+}
+
+/** exprEnd(src, p) — the index just past the `}` closing a `${…}` body that starts at `p`. */
+function exprEnd(src, p) {
+  const n = src.length;
+  let depth = 0;
+  while (p < n) {
+    const ch = src[p];
+    if (ch === "`") { p = templateEnd(src, p) + 1; continue; }
+    if (ch === "'" || ch === '"') {
+      let q = p + 1;
+      while (q < n && src[q] !== ch && src[q] !== "\n") q += src[q] === "\\" ? 2 : 1;
+      p = q + 1;
+      continue;
+    }
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      if (depth === 0) return p + 1;
+      depth--;
+    }
+    p++;
+  }
+  return n;
+}
+
 function stripJs(src) {
   let out = "";
-  let state = "code"; // code | line | block | squote | dquote | backtick
+  let state = "code"; // code | line | block | squote | dquote (a template is copied whole: templateEnd)
   const n = src.length;
   for (let i = 0; i < n; i++) {
     const c = src[i];
@@ -151,8 +195,16 @@ function stripJs(src) {
       continue;
     }
     if (c === "`") {
-      state = "backtick";
-      out += c;
+      // Phase 79 (plan 79-12, the 79-01 deferred item): a template literal
+      // is copied verbatim as ONE unit, `${…}` bodies included (the module's
+      // stripping contract: template bodies are string text), with nested
+      // templates and quotes inside `${…}` tracked. The old per-character
+      // backtick state closed the outer template at a NESTED template's
+      // opening backtick (eventNarration.js#foeShattered), so every comment
+      // after it survived the strip.
+      const end = templateEnd(src, i);
+      out += src.slice(i, end + 1);
+      i = end;
       continue;
     }
     out += c;
@@ -309,6 +361,11 @@ function selfTest() {
     "const needle_d = 1;",
     'const someVar = "needle_e";',
     'const url = "http://example.com"; // needle_f trailing comment',
+    // 79-12: a template nested inside `${…}` (eventNarration.js#foeShattered's
+    // shape) must not close the outer template, so the comment after it is
+    // still stripped.
+    'const shattered = (e) => `a ${e.by ? `${e.by ?? "Something"}\'s` : "its"} b`;',
+    "// needle_g after a nested template",
   ].join("\n");
 
   const HTML_SAMPLE = [
