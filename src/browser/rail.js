@@ -353,7 +353,9 @@ export const RAIL_FAMILY = Object.freeze({
   regenFaded: { icon: "·", title: "REGENERATION ENDS", tone: "dull" },
 
   // Phase 40 (SPELL-07) — a scroll's own spell isn't scribable yet.
-  scrollTooAdvanced: { icon: "▪", title: "TOO ADVANCED", tone: "dull" },
+  // CMBUI-11 (Phase 77): the scroll still cast, so the family is a note, not
+  // a refusal (was "TOO ADVANCED", tone dull).
+  scrollTooAdvanced: { icon: "▪", title: "NOT FOR THE BOOK", tone: "odd" },
 
   // Phase 40 (SPELL-05, Plan 04) — Map the Floor's time-boxed reveal: the
   // cast itself and the one sweep at expiry (Plan 05 paints spell-only

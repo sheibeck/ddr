@@ -274,6 +274,19 @@ test("narrationLines.js source contains no Math.random / Date.now / document. / 
   assert.deepEqual(offenses, [], `Found disallowed reference in narrationLines.js:\n${offenses.join("\n")}`);
 });
 
+// ─── CMBUI-11 (Phase 77): the scroll copy note ──────────────────────────────
+
+test("locked wordings (CMBUI-11): scrollTooAdvanced is a plain copy note (tone magic), never 'needs level N; you are M'", () => {
+  const full = LINE_FOR.scrollTooAdvanced({ type: "scrollTooAdvanced", spell: "Fireball", need: 3, have: 1, school: "offense" });
+  assert.deepEqual(full, { text: "Fireball: too advanced to copy into your book.", tone: "magic", priority: PRIORITY.you });
+  const bare = LINE_FOR.scrollTooAdvanced({ type: "scrollTooAdvanced" });
+  assert.equal(bare.text, "It: too advanced to copy into your book.");
+  for (const r of [full, bare]) {
+    assert.ok(!/needs level|you are /i.test(r.text), `a refusal phrase in "${r.text}"`);
+  }
+  assert.deepEqual(LINE_FOR.scrollCast({ type: "scrollCast", spell: "Fireball" }), { text: "The scroll casts: Fireball.", tone: "magic", priority: PRIORITY.you });
+});
+
 test("calling a builder twice with the same payload gives deepEqual results (pure)", () => {
   const payload = { type: "struckByFoe", name: "Dante", dmg: 6, critical: true, soaked: { hide: 2 } };
   assert.deepEqual(LINE_FOR.struckByFoe(payload), LINE_FOR.struckByFoe(payload));
