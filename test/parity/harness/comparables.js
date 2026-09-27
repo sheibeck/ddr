@@ -414,7 +414,17 @@ function stripBagArmorFields(c) {
  * of the 7 newly-reworded jewelry/cloak rows into a starting kit. Same
  * cosmetic-carve-out rationale as Phase 28; the function name
  * (`stripCloakArmorTxt`) is kept so the three comparable chains below are
- * untouched. */
+ * untouched.
+ *
+ * Phase 79 (ROLL-04, plan 79-05): the roll-under item texts were rewritten to
+ * the roll-high reading (Lockpicks "1–5 on d10" -> "6–10 on d10"; the
+ * Crystal Staff, Cloak of Invisibility and Invisible potion now state the
+ * foe's top face; the Anklet, already in the set, states "two fewer faces").
+ * Display text only — no engine rule reads an item's `txt`. Measured
+ * exposure: the economy fixture buys a set of lockpicks (items[2].txt); no
+ * fixture carries a Crystal Staff, Cloak of Invisibility or Invisible potion.
+ * The potion's item name is "Invisible potion" from the store and
+ * "Invisible potion (clear)" from a find, so both are listed. */
 export const REWORDED_TXT_ITEMS = Object.freeze(
   new Set([
     "Cloak of Armor",
@@ -428,6 +438,11 @@ export const REWORDED_TXT_ITEMS = Object.freeze(
     "Helm of Knowledge",
     "Bracelet of Flight",
     "Cloak of Strength",
+    "Lockpicks",
+    "Crystal Staff",
+    "Cloak of Invisibility",
+    "Invisible potion",
+    "Invisible potion (clear)",
   ])
 );
 
@@ -958,9 +973,16 @@ export function declaredEndDiffs(protoState, engineState, divergence) {
   const declaredBefore = { ...divergence.before, ...divergence.stateBefore };
   const declaredAfter = { ...divergence.after, ...divergence.stateAfter };
 
+  // Phase 79 (ROLL-04, plan 79-05): the ENGINE side's declared `after` is
+  // compared with every REWORDED_TXT_ITEMS row's `txt` stripped from both
+  // the measured and the declared snapshot (stripCloakArmorTxt, the same
+  // carve-out the three comparable chains apply), so a reworded item text
+  // never forces a fixture edit. Measured: the economy fixture's declared
+  // `after.items[2]` (a bought set of Lockpicks). The `before` side is the
+  // frozen prototype and is still compared text for text.
   return {
     before: diffState(measuredBefore, declaredBefore),
-    after: diffState(measuredAfter, declaredAfter),
+    after: diffState(stripCloakArmorTxt(measuredAfter), stripCloakArmorTxt(declaredAfter)),
   };
 }
 

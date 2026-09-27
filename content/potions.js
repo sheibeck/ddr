@@ -52,7 +52,7 @@ export const POTIONS = [
   {
     // The canon text says "a day"; the prototype set 100 squares — kept.
     n: "Invisible", col: "Clear", uses: { n: 1, sides: 4, bonus: 0 }, price: 250, eff: "invis",
-    txt: "invisible for a day",
+    txt: "invisible for a day: foes hit you only on their die's top face (the top two faces if you insulted them)",
     act: { kind: "invis", effect: 100 },
   },
 ];

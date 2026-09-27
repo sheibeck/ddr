@@ -150,7 +150,7 @@
         <span class="mw-gear-tag mw-gear-tag-swap">
           text="JEWELRY · SWAP"
       <div class="mw-gear-desc">
-        text="used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight"
+        text="used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight"
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">

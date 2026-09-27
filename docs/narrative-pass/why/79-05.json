@@ -1,0 +1,335 @@
+[
+  {
+    "key": "content:SPELLS.Mirror Self.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "defensive · you · foes need a 1 to hit, d6 rounds",
+    "after": "defensive · you · foes hit you only on their die's top face (the top two faces if you insulted them), d6 rounds",
+    "reasons": [
+      "roll-under",
+      "accurate"
+    ],
+    "why": "The old text was a roll-under face count; foes roll high on a die that scales with their level, so it now names the top face, and the insulted top two, as the engine's override does."
+  },
+  {
+    "key": "content:SPELLS.Weaken.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · every foe · they hit on a 3 and do half, d4+1 rounds",
+    "after": "control · every foe · no more than their die's top three faces hit, and they do half, d4+1 rounds",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Hit on a 3\" was the roll-under face count; Weaken caps every foe at three winning faces from the top of a die that scales with the foe's level."
+  },
+  {
+    "key": "content:ABILITIES.battleRoar.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "loud enough to matter: for two rounds every foe needs two better to hit anyone on your side",
+    "after": "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Needs two better\" was roll-under shorthand; the engine takes two faces off every foe's winning range, so the text says two fewer faces."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Battle Roar.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "loud enough to matter: for two rounds every foe needs two better to hit anyone on your side",
+    "after": "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Needs two better\" was roll-under shorthand; the engine takes two faces off every foe's winning range, so the text says two fewer faces."
+  },
+  {
+    "key": "content:ABILITIES.sidestep.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "two rounds of not being where the blade is: every foe needs two better",
+    "after": "two rounds of not being where the blade is: every foe has two fewer faces that hit you",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Needs two better\" was roll-under shorthand; the engine takes two faces off every foe's winning range, so the text says two fewer faces."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Sidestep.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "two rounds of not being where the blade is: every foe needs two better",
+    "after": "two rounds of not being where the blade is: every foe has two fewer faces that hit you",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Needs two better\" was roll-under shorthand; the engine takes two faces off every foe's winning range, so the text says two fewer faces."
+  },
+  {
+    "key": "content:ABILITIES.smoke.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works",
+    "after": "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "The old text was a roll-under face count; foes roll high on a die that scales with their level, so it now names the top face, and the insulted top two, as the engine's override does."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Smoke.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works",
+    "after": "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "The old text was a roll-under face count; foes roll high on a die that scales with their level, so it now names the top face, and the insulted top two, as the engine's override does."
+  },
+  {
+    "key": "content:ABILITIES.overheadBlow.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "everything into one swing: double damage, but you need two better to land it",
+    "after": "everything into one swing: double damage, but your die has two fewer faces that land it",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Need two better\" was roll-under shorthand; the swing loses two faces off the top of your strike die, which scales with level."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Stealth.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "critical on a 2 when you open a fight; never in plate",
+    "after": "critical on your die's top two faces when you open a fight; never in plate",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Critical on a 2\" was the roll-under face count; the opener crits on the strike die's top two faces, and that die scales with level."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Locks.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "1–5 on d10 to open a lock",
+    "after": "6–10 on d10 to open a lock",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "The lock check rolls high on a fixed d10, so five winning faces are 6–10, not 1–5."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Locks.txt2",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "1–7 on d10 to open a lock",
+    "after": "4–10 on d10 to open a lock",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "The raised Locks tier wins on seven faces of a d10 rolled high: 4–10, not 1–7."
+  },
+  {
+    "key": "content:ABILITIES.feint.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "look left, stab right: this strike cannot miss and adds your level",
+    "after": "look left, stab right: this strike cannot miss and adds your level in damage",
+    "reasons": [
+      "fact"
+    ],
+    "why": "It never said what your level is added to; the engine adds it to the damage, as Kata's text already says."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Feint.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "look left, stab right: this strike cannot miss and adds your level",
+    "after": "look left, stab right: this strike cannot miss and adds your level in damage",
+    "reasons": [
+      "fact"
+    ],
+    "why": "It never said what your level is added to; the engine adds it to the damage, as Kata's text already says."
+  },
+  {
+    "key": "content:ABILITIES.mark.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "study it: every strike on the target adds +2 for the rest of the fight",
+    "after": "study it: every strike on the target adds +2 damage for the rest of the fight",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A bare +2 read as either to-hit or damage; the engine adds 2 damage to every blow on a marked foe."
+  },
+  {
+    "key": "content:JEWELRY.Anklet of Invisibility.txt",
+    "surface": "items",
+    "trigger": "a jewelry piece's item text",
+    "before": "used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight",
+    "after": "used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Needs two better\" was roll-under shorthand; the engine takes two faces off every foe's winning range, so the text says two fewer faces."
+  },
+  {
+    "key": "content:CLOAKS.Cloak of Invisibility.txt",
+    "surface": "items",
+    "trigger": "a cloak's item text",
+    "before": "invisible for 50 squares, once every 100",
+    "after": "invisible for 50 squares, once every 100: foes hit you only on their die's top face (the top two faces if you insulted them)",
+    "reasons": [
+      "roll-under",
+      "fact"
+    ],
+    "why": "It said invisible without saying what that buys; the engine lets foes hit only on their die's top face, the top two if insulted."
+  },
+  {
+    "key": "content:STAVES.Crystal Staff.txt",
+    "surface": "items",
+    "trigger": "a staff's item text",
+    "before": "party invisible d10+5 squares; enemies need a 1",
+    "after": "party invisible d10+5 squares: foes hit only on their die's top face (the top two faces if you insulted them)",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "The old text was a roll-under face count; foes roll high on a die that scales with their level, so it now names the top face, and the insulted top two, as the engine's override does."
+  },
+  {
+    "key": "content:POTIONS.Invisible.txt",
+    "surface": "items",
+    "trigger": "a potion's item text",
+    "before": "invisible for a day",
+    "after": "invisible for a day: foes hit you only on their die's top face (the top two faces if you insulted them)",
+    "reasons": [
+      "fact"
+    ],
+    "why": "It said invisible without saying what that buys; the engine lets foes hit only on their die's top face, the top two if insulted."
+  },
+  {
+    "key": "raw:engine/items.js#rollTreasureItem",
+    "surface": "items",
+    "trigger": "inline literal in engine/items.js#rollTreasureItem",
+    "before": "1–5 on d10 against any lock",
+    "after": "6–10 on d10 against any lock",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "Lockpicks give the lock check five winning faces on a d10 rolled high: 6–10, not 1–5."
+  },
+  {
+    "key": "raw:engine/economy.js#openStore",
+    "surface": "items",
+    "trigger": "inline literal in engine/economy.js#openStore",
+    "before": "1–5 on d10 against any lock",
+    "after": "6–10 on d10 against any lock",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "The store's Lockpicks carry the same text as a found set: five winning faces on a d10 rolled high, 6–10."
+  },
+  {
+    "key": "raw:engine/economy.js#openStore",
+    "surface": "items",
+    "trigger": "inline literal in engine/economy.js#openStore",
+    "before": "opens boxes on 1–5",
+    "after": "opens boxes on 6–10",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "The store row's line states the same roll-high range as the item it sells."
+  },
+  {
+    "key": "content:BESTIARY.Zit.sp.note",
+    "surface": "foes",
+    "trigger": "a foe's special note (foe card)",
+    "before": "acid; hittable only on a 4",
+    "after": "acid; at best your die's top four faces hit it",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Hittable only on a 4\" was a roll-under face count; the Zit caps your strike at four faces off the top of a die that scales with level."
+  },
+  {
+    "key": "content:BESTIARY.Stink Bug.sp.note",
+    "surface": "foes",
+    "trigger": "a foe's special note (foe card)",
+    "before": "small: strike as one level lower, 2 to hit",
+    "after": "small and slippery: at best your die's top two faces hit it",
+    "reasons": [
+      "roll-under",
+      "accurate"
+    ],
+    "why": "\"2 to hit\" was a bare face count, and \"strike as one level lower\" is nothing the engine does; it caps your strike at the die's top two faces."
+  },
+  {
+    "key": "content:BESTIARY.Pogo.sp.note",
+    "surface": "foes",
+    "trigger": "a foe's special note (foe card)",
+    "before": "+4 damage, and fast — strike one higher",
+    "after": "+4 damage, and fast: your die has one face fewer that hits it",
+    "reasons": [
+      "roll-under"
+    ],
+    "why": "\"Strike one higher\" read either way; the engine takes one face off your winning range against it."
+  },
+  {
+    "key": "content:BESTIARY.Trachea.sp.note",
+    "surface": "foes",
+    "trigger": "a foe's special note (foe card)",
+    "before": "+4 on its first hit; fighters do double to it",
+    "after": "a d10 bite; fighters do double to it",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "No engine rule adds +4 to its first hit; it bites for a d10, and a Fighter's blows do double."
+  },
+  {
+    "key": "content:LEAP_TABLE.0.ft",
+    "surface": "other",
+    "trigger": "a leap distance row",
+    "before": "3-4 feet",
+    "after": "3–4 feet",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "A range takes the en dash, not a hyphen."
+  },
+  {
+    "key": "content:LEAP_TABLE.1.ft",
+    "surface": "other",
+    "trigger": "a leap distance row",
+    "before": "5-8 feet",
+    "after": "5–8 feet",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "A range takes the en dash, not a hyphen."
+  },
+  {
+    "key": "content:LEAP_TABLE.2.ft",
+    "surface": "other",
+    "trigger": "a leap distance row",
+    "before": "8-12 feet",
+    "after": "8–12 feet",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "A range takes the en dash, not a hyphen."
+  },
+  {
+    "key": "content:LEAP_TABLE.3.ft",
+    "surface": "other",
+    "trigger": "a leap distance row",
+    "before": "12-15 feet",
+    "after": "12–15 feet",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "A range takes the en dash, not a hyphen."
+  }
+]

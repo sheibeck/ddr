@@ -86,7 +86,7 @@
       text="Cast"
   <li>
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L1</span>Mirror Self</b><i>defensive · you · foes need a 1 to hit, d6 rounds</i>"
+      html="<b><span class=\"grim-lvl\">L1</span>Mirror Self</b><i>defensive · you · foes hit you only on their die's top face (the top two faces if you insulted them), d6 rounds</i>"
     <button class="small" onclick>
       text="Cast"
   <li class="grim-locked">

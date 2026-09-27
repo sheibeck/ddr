@@ -143,7 +143,7 @@ const JEWELRY_ROWS = [
     // Use-activated (260918-w4n): worn + used, foes need two better to land
     // for 50 squares, 50 to fade back into view.
     n: "Anklet of Invisibility", slot: "jewelry", eff: { foeToHit: -2 },
-    txt: "used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight",
+    txt: "used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight",
     act: { kind: "unseen", effect: 50, cd: 50 },
   },
   {
@@ -184,7 +184,7 @@ const CLOAKS_ROWS = [
   {
     // Once-a-day rule: 100 effect / 100 cd -> 50 effect / 50 cd (50+50 = one day).
     n: "Cloak of Invisibility", slot: "cloak", eff: {}, use: "invis", every: 50,
-    txt: "invisible for 50 squares, once every 100",
+    txt: "invisible for 50 squares, once every 100: foes hit you only on their die's top face (the top two faces if you insulted them)",
     act: { kind: "invis", effect: 50 },
   },
   {
@@ -258,7 +258,7 @@ const STAVES_ROWS = [
     act: { kind: "stone", charges: 1, recharge: 100 },
   },
   {
-    n: "Crystal Staff", use: "invis", txt: "party invisible d10+5 squares; enemies need a 1",
+    n: "Crystal Staff", use: "invis", txt: "party invisible d10+5 squares: foes hit only on their die's top face (the top two faces if you insulted them)",
     act: { kind: "invis", charges: 2, recharge: 100, effect: { n: 1, sides: 10, bonus: 5 } },
   },
   {

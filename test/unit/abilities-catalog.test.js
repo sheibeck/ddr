@@ -59,12 +59,14 @@ test("THIEF_SKILLS: 9 keys, same order, same per-position cost as the pre-phase 
 
 test("Locks/Sewing keep their up-tier + txt2; the ten kept passives keep their exact pre-phase txt", () => {
   assert.equal(THIEF_SKILLS["Locks"].up, 1);
-  assert.equal(THIEF_SKILLS["Locks"].txt2, "1–7 on d10 to open a lock");
+  // VOX-05/ROLL-04 (79-05): the lock ranges read roll-high (test/unit/authored-ranges.test.js pins them to the engine).
+  assert.equal(THIEF_SKILLS["Locks"].txt2, "4–10 on d10 to open a lock");
   assert.equal(THIEF_SKILLS["Sewing"].up, 2);
   assert.equal(THIEF_SKILLS["Sewing"].txt2, "patch any armour, d6+3 back, 6 times");
 
   const KEPT_TXT = {
-    "FIGHTER_SKILLS.Stealth": [FIGHTER_SKILLS, "Stealth", "critical on a 2 when you open a fight; never in plate"],
+    // VOX-05/ROLL-04 (79-05): Stealth and Locks read roll-high.
+    "FIGHTER_SKILLS.Stealth": [FIGHTER_SKILLS, "Stealth", "critical on your die's top two faces when you open a fight; never in plate"],
     "FIGHTER_SKILLS.Hardiness": [FIGHTER_SKILLS, "Hardiness", "−3 to all damage taken; phobias halved"],
     "FIGHTER_SKILLS.Ambidextrous": [FIGHTER_SKILLS, "Ambidextrous", "a second weapon at the end of every round"],
     // Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp.
@@ -72,7 +74,7 @@ test("Locks/Sewing keep their up-tier + txt2; the ten kept passives keep their e
     // RULES-10 (Phase 75.1, plan 75.1-07): rewritten — canRead is gone, so
     // Runes/Signs is the automatic-read guarantee, not the gate.
     "FIGHTER_SKILLS.Runes/Signs": [FIGHTER_SKILLS, "Runes/Signs", "reads any scroll without fail; without it, a scroll is an intelligence roll that can backfire"],
-    "THIEF_SKILLS.Locks": [THIEF_SKILLS, "Locks", "1–5 on d10 to open a lock"],
+    "THIEF_SKILLS.Locks": [THIEF_SKILLS, "Locks", "6–10 on d10 to open a lock"],
     "THIEF_SKILLS.Sewing": [THIEF_SKILLS, "Sewing", "patch any armour, d6 back, 4 times"],
     "THIEF_SKILLS.Night Vision": [THIEF_SKILLS, "Night Vision", "darkness costs you nothing"],
     "THIEF_SKILLS.Heft": [THIEF_SKILLS, "Heft", "+2 damage, mail armour, half upkeep"],
@@ -130,24 +132,26 @@ test("FREE_SKILL is repointed to the keys sitting at the OLD free key's exact po
 const CATALOG_TXT = {
   kata: "one perfect form: this strike cannot miss and adds your level in damage",
   deathTouch: "call it: your next landed blow doubles, and finishes anything under 15 hp",
-  sidestep: "two rounds of not being where the blade is: every foe needs two better",
+  // VOX-05/ROLL-04 (79-05): sidestep, battleRoar, overheadBlow and smoke read
+  // roll-high in faces; feint and mark name what they add (damage).
+  sidestep: "two rounds of not being where the blade is: every foe has two fewer faces that hit you",
   pommelStrike: "the blunt end, to the temple: the target loses its next turn",
-  battleRoar: "loud enough to matter: for two rounds every foe needs two better to hit anyone on your side",
+  battleRoar: "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side",
   secondWind: "remember why you came: heal d8 + level",
   sweep: "one wide arc: every living foe takes half damage",
   brace: "halve the next blow that lands on you",
   riposte: "for one round every foe that misses you eats your weapon damage",
   taunt: "every foe swings at you this round and your armour soaks double",
-  overheadBlow: "everything into one swing: double damage, but you need two better to land it",
+  overheadBlow: "everything into one swing: double damage, but your die has two fewer faces that land it",
   lastStand: "under a quarter hp: three attacks this round",
   silentStep: "nobody heard that: your next attack is an automatic critical, any round",
-  feint: "look left, stab right: this strike cannot miss and adds your level",
+  feint: "look left, stab right: this strike cannot miss and adds your level in damage",
   dirtyTrick: "sand, thumb, elbow: the target is blinded for two rounds",
-  smoke: "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works",
+  smoke: "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works",
   cutpurse: "lift d10 × level gold off the target mid-fight; it has other problems",
   poisonedEdge: "the blade weeps: d4 a round to the target for three rounds",
   hamstring: "cut the tendon: the target's blows do half damage for the rest of the fight",
-  mark: "study it: every strike on the target adds +2 for the rest of the fight",
+  mark: "study it: every strike on the target adds +2 damage for the rest of the fight",
 };
 
 test("ABILITIES: 20 unique entries, valid shape/enums, canon txt lines pinned", () => {

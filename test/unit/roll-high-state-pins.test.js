@@ -163,7 +163,18 @@ const PINNED = {
   // re-measured byte-identical (solo runs never take the member branch;
   // party-1's Joiner has no personal term the fix moves). Regenerated via
   // `node tools/roll-high-baseline.mjs pins` (hashed identically twice).
-  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "4f38e357d857652fcc660a37bb641857e155a8174f8c57a4989811f554b46fbf" },
+  //
+  // "party-fighter-knight" and "deep-8" re-pinned (Phase 79, Plan 05,
+  // 2026-09-27, ROLL-04): item TEXT only. The roll-under item texts were
+  // rewritten roll-high, and each run ends holding one: this run carries an
+  // "Invisible potion (clear)" whose txt now states the foe's top face;
+  // "deep-8" carries a set of Lockpicks whose txt reads "6–10 on d10" (was
+  // "1–5"). Traced: putting the old txt back into each run's final state
+  // re-hashes to the previous pin exactly, and actions/dead/depth are
+  // unchanged. Regenerated via `node tools/roll-high-baseline.mjs pins`.
+  // Merged 2026-09-27 (orchestrator): BOTH causes apply together, so the
+  // value below was re-measured on the merged tree: depth 4 (the Joiner die) and the new item text, hashed identically twice.
+  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "8b18a1e83b9944a8170493396acecc5aa1e73a2a0a8e3fb5aa045cb3a99564a1" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
@@ -192,7 +203,9 @@ const PINNED = {
   // Troll-Summoner complaint was exactly "too many solo fights past floor
   // 5"). Regenerated via `node tools/roll-high-baseline.mjs pins` (hashed
   // identically twice).
-  "deep-8": { actions: 250, dead: true, depth: 10, hash: "4ad84fadec4eed1bb45908ccea142ed06a9d318a81f06c723834e9a5d1011b45" },
+  // "deep-8" re-pinned (Phase 79, Plan 05): its Lockpicks txt, see the
+  // "party-fighter-knight" comment above.
+  "deep-8": { actions: 250, dead: true, depth: 10, hash: "ffe8d37b693277b5b0752971f516ada4740b262dc5f55e751c8e236a785b62cb" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll

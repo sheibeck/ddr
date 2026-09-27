@@ -33,10 +33,10 @@ export const CLIMB_TABLE = {
 };
 
 export const LEAP_TABLE = [
-  { ft: "3-4 feet", F: 10, T: 10, M: 9 },
-  { ft: "5-8 feet", F: 8, T: 7, M: 6 },
-  { ft: "8-12 feet", F: 6, T: 5, M: 4 },
-  { ft: "12-15 feet", F: 4, T: 3, M: 1 },
+  { ft: "3–4 feet", F: 10, T: 10, M: 9 },
+  { ft: "5–8 feet", F: 8, T: 7, M: 6 },
+  { ft: "8–12 feet", F: 6, T: 5, M: 4 },
+  { ft: "12–15 feet", F: 4, T: 3, M: 1 },
 ];
 
 export const DIRECTION_TABLE = ["N", "N", "E", "E", "S", "S", "W", "W"]; // 2d8, p.49
