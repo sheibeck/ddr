@@ -15,7 +15,7 @@
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel } from "./heroTab.js";
 import { itemRowState } from "./gearTab.js";
-import { canCast, WORN_SLOTS, activationFor, wieldedStaff } from "../../engine/derived.js";
+import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
@@ -59,11 +59,16 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // RULES-13 (Phase 75, user 2026-09-25): a bagged staff's power is inert
   // (75-09's engine-side notWielded refusal) — its combat row is disabled
   // and says why; a WIELDED staff gets its own EQUIPPED row beside the worn
-  // rows below. Phase 77 (CMBUI-14) reuses these same two keys for jewelry
-  // and cloaks.
+  // rows below. Phase 77 (CMBUI-14, user 2026-09-25) extends the pattern to
+  // jewelry and cloaks: a worn row reads `EQUIPPED · <its state>`, and a
+  // bagged wearable (the engine's own notWorn refusal) reads NOT EQUIPPED
+  // with notEquippedDesc — equipping is refused mid-fight
+  // (engine/items.js#equipItem's gearLockReason), so the reason says so.
   notWielded: "NOT WIELDED",
   notWieldedDesc: "Wield it outside the fight to use its power.",
   equipped: "EQUIPPED",
+  notEquipped: "NOT EQUIPPED",
+  notEquippedDesc: "Only works worn, and nobody changes outfits mid-fight. Put it on after.",
   potion: "POTION",
   potionDesc: "Heals. Wasted at full health.",
   scroll: "SCROLL",
@@ -206,14 +211,28 @@ function combatMenuViewModelUnlocked(state) {
     // information the player needs, unlike a lock the player cannot act on.
     // The Hero-tab Grimoire (heroTab.js#grimoireViewModel) is untouched and
     // still lists every spell the book holds, locked or not.
+    //
+    // Phase 77 (CMBUI-08, user device report 2026-09-21: "spells are in level
+    // order, then alphabetical"; the 2026-09-25 Lesser Summon report): the
+    // visible rows sort by the spell's EFFECTIVE level for this sub-class
+    // (spellLevelFor(c.sub, sp), the same level canCast gates on) ascending,
+    // then by the upper-cased name compared by code unit (names are ASCII and
+    // unique in SPELLS), then by SPELLS index as a final safety tie-break.
+    // The LVL label reads that same effective level, so the list never reads
+    // out of order (the Illusionist's Phantom Host: base 3, effective 1).
+    // Sorting reorders rows only: each row's id and dispatch idx stay its own
+    // SPELLS index, so a tap casts the spell the row names, and the RULES-04
+    // hidden rows stay hidden.
     const grimoireSpells = SPELLS.filter((sp) => (c.grimoire || []).includes(sp.n));
-    const castableSpells = grimoireSpells.filter((sp) => canCast(state, sp));
-    const spellRows = castableSpells.map((sp) => {
-      const idx = SPELLS.indexOf(sp);
+    const castableSpells = grimoireSpells
+      .filter((sp) => canCast(state, sp))
+      .map((sp) => ({ sp, lvl: spellLevelFor(c.sub, sp), name: sp.n.toUpperCase(), idx: SPELLS.indexOf(sp) }))
+      .sort((a, b) => a.lvl - b.lvl || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) || a.idx - b.idx);
+    const spellRows = castableSpells.map(({ sp, idx }) => {
       return {
         id: `spell-${idx}`,
         label: sp.n.toUpperCase(),
-        cost: `LVL ${sp.lvl}`,
+        cost: `LVL ${spellLevelFor(c.sub, sp)}`,
         desc: sp.txt || "",
         // Phase 40 (SPELL-01): the same niche/nicheLabel pair the Hero-tab
         // Grimoire rows carry (src/browser/heroTab.js#grimoireViewModel) —
@@ -308,11 +327,22 @@ function combatMenuViewModelUnlocked(state) {
   // — this loop only ever sees a bagged one), so its row is disabled with
   // `notWielded`/`notWieldedDesc` and dispatches nothing useful — the tap
   // still reaches the engine's OWN `useRefused {reason:"notWielded"}` line,
-  // never a restated refusal. Every OTHER activatable row stays
-  // `enabled: true` (the Phase 38 ability-row ruling) — a tap on cooldown
-  // dispatches exactly like a ready one, and the engine's own useRefused
-  // {reason: "cooldown"|"recharging"|"notWorn"} lands the canon refusal
-  // line in the fight log.
+  // never a restated refusal.
+  //
+  // Phase 77 (CMBUI-14, user 2026-09-25: "grey out unequipped gear that
+  // isn't usable during combat"): a bagged WEARABLE the engine would refuse
+  // as notWorn is disabled the same way, reading NOT EQUIPPED with its
+  // reason. The test is engine/items.js#useItem's OWN notWorn gate, word for
+  // word (a bag-index use while `c.worn` is an object and `slotFor(it)` is
+  // truthy), so the menu never re-derives a rule the engine does not hold: a
+  // legacy character with no `c.worn` keeps its bag wearables enabled because
+  // the engine lets it use them. The dispatch is unchanged, so a tap still
+  // lands the engine's own notWorn line. Every OTHER activatable row (bag
+  // potions, the torch) stays `enabled: true` (the Phase 38 ability-row
+  // ruling) — a tap on cooldown dispatches exactly like a ready one, and the
+  // engine's own useRefused {reason: "cooldown"|"recharging"} lands the canon
+  // refusal line in the fight log.
+  const mustBeWorn = (it) => !!(c.worn && typeof c.worn === "object" && slotFor(it));
   const carriedRows = (c.items || [])
     .map((it, i) => ({ it, i }))
     .filter(({ it }) => it && (it.kind === "potion" || activationFor(it)))
@@ -326,14 +356,23 @@ function combatMenuViewModelUnlocked(state) {
             enabled: false,
             dispatch: { type: "useItem", i },
           }
-        : {
-            id: `item-${i}`,
-            label: String(it.n).toUpperCase(),
-            cost: itemRowState(state, it).text,
-            desc: it.txt || "",
-            enabled: true,
-            dispatch: { type: "useItem", i },
-          },
+        : mustBeWorn(it)
+          ? {
+              id: `item-${i}`,
+              label: String(it.n).toUpperCase(),
+              cost: COMBAT_MENU_COPY.notEquipped,
+              desc: COMBAT_MENU_COPY.notEquippedDesc,
+              enabled: false,
+              dispatch: { type: "useItem", i },
+            }
+          : {
+              id: `item-${i}`,
+              label: String(it.n).toUpperCase(),
+              cost: itemRowState(state, it).text,
+              desc: it.txt || "",
+              enabled: true,
+              dispatch: { type: "useItem", i },
+            },
     );
   // Phase 37 (GEAR-03) + 260918-w4n: worn activatables must be worn to work
   // in the worn-slot model, so a worn cloak/jewel must be reachable from the
@@ -342,13 +381,19 @@ function combatMenuViewModelUnlocked(state) {
   // jewelry2, cloak — both worn jewelry pieces get their own row
   // (worn-jewelry1 / worn-jewelry2) alongside the cloak row. A legacy c (no
   // c.worn key) contributes zero rows here, byte-identical to before this
-  // phase.
+  // phase. Phase 77 (CMBUI-14): a worn row reads `EQUIPPED · <its state>`,
+  // the RULES-13 wielded-staff row's own pattern (the separator is dropped
+  // if the state text is ever empty).
+  const equippedCost = (it) => {
+    const text = itemRowState(state, it).text;
+    return text ? `${COMBAT_MENU_COPY.equipped} · ${text}` : COMBAT_MENU_COPY.equipped;
+  };
   const wornRows = WORN_SLOTS.filter((slot) => c.worn && activationFor(c.worn[slot])).map((slot) => {
     const it = c.worn[slot];
     return {
       id: `worn-${slot}`,
       label: String(it.n).toUpperCase(),
-      cost: itemRowState(state, it).text,
+      cost: equippedCost(it),
       desc: it.txt || "",
       enabled: true,
       dispatch: { type: "useItem", slot },
@@ -372,13 +417,15 @@ function combatMenuViewModelUnlocked(state) {
         },
       ]
     : [];
-  // CMBUI-14's counting rule (usable rows are counted by `enabled`, never by
-  // mere presence), applied here to staves only — every OTHER row in
-  // `carriedRows`/`wornRows`/`staffRows` is always `enabled: true`, so this
-  // is a no-op for anything but a bagged (disabled) staff, and a fight with
-  // no staff involved counts exactly as it did before this plan.
+  // Phase 77 (CMBUI-14): `N USABLE` counts exactly the enabled, dispatchable
+  // rows, never mere presence — the potion row only while it is enabled
+  // (potions in hand AND below full HP, the same test that row's own
+  // `enabled` uses below), the scroll, and every enabled carried/worn/staff
+  // row (a bagged staff or bagged wearable is disabled, so it never counts).
+  // The title and the grid sub read this one number.
+  const potionEnabled = (c.potions || 0) > 0 && c.wp < c.maxWP;
   const usableCount =
-    ((c.potions || 0) > 0 ? 1 : 0) +
+    (potionEnabled ? 1 : 0) +
     (hasScroll ? 1 : 0) +
     carriedRows.filter((r) => r.enabled).length +
     wornRows.filter((r) => r.enabled).length +
@@ -400,7 +447,7 @@ function combatMenuViewModelUnlocked(state) {
         label: COMBAT_MENU_COPY.potion,
         cost: `${c.potions || 0} LEFT`,
         desc: COMBAT_MENU_COPY.potionDesc,
-        enabled: (c.potions || 0) > 0 && c.wp < c.maxWP,
+        enabled: potionEnabled,
         dispatch: { type: "drinkPotion" },
       },
     ];

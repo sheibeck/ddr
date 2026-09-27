@@ -807,14 +807,23 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-sub-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .cb-sub-title{font-family:var(--disp);font-size:6.5px;color:#e8c97a;line-height:1.7}
 .cb-chip{font-family:var(--disp);font-size:7px;color:#c9bda0;padding:7px 9px;border:2px solid #4a4032;border-radius:0;background:transparent;box-shadow:none;letter-spacing:0;flex:none;min-height:0;cursor:pointer}
+/* Phase 77 (CMBUI-07, user device report 2026-09-21): a submenu row GROWS to
+   fit its whole label and description. Root cause (measured at 412px in
+   headless Chrome): .cb-sub-list is a column flex container capped at 206px,
+   and a row's explicit min-height:48px replaces the flex item's content-based
+   minimum, so once a submenu's rows add up to more than 206px every row
+   shrank to 48px and its description ran up to ~43px past the bottom border
+   and under the next row. flex:none keeps each row at its content height
+   (the list still scrolls), the label and description wrap instead of being
+   cut, and the bottom padding leaves room under the last line. */
 .cb-sub-list{display:flex;flex-direction:column;gap:6px;margin-top:9px;max-height:206px;overflow:auto;padding-right:4px}
-.cb-row{display:block;width:100%;border:2px solid #6b5c3c;border-radius:0;background:#241d12;padding:10px 11px;text-align:left;color:#e6ddc6;font-family:var(--mono);letter-spacing:0;box-shadow:none;min-height:48px;cursor:pointer}
+.cb-row{display:block;flex:none;width:100%;border:2px solid #6b5c3c;border-radius:0;background:#241d12;padding:10px 11px 13px;text-align:left;color:#e6ddc6;font-family:var(--mono);letter-spacing:0;box-shadow:none;min-height:48px;cursor:pointer}
 .cb-row-off{border-color:#241f16;background:#191510;color:#8f856f}
-.cb-row-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.cb-row-label{font-family:var(--disp);font-size:7.5px;line-height:1.6;min-width:0;overflow:hidden}
+.cb-row-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.cb-row-label{font-family:var(--disp);font-size:7.5px;line-height:1.6;min-width:0;overflow-wrap:anywhere}
 .cb-row-cost{font-family:var(--mono);font-weight:700;font-size:14px;color:#e8c97a;flex:none}
 .cb-row-off .cb-row-cost{color:#8f856f}
-.cb-row-desc{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin-top:6px;line-height:1.4}
+.cb-row-desc{font-family:var(--mono);font-weight:700;font-size:13px;color:#a89c82;margin-top:6px;line-height:1.4;overflow-wrap:anywhere}
 .cb-over{padding:13px 12px 28px;animation:mwfade .2s ease}
 .cb-over-title{font-family:var(--disp);font-size:11px;line-height:1.6;color:#e8c97a}
 .cb-over-title.dead{color:#e07260}
