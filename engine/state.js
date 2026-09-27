@@ -212,8 +212,10 @@ export function newRun(seed, exclude = [], { startDepth = 1, force = null, store
     // Phase 39 (GEAR-05): the hazard pre-roll decision — a top-level
     // sibling of pendingFind/pendingJoiner (NOT a field on `c`), a SEVENTH
     // analog of party/pendingJoiner/pendingFind/pendingLoot/dev/storeRoll.
-    // `{ feat, dir, tool, declined }` while a climbable wall/gorge tile is
-    // being decided, else `null`. Initialized to `null` here as a plain
+    // Phase 78 (CLIMB-01/02): `{ feat, dir, tool }` while EVERY hero's step
+    // toward a wall/crevice waits on the pre-roll decision (CLIMB IT / LEAP
+    // IT, USE LADDER / USE ROPE, TURN BACK; `tool` is the one that would
+    // cross it, carried or not), else `null`. Initialized to `null` here as a plain
     // assignment (NO rng draw) — like pendingFind, it survives a relaunch
     // while it still matches its neighbour cell and loads as `null`
     // otherwise (engine/saveState.js, SAV-06/07, Phase 76). The parity harness strips

@@ -330,22 +330,44 @@ function neighbour(floor) {
   throw new Error("no neighbour");
 }
 
+// CLIMB-01 (Phase 78): the record is the pre-roll decision's `{ feat, dir,
+// tool }` (no retry flag); `tool` must be the feat's own matching tool.
 test("pendingHazard: one matching the neighbour cell's feat survives; a bad dir, tool or feat loads null", () => {
   const s = newRun(7);
   const [dir, x, y] = neighbour(s.floor);
   s.floor.g[y][x].feat = "climb";
-  s.pendingHazard = { feat: "climb", dir, tool: "ladder", declined: false };
-  for (const st of loadAll(s).all) assert.deepStrictEqual(st.pendingHazard, { feat: "climb", dir, tool: "ladder", declined: false });
+  s.pendingHazard = { feat: "climb", dir, tool: "ladder" };
+  for (const st of loadAll(s).all) assert.deepStrictEqual(st.pendingHazard, { feat: "climb", dir, tool: "ladder" });
   const cases = [
-    { feat: "climb", dir: "Q", tool: "ladder", declined: false },
-    { feat: "climb", dir, tool: "jetpack", declined: false },
-    { feat: "gorge", dir, tool: "rope", declined: false },
-    { feat: "climb", dir, tool: "ladder", declined: "no" },
+    { feat: "climb", dir: "Q", tool: "ladder" },
+    { feat: "climb", dir, tool: "jetpack" },
+    { feat: "climb", dir, tool: "rope" },
+    { feat: "climb", dir, tool: "torch" },
+    { feat: "gorge", dir, tool: "rope" },
+    { feat: "dot", dir, tool: "ladder" },
     "x",
   ];
   for (const bad of cases) {
     s.pendingHazard = bad;
     for (const st of loadAll(s).all) assert.equal(st.pendingHazard, null, JSON.stringify(bad));
+  }
+});
+
+// CLIMB-01 (Phase 78): tolerant load — a pre-Phase-78 save's record still
+// carries the retired `declined` retry flag; it loads (wholesale, the flag
+// ignored) and the next resolveHazard commits it.
+test("pendingHazard: an old save's record with the retired declined flag still loads, and resolveHazard commits it", () => {
+  const s = newRun(7);
+  const [dir, x, y] = neighbour(s.floor);
+  s.floor.g[y][x] = { ...s.floor.g[y][x], wall: false, feat: "gorge" }; // an open cell, so the commit can cross
+  for (const declined of [true, false]) {
+    s.pendingHazard = { feat: "gorge", dir, tool: "rope", declined };
+    for (const st of loadAll(s).all) {
+      assert.equal(st.pendingHazard.feat, "gorge");
+      const { state: after, events } = applyAction(st, { type: "resolveHazard", cross: true });
+      assert.ok(events.some((e) => ["leaptOver", "fellInGorge"].includes(e.type)), "the commit rolls the leap");
+      assert.equal(after.pendingHazard, null);
+    }
   }
 });
 

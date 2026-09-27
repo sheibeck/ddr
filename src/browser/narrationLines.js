@@ -196,7 +196,7 @@ export const ORACLE_ONLY = new Set([
   "storeLeft", // the store screen closing IS the signal
   "encounterRolled", // internal table-roll bookkeeping; tableFour/tableFourNoop narrate the outcome
   "findOffered", // the dedicated Take it/Leave it prompt IS the UI
-  "hazardChoice", // Phase 39 (GEAR-05): the pre-roll USE LADDER/USE ROPE decision card IS the UI, like findOffered
+  "hazardChoice", // Phase 78 (CLIMB-01): the pre-roll wall/crevice decision card (every hero, tool or not) IS the UI, like findOffered
   "findTaken", // the dedicated Take it/Leave it prompt IS the UI
   "findLeft", // the dedicated Take it/Leave it prompt IS the UI
   // Phase 63 (GSCR-09): itemDropped/itemUnequipped moved to LINE_FOR — the
@@ -2017,6 +2017,13 @@ export const LINE_FOR = {
     text: e?.tool === "ladder" ? "Ladder: over the wall, ladder spent." : "Rope: across, rope spent.",
     tone: "hit",
     priority: PRIORITY.you,
+  }),
+  // Phase 78 (CLIMB-02): TURN BACK on the pre-roll card — a minor event, so
+  // a rail line (never a decision card): nothing was rolled or spent.
+  turnedBack: (e) => ({
+    text: e?.feat === "gorge" ? "You back away from the crevice. Nothing rolled, nothing lost." : "You leave the wall alone. Nothing rolled, nothing lost.",
+    tone: "beat",
+    priority: PRIORITY.other,
   }),
   toolRefused: (e) => {
     const map = {

@@ -16,7 +16,7 @@
 import { newRun } from "./state.js";
 import { validateAction } from "./actions.js";
 import { makeRng } from "./rng.js";
-import { move, makeCamp, useTool, resolvePendingTile } from "./movement.js";
+import { move, makeCamp, useTool, resolveHazard, resolvePendingTile } from "./movement.js";
 import { fight, playerStrike, flee, parley, sing, loseTurn } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useAbility } from "./abilities.js";
@@ -85,6 +85,11 @@ export function applyAction(state, action) {
     case "useTool":
       // Phase 39 (GEAR-05): spend a pending hazard's tool (ladder/rope).
       useTool(next, action.tool, action.dir, rng, events);
+      break;
+    case "resolveHazard":
+      // Phase 78 (CLIMB-01/02): the pre-roll wall/crevice decision — commit
+      // (the roll) or TURN BACK (free). See movement.js#resolveHazard.
+      resolveHazard(next, action.cross, rng, events);
       break;
     case "camp":
       makeCamp(next, rng, events);

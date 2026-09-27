@@ -55,6 +55,25 @@ test("validateAction rejects a bad useTool.dir", () => {
   assert.equal(validateAction({ type: "useTool", tool: "ladder" }).ok, false);
 });
 
+// --- Phase 78 (CLIMB-01/02): resolveHazard { cross } -------------------------
+
+test("CLIMB-01: ACTION_TYPES includes resolveHazard", () => {
+  assert.ok(ACTION_TYPES.has("resolveHazard"));
+});
+
+test("CLIMB-01: validateAction accepts resolveHazard with a boolean cross (commit or TURN BACK)", () => {
+  assert.equal(validateAction({ type: "resolveHazard", cross: true }).ok, true);
+  assert.equal(validateAction({ type: "resolveHazard", cross: false }).ok, true);
+});
+
+test("CLIMB-01: validateAction rejects a missing, string or numeric resolveHazard.cross", () => {
+  for (const bad of [{ type: "resolveHazard" }, { type: "resolveHazard", cross: "true" }, { type: "resolveHazard", cross: 0 }]) {
+    const r = validateAction(bad);
+    assert.equal(r.ok, false, JSON.stringify(bad));
+    assert.equal(r.reason, "resolveHazard.cross must be a boolean");
+  }
+});
+
 // --- RULES-10 (Phase 75.1): loseTurn (no payload) ---------------------------
 
 test("ACTION_TYPES includes loseTurn", () => {

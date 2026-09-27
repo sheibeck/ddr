@@ -186,10 +186,24 @@ export const EVENT_NARRATION = {
   // Phase 39 (GEAR-05): the hazard pre-roll decision — a rail card IS the
   // UI (ORACLE_ONLY on the line side, like findOffered), but the Oracle
   // still gets its own line.
-  hazardChoice: (e) =>
-    e.tool === "ladder"
+  // Phase 78 (CLIMB-01): every hero now pauses at a wall or crevice, so a
+  // hero without the tool (`carried` false) gets a line of their own.
+  hazardChoice: (e) => {
+    const wall = e.feat ? e.feat === "climb" : e.tool === "ladder";
+    if (e.carried === false) {
+      return wall
+        ? `<span class="beat">A wall. No ladder. Just you, your fingers, and a strong opinion about gravity.</span>`
+        : `<span class="beat">A crevice. No rope. The gap is waiting to see how far you think you can jump.</span>`;
+    }
+    return wall
       ? `<span class="beat">A wall. Also: a ladder. Someone thought of everything, and it was you.</span>`
-      : `<span class="beat">A crevice, and you happen to have rope. The honest way across.</span>`,
+      : `<span class="beat">A crevice, and you happen to have rope. The honest way across.</span>`;
+  },
+  // Phase 78 (CLIMB-02): TURN BACK on the pre-roll card — free, no roll.
+  turnedBack: (e) =>
+    e.feat === "gorge"
+      ? `<span class="beat">You step back from the edge. The crevice will be here, being deep, when you change your mind.</span>`
+      : `<span class="beat">You leave the wall unclimbed. It does not seem to mind.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   toolUsed: (e) =>
     e.tool === "ladder"

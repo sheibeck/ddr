@@ -48,6 +48,9 @@ const withoutActsAndRecord = (st) => {
   return rest;
 };
 
+/** cursor(x) — the rng cursor as the unsigned 32-bit value applyAction persists (newRun may store it signed). */
+const cursor = (x) => x >>> 0;
+
 const FEAR_TYPES = new Set(["phobiaTriggered", "heightsFear"]);
 
 /** Everything a pause or TURN BACK must leave alone. */
@@ -56,7 +59,7 @@ function assertUntouched(before, after, label) {
   assert.equal(after.floor.py, before.floor.py, `${label}: py`);
   assert.equal(after.steps, before.steps, `${label}: steps`);
   assert.equal(after.day, before.day, `${label}: day`);
-  assert.equal(after.rngState, before.rngState, `${label}: rngState`);
+  assert.equal(cursor(after.rngState), cursor(before.rngState), `${label}: rngState`);
   assert.deepStrictEqual(after.c, before.c, `${label}: c`);
   assert.deepStrictEqual(after.floor, before.floor, `${label}: floor`);
   assert.deepStrictEqual(after.party, before.party, `${label}: party`);
@@ -109,7 +112,7 @@ test("CLIMB-01: move then resolveHazard(cross:true) reproduces every pre-Phase-7
     const input = inputOf(sc);
     const paused = applyAction(input, sc.action);
     assert.deepStrictEqual(paused.events.map((e) => e.type), ["hazardChoice"], `${sc.label}: the move pauses`);
-    assert.equal(paused.state.rngState, input.rngState, `${sc.label}: the pause draws nothing`);
+    assert.equal(cursor(paused.state.rngState), cursor(input.rngState), `${sc.label}: the pause draws nothing`);
     const committed = applyAction(paused.state, { type: "resolveHazard", cross: true });
     const events = [...paused.events, ...committed.events].filter((e) => e.type !== "hazardChoice");
     assert.deepStrictEqual(events, sc.expected.events, `${sc.label}: events`);
@@ -155,7 +158,7 @@ test("CLIMB-02: after TURN BACK the next step toward the same wall pauses again 
   s = applyAction(s, { type: "resolveHazard", cross: false }).state;
   const { state: again, events } = applyAction(s, { type: "move", dir });
   assert.deepStrictEqual(events.map((e) => e.type), ["hazardChoice"]);
-  assert.equal(again.rngState, state.rngState);
+  assert.equal(cursor(again.rngState), cursor(state.rngState));
   assert.deepStrictEqual(again.pendingHazard, { feat: "climb", dir, tool: "ladder" });
 });
 
@@ -185,7 +188,8 @@ test("CLIMB-02: resolveHazard with no record is a no-op either way — no events
     const { state: after, events } = applyAction(state, { type: "resolveHazard", cross });
     assert.deepStrictEqual(events, []);
     assert.equal(after.acts, (state.acts || 0) + 1, "the validated-action counter still counts it");
-    assert.deepStrictEqual({ ...after, acts: state.acts }, state);
+    assert.equal(cursor(after.rngState), cursor(state.rngState));
+    assert.deepStrictEqual({ ...after, acts: state.acts, rngState: state.rngState }, state);
   }
 });
 
@@ -245,18 +249,20 @@ test("CLIMB-01: useTool still crosses with the tool spent, no roll, and clears t
 });
 
 test("CLIMB-01: a genuine step in another direction clears the record", () => {
-  // fighter-s1's hazard lies S of the party; find another open neighbour.
+  // fighter-s1 starts in a corner with its only open neighbour (the hazard)
+  // to the S; open a plain cell on an in-grid side for the other step.
   const { state, dir } = atHazard("fighter-s1", "climb");
   const f = state.floor;
   const other = Object.keys(DIRV).find((d) => {
     if (d === dir) return false;
     const [dx, dy] = DIRV[d];
-    const cell = f.g[f.py + dy]?.[f.px + dx];
-    return cell && !cell.wall && cell.feat !== "one";
+    const x = f.px + dx;
+    const y = f.py + dy;
+    return y > 0 && x > 0 && f.g[y] && f.g[y + 1] && f.g[y][x + 1] !== undefined;
   });
-  assert.ok(other, "precondition: a second open neighbour");
+  assert.ok(other, "precondition: an interior neighbour to open");
   const [dx, dy] = DIRV[other];
-  f.g[f.py + dy][f.px + dx].feat = null;
+  f.g[f.py + dy][f.px + dx] = { wall: false, seen: false, feat: null };
   const paused = applyAction(state, { type: "move", dir }).state;
   assert.ok(paused.pendingHazard);
   const stepped = applyAction(paused, { type: "move", dir: other }).state;

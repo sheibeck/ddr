@@ -65,11 +65,15 @@ export const ACTION_TYPES = new Set([
   // yields a named abilityRefused event rather than being rejected here —
   // this validator only guards the wire shape (a non-empty string).
   "useAbility",
-  // Phase 39 (GEAR-05): spend a pending hazard's tool — the ladder/rope
-  // half of the pre-roll decision card (`state.pendingHazard`). The torch
+  // Phase 39 (GEAR-05): spend a hazard tool — the USE LADDER / USE ROPE
+  // answer to the pre-roll decision (`state.pendingHazard`). The torch
   // goes through the existing `useItem` action instead (it is a
   // useItem-activatable consumable, not a movement-tile tool).
   "useTool",
+  // Phase 78 (CLIMB-01/02): the pre-roll decision's commit (CLIMB IT /
+  // LEAP IT, `cross: true`) or TURN BACK (`cross: false`, free). Carries a
+  // strict boolean `cross`, mirroring resolveJoiner's `accept`.
+  "resolveHazard",
   // RULES-10 (Phase 75.1): the ONE action a hero who cannot act (C.heroOut)
   // may take. No payload, like "fight" — no validate case needed.
   "loseTurn",
@@ -223,6 +227,14 @@ export function validateAction(action) {
       }
       if (!DIRS.has(action.dir)) {
         return { ok: false, reason: "useTool.dir must be one of N/S/E/W" };
+      }
+      break;
+    case "resolveHazard":
+      // Phase 78 (CLIMB-01/02): same strict-boolean contract as
+      // resolveJoiner.accept — an ambiguous truthy/falsy value must never
+      // decide whether dice are rolled.
+      if (typeof action.cross !== "boolean") {
+        return { ok: false, reason: "resolveHazard.cross must be a boolean" };
       }
       break;
     default:
