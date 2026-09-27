@@ -27,6 +27,16 @@
 // crossed in one step; a step toward a wall now pauses on the pre-roll
 // decision with no dice, and the recorded list holds no `resolveHazard`, so
 // the continuation plays out from the near side (see the fixture's `note`).
+//
+// Phase 79 quick fix 79-02b (2026-09-27, user ruling "Joiners use only their
+// own defences against foe swings"): `expected` re-recorded (ONLY — never
+// `save`/`dispatched`; `dead`/`actions` still false/300, `depth` 4 -> 3). The
+// save's hero is an Elven Thief/Acrobat; its Joiner, Denn of Ash Alley, is a
+// Wilmsry Magic User/Apprentice. Traced live (base 90fa443 vs the fix): the
+// first divergence is dispatched index 98, the foe Drekk's swing at Denn. At
+// the base the HERO's Acrobat override (3 faces, atLeast 18) shielded Denn,
+// so a 17 missed; now Denn reads his own 5 faces (atLeast 16) and the same
+// 17 lands (memberStruck, 4 damage). Same draw, same position.
 
 import test from "node:test";
 import assert from "node:assert/strict";

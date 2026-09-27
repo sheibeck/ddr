@@ -1661,11 +1661,57 @@ export function memberToHit(m) {
  * foeDie(c, foe) — the die a creature of the foe's level strikes on against
  * this character; never lower than a d8 (p.24). Ports mazeworld.html foeDie()
  * (lines 1469-1472).
+ *
+ * Phase 79 (quick fix 79-02b, user ruling 2026-09-27, "Joiners use only
+ * their own defences"): `c` is the body being swung at — the hero's sheet
+ * on the hero branch, the Joiner's OWN sheet on engine/combat.js#foeTurn's
+ * member branch (a Dwarven Joiner draws its own better foe die; a Dwarven
+ * hero's die never reaches a Human Joiner). A missing sheet (a Joiner
+ * whose sheet is gone from state.party) reads as step 0; a present sheet
+ * reads its own race row exactly as before — a race-less sheet still
+ * throws, which src/browser/foeDetails.js's safe(…) relies on to drop the
+ * odds line for a minimal state. A data read of `foeStrikeStep`, never a
+ * race-name check. Pure, zero draws.
  */
 export function foeDie(c, f) {
-  const R = RACES[c.race];
-  const step = R.foeStrikeStep || 0;
+  const step = c ? RACES[c.race].foeStrikeStep || 0 : 0;
   return Math.max(8, STRIKE_DICE[clamp(f.lvl - 1 + step, 0, 4)]);
+}
+
+/**
+ * PARTY_WIDE_ITEM_EFFECTS — Phase 79 (quick fix 79-02b, user ruling
+ * 2026-09-27): the item effects whose content text makes them explicitly
+ * party-wide, keyed by their `content/activations.js#ACTIVATION_OF` key
+ * (the `item:<key>` timer id). A live one on the HERO's sheet also covers
+ * every Joiner; every other hero item effect is the hero's own body only.
+ * Today one row: the Crystal Staff (content/treasure-tables.js STAVES,
+ * "party invisible d10+5 squares; enemies need a 1"). The Cloak of
+ * Invisibility and the Invisible potion say "you", so they stay personal.
+ * test/unit/joiner-defences.test.js pins each key to a real activation
+ * whose own text names the party.
+ */
+export const PARTY_WIDE_ITEM_EFFECTS = Object.freeze(["Crystal Staff"]);
+
+/**
+ * partyItemEffectActive(state, kind) — true when the HERO carries a live
+ * item effect of activation `kind` from a PARTY_WIDE_ITEM_EFFECTS row (the
+ * Crystal Staff's party invisibility). Read only on the member side of
+ * foeToHitVs/foeToHitBreakdown — the hero's own reads already see it
+ * through itemEffectActive(c, kind). Pure, no rng.
+ */
+function partyItemEffectActive(state, kind) {
+  return liveItemEffects(state && state.c).some((e) => e.act.kind === kind && PARTY_WIDE_ITEM_EFFECTS.includes(e.key));
+}
+
+/**
+ * defenceBody(state, vs, sheet) — Phase 79 (quick fix 79-02b): the body a
+ * foe's swing lands on, whose OWN race, size, class/sub-class, gear and
+ * self effects set its to-be-hit terms: the hero's sheet for `vs === "hero"`,
+ * else the Joiner's own `sheet` (a missing sheet reads as a blank body — no
+ * trait of anyone's, never the hero's). Pure.
+ */
+function defenceBody(state, vs, sheet) {
+  return vs === "hero" ? state.c : sheet || {};
 }
 
 /**
@@ -1674,10 +1720,11 @@ export function foeDie(c, f) {
  * 0 for every other race and for a missing sheet/race row. Phase 79 (plan
  * 79-02, todo 2026-09-25 "An Elven Joiner never gets its own thin-boned
  * to-be-hit trait"): the ONE seam for this trait — foeToHitVs/
- * foeToHitBreakdown read it from the hero's sheet (vs "hero" only), and
- * engine/combat.js#foeTurn's member branch reads it from the Joiner's OWN
- * sheet, beside that Joiner's own size term (Phase 75.2: "race signatures
- * survive size", "Joiners get size"). Before this, the member branch
+ * foeToHitBreakdown read it from the body being swung at: the hero's sheet
+ * (vs "hero") or, since quick fix 79-02b, the Joiner's OWN sheet (vs
+ * "member", passed by engine/combat.js#foeTurn's member branch through
+ * foeSwingVsMember), beside that body's own size term (Phase 75.2: "race
+ * signatures survive size", "Joiners get size"). Before 79-02, the member branch
  * inherited the HERO's race row, so an Elven Joiner was neutral and a
  * Human Joiner beside an Elven hero was thin-boned. A data read, never a
  * race-name check. Pure, zero draws.
@@ -1688,7 +1735,7 @@ export function raceFoeToHit(sheet) {
 }
 
 /**
- * foeToHitVs(state, vs) — the foe's to-hit need against this character: a
+ * foeToHitVs(state, vs, sheet) — the foe's to-hit need against this character: a
  * count of winning faces on the foe's strike die (Phase 73, ROLL-05, read
  * roll-high via `atLeastFor(need, dieN)` — a bigger need is more winning
  * faces, always better for the foe). Reads state.c and state.floor; ports
@@ -1703,12 +1750,11 @@ export function raceFoeToHit(sheet) {
  * Phase 38 (ABIL-02, need-shift spec): the retired Agility passive and the
  * retired Silence-in-the-dark clause are replaced by three timers-driven
  * active terms, read via `abilityEffectActive` — Battle Roar (-2, applies to
- * ANY `vs`, since it covers the whole side), Sidestep (-2, `vs === "hero"`
- * only — the hero's own body), and Smoke (an override to `h = 1`, `vs ===
- * "hero"` only). Battle Roar's -2 stacks with the Guard -1 exactly the way
- * Agility used to. `vs` is `"hero"` (default — every pre-Phase-38 caller) or
- * `"member"` (foeTurn's party-member branch — Battle Roar still applies,
- * Sidestep/Smoke do not, since those are the hero's own body).
+ * ANY `vs`, since it covers the whole side), Sidestep (-2, the body's own)
+ * and Smoke (an override to `h = 1`, the body's own). Battle Roar's -2
+ * stacks with the Guard -1 exactly the way Agility used to. `vs` is `"hero"`
+ * (default — every pre-Phase-38 caller) or `"member"` (foeTurn's
+ * party-member branch, with the Joiner's own `sheet` — Phase 79, 79-02b).
  *
  * Phase 38 (ABIL-05): Battle Roar's term also honours ANY live party
  * member's own Battle Roar (`partyEffectActive`) — a Joiner's Battle Roar
@@ -1723,44 +1769,59 @@ export function raceFoeToHit(sheet) {
  * Small being harder to hit; the Dwarven Small face axis still applies),
  * plus any live item step (the Gauntlet of the Giant, Enlarge), in full.
  * Placed right after Guard, before gear — see foeToHitBreakdown's matching
- * term for the exact ordering this function mirrors silently. A Joiner's
- * own size is a SEPARATE term read from the member's own sheet in
- * engine/combat.js#foeTurn's member branch, never through this function.
+ * term for the exact ordering this function mirrors silently.
+ *
+ * Phase 79 (quick fix 79-02b, user ruling 2026-09-27, "Joiners use only
+ * their own defences against foe swings"): every personal term reads the
+ * BODY being swung at (defenceBody) — the hero's sheet for `vs === "hero"`,
+ * the Joiner's own `sheet` for `vs === "member"`: its race trait
+ * (raceFoeToHit), its sub-class (the Acrobat override, the Guard −1), its
+ * size (sizeAxisStep), its gear (`eff(body, "foeToHit")`), its class
+ * evasion (classEvasionFor), its own Sidestep/Smoke, its own Mirror Self and
+ * its own invisibility. None of the hero's personal defences reach a Joiner
+ * any more (before this, the hero's Acrobat, Guard, gear, Mirror Self and
+ * invisibility did). The party-wide terms read the whole side: Battle Roar
+ * (the hero's or any live member's, "every foe needs two better to hit
+ * anyone on your side") and a PARTY_WIDE_ITEM_EFFECTS invisibility on the
+ * hero (the Crystal Staff, "party invisible"). FOE_ACCURACY is the foe's own
+ * dial and applies to every target. engine/combat.js#foeTurn's member
+ * branch reads a Joiner's odds ONLY through this function (via
+ * foeSwingVsMember), so one rule builds both bodies' odds. Data reads (the
+ * sub-class checks are the same two the hero always had), zero draws.
  */
-export function foeToHitVs(state, vs = "hero") {
+export function foeToHitVs(state, vs = "hero", sheet) {
   const c = state.c;
+  const body = defenceBody(state, vs, sheet);
   let h = 5;
   // Phase 79 (plan 79-02): the race's to-be-hit trait belongs to the body
-  // being swung at — the hero's own here (vs "hero"); a Joiner's own is
-  // applied from its sheet in engine/combat.js#foeTurn's member branch.
-  if (vs === "hero") h += raceFoeToHit(c);
-  if (c.sub === "Acrobat") h = 3;
-  if (c.sub === "Guard") h -= 1;
+  // being swung at (raceFoeToHit, one seam).
+  h += raceFoeToHit(body);
+  if (body.sub === "Acrobat") h = 3;
+  if (body.sub === "Guard") h -= 1;
   // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): each
-  // applied size step moves a foe's winning faces against the HERO'S OWN
-  // body by SIZE_FACES_PER_STEP — the race's own face axis (signature mask
-  // applied, sizeAxisStep) plus any live item step, in full. `vs === "hero"`
-  // only, like Sidestep/Smoke just below — a Joiner's own size is read
-  // separately, on the member's own sheet, in engine/combat.js#foeTurn's
-  // member branch (never through this function, which never sees a
-  // member's sheet). Zero draws — pure arithmetic.
-  if (vs === "hero") h += SIZE_FACES_PER_STEP * sizeAxisStep(c, "face");
-  h += eff(c, "foeToHit");
-  // Phase 54 (BAND-02, USER RULING D): FOE_ACCURACY (both vs "hero" and
-  // "member") + CLASS_MITIGATION.Thief.evasion (vs "hero" only — the hero's
-  // own body). Identity 0 for both is a structural no-op.
+  // applied size step moves a foe's winning faces against the body's OWN
+  // size by SIZE_FACES_PER_STEP — the race's own face axis (signature mask
+  // applied, sizeAxisStep) plus any live item step, in full. A Joiner's own
+  // size never reaches the hero's odds, nor the hero's a Joiner's ("Joiners
+  // get size", by the same rule). Zero draws — pure arithmetic.
+  h += SIZE_FACES_PER_STEP * sizeAxisStep(body, "face");
+  h += eff(body, "foeToHit");
+  // Phase 54 (BAND-02, USER RULING D): FOE_ACCURACY is the foe's own dial
+  // (every target). Identity 0 is a structural no-op.
   h += foeAccuracyFor();
-  // CLASS_MITIGATION.Thief.evasion (vs hero only) is SUBTRACTED from the
-  // foe's need: a positive evasion makes the Thief harder to hit. Phase 72,
-  // ROLL-01 (d), user ruling 2026-09-24; identity 0 is a structural no-op.
-  if (vs === "hero" && c.cls === "Thief") h -= classEvasionFor(c);
-  if (abilityEffectActive(c, "battleRoar") || partyEffectActive(state, "battleRoar")) h -= 2;
-  if (vs === "hero" && abilityEffectActive(c, "sidestep")) h -= 2;
-  if (vs === "hero" && abilityEffectActive(c, "smoke")) h = 1;
-  if (c.mirror > 0) h = 1; // Mirror Self
+  // CLASS_MITIGATION.Thief.evasion (the body's own class) is SUBTRACTED from
+  // the foe's need: a positive evasion makes a Thief harder to hit. Phase
+  // 72, ROLL-01 (d), user ruling 2026-09-24; identity 0 is a structural
+  // no-op. Phase 79 (79-02b): a Thief Joiner has its own.
+  if (body.cls === "Thief") h -= classEvasionFor(body);
+  if (abilityEffectActive(c, "battleRoar") || partyEffectActive(state, "battleRoar")) h -= 2; // party-wide
+  if (abilityEffectActive(body, "sidestep")) h -= 2;
+  if (abilityEffectActive(body, "smoke")) h = 1;
+  if (body.mirror > 0) h = 1; // Mirror Self (the caster's own body: "you")
   // Phase 39 (GEAR-02): the retired c.invis counter — a live "invis" item
-  // effect (Cloak/potion/staff of invisibility) reads through c.timers.
-  if (itemEffectActive(c, "invis")) h = 1; // invisible
+  // effect (Cloak/potion/staff of invisibility) reads through the body's own
+  // timers; the Crystal Staff's is party-wide (PARTY_WIDE_ITEM_EFFECTS).
+  if (itemEffectActive(body, "invis") || (vs !== "hero" && partyItemEffectActive(state, "invis"))) h = 1; // invisible
   return Math.max(1, h);
 }
 
@@ -1788,42 +1849,46 @@ export function foeToHitVs(state, vs = "hero") {
  * no size entry (the signature mask drops the face axis for a race whose
  * base step would otherwise apply), a Troll's read `[..., { name: "size",
  * delta: 1 }]`, a Dwarf's `[..., { name: "size", delta: -1 }]`.
+ *
+ * Phase 79 (quick fix 79-02b, user ruling 2026-09-27): `sheet` is the
+ * Joiner's own sheet for `vs === "member"` — every personal term reads the
+ * body being swung at, exactly as foeToHitVs does (see its JSDoc).
  */
-export function foeToHitBreakdown(state, vs = "hero") {
+export function foeToHitBreakdown(state, vs = "hero", sheet) {
   const c = state.c;
+  // Phase 79 (quick fix 79-02b): the SAME body foeToHitVs reads — the hero's
+  // sheet for vs "hero", the Joiner's own sheet for vs "member".
+  const body = defenceBody(state, vs, sheet);
   const mods = [];
   let h = 5;
-  // Phase 79 (plan 79-02): the SAME hero-only race term foeToHitVs applies.
-  const raceTrait = vs === "hero" ? raceFoeToHit(c) : 0;
+  // Phase 79 (plan 79-02): the SAME race term foeToHitVs applies, named by
+  // the body's own race.
+  const raceTrait = raceFoeToHit(body);
   if (raceTrait) {
     const before = h;
     h += raceTrait;
-    if (h !== before) mods.push({ name: c.race, delta: h - before });
+    if (h !== before) mods.push({ name: body.race, delta: h - before });
   }
-  if (c.sub === "Acrobat") {
+  if (body.sub === "Acrobat") {
     const before = h;
     h = 3;
     if (h !== before) mods.push({ name: "Acrobat", delta: h - before });
   }
-  if (c.sub === "Guard") {
+  if (body.sub === "Guard") {
     const before = h;
     h -= 1;
     if (h !== before) mods.push({ name: "Guard", delta: h - before });
   }
   // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): the
   // SAME size term foeToHitVs applies above, recorded as a single "size"
-  // entry only when the resolved face step is non-zero — `vs === "hero"`
-  // only (a Joiner's own size is a separate term on the member's own sheet,
-  // engine/combat.js#foeTurn's member branch).
-  if (vs === "hero") {
-    const sizeDelta = SIZE_FACES_PER_STEP * sizeAxisStep(c, "face");
-    if (sizeDelta) {
-      const before = h;
-      h += sizeDelta;
-      if (h !== before) mods.push({ name: "size", delta: h - before });
-    }
+  // entry only when the body's resolved face step is non-zero.
+  const sizeDelta = SIZE_FACES_PER_STEP * sizeAxisStep(body, "face");
+  if (sizeDelta) {
+    const before = h;
+    h += sizeDelta;
+    if (h !== before) mods.push({ name: "size", delta: h - before });
   }
-  const gear = eff(c, "foeToHit");
+  const gear = eff(body, "foeToHit");
   if (gear) {
     const before = h;
     h += gear;
@@ -1837,11 +1902,11 @@ export function foeToHitBreakdown(state, vs = "hero") {
     h += accuracy;
     if (h !== before) mods.push({ name: "accuracy", delta: h - before });
   }
-  // CLASS_MITIGATION.Thief.evasion (vs hero only) is SUBTRACTED from the
-  // foe's need: a positive evasion makes the Thief harder to hit. Phase 72,
-  // ROLL-01 (d), user ruling 2026-09-24; identity 0 is a structural no-op.
-  if (vs === "hero" && c.cls === "Thief") {
-    const evasion = classEvasionFor(c);
+  // CLASS_MITIGATION.Thief.evasion (the body's own class) is SUBTRACTED from
+  // the foe's need: a positive evasion makes a Thief harder to hit. Phase
+  // 72, ROLL-01 (d), user ruling 2026-09-24; identity 0 is a structural no-op.
+  if (body.cls === "Thief") {
+    const evasion = classEvasionFor(body);
     if (evasion) {
       const before = h;
       h -= evasion;
@@ -1853,23 +1918,24 @@ export function foeToHitBreakdown(state, vs = "hero") {
     h -= 2;
     if (h !== before) mods.push({ name: "Battle Roar", delta: h - before });
   }
-  if (vs === "hero" && abilityEffectActive(c, "sidestep")) {
+  if (abilityEffectActive(body, "sidestep")) {
     const before = h;
     h -= 2;
     if (h !== before) mods.push({ name: "Sidestep", delta: h - before });
   }
-  if (vs === "hero" && abilityEffectActive(c, "smoke")) {
+  if (abilityEffectActive(body, "smoke")) {
     const before = h;
     h = 1;
     if (h !== before) mods.push({ name: "Smoke", delta: h - before });
   }
-  if (c.mirror > 0) {
+  if (body.mirror > 0) {
     const before = h;
     h = 1; // Mirror Self
     if (h !== before) mods.push({ name: "Mirror Self", delta: h - before });
   }
-  // Phase 39 (GEAR-02): the retired c.invis counter — read through c.timers.
-  if (itemEffectActive(c, "invis")) {
+  // Phase 39 (GEAR-02): the retired c.invis counter — read through the
+  // body's own timers, plus the hero's party-wide Crystal Staff for a Joiner.
+  if (itemEffectActive(body, "invis") || (vs !== "hero" && partyItemEffectActive(state, "invis"))) {
     const before = h;
     h = 1; // invisible
     if (h !== before) mods.push({ name: "invisible", delta: h - before });
@@ -1946,8 +2012,34 @@ export function heroStrikeFacesVs(state, t) {
  * throws. Returns `{ faces, mods }`. Pure, zero rng, never mutates `state`/`f`.
  */
 export function foeSwingVsHero(state, f) {
-  let faces = foeToHitVs(state);
-  const mods = foeToHitBreakdown(state).mods.slice();
+  return foeSwingChain(state, f, foeToHitVs(state), foeToHitBreakdown(state).mods.slice());
+}
+
+/**
+ * foeSwingVsMember(state, f, sheet) — Phase 79 (quick fix 79-02b, user
+ * ruling 2026-09-27, "Joiners use only their own defences"): the foe `f`'s
+ * winning faces and mods for its swing at the Joiner whose own sheet is
+ * `sheet` — base `foeToHitVs(state, "member", sheet)` and its breakdown
+ * (the Joiner's OWN race, size, sub-class, gear, evasion, Sidestep/Smoke,
+ * Mirror Self and invisibility, plus the party-wide Battle Roar and Crystal
+ * Staff), then the SAME combat-wide chain as the hero (blind, the Weaken
+ * `foeToHitPenalty` cap, the insult applied LAST). engine/combat.js#foeTurn's
+ * member branch reads this and nothing else, so the hero's and a Joiner's
+ * odds are one rule on two bodies. Returns `{ faces, mods }`. Pure, zero
+ * rng, never mutates `state`/`f`/`sheet`.
+ */
+export function foeSwingVsMember(state, f, sheet) {
+  return foeSwingChain(state, f, foeToHitVs(state, "member", sheet), foeToHitBreakdown(state, "member", sheet).mods.slice());
+}
+
+/**
+ * foeSwingChain(state, f, faces, mods) — the combat-wide tail of every foe
+ * melee swing (hero or Joiner): blind (override to 1), the combat's
+ * `foeToHitPenalty` cap, then the insult (+1, LAST). See foeSwingVsHero's
+ * JSDoc for the ordering and sign conventions. Mutates only the `mods`
+ * array it was handed (a fresh copy at both callers). Pure, zero rng.
+ */
+function foeSwingChain(state, f, faces, mods) {
   if (f && f.blind) {
     const before = faces;
     faces = 1;

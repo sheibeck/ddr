@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck, raceFoeToHit } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -3145,80 +3145,26 @@ export function foeTurn(state, rng, events = []) {
         // SIMPLIFIED member branch: no ward/armor/mirror/Hardiness (all
         // hero-only machinery), no die(). Same to-hit shape, then straight to
         // the member's own `wp`; a member at 0 wp is downed + departs.
-        const mDieN = foeDie(c, f);
-        // Phase 38 (ABIL-02): a party member is its own body — Battle Roar
-        // (party-wide) still applies, but Sidestep/Smoke (the hero's own
-        // body) do not, hence `vs = "member"`.
-        // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng)
-        // and now sits above the strike draw. `mNeed` -> `mFaces`,
-        // `mNeedMods` -> `mMods`.
-        let mFaces = foeToHitVs(state, "member");
-        // Phase 25 (FEED-01, additive payload): same breakdown + post-mods
-        // pattern as the hero branch below — narration only, 0 new draws.
-        const mMods = foeToHitBreakdown(state, "member").mods.slice();
-        // Phase 38 (ABIL-05): a member is its own body — its OWN Sidestep/
-        // Smoke shift its own need, exactly like the hero's equivalent terms
-        // in foeToHitVs("hero") (which this "member" vs never reads). Pure
-        // reads of the member's own persistent sheet.timers; false on every
-        // fixture (no fixture carries a party). Hoisted above the blind
-        // check (Phase 75.2) so the size term below can read it first.
+        // Phase 79 (quick fix 79-02b, user ruling 2026-09-27, "Joiners use
+        // only their own defences against foe swings"): a Joiner is its own
+        // body, built by the hero's rule. The foe die reads the Joiner's OWN
+        // race (a Dwarven Joiner's better foe die; the hero's never reaches
+        // it), and the faces/mods come from derived.js#foeSwingVsMember —
+        // foeToHitVs(state, "member", sheet) on the Joiner's own race trait,
+        // size, sub-class, gear, evasion, Sidestep/Smoke, Mirror Self and
+        // invisibility, plus the party-wide Battle Roar and Crystal Staff,
+        // then the SAME blind / Weaken cap / insult-LAST chain the hero's
+        // swing takes (PARLEY-02 + Phase 72 ROLL-01 (a): the insult is the
+        // last term on every foe swing). None of the hero's personal
+        // defences (Acrobat, Guard, gear, Mirror Self, invisibility, race
+        // or size) reach a Joiner. Pure reads of the member's persistent
+        // sheet; a missing sheet, or one with no known race row (a
+        // hand-built or damaged save's Joiner — tolerant load), reads as a
+        // blank body (foe die step 0), never the hero's. Zero draws: the
+        // strike draw below keeps its position (Phase 73, ROLL-05).
         const mSheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
-        // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25):
-        // a Joiner's own size — its own race's face axis (signature mask
-        // applied, sizeAxisStep) plus any live item step — raises or lowers
-        // the foe's faces against THIS member, floored at 1, before blind/
-        // penalty/Sidestep/Smoke/insult. A member's own size never reaches
-        // the hero's odds (foeToHitVs("hero") never reads a member's sheet)
-        // and the hero's own size never reaches a member's (this branch
-        // never reads state.c). Damage already moves inside weaponDamage on
-        // the member view (memberStrike/foeTurn's riposte call). Zero draws.
-        // Phase 79 (plan 79-02, todo 2026-09-25): the Joiner's OWN race
-        // to-be-hit trait (derived.js#raceFoeToHit — the Elven thin-boned
-        // +1), read from its own sheet exactly as foeToHitVs reads the
-        // hero's; foeToHitVs(state, "member") no longer carries the hero's.
-        // Named by the member's race, like the hero's own race mod. Zero draws.
-        const mRaceTrait = mSheet ? raceFoeToHit(mSheet) : 0;
-        if (mRaceTrait) {
-          const before = mFaces;
-          mFaces = Math.max(1, mFaces + mRaceTrait);
-          if (mFaces !== before) mMods.push({ name: mSheet.race, delta: mFaces - before });
-        }
-        if (mSheet) {
-          const before = mFaces;
-          mFaces = Math.max(1, mFaces + SIZE_FACES_PER_STEP * sizeAxisStep(mSheet, "face"));
-          if (mFaces !== before) mMods.push({ name: "size", delta: mFaces - before });
-        }
-        if (f.blind) {
-          const before = mFaces;
-          mFaces = 1;
-          if (mFaces !== before) mMods.push({ name: "blind", delta: mFaces - before });
-        }
-        if (C.foeToHitPenalty) {
-          const before = mFaces;
-          mFaces = Math.min(mFaces, C.foeToHitPenalty);
-          if (mFaces !== before) mMods.push({ name: "penalty", delta: mFaces - before });
-        }
-        if (mSheet && abilityEffectActive(mSheet, "sidestep")) {
-          const before = mFaces;
-          mFaces = Math.max(1, mFaces - 2);
-          if (mFaces !== before) mMods.push({ name: "Sidestep", delta: mFaces - before });
-        }
-        if (mSheet && abilityEffectActive(mSheet, "smoke")) {
-          const before = mFaces;
-          mFaces = 1;
-          if (mFaces !== before) mMods.push({ name: "Smoke", delta: mFaces - before });
-        }
-        if (C.parleyInsulted) {
-          // PARLEY-02 / D-06 / D-20 + Phase 72 ROLL-01 (a), user ruling
-          // 2026-09-24: the insult is the LAST need term on every foe swing
-          // (hero branch, member branch and pursuitStrike), so an override
-          // (Smoke / Mirror / invisible / blind) resets the need first and
-          // the insult then adds its one face on top. Post-draw arithmetic,
-          // zero draws.
-          const before = mFaces;
-          mFaces += 1;
-          mMods.push({ name: "insulted", delta: mFaces - before });
-        }
+        const mDieN = foeDie(mSheet && RACES[mSheet.race] ? mSheet : null, f);
+        const { faces: mFaces, mods: mMods } = foeSwingVsMember(state, f, mSheet);
         // Phase 73 (ROLL-05): the ONE roll-high check helper reads the to-hit
         // die, in the same draw position the previous draw sat.
         const mCheck = rollCheck(rng, mDieN, atLeastFor(mFaces, mDieN));

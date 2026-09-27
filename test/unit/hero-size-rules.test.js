@@ -152,10 +152,13 @@ test("hero-size-rules: the only sizeAxes read in engine/*.js is inside derived.j
   );
 });
 
-test("hero-size-rules: sizeAxisStep( is called ONLY from derived.js (heroSize, sizeDamage, foeToHitVs, foeToHitBreakdown) and combat.js's foeTurn (the member branch)", () => {
+// Phase 79 (quick fix 79-02b): combat.js#foeTurn's member branch no longer
+// calls sizeAxisStep itself — a Joiner's own size reaches its odds through
+// foeToHitVs/foeToHitBreakdown(state, "member", sheet), so the audited set
+// shrinks to derived.js alone.
+test("hero-size-rules: sizeAxisStep( is called ONLY from derived.js (heroSize, sizeDamage, foeToHitVs, foeToHitBreakdown) — a Joiner's size reads through foeToHitVs(state, \"member\", sheet)", () => {
   const violations = violationsFor(ENGINE_FILES, /(?<!function )\bsizeAxisStep\(/g, {
     "derived.js": ["heroSize", "sizeDamage", "foeToHitVs", "foeToHitBreakdown"],
-    "combat.js": ["foeTurn"],
   });
   assert.deepEqual(
     violations,

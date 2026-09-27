@@ -149,7 +149,21 @@ const PINNED = {
   // edit reaching a real playthrough's serialized state. Regenerated via
   // `node tools/roll-high-baseline.mjs pins` (each hashed identically
   // twice).
-  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "a5f8ac7c4d2e9d54d599662239472d803d01336ca8a0c71044c48b9ba35366ce" },
+  //
+  // "party-fighter-knight" re-pinned AGAIN (Phase 79, quick fix 79-02b,
+  // 2026-09-27, user ruling "Joiners use only their own defences against
+  // foe swings"): a DECLARED outcome change. Traced live (base 90fa443 vs
+  // the fix, playRun's onStep event streams): the first divergence is bot
+  // step 99, the foe Ned's swing at the Joiner Hilda Stonecut, a Dwarven
+  // Fighter/Woodsman beside a Human Knight hero. The foe die against her
+  // was the HERO's (foeDie(c, f): d20, atLeast 17); it is now her OWN
+  // race's (foeDie(sheet, f), the Dwarven foeStrikeStep: d12, atLeast 9).
+  // Same draw, same position; only the face and later outcomes move —
+  // depth 3 -> 4 within the same 400 actions. Every other label
+  // re-measured byte-identical (solo runs never take the member branch;
+  // party-1's Joiner has no personal term the fix moves). Regenerated via
+  // `node tools/roll-high-baseline.mjs pins` (hashed identically twice).
+  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "4f38e357d857652fcc660a37bb641857e155a8174f8c57a4989811f554b46fbf" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
