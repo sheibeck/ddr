@@ -293,18 +293,20 @@ test(".cb-log* CSS matches the Combat Panel mock's style spec", () => {
   const markRule = HTML.match(/\.cb-log-mark\{([^}]*)\}/);
   assert.ok(markRule, ".cb-log-mark{...} rule must exist");
   assert.match(markRule[1], /#6b5c3c/);
-  assert.match(markRule[1], /15px/);
+  // Phase 78 (HUD-04): the sizes scale with the text size — 15px and 13.5px
+  // at M became 0.9375rem and 0.84375rem times var(--mw-text-scale).
+  assert.match(markRule[1], /font-size:calc\(0\.9375rem \* var\(--mw-text-scale\)\)/);
 
   const textRule = HTML.match(/\.cb-log-text\{([^}]*)\}/);
   assert.ok(textRule, ".cb-log-text{...} rule must exist");
   assert.match(textRule[1], /#c9bda0/);
-  assert.match(textRule[1], /15px/);
+  assert.match(textRule[1], /font-size:calc\(0\.9375rem \* var\(--mw-text-scale\)\)/);
   assert.match(textRule[1], /700/);
 
   const rollRule = HTML.match(/\.cb-log-roll\{([^}]*)\}/);
   assert.ok(rollRule, ".cb-log-roll{...} rule must exist");
   assert.match(rollRule[1], /#e8c97a/);
-  assert.match(rollRule[1], /13\.5px/);
+  assert.match(rollRule[1], /font-size:calc\(0\.84375rem \* var\(--mw-text-scale\)\)/);
 
   assert.match(HTML, /\.cb-log-roll\[hidden\]\{display:none\}/);
   assert.doesNotMatch(HTML, /\.round-card\{/);
