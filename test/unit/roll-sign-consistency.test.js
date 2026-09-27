@@ -237,6 +237,26 @@ test("afraid: a real playerStrike shows 'afraid −3' on the Oracle line and the
   assert.match(effectText, /^−3 to hit \(\d+(?:–\d+)? instead of \d+(?:–\d+)?\)$/, `the Afraid lead's range shape, got "${effectText}"`);
 });
 
+// ─── Scenario 5b: dazed (CMBUI-13, Phase 77 plan 77-07) ────────────────────
+
+test("dazed: a real dazed playerStrike reads 'dazed −2' on the Oracle line and the fight-log reveal, never 'dazed +2', and the Dazed chip effect starts with '−2 to hit'", () => {
+  const driveState = fullHeroState(plainFoe(), { c: { foeEffect: { kind: "dazed", rounds: 3 } } });
+  const events = playerStrike(driveState, fakeRng([20, 20, ...FILL]), []);
+  const e = events.find((ev) => ev.type === "struck" || ev.type === "strikeMissed");
+  assert.ok(e, "expected a struck or strikeMissed event");
+  const oracleHtml = EVENT_NARRATION[e.type](e);
+  for (const [label, text] of [["Oracle", oracleHtml], ["fight-log reveal", oracleDetailText(oracleHtml)]]) {
+    assertModifier(text, "dazed −2", label);
+    assert.deepEqual(signedTokens(text, ["dazed"]), ["dazed −2"], `${label}: never the opposite sign`);
+  }
+
+  const chipState = fullHeroState(plainFoe(), { c: { foeEffect: { kind: "dazed", rounds: 3 } } });
+  const cn = conditionsOf(chipState).find((d) => d.key === "foeEffect");
+  assert.ok(cn, "expected the foeEffect (Dazed) condition descriptor");
+  const effectText = conditionEffectText(cn, chipState);
+  assert.ok(effectText && effectText.startsWith("−2 to hit"), `expected the Dazed chip effect to start "−2 to hit", got "${effectText}"`);
+});
+
 // ─── Scenario 6: weapons ────────────────────────────────────────────────────
 
 test("weapons: a heavy (need −2) and a light (need +1) weapon read the same to-hit sign on lootCompare, EVENT_NARRATION.purchaseBagged and LINE_FOR.purchaseBagged", () => {

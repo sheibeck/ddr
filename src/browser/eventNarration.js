@@ -58,7 +58,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // every event-driven roll line this plan converts (strikeMissed/struck; the
 // foe-side/thrown lines convert in 73-05/73-07) formats its range through
 // rangeText here, so no two surfaces ever write a range differently.
-import { rangeText, rollVsText, modsClause, signedText, ROLLERS, bottomRangeText } from "./rollRange.js";
+import { rangeText, rollVsText, modsClause, signedText, ROLLERS, bottomRangeText, toHitText } from "./rollRange.js";
 // RULES-07 (Phase 75): afflictionRolled reads the row's own `phobia` flag by
 // roll so a mind-row (5-6) narrates honestly instead of printing "Disease." —
 // pure content data, no engine/ import, same discipline as the flavor.js
@@ -704,7 +704,9 @@ export const EVENT_NARRATION = {
       case "shrink":
         return `<span class="hurt">${e.spell ?? "The scroll"} shrinks you, <span class="roll">−${e.loss ?? 0} hp</span>, for the rest of the fight.</span>`;
       case "weakened":
-        return `<span class="hurt">${e.spell ?? "The scroll"} weakens you, ${e.rounds ?? 0} round${e.rounds === 1 ? "" : "s"} of it.</span>`;
+        // CMBUI-13 (Phase 77, plan 77-07): the reader's own weakening (76-06)
+        // names what it does, like a foe's Weaken onset line.
+        return `<span class="hurt">${e.spell ?? "The scroll"} weakens you: your blows do half damage, ${e.rounds ?? 0} round${e.rounds === 1 ? "" : "s"} of it.</span>`;
       default:
         return `<span class="beat">${e.spell ?? "The scroll"} fumbles and does nothing to you. Small mercies.</span>`;
     }
@@ -743,10 +745,15 @@ export const EVENT_NARRATION = {
       : `<span class="hurt">${e.name ?? "It"}: it lands.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}${e.ignoresArmor ? ", and your armor was not consulted" : ""}.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   foeDrained: (e) => `<span class="hurt">${e.name ?? "It"}: it drinks ${e.stolen ?? 0} hp of yours and looks better for it.</span>`,
-  foeDebuffed: (e) =>
-    e.kind === "dazed"
-      ? `<span class="hurt">The room keeps moving after you stop. Dazed for ${e.rounds ?? "?"} rounds.</span>`
-      : `<span class="hurt">Your arms feel like someone else's. Weakened for ${e.rounds ?? "?"} rounds.</span>`,
+  // CMBUI-13 (Phase 77, plan 77-07, "the onset line names the effect"): a
+  // daze states its to-hit delta from the payload (toHitText, U+2212); a
+  // weakening states half damage in words. A missing field drops its clause.
+  foeDebuffed: (e) => {
+    const lasts = Number.isFinite(e.rounds) ? ` for ${plural(e.rounds, "round")}` : "";
+    return e.kind === "dazed"
+      ? `<span class="hurt">The room keeps moving after you stop.</span> Dazed: ${Number.isFinite(e.toHit) ? toHitText(e.toHit) : "your aim wanders"}${lasts}.`
+      : `<span class="hurt">Your arms feel like someone else's.</span> Weakened: your blows do half damage${lasts}.`;
+  },
   foeHealed: (e) => `${e.name ?? "It"} knits itself back together. <span class="miss">+${e.amount ?? 0} hp.</span> Rude.`,
   // RULES-10 (Phase 75.1) — a fumbled Regeneration on a foe: a d8 a turn,
   // capped at its own maxWP, same snarky "good news for it" framing as
@@ -756,10 +763,12 @@ export const EVENT_NARRATION = {
     e.pending
       ? `<span class="miss">${e.by ?? "It"} calls, and something answers from a little way off.</span>`
       : `<span class="miss">${e.name ?? "Something"} shuffles in, late and unbothered.</span>`,
+  // CMBUI-13 (Phase 77, plan 77-07): the fade says the effect ended in the
+  // same terms the onset used.
   foeEffectFaded: (e) =>
     e.kind === "dazed"
-      ? `<span class="hit">The room settles. You are no longer dazed.</span>`
-      : `<span class="hit">Your strength comes back. It was only borrowed.</span>`,
+      ? `<span class="hit">The room settles, and so does your aim.</span> ${Number.isFinite(e.toHit) ? `No longer ${toHitText(e.toHit)}.` : "You are no longer dazed."}`
+      : `<span class="hit">Your strength comes back. It was only borrowed.</span> Your blows land for full damage again.`,
   heroResisted: (e) =>
     `<span class="hit">You think very hard about not being affected, and it works.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
   heroResistFailed: (e) =>

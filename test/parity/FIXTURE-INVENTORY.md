@@ -4393,3 +4393,74 @@ rail corpus moved.
 | test/unit/scroll-fumble-resolve.test.js | (new) the weakened reader's blows | none | the reader's landed blow is half the unweakened twin's |
 | test/unit/scroll-fumble-resolve.test.js | (new) out of combat | none | a forced Weaken fumble read on the map fizzles and weakens nobody |
 | test/unit/control-at-depth-rules.test.js | EXEMPT and the non-vacuity site list | `scrollFumble.js#resolveHarmful` exempt and expected | removed from both |
+
+## Phase 77: combat screen & Oracle readability (CMBUI-07..14) — measured per plan
+
+Phase 77's other plans are presentation-only: no engine change. 77-01
+(submenu fit, spell order, ITEMS EQUIPPED), 77-02 (the event-order fold),
+77-03 (`conditionsOf` / `memberConditionsOf`, pure derived reads), 77-04
+(foe chips), 77-05 (the scroll copy note), 77-06 (the foe family, the oldest
+log row) and 77-08 (the YOUR LOT chips) touch no rule, no draw and no
+serialized field, so none of them has a fixture to move. Plan 77-07 is the
+phase's only engine touch, and it is payload only.
+
+### Plan 77-07 — condition terms in strike mods and the foeDebuffed payload (CMBUI-13): measured zero
+
+**The change.** "Dazed honesty" (user, 2026-09-25: "i was dazed in combat,
+but it seems like it doesn't do anything"):
+
+- `engine/derived.js` exports `DAZED_TO_HIT_PENALTY` (2). toHit's dazed step
+  now reads it, with the same arithmetic
+  (`Math.max(1, h - DAZED_TO_HIT_PENALTY)`).
+- `engine/derived.js#toHitBreakdown(state)` is a narration-only mirror of
+  toHit (the foeToHitBreakdown precedent). It returns `{ need, mods }`, with
+  `need === toHit(state)` proven by matrix. The mods carry `{ name, delta }`
+  for the condition steps that changed the value: "inspired", "dazed",
+  "dark" and "blind".
+- `engine/combat.js#playerStrike` prepends those entries to its
+  strikeMissed/struck `mods`. The order is conditions, then Mirror Self,
+  then Overhead Blow, then afraid. The faces still come from toHit itself.
+- `engine/foeAbilities.js` (foeDebuffed) and the foeTurn tail in
+  `engine/combat.js` (foeEffectFaded) add `toHit: -DAZED_TO_HIT_PENALTY`
+  for a daze.
+
+No rule, face, draw or state field changed.
+
+**The predictor.** Event payloads are not comparables:
+`test/parity/harness/comparables.js` compares state, and the state pins
+hash state. No new draw exists, so the roll-high draw inventory is
+unchanged. The predicted moved set is zero fixtures, zero carve-outs and
+zero state pins.
+
+**The exposure (what the payload now shows, measured, not assumed).** On
+the PIN_RUNS labels, 20 of `party-fighter-knight`'s 46 strikes now carry a
+`{ name: "dark", delta: -3 }` entry. Every other label has zero strikes with
+a live condition (solo-2 17 strikes, solo-thief-pilfer 15, deep-14 3, the
+rest 0), and no label meets a daze. The state hashes are unchanged.
+`test/unit/condition-roll-mods.test.js` also pins eight-seed digests of 11
+strike scenarios (none, dazed, weakened, inspired, dark, dark with Night
+Vision, blind, stacked, afraid plus dazed, a floored Magic User, a dazed
+Fridgian frenzy). The digests were recorded at the plan base with `mods`
+(and foeDebuffed/foeEffectFaded `toHit`) stripped, and cover the draw
+count, every event and the resulting state.
+
+**The live results (at the plan head).**
+
+1. `node --test "test/parity/**/*.test.js"`: **64 tests, 64 pass, 0 fail**.
+2. `git diff --quiet e8bd4808 -- test/parity/fixtures test/parity/prototype-master.js.txt test/unit/roll-high-state-pins.test.js test/unit/fixtures`
+   exits 0. `e8bd4808` is the plan base.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node --test test/unit/roll-high-state-pins.test.js test/unit/roll-high-guard.test.js test/parity/fixture-inventory.test.js`:
+   25/25 pass. Every PIN_RUNS hash and the draw inventory are unchanged.
+5. `node tools/fixture-inventory.mjs`: the same roster, with no fixture
+   written.
+6. The recorded rail corpus
+   (`test/unit/fixtures/event-order/default-fold-corpus.json`) holds no
+   foeDebuffed, foeEffectFaded or weakened-fumble event. It stores its input
+   events, so the new strike mods cannot move it. It was not regenerated.
+
+**Re-pinned tests.** None of the existing strike-mods deep-equals had a
+live condition. The payload pin added to
+`test/unit/foe-abilities.test.js` (a daze carries `toHit`, a weakening does
+not) is an addition, not a flip.

@@ -17,6 +17,7 @@ import { makeRng } from "../../engine/rng.js";
 import { newRun } from "../../engine/state.js";
 import { foeTurn, startCombat, playerStrike, endCombat, killFoe } from "../../engine/combat.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "../../engine/foeAbilities.js";
+import { DAZED_TO_HIT_PENALTY } from "../../engine/derived.js";
 import { FOE_ABILITIES, BESTIARY } from "../../content/index.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 
@@ -352,12 +353,17 @@ test("debuff (D-09/D-10): sets a NEW foeEffect with d4 rounds; same kind refresh
   const events1 = [];
   resolveFoeAbility(state, foe, djinniDaze, fakeRng([3]), events1);
   assert.ok(events1.some((e) => e.type === "foeDebuffed" && e.kind === "dazed" && e.rounds === 3));
+  // CMBUI-13 (Phase 77, plan 77-07): a daze's payload carries the engine's
+  // own to-hit delta so the onset line states it (payload only).
+  assert.equal(events1.find((e) => e.type === "foeDebuffed").toHit, -DAZED_TO_HIT_PENALTY);
   assert.deepStrictEqual(state.c.foeEffect, { kind: "dazed", rounds: 3 });
   assert.notEqual(state.c.foeEffect, preset, "a fresh object, never a mutated reuse");
 
   const events2 = [];
   resolveFoeAbility(state, foe, krupkeWeaken, fakeRng([2]), events2);
   assert.deepStrictEqual(state.c.foeEffect, { kind: "weakened", rounds: 2 });
+  // CMBUI-13: a weakening is not a to-hit term, so its payload has no toHit.
+  assert.equal("toHit" in events2.find((e) => e.type === "foeDebuffed"), false);
 
   state.c.intel = 14;
   const before = state.c.foeEffect;

@@ -25,7 +25,7 @@
 
 import { FOE_ABILITIES, BESTIARY } from "../content/index.js";
 import { rollDice, rollFields } from "./dice.js";
-import { resistRoll } from "./derived.js";
+import { resistRoll, DAZED_TO_HIT_PENALTY } from "./derived.js";
 import { difficultyCurve, abilityCadenceFor } from "./difficulty.js";
 import { pickFoeTarget, applyFoeDamageToPlayer, downMember, liveFoes } from "./combat.js";
 
@@ -233,7 +233,16 @@ export function resolveFoeAbility(state, f, a, rng, events, gate = null) {
     // hero-only (D-09/D-10) — never pickFoeTarget.
     if (RESISTIBLE.has(a.kind) && heroResist(rng, c, f, a, events)) return { died: false };
     c.foeEffect = { kind: a.effect, rounds: rng.d(4) }; // roll:amount
-    events.push({ type: "foeDebuffed", name: f.name, ability: a.id, kind: a.effect, rounds: c.foeEffect.rounds });
+    // CMBUI-13 (Phase 77, plan 77-07, "the onset line names the effect"): a
+    // daze carries toHit's own delta so the line states it; payload only.
+    events.push({
+      type: "foeDebuffed",
+      name: f.name,
+      ability: a.id,
+      kind: a.effect,
+      rounds: c.foeEffect.rounds,
+      ...(a.effect === "dazed" ? { toHit: -DAZED_TO_HIT_PENALTY } : {}),
+    });
     return { died: false };
   }
 

@@ -189,6 +189,20 @@ test("locked wordings: memberStruck", () => {
   assert.equal(r.priority, PRIORITY.feature);
 });
 
+// CMBUI-13 (Phase 77, plan 77-07, "the onset line names the effect"): the
+// daze states its to-hit delta from the payload (rollRange.js#toHitText),
+// the weakening states half damage in words, and both fades say it ended.
+test("locked wordings (CMBUI-13): foeDebuffed and foeEffectFaded name what dazed and weakened do", () => {
+  const daze = LINE_FOR.foeDebuffed({ type: "foeDebuffed", name: "Djinni", kind: "dazed", rounds: 3, toHit: -2 });
+  assert.equal(daze.text, "Djinni: dazed, −2 to hit for 3 rounds.");
+  assert.equal(daze.tone, "hurt");
+  assert.equal(daze.priority, PRIORITY.them);
+  const weak = LINE_FOR.foeDebuffed({ type: "foeDebuffed", name: "Krupke", kind: "weakened", rounds: 1 });
+  assert.equal(weak.text, "Krupke: weakened, half damage for 1 round.");
+  assert.equal(LINE_FOR.foeEffectFaded({ type: "foeEffectFaded", kind: "dazed", toHit: -2 }).text, "The daze lifts: no longer −2 to hit.");
+  assert.equal(LINE_FOR.foeEffectFaded({ type: "foeEffectFaded", kind: "weakened" }).text, "Your strength comes back: full damage again.");
+});
+
 test("locked wordings: struck", () => {
   assert.equal(LINE_FOR.struck({ type: "struck", target: "Dante", dmg: 8 }).text, "You hit Dante (8)");
   const crit = LINE_FOR.struck({ type: "struck", target: "Dante", dmg: 8, critical: true, critBy: "backstab" }).text;
