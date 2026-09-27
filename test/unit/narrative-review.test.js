@@ -46,7 +46,7 @@ const SYN_BASE = {
   base: "abc1234",
   entries: [
     { key: "bank:A.one", surface: "panels", texts: ["Old panel line."] },
-    { key: "content:SPELLS.Mirror Self.txt", surface: "spells", texts: ["foes need a 1 to hit"] },
+    { key: "content:SPELLS.Mirror Self.txt", surface: "spells", texts: ["Old spell text."] },
     { key: "oracle:rested", surface: "oracle", texts: ["Rest restores +2 hp.", "Rest restores +8 hp."] },
     { key: "bank:B.kept", surface: "oracle", texts: ["A line nobody touched."] },
     { key: "raw:mazeworld.html#markup", surface: "title", texts: ["Gone soon.", "Also gone."] },
@@ -59,7 +59,7 @@ const SYN_LEDGERS = [
     ROW("bank:A.one", "panels", "Old panel line.", "Middle panel line.", "First pass: the fact first."),
   ] },
   { plan: "79-05", rows: [
-    ROW("content:SPELLS.Mirror Self.txt", "spells", "foes need a 1 to hit", "foes hit only on a 20 <b>&</b>", "Roll-high.", ["roll-under"]),
+    ROW("content:SPELLS.Mirror Self.txt", "spells", "Old spell text.", "foes hit only on a 20 <b>&</b>", "Roll-high.", ["roll-under"]),
     ROW("bank:A.one", "panels", "Middle panel line.", "Final panel line.", "Second pass: reads aloud."),
   ] },
   { plan: "79-12", rows: [

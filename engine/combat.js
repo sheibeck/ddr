@@ -743,7 +743,7 @@ export function playerStrike(state, rng, events = []) {
       if (faces !== withoutMirror) mirrorMods = [{ name: "Mirror Self", delta: faces - withoutMirror }];
     }
     // Phase 38 (ABIL-02, need_shift_spec): Overhead Blow's party-agnostic
-    // "you need two better to land it" self-penalty — a transient descriptor
+    // "your die has two fewer faces that land it" self-penalty — a transient descriptor
     // term, zero draws, applied BEFORE Afraid so Afraid's own penalty stacks
     // on top of it like any other need rule. Floors at 1 (never revives an
     // untouchable need-0 foe, mirroring Afraid's own floor below); a no-op

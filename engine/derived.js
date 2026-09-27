@@ -1685,7 +1685,8 @@ export function foeDie(c, f) {
  * (the `item:<key>` timer id). A live one on the HERO's sheet also covers
  * every Joiner; every other hero item effect is the hero's own body only.
  * Today one row: the Crystal Staff (content/treasure-tables.js STAVES,
- * "party invisible d10+5 squares; enemies need a 1"). The Cloak of
+ * "party invisible d10+5 squares: foes hit only on their die's top
+ * face"). The Cloak of
  * Invisibility and the Invisible potion say "you", so they stay personal.
  * test/unit/joiner-defences.test.js pins each key to a real activation
  * whose own text names the party.
@@ -1781,8 +1782,8 @@ export function raceFoeToHit(sheet) {
  * its own invisibility. None of the hero's personal defences reach a Joiner
  * any more (before this, the hero's Acrobat, Guard, gear, Mirror Self and
  * invisibility did). The party-wide terms read the whole side: Battle Roar
- * (the hero's or any live member's, "every foe needs two better to hit
- * anyone on your side") and a PARTY_WIDE_ITEM_EFFECTS invisibility on the
+ * (the hero's or any live member's, "every foe has two fewer faces that
+ * hit anyone on your side") and a PARTY_WIDE_ITEM_EFFECTS invisibility on the
  * hero (the Crystal Staff, "party invisible"). FOE_ACCURACY is the foe's own
  * dial and applies to every target. engine/combat.js#foeTurn's member
  * branch reads a Joiner's odds ONLY through this function (via
