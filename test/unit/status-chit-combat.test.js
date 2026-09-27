@@ -438,7 +438,9 @@ test("pins: renderRail reads combatCardUp and combatScreenUp() for hidden, data-
   assert.match(region, /const combatCardUp = !!window\.__mzRailVM\?\.isCombatCard\?\.\(rail\.card\) && key === "card:" \+ rail\.card\.seq;/);
   assert.match(region, /const foeCardUp = rail\.card\?\.kind === "foe" && key === "card:" \+ rail\.card\.seq;/);
   assert.match(region, /if \(foeCardUp && S\.combat && window\.__mzFoeInspect\?\.card\)/);
-  assert.match(region, /railEl\.hidden = !!\(\(S\.combat && !combatCardUp\) \|\| S\.dead\) \|\| idle;/);
+  // Phase 78 (HUD-06, 78-08): the stairs fade joins the same predicate
+  // (`|| fadeUp`); the combat-card half is unchanged.
+  assert.match(region, /railEl\.hidden = !!\(\(S\.combat && !combatCardUp\) \|\| S\.dead\) \|\| idle \|\| fadeUp;/);
   assert.match(region, /if \(combatScreenUp\(\) && combatCardUp && !railEl\.hidden\) \{/);
   assert.match(region, /if \(combatCardUp\) \{[\s\S]{0,400}?if \(!combatScreenUp\(\)\) startHold\(\);/);
   assert.match(region, /\} else if \(combatCardUp && !combatScreenUp\(\) && railTimer === null\) \{/);
