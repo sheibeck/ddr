@@ -47,9 +47,12 @@ test("CARD_EVENTS is exactly floorChanged + leveled, disjoint from ORACLE_ONLY, 
   assert.equal(ORACLE_ONLY.has("floorChanged"), true);
 });
 
-test("NARRATIVE_ACTIONS is exactly move + camp + resolveJoiner + dismissJoiner", () => {
-  assert.deepEqual([...NARRATIVE_ACTIONS].sort(), ["camp", "dismissJoiner", "move", "resolveJoiner"]);
-  for (const t of ["attack", "castSpell", "buyItem", "equipItem"]) {
+// Phase 78 (CLIMB-01, a 78-03 follow-up): resolveHazard joins the set (it
+// was move + camp + resolveJoiner + dismissJoiner), since a wall or crevice
+// crossing is its own dispatch now; useTool stays out, as before.
+test("NARRATIVE_ACTIONS is exactly move + camp + resolveJoiner + dismissJoiner + resolveHazard", () => {
+  assert.deepEqual([...NARRATIVE_ACTIONS].sort(), ["camp", "dismissJoiner", "move", "resolveHazard", "resolveJoiner"]);
+  for (const t of ["attack", "castSpell", "buyItem", "equipItem", "useTool"]) {
     assert.equal(NARRATIVE_ACTIONS.has(t), false, `${t} must not be a narrative action`);
   }
 });
