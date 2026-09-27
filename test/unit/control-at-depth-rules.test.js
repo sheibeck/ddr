@@ -114,9 +114,6 @@ const EXEMPT = {
     applyPommel: "X5: Pommel Strike, a one-turn ability effect",
     applyDirtyTrick: "X5: Dirty Trick, a two-round ability effect",
   },
-  "scrollFumble.js": {
-    resolveHarmful: "X8: a fumbled Weaken scroll (Phase 75.1) sets C.weakened as a fumble effect, not the hero's control",
-  },
 };
 
 /**
@@ -187,7 +184,9 @@ test("RULES-18 guard: the scan is not vacuous — every hit resolves to a named 
   // One entry per audited function that assigns a control today: castSpell
   // (C1, C5, C7, C8, C10, C11, C14, C17-C19), useItem (C4, C6, C12, C16),
   // allyCast (C2, C9, C15), sing (C13), foeTurn (C3), holdFoe, and the
-  // exemptions (X5, X8).
+  // exemptions (X5). X8 left the list in Plan 76-06 (user ruling
+  // 2026-09-26): a fumbled Weaken now weakens the READER (c.foeEffect), so
+  // scrollFumble.js assigns no foe control at all and needs no exemption.
   for (const site of [
     "magic.js#castSpell",
     "items.js#useItem",
@@ -197,7 +196,6 @@ test("RULES-18 guard: the scan is not vacuous — every hit resolves to a named 
     "combat.js#holdFoe",
     "abilities.js#applyPommel",
     "abilities.js#applyDirtyTrick",
-    "scrollFumble.js#resolveHarmful",
   ]) {
     assert.ok(seen.has(site), `expected the scan to see a control assignment in ${site}; seen: ${[...seen].join(", ")}`);
   }

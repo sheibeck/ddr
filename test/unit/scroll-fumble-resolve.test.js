@@ -22,6 +22,9 @@ import { SCROLL_FUMBLE, SPELLS } from "../../content/index.js";
 import { applyAction } from "../../engine/engine.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
+import { readScroll, scrollReadRng } from "../../engine/magic.js";
+import { conditionsOf, scrollReadBands, scrollReadOutcome } from "../../engine/derived.js";
+import { rollCheck } from "../../engine/dice.js";
 
 const stripMarkup = (s) => String(s).replace(/<[^>]*>/g, " ");
 
@@ -209,14 +212,77 @@ test("harmful shrink: cannot take 1 hp to 0", () => {
   assert.equal(state.c.wp, 1);
 });
 
-test("harmful weakened: sets the hex for d4+1 rounds", () => {
+// Plan 76-06's dispatch (user ruling 2026-09-26, 76-CONTEXT "A fumbled Weaken
+// scroll weakens the READER"): this test used to pin the foe-side fields a
+// landed hero Weaken sets (C.weakened, C.foeToHitPenalty 3, the spell:weaken
+// timer), so the "harmful" fumble helped the reader. The fumble now puts the
+// hero-side debuff on the reader: c.foeEffect of kind "weakened", the same
+// one a foe's Weaken inflicts (engine/foeAbilities.js), for the d4+1 rounds.
+test("harmful weakened: weakens the READER (c.foeEffect weakened) for d4+1 rounds; no foe-side field is set", () => {
   const state = fixedState();
   state.combat = fixedCombat([fixedFoe()]);
   const events = resolveScrollFumble(state, spellRow("Weaken"), fakeRng([2]), fakeRng([]));
-  assert.equal(state.combat.weakened, true);
-  assert.equal(state.combat.foeToHitPenalty, 3);
-  assert.equal(state.c.timers["spell:weaken"].left, 3);
+  assert.deepEqual(state.c.foeEffect, { kind: "weakened", rounds: 3 });
+  assert.equal(state.combat.weakened, undefined, "the foes are not weakened");
+  assert.equal(state.combat.foeToHitPenalty, undefined, "the foes' to-hit is untouched");
+  assert.equal(state.c.timers && state.c.timers["spell:weaken"], undefined, "no spell:weaken timer");
   assert.deepEqual(events.find((e) => e.type === "fumbleOnReader"), { type: "fumbleOnReader", spell: "Weaken", effect: "weakened", rounds: 3 });
+  // The reader carries the same chip a foe's Weaken gives them.
+  assert.deepEqual(
+    conditionsOf(state).find((cn) => cn.key === "foeEffect"),
+    { key: "foeEffect", polarity: "bad", kind: "weakened", remaining: 3 },
+  );
+  // The Oracle and rail lines tell that truth: the scroll weakens YOU.
+  const ev = events.find((e) => e.type === "fumbleOnReader");
+  assert.match(stripMarkup(EVENT_NARRATION.fumbleOnReader(ev)), /weakens you/);
+  assert.match(LINE_FOR.fumbleOnReader(ev, {}).text, /weakens you/);
+});
+
+test("harmful weakened: the weakened reader's own melee blows are halved, and the foes' blows are not", () => {
+  // A fumbled Weaken, then one attack round through the real engine: the
+  // hero-side debuff halves the reader's landed weapon damage (combat.js
+  // playerStrike's c.foeEffect read), and C.weakened (which halves the
+  // FOES' blows) stays unset.
+  const state = fixedState({ c: { wp: 999, maxWP: 999 } });
+  state.combat = fixedCombat([fixedFoe()]);
+  resolveScrollFumble(state, spellRow("Weaken"), fakeRng([4]), fakeRng([]));
+  assert.deepEqual(state.c.foeEffect, { kind: "weakened", rounds: 5 });
+  assert.equal(state.combat.weakened, undefined);
+  const struck = (s) => applyAction(s, { type: "attack" }).events.find((e) => e.type === "struck");
+  let compared = 0;
+  for (let rngState = 1; rngState <= 60 && compared < 3; rngState++) {
+    const weak = structuredClone(state);
+    weak.rngState = rngState;
+    const plain = structuredClone(weak);
+    plain.c.foeEffect = null;
+    const w = struck(weak);
+    const p = struck(plain);
+    if (!w || !p || p.dmg < 2) continue;
+    assert.equal(w.dmg, Math.ceil(p.dmg / 2), `rngState ${rngState}: the weakened reader's blow is halved`);
+    compared++;
+  }
+  assert.ok(compared > 0, "non-vacuous: at least one landed blow compared");
+});
+
+test("harmful weakened: a fumbled Weaken read OUT of combat fizzles (the Phase 75.1 rule) and weakens nobody", () => {
+  // readScroll resolves a fumble only in combat; out of combat it fizzles.
+  // Force a Weaken pick and a fumbled intel read on the real derived stream.
+  const pickWeaken = (arr) => arr.find((sp) => sp.n === "Weaken");
+  const intel = 14;
+  const bands = scrollReadBands(intel);
+  let acts = -1;
+  for (let a = 0; a <= 5000 && acts === -1; a++) {
+    const check = rollCheck(scrollReadRng({ acts: a }, { getState: () => 0 }), bands.dieN, bands.atLeast);
+    if (scrollReadOutcome(check, bands) === "fumbled") acts = a;
+  }
+  assert.ok(acts >= 0, "a fumbling acts value exists");
+  const state = fixedState({ acts, c: { cls: "Fighter", sub: "Soldier", skills: {}, intel, scrolls: 1, foeEffect: null } });
+  const events = readScroll(state, { ...fakeRng([]), pick: pickWeaken, getState: () => 0 }, []);
+  const fumbled = events.find((e) => e.type === "scrollFumbled");
+  assert.ok(fumbled && fumbled.spell === "Weaken" && fumbled.fizzled === true);
+  assert.equal(events.some((e) => e.type === "fumbleOnReader"), false);
+  assert.equal(state.c.foeEffect, null, "nobody is weakened");
+  assert.equal(state.c.timers && state.c.timers["spell:weaken"], undefined);
 });
 
 test("harmful vapor: level 5+, d10 not 1, lands a heavy blow (how vapor)", () => {

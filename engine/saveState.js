@@ -259,6 +259,28 @@ function clearStaleTimers(c, fightSurvives = false) {
   return c;
 }
 
+/**
+ * clampRevealWindow(c) — Plan 76-06 (user ruling 2026-09-26: Map the Floor
+ * lasts only until you move). A tolerant load that applies the until-you-
+ * move rule to a window saved before it: when `c.timers["spell:reveal"]` is
+ * a plain-object record with phase "effect", cadence "squares" and a finite
+ * `left` above 1 (an old 40-square window), `left` becomes 1, so the first
+ * step after the load ends it. Anything else — no timers, a cooldown or
+ * spent record, a non-object or tampered record — is left exactly as it is
+ * for clearStaleTimers / clearStaleSpellSeen to handle. A no-op for every
+ * state the new engine produces (its windows are already one square). No
+ * event, no narration; never throws, never creates a key. Mutates and
+ * returns the passed `c`.
+ */
+function clampRevealWindow(c) {
+  if (!isPlainObject(c) || !isPlainObject(c.timers)) return c;
+  const rec = c.timers["spell:reveal"];
+  if (isPlainObject(rec) && rec.phase === "effect" && rec.cadence === "squares" && Number.isFinite(rec.left) && rec.left > 1) {
+    rec.left = 1;
+  }
+  return c;
+}
+
 // ─── SAV-06/SAV-07 (Phase 76): the resume sanitizers ────────────────────────
 //
 // A DECLARED CANON DIVERGENCE from the 1994 prototype's load(), which never
@@ -874,7 +896,7 @@ export function validateSave(raw, options = {}) {
     sanitizeWard(
       foldLegacyCounters(
         ensureCharacterAbilities(
-          sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)), fightSurvives)), fightSurvives)),
+          sanitizeWorn(clampRevealWindow(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)), fightSurvives)), fightSurvives))),
           seed,
         ),
         steps,
@@ -1016,7 +1038,7 @@ export function rehydrate(obj) {
     sanitizeWard(
       foldLegacyCounters(
         ensureCharacterAbilities(
-          sanitizeWorn(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)), fightSurvives)), fightSurvives)),
+          sanitizeWorn(clampRevealWindow(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)), fightSurvives)), fightSurvives))),
           obj.seed,
         ),
         obj.steps ?? 0,

@@ -727,7 +727,7 @@ export function isFlying(state) {
  *   - senses {polarity:"good"}                             — Phase 40 (SPELL-02): Sense Presence — a flat 0/1 flag (no count), lasts until endCombat clears it; also waives every forced foe-first initiative rule (see combat.js#rollInitiative)
  *   - regen  {polarity:"good"}                              — Phase 40 (SPELL-02): Regeneration — a flat boolean (no count, the d8/round tick has no duration field), cleared at endCombat
  *   - foresight {polarity:"good"}                           — Phase 40 (SPELL-02): an ARMED Sense Danger, waiting for the next fight (consumed by rollInitiative, which always sets it back to false)
- *   - reveal {polarity:"good", remaining:<sq left>, cadence:"squares"}     — Phase 40 (SPELL-05): Map the Floor's window — the `spell:reveal` c.timers record, while its phase is "effect"
+ *   - reveal {polarity:"good"}                              — Phase 40 (SPELL-05): Map the Floor's window — the `spell:reveal` c.timers record, while its phase is "effect"; Plan 76-06: the window lasts until the next step, so the chip carries no countdown
  *   - flight {polarity:"good", flight:"charged", remaining:<sq>, cadence:"squares", source:<item display name>} — 260918-w4n: reported by the SAME generic live-item-effect loop as haste/invis/etc, only while a `fly`-kind record (Cloak of Flying OR Bracelet of Flight) is live; a ready-but-unused flight item yields NO flight chip, and a cooling one reports through the generic itemCooldown chip below like every other item
  *   - itemCooldown (Phase 39, GEAR-02, one per COOLING duration+cooldown item): {polarity:"good", item:<display name>, remaining:<sq left>}
  *   - staffCharges (Phase 39, GEAR-02, one per RECHARGING staff): {polarity:"good", item:<display name>, charges:<current>, max:<pool>, remaining:<sq left>}
@@ -839,10 +839,12 @@ export function conditionsOf(state) {
   // cadence c.timers record read the same way the item-effect chips above
   // read theirs; ONLY while the window is open (phase "effect", left > 0).
   // No rng, no mutation, no new c.* field (the record already lives on
-  // c.timers via engine/effects.js#startEffect).
+  // c.timers via engine/effects.js#startEffect). Plan 76-06 (user ruling
+  // 2026-09-26): the window lasts until the hero's next step, so the chip
+  // carries no countdown — the shell shows a fixed "until you move".
   const rev = c.timers && c.timers["spell:reveal"];
   if (rev && rev.phase === "effect" && rev.left > 0) {
-    out.push({ key: "reveal", polarity: "good", remaining: rev.left, cadence: "squares" });
+    out.push({ key: "reveal", polarity: "good" });
   }
 
   // CMBUI-13 (Phase 77): the good effects that had no chip, appended in a
@@ -1200,9 +1202,9 @@ export const DARK_VIEW_RADIUS = 1;
  * stored flag (research Pitfall 4) — so leaving the dark square restores
  * the full explored view for free: nothing was ever taken away from
  * `seen`, only hidden at render time. Map the Floor's `spellSeen` window
- * keeps counting under this filter — it is orthogonal, the filter only
- * HIDES, it never pauses the reveal-window's own squares-cadence countdown
- * (CONTEXT routine decision). Pure, zero rng, mutates nothing.
+ * is orthogonal to this filter — the filter only HIDES, and the reveal
+ * window still ends on the hero's next step (Plan 76-06) whatever the
+ * filter shows (CONTEXT routine decision). Pure, zero rng, mutates nothing.
  */
 export function mapViewRadius(state) {
   return darkLimited(state) ? DARK_VIEW_RADIUS : Infinity;

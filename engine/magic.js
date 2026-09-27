@@ -445,9 +445,14 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // cell is marked BOTH seen and spellSeen (the provenance flag) — a cell
     // already seen (walked earlier, or already spell-marked from an earlier
     // cast this window) is left alone, so a recast never double-marks and
-    // the reported `cells` count is only the NEWLY-marked cells. startEffect
-    // OVERWRITES any existing `spell:reveal` record, so a recast mid-window
-    // simply refreshes the timer back to sp.squares. Zero rng draws.
+    // the reported `cells` count is only the NEWLY-marked cells. Zero rng
+    // draws.
+    // Plan 76-06 (user ruling 2026-09-26): the window lasts until the hero's
+    // first step (sp.squares is 1, and engine/movement.js#move is the one
+    // tickSquares site). startEffect OVERWRITES any existing `spell:reveal`
+    // record with the one-square record, so a recast keeps an open window
+    // open and reopens a closed one. The event carries no squares count:
+    // there is nothing left to count.
     const f = state.floor;
     let cells = 0;
     for (let y = 0; y < GH; y++)
@@ -459,7 +464,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         cells++;
       }
     startEffect(c, "spell:reveal", { squares: sp.squares });
-    events.push({ type: "floorMapped", squares: sp.squares, cells });
+    events.push({ type: "floorMapped", cells });
   } else if (sp.kind === "foresee") {
     c.foresight = true;
     const type = rng.pick(ENC_TYPES);

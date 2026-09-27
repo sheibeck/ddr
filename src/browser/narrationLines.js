@@ -1790,8 +1790,9 @@ export const LINE_FOR = {
   sensesGained: () => ({ text: "Your senses sharpen.", tone: "magic", priority: PRIORITY.you }),
   // Phase 40 (SPELL-05, Plan 04): see eventNarration.js's matching comment —
   // floorMapped/revealFaded replace the old retired permanent reveal event.
-  floorMapped: (e) => ({ text: `The floor lays itself out in your head (${e?.squares ?? 0} squares).`, tone: "magic", priority: PRIORITY.you }),
-  revealFaded: () => ({ text: "The map forgets what it was told.", tone: "beat", priority: PRIORITY.other }),
+  // Plan 76-06 (user ruling 2026-09-26): until you move; no squares count.
+  floorMapped: () => ({ text: "The floor lays itself out in your head. Don't move.", tone: "magic", priority: PRIORITY.you }),
+  revealFaded: () => ({ text: "You moved. Focus lost; the map forgets.", tone: "beat", priority: PRIORITY.other }),
   senseDanger: (e) => ({ text: `Bad feeling about the ${e?.nextEncounter ?? "next encounter"}.`, tone: "magic", priority: PRIORITY.you }),
   mirrorSelf: (e) => ({ text: `A mirror image holds (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   // RULES-14 (Phase 75): the rail twin of eventNarration.js's own

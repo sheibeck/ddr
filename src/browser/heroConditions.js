@@ -39,7 +39,9 @@
 import { ABILITY_BY_ID } from "../../content/abilities.js";
 
 /** LASTS — every `lasts` value an entry may carry. */
-export const LASTS = Object.freeze(["rounds", "squares", "fight", "nextBlow", "day", "nextFight", "untilCured", "charges"]);
+// Plan 76-06 (user ruling 2026-09-26): "untilMove" is Map the Floor's window,
+// which lasts until the hero's next step and carries no countdown.
+export const LASTS = Object.freeze(["rounds", "squares", "fight", "nextBlow", "day", "nextFight", "untilCured", "charges", "untilMove"]);
 
 /** SOURCES — every `source` kind an entry may carry. */
 export const SOURCES = Object.freeze(["ability", "spell", "item", "foe", "scroll", "song", "fear", "insult", "dark", "trait", "mishap"]);
@@ -62,6 +64,7 @@ export const HERO_CHIP_COPY = Object.freeze({
     nextFight: "until your next fight",
     untilCured: "until something cures it",
     charges: "{n} of {max} charges left",
+    untilMove: "until you move",
   }),
   source: Object.freeze({
     ability: "from your {name}",
@@ -131,7 +134,7 @@ export const HERO_CONDITIONS = Object.freeze(
     { key: "senses", fields: ["senses"], fight: true, lasts: "fight", source: "spell" }, // Sense Presence: lifts the dark cap, waives foe-first.
     { key: "regen", fields: ["regen"], fight: true, lasts: "fight", source: "spell" }, // Regeneration: heals each round.
     { key: "foresight", fields: ["foresight"], fight: false, lasts: "nextFight", source: "spell" }, // Sense Danger: waiting for the next fight.
-    { key: "reveal", fields: ["timers"], timers: ["spell:reveal"], fight: false, lasts: "squares", source: "spell" }, // Map the Floor: the map only.
+    { key: "reveal", fields: ["timers"], timers: ["spell:reveal"], fight: false, lasts: "untilMove", source: "spell" }, // Map the Floor: the map only, until the next step (Plan 76-06).
     { key: "braced", fields: ["braced"], fight: true, lasts: "nextBlow", source: "ability", sourceName: ABILITY_BY_ID.brace?.name }, // Brace: halves the next blow.
     { key: "inspired", fields: ["inspired"], fight: true, lasts: "fight", source: "song" }, // the level-2 song: a to-hit plus.
     { key: "halfNext", fields: ["halfNext"], fight: true, lasts: "nextBlow", source: "item", sourceName: "Pendant of Fortitude" }, // halves the next blow.

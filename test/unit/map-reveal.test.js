@@ -9,6 +9,12 @@
 // research Pitfall 4), and a recast mid-window refreshes the timer without
 // ever double-marking a cell.
 //
+// Plan 76-06 (user ruling 2026-09-26, 76-CONTEXT "User rulings after
+// planning"): the window is now ONE square — Map the Floor lasts only until
+// you move. The pins below that named the old 40-square window are flipped
+// to the one-square rule, each with its own comment; the full until-you-move
+// coverage lives in test/unit/map-until-move.test.js.
+//
 // Direct unit coverage against the real engine (castSpell/move/descend/
 // teleport/conditionsOf/refogSpellSeen/reveal), mirroring test/unit/
 // magic.test.js's and test/unit/movement.test.js's own fixture patterns
@@ -150,7 +156,8 @@ test("castSpell (Map the Floor): marks every unseen non-wall cell seen+spellSeen
 
   const floorMapped = events.find((e) => e.type === "floorMapped");
   assert.ok(floorMapped, "floorMapped fires");
-  assert.equal(floorMapped.squares, 40);
+  // Plan 76-06 (user ruling 2026-09-26): the event no longer carries a squares count.
+  assert.equal("squares" in floorMapped, false);
   assert.equal(events.some((e) => e.type === "detectMagic"), false, "the retired event never fires");
 
   let expectedCells = 0;
@@ -174,18 +181,20 @@ test("castSpell (Map the Floor): marks every unseen non-wall cell seen+spellSeen
     }
   }
   assert.equal(floorMapped.cells, expectedCells, "floorMapped.cells counts only the newly-marked cells");
-  assert.deepStrictEqual(state.c.timers["spell:reveal"], { cadence: "squares", left: 40, phase: "effect" });
+  // Plan 76-06 (user ruling 2026-09-26): the window is one square — it lasts until you move.
+  assert.deepStrictEqual(state.c.timers["spell:reveal"], { cadence: "squares", left: 1, phase: "effect" });
 });
 
-test("castSpell (Map the Floor): a recast on a floor that is still fully lit marks zero new cells but refreshes the timer to 40", () => {
+// Plan 76-06 (user ruling 2026-09-26): the window is one square, so a recast
+// while it is open keeps it at one square (this was "refreshes to 40").
+test("castSpell (Map the Floor): a recast on a floor that is still fully lit marks zero new cells and keeps the one-square window", () => {
   const state = fixedState({ c: { grimoire: ["Map the Floor"] } });
   castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
-  state.c.timers["spell:reveal"].left = 17; // simulate the window having ticked down
 
   const events2 = castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
   const floorMapped2 = events2.find((e) => e.type === "floorMapped");
   assert.equal(floorMapped2.cells, 0, "every cell is already seen from the first cast — nothing new to mark");
-  assert.deepStrictEqual(state.c.timers["spell:reveal"], { cadence: "squares", left: 40, phase: "effect" });
+  assert.deepStrictEqual(state.c.timers["spell:reveal"], { cadence: "squares", left: 1, phase: "effect" });
 });
 
 // --- refogSpellSeen / reveal() graduation, as pure functions ---------------
@@ -246,28 +255,24 @@ test("move(): walking graduates every cell reveal() touches — spellSeen remove
 
 // --- the ONE sweep at expiry, never a per-step poll (research Pitfall 4) --
 
-test("the reveal window's sweep: no re-fog for 39 steps, exactly ONE sweep on the 40th, never a second", () => {
+// Plan 76-06 (user ruling 2026-09-26): Map the Floor lasts only until you
+// move, so this was "no re-fog for 39 steps, ONE sweep on the 40th" and is
+// now "the first step sweeps, never a second".
+test("the reveal window's sweep: exactly ONE sweep on the first step, never a second", () => {
   const dirs = longCorridorDirs();
   const state = fixedState({
     c: { grimoire: ["Map the Floor"] },
     floor: { g: buildCorridorFloor(dirs), px: 1, py: 1, depth: 1 },
   });
   castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
-  assert.equal(state.c.timers["spell:reveal"].left, 40);
-
-  for (let i = 0; i < 39; i++) {
-    const events = move(state, dirs[i], fakeRng([]), []);
-    assert.equal(events.some((e) => e.type === "revealFaded"), false, `step ${i + 1}: no sweep yet`);
-  }
-  assert.ok(state.c.timers["spell:reveal"], "the record survives 39 ticks");
   assert.equal(state.c.timers["spell:reveal"].left, 1);
 
   const preFlagged = [];
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (state.floor.g[y][x].spellSeen) preFlagged.push([x, y]);
 
-  const events40 = move(state, dirs[39], fakeRng([]), []);
-  const faded = events40.filter((e) => e.type === "revealFaded");
-  assert.equal(faded.length, 1, "exactly one sweep on the 40th step");
+  const events1 = move(state, dirs[0], fakeRng([]), []);
+  const faded = events1.filter((e) => e.type === "revealFaded");
+  assert.equal(faded.length, 1, "exactly one sweep on the first step");
 
   let refogged = 0;
   let graduated = 0;
@@ -280,13 +285,16 @@ test("the reveal window's sweep: no re-fog for 39 steps, exactly ONE sweep on th
   assert.equal("spell:reveal" in state.c.timers, false, "the record is gone");
   assert.equal(countFlagged(state.floor), 0, "the floor holds zero spellSeen keys after the sweep");
 
-  for (let i = 40; i < dirs.length; i++) {
+  for (let i = 1; i < dirs.length; i++) {
     const events = move(state, dirs[i], fakeRng([]), []);
     assert.equal(events.some((e) => e.type === "revealFaded"), false, `step ${i + 1}: no second sweep`);
   }
 });
 
-test("castSpell (Map the Floor): a recast at step 20 resets the window without ticking early", () => {
+// Plan 76-06 (user ruling 2026-09-26): this was "a recast at step 20 resets
+// the window to 40". The window now closes on the first step, so a recast at
+// step 20 reopens a one-square window that the next step closes again.
+test("castSpell (Map the Floor): a recast at step 20 reopens a one-square window that the very next step closes", () => {
   const dirs = longCorridorDirs();
   const state = fixedState({
     c: { grimoire: ["Map the Floor"] },
@@ -294,20 +302,20 @@ test("castSpell (Map the Floor): a recast at step 20 resets the window without t
   });
   castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
   for (let i = 0; i < 20; i++) move(state, dirs[i], fakeRng([]), []);
-  assert.equal(state.c.timers["spell:reveal"].left, 20);
+  assert.equal("spell:reveal" in state.c.timers, false, "the first cast's window closed on its first step");
+  assert.equal(countFlagged(state.floor), 0);
 
-  const preFlagged = countFlagged(state.floor);
   const recastEvents = castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
   const floorMapped = recastEvents.find((e) => e.type === "floorMapped");
-  assert.equal(floorMapped.cells, 0, "every cell reachable from here is already seen");
-  assert.equal(countFlagged(state.floor), preFlagged, "no flag is set twice — the recast leaves the flagged count unchanged");
-  assert.deepStrictEqual(state.c.timers["spell:reveal"], { cadence: "squares", left: 40, phase: "effect" });
+  assert.ok(floorMapped.cells > 0, "the corridor the hero never walked is marked again");
+  assert.equal(countFlagged(state.floor), floorMapped.cells);
+  assert.deepStrictEqual(state.c.timers["spell:reveal"], { cadence: "squares", left: 1, phase: "effect" });
 
-  for (let i = 20; i < 25; i++) {
-    const events = move(state, dirs[i], fakeRng([]), []);
-    assert.equal(events.some((e) => e.type === "revealFaded"), false, "no premature sweep after the refresh");
+  const events = move(state, dirs[20], fakeRng([]), []);
+  assert.equal(events.filter((e) => e.type === "revealFaded").length, 1, "the next step sweeps again");
+  for (let i = 21; i < 25; i++) {
+    assert.equal(move(state, dirs[i], fakeRng([]), []).some((e) => e.type === "revealFaded"), false, "and never again");
   }
-  assert.equal(state.c.timers["spell:reveal"].left, 35, "expiry now sits 40 squares after the recast, not the original cast");
 });
 
 // --- descend clears the record; teleport leaves it running -----------------
@@ -342,10 +350,11 @@ test("conditionsOf: the reveal chip tracks the live spell:reveal window and is a
   assert.equal(conditionsOf(state).some((c2) => c2.key === "reveal"), false);
 
   castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
-  assert.deepStrictEqual(
-    conditionsOf(state).find((c2) => c2.key === "reveal"),
-    { key: "reveal", polarity: "good", remaining: 40, cadence: "squares" },
-  );
+  // Plan 76-06 (user ruling 2026-09-26): the window lasts until you move, so
+  // the chip carries no countdown (was remaining 40, cadence "squares").
+  assert.deepStrictEqual(conditionsOf(state).find((c2) => c2.key === "reveal"), { key: "reveal", polarity: "good" });
+  move(state, "E", fakeRng([]), []);
+  assert.equal(conditionsOf(state).some((c2) => c2.key === "reveal"), false, "gone after the first step");
 });
 
 // --- a fresh run carries no flag at all -------------------------------------
@@ -396,10 +405,22 @@ test("floorMapped/revealFaded: both have EVENT_NARRATION + LINE_FOR + RAIL_FAMIL
   assert.equal("detectMagic" in ORACLE_ONLY, false);
   assert.equal("detectMagic" in RAIL_FAMILY, false);
 
-  const mapped = EVENT_NARRATION.floorMapped({ squares: 40 });
-  assert.ok(/40/.test(mapped) && /squares/.test(mapped));
-  const faded = EVENT_NARRATION.revealFaded({});
-  assert.ok(/forgets/.test(faded));
+  // Plan 76-06 (user ruling 2026-09-26): floorMapped carries no squares count
+  // (the map holds while you stand still), and revealFaded is about losing
+  // focus when you move. Oracle and rail agree; tones are unchanged.
+  const mapped = EVENT_NARRATION.floorMapped({ type: "floorMapped", cells: 120 });
+  assert.ok(mapped.startsWith('<span class="hit">'), mapped);
+  assert.equal(/\d/.test(mapped), false, "no number of squares");
+  assert.match(mapped, /still/);
+  const faded = EVENT_NARRATION.revealFaded({ type: "revealFaded", cells: 80 });
+  assert.ok(faded.startsWith('<span class="beat">'), faded);
+  assert.match(faded, /focus/);
+  const railMapped = LINE_FOR.floorMapped({ type: "floorMapped", cells: 120 });
+  assert.equal(/\d/.test(railMapped.text), false, "no number on the rail either");
+  assert.equal(railMapped.tone, "magic");
+  const railFaded = LINE_FOR.revealFaded({ type: "revealFaded", cells: 80 });
+  assert.match(railFaded.text, /focus/i);
+  assert.equal(railFaded.tone, "beat");
 });
 
 // --- Task 2: the saveState boundary end to end ------------------------------
@@ -407,7 +428,8 @@ test("floorMapped/revealFaded: both have EVENT_NARRATION + LINE_FOR + RAIL_FAMIL
 test("serializeRun -> validateSave round-trip: a LIVE spell:reveal window and its still-flagged cells survive intact", () => {
   const state = fixedState({ c: { grimoire: ["Map the Floor"] } });
   castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
-  move(state, "E", fakeRng([]), []); // graduate a few cells, leave the rest flagged
+  // Plan 76-06 (user ruling 2026-09-26): a step now closes the window, so the
+  // save is taken right after the cast, before any step.
   const flaggedBefore = countFlagged(state.floor);
   assert.ok(flaggedBefore > 0);
 

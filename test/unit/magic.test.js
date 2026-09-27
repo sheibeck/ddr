@@ -326,7 +326,8 @@ test("castSpell: Map the Floor (non-combat) works with no active encounter", () 
   const state = fixedState({ c: { grimoire: ["Map the Floor"] }, combat: null });
   state.floor.g[2][2].wall = true; // one wall cell, left alone by reveal
   const events = castSpell(state, SPELL_IDX["Map the Floor"], fakeRng([]), []);
-  assert.ok(events.some((e) => e.type === "floorMapped" && e.squares === 40));
+  // Plan 76-06 (user ruling 2026-09-26): floorMapped no longer carries a squares count.
+  assert.ok(events.some((e) => e.type === "floorMapped" && !("squares" in e)));
   assert.equal(state.floor.g[0][0].seen, true, "every non-wall cell is revealed");
   assert.equal(state.floor.g[0][0].spellSeen, true, "a newly-revealed cell carries the provenance flag");
   assert.equal(state.floor.g[2][2].seen, false, "wall cells are left alone");

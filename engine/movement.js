@@ -502,6 +502,11 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
     // step's own reveal() call above has already graduated THIS step's
     // cells before this runs, so a cell just walked onto never re-fogs even
     // on the exact step the window closes.
+    // Plan 76-06 (user ruling 2026-09-26): the `spell:reveal` window is one
+    // square, so this sweep fires on the FIRST step after a cast — Map the
+    // Floor lasts only until you move. This is the only tickSquares call
+    // site in engine/, which is why only movement ends the window (casting,
+    // camping, a same-square fight or a refused step never reach it).
     if (trans.some((t) => t.id === "spell:reveal" && t.from === "effect")) {
       const cells = refogSpellSeen(f);
       events.push({ type: "revealFaded", cells });
