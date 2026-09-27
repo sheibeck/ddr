@@ -386,18 +386,6 @@ export const ALLOWED = Object.freeze(
     },
     {
       term: "roll-under",
-      file: "engine/combat.js",
-      match: "\"you need two better to land it\" self-penalty",
-      reason: "B — quotes Overhead Blow's pre-Phase-79 text to name the rule; engine/ is frozen for 79-12 (no engine diff), so the next plan that touches combat.js refreshes the quote",
-    },
-    {
-      term: "roll-under",
-      file: "engine/derived.js",
-      match: "\"party invisible d10\\+5 squares; enemies need a 1\"|\"every foe needs two better to hit",
-      reason: "B — PARTY_WIDE_ITEM_EFFECTS' and foeToHitVs' doc comments quote the Crystal Staff's and Battle Roar's pre-Phase-79 text as the party-wide claim they honour; engine/ is frozen for 79-12, so the next plan that touches derived.js refreshes the quotes",
-    },
-    {
-      term: "roll-under",
       file: "test/unit/",
       match: "txt: \"1[–-]5 on d10|txt: \"foes need two better to land\"",
       reason: "D — an inert pre-Phase-79 item text inside a hand-built test item literal (Lockpicks, the Anklet); where a test reads it, it compares the item against its own literal, never against game copy",

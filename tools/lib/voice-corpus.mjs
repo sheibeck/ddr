@@ -276,6 +276,9 @@ export const NON_COPY_EXPORTS = Object.freeze([
   nonCopy("content/treasure-tables.js", "BLADE_NAMES", "proper-noun blade names"),
   nonCopy("content/treasure-tables.js", "STAFF_NAMES", "proper-noun staff names"),
   nonCopy("content/weapons.js", "WEAPON_TYPE_TABLE", "weapon family ids"),
+  // 79-13: an engine lookup, so only the raw sweep ever met it (the
+  // completeness audit walks src/browser and content, not engine).
+  nonCopy("engine/derived.js", "PARTY_WIDE_ITEM_EFFECTS", "activation keys (item names used as ids) for the party-wide item effects quick fix 79-02b added; the lookup is never printed, and the Crystal Staff's text is walked as content:STAVES"),
 ]);
 
 /** Modules that cannot be imported under node, each with why (raw sweep still covers them). */
@@ -1111,6 +1114,13 @@ export async function auditRegistry({ root = REPO_ROOT } = {}) {
       if (registered.has(`${rel}#${name}`)) continue;
       unregistered.push({ module: rel, export: name, sample: copy[1].slice(0, 80) });
     }
+  }
+  // 79-13: a non-copy row may name an engine export (the raw sweep reads
+  // engine/, the module walk above does not); it is present when it exports it.
+  for (const r of NON_COPY_EXPORTS) {
+    if (!r.module.startsWith("engine/") || present.has(`${r.module}#${r.export}`)) continue;
+    const { mod } = await tryImport(root, r.module);
+    if (mod && r.export in mod) present.add(`${r.module}#${r.export}`);
   }
   const absent = [...BANK_REGISTRY, ...CONTENT_FIELDS, ...NON_COPY_EXPORTS]
     .filter((r) => !present.has(`${r.module}#${r.export}`))

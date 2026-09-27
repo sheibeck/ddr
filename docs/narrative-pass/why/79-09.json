@@ -142,5 +142,23 @@
     "after": "A store … wilmst in your purse … … Your gear Leave",
     "reasons": ["accurate"],
     "why": "The purse line lost the dead markup interpolation above; its words are unchanged."
+  },
+  {
+    "key": "oracle:purchaseBagged",
+    "surface": "oracle",
+    "trigger": "purchaseBagged — engine/economy.js#buyFrom stows a legal buy that is not an upgrade (the upgradeWhyText clause)",
+    "before": "Into the bag: Dagger. Not an upgrade — d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing · loses your +2 practiced bonus. It is yours all the same; equip it from Gear if you know something the arithmetic does not.",
+    "after": "Into the bag: Dagger. Not an upgrade — d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 average damage a swing · loses your +2 damage from practice. It is yours all the same; equip it from Gear if you know something the arithmetic does not.",
+    "reasons": ["fact"],
+    "why": "UPGRADE_WHY_COPY's rewording reaches this line: the swing numbers now say they are average damage, and the lost proficiency says it is damage from practice."
+  },
+  {
+    "key": "rail:purchaseBagged",
+    "surface": "rail",
+    "trigger": "purchaseBagged — engine/economy.js#buyFrom stows a legal buy that is not an upgrade (the upgradeWhyText clause)",
+    "before": "Into the bag: Dagger — not an upgrade: d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing · loses your +2 practiced bonus.",
+    "after": "Into the bag: Dagger — not an upgrade: d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 average damage a swing · loses your +2 damage from practice.",
+    "reasons": ["fact"],
+    "why": "UPGRADE_WHY_COPY's rewording reaches this line: the swing numbers now say they are average damage, and the lost proficiency says it is damage from practice."
   }
 ]

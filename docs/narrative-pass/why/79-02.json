@@ -323,5 +323,71 @@
       "accurate"
     ],
     "why": "The number moved out of the prose into the event's signed `amount`, which both narration surfaces print once, with its sign."
+  },
+  {
+    "key": "oracle:rested",
+    "surface": "oracle",
+    "trigger": "rested — engine/movement.js#newDay's rest (synthetic { amount 8, gained 3 }; in play `gained` equals `amount`)",
+    "before": "Rest restores +8 hp.",
+    "after": "Rest restores +3 hp.",
+    "reasons": [
+      "number"
+    ],
+    "why": "The rest line now prints `gained`, the HP the engine says it really added, instead of `amount`; 79-02 stamps `gained` on every gain event and here it always equals `amount`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source)."
+  },
+  {
+    "key": "rail:rested",
+    "surface": "rail",
+    "trigger": "rested — engine/movement.js#newDay's rest (synthetic { amount 8, gained 3 }; in play `gained` equals `amount`)",
+    "before": "Camp +8 hp",
+    "after": "Camp +3 hp",
+    "reasons": [
+      "number"
+    ],
+    "why": "The camp line now prints `gained`, the HP the engine says it really added, instead of `amount`; 79-02 stamps `gained` on every gain event and here it always equals `amount`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source)."
+  },
+  {
+    "key": "oracle:leveled",
+    "surface": "oracle",
+    "trigger": "leveled — engine/character.js#checkLevel (synthetic { wpGain 3, gained 8 }; in play `gained` equals `wpGain`)",
+    "before": "Skill level 2 (+3 hp).",
+    "after": "Skill level 2 (+8 hp).",
+    "reasons": [
+      "number"
+    ],
+    "why": "The level-up line now prints `gained`, the HP the engine says it really added, instead of `wpGain`; 79-02 stamps `gained` on every gain event and here it always equals `wpGain`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source)."
+  },
+  {
+    "key": "rail:leveled",
+    "surface": "rail",
+    "trigger": "leveled — engine/character.js#checkLevel (synthetic { wpGain 3, gained 8 }; in play `gained` equals `wpGain`)",
+    "before": "Skill level 2 (+3 hp).",
+    "after": "Skill level 2 (+8 hp).",
+    "reasons": [
+      "number"
+    ],
+    "why": "The level-up line now prints `gained`, the HP the engine says it really added, instead of `wpGain`; 79-02 stamps `gained` on every gain event and here it always equals `wpGain`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source)."
+  },
+  {
+    "key": "oracle:faerieBoon",
+    "surface": "oracle",
+    "trigger": "faerieBoon — engine/encounters.js#meetFaerie's +d20 base HP (synthetic { amount 8, gained 3 }; in play `gained` equals `amount`)",
+    "before": "+8 base hp.",
+    "after": "+3 base hp.",
+    "reasons": [
+      "number"
+    ],
+    "why": "The Faerie boon line now prints `gained`, the HP the engine says it really added, instead of `amount`; 79-02 stamps `gained` on every gain event and here it always equals `amount`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source)."
+  },
+  {
+    "key": "rail:faerieBoon",
+    "surface": "rail",
+    "trigger": "faerieBoon — engine/encounters.js#meetFaerie's +d20 base HP (synthetic { amount 8, gained 3 }; in play `gained` equals `amount`)",
+    "before": "+8 base hp.",
+    "after": "+3 base hp.",
+    "reasons": [
+      "number"
+    ],
+    "why": "The Faerie boon line now prints `gained`, the HP the engine says it really added, instead of `amount`; 79-02 stamps `gained` on every gain event and here it always equals `amount`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source)."
   }
 ]
