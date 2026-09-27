@@ -23,10 +23,19 @@ import {
   toHit,
 } from "../../engine/derived.js";
 import { playerStrike, flee } from "../../engine/combat.js";
-import { move } from "../../engine/movement.js";
+import { move, resolveHazard } from "../../engine/movement.js";
 import { weaponUpgradeDelta, takeItem } from "../../engine/items.js";
 import { lootCompare } from "../../src/browser/viewModels.js";
 import { setIdentityDials } from "./harness/identityDials.js";
+
+/** moveAndCommit(state, dir, rng, events) — CLIMB-01 (Phase 78): a step
+ * toward a wall/crevice now pauses on the pre-roll decision (no dice, a lone
+ * hazardChoice); the commit (resolveHazard, cross true) runs the roll these
+ * tests exercise, with exactly the draws the old single step made. */
+function moveAndCommit(state, dir, rng, events = []) {
+  move(state, dir, rng, []);
+  return resolveHazard(state, true, rng, events);
+}
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
 // this file's own pins are canon-mechanic numbers written before the fit
@@ -347,12 +356,12 @@ test("climb: armorBulk(state.c) is added to r — a stubbed d10 that a Leather w
   // 10ft rungs); each rung's roll of 6 passes for Leather (bulk 0: r=6) but
   // fails for Plate (bulk 2: r=8) on the FIRST rung.
   const leather = climbState("Leather");
-  const leatherEvents = move(leather, "N", fakeRng([1, 6, 6]), []);
+  const leatherEvents = moveAndCommit(leather, "N", fakeRng([1, 6, 6]), []);
   assert.ok(leatherEvents.some((e) => e.type === "climbedOver"), "Leather (bulk 0) must pass a roll of 6 (need <= 7)");
   assert.equal(leather.c.wp, 55, "no fall damage on a clean climb");
 
   const plate = climbState("Plate");
-  const plateEvents = move(plate, "N", fakeRng([1, 6, 15, 4]), []);
+  const plateEvents = moveAndCommit(plate, "N", fakeRng([1, 6, 15, 4]), []);
   assert.ok(plateEvents.some((e) => e.type === "fellClimbing"), "Plate (bulk 2) must fail the same roll of 6 (r=8 > 7)");
   assert.equal(plate.c.wp, 51, "took 4 wp of fall damage");
 });

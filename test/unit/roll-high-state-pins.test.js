@@ -106,11 +106,30 @@ const PINNED = {
   // are all Human/Wilmsry/Fridgian heroes with no sized party member).
   // Regenerated via `node tools/roll-high-baseline.mjs pins` (each hashed
   // identically twice).
-  "solo-1": { actions: 400, dead: false, depth: 5, hash: "ce883a88443d0e1a2ff1547974c0f9ce5c2a647f479e9ef8de4d7bf4644f8ca6" },
-  "solo-2": { actions: 400, dead: false, depth: 5, hash: "3cabf90ff81313a86fd89ec3add5d7927a515afeb9df2a57c9a4729fc6cc975a" },
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "3371e1f8bfdce95fed2d9bc4ea7d854e1718c9c6a69de3cae070f8bb80fd4cbc" },
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "444ec2ca839587b2249e6f89828a40fef887b2668b935c228a510e99c4ac4207" },
-  "party-1": { actions: 400, dead: false, depth: 4, hash: "ab7a42cbfcc8f9cad5845ce73e5f51b59a1942f4cb0ff25c1e2a78591c0aa61d" },
+  // "solo-1", "solo-2", "solo-thief-pilfer", "solo-magicuser-sorcerer" and
+  // "party-1" re-pinned (Phase 78, Plan 01, 2026-09-26, CLIMB-01): every
+  // step toward a wall or crevice now pauses on the pre-roll decision (a
+  // `hazardChoice`, no dice) and the bot commits on its next action
+  // (tools/lib/tuning-bot.mjs#decideAction), so each crossing WITHOUT the
+  // tool costs one extra validated action inside the fixed 400-action
+  // budget. Bisected live (a scratch trace of every step's full state hash,
+  // `acts`/`pendingHazard` aside, against a plan-base copy of the engine,
+  // with the pause steps dropped): solo-1 (4 uncarried pauses), solo-2 (3),
+  // solo-magicuser-sorcerer (7) and party-1 (5) play the SAME game step for
+  // step and simply stop that many game actions earlier. solo-thief-pilfer
+  // (3 pauses) matches up to bot step 137, its first scroll read after a
+  // crossing: the acts-keyed `scrollRead` derived stream (engine/magic.js)
+  // sees an `acts` one higher per earlier pause, so the read that
+  // deciphered now fumbles. `actions`/`dead`/`depth` are unchanged for all
+  // five; party-fighter-knight, deep-8 and deep-14 cross no wall or crevice
+  // within their budgets and re-measured byte-identical. Regenerated via
+  // `node tools/roll-high-baseline.mjs pins` (hashed identically three
+  // times).
+  "solo-1": { actions: 400, dead: false, depth: 5, hash: "5ab327e84b44ab942c7dca8dbad8e33003a85393c7bf6b64ae3e57d817ceee26" },
+  "solo-2": { actions: 400, dead: false, depth: 5, hash: "368ef81db919cdd022cab2926726e8e2dc32d29132c3042ea103d60eeae500da" },
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "5618fcf6dab0130b69de8cfa082aebcd9fd32abff2c1d12a94058d5d4968c8a1" },
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "3121f6b2c7d5b94470c05a7559cc68f5856a2d03b21f239fd243409b308c62b1" },
+  "party-1": { actions: 400, dead: false, depth: 4, hash: "673f322da39d24ed8796dcbeb7576f0991931bef01685aa335be2ef488956b80" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a

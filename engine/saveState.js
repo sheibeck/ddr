@@ -370,17 +370,21 @@ function sanitizePendingFind(raw) {
 }
 
 /**
- * sanitizePendingHazard(raw, floor) — `{ feat, dir, tool, declined }` with a
- * string `feat`, a DIRV key `dir`, a TOOLS key `tool` and a boolean
- * `declined`, AND the cell one step in `dir` from the party still carries
- * that `feat` (engine/movement.js#move matches the record against it), or
- * null.
+ * sanitizePendingHazard(raw, floor) — Phase 78 (CLIMB-01/02): the pre-roll
+ * wall/crevice decision `{ feat, dir, tool }` with `feat` "climb" or
+ * "gorge", a DIRV key `dir`, `tool` the feat's matching TOOLS key (a ladder
+ * for a climb, a rope for a gorge), AND the cell one step in `dir` from the
+ * party still carrying that `feat` (engine/movement.js#resolveHazard commits
+ * against it), or null. Carried wholesale: an old save's record with the
+ * retired `declined` retry flag still loads (the flag is ignored), and since
+ * the pause drew no die, the relaunched decision is the same decision.
  */
 function sanitizePendingHazard(raw, floor) {
   if (!isPlainObject(raw)) return null;
-  if (typeof raw.feat !== "string" || typeof raw.declined !== "boolean") return null;
+  if (raw.feat !== "climb" && raw.feat !== "gorge") return null;
   if (typeof raw.dir !== "string" || !Object.prototype.hasOwnProperty.call(DIRV, raw.dir)) return null;
   if (typeof raw.tool !== "string" || !Object.prototype.hasOwnProperty.call(TOOLS, raw.tool)) return null;
+  if (TOOLS[raw.tool].feat !== raw.feat) return null;
   const [dx, dy] = DIRV[raw.dir];
   const row = floor && Array.isArray(floor.g) ? floor.g[floor.py + dy] : undefined;
   const cell = Array.isArray(row) ? row[floor.px + dx] : undefined;

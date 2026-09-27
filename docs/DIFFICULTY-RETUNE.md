@@ -6634,6 +6634,63 @@ The 200-seed `tools/tune-difficulty.mjs` readout that measures this shift
 there. If a difficulty band fails then, the rule is to stop and report: no
 band is loosened and no compensating nerf is made.
 
+## v2.1 pre-roll wall/crevice decision (Phase 78) — bot readout
+
+**USER RULING (2026-09-26):** bot balance runs happen once, at the
+milestone close (Phase 79.1). This section records what Phase 78 changed at
+walls and crevices and where its readout now lives. It is not a readout
+record: no `tune-difficulty`, `tune-classes` or `fit-difficulty` run
+happened in this phase, so it quotes no BEFORE or AFTER block and gives no
+verdict. Phase 79.1 writes those.
+
+### Change under measurement (78-01, CLIMB-01/02)
+
+- **One pre-roll decision for every wall and crevice.** A step toward a
+  `climb` or `gorge` tile no longer rolls. It parks
+  `state.pendingHazard = { feat, dir, tool }` and emits `hazardChoice`
+  (with `carried`), with no die drawn. `resolveHazard { cross: true }`
+  (CLIMB IT / LEAP IT) runs the old roll draw for draw, `useTool` spends a
+  carried ladder or rope as before, and `resolveHazard { cross: false }`
+  (TURN BACK) costs nothing: no step, no squares, no day tick, no roll.
+- **Heights timing (declared).** `engine/phobias.js#noteHeightsAttempt`
+  now arms on the commit, not the step, so turning back never arms fear.
+  The Heights and Bodies-of-water penalties and armour bulk still fold into
+  the roll's winning faces (`engine/movement.js#climbFacesFor` /
+  `#leapFacesFor`, shared with the card's `hazardOdds`).
+- **The bot always commits.** `tools/lib/tuning-bot.mjs#decideAction`
+  answers the decision on the next action (the tool when carried, else
+  CLIMB IT / LEAP IT, never TURN BACK), and `#observe` counts the pause and
+  its commit as one floor action, so the bot's route is unchanged. What
+  still moves: a pause is one more validated action (`state.acts`) inside a
+  fixed action budget, and the acts-keyed derived streams (the Pilfer
+  fumble, the scroll read, the control resist, the fumbled blow) see a
+  different `acts` after a crossing.
+
+### Measured without a bot readout
+
+- Parity fixtures and `test/parity/prototype-master.js.txt`: untouched and
+  green (no fixture script or scenario reaches a wall or crevice). The
+  golden equivalence (`test/unit/hazard-decision.test.js`, 41 scenarios
+  captured on the plan base) proves the commit reproduces the old single
+  step's state, rngState and events exactly.
+- Five roll-high state pins moved and were re-pinned with a traced cause
+  (four are the same game cut short by the 400-action budget; the Pilfer
+  run diverges at a scroll read through the acts-keyed stream), and the
+  pre-switch save's `expected.hash` was re-recorded (its recorded list holds
+  no `resolveHazard`). See `test/parity/FIXTURE-INVENTORY.md`'s Phase 78
+  section, Plan 78-01.
+- `engine/difficulty.js` and `content/` are byte-identical to the plan base
+  (`e8bd4808`). No dial was retuned and nothing was nerfed to compensate.
+  Every `test/difficulty` band test stays green.
+
+### Deferred to Phase 79.1
+
+The 200-seed `tools/tune-difficulty.mjs` readout for this change runs once
+in Phase 79.1, against the finished milestone code. Expected effect: none
+on the bot's route (it always commits), a small one through the acts-keyed
+derived streams. If a difficulty band fails then, the rule is to stop and
+report: no band is loosened and no compensating nerf is made.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases

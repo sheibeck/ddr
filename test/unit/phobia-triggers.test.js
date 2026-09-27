@@ -14,11 +14,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { GW, GH } from "../../engine/maze.js";
-import { move, teleport, descend } from "../../engine/movement.js";
+import { move, teleport, descend, resolveHazard } from "../../engine/movement.js";
 import { makeRng } from "../../engine/rng.js";
 import { fight, foeTurn, endCombat, playerStrike } from "../../engine/combat.js";
 import { AFRAID_ROUNDS } from "../../engine/derived.js";
 import { noteHeightsAttempt } from "../../engine/phobias.js";
+
+/** moveAndCommit(state, dir, rng, events) — CLIMB-01 (Phase 78): a step
+ * toward a wall/crevice now pauses on the pre-roll decision (no dice, a lone
+ * hazardChoice); the commit (resolveHazard, cross true) runs the roll these
+ * tests exercise, with exactly the draws the old single step made. */
+function moveAndCommit(state, dir, rng, events = []) {
+  move(state, dir, rng, []);
+  return resolveHazard(state, true, rng, events);
+}
 
 /** fakeRng(seq) — verbatim copy of test/unit/movement.test.js's helper:
  * `.d()` pops the next value off `seq` regardless of requested side count;
@@ -167,7 +176,7 @@ test("heights: a climb attempt fires phobiaTriggered BEFORE heightsFear and befo
   open(state.floor.g, 5, 4, { feat: "climb" });
   // feet=10*(1+d(2)=1)=20; rung1: r=d(10)=6+hPenalty(2)=8>7(rope success) -> fail;
   // fall check g=0: d(20)=15(>2, hurt rolls); fall damage d6=4.
-  const e = move(state, "N", fakeRng([1, 6, 15, 4]), []);
+  const e = moveAndCommit(state, "N", fakeRng([1, 6, 15, 4]), []);
   const iTrigger = e.findIndex((ev) => ev.type === "phobiaTriggered");
   const iFear = e.findIndex((ev) => ev.type === "heightsFear");
   const iRoll = e.findIndex((ev) => ev.type === "fellClimbing" || ev.type === "climbedOver");
@@ -183,9 +192,9 @@ test("heights: a climb attempt fires phobiaTriggered BEFORE heightsFear and befo
 // via move() is therefore now UNREACHABLE (the tile's feat is gone after
 // exactly one roll, pass or fail) — the debounce this test used to prove
 // through move() is tested directly against noteHeightsAttempt itself below,
-// which still owns the underlying "same key is silent" contract (defensive,
-// and reachable via the hazardChoice pending/declined pause, which can call
-// it once for a tile before any roll has run).
+// which still owns the underlying "same key is silent" contract (defensive:
+// since Phase 78, CLIMB-01, it is reached only on a commit, and a commit
+// always consumes the tile).
 test("heights: noteHeightsAttempt is silent on a second call with the SAME tile key (the debounce contract, unreachable via move() post-one-and-done)", () => {
   const state = fixedState({ c: { phobia: "Heights", phobiaType: null } });
   const e1 = [];
@@ -206,25 +215,43 @@ test("heights: a SECOND, different climb tile fires phobiaTriggered again (a fre
   open(state.floor.g, 5, 5);
   open(state.floor.g, 5, 4, { feat: "climb" });
   open(state.floor.g, 6, 5, { feat: "climb" });
-  const e1 = move(state, "N", fakeRng([1, 6, 15, 4]), []); // fails, crosses to (5,4) (one and done)
+  const e1 = moveAndCommit(state, "N", fakeRng([1, 6, 15, 4]), []); // fails, crosses to (5,4) (one and done)
   assert.ok(e1.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"), "the first tile fires");
-  move(state, "S", fakeRng([]), []); // back to (5,5)
-  const e2 = move(state, "E", fakeRng([1, 5, 5]), []); // a DIFFERENT climb tile (6,5): succeeds
+  moveAndCommit(state, "S", fakeRng([]), []); // back to (5,5)
+  const e2 = moveAndCommit(state, "E", fakeRng([1, 5, 5]), []); // a DIFFERENT climb tile (6,5): succeeds
   assert.ok(e2.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"), "a fresh, different tile fires again");
 });
 
-test("heights: the hazardChoice pause (a carried rope) does NOT fire noteHeightsAttempt — the second (declined) move does", () => {
-  const state = fixedState({ c: { phobia: "Heights", phobiaType: null, items: [{ kind: "tool", tool: "rope", n: "Rope" }] } });
-  open(state.floor.g, 5, 4, { feat: "gorge" });
-  const e1 = move(state, "N", fakeRng([]), []); // stashes pendingHazard, zero draws
-  assert.ok(e1.some((ev) => ev.type === "hazardChoice"));
-  assert.ok(!e1.some((ev) => ev.type === "phobiaTriggered"), "the pause itself must not fire the trigger");
-  assert.equal("phobiaState" in state.c, false);
+// CLIMB-01 (Phase 78, a declared rules-timing change): Heights arms on the
+// COMMIT, not the step. The pause (with or without the tool) and a second
+// plain move toward the same tile never fire it; resolveHazard(cross: true)
+// does.
+test("heights: the hazardChoice pause (with or without the tool) and a repeat move do NOT fire noteHeightsAttempt — the commit does", () => {
+  for (const items of [[{ kind: "tool", tool: "rope", n: "Rope" }], []]) {
+    const state = fixedState({ c: { phobia: "Heights", phobiaType: null, items } });
+    open(state.floor.g, 5, 4, { feat: "gorge" });
+    const e1 = move(state, "N", fakeRng([]), []); // stashes pendingHazard, zero draws
+    assert.ok(e1.some((ev) => ev.type === "hazardChoice"));
+    assert.ok(!e1.some((ev) => ev.type === "phobiaTriggered"), "the pause itself must not fire the trigger");
+    const again = move(state, "N", fakeRng([]), []); // a repeat step just pauses again
+    assert.deepEqual(again.map((ev) => ev.type), ["hazardChoice"]);
+    assert.equal("phobiaState" in state.c, false);
 
-  // LEAP_TABLE[0]: Fighter needs <=10; r = d(10)=6 <= 10 -> clear.
-  const e2 = move(state, "N", fakeRng([1, 6]), []); // declines the tool, rolls instead
-  assert.ok(e2.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"), "the declined (second) CLIMB IT/LEAP IT move fires it");
-  assert.deepEqual(state.c.fearArmed, { phobia: "Heights", trigger: "heights" });
+    // LEAP_TABLE[0]: Fighter needs <=10; r = d(10)=6 <= 10 -> clear.
+    const e2 = resolveHazard(state, true, fakeRng([1, 6]), []); // LEAP IT
+    assert.ok(e2.some((ev) => ev.type === "phobiaTriggered" && ev.trigger === "heights"), "the commit fires it");
+    assert.deepEqual(state.c.fearArmed, { phobia: "Heights", trigger: "heights" });
+  }
+});
+
+test("heights: TURN BACK from a wall arms no fear and records no Heights tile", () => {
+  const state = fixedState({ c: { phobia: "Heights", phobiaType: null } });
+  open(state.floor.g, 5, 4, { feat: "climb" });
+  move(state, "N", fakeRng([]), []);
+  const back = resolveHazard(state, false, fakeRng([]), []);
+  assert.deepEqual(back, [{ type: "turnedBack", feat: "climb", dir: "N" }]);
+  assert.equal("phobiaState" in state.c, false);
+  assert.equal(state.c.fearArmed ?? null, null);
 });
 
 test("heights: the flyOver (Bracelet of Flight) branch never calls noteHeightsAttempt", () => {

@@ -257,6 +257,8 @@ function payloadTable(c) {
     leaveAllLoot: [{}],
     useAbility: [...(c.abilities || []).map((key) => ({ key })), { key: "x" }],
     useTool: [{ tool: "rope", dir: "N" }],
+    // CLIMB-01 (Phase 78): the pre-roll wall/crevice decision's commit / TURN BACK.
+    resolveHazard: [{ cross: true }, { cross: false }],
   };
 }
 

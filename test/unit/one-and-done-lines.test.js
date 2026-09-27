@@ -17,9 +17,18 @@ import assert from "node:assert/strict";
 
 import { EVENT_NARRATION, narrateEvent } from "../../src/browser/eventNarration.js";
 import { LINE_FOR, narrativeLineText } from "../../src/browser/narrationLines.js";
-import { move } from "../../engine/movement.js";
+import { move, resolveHazard } from "../../engine/movement.js";
 import { GW, GH } from "../../engine/maze.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+
+/** moveAndCommit(state, dir, rng, events) — CLIMB-01 (Phase 78): a step
+ * toward a wall/crevice now pauses on the pre-roll decision (no dice, a lone
+ * hazardChoice); the commit (resolveHazard, cross true) runs the roll these
+ * tests exercise, with exactly the draws the old single step made. */
+function moveAndCommit(state, dir, rng, events = []) {
+  move(state, dir, rng, []);
+  return resolveHazard(state, true, rng, events);
+}
 
 // ─── BANNED scan (verbatim pattern from test/unit/initiative-line.test.js) ─
 const ALLOW = new Set(ALLOWLIST.map((w) => w.toLowerCase()));
@@ -137,7 +146,7 @@ test("one and done (SC): a real failed climb replay pushes [fellClimbing, dragge
   open(state.floor.g, 5, 4, { feat: "climb" });
   // feet = 10*(1+d(2)=1) = 20; first rung r = d(10)=9 > rope.success(7) -> fail;
   // fall check for g=0: d(20)=15 (>2, hurt rolls); fall damage d6 = 4.
-  const events = move(state, "N", fakeRng([1, 9, 15, 4]), []);
+  const events = moveAndCommit(state, "N", fakeRng([1, 9, 15, 4]), []);
   const types = events.map((e) => e.type);
   assert.ok(types.includes("fellClimbing"));
   assert.ok(types.includes("draggedOver"));
@@ -155,7 +164,7 @@ test("one and done (SC): a real failed leap replay pushes [fellInGorge, draggedO
   open(state.floor.g, 5, 4, { feat: "gorge" });
   // LEAP_TABLE[d(4)-1=0] -> {ft:"3-4 feet", F:10, T:10, M:9}; Fighter needs <=10;
   // r = d(10) - leapBonus(0) = 11 (fail, > need 10); fall = d6+d6.
-  const events = move(state, "N", fakeRng([1, 11, 3, 4]), []);
+  const events = moveAndCommit(state, "N", fakeRng([1, 11, 3, 4]), []);
   const types = events.map((e) => e.type);
   assert.ok(types.includes("fellInGorge"));
   assert.ok(types.includes("draggedOver"));

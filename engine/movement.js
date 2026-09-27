@@ -62,6 +62,77 @@ const heightsPenalty = (c) =>
 const waterPenalty = (c) =>
   c.phobia === "Bodies of water" ? (skill(c, "Hardiness") ? Math.round(WATER_PHOBIA_PENALTY / 2) : WATER_PHOBIA_PENALTY) : 0;
 
+/**
+ * climbFacesFor(c, kind) — Phase 78 (CLIMB-01): the ONE winning-faces
+ * formula for a climb segment on a CLIMB_TABLE wall `kind` ("rope" | "rock"
+ * | "wood"): the table's success faces minus the Heights penalty and armour
+ * bulk. `move`'s climb roll and `hazardOdds` (the pre-roll card's odds) both
+ * read it, so the card can never disagree with the die. Pure; draws nothing.
+ */
+export function climbFacesFor(c, kind) {
+  return CLIMB_TABLE[kind].success - heightsPenalty(c) - armorBulk(c);
+}
+
+/**
+ * leapFacesFor(c, row) — Phase 78 (CLIMB-01): the ONE winning-faces formula
+ * for a leap across a LEAP_TABLE `row`: the hero's class column (F/T/M)
+ * minus the Bodies-of-water penalty and armour bulk. Shared by `move`'s leap
+ * roll and `hazardOdds`. Pure; draws nothing.
+ */
+export function leapFacesFor(c, row) {
+  const need = c.cls === "Fighter" ? row.F : c.cls === "Thief" ? row.T : row.M;
+  return need - waterPenalty(c) - armorBulk(c);
+}
+
+/** LEAP_FALL — a failed leap's hurt: the two d6s `move`'s leap draws below. */
+const LEAP_FALL = Object.freeze({ n: 2, sides: 6, bonus: 0 });
+
+/**
+ * hazardOdds(state, feat) — Phase 78 (CLIMB-01): the odds of crossing a
+ * `feat` ("climb" | "gorge") tile for the party's hero, read BEFORE any die
+ * is drawn. Its consumer is 78-03's pre-roll decision card on the rail
+ * (CLIMB IT / LEAP IT, USE LADDER / USE ROPE, TURN BACK). Returns
+ * `{ feat, dieN, rolls, cases, penalties }`:
+ *   - `dieN` 10;
+ *   - `rolls`: how many d10s the attempt takes: `[2, 3]` for a climb (a 20
+ *     or 30 ft wall, one roll per 10 ft), `[1]` for a leap;
+ *   - `cases`: one entry per way the tile can turn out, `{ label, faces,
+ *     atLeast, fall }` — every CLIMB_TABLE wall kind for a climb (its fall
+ *     dice), every LEAP_TABLE row (`label` is its `ft`, the fall is 2d6) for a
+ *     leap. `faces` comes from climbFacesFor/leapFacesFor, the same helpers
+ *     the roll reads; `atLeast` is `atLeastFor(faces, 10)`, unclamped;
+ *   - `penalties`: the named terms already folded into every case's faces,
+ *     `{ name: "heights" | "water" | "armorBulk", faces }` (negative), only
+ *     the non-zero ones.
+ * Any other feat (or no hero) returns the same shape with empty `cases`,
+ * `rolls` and `penalties`. Pure: draws no rng, never mutates, never throws.
+ */
+export function hazardOdds(state, feat) {
+  const c = state && state.c;
+  const out = { feat: feat ?? null, dieN: 10, rolls: [], cases: [], penalties: [] };
+  if (!c || (feat !== "climb" && feat !== "gorge")) return out;
+  const bulk = armorBulk(c);
+  if (feat === "climb") {
+    const h = heightsPenalty(c);
+    if (h) out.penalties.push({ name: "heights", faces: -h });
+    out.rolls = [2, 3];
+    for (const kind of Object.keys(CLIMB_TABLE)) {
+      const faces = climbFacesFor(c, kind);
+      out.cases.push({ label: kind, faces, atLeast: atLeastFor(faces, 10), fall: { ...CLIMB_TABLE[kind].fall } });
+    }
+  } else {
+    const w = waterPenalty(c);
+    if (w) out.penalties.push({ name: "water", faces: -w });
+    out.rolls = [1];
+    for (const row of LEAP_TABLE) {
+      const faces = leapFacesFor(c, row);
+      out.cases.push({ label: row.ft, faces, atLeast: atLeastFor(faces, 10), fall: { ...LEAP_FALL } });
+    }
+  }
+  if (bulk) out.penalties.push({ name: "armorBulk", faces: -bulk });
+  return out;
+}
+
 // DELIBERATE RULES CHANGE (04.1-06, 2026-09-09, PHOBIA-01): the Being-trapped
 // phobia (also `t: null`, also inert) gets a fear reaction on a genuine ENTRY
 // into an enclosed (dead-end) tile — one with exactly one non-wall orthogonal
@@ -126,14 +197,15 @@ export function resolveEtherEnd(state, rng, events = [], now = Date.now) {
  * the wrong side, is a no-op: no state mutation beyond (for the door case) a
  * pushed event.
  *
- * Phase 39 (GEAR-05): `opts.tool` ("ladder"|"rope") is the ONE extra
- * caller-facing knob, set ONLY by `useTool` below (never passed directly by
- * `applyAction`'s "move" case) — the tile/bag are already validated by the
- * time it arrives, so the climb/gorge block's tool branch does no further
- * legality checking, only the spend. Every plain `move(state, dir, rng,
- * events, now)` call (every fixture, the bot, every existing caller) passes
- * no fifth argument, so `opts` defaults to `{}` and the tool branch never
- * runs for them — byte-identical to before this plan.
+ * Two internal knobs ride in `opts`, never set by `applyAction`'s "move"
+ * case:
+ *   - Phase 39 (GEAR-05): `opts.tool` ("ladder"|"rope"), set ONLY by
+ *     `useTool` below — the tile/bag are already validated by the time it
+ *     arrives, so the climb/gorge block's tool branch only does the spend.
+ *   - Phase 78 (CLIMB-01): `opts.commit`, set ONLY by `resolveHazard` below
+ *     — the player's CLIMB IT / LEAP IT, which skips the pre-roll pause and
+ *     runs the roll. A plain `move` toward a climb/gorge tile never rolls:
+ *     it pauses on the pending decision instead (see the climb/gorge block).
  */
 export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   if (state.combat || state.store || state.dead) return events;
@@ -220,28 +292,24 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
       events.push({ type: "phasedThrough" });
       there.feat = null;
     } else {
-      // Phase 39 (GEAR-05): the hazard pre-roll pending-decision pre-check
-      // (CONTEXT Area 1) — a character carrying the matching tool gets ONE
-      // pause before the roll: `state.pendingHazard` is stashed and a
-      // `hazardChoice` event fires, WITHOUT moving or rolling (return below,
-      // zero draws, zero mutation besides the pending record). A second
-      // `move(dir)` at the SAME tile/direction (the "CLIMB IT"/"LEAP IT"
-      // button) flips `declined: true` in place and falls through to the
-      // roll below — the pending record deliberately stays on the tile
-      // (never cleared here) so a failed roll's retry card can offer both
-      // buttons again with no second prompt; only a genuine successful
-      // step/tool-use/teleport/descend clears it (see below/teleport/
-      // descend). A character without the matching tool never enters either
-      // branch — `hasTool` false, `pendingHazard` stays whatever it already
-      // was (usually null) — so the roll runs immediately, exactly as
-      // before this plan.
-      const toolFor = climbing ? "ladder" : "rope";
-      const pend = state.pendingHazard;
-      if (pend && pend.dir === dir && pend.feat === there.feat) {
-        pend.declined = true;
-      } else if (hasTool(state.c, toolFor)) {
-        state.pendingHazard = { feat: there.feat, dir, tool: toolFor, declined: false };
-        events.push({ type: "hazardChoice", feat: there.feat, dir, tool: toolFor });
+      // DELIBERATE RULES CHANGE (Phase 78, CLIMB-01/02, user ruling
+      // 2026-09-24, accepted 2026-09-25: "a pre-roll card ... no rng until
+      // commit, and TURN BACK costs nothing"): EVERY hero stepping toward a
+      // wall or crevice pauses here on ONE pending decision, tool or not —
+      // `state.pendingHazard = { feat, dir, tool }` (`tool` is the one that
+      // WOULD cross it: a ladder for a wall, a rope for a crevice) and a
+      // `hazardChoice` event whose `carried` says whether that tool is in
+      // the bag. Nothing else happens: no die, no step, no squares/day
+      // cadence, no reveal, no Heights fear. A second plain move toward the
+      // same tile just pauses again; only `resolveHazard` (cross: true, the
+      // CLIMB IT / LEAP IT button, which passes `opts.commit`) reaches the
+      // roll below, and it runs exactly the draws, in exactly the order, the
+      // single step made before Phase 78. `useTool` (the tool branch above)
+      // and a live flight/ether effect still cross before the pause.
+      if (!opts.commit) {
+        const tool = climbing ? "ladder" : "rope";
+        state.pendingHazard = { feat: there.feat, dir, tool };
+        events.push({ type: "hazardChoice", feat: there.feat, dir, tool, carried: hasTool(state.c, tool) });
         return events;
       }
       // DELIBERATE RULES CHANGE (Phase 41, TERR-04/05, user-ratified Key
@@ -252,6 +320,9 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
       // (a different roll from the next fight's Afraid — no double count,
       // per 41-RESEARCH.md Pitfall 2). No-op for every non-Heights-phobic
       // character (noteHeightsAttempt gates on c.phobia itself).
+      // DECLARED RULES-TIMING CHANGE (Phase 78, CLIMB-01): the attempt is now
+      // the COMMIT, not the step — this line sits after the pause, so the
+      // pause and TURN BACK never arm Heights; only CLIMB IT / LEAP IT does.
       noteHeightsAttempt(state, nx, ny, events);
       let ok = true;
       let hurt = 0;
@@ -276,7 +347,9 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
         // roll comparison, exactly like hPenalty above — no new rng draw.
         // Phase 73 (ROLL-05): the penalties are constant across every
         // segment, so they fold into the winning-face count ONCE, here.
-        const climbFaces = tbl.success - hPenalty - armorBulk(state.c);
+        // Phase 78 (CLIMB-01): through climbFacesFor, the formula
+        // hazardOdds also reads (same arithmetic, no draw).
+        const climbFaces = climbFacesFor(state.c, kind);
         rollsList = [];
         let lastCheck = null;
         for (let ft = 0; ft < feet && ok; ft += 10) {
@@ -295,10 +368,11 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
         // narration; fixtures compare state, so this moves none.
         if (wPenalty) events.push({ type: "waterFear", penalty: wPenalty });
         const row = LEAP_TABLE[rng.d(4) - 1]; // roll:selection
-        const need = state.c.cls === "Fighter" ? row.F : state.c.cls === "Thief" ? row.T : row.M;
         // Phase 38 (ABIL-02): the retired leap bonus — no term subtracted here anymore.
         // Phase 39 (GEAR-01): armor bulk penalty, same as the climb branch above.
-        const check = rollCheck(rng, 10, atLeastFor(need - wPenalty - armorBulk(state.c), 10));
+        // Phase 78 (CLIMB-01): the class column minus both penalties, through
+        // leapFacesFor — the formula hazardOdds also reads.
+        const check = rollCheck(rng, 10, atLeastFor(leapFacesFor(state.c, row), 10));
         checkFields = rollFields(check);
         if (!check.ok) {
           ok = false;
@@ -363,8 +437,10 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   const cost = moveCost(state, there);
   f.px = nx;
   f.py = ny;
-  // Phase 39 (GEAR-05): a genuine step anywhere resolves the hazard
-  // decision — mirrors the same reset in teleport()/descend() below.
+  // Phase 39 (GEAR-05) / Phase 78 (CLIMB-01): a genuine step anywhere (a
+  // crossing included, success or Phase 54's one-and-done failed crossing)
+  // resolves the pending hazard decision, so no stale card can outlive it —
+  // mirrors the same reset in teleport()/descend() below.
   state.pendingHazard = null;
   const stepsBefore = state.steps;
   state.steps += cost;
@@ -671,7 +747,9 @@ export function resolvePendingTile(state, rng, events = []) {
  * `noHazard` (the target tile is missing/a wall/not the matching feat).
  * Once past every refusal, delegates to `move(state, dir, rng, events, now,
  * { tool })` — the SAME climb/gorge block, tool branch (isFlying still wins
- * there, per that block's own header comment).
+ * there, per that block's own header comment). Phase 78 (CLIMB-01): this is
+ * the USE LADDER / USE ROPE answer to the pre-roll decision every hero now
+ * gets; it needs no pending record and clears one when it spends the tool.
  */
 export function useTool(state, tool, dir, rng, events = [], now = Date.now) {
   if (state.combat || state.store || state.dead) return events;
@@ -694,6 +772,40 @@ export function useTool(state, tool, dir, rng, events = [], now = Date.now) {
     return events;
   }
   return move(state, dir, rng, events, now, { tool });
+}
+
+/**
+ * resolveHazard(state, cross, rng, events, now) — Phase 78 (CLIMB-01/02):
+ * the answer to the pre-roll wall/crevice decision `move` parked in
+ * `state.pendingHazard`.
+ *   - combat, a store or death: a silent no-op (the record stays);
+ *   - no pending record: a silent no-op, either choice (no events, no rng);
+ *   - `cross` false, TURN BACK: clears the record and pushes `turnedBack
+ *     { feat, dir }`. It costs NOTHING — no step, no squares or day cadence,
+ *     no roll, no Heights fear; the hero stays where they stood;
+ *   - `cross` true, CLIMB IT / LEAP IT: clears the record first (so a fatal
+ *     fall, which returns before move's step tail, never leaves it behind),
+ *     then re-enters `move` for the record's `dir` with `opts.commit`, which
+ *     skips the pause. A flight or ether effect live at commit time still
+ *     crosses free; otherwise the roll runs with exactly the draws, in
+ *     exactly the order, the single step made before Phase 78 (pinned by
+ *     test/unit/hazard-decision.test.js's golden equivalence). If the cell in
+ *     `dir` no longer carries the record's feat, the record just clears.
+ */
+export function resolveHazard(state, cross, rng, events = [], now = Date.now) {
+  if (state.combat || state.store || state.dead) return events;
+  const pend = state.pendingHazard;
+  if (!pend) return events;
+  state.pendingHazard = null;
+  if (!cross) {
+    events.push({ type: "turnedBack", feat: pend.feat, dir: pend.dir });
+    return events;
+  }
+  const v = Object.prototype.hasOwnProperty.call(DIRV, pend.dir) ? DIRV[pend.dir] : null;
+  const f = state.floor;
+  const there = v && f.g[f.py + v[1]] && f.g[f.py + v[1]][f.px + v[0]];
+  if (!there || there.feat !== pend.feat) return events;
+  return move(state, pend.dir, rng, events, now, { commit: true });
 }
 
 /* ---------------- day cycle / camp ---------------- */

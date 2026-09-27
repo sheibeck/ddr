@@ -21,7 +21,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { GW, GH } from "../../engine/maze.js";
-import { move } from "../../engine/movement.js";
+import { move, resolveHazard } from "../../engine/movement.js";
 import { castSpell } from "../../engine/magic.js";
 import { goInsane } from "../../engine/encounters.js";
 import { SPELLS } from "../../content/index.js";
@@ -47,6 +47,14 @@ function fakeRng(seq, { pick = (arr) => arr[0] } = {}) {
     pick,
     shuffle: (a) => a,
   };
+}
+
+/** moveAndCommit(state, dir, rng, events) — CLIMB-01 (Phase 78): a step
+ * toward a wall/crevice now pauses on the pre-roll decision (no dice); the
+ * commit (resolveHazard, cross true) runs the roll these tests exercise. */
+function moveAndCommit(state, dir, rng, events = []) {
+  move(state, dir, rng, []);
+  return resolveHazard(state, true, rng, events);
 }
 
 /** A minimal, fully-walled 21x21 grid with a hole punched wherever a test
@@ -133,7 +141,7 @@ test("heightsFear carries penalty:2 for a plain Heights-phobic character, penalt
   open(plain.floor.g, 5, 4, { feat: "climb" });
   // pick(["rope","rock","wood"]) -> rope (success=7); feet=10*(1+d(2)=1)=20;
   // rung 1: r = d(10)=6 + 2 = 8 > 7 -> fails; fall check g=0: d(20)=15 (>2, rolls); fall d6=4.
-  const events = move(plain, "N", fakeRng([1, 6, 15, 4]), []);
+  const events = moveAndCommit(plain, "N", fakeRng([1, 6, 15, 4]), []);
   const e = events.find((ev) => ev.type === "heightsFear");
   assert.ok(e);
   assert.equal(e.penalty, 2);
@@ -141,7 +149,7 @@ test("heightsFear carries penalty:2 for a plain Heights-phobic character, penalt
   const hardy = fixedState({ c: { phobia: "Heights", phobiaType: null, skills: { Hardiness: 1 } } });
   open(hardy.floor.g, 5, 4, { feat: "climb" });
   // Halved penalty = round(2/2) = 1: rung 1 r = 6 + 1 = 7 <= 7 -> pass; rung 2 r = 5 + 1 = 6 <= 7 -> pass.
-  const events2 = move(hardy, "N", fakeRng([1, 6, 5]), []);
+  const events2 = moveAndCommit(hardy, "N", fakeRng([1, 6, 5]), []);
   const e2 = events2.find((ev) => ev.type === "heightsFear");
   assert.ok(e2);
   assert.equal(e2.penalty, 1);
@@ -151,7 +159,7 @@ test("waterFear carries penalty:2 for a plain Bodies-of-water-phobic character, 
   const plain = fixedState({ c: { phobia: "Bodies of water", phobiaType: null } });
   open(plain.floor.g, 5, 4, { feat: "gorge" });
   // LEAP_TABLE[0]: Fighter needs <=10; r = d(10)=9 + 2 = 11 > 10 -> fails; fall = d6+d6.
-  const events = move(plain, "N", fakeRng([1, 9, 3, 4]), []);
+  const events = moveAndCommit(plain, "N", fakeRng([1, 9, 3, 4]), []);
   const e = events.find((ev) => ev.type === "waterFear");
   assert.ok(e);
   assert.equal(e.penalty, 2);
@@ -159,7 +167,7 @@ test("waterFear carries penalty:2 for a plain Bodies-of-water-phobic character, 
   const hardy = fixedState({ c: { phobia: "Bodies of water", phobiaType: null, skills: { Hardiness: 1 } } });
   open(hardy.floor.g, 5, 4, { feat: "gorge" });
   // Halved penalty = round(2/2) = 1: r = 9 + 1 = 10 <= 10 -> clear.
-  const events2 = move(hardy, "N", fakeRng([1, 9]), []);
+  const events2 = moveAndCommit(hardy, "N", fakeRng([1, 9]), []);
   const e2 = events2.find((ev) => ev.type === "waterFear");
   assert.ok(e2);
   assert.equal(e2.penalty, 1);
