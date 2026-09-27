@@ -86,7 +86,7 @@ const SONGS = [
   { lvl: 2, n: "Inspire the Heart", txt: "+1 to hit this fight" },
   { lvl: 3, n: "Lullaby", txt: "d6 foes sleep" },
   { lvl: 4, n: "Cry of Thunder", txt: "d12 foes frozen d8 rounds" },
-  { lvl: 5, n: "An Ode to Death", txt: "equals reduced to 1 wp" },
+  { lvl: 5, n: "An Ode to Death", txt: "foes your level or lower drop to 1 hp" },
 ];
 
 /** liveFoes(state) — the still-standing foes in the current encounter. */

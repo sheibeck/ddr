@@ -355,6 +355,12 @@ function block(text) {
 const railGain = (e, offered) => (Number.isFinite(e?.gained) ? e.gained : Number.isFinite(offered) ? offered : 0);
 const railFull = (gained, offered) => (Number.isFinite(offered) && gained > 0 && gained < offered ? ", back to full" : "");
 
+// VOX-05 (Phase 79, plan 79-04): the rail twins of eventNarration.js's own
+// fight-line helpers — "1 round", never "1 rounds"; a named foe's
+// possessive, or the caller's fallback ("its", never "it's") for a bare event.
+const railPlural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const railPossessive = (name, fallback) => (name ? `${name}'s` : fallback);
+
 /** railTableFourTail(e) — todo 2026-09-26: the signed amount a Table 4 row actually made (rollRange.js#signedText). */
 function railTableFourTail(e) {
   if (!Number.isFinite(e?.amount)) return "";
@@ -1483,7 +1489,7 @@ export const LINE_FOR = {
       ? { text: `You cannot touch ${e?.target ?? "it"}.`, tone: "miss", priority: PRIORITY.you }
       : { text: `You miss ${e?.target ?? "it"}${e?.quip ? ` — ${e.quip}` : ""}`, tone: "miss", priority: PRIORITY.you },
   deathTouch: (e) => ({ text: `One touch — ${e?.target ?? "it"} drops.`, tone: "hit", priority: PRIORITY.feature }),
-  backstabDenied: () => block("Heavy armour gave you away."),
+  backstabDenied: () => block("Heavy armour gave you away: no sneak attack."),
   stealthStrike: () => ({ text: "Unseen strike — critical.", tone: "hit", priority: PRIORITY.feature }),
   backstab: () => ({ text: "Backstab — critical.", tone: "hit", priority: PRIORITY.feature }),
   conArtistOpener: () => ({ text: "Con Artist opener: all flourish, no damage.", tone: "miss", priority: PRIORITY.feature }),
@@ -1561,10 +1567,20 @@ export const LINE_FOR = {
   },
   parleyFailed: () => ({ text: "They are not buying it.", tone: "miss", priority: PRIORITY.you }),
   sang: (e) => ({ text: `You sing ${e?.song ?? "a tune"}.`, tone: "magic", priority: PRIORITY.feature }),
-  beastsSoothed: (e) => ({ text: `${e?.count ?? 0} stand down.`, tone: "hit", priority: PRIORITY.feature }),
+  // VOX-05 (Phase 79, plan 79-04): the song lines name who the song reached;
+  // Lullaby and Thunder roll how many foes they can reach ("up to").
+  beastsSoothed: (e) => ({
+    text: (e?.count ?? 0) === 1 ? "1 beast stands down and leaves." : `${e?.count ?? 0} beasts stand down and leave.`,
+    tone: "hit",
+    priority: PRIORITY.feature,
+  }),
   songIgnored: () => ({ text: "They do not care for music.", tone: "miss", priority: PRIORITY.feature }),
-  lullabyRolled: (e) => ({ text: `${e?.n ?? 0} nod off.`, tone: "magic", priority: PRIORITY.feature }),
-  thunderRolled: (e) => ({ text: `Thunder rolls — ${e?.n ?? 0} freeze (${e?.r ?? 0}).`, tone: "magic", priority: PRIORITY.feature }),
+  lullabyRolled: (e) => ({ text: `Lullaby: up to ${e?.n ?? 0} nod off.`, tone: "magic", priority: PRIORITY.feature }),
+  thunderRolled: (e) => ({
+    text: `Thunder rolls — up to ${e?.n ?? 0} freeze, ${railPlural(e?.r ?? 0, "round")}.`,
+    tone: "magic",
+    priority: PRIORITY.feature,
+  }),
   // DFB-05 (Phase 25.1): legacy text (no `backstab`/`crit`/`target`) stays
   // byte-identical; a classed member's blow names the target and calls out
   // a backstab/crit. Plan 04 (ABIL-05): an optional `via` clause names the
@@ -1646,7 +1662,7 @@ export const LINE_FOR = {
   foeBubbleCaught: (e) => ({ text: `${e?.name ?? "It"}'s bubble swallows your blow — ${e?.amount ?? 0} wasted.`, tone: "miss", priority: PRIORITY.them }),
   // The telegraph for the throw-back; foeBolted (pushed right after, same
   // action) carries the actual hp lost.
-  foeBubbleRebound: (e) => ({ text: `${e?.name ?? "It"}'s bubble throws it back at you.`, tone: "hurt", priority: PRIORITY.them }),
+  foeBubbleRebound: (e) => ({ text: `${railPossessive(e?.name, "Its")} bubble throws it back at you.`, tone: "hurt", priority: PRIORITY.them }),
   armorDestroyed: () => ({ text: "Your armour gives out.", tone: "hurt", priority: PRIORITY.them }),
   // Phase 25 (FEED-01): `wear` is the real durability cost; `halved` names the
   // Dwarven mitigation. Phase 28 (ARMOR-05): `underMin`/`magic` are two more
@@ -1663,7 +1679,7 @@ export const LINE_FOR = {
     priority: PRIORITY.them,
   }),
   foeArmorSoaked: (e) => ({ text: `${e?.name ?? "It"}'s armour shrugs it off.`, tone: "miss", priority: PRIORITY.them }),
-  damageHalved: (e) => ({ text: `The pendant halves ${e?.name ?? "that"}'s blow.`, tone: "hit", priority: PRIORITY.them }),
+  damageHalved: (e) => ({ text: `The pendant halves ${railPossessive(e?.name, "the")} blow.`, tone: "hit", priority: PRIORITY.them }),
   // Phase 25 (FEED-01): `soldierCrit` renders exactly like `critical`;
   // `soaked` names what absorbed the blow.
   struckByFoe: (e) => {
@@ -1674,8 +1690,8 @@ export const LINE_FOR = {
   mirrorFaded: () => ({ text: "The mirror fades.", tone: "beat", priority: PRIORITY.other }),
   // RULES-10 (Phase 75.1) — a foe's own ward/Mirror Self ticks fade exactly
   // like the hero's above.
-  foeWardFaded: (e) => ({ text: `${e?.name ?? "It"}'s ward fades.`, tone: "beat", priority: PRIORITY.other }),
-  foeMirrorFaded: (e) => ({ text: `${e?.name ?? "It"}'s mirror fades.`, tone: "beat", priority: PRIORITY.other }),
+  foeWardFaded: (e) => ({ text: `${railPossessive(e?.name, "Its")} ward fades.`, tone: "beat", priority: PRIORITY.other }),
+  foeMirrorFaded: (e) => ({ text: `${railPossessive(e?.name, "Its")} mirror fades.`, tone: "beat", priority: PRIORITY.other }),
   // Phase 40 (SPELL-02): endCombat's own expiry narration for a
   // still-running Regeneration/Sense Presence when the fight ends.
   sensesFaded: () => ({ text: "Your senses dull back to normal.", tone: "beat", priority: PRIORITY.other }),
@@ -1684,7 +1700,9 @@ export const LINE_FOR = {
   // RULES-10 (Phase 75.1) — the reader's own burn, the heavy-blow fumble
   // replacement, and the hero-cannot-act countdown/recovery.
   selfDotTick: (e) => ({ text: `${e?.spell ?? "The scroll"} burns you (−${e?.amount ?? 0} hp, ${e?.left ?? 0} left).`, tone: "hurt", priority: PRIORITY.you }),
-  fumbleHeavyBlow: (e) => ({ text: `${e?.spell ?? "The scroll"}: ${e?.how ?? "a hard knock"} instead (−${e?.amount ?? 0} hp). Shaken.`, tone: "hurt", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-04): the twin of the Oracle's heavy-blow line
+  // (the `how` flavor key no longer prints: "stone instead" read as a fact).
+  fumbleHeavyBlow: (e) => ({ text: `${e?.spell ?? "The scroll"} backfires: a heavy blow (−${e?.amount ?? 0} hp). Shaken.`, tone: "hurt", priority: PRIORITY.you }),
   heroLostTurn: (e) => ({ text: `You cannot act (${e?.kind ?? "out"}), ${e?.left ?? 0} turn${e?.left === 1 ? "" : "s"} left.`, tone: "hurt", priority: PRIORITY.you }),
   heroCameTo: () => ({ text: "You can act again.", tone: "hit", priority: PRIORITY.you }),
 
@@ -1800,10 +1818,21 @@ export const LINE_FOR = {
   // Plan 04 (ABIL-05): the fourteen ability-activation/effect lines below
   // carry an ADDITIVE `${e?.member ? \`${e.member}: \` : ""}` prefix — present
   // only when a Joiner (not the hero) is the actor.
-  pommelStruck: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}The pommel finds ${e?.target ?? "it"}'s temple.`, tone: "hit", priority: PRIORITY.them }),
+  // VOX-05 (Phase 79, plan 79-04): the ability twins below state the effect
+  // the engine applied, like their Oracle lines; a Joiner's own Sidestep,
+  // Smoke, Riposte and Brace cover the Joiner ("them"), not the hero.
+  pommelStruck: (e) => ({
+    text: `${e?.member ? `${e.member}: ` : ""}The pommel finds ${railPossessive(e?.target, "its")} temple: it loses its next turn.`,
+    tone: "hit",
+    priority: PRIORITY.them,
+  }),
   foeStunned: (e) => ({ text: `${e?.name ?? "It"} loses its turn.`, tone: "hit", priority: PRIORITY.them }),
-  battleRoarRaised: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Loud enough. Two rounds of it.`, tone: "hit", priority: PRIORITY.feature }),
-  sidestepped: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Not where the blade is. Two rounds of that.`, tone: "hit", priority: PRIORITY.feature }),
+  battleRoarRaised: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Foes have two fewer faces to hit your side, for two rounds.`, tone: "hit", priority: PRIORITY.feature }),
+  sidestepped: (e) => ({
+    text: `${e?.member ? `${e.member}: ` : ""}Foes have two fewer faces to hit ${e?.member ? "them" : "you"}, for two rounds.`,
+    tone: "hit",
+    priority: PRIORITY.feature,
+  }),
   secondWindHealed: (e) => ({
     text: railGain(e, e?.amount) > 0 ? `+${railGain(e, e?.amount)} hp${railFull(railGain(e, e?.amount), e?.rolled)}.` : "Second wind: you were already at full hp.",
     tone: "hit",
@@ -1811,22 +1840,49 @@ export const LINE_FOR = {
   }),
   swept: (e) => ({ text: `One wide arc — ${e?.dmg ?? 0} to everything standing.`, tone: "hit", priority: PRIORITY.feature }),
   sweptFoe: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0}.`, tone: "hit", priority: PRIORITY.them }),
-  braced: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Braced. The next one lands on your terms.`, tone: "hit", priority: PRIORITY.feature }),
-  braceHeld: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Braced — ${e?.name ?? "it"}'s blow lands half as hard (−${e?.soaked ?? 0}).`, tone: "hit", priority: PRIORITY.you }),
-  riposteReady: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every miss is an invitation.`, tone: "hit", priority: PRIORITY.feature }),
+  braced: (e) => ({
+    text: `${e?.member ? `${e.member}: ` : ""}Braced. The next blow that lands on ${e?.member ? "them" : "you"} does half damage.`,
+    tone: "hit",
+    priority: PRIORITY.feature,
+  }),
+  braceHeld: (e) => ({
+    text: `${e?.member ? `${e.member}: ` : ""}Braced — ${railPossessive(e?.name, "the")} blow lands half as hard${Number.isFinite(e?.soaked) ? `, ${e.soaked} hp lighter` : ""}.`,
+    tone: "hit",
+    priority: PRIORITY.you,
+  }),
+  riposteReady: (e) => ({
+    text: `${e?.member ? `${e.member}: ` : ""}For one round every foe that misses ${e?.member ? "them" : "you"} takes ${e?.member ? "their" : "your"} weapon's damage.`,
+    tone: "hit",
+    priority: PRIORITY.feature,
+  }),
   riposted: (e) => ({ text: `${e?.target ?? "It"} misses, and pays ${e?.dmg ?? 0} for it.`, tone: "hit", priority: PRIORITY.them }),
-  taunted: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every foe looks at you. Armour doubles.`, tone: "hit", priority: PRIORITY.feature }),
+  taunted: (e) => ({
+    text: e?.member ? `${e.member}: Every foe swings at them this round.` : "Every foe looks at you. Armour doubles.",
+    tone: "hit",
+    priority: PRIORITY.feature,
+  }),
   lastStandCalled: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Under a quarter. ${e?.attacks ?? 3} attacks this round.`, tone: "beat", priority: PRIORITY.feature }),
   dirtyTrickLanded: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is blinded for ${e?.rounds ?? 2} rounds.`, tone: "hit", priority: PRIORITY.them }),
   foeSightReturned: (e) => ({ text: `${e?.name ?? "It"} blinks the sand out.`, tone: "dodge", priority: PRIORITY.them }),
-  smokeThrown: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Gone. They need a natural 1 to find you (a 1–2 if you insulted them).`, tone: "hit", priority: PRIORITY.feature }),
-  cutpursed: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}You lift ${e?.amount ?? 0} wilmst off ${e?.target ?? "it"}.`, tone: "hit", priority: PRIORITY.them }),
+  // ROLL-04 (79-04): a foe's strike die scales, so Smoke speaks in faces.
+  smokeThrown: (e) => ({
+    text: e?.member
+      ? `${e.member}: Gone. Foes find them only on their die's top face (top two if insulted) for two rounds.`
+      : "Gone. Foes find you only on their die's top face (top two if insulted) for two rounds, and a run just works.",
+    tone: "hit",
+    priority: PRIORITY.feature,
+  }),
+  cutpursed: (e) => ({
+    text: e?.member ? `${e.member} lifts ${e?.amount ?? 0} wilmst off ${e?.target ?? "it"} for you.` : `You lift ${e?.amount ?? 0} wilmst off ${e?.target ?? "it"}.`,
+    tone: "hit",
+    priority: PRIORITY.them,
+  }),
   poisonedEdgeApplied: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is poisoned for ${e?.rounds ?? 3} rounds.`, tone: "hit", priority: PRIORITY.them }),
   // Phase 40 (SPELL-01, Ice) — the generic-on-`by` shape now covers two
   // sources; the short form names whichever one this tick came from.
   dotTick: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0} from ${e?.by === "ice" ? "the ice" : "the poison"}.`, tone: "hurt", priority: PRIORITY.them }),
   hamstrung: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} hits half as hard from here on.`, tone: "hit", priority: PRIORITY.them }),
-  marked: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every blow on ${e?.target ?? "it"} lands +2.`, tone: "hit", priority: PRIORITY.them }),
+  marked: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every blow on ${e?.target ?? "it"} does +2 damage.`, tone: "hit", priority: PRIORITY.them }),
   // Plan 04 (ABIL-05): a Joiner's own ability use — four new member-only
   // events (no hero equivalent; a hero's own equivalent reads
   // abilityUsed/secondWindHealed/swept/riposted above).
@@ -1960,7 +2016,7 @@ export const LINE_FOR = {
     priority: PRIORITY.them,
   }),
   controlHeld: (e) => ({
-    text: `${e?.target ?? "It"} held ${e?.rounds ?? "?"} rounds.`,
+    text: `${e?.target ?? "It"} held ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}.`,
     tone: "magic",
     priority: PRIORITY.them,
   }),
