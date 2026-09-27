@@ -125,11 +125,29 @@ const PINNED = {
   // within their budgets and re-measured byte-identical. Regenerated via
   // `node tools/roll-high-baseline.mjs pins` (hashed identically three
   // times).
-  "solo-1": { actions: 400, dead: false, depth: 5, hash: "5ab327e84b44ab942c7dca8dbad8e33003a85393c7bf6b64ae3e57d817ceee26" },
-  "solo-2": { actions: 400, dead: false, depth: 5, hash: "368ef81db919cdd022cab2926726e8e2dc32d29132c3042ea103d60eeae500da" },
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "5618fcf6dab0130b69de8cfa082aebcd9fd32abff2c1d12a94058d5d4968c8a1" },
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "3121f6b2c7d5b94470c05a7559cc68f5856a2d03b21f239fd243409b308c62b1" },
-  "party-1": { actions: 400, dead: false, depth: 4, hash: "673f322da39d24ed8796dcbeb7576f0991931bef01685aa335be2ef488956b80" },
+  //
+  // "solo-1", "solo-2", "solo-thief-pilfer", "solo-magicuser-sorcerer",
+  // "party-1", "party-fighter-knight" and "deep-8" re-pinned (Phase 79,
+  // quick fix 79-02c, 2026-09-27): per-floor heal removed (user ruling
+  // 2026-09-27, "We shouldn't heal at all when we go down a floor"). A
+  // DECLARED outcome change. Traced live (base 08969929 vs the fix, a
+  // scratch trace of every bot step's full state hash through playRun's
+  // onStep hook): each label's FIRST divergence is exactly its first
+  // descent that used to push `floorRegen`, and the two runs agree on every
+  // earlier step. solo-1 step 205 (base +18 hp, 72/72 vs now 54/72), solo-2
+  // step 103 (+9), solo-thief-pilfer step 74 (+4), solo-magicuser-sorcerer
+  // step 85 (+4), party-1 step 147 (+7), party-fighter-knight step 318
+  // (+17), deep-8 step 77 (+15). The regen drew no rng, so the draw stream
+  // is the same; only hp, and the bot's later choices from it, move.
+  // actions/dead/depth are unchanged except deep-8 (250 -> 262 actions,
+  // still dead on floor 10). "deep-14" re-measured byte-identical (it dies
+  // on floor 14 before any descent). Regenerated via
+  // `node tools/roll-high-baseline.mjs pins` (hashed identically twice).
+  "solo-1": { actions: 400, dead: false, depth: 5, hash: "e89b8af04db94dee24781e95c770f26c614be6bee0d7865052d80a89159cddeb" },
+  "solo-2": { actions: 400, dead: false, depth: 5, hash: "0b1b52857880fa7058c673fe60c87c3030c01066732ceef037b48ebf0e84f0cd" },
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "d2242ff2c65b463ad6236cc4d67fb95a59bc3b26eb29d96f64814c7f44d273ab" },
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "a0f6456fd3df9395d3254a0d372a1d342af8ccbbae2387c7e1f30d9cf1c14e97" },
+  "party-1": { actions: 400, dead: false, depth: 4, hash: "0359263cea8eb7d2ca5f481e44b0c0120353f0021eb5ee6f9014fdddf392fb58" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -174,7 +192,9 @@ const PINNED = {
   // unchanged. Regenerated via `node tools/roll-high-baseline.mjs pins`.
   // Merged 2026-09-27 (orchestrator): BOTH causes apply together, so the
   // value below was re-measured on the merged tree: depth 4 (the Joiner die) and the new item text, hashed identically twice.
-  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "8b18a1e83b9944a8170493396acecc5aa1e73a2a0a8e3fb5aa045cb3a99564a1" },
+  // Re-pinned again (quick fix 79-02c): per-floor heal removed (user ruling
+  // 2026-09-27); first divergence bot step 318, see the "solo-1" block above.
+  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "f1da57d339d737b24623414e260591f1013a2ff04d6e612f1879e7f02b673a50" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
@@ -205,7 +225,11 @@ const PINNED = {
   // identically twice).
   // "deep-8" re-pinned (Phase 79, Plan 05): its Lockpicks txt, see the
   // "party-fighter-knight" comment above.
-  "deep-8": { actions: 250, dead: true, depth: 10, hash: "ffe8d37b693277b5b0752971f516ada4740b262dc5f55e751c8e236a785b62cb" },
+  // Re-pinned again (quick fix 79-02c): per-floor heal removed (user ruling
+  // 2026-09-27); first divergence bot step 77 (a floor-9 arrival that used
+  // to heal +15), 250 -> 262 actions, still dead on floor 10. See the
+  // "solo-1" block above.
+  "deep-8": { actions: 262, dead: true, depth: 10, hash: "2fed395c6f294c82294119ea7c50ef168911409cb0bd740de8e498b177cb65c5" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll

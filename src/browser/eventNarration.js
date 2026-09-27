@@ -331,9 +331,6 @@ export const EVENT_NARRATION = {
   spellChargeRecovered: (e) =>
     `<span class="beat">Twenty quiet squares, and a spell charge is ready again (${e.charges ?? "?"}/${e.max ?? "?"}).</span> The dungeon keeps no such courtesy for you.`,
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
-  // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR's arrival tick —
-  // identity (0) never pushes this event.
-  floorRegen: (e) => `<span class="hit">A new floor, and the dungeon lets you keep +${gainOf(e, e.amount)} hp of it.</span> Do not mistake this for kindness.`,
   rested: (e) =>
     `Rest restores <span class="hit">+${gainOf(e, e.amount)} hp</span>.${e.doubled ? ` (${e.doubled}: twice as fast, as promised.)` : ""}`,
   // 260918-w4n (use-activated-only): the Cloak of Healing is removed from

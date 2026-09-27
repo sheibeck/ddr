@@ -5008,3 +5008,63 @@ line copies each: a recorded `dozed` now reads "Orc dozes off, 2 rounds."
 (was "(2)") and a recorded zero-count `stunned` reads "The stun puts nobody
 to sleep." (was "0 freeze in place."). No event, order, fold or priority
 moved.
+
+### No descent heal (user ruling 2026-09-27)
+
+Quick fix 79-02c, base `08969929`. The ruling: "We shouldn't heal at all
+when we go down a floor." Phase 54's per-floor regen is removed outright:
+the `HERO_REGEN_PER_FLOOR` dial (fitted 0.25), `heroRegenFor`, the regen
+block in `engine/movement.js#descend` and the `floorRegen` event. The regen
+drew no rng, so no draw moves; only `c.wp` after an arrival that used to
+heal changes, and whatever the bot does from there.
+
+**The predictor.** The prototype has no per-floor regen, and a parity
+replay only reaches the regen by descending with the hero below full hp.
+The one replay that descends (`action-script.movement.json`, action 12,
+floor 1 to 2) does so at full hp, where the regen clamped to 0 and pushed
+nothing. Prediction: **zero moved fixtures.** Every bot-played state pin
+that descends while hurt moves.
+
+**The live scan (measured at the base, then after the fix).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical before and
+   after. The generated roster block above is not edited.
+2. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+   No parity carve-out existed for `floorRegen`, so none was removed.
+3. `test/parity/fixtures`, `test/parity/harness/comparables.js` and
+   `test/parity/prototype-master.js.txt` are untouched; the master's hash is
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. **State pins.** `test/unit/roll-high-state-pins.test.js`: seven of eight
+   labels moved, traced cause "per-floor heal removed (user ruling
+   2026-09-27)". Traced against an extracted base tree (`git archive
+   08969929`) with a scratch trace of every bot step's full state hash: each
+   label's first divergence is exactly its first descent that pushed
+   `floorRegen` at the base, and every earlier step is byte-identical.
+
+   | Label | First divergence (bot step) | Heal at the base | actions / dead / depth |
+   |---|---|---|---|
+   | solo-1 | 205 | +18 (72/72, now 54/72) | 400 / false / 5 (unchanged) |
+   | solo-2 | 103 | +9 | 400 / false / 5 (unchanged) |
+   | solo-thief-pilfer | 74 | +4 | 400 / false / 4 (unchanged) |
+   | solo-magicuser-sorcerer | 85 | +4 | 400 / false / 4 (unchanged) |
+   | party-1 | 147 | +7 | 400 / false / 4 (unchanged) |
+   | party-fighter-knight | 318 | +17 | 400 / false / 4 (unchanged) |
+   | deep-8 | 77 | +15 | 250 → 262 / true / 10 |
+   | deep-14 | none | none (dies on floor 14 before a descent) | unchanged |
+
+   Re-pinned with `node tools/roll-high-baseline.mjs pins` (hashed
+   identically twice). `roll-high-save-compat.test.js` (the pre-switch
+   save), `foe-turn-draw-count.test.js`, `bot-tactics.test.js` and
+   `test/determinism/**` pass unchanged; the save's `expected` is not
+   re-recorded.
+5. **Event-order corpus.** `test/unit/fixtures/event-order/default-fold-corpus.json`
+   records no `floorRegen` event and its test passes unchanged, so it was
+   not regenerated.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |

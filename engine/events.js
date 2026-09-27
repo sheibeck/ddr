@@ -14,8 +14,6 @@ export const EVENT_TYPES = {
   FLOOR_CHANGED: "floorChanged",
   DIED: "died",
   LEVELED: "leveled",
-  // Phase 54 (BAND-02, USER RULING D): a hero-only, floor-arrival regen tick.
-  FLOOR_REGEN: "floorRegen",
 };
 
 /** moved(to) — the player stepped to grid cell `to` ({x, y}). */
@@ -34,10 +32,3 @@ export const died = (cause) => ({ type: EVENT_TYPES.DIED, cause });
 // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` — the HP the
 // level-up added to current HP (= wpGain; a raise, never clamped). Additive.
 export const leveled = (level, wpGain) => ({ type: EVENT_TYPES.LEVELED, level, wpGain, gained: wpGain });
-
-/** floorRegen(amount) — HERO_REGEN_PER_FLOOR healed the hero on arrival at
- * a new floor (Phase 54, BAND-02, USER RULING D). Only pushed when
- * `amount > 0` — identity (0) never fires. */
-// VOX-05 (Phase 79, plan 79-02): `gained` (= amount, the clamped HP) is the
-// one field every gain event carries. Additive.
-export const floorRegen = (amount) => ({ type: EVENT_TYPES.FLOOR_REGEN, amount, gained: amount });

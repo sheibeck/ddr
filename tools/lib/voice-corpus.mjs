@@ -329,7 +329,7 @@ const rule = (owner, when, note) => Object.freeze({ owner, when: Object.freeze(w
 export const OWNER_RULES = Object.freeze([
   rule("79-02", {
     kind: "builder",
-    types: ["healed", "regenerated", "potionDrunk", "secondWindHealed", "foodFound", "faerieBoon", "floorRegen", "cloakRegenerated", "cooked", "rested", "leveled", "tableFour", "tableFourNoop", "encounterRolled"],
+    types: ["healed", "regenerated", "potionDrunk", "secondWindHealed", "foodFound", "faerieBoon", "cloakRegenerated", "cooked", "rested", "leveled", "tableFour", "tableFourNoop", "encounterRolled"],
   }, "the gain, Table 4 and table-roll builders"),
   rule("79-02", { keys: ["raw:engine/encounters.js#tableFour"] }, "Table 4's engine prose"),
   rule("79-03", { surfaces: ["blurbs"] }, "class, sub-class and race blurbs, RACES notes and the identity footers"),

@@ -1,0 +1,24 @@
+[
+  {
+    "key": "oracle:floorRegen",
+    "surface": "oracle",
+    "trigger": "floorRegen — engine/movement.js#descend (removed by quick fix 79-02c)",
+    "before": "A new floor, and the dungeon lets you keep +8 hp of it. Do not mistake this for kindness.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User ruling 2026-09-27: the stairs heal nothing. The per-floor regen and its floorRegen event are gone, so this line would promise a heal the game no longer gives."
+  },
+  {
+    "key": "rail:floorRegen",
+    "surface": "rail",
+    "trigger": "floorRegen — engine/movement.js#descend (removed by quick fix 79-02c)",
+    "before": "A new floor, and the dungeon lets you keep +8 hp of it. Do not mistake this for kindness.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User ruling 2026-09-27: the stairs heal nothing. The per-floor regen and its floorRegen event are gone, so this line would promise a heal the game no longer gives."
+  }
+]

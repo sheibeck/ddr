@@ -32,7 +32,7 @@ import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { fallDark } from "../../engine/encounters.js";
 import { inDark, revealRadius } from "../../engine/derived.js";
-import { difficultyCurve, scaleHazard, campHealFor, heroRegenFor, heroSpFor, setDialsForTuning, wanderWakeFacesFor } from "../../engine/difficulty.js";
+import { difficultyCurve, scaleHazard, campHealFor, heroSpFor, setDialsForTuning, wanderWakeFacesFor } from "../../engine/difficulty.js";
 import { setIdentityDials, IDENTITY_DIALS } from "./harness/identityDials.js";
 
 /** moveAndCommit(state, dir, rng, events) — CLIMB-01 (Phase 78): a step
@@ -789,30 +789,18 @@ test("descend: the SP bonus is heroSpFor(40 + 30*depth) — identity (HERO_SP_SC
   assert.equal(state.c.sp - before, heroSpFor(40 + 30 * 1));
 });
 
-// DELIBERATE RULES CHANGE (Phase 54, USER RULING D): HERO_REGEN_PER_FLOOR —
-// a fraction of maxWP restored once, on arriving at a new floor. Identity
-// (0) never pushes a floorRegen event; a synthetic override proves the
-// wiring (0 new draws either way).
-test("descend: no floorRegen event at HERO_REGEN_PER_FLOOR 0 (identity); under a 0.25 override the hero gains round(0.25 * maxWP) capped at maxWP and the event carries the amount", () => {
-  const restore = setDials({ HERO_REGEN_PER_FLOOR: 0.25 });
-  try {
-    const state = fixedState({ c: { wp: 10, maxWP: 55 } });
-    open(state.floor.g, 5, 4, { feat: "exit" });
-    const events = move(state, "N", makeRng(777), []);
-    const regen = events.find((e) => e.type === "floorRegen");
-    assert.ok(regen, "a positive HERO_REGEN_PER_FLOOR must push floorRegen on arrival");
-    const expectedRegen = Math.min(55, 10 + Math.round(0.25 * 55)) - 10;
-    assert.equal(regen.amount, expectedRegen);
-    assert.equal(state.c.wp, 10 + expectedRegen);
-  } finally {
-    restore();
-  }
-
-  // identity check (0): re-run with a fresh state, no override active.
-  const stateOff = fixedState({ c: { wp: 10, maxWP: 55 } });
-  open(stateOff.floor.g, 5, 4, { feat: "exit" });
-  const eventsOff = move(stateOff, "N", makeRng(777), []);
-  assert.ok(!eventsOff.some((e) => e.type === "floorRegen"), "identity (0) never pushes floorRegen");
+// User ruling 2026-09-27 (quick fix 79-02c): the stairs heal nothing. Phase
+// 54's HERO_REGEN_PER_FLOOR dial and its floorRegen event are removed, so
+// stepping onto the exit brings no hp back (a level-up's own gain aside).
+test("descend: stepping onto the exit heals nothing and pushes no floorRegen event (user ruling 2026-09-27)", () => {
+  const state = fixedState({ c: { wp: 10, maxWP: 55 } });
+  open(state.floor.g, 5, 4, { feat: "exit" });
+  const events = move(state, "N", makeRng(777), []);
+  assert.equal(state.floor.depth, 2, "arrived on the next floor");
+  assert.ok(!events.some((e) => e.type === "floorRegen"), "no floorRegen event");
+  const levelGain = events.filter((e) => e.type === "leveled").reduce((s, e) => s + e.gained, 0);
+  assert.equal(state.c.wp, 10 + levelGain, "hp unchanged by the stairs");
+  assert.throws(() => setDials({ HERO_REGEN_PER_FLOOR: 0.25 }), /unknown dial/, "the dial is gone");
 });
 
 test("move: dot/trap/chest feature tiles are consumed and dispatch to the real encounter/trap/chest handlers (01-10)", () => {

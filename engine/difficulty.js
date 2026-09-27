@@ -205,13 +205,6 @@ export const DIALS = deepFreeze({
    * 1/1.25 -> 1.25 (unmoved from the cycle-2 start this cycle) —
    * fit/fit-log.jsonl #13 (score 2.7113, PASS). */
   HERO_HP_SCALE: 1.25,
-  /** HERO_REGEN_PER_FLOOR — a fraction of maxWP restored once, on arriving
-   * at a new floor (`descend`, hero only). Identity: 0 (no regen — canon has
-   * none). Direction: ↑ = easier.
-   * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
-   * 0/0.25 -> 0.25 (unmoved from the cycle-2 start this cycle) —
-   * fit/fit-log.jsonl #13 (score 2.7113, PASS). */
-  HERO_REGEN_PER_FLOOR: 0.25,
   /** HERO_SP_SCALE — scales every SP grant (kill share, parley, the descend
    * bonus, the table-four +10/+25 XP dots). Identity: 1 (canon). Direction:
    * ↑ = faster leveling (paces HERO_HP_SCALE's payoff sooner).
@@ -728,15 +721,6 @@ export function heroMaxWpFor(rolled, cls) {
   const classMit = live.CLASS_MITIGATION[cls];
   const m = live.HERO_HP_SCALE * ((classMit && classMit.hpMul) || 1);
   return m === 1 ? rolled : Math.max(1, Math.round(rolled * m));
-}
-
-/**
- * heroRegenFor(maxWP) — HERO_REGEN_PER_FLOOR, evaluated once per floor
- * arrival (engine/movement.js#descend, hero only). 0 at identity (no
- * regen).
- */
-export function heroRegenFor(maxWP) {
-  return live.HERO_REGEN_PER_FLOOR === 0 ? 0 : Math.max(0, Math.round(live.HERO_REGEN_PER_FLOOR * maxWP));
 }
 
 /**

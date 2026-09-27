@@ -27,14 +27,14 @@
 // comment for why.
 
 import { GW, GH, genFloor, reveal, refogSpellSeen } from "./maze.js";
-import { difficultyCurve, scaleHazard, heroSpFor, heroRegenFor, campHealFor, wanderWakeFacesFor } from "./difficulty.js";
+import { difficultyCurve, scaleHazard, heroSpFor, campHealFor, wanderWakeFacesFor } from "./difficulty.js";
 import { skill, skillTier, upkeep, eff, revealRadius, isFlying, armorBulk, itemEffectActive, activationFor, hasTool, moveCost, inStone } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { checkLevel } from "./character.js";
 import { startCombat } from "./combat.js";
 import { encounterDot, springTrap, openChest } from "./encounters.js";
-import { moved, floorChanged, floorRegen } from "./events.js";
+import { moved, floorChanged } from "./events.js";
 import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, TOOLS, ACTIVATION_OF } from "../content/index.js";
 import { tickSquares } from "./effects.js";
 import { narrateTimerTransitions, toolIndex } from "./items.js";
@@ -1260,21 +1260,10 @@ export function descend(state, rng, events = []) {
   state.pendingHazard = null;
   reveal(state.floor, revealRadius(state));
   events.push(floorChanged(state.floor.depth));
-  // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR — a fraction of
-  // maxWP restored once, on arriving at the new floor (hero only, 0 draws).
-  // Identity (0) never pushes an event; a loaded save resumes on its
-  // current floor with no regen owed (`descend` is the only arrival path
-  // and runs once per floor by construction, so there is no "regen applied"
-  // marker to track).
-  const regen = heroRegenFor(state.c.maxWP);
-  if (regen > 0) {
-    const before = state.c.wp;
-    state.c.wp = Math.min(state.c.maxWP, state.c.wp + regen);
-    // VOX-05 (Phase 79, plan 79-02): floorRegen(amount) carries `gained`
-    // (= amount, already the clamped value) — see engine/events.js.
-    const gained = state.c.wp - before;
-    if (gained > 0) events.push(floorRegen(gained));
-  }
+  // User ruling 2026-09-27 (quick fix 79-02c): the stairs heal nothing.
+  // Phase 54's per-floor regen (the HERO_REGEN_PER_FLOOR dial and its
+  // floorRegen event) is removed outright; canon has none. The hero arrives
+  // with the hp they left with, plus any level-up gain checkLevel added.
   // Phase 41 (TERR-04/05): floor-bound phobia regions die with the floor —
   // Death (hp-based) and any still-pending c.fearArmed both survive.
   resetFloorPhobiaRegions(state.c);

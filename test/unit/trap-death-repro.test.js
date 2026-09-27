@@ -326,7 +326,9 @@ const LOSS_FIELDS = {
 // foeBolted). tableFour is summed separately by `stat` and `amount` (see
 // heroTableFourDelta below).
 const GAIN_TYPES = new Set([
-  "healed", "secondWindHealed", "foodFound", "faerieBoon", "floorRegen",
+  // (floorRegen left the set with the per-floor heal: user ruling
+  // 2026-09-27, quick fix 79-02c.)
+  "healed", "secondWindHealed", "foodFound", "faerieBoon",
   "cloakRegenerated", "potionDrunk", "rested", "cooked", "regenerated",
   "leveled", // a level-up's own HP raise also raises c.wp (`gained` = wpGain)
   "bought", // a store meal's `gained` (Phase 79); any other purchase adds 0

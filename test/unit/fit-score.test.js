@@ -35,7 +35,7 @@ function onTargetSurvival() {
 
 // --- SEARCH_PLAN / HELD_DIALS ------------------------------------------
 
-test("SEARCH_PLAN is exactly the core 10, in order, with pinned steps/bounds (USER RULING G, cycle 3: the Ruling F spellPower coordinate is dropped again — proved a structural no-op in cycle 2)", () => {
+test("SEARCH_PLAN is exactly the core 9, in order (user ruling 2026-09-27 removed HERO_REGEN_PER_FLOOR), with pinned steps/bounds (USER RULING G, cycle 3: the Ruling F spellPower coordinate is dropped again — proved a structural no-op in cycle 2)", () => {
   const expected = [
     ["FOE_LEVEL.perDepth", 0.03, 0.12, 0.3],
     ["FOE_LEVEL.base", 0.15, 0.3, 1.0],
@@ -44,11 +44,11 @@ test("SEARCH_PLAN is exactly the core 10, in order, with pinned steps/bounds (US
     ["FOE_HIT_SCALE.perDepth", 0.01, 0, 0.05],
     ["FOE_HP_SCALE.base", 0.1, 0.5, 1.2],
     ["HERO_HP_SCALE", 0.15, 1.0, 1.8],
-    ["HERO_REGEN_PER_FLOOR", 0.1, 0, 0.5],
     ["HAZARD_SCALE.base", 0.1, 0.3, 1.0],
     ["ENCOUNTER_DOTS.base", 1, 5, 10],
   ];
-  assert.equal(SEARCH_PLAN.length, 10);
+  assert.equal(SEARCH_PLAN.length, 9);
+  assert.equal(SEARCH_PLAN.some((c) => c.path[0] === "HERO_REGEN_PER_FLOOR"), false, "the regen coordinate left with its dial (user ruling 2026-09-27)");
   SEARCH_PLAN.forEach((coord, i) => {
     const [path, step, lo, hi] = expected[i];
     assert.equal(coord.path.join("."), path, `coordinate ${i}`);

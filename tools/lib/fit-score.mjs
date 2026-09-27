@@ -186,7 +186,7 @@ export function classConstraints(classIdentity) {
 }
 
 /**
- * SEARCH_PLAN — the CORE 10 coordinates (USER CUT, 2026-09-21, plan
+ * SEARCH_PLAN — the CORE coordinates, 10 then 9 (USER CUT, 2026-09-21, plan
  * approval). Coordinates transcribed verbatim from 54-06-PLAN.md's dial
  * table's `Search bounds (step)` / `Search order` columns. `applyStep`
  * refuses any key outside this list.
@@ -203,6 +203,12 @@ export function classConstraints(classIdentity) {
  * directly) — while the real fairness fix (loosening the tolerance itself,
  * see classConstraints above) was the one that actually mattered. The
  * coordinate returns to HELD_DIALS below at its identity value (1).
+ *
+ * User ruling 2026-09-27 (quick fix 79-02c): the stairs heal nothing, so
+ * the `HERO_REGEN_PER_FLOOR` coordinate is gone with its dial. The core is
+ * now 9. A dial set (a --start file, an old fit log) that still names it
+ * fails loudly: engine/difficulty.js#setDialsForTuning throws on an
+ * unknown dial.
  */
 export const SEARCH_PLAN = [
   { path: ["FOE_LEVEL", "perDepth"], step: 0.03, lo: 0.12, hi: 0.3 },
@@ -212,7 +218,6 @@ export const SEARCH_PLAN = [
   { path: ["FOE_HIT_SCALE", "perDepth"], step: 0.01, lo: 0, hi: 0.05 },
   { path: ["FOE_HP_SCALE", "base"], step: 0.1, lo: 0.5, hi: 1.2 },
   { path: ["HERO_HP_SCALE"], step: 0.15, lo: 1.0, hi: 1.8 },
-  { path: ["HERO_REGEN_PER_FLOOR"], step: 0.1, lo: 0, hi: 0.5 },
   { path: ["HAZARD_SCALE", "base"], step: 0.1, lo: 0.3, hi: 1.0 },
   { path: ["ENCOUNTER_DOTS", "base"], step: 1, lo: 5, hi: 10 },
 ];

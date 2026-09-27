@@ -6697,6 +6697,28 @@ on the bot's route (it always commits), a small one through the acts-keyed
 derived streams. If a difficulty band fails then, the rule is to stop and
 report: no band is loosened and no compensating nerf is made.
 
+## v2.1 per-floor regen removed (quick fix 79-02c, user ruling 2026-09-27)
+
+**2026-09-27.** The user ruled: "We shouldn't heal at all when we go down a
+floor. I know we added that to make the game easier, but that is definitely
+too much." Quick fix 79-02c removes the Phase 54 per-floor regen outright.
+The history above (the Phase 54 dial table, the fit log, the "fitted 0.25"
+rows) is left as it was measured.
+
+- `HERO_REGEN_PER_FLOOR` (fitted 0.25 × maxHP on each arrival) is deleted
+  from `DIALS`, with `heroRegenFor`, the regen block in
+  `engine/movement.js#descend`, the `floorRegen` event and its Oracle and rail
+  lines. Canon has no per-floor regen.
+- The fit tooling's search space is now nine coordinates
+  (`tools/lib/fit-score.mjs#SEARCH_PLAN`). A dial set that still names
+  `HERO_REGEN_PER_FLOOR` fails loudly: `setDialsForTuning` throws on an
+  unknown dial.
+- Every other heal is unchanged: camp, rations, potions, spells, the Table 4
+  dots and the level-up HP gain added to current HP. The descend SP bonus is
+  unchanged too.
+- No bot readout was run for this change. Phase 79.1 measures the game
+  without the regen; its sweep has no regen dial to search.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
