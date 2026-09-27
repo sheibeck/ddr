@@ -199,7 +199,15 @@ test("the classic eff(key) duplicate is retired; heroTab.js imports eff(c, key) 
   // `weaponRow` joined the line — both weapon reads now route through it,
   // not a raw WEAPONS[c.weapon] lookup.
   assert.match(heroSrc, /import \{ strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight, weaponRow \} from "\.\.\/\.\.\/engine\/derived\.js";/);
-  assert.match(heroSrc, /eff\(c, "dmg"\)/);
+  // Phase 79 (Plan 09; todo 2026-09-25 "hero sheet damage range leaves out
+  // bonuses the engine applies"): the sheet no longer restates the damage
+  // modifier stack — the pin that heroTab.js calls eff(c, "dmg") itself was
+  // the drift the todo found (the restated stack left out Master of Arms,
+  // Heft and might). It now reads the engine's own terms instead, pinned by
+  // test/unit/hero-damage-agreement.test.js. Previously:
+  // assert.match(heroSrc, /eff\(c, "dmg"\)/).
+  assert.match(heroSrc, /import \{ weaponDamageTerms, weaponDamageRange \} from "\.\.\/\.\.\/engine\/derived\.js";/);
+  assert.doesNotMatch(heroSrc, /eff\(c, "dmg"\)/);
 });
 
 // ─── 6. Module bridges ───────────────────────────────────────────────────────

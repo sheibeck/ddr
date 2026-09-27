@@ -2060,35 +2060,41 @@ function foeSwingChain(state, f, faces, mods) {
 }
 
 /**
- * weaponDamage(c, rng) — a single strike's damage. The weapon's dice notation
- * is resolved here via the injected rng (the ONLY randomness in this module),
- * so this stays deterministic given (c, rng). Ports mazeworld.html
- * weaponDamage() (lines 1484-1496), with the prototype's `w.d()` closure
- * replaced by the content weapon's `dice`/`halve` notation.
+ * weaponDamageTerms(c) — Phase 79 (VOX-05, Plan 09; todo 2026-09-25 "hero
+ * sheet damage range leaves out bonuses the engine applies"): every term of
+ * a strike's damage EXCEPT the weapon's own dice, as plain data. This is the
+ * ONE place the damage modifiers live: weaponDamage (below) adds a dice roll
+ * to these terms, and weaponDamageRange (below) adds the dice's lowest and
+ * highest faces, so the Hero sheet's DAMAGE row and #s-dmg line
+ * (src/browser/heroTab.js) can never leave out a bonus a real strike gets.
+ * Returns `{ weapon, levelSq, bonus, cap }`: `weapon` is the row whose dice
+ * are rolled (weaponRow(c.weapon), else the Club), `levelSq` is level², `bonus`
+ * is the sum of every other additive term (negative for a low-level Guard),
+ * and `cap` is the Sorcerer's ceiling (9) or null. Pure, no rng, never
+ * mutates `c`.
  */
-export function weaponDamage(c, rng) {
-  const w = weaponRow(c.weapon) || WEAPONS["Club"];
+export function weaponDamageTerms(c) {
+  const weapon = weaponRow(c.weapon) || WEAPONS["Club"];
   const R = RACES[c.race];
-  const base = w.halve ? Math.ceil(rollDice(rng, w.dice) / 2) : rollDice(rng, w.dice);
-  let d = c.level * c.level + base + c.prof + c.magicWpn;
-  if (R.dmg) d += R.dmg;
-  if (R.wpnBonus) d += R.wpnBonus;
-  if (c.might) d += c.might;
+  let bonus = c.prof + c.magicWpn;
+  if (R.dmg) bonus += R.dmg;
+  if (R.wpnBonus) bonus += R.wpnBonus;
+  if (c.might) bonus += c.might;
   // Phase 39 (GEAR-02): the retired never-expiring c.might += 8 potion
   // write — a live Strength potion effect now reads through c.timers
   // (potionMight), additive alongside the spell's own c.might. RULES-11
   // (Phase 75.2, Plan 02): Enlarge no longer contributes here — it is a
   // size step, read below through sizeDamage(c) instead.
-  d += potionMight(c);
-  if (skill(c, "Heft")) d += 2;
+  bonus += potionMight(c);
+  if (skill(c, "Heft")) bonus += 2;
   // DELIBERATE RULES CHANGE (04.1-02, 2026-09-09, RULE-02): the Master of
   // Arms subclass blurb (content/flavor.js SUB_NOTE["Master of Arms"]) reads
   // "Plus two with every weapon ever forged" but the +2 weapon-proficiency
   // bonus had NO implementation anywhere in the engine. Wired here as a flat
   // additive, mirroring the existing prof/Heft pattern — no RNG, so this
   // does not change RNG consumption order or affect determinism/parity.
-  if (c.sub === "Master of Arms") d += 2;
-  d += eff(c, "dmg");
+  if (c.sub === "Master of Arms") bonus += 2;
+  bonus += eff(c, "dmg");
   // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25):
   // size is now a real stat, replacing the Phase 15 (ECON-08) Gauntlet-only
   // line this comment used to sit on. sizeDamage(c) = SIZE_DAMAGE_PER_STEP x
@@ -2098,16 +2104,58 @@ export function weaponDamage(c, rng) {
   // survives Small's -2, the Elven thin bones survive despite Small's -2
   // applying in full), and any live item size step (the Gauntlet of the
   // Giant, Enlarge) always counts in full on top of the resolved base. A
-  // step down is floored by the Math.max(1, d) below, exactly like the old
-  // line. The same function serves a Joiner's own member view
+  // step down is floored by weaponDamage's Math.max(1, d), exactly like the
+  // old line. The same function serves a Joiner's own member view
   // (weaponDamage(memberView(sheet, ally), rng), engine/combat.js) — a
   // member's own race/mask sets a member's own size damage, never the
   // hero's. Pure read of `c` (no rng); parity-unaffected for every character
   // whose resolved size axis is 0.
-  d += sizeDamage(c);
-  if (c.sub === "Guard" && c.level < 4) d -= 4 - c.level;
-  if (c.sub === "Sorcerer") d = Math.min(d, 9); // a Sorcerer's arm is not the point
+  bonus += sizeDamage(c);
+  if (c.sub === "Guard" && c.level < 4) bonus -= 4 - c.level;
+  const cap = c.sub === "Sorcerer" ? 9 : null; // a Sorcerer's arm is not the point
+  return { weapon, levelSq: c.level * c.level, bonus, cap };
+}
+
+/** settleDamage(t, base) — module-private: a dice result plus the terms,
+ * capped for a Sorcerer and floored at 1. The ONE settle weaponDamage and
+ * weaponDamageRange share. */
+function settleDamage(t, base) {
+  let d = t.levelSq + base + t.bonus;
+  if (t.cap !== null) d = Math.min(d, t.cap);
   return Math.max(1, d);
+}
+
+/**
+ * weaponDamage(c, rng) — a single strike's damage. The weapon's dice notation
+ * is resolved here via the injected rng (the ONLY randomness in this module),
+ * so this stays deterministic given (c, rng). Ports mazeworld.html
+ * weaponDamage() (lines 1484-1496), with the prototype's `w.d()` closure
+ * replaced by the content weapon's `dice`/`halve` notation. Phase 79 (Plan
+ * 09): the modifiers now come from weaponDamageTerms(c) above (the same sum,
+ * the same single dice draw, the same Sorcerer cap and floor).
+ */
+export function weaponDamage(c, rng) {
+  const t = weaponDamageTerms(c);
+  const w = t.weapon;
+  const base = w.halve ? Math.ceil(rollDice(rng, w.dice) / 2) : rollDice(rng, w.dice);
+  return settleDamage(t, base);
+}
+
+/**
+ * weaponDamageRange(c) — Phase 79 (Plan 09): the lowest and highest damage
+ * weaponDamage(c, rng) can return, as `{ min, max }` — the weapon's dice at
+ * their lowest and highest faces (halved first for a halving weapon), then
+ * the same terms, cap and floor. The Hero sheet reads this instead of
+ * re-deriving the modifier stack. Pure, no rng, never mutates `c`.
+ */
+export function weaponDamageRange(c) {
+  const t = weaponDamageTerms(c);
+  const { n, sides } = t.weapon.dice;
+  const flat = t.weapon.dice.bonus || 0; // rollDice's own `bonus || 0`
+  const lo = n + flat;
+  const hi = n * sides + flat;
+  const halve = (x) => (t.weapon.halve ? Math.ceil(x / 2) : x);
+  return { min: settleDamage(t, halve(lo)), max: settleDamage(t, halve(hi)) };
 }
 
 /**
