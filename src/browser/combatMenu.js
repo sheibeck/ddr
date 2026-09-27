@@ -53,7 +53,9 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // every one is level- or school-locked right now (hidden rows, below) —
   // distinct from noSpells (an empty grimoire).
   noCastable: "NOTHING YOU CAN CAST YET",
-  noCastableDesc: "Your book holds spells above your level or school. Grow into them.",
+  // VOX-05 (79-07): both locks are level gates (canCast: the spell's level
+  // and the school's gate level), so "grow into them" is true of both.
+  noCastableDesc: "Every spell in your book is above your level or behind your school's level gate. Grow into them.",
   noItems: "NOTHING TO USE",
   noItemsDesc: "The bag is quieter than you are.",
   // RULES-13 (Phase 75, user 2026-09-25): a bagged staff's power is inert
@@ -70,19 +72,31 @@ export const COMBAT_MENU_COPY = Object.freeze({
   notEquipped: "NOT EQUIPPED",
   notEquippedDesc: "Only works worn, and nobody changes outfits mid-fight. Put it on after.",
   potion: "POTION",
-  potionDesc: "Heals. Wasted at full health.",
+  // VOX-05 (79-07): engine/magic.js#drinkPotion heals 2d10+5 (doubled for a
+  // heal2x race, the Wilmsry) and spends the turn; the row is disabled at
+  // full HP (potionEnabled below), so it is never actually wasted.
+  potionDesc: "Heals 2d10+5 hp, doubled for a Wilmsry, and takes your turn. Greyed out at full health, where it would be wasted.",
   scroll: "SCROLL",
   scrollDesc: "A random spell, read aloud. No refunds.",
   sing: "SING",
   singReady: "READY",
-  singDesc: "One song per hundred squares. Pick the moment.",
+  // VOX-05 (79-07): engine/combat.js#sing plays the highest song the level
+  // allows; songReady is the hundred-square cooldown.
+  singDesc: "Sings the best song your level knows, then a hundred squares before the next. Pick the moment.",
   flee: "FLEE",
   withdraw: "WITHDRAW",
   withdrawCost: "CLEAN",
-  fleeDesc: "Run. They get one swing at your back.",
+  // VOX-05 (79-07): engine/combat.js#flee — a failed roll hands every foe
+  // its turn (foeTurn); a clean escape forfeits the loot pile. Only a
+  // pursuing foe (the Spectre) swings at your back, so the old line was
+  // wrong for nearly every fight.
+  fleeDesc: "Roll to run. Fail and they all get a turn; get away and the loot stays behind.",
   withdrawDesc: "They have not noticed you. Leave before they do.",
   parley: "PARLEY",
-  parleyDesc: "Talk it down. An insult is permanent.",
+  // VOX-05 (79-07): one attempt per encounter (C.parleyTried); a failure
+  // insults the group for the rest of the fight (C.parleyInsulted, +1 face
+  // to every foe swing at the hero and the party), not permanently.
+  parleyDesc: "One try per fight. Fail and they take it personally: every foe hits you and yours one face easier until it ends.",
   back: "BACK",
   // RULES-10 (Phase 75.1, user ruling 2026-09-25): the hero-cannot-act shape.
   // A fumbled Doze/Stun (asleep), Stupidity (stupefied) or Insane (maddened)

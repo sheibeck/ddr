@@ -715,3 +715,11 @@ test("an entry without a description fails: the chip builder reads the desc tabl
     for (const k of keys) assert.ok(typeof FOE_CONDITION_DESC[k] === "string" && FOE_CONDITION_DESC[k].length > 0, `${k} has no description`);
   }
 });
+
+// VOX-05/ROLL-04 (Phase 79, plan 79-07): the two foe-card lines that move a
+// foe's swing say so roll-high, matching engine/derived.js#foeSwingChain (a
+// blind foe swings on one face; Weaken caps every swing at three faces).
+test("VOX-05 (79-07): blind and weakened descriptions state their to-hit effect roll-high, before the flavour", () => {
+  assert.match(FOE_CONDITION_DESC.blind, /^It hits only on its die's top face/);
+  assert.match(FOE_CONDITION_DESC.weakened, /^Every one of them hits on no more than its die's top three faces, and does half damage/);
+});

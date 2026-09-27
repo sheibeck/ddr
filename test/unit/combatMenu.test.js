@@ -853,3 +853,20 @@ test("Phase 71 D-05: with no opts, or a falsy locked, the output is deep-equal t
     assert.doesNotMatch(JSON.stringify(today), /"locked"/);
   }
 });
+
+// VOX-05 (Phase 79, plan 79-07): the row descriptions say what the action
+// does in the engine's own terms (engine/magic.js#drinkPotion, engine/
+// combat.js#flee, #parley and #sing), so a later edit cannot drift them back
+// to the old claims ("wasted at full health", "one swing at your back", "an
+// insult is permanent").
+test("VOX-05 (79-07): potion, flee, parley and sing descriptions state the engine's own rule", () => {
+  assert.match(COMBAT_MENU_COPY.potionDesc, /^Heals 2d10\+5 hp\b/);
+  assert.match(COMBAT_MENU_COPY.potionDesc, /takes your turn/);
+  assert.doesNotMatch(COMBAT_MENU_COPY.fleeDesc, /swing at your back/);
+  assert.match(COMBAT_MENU_COPY.fleeDesc, /Fail and they all get a turn/);
+  assert.match(COMBAT_MENU_COPY.fleeDesc, /loot stays behind/);
+  assert.match(COMBAT_MENU_COPY.parleyDesc, /^One try per fight\./);
+  assert.match(COMBAT_MENU_COPY.parleyDesc, /one face easier until it ends/);
+  assert.doesNotMatch(COMBAT_MENU_COPY.parleyDesc, /permanent/);
+  assert.match(COMBAT_MENU_COPY.singDesc, /best song your level knows/);
+});
