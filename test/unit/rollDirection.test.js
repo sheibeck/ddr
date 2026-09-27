@@ -1162,6 +1162,140 @@ test("[foe-vs-member:hero-only-terms] the HERO's own Sidestep/Smoke leave a memb
   assertSame(withMod, without, { label: "foe-vs-member:hero-only-terms" });
 });
 
+// Phase 79 quick fix 79-02b (user ruling 2026-09-27, "Joiners use only their
+// own defences against foe swings"): a Joiner's to-be-hit terms are built
+// from its OWN sheet by the hero's rule; the hero's personal defences never
+// reach it; the content's party-wide effects (Battle Roar, the Crystal
+// Staff's party invisibility) still do.
+
+test("[foe-vs-member:hero-defences] the HERO's own Acrobat, Guard, gear, Mirror Self, invisibility and Dwarven die leave a member's odds unchanged", () => {
+  const plainMember = { cls: "Fighter", sub: "Soldier", race: "Human" };
+  const plain = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, plainMember, NEUTRAL_FOE());
+  const without = faceOdds((rng) => foeHitsMember(plain(), rng), { label: "foe-vs-member:hero-defences (baseline)" });
+  const heroes = {
+    acrobat: () => memberCombatState({ cls: "Thief", sub: "Acrobat", race: "Human" }, plainMember, NEUTRAL_FOE()),
+    guard: () => memberCombatState({ cls: "Fighter", sub: "Guard", race: "Human" }, plainMember, NEUTRAL_FOE()),
+    dwarven: () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Dwarven" }, plainMember, NEUTRAL_FOE()),
+    anklet: () => {
+      const s = plain();
+      startEffect(s.c, "item:Anklet of Invisibility", { rounds: 50 });
+      return s;
+    },
+    mirror: () => {
+      const s = plain();
+      s.c.mirror = 3;
+      return s;
+    },
+    cloak: () => {
+      const s = plain();
+      startEffect(s.c, "item:Cloak of Invisibility", { squares: 50, cd: 50 });
+      return s;
+    },
+  };
+  for (const [name, build] of Object.entries(heroes)) {
+    const withMod = faceOdds((rng) => foeHitsMember(build(), rng), { label: `foe-vs-member:hero-defences (${name})` });
+    assertSame(withMod, without, { label: `foe-vs-member:hero-defences (${name})` });
+  }
+});
+
+test('[foe-vs-member:elven] an Elven member is thin-boned from its own race — a strict bonus to the foe', () => {
+  const hero = { cls: "Fighter", sub: "Soldier", race: "Human" };
+  const elven = () => memberCombatState(hero, { cls: "Fighter", sub: "Soldier", race: "Elven" }, NEUTRAL_FOE());
+  const human = () => memberCombatState(hero, { cls: "Fighter", sub: "Soldier", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(elven(), rng), { label: "foe-vs-member:elven" });
+  const without = faceOdds((rng) => foeHitsMember(human(), rng), { label: "foe-vs-member:elven (baseline)" });
+  assertBonus(withMod, without, { label: "foe-vs-member:elven" });
+});
+
+test("[foe-vs-member:acrobat] a member's own Acrobat is harder to hit (3 faces, not 5) — a strict penalty to the foe", () => {
+  const hero = { cls: "Fighter", sub: "Soldier", race: "Human" };
+  const acrobat = () => memberCombatState(hero, { cls: "Thief", sub: "Acrobat", race: "Human" }, NEUTRAL_FOE());
+  const pickpocket = () => memberCombatState(hero, { cls: "Thief", sub: "Pickpocket", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(acrobat(), rng), { label: "foe-vs-member:acrobat" });
+  const without = faceOdds((rng) => foeHitsMember(pickpocket(), rng), { label: "foe-vs-member:acrobat (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-member:acrobat" });
+});
+
+test("[foe-vs-member:guard] a member's own Guard sub-class — a strict penalty to the foe", () => {
+  const hero = { cls: "Fighter", sub: "Soldier", race: "Human" };
+  const guard = () => memberCombatState(hero, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const soldier = () => memberCombatState(hero, { cls: "Fighter", sub: "Soldier", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(guard(), rng), { label: "foe-vs-member:guard" });
+  const without = faceOdds((rng) => foeHitsMember(soldier(), rng), { label: "foe-vs-member:guard (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-member:guard" });
+});
+
+test('[foe-vs-member:gear-foe-to-hit] a member\'s own live Anklet of Invisibility effect — a strict penalty to the foe', () => {
+  const hero = { cls: "Fighter", sub: "Soldier", race: "Human" };
+  const member = { cls: "Fighter", sub: "Soldier", race: "Human" };
+  const anklet = () => {
+    const s = memberCombatState(hero, member, NEUTRAL_FOE());
+    startEffect(s.party[0], "item:Anklet of Invisibility", { rounds: 50 });
+    return s;
+  };
+  const plain = () => memberCombatState(hero, member, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(anklet(), rng), { label: "foe-vs-member:gear-foe-to-hit" });
+  const without = faceOdds((rng) => foeHitsMember(plain(), rng), { label: "foe-vs-member:gear-foe-to-hit (baseline)" });
+  assertPenalty(withMod, without, { label: "foe-vs-member:gear-foe-to-hit" });
+});
+
+test("[foe-vs-member:mirror-self] a member's own mirror count gives the foe exactly one winning face", () => {
+  const build = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Soldier", race: "Human" }, NEUTRAL_FOE());
+    s.party[0].mirror = 3;
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsMember(build(), rng), { label: "foe-vs-member:mirror-self" });
+  assert.equal(result.wins, 1, "[foe-vs-member:mirror-self] the foe must win on exactly one face");
+});
+
+test("[foe-vs-member:invisibility] a member's own live invis item effect gives the foe exactly one winning face", () => {
+  const build = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Soldier", race: "Human" }, NEUTRAL_FOE());
+    startEffect(s.party[0], "item:Invisible", { rounds: 90 });
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsMember(build(), rng), { label: "foe-vs-member:invisibility" });
+  assert.equal(result.wins, 1, "[foe-vs-member:invisibility] the foe must win on exactly one face");
+});
+
+test('[foe-vs-member:party-invisibility] the hero\'s Crystal Staff ("party invisible; enemies need a 1") gives the foe exactly one winning face against a member', () => {
+  const build = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Soldier", race: "Human" }, NEUTRAL_FOE());
+    startEffect(s.c, "item:Crystal Staff", { squares: 10 });
+    return s;
+  };
+  const result = faceOdds((rng) => foeHitsMember(build(), rng), { label: "foe-vs-member:party-invisibility" });
+  assert.equal(result.wins, 1, "[foe-vs-member:party-invisibility] the foe must win on exactly one face");
+});
+
+test("[foe-vs-member:thief-evasion] a positive evasion dial makes a Thief member harder to hit; a non-Thief member is unaffected", () => {
+  const hero = { cls: "Fighter", sub: "Soldier", race: "Human" };
+  const thief = () => memberCombatState(hero, { cls: "Thief", sub: "Pickpocket", race: "Human" }, NEUTRAL_FOE());
+  const nonThief = () => memberCombatState(hero, { cls: "Fighter", sub: "Soldier", race: "Human" }, NEUTRAL_FOE());
+  const identity = faceOdds((rng) => foeHitsMember(thief(), rng), { label: "foe-vs-member:thief-evasion (identity)" });
+  const nonThiefBaseline = faceOdds((rng) => foeHitsMember(nonThief(), rng), { label: "foe-vs-member:thief-evasion (baseline, non-Thief)" });
+  const restore = setDialsForTuning({ CLASS_MITIGATION: { Thief: { ...DIALS.CLASS_MITIGATION.Thief, evasion: 1 } } });
+  const bumped = faceOdds((rng) => foeHitsMember(thief(), rng), { label: "foe-vs-member:thief-evasion (+1)" });
+  const bumpedNonThief = faceOdds((rng) => foeHitsMember(nonThief(), rng), { label: "foe-vs-member:thief-evasion (+1, non-Thief)" });
+  restore();
+  assertPenalty(bumped, identity, { label: "foe-vs-member:thief-evasion" });
+  assertSame(bumpedNonThief, nonThiefBaseline, { label: "foe-vs-member:thief-evasion (non-Thief unaffected)" });
+});
+
+test('[foe-vs-member:dwarven-foe-strike-step] "foes strike at a better die" against a Dwarven member (its own race; face step 0 via its own live Gauntlet record)', () => {
+  const hero = { cls: "Fighter", sub: "Soldier", race: "Human" };
+  const dwarf = () => {
+    const s = memberCombatState(hero, { cls: "Fighter", sub: "Soldier", race: "Dwarven" }, NEUTRAL_FOE());
+    startEffect(s.party[0], "item:Gauntlet of the Giant", { squares: 50, cd: 50 });
+    return s;
+  };
+  const human = () => memberCombatState(hero, { cls: "Fighter", sub: "Soldier", race: "Human" }, NEUTRAL_FOE());
+  const withMod = faceOdds((rng) => foeHitsMember(dwarf(), rng), { label: "foe-vs-member:dwarven-foe-strike-step" });
+  const without = faceOdds((rng) => foeHitsMember(human(), rng), { label: "foe-vs-member:dwarven-foe-strike-step (baseline)" });
+  assertBonus(withMod, without, { label: "foe-vs-member:dwarven-foe-strike-step" });
+});
+
 test(
   '[foe-vs-member:insult-after-member-smoke] the member\'s own Smoke plus insulted should give exactly two faces, like [foe-vs-hero:insult-after-smoke] — engine/combat.js#foeTurn member branch ~L2446-2467 applies insult BEFORE the member\'s own Sidestep/Smoke (72-04 moves it to the end)',
   () => {
