@@ -552,6 +552,22 @@ test("dock: null for tab entry; title with a live hero gives BACK TO THE DUNGEON
   ]);
 });
 
+// Phase 78 (HUD-03): the in-game DEAD tab opened with a dead hero docks
+// FINAL SHEET (secondary) then BURY THEM (primary); every other entry keeps
+// its old dock (null for a live tab, the title's own pair or single button).
+test("dock (HUD-03): a dead hero's tab entry gives FINAL SHEET + BURY THEM; a live tab stays null; dead never changes the title dock", () => {
+  const deadTab = boardsView({ bests: null, graves: [], board: "deep", entry: "tab", dead: true });
+  assert.deepStrictEqual(deadTab.dock, [
+    { id: "finalSheet", label: "FINAL SHEET", primary: false },
+    { id: "bury", label: "BURY THEM", primary: true },
+  ]);
+  for (const dead of [false, undefined, null, 1, "true"]) {
+    assert.equal(boardsView({ bests: null, graves: [], board: "deep", entry: "tab", dead }).dock, null, `dead=${String(dead)}`);
+  }
+  const titleDead = boardsView({ bests: null, graves: [], board: "deep", entry: "title", hasHero: false, dead: true });
+  assert.deepStrictEqual(titleDead.dock.map((d) => d.id), ["title", "roll"]);
+});
+
 test("standing, ranked board: place is 1 + strictly-better count, label is name + unit, note carries the pool size", () => {
   const runs = [];
   for (let i = 0; i < 5; i++) runs.push(makeSummary({ floor: 10 - i, name: `R${i}`, seed: i + 1 }));

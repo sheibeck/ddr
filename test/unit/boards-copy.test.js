@@ -166,6 +166,10 @@ test("BOARDS_PANEL_COPY carries the D-01/D-06/D-07/D-12 fields the plan specifie
   assert.equal(BOARDS_PANEL_COPY.dock.title, "BACK TO TITLE");
   assert.equal(BOARDS_PANEL_COPY.dock.roll, "ROLL A NEW HERO");
   assert.equal(BOARDS_PANEL_COPY.dock.dungeon, "BACK TO THE DUNGEON");
+  // Phase 78 (HUD-03): the dead-hero dock on the in-game DEAD tab.
+  assert.equal(BOARDS_PANEL_COPY.dock.finalSheet, "FINAL SHEET");
+  assert.equal(BOARDS_PANEL_COPY.dock.bury, "BURY THEM");
+  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.dock), ["title", "roll", "dungeon", "finalSheet", "bury"]);
 });
 
 // ─── STANDING_LINES: frozen, shape, bank sizes, forbidden wording ───────────

@@ -28,6 +28,7 @@ import { makeRng } from "../../engine/rng.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox } from "./harness/shellSandbox.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
+import { finalSheetViewModel, renderFinalSheet, FINAL_SHEET_CLASSES } from "../../src/browser/finalSheet.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -206,6 +207,87 @@ test("HUD-02: on the dead map a tap and a hold act on nothing (no move, no inspe
   assert.deepStrictEqual(r.moves, [], "a tap never steps");
   assert.deepStrictEqual(r.railLines, [], "a hold pushes no inspect card");
   assert.equal(JSON.stringify(r.w.__mzState.get()), before);
+});
+
+// ─── the FINAL SHEET and the ways back (Task 3) ──────────────────────────
+
+/** finalSheetFns(state) — the module script's own openFinalSheet/closeFinalSheet/
+ * finalSheetOpen source, evaluated over a recording document, a fake
+ * panelMotion and the REAL finalSheet.js exports (never a stub of the logic). */
+function finalSheetFns(state) {
+  const region = sliceBetween(CODE, "function finalSheetOpen()", "window.mzOpenFinalSheet = openFinalSheet;");
+  const doc = createRecordingDocument();
+  const sheet = doc.document.getElementById("mw-final-sheet");
+  sheet.hidden = true;
+  const panelMotion = { open: (el) => { el.hidden = false; }, close: (el) => { el.hidden = true; } };
+  const fakeWindow = { __mzState: { get: () => state } };
+  const make = new Function("window", "document", "panelMotion", "renderFinalSheet", "finalSheetViewModel", region + "\nreturn { finalSheetOpen, openFinalSheet, closeFinalSheet };");
+  const fns = make(fakeWindow, doc.document, panelMotion, renderFinalSheet, finalSheetViewModel);
+  return { ...fns, doc, sheet, body: doc.document.getElementById("mw-final-sheet-body") };
+}
+
+test("HUD-03: the FINAL SHEET opens only while the hero is dead, renders the run through finalSheet.js, and closes", () => {
+  const live = finalSheetFns(liveState());
+  live.openFinalSheet();
+  assert.equal(live.finalSheetOpen(), false, "a live hero gets no final sheet");
+  assert.equal(live.body.children.length, 0);
+
+  const dead = deadState();
+  const f = finalSheetFns(dead);
+  f.openFinalSheet();
+  assert.equal(f.finalSheetOpen(), true);
+  const texts = [];
+  const walk = (n) => {
+    if (n.nodeType === 3) return;
+    assert.notEqual(n.tagName, "button", "no control inside the sheet body");
+    assert.equal(n.onclick, null);
+    if (n._content.kind === "text") texts.push(n._content.value);
+    for (const c of n.children) walk(c);
+  };
+  walk(f.body);
+  assert.ok(texts.includes(dead.c.name));
+  assert.ok(texts.includes(dead.epitaph));
+  f.closeFinalSheet();
+  assert.equal(f.finalSheetOpen(), false);
+});
+
+test("HUD-03 markup: #mw-final-sheet's only control is its Close button; the scrim and Close close it; window.mzOpenFinalSheet is its one opener", () => {
+  const markup = sliceBetween(HTML, '<div id="mw-final-sheet"', '<div class="mw-final-sheet-body" id="mw-final-sheet-body"></div>');
+  assert.equal((markup.match(/<button/g) || []).length, 1);
+  assert.match(markup, /<button type="button" class="mw-legend-close" id="mw-final-sheet-close" aria-label="Close">Close<\/button>/);
+  assert.match(CODE, /document\.getElementById\("mw-final-sheet-scrim"\)\?\.addEventListener\("click", closeFinalSheet\);/);
+  assert.match(CODE, /document\.getElementById\("mw-final-sheet-close"\)\?\.addEventListener\("click", closeFinalSheet\);/);
+  assert.equal((CODE.match(/window\.mzOpenFinalSheet = /g) || []).length, 1);
+  assert.match(CODE, /import \{ finalSheetViewModel, renderFinalSheet \} from "\.\/src\/browser\/finalSheet\.js";/);
+});
+
+test("HUD-03 back button: hasOpenModal counts the FINAL SHEET and closeModal closes only it, right after the account sheet, the title panel and the ☰", () => {
+  const ctx = sliceBetween(CODE, "getGameContext: () => ({", "navigateBack: () => {");
+  const hasOpenModal = ctx.slice(ctx.indexOf("hasOpenModal:"), ctx.indexOf("hasLiveRun:"));
+  assert.match(hasOpenModal, /finalSheetOpen\(\)/);
+  const closeModal = sliceBetween(CODE, "closeModal: () => {", "\n        navigateBack: () => {");
+  const acct = closeModal.indexOf("if (accountSheetOpen())");
+  const title = closeModal.indexOf("if (boardsPanel.isTitleOpen())");
+  const fs = closeModal.indexOf("if (finalSheetOpen()) { closeFinalSheet(); return; }");
+  const menu = closeModal.indexOf('if (hudMenuIsOpen()) { hudMenuEvent("escape"); return; }');
+  const gear = closeModal.indexOf("if (gearSheetTarget !== null)");
+  assert.ok(acct < title && title < menu && menu < fs && fs < gear, "account, title panel, the ☰, then the final sheet, before anything touches S");
+});
+
+test("HUD-03 CSS: every class finalSheet.js emits has a rule, and long lines wrap instead of truncating", () => {
+  for (const cls of FINAL_SHEET_CLASSES) assert.match(HTML, new RegExp(`\\.${cls}[{,:]`), `.${cls} has a CSS rule`);
+  assert.match(HTML, /\.mw-fs-line,\.mw-fs-note,\.mw-fs-empty,\.mw-fs-epitaph\{[^}]*overflow-wrap:anywhere/);
+  assert.doesNotMatch(HTML, /\.mw-fs-[\w-]+\{[^}]*text-overflow:ellipsis/);
+});
+
+test("HUD-02 no trap: while dead the death card offers ORACLE, FINAL SHEET and BURY THEM; the ☰ keeps SETTINGS, SAVE & QUIT and NEW CHARACTER live", () => {
+  const r = boot(deadState());
+  for (const id of ["btn-death-oracle", "btn-death-sheet", "btn-death-confirm"]) assert.ok(r.doc.elementsById.get(id), `${id} is on the death card`);
+  r.el("mw-hud-menu-btn").onclick();
+  for (const id of ["mw-gear-btn", "mw-menu-save-quit", "mw-menu-abandon"]) assert.ok(isLive(r.el(id)), `${id} live while dead`);
+  for (const id of ["mw-chip-marks", "mw-chip-centre", "btn-camp"]) assert.ok(isDisabled(r.el(id)), `${id} inert while dead`);
+  const confirm = sliceBetween(CODE, "function wireDeathConfirm()", "function foeStatusBadges(");
+  assert.match(confirm, /guardTap\(btn, \(\) => \{\s*window\.mzReturnToTitle\(\);\s*\}\);/);
 });
 
 test("HUD-02 source pins: tapStep, inspectAt and the keyboard movement path all bail while dead; the viewport lets only a look start on the put-aside dead map", () => {

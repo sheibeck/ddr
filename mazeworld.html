@@ -1661,6 +1661,35 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 }
 .mw-legend-row-desc{flex:1;font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale));font-weight:700;color:#a89c82;line-height:1.35}
 
+/* ---------- FINAL SHEET (Phase 78, HUD-03) ----------
+   The read-only look at the run that just ended, in the MARKS legend's own
+   sheet chrome (.mw-legend-sheet/-scrim/-panel/-head/-close, above — the
+   panel already scrolls at max-height 78vh). src/browser/finalSheet.js
+   draws the .mw-fs-* body with text only; long names, epitaphs and item
+   lines wrap inside the sheet (overflow-wrap:anywhere), never truncate. */
+.mw-final-sheet-body{padding-top:4px}
+.mw-fs{display:block;color:#e6ddc6}
+.mw-fs-sec{padding:12px 0;border-bottom:2px solid #241f16}
+.mw-fs-sec:last-child{border-bottom:0}
+.mw-fs-head{
+  margin:0 0 8px;font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));
+  letter-spacing:.08em;text-transform:uppercase;color:#c9bda0;
+}
+.mw-fs-name{margin:0 0 4px;font-family:var(--disp);font-size:calc(0.625rem * var(--mw-text-scale));line-height:1.5;color:#e8c97a;overflow-wrap:anywhere}
+.mw-fs-line,.mw-fs-note,.mw-fs-empty,.mw-fs-epitaph{
+  margin:2px 0;font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale));
+  line-height:1.4;color:#e6ddc6;overflow-wrap:anywhere;
+}
+.mw-fs-note{color:#a89c82}
+.mw-fs-empty{color:#8f856f;font-style:italic}
+.mw-fs-epitaph{font-style:italic}
+.mw-fs-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:3px 0}
+.mw-fs-k{
+  font-family:var(--disp);font-size:calc(0.4375rem * var(--mw-text-scale));line-height:1.6;
+  letter-spacing:.06em;text-transform:uppercase;color:#9a8f76;overflow-wrap:anywhere;
+}
+.mw-fs-v{font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale));font-weight:700;color:#e6ddc6;overflow-wrap:anywhere}
+
 /* ---------- Settings bottom sheet (04-DR9, completes UX-07) ----------
    Reuses the MARKS legend's own sheet chrome (.mw-legend-sheet/-scrim/
    -panel/-head/-close, above) — only the rows content differs. Each row is
@@ -1976,6 +2005,25 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
       <button type="button" class="mw-legend-close" id="mw-legend-close" aria-label="Close">Close</button>
     </div>
     <div class="mw-legend-rows" id="mw-legend-rows"></div>
+  </div>
+</div>
+
+<!-- ============ FINAL SHEET (Phase 78, HUD-03) ============
+     The user's 2026-09-24 ruling: the DEAD screen offers the hero's
+     character sheet in READ-ONLY mode (stats, level, gear, grimoire and the
+     epitaph) for the run that just ended. Opened only while the hero is dead,
+     by window.mzOpenFinalSheet (the DEAD tab's dock and the death card's
+     FINAL SHEET button); src/browser/finalSheet.js draws the body as text
+     only. Close and the scrim are its only controls; the Android back
+     button closes it too. -->
+<div id="mw-final-sheet" class="mw-legend-sheet mw-final-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-final-sheet-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-label="Final sheet">
+    <div class="mw-legend-head">
+      <span>Final sheet</span>
+      <button type="button" class="mw-legend-close" id="mw-final-sheet-close" aria-label="Close">Close</button>
+    </div>
+    <div class="mw-final-sheet-body" id="mw-final-sheet-body"></div>
   </div>
 </div>
 
@@ -2760,7 +2808,9 @@ function syncDeadTabLock() {
     // time the tab opens), so there is no storage re-fetch here any more.
     // Optional-chained because the initial showTab("maze") runs before the
     // module script assigns window.__mzBoards.
-    if (name === "dead") window.__mzBoards?.onDeadTab?.();
+    // Phase 78 (HUD-03): it passes whether the hero is dead, so a dead
+    // hero's DEAD tab docks FINAL SHEET and BURY THEM.
+    if (name === "dead") window.__mzBoards?.onDeadTab?.({ dead });
   }
   for (const btn of tabs) btn.addEventListener("click", () => showTab(btn.dataset.tab));
   showTab("maze");
@@ -3269,7 +3319,7 @@ const COMBAT_COPY = {
     won: { title: "THEY ARE DOWN", line: "Every one of them. Try not to look smug.", btn: "BACK TO THE MAZE" },
     soothed: { title: "THEY STAND DOWN", line: "Words. Who knew.", btn: "BACK TO THE MAZE" },
     fled: { title: "YOU GOT OUT", line: "Not proud. Not dead either.", btn: "BACK TO THE MAZE" },
-    dead: { title: "THAT IS THAT", line: "The maze keeps the rest.", oracle: "REVIEW THE ORACLE", bury: "BURY THEM" },
+    dead: { title: "THAT IS THAT", line: "The maze keeps the rest.", oracle: "REVIEW THE ORACLE", sheet: "FINAL SHEET", bury: "BURY THEM" },
   },
 };
 
@@ -5129,6 +5179,10 @@ function renderEncounter() {
       lines: S.beats && S.beats.preDeath && S.beats.groups && S.beats.groups.length ? S.beats.groups[0].lines : [],
       buttons: [
         { id: "btn-death-oracle", label: COMBAT_COPY.over.dead.oracle, cls: "secondary", onTap: () => window.__mzShowTab?.("oracle") },
+        // Phase 78 (HUD-03): FINAL SHEET — the read-only look at the run
+        // that just ended, offered here too since this is the first dead
+        // screen the player sees.
+        { id: "btn-death-sheet", label: COMBAT_COPY.over.dead.sheet, cls: "secondary", onTap: () => window.mzOpenFinalSheet?.() },
         { id: "btn-death-confirm", label: COMBAT_COPY.over.dead.bury, cls: "dead" },
       ],
     });
@@ -6427,6 +6481,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 78 (CLIMB-01/02) — the pre-roll wall/crevice decision card's pure
   // view model, bridged onto window.__mzRailVM.hazardCard below.
   import { hazardCardViewModel } from "./src/browser/hazardCard.js";
+  // Phase 78 (HUD-03) — the FINAL SHEET's pure, read-only view model and
+  // text-only renderer (window.mzOpenFinalSheet, below).
+  import { finalSheetViewModel, renderFinalSheet } from "./src/browser/finalSheet.js";
   // Phase 34 (CSCR-01/02/03/06) — the header/foe-card/YOUR LOT/overlay
   // view-models and the four-action-grid/submenu view-model, bridged onto
   // window.__mzCombatVM below for the classic renderEncounter to consume.
@@ -7116,6 +7173,33 @@ window.__mzClassicBoot = async function classicBoot() {
   document.getElementById("mw-gear-btn")?.addEventListener("click", closeMenuThen(openSettingsSheet));
   document.getElementById("mw-settings-scrim")?.addEventListener("click", closeSettingsSheet);
   document.getElementById("mw-settings-close")?.addEventListener("click", closeSettingsSheet);
+
+  // Phase 78 (HUD-03): the FINAL SHEET — the read-only look at the run that
+  // just ended (the user's 2026-09-24 ruling). It opens only while the hero
+  // is dead; the body is src/browser/finalSheet.js's text-only render of
+  // finalSheetViewModel(S), so nothing in it can dispatch. Close, the scrim
+  // and the Android back button (getGameContext below) close it.
+  function finalSheetOpen() {
+    const sheet = document.getElementById("mw-final-sheet");
+    return !!sheet && !sheet.hidden;
+  }
+  function openFinalSheet() {
+    const S = window.__mzState.get();
+    if (!S || S.dead !== true) return;
+    const sheet = document.getElementById("mw-final-sheet");
+    const body = document.getElementById("mw-final-sheet-body");
+    if (!sheet || !body) return;
+    renderFinalSheet(body, finalSheetViewModel(S));
+    body.scrollTop = 0;
+    panelMotion.open(sheet);
+  }
+  function closeFinalSheet() {
+    const sheet = document.getElementById("mw-final-sheet");
+    if (sheet && !sheet.hidden) panelMotion.close(sheet);
+  }
+  window.mzOpenFinalSheet = openFinalSheet;
+  document.getElementById("mw-final-sheet-scrim")?.addEventListener("click", closeFinalSheet);
+  document.getElementById("mw-final-sheet-close")?.addEventListener("click", closeFinalSheet);
 
   // Phase 67 (ACCT-02, D-09/D-10): the account bottom sheet. Phase 70
   // (D-03/D-04): only the title screen's corner chip opens it now, and it
@@ -8876,6 +8960,15 @@ window.__mzClassicBoot = async function classicBoot() {
       flushAccountCard();
     } else if (action === "roll") {
       window.mzStartRoll();
+    } else if (action === "finalSheet") {
+      // Phase 78 (HUD-03): the dead-hero dock's FINAL SHEET — a sheet over
+      // the panel, which stays where it is.
+      window.mzOpenFinalSheet?.();
+    } else if (action === "bury") {
+      // Phase 78 (HUD-03): the dock's BURY THEM — the same way back to the
+      // title the death card's own BURY THEM takes, from the map.
+      window.__mzShowTab?.("maze");
+      window.mzReturnToTitle();
     }
   }
 
@@ -9014,7 +9107,7 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen(),
+        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen() || finalSheetOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
@@ -9038,6 +9131,9 @@ window.__mzClassicBoot = async function classicBoot() {
           // returns at once — the rest of this handler would otherwise
           // clear the store/beats/stair underneath on the same press.
           if (hudMenuIsOpen()) { hudMenuEvent("escape"); return; }
+          // Phase 78 (HUD-03): the FINAL SHEET sits over the DEAD tab or the
+          // death card, so one back press closes only it.
+          if (finalSheetOpen()) { closeFinalSheet(); return; }
           // Phase 71 (71-06, D-07): THE FIGHT SO FAR sits over the combat
           // screen, so one back press closes only it; the fight underneath
           // is exactly as it was.

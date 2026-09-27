@@ -138,6 +138,8 @@ test("CSCR-07: COMBAT_COPY.over carries the four ending variants (won/soothed/fl
   assert.match(region, /title: "THEY STAND DOWN"/);
   assert.match(region, /bury: "BURY THEM"/);
   assert.match(region, /oracle: "REVIEW THE ORACLE"/);
+  // Phase 78 (HUD-03): the death card's FINAL SHEET label.
+  assert.match(region, /sheet: "FINAL SHEET"/);
   const btnHits = region.match(/btn: "BACK TO THE MAZE"/g) || [];
   assert.ok(btnHits.length >= 3, `expected btn: "BACK TO THE MAZE" at least 3 times, found ${btnHits.length}`);
 });
@@ -167,6 +169,14 @@ test('CSCR-07/Phase 35 (MAP-05): the death branch renders THAT IS THAT through r
   assert.match(region, /S\.beats\.preDeath/);
   assert.match(region, /"btn-death-oracle"/);
   assert.match(region, /"btn-death-confirm"/);
+  // Phase 78 (HUD-03): THAT IS THAT offers three buttons — REVIEW THE
+  // ORACLE, FINAL SHEET (secondary, window.mzOpenFinalSheet) and BURY THEM,
+  // in that order. Before 78-06 it offered the first and the last only.
+  const oracleIdx = region.indexOf('id: "btn-death-oracle"');
+  const sheetIdx = region.indexOf('id: "btn-death-sheet"');
+  const buryIdx = region.indexOf('id: "btn-death-confirm"');
+  assert.ok(oracleIdx !== -1 && sheetIdx !== -1 && buryIdx !== -1 && oracleIdx < sheetIdx && sheetIdx < buryIdx, "ORACLE, FINAL SHEET, BURY THEM in order");
+  assert.match(region, /\{ id: "btn-death-sheet", label: COMBAT_COPY\.over\.dead\.sheet, cls: "secondary", onTap: \(\) => window\.mzOpenFinalSheet\?\.\(\) \}/);
   assert.match(region, /cls: "dead"/);
   assert.match(region, /wireDeathConfirm\(\);/);
   assert.match(region, /panel\.dataset\.mode = "dark"/);

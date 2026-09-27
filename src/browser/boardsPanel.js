@@ -661,6 +661,10 @@ export function createBoardsPanel({
   let scope = "local"; // "local" | "all" | "friends"
   let open = null; // a row key, or null
   let hasHero = false;
+  // Phase 78 (HUD-03): true only while the in-game DEAD tab is open with a
+  // dead hero (fed by the shell through openFromTab/onDeadTab); the view then
+  // docks FINAL SHEET and BURY THEM. A title open always clears it.
+  let dead = false;
   let season = 1; // Phase 68 (D-08): the viewed season; reset to the current one on every open.
   let lineage = null; // Phase 70 (D-11): the LINEAGE selection { race, sub }; null re-defaults, on every open.
   // Phase 81 (BOARD-11): true once the scope has been fixed for this panel
@@ -775,6 +779,7 @@ export function createBoardsPanel({
         open,
         entry,
         hasHero,
+        dead,
         signedIn,
         player,
         global: snapshot,
@@ -837,6 +842,11 @@ export function createBoardsPanel({
     },
     onDock(id) {
       if (id === "title" || id === "roll" || id === "dungeon") route(id);
+      // Phase 78 (HUD-03): the dead-hero dock. BURY THEM leaves the panel
+      // like any other route; FINAL SHEET opens a sheet OVER the panel, so
+      // the panel keeps its entry (a later refresh still renders it).
+      else if (dead && id === "bury") route(id);
+      else if (dead && id === "finalSheet") onRoute?.(id, { hasHero });
     },
     onSeason(n) {
       // Phase 68 (D-08): older seasons are read-only views; only a known season switches.
@@ -889,9 +899,10 @@ export function createBoardsPanel({
     }
   }
 
-  function openFromTab() {
+  function openFromTab({ dead: d } = {}) {
     callOnOpen();
     entry = "tab";
+    dead = d === true;
     // Phase 81 (BOARD-11): opens on the default scope (ALL signed in with
     // Compete ON, else ME) and leaves it re-evaluated by refresh() until a
     // scope chip is tapped.
@@ -912,6 +923,7 @@ export function createBoardsPanel({
     callOnOpen();
     entry = "title";
     hasHero = !!h;
+    dead = false;
     board = "yard"; // D-04: VIEW THE DEAD opens GRAVEYARD under ME (Phase 81, BOARD-14).
     // Phase 81 (BOARD-11 flagged assumption): the title's button names a
     // ME-only board, so it fixes the scope to ME (local) for this session,
@@ -925,12 +937,14 @@ export function createBoardsPanel({
     render({ reset: true });
   }
 
-  function onDeadTab() {
+  function onDeadTab(opts) {
     if (entry === "title") {
       centreRail();
       return;
     }
-    openFromTab();
+    // Phase 78 (HUD-03): the shell passes { dead } — whether the hero whose
+    // DEAD tab this is has died — so the dock can offer FINAL SHEET.
+    openFromTab(opts && typeof opts === "object" ? opts : {});
   }
 
   /**

@@ -191,6 +191,10 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     title: "BACK TO TITLE",
     roll: "ROLL A NEW HERO",
     dungeon: "BACK TO THE DUNGEON",
+    // Phase 78 (HUD-03): the in-game DEAD tab's dock for a dead hero — the
+    // read-only look at the run that just ended, and the way back to the title.
+    finalSheet: "FINAL SHEET",
+    bury: "BURY THEM",
   }),
 });
 
