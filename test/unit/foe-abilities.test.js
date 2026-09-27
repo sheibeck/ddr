@@ -633,3 +633,41 @@ test("narration: every new event builder returns a non-empty string for a bare {
   assert.notEqual(lowHp, plain);
   assert.ok(lowHp.includes("Plane"));
 });
+
+// VOX-05 (Phase 79, plan 79-08): a foe's debuff line names who did it and
+// what it does before the joke, and a drain line states the FOE's own gain
+// (its bolt line carries the hp you lost).
+test("narration (79-08): foeDebuffed names the foe and the effect first; foeDrained states the foe's gain", () => {
+  const strip = (s) => s.replace(/<[^>]+>/g, "");
+  assert.equal(
+    strip(EVENT_NARRATION.foeDebuffed({ type: "foeDebuffed", name: "Krupke", kind: "weakened", rounds: 2 })),
+    "Krupke weakens you: your blows do half damage for 2 rounds. Your arms feel like someone else's.",
+  );
+  assert.equal(
+    strip(EVENT_NARRATION.foeDebuffed({ type: "foeDebuffed", name: "Djinni", kind: "dazed", rounds: 3, toHit: -DAZED_TO_HIT_PENALTY })),
+    `Djinni dazes you: −${DAZED_TO_HIT_PENALTY} to hit for 3 rounds. The room keeps moving after you stop.`,
+  );
+  assert.equal(strip(EVENT_NARRATION.foeDebuffed({ type: "foeDebuffed", kind: "weakened" })), "You are weakened: your blows do half damage. Your arms feel like someone else's.");
+  assert.equal(strip(EVENT_NARRATION.foeDrained({ type: "foeDrained", name: "Vampire", stolen: 5 })), "Vampire drinks it in: +5 hp for itself. It looks better for it.");
+});
+
+// VOX-05 (Phase 79, plan 79-08, from 79-04): engine/foeDamage.js's ward and
+// bubble events on a nameless foe read "Its", never "It's", on the Oracle
+// and on the rail.
+test("narration (79-08): foeWardSoaked, foeWardBroken and foeBubbleCaught read 'Its' when the event names no foe", async () => {
+  const { LINE_FOR } = await import("../../src/browser/narrationLines.js");
+  const strip = (s) => s.replace(/<[^>]+>/g, "");
+  assert.equal(strip(EVENT_NARRATION.foeWardSoaked({ type: "foeWardSoaked", amount: 4, left: 6 })), "Its ward drinks 4 of your blow — 6 left in it.");
+  assert.equal(strip(EVENT_NARRATION.foeWardBroken({ type: "foeWardBroken" })), "Its ward gives out.");
+  assert.equal(strip(EVENT_NARRATION.foeBubbleCaught({ type: "foeBubbleCaught", amount: 7 })), "Its bubble swallows your blow whole — 7 damage wasted.");
+  assert.equal(LINE_FOR.foeWardSoaked({ type: "foeWardSoaked", amount: 4, left: 6 }).text, "Its ward drinks 4 (6 left).");
+  assert.equal(LINE_FOR.foeWardBroken({ type: "foeWardBroken" }).text, "Its ward gives out.");
+  assert.equal(LINE_FOR.foeBubbleCaught({ type: "foeBubbleCaught", amount: 7 }).text, "Its bubble swallows your blow — 7 damage wasted.");
+  // A named foe keeps its own possessive.
+  assert.equal(strip(EVENT_NARRATION.foeWardBroken({ type: "foeWardBroken", name: "Drarl" })), "Drarl's ward gives out.");
+  assert.equal(LINE_FOR.foeBubbleCaught({ type: "foeBubbleCaught", name: "Drarl", amount: 7 }).text, "Drarl's bubble swallows your blow — 7 damage wasted.");
+  for (const type of ["foeWardSoaked", "foeWardBroken", "foeBubbleCaught"]) {
+    assert.equal(/It's/.test(strip(EVENT_NARRATION[type]({ type }))), false, `oracle:${type} bare`);
+    assert.equal(/It's/.test(LINE_FOR[type]({ type }).text), false, `rail:${type} bare`);
+  }
+});

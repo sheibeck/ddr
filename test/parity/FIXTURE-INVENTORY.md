@@ -4960,3 +4960,51 @@ re-recorded).
 | Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
 |---|---|---|---|---|---|---|
 | *(none — carved out, not re-recorded)* | | | | | | |
+
+### Plan 79-08 — the powers domain's narration (VOX-05), and Strength's HP gain: measured
+
+**The change.** Presentation, plus two additive event fields:
+
+1. *Copy.* The powers-domain Oracle and rail lines in
+   `src/browser/eventNarration.js` and `src/browser/narrationLines.js`
+   (spells, abilities, foe abilities, scroll fumbles).
+2. *Events only (extra scope, the silent Strength HP boost).*
+   `engine/magic.js`'s `strengthCast` event gains additive `gained` (the HP
+   the cast added: the old max on the day's first cast, 0 on a recast) and
+   `maxWP` (the new ceiling); `engine/scrollFumble.js`'s might-effect
+   `fumbleOnFoe` event gains additive `gained` (the HP the fumble handed the
+   foe). Both read values the branch already computed. No rng draw, rule or
+   state field moves, and events are never serialized.
+
+**The predictor.** Zero moved fixtures, zero moved state pins. The parity
+comparables compare state, not these event fields.
+
+**The live scan (measured at this plan's base, `08969929`).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+2. `git diff --quiet 08969929 -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness content`
+   exits 0. No site was reconciled and no carve-out was added.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node --test test/parity/fixture-inventory.test.js` passes (5/5); the
+   generated roster block above is not edited.
+5. `npm test`: no state pin moved (`roll-high-state-pins`,
+   `roll-high-save-compat`, `foe-turn-draw-count` and
+   `test/determinism/**` pass unchanged).
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Other recorded artifacts.** The 77-02 event-order corpus
+(`test/unit/fixtures/event-order/default-fold-corpus.json`) was regenerated
+as a declared change (`MZ_REGEN_EVENT_ORDER_CORPUS=1 node --test
+test/unit/event-order-fold.test.js`). The diff is four `text` lines, two
+line copies each: a recorded `dozed` now reads "Orc dozes off, 2 rounds."
+(was "(2)") and a recorded zero-count `stunned` reads "The stun puts nobody
+to sleep." (was "0 freeze in place."). No event, order, fold or priority
+moved.

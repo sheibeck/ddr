@@ -487,12 +487,16 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     }
   } else if (sp.kind === "might") {
     c.might = rollDice(rng, sp.dmg);
+    const before = c.wp;
     if (!c.strengthBoost) {
       c.strengthBoost = c.maxWP;
       c.maxWP += c.strengthBoost;
       c.wp += c.strengthBoost;
     }
-    events.push({ type: "strengthCast", might: c.might });
+    // VOX-05 (Phase 79, plan 79-08): `gained` is the HP the cast added (the
+    // doubling happens once a day, so a recast adds 0) and `maxWP` the new
+    // ceiling, so the cast line can state the boost. Additive, zero draws.
+    events.push({ type: "strengthCast", might: c.might, gained: c.wp - before, maxWP: c.maxWP });
   } else if (sp.kind === "regen") {
     c.regen = true;
     events.push({ type: "regenerationCast" });

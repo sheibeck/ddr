@@ -1,0 +1,639 @@
+[
+  {
+    "key": "oracle:abilityRefused",
+    "surface": "refusals",
+    "trigger": "abilityRefused — an ability is on cooldown, or Last Stand is used above a quarter hp",
+    "before": "Viper: 3 rounds. Your arm has opinions.",
+    "after": "Viper: ready again in 3 rounds. Your arm has opinions.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A bare \"3 rounds\" did not say it was the wait until the ability is ready again."
+  },
+  {
+    "key": "rail:abilityRefused",
+    "surface": "refusals",
+    "trigger": "abilityRefused — an ability is on cooldown, or Last Stand is used above a quarter hp",
+    "before": "Last Stand: you are not desperate enough yet (10 of 5 hp).",
+    "after": "Last Stand: only at a quarter of your hp or less (you have 10 of 5).",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The refusal said why in a joke but never the rule; it now names the quarter-hp line, and the cooldown twin says \"ready again in\"."
+  },
+  {
+    "key": "oracle:acidApplied",
+    "surface": "oracle",
+    "trigger": "acidApplied — the hero's Acid lands on a foe",
+    "before": "Viper starts to dissolve. 1 rounds of it.",
+    "after": "Viper starts to dissolve. 1 round of it.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "\"1 rounds\" is now \"1 round\"."
+  },
+  {
+    "key": "rail:acidApplied",
+    "surface": "rail",
+    "trigger": "acidApplied — the hero's Acid lands on a foe",
+    "before": "Viper starts to dissolve (3).",
+    "after": "Viper starts to dissolve, 3 rounds.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A bare \"(3)\" did not say it counts rounds."
+  },
+  {
+    "key": "oracle:blinded",
+    "surface": "oracle",
+    "trigger": "blinded — the hero's Blind lands on a foe",
+    "before": "Viper cannot see a thing for 1 rounds.",
+    "after": "Viper cannot see a thing for 1 round: it hits only on its die's top face.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "It never said what blindness does (a blind foe hits only on its die's top face) or, without a timer, that it lasts the fight; and \"1 rounds\"."
+  },
+  {
+    "key": "rail:blinded",
+    "surface": "rail",
+    "trigger": "blinded — the hero's Blind lands on a foe",
+    "before": "Viper cannot see a thing for 3 rounds.",
+    "after": "Viper is blind for 3 rounds: it hits only on its top face.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line, which now states what blindness does."
+  },
+  {
+    "key": "oracle:castRefused",
+    "surface": "refusals",
+    "trigger": "castRefused — an explore-only spell is cast in a fight",
+    "before": "Heal needs quieter surroundings.",
+    "after": "Heal only works out of a fight. It needs quieter surroundings.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "The joke was the whole reason; it now says the spell only works out of a fight, then jokes."
+  },
+  {
+    "key": "rail:castRefused",
+    "surface": "refusals",
+    "trigger": "castRefused — an explore-only spell is cast in a fight",
+    "before": "Heal needs quieter surroundings.",
+    "after": "Heal only works out of a fight.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin states the reason in the player's terms."
+  },
+  {
+    "key": "oracle:deathSpellTooWeak",
+    "surface": "oracle",
+    "trigger": "deathSpellTooWeak — Death is cast with 26 hp or less",
+    "before": "Death: the fee is 25 hp, and you would not survive paying it.",
+    "after": "Death: the fee is 25 hp, and you need at least 27 to pay it. The spell refuses to be what kills you.",
+    "reasons": [
+      "accurate",
+      "fact"
+    ],
+    "why": "The engine refuses at 26 hp or less, where paying would leave 1 hp, so \"would not survive\" was not quite true; it now states the hp needed."
+  },
+  {
+    "key": "rail:deathSpellTooWeak",
+    "surface": "rail",
+    "trigger": "deathSpellTooWeak — Death is cast with 26 hp or less",
+    "before": "Death: 25 hp fee. You cannot pay it and live.",
+    "after": "Death: 25 hp fee. You need at least 27 hp to pay it.",
+    "reasons": [
+      "accurate",
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line, which now states the hp needed."
+  },
+  {
+    "key": "oracle:dozed",
+    "surface": "oracle",
+    "trigger": "dozed — the hero's Doze puts a foe to sleep",
+    "before": "Viper dozes off for 1 rounds.",
+    "after": "Viper dozes off for 1 round.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "\"1 rounds\" is now \"1 round\"."
+  },
+  {
+    "key": "rail:dozed",
+    "surface": "rail",
+    "trigger": "dozed — the hero's Doze puts a foe to sleep",
+    "before": "Viper dozes off (3).",
+    "after": "Viper dozes off, 3 rounds.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A bare \"(3)\" did not say it counts rounds."
+  },
+  {
+    "key": "oracle:earthquake",
+    "surface": "oracle",
+    "trigger": "earthquake — the hero casts Earthquake",
+    "before": "The floor heaves. 8 to everyone in the room.",
+    "after": "The floor heaves. 8 damage to every foe in the room.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The number had no unit, and \"everyone\" is every foe (the caster's own half is its own line)."
+  },
+  {
+    "key": "rail:earthquake",
+    "surface": "rail",
+    "trigger": "earthquake — the hero casts Earthquake",
+    "before": "The floor heaves (8).",
+    "after": "The floor heaves: 8 to every foe.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A bare \"(8)\" did not say whom it hit."
+  },
+  {
+    "key": "rail:foeArmorSoaked",
+    "surface": "rail",
+    "trigger": "foeArmorSoaked — a foe's natural armour eats a blow (engine/foeDamage.js)",
+    "before": "It's armour shrugs it off.",
+    "after": "Its armour shrugs it off.",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "A nameless event read \"It's armour\"; it now uses 79-04's possessive helper."
+  },
+  {
+    "key": "oracle:foeBubbleCaught",
+    "surface": "oracle",
+    "trigger": "foeBubbleCaught — a foe's fumbled Bubble swallows the hero's blow (engine/foeDamage.js)",
+    "before": "It's bubble swallows your blow whole — 0 wasted.",
+    "after": "Its bubble swallows your blow whole — 0 damage wasted.",
+    "reasons": [
+      "hygiene",
+      "fact"
+    ],
+    "why": "A nameless event read \"It's bubble\", and \"2 wasted\" did not say it was damage."
+  },
+  {
+    "key": "rail:foeBubbleCaught",
+    "surface": "rail",
+    "trigger": "foeBubbleCaught — a foe's fumbled Bubble swallows the hero's blow (engine/foeDamage.js)",
+    "before": "It's bubble swallows your blow — 0 wasted.",
+    "after": "Its bubble swallows your blow — 0 damage wasted.",
+    "reasons": [
+      "hygiene",
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle fix."
+  },
+  {
+    "key": "oracle:foeDebuffed",
+    "surface": "oracle",
+    "trigger": "foeDebuffed — a foe weakens or dazes the hero",
+    "before": "Your arms feel like someone else's. Weakened: your blows do half damage for 3 rounds.",
+    "after": "Viper weakens you: your blows do half damage for 3 rounds. Your arms feel like someone else's.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "The joke came first and the foe was never named; it now says who weakened or dazed you and what it does, then jokes."
+  },
+  {
+    "key": "oracle:foeDrained",
+    "surface": "oracle",
+    "trigger": "foeDrained — a foe's drain heals it after its bolt lands",
+    "before": "Viper: it drinks 4 hp of yours and looks better for it.",
+    "after": "Viper drinks it in: +4 hp for itself. It looks better for it.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "`stolen` is what the foe healed after its own cap, not the hp you lost (its bolt line states that), and a drain on a Joiner was not \"yours\"."
+  },
+  {
+    "key": "rail:foeDrained",
+    "surface": "rail",
+    "trigger": "foeDrained — a foe's drain heals it after its bolt lands",
+    "before": "Viper drains you (−4 hp).",
+    "after": "Viper drinks it in (+4 hp).",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "The rail printed the foe's gain as a second copy of your loss; it now states the foe's gain."
+  },
+  {
+    "key": "oracle:foeWardBroken",
+    "surface": "oracle",
+    "trigger": "foeWardBroken — a foe's fumbled Shield runs dry (engine/foeDamage.js)",
+    "before": "It's ward gives out.",
+    "after": "Its ward gives out.",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "A nameless event read \"It's ward\"; it now uses 79-04's possessive helper."
+  },
+  {
+    "key": "rail:foeWardBroken",
+    "surface": "rail",
+    "trigger": "foeWardBroken — a foe's fumbled Shield runs dry (engine/foeDamage.js)",
+    "before": "It's ward gives out.",
+    "after": "Its ward gives out.",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "The rail twin of the Oracle fix."
+  },
+  {
+    "key": "oracle:foeWardSoaked",
+    "surface": "oracle",
+    "trigger": "foeWardSoaked — a foe's fumbled Shield soaks the hero's blow (engine/foeDamage.js)",
+    "before": "Viper's ward drinks 2 of it — 3 left.",
+    "after": "Viper's ward drinks 2 of your blow — 3 left in it.",
+    "reasons": [
+      "hygiene",
+      "fact"
+    ],
+    "why": "A nameless event read \"It's ward\", and \"of it — 3 left\" did not say what \"it\" was or what was left."
+  },
+  {
+    "key": "rail:foeWardSoaked",
+    "surface": "rail",
+    "trigger": "foeWardSoaked — a foe's fumbled Shield soaks the hero's blow (engine/foeDamage.js)",
+    "before": "It's ward drinks 0 (0 left).",
+    "after": "Its ward drinks 0 (0 left).",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "A nameless event read \"It's ward\"; it now uses 79-04's possessive helper."
+  },
+  {
+    "key": "oracle:fumbleOnFoe",
+    "surface": "oracle",
+    "trigger": "fumbleOnFoe — a fumbled helpful scroll lands on the foe instead",
+    "before": "Heal helps Viper instead.",
+    "after": "Heal heals Viper instead: +2 hp.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A helpful fumble on a foe said only that it \"helps\"; it now says what it did (healed, warded, strengthened, mirrored…) and by how much, and a fumble with no foe left says so."
+  },
+  {
+    "key": "rail:fumbleOnFoe",
+    "surface": "rail",
+    "trigger": "fumbleOnFoe — a fumbled helpful scroll lands on the foe instead",
+    "before": "Heal helps Viper instead.",
+    "after": "Heal heals Viper instead (+2 hp).",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line, which now says what the fumble did for the foe."
+  },
+  {
+    "key": "rail:heroResisted",
+    "surface": "rail",
+    "trigger": "heroResisted — the hero resists a foe's spell",
+    "before": "You resist its's spell.",
+    "after": "You resist its spell.",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "A nameless event read \"its's spell\"."
+  },
+  {
+    "key": "oracle:iceApplied",
+    "surface": "oracle",
+    "trigger": "iceApplied — the hero's Ice lands on a foe",
+    "before": "Ice climbs Viper: d6 a round for 1 rounds, then it stops moving.",
+    "after": "Ice climbs Viper: d6 a round for 1 round, then it stops moving.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "\"1 rounds\" is now \"1 round\"."
+  },
+  {
+    "key": "rail:iceApplied",
+    "surface": "rail",
+    "trigger": "iceApplied — the hero's Ice lands on a foe",
+    "before": "Ice climbs Viper (3).",
+    "after": "Ice climbs Viper: d6 a round, 3 rounds.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A bare \"(3)\" did not say it counts rounds, or what the ice does."
+  },
+  {
+    "key": "oracle:insaneNoTarget",
+    "surface": "oracle",
+    "trigger": "insaneNoTarget — Insanity is cast with no foe to target",
+    "before": "There is no one here to turn insane at.",
+    "after": "There is no one here to drive insane.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "\"Turn insane at\" did not read naturally."
+  },
+  {
+    "key": "rail:insaneNoTarget",
+    "surface": "rail",
+    "trigger": "insaneNoTarget — Insanity is cast with no foe to target",
+    "before": "No one here to turn insane at.",
+    "after": "No one here to drive insane.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "The rail twin of the Oracle fix."
+  },
+  {
+    "key": "oracle:insaneRolled",
+    "surface": "oracle",
+    "trigger": "insaneRolled — the hero's Insanity rolls its d6 on a foe",
+    "before": "Insanity takes Viper: 5.",
+    "after": "Insanity takes Viper: 5, and it flies into a frenzy: twice the swings from here on.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The d6 face was printed with no meaning, and a 1, 4 or 5 has no line of its own; each now says what it did (a 2, 3 or 6 has its own line after)."
+  },
+  {
+    "key": "rail:insaneRolled",
+    "surface": "rail",
+    "trigger": "insaneRolled — the hero's Insanity rolls its d6 on a foe",
+    "before": "Insanity takes Viper.",
+    "after": "Insanity takes Viper (5): frenzy, twice the swings.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line, which now says what the face did."
+  },
+  {
+    "key": "oracle:mirrorSelf",
+    "surface": "oracle",
+    "trigger": "mirrorSelf — the hero casts Mirror Self",
+    "before": "A mirror image holds for 1 rounds.",
+    "after": "A mirror image holds for 1 round: foes hit you only on their die's top face (the top two if you insulted them).",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "It never said what the image does; it now states it in the grimoire's roll-high terms, and \"1 round\"."
+  },
+  {
+    "key": "rail:mirrorSelf",
+    "surface": "rail",
+    "trigger": "mirrorSelf — the hero casts Mirror Self",
+    "before": "A mirror image holds (3).",
+    "after": "A mirror image holds, 3 rounds: foes hit you only on their top face.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A bare \"(3)\" did not say it counts rounds, or what the image does."
+  },
+  {
+    "key": "oracle:planeGated",
+    "surface": "oracle",
+    "trigger": "planeGated — the hero's Plane Gate sends Demons or Walking Dead back",
+    "before": "1 are gated straight back out.",
+    "after": "1 foe is gated straight back out to the Planes.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "A bare count with no \"who\", and \"1 are\"."
+  },
+  {
+    "key": "oracle:sensesGained",
+    "surface": "oracle",
+    "trigger": "sensesGained — the hero casts Sense Presence",
+    "before": "Your senses sharpen.",
+    "after": "Your senses sharpen: nothing gets the jump on you, and the dark costs you nothing, until your next fight ends.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "It never said what Sense Presence does or how long it lasts."
+  },
+  {
+    "key": "rail:sensesGained",
+    "surface": "rail",
+    "trigger": "sensesGained — the hero casts Sense Presence",
+    "before": "Your senses sharpen.",
+    "after": "Your senses sharpen: no surprises, no penalty in the dark, till your next fight ends.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line, which now states the effect and its length."
+  },
+  {
+    "key": "oracle:shrunk",
+    "surface": "oracle",
+    "trigger": "shrunk — the hero's Shrink halves some foes",
+    "before": "2 shrink to half size.",
+    "after": "2 foes shrink to half size: half their hp and half their damage, for the fight.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "A bare count with no \"who\" and no effect; \"1 shrink\" and \"0 shrink\" no longer read."
+  },
+  {
+    "key": "rail:shrunk",
+    "surface": "rail",
+    "trigger": "shrunk — the hero's Shrink halves some foes",
+    "before": "2 shrink to half size.",
+    "after": "2 foes shrink: half hp, half damage.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line."
+  },
+  {
+    "key": "oracle:spellHit",
+    "surface": "oracle",
+    "trigger": "spellHit — the hero's thrown spell lands",
+    "before": "Hit. 6 hp (×2).",
+    "after": "Hit. Viper takes 6 hp (the roll ×2, for your level).",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The line never named who took it, and \"6 hp (×2)\" read as 12 when the level multiplier is already inside the 6."
+  },
+  {
+    "key": "rail:spellHit",
+    "surface": "rail",
+    "trigger": "spellHit — the hero's thrown spell lands",
+    "before": "Heal hits Viper (6) ×2",
+    "after": "Heal hits Viper (6, the roll ×2 for your level)",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "\"(6) ×2\" read as 12 when the multiplier is already inside the 6."
+  },
+  {
+    "key": "oracle:spellSchoolLocked",
+    "surface": "oracle",
+    "trigger": "spellSchoolLocked — a known spell whose school the sub-class has not opened yet",
+    "before": "Heal is not open to you yet.",
+    "after": "Heal's school opens to you at level 5; you are 10.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The refusal never said why; it now names the level the school opens at and yours, like spellAboveLevel."
+  },
+  {
+    "key": "rail:spellSchoolLocked",
+    "surface": "rail",
+    "trigger": "spellSchoolLocked — a known spell whose school the sub-class has not opened yet",
+    "before": "Heal is not open to you yet.",
+    "after": "Heal's school opens to you at level 5; you are 10.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line."
+  },
+  {
+    "key": "oracle:strengthCast",
+    "surface": "oracle",
+    "trigger": "strengthCast — the hero casts Strength",
+    "before": "Might surges: +3.",
+    "after": "Might surges: +3 damage on every blow until you make camp, and +8 hp.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "\"+3\" never said what it added, and the cast's HP boost was silent; the event now carries `gained` and the line states both."
+  },
+  {
+    "key": "rail:strengthCast",
+    "surface": "rail",
+    "trigger": "strengthCast — the hero casts Strength",
+    "before": "Might surges +3.",
+    "after": "Might surges: +3 damage till camp, +8 hp.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin of the Oracle line."
+  },
+  {
+    "key": "oracle:stunned",
+    "surface": "oracle",
+    "trigger": "stunned — the hero's Stun puts foes to sleep",
+    "before": "2 freeze in place.",
+    "after": "2 foes drop asleep for d4 rounds each.",
+    "reasons": [
+      "fact",
+      "accurate",
+      "natural"
+    ],
+    "why": "A bare count with no \"who\"; Stun puts foes to sleep for a d4 each (not a freeze), and \"0 freeze in place\" and \"1 freeze\" no longer read."
+  },
+  {
+    "key": "rail:stunned",
+    "surface": "rail",
+    "trigger": "stunned — the hero's Stun puts foes to sleep",
+    "before": "2 freeze in place.",
+    "after": "2 foes drop asleep, d4 rounds each.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin of the Oracle line."
+  },
+  {
+    "key": "oracle:stupefied",
+    "surface": "oracle",
+    "trigger": "stupefied — the hero's Stupidity lands for the fight",
+    "before": "Viper forgets what it is doing.",
+    "after": "Viper forgets what it is doing, for the rest of the fight.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "It never said how long it lasts."
+  },
+  {
+    "key": "rail:stupefied",
+    "surface": "rail",
+    "trigger": "stupefied — the hero's Stupidity lands for the fight",
+    "before": "Viper forgets what it is doing.",
+    "after": "Viper forgets what it is doing, for the fight.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line."
+  },
+  {
+    "key": "oracle:vaporRolled",
+    "surface": "oracle",
+    "trigger": "vaporRolled — the hero's Noxious Vapor rolls its d6",
+    "before": "Noxious vapor: 5.",
+    "after": "Noxious vapor: 5. Every foe falls asleep for d6+2 rounds.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The d6 face was printed with no meaning; it now says what the face does (each death and resist has its own line)."
+  },
+  {
+    "key": "rail:vaporRolled",
+    "surface": "rail",
+    "trigger": "vaporRolled — the hero's Noxious Vapor rolls its d6",
+    "before": "Noxious vapor (5).",
+    "after": "Noxious vapor (5): every foe sleeps, d6+2 rounds.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line."
+  },
+  {
+    "key": "oracle:wardRaised",
+    "surface": "oracle",
+    "trigger": "wardRaised — the hero casts Shield",
+    "before": "The ward raises a ward: 0 points.",
+    "after": "A spell raises a ward: it soaks the next 0 hp of damage.",
+    "reasons": [
+      "fact",
+      "hygiene"
+    ],
+    "why": "\"N points\" never said points of what, and a bare event read \"The ward raises a ward\"."
+  },
+  {
+    "key": "rail:wardRaised",
+    "surface": "rail",
+    "trigger": "wardRaised — the hero casts Shield",
+    "before": "The ward raises a ward (0).",
+    "after": "A spell raises a ward: it soaks the next 0 hp.",
+    "reasons": [
+      "fact",
+      "hygiene"
+    ],
+    "why": "The rail twin of the Oracle line."
+  },
+  {
+    "key": "oracle:weakened",
+    "surface": "oracle",
+    "trigger": "weakened — the hero's Weaken lands on every foe",
+    "before": "They hit softer now, for 1 rounds.",
+    "after": "Every foe is weakened for 1 round: no more than its die's top three faces hit, and it does half damage. They hit softer now.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "It never said who or what (every foe, top three faces to hit, half damage), and \"1 rounds\"."
+  },
+  {
+    "key": "rail:weakened",
+    "surface": "rail",
+    "trigger": "weakened — the hero's Weaken lands on every foe",
+    "before": "They hit softer now (3).",
+    "after": "Every foe weakened, 3 rounds: top three faces to hit, half damage.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A bare \"(3)\" and no effect; the rail twin of the Oracle line."
+  }
+]

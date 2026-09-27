@@ -39,9 +39,9 @@ them — those rows are marked "unchanged" below, not rewritten.
 | `backfireSelfDamage` | hp | ADDED `spell`,`sub` | "It costs you 4 hp." | `Backfire: Fireball went wrong in your hands — the Apprentice tax, one time in eight. −4 hp.` | Plan 01 |
 | `earthquakeSelfDamage` | hp | ADDED `spell` | "The shaking costs you 6 hp too." | `Earthquake: the floor does not take sides. −6 hp.` | Plan 01 |
 | `deathCast` | hp | ADDED `cost` | "You spend 25 hp calling on Death itself." | `Death: the spell takes its fee first. −25 hp.` | Plan 01 |
-| `deathSpellTooWeak` | refusal naming the fee | ADDED `fee` | "You are too weak yourself to cast it." | `Death: the fee is 25 hp, and you would not survive paying it.` | Plan 01 |
+| `deathSpellTooWeak` | refusal naming the fee | ADDED `fee` | "You are too weak yourself to cast it." | `Death: the fee is 25 hp, and you need at least 27 to pay it. The spell refuses to be what kills you.` | Plan 01; reworded 79-08 |
 | `foeBolted` | hp | present (`name`,`ability`) | "It lands. 5 hp." | `Shriek: it lands. −5 hp.` (direct builder; the in-combat fold text is unchanged) | Plan 01 |
-| `foeDrained` | hp | present (`name`,`stolen`) | "It looks better for it. +4 hp — yours, formerly." | `Wraith: it drinks 4 hp of yours and looks better for it.` | Plan 01 |
+| `foeDrained` | hp | present (`name`,`stolen`) | "It looks better for it. +4 hp — yours, formerly." | `Wraith drinks it in: +4 hp for itself. It looks better for it.` | Plan 01; reworded 79-08 (`stolen` is the foe's gain) |
 | `struckByFoe` | hp | present (`name`) | dice-first fight-log line | unchanged (dice-first fight-log convention) | unchanged |
 | `memberStruck` | member hp | present | dice-first fight-log line | unchanged | unchanged |
 | `armorSoaked` | armor durability | present (`name`,`wear`) | "Your armor takes N from it so you do not have to." | unchanged | unchanged |

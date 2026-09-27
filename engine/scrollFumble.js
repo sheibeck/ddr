@@ -292,12 +292,15 @@ function resolveHelpful(state, sp, entry, srng, rng, events, now) {
     }
     case "might": {
       t.might = rollDice(srng, sp.dmg);
+      const before = t.wp;
       if (!t.strengthBoost) {
         t.strengthBoost = t.maxWP;
         t.maxWP += t.strengthBoost;
         t.wp += t.strengthBoost;
       }
-      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "might", might: t.might });
+      // VOX-05 (Phase 79, plan 79-08): `gained` is the HP the fumble handed
+      // the foe (0 on a second one), so the line can say it. Additive, zero draws.
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "might", might: t.might, gained: t.wp - before });
       break;
     }
     case "mirror": {

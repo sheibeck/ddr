@@ -1657,9 +1657,11 @@ export const LINE_FOR = {
   // RULES-10 (Phase 75.1) — the foe-side ward/Bubble mirrors: a fumbled
   // Shield or a popped fumbled Bubble on the FOE eats the hero's OWN blow,
   // mirroring wardAbsorbed/wardShattered's own tone/priority pairing.
-  foeWardSoaked: (e) => ({ text: `${e?.name ?? "It"}'s ward drinks ${e?.amount ?? 0} (${e?.left ?? 0} left).`, tone: "miss", priority: PRIORITY.them }),
-  foeWardBroken: (e) => ({ text: `${e?.name ?? "It"}'s ward gives out.`, tone: "hit", priority: PRIORITY.them }),
-  foeBubbleCaught: (e) => ({ text: `${e?.name ?? "It"}'s bubble swallows your blow — ${e?.amount ?? 0} wasted.`, tone: "miss", priority: PRIORITY.them }),
+  // VOX-05 (Phase 79, plan 79-08): a bare event reads "Its", never "It's", and
+  // the bubble's wasted number is damage.
+  foeWardSoaked: (e) => ({ text: `${railPossessive(e?.name, "Its")} ward drinks ${e?.amount ?? 0} (${e?.left ?? 0} left).`, tone: "miss", priority: PRIORITY.them }),
+  foeWardBroken: (e) => ({ text: `${railPossessive(e?.name, "Its")} ward gives out.`, tone: "hit", priority: PRIORITY.them }),
+  foeBubbleCaught: (e) => ({ text: `${railPossessive(e?.name, "Its")} bubble swallows your blow — ${e?.amount ?? 0} damage wasted.`, tone: "miss", priority: PRIORITY.them }),
   // The telegraph for the throw-back; foeBolted (pushed right after, same
   // action) carries the actual hp lost.
   foeBubbleRebound: (e) => ({ text: `${railPossessive(e?.name, "Its")} bubble throws it back at you.`, tone: "hurt", priority: PRIORITY.them }),
@@ -1678,7 +1680,8 @@ export const LINE_FOR = {
     tone: "hit",
     priority: PRIORITY.them,
   }),
-  foeArmorSoaked: (e) => ({ text: `${e?.name ?? "It"}'s armour shrugs it off.`, tone: "miss", priority: PRIORITY.them }),
+  // VOX-05 (Phase 79, plan 79-08): "Its armour", never "It's armour".
+  foeArmorSoaked: (e) => ({ text: `${railPossessive(e?.name, "Its")} armour shrugs it off.`, tone: "miss", priority: PRIORITY.them }),
   damageHalved: (e) => ({ text: `The pendant halves ${railPossessive(e?.name, "the")} blow.`, tone: "hit", priority: PRIORITY.them }),
   // Phase 25 (FEED-01): `soldierCrit` renders exactly like `critical`;
   // `soaked` names what absorbed the blow.
@@ -1733,18 +1736,36 @@ export const LINE_FOR = {
     tone: "hurt",
     priority: PRIORITY.you,
   }),
-  fumbleOnFoe: (e) => ({
-    text:
-      e?.effect === "wasted"
-        ? `${e?.spell ?? "The scroll"} is wasted on ${e?.target ?? "the wrong side"}.`
-        : e?.effect === "summon"
-          ? e?.joined
-            ? `${e?.spell ?? "The scroll"} calls up ${e?.reinforcement ?? "something"} for ${e?.target ?? "it"}.`
-            : `${e?.spell ?? "The scroll"} calls for help — nothing answers.`
-          : `${e?.spell ?? "The scroll"} helps ${e?.target ?? "it"} instead.`,
-    tone: "miss",
-    priority: PRIORITY.them,
-  }),
+  // VOX-05 (Phase 79, plan 79-08): a helpful fumble says what it did for the
+  // foe, the twin of the Oracle line; a wasted one with no foe left says so.
+  fumbleOnFoe: (e) => {
+    const sp = e?.spell ?? "The scroll";
+    const t = e?.target ?? "it";
+    const helped = {
+      heal: `heals ${t} instead (+${e?.amount ?? 0} hp).`,
+      regen: `lands on ${t} instead: it regenerates.`,
+      ward: e?.mirror ? `wraps ${t} in a bubble: your next blow comes back.` : `wards ${t}: it soaks your next ${e?.pool ?? 0}.`,
+      might: `strengthens ${t}: +${e?.might ?? 0} damage${(e?.gained ?? 0) > 0 ? `, +${e.gained} hp` : ""}.`,
+      mirror: `mirrors ${t}, ${railPlural(e?.rounds ?? 0, "round")}: you hit it only on your top face.`,
+      senses: `sharpens ${railPossessive(e?.target, "its")} senses, to no visible effect.`,
+    };
+    return {
+      text:
+        e?.effect === "wasted"
+          ? e?.target
+            ? `${sp} is wasted on ${e.target}.`
+            : `${sp} is wasted: no foe left to help.`
+          : e?.effect === "summon"
+            ? e?.joined
+              ? `${sp} calls up ${e?.reinforcement ?? "something"} for ${t}.`
+              : `${sp} calls for help — nothing answers.`
+            : helped[e?.effect]
+              ? `${sp} ${helped[e.effect]}`
+              : `${sp} helps ${t} instead.`,
+      tone: "miss",
+      priority: PRIORITY.them,
+    };
+  },
 
   /* ---------------- foe abilities (engine/foeAbilities.js) ---------------- */
 
@@ -1756,7 +1777,9 @@ export const LINE_FOR = {
       : { text: `${e?.name ?? "It"} bolts you (${e?.dmg ?? 0})${suffix}`, tone: "hurt", priority: PRIORITY.them };
   },
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  foeDrained: (e) => ({ text: `${e?.name ?? "It"} drains you (−${e?.stolen ?? 0} hp).`, tone: "hurt", priority: PRIORITY.them }),
+  // VOX-05 (Phase 79, plan 79-08): `stolen` is the FOE's gain (its bolt line,
+  // just before, carries your loss), and the drain may have hit a Joiner.
+  foeDrained: (e) => ({ text: `${e?.name ?? "It"} drinks it in (+${e?.stolen ?? 0} hp).`, tone: "hurt", priority: PRIORITY.them }),
   // CMBUI-13 (Phase 77, plan 77-07, "the onset line names the effect"): a
   // daze states its to-hit delta from the payload (toHitText); a weakening
   // says half damage. A missing field drops its clause.
@@ -1791,7 +1814,8 @@ export const LINE_FOR = {
     tone: "hit",
     priority: PRIORITY.you,
   }),
-  heroResisted: (e) => ({ text: `You resist ${e?.name ?? "its"}'s spell.`, tone: "hit", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): a bare event read "its's spell".
+  heroResisted: (e) => ({ text: `You resist ${railPossessive(e?.name, "its")} spell.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 25 (FEED-03): starts with the foe's name (matches the THEM-family
   // tone-prefix contract every other foe-action builder follows).
   heroResistFailed: (e) => ({ text: `${e?.name ?? "It"} gets through — you fail to resist.`, tone: "hurt", priority: PRIORITY.them }),
@@ -1808,10 +1832,11 @@ export const LINE_FOR = {
     const map = {
       notFought: "Fight! first, then swing.",
       unknown: `${e?.name ?? e?.key ?? "That"}? You do not know that one.`,
-      cooldown: `${name}: ${e?.left ?? "?"} round${e?.left === 1 ? "" : "s"}. Your arm has opinions.`,
+      // VOX-05 (Phase 79, plan 79-08): the Oracle twin's wording.
+      cooldown: `${name}: ready again in ${e?.left ?? "?"} round${e?.left === 1 ? "" : "s"}. Your arm has opinions.`,
       notInCombat: `${name}: nothing to use it on out here.`,
       noTarget: `${name}: nothing left standing to use it on.`,
-      notLowEnough: `Last Stand: you are not desperate enough yet (${e?.have ?? "?"} of ${e?.max ?? "?"} hp).`,
+      notLowEnough: `Last Stand: only at a quarter of your hp or less (you have ${e?.have ?? "?"} of ${e?.max ?? "?"}).`,
     };
     return block(map[e?.reason] ?? `${name} refuses you.`);
   },
@@ -1903,7 +1928,13 @@ export const LINE_FOR = {
   noChargesLeft: () => block("Nothing left to cast with."),
   spellNotKnown: (e) => block(`You do not know ${e?.spell ?? "that"}.`),
   spellAboveLevel: (e) => block(`${e?.spell ?? "That"} needs level ${e?.need ?? "?"}; you are ${e?.have ?? "?"}.`),
-  spellSchoolLocked: (e) => block(`${e?.spell ?? "That"} is not open to you yet.`),
+  // VOX-05 (Phase 79, plan 79-08): why, like spellAboveLevel.
+  spellSchoolLocked: (e) =>
+    block(
+      Number.isFinite(e?.need)
+        ? `${e?.spell ? `${e.spell}'s school` : "That school"} opens to you at level ${e.need}; you are ${e?.have ?? "?"}.`
+        : `${e?.spell ?? "That"} is not open to you yet.`,
+    ),
   // Phase 31 (CMB-01/CMB-02): the NEW spell-refusal circumstances this phase
   // introduces (notFought/combatOnly/exploreOnly/noTarget) — never a `frozen`
   // reason; nothing is ever refused for fear.
@@ -1911,7 +1942,8 @@ export const LINE_FOR = {
     const map = {
       notFought: "Fight! first. The spell keeps.",
       combatOnly: `${e?.spell ?? "That"} wants a target. Save it for a fight.`,
-      exploreOnly: `${e?.spell ?? "That"} needs quieter surroundings.`,
+      // VOX-05 (Phase 79, plan 79-08): the reason, in the player's terms.
+      exploreOnly: `${e?.spell ?? "That"} only works out of a fight.`,
       noTarget: "Nothing left to aim at.",
     };
     return block(map[e?.reason] ?? "The spell refuses you.");
@@ -1940,49 +1972,105 @@ export const LINE_FOR = {
   // Phase 40 (SPELL-04): `e?.lesser` (Lesser Summon) swaps the short form.
   allySummoned: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} answers the call, sort of.` : `${e?.name ?? "Something"} answers the call.`, tone: "magic", priority: PRIORITY.you }),
   allyPending: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} is coming, in a small way.` : `${e?.name ?? "Something"} is coming.`, tone: "magic", priority: PRIORITY.you }),
-  stunned: (e) => ({ text: `${e?.count ?? 0} freeze in place.`, tone: "magic", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): who and what, twin of the Oracle line.
+  stunned: (e) => ({
+    text:
+      (e?.count ?? 0) > 0
+        ? `${e.count === 1 ? "1 foe drops" : `${e.count} foes drop`} asleep, d4 rounds${e.count === 1 ? "" : " each"}.`
+        : "The stun puts nobody to sleep.",
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
   // Phase 40 (SPELL-01, Weaken): the rounds count, when the payload carries one.
-  weakened: (e) => ({ text: `They hit softer now${e?.rounds ? ` (${e.rounds})` : ""}.`, tone: "magic", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): what Weaken does, and "(3)" now says rounds.
+  weakened: (e) => ({
+    text: `Every foe weakened${e?.rounds ? `, ${railPlural(e.rounds, "round")}` : ""}: top three faces to hit, half damage.`,
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
   // Phase 40 (SPELL-01) — combat.js#foeTurn's `spell:weaken` expiry.
   weakenFaded: () => ({ text: "Their arms remember how to swing.", tone: "magic", priority: PRIORITY.you }),
-  stupefied: (e) => ({ text: `${e?.target ?? "It"} forgets what it is doing.`, tone: "magic", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): for how long.
+  stupefied: (e) => ({ text: `${e?.target ?? "It"} forgets what it is doing, for the fight.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 40 (SPELL-01, Stupidity) — combat.js#foeTurn's per-round skip.
   foeStupefied: (e) => ({ text: `${e?.name ?? "It"} stands there, thinking about nothing.`, tone: "dodge", priority: PRIORITY.them }),
-  blinded: (e) => ({ text: `${e?.target ?? "It"} cannot see a thing${e?.rounds ? ` for ${e.rounds} rounds` : ""}.`, tone: "magic", priority: PRIORITY.you }),
-  shrunk: (e) => ({ text: `${e?.count ?? 0} shrink to half size.`, tone: "magic", priority: PRIORITY.you }),
-  acidApplied: (e) => ({ text: `${e?.target ?? "It"} starts to dissolve (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): what blindness does, and for how long.
+  blinded: (e) => ({
+    text: `${e?.target ?? "It"} is blind ${e?.rounds ? `for ${railPlural(e.rounds, "round")}` : "for the fight"}: it hits only on its top face.`,
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
+  // VOX-05 (Phase 79, plan 79-08): who and what.
+  shrunk: (e) => ({
+    text: (e?.count ?? 0) > 0 ? `${e.count === 1 ? "1 foe shrinks" : `${e.count} foes shrink`}: half hp, half damage.` : "Nobody shrinks.",
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
+  // VOX-05 (Phase 79, plan 79-08): "(3)" now says rounds.
+  acidApplied: (e) => ({ text: `${e?.target ?? "It"} starts to dissolve, ${railPlural(e?.rounds ?? 0, "round")}.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 40 (SPELL-01, Ice) — the cast-time line; dotTick's own `by` branch
   // (Phase 38's combat.js hooks section, below) narrates every round after.
-  iceApplied: (e) => ({ text: `Ice climbs ${e?.target ?? "it"} (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
-  earthquake: (e) => ({ text: `The floor heaves (${e?.amount ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): "(3)" now says rounds, and the d6 a round.
+  iceApplied: (e) => ({ text: `Ice climbs ${e?.target ?? "it"}: d6 a round, ${railPlural(e?.rounds ?? 0, "round")}.`, tone: "magic", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): the number is damage to every foe.
+  earthquake: (e) => ({ text: `The floor heaves: ${e?.amount ?? 0} to every foe.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   earthquakeSelfDamage: (e) => ({ text: `Earthquake: −${e?.amount ?? 0} hp, yours too.`, tone: "hurt", priority: PRIORITY.you }),
-  vaporRolled: (e) => ({ text: `Noxious vapor (${e?.roll ?? "?"}).`, tone: "magic", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-08): what the face does, twin of the Oracle line.
+  vaporRolled: (e) => ({
+    text:
+      e?.roll === 4
+        ? "Noxious vapor (4): every foe drops, unless its d10 shows a 1."
+        : Number.isFinite(e?.roll)
+          ? `Noxious vapor (${e.roll}): every foe sleeps, d6+2 rounds.`
+          : "Noxious vapor (?).",
+    tone: "magic",
+    priority: PRIORITY.other,
+  }),
   volley: (e) => ({ text: `${e?.rolls ?? 0} shots, ${e?.totalDamage ?? 0} total.`, tone: "magic", priority: PRIORITY.you }),
   petrified: (e) => ({ text: `${e?.target ?? "It"} turns to stone.`, tone: "magic", priority: PRIORITY.you }),
   walkingDeadTurned: (e) => ({ text: `${e?.count ?? 0} of the dead flee.`, tone: "magic", priority: PRIORITY.you }),
   nothingToTurn: () => block("Nothing here to turn."),
   planeGated: (e) => ({ text: `${e?.count ?? 0} gated straight back out.`, tone: "magic", priority: PRIORITY.you }),
   gateRefused: () => block("There is no plane here worth opening."),
-  sensesGained: () => ({ text: "Your senses sharpen.", tone: "magic", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): what the sharpening does, and for how long.
+  sensesGained: () => ({ text: "Your senses sharpen: no surprises, no penalty in the dark, till your next fight ends.", tone: "magic", priority: PRIORITY.you }),
   // Phase 40 (SPELL-05, Plan 04): see eventNarration.js's matching comment —
   // floorMapped/revealFaded replace the old retired permanent reveal event.
   // Plan 76-06 (user ruling 2026-09-26): until you move; no squares count.
   floorMapped: () => ({ text: "The floor lays itself out in your head. Don't move.", tone: "magic", priority: PRIORITY.you }),
   revealFaded: () => ({ text: "You moved. Focus lost; the map forgets.", tone: "beat", priority: PRIORITY.other }),
   senseDanger: (e) => ({ text: `Bad feeling about the ${e?.nextEncounter ?? "next encounter"}.`, tone: "magic", priority: PRIORITY.you }),
-  mirrorSelf: (e) => ({ text: `A mirror image holds (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
-  // RULES-14 (Phase 75): the rail twin of eventNarration.js's own
-  // mirror-aware wardRaised line.
-  wardRaised: (e) => ({
-    text: e?.mirror ? "A bubble shimmers around you. Next hit bounces back." : `${e?.spell ?? "The ward"} raises a ward (${e?.pool ?? 0}).`,
+  // VOX-05 (Phase 79, plan 79-08): what the image does, and "(3)" now says rounds.
+  mirrorSelf: (e) => ({
+    text: `A mirror image holds, ${railPlural(e?.rounds ?? 0, "round")}: foes hit you only on their top face.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
-  strengthCast: (e) => ({ text: `Might surges +${e?.might ?? 0}.`, tone: "magic", priority: PRIORITY.you }),
+  // RULES-14 (Phase 75): the rail twin of eventNarration.js's own
+  // mirror-aware wardRaised line.
+  wardRaised: (e) => ({
+    // VOX-05 (Phase 79, plan 79-08): the pool is hp of damage it soaks.
+    text: e?.mirror ? "A bubble shimmers around you. Next hit bounces back." : `${e?.spell ?? "A spell"} raises a ward: it soaks the next ${e?.pool ?? 0} hp.`,
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
+  // VOX-05 (Phase 79, plan 79-08): the damage and the HP the cast added.
+  strengthCast: (e) => ({
+    text: `Might surges: +${e?.might ?? 0} damage till camp${
+      (e?.gained ?? 0) > 0 ? `, +${e.gained} hp` : Number.isFinite(e?.gained) ? " (hp already doubled today)" : ""
+    }.`,
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
   regenerationCast: () => ({ text: "Wounds start closing on their own.", tone: "magic", priority: PRIORITY.you }),
-  insaneNoTarget: () => block("No one here to turn insane at."),
-  insaneRolled: (e) => ({ text: `Insanity takes ${e?.target ?? "it"}.`, tone: "magic", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-08): reads naturally; the face says what it did.
+  insaneNoTarget: () => block("No one here to drive insane."),
+  insaneRolled: (e) => ({
+    text: `Insanity takes ${e?.target ?? "it"}${{ 1: " (1): it keels over", 4: " (4): it tries to nap, d4 rounds", 5: " (5): frenzy, twice the swings" }[e?.roll] ?? ""}.`,
+    tone: "magic",
+    priority: PRIORITY.other,
+  }),
   insaneStruckAlly: (e) => ({ text: `The maddened thing turns on ${e?.target ?? "an ally"} (${e?.dmg ?? 0}).`, tone: "hurt", priority: PRIORITY.you }),
   insaneFled: (e) => ({ text: `${e?.target ?? "It"} bolts, mad with fear.`, tone: "magic", priority: PRIORITY.you }),
   healed: (e) => ({
@@ -1994,14 +2082,17 @@ export const LINE_FOR = {
     priority: PRIORITY.you,
   }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  deathSpellTooWeak: (e) => block(`Death: ${e?.fee ?? 25} hp fee. You cannot pay it and live.`),
+  // VOX-05 (Phase 79, plan 79-08): the hp it needs (refused at fee + 1 or less).
+  deathSpellTooWeak: (e) => block(`Death: ${e?.fee ?? 25} hp fee. You need at least ${(e?.fee ?? 25) + 2} hp to pay it.`),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   deathCast: (e) => ({ text: `Death: its fee (−${e?.cost ?? 25} hp).`, tone: "hurt", priority: PRIORITY.you }),
-  dozed: (e) => ({ text: `${e?.target ?? "It"} dozes off (${e?.rounds ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
+  // VOX-05 (Phase 79, plan 79-08): "(3)" now says rounds.
+  dozed: (e) => ({ text: `${e?.target ?? "It"} dozes off, ${railPlural(e?.rounds ?? 0, "round")}.`, tone: "magic", priority: PRIORITY.you }),
   nothingToThrowAt: () => block("Nothing here to throw it at."),
   spellThrown: (e) => ({ text: `${e?.spell ?? "It"} at ${e?.target ?? "it"}.`, tone: "magic", priority: PRIORITY.you }),
   spellHit: (e) => ({
-    text: `${e?.spell ?? "It"} hits ${e?.target ?? "it"} (${e?.dmg ?? 0})${(e?.mult ?? 1) > 1 ? ` ×${e.mult}` : ""}`,
+    // VOX-05 (Phase 79, plan 79-08): the ×N is inside the damage, not on top of it.
+    text: `${e?.spell ?? "It"} hits ${e?.target ?? "it"} (${e?.dmg ?? 0}${(e?.mult ?? 1) > 1 ? `, the roll ×${e.mult} for your level` : ""})`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
