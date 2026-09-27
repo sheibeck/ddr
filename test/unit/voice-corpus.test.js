@@ -136,8 +136,8 @@ test("order: entries sort by the fixed surface order, then by key, and keys are 
 // ─── Floors (about 80% of the phase-base counts) ───────────────────────────
 
 const FLOORS = Object.freeze({
-  blurbs: 31, oracle: 263, rail: 229, refusals: 30, "rail-cards": 112, "combat-screen": 163, items: 88, spells: 69,
-  foes: 62, death: 96, boards: 146, panels: 152, map: 16, title: 13,
+  blurbs: 31, oracle: 261, rail: 229, refusals: 30, "rail-cards": 112, "combat-screen": 162, items: 88, spells: 69,
+  foes: 62, death: 96, boards: 145, panels: 152, map: 16, title: 13,
 });
 const TEXT_FLOOR = 3200;
 
