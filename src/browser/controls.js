@@ -140,3 +140,86 @@ export function keepInViewAxis(camAxis, partyAxis, spanCells) {
   if (camAxis + half - partyAxis < EDGE_TRIGGER_CELLS) return partyAxis + rest - half;
   return camAxis;
 }
+
+// keepInViewRegion(camAxis, partyAxis, spanCells, lo, hi) — keepInViewAxis
+// run over the sub-range [lo, hi] of the viewport (cells from its low edge)
+// instead of the whole span: the region's own centre stands in for the
+// camera, so the rule's rest margin and strict "<" edge test apply to the
+// region's edges unchanged. An untouched region returns the caller's
+// camAxis itself (no floating-point round trip).
+function keepInViewRegion(camAxis, partyAxis, spanCells, lo, hi) {
+  const width = hi - lo;
+  const offset = lo + width / 2 - spanCells / 2;
+  const camRegion = camAxis + offset;
+  const next = keepInViewAxis(camRegion, partyAxis, width);
+  return next === camRegion ? camAxis : next - offset;
+}
+
+function isObstacle(o) {
+  return (
+    !!o &&
+    [o.left, o.top, o.right, o.bottom].every((n) => typeof n === "number" && Number.isFinite(n)) &&
+    o.right > o.left &&
+    o.bottom > o.top
+  );
+}
+
+/**
+ * keepInViewRect(cam, party, span, obstacle)
+ *
+ * Phase 78 (HUD-08): the stationary-camera rule with the arrow pad as an
+ * edge. Every value is in cells: `cam` and `party` are grid points (as for
+ * keepInViewAxis), `span` is the viewport's {x, y} span, and `obstacle` is
+ * the pad's rect `{ left, top, right, bottom }` relative to the viewport's
+ * top-left (or null when no pad is shown).
+ *
+ * - No obstacle: exactly keepInViewAxis on each axis (tap mode's camera is
+ *   unchanged).
+ * - The party's cell in the pad's column band: the y axis runs keepInViewAxis
+ *   over the viewport part on the open side of the pad (for a bottom pad,
+ *   from the viewport's top down to the pad's top edge), so the map scrolls
+ *   before the party walks under the pad.
+ * - Otherwise, the party's cell in the pad's row band: the x axis does the
+ *   same against the pad's inner side edge (a BOTTOM RIGHT pad's left edge,
+ *   a BOTTOM LEFT pad's right edge).
+ * - Elsewhere the pad may overlap the map; only the viewport's edges count.
+ *
+ * The pad edge keeps keepInViewAxis's own strictness (a party exactly
+ * EDGE_TRIGGER_CELLS from it does not scroll, closer does) and its rest
+ * margin; it never snaps to centre when a minimal nudge suffices, and it
+ * returns the input camera's values when no edge is near.
+ *
+ * @param {{x:number, y:number}} cam - camera grid point (cell units)
+ * @param {{x:number, y:number}} party - the party's cell-centre grid point
+ * @param {{x:number, y:number}} span - the viewport span, in cells
+ * @param {{left:number, top:number, right:number, bottom:number}|null} obstacle - the pad, in cells from the viewport's top-left
+ * @returns {{x:number, y:number}} the camera grid point to use
+ */
+export function keepInViewRect(cam, party, span, obstacle) {
+  const base = {
+    x: keepInViewAxis(cam.x, party.x, span.x),
+    y: keepInViewAxis(cam.y, party.y, span.y),
+  };
+  if (!isObstacle(obstacle)) return base;
+  // The party's position in the viewport (cells from its top-left) once the
+  // viewport-edge nudges above are applied.
+  const relX = party.x - (base.x - span.x / 2);
+  const relY = party.y - (base.y - span.y / 2);
+  // A band holds the party when its CELL (centre +/- half a cell) overlaps
+  // the pad's columns or rows.
+  const inColumn = relX > obstacle.left - 0.5 && relX < obstacle.right + 0.5;
+  const inRow = relY > obstacle.top - 0.5 && relY < obstacle.bottom + 0.5;
+  if (inColumn) {
+    // The open side is the larger of the two gaps (above a bottom pad).
+    const above = obstacle.top >= span.y - obstacle.bottom;
+    const [lo, hi] = above ? [0, obstacle.top] : [obstacle.bottom, span.y];
+    if (hi - lo > 0) return { x: base.x, y: keepInViewRegion(cam.y, party.y, span.y, lo, hi) };
+    return base;
+  }
+  if (inRow) {
+    const leftOpen = obstacle.left >= span.x - obstacle.right;
+    const [lo, hi] = leftOpen ? [0, obstacle.left] : [obstacle.right, span.x];
+    if (hi - lo > 0) return { x: keepInViewRegion(cam.x, party.x, span.x, lo, hi), y: base.y };
+  }
+  return base;
+}

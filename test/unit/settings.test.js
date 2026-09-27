@@ -46,7 +46,11 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: the eleven fields' defaults", () => {
+test("SETTINGS_DEFAULTS: the thirteen fields' defaults", () => {
+  // Phase 78 (HUD-08): Movement defaults to tap-to-move, the pad to the
+  // bottom right.
+  assert.equal(SETTINGS_DEFAULTS.movement, "tap");
+  assert.equal(SETTINGS_DEFAULTS.padSide, "right");
   assert.equal(SETTINGS_DEFAULTS.textSize, "M");
   assert.equal(SETTINGS_DEFAULTS.sound, true);
   assert.equal(SETTINGS_DEFAULTS.haptics, true);
@@ -88,6 +92,9 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       volMaster: 100,
       volMusic: 100,
       volEffects: 100,
+      // Phase 78 (HUD-08): Movement and Pad keep theirs.
+      movement: "tap",
+      padSide: "right",
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -154,7 +161,8 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
 
     // Phase 59 (DRESS-05) appended `dressing`; Phase 67 (PGS-02) appended
     // `compete`, `pgsWelcomed` and `pgsDevSignedIn`; Phase 71 (D-03) appended
-    // `volMaster`, `volMusic` and `volEffects` — eleven keys, in order.
+    // `volMaster`, `volMusic` and `volEffects`; Phase 78 (HUD-08) appended
+    // `movement` and `padSide` — thirteen keys, in order.
     assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), [
       "sound",
       "haptics",
@@ -167,8 +175,10 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
       "volMaster",
       "volMusic",
       "volEffects",
+      "movement",
+      "padSide",
     ]);
-    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 11);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 13);
     assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -183,7 +193,8 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
 });
 
 // Phase 46 (NAME-02): the on-screen movement-control-scheme setting is
-// retired — tap-to-move has been the only movement surface since v1.4/v1.5.
+// retired. Phase 78 (HUD-08) brought an opt-in arrow pad back under NEW
+// names (`movement`, `padSide`); the retired key and value stay retired.
 // Built from string fragments (the shell-map-invariants RETIRED-map idiom)
 // so this pin never spells the retired identifier/value whole, keeping the
 // zero-straggler grep for the retired setting at zero across test/.
@@ -445,4 +456,71 @@ test("Phase 78 (HUD-04): effectiveTextScale stays within 0.85..1.25 inclusive, a
   assert.equal(effectiveTextScale("L", 50), 1.25);
   assert.equal(effectiveTextScale(SETTINGS_DEFAULTS.textSize), 1);
   assert.equal(effectiveTextScale(undefined), 1);
+});
+
+// --- Phase 78 (HUD-08): movement and padSide -------------------------------
+
+test("HUD-08: writeSetting accepts tap/arrows and left/right, each changing only its own field", async () => {
+  await withFakeLocalStorage(async () => {
+    const before = await readSettings();
+    await writeSetting("movement", "arrows");
+    await flushStorage();
+    assert.deepEqual(await readSettings(), { ...before, movement: "arrows" });
+    await writeSetting("padSide", "left");
+    await flushStorage();
+    assert.deepEqual(await readSettings(), { ...before, movement: "arrows", padSide: "left" });
+    await writeSetting("movement", "tap");
+    await writeSetting("padSide", "right");
+    await flushStorage();
+    assert.deepEqual(await readSettings(), before);
+  });
+});
+
+test("HUD-08: an invalid movement or padSide is rejected (the stored value is unchanged)", async () => {
+  await withFakeLocalStorage(async () => {
+    await writeSetting("movement", "arrows");
+    await writeSetting("padSide", "left");
+    await flushStorage();
+    const current = await readSettings();
+    for (const bad of ["hover", "ARROWS", "", null, true, 1]) {
+      assert.deepEqual(await writeSetting("movement", bad), current, `movement ${JSON.stringify(bad)} is rejected`);
+    }
+    for (const bad of ["centre", "LEFT", 7, null, false]) {
+      assert.deepEqual(await writeSetting("padSide", bad), current, `padSide ${JSON.stringify(bad)} is rejected`);
+    }
+    await flushStorage();
+    assert.deepEqual(await readSettings(), current);
+  });
+});
+
+test("HUD-08: a tampered stored movement or padSide reads its default (an unknown movement falls back to tap-to-move)", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "L", movement: "hover", padSide: 7 }));
+    const settings = await readSettings();
+    assert.equal(settings.movement, "tap");
+    assert.equal(settings.padSide, "right");
+    assert.equal(settings.textSize, "L"); // the other fields still load
+  });
+});
+
+test("HUD-08: an old blob with neither key reads the defaults (tolerant load, no migration)", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ sound: false, haptics: true, textSize: "S", confirmBeforeQuit: true, dressing: true, compete: true, pgsWelcomed: false, pgsDevSignedIn: false, volMaster: 40, volMusic: 100, volEffects: 100 }),
+    );
+    const settings = await readSettings();
+    assert.equal(settings.movement, "tap");
+    assert.equal(settings.padSide, "right");
+    assert.equal(settings.volMaster, 40);
+  });
+});
+
+test("HUD-08: a stored arrows/left pair loads as written", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ movement: "arrows", padSide: "left" }));
+    const settings = await readSettings();
+    assert.equal(settings.movement, "arrows");
+    assert.equal(settings.padSide, "left");
+  });
 });

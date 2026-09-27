@@ -110,13 +110,16 @@ test("SC-1: CODE carries exactly one linesForAction( call (the dispatchWithNarra
 
 // ─── (b) SC-1: no D-pad ─────────────────────────────────────────────────────
 
-test("SC-1: RAW carries zero of the three retired D-pad literals", () => {
+// Phase 78 (HUD-08): the opt-in arrow pad (#mw-arrow-pad, `data-step`,
+// "Step north" labels) is not the old control bar; the old bar's literals
+// and labels stay at zero.
+test("SC-1: the OLD control bar stays gone while the opt-in arrow pad (HUD-08) exists — RAW carries zero of its three retired literals", () => {
   for (const key of ["dpad1", "dpad2", "dpad3"]) {
     assert.equal(countOf(RAW, RETIRED[key]), 0, `expected zero "${RETIRED[key]}" in mazeworld.html`);
   }
 });
 
-test("SC-1: RAW carries zero Move north/west/south/east aria labels", () => {
+test("SC-1: RAW carries zero of the old bar's Move north/west/south/east aria labels (the opt-in pad says Step)", () => {
   for (const dir of ["north", "west", "south", "east"]) {
     assert.equal(countOf(RAW, `Move ${dir}`), 0, `expected zero "Move ${dir}" in mazeworld.html`);
   }
@@ -191,6 +194,9 @@ const FILE_WIDE_GUARDED_IDS = [
   "a-hazard-cross", "a-hazard-tool", "a-hazard-back", "mw-camp-sleep", "mw-camp-walk",
   "mw-major-primary", "mw-major-secondary",
   "btn-death-oracle", "cb-over-btn", "a-loot-take-all", "a-loot-leave-all",
+  // Phase 78 (HUD-03): the death card's FINAL SHEET button (78-06), wired
+  // through the same generic buttons array as btn-death-oracle.
+  "btn-death-sheet",
 ];
 
 test("MAP-08: every new tap target is wired through guardTap somewhere in the file", () => {
@@ -420,7 +426,7 @@ test("voice scan: every MARKS_LEGEND name/desc is non-empty and clear of BANNED"
 
 // ─── (k) SC pins: the five ROADMAP success criteria, by name ───────────────
 
-test("SC-1 (no D-pad, no toast, tap/hold/drag/pinch): proven by the tests above (toast/D-pad zero-greps)", () => {
+test("SC-1 (the old D-pad and the toast stay gone beside the opt-in arrow pad, tap/hold/drag/pinch): proven by the tests above (toast/D-pad zero-greps)", () => {
   assert.equal(countOf(RAW, RETIRED.dpad3), 0);
   assert.equal(countOf(RAW, RETIRED.toastClass), 0);
 });

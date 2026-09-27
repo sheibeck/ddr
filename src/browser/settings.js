@@ -1,12 +1,12 @@
 // src/browser/settings.js
 //
-// The single source of truth for the eleven persisted settings (UX-07;
+// The single source of truth for the thirteen persisted settings (UX-07;
 // DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
 // former control-bar side option, Phase 46 NAME-02 removed the on-screen
-// movement-control-scheme field — tap-to-move has been the only movement
-// surface since v1.4/v1.5; Phase 59 DRESS-05 added `dressing`, the Set
+// movement-control-scheme field; Phase 59 DRESS-05 added `dressing`, the Set
 // Dressing On/Off row; Phase 67 PGS-02 added the three Play Games fields
-// below; Phase 71 D-03 added the three volume levels) plus the pure
+// below; Phase 71 D-03 added the three volume levels; Phase 78 HUD-08 added
+// `movement` and `padSide`, the opt-in arrow pad) plus the pure
 // text-scaling (UX-08) and
 // confirm-before-quit-gate helpers. All persistence goes through
 // src/browser/storage.js's shared async abstraction (which itself installs
@@ -18,9 +18,9 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All eleven fields are persisted as ONE JSON object under a single
+// All thirteen fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never eleven separate keys racing each other.
+// per settings change, never thirteen separate keys racing each other.
 //
 // Phase 67 (PGS-02) fields:
 //   - `compete` (D-01, D-02): the Compete toggle, default ON on a fresh
@@ -36,6 +36,14 @@
 // EFFECTS the one-shots' bus). They are validated by a predicate (an
 // integer from 0 to 100 inclusive) rather than an allowed-values list.
 //
+// Phase 78 (HUD-08, the user's 2026-09-25 request) fields: `movement`
+// ("tap" | "arrows", default "tap") and `padSide` ("left" | "right", default
+// "right"). The opt-in reversal of the v1.4/v1.5 tap-only ruling:
+// tap-to-move stays the default and complete, and ARROWS shows an on-screen
+// pad (src/browser/arrowPad.js) in the chosen bottom corner, with map taps
+// no longer stepping. These are NEW names; the Phase 46 retired key and
+// value stay retired (settings.test.js pins both).
+//
 // Fail-open posture (matches engineAdapter.js's persist()/boot()):
 // a missing key, a blocked/private store, or a corrupt/malformed JSON blob
 // all just mean readSettings() returns SETTINGS_DEFAULTS — this module never
@@ -50,11 +58,14 @@
 // reads their defaults (true / false / false), no migration. Phase 71
 // (D-03): the three volume levels read their default 100 from an old blob
 // through the same tolerant merge — and a non-integer, out-of-range or
-// string stored value reads 100 too — with no migration.
+// string stored value reads 100 too — with no migration. Phase 78 (HUD-08):
+// an old blob without `movement`/`padSide`, or with a tampered value, reads
+// "tap"/"right" through the same merge, so an unknown movement falls back to
+// tap-to-move.
 
 import { getItem, setItem } from "./storage.js";
 
-/** Single versioned key all eleven settings fields are persisted under. */
+/** Single versioned key all thirteen settings fields are persisted under. */
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
 /**
@@ -71,6 +82,9 @@ export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
  * only) are appended after `dressing`, in that order.
  * Phase 71 (D-03): `volMaster`, `volMusic` and `volEffects` (integers 0-100,
  * default 100) are appended after `pgsDevSignedIn`, in that order.
+ * Phase 78 (HUD-08): `movement` (default "tap", tap-to-move) and `padSide`
+ * (default "right", the arrow pad's bottom corner, read only in arrow mode)
+ * are appended after `volEffects`, in that order.
  */
 export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
@@ -84,6 +98,8 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   volMaster: 100,
   volMusic: 100,
   volEffects: 100,
+  movement: "tap",
+  padSide: "right",
 });
 
 // Allowed values per field — writeSetting() validates against these before
@@ -107,6 +123,8 @@ const ALLOWED_VALUES = {
   volMaster: isVolumeLevel,
   volMusic: isVolumeLevel,
   volEffects: isVolumeLevel,
+  movement: ["tap", "arrows"],
+  padSide: ["left", "right"],
 };
 
 function isValidSettingValue(key, value) {
@@ -117,7 +135,7 @@ function isValidSettingValue(key, value) {
 }
 
 /**
- * readSettings() — resolves the full eleven-field settings object: persisted
+ * readSettings() — resolves the full thirteen-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled

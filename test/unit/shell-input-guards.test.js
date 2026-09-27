@@ -165,6 +165,9 @@ const GUARDED_IDS = [
   // pre-roll wall/crevice card's three buttons take its place.
   "a-find-take", "a-find-leave", "btn-death-oracle", "cb-over-btn",
   "a-hazard-cross", "a-hazard-tool", "a-hazard-back",
+  // Phase 78 (HUD-03): the death card's FINAL SHEET button (78-06), beside
+  // btn-death-oracle in renderCombatOver's buttons array.
+  "btn-death-sheet",
 ];
 
 // A guarded id is wired one of three ways in renderEncounter:
