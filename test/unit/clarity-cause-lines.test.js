@@ -361,11 +361,13 @@ const ORACLE_CASES = [
     ],
     [{ type: "earthquakeSelfDamage", amount: 6 }, "Earthquake: the floor does not take sides. −6 hp."],
     [{ type: "deathCast", cost: 25 }, "Death: the spell takes its fee first. −25 hp."],
-    [{ type: "deathSpellTooWeak", fee: 25 }, "Death: the fee is 25 hp, and you would not survive paying it."],
+    // VOX-05 (79-08): the refusal states the hp it needs (refused at fee + 1 or less).
+    [{ type: "deathSpellTooWeak", fee: 25 }, "Death: the fee is 25 hp, and you need at least 27 to pay it. The spell refuses to be what kills you."],
     [{ type: "foeBolted", name: "Shriek", dmg: 5 }, "Shriek: it lands. −5 hp."],
     [{ type: "foeBolted", name: "Shriek", dmg: 5, ignoresArmor: true }, "Shriek: it lands. −5 hp, and your armor was not consulted."],
     [{ type: "foeBolted", name: "Shriek", dmg: 5, member: "Grunk" }, "Shriek: it lands on Grunk. −5 hp. Better them than you."],
-    [{ type: "foeDrained", name: "Wraith", stolen: 4 }, "Wraith: it drinks 4 hp of yours and looks better for it."],
+    // VOX-05 (79-08): `stolen` is the foe's own gain; foeBolted carries your loss.
+    [{ type: "foeDrained", name: "Wraith", stolen: 4 }, "Wraith drinks it in: +4 hp for itself. It looks better for it."],
     [{ type: "bought", item: "Axe", cost: 63 }, "Bought: Axe. −63 wilmst."],
     [{ type: "toolUsed", tool: "ladder" }, "Ladder: up and over the wall. The ladder stays behind."],
     [{ type: "toolUsed", tool: "rope" }, "Rope: across the gap, boring and safe. The rope stays behind."],
@@ -408,7 +410,8 @@ const LINE_CASES = [
     ["backfireSelfDamage", { type: "backfireSelfDamage", amount: 4, spell: "Fireball" }, "Backfire: Fireball (−4 hp)."],
     ["earthquakeSelfDamage", { type: "earthquakeSelfDamage", amount: 6 }, "Earthquake: −6 hp, yours too."],
     ["deathCast", { type: "deathCast", cost: 25 }, "Death: its fee (−25 hp)."],
-    ["foeDrained", { type: "foeDrained", name: "Wraith", stolen: 4 }, "Wraith drains you (−4 hp)."],
+    // VOX-05 (79-08): the foe's gain, not a second copy of your loss.
+    ["foeDrained", { type: "foeDrained", name: "Wraith", stolen: 4 }, "Wraith drinks it in (+4 hp)."],
     ["bought", { type: "bought", item: "Axe", cost: 63 }, "Bought: Axe (−63 wilmst)."],
     ["toolUsed", { type: "toolUsed", tool: "ladder" }, "Ladder: over the wall, ladder spent."],
     ["toolUsed", { type: "toolUsed", tool: "rope" }, "Rope: across, rope spent."],
@@ -427,7 +430,8 @@ for (const [type, e, expected] of LINE_CASES) {
 
 test("Line: deathSpellTooWeak is a block-priority line naming the fee", () => {
   const line = LINE_FOR.deathSpellTooWeak({ type: "deathSpellTooWeak", fee: 25 });
-  assert.equal(line.text, "Death: 25 hp fee. You cannot pay it and live.");
+  // VOX-05 (79-08): the hp it needs, not "cannot pay it and live".
+  assert.equal(line.text, "Death: 25 hp fee. You need at least 27 hp to pay it.");
 });
 
 // ─── Every builder above defends a bare `{ type }` call (coverage-guard shape) ─

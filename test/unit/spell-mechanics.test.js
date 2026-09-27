@@ -486,3 +486,31 @@ test("Narration: weakenFaded/foeStupefied render through EVENT_NARRATION and LIN
   assert.equal(typeof LINE_FOR.weakenFaded({ type: "weakenFaded" }).text, "string");
   assert.equal(typeof LINE_FOR.foeStupefied({ type: "foeStupefied", name: "Ogre" }).text, "string");
 });
+
+// VOX-05 (Phase 79, plan 79-08): Strength's HP boost is no longer silent.
+// The cast's event carries the HP it added (`gained`) and the new ceiling
+// (`maxWP`), and both the Oracle line and its rail twin state them. The
+// doubling happens once a day, so a recast adds 0 and says so.
+test("Strength: the cast line states the damage and the HP the cast added", () => {
+  const state = fixedState({ c: fixedCaster({ grimoire: ["Strength"], wp: 30, maxWP: 40 }) });
+  const events = castSpell(state, SPELL_IDX.Strength, fakeRng([7]), []);
+  const cast = events.find((e) => e.type === "strengthCast");
+  assert.ok(cast, "strengthCast pushed");
+  assert.equal(cast.might, 7);
+  assert.equal(cast.gained, 40, "the HP the doubling added (the old max)");
+  assert.equal(cast.maxWP, 80);
+  assert.equal(state.c.wp, 70);
+  const oracle = EVENT_NARRATION.strengthCast(cast).replace(/<[^>]+>/g, "");
+  assert.equal(oracle, "Might surges: +7 damage on every blow until you make camp, and +40 hp (max 80).");
+  assert.equal(LINE_FOR.strengthCast(cast).text, "Might surges: +7 damage till camp, +40 hp.");
+
+  // A second cast the same day re-rolls the damage but adds no HP.
+  const again = castSpell(state, SPELL_IDX.Strength, fakeRng([4]), []).find((e) => e.type === "strengthCast");
+  assert.equal(again.gained, 0);
+  assert.equal(state.c.maxWP, 80, "never doubled twice");
+  assert.equal(
+    EVENT_NARRATION.strengthCast(again).replace(/<[^>]+>/g, ""),
+    "Might surges: +4 damage on every blow until you make camp. Your hp was already doubled for the day.",
+  );
+  assert.equal(LINE_FOR.strengthCast(again).text, "Might surges: +4 damage till camp (hp already doubled today).");
+});

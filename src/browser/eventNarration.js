@@ -125,6 +125,17 @@ const CONTROL_EFFECT_WORD = Object.freeze({
 });
 const CONTROL_HOLD_WORD = Object.freeze({ frozen: "frozen solid", stone: "turned to stone", stupid: "stupefied" });
 
+// VOX-05 (Phase 79, plan 79-08): what each Insanity face does
+// (engine/magic.js's insane branch). A 2 (strikes a neighbour) and a 3 or 6
+// (flees) have their own lines right after, so they add nothing here; a 1
+// is followed by the foeKilled line, a 4 by a resist line if it shrugs off
+// the sleep. A 5's frenzy doubles its swings (engine/combat.js#foeTurn).
+const INSANE_FACE = Object.freeze({
+  1: ", and it simply keels over",
+  4: ", and it tries to lie down for a nap, d4 rounds",
+  5: ", and it flies into a frenzy: twice the swings from here on",
+});
+
 // Phase 25.1 (DFB-04): a member/newcomer name is interpolated TWICE into
 // markup for the joinerLeft snark line — escape so a name containing '<'
 // renders as visible text, never a live tag.
@@ -712,14 +723,19 @@ export const EVENT_NARRATION = {
   // fumbled Shield or a popped fumbled Bubble sitting on the FOE eats the
   // hero's own blow instead. `name` is the foe; the pool drains the same
   // way the hero's own does (wardAbsorbed's own phrasing, mirrored).
-  foeWardSoaked: (e) => `<span class="miss">${e.name ?? "It"}'s ward drinks <span class="roll">${e.amount ?? 0}</span> of it — ${e.left ?? 0} left.</span>`,
-  foeWardBroken: (e) => `<span class="hit">${e.name ?? "It"}'s ward gives out.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): the named-or-bare possessive (a bare event
+  // read "It's ward"), and the numbers say what they count.
+  foeWardSoaked: (e) =>
+    `<span class="miss">${possessive(e.name, "Its")} ward drinks <span class="roll">${e.amount ?? 0}</span> of your blow — ${e.left ?? 0} left in it.</span>`,
+  foeWardBroken: (e) => `<span class="hit">${possessive(e.name, "Its")} ward gives out.</span>`,
   foeWardFaded: (e) => `<span class="beat">${possessive(e.name, "Its")} ward fades.</span>`,
   // RULES-10 (Phase 75.1) — a fumbled Bubble sitting on the FOE: the first
   // blow it catches never touches its hp at all (your effort, wasted), then
   // it pops into a small pool for the rest of that round (foeWardSoaked
   // above narrates the pop pool's own absorbs the same way Shield's does).
-  foeBubbleCaught: (e) => `<span class="miss">${e.name ?? "It"}'s bubble swallows your blow whole — <span class="roll">${e.amount ?? 0}</span> wasted.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): possessive as above; the wasted number is damage.
+  foeBubbleCaught: (e) =>
+    `<span class="miss">${possessive(e.name, "Its")} bubble swallows your blow whole — <span class="roll">${e.amount ?? 0}</span> damage wasted.</span>`,
   // RULES-10 (Phase 75.1) — the caught blow is thrown back at the TOP of the
   // foe's next turn; this line is the telegraph, and the existing foeBolted
   // builder (pushed right after it, same action) states the hp actually lost.
@@ -816,16 +832,33 @@ export const EVENT_NARRATION = {
     }
     return `<span class="hurt">${e.spell ?? "The scroll"} catches ${e.name ?? "your companion"} too: <span class="roll">−${e.amount ?? 0} hp</span>.</span>`;
   },
+  // VOX-05 (Phase 79, plan 79-08): a helpful fumble says what it did for the
+  // foe (engine/scrollFumble.js#resolveHelpful's own effect and numbers), not
+  // just that it "helps"; a wasted fumble with no foe left says so.
   fumbleOnFoe: (e) => {
+    const sp = e.spell ?? "The scroll";
+    const t = e.target ?? "it";
     if (e.effect === "wasted") {
-      return `<span class="beat">${e.spell ?? "The scroll"} is wasted on ${e.target ?? "the wrong side"}.</span>`;
+      return e.target
+        ? `<span class="beat">${sp} is wasted on ${e.target}.</span>`
+        : `<span class="beat">${sp} is wasted: there is no foe left for it to help.</span>`;
     }
     if (e.effect === "summon") {
       return e.joined
-        ? `<span class="miss">${e.spell ?? "The scroll"} calls up ${e.reinforcement ?? "something"} to fight beside ${e.target ?? "it"}.</span>`
-        : `<span class="beat">${e.spell ?? "The scroll"} tries to call for help for ${e.target ?? "it"}, but nothing answers.</span>`;
+        ? `<span class="miss">${sp} calls up ${e.reinforcement ?? "something"} to fight beside ${t}.</span>`
+        : `<span class="beat">${sp} tries to call for help for ${t}, but nothing answers.</span>`;
     }
-    return `<span class="miss">${e.spell ?? "The scroll"} helps ${e.target ?? "it"} instead.</span>`;
+    const helped = {
+      heal: `heals ${t} instead: <span class="roll">+${e.amount ?? 0} hp</span>`,
+      regen: `lands on ${t} instead: its wounds start closing on their own`,
+      ward: e.mirror
+        ? `wraps ${t} in a bubble instead: your next blow on it is swallowed and thrown back at you`
+        : `wards ${t} instead: it soaks your next ${e.pool ?? 0} hp of damage`,
+      might: `strengthens ${t} instead: <span class="roll">+${e.might ?? 0}</span> damage on its blows${(e.gained ?? 0) > 0 ? `, and <span class="roll">+${e.gained} hp</span>` : ""}`,
+      mirror: `gives ${t} a mirror image instead: for ${plural(e.rounds ?? 0, "round")} you hit it only on your die's top face`,
+      senses: `sharpens ${possessive(e.target, "its")} senses instead, to no effect you can see`,
+    }[e.effect];
+    return helped ? `<span class="miss">${sp} ${helped}.</span>` : `<span class="miss">${sp} helps ${t} instead.</span>`;
   },
 
   // Phase 19 (FOE-01..09, D-16): foe abilities — telegraph first, effect
@@ -840,15 +873,20 @@ export const EVENT_NARRATION = {
       ? `<span class="hurt">${e.name ?? "It"}: it lands on ${e.member}.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}. Better them than you.`
       : `<span class="hurt">${e.name ?? "It"}: it lands.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}${e.ignoresArmor ? ", and your armor was not consulted" : ""}.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  foeDrained: (e) => `<span class="hurt">${e.name ?? "It"}: it drinks ${e.stolen ?? 0} hp of yours and looks better for it.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): `stolen` is what the FOE healed (after its
+  // own cap), not the hp you lost (foeBolted, pushed just before, states
+  // that), and a drain on a Joiner is not "yours".
+  foeDrained: (e) => `<span class="hurt">${e.name ?? "It"} drinks it in: <span class="miss">+${e.stolen ?? 0} hp</span> for itself.</span> It looks better for it.`,
   // CMBUI-13 (Phase 77, plan 77-07, "the onset line names the effect"): a
   // daze states its to-hit delta from the payload (toHitText, U+2212); a
   // weakening states half damage in words. A missing field drops its clause.
+  // VOX-05 (Phase 79, plan 79-08): who did it and what it does come first;
+  // the joke closes the line.
   foeDebuffed: (e) => {
     const lasts = Number.isFinite(e.rounds) ? ` for ${plural(e.rounds, "round")}` : "";
     return e.kind === "dazed"
-      ? `<span class="hurt">The room keeps moving after you stop.</span> Dazed: ${Number.isFinite(e.toHit) ? toHitText(e.toHit) : "your aim wanders"}${lasts}.`
-      : `<span class="hurt">Your arms feel like someone else's.</span> Weakened: your blows do half damage${lasts}.`;
+      ? `<span class="hurt">${e.name ? `${e.name} dazes you` : "You are dazed"}: ${Number.isFinite(e.toHit) ? toHitText(e.toHit) : "your aim wanders"}${lasts}.</span> The room keeps moving after you stop.`
+      : `<span class="hurt">${e.name ? `${e.name} weakens you` : "You are weakened"}: your blows do half damage${lasts}.</span> Your arms feel like someone else's.`;
   },
   foeHealed: (e) => `${e.name ?? "It"} knits itself back together. <span class="miss">+${e.amount ?? 0} hp.</span> Rude.`,
   // RULES-10 (Phase 75.1) — a fumbled Regeneration on a foe: a d8 a turn,
@@ -883,10 +921,12 @@ export const EVENT_NARRATION = {
     const map = {
       notFought: `<span class="miss">Fight! first, then swing.</span>`,
       unknown: `<span class="miss">${e.name ?? e.key ?? "That"}? You do not know that one.</span>`,
-      cooldown: `<span class="miss">${name}: ${e.left ?? "?"} round${e.left === 1 ? "" : "s"}. Your arm has opinions.</span>`,
+      // VOX-05 (Phase 79, plan 79-08): the rounds are the wait until it is
+      // ready again, and Last Stand names its quarter-hp line.
+      cooldown: `<span class="miss">${name}: ready again in ${e.left ?? "?"} round${e.left === 1 ? "" : "s"}. Your arm has opinions.</span>`,
       notInCombat: `<span class="miss">${name}: nothing to use it on out here.</span>`,
       noTarget: `<span class="miss">${name}: nothing left standing to use it on.</span>`,
-      notLowEnough: `<span class="miss">Last Stand: you are not desperate enough yet (${e.have ?? "?"} of ${e.max ?? "?"} hp).</span>`,
+      notLowEnough: `<span class="miss">Last Stand: only at a quarter of your hp or less, and you have ${e.have ?? "?"} of ${e.max ?? "?"}.</span> You are not desperate enough yet.`,
     };
     return map[e.reason] ?? `<span class="miss">${name} refuses you.</span>`;
   },
@@ -964,14 +1004,20 @@ export const EVENT_NARRATION = {
   noChargesLeft: () => `<span class="miss">Nothing left to cast with.</span>`,
   spellNotKnown: (e) => `<span class="miss">You do not know ${e.spell ?? "that"}.</span>`,
   spellAboveLevel: (e) => `<span class="miss">${e.spell ?? "That"} needs level ${e.need ?? "?"}; you are ${e.have ?? "?"}.</span>`,
-  spellSchoolLocked: (e) => `<span class="miss">${e.spell ?? "That"} is not open to you yet.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): the refusal says why, in the same shape
+  // as spellAboveLevel: the level the school opens at, and yours.
+  spellSchoolLocked: (e) =>
+    Number.isFinite(e.need)
+      ? `<span class="miss">${e.spell ? `${e.spell}'s school` : "That school"} opens to you at level ${e.need}; you are ${e.have ?? "?"}.</span>`
+      : `<span class="miss">${e.spell ?? "That"} is not open to you yet.</span>`,
   // Phase 31 (CMB-01/CMB-02): the NEW spell-refusal circumstances — never a
   // `frozen` reason; nothing is ever refused for fear.
   castRefused: (e) => {
     const map = {
       notFought: `<span class="miss">Fight! first.</span> ${e.spell ?? "The spell"} keeps.`,
       combatOnly: `<span class="miss">${e.spell ?? "That"} wants a target.</span> Save it for a fight.`,
-      exploreOnly: `<span class="miss">${e.spell ?? "That"} needs quieter surroundings.</span>`,
+      // VOX-05 (Phase 79, plan 79-08): the reason, then the joke.
+      exploreOnly: `<span class="miss">${e.spell ?? "That"} only works out of a fight.</span> It needs quieter surroundings.`,
       noTarget: `<span class="miss">Nothing left to aim at.</span>`,
     };
     return map[e.reason] ?? `<span class="miss">${e.spell ?? "The spell"} refuses you.</span>`;
@@ -1007,38 +1053,74 @@ export const EVENT_NARRATION = {
     e.lesser
       ? `<span class="beat">${e.name ?? "Something"} is coming, in a small way.</span>`
       : `<span class="beat">${e.name ?? "Something"} is coming, once there is a fight to join.</span>`,
-  stunned: (e) => `<span class="hit">${e.count ?? 0} freeze in place.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): who (foes, not a bare count) and what (asleep,
+  // a d4 each: engine/magic.js's stun branch); "1 freeze" no longer reads.
+  stunned: (e) =>
+    (e.count ?? 0) > 0
+      ? `<span class="hit">${e.count === 1 ? "1 foe drops" : `${e.count} foes drop`} asleep for d4 rounds${e.count === 1 ? "" : " each"}.</span>`
+      : `<span class="miss">The stun puts nobody to sleep.</span>`,
   // Phase 40 (SPELL-01, Weaken): names the duration when the payload carries
   // one (a member's own weakened line predates the timer and may not).
-  weakened: (e) => `<span class="hit">They hit softer now${e.rounds ? `, for ${e.rounds} rounds` : ""}.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): who and what, in the grimoire's own
+  // roll-high terms (C.foeToHitPenalty caps a foe at its die's top three
+  // faces; C.weakened halves its damage), and "1 round", never "1 rounds".
+  weakened: (e) =>
+    `<span class="hit">Every foe is weakened${e.rounds ? ` for ${plural(e.rounds, "round")}` : ""}: no more than its die's top three faces hit, and it does half damage.</span> They hit softer now.`,
   // Phase 40 (SPELL-01) — combat.js#foeTurn's tail narrates this on the
   // `spell:weaken` timer's own effect->null transition.
   weakenFaded: () => `<span class="hit">Their arms remember how to swing.</span>`,
-  stupefied: (e) => `<span class="hit">${e.target ?? "It"} forgets what it is doing.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): the fight-long effect is stated (past the
+  // knee the spell holds instead, and controlHeld narrates that).
+  stupefied: (e) => `<span class="hit">${e.target ?? "It"} forgets what it is doing, for the rest of the fight.</span>`,
   // Phase 40 (SPELL-01, Stupidity) — combat.js#foeTurn's own per-round skip
   // (the cast-time `stupefied` line above narrates the moment it lands; this
   // one narrates every subsequent turn it does nothing).
   foeStupefied: (e) => `${e.name ?? "It"} stands there, thinking about nothing.`,
   // RULES-18 (Phase 75.3): past the knee the Blind spell is timed — `rounds`
   // rides on the event and the line says so; without it, blind for the fight.
-  blinded: (e) => `<span class="hit">${e.target ?? "It"} cannot see a thing${e.rounds ? ` for ${e.rounds} rounds` : ""}.</span>`,
-  shrunk: (e) => `<span class="hit">${e.count ?? 0} shrink to half size.</span>`,
-  acidApplied: (e) => `${e.target ?? "It"} starts to dissolve. <span class="roll">${e.rounds ?? 0}</span> rounds of it.`,
+  // VOX-05 (Phase 79, plan 79-08): what blindness does to a foe's swing
+  // (engine/derived.js#foeSwingChain: its die's top face only), and the
+  // duration, "1 round" or the fight.
+  blinded: (e) =>
+    `<span class="hit">${e.target ?? "It"} cannot see a thing ${e.rounds ? `for ${plural(e.rounds, "round")}` : "for the rest of the fight"}: it hits only on its die's top face.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): who and what: half hp, half damage.
+  shrunk: (e) =>
+    (e.count ?? 0) > 0
+      ? `<span class="hit">${e.count === 1 ? "1 foe shrinks" : `${e.count} foes shrink`} to half size: half ${e.count === 1 ? "its" : "their"} hp and half ${e.count === 1 ? "its" : "their"} damage, for the fight.</span>`
+      : `<span class="miss">Nobody shrinks.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): "1 round", never "1 rounds".
+  acidApplied: (e) => `${e.target ?? "It"} starts to dissolve. <span class="roll">${e.rounds ?? 0}</span> round${e.rounds === 1 ? "" : "s"} of it.`,
   // Phase 40 (SPELL-01, Ice) — the cast-time line; combat.js#foeTurn's
   // existing dotTick handles every round after (see dotTick's own `by`
   // branch above), and frozenSolid (below) narrates the payoff.
-  iceApplied: (e) => `<span class="hit">Ice climbs ${e.target ?? "it"}: d6 a round for ${e.rounds ?? 0} rounds, then it stops moving.</span>`,
-  earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> to everyone in the room.`,
+  // VOX-05 (Phase 79, plan 79-08): "1 round", never "1 rounds".
+  iceApplied: (e) => `<span class="hit">Ice climbs ${e.target ?? "it"}: d6 a round for ${plural(e.rounds ?? 0, "round")}, then it stops moving.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): the number is damage, and it lands on
+  // every foe (the caster's own half is earthquakeSelfDamage's line).
+  earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> damage to every foe in the room.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   earthquakeSelfDamage: (e) => `<span class="hurt">Earthquake: the floor does not take sides.</span> −${e.amount ?? 0} hp.`,
-  vaporRolled: (e) => `Noxious vapor: <span class="roll">${e.roll ?? "?"}</span>.`,
+  // VOX-05 (Phase 79, plan 79-08): the face means something; say what
+  // (engine/magic.js's vapor branch: a 4 drops every foe unless its own d10
+  // shows a 1; any other face, or that 1, puts it to sleep for d6+2 rounds).
+  // Each death and each resist has its own line after this one.
+  vaporRolled: (e) =>
+    e.roll === 4
+      ? `Noxious vapor: <span class="roll">4</span>, the bad one. Every foe that breathes it drops, unless its own d10 shows a 1; then it only sleeps.`
+      : Number.isFinite(e.roll)
+        ? `Noxious vapor: <span class="roll">${e.roll}</span>. Every foe falls asleep for d6+2 rounds.`
+        : `Noxious vapor: <span class="roll">?</span>.`,
   volley: (e) => `<span class="roll">${e.rolls ?? 0}</span> shots, <span class="roll">${e.totalDamage ?? 0}</span> total damage.`,
   petrified: (e) => `<span class="hit">${e.target ?? "It"} turns to stone.</span>`,
   walkingDeadTurned: (e) => `<span class="hit">${e.count ?? 0} of the dead turn and flee.</span>`,
   nothingToTurn: () => `<span class="miss">Nothing here to turn.</span>`,
-  planeGated: (e) => `<span class="hit">${e.count ?? 0} are gated straight back out.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): who (foes), and "1 is", never "1 are".
+  planeGated: (e) => `<span class="hit">${e.count === 1 ? "1 foe is" : `${e.count ?? 0} foes are`} gated straight back out to the Planes.</span>`,
   gateRefused: () => `<span class="miss">There is no plane here worth opening.</span>`,
-  sensesGained: () => `<span class="hit">Your senses sharpen.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): what the sharpening does (engine/
+  // combat.js reads c.senses: you act first, and the dark costs nothing),
+  // until endCombat's sensesFaded.
+  sensesGained: () => `<span class="hit">Your senses sharpen: nothing gets the jump on you, and the dark costs you nothing, until your next fight ends.</span>`,
   // Phase 40 (SPELL-05, Plan 04): Map the Floor is now a time-boxed,
   // re-fogging reveal — the old permanent whole-floor reveal event is
   // retired outright; floorMapped/revealFaded replace it. Plan 76-06 (user
@@ -1047,7 +1129,10 @@ export const EVENT_NARRATION = {
   floorMapped: () => `<span class="hit">The floor lays itself out in your head — every corridor on this level, for exactly as long as you hold still.</span>`,
   revealFaded: () => `<span class="beat">You glance down to check your footing, and your focus breaks. The whole floor slips out of your head.</span>`,
   senseDanger: (e) => `<span class="beat">You get a bad feeling about the next ${e.nextEncounter ?? "encounter"}.</span>`,
-  mirrorSelf: (e) => `<span class="hit">A mirror image holds for ${e.rounds ?? 0} rounds.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): what the image does, in the grimoire's
+  // roll-high terms, and "1 round", never "1 rounds".
+  mirrorSelf: (e) =>
+    `<span class="hit">A mirror image holds for ${plural(e.rounds ?? 0, "round")}: foes hit you only on their die's top face (the top two if you insulted them).</span>`,
   // RULES-14 (Phase 75): a mirror spell (Bubble) reads its own line —
   // nothing to soak yet, just a promise to bounce the next blow — while
   // every other ward (Shield) keeps its plain "N points" text (no more
@@ -1056,11 +1141,21 @@ export const EVENT_NARRATION = {
   wardRaised: (e) =>
     e.mirror
       ? `<span class="hit">A bubble shimmers around you. The next blow goes back where it came from.</span>`
-      : `<span class="hit">${e.spell ?? "The ward"} raises a ward: ${e.pool ?? 0} points.</span>`,
-  strengthCast: (e) => `<span class="hit">Might surges: +${e.might ?? 0}.</span>`,
+      : `<span class="hit">${e.spell ?? "A spell"} raises a ward: it soaks the next ${e.pool ?? 0} hp of damage.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): the +N is damage on every blow, and the
+  // HP the cast added (engine/magic.js's `gained`: the doubling happens once
+  // a day, so a recast adds none) is stated, never silent.
+  strengthCast: (e) =>
+    `<span class="hit">Might surges: +${e.might ?? 0} damage on every blow until you make camp${
+      (e.gained ?? 0) > 0 ? `, and +${e.gained} hp${Number.isFinite(e.maxWP) ? ` (max ${e.maxWP})` : ""}` : ""
+    }.</span>${Number.isFinite(e.gained) && e.gained <= 0 ? " Your hp was already doubled for the day." : ""}`,
   regenerationCast: () => `<span class="hit">Wounds start closing on their own.</span>`,
-  insaneNoTarget: () => `<span class="miss">There is no one here to turn insane at.</span>`,
-  insaneRolled: (e) => `Insanity takes ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span>.`,
+  // VOX-05 (Phase 79, plan 79-08): "turn insane at" did not read naturally.
+  insaneNoTarget: () => `<span class="miss">There is no one here to drive insane.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): the d6 face means something; say what
+  // (engine/magic.js's insane branch). A 3 or 6 flees and a 2 strikes a
+  // neighbour: their own lines follow, so only the other faces add a clause.
+  insaneRolled: (e) => `Insanity takes ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span>${INSANE_FACE[e.roll] ?? ""}.`,
   insaneStruckAlly: (e) => `The maddened thing turns on ${e.target ?? "an ally"} for <span class="roll">${e.dmg ?? 0}</span> hp.`,
   insaneFled: (e) => `<span class="beat">${e.target ?? "It"} bolts, mad with fear.</span>`,
   // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): the HP gained leads; a
@@ -1070,15 +1165,21 @@ export const EVENT_NARRATION = {
       ? `<span class="hit">+${gainOf(e, e.amount)} hp</span>${e.spell ? ` from ${e.spell}` : ""}${cappedNote(gainOf(e, e.amount), e.amount)}.`
       : `<span class="miss">${e.spell ?? "Healing"}: nothing to restore.</span> You were already at full hp.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  deathSpellTooWeak: (e) => `<span class="miss">Death: the fee is ${e?.fee ?? 25} hp, and you would not survive paying it.</span>`,
+  // VOX-05 (Phase 79, plan 79-08): the rule refuses at fee + 1 hp or less
+  // (engine/magic.js), so the line states the hp it needs.
+  deathSpellTooWeak: (e) => `<span class="miss">Death: the fee is ${e?.fee ?? 25} hp, and you need at least ${(e?.fee ?? 25) + 2} to pay it.</span> The spell refuses to be what kills you.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   deathCast: (e) => `<span class="hurt">Death: the spell takes its fee first.</span> −${e?.cost ?? 25} hp.`,
-  dozed: (e) => `${e.target ?? "It"} dozes off for ${e.rounds ?? 0} rounds.`,
+  // VOX-05 (Phase 79, plan 79-08): "1 round", never "1 rounds".
+  dozed: (e) => `${e.target ?? "It"} dozes off for ${plural(e.rounds ?? 0, "round")}.`,
   nothingToThrowAt: () => `<span class="miss">Nothing here to throw it at.</span>`,
   spellThrown: (e) =>
     `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}.`,
+  // VOX-05 (Phase 79, plan 79-08): names who took it, like the strike line,
+  // and the ×N is the level multiplier already inside the damage (a bare
+  // "6 hp (×2)" read as 12).
   spellHit: (e) =>
-    `<span class="hit">Hit.</span> <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (×${e.mult})` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
+    `<span class="hit">Hit.</span> ${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (the roll ×${e.mult}, for your level)` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
   frozenSolid: (e) => `<span class="hit">${e.target ?? "It"} freezes solid.</span>`,
   // RULES-18 (Phase 75.3, Plan 04): past floor 12, a control (Freeze, Ice's
   // last tick, a Joiner's Doze/Stun/Weaken, a Bard song) increasingly gets
