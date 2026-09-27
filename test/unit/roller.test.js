@@ -26,6 +26,7 @@ import { characterSheetViewModel } from "../../src/browser/heroTab.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import * as roller from "../../src/browser/roller.js";
 import { ROLLER_IDS, ROLLER_TIMELINE, ROLLER_COPY, ROLLER_CSS, reelWordLists, createRoller } from "../../src/browser/roller.js";
+import { footerLines } from "../../src/browser/identityFooter.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -380,14 +381,17 @@ test("roller.js exports createRoller/reelWordLists as functions and the four fro
 
 // ─── (8) module source pins: no globals ───────────────────────────────────
 
-test("roller.js reads no window/document global, no rng-cursor read, no bridge name, exactly one import", () => {
+// VOX-04 (Phase 79, Plan 03): the reveal's footer adds the one pure footer
+// module as a second import (src/browser/identityFooter.js — no DOM, no rng).
+test("roller.js reads no window/document global, no rng-cursor read, no bridge name, exactly two imports (content, the identity footer)", () => {
   assert.doesNotMatch(ROLLER_STRIPPED, /\bwindow\./);
   assert.doesNotMatch(ROLLER_STRIPPED, /\bdocument\./);
   assert.doesNotMatch(ROLLER_STRIPPED, /rngState/);
   assert.doesNotMatch(ROLLER_STRIPPED, /__mz/);
   const importLines = ROLLER_STRIPPED.split("\n").filter((l) => l.startsWith("import "));
-  assert.equal(importLines.length, 1);
+  assert.equal(importLines.length, 2);
   assert.match(importLines[0], /from "\.\.\/\.\.\/content\/index\.js"/);
+  assert.match(importLines[1], /^import \{ footerLines \} from "\.\/identityFooter\.js";$/);
 });
 
 // ─── (9) module source pins: id containment ───────────────────────────────
@@ -540,4 +544,69 @@ test("m6: every inline-roller identifier is gone from both the classic and modul
 
 test("m7: function commitRolledState(state) { occurs exactly once in the module script", () => {
   assert.equal((MOUNT_MOD.match(/function commitRolledState\(state\) \{/g) || []).length, 1);
+});
+
+// ─── VOX-04 (Phase 79, Plan 03): the reveal's identity footer ─────────────
+//
+// The user met the Summoner's weakness only after DESCEND; the reveal now
+// shows the rolled sub-class's footer (and a non-Human race's) before it.
+
+const SUMMONER_HUMAN = newRun(1, [], { force: { sub: "Summoner", race: "Human" } });
+const WARLOCK_ELVEN = newRun(2, [], { force: { sub: "Warlock", race: "Elven" } });
+
+/** rulesText(el) — [[who, ...lines], ...], one entry per footer group. */
+function rulesText(el) {
+  return el.children.map((group) => group.children.map((p) => p.textContent));
+}
+
+async function rollTo(rig, state, callIdx) {
+  const p = rig.roller.start();
+  await flush();
+  rig.calls[callIdx].resolve(state);
+  await flush();
+  await p;
+}
+
+test("VOX-04: ROLLER_IDS lists the footer element and the roller-screen markup declares it after the quirk", () => {
+  assert.equal(ROLLER_IDS.rules, "mw-roller-rules");
+  const start = HTML_RAW.indexOf('<div id="mw-roller-screen"');
+  const slice = HTML_RAW.slice(start, HTML_RAW.indexOf("<!-- ============ MARKS LEGEND BOTTOM SHEET", start));
+  assert.ok(slice.indexOf('id="mw-roller-quirk"') < slice.indexOf('id="mw-roller-rules"'), "the footer sits after the quirk");
+});
+
+test("VOX-04: nothing shows before the reveal; the reveal shows the sub-class footer, and a Human race adds none", async () => {
+  const rig = makeRig();
+  await rollTo(rig, SUMMONER_HUMAN, 0);
+  const rules = rig.el(ROLLER_IDS.rules);
+  assert.equal(rules.children.length, 0, "empty while the dice are falling");
+  await rig.timers.advance(ROLLER_TIMELINE.reveal - 1);
+  assert.equal(rules.children.length, 0, "still empty one tick before the reveal");
+  await rig.timers.advance(1);
+  assert.deepEqual(rulesText(rules), [["Summoner", ...footerLines("sub", "Summoner")]]);
+  assert.ok(rulesText(rules)[0].some((l) => /healing spells you cast heal at half strength/.test(l)), "the half-strength healing line shows");
+});
+
+test("VOX-04: a non-Human race adds its own footer; a re-roll clears and refills with the new roll's lines", async () => {
+  const rig = makeRig();
+  await rollTo(rig, WARLOCK_ELVEN, 0);
+  await rig.timers.advance(ROLLER_TIMELINE.reveal);
+  const rules = rig.el(ROLLER_IDS.rules);
+  assert.deepEqual(rulesText(rules), [
+    ["Warlock", ...footerLines("sub", "Warlock")],
+    ["Elven", ...footerLines("race", "Elven")],
+  ]);
+
+  const p = rig.roller.start();
+  await flush();
+  assert.equal(rules.children.length, 0, "a re-roll clears the old footer at once");
+  rig.calls[1].resolve(SUMMONER_HUMAN);
+  await flush();
+  await p;
+  await rig.timers.advance(ROLLER_TIMELINE.reveal);
+  assert.deepEqual(rulesText(rules), [["Summoner", ...footerLines("sub", "Summoner")]]);
+});
+
+test("VOX-04: the footer reads footerLines and reaches the DOM through textContent, never innerHTML", () => {
+  assert.ok((ROLLER_STRIPPED.match(/footerLines\(/g) || []).length >= 1);
+  assert.doesNotMatch(ROLLER_STRIPPED, /innerHTML/);
 });
