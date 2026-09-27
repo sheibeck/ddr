@@ -65,14 +65,14 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 ### Darkness (DARK) — backlog 999.8
 
-- [ ] **DARK-01**: One shared darkness-waiver predicate drives both `revealRadius` and `mapViewRadius`. A lit torch, the Amulet or Night Vision widens what you reveal as you walk as well as what is rendered.
-- [ ] **DARK-02**: The DARK chip, the map vignette and per-tile dark painting all read from the unified rule, so a light source means the same thing on every surface.
-- [ ] **DARK-03**: Map the Floor lasts only until you move. The whole-floor reveal holds while the hero stands still. The first step ends it and re-fogs every cell the spell showed; cells the hero walked or revealed normally stay seen. Only movement ends the window, and a recast refreshes it. The spell text, the chip and the Oracle lines say so ("you lose focus"). (user, 2026-09-26; todo 2026-09-26 map-the-floor-lasts-only-until-you-move)
+- [x] **DARK-01**: One shared darkness-waiver predicate drives both `revealRadius` and `mapViewRadius`. A lit torch, the Amulet or Night Vision widens what you reveal as you walk as well as what is rendered.
+- [x] **DARK-02**: The DARK chip, the map vignette and per-tile dark painting all read from the unified rule, so a light source means the same thing on every surface.
+- [x] **DARK-03**: Map the Floor lasts only until you move. The whole-floor reveal holds while the hero stands still. The first step ends it and re-fogs every cell the spell showed; cells the hero walked or revealed normally stay seen. Only movement ends the window, and a recast refreshes it. The spell text, the chip and the Oracle lines say so ("you lose focus"). (user, 2026-09-26; todo 2026-09-26 map-the-floor-lasts-only-until-you-move)
 
 ### Relaunch persistence (SAV) — backlog 999.10
 
-- [ ] **SAV-06**: A player who Saves & quits, or whose app is killed, mid-fight relaunches into the same fight: the same foes, HP, round and active effects. Force-closing no longer escapes a fight.
-- [ ] **SAV-07**: A player who relaunches with the store open returns to the same store with the same stock.
+- [x] **SAV-06**: A player who Saves & quits, or whose app is killed, mid-fight relaunches into the same fight: the same foes, HP, round and active effects. Force-closing no longer escapes a fight.
+- [x] **SAV-07**: A player who relaunches with the store open returns to the same store with the same stock.
 
 ### Combat screen & Oracle (CMBUI)
 
@@ -157,11 +157,11 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | RULES-16 | Phase 75.3 | Complete |
 | RULES-17 | Phase 75.3 | Complete |
 | RULES-18 | Phase 75.3 | Complete |
-| DARK-01 | Phase 76 | Pending |
-| DARK-02 | Phase 76 | Pending |
-| DARK-03 | Phase 76 | Pending |
-| SAV-06 | Phase 76 | Pending |
-| SAV-07 | Phase 76 | Pending |
+| DARK-01 | Phase 76 | Complete |
+| DARK-02 | Phase 76 | Complete |
+| DARK-03 | Phase 76 | Complete |
+| SAV-06 | Phase 76 | Complete |
+| SAV-07 | Phase 76 | Complete |
 | CMBUI-07 | Phase 77 | Pending |
 | CMBUI-08 | Phase 77 | Pending |
 | CMBUI-09 | Phase 77 | Pending |

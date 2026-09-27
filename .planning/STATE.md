@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 76
-current_phase_name: Darkness Unification & Relaunch Persistence
+current_phase: 77
+current_phase_name: Combat Screen & Oracle Readability
 status: executing
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-26T22:31:52.054Z"
+last_updated: "2026-09-27T01:13:51.109Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 75.3 complete, transitioned to Phase 76
+last_activity_desc: Phase 76 complete, transitioned to Phase 77
 progress:
   total_phases: 14
-  completed_phases: 8
-  total_plans: 107
-  completed_plans: 68
-  percent: 57
+  completed_phases: 9
+  total_plans: 111
+  completed_plans: 81
+  percent: 64
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 76 — Darkness Unification & Relaunch Persistence
+Phase: 77 — Combat Screen & Oracle Readability
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-09-26 — Phase 75.3 complete, transitioned to Phase 76
+Last activity: 2026-09-26 — Phase 76 complete, transitioned to Phase 77
 
 ## Ground Truth (durable facts every session needs)
 
@@ -95,7 +95,6 @@ Last activity: 2026-09-26 — Phase 75.3 complete, transitioned to Phase 76
 
 ### Pending Todos
 
-- 2026-09-26 — **Map the Floor lasts only until you move** (user): the reveal breaks on the first step (focus lost) instead of 40 squares; candidate Phase 76 — `todos/pending/2026-09-26-map-the-floor-lasts-only-until-you-move.md`
 - 2026-09-25 — **Leaderboards lose runs** (user + friend, on device; v2.1 BOARD-15/16, Phase 81): a depth-10 run missing from the player's own DEEPEST board (Graveyard only); a friend's depth-11 score never shows on the user's ALL board; the friend's "not in the top ten" card is wrong — `todos/pending/2026-09-25-leaderboards-lose-runs-locally-and-globally.md`
 - 2026-09-24 — **Pilfer bad becomes fumbling** (user, added to v2.1 as RULES-09, Phase 75.1): drop the heal-only lockout; a Pilfer uses magic items normally but a rolled 1 destroys the item — `todos/pending/2026-09-24-pilfer-bad-becomes-fumbling-destroys-a-magic-item-on-a-1.md`
 - 2026-09-24 — **Anyone reads scrolls on an intelligence roll** (user, v2.1 RULES-10, Phase 75.1): Magic Users always succeed, everyone else rolls d20 vs intel, scroll consumed either way — `todos/pending/2026-09-24-anyone-reads-scrolls-on-an-intelligence-roll-scroll-always-consumed.md`

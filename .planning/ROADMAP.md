@@ -50,7 +50,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [x] **Phase 75.3: Deep-Floor Encounter Scaling** (INSERTED) - solo fights fade with depth, a steeper foe curve and tier past floor 12, and control spells lose their lock at depth
  (completed 2026-09-26)
 
-- [ ] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store
+- [x] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store (completed 2026-09-26)
 - [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
 - [ ] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep
@@ -372,7 +372,7 @@ Plans:
   3. A player who Saves & quits, or whose app is killed, mid-fight relaunches into the exact same fight — same foes, HP, round and active effects — and force-closing can no longer be used to escape a fight.
   4. A player who relaunches with the store open returns to the same store with the same stock.
 
-**Plans**: 5/6 plans executed
+**Plans**: 6/6 plans complete
 
 Plans:
 **Wave 1**
@@ -391,7 +391,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 76-06-PLAN.md — Make Map the Floor last only until the hero moves (wave 4)
+- [x] 76-06-PLAN.md — Make Map the Floor last only until the hero moves (wave 4)
 
 **Device check**: yes — relaunch-mid-fight and relaunch-mid-store batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
 
@@ -652,7 +652,7 @@ Plans:
 | 75.1. Pilfer Fumbles & Scroll Reading | v2.1 | 9/9 | Complete    | 2026-09-26 |
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
-| 76. Darkness Unification & Relaunch Persistence | v2.1 | 5/6 | In Progress|  |
+| 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 6/8 | In Progress|  |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
