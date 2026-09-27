@@ -499,6 +499,29 @@ export function dropShelfItems(c) {
     .filter(({ it }) => takesBagSlot(it));
 }
 
+/**
+ * dropShelfRows(c) — Phase 78 (HUD-09): the bag-full drop list's render-
+ * ready rows. The one bag-slot list (`dropShelfItems`, above: bag order,
+ * the true `c.items` index, never a potion/scroll/bag) plus the one stat
+ * formatter (`itemStatLines`, the Gear sheet's and the Store's own), so a
+ * row reads the item's name and its stat line and still drops that exact
+ * item. Each row is `{ it, i, name, stats }`: `it` is the same item
+ * reference (a superset of a `dropShelfItems` entry, so a renderer that
+ * destructures `{ it, i }` keeps working), `stats` joins the stat lines'
+ * texts with " · " ("" when the formatter has nothing to say). Pure, no
+ * rng; never mutates `c`.
+ */
+export function dropShelfRows(c) {
+  return dropShelfItems(c).map(({ it, i }) => ({
+    it,
+    i,
+    name: it.n || "",
+    stats: itemStatLines(it, c)
+      .map((l) => l.text)
+      .join(" · "),
+  }));
+}
+
 // Matches the roll-detail span src/browser/engineAdapter.js's formatEvent()
 // already embeds inline (e.g. `<span class="roll">7</span>`).
 const ROLL_SPAN_RE = /<span class="roll">([\s\S]*?)<\/span>/;

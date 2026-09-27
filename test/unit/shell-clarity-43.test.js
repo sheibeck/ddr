@@ -125,10 +125,13 @@ test("import: the pinned viewModels import line is byte-identical and occurs exa
   );
 });
 
+// Phase 78 (HUD-09, 78-08): re-pinned — the drop shelf's bridge hands out
+// dropShelfRows (the same entries plus name and stat line), so the line
+// imports it in dropShelfItems' place.
 test("import: a NEW, separate viewModels import line carries the four Phase 43 exports, exactly once", () => {
   assert.equal(
     (CODE.match(
-      /import \{ usableBy, dropShelfItems \} from "\.\/src\/browser\/viewModels\.js";/g,
+      /import \{ usableBy, dropShelfRows \} from "\.\/src\/browser\/viewModels\.js";/g,
     ) || []).length,
     1,
   );
@@ -170,7 +173,9 @@ test("bridges: __mzUsableBy/__mzRations/__mzDropShelfItems occur exactly once ea
   for (const bridge of [
     "window.__mzUsableBy = usableBy;",
     "window.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };",
-    "window.__mzDropShelfItems = dropShelfItems;",
+    // Phase 78 (HUD-09, 78-08): the bridge name is unchanged; it hands out
+    // the rows now.
+    "window.__mzDropShelfItems = dropShelfRows;",
   ]) {
     const matches = CODE.match(new RegExp(bridge.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || [];
     assert.equal(matches.length, 1, `expected exactly one occurrence of: ${bridge}`);
@@ -405,7 +410,8 @@ test("Kit (gearTab.js): gearKitRows has no weapon/armor/Potions/Scrolls/Wilmst r
 test("renderDropShelf(shelf, entries) destructures { it, i }; both call sites read window.__mzDropShelfItems(c)", () => {
   assert.equal((CODE.match(/function renderDropShelf\(shelf, entries\)/g) || []).length, 1);
   const region = renderDropShelfRegion();
-  assert.match(region, /forEach\(\(\{ it: bi, i \}\) =>/);
+  // Phase 78 (HUD-09, 78-08): a row also carries its stat line.
+  assert.match(region, /forEach\(\(\{ it: bi, i, stats \}\) =>/);
   assert.doesNotMatch(region, /c\.items|c\.worn|c\.weapon|c\.armor/);
   assert.equal((CODE.match(/window\.__mzDropShelfItems\(c\)/g) || []).length, 2);
 });

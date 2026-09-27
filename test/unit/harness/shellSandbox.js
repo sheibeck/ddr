@@ -44,7 +44,7 @@ import {
   bagArmorText,
   lootCompare,
   usableBy,
-  dropShelfItems,
+  dropShelfRows,
 } from "../../../src/browser/viewModels.js";
 import { bagUsage, renderGearTab, renderCarriedList } from "../../../src/browser/gearTab.js";
 // Phase 74 (ROLL-02/03), plan 74-07 — wired below as window.__mzConditionEffect,
@@ -202,7 +202,9 @@ function wireBridges(context, { dressing = null } = {}) {
   w.__mzToolIndex = toolIndex;
   w.__mzUsableBy = usableBy;
   w.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
-  w.__mzDropShelfItems = dropShelfItems;
+  // Phase 78 (HUD-09): the rows (entries plus name and stat line), as the
+  // module script bridges them.
+  w.__mzDropShelfItems = dropShelfRows;
   w.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
   w.__mzCarriedList = renderCarriedList;
   // Phase 63 (GSCR-07..10, GRULE-02) — the REAL sheet renderer, mirroring

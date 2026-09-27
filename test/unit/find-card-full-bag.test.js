@@ -206,7 +206,9 @@ test("(d) after a drop the card re-renders with the found item still first and t
 // ─── (e) CSS ────────────────────────────────────────────────────────────────
 
 function rule(selector) {
-  const re = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\{([^}]*)\\}");
+  // Anchored to a rule start, so ".mw-find-drop" never matches inside a
+  // compound selector such as "#mw-rail .mw-rail-lines>.mw-find-drop".
+  const re = new RegExp("(?:^|\\})\\s*" + selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\{([^}]*)\\}", "m");
   const m = STYLE.match(re);
   assert.ok(m, `rule not found: ${selector}`);
   return m[1];
@@ -222,6 +224,18 @@ test("(e) the drop region is bounded by the viewport and the text scale, scrolls
 test("(e) the map-side rail never grows past the stage; rows wrap (no nowrap or ellipsis on a row's name or stats)", () => {
   assert.match(rule("#mw-rail"), /max-height:100%/);
   assert.match(rule("#mw-rail"), /overflow-y:auto/);
+  // The rail is a column: the title and actions never shrink, the drop
+  // region is the one line that gives way (down to a floor), and only past
+  // that floor does the lines column scroll, so nothing overlaps TAKE /
+  // LEAVE. Measured in headless Chrome at L on a 412px-wide screen (SUMMARY).
+  assert.match(rule("#mw-rail"), /display:flex;flex-direction:column/);
+  assert.match(rule("#mw-rail[hidden]"), /display:flex!important/);
+  assert.match(rule("#mw-rail>.mw-rail-row"), /flex:0 1 auto;min-height:0/);
+  assert.match(rule("#mw-rail .mw-rail-body"), /align-self:stretch;display:flex;flex-direction:column;min-height:0/);
+  assert.match(rule("#mw-rail .mw-rail-lines"), /min-height:0;display:flex;flex-direction:column;overflow-y:auto/);
+  assert.match(rule("#mw-rail .mw-rail-lines>*"), /flex:none/);
+  assert.match(rule("#mw-rail .mw-rail-lines>.mw-find-drop"), /flex:0 1 auto;min-height:calc\([\d.]+rem \* var\(--mw-text-scale\)\)/);
+  assert.match(rule("#mw-rail>.mw-rail-actions"), /flex:none/);
   const names = rule(".mw-find-drop .g-n");
   assert.match(names, /overflow-wrap:anywhere/);
   assert.match(names, /min-width:0/);

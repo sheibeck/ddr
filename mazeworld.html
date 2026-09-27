@@ -1001,6 +1001,34 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    It may cover the lower foe list; a body tap dismisses it. No new
    transition or animation. */
 #mw-rail[data-over="combat"]{z-index:8;bottom:var(--mw-rail-lift,0px);max-height:45%;overflow-y:auto}
+/* Phase 78 (HUD-09, user 2026-09-25: "if you have a larger bag, you only
+   see what's in your bag to drop, and you can't scroll the rail back up to
+   see the item you are trying to loot"). The map-side rail card never grows
+   past the stage: it is a column capped at the stage's height, the title
+   and the actions row never shrink, and the lines column gives way instead.
+   The bag-full drop list (.mw-find-drop, the find card's #find-drop-shelf
+   and the loot screen's #loot-drop-shelf) is a bounded region of its own:
+   at most about a third of the screen, growing with the S/M/L text scale,
+   scrolling inside the card and keeping its scroll to itself; on the rail
+   it is also the one line that shrinks (to a floor of about three rows) so
+   the found item's lines above it and TAKE IT NOW / LEAVE IT below it stay
+   in view. Only past that floor (a very short stage, a very long narration)
+   does the lines column scroll, and even then the actions stay put and
+   nothing overlaps them. Measured at L on a 412px-wide screen: a 656px
+   stage keeps everything in view with a 184px drop region. Long names and
+   stat lines wrap inside their rows. Display stays flex while hidden, so
+   the close slide lays out exactly as the open one. The combat card's own
+   45% cap above still wins while it is up. */
+#mw-rail{max-height:100%;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column}
+#mw-rail[hidden]{display:flex!important}
+#mw-rail>.mw-rail-row{flex:0 1 auto;min-height:0}
+#mw-rail .mw-rail-body{align-self:stretch;display:flex;flex-direction:column;min-height:0}
+#mw-rail .mw-rail-lines{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
+#mw-rail .mw-rail-lines>*{flex:none}
+#mw-rail .mw-rail-lines>.mw-find-drop{flex:0 1 auto;min-height:calc(5.5rem * var(--mw-text-scale))}
+#mw-rail>.mw-rail-actions{flex:none}
+.mw-find-drop{max-height:min(34vh, calc(15rem * var(--mw-text-scale)));overflow-y:auto;overscroll-behavior:contain;margin:8px 0 0}
+.mw-find-drop .g-n{min-width:0;overflow-wrap:anywhere}
 
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
@@ -4041,14 +4069,20 @@ function paint() {
    window.__mzDropShelfItems(c) — slot-consuming BAG items with their true
    c.items index; worn/wielded pieces and slot-exempt potions never appear
    here, so this function itself never reads c.items/c.worn/c.weapon/
-   c.armor. */
+   c.armor.
+   Phase 78 (HUD-09): an entry is a viewModels.js#dropShelfRows row, so
+   each row reads the item's Gear-sheet stat line (`stats`, from the one
+   itemStatLines formatter); both callers mount the shelf as the bounded,
+   scrolling .mw-find-drop region. */
 function renderDropShelf(shelf, entries) {
-  (entries || []).forEach(({ it: bi, i }) => {
+  (entries || []).forEach(({ it: bi, i, stats }) => {
     const row = document.createElement("button");
     row.className = "goods";
     // Phase 28 (ARMOR-03): the drop shelf shows remaining armor durability,
-    // never the frozen txt.
-    const biSub = bi.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(bi) : bi.txt;
+    // never the frozen txt. Phase 78 (HUD-09): the stat line (AR and wear
+    // for armour) comes first; the old sub is the fallback for an item the
+    // formatter has nothing to say about.
+    const biSub = stats || (bi.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(bi) : bi.txt);
     row.innerHTML = `<span class="g-n">${bi.n}${biSub ? `<i>${biSub}</i>` : ""}</span><span class="g-c">Drop</span>`;
     row.onclick = () => window.mzDropItem?.(i);
     shelf.appendChild(row);
@@ -5336,11 +5370,14 @@ function renderEncounter() {
         // 2026-09-17 UAT (user ruling): a full bag is reported once, by the
         // rail's bagFull refusal card — no inline line under the loot list;
         // the drop shelf still appears so the player can make room.
+        // Phase 78 (HUD-09): the same bounded, scrolling .mw-find-drop
+        // region as the find card, so a big full bag never pushes the loot
+        // list or TAKE ALL / LEAVE ALL out of view.
         const wrap = document.createElement("div");
         wrap.innerHTML = `<p class="cb-sub">${COMBAT_COPY.lootHead} · bag ${usage.text || "unlimited"}</p>
           <ul class="skills cb-loot" id="loot-list"></ul>`
           + (usage.full && needsSlot
-            ? `<div class="shelf" id="loot-drop-shelf"></div>`
+            ? `<div class="shelf mw-find-drop" id="loot-drop-shelf"></div>`
             : "");
         mid.appendChild(wrap);
         // Resolve the hosts inside `wrap` itself (never by document id) so
@@ -5740,8 +5777,13 @@ function renderRail() {
     }
   }
   if (shelfItems) {
+    // Phase 78 (HUD-09, user 2026-09-25): the drop list is its own bounded,
+    // scrolling region (.mw-find-drop), after the found item's lines and the
+    // bag-full line that heads it, and before the actions row, so the item
+    // being decided on and TAKE IT NOW / LEAVE IT stay in view however big
+    // the bag is.
     const shelfEl = document.createElement("div");
-    shelfEl.className = "shelf";
+    shelfEl.className = "shelf mw-find-drop";
     shelfEl.id = "find-drop-shelf";
     linesEl.appendChild(shelfEl);
     renderDropShelf(document.getElementById("find-drop-shelf"), shelfItems);
@@ -6810,7 +6852,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { hudMenuNext, abandonRowNext, ABANDON_ARM_MS, hudMenuRowStates } from "./src/browser/hudMenu.js";
   // Phase 43 (CLAR-02/03/04/05) — the clarity view models, a SEPARATE import
   // line so the Phase 28/29/37/39 pins on the line above stay byte-identical.
-  import { usableBy, dropShelfItems } from "./src/browser/viewModels.js";
+  import { usableBy, dropShelfRows } from "./src/browser/viewModels.js";
   // Phase 47 (SHELL-02), Plan 04 — the Hero-only view models moved out of
   // viewModels.js into heroTab.js (Task 1); renderHeroTab is the classic-
   // script carve's mount function (Task 2).
@@ -7006,10 +7048,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // panel, eatsLine for the Joiner card + Company panel — both read
   // engine/movement.js#eatsFor, the same read __mzNightlyEats's camp gate
   // uses), __mzDropShelfItems (the bag-full drop shelf's ONE source list —
-  // bag items only).
+  // bag items only). Phase 78 (HUD-09): it hands out dropShelfRows, the same
+  // entries ({ it, i }) plus each row's name and Gear-sheet stat line, so
+  // the find card's and the loot screen's drop rows both read the stats.
   window.__mzUsableBy = usableBy;
   window.__mzRations = { view: rationsViewModel, eatsLine: eatsLineFor };
-  window.__mzDropShelfItems = dropShelfItems;
+  window.__mzDropShelfItems = dropShelfRows;
 
   // Phase 47 (SHELL-01/02/03), Plans 03/04/05 — the tab modules' render
   // functions, one frozen object (the __mzControls/__mzTables precedent:
