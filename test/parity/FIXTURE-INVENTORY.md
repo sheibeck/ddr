@@ -4758,3 +4758,67 @@ Prediction: **zero moved fixtures, zero moved state pins.**
 (`test/unit/fixtures/event-order/default-fold-corpus.json`) was regenerated
 as a declared change (`MZ_REGEN_EVENT_ORDER_CORPUS=1`): two recorded `rested`
 events gained the additive `gained: 2`; every recorded line is byte-identical.
+
+### Plan 79-05 — the content rules text reads roll-high (ROLL-04, VOX-05): measured, one carve-out
+
+**The rule.** Text only. The authored rules text in `content/` (spells,
+skills, abilities, treasure rows, potions, bestiary notes, the leap table's
+labels) and two string literals (the Lockpicks `txt` in
+`engine/items.js#rollTreasureItem` and the lockpick store row in
+`engine/economy.js#openStore`) were rewritten to the roll-high reading or
+to fix a rubric failure. No rule, field (other than a text field) or rng
+draw changes; no engine code reads any of these strings.
+
+**The predictor.** An item's `txt` is copied into `c.items` when the item
+is found or bought, and a store row into `state.store`, so a reworded item
+reaches serialized state. The reworded items are Lockpicks, the Crystal
+Staff, the Cloak of Invisibility, the Anklet of Invisibility (already in
+`REWORDED_TXT_ITEMS` since 260918-w4n) and the Invisible potion. A foe's
+`sp.note` rides in a live fight's state (Bat/Rat, Viper, Zit, Stink Bug,
+Pogo, Trachea). The leap labels never reach state (only
+`src/browser/rollOdds.js#gapText` reads them, for the climb card).
+
+**The live scan (measured at this plan's base, `d39625ee`).**
+
+1. `node --test "test/parity/**/*.test.js"` before the carve-out: 63 of 66
+   pass. The three failures are one diff: the economy fixture buys a set of
+   Lockpicks, and its declared end-state `after.items[2].txt` reads
+   "1–5 on d10 against any lock" against the engine's "6–10 on d10 against
+   any lock". No other comparison moved: no fixture carries a Crystal
+   Staff, Cloak of Invisibility or Invisible potion, and no fixture fight
+   meets a reworded foe. The lockpick store row's new `sub` ("opens boxes on
+   6–10") is never compared: the economy fixture is the only replay that
+   rolls that row, and its action-path record (fromAction 0) skips the
+   per-action byte diff; its stock pins compare names and `[n, cost]` only.
+2. **The carve-out.** `test/parity/harness/comparables.js`:
+   `REWORDED_TXT_ITEMS` gains "Lockpicks", "Crystal Staff", "Cloak of
+   Invisibility", "Invisible potion" and "Invisible potion (clear)" (the
+   store and find names); and `declaredEndDiffs` now compares the engine
+   side's measured and declared `after` through `stripCloakArmorTxt`, the
+   same named carve-out the three comparable chains apply, so a reworded
+   item text never forces a fixture edit. The prototype `before` side is
+   still compared text for text. After it: **66 tests, 66 pass, 0 fail.**
+3. `git diff --quiet d39625ee -- test/parity/fixtures test/parity/prototype-master.js.txt`
+   exits 0; `git hash-object test/parity/prototype-master.js.txt` is
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node --test test/parity/fixture-inventory.test.js` passes (5/5); the
+   generated roster block above is not edited.
+5. **State pins.** `test/unit/roll-high-state-pins.test.js`: two hashes
+   moved, `party-fighter-knight` (the run ends holding an "Invisible potion
+   (clear)", whose `txt` now states the foe's top face) and `deep-8` (it
+   ends holding a set of Lockpicks). Traced: putting the old `txt` back into
+   each run's final state re-hashes to the previous pin exactly;
+   actions/dead/depth are unchanged. Both re-pinned with
+   `node tools/roll-high-baseline.mjs pins`. `roll-high-save-compat.test.js`
+   (the pre-switch save), `foe-turn-draw-count.test.js`,
+   `bot-tactics.test.js` and `test/determinism/**` pass unchanged: the
+   save's `expected` is not re-recorded.
+
+#### Moved set — declared records
+
+**Empty — no fixture record moved** (the one diff is carved out above, not
+re-recorded).
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — carved out, not re-recorded)* | | | | | | |

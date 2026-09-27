@@ -178,7 +178,7 @@ export function scrollReadOdds(state) {
  *   - `rolls`: how many d10s the attempt takes (`one` for a single roll,
  *     `many` fills `{list}` from hazardOdds's `rolls`, " or "-joined).
  *   - `penalty`: the player-facing name of each hazardOdds penalty term.
- *   - `ft`: a LEAP_TABLE gap label ("3-4 feet") as the card writes it.
+ *   - `ft`: a LEAP_TABLE gap label ("3–4 feet") as the card writes it.
  */
 export const HAZARD_ODDS_COPY = Object.freeze({
   climb: "{range} on a {die} for each 10 ft{others}, {rolls}",
@@ -190,9 +190,11 @@ export const HAZARD_ODDS_COPY = Object.freeze({
   ft: "{lo}–{hi} ft",
 });
 
-/** gapText(label) — a LEAP_TABLE `ft` label ("12-15 feet") as "12–15 ft"; any other label passes through. */
+/** gapText(label) — a LEAP_TABLE `ft` label ("12–15 feet") as "12–15 ft"; any other label passes through.
+ * Phase 79 (79-05): the table's labels moved to the U+2013 range dash (the
+ * hygiene ruling), so this reads that dash. */
 function gapText(label) {
-  const m = /^(\d+)-(\d+) feet$/.exec(String(label));
+  const m = /^(\d+)–(\d+) feet$/.exec(String(label));
   return m ? HAZARD_ODDS_COPY.ft.replace("{lo}", m[1]).replace("{hi}", m[2]) : String(label);
 }
 

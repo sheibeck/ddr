@@ -149,7 +149,16 @@ const PINNED = {
   // edit reaching a real playthrough's serialized state. Regenerated via
   // `node tools/roll-high-baseline.mjs pins` (each hashed identically
   // twice).
-  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "a5f8ac7c4d2e9d54d599662239472d803d01336ca8a0c71044c48b9ba35366ce" },
+  //
+  // "party-fighter-knight" and "deep-8" re-pinned (Phase 79, Plan 05,
+  // 2026-09-27, ROLL-04): item TEXT only. The roll-under item texts were
+  // rewritten roll-high, and each run ends holding one: this run carries an
+  // "Invisible potion (clear)" whose txt now states the foe's top face;
+  // "deep-8" carries a set of Lockpicks whose txt reads "6–10 on d10" (was
+  // "1–5"). Traced: putting the old txt back into each run's final state
+  // re-hashes to the previous pin exactly, and actions/dead/depth are
+  // unchanged. Regenerated via `node tools/roll-high-baseline.mjs pins`.
+  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "b00ad65f81d8f4a8fcc322a8760ff6d4aef915968f2cd59b177a7c7a09b5e388" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
@@ -178,7 +187,9 @@ const PINNED = {
   // Troll-Summoner complaint was exactly "too many solo fights past floor
   // 5"). Regenerated via `node tools/roll-high-baseline.mjs pins` (hashed
   // identically twice).
-  "deep-8": { actions: 250, dead: true, depth: 10, hash: "4ad84fadec4eed1bb45908ccea142ed06a9d318a81f06c723834e9a5d1011b45" },
+  // "deep-8" re-pinned (Phase 79, Plan 05): its Lockpicks txt, see the
+  // "party-fighter-knight" comment above.
+  "deep-8": { actions: 250, dead: true, depth: 10, hash: "ffe8d37b693277b5b0752971f516ada4740b262dc5f55e751c8e236a785b62cb" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll
