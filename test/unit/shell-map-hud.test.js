@@ -224,7 +224,9 @@ test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp
   // counters and the ☰ still fit 412px at L (was `* var(--mw-text-scale)`).
   assert.equal((HTML.match(/--mw-font-hud-label:calc\(0\.40625rem \* min\(var\(--mw-text-scale\), 1\.1\)\)/g) || []).length, 1);
   assert.equal((HTML.match(/--mw-font-hud-num:calc\(1rem \* min\(var\(--mw-text-scale\), 1\.1\)\)/g) || []).length, 1);
-  assert.equal((HTML.match(/--mw-font-hud-ident:calc\(0\.8125rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
+  // Phase 78 (HUD-01, Plan 05): band 1's token caps at 1.1 too, so more of
+  // "Race Sub-class · Lvl N" fits 412px at L (was `* var(--mw-text-scale)`).
+  assert.equal((HTML.match(/--mw-font-hud-ident:calc\(0\.8125rem \* min\(var\(--mw-text-scale\), 1\.1\)\)/g) || []).length, 1);
 });
 
 // ─── (d) chip CSS + the four condition tone rules ─────────────────────────

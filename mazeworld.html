@@ -153,8 +153,13 @@
   --mw-font-hud-num:calc(1rem * min(var(--mw-text-scale), 1.1));         /* Courier Prime Bold — mock's 16px HUD numbers */
   /* Phase 57 (LAYOUT-05), Plan 05: the 2026-09-22 mock's 13px band-1
      Courier Prime Bold size — the name and the race/class/level line share
-     this token (design/Mazeworld Map.dc.html's own literal font-size:13px). */
-  --mw-font-hud-ident:calc(0.8125rem * var(--mw-text-scale));
+     this token (design/Mazeworld Map.dc.html's own literal font-size:13px).
+     Phase 78 (HUD-01, Plan 05): band 1 caps its scale at 1.1 like band 2,
+     so the whole HUD tops out together. At the full 1.25 the ellipsis cut
+     "Lvl N" off the race/sub-class line for almost every rolled character
+     on a 412px screen (full line shown for 4.2% of 2,000 seeds); at 1.1 it
+     is 29.3% (M 72.4%). S 0.85 < M 1 < L 1.1 stays strictly increasing. */
+  --mw-font-hud-ident:calc(0.8125rem * min(var(--mw-text-scale), 1.1));
 }
 *{box-sizing:border-box}
 body{

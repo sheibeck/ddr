@@ -107,9 +107,10 @@ test("HUD-04 band-2 cap: band 2's tokens cap their scale at 1.1, so S < M < L ho
     assert.ok(s < m && m < l, `${name}: S ${s} < M ${m} < L ${l}`);
     assert.equal(m, 1, `${name} is unchanged at M`);
   }
-  // Every other token takes the full scale (no cap).
+  // Every other token takes the full scale (no cap), except band 1's
+  // --mw-font-hud-ident (78-05, pinned in the band-1 test below).
   for (const [name, v] of decls) {
-    if (name === "--mw-font-hud-label" || name === "--mw-font-hud-num") continue;
+    if (name === "--mw-font-hud-label" || name === "--mw-font-hud-num" || name === "--mw-font-hud-ident") continue;
     assert.equal(cap(v), Infinity, `${name} takes the full scale`);
   }
   // Band 2's budget at the capped L (the hud-menu-layout (14) model: glyph
@@ -121,6 +122,25 @@ test("HUD-04 band-2 cap: band 2's tokens cap their scale at 1.1, so S < M < L ho
   const total = text + 3 * 8 + 28 + 10 + 40;
   assert.ok(total <= 411, `band 2 at the capped L computes to ${total.toFixed(1)}px of 411`);
   // Headless Chrome at 412px measured 404.5px (78-02 SUMMARY).
+});
+
+test("HUD-01 band-1 cap: band 1's --mw-font-hud-ident caps at 1.1 like band 2, so S < M < L holds and more of 'Race Sub-class · Lvl N' fits 412px at L", () => {
+  const decls = new Map(tokenDeclarations().map((d) => [d.name, d.value]));
+  const v = decls.get("--mw-font-hud-ident");
+  const m = v.match(/min\(var\(--mw-text-scale\),\s*([\d.]+)\)/);
+  assert.ok(m, `--mw-font-hud-ident (${v}) caps its scale`);
+  assert.equal(Number(m[1]), 1.1, "--mw-font-hud-ident caps at 1.1");
+  const [s, mid, l] = [0.85, 1, 1.25].map((x) => Math.min(x, Number(m[1])));
+  assert.ok(s < mid && mid < l, `band 1: S ${s} < M ${mid} < L ${l}`);
+  // Band 1's budget (13px Courier Prime Bold, 0.6em advance; 412px minus the
+  // 28px padding and two 8px gaps): a typical "Thrain Anvilborn" with
+  // "Dwarven Pickpocket · Lvl 3" and "18/18 HP" is 50 glyphs. At the capped
+  // L that is 50 x 8.58 = 429px of 368 (the line ellipsizes); at the
+  // uncapped L it was 487.5px. The fit rate over 2,000 rolled characters is
+  // in 78-05-SUMMARY (L 4.2% -> 29.3%, M 72.4%).
+  const glyph = 13 * l * 0.6;
+  assert.equal(glyph.toFixed(2), "8.58");
+  console.log(`text-scale: band 1 at the capped L is ${glyph.toFixed(2)}px per glyph (uncapped ${(13 * 1.25 * 0.6).toFixed(2)}).`);
 });
 
 test("HUD-04 root write:applySettings sets --mw-text-scale on document.documentElement, exactly once", () => {
