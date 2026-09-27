@@ -84,7 +84,10 @@ function fixedCombat(foes, overrides = {}) {
 
 // ─── Fighter: STRIKE / no-spells ABILITIES fallback / ITEMS / SOCIAL ──────
 
-test("Fighter (Soldier): the default grid — STRIKE sub-line, ABILITIES fallback, ITEMS 1 usable, SOCIAL accent", () => {
+// CMBUI-14 re-pin (Phase 77): the default Fighter holds 1 potion at full HP,
+// so its POTION row is disabled and the count honestly reads 0 usable
+// (before: "1 usable", counting the disabled potion row by presence).
+test("Fighter (Soldier): the default grid — STRIKE sub-line, ABILITIES fallback, ITEMS 0 usable at full HP, SOCIAL accent", () => {
   const state = fixedState({ combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
 
@@ -100,7 +103,7 @@ test("Fighter (Soldier): the default grid — STRIKE sub-line, ABILITIES fallbac
 
   assert.equal(vm.actions[2].key, "items");
   assert.equal(vm.actions[2].label, "3 · ITEMS");
-  assert.equal(vm.actions[2].sub, "1 usable");
+  assert.equal(vm.actions[2].sub, "0 usable");
   assert.equal(vm.actions[2].opens, "items");
 
   assert.equal(vm.actions[3].key, "social");
@@ -473,7 +476,9 @@ test("ITEMS: a bagged activatable staff recharging appears after the potion row,
   assert.deepEqual(vm.submenus.items.rows, [
     { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
     { id: "item-0", label: "POPLAR STAFF", cost: COMBAT_MENU_COPY.notWielded, desc: COMBAT_MENU_COPY.notWieldedDesc, enabled: false, dispatch: { type: "useItem", i: 0 } },
-    { id: "worn-jewelry1", label: "RING OF POWER", cost: "READY", desc: "+1 damage", enabled: true, dispatch: { type: "useItem", slot: "jewelry1" } },
+    // CMBUI-14 re-pin (Phase 77): a worn row reads `EQUIPPED · <state>`
+    // (before: "READY"; after: "EQUIPPED · READY").
+    { id: "worn-jewelry1", label: "RING OF POWER", cost: `${COMBAT_MENU_COPY.equipped} · READY`, desc: "+1 damage", enabled: true, dispatch: { type: "useItem", slot: "jewelry1" } },
   ]);
 });
 
@@ -554,8 +559,11 @@ test("ITEMS: a wielded, recharging staff still reads EQUIPPED · <itemRowState t
 // With no staff involved at all (the fixture default), every ITEMS row and
 // count is exactly as before this plan — the wielded-staff row simply never
 // appears.
+// CMBUI-14 re-pin (Phase 77): the potion row counts only while it is enabled
+// (below full HP), so this fixture now drinks from wp 40 of 55; at the old
+// full-HP fixture the count would honestly read 0 USABLE.
 test("ITEMS: with no staff involved, no worn-weapon row appears and the count is unaffected", () => {
-  const state = fixedState({ c: { potions: 2, scrolls: 0, items: [] }, combat: fixedCombat([]) });
+  const state = fixedState({ c: { potions: 2, scrolls: 0, items: [], wp: 40 }, combat: fixedCombat([]) });
   const vm = combatMenuViewModel(state);
   assert.ok(!vm.submenus.items.rows.some((r) => r.id === "worn-weapon"));
   assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");

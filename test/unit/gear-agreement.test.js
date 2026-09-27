@@ -33,7 +33,7 @@ import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates, SNAPSHOT_IDS } from "./harness/shellSandbox.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 import { itemRowState, bagUsage, GEAR_COPY } from "../../src/browser/gearTab.js";
-import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
+import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { dropShelfItems } from "../../src/browser/viewModels.js";
 import { itemTimerId, chargesTimerId, slotFor } from "../../engine/derived.js";
 import { toolItem, toolIndex } from "../../engine/items.js";
@@ -193,7 +193,18 @@ test("Edge GSCR-11/adjacency: every rendered .mw-gear-use cell's data-phase and 
       assert.equal(cell.dataset.phase, st.kind, `data-phase mismatch for ${id}`);
       const row = menu.submenus.items.rows.find((r) => r.id === id);
       assert.ok(row, `expected a combat ITEMS row with id ${id}`);
-      assert.equal(row.cost, st.text, `combat cost mismatch for ${id}`);
+      // Phase 77 (CMBUI-14) re-pin: a worn row reads `EQUIPPED · <state>`
+      // (before: the bare state), and a bagged wearable the engine refuses
+      // as notWorn reads NOT EQUIPPED; every other row still reads the bare
+      // itemRowState text. The state text itself still agrees with the Gear
+      // USE cell's.
+      const bagWearable = id.startsWith("item-") && state.c.worn && typeof state.c.worn === "object" && slotFor(it);
+      const expected = id.startsWith("worn-")
+        ? `${COMBAT_MENU_COPY.equipped} · ${st.text}`
+        : bagWearable
+          ? COMBAT_MENU_COPY.notEquipped
+          : st.text;
+      assert.equal(row.cost, expected, `combat cost mismatch for ${id}`);
       pairCount++;
     }
   }
@@ -227,7 +238,9 @@ test("Edge GSCR-11/adjacency: advancing jewelry1's timer left by -1 moves the Ge
   const costBefore = combatMenuViewModel(before).submenus.items.rows.find((r) => r.id === "worn-jewelry1").cost;
   const costAfter = combatMenuViewModel(after).submenus.items.rows.find((r) => r.id === "worn-jewelry1").cost;
   assert.notEqual(costBefore, costAfter);
-  assert.equal(costAfter, "9 SQ");
+  // Phase 77 (CMBUI-14) re-pin: before "9 SQ"; the worn row now reads
+  // `EQUIPPED · 9 SQ`, its state text still moving with the Gear USE sub.
+  assert.equal(costAfter, `${COMBAT_MENU_COPY.equipped} · 9 SQ`);
 });
 
 // ═══════════════════════ heal agreement ════════════════════════════════════
