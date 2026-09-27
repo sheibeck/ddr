@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -3408,7 +3408,9 @@ export function foeTurn(state, rng, events = []) {
   // on the turn that applied/refreshed it (resolveFoeAbility always assigns
   // a NEW object to c.foeEffect), so `rounds: 1` is never a no-op.
   if (c.foeEffect && c.foeEffect === foeEffectAtStart && --c.foeEffect.rounds <= 0) {
-    events.push({ type: "foeEffectFaded", kind: c.foeEffect.kind });
+    // CMBUI-13 (Phase 77, plan 77-07): a fading daze names the to-hit delta
+    // it takes back, from the engine's own constant; payload only.
+    events.push({ type: "foeEffectFaded", kind: c.foeEffect.kind, ...(c.foeEffect.kind === "dazed" ? { toHit: -DAZED_TO_HIT_PENALTY } : {}) });
     c.foeEffect = null;
   }
   // Phase 31 (Afraid ruling, user ruling 2026-09-16): the Afraid countdown —

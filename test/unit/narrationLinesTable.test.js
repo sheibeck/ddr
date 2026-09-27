@@ -199,7 +199,7 @@ test("locked wordings (CMBUI-13): foeDebuffed and foeEffectFaded name what dazed
   assert.equal(daze.priority, PRIORITY.them);
   const weak = LINE_FOR.foeDebuffed({ type: "foeDebuffed", name: "Krupke", kind: "weakened", rounds: 1 });
   assert.equal(weak.text, "Krupke: weakened, half damage for 1 round.");
-  assert.equal(LINE_FOR.foeEffectFaded({ type: "foeEffectFaded", kind: "dazed", toHit: -2 }).text, "No longer dazed: no longer −2 to hit.");
+  assert.equal(LINE_FOR.foeEffectFaded({ type: "foeEffectFaded", kind: "dazed", toHit: -2 }).text, "The daze lifts: no longer −2 to hit.");
   assert.equal(LINE_FOR.foeEffectFaded({ type: "foeEffectFaded", kind: "weakened" }).text, "Your strength comes back: full damage again.");
 });
 

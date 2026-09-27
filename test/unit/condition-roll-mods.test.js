@@ -259,8 +259,8 @@ test("playerStrike: the frenzy second swing reads the same condition entries (a 
 
 // ─── 3. measured zero: nothing but the mods changed ───────────────────────
 
-// Recorded at the plan base (e8bd4808) with `mods` stripped from every
-// event: hashString(JSON.stringify([{ draws, events, state } x seeds 1-8])),
+// Recorded at the plan base (e8bd4808) with `mods` (and Task 2's
+// foeDebuffed/foeEffectFaded `toHit`) stripped from every event: hashString(JSON.stringify([{ draws, events, state } x seeds 1-8])),
 // the strike driven by countingRng(makeRng(seed * 7919)). A moved digest
 // means this plan changed a roll, a face, a draw or the state.
 const STRIKE_SCENARIOS = {
@@ -291,8 +291,12 @@ const STRIKE_DIGESTS = {
 };
 
 test("measured zero: every strike's roll, faces, outcome, draw count and resulting state match the plan base (mods stripped)", () => {
+  // Strips only this plan's payload fields: `mods` everywhere, and the
+  // `toHit` Task 2 adds to foeDebuffed/foeEffectFaded (a dazed strike's
+  // follow-on foe turn can fade the daze). Everything else must match.
   const stripMods = (e) => {
     const { mods, ...rest } = e;
+    if (rest.type === "foeDebuffed" || rest.type === "foeEffectFaded") delete rest.toHit;
     return rest;
   };
   for (const [name, sc] of Object.entries(STRIKE_SCENARIOS)) {
@@ -370,7 +374,7 @@ test("onset: a weakening says your blows do half damage for N rounds", () => {
 test("fade: a real daze fading says the −2 to hit is gone; a weakening says full damage again", () => {
   const dazed = realFade("dazed");
   assert.deepEqual(dazed, { type: "foeEffectFaded", kind: "dazed", toHit: -DAZED_TO_HIT_PENALTY });
-  assert.match(plain(EVENT_NARRATION.foeEffectFaded(dazed)), /no longer −2 to hit/);
+  assert.match(plain(EVENT_NARRATION.foeEffectFaded(dazed)), /no longer −2 to hit/i);
   assert.match(LINE_FOR.foeEffectFaded(dazed, {}).text, /no longer −2 to hit/);
   const weak = realFade("weakened");
   assert.deepEqual(weak, { type: "foeEffectFaded", kind: "weakened" });

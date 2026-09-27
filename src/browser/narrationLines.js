@@ -61,7 +61,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // Phase 73 (ROLL-05): rollRange.js is the ONE place a winning range is
 // formatted ("16–20") — like upgradeWhy.js, it carries zero imports of its
 // own, so pulling it in here does not trip T-25-23's engine-import guard.
-import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS, bottomRangeText } from "./rollRange.js";
+import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS, bottomRangeText, toHitText } from "./rollRange.js";
 // RULES-07 (Phase 75): afflictionRolled's rail line reads the row's own
 // `phobia` flag by roll, mirroring eventNarration.js — pure content data
 // (not engine/), same discipline as the ABILITY_BY_ID import above.
@@ -1614,7 +1614,8 @@ export const LINE_FOR = {
       vapor: `${e?.spell ?? "The scroll"} takes you out (${e?.kind ?? "out"}), ${rounds} turn${rounds === 1 ? "" : "s"}.`,
       blind: `${e?.spell ?? "The scroll"} blinds you for the fight.`,
       shrink: `${e?.spell ?? "The scroll"} shrinks you (−${e?.loss ?? 0} hp) for the fight.`,
-      weakened: `${e?.spell ?? "The scroll"} weakens you, ${rounds} round${rounds === 1 ? "" : "s"}.`,
+      // CMBUI-13 (Phase 77, plan 77-07): names what the weakening does.
+      weakened: `${e?.spell ?? "The scroll"} weakens you: half damage, ${rounds} round${rounds === 1 ? "" : "s"}.`,
     };
     return { text: texts[e?.effect] ?? `${e?.spell ?? "The scroll"} fumbles and does nothing to you.`, tone: "hurt", priority: PRIORITY.you };
   },
@@ -1652,7 +1653,20 @@ export const LINE_FOR = {
   },
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   foeDrained: (e) => ({ text: `${e?.name ?? "It"} drains you (−${e?.stolen ?? 0} hp).`, tone: "hurt", priority: PRIORITY.them }),
-  foeDebuffed: (e) => ({ text: `${e?.name ?? "It"}: you are ${e?.kind ?? "afflicted"} (${e?.rounds ?? "?"}).`, tone: "hurt", priority: PRIORITY.them }),
+  // CMBUI-13 (Phase 77, plan 77-07, "the onset line names the effect"): a
+  // daze states its to-hit delta from the payload (toHitText); a weakening
+  // says half damage. A missing field drops its clause.
+  foeDebuffed: (e) => {
+    const rounds = e?.rounds;
+    const lasts = Number.isFinite(rounds) ? ` for ${rounds} round${rounds === 1 ? "" : "s"}` : "";
+    const what =
+      e?.kind === "dazed"
+        ? `dazed${Number.isFinite(e?.toHit) ? `, ${toHitText(e.toHit)}` : ""}`
+        : e?.kind === "weakened"
+          ? "weakened, half damage"
+          : `you are ${e?.kind ?? "afflicted"}`;
+    return { text: `${e?.name ?? "It"}: ${what}${lasts}.`, tone: "hurt", priority: PRIORITY.them };
+  },
   foeHealed: (e) => ({ text: `${e?.name ?? "It"} heals (+${e?.amount ?? 0}).`, tone: "dodge", priority: PRIORITY.them }),
   // RULES-10 (Phase 75.1) — a fumbled Regeneration on a foe, same
   // tone/priority as foeHealed immediately above.
@@ -1662,7 +1676,17 @@ export const LINE_FOR = {
     tone: "dodge",
     priority: PRIORITY.them,
   }),
-  foeEffectFaded: (e) => ({ text: e?.kind === "dazed" ? "You are no longer dazed." : "Your strength comes back.", tone: "hit", priority: PRIORITY.you }),
+  // CMBUI-13 (Phase 77, plan 77-07): the fade says what ended.
+  foeEffectFaded: (e) => ({
+    text:
+      e?.kind === "dazed"
+        ? Number.isFinite(e?.toHit)
+          ? `The daze lifts: no longer ${toHitText(e.toHit)}.`
+          : "You are no longer dazed."
+        : "Your strength comes back: full damage again.",
+    tone: "hit",
+    priority: PRIORITY.you,
+  }),
   heroResisted: (e) => ({ text: `You resist ${e?.name ?? "its"}'s spell.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 25 (FEED-03): starts with the foe's name (matches the THEM-family
   // tone-prefix contract every other foe-action builder follows).
