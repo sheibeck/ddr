@@ -100,14 +100,14 @@ export const GEAR_COPY = Object.freeze({
   emptyName: "empty",
   noValue: "—",
   chevron: "›",
-  weaponMagic: "+{n} magic. Somebody cared, once.",
+  weaponMagic: "+{n} damage, and it hits what only magic can. Somebody cared, once.",
   weaponMundane: "no enchantment. Just you and the swing.",
   magicPlate: "magic plate",
   armorWear: "{current}/{max} hp",
   armorDestroyed: "destroyed",
   bagFull: "BAG FULL · DROP OR USE SOMETHING",
-  bagEmptyHead: "NOTHING LEFT TO CARRY",
-  bagEmptyBody: "You used it all. That was the plan, technically.",
+  bagEmptyHead: "THE BAG IS EMPTY",
+  bagEmptyBody: "Nothing here takes a slot. Plenty of room for regret.",
   use: Object.freeze({
     use: "USE",
     active: "ACTIVE",
@@ -115,7 +115,7 @@ export const GEAR_COPY = Object.freeze({
     read: "READ",
   }),
   healingPotion: "HEALING POTION",
-  healingDesc: "Heals. Wasted at full health.",
+  healingDesc: "Heals 7–25 hp (double for a Wilmsry). Stays corked at full health.",
   scrolls: "SCROLLS",
   scrollDesc: "A random spell, read aloud. No refunds.",
   qty: "×{n}",
@@ -197,6 +197,18 @@ export const ITEM_STATE_COPY = Object.freeze({
 });
 
 /**
+ * chargeCounts(it, act) — module-private: a charged item's current and
+ * maximum charges, with the tolerant read (a missing `it.charges` means a
+ * full pool). The ONE place itemRowState and gearUseCell read the pair
+ * from, so the row tag and the action sheet's sentence (VOX-05, 79-09)
+ * always name the same numbers.
+ */
+function chargeCounts(it, act) {
+  const max = act.charges;
+  return { charges: Number.isInteger(it.charges) ? it.charges : max, max };
+}
+
+/**
  * itemRowState(state, it) — Phase 39 (GEAR-02/GEAR-05) + 260918-w4n
  * (use-activated-only): the ONE row-state rule for every carried/worn item —
  * the Gear tab's worn/carried rows and the ITEMS submenu (combatMenu.js)
@@ -230,8 +242,7 @@ export function itemRowState(state, it) {
   if (it.kind === "tool") return { text: "", kind: "consumable" };
 
   if (act.charges !== undefined) {
-    const max = act.charges;
-    const charges = Number.isInteger(it.charges) ? it.charges : max;
+    const { charges, max } = chargeCounts(it, act);
     const left = remaining(c, chargesTimerId(it));
     if (charges >= max || left <= 0) return { text: ITEM_STATE_COPY.ready, kind: "ready" };
     const text = ITEM_STATE_COPY.charges.replace("{k}", charges).replace("{max}", max).replace("{n}", left);
@@ -293,6 +304,13 @@ export function gearUseCell(state, it) {
   if (st.kind === "ready" || st.kind === "consumable") sub = "";
   else if (st.kind === "effect" || st.kind === "charges") sub = st.text;
   else sub = st.remaining === 1 ? ITEM_STATE_COPY.square : ITEM_STATE_COPY.squares.replace("{n}", st.remaining);
+  // VOX-05 (Phase 79, Plan 09): a recharging item also carries its charge
+  // counts (additive, charges phase only), so the action sheet can say
+  // "1 of 3 charges left" in words instead of repeating the row tag.
+  if (st.kind === "charges") {
+    const { charges, max } = chargeCounts(it, activationFor(it));
+    return { phase: st.kind, label, sub, remaining: st.remaining ?? 0, charges, max };
+  }
   return { phase: st.kind, label, sub, remaining: st.remaining ?? 0 };
 }
 

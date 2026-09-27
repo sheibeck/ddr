@@ -81,7 +81,7 @@ export function renderStoreScreen(host, state, deps = {}) {
   // stock contents, so an old save (flag off, fixed stock) shows exactly
   // the pre-Phase-33 header.
   host.innerHTML += `<p class="enc-head" style="color:var(--moss)">A store</p>
-      <p class="enc-sub">${c.gold.toLocaleString()} wilmst in your purse${st.markup > 1 ? " · triple for armour, double for arms" : ""}</p>
+      <p class="enc-sub">${c.gold.toLocaleString()} wilmst in your purse</p>
       ${state.storeRoll === true ? `<p class="enc-sub mw-store-roll">${STORE_ROLL_COPY}</p>` : ""}
       <div class="shelf" id="shelf"></div>
       ${usage.full ? `<p class="enc-sub" style="color:var(--rust)">Bag full (${usage.have}/${usage.slots}) — sell or drop something to make room. Potions and scrolls still ride free.</p>` : ""}

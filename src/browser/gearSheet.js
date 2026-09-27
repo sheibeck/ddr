@@ -85,7 +85,10 @@ export const GEAR_SHEET_COPY = Object.freeze({
     effectOne: "Already running — 1 square left.",
     cooldown: "Cooling down — {n} more squares.",
     cooldownOne: "Cooling down — 1 more square.",
-    charges: "Charges {state}.",
+    // VOX-05 (Phase 79, Plan 09): the recharge sentence in words — the old
+    // "Charges {state}." repeated the row tag ("1/3 · 5 SQ") as a sentence.
+    charges: "{k} of {max} charges left; the next one comes back in {n} squares.",
+    chargesOne: "{k} of {max} charges left; the next one comes back in 1 square.",
   }),
   cancel: "CANCEL",
 });
@@ -136,7 +139,8 @@ export function gearSheetModel(state, target) {
     } else if (cell.phase === "cooldown") {
       sub = cell.remaining === 1 ? GEAR_SHEET_COPY.use.cooldownOne : GEAR_SHEET_COPY.use.cooldown.replace("{n}", cell.remaining);
     } else if (cell.phase === "charges") {
-      sub = GEAR_SHEET_COPY.use.charges.replace("{state}", cell.sub);
+      const template = cell.remaining === 1 ? GEAR_SHEET_COPY.use.chargesOne : GEAR_SHEET_COPY.use.charges;
+      sub = template.replace("{k}", cell.charges).replace("{max}", cell.max).replace("{n}", cell.remaining);
     } else {
       sub = "";
     }

@@ -213,7 +213,7 @@ export const ITEM_STAT_COPY = Object.freeze({
     enchanted: "enchanted",
     charges: "{n}/{max} charges",
     slots: "{n} slots",
-    wield: "Wielded: {lab} weapon; its power works only in hand.",
+    wield: "Fights as a {lab} weapon; its power works only while wielded.",
   }),
 });
 
@@ -416,7 +416,7 @@ export function lootCompare(c, it) {
   }
 
   if (it.kind === "bag") {
-    const line = `${BAGS[it.tier]?.slots ?? "?"} slots — you carry ${bagCap(c) === Infinity ? "no bag" : bagCap(c)}`;
+    const line = `${BAGS[it.tier]?.slots ?? "?"} slots — ${bagCap(c) === Infinity ? "you carry no bag" : `yours holds ${bagCap(c)}`}`;
     // sub is deliberately blank — it.txt would just repeat the slot count.
     // Phase 43 (CLAR-02, additive field): a bag is never class-restricted, so usable is always "".
     return { kind: "bag", legal: true, reason: null, delta: null, upgrade: null, equipNow: false, line, sub: "", why: null, usable: usableBy(it, c) };

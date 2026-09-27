@@ -166,7 +166,7 @@ export const ABILITY_VIEW_COPY = Object.freeze({
   once: "once a fight",
   tagTable: "special skill · active",
   tagPool: "trick",
-  noAbilitiesCaster: "Spells are the trick.",
+  noAbilitiesCaster: "No abilities. Spells are the trick.",
 });
 
 /**
@@ -464,7 +464,7 @@ function renderAbilityRows(doc, state) {
   if (c.cls === "Magic User") {
     const li = doc.createElement("li");
     li.className = "none";
-    li.textContent = "Spells are the trick.";
+    li.textContent = "No abilities. Spells are the trick.";
     ul.appendChild(li);
     return;
   }
