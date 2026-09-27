@@ -737,6 +737,10 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-foe.target .cb-foe-glyph{color:#e8c97a}
 .cb-foe.dead .cb-foe-glyph{color:#6d6455}
 .cb-foe-name{font-family:var(--disp);font-size:8px;line-height:1.5;color:#e6ddc6}
+/* Phase 77 (CMBUI-09): the bestiary family after the name ("ZIT · BEASTS"),
+   muted and a touch smaller so the name stays primary; an inline span, so
+   it wraps with the name on a narrow card. */
+.cb-foe-family{font-size:7px;color:#a89c82}
 .cb-foe-meta{font-family:var(--mono);font-weight:700;font-size:12px;color:#a89c82;margin-top:4px}
 .cb-foe-right{text-align:right;flex:none}
 .cb-foe-wp{font-family:var(--mono);font-weight:700;font-size:15px;color:#e6ddc6}
@@ -4252,6 +4256,14 @@ function renderFoeCards(host, vm, onPick, hitFoe = -1) {
     const name = document.createElement("div");
     name.className = "cb-foe-name";
     name.textContent = c.name;
+    // Phase 77 (CMBUI-09): the family follows the name (" · BEASTS") in a
+    // muted span; an unknown family (c.family null) adds nothing.
+    if (c.family) {
+      const family = document.createElement("span");
+      family.className = "cb-foe-family";
+      family.textContent = ` · ${c.family}`;
+      name.appendChild(family);
+    }
     nameWrap.appendChild(name);
     const meta = document.createElement("div");
     meta.className = "cb-foe-meta";
