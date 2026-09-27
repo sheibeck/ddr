@@ -37,3 +37,7 @@ The hunger and rations were not involved. The same label-versus-amount drift hit
 - The effect line prints a signed amount through the Phase 74 formatter ("−19 HP"), with HP not WP.
 - Check whether the raw-cell echo exists anywhere else. This is related to the heal-lines-print-the-raw-roll todo (2026-09-25).
 - It is presentation plus an additive event field only. The engine gate applies if an event field is added: narrate it and carve it out of the comparables if it is serialized.
+
+## Resolution
+
+Resolved by Phase 79, plan 79-02 (2026-09-27) with the first option: the roll line names the row by its effect. `encounterRolled` renders a Table 4 cell as its effect ("Table 4, roll 7: The dice decide — a toll."), never as the canon cell. `tableFour` carries additive `row`/`stat`/signed `amount`, and its prose lost the number. The effect line prints the signed amount through `rollRange.js#signedText` ("The maze extracts a toll you did not agree to. −19 hp."), and the rail twin prints the same number. The user's depth-3 death log is reproduced through the real engine in `test/unit/honest-gains.test.js`. The raw-cell echo existed only on `encounterRolled`.
