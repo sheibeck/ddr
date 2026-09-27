@@ -136,14 +136,18 @@ test("(a) combat + Afraid: the chip's tap raises one kind 'cond' card, the label
   assert.equal(card?.kind, "cond");
   assert.equal(card.title, "AFRAID");
   assert.equal(card.lines.length, 1);
+  // CMBUI-13 (Phase 77, plan 77-08): the tap text is the ONE shared
+  // composition, conditionTapText (the HUD strip and YOUR LOT both call it):
+  // the measured lead, the explanation, then how long it lasts and where it
+  // came from (heroConditions.js#chipSheetFacts, "2 more rounds, from your fear").
   assert.equal(
     card.lines[0].text,
-    `${r.w.__mzConditionEffect(r.descriptor("afraid"), r.w.__mzState.get())}. ${r.explain(r.descriptor("afraid"), "Afraid")}`
+    `${r.w.__mzConditionEffect(r.descriptor("afraid"), r.w.__mzState.get())}. ${r.explain(r.descriptor("afraid"), "Afraid")} 2 more rounds, from your fear.`
   );
-  assert.equal(card.lines[0].text, `${AFRAID_LEAD}. ${r.explain(r.descriptor("afraid"), "Afraid")}`);
+  assert.equal(card.lines[0].text, r.sandbox.context.conditionTapText(r.descriptor("afraid"), "Afraid", r.w.__mzState.get()));
   assert.equal(
     card.lines[0].text,
-    `${AFRAID_LEAD}. ${vm.runInContext("CONDITION_EXPLAIN.afraid", r.sandbox.context)}`,
+    `${AFRAID_LEAD}. ${vm.runInContext("CONDITION_EXPLAIN.afraid", r.sandbox.context)} 2 more rounds, from your fear.`,
     "the same CONDITION_EXPLAIN source"
   );
   r.renderRail();
@@ -169,7 +173,10 @@ test("(b) no combat: the chip's tap pushes the plain line card (no kind, 8400 ho
   assert.equal(card.title, "STRONG");
   assert.equal(card.hold, 8400);
   assert.equal(card.tone, "info");
-  assert.equal(card.lines[0].text, r.explain(r.descriptor("might"), "Strong"));
+  // CMBUI-13 (Phase 77, plan 77-08): the one shared tap text adds how long
+  // the chip lasts and where it came from after the explanation.
+  assert.equal(card.lines[0].text, `${r.explain(r.descriptor("might"), "Strong")} Until the day ends, from a spell.`);
+  assert.equal(card.lines[0].text, r.sandbox.context.conditionTapText(r.descriptor("might"), "Strong", r.w.__mzState.get()));
   assert.equal(r.w.__mzTypewriter.active("rail"), true, "the out-of-combat card still types");
 });
 
@@ -322,8 +329,22 @@ function conditionsOfBody() {
   return DERIVED.slice(start, end);
 }
 
+/** derivedFnBody(head) — the source of one named function in engine/derived.js. */
+function derivedFnBody(head) {
+  const start = DERIVED.indexOf(head);
+  assert.ok(start !== -1, `${head} found`);
+  return DERIVED.slice(start, DERIVED.indexOf("\n}\n", start));
+}
+
 function heroVocabulary() {
   const keys = new Set([...conditionsOfBody().matchAll(/key: "([A-Za-z]+)"/g)].map((m) => m[1]));
+  // CMBUI-13 (plan 77-08): the ability chip is emitted by conditionsOf's
+  // helper liveAbilityChips, and a member's chips by memberConditionsOf;
+  // both feed the same chips, so the scan reads them too (as
+  // hero-conditions.test.js#emittableKeys does).
+  for (const head of ["function liveAbilityChips(timers)", "export function memberConditionsOf(state, partyIdx)"]) {
+    for (const m of derivedFnBody(head).matchAll(/key: "([A-Za-z]+)"/g)) keys.add(m[1]);
+  }
   // Every activation kind with a live effect (a positive duration, or a
   // rolled one) makes a chip under its own kind; fly shows as flight.
   // Kinds with effect 0 (half, stone, knit) or none never make a live chip.
@@ -337,7 +358,7 @@ function heroVocabulary() {
 
 test("(h) R-32 scan self-check: the vocabulary finds afraid, ward, darkness, fearArmed and flight, and no dead kind", () => {
   const keys = heroVocabulary();
-  for (const k of ["afraid", "ward", "darkness", "fearArmed", "flight", "haste", "acute", "lit"]) assert.ok(keys.has(k), `the scan sees ${k}`);
+  for (const k of ["afraid", "ward", "darkness", "fearArmed", "flight", "haste", "acute", "lit", "ability", "braced"]) assert.ok(keys.has(k), `the scan sees ${k}`);
   for (const k of ["half", "stone", "knit", "fly"]) assert.ok(!keys.has(k), `${k} never makes a live chip`);
 });
 
@@ -352,16 +373,10 @@ test("(h) R-32: every key conditionsOf can emit resolves to its own CONDITION_EX
     assert.ok(typeof text === "string" && text.length > 0, `${key} has text`);
     if (text === fallback) missing.push(key);
   }
-  // CMBUI-13 (Phase 77, plan 77-03): conditionsOf gained the keys below (the
-  // data half); their labels and explanations land in the shell's
-  // CONDITION_COPY/CONDITION_EXPLAIN in plan 77-08 (the drawing half, wave
-  // 3), which owns mazeworld.html. Until then these, and ONLY these, may
-  // resolve to the default. The exemption is exact: a key 77-08 explains
-  // must leave this list (the deepEqual below fails otherwise), and any
-  // other key with no sentence still fails the build.
-  const AWAITING_77_08 = ["braced", "fightDark", "halfNext", "inspired", "insulted", "nightVision", "selfDot", "strengthBoost"];
-  assert.deepEqual(missing.filter((k) => !AWAITING_77_08.includes(k)), [], `keys with no description of their own: ${missing.join(", ")}`);
-  assert.deepEqual([...missing].sort(), AWAITING_77_08, "77-08 explained a CMBUI-13 key: drop it from AWAITING_77_08");
+  // CMBUI-13 (Phase 77, plan 77-08): 77-08 wrote the shell copy for every
+  // key 77-03 added, so the AWAITING_77_08 exemption is gone: no key may
+  // resolve to the default.
+  assert.deepEqual(missing, [], `keys with no description of their own: ${missing.join(", ")}`);
 });
 
 // ─── (i) a foe card tap only aims ──────────────────────────────────────────
@@ -456,5 +471,7 @@ test("pins: CSCR-08 — no new listener in the renderEncounter render region, an
   const region = fnRegion("function renderEncounter()");
   assert.doesNotMatch(region, /mzConditionCard|guardInfoTap/);
   assert.equal((CODE.match(/getElementById\("enc-panel"\)\?\.addEventListener\("click"/g) || []).length, 1);
-  assert.equal((CODE.match(/mzConditionCard\?\.\(/g) || []).length, 1, "the chip is the one caller");
+  // CMBUI-13 (plan 77-08): YOUR LOT's chip rows are the second caller (the
+  // combat screen is always up there, so they skip the rail-line branch).
+  assert.equal((CODE.match(/mzConditionCard\?\.\(/g) || []).length, 2, "the HUD chip and the YOUR LOT chip are the two callers");
 });

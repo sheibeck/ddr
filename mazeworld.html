@@ -785,6 +785,14 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-lot-card.down .cb-lot-fill{background:#3a3226}
 .cb-lot-third{font-family:var(--mono);font-weight:700;font-size:calc(0.75rem * var(--mw-text-scale));color:#a89c82;margin-top:5px}
 .cb-lot-card.down .cb-lot-third{color:#8f856f}
+/* CMBUI-13 (Phase 77, plan 77-08): the effect chips under each YOUR LOT card
+   (hero and party members; never the summoned ally). The .mw-cond chip look
+   (tone edge and ink), wrapped and centred under the card, with a slightly
+   larger tap target than the HUD strip's chips. */
+.cb-lot-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:6px}
+.cb-lot-chip{display:inline-flex;align-items:center;justify-content:center;max-width:100%;min-width:0;min-height:22px;border:1px solid var(--cond-edge);background:#1b170f;padding:4px 6px;border-radius:0;box-shadow:none;font-family:var(--disp);font-size:calc(0.34375rem * var(--mw-text-scale));line-height:1.5;color:var(--cond-ink);white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.cb-lot-chip[data-tone="bad"]{--cond-edge:#a63a2c;--cond-ink:#e07260}
+.cb-lot-chip[data-tone="good"]{--cond-edge:#5e7a3c;--cond-ink:#a8cc72}
 /* Phase 71 (POLISH-07, D-07): the "ROUND n · WHAT HAPPENED" strip, values
    from the combat v2 mock (design/Mazeworld Combat Panel v2.dc.html). It is
    in the flex flow (flex:none, never absolute or fixed) between the
@@ -3107,7 +3115,8 @@ const CONDITION_COPY = {
   // (unchanged behaviour).
   might:  { label: "Strong", unit: "sq" },  // +damage; a potion effect counts down, the spell effect lasts the day
   flight: { label: "Flying"                  },  // detail comes from the flight sub-state
-  darkness: { label: "In the dark", unit: "sq" },
+  // CMBUI-13 (Phase 77, plan 77-08): one word, the house style for a chip.
+  darkness: { label: "Dark", unit: "sq" },
   // Phase 39 (GEAR-05): the torch's lit effect.
   lit: { label: "Lit", unit: "sq" },
   // Phase 39 (GEAR-02): a cooling duration+cooldown item / a recharging
@@ -3166,6 +3175,21 @@ const CONDITION_COPY = {
   heroOut: { label: "Can't act", unit: "rds" },
   heroBlind: { label: "Blinded" },
   heroShrunk: { label: "Shrunk" },
+  // CMBUI-13 (Phase 77, plan 77-08): the keys plan 77-03 added to
+  // conditionsOf/memberConditionsOf (src/browser/heroConditions.js is the
+  // table of which ones show in YOUR LOT). An `ability` chip is labelled by
+  // ABILITY_CHIP_LABEL[cn.ability] first (conditionLabel below); this row's
+  // label is only the fallback for an id with no label, and its `rds` unit
+  // feeds the HUD strip's generic countdown detail, as selfDot's does.
+  ability: { label: "Ability", unit: "rds" },
+  braced: { label: "Bracing" },
+  inspired: { label: "Inspired" },
+  halfNext: { label: "Fortified" },
+  strengthBoost: { label: "Bolstered" },
+  nightVision: { label: "Nightsight" },
+  fightDark: { label: "Dark" },
+  insulted: { label: "Provoked" },
+  selfDot: { label: "Burning", unit: "rds" },
 };
 
 // Phase 34 (CSCR-04/05) — every player-facing literal the shell itself adds
@@ -3223,6 +3247,23 @@ const MAP_COPY = {
 // values and test/unit/foe-effect-chip.test.js cross-checks the two sets.
 const FOE_EFFECT_LABEL = { weakened: "Weakened", dazed: "Dazed" };
 
+// CMBUI-13 (Phase 77, plan 77-08; CONTEXT "Dazed honesty"): what each
+// foe-given effect DOES, per kind — the foeEffect chip's tap explanation
+// (explainCondition reads it before the generic CONDITION_EXPLAIN.foeEffect
+// line, which stays the fallback for an unmapped kind). Keys mirror
+// FOE_EFFECT_LABEL (test/unit/hero-conditions.test.js checks the two sets).
+const FOE_EFFECT_EXPLAIN = {
+  dazed: "Your head is ringing: every swing needs a better roll to hit until it clears.",
+  weakened: "Your arms have gone soft: your blows do half damage until it wears off.",
+};
+
+// CMBUI-13 (Phase 77, plan 77-08): an ability chip's one-word label, per
+// duration ability (engine/abilities.js DURATION_ROUNDS — the only
+// abilities with an effect that lasts; test/unit/hero-conditions.test.js
+// fails when one has no label). The ability's own name and content text
+// still lead its tap card.
+const ABILITY_CHIP_LABEL = { sidestep: "Sidestep", battleRoar: "Roaring", riposte: "Riposte", taunt: "Taunting", smoke: "Smoke" };
+
 // Phase 35 (MAP-01, ruling 5): presentation-only tone/explanation tables for
 // the condition-chip strip — CONDITION_TONE picks the chip's tone class
 // (falling back to the descriptor's own polarity when a key has no explicit
@@ -3237,17 +3278,26 @@ const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd
   // RULES-10 (Phase 75.1, plan 09): all three read bad, exactly like
   // foeEffect/affliction above (the fallback on cn.polarity would already
   // land here, but every other bad-toned key above is explicit too).
-  heroOut: "bad", heroBlind: "bad", heroShrunk: "bad" };
+  heroOut: "bad", heroBlind: "bad", heroShrunk: "bad",
+  // CMBUI-13 (Phase 77, plan 77-08): the new keys, good or bad by what they
+  // do to the player.
+  ability: "good", braced: "good", inspired: "good", halfNext: "good", strengthBoost: "good", nightVision: "good",
+  fightDark: "bad", insulted: "bad", selfDot: "bad" };
 const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
-  invis: "They swing at where you were. Enjoy it; it wears off.",
+  // CMBUI-13 (Phase 77, plan 77-08; CONTEXT "Dazed honesty"): every fight
+  // chip's sentence names what it does — invis, afraid, mirror, lit and glow
+  // were re-worded to say it.
+  invis: "They swing at where you were: only a foe's very best roll finds you. Enjoy it; it wears off.",
   acute: "You strike first on a d6. The maze is briefly unfair in your favour.",
   // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): walls
   // are now a REAL destination, not merely a phased-through feature tile —
   // the chip's own warn tone (paintConditions below) already flags "you are
   // standing in one right now"; this sentence states the stakes.
   ether: "Walls are a suggestion for the count shown. When it reaches zero, be standing in a corridor. The rock will not be.",
-  might: "Extra damage until the day ends. Hit things.",
+  // CMBUI-13 (plan 77-08): "how long" now follows on the tap card
+  // (conditionTapText), so the sentences below no longer repeat it.
+  might: "Extra damage on every blow. Hit things.",
   flight: "Walls and crevices cost nothing while the charge holds. Then they cost the usual.",
   // DARK-02 (Phase 76, user ruling 2026-09-25 "combat too"): one rule for
   // the map and the fight (engine/derived.js#darkWaiver / darkLimited). The
@@ -3259,7 +3309,7 @@ const CONDITION_EXPLAIN = {
   // paintConditions prepends a named clause ahead of this sentence at tap
   // time — see WAIVER_LABEL below.
   darkness: "While this counts down you see one square around you, the map shows no further, and in a fight every strike is harder to land, none of them critical, and anyone afraid of the dark gets to prove it. Night Vision, a lit torch or a live Amulet of Light holds all of it back, and the Amulet ends it outright. Sense Presence lets you fight at full skill anyway, but it lights nothing.",
-  afraid: "A penalty on every roll until it passes. Nobody is proud of this.",
+  afraid: "Harder to land a blow, and the ones that land do half damage, until it passes. Nobody is proud of this.",
   // RULES-14 (Phase 75): Shield still reads the plain pool sentence below.
   // An armed Bubble mirror's own explanation is appended at tap time (see
   // paintConditions) — this stays the fallback for a popped pool and for
@@ -3268,13 +3318,13 @@ const CONDITION_EXPLAIN = {
   foeEffect: "Something they did to you. It wears off in a few rounds, which is more than most things do.",
   affliction: "It takes a bite out of you on a schedule. Find a cure before it finds the rest.",
   // Phase 39 (GEAR-05): the torch's lit effect.
-  lit: "You are carrying a light. Darkness will have to wait its turn.",
+  lit: "You are carrying a light, so the dark cannot make your strikes harder to land. Darkness will have to wait its turn.",
   // Phase 39 (GEAR-02): a cooling item / a recharging staff.
   itemCooldown: "Used, and not ready to be used again. Squares fix that.",
   staffCharges: "The staff is remembering how to do that. Walk it off.",
   // Phase 40 (SPELL-02/05).
-  mirror: "They swing at a reflection for a few rounds. Try not to look smug.",
-  senses: "You fight in the dark at full skill and nothing gets the jump on you, until this fight ends.",
+  mirror: "They swing at a reflection: only a foe's very best roll finds the real you, for a few rounds. Try not to look smug.",
+  senses: "You fight in the dark at full skill and nothing gets the jump on you.",
   regen: "Wounds close on their own every round of this fight. It is not a licence.",
   foresight: "You already know what the next encounter is. Whether that helps is up to you.",
   reveal: "You can see the whole floor for exactly as long as you stand still. One step and your focus breaks; whatever you never walked goes dark again.",
@@ -3288,7 +3338,7 @@ const CONDITION_EXPLAIN = {
   // size step, so they share the same sentence.
   giant: "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
   enlarge: "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
-  glow: "You are your own lantern. The dark is filing a complaint.",
+  glow: "You are your own lantern, so the dark cannot make your strikes harder to land. The dark is filing a complaint.",
   unseen: "They need two better to land a blow, and they know it.",
   tongue: "You understand them perfectly. Whether that helps is up to them.",
   brace: "No critical lands on you. Ordinary hits still count.",
@@ -3300,8 +3350,20 @@ const CONDITION_EXPLAIN = {
   // heroBlind's numeric lead comes from conditionEffectText (this sentence
   // is only the tail); heroShrunk states the halving plainly.
   heroOut: "The round goes on without you. Nothing wakes you early, and foes hit you exactly as they would if you could still swing back.",
-  heroBlind: "Only the very best swing of the die lands, for the rest of this fight.",
-  heroShrunk: "Your own blows land for half, for the rest of this fight.",
+  heroBlind: "Only the very best swing of the die lands.",
+  heroShrunk: "Your own blows land for half.",
+  // CMBUI-13 (Phase 77, plan 77-08): the keys plan 77-03 added. An ability
+  // chip's tap card reads the ability's own content text instead (the one
+  // mechanical description of an ability); this sentence is its fallback.
+  ability: "One of your own tricks, still working. The ability itself says what it does.",
+  braced: "The next blow that lands on you does half damage. Planning ahead, for once.",
+  inspired: "The song is still ringing in everyone's ears, so every swing lands a little easier.",
+  halfNext: "The next blow that lands on you does half damage. The Pendant takes the other half personally.",
+  strengthBoost: "Your hit points are doubled. When the day ends the extra goes, whether you spent it or not.",
+  nightVision: "Your own eyes see in the dark, so the dark cannot make your strikes harder to land. Everyone else is squinting.",
+  fightDark: "You are fighting in the dark: every strike is harder to land and none of them can be critical. A light or Sense Presence would fix that.",
+  insulted: "You insulted them and they took it personally: every foe finds it one face easier to hit you and yours.",
+  selfDot: "Your own fumbled scroll is still eating at you: a little damage every round until it runs out.",
   default: "A condition. The maze does not explain itself further.",
 };
 
@@ -3331,12 +3393,16 @@ const WAIVER_LABEL = {
  * `cn.mirror` set) reads its OWN sentence instead of the plain Shield-soak
  * line — the mirror has nothing to do with a soak pool until it pops.
  */
+const EXPLAIN_BY_KIND = { foeEffect: FOE_EFFECT_EXPLAIN };
 function explainCondition(cn, label) {
   if (cn.key === "ward" && cn.mirror) {
     return "The next blow that lands goes back to whoever threw it; then a small pool for the rest of the round.";
   }
   const itemName = cn.source || cn.item;
-  const tail = CONDITION_EXPLAIN[cn.key] || CONDITION_EXPLAIN.default;
+  // CMBUI-13 (plan 77-08): a kind-carrying chip reads its kind's own sentence
+  // first (a foeEffect's FOE_EFFECT_EXPLAIN[cn.kind]); an unmapped kind falls
+  // back to the key's plain sentence.
+  const tail = EXPLAIN_BY_KIND[cn.key]?.[cn.kind] || CONDITION_EXPLAIN[cn.key] || CONDITION_EXPLAIN.default;
   if (!itemName) return tail;
   const unit = cn.cadence === "rounds" ? "rounds" : "squares";
   const what =
@@ -3344,6 +3410,98 @@ function explainCondition(cn, label) {
       : cn.key === "staffCharges" ? `${cn.charges} of ${cn.max} charges, next in`
       : label.toLowerCase();
   return `${itemName} — ${what}, ${cn.remaining} ${unit}. ${tail}`;
+}
+
+/**
+ * conditionLabel(cn) — CMBUI-13 (Phase 77, plan 77-08): a condition chip's
+ * label, the ONE label rule the HUD strip (paintConditions) and YOUR LOT's
+ * chip rows (renderYourLot) share, so a chip reads the same wherever it is
+ * tapped. Moved verbatim out of paintConditions' loop, plus the ability
+ * branch. Every key has a label (test/unit/hero-conditions.test.js's shell
+ * guard), so the trailing `|| cn.key` never shows a raw key for a known one.
+ */
+function conditionLabel(cn) {
+  // Affliction has no fixed copy row — it names its own kind (Poison/Disease).
+  // Phase 19 D-21 — the foeEffect chip labels its kind ("Weakened" /
+  // "Dazed"); the detail branch below already renders `remaining` with the
+  // row's `rds` unit, so nothing else changes. Phase 31: the old DR17
+  // phobia-names-its-own-fear branch is gone — "afraid" now renders through
+  // the plain CONDITION_COPY/generic-detail path below like any other timed
+  // condition (no special case needed).
+  // Phase 39 (GEAR-02): itemCooldown/staffCharges carry their OWN item
+  // name (`cn.item`) as the label — neither has a fixed CONDITION_COPY
+  // label (both rows are `label: ""`). (The "detail branch" these notes
+  // mention is paintConditions', below.)
+  return cn.key === "affliction" ? (cn.kind || "Afflicted")
+    : cn.key === "foeEffect" ? (FOE_EFFECT_LABEL[cn.kind] || CONDITION_COPY.foeEffect.label)
+    : cn.key === "itemCooldown" || cn.key === "staffCharges" ? cn.item
+    // RULES-14 (Phase 75): the ward chip reads the ward's OWN name
+    // (Shield or Bubble), falling back to "Shield" for a legacy/malformed
+    // chip with no name.
+    : cn.key === "ward" ? (cn.name || CONDITION_COPY.ward.label)
+    // CMBUI-13 (Phase 77, plan 77-08): an ability chip reads its one-word
+    // ABILITY_CHIP_LABEL, never the generic key.
+    : cn.key === "ability" ? (ABILITY_CHIP_LABEL[cn.ability] || CONDITION_COPY.ability.label)
+    // RULES-11 (Phase 75.2, Plan 04): a live size-stepping item's chip
+    // (the Gauntlet of the Giant, Enlarge, or any future size item) is
+    // labelled with the hero's CURRENT resulting size (cn.size, e.g.
+    // "Large"/"Huge" — engine/derived.js#conditionsOf's own size field),
+    // not the item's own fixed CONDITION_COPY label — two live size items
+    // on the same hero show two chips with the SAME size name, each
+    // counting its own item down. A chip carrying no cn.size (any other
+    // item) falls through to the plain CONDITION_COPY/generic path below,
+    // unchanged.
+    : (typeof cn.size === "string" && cn.size) ? cn.size
+    : (CONDITION_COPY[cn.key]?.label || cn.key);
+}
+
+// darkWaiverOf(state) — the engine's ONE darkness-waiver answer
+// (window.__mzDarkness's darkWaiver + waiverFor, DARK-02) for the darkness
+// chip's detail and tap card; null when no light holds the dark back or the
+// bridge is missing (fail-open: names no waiver).
+function darkWaiverOf(state) {
+  const dk = window.__mzDarkness;
+  return dk?.waiverFor?.(dk.darkWaiver?.(state?.c)) ?? null;
+}
+
+// sentenceCase(text) — the first letter upper-cased and a closing full stop
+// when the text has no end punctuation (an ability's content text is a
+// lower-case fragment: "gone: for two rounds ...").
+function sentenceCase(text) {
+  const t = String(text || "").trim();
+  if (!t) return "";
+  const s = t[0].toUpperCase() + t.slice(1);
+  return /[.!?]$/.test(s) ? s : s + ".";
+}
+
+/**
+ * conditionTapText(cn, label, state, opts = {}) — CMBUI-13 (Phase 77, plan
+ * 77-08): the ONE tap-card text for a condition chip, shared by the HUD
+ * strip and YOUR LOT: the chip's measured effect
+ * (window.__mzConditionEffect, e.g. "−2 to hit (18–20 instead of 16–20)"),
+ * what it does (the darkness waiver sentence, an ability's own content text,
+ * else explainCondition), then how long it lasts and where it came from
+ * (window.__mzHeroChips.chipSheetFacts: "2 more rounds, from your Smoke.").
+ * An item-sourced chip already names its item and count in explainCondition,
+ * so it adds neither again. `opts.member` marks a party member's chip: the
+ * measured lead is the hero's, so a member chip has none, and its source
+ * reads "their", not "your". Pure read: never acts, never dispatches.
+ */
+function conditionTapText(cn, label, state, opts = {}) {
+  const member = !!opts.member;
+  const effectLead = member ? null : window.__mzConditionEffect?.(cn, state);
+  const facts = window.__mzHeroChips?.chipSheetFacts?.(cn) || null;
+  const darkWaiver = cn.key === "darkness" && !member ? darkWaiverOf(state) : null;
+  const body = darkWaiver
+    ? `The dark is on you, but ${WAIVER_LABEL[darkWaiver]} is holding it back. ${CONDITION_EXPLAIN.darkness}`
+    : cn.key === "ability" && facts?.detail ? sentenceCase(facts.detail)
+    : explainCondition(cn, label);
+  let when = "";
+  if (facts && !(cn.source || cn.item)) {
+    const source = member ? String(facts.source || "").replace(/^from your /, "from their ") : facts.source;
+    when = [facts.lasts, source].filter(Boolean).join(", ");
+  }
+  return (effectLead ? `${effectLead}. ` : "") + body + (when ? ` ${sentenceCase(when)}` : "");
 }
 
 // Render the unified good/bad condition-chip strip from conditionsOf(S). Reads
@@ -3371,34 +3529,7 @@ function paintConditions(c) {
   host.innerHTML = "";
   const keyList = conds.map((cn) => cn.key + ":" + (cn.kind || "")).join("|");
   for (const cn of conds) {
-    // Affliction has no fixed copy row — it names its own kind (Poison/Disease).
-    // Phase 19 D-21 — the foeEffect chip labels its kind ("Weakened" /
-    // "Dazed"); the detail branch below already renders `remaining` with the
-    // row's `rds` unit, so nothing else changes. Phase 31: the old DR17
-    // phobia-names-its-own-fear branch is gone — "afraid" now renders through
-    // the plain CONDITION_COPY/generic-detail path below like any other timed
-    // condition (no special case needed).
-    // Phase 39 (GEAR-02): itemCooldown/staffCharges carry their OWN item
-    // name (`cn.item`) as the label — neither has a fixed CONDITION_COPY
-    // label (both rows are `label: ""`).
-    let label = cn.key === "affliction" ? (cn.kind || "Afflicted")
-      : cn.key === "foeEffect" ? (FOE_EFFECT_LABEL[cn.kind] || CONDITION_COPY.foeEffect.label)
-      : cn.key === "itemCooldown" || cn.key === "staffCharges" ? cn.item
-      // RULES-14 (Phase 75): the ward chip reads the ward's OWN name
-      // (Shield or Bubble), falling back to "Shield" for a legacy/malformed
-      // chip with no name.
-      : cn.key === "ward" ? (cn.name || CONDITION_COPY.ward.label)
-      // RULES-11 (Phase 75.2, Plan 04): a live size-stepping item's chip
-      // (the Gauntlet of the Giant, Enlarge, or any future size item) is
-      // labelled with the hero's CURRENT resulting size (cn.size, e.g.
-      // "Large"/"Huge" — engine/derived.js#conditionsOf's own size field),
-      // not the item's own fixed CONDITION_COPY label — two live size items
-      // on the same hero show two chips with the SAME size name, each
-      // counting its own item down. A chip carrying no cn.size (any other
-      // item) falls through to the plain CONDITION_COPY/generic path below,
-      // unchanged.
-      : (typeof cn.size === "string" && cn.size) ? cn.size
-      : (CONDITION_COPY[cn.key]?.label || cn.key);
+    const label = conditionLabel(cn);
     let detail = "";
     if (cn.key === "flight") {
       // 260918-w4n (use-activated-only): a `flight` chip now exists ONLY
@@ -3438,10 +3569,8 @@ function paintConditions(c) {
     // window.__mzDarkness), the same predicate the reveal, the render window
     // and the fight read; the shell computes no waiver of its own. Fail-open:
     // a missing bridge simply names no waiver, same as "none is open".
-    let darkWaiver = null;
     if (cn.key === "darkness") {
-      const dk = window.__mzDarkness;
-      darkWaiver = dk?.waiverFor?.(dk.darkWaiver?.(S.c)) ?? null;
+      const darkWaiver = darkWaiverOf(S);
       if (darkWaiver) detail += ` · ${WAIVER_LABEL[darkWaiver] || "something"} is holding it back`;
     }
     const btn = document.createElement("button");
@@ -3467,15 +3596,15 @@ function paintConditions(c) {
     // card leads with the named waiver when one is open, then the plain
     // rule; every other chip's card is explainCondition(cn, label) unchanged.
     // Phase 74 (ROLL-02/03), plan 74-07: the chip's measured effect leads
-    // the tap card ("−3 to hit (now 19–20). …"), from window.__mzConditionEffect
+    // the tap card ("−3 to hit (19–20 instead of 16–20). …"), from window.__mzConditionEffect
     // (bridged from src/browser/conditionEffects.js#conditionEffectText). A
     // chip with no to-hit effect (haste, might, ward, regen, flight, an
     // item-cooldown/staff-charges chip, a weakening foeEffect) reads no lead
     // at all — optional chaining, so a missing bridge also reads as no lead.
-    const effectLead = window.__mzConditionEffect?.(cn, S);
-    const explainText = (effectLead ? `${effectLead}. ` : "") + (darkWaiver
-      ? `The dark is on you, but ${WAIVER_LABEL[darkWaiver]} is holding it back. ${CONDITION_EXPLAIN.darkness}`
-      : explainCondition(cn, label));
+    // CMBUI-13 (Phase 77, plan 77-08): the lead, the explanation and the
+    // "how long / where from" facts now come from conditionTapText, the ONE
+    // composition YOUR LOT's chip rows share.
+    const explainText = conditionTapText(cn, label, S);
     // Phase 71 (D-16, R-28/R-29/R-31): while the combat screen is up the
     // same sentence goes on the combat-legal condition card (the rail is
     // otherwise hidden in a fight); anywhere else it is the unchanged typed
@@ -4391,10 +4520,72 @@ function renderYourLot(host, vm) {
     third.className = "cb-lot-third";
     third.textContent = c.third;
     el.appendChild(third);
+    // CMBUI-13 (Phase 77, plan 77-08): the card's live effects, one chip
+    // each ("Smoke · 2"), from yourLotChipsFor (the ONE enumerator the HUD
+    // strip reads). A tap only raises the combat-legal condition card: YOUR
+    // LOT is not a targeting surface, so it never aims, acts or dispatches.
+    const chips = Array.isArray(c.chips) ? c.chips : [];
+    if (chips.length) {
+      const row = document.createElement("div");
+      row.className = "cb-lot-chips";
+      for (const chip of chips) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cb-lot-chip";
+        btn.dataset.tone = chip.tone === "bad" ? "bad" : "good";
+        btn.dataset.key = chip.cn?.key || "";
+        btn.textContent = chip.text;
+        guardInfoTap(btn, () => window.mzConditionCard?.(chip.label.toUpperCase(), chip.tapText()), lotChipArmed);
+        row.appendChild(btn);
+      }
+      el.appendChild(row);
+    }
     strip.appendChild(el);
   });
+  // The chips' own arm stamp, re-set only when the YOUR LOT chip SET
+  // changes (mirrors paintConditions' key gate for the HUD strip).
+  const lotKey = vm.cards.map((c) => (Array.isArray(c.chips) ? c.chips : []).map((ch) => `${ch.cn?.key}:${ch.cn?.ability || ch.cn?.kind || ""}`).join(",")).join("|");
+  if (lotKey !== lastLotChipKey) {
+    lastLotChipKey = lotKey;
+    lotChipArmedAt = Date.now();
+  }
   section.appendChild(strip);
   host.appendChild(section);
+}
+
+// CMBUI-13 (Phase 77, plan 77-08): YOUR LOT's chip arm stamp — the Phase 32
+// window measured from the last change of the YOUR LOT chip set, like
+// condArmed() for the HUD strip. Reading a status is an inspection, so it
+// is never gated on the beat. Fail-open, like condArmed().
+let lastLotChipKey = "";
+let lotChipArmedAt = 0;
+function lotChipArmed() {
+  try {
+    return window.__mzInputGuards ? window.__mzInputGuards.isArmed(lotChipArmedAt, Date.now()) : true;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * yourLotChipsFor(V, ref) — CMBUI-13 (Phase 77, plan 77-08): the chips for
+ * one YOUR LOT card, read from V (the beat's view state mid-round, S once
+ * settled — the same state the card itself is drawn from, as the foe chips
+ * read foeStatusBadges(f, V)). The hero's come from conditionsOf, a member's
+ * from memberConditionsOf, both through heroConditions.js#lotChips (only
+ * the entries that change a roll or the flow of a fight). Each chip carries
+ * its text (chipText of conditionLabel: "Smoke · 2"), its tone, its label
+ * and a tapText thunk (conditionTapText, the text the HUD strip's tap uses).
+ */
+function yourLotChipsFor(V, ref) {
+  const HC = window.__mzHeroChips;
+  if (!HC || !V) return [];
+  const member = ref?.kind === "member";
+  const conds = member ? window.__mzMemberConditionsOf?.(V, ref.partyIdx) : window.__mzConditionsOf?.(V);
+  return HC.lotChips(conds || []).map((ch) => {
+    const label = conditionLabel(ch.cn);
+    return { text: HC.chipText(label, ch), tone: ch.tone, label, cn: ch.cn, tapText: () => conditionTapText(ch.cn, label, V, { member }) };
+  });
 }
 
 // Phase 34 (CSCR-05) — the ONE map from a submenu row's dispatch payload
@@ -4993,7 +5184,8 @@ function renderEncounter() {
   // real dispatch already resolved it); guardTap/encArmed already swallow
   // a tap here during a live beat, this is defensive.
   renderFoeCards(mid, window.__mzCombatVM.foes(V, { chipsFor: (f) => foeStatusBadges(f, V).map((b) => b.t) }), (i) => { if (S.combat) { S.combat.target = i; renderEncounter(); } }, bv ? bv.hitFoe : -1);
-  renderYourLot(mid, window.__mzCombatVM.lot(V));
+  // CMBUI-13 (Phase 77, plan 77-08): the chip rows read V, like the foe chips.
+  renderYourLot(mid, window.__mzCombatVM.lot(V, { chipsFor: (ref) => yourLotChipsFor(V, ref) }));
   // Phase 71 (D-07, R-19): the combat v2 mock's middle holds the foes and
   // the party only, and scrolls on its own. The in-panel fight log (and its
   // Phase 34 scroll-into-view gate) left it: the latest round lives in the
@@ -5482,6 +5674,10 @@ document.getElementById("mw-rail").onclick = (e) => {
 // live beat.
 function beatHurryTap(e) {
   if (!window.__mzBeat?.active?.()) return;
+  // CMBUI-13 (Phase 77, plan 77-08): a YOUR LOT chip tap is an inspection
+  // (Phase 71 R-29: the card rises at once and the round keeps playing), so
+  // it passes through to the chip instead of hurrying the beat.
+  if (e?.target?.closest?.(".cb-lot-chip")) return;
   e.stopPropagation();
   e.preventDefault();
   window.__mzBeat.hurry();
