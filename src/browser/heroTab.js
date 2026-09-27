@@ -714,8 +714,10 @@ export function renderHeroTab(host, state, deps = {}) {
   const sk = doc.getElementById("s-skills");
   const table = skillTable(c.cls);
   const owned = Object.keys(c.skills || {});
+  // VOX-05 (Phase 79, Plan 09): the chargen value-point budget in words —
+  // the bare "12/12 vp" named a unit the game never explains.
   doc.getElementById("s-vp").textContent =
-    table ? `${(c.cls === "Fighter" ? 8 : 12) - (c.vp || 0)}/${c.cls === "Fighter" ? 8 : 12} vp` : "none";
+    table ? `${(c.cls === "Fighter" ? 8 : 12) - (c.vp || 0)} of ${c.cls === "Fighter" ? 8 : 12} points spent` : "none";
   sk.innerHTML = "";
   if (!owned.length) {
     const li = doc.createElement("li");
