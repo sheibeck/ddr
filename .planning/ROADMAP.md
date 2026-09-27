@@ -409,15 +409,15 @@ Plans:
 
   5. In combat, the ITEMS list marks equipped gear EQUIPPED and greys out bag gear that only works when worn, with the reason shown.
 
-**Plans**: 0/8 plans executed
+**Plans**: 4/8 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 77-01-PLAN.md — Make the combat submenus readable and honest: every row grows to fit its whole label and description on the Pixel 7 (CMBUI-07), spells list by level then name (CMBUI-08), and the ITEMS list says what is equipped and g... (wave 1)
-- [ ] 77-02-PLAN.md — Make the combat record read in the order things happened (CMBUI-10): the fight log's lines follow engine event order, and only identical back-to-back lines fold into "×N" (wave 1)
-- [ ] 77-03-PLAN.md — Build the data half of CMBUI-13's live effect indicators: the one enumerator knows every effect that is live on the hero or a party member, one table says how each is shown, a coverage guard fails the build when a new... (wave 1)
-- [ ] 77-04-PLAN.md — Finish the foe half of CMBUI-13: every effect a foe can carry this milestone, including the gifts a fumbled scroll hands it, shows as a chip on its card with a description on the long press (wave 1)
+- [x] 77-01-PLAN.md — Make the combat submenus readable and honest: every row grows to fit its whole label and description on the Pixel 7 (CMBUI-07), spells list by level then name (CMBUI-08), and the ITEMS list says what is equipped and g... (wave 1)
+- [x] 77-02-PLAN.md — Make the combat record read in the order things happened (CMBUI-10): the fight log's lines follow engine event order, and only identical back-to-back lines fold into "×N" (wave 1)
+- [x] 77-03-PLAN.md — Build the data half of CMBUI-13's live effect indicators: the one enumerator knows every effect that is live on the hero or a party member, one table says how each is shown, a coverage guard fails the build when a new... (wave 1)
+- [x] 77-04-PLAN.md — Finish the foe half of CMBUI-13: every effect a foe can carry this milestone, including the gifts a fumbled scroll hands it, shows as a chip on its card with a description on the long press (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -653,7 +653,7 @@ Plans:
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 5/6 | In Progress|  |
-| 77. Combat Screen & Oracle Readability | v2.1 | 0/– | Not started | - |
+| 77. Combat Screen & Oracle Readability | v2.1 | 4/8 | In Progress|  |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
