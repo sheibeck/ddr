@@ -25,6 +25,11 @@ import {
   buildCorpus, corpusJson, auditRegistry, domainOf, ownerOf, scanEmitters, lexJs, topLevelDecls, declAt,
 } from "../../tools/lib/voice-corpus.mjs";
 import { BRANCH_TOGGLES, BASE_EVENT, variantsFor } from "../../tools/lib/event-variants.mjs";
+import {
+  ROLL_UNDER_PATTERNS, HYGIENE_RULES, ROLL_HIGH_CLEAN, ROLL_PHRASING_EXCEPTIONS, HYGIENE_EXCEPTIONS, REASONS, DASHES, NUMBER_WORDS,
+  fixtureVariants, checkFixtures, playerWpSameness, scanRollUnder, scanHygiene, scanTwins, scanSafety, readLedgers, validateLedgers,
+} from "../../tools/lib/voice-checks.mjs";
+import { spawnSync } from "node:child_process";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 
@@ -99,7 +104,11 @@ test("builder renderings: each rendering is text, never the bare event type alon
 
 test("variantsFor: bare, base, then one variant per toggle, in a fixed order", () => {
   const v = variantsFor("healed");
-  assert.equal(v.length, BRANCH_TOGGLES.length + 2);
+  assert.equal(v.length, BRANCH_TOGGLES.filter((t) => !t.only || t.only.includes("healed")).length + 2);
+  // a scoped toggle renders only for its own types
+  assert.ok(variantsFor("tableFour").some((x) => x.event.stat === "hp" && x.event.amount === -19));
+  assert.ok(!v.some((x) => x.event.amount === -19));
+  assert.ok(!("only" in v[v.length - 1].event));
   assert.deepStrictEqual(v.slice(0, 3).map((x) => x.id), ["bare", "base", "t0"]);
   assert.deepStrictEqual(v[0].event, { type: "healed" });
   assert.equal(v[1].event.amount, BASE_EVENT.amount);
@@ -245,4 +254,172 @@ test("lexJs: nested template literals and regex literals keep exact literal boun
   assert.deepStrictEqual(decls.map((d) => d.name), ["a", "b", "c"]);
   assert.equal(declAt(decls, src.indexOf("Plain")), "c");
   assert.equal(declAt(decls, src.indexOf("comment")), "top");
+});
+
+// ═══ The checks (tools/lib/voice-checks.mjs) and the CLI ═══════════════════
+
+const re = (r) => new RegExp(r.source, r.flags);
+
+test("roll-under patterns: each trips every variant of its violations and passes every variant of its clean lines", () => {
+  const ids = ROLL_UNDER_PATTERNS.map((p) => p.id);
+  assert.deepStrictEqual(ids, ["need-face", "natural-low", "low-range", "or-under", "face-to-hit", "single-low-face", "penalty-to-hit", "need-better"]);
+  for (const p of ROLL_UNDER_PATTERNS) {
+    assert.ok(p.violation.length && p.clean.length && p.catches, `${p.id} needs fixtures both ways and a description`);
+    assert.equal(p.flags, "i");
+    for (const v of p.violation) for (const x of fixtureVariants(v)) assert.ok(re(p).test(x), `${p.id} must catch ${JSON.stringify(x)}`);
+    for (const c of [...p.clean, ...ROLL_HIGH_CLEAN]) for (const x of fixtureVariants(c)) assert.ok(!re(p).test(x), `${p.id} must pass ${JSON.stringify(x)}`);
+  }
+});
+
+test("roll-under: every dash variant and number word, case-insensitively", () => {
+  const low = ROLL_UNDER_PATTERNS.find((p) => p.id === "low-range");
+  for (const d of DASHES) {
+    assert.ok(re(low).test(`1${d}5 on d10 against any lock`), `dash U+${d.codePointAt(0).toString(16)}`);
+    assert.ok(re(low).test(`ONE${d}FIVE ON A D10`), `upper case, dash U+${d.codePointAt(0).toString(16)}`);
+  }
+  const need = ROLL_UNDER_PATTERNS.find((p) => p.id === "need-face");
+  NUMBER_WORDS.forEach((w, i) => {
+    assert.ok(re(need).test(`foes need a ${w} to hit`), w);
+    assert.ok(re(need).test(`foes need a ${i + 1} to hit`), String(i + 1));
+  });
+  const pen = ROLL_UNDER_PATTERNS.find((p) => p.id === "penalty-to-hit");
+  for (const d of DASHES) assert.ok(re(pen).test(`${d}3 on to${d}hit`));
+  assert.ok(!re(pen).test("−2 to hit"), "Phase 74's signed display is legal");
+  // a mishap on a 1 is roll-high canon
+  const nat = ROLL_UNDER_PATTERNS.find((p) => p.id === "natural-low");
+  assert.ok(!re(nat).test("A natural 1 fumbles the pick."));
+});
+
+test("hygiene rules: each trips its violations and passes its clean lines; standing-wp is PLAYER_WP", () => {
+  assert.deepStrictEqual(HYGIENE_RULES.map((h) => h.id), ["leaked-value", "unfilled-token", "ascii-sign", "hyphen-range", "standalone-wp", "retired-name", "spacing"]);
+  for (const h of HYGIENE_RULES) {
+    assert.ok(h.violation.length && h.clean.length);
+    for (const v of h.violation) assert.ok(re(h).test(v), `${h.id} must catch ${JSON.stringify(v)}`);
+    for (const c of h.clean) assert.ok(!re(h).test(c), `${h.id} must pass ${JSON.stringify(c)}`);
+  }
+  const wp = playerWpSameness();
+  assert.ok(wp.ok, `PLAYER_WP drifted: theirs ${wp.theirs}, ours ${wp.ours}`);
+  assert.deepStrictEqual(checkFixtures(), []);
+});
+
+test("exceptions carry a key, a match and a reason", () => {
+  for (const x of [...ROLL_PHRASING_EXCEPTIONS, ...HYGIENE_EXCEPTIONS]) {
+    assert.match(x.key, /^(oracle|rail|bank|content|raw):/);
+    assert.doesNotThrow(() => new RegExp(x.match));
+    assert.ok(x.reason && x.reason.length > 20, `${x.key}: reason`);
+  }
+});
+
+const synthetic = (entries, renderings) => ({ entries, renderings });
+const E = (key, texts, extra = {}) => ({ key, surface: "oracle", owner: "79-11", source: "s", trigger: "t", texts, ...extra });
+
+test("scanRollUnder / scanHygiene / scanSafety on a synthetic corpus, with template entries exempt from the token rule", () => {
+  const c = synthetic([
+    E("content:SPELLS.X.txt", ["foes need a 1 to hit"]),
+    E("bank:EPITAPHS.a.0", ["Here lies {name}."], { template: true }),
+    E("oracle:leak", ["Here lies {name}.", "You gain undefined hp.", "The dice decide — -15 HP."]),
+    E("oracle:clean", ["They hit only on 18–20.", "−3 hp."]),
+  ]);
+  const ru = scanRollUnder(c);
+  assert.deepStrictEqual([...new Set(ru.map((h) => h.key))], ["content:SPELLS.X.txt"]);
+  const hy = scanHygiene(c);
+  assert.deepStrictEqual(hy.map((h) => `${h.rule}@${h.key}`).sort(), ["ascii-sign@oracle:leak", "leaked-value@oracle:leak", "unfilled-token@oracle:leak"]);
+  assert.deepStrictEqual(scanSafety(c, { banned: ["frobnicate"], allowlist: [] }), []);
+  const unsafe = synthetic([E("oracle:x", ["They frobnicate loudly."])]);
+  assert.equal(scanSafety(unsafe, { banned: ["frobnicate"], allowlist: [] }).length, 1);
+  assert.deepStrictEqual(scanSafety(unsafe, { banned: ["frobnicate"], allowlist: ["frobnicate"] }), []);
+});
+
+test("scanTwins: a number the rail prints that the Oracle lacks, per variant", () => {
+  const c = synthetic(
+    [E("oracle:healed", ["+3 hp."]), E("rail:healed", ["+8 hp."], { owner: "79-02" }), E("oracle:ok", ["−2 hp."]), E("rail:ok", ["−2 hp."])],
+    new Map([
+      ["healed", { oracle: { base: "You heal. +3 hp.", t1: "Full." }, rail: { base: "+8 hp.", t1: "Full." } }],
+      ["ok", { oracle: { base: "It bites. −2 hp." }, rail: { base: "−2 hp." } }],
+    ]),
+  );
+  const hits = scanTwins(c);
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].key, "rail:healed");
+  assert.equal(hits[0].owner, "79-02");
+  assert.deepStrictEqual(hits[0].missing, ["8"]);
+  assert.equal(hits[0].variants, 1);
+  assert.deepStrictEqual(scanTwins({ entries: [] }), [], "a snapshot without renderings has no twins to check");
+});
+
+const baseC = synthetic([E("oracle:healed", ["You heal. +2 hp.", "You heal. +1 hp."]), E("bank:X.a", ["Old line."]), E("bank:X.b", ["Untouched."])]);
+const row = (over = {}) => ({ key: "bank:X.a", surface: "oracle", trigger: "t", before: "Old line.", after: "New line.", reasons: ["fact"], why: "It now says what happened.", ...over });
+
+test("validateLedgers: well-formed rows pass; malformed rows, unknown reasons, empty whys and a foreign before fail", () => {
+  assert.deepStrictEqual(validateLedgers({ base: baseC, ledgers: [{ plan: "79-05", rows: [row()] }] }), []);
+  const bad = validateLedgers({
+    base: baseC,
+    ledgers: [{
+      plan: "79-05",
+      rows: [
+        row({ reasons: ["vibes"] }),
+        row({ why: "  " }),
+        row({ before: "A line nobody ever wrote." }),
+        { key: "bank:X.a", before: "Old line." },
+        row({ surface: "nowhere" }),
+        row({ key: "notakey" }),
+        row({ after: "Old line." }),
+      ],
+    }],
+  });
+  assert.equal(bad.length, 7, bad.join("\n"));
+  for (const re of [/unknown reason/, /empty why/, /neither a base rendering/, /missing/, /unknown surface/, /key scheme/, /the same/]) {
+    assert.ok(bad.some((e) => re.test(e)), `expected an error matching ${re}`);
+  }
+  assert.ok(REASONS.includes("roll-under") && REASONS.includes("hygiene"));
+});
+
+test("validateLedgers: a two-plan chain, a new line, number-blind builder befores, checkAfter and coverage", () => {
+  const chain = [
+    { plan: "79-02", rows: [row({ key: "oracle:healed", before: "You heal. +7 hp.", after: "+7 hp. You heal.", reasons: ["number"] })] },
+    { plan: "79-11", rows: [row({ key: "oracle:healed", before: "+7 hp. You heal.", after: "+7 hp, back from the brink.", reasons: ["natural"] }), row({ key: "bank:X.c", before: "", after: "A brand-new line." })] },
+  ];
+  assert.deepStrictEqual(validateLedgers({ base: baseC, ledgers: chain }), []);
+  // a plan cannot cite an after that only a LATER plan wrote
+  const reversed = validateLedgers({ base: baseC, ledgers: [{ ...chain[1], plan: "79-02" }, { ...chain[0], plan: "79-12" }] });
+  assert.ok(reversed.some((e) => /neither a base rendering/.test(e)), reversed.join("\n"));
+  const current = synthetic([E("oracle:healed", ["+2 hp, back from the brink."]), E("bank:X.a", ["Old line."]), E("bank:X.b", ["Untouched."]), E("bank:X.c", ["A brand-new line."])]);
+  assert.deepStrictEqual(validateLedgers({ base: baseC, current, ledgers: chain }, { checkAfter: true }), []);
+  const stale = validateLedgers({ base: baseC, current, ledgers: [{ plan: "79-05", rows: [row()] }] }, { checkAfter: true });
+  assert.ok(stale.some((e) => /not in the current corpus/.test(e)));
+  const cov = validateLedgers({ base: baseC, current, ledgers: [chain[0]] }, { coverage: true });
+  assert.deepStrictEqual(cov.filter((e) => e.startsWith("coverage")), ["coverage: bank:X.c changed between base and current with no ledger row"]);
+});
+
+test("readLedgers: tolerates a BOM and CRLF, reads plans in order, and reports a parse error", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "voice-ledgers-"));
+  try {
+    fs.writeFileSync(path.join(tmp, "79-05.json"), "﻿[\r\n " + JSON.stringify(row()) + "\r\n]\r\n");
+    fs.writeFileSync(path.join(tmp, "79-02.json"), "[]\r\n");
+    fs.writeFileSync(path.join(tmp, "79-09.json"), "[ not json");
+    const ls = readLedgers(tmp);
+    assert.deepStrictEqual(ls.map((l) => l.plan), ["79-02", "79-05", "79-09"]);
+    const errs = validateLedgers({ base: baseC, ledgers: ls });
+    assert.equal(errs.length, 1, errs.join("\n"));
+    assert.match(errs[0], /^79-09: the ledger is not an array/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  assert.deepStrictEqual(readLedgers(path.join(os.tmpdir(), "no-such-dir-voice-ledgers")), []);
+});
+
+test("standing: every docs/narrative-pass/why/*.json ledger is well-formed and its befores come from the phase base", () => {
+  const ledgers = readLedgers(path.join(REPO_ROOT, "docs", "narrative-pass", "why"));
+  if (!ledgers.length) return; // none yet: 79-01 writes no ledger
+  const basePath = path.join(REPO_ROOT, "docs", "narrative-pass", "corpus-base.json");
+  assert.ok(fs.existsSync(basePath), "a ledger exists but the phase-base snapshot does not");
+  const base = JSON.parse(fs.readFileSync(basePath, "utf8").replace(/^﻿/, ""));
+  const errors = validateLedgers({ base, ledgers });
+  assert.deepStrictEqual(errors, [], errors.join("\n"));
+});
+
+test("CLI: --self-test exits 0", () => {
+  const r = spawnSync(process.execPath, [path.join(REPO_ROOT, "tools", "voice-inventory.mjs"), "--self-test"], { encoding: "utf8", timeout: 60000 });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /self-test: PASS/);
 });
