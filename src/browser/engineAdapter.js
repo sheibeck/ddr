@@ -31,7 +31,7 @@ import { emptyBests, sanitizeBests, updateBests, backfillBests, reconcileBests }
 // any engine-emitted type has no entry, closing 04-RESEARCH.md's Pitfall 4
 // (a silently-dropped combat/economy log line once those domains route
 // through dispatch() — 04-07).
-import { EVENT_NARRATION } from "./eventNarration.js";
+import { EVENT_NARRATION, stampScrollCopyNotes } from "./eventNarration.js";
 // Phase 25 (FEED-05): the fledgling-miss quip corpus + its pure decorator.
 // dispatch() below is the ONE site that stamps a quip onto a strikeMissed
 // event, so the Oracle line and the narration line share the same quip.
@@ -689,6 +689,13 @@ function persist() {
  * already been passed through missLines.js#decorateMisses — a strikeMissed
  * event may carry a presentation-only `quip` field the engine itself never
  * sets, present only while the hero's level is <= QUIP_MAX_LEVEL.
+ *
+ * Phase 77 (CMBUI-11): then through eventNarration.js#stampScrollCopyNotes —
+ * a scrollTooAdvanced directly followed by its scrollCast carries
+ * `castFollows` (it prints no Oracle line of its own) and that scrollCast
+ * carries `tooAdvanced` (its line reads the cast, then the copy note). Every
+ * consumer of the returned `events` (the rail/fight-log fold, the roll
+ * lookup) reads the same stamped list.
  */
 export function dispatch(action) {
   if (!currentState) {
@@ -741,7 +748,11 @@ export function dispatch(action) {
     // (25-03/25-04) read the exact same quip from this one assignment site.
     const { events: decorated, seq: nextMissSeq } = decorateMisses(events, currentState.c?.level ?? 1, missSeq);
     missSeq = nextMissSeq;
-    return { state: currentState, events: decorated, html: formatEvents(decorated) };
+    // CMBUI-11 (Phase 77): a scroll too advanced to copy still cast — stamp
+    // the note/cast pair so the Oracle says the cast, then the copy note
+    // (presentation only; the engine's events keep their order).
+    const stamped = stampScrollCopyNotes(decorated);
+    return { state: currentState, events: stamped, html: formatEvents(stamped) };
   } catch (err) {
     // Defense in depth (CR-01): engine/saveState.js#validateSave already
     // rejects a structurally-malformed save before it ever reaches here, but

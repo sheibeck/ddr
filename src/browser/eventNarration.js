@@ -965,11 +965,18 @@ export const EVENT_NARRATION = {
         : `<span class="miss">It stays rolled.</span>`,
   scrollCopiedToGrimoire: (e) => `<span class="hit">${e.spell ?? "It"} copied into your grimoire.</span>`,
   // Phase 40 (SPELL-07): the scroll's spell is not yet scribable (level or
-  // school gate not met) — it names the level needed and falls through to
-  // the free cast (the following `scrollCast` line narrates that part).
-  scrollTooAdvanced: (e) =>
-    `<span class="miss">${e.spell ?? "It"} needs level ${e.need ?? "?"}; you are ${e.have ?? "?"}. The scroll reads itself once and crumbles.</span>`,
-  scrollCast: (e) => `The scroll casts itself: ${e.spell ?? "something"}.`,
+  // school gate not met) and falls through to the free cast. CMBUI-11
+  // (Phase 77): the cast succeeded, so this is never worded as a refusal.
+  // Stamped `castFollows` by stampScrollCopyNotes (its scrollCast comes
+  // right after), it prints nothing: the cast's own line carries the note,
+  // AFTER the cast. Standalone, it is the plain copy note.
+  scrollTooAdvanced: (e) => (e.castFollows ? "" : `<span class="beat">${e.spell ?? "It"}: too advanced to copy into your book.</span>`),
+  // CMBUI-11: a cast stamped `tooAdvanced` (by stampScrollCopyNotes) reads
+  // the cast first, then the copy note.
+  scrollCast: (e) =>
+    `The scroll casts itself: ${e.spell ?? "something"}.${
+      e.tooAdvanced ? ` <span class="beat">Too advanced to copy into your book. The scroll crumbles, having made its point.</span>` : ""
+    }`,
   // RULES-10 (Phase 75.1) — an "intel" reader's own d20, on its own derived
   // stream. scrollDeciphered names the reading range (like heroResisted);
   // scrollGarbled is a plain failure — never the spell's name, never worded
@@ -1363,6 +1370,41 @@ export const EVENT_NARRATION = {
     return `<span class="miss">Fled: the loot stays with them — ${names}.</span>`;
   },
 };
+
+/**
+ * stampScrollCopyNotes(events) — CMBUI-11 (Phase 77). A presentation-only
+ * decoration, like missLines.js#decorateMisses (the precedent: a field the
+ * adapter adds before formatting, which the engine never sets). The engine
+ * pushes `scrollTooAdvanced` BEFORE its `scrollCast` (it checks the grimoire
+ * copy before the free cast), so the Oracle used to print "Fireball needs
+ * level 3; you are 1." ahead of a scroll that cast anyway. The user's
+ * 2026-09-21 device report: "I used a scroll in combat and I got a message
+ * saying it was a level 3 spell so I couldn't use it, but it actually
+ * successfully used the scroll."
+ *
+ * Returns a NEW array: a `scrollTooAdvanced` DIRECTLY followed by a
+ * `scrollCast` of the same spell becomes `{ ...e, castFollows: true }` (its
+ * EVENT_NARRATION line is then empty and formatEvent drops it), and that
+ * cast becomes `{ ...cast, tooAdvanced: { need, have } }` (its line reads the
+ * cast, then "Too advanced to copy into your book."). Every other element is
+ * the same object; the input is never mutated; a non-array returns []. The
+ * engine's events and their order are untouched. engineAdapter.js#dispatch
+ * applies it right after decorateMisses; narrationLines.js's
+ * scrollCopyChain gives the fold the same reading.
+ */
+export function stampScrollCopyNotes(events) {
+  if (!Array.isArray(events)) return [];
+  const out = events.slice();
+  for (let i = 0; i < out.length - 1; i++) {
+    const note = out[i];
+    const cast = out[i + 1];
+    if (note?.type !== "scrollTooAdvanced" || cast?.type !== "scrollCast" || cast.spell !== note.spell) continue;
+    out[i] = { ...note, castFollows: true };
+    out[i + 1] = { ...cast, tooAdvanced: { need: note.need, have: note.have } };
+    i++;
+  }
+  return out;
+}
 
 /**
  * narrateEvent(e) — Phase 25.1 (DFB-01 decision 2). Returns ONE event's
