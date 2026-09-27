@@ -43,6 +43,11 @@ import { rangeText } from "../../src/browser/rollRange.js";
 // discipline this whole guard file exists to enforce.
 import { gearConsumablesModel } from "../../src/browser/gearTab.js";
 import { scrollReaderOf, scrollReadBands } from "../../engine/derived.js";
+// Phase 79 (ROLL-04), plan 79-12: the authored ranges (content text, the
+// Oracle and rail lines, the foe chip sentence) against the measured ones.
+import { useAbility } from "../../engine/abilities.js";
+import { FOE_CONDITION_DESC } from "../../src/browser/foeConditions.js";
+import * as CONTENT from "../../content/index.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -512,4 +517,148 @@ test("one formatter: no src/browser/*.js file except rollRange.js defines a loca
     while ((tm = ternaryRe.exec(src))) offenders.push(`${path.relative(REPO_ROOT, file)}: local sign ternary -> "${tm[0].slice(0, 80)}"`);
   }
   assert.deepStrictEqual(offenders, [], `One-formatter violations:\n${offenders.join("\n")}`);
+});
+
+// ─── Phase 79 (ROLL-04), plan 79-12: authored ranges equal measured ranges ──
+//
+// Phase 79 rewrote the authored text for Smoke, Mirror Self, Weaken and the
+// Anklet of Invisibility roll-high: a foe's strike die scales with its
+// level, so the text speaks in faces ("only their die's top face", "two
+// fewer faces"). These scenarios put the SAME state on every surface and
+// require the faces the text states to equal the faces the foe card's odds
+// line measures (engine/derived.js through src/browser/rollOdds.js), and
+// the faces a chip's measured clause moves — so a rule change that the text
+// misses fails here, on the surface the player compares it with.
+
+const FACE_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
+const faceWord = (w) => (w ? FACE_WORDS.indexOf(w) : 1);
+
+/** statedTopFaces(text) — every "top face" / "top N faces" count, in order (plain, then insulted). */
+function statedTopFaces(text) {
+  return [...stripTags(text).matchAll(/\btop(?: (one|two|three|four|five|six)\b)?(?: faces?\b)?/g)].map((m) => faceWord(m[1]));
+}
+
+/** statedFewerFaces(text) — the N of "N fewer faces" / "one face fewer", or null. */
+function statedFewerFaces(text) {
+  const m = stripTags(text).match(/\b(one|two|three|four|five|six) (?:fewer faces|face fewer)\b/);
+  return m ? faceWord(m[1]) : null;
+}
+
+/** cardOdds(state) — the foe card's "it hits you on …" clause: { faces, dieN, mods }. */
+function cardOdds(state) {
+  const line = foeDetailsCard(0, state).lines.map((l) => l.text).find((t) => t.includes("it hits you on"));
+  assert.ok(line, "expected an odds line on the foe details card");
+  const m = line.match(/it hits you on (\d+)(?:–(\d+))? \(d(\d+)(?:; ([^)]*))?\)/);
+  assert.ok(m, `unreadable odds line "${line}"`);
+  const lo = Number(m[1]);
+  const hi = m[2] ? Number(m[2]) : lo;
+  return { faces: hi - lo + 1, dieN: Number(m[3]), mods: m[4] ?? "", line, range: m[2] ? `${m[1]}–${m[2]}` : m[1] };
+}
+
+/** chipDelta(state, key) — the signed number a hero chip's measured "±N vs their swings" clause states. */
+function chipDelta(state, key) {
+  const cn = conditionsOf(state).find((d) => d.key === key);
+  assert.ok(cn, `expected a ${key} condition descriptor`);
+  const text = conditionEffectText(cn, state);
+  const m = String(text ?? "").match(/^([+−])(\d+) vs their swings$/);
+  assert.ok(m, `the ${key} chip's measured clause should read "±N vs their swings", got "${text}"`);
+  return (m[1] === "+" ? 1 : -1) * Number(m[2]);
+}
+
+const itemTimer = (name) => ({ [`item:${name}`]: { cadence: "squares", left: 10, phase: "effect", cd: 0 } });
+const contentRow = (table, n) => table.find((r) => r.n === n);
+
+test("Smoke: the ability and skill text, the Oracle and rail lines state the foe card's measured faces, plain and insulted, and the chip moves the same count", () => {
+  const smokeC = { cls: "Thief", sub: "Burglar", abilities: ["smoke"], timers: timersFor("smoke") };
+  const plainFaces = cardOdds(fullHeroState(plainFoe())).faces;
+  const plain = cardOdds(fullHeroState(plainFoe(), { c: smokeC }));
+  const insulted = cardOdds(fullHeroState(plainFoe(), { c: smokeC, combat: { parleyInsulted: true } }));
+  assert.ok(plain.mods.includes("Smoke +"), `the card names Smoke: "${plain.line}"`);
+
+  // The real ability, used by a Thief, gives the event the narration renders.
+  const useState = fullHeroState(plainFoe(), { c: { cls: "Thief", sub: "Burglar", abilities: ["smoke"] } });
+  const ev = useAbility(useState, "smoke", fakeRng([...FILL]), []).find((e) => e.type === "smokeThrown");
+  assert.ok(ev, "expected a smokeThrown event from the real ability");
+
+  for (const [label, text] of [
+    ["ABILITIES.smoke.txt", CONTENT.ABILITY_BY_ID.smoke.txt],
+    ["THIEF_SKILLS.Smoke.txt", CONTENT.THIEF_SKILLS.Smoke.txt],
+    ["Oracle smokeThrown", EVENT_NARRATION.smokeThrown(ev)],
+    ["rail smokeThrown", LINE_FOR.smokeThrown(ev, {}).text],
+  ]) {
+    assert.deepEqual(statedTopFaces(text), [plain.faces, insulted.faces], `${label}: "${stripTags(text).trim()}" vs the card's ${plain.range} / ${insulted.range}`);
+  }
+  assert.equal(plain.range, rangeText(plain.dieN + 1 - plain.faces, plain.dieN));
+  assert.equal(chipDelta(fullHeroState(plainFoe(), { c: smokeC }), "ability"), plainFaces - plain.faces, "the Smoke chip moves the same faces");
+});
+
+test("Mirror Self: the spell text, the Oracle and rail lines state the foe card's measured faces, and the chip moves the same count", () => {
+  const plainFaces = cardOdds(fullHeroState(plainFoe())).faces;
+  const plain = cardOdds(fullHeroState(plainFoe(), { c: { mirror: 3 } }));
+  const insulted = cardOdds(fullHeroState(plainFoe(), { c: { mirror: 3 }, combat: { parleyInsulted: true } }));
+  assert.ok(plain.mods.includes("Mirror Self +"), `the card names Mirror Self: "${plain.line}"`);
+  const ev = { type: "mirrorSelf", rounds: 3 };
+  for (const [label, text, want] of [
+    ["SPELLS.Mirror Self.txt", contentRow(CONTENT.SPELLS, "Mirror Self").txt, [plain.faces, insulted.faces]],
+    ["Oracle mirrorSelf", EVENT_NARRATION.mirrorSelf(ev), [plain.faces, insulted.faces]],
+    // The rail's short line states the plain count only.
+    ["rail mirrorSelf", LINE_FOR.mirrorSelf(ev, {}).text, [plain.faces]],
+  ]) {
+    assert.deepEqual(statedTopFaces(text), want, `${label}: "${stripTags(text).trim()}" vs the card's ${plain.range} / ${insulted.range}`);
+  }
+  assert.equal(chipDelta(fullHeroState(plainFoe(), { c: { mirror: 3 } }), "mirror"), plainFaces - plain.faces, "the Mirror Self chip moves the same faces");
+});
+
+test("Weaken: the spell text, the Oracle and rail lines and the foe chip sentence state the cap the foe card measures, and the card's Weakened line agrees", () => {
+  const weakened = { foeToHitPenalty: 3, weakened: true };
+  const odds = cardOdds(fullHeroState(plainFoe(), { combat: weakened }));
+  assert.ok(odds.mods.includes("Weaken +"), `the card names Weaken: "${odds.line}"`);
+  // The cap binds whatever the hero's own defences: a Guard's foe already
+  // below the cap keeps its lower count.
+  const ev = { type: "weakened", rounds: 3 };
+  for (const [label, text] of [
+    ["SPELLS.Weaken.txt", contentRow(CONTENT.SPELLS, "Weaken").txt],
+    ["Oracle weakened", EVENT_NARRATION.weakened(ev)],
+    ["rail weakened", LINE_FOR.weakened(ev, {}).text],
+    ["FOE_CONDITION_DESC.weakened", FOE_CONDITION_DESC.weakened],
+  ]) {
+    assert.deepEqual(statedTopFaces(text), [odds.faces], `${label}: "${stripTags(text).trim()}" vs the card's ${odds.range}`);
+  }
+  const cardLine = foeDetailsCard(0, fullHeroState(plainFoe(), { combat: weakened })).lines.map((l) => l.text).find((t) => t.startsWith("Weakened"));
+  assert.ok(cardLine && cardLine.includes(`it hits you only on ${odds.range} (d${odds.dieN})`), `the foe card's Weakened line measures ${odds.range}: "${cardLine}"`);
+});
+
+test("Anklet of Invisibility: the item text, the Oracle and rail lines state the faces the foe card loses, the card and a real foe line name it 'unseen', and the chip moves the same count", () => {
+  const ankletC = { timers: itemTimer("Anklet of Invisibility") };
+  const base = cardOdds(fullHeroState(plainFoe()));
+  const under = cardOdds(fullHeroState(plainFoe(), { c: ankletC }));
+  const lost = base.faces - under.faces;
+  assert.ok(lost > 0, "the Anklet should cost the foe faces");
+  assertModifier(under.line, `unseen +${lost}`, "foe details odds line");
+  const driveState = fullHeroState(plainFoe(), { c: ankletC });
+  const e = foeTurn(driveState, fakeRng([20]), []).find((x) => x.type === "foeMissed" || x.type === "struckByFoe");
+  assert.ok(e, "expected a foeMissed or struckByFoe event");
+  assertModifier(EVENT_NARRATION[e.type](e), `unseen +${lost}`, "Oracle");
+  const ev = { type: "itemEffectStarted", kind: "unseen", item: "Anklet of Invisibility", left: 50 };
+  for (const [label, text] of [
+    ["JEWELRY.Anklet of Invisibility.txt", contentRow(CONTENT.JEWELRY, "Anklet of Invisibility").txt],
+    ["Oracle itemEffectStarted", EVENT_NARRATION.itemEffectStarted(ev)],
+    ["rail itemEffectStarted", LINE_FOR.itemEffectStarted(ev, {}).text],
+  ]) {
+    assert.equal(statedFewerFaces(text), lost, `${label}: "${stripTags(text).trim()}" vs the card's ${base.range} → ${under.range}`);
+  }
+  assert.equal(chipDelta(fullHeroState(plainFoe(), { c: ankletC }), "unseen"), lost, "the Unseen chip moves the same faces");
+});
+
+test("the 'unseen' label stays true: the Anklet of Invisibility is the only content item with a foeToHit effect (rollRange.js MOD_LABEL.gear)", () => {
+  const carriers = new Set();
+  const walk = (v, seen = new Set()) => {
+    if (!v || typeof v !== "object" || seen.has(v)) return;
+    seen.add(v);
+    if (Array.isArray(v)) { for (const x of v) walk(x, seen); return; }
+    if (v.eff && typeof v.eff === "object" && Object.hasOwn(v.eff, "foeToHit") && typeof v.n === "string") carriers.add(v.n);
+    for (const x of Object.values(v)) walk(x, seen);
+  };
+  for (const exp of Object.values(CONTENT)) walk(exp);
+  assert.deepEqual([...carriers], ["Anklet of Invisibility"], "a second foeToHit item would make the 'unseen' label lie: name its term in engine/derived.js#foeToHitBreakdown instead");
 });

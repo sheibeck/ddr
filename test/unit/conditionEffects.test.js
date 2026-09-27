@@ -288,7 +288,7 @@ test("CMBUI-13 ability: a live Sidestep and a live Battle Roar each read '+2 vs 
   }
 });
 
-test("CMBUI-13 ability: Smoke reads the measured plus from its override (every foe needs a 1)", () => {
+test("CMBUI-13 ability: Smoke reads the measured plus from its override (every foe finds you only on its die's top face)", () => {
   const state = inFight({ c: { cls: "Thief", sub: "Pilfer", timers: { "ability:smoke": liveAbility() } } });
   const without = foeToHitVs({ ...state, c: { ...state.c, timers: {} } });
   assert.equal(foeToHitVs(state), 1);

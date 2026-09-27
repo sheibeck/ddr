@@ -162,9 +162,9 @@ test("a Thief Joiner gets its own evasion dial; a Thief hero's evasion never rea
 test("party-wide effects stay party-wide: Battle Roar and the Crystal Staff's party invisibility still cover a Joiner", () => {
   const plain = memberSwing(partyState(PLAIN_BODY, PLAIN_BODY));
   const roar = memberSwing(partyState({ ...PLAIN_BODY, dress: (c) => startEffect(c, "ability:battleRoar", { rounds: 2 }) }, PLAIN_BODY));
-  assert.equal(roar.faces, plain.faces - 2, "the hero's Battle Roar: every foe needs two better to hit anyone on your side");
+  assert.equal(roar.faces, plain.faces - 2, "the hero's Battle Roar: every foe has two fewer faces that hit anyone on your side");
   const staff = memberSwing(partyState({ ...PLAIN_BODY, dress: (c) => startEffect(c, "item:Crystal Staff", { squares: 10 }) }, PLAIN_BODY));
-  assert.equal(staff.faces, 1, "the hero's Crystal Staff: party invisible, enemies need a 1");
+  assert.equal(staff.faces, 1, "the hero's Crystal Staff: party invisible, foes hit only on their die's top face");
   assert.ok(staff.mods.some((m) => m.name === "invisible"), JSON.stringify(staff.mods));
 });
 

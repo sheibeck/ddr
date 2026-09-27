@@ -109,8 +109,16 @@ export function playerDelta(delta, roller) {
  * cannot read as written: "penalty" (the Weaken cap, C.foeToHitPenalty) to
  * "Weaken", and "overhead" (the Overhead Blow ability's needShift) to
  * "Overhead Blow". Every other mod name is displayed as-is.
+ *
+ * Phase 79 (plan 79-12, closing Phase 77's 77-07 audit gap): "gear" (the
+ * summed `foeToHit` item effect engine/derived.js#foeToHitBreakdown names)
+ * reads "unseen", the name on the only item that carries that effect, the
+ * Anklet of Invisibility, and on its hero chip (mazeworld.html's
+ * CONDITION_COPY.unseen, "Unseen").
+ * test/unit/roll-sign-consistency.test.js fails if a second item gains a
+ * `foeToHit` effect, when this label would stop being true.
  */
-export const MOD_LABEL = Object.freeze({ penalty: "Weaken", overhead: "Overhead Blow" });
+export const MOD_LABEL = Object.freeze({ penalty: "Weaken", overhead: "Overhead Blow", gear: "unseen" });
 
 /**
  * modLabel(name) — looks up MOD_LABEL by OWN property only (never the

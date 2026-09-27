@@ -60,6 +60,39 @@ test("teeth: a synthetic comment that presents a retired surface as live is repo
   assert.equal(dpadAllowed.allowed, 1);
 });
 
+// --- (c2) Phase 79 (ROLL-04), plan 79-12: the retired roll-under phrasings ---
+
+test("teeth: the roll-under term reports a comment or title quoting a retired roll-under phrase, and passes its roll-high rewrite", () => {
+  const term = TERMS.find((t) => t.id === "roll-under");
+  assert.ok(term && term.enforced, "the roll-under term is enforced");
+  // Each retired family, built from parts so this file never spells one.
+  const retired = [
+    ["// Mirror Self: foes need", "a 1 to hit"],
+    ["test(\"Smoke: every foe needs", "a natural 1\")"],
+    ["// Battle Roar: every foe needs", "two better"],
+    ["// a Zit is hittable", "only on a 4"],
+    ["// traps are dodged", "on 1–5"],
+    ["// Lockpicks: 1–5", "on d10 against any lock"],
+    ["// Weaken: they hit", "on a 3"],
+  ].map(([a, b]) => `${a} ${b}`);
+  for (const line of retired) {
+    const { rows } = scan([{ path: "x/r.js", text: `${line}\n` }], { allowed: [] });
+    assert.equal(rows.find((r) => r.id === "roll-under").unlisted, 1, `expected "${line}" to be reported`);
+  }
+  const rollHigh = [
+    "// Mirror Self: foes hit you only on their die's top face",
+    "// Battle Roar: every foe has two fewer faces to hit",
+    "// Lockpicks: 6–10 on d10 against any lock",
+    "// a natural 1 fumbles the pick",
+    "// a Fighter in Plate needs a natural 16",
+    "// Weaken: no more than their die's top three faces hit",
+  ];
+  for (const line of rollHigh) {
+    const { rows } = scan([{ path: "x/r.js", text: `${line}\n` }], { allowed: [] });
+    assert.equal(rows.find((r) => r.id === "roll-under").total, 0, `expected "${line}" to pass`);
+  }
+});
+
 // --- (d) informational rows never fail --------------------------------
 
 test("informational rows never fail: classic-script and legacy-won are enforced:false", () => {

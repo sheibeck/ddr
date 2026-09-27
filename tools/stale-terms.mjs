@@ -85,6 +85,19 @@ export const TERMS = Object.freeze(
       note: "supplementary: file names Phase 46 renamed/deleted, plus the test file Plan 03 renames",
     },
     { id: "legacy-won", regex: "won: false|state\\.won|winGame", enforced: false, note: "the 46-02 SUMMARY's inert won:false fixture-literal inventory — counted, test bodies untouched" },
+    // Phase 79 (ROLL-04), plan 79-12: the retired roll-under phrase families
+    // Phase 79 rewrote roll-high (docs/ROLL-LEDGER.md's `## Phase 79 roll
+    // phrasing closure (ROLL-04)`): a need phrase with a low face, "need two
+    // better", a natural 1 as the way to succeed, a low face that hits, a
+    // low range that dodges, and the old Lockpicks and Weaken wordings. A
+    // comment or test title that quotes one as the game's current text is
+    // stale; test/unit/roll-phrasing.test.js guards the player-facing copy.
+    {
+      id: "roll-under",
+      regex: "needs? (a )?natural (1|one)\\b|needs? an? (1|one)\\b(?! ?[–-])|needs? (two|2) better|hittable only on an? \\d|(hits?|dodged) on (a )?1[–-]\\d|\\b1[–-]5 on d10|\\bhit on a 3\\b",
+      enforced: true,
+      note: "the roll-under phrasings Phase 79 retired (ROLL-04)",
+    },
   ].map((t) => Object.freeze(t)),
 );
 
@@ -350,6 +363,44 @@ export const ALLOWED = Object.freeze(
       file: "test/unit/shell-clarity-43.test.js",
       match: "__mzGear/__mzItemRowState are retired",
       reason: "A — the title states the trio is retired",
+    },
+
+    // --- Phase 79 (ROLL-04), plan 79-12: the retired roll-under phrasings ---
+    {
+      term: "roll-under",
+      file: "tools/lib/voice-checks.mjs",
+      match: ".",
+      reason: "A — ROLL_UNDER_PATTERNS' own violation fixtures and descriptions: every one is a phrase the patterns must keep catching",
+    },
+    {
+      term: "roll-under",
+      file: "test/unit/voice-corpus.test.js",
+      match: "E\\(\"content:SPELLS\\.X\\.txt\"",
+      reason: "A — the synthetic corpus row scanRollUnder must catch",
+    },
+    {
+      term: "roll-under",
+      file: "test/parity/harness/comparables.js",
+      match: "\"1–5 on d10\" -> \"6–10 on d10\"",
+      reason: "B — the REWORDED_TXT_ITEMS carve-out states the Lockpicks rewording it exists for (old -> new)",
+    },
+    {
+      term: "roll-under",
+      file: "engine/combat.js",
+      match: "\"you need two better to land it\" self-penalty",
+      reason: "B — quotes Overhead Blow's pre-Phase-79 text to name the rule; engine/ is frozen for 79-12 (no engine diff), so the next plan that touches combat.js refreshes the quote",
+    },
+    {
+      term: "roll-under",
+      file: "engine/derived.js",
+      match: "\"party invisible d10\\+5 squares; enemies need a 1\"|\"every foe needs two better to hit",
+      reason: "B — PARTY_WIDE_ITEM_EFFECTS' and foeToHitVs' doc comments quote the Crystal Staff's and Battle Roar's pre-Phase-79 text as the party-wide claim they honour; engine/ is frozen for 79-12, so the next plan that touches derived.js refreshes the quotes",
+    },
+    {
+      term: "roll-under",
+      file: "test/unit/",
+      match: "txt: \"1[–-]5 on d10|txt: \"foes need two better to land\"",
+      reason: "D — an inert pre-Phase-79 item text inside a hand-built test item literal (Lockpicks, the Anklet); where a test reads it, it compares the item against its own literal, never against game copy",
     },
   ].map((a) => Object.freeze(a)),
 );

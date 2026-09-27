@@ -19,17 +19,27 @@
 //
 // A mishap on a 1 is roll-high canon and is never a row here.
 //
+// Plan 79-12 (section 8) extends the pins outside content/: the narration
+// lines, chip sentences, menu and panel copy Phase 79 wrote, each computed
+// from the engine, plus a coverage guard over the live corpus that names
+// the test pinning every other stated face count or fixed-die range
+// (blurbs, the legend, the trap epitaph).
+//
 // Local fixture copies (fakeRng/fixedFighter/fixedFloor/fixedState/fixedFoe/
 // fixedCombat) mirror test/unit/odds-helpers.test.js — this repo's
 // per-file-fixture convention (never imported cross-file).
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
 import {
   foeToHitVs,
   foeSwingVsHero,
   targetStrikeFaces,
+  heroStrikeFacesVs,
   strikeDie,
   foeDie,
   weaponDamage,
@@ -37,7 +47,16 @@ import {
   SIZE_DAMAGE_PER_STEP,
   SIZE_FACES_PER_STEP,
 } from "../../engine/derived.js";
-import { playerStrike } from "../../engine/combat.js";
+import { playerStrike, parley } from "../../engine/combat.js";
+import { drinkPotion } from "../../engine/magic.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
+import { FOE_CONDITION_DESC } from "../../src/browser/foeConditions.js";
+import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { GEAR_COPY } from "../../src/browser/gearTab.js";
+import { buildCorpus } from "../../tools/lib/voice-corpus.mjs";
+
+const REPO_ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..", "..");
 import { useAbility } from "../../engine/abilities.js";
 import { openChest } from "../../engine/encounters.js";
 import { openStore } from "../../engine/economy.js";
@@ -372,4 +391,220 @@ test("Enlarge and the Gauntlet state the size step's face change for foes", () =
   assert.equal(SIZE_FACES_PER_STEP, 1);
   assert.ok(potion("Enlarge").includes("one face easier for foes to hit"));
   assert.ok(row(JEWELRY, "Gauntlet of the Giant").includes("one face easier for foes to hit"));
+});
+
+// ---------------------------------------------------------------------------
+// 8. Outside content (Phase 79, plan 79-12): the narration lines, chip
+//    sentences, menu and panel copy, blurbs, legend and epitaphs Phase 79
+//    rewrote. Every corpus string (tools/lib/voice-corpus.mjs) outside
+//    content/ that states a face count or a fixed-die range is either pinned
+//    to the engine here or named with the test file that pins it, so a new
+//    one cannot slip in unpinned.
+// ---------------------------------------------------------------------------
+
+const html = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
+
+/** conditionExplain() — mazeworld.html's classic-script CONDITION_EXPLAIN, key → sentence. */
+function conditionExplain() {
+  const start = html.indexOf("const CONDITION_EXPLAIN = {");
+  assert.ok(start >= 0, "mazeworld.html should declare CONDITION_EXPLAIN");
+  const end = html.indexOf("\n};", start);
+  const out = {};
+  for (const m of html.slice(start, end).matchAll(/^\s*(\w+): "((?:[^"\\]|\\.)*)",?\s*$/gm)) out[m[1]] = m[2];
+  return out;
+}
+const EXPLAIN = conditionExplain();
+
+/** statedTop(text) — "top face" 1, "top N faces" N; every occurrence in order. */
+const statedTop = (text) => [...String(text).replace(/<[^>]+>/g, " ").matchAll(/\btop(?: (one|two|three|four|five|six)\b)?(?: faces?\b)?/g)].map((m) => (m[1] ? WORD.indexOf(m[1]) : 1));
+const plainText = (html_) => String(html_).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+test("CONDITION_EXPLAIN and itemEffectStarted: invisibility's 'very best roll' and 'top face (top two)' are the foe's measured faces", () => {
+  const { plain, insulted } = foeFacesVsHero({ timers: itemTimer("Cloak of Invisibility") });
+  assert.equal(plain, 1, "only the foe's top face finds an invisible hero");
+  // "only a foe's very best roll" names exactly one face.
+  assert.match(EXPLAIN.invis, /only a foe's very best roll finds you/);
+  assert.equal(foeFacesVsHero({ mirror: 3 }).plain, 1);
+  assert.match(EXPLAIN.mirror, /only a foe's very best roll finds the real you/);
+  const ev = { type: "itemEffectStarted", kind: "invis", item: "Cloak of Invisibility", left: 3 };
+  assert.deepEqual(statedTop(EVENT_NARRATION.itemEffectStarted(ev)), [plain, insulted], plainText(EVENT_NARRATION.itemEffectStarted(ev)));
+  assert.deepEqual(statedTop(LINE_FOR.itemEffectStarted(ev, {}).text), [plain, insulted], LINE_FOR.itemEffectStarted(ev, {}).text);
+});
+
+test("CONDITION_EXPLAIN.unseen and itemEffectStarted (unseen): the Anklet's 'two fewer faces' is the engine's shift", () => {
+  const lost = foeToHitVs(fixedState({})) - foeToHitVs(fixedState({ timers: itemTimer("Anklet of Invisibility") }));
+  const phrase = `${fewerFaces(lost)} that hit you`;
+  assert.ok(EXPLAIN.unseen.includes(`Every foe has ${phrase}`), EXPLAIN.unseen);
+  const ev = { type: "itemEffectStarted", kind: "unseen", item: "Anklet of Invisibility", left: 3 };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
+  assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(phrase), LINE_FOR.itemEffectStarted(ev, {}).text);
+});
+
+test("CONDITION_EXPLAIN.acute and itemEffectStarted (acute): 'you strike on a d6' is the strike die Acuteness sets", () => {
+  const die = strikeDie(fixedFighter({ timers: itemTimer("Acuteness") }));
+  assert.ok(die < strikeDie(fixedFighter()), "Acuteness should improve the strike die");
+  assert.ok(EXPLAIN.acute.startsWith(`You strike on a d${die},`), EXPLAIN.acute);
+  const ev = { type: "itemEffectStarted", kind: "acute", item: "Acuteness", rounds: 3 };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(`strike on a d${die}`), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
+  assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(`strike on a d${die}`), LINE_FOR.itemEffectStarted(ev, {}).text);
+});
+
+test("CONDITION_EXPLAIN (giant, enlarge) and itemEffectStarted: one size step is '+2 damage, and one face easier for foes to hit'", () => {
+  for (const [key, item] of [["giant", "Gauntlet of the Giant"], ["enlarge", "Enlarge"]]) {
+    const hero = fixedFighter({ timers: itemTimer(item) });
+    const dmg = SIZE_DAMAGE_PER_STEP * sizeAxisStep(hero, "dmg");
+    const faces = foeToHitVs(fixedState({ timers: itemTimer(item) })) - foeToHitVs(fixedState({}));
+    assert.equal(faces, 1, `${item}: one face easier`);
+    const phrase = `+${dmg} damage, and one face easier for foes to hit`;
+    assert.ok(EXPLAIN[key].includes(phrase), `${key}: ${EXPLAIN[key]}`);
+    // engine/items.js stamps `size` and `sizeDmg` (SIZE_DAMAGE_PER_STEP × the item's step) on the event.
+    const ev = { type: "itemEffectStarted", kind: key, item, left: 3, size: "Large", sizeDmg: dmg };
+    assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
+    assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(phrase), LINE_FOR.itemEffectStarted(ev, {}).text);
+  }
+});
+
+test("CONDITION_EXPLAIN.heroBlind: 'only your die's top face lands' is the hero's measured faces while blind", () => {
+  const state = fixedState({}, { combat: fixedCombat([fixedFoe()], { heroBlind: true }) });
+  assert.equal(heroStrikeFacesVs(state, state.combat.foes[0]), 1);
+  assert.equal(EXPLAIN.heroBlind, "Only your die's top face lands.");
+});
+
+test("CONDITION_EXPLAIN.tongue: 'the roll gets two more faces' is the Helm's parley bonus", () => {
+  const parleyAt = (cOverrides) => {
+    const state = fixedState({ race: "Wilmsry", ...cOverrides }, { combat: fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" }) });
+    const ev = parley(state, fakeRng([], 20), []).find((e) => e.type === "parleyRolled");
+    assert.ok(ev, `a parleyRolled event, got ${JSON.stringify(state.combat)}`);
+    return ev.atLeast;
+  };
+  const more = parleyAt({}) - parleyAt({ timers: itemTimer("Helm of Knowledge") });
+  assert.equal(more, 2);
+  assert.ok(EXPLAIN.tongue.includes(`the roll gets ${WORD[more]} more faces`), EXPLAIN.tongue);
+});
+
+test("battleRoarRaised and sidestepped (Oracle and rail): 'two fewer faces' is the engine's shift", () => {
+  for (const [type, key] of [["battleRoarRaised", "battleRoar"], ["sidestepped", "sidestep"]]) {
+    const lost = foeToHitVs(fixedState({})) - foeToHitVs(fixedState({ timers: abilityTimer(key) }));
+    const phrase = `${WORD[lost]} fewer faces to hit`;
+    const ev = { type };
+    assert.ok(plainText(EVENT_NARRATION[type](ev)).includes(phrase), `${type}: ${plainText(EVENT_NARRATION[type](ev))}`);
+    assert.ok(LINE_FOR[type](ev, {}).text.includes(phrase), `${type}: ${LINE_FOR[type](ev, {}).text}`);
+  }
+});
+
+test("blinded (Oracle and rail) and FOE_CONDITION_DESC.blind: a blind foe 'hits only on its top face'", () => {
+  const foe = fixedFoe({ blind: true });
+  const faces = foeSwingVsHero(fixedState({}, { combat: fixedCombat([foe]) }), foe).faces;
+  assert.equal(faces, 1);
+  const ev = { type: "blinded", target: "Viper", rounds: 2 };
+  for (const text of [EVENT_NARRATION.blinded(ev), LINE_FOR.blinded(ev, {}).text, FOE_CONDITION_DESC.blind]) {
+    assert.deepEqual(statedTop(text), [faces], plainText(text));
+  }
+});
+
+test("fumbleOnFoe (mirror, Oracle and rail): 'you hit it only on your top face' is the hero's measured faces against a mirrored foe", () => {
+  const foe = fixedFoe({ mirror: 3 });
+  const state = fixedState({}, { combat: fixedCombat([foe]) });
+  assert.equal(heroStrikeFacesVs(state, foe), 1);
+  const ev = { type: "fumbleOnFoe", effect: "mirror", spell: "Mirror Self", target: "Viper", rounds: 3 };
+  assert.deepEqual(statedTop(EVENT_NARRATION.fumbleOnFoe(ev)), [1], plainText(EVENT_NARRATION.fumbleOnFoe(ev)));
+  assert.deepEqual(statedTop(LINE_FOR.fumbleOnFoe(ev, {}).text), [1], LINE_FOR.fumbleOnFoe(ev, {}).text);
+});
+
+test("struck (critBy ninja): 'A Ninja's top two faces' is the faces a Ninja's later strikes crit on", () => {
+  const hero = { cls: "Thief", sub: "Ninja" };
+  const dieN = strikeDie(fixedFighter(hero));
+  let n = 0;
+  for (let roll = dieN; roll >= dieN - 5; roll--) {
+    const state = fixedState(hero, { combat: fixedCombat([fixedFoe()], { opened2: true }) });
+    const events = [];
+    playerStrike(state, fakeRng([dieN + 1 - roll], 1), events);
+    if (events.some((e) => e.critBy === "ninja")) n++;
+    else break;
+  }
+  assert.ok(n > 0, "a Ninja crits on the top face at least");
+  const text = plainText(EVENT_NARRATION.struck({ type: "struck", target: "Viper", dmg: 6, critical: true, critBy: "ninja" }));
+  assert.ok(text.includes(`A Ninja's ${topFaces(n)}`), text);
+});
+
+test("COMBAT_MENU_COPY.parleyDesc: a failed parley's insult makes every foe 'one face easier'", () => {
+  const foe = fixedFoe();
+  const plain = foeSwingVsHero(fixedState({}, { combat: fixedCombat([foe]) }), foe).faces;
+  const insulted = foeSwingVsHero(fixedState({}, { combat: fixedCombat([foe], { parleyInsulted: true }) }), foe).faces;
+  assert.equal(insulted - plain, 1);
+  assert.ok(COMBAT_MENU_COPY.parleyDesc.includes("every foe hits you and yours one face easier"), COMBAT_MENU_COPY.parleyDesc);
+});
+
+test("GEAR_COPY.healingDesc: 'Heals 7–25 hp (double for a Wilmsry)' is drinkPotion's own range", () => {
+  const healed = (race, draw) => {
+    const state = fixedState({ race, wp: 1, maxWP: 999, potions: 1 });
+    const ev = drinkPotion(state, fakeRng([draw], draw), []).find((e) => e.type === "potionDrunk");
+    assert.ok(ev, "a potionDrunk event");
+    return ev.amount;
+  };
+  const lo = healed("Human", 1);
+  const hi = healed("Human", 10);
+  assert.ok(GEAR_COPY.healingDesc.startsWith(`Heals ${lo}–${hi} hp (double for a Wilmsry)`), GEAR_COPY.healingDesc);
+  assert.equal(healed("Wilmsry", 1), 2 * lo);
+});
+
+// Every non-content corpus key stating a face count or a fixed-die range,
+// and where it is pinned. "here" rows are the tests above; a file names the
+// test that pins the key against the engine.
+const PINNED_OUTSIDE_CONTENT = Object.freeze([
+  { match: "bank:CLASS_NOTE.", proof: "test/unit/identity-footer.test.js", token: "CLASS_NOTE" },
+  { match: "bank:SUB_NOTE.", proof: "test/unit/identity-footer.test.js", token: "SUB_NOTE" },
+  { match: "bank:RACE_NOTE.", proof: "test/unit/identity-footer.test.js", token: "RACE_NOTE" },
+  { match: "bank:IDENTITY_FOOTER.", proof: "test/unit/identity-footer.test.js", token: "footerLines" },
+  { match: "bank:IDENTITY_TRAITS.", proof: "test/unit/identity-footer.test.js", token: "IDENTITY_TRAITS" },
+  { match: "bank:EPITAPHS.trap.", proof: "test/unit/death-copy.test.js", token: "EPITAPHS.trap" },
+  { match: "bank:MARKS_LEGEND.", proof: "test/unit/mapMarks.test.js", token: "MARKS_LEGEND" },
+  { match: "oracle:smokeThrown", proof: "test/unit/roll-sign-consistency.test.js", token: "smokeThrown" },
+  { match: "rail:smokeThrown", proof: "test/unit/roll-sign-consistency.test.js", token: "smokeThrown" },
+  { match: "oracle:mirrorSelf", proof: "test/unit/roll-sign-consistency.test.js", token: "mirrorSelf" },
+  { match: "rail:mirrorSelf", proof: "test/unit/roll-sign-consistency.test.js", token: "mirrorSelf" },
+  { match: "oracle:weakened", proof: "test/unit/roll-sign-consistency.test.js", token: "EVENT_NARRATION.weakened" },
+  { match: "rail:weakened", proof: "test/unit/roll-sign-consistency.test.js", token: "LINE_FOR.weakened" },
+  { match: "bank:FOE_CONDITION_DESC.weakened", proof: "test/unit/roll-sign-consistency.test.js", token: "FOE_CONDITION_DESC.weakened" },
+  { match: "raw:engine/items.js#rollTreasureItem", proof: "here" },
+  { match: "raw:engine/economy.js#openStore", proof: "here" },
+  { match: "raw:mazeworld.html#CONDITION_EXPLAIN", proof: "here" },
+  { match: "oracle:itemEffectStarted", proof: "here" },
+  { match: "rail:itemEffectStarted", proof: "here" },
+  { match: "oracle:battleRoarRaised", proof: "here" },
+  { match: "rail:battleRoarRaised", proof: "here" },
+  { match: "oracle:sidestepped", proof: "here" },
+  { match: "rail:sidestepped", proof: "here" },
+  { match: "oracle:blinded", proof: "here" },
+  { match: "rail:blinded", proof: "here" },
+  { match: "bank:FOE_CONDITION_DESC.blind", proof: "here" },
+  { match: "oracle:fumbleOnFoe", proof: "here" },
+  { match: "rail:fumbleOnFoe", proof: "here" },
+  { match: "oracle:struck", proof: "here" },
+  { match: "bank:COMBAT_MENU_COPY.parleyDesc", proof: "here" },
+  { match: "bank:GEAR_COPY.healingDesc", proof: "here" },
+]);
+
+// A face count or a fixed-die range in prose. A computed roll line ("7 vs
+// 12–20") is rollRange.js's own output, not authored, and never matches.
+const STATES_FACES_OR_RANGE =
+  /\btop (?:(?:one|two|three|four|five|six) )?faces?\b|\b(?:one|two|three|four|five|six) (?:fewer|more) faces\b|\bone face (?:easier|harder|fewer|more|better|worse)\b|\bvery best roll\b|\bon (?:a |the )?d(?:4|6|8|10|12|20)\b|\b\d+–\d+ (?:on (?:a |the )?d\d+|dodges|avoids)\b|\b\d+–\d+ hp\b|\bdie one size\b|\ba die better\b/;
+
+const corpus = await buildCorpus();
+const flagged = corpus.entries.filter((e) => !e.key.startsWith("content:") && e.texts.some((t) => STATES_FACES_OR_RANGE.test(t))).map((e) => e.key);
+const pinFor = (key) => PINNED_OUTSIDE_CONTENT.find((p) => (p.match.endsWith(".") ? key.startsWith(p.match) : key === p.match));
+
+test("coverage: every non-content corpus string stating a face count or a fixed-die range is pinned (here or in a named test)", () => {
+  assert.ok(flagged.length >= 30, `the scan should see Phase 79's authored ranges, saw ${flagged.length}`);
+  const unpinned = flagged.filter((k) => !pinFor(k));
+  assert.deepEqual(unpinned, [], "pin each new authored face count or range to the engine (a row above, or a named test) and list it in PINNED_OUTSIDE_CONTENT");
+});
+
+test("coverage: no PINNED_OUTSIDE_CONTENT row has rotted, and every named proof file pins its key", () => {
+  for (const p of PINNED_OUTSIDE_CONTENT) {
+    assert.ok(flagged.some((k) => (p.match.endsWith(".") ? k.startsWith(p.match) : k === p.match)), `${p.match}: no live corpus string states a range any more, so the row is dead`);
+    if (p.proof === "here") continue;
+    const src = fs.readFileSync(path.join(REPO_ROOT, p.proof), "utf8");
+    assert.ok(src.includes(p.token), `${p.proof} should pin ${p.match} (it never names ${p.token})`);
+  }
 });

@@ -130,6 +130,15 @@ export const ROLL_UNDER_PATTERNS = Object.freeze([
  * not a roll phrase and could not be excluded by tightening its pattern
  * without losing a genuine phrase. Calibrated on the phase base in 79-01;
  * pruned for rot by 79-12.
+ *
+ * 79-12 (the phase close): still empty, on purpose. Every hit the patterns
+ * ever found was a genuine roll-under phrase and was rewritten roll-high by
+ * its owning plan, so the live corpus reads zero with no exception at all.
+ * docs/ROLL-LEDGER.md's `## Phase 79 roll phrasing closure (ROLL-04)`
+ * Exceptions table mirrors this list, and test/unit/roll-phrasing.test.js
+ * fails when the two differ, when an entry stops matching a live string, or
+ * when a live string trips a pattern outside this list. An entry here is
+ * only ever for a phrase that is not about a roll.
  */
 export const ROLL_PHRASING_EXCEPTIONS = Object.freeze([]);
 
@@ -179,14 +188,17 @@ const exc = (key, rule, match, reason) => Object.freeze({ key, rule, match, reas
  * HYGIENE_EXCEPTIONS — `{ key, rule, match, reason }`: base hits that are
  * artifacts of the synthetic events or are not the leak the rule targets.
  * Calibrated on the phase base in 79-01; pruned for rot by 79-12.
+ *
+ * 79-12 pruned the four bare-variant and soaked-object entries
+ * (itemEffectStarted and braceHeld, Oracle and rail): their owning plans
+ * gave the builders fallbacks, so the leaks they excused no longer render
+ * (test/voice/narrative-hygiene.test.js fails on an entry that matches no
+ * live text). It also dropped the credits line's "Mazeworld rulebook"
+ * entry: that line lived in mazeworld.html's never-shown rulebook-notes
+ * section, which 79-12 deleted.
  */
 export const HYGIENE_EXCEPTIONS = Object.freeze([
-  exc("oracle:itemEffectStarted", "leaked-value", "^It: undefined squares\\.$", "bare-variant only: the builder reads e.left without a fallback, and every real itemEffectStarted carries left (engine/items.js)"),
-  exc("rail:itemEffectStarted", "leaked-value", "^It: undefined squares\\.$", "bare-variant only: the rail twin of oracle:itemEffectStarted, same missing left"),
-  exc("oracle:braceHeld", "leaked-value", "\\(−\\[object Object\\]\\)", "the safety scan's soaked-object toggle (the FEED-01 shape other combat lines read); braceHeld's real soaked is a number (engine/combat.js)"),
-  exc("rail:braceHeld", "leaked-value", "\\(−\\[object Object\\]\\)", "the rail twin of oracle:braceHeld, same soaked-object toggle"),
   exc("raw:engine/difficulty.js#DOT_MIX_FAMILIES", "ascii-sign", "^-\\d+ HP$", "an ENCOUNTER_TABLES cell used as a dispatch key inside the engine; never printed from here"),
-  exc("raw:mazeworld.html#markup", "retired-name", "Mazeworld rulebook", "names the 1994 tabletop rulebook the game adapts (the credits), not the app's retired working title"),
 ]);
 
 // ---------------------------------------------------------------------------
