@@ -190,9 +190,12 @@ test("the centerMap bridge itself is untouched: anchorCamOnParty/positionCanvas 
 
 // Phase 67 (D-09): closeAccountSheet() is the 8th mzKeepPartyInView site,
 // the settings sheet's own pattern for a sheet outside the tab system.
-test("mzCenterMap call-site count is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch); mzKeepPartyInView is 10 (Phase 44: the callerless window.newGame/engineNewRun override and its mzCenterMap call are gone; Phase 67 adds the account sheet's close; Phase 78 HUD-08 adds the arrow pad's place changing and a Movement/Pad settings write)", () => {
+test("mzCenterMap call-site count is 5 (boot, 2 new-run paths, stepWith's teleported branch, the stairs fade's dark point); mzKeepPartyInView is 10 (Phase 44: the callerless window.newGame/engineNewRun override and its mzCenterMap call are gone; Phase 67 adds the account sheet's close; Phase 78 HUD-08 adds the arrow pad's place changing and a Movement/Pad settings write)", () => {
   const centerMatches = CODE.match(/window\.mzCenterMap\?\.\(\)/g) || [];
-  assert.equal(centerMatches.length, 4);
+  // Phase 78 (HUD-06, 78-08): 4 -> 5 — a floor change now centres at the
+  // stairs fade's dark point (dispatchWithNarration's onDark) and stepWith
+  // centres only a teleport.
+  assert.equal(centerMatches.length, 5);
   const keepInViewMatches = CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || [];
   assert.equal(keepInViewMatches.length, 10);
 });

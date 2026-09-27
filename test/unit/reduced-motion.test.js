@@ -857,8 +857,15 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
 // #mw-hud-ident and .lvl into #mw-hud-lvl (it wrote .line into #mw-hud-line),
 // reading the two span elements alongside the other two. No motion change.
 // Previous digest 7fe5fedd02d31a20cbf6f069884f2b542a130060f51395a19b551e2824dc4b14.
+//
+// DRAW_SHA256 (Phase 78, Plan 08 re-pin, HUD-06): exactly one statement,
+// `if (window.__mzStairsFade?.holding?.()) return;`, directly after the
+// `if (!S) return;` guard, so the canvas keeps the old floor while the
+// stairs fade darkens (the fade's own dark point draws the new floor). The
+// hold is the fade controller's; draw() gains no motion of its own.
+// Previous digest 455c2b5f6b201611cf4585d05da8df9d285e95082e8d165b0308020e187feef3.
 const PAINT_SHA256 = "18f608035e48a2e92ec611a05893a6be0c493e8b6d23a3ae6eb1b1b9380848b5";
-const DRAW_SHA256 = "455c2b5f6b201611cf4585d05da8df9d285e95082e8d165b0308020e187feef3";
+const DRAW_SHA256 = "b59a98cb9d7839d512fcbed85f4cb7570a9fc6acccf83283a947b98c0db0a5a6";
 
 test("reduced-motion/audit: modularity — paint() is re-pinned for Phase 63 Plan 04 (the one gearSheetTarget-gated refreshGearSheet() call, nothing else); draw() is re-pinned for Phase 76 Plan 02 (Phase 59's party-paint removal and dressing-layer call, plus DARK-02's waived-dark tint, nothing else) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");

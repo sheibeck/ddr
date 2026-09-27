@@ -119,7 +119,7 @@ export const BRIDGE = Object.freeze({
   }),
   __mzControls: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: keepPartyInView / map pointer handlers — screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis)"]),
+    consumers: Object.freeze(["mazeworld.html (classic: keepPartyInView / map pointer handlers — screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis, keepInViewRect)"]),
     purpose: "Bridges the pure pointer-to-cell and camera-keep-in-view math so map taps and the stationary camera use one shared calculation.",
   }),
   __mzDarkness: Object.freeze({
@@ -370,6 +370,14 @@ export const BRIDGE = Object.freeze({
       "mazeworld.html (module: the tap-to-move step handler / getGameContext / closeModal — sets and clears the overlay flag)",
     ]),
     purpose: "Presentation-only stair-down gate flag ({ dir } while the overlay is up, else null); never a field on state.",
+  }),
+  __mzStairsFade: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (module: dispatchWithNarration — start() on a floorChanged dispatch; window.move — refuses while active(); settleAllMotion — cancel())",
+      "mazeworld.html (classic: draw — holds the old floor while holding(); renderRail — keeps the rail hidden while active())",
+    ]),
+    purpose: "The stairs descent's fade to black (HUD-06, src/browser/stairsFade.js): about 0.6s out under the stairs sound, the new floor swapped in the dark, about 0.4s in; an instant cut under reduced motion.",
   }),
   __mzState: Object.freeze({
     owner: "mazeworld.html (classic)",
