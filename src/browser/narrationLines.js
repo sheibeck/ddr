@@ -1355,13 +1355,6 @@ export const LINE_FOR = {
     tone: "hit",
     priority: PRIORITY.feature,
   }),
-  // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR's arrival tick —
-  // identity (0) never pushes this event.
-  floorRegen: (e) => ({
-    text: `A new floor, and the dungeon lets you keep +${railGain(e, e?.amount)} hp of it. Do not mistake this for kindness.`,
-    tone: "hit",
-    priority: PRIORITY.other,
-  }),
   // 260918-w4n (use-activated-only): the Cloak of Healing is removed from
   // the game — the "cloakHealed" event type no longer exists anywhere.
   cloakRegenerated: (e) => ({

@@ -277,20 +277,20 @@ test("rested: the draw count is the same near full, far and at full (the fields 
   assert.deepEqual(counts, [9, 9, 9]);
 });
 
-test("floorRegen (arrival on a new floor): `gained` equals the real delta; the rng cursor matches the plan base", () => {
+// Quick fix 79-02c (user ruling 2026-09-27): the stairs heal nothing. The
+// per-floor regen and its floorRegen event are gone; this row now pins that
+// arriving on a new floor brings no hp back and emits no gain event, and that
+// the rng cursor is the plan base's (the regen never drew).
+test("descend (arrival on a new floor): no hp comes back and no floorRegen event; the rng cursor matches the plan base", () => {
   for (const missing of [NEAR, 40]) {
     const state = newRun(7, [], { startDepth: 2 });
     state.c.wp = state.c.maxWP - missing;
     const before = state.c.wp;
     const rng = makeRng(12345);
     const events = descend(state, rng, []);
-    const e = find(events, "floorRegen");
-    assert.ok(e, "a floorRegen event at shipped dials");
-    assert.equal(e.gained, e.amount);
-    // descend may run other hp-changing beats after arrival (a Cutthroat's
-    // murder check), so read the hp right at the regen: before + gained.
-    assert.ok(e.gained > 0 && e.gained <= missing);
-    assert.ok(before + e.gained <= state.c.maxWP);
+    assert.equal(find(events, "floorRegen"), undefined, "no floorRegen event");
+    const levelGain = events.filter((e) => e.type === "leveled").reduce((s, e) => s + e.gained, 0);
+    assert.equal(state.c.wp, before + levelGain, "hp = before (+ any level-up gain), nothing from the stairs");
     assert.equal(rng.getState(), DESCEND_CURSOR[missing], `missing ${missing}: rng cursor`);
   }
 });
@@ -517,7 +517,7 @@ test("gain lines lead with the HP actually gained: capped adds the roll and 'ful
   }
 });
 
-test("the gain lines with no pre-clamp value (cloak, rest, floor regen, level-up, faerie) read `gained`; the cloak at full says so", () => {
+test("the gain lines with no pre-clamp value (cloak, rest, level-up, faerie) read `gained`; the cloak at full says so", () => {
   assert.match(oracle({ type: "cloakRegenerated", amount: 4, gained: 4 }), /\+4 hp/);
   assert.match(rail({ type: "cloakRegenerated", amount: 4, gained: 4 }), /\+4 hp/);
   for (const text of [oracle({ type: "cloakRegenerated", amount: 0, gained: 0 }), rail({ type: "cloakRegenerated", amount: 0, gained: 0 })]) {
@@ -525,7 +525,7 @@ test("the gain lines with no pre-clamp value (cloak, rest, floor regen, level-up
     assert.match(text, /already at full/, text);
   }
   assert.match(oracle({ type: "rested", amount: 6, gained: 6 }), /\+6 hp/);
-  assert.match(rail({ type: "floorRegen", amount: 5, gained: 5 }), /\+5 hp/);
+  assert.match(rail({ type: "rested", amount: 5, gained: 5 }), /\+5 hp/);
   assert.match(oracle({ type: "leveled", level: 2, wpGain: 7, gained: 7 }), /\+7 hp/);
   assert.match(rail({ type: "faerieBoon", amount: 13, gained: 13 }), /\+13 base hp/);
 });

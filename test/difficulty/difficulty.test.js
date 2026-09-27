@@ -24,7 +24,6 @@ import {
   roundDamageCapFor,
   heroMeanMaxWpFor,
   heroMaxWpFor,
-  heroRegenFor,
   heroSpFor,
   campHealFor,
   dotHpFor,
@@ -70,7 +69,6 @@ test("USER RULING D/G, RULES-16/17/18 (Phase 75.3): DIALS is frozen and its key 
     "FOOD_CLOCK",
     "HAZARD_SCALE",
     "HERO_HP_SCALE",
-    "HERO_REGEN_PER_FLOOR",
     "HERO_SP_SCALE",
     "LOOT_SCALE",
     "PARLEY_NEED_MOD",
@@ -104,7 +102,6 @@ const IDENTITY_COLUMN = {
   ROUND_DAMAGE_CEILING: 0,
   ABILITY_THREAT: { base: 1, perDepth: 0 },
   HERO_HP_SCALE: 1,
-  HERO_REGEN_PER_FLOOR: 0,
   HERO_SP_SCALE: 1,
   CAMP_HEAL_FRACTION: 0.17,
   FOOD_CLOCK: 1,
@@ -173,7 +170,13 @@ test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3), RULES-16 (Phase 75
   assert.ok(overlayPath, "75.3's fit/best.json not found in .planning/phases/ or .planning/milestones/v2.1-phases/");
   const overlay = JSON.parse(fs.readFileSync(overlayPath, "utf8"));
 
-  const merged = { ...IDENTITY_COLUMN, ...best, ...overlay };
+  // User ruling 2026-09-27 (quick fix 79-02c): the stairs heal nothing, so
+  // HERO_REGEN_PER_FLOOR left DIALS. Phase 54's fit artifact is history and
+  // still records the fitted 0.25; the merge drops that one retired key by
+  // name (any other unknown key still fails the key-set pin below).
+  const { HERO_REGEN_PER_FLOOR: retiredRegen, ...bestLive } = best;
+  assert.equal(retiredRegen, 0.25, "the Phase 54 fit artifact still records the retired regen");
+  const merged = { ...IDENTITY_COLUMN, ...bestLive, ...overlay };
   assert.deepStrictEqual(Object.keys(DIALS).sort(), Object.keys(merged).sort(), "DIALS and the identity+best.json+overlay merge must cover the exact same key set");
   assert.deepStrictEqual(DIALS, merged);
 });
@@ -440,7 +443,6 @@ test("every helper's identity fast path returns its input by identity (under an 
     assert.equal(Object.is(heroSpFor(123), 123), true);
     assert.equal(Object.is(startingRationsFor(6), 6), true);
     assert.equal(Object.is(scaleHazard(9, curve), 9), true);
-    assert.equal(heroRegenFor(100), 0, "HERO_REGEN_PER_FLOOR identity (0) never heals");
   });
 });
 
@@ -452,7 +454,6 @@ test("USER RULING G (cycle 3, fitted DIALS): every helper reflects the SHIPPED (
   assert.equal(heroSpFor(123), Math.round(123 * 0.28), "HERO_SP_SCALE fitted (0.28) moves heroSpFor off identity");
   assert.equal(startingRationsFor(6), Math.max(1, Math.round(6 * 1.5)), "FOOD_CLOCK held at 1.5 moves startingRationsFor off identity");
   assert.equal(scaleHazard(9, curve), Math.max(1, Math.round(9 * 0.62)), "HAZARD_SCALE fitted (0.6 base) moves scaleHazard off identity");
-  assert.equal(heroRegenFor(100), Math.max(0, Math.round(0.25 * 100)), "HERO_REGEN_PER_FLOOR fitted (0.25) is no longer a no-op");
 });
 
 test("campHealFor keeps the SAME d10 draw re-centered around CAMP_HEAL_FRACTION (identity, mean-matched, under an explicit identity override)", () => {

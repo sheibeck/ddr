@@ -11,7 +11,8 @@
 // Phase 54 (BAND-02, 2026-09-21, USER RULING D / plan-approval cuts; USER
 // RULING G "Adjustment 3", mid-54-07 cycle 3): the in-process,
 // worker-threaded, deterministic, logged evaluator and bounded coordinate
-// search over tools/lib/fit-score.mjs's SEARCH_PLAN (the core 10; every
+// search over tools/lib/fit-score.mjs's SEARCH_PLAN (the core 9 since the
+// user ruling of 2026-09-27 removed HERO_REGEN_PER_FLOOR with its dial; every
 // OTHER dial, including CLASS_MITIGATION["Magic User"].spellPower — USER
 // RULING G dropped it back out of the search after cycle 2 proved it a
 // structural no-op — is HELD at its `--start` value, never probed). Each
@@ -246,7 +247,7 @@ function usage() {
     "  --dials=<json|path>  a single evaluation against this partial DIALS override",
     "  --objective=<survival|tail>  which evaluator to run (default survival)",
     "  --fresh=<gate|always>  --objective=tail only: gate the 1,000-seed fresh slice (default gate)",
-    "  --search              bounded coordinate descent: Ruling F's spellPower coordinate first, then the core 10",
+    "  --search              bounded coordinate descent: Ruling F's spellPower coordinate first, then the core 9",
     "  --start=<path>        the search's starting dial set (default: {})",
     "  --budget=N            max evaluations for --search (default 80)",
     "  --seeds=N             seeds per evaluation (default 200; ignored under --objective=tail)",
