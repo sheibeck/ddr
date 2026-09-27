@@ -178,18 +178,48 @@ export function oracleDetailText(html) {
 }
 
 /**
+ * bookRefillText(books) — Phase 78 (78-05). The refill clause shared by the
+ * rail line (LINE_FOR.rationsEaten) and the Oracle line
+ * (eventNarration.js#EVENT_NARRATION.rationsEaten), from the `books` array
+ * eventNarration.js#stampBookRefill puts on a fed day's `rationsEaten`:
+ * "Your book is full again (12/12)." for the hero (`who: "you"`), then
+ * "Mira's book is full again (6/6)." for each member, in the stamp's order.
+ * The count is dropped when the stamp carried none. Returns "" for a
+ * missing, non-array or empty `books` (no refill is ever claimed without it).
+ */
+export function bookRefillText(books) {
+  if (!Array.isArray(books) || !books.length) return "";
+  return books
+    .map((b) => {
+      const count = Number.isFinite(b?.have) && Number.isFinite(b?.max) ? ` (${b.have}/${b.max})` : "";
+      const whose = b?.who === "you" ? "Your" : `${b?.name || "Someone"}'s`;
+      return `${whose} book is full again${count}.`;
+    })
+    .join(" ");
+}
+
+/**
  * ORACLE_ONLY — bookkeeping event types that already have a dedicated
  * screen, HUD field, prompt, or are pure step/roll detail whose outcome
  * sibling always follows. These get NO LINE_FOR entry; the Oracle never
  * loses information a line shows (a line is the glance, the Oracle is the
  * record — T-25-10). Any addition must carry a reason and obey the same
  * principle: never a feature, refusal, outcome, spell, or ability event.
+ *
+ * Phase 78 (78-05) audit, the user's 2026-09-25 report ("we're no longer
+ * getting a rail update when a spell charge is regained"): every reason
+ * below was re-read against today's HUD. `spellChargeRecovered` left the set
+ * (its "the grimoire/HUD charge display already shows this" was stale: the
+ * HUD carries no charge count, only the Hero/Gear tabs and the combat panel
+ * do) and has a LINE_FOR rail line now. `dayBegan`/`floorChanged` keep true
+ * reasons (band 2's Day and Depth counters, plus the rail's own DAY/FLOOR
+ * card read directly through rail.js#RAIL_DIRECT); `findTaken`/`findLeft`
+ * name the rail's direct TAKEN/LEFT IT card too.
  */
 export const ORACLE_ONLY = new Set([
   "moved", // a plain step is already silent by design (engineAdapter.js) — not a LINE_FOR type either
-  "dayBegan", // the HUD's day counter already shows this
-  "floorChanged", // the HUD's depth banner already shows this
-  "spellChargeRecovered", // the grimoire/HUD charge display already shows this
+  "dayBegan", // band 2's Day counter shows this; the rail's DAY card reads it directly (rail.js RAIL_DIRECT)
+  "floorChanged", // band 2's Depth counter shows this; the rail's FLOOR card reads it directly (rail.js RAIL_DIRECT)
   "spGained", // pure XP bookkeeping; foeKilled/parleyRolled narrate the outcome that earned it
   "combatEnded", // the combat screen closing IS the signal
   "died", // dedicated death/epitaph screen
@@ -197,8 +227,8 @@ export const ORACLE_ONLY = new Set([
   "encounterRolled", // internal table-roll bookkeeping; tableFour/tableFourNoop narrate the outcome
   "findOffered", // the dedicated Take it/Leave it prompt IS the UI
   "hazardChoice", // Phase 78 (CLIMB-01): the pre-roll wall/crevice decision card (every hero, tool or not) IS the UI, like findOffered
-  "findTaken", // the dedicated Take it/Leave it prompt IS the UI
-  "findLeft", // the dedicated Take it/Leave it prompt IS the UI
+  "findTaken", // the Take it/Leave it prompt IS the UI; the rail's TAKEN card reads it directly (rail.js RAIL_DIRECT)
+  "findLeft", // the Take it/Leave it prompt IS the UI; the rail's LEFT IT card reads it directly (rail.js RAIL_DIRECT)
   // Phase 63 (GSCR-09): itemDropped/itemUnequipped moved to LINE_FOR — the
   // Gear tab's action sheet closes on the tap, so the row change alone is
   // no longer the signal; the rail is the one feedback surface.
@@ -1309,7 +1339,26 @@ export const LINE_FOR = {
   potionDuplicated: () => ({ text: "Warlock: +1 potion.", tone: "magic", priority: PRIORITY.feature }),
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost — a cost, so it is
   // narrated (never ORACLE_ONLY), not just bookkeeping.
-  rationsEaten: (e) => ({ text: `Rations: −${e?.eats ?? 0} (${e?.left ?? 0} left).`, tone: "beat", priority: PRIORITY.other }),
+  // Phase 78 (78-05, the user's 2026-09-25 report: "I had 1 charge left ...
+  // then when combat started I had 12 charges"): a fed day that refilled a
+  // spent book leads with the refill and its count (`books`, stamped by
+  // eventNarration.js#stampBookRefill only when the engine's own `refilled`
+  // flag is set and the charges really reached zero), then the rations.
+  rationsEaten: (e) => {
+    const refill = bookRefillText(e?.books);
+    const rations = `Rations: −${e?.eats ?? 0} (${e?.left ?? 0} left).`;
+    return refill
+      ? { text: `A new day. ${refill} ${rations}`, tone: "magic", priority: PRIORITY.other }
+      : { text: rations, tone: "beat", priority: PRIORITY.other };
+  },
+  // Phase 78 (78-05, the user's 2026-09-25 report: "we're no longer getting
+  // a rail update when a spell charge is regained"): the 20-square trickle
+  // is a minor event — a rail line with the count, never a decision card.
+  spellChargeRecovered: (e) => ({
+    text: `A spell charge wanders back (${e?.charges ?? "?"}/${e?.max ?? "?"}).`,
+    tone: "magic",
+    priority: PRIORITY.other,
+  }),
   // RULES-15 (Phase 75, user 2026-09-25): the rail line still says WHY a
   // spent book stays empty — mirrors eventNarration.js's own `booksKept` clause.
   wentHungry: (e) => ({

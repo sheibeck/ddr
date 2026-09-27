@@ -47,7 +47,7 @@ import { ABILITY_BY_ID } from "../../content/abilities.js";
 // narrationLines.js. The import is one-directional: this file imports from
 // narrationLines.js, never the reverse (the no-cycle rule the coverage test
 // pins).
-import { slotWord, initiativeVerdictText } from "./narrationLines.js";
+import { slotWord, initiativeVerdictText, bookRefillText } from "./narrationLines.js";
 // Phase 61 (STORE-02/STORE-03): purchaseBagged's "why isn't this an
 // upgrade" clause formats engine/derived.js#gearCompareParts through the
 // SAME zero-import formatter narrationLines.js's rail line uses — importing
@@ -269,8 +269,11 @@ export const EVENT_NARRATION = {
   // ever fires for a Magic User's spell-charge pool (engine/movement.js,
   // every 20 squares), so "A charge comes back" with no noun was the
   // ambiguity the device-review flagged ("needs context — what recharged?").
+  // Phase 78 (78-05): the count reads have/max, the same "(9/12)" the rail
+  // line (narrationLines.js LINE_FOR.spellChargeRecovered) and the refill
+  // clause use; a move's rail line is this sentence, tags stripped.
   spellChargeRecovered: (e) =>
-    `<span class="beat">Twenty quiet squares, and a spell charge is ready again</span> — ${e.charges ?? "?"} of ${e.max ?? "?"} in reserve. The dungeon keeps no such courtesy for you.`,
+    `<span class="beat">Twenty quiet squares, and a spell charge is ready again (${e.charges ?? "?"}/${e.max ?? "?"}).</span> The dungeon keeps no such courtesy for you.`,
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
   // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR's arrival tick —
   // identity (0) never pushes this event.
@@ -302,7 +305,12 @@ export const EVENT_NARRATION = {
       if (m?.race && RATION_RULE_LINE[m.race] && !races.includes(m.race)) races.push(m.race);
     }
     const ruleSentence = races.map((r) => RATION_RULE_LINE[r]).join(" ");
-    return `<span class="beat">Rations: ${clauses}.</span>${ruleSentence ? ` ${ruleSentence}` : ""} −${plural(eats, "ration")}, ${left} left.`;
+    // Phase 78 (78-05): a fed day that refilled a spent book leads with it
+    // (`books`, stamped by stampBookRefill below — never without the engine's
+    // own `refilled` flag), then the rations exactly as before.
+    const refill = bookRefillText(e?.books);
+    const lead = refill ? `<span class="hit">A new day. ${refill}</span> ` : "";
+    return `${lead}<span class="beat">Rations: ${clauses}.</span>${ruleSentence ? ` ${ruleSentence}` : ""} −${plural(eats, "ration")}, ${left} left.`;
   },
   // Phase 43 (CLAR-01/03/05): hunger names need/have/mouths and the Heft
   // halving — rewritten from the old "No rations." to cause-first, cost-last.
@@ -1429,6 +1437,49 @@ export function stampScrollCopyNotes(events) {
     i++;
   }
   return out;
+}
+
+/**
+ * stampBookRefill(events, before, after, maxOf) — Phase 78 (78-05). A
+ * presentation-only decoration in the stampScrollCopyNotes precedent above.
+ * The user's 2026-09-25 report: "I had 1 charge left ... then when combat
+ * started I had 12 charges". Not an engine bug: a fed new day refills every
+ * spent book (Phase 75 RULES-15), and nothing on screen said so.
+ *
+ * Returns a NEW array: each `rationsEaten` that carries the engine's own
+ * `refilled` flag becomes `{ ...e, books }`, where `books` lists the hero
+ * (`{ who: "you", name, have, max }`) and then each party member (`who` is
+ * the member's index; matched by index AND the same name in `before` and
+ * `after`) whose spent charges (`spellsUsed`) were above 0 in `before` and
+ * are 0 in `after`. A refilled book is full, so `have` equals `max`, which is
+ * `maxOf(sheet)` read from the `after` sheet (engineAdapter.js passes
+ * engine/movement.js#maxCharges; this module never imports engine/). Without
+ * a `maxOf` the entries carry no count. RULES-15 agreement: no `refilled`
+ * flag, or no sheet whose charges reached zero, stamps nothing, so an unfed
+ * day, an already-full book or a still-spent sheet never claims a refill.
+ * Every other element is the same object; the input is never mutated; a
+ * non-array returns []. engineAdapter.js#dispatch applies it right after
+ * stampScrollCopyNotes, with the state before applyAction as `before`.
+ */
+export function stampBookRefill(events, before, after, maxOf) {
+  if (!Array.isArray(events)) return [];
+  if (!events.some((e) => e?.type === "rationsEaten" && e.refilled)) return events.slice();
+  const refilled = (b, a) => !!b && !!a && (Number(b.spellsUsed) || 0) > 0 && (Number(a.spellsUsed) || 0) === 0;
+  const countOf = (sheet) => {
+    if (typeof maxOf !== "function") return {};
+    const max = Number(maxOf(sheet));
+    return Number.isFinite(max) ? { have: max, max } : {};
+  };
+  const books = [];
+  if (refilled(before?.c, after?.c)) books.push({ who: "you", name: after.c.name, ...countOf(after.c) });
+  const bParty = Array.isArray(before?.party) ? before.party : [];
+  const aParty = Array.isArray(after?.party) ? after.party : [];
+  bParty.forEach((bm, i) => {
+    const am = aParty[i];
+    if (am && bm && am.name === bm.name && refilled(bm, am)) books.push({ who: i, name: am.name, ...countOf(am) });
+  });
+  if (!books.length) return events.slice();
+  return events.map((e) => (e?.type === "rationsEaten" && e.refilled ? { ...e, books: books.map((b) => ({ ...b })) } : e));
 }
 
 /**
