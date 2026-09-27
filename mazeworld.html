@@ -1104,8 +1104,9 @@ html,body{height:100%}
    don't need more rails on the top; consolidate the buttons into a
    hamburger menu"): band 4 is retired outright. The HUD is now:
      1. Band 1 (.mw-hud-identity) — the name (#mw-hud-name, gold, never
-        truncated), then the race/class(sub)/level line (#mw-hud-line,
-        dimmed, ellipsis-truncating), then the x/y HP text
+        truncated), then the "Race Sub-class · Lvl N" line (#mw-hud-line,
+        dimmed: its race/sub-class span ellipsizes, its level span never
+        does — Phase 78 HUD-01), then the x/y HP text
         (#mw-hud-wp/.mw-hud-wp-text), then the DEV chip.
      2. The HP strip (.mw-hud-wptrack) — a full-width 4px bar directly
         under band 1, so the text and the bar can never collide (D-02: this
@@ -1125,7 +1126,14 @@ html,body{height:100%}
 .mw-hud{flex:none;background:#1b170f;border-bottom:3px solid #3a3226;display:flex;flex-direction:column}
 .mw-hud-identity{display:flex;align-items:baseline;gap:8px;padding:calc(9px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) 14px 10px;background:#241d12;overflow:hidden}
 .mw-hud-name{flex:none;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#e8c97a}
-.mw-hud-line{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#a89c82}
+.mw-hud-line{flex:1;min-width:0;display:flex;align-items:baseline;overflow:hidden;white-space:nowrap;font-family:var(--mono);font-weight:700;font-size:var(--mw-font-hud-ident);color:#a89c82}
+/* Phase 78 (HUD-01, Plan 06): band 1's line is two spans. "Race Sub-class"
+   (#mw-hud-ident) is the part that shrinks and ellipsizes; " · Lvl N"
+   (#mw-hud-lvl) is flex:none, so the level is never the part that is cut.
+   white-space:pre keeps the separator's leading space, which a flex item
+   would otherwise drop. */
+.mw-hud-ident{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mw-hud-lvl{flex:none;white-space:pre}
 /* Phase 35 (MAP-01) / Phase 57 (LAYOUT-05/Plan 05): the x/y HP readout, a
    direct child of band 1 now (the .mw-hud-wp wrapper div retired — the
    strip below is the bar) — paint() writes the text and the strip's
@@ -2222,7 +2230,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
   <header class="mw-hud" id="mw-hud">
     <div class="mw-hud-identity">
       <span class="mw-hud-name" id="mw-hud-name"></span>
-      <span class="mw-hud-line" id="mw-hud-line"></span>
+      <span class="mw-hud-line" id="mw-hud-line"><span class="mw-hud-ident" id="mw-hud-ident"></span><span class="mw-hud-lvl" id="mw-hud-lvl"></span></span>
       <!-- Phase 35 (MAP-01, ruling 5) / Phase 57 (LAYOUT-05, Plan 05): the
            x/y HP text — paint() writes it and the strip's width/threshold
            classes below (the wrapper div retired; this is now a direct
@@ -3835,17 +3843,23 @@ function paint() {
   // co-rendered "RATIONS n" label (never color-only).
   document.getElementById("m-rat-wrap").classList.toggle("warn", c.rations <= 2);
   // Phase 57 (LAYOUT-05), Plan 05: band 1's name (never truncated) and its
-  // race/class(sub)/level line (which does truncate) — split by the bridge's
-  // identityParts(c) into #mw-hud-name/#mw-hud-line. #mw-hud-line's title
+  // "Race Sub-class · Lvl N" line — split by the bridge's identityParts(c)
+  // into #mw-hud-name/#mw-hud-line. #mw-hud-line's title
   // carries the FULL identityLine(c) string so an ellipsised line is still
   // readable on a long-press. Fail-open: a missing bridge leaves the
   // existing text in place rather than throwing.
+  // Phase 78 (HUD-01, Plan 06): the line itself is two spans — the
+  // truncating "Race Sub-class" (#mw-hud-ident) and the never-truncated
+  // " · Lvl N" (#mw-hud-lvl) — so an ellipsis can never eat the level.
   const hudName = document.getElementById("mw-hud-name");
   const hudLine = document.getElementById("mw-hud-line");
-  if (hudName && hudLine && window.__mzHudBands) {
+  const hudIdent = document.getElementById("mw-hud-ident");
+  const hudLvl = document.getElementById("mw-hud-lvl");
+  if (hudName && hudLine && hudIdent && hudLvl && window.__mzHudBands) {
     const parts = window.__mzHudBands.identityParts(c);
     hudName.textContent = parts.name;
-    hudLine.textContent = parts.line;
+    hudIdent.textContent = parts.ident;
+    hudLvl.textContent = parts.lvl;
     hudLine.title = window.__mzHudBands.identityLine(c);
   }
   // Phase 47 (SHELL-01), Plan 03: the m-gold HUD write moved into

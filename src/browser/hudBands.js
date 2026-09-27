@@ -71,7 +71,7 @@ export const COUNTER_OVERFLOW = "9".repeat(COUNTER_DIGIT_SLOT) + "+";
 const IDENTITY_PLACEHOLDER = "Nameless";
 
 /**
- * identityParts(c) -> frozen { name, line }
+ * identityParts(c) -> frozen { name, line, ident, lvl }
  *
  * Phase 57 (LAYOUT-05), Plan 05 — the band-1 split: `name` is exactly the
  * name segment identityLine() renders (the existing IDENTITY_PLACEHOLDER
@@ -88,14 +88,20 @@ const IDENTITY_PLACEHOLDER = "Nameless";
  * `c.sub` lets `c.cls` stand in the sub-class's place; falsy parts are
  * dropped (no stray spaces); with neither race nor class nor sub the line
  * is just "Lvl N". The Hero tab keeps the full "Race Sub · Class" tag.
+ *
+ * Phase 78 (HUD-01, Plan 06): the line is drawn as TWO spans so the level is
+ * never the part an ellipsis cuts. `ident` is "Race Sub-class" (the part that
+ * truncates) and `lvl` is " · Lvl N" (never truncated; just "Lvl N" when
+ * `ident` is empty). `line` is always exactly `ident + lvl`. A null `c`
+ * gives empty `ident` and `lvl`.
  */
 export function identityParts(c) {
-  if (!c) return Object.freeze({ name: IDENTITY_PLACEHOLDER, line: "" });
+  if (!c) return Object.freeze({ name: IDENTITY_PLACEHOLDER, line: "", ident: "", lvl: "" });
   const name = c.name || IDENTITY_PLACEHOLDER;
   const level = c.level || 1;
   const ident = [c.race, c.sub || c.cls].filter(Boolean).join(" ");
-  const lvl = `Lvl ${level}`;
-  return Object.freeze({ name, line: ident ? `${ident} · ${lvl}` : lvl });
+  const lvl = ident ? ` · Lvl ${level}` : `Lvl ${level}`;
+  return Object.freeze({ name, line: ident + lvl, ident, lvl });
 }
 
 /**

@@ -107,7 +107,14 @@ test("(4) BEHAVIOUR: paint() writes #m-steps through __mzHudBands.counterSlots()
     const nameEl = doc.document.getElementById("mw-hud-name");
     const lineEl = doc.document.getElementById("mw-hud-line");
     assert.equal(nameEl.textContent, expectedParts.name, `#mw-hud-name must equal identityParts(c).name at steps=${steps}`);
-    assert.equal(lineEl.textContent, expectedParts.line, `#mw-hud-line must equal identityParts(c).line at steps=${steps}`);
+    // Phase 78 (HUD-01, Plan 06): the line is two spans now — the truncating
+    // #mw-hud-ident and the never-truncated #mw-hud-lvl — whose texts join to
+    // identityParts(c).line (it was one text write into #mw-hud-line).
+    const identEl = doc.document.getElementById("mw-hud-ident");
+    const lvlEl = doc.document.getElementById("mw-hud-lvl");
+    assert.equal(identEl.textContent, expectedParts.ident, `#mw-hud-ident must equal identityParts(c).ident at steps=${steps}`);
+    assert.equal(lvlEl.textContent, expectedParts.lvl, `#mw-hud-lvl must equal identityParts(c).lvl at steps=${steps}`);
+    assert.equal(identEl.textContent + lvlEl.textContent, expectedParts.line, `the two spans join to identityParts(c).line at steps=${steps}`);
     assert.equal(lineEl.title, identityLine(state.c), `#mw-hud-line's title must equal identityLine(c) at steps=${steps}`);
   }
 });

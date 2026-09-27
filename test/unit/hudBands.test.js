@@ -157,6 +157,28 @@ test("identityParts: for every character in the matrix, identityLine(c) equals n
   }
 });
 
+// Phase 78 (HUD-01, Plan 06): the line splits into the truncating `ident`
+// ("Race Sub-class") and the never-truncated `lvl` (" · Lvl N", or "Lvl N"
+// alone when there is no ident), and `line` is always ident + lvl.
+test("identityParts (HUD-01 split): ident is 'Race Sub-class', lvl is ' · Lvl N' (or 'Lvl N' alone), and line === ident + lvl for every character", () => {
+  const p = identityParts({ name: "Thrain", race: "Dwarven", cls: "Thief", sub: "Pickpocket", level: 3 });
+  assert.equal(p.ident, "Dwarven Pickpocket");
+  assert.equal(p.lvl, " · Lvl 3");
+  assert.equal(p.line, "Dwarven Pickpocket · Lvl 3");
+  const bare = identityParts({ name: "Ardwin", race: "", cls: "", sub: null, level: 1 });
+  assert.equal(bare.ident, "");
+  assert.equal(bare.lvl, "Lvl 1");
+  for (const c of IDENTITY_MATRIX) {
+    const parts = identityParts(c);
+    assert.equal(parts.ident + parts.lvl, parts.line, JSON.stringify(c));
+    assert.match(parts.lvl, /^( · )?Lvl \d+$/);
+    assert.ok(Object.isFrozen(parts));
+  }
+  const none = identityParts(null);
+  assert.equal(none.ident, "");
+  assert.equal(none.lvl, "");
+});
+
 test("identityParts: null/missing yields the stand-in name and an empty line; identityLine(null) still returns the stand-in alone", () => {
   const parts = identityParts(null);
   assert.equal(parts.name, "Nameless");

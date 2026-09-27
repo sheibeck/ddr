@@ -24,6 +24,10 @@ import url from "node:url";
 
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { markForCell, ONEWAY_ROTATION_DEG } from "../../src/browser/mapMarks.js";
+// Phase 78 (HUD-01, Plan 06): the (c2) band-1 fit walk reads the real name,
+// race, sub-class and level tables and the real S/M/L scales.
+import { NAMES, RACES, CLASSES, THRESHOLDS } from "../../content/index.js";
+import { textScaleForSize } from "../../src/browser/settings.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -198,7 +202,13 @@ test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp
   assert.match(HTML, /^\.mw-hud-identity\{display:flex;align-items:baseline;gap:8px;padding:calc\(9px \+ var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)\) 14px 10px;background:#241d12;overflow:hidden\}$/m);
   assert.match(HTML, /^\.mw-hud-name\{flex:none;white-space:nowrap;font-family:var\(--mono\);font-weight:700;font-size:var\(--mw-font-hud-ident\);color:#e8c97a\}$/m);
   assert.doesNotMatch(HTML.match(/^\.mw-hud-name\{[^}]*\}$/m)[0], /overflow|text-overflow|ellipsis/, "the name never truncates (Plan 05)");
-  assert.match(HTML, /^\.mw-hud-line\{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var\(--mono\);font-weight:700;font-size:var\(--mw-font-hud-ident\);color:#a89c82\}$/m);
+  // Phase 78 (HUD-01, Plan 06): #mw-hud-line is a flex row of two spans now
+  // (it was one ellipsizing span: `flex:1;min-width:0;overflow:hidden;
+  // text-overflow:ellipsis;white-space:nowrap;...`). The race/sub-class span
+  // ellipsizes; the level span never does.
+  assert.match(HTML, /^\.mw-hud-line\{flex:1;min-width:0;display:flex;align-items:baseline;overflow:hidden;white-space:nowrap;font-family:var\(--mono\);font-weight:700;font-size:var\(--mw-font-hud-ident\);color:#a89c82\}$/m);
+  assert.match(HTML, /^\.mw-hud-ident\{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\}$/m);
+  assert.match(HTML, /^\.mw-hud-lvl\{flex:none;white-space:pre\}$/m);
   assert.match(HTML, /^\.mw-hud-wp-text\{flex:none;font-family:var\(--mono\);font-weight:700;font-size:var\(--mw-font-hud-ident\);white-space:nowrap;color:#e6ddc6\}$/m);
   assert.match(HTML, /^\.mw-hud-wptrack\{flex:none;height:4px;background:#2c2519;box-shadow:inset 0 1px 0 rgba\(0,0,0,\.5\)\}$/m);
   assert.doesNotMatch(HTML, /\.mw-hud-wp\{/, "the .mw-hud-wp wrapper rule is retired (Plan 05)");
@@ -227,6 +237,62 @@ test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp
   // Phase 78 (HUD-01, Plan 05): band 1's token caps at 1.1 too, so more of
   // "Race Sub-class · Lvl N" fits 412px at L (was `* var(--mw-text-scale)`).
   assert.equal((HTML.match(/--mw-font-hud-ident:calc\(0\.8125rem \* min\(var\(--mw-text-scale\), 1\.1\)\)/g) || []).length, 1);
+});
+
+// ─── (c2) HUD-01: the level is never the part that is cut ─────────────────
+//
+// Phase 78 (HUD-01, Plan 06). 78-05 modelled the single-span line over 2,000
+// rolls at 412px: "Lvl N" was cut for about 28% of characters at M and 71% at
+// the capped L. Band 1 is now [name (flex:none)] [line: ident (shrinks,
+// ellipsis) + lvl (flex:none)] [HP text (flex:none)], so the level stays
+// whole whenever name + lvl + HP + padding + gaps fit, however long the race
+// and sub-class are. This walks the WORST case: the longest name any race's
+// generator can build, the widest level (" · Lvl 10", a digit more than the
+// top level), the widest HP text ("999/999 HP") and the longest race and
+// sub-class names, on a 411px Pixel 7, at S, M and L. Glyphs are 13px
+// Courier Prime Bold at a 0.6em advance, scaled by min(scale, the token's cap).
+
+test("(c2) HUD-01: at S, M and L the level span fits beside the longest name and HP text on a 411px Pixel 7, and the longest race + sub-class is what truncates", () => {
+  const identityRule = HTML.match(/^\.mw-hud-identity\{([^}]*)\}$/m)[1];
+  const pad = identityRule.match(/padding:calc\(.*?\)\)\) (\d+)px (\d+)px/);
+  assert.ok(pad, "band 1's padding");
+  const hPad = Number(pad[1]) * 2;
+  const gap = Number(identityRule.match(/gap:(\d+)px/)[1]);
+  const token = HTML.match(/--mw-font-hud-ident:calc\(([\d.]+)rem \* min\(var\(--mw-text-scale\), ([\d.]+)\)\)/);
+  const basePx = Number(token[1]) * 16;
+  const cap = Number(token[2]);
+  const WIDTH = 411;
+  const gaps = 2 * gap; // name | line | HP text (the DEV chip is hidden in play)
+
+  const longest = (list) => list.reduce((a, b) => (b.length > a.length ? b : a), "");
+  const longestName = longest(Object.values(NAMES).map((pool) => `${longest(pool.first)} ${longest(pool.sur)}`));
+  const subs = Object.values(CLASSES).flatMap((c) => (Array.isArray(c.subs) ? c.subs : Object.keys(c.subs || {})));
+  const identWorst = `${longest(Object.keys(RACES))} ${longest(subs)}`;
+  const lvlWorst = " · Lvl 10";
+  const hpWorst = "999/999 HP";
+  assert.ok(THRESHOLDS.length < 10, "the top level has one digit, so ' · Lvl 10' is a safe worst case");
+
+  for (const size of ["S", "M", "L"]) {
+    const glyph = basePx * Math.min(textScaleForSize(size), cap) * 0.6;
+    const fixed = (longestName.length + lvlWorst.length + hpWorst.length) * glyph + hPad + gaps;
+    const room = WIDTH - fixed;
+    assert.ok(room >= 0, `${size}: name + level + HP (${fixed.toFixed(1)}px) must fit ${WIDTH}px, so the level span is never clipped`);
+    if (size !== "S") {
+      assert.ok(identWorst.length * glyph > room, `${size}: "${identWorst}" (${(identWorst.length * glyph).toFixed(1)}px) overflows its ${room.toFixed(1)}px, so the race/sub-class span is the one that ellipsizes`);
+    }
+    // eslint-disable-next-line no-console
+    console.log(`shell-map-hud (c2): ${size} ${glyph.toFixed(2)}px/glyph; "${longestName}" + "${lvlWorst}" + "${hpWorst}" = ${fixed.toFixed(1)}px of ${WIDTH}; ${room.toFixed(1)}px left for "${identWorst}" (${(identWorst.length * glyph).toFixed(1)}px).`);
+  }
+
+  // The structure the arithmetic relies on: only the ident span can shrink.
+  const rule = (sel) => HTML.match(new RegExp(`^\\.${sel}\\{([^}]*)\\}$`, "m"))[1];
+  assert.match(rule("mw-hud-name"), /flex:none/);
+  assert.match(rule("mw-hud-wp-text"), /flex:none/);
+  assert.match(rule("mw-hud-lvl"), /flex:none/);
+  assert.doesNotMatch(rule("mw-hud-lvl"), /overflow|ellipsis/, "the level span never truncates");
+  assert.match(rule("mw-hud-ident"), /min-width:0;overflow:hidden;text-overflow:ellipsis/);
+  assert.match(rule("mw-hud-line"), /min-width:0/);
+  assert.match(HTML, /<span class="mw-hud-line" id="mw-hud-line"><span class="mw-hud-ident" id="mw-hud-ident"><\/span><span class="mw-hud-lvl" id="mw-hud-lvl"><\/span><\/span>/);
 });
 
 // ─── (d) chip CSS + the four condition tone rules ─────────────────────────
