@@ -117,7 +117,8 @@ test("a restart during the fade-in does not rerun the first onDark", () => {
   assert.deepEqual(calls, ["dark1"]);
   fade.start(() => calls.push("dark2"), () => calls.push("done2"));
   assert.deepEqual(calls, ["dark1"]);
-  clock.advance(1000);
+  // 16ms frame steps can land a chained timer up to one frame late.
+  clock.advance(1100);
   assert.deepEqual(calls, ["dark1", "dark2", "done2"]);
 });
 
@@ -156,7 +157,7 @@ test("a throwing callback never strands the controller", () => {
       throw new Error("rail failed");
     },
   );
-  clock.advance(1000);
+  clock.advance(1100);
   assert.equal(fade.active(), false);
   assert.equal(clock.pending(), 0);
 });
