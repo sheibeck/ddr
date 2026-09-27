@@ -1,0 +1,492 @@
+// test/unit/hero-conditions.test.js
+//
+// Phase 77 (CMBUI-13) — the ONE hero and party-member chip table
+// (src/browser/heroConditions.js) and its engine-scan coverage guard,
+// mirroring test/unit/foe-conditions.test.js.
+//
+// The user's report (2026-09-25): "When I use the ability smoke, I have no
+// indication on myself or the enemies that it's active ... Abilities and
+// spells all need to have some sort of active indicator while in combat."
+//
+// Sections:
+//   (a) the table: one entry per descriptor key conditionsOf and
+//       memberConditionsOf can emit, each with fields/fight/lasts/source;
+//   (b) lotChips, chipText and chipSheetFacts;
+//   (c) malformed and hostile inputs;
+//   (d) the coverage guard: every hero field, combat-wide flag and member
+//       field the engine assigns, every DURATION_ROUNDS ability and every
+//       timer id the engine starts is read by an entry, shown by the foe
+//       table, or on NOT_A_CONDITION with a reason; plus self-checks and a
+//       synthetic miss;
+//   (e) HERO_CHIP_COPY is frozen, voice-safe and says HP, never WP.
+//
+// The guard reads the engine as text and never edits it.
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
+
+import { HERO_CONDITIONS, HERO_CHIP_COPY, LASTS, SOURCES, lotChips, chipText, chipSheetFacts } from "../../src/browser/heroConditions.js";
+import { FOE_CONDITIONS } from "../../src/browser/foeConditions.js";
+import { conditionsOf, memberConditionsOf } from "../../engine/derived.js";
+import { DURATION_ROUNDS } from "../../engine/abilities.js";
+import { ABILITY_BY_ID } from "../../content/abilities.js";
+import { ACTIVATION_OF } from "../../content/activations.js";
+import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const DERIVED = fs.readFileSync(path.join(REPO_ROOT, "engine", "derived.js"), "utf8").replace(/\r\n/g, "\n");
+
+// ─── fixtures ──────────────────────────────────────────────────────────────
+
+function hero(overrides = {}) {
+  return {
+    cls: "Fighter", sub: "Soldier", race: "Human", level: 1, maxWP: 40, wp: 40, skills: {}, abilities: [],
+    weapon: "Club", prof: 0, magicWpn: 0, armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0,
+    phobia: "Spiders", phobiaType: "x", items: [], might: 0, ward: null, mirror: 0, darkFor: 0, name: "Test Delver",
+    ...overrides,
+  };
+}
+
+function fight({ c = {}, combat = {}, dark = false, party = [] } = {}) {
+  const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ wall: false, dark, seen: true, feat: null })));
+  return {
+    c: hero(c),
+    floor: { g, px: 1, py: 1, depth: 1 },
+    party,
+    combat: { foes: [{ name: "Target", wp: 9, maxWP: 9, alive: true }], type: "Beasts", round: 1, target: 0, ...combat },
+  };
+}
+
+const live = (left) => ({ cadence: "rounds", left, phase: "effect", cd: 4 });
+
+// ─── (a) the table ─────────────────────────────────────────────────────────
+
+/** fnBody(head) — the source of the named function in engine/derived.js. */
+function fnBody(head) {
+  const start = DERIVED.indexOf(head);
+  assert.ok(start !== -1, `${head} found`);
+  return DERIVED.slice(start, DERIVED.indexOf("\n}\n", start));
+}
+
+/** emittableKeys() — every descriptor key the two enumerators can emit: the
+ * literal keys in conditionsOf, liveAbilityChips and memberConditionsOf, plus
+ * one per live activation kind (the generic item loop; fly shows as flight). */
+function emittableKeys() {
+  const keys = new Set();
+  for (const head of ["export function conditionsOf(state)", "function liveAbilityChips(timers)", "export function memberConditionsOf(state, partyIdx)"]) {
+    for (const m of fnBody(head).matchAll(/key: "([A-Za-z]+)"/g)) keys.add(m[1]);
+  }
+  for (const act of Object.values(ACTIVATION_OF)) {
+    const e = act && act.effect;
+    const isLive = (typeof e === "number" && e > 0) || (e && typeof e === "object" && e.sides > 0);
+    if (isLive) keys.add(act.kind === "fly" ? "flight" : act.kind);
+  }
+  return keys;
+}
+
+test("table: exactly one entry per descriptor key conditionsOf and memberConditionsOf can emit", () => {
+  const keys = HERO_CONDITIONS.map((e) => e.key);
+  assert.equal(new Set(keys).size, keys.length, "no key twice");
+  assert.deepEqual([...keys].sort(), [...emittableKeys()].sort());
+});
+
+test("table: the scan of emittable keys still sees the CMBUI-13 keys and the old ones", () => {
+  const keys = emittableKeys();
+  for (const k of ["ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "strengthBoost", "fightDark", "nightVision", "ward", "afraid", "foeEffect", "flight", "haste", "lit"]) {
+    assert.ok(keys.has(k), `the scan sees ${k}`);
+  }
+  for (const k of ["fly", "half", "knit"]) assert.ok(!keys.has(k), `${k} never makes a live chip`);
+});
+
+test("table: frozen; every entry has key, non-empty fields, a boolean fight, a documented lasts and source", () => {
+  assert.ok(Object.isFrozen(HERO_CONDITIONS));
+  for (const e of HERO_CONDITIONS) {
+    assert.ok(Object.isFrozen(e), `${e.key} frozen`);
+    assert.ok(typeof e.key === "string" && e.key.length > 0);
+    assert.ok(Array.isArray(e.fields) && e.fields.length > 0 && Object.isFrozen(e.fields), `${e.key} fields`);
+    assert.equal(typeof e.fight, "boolean", `${e.key} fight`);
+    assert.ok(LASTS.includes(e.lasts), `${e.key} lasts ${e.lasts}`);
+    assert.ok(SOURCES.includes(e.source), `${e.key} source ${e.source}`);
+  }
+});
+
+test("table: the fight rule — map-only, recharging and waiting chips stay out of YOUR LOT; fight effects are in", () => {
+  const fightOf = Object.fromEntries(HERO_CONDITIONS.map((e) => [e.key, e.fight]));
+  for (const k of ["reveal", "itemCooldown", "staffCharges", "fearArmed", "foresight", "flight", "tongue", "ether"]) assert.equal(fightOf[k], false, `${k} is not a fight chip`);
+  for (const k of ["afraid", "foeEffect", "ward", "mirror", "senses", "regen", "ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "fightDark", "nightVision", "acute", "invis", "unseen", "heroOut", "heroBlind", "heroShrunk"]) {
+    assert.equal(fightOf[k], true, `${k} is a fight chip`);
+  }
+});
+
+// ─── (b) lotChips, chipText, chipSheetFacts ────────────────────────────────
+
+test("lotChips: Smoke in a fight is a good ability chip with its rounds and sub", () => {
+  const state = fight({ c: { timers: { "ability:smoke": live(2) } } });
+  const chips = lotChips(conditionsOf(state));
+  assert.equal(chips.length, 1);
+  const [ch] = chips;
+  assert.deepEqual({ key: ch.key, sub: ch.sub, tone: ch.tone, rounds: ch.rounds }, { key: "ability", sub: "smoke", tone: "good", rounds: 2 });
+  assert.equal(ch.cn.ability, "smoke");
+  assert.ok(Object.isFrozen(ch) && Object.isFrozen(chips));
+  assert.deepEqual(Object.keys(ch), ["key", "sub", "tone", "rounds", "cn"]);
+});
+
+test("lotChips: keeps only fight entries, in input order; tone follows polarity; squares effects carry no rounds", () => {
+  const conds = [
+    { key: "reveal", polarity: "good", remaining: 22, cadence: "squares" },
+    { key: "foeEffect", polarity: "bad", kind: "dazed", remaining: 2 },
+    { key: "haste", polarity: "good", remaining: 34, cadence: "squares", source: "Cloak of Speed" },
+    { key: "itemCooldown", polarity: "good", item: "Cloak of Speed", remaining: 4 },
+    { key: "ward", polarity: "good", pool: 10, remaining: 3, name: "Shield" },
+    { key: "senses", polarity: "good" },
+    { key: "fearArmed", polarity: "bad", phobia: "Heights", trigger: "heights" },
+  ];
+  assert.deepEqual(
+    lotChips(conds).map(({ key, sub, tone, rounds }) => ({ key, sub, tone, rounds })),
+    [
+      { key: "foeEffect", sub: "dazed", tone: "bad", rounds: 2 },
+      { key: "haste", sub: null, tone: "good", rounds: null },
+      { key: "ward", sub: null, tone: "good", rounds: 3 },
+      { key: "senses", sub: null, tone: "good", rounds: null },
+    ],
+  );
+});
+
+test("lotChips: every DURATION_ROUNDS ability makes a chip with its rounds when its effect is live", () => {
+  for (const id of Object.keys(DURATION_ROUNDS)) {
+    const state = fight({ c: { timers: { [`ability:${id}`]: live(DURATION_ROUNDS[id]) } } });
+    const chips = lotChips(conditionsOf(state));
+    assert.deepEqual(chips.map((c) => [c.key, c.sub, c.rounds]), [["ability", id, DURATION_ROUNDS[id]]], id);
+    assert.ok(abilityName(id), `${id} has a content name`);
+  }
+});
+
+function abilityName(id) {
+  return ABILITY_BY_ID[id] && ABILITY_BY_ID[id].name;
+}
+
+test("lotChips: a member's chips come from memberConditionsOf through the same table", () => {
+  const party = [hero({ name: "Joiner", timers: { "ability:sidestep": live(1) } })];
+  const state = fight({ combat: { allies: [{ partyIdx: 0, name: "Joiner", lvl: 1, wp: 30, maxWP: 30, braced: true }] }, party });
+  assert.deepEqual(lotChips(memberConditionsOf(state, 0)).map((c) => [c.key, c.sub, c.rounds]), [["ability", "sidestep", 1], ["braced", null, null]]);
+});
+
+test("chipText: the house style — ' · n' only for a whole-number rounds above 0", () => {
+  assert.equal(chipText("Smoke", { rounds: 2 }), "Smoke · 2");
+  assert.equal(chipText("Shield", { rounds: 3 }), "Shield · 3");
+  assert.equal(chipText("Senses", { rounds: null }), "Senses");
+  assert.equal(chipText("Senses", {}), "Senses");
+  for (const bad of [0, -1, 1.5, "2", NaN]) assert.equal(chipText("Smoke", { rounds: bad }), "Smoke", `rounds ${String(bad)}`);
+  assert.equal(chipText("Smoke", null), "Smoke");
+  assert.equal(chipText(null, { rounds: 2 }), "", "no label, no orphan count");
+  assert.equal(chipText("", { rounds: 2 }), "");
+});
+
+test("chipSheetFacts: an ability chip names its rounds, its ability and the ability's own content text", () => {
+  const facts = chipSheetFacts({ key: "ability", ability: "smoke", polarity: "good", remaining: 2, cadence: "rounds" });
+  assert.deepEqual(facts, { lasts: "2 more rounds", source: "from your Smoke", detail: ABILITY_BY_ID.smoke.txt });
+  assert.ok(Object.isFrozen(facts));
+  assert.equal(chipSheetFacts({ key: "ability", ability: "riposte", polarity: "good", remaining: 1 }).lasts, "1 more round");
+});
+
+test("chipSheetFacts: every lasts and source phrase", () => {
+  const f = (cn) => chipSheetFacts(cn);
+  assert.deepEqual(f({ key: "braced", polarity: "good" }), { lasts: "until the next blow lands", source: `from your ${ABILITY_BY_ID.brace.name}`, detail: "" });
+  assert.deepEqual(f({ key: "inspired", polarity: "good", amount: 1 }), { lasts: "for the rest of this fight", source: "from your song", detail: "" });
+  assert.deepEqual(f({ key: "insulted", polarity: "bad" }), { lasts: "for the rest of this fight", source: "from your insult", detail: "" });
+  assert.deepEqual(f({ key: "strengthBoost", polarity: "good", amount: 40 }), { lasts: "until the day ends", source: "from a spell", detail: "" });
+  assert.deepEqual(f({ key: "halfNext", polarity: "good" }), { lasts: "until the next blow lands", source: "from Pendant of Fortitude", detail: "" });
+  assert.deepEqual(f({ key: "fearArmed", polarity: "bad", phobia: "Heights" }), { lasts: "until your next fight", source: "from your fear", detail: "" });
+  assert.deepEqual(f({ key: "selfDot", polarity: "bad", remaining: 2, by: "acid", spell: "Acid" }), { lasts: "2 more rounds", source: "from a fumbled scroll", detail: "" });
+  assert.deepEqual(f({ key: "foeEffect", polarity: "bad", kind: "dazed", remaining: 2 }), { lasts: "2 more rounds", source: "from a foe's power", detail: "" });
+  assert.deepEqual(f({ key: "fightDark", polarity: "bad" }), { lasts: "for the rest of this fight", source: "from the dark", detail: "" });
+  assert.deepEqual(f({ key: "darkness", polarity: "bad", remaining: 12 }), { lasts: "12 squares left", source: "from the dark", detail: "" });
+  assert.equal(f({ key: "reveal", polarity: "good", remaining: 1, cadence: "squares" }).lasts, "1 square left");
+  assert.deepEqual(f({ key: "haste", polarity: "good", remaining: 34, cadence: "squares", source: "Cloak of Speed" }), { lasts: "34 squares left", source: "from Cloak of Speed", detail: "" });
+  assert.deepEqual(f({ key: "might", polarity: "good" }), { lasts: "until the day ends", source: "from a spell", detail: "" });
+  assert.deepEqual(f({ key: "might", polarity: "good", remaining: 5, cadence: "squares", source: "Strength", might: 8 }), { lasts: "5 squares left", source: "from Strength", detail: "" });
+  assert.deepEqual(f({ key: "ward", polarity: "good", pool: 0, name: "Bubble", mirror: true }).lasts, "until the next blow lands");
+  assert.deepEqual(f({ key: "staffCharges", polarity: "good", item: "Oak Staff", charges: 2, max: 5, remaining: 9 }), { lasts: "2 of 5 charges left", source: "from Oak Staff", detail: "" });
+  assert.deepEqual(f({ key: "affliction", polarity: "bad", kind: "Poison" }), { lasts: "until something cures it", source: "from the dungeon's hospitality", detail: "" });
+  assert.deepEqual(f({ key: "nightVision", polarity: "good" }), { lasts: "for the rest of this fight", source: "from your own eyes", detail: "" });
+  assert.deepEqual(f({ key: "afraid", polarity: "bad", remaining: 2, phobia: "Crowds" }).lasts, "2 more rounds");
+  assert.deepEqual(f({ key: "heroOut", polarity: "bad", kind: "sleep", remaining: 1 }).source, "from a fumbled scroll");
+});
+
+// ─── (c) malformed and hostile inputs ──────────────────────────────────────
+
+test("malformed: lotChips and chipSheetFacts never throw and give empty results", () => {
+  for (const bad of [null, undefined, 0, "x", {}, { key: 7 }]) {
+    assert.deepEqual(lotChips(bad), []);
+    assert.deepEqual(chipSheetFacts(bad), { lasts: "", source: "", detail: "" });
+  }
+  assert.deepEqual(lotChips([null, 3, "x", { key: "nope" }, { key: "senses", polarity: "good" }]).map((c) => c.key), ["senses"]);
+  // a rounds entry missing its count reads no rounds and no lasts phrase
+  assert.deepEqual(lotChips([{ key: "ability", ability: "smoke", polarity: "good" }]).map((c) => c.rounds), [null]);
+  assert.equal(chipSheetFacts({ key: "ability", ability: "smoke" }).lasts, "");
+  // an unknown ability id names nothing and has no detail
+  assert.deepEqual(chipSheetFacts({ key: "ability", ability: "hexStorm", remaining: 2 }), { lasts: "2 more rounds", source: "", detail: "" });
+  assert.deepEqual(chipSheetFacts({ key: "ability", ability: "__proto__", remaining: 2 }), { lasts: "2 more rounds", source: "", detail: "" });
+  // staff charges with no numbers
+  assert.equal(chipSheetFacts({ key: "staffCharges", item: "Oak Staff" }).lasts, "");
+});
+
+test("hostile: a throwing getter drops only what read it", () => {
+  const cn = { key: "ability", ability: "smoke", polarity: "good" };
+  Object.defineProperty(cn, "remaining", { get() { throw new Error("boom"); }, enumerable: true });
+  let out;
+  assert.doesNotThrow(() => { out = lotChips([cn, { key: "senses", polarity: "good" }]); });
+  assert.deepEqual(out.map((c) => [c.key, c.rounds]), [["ability", null], ["senses", null]]);
+  assert.doesNotThrow(() => chipSheetFacts(cn));
+  const hostileKey = {};
+  Object.defineProperty(hostileKey, "key", { get() { throw new Error("boom"); } });
+  assert.deepEqual(lotChips([hostileKey]), []);
+  assert.deepEqual(chipSheetFacts(hostileKey), { lasts: "", source: "", detail: "" });
+});
+
+test("purity: the table's functions never mutate a descriptor", () => {
+  const conds = conditionsOf(fight({ dark: true, c: { timers: { "ability:smoke": live(2) } }, combat: { braced: true, selfDot: { left: 2, by: "ice", spell: "Ice" } } }));
+  const before = JSON.stringify(conds);
+  lotChips(conds);
+  conds.forEach((cn) => chipSheetFacts(cn));
+  assert.equal(JSON.stringify(conds), before);
+  assert.deepEqual(lotChips(conds), lotChips(conds));
+});
+
+// ─── (d) the engine-scan coverage guard ────────────────────────────────────
+
+const ENGINE_DIR = path.join(REPO_ROOT, "engine");
+const ENGINE_FILES = fs.readdirSync(ENGINE_DIR).filter((f) => f.endsWith(".js")).map((f) => `engine/${f}`);
+
+/** NOT_A_CONDITION — every field the scan finds on the hero, the fight or a
+ * party member that is NOT an effect the player should see as a chip, each
+ * with its one-line reason. Test-owned: the engine is never edited to
+ * satisfy this guard. */
+const NOT_A_CONDITION = Object.freeze({
+  // ── hero sheet: stats, kit and bookkeeping ──
+  wp: "hit points: the HP bar shows them",
+  maxWP: "max hit points: the HP bar shows them (Strength's doubling has its own strengthBoost chip)",
+  sp: "spell points: the SP bar shows them",
+  vp: "victory points: the sheet shows them",
+  level: "the hero's level: the sheet shows it",
+  name: "the hero's name",
+  sub: "the sub-class: identity, not an effect",
+  abilities: "the list of abilities known; a live one shows as its ability chip",
+  grimoire: "the spells known: the SPELLS menu lists them",
+  spellsUsed: "the spells cast today: the SPELLS menu's cost line counts them",
+  gold: "the purse: the HUD shows it",
+  rations: "food: the HUD shows it",
+  potions: "healing potions carried: the ITEMS menu shows them",
+  scrolls: "scrolls carried: the ITEMS menu shows them",
+  items: "the bag: the ITEMS menu shows it",
+  worn: "the worn slots: the gear screen shows them",
+  bag: "the bag size: the gear screen shows it",
+  staff: "the staff carried: its charges show through staffCharges",
+  weapon: "the weapon: the sheet and the strike odds show it",
+  prof: "weapon proficiency: the sheet shows it",
+  magicWpn: "the weapon's magic plus: the sheet shows it",
+  armor: "the armour: the sheet shows it",
+  ar: "the armour's soak rating: the sheet shows it",
+  armorMin: "the armour's soak floor: the sheet shows it",
+  armorMax: "the armour's durability cap: the sheet shows it",
+  armorWP: "the armour's durability: the sheet shows it",
+  patches: "armour patches carried: the ITEMS menu shows them",
+  kills: "the kill count for the graveyard",
+  joiner: "the Joiner offer: a party member gets its own YOUR LOT card",
+  phobiaType: "the fear's trigger family: a trait, shown as Afraid only when it bites",
+  phobiaState: "the terrain-phobia bookkeeping behind fearArmed",
+  dupAt: "the duplicate-find bookkeeping for loot",
+  songAt: "the Bard's once-a-day song bookkeeping",
+  pendingAlly: "a summon queued for the next fight: it appears as its own YOUR LOT card when that fight starts",
+  scrollCast: "set and cleared inside one scroll read",
+  // ── the fight ──
+  allies: "the party members' combat entries: each member has its own YOUR LOT card",
+  ally: "the summoned ally: its own YOUR LOT card with its rounds",
+  abilityStrike: "an ability's strike, consumed inside the same action",
+  cut: "the Cutthroat's once-a-fight crit is spent, narrated by its own line",
+  opened: "the Cat Burglar/Ninja free opener is spent, narrated by its own line",
+  opened2: "the opening strike has landed (opening-crit bookkeeping)",
+  first: "initiative: who swings first",
+  target: "the hero's aim: the foe card shows it",
+  round: "the round counter the header shows",
+  pending: "the pre-join encounter marker",
+  pendingFoes: "foes waiting to join: they arrive as foe cards",
+  spellOpen: "the spell submenu's open flag",
+  parleyTried: "the one parley attempt is spent",
+  foeToHitPenalty: "the to-hit half of Weaken: the foe cards' Weakened chip shows it",
+  // ── a party member's combat entry ──
+  backstabUsed: "the member's once-a-fight backstab is spent",
+});
+
+/** NOT_A_TIMER — timer id families the scan finds that are not effects. */
+const NOT_A_TIMER = Object.freeze({
+  "joiner:*": "a Joiner's derived rng stream key, not a c.timers record",
+});
+
+/** FOE_TABLE_TIMERS — timer ids the foe table shows (its entry key must exist). */
+const FOE_TABLE_TIMERS = Object.freeze({ "spell:weaken": "weakened" });
+
+function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\])\/\/[^\n]*/g, "$1");
+}
+
+const ASSIGN = String.raw`\s*(?:=(?![=>])|\+=|-=|\*=|\/=|\+\+|--)`;
+const HERO_BINDING = String.raw`(?<![\w.$])(?:c|state\.c|hero)`;
+const COMBAT_BINDING = String.raw`(?<![\w.$])(?:state\.combat|combat|C)`;
+const MEMBER_BINDING = String.raw`(?<![\w.$])(?:ally|member|sheet)`;
+
+/** scanEngineFields(src) — { hero, combat, member } Sets of every field the
+ * source assigns (=, op=, ++, --, prefix ++/--, delete) on each binding.
+ * Comments are stripped first. */
+function scanEngineFields(rawSrc) {
+  const src = stripComments(rawSrc);
+  const out = { hero: new Set(), combat: new Set(), member: new Set() };
+  const collect = (binding, into) => {
+    const patterns = [
+      new RegExp(`${binding}\\.([A-Za-z_$][\\w$]*)${ASSIGN}`, "g"),
+      new RegExp(`(?:\\+\\+|--)\\s*${binding}\\.([A-Za-z_$][\\w$]*)`, "g"),
+      new RegExp(`delete\\s+${binding}\\.([A-Za-z_$][\\w$]*)`, "g"),
+    ];
+    for (const re of patterns) for (const m of src.matchAll(re)) into.add(m[1]);
+  };
+  collect(HERO_BINDING, out.hero);
+  collect(COMBAT_BINDING, out.combat);
+  collect(MEMBER_BINDING, out.member);
+  return out;
+}
+
+/** scanTimerIds(src) — every timer id started with a literal id, and every
+ * `prefix:${…}` template family ("prefix:*"). */
+function scanTimerIds(rawSrc) {
+  const src = stripComments(rawSrc);
+  const ids = new Set();
+  for (const m of src.matchAll(/start(?:Effect|Cooldown)\(\s*[\w.]+\s*,\s*["'`]([a-z]+:[^"'`$]+)["'`]/g)) ids.add(m[1]);
+  for (const m of src.matchAll(/`([a-z]+):\$\{/g)) ids.add(`${m[1]}:*`);
+  return ids;
+}
+
+function scanAll() {
+  const all = { hero: new Set(), combat: new Set(), member: new Set(), timers: new Set() };
+  for (const rel of ENGINE_FILES) {
+    const src = fs.readFileSync(path.join(REPO_ROOT, rel), "utf8");
+    const r = scanEngineFields(src);
+    for (const k of ["hero", "combat", "member"]) r[k].forEach((f) => all[k].add(f));
+    scanTimerIds(src).forEach((id) => all.timers.add(id));
+  }
+  return all;
+}
+
+/** coveredFields() — every field a hero entry reads, plus every field or key the foe table reads. */
+function coveredFields() {
+  const out = new Set();
+  for (const e of HERO_CONDITIONS) for (const f of e.fields) out.add(f);
+  for (const e of FOE_CONDITIONS) {
+    out.add(e.key);
+    for (const f of e.fields || []) out.add(f);
+  }
+  return out;
+}
+
+function uncovered(fields) {
+  const covered = coveredFields();
+  return [...fields].filter((k) => !covered.has(k) && !Object.hasOwn(NOT_A_CONDITION, k)).sort();
+}
+
+/** timerCovered(id) — is timer id (or family) read by a hero entry, shown by the foe table, or excused? */
+function timerCovered(id) {
+  const family = id.includes("*") ? id : `${id.split(":")[0]}:*`;
+  for (const e of HERO_CONDITIONS) for (const t of e.timers || []) if (t === id || t === family) return true;
+  if (Object.hasOwn(FOE_TABLE_TIMERS, id)) return FOE_CONDITIONS.some((e) => e.key === FOE_TABLE_TIMERS[id]);
+  return Object.hasOwn(NOT_A_TIMER, id) || Object.hasOwn(NOT_A_TIMER, family);
+}
+
+test("coverage guard: every hero field, combat-wide flag and member field the engine assigns is a chip, a foe chip, or a reasoned NOT_A_CONDITION", () => {
+  const { hero: h, combat, member } = scanAll();
+  const missing = uncovered(new Set([...h, ...combat, ...member]));
+  assert.deepEqual(missing, [], `engine fields with no chip and no NOT_A_CONDITION reason: ${missing.join(", ")} — add a HERO_CONDITIONS entry (src/browser/heroConditions.js) or a reasoned exclusion here`);
+});
+
+test("coverage guard: every timer id the engine starts is read by an entry, shown by the foe table, or excused", () => {
+  const { timers } = scanAll();
+  const missing = [...timers].filter((id) => !timerCovered(id)).sort();
+  assert.deepEqual(missing, [], `timer ids with no chip: ${missing.join(", ")}`);
+});
+
+test("coverage guard: every DURATION_ROUNDS ability is read by the ability entry and has a content name", () => {
+  const entry = HERO_CONDITIONS.find((e) => e.key === "ability");
+  assert.ok(entry && entry.timers.includes("ability:*"));
+  for (const id of Object.keys(DURATION_ROUNDS)) {
+    assert.ok(ABILITY_BY_ID[id] && ABILITY_BY_ID[id].name, `${id} has a name`);
+    const cn = conditionsOf(fight({ c: { timers: { [`ability:${id}`]: live(1) } } })).find((x) => x.key === "ability");
+    assert.equal(cn && cn.ability, id, `${id} makes an ability chip`);
+  }
+});
+
+test("coverage guard self-check: the scan still sees the known hero, combat and member fields and timer ids", () => {
+  const { hero: h, combat, member, timers } = scanAll();
+  for (const k of ["halfNext", "foeEffect", "ward", "mirror", "senses", "regen", "foresight", "strengthBoost", "fearArmed", "darkFor", "affliction"]) assert.ok(h.has(k), `hero ${k}`);
+  for (const k of ["braced", "inspired", "parleyInsulted", "selfDot", "heroOut", "heroBlind", "heroShrunk", "afraid", "weakened"]) assert.ok(combat.has(k), `combat ${k}`);
+  assert.ok(member.has("braced"), "member braced");
+  for (const id of ["spell:weaken", "spell:reveal", "ability:*", "item:*", "charges:*"]) assert.ok(timers.has(id), `timer ${id}`);
+});
+
+test("coverage guard self-check: a synthetic `c.newHex = true` and a combat-wide `C.hexStorm = 2` are reported", () => {
+  const synthetic = "function applyHex(c, C) {\n  c.newHex = true;\n  C.hexStorm = 2;\n  // c.commentOnly = true;\n  sheet.memberHex++;\n}\n";
+  const r = scanEngineFields(synthetic);
+  assert.deepEqual(uncovered(new Set([...r.hero, ...r.combat, ...r.member])), ["hexStorm", "memberHex", "newHex"]);
+  const r2 = scanEngineFields("if (c.halfNext === true && C.braced == 0) run((c) => c.ward);\n");
+  assert.deepEqual([...r2.hero, ...r2.combat], []);
+  const r3 = scanEngineFields("delete c.a; state.c.b++; --hero.d; state.combat.g = 1; combat.h += 2; ally.i = 1;");
+  assert.deepEqual([...r3.hero].sort(), ["a", "b", "d"]);
+  assert.deepEqual([...r3.combat].sort(), ["g", "h"]);
+  assert.deepEqual([...r3.member], ["i"]);
+  const t = scanTimerIds("startEffect(c, \"spell:hex\", { rounds: 2 }); const id = `curse:${k}`;");
+  assert.deepEqual([...t].filter((id) => !timerCovered(id)).sort(), ["curse:*", "spell:hex"]);
+});
+
+test("coverage guard: NOT_A_CONDITION never lists a covered field, and every reason is a non-empty line", () => {
+  const covered = coveredFields();
+  for (const [k, reason] of Object.entries(NOT_A_CONDITION)) {
+    assert.equal(covered.has(k), false, `${k} is both a chip field and on NOT_A_CONDITION`);
+    assert.ok(typeof reason === "string" && reason.trim().length > 0 && !reason.includes("\n"), `${k} needs a one-line reason`);
+  }
+});
+
+// ─── (e) copy ──────────────────────────────────────────────────────────────
+
+const ALLOW = new Set(ALLOWLIST.map((w) => w.toLowerCase()));
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const MATCHERS = BANNED.map((term) => ({ term, re: new RegExp("\\b" + escapeRegExp(term) + "\\b", "i") }));
+const PLAYER_WP_RULE = /(?<![\w.$-])(wp|WP)(?![\w:])/;
+
+function leaves(obj, prefix = "") {
+  const out = [];
+  for (const [k, v] of Object.entries(obj)) {
+    const p = prefix ? `${prefix}.${k}` : k;
+    if (v && typeof v === "object") out.push(...leaves(v, p));
+    else out.push([p, v]);
+  }
+  return out;
+}
+
+test("HERO_CHIP_COPY: frozen at every level, every leaf a non-empty string, clear of BANNED, HP never WP", () => {
+  assert.ok(Object.isFrozen(HERO_CHIP_COPY));
+  assert.ok(Object.isFrozen(HERO_CHIP_COPY.lasts) && Object.isFrozen(HERO_CHIP_COPY.source));
+  const all = leaves(HERO_CHIP_COPY);
+  assert.ok(all.length > 0);
+  for (const [p, value] of all) {
+    assert.ok(typeof value === "string" && value.trim().length > 0, `${p} must be a non-empty string`);
+    for (const { term, re } of MATCHERS) {
+      const m = value.match(re);
+      assert.ok(!m || ALLOW.has(m[0].toLowerCase()), `${p} ("${value}") hits BANNED term ${term}`);
+    }
+    assert.ok(!PLAYER_WP_RULE.test(value), `${p} ("${value}") says WP; the player reads HP`);
+  }
+  // every lasts kind but rounds/squares has its own phrase; every source kind has one
+  for (const k of LASTS.filter((k) => k !== "rounds" && k !== "squares")) assert.ok(HERO_CHIP_COPY.lasts[k], `lasts ${k}`);
+  for (const k of SOURCES) assert.ok(HERO_CHIP_COPY.source[k], `source ${k}`);
+});

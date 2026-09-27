@@ -14,9 +14,11 @@
 // ONE formatter (toHitText/signedText/playerDelta/ROLLERS), so this module
 // can never disagree with any other roll surface in this phase.
 //
-// This design is also the hook Phase 77 (CMBUI-13) needs: adding an ability
-// timer key to WHAT_IF gives Smoke/Sidestep/Battle Roar indicators their
-// effect text for free. This plan does NOT add those keys.
+// This design is also the hook Phase 77 (CMBUI-13) used: plan 77-03 added
+// its keys to WHAT_IF as planned (ability — Smoke/Sidestep/Battle Roar/
+// Riposte/Taunt — inspired, fightDark and nightVision) rather than a second
+// what-if map, and the to-hit lead now names both ranges, CONTEXT's Dazed
+// honesty shape: "−2 to hit (18–20 instead of 16–20)".
 //
 // Pure presentation module: no DOM, no rng, no mutation of the state/c
 // passed in — every what-if is built as a NEW shallow-copied state/c, never
@@ -30,14 +32,16 @@ import { toHitText, signedText, playerDelta, ROLLERS } from "./rollRange.js";
 /**
  * CONDITION_EFFECT_COPY — the frozen copy bank for this module's own two
  * effect-sentence shapes and the joiner between them. `toHitNow` fills
- * `{toHit}` with a signed toHitText delta and `{range}` with the LIVE
- * (current, with the condition still active) faces range; `dieSwap` fills
+ * `{toHit}` with a signed toHitText delta, `{range}` with the LIVE
+ * (current, with the condition still active) faces range and `{was}` with
+ * the what-if range (the same roll without the condition) — CMBUI-13
+ * (Phase 77): "−2 to hit (18–20 instead of 16–20)"; `dieSwap` fills
  * `{range}` with the live heroHitOdds `text` (which already carries its own
  * die, e.g. "2–6 (d6)"); `theirs` fills `{signed}` with a player-signed
  * delta on a foe's swing at the hero.
  */
 export const CONDITION_EFFECT_COPY = Object.freeze({
-  toHitNow: "{toHit} (now {range})",
+  toHitNow: "{toHit} ({range} instead of {was})",
   dieSwap: "Hit {range}",
   theirs: "{signed} vs their swings",
   sep: "; ",
@@ -73,6 +77,24 @@ function itemSourceWhatIf(source, state) {
 }
 
 /**
+ * abilityWhatIf(state, cn) — CMBUI-13 (Phase 77): a shallow copy of
+ * `c.timers` with the chip's own `ability:<cn.ability>` record removed (the
+ * same shape as itemSourceWhatIf), so the what-if reads as though that one
+ * ability effect were not live; foeToHitVs's abilityEffectActive terms
+ * (Sidestep, Battle Roar, Smoke) then drop out. A missing id, a malformed
+ * timers map or no matching record yields the state unchanged (zero diff,
+ * read as "no effect").
+ */
+function abilityWhatIf(state, cn) {
+  const id = cn && typeof cn.ability === "string" && cn.ability ? `ability:${cn.ability}` : null;
+  const timers = state.c && state.c.timers;
+  if (!id || !timers || typeof timers !== "object" || !Object.prototype.hasOwnProperty.call(timers, id)) return state;
+  const nextTimers = { ...timers };
+  delete nextTimers[id];
+  return withC(state, { timers: nextTimers });
+}
+
+/**
  * WHAT_IF — the frozen key-to-builder map for every hero condition chip
  * whose to-hit effect this plan measures. Each builder returns a SHALLOW
  * what-if copy of the state with only that one condition dropped, never
@@ -90,9 +112,14 @@ function itemSourceWhatIf(source, state) {
  *     against the unblinded one, the SAME way afraid's own faces diff
  *     works, since derived.js#toHit reads C.heroBlind as its LAST term
  *     (overriding every other modifier).
- *
- * Phase 77 (CMBUI-13) is expected to add its own ability-timer keys here
- * (Smoke/Sidestep/Battle Roar) rather than inventing a second what-if map.
+ *   - ability: the chip's own `ability:<id>` record dropped (abilityWhatIf)
+ *     — CMBUI-13 (Phase 77); Riposte and Taunt move no roll, so they read null
+ *   - inspired: state.combat.inspired -> 0 (the Bard's level-2 song)
+ *   - fightDark: c.senses -> true — Sense Presence lifts EXACTLY toHit's dark
+ *     cap and nothing else this module reads, so the diff is the cap alone
+ *   - nightVision: a copied c.skills without "Night Vision", so the dark cap
+ *     returns unless another light (a torch, the Amulet) still holds it back
+ * Every builder takes (state, cn); the older ones ignore cn.
  */
 export const WHAT_IF = Object.freeze({
   afraid: (state) => (state.combat ? { ...state, combat: { ...state.combat, afraid: 0 } } : state),
@@ -103,6 +130,15 @@ export const WHAT_IF = Object.freeze({
   // RULES-10 (Phase 75.1, plan 09): mirrors the afraid builder above exactly
   // — a shallow what-if combat with heroBlind dropped.
   heroBlind: (state) => (state.combat ? { ...state, combat: { ...state.combat, heroBlind: false } } : state),
+  // CMBUI-13 (Phase 77, plan 77-03): the new hero chips.
+  ability: (state, cn) => abilityWhatIf(state, cn),
+  inspired: (state) => (state.combat ? { ...state, combat: { ...state.combat, inspired: 0 } } : state),
+  fightDark: (state) => withC(state, { senses: true }),
+  nightVision: (state) => {
+    const skills = state.c && state.c.skills && typeof state.c.skills === "object" ? { ...state.c.skills } : {};
+    delete skills["Night Vision"];
+    return withC(state, { skills });
+  },
 });
 
 /**
@@ -114,7 +150,7 @@ export const WHAT_IF = Object.freeze({
  */
 function buildWhatIf(cn, state) {
   const builder = WHAT_IF[cn.key];
-  if (typeof builder === "function") return builder(state);
+  if (typeof builder === "function") return builder(state, cn);
   if (typeof cn.source === "string" && cn.source) return itemSourceWhatIf(cn.source, state);
   return null;
 }
@@ -130,7 +166,8 @@ function buildWhatIf(cn, state) {
  * A change in strike die (e.g. a live Acuteness effect) reports as
  * `dieSwap` with the live "Hit {range} (dN)" text; otherwise a change in
  * winning-faces count reports as `toHitNow`, signed from the player's side
- * via toHitText, with the LIVE range.
+ * via toHitText, with the LIVE range and then the what-if range ("{range}
+ * instead of {was}", CMBUI-13).
  *
  * Their roll: foeToHitVs(state) vs foeToHitVs(whatIf) (engine/derived.js).
  * A non-zero difference reports as `theirs`, run through playerDelta with
@@ -159,7 +196,10 @@ export function conditionEffectText(cn, state) {
     } else if (liveHit.faces !== whatIfHit.faces) {
       const delta = liveHit.faces - whatIfHit.faces;
       parts.push(
-        CONDITION_EFFECT_COPY.toHitNow.replace("{toHit}", toHitText(delta)).replace("{range}", liveHit.range)
+        CONDITION_EFFECT_COPY.toHitNow
+          .replace("{toHit}", toHitText(delta))
+          .replace("{range}", liveHit.range)
+          .replace("{was}", whatIfHit.range)
       );
     }
 

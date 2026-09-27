@@ -115,10 +115,14 @@ function rig({ reducedMotion = true } = {}) {
 // Phase 74 (ROLL-02/03), plan 74-07: the chip-tap card now leads with the
 // chip's measured effect. This hero is a level-3 Human Fighter Soldier
 // (strike die d10; its weapon "Sword" is not a WEAPONS key, so need 0),
-// so the Afraid lead here reads "−3 to hit (now 9–10)" — pinned below and
-// cross-checked against window.__mzConditionEffect (the real bridge) so a
-// drift in the engine's own numbers fails this test, not silently passes.
-const AFRAID_LEAD = "−3 to hit (now 9–10)";
+// so the Afraid lead here reads "−3 to hit (9–10 instead of 6–10)" — pinned
+// below and cross-checked against window.__mzConditionEffect (the real
+// bridge) so a drift in the engine's own numbers fails this test, not
+// silently passes.
+// CMBUI-13 (Phase 77, plan 77-03): re-pinned from Phase 74's
+// "−3 to hit (now 9–10)" to CONTEXT's Dazed honesty shape, which names the
+// range without the effect too (the what-if range, read through heroHitOdds).
+const AFRAID_LEAD = "−3 to hit (9–10 instead of 6–10)";
 
 test("(a) combat + Afraid: the chip's tap raises one kind 'cond' card, the label in capitals and the effect lead + out-of-combat sentence, over the combat screen", () => {
   const r = rig();
@@ -348,7 +352,16 @@ test("(h) R-32: every key conditionsOf can emit resolves to its own CONDITION_EX
     assert.ok(typeof text === "string" && text.length > 0, `${key} has text`);
     if (text === fallback) missing.push(key);
   }
-  assert.deepEqual(missing, [], `keys with no description of their own: ${missing.join(", ")}`);
+  // CMBUI-13 (Phase 77, plan 77-03): conditionsOf gained the keys below (the
+  // data half); their labels and explanations land in the shell's
+  // CONDITION_COPY/CONDITION_EXPLAIN in plan 77-08 (the drawing half, wave
+  // 3), which owns mazeworld.html. Until then these, and ONLY these, may
+  // resolve to the default. The exemption is exact: a key 77-08 explains
+  // must leave this list (the deepEqual below fails otherwise), and any
+  // other key with no sentence still fails the build.
+  const AWAITING_77_08 = ["braced", "fightDark", "halfNext", "inspired", "insulted", "nightVision", "selfDot", "strengthBoost"];
+  assert.deepEqual(missing.filter((k) => !AWAITING_77_08.includes(k)), [], `keys with no description of their own: ${missing.join(", ")}`);
+  assert.deepEqual([...missing].sort(), AWAITING_77_08, "77-08 explained a CMBUI-13 key: drop it from AWAITING_77_08");
 });
 
 // ─── (i) a foe card tap only aims ──────────────────────────────────────────

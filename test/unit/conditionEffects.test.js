@@ -64,11 +64,17 @@ test("CONDITION_EFFECT_COPY/WHAT_IF are frozen", () => {
 });
 
 // ─── afraid ──────────────────────────────────────────────────────────────
+//
+// CMBUI-13 (Phase 77, plan 77-03): every to-hit lead in this file was
+// re-pinned from Phase 74's "(now 19–20)" to CONTEXT's Dazed honesty shape
+// "(19–20 instead of 16–20)" — the live range, then the range without the
+// effect, both read through heroHitOdds (live and what-if). The deltas are
+// unchanged; only the parenthesis gained the what-if range.
 
 test("afraid: a level-1 Human Fighter reads the Afraid penalty against the engine's own faces", () => {
   const state = fixedState({ combat: { afraid: 2 } });
   const text = conditionEffectText({ key: "afraid", remaining: 2 }, state);
-  assert.equal(text, "−3 to hit (now 19–20)");
+  assert.equal(text, "−3 to hit (19–20 instead of 16–20)");
 
   // Prove it against the engine directly, not a hardcoded expectation.
   const whatIf = { ...state, combat: { ...state.combat, afraid: 0 } };
@@ -80,7 +86,7 @@ test("afraid: a level-1 Human Fighter reads the Afraid penalty against the engin
 
 test("afraid: a level-1 Human Magic User reads a single-face range", () => {
   const state = fixedState({ c: { cls: "Magic User", sub: "Wizard" }, combat: { afraid: 2 } });
-  assert.equal(conditionEffectText({ key: "afraid", remaining: 2 }, state), "−2 to hit (now 20)");
+  assert.equal(conditionEffectText({ key: "afraid", remaining: 2 }, state), "−2 to hit (20 instead of 18–20)");
 });
 
 test("afraid: a missing combat is defensive (no throw, no effect)", () => {
@@ -94,7 +100,7 @@ test("foeEffect: a dazed hero reads the engine's own to-hit penalty", () => {
   const state = fixedState({ c: { foeEffect: { kind: "dazed", rounds: 2 } } });
   assert.equal(
     conditionEffectText({ key: "foeEffect", kind: "dazed", remaining: 2 }, state),
-    "−2 to hit (now 18–20)"
+    "−2 to hit (18–20 instead of 16–20)"
   );
 });
 
@@ -107,7 +113,7 @@ test("foeEffect: a weakened hero moves no to-hit term, so the chip reads null", 
 
 test("darkness: a lit-tile hero with a live darkFor counter reads the dark cap being lifted", () => {
   const state = fixedState({ c: { darkFor: 5 } });
-  assert.equal(conditionEffectText({ key: "darkness", remaining: 5 }, state), "−3 to hit (now 19–20)");
+  assert.equal(conditionEffectText({ key: "darkness", remaining: 5 }, state), "−3 to hit (19–20 instead of 16–20)");
 });
 
 test("darkness: Night Vision waives the dark cap either way, so the chip reads null", () => {
@@ -119,7 +125,7 @@ test("darkness: Night Vision waives the dark cap either way, so the chip reads n
 
 test("senses: a dark-tile hero with Sense Presence reads the dark cap being lifted", () => {
   const state = fixedState({ c: { senses: true }, floor: { dark: true } });
-  assert.equal(conditionEffectText({ key: "senses", remaining: undefined }, state), "+3 to hit (now 16–20)");
+  assert.equal(conditionEffectText({ key: "senses", remaining: undefined }, state), "+3 to hit (16–20 instead of 19–20)");
 });
 
 // ─── heroBlind (RULES-10, Phase 75.1, plan 09) ──────────────────────────
@@ -127,7 +133,7 @@ test("senses: a dark-tile hero with Sense Presence reads the dark cap being lift
 test("heroBlind: a level-1 Human Fighter reads the one-face range against the engine's own faces", () => {
   const state = fixedState({ combat: { heroBlind: true } });
   const text = conditionEffectText({ key: "heroBlind" }, state);
-  assert.equal(text, "−4 to hit (now 20)");
+  assert.equal(text, "−4 to hit (20 instead of 16–20)");
 
   // Prove it against the engine directly, not a hardcoded expectation.
   const whatIf = { ...state, combat: { ...state.combat, heroBlind: false } };
@@ -254,10 +260,119 @@ test("a deep-frozen state is never mutated, and two calls return the same string
 
   const first = conditionEffectText({ key: "afraid", remaining: 2 }, state);
   const second = conditionEffectText({ key: "afraid", remaining: 2 }, state);
-  assert.equal(first, "−3 to hit (now 19–20)");
+  assert.equal(first, "−3 to hit (19–20 instead of 16–20)");
   assert.equal(first, second);
 
   // Never mutated: still frozen, still the same values.
   assert.equal(Object.isFrozen(state), true);
   assert.equal(state.combat.afraid, 2);
+});
+
+// ─── CMBUI-13 (Phase 77, plan 77-03): the new chips' measured effects ────
+//
+// Each new WHAT_IF key drops only its own effect in a shallow what-if and
+// is read through heroHitOdds/foeToHitVs like every other chip; the
+// expected strings are cross-checked against the engine's own numbers.
+
+function inFight(overrides = {}) {
+  const { combat = {}, ...rest } = overrides;
+  return fixedState({ ...rest, combat: { foes: [], round: 1, target: 0, ...combat } });
+}
+
+const liveAbility = (left = 2) => ({ cadence: "rounds", left, phase: "effect", cd: 4 });
+
+test("CMBUI-13 ability: a live Sidestep and a live Battle Roar each read '+2 vs their swings'", () => {
+  for (const id of ["sidestep", "battleRoar"]) {
+    const state = inFight({ c: { timers: { [`ability:${id}`]: liveAbility() } } });
+    assert.equal(conditionEffectText({ key: "ability", ability: id, polarity: "good", remaining: 2, cadence: "rounds" }, state), "+2 vs their swings", id);
+  }
+});
+
+test("CMBUI-13 ability: Smoke reads the measured plus from its override (every foe needs a 1)", () => {
+  const state = inFight({ c: { cls: "Thief", sub: "Pilfer", timers: { "ability:smoke": liveAbility() } } });
+  const without = foeToHitVs({ ...state, c: { ...state.c, timers: {} } });
+  assert.equal(foeToHitVs(state), 1);
+  assert.ok(without > 1);
+  assert.equal(conditionEffectText({ key: "ability", ability: "smoke", polarity: "good", remaining: 2 }, state), `+${without - 1} vs their swings`);
+});
+
+test("CMBUI-13 ability: Riposte and Taunt move no roll, so they read null; an ability with no live record reads null", () => {
+  for (const id of ["riposte", "taunt"]) {
+    const state = inFight({ c: { timers: { [`ability:${id}`]: liveAbility(1) } } });
+    assert.equal(conditionEffectText({ key: "ability", ability: id, polarity: "good", remaining: 1 }, state), null, id);
+  }
+  assert.equal(conditionEffectText({ key: "ability", ability: "sidestep", remaining: 2 }, inFight()), null);
+  assert.equal(conditionEffectText({ key: "ability", remaining: 2 }, inFight({ c: { timers: { "ability:sidestep": liveAbility() } } })), null);
+});
+
+test("CMBUI-13 ability: the what-if never touches the caller's timers", () => {
+  const state = inFight({ c: { timers: { "ability:sidestep": liveAbility() } } });
+  const before = JSON.stringify(state);
+  conditionEffectText({ key: "ability", ability: "sidestep", remaining: 2 }, state);
+  assert.equal(JSON.stringify(state), before);
+  assert.ok(state.c.timers["ability:sidestep"]);
+});
+
+test("CMBUI-13 inspired: the song's to-hit plus, with the range it gives and the range without it", () => {
+  const state = inFight({ combat: { inspired: 1 } });
+  const text = conditionEffectText({ key: "inspired", polarity: "good", amount: 1 }, state);
+  assert.equal(text, "+1 to hit (15–20 instead of 16–20)");
+  assert.equal(toHit(state), toHit({ ...state, combat: { ...state.combat, inspired: 0 } }) + 1);
+});
+
+test("CMBUI-13 fightDark: the dark cap's to-hit change; nightVision: the to-hit it saves", () => {
+  const dark = inFight({ floor: { dark: true } });
+  assert.equal(conditionEffectText({ key: "fightDark", polarity: "bad" }, dark), "−3 to hit (19–20 instead of 16–20)");
+  const nv = inFight({ floor: { dark: true }, c: { skills: { "Night Vision": 1 } } });
+  assert.equal(conditionEffectText({ key: "nightVision", polarity: "good" }, nv), "+3 to hit (16–20 instead of 19–20)");
+  // A lit torch also holds the dark back, so Night Vision saves nothing more.
+  const both = inFight({ floor: { dark: true }, c: { skills: { "Night Vision": 1 } } });
+  startEffect(both.c, "item:Torch", { squares: 40 });
+  assert.equal(conditionEffectText({ key: "nightVision", polarity: "good" }, both), null);
+});
+
+test("CMBUI-13 null effects: braced, halfNext, selfDot, insulted and strengthBoost move no roll the chip reads", () => {
+  const state = inFight({
+    c: { halfNext: true, strengthBoost: 30 },
+    combat: { braced: true, parleyInsulted: true, selfDot: { left: 2, dmg: "1d6", by: "acid", spell: "Acid" } },
+  });
+  assert.equal(conditionEffectText({ key: "braced", polarity: "good" }, state), null);
+  assert.equal(conditionEffectText({ key: "halfNext", polarity: "good" }, state), null);
+  assert.equal(conditionEffectText({ key: "selfDot", polarity: "bad", remaining: 2, by: "acid", spell: "Acid" }, state), null);
+  assert.equal(conditionEffectText({ key: "insulted", polarity: "bad" }, state), null);
+  assert.equal(conditionEffectText({ key: "strengthBoost", polarity: "good", amount: 30 }, state), null);
+});
+
+test("CMBUI-13 dazed honesty: '−2 to hit (<live> instead of <without>)' from heroHitOdds live and what-if", () => {
+  const state = fixedState({ c: { foeEffect: { kind: "dazed", rounds: 2 } } });
+  const text = conditionEffectText({ key: "foeEffect", kind: "dazed", remaining: 2 }, state);
+  const cleared = { ...state, c: { ...state.c, foeEffect: null } };
+  assert.equal(afraidNeed(state, toHit(state)), 3);
+  assert.equal(afraidNeed(cleared, toHit(cleared)), 5);
+  assert.equal(text, "−2 to hit (18–20 instead of 16–20)");
+});
+
+test("CMBUI-13 formatting: every lead uses U+2212 for a minus and U+2013 for a range; malformed input reads null", () => {
+  const texts = [
+    conditionEffectText({ key: "fightDark" }, inFight({ floor: { dark: true } })),
+    conditionEffectText({ key: "afraid", remaining: 2 }, fixedState({ combat: { afraid: 2 } })),
+    conditionEffectText({ key: "inspired", amount: 1 }, inFight({ combat: { inspired: 1 } })),
+  ];
+  for (const t of texts) {
+    assert.ok(typeof t === "string" && t.includes(" instead of "), t);
+    assert.ok(!/-\d/.test(t) && !/\d-\d/.test(t), `ASCII hyphen in "${t}"`);
+    assert.ok(/\d–\d/.test(t), `an en-dash range in "${t}"`);
+  }
+  assert.ok(texts[0].startsWith("−") && texts[1].startsWith("−"));
+  for (const key of ["ability", "inspired", "fightDark", "nightVision"]) {
+    assert.doesNotThrow(() => conditionEffectText({ key }, { c: {} }));
+    assert.equal(conditionEffectText({ key }, null), null);
+    assert.equal(conditionEffectText({ key, ability: 7 }, { c: { timers: "x" } }), null);
+  }
+});
+
+test("CMBUI-13 WHAT_IF: the new keys sit in the one what-if map beside the Phase 74/75.1 keys", () => {
+  for (const key of ["afraid", "foeEffect", "darkness", "mirror", "senses", "heroBlind", "ability", "inspired", "fightDark", "nightVision"]) {
+    assert.equal(typeof WHAT_IF[key], "function", key);
+  }
 });

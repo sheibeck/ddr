@@ -232,6 +232,9 @@ test("afraid: a real playerStrike shows 'afraid −3' on the Oracle line and the
   const effectText = conditionEffectText(cn, chipState);
   assert.ok(effectText, "expected a measured afraid effect");
   assert.ok(effectText.startsWith("−3 to hit"), `expected the Afraid chip effect to start "−3 to hit", got "${effectText}"`);
+  // CMBUI-13 (Phase 77, plan 77-03): the lead names the live range, then the
+  // range without the effect, both en-dash ranges from the one formatter.
+  assert.match(effectText, /^−3 to hit \(\d+(?:–\d+)? instead of \d+(?:–\d+)?\)$/, `the Afraid lead's range shape, got "${effectText}"`);
 });
 
 // ─── Scenario 6: weapons ────────────────────────────────────────────────────
