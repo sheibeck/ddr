@@ -83,3 +83,10 @@ Every piece of in-game text reads honestly and consistently in the game's voice:
 
 - A full voice rewrite of lines that already pass the rubric: not wanted.
 </deferred>
+
+## Rulings after planning (user, 2026-09-27)
+
+### Joiners use only their own defences against foe swings (fix before 79.1)
+- Found by 79-02 while fixing the Elven Joiner. `engine/derived.js#foeToHitVs(state, "member")` still applies HERO-only terms to a party member's odds of being hit: the hero's Acrobat override, the Guard −1, the hero's worn gear, Mirror Self and invisibility. A foe's damage die against a member also uses the hero's race/size step (`foeDie(c, f)`).
+- **User ruling: fix it before the 79.1 bot pass.** When a foe swings at a Joiner, only that Joiner's OWN race, size, class/sub-class and worn gear count. None of the hero's personal defences (gear, sub-class dodge/Guard, Mirror Self, invisibility) protect a Joiner. Party-wide effects that are explicitly party-wide (if any exist in content) stay party-wide; name them in the SUMMARY.
+- Greenfield: no legacy path. Measure the moved set and re-pin with traced causes. 79.1 measures the balance effect.
