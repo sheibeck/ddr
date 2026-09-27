@@ -190,6 +190,40 @@ test("inspectCell: a water cell that also carries a feat returns the feat's own 
   });
 });
 
+// ─── inspectCell: the heard card (Phase 78, HUD-07) ─────────────────────────
+
+// Phase 78 (HUD-07, user ruling 2026-09-26, option A): a square Acute
+// Hearing picked up answers the HEARD card whatever the cell holds or shows —
+// fog, a seen-but-dark dot, a trap row — and never names a feature.
+test("HUD-07 inspectCell: { heard: true } answers the HEARD card before every other branch", () => {
+  const heardCard = { title: RAIL_COPY.heard.title, line: RAIL_COPY.heard.line, tone: "odd", hold: RAIL_HOLD.mark };
+  for (const cell of [
+    { seen: false, wall: false, feat: "dot" },
+    { seen: true, wall: false, feat: "dot" },
+    { seen: true, wall: false, feat: "trap" },
+    { seen: false, wall: false, feat: null },
+  ]) {
+    assert.deepEqual(inspectCell(cell, legendFor, { heard: true }), heardCard, JSON.stringify(cell));
+  }
+  assert.deepEqual(inspectCell({ seen: true, wall: false, feat: "trap" }, legendFor, { ethereal: true, heard: true }), heardCard);
+});
+
+test("HUD-07 inspectCell: without the heard flag nothing changes (a null cell stays SOLID ROCK even when flagged)", () => {
+  assert.equal(inspectCell({ seen: false, feat: "dot" }, legendFor).title, RAIL_COPY.unwalked.title);
+  assert.equal(inspectCell({ seen: false, feat: "dot" }, legendFor, { heard: false }).title, RAIL_COPY.unwalked.title);
+  assert.equal(inspectCell({ seen: true, feat: "trap" }, legendFor, { heard: "yes" }).title, "TRAP", "only a strict true counts");
+  assert.equal(inspectCell(null, legendFor, { heard: true }).title, RAIL_COPY.rock.title);
+});
+
+test("HUD-07 the HEARD copy says something is there and names nothing", () => {
+  assert.equal(RAIL_COPY.heard.title, "HEARD");
+  assert.match(RAIL_COPY.heard.line, /Something is there/);
+  for (const named of [/encounter/i, /monster/i, /foe/i, /trap/i, /chest/i, /box/i, /joiner/i, /faerie/i, /creature/i]) {
+    assert.doesNotMatch(RAIL_COPY.heard.line, named);
+    assert.doesNotMatch(RAIL_COPY.heard.title, named);
+  }
+});
+
 // ─── purity ─────────────────────────────────────────────────────────────────
 
 test("tapStep.js is pure: no window/document/Date.now/localStorage/setTimeout/innerHTML/Math.random in live code", () => {

@@ -55,6 +55,11 @@ export const MAP_PALETTE = Object.freeze({
   floorDarkLit: "#4f4531",
   waterDarkLit: "#2d4a57",
   border: "#443a26",
+  // Phase 78 (HUD-07): the heard ripple — a pale parchment tone draw()
+  // strokes at low alpha over the fog on each square Acute Hearing picks up
+  // (engine/derived.js#heardSquares). Deliberately none of the encounter
+  // mark's red, and never a glyph: the ripple must not say what is there.
+  heard: "#e6d9b0",
   party: "#f4dc94",
   partyGlow: "rgba(232,201,122,.55)",
 });
@@ -98,6 +103,11 @@ export const MARK_GLYPHS = Object.freeze({
  * die) and Phase 54's one and done (a failed roll still gets you across,
  * hurt). The MARKS sheet and the hold-inspect card (tapStep.js#inspectCell,
  * through legendFor) both read these rows.
+ *
+ * Phase 78 (HUD-07, user ruling 2026-09-26, option A): a tenth row, `heard`,
+ * explains Acute Hearing's ripple. It is not a feature, so it has no
+ * MARK_GLYPHS entry and legendFor never returns it; `swatch: "ripple"` tells
+ * the MARKS sheet to draw the ripple itself instead of a PNG icon.
  */
 export const MARKS_LEGEND = Object.freeze([
   Object.freeze({ key: "encounter", name: "ENCOUNTER", desc: "Something gets rolled for you the moment you touch it." }),
@@ -117,6 +127,12 @@ export const MARKS_LEGEND = Object.freeze([
     desc: "You choose before anything is rolled: climb it, use a ladder if you have one, or turn back. A failed climb still gets you over, hurt.",
   }),
   Object.freeze({ key: "party", name: "YOU", desc: "The party marker. Whatever is nearby has already noticed you." }),
+  Object.freeze({
+    key: "heard",
+    name: "HEARD",
+    desc: "Acute Hearing caught something up to three squares off, walls or no walls. What it is, you find out the usual way.",
+    swatch: "ripple",
+  }),
 ]);
 
 /**
