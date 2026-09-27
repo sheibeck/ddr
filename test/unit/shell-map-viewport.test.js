@@ -5,8 +5,9 @@
 // the test runner can load), so — mirroring shell-map-rail.test.js/shell-
 // map-hud.test.js's own source-assertion pattern — this file reads the real
 // shipped source with fs.readFileSync and asserts against it directly:
-//   (a) the D-pad/control bar are retired without a trace, code or markup
-//       or comment, and the encounter overlay markup survives
+//   (a) the OLD D-pad/control bar is retired without a trace, code or
+//       markup or comment (Phase 78's opt-in arrow pad, HUD-08, uses new
+//       names), and the encounter overlay markup survives
 //   (b) ZOOM_MIN/ZOOM_MAX/the zoom default
 //   (c) the tapStep.js import + window.__mzTapStep bridge
 //   (d) tapStep() — the guard/lookup/resolve/branch order
@@ -98,13 +99,16 @@ function hasActiveEncounterRegion() {
 
 // ─── (a) D-pad / control bar retirement ───────────────────────────────────
 
-test("(a) raw file: zero dpad/data-dir/mazefoot occurrences, code or comments, in the whole file", () => {
+// Phase 78 (HUD-08): an opt-in arrow pad exists now (#mw-arrow-pad, its
+// buttons carrying `data-step`); it is NOT the old control bar, whose three
+// literals stay at zero.
+test("(a) the OLD control bar stays gone while the opt-in arrow pad (HUD-08) exists: zero dpad/data-dir/mazefoot occurrences, code or comments, in the whole file", () => {
   for (const literal of ["dpad", "data-dir", "mazefoot"]) {
     assert.equal((HTML.match(new RegExp(literal, "g")) || []).length, 0, `expected zero occurrences of "${literal}"`);
   }
 });
 
-test("(a) the viewport markup carries no direction-attribute button; the encounter overlay markup survives once", () => {
+test("(a) the viewport markup carries no old direction-attribute button (the opt-in pad uses data-step); the encounter overlay markup survives once", () => {
   assert.doesNotMatch(HTML, /<button[^>]*data-dir/);
   assert.equal((HTML.match(/class="mw-overlay" id="enc-panel"/g) || []).length, 1);
 });
@@ -251,9 +255,9 @@ test("(f) pointermove sub-region never recenters or keeps in view (no per-tick r
 });
 
 // Phase 67 (D-09): closeAccountSheet() is the 8th mzKeepPartyInView site.
-test("(f) camera call sites: mzCenterMap is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 8 (Phase 67: the account sheet's close)", () => {
+test("(f) camera call sites: mzCenterMap is 4 (boot, 2 new-run paths, stepWith's floorChanged/teleported branch — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 10 (Phase 67: the account sheet's close; Phase 78 HUD-08: the arrow pad's place changing and a Movement/Pad settings write)", () => {
   assert.equal((CODE.match(/window\.mzCenterMap\?\.\(\)/g) || []).length, 4);
-  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 8);
+  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 10);
 });
 
 // ─── (g) the stair-down gate ─────────────────────────────────────────────────

@@ -144,12 +144,10 @@ export const ALLOWED = Object.freeze(
       match: "Round Card \\(Phase 32\\) entirely",
       reason: "B — fight-log CSS: names what it replaced",
     },
-    {
-      term: "dpad",
-      file: "mazeworld.html",
-      match: "there is no D-pad",
-      reason: "B — the Cloak-of-Ether tap rule states the retirement of the D-pad; the one place a reader asks",
-    },
+    // Phase 78 (HUD-08), Plan 07: tapStep()'s Cloak-of-Ether comment no
+    // longer says the retired control scheme is absent (an opt-in arrow pad
+    // exists now), so the entry that excused that sentence is removed
+    // rather than left to rot.
     {
       term: "toast",
       file: "mazeworld.html",

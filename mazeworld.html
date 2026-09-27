@@ -496,6 +496,28 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-party-pulse.covered ~ .mw-party-sprite{visibility:hidden}
 .mw-party-pulse.covered ~ .mw-party-sprite .mw-party-frame{animation-play-state:paused}
 
+/* Phase 78 (HUD-08): the opt-in arrow pad, a 3 x 3 cross in the chosen
+   bottom corner of .mazebox. Each button is max(48px, 3.25rem x the S/M/L
+   text scale): 48px at S (44.2px floored to the 48px touch minimum), 52px
+   at M, 65px at L. z-index 3 sits it above the canvas, the party ring (2)
+   and the party sprite (3, earlier in the DOM), and below the rail (4), the
+   encounter overlay (8) and the body-level sheets (45+). The container
+   passes pointer events through (the map under its empty corners stays
+   pannable); only the buttons take them. --mw-pad-lift (set by the module
+   script's syncArrowPad) raises the pad above a shown rail card. The press
+   feedback is a colour, border and shadow change only (no movement), and
+   its short fade falls to the blanket reduced-motion rule. */
+.mw-arrow-pad{--mw-pad-btn:max(48px, calc(3.25rem * var(--mw-text-scale)));position:absolute;bottom:calc(12px + var(--mw-pad-lift, 0px));z-index:3;display:grid;grid-template-columns:repeat(3,var(--mw-pad-btn));grid-template-rows:repeat(3,var(--mw-pad-btn));gap:4px;pointer-events:none}
+.mw-arrow-pad[hidden]{display:none}
+.mw-arrow-pad[data-side="right"]{right:calc(12px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+.mw-arrow-pad[data-side="left"]{left:calc(12px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)))}
+.mw-arrow-btn{pointer-events:auto;width:var(--mw-pad-btn);height:var(--mw-pad-btn);min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;font-size:calc(1.125rem * var(--mw-text-scale));line-height:1;color:#e8c97a;background:rgba(27,23,15,.84);border:2px solid #6b5c3c;border-radius:0;box-shadow:0 3px 0 #0d0b08;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;transition:background-color .06s ease-out}
+.mw-arrow-btn:active{background:#241d12;border-color:#e8c97a;box-shadow:0 1px 0 #0d0b08}
+.mw-arrow-btn[data-step="N"]{grid-row:1;grid-column:2}
+.mw-arrow-btn[data-step="E"]{grid-row:2;grid-column:3}
+.mw-arrow-btn[data-step="S"]{grid-row:3;grid-column:2}
+.mw-arrow-btn[data-step="W"]{grid-row:2;grid-column:1}
+
 /* Device-review revision #5: the encounter/feature-event panel as an
    OVER-MAP OVERLAY — absolutely positioned inside .mazebox (DR5: moved from
    .mw-maze-viewport, which only covered the canvas, to .mazebox itself —
@@ -2065,6 +2087,26 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
           <button type="button" class="mw-settings-opt" data-value="L">L</button>
         </div>
       </div>
+      <!-- Phase 78 (HUD-08, the user's 2026-09-25 request): Movement picks
+           TAP TO MOVE (the default) or ARROWS, the opt-in on-screen pad
+           (#mw-arrow-pad over the map). The Pad row picks its bottom corner
+           and shows only while ARROWS is chosen (renderSettingsSheet sets
+           `hidden`, the volume rows' pattern). Both persist through
+           settings.js as `movement` / `padSide`. -->
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Movement</span>
+        <div class="mw-settings-options" data-setting="movement">
+          <button type="button" class="mw-settings-opt" data-value="tap">Tap to move</button>
+          <button type="button" class="mw-settings-opt" data-value="arrows">Arrows</button>
+        </div>
+      </div>
+      <div class="mw-settings-row" id="mw-pad-side-row" hidden>
+        <span class="mw-settings-label">Pad</span>
+        <div class="mw-settings-options" data-setting="padSide">
+          <button type="button" class="mw-settings-opt" data-value="left">Bottom left</button>
+          <button type="button" class="mw-settings-opt" data-value="right">Bottom right</button>
+        </div>
+      </div>
       <div class="mw-settings-row">
         <span class="mw-settings-label">Confirm before quit</span>
         <div class="mw-settings-options" data-setting="confirmBeforeQuit">
@@ -2369,6 +2411,23 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
             <img class="mw-party-frame" data-set="step" data-k="3" src="icons/optimized/party_step_3.png" alt="" draggable="false" decoding="async">
             <img class="mw-party-frame" data-set="step" data-k="4" src="icons/optimized/party_step_4.png" alt="" draggable="false" decoding="async">
           </div>
+        </div>
+
+        <!-- Phase 78 (HUD-08): the opt-in arrow pad (Settings › Movement ›
+             ARROWS), in the bottom corner Settings › Pad names. A SIBLING of
+             #mw-maze-viewport, never inside it, so a press never reaches the
+             viewport's pan/tap/hold pipeline; the container itself takes no
+             pointer events, only its four buttons do. Each button's click is
+             window.move(dir), the one movement choke point. The trailing
+             module script's syncArrowPad (src/browser/arrowPad.js's
+             arrowPadModel) shows it only in arrow mode while the map takes
+             input, and lifts it above a shown rail card (--mw-pad-lift). The
+             labels mirror ARROW_PAD_COPY (shell-arrow-pad.test.js pins it). -->
+        <div class="mw-arrow-pad" id="mw-arrow-pad" role="group" aria-label="Arrow pad" data-side="right" hidden>
+          <button type="button" class="mw-arrow-btn" data-step="N" aria-label="Step north"><span aria-hidden="true">▲</span></button>
+          <button type="button" class="mw-arrow-btn" data-step="E" aria-label="Step east"><span aria-hidden="true">▶</span></button>
+          <button type="button" class="mw-arrow-btn" data-step="S" aria-label="Step south"><span aria-hidden="true">▼</span></button>
+          <button type="button" class="mw-arrow-btn" data-step="W" aria-label="Step west"><span aria-hidden="true">◀</span></button>
         </div>
 
         <!-- DR5: the encounter/feature-event panel is a direct child of
@@ -5053,6 +5112,10 @@ function renderEncounter() {
   // render (every paint reaches here): set for a dead hero; cleared, with the
   // put-aside flag, for a live run.
   syncDeadTabLock();
+  // Phase 78 (HUD-08): the arrow pad hides exactly when map taps are inert
+  // (death, combat, a store, the stair prompt, any over-map overlay) — the
+  // stair prompt reaches only this render, so the pad syncs here too.
+  window.mzSyncArrowPad?.();
   const panel = document.getElementById("enc-panel");
   // Device-review revision #5: the panel is an OVERLAY over the map, shown
   // ONLY while something is actually happening (feature-tile narration,
@@ -5604,6 +5667,9 @@ function renderRail() {
     // (the D-06 skip-repaint path) are written out in full for the slide,
     // and no hold is ever scheduled for a card that is gone.
     window.__mzTypewriter?.cancel?.("rail");
+    // Phase 78 (HUD-08): the rail just went idle, so the arrow pad drops
+    // back to its corner (syncArrowPad reads data-shown, written above).
+    window.mzSyncArrowPad?.();
     return;
   }
 
@@ -5711,6 +5777,10 @@ function renderRail() {
     // the timer running and leaves it alone).
     startHold();
   }
+  // Phase 78 (HUD-08): with the card painted (its height is final), the
+  // arrow pad lifts above a shown rail card or drops back when it hides —
+  // the rail and the pad are never stacked.
+  window.mzSyncArrowPad?.();
 }
 
 // syncRailLive(text): the persistent #mw-rail-live announcer — textContent
@@ -5830,7 +5900,9 @@ document.getElementById("enc-panel")?.addEventListener("click", beatHurryTap, tr
 // removed — the lifetime death total is non-clearable by design now.
 // Phase 35 (MAP-02, ruling 2): the retired control bar's click listener that
 // dispatched move(dir) on a direction-button tap is gone — tap-to-step
-// (tapStep(), below) and keyboard arrows are the only movement input now;
+// (tapStep(), below), keyboard arrows and, opt-in since Phase 78 (HUD-08),
+// the arrow pad's buttons (the module script's syncArrowPad wiring) are the
+// movement inputs, all through window.move;
 // UX-07's haptic buzz (hapticForEvents, fired from window.move's event path
 // on trap-sprung/level-up) is unaffected — it never lived here.
 
@@ -6210,8 +6282,21 @@ window.mzKeepPartyInView = keepPartyInView;
 // rail lock all still run there); screenToCell (src/browser/controls.js) is
 // the single screen->cell transform both tapStep()/inspectAt() and the
 // pointer pipeline below feed from — never re-derived a second time.
+// Phase 78 (HUD-08): tapMovementOff() is true in arrow mode (the resolved
+// settings bridge says `movement: "arrows"`), read at call time so a live
+// switch in Settings takes effect on the next tap. Anything else, a missing
+// bridge included, is tap-to-move.
+function tapMovementOff() {
+  const settings = window.__mzSettings;
+  return !!(settings && settings.movement === "arrows");
+}
 function tapStep(clientX, clientY) {
   if (!S || hasActiveEncounter()) return;
+  // Phase 78 (HUD-08): in arrow mode (Settings › Movement › ARROWS) a map
+  // tap never moves the party and says nothing; the pad and the keys step
+  // instead. Hold-inspect, drag-to-pan and pinch-to-zoom never reach here,
+  // so they keep working in both modes.
+  if (tapMovementOff()) return;
   // Ruling 3: a tap while a rail decision/obstacle is pending re-shows the
   // pending card — it never steps.
   if (railLocked()) { railPulse(); return; }
@@ -6219,10 +6304,11 @@ function tapStep(clientX, clientY) {
   const rect = vp.getBoundingClientRect();
   const { px, py, g } = S.floor;
   const cell = window.__mzControls.screenToCell(clientX, clientY, rect, { x: px, y: py }, cameraPan(), CELL, CANVAS_PAD);
-  // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): tap-
-  // to-move is the ONLY movement surface — there is no D-pad. While ethereal
-  // any in-bounds cell is a destination; a tap on rock resolves ONE step
-  // toward it (still one square per tap, never a route preview). The
+  // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): while
+  // ethereal any in-bounds cell is a tap destination; a tap on rock resolves
+  // ONE step toward it (still one square per tap, never a route preview).
+  // In arrow mode (HUD-08) the pad steps through window.move instead and
+  // this function has already returned above. The
   // engine's own move() guard is the real authority — it accepts the wall
   // step only while the effect is genuinely live — this predicate is a
   // presentation hint only (see the threat model's T-00d-03).
@@ -6574,6 +6660,9 @@ window.__mzClassicBoot = async function classicBoot() {
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
+  // Phase 78 (HUD-08) — the opt-in arrow pad's pure view model (visibility,
+  // side, the four labelled buttons); syncArrowPad below renders it.
+  import { arrowPadModel } from "./src/browser/arrowPad.js";
   import { SLIDER_IDLE, sliderGestureNext } from "./src/browser/sliderGesture.js";
   import { maybeHaptic } from "./src/browser/haptics.js";
   // Phase 56 (AUD-01..06) — the whole audio layer lives in src/browser/sfx.js;
@@ -7116,9 +7205,10 @@ window.__mzClassicBoot = async function classicBoot() {
     // 04-06: expose the resolved settings object so the classic script's
     // fit() (cell size) can read it without importing settings.js directly
     // — same bridge pattern as window.__mzState. Phase 46 (NAME-02): the
-    // on-screen movement-control-scheme setting is retired — tap-to-move
-    // has been the only movement surface since v1.4/v1.5, and the viewport
-    // gesture handler below reads nothing settings-gated for it.
+    // on-screen movement-control-scheme setting is retired. Phase 78
+    // (HUD-08): the classic tapStep() reads `movement` off this bridge at
+    // call time (arrow mode turns tap-to-move off), and syncArrowPad below
+    // shows or hides the opt-in pad from it on every apply.
     window.__mzSettings = settings;
     // Phase 56 (AUD-05) — the ONE gate that makes the Settings "Sound" row
     // real: the row and its persistence already existed and nothing read
@@ -7137,6 +7227,79 @@ window.__mzClassicBoot = async function classicBoot() {
     // sheets included, not just #app's subtree. Nothing reads the scale off
     // #app, so the old #app write is gone.
     document.documentElement.style.setProperty("--mw-text-scale", String(effectiveTextScale(settings.textSize)));
+    // Phase 78 (HUD-08): a Movement or Pad change shows, hides or moves the
+    // arrow pad at once — no reload.
+    syncArrowPad();
+  }
+
+  // Phase 78 (HUD-08) — syncArrowPad(): renders #mw-arrow-pad from
+  // src/browser/arrowPad.js#arrowPadModel. The pad shows only in arrow mode
+  // while the map takes input: a run exists, the hero lives (78-06's
+  // lockdown, the read-only dead map included), nothing is over the map
+  // (hasActiveEncounter: combat, a store, the stair prompt, any over-map
+  // overlay) and no sheet (Settings, MARKS, camp, gear, FINAL SHEET, ...)
+  // covers it. It lives inside the map screen, so other tabs never show it.
+  // While a rail card is shown the pad lifts above the card's resting top
+  // edge (--mw-pad-lift, from the rail's layout height, so the rail's slide
+  // transform never skews it), and it never covers the card's text or
+  // buttons. Called from applySettings, the classic renderRail (both exits
+  // after its data-shown write) and renderEncounter, and by the observers
+  // below. When the pad's place changes (shown, side, lift) the camera
+  // re-runs the keep-in-view rule, which reads the pad's rect as an edge.
+  // arrowPadKey is declared BEFORE the first applySettings call (TDZ).
+  let arrowPadKey = "";
+  function syncArrowPad() {
+    const pad = document.getElementById("mw-arrow-pad");
+    if (!pad) return;
+    const state = window.__mzState?.get?.() ?? null;
+    const model = arrowPadModel(window.__mzSettings, {
+      run: !!state,
+      dead: !!(state && state.dead),
+      encounter: !!state && hasActiveEncounter(),
+      sheet: !!document.querySelector(".mw-legend-sheet:not([hidden])"),
+    });
+    pad.hidden = !model.visible;
+    pad.dataset.side = model.side;
+    pad.setAttribute("aria-label", model.label);
+    for (const b of model.buttons) pad.querySelector(`[data-step="${b.dir}"]`)?.setAttribute("aria-label", b.label);
+    let lift = 0;
+    const railEl = document.getElementById("mw-rail");
+    const stageEl = document.getElementById("mw-stage");
+    const box = pad.parentElement;
+    if (model.visible && railEl && railEl.dataset.shown === "1" && stageEl && box) {
+      const railTop = stageEl.getBoundingClientRect().bottom - railEl.offsetHeight;
+      const boxBottom = box.getBoundingClientRect().bottom;
+      if (Number.isFinite(railTop) && Number.isFinite(boxBottom)) lift = Math.max(0, Math.round(boxBottom - railTop));
+    }
+    pad.style.setProperty("--mw-pad-lift", lift + "px");
+    const key = model.visible ? `${model.side}|${lift}` : "";
+    if (key !== arrowPadKey) {
+      arrowPadKey = key;
+      if (key) window.mzKeepPartyInView?.();
+    }
+  }
+  window.mzSyncArrowPad = syncArrowPad;
+  // HUD-08: each press is ONE step through window.move, the single movement
+  // choke point (the encounter gate, the settle window, the rail lock and
+  // the stair gate, then stepNow) — the same path a tap step and a keyboard
+  // arrow take, so there is no second movement path. A press while a rail
+  // decision is up pulses the card there and never steps. One click is one
+  // step: there is no hold-to-repeat.
+  document.getElementById("mw-arrow-pad")?.addEventListener("click", (e) => {
+    const btn = e.target?.closest?.("[data-step]");
+    const dir = btn?.dataset?.step;
+    if (dir === "N" || dir === "E" || dir === "S" || dir === "W") window.move(dir);
+  });
+  // A sheet opening or closing (its `hidden` flips, including the timed
+  // close of panelMotion) re-syncs the pad, and so does the rail card's
+  // height changing while its lines type in.
+  if (typeof MutationObserver === "function") {
+    const sheetWatch = new MutationObserver(() => syncArrowPad());
+    document.querySelectorAll(".mw-legend-sheet").forEach((sheet) => sheetWatch.observe(sheet, { attributes: true, attributeFilter: ["hidden"] }));
+  }
+  if (typeof ResizeObserver === "function") {
+    const railEl = document.getElementById("mw-rail");
+    if (railEl) new ResizeObserver(() => syncArrowPad()).observe(railEl);
   }
 
   // 04-DR9: highlights the currently-selected option in each Settings-sheet
@@ -7158,6 +7321,10 @@ window.__mzClassicBoot = async function classicBoot() {
     // and its percentage show the saved level (100 when unset).
     const volRows = document.getElementById("mw-vol-rows");
     if (volRows) volRows.hidden = currentSettings.sound !== true;
+    // Phase 78 (HUD-08): the Pad row (BOTTOM LEFT / BOTTOM RIGHT) shows only
+    // while Movement is ARROWS — the volume rows' `hidden` pattern.
+    const padRow = document.getElementById("mw-pad-side-row");
+    if (padRow) padRow.hidden = currentSettings.movement !== "arrows";
     document.querySelectorAll("#mw-vol-rows [data-vol]").forEach((input) => {
       const saved = currentSettings[input.dataset.vol];
       const level = Number.isInteger(saved) && saved >= 0 && saved <= 100 ? saved : 100;
@@ -7363,6 +7530,14 @@ window.__mzClassicBoot = async function classicBoot() {
     renderSettingsSheet();
     if (key === "textSize") {
       window.fit?.();
+      window.mzKeepPartyInView?.();
+    }
+    // Phase 78 (HUD-08): a Movement or Pad write takes effect live —
+    // applySettings above already re-synced the pad; the camera then keeps
+    // the party clear of wherever the pad now sits (the pad reappears, and
+    // re-runs this, once the sheet closes).
+    if (key === "movement" || key === "padSide") {
+      syncArrowPad();
       window.mzKeepPartyInView?.();
     }
     // Phase 59 (DRESS-05): repaint at once so flipping Set dressing Off
