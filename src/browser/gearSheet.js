@@ -74,7 +74,7 @@ export const GEAR_SHEET_COPY = Object.freeze({
     // warning when the worn armor being replaced is destroyed — prefixes the
     // candidate's own comparison line (GSCR-07's sub) rather than replacing
     // it, so the player still sees what the swap is worth.
-    discarded: "Your worn armor is destroyed — it will be discarded.",
+    discarded: "Your worn armour is destroyed — it will be discarded.",
     drop: "Gone for good. Frees a slot immediately.",
     nothing: "Nothing in the bag fits this slot. Find something, or live without.",
   }),

@@ -448,16 +448,22 @@ function equipRejectText(e) {
 // against the same three literal keys.
 const SLOT_FAMILY_WORD = Object.freeze({ jewelry1: "jewelry", jewelry2: "jewelry", cloak: "cloak" });
 
+// SLOT_HOUSE_SPELLING — Phase 79 (VOX-05, plan 79-12): the engine's `armor`
+// slot KEY reads in the house spelling, "armour", wherever slotWord puts it
+// in prose (docs/narrative-pass/README.md, "House spelling"). Kept apart
+// from SLOT_FAMILY_WORD, which mirrors engine/derived.js#WORN_FAMILY_OF.
+const SLOT_HOUSE_SPELLING = Object.freeze({ armor: "armour" });
+
 /**
  * slotWord(slot) — 260918-wy1 (jewelry-merge): the player-facing FAMILY word
  * for a worn KEY — `jewelry1`/`jewelry2` both read "jewelry", `cloak` reads
- * "cloak"; any other slot word (`weapon`, `armor`, or an unrecognized
- * string) passes through unchanged. Exported so eventNarration.js's Oracle
- * lines can share the exact same word (never a raw key like "jewelry2" in
- * prose).
+ * "cloak"; `armor` reads "armour" (the house spelling, Phase 79); any
+ * other slot word (`weapon`, or an unrecognized string) passes through
+ * unchanged. Exported so eventNarration.js's Oracle lines can share the
+ * exact same word (never a raw key like "jewelry2" in prose).
  */
 export function slotWord(slot) {
-  return SLOT_FAMILY_WORD[slot] ?? slot;
+  return SLOT_FAMILY_WORD[slot] ?? SLOT_HOUSE_SPELLING[slot] ?? slot;
 }
 
 // ─── linesForAction pipeline (25-03) ─────────────────────────────────────

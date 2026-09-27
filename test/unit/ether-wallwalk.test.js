@@ -97,13 +97,12 @@ test("ACTIVATION_OF['Cloak of Ether'] is 10 squares / 80 cd; the exported CLOAKS
 
 // --- 2. entombed content ----------------------------------------------------
 
-test("entombed content: EPITAPHS bank, CAUSE_TEXT, CAUSE_TEXT_TOKENS, and the every-bucket-except-won invariant", () => {
+test("entombed content: EPITAPHS bank, CAUSE_TEXT, CAUSE_TEXT_TOKENS, and the every-bucket invariant (79-12 deleted the unreachable won bucket)", () => {
   assert.ok(Array.isArray(EPITAPHS.entombed) && EPITAPHS.entombed.length > 0);
   assert.ok(EPITAPHS.entombed.includes("Became a permanent architectural feature."));
   assert.equal(CAUSE_TEXT.entombed, "became a permanent architectural feature");
   assert.deepEqual(CAUSE_TEXT_TOKENS.entombed, []);
   for (const cause of Object.keys(EPITAPHS)) {
-    if (cause === "won") continue;
     assert.ok(CAUSE_TEXT[cause], `EPITAPHS.${cause} has no CAUSE_TEXT entry`);
   }
 });

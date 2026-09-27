@@ -93,7 +93,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
     "Woodsman": side(
       [trait("woodsman-talk", "can always talk to Beasts and Lair Beasts", CONTRACT, "the professional forester — parleys Beasts and Lair Beasts, refused for Humans")],
-      [trait("woodsman-armor", "no armor heavier than Studded", CONTRACT, "no mail, no plate — refused anything heavier than Studded")],
+      [trait("woodsman-armor", "no armour heavier than Studded", CONTRACT, "no mail, no plate — refused anything heavier than Studded")],
     ),
     "Soldier": side(
       [
@@ -112,7 +112,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     "Master of Arms": side(
       [
         trait("moa-damage", "+2 damage with every weapon", CONTRACT, "plus two with every weapon ever forged"),
-        trait("moa-patch", "patches your own damaged armor every night in camp", "test/unit/movement.test.js", "newDay: a Master of Arms fighter (no Sewing) patches d6+3 armour"),
+        trait("moa-patch", "patches your own damaged armour every night in camp", "test/unit/movement.test.js", "newDay: a Master of Arms fighter (no Sewing) patches d6+3 armour"),
       ],
       [
         trait("moa-parley", "can never talk a fight down", CONTRACT, "cannot parley, ever; no clean round-1 tracked withdrawal"),
@@ -148,7 +148,7 @@ export const IDENTITY_TRAITS = Object.freeze({
       [trait("cat-burglar-traps", "every trap that catches you deals double damage", CONTRACT, "every trap that catches a Cat Burglar deals double damage")],
     ),
     "Cutthroat": side(
-      [trait("cutthroat-crit", "your first landed blow always crits, even in heavy armor", CONTRACT, "the first landed blow always crits, even in armor a backstab would refuse")],
+      [trait("cutthroat-crit", "your first landed blow always crits, even in heavy armour", CONTRACT, "the first landed blow always crits, even in armor a backstab would refuse")],
       [trait("cutthroat-joiner", "one descent in twenty, the Joiner beside you doesn't reach the next floor", CONTRACT, "one descent in twenty, the Joiner beside you does not reach the next floor")],
     ),
     "Cloaker": side(

@@ -224,7 +224,7 @@ test("(e) content/races.js: the Elven/Dwarven/Troll notes state their net size t
   assert.match(RACES.Troll.note, /two rations/i);
   assert.equal(RACES.Human.note, "No advantages, no penalties. The dungeon's default.");
   assert.equal(RACES.Wilmsry.note, "Heals twice as fast, learns half as quickly. Magic Users despise them.");
-  assert.match(RACES.Fridgian.note, /Never wears armor/);
+  assert.match(RACES.Fridgian.note, /Never wears armour/);
 });
 
 test("(e) content/flavor.js RACE_NOTE: the Elven/Dwarven/Troll entries name their size and net effect", () => {

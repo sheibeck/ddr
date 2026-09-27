@@ -4,7 +4,7 @@
     <b class="mw-gear-stat-num">
       text="3"
     <span class="mw-gear-stat-label">
-      text="ARMOR RATING"
+      text="ARMOUR RATING"
   <div class="mw-gear-stat">
     <b class="mw-gear-stat-num">
       text="50"
@@ -34,7 +34,7 @@
       text="›"
   <li class="mw-gear-row mw-gear-tap" data-slot="armor" onclick>
     <span class="mw-gear-slot">
-      text="ARMOR"
+      text="ARMOUR"
     <div id="gear-open-armor" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Cloth"

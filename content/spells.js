@@ -115,7 +115,7 @@ export const SPELLS = [
   // the rest of that round. See engine/magic.js's ward branch and
   // engine/combat.js#applyFoeDamageToPlayer's mirror check.
   { n: "Bubble", lvl: 3, s: "protection", kind: "ward", mirror: true, popPool: 25, niche: "defensive", txt: "defensive · you · the next blow bounces back at whoever threw it, then a 25 hp film for the rest of that round", combatOnly: false },
-  { n: "Sense Danger", lvl: 3, s: "divination", kind: "foresee", niche: "sight", txt: "sight · the next encounter · names it before you meet it, and you act first", combatOnly: false },
+  { n: "Sense Danger", lvl: 3, s: "divination", kind: "foresee", niche: "sight", txt: "sight · your next fight · you act first, whatever turns up (the family it hints at is a hunch, not a promise)", combatOnly: false },
   { n: "Turn Walking Dead", lvl: 2, s: "protection", kind: "turn", niche: "answer", txt: "answer · every Walking Dead of your level or lower · sent back", combatOnly: true },
   { n: "Plane Gate", lvl: 3, s: "protection", kind: "gate", niche: "answer", txt: "answer · d6 Demons or Walking Dead · vanquished to The Planes", combatOnly: true },
   { n: "Sense Presence", lvl: 2, s: "protection", kind: "senses", niche: "sight", txt: "sight · you · fight in the dark at full skill and nothing gets the jump on you, till your next fight ends", combatOnly: false },

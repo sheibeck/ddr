@@ -51,7 +51,7 @@ export const RACES = {
     // RULES-11 (Phase 75.2, Plan 04): states the net truth under the size
     // rule — the masked damage axis leaves the +2 untouched; the face axis
     // is NOT masked, so being small also makes it one face harder to hit.
-    note: "+2 damage and 1 hp/day upkeep; foes strike at a better die; armor wears at half the rate; being small makes it one face harder to hit.",
+    note: "+2 damage and 1 hp/day upkeep; foes strike at a better die; armour wears at half the rate; being small makes it one face harder to hit.",
   },
   "Wilmsry": {
     size: "Human", upkeep: 4, heal2x: true, spMul: 0.5,
@@ -60,7 +60,7 @@ export const RACES = {
   "Fridgian": {
     // hide: flat damage soaked from every blow, read by applyFoeDamageToPlayer.
     size: "Human", upkeep: 4, noArmor: true, frenzy: true, slow: true, hide: 2,
-    note: "Never wears armor, strikes last, frenzies into a second wild swing that never wastes itself on a corpse; thick hide soaks 2 from every blow.",
+    note: "Never wears armour, strikes last, frenzies into a second wild swing that never wastes itself on a corpse; thick hide soaks 2 from every blow.",
   },
   "Troll": {
     size: "Large", upkeep: 15, flatWP: 75, dmg: 6, wpnBonus: 3, eats: 2,

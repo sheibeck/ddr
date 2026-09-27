@@ -180,7 +180,7 @@ test("LIVE worn armor with a fitting bag armor card: SWAP FOR sub stays exactly 
   assert.equal(swap.sub, lootCompare(c, chain).line);
 });
 
-test("Cloak-of-Armor-only armor slot: label ARMOR · EMPTY, title magicPlate, EQUIP actions for bag armor (none -> NOTHING TO EQUIP)", () => {
+test("Cloak-of-Armor-only armor slot: label ARMOUR · EMPTY, title magicPlate, EQUIP actions for bag armor (none -> NOTHING TO EQUIP)", () => {
   const studded = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
   const c = fixedChar({
     armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0,
@@ -192,7 +192,7 @@ test("Cloak-of-Armor-only armor slot: label ARMOR · EMPTY, title magicPlate, EQ
   const armorD = armorDisplay(c);
   assert.ok(armorD.magic && !armorD.worn);
   let model = gearSheetModel(stt, { from: "worn", slot: "armor" });
-  assert.equal(model.label, "ARMOR · EMPTY");
+  assert.equal(model.label, "ARMOUR · EMPTY");
   assert.equal(model.title, GEAR_COPY.magicPlate);
   assert.deepStrictEqual(model.actions.map((a) => a.key), ["nothing"]);
   assert.equal(model.actions[0].enabled, false);
@@ -235,12 +235,12 @@ test("Bag weapon card: SWAP INTO WEAPON when wielding one, EQUIP TO WEAPON on Fi
   assert.equal(slotAction2.sub, "Fills the slot and frees a bag slot.");
 });
 
-test("Bag armor card over destroyed worn armor: SWAP INTO ARMOR, sub '<armor name> is scrap. It stays behind.'", () => {
+test("Bag armor card over destroyed worn armor: SWAP INTO ARMOUR, sub '<armor name> is scrap. It stays behind.'", () => {
   const studded = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
   const c = fixedChar({ armor: "Mail", ar: 12, armorWP: 0, armorMax: 40, items: [studded] });
   const model = gearSheetModel(st(c), { from: "bag", i: 0, n: "Studded" });
   const slotAction = model.actions.find((a) => a.key === "slot:armor");
-  assert.equal(slotAction.label, "SWAP INTO ARMOR");
+  assert.equal(slotAction.label, "SWAP INTO ARMOUR");
   assert.equal(slotAction.sub, "Mail is scrap. It stays behind.");
 });
 

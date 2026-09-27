@@ -14,6 +14,15 @@
 // calling a function. CAUSE_TEXT_TOKENS records, per cause, which token
 // names (if any) the engine must supply when formatting the string.
 
+// Phase 79 (VOX-05, plan 79-12; greenfield): the teleport, poison and won
+// buckets and the teleport and poison causes are deleted. No engine die()
+// call passes those causes (a teleport never kills, poison stops at 1 hp,
+// and there is no Gate exit), and their text would have been wrong if one
+// ever did ("all five floors", "two hp per square").
+// test/unit/death-copy.test.js pins both directions: every cause die() is
+// passed has a bucket, and every bucket is a cause die() is passed.
+// src/browser/scoreTag.js#TAG_CAUSES keeps their codec indices
+// (append-only), and boardsView.js reads an unknown cause as "".
 export const EPITAPHS = {
   combat: [
     "Killed by a {foe}. The {foe} has since been promoted.",
@@ -70,11 +79,6 @@ export const EPITAPHS = {
     "Jumped on day {day}. Landed shortly afterwards, and at length.",
     "The gap did not move. This was checked. Twice.",
   ],
-  teleport: [
-    "Teleported d20 squares. Required d20 minus four.",
-    "Arrived somewhere. Arrived inside it.",
-    "The dungeon does not check its destinations, and neither did {name}.",
-  ],
   maze: [
     "Table four giveth. Table four overwhelmingly taketh.",
     "No monster, no trap, no fall. A red dot and a bad attitude.",
@@ -104,12 +108,6 @@ export const EPITAPHS = {
     "Nothing attacked {name}. Dungeon madness is cheaper than monsters, and much quieter.",
     "Cause of death: one d6, honestly interpreted.",
   ],
-  poison: [
-    "Poison is patient. {name} was merely available.",
-    "There was a cure. It cost 100 wilmst. {name} had {gold} and no store in sight.",
-    "Died on an instalment plan, two hp per square.",
-    "Not a dramatic death — but a beautifully documented one.",
-  ],
   backfire: [
     "One spell in eight goes wrong for an Apprentice. This was the eighth.",
     "Held the incantation slightly wrong, and then very briefly.",
@@ -121,13 +119,6 @@ export const EPITAPHS = {
     "One time in eight the summoning turns around. {name} beat the odds in the wrong direction.",
     "Read the opening paragraph of the ritual with tremendous conviction.",
     "The Summoner’s own notes cover this outcome. On the following page.",
-  ],
-  won: [
-    "Walked out through the Gate on day {day}. The Game Master has requested a recount.",
-    "Reached the Gate with {sp} experience points and a limp, and retired to lie about both.",
-    "Went in for {motive}. Came out with {motive} and a permanent flinch.",
-    "Survived all five floors and will now be insufferable at parties for life.",
-    "Escaped. Statistically speaking, this did not occur.",
   ],
   // Device-review Pass B1 item 3: a DISTINCT, non-combat cause for a
   // voluntary "ABANDON THIS CHARACTER" — sarcastic and family-friendly per
@@ -184,7 +175,6 @@ export const CAUSE_TEXT = {
   combat: "cut down by a {foe}",
   starve: "starved in the dark",
   trap: "undone by a trap",
-  teleport: "materialised inside a wall",
   fall: "fell off a wall",
   gorge: "came up short on a leap",
   backfire: "killed by their own spell",
@@ -194,7 +184,6 @@ export const CAUSE_TEXT = {
   potion: "poisoned by an unlabelled bottle",
   // VOX-05 (79-06): was "dead by their own hand" (self-harm framing).
   insanity: "lost to a fit of dungeon madness",
-  poison: "carried off by poison",
   // Device-review Pass B1 item 3: voluntary abandonment, distinct from every
   // combat/hazard cause above — nobody and nothing killed them.
   abandon: "abandoned mid-delve by their own player",
@@ -213,7 +202,6 @@ export const CAUSE_TEXT_TOKENS = {
   combat: ["foe"],
   starve: [],
   trap: [],
-  teleport: [],
   fall: [],
   gorge: [],
   backfire: [],
@@ -222,7 +210,6 @@ export const CAUSE_TEXT_TOKENS = {
   quake: [],
   potion: [],
   insanity: [],
-  poison: [],
   abandon: [],
   entombed: [],
   pilferFumble: ["foe"],

@@ -4,7 +4,7 @@
     <b class="mw-gear-stat-num">
       text="6"
     <span class="mw-gear-stat-label">
-      text="ARMOR RATING"
+      text="ARMOUR RATING"
   <div class="mw-gear-stat">
     <b class="mw-gear-stat-num">
       text="50"
@@ -34,7 +34,7 @@
       text="›"
   <li class="mw-gear-row mw-gear-tap" data-slot="armor" onclick>
     <span class="mw-gear-slot">
-      text="ARMOR"
+      text="ARMOUR"
     <div id="gear-open-armor" class="mw-gear-main" aria-haspopup="dialog" role="button" tabindex="0">
       <span class="mw-gear-name">
         text="Leather"
@@ -135,7 +135,7 @@
         <span class="mw-gear-name">
           text="Warded studded"
         <span class="mw-gear-tag mw-gear-tag-swap">
-          text="ARMOR · SWAP"
+          text="ARMOUR · SWAP"
       <div class="mw-gear-desc">
         text="AR 11 · 28/28 hp (usable by Fighters, Thieves)"
       <span class="sr-only">

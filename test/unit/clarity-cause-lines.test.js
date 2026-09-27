@@ -365,7 +365,7 @@ const ORACLE_CASES = [
     // VOX-05 (79-08): the refusal states the hp it needs (refused at fee + 1 or less).
     [{ type: "deathSpellTooWeak", fee: 25 }, "Death: the fee is 25 hp, and you need at least 27 to pay it. The spell refuses to be what kills you."],
     [{ type: "foeBolted", name: "Shriek", dmg: 5 }, "Shriek: it lands. −5 hp."],
-    [{ type: "foeBolted", name: "Shriek", dmg: 5, ignoresArmor: true }, "Shriek: it lands. −5 hp, and your armor was not consulted."],
+    [{ type: "foeBolted", name: "Shriek", dmg: 5, ignoresArmor: true }, "Shriek: it lands. −5 hp, and your armour was not consulted."],
     [{ type: "foeBolted", name: "Shriek", dmg: 5, member: "Grunk" }, "Shriek: it lands on Grunk. −5 hp. Better them than you."],
     // VOX-05 (79-08): `stolen` is the foe's own gain; foeBolted carries your loss.
     [{ type: "foeDrained", name: "Wraith", stolen: 4 }, "Wraith drinks it in: +4 hp for itself. It looks better for it."],

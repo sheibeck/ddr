@@ -111,7 +111,7 @@
     <p class="doss-rules">
       text="Bad: Magic User Joiners refuse to travel with you; half the experience from every kill."
   <section>
-    html="<h3>Class</h3><p class=\"who\">Thief</p><p>Forty Hit Points, leather at the very best, and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.</p>"
+    html="<h3>Class</h3><p class=\"who\">Thief</p><p>Forty Hit Points, studded leather at the very best (mail, if you learn Heft), and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.</p>"
   <section>
     html="<h3>Subclass</h3><p class=\"who\">Cat Burglar</p><p>Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.</p>"
     <p class="doss-rules">

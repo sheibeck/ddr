@@ -4,6 +4,8 @@
 **Date:** 2026-09-18
 
 > **Status (v1.6, Phase 48):** design record of Phase 40; the spell table and mechanics are live. "What stays for the cleanup milestone" is done — Phase 44 deleted the classic `SPELLS`/`castSpell`/`rollGrimoire` duplicates.
+>
+> **Status (Phase 79, plan 79-12):** the spell texts quoted below are Phase 40's. Phase 79 rewrote several roll-high or to match the engine (Mirror Self, Weaken, Sense Danger); `content/spells.js` is the live text, and `test/unit/roll-phrasing.test.js` guards it.
 
 This ledger declares Phase 40's spell-table reshape: the 33-row niche
 contract (SPELL-01), Detect Magic's rename to Map the Floor (SPELL-05), the

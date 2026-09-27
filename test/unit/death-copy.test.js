@@ -78,6 +78,12 @@ test("death copy: every cause the engine passes to die() has a CAUSE_TEXT entry 
   }
 });
 
+test("death copy (79-12): every EPITAPHS bucket and CAUSE_TEXT entry is a cause the engine passes to die() — no dead bucket", () => {
+  const causes = engineDeathCauses();
+  for (const cause of Object.keys(EPITAPHS)) assert.ok(causes.has(cause), `EPITAPHS.${cause} is unreachable: no die() call passes "${cause}" (delete it, greenfield)`);
+  for (const cause of Object.keys(CAUSE_TEXT)) assert.ok(causes.has(cause), `CAUSE_TEXT.${cause} is unreachable: no die() call passes "${cause}" (delete it, greenfield)`);
+});
+
 test("death copy: CAUSE_TEXT tokens are exactly CAUSE_TEXT_TOKENS and only {foe}; filled lines show no raw token or undefined", () => {
   assert.deepEqual(Object.keys(CAUSE_TEXT_TOKENS).sort(), Object.keys(CAUSE_TEXT).sort());
   for (const [cause, template] of Object.entries(CAUSE_TEXT)) {

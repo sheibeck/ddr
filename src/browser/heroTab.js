@@ -229,7 +229,7 @@ export function characterSheetViewModel(state) {
     // size, e.g. 'SIZE Small'") — sizeRowFor(c) reads only the engine's own
     // size seam, never a restated formula.
     sizeRowFor(c),
-    { key: "armor", label: "ARMOR", value: `${armor.label.toUpperCase()} · ${armor.sub}`, under: armor.under },
+    { key: "armor", label: "ARMOUR", value: `${armor.label.toUpperCase()} · ${armor.sub}`, under: armor.under },
     // RULE-01 (04.1-04): intelBonus(c) is the SAME derived.js helper openChest
     // consumes for its lock-roll threshold — surfaced here as `lockBonus` so
     // the sheet and the engine can never drift (the damageBracket↔
