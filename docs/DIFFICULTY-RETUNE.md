@@ -6682,6 +6682,12 @@ verdict. Phase 79.1 writes those.
 - `engine/difficulty.js` and `content/` are byte-identical to the plan base
   (`e8bd4808`). No dial was retuned and nothing was nerfed to compensate.
   Every `test/difficulty` band test stays green.
+- 78-04 added two standing guards and no behaviour.
+  `test/parity/hazard-exposure.test.js` fails if any parity site ever
+  reaches a wall or crevice. `test/roundtrip/resume-roundtrip.test.js`
+  commits every pending hazard its bot corpus samples (44) on the live and
+  the relaunched state and finds no difference, so a relaunch never changes
+  a climb or leap roll.
 
 ### Deferred to Phase 79.1
 

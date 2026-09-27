@@ -259,17 +259,22 @@ replaced; the arm applies to it like the other four.
 
 Heights is the one phobia whose region is not a plain boolean: `noteHeights
 Attempt(state, x, y, events)` (called from the climb/gorge roll branch,
-BEFORE the roll, for every attempt regardless of phobia) stores
+BEFORE the roll, for every committed attempt regardless of phobia) stores
 `c.phobiaState.Heights = "x,y"` (via `tileKey`) on a FRESH tile only — a
-retry of the identical tile is silent. `checkTerrainPhobias`'s own Heights
-branch runs ONLY the leave-check: once the hero's current position is more
-than 1 square (Manhattan distance) from the stored tile, the key flips to
-`false`, so a later attempt (even at the SAME tile) fires again. The
-`hazardChoice` pending pre-check (a carried rope/ladder) never reaches
-`noteHeightsAttempt` — only the declined ("CLIMB IT"/"LEAP IT") retry does;
-the flyOver/ether/tool branches never reach it either (all three are
-alternate branches inside the SAME climb/gorge block, exclusive of the roll
-branch `noteHeightsAttempt` sits in).
+repeat attempt at the identical tile is silent. `checkTerrainPhobias`'s own
+Heights branch runs ONLY the leave-check: once the hero's current position
+is more than 1 square (Manhattan distance) from the stored tile, the key
+flips to `false`, so a later attempt (even at the SAME tile) fires again.
+
+**Timing (Phase 78, CLIMB-01, a declared rules-timing change).** Every step
+toward a wall or crevice first pauses on the `hazardChoice` decision
+(`state.pendingHazard`, no die drawn). `noteHeightsAttempt` runs only on a
+committed climb or leap: `resolveHazard { cross: true }`, the CLIMB IT /
+LEAP IT button. The pause itself and TURN BACK (`resolveHazard { cross:
+false }`) never arm Heights fear. The flyOver, ether and tool branches never
+reach it either: all three cross before the pause, inside the SAME
+climb/gorge block and exclusive of the roll branch `noteHeightsAttempt` sits
+in. Before Phase 78 it ran on the step.
 
 ### The dead-end definition
 
