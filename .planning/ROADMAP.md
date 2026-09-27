@@ -409,7 +409,7 @@ Plans:
 
   5. In combat, the ITEMS list marks equipped gear EQUIPPED and greys out bag gear that only works when worn, with the reason shown.
 
-**Plans**: 4/8 plans executed
+**Plans**: 6/8 plans executed
 
 Plans:
 **Wave 1**
@@ -421,8 +421,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 77-05-PLAN.md — Stop a successful scroll cast from reading like a refusal (CMBUI-11): the copy limit is said once, after the cast, as "too advanced to copy into your book", on every surface (wave 2)
-- [ ] 77-06-PLAN.md — Two combat-screen display fixes: each foe card names its bestiary family after the foe's name (CMBUI-09), and the oldest row of THE FIGHT SO FAR reveals its roll like every other row (CMBUI-12) (wave 2)
+- [x] 77-05-PLAN.md — Stop a successful scroll cast from reading like a refusal (CMBUI-11): the copy limit is said once, after the cast, as "too advanced to copy into your book", on every surface (wave 2)
+- [x] 77-06-PLAN.md — Two combat-screen display fixes: each foe card names its bestiary family after the foe's name (CMBUI-09), and the oldest row of THE FIGHT SO FAR reveals its roll like every other row (CMBUI-12) (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -653,7 +653,7 @@ Plans:
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 5/6 | In Progress|  |
-| 77. Combat Screen & Oracle Readability | v2.1 | 4/8 | In Progress|  |
+| 77. Combat Screen & Oracle Readability | v2.1 | 6/8 | In Progress|  |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
