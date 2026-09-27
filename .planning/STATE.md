@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 77
-current_phase_name: Combat Screen & Oracle Readability
+current_phase: 78
+current_phase_name: HUD, Dead State & Climb Decisions
 status: executing
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-27T01:13:51.109Z"
+last_updated: "2026-09-27T02:04:20.815Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 76 complete, transitioned to Phase 77
+last_activity_desc: Phase 77 complete, transitioned to Phase 78
 progress:
   total_phases: 14
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 111
-  completed_plans: 81
-  percent: 64
+  completed_plans: 83
+  percent: 71
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 77 — Combat Screen & Oracle Readability
+Phase: 78 — HUD, Dead State & Climb Decisions
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-09-26 — Phase 76 complete, transitioned to Phase 77
+Last activity: 2026-09-26 — Phase 77 complete, transitioned to Phase 78
 
 ## Ground Truth (durable facts every session needs)
 

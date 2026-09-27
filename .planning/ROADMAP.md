@@ -51,7 +51,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
  (completed 2026-09-26)
 
 - [x] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store (completed 2026-09-26)
-- [ ] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators
+- [x] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators (completed 2026-09-26)
 - [ ] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card
 - [ ] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep
 - [ ] **Phase 80: Android Release Build & Tooling** - R8 minify/shrink, edge-to-edge and large-screen handling, and the fit tool's replay-resume fix
@@ -409,7 +409,7 @@ Plans:
 
   5. In combat, the ITEMS list marks equipped gear EQUIPPED and greys out bag gear that only works when worn, with the reason shown.
 
-**Plans**: 6/8 plans executed
+**Plans**: 8/8 plans complete
 
 Plans:
 **Wave 1**
@@ -426,8 +426,8 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 77-07-PLAN.md — Make the conditions honest in the rolls themselves: a dazed (or inspired, blinded, dark-capped) strike says so in its modifier list, and the moment you are dazed or weakened the Oracle and the fight log say what it do... (wave 3)
-- [ ] 77-08-PLAN.md — Draw CMBUI-13's live effect indicators on the player's side: a chip row under the hero and each party member in YOUR LOT, with a tap that explains what the effect does, how long it lasts and where it came from (wave 3)
+- [x] 77-07-PLAN.md — Make the conditions honest in the rolls themselves: a dazed (or inspired, blinded, dark-capped) strike says so in its modifier list, and the moment you are dazed or weakened the Oracle and the fight log say what it do... (wave 3)
+- [x] 77-08-PLAN.md — Draw CMBUI-13's live effect indicators on the player's side: a chip row under the hero and each party member in YOUR LOT, with a tap that explains what the effect does, how long it lasts and where it came from (wave 3)
 
 **UI hint**: yes
 **Device check**: yes — combat-screen legibility (submenu clipping, indicator readability) batched into the milestone-close Pixel 7 checklist per the deferred-UAT protocol.
@@ -653,7 +653,7 @@ Plans:
 | 75.2. Hero Size Matters | v2.1 | 5/5 | Complete    | 2026-09-26 |
 | 75.3. Deep-Floor Encounter Scaling | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
-| 77. Combat Screen & Oracle Readability | v2.1 | 6/8 | In Progress|  |
+| 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 0/– | Not started | - |
 | 79. Content & Narrative Pass | v2.1 | 0/– | Not started | - |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |

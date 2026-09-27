@@ -76,14 +76,14 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 ### Combat screen & Oracle (CMBUI)
 
-- [ ] **CMBUI-07**: Every combat submenu row (spells, abilities, items, social) grows to fit its text on the Pixel 7. No label or description runs past the row's bottom edge. (todo 2026-09-21 combat-submenu-rows)
-- [ ] **CMBUI-08**: Spell rows are ordered by spell level ascending, then alphabetically. (same todo)
-- [ ] **CMBUI-09**: Each foe card shows the foe's bestiary family after its name. (todo 2026-09-21 foe-type)
-- [ ] **CMBUI-10**: The Oracle prints combat lines in the order they happened, and only adjacent identical lines fold together. (todo 2026-09-21 oracle-event-order)
-- [ ] **CMBUI-11**: Reading a scroll in combat that casts its spell never narrates a level refusal. At most, it says the spell is too advanced to copy into the book. (todo 2026-09-21 scroll-read-in-combat)
-- [ ] **CMBUI-12**: The last (oldest) row of THE FIGHT SO FAR sheet can be tapped to reveal its roll, like every other row. (todo 2026-09-24 last-fight-log-row)
-- [ ] **CMBUI-13**: During a fight, every active ability or spell effect is shown on the hero (YOUR LOT) or on the foe it affects. This covers Smoke, Sidestep, Battle Roar, Riposte, Taunt, Shield, Sense Presence and every other timed or conditional effect. Each indicator shows its rounds remaining, gives a description on tap, and clears when the effect ends. (user, 2026-09-24: "Abilities and spells all need to have some sort of active indicator while in combat.")
-- [ ] **CMBUI-14**: The combat ITEMS list marks equipped gear EQUIPPED, and greys out (with a reason) bag gear that only works when worn (jewelry, cloaks, staves), since it can't be used mid-fight. Bag potions and consumables stay usable, and the USABLE count counts only enabled rows. (user, 2026-09-25; todo 2026-09-25 combat-items-mark-equipped)
+- [x] **CMBUI-07**: Every combat submenu row (spells, abilities, items, social) grows to fit its text on the Pixel 7. No label or description runs past the row's bottom edge. (todo 2026-09-21 combat-submenu-rows)
+- [x] **CMBUI-08**: Spell rows are ordered by spell level ascending, then alphabetically. (same todo)
+- [x] **CMBUI-09**: Each foe card shows the foe's bestiary family after its name. (todo 2026-09-21 foe-type)
+- [x] **CMBUI-10**: The Oracle prints combat lines in the order they happened, and only adjacent identical lines fold together. (todo 2026-09-21 oracle-event-order)
+- [x] **CMBUI-11**: Reading a scroll in combat that casts its spell never narrates a level refusal. At most, it says the spell is too advanced to copy into the book. (todo 2026-09-21 scroll-read-in-combat)
+- [x] **CMBUI-12**: The last (oldest) row of THE FIGHT SO FAR sheet can be tapped to reveal its roll, like every other row. (todo 2026-09-24 last-fight-log-row)
+- [x] **CMBUI-13**: During a fight, every active ability or spell effect is shown on the hero (YOUR LOT) or on the foe it affects. This covers Smoke, Sidestep, Battle Roar, Riposte, Taunt, Shield, Sense Presence and every other timed or conditional effect. Each indicator shows its rounds remaining, gives a description on tap, and clears when the effect ends. (user, 2026-09-24: "Abilities and spells all need to have some sort of active indicator while in combat.")
+- [x] **CMBUI-14**: The combat ITEMS list marks equipped gear EQUIPPED, and greys out (with a reason) bag gear that only works when worn (jewelry, cloaks, staves), since it can't be used mid-fight. Bag potions and consumables stay usable, and the USABLE count counts only enabled rows. (user, 2026-09-25; todo 2026-09-25 combat-items-mark-equipped)
 
 ### HUD & shell (HUD)
 
@@ -162,14 +162,14 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | DARK-03 | Phase 76 | Complete |
 | SAV-06 | Phase 76 | Complete |
 | SAV-07 | Phase 76 | Complete |
-| CMBUI-07 | Phase 77 | Pending |
-| CMBUI-08 | Phase 77 | Pending |
-| CMBUI-09 | Phase 77 | Pending |
-| CMBUI-10 | Phase 77 | Pending |
-| CMBUI-11 | Phase 77 | Pending |
-| CMBUI-12 | Phase 77 | Pending |
-| CMBUI-13 | Phase 77 | Pending |
-| CMBUI-14 | Phase 77 | Pending |
+| CMBUI-07 | Phase 77 | Complete |
+| CMBUI-08 | Phase 77 | Complete |
+| CMBUI-09 | Phase 77 | Complete |
+| CMBUI-10 | Phase 77 | Complete |
+| CMBUI-11 | Phase 77 | Complete |
+| CMBUI-12 | Phase 77 | Complete |
+| CMBUI-13 | Phase 77 | Complete |
+| CMBUI-14 | Phase 77 | Complete |
 | HUD-01 | Phase 78 | Pending |
 | HUD-02 | Phase 78 | Pending |
 | HUD-03 | Phase 78 | Pending |
