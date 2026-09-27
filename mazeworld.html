@@ -3430,7 +3430,12 @@ const CONDITION_COPY = {
   // heroOut's `unit: "rds"` feeds the generic `typeof cn.remaining ===
   // "number"` detail branch below — the same one every other timed chip
   // above already uses, so no special case is needed here.
-  heroOut: { label: "Can't act", unit: "rds" },
+  // VOX-05 (Phase 79, plan 79-07): the chip names WHY the hero cannot act,
+  // in one word, by the fumble's own kind (content/scroll-fumbles.js:
+  // asleep/stupefied/maddened; conditionLabel reads `kinds` first). The tap
+  // card's first words say what it costs ("You cannot act"). "Helpless" is
+  // only the fallback for a kind this row has not been taught.
+  heroOut: { label: "Helpless", unit: "rds", kinds: { asleep: "Asleep", stupefied: "Stupefied", maddened: "Maddened" } },
   heroBlind: { label: "Blinded" },
   heroShrunk: { label: "Shrunk" },
   // CMBUI-13 (Phase 77, plan 77-08): the keys plan 77-03 added to
@@ -3547,7 +3552,7 @@ const CONDITION_EXPLAIN = {
   // chip's sentence names what it does — invis, afraid, mirror, lit and glow
   // were re-worded to say it.
   invis: "They swing at where you were: only a foe's very best roll finds you. Enjoy it; it wears off.",
-  acute: "You strike first on a d6. The maze is briefly unfair in your favour.",
+  acute: "You strike on a d6, the best die there is, while it lasts. The maze is briefly unfair in your favour.",
   // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): walls
   // are now a REAL destination, not merely a phased-through feature tile —
   // the chip's own warn tone (paintConditions below) already flags "you are
@@ -3574,7 +3579,7 @@ const CONDITION_EXPLAIN = {
   // Shield.
   ward: "A pool of hit points that is not yours, soaking blows until it runs dry.",
   foeEffect: "Something they did to you. It wears off in a few rounds, which is more than most things do.",
-  affliction: "It takes a bite out of you on a schedule. Find a cure before it finds the rest.",
+  affliction: "It takes a few hit points as you walk, but never your last one. That is the nicest thing about it.",
   // Phase 39 (GEAR-05): the torch's lit effect.
   lit: "You are carrying a light, so the dark cannot make your strikes harder to land. Darkness will have to wait its turn.",
   // Phase 39 (GEAR-02): a cooling item / a recharging staff.
@@ -3584,10 +3589,10 @@ const CONDITION_EXPLAIN = {
   mirror: "They swing at a reflection: only a foe's very best roll finds the real you, for a few rounds. Try not to look smug.",
   senses: "You fight in the dark at full skill and nothing gets the jump on you.",
   regen: "Wounds close on their own every round of this fight. It is not a licence.",
-  foresight: "You already know what the next encounter is. Whether that helps is up to you.",
+  foresight: "You act first in your next fight, whatever turns up. Whether the warning helps beyond that is up to you.",
   reveal: "You can see the whole floor for exactly as long as you stand still. One step and your focus breaks; whatever you never walked goes dark again.",
   // Phase 41 (TERR-05).
-  fearArmed: "Something out there got to you. The next fight opens Afraid — harder to hit, softer blows — until it passes.",
+  fearArmed: "Something out there got to you: your next fight opens Afraid, −3 to hit and half damage on your blows until it passes, unless Hardiness shrugs it off.",
   // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.
   power: "One more point of damage on every swing, for a while. The ring calls it generosity.",
   // RULES-11 (Phase 75.2, Plan 04): states exactly what a size step does —
@@ -3597,25 +3602,25 @@ const CONDITION_EXPLAIN = {
   giant: "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
   enlarge: "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
   glow: "You are your own lantern, so the dark cannot make your strikes harder to land. The dark is filing a complaint.",
-  unseen: "They need two better to land a blow, and they know it.",
-  tongue: "You understand them perfectly. Whether that helps is up to them.",
+  unseen: "Every foe has two fewer faces that hit you, and they know it.",
+  tongue: "You can try a parley with anything but the Magical and the Walking Dead, and the roll gets two more faces. Whether they listen is up to them.",
   brace: "No critical lands on you. Ordinary hits still count.",
-  plate: "Weightless plate over whatever you wear. It still will not make you graceful.",
+  plate: "You soak blows as plate, or as your own armour if that is better, and none of it wears out. It still will not make you graceful.",
   // RULES-10 (Phase 75.1, plan 09): the reader-side fumble effects — a
   // fumbled scroll turning against its own reader. heroOut states the three
   // things the user's ruling requires the tap card say (the round goes on
   // without you, nothing wakes you early, and foes hit you as usual);
   // heroBlind's numeric lead comes from conditionEffectText (this sentence
   // is only the tail); heroShrunk states the halving plainly.
-  heroOut: "The round goes on without you. Nothing wakes you early, and foes hit you exactly as they would if you could still swing back.",
-  heroBlind: "Only the very best swing of the die lands.",
+  heroOut: "You cannot act: the round goes on without you. Nothing wakes you early, and foes hit you exactly as they would if you could still swing back.",
+  heroBlind: "Only your die's top face lands.",
   heroShrunk: "Your own blows land for half.",
   // CMBUI-13 (Phase 77, plan 77-08): the keys plan 77-03 added. An ability
   // chip's tap card reads the ability's own content text instead (the one
   // mechanical description of an ability); this sentence is its fallback.
   ability: "One of your own tricks, still working. The ability itself says what it does.",
-  braced: "The next blow that lands on you does half damage. Planning ahead, for once.",
-  inspired: "The song is still ringing in everyone's ears, so every swing lands a little easier.",
+  braced: "The next blow that lands does half damage. Planning ahead, for once.",
+  inspired: "Your song is still ringing in your ears: your own strikes land one face easier. The party is pretending not to have heard it.",
   halfNext: "The next blow that lands on you does half damage. The Pendant takes the other half personally.",
   strengthBoost: "Your hit points are doubled. When the day ends the extra goes, whether you spent it or not.",
   nightVision: "Your own eyes see in the dark, so the dark cannot make your strikes harder to land. Everyone else is squinting.",
@@ -3700,6 +3705,9 @@ function conditionLabel(cn) {
     // CMBUI-13 (Phase 77, plan 77-08): an ability chip reads its one-word
     // ABILITY_CHIP_LABEL, never the generic key.
     : cn.key === "ability" ? (ABILITY_CHIP_LABEL[cn.ability] || CONDITION_COPY.ability.label)
+    // VOX-05 (Phase 79, plan 79-07): the hero-cannot-act chip names its kind
+    // (Asleep/Stupefied/Maddened), falling back to the row's own label.
+    : cn.key === "heroOut" ? (CONDITION_COPY.heroOut.kinds[cn.kind] || CONDITION_COPY.heroOut.label)
     // RULES-11 (Phase 75.2, Plan 04): a live size-stepping item's chip
     // (the Gauntlet of the Giant, Enlarge, or any future size item) is
     // labelled with the hero's CURRENT resulting size (cn.size, e.g.

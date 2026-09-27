@@ -62,7 +62,9 @@ export const HERO_CHIP_COPY = Object.freeze({
     nextBlow: "until the next blow lands",
     day: "until the day ends",
     nextFight: "until your next fight",
-    untilCured: "until something cures it",
+    // VOX-05 (79-07): an affliction also runs out on its own
+    // (engine/movement.js counts c.affliction.left down per tick).
+    untilCured: "until it runs its course or something cures it",
     charges: "{n} of {max} charges left",
     untilMove: "until you move",
   }),
@@ -107,13 +109,13 @@ export const HERO_CONDITIONS = Object.freeze(
   [
     // ── live item effects (engine/derived.js#liveItemEffects), one entry per live activation kind ──
     item("haste", true), // Cloak of Speed / Speed: a second swing each round (combat.js playerStrike).
-    item("invis", true), // Cloak/staff/potion of invisibility: every foe needs a 1 (foeToHitVs).
+    item("invis", true), // Cloak/staff/potion of invisibility: every foe hits only on its top face (foeToHitVs).
     item("acute", true, "rounds"), // Acuteness: strike on a d6 (strikeDie); a rounds-cadence record.
     item("ether", false), // Cloak of Ether: walking through walls, nothing in a fight.
     item("enlarge", true), // Enlarge: a size step (foeToHitVs, sizeDamage).
     item("giant", true), // Gauntlet of the Giant: a size step.
     item("glow", true), // Amulet of Light: a light that lifts the dark cap (darkWaiver).
-    item("unseen", true), // Anklet of Invisibility: foes need 2 better (eff foeToHit).
+    item("unseen", true), // Anklet of Invisibility: every foe has two fewer faces that hit (eff foeToHit).
     item("tongue", false), // Helm of Knowledge: a parley aid, nothing once blows land.
     item("brace", true), // Cloak of Strength: no critical hits on you (eff noCrit).
     item("plate", true), // Cloak of Armor: soaks as plate (armorSoak).
@@ -130,13 +132,13 @@ export const HERO_CONDITIONS = Object.freeze(
     },
     // Shield soaks blows; an armed Bubble mirror waits for one.
     { key: "ward", fields: ["ward"], fight: true, lasts: "rounds", source: "spell", lastsFor: (cn) => (cn.mirror ? "nextBlow" : "rounds") },
-    { key: "mirror", fields: ["mirror"], fight: true, lasts: "rounds", source: "spell" }, // Mirror Self: every foe needs a 1.
+    { key: "mirror", fields: ["mirror"], fight: true, lasts: "rounds", source: "spell" }, // Mirror Self: every foe hits only on its top face.
     { key: "senses", fields: ["senses"], fight: true, lasts: "fight", source: "spell" }, // Sense Presence: lifts the dark cap, waives foe-first.
     { key: "regen", fields: ["regen"], fight: true, lasts: "fight", source: "spell" }, // Regeneration: heals each round.
     { key: "foresight", fields: ["foresight"], fight: false, lasts: "nextFight", source: "spell" }, // Sense Danger: waiting for the next fight.
     { key: "reveal", fields: ["timers"], timers: ["spell:reveal"], fight: false, lasts: "untilMove", source: "spell" }, // Map the Floor: the map only, until the next step (Plan 76-06).
     { key: "braced", fields: ["braced"], fight: true, lasts: "nextBlow", source: "ability", sourceName: ABILITY_BY_ID.brace?.name }, // Brace: halves the next blow.
-    { key: "inspired", fields: ["inspired"], fight: true, lasts: "fight", source: "song" }, // the level-2 song: a to-hit plus.
+    { key: "inspired", fields: ["inspired"], fight: true, lasts: "fight", source: "song" }, // the level-2 song: one more face on the hero's own strikes (toHit).
     { key: "halfNext", fields: ["halfNext"], fight: true, lasts: "nextBlow", source: "item", sourceName: "Pendant of Fortitude" }, // halves the next blow.
     { key: "strengthBoost", fields: ["strengthBoost"], fight: true, lasts: "day", source: "spell" }, // Strength: doubled hit points to spend.
     { key: "nightVision", fields: ["skills"], fight: true, lasts: "fight", source: "trait" }, // Night Vision: holds the dark cap back.
@@ -150,7 +152,7 @@ export const HERO_CONDITIONS = Object.freeze(
     { key: "afraid", fields: ["afraid", "phobia"], fight: true, lasts: "rounds", source: "fear" }, // −3 to hit, half damage.
     { key: "heroOut", fields: ["heroOut"], fight: true, lasts: "rounds", source: "scroll" }, // you cannot act.
     { key: "heroBlind", fields: ["heroBlind"], fight: true, lasts: "fight", source: "scroll" }, // one winning face.
-    { key: "heroShrunk", fields: ["heroShrunk"], fight: true, lasts: "fight", source: "scroll" }, // a size step down.
+    { key: "heroShrunk", fields: ["heroShrunk"], fight: true, lasts: "fight", source: "scroll" }, // your own blows halved (combat.js playerStrike).
     { key: "fightDark", fields: ["darkFor", "senses"], fight: true, lasts: "fight", source: "dark" }, // the dark cap on your to-hit.
     { key: "insulted", fields: ["parleyInsulted"], fight: true, lasts: "fight", source: "insult" }, // every foe swings better at you.
     { key: "selfDot", fields: ["selfDot"], fight: true, lasts: "rounds", source: "scroll" }, // a burn each round.

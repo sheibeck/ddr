@@ -87,7 +87,10 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // engine/abilities.js applyPommel; engine/combat.js foeTurn skips one turn, then clears it.
   stunned: "Seeing stars. It loses its next turn, then remembers where it is.",
   // foeTurn sets a blind foe's need to its worst; Dirty Trick's blindFor counts down and restores sight.
-  blind: "It swings at where you were a moment ago and almost never lands. A count on the chip is how long until it can see again.",
+  // VOX-05 (79-07): derived.js#foeSwingChain sets a blind foe's swing to one
+  // face (its die's top face); the Blind spell sets no count, so that
+  // blindness lasts the fight.
+  blind: "It hits only on its die's top face until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.",
   // applyHamstring; foeTurn halves its blows (hero and party alike).
   hamstrung: "Its blows do half damage for the rest of the fight. It is limping about it.",
   // applyMark; playerStrike and the party's strikes add 2 damage on a marked target.
@@ -111,7 +114,10 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // The Insane spell's madness roll; foeTurn doubles its swings.
   frenzied: "The madness went the wrong way. It swings twice as often for the rest of the fight.",
   // C.weakened: foeTurn and the pursuit roll halve every foe's damage until it fades.
-  weakened: "Every one of them does half damage while it lasts. They are not taking it well.",
+  // VOX-05/ROLL-04 (79-07): the same cast sets C.foeToHitPenalty = 3, which
+  // derived.js#foeSwingChain reads as a cap of three winning faces; the old
+  // line left that half of the spell out.
+  weakened: "Every one of them hits on no more than its die's top three faces, and does half damage, while it lasts. They are not taking it well.",
   // RULES-18 (Phase 75.3, Plan 04): holdFoe (engine/combat.js) — a control
   // that would have lasted the whole fight (or ended it outright) past floor
   // 12; the foe's own turn skips run down alongside the chip's count. Kept
