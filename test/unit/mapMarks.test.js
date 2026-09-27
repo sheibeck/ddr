@@ -21,6 +21,9 @@ import {
   markForCell,
   legendFor,
 } from "../../src/browser/mapMarks.js";
+import { facesRangeText } from "../../src/browser/rollRange.js";
+import { openChest, springTrap } from "../../engine/encounters.js";
+import { TRAPS } from "../../content/index.js";
 
 // ─── glyph table completeness ──────────────────────────────────────────────
 
@@ -130,8 +133,20 @@ const OLD_MARKS_LEGEND = [
   { key: "encounter", name: "ENCOUNTER", desc: "Something gets rolled for you the moment you touch it." },
   { key: "teleport", name: "TELEPORT", desc: "Thrown a d20 of squares somewhere you did not choose." },
   { key: "onewaydoor", name: "ONE-WAY DOOR", desc: "Go where the arrow points. There is no coming back." },
-  { key: "trap", name: "TRAP", desc: "A d6 out of you, before you knew it was there." },
-  { key: "chest", name: "LOCKED BOX", desc: "1–5 on a d10 opens it. The rest costs you a pick." },
+  // VOX-05 (79-10): the trap and chest rows are rewritten (previously "A d6
+  // out of you, before you knew it was there." and "1–5 on a d10 opens it.
+  // The rest costs you a pick."); their numbers are pinned to the engine at
+  // the end of this file.
+  {
+    key: "trap",
+    name: "TRAP",
+    desc: "Step on it and a d20 decides: 16–20 dodges it (13–20 for an Acrobat). Fail and it goes off, anything from a d6 of darts to a spike pit's d10×5. Going around is free.",
+  },
+  {
+    key: "chest",
+    name: "LOCKED BOX",
+    desc: "With lockpicks or the Locks skill, 6–10 on a d10 opens it (more faces with practice or wits); bare hands need 13–20 on a d20. Fail and it stays shut for good.",
+  },
   {
     key: "crevice",
     name: "CREVICE",
@@ -281,4 +296,56 @@ test("mapMarks.js is pure and imports ONLY featureKeyForCell from icons.js (no p
   for (const needle of ["window.", "document.", "Date.now", "localStorage", "setTimeout", "innerHTML", "Math.random"]) {
     assert.doesNotMatch(text, new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${needle} must not appear in mapMarks.js`);
   }
+});
+
+// ─── VOX-05 / ROLL-04 (79-10): the LOCKED BOX and TRAP rows read the engine ─
+
+// The LOCKED BOX row used to read "1–5 on a d10 opens it. The rest costs you
+// a pick." That was the retired roll-under face count, and a failed roll
+// never costs a pick: engine/encounters.js#openChest pushes chestLocked and
+// stops, and engine/movement.js#resolveFeature has already cleared the box's
+// cell. Both ranges are read from the engine's own chestLockRolled event, so
+// the legend can never drift from the lock table.
+function lockRange(c) {
+  const events = openChest({ c }, { d: (n) => n }, []); // the worst face: the roll fails
+  const rolled = events.find((e) => e.type === "chestLockRolled");
+  assert.ok(rolled, "openChest rolls the lock");
+  assert.equal(events.at(-1).type, "chestLocked", "a failed roll ends in chestLocked");
+  return { range: facesRangeText(rolled.dieN + 1 - rolled.atLeast, rolled.dieN), dieN: rolled.dieN };
+}
+
+test("VOX-05 / ROLL-04 (79-10): the LOCKED BOX row states the engine's lock ranges roll-high and what a failure costs", () => {
+  const { desc } = MARKS_LEGEND.find((r) => r.key === "chest");
+  const withPicks = { sub: "Knight", skills: {}, intel: 10, items: [{ kind: "picks", n: "Lockpicks" }] };
+  const withSkill = { sub: "Knight", skills: { Locks: 1 }, intel: 10, items: [] };
+  const bare = { sub: "Knight", skills: {}, intel: 10, items: [] };
+  const picked = lockRange(withPicks);
+  assert.deepEqual(lockRange(withSkill), picked, "a lockpick and Locks I are the same tier");
+  assert.equal(picked.dieN, 10);
+  assert.ok(desc.includes(`${picked.range} on a d10`), `the picks/skill range ${picked.range} on a d10: ${desc}`);
+  const hands = lockRange(bare);
+  assert.equal(hands.dieN, 20);
+  assert.ok(desc.includes(`${hands.range} on a d20`), `the bare-hands range ${hands.range} on a d20: ${desc}`);
+  assert.equal(withPicks.items.length, 1, "a failed roll keeps the lockpicks");
+  assert.doesNotMatch(desc, /costs you a pick/i, "a failed roll never costs a pick");
+  assert.match(desc, /stays shut for good/, "a failure leaves the box shut, and its cell is cleared");
+  const movement = fs.readFileSync(url.fileURLToPath(new URL("../../engine/movement.js", import.meta.url)), "utf8");
+  assert.match(movement, /cell\.feat === "chest"\) \{\s*cell\.feat = null;\s*openChest\(/, "the box's cell clears before the roll");
+});
+
+test("VOX-05 / ROLL-04 (79-10): the TRAP row states the engine's d20 dodge range and the trap table's spread", () => {
+  const { desc } = MARKS_LEGEND.find((r) => r.key === "trap");
+  const dodge = (sub) => {
+    const events = springTrap({ c: { sub, cls: "Fighter", skills: {} } }, { d: () => 1 }, []); // the best face: dodged
+    const e = events.find((x) => x.type === "trapAvoided");
+    assert.ok(e, `${sub}: the best face dodges`);
+    return facesRangeText(e.dieN + 1 - e.atLeast, e.dieN);
+  };
+  assert.ok(desc.includes(`${dodge("Knight")} dodges it`), `the base dodge range: ${desc}`);
+  assert.ok(desc.includes(`(${dodge("Acrobat")} for an Acrobat)`), `the Acrobat's range: ${desc}`);
+  const sides = TRAPS.map((t) => t.dmg.sides);
+  const spike = TRAPS.find((t) => t.times);
+  assert.ok(desc.includes(`a d${Math.min(...sides)} of darts`), `the smallest trap: ${desc}`);
+  assert.ok(desc.includes(`d${spike.dmg.sides}×${spike.times}`), `the spike pit: ${desc}`);
+  assert.doesNotMatch(desc, /before you knew it was there/, "the mark is only drawn on a square you can see");
 });

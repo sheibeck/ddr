@@ -28,6 +28,10 @@ import { markForCell, ONEWAY_ROTATION_DEG } from "../../src/browser/mapMarks.js"
 // race, sub-class and level tables and the real S/M/L scales.
 import { NAMES, RACES, CLASSES, THRESHOLDS } from "../../content/index.js";
 import { textScaleForSize } from "../../src/browser/settings.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
+import { loadShellSandbox } from "./harness/shellSandbox.js";
+import { newRun } from "../../engine/state.js";
+import { nightlyEats } from "../../engine/movement.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -610,9 +614,38 @@ test("(k) camp sheet markup: the ids exist, sit inside a .mw-legend-sheet with a
 test("(k) MAP_COPY.camp carries the exact sleep/walk/copy literals", () => {
   assert.equal((HTML.match(/^const MAP_COPY = \{/gm) || []).length, 1);
   const literal = extractObjectLiteral("MAP_COPY");
-  assert.match(literal, /sleep: "SLEEP\\n1 RATION"/);
+  // VOX-05 (79-10): was `sleep: "SLEEP\n1 RATION"` and "One ration buys the
+  // sleep and a full spell book."; a night costs the party's nightlyEats.
+  assert.match(literal, /sleep: "SLEEP\\n\{rations\}"/);
   assert.match(literal, /walk: "WALK\\nON"/);
   assert.match(literal, /copy: "Eight hours asleep/);
+  assert.match(literal, /Supper is \{rations\}: it buys the sleep, some HP back and a full spell book\./);
+});
+
+test("VOX-05 (79-10): openCampSheet fills {rations} from the camp gate's own nightly count", () => {
+  const region = openCampSheetRegion();
+  assert.match(region, /window\.__mzNightlyEats \? window\.__mzNightlyEats\(S\) : 1/);
+  assert.match(region, /MAP_COPY\.camp\.copy\.replace\("\{rations\}", rations\)/);
+  assert.match(region, /MAP_COPY\.camp\.sleep\.replace\("\{rations\}", rations\.toUpperCase\(\)\)/);
+
+  // Behaviour: a solo hero of a one-ration race reads "1 ration"; a Troll
+  // (two a night, content RACES) reads "2 rations"; neither leaves a token.
+  for (const [race, word] of [["Human", "1 ration"], ["Troll", "2 rations"]]) {
+    assert.ok(RACES[race], `content has the ${race} race`);
+    const doc = createRecordingDocument();
+    const sandbox = loadShellSandbox({ doc });
+    const state = newRun(1);
+    state.c.race = race;
+    state.party = [];
+    sandbox.setState(state);
+    assert.equal(nightlyEats(state), word.startsWith("1") ? 1 : 2, `${race} eats`);
+    sandbox.context.openCampSheet();
+    const copy = doc.document.getElementById("mw-camp-copy").textContent;
+    const sleep = doc.document.getElementById("mw-camp-sleep").textContent;
+    assert.ok(copy.includes(`Supper is ${word}:`), `${race}: ${copy}`);
+    assert.equal(sleep, `SLEEP\n${word.toUpperCase()}`);
+    assert.doesNotMatch(copy + sleep, /[{}]/, "no unfilled token");
+  }
 });
 
 test("(k) openCampSheet/closeCampSheet: the refusal/lock/arm/guard wiring, both settle stamps, the scrim listener, the onclick wiring", () => {

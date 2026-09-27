@@ -25,7 +25,7 @@
 // instead (src/browser/account.js#accountMenuView). Per D-06 the two quit
 // rows (SAVE & QUIT and ABANDON THIS CHARACTER, NEW CHARACTER once the hero
 // is dead) live in this menu too. Abandon has an in-row two-tap arm with no
-// modal (abandonRowNext below); Settings › Confirm before quit governs the
+// modal (abandonRowNext below); Settings › Confirm abandon governs the
 // arm (draft DISC-1): On means two taps, Off means one. The shell owns the
 // ABANDON_ARM_MS timer and feeds its expiry back in as a "timeout" event.
 //
@@ -147,7 +147,7 @@ const NEW_CHARACTER = Object.freeze({ armed: false, act: "newCharacter" });
  *   - a live tap with confirm required arms the row, and a tap on an
  *     already-armed row (strictly true) abandons;
  *   - confirm is required unless ctx.confirm is strictly false (the player
- *     turned Settings › Confirm before quit Off) — a missing, hostile or
+ *     turned Settings › Confirm abandon Off) — a missing, hostile or
  *     non-boolean ctx is fail-safe, so the first tap only ever arms;
  *   - "timeout", "close" and any unknown or missing kind disarm.
  * act is null, "abandon" or "newCharacter". Total: never throws.
