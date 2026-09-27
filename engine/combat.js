@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, foeToHitVs, foeToHitBreakdown, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, weaponRow, applyCasterHealMul, sizeAxisStep, SIZE_FACES_PER_STEP, controlResistCheck, raceFoeToHit } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -3172,6 +3172,17 @@ export function foeTurn(state, rng, events = []) {
         // and the hero's own size never reaches a member's (this branch
         // never reads state.c). Damage already moves inside weaponDamage on
         // the member view (memberStrike/foeTurn's riposte call). Zero draws.
+        // Phase 79 (plan 79-02, todo 2026-09-25): the Joiner's OWN race
+        // to-be-hit trait (derived.js#raceFoeToHit — the Elven thin-boned
+        // +1), read from its own sheet exactly as foeToHitVs reads the
+        // hero's; foeToHitVs(state, "member") no longer carries the hero's.
+        // Named by the member's race, like the hero's own race mod. Zero draws.
+        const mRaceTrait = mSheet ? raceFoeToHit(mSheet) : 0;
+        if (mRaceTrait) {
+          const before = mFaces;
+          mFaces = Math.max(1, mFaces + mRaceTrait);
+          if (mFaces !== before) mMods.push({ name: mSheet.race, delta: mFaces - before });
+        }
         if (mSheet) {
           const before = mFaces;
           mFaces = Math.max(1, mFaces + SIZE_FACES_PER_STEP * sizeAxisStep(mSheet, "face"));

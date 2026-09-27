@@ -1669,6 +1669,25 @@ export function foeDie(c, f) {
 }
 
 /**
+ * raceFoeToHit(sheet) — the race's own to-be-hit trait for ANY body the
+ * foe swings at: content/races.js's `foeToHit` (the Elven thin-boned +1),
+ * 0 for every other race and for a missing sheet/race row. Phase 79 (plan
+ * 79-02, todo 2026-09-25 "An Elven Joiner never gets its own thin-boned
+ * to-be-hit trait"): the ONE seam for this trait — foeToHitVs/
+ * foeToHitBreakdown read it from the hero's sheet (vs "hero" only), and
+ * engine/combat.js#foeTurn's member branch reads it from the Joiner's OWN
+ * sheet, beside that Joiner's own size term (Phase 75.2: "race signatures
+ * survive size", "Joiners get size"). Before this, the member branch
+ * inherited the HERO's race row, so an Elven Joiner was neutral and a
+ * Human Joiner beside an Elven hero was thin-boned. A data read, never a
+ * race-name check. Pure, zero draws.
+ */
+export function raceFoeToHit(sheet) {
+  const R = sheet && RACES[sheet.race];
+  return (R && R.foeToHit) || 0;
+}
+
+/**
  * foeToHitVs(state, vs) — the foe's to-hit need against this character: a
  * count of winning faces on the foe's strike die (Phase 73, ROLL-05, read
  * roll-high via `atLeastFor(need, dieN)` — a bigger need is more winning
@@ -1710,9 +1729,11 @@ export function foeDie(c, f) {
  */
 export function foeToHitVs(state, vs = "hero") {
   const c = state.c;
-  const R = RACES[c.race];
   let h = 5;
-  if (R.foeToHit) h += R.foeToHit;
+  // Phase 79 (plan 79-02): the race's to-be-hit trait belongs to the body
+  // being swung at — the hero's own here (vs "hero"); a Joiner's own is
+  // applied from its sheet in engine/combat.js#foeTurn's member branch.
+  if (vs === "hero") h += raceFoeToHit(c);
   if (c.sub === "Acrobat") h = 3;
   if (c.sub === "Guard") h -= 1;
   // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): each
@@ -1770,12 +1791,13 @@ export function foeToHitVs(state, vs = "hero") {
  */
 export function foeToHitBreakdown(state, vs = "hero") {
   const c = state.c;
-  const R = RACES[c.race];
   const mods = [];
   let h = 5;
-  if (R.foeToHit) {
+  // Phase 79 (plan 79-02): the SAME hero-only race term foeToHitVs applies.
+  const raceTrait = vs === "hero" ? raceFoeToHit(c) : 0;
+  if (raceTrait) {
     const before = h;
-    h += R.foeToHit;
+    h += raceTrait;
     if (h !== before) mods.push({ name: c.race, delta: h - before });
   }
   if (c.sub === "Acrobat") {

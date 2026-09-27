@@ -4697,3 +4697,64 @@ moved, deliberately: the fixture Thief has Acute Hearing, so its Hero tab
 shows the new text. Regenerated with
 `MZ_SNAPSHOT_UPDATE=1 node --test test/unit/shell-tab-snapshots.test.js`;
 the CRLF-only rewrites of the other snapshots were reverted.
+
+## Phase 79: content and narrative pass (VOX-04/05, ROLL-04) — measured per plan
+
+Each plan records its own subsection below.
+
+### Plan 79-02 — honest gain and Table 4 numbers (VOX-05), and a Joiner's own race to-be-hit trait: measured
+
+**The rules.**
+
+1. *Honest numbers (events only).* Every hero or member HP gain event
+   carries an additive `gained` (the HP actually added after the clamp to
+   max); every `tableFour` event carries additive `row`/`stat`/signed
+   `amount` and number-free `result` prose; a store meal's `bought` event
+   carries `gained` and `meal`. Events are never serialized, no rng draw
+   moves (draw-count pins in `test/unit/honest-gains.test.js`), and no
+   state field changes.
+2. *A Joiner's own race to-be-hit trait (extra scope, todo 2026-09-25).*
+   `engine/derived.js#raceFoeToHit(sheet)` is the one seam for a race's
+   `foeToHit` (the Elven thin-boned +1). `foeToHitVs`/`foeToHitBreakdown`
+   apply it for the hero only (`vs === "hero"`); `engine/combat.js#foeTurn`'s
+   member branch applies the Joiner's OWN, before its size term. Before this,
+   the member branch inherited the HERO's race row: an Elven Joiner was
+   neutral, and a Human Joiner beside an Elven hero was thin-boned. A rules
+   change (a declared fix under the 75.2 rulings "race signatures survive
+   size" and "Joiners get size"), zero draws.
+
+**The predictor.** Rule 1 can move no fixture (events only, zero draws).
+Rule 2 moves a foe's swing only against a Joiner when the hero or the
+Joiner is Elven. No parity replay carries a party with an Elven hero or an
+Elven Joiner (the 75.2 predictor already found no fighting Elven hero in
+any parity replay, and the party fixtures' Joiners are Human or Dwarven).
+Prediction: **zero moved fixtures, zero moved state pins.**
+
+**The live scan (measured at this plan's base, `cd560cc8`).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**
+   (after both rules).
+2. `git diff --quiet cd560cc8 -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js`
+   exits 0. No site was reconciled and no carve-out was added.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node tools/fixture-inventory.mjs` replays the roster unchanged, and
+   `node --test test/parity/fixture-inventory.test.js` passes (5/5); the
+   generated roster block above is not edited.
+5. `test/unit/roll-high-state-pins.test.js`, `roll-high-save-compat.test.js`
+   (the pre-switch save), `foe-turn-draw-count.test.js`, `bot-tactics.test.js`
+   and `test/determinism/**` all pass unchanged: no state pin re-pinned, the
+   save's `expected` not re-recorded.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Other recorded artifacts.** The 77-02 event-order corpus
+(`test/unit/fixtures/event-order/default-fold-corpus.json`) was regenerated
+as a declared change (`MZ_REGEN_EVENT_ORDER_CORPUS=1`): two recorded `rested`
+events gained the additive `gained: 2`; every recorded line is byte-identical.
