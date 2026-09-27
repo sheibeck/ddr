@@ -1,0 +1,326 @@
+[
+  {
+    "key": "oracle:abilityLearned",
+    "surface": "oracle",
+    "trigger": "abilityLearned — a level-up rolls a new ability from the level pool",
+    "before": "New trick: Viper —",
+    "after": "New trick: Viper.",
+    "reasons": ["hygiene"],
+    "why": "An event with no ability text left a dangling dash; the dash now appears only before real text."
+  },
+  {
+    "key": "rail:abilityLearned",
+    "surface": "rail",
+    "trigger": "abilityLearned — a level-up rolls a new ability from the level pool",
+    "before": "New trick: Viper —",
+    "after": "New trick: Viper.",
+    "reasons": ["hygiene"],
+    "why": "The rail twin of the Oracle fix: no dangling dash when the event carries no text."
+  },
+  {
+    "key": "oracle:armorPatched",
+    "surface": "oracle",
+    "trigger": "armorPatched — Sewing or a Master of Arms mends worn armour overnight",
+    "before": "poisonedEdge: +2 back into your kit.",
+    "after": "poisonedEdge: +2 armour patched back into your kit.",
+    "reasons": ["fact"],
+    "why": "A bare \"+2\" never said what came back; it is armour, as the rail twin already said."
+  },
+  {
+    "key": "rail:afflictionTick",
+    "surface": "rail",
+    "trigger": "afflictionTick — a poison or disease takes its hp on a step",
+    "before": "Poison (−2 hp).",
+    "after": "Poison: still in you (−2 hp).",
+    "reasons": ["fact", "accurate"],
+    "why": "The rail printed \"(−0 hp)\" where its Oracle twin says the sickness has nothing left to take and you are on one hp; the two now say the same thing, and a tick says what did it."
+  },
+  {
+    "key": "oracle:campFailed",
+    "surface": "oracle",
+    "trigger": "campFailed — Make Camp is refused for want of rations",
+    "before": "You eat 5 a night (Your companion eats 1 more). You have 10. Find rations first.",
+    "after": "Not enough food to make camp: the party eats 5 a night (Your companion eats 1 of those), and you have 10. Find rations first.",
+    "reasons": ["fact", "accurate"],
+    "why": "The refusal never named the camp it refused, and the engine's need is the whole party's night, so \"you eat N (Mira eats 1 more)\" counted the member twice."
+  },
+  {
+    "key": "rail:campFailed",
+    "surface": "rail",
+    "trigger": "campFailed — Make Camp is refused for want of rations",
+    "before": "You eat 5 a night, you have 10. Find rations first.",
+    "after": "Not enough food to make camp: you eat 5 a night, you have 10. Find rations first.",
+    "reasons": ["fact", "accurate"],
+    "why": "The rail twin now names the refused camp, and a party's night reads \"the party eats\"."
+  },
+  {
+    "key": "oracle:chestLocked",
+    "surface": "oracle",
+    "trigger": "chestLocked — the lock roll on a chest fails",
+    "before": "Not today. The lock wins this round.",
+    "after": "The lock holds, and the box stays shut for good. Not today, and not any other day.",
+    "reasons": ["accurate", "joke"],
+    "why": "A chest gets one lock roll and its tile is cleared first, so \"this round\" promised a retry that never comes; the fact now comes before the joke."
+  },
+  {
+    "key": "rail:chestLocked",
+    "surface": "rail",
+    "trigger": "chestLocked — the lock roll on a chest fails",
+    "before": "The lock wins this round.",
+    "after": "The lock holds. The box stays shut for good.",
+    "reasons": ["accurate"],
+    "why": "The rail twin of the Oracle fix: a failed lock is final."
+  },
+  {
+    "key": "oracle:darknessFell",
+    "surface": "oracle",
+    "trigger": "darknessFell — a Darkness result on the dot falls on the hero",
+    "before": "The dark closes in around you.",
+    "after": "The dark closes in around you: you see only the squares beside you, and you fight worse in it.",
+    "reasons": ["fact"],
+    "why": "The line never said what the dark does or how long it lasts; it now states the cost, the event's duration in squares, and that Night Vision waives it."
+  },
+  {
+    "key": "oracle:equipRejected",
+    "surface": "refusals",
+    "trigger": "equipRejected — the Gear tab refuses to equip an item",
+    "before": "Not for the likes of you. Dagger refuses your hands — your kind wears no armour.",
+    "after": "Your kind wears no armour, so Dagger stays off. Not for the likes of you.",
+    "reasons": ["fact", "joke", "accurate"],
+    "why": "Every reason now says why in the player's terms before the joke: the class armour rule (tooHeavy) and the class weapon rule no longer read as a bare \"Not for the likes of you\", an unequippable item says so, and the Woodsman's rule is named."
+  },
+  {
+    "key": "rail:equipRejected",
+    "surface": "refusals",
+    "trigger": "equipRejected — the Gear tab refuses to equip an item",
+    "before": "Too heavy to carry.",
+    "after": "Your class does not wear that armour.",
+    "reasons": ["accurate", "fact"],
+    "why": "tooHeavy is the class armour rule (engine/items.js#armorRefusalReason), not weight; wrongClass now says it is your class, and a Woodsman's rule names plate as well as mail."
+  },
+  {
+    "key": "oracle:foeStoned",
+    "surface": "oracle",
+    "trigger": "foeStoned — an Amulet of Stone or Oak Staff turns foes to stone",
+    "before": "It turn to stone. Statues don't hit back.",
+    "after": "It turns to stone. Statues don't hit back.",
+    "reasons": ["natural"],
+    "why": "One stoned foe read \"Grunk turn to stone\"; the verb now agrees with the count."
+  },
+  {
+    "key": "rail:foeStoned",
+    "surface": "rail",
+    "trigger": "foeStoned — an Amulet of Stone or Oak Staff turns foes to stone",
+    "before": "It turn to stone. Statues don't hit back.",
+    "after": "It turns to stone. Statues don't hit back.",
+    "reasons": ["natural"],
+    "why": "The rail twin of the Oracle fix: one foe \"turns\"."
+  },
+  {
+    "key": "oracle:insanityRage",
+    "surface": "oracle",
+    "trigger": "insanityRage — the hero's insanity rolls a rage",
+    "before": "Rage: +2 might.",
+    "after": "Rage: +2 damage on every blow until the day ends.",
+    "reasons": ["fact"],
+    "why": "\"Might\" is engine vocabulary; the line now says it is damage on every blow and lasts until the new day clears it."
+  },
+  {
+    "key": "rail:insanityRage",
+    "surface": "rail",
+    "trigger": "insanityRage — the hero's insanity rolls a rage",
+    "before": "Rage: +2 might.",
+    "after": "Rage: +2 damage on every blow until the day ends.",
+    "reasons": ["fact"],
+    "why": "The rail twin of the Oracle fix."
+  },
+  {
+    "key": "oracle:insanityRolled",
+    "surface": "oracle",
+    "trigger": "insanityRolled — an Insanity result on the dot rolls the hero's d6",
+    "before": "Insanity. It comes apart at the seams.",
+    "after": "Insanity takes hold of you.",
+    "reasons": ["fact", "accurate"],
+    "why": "The line printed the INSANITY table's foe-side row (\"It strikes the nearest of its own\") for the hero's own insanity; it now says it is yours, and faces 2, 4 and 6, which do nothing, say so."
+  },
+  {
+    "key": "rail:insanityRolled",
+    "surface": "rail",
+    "trigger": "insanityRolled — an Insanity result on the dot rolls the hero's d6",
+    "before": "Insanity — it comes apart.",
+    "after": "Insanity takes hold of you.",
+    "reasons": ["fact", "accurate"],
+    "why": "The rail twin of the Oracle fix."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — a worn or drunk item's timed effect starts",
+    "before": "Unseen for 3 squares. They need two better.",
+    "after": "Unseen for 3 squares: every foe has two fewer faces that hit you.",
+    "reasons": ["roll-under", "fact", "hygiene"],
+    "why": "The Anklet's \"need two better\" was roll-under and the Cloak's line never said what being unseen does; both now use their item text's roll-high words, a count of one reads \"1 square\", and a bare event no longer leaks \"undefined squares\"."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — a worn or drunk item's timed effect starts",
+    "before": "Unseen for 3 squares. They need two better.",
+    "after": "Unseen for 3 squares: every foe has two fewer faces that hit you.",
+    "reasons": ["roll-under", "fact", "hygiene"],
+    "why": "The rail twin of the Oracle fix, the Cloak of Invisibility's effect in the rail's short form."
+  },
+  {
+    "key": "oracle:itemRejected",
+    "surface": "refusals",
+    "trigger": "itemRejected — a take or a store buy is refused",
+    "before": "Not an upgrade. Dagger.",
+    "after": "Not an upgrade: Dagger is no better than what you have.",
+    "reasons": ["natural", "fact", "accurate"],
+    "why": "The same refusal reader as equipRejected: the stilted \"Not an upgrade. Dagger.\" reads naturally, and the class rules say why before the joke."
+  },
+  {
+    "key": "rail:itemRejected",
+    "surface": "refusals",
+    "trigger": "itemRejected — a take or a store buy is refused",
+    "before": "Too heavy to carry.",
+    "after": "Your class does not wear that armour.",
+    "reasons": ["accurate", "fact"],
+    "why": "The same fix as rail:equipRejected: tooHeavy is the class armour rule, not weight (79-09 handoff)."
+  },
+  {
+    "key": "oracle:joinerMet",
+    "surface": "oracle",
+    "trigger": "joinerMet — a Joiner is met on the dot",
+    "before": "Viper, a Apprentice, joins you for a while.",
+    "after": "Viper, an Apprentice, offers to travel with you for a while.",
+    "reasons": ["accurate", "natural"],
+    "why": "The meeting is an offer that the accept, decline or refusal follows, so \"joins you\" contradicted a decline; the article agrees, and a real event states the Joiner's level."
+  },
+  {
+    "key": "rail:joinerRefused",
+    "surface": "refusals",
+    "trigger": "joinerRefused — a Magic User Joiner will not travel with a Wilmsry",
+    "before": "Viper takes one look at a Wilmsry and leaves.",
+    "after": "Viper, a Magic User, takes one look at a Wilmsry and leaves.",
+    "reasons": ["fact"],
+    "why": "The refusal never said why; it now names the Magic User, as the Oracle twin does."
+  },
+  {
+    "key": "bank:RAIL_COPY.quit.line",
+    "surface": "rail-cards",
+    "trigger": "the rail card after the first Android back press on a live run",
+    "before": "Press back once more and this delve is abandoned. Nobody will write it down.",
+    "after": "Press back once more to close the game. The delve waits for you.",
+    "reasons": ["accurate"],
+    "why": "A second back press closes the app and the run is already saved, so nothing is abandoned; it now matches the Oracle line 79-10 fixed (79-10 handoff)."
+  },
+  {
+    "key": "rail:rationsBought",
+    "surface": "rail",
+    "trigger": "rationsBought — rations bought at the store",
+    "before": "Stocked up: +1 rations.",
+    "after": "Stocked up: +1 ration.",
+    "reasons": ["natural"],
+    "why": "\"+1 rations\" is now \"+1 ration\", as on the Oracle."
+  },
+  {
+    "key": "oracle:staffRecharged",
+    "surface": "oracle",
+    "trigger": "staffRecharged — a staff regains a charge",
+    "before": "Crystal Staff hums. 2/5.",
+    "after": "Crystal Staff hums: a charge is back (2/5).",
+    "reasons": ["fact", "hygiene"],
+    "why": "A bare \"2/5\" never said what it counted, and a bare event printed \"?/?\"."
+  },
+  {
+    "key": "rail:staffRecharged",
+    "surface": "rail",
+    "trigger": "staffRecharged — a staff regains a charge",
+    "before": "Crystal Staff hums. 2/5.",
+    "after": "Crystal Staff hums: a charge is back (2/5).",
+    "reasons": ["fact", "hygiene"],
+    "why": "The rail twin of the Oracle fix."
+  },
+  {
+    "key": "oracle:storeOpened",
+    "surface": "oracle",
+    "trigger": "storeOpened — the store opens",
+    "before": "The shop is open. (A discount, as always.)",
+    "after": "The shop is open. (Half price, as always.)",
+    "reasons": ["fact", "number"],
+    "why": "The discount never said how much (half), and a Pickpocket's ×1.25 buy and ×0.75 sell prices were on the rail but missing from the Oracle."
+  },
+  {
+    "key": "rail:storeOpened",
+    "surface": "rail",
+    "trigger": "storeOpened — the store opens",
+    "before": "Shop open. (a discount, as always)",
+    "after": "Shop open. (half price, as always)",
+    "reasons": ["fact", "number"],
+    "why": "The rail twin of the Oracle fix: the discount says how much."
+  },
+  {
+    "key": "oracle:trapDisarmed",
+    "surface": "oracle",
+    "trigger": "trapDisarmed — a Pilfer disarms a trap",
+    "before": "A Pilfer's hands already knew where not to put themselves.",
+    "after": "Pilfer: trap disarmed. Your hands already knew where not to put themselves.",
+    "reasons": ["fact", "joke"],
+    "why": "The joke stood in for the fact; the line now says the trap was disarmed first."
+  },
+  {
+    "key": "oracle:trapDoubled",
+    "surface": "oracle",
+    "trigger": "trapDoubled — a Cat Burglar's trap hits twice as hard",
+    "before": "Cat Burglar's luck holds — for the trap. It hits twice as hard.",
+    "after": "Cat Burglar: the trap hits twice as hard. The luck holds — for the trap.",
+    "reasons": ["joke"],
+    "why": "The fact now comes before the joke."
+  },
+  {
+    "key": "oracle:trapPoisoned",
+    "surface": "oracle",
+    "trigger": "trapPoisoned — a trap's arrow poisons the hero",
+    "before": "Trap: it leaves something behind that outlasts the bruise.",
+    "after": "Trap: poisoned. It leaves something behind that outlasts the bruise.",
+    "reasons": ["fact", "joke"],
+    "why": "The line never said \"poisoned\"; the fact now comes before the joke."
+  },
+  {
+    "key": "oracle:useRefused",
+    "surface": "refusals",
+    "trigger": "useRefused — an item's use is refused",
+    "before": "Dagger: 3 squares. It is not a vending machine.",
+    "after": "Dagger: ready again in 3 squares. It is not a vending machine.",
+    "reasons": ["fact"],
+    "why": "A bare \"3 squares\" never said it was the wait until the item is ready; an explore-only item now says it only works out of a fight."
+  },
+  {
+    "key": "rail:useRefused",
+    "surface": "refusals",
+    "trigger": "useRefused — an item's use is refused",
+    "before": "Dagger needs quieter surroundings.",
+    "after": "Dagger only works out of a fight. It needs quieter surroundings.",
+    "reasons": ["fact"],
+    "why": "The rail twin of the Oracle fix: the rule before the joke, and the cooldown reads \"ready again in\"."
+  },
+  {
+    "key": "oracle:wentHungry",
+    "surface": "oracle",
+    "trigger": "wentHungry — the new day finds too few rations",
+    "before": "Hunger: nobody packed — you eat 5 a night, and you had 10. Cost of living −4 hp.",
+    "after": "Hunger: you eat 5 a night, and you had 10. Nobody packed enough. Cost of living −4 hp.",
+    "reasons": ["joke", "accurate"],
+    "why": "The joke came before the numbers and read false when you had some rations; the numbers now come first."
+  },
+  {
+    "key": "rail:wentHungry",
+    "surface": "rail",
+    "trigger": "wentHungry — the new day finds too few rations",
+    "before": "Hunger: no rations (−4 hp).",
+    "after": "Hunger: not enough rations (−4 hp).",
+    "reasons": ["accurate"],
+    "why": "Hunger fires when you have fewer rations than the night needs, not only none."
+  }
+]

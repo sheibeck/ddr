@@ -780,7 +780,7 @@
      "priority": 3
     },
     {
-     "text": "The lock wins this round. (2 vs 10–20)",
+     "text": "The lock holds. The box stays shut for good. (2 vs 10–20)",
      "tone": "miss",
      "priority": 4
     }
@@ -800,7 +800,7 @@
      "type": "goldGained"
     },
     {
-     "text": "The lock wins this round. (2 vs 10–20)",
+     "text": "The lock holds. The box stays shut for good. (2 vs 10–20)",
      "tone": "miss",
      "priority": 4,
      "idx": 2
@@ -11128,14 +11128,14 @@
    ],
    "lines": [
     {
-     "text": "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.",
+     "text": "Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −4 hp.",
      "tone": "hurt",
      "priority": 4
     }
    ],
    "linesIdx": [
     {
-     "text": "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.",
+     "text": "Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −4 hp.",
      "tone": "hurt",
      "priority": 4,
      "idx": 2,
@@ -11157,14 +11157,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -11186,14 +11186,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -11215,14 +11215,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -11244,14 +11244,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -11273,14 +11273,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12250,14 +12250,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12279,14 +12279,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12308,14 +12308,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12337,14 +12337,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12366,14 +12366,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12395,14 +12395,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12424,14 +12424,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12453,14 +12453,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12482,14 +12482,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -12569,7 +12569,7 @@
      "priority": 3
     },
     {
-     "text": "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.",
+     "text": "Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −4 hp.",
      "tone": "hurt",
      "priority": 4
     }
@@ -12589,7 +12589,7 @@
      "idx": 4
     },
     {
-     "text": "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.",
+     "text": "Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −4 hp.",
      "tone": "hurt",
      "priority": 4,
      "idx": 2,
@@ -13834,14 +13834,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -13863,14 +13863,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -13892,14 +13892,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -13921,14 +13921,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -13950,14 +13950,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -13979,14 +13979,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -14008,14 +14008,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -14037,14 +14037,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -15160,14 +15160,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -15247,7 +15247,7 @@
      "priority": 3
     },
     {
-     "text": "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −1 hp.",
+     "text": "Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −1 hp.",
      "tone": "hurt",
      "priority": 4
     }
@@ -15267,7 +15267,7 @@
      "idx": 4
     },
     {
-     "text": "Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −1 hp.",
+     "text": "Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −1 hp.",
      "tone": "hurt",
      "priority": 4,
      "idx": 2,
@@ -15408,14 +15408,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -15437,14 +15437,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -15466,14 +15466,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -15495,14 +15495,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -15524,14 +15524,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -15553,14 +15553,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,
@@ -15582,14 +15582,14 @@
    ],
    "lines": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0
     }
    ],
    "linesIdx": [
     {
-     "text": "You eat 1 a night. You have 0. Find rations first.",
+     "text": "Not enough food to make camp: you eat 1 a night, and you have 0. Find rations first.",
      "tone": "block",
      "priority": 0,
      "idx": 0,

@@ -115,8 +115,9 @@ expectation of zero missing prototype rules is confirmed live by
   appetite), R2 (every live member's own appetite) and, via
   `RATION_RULE_LINE`, the doubling rule by name: "Trolls eat for two."
   — never just a number.
-- **`wentHungry`** ("Hunger: nobody packed — you eat 1 a night, and you had
-  0. Cost of living −4 hp." / "… −2 hp (Heft: half, as promised).") names
+- **`wentHungry`** ("Hunger: you eat 1 a night, and you had 0. Nobody
+  packed enough. Cost of living −4 hp." / "… −2 hp (Heft: half, as
+  promised)."; reworded by 79-11, the numbers before the joke) names
   R6 (the unfed cost-of-living charge) and, when it applied, the Heft
   halving by name.
 - **`rested`** (unchanged this plan, already verified) names R5's healing
