@@ -27,3 +27,7 @@ Make the dots proportional to a pool that does not feed back on itself: `dotHpFo
 ## Second instance (2026-09-21 23:05, same device session)
 
 User: "another instance of this. Just not sure what's causing it: The maze extracts a toll you did not agree to. 141 hp. / Table 4, roll 7: The dice decide — -15 HP." → 141 = round(0.36 × maxWP) ⇒ maxWP ≈ 392 on the same hero — consistent with two or three "+25 HP" pulls compounding (×1.6 each) on a ~100-HP level-5 Samurai. Fix in flight: USER RULING G §1 (54-07 cycle 3, Adjustment 2) — canon flat ±25/15 × HERO_HP_SCALE, no feedback into maxWP.
+
+## Resolution (2026-09-27, orchestrator)
+
+Fixed by USER RULING G §1: `engine/difficulty.js#dotHpFor(kind)` now returns the flat canon value × `HERO_HP_SCALE` (`DOT_HP_BASE`), with no `maxWP` input, so a "+HP" pull can no longer feed back into the next one. The retirement of `DOT_HP_FRACTION` is documented in `engine/difficulty.js` around line 356. Phase 75 recorded the fix (75-02 / 75-10 SUMMARYs, 75-VERIFICATION). The related display bug (the Table 4 roll line printing the canon cell instead of the scaled amount) is a separate todo, handled by plan 79-02.
