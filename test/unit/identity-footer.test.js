@@ -480,8 +480,18 @@ test("VOX-05: the 79-03 why-ledger parses, every row carries reasons and a why, 
     if (m) return RACES[m[1]].note;
     m = /^bank:IDENTITY_FOOTER\.(sub|race)\.(.+)$/.exec(key);
     if (m) return footerLines(m[1], m[2]).join(" ");
+    // 79-13: the authored trait lines the footers read (a name may hold a space).
+    m = /^bank:IDENTITY_TRAITS\.(sub|race)\.(.+)\.(good|bad)\.(\d+)\.text$/.exec(key);
+    if (m) return IDENTITY_TRAITS[m[1]][m[2]][m[3]][Number(m[4])].text;
+    m = /^bank:IDENTITY_TRAITS\.(sub|race)\.(.+)\.neutral\.text$/.exec(key);
+    if (m) return IDENTITY_TRAITS[m[1]][m[2]].neutral.text;
     return undefined;
   };
+  // 79-13: a raw generator fragment (src/browser/identityFooter.js) records
+  // one representative literal with its interpolations as "…"; it has no
+  // single current string here, so tools/voice-inventory.mjs --check-ledgers
+  // --after and test/unit/narrative-review.test.js prove it against the corpus.
+  const isFragment = (key) => key.startsWith("raw:src/browser/identityFooter.js#");
   // 79-12: a key a LATER plan's ledger also touches carries that plan's
   // after (tools/lib/voice-checks.mjs#validateLedgers checks only the last
   // plan to touch a key), so 79-03's own after is history for it.
@@ -495,7 +505,7 @@ test("VOX-05: the 79-03 why-ledger parses, every row carries reasons and a why, 
     for (const f of ["key", "surface", "trigger", "before", "after", "reasons", "why"]) assert.ok(f in row, `${row.key}: missing ${f}`);
     assert.ok(row.reasons.length > 0 && row.reasons.every((r) => REASONS.has(r)), `${row.key}: bad reasons`);
     assert.ok(row.why.trim().length > 0, `${row.key}: empty why`);
-    if (laterKeys.has(row.key)) continue;
+    if (laterKeys.has(row.key) || isFragment(row.key)) continue;
     assert.equal(row.after, current(row.key), `${row.key}: ledger after is stale`);
   }
   const footers = ledger.filter((r) => r.key.startsWith("bank:IDENTITY_FOOTER.")).map((r) => r.key);

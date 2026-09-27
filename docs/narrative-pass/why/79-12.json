@@ -894,7 +894,7 @@
     "key": "bank:IDENTITY_TRAITS.sub.Cutthroat.good.0.text",
     "surface": "blurbs",
     "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
-    "before": "",
+    "before": "your first landed blow always crits, even in heavy armor",
     "after": "your first landed blow always crits, even in heavy armour",
     "reasons": [
       "naming"
@@ -905,7 +905,7 @@
     "key": "bank:IDENTITY_TRAITS.sub.Master of Arms.good.1.text",
     "surface": "blurbs",
     "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
-    "before": "",
+    "before": "patches your own damaged armor every night in camp",
     "after": "patches your own damaged armour every night in camp",
     "reasons": [
       "naming"
@@ -916,7 +916,7 @@
     "key": "bank:IDENTITY_TRAITS.sub.Woodsman.bad.0.text",
     "surface": "blurbs",
     "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
-    "before": "",
+    "before": "no armor heavier than Studded",
     "after": "no armour heavier than Studded",
     "reasons": [
       "naming"
@@ -1048,7 +1048,7 @@
     "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
     "surface": "other",
     "trigger": "inline literal in src/browser/identityFooter.js#RACE_FIELD_LINES",
-    "before": "",
+    "before": "armor wears at … the rate",
     "after": "armour wears at … the rate",
     "reasons": [
       "naming"

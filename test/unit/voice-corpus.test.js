@@ -75,6 +75,21 @@ test("completeness: every registry row names a real module or is reported absent
   for (const r of NON_COPY_EXPORTS) assert.ok(r.reason && r.reason.length > 8, `${r.module}#${r.export} needs a reason`);
 });
 
+test("non-copy (79-13): engine/derived.js#PARTY_WIDE_ITEM_EFFECTS is a lookup, out of the corpus but still a real export", async () => {
+  // A lookup key 79-02b added after the phase base, never printed: the raw
+  // sweep skips it as a declared non-copy export rather than a ledger row
+  // inventing a "changed line".
+  assert.ok(NON_COPY_EXPORTS.some((r) => r.module === "engine/derived.js" && r.export === "PARTY_WIDE_ITEM_EFFECTS"));
+  assert.ok(!byKey.has("raw:engine/derived.js#PARTY_WIDE_ITEM_EFFECTS"), "the lookup is not a corpus line");
+  const derived = await import("../../engine/derived.js");
+  assert.ok(Array.isArray(derived.PARTY_WIDE_ITEM_EFFECTS) && derived.PARTY_WIDE_ITEM_EFFECTS.includes("Crystal Staff"));
+  // the staff's own text stays in the corpus through its content table
+  assert.ok(byKey.has("content:STAVES.Crystal Staff.txt"));
+  // and the audit counts it present, not absent
+  const audit = await auditRegistry();
+  assert.ok(!audit.absent.some((a) => a.module === "engine/derived.js"), JSON.stringify(audit.absent));
+});
+
 // ─── Builders ─────────────────────────────────────────────────────────────
 
 test("every EVENT_NARRATION builder yields an oracle or refusals entry", () => {

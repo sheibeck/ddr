@@ -501,5 +501,852 @@
       "identity"
     ],
     "why": "VOX-04: a new mechanical footer, generated from MU_CHART, SPELL_LEVEL_OVERRIDES, the RACES fields and the proven IDENTITY_TRAITS, so the blurb's advantages and disadvantages can never drift from the rules."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Dwarven.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "store prices halved",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Dwarven race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Dwarven)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Elven.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "store prices halved",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Elven race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Elven)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Elven.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "can always talk to Humans, with a bonus",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Elven race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Elven)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Human.neutral.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "No advantages and no disadvantages: every other race is measured against this one.",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, the plain statement that it has neither of the Human race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Human)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Troll.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "store prices triple",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Troll race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Troll)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Troll.bad.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "weapons cost double on top of that",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Troll race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Troll)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Wilmsry.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "Magic User Joiners refuse to travel with you",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Wilmsry race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Wilmsry)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Wilmsry.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "can talk to anything but Magical foes and the Walking Dead",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Wilmsry race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Wilmsry)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Wilmsry.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "store prices 30% off",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Wilmsry race, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.race.Wilmsry)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Acrobat.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "a dagger and nothing else",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Acrobat sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Acrobat)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Acrobat.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "foes land only on their top three faces",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Acrobat sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Acrobat)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Acrobat.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your top five faces hit, like a Fighter's (six with the dagger)",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Acrobat sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Acrobat)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Apprentice.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "one spell in eight backfires",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Apprentice sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Apprentice)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Apprentice.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "double experience from kills until level 3",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Apprentice sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Apprentice)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Barbarian.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "half the experience from every kill",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Barbarian sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Barbarian)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Barbarian.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "two attacks every strike",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Barbarian sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Barbarian)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Bard.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "camp wakes wandering monsters twice as often",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Bard sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Bard)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Bard.bad.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "dim-witted foes come for you first, even with a party beside you",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Bard sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Bard)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Bard.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "can always talk to Humans",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Bard sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Bard)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Bard.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "a song every 100 squares",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Bard sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Bard)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cat Burglar.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "every trap that catches you deals double damage",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Cat Burglar sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Cat Burglar)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cat Burglar.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your first strike of every fight always lands",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Cat Burglar sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Cat Burglar)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "every healing spell heals 3 more",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Cleric sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Cleric)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your top four faces hit, not a Magic User's three",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Cleric sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Cleric)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cloaker.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "once you've struck, you flee on the ordinary roll like everyone else",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Cloaker sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Cloaker)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cloaker.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "vanishes from any fight for free until you land a blow",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Cloaker sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Cloaker)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Con Artist.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your opening blow deals no damage",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Con Artist sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Con Artist)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Con Artist.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "can talk to anything but Magical foes and the Walking Dead",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Con Artist sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Con Artist)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Con Artist.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "a level 1 foe leaves before the fight two times in three",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Con Artist sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Con Artist)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Court Mage.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "foes act first in round one",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Court Mage sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Court Mage)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Court Mage.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "one foe in six dies of boredom before the fight starts",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Court Mage sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Court Mage)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Court Mage.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "can always talk to Humans",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Court Mage sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Court Mage)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cutthroat.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "one descent in twenty, the Joiner beside you doesn't reach the next floor",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Cutthroat sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Cutthroat)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cutthroat.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your first landed blow always crits, even in heavy armor",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Cutthroat sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Cutthroat)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Guard.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your blows deal 3 less at level 1, one less each level until level 4",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Guard sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Guard)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Guard.bad.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your blows never crit",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Guard sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Guard)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Guard.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "every foe lands on one face fewer against you",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Guard sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Guard)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Illusionist.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "strikes on a d20 until level 3",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Illusionist sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Illusionist)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Illusionist.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "you choose where every teleport lands",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Illusionist sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Illusionist)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Knight.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "never wins initiative against a foe with 20 HP or more",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Knight sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Knight)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Knight.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "any foe under 5 HP flees before it can act",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Knight sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Knight)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Master of Arms.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "can never talk a fight down",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Master of Arms sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Master of Arms)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Master of Arms.bad.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "no clean withdrawal in round one",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Master of Arms sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Master of Arms)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Master of Arms.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "+2 damage with every weapon",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Master of Arms sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Master of Arms)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Master of Arms.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "patches your own damaged armor every night in camp",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Master of Arms sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Master of Arms)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Ninja.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "can never talk a fight down",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Ninja sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Ninja)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Ninja.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your opening strike always lands for maximum damage",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Ninja sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Ninja)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Ninja.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "after that, your top two faces crit",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Ninja sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Ninja)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Pickpocket.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "shops charge you a quarter more and pay a quarter less",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Pickpocket sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Pickpocket)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Pickpocket.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "an extra take from every kill and chest",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Pickpocket sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Pickpocket)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Pilfer.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "about one use in twenty, a magic ring, amulet, cloak or staff blows up in your hands for d10 HP and is gone",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Pilfer sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Pilfer)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Pilfer.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "disarms every trap and opens every chest for free",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Pilfer sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Pilfer)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Samurai.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "never wins initiative and never flees",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Samurai sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Samurai)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Samurai.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "starts in plate with a magic katana (+2)",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Samurai sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Samurai)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Soldier.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "foes crit you on their top two faces, not just the top one",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Soldier sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Soldier)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Soldier.bad.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "your blows never crit",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Soldier sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Soldier)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Soldier.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "camp heals you twice as much",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Soldier sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Soldier)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Soldier.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "knighted at level 3",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Soldier sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Soldier)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Sorcerer.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "weapon damage never goes above 9",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Sorcerer sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Sorcerer)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Sorcerer.bad.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "one level-up in eight forgets a spell that isn't Freeze, Fireball or Lightning",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Sorcerer sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Sorcerer)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Sorcerer.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "starts with Freeze and Fireball in the book",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Sorcerer sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Sorcerer)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Sorcerer.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "learns two new spells at every level",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Sorcerer sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Sorcerer)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Summoner.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "one full Summon in eight turns on you",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Summoner sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Summoner)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Summoner.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "Lesser Summon in the book and castable from day one",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Summoner sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Summoner)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Summoner.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "a full Summon arrives a level stronger, and its duration die counts double",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Summoner sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Summoner)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Warlock.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "every Walking Dead foe in the fight gains HP equal to your level",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Warlock sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Warlock)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Warlock.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "copies a potion every night it has one",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Warlock sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Warlock)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Wizard.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "won't swing a weapon while a castable attack spell and a charge remain",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Wizard sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Wizard)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Woodsman.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "no armor heavier than Studded",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, a disadvantage of the Woodsman sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Woodsman)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Woodsman.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "can always talk to Beasts and Lair Beasts",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new authored line, an advantage of the Woodsman sub-class, printed in its generated footer (the whole footer is on this page under bank:IDENTITY_FOOTER.sub.Woodsman)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#footerLines",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#footerLines), shown only inside a composed footer",
+    "before": "",
+    "after": "Good: ….",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new generator fragment (the Good and Bad lists); every footer it composes is on this page under bank:IDENTITY_FOOTER."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#chartLines",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#chartLines), shown only inside a composed footer",
+    "before": "",
+    "after": "every school of magic from level 1",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new generator fragment (the MU_CHART school gates and bonuses); every footer it composes is on this page under bank:IDENTITY_FOOTER."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#damageLines",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#damageLines), shown only inside a composed footer",
+    "before": "",
+    "after": "… damage with every weapon…",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new generator fragment (the damage terms); every footer it composes is on this page under bank:IDENTITY_FOOTER."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#sizeLines",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#sizeLines), shown only inside a composed footer",
+    "before": "",
+    "after": "being … makes you … harder to hit",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new generator fragment (the size terms); every footer it composes is on this page under bank:IDENTITY_FOOTER."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#faces",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#faces), shown only inside a composed footer",
+    "before": "",
+    "after": "… face…",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new generator fragment (the face-count word); every footer it composes is on this page under bank:IDENTITY_FOOTER."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#orList",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#orList), shown only inside a composed footer",
+    "before": "",
+    "after": "… or …",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new generator fragment (a list joined with \"or\"); every footer it composes is on this page under bank:IDENTITY_FOOTER."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "inline literal in src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "before": "",
+    "after": "armor wears at … the rate",
+    "reasons": [
+      "identity"
+    ],
+    "why": "VOX-04: a new generator fragment (a race's rules fields, one line each); every footer it composes is on this page under bank:IDENTITY_FOOTER."
   }
 ]
