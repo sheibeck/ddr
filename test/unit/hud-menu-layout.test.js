@@ -685,14 +685,16 @@ test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead wit
     assert.ok(isOpen(doc), "combat: the ☰ opens");
     assertRows(doc, ["btn-camp", "mw-chip-centre"], "combat");
   }
-  // dead: opens, data-dead "1", camp + centre disabled
+  // dead: opens, data-dead "1", camp + centre disabled — and, from Phase 78
+  // (HUD-02: "camp, marks and centre-map are inert" once the hero is dead),
+  // MARKS too; before 78-06 this block expected MARKS enabled.
   {
     const { doc, sandbox } = freshSandbox(states.thief);
     sandbox.setState({ ...states.thief, dead: true });
     menuBtn(doc).onclick();
     assert.ok(isOpen(doc), "dead: the ☰ opens");
     assert.equal(rowEl(doc, "mw-menu-abandon").dataset.dead, "1", "dead: the last row reads NEW CHARACTER");
-    assertRows(doc, ["btn-camp", "mw-chip-centre"], "dead");
+    assertRows(doc, ["btn-camp", "mw-chip-centre", "mw-chip-marks"], "dead");
   }
   // a live, idle hero: all six enabled
   {
