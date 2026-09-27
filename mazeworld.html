@@ -6246,6 +6246,24 @@ document.getElementById("mw-hud-menu").onclick = (e) => {
 // heading. A second nudge mid-flight therefore always re-aims from the
 // currently displayed destination, so rapid tap-to-move never stutters or
 // queues.
+// Phase 78 (HUD-08): arrowPadCells(rect) — the shown arrow pad's on-screen
+// rect converted to cells relative to the viewport's top-left (`rect` is
+// #mw-maze-viewport's own rect; divide by CELL), for keepPartyInView's
+// pad-as-an-edge rule. Null in tap mode, while the pad is hidden (dead, an
+// encounter, a sheet — syncArrowPad), or before it has any layout box.
+function arrowPadCells(rect) {
+  if (!tapMovementOff()) return null;
+  const pad = document.getElementById("mw-arrow-pad");
+  if (!pad || pad.hidden) return null;
+  const r = pad.getBoundingClientRect();
+  if (!r || !(r.width > 0) || !(r.height > 0)) return null;
+  return {
+    left: (r.left - rect.left) / CELL,
+    top: (r.top - rect.top) / CELL,
+    right: (r.right - rect.left) / CELL,
+    bottom: (r.bottom - rect.top) / CELL,
+  };
+}
 function keepPartyInView() {
   if (!S) return;
   const vp = document.getElementById("mw-maze-viewport");
@@ -6259,10 +6277,18 @@ function keepPartyInView() {
     const p = partyCentre();
     const G = window.__mzCameraGlide;
     const base = (G && G.target && G.target()) || cam;
-    const target = {
-      x: C.keepInViewAxis(base.x, p.x, rect.width / CELL),
-      y: C.keepInViewAxis(base.y, p.y, rect.height / CELL),
-    };
+    // Phase 78 (HUD-08): in arrow mode with the pad shown, the pad is an
+    // edge — keepInViewRect scrolls before the party walks under it (its
+    // top edge, or its inner side edge in its row band). Tap mode, a hidden
+    // pad or a bridge without keepInViewRect keeps the per-axis rule below,
+    // byte-for-byte as before.
+    const padBox = C.keepInViewRect ? arrowPadCells(rect) : null;
+    const target = padBox
+      ? C.keepInViewRect(base, p, { x: rect.width / CELL, y: rect.height / CELL }, padBox)
+      : {
+          x: C.keepInViewAxis(base.x, p.x, rect.width / CELL),
+          y: C.keepInViewAxis(base.y, p.y, rect.height / CELL),
+        };
     if (target.x !== base.x || target.y !== base.y) {
       if (G) G.to(cam, target, applyCam);
       else cam = target; // fail-open: no bridge, pre-phase snap
@@ -6677,7 +6703,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // below so the classic (non-module) script's fit()/draw()/tap-handler code
   // can call them without an ES `import` (see this module's own doc comment
   // on why window.move/window.__mzState use the same bridge pattern).
-  import { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis } from "./src/browser/controls.js";
+  import { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis, keepInViewRect } from "./src/browser/controls.js";
   // Phase 58 (MOTION-01/05) — the live reduced-motion predicate/subscription
   // and the retargetable ease-out camera tween, bridged below (beside
   // window.__mzControls) so the classic keepPartyInView/glideCenterMap/
@@ -7999,7 +8025,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // decoded BEFORE window.__mzClassicBoot() below ever calls draw() the
   // first time — no first-paint pop, fail-open per icons.js's own contract
   // (a missing/broken icon just resolves without drawing).
-  window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis };
+  // Phase 78 (HUD-08): keepInViewRect joins the same object (no new bridge
+  // name) — the classic keepPartyInView's pad-as-an-edge rule in arrow mode.
+  window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis, keepInViewRect };
   // Phase 58 (MOTION-01) — the map camera's ~200ms ease-out tween (D-04).
   // The classic keepPartyInView (the glided keep-in-view nudge),
   // glideCenterMap (the CENTRE row), anchorCamOnParty (every snap and

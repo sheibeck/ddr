@@ -492,10 +492,15 @@ test("(m) stepWith(): floorChanged/teleported centre; a plain moved keeps the pa
   }
 });
 
-test("(m) the module controls bridge carries keepInViewAxis, exactly once", () => {
+// Phase 78 (HUD-08): re-pinned — keepInViewRect (the pad as an edge) joins
+// the same bridge object, no new bridge name.
+test("(m) the module controls bridge carries keepInViewAxis and keepInViewRect, exactly once", () => {
   assert.equal(
-    (CODE.match(/window\.__mzControls = \{ screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis \};/g) || [])
-      .length,
+    (
+      CODE.match(
+        /window\.__mzControls = \{ screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis, keepInViewRect \};/g,
+      ) || []
+    ).length,
     1,
   );
 });

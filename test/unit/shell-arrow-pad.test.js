@@ -434,3 +434,106 @@ test("(e) keyboard arrows and WASD step through window.move in BOTH modes (the k
   assert.match(keys, /if \(dirKeys\[k\]\) \{ e\.preventDefault\(\); window\.move\(dirKeys\[k\]\); return; \}/);
   assert.doesNotMatch(keys, /tapMovementOff|movement|__mzSettings|mw-arrow-pad/);
 });
+
+// ─── (f) keepPartyInView: the pad is an edge ───────────────────────────────
+
+const VIEWPORT = Object.freeze({ left: 0, top: 0, width: 400, height: 600, right: 400, bottom: 600, x: 0, y: 0 });
+// A BOTTOM RIGHT pad, 164 x 164 px (three 52px buttons and two 4px gaps at
+// M), 12px in from the viewport's right and bottom edges.
+const PAD_RECT = Object.freeze({ left: 224, top: 424, right: 388, bottom: 588, width: 164, height: 164, x: 224, y: 424 });
+
+/**
+ * bootCamera({ settings, padHidden }) — the REAL classic keepPartyInView
+ * over a live run (party at {16,13}, the camera snapped onto {10,10}'s
+ * centre first), with __mzControls wired from the real controls.js through
+ * recording spies and the pad's rect stubbed.
+ */
+function bootCamera({ settings, padHidden = false } = {}) {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc });
+  const w = sandbox.context.window;
+  const calls = { axis: [], rect: [] };
+  w.__mzControls = {
+    screenToCell,
+    keepInViewAxis: (...args) => {
+      calls.axis.push(args);
+      return keepInViewAxis(...args);
+    },
+    keepInViewRect: (...args) => {
+      calls.rect.push(args);
+      return keepInViewRect(...args);
+    },
+  };
+  if (settings !== undefined) w.__mzSettings = settings;
+  const state = newRun(1);
+  state.floor.px = 10;
+  state.floor.py = 10;
+  sandbox.setState(state);
+  doc.document.getElementById("mw-maze-viewport").getBoundingClientRect = () => ({ ...VIEWPORT });
+  const pad = doc.document.getElementById("mw-arrow-pad");
+  pad.hidden = padHidden;
+  pad.getBoundingClientRect = () => ({ ...PAD_RECT });
+  sandbox.context.centerMap();
+  // Walk the party into the pad's column, 1.43 cells above its top edge.
+  state.floor.px = 16;
+  state.floor.py = 13;
+  // JSON round trip: plain objects of this realm (the vm's own Object
+  // prototype would fail deepStrictEqual).
+  const read = (expr) => JSON.parse(JSON.stringify(vm.runInContext(expr, sandbox.context)));
+  const before = read("({ x: cam.x, y: cam.y })");
+  calls.axis.length = 0;
+  calls.rect.length = 0;
+  return { sandbox, calls, read, before, keep: () => sandbox.context.keepPartyInView() };
+}
+
+test("(f) arrow mode with the pad shown: keepPartyInView calls keepInViewRect with the pad's rect in cells relative to the viewport, and the camera takes its answer", () => {
+  const r = bootCamera({ settings: { movement: "arrows", padSide: "right" } });
+  r.keep();
+  assert.equal(r.calls.rect.length, 1, "keepInViewRect called once");
+  const [base, party, span, obstacle] = JSON.parse(JSON.stringify(r.calls.rect[0]));
+  const CELL = r.read("CELL");
+  assert.deepEqual({ x: base.x, y: base.y }, r.before);
+  assert.deepEqual(party, { x: 16.5, y: 13.5 });
+  assert.deepEqual(span, { x: 400 / CELL, y: 600 / CELL });
+  assert.deepEqual(obstacle, { left: 224 / CELL, top: 424 / CELL, right: 388 / CELL, bottom: 588 / CELL });
+  const expected = keepInViewRect(r.before, { x: 16.5, y: 13.5 }, span, obstacle);
+  assert.ok(expected.y > r.before.y, "the pad edge scrolls the camera down");
+  assert.deepEqual(r.read("({ x: cam.x, y: cam.y })"), expected, "the camera lands on keepInViewRect's answer (reduced motion snaps)");
+});
+
+test("(f) tap mode: keepPartyInView runs keepInViewAxis per axis and never keepInViewRect (tap mode's camera is unchanged)", () => {
+  for (const settings of [undefined, { movement: "tap", padSide: "right" }]) {
+    const r = bootCamera({ settings });
+    r.keep();
+    assert.equal(r.calls.rect.length, 0, `settings ${JSON.stringify(settings)}: no keepInViewRect`);
+    assert.equal(r.calls.axis.length, 2);
+    const CELL = r.read("CELL");
+    const expected = {
+      x: keepInViewAxis(r.before.x, 16.5, 400 / CELL),
+      y: keepInViewAxis(r.before.y, 13.5, 600 / CELL),
+    };
+    assert.deepEqual(r.read("({ x: cam.x, y: cam.y })"), expected);
+  }
+});
+
+test("(f) arrow mode with the pad hidden (dead, an encounter, a sheet): the plain per-axis rule, no pad edge", () => {
+  const r = bootCamera({ settings: { movement: "arrows", padSide: "right" }, padHidden: true });
+  r.keep();
+  assert.equal(r.calls.rect.length, 0);
+  assert.equal(r.calls.axis.length, 2);
+});
+
+test("(f) source: keepPartyInView keeps its per-axis tap path verbatim and reads the pad through arrowPadCells; keepInViewRect is on the one controls bridge", () => {
+  const keep = sliceBetween(CODE, "function keepPartyInView()", "window.mzKeepPartyInView = keepPartyInView;");
+  assert.match(keep, /const padBox = C\.keepInViewRect \? arrowPadCells\(rect\) : null;/);
+  assert.match(keep, /C\.keepInViewRect\(base, p, \{ x: rect\.width \/ CELL, y: rect\.height \/ CELL \}, padBox\)/);
+  assert.match(keep, /C\.keepInViewAxis\(base\.x, p\.x, rect\.width \/ CELL\)/);
+  assert.match(keep, /C\.keepInViewAxis\(base\.y, p\.y, rect\.height \/ CELL\)/);
+  const cells = sliceBetween(CODE, "function arrowPadCells(rect)", "function keepPartyInView()");
+  assert.match(cells, /if \(!tapMovementOff\(\)\) return null;/);
+  assert.match(cells, /if \(!pad \|\| pad\.hidden\) return null;/);
+  assert.match(cells, /left: \(r\.left - rect\.left\) \/ CELL,/);
+  assert.match(cells, /top: \(r\.top - rect\.top\) \/ CELL,/);
+  assert.equal(count(CODE, "window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis, keepInViewRect };"), 1);
+  assert.ok(count(HTML, "keepInViewRect") >= 2);
+});
