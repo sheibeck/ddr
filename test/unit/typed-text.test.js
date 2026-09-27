@@ -277,7 +277,9 @@ test("typed-text (8): the encounter overlay's line types with aria-hidden, #mw-m
   const clock = createFakeClock();
   const { doc, sandbox } = scenario({ seed: 108, clock });
   const state = sandbox.context.window.__mzState.get();
-  const expectedLine = `Floor ${state.floor.depth + 1} is colder, longer, and considerably less forgiving. Nobody has asked you to do this.`;
+  // VOX-05 (79-10): was "Floor N is colder, longer, and considerably less
+  // forgiving. Nobody has asked you to do this." (every floor is 21 by 21).
+  const expectedLine = `Floor ${state.floor.depth + 1} is below, and there is no stair back up. It only gets meaner from here. Nobody has asked you to do this.`;
 
   sandbox.context.window.__mzStair = { dir: "n" };
   sandbox.context.renderEncounter();

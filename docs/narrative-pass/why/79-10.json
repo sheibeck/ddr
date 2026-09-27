@@ -1,0 +1,74 @@
+[
+  {
+    "key": "bank:MARKS_LEGEND.3.desc",
+    "surface": "map",
+    "trigger": "the MARKS legend sheet's TRAP row, and the hold-inspect card on a seen trap square",
+    "before": "A d6 out of you, before you knew it was there.",
+    "after": "Step on it and a d20 decides: 16–20 dodges it (13–20 for an Acrobat). Fail and it goes off, anything from a d6 of darts to a spike pit's d10×5. Going around is free.",
+    "reasons": ["accurate", "fact", "number"],
+    "why": "The mark is only drawn on a square you can already see, springTrap rolls a d20 dodge first, and the trap table runs from a d6 to a spike pit's d10×5, so neither \"a d6\" nor \"before you knew\" was true."
+  },
+  {
+    "key": "bank:MARKS_LEGEND.4.desc",
+    "surface": "map",
+    "trigger": "the MARKS legend sheet's LOCKED BOX row, and the hold-inspect card on a seen box square",
+    "before": "1–5 on a d10 opens it. The rest costs you a pick.",
+    "after": "With lockpicks or the Locks skill, 6–10 on a d10 opens it (more faces with practice or wits); bare hands need 13–20 on a d20. Fail and it stays shut for good.",
+    "reasons": ["roll-under", "accurate", "number"],
+    "why": "The range was the retired roll-under face count, it left out the bare-handed d20 roll, and a failed lock never costs a pick: openChest stops at chestLocked and the box's square is already cleared."
+  },
+  {
+    "key": "raw:mazeworld.html#MAP_COPY",
+    "surface": "map",
+    "trigger": "the MAKE CAMP sheet's body, opened from the ☰ menu",
+    "before": "Eight hours asleep in a corridor that has already killed better people than you. One ration buys the sleep and a full spell book. We roll to see what wanders past.",
+    "after": "Eight hours asleep in a corridor that has already killed better people than you. Supper is {rations}: it buys the sleep, some HP back and a full spell book. We roll to see what wanders past.",
+    "reasons": ["accurate", "fact"],
+    "why": "A night costs the whole party's nightlyEats (two for a Troll, more with Joiners), not always one ration, and a fed night also heals; the sheet now fills the count from the camp gate's own helper."
+  },
+  {
+    "key": "raw:mazeworld.html#MAP_COPY",
+    "surface": "map",
+    "trigger": "the MAKE CAMP sheet's SLEEP button",
+    "before": "SLEEP 1 RATION",
+    "after": "SLEEP {rations}",
+    "reasons": ["accurate", "number"],
+    "why": "The button promised one ration to a Troll or a party that eats more; it now shows the real nightly count."
+  },
+  {
+    "key": "raw:mazeworld.html#MAP_COPY",
+    "surface": "map",
+    "trigger": "THE STAIR DOWN overlay, before the descent",
+    "before": "Floor {n} is colder, longer, and considerably less forgiving. Nobody has asked you to do this.",
+    "after": "Floor {n} is below, and there is no stair back up. It only gets meaner from here. Nobody has asked you to do this.",
+    "reasons": ["accurate", "fact"],
+    "why": "Every floor is the same 21 by 21 maze, so \"longer\" was not true; the line now states the fact that matters, that the trip is one way."
+  },
+  {
+    "key": "raw:mazeworld.html#openCampSheet",
+    "surface": "other",
+    "trigger": "the MAKE CAMP sheet's ration count, filled into the body and the SLEEP button",
+    "before": "",
+    "after": "… ration…",
+    "reasons": ["accurate", "number"],
+    "why": "The new ration count (\"1 ration\", \"2 rations\") the camp sheet fills in from window.__mzNightlyEats."
+  },
+  {
+    "key": "raw:mazeworld.html#top",
+    "surface": "other",
+    "trigger": "the Oracle line after the first Android back press on a live run",
+    "before": "Press back again to abandon this delve.",
+    "after": "Press back again to close the game. This delve is saved for later.",
+    "reasons": ["accurate", "fact"],
+    "why": "A second back press exits the app, and the run is already saved and resumes from ENTER, so nothing is abandoned."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "the Settings sheet's On/Off row for the ☰ ABANDON THIS CHARACTER confirm",
+    "before": "Confirm before quit",
+    "after": "Confirm abandon",
+    "reasons": ["accurate", "fact"],
+    "why": "The row only arms the ☰ Abandon row's second tap; SAVE & QUIT never asks and the back button always asks, so \"quit\" named the wrong control."
+  }
+]

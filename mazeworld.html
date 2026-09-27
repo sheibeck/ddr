@@ -2161,8 +2161,11 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
           <button type="button" class="mw-settings-opt" data-value="right">Bottom right</button>
         </div>
       </div>
+      <!-- VOX-05 (Phase 79, plan 79-10): this row was "Confirm before quit",
+           but it only arms the ☰ ABANDON THIS CHARACTER row; SAVE & QUIT
+           never asks, and the back button always asks once. -->
       <div class="mw-settings-row">
-        <span class="mw-settings-label">Confirm before quit</span>
+        <span class="mw-settings-label">Confirm abandon</span>
         <div class="mw-settings-options" data-setting="confirmBeforeQuit">
           <button type="button" class="mw-settings-opt" data-value="true">On</button>
           <button type="button" class="mw-settings-opt" data-value="false">Off</button>
@@ -2384,7 +2387,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
                arms in the row: the first tap shows TAP AGAIN TO BURY
                THEM (data-armed="1"), the second buries the hero; the arm
                expires after ABANDON_ARM_MS or whenever the menu closes,
-               and Settings › Confirm before quit Off makes it one tap.
+               and Settings › Confirm abandon Off makes it one tap.
                With the hero dead (data-dead="1") the row reads NEW
                CHARACTER. The CSS shows exactly one of the three labels;
                src/browser/hudMenu.js#HUD_MENU_QUIT_COPY is the copy source
@@ -3490,8 +3493,12 @@ const MAP_COPY = {
     // RULES-15 (Phase 75, user 2026-09-25): eating is what refills the book
     // — states the rule plainly, not just the rest and the wandering-monster
     // roll.
-    copy: "Eight hours asleep in a corridor that has already killed better people than you. One ration buys the sleep and a full spell book. We roll to see what wanders past.",
-    sleep: "SLEEP\n1 RATION",
+    // VOX-05 (Phase 79, plan 79-10): a night costs what the whole party eats
+    // (engine/movement.js#nightlyEats: two for a Troll, more with Joiners),
+    // not always one ration, and a fed night also heals. openCampSheet fills
+    // {rations} from window.__mzNightlyEats, the camp gate's own count.
+    copy: "Eight hours asleep in a corridor that has already killed better people than you. Supper is {rations}: it buys the sleep, some HP back and a full spell book. We roll to see what wanders past.",
+    sleep: "SLEEP\n{rations}",
     walk: "WALK\nON",
   },
   // Phase 35 (MAP-05, decision 5): THE STAIR DOWN — the MAJOR OVERLAY shown
@@ -3499,7 +3506,9 @@ const MAP_COPY = {
   // other step uses.
   stair: {
     title: "THE STAIR DOWN",
-    line: "Floor {n} is colder, longer, and considerably less forgiving. Nobody has asked you to do this.",
+    // VOX-05 (Phase 79, plan 79-10): every floor is the same 21 by 21
+    // (engine/maze.js GW/GH), so "longer" was not true; the one-way trip is.
+    line: "Floor {n} is below, and there is no stair back up. It only gets meaner from here. Nobody has asked you to do this.",
     go: "GO DOWN",
     stay: "NOT YET",
   },
@@ -6107,8 +6116,13 @@ function openCampSheet() {
   if (railLocked()) { railPulse(); return; }
   const sheet = document.getElementById("mw-camp-sheet");
   if (!sheet) return;
-  document.getElementById("mw-camp-copy").textContent = MAP_COPY.camp.copy;
-  document.getElementById("mw-camp-sleep").textContent = MAP_COPY.camp.sleep;
+  // VOX-05 (79-10): the party's nightly ration count, from the same helper
+  // the engine's camp gate reads, so the sheet never promises one ration to
+  // a Troll or a party.
+  const eats = window.__mzNightlyEats ? window.__mzNightlyEats(S) : 1;
+  const rations = `${eats} ration${eats === 1 ? "" : "s"}`;
+  document.getElementById("mw-camp-copy").textContent = MAP_COPY.camp.copy.replace("{rations}", rations);
+  document.getElementById("mw-camp-sleep").textContent = MAP_COPY.camp.sleep.replace("{rations}", rations.toUpperCase());
   document.getElementById("mw-camp-walk").textContent = MAP_COPY.camp.walk;
   showPanel(sheet);
   armEncounterButtons();
@@ -7612,7 +7626,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // - SAVE & QUIT closes the menu, then calls window.mzAbandonRun (the
   //   non-destructive quit to the title, no dialog).
   // - ABANDON THIS CHARACTER asks abandonRowNext (src/browser/hudMenu.js).
-  //   With Settings › Confirm before quit On (the default) the first tap
+  //   With Settings › Confirm abandon On (the default) the first tap
   //   only arms the row (data-armed "1", TAP AGAIN TO BURY THEM) and leaves
   //   the menu open; one ABANDON_ARM_MS timer disarms it, restarted on each
   //   arm, and setHudMenuOpen disarms it whenever the menu closes. A tap
@@ -9573,7 +9587,10 @@ window.__mzClassicBoot = async function classicBoot() {
           window.paint();
         },
         showConfirmQuit: () => {
-          window.logLine(`<span class="beat">Press back again to abandon this delve.</span>`);
+          // VOX-05 (79-10): a second press exits the app (nativeChrome.js
+          // "exit-app"); the run is already saved (engineAdapter.js#persist)
+          // and ENTER resumes it, so nothing is abandoned.
+          window.logLine(`<span class="beat">Press back again to close the game. This delve is saved for later.</span>`);
           window.mzRailLine?.(RAIL_COPY.quit.title, RAIL_COPY.quit.line, "dull", 8400);
         },
       }),

@@ -267,7 +267,7 @@ tab's Delve panel and its two buttons are retired (D-06).
   the title with `allowResume: hasActiveDelveSave()`. There is no dialog. A
   live hero resumes on ENTER; a dead hero's Save & quit arms no resume.
 - ABANDON THIS CHARACTER arms in the row through `hudMenu.js`'s
-  `abandonRowNext`. With Settings › Confirm before quit On, the first tap
+  `abandonRowNext`. With Settings › Confirm abandon On, the first tap
   shows TAP AGAIN TO BURY THEM and a second tap within `ABANDON_ARM_MS`
   closes the menu and calls `window.mzAbandonCharacter`; with it Off, one
   tap does. The arm expires on its timer and whenever the menu closes
