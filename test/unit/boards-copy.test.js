@@ -21,7 +21,8 @@ const MOCK_RULE = {
   days: "Days survived underground. Rations are the real opponent.",
   kills: "Things killed before being killed. Not correlated with depth, which is the joke.",
   purse: "Wilmst carried at the moment of death. All of it still down there.",
-  yard: "Everyone you have rolled and lost, deepest first, with what was said over them. Not ranked against anybody.",
+  // VOX-05 (79-06): the graveyard holds the newest sixty stones (GRAVE_CAP).
+  yard: "Your sixty most recent dead, deepest first, with what was said over them. Not ranked against anybody.",
 };
 
 const MOCK_MARK_COL = {
@@ -293,7 +294,8 @@ test("The Phase 66/67 keys of BOARDS_PANEL_COPY are unchanged by the Phase 68 ad
   assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY), [
     "head", "scope", "strip", "chips", "note", "global", "empty", "divider", "standing", "stats", "lineage", "level", "sep", "dock",
   ]);
-  assert.equal(BOARDS_PANEL_COPY.scope.ranked, "Your dead only. The world has not been told.");
+  // VOX-05 (79-06): true under Compete ON as well as OFF.
+  assert.equal(BOARDS_PANEL_COPY.scope.ranked, "Your dead only, from this phone. Nobody else is counted here.");
   assert.equal(BOARDS_PANEL_COPY.divider, "NOT IN THE TOP TEN · YOUR BEST RUN");
 });
 
@@ -341,7 +343,7 @@ const GLOBAL_STANDING_PINS = {
     "Nobody has done better. Nobody will admit it, either.",
   ],
   ten: [
-    "Top ten. Strangers are studying your corpse.",
+    "Top ten. Other delvers are studying your corpse.", // VOX-05 (79-06): true on FRIENDS too
     "In the top ten. Your ghost has earned a small nod.",
     "Top ten. The rest are taking notes, grudgingly.",
   ],

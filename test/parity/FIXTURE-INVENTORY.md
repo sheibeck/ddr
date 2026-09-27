@@ -4758,3 +4758,38 @@ Prediction: **zero moved fixtures, zero moved state pins.**
 (`test/unit/fixtures/event-order/default-fold-corpus.json`) was regenerated
 as a declared change (`MZ_REGEN_EVENT_ORDER_CORPUS=1`): two recorded `rested`
 events gained the additive `gained: 2`; every recorded line is byte-identical.
+
+### Plan 79-06 — death, board, placement, account and quip copy (VOX-05, ROLL-04): measured
+
+**The rules.** None. Copy only: fifteen strings in `content/epitaphs.js`
+(CAUSE_TEXT.insanity and eight EPITAPHS lines), `content/boards.js`,
+`content/placement.js` and `src/browser/missLines.js`. No rng draw, event
+or rule moves. `die()` still writes `state.deathNote` and `state.epitaph`
+from these banks, so a state that dies on a changed line carries the new
+text.
+
+**The predictor.** A pin moves only where a recorded state dies and its
+rng pick lands on a changed CAUSE_TEXT or EPITAPHS line. The parity
+comparables never reach a death on those buckets, so no parity fixture
+moves. A unit golden that hashes a whole death state can move.
+
+**The live scan (measured at this plan's base, `d39625ee`).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+2. `git diff --quiet d39625ee -- engine test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness`
+   exits 0. No site was reconciled and no carve-out was added.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `npm test` found exactly one moved pin, listed below.
+
+#### Moved set — declared records
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| `test/unit/fixtures/hazard-commit/golden.json` | scenario `fatal-climb-s4` (base `fighter-s4`, seed 4) | Fighter, `cPatch { wp: 1 }` | `expected.hash` | `move E` then `resolveHazard { cross: true }` | `state.epitaph` only: "Needed a 6 on a d10, three separate times. Managed two." → "Needed three good d10 rolls to top the wall. Managed two." (hash `d0c79dc8…` → `272dd7d8…`) | 79-06 ledger row `bank:EPITAPHS.fall.3` (ROLL-04) |
+
+The re-pin was proved before it was written: re-hashing the new committed
+state with the old epitaph text restored gives the old `d0c79dc8…` hash
+exactly, and the scenario's events and `rngState` assertions pass
+unchanged. Only that one `expected.hash` value was edited; the rest of the
+golden (captured on the pre-Phase-78 engine) is untouched.

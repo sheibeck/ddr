@@ -76,7 +76,9 @@ export const BOARD_COPY = {
     mark: "✝",
     col: "#c9bda0",
     unitLabel: "FLOOR · SQ",
-    rule: "Everyone you have rolled and lost, deepest first, with what was said over them. Not ranked against anybody.",
+    // VOX-05 (79-06): the graveyard keeps the newest sixty stones
+    // (engineAdapter's GRAVE_CAP), so "everyone" was not true past sixty.
+    rule: "Your sixty most recent dead, deepest first, with what was said over them. Not ranked against anybody.",
     unit: "floor",
   },
 };
@@ -119,7 +121,9 @@ export const BOARDS_PANEL_COPY = Object.freeze({
     back: "Back",
   }),
   scope: Object.freeze({
-    ranked: "Your dead only. The world has not been told.",
+    // VOX-05 (79-06): the ME scope shows under Compete ON too, when the
+    // world HAS been told; the line now says only what the view holds.
+    ranked: "Your dead only, from this phone. Nobody else is counted here.",
     yard: "Your own dead. Nobody else’s business.",
   }),
   strip: Object.freeze({
@@ -215,7 +219,7 @@ export const STANDING_LINES = Object.freeze({
   rest: Object.freeze([
     "Outside your own top ten. Even your ghosts are unimpressed.",
     "Not your finest hour. Not your worst, either, probably.",
-    "Somewhere in the middle of the pile. Literally.",
+    "Somewhere in the pile. Literally.",
   ]),
 });
 
@@ -248,7 +252,7 @@ export const GLOBAL_STANDING_LINES = Object.freeze({
     "Nobody has done better. Nobody will admit it, either.",
   ]),
   ten: Object.freeze([
-    "Top ten. Strangers are studying your corpse.",
+    "Top ten. Other delvers are studying your corpse.",
     "In the top ten. Your ghost has earned a small nod.",
     "Top ten. The rest are taking notes, grudgingly.",
   ]),

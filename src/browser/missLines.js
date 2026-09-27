@@ -42,7 +42,7 @@ export const MISS_LINES = Object.freeze([
   "Ambitious. Also nowhere close.",
   "You swing at yesterday.",
   "That counts as a warning shot.",
-  "The dungeon rates that a two.",
+  "The dungeon rates that two out of ten.",
 ]);
 
 /**
