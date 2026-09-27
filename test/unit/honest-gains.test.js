@@ -41,6 +41,9 @@ import { makeRng } from "../../engine/rng.js";
 import { GW, GH } from "../../engine/maze.js";
 import { dotHpFor, heroSpFor } from "../../engine/difficulty.js";
 import { SPELLS, THRESHOLDS } from "../../content/index.js";
+import { ENCOUNTER_TABLES } from "../../content/encounters.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -461,4 +464,132 @@ test("death log (engine): Table 4 roll 7 at depth 3 lands the '-15 HP' row; tabl
   assert.equal(t4.amount, -19);
   assert.ok(state.dead, "15 hp against a 19 hp toll is fatal");
   assert.ok(before + t4.amount <= 0, "the narrated loss explains the death");
+});
+
+// ── 5. The lines say it (Task 3): Oracle and rail ─────────────────────────
+
+const plain = (html) => String(html).replace(/<[^>]+>/g, "");
+const oracle = (e) => plain(EVENT_NARRATION[e.type](e));
+const rail = (e) => LINE_FOR[e.type](e, {}).text;
+
+/** Every gain builder the scan found: a factory for (on offer, gained). */
+const GAIN_BUILDERS = {
+  healed: (n, g) => ({ type: "healed", amount: n, gained: g, spell: "Heal" }),
+  potionDrunk: (n, g) => ({ type: "potionDrunk", amount: n, gained: g, remaining: 2 }),
+  regenerated: (n, g) => ({ type: "regenerated", amount: n, gained: g }),
+  foodFound: (n, g) => ({ type: "foodFound", name: "Meat", wp: n, gained: g }),
+  secondWindHealed: (n, g) => ({ type: "secondWindHealed", amount: g, rolled: n, gained: g }),
+  memberSecondWind: (n, g) => ({ type: "memberSecondWind", name: "Ada", amount: g, rolled: n, gained: g }),
+  cooked: (n, g) => ({ type: "cooked", wp: n, rations: 1, gained: g }),
+  bought: (n, g) => ({ type: "bought", item: "Chicken", cost: 20, meal: n, gained: g }),
+  tableFour: (n, g) => ({ type: "tableFour", result: "The maze, for once, gives something back.", row: "+10 HP", stat: "hp", amount: g, rolled: n, gained: g }),
+};
+
+test("gain lines lead with the HP actually gained: capped adds the roll and 'full'; exact reads plain; zero says nothing came back (Oracle and rail)", () => {
+  for (const [type, make] of Object.entries(GAIN_BUILDERS)) {
+    // capped: 8 on offer, 3 gained
+    const capped = make(8, 3);
+    const oc = oracle(capped);
+    const rc = rail(capped);
+    assert.match(oc, /\+3 hp/, `${type} Oracle capped: ${oc}`);
+    assert.match(oc, /\b8\b/, `${type} Oracle capped names the 8: ${oc}`);
+    assert.match(oc, /full/, `${type} Oracle capped says full: ${oc}`);
+    assert.doesNotMatch(oc, /\+8 hp/, `${type} Oracle capped never prints the roll as the gain: ${oc}`);
+    assert.match(rc, /\+3 hp/, `${type} rail capped: ${rc}`);
+    assert.match(rc, /full/, `${type} rail capped says full: ${rc}`);
+    assert.doesNotMatch(rc, /\+8 hp/, `${type} rail capped: ${rc}`);
+    // The gain leads: the 8 only appears after the "+3 hp".
+    assert.doesNotMatch(oc.slice(0, oc.indexOf("+3 hp")), /\b8\b/, `${type}: the gain leads, the 8 trails: ${oc}`);
+    // exact: 8 on offer, 8 gained — no capped clause
+    const exact = make(8, 8);
+    assert.match(oracle(exact), /\+8 hp/, `${type} Oracle exact`);
+    assert.doesNotMatch(oracle(exact), /back to full/, `${type} Oracle exact has no capped clause: ${oracle(exact)}`);
+    assert.match(rail(exact), /\+8 hp/, `${type} rail exact`);
+    assert.doesNotMatch(rail(exact), /back to full/, `${type} rail exact: ${rail(exact)}`);
+    // zero: already full — no "+0"
+    const zero = make(8, 0);
+    for (const [surface, text] of [["Oracle", oracle(zero)], ["rail", rail(zero)]]) {
+      assert.doesNotMatch(text, /\+0\b/, `${type} ${surface} zero prints no +0: ${text}`);
+      assert.doesNotMatch(text, /\+8 hp/, `${type} ${surface} zero: ${text}`);
+      assert.match(text, /already at full/, `${type} ${surface} zero says nothing came back: ${text}`);
+    }
+  }
+});
+
+test("the gain lines with no pre-clamp value (cloak, rest, floor regen, level-up, faerie) read `gained`; the cloak at full says so", () => {
+  assert.match(oracle({ type: "cloakRegenerated", amount: 4, gained: 4 }), /\+4 hp/);
+  assert.match(rail({ type: "cloakRegenerated", amount: 4, gained: 4 }), /\+4 hp/);
+  for (const text of [oracle({ type: "cloakRegenerated", amount: 0, gained: 0 }), rail({ type: "cloakRegenerated", amount: 0, gained: 0 })]) {
+    assert.doesNotMatch(text, /\+0\b/, text);
+    assert.match(text, /already at full/, text);
+  }
+  assert.match(oracle({ type: "rested", amount: 6, gained: 6 }), /\+6 hp/);
+  assert.match(rail({ type: "floorRegen", amount: 5, gained: 5 }), /\+5 hp/);
+  assert.match(oracle({ type: "leveled", level: 2, wpGain: 7, gained: 7 }), /\+7 hp/);
+  assert.match(rail({ type: "faerieBoon", amount: 13, gained: 13 }), /\+13 base hp/);
+});
+
+test("a potion's doubled dose keeps its clause on the honest line", () => {
+  const e = { type: "potionDrunk", amount: 42, gained: 3, remaining: 1, doubled: "Wilmsry" };
+  assert.match(oracle(e), /\+3 hp/);
+  assert.match(oracle(e), /Wilmsry: twice the dose/);
+  assert.match(rail(e), /Wilmsry/);
+});
+
+test("a hand-built gain event without `gained` still renders its amount", () => {
+  assert.match(oracle({ type: "healed", amount: 5 }), /\+5 hp/);
+  assert.match(rail({ type: "potionDrunk", amount: 7, remaining: 0 }), /\+7 hp/);
+});
+
+test("encounterRolled: no ENCOUNTER_TABLES cell renders a digit or a sign after 'The dice decide'; every Table 4 numeric row reads as its effect", () => {
+  const TABLE_FOUR_SIGNED = ENCOUNTER_TABLES[3].filter((cell) => /[\d+\-−]/.test(cell));
+  assert.ok(TABLE_FOUR_SIGNED.length >= 7, "sanity: the Table 4 numeric/signed cells");
+  ENCOUNTER_TABLES.forEach((cells, t) => cells.forEach((cell, r) => {
+    const text = oracle({ type: "encounterRolled", table: t + 1, roll: r + 1, result: cell });
+    assert.match(text, /^Table \d+, roll \d+: The dice decide — /, text);
+    const tail = text.replace(/^Table \d+, roll \d+: The dice decide — /, "");
+    assert.doesNotMatch(tail, /\d/, `table ${t + 1} roll ${r + 1}: ${text}`);
+    assert.doesNotMatch(tail, /(^|\s)[+\-−]/, `table ${t + 1} roll ${r + 1}: ${text}`);
+    if (TABLE_FOUR_SIGNED.includes(cell)) assert.ok(!tail.includes(cell), `${cell} reads as its effect: ${text}`);
+  }));
+  assert.match(oracle({ type: "encounterRolled", table: 4, roll: 7, result: "-15 HP" }), /The dice decide — a toll\.$/);
+});
+
+test("tableFour lines: the prose, then the signed amount (U+2212 for a loss) on both surfaces; XP reads experience; armour prints no number", () => {
+  const toll = { type: "tableFour", result: "The maze extracts a toll you did not agree to.", row: "-15 HP", stat: "hp", amount: -19 };
+  assert.equal(oracle(toll), "The maze extracts a toll you did not agree to. −19 hp.");
+  assert.match(rail(toll), /−19 hp/);
+  assert.doesNotMatch(oracle(toll) + rail(toll), /-19|-15|15/);
+  const big = { type: "tableFour", result: "A rare kindness — you come away tougher, for keeps.", row: "+25 HP", stat: "maxHp", amount: 31, gained: 31 };
+  assert.match(oracle(big), /\+31 max hp/);
+  assert.match(rail(big), /\+31 max hp/);
+  const xp = { type: "tableFour", result: "A hard lesson, and you actually learned it.", row: "+25 XP", stat: "xp", amount: 31 };
+  assert.match(oracle(xp), /\+31 experience/);
+  assert.match(rail(xp), /\+31 experience/);
+  const armour = { type: "tableFour", result: "Your armour sloughs off in useless flakes. Whatever you were wearing, you no longer are.", row: "-All armour", stat: "armor" };
+  assert.doesNotMatch(oracle(armour) + rail(armour), /\d/);
+});
+
+test("death log reproduction (depth 3, the '-15 HP' row) through the real engine and both surfaces: the roll line has no number, the effect line's number is the HP lost, nothing prints -15", () => {
+  const run = (wp) => {
+    const state = fixedState({ c: { wp }, floor: { depth: 3 } });
+    const events = encounterDot(state, countingRng([4, 7]), []);
+    const oracleLines = events.filter((e) => EVENT_NARRATION[e.type]).map((e) => oracle(e));
+    const railLines = events.filter((e) => LINE_FOR[e.type]).map((e) => rail(e));
+    return { state, oracleLines, railLines };
+  };
+  // A survivor: the number printed is exactly the HP that left.
+  const alive = run(40);
+  const lost = 40 - alive.state.c.wp;
+  assert.equal(lost, 19);
+  assert.ok(alive.oracleLines.includes("Table 4, roll 7: The dice decide — a toll."), alive.oracleLines.join(" | "));
+  assert.ok(alive.oracleLines.includes(`The maze extracts a toll you did not agree to. −${lost} hp.`), alive.oracleLines.join(" | "));
+  assert.ok(alive.railLines.some((l) => l.includes(`−${lost} hp`)), alive.railLines.join(" | "));
+  // The user's death: the same one number, once, with a minus sign.
+  const dead = run(15);
+  assert.ok(dead.state.dead);
+  const all = [...dead.oracleLines, ...dead.railLines].join("\n");
+  assert.doesNotMatch(all, /-15|15 HP|\b15\b/, all);
+  assert.match(all, /−19 hp/);
+  assert.equal(dead.oracleLines.filter((l) => /19/.test(l)).length, 1, "one Oracle line carries the number");
 });
