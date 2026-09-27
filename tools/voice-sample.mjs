@@ -90,7 +90,28 @@ const SAMPLE_OVERRIDES = {
   itemEquipped: { destroyed: true, discarded: { n: "Leather" } },
   itemTaken: { destroyed: true, discarded: { n: "Leather" } },
   combatJoined: { why: "senses" },
+  // VOX-05 (Phase 79, plan 79-13): 79-02's honest gains. Every clamped gain
+  // shows its capped branch once ("+3 hp … (8 rolled, back to full)"), the
+  // cloak its used-at-full line, and Table 4 (an ARRAY: one patch per
+  // sample index) its hp loss and its capped heal, with the engine's own
+  // prose (engine/encounters.js#tableFour). A raise (faerieBoon, leveled,
+  // the +25 HP row) always gains what it rolls, so the random draw shows it.
+  healed: { spell: "Heal", amount: 8, gained: 3 },
+  potionDrunk: { amount: 8, gained: 3, remaining: 1 },
+  regenerated: { amount: 8, gained: 3 },
+  cloakRegenerated: { amount: 5, gained: 0 },
+  secondWindHealed: { amount: 3, gained: 3, rolled: 8 },
+  memberSecondWind: { name: "Grunk", amount: 3, gained: 3, rolled: 8 },
+  cooked: { wp: 8, gained: 3, rations: 1 },
+  foodFound: { name: "Chicken", wp: 12, gained: 3 },
+  bought: { item: "Chicken (+12 hp)", cost: 20, gained: 3, meal: 12 },
+  tableFour: [
+    { row: "-15 HP", stat: "hp", amount: -19, result: "The maze extracts a toll you did not agree to." },
+    { row: "+10 HP", stat: "hp", amount: 3, rolled: 8, gained: 3, result: "The maze, for once, gives something back." },
+  ],
 };
+
+const ITEM_NAME_TYPES = new Set(["bought", "itemCooled", "itemEffectFaded", "itemEffectStarted", "pilferFumbled", "staffRecharged"]);
 
 // A representative, randomly-filled event carrying every field any builder
 // reads. Re-rolled per line so tone variety across a run is visible.
@@ -129,8 +150,13 @@ function sampleEvent(type, sampleIndex = 0) {
     // itemEffectStarted/conditionsOf payload shape exactly.
     size: "Large", step: 1, sizeDmg: 2,
   };
-  if (sampleIndex === 0 && SAMPLE_OVERRIDES[type]) return { ...base, ...SAMPLE_OVERRIDES[type] };
-  return base;
+  // 79-13: these types carry the item's NAME, not the `{ n }` object
+  // (tools/lib/event-variants.mjs#TYPE_FIELDS makes the same correction);
+  // the drawn name is reused, so no rng draw moves.
+  if (ITEM_NAME_TYPES.has(type)) base.item = base.item.n;
+  const o = SAMPLE_OVERRIDES[type];
+  const patch = Array.isArray(o) ? o[sampleIndex] : sampleIndex === 0 ? o : undefined;
+  return patch ? { ...base, ...patch } : base;
 }
 
 function fillEpitaph(tmpl) {
