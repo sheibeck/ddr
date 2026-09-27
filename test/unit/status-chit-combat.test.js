@@ -115,10 +115,14 @@ function rig({ reducedMotion = true } = {}) {
 // Phase 74 (ROLL-02/03), plan 74-07: the chip-tap card now leads with the
 // chip's measured effect. This hero is a level-3 Human Fighter Soldier
 // (strike die d10; its weapon "Sword" is not a WEAPONS key, so need 0),
-// so the Afraid lead here reads "−3 to hit (now 9–10)" — pinned below and
-// cross-checked against window.__mzConditionEffect (the real bridge) so a
-// drift in the engine's own numbers fails this test, not silently passes.
-const AFRAID_LEAD = "−3 to hit (now 9–10)";
+// so the Afraid lead here reads "−3 to hit (9–10 instead of 6–10)" — pinned
+// below and cross-checked against window.__mzConditionEffect (the real
+// bridge) so a drift in the engine's own numbers fails this test, not
+// silently passes.
+// CMBUI-13 (Phase 77, plan 77-03): re-pinned from Phase 74's
+// "−3 to hit (now 9–10)" to CONTEXT's Dazed honesty shape, which names the
+// range without the effect too (the what-if range, read through heroHitOdds).
+const AFRAID_LEAD = "−3 to hit (9–10 instead of 6–10)";
 
 test("(a) combat + Afraid: the chip's tap raises one kind 'cond' card, the label in capitals and the effect lead + out-of-combat sentence, over the combat screen", () => {
   const r = rig();
