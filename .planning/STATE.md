@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 79
-current_phase_name: Content & Narrative Pass
-status: executing
+current_phase: 79.1
+current_phase_name: Milestone Balance Check & Deep-Floor Tuning
+status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-27T05:15:27.417Z"
+last_updated: "2026-09-27T22:45:00.987Z"
 last_activity: 2026-09-27
-last_activity_desc: Phase 78 complete, transitioned to Phase 79
+last_activity_desc: Phase 79 complete, transitioned to Phase 79.1
 progress:
   total_phases: 14
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 111
-  completed_plans: 91
-  percent: 79
+  completed_plans: 104
+  percent: 86
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 79 — Content & Narrative Pass
+Phase: 79.1 — Milestone Balance Check & Deep-Floor Tuning
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-27 — Phase 78 complete, transitioned to Phase 79
+Status: Ready to plan
+Last activity: 2026-09-27 — Phase 79 complete, transitioned to Phase 79.1
 
 ## Ground Truth (durable facts every session needs)
 

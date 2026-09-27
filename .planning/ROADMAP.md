@@ -53,7 +53,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [x] **Phase 76: Darkness Unification & Relaunch Persistence** - one shared darkness rule, and a relaunch or force-close can no longer escape a live fight or an open store (completed 2026-09-26)
 - [x] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators (completed 2026-09-26)
 - [x] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card (completed 2026-09-27)
-- [ ] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep
+- [x] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep (completed 2026-09-27)
 - [ ] **Phase 80: Android Release Build & Tooling** - R8 minify/shrink, edge-to-edge and large-screen handling, and the fit tool's replay-resume fix
 - [x] **Phase 81: Leaderboards Panel Fixes** - YOU tag, standing card, ME | ALL | FRIENDS scopes with ALL default when signed in, LINEAGE ME-only, GRAVEYARD and LEANEST removed (completed 2026-09-25)
 
@@ -493,7 +493,7 @@ Plans:
   2. No player-facing string still encodes roll-under phrasing ("1–N", "need N", "natural 1", "−3 on to-hit") — a doc-synced test pins that none remains.
   3. Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why, while staying sarcastic and family-friendly.
 
-**Plans**: 12/13 plans executed
+**Plans**: 13/13 plans complete
 
 Plans:
 **Wave 1**
@@ -525,7 +525,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 79-13-PLAN.md — Produce the review page the user reads at milestone close, prove every changed line is on it, refresh the voice sample, and close the phase with the gates and one Pixel 7 checklist (VOX-05's review model; VOX-04 and R... (wave 6)
+- [x] 79-13-PLAN.md — Produce the review page the user reads at milestone close, prove every changed line is on it, refresh the voice sample, and close the phase with the gates and one Pixel 7 checklist (VOX-05's review model; VOX-04 and R... (wave 6)
 
 ### Phase 79.1: Milestone Balance Check & Deep-Floor Tuning (INSERTED)
 
@@ -655,7 +655,7 @@ Plans:
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 9/9 | Complete    | 2026-09-27 |
-| 79. Content & Narrative Pass | v2.1 | 12/13 | In Progress|  |
+| 79. Content & Narrative Pass | v2.1 | 15/13 | Complete    | 2026-09-27 |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
