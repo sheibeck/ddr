@@ -1097,6 +1097,8 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 }
 .doss .who{font-family:var(--disp);font-size:calc(1.125rem * var(--mw-text-scale));line-height:1.1;color:var(--ditto);margin:0 0 3px}
 .doss p{font-family:var(--body);font-size:calc(0.90625rem * var(--mw-text-scale));line-height:1.42;color:var(--ink);margin:0;max-width:44ch}
+/* VOX-04 (Phase 79, Plan 03): the Race and Subclass notes' Good/Bad footer. */
+.doss .doss-rules{font-family:var(--mono);font-size:calc(0.75rem * var(--mw-text-scale));line-height:1.45;color:var(--ink-soft);margin-top:4px;overflow-wrap:anywhere}
 .doss section + section{border-left:1px dotted var(--rule);padding-left:16px}
 @media (max-width:700px){.doss section + section{border-left:0;padding-left:0;border-top:1px dotted var(--rule);padding-top:14px}}
 
@@ -1967,6 +1969,12 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-roller-reveal.mw-roller-revealed{opacity:1}
 .mw-roller-name{font-family:var(--disp);font-size:calc(1rem * var(--mw-text-scale));line-height:1.6;color:var(--ink)}
 .mw-roller-quirk{border:2px solid var(--rule);background:var(--paper-2);padding:13px;margin-top:16px;font-family:var(--body);font-size:calc(0.9375rem * var(--mw-text-scale));font-weight:700;line-height:1.5;color:var(--ink-soft)}
+/* VOX-04 (Phase 79, Plan 03): the rolled sub-class's (and a non-Human
+   race's) Good/Bad footer under the quirk; wraps, and the screen scrolls. */
+.mw-roller-rules{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.mw-roller-rules:empty{display:none}
+.mw-roller-rules-who{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:.06em;line-height:1.6;color:var(--ink-soft);margin:0 0 4px;text-transform:uppercase}
+.mw-roller-rules-line{font-family:var(--body);font-size:calc(0.8125rem * var(--mw-text-scale));line-height:1.45;color:var(--ink-soft);margin:0 0 3px;overflow-wrap:anywhere}
 .mw-roller-spacer{flex:1}
 .mw-roller-cta{
   margin-top:22px;width:100%;text-align:center;font-family:var(--disp);font-size:calc(0.5625rem * var(--mw-text-scale));
@@ -2058,6 +2066,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
     <div class="mw-roller-reveal" id="mw-roller-reveal">
       <div class="mw-roller-name" id="mw-roller-name">—</div>
       <div class="mw-roller-quirk" id="mw-roller-quirk">—</div>
+      <div class="mw-roller-rules" id="mw-roller-rules"></div>
     </div>
     <div class="mw-roller-spacer"></div>
     <button type="button" class="mw-roller-cta" id="mw-roller-cta" disabled>THE DICE ARE STILL FALLING</button>

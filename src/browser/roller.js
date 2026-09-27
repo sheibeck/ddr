@@ -21,15 +21,20 @@
 // by having `commit()` hand `onCommit` that same object.
 
 import { RACES, CLASSES } from "../../content/index.js";
+import { footerLines } from "./identityFooter.js";
 
 // ─── frozen tables ──────────────────────────────────────────────────────
 
+// VOX-04 (Phase 79, Plan 03): `rules` is the reveal's identity footer — the
+// rolled sub-class's Good/Bad lines and, for a non-Human race, the race's,
+// shown before DESCEND (the user met the Summoner's weakness only after it).
 export const ROLLER_IDS = Object.freeze({
   screen: "mw-roller-screen",
   cta: "mw-roller-cta",
   reveal: "mw-roller-reveal",
   name: "mw-roller-name",
   quirk: "mw-roller-quirk",
+  rules: "mw-roller-rules",
   race: "mw-roller-race",
   cls: "mw-roller-class",
   sub: "mw-roller-sub",
@@ -77,6 +82,37 @@ function noop() {}
 
 function pickDisplay(list, random) {
   return list[Math.floor(random() * list.length)];
+}
+
+// VOX-04 (Phase 79, Plan 03): one group per footer — the sub-class, then a
+// non-Human race (Human's neutral line adds nothing a new player needs at
+// the roll) — each a `.mw-roller-rules-group` holding the name and one
+// paragraph per footerLines line, textContent only. An empty `sheet` (the
+// start of a roll) just clears the element.
+function fillRules(doc, sheet) {
+  const el = doc.getElementById(ROLLER_IDS.rules);
+  if (!el) return;
+  el.textContent = "";
+  if (!sheet) return;
+  const groups = [["sub", sheet.subLabel]];
+  if (footerLines("race", sheet.raceLabel).some((line) => /^(Good|Bad): /.test(line))) groups.push(["race", sheet.raceLabel]);
+  for (const [kind, key] of groups) {
+    const lines = footerLines(kind, key);
+    if (!lines.length) continue;
+    const group = doc.createElement("div");
+    group.className = "mw-roller-rules-group";
+    const who = doc.createElement("p");
+    who.className = "mw-roller-rules-who";
+    who.textContent = key;
+    group.appendChild(who);
+    for (const line of lines) {
+      const p = doc.createElement("p");
+      p.className = "mw-roller-rules-line";
+      p.textContent = line;
+      group.appendChild(p);
+    }
+    el.appendChild(group);
+  }
 }
 
 function setReel(doc, id, value, locked) {
@@ -170,6 +206,7 @@ export function createRoller(options) {
     if (reveal) reveal.classList.remove(ROLLER_CSS.revealed);
     if (nameEl) nameEl.textContent = "";
     if (quirkEl) quirkEl.textContent = "";
+    fillRules(doc, null);
     if (ctaEl) {
       ctaEl.disabled = true;
       ctaEl.classList.remove(ROLLER_CSS.ready);
@@ -239,6 +276,7 @@ export function createRoller(options) {
         const finalCtaEl = doc.getElementById(ROLLER_IDS.cta);
         if (finalNameEl) finalNameEl.textContent = sheet.name;
         if (finalQuirkEl) finalQuirkEl.textContent = sheet.quirk.text;
+        fillRules(doc, sheet);
         if (finalRevealEl) finalRevealEl.classList.add(ROLLER_CSS.revealed);
         revealed = true;
         if (finalCtaEl) {
