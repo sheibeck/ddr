@@ -57,9 +57,12 @@ export const THIEF_SKILLS = {
   // unseen foe that no engine site ever read (a dead claim) — dropped.
   // "never surprised" is kept (its own initiative-side effect is real, see
   // docs/ROLL-LEDGER.md's [initiative:acute-hearing] row). The user's
-  // requested replacement ("Hear the next room") is a new map feature, OUT
-  // of this phase's scope — tracked as HUD-07 in Phase 78.
-  "Acute Hearing": { cost: 5, txt: "never surprised" },
+  // requested replacement ("Hear the next room") landed in Phase 78 as
+  // HUD-07 (plan 78-09, ruled option A by the user 2026-09-26): the hero
+  // hears every unresolved encounter within three squares, through walls,
+  // without learning what it is (engine/derived.js#heardSquares; the map
+  // draws a faint ripple). The engine never reads this string.
+  "Acute Hearing": { cost: 5, txt: "never surprised; hears an encounter up to three squares away, walls or no walls, without learning what it is" },
   "Dirty Trick": { cost: 3, active: "dirtyTrick", txt: "sand, thumb, elbow: the target is blinded for two rounds" },
   "Smoke": { cost: 4, active: "smoke", txt: "gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works" },
   "Silent Step": { cost: 6, active: "silentStep", txt: "nobody heard that: your next attack is an automatic critical, any round" },

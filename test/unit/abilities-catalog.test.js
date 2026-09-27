@@ -78,7 +78,10 @@ test("Locks/Sewing keep their up-tier + txt2; the ten kept passives keep their e
     "THIEF_SKILLS.Heft": [THIEF_SKILLS, "Heft", "+2 damage, mail armour, half upkeep"],
     // Phase 72 (ROLL-01, finding F2): the dead "3 to hit the unseen" clause
     // (no engine site ever read it) was dropped; "never surprised" is kept.
-    "THIEF_SKILLS.Acute Hearing": [THIEF_SKILLS, "Acute Hearing", "never surprised"],
+    // HUD-07 (Phase 78, plan 78-09, user ruling 2026-09-26, option A): the
+    // replacement mechanic landed, so the text keeps "never surprised" and
+    // states the hearing (engine/derived.js#heardSquares).
+    "THIEF_SKILLS.Acute Hearing": [THIEF_SKILLS, "Acute Hearing", "never surprised; hears an encounter up to three squares away, walls or no walls, without learning what it is"],
   };
   for (const [label, [table, key, txt]] of Object.entries(KEPT_TXT)) {
     assert.equal(table[key].txt, txt, `${label}: kept-passive txt must be byte-identical to the pre-phase string`);

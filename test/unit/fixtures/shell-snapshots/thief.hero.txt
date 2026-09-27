@@ -58,7 +58,7 @@
 <div id="s-skills">
   html=""
   <li>
-    html="<b>Acute Hearing</b><i>never surprised</i>"
+    html="<b>Acute Hearing</b><i>never surprised; hears an encounter up to three squares away, walls or no walls, without learning what it is</i>"
   <li>
     html="<b>Night Vision</b><i>darkness costs you nothing</i>"
 ## #s-abilities
