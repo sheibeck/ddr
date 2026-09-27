@@ -20,17 +20,43 @@ import {
 import { BAGS } from "../../content/bags.js";
 
 // ─── identityLine() ────────────────────────────────────────────────────
+//
+// Phase 78 (HUD-01) re-pin. The user's 2026-09-22 ruling: "Only show the
+// sub class on top rail ... keep the race, drop the parent class." Band 1
+// reads "Race Sub-class · Lvl N" (e.g. "Dwarf Pickpocket · Lvl 3"), with no
+// parent class and no parentheses. The Hero tab still carries the full
+// "Race Sub · Class" tag.
 
-test("identityLine: a full character renders Name — Race Class (Sub) · Lvl N", () => {
-  const line = identityLine({ name: "Ardwin", race: "Human", cls: "Thief", sub: "Guard", level: 3 });
-  assert.equal(line, "Ardwin — Human Thief (Guard) · Lvl 3");
+test("identityLine (HUD-01): a full character renders Name — Race Sub-class · Lvl N", () => {
+  const c = { name: "Ardwin", race: "Dwarf", cls: "Thief", sub: "Pickpocket", level: 3 };
+  assert.equal(identityParts(c).line, "Dwarf Pickpocket · Lvl 3");
+  assert.equal(identityLine(c), "Ardwin — Dwarf Pickpocket · Lvl 3");
 });
 
-test("identityLine: a falsy sub omits the parenthesised group and its leading space", () => {
+test("identityLine (HUD-01): a sub-class hides the parent class and uses no parentheses", () => {
+  const line = identityLine({ name: "Ardwin", race: "Human", cls: "Thief", sub: "Guard", level: 3 });
+  assert.equal(line, "Ardwin — Human Guard · Lvl 3");
+  assert.doesNotMatch(line, /[()]/);
+  assert.doesNotMatch(line, /Thief/);
+});
+
+test("identityLine (HUD-01): a falsy sub lets the class stand in the sub-class's place", () => {
   const line = identityLine({ name: "Ardwin", race: "Human", cls: "Thief", sub: null, level: 3 });
   assert.equal(line, "Ardwin — Human Thief · Lvl 3");
   assert.doesNotMatch(line, /\(\)/);
-  assert.doesNotMatch(line, /  /, "no double space where the sub group would have been");
+  assert.doesNotMatch(line, /  /, "no double space where the sub would have been");
+});
+
+test("identityLine (HUD-01): a missing race leaves no leading space", () => {
+  const c = { name: "Ardwin", race: "", cls: "Thief", sub: "Pickpocket", level: 3 };
+  assert.equal(identityParts(c).line, "Pickpocket · Lvl 3");
+  assert.equal(identityLine(c), "Ardwin — Pickpocket · Lvl 3");
+});
+
+test("identityLine (HUD-01): with neither race nor class nor sub the line is just Lvl N", () => {
+  const c = { name: "Ardwin", race: "", cls: "", sub: null, level: 3 };
+  assert.equal(identityParts(c).line, "Lvl 3");
+  assert.equal(identityLine(c), "Ardwin — Lvl 3");
 });
 
 test("identityLine: a falsy name substitutes a non-empty placeholder", () => {

@@ -825,6 +825,34 @@ test("Device-review Pass DR8: dispatch({type:'camp'}) applies its effect through
   });
 });
 
+test("Phase 78 (78-05): dispatch() stamps the fed day's book refill (stampBookRefill) so the returned events and html name it with the count", async () => {
+  await withFakeLocalStorage(async () => {
+    let result = null;
+    for (let seed = 9100; seed < 9300 && !result; seed++) {
+      initRun(seed, [], { force: { cls: "Magic User" } });
+      const state = getState();
+      const dir = firstOpenPlainDir(state);
+      if (!dir) continue;
+      // A spent 12-charge book, one square short of the 100-square day.
+      state.c.level = 5;
+      state.c.wp = state.c.maxWP;
+      state.c.spellsUsed = 11;
+      state.c.rations = 10;
+      state.steps = 99;
+      const out = dispatch({ type: "move", dir });
+      if (out.events.some((e) => e.type === "rationsEaten")) result = out;
+    }
+    assert.ok(result, "a seed whose hundredth square is a plain fed step");
+    const ra = result.events.find((e) => e.type === "rationsEaten");
+    assert.equal(ra.refilled, true, "the engine's own refill flag");
+    assert.deepEqual(ra.books, [{ who: "you", name: result.state.c.name, have: 12, max: 12 }], "the adapter stamped the count");
+    assert.ok(
+      result.html.some((h) => /Your book is full again \(12\/12\)/.test(h)),
+      "the Oracle html names the refill with the count",
+    );
+  });
+});
+
 test("Device-review Pass DR8: dispatch({type:'camp'}) with no rations is a no-op that reports why, never a throw", async () => {
   await withFakeLocalStorage(async () => {
     initRun(9003);

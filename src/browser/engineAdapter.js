@@ -21,6 +21,9 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { validateSave, rehydrate, serializeRun, resumeEventsFor } from "../../engine/saveState.js";
 import { bury, buildRunSummary } from "../../engine/death.js";
+// Phase 78 (78-05): the charge count for stampBookRefill's refill line
+// (eventNarration.js never imports engine/, so the adapter hands it in).
+import { maxCharges } from "../../engine/movement.js";
 // Phase 65 (RUN-02/RUN-03): the pure bests-record operations — this adapter
 // owns the durable ddr.bests.v1 storage, engine/records.js owns the shape.
 import { emptyBests, sanitizeBests, updateBests, backfillBests, reconcileBests } from "../../engine/records.js";
@@ -31,7 +34,7 @@ import { emptyBests, sanitizeBests, updateBests, backfillBests, reconcileBests }
 // any engine-emitted type has no entry, closing 04-RESEARCH.md's Pitfall 4
 // (a silently-dropped combat/economy log line once those domains route
 // through dispatch() — 04-07).
-import { EVENT_NARRATION, stampScrollCopyNotes } from "./eventNarration.js";
+import { EVENT_NARRATION, stampScrollCopyNotes, stampBookRefill } from "./eventNarration.js";
 // Phase 25 (FEED-05): the fledgling-miss quip corpus + its pure decorator.
 // dispatch() below is the ONE site that stamps a quip onto a strikeMissed
 // event, so the Oracle line and the narration line share the same quip.
@@ -702,6 +705,7 @@ export function dispatch(action) {
     throw new Error("engineAdapter.dispatch: call boot()/initRun() before dispatch()");
   }
   try {
+    const before = currentState;
     const { state, events } = applyAction(currentState, action);
     currentState = state;
     persist();
@@ -751,7 +755,11 @@ export function dispatch(action) {
     // CMBUI-11 (Phase 77): a scroll too advanced to copy still cast — stamp
     // the note/cast pair so the Oracle says the cast, then the copy note
     // (presentation only; the engine's events keep their order).
-    const stamped = stampScrollCopyNotes(decorated);
+    // Phase 78 (78-05): a fed day that refilled a spent book names it with
+    // the count — stamp each refilled sheet (before: the state applyAction
+    // was handed, never mutated; after: the new state) onto `rationsEaten`
+    // (presentation only; the engine's events and state are untouched).
+    const stamped = stampBookRefill(stampScrollCopyNotes(decorated), before, currentState, maxCharges);
     return { state: currentState, events: stamped, html: formatEvents(stamped) };
   } catch (err) {
     // Defense in depth (CR-01): engine/saveState.js#validateSave already

@@ -77,35 +77,40 @@ const IDENTITY_PLACEHOLDER = "Nameless";
  * name segment identityLine() renders (the existing IDENTITY_PLACEHOLDER
  * stand-in when missing) — this is the mock's never-truncated gold span.
  * `line` is exactly the text identityLine() renders AFTER its em-dash
- * separator ("Race Class (Sub) · Lvl N", with the same sub-omission and
- * level-1 rules) — this is the mock's dimmed, ellipsis-truncating span. A
+ * separator — this is the mock's dimmed, ellipsis-truncating span. A
  * null/missing `c` yields the stand-in name and an empty line (never
  * throws).
+ *
+ * Phase 78 (HUD-01), the user's 2026-09-22 ruling: "Only show the sub class
+ * on top rail ... keep the race, drop the parent class." `line` is the race
+ * and the sub-class joined by one space, then " · Lvl N" — e.g. "Dwarf
+ * Pickpocket · Lvl 3" — with no parent class and no parentheses. A falsy
+ * `c.sub` lets `c.cls` stand in the sub-class's place; falsy parts are
+ * dropped (no stray spaces); with neither race nor class nor sub the line
+ * is just "Lvl N". The Hero tab keeps the full "Race Sub · Class" tag.
  */
 export function identityParts(c) {
   if (!c) return Object.freeze({ name: IDENTITY_PLACEHOLDER, line: "" });
   const name = c.name || IDENTITY_PLACEHOLDER;
-  const race = c.race || "";
-  const cls = c.cls || "";
-  const subGroup = c.sub ? ` (${c.sub})` : "";
   const level = c.level || 1;
-  const raceClass = [race, cls].filter(Boolean).join(" ");
-  return Object.freeze({ name, line: `${raceClass}${subGroup} · Lvl ${level}` });
+  const ident = [c.race, c.sub || c.cls].filter(Boolean).join(" ");
+  const lvl = `Lvl ${level}`;
+  return Object.freeze({ name, line: ident ? `${ident} · ${lvl}` : lvl });
 }
 
 /**
- * identityLine(c) -> "Name — Race Class (Sub) · Lvl N"
+ * identityLine(c) -> "Name — Race Sub-class · Lvl N"
  *
- * Composes from identityParts(c) (Phase 57, Plan 05) — every existing
- * output stays byte-identical to the pre-split formatter, guarded by the
- * seven pre-existing tests in test/unit/hudBands.test.js.
+ * Composes from identityParts(c) (Phase 57, Plan 05; re-formed by Phase 78
+ * HUD-01 — see identityParts above for the ruling).
  *
  * Rules:
  * - a missing/null `c` returns the placeholder-only form (IDENTITY_PLACEHOLDER)
  *   and never throws — nothing else about the character is known.
  * - a falsy `c.name` substitutes IDENTITY_PLACEHOLDER for the name segment.
- * - a falsy `c.sub` omits the parenthesised group AND its leading space
- *   entirely (never empty parentheses).
+ * - HUD-01: the sub-class replaces the parent class; a falsy `c.sub` lets
+ *   `c.cls` stand in; a missing race leaves no leading space; with none of
+ *   the three the line is "Name — Lvl N". Never any parentheses.
  * - a falsy `c.level` renders "Lvl 1".
  * - the separators are the em dash and the middle dot already used
  *   elsewhere in the shell (heroTab.js's party-line / armor sub-line).

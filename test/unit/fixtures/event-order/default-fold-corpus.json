@@ -1195,6 +1195,11 @@
      "text": "Rest restores +6 hp.",
      "tone": "hit",
      "priority": 3
+    },
+    {
+     "text": "Twenty quiet squares, and a spell charge is ready again (?/?). The dungeon keeps no such courtesy for you.",
+     "tone": "magic",
+     "priority": 4
     }
    ],
    "linesIdx": [
@@ -1204,6 +1209,13 @@
      "priority": 3,
      "idx": 0,
      "type": "rested"
+    },
+    {
+     "text": "Twenty quiet squares, and a spell charge is ready again (?/?). The dungeon keeps no such courtesy for you.",
+     "tone": "magic",
+     "priority": 4,
+     "idx": 2,
+     "type": "spellChargeRecovered"
     }
    ]
   },
