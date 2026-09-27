@@ -74,7 +74,7 @@ function fixedFoe(overrides = {}) {
   };
 }
 
-/** midFightRound() — the same real rngState-32 round combat-beat-shell uses: three folded lines, no ending. */
+/** midFightRound() — the same real rngState-32 round combat-beat-shell uses: four event-order lines (CMBUI-10; three under the old priority fold), no ending. */
 function midFightRound() {
   const before = fixedState({ rngState: 32 });
   before.combat = {
@@ -154,7 +154,7 @@ test("round-summary (b): mid-beat, the rows are exactly the revealed lines, the 
   const { clock, doc, sandbox, w } = scenario();
   const { plan, started, lines } = driveHandoff(sandbox, midFightRound());
   assert.ok(started);
-  assert.equal(plan.count, 3);
+  assert.equal(plan.count, 4); // CMBUI-10 (Phase 77): 4 event-order lines (3 under the old priority fold)
 
   let rows = stripRows(doc);
   assert.equal(rows.length, 1, "only the first line has been revealed");
@@ -195,7 +195,7 @@ test("round-summary (c): beatHurryTap with a target inside #cb-summary stops pro
   assert.equal(stopped, true);
   assert.equal(prevented, true);
   assert.equal(w.__mzBeat.active(), false, "the round lands at once");
-  assert.equal(stripRows(doc).length, 3, "every line of the round now shows");
+  assert.equal(stripRows(doc).length, 3, "every line the strip holds (the round's last 3 of its 4) now shows");
   for (const r of stripRows(doc)) assert.equal(r.getAttribute("aria-hidden"), null, "none left typing");
   const order = kids(encBody(doc)).map((el) => el.id || el.className);
   assert.deepEqual(order.slice(-3), ["cb-mid", "cb-summary", "cb-act"], "the settle render is the plain combat screen");

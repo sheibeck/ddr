@@ -77,15 +77,16 @@ export function beatEndMs(texts, durationFor = () => 0) {
 
 /**
  * lineIdxsFor(actionType, events, ctx = {}) — the SAME
- * `linesForAction(..., { limit: Infinity, withIdx: true })` call
- * fightLogLinesFor makes, reporting only each fold line's first
- * constituent event index. Aligned 1:1 with
+ * `linesForAction(..., { limit: Infinity, withIdx: true, order: "event" })`
+ * call fightLogLinesFor makes (CMBUI-10: the event order, so the idxs
+ * ascend), reporting only each fold line's first constituent event index.
+ * Aligned 1:1 with
  * `fightLogLinesFor(actionType, events, ctx)` by construction (same call,
  * same order, same count). [] for a non-array `events`.
  */
 export function lineIdxsFor(actionType, events, ctx = {}) {
   if (!Array.isArray(events)) return [];
-  return linesForAction(actionType, events, ctx, { limit: Infinity, withIdx: true }).map((l) => l.idx);
+  return linesForAction(actionType, events, ctx, { limit: Infinity, withIdx: true, order: "event" }).map((l) => l.idx);
 }
 
 /**
@@ -270,9 +271,11 @@ export function planBeat(opts = {}) {
   const heroHp = heroFrames(before.c ? before.c.wp : 0, lineEvents);
   // Bugfix (post-58-06, trap-death-21hp-oracle-minus1): lineEvents carries
   // only ONE representative event per folded line (lineIdxsFor's own
-  // contract, inherited from narrationLines.js's enemyRound — a foe with
-  // 2+ swings this round, or 3+ foes landing together, folds into one line
-  // whose TEXT sums every hit but whose `idx` names only the first one).
+  // contract). Phase 77 (CMBUI-10): the event order folds far less — every
+  // swing is its own line, so each struckByFoe now has its own frame — but
+  // a line can still stand for more than one event: back-to-back identical
+  // lines fold " ×N" (two identical hits read once, their `idx` naming only
+  // the first), and a contiguous chain (a roll and its outcome) is one line.
   // heroFrames, fed that single event, silently under-counts the round's
   // real total whenever such a fold occurs. The gap is invisible on a
   // MID-FIGHT round (viewFor already substitutes the real `after` on its

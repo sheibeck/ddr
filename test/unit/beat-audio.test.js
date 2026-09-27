@@ -150,18 +150,19 @@ function fixedCombat(foes, overrides = {}) {
 /**
  * midFightRound() — a real, resolved, MID-FIGHT round (rngState 32),
  * verbatim from test/unit/combat-beat-shell.test.js: the hero attacks two
- * foes. Goblin Grunt (wp 1) is struck and killed on the FIRST folded line
- * (struck+foeKilled+goldGained fold to one line); Cave Rat (wp 40, alive)
- * strikes back on the SECOND line (struckByFoe, a critical hit); a third
- * line ("+1 wilmst") carries no foe/hero HP change. `after.combat` stays
- * set (Cave Rat is still alive) — three real fight-log lines.
+ * foes. CMBUI-10 (Phase 77): the fight log reads in event order, one line
+ * per happening — Goblin Grunt (wp 1) is struck (line 0), falls (line 1)
+ * and drops "+1 wilmst" (line 2); then Cave Rat (wp 40, alive) strikes back
+ * (line 3, struckByFoe, a critical hit). `after.combat` stays set (Cave Rat
+ * is still alive) — four real fight-log lines (three under the old
+ * priority fold, which read "struck · felled" first).
  *
  * Its four mapped events (struck->hit, foeKilled->foeDie, goldGained->gold,
  * struckByFoe->hurt) hit the dispatch's 3-clip cap (DISPATCH_CLIP_CAP):
- * cuesForDispatch resolves to hit1(line0)/foe-die(line0)/gold(line2) — the
+ * cuesForDispatch resolves to hit1(line0)/foe-die(line1)/gold(line2) — the
  * hurt cue is capped away, exactly as a pre-beat playForDispatch call on
  * this SAME round would drop it too (Phase 56's cap, untouched by Phase
- * 58) — so the beat's line-1 legitimately plays nothing, a real case this
+ * 58) — so the beat's line 3 legitimately plays nothing, a real case this
  * suite must not paper over.
  */
 function midFightRound() {
@@ -213,20 +214,24 @@ test("beat-audio (1): a real beat plays only line 0's clips at start; each later
     const { before, after, events } = midFightRound();
     const plan = buildPlanFor(before, after, events);
     assert.ok(plan, "the real round must yield a beat plan");
-    assert.equal(plan.count, 3, "scenario setup must actually fold to three fight-log lines");
+    // CMBUI-10: 3 lines under the priority fold, 4 in the event order.
+    assert.equal(plan.count, 4, "scenario setup must actually fold to four fight-log lines");
 
     const clock = createFakeClock();
     const runner = makeRunner(clock);
 
     runner.start(plan);
-    assert.deepEqual(fake.calls.starts, ["hit1", "foe-die"], "line 0's clips (and only line 0's) must start synchronously");
+    assert.deepEqual(fake.calls.starts, ["hit1"], "line 0's clips (and only line 0's) must start synchronously");
 
     const offsets = beatOffsets(plan.texts, () => 0);
     clock.advance(offsets[1] - offsets[0]);
-    assert.deepEqual(fake.calls.starts, ["hit1", "foe-die"], "line 1 carries no clip of its own (capped away) — nothing new must start");
+    assert.deepEqual(fake.calls.starts, ["hit1", "foe-die"], "line 1's clip (the kill, its own line in event order) must start exactly at line 1's own offset");
 
     clock.advance(offsets[2] - offsets[1]);
     assert.deepEqual(fake.calls.starts, ["hit1", "foe-die", "gold"], "line 2's clip must start exactly at line 2's own offset");
+
+    clock.advance(offsets[3] - offsets[2]);
+    assert.deepEqual(fake.calls.starts, ["hit1", "foe-die", "gold"], "line 3 carries no clip of its own (capped away) — nothing new must start");
 
     const expected = clipsForDispatch("attack", events, {}, createVariation());
     assert.deepEqual(fake.calls.starts, expected, "the whole beat's started-clip sequence must equal a parallel clipsForDispatch call, fresh variation each side");
@@ -249,7 +254,7 @@ test("beat-audio (2): runner.hurry() after line 0 starts every remaining line's 
     const runner = makeRunner(clock);
 
     runner.start(plan);
-    assert.deepEqual(fake.calls.starts, ["hit1", "foe-die"]);
+    assert.deepEqual(fake.calls.starts, ["hit1"]); // CMBUI-10: the kill is line 1 now, not part of line 0
 
     runner.hurry();
     assert.deepEqual(fake.calls.starts, ["hit1", "foe-die", "gold"], "hurry must start every remaining line's clips, losing nothing");

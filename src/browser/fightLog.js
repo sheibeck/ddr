@@ -5,17 +5,24 @@
 //
 // Decision 1 (34-01-PLAN.md objective, RESEARCH Open Question 1): the
 // fight log's lines are sourced from `linesForAction(type, events, ctx,
-// { limit: Infinity, withIdx: true })` — the SAME folded/deduped pipeline —
-// rather than from raw `formatEvents()` output.
-// 34-CONTEXT.md pins "log line count = folded count" (the worst-case
-// fight-log round test pins line count = folded count), so the
-// folding/dedup pipeline must stay the ONE source; sourcing lines from raw
-// per-event HTML would yield one
-// line per narrated event and break both that pin and the 400-seed fold
-// proof. A folded multi-event entry reveals the dice of its FIRST
-// constituent event (`events[idx]`, via `narrateEvent`/`oracleDetailText`)
-// — the Oracle stays the complete per-swing log (CSCR-04: "the Oracle
-// stays the complete log").
+// { limit: Infinity, withIdx: true, order: "event" })` — the SAME fold
+// pipeline, in its EVENT order — rather than from raw `formatEvents()`
+// output. 34-CONTEXT.md pins "log line count = folded count" (the
+// worst-case fight-log round test pins line count = the event-order folded
+// count).
+//
+// Phase 77 (CMBUI-10): the fold's event order is the fight log's order.
+// The user's device report (2026-09-21): "A Ned falls, then 2 Neds miss,
+// then I riposted. Let's make sure the Oracle reads in order." The priority
+// fold (the rail's one-card summary) grouped a foe's swings across the
+// action and sorted by priority, so a kill could read before the miss that
+// caused it. In the event order every line sits at its earliest event, only
+// contiguous chains merge (a roll and its outcome, a throw and its
+// outcome), and only back-to-back identical lines fold " ×N". A merged
+// entry reveals the dice of its FIRST (earliest) constituent event
+// (`events[idx]`, via `narrateEvent`/`oracleDetailText`) — the Oracle
+// stays the complete per-swing log (CSCR-04: "the Oracle stays the
+// complete log").
 //
 // PRESENTATION ONLY, pure module: no DOM/global access, no timers, no
 // storage anywhere in this file. Every export is a plain function
@@ -30,9 +37,10 @@ import { narrateEvent } from "./eventNarration.js";
 export const FIGHT_LOG_TONES = Object.freeze(["narrative", "dull"]);
 
 /**
- * fightLogLinesFor(type, events, ctx = {}) — one fight-log line per folded
- * linesForAction entry (uncapped, per the Decision 1 fold-preserving
- * source). Each line is `{ text, tone, roll }`:
+ * fightLogLinesFor(type, events, ctx = {}) — one fight-log line per
+ * event-order linesForAction entry (uncapped, per the Decision 1
+ * fold-preserving source; CMBUI-10: engine order, only adjacent identical
+ * lines fold). Each line is `{ text, tone, roll }`:
  *   - text: the folded line's own text (narrativeLineText-normalized —
  *     already roll-free from LINE_FOR/ctx.narrate, this is a defensive
  *     pass so the fight log never renders a stray tag).
@@ -43,7 +51,7 @@ export const FIGHT_LOG_TONES = Object.freeze(["narrative", "dull"]);
  *     null when that event has no roll span to reveal.
  */
 export function fightLogLinesFor(type, events, ctx = {}) {
-  const lines = linesForAction(type, events, ctx, { limit: Infinity, withIdx: true });
+  const lines = linesForAction(type, events, ctx, { limit: Infinity, withIdx: true, order: "event" });
   return lines.map((t) => ({
     text: narrativeLineText(t.text) || t.text,
     tone: t.priority === PRIORITY.block ? "dull" : "narrative",
@@ -156,7 +164,8 @@ const ROUND_STRIP_MAX_LINES = 3;
  *
  * Order: the fight log's own fold order (append order), deliberately the
  * same order the full-log sheet shows, so the two never disagree (backlog
- * 999.5 note (3): if the fold moves to event order, both follow).
+ * 999.5 note (3)). Phase 77 (CMBUI-10) moved the fold to event order, and
+ * both followed: the strip and the sheet read in the order things happened.
  *
  * No spoilers: with a `beatView` (a live beat's `{ log, maxId }`), the
  * source is `beatView.log` and only entries with `id <= maxId` show, so a

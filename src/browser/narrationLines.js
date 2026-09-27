@@ -4,11 +4,21 @@
 // every narrated engine event type to a SHORT `(e, ctx) => ({ text, tone,
 // priority })` builder — the summary a player glances at — and
 // `linesForAction` folds a whole action's events into an ordered list of
-// those summaries. `rail.js` reads this fold out of combat (one RAIL
-// card); `fightLog.js` reads it in combat (the round's fight-log lines).
+// those summaries, in one of TWO orders:
+//   - "priority" (the default): the one-card summary. Groups a foe's swings,
+//     folds kills and same-type lines, and sorts by PRIORITY with time as
+//     the tiebreak. The out-of-combat RAIL card reads this (rail.js).
+//   - "event" (CMBUI-10, Phase 77): the combat record. Every line sits at its
+//     earliest event and lines keep engine order; only contiguous chains
+//     merge (a roll and its outcome, a throw and its outcome, a resistFailed
+//     and its effect, an encounter start and its followers), and only
+//     back-to-back identical lines fold " ×N". THE FIGHT SO FAR, the round
+//     strip and the beats read this (fightLog.js, combatBeat.js). The user's
+//     2026-09-21 device report: "A Ned falls, then 2 Neds miss, then I
+//     riposted. Let's make sure the Oracle reads in order."
 // Beside it sits `src/browser/eventNarration.js`'s `EVENT_NARRATION` (the
-// Oracle log) — the full sentence with the roll, for the record rather
-// than the glance.
+// Oracle log) — the full sentence with the roll, one line per event in
+// engine order, for the record rather than the glance.
 //
 // PRESENTATION ONLY, pure module: no DOM access, no `import` from engine/,
 // and no Math.random/Date.now anywhere in this file (mirrors missLines.js's
@@ -416,6 +426,16 @@ export function slotWord(slot) {
 //      in Phase 35; the rail and the fight log show every line), so every
 //      folded line survives unless a caller passes an explicit `opts.limit`.
 //
+// `opts.order: "event"` (CMBUI-10) runs a different middle: step 1 folds only
+// the followers directly after the start; steps 2, 3 and 6 are skipped (every
+// swing, hit, miss and kill is its own line); step 4 is spellChainEvent
+// (contiguous throw/outcome and resist/effect merges, no 3+ target
+// collapse); step 5's chains merge only when the outcome is the very next
+// line event (chainScan); step 8 sorts by idx alone and folds only adjacent
+// identical lines (foldAdjacent). The contiguity rule for any future chain:
+// merge an event only with the next event that would otherwise produce a
+// line, and give the merged line its earliest event's idx.
+//
 // `ctx.narrate` (Phase 25.1, DFB-01 decision 2) — `(e) => html string | ""`,
 // supplied by the shell ONLY for NARRATIVE_ACTIONS (move/camp/resolveJoiner).
 // In step 7 (the direct-mapped-event loop below), when `ctx.narrate` is a
@@ -428,6 +448,40 @@ export function slotWord(slot) {
 // ONE decision point where the narrative-vs-table choice is made.
 
 const CRIT_SUFFIX = " · CRIT";
+
+/**
+ * lineEvent(e) — CMBUI-10: true when `e` would produce a line of its own
+ * (a LINE_FOR builder, not ORACLE_ONLY). The event order's contiguity rule
+ * reads "next" as the next event that would otherwise produce a line, so a
+ * silent bookkeeping event (spGained, itemConsumed, moved …) between a roll
+ * and its outcome never splits them.
+ */
+function lineEvent(e) {
+  return !!e && typeof e.type === "string" && !ORACLE_ONLY.has(e.type) && typeof LINE_FOR[e.type] === "function";
+}
+
+/** nextLineIdx(events, i) — CMBUI-10: the index of the first lineEvent after `i`, or -1. */
+function nextLineIdx(events, i) {
+  for (let j = i + 1; j < events.length; j++) if (lineEvent(events[j])) return j;
+  return -1;
+}
+
+/**
+ * chainScan(events, i, eventOrder) — the candidate outcome indices a roll at
+ * `i` may merge with. The priority fold scans every later event (a roll
+ * reaches across the action for its outcome); the event order (CMBUI-10)
+ * offers only the very next line event, so a merge never pulls an outcome
+ * across something that happened in between.
+ */
+function chainScan(events, i, eventOrder) {
+  if (eventOrder) {
+    const j = nextLineIdx(events, i);
+    return j === -1 ? [] : [j];
+  }
+  const all = [];
+  for (let j = i + 1; j < events.length; j++) all.push(j);
+  return all;
+}
 
 /** sumSoaked(list) — per-key integer sums across a group's hit events' `soaked`. */
 function sumSoaked(list) {
@@ -736,7 +790,75 @@ function spellChain(events, consumed) {
 }
 
 /**
- * fleeChain(events, consumed) — `fleeRolled` + (`fled` | `fleeFailed`) fold
+ * spellChainEvent(events, consumed, idxAt, patched) — CMBUI-10: spellChain's
+ * event-order sibling. Merges only CONTIGUOUS events (each "next" is the next
+ * line event, see nextLineIdx):
+ *   - a `resistFailed` whose next line event is its RESIST_FOLD_EFFECTS effect
+ *     (same target, or an untargeted AOE effect) is dropped, and the effect's
+ *     own line moves to the resistFailed's position (`idxAt`, effect idx ->
+ *     earliest idx), so the line still sits at its earliest event;
+ *   - a `spellThrown` whose next line event is that target's `spellMissed` or
+ *     `spellHit` is one line (the outcome's text, the throw's position); a
+ *     hit's `frozenSolid` joins only when it is the next line event after the
+ *     hit, and the kill only when it comes right after the frozenSolid;
+ *   - a throw with no contiguous outcome keeps its own LINE_FOR line, and the
+ *     later spellHit/spellMissed for that target still names the spell
+ *     (`patched`, idx -> the outcome event with the throw's `spell`).
+ * No 3+ target collapse: a Lightning reads one line per target, in order.
+ */
+function spellChainEvent(events, consumed, idxAt, patched) {
+  const built = [];
+
+  events.forEach((e, i) => {
+    if (consumed.has(i) || e.type !== "resistFailed") return;
+    const j = nextLineIdx(events, i);
+    if (j === -1 || consumed.has(j)) return;
+    const oe = events[j];
+    if (RESIST_FOLD_EFFECTS.has(oe.type) && (oe.target === undefined || oe.target === e.target)) {
+      consumed.add(i);
+      idxAt.set(j, i);
+    }
+  });
+
+  events.forEach((e0, ti) => {
+    if (consumed.has(ti) || e0.type !== "spellThrown") return;
+    const target = e0.target;
+    const j = nextLineIdx(events, ti);
+    const oe = j === -1 || consumed.has(j) ? null : events[j];
+    if (oe && oe.type === "spellMissed" && oe.target === target) {
+      consumed.add(ti);
+      consumed.add(j);
+      built.push({ ...LINE_FOR.spellMissed({ ...oe, spell: e0.spell }), idx: ti });
+      return;
+    }
+    if (oe && oe.type === "spellHit" && oe.target === target) {
+      consumed.add(ti);
+      consumed.add(j);
+      const k = nextLineIdx(events, j);
+      if (k !== -1 && !consumed.has(k) && events[k].type === "frozenSolid" && events[k].target === target) {
+        consumed.add(k);
+        const m = nextLineIdx(events, k);
+        if (m !== -1 && !consumed.has(m) && events[m].type === "foeKilled" && events[m].name === target) consumed.add(m);
+        built.push({ text: `${e0.spell} — ${target} frozen solid`, tone: "magic", priority: PRIORITY.you, idx: ti });
+        return;
+      }
+      built.push({ ...LINE_FOR.spellHit({ ...oe, spell: e0.spell }), idx: ti });
+      return;
+    }
+    for (let x = ti + 1; x < events.length; x++) {
+      const later = events[x];
+      if (later.type === "spellThrown") break;
+      if ((later.type === "spellHit" || later.type === "spellMissed") && later.target === target && !consumed.has(x)) {
+        if (!patched.has(x)) patched.set(x, { ...later, spell: later.spell ?? e0.spell });
+        break;
+      }
+    }
+  });
+  return built;
+}
+
+/**
+ * fleeChain(events, consumed, eventOrder = false) — `fleeRolled` + (`fled` | `fleeFailed`) fold
  * into ONE line, ROLL FIRST (Phase 42, FLEE-02, ROADMAP SC-1): the roll and
  * every named modifier lead, the outcome's own text follows —
  * `${LINE_FOR.fleeRolled(e).text}. ${outcome text}` — so the fight log
@@ -744,13 +866,16 @@ function spellChain(events, consumed) {
  * "log line count = folded count" pin still holds: still ONE line per
  * attempt). Reuses LINE_FOR.fleeRolled itself rather than restating the
  * format. A `fled` with no preceding `fleeRolled` (Cloaker/tracked) keeps
- * its own builder untouched.
+ * its own builder untouched. In the event order (CMBUI-10, and likewise in
+ * parleyChain/chestChain) the outcome merges only when it is the very next
+ * line event (chainScan): a pursuit strike between the roll and `fled`
+ * leaves three lines, in the order they happened.
  */
-function fleeChain(events, consumed) {
+function fleeChain(events, consumed, eventOrder = false) {
   const built = [];
   events.forEach((e, i) => {
     if (consumed.has(i) || e.type !== "fleeRolled") return;
-    for (let j = i + 1; j < events.length; j++) {
+    for (const j of chainScan(events, i, eventOrder)) {
       if (consumed.has(j)) continue;
       const oe = events[j];
       if (oe.type === "fled" || oe.type === "fleeFailed") {
@@ -768,16 +893,16 @@ function fleeChain(events, consumed) {
 }
 
 /**
- * parleyChain(events, consumed) — `parleyRolled` + (`goldGained` why
+ * parleyChain(events, consumed, eventOrder = false) — `parleyRolled` + (`goldGained` why
  * "parley" | `parleyFailed` | `beastsSoothed`) fold into ONE line: the
  * outcome's own text plus `(${roll} vs ${range})` (Phase 73, ROLL-05: via
  * rollVsText, roll-high).
  */
-function parleyChain(events, consumed) {
+function parleyChain(events, consumed, eventOrder = false) {
   const built = [];
   events.forEach((e, i) => {
     if (consumed.has(i) || e.type !== "parleyRolled") return;
-    for (let j = i + 1; j < events.length; j++) {
+    for (const j of chainScan(events, i, eventOrder)) {
       if (consumed.has(j)) continue;
       const oe = events[j];
       const isOutcome =
@@ -796,17 +921,17 @@ function parleyChain(events, consumed) {
 }
 
 /**
- * chestChain(events, consumed) — `chestLockRolled` + (`chestOpened` |
+ * chestChain(events, consumed, eventOrder = false) — `chestLockRolled` + (`chestOpened` |
  * `chestLocked`) fold into ONE line: the outcome's own text plus the
  * roll-high triple via rollVsText, `(${roll} vs ${lo}–${hi})`. A Pilfer's
  * roll-free `chestOpened` (reason "pilfer") has no preceding
  * `chestLockRolled` and keeps its own builder.
  */
-function chestChain(events, consumed) {
+function chestChain(events, consumed, eventOrder = false) {
   const built = [];
   events.forEach((e, i) => {
     if (consumed.has(i) || e.type !== "chestLockRolled") return;
-    for (let j = i + 1; j < events.length; j++) {
+    for (const j of chainScan(events, i, eventOrder)) {
       if (consumed.has(j)) continue;
       const oe = events[j];
       if (oe.type === "chestOpened" || oe.type === "chestLocked") {
@@ -822,15 +947,20 @@ function chestChain(events, consumed) {
   return built;
 }
 
+/** ENCOUNTER_FOLLOWERS — the event types encounterStart's switch may fold in. */
+const ENCOUNTER_FOLLOWERS = new Set(["trackable", "allyJoined", "warlockBoost", "foeFled", "foeBored", "phobiaAfraid", "combatInDark"]);
+
 /**
- * encounterStart(events, consumed) — when an `encounterStarted` is present,
+ * encounterStart(events, consumed, eventOrder = false) — when an `encounterStarted` is present,
  * folds it plus its same-action followers (trackable, allyJoined,
  * warlockBoost, foeFled reason knight/conArtist, foeBored, phobiaAfraid,
  * combatInDark) into ONE line; each follower appends a short clause and is
  * consumed. Without an `encounterStarted` in the action, every one of those
- * events keeps its own builder (this function simply returns null).
+ * events keeps its own builder (this function simply returns null). In the
+ * event order (CMBUI-10) only the followers that come directly after the
+ * start fold; a follower separated by another line keeps its own line.
  */
-function encounterStart(events, consumed) {
+function encounterStart(events, consumed, eventOrder = false) {
   const idx = events.findIndex((e, i) => !consumed.has(i) && e.type === "encounterStarted");
   if (idx === -1) return null;
   const e = events[idx];
@@ -840,6 +970,13 @@ function encounterStart(events, consumed) {
   for (let j = idx + 1; j < events.length; j++) {
     if (consumed.has(j)) continue;
     const fe = events[j];
+    // CMBUI-10 (event order): only the run of followers directly after the
+    // start folds in; the first other line event ends the run (a silent
+    // bookkeeping event between them does not).
+    if (eventOrder && !ENCOUNTER_FOLLOWERS.has(fe.type)) {
+      if (lineEvent(fe)) break;
+      continue;
+    }
     switch (fe.type) {
       case "trackable":
         text += " · unnoticed";
@@ -881,6 +1018,9 @@ function encounterStart(events, consumed) {
       default:
         break;
     }
+    // CMBUI-10: a follower-type event that did not fold (a foeFled for some
+    // other reason) is a line of its own, so it ends the run too.
+    if (eventOrder && !consumed.has(j)) break;
   }
   return { text, tone: base.tone, priority: base.priority, idx };
 }
@@ -909,6 +1049,28 @@ function dedupeByType(list) {
         first.text = first.text.replace(/ ×\d+$/, "") + ` ×${first._count}`;
       }
     }
+  }
+  return result;
+}
+
+/**
+ * foldAdjacent(list) — CMBUI-10: the event order's ONLY fold. `list` is
+ * already in event order; a line whose text, tone and priority all equal the
+ * line right before it folds into that line, which gains " ×N" (the same
+ * suffix shape dedupeByType uses, replacing any earlier " ×k"). A fold never
+ * crosses an intervening line, so "Ned misses you" twice in a row reads once
+ * with " ×2", and the same miss either side of a riposte reads twice.
+ */
+function foldAdjacent(list) {
+  const result = [];
+  for (const item of list) {
+    const prev = result[result.length - 1];
+    if (prev && prev._base === item.text && prev.tone === item.tone && prev.priority === item.priority) {
+      prev._count += 1;
+      prev.text = `${prev._base.replace(/ ×\d+$/, "")} ×${prev._count}`;
+      continue;
+    }
+    result.push({ ...item, _base: item.text, _count: 1 });
   }
   return result;
 }
@@ -966,39 +1128,64 @@ export function initiativeVerdictText(e) {
  * fold/dedup pipeline. The default (no opts, or opts without `withIdx`)
  * return shape stays exactly `{ text, tone, priority }`, byte-for-byte
  * unchanged from before this option existed.
+ *
+ * Phase 77 (CMBUI-10) adds `opts.order`: "priority" (the default, the rail's
+ * one-card summary, byte-identical to before — pinned over a recorded corpus
+ * by test/unit/event-order-fold.test.js) or "event" (the combat record:
+ * fightLog.js#fightLogLinesFor and combatBeat.js#lineIdxsFor). In the event
+ * order every line's `idx` is its earliest event, the lines ascend by idx,
+ * and a line narrates more than one event only for one contiguous happening
+ * (see the pipeline comment above). The user's report it fixes: "A Ned
+ * falls, then 2 Neds miss, then I riposted."
  */
 export function linesForAction(type, events, ctx = {}, opts = {}) {
   if (!Array.isArray(events) || events.length === 0) return [];
-  const { limit = Infinity, withIdx = false } = opts || {};
+  const { limit = Infinity, withIdx = false, order = "priority" } = opts || {};
+  const eventOrder = order === "event";
   const consumed = new Set();
   const built = [];
+  // CMBUI-10 (event order only): idxAt moves a merged line to its earliest
+  // event (a resistFailed folded into its effect); patched lends a throw's
+  // spell name to a non-contiguous spellHit/spellMissed.
+  const idxAt = new Map();
+  const patched = new Map();
 
-  const enc = encounterStart(events, consumed);
+  const enc = encounterStart(events, consumed, eventOrder);
   if (enc) built.push(enc);
-  built.push(...enemyRound(events, consumed));
-  built.push(...yourRound(events, consumed));
-  built.push(...spellChain(events, consumed));
-  built.push(...fleeChain(events, consumed));
-  built.push(...parleyChain(events, consumed));
-  built.push(...chestChain(events, consumed));
-  killFold(events, consumed, built);
+  if (eventOrder) {
+    built.push(...spellChainEvent(events, consumed, idxAt, patched));
+  } else {
+    built.push(...enemyRound(events, consumed));
+    built.push(...yourRound(events, consumed));
+    built.push(...spellChain(events, consumed));
+  }
+  built.push(...fleeChain(events, consumed, eventOrder));
+  built.push(...parleyChain(events, consumed, eventOrder));
+  built.push(...chestChain(events, consumed, eventOrder));
+  if (!eventOrder) killFold(events, consumed, built);
 
   events.forEach((e, idx) => {
     if (consumed.has(idx)) return;
     if (ORACLE_ONLY.has(e.type)) return;
     const builder = LINE_FOR[e.type];
     if (!builder) return;
-    const { text, tone, priority } = builder(e, ctx);
+    const { text, tone, priority } = builder(patched.get(idx) ?? e, ctx);
     // Phase 25.1 (DFB-01 decision 2) — the ONE narrative-vs-table decision
     // point: for a narrative action's non-card event, prefer the Oracle's
     // own sentence (dice stripped); fall back to the table text when the
     // narration strips to nothing so a line is never blank.
     const narrative = typeof ctx.narrate === "function" && !CARD_EVENTS.has(e.type) ? narrativeLineText(ctx.narrate(e)) : "";
-    built.push({ text: narrative || text, tone, priority, idx, type: e.type });
+    built.push({ text: narrative || text, tone, priority, idx: idxAt.get(idx) ?? idx, type: e.type });
   });
 
-  const deduped = dedupeByType(built);
-  deduped.sort((a, b) => a.priority - b.priority || a.idx - b.idx);
+  let deduped;
+  if (eventOrder) {
+    built.sort((a, b) => a.idx - b.idx);
+    deduped = foldAdjacent(built);
+  } else {
+    deduped = dedupeByType(built);
+    deduped.sort((a, b) => a.priority - b.priority || a.idx - b.idx);
+  }
   const capped = deduped.slice(0, limit);
   return capped.map(({ text, tone, priority, idx, type: t }) =>
     withIdx ? { text, tone, priority, idx, ...(t !== undefined ? { type: t } : {}) } : { text, tone, priority }

@@ -134,11 +134,13 @@ test("partition: PRIORITY.block lines fold to dull-only fight-log entries; every
 
 // ─── Test 7: count equality (folded count, uncapped) ───────────────────────
 
-test("count equality: fightLogLinesFor's line count equals the uncapped folded line count", () => {
+test("count equality: fightLogLinesFor's line count equals the uncapped event-order folded line count", () => {
   const types = ["frenzy", "phobiaAfraid", "lootDropped", "combatJoined", "struck", "foeMissed"];
   const events = types.map((type) => ({ type }));
   const lines = fightLogLinesFor("attack", events);
-  const folded = linesForAction("attack", events, {}, { limit: Infinity });
+  // CMBUI-10 (Phase 77): the fight log reads the fold's event order.
+  const folded = linesForAction("attack", events, {}, { limit: Infinity, order: "event" });
+  assert.deepEqual(lines.map((l) => l.text), folded.map((l) => l.text), "same lines, same (engine) order");
   assert.equal(lines.length, 6);
   assert.equal(folded.length, 6);
   assert.equal(lines.length, folded.length);

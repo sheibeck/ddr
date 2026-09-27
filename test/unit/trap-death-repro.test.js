@@ -12,7 +12,7 @@
 // them): (1) the trap's narrated dmg is the SAME value subtracted from
 // c.wp — narration can never disagree with the actual loss for a single
 // trapSprung event; (2) planBeat's last hero-hp frame still equals the
-// real final hp for a K-of-M multi-swing fold (the 2026-09-22 fix,
+// real final hp for a multi-swing fold (CMBUI-10: now the adjacent-identical " ×N" fold) (the 2026-09-22 fix,
 // src/browser/combatBeat.js, regression-tested in combat-beat.test.js —
 // pinned again here as this session's own artifact, per the plan's own
 // instruction to "build the states directly, the way combat-beat.test.js
@@ -148,7 +148,10 @@ test("RULES-06 (Phase 75 re-verification): a sprung trap's narrated dmg equals t
 
 // ── (2) planBeat's last hero-hp frame — re-pinned this session ────────────
 
-test("RULES-06 (Phase 75 re-verification): planBeat's last hero-hp frame still equals the real final hp for a K-of-M multi-swing fold — the 2026-09-22 fix (src/browser/combatBeat.js) holds on master after Phases 73/74", () => {
+test("RULES-06 (Phase 75 re-verification): planBeat's last hero-hp frame still equals the real final hp for a multi-swing fold — the 2026-09-22 fix (src/browser/combatBeat.js) holds on master after Phases 73/74", () => {
+  // CMBUI-10 (Phase 77): the fight log folds only back-to-back IDENTICAL
+  // lines now (the per-foe "hits you K of M" group is gone), so the fold
+  // this pin guards is two identical swings reading "Ogre hits you (8) ×2".
   const foes = [
     { name: "Rat", alive: true, wp: 6, maxWP: 6, type: "Beasts" },
     { name: "Ogre", alive: true, wp: 20, maxWP: 20, type: "Beasts" },
@@ -158,27 +161,27 @@ test("RULES-06 (Phase 75 re-verification): planBeat's last hero-hp frame still e
     { type: "struck", target: "Rat", dmg: 5 },
     { type: "foeKilled", name: "Rat", spGained: 1 },
     { type: "struckByFoe", name: "Ogre", dmg: 8 },
-    { type: "struckByFoe", name: "Ogre", dmg: 9 },
+    { type: "struckByFoe", name: "Ogre", dmg: 8 },
   ];
   const ctx = {};
 
   const lines = fightLogLinesFor("attack", events, ctx);
-  const ogreLine = lines.find((l) => l.text.includes("Ogre"));
-  assert.ok(ogreLine, "sanity: the Ogre exchange must fold to one fight-log line");
-  assert.match(ogreLine.text, /17/, "sanity: the fold's TEXT already carries the true combined damage (8+9=17)");
+  const ogreLines = lines.filter((l) => l.text.includes("Ogre"));
+  assert.equal(ogreLines.length, 1, "sanity: the Ogre exchange must fold to one fight-log line");
+  assert.equal(ogreLines[0].text, "Ogre hits you (8) ×2", "sanity: the fold's TEXT names both swings");
 
-  const after = fixedState({ c: { wp: 55 - 17 }, combat: null }); // true final: 38
+  const after = fixedState({ c: { wp: 55 - 16 }, combat: null }); // true final: 39
   const plan = planBeat({ actionType: "attack", events, before, after, beforeLog: null, ctx });
   assert.ok(plan);
   assert.equal(plan.ending, true);
   assert.equal(
     plan.heroHp[plan.heroHp.length - 1],
-    38,
+    39,
     "the LAST frame — the one on screen the instant before the over-panel/settle takes over — must equal the real final hp, never an under-count from only the fold's first constituent event (55-8=47)"
   );
 });
 
-// ── (3) Phase 75 finding: the intermediate (non-last) frame of a K-of-M ───
+// ── (3) Phase 75 finding: the intermediate (non-last) frame of a multi-swing ───
 // fold still under-counts (blind spot 1, named-but-unfixed by the
 // 2026-09-22 session) — pinned here as a KNOWN, CONFIRMED, NON-FATAL fact:
 // this transient frame is never the one on screen at an actionable moment
@@ -187,7 +190,7 @@ test("RULES-06 (Phase 75 re-verification): planBeat's last hero-hp frame still e
 // death. Not a case left pending for a future fix — nothing here needs to change; this is
 // a passing pin of a already-understood, already-bounded limitation.
 
-test("RULES-06 (Phase 75 finding): an intermediate (not-last) K-of-M fold frame still under-counts — the true value returns on the very next line, and the ROUND's own last frame is always correct regardless", () => {
+test("RULES-06 (Phase 75 finding): an intermediate (not-last) multi-swing fold frame still under-counts — the true value returns on the very next line, and the ROUND's own last frame is always correct regardless", () => {
   const foes = [
     { name: "Rat", alive: true, wp: 6, maxWP: 6, type: "Beasts" },
     { name: "Ogre", alive: true, wp: 20, maxWP: 20, type: "Beasts" },
@@ -196,27 +199,30 @@ test("RULES-06 (Phase 75 finding): an intermediate (not-last) K-of-M fold frame 
   // The Ogre fold is deliberately NOT the round's last line — Rat's own
   // single hit follows it, so the fold's transient under-count is genuinely
   // on screen for one beat-gap, not masked by the last-frame pin.
+  // CMBUI-10 (Phase 77): the fold is now the event order's adjacent-identical
+  // " ×2" (two identical 8s) — the only multi-swing line left; two different
+  // swings are two lines, each with its own exact frame.
   const events = [
     { type: "struck", target: "Rat", dmg: 5 },
     { type: "struckByFoe", name: "Ogre", dmg: 8 },
-    { type: "struckByFoe", name: "Ogre", dmg: 9 },
+    { type: "struckByFoe", name: "Ogre", dmg: 8 },
     { type: "struckByFoe", name: "Rat", dmg: 2 },
   ];
-  const after = fixedState({ c: { wp: 55 - 17 - 2 }, combat: fixedCombat([{ ...foes[0], wp: 1 }, foes[1]], { round: 5 }) });
+  const after = fixedState({ c: { wp: 55 - 16 - 2 }, combat: fixedCombat([{ ...foes[0], wp: 1 }, foes[1]], { round: 5 }) });
   const plan = planBeat({ actionType: "attack", events, before, after, beforeLog: null, ctx: {} });
   assert.ok(plan);
   assert.equal(plan.count, 3, "sanity: three fight-log lines (hero's own hit, the Ogre fold, Rat's own hit)");
 
   // Frame 1 (the Ogre fold, index 1, NOT the last index 2): still reads the
   // fold's first-constituent-only under-count (55-8=47), not the true
-  // running total at that point (55-17=38) — this is blind spot 1, still
+  // running total at that point (55-16=39) — this is blind spot 1, still
   // present, and this test documents (not fixes) it.
   assert.equal(plan.heroHp[1], 47, "blind spot 1: the fold's own frame is STILL an under-count (documented, not fixed by this plan)");
 
   // Frame 2 (the LAST line, Rat's own single hit) is always correct — the
   // 2026-09-22 fix pins the LAST entry to after.c.wp regardless of any
   // upstream fold's own math.
-  assert.equal(plan.heroHp[2], 36, "the round's own last frame is always correct: 55-17-2=36");
+  assert.equal(plan.heroHp[2], 37, "the round's own last frame is always correct: 55-16-2=37");
 
   // The player can never act while any of this is on screen: every offset
   // before the round's last one falls strictly inside the beat's own timed

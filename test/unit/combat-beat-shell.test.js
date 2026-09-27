@@ -93,13 +93,15 @@ function fixedFoe(overrides = {}) {
 
 /**
  * midFightRound() — a real, resolved, MID-FIGHT round (rngState 32): the
- * hero attacks two foes. Goblin Grunt (wp 1) is struck and killed on the
- * FIRST folded line (struck+foeKilled+goldGained fold to one line); Cave
- * Rat (wp 40, alive) strikes back on the SECOND line (struckByFoe, a
- * critical hit); a third line ("+1 wilmst", the level/sp-gain narration)
- * carries no foe/hero HP change. `after.combat` stays set (Cave Rat is
- * still alive) — three real fight-log lines, a uniquely-named foe struck,
- * no ending.
+ * hero attacks two foes. CMBUI-10 (Phase 77): the fight log reads in event
+ * order, one line per happening — Goblin Grunt (wp 1) is struck (line 0,
+ * which already drops its HP to 0), falls (line 1), drops "+1 wilmst"
+ * (line 2), and then Cave Rat (wp 40, alive) strikes back (line 3,
+ * struckByFoe, a critical hit). `after.combat` stays set (Cave Rat is still
+ * alive) — four real fight-log lines (three under the old priority fold,
+ * which read "struck · felled" first), a uniquely-named foe struck, no
+ * ending. The strip shows the round's LAST 3 lines, so once line 3 lands
+ * the strip holds lines 1-3.
  */
 function midFightRound() {
   const before = fixedState({ rngState: 32 });
@@ -114,9 +116,9 @@ function midFightRound() {
 /**
  * endingRound() — a real, resolved, COMBAT-ENDING round (rngState 7): the
  * hero attacks a single foe (Lone Wolf, wp 1), kills it, and the fight
- * ends (`after.combat` is null — a victory, no drops). Three real
- * fight-log lines (struck+foeKilled+goldGained fold to one, "+1 wilmst",
- * "Nothing left standing.").
+ * ends (`after.combat` is null — a victory, no drops). CMBUI-10: in event
+ * order the hit, the kill, the coin and "Nothing left standing." each read
+ * as their own fight-log line, in the order they happened.
  */
 function endingRound() {
   const before = fixedState({ rngState: 7 });
@@ -195,7 +197,8 @@ test("combat-beat-shell (1): the first exchange lands immediately — the panel 
 
   const { plan, started, lines } = driveHandoff(sandbox, { before, after, events });
   assert.ok(started, "beatRunner.start(plan) must return true for a real resolved round");
-  assert.equal(plan.count, 3, "scenario setup must actually fold to three fight-log lines");
+  // CMBUI-10: 3 lines under the priority fold, 4 in the event order.
+  assert.equal(plan.count, 4, "scenario setup must actually fold to four fight-log lines");
 
   const panel = doc.document.getElementById("enc-panel");
   assert.equal(panel.hidden, false, "the encounter panel must be showing");
@@ -223,7 +226,7 @@ test("combat-beat-shell (2): the next exchange lands at its offset, and so on to
   const { plan } = driveHandoff(sandbox, { before, after, events });
 
   const offsets = beatOffsets(plan.texts, durationFor);
-  assert.equal(offsets.length, 3);
+  assert.equal(offsets.length, 4); // CMBUI-10: four event-order lines (was 3)
 
   // Just short of the second line's offset: still exactly one row.
   clock.advance(offsets[1] - 1);
@@ -237,9 +240,22 @@ test("combat-beat-shell (2): the next exchange lands at its offset, and so on to
   clock.advance(offsets[2] - offsets[1] - 3);
   assert.equal(logRows(doc).length, 2, "the third line must not land before its own offset");
 
-  // At (and past) the third (last) line's offset: all three rows.
+  // At (and past) the third line's offset: three rows.
   clock.advance(4);
-  assert.equal(logRows(doc).length, 3, "the last line must land at its own offset");
+  assert.equal(logRows(doc).length, 3, "the third line must land at its own offset");
+
+  // CMBUI-10: the fourth (last) line. The strip keeps the round's last 3
+  // lines, so the row count stays 3 and the newest row becomes line 3.
+  const newestText = () => {
+    const rows = logRows(doc);
+    const textEl = rows[rows.length - 1].querySelector(".cb-sum-text");
+    return textEl.children.length === 2 ? textEl.children[0].textContent + textEl.children[1].textContent : textEl.textContent;
+  };
+  clock.advance(offsets[3] - offsets[2] - 3);
+  assert.equal(newestText(), plan.texts[2], "the last line must not land before its own offset");
+  clock.advance(4);
+  assert.equal(logRows(doc).length, 3, "the strip keeps the last 3 lines");
+  assert.equal(newestText(), plan.texts[3], "the last line must land at its own offset");
 });
 
 // ─── (3) the announcer gets the whole batch at once ───────────────────────
@@ -304,7 +320,7 @@ test("combat-beat-shell (5): beatHurryTap mid-beat stops propagation, reveals ev
   const { before, after, events } = midFightRound();
   const { plan, lines } = driveHandoff(sandbox, { before, after, events });
 
-  clock.advance(beatOffsets(plan.texts, durationFor)[1] + 10); // mid-beat: two lines landed, one still to come
+  clock.advance(beatOffsets(plan.texts, durationFor)[1] + 10); // mid-beat: two lines landed, two still to come
 
   // onSettle's own body is `window.paint(); window.renderEncounter();` —
   // paint() itself also calls renderEncounter() (its own trailing line), so
@@ -322,11 +338,12 @@ test("combat-beat-shell (5): beatHurryTap mid-beat stops propagation, reveals ev
   assert.equal(stopped, true, "beatHurryTap must stopPropagation while a beat is live");
   assert.equal(prevented, true, "beatHurryTap must preventDefault while a beat is live");
   assert.equal(sandbox.context.window.__mzBeat.active(), false, "the hurry must end the beat");
-  assert.equal(logRows(doc).length, 3, "every line must be revealed in full");
+  // CMBUI-10: four event-order lines; the strip shows the round's last 3.
+  assert.equal(logRows(doc).length, 3, "every line must be revealed in full (the strip keeps the last 3)");
   for (const row of logRows(doc)) {
     assert.equal(row.getAttribute("aria-hidden"), null, "no row may be left mid-typed after a hurry");
   }
-  assert.equal(sandbox.context.window.__mzFightLog.entries.length, 3, "nothing is lost — every line stays in the log");
+  assert.equal(sandbox.context.window.__mzFightLog.entries.length, 4, "nothing is lost — every line stays in the log");
   assert.equal(paintCount, 1, "the settle paint (and its own render) must run exactly once");
 
   // With no beat live, the SAME handler touches nothing on the event.
@@ -404,7 +421,7 @@ test("combat-beat-shell (8): window.__mzShowTab(\"oracle\") mid-beat ends the be
   sandbox.context.window.__mzShowTab("oracle");
 
   assert.equal(sandbox.context.window.__mzBeat.active(), false, "a tab switch must land the round the same way a hurry tap does");
-  assert.equal(sandbox.context.window.__mzFightLog.entries.length, 3, "nothing is lost — every line stays in the log");
+  assert.equal(sandbox.context.window.__mzFightLog.entries.length, 4, "nothing is lost — every line stays in the log (CMBUI-10: four event-order lines)");
 });
 
 // ─── (9) handoff anchor (stripped module script) ──────────────────────────
