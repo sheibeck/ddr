@@ -265,7 +265,8 @@ test("CSS: .mw-swap-confirm exists once with no transition/animation/aria-disabl
   assert.doesNotMatch(ruleMatch[0], /aria-disabled/i);
   const dropRuleMatch = HTML.match(/^\.mw-drop-confirm\{[^}]*\}/m);
   assert.ok(dropRuleMatch, ".mw-drop-confirm rule found");
-  assert.equal(dropRuleMatch[0], '.mw-drop-confirm{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft)}');
+  // Phase 78 (HUD-04): the one change is font-size, 11px at M now scaled.
+  assert.equal(dropRuleMatch[0], '.mw-drop-confirm{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));letter-spacing:.06em;color:var(--ink-soft)}');
 });
 
 // ─── 10. Voice safety ─────────────────────────────────────────────────────────

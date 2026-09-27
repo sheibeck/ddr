@@ -337,14 +337,16 @@ test("CSS: the mock's scrim and 74% panel, the head/chip/ROUND n styles, the gol
   assert.match(panel, /max-height:74%/);
   assert.match(panel, /display:flex/);
   assert.match(panel, /flex-direction:column/);
+  // Phase 78 (HUD-04): the sheet's sizes scale with the text size — 7px and
+  // 6px at M became 0.4375rem and 0.375rem times var(--mw-text-scale).
   const title = rule(".mw-fl-title");
-  assert.match(title, /font-size:7px/);
+  assert.match(title, /font-size:calc\(0\.4375rem \* var\(--mw-text-scale\)\)/);
   assert.match(title, /#e8c97a/);
   const hint = rule(".mw-fl-hint");
-  assert.match(hint, /font-size:6px/);
+  assert.match(hint, /font-size:calc\(0\.375rem \* var\(--mw-text-scale\)\)/);
   assert.match(hint, /#8f856f/);
   const close = rule(".mw-fl-close");
-  assert.match(close, /font-size:7px/);
+  assert.match(close, /font-size:calc\(0\.4375rem \* var\(--mw-text-scale\)\)/);
   assert.match(close, /border:2px solid #4a4032/);
   const rows = rule(".mw-fl-rows");
   assert.match(rows, /overflow-y:auto/);

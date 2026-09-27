@@ -147,19 +147,30 @@ test("settings-volume-shell (4): renderSettingsSheet hides the group unless Soun
   assert.ok(body.includes('btn.classList.toggle("active", btn.dataset.value === current);'), "the existing .active loop is unchanged");
 });
 
+// Phase 78 (HUD-05): the live and persist steps moved out of the two
+// listeners into volApplyLive / volCommit, which the pointer gesture shares.
+// (5) and (6) now pin each listener's hand-off plus the shared function's
+// body (was: the same assertions on the listener bodies themselves).
 test("settings-volume-shell (5): the input listener applies the dragged level live through applySettings and NEVER writes storage (R-02)", () => {
-  const body = listenerBody("input");
-  assert.match(body, /closest\?\.\("\[data-vol\]"\)/, "acts only on [data-vol] targets");
+  const listener = listenerBody("input");
+  assert.match(listener, /closest\?\.\("\[data-vol\]"\)/, "acts only on [data-vol] targets");
+  assert.match(listener, /volApplyLive\(input, volSliderValue\(input\)\)/, "hands the clamped level to the shared live path");
+  assert.doesNotMatch(listener, /writeSetting|volCommit/);
+  const body = extractBody(html, /function volApplyLive\(input, value\)\s*\{/);
+  assert.ok(body, "volApplyLive found");
   assert.match(body, /applySettings\(\{ \.\.\.currentSettings, \[key\]: value \}\)/);
   assert.doesNotMatch(body, /writeSetting/);
   assert.doesNotMatch(body, /playUiTap/);
-  assert.match(body, /Math\.min\(100, Math\.max\(0,|volSliderValue\(/, "the value is clamped to 0-100");
+  assert.match(listener + body, /Math\.min\(100, Math\.max\(0,|volSliderValue\(/, "the value is clamped to 0-100");
   assert.match(body, /\.textContent = `\$\{value\}%`/, "the row's percentage follows the drag");
 });
 
 test("settings-volume-shell (6): the change listener persists once (writeSetting -> applySettings -> renderSettingsSheet) and previews ui-tap on EFFECTS release only", () => {
-  const body = listenerBody("change");
-  assert.match(body, /closest\?\.\("\[data-vol\]"\)/, "acts only on [data-vol] targets");
+  const listener = listenerBody("change");
+  assert.match(listener, /closest\?\.\("\[data-vol\]"\)/, "acts only on [data-vol] targets");
+  assert.match(listener, /volCommit\(input, volSliderValue\(input\)\)/, "hands the clamped level to the shared persist path");
+  const body = extractBody(html, /async function volCommit\(input, value\)\s*\{/);
+  assert.ok(body, "volCommit found");
   const w = body.indexOf("writeSetting(key, value)");
   const a = body.indexOf("applySettings(next)");
   const r = body.indexOf("renderSettingsSheet()");

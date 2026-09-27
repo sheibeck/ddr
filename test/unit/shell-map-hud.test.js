@@ -220,8 +220,10 @@ test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp
   assert.equal((HTML.match(/^\.mw-hud-wpfill\.mid\{background:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wpfill\.low\{background:#e05a48\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-wp-text\.low\{color:#e05a48\}$/gm) || []).length, 1);
-  assert.equal((HTML.match(/--mw-font-hud-label:calc\(0\.40625rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
-  assert.equal((HTML.match(/--mw-font-hud-num:calc\(1rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
+  // Phase 78 (HUD-04): band 2's two tokens cap their own scale at 1.1 so the
+  // counters and the ☰ still fit 412px at L (was `* var(--mw-text-scale)`).
+  assert.equal((HTML.match(/--mw-font-hud-label:calc\(0\.40625rem \* min\(var\(--mw-text-scale\), 1\.1\)\)/g) || []).length, 1);
+  assert.equal((HTML.match(/--mw-font-hud-num:calc\(1rem \* min\(var\(--mw-text-scale\), 1\.1\)\)/g) || []).length, 1);
   assert.equal((HTML.match(/--mw-font-hud-ident:calc\(0\.8125rem \* var\(--mw-text-scale\)\)/g) || []).length, 1);
 });
 
@@ -230,12 +232,13 @@ test("(c) HUD CSS: .mw-hud/.mw-hud-identity/.mw-hud-name/.mw-hud-line/.mw-hud-wp
 test("(d) condition-chip strip CSS: .mw-cond-strip/.mw-cond values and the four tone rules", () => {
   assert.match(HTML, /^\.mw-cond-strip\{flex:none;display:flex;gap:5px;overflow-x:auto;padding:6px 14px 7px;border-bottom:3px solid #3a3226;background:#181409\}$/m);
   assert.match(HTML, /^\.mw-cond-strip\[hidden\]\{display:none\}$/m);
-  assert.match(HTML, /^\.mw-cond\{display:flex;align-items:baseline;gap:4px;flex:none;border:1px solid var\(--cond-edge\);background:#1b170f;padding:3px 5px;[^}]*font-size:5\.5px;/m);
+  assert.match(HTML, /^\.mw-cond\{display:flex;align-items:baseline;gap:4px;flex:none;border:1px solid var\(--cond-edge\);background:#1b170f;padding:3px 5px;[^}]*font-size:calc\(0\.34375rem \* var\(--mw-text-scale\)\);/m); // Phase 78 (HUD-04): was 5.5px
   assert.equal((HTML.match(/^\.mw-cond\[data-tone="bad"\]\{--cond-edge:#a63a2c;--cond-ink:#e07260\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-cond\[data-tone="warn"\]\{--cond-edge:#6b5c3c;--cond-ink:#e8c97a\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-cond\[data-tone="odd"\]\{--cond-edge:#5b4a86;--cond-ink:#b9a4ef\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-cond\[data-tone="good"\]\{--cond-edge:#5e7a3c;--cond-ink:#a8cc72\}$/gm) || []).length, 1);
-  assert.match(HTML, /^\.mw-cond-detail\{font-family:var\(--mono\);font-weight:700;font-size:10px;color:#8f856f\}$/m);
+  // Phase 78 (HUD-04): was font-size:10px, now scaled with the text size.
+  assert.match(HTML, /^\.mw-cond-detail\{font-family:var\(--mono\);font-weight:700;font-size:calc\(0\.625rem \* var\(--mw-text-scale\)\);color:#8f856f\}$/m);
 });
 
 // ─── (e) CONDITION_TONE/CONDITION_EXPLAIN + voice scan ────────────────────

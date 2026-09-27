@@ -308,7 +308,8 @@ test("pins: the strip's CSS follows the mock — in the flow (flex:none, never a
   assert.match(body, /-webkit-mask-image:linear-gradient\(to bottom,transparent 0,#000 22px\)/);
   assert.match(body, /(^|;)mask-image:linear-gradient\(to bottom,transparent 0,#000 22px\)/);
   const line = rule(".cb-sum-line");
-  assert.match(line, /font-size:14px/);
+  // Phase 78 (HUD-04): 14px at M, now scaled with the text size.
+  assert.match(line, /font-size:calc\(0\.875rem \* var\(--mw-text-scale\)\)/);
   assert.match(line, /font-weight:700/);
   assert.match(line, /line-height:1\.4/);
   assert.match(line, /color:#8f856f/);
@@ -321,7 +322,8 @@ test("pins: the strip's CSS follows the mock — in the flow (flex:none, never a
   assert.match(busy, /animation:mwtorch \.9s steps\(2\) infinite/);
   assert.match(STYLE, /@keyframes mwtorch\{0%,100%\{opacity:\.9\}50%\{opacity:\.5\}\}/);
   const chip = rule(".cb-sum-chip");
-  assert.match(chip, /font-size:6px/);
+  // Phase 78 (HUD-04): 6px at M, now scaled with the text size.
+  assert.match(chip, /font-size:calc\(0\.375rem \* var\(--mw-text-scale\)\)/);
   assert.match(chip, /color:#8f856f/);
   const mid = rule(".cb-mid");
   assert.match(mid, /flex:1/);

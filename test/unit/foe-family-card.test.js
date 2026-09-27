@@ -172,6 +172,10 @@ test("CMBUI-09 CSS: .cb-foe-family is muted and smaller than the name", () => {
   const rule = HTML.match(/\.cb-foe-family\{([^}]*)\}/);
   assert.ok(rule, ".cb-foe-family{...} rule must exist");
   assert.match(rule[1], /color:#a89c82/, "the family uses the meta line's muted colour");
-  const size = /font-size:(\d+(?:\.\d+)?)px/.exec(rule[1]);
-  assert.ok(size && Number(size[1]) < 8, "the family is smaller than the 8px name");
+  // Phase 78 (HUD-04): both sizes are scaled rems now (was `font-size:7px`
+  // against the name's 8px); the family stays smaller than the name's 0.5rem.
+  const size = /font-size:calc\((\d+(?:\.\d+)?)rem \* var\(--mw-text-scale\)\)/.exec(rule[1]);
+  const name = /\.cb-foe-name\{[^}]*font-size:calc\((\d+(?:\.\d+)?)rem \* var\(--mw-text-scale\)\)/.exec(HTML);
+  assert.ok(size && name && Number(size[1]) < Number(name[1]), "the family is smaller than the name");
+  assert.equal(Number(name[1]), 0.5, "the name is 8px at M");
 });
