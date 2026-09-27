@@ -389,6 +389,15 @@ test("RAIL_COPY: the retired climb retry and hazard pre-roll copy is gone; the d
   assert.equal(RAIL_COPY.dark.torch, "USE TORCH");
 });
 
+// VOX-05 (79-11, from 79-10): a second back press closes the app and the run
+// is already saved, so the quit card never says the delve is abandoned; it
+// matches the Oracle line 79-10 fixed.
+test("RAIL_COPY.quit: a second back closes the game and the delve waits (nothing is abandoned)", () => {
+  assert.equal(RAIL_COPY.quit.title, "BACK AGAIN TO QUIT");
+  assert.equal(RAIL_COPY.quit.line, "Press back once more to close the game. The delve waits for you.");
+  assert.doesNotMatch(RAIL_COPY.quit.line, /abandon/i);
+});
+
 // ─── Test 12: emptyRail / railPush / railClear ─────────────────────────────
 
 test("emptyRail/railPush/railClear: seq discipline, pending preserved, never mutates the input", () => {

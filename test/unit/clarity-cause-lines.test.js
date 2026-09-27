@@ -340,7 +340,8 @@ const narrate = (e) => narrativeLineText(narrateEvent(e));
 // row is independently reported and counted by the test runner.
 const ORACLE_CASES = [
     [{ type: "trapSprung", name: "Pit", dmg: 4 }, "Trap: Pit finds you first. −4 hp."],
-    [{ type: "trapPoisoned" }, "Trap: it leaves something behind that outlasts the bruise."],
+    // VOX-05 (79-11): the line says "poisoned" before the joke.
+    [{ type: "trapPoisoned" }, "Trap: poisoned. It leaves something behind that outlasts the bruise."],
     [{ type: "trappedPanic", loss: 4, phobia: "Being trapped" }, "Being trapped: four walls and one door you already used. −4 hp."],
     [{ type: "trappedPanic", loss: 4 }, "Being trapped: four walls and one door you already used. −4 hp."],
     [{ type: "fellClimbing", hurt: 5 }, "Fall: the wall had other plans. −5 hp."],

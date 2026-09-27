@@ -480,10 +480,11 @@ test("narration: EVENT_NARRATION.itemRejected — tooHeavy/wrongClass never read
   assert.doesNotMatch(noArmor, /Not an upgrade/);
   assert.match(noArmor, /wears no armour/);
   assert.match(notBetter, /Not an upgrade/);
-  // woodsman/acrobat/haveOne clauses stay byte-identical.
+  // VOX-05 (79-11): the Woodsman refusal states the rule before the joke;
+  // acrobat stays byte-identical.
   assert.equal(
     EVENT_NARRATION.itemRejected({ type: "itemRejected", item: { n: "Mail" }, reason: "woodsman" }),
-    '<span class="miss">A Woodsman in Mail is a tree in a tin.</span> No.',
+    '<span class="miss">A Woodsman wears no mail or plate.</span> A Woodsman in Mail is a tree in a tin.',
   );
   assert.equal(
     EVENT_NARRATION.itemRejected({ type: "itemRejected", reason: "acrobat" }),

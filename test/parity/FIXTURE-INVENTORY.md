@@ -5108,3 +5108,49 @@ by a parity comparable or hashed into a state pin.
 | Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
 |---|---|---|---|---|---|---|
 | *(none)* | | | | | | |
+
+### Plan 79-11 — the world domain's narration and the rail cards (VOX-05, ROLL-04): measured
+
+**The change.** Presentation only: the world-domain Oracle and rail lines in
+`src/browser/eventNarration.js` and `src/browser/narrationLines.js`
+(movement, traps, chests, the day, rations, items, the store, Joiners,
+darkness, insanity and the equip/take/use refusals). `engine/`, `content/`,
+`src/browser/rail.js` and `src/browser/hazardCard.js` are untouched; no rng
+draw, rule, event field or state field moves.
+
+**The predictor.** Zero moved fixtures, zero moved state pins. The parity
+comparables compare state, never narration.
+
+**The live scan (measured at this plan's base, `1cadbcb0`).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+2. `git diff --quiet 1cadbcb0 -- test/parity content engine` exits 0 before
+   this declaration was appended. No site was reconciled and no carve-out
+   was added.
+3. `git hash-object test/parity/prototype-master.js.txt`:
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. `node --test test/parity/fixture-inventory.test.js` passes (5/5); the
+   generated roster block above is not edited.
+5. `npm test`: no state pin moved (`roll-high-state-pins`,
+   `roll-high-save-compat`, `foe-turn-draw-count` and
+   `test/determinism/**` pass unchanged).
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Other recorded artifacts.** The 77-02 event-order corpus
+(`test/unit/fixtures/event-order/default-fold-corpus.json`) was regenerated
+as a declared change (`MZ_REGEN_EVENT_ORDER_CORPUS=1 node --test
+test/unit/event-order-fold.test.js`). The diff is 68 `text` lines, all
+copies of three recorded lines: `campFailed` now reads "Not enough food to
+make camp: you eat 1 a night, and you have 0. Find rations first." (was
+"You eat 1 a night. You have 0. Find rations first."), `wentHungry` reads
+"Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of
+living −N hp." (was "Hunger: nobody packed — you eat …"), and `chestLocked`
+reads "The lock holds. The box stays shut for good." (was "The lock wins
+this round."). No event, order, fold or priority moved.

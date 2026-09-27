@@ -1212,10 +1212,11 @@ test("campFailed Oracle sentence and line render the numbers and the member clau
     have: 1,
     members: [{ name: "Bram", eats: 1 }],
   }).replace(/<[^>]+>/g, "");
-  assert.equal(withMember, "You eat 2 a night (Bram eats 1 more). You have 1. Find rations first.");
+  // VOX-05 (79-11): the refusal names the camp, and `need` is the whole party's night.
+  assert.equal(withMember, "Not enough food to make camp: the party eats 2 a night (Bram eats 1 of those), and you have 1. Find rations first.");
 
   const solo = EVENT_NARRATION.campFailed({ type: "campFailed", need: 2, have: 1 }).replace(/<[^>]+>/g, "");
-  assert.equal(solo, "You eat 2 a night. You have 1. Find rations first.");
+  assert.equal(solo, "Not enough food to make camp: you eat 2 a night, and you have 1. Find rations first.");
 
   const line = LINE_FOR.campFailed({ type: "campFailed", need: 2, have: 1 });
   assert.equal(line.tone, "block");

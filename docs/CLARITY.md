@@ -25,8 +25,8 @@ them — those rows are marked "unchanged" below, not rewritten.
 | Event | Cost kind | Cause key (present / ADDED) | Line before | Line after | Owner |
 |---|---|---|---|---|---|
 | `trapSprung` | hp | present (`name`) | "Pit finds you first. `4 hp`." | `Trap: Pit finds you first. −4 hp.` | Plan 01 |
-| `trapDoubled` | hp×2 | present (`reason`) | "Cat Burglar's luck holds — for the trap. It hits twice as hard." | unchanged (already cause-first) | unchanged |
-| `trapPoisoned` | affliction | type | "The trap leaves something behind that outlasts the bruise." | `Trap: it leaves something behind that outlasts the bruise.` | Plan 01 |
+| `trapDoubled` | hp×2 | present (`reason`) | "Cat Burglar's luck holds — for the trap. It hits twice as hard." | `Cat Burglar: the trap hits twice as hard. The luck holds — for the trap.` | reworded 79-11 (the fact before the joke) |
+| `trapPoisoned` | affliction | type | "The trap leaves something behind that outlasts the bruise." | `Trap: poisoned. It leaves something behind that outlasts the bruise.` (reworded 79-11: "poisoned" before the joke) | Plan 01 |
 | `afflictionCaught` | hp | present (`kind`) | "Poison takes hold. −3 hp." | `Poison: it takes hold. −3 hp.` | Plan 01 |
 | `afflictionTick` | hp | present (`kind`) | "Poison: −2 hp." | `Poison: still in you. −2 hp.` | Plan 01 |
 | `fellClimbing` | hp | type (wall) | "Gravity remembers you exist — 5 hp." | `Fall: the wall had other plans. −5 hp.` | Plan 01 |
@@ -59,9 +59,9 @@ them — those rows are marked "unchanged" below, not rewritten.
 | spell charge spent | none (no dedicated event; the cast line names the spell, the Grimoire/HUD shows the count — the `spellChargeRecovered` ORACLE_ONLY precedent) | none | n/a | unchanged | unchanged |
 | `dayBegan` | none | none | n/a | unchanged (`<span class="banner">Day N.</span>`) | Plan 02 |
 | `rationsEaten` | rations | NEW EVENT `eats`,`left`,`eaters` | n/a (event did not exist before this plan) | `Rations: you eat 1; Grunk (Troll) eats 2. Trolls eat for two. −3 rations, 4 left.` | Plan 02 |
-| `wentHungry` | hp | ADDED `need`,`have`,`mouths`,`heft` | "No rations. Cost of living takes N hp straight out of you." | `Hunger: nobody packed — you eat 1 a night, and you had 0. Cost of living −4 hp.` (Heft: `… −2 hp (Heft: half, as promised).`) | Plan 02 |
+| `wentHungry` | hp | ADDED `need`,`have`,`mouths`,`heft` | "No rations. Cost of living takes N hp straight out of you." | `Hunger: you eat 1 a night, and you had 0. Nobody packed enough. Cost of living −4 hp.` (Heft: `… −2 hp (Heft: half, as promised).`) | Plan 02; reworded 79-11 (the numbers before the joke) |
 | `rested` | (gain; names the doubling rule) | present (`amount`,`doubled`) | existing rest line | unchanged — verified it already names the doubling race/sub-class via `doubled` | Plan 02 |
-| `campFailed` | refusal | present (`need`,`have`,`members`) | "You eat N a night, you have M." | unchanged (pinned exactly by movement.test.js:984) | unchanged |
+| `campFailed` | refusal | present (`need`,`have`,`members`) | "You eat N a night, you have M." | `Not enough food to make camp: you eat N a night, and you have M. Find rations first.` (a party: `the party eats N a night (Bram eats 1 of those)`; pinned exactly by movement.test.js) | reworded 79-11 |
 
 ## HP not WP sweep
 

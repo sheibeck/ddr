@@ -199,7 +199,11 @@ export const RAIL_COPY = Object.freeze({
   // USE ROPE, TURN BACK) is src/browser/hazardCard.js#HAZARD_CARD_COPY.
   // `dark.torch` is the Darkness card's USE TORCH offer.
   dark: { torch: "USE TORCH" },
-  quit: { title: "BACK AGAIN TO QUIT", line: "Press back once more and this delve is abandoned. Nobody will write it down." },
+  // VOX-05 (Phase 79, plan 79-11, from 79-10): a second back press closes
+  // the app (nativeChrome.js's exit-app) and the run is already saved (the
+  // pause/appStateChange flush), so nothing is abandoned. Matches the Oracle
+  // line 79-10 fixed.
+  quit: { title: "BACK AGAIN TO QUIT", line: "Press back once more to close the game. The delve waits for you." },
   // Phase 37 (GEAR-04), rewritten 260918-wy1 (jewelry-merge): the one-shot
   // worn-reconciliation copy — wornReconcileCard (below) builds the actual
   // card; `title` is reused verbatim, `line` is a template
