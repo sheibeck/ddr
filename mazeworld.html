@@ -1679,12 +1679,18 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
    .mw-settings-row[hidden] rule below removes the group otherwise). Native
    range inputs restyled in the settings palette: a 44px-tall touch box with
    a 28px square thumb. Labels and percentages scale with S/M/L. No motion
-   of any kind, so reduced motion has nothing to stop. */
+   of any kind, so reduced motion has nothing to stop.
+   Phase 78 (HUD-05): the range inputs take no pointer input of their own
+   (pointer-events:none — they stay focusable for the keyboard and
+   TalkBack); the ROW takes the finger with touch-action:pan-y, so a
+   vertical drag scrolls the sheet natively and only a sideways drag (or a
+   tap) that starts on the track moves the level (src/browser/sliderGesture.js). */
+.mw-vol-row{touch-action:pan-y}
 .mw-vol-row + .mw-vol-row{margin-top:10px}
 .mw-vol-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .mw-vol-label{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));line-height:1.5;letter-spacing:.08em;text-transform:uppercase;color:#c9bda0}
 .mw-vol-pct{flex:none;font-family:var(--mono);font-weight:700;font-size:calc(0.8125rem * var(--mw-text-scale));color:#e8c97a;font-variant-numeric:tabular-nums}
-.mw-vol-range{-webkit-appearance:none;appearance:none;display:block;width:100%;height:44px;min-height:44px;margin:0;padding:0;background:transparent;cursor:pointer;touch-action:pan-y}
+.mw-vol-range{-webkit-appearance:none;appearance:none;display:block;width:100%;height:44px;min-height:44px;margin:0;padding:0;background:transparent;cursor:pointer;touch-action:pan-y;pointer-events:none}
 .mw-vol-range:focus{outline:none}
 .mw-vol-range:focus-visible{outline:2px solid #e8c97a;outline-offset:2px}
 .mw-vol-range::-webkit-slider-runnable-track{height:8px;background:#1b170f;border:2px solid #4a4032;border-radius:0}
@@ -6224,6 +6230,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
+  import { SLIDER_IDLE, sliderGestureNext } from "./src/browser/sliderGesture.js";
   import { maybeHaptic } from "./src/browser/haptics.js";
   // Phase 56 (AUD-01..06) — the whole audio layer lives in src/browser/sfx.js;
   // this module script calls it directly (dispatchWithNarration and
@@ -6992,28 +6999,101 @@ window.__mzClassicBoot = async function classicBoot() {
   // below (71-07, D-15) plays its tap only for buttons, and a range input is
   // not a button, so grabbing a slider makes no tap sound. volSliderValue is the shell's own inline clamp (no
   // copy of any settings.js / sfx.js export).
+  // Phase 78 (HUD-05): the live and persist steps are the two functions
+  // below, shared by the keyboard / TalkBack `input` and `change` listeners
+  // and by the pointer gesture further down, so there is one live path and
+  // one persist path whichever way the level moves.
   function volSliderValue(input) {
     const n = Math.round(Number(input?.value));
     return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 100;
   }
-  document.getElementById("mw-settings-rows")?.addEventListener("input", (e) => {
-    const input = e.target?.closest?.("[data-vol]");
+  function volApplyLive(input, value) {
     if (!input || !currentSettings) return;
     const key = input.dataset.vol;
-    const value = volSliderValue(input);
+    input.value = String(value);
     applySettings({ ...currentSettings, [key]: value });
     const pct = input.closest(".mw-vol-row")?.querySelector(".mw-vol-pct");
     if (pct) pct.textContent = `${value}%`;
-  });
-  document.getElementById("mw-settings-rows")?.addEventListener("change", async (e) => {
-    const input = e.target?.closest?.("[data-vol]");
+  }
+  async function volCommit(input, value) {
     if (!input) return;
     const key = input.dataset.vol;
-    const value = volSliderValue(input);
     const next = await writeSetting(key, value);
     applySettings(next);
     renderSettingsSheet();
     if (key === "volEffects") playUiTap();
+  }
+  document.getElementById("mw-settings-rows")?.addEventListener("input", (e) => {
+    const input = e.target?.closest?.("[data-vol]");
+    if (!input || !currentSettings) return;
+    volApplyLive(input, volSliderValue(input));
+  });
+  document.getElementById("mw-settings-rows")?.addEventListener("change", async (e) => {
+    const input = e.target?.closest?.("[data-vol]");
+    if (!input) return;
+    await volCommit(input, volSliderValue(input));
+  });
+
+  // Phase 78 (HUD-05): the pointer path. The range inputs ignore pointers
+  // (CSS pointer-events:none), so a finger lands on the .mw-vol-row, whose
+  // touch-action:pan-y lets a vertical drag scroll the sheet natively (the
+  // browser then sends pointercancel). A gesture starts only when the
+  // pointerdown falls inside the row's track box; src/browser/sliderGesture.js
+  // decides the rest — a sideways drag goes live then commits once on
+  // release, a tap commits the tapped level, a vertical drag or a cancel
+  // restores the start level with no storage write and no sound.
+  // VOL_THUMB_INSET is half the 28px thumb, so the level under the finger
+  // matches where a native range input draws its thumb.
+  const VOL_THUMB_INSET = 14;
+  let volGesture = SLIDER_IDLE;
+  let volGestureInput = null;
+  function volGestureFeed(event) {
+    const input = volGestureInput;
+    const { state, effect } = sliderGestureNext(volGesture, event);
+    volGesture = state;
+    if (state.phase === "idle") volGestureInput = null;
+    if (!effect || !input) return;
+    if (effect.live !== undefined) volApplyLive(input, effect.live);
+    else if (effect.commit !== undefined) volCommit(input, effect.commit);
+    else if (effect.restore !== undefined) volApplyLive(input, effect.restore);
+  }
+  const volRowsEl = document.getElementById("mw-vol-rows");
+  volRowsEl?.addEventListener("pointerdown", (e) => {
+    // A second pointer mid-gesture cancels it (the state machine's rule).
+    if (volGesture.phase !== "idle") {
+      volGestureFeed({ type: "down", pointerId: e.pointerId, x: e.clientX, y: e.clientY });
+      return;
+    }
+    if (e.button !== 0 || !currentSettings) return;
+    const row = e.target?.closest?.(".mw-vol-row");
+    const input = row?.querySelector("[data-vol]");
+    if (!input) return;
+    const box = input.getBoundingClientRect();
+    if (e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom) return;
+    volGestureInput = input;
+    volGestureFeed({
+      type: "down",
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      startValue: volSliderValue(input),
+      rect: { left: box.left, width: box.width },
+      range: { min: Number(input.min) || 0, max: Number(input.max) || 100, step: Number(input.step) || 1, inset: VOL_THUMB_INSET },
+    });
+    if (volGesture.phase === "idle") { volGestureInput = null; return; }
+    try { row.setPointerCapture(e.pointerId); } catch { /* capture is a nicety */ }
+  });
+  volRowsEl?.addEventListener("pointermove", (e) => {
+    if (volGesture.phase === "idle") return;
+    volGestureFeed({ type: "move", pointerId: e.pointerId, x: e.clientX, y: e.clientY });
+  });
+  volRowsEl?.addEventListener("pointerup", (e) => {
+    if (volGesture.phase === "idle") return;
+    volGestureFeed({ type: "up", pointerId: e.pointerId, x: e.clientX, y: e.clientY });
+  });
+  volRowsEl?.addEventListener("pointercancel", (e) => {
+    if (volGesture.phase === "idle") return;
+    volGestureFeed({ type: "cancel", pointerId: e.pointerId });
   });
 
   // Quick task 260924-51h — the title theme (sfx/theme.mp3). WHEN it plays
