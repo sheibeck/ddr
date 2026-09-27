@@ -493,7 +493,7 @@ Plans:
   2. No player-facing string still encodes roll-under phrasing ("1–N", "need N", "natural 1", "−3 on to-hit") — a doc-synced test pins that none remains.
   3. Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why, while staying sarcastic and family-friendly.
 
-**Plans**: 9/13 plans executed
+**Plans**: 11/13 plans executed
 
 Plans:
 **Wave 1**
@@ -516,8 +516,8 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 79-10-PLAN.md — Run the narrative pass over the map, the title and roller, Settings, the ☰ menu and everything else left in mazeworld.html and the small shell modules (VOX-05), including the legend's roll-under lock line (ROLL-04) (wave 4)
-- [ ] 79-11-PLAN.md — Run the narrative pass over the world: every Oracle and rail line from movement, encounters, traps, hazards, the day, rations, items, the store, Joiners and the relaunch, plus the rail cards themselves (VOX-05), fixin... (wave 4)
+- [x] 79-10-PLAN.md — Run the narrative pass over the map, the title and roller, Settings, the ☰ menu and everything else left in mazeworld.html and the small shell modules (VOX-05), including the legend's roll-under lock line (ROLL-04) (wave 4)
+- [x] 79-11-PLAN.md — Run the narrative pass over the world: every Oracle and rail line from movement, encounters, traps, hazards, the day, rations, items, the store, Joiners and the relaunch, plus the rail cards themselves (VOX-05), fixin... (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -655,7 +655,7 @@ Plans:
 | 76. Darkness Unification & Relaunch Persistence | v2.1 | 6/6 | Complete    | 2026-09-26 |
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 9/9 | Complete    | 2026-09-27 |
-| 79. Content & Narrative Pass | v2.1 | 9/13 | In Progress|  |
+| 79. Content & Narrative Pass | v2.1 | 11/13 | In Progress|  |
 | 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
