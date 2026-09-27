@@ -156,8 +156,10 @@ test("empty: no events -> no lines under either ctx", () => {
 // ─── tableFour / tableFourNoop ────────────────────────────────────────────
 
 test("tableFour / tableFourNoop narrate their prose result and are no longer Oracle-only", () => {
-  const result = LINE_FOR.tableFour({ type: "tableFour", result: "Something unseen takes its cut — 10 hp, gone." });
-  assert.equal(result.text, "Something unseen takes its cut — 10 hp, gone.");
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): the engine's prose lost
+  // its number; the line appends the signed amount the row actually made.
+  const result = LINE_FOR.tableFour({ type: "tableFour", result: "Something unseen takes its cut.", row: "-10 HP", stat: "hp", amount: -13 });
+  assert.equal(result.text, "Something unseen takes its cut. −13 hp.");
   assert.equal(result.tone, "beat");
 
   const noop = LINE_FOR.tableFourNoop({ type: "tableFourNoop" });

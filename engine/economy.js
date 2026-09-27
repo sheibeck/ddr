@@ -224,9 +224,10 @@ export const STORE_EFFECTS = {
     const before = c.wp;
     c.wp = Math.min(c.maxWP, c.wp + params.wp);
     // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): the meal's real HP
-    // gain rides on the purchase's own `bought` event as `gained` (buyFrom
-    // merges a returned field object) — additive, zero draws.
-    return { gained: c.wp - before };
+    // gain rides on the purchase's own `bought` event as `gained`, beside the
+    // meal's portion as `meal` (buyFrom merges a returned field object) —
+    // additive, zero draws.
+    return { gained: c.wp - before, meal: params.wp };
   },
   buyRations(state, params, events) {
     // DELIBERATE RULES CHANGE (04.1-03, RATION-01): the dedicated, visible

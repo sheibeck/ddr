@@ -325,6 +325,7 @@ test("bought (a store meal): the purchase event carries `gained`, the HP the mea
     state.store = { stock: [{ n: "Chicken (+12 hp)", sub: null, cost: 20, effectId: "eatRation", effectParams: { wp: 12 }, sold: false }] };
     const e = find(buyFrom(state, 0, []), "bought");
     assert.equal(e.gained, expectGained, `missing ${missing}`);
+    assert.equal(e.meal, 12, "the meal's portion rides beside it");
     assert.equal(state.c.wp, 100 - missing + expectGained);
   }
   // A non-food purchase carries no `gained` at all.

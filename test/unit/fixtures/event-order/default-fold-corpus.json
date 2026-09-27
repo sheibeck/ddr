@@ -10194,7 +10194,8 @@
     },
     {
      "type": "rested",
-     "amount": 2
+     "amount": 2,
+     "gained": 2
     },
     {
      "type": "wanderingMonster",
@@ -11067,7 +11068,8 @@
     },
     {
      "type": "rested",
-     "amount": 2
+     "amount": 2,
+     "gained": 2
     }
    ],
    "lines": [

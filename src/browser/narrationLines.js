@@ -347,6 +347,26 @@ function block(text) {
   return { text, tone: "block", priority: PRIORITY.block };
 }
 
+// VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): the rail twins of the
+// Oracle's honest gain lines (eventNarration.js#gainOf/cappedNote) — the HP
+// actually gained leads; a capped gain says "back to full"; a gain of 0 says
+// the hero was already at full, never "+0". A hand-built event with no
+// `gained` falls back to its pre-clamp value.
+const railGain = (e, offered) => (Number.isFinite(e?.gained) ? e.gained : Number.isFinite(offered) ? offered : 0);
+const railFull = (gained, offered) => (Number.isFinite(offered) && gained > 0 && gained < offered ? ", back to full" : "");
+
+/** railTableFourTail(e) — todo 2026-09-26: the signed amount a Table 4 row actually made (rollRange.js#signedText). */
+function railTableFourTail(e) {
+  if (!Number.isFinite(e?.amount)) return "";
+  if (e.stat === "hp") {
+    if (e.amount === 0) return " You were already at full hp.";
+    return ` ${signedText(e.amount)} hp${e.amount > 0 ? railFull(e.amount, e.rolled) : ""}.`;
+  }
+  if (e.stat === "maxHp") return ` ${signedText(e.amount)} max hp.`;
+  if (e.stat === "xp") return ` ${signedText(e.amount)} experience.`;
+  return "";
+}
+
 /**
  * GEAR_LOCK_LOOT_VERBS — Phase 61 (GRULE-01): the three `gearRefused` verbs
  * whose line is "the spoils can wait" rather than "not the moment to change
@@ -1325,20 +1345,24 @@ export const LINE_FOR = {
   // Phase 25 (FEED-01): `doubled` names the Soldier/heal2x race when the camp
   // heal was doubled; absent renders the plain amount only.
   rested: (e) => ({
-    text: `Camp +${e?.amount ?? 0} hp${e?.doubled ? ` · ${e.doubled}, doubled` : ""}`,
+    text: `Camp +${railGain(e, e?.amount)} hp${e?.doubled ? ` · ${e.doubled}, doubled` : ""}`,
     tone: "hit",
     priority: PRIORITY.feature,
   }),
   // Phase 54 (BAND-02, USER RULING D): HERO_REGEN_PER_FLOOR's arrival tick —
   // identity (0) never pushes this event.
   floorRegen: (e) => ({
-    text: `A new floor, and the dungeon lets you keep +${e?.amount ?? 0} hp of it. Do not mistake this for kindness.`,
+    text: `A new floor, and the dungeon lets you keep +${railGain(e, e?.amount)} hp of it. Do not mistake this for kindness.`,
     tone: "hit",
     priority: PRIORITY.other,
   }),
   // 260918-w4n (use-activated-only): the Cloak of Healing is removed from
   // the game — the "cloakHealed" event type no longer exists anywhere.
-  cloakRegenerated: (e) => ({ text: `Flesh knits +${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.other }),
+  cloakRegenerated: (e) => ({
+    text: railGain(e, e?.amount) > 0 ? `Flesh knits +${railGain(e, e?.amount)} hp.` : "Cloak: you were already at full hp.",
+    tone: "hit",
+    priority: PRIORITY.other,
+  }),
   armorPatched: (e) => ({ text: `${e?.by ?? "Mending"}: +${e?.amount ?? 0} armour.`, tone: "hit", priority: PRIORITY.feature }),
   potionDuplicated: () => ({ text: "Warlock: +1 potion.", tone: "magic", priority: PRIORITY.feature }),
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost — a cost, so it is
@@ -1389,7 +1413,7 @@ export const LINE_FOR = {
   campFailed: (e) =>
     block(e?.need != null && e?.have != null ? `You eat ${e.need} a night, you have ${e.have}. Find rations first.` : "Not enough food to make camp."),
   teleported: () => ({ text: "You teleport to an unknown location.", tone: "beat", priority: PRIORITY.other }),
-  leveled: (e) => ({ text: `Skill level ${e?.level ?? "?"} (+${e?.wpGain ?? 0} hp).`, tone: "hit", priority: PRIORITY.feature }),
+  leveled: (e) => ({ text: `Skill level ${e?.level ?? "?"} (+${railGain(e, e?.wpGain)} hp).`, tone: "hit", priority: PRIORITY.feature }),
   // Phase 38 (ABIL-01/03): a level-pool ability roll, sibling of leveled
   // immediately above (both fold into the same SKILL LEVEL N card family).
   abilityLearned: (e) => ({ text: `New trick: ${e?.name ?? "something"} — ${e?.txt ?? ""}`, tone: "hit", priority: PRIORITY.feature }),
@@ -1481,7 +1505,12 @@ export const LINE_FOR = {
     priority: PRIORITY.feature,
   }),
   cooked: (e) => ({
-    text: (e?.wp ?? 0) > 0 ? `Cooked: +${e.wp} hp, +${e?.rations ?? 1} ration.` : `Salvaged +${e?.rations ?? 1} ration.`,
+    text:
+      (e?.wp ?? 0) <= 0
+        ? `Salvaged +${e?.rations ?? 1} ration.`
+        : railGain(e, e.wp) > 0
+          ? `Cooked: +${railGain(e, e.wp)} hp${railFull(railGain(e, e.wp), e.wp) ? " (back to full)" : ""}, +${e?.rations ?? 1} ration.`
+          : `Cooked: you were already at full hp, +${e?.rations ?? 1} ration.`,
     tone: "hit",
     priority: PRIORITY.feature,
   }),
@@ -1578,7 +1607,11 @@ export const LINE_FOR = {
     return { text: `${e?.name ?? "It"} hits ${e?.member ?? "your companion"} (${e?.dmg ?? 0})${crit}`, tone: "hurt", priority: PRIORITY.feature };
   },
   memberDowned: (e) => ({ text: `${e?.name ?? "Your companion"} goes down.`, tone: "hurt", priority: PRIORITY.feature }),
-  regenerated: (e) => ({ text: `+${e?.amount ?? 0} hp knits shut.`, tone: "hit", priority: PRIORITY.you }),
+  regenerated: (e) => ({
+    text: railGain(e, e?.amount) > 0 ? `+${railGain(e, e?.amount)} hp knits shut${railFull(railGain(e, e?.amount), e?.amount)}.` : "Regeneration: you were already at full hp.",
+    tone: "hit",
+    priority: PRIORITY.you,
+  }),
   acidTick: (e) => ({ text: `Acid eats at ${e?.target ?? "it"} (${e?.dmg ?? 0}).`, tone: "magic", priority: PRIORITY.you }),
   foeSlept: (e) => ({ text: `${e?.name ?? "It"} sleeps through it.`, tone: "dodge", priority: PRIORITY.them }),
   foeMissed: (e) => {
@@ -1771,7 +1804,11 @@ export const LINE_FOR = {
   foeStunned: (e) => ({ text: `${e?.name ?? "It"} loses its turn.`, tone: "hit", priority: PRIORITY.them }),
   battleRoarRaised: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Loud enough. Two rounds of it.`, tone: "hit", priority: PRIORITY.feature }),
   sidestepped: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Not where the blade is. Two rounds of that.`, tone: "hit", priority: PRIORITY.feature }),
-  secondWindHealed: (e) => ({ text: `+${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.you }),
+  secondWindHealed: (e) => ({
+    text: railGain(e, e?.amount) > 0 ? `+${railGain(e, e?.amount)} hp${railFull(railGain(e, e?.amount), e?.rolled)}.` : "Second wind: you were already at full hp.",
+    tone: "hit",
+    priority: PRIORITY.you,
+  }),
   swept: (e) => ({ text: `One wide arc — ${e?.dmg ?? 0} to everything standing.`, tone: "hit", priority: PRIORITY.feature }),
   sweptFoe: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0}.`, tone: "hit", priority: PRIORITY.them }),
   braced: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Braced. The next one lands on your terms.`, tone: "hit", priority: PRIORITY.feature }),
@@ -1794,7 +1831,14 @@ export const LINE_FOR = {
   // events (no hero equivalent; a hero's own equivalent reads
   // abilityUsed/secondWindHealed/swept/riposted above).
   memberAbilityUsed: (e) => ({ text: `${e?.name ?? "Your companion"} calls ${e?.ability ?? "it"}.`, tone: "hit", priority: PRIORITY.feature }),
-  memberSecondWind: (e) => ({ text: `${e?.name ?? "Your companion"} remembers why they came. +${e?.amount ?? 0} hp.`, tone: "hit", priority: PRIORITY.them }),
+  memberSecondWind: (e) => ({
+    text:
+      railGain(e, e?.amount) > 0
+        ? `${e?.name ?? "Your companion"} remembers why they came. +${railGain(e, e?.amount)} hp${railFull(railGain(e, e?.amount), e?.rolled)}.`
+        : `${e?.name ?? "Your companion"} remembers why they came, already at full hp.`,
+    tone: "hit",
+    priority: PRIORITY.them,
+  }),
   memberSwept: (e) => ({ text: `${e?.name ?? "Your companion"} sweeps — ${e?.dmg ?? 0} to everything standing.`, tone: "hit", priority: PRIORITY.them }),
   memberRiposted: (e) => ({ text: `${e?.target ?? "It"} misses ${e?.name ?? "your companion"}, and pays ${e?.dmg ?? 0} for it.`, tone: "hit", priority: PRIORITY.them }),
 
@@ -1885,7 +1929,14 @@ export const LINE_FOR = {
   insaneRolled: (e) => ({ text: `Insanity takes ${e?.target ?? "it"}.`, tone: "magic", priority: PRIORITY.other }),
   insaneStruckAlly: (e) => ({ text: `The maddened thing turns on ${e?.target ?? "an ally"} (${e?.dmg ?? 0}).`, tone: "hurt", priority: PRIORITY.you }),
   insaneFled: (e) => ({ text: `${e?.target ?? "It"} bolts, mad with fear.`, tone: "magic", priority: PRIORITY.you }),
-  healed: (e) => ({ text: `+${e?.amount ?? 0} hp${e?.spell ? ` (${e.spell})` : ""}.`, tone: "hit", priority: PRIORITY.you }),
+  healed: (e) => ({
+    text:
+      railGain(e, e?.amount) > 0
+        ? `+${railGain(e, e?.amount)} hp${e?.spell ? ` (${e.spell})` : ""}${railFull(railGain(e, e?.amount), e?.amount)}.`
+        : `${e?.spell ?? "Healing"}: you were already at full hp.`,
+    tone: "hit",
+    priority: PRIORITY.you,
+  }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   deathSpellTooWeak: (e) => block(`Death: ${e?.fee ?? 25} hp fee. You cannot pay it and live.`),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -1918,7 +1969,10 @@ export const LINE_FOR = {
   spellMissed: (e) => ({ text: `${e?.spell ?? "It"} misses ${e?.target ?? "it"}.`, tone: "miss", priority: PRIORITY.you }),
   // Phase 25 (FEED-01): `doubled` names the heal2x race when the dose was doubled.
   potionDrunk: (e) => ({
-    text: `Potion +${e?.amount ?? 0} hp (${e?.remaining ?? 0} left)${e?.doubled ? ` · ${e.doubled}` : ""}`,
+    text:
+      railGain(e, e?.amount) > 0
+        ? `Potion +${railGain(e, e?.amount)} hp${railFull(railGain(e, e?.amount), e?.amount)} (${e?.remaining ?? 0} left)${e?.doubled ? ` · ${e.doubled}` : ""}`
+        : `Potion: you were already at full hp (${e?.remaining ?? 0} left)${e?.doubled ? ` · ${e.doubled}` : ""}`,
     tone: "hit",
     priority: PRIORITY.you,
   }),
@@ -1973,7 +2027,14 @@ export const LINE_FOR = {
   },
   buyFailed: (e) => block(`Short ${e?.short ?? 0} wilmst.`),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  bought: (e) => ({ text: `Bought: ${e?.item ?? "something"} (−${e?.cost ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-02): a store meal adds the HP it really restored.
+  bought: (e) => ({
+    text: `Bought: ${e?.item ?? "something"} (−${e?.cost ?? 0} wilmst).${
+      !Number.isFinite(e?.gained) ? "" : e.gained > 0 ? ` +${e.gained} hp${railFull(e.gained, e?.meal)}.` : " You were already at full hp."
+    }`,
+    tone: "hit",
+    priority: PRIORITY.other,
+  }),
   // Phase 61 (STORE-02/STORE-03): a legal not-better buy — charged and
   // bagged, never lost. Same priority as `bought` so the fold keeps engine
   // order: "Bought: … (−N wilmst)." then "Into the bag: … — not an upgrade:
@@ -1993,7 +2054,9 @@ export const LINE_FOR = {
   // "Move on" card is gated to CARD_EVENTS — the over-map overlay no longer
   // narrates these on the move path, so they need their own line. `result`
   // is already a full prose sentence (engine/encounters.js#tableFour).
-  tableFour: (e) => ({ text: e?.result ?? "Something happens.", tone: "beat", priority: PRIORITY.other }),
+  // VOX-05 (Phase 79, plan 79-02, todo 2026-09-26): the prose, then the
+  // signed amount the row actually made — the same number as the Oracle.
+  tableFour: (e) => ({ text: `${e?.result ?? "Something happens."}${railTableFourTail(e)}`, tone: "beat", priority: PRIORITY.other }),
   tableFourNoop: (e) => ({ text: e?.result ?? "Nothing much happens.", tone: "beat", priority: PRIORITY.other }),
   // Phase 73 (ROLL-05): the roll-high triple, via rollVsText.
   trapAvoided: (e) => ({ text: `You clock it early (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}).`, tone: "hit", priority: PRIORITY.other }),
@@ -2012,9 +2075,13 @@ export const LINE_FOR = {
   chestLockRolled: (e) => ({ text: `Lock: ${rollVsText(e?.roll, e?.atLeast, e?.dieN)}`, tone: "beat", priority: PRIORITY.other }),
   chestLocked: () => ({ text: "The lock wins this round.", tone: "miss", priority: PRIORITY.other }),
   scrollFound: () => ({ text: "A scroll, tucked in with the loot.", tone: "hit", priority: PRIORITY.other }),
-  foodFound: (e) => ({ text: `${e?.name ?? "Food"} (+${e?.wp ?? 0} hp).`, tone: "hit", priority: PRIORITY.other }),
+  foodFound: (e) => ({
+    text: railGain(e, e?.wp) > 0 ? `${e?.name ?? "Food"} (+${railGain(e, e?.wp)} hp${railFull(railGain(e, e?.wp), e?.wp)}).` : `${e?.name ?? "Food"}: you were already at full hp.`,
+    tone: "hit",
+    priority: PRIORITY.other,
+  }),
   grimoireLearned: (e) => ({ text: `New spells: ${(e?.spells ?? []).join(", ") || "nothing new"}.`, tone: "hit", priority: PRIORITY.other }),
-  faerieBoon: (e) => ({ text: `+${e?.amount ?? 0} base hp.`, tone: "hit", priority: PRIORITY.other }),
+  faerieBoon: (e) => ({ text: `+${railGain(e, e?.amount)} base hp.`, tone: "hit", priority: PRIORITY.other }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   faerieBane: (e) => ({ text: `Faerie: −${e?.amount ?? 0} base hp.`, tone: "hurt", priority: PRIORITY.other }),
   joinerJoined: (e) => ({ text: `${e?.name ?? "Someone"} falls in beside you.`, tone: "hit", priority: PRIORITY.feature }),
