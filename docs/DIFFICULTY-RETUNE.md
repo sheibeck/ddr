@@ -6618,6 +6618,13 @@ no BEFORE or AFTER block and gives no verdict. Phase 79.1 writes those.
   `test/parity/FIXTURE-INVENTORY.md`'s Phase 76 section, Plan 01).
 - `engine/difficulty.js` and `content/` are byte-identical to the plan base
   (`e090d1da`). No dial was retuned and nothing was nerfed to compensate.
+- 76-06 adds two rule changes for the same Phase 79.1 readout, both user
+  rulings of 2026-09-26: Map the Floor lasts only until you move (a
+  one-square window; harder on casters, and the bot resumes exploring after
+  one step instead of wandering a fully mapped floor), and a fumbled Weaken
+  scroll weakens the reader (`c.foeEffect`), no longer the foes (harsher on
+  intelligence readers, in combat only). Every state pin and the pre-switch
+  save stayed byte-identical (FIXTURE-INVENTORY's Phase 76 section, Plan 06).
 
 ### Deferred to Phase 79.1
 

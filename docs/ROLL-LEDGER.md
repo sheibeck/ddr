@@ -848,7 +848,7 @@ mutation (a miss, or no roll at the knee or above it) or marks
 | X5 | one turn / two rounds | Pommel Strike, Dirty Trick | abilities.js | OUT: short ability effects | OUT; exempt in the guard (`applyPommel`, `applyDirtyTrick`) | — |
 | X6 | debuffs | Hamstring, Mark, Acid, Poisoned Edge | abilities.js, magic.js | OUT: damage and debuffs, not control | OUT | — |
 | X7 | on the hero | foe abilities (c.foeEffect) | foeAbilities.js | OUT: the hero's own intel resist governs | OUT | — |
-| X8 | weaken | a fumbled Weaken scroll (Phase 75.1) | scrollFumble.js resolveHarmful, case `weakened` | OUT: a fumble effect (the scroll misfiring), not the hero's control | OUT; exempt in the guard (`resolveHarmful`). Found by 75.3-07's scan. It sets the same `C.weakened` / `C.foeToHitPenalty` / `spell:weaken` fields the hero's own landed Weaken sets on the foes, while its `fumbleOnReader` event narrates the reader being weakened: flagged for the user, not changed | — |
+| X8 | weaken | a fumbled Weaken scroll (Phase 75.1) | scrollFumble.js resolveHarmful, case `weakened` | OUT: a fumble effect (the scroll misfiring), not the hero's control | RESOLVED (user ruling 2026-09-26, "weaken the reader"; Plan 76-06's dispatch). Found by 75.3-07's scan: it used to set the foe-side `C.weakened` / `C.foeToHitPenalty` / `spell:weaken` fields, so the harmful fumble helped the reader. It now sets the reader's own `c.foeEffect` `{ kind: "weakened", rounds }` (d4+1), the debuff a foe's Weaken inflicts, and assigns no foe control, so the guard exemption is gone. Out of combat the fumble still fizzles (Phase 75.1) | 76-06 |
 
 **The standing guard.** `test/unit/control-at-depth-rules.test.js`
 (75.3-07) scans every comment-stripped `engine/*.js` file and fails when a
@@ -856,7 +856,8 @@ foe-control assignment (`asleep` or `held` set to a live value, or
 `stupid`, `frozen`, `blind`, `shrunk`, `stunned` or `weakened` set true)
 sits in a function that does not also call `resistControl(`, outside the
 audited exemptions (`holdFoe` itself, whose callers resist first; X5's
-`applyPommel` and `applyDirtyTrick`; X8's `resolveHarmful`). It also pins
+`applyPommel` and `applyDirtyTrick`; X8's `resolveHarmful` exemption was
+removed in Plan 76-06, when the fumble stopped assigning foe control). It also pins
 `controlResistCheck(` to `combat.js#resistControl`, `controlResistRoll(` to
 `derived.js#controlResistCheck`, and the one `"controlResist"` stream to
 `derived.js#controlResistCheck`, and checks this section lists C1-C19 and

@@ -616,7 +616,11 @@ What each effect means:
   cannot kill), and the hero's landed weapon damage halved for the rest of
   the fight; max hp is untouched — no turns are lost.
 - harmful **weakened**: the hero's existing foe-inflicted hex (half damage)
-  for `rounds`.
+  for `rounds`. Plan 76-06's dispatch (user ruling 2026-09-26, "weaken the
+  reader"): the code now does what this line says, `c.foeEffect { kind:
+  "weakened", rounds }` on the reader. Until then it set the foe-side
+  `C.weakened` / `C.foeToHitPenalty` / `spell:weaken` fields, so the fumble
+  helped the reader (ROLL-LEDGER audit row X8).
 - harmful **vapor**: the vapor table as `castSpell` rolls it (level 5+
   always 4, else a d6); a 4 is a heavy blow (how "vapor") unless a d10
   shows 1; anything else puts the reader to sleep (out, asleep) for d4

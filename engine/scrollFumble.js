@@ -33,7 +33,6 @@ import { SCROLL_FUMBLE } from "../content/index.js";
 import { rollDice } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, normalizeTarget, downMember, fumbleHeavyBlow, HERO_OUT_MAX } from "./combat.js";
-import { startEffect } from "./effects.js";
 import { buildReinforcement, SUMMON_MAX_LIVE } from "./foeAbilities.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -61,9 +60,11 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
  *   - blind: sets C.heroBlind (Blind) — no turns lost.
  *   - shrink: halves current hp rounding up (never to 0), sets C.heroShrunk
  *     — no turns lost.
- *   - weakened: the SAME spell:weaken timer castSpell's own weaken branch
- *     starts (C.weakened, C.foeToHitPenalty, startEffect), for the row's own
- *     `d4+1` rounds.
+ *   - weakened: the READER is weakened — c.foeEffect `{ kind: "weakened",
+ *     rounds }`, the same hero-side debuff a foe's Weaken inflicts (the
+ *     reader's own blows are halved while it runs), for the row's own
+ *     `d4+1` rounds. No foe-side field is set (Plan 76-06's dispatch, user
+ *     ruling 2026-09-26; it used to set the foe-side C.weakened fields).
  *   - vapor: rolls castSpell's own vapor table on the READER — a 4 (forced
  *     at reader level 5+, else a rolled d6) draws a d10; anything but a 1
  *     lands the heavy blow (how "vapor"); a 1, OR a d6 that was never 4 to
@@ -118,10 +119,16 @@ function resolveHarmful(state, sp, entry, srng, rng, events, now) {
       break;
     }
     case "weakened": {
+      // Plan 76-06's dispatch (user ruling 2026-09-26, "weaken the reader"):
+      // the fumble puts the hero-side debuff on the READER — c.foeEffect of
+      // kind "weakened", the same slot and shape a foe's Weaken inflicts
+      // (engine/foeAbilities.js; combat.js#playerStrike halves the reader's
+      // own blows while it runs, foeTurn ticks it down) — for the row's own
+      // d4+1 rounds. It no longer sets the foe-side C.weakened /
+      // C.foeToHitPenalty / spell:weaken fields a landed hero Weaken sets,
+      // which made the "harmful" fumble help the reader.
       const rounds = rollDice(srng, entry.rounds);
-      C.weakened = true;
-      C.foeToHitPenalty = 3;
-      startEffect(c, "spell:weaken", { rounds });
+      c.foeEffect = { kind: "weakened", rounds };
       events.push({ type: "fumbleOnReader", spell: sp.n, effect: "weakened", rounds });
       break;
     }

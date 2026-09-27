@@ -4359,3 +4359,37 @@ proves every window closes on the next move with no bot-code change.
 **Byte-identical elsewhere.** No comparable carve-out was added
 (`test/parity/harness/comparables.js` is untouched); `stripSpellSeen` and
 `stripTimersField` already carve the flag and the timers out.
+
+#### A fumbled Weaken scroll weakens the reader (user ruling 2026-09-26, carried by 76-06's dispatch): measured zero
+
+**The rule.** `engine/scrollFumble.js#resolveHarmful`, case `weakened`, now
+sets the reader's own `c.foeEffect = { kind: "weakened", rounds }` (the row's
+d4+1, drawn from the fumble stream as before), the hero-side debuff a foe's
+Weaken inflicts. It no longer sets the foe-side `C.weakened`,
+`C.foeToHitPenalty = 3` or the `spell:weaken` timer. The event is unchanged
+(`fumbleOnReader { spell, effect: "weakened", rounds }`), and its Oracle and
+rail lines ("… weakens you, N rounds") now tell the truth. Out of combat the
+fumble still fizzles (readScroll's Phase 75.1 rule; the resolver never runs).
+ROLL-LEDGER audit row X8 is marked resolved, and the X8 exemption left
+`test/unit/control-at-depth-rules.test.js` (the fumble assigns no foe
+control any more). The draw count and order are unchanged (one `rollDice`
+on the fumble stream), so no rng stream shifts.
+
+**The predictor.** At the pre-fix head (after the Map the Floor commits),
+`fumbleOnReader` events with `effect: "weakened"`: 0 for every PIN_RUNS
+label, 0 for the pre-switch save replay, 0 for every bot-tactics seed. The
+parity suite's standing guard ("RULES-09/RULES-10 (Phase 75.1): every one of
+the 31 replay sites measures zero exposure to the Pilfer-fumble/scroll-fumble
+mechanics", `test/parity/divergence-records.test.js`) already pins zero
+exposure on the parity side.
+
+**The live scan.** Parity 64/64 with the fixtures and the master untouched;
+no state pin, pre-switch save, bot-tactics seed, shell snapshot or recorded
+rail corpus moved.
+
+| File | Test | Old assertion | New assertion |
+|---|---|---|---|
+| test/unit/scroll-fumble-resolve.test.js | harmful weakened | `combat.weakened` true, `foeToHitPenalty` 3, `spell:weaken` left 3 | `c.foeEffect` `{ kind: "weakened", rounds: 3 }`; no foe-side field; the reader's foeEffect chip; "weakens you" on the Oracle and rail |
+| test/unit/scroll-fumble-resolve.test.js | (new) the weakened reader's blows | none | the reader's landed blow is half the unweakened twin's |
+| test/unit/scroll-fumble-resolve.test.js | (new) out of combat | none | a forced Weaken fumble read on the map fizzles and weakens nobody |
+| test/unit/control-at-depth-rules.test.js | EXEMPT and the non-vacuity site list | `scrollFumble.js#resolveHarmful` exempt and expected | removed from both |
