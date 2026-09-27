@@ -107,9 +107,9 @@
 <div id="gear-bag">
   <li class="mw-empty">
     <b class="mw-empty-head">
-      text="NOTHING LEFT TO CARRY"
+      text="THE BAG IS EMPTY"
     <i class="mw-empty-body">
-      text="You used it all. That was the plan, technically."
+      text="Nothing here takes a slot. Plenty of room for regret."
 ## #gear-cons-head
 <div id="gear-cons-head">
   <span class="mw-gear-head-title">
@@ -126,7 +126,7 @@
         <span class="mw-gear-qty">
           text="×2"
       <div class="mw-gear-desc">
-        text="Heals. Wasted at full health."
+        text="Heals 7–25 hp (double for a Wilmsry). Stays corked at full health."
     <button class="mw-gear-cons-btn" disabled>
       text="USE"
   <li class="mw-gear-card mw-gear-cons" data-key="scroll">

@@ -70,14 +70,17 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
     emptyName: "empty",
     noValue: "—",
     chevron: "›",
-    weaponMagic: "+{n} magic. Somebody cared, once.",
+    // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+    weaponMagic: "+{n} damage, and it hits what only magic can. Somebody cared, once.",
     weaponMundane: "no enchantment. Just you and the swing.",
     magicPlate: "magic plate",
     armorWear: "{current}/{max} hp",
     armorDestroyed: "destroyed",
     bagFull: "BAG FULL · DROP OR USE SOMETHING",
-    bagEmptyHead: "NOTHING LEFT TO CARRY",
-    bagEmptyBody: "You used it all. That was the plan, technically.",
+    // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+    bagEmptyHead: "THE BAG IS EMPTY",
+    // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+    bagEmptyBody: "Nothing here takes a slot. Plenty of room for regret.",
     use: {
       use: "USE",
       active: "ACTIVE",
@@ -85,7 +88,8 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
       read: "READ",
     },
     healingPotion: "HEALING POTION",
-    healingDesc: "Heals. Wasted at full health.",
+    // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+    healingDesc: "Heals 7–25 hp (double for a Wilmsry). Stays corked at full health.",
     scrolls: "SCROLLS",
     scrollDesc: "A random spell, read aloud. No refunds.",
     qty: "×{n}",

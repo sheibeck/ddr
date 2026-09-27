@@ -355,7 +355,8 @@ test("Acceptance: Spiked Staff bag sheet — exact why, exact action labels, DRO
   const model = gearSheetModel(state, { from: "bag", i: 0, n: "Spiked Staff" });
   // Phase 74 (ROLL-02/03): the to-hit term now states which way it goes and
   // names the wielded weapon (Quarter Staff).
-  assert.equal(model.why, "d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 a swing · not an upgrade");
+  // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+  assert.equal(model.why, "d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 average damage a swing · not an upgrade");
   assert.deepStrictEqual(model.actions.map((a) => a.label), ["SWAP INTO WEAPON", "DROP"]);
   const drop = model.actions.find((a) => a.key === "drop");
   assert.equal(drop.confirm, true);
@@ -501,6 +502,21 @@ test("Run shapes: cloak/jewelry1/jewelry2 equip runs carry a slot key; weapon/ar
   const bagModel = gearSheetModel(st(fixedChar({ worn: { jewelry1: RING_OF_POWER }, items: [GAUNTLET] })), { from: "bag", i: 0, n: "Gauntlet of the Giant" });
   const j2Action = bagModel.actions.find((a) => a.key === "slot:jewelry2");
   assert.deepStrictEqual(j2Action.run, { type: "equipItem", i: 0, slot: "jewelry2" });
+});
+
+// VOX-05 (79-09): a recharging staff's USE line says, in words, how many
+// charges are left and when the next one returns (one per recharge,
+// engine/items.js) — it used to repeat the row tag ("Charges 1/3 · 17 SQ.").
+test("VOX-05 (79-09): a wielded, recharging staff's USE line names its charges left and the squares to the next one", () => {
+  const staff = { kind: "staff", n: "Poplar Staff", use: "heal", charges: 1 };
+  const at = (left) =>
+    gearSheetModel(
+      st(fixedChar({ cls: "Magic User", weapon: "Poplar Staff", staff, timers: { "charges:Poplar Staff": { cadence: "squares", left, phase: "cooldown" } } })),
+      { from: "worn", slot: "weapon" },
+    ).actions.find((a) => a.key === "use");
+  assert.equal(at(17).sub, "1 of 3 charges left; the next one comes back in 17 squares.");
+  assert.equal(at(1).sub, "1 of 3 charges left; the next one comes back in 1 square.");
+  assert.equal(at(17).enabled, true);
 });
 
 test("USE is never greyed, across every phase (ready, effect, cooldown, charges, consumable)", () => {

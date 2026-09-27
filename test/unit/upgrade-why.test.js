@@ -91,14 +91,16 @@ test("Spiked Staff: level-3 Human Wizard (Quarter Staff, prof 0) reads the exact
   const it = { kind: "weapon", base: "Spiked Staff", bonus: 0, n: "Spiked Staff", txt: "d8" };
   const parts = gearCompareParts(magicUser, it);
   const text = upgradeWhyText(parts);
-  assert.equal(text, "d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing");
+  // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+  assert.equal(text, "d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 average damage a swing");
   assert.equal(weaponUpgradeDelta(magicUser, it) > 0, false, "the Spiked Staff must NOT be an upgrade for this hero (the verdict CONTEXT reasons about)");
 });
 
 test("same weapon (Quarter Staff vs Quarter Staff, prof 0): no dice/to-hit/crit term, just the swing numbers", () => {
   const it = { kind: "weapon", base: "Quarter Staff", bonus: 0, n: "Quarter Staff", txt: "d6" };
   const text = upgradeWhyText(gearCompareParts(magicUser, it));
-  assert.equal(text, "5.0 vs 5.0 a swing");
+  // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+  assert.equal(text, "5.0 vs 5.0 average damage a swing");
 });
 
 test("Rapier vs Quarter Staff for a hero who can crit, dieN 20 + haveName: '+1 to hit, better than your Quarter Staff' and 'crits on 19–20 vs your 20' (roll-high, Phase 73)", () => {
@@ -168,10 +170,12 @@ test("no output contains the pre-mirror '1–2' crit range, a hyphen-minus sign 
   }
 });
 
-test("a Knight-style hero with prof 2 comparing a Long Sword (same weapon) ends 'loses your +2 practiced bonus'", () => {
+// VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+test("a Knight-style hero with prof 2 comparing a Long Sword (same weapon) ends 'loses your +2 damage from practice'", () => {
   const it = { kind: "weapon", base: "Long Sword", bonus: 0, n: "Long Sword", txt: "d8+2" };
   const text = upgradeWhyText(gearCompareParts(knight, it));
-  assert.ok(text.endsWith("loses your +2 practiced bonus"), text);
+  // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+  assert.ok(text.endsWith("loses your +2 damage from practice"), text);
 });
 
 test("an enchanted candidate (bonus 2) labels its dice 'd8 +2'", () => {

@@ -251,7 +251,8 @@ test("Combat: SWAP INTO WEAPON greys with the model's reason, DROP stays wired; 
   assert.equal(whyEl.hidden, false);
   // Phase 74 (ROLL-02/03): the to-hit term now states which way it goes and
   // names the wielded weapon (Quarter Staff).
-  assert.equal(whyEl.textContent, "d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 a swing · not an upgrade");
+  // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+  assert.equal(whyEl.textContent, "d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 average damage a swing · not an upgrade");
 });
 
 test("Vanished target: returns false and the actions container receives no new children", () => {

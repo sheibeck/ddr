@@ -81,7 +81,8 @@ test("Spiked Staff row: enabled, no refusal, no reasonText, the explained compar
     reasonText: null,
     // Phase 74 (ROLL-02/03): the to-hit term now states which way it goes
     // and names the wielded weapon (Quarter Staff).
-    compareLine: "d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 a swing · not an upgrade",
+    // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+    compareLine: "d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 average damage a swing · not an upgrade",
     showUsable: true,
   });
 });
@@ -288,7 +289,8 @@ test("DOM: renderStoreScreen renders the Spiked Staff row enabled with its compa
   assert.ok(
     // Phase 74 (ROLL-02/03): the to-hit term now states which way it goes
     // and names the wielded weapon (Quarter Staff).
-    staffRow.innerHTML.includes("d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 a swing · not an upgrade"),
+    // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+    staffRow.innerHTML.includes("d8 vs your d6 · −1 to hit, worse than your Quarter Staff · 4.1 vs 5.0 average damage a swing · not an upgrade"),
     `expected the Spiked Staff row to show the explained compare line, got: ${staffRow.innerHTML}`,
   );
 

@@ -33,6 +33,10 @@ import { heroHitOdds } from "./rollOdds.js";
 // formatter (src/browser/rollRange.js) the SIZE row's detail clauses read.
 import { heroSize, sizeDamage, SIZE_FACES_PER_STEP } from "../../engine/derived.js";
 import { signedText, playerDelta, ROLLERS } from "./rollRange.js";
+// Phase 79 (Plan 09) — a SEPARATE import line (the pinned line above stays
+// byte-identical): the engine's own damage terms and range, read by
+// damageBracket and damageLine instead of a restated modifier stack.
+import { weaponDamageTerms, weaponDamageRange } from "../../engine/derived.js";
 import { footerLines } from "./identityFooter.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
@@ -51,53 +55,31 @@ function skillTableFor(cls) {
 
 /**
  * damageBracket(c) — a deterministic [min, max] damage range for the
- * character's current weapon, mirroring engine/derived.js's weaponDamage()
- * modifier stack EXACTLY (level^2 + prof + magicWpn + race dmg/wpnBonus +
- * might + Heft skill + eff("dmg") + size + Guard/Sorcerer adjustments) but
- * resolving the weapon's dice notation as a [min, max] range instead of
- * drawing from an rng — so the sheet NEVER advances GameState.rngState
- * (T-04-06). Reads only `c`. Phase 38 (ABIL-02): the retired Kata passive's
- * flat damage term is gone (Kata is now an active, resolved per-strike via
- * the abilityStrike descriptor, not a standing bonus this bracket can show).
+ * character's current weapon. Phase 79 (Plan 09; todo 2026-09-25 "hero
+ * sheet damage range leaves out bonuses the engine applies"): this used to
+ * restate weaponDamage's modifier stack here and had drifted (it left out
+ * Master of Arms' +2). It now reads the engine's own
+ * engine/derived.js#weaponDamageRange — the same terms, cap and floor
+ * weaponDamage rolls with — so the sheet can never show a lower or higher
+ * range than a real strike, and it still never advances
+ * GameState.rngState (T-04-06). Reads only `c`.
  */
 function damageBracket(c) {
-  // RULES-13 (Phase 75): weaponRow(c.weapon) (WEAPONS OR the wielded-staff
-  // row) mirrors engine/derived.js#weaponDamage's own read exactly — a
-  // wielded staff shows its flat d8 here too; the Club fallback now applies
-  // only to Fists or a name neither table recognizes.
-  const w = weaponRow(c.weapon) || WEAPONS["Club"];
-  const R = RACES[c.race];
+  return weaponDamageRange(c);
+}
 
-  const diceMin = w.dice.n * 1 + w.dice.bonus;
-  const diceMax = w.dice.n * w.dice.sides + w.dice.bonus;
-  const baseMin = w.halve ? Math.ceil(diceMin / 2) : diceMin;
-  const baseMax = w.halve ? Math.ceil(diceMax / 2) : diceMax;
-
-  let flat = c.level * c.level + c.prof + c.magicWpn;
-  if (R.dmg) flat += R.dmg;
-  if (R.wpnBonus) flat += R.wpnBonus;
-  if (c.might) flat += c.might;
-  // Phase 39 (GEAR-02, Strength only since 75.2-02): a live Strength potion
-  // effect (c.timers), additive alongside the spell's own c.might — Enlarge
-  // is a size step now (RULES-11), not a might record.
-  flat += potionMight(c);
-  if (skill(c, "Heft")) flat += 2;
-  flat += eff(c, "dmg");
-  // RULES-11 (Phase 75.2, Plan 03): sizeDamage(c) in the SAME position
-  // weaponDamage applies it (right after eff(c, "dmg"), before the Guard/
-  // Sorcerer adjustments below) — the bracket can never disagree with a
-  // real weaponDamage(c, rng) draw for any size.
-  flat += sizeDamage(c);
-  if (c.sub === "Guard" && c.level < 4) flat -= 4 - c.level;
-
-  let min = Math.max(1, baseMin + flat);
-  let max = Math.max(1, baseMax + flat);
-  if (c.sub === "Sorcerer") {
-    min = Math.min(min, 9);
-    max = Math.min(max, 9);
-  }
-  if (max < min) max = min;
-  return { min, max };
+/**
+ * damageLine(c) — Phase 79 (Plan 09): the Hero sheet's #s-dmg formula,
+ * "level² + dice ± bonus", built only from the engine's own
+ * weaponDamageTerms(c) (never a restated modifier stack), with " (max N)"
+ * when the terms carry a cap (the Sorcerer's 9). A zero bonus is left off,
+ * as before. Pure.
+ */
+function damageLine(c) {
+  const t = weaponDamageTerms(c);
+  const sign = t.bonus > 0 ? ` + ${t.bonus}` : t.bonus < 0 ? ` − ${-t.bonus}` : "";
+  const cap = t.cap !== null ? ` (max ${t.cap})` : "";
+  return `${c.level}² + ${t.weapon.lab}${sign}${cap}`;
 }
 
 /**
@@ -184,7 +166,7 @@ export const ABILITY_VIEW_COPY = Object.freeze({
   once: "once a fight",
   tagTable: "special skill · active",
   tagPool: "trick",
-  noAbilitiesCaster: "Spells are the trick.",
+  noAbilitiesCaster: "No abilities. Spells are the trick.",
 });
 
 /**
@@ -482,7 +464,7 @@ function renderAbilityRows(doc, state) {
   if (c.cls === "Magic User") {
     const li = doc.createElement("li");
     li.className = "none";
-    li.textContent = "Spells are the trick.";
+    li.textContent = "No abilities. Spells are the trick.";
     ul.appendChild(li);
     return;
   }
@@ -696,15 +678,13 @@ export function renderHeroTab(host, state, deps = {}) {
   // reads above (src/browser/rollOdds.js) — the two can never disagree.
   doc.getElementById("s-die").textContent = "d" + strikeDie(c);
   doc.getElementById("s-hit").textContent = heroHitOdds(state).text;
-  // RULES-13 (Phase 75): weaponRow(c.weapon), not a raw WEAPONS lookup, so
-  // a wielded staff's flat d8 shows on the sheet's damage line too.
-  const w = weaponRow(c.weapon) || WEAPONS["Club"];
+  // Phase 79 (Plan 09; todo 2026-09-25): the damage line reads the engine's
+  // own terms (engine/derived.js#weaponDamageTerms — the weapon row, level²,
+  // every other bonus, the Sorcerer's cap), the same ones weaponDamage rolls
+  // with, so Heft, Master of Arms, might and a Guard's early penalty all
+  // show. A negative sum reads with U+2212; a capped arm names its cap.
+  doc.getElementById("s-dmg").textContent = damageLine(c);
   const R = RACES[c.race];
-  // RULES-11 (Phase 75.2, Plan 03): sizeDamage(c) joins the bonus sum so
-  // #s-dmg can never disagree with a real weaponDamage(c, rng) draw for a
-  // sized character.
-  const bonus = c.prof + c.magicWpn + (R.dmg || 0) + (R.wpnBonus || 0) + eff(c, "dmg") + sizeDamage(c);
-  doc.getElementById("s-dmg").textContent = `${c.level}² + ${w.lab}${bonus ? " + " + bonus : ""}`;
   // RULES-11 (Phase 75.2, Plan 03): the hero's size, read from the SAME
   // sizeRowFor(c) characterSheetViewModel's stats row uses — skipped
   // silently when the node is absent, like any optional node in this
@@ -734,8 +714,10 @@ export function renderHeroTab(host, state, deps = {}) {
   const sk = doc.getElementById("s-skills");
   const table = skillTable(c.cls);
   const owned = Object.keys(c.skills || {});
+  // VOX-05 (Phase 79, Plan 09): the chargen value-point budget in words —
+  // the bare "12/12 vp" named a unit the game never explains.
   doc.getElementById("s-vp").textContent =
-    table ? `${(c.cls === "Fighter" ? 8 : 12) - (c.vp || 0)}/${c.cls === "Fighter" ? 8 : 12} vp` : "none";
+    table ? `${(c.cls === "Fighter" ? 8 : 12) - (c.vp || 0)} of ${c.cls === "Fighter" ? 8 : 12} points spent` : "none";
   sk.innerHTML = "";
   if (!owned.length) {
     const li = doc.createElement("li");

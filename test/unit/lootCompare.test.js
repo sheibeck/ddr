@@ -49,7 +49,8 @@ test("lootCompare: a strictly-better weapon is an upgrade, equip-now", () => {
   // (ROLL-02/03): both weapons share the same need (0), so the die/haveName
   // opts don't change this particular line — no to-hit term either way.
   assert.equal(cmp.why, upgradeWhyText(gearCompareParts(c, it), { dieN: strikeDie(c), haveName: "Broadsword" }));
-  assert.equal(cmp.line, "d10+2 +2 vs your d10+2 · 2.6 vs 2.1 a swing · upgrade");
+  // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+  assert.equal(cmp.line, "d10+2 +2 vs your d10+2 · 2.6 vs 2.1 average damage a swing · upgrade");
   assert.equal(cmp.sub, it.txt);
   assert.equal(cmp.usable, "(usable by Fighters)"); // Phase 43 (CLAR-02): Broadsword is F-only
 });
@@ -63,7 +64,8 @@ test("lootCompare: a not-better weapon reads 'not an upgrade', no equip-now", ()
   // Phase 61 (STORE-03); Phase 74 (ROLL-02/03): the to-hit term now states
   // which way it goes and names the wielded weapon.
   assert.equal(cmp.why, upgradeWhyText(gearCompareParts(c, it), { dieN: strikeDie(c), haveName: "Broadsword" }));
-  assert.equal(cmp.line, "d6/2 vs your d10+2 · +1 to hit, better than your Broadsword · 0.9 vs 2.1 a swing · not an upgrade");
+  // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+  assert.equal(cmp.line, "d6/2 vs your d10+2 · +1 to hit, better than your Broadsword · 0.9 vs 2.1 average damage a swing · not an upgrade");
   assert.equal(cmp.usable, ""); // Phase 43 (CLAR-02): Dagger is FTM, unrestricted
 });
 
@@ -173,7 +175,8 @@ test("lootCompare: a bag item shows the slot delta, never equip-now", () => {
   assert.equal(cmp.equipNow, false);
   assert.equal(cmp.upgrade, null);
   assert.equal(cmp.legal, true);
-  assert.equal(cmp.line, "6 slots — you carry 4");
+  // VOX-05 (79-09): re-pinned to the audited wording (docs/narrative-pass/why/79-09.json).
+  assert.equal(cmp.line, "6 slots — yours holds 4");
   assert.equal(cmp.sub, "");
   assert.equal(cmp.usable, ""); // Phase 43 (CLAR-02): a bag is never class-restricted
 });

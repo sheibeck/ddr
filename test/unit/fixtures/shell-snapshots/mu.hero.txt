@@ -62,7 +62,7 @@
 ## #s-abilities
 <div id="s-abilities">
   <li class="none">
-    text="Spells are the trick."
+    text="No abilities. Spells are the trick."
 ## #s-grim-count
 <div id="s-grim-count">
   text="3 of 4"

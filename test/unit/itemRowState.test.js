@@ -92,13 +92,15 @@ test("a staff missing its charges field entirely (a fresh/legacy item) reads REA
 test("a recharging single-charge staff reads '{k}/{max} · {n} SQ' (k may be 0)", () => {
   const staff = { n: "Pine Staff", kind: "staff", use: "fire", charges: 0 };
   const st = state({ "charges:Pine Staff": { cadence: "squares", left: 94, phase: "cooldown" } });
-  assert.deepEqual(itemRowState(st, staff), { text: "0/1 · 94 SQ", kind: "charges", remaining: 94 });
+  // VOX-05 (79-09): the charges branch also carries its counts (additive), read by the Gear sheet's recharge sentence.
+  assert.deepEqual(itemRowState(st, staff), { text: "0/1 · 94 SQ", kind: "charges", remaining: 94, charges: 0, max: 1 });
 });
 
 test("a recharging multi-charge staff with a partial pool reads its own current count", () => {
   const staff = { n: "Poplar Staff", kind: "staff", use: "heal", charges: 1 };
   const st = state({ "charges:Poplar Staff": { cadence: "squares", left: 17, phase: "cooldown" } });
-  assert.deepEqual(itemRowState(st, staff), { text: "1/3 · 17 SQ", kind: "charges", remaining: 17 });
+  // VOX-05 (79-09): the charges branch also carries its counts (additive), read by the Gear sheet's recharge sentence.
+  assert.deepEqual(itemRowState(st, staff), { text: "1/3 · 17 SQ", kind: "charges", remaining: 17, charges: 1, max: 3 });
 });
 
 test("a legacy c with no c.timers map at all still reads READY for every cd/staff item — never throws", () => {
