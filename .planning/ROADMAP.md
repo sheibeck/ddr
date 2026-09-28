@@ -533,20 +533,22 @@ Plans:
 **Requirements**: TBD (user ruling 2026-09-27; todo 2026-09-27-floors-1-12-too-easy-bring-difficulty-back-up)
 **Depends on:** Phase 79 and the 260927-rsx/opf rule changes. Phase 79.1-04 (the final readouts) and Phase 80's release build follow this phase.
 **Success criteria:**
+
 1. The fair bot's fresh p50 death depth sits at 3–4 at 1,000 seeds, and the early band shape is still sensible: floors 1–4 are variance-driven, not a flat wall.
 2. The 79.1 ruled tail targets still PASS, or any miss is put in front of the user with evidence.
 3. Class balance holds within the existing class constraint (|p50 − pooled| ≤ 2).
 4. The dial changes are locked with traced re-pins, declared fixture moves and a green gate, and recorded in docs/DIFFICULTY-RETUNE.md.
-**Plans:** 4 plans
+
+**Plans:** 2/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 79.2-01-PLAN.md — Make the new floors 1–12 targets data the band objective scores (floor L = Ruling C floor 2L, fair-bot median death floor 4, the p50 band [3, 4] and a Filter-shape gate), reorder the sweep's coordinates, sync the targets into DIFFICULTY-RETUNE.md behind a test, and take START on the 2026-09-27 rules: 1,000-seed bands, the tail row, and sweep row #1 (wave 1)
+- [x] 79.2-01-PLAN.md — Make the new floors 1–12 targets data the band objective scores (floor L = Ruling C floor 2L, fair-bot median death floor 4, the p50 band [3, 4] and a Filter-shape gate), reorder the sweep's coordinates, sync the targets into DIFFICULTY-RETUNE.md behind a test, and take START on the 2026-09-27 rules: 1,000-seed bands, the tail row, and sweep row #1 (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 79.2-02-PLAN.md — Checkpointed band sweep over the 9 early-game coordinates at 200 seeds (blocks of 10, ruling F, hand-backs), then confirm the PASS candidate at 1,000 seeds and on every 79.1 tail target before writing fit/early-lock.json (wave 2)
+- [x] 79.2-02-PLAN.md — Checkpointed band sweep over the 9 early-game coordinates at 200 seeds (blocks of 10, ruling F, hand-backs), then confirm the PASS candidate at 1,000 seeds and on every 79.1 tail target before writing fit/early-lock.json (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
