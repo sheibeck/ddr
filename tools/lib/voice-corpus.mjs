@@ -163,6 +163,7 @@ export const BANK_REGISTRY = Object.freeze([
   bank("src/browser/patchNotes.js", "PATCH_NOTES_COPY", "title", "the ☰ PATCH NOTES sheet"),
   bank("src/browser/rail.js", "RAIL_COPY", "rail-cards", "the rail card chrome and the idle card"),
   bank("src/browser/rail.js", "RAIL_FAMILY", "rail-cards", "a rail card's family title", { pick: ["title"] }),
+  bank("src/browser/reportSheet.js", "BUG_REPORT_COPY", "title", "the ☰ REPORT A BUG sheet"),
   bank("src/browser/rollOdds.js", "HAZARD_ODDS_COPY", "rail-cards", "the odds lines on the wall and crevice card"),
   bank("src/browser/rollOdds.js", "SCROLL_ODDS_COPY", "items", "a scroll's reading odds"),
   bank("src/browser/rollRange.js", "MOD_LABEL", "other", "a named roll modifier inside a roll line"),
