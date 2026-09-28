@@ -542,12 +542,12 @@ Plans:
      - The rotation Sorcerer never outlasts the fair bot. Every target gets a PASS or MISS verdict.
   3. Floors 1–12 are measured, not refitted. The average run still ends on floors 5–7. Any band miss, including the floor-11 survival miss flagged in Phase 75.1, is reported to the user with 1,000-seed evidence rather than silently compensated.
 
-**Plans:** 0/4 plans executed
+**Plans:** 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 79.1-01-PLAN.md — Take the milestone's pre-milestone BASELINE once: prove the committed Phase 72 BEFORE readout is the v2.0 200-seed natural run and copy it, then run, at the v2.0 tag in a scratch worktree, the three readouts that have... (wave 1)
+- [x] 79.1-01-PLAN.md — Take the milestone's pre-milestone BASELINE once: prove the committed Phase 72 BEFORE readout is the v2.0 200-seed natural run and copy it, then run, at the v2.0 tag in a scratch worktree, the three readouts that have... (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
