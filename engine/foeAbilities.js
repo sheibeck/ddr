@@ -154,6 +154,28 @@ function heroResist(rng, c, f, a, events) {
 }
 
 /**
+ * memberResist(state, rng, member, f, a, events) — quick 260928-nrf (user
+ * ruling 2026-09-28, Joiners resist: "Yes, same scale"): the Joiner's mirror
+ * of heroResist. A bolt or drain `pickFoeTarget` aims at a live party member
+ * rolls the SAME `resistRoll` on the member's OWN intel (its persistent
+ * sheet, `state.party[member.partyIdx]`; a sheet with no intel reads 0, one
+ * face), from the MAIN rng, in the slot matching the hero's: after the
+ * ability gate and the target pick, before the effect's own dice. A resist
+ * blocks what a hero's resist blocks — the whole effect: no damage, no
+ * drain, no further draw. Pushes `memberResisted` or `memberResistFailed`
+ * every time, carrying heroResist's fields plus `member` (the Joiner's name;
+ * `name` stays the foe's, like foeBolted). Returns `true` on a resist.
+ */
+function memberResist(state, rng, member, f, a, events) {
+  const sheet = state.party?.[member.partyIdx];
+  const intel = sheet && Number.isFinite(sheet.intel) ? sheet.intel : 0;
+  const res = resistRoll(rng, intel);
+  const fields = { name: f.name, ability: a.id, member: member.name, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel, faces: res.faces };
+  events.push({ type: res.resisted ? "memberResisted" : "memberResistFailed", ...fields });
+  return res.resisted;
+}
+
+/**
  * resolveFoeAbility(state, f, a, rng, events, gate) — fires a ready ability
  * (D-06: `foeCast` telegraph pushed first, always, before any effect event),
  * marks its cooldown/uses usage, then dispatches by kind:
@@ -177,8 +199,9 @@ function heroResist(rng, c, f, a, events) {
  *     BRAND NEW `c.foeEffect = { kind, rounds: rng.d(4) }` (same kind
  *     refreshes, different kind replaces) + `foeDebuffed`.
  *   - bolt / drain (D-02/D-11/D-13/D-18): `pickFoeTarget` first — a live
- *     party member takes `rollDice` damage straight off `member.wp` (no
- *     resist/ward/armor/Hardiness), downed via `downMember` at 0; otherwise
+ *     party member rolls its own resist (memberResist, quick 260928-nrf),
+ *     then takes `rollDice` damage straight off `member.wp` (no
+ *     ward/armor/Hardiness), downed via `downMember` at 0; otherwise
  *     the hero resists, then the damage runs through
  *     `applyFoeDamageToPlayer` (a drain forces `ignoresArmor: true`). A
  *     landed drain then heals the foe by the amount ACTUALLY applied
@@ -193,7 +216,8 @@ function heroResist(rng, c, f, a, events) {
  *
  * Draws (see 19-03-PLAN.md's dice-budget table): heal/debuff/bolt/drain each
  * draw their own dice (`a.dmg`/`d4`), plus one `resistRoll` d20 whenever the
- * effect lands on the hero (every hero since quick 260928-hrs) and one gated
+ * effect lands on the hero (every hero since quick 260928-hrs) or on a
+ * Joiner (every Joiner since quick 260928-nrf), and one gated
  * `pickFoeTarget` die (a live party member only); summon draws exactly one
  * `rng.pick`.
  *
@@ -255,6 +279,9 @@ export function resolveFoeAbility(state, f, a, rng, events, gate = null) {
   // bolt / drain
   const member = pickFoeTarget(state, rng);
   if (member) {
+    // Quick 260928-nrf: the Joiner resists, in the hero's slot (after the
+    // target pick, before the damage dice).
+    if (memberResist(state, rng, member, f, a, events)) return { died: false };
     const dmg = rollDice(rng, a.dmg);
     member.wp -= dmg;
     events.push({
