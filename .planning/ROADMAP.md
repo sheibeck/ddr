@@ -21,7 +21,7 @@
 
 ### v2.2 Our Own Leaderboards (Phases 82–86) — IN PROGRESS
 
-- [ ] **Phase 82: DAYS Farming Check** - Measure whether floor-1 farming out-DAYS an honest descending run and settle the DAYS ranking rule.
+- [x] **Phase 82: DAYS Farming Check** - Measure whether floor-1 farming out-DAYS an honest descending run and settle the DAYS ranking rule. (completed 2026-09-28)
 - [ ] **Phase 83: Leaderboard Server** - Stand up our own Firebase-hosted run table, rules, indexes, identity and queue, proven end to end.
 - [ ] **Phase 84: Leaderboards Panel v3** - Rebuild the DEAD tab and VIEW THE DEAD to the v3 mock, ranked by four stats with RACE/SUB-CLASS filters.
 - [ ] **Phase 85: Play Games Out, Our Board In** - Remove Play Games entirely and route every Compete-ON death to our own board.
@@ -80,7 +80,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. The user has reviewed the comparison and recorded a verdict: either DAYS ranks as the mock already shows (days, then floor), or a specific rule that stops the exploit is chosen and recorded.
   4. The recorded verdict is stated in terms Phase 83 can consume directly as SRV-03's DAYS ranking key.
 
-**Plans:** 2/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -176,7 +176,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 82. DAYS Farming Check | 2/2 | In Progress|  |
+| 82. DAYS Farming Check | 2/2 | Complete    | 2026-09-28 |
 | 83. Leaderboard Server | 0/TBD | Not started | - |
 | 84. Leaderboards Panel v3 | 0/TBD | Not started | - |
 | 85. Play Games Out, Our Board In | 0/TBD | Not started | - |
