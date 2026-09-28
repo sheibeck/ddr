@@ -95,7 +95,7 @@ Plans:
 
 **Goal**: Our own board is live on Firebase (Firestore run table, rules, indexes, anonymous identity, rolled handles, a durable queue, admin script, runbook) and proven end to end, with no Firebase SDK in the app.
 **Depends on**: Phase 82 (the DAYS ranking rule feeds SRV-03's tie-break key). Same Spark project as the Phase 79.3 bug reports (`delve-die-repeat-6ba5f`); precedent = `src/browser/bugReport.js` + `firebase/firestore.rules` + `test/unit/firestore-rules.test.js` — pure DOM-free modules with an injected `fetchFn`, a JS mirror of the security rules kept equal by tests. User console steps (enable Anonymous sign-in, API key API restrictions, deploy rules + `firestore.indexes.json`) are checkpoints. Zero parity fixtures; engine untouched.
-**Requirements**: SRV-01, SRV-02, SRV-03, SRV-04, SRV-05, SRV-06, SRV-07, SRV-08
+**Requirements**: SRV-01, SRV-02, SRV-03, SRV-04, SRV-05, SRV-06, SRV-07, SRV-08, SRV-09, SRV-10, SRV-11, SRV-12
 **Success Criteria** (what must be TRUE):
 
   1. Each finished Compete-ON run is written once to a Firestore run collection in `delve-die-repeat-6ba5f`, carrying owner id, handle, season, hero identity, stats, cause, epitaph, run hash and app version; resubmitting the same run never creates a duplicate.
@@ -103,6 +103,7 @@ Plans:
   3. For each of DEPTH, DAYS, KILLS and WILMST, filtered by race, sub-class, both or neither within the current season, the board answers the top ten, a total count and one run's rank, backed by declared composite indexes, with DAYS ties following the Phase 82 ruling.
   4. The game obtains and refreshes an anonymous Firebase identity over plain `fetch` (no SDK) only when Compete is ON, rolls a family-friendly @handle the player can re-roll, and queues every non-dev Compete-ON death durably through relaunches and offline play, retrying with backoff and never double-submitting.
   5. An admin script lists and deletes suspicious runs (one run or one player's runs, with the service-account key never entering the repo or `www/`), an ops runbook covers rules/index deploys and quotas, and a smoke test against the live project proves create, read, rank and delete end to end with rules and indexes deployed, anonymous sign-in enabled and the API key restricted to only the APIs the game calls.
+  6. Bug reports share the quota safely (added by the user 2026-09-28): a report needs the anonymous identity and is limited per player (2-minute cooldown, 5 a day) by rules proven with live 403 probes; the Action deletes filed/failed reports and stale limit documents on the retention schedule, and its 15-minute schedule is proven to fire.
 
 **Plans**: TBD
 **Research**: yes — gsd-phase-researcher (Firestore REST `runQuery`/`runAggregationQuery` count + rank queries, anonymous auth over REST + token refresh, owner-scoped rules and bounded list rules, composite index count, Spark quotas)

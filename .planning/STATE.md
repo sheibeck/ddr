@@ -95,6 +95,7 @@ Last activity: 2026-09-28 — Phase 82 complete, transitioned to Phase 83
 
 ### Pending Todos
 
+- 2026-09-28 — **Bug report per-player limit and automatic Firestore cleanup** (user; folded into Phase 83 as SRV-09..SRV-12): sign-in + reportLimits cooldown/daily cap, per-IP sign-up limit, Action retention cleanup, prove the 15-min schedule fires — `todos/pending/2026-09-28-bug-report-per-player-limit-and-automatic-firestore-cleanup.md`
 - 2026-09-27 — **No healing when going down a floor** (user): drop HERO_REGEN_PER_FLOOR (0.25 → 0) before the 79.1 bot pass; 79.1 must not re-enable it — `todos/pending/2026-09-27-no-healing-when-going-down-a-floor.md`
 - 2026-09-25 — **Leaderboards lose runs** (user + friend, on device; v2.1 BOARD-15/16, Phase 81): a depth-10 run missing from the player's own DEEPEST board (Graveyard only); a friend's depth-11 score never shows on the user's ALL board; the friend's "not in the top ten" card is wrong — `todos/pending/2026-09-25-leaderboards-lose-runs-locally-and-globally.md`
 - 2026-09-24 — **Pilfer bad becomes fumbling** (user, added to v2.1 as RULES-09, Phase 75.1): drop the heal-only lockout; a Pilfer uses magic items normally but a rolled 1 destroys the item — `todos/pending/2026-09-24-pilfer-bad-becomes-fumbling-destroys-a-magic-item-on-a-1.md`

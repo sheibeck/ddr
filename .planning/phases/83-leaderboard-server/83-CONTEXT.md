@@ -47,6 +47,10 @@ Stand up our own leaderboard on Firebase (Spark project `delve-die-repeat-6ba5f`
 - Live setup is done by Claude, not the user: deploy rules + indexes with the logged-in Firebase CLI (`firebase deploy --only firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f`; add `firestore.indexes` to firebase.json); add the Identity Toolkit API + Token Service API to the existing API key's API restrictions with gcloud (keep Firestore; nothing else); enable the Anonymous sign-in provider via the Identity Toolkit admin API (gcloud access token). Fall back to user console steps only if a call is refused. Then a node smoke test (`tools/boards-smoke.mjs`) against the live project: anonymous sign-up → create a run → read top ten → count/rank → handle update → owner delete, cleaning up after itself.
 - Runbook `docs/LEADERBOARDS.md`: deploys, the SEASON bump + rules constant, key restrictions, Spark quotas, moderation with boards-admin, the kill switch.
 
+### Bug-report quota protection (added by the user 2026-09-28, SRV-09..SRV-12)
+- Full spec: `.planning/todos/pending/2026-09-28-bug-report-per-player-limit-and-automatic-firestore-cleanup.md` — every numbered requirement, test and doc item there is locked scope for this phase (sign-in for reports via the shared auth module, reportLimits/{uid} in one commit with a 2-min cooldown + 5/day cap, lockdown rules, report-sheet rate-limited UX, per-IP sign-up limit ~10/h, old builds rejected, Action cleanup with retention constants 30 d / 2 d and a 100-delete cap, the schedule must fire, 403 probes + live cleanup proof, BUG-REPORTS.md + LISTING.md retention text). Out of scope: App Check, a global throttle.
+- Rules for runs and bugReports/reportLimits live in the one firebase/firestore.rules file and are deployed together.
+
 ### Claude's Discretion
 - Module names/split (e.g. firebaseAuth.js, boardClient.js, runQueue.js, runDoc.js, handles), REST request shapes, backoff constants, the index list details, the camp allowance in the day bound, test file layout.
 
