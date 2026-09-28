@@ -1,0 +1,45 @@
+---
+created: 2026-09-24T22:20:00.000Z
+title: Anyone can read a scroll on an intelligence roll; Magic Users always succeed; the scroll is consumed either way
+area: engine
+resolves_phase: 75.1
+files:
+  - engine/magic.js:579-585 (canRead — Magic User or Runes/Signs; a Pilfer is always refused)
+  - engine/magic.js:~586-655 (readScroll — refusals before `c.scrolls--`, then scrollRead → optional grimoire copy (Magic Users) → scrollCast)
+  - engine/derived.js:1427 (resistRoll — the existing intelligence check, d20 < c.intel)
+  - engine/character.js:507 (c.intel — a d20 rolled once at chargen)
+  - content/flavor.js (SUB_NOTE / class blurbs that mention scrolls or Runes/Signs)
+---
+
+## Problem
+
+User, 2026-09-24, over three messages:
+1. "All thieves should have a 50% chance to successfully read a scroll. Regardless of the outcome, the scroll is destroyed after the attempt."
+2. Then, superseding the 50% part: "Actually, scrolls should be usable by anyone by giving them an intelligence roll. Magic-users always succeed."
+3. Then: "Anyone who fails their scroll read attempt by more than half the required number is a fumble and the scroll affects the caster instead of the target."
+
+Today `canRead` lets only a Magic User, or someone with the Runes/Signs skill, read a scroll, and a Pilfer never can. Everyone else is refused before the scroll is spent (`scrollRefused`, reason `noRunes`).
+
+## Solution
+
+**Rule (user rulings, 2026-09-24):**
+- **Anyone** (every class, sub-class and race) may attempt to read any scroll. `canRead`'s class/skill gate and the Pilfer lockout go away.
+- **Runes/Signs reads automatically (ruled 2026-09-24).** A non-Magic-User with the Runes/Signs skill reads every scroll automatically, just like a Magic User: no intelligence roll and no fumble. User: "Runes/Signs on a non-magic-user means they can read them automatically, just like a magic-user." They get the free cast only; the grimoire copy stays Magic-User-only.
+- **Magic Users always succeed.** They keep today's path unchanged: cast, plus the grimoire copy when the spell is learnable.
+- **Everyone else** (no Magic User class, no Runes/Signs) **makes an intelligence roll** against their own `c.intel`: a d20 checked against intel, reusing the existing check's shape (`resistRoll`: today d20 < intel; after the Phase 73 mirror, expressed roll-high). On a success, the scroll's spell is cast through the free-cast path (`scrollCast`). On a failure, nothing is cast.
+- **A bad failure is a FUMBLE (ruling 3):** a read that misses by more than half the required number backfires. The scroll's spell takes effect **on the reader instead of its target** (e.g. a Fireball burns the reader). Magic Users never fumble, because they always succeed.
+- **A fumbled beneficial scroll helps the enemy (ruled 2026-09-24).** A good-effect scroll (heal, Shield, Sense Presence and the like) that fumbles gives its effect to the enemy instead. User: "a good affect scroll that fumbles affects the enemy." Harmful scrolls hit the reader; helpful scrolls help the foe. **Which foe: the TARGETED enemy** (user: "a shield scroll with a fumble means you shield the target enemy instead"). So a fumbled Shield scroll shields the foe you're targeting, and the fight UI should show that foe's new effect (CMBUI-13 indicators).
+- **The fumble cutoff, confirmed 2026-09-24:** a fumble is a roll below half the target number you needed. This is roll-high; Phase 75 lands after the Phase 73 mirror. The rule is `roll < T / 2`, where T is the target to meet or beat. Worked example: intel 14 today (roll-under, success on 1–13) becomes a roll-high target of 8+. A fumble is a roll of 3 or less (15%); 4–7 is a plain failure (20%). Pin exact-half rounding in a test.
+- **An area-damage fumble hits the reader AND everyone in the reader's party (ruled 2026-09-24).** Each party member takes the spell's damage as if targeted.
+- **Pilfers read scrolls like everyone else (ruled 2026-09-24).** The Pilfer's RULES-09 d10 fumble applies to magic items only, never to scrolls, so a Pilfer's scroll read uses this rule unchanged.
+- **A fumble outside combat fizzles (ruled 2026-09-24):** there is no target to turn it on, so the scroll has no effect and is destroyed.
+- **The scroll is consumed on every attempt**, success or failure. This carries over from ruling 1 and was not revoked.
+- Narrate both outcomes, in voice. A failure should read as squinting at runes you can't make out while the scroll crumbles, not as a refusal.
+
+**Decide in the Phase 75.1 discuss:**
+- **Low-intel characters:** `resistRoll` skips its roll below intel 12. That gate is for foe abilities and should NOT carry over. Every non-Magic-User reader rolls, and a low intel just means worse odds.
+
+**Engine gate:** the intelligence roll is a new draw. Take it from a derived rng stream (`makeRng(hash(seed, "scrollRead", …))`) so it doesn't reorder the main stream. Measure, declare and regenerate only the moved fixtures. Every new event gets an `EVENT_NARRATION` entry. Update the class and sub-class blurbs that mention scrolls or Runes/Signs, per VOX-04.
+
+## Resolution (v2.1 close, 2026-09-28)
+Closed by v2.1 Phase 75.1 (see its VERIFICATION.md). Device feel checks are in docs/UAT-v2.1.md.

@@ -2,36 +2,36 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 79.2
-current_phase_name: "floors 1-12 harder: fair-bot p50 death ~3-4"
-status: planning
+status: Awaiting next milestone
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-28T20:09:28.390Z"
+last_updated: "2026-09-28T20:15:30.501Z"
 last_activity: 2026-09-28
-last_activity_desc: Phase 79.1 complete, transitioned to Phase 79.2
+last_activity_desc: Milestone v2.1 completed and archived
 progress:
   total_phases: 16
   completed_phases: 16
   total_plans: 122
   completed_plans: 122
   percent: 100
+current_phase: 79.2
+current_phase_name: "floors 1-12 harder: fair-bot p50 death ~3-4"
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as Play 2.0.0 / vc10 and archived; open Pixel 7 UAT batches: v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-28 — v2.1 Bug Fixes shipped as Play 2.1.0 / vc11 to closed testing and archived; open Pixel 7 UAT batches: v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 72 — Roll-Direction Sign Audit & Fixes
+**Current focus:** Planning the next milestone (`/gsd-new-milestone`)
 
 ## Current Position
 
-Phase: 79.2 — Early-floor difficulty retune (floors 1-12 harder: fair-bot p50 death ~3-4)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-28 — Phase 79.1 complete, transitioned to Phase 79.2
+Phase: Milestone v2.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-28 — Milestone v2.1 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -153,6 +153,20 @@ detail; the backlog phases are the index.
 
 ## Deferred Items
 
+Items acknowledged and deferred at milestone close on 2026-09-28 (v2.1 override closeout: 16/16 phases `passed`, 68/68 requirements; audit `tech_debt` with zero blockers; the user uploaded Play 2.1.0 / vc11 and said "I'm all done. Build uploaded. Cleanup the milestone", then cancelled the 80-05 emulator pass "for now ... once we have all our features in"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | docs/UAT-v2.1.md: 108 phase checks, 3 user tasks, 12 quick-task checks | the user walks it over play sessions on 2.1.0 (11) |
+| plan | 80-05, the emulator pass (tablet, foldable, nav modes) | deferred by the user until the features are in |
+| balance | Floors 4–5 MISS the early-floor targets; tail slices not re-measured after the cos/hrs/nrf trims | .planning/MILESTONE-CLOSE-QUESTIONS.md |
+| user task | Play Console Data safety form for bug reports; pre-launch report re-check | UAT-v2.1 §0 and §16.6 |
+| tooling | boot:check `graves` flake (about 1 in 3) | pre-existing |
+| todo | 35 pending todos were all closed by v2.1 phases and moved to todos/completed with resolution notes | 0 pending |
+| quick_task | 260924-56z, 260924-5b8 (superseded by Phase 70); rules-text-audit-pass (20260909), 260908-kkq (v1.0-era stubs) | re-acknowledged |
+
+### Earlier: v2.0 close
+
 Items acknowledged and deferred at milestone close on 2026-09-24 (v2.0 override closeout: 7/7 phases `passed`, 38/38 requirements; audit `tech_debt` with zero blockers; the user said "We are published and I'll keep testing, but I think we can wrap up the milestone"):
 
 | Category | Item | Status |
@@ -257,7 +271,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Plan Phase 72 (Roll-Direction Sign Audit & Fixes) with /gsd-plan-phase 72
+- Start the next milestone with /gsd-new-milestone
 
 ## Performance Metrics
 

@@ -1,5 +1,30 @@
 # Milestones
 
+## v2.1 Bug Fixes (Shipped: 2026-09-28; Play 2.1.0 / vc11 uploaded to closed testing; device UAT spread over the user's play sessions)
+
+**Closeout type:** override closeout. 68/68 requirements are complete and 16/16 phases `passed`. The audit is `tech_debt` with zero blockers (`.planning/milestones/v2.1-MILESTONE-AUDIT.md`). The user uploaded 2.1.0 (versionCode 11, tags `v2.1.0` and `v2.1.0-play11`) and said: *"I'm all done. Build uploaded. Cleanup the milestone."* They cancelled the 80-05 emulator pass "for now ... once we have all our features in". Known verification overrides: the deferred UAT batch `docs/UAT-v2.1.md`, 80-05, and 4 old quick-task stubs (see STATE.md Deferred Items).
+**Phases completed:** 16 phases (72–81, including the inserted 75.1–75.3 and 79.1–79.3), 122 plans, 180 tasks. **Timeline:** 2026-09-24 → 2026-09-28. **Git:** 906 commits since `v2.0`; 735 files changed, +182,274 / −6,306, most of it test fixtures and bot readouts. **Tests:** 7,902 pass, parity 66/66.
+
+**Key accomplishments:**
+
+- **Roll-high everywhere (Phases 72–74).** Every roll modifier's direction was audited in docs/ROLL-LEDGER.md, and five sign bugs were fixed. The engine switched to one roll-high check helper, with a mirror-theorem proof and before/after baselines. Every screen now prints the engine's real need and modifiers.
+- **Engine rules from the device rounds (Phases 75–75.3).** The fixes cover HP dots, the wilmst cache, Summoners, the Magic Staff, rations and spell recovery. Pilfer can fumble and destroy a magic item, and anyone can read a scroll on an intelligence roll. Race sets a hero's size, and size matters beyond damage. Deep floors scale: solo fights fade, and foes get a steeper curve.
+- **Screens and state (Phases 76–78).** There is one darkness rule. A relaunch or force-close resumes cleanly. Combat submenus are readable, and the Oracle tells a fight in order. The HUD identity line is fixed, the dead-state lockdown works, and climb and leap decisions are clear. The text-size setting now reaches every font token. There is an opt-in arrow pad and a fade-to-black stairs transition.
+- **Narrative pass and balance (Phases 79–79.2).** Sub-class and race blurbs were added, with roll-direction phrasing and a full voice pass behind a review page and ledgers. Floors 1–12 were retuned harder: the fair bot's median death is floor 4, inside the 3–4 target. There were also late class trims: Thief flee, Sweep, Kata and Feint, Acrobat, and Joiner resist.
+- **Players can talk back (Phase 79.3).** ☰ REPORT A BUG sends the player's text and the run's Oracle to Firestore, and a scheduled Action files it as a GitHub issue. The path is proven live. The patch notes come from one Markdown file per release, which feeds the in-game sheet (shown once per update), the GitHub Release, the Play "What's new" text and darktierstudios.com.
+- **Release hygiene (Phases 80–81).** R8 minify, shrink and obfuscation, with the mapping shipped, make the AAB 11.3% smaller. SystemBars replaces the deprecated status-bar plugin, and the letterboxed large-screen layout and a game appCategory were added. The fit tool's resume now retraces its walk exactly. Leaderboards fixes: the YOU tag, the standing card, ME | ALL | FRIENDS scopes, and no more lost runs.
+
+### Known Gaps
+
+- None in requirements.
+- Device UAT is deferred to the user's play sessions: 108 phase checks and 12 quick-task checks.
+- The emulator pass (80-05) is deferred.
+- Floors 4–5 miss their early-floor targets (see MILESTONE-CLOSE-QUESTIONS.md).
+- The Play Data safety form for bug reports is a user task.
+- The boot:check `graves` step flakes.
+
+---
+
 ## v2.0 Leaderboards (Shipped: 2026-09-24; Play 2.0.0 / vc10 published; device UAT spread over the user's play sessions)
 
 **Closeout type:** override closeout (open artifacts acknowledged). 38/38 requirements complete, 7/7 phases `passed`, audit `tech_debt` with zero blockers (`.planning/milestones/v2.0-MILESTONE-AUDIT.md`). The user published 2.0.0 (versionCode 10, tag `v2.0.0-play10`) and closed the milestone: *"We are published and I'll keep testing, but I think we can wrap up the milestone."* The 142-row Pixel 7 batch `docs/UAT-v2.0.md` goes into their play sessions. Known verification overrides: the deferred UAT batch, 1 debug session, 22 pending todos and 2 v1.0-era quick-task stubs (see STATE.md Deferred Items).

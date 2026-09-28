@@ -243,6 +243,54 @@
 - Model mix: Opus planners, Sonnet executors, orchestrator on Opus; one researcher (Phase 67). No verification agents.
 - Sessions: several (autonomous runs plus device rounds).
 
+## v2.1 Bug Fixes (2026-09-24 → 2026-09-28)
+
+**Phases:** 16 (72–81, plus 75.1–75.3 and 79.1–79.3 inserted mid-milestone) | **Plans:** 122 | **Commits:** 906 since `v2.0` | **Tests:** 5,483 → 7,902
+
+### What Was Built
+- **Roll-high everywhere.** An audited sign ledger for every roll modifier found and fixed five sign bugs. The engine now rolls high through one check helper, proven by a mirror theorem, and every screen prints the true need.
+- **The device-round bug sweep:**
+  - engine rules (HP dots, the wilmst cache, Summoners, the staff, rations, the wanderer tile);
+  - Pilfer fumbles and scroll reading;
+  - hero size;
+  - deep-floor scaling;
+  - one darkness rule and relaunch persistence;
+  - readable combat and Oracle;
+  - HUD, dead-state and climb decisions;
+  - leaderboard panel fixes.
+- **A full narrative pass,** with why-ledgers and a review page.
+- **Harder early floors:** the fair-bot p50 death is floor 4. Late class trims followed.
+- **In-app bug reports:** Firestore plus a scheduled Action, with GitHub issues filed. Proven live.
+- **Per-release patch notes** from one Markdown file, fed to the game, GitHub, Play and the website.
+- **R8, SystemBars and a letterbox** for a store-clean build.
+- **Play 2.1.0 / vc11** uploaded to closed testing.
+
+### What Worked
+- **The greenfield gate held for 16 phases.** Each rule change declared and regenerated only the fixtures it moved, and parity stayed 66/66.
+- **Bots only at the milestone end,** a user ruling on 2026-09-26. It stopped per-phase readouts of moving targets, and 79.1 became a single measure-then-ship pass.
+- **The orchestrator did the verification,** with deferred UAT: one VERIFICATION per phase, and one batched Pixel 7 checklist (UAT-v2.1) at the close.
+- **Provisioning cloud pieces from the orchestrator** (Firestore, a restricted key, a service-account secret, a label) and then a live E2E test proved the bug-report path before release.
+- **Patch notes agreed before the release build** turned into a standing rule and a four-destination pipeline.
+
+### What Was Inefficient
+- **Scope grew mid-milestone,** from 10 phases to 16: three inserted rules phases and three inserted end phases. Two inserts collided on numbering (79.2 → 79.2.1, reverted).
+- **Orchestrator-written SUMMARYs lacked `requirements-completed`,** so the audit fell back to manual checks for 27 requirements. Two 79.3 SUMMARYs were only filed at the close.
+- **The emulator pass (80-05)** spent most of its time booting AVDs and was cancelled by the user. A device check on the real phone was already in the UAT batch.
+- **Windows friction:** worktree folders locked by dead processes, long paths, CRLF noise after cap sync, and a flaky `graves` boot check.
+
+### Patterns Established
+- **The build part at the end:** Android phases split into a code part (in parallel with gameplay) and a build part (one release build, last).
+- **Discuss the patch notes before any release build;** difficulty is worded generically for players.
+- **Public-by-design client keys:** restrict them to one API and put the security in the rules. Close secret-scanning alerts with a reason, and don't rotate.
+
+### Key Lessons
+- Make executors return SUMMARY frontmatter with `requirements-completed`, even when the orchestrator writes the file.
+- Put an emulator pass behind a real need, before the production launch, not every milestone.
+
+### Cost Observations
+- Model mix: Opus planners and orchestrator, Sonnet executors. No verification agents.
+- Sessions: one long autonomous run with several compactions, plus device rounds.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -260,6 +308,7 @@
 | v1.8 | 1 (autonomous, 2 compactions) | 5 | Presentation-only under a tag-diff Engine Gate; parallel worktree waves; mid-run design mock absorbed as an added plan; UAT spread over play sessions |
 | v1.9 | 1 (autonomous, no compaction) | 4 | Engine rule fixes first so the UI reads real refusal reasons; cross-screen agreement sweeps; in-session wireless-adb device walk (partial) and a Play closed-test build |
 | v2.0 | several | 7 (two device-round phases added) | First network feature behind an opt-in provider seam with a fake; seasons from day one; publish-then-close with UAT over play sessions |
+| v2.1 | 1 long run (several compactions) | 16 (six inserted) | Bots only at the milestone end; build part last; live cloud E2E from the orchestrator; patch notes agreed before every release build |
 
 ### Cumulative Quality
 
@@ -276,6 +325,7 @@
 | v1.8 | 3905 | engine/content/parity byte-identical to v1.7; fake-clock beat/glide/typewriter suites; reduced-motion audit; bridge set-equality | 0 |
 | v1.9 | 4197 | one declared fixture (economy); cross-screen agreement sweeps (432 / 117 / 17 pairs) | 0 |
 | v2.0 | 5483 | parity master untouched; `acts` carved out (measured-zero); fake PGS provider + recording Proxy (zero calls Compete OFF); boardsView 43 tests | 1 vendored Capacitor plugin (`@modbender/capacitor-play-games`, pinned) |
+| v2.1 | 7902 | parity 66/66 re-baselined for roll-high with declared moves; roll-ledger sync guard; mirror-theorem property test; no-committed-secrets scan | 0 (Firestore via plain fetch, no SDK) |
 
 ### Top Lessons (Verified Across Milestones)
 

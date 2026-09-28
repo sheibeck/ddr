@@ -2,7 +2,7 @@
 
 ## What This Is
 
-**Delve, Die, Repeat** (appId `com.darktierstudios.delvedierepeat`) is a premium (paid-upfront), offline-first mobile roguelike dungeon-crawler for **Android (Google Play)**, adapting a fantasy tabletop RPG the author designed in 1994. As of v1.0 (2026-09-13) it is a native Capacitor app on a Google Play **internal-testing track** with real testers: a pure deterministic engine (`engine/`), a dark torch-lit mobile UX built from the Claude Design mock, endless descent, an NPC party system, a real loot economy, and the sarcastic Oracle voice. As of v2.0 (2026-09-24) it is published on Play as 2.0.0 (versionCode 10), with local personal-best leaderboards and opt-in Google Play Games global and friends boards. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
+**Delve, Die, Repeat** (appId `com.darktierstudios.delvedierepeat`) is a premium (paid-upfront), offline-first mobile roguelike dungeon-crawler for **Android (Google Play)**, adapting a fantasy tabletop RPG the author designed in 1994. As of v1.0 (2026-09-13) it is a native Capacitor app on a Google Play **internal-testing track** with real testers: a pure deterministic engine (`engine/`), a dark torch-lit mobile UX built from the Claude Design mock, endless descent, an NPC party system, a real loot economy, and the sarcastic Oracle voice. As of v2.0 (2026-09-24) it is published on Play as 2.0.0 (versionCode 10), with local personal-best leaderboards and opt-in Google Play Games global and friends boards. As of v2.1 (2026-09-28) it is on Play's closed test as 2.1.0 (versionCode 11): roll-high dice everywhere, a deep engine-rules and narrative pass, harder early floors, in-app bug reports and per-release patch notes. Players generate a randomly-rolled adventurer and descend an ever-deeper procedurally-generated maze — fighting monsters, casting spells, looting treasure, and surviving traps and starvation — until permadeath ends the run and they chase a higher depth/score on the next one. It's for players who love crunchy, dice-driven dungeon crawls and the comedic, "play-the-hand-you're-dealt" spirit of the original game.
 
 **Tone & voice:** heavy sarcasm and dark humor — self-aware, deadpan, poking fun at fantasy-RPG tropes and at the player's own doomed adventurers — but kept **family-friendly** (no profanity, gore, or adult content; the darkness is in the wit, not the shock). Sarcasm is the through-line of every screen: death epitaphs, the "Oracle" log, item flavor, the tutorial. This voice is a core identity, not decoration.
 
@@ -53,6 +53,12 @@
 - ✓ **Four-band difficulty curve** — v1.7 (initiative once per combat, honest foe cadence, smoothed damage curve, depth-capped Joiners, and a global difficulty model fitted by a fair bot: solo death floor p50 4 → 7, reach ≥ 5 33 % → 80.5 %; roster capped by a round-damage ceiling)
 - ✓ **Sound, motion & set dressing** — v1.8 (30 bundled clips with a real Sound Off; camera glide, panel motion, a readable combat beat and typed text, all with a reduced-motion path; the rail overlays the map; stacked HUD bands with a ☰ menu; an animated party sprite; seeded, non-interactive dungeon props; Pixel 7: cold start +5.1 %, step p95 improved, AAB +4.5 %; engine/content/parity byte-identical to v1.7)
 - ✓ **Leaderboards** — v2.0 (season-tagged run record + all-time personal bests in `engine/records.js`; the DEAD tab and VIEW THE DEAD are the mock's seven-board panel, fully offline; opt-in Play Games Services v2 via the vendored `@modbender/capacitor-play-games`, Compete toggle, seasoned global/friends boards, score-tag details, "you placed X" on death; zero network calls signed out or Compete off; Data Safety/privacy/PGS runbook reconciled; published as 2.0.0 / vc10)
+- ✓ **Roll-high, honest dice** — v2.1 Phases 72–74 (every modifier's sign audited in docs/ROLL-LEDGER.md; the engine rolls high through one check helper; every screen prints the engine's true need)
+- ✓ **Device-round bug sweep** — v2.1 Phases 75–78, 81 (engine rules, Pilfer fumbles and scroll reading, hero size, deep-floor scaling, one darkness rule, relaunch persistence, readable combat and Oracle, HUD/dead-state/climb decisions, leaderboard panel fixes)
+- ✓ **Narrative clarity pass** — v2.1 Phase 79 (every sub-class/race blurb states its good and bad; every in-game line reviewed behind why-ledgers and a review page)
+- ✓ **Harder early floors** — v2.1 Phases 79.1–79.2 (fair-bot p50 death floor 4, inside the ruled 3–4; floors 4–5 miss and are recorded)
+- ✓ **In-app bug reports + patch notes** — v2.1 Phase 79.3 (☰ REPORT A BUG → Firestore → a GitHub issue via a scheduled Action, proven live; one Markdown file per release feeds the in-game sheet, GitHub Release, Play "What's new" and darktierstudios.com)
+- ✓ **Store-clean Android build** — v2.1 Phase 80 (R8 with mapping, SystemBars instead of the deprecated status-bar plugin, a letterboxed large-screen column, appCategory game)
 - ✓ **Device-round polish II** — v2.0 Phases 70–71 (title theme loop, ☰ as the account face opening everywhere with Save & quit / Abandon, race + sub-class LINEAGE, MASTER/MUSIC/EFFECTS volume, full gear stats on the Gear tab, combat input lock + visible round summary + THE FIGHT SO FAR, long-press enemy details)
 
 ### Active
@@ -62,6 +68,7 @@
 - [ ] **Quick 5–10 minute session feel** — mechanically bounded; validated only by the retune + playtest
 - [ ] Player **onboarding/tutorial** (first-run coach marks, 04-10 / UX-06) — deliberately LAST, once the UI settles — rebuilt from scratch on the modular shell (Phase 46 deleted the 04-era sequencer)
 - [ ] **Publish to Google Play production** — store entry exists; remaining: repo-side SDK/dependency audit for Data Safety, privacy-policy page, listing assets/copy, then the Console steps (Data Safety, IARC, paid pricing, production rollout)
+- [ ] **Emulator pass on the R8 build** (tablet, foldable, nav modes) — deferred from v2.1 (80-05) until the features are in
 - [ ] Automate the Play upload (Developer API service account) — see `docs/RELEASING.md`
 - ✓ **Armor rework** — v1.3 Phase 28 (soak-vs-wear ruling audited: rulebook p.44 = prototype = engine, kept as canon and recorded as a Key Decision; the "wear N / panel shows no damage" discrepancy root-caused to the HUD armor line never showing durability and pinned by test; durability rides the bag item (`left`/`patches`) so re-equip no longer repairs; destroyed armor is gone; Cloak of Armor = never-wearing plate for any carrier, text states the rule, shown as effective armor; four armor outcomes narrated via additive `armorSoaked` flags; 1485/1485 tests, master untouched; 5 Pixel 7 checks deferred to the end-of-run UAT batch)
 - ✓ **End-of-combat loot** — v1.3 Phase 29 (every foe drop goes into a serialized `pendingLoot` pile and is presented on a Victory card with Take/Leave per item, Take all/Leave all, `lootCompare` readout and Equip now vs Stow; one `stowItem` bag-cap gate on every pickup/buy/kit/loot path — potions and scrolls never count, a refused stow spends nothing; bigger bags (medium/large/exlarge from floors 2/5/9) as one-tier-up treasure behind the phase's single guarded rng draw; flee/death forfeit the pile with a narrated line; 1593/1593 tests, zero fixture edits; 8 Pixel 7 checks deferred to the end-of-run UAT batch)
@@ -74,7 +81,7 @@
 - ✓ **Spell rework** — v1.5 (utility useful, combat situational, Shield pool visible, timed map reveal, day-one damage spell for every wizard sub, scribed scrolls immediately castable)
 - ✓ **Melee active abilities** — v1.5 (skills-as-actives + a level-up ability pool in the ABILITIES submenu)
 - ✓ **Next tuning pass** — shipped as v1.7 (2026-09-22); the human curve verdict is deferred by the user to later plays, and the reach-20 miss (1.5 % vs 3–5 %) is recorded
-- [ ] **Pixel 7 UAT batches** — `docs/UAT-v2.0.md` (142 open; the user walks it over play sessions on the published 2.0.0 build), `docs/UAT-v1.9.md` (21 of 24 open), `docs/UAT-v1.8.md` (30 of 31 open), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → todos / quick tasks
+- [ ] **Pixel 7 UAT batches** — `docs/UAT-v2.1.md` (108 phase + 12 quick-task checks open, on the 2.1.0 build), `docs/UAT-v2.0.md` (142 open; the user walks it over play sessions on the published 2.0.0 build), `docs/UAT-v1.9.md` (21 of 24 open), `docs/UAT-v1.8.md` (30 of 31 open), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → todos / quick tasks
 - ✓ **Gear screen UX redo** — v1.9 (Phases 62–63): slim AR/WILMST header, five fixed WORN rows, bag meter + tagged cards, per-type consumables, ALSO ON YOU, and one bottom action sheet for every equip/swap/unequip/use/drop (engine-true reasons, combat greying, back/TalkBack/reduced motion). Device batch `docs/UAT-v1.9.md`: 3/24 walked
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
@@ -83,49 +90,18 @@
 
 - **iOS / Apple App Store** — deliberately out of scope. Android/Google Play only. Avoids the Apple Developer account, Mac/Xcode toolchain, and Apple's review process. May be reconsidered post-launch, but the tech path should not be compromised to accommodate it now.
 - **Networked multiplayer / "play with friends"** — still post-launch (v2). The *party* layer is now IN scope and shipped (Joiners, Phases 7–11) as its single-player foundation; only the network/relay layer stays out.
-- **Accounts, logins, cloud save, servers** — go simple. Platform identity arrives in v2.0 as opt-in Google Play Games sign-in for leaderboards only. Still out: our own accounts or login forms, PGS cloud saves, and any server of our own.
+- **Accounts, logins, cloud save, servers** — go simple. Platform identity arrives in v2.0 as opt-in Google Play Games sign-in for leaderboards only. Still out: our own accounts or login forms, PGS cloud saves, and any server of our own. v2.1 adds one user-initiated path off the device: a bug report the player chooses to send goes to Firebase Firestore (Google-hosted, create-only rules) and becomes a public GitHub issue; nothing else leaves the device.
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v2.1 Bug Fixes
+## Last Milestone: v2.1 Bug Fixes (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; device UAT spread over the user's play sessions)
 
-Scoped with the user on 2026-09-24. It clears every open device-round todo plus backlog phases 999.8, 999.9 and 999.10. Phases continue from 72.
+Scoped with the user on 2026-09-24, run by `/gsd-autonomous` across Phases 72–81 plus the inserted 75.1–75.3 and 79.1–79.3. 68/68 requirements, 16/16 phases passed; the audit is `tech_debt` with zero blockers. Full record: `.planning/milestones/v2.1-ROADMAP.md` and `.planning/MILESTONES.md`.
 
-**Goal:** Close out every open device-round bug so the game is honest, legible and store-clean ahead of the Play production launch.
+**Goal (met):** close out every open device-round bug so the game is honest, legible and store-clean ahead of the Play production launch. Added mid-milestone by the user: harder early floors (79.2), in-app bug reports and per-release patch notes (79.3), and class trims (Thief flee, Sweep, Kata/Feint, Acrobat, Joiner resist).
 
-**Target features:**
-- **Engine rules**, under the greenfield gate: each fix declares and regenerates only the fixtures it moves.
-  - Table-4 +HP dots stop compounding max HP. The red-dot wilmst cache is cut.
-  - The Summoner's grimoire respects the school gate, and combat hides level-locked spells.
-  - Sense Presence wins initiative and lifts the dark penalties.
-  - The trap "-1 HP" death gets a debug and a fix.
-  - Ailment rolls 5–6 give the disease they narrate.
-  - A destroyed armor piece is narrated when it is replaced.
-  - The two darkness mechanisms are unified (999.8).
-  - Live combat and an open store survive a relaunch (999.10).
-- **Combat screen and Oracle:**
-  - Submenu rows stop clipping, and spells sort by level then name.
-  - The foe's family shows after its name.
-  - The Oracle prints in event order.
-  - A scroll that casts no longer narrates a refusal.
-  - The last fight-log row can be tapped.
-- **HUD and shell:**
-  - Band 1 reads "Race Sub-class · Lvl N".
-  - Dead state: only the Oracle, the DEAD/Leaderboards screen and ☰ with Settings accept input, and a **read-only final character sheet** opens from the DEAD screen (user ruling 2026-09-24).
-  - The text-size setting reaches every `--mw-font-*` token.
-  - Dragging the settings sheet no longer scrubs a volume slider.
-  - Climbs and leaps get a **pre-roll prompt**: CLIMB/LEAP IT, USE LADDER/ROPE or TURN BACK. No roll happens until you commit, and TURN BACK is free (user ruling 2026-09-24, option B).
-  - A stairs descent fades to black with the stairs sound, then fades in.
-- **Content:**
-  - Every sub-class and race blurb states its advantages and disadvantages.
-  - A full narrative clarity pass covers every in-game line.
-- **Android and tooling:**
-  - R8 minify, shrink and obfuscation on AGP 8.13 (AGP 9 stays deferred per the Phase 67 spike).
-  - Android 15/16 edge-to-edge, deprecated window APIs and large-screen handling (999.9).
-  - The fit tool's replay-resume diverges after an infeasible point. This gets fixed.
-
-**Not code work:** UAT row F1, the RELEASE-BLOCKING Compete-OFF capture, stays the user's device check in `docs/UAT-v2.0.md`.
+**Deferred:** the 80-05 emulator pass (user, "once we have all our features in"); floors 4–5 early-floor misses and the other MILESTONE-CLOSE-QUESTIONS items; the Play Data safety update for bug reports (user task).
 
 ## Last Milestone: v2.0 Leaderboards (shipped 2026-09-24 as Play 2.0.0 / vc10; device UAT spread over the user's play sessions)
 
@@ -343,6 +319,10 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
+## Current State (2026-09-28, v2.1 Bug Fixes shipped; next milestone not yet chosen)
+
+**On Play's closed test, device UAT spread over play sessions:** v2.1 "Bug Fixes" (Phases 72–81, incl. 75.1–75.3 and 79.1–79.3) is uploaded as 2.1.0 / versionCode 11 (tags `v2.1.0`, `v2.1.0-play11`; GitHub Release v2.1.0 carries the patch notes, mirrored at darktierstudios.com/delve-die-repeat/patch-notes). Bug reports are live (Firestore → the "Player bug reports" Action on sheibeck/ddr). Tests 7,902, parity 66/66. Open device batches: UAT-v2.1 (108 + 12), v2.0 (142), v1.9 (21), v1.8 (30), v1.7 (25 + DR bar), v1.6 (26), v1.5 (140). Open design questions: `.planning/MILESTONE-CLOSE-QUESTIONS.md`. The next Play build needs versionCode 12+ and agreed patch notes first. Next: `/gsd-new-milestone` (candidates: 999.13 own leaderboards with the new UX design, 999.15 skill/spell review, 999.16 itemization pass, the UX-06 tutorial and production launch).
+
 ## Current State (2026-09-24, v2.0 Leaderboards shipped; next milestone not yet chosen)
 
 **Published, device UAT spread over play sessions:** v2.0 "Leaderboards" (Phases 65–71) is live on Play as 2.0.0 / versionCode 10 (tag `v2.0.0-play10`): personal bests, the seven-board Leaderboards panel, opt-in Play Games global/friends boards with "you placed X", and two device-round polish passes. Signed out or Compete off, the game is still fully offline. Open device batches: UAT-v2.0 (142), v1.9 (21), v1.8 (30), v1.7 (25 + DR bar), v1.6 (26), v1.5 (140). Post-ship todos (2026-09-24): the volume slider scrubs on a sheet drag, the last fight-log row won't reveal its roll, and the stairs fade-to-black request. Next: `/gsd-new-milestone` (candidates: the v1.0 launch tail — the UX-06 tutorial and production launch — the narrative pass todo, or the 999.x backlog).
@@ -443,6 +423,12 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 | Seasons from day one: every run summary and board carries the rules/season version; personal bests stay all-time locally, tagged by season — v2.0, 2026-09-17 (user) | A balance change must never poison the all-time boards | ✓ Good — Season-1 board IDs live |
 | Global display name = the Play Games profile name; adventurer name + epitaph ride in the 64-char score tag and the local graveyard — v2.0, 2026-09-17 (user) | No adventurer-name composite on public boards | ✓ Good |
 | LINEAGE's global form = client-side grouping of a top-25 DEEPEST sample (the plugin binds no paging) — v2.0 Phase 68; the board ranks race + sub-class since Phase 70 | No per-combo board explosion in Play Console | — Revisit if the sample proves too thin |
+| The engine rolls high everywhere (one check helper), not a display adapter over roll-under — v2.1 Phase 73, 2026-09-24 (user) | Every seed must read the same way the dice look; a mirror theorem proves equivalence | ✓ Good — parity 66/66 re-baselined with declared moves |
+| Early floors retuned harder: fair-bot p50 death ~3–4 — v2.1 Phase 79.2, 2026-09-27 (user: "just too easy") | The bot plays worse than humans; the human average should end floors 5–7 | ✓ p50 4; floors 4–5 miss, recorded for later tuning |
+| Bots run once, at the milestone end, as the final check — 2026-09-26 (user) | Per-phase readouts measured moving targets | ✓ Good — 79.1 measure-then-ship |
+| In-app bug reports via Firestore + a scheduled GitHub Action, public issues with a notice — v2.1 Phase 79.3, 2026-09-28 (user) | Keep it in the existing Firebase project; no GitHub token ships in the app | ✓ Good — live E2E proven; the key is public by design (secret-scanning alert closed as won't fix) |
+| Patch notes agreed with the user before every release build; one Markdown file feeds the game, GitHub, Play and the website — 2026-09-28 (user) | Players see what changed; one source avoids drift | ✓ Good — 2.1.0 notes shipped in all four places |
+| The 80-05 emulator pass deferred until the features are in — 2026-09-28 (user) | "We still have a long way to go" | — Pending: re-run before the production launch |
 | v2.0 closed on publish with the 142-row device batch spread over the user's play sessions — 2026-09-24 (user) | "We are published and I'll keep testing, but I think we can wrap up the milestone" | — Pending: `docs/UAT-v2.0.md` |
 
 ## Evolution
@@ -463,4 +449,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 — v2.1 Bug Fixes milestone started*
+*Last updated: 2026-09-28 after the v2.1 Bug Fixes milestone*
