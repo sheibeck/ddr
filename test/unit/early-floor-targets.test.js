@@ -27,6 +27,7 @@ import {
   evalRow,
   formatEvalLine,
   CLASS_POOL_MIN_N,
+  CLASS_CONSTRAINT_EXEMPT,
 } from "../../tools/lib/fit-score.mjs";
 import { distribution } from "../../tools/lib/tuning-bot.mjs";
 import { DIALS } from "../../engine/difficulty.js";
@@ -249,4 +250,24 @@ test("docs/DIFFICULTY-RETUNE.md: the Phase 79.2 targets section agrees with TARG
     `- \`TAIL_TARGETS.guard.freshP50Death\`: [${TAIL_TARGETS.guard.freshP50Death.join(", ")}]`,
   ];
   for (const c of constLines) assert.ok(section.includes(c), `the section carries the line: ${c}`);
+});
+
+// USER RULING 2026-09-28 (Phase 79.2-02): "This is fine for now. Magic users
+// require much more tactical play." The doc section records the exempt list.
+test("docs/DIFFICULTY-RETUNE.md: the Magic User exemption section agrees with CLASS_CONSTRAINT_EXEMPT (doc-sync)", () => {
+  const doc = fs.readFileSync(path.join(__dirname, "../../docs/DIFFICULTY-RETUNE.md"), "utf8").replace(/\r\n/g, "\n");
+  const lines = doc.split("\n");
+  const start = lines.findIndex((l) => l.startsWith("### Phase 79.2 — the class constraint's Magic User exemption (user ruling 2026-09-28)"));
+  assert.ok(start > -1, "the exemption heading exists");
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^#{1,3} /.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  const section = lines.slice(start + 1, end);
+  const line = "- `CLASS_CONSTRAINT_EXEMPT`: [" + CLASS_CONSTRAINT_EXEMPT.map((c) => JSON.stringify(c)).join(", ") + "]";
+  assert.ok(section.includes(line), "the section carries the line: " + line);
+  assert.ok(section.join(" ").includes("Magic users require much more tactical play."), "the ruling is quoted");
 });

@@ -1,0 +1,28 @@
+{
+  "FOE_HIT_SCALE": {
+    "base": 0.84,
+    "perDepth": 0.02,
+    "kneeDepth": 12,
+    "perDepthAfter": 0.02
+  },
+  "FOE_LEVEL": {
+    "base": 1.15,
+    "perDepth": 0.3
+  },
+  "HAZARD_SCALE": {
+    "base": 0.6,
+    "perDepth": 0.02
+  },
+  "FOE_HP_SCALE": {
+    "base": 1.2,
+    "perDepth": 0.015,
+    "kneeDepth": 12,
+    "perDepthAfter": 0.03
+  },
+  "ENCOUNTER_DOTS": {
+    "base": 7,
+    "perDepth": 0.3
+  },
+  "HERO_HP_SCALE": 1.4,
+  "HERO_SP_SCALE": 0.28
+}

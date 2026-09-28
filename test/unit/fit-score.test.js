@@ -19,6 +19,7 @@ import {
   evalRow,
   formatEvalLine,
   CLASS_POOL_MIN_N,
+  CLASS_CONSTRAINT_EXEMPT,
 } from "../../tools/lib/fit-score.mjs";
 import { DIALS } from "../../engine/difficulty.js";
 
@@ -43,12 +44,17 @@ function onTargetSurvival() {
 // Phase 54 steps and bounds, re-ordered so the early-weighted base levers
 // are walked first and the two depth slopes last.
 test("SEARCH_PLAN is exactly the core 9 in the Phase 79.2 order (early-weighted base levers first, depth slopes last; user ruling 2026-09-27 removed HERO_REGEN_PER_FLOOR), with pinned Phase 54 steps/bounds (USER RULING G, cycle 3: the Ruling F spellPower coordinate is dropped again — proved a structural no-op in cycle 2)", () => {
+  // RF-79.2-02-2 (ruling F, the orchestrator's search-parameter call,
+  // 2026-09-28): the four floor-1-6 base levers first (FOE_HP_SCALE,
+  // ENCOUNTER_DOTS, HAZARD_SCALE, FOE_HIT_SCALE), then FOE_LEVEL.base and the
+  // hero dials, slopes last; FOE_HP_SCALE.base hi 1.2 -> 1.5 and
+  // FOE_LEVEL.base hi 1.0 -> 1.2. Every other step and bound is unchanged.
   const expected = [
-    ["FOE_HIT_SCALE.base", 0.08, 0.4, 1.0],
-    ["FOE_LEVEL.base", 0.15, 0.3, 1.0],
-    ["HAZARD_SCALE.base", 0.1, 0.3, 1.0],
-    ["FOE_HP_SCALE.base", 0.1, 0.5, 1.2],
+    ["FOE_HP_SCALE.base", 0.1, 0.5, 1.5],
     ["ENCOUNTER_DOTS.base", 1, 5, 10],
+    ["HAZARD_SCALE.base", 0.1, 0.3, 1.0],
+    ["FOE_HIT_SCALE.base", 0.08, 0.4, 1.0],
+    ["FOE_LEVEL.base", 0.15, 0.3, 1.2],
     ["HERO_HP_SCALE", 0.15, 1.0, 1.8],
     ["HERO_SP_SCALE", 0.05, 0.15, 0.6],
     ["FOE_HIT_SCALE.perDepth", 0.01, 0, 0.05],
@@ -197,6 +203,56 @@ test("classConstraints: rejects Thief roundsPerFight > Fighter's", () => {
   const result = classConstraints(classIdentity);
   assert.equal(result.ok, false);
   assert.ok(result.reasons.some((r) => r.includes("roundsPerFight")), result.reasons.join(" | "));
+});
+
+// USER RULING 2026-09-28 (Phase 79.2-02): "This is fine for now. Magic users
+// require much more tactical play." The Magic User's breach is reported in
+// `exempt`, never rejects; Fighter and Thief breaches still reject against
+// the same pooled values (computed from all eligible classes, unchanged).
+test("classConstraints (user ruling 2026-09-28): CLASS_CONSTRAINT_EXEMPT is exactly the Magic User", () => {
+  assert.deepStrictEqual([...CLASS_CONSTRAINT_EXEMPT], ["Magic User"]);
+});
+
+test("classConstraints (user ruling 2026-09-28): a Magic-User-only p50 and reach5 breach now PASSES, reported as exempt", () => {
+  const classIdentity = [
+    classRow("Fighter", { p50: 6, reach5: 83.5 }),
+    classRow("Thief", { p50: 7, reach5: 84.2 }),
+    classRow("Magic User", { p50: 2, reach5: 49.3 }),
+  ];
+  const result = classConstraints(classIdentity);
+  assert.equal(result.ok, true, result.reasons.join(" | "));
+  assert.deepStrictEqual(result.reasons, []);
+  assert.equal(result.pooledP50, 6, "pooled p50 is the median of all three classes, the Magic User included");
+  assert.equal(result.pooledReach5, 83.5, "pooled reach5 is the median of all three classes, the Magic User included");
+  assert.deepStrictEqual(result.exempt, [
+    "Magic User p50 2 vs pooled 6 (|delta| > 2) — exempt",
+    "Magic User reach5 49.3 vs pooled 83.5 (|delta| > 20) — exempt",
+  ]);
+  const row = evalRow(1, {}, { survival: { floors: [], reach20: 0 }, scored: { score: 1, verdict: "MISS", misses: [] }, classIdentity, constraints: result, pace: { floors: [] }, elapsedMs: 1 });
+  assert.equal(row.score, 1, "an exempt breach never scores the row +Infinity");
+  assert.equal("reason" in row, false);
+  const line = formatEvalLine(row);
+  assert.ok(line.includes("ok=true exempt=Magic User p50 2 vs pooled 6 (|delta| > 2) — exempt; Magic User reach5 49.3 vs pooled 83.5 (|delta| > 20) — exempt"), line);
+});
+
+test("classConstraints (user ruling 2026-09-28): a Fighter or a Thief breach still rejects while the Magic User is exempt", () => {
+  const fighterBreach = classConstraints([
+    classRow("Fighter", { p50: 5, reach5: 20 }),
+    classRow("Thief", { p50: 5, reach5: 60 }),
+    classRow("Magic User", { p50: 5, reach5: 50 }),
+  ]);
+  assert.equal(fighterBreach.ok, false);
+  assert.deepStrictEqual(fighterBreach.reasons, ["Fighter reach5 20 vs pooled 50 (|delta| > 20)"]);
+  assert.deepStrictEqual(fighterBreach.exempt, []);
+
+  const thiefBreach = classConstraints([
+    classRow("Fighter", { p50: 5, reach5: 50 }),
+    classRow("Thief", { p50: 8, reach5: 50 }),
+    classRow("Magic User", { p50: 2, reach5: 50 }),
+  ]);
+  assert.equal(thiefBreach.ok, false);
+  assert.deepStrictEqual(thiefBreach.reasons, ["Thief p50 8 vs pooled 5 (|delta| > 2)"]);
+  assert.deepStrictEqual(thiefBreach.exempt, ["Magic User p50 2 vs pooled 5 (|delta| > 2) — exempt"]);
 });
 
 test("classConstraints: a pool with n < 20 is unconstrained (ok stays true, a reason is recorded)", () => {

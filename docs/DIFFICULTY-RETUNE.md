@@ -6822,6 +6822,15 @@ The foe-side base levers come first because they act from floor 1 and weigh
 relatively most on the early floors. The two depth slopes go last because
 they steepen the tail most, and the tail already sits at its ruled limits.
 
+**RF-79.2-02-2 (the orchestrator's search-parameter call, 2026-09-28).**
+Cycle 2 froze floors 1–4 once it reached the hero dials and slopes, and its
+row #18 missed floors 3–6 at 1,000 seeds. From cycle 3's 200-seed walk
+(`fit/early-log-c3b.jsonl`) the order is `FOE_HP_SCALE.base`,
+`ENCOUNTER_DOTS.base`, `HAZARD_SCALE.base`, `FOE_HIT_SCALE.base`,
+`FOE_LEVEL.base`, `HERO_HP_SCALE`, `HERO_SP_SCALE`, then the two slopes.
+Two pinned upper bounds are widened: `FOE_HP_SCALE.base` 1.2 → 1.5 and
+`FOE_LEVEL.base` 1.0 → 1.2. No target, tolerance or ruled value changed.
+
 ### Phase 79.2 — START (shipped dials, 2026-09-27 and 2026-09-28 rules) — commit 582cd6c7db4599f73c01daff348c36daee577116
 
 The shipped dials (`fit/start.json`, the seven SEARCH_PLAN dials from
@@ -6891,6 +6900,26 @@ The ruled tail targets, built by script from `fit/tail-start.jsonl`:
 | guard: fresh p50 death depth (report only) | in [3, 4] | 6 | outside (guard, reported) |
 
 Tail row: score 0.0000, verdict PASS, misses none, constraints.ok true, guard fresh p50Death 6 outside [3, 4], freshMeasured true.
+
+### Phase 79.2 — the class constraint's Magic User exemption (user ruling 2026-09-28)
+
+**2026-09-28.** START's only constraint rejection was the Magic User's
+reach5 (49.3 against a pooled 83.5 at 1,000 seeds). The user ruled: "This is
+fine for now. Magic users require much more tactical play."
+
+- `CLASS_CONSTRAINT_EXEMPT`: ["Magic User"]
+
+`tools/lib/fit-score.mjs#classConstraints` still measures every eligible
+class against the pooled p50 and reach5, and the pooled values are computed
+exactly as before (the median of every eligible class, the Magic User
+included). A breach by a class in `CLASS_CONSTRAINT_EXEMPT` goes to the
+result's `exempt` list (the reason text + " — exempt") and never to
+`reasons`: it does not set `ok` false and never rejects a candidate. The
+eval line prints it as `exempt=...`. Fighter and Thief are still held to
+|class p50 − pooled| ≤ 2 and reach5 within 20, and the two identity rules
+(Fighter takes at least the Thief's damage per fight; the Thief's fights are
+no longer than the Fighter's) are unchanged. Every 79.2-02 row still carries
+the Magic User's p50 and reach5 in `classes`.
 
 ## v1.2 retune (Phase 27) — TUNE-05..07
 

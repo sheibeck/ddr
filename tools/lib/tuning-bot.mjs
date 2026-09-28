@@ -29,7 +29,7 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
-import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS, wieldedStaff, hasTool } from "../../engine/derived.js";
+import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq } from "../../engine/derived.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
 import { isReady } from "../../engine/effects.js";
@@ -300,6 +300,42 @@ function expectedDamage(sp) {
 }
 
 /**
+ * expectedSpellDamage(sp, caster, nFoes = 1) — Phase 79.2-02 pre-step (the
+ * bot scores level² spell damage): the mean damage one cast of an offensive
+ * spell deals, as chooseSpell's DAMAGE tier scores it. Since quick
+ * 260928-sq2 the engine adds the caster's level² to spell damage, and this
+ * uses the engine's own helper (engine/derived.js#spellLevelSq), never a
+ * re-derivation. Where the engine adds it:
+ *   - thrown (Freeze, Fireball, Mangle): once — dice + level²;
+ *   - Lightning (thrown, aoe "all"): per foe — (dice + level²) × nFoes;
+ *   - Fireballs (volley, d8 bolts): every bolt its dice (mean 4.5 bolts),
+ *     plus level² once per foe struck — E[min(nFoes, d8)] foes;
+ *   - Acid: two scored rounds of dice, the first tick adds level²;
+ *   - Ice (dot): three scored rounds of dice, the first tick adds level².
+ * Earthquake (kind quake) is never auto-cast, so it is not scored. The bot's
+ * tick/bolt constants (2, 3, 4.5) are unchanged. Heals never add level² and
+ * keep expectedDamage(sp). Pure, no rng.
+ */
+export function expectedSpellDamage(sp, caster, nFoes = 1) {
+  if (!sp.dmg) return 0;
+  const dice = expectedDamage(sp);
+  const levelSq = spellLevelSq(caster);
+  const foes = Math.max(1, nFoes);
+  if (sp.aoe === "all") return (dice + levelSq) * foes;
+  if (sp.kind === "volley") {
+    let struck = 0; // E[min(nFoes, d8)]: distinct foes the bolts reach
+    for (let k = 1; k <= 8; k++) struck += Math.min(foes, k) / 8;
+    return dice * 4.5 + levelSq * struck;
+  }
+  if (sp.kind === "acid") return dice * 2 + levelSq; // two rounds of ticks
+  // Phase 40 (SPELL-01): Ice is a real per-round DOT — scored with the same
+  // "documented mean tick count" constant Acid uses, per its own d4+1
+  // duration (mean 3.5).
+  if (sp.kind === "dot") return dice * 3 + levelSq;
+  return dice + levelSq;
+}
+
+/**
  * bestBurstExpected(state) — Phase 42 (BAL-01 second half): the highest
  * `expectedDamage(sp)` over every CASTABLE `niche === "burst"` spell that
  * also carries a `dmg` field (Death has no `dmg` field and is excluded) — 0
@@ -312,7 +348,7 @@ function bestBurstExpected(state) {
   for (const sp of SPELLS) {
     if (sp.niche !== "burst" || !sp.dmg) continue;
     if (!canCast(state, sp)) continue;
-    const expected = expectedDamage(sp);
+    const expected = expectedSpellDamage(sp, state.c); // + level² (quick 260928-sq2)
     if (expected > best) best = expected;
   }
   return best;
@@ -389,7 +425,10 @@ function lowestCastableUtilitySpellIdx(state) {
  *           wp<=26 anyway); `kind==="turn"` 402 only vs Walking Dead;
  *           `kind==="gate"` 402 only vs Demons/Walking Dead.
  *   DAMAGE  (300 + expected damage, ties -> higher sp.lvl): expected(sp) =
- *           sp.dmg.n * (sp.dmg.sides + 1) / 2 + sp.dmg.bonus.
+ *           sp.dmg.n * (sp.dmg.sides + 1) / 2 + sp.dmg.bonus, plus the
+ *           caster's level² where the engine adds it (Phase 79.2-02,
+ *           expectedSpellDamage; once per cast, per foe for Lightning and
+ *           the first Fireballs bolt on each foe, the first Acid/Ice tick).
  *           `kind==="thrown"` (Mangle/Lightning/Fireball — Freeze scores in
  *           DISABLE) or `kind==="dot"` (Ice, Phase 40): Lightning's own `aoe`
  *           data flag (never the spell's name) multiplies the expected
@@ -552,15 +591,9 @@ export function chooseSpell(state, ctx) {
       // could simply finish this turn — see bestBurstExpected/chooseSpell's
       // JSDoc above.
       if (sp.niche === "dot" && target && target.wp <= burstBest + BOT_TACTICS.dotToughMargin) continue;
-      let expected = expectedDamage(sp);
-      if (sp.aoe === "all") expected *= Math.max(1, nFoes);
-      else if (sp.kind === "volley") expected *= 4.5;
-      else if (sp.kind === "acid") expected *= 2; // two rounds of ticks
-      // Phase 40 (SPELL-01): Ice is now a real per-round DOT
-      // (engine/magic.js#castSpell's `dot` branch + combat.js#foeTurn's own
-      // f.dot tick/freeze payoff) — scored with the same "documented mean
-      // tick count" constant Acid uses, per its own d4+1 duration (mean 3.5).
-      else if (sp.kind === "dot") expected *= 3;
+      // Phase 79.2-02 pre-step: the dice plus the caster's level², exactly
+      // where the engine adds it (see expectedSpellDamage's JSDoc).
+      const expected = expectedSpellDamage(sp, c, nFoes);
       // Phase 42 (BAL-01 second half): a burst spell (niche "burst") whose
       // plain expected damage already meets/exceeds the target's current wp
       // outranks every other DAMAGE-tier pick — a likely finish beats a
