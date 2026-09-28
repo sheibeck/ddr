@@ -547,7 +547,7 @@ test("chooseCombatItem: round-1 worn buff tier walks WORN_SLOTS order and skips 
   const ctx = makeBotContext();
   const hard = fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, lvl: 3, wp: 20, maxWP: 20 }] });
   const ring = { kind: "jewel", n: "Ring of Power", eff: { dmg: 1 } }; // kind: power
-  const cloak = { kind: "cloak", n: "Cloak of Strength", eff: { noCrit: 1 } }; // kind: brace
+  const cloak = { kind: "cloak", n: "Cloak of Strength", eff: { critWard: 1 } }; // kind: critWard
 
   // jewelry1 (earlier in WORN_SLOTS order) wins over cloak when both are ready.
   const both = mkState({ combat: hard, c: fighter({ worn: { jewelry1: ring, cloak } }) });

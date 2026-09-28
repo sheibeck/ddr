@@ -95,7 +95,8 @@ test("ACTIVATION_OF: 29 entries (9 new use-activated rows + 6 existing treasure 
   assert.deepStrictEqual(ACTIVATION_OF["Helm of Knowledge"], { kind: "tongue", effect: 50, cd: 50, eff: { tongue: 1 } });
   assert.deepStrictEqual(ACTIVATION_OF["Bracelet of Flight"], { kind: "fly", effect: 20, cd: 50, eff: { fly: 1 } });
   assert.deepStrictEqual(ACTIVATION_OF["Cloak of Regeneration"], { kind: "knit", effect: 0, cd: 20, eff: { cloakRegen: 1 } });
-  assert.deepStrictEqual(ACTIVATION_OF["Cloak of Strength"], { kind: "brace", effect: 50, cd: 50, eff: { noCrit: 1 } });
+  // Quick 260928-cos: its own kind and payload (was kind "brace", eff noCrit).
+  assert.deepStrictEqual(ACTIVATION_OF["Cloak of Strength"], { kind: "critWard", effect: 50, cd: 50, eff: { critWard: 1 } });
   assert.deepStrictEqual(ACTIVATION_OF["Cloak of Armor"], { kind: "plate", effect: 50, cd: 50, eff: { cloakArmor: 1 } });
   // The dropped healing cloak leaves no trace in the activation table.
   assert.equal(ACTIVATION_OF["Cloak of Healing"], undefined);

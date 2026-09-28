@@ -240,6 +240,28 @@ export function eff(c, key) {
 }
 
 /**
+ * critWardOf(c) — quick 260928-cos (user-approved fix 2026-09-28): the name
+ * of the live item whose `critWard` payload protects `c` (the Cloak of
+ * Strength: "no critical damage lands on you"), or null. While it returns a
+ * name, a foe's critical against `c` lands as an ordinary hit — engine/
+ * combat.js reads it at every foe-crit site (foeTurn's hero branch and member
+ * branch, pursuitStrike). It is protection only: it never touches `c`'s OWN
+ * crits (that is the Guard/Soldier/dark ban, noCritFor and playerStrike).
+ * Reads the timer records only, like eff(), so a bagged or worn-but-unused
+ * cloak grants nothing, and it serves a Joiner's own sheet the same way (its
+ * own `timers`). An old save's worn cloak still carries the retired
+ * `eff: { noCrit: 1 }` on the item object; that copy is inert (eff reads the
+ * content payload through ACTIVATION_OF), so it loads and wards unchanged.
+ * Pure, no rng, never throws on a missing/odd `c`.
+ */
+export function critWardOf(c) {
+  for (const { key, act } of liveItemEffects(c)) {
+    if (act.eff && typeof act.eff === "object" && typeof act.eff.critWard === "number" && act.eff.critWard > 0) return key;
+  }
+  return null;
+}
+
+/**
  * BAG_FREE_KINDS — the closed list of item `kind`s that never consume a bag
  * slot: `"potion"` (LOOT-04 user rule, 2026-09-15 — special potions live in
  * `c.items` but are exempt), `"scroll"` (quick 260918-vvt, 2026-09-18 scope
@@ -1427,7 +1449,7 @@ function weaponDiceMean(w) {
  *
  * need = classNeed(c) + weaponNeedMod(base), floored at 1 (never negative —
  * an already-impossible need cannot go lower). hitP = need/dieN, capped at 1.
- * critP = 0 for a noCrit character (Guard/Soldier/eff("noCrit")), else
+ * critP = 0 for a noCrit character (Guard/Soldier, noCritFor), else
  * min(hitP, weaponCrit/dieN) — a crit is never MORE likely than a hit.
  * `flat` mirrors weaponDamage's additive terms EXCEPT the weapon's own dice
  * (folded in separately as `avg`, via weaponDiceMean) and EXCEPT `c.prof`/
@@ -1441,13 +1463,15 @@ function weaponDiceMean(w) {
  * crit" rule expectedStrike already applied inline — extracted verbatim
  * (byte-identical arithmetic, same three clauses) so gearCompareParts below
  * can read the SAME rule expectedStrike uses instead of restating it.
- * `true` for a Guard/Soldier sub or a live `noCrit` effect (e.g. darkness);
- * `false` otherwise. Does NOT read state.floor's in-fight darkness rule —
- * that is engine/combat.js's own separate in-combat noCrit, untouched by
- * this extraction. Pure, no rng.
+ * `true` for a Guard/Soldier sub; `false` otherwise. Does NOT read
+ * state.floor's in-fight darkness rule — that is engine/combat.js's own
+ * separate in-combat noCrit, untouched by this extraction. Quick 260928-cos
+ * (2026-09-28): the third clause, a live `eff(c, "noCrit")`, is gone — its
+ * only source was the Cloak of Strength, whose payload protects the wearer
+ * from foe crits (critWardOf) and never banned the wearer's own. Pure, no rng.
  */
 export function noCritFor(c) {
-  return c.sub === "Guard" || c.sub === "Soldier" || eff(c, "noCrit") > 0;
+  return c.sub === "Guard" || c.sub === "Soldier";
 }
 
 export function expectedStrike(c, base, bonus = 0, prof = 0) {

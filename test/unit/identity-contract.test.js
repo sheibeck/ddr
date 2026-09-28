@@ -966,6 +966,8 @@ const CONTRACT = [
         // (7 rows) now lands this seed on a different cloak, AND even the
         // Cloak of Strength would no longer protect anything while merely
         // bagged (eff() is timer-only — a live "brace" record is required).
+        // Quick 260928-cos: the cloak (now kind/payload critWard) no longer
+        // touches its wearer's own crits at all; it wards foe crits.
         // Re-measured live: the opener's flat formula is now genuinely
         // doubled by the same backstab-crit branch every OTHER Thief's
         // opening strike already goes through — a pre-existing combat.js

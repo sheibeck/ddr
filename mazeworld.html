@@ -3416,7 +3416,11 @@ const CONDITION_COPY = {
   glow: { label: "Alight", unit: "sq" },
   unseen: { label: "Unseen", unit: "sq" },
   tongue: { label: "Fluent", unit: "sq" },
-  brace: { label: "Braced", unit: "sq" },
+  // Quick 260928-cos (user-approved fix 2026-09-28): the Cloak of Strength's
+  // own chip. It used to read "Braced" (key "brace"), which is the Fighter's
+  // Brace ability's word ("braced" below: halves the next blow) — a different
+  // thing. The cloak turns a foe's critical into an ordinary hit.
+  critWard: { label: "Crit-proof", unit: "sq" },
   plate: { label: "Plated", unit: "sq" },
   // RULES-10 (Phase 75.1, plan 09): the hero-cannot-act chip and its two
   // fight-long twins (a fumbled Blind/Shrink turned against the reader).
@@ -3533,10 +3537,10 @@ const ABILITY_CHIP_LABEL = { sidestep: "Sidestep", battleRoar: "Roaring", ripost
 // sentence a guarded chip tap puts in the rail. Both are ONE object literal
 // each (voice-scannable) — presentation copy only, no engine data.
 const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd", might: "good", flight: "odd", darkness: "warn", afraid: "warn", ward: "good", foeEffect: "bad", affliction: "bad", lit: "good", itemCooldown: "odd", staffCharges: "odd", mirror: "good", senses: "good", regen: "good", foresight: "odd", reveal: "odd", fearArmed: "warn",
-  // 260918-w4n: power/giant/brace/plate read as straightforward buffs
+  // 260918-w4n: power/giant/critWard/plate read as straightforward buffs
   // (good); glow/unseen/tongue read as "odd" like invis/ether above (a
   // strange-but-good state, not a plain good one).
-  power: "good", giant: "good", enlarge: "good", glow: "odd", unseen: "odd", tongue: "odd", brace: "good", plate: "good",
+  power: "good", giant: "good", enlarge: "good", glow: "odd", unseen: "odd", tongue: "odd", critWard: "good", plate: "good",
   // RULES-10 (Phase 75.1, plan 09): all three read bad, exactly like
   // foeEffect/affliction above (the fallback on cn.polarity would already
   // land here, but every other bad-toned key above is explicit too).
@@ -3603,7 +3607,7 @@ const CONDITION_EXPLAIN = {
   glow: "You are your own lantern, so the dark cannot make your strikes harder to land. The dark is filing a complaint.",
   unseen: "Every foe has two fewer faces that hit you, and they know it.",
   tongue: "You can try a parley with anything but the Magical and the Walking Dead, and the roll gets two more faces. Whether they listen is up to them.",
-  brace: "No critical lands on you. Ordinary hits still count.",
+  critWard: "No critical hit lands on you: a foe's best roll is an ordinary hit. Ordinary hits still count.",
   plate: "You soak blows as plate, or as your own armour if that is better, and none of it wears out. It still will not make you graceful.",
   // RULES-10 (Phase 75.1, plan 09): the reader-side fumble effects — a
   // fumbled scroll turning against its own reader. heroOut states the three

@@ -140,13 +140,14 @@ test("a foe's top-face swing at a wearer with the cloak live lands as an ordinar
   assert.equal(hit.critAtLeast, undefined, "no crit threshold is narrated for a warded crit");
   assert.ok(events.indexOf(warded) < events.indexOf(hit), "the save is told before the blow lands");
 
+  // Roll-high, read off the event: the foe's top face on its own die.
+  const onDie = `${warded.roll} on the d${warded.dieN}`;
   const oracle = EVENT_NARRATION.critWarded(warded);
-  assert.match(oracle, /Cloak of Strength/);
-  assert.match(oracle, /Wolf/);
-  assert.match(oracle, /critical/i);
+  assert.match(oracle, /^<span class="hit">Your Cloak of Strength turns Wolf's critical aside/, "fact first: whose cloak, whose critical");
+  assert.ok(oracle.replace(/<[^>]+>/g, "").includes(`aside: ${onDie}, an ordinary`), `the Oracle names the roll (${onDie})`);
+  assert.match(oracle, /an ordinary hit instead/);
   const rail = LINE_FOR.critWarded(warded);
-  assert.match(rail.text, /Cloak of Strength/);
-  assert.match(rail.text, /critical/i);
+  assert.equal(rail.text, `Your Cloak of Strength turns Wolf's critical into an ordinary hit (${onDie}).`);
 });
 
 test("without the cloak (or worn but unused) the same top-face swing is a critical and doubles the dice", () => {
@@ -249,6 +250,15 @@ test("the HERO's cloak does not protect a Joiner, and a Joiner's cloak does not 
   useItem(heroCloak, { slot: "cloak" }, noDrawRng(), []);
   const hit = foeTurn(heroCloak, fakeRng([1, 6]), []).find((e) => e.type === "memberStruck");
   assert.equal(hit.critical, true, "the hero's cloak is the hero's");
+
+  // Ada wears it, no taunt: the target die (d2 = 1) picks the hero.
+  const sheet = { name: "Ada", level: 1, sub: "Knight", cls: "Fighter", race: "Human", wp: 200, maxWP: 200, status: "ok", worn: { cloak: CLOAK } };
+  startEffect(sheet, "item:Cloak of Strength", { squares: 50, cd: 50 });
+  const memberCloak = fixedState({ party: [sheet] });
+  memberCloak.combat = fixedCombat([fixedFoe()], { allies: [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Knight", wp: 200, maxWP: 200 }] });
+  const heroHit = foeTurn(memberCloak, fakeRng([1, 1, 6]), []).find((e) => e.type === "struckByFoe");
+  assert.ok(heroHit, "the swing went at the hero");
+  assert.equal(heroHit.critical, true, "a Joiner's cloak is the Joiner's");
 });
 
 // ─── the wearer's own blows ───────────────────────────────────────────────

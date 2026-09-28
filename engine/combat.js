@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, critWardOf } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -819,24 +819,19 @@ export function playerStrike(state, rng, events = []) {
 
     let dmg = weaponDamage(c, rng);
     if (AS && AS.bonusDmg) dmg += AS.bonusDmg;
-    // DELIBERATE RULES CHANGE (Phase 15 item-wiring, ECON-08): the Cloak of
-    // Strength (content/treasure-tables.js, eff:{noCrit:1}, "no critical
-    // damage ever lands on you") was inert — the prototype's noCrit was
-    // class-only (Guard/Soldier/dark) and never read eff(c,"noCrit"). This
-    // flag ("no critical damage lands ON YOU") reads as PLAYER protection, but
-    // the same field name is reused here as the player's OWN crit-suppression
-    // (the only noCrit hook in combat), matching the prototype's Guard/Soldier
-    // "your blows never crit" seam. Pure read (no rng), so parity is unaffected
-    // for every character not carrying the cloak (eff noCrit === 0).
+    // The hero's OWN crit ban: Guard/Soldier ("your blows never crit") and
+    // the dark. Quick 260928-cos (user-approved fix 2026-09-28): the Phase 15
+    // (ECON-08) fourth clause, `eff(c, "noCrit") > 0`, is gone. It read the
+    // Cloak of Strength ("no critical damage lands on you") as a ban on the
+    // WEARER's own crits, so the cloak stopped your crits and not the foe's.
+    // The cloak's payload is now `critWard`, read only at the foe-crit sites
+    // (foeTurn's hero and member branches, pursuitStrike) through
+    // derived.js#critWardOf. Pure read, no rng.
     // RULES-05 (Phase 75): Sense Presence waives the dark no-crit ban too —
     // "full skill in the dark," matching toHit's existing dark-cap waiver.
     // DARK-01 (Phase 76): the dark term reads the one darkness waiver
     // (darkLimited), so a lit torch or a live Amulet restores crits too.
-    const noCrit =
-      c.sub === "Guard" ||
-      c.sub === "Soldier" ||
-      (darkLimited(state) && !c.senses) ||
-      eff(c, "noCrit") > 0;
+    const noCrit = c.sub === "Guard" || c.sub === "Soldier" || (darkLimited(state) && !c.senses);
     // Phase 39 (GEAR-01): the crit RANGE is now weapon-driven — a precise
     // blade (Rapier/Katana/Wakazashi/Ninja-to/Dagger, crit:2) doubles on the
     // die's top TWO faces; every other weapon still doubles only on the top
@@ -927,7 +922,7 @@ export function playerStrike(state, rng, events = []) {
       C.cut = true;
     }
     // Phase 38 (ABIL-02, strike_descriptor_spec item 5): a forced crit obeys
-    // the Guard/Soldier/dark/noCrit-gear rule exactly like a natural 1 (a
+    // the Guard/Soldier/dark rule exactly like a natural 1 (a
     // Guard's Death Touch still finishes under 15 above, but does not
     // double). Silent Step's crit is specifically denied by heavy armour,
     // like the old Silence branch — the strike still auto-hits (autoHit is
@@ -1355,7 +1350,12 @@ function pursuitStrike(state, rng, events) {
   // Phase 73 (ROLL-05): the mirrored crit rule — the top face always crits,
   // the top TWO faces crit for a Soldier — byte-identical to the old
   // `roll === 1 || (roll <= 2 && Soldier)`.
-  const crit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
+  // Quick 260928-cos: a live Cloak of Strength (critWardOf) turns the crit
+  // into an ordinary hit — the roll and the dice draw are unchanged, only
+  // the doubling is dropped (see foeTurn's hero branch).
+  const rolledCrit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
+  const critWarded = rolledCrit && wardCrit(c, pursuer, roll, dieN, events);
+  const crit = rolledCrit && !critWarded;
   const dice = pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6); // roll:amount
   const curve = difficultyCurve(state.floor.depth);
   // RULES-17 (Phase 75.3): an elite pursuer's parting strike carries its own
@@ -1369,7 +1369,27 @@ function pursuitStrike(state, rng, events) {
   // (pursuitStrike is a single strike, never part of foeTurn's per-visit
   // budget) — Infinity at the identity value (0, off), a structural no-op.
   dmg = Math.min(dmg, Math.max(0, roundDamageCapFor(c.level)));
-  return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, atLeast, dieN, mods });
+  return applyFoeDamageToPlayer(state, pursuer, rng, events, { dmg, roll, atLeast, dieN, mods, critWarded });
+}
+
+/**
+ * wardCrit(body, foe, roll, dieN, events, member) — quick 260928-cos
+ * (user-approved fix 2026-09-28, "the cloak of strength is supposed to stop
+ * critical hits"): called at a foe-crit site ONLY when the foe's swing has
+ * already rolled a critical against `body` (the hero's `c`, or a Joiner's
+ * own persistent sheet). When `body` has a live critWard item (the Cloak of
+ * Strength, derived.js#critWardOf), pushes ONE `critWarded { name, item,
+ * roll, dieN, member? }` event — told before the blow lands, so it reads
+ * even when armour then soaks the ordinary hit — and returns true; the
+ * caller drops the crit's doubling. Otherwise returns false and pushes
+ * nothing. No rng: the crit roll already happened and the damage dice are
+ * drawn exactly as before, so the draw shape never changes.
+ */
+function wardCrit(body, foe, roll, dieN, events, member = null) {
+  const item = critWardOf(body);
+  if (!item) return false;
+  events.push({ type: "critWarded", name: foe.name, item, roll, dieN, ...(member ? { member } : {}) });
+  return true;
 }
 
 /**
@@ -2653,12 +2673,17 @@ export function pickFoeTarget(state, rng, foe = null) {
  *     `foeBolted { name, ability, dmg, ignoresArmor }` instead of
  *     `struckByFoe` (a foe-ability bolt has no to-hit roll, so there is no
  *     `roll`/`need` to narrate — RESEARCH Pitfall 2).
+ *   - `critWarded` (boolean|undefined, quick 260928-cos): the caller's
+ *     wardCrit turned this blow's rolled crit into an ordinary hit (a live
+ *     Cloak of Strength); `struckByFoe` then carries `critical: false`, no
+ *     soldierCrit/critAtLeast, and `critWarded: true`. `dmg` already arrives
+ *     undoubled.
  *   - `applied` (additive return field, on EVERY branch): the amount
  *     actually subtracted from `c.wp` this call (0 on every early-return
  *     branch — reflect-kill, `dmg <= 0`, armor-soaked — and the final landed
  *     `dmg` on both tail returns).
  */
-export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atLeast, dieN, mods, ignoresArmor, ability }) {
+export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atLeast, dieN, mods, ignoresArmor, ability, critWarded }) {
   const c = state.c;
   const R = RACES[c.race];
 
@@ -2846,8 +2871,11 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
     // second-highest face is its own `soldierCrit`, byte-identical to the
     // old `roll === 2 && Soldier`. `critAtLeast` (the top-face threshold this
     // foe needed) is only narrated when one of the two fired.
-    const critical = isBestFace(roll, dieN);
-    const soldierCrit = roll === dieN - 1 && c.sub === "Soldier";
+    // Quick 260928-cos: a crit the caller's wardCrit turned aside (a live
+    // Cloak of Strength) is an ordinary hit — neither flag fires, and the
+    // line carries `critWarded: true` instead (additive; absent otherwise).
+    const critical = !critWarded && isBestFace(roll, dieN);
+    const soldierCrit = !critWarded && roll === dieN - 1 && c.sub === "Soldier";
     events.push({
       type: "struckByFoe",
       name: foe.name,
@@ -2867,6 +2895,7 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
       ...(mods && mods.length ? { mods } : {}),
       ...(critical || soldierCrit ? { critAtLeast: atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN) } : {}),
       ...(soldierCrit ? { soldierCrit: true } : {}),
+      ...(critWarded ? { critWarded: true } : {}),
     });
   }
   if (c.wp <= 0) {
@@ -3322,7 +3351,12 @@ export function foeTurn(state, rng, events = []) {
         // Phase 73 (ROLL-05): the mirrored crit rule — the top face of the
         // member's own strike die always crits, byte-identical to the old
         // `mRoll === 1`.
-        const mCritical = isBestFace(mRoll, mDieN);
+        // Quick 260928-cos: the Joiner's OWN live Cloak of Strength (its own
+        // sheet's timers — never the hero's) turns the crit aside, exactly
+        // like the hero branch below; same draws.
+        const mRolledCrit = isBestFace(mRoll, mDieN);
+        const mCritWarded = mRolledCrit && !!mSheet && wardCrit(mSheet, f, mRoll, mDieN, events, member.name);
+        const mCritical = mRolledCrit && !mCritWarded;
         const mDice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount
         // RULES-17 (Phase 75.3): an elite's blow carries its own per-rank
         // hit bonus too — `f.elite || 0` is 0 for every plain foe.
@@ -3365,6 +3399,7 @@ export function foeTurn(state, rng, events = []) {
           critical: mCritical,
           ...(mCritical ? { critAtLeast: mDieN } : {}),
           ...(mMods.length ? { mods: mMods } : {}),
+          ...(mCritWarded ? { critWarded: true } : {}),
         });
         if (member.wp <= 0) downMember(state, member, events);
         continue;
@@ -3413,7 +3448,13 @@ export function foeTurn(state, rng, events = []) {
       // Phase 73 (ROLL-05): the mirrored crit rule — the top face always
       // crits, the top TWO faces crit for a Soldier — byte-identical to the
       // old `roll === 1 || (roll <= 2 && Soldier)`.
-      const crit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
+      // Quick 260928-cos (user-approved fix 2026-09-28): a live Cloak of
+      // Strength on the hero turns a rolled crit into an ordinary hit
+      // (wardCrit narrates it). The crit roll is the to-hit roll above and
+      // the dice draw below is unchanged — only the doubling is dropped.
+      const rolledCrit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
+      const critWarded = rolledCrit && wardCrit(c, f, roll, dieN, events);
+      const crit = rolledCrit && !critWarded;
       const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount
       // RULES-17 (Phase 75.3): an elite's blow carries its own per-rank hit
       // bonus too — `f.elite || 0` is 0 for every plain foe.
@@ -3433,7 +3474,7 @@ export function foeTurn(state, rng, events = []) {
       dmg = Math.min(dmg, Math.max(0, roundDamageCapFor(c.level) - dealtThisVisit));
       dealtThisVisit += dmg;
 
-      const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, atLeast, dieN, mods });
+      const hit = applyFoeDamageToPlayer(state, f, rng, events, { dmg, roll, atLeast, dieN, mods, critWarded });
       if (hit.died) return events;
     }
     // Phase 38 (ABIL-01, Dirty Trick) — the blindFor countdown, at the END

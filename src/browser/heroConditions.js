@@ -117,7 +117,7 @@ export const HERO_CONDITIONS = Object.freeze(
     item("glow", true), // Amulet of Light: a light that lifts the dark cap (darkWaiver).
     item("unseen", true), // Anklet of Invisibility: every foe has two fewer faces that hit (eff foeToHit).
     item("tongue", false), // Helm of Knowledge: a parley aid, nothing once blows land.
-    item("brace", true), // Cloak of Strength: no critical hits on you (eff noCrit).
+    item("critWard", true), // Cloak of Strength: a foe's critical lands on you as an ordinary hit (derived.js#critWardOf; quick 260928-cos, was "brace").
     item("plate", true), // Cloak of Armor: soaks as plate (armorSoak).
     item("power", true), // Ring of Power: +1 damage (eff dmg).
     item("lit", true), // a lit torch: lifts the dark cap in a dark fight (darkWaiver).

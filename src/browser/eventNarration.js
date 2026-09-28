@@ -79,6 +79,10 @@ const withArticle = (word) => `${/^[aeiou]/i.test(String(word)) ? "an" : "a"} ${
 // fallback when the event names no one ("its", never the "it's" a bare
 // `${e.name ?? "it"}'s` used to print).
 const possessive = (name, fallback) => (name ? `${name}'s` : fallback);
+/** wardName(item) — critWarded's `item` is the warding item's display name
+ * (engine/derived.js#critWardOf); an item object or a missing field reads
+ * as its `n` or "cloak" (quick 260928-cos). */
+const wardName = (item) => (typeof item === "string" && item ? item : typeof item?.n === "string" && item.n ? item.n : "cloak");
 
 // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): every gain line leads with
 // the HP actually gained — the engine's additive `gained`, after the clamp
@@ -770,6 +774,13 @@ export const EVENT_NARRATION = {
   // Phase 15 item-wiring (ECON-08): the Pendant of Fortitude eats half of one
   // incoming blow, then spends itself. `name` is the foe whose hit was blunted.
   damageHalved: (e) => `<span class="hit">The pendant drinks half of ${possessive(e.name, "the")} blow before it reaches you.</span>`,
+  // Quick 260928-cos (user-approved fix 2026-09-28): a live Cloak of
+  // Strength turned a foe's critical into an ordinary hit. Fact first (whose
+  // cloak, whose critical, the roll), then the joke. `member` names a Joiner
+  // wearing it; the struck/soaked line that follows says what the ordinary
+  // hit did.
+  critWarded: (e) =>
+    `<span class="hit">${e.member ? `${possessive(e.member, "Their")} ${wardName(e.item)}` : `Your ${wardName(e.item)}`} turns ${possessive(e.name, "the")} critical aside${Number.isFinite(e.roll) && Number.isFinite(e.dieN) ? `: <span class="roll">${e.roll}</span> on the d${e.dieN}` : ""}, an ordinary hit instead.</span> The cloak will not let anyone forget it.`,
   // Phase 25 (FEED-01, additive payload): `soldierCrit` renders exactly like
   // `critical` (a Soldier's second-highest face is a crit in every way that
   // matters to the Oracle); `mods`/`soaked` render only when present, so a
@@ -1617,7 +1628,7 @@ export const EVENT_NARRATION = {
       glow: `<span class="hit">Fifty squares of being your own lantern.</span>`,
       unseen: `<span class="hit">Unseen for ${sq}: every foe has two fewer faces that hit you.</span>`,
       tongue: `<span class="hit">${sq} of perfect fluency. Do not waste it on small talk.</span>`,
-      brace: `<span class="hit">${sq} with nothing critical landing on you.</span>`,
+      critWard: `<span class="hit">${sq} with nothing critical landing on you.</span>`,
       plate: `<span class="hit">${sq} of weightless plate.</span>`,
     };
     return map[e.kind] ?? `<span class="hit">${e.item ?? "It"} is in effect for ${sq}.</span>`;
