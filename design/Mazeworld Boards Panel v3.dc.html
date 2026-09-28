@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"><style>
+body{margin:0;background:#14110c;font-family:'Courier Prime',ui-monospace,monospace}
+a{color:#e8c97a}a:hover{color:#f6e0a2}
+*{-webkit-tap-highlight-color:transparent}
+::-webkit-scrollbar{width:0;height:0}
+@keyframes mwrise{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes mwfade{from{opacity:0}to{opacity:1}}
+</style></helmet>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#14110c;overflow:hidden;font-family:'Courier Prime',ui-monospace,monospace;color:#e6ddc6">
+
+<div style="flex:none;display:flex;align-items:center;gap:10px;padding:9px 14px 10px;background:#1b170f">
+<sc-if value="{{ hasBack }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ onBack }}" style="flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-6px 0 -6px -8px;font-size:13px;color:#e8c97a;cursor:pointer;box-shadow:inset 0 0 0 2px #4a4032;background:#14110c">&#9664;</div>
+</sc-if>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+<span style="font-family:'Press Start 2P';font-size:9px;color:#c9bda0">{{ title }}</span>
+<span style="font-size:11.5px;color:#8e8369;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ scopeLine }}</span>
+</div>
+<div onClick="{{ openMine }}" style="{{ interredBox }}">
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:17px;color:#e8c97a">{{ interred }}</span>
+<span style="font-family:'Press Start 2P';font-size:6px;color:#9a8f76">{{ interredLabel }}</span>
+</div>
+</div>
+
+<div style="flex:none;display:flex;gap:4px;padding:0 14px 10px;border-bottom:3px solid #3a3226;background:#1b170f">
+<sc-for list="{{ pickers }}" as="p" hint-placeholder-count="3">
+<div onClick="{{ p.onClick }}" style="{{ p.box }}">
+<span style="font-family:'Press Start 2P';font-size:5.5px;line-height:1.4;color:#8e8369">{{ p.label }}</span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0">
+<span style="{{ p.valStyle }}">{{ p.value }}</span>
+<span style="font-size:9px;color:#8e8369;flex:none">&#9660;</span>
+</div>
+</div>
+</sc-for>
+</div>
+
+<div style="flex:1;min-height:0;overflow:auto;padding:0 0 22px">
+
+<sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 28px 10px;text-align:center">
+<span style="font-family:'Press Start 2P';font-size:8px;line-height:1.7;color:#c9bda0">{{ emptyTitle }}</span>
+<span style="font-size:12px;line-height:1.5;color:#8e8369;text-wrap:pretty">{{ emptyNote }}</span>
+<div onClick="{{ clearPick }}" style="margin-top:6px;padding:10px 12px;font-family:'Press Start 2P';font-size:7px;color:#b9a4ef;cursor:pointer;box-shadow:inset 0 0 0 2px #4a4032">CLEAR FILTERS</div>
+</div>
+</sc-if>
+
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+<div style="display:flex;flex-direction:column">
+<sc-if value="{{ r.divider }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#100e0a;box-shadow:inset 0 -1px 0 #241f16,inset 0 1px 0 #241f16">
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:15px;color:#4a3f2c;letter-spacing:.2em">···</span>
+<span style="font-family:'Press Start 2P';font-size:6.5px;line-height:1.5;color:#8e8369">NOT IN THE TOP TEN · YOUR BEST</span>
+</div>
+</sc-if>
+<div onClick="{{ r.onClick }}" style="{{ r.row }}">
+<div style="flex:none;width:24px;display:flex;justify-content:center;padding-top:1px">
+<span style="{{ r.rankStyle }}">{{ r.rank }}</span>
+</div>
+<div style="{{ r.av }}">{{ r.initials }}</div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;align-items:baseline;gap:6px;min-width:0">
+<span style="{{ r.handleStyle }}">{{ r.handle }}</span>
+<span style="{{ r.tagStyle }}">{{ r.tag }}</span>
+</div>
+<span style="font-family:'Press Start 2P';font-size:6px;line-height:1.5;color:#9a8f76;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.line }}</span>
+<sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:4px;display:flex;flex-direction:column;gap:6px;animation:mwrise .22s steps(3)">
+<span style="font-size:11.5px;line-height:1.45;color:#a89c82;text-wrap:pretty">{{ r.detail }}</span>
+<div style="display:flex;flex-wrap:wrap;gap:5px">
+<sc-for list="{{ r.stats }}" as="s" hint-placeholder-count="4">
+<div style="{{ s.box }}">
+<span style="font-family:'Press Start 2P';font-size:6px;color:#9a8f76">{{ s.k }}</span>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:13px;color:#e6ddc6">{{ s.v }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:56px">
+<span style="{{ r.valStyle }}">{{ r.val }}</span>
+<span style="font-family:'Press Start 2P';font-size:5.5px;color:#8e8369;white-space:nowrap">{{ r.unit }}</span>
+</div>
+</div>
+</div>
+</sc-for>
+
+<sc-if value="{{ hasStanding }}" hint-placeholder-val="{{ true }}">
+<div style="margin:12px 14px 0;padding:10px 12px;background:#181409;box-shadow:inset 0 0 0 1px #2c2519;display:flex;align-items:center;gap:10px">
+<span style="flex:1;min-width:0;font-size:11.5px;line-height:1.4;color:#8e8369;text-wrap:pretty">{{ standing.note }}</span>
+<span style="font-family:'Courier Prime',monospace;font-weight:700;font-size:20px;color:#e8c97a;flex:none">{{ standing.place }}</span>
+</div>
+</sc-if>
+
+</div>
+
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(10,8,6,.72);animation:mwfade .15s ease">
+<div onClick="{{ stop }}" style="max-height:78%;display:flex;flex-direction:column;background:#1b170f;border-top:3px solid #6b5c3c;animation:mwrise .18s ease">
+<div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 14px 11px">
+<span style="font-family:'Press Start 2P';font-size:7.5px;line-height:1.6;color:#e8c97a">{{ sheet.title }}</span>
+<span onClick="{{ closeSheet }}" style="font-family:'Press Start 2P';font-size:7px;color:#c9bda0;cursor:pointer;padding:8px 10px;border:2px solid #4a4032">DONE</span>
+</div>
+<div style="flex:1;min-height:0;overflow:auto;padding:0 0 26px">
+<sc-for list="{{ sheet.opts }}" as="o" hint-placeholder-count="6">
+<div onClick="{{ o.onClick }}" style="{{ o.row }}">
+<span style="{{ o.mark }}">&#9670;</span>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+<span style="{{ o.labelStyle }}">{{ o.label }}</span>
+<span style="font-size:11px;line-height:1.35;color:#8e8369">{{ o.sub }}</span>
+</div>
+<span style="{{ o.nStyle }}">{{ o.n }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;stat&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;deep&quot;,&quot;days&quot;,&quot;kills&quot;,&quot;gold&quot;],&quot;default&quot;:&quot;deep&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;race&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;any&quot;,&quot;Dwarven&quot;,&quot;Elven&quot;,&quot;Gnollish&quot;,&quot;Halfling&quot;,&quot;Human&quot;,&quot;Troll&quot;,&quot;Wilmsry&quot;],&quot;default&quot;:&quot;any&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;sub&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;any&quot;,&quot;Berserker&quot;,&quot;Bonecaller&quot;,&quot;Cloaker&quot;,&quot;Lamplighter&quot;,&quot;Pickpocket&quot;,&quot;Trapwright&quot;],&quot;default&quot;:&quot;any&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Board&quot;},&quot;compete&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Account&quot;},&quot;handle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;@lanternjaw&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Account&quot;}}">
+const GRAVES = [
+  { name:'MARTA QUEN', user:'@quenchless', race:'Wilmsry', cls:'Thief', sub:'Cloaker', lvl:'I', floor:1, days:4, squares:96, kills:2, skill:40, wilmst:310, cause:'Cut down by a Zombie', epitaph:'The Zombie was the same level as Marta Quen. Only one of them knew what to do about it.' },
+  { name:'SERA COLL', user:'@sera_c', race:'Human', cls:'Thief', sub:'Pickpocket', lvl:'II', floor:2, days:6, squares:168, kills:5, skill:210, wilmst:1140, cause:'Cut down by a Dire Boar', epitaph:'Fought on for nine rounds. Should have run on round two.' },
+  { name:'ULBA THE WIDE', user:'@ulba_wide', race:'Troll', cls:'Warrior', sub:'Berserker', lvl:'III', floor:4, days:11, squares:402, kills:19, skill:640, wilmst:2980, cause:'Starved on the fourth floor', epitaph:'Killed nineteen things and not one of them was edible.' },
+  { name:'BRAN ODDER', user:'@branodder', race:'Dwarven', cls:'Ranger', sub:'Trapwright', lvl:'II', floor:3, days:7, squares:191, kills:8, skill:300, wilmst:1620, cause:'Sprung his own trap', epitaph:'A trapwright of real ability, in exactly one direction.' },
+  { name:'YSOLDE ASH', user:'@ashfall', race:'Elven', cls:'Summoner', sub:'Bonecaller', lvl:'IV', floor:6, days:16, squares:734, kills:23, skill:1180, wilmst:6410, cause:'Cut down by her own summon', epitaph:'Called something up on floor six and lost the argument.' },
+  { name:'KEPP MARROW', user:'@kepp.marrow', race:'Gnollish', cls:'Cleric', sub:'Lamplighter', lvl:'II', floor:3, days:9, squares:288, kills:7, skill:340, wilmst:1490, cause:'Lantern out, floor three', epitaph:'The Lamplighter ran out of oil. Nobody has stopped laughing.' },
+  { name:'TAM UNDERHALE', user:'@underhale', race:'Halfling', cls:'Thief', sub:'Pickpocket', lvl:'III', floor:5, days:8, squares:236, kills:6, skill:720, wilmst:4880, cause:'Fell down the stair he found', epitaph:'Fastest descent on record, in every sense.' },
+  { name:'HILDA FERROW', user:'@lanternjaw', you:true, race:'Dwarven', cls:'Thief', sub:'Pickpocket', lvl:'I', floor:1, days:2, squares:118, kills:6, skill:120, wilmst:4688, cause:'Cut down by a Gutter Ghoul', epitaph:'Nobody was impressed. She was warned about that.' },
+  { name:'GRIM HOLLOWAY', user:'@grimholloway', race:'Human', cls:'Warrior', sub:'Berserker', lvl:'III', floor:4, days:13, squares:512, kills:26, skill:690, wilmst:2210, cause:'Bled out in a corridor', epitaph:'Twenty-six kills, no bandages, one decision to review.' },
+  { name:'NESS QUILT', user:'@lanternjaw', you:true, race:'Wilmsry', cls:'Ranger', sub:'Trapwright', lvl:'II', floor:3, days:5, squares:142, kills:4, skill:280, wilmst:900, cause:'Teleported into stone', epitaph:'The crevice was optional. She insisted.' },
+  { name:'ODO BELL', user:'@lanternjaw', you:true, race:'Halfling', cls:'Cleric', sub:'Lamplighter', lvl:'I', floor:2, days:3, squares:88, kills:1, skill:90, wilmst:420, cause:'Cut down by a Rat King', epitaph:'Two floors, one rat, no prayers answered.' },
+  { name:'VARG STONEHEEL', user:'@stoneheel', race:'Troll', cls:'Warrior', sub:'Berserker', lvl:'IV', floor:5, days:19, squares:880, kills:31, skill:1020, wilmst:3760, cause:'Died of the fifth floor generally', epitaph:'Walked eight hundred and eighty squares to arrive nowhere.' },
+  { name:'SILT MAWE', user:'@siltmawe', race:'Gnollish', cls:'Summoner', sub:'Bonecaller', lvl:'III', floor:4, days:10, squares:214, kills:12, skill:610, wilmst:2040, cause:'Crushed by a collapsing floor', epitaph:'Efficient to the last square, including the one that gave way.' },
+  { name:'PIP ALDERWEY', user:'@lanternjaw', you:true, race:'Elven', cls:'Ranger', sub:'Trapwright', lvl:'I', floor:1, days:1, squares:22, kills:0, skill:10, wilmst:60, cause:'Cut down by a Cave Newt', epitaph:'Twenty-two squares. The shortest delve anybody has bothered to record.' },
+];
+
+const STATS = [
+  { id:'deep', label:'DEPTH', unit:'FLOOR · SQ', col:'#d3c49f', sub:'Lowest floor reached. Ties go to fewer squares walked.',
+    val:function(g){return g.floor;}, disp:function(g){return g.floor + ' · ' + g.squares;}, sort:function(a,b){return b.floor-a.floor||a.squares-b.squares;} },
+  { id:'days', label:'DAYS', unit:'DAYS', col:'#8fb08a', sub:'Days survived underground.',
+    val:function(g){return g.days;}, sort:function(a,b){return b.days-a.days||b.floor-a.floor;} },
+  { id:'kills', label:'KILLS', unit:'KILLS', col:'#e07260', sub:'Things killed before being killed.',
+    val:function(g){return g.kills;}, sort:function(a,b){return b.kills-a.kills||b.floor-a.floor;} },
+  { id:'gold', label:'WILMST', unit:'WILMST', col:'#e8c97a', sub:'Carried at the moment of death. All of it still down there.',
+    val:function(g){return g.wilmst;}, disp:function(g){return g.wilmst.toLocaleString();}, sort:function(a,b){return b.wilmst-a.wilmst;} },
+];
+const LEGACY = { deep:'deep', lean:'deep', combo:'deep', days:'days', kills:'kills', purse:'gold', yard:'deep' };
+const TOP = 10;
+const AV = ['#6b5c3c','#4a5c6b','#5c4a6b','#4a6b52','#6b4a4a','#5c5c4a'];
+const AVATAR = function (seed, on) {
+  const h = seed.split('').reduce(function (a, c) { return (a * 31 + c.charCodeAt(0)) >>> 0; }, 7);
+  return { width: 28, height: 28, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: "'Press Start 2P'", fontSize: 8, color: '#e6ddc6', background: AV[h % AV.length],
+    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.5), 0 0 0 1px ' + (on ? '#e8c97a' : '#2c2519') };
+};
+const INITIALS = function (s) {
+  const p = s.replace('@', '').replace(/[._]/g, ' ').split(' ').filter(Boolean);
+  return ((p[0] || '?')[0] + (p[1] ? p[1][0] : (p[0][1] || ''))).toUpperCase();
+};
+const ORD = function (n) { return n + (['TH','ST','ND','RD'][n % 100 > 10 && n % 100 < 14 ? 0 : Math.min(n % 10, 4)] || 'TH'); };
+const uniq = function (k) { return GRAVES.map(function (g) { return g[k]; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(); };
+const RACES = uniq('race'), SUBS = uniq('sub');
+
+class Component extends DCLogic {
+  state = { stat: null, race: null, sub: null, sheet: null, open: null, mine: false };
+
+  statId() { return this.state.stat || this.props.stat || LEGACY[this.props.board] || 'deep'; }
+  raceId() { return this.state.race || this.props.race || 'any'; }
+  subId() { return this.state.sub || this.props.sub || 'any'; }
+  compete() { return this.props.compete !== false && this.props.compete !== 'false'; }
+  board() { return this.compete() && !this.state.mine; }
+  base() { return this.board() ? GRAVES.slice() : GRAVES.filter(function (g) { return g.you; }); }
+  match(r, s) {
+    return this.base().filter(function (g) { return (r === 'any' || g.race === r) && (s === 'any' || g.sub === s); });
+  }
+
+  renderVals() {
+    const self = this, compete = this.board(), canLeave = this.compete() && this.state.mine;
+    const st = STATS.filter(function (x) { return x.id === self.statId(); })[0] || STATS[0];
+    const race = this.raceId(), sub = this.subId();
+    const all = this.match(race, sub).sort(st.sort);
+    let rows = all.slice(0, TOP);
+    if (compete && all.length > TOP && !rows.some(function (g) { return g.you; })) {
+      const mine = all.filter(function (g) { return g.you; })[0];
+      if (mine) rows = rows.concat([mine]);
+    }
+    const mineIdx = all.findIndex(function (g) { return g.you; });
+    const me = this.props.handle || '@lanternjaw';
+    const close = function () { self.setState({ sheet: null }); };
+
+    const pickBox = function (active, grow) {
+      return { flex: grow, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 8px 7px', cursor: 'pointer',
+        background: '#14110c', boxShadow: 'inset 0 0 0 ' + (active ? '2px #6b5c3c' : '1px #2c2519') };
+    };
+    const pickVal = function (active, col) {
+      return { fontFamily: "'Press Start 2P'", fontSize: 7, lineHeight: 1.4, color: col || (active ? '#e6ddc6' : '#8e8369'),
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
+    };
+    const opt = function (key, label, subTxt, n, on, pick, col) {
+      return { key: key, label: label, sub: subTxt, n: n, onClick: function () { pick(); close(); },
+        row: { display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', minHeight: 44, boxSizing: 'border-box', cursor: 'pointer',
+          background: on ? '#221d13' : 'transparent', boxShadow: 'inset 0 -1px 0 #241f16' + (on ? ', inset 3px 0 0 ' + (col || '#e8c97a') : '') },
+        mark: { fontSize: 10, flex: 'none', width: 12, textAlign: 'center', color: on ? (col || '#e8c97a') : '#3a3226' },
+        labelStyle: { fontFamily: "'Press Start 2P'", fontSize: 7.5, lineHeight: 1.5, color: n === 0 ? '#5a5242' : (on ? '#e6ddc6' : '#c9bda0') },
+        nStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 14, flex: 'none', color: n === 0 ? '#4a4032' : '#8e8369' } };
+    };
+
+    let sheet = { title: '', opts: [] };
+    if (this.state.sheet === 'stat') sheet = { title: 'RANK BY', opts: STATS.map(function (x) {
+      return opt(x.id, x.label, x.sub, '', x.id === st.id, function () { self.setState({ stat: x.id, open: null }); }, x.col); }) };
+    if (this.state.sheet === 'race') sheet = { title: 'RACE', opts: ['any'].concat(RACES).map(function (r) {
+      return opt(r, r === 'any' ? 'ANY RACE' : r.toUpperCase(), r === 'any' ? 'Every race' : (sub === 'any' ? 'Any sub-class' : 'as ' + sub), self.match(r, sub).length, r === race,
+        function () { self.setState({ race: r, open: null }); }); }) };
+    if (this.state.sheet === 'sub') sheet = { title: 'SUB-CLASS', opts: ['any'].concat(SUBS).map(function (s) {
+      const cls = s === 'any' ? '' : GRAVES.filter(function (g) { return g.sub === s; })[0].cls;
+      return opt(s, s === 'any' ? 'ANY SUB-CLASS' : s.toUpperCase(), s === 'any' ? 'Every sub-class' : cls + (race === 'any' ? '' : ' · ' + race), self.match(race, s).length, s === sub,
+        function () { self.setState({ sub: s, open: null }); }); }) };
+
+    const lineName = (race === 'any' ? 'any race' : race) + ', ' + (sub === 'any' ? 'any sub-class' : sub);
+
+    return {
+      title: compete ? 'LEADERBOARD' : 'YOUR DEAD',
+      scopeLine: compete ? 'Everyone’s dead. Top ten shown.' : (canLeave ? 'Only your heroes. Nobody else’s business.' : 'Compete is off. Only your heroes.'),
+      interred: compete ? GRAVES.filter(function (g) { return g.you; }).length : (canLeave ? GRAVES.length : all.length),
+      interredLabel: compete ? 'YOURS ›' : (canLeave ? 'EVERYONE ›' : 'INTERRED'),
+      openMine: function () { if (compete) self.setState({ mine: true, open: null, sheet: null }); else if (canLeave) self.setState({ mine: false, open: null, sheet: null }); },
+      interredBox: { flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', gap: 2,
+        minHeight: 44, margin: '-6px -8px -6px 0', padding: '0 8px', boxSizing: 'border-box', cursor: compete || canLeave ? 'pointer' : 'default',
+        boxShadow: compete || canLeave ? 'inset 0 0 0 2px #4a4032' : 'none', background: compete || canLeave ? '#14110c' : 'transparent' },
+      hasBack: canLeave || typeof this.props.onBack === 'function',
+      onBack: function () { if (canLeave) { self.setState({ mine: false, open: null }); return; } if (self.props.onBack) self.props.onBack(); },
+      pickers: [
+        { key: 'stat', label: 'RANK BY', value: st.label, onClick: function () { self.setState({ sheet: 'stat' }); }, box: pickBox(true, '1 1 0'), valStyle: pickVal(true, st.col) },
+        { key: 'race', label: 'RACE', value: race === 'any' ? 'ANY' : race.toUpperCase(), onClick: function () { self.setState({ sheet: 'race' }); }, box: pickBox(race !== 'any', '1.25 1 0'), valStyle: pickVal(race !== 'any') },
+        { key: 'sub', label: 'SUB-CLASS', value: sub === 'any' ? 'ANY' : sub.toUpperCase(), onClick: function () { self.setState({ sheet: 'sub' }); }, box: pickBox(sub !== 'any', '1.45 1 0'), valStyle: pickVal(sub !== 'any') },
+      ],
+      isEmpty: all.length === 0,
+      emptyTitle: 'NOBODY YET',
+      emptyNote: (compete ? 'Nobody has died as ' : 'You haven’t lost a hero as ') + lineName + '.',
+      clearPick: function () { self.setState({ race: 'any', sub: 'any', open: null }); },
+      rows: rows.map(function (g) {
+        const i = all.indexOf(g), top = i === 0, open = self.state.open === g.name;
+        const you = compete && !!g.you;
+        const val = st.disp ? st.disp(g) : String(st.val(g));
+        const ident = compete ? g.user : g.name;
+        return { key: g.name, rank: i + 1, open: open, divider: i >= TOP,
+          handle: ident, initials: INITIALS(compete ? g.user : g.name.replace(/ /g, '.')), av: AVATAR(ident, you),
+          tag: you ? 'YOU' : '',
+          tagStyle: { flex: 'none', fontFamily: "'Press Start 2P'", fontSize: 6, lineHeight: 1.4, color: '#14110c', background: you ? '#e8c97a' : 'transparent', padding: you ? '3px 4px' : 0 },
+          handleStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: 13.5, lineHeight: 1.1, color: you ? '#e8c97a' : '#c9bda0',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+          line: (compete ? g.name + ' · ' : '') + g.race.toUpperCase() + ' ' + g.sub.toUpperCase() + ' · ' + g.lvl,
+          detail: g.cause + '. ' + g.epitaph,
+          stats: [['FLOOR', g.floor], ['DAYS', g.days], ['SQUARES', g.squares], ['KILLS', g.kills], ['EXP', g.skill], ['WILMST', g.wilmst.toLocaleString()]].map(function (s) {
+            return { key: s[0], k: s[0], v: s[1], box: { display: 'flex', gap: 5, alignItems: 'baseline', padding: '4px 7px', background: '#1b170f', boxShadow: 'inset 0 0 0 1px #2c2519' } }; }),
+          val: val, unit: st.unit,
+          onClick: function () { self.setState({ open: open ? null : g.name }); },
+          row: { display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 14px 11px', cursor: 'pointer',
+            background: you ? '#1d1810' : (top ? '#191509' : 'transparent'),
+            boxShadow: 'inset 0 -1px 0 #241f16' + (you ? ', inset 3px 0 0 #e8c97a' : (top ? ', inset 3px 0 0 ' + st.col : '')) },
+          rankStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: top ? 20 : 16, lineHeight: 1, color: top ? st.col : (i < 3 ? '#c9bda0' : '#8e8369') },
+          valStyle: { fontFamily: "'Courier Prime',monospace", fontWeight: 700, fontSize: val.length > 5 ? 16 : (top ? 22 : 19), lineHeight: 1, whiteSpace: 'nowrap', color: top ? st.col : '#e6ddc6' } };
+      }),
+      hasStanding: compete && all.length > 0,
+      standing: mineIdx >= 0
+        ? { place: ORD(mineIdx + 1), note: me + '’s best, of ' + all.length + ' interred as ' + lineName + '.' }
+        : { place: '—', note: 'None of yours on this board yet.' },
+      sheetOpen: !!this.state.sheet, sheet: sheet, closeSheet: close,
+      stop: function (e) { e.stopPropagation(); },
+    };
+  }
+}
+</script>
+</body>
+</html>

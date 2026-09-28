@@ -85,15 +85,50 @@
 - ✓ **Gear screen UX redo** — v1.9 (Phases 62–63): slim AR/WILMST header, five fixed WORN rows, bag meter + tagged cards, per-type consumables, ALSO ON YOU, and one bottom action sheet for every equip/swap/unequip/use/drop (engine-true reasons, combat greying, back/TalkBack/reduced motion). Device batch `docs/UAT-v1.9.md`: 3/24 walked
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
+- [ ] **Our own leaderboards** — v2.2 (Phases 82–86): the DAYS farming check, a Firebase run table with a rolled @handle, the v3 Leaderboards panel (everyone or just yours), Play Games removed entirely, and the compliance close
 
 ### Out of Scope
 
 - **iOS / Apple App Store** — deliberately out of scope. Android/Google Play only. Avoids the Apple Developer account, Mac/Xcode toolchain, and Apple's review process. May be reconsidered post-launch, but the tech path should not be compromised to accommodate it now.
 - **Networked multiplayer / "play with friends"** — still post-launch (v2). The *party* layer is now IN scope and shipped (Joiners, Phases 7–11) as its single-player foundation; only the network/relay layer stays out.
-- **Accounts, logins, cloud save, servers** — go simple. Platform identity arrives in v2.0 as opt-in Google Play Games sign-in for leaderboards only. Still out: our own accounts or login forms, PGS cloud saves, and any server of our own. v2.1 adds one user-initiated path off the device: a bug report the player chooses to send goes to Firebase Firestore (Google-hosted, create-only rules) and becomes a public GitHub issue; nothing else leaves the device.
+- **Accounts, logins, cloud save** — go simple. Platform identity arrived in v2.0 as opt-in Google Play Games sign-in for leaderboards only; v2.2 removes Play Games entirely and hosts our own board on Firebase (Firestore plus anonymous auth over REST, a rolled @handle, no login form). Still out: accounts or login forms, cloud saves, friends lists and chat. Off the device go only a bug report the player chooses to send (v2.1) and, with Compete ON, each finished run with its handle (v2.2).
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
+
+## Current Milestone: v2.2 Our Own Leaderboards (started 2026-09-28)
+
+Promoted from backlog 999.13 by the user on 2026-09-28 and run by `/gsd-autonomous`.
+
+**Goal:** Replace Google Play Games with our own Firebase-hosted leaderboard and the v3 Leaderboards design: one board of everyone's dead, or just yours, so the global board stops being a ghost town.
+
+**Target features:**
+- **DAYS farming check** (user note, 2026-09-28): measure how many DAYS a hero can bank by never leaving floor 1. If starvation doesn't end it below an honest deep run, the DAYS board gets a rule that stops it.
+- **Our board server on Firebase**, in the same Spark project as bug reports (`delve-die-repeat-6ba5f`):
+  - one Firestore run table, created only by the run's owner and publicly readable in bounded pages;
+  - composite indexes for the four stats, filtered by race and sub-class;
+  - an anonymous Firebase identity over REST (no SDK) with a rolled, family-friendly @handle;
+  - a durable offline submission queue, an admin/moderation script and an ops runbook.
+- **Leaderboards panel v3, built to the mock** (`design/Mazeworld Leaderboards v3.dc.html` and `design/Mazeworld Boards Panel v3.dc.html`):
+  - LEADERBOARD (everyone's dead, top ten) or YOUR DEAD (just yours), switched by the YOURS › / EVERYONE › box;
+  - RANK BY (DEPTH, DAYS, KILLS, WILMST), RACE and SUB-CLASS pickers with bottom sheets and counts;
+  - rows with rank, avatar, handle, YOU tag, run line and value, which tap open to the cause, the epitaph and six stat chips;
+  - your best pinned under NOT IN THE TOP TEN, a standing card, and NOBODY YET with CLEAR FILTERS;
+  - it opens from the DEAD tab and from the title's VIEW THE DEAD.
+- **Play Games removed entirely**: the plugin, sign-in, APP_ID, provider, PGS queue, score tags and board IDs go. The ☰ account rows and the title chip become Compete plus your handle. Every Compete-ON death is submitted to our server, and "you placed X" reads from it.
+- **Compliance close**: Data safety and privacy text for our server's data, the Play Console Play Games cleanup, the runbook and the batched Pixel 7 checklist.
+
+**Key context:**
+- **Decided (user, 2026-09-28):**
+  - There is no FRIENDS scope. It is everyone or just yours, as the mock shows.
+  - Play Games is removed entirely.
+  - Identity is a rolled @handle over an anonymous Firebase id.
+  - Research runs only for the server phase.
+- **The mock is the UX and visual spec only**, the same stance as every earlier import. Its iOS frame is preview chrome, and its toy data maps to shipped canon: squares → `steps`, WILMST → `gold`, EXP → `sp`, Roman level. The house rules win: PNG icons, the rail as the one feedback surface, tap-to-move, HP never WP.
+- **Offline:** Compete OFF means zero network calls, and the panel shows YOUR DEAD only; the whole YOUR DEAD view works in airplane mode. Compete stays ON by default (the v2.0 ruling).
+- **No new client SDK.** Firestore and Firebase Auth are reached with plain `fetch` against their REST APIs, as bug reports are (Phase 79.3). The API key is a public identifier.
+- **Engine untouched:** this is shell, server and tooling work, with zero parity fixtures. The DAYS check is a one-off measurement, not a balance run; the engine doesn't change this milestone, so it measures the final rules.
+- **Backlog:** this supersedes 999.11 (per-sub-class boards and a global LINEAGE become RACE and SUB-CLASS filters over one run table). 999.14 (our own friends list) is not planned.
 
 ## Last Milestone: v2.1 Bug Fixes (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; device UAT spread over the user's play sessions)
 
@@ -313,7 +348,7 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 ## Constraints
 
 - **Platforms**: Must ship to **Google Play (Android only)**. Native packaging, Play App Signing, store entry and internal-testing track are DONE (targetSdk 36, minSdk 24); remaining compliance = Data Safety form, IARC, privacy policy, production listing. iOS is explicitly excluded.
-- **Offline**: v1 must run with **no network**, no accounts, no backend. **v2.0 amendment (user, 2026-09-23; in effect from v2.0):** opt-in Google Play Games Services v2 sign-in adds global/friends leaderboards. Signed out, the game stays fully offline with zero network calls. There is still no backend of our own and no account form (PGS uses the device's Google account).
+- **Offline**: v1 must run with **no network**, no accounts, no backend. **v2.0 amendment (user, 2026-09-23; in effect from v2.0):** opt-in Google Play Games Services v2 sign-in adds global/friends leaderboards. Signed out, the game stays fully offline with zero network calls. There is still no backend of our own and no account form (PGS uses the device's Google account). **v2.2 amendment (user, 2026-09-28):** Play Games is removed. Compete-ON players send each finished run to our own Firebase board (Firestore and anonymous auth over REST, no SDK); Compete OFF makes zero network calls.
 - **Monetization**: **Paid upfront**, no ads/IAP — keep the build free of monetization SDKs.
 - **Fidelity**: The prototype's rules are **canon**; deviations must be deliberate design decisions, not accidental regressions.
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
@@ -449,4 +484,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-28 after the v2.1 Bug Fixes milestone*
+*Last updated: 2026-09-28 at the start of the v2.2 Our Own Leaderboards milestone*

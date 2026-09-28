@@ -1,37 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: Bug Fixes
-status: Awaiting next milestone
-stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-28T20:15:30.501Z"
+milestone: v2.2
+milestone_name: Our Own Leaderboards
+status: planning
+last_updated: "2026-09-28T20:35:06.946Z"
 last_activity: 2026-09-28
-last_activity_desc: Milestone v2.1 completed and archived
 progress:
-  total_phases: 16
-  completed_phases: 16
-  total_plans: 122
-  completed_plans: 122
-  percent: 100
-current_phase: 79.2
-current_phase_name: "floors 1-12 harder: fair-bot p50 death ~3-4"
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-28 — v2.1 Bug Fixes shipped as Play 2.1.0 / vc11 to closed testing and archived; open Pixel 7 UAT batches: v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards started, promoted from backlog 999.13; v2.1 shipped as Play 2.1.0 / vc11; open Pixel 7 UAT batches: v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Planning the next milestone (`/gsd-new-milestone`)
+**Current focus:** v2.2 Our Own Leaderboards — defining requirements and the roadmap (Phases 82–86)
 
 ## Current Position
 
-Phase: Milestone v2.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-28 — Milestone v2.1 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-28 — Milestone v2.2 started
 
 ## Ground Truth (durable facts every session needs)
 
