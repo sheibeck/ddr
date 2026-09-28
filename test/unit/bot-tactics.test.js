@@ -354,8 +354,18 @@ test("playRun: a forced Fighter/Knight cell uses at least one ability and never 
   // seed 4 still stalls (depth 5), seed 7 dies naturally (depth 1, 99
   // actions, 5 abilityUsed) and is the smallest untaken seed that does;
   // seeds 1, 2, 3 and 6 still die naturally.
+  //
+  // Seed 3 swapped for seed 4 (quick 260928-nrf, user ruling 2026-09-28:
+  // Kata and Feint roll to hit with three extra faces). Bisected per rule
+  // commit: only the Kata/Feint change moves seed 3. At bot step 385 a
+  // Joiner's Feint rolls 12 against 14 or better and misses, where the old
+  // auto-hit landed; the run plays out differently from there and now
+  // outlives the 2000-action cap (alive on depth 6 at action 2000: a longer
+  // survival, not a loop). Re-measured live under identity dials (never hand-typed): seed
+  // 4 now dies naturally (depth 10, 910 actions, 41 abilityUsed) and is the
+  // smallest untaken seed that does; seeds 1, 2, 6 and 7 still die naturally.
   let sawAbility = false;
-  for (const seed of [1, 2, 3, 6, 7]) {
+  for (const seed of [1, 2, 4, 6, 7]) {
     const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 2000, force: { cls: "Fighter", sub: "Knight", race: "Human" } }, (events) => {
       if (events.some((e) => e.type === "abilityUsed")) sawAbility = true;
     });

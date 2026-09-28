@@ -172,6 +172,7 @@ export const EVENT_CLIP_GROUP = Object.freeze({
   regenerationCast: "spell",
   deathCast: "spell",
   heroResisted: "resist",
+  memberResisted: "resist", // quick 260928-nrf: a Joiner's resist sounds like the hero's
   spellResisted: "resist",
   darknessResisted: "resist",
   healed: "heal",

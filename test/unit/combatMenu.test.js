@@ -116,7 +116,7 @@ test("Fighter (Soldier): the default grid — STRIKE sub-line, ABILITIES fallbac
     { id: "none", label: COMBAT_MENU_COPY.noAbilities, cost: "", desc: COMBAT_MENU_COPY.noAbilitiesDesc, enabled: false, dispatch: null },
   ]);
 
-  // Reused below: a Fighter's flee cost has no Thief +5.
+  // Reused below: a Fighter's flee cost has no Thief bonus.
   // Phase 74 (ROLL-02): the honest winning range on the d20 (need 14, no
   // bonus, per engine/derived.js#fleeBreakdown).
   assert.equal(vm.submenus.social.rows[0].cost, "14–20 (d20)");
@@ -364,14 +364,15 @@ test("RULES-04 scope: the combat SPELLS submenu hides Lightning (above level 1) 
 
 // ─── Thief: SOCIAL flee cost bonus, WITHDRAW, PARLEY ───────────────────────
 
-test("Thief (Pilfer): FLEE carries the +5 Thief bonus; a tracked round-1 combat becomes a clean WITHDRAW", () => {
-  // Phase 74 (ROLL-02/ROLL-03): the honest winning range (need 14, +5 Thief
-  // bonus -> atLeast 9) and the desc's Thief +5 modifier, both through
-  // fleeOdds(c) (src/browser/rollOdds.js).
+test("Thief (Pilfer): FLEE carries the +3 Thief bonus; a tracked round-1 combat becomes a clean WITHDRAW", () => {
+  // Phase 74 (ROLL-02/ROLL-03): the honest winning range (need 14, Thief
+  // bonus) and the desc's Thief modifier, both through fleeOdds(c)
+  // (src/browser/rollOdds.js). Quick 260928-nrf (user ruling 2026-09-28):
+  // the bonus is +3 (canon +5), so atLeast is 11 (was 9).
   const c = { cls: "Thief", sub: "Pilfer" };
   const normal = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
   assert.deepEqual(normal.submenus.social.rows[0], {
-    id: "flee", label: "FLEE", cost: "9–20 (d20)", desc: `${COMBAT_MENU_COPY.fleeDesc} (Thief +5)`, enabled: true, dispatch: { type: "flee" },
+    id: "flee", label: "FLEE", cost: "11–20 (d20)", desc: `${COMBAT_MENU_COPY.fleeDesc} (Thief +3)`, enabled: true, dispatch: { type: "flee" },
   });
 
   const withdrawState = fixedState({ c, combat: fixedCombat([], { tracked: true, round: 1 }) });

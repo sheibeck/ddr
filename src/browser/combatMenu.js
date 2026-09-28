@@ -19,7 +19,7 @@ import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFo
 import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
-import { abilityRoundsLeft } from "../../engine/abilities.js";
+import { abilityRoundsLeft, abilityUnavailableReason } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
 
@@ -48,6 +48,10 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // (`cd: "fight"`) says so ready, and reads spent once used.
   abilityReadyOnce: "READY · ONCE PER FIGHT",
   abilityUsedUp: "ONCE PER FIGHT · SPENT",
+  // Quick 260928-nrf (user ruling 2026-09-28): Sweep with fewer than two
+  // living foes (engine/abilities.js#abilityUnavailableReason, the same rule
+  // the engine refuses on) reads disabled with its reason.
+  abilityTooFewFoes: "NEEDS TWO OR MORE FOES",
   abilityRound: "1 ROUND",
   abilityRounds: "{n} ROUNDS",
   abilitiesSub: "{ready}/{n} READY",
@@ -120,8 +124,9 @@ export const COMBAT_MENU_COPY = Object.freeze({
 });
 
 /**
- * abilityRows(c) — Phase 38 (ABIL-01/04): one row per `c.abilities` catalog
- * id, in `c.abilities` order. Every row is `enabled: true` — CONTEXT's
+ * abilityRows(c, state) — Phase 38 (ABIL-01/04): one row per `c.abilities` catalog
+ * id, in `c.abilities` order. Every row is `enabled: true` (except a ready
+ * ability the fight refuses, below) — CONTEXT's
  * "unavailable rows render disabled-styled but stay tappable" rule applies
  * to SPELLS, not this branch: a tap on cooldown dispatches `useAbility`
  * exactly like a ready one, and the engine's own `abilityRefused { reason:
@@ -130,18 +135,28 @@ export const COMBAT_MENU_COPY = Object.freeze({
  * abilityReadyOnce for a ready `cd: "fight"` ability, quick 260927-opf) /
  * "N ROUND(S)" / the abilityUsedUp copy (a `cd: "fight"` ability that is not
  * ready, regardless of its remaining phase; the engine refuses it `spent`).
+ * Quick 260928-nrf (user ruling 2026-09-28): a ready ability
+ * engine/abilities.js#abilityUnavailableReason refuses in this fight (Sweep
+ * with fewer than two living foes) reads abilityTooFewFoes and `enabled:
+ * false` — still dispatchable, so a tap lands the engine's refusal line.
  * An id absent from the catalog
  * (a tampered save) is silently dropped. Pure, no rng.
  */
-function abilityRows(c) {
+function abilityRows(c, state) {
   return (c.abilities || [])
     .map((key) => {
       const meta = ABILITY_BY_ID[key];
       if (!meta) return null;
       const id = `ability:${key}`;
       const ready = isReady(c, id);
+      // Quick 260928-nrf: a ready ability the fight itself refuses (Sweep
+      // with one living foe) shows its reason and reads disabled; it stays
+      // dispatchable, so a tap lands the engine's own refusal line.
+      const shortfall = ready ? abilityUnavailableReason(state, key) : null;
       let cost;
-      if (ready) {
+      if (shortfall === "tooFewFoes") {
+        cost = COMBAT_MENU_COPY.abilityTooFewFoes;
+      } else if (ready) {
         cost = meta.cd === "fight" ? COMBAT_MENU_COPY.abilityReadyOnce : COMBAT_MENU_COPY.abilityReady;
       } else if (meta.cd === "fight") {
         cost = COMBAT_MENU_COPY.abilityUsedUp;
@@ -154,7 +169,7 @@ function abilityRows(c) {
         label: meta.name.toUpperCase(),
         cost,
         desc: meta.txt || "",
-        enabled: true,
+        enabled: !shortfall,
         dispatch: { type: "useAbility", key },
       };
     })
@@ -307,14 +322,14 @@ function combatMenuViewModelUnlocked(state) {
         },
         // Phase 38 (ABIL-01): the Bard keeps Sing FIRST (CONTEXT); because a
         // Bard is a Fighter it also rolls abilities, so its own rows follow.
-        ...abilityRows(c),
+        ...abilityRows(c, state),
       ],
     };
   } else if (Array.isArray(c.abilities) && c.abilities.length) {
     // Phase 38 (ABIL-01/03/04) — a melee (Fighter/Thief) c with at least one
     // rolled ability. An empty/absent c.abilities falls through to the
     // fallback branch below, byte-identical to before this phase.
-    const rows = abilityRows(c);
+    const rows = abilityRows(c, state);
     const readyCount = rows.filter((r) => r.cost === COMBAT_MENU_COPY.abilityReady || r.cost === COMBAT_MENU_COPY.abilityReadyOnce).length;
     secondAction = {
       key: "abilities",

@@ -406,9 +406,11 @@ test("ordering: a Troll Guard lists Guard before size", () => {
   ]);
 });
 
-test("ordering: a Troll Acrobat reads 4 (the Acrobat override, then size)", () => {
+// Quick 260928-nrf (user ruling 2026-09-28): the Acrobat override is 4 (was
+// 3), then the Troll's size +1.
+test("ordering: a Troll Acrobat reads 5 (the Acrobat override, then size)", () => {
   const state = needState("Troll", { sub: "Acrobat" });
-  assert.equal(foeToHitVs(state), 4);
+  assert.equal(foeToHitVs(state), 5);
 });
 
 test("ordering: a Troll with Smoke, Mirror Self, or a live invis item reads 1 — the size term never survives an override", () => {

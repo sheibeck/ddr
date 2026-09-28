@@ -81,7 +81,7 @@ export const SUB_NOTE = {
   "Cloaker": "You can vanish for free, right up until you land your first blow — after that you flee like everyone else, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
   "Ninja": "You never speak — literally; no fluency, no encounter, ever talks you out of a fight. Your opening strike lands for maximum damage and after that your top two faces open something up. The silence isn't a vow, it's a tactic.",
   "Con Artist": "You talk first, and any level-one foe declines to fight you two times in three. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
-  "Acrobat": "Nothing lays a hand on you except on its top three faces, and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
+  "Acrobat": "Nothing lays a hand on you except on its top four faces, and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
 
   "Wizard": "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.",
   "Warlock": "Evil, and productive with it — a potion copied every day and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",

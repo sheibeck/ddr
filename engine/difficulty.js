@@ -376,7 +376,8 @@ export const DIALS = deepFreeze({
   /** CLASS_MITIGATION — 54-06's per-class mitigation rows; `Fighter.hpMul`
    * is already read by `heroMaxWpFor` below (identity 1, a no-op multiplier
    * on top of HERO_HP_SCALE). `Thief.fleeBonus` is seeded from
-   * content/flee.js's own canon `FLEE_THIEF_BONUS` (5) so this table is
+   * content/flee.js's own `FLEE_THIEF_BONUS` (3 since quick 260928-nrf;
+   * canon 5) so this table is
    * never out of sync with the existing flee-modifier table it will one day
    * replace.
    * held (available) — Phase 54 fit did not search this dial (USER RULING

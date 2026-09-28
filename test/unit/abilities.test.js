@@ -19,7 +19,7 @@ import assert from "node:assert/strict";
 
 import { useAbility, abilityRoundsLeft, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "../../engine/abilities.js";
 import { isReady, remaining, startEffect } from "../../engine/effects.js";
-import { abilityEffectActive, foeToHitVs, DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
+import { abilityEffectActive, foeToHitVs, DEATH_PANIC_THRESHOLD, strikeDie, toHit } from "../../engine/derived.js";
 import { endCombat, foeTurn, pickFoeTarget, applyFoeDamageToPlayer, flee } from "../../engine/combat.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
@@ -316,23 +316,31 @@ test("timers: secondWind is a once-a-fight cooldown, cleared unconditionally by 
 //    foeTurn/pickFoeTarget/applyFoeDamageToPlayer/flee hook)
 // ---------------------------------------------------------------------------
 
-test("kata: autoHit + level bonus damage, via tag", () => {
-  const state = fixedState({ c: fixedFighter({ abilities: ["kata"], level: 3 }) });
-  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
-  const events = useAbility(state, "kata", fakeRng([20, 4, ...FILL]), []); // roll 20 would normally miss
-  const struck = events.find((e) => e.type === "struck");
-  assert.ok(struck);
-  assert.equal(struck.via, "kata");
-});
-
-test("feint: autoHit + level bonus damage, via tag", () => {
-  const state = fixedState({ c: fixedFighter({ abilities: ["feint"], cls: "Thief", sub: "Pilfer", level: 2 }) });
-  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
-  const events = useAbility(state, "feint", fakeRng([20, 4, ...FILL]), []);
-  const struck = events.find((e) => e.type === "struck");
-  assert.ok(struck);
-  assert.equal(struck.via, "feint");
-});
+// Quick 260928-nrf (user ruling 2026-09-28, "Kata and Feint roll to hit"):
+// no auto-hit any more; three more winning faces (needShift +3) on the strike
+// roll. The shifted need's lowest winning face lands, one below it misses;
+// both keep the level bonus damage and the via tag. (Before the ruling a raw
+// 20, the worst face, still landed.)
+for (const [key, cOver] of [
+  ["kata", { abilities: ["kata"], level: 3 }],
+  ["feint", { abilities: ["feint"], cls: "Thief", sub: "Pilfer", level: 2 }],
+]) {
+  test(`${key}: +3 winning faces + level bonus damage, via tag; one face below the shifted need misses`, () => {
+    const state = fixedState({ c: fixedFighter(cOver) });
+    state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
+    const dieN = strikeDie(state.c);
+    const faces = Math.min(dieN, toHit(state) + 3);
+    const atLeast = dieN + 1 - faces;
+    const events = useAbility(state, key, fakeRng([dieN + 1 - atLeast, 4, ...FILL]), []); // raw face -> roll-high atLeast
+    const struck = events.find((e) => e.type === "struck");
+    assert.ok(struck, JSON.stringify(events.map((e) => e.type)));
+    assert.equal(struck.via, key);
+    const miss = fixedState({ c: fixedFighter(cOver) });
+    miss.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
+    const missed = useAbility(miss, key, fakeRng([dieN + 2 - atLeast, ...FILL]), []).find((e) => e.type === "strikeMissed");
+    assert.ok(missed && missed.via === key, "one face below the shifted need is an ordinary miss");
+  });
+}
 
 test("deathTouch: a landed blow on a foe under 15 hp finishes it (a miss would only burn the cooldown)", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["deathTouch"], sub: "Knight" }) });
@@ -499,14 +507,18 @@ test("sweep: every live foe takes ceil(weaponDamage/2); a lethal sweep kills and
   assert.equal(state.combat, null);
 });
 
+// Quick 260928-nrf (user ruling 2026-09-28, "Sweep needs 2+ foes"): a
+// second, unarmoured foe stands beside the armoured one (a lone foe refuses).
 test("sweep: a foe with sp.ar draws its own armour d20 (damageFoe's own gate, unchanged)", () => {
   const foeA = fixedFoe({ name: "A", wp: 999, maxWP: 999, sp: { ar: 5 } });
+  const foeB = fixedFoe({ name: "B", wp: 999, maxWP: 999 });
   const state = fixedState({ c: fixedFighter({ abilities: ["sweep"], wp: 999, maxWP: 999 }) });
-  state.combat = fixedCombat([foeA]);
-  const rng = countingRng(fakeRng([6, 1, ...FILL])); // weaponDamage die, then the armour-soak d20 (roll 1 <= ar 5 -> soaked)
+  state.combat = fixedCombat([foeA, foeB]);
+  const rng = countingRng(fakeRng([6, 1, ...FILL])); // weaponDamage die, then A's armour-soak d20 (roll 1 <= ar 5 -> soaked)
   const events = useAbility(state, "sweep", rng, []);
   assert.ok(events.some((e) => e.type === "foeArmorSoaked"));
-  assert.equal(events.some((e) => e.type === "sweptFoe"), false, "a soaked hit never pushes sweptFoe");
+  assert.equal(events.some((e) => e.type === "sweptFoe" && e.target === "A"), false, "a soaked hit never pushes sweptFoe");
+  assert.ok(events.some((e) => e.type === "sweptFoe" && e.target === "B"), "the unarmoured foe still takes it");
 });
 
 test("brace: sets C.braced and pushes braced", () => {

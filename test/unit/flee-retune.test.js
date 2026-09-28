@@ -94,9 +94,11 @@ function fixedCombat(foes, overrides = {}) {
 
 // --- 1. Table shape ---------------------------------------------------------
 
-test("content/flee.js: FLEE_NEED is 14, FLEE_THIEF_BONUS is 5", () => {
+// Quick 260928-nrf (user ruling 2026-09-28, "Thief flee +5 -> +3"): the
+// Thief's flee bonus is +3 (canon +5), so every Thief row below moves by 2.
+test("content/flee.js: FLEE_NEED is 14, FLEE_THIEF_BONUS is 3", () => {
   assert.equal(FLEE_NEED, 14);
-  assert.equal(FLEE_THIEF_BONUS, 5);
+  assert.equal(FLEE_THIEF_BONUS, 3);
 });
 
 test("content/flee.js: every FLEE_CLASS_MOD/FLEE_RACE_MOD value is an integer in [-2, 2]; every RACES/CLASSES key has an entry", () => {
@@ -140,13 +142,13 @@ test("fleeBreakdown: FLEE_NEED_MOD identity (0) leaves need at FLEE_NEED; +3 rai
 test("fleeBreakdown: worked rows match the plan's table exactly", () => {
   const rows = [
     [{ cls: "Fighter", race: "Human", armor: "Nothing" }, 14, 0],
-    [{ cls: "Thief", race: "Human", armor: "Leather" }, 14, 5],
-    [{ cls: "Thief", race: "Elven", armor: "Leather" }, 14, 6],
+    [{ cls: "Thief", race: "Human", armor: "Leather" }, 14, 3],
+    [{ cls: "Thief", race: "Elven", armor: "Leather" }, 14, 4],
     [{ cls: "Fighter", race: "Human", armor: "Plate" }, 14, -2],
     [{ cls: "Magic User", race: "Human", armor: "Cloth" }, 14, -1],
     [{ cls: "Fighter", race: "Troll", armor: "Plate" }, 14, -3],
     [{ cls: "Fighter", race: "Dwarven", armor: "Mail" }, 14, -2],
-    [{ cls: "Thief", race: "Fridgian", armor: "Nothing" }, 14, 4],
+    [{ cls: "Thief", race: "Fridgian", armor: "Nothing" }, 14, 2],
   ];
   for (const [c, need, bonus] of rows) {
     const b = fleeBreakdown(c);
@@ -172,7 +174,7 @@ test("fleeBreakdown: a Human Fighter in no armor carries zero mods; a Troll Figh
 
   const elvenThief = fleeBreakdown(fixedFighter({ cls: "Thief", race: "Elven", armor: "Leather" }));
   assert.deepStrictEqual(elvenThief.mods, [
-    { name: "Thief", delta: 5 },
+    { name: "Thief", delta: 3 },
     { name: "Elven", delta: 1 },
   ]);
 });
@@ -192,10 +194,10 @@ function countFled(c) {
 
 test("exhaustive d20 enumeration: base rates match the CONTEXT anchors and the plan's worked table", () => {
   assert.equal(countFled(fixedFighter({ armor: "Nothing" })), 7, "Human Fighter no armor: 7/20 (35%)");
-  assert.equal(countFled(fixedFighter({ cls: "Thief", armor: "Leather" })), 12, "Human Thief Leather: 12/20 (60%)");
+  assert.equal(countFled(fixedFighter({ cls: "Thief", armor: "Leather" })), 10, "Human Thief Leather: 10/20 (50%; 60% at canon +5)");
   assert.equal(countFled(fixedFighter({ armor: "Plate" })), 5, "Human Fighter Plate: 5/20 (25%)");
   assert.equal(countFled(fixedFighter({ cls: "Magic User", armor: "Cloth" })), 6, "Human Magic User Cloth: 6/20 (30%)");
-  assert.equal(countFled(fixedFighter({ cls: "Thief", race: "Elven", armor: "Leather" })), 13, "Elven Thief Leather: 13/20 (65%)");
+  assert.equal(countFled(fixedFighter({ cls: "Thief", race: "Elven", armor: "Leather" })), 11, "Elven Thief Leather: 11/20 (55%; 65% at canon +5)");
   // NOTE (deviation from the plan's own <behavior> bullet, which claimed
   // 3/20 — arithmetic error inconsistent with the plan's own Action A
   // table (Troll -1) and its Before/after table (need 17, 20%): FLEE_RACE_MOD.Troll
@@ -210,13 +212,14 @@ test("flee: the ordinary path pushes exactly one fleeRolled with exactly {type,r
   const state = fixedState({ c: fixedFighter({ cls: "Thief", race: "Elven", armor: "Leather" }) });
   state.combat = fixedCombat([fixedFoe()]);
   // Phase 73 (ROLL-05): flee is already roll-high — the raw d20 IS the
-  // roll, no mirror; 8 >= atLeast(14 - bonus(6) = 8) escapes.
-  const events = flee(state, fakeRng([8]), []);
+  // roll, no mirror; 10 >= atLeast(14 - bonus(4) = 10) escapes (quick
+  // 260928-nrf: Thief +3, was 8 vs 14 - 6 at canon +5).
+  const events = flee(state, fakeRng([10]), []);
   const rolledEvents = events.filter((e) => e.type === "fleeRolled");
   assert.equal(rolledEvents.length, 1);
   const rolled = rolledEvents[0];
   assert.deepStrictEqual(Object.keys(rolled).sort(), ["atLeast", "dieN", "mods", "roll", "type"].sort());
-  assert.equal(rolled.roll, 8);
+  assert.equal(rolled.roll, 10);
   assert.equal(rolled.dieN, 20);
   assert.equal(rolled.atLeast, 14 - fleeBreakdown(state.c).bonus);
   assert.ok(!("total" in rolled), "the old total field is retired");

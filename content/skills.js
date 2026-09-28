@@ -24,7 +24,7 @@
 // must never break.
 
 export const FIGHTER_SKILLS = {
-  "Kata": { cost: 4, active: "kata", txt: "one perfect form: this strike cannot miss and adds your level in damage; once per fight" },
+  "Kata": { cost: 4, active: "kata", txt: "one perfect form: your die has three more faces that land this strike, and it adds your level in damage; once per fight" },
   "Stealth": { cost: 3, txt: "critical on your die's top two faces when you open a fight; never in plate" },
   "Death Touch": { cost: 4, active: "deathTouch", txt: "call it: your next landed blow doubles, and finishes anything under 15 hp; once per fight" },
   "Sidestep": { cost: 5, active: "sidestep", txt: "two rounds of not being where the blade is: every foe has two fewer faces that hit you" },
@@ -43,11 +43,11 @@ export const FIGHTER_SKILLS = {
   "Runes/Signs": { cost: 2, txt: "reads any scroll without fail; without it, a scroll is an intelligence roll that can backfire" },
   "Battle Roar": { cost: 4, active: "battleRoar", txt: "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side" },
   "Second Wind": { cost: 2, active: "secondWind", txt: "remember why you came: heal d8 + level" },
-  "Sweep": { cost: 2, active: "sweep", txt: "one wide arc: every living foe takes half damage" },
+  "Sweep": { cost: 2, active: "sweep", txt: "one wide arc: every living foe takes half damage; needs two or more foes" },
 };
 
 export const THIEF_SKILLS = {
-  "Feint": { cost: 5, active: "feint", txt: "look left, stab right: this strike cannot miss and adds your level in damage; once per fight" },
+  "Feint": { cost: 5, active: "feint", txt: "look left, stab right: your die has three more faces that land this strike, and it adds your level in damage; once per fight" },
   "Locks": { cost: 2, up: 1, txt: "6–10 on d10 to open a lock", txt2: "4–10 on d10 to open a lock" },
   "Sewing": { cost: 4, up: 2, txt: "patch any armour, d6 back, 4 times", txt2: "patch any armour, d6+3 back, 6 times" },
   "Night Vision": { cost: 3, txt: "darkness costs you nothing" },

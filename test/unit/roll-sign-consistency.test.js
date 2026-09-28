@@ -285,19 +285,20 @@ test("weapons: a heavy (need −2) and a light (need +1) weapon read the same to
 
 // ─── Scenario 7: flee ───────────────────────────────────────────────────────
 
-test("flee: a real Human Thief flee reads 'Thief +5' on the fleeRolled Oracle line, LINE_FOR.fleeRolled and the combat menu flee row", () => {
+// Quick 260928-nrf (user ruling 2026-09-28): the Thief's flee bonus is +3.
+test("flee: a real Human Thief flee reads 'Thief +3' on the fleeRolled Oracle line, LINE_FOR.fleeRolled and the combat menu flee row", () => {
   const driveState = fullHeroState(plainFoe(), { c: { cls: "Thief", sub: "Pilfer", weapon: "Dagger" } });
   const events = flee(driveState, fakeRng([20]), []);
   const e = events.find((ev) => ev.type === "fleeRolled");
   assert.ok(e, "expected a fleeRolled event");
-  assertModifier(EVENT_NARRATION.fleeRolled(e), "Thief +5", "Oracle");
-  assertModifier(LINE_FOR.fleeRolled(e).text, "Thief +5", "rail");
+  assertModifier(EVENT_NARRATION.fleeRolled(e), "Thief +3", "Oracle");
+  assertModifier(LINE_FOR.fleeRolled(e).text, "Thief +3", "rail");
 
   const menuState = fullHeroState(plainFoe(), { c: { cls: "Thief", sub: "Pilfer", weapon: "Dagger" } });
   const menu = combatMenuViewModel(menuState);
   const fleeRow = menu.submenus.social.rows.find((r) => r.id === "flee");
   assert.ok(fleeRow, "expected a FLEE row in the social submenu");
-  assertModifier(fleeRow.desc, "Thief +5", "combat menu flee row");
+  assertModifier(fleeRow.desc, "Thief +3", "combat menu flee row");
 });
 
 // ─── Scenario 8: heights ────────────────────────────────────────────────────

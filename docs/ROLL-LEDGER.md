@@ -83,7 +83,7 @@ One row per **CHECK site** — a die roll compared against a threshold that deci
 | 43 | movement.js affliction cure (L708) | d20 | hero | `<= 10 + (Hardiness?4:0)` | LOW | `[cure:hardiness]` | 32 | OK |
 | 44 | movement.js wandering wake (L785, ×8/hour) | d20 | n/a (bad for hero) | `<= wakeOn` | n/a | `[wake:bard]`, `[wake:wander-rate]` | 33 | OK |
 | 45 | movement.js d20===1 event (L950) | d20 | n/a | `=== 1` | n/a | none (flat; classified per interfaces "classify it" — a rare wandering/travel event gate) | — | OK / N/A (new since Phase 31) |
-| 46 | derived.js#resistRoll (L1429) | d20 | resistor (hero or foe) | `roll < intel`, gated `intel>=12` (quick 260928-hrs: now roll-high `roll >= 21 - resistFaces(intel)`, half-intel faces, no gate, both sides) | YES (resistor wants a LOW roll under intel — a roll-high-style "beat the stat" read) | `[resist:intel]`, `[resist:foe-intel]` (`[resist:intel-gate]` retired) | 34 | OK |
+| 46 | derived.js#resistRoll (L1429) | d20 | resistor (hero or foe) | `roll < intel`, gated `intel>=12` (quick 260928-hrs: now roll-high `roll >= 21 - resistFaces(intel)`, half-intel faces, no gate, both sides; quick 260928-nrf: Joiners too) | YES (resistor wants a LOW roll under intel — a roll-high-style "beat the stat" read) | `[resist:intel]`, `[resist:foe-intel]`, `[resist:member-intel]` (`[resist:intel-gate]` retired) | 34 | OK |
 | 47 | items.js lockpick wear (L250) | d12 | n/a (item-loss gate) | `=== 1` (gated `!hasPicks`) | n/a | none (flat) | — | OK / N/A (new since Phase 31) |
 | 48 | character.js#checkLevel Sorcerer spell-loss (L657) | d8 | n/a (chargen/level-up gate) | `=== 1` | n/a | none (flat) | — | OK / N/A (new since Phase 31; not a combat/dungeon check, included for CONTEXT's "every non-comment `rng.d(` call" completeness) |
 
@@ -185,6 +185,7 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 
 **Fixture outcome (F3):** `test/parity/FIXTURE-INVENTORY.md`'s "### Plan 07" section — measured moved set of **zero** (the complete parity-exposed bestiary surface, per `## Parity-exposed bestiary surface`, contains no Shadow; `test/parity/divergence-records.test.js`'s `ROLL-01 (Phase 72)` guard's part (e) proves this live). Also reachable in real gameplay — the AFTER bot readout's death-cause breakdown shows the Shadow's death share moving from 1 (0.5%) to 3 (1.5%) of 200 seeds, the one line plausibly touched by this fix (see `docs/DIFFICULTY-RETUNE.md`'s Phase 72 H2 Reading).
 | `[hero-strike:overhead-blow]` | hero-strike | Overhead Blow ability, `AS.needShift` | ability | a heavy telegraphed swing trades accuracy for damage | narrows the need | fewer top faces succeed | OK |
+| `[hero-strike:kata-feint]` | hero-strike | Kata and Feint, `AS.needShift: +3` (`KATA_FEINT_NEED_SHIFT`) | ability | quick 260928-nrf (user ruling 2026-09-28): "your die has three more faces that land this strike", replacing the old auto-hit | widens the need by three faces, capped at the die | more top faces succeed; a miss is still possible | OK (quick 260928-nrf) |
 | `[hero-strike:afraid]` | hero-strike | `C.afraid`, `afraidNeed` (last modifier, `-3`) | condition | a frightened hero swings worse | lowers the need by 3 (floored) | fewer top faces succeed | OK |
 | `[hero-strike:afraid-vs-untouchable]` | hero-strike | `magicOnly` + `afraid` | foe-trait + condition | Afraid "never revives an untouchable" target | a need-0 (magicOnly, no magic weapon) target stays at need 0 under Afraid — the floor never lifts a 0 to 1 | zero faces, unchanged | OK (clamp) |
 | `[hero-strike:floor-clamp]` | hero-strike | Overhead Blow + Afraid stacked | ability + condition | stacked penalties never erase a touchable target's last face | the floor keeps need ≥ 1 while the target is touchable | at least the single best face still succeeds | OK (clamp) |
@@ -216,7 +217,7 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 | Id | Site | Source | Kind | Claimed direction | Verified today | Phase 73 reading | Verdict |
 |---|---|---|---|---|---|---|---|
 | `[foe-vs-hero:elven]` | foe-vs-hero | race `foeToHit:+1` | race | "thin-boned and easy to hit," `content/races.js` | `+1` to the foe's need, a bonus to the foe (bad for the hero); the Small face axis is masked by the signature rule (RULES-11, Phase 75.2), so this row still measures thin bones alone | foe finds an Elven hero on one more top face | OK (deliberate, Phase 31 — fixes 31-ROLL-DIRECTION-AUDIT.md Finding 1's inherited `-1`) |
-| `[foe-vs-hero:acrobat]` | foe-vs-hero | Acrobat override | sub-class | an Acrobat is hard to pin down | lowers the foe's need (penalty to the foe) | foe finds an Acrobat on fewer top faces | OK |
+| `[foe-vs-hero:acrobat]` | foe-vs-hero | Acrobat override (`ACROBAT_FOE_FACES`, 4 since quick 260928-nrf; canon 3) | sub-class | an Acrobat is hard to pin down | lowers the foe's need (penalty to the foe) | foe finds an Acrobat on fewer top faces (four, not five) | OK |
 | `[foe-vs-hero:guard]` | foe-vs-hero | Guard `-1` | sub-class | Guard is defensively sound (identity-contract GOOD entry) | lowers the foe's need | one fewer top face for the foe | OK |
 | `[foe-vs-hero:gear-foe-to-hit]` | foe-vs-hero | Anklet of Invisibility, `foeToHit:-2` | item | "foes need two better to land" | lowers the foe's need by 2 | two fewer top faces for the foe | OK |
 | `[foe-vs-hero:foe-accuracy]` | foe-vs-hero | `FOE_ACCURACY` dial | dial | identity 0 is a structural no-op; a positive value should sharpen every foe | at identity, no change; with a positive tuning override, raises the foe's need (bonus to the foe) | identity: unchanged; tuned: foe finds the hero on more top faces | OK (identity no-op, direction confirmed under a tuning probe) |
@@ -265,7 +266,7 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 | `[foe-vs-member:insult-after-member-smoke]` | foe-vs-member | member Smoke + insulted, ORDER-DEPENDENT | ability + condition | CONTEXT (a): the insult must apply LAST here too, matching the hero branch — need 1→2 | the member branch (`engine/combat.js` ~L2436-2466) applied insulted BEFORE the member's own Sidestep/Smoke, so a member's own Smoke reset the need back to 1 and SWALLOWED the insult entirely | fixed: insulted has effect again (exactly two faces), matching `[foe-vs-hero:insult-after-smoke]` | **FIXED (72-04, 6484f48)** (known fix a) |
 | `[foe-vs-member:hero-defences]` | foe-vs-member | the HERO's own Acrobat, Guard, gear (Anklet), Mirror Self, Cloak invisibility and Dwarven foe die | sub-class + gear + spell + race | user ruling 2026-09-27: "none of the hero's personal defences protect a Joiner" | before 79-02b, `foeToHitVs(state,"member")` read the hero's Acrobat override, Guard −1, `eff(c,"foeToHit")`, `c.mirror` and invisibility, and the member die was `foeDie(c, f)` | the member's odds are unchanged by any of them | **FIXED (79-02b)** |
 | `[foe-vs-member:elven]` | foe-vs-member | the member's own Elven thin-boned trait (`raceFoeToHit(sheet)`) | race | same claim as `[foe-vs-hero:elven]`, for the Joiner's own body | raises the foe's need against an Elven member | one more top face | OK (79-02, re-homed into `foeToHitVs` by 79-02b) |
-| `[foe-vs-member:acrobat]` | foe-vs-member | the member's own Acrobat (need 3) | sub-class | same claim as `[foe-vs-hero:acrobat]`, for the Joiner's own body | the member's own Acrobat override now applies | fewer top faces for the foe | **FIXED (79-02b)** |
+| `[foe-vs-member:acrobat]` | foe-vs-member | the member's own Acrobat (need 4 since quick 260928-nrf; was 3) | sub-class | same claim as `[foe-vs-hero:acrobat]`, for the Joiner's own body | the member's own Acrobat override now applies | fewer top faces for the foe | **FIXED (79-02b)** |
 | `[foe-vs-member:guard]` | foe-vs-member | the member's own Guard (−1) | sub-class | same claim as `[foe-vs-hero:guard]` | the member's own Guard −1 now applies | one fewer top face | **FIXED (79-02b)** |
 | `[foe-vs-member:gear-foe-to-hit]` | foe-vs-member | a live `foeToHit` item effect on the member's own sheet | gear | same claim as `[foe-vs-hero:gear-foe-to-hit]` | `eff(sheet,"foeToHit")` now applies (structurally 0 today: a Joiner starts no item effect) | two fewer top faces | **FIXED (79-02b)** |
 | `[foe-vs-member:mirror-self]` | foe-vs-member | the member's own `mirror` count | spell | Mirror Self: "you" — the caster's own body | `sheet.mirror > 0` overrides to one face (structurally 0 today: a Joiner casts attack spells only) | one face | **FIXED (79-02b)** |
@@ -341,6 +342,7 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 | `[resist:intel-gate]` | resist | `intel >= 12` gate | stat | below the threshold, resistance is never rolled for | retired: every hero rolls since quick 260928-hrs | no gate | N/A (retired by quick 260928-hrs, user ruling 2026-09-28: the gate no longer exists, so there is nothing to probe) |
 | `[resist:depth]` | resist | floor depth past CONTROL_AT_DEPTH.kneeDepth | depth | RULES-18 (Phase 75.3, user ruling 2026-09-25): from floor 12, foes increasingly RESIST control | roll-high: `resisted = roll >= 21 - faces`, faces growing with depth past the knee | wider resist range for a deeper foe past the knee | OK (RULES-18, Phase 75.3) |
 | `[resist:foe-intel]` | resist | a foe's `intel` against a spell cast on it | stat | quick 260927-rsx (user ruling 2026-09-27): every spell cast on an enemy can be resisted, more often by a smarter foe; half-intel scale | roll-high: `resisted = roll >= 21 - faces`, `faces = max(1, round(intel / 2))`, every foe rolls (no gate) | wider resist range for a higher-intel foe; intel 1–2 still resists on one face | OK (quick 260927-rsx) |
+| `[resist:member-intel]` | resist | a Joiner's own `intel` against a foe's bolt or drain | stat | quick 260928-nrf (user ruling 2026-09-28, Joiners resist: "Yes, same scale"): a smarter Joiner shrugs off more, on the scale the hero and foes use | roll-high: `resisted = roll >= 21 - faces`, `faces = resistFaces(intel)`, every Joiner rolls (no gate); main rng, between the target pick and the damage dice | wider resist range for a higher-intel Joiner; intel 1–2 still resists on one face | OK (quick 260928-nrf) |
 | `[initiative:samurai]` | initiative | Samurai forced-foe | sub-class | Samurai never gets the jump on a fight's first round (a documented BAD trait) | forces `first="foe"` | the foe always acts first | OK |
 | `[initiative:fridgian-slow]` | initiative | Fridgian `slow` forced-foe | race | Fridgians are slow to react | forces `first="foe"` | the foe always acts first | OK |
 | `[initiative:knight-big-foe]` | initiative | Knight vs a big foe, forced-foe | sub-class | a Knight is cautious against a large foe | forces `first="foe"` | the foe always acts first | OK |
@@ -353,7 +355,7 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 
 | Id | Site | Source | Kind | Claimed direction | Verified today | Phase 73 reading | Verdict |
 |---|---|---|---|---|---|---|---|
-| `[flee:thief]` | flee | `FLEE_THIEF_BONUS`, `+5` | sub-class | "getting out is the Thief's whole trade" | added to the roll, easier to clear the flee threshold | wider success range | OK |
+| `[flee:thief]` | flee | `FLEE_THIEF_BONUS`, `+3` (canon `+5`; quick 260928-nrf, user ruling 2026-09-28) | sub-class | "getting out is the Thief's whole trade" | added to the roll, easier to clear the flee threshold | wider success range | OK |
 | `[flee:class-mod]` | flee | `FLEE_CLASS_MOD` (MU `-1`) | class | a Magic User is slower afoot than a Fighter | subtracted from the roll, narrower | narrower success range for an MU | OK |
 | `[flee:race-mod-elven]` | flee | `FLEE_RACE_MOD` (Elven `+1`) | race | Elves flee well | added to the roll, wider | wider success range | OK |
 | `[flee:race-mod-heavy]` | flee | `FLEE_RACE_MOD` (Dwarven/Fridgian/Troll `-1`) | race | the heavier races flee poorly | subtracted from the roll, narrower | narrower success range | OK |
@@ -1158,3 +1160,40 @@ DRAW_INVENTORY drops one `rollCheck` call in derived.js (3 → 2), the merge.
 The Oracle line for `heroResisted` / `heroResistFailed` already printed the
 roll, the event's range and the intel; the rail twins now print them too
 (`test/unit/authored-ranges.test.js` pins both against the engine's range).
+
+## User rulings 2026-09-28: class trims and Joiner resist (quick 260928-nrf)
+
+The user picked option (a) for each trim the 260928-abl Fighter/Thief ability
+audit offered, and said "Yes, same scale" to Joiners resisting. Five rules
+change; every one is roll-high and draws exactly where the old rule drew,
+except the Joiner resist, which adds one main-rng d20.
+
+| Rule | Id | Before | After | Draws |
+|---|---|---|---|---|
+| Thief flee bonus | `[flee:thief]` | `+5` (canon): a Human Thief in light armour escapes on 9–20 | `+3`: 11–20 (a deliberate deviation from canon; docs/FLEE.md) | unchanged: the one flee d20 |
+| Sweep | (a refusal, not a roll) | used against any number of living foes | refuses `tooFewFoes` with fewer than two: no turn, no cooldown, no draw | none on a refusal |
+| Kata and Feint | `[hero-strike:kata-feint]` | `autoHit`: the strike die is drawn and ignored | `needShift: +3`: three more winning faces, capped at the die; an untouchable foe stays untouchable | unchanged: the strike die, then the damage die on a hit (a miss draws no damage die) |
+| Acrobat, as the target | `[foe-vs-hero:acrobat]`, `[foe-vs-member:acrobat]` | foes land on their top 3 faces | their top 4 (`ACROBAT_FOE_FACES`) | unchanged |
+| Joiner resist | `[resist:member-intel]` | a foe's bolt or drain at a Joiner was never resisted | the Joiner rolls `resistRoll(rng, intel)` on its own intel, `faces = resistFaces(intel)`: intel 1–2 resists on 20, 6 on 18–20, 10 on 16–20, 16 on 13–20, 20 on 11–20. A resist blocks the whole effect (no damage, no drain) | +1 main-rng d20 per bolt or drain aimed at a Joiner, after the ability gate and the `pickFoeTarget` die, before the damage dice: the hero's slot |
+
+**The Joiner's stream.** The hero's resist has drawn from the main rng in
+this slot since quick 260928-hrs, and a foe's from a derived stream. The
+Joiner follows the hero: the target pick already draws on the main rng
+there, and a Joiner's resist is the target's roll, like the hero's.
+
+**Events.** `memberResisted` / `memberResistFailed` carry the hero events'
+fields (`name` is the foe, `ability`, `roll`, `atLeast`, `dieN`, `intel`,
+`faces`) plus `member`, the Joiner's name. Both are OUTCOME rows in
+`test/parity/roll-high-invariant.test.js` (success / failure). The Oracle and
+rail lines name the Joiner and print the roll, the range and the intel
+(`test/unit/class-trims-nrf-copy.test.js`).
+
+**A missed Kata or Feint** is an ordinary `strikeMissed` with `via` and a
+`{ name: "Kata" | "Feint", delta: +3 }` mod entry, so the roll line reads
+"7 vs 9–12 (Kata +3)". The use is spent either way.
+
+**Direction probes.** `[hero-strike:kata-feint]` (a strict bonus, and a miss
+is still possible) and `[resist:member-intel]` are new rows in
+`test/unit/rollDirection.test.js` / `rollDirection-checks.test.js`;
+`[flee:thief]` and the two Acrobat rows keep their direction and change only
+their numbers.

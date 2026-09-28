@@ -10,8 +10,9 @@
 // notInCombat -> cooldown (or spent, a used once-per-fight ability — quick
 // 260927-opf) -> noTarget (structurally unreachable in combat,
 // same reasoning castSpell's own comment documents — normalizeTarget always
-// finds a live foe while state.combat exists) -> notLowEnough (Last Stand's
-// own gate). A refusal is a single event, spends no action, starts no timer,
+// finds a live foe while state.combat exists) -> tooFewFoes (Sweep with
+// fewer than SWEEP_MIN_FOES living foes, quick 260928-nrf) -> notLowEnough
+// (Last Stand's own gate). A refusal is a single event, spends no action, starts no timer,
 // and never touches state.rngState (no draw ever happens before the ladder
 // clears).
 //
@@ -91,6 +92,47 @@ export function abilityEffectTicks(key) {
   const n = DURATION_ROUNDS[key];
   if (!n) return 0;
   return THIS_ROUND_ABILITIES.has(key) ? n : n + 1;
+}
+
+/**
+ * SWEEP_MIN_FOES — quick 260928-nrf (user ruling 2026-09-28, "Sweep needs 2+
+ * foes"): the fewest living foes a Sweep may be used against. The
+ * 260928-abl audit found Sweep hit a single foe 73% of the time, which made
+ * it a guaranteed half-damage strike that ignored the to-hit roll.
+ */
+export const SWEEP_MIN_FOES = 2;
+
+/**
+ * KATA_FEINT_NEED_SHIFT — quick 260928-nrf (user ruling 2026-09-28, "Kata
+ * and Feint roll to hit"): the winning faces Kata and Feint ADD to the
+ * strike roll, replacing their old auto-hit. The 260928-abl audit measured
+ * plain level-1 swings landing about 17% (Fighter) and 34% (Thief) of the
+ * time, which made a "cannot miss" strike most of the class's killing.
+ * Shared with combat.js#resolveMemberAbility (a Joiner's Kata/Feint).
+ */
+export const KATA_FEINT_NEED_SHIFT = 3;
+
+/**
+ * abilityShortfall(key, liveCount) — the ONE ability-availability rule that
+ * depends on the fight rather than the timers: `"tooFewFoes"` for Sweep
+ * with fewer than SWEEP_MIN_FOES living foes, else `null`. The hero
+ * (useAbility's refusal ladder), the combat menu, a Joiner
+ * (combat.js#pickMemberAbility) and the bot (tuning-bot.mjs#chooseAbility)
+ * all read this, so none of them re-derives the rule. Pure, no rng.
+ */
+export function abilityShortfall(key, liveCount) {
+  if (key === "sweep" && liveCount < SWEEP_MIN_FOES) return "tooFewFoes";
+  return null;
+}
+
+/**
+ * abilityUnavailableReason(state, key) — abilityShortfall against the
+ * current fight's living foes. `null` outside a fight (the ladder's own
+ * notInCombat refusal covers that). Pure, no rng.
+ */
+export function abilityUnavailableReason(state, key) {
+  if (!state || !state.combat) return null;
+  return abilityShortfall(key, liveFoes(state).length);
 }
 
 /**
@@ -198,6 +240,14 @@ export function useAbility(state, key, rng, events = []) {
       return events;
     }
   }
+  // Quick 260928-nrf (user ruling 2026-09-28): Sweep with fewer than two
+  // living foes refuses before anything is spent — no turn, no cooldown, no
+  // draw — exactly like the spent/cooldown refusals above.
+  const shortfall = abilityUnavailableReason(state, key);
+  if (shortfall) {
+    events.push({ type: "abilityRefused", key, reason: shortfall, name: meta.name, need: SWEEP_MIN_FOES, have: liveFoes(state).length });
+    return events;
+  }
   if (key === "lastStand" && c.wp > c.maxWP * DEATH_PANIC_THRESHOLD) {
     events.push({ type: "abilityRefused", key, reason: "notLowEnough", name: meta.name, have: c.wp, max: c.maxWP });
     return events;
@@ -207,12 +257,13 @@ export function useAbility(state, key, rng, events = []) {
   startAbilityTimer(c, meta);
 
   switch (key) {
+    // Quick 260928-nrf (user ruling 2026-09-28, "Kata and Feint roll to
+    // hit"): three more winning faces on the strike roll (the mirror of
+    // Overhead Blow's −2), not an auto-hit. A miss is an ordinary miss and
+    // the once-per-fight use is still spent (startAbilityTimer ran above).
     case "kata":
-      C.abilityStrike = { key, autoHit: true, bonusDmg: c.level };
-      playerStrike(state, rng, events);
-      return events;
     case "feint":
-      C.abilityStrike = { key, autoHit: true, bonusDmg: c.level };
+      C.abilityStrike = { key, needShift: KATA_FEINT_NEED_SHIFT, bonusDmg: c.level };
       playerStrike(state, rng, events);
       return events;
     case "deathTouch":

@@ -18,12 +18,13 @@ input exists at all.
 The new rule (one formula, engine-wide):
 
 ```
-d20 + Thief(+5, kept) + FLEE_CLASS_MOD[cls] + FLEE_RACE_MOD[race] - armorBulk(c) >= 14
+d20 + Thief(+3) + FLEE_CLASS_MOD[cls] + FLEE_RACE_MOD[race] - armorBulk(c) >= 14
 ```
 
 The user's decision (CONTEXT Area 1, 2026-09-18): **35% base (need 14)** — a
 plain Human Fighter in no armor escapes 35% of the time, a Thief in light
-armor 60%, a Fighter in Plate 25%. Every class/race modifier is bounded to
+armor 50% (60% while the Thief kept canon's +5, until quick 260928-nrf), a
+Fighter in Plate 25%. Every class/race modifier is bounded to
 ±2 and reasoned below.
 
 **Greenfield ruling (STATE.md amendment 2026-09-17):** this is the ONLY flee
@@ -36,7 +37,7 @@ and its outcome did not move, so zero fixtures were regenerated.
 
 | Modifier | Value | Reason |
 |---|---|---|
-| Thief flee bonus | +5 | Getting out is the Thief's whole trade — kept unchanged from the prototype. |
+| Thief flee bonus | +3 | Getting out is the Thief's whole trade. Kept at the prototype's +5 until quick 260928-nrf (user ruling 2026-09-28) cut it to +3; see the section at the end. |
 | Fighter (class) | 0 | The class-neutral baseline; a Fighter's edge is standing and fighting, not running. |
 | Thief (class) | 0 | The class modifier is separate from the Thief flee bonus above — a Thief's edge IS that bonus, not a second class term. |
 | Magic User (class) | −1 | Robes and no footwork. |
@@ -67,17 +68,20 @@ from `content/flee.js` and asserts this exact formula).
 | Human Fighter, no armor | 11 | 50 | 14 | 35 |
 | Human Fighter, Mail | 12 | 45 | 15 | 30 |
 | Human Fighter, Plate | 13 | 40 | 16 | 25 |
-| Human Thief, Leather | 6 | 75 | 9 | 60 |
-| Human Thief, Studded | 7 | 70 | 10 | 55 |
-| Elven Thief, Leather | 6 | 75 | 8 | 65 |
+| Human Thief, Leather | 6 | 75 | 11 | 50 |
+| Human Thief, Studded | 7 | 70 | 12 | 45 |
+| Elven Thief, Leather | 6 | 75 | 10 | 55 |
 | Human Magic User, Cloth | 11 | 50 | 15 | 30 |
 | Dwarven Fighter, Mail | 12 | 45 | 16 | 25 |
-| Fridgian Thief, no armor | 6 | 75 | 10 | 55 |
+| Fridgian Thief, no armor | 6 | 75 | 12 | 45 |
 | Troll Fighter, Plate | 13 | 40 | 17 | 20 |
 | Troll Magic User, Cloth | 11 | 50 | 16 | 25 |
 
-The base rate drops everywhere, the Thief's edge over a Fighter of the same
-race/armor stays the full 5 points wide, and armor's bite is now visible by
+The "New" columns are the rule today, with the Thief's +3 (quick
+260928-nrf); Phase 42 shipped them with the Thief's +5, 10 points higher on
+every Thief row. The base rate drops everywhere, the Thief's edge over a
+Fighter of the same race/armor is 3 points wide (5 until quick 260928-nrf),
+and armor's bite is now visible by
 name (an armor-heavy Fighter and a light Thief are no longer separated by a
 flat, silent 25-point gap the player never sees explained).
 
@@ -123,13 +127,13 @@ when it is non-zero, mirroring `engine/derived.js#foeToHitBreakdown`'s
 instead of re-deriving the formula:
 
 - **Oracle sentence** (`src/browser/eventNarration.js`):
-  `Flee: rolled <span class="roll">8</span> vs 10–20 (Thief +5, Mail −1).` —
+  `Flee: rolled <span class="roll">8</span> vs 12–20 (Thief +3, Mail −1).` —
   the roll, its winning range, and every named modifier, all before the
   `fled`/`fleeFailed` line resolves.
 - **Fight-log fold** (`src/browser/narrationLines.js#fleeChain`): one line per
-  attempt, ROLL FIRST — `Flee: 9 vs 9–20 (Thief +5). You get clear.` — by
+  attempt, ROLL FIRST — `Flee: 11 vs 11–20 (Thief +3). You get clear.` — by
   reusing `LINE_FOR.fleeRolled`'s own text rather than restating the format.
-- **Rail line** (`LINE_FOR.fleeRolled`): `Flee: 8 vs 10–20 (Thief +5, Mail
+- **Rail line** (`LINE_FOR.fleeRolled`): `Flee: 8 vs 12–20 (Thief +3, Mail
   −1)` (no parenthetical when there are no modifiers).
 - **Rail** (`RAIL_FAMILY.fleeRolled`): `{ icon: "·", title: "FLEE", tone:
   "info" }` — a family entry for completeness; the fight log is the real
@@ -195,3 +199,27 @@ section, `### Pin and provenance (Phase 42 capture)`, for the consolidated
 AFTER class matrix this flee retune is measured inside — the flee formula
 above is fully landed in that pin (no fixture regenerated; the seed-17
 reading did not move).
+
+## Quick 260928-nrf: the Thief's flee bonus is +3 (user ruling 2026-09-28)
+
+"Thief flee +5 → +3." The 260928-abl Fighter/Thief ability audit measured
+the Thief's canon +5 alone as worth about 0.6 floors of mean depth and 12
+points of reach-5 to a Thief (paired bootstrap, 200 seeds), almost exactly
+the Thief's lead over the Fighter. The user chose option (a): `+5 → +3`.
+This is a **deliberate deviation from the prototype's canon +5**.
+
+- `content/flee.js#FLEE_THIEF_BONUS` is 3. `engine/derived.js#fleeBreakdown`
+  reads it, so the fight log, the rail, the combat menu's FLEE row and the
+  pre-roll odds all read "Thief +3" with no copy edit.
+- A Human Thief in light armour clears 14 on an 11 or better: 50%, was 60%.
+  Every Thief row of the Before/after table above moved two faces (10
+  points).
+- `engine/difficulty.js`'s `CLASS_MITIGATION.Thief.fleeBonus` mirror follows
+  the constant; `tools/lib/ablation.mjs`'s `thiefFlee` override now reads it
+  too, instead of a literal 5.
+- **Parity:** the one fixture that flees (seed 17, a Fridgian Thief in no
+  armour, roll 18) reads `18 + 3 − 1 = 20 ≥ 14` and still escapes; only its
+  fleeRolled `mods` narration differs, and the prototype has no such
+  payload. See `test/parity/FIXTURE-INVENTORY.md`'s "Class trims and Joiner
+  resist" section.
+- The bot's measurement of the trim is left to the milestone's final readout.

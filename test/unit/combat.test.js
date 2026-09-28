@@ -1072,12 +1072,14 @@ test("flee: a Cloaker always gets away, for free", () => {
   assert.equal(state.combat, null);
 });
 
-test("flee: a Thief's +5 bonus can turn a marginal roll into a clean escape", () => {
+test("flee: a Thief's +3 bonus can turn a marginal roll into a clean escape", () => {
   // Phase 42 (FLEE-01): need is now 14 (was 11) — a Human Thief's only
-  // modifier is the Thief +5, so the marginal roll moves from 6 to 9.
+  // modifier is the Thief bonus, so the marginal roll moved from 6 to 9;
+  // quick 260928-nrf (user ruling 2026-09-28) cut the bonus +5 -> +3, so it
+  // is 11 now.
   const state = fixedState({ c: { cls: "Thief", sub: "Cat Burglar" } });
   state.combat = fixedCombat([fixedFoe()]);
-  const events = flee(state, fakeRng([9]), []); // 9 + 5 = 14 >= 14
+  const events = flee(state, fakeRng([11]), []); // 11 + 3 = 14 >= 14
   assert.ok(events.some((e) => e.type === "fled" && e.reason === "escaped"));
   assert.equal(state.combat, null);
 });

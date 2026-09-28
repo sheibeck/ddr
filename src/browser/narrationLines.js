@@ -360,6 +360,9 @@ const railFull = (gained, offered) => (Number.isFinite(offered) && gained > 0 &&
 // possessive, or the caller's fallback ("its", never "it's") for a bare event.
 const railPlural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const railPossessive = (name, fallback) => (name ? `${name}'s` : fallback);
+// Quick 260928-nrf: the strike abilities that used to auto-hit and now roll
+// (Kata, Feint) — a miss names the ability and says it is spent anyway.
+const MISS_SPENT_VIA = new Set(["kata", "feint"]);
 /** railWardName(item) — eventNarration.js's wardName twin for critWarded
  * (quick 260928-cos): the warding item's name, an object's `n`, or "cloak". */
 const railWardName = (item) => (typeof item === "string" && item ? item : typeof item?.n === "string" && item.n ? item.n : "cloak");
@@ -1564,10 +1567,12 @@ export const LINE_FOR = {
   frenzy: () => ({ text: "Frenzy — two wild swings.", tone: "hit", priority: PRIORITY.feature }),
   // Phase 25 (FEED-05): untouchable never gets a quip (decorateMisses skips
   // it); `quip` renders after an em-dash only when present.
+  // Quick 260928-nrf (user ruling 2026-09-28): a missed Kata or Feint names
+  // the ability and says it is spent anyway (they roll to hit now).
   strikeMissed: (e) =>
     e?.untouchable
       ? { text: `You cannot touch ${e?.target ?? "it"}.`, tone: "miss", priority: PRIORITY.you }
-      : { text: `You miss ${e?.target ?? "it"}${e?.quip ? ` — ${e.quip}` : ""}`, tone: "miss", priority: PRIORITY.you },
+      : { text: `You miss ${e?.target ?? "it"}${MISS_SPENT_VIA.has(e?.via) ? ` with ${ABILITY_BY_ID[e.via].name}, spent anyway` : ""}${e?.quip ? ` — ${e.quip}` : ""}`, tone: "miss", priority: PRIORITY.you },
   deathTouch: (e) => ({ text: `One touch — ${e?.target ?? "it"} drops.`, tone: "hit", priority: PRIORITY.feature }),
   backstabDenied: () => block("Heavy armour gave you away: no sneak attack."),
   stealthStrike: () => ({ text: "Unseen strike — critical.", tone: "hit", priority: PRIORITY.feature }),
@@ -1907,6 +1912,11 @@ export const LINE_FOR = {
   // Phase 25 (FEED-03): starts with the foe's name (matches the THEM-family
   // tone-prefix contract every other foe-action builder follows).
   heroResistFailed: (e) => ({ text: `${e?.name ?? "It"} gets through — you fail to resist (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}, intel ${e?.intel ?? "?"}).`, tone: "hurt", priority: PRIORITY.them }),
+  // Quick 260928-nrf (user ruling 2026-09-28, Joiners resist: "Yes, same
+  // scale"): the Joiner's twins of the two lines above, naming the Joiner
+  // and stating the roll, the range and the Joiner's own intel.
+  memberResisted: (e) => ({ text: `${e?.member ?? "Your companion"} resists ${railPossessive(e?.name, "its")} spell (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}, intel ${e?.intel ?? "?"}).`, tone: "hit", priority: PRIORITY.feature }),
+  memberResistFailed: (e) => ({ text: `${e?.name ?? "It"} gets through — ${e?.member ?? "your companion"} fails to resist (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}, intel ${e?.intel ?? "?"}).`, tone: "hurt", priority: PRIORITY.feature }),
   foePursued: (e) => ({ text: `${e?.name ?? "It"} follows you out.`, tone: "hurt", priority: PRIORITY.them }),
   foeOutOfSpells: (e) => ({ text: `${e?.name ?? "It"} is out of spells.`, tone: "dodge", priority: PRIORITY.them }),
 
@@ -1927,6 +1937,8 @@ export const LINE_FOR = {
       notInCombat: `${name}: nothing to use it on out here.`,
       noTarget: `${name}: nothing left standing to use it on.`,
       notLowEnough: `Last Stand: only at a quarter of your hp or less (you have ${e?.have ?? "?"} of ${e?.max ?? "?"}).`,
+      // Quick 260928-nrf: Sweep needs two or more living foes.
+      tooFewFoes: `${name}: needs two or more foes.`,
     };
     return block(map[e?.reason] ?? `${name} refuses you.`);
   },

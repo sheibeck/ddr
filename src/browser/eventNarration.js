@@ -208,6 +208,15 @@ export const PHOBIA_TRIGGER_PHRASE = Object.freeze({
 // never disagree about which races carry a named rule).
 export const RATION_RULE_LINE = Object.freeze({ Troll: "Trolls eat for two." });
 
+// Quick 260928-nrf (user ruling 2026-09-28, "Kata and Feint roll to hit"):
+// the clause a missed Kata or Feint appends to strikeMissed (its `via`). The
+// fact first (the use is spent all the same), then the joke. Module-private:
+// the corpus reads these through the strikeMissed builder (oracle:strikeMissed).
+const STRIKE_MISS_VIA = Object.freeze({
+  kata: "Kata is spent all the same: one perfect form, one imperfect result.",
+  feint: "Feint is spent all the same: they looked left, and so did your blade.",
+});
+
 export const EVENT_NARRATION = {
   /* ---------------- movement.js (migrated verbatim from the prior formatEvent switch) ---------------- */
 
@@ -541,10 +550,13 @@ export const EVENT_NARRATION = {
   // never set by the engine, only by 25-02's decorateMisses — appended after
   // the roll and the plain miss sentence so the Oracle keeps the roll first.
   // Absent `quip` renders byte-identical to before.
+  // Quick 260928-nrf (user ruling 2026-09-28): Kata and Feint roll to hit
+  // now (three more winning faces, the `mods` clause's "Kata +3"), so a miss
+  // is an ordinary miss that names the ability and says it is still spent.
   strikeMissed: (e) =>
     e.untouchable
       ? `<span class="miss">${e.target ?? "It"} cannot be touched like that.</span>`
-      : `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${e.quip ? ` ${e.quip}` : ""}`,
+      : `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. <span class="miss">You miss ${e.target ?? "it"}.</span>${STRIKE_MISS_VIA[e.via] ? ` ${STRIKE_MISS_VIA[e.via]}` : ""}${e.quip ? ` ${e.quip}` : ""}`,
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
   // VOX-05 (Phase 79, plan 79-04): the line says what the armour cost you.
   backstabDenied: () => `<span class="miss">Heavy armour gives you away: no sneak attack.</span>`,
@@ -931,6 +943,13 @@ export const EVENT_NARRATION = {
     `<span class="hit">You think very hard about not being affected, and it works.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
   heroResistFailed: (e) =>
     `You try to shrug it off. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span> <span class="miss">You do not.</span>`,
+  // Quick 260928-nrf (user ruling 2026-09-28, Joiners resist: "Yes, same
+  // scale"): a Joiner rolls its own intel against a foe's bolt or drain, on
+  // the hero's half-intel scale. The fact and the roll first, then the joke.
+  memberResisted: (e) =>
+    `<span class="hit">${e.member ?? "Your companion"} resists ${possessive(e.name, "its")} spell.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span> Somebody on your side was paying attention.`,
+  memberResistFailed: (e) =>
+    `${e.member ?? "Your companion"} fails to resist ${possessive(e.name, "its")} spell. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span> <span class="miss">Shrugging it off is harder than it looks.</span>`,
   foePursued: (e) => `<span class="hurt">${e.name ?? "It"} follows you out. Of course it does.</span>`,
   foeOutOfSpells: (e) => `${e.name ?? "It"} gestures grandly. Nothing happens. <span class="miss">It appears to be out of spells.</span>`,
 
@@ -954,6 +973,9 @@ export const EVENT_NARRATION = {
       notInCombat: `<span class="miss">${name}: nothing to use it on out here.</span>`,
       noTarget: `<span class="miss">${name}: nothing left standing to use it on.</span>`,
       notLowEnough: `<span class="miss">Last Stand: only at a quarter of your hp or less, and you have ${e.have ?? "?"} of ${e.max ?? "?"}.</span> You are not desperate enough yet.`,
+      // Quick 260928-nrf (user ruling 2026-09-28): Sweep needs two or more
+      // living foes; refused, nothing is spent.
+      tooFewFoes: `<span class="miss">${name}: needs two or more foes, and ${e.have === undefined || e.have === 1 ? "there is only one" : `there are ${e.have}`}.</span> A wide arc at a single foe is a swing with extra steps.`,
     };
     return map[e.reason] ?? `<span class="miss">${name} refuses you.</span>`;
   },

@@ -203,6 +203,14 @@ const PHASE_79_TOGGLES = [
   { only: ["spellResisted", "resistFailed"], by: "Ada", spell: "Fireball" },
   { only: ["weakened"], spared: 1 },
   { only: ["abilityRefused"], reason: "spent", name: "Feint" },
+  // Quick 260928-nrf (user rulings 2026-09-28), appended so every earlier
+  // toggle keeps its id: Sweep refused with one living foe, a missed Kata
+  // and Feint (a touchable foe: the shared base is untouchable), and a
+  // Joiner's resist naming the Joiner — so the voice guards read them.
+  { only: ["abilityRefused"], reason: "tooFewFoes", name: "Sweep", need: 2, have: 1 },
+  { only: ["strikeMissed"], untouchable: false, via: "kata", mods: [{ name: "Kata", delta: 3 }] },
+  { only: ["strikeMissed"], untouchable: false, via: "feint", mods: [{ name: "Feint", delta: 3 }] },
+  { only: ["memberResisted", "memberResistFailed"], member: "Ada", intel: 10, roll: 16, atLeast: 16, dieN: 20, faces: 5 },
 ];
 
 /**

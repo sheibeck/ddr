@@ -372,6 +372,15 @@ test('[resist:foe-intel] a smarter foe resists a spell cast on it more often, en
   assertBonus(withMod, without, { label: "resist:foe-intel" });
 });
 
+// Quick 260928-nrf (user ruling 2026-09-28, Joiners resist: "Yes, same
+// scale"): a Joiner resists a foe's bolt or drain on its own intel, through
+// engine/foeAbilities.js#memberResist -> the same resistRoll.
+test("[resist:member-intel] a smarter Joiner resists a foe's bolt or drain more often, engine/foeAbilities.js#memberResist", () => {
+  const withMod = faceOdds((rng) => resistRoll(rng, 18).resisted, { label: "resist:member-intel (18)" });
+  const without = faceOdds((rng) => resistRoll(rng, 6).resisted, { label: "resist:member-intel (6)" });
+  assertBonus(withMod, without, { label: "resist:member-intel" });
+});
+
 // --- Initiative [hero]: jointOdds over the two d20s; success = first === "you" ---
 
 test('[initiative:samurai] "never wins the first roll of anything" (content/flavor.js:46) — forced foe-first, engine/combat.js#resolveInitiative ~L183', () => {
@@ -458,7 +467,7 @@ test('[initiative:senses] c.senses waives every forced-foe rule, engine/combat.j
 
 // --- Flee [hero]: fled, over a plain content foe without pursues -------------
 
-test('[flee:thief] "the whole trade" — Thief +5, content/flee.js:22, engine/derived.js#fleeBreakdown ~L950', () => {
+test('[flee:thief] "the whole trade" — Thief +3 (canon +5; quick 260928-nrf), content/flee.js#FLEE_THIEF_BONUS, engine/derived.js#fleeBreakdown', () => {
   const thief = () => noArmor(inCombat(heroState({ cls: "Thief", sub: "Pickpocket", race: "Human" }), [NEUTRAL_FOE()]));
   const fighter = () => noArmor(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
   const withMod = faceOdds((rng) => fled(thief(), rng), { label: "flee:thief" });

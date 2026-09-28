@@ -376,9 +376,11 @@ test("ROLL-04 pin: the Guard note's damage and face numbers come from weaponDama
   assert.match(SUB_NOTE.Guard, /lands on one face fewer against you/);
 });
 
-test("ROLL-04 pin: the Acrobat's three faces and the Cleric's four are the engine's own numbers", () => {
-  assert.equal(foeToHitVs(hero("Acrobat")), 3);
-  assert.match(SUB_NOTE.Acrobat, /except on its top three faces/);
+// Quick 260928-nrf (user ruling 2026-09-28): the Acrobat's foe need is four
+// faces (was three).
+test("ROLL-04 pin: the Acrobat's four faces and the Cleric's four are the engine's own numbers", () => {
+  assert.equal(foeToHitVs(hero("Acrobat")), 4);
+  assert.match(SUB_NOTE.Acrobat, /except on its top four faces/);
   assert.equal(classNeed({ cls: "Magic User", sub: "Cleric", race: "Human" }), 4);
   assert.equal(classNeed({ cls: "Magic User", sub: "Wizard", race: "Human" }), 3);
   assert.match(SUB_NOTE.Cleric, /Your top four faces hit instead of three/);

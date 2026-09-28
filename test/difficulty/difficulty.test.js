@@ -218,7 +218,18 @@ test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3), RULES-16 (Phase 75
   // the shallow merge replaces the Phase 54 / 75.3 values for exactly those
   // dials.
   const earlyLock = readEarlyLock();
-  const merged = { ...IDENTITY_COLUMN, ...bestLive, ...overlay, ...earlyLock };
+  const layered = { ...IDENTITY_COLUMN, ...bestLive, ...overlay, ...earlyLock };
+  // Quick 260928-nrf (user ruling 2026-09-28, "Thief flee +5 -> +3"):
+  // CLASS_MITIGATION.Thief.fleeBonus is a mirror seeded from
+  // content/flee.js#FLEE_THIEF_BONUS (engine/difficulty.js; no engine code
+  // reads it), and Phase 54's fit artifact recorded the canon 5. The ruling
+  // moves the mirror with the content value; every other leaf stays the
+  // artifacts'.
+  const merged = {
+    ...layered,
+    CLASS_MITIGATION: { ...layered.CLASS_MITIGATION, Thief: { ...layered.CLASS_MITIGATION.Thief, fleeBonus: FLEE_THIEF_BONUS } },
+  };
+  assert.equal(bestLive.CLASS_MITIGATION.Thief.fleeBonus, 5, "the Phase 54 fit artifact still records the canon +5");
   assert.deepStrictEqual(Object.keys(DIALS).sort(), Object.keys(merged).sort(), "DIALS and the identity+best.json+overlay+early-lock merge must cover the exact same key set");
   assert.deepStrictEqual(DIALS, merged);
 });

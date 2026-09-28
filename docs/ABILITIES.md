@@ -43,20 +43,20 @@ cooldown); `target` is `foe` / `self` / `foes`; `tag` is `opener` / `damage`
 
 | id | name | cls | source | cd | target | tag | txt |
 |---|---|---|---|---|---|---|---|
-| kata | Kata | Fighter | table | 3 | foe | damage | one perfect form: this strike cannot miss and adds your level in damage |
+| kata | Kata | Fighter | table | fight | foe | damage | one perfect form: your die has three more faces that land this strike, and it adds your level in damage; once per fight |
 | deathTouch | Death Touch | Fighter | table | 5 | foe | damage | call it: your next landed blow doubles, and finishes anything under 15 hp |
 | sidestep | Sidestep | Fighter | table | 4 | self | defensive | two rounds of not being where the blade is: every foe needs two better |
 | pommelStrike | Pommel Strike | Fighter | table | 4 | foe | opener | the blunt end, to the temple: the target loses its next turn |
 | battleRoar | Battle Roar | Fighter | table | 5 | self | opener | loud enough to matter: for two rounds every foe needs two better to hit anyone on your side |
 | secondWind | Second Wind | Fighter | table | fight | self | defensive | remember why you came: heal d8 + level |
-| sweep | Sweep | Fighter | table | 4 | foes | damage | one wide arc: every living foe takes half damage |
+| sweep | Sweep | Fighter | table | 4 | foes | damage | one wide arc: every living foe takes half damage; needs two or more foes |
 | brace | Brace | Fighter | pool | 3 | self | defensive | halve the next blow that lands on you |
 | riposte | Riposte | Fighter | pool | 4 | self | defensive | for one round every foe that misses you eats your weapon damage |
 | taunt | Taunt | Fighter | pool | 4 | self | defensive | every foe swings at you this round and your armour soaks double |
 | overheadBlow | Overhead Blow | Fighter | pool | 3 | foe | damage | everything into one swing: double damage, but you need two better to land it |
 | lastStand | Last Stand | Fighter | pool | fight | foe | damage | under a quarter hp: three attacks this round |
 | silentStep | Silent Step | Thief | table | 4 | foe | opener | nobody heard that: your next attack is an automatic critical, any round |
-| feint | Feint | Thief | table | 3 | foe | damage | look left, stab right: this strike cannot miss and adds your level |
+| feint | Feint | Thief | table | fight | foe | damage | look left, stab right: your die has three more faces that land this strike, and it adds your level in damage; once per fight |
 | dirtyTrick | Dirty Trick | Thief | table | 4 | foe | opener | sand, thumb, elbow: the target is blinded for two rounds |
 | smoke | Smoke | Thief | table | fight | self | defensive | gone: for two rounds foes need a natural 1 to find you (a 1–2 if you insulted them), and a flee during it just works |
 | cutpurse | Cutpurse | Thief | pool | fight | foe | damage | lift d10 × level gold off the target mid-fight; it has other problems |
@@ -170,7 +170,7 @@ replacement, plus two converted passives now resolve through a descriptor:
 | Silence (in-dark) | `engine/derived.js#foeToHitVs`/`#foeToHitBreakdown` | Dropped; replaced by Smoke's `abilityEffectActive` term |
 | Silence (opening strike) | `engine/combat.js#playerStrike` | Dropped outright — the plain Thief backstab fallback already crits an opening strike with neither Silence nor Stealth, so removing this branch changes only the emitted event (`silenceStrike` → `backstab`), never `crit`/`dmg` |
 | Death-touch | `engine/combat.js#playerStrike` | Dropped; replaced by Death Touch's `finishUnder`/`forceCrit` descriptor fields |
-| Kata (Fighter, `toHit`) | `engine/derived.js#toHit` | Dropped outright — Kata's auto-hit is now descriptor-driven (`autoHit`), never a standing to-hit bonus |
+| Kata (Fighter, `toHit`) | `engine/derived.js#toHit` | Dropped outright — Kata is now descriptor-driven (an `autoHit` until quick 260928-nrf, `needShift: +3` since), never a standing to-hit bonus |
 | Kata (Fighter, `weaponDamage`) | `engine/derived.js#weaponDamage` | Dropped outright — Kata's `+level` damage is now `bonusDmg`, resolved per-strike |
 | Kata (member, `memberToHit`) | `engine/derived.js#memberToHit` | Dropped outright — no member equivalent of the descriptor exists yet (Plan 04) |
 | Tracking | `engine/combat.js#startCombat` | Dropped outright — `let tracked = false;` and every downstream `tracked` reader (`C.tracked`, the `trackable` event, flee's round-1 clean withdrawal) survive as dormant machinery; nothing sets it true until a future source does |
@@ -193,9 +193,12 @@ any later dispatch):
 
 - `attacks` raises the swing count via `Math.max` (never stacks additively
   with a Fridgian's frenzy or Ambidextrous/haste).
-- `needShift` widens the strike's own need (floored at 1, never revives a
-  `magicOnly`/untouchable need-0 foe), narrated as a `{ name: "overhead",
-  delta }` needMods entry alongside any Afraid penalty.
+- `needShift` moves the strike's own need by that many faces (floored at 1,
+  and since quick 260928-nrf a positive shift is capped at the die; it never
+  revives a `magicOnly`/untouchable need-0 foe, for the hero or a Joiner),
+  narrated as a needMods entry alongside any Afraid penalty: `{ name:
+  "overhead", delta }` for Overhead Blow (−2), `{ name: "Kata" | "Feint",
+  delta }` for Kata and Feint (+3).
 - `autoHit` never touches `C.opened` — the Cat Burglar/Ninja free opener
   (`subAuto`) is a structurally separate flag from an ability's own auto-hit.
 - `forceCrit` obeys the Guard/Soldier/dark rule (the noCrit-gear clause was
@@ -332,7 +335,7 @@ ability without a rounds figure.
 
 | Key | Kind | Resolution |
 |---|---|---|
-| kata / feint | strike | `abilityStrike = { autoHit: true, bonusDmg: c.level }` → `playerStrike` |
+| kata / feint | strike | `abilityStrike = { needShift: 3, bonusDmg: c.level }` → `playerStrike` (an `autoHit` until quick 260928-nrf) |
 | deathTouch | strike | `{ forceCrit: true, finishUnder: 15 }` |
 | silentStep | strike | `{ autoHit: true, forceCrit: true }` |
 | overheadBlow | strike | `{ dmgMul: 2, needShift: -2 }` |
@@ -344,7 +347,7 @@ ability without a rounds figure.
 | mark | foe | `t.marked = true` → `marked` (already read by `playerStrike`'s +2 since Plan 02) |
 | cutpurse | foe | `rng.d(10) * c.level` gold → `cutpursed` + `gainWilmst(..., "cutpurse", ...)` |
 | secondWind | self | `rng.d(8) + c.level`, capped at `maxWP` → `secondWindHealed` |
-| sweep | foes | `ceil(weaponDamage(c,rng)/2)` to every live foe via `damageFoe` → `swept`/`sweptFoe` |
+| sweep | foes | refused `tooFewFoes` with fewer than two live foes (quick 260928-nrf); else `ceil(weaponDamage(c,rng)/2)` to every live foe via `damageFoe` → `swept`/`sweptFoe` |
 | brace | self | `C.braced = true` → `braced` |
 | riposte / taunt / sidestep / battleRoar / smoke | self | starts the timer → `riposteReady`/`taunted`/`sidestepped`/`battleRoarRaised`/`smokeThrown` |
 
@@ -441,7 +444,7 @@ primitives the hero's `useAbility` uses:
 
 | Kind | Member resolution |
 |------|--------------------|
-| kata / feint | `memberStrike(..., { autoHit: true, bonusDmg: ally.lvl })` |
+| kata / feint | `memberStrike(..., { needShift: 3, bonusDmg: ally.lvl })` (an `autoHit` until quick 260928-nrf) |
 | deathTouch | `memberStrike(..., { forceCrit: true, finishUnder: 15 })` |
 | silentStep | `memberStrike(..., { autoHit: true, forceCrit: true })` (denied by the same heavy-armor list) |
 | overheadBlow | `memberStrike(..., { dmgMul: 2, needShift: -2 })` |
@@ -449,7 +452,7 @@ primitives the hero's `useAbility` uses:
 | pommelStrike / dirtyTrick / poisonedEdge / hamstring / mark | the shared `applyPommel`/`applyDirtyTrick`/`applyPoison`/`applyHamstring`/`applyMark` appliers (Plan 03), same foe fields, event gains `member` |
 | cutpurse | `rng.d(10) * ally.lvl` gold, paid to the HERO via `gainWilmst` |
 | secondWind | `rng.d(8) + ally.lvl`, capped at the member's own `maxWP` |
-| sweep | `ceil(weaponDamage(view, rng) / 2)` to every live foe via `damageFoe` |
+| sweep | never picked with fewer than two live foes (`pickMemberAbility`, quick 260928-nrf); else `ceil(weaponDamage(view, rng) / 2)` to every live foe via `damageFoe` |
 | brace | `ally.braced = true` (the transient flag above) |
 | riposte / taunt / sidestep / battleRoar / smoke | starts the timer on the member's own sheet; the effect is read at the SAME sites the hero's is |
 
@@ -590,3 +593,36 @@ identical to `RAIL_FAMILY.leveled`). The end-of-fight victory report
   Phase 40).
 - Bot use policy for abilities — landed: see `docs/CLASS-PASS.md`
   `### Phase 42 tactics (BAL-01 second half)`.
+
+## Class trims (quick 260928-nrf, user rulings 2026-09-28)
+
+The 260928-abl Fighter/Thief ability audit found no one ability that
+explains the class gap, and offered nerf options; the user picked option (a)
+for each. Riposte is unchanged (the user kept its "for N rounds" rule from
+quick 260928-hrs).
+
+| Rule | Before | After | Where |
+|---|---|---|---|
+| Kata and Feint | auto-hit (`autoHit: true`) + level damage, once per fight | roll to hit with three more winning faces (`needShift: +3`, `KATA_FEINT_NEED_SHIFT`, capped at the die) + level damage, once per fight; a miss is an ordinary miss, names the ability, and still spends the use | `engine/abilities.js`, `engine/combat.js#playerStrike`/`#memberStrike` (the shared `shiftedFaces`) |
+| Sweep | half weapon damage to every living foe, one foe or many | refuses `tooFewFoes` with fewer than two living foes (`SWEEP_MIN_FOES`): no turn, no cooldown, no draw | `engine/abilities.js#abilityShortfall` / `#abilityUnavailableReason`, read by `useAbility`, `pickMemberAbility`, the combat menu and the bot |
+| Acrobat, being struck | foes land on their top 3 faces | their top 4 (`ACROBAT_FOE_FACES`); the Acrobat's own strike need (5, "as a fighter with the dagger") is a different rule and is unchanged | `engine/derived.js#foeToHitVs` / `#foeToHitBreakdown` |
+| Thief flee bonus | +5 (canon) | +3 | `content/flee.js`; see docs/FLEE.md |
+
+- **The menu.** A ready Sweep with one living foe reads "NEEDS TWO OR MORE
+  FOES" and is disabled-styled (`enabled: false`), not counted in the "N/M
+  READY" sub-line, and stays tappable so the engine's refusal explains:
+  "Sweep: needs two or more foes, and there is only one. A wide arc at a
+  single foe is a swing with extra steps." (rail: "Sweep: needs two or more
+  foes.").
+- **A missed Kata or Feint** reads, for example, "7 vs 9–12 (Kata +3). You
+  miss Viper. Kata is spent all the same: one perfect form, one imperfect
+  result." (rail: "You miss Viper with Kata, spent anyway"). No text says or
+  implies either ability cannot miss.
+- **The bot** needs no new valuation: `chooseAbility` has no expected-value
+  table for strike abilities (Overhead Blow's −2 is read nowhere in the bot
+  either); it picks by the Joiner policy and the engine rolls the real
+  chance. It reads `abilityUnavailableReason`, so it never presses Sweep
+  against a lone foe.
+- **A Joiner's need shift** now skips an untouchable (0-face) foe, like the
+  hero's always did; before, a Joiner's Overhead Blow could lift 0 faces to
+  1.

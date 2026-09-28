@@ -12,14 +12,22 @@
 //     them the door.
 //   - Troll -1: Large, 75 wp of lumber; nothing about a Troll is quick.
 //   - Magic User -1: robes and no footwork.
-//   - Fighter/Thief 0: the Thief's own +5 IS the trade; a Fighter is
+//   - Fighter/Thief 0: the Thief's own bonus IS the trade; a Fighter is
 //     the class-neutral baseline.
+//
+// DELIBERATE RULES CHANGE (quick 260928-nrf, user ruling 2026-09-28,
+// "Thief flee +5 -> +3"): the Thief's flee bonus is +3, not canon's +5. The
+// 260928-abl ability audit found the +5 alone worth about 0.6 floors of mean
+// depth and 12 points of reach-5 to a Thief, almost exactly the Thief's lead
+// over the Fighter. At +3 a Human Thief in light armour clears 14 on an 11
+// or better (50%) instead of a 9 or better (60%). Declared in docs/FLEE.md
+// and test/parity/FIXTURE-INVENTORY.md.
 //
 // Pure data — read by engine/derived.js#fleeBreakdown, which is the ONE
 // place that assembles these into the fleeRolled event's `mods` list.
 
 export const FLEE_NEED = 14;
-export const FLEE_THIEF_BONUS = 5;
+export const FLEE_THIEF_BONUS = 3;
 
 export const FLEE_CLASS_MOD = Object.freeze({
   "Magic User": -1,
