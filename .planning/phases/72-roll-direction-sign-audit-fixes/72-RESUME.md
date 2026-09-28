@@ -1,4 +1,12 @@
-# v2.1 autonomous run: resume point (2026-09-28, after the second compact)
+# v2.1 autonomous run: resume point (2026-09-28, evening)
+
+## NOW (supersedes the sections below where they differ)
+- **Complete:** every phase except 80. 79.1 (the final record) and 79.3 (bug reports and patch notes, live-tested: issue #2 on ddr was filed and then closed) are both done. The quick tasks cos, hrs, abl, nrf and web are all merged.
+- **2.1.0 patch notes:** agreed by the user ("Good to go"), committed at db35ada7. Difficulty is worded generically.
+- **The Pixel 7 has the debug build with everything** (~15:00).
+- **The darktier-studio website:** commits 6327344 (the patch-notes pages) and a095d85 (the privacy policy and delete-data paragraphs), NOT pushed or deployed. Deploy at release time (user ruling): `npm run deploy`, then `git push` there.
+- **RUNNING:** 80-04, the unsigned R8 release build (executor, base acba40ed). Next is 80-05 (the emulator pass). Then **ASK the user** before the signed versionCode-11 Play build and push (closed test), and deploy the website in the same window. Then the milestone close: audit, complete, cleanup, the Pixel 7 checklist and the close questions.
+- **The master gate before release:** npm test passed 7,902 with 0 fail, parity 66/66, and boot:check PASS on rerun (the graves flake).
 
 ## Where we are
 - **Complete:** 72, 73, 74, 75, 75.1, 75.2, 75.3, 76, 77, 78, **79**, and **79.2**, which was inserted for the early-floor retune and locked by user ruling.
