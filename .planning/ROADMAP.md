@@ -1167,3 +1167,22 @@ Plans:
 Plans:
 
 - [ ] TBD (promote with 999.13 via /gsd-review-backlog or /gsd-new-milestone)
+
+### Phase 999.15: Review every skill and every spell (BACKLOG)
+
+**Goal:** [Captured 2026-09-27, user] "why does freeze say a d6? Looks like a spell with a to hit roll. So we have spells with to hit rolls? Maybe those rolls need to be double checked. Let's add a backlog item to review every skill and every spell." Audit every spell and every skill/ability end to end. For each one, check what the text promises against what the engine rolls and does, and against canon.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**What prompted it (scouted 2026-09-27):**
+- **Thrown attack spells have a to-hit roll.** In `engine/magic.js`'s thrown branch (~L598-630), Freeze hits on 6 faces of a d10, and every other thrown spell on 4 faces of a d8. Both are narrowed by Afraid and widened by the school and throw bonuses. The "d6" in Freeze's text (`content/spells.js:87`, "one foe · d6, and frozen solid on a hit") is its DAMAGE die. It reads like a to-hit roll, and the text never states the real to-hit odds.
+- The 2026-09-27 universal spell resist (quick 260927-rsx: every foe-targeted spell can be resisted on a half-intel scale) adds a second roll after a thrown spell's to-hit. Its interaction with the to-hit roll belongs in this review.
+
+**Scope for the review (decide at discuss time):**
+- **Every spell:** its to-hit roll (if any), damage dice, multipliers, duration, the resist checks (intel, RULES-18 depth control), the school gates, the backfire and fumble odds, and whether the text, the Grimoire, the chips and the foe card state each of those in roll-high form and agree with the engine.
+- **Every skill and ability:** its cooldown or once-per-fight rule, auto-hit or forced crit, its bonus terms, who can use it (the hero, Joiners), and the same text-vs-engine agreement.
+- **Canon check:** each against the 1994 rulebook. Deviations are recorded as deliberate rulings or fixed.
+- **Output:** a per-spell and per-skill audit table (text / engine / canon / verdict), the fixes, and pinned tests. That extends test/unit/authored-ranges.test.js and roll-sign-consistency.test.js to every roll a spell or skill makes.
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
