@@ -4,8 +4,9 @@
 // engine-free unit coverage for tools/lib/tail-score.mjs: TAIL_SLICES,
 // TAIL_TARGETS, summarizeSlice, scoreTail, TAIL_SEARCH_PLAN, tailEvalRow and
 // formatTailEvalLine. Every synthetic row/summary below is hand-built to
-// exercise one arithmetic path at a time (this file never imports the engine
-// or the bot, exactly as tail-score.mjs itself does not).
+// exercise one arithmetic path at a time (this file never imports the bot,
+// and imports the engine only for Phase 79.1-02's read-only DIALS resolution
+// tests at the end; tail-score.mjs itself imports neither).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -19,6 +20,10 @@ import {
   tailEvalRow,
   formatTailEvalLine,
 } from "../../tools/lib/tail-score.mjs";
+// Phase 79.1-02 (Task 1): the one engine import this file takes, read-only,
+// so the resolution tests below can check TAIL_SEARCH_PLAN against the real
+// dials. Everything else in this file stays engine-free.
+import { DIALS } from "../../engine/difficulty.js";
 
 // --- TAIL_SLICES / TAIL_TARGETS / TAIL_SEARCH_PLAN -------------------------
 
@@ -270,4 +275,25 @@ test("formatTailEvalLine: reports 'unmeasured' for a missing fresh summary", () 
   const row = tailEvalRow(3, {}, { summaries, elapsedMs: 10 });
   const line = formatTailEvalLine(row);
   assert.match(line, /fresh\[unmeasured\]/);
+});
+
+// --- TAIL_SEARCH_PLAN resolution against DIALS (Phase 79.1-02 Task 1) --------
+
+test("every TAIL_SEARCH_PLAN path resolves against DIALS to a finite number within its [lo, hi]", () => {
+  for (const coord of TAIL_SEARCH_PLAN) {
+    const name = coord.path.join(".");
+    const value = coord.path.reduce((obj, key) => (obj == null ? undefined : obj[key]), DIALS);
+    assert.equal(typeof value, "number", `${name} resolves to a number`);
+    assert.ok(Number.isFinite(value), `${name} is finite`);
+    assert.ok(value >= coord.lo && value <= coord.hi, `${name}=${value} lies within [${coord.lo}, ${coord.hi}]`);
+  }
+});
+
+test("no TAIL_SEARCH_PLAN path names a user-ruled value (FOE_COUNT_DEPTH, any kneeDepth, CONTROL_AT_DEPTH.holdRounds)", () => {
+  for (const coord of TAIL_SEARCH_PLAN) {
+    const name = coord.path.join(".");
+    assert.notEqual(coord.path[0], "FOE_COUNT_DEPTH", `${name} searches FOE_COUNT_DEPTH`);
+    assert.notEqual(coord.path[coord.path.length - 1], "kneeDepth", `${name} searches a knee`);
+    assert.notEqual(name, "CONTROL_AT_DEPTH.holdRounds", `${name} searches holdRounds`);
+  }
 });
