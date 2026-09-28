@@ -113,8 +113,10 @@ without a valid notes file for that version.
 The ☰ menu's **PATCH NOTES** row opens a sheet showing the current version's
 notes, rendered from `src/browser/patchNotesData.js` through
 `src/browser/patchNotes.js#renderPatchNotes` (no library — a minimal, pure
-Markdown-subset parser). The sheet also carries a "Past versions on GitHub"
-link to the public releases page. On the first launch after an update where
-the stamped version differs from the last version the player saw, the sheet
+Markdown-subset parser). The sheet also carries a "Past versions" link to
+the public patch-notes page on the website
+(`https://darktierstudios.com/delve-die-repeat/patch-notes`,
+`PATCH_NOTES_RELEASES_URL`). On the first launch after an update where the
+stamped version differs from the last version the player saw, the sheet
 opens once by itself; a genuinely fresh install marks the current version
 seen without ever popping the sheet.

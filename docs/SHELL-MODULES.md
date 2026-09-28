@@ -348,10 +348,10 @@ decision; `PATCH_NOTES_COPY` and `PATCH_NOTES_RELEASES_URL`).
 - **The sheet renders the current version's notes offline.** `openNotesSheet`
   parses `PATCH_NOTES.markdown` and draws it into `#mw-notes-body` through
   `renderPatchNotes`; a build shipped with no notes file shows
-  `PATCH_NOTES_COPY.missing` instead. The "Past versions on GitHub" link
-  (`PATCH_NOTES_RELEASES_URL`) opens outside the game — the system browser
-  on native, a new tab in the dev loop — and the game is exactly where it
-  was on return.
+  `PATCH_NOTES_COPY.missing` instead. The "Past versions" link
+  (`PATCH_NOTES_RELEASES_URL`, `https://darktierstudios.com/delve-die-repeat/patch-notes`)
+  opens outside the game — the system browser on native, a new tab in the
+  dev loop — and the game is exactly where it was on return.
 - **The once-per-update auto-show (D-21).** Right before `account.boot()`,
   `readNotesLaunch(window.mzStorage, PATCH_NOTES.version)` reads the last
   version the player has seen the notes for, through `window.mzStorage`
