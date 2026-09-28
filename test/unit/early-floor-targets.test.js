@@ -11,8 +11,12 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
 
-import { TARGET_SURVIVAL, survivalReadout } from "../../tools/lib/band-readout.mjs";
+import { TARGET_SURVIVAL, FOUR_BANDS, survivalReadout } from "../../tools/lib/band-readout.mjs";
+import { TAIL_TARGETS } from "../../tools/lib/tail-score.mjs";
 import {
   EARLY_TARGET_S,
   P50_DEATH_BAND,
@@ -26,6 +30,8 @@ import {
 } from "../../tools/lib/fit-score.mjs";
 import { distribution } from "../../tools/lib/tuning-bot.mjs";
 import { DIALS } from "../../engine/difficulty.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 // USER RULING C's S_L for floors 1-24 (54-CONTEXT.md, 2026-09-21), pasted
 // independently of both copies under test, so a drift fails here.
@@ -201,4 +207,46 @@ test("evalRow: floors 13-20 carry dS null; the row carries p50Death, p50InBand a
   assert.ok(line.startsWith("#1 score="), line);
   assert.ok(line.includes("deathP50=4 shape=ok"), line);
   assert.ok(line.includes(" S1=95.1 S2=79.7 S3=58.4 S4=38.7 S6=15.1 S8=6.2 S12=1.7 tail S15="), line);
+});
+
+// --- the tail guard and the doc record (Phase 79.2) ----------------------------------
+
+test("P50_DEATH_BAND deep-equals TAIL_TARGETS.guard.freshP50Death ([3, 4], user ruling 2026-09-27); the fresh ruled tail targets are unchanged", () => {
+  assert.deepStrictEqual(TAIL_TARGETS.guard, { freshP50Death: [3, 4] });
+  assert.deepStrictEqual(P50_DEATH_BAND, TAIL_TARGETS.guard.freshP50Death);
+  assert.deepStrictEqual(TAIL_TARGETS.fresh, { reach20Max: 1.0, reach21Below: 0.5, reachCount30Max: 1 });
+});
+
+test("docs/DIFFICULTY-RETUNE.md: the Phase 79.2 targets section agrees with TARGET_SURVIVAL and the live constants (doc-sync)", () => {
+  const doc = fs.readFileSync(path.join(__dirname, "../../docs/DIFFICULTY-RETUNE.md"), "utf8").replace(/\r\n/g, "\n");
+  const lines = doc.split("\n");
+  const start = lines.findIndex((l) => l.startsWith("### Phase 79.2 — the targets (floors 1–12)"));
+  assert.ok(start > -1, "the '### Phase 79.2 — the targets (floors 1–12)' heading exists");
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^#{1,3} /.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  const section = lines.slice(start + 1, end);
+
+  const rowRe = /^\| (\d+) \| ([\d.]+) % \| ([\d.]+) % \| Ruling C floor (\d+) \| (\w+) \|$/;
+  const rows = section.filter((l) => rowRe.test(l));
+  assert.equal(rows.length, 12, "exactly 12 target rows");
+  const bandOf = (L) => (L <= 4 ? "Filter" : L <= 8 ? "Wall" : "Breakaway");
+  rows.forEach((line, i) => {
+    const t = TARGET_SURVIVAL[i];
+    const band = FOUR_BANDS.find((b) => t.floor >= b.min && t.floor <= b.max).name;
+    assert.equal(band, bandOf(t.floor));
+    assert.equal(line, `| ${t.floor} | ${t.pL.toFixed(1)} % | ${t.SL.toFixed(1)} % | Ruling C floor ${2 * t.floor} | ${band} |`);
+  });
+
+  const constLines = [
+    `- \`P50_DEATH_BAND\`: [${P50_DEATH_BAND.join(", ")}]`,
+    `- \`FILTER_SHAPE.maxDrop\`: ${FILTER_SHAPE.maxDrop}`,
+    `- \`FILTER_SHAPE.minRise\`: ${FILTER_SHAPE.minRise}`,
+    `- \`TAIL_TARGETS.guard.freshP50Death\`: [${TAIL_TARGETS.guard.freshP50Death.join(", ")}]`,
+  ];
+  for (const c of constLines) assert.ok(section.includes(c), `the section carries the line: ${c}`);
 });

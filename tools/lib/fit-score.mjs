@@ -296,17 +296,28 @@ export function classConstraints(classIdentity) {
  * now 9. A dial set (a --start file, an old fit log) that still names it
  * fails loudly: engine/difficulty.js#setDialsForTuning throws on an
  * unknown dial.
+ *
+ * Phase 79.2 (user ruling 2026-09-27; the coordinate order is the planner's
+ * call under 79.2-CONTEXT.md's discretion): the SAME 9 coordinates with the
+ * SAME Phase 54 steps and bounds, re-ordered for the early-floor retune.
+ * The foe-side base levers come first, because they act from floor 1 and
+ * weigh relatively most on the early floors (FOE_HIT_SCALE.base, then
+ * FOE_LEVEL.base). Hazards come next, for the Filter's bad-drop variance
+ * (HAZARD_SCALE.base). Then foe HP and encounter density, then the two hero
+ * dials, which carry the largest parity re-declaration. The two depth slopes
+ * (FOE_HIT_SCALE.perDepth, FOE_LEVEL.perDepth) go last, because they steepen
+ * the tail most and the tail already sits at its ruled limits.
  */
 export const SEARCH_PLAN = [
-  { path: ["FOE_LEVEL", "perDepth"], step: 0.03, lo: 0.12, hi: 0.3 },
-  { path: ["FOE_LEVEL", "base"], step: 0.15, lo: 0.3, hi: 1.0 },
-  { path: ["HERO_SP_SCALE"], step: 0.05, lo: 0.15, hi: 0.6 },
   { path: ["FOE_HIT_SCALE", "base"], step: 0.08, lo: 0.4, hi: 1.0 },
-  { path: ["FOE_HIT_SCALE", "perDepth"], step: 0.01, lo: 0, hi: 0.05 },
-  { path: ["FOE_HP_SCALE", "base"], step: 0.1, lo: 0.5, hi: 1.2 },
-  { path: ["HERO_HP_SCALE"], step: 0.15, lo: 1.0, hi: 1.8 },
+  { path: ["FOE_LEVEL", "base"], step: 0.15, lo: 0.3, hi: 1.0 },
   { path: ["HAZARD_SCALE", "base"], step: 0.1, lo: 0.3, hi: 1.0 },
+  { path: ["FOE_HP_SCALE", "base"], step: 0.1, lo: 0.5, hi: 1.2 },
   { path: ["ENCOUNTER_DOTS", "base"], step: 1, lo: 5, hi: 10 },
+  { path: ["HERO_HP_SCALE"], step: 0.15, lo: 1.0, hi: 1.8 },
+  { path: ["HERO_SP_SCALE"], step: 0.05, lo: 0.15, hi: 0.6 },
+  { path: ["FOE_HIT_SCALE", "perDepth"], step: 0.01, lo: 0, hi: 0.05 },
+  { path: ["FOE_LEVEL", "perDepth"], step: 0.03, lo: 0.12, hi: 0.3 },
 ];
 
 /**

@@ -108,6 +108,12 @@ export const TAIL_SLICES = Object.freeze([
  * 30 should basically never happen"). RULES-17 prohibition: MUST NOT be
  * softened or reinterpreted here — any change to these numbers is a question
  * for the user, never a code-only fix.
+ *
+ * `guard.freshP50Death` — the user's ruling of 2026-09-27 (Phase 79.2,
+ * "Lower the bot target") moved the fair bot's fresh p50 death-depth band
+ * from 5-7 (USER RULING D) to [3, 4]. The guard is report-only (a note,
+ * never a score or verdict change). Every other TAIL_TARGETS number above is
+ * unchanged.
  */
 export const TAIL_TARGETS = Object.freeze({
   fresh: Object.freeze({ reach20Max: 1.0, reach21Below: 0.5, reachCount30Max: 1 }),
@@ -115,7 +121,7 @@ export const TAIL_TARGETS = Object.freeze({
   deep20: Object.freeze({ p50GainedMax: 2, reach30Max: 1 }),
   deep30: Object.freeze({ p50GainedMax: 0, p90GainedMax: 1 }),
   rotation: Object.freeze({ p50Slack: 0, p90Slack: 0 }),
-  guard: Object.freeze({ freshP50Death: Object.freeze([5, 7]) }),
+  guard: Object.freeze({ freshP50Death: Object.freeze([3, 4]) }),
 });
 
 /**
@@ -191,8 +197,9 @@ const SLICE_LEX_FACTOR = 1_000_000;
  * rot40/troll20 are reported only (via the caller's own `summaries`) — never
  * read by this function at all (deep40 carries no TAIL_TARGETS entry).
  *
- * A fresh `p50Death` outside `targets.guard.freshP50Death` (the [5, 7]
- * average-run-ends band, reported as a guard) sets `guard` to a note string
+ * A fresh `p50Death` outside `targets.guard.freshP50Death` (the [3, 4]
+ * fair-bot band since the user's ruling of 2026-09-27, Phase 79.2; it was
+ * USER RULING D's [5, 7]; reported as a guard) sets `guard` to a note string
  * — this NEVER changes `score` or `verdict`.
  *
  * Returns `{ score, verdict, misses, guard, freshMeasured, constraints }`.
