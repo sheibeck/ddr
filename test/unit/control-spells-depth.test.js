@@ -29,7 +29,7 @@ import assert from "node:assert/strict";
 import { castSpell, readScroll } from "../../engine/magic.js";
 import { useItem } from "../../engine/items.js";
 import { foeTurn } from "../../engine/combat.js";
-import { controlResistCheck } from "../../engine/derived.js";
+import { controlResistCheck, foeSpellResistCheck } from "../../engine/derived.js";
 import { DIALS, controlHoldRoundsFor } from "../../engine/difficulty.js";
 import { SPELLS } from "../../content/index.js";
 import { STAVES, JEWELRY } from "../../content/treasure-tables.js";
@@ -105,14 +105,37 @@ function spellState(depth, spellName, level, nFoes, foeOverrides = {}) {
  * cursor 0, round 1 (every cast-time resist happens before the round ticks). */
 function findActs(depth, wants) {
   const probe = { getState: () => 0 };
-  for (let acts = 0; acts <= 5000; acts++) {
+  // Quick 260927-rsx: this file pins the RULES-18 depth resist, so the acts
+  // it picks must also leave every foe failing the (earlier, separate) intel
+  // resist for the same source — see intelQuiet below.
+  const source = wants.length ? wants[0][0].slice(wants[0][0].indexOf(":") + 1) : "";
+  for (let acts = 0; acts <= 20000; acts++) {
     const ok = wants.every(([purpose, idx, resisted]) => {
       const r = controlResistCheck({ floor: { depth }, acts, combat: { round: 1 } }, probe, purpose, idx);
       return r.rolled && r.resisted === resisted;
     });
-    if (ok) return acts;
+    if (ok && intelQuiet(acts, source)) return acts;
   }
   throw new Error(`findActs: nothing for ${JSON.stringify(wants)} at depth ${depth}`);
+}
+
+/** intelQuiet(acts, source) — quick 260927-rsx (user ruling 2026-09-27):
+ * every spell cast on a foe first rolls the foe's intel resist
+ * (engine/derived.js#foeSpellResistCheck, a derived stream off the same fixed
+ * cursor). This file's scenarios pin the depth rule, so they run at an acts
+ * where none of the (up to five, intel-1) foes resists `source` that way. */
+function intelQuiet(acts, source) {
+  const probe = { getState: () => 0 };
+  for (let idx = 0; idx < 5; idx++) {
+    if (foeSpellResistCheck({ acts, combat: { round: 1 } }, probe, source, idx, 1).resisted) return false;
+  }
+  return true;
+}
+
+/** quietActs(source) — the first acts where intelQuiet holds. */
+function quietActs(source) {
+  for (let acts = 0; acts <= 20000; acts++) if (intelQuiet(acts, source)) return acts;
+  throw new Error(`quietActs: nothing for ${source}`);
 }
 
 /** markingEvents(rng, type) — an events array that records the main-draw
@@ -135,7 +158,11 @@ const CAST = new Set(["stunned", "dozed", "weakened", "stupefied", "blinded", "s
 function digest(s, events, rng) {
   return {
     n: rng.count(),
-    ev: events.map((e) => e.type),
+    // Quick 260927-rsx (declared): the intel resist is new since the pre-plan
+    // capture; its failed rolls (resistFailed) are dropped from the digest,
+    // and every scenario runs at an acts where no foe resists (intelQuiet),
+    // so the pre-plan expectations below stand as written.
+    ev: events.map((e) => e.type).filter((t) => t !== "resistFailed"),
     cast: events.filter((e) => CAST.has(e.type)),
     foes: s.combat ? s.combat.foes.map((f) => Object.fromEntries(FIELDS.filter((k) => k in f).map((k) => [k, f[k]]))) : null,
     weakened: s.combat ? !!s.combat.weakened : null,
@@ -157,7 +184,7 @@ const SPELL_SCENARIOS = {
   Insane: ["Insane", 2, 1, [4, 2, ...PAD(20)]],
 };
 
-function castScenario(key, depth, acts = 0) {
+function castScenario(key, depth, acts = quietActs(SPELL_SCENARIOS[key][0])) {
   const [name, level, nFoes, seq] = SPELL_SCENARIOS[key];
   const s = spellState(depth, name, level, nFoes);
   s.acts = acts;
@@ -454,7 +481,7 @@ const ITEM_SCENARIOS = {
   Amulet: [() => ({ n: "Amulet of Stone", use: "stone", every: 100, aoe: 4 }), 5],
 };
 
-function useScenario(key, depth, acts = 0, seq = PAD(40)) {
+function useScenario(key, depth, acts = quietActs(ITEM_SCENARIOS[key][0]().n), seq = PAD(40)) {
   const [make, nFoes] = ITEM_SCENARIOS[key];
   const it = make();
   const s = spellState(depth, "Doze", 1, nFoes);

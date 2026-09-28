@@ -26,6 +26,9 @@ import { useItem } from "../../engine/items.js";
 import { applyAction, newRun } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { SPELLS } from "../../content/index.js";
+// Quick 260927-rsx: every spell cast on a foe rolls its resist; a test that
+// pins something else picks a state.acts where no foe resists.
+import { noResistActs } from "./harness/spellResistActs.js";
 
 const SPELL_IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 
@@ -486,6 +489,7 @@ test("(xii) Earthquake halves its per-foe damage while afraid, drawing the same 
     c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Earthquake"], wp: 50, maxWP: 50, ward: { pool: 10, rounds: 1, name: "Shield" } },
   });
   stateA.combat = fixedCombat([foeA]);
+  stateA.acts = noResistActs("Earthquake"); // quick 260927-rsx: the foe does not resist
   // 3 quake dice, tail: foe miss(7) — no round-advance draws, Phase 51.
   const rngA = countingRng(fakeRng([10, 10, 10, 7]));
   castSpell(stateA, SPELL_IDX.Earthquake, rngA, []);
@@ -496,6 +500,7 @@ test("(xii) Earthquake halves its per-foe damage while afraid, drawing the same 
     c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Earthquake"], wp: 50, maxWP: 50, ward: { pool: 10, rounds: 1, name: "Shield" } },
   });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
+  stateB.acts = stateA.acts;
   const rngB = countingRng(fakeRng([10, 10, 10, 7]));
   castSpell(stateB, SPELL_IDX.Earthquake, rngB, []);
   assert.equal(foeB.wp, 999 - 19, "afraid: ceil(38/2) = 19");
@@ -507,6 +512,7 @@ test("(xii) Volley (Fireballs) halves each bolt's damage while afraid, drawing t
   const foeA = fixedFoe({ wp: 999, maxWP: 999, type: "Humans" });
   const stateA = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Fireballs"], wp: 50, maxWP: 50 } });
   stateA.combat = fixedCombat([foeA]);
+  stateA.acts = noResistActs("Fireballs"); // quick 260927-rsx: the foe does not resist
   // n = d8 = 1 ball; dmg d10=1 -> 1+2=3; tail: foe miss(7) — no round-advance
   // draws, initiative is rolled once, Phase 51.
   const rngA = countingRng(fakeRng([1, 1, 7]));
@@ -517,6 +523,7 @@ test("(xii) Volley (Fireballs) halves each bolt's damage while afraid, drawing t
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans" });
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Fireballs"], wp: 50, maxWP: 50 } });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
+  stateB.acts = stateA.acts;
   const rngB = countingRng(fakeRng([1, 1, 7]));
   const eventsB = castSpell(stateB, SPELL_IDX.Fireballs, rngB, []);
   assert.equal(eventsB.find((e) => e.type === "volley").totalDamage, 2, "afraid: ceil(3/2) = 2");

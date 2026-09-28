@@ -252,8 +252,8 @@ in the engine or bot.
 thrown branch: `t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice" }` on
 `C.foes[C.target]` — one draw, no to-hit roll (like Acid), guarded on
 `sp.dmg` being present (T-40-03: a tampered/unknown `dot` row missing it
-never writes a broken record). `"dot"` is absent from `RESIST_IMMUNE_KINDS`,
-so an intel >= 12 target still gets its resist d20 exactly like Acid.
+never writes a broken record). Like Acid, the target rolls its spell resist
+first (quick 260927-rsx: every foe, half its intel in faces on a d20).
 Recasting on a foe already carrying an ice dot REFRESHES `left` (a plain
 overwrite — the record is replaced, never stacked).
 
@@ -1117,8 +1117,9 @@ is `CONTROL_AT_DEPTH` in `engine/difficulty.js`
   lands the control). The roll comes from its own derived stream, so the
   main dice never move because of it. A foe that shakes a control off gets
   an Oracle line (`controlResisted`, printing the roll and its range), a
-  rail line and an **Unmoved** chip. The existing intelligence resist
-  (`resistRoll`, intel 12+) still runs first and is unchanged.
+  rail line and an **Unmoved** chip. The intelligence resist still runs
+  first (since quick 260927-rsx, every foe rolls it: see below) and is a
+  separate check.
 - **The hold.** Past the knee, a control that used to kill, remove or last
   the whole fight holds the foe for `holdRounds` (three) rounds instead:
   a Freeze or Ice payoff (held frozen), Petrify and the stone items (held as
@@ -1173,3 +1174,20 @@ the new rules: past the knee it scores Freeze as a disable, not a kill
 - Spell cooldowns / a mana model — not in v1.5; spells stay per-day
   slot-casts as canon (40-CONTEXT.md "Deferred Ideas").
 - (done — see above)
+
+## Every spell cast on a foe can be resisted (quick 260927-rsx, user ruling 2026-09-27)
+
+"Every spell cast on an enemy should have a chance to be resisted based on
+their intelligence. High intelligence is more chance to resist." Every foe a
+spell targets rolls a d20 and resists on the top `max(1, round(intel / 2))`
+faces: intel 1–2 on 20 (5%), 3 on 19–20, 6 on 18–20, 10 on 16–20 (25%), 16
+on 13–20 (40%). No intel-12 gate, and thrown damage spells are included. A
+resisted spell does nothing to that foe; the turn and the charge are spent.
+A room spell rolls per foe (a Weaken lands on the foes that did not resist).
+The hero, a Joiner, a scroll and the foe-targeted staves and amulet all
+follow it; self and ally spells (Heal, Shield, Bubble, Strength, Regenerate,
+Map the Floor, Sense Danger, Sense Presence, Mirror Self, the summons) never
+roll. A foe casting at the HERO still uses canon p.25 (`resistRoll`, intel
+12+). Every roll, either way, is an Oracle line. The foe card and each
+foe-targeted spell row state the range. See docs/ROLL-LEDGER.md for the site,
+the stream and the draw order.

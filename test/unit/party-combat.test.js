@@ -27,6 +27,8 @@ import { newDay } from "../../engine/movement.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR, ORACLE_ONLY, FEATURE_EVENTS, linesForAction } from "../../src/browser/narrationLines.js";
 import { setIdentityDials } from "./harness/identityDials.js";
+// Quick 260927-rsx: forced resist outcomes come from the real derived check.
+import { actsWhere } from "./harness/spellResistActs.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
 // this file's own pins are canon-mechanic numbers written before the fit
@@ -482,13 +484,20 @@ test("DFB-05 Magic User: Doze on a dim foe draws no resist roll and puts it to s
   assert.equal(foe.asleep, 3);
 });
 
-test("DFB-05 Magic User: an intelligent foe can resist Doze (d20 below its intel) -> allySpellMissed { resisted: true }", () => {
+// Quick 260927-rsx (user ruling 2026-09-27): re-pinned — a Joiner's cast is
+// resisted like the hero's: every foe rolls half its intel in faces on a
+// derived-stream d20 (intel 15: 8 faces, 13–20), and the resist is its own
+// spellResisted { by } line, not allySpellMissed. No main draw is taken.
+test("DFB-05 Magic User: a foe can resist a Joiner's Doze -> spellResisted { by }, no sleep, the charge spent", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 15 });
   const state = fixedState({ party: [muMember({ grimoire: ["Doze"] })] });
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
-  const events = alliesTurn(state, fakeRng([10]), []);
-  const miss = events.find((e) => e.type === "allySpellMissed");
-  assert.equal(miss.resisted, true);
+  state.acts = actsWhere("Doze", [[0, true]], { intels: { 0: 15 }, caster: "Ada" });
+  const events = alliesTurn(state, fakeRng([]), []);
+  const res = events.find((e) => e.type === "spellResisted");
+  assert.equal(res.by, "Ada");
+  assert.equal(res.atLeast, 13);
+  assert.equal(events.some((e) => e.type === "allySpellMissed"), false);
   assert.equal(foe.asleep, 0);
   assert.equal(state.party[0].spellsUsed, 1);
 });

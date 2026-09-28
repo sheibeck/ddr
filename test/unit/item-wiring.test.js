@@ -16,6 +16,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { makeRng } from "../../engine/rng.js";
+// Quick 260927-rsx: a staff or amulet power is a spell on each foe it
+// reaches, and each foe rolls its resist; a test that pins the reach picks a
+// state.acts where no foe resists.
+import { noResistActs } from "./harness/spellResistActs.js";
 import { GW, GH } from "../../engine/maze.js";
 import { move } from "../../engine/movement.js";
 import { canParley, playerStrike, foeTurn } from "../../engine/combat.js";
@@ -262,6 +266,7 @@ test("Amulet of Stone petrifies up to 4 foes (per-item aoe:4); a plain stone sou
   const makeFoes = () => [1, 2, 3, 4, 5].map((i) => fixedFoe({ name: `F${i}`, wp: 12, maxWP: 12 }));
 
   const amulet = fixedState({ c: { items: [AMULET_STONE] }, combat: fixedCombat(makeFoes()) });
+  amulet.acts = noResistActs("Amulet of Stone", 4, { cursor: makeRng(7).getState() });
   useItem(amulet, 0, makeRng(7), []);
   assert.equal(amulet.combat.foes.filter((f) => f.alive).length, 1, "Amulet turns 4 of 5 to stone");
 
@@ -270,6 +275,7 @@ test("Amulet of Stone petrifies up to 4 foes (per-item aoe:4); a plain stone sou
   // RULES-13 (Phase 75, Plan 09): a staff's power works only while wielded —
   // wield OAK_STAFF ({slot:"weapon"}) instead of addressing it by bag index.
   const staff = fixedState({ c: { cls: "Magic User", weapon: "Oak Staff", staff: OAK_STAFF, items: [] }, combat: fixedCombat(makeFoes()) });
+  staff.acts = noResistActs("Oak Staff", 2, { cursor: makeRng(7).getState() });
   useItem(staff, { slot: "weapon" }, makeRng(7), []);
   assert.equal(staff.combat.foes.filter((f) => f.alive).length, 3, "a default stone source (Oak Staff) hits only 2");
 });

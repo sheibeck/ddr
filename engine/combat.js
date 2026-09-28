@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, resistRoll, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -1119,6 +1119,67 @@ export function resistControl(state, foe, effect, source, idx, rng, events) {
 }
 
 /**
+ * foeResistsSpell(state, foe, spell, rng, events, by) — user ruling
+ * 2026-09-27 (quick 260927-rsx): "Every spell cast on an enemy should have a
+ * chance to be resisted based on their intelligence ... I want the resist
+ * rolls noted in the Oracle, too." The ONE gate every spell cast on a foe
+ * calls, once per targeted foe, BEFORE anything of the spell touches that
+ * foe: the hero's castSpell (every kind except derived.js#SPELL_SELF_KINDS,
+ * which includes a scroll's free cast), a Joiner's allyCast, and a staff or
+ * amulet activation that lays a spell on foes (engine/items.js). Rolls
+ * derived.js#foeSpellResistCheck (a derived stream, so the check never moves
+ * the main rng) and ALWAYS narrates: `spellResisted` on a resist (the
+ * caller then gives that foe NO effect — damage included) or
+ * `resistFailed` on a miss, each carrying `{ target, spell, roll, atLeast,
+ * dieN, intel, faces }` plus `by` (the caster's name) when a Joiner cast
+ * it. Returns `true` when the foe resisted. The RULES-18 depth resist
+ * (`resistControl` above) is a separate, later check for controls only —
+ * reached only when this one returns false.
+ */
+export function foeResistsSpell(state, foe, spell, rng, events, by) {
+  const C = state.combat;
+  const idx = C && Array.isArray(C.foes) ? C.foes.indexOf(foe) : -1;
+  const intel = Number.isFinite(foe.intel) ? foe.intel : 0;
+  const res = foeSpellResistCheck(state, rng, spell, idx, intel, by || "you");
+  const payload = { target: foe.name, spell, ...(by ? { by } : {}), roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel, faces: res.faces };
+  events.push({ type: res.resisted ? "spellResisted" : "resistFailed", ...payload });
+  return res.resisted;
+}
+
+/**
+ * roomWeakenResists(state, aimed, spell, rng, events, by) — a room-wide
+ * Weaken (the hero's spell, a Joiner's, the Walnut Staff) under the per-foe
+ * rule of quick 260927-rsx: every live foe rolls its own intel resist
+ * (foeResistsSpell, in C.foes order). When every one resists, nothing lands
+ * (returns false). Otherwise the RULES-18 room resist runs EXACTLY as before
+ * (one `resistControl` keyed on `aimed`; a resist marks every live foe
+ * Unmoved and nothing lands). When the Weaken lands (returns true), a foe
+ * that resisted is marked `weakenResisted` — but only if no Weaken was
+ * already running (a resist shrugs off the new cast, not an old one that
+ * already took) — and every foe that did not resist loses the mark; the
+ * CALLER then sets `C.weakened`/`C.foeToHitPenalty`/its timer, which
+ * derived.js#foeWeakened reads per foe.
+ */
+export function roomWeakenResists(state, aimed, spell, rng, events, by) {
+  const C = state.combat;
+  const live = liveFoes(state);
+  const shrugged = new Set(live.filter((f) => foeResistsSpell(state, f, spell, rng, events, by)));
+  if (shrugged.size === live.length) return false;
+  if (aimed && resistControl(state, aimed, "weaken", spell, C.foes.indexOf(aimed), rng, events)) {
+    C.foes.forEach((f) => {
+      if (f.alive) f.resisted = "weaken";
+    });
+    return false;
+  }
+  const already = !!C.weakened;
+  for (const f of live) {
+    if (!shrugged.has(f)) delete f.weakenResisted;
+    else if (!already) f.weakenResisted = true;
+  }
+  return true;
+}
+
+/**
  * holdFoe(state, foe, kind, source, events) — RULES-18: the "hold instead of
  * a kill/lock forever" half of the control audit's past-the-knee rule. Sets
  * `foe.held = { kind, left: controlHoldRoundsFor(depth) }` — `kind` one of
@@ -1243,7 +1304,7 @@ function pursuitStrike(state, rng, events) {
   // RULES-17 (Phase 75.3): an elite pursuer's parting strike carries its own
   // per-rank hit bonus too — `pursuer.elite || 0` is 0 for every plain foe.
   let dmg = foeHitFor(foeLevelBase(pursuer) + (crit ? 2 * dice : dice), curve, pursuer.elite || 0);
-  if (C.weakened) dmg = Math.ceil(dmg / 2);
+  if (foeWeakened(C, pursuer)) dmg = Math.ceil(dmg / 2);
   // Phase 40 (SPELL-01, Shrink) — a shrunk pursuer's parting strike is
   // halved too, same rule as its ordinary melee swing.
   if (pursuer.shrunk) dmg = Math.ceil(dmg / 2);
@@ -2296,8 +2357,9 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
  * + eff(throw), damage = rollDice(sp.dmg) * max(1, level - sp.lvl) +
  * eff(spellDmg) through damageFoe kind "spell" (no armor draw), Freeze
  * freezes and routes through killFoe with the kill-twice unfreeze exactly
- * like the hero's Phase 23 rule; status/stun/weaken resist-check first
- * (resistRoll — only an intel >= 12 target draws) then sleep the target
+ * like the hero's Phase 23 rule; every kind resist-checks first (quick
+ * 260927-rsx: foeResistsSpell, every targeted foe rolls; a Weaken rolls
+ * per live foe through roomWeakenResists) then sleeps the target
  * (max(asleep, d4) rounds) or weaken the party's `C.weakened`/
  * `C.foeToHitPenalty`. The persistent sheet pays the charge
  * (`sheet.spellsUsed++`), never the transient `view`.
@@ -2306,6 +2368,10 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   sheet.spellsUsed = (sheet.spellsUsed || 0) + 1;
   const base = { name: ally.name, spell: sp.n, target: t.name };
   if (sp.kind === "thrown") {
+    // Quick 260927-rsx (user ruling 2026-09-27): the target rolls its intel
+    // resist before the throw; a resisted spell does nothing to it (no
+    // to-hit, no damage draw) and the charge is still spent.
+    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
     // Phase 40 (SPELL-01): the THIRD name-keyed Freeze check (a member cast)
     // — repointed to the data flag alongside magic.js's own two sites
     // (research Pitfall 2).
@@ -2372,32 +2438,22 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   }
   // status / stun / weaken — the only other ATTACK_SPELL_KINDS.
   events.push({ type: "allyCast", ...base });
-  const res = resistRoll(rng, t.intel);
-  if (res.rolled && res.resisted) {
-    // Phase 73 (ROLL-05): resistRoll's own draw is roll-high; carry its
-    // { roll, atLeast, dieN } triple alongside the existing resisted flag.
-    events.push({ type: "allySpellMissed", ...base, resisted: true, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN });
-    return;
-  }
   // RULES-18 (Phase 75.3, audit C9/C15): the d4 (or d4+1) is drawn in its
-  // existing position, whether or not the target resists — the control
-  // resist check itself is a derived stream and never touches this draw.
+  // existing position, whether or not the target resists the depth check —
+  // the control resist check itself is a derived stream and never touches
+  // this draw. Quick 260927-rsx: the intel resist (also a derived stream)
+  // comes first, per targeted foe; a Doze/Stun that the target resists
+  // draws nothing more.
   const idx = state.combat.foes.indexOf(t);
   if (sp.kind === "weaken") {
     // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
     // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
-    // (party-wide duration lives in one place) — its own d4+1 draw, after
-    // the resist roll above.
+    // (party-wide duration lives in one place) — its own d4+1 draw.
     const rounds = rng.d(4) + 1; // roll:amount
-    // RULES-18 (audit C15): Weaken is one roll for the whole room, keyed on
-    // the target the caster aimed at (75.3-CONTEXT's flagged assumption) —
-    // a resist marks every live foe Unmoved and starts nothing.
-    if (resistControl(state, t, "weaken", sp.n, idx, rng, events)) {
-      state.combat.foes.forEach((f) => {
-        if (f.alive) f.resisted = "weaken";
-      });
-      return;
-    }
+    // Quick 260927-rsx: every live foe rolls its own intel resist, then
+    // RULES-18 (audit C15) keeps its one depth roll for the whole room,
+    // keyed on the target the caster aimed at — see roomWeakenResists.
+    if (!roomWeakenResists(state, t, sp.n, rng, events, ally.name)) return;
     const C = state.combat;
     if (C) {
       C.weakened = true;
@@ -2406,6 +2462,7 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     }
     events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
   } else {
+    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
     const rolled = rng.d(4); // roll:amount
     if (resistControl(state, t, "sleep", sp.n, idx, rng, events)) return;
     t.asleep = Math.max(t.asleep || 0, rolled);
@@ -3214,7 +3271,7 @@ export function foeTurn(state, rng, events = []) {
         // RULES-17 (Phase 75.3): an elite's blow carries its own per-rank
         // hit bonus too — `f.elite || 0` is 0 for every plain foe.
         let mDmg = foeHitFor(foeLevelBase(f) + (mCritical ? 2 * mDice : mDice), curve, f.elite || 0);
-        if (C.weakened) mDmg = Math.ceil(mDmg / 2);
+        if (foeWeakened(C, f)) mDmg = Math.ceil(mDmg / 2);
         // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
         // too (a shrunk-AND-weakened foe is quartered, ceil applied twice —
         // both are independent post-roll halvings). Pure read, 0 draws;
@@ -3305,7 +3362,7 @@ export function foeTurn(state, rng, events = []) {
       // RULES-17 (Phase 75.3): an elite's blow carries its own per-rank hit
       // bonus too — `f.elite || 0` is 0 for every plain foe.
       let dmg = foeHitFor(foeLevelBase(f) + (crit ? 2 * dice : dice), curve, f.elite || 0);
-      if (C.weakened) dmg = Math.ceil(dmg / 2);
+      if (foeWeakened(C, f)) dmg = Math.ceil(dmg / 2);
       // Phase 40 (SPELL-01, Shrink) — a shrunk foe's own blows are halved
       // too, hero side (see the member-branch twin above for the
       // shrunk+weakened quartering note). Pure read, 0 draws; false on every
@@ -3405,6 +3462,8 @@ export function foeTurn(state, rng, events = []) {
     if (C && trans.some((t) => t.id === "spell:weaken" && t.from === "effect")) {
       C.weakened = false;
       C.foeToHitPenalty = 0;
+      // Quick 260927-rsx: the per-foe resist marks go with the Weaken.
+      C.foes.forEach((f) => delete f.weakenResisted);
       events.push({ type: "weakenFaded" });
     }
   }

@@ -19,10 +19,10 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, schoolBonus, schoolGate, resistRoll, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome } from "./derived.js";
+import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe, foeResistsSpell, roomWeakenResists } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -39,10 +39,35 @@ import { startEffect } from "./effects.js";
 import { damageFoe } from "./foeDamage.js";
 import { spellDamageFor, controlHoldRoundsFor } from "./difficulty.js";
 
-// p.25: a non-thrown spell can be resisted by an intelligent target. These
-// kinds are immune to that resistance check — ports mazeworld.html's inline
-// array literal (line 2509) verbatim as a named set.
-const RESIST_IMMUNE_KINDS = new Set(["thrown", "ward", "might", "regen", "heal", "reveal", "foresee", "summon", "mirror"]);
+// DELIBERATE RULES CHANGE (quick 260927-rsx, user ruling 2026-09-27: "Every
+// spell cast on an enemy should have a chance to be resisted based on their
+// intelligence"). Canon p.25 (mazeworld.html line 2509) let only an
+// intel >= 12 target resist, and never a thrown spell. Now every foe a spell
+// targets rolls combat.js#foeResistsSpell (derived.js#foeSpellResistRoll,
+// half-intel faces on a d20), thrown damage included; a resisted spell has
+// no effect on that foe. Only derived.js#SPELL_SELF_KINDS (the caster's own
+// body, side or map) is never resisted.
+//
+// SINGLE_TARGET_KINDS — the foe-targeted kinds that land on ONE foe: its
+// resist is rolled up front, before the kind branch, and a resist ends the
+// cast right there (the turn and the charge are spent, nothing else draws —
+// canon's own spellResisted shape). Each names the foe its own branch
+// resolves: `target` is the hero's live target (C.target, normalized),
+// `first` the first live foe. A single-target thrown spell (no `aoe`) is
+// "target". Every other foe-targeted kind (stun, weaken, shrink, quake,
+// vapor, volley, turn, gate, and a thrown `aoe: "all"`) resists per foe
+// inside its own branch.
+const SINGLE_TARGET_KINDS = Object.freeze({
+  stupid: "first",
+  status: "first",
+  death: "first",
+  blind: "target",
+  acid: "target",
+  dot: "target",
+  petrify: "target",
+  insane: "target",
+  thrown: "target",
+});
 
 // Phase 40 (SPELL-01/SPELL-04): the summon branch's two ally name tables,
 // moved to module consts (byte-identical strings, same order) so both the
@@ -149,26 +174,20 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     return events;
   }
 
-  // p.25: a non-thrown spell can be resisted by an intelligent target.
-  // Phase 19 FOE-07 (D-07/D-17): the intel>=12 gate and the single d20 now
-  // live in derived.js's resistRoll, shared with engine/foeAbilities.js's
-  // hero-side check; byte-identical control flow and events (the gate is
-  // the same boolean, relocated), so parity's cast-damage fixture (Shriek,
-  // intel 1) never enters the rolled branch on either side. Phase 73
-  // (ROLL-05): resistRoll's own draw is now roll-high; both events carry the
-  // { roll, atLeast, dieN } triple alongside their existing fields.
-  if (C && !RESIST_IMMUNE_KINDS.has(sp.kind)) {
-    const t = liveFoes(state)[0];
-    if (t) {
-      const res = resistRoll(rng, t.intel);
-      if (res.rolled) {
-        if (res.resisted) {
-          events.push({ type: "spellResisted", target: t.name, spell: sp.n, ...rollFields(res), intel: t.intel });
-          afterPlayerAction(state, rng, events);
-          return events;
-        }
-        events.push({ type: "resistFailed", target: t.name, ...rollFields(res) });
-      }
+  // Quick 260927-rsx (user ruling 2026-09-27): a single-target spell cast on
+  // a foe — the foe its own branch below will resolve — rolls that foe's
+  // intel resist here, in the position canon p.25's check sat. A resist
+  // ends the cast (no effect; the turn and the charge are spent), exactly
+  // as canon's spellResisted did; a failed resist is narrated and the
+  // spell proceeds. The roll is drawn from a derived stream
+  // (foeResistsSpell), so it never moves the main rng itself.
+  const single = C && spellTargetsFoe(sp) && !(sp.kind === "thrown" && sp.aoe === "all") ? SINGLE_TARGET_KINDS[sp.kind] : undefined;
+  if (single) {
+    const aimed = C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
+    const t = single === "first" ? liveFoes(state)[0] : aimed || liveFoes(state)[0];
+    if (t && foeResistsSpell(state, t, sp.n, rng, events)) {
+      afterPlayerAction(state, rng, events);
+      return events;
     }
   }
 
@@ -223,8 +242,12 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // its own resist; its d4 is drawn in the same position either way, and
     // `count` is the number that actually slept (every affected foe at or
     // below the knee, exactly as before).
+    // Quick 260927-rsx: each affected foe first rolls its own intel resist
+    // (a derived stream); a foe that resists sleeps not at all and draws no
+    // d4. The foe count (the d6 above) is the cast's own and is drawn first.
     let slept = 0;
     affected.forEach((f) => {
+      if (foeResistsSpell(state, f, sp.n, rng, events)) return;
       const rolled = rng.d(4); // roll:amount
       if (resistControl(state, f, "sleep", sp.n, C.foes.indexOf(f), rng, events)) return;
       f.asleep = Math.max(f.asleep, rolled);
@@ -246,22 +269,26 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // branch runs — the `if (C)` guard is defensive (engine V5 discipline),
     // not reachable-false in real play.
     const rounds = rng.d(4) + 1; // roll:amount
-    // RULES-18 (Phase 75.3, audit C14): one resist for the whole room, keyed
-    // on the foe the caster aimed at (the current target, else the first live
-    // foe); the d4 + 1 above is drawn either way. A resist marks every live
-    // foe Unmoved and starts nothing.
+    // Quick 260927-rsx (user ruling 2026-09-27): every live foe rolls its
+    // own intel resist (roomWeakenResists, C.foes order); when all resist,
+    // nothing lands. Otherwise RULES-18 (Phase 75.3, audit C14) keeps its
+    // one depth resist for the whole room, keyed on the foe the caster aimed
+    // at (the current target, else the first live foe); a depth resist
+    // marks every live foe Unmoved and starts nothing. A landed Weaken skips
+    // every foe that resisted (f.weakenResisted, derived.js#foeWeakened).
+    // The d4 + 1 above is drawn either way.
     const aimed = C && (C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : liveFoes(state)[0]);
-    if (aimed && resistControl(state, aimed, "weaken", sp.n, C.foes.indexOf(aimed), rng, events)) {
-      C.foes.forEach((f) => {
-        if (f.alive) f.resisted = "weaken";
-      });
-    } else {
+    if (!C || roomWeakenResists(state, aimed, sp.n, rng, events)) {
       if (C) {
         C.weakened = true;
         C.foeToHitPenalty = 3;
         startEffect(c, "spell:weaken", { rounds });
       }
-      events.push({ type: "weakened", rounds });
+      // Quick 260927-rsx: `spared` counts the live foes the landed Weaken
+      // skips (they resisted it), so the line never says "every foe" when
+      // it was not; absent when none did (additive, zero draws).
+      const spared = C ? liveFoes(state).filter((f) => f.weakenResisted).length : 0;
+      events.push({ type: "weakened", rounds, ...(spared ? { spared } : {}) });
     }
   } else if (sp.kind === "stupid") {
     const t = C && liveFoes(state)[0];
@@ -303,8 +330,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // RULES-18 (Phase 75.3, audit C19): past the knee each affected foe gets
     // its own resist; only those that did not resist are halved, and `count`
     // counts the halved (every affected foe at or below the knee).
+    // Quick 260927-rsx: the intel resist comes first, per affected foe.
     let halved = 0;
     affected.forEach((f) => {
+      if (foeResistsSpell(state, f, sp.n, rng, events)) return;
       if (resistControl(state, f, "shrink", sp.n, C.foes.indexOf(f), rng, events)) return;
       f.wp = Math.ceil(f.wp / 2);
       f.maxWP = Math.ceil(f.maxWP / 2);
@@ -324,9 +353,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // shape Poisoned Edge (Phase 38) and combat.js#foeTurn's existing tick
     // already read; this module never freezes anything itself — foeTurn's
     // own payoff does that when the last tick leaves the foe standing. One
-    // draw (the duration); no to-hit roll, like Acid; resistible ("dot" is
-    // absent from RESIST_IMMUNE_KINDS, so an intel >= 12 foe still gets its
-    // d20 above); recasting on a foe already carrying an ice dot REFRESHES
+    // draw (the duration); no to-hit roll, like Acid; resistible (a
+    // SINGLE_TARGET_KINDS entry, so the target rolls its intel resist
+    // above); recasting on a foe already carrying an ice dot REFRESHES
     // `left` (overwrite), never stacks. T-40-03: guarded on `sp.dmg` — a
     // tampered/unknown dot row missing it never writes a broken record.
     const t = C && C.foes[C.target];
@@ -342,7 +371,12 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1,
     // no-op) sits between the roll and afraidDamage.
     const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) * mult, c));
-    liveFoes(state).forEach((f) => {
+    // Quick 260927-rsx: every live foe rolls its intel resist up front (in
+    // C.foes order, before any damage lands); a foe that resists takes none.
+    // The one damage roll above is the cast's own and is drawn first; the
+    // caster's own backlash below is unchanged.
+    const quakeHit = liveFoes(state).filter((f) => !foeResistsSpell(state, f, sp.n, rng, events));
+    quakeHit.forEach((f) => {
       // Spell damage (CANON-04, D-11): per-foe multiplier/halfDmg/bypass —
       // the event below reports the single rolled base, not the per-foe
       // applied amount (each foe's own wp shows what actually landed).
@@ -364,7 +398,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else if (sp.kind === "vapor") {
     const r = c.level >= 5 ? 4 : rng.d(6); // roll:selection
     events.push({ type: "vaporRolled", roll: r });
+    // Quick 260927-rsx: each live foe rolls its intel resist first (after
+    // the cast's own table roll above); a foe that resists is neither killed
+    // nor put to sleep, and draws neither its d10 nor its d6.
     liveFoes(state).forEach((f) => {
+      if (foeResistsSpell(state, f, sp.n, rng, events)) return;
       if (r === 4 && rng.d(10) !== 1) { // roll:mishap-on-1
         f.wp = 0;
         killFoe(state, f, rng, events);
@@ -379,10 +417,14 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else if (sp.kind === "volley") {
     const n = rng.d(8); // roll:amount
     const foes = liveFoes(state);
+    // Quick 260927-rsx: every live foe rolls its intel resist once, up front
+    // (C.foes order, after the bolt count); a bolt that comes round to a foe
+    // that resisted does nothing and draws no damage.
+    const shrugged = new Set(foes.filter((f) => foeResistsSpell(state, f, sp.n, rng, events)));
     let tot = 0;
     for (let k = 0; k < n && foes.length; k++) {
       const t = foes[k % foes.length];
-      if (!t.alive) continue;
+      if (!t.alive || shrugged.has(t)) continue;
       // Phase 31 Afraid: halves each Volley bolt the hero deals (post-roll
       // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
       // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
@@ -411,7 +453,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     }
   } else if (sp.kind === "turn") {
     if (C && C.type === "Walking Dead") {
-      const turned = liveFoes(state).filter((f) => f.lvl <= c.level);
+      // Quick 260927-rsx: each foe the turning reaches (level at or below
+      // the caster's) rolls its intel resist; a foe that resists stays.
+      const turned = liveFoes(state)
+        .filter((f) => f.lvl <= c.level)
+        .filter((f) => !foeResistsSpell(state, f, sp.n, rng, events));
       turned.forEach((f) => {
         f.alive = false;
         f.turned = true;
@@ -426,7 +472,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     }
   } else if (sp.kind === "gate") {
     if (C && (C.type === "Walking Dead" || C.type === "Demons")) {
-      const gone = liveFoes(state).slice(0, rng.d(6)); // roll:amount
+      // Quick 260927-rsx: each foe the gate reaches rolls its intel resist
+      // (after the reach roll); a foe that resists stays on this plane.
+      const gone = liveFoes(state)
+        .slice(0, rng.d(6)) // roll:amount
+        .filter((f) => !foeResistsSpell(state, f, sp.n, rng, events));
       gone.forEach((f) => {
         f.alive = false;
         f.turned = true;
@@ -597,6 +647,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     }
     for (const t of targets) {
       if (!t.alive) continue;
+      // Quick 260927-rsx: an every-foe throw (Lightning) rolls each foe's
+      // intel resist just before that foe's throw; a foe that resists takes
+      // no throw and no damage. A one-foe throw already rolled its resist
+      // before the kind branch (SINGLE_TARGET_KINDS).
+      if (sp.aoe === "all" && foeResistsSpell(state, t, sp.n, rng, events)) continue;
       // Phase 40 (SPELL-01): Freeze's own `onHit` data flag drives the
       // frozen-solid case below — replaces the old name-keyed check (a
       // direct comparison against the literal spell name "Freeze"), per
