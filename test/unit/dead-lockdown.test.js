@@ -137,76 +137,146 @@ test("HUD-02: dying while the Gear tab is showing switches to the map so the dea
 });
 
 // ─── the read-only dead map ──────────────────────────────────────────────
+//
+// Quick task 260928-dcm (the user's 2026-09-27 ruling, superseding the
+// put-aside part of the 2026-09-26 one): "after dying, if i leave the map and
+// come back to it, the rail with our death message is gone, and i just see
+// the map. Make sure that the map still shows the death message with the
+// three buttons on it." Whenever the MAP tab shows while the hero is dead,
+// the death card (THAT IS THAT) is up with REVIEW THE ORACLE, FINAL SHEET
+// and BURY THEM — just died, back from another tab, or relaunched. The map
+// under it stays read-only: a drag or a pinch moves only the camera.
 
-test("HUD-02 (ruling 2026-09-26): the death card shows first; after a visit to ORACLE (or DEAD) the MAP shows the map where the hero died, and hasActiveEncounter() stays true", () => {
+/** deathCardUp(r, why) — THAT IS THAT is showing over the map with its three
+ * buttons, in order, each one live: past the arm window a tap routes. */
+function assertDeathCardUp(r, why) {
+  const panel = r.el("enc-panel");
+  assert.equal(r.read("mwActiveTab"), "maze", `${why}: the MAP tab is showing`);
+  assert.equal(panel.hidden, false, `${why}: the death card is up`);
+  assert.equal(panel.dataset.mode, "dark", `${why}: the over-panel`);
+  const over = r.el("enc-body").querySelector(".cb-over");
+  assert.ok(over, `${why}: THAT IS THAT's block is in the panel`);
+  assert.equal(over.querySelector(".cb-over-title").textContent, "THAT IS THAT", why);
+  const actions = over.querySelector(".cb-over-actions");
+  assert.deepStrictEqual(
+    actions.children.map((b) => [b.id, b.textContent]),
+    [["btn-death-oracle", "REVIEW THE ORACLE"], ["btn-death-sheet", "FINAL SHEET"], ["btn-death-confirm", "BURY THEM"]],
+    `${why}: the three buttons, in order`,
+  );
+  // Live: each button carries its guarded handler, and past the arm window
+  // (encRenderedAt pushed back) a tap does what the button says.
+  for (const b of actions.children) assert.equal(typeof b.onclick, "function", `${why}: ${b.id} is wired`);
+  const routed = [];
+  r.w.mzOpenFinalSheet = () => routed.push("sheet");
+  r.w.mzReturnToTitle = () => routed.push("bury");
+  r.read("encRenderedAt = 0");
+  r.el("btn-death-sheet").onclick();
+  r.el("btn-death-confirm").onclick();
+  assert.deepStrictEqual(routed, ["sheet", "bury"], `${why}: FINAL SHEET and BURY THEM route`);
+  r.el("btn-death-oracle").onclick();
+  assert.equal(r.read("mwActiveTab"), "oracle", `${why}: REVIEW THE ORACLE opens the Oracle`);
+  r.w.__mzShowTab("maze");
+  assert.equal(panel.hidden, false, `${why}: and back again, the card is still up`);
+}
+
+test("HUD-02 (ruling 2026-09-27, quick 260928-dcm): the death card is up the moment the hero dies, with THAT IS THAT and three live buttons", () => {
+  const r = boot(deadState());
+  assertDeathCardUp(r, "just died");
+  assert.equal(r.sandbox.context.hasActiveEncounter(), true, "every input gate stays shut");
+});
+
+test("HUD-02 (ruling 2026-09-27): leaving the MAP for ORACLE or DEAD and coming back shows the death card again, and a repaint keeps it", () => {
   for (const away of ["oracle", "dead"]) {
     const r = boot(deadState());
-    assert.equal(r.el("enc-panel").hidden, false, "the death card shows when the death happens");
     r.w.__mzShowTab(away);
+    assert.equal(r.read("mwActiveTab"), away);
     r.w.__mzShowTab("maze");
-    assert.equal(r.el("enc-panel").hidden, true, `after ${away}, the card is put aside`);
-    assert.equal(r.sandbox.context.hasActiveEncounter(), true, "every input gate stays shut");
+    assertDeathCardUp(r, `back from ${away.toUpperCase()}`);
     r.sandbox.paint();
-    assert.equal(r.el("enc-panel").hidden, true, "a repaint keeps the card put aside");
+    assertDeathCardUp(r, `back from ${away.toUpperCase()}, then a repaint`);
+    assert.equal(r.sandbox.context.hasActiveEncounter(), true, "every input gate stays shut");
   }
 });
 
-test("HUD-02: the put-aside flag is presentation-only (never on S) and a live run clears it", () => {
+test("HUD-02 (ruling 2026-09-27): opening and closing the ☰ over the dead map, or from the ORACLE tab, leaves the death card up", () => {
   const r = boot(deadState());
+  r.el("mw-hud-menu-btn").onclick();
+  assert.equal(r.sandbox.context.hudMenuIsOpen(), true, "the ☰ opens while dead");
+  r.el("mw-hud-menu-btn").onclick();
+  assert.equal(r.sandbox.context.hudMenuIsOpen(), false);
+  assertDeathCardUp(r, "after the ☰ on the map");
+
+  r.w.__mzShowTab("oracle");
+  r.el("mw-hud-menu-btn").onclick();
+  r.sandbox.context.hudMenuEvent("escape");
+  assert.equal(r.sandbox.context.hudMenuIsOpen(), false);
+  r.w.__mzShowTab("maze");
+  assertDeathCardUp(r, "after the ☰ on the ORACLE tab");
+});
+
+test("HUD-02 (ruling 2026-09-27): a relaunch while dead shows the death card on the map", () => {
+  // A relaunch is a fresh shell over the saved (JSON round-tripped) state.
+  const saved = JSON.parse(JSON.stringify(deadState()));
+  assert.equal(saved.dead, true);
+  const r = boot(saved);
+  assertDeathCardUp(r, "relaunched while dead");
+});
+
+test("HUD-02 (ruling 2026-09-27): the put-aside flag is gone; the death card has no hidden state of its own and none reaches S", () => {
+  assert.doesNotMatch(CODE, /mwDeadMapAside/, "no put-aside flag in the shell");
+  const r = boot(deadState());
+  assert.equal(r.read("typeof mwDeadMapAside"), "undefined");
   r.w.__mzShowTab("oracle");
   r.w.__mzShowTab("maze");
-  assert.equal(r.read("mwDeadMapAside"), true);
   assert.equal(JSON.stringify(r.w.__mzState.get()).includes("Aside"), false);
-  r.sandbox.setState(liveState());
-  r.sandbox.paint();
-  assert.equal(r.read("mwDeadMapAside"), false);
 });
 
-test("HUD-02: on the put-aside dead map, a drag moves the camera and a pinch changes the zoom; neither touches the state", () => {
-  const r = boot(deadState());
-  r.w.__mzShowTab("oracle");
-  r.w.__mzShowTab("maze");
-  const before = JSON.stringify(r.w.__mzState.get());
-  const cam0 = r.read("({ ...cam })");
-  r.fire("pointerdown", { pointerId: 1, clientX: 100, clientY: 100 });
-  r.fire("pointermove", { pointerId: 1, clientX: 180, clientY: 140 });
-  r.fire("pointerup", { pointerId: 1, clientX: 180, clientY: 140 });
-  const cam1 = r.read("({ ...cam })");
-  assert.notDeepStrictEqual(cam1, cam0, "the drag moved the camera");
+test("HUD-02 (ruling 2026-09-27): with the death card up, a drag moves the camera and a pinch changes the zoom; neither touches the state", () => {
+  for (const visitAway of [false, true]) {
+    const r = boot(deadState());
+    if (visitAway) {
+      r.w.__mzShowTab("oracle");
+      r.w.__mzShowTab("maze");
+    }
+    const why = visitAway ? "back from ORACLE" : "just died";
+    assert.equal(r.el("enc-panel").hidden, false, `${why}: the card is up`);
+    const before = JSON.stringify(r.w.__mzState.get());
+    const cam0 = r.read("({ ...cam })");
+    r.fire("pointerdown", { pointerId: 1, clientX: 100, clientY: 100 });
+    r.fire("pointermove", { pointerId: 1, clientX: 180, clientY: 140 });
+    r.fire("pointerup", { pointerId: 1, clientX: 180, clientY: 140 });
+    assert.notDeepStrictEqual(r.read("({ ...cam })"), cam0, `${why}: the drag moved the camera`);
 
-  const zoom0 = r.read("zoom");
-  r.fire("pointerdown", { pointerId: 2, clientX: 100, clientY: 100 });
-  r.fire("pointerdown", { pointerId: 3, clientX: 200, clientY: 100 });
-  r.fire("pointermove", { pointerId: 3, clientX: 260, clientY: 100 });
-  r.fire("pointerup", { pointerId: 3, clientX: 260, clientY: 100 });
-  r.fire("pointerup", { pointerId: 2, clientX: 100, clientY: 100 });
-  assert.notEqual(r.read("zoom"), zoom0, "the pinch changed the zoom");
+    const zoom0 = r.read("zoom");
+    r.fire("pointerdown", { pointerId: 2, clientX: 100, clientY: 100 });
+    r.fire("pointerdown", { pointerId: 3, clientX: 200, clientY: 100 });
+    r.fire("pointermove", { pointerId: 3, clientX: 260, clientY: 100 });
+    r.fire("pointerup", { pointerId: 3, clientX: 260, clientY: 100 });
+    r.fire("pointerup", { pointerId: 2, clientX: 100, clientY: 100 });
+    assert.notEqual(r.read("zoom"), zoom0, `${why}: the pinch changed the zoom`);
 
-  assert.equal(JSON.stringify(r.w.__mzState.get()), before, "looking never touches S");
-  assert.deepStrictEqual(r.moves, []);
-});
-
-test("HUD-02: while the death card covers the map, a drag does nothing (the card is not a map)", () => {
-  const r = boot(deadState());
-  const cam0 = r.read("({ ...cam })");
-  r.fire("pointerdown", { pointerId: 1, clientX: 100, clientY: 100 });
-  r.fire("pointermove", { pointerId: 1, clientX: 180, clientY: 140 });
-  r.fire("pointerup", { pointerId: 1, clientX: 180, clientY: 140 });
-  assert.deepStrictEqual(r.read("({ ...cam })"), cam0);
+    assert.equal(JSON.stringify(r.w.__mzState.get()), before, `${why}: looking never touches S`);
+    assert.deepStrictEqual(r.moves, []);
+    assert.equal(r.el("enc-panel").hidden, false, `${why}: the card is still up`);
+  }
 });
 
 test("HUD-02: on the dead map a tap and a hold act on nothing (no move, no inspect card)", () => {
-  const r = boot(deadState());
-  r.w.__mzShowTab("oracle");
-  r.w.__mzShowTab("maze");
-  const before = JSON.stringify(r.w.__mzState.get());
-  r.fire("pointerdown", { pointerId: 1, clientX: 120, clientY: 120 });
-  r.fire("pointerup", { pointerId: 1, clientX: 120, clientY: 120 });
-  r.sandbox.context.tapStep(120, 120);
-  r.sandbox.context.inspectAt(120, 120);
-  assert.deepStrictEqual(r.moves, [], "a tap never steps");
-  assert.deepStrictEqual(r.railLines, [], "a hold pushes no inspect card");
-  assert.equal(JSON.stringify(r.w.__mzState.get()), before);
+  for (const visitAway of [false, true]) {
+    const r = boot(deadState());
+    if (visitAway) {
+      r.w.__mzShowTab("oracle");
+      r.w.__mzShowTab("maze");
+    }
+    const before = JSON.stringify(r.w.__mzState.get());
+    r.fire("pointerdown", { pointerId: 1, clientX: 120, clientY: 120 });
+    r.fire("pointerup", { pointerId: 1, clientX: 120, clientY: 120 });
+    r.sandbox.context.tapStep(120, 120);
+    r.sandbox.context.inspectAt(120, 120);
+    assert.deepStrictEqual(r.moves, [], "a tap never steps");
+    assert.deepStrictEqual(r.railLines, [], "a hold pushes no inspect card");
+    assert.equal(JSON.stringify(r.w.__mzState.get()), before);
+  }
 });
 
 // ─── the FINAL SHEET and the ways back (Task 3) ──────────────────────────
@@ -290,7 +360,7 @@ test("HUD-02 no trap: while dead the death card offers ORACLE, FINAL SHEET and B
   assert.match(confirm, /guardTap\(btn, \(\) => \{\s*window\.mzReturnToTitle\(\);\s*\}\);/);
 });
 
-test("HUD-02 source pins: tapStep, inspectAt and the keyboard movement path all bail while dead; the viewport lets only a look start on the put-aside dead map", () => {
+test("HUD-02 source pins: tapStep, inspectAt and the keyboard movement path all bail while dead; the viewport lets only a look start on the dead map (the card up, ruling 2026-09-27)", () => {
   const tap = sliceBetween(CODE, "function tapStep(clientX, clientY)", "function inspectAt(clientX, clientY)");
   assert.match(tap, /if \(!S \|\| hasActiveEncounter\(\)\) return;/);
   const inspect = sliceBetween(CODE, "function inspectAt(clientX, clientY)", "(function initMazeViewportControls()");
@@ -304,7 +374,7 @@ test("HUD-02 source pins: tapStep, inspectAt and the keyboard movement path all 
   const viewport = sliceBetween(CODE, "(function initMazeViewportControls()", 'addEventListener("keydown"');
   assert.match(viewport, /if \(!S \|\| \(hasActiveEncounter\(\) && !deadMapLookOnly\(\)\)\) return;/);
   const look = sliceBetween(CODE, "function deadMapLookOnly()", "\n}\n");
-  assert.match(look, /S\.dead && mwDeadMapAside/);
+  assert.match(look, /return !!\(S && S\.dead\);/);
   const engineMove = sliceBetween(CODE, "window.move = function engineMove", "function stepNow(dir)");
   assert.match(engineMove, /if \(hasActiveEncounter\(\)\) return;/);
 });

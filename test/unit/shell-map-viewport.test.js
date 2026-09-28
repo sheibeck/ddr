@@ -240,14 +240,16 @@ test("(f) viewport region: the four Phase 33 pan/pinch literals are byte-intact"
 // where you died, but every map tap, mark and camp action is inert"): the
 // pan gate was `if (!S || hasActiveEncounter()) return;` and is now
 // `if (!S || (hasActiveEncounter() && !deadMapLookOnly())) return;` — the one
-// exception is the dead map with the death card put aside, where a drag or a
-// pinch may start (camera only). tapStep keeps its own encounter gate and
+// exception is the dead map, where a drag or a pinch may start (camera only).
+// Quick task 260928-dcm (the user's 2026-09-27 ruling) retired the put-aside
+// flag: the death card is up whenever the MAP shows while dead, so the look
+// is open for any dead map, card up. tapStep keeps its own encounter gate and
 // inspectAt bails while dead, so a tap or a hold there still acts on nothing.
-test("(f) HUD-02: the pan gate lets only a look start on the put-aside dead map; tapStep and inspectAt stay shut while dead", () => {
+test("(f) HUD-02: the pan gate lets only a look start on the dead map (card up); tapStep and inspectAt stay shut while dead", () => {
   const region = viewportRegion();
   assert.match(region, /if \(!S \|\| \(hasActiveEncounter\(\) && !deadMapLookOnly\(\)\)\) return;/);
   assert.doesNotMatch(region, /if \(!S \|\| hasActiveEncounter\(\)\) return;/);
-  assert.match(sliceBetween(CODE, "function deadMapLookOnly()", "(function initMazeViewportControls()"), /return !!\(S && S\.dead && mwDeadMapAside\);/);
+  assert.match(sliceBetween(CODE, "function deadMapLookOnly()", "(function initMazeViewportControls()"), /return !!\(S && S\.dead\);/);
   assert.match(tapStepRegion(), /if \(!S \|\| hasActiveEncounter\(\)\) return;/);
   assert.match(inspectAtRegion(), /if \(!S \|\| S\.dead\) return;/);
 });

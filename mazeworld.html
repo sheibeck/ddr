@@ -2768,21 +2768,20 @@ let mwActiveTab = "maze";
 //   - HERO and GEAR are the locked tabs: showTab refuses them while dead and
 //     syncDeadTabLock() (called from paint) sets disabled + aria-disabled on
 //     their buttons, clearing both for a live run.
-//   - mwDeadMapAside is a presentation-only shell flag (a plain `let`, never
-//     on S or window): set when the player leaves the MAP tab while dead,
-//     cleared for a live run. While it is set, renderEncounter puts the death
-//     card (THAT IS THAT) aside so the map where the hero died can be looked
-//     at; hasActiveEncounter() still counts S.dead, so every input gate stays
-//     shut and only a drag or a pinch (camera only) starts on that map.
+//   - Quick task 260928-dcm (the user's 2026-09-27 ruling, superseding the
+//     2026-09-26 put-aside): "Make sure that the map still shows the death
+//     message with the three buttons on it." Whenever the MAP tab shows while
+//     the hero is dead, the death card (THAT IS THAT: REVIEW THE ORACLE,
+//     FINAL SHEET, BURY THEM) is up — just died, back from another tab, or
+//     relaunched. hasActiveEncounter() counts S.dead, so every input gate
+//     stays shut and only a drag or a pinch (camera only) starts on the map.
 // Declared ahead of initTabs so its first showTab("maze") reads no TDZ binding.
 const DEAD_LOCKED_TABS = Object.freeze(["hero", "gear"]);
-let mwDeadMapAside = false;
 function deadNow() {
   return window.__mzState?.get?.()?.dead === true;
 }
 function syncDeadTabLock() {
   const dead = deadNow();
-  if (!dead) mwDeadMapAside = false;
   for (const name of DEAD_LOCKED_TABS) {
     const btn = document.getElementById(`mw-tab-${name}`);
     if (!btn) continue;
@@ -2811,12 +2810,9 @@ function syncDeadTabLock() {
   function showTab(name) {
     if (!screens[name]) return;
     // Phase 78 (HUD-02): a dead hero's HERO and GEAR tabs are inert (their
-    // buttons are disabled too; this refuses a programmatic call). Leaving
-    // the MAP tab while dead puts the death card aside for the next visit
-    // (the 2026-09-26 ruling: the map where you died stays viewable).
+    // buttons are disabled too; this refuses a programmatic call).
     const dead = deadNow();
     if (dead && DEAD_LOCKED_TABS.includes(name)) return;
-    if (dead && mwActiveTab === "maze" && name !== "maze") mwDeadMapAside = true;
     // Phase 58 (MOTION-03, D-11): a tab switch lands the round the same
     // way a hurry tap does — nothing is lost.
     window.__mzBeat?.hurry?.();
@@ -2895,9 +2891,10 @@ function syncDeadTabLock() {
     // assigns the bridge (a harmless no-op then). The viewport rect is
     // non-zero here because the screen was un-hidden two statements earlier.
     if (name === "maze") window.mzKeepPartyInView?.();
-    // Phase 78 (HUD-02): back on the MAP while dead, re-render the encounter
-    // so a put-aside death card stays aside (the bare map where they died).
-    // `dead` implies the state bridge exists, so S is past its TDZ here.
+    // Phase 78 (HUD-02), quick task 260928-dcm (ruling 2026-09-27): back on
+    // the MAP while dead, re-render the encounter so the death card is up
+    // with its three buttons. `dead` implies the state bridge exists, so S
+    // is past its TDZ here.
     if (name === "maze" && dead) renderEncounter();
     // Phase 66 (BOARD-01, D-02/D-04/D-15): the DEAD tab opens the
     // module-owned Leaderboards panel, which reads the adapter's in-memory
@@ -5210,8 +5207,8 @@ function renderRankLine(host, placement) {
 
 function renderEncounter() {
   // Phase 78 (HUD-02): the HERO/GEAR tab lock follows S.dead on every
-  // render (every paint reaches here): set for a dead hero; cleared, with the
-  // put-aside flag, for a live run.
+  // render (every paint reaches here): set for a dead hero; cleared for a
+  // live run.
   syncDeadTabLock();
   // Phase 78 (HUD-08): the arrow pad hides exactly when map taps are inert
   // (death, combat, a store, the stair prompt, any over-map overlay) — the
@@ -5266,19 +5263,6 @@ function renderEncounter() {
     // Phase 58 (MOTION-04): the overlay just went away — the next time a
     // major overlay shows, even with identical content, it types again.
     lastMajorTypedKey = "";
-    return;
-  }
-  // Phase 78 (HUD-02, the user's 2026-09-26 ruling: "You can look at the map
-  // where you died, but every map tap, mark and camp action is inert"): once
-  // the player has left the MAP tab while dead, the death card is put aside
-  // and the overlay stays hidden, so the bare map shows. The encounter is
-  // still active (hasActiveEncounter() counts S.dead), so taps, holds and
-  // keys stay inert; the death card's actions live on the DEAD tab's dock
-  // and in the ☰ from here on.
-  if (S.dead && mwDeadMapAside) {
-    if (panel) hidePanel(panel);
-    document.getElementById("mw-party-pulse")?.classList.remove("covered");
-    if (window.__mzState) window.renderRail?.();
     return;
   }
   if (panel) showPanel(panel);
@@ -6529,12 +6513,14 @@ function inspectAt(clientX, clientY) {
 // underneath would be a confusing no-op, so panning is suppressed until the
 // overlay is dismissed.
 // Phase 78 (HUD-02, the user's 2026-09-26 ruling: "You can look at the map
-// where you died"): the one exception is the dead map with the death card put
-// aside — deadMapLookOnly() lets a drag or a pinch start there (they move only
-// `cam`/`zoom`, never S). A tap still reaches tapStep, which bails on
-// hasActiveEncounter(), and a hold reaches inspectAt, which bails while dead.
+// where you died"): the one exception is the dead map — deadMapLookOnly()
+// lets a drag or a pinch start there (they move only `cam`/`zoom`, never S).
+// Quick task 260928-dcm (ruling 2026-09-27): the death card is always up on
+// the dead map now, so the look is open for any dead map. A tap still reaches
+// tapStep, which bails on hasActiveEncounter(), and a hold reaches inspectAt,
+// which bails while dead.
 function deadMapLookOnly() {
-  return !!(S && S.dead && mwDeadMapAside);
+  return !!(S && S.dead);
 }
 (function initMazeViewportControls() {
   const vp = document.getElementById("mw-maze-viewport");
