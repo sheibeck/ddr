@@ -1,12 +1,20 @@
 # v2.1 autonomous run: resume point (2026-09-28, evening)
 
-## NOW (supersedes the sections below where they differ)
-- **Complete:** every phase except 80. 79.1 (the final record) and 79.3 (bug reports and patch notes, live-tested: issue #2 on ddr was filed and then closed) are both done. The quick tasks cos, hrs, abl, nrf and web are all merged.
-- **2.1.0 patch notes:** agreed by the user ("Good to go"), committed at db35ada7. Difficulty is worded generically.
-- **The Pixel 7 has the debug build with everything** (~15:00).
-- **The darktier-studio website:** commits 6327344 (the patch-notes pages) and a095d85 (the privacy policy and delete-data paragraphs), NOT pushed or deployed. Deploy at release time (user ruling): `npm run deploy`, then `git push` there.
-- **RUNNING:** 80-04, the unsigned R8 release build (executor, base acba40ed). Next is 80-05 (the emulator pass). Then **ASK the user** before the signed versionCode-11 Play build and push (closed test), and deploy the website in the same window. Then the milestone close: audit, complete, cleanup, the Pixel 7 checklist and the close questions.
-- **The master gate before release:** npm test passed 7,902 with 0 fail, parity 66/66, and boot:check PASS on rerun (the graves flake).
+## NOW (supersedes everything below; 2026-09-28 ~16:15, before the third compact)
+- **Released:** Play 2.1.0 / versionCode 11 is signed, tagged `v2.1.0` and `v2.1.0-play11` (commit a897fd9c), and **UPLOADED to the closed test by the user**. The GitHub Release v2.1.0 is published with the notes.
+- **Website deployed** (user: "deploy it") and pushed (darktier-studio 262b823). It has the patch-notes pages, the bug-report privacy paragraphs and the "binder" → 1994 copy fix (six races).
+- **Complete:** every phase except 80. **80-04 is done** (summary 248166cd). **80-05, the emulator pass, is RUNNING** as a gsd-executor in a worktree, base a897fd9c, watched by a watch.sh monitor. Its gate has a declared exception: versionCode 10→11 is the only app-path change since acba40ed. It deletes its three AVDs itself.
+- **docs/UAT-v2.1.md is written:** 102 phase checks, 3 user console tasks and 12 quick-task checks. Commit it with the close.
+
+## NEXT (in order)
+1. When 80-05 returns:
+   - merge it (the worktree may need a `\\?\` long-path delete in PowerShell);
+   - write 80-05-SUMMARY.md and place any screenshots or VERIFICATION it returned as text;
+   - write 80-VERIFICATION.md;
+   - run `gsd-tools query phase.complete 80`.
+2. **Delete `C:/projects/mazeworld-build/phase80-acba40ed/`.** The user asked for it once 80-05 is done.
+3. **Milestone lifecycle** (/gsd-autonomous step 5): Skill gsd-audit-milestone → Skill gsd-complete-milestone v2.1 → Skill gsd-cleanup (it asks the user). Then bring the user MILESTONE-CLOSE-QUESTIONS.md and docs/UAT-v2.1.md.
+4. **Discord (user request):** in the user's Discord server "The Bat Cave", create a text channel **#delve-die-repeat**. Its first post is the patch-notes link https://darktierstudios.com/delve-die-repeat/patch-notes. There is no Discord tool, so use the claude-in-chrome browser tools on discord.com in the user's signed-in Chrome. Creating a channel and posting were explicitly requested.
 
 ## Where we are
 - **Complete:** 72, 73, 74, 75, 75.1, 75.2, 75.3, 76, 77, 78, **79**, and **79.2**, which was inserted for the early-floor retune and locked by user ruling.
