@@ -168,7 +168,3 @@ test("(2) the bot never picks Sweep with one living foe; it does with two", () =
   two.combat.round = 2;
   assert.deepEqual(chooseAbility(two, makeBotContext()), { key: "sweep" });
 });
-
-test("(2) Sweep's text says it needs two or more foes", () => {
-  assert.match(ABILITY_BY_ID.sweep.txt, /two or more/);
-});

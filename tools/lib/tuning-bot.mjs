@@ -33,6 +33,7 @@ import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, item
 import { maxCharges } from "../../engine/movement.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
 import { isReady } from "../../engine/effects.js";
+import { abilityUnavailableReason } from "../../engine/abilities.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { SPELLS, RACES, ABILITY_BY_ID, WEAPONS } from "../../content/index.js";
 import { abilityAblated, applyStartAblation, applyStrikeAblation } from "./ablation.mjs";
@@ -268,6 +269,9 @@ export function chooseAbility(state, ctx) {
         ABILITY_BY_ID[id] &&
         ABILITY_BY_ID[id].cls === c.cls &&
         isReady(c, `ability:${id}`) &&
+        // Quick 260928-nrf: the engine's own availability (Sweep refuses
+        // with fewer than two living foes) — read, never re-derived.
+        !abilityUnavailableReason(state, id) &&
         !ctx.abilityBlocked.has(id) &&
         // Quick 260928-abl: the off-by-default ablation switch (tools/lib/ablation.mjs).
         !abilityAblated(ctx.opts.ablate, id),

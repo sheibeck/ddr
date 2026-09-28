@@ -72,7 +72,7 @@ import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, AB
 // (abilities.js imports several combat.js functions; neither module reads
 // the other's binding at top-level module-evaluation time, only inside
 // function bodies, so the cycle is safe).
-import { abilityEffectTicks, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
+import { abilityEffectTicks, abilityShortfall, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
 import { checkDeathPhobia } from "./phobias.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -2069,7 +2069,7 @@ export function alliesTurn(state, rng, events = []) {
     // decision itself and falls through to today's cast/strike path
     // byte-identically — false on every fixture (no fixture has a party).
     if (sheet.abilities && sheet.abilities.length) {
-      const meta = pickMemberAbility(sheet, ally, C.round, foes[0]);
+      const meta = pickMemberAbility(sheet, ally, C.round, foes[0], foes.length);
       if (meta) {
         resolveMemberAbility(state, ally, sheet, view, meta, foes[0], rng, events);
         continue;
@@ -2133,11 +2133,22 @@ function memberView(sheet, ally) {
  * in the catalog for THIS member's own class (T-38-09: an id belonging to
  * the other class, or an unknown id, is silently ignored), and
  * `isReady(sheet, "ability:"+id)` (Phase 36 `sheet.timers`).
+ *
+ * Quick 260928-nrf (user ruling 2026-09-28): `liveCount` is the fight's
+ * living-foe count; an ability abilities.js#abilityShortfall refuses at that
+ * count (Sweep below two foes) is not READY. Omitted (a direct test call),
+ * no shortfall applies.
  */
-export function pickMemberAbility(sheet, ally, round, target) {
+export function pickMemberAbility(sheet, ally, round, target, liveCount) {
   const owned = Array.isArray(sheet.abilities) ? sheet.abilities : [];
   const ready = owned
-    .filter((id) => ABILITY_BY_ID[id] && ABILITY_BY_ID[id].cls === sheet.cls && isReady(sheet, `ability:${id}`))
+    .filter(
+      (id) =>
+        ABILITY_BY_ID[id] &&
+        ABILITY_BY_ID[id].cls === sheet.cls &&
+        isReady(sheet, `ability:${id}`) &&
+        !(Number.isInteger(liveCount) && abilityShortfall(id, liveCount)),
+    )
     .map((id) => ABILITY_BY_ID[id]);
   if (round === 1) {
     const opener = ready.find((m) => m.tag === "opener");
