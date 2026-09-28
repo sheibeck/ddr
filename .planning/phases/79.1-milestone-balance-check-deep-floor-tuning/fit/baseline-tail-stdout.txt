@@ -1,0 +1,2 @@
+== fit-difficulty block 2026-09-27T22:53:29.897Z mode=single objective=tail budget=- seeds=200 log=C:/projects/mazeworld/.claude/worktrees/agent-a0b75aa17241762f3/.planning/phases/79.1-milestone-balance-check-deep-floor-tuning/fit/baseline-tail.jsonl resume-from=none
+#1 score=+Infinity verdict=MISS fresh[unmeasured] deep12.reach20=7 deep20[p50=1 reach30=2.5] deep30[p50=0 p90=4] rot.p50[20/30/40]=2/2/0 guard=none ok=false reason=rot20 p50Gained 2 above deep20's 1; rot30 p90Gained 8 above deep30's 4
