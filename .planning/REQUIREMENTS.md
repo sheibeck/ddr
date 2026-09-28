@@ -107,6 +107,13 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [x] **VOX-04**: Every sub-class and race description names both its advantage(s) and its disadvantage(s), including school gates and weaknesses such as the Summoner's half-strength healing (its offense gate was removed 2026-09-25, RULES-03). (todo 2026-09-21 sub-class-descriptions)
 - [x] **VOX-05**: Every in-game line (Oracle, rail cards, fight log, refusal reasons, item and spell text, epitaphs) states clearly what happened, to whom and why. The sarcastic, family-friendly voice stays, but no joke hides the fact. (todo 2026-09-23 narrative-pass)
 
+### Bug reports (BUG) — user, 2026-09-28
+
+- [ ] **BUG-01**: The ☰ menu has a REPORT A BUG row on every screen. It opens a sheet where the player types what happened. Before sending, a plain notice tells them the report and their run's Oracle will be posted publicly on GitHub.
+- [ ] **BUG-02**: Send stores one report in the game's Firebase project (Firestore): the player's text, the current run's Oracle, the app version and build, the device and OS, and the run context. A failed or offline send keeps the draft and says so, and nothing secret ships in the app.
+- [ ] **BUG-03**: Firestore rules allow only a validated, size-bounded create of a report. The app can't read, change or delete reports.
+- [ ] **BUG-04**: A GitHub Action in sheibeck/ddr, run on a schedule or by hand, files each new report as an issue labelled player-report. The player's text can't @-mention anyone, and the Oracle sits in a collapsed block, trimmed to fit. The report is marked filed and never filed twice. A live end-to-end test proves the path.
+
 ### Android & Play (DROID)
 
 - [ ] **DROID-01**: The release AAB is built with R8 minify, shrink and obfuscation on AGP 8.13, and ships a deobfuscation mapping. A release-signed build on the Pixel 7 boots, saves and resumes, handles back, and plays sound and haptics as before. (todo 2026-09-23 enable-r8)
@@ -191,6 +198,10 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | DROID-02 | Phase 80 | Pending |
 | DROID-03 | Phase 80 | Pending |
 | TOOL-01 | Phase 80 | Pending |
+| BUG-01 | Phase 79.3 | Pending |
+| BUG-02 | Phase 79.3 | Pending |
+| BUG-03 | Phase 79.3 | Pending |
+| BUG-04 | Phase 79.3 | Pending |
 | BOARD-12 | Phase 81 | Complete |
 | BOARD-13 | Phase 81 | Complete |
 | BOARD-14 | Phase 81 | Complete |

@@ -527,6 +527,39 @@ Plans:
 
 - [x] 79-13-PLAN.md — Produce the review page the user reads at milestone close, prove every changed line is on it, refresh the voice sample, and close the phase with the gates and one Pixel 7 checklist (VOX-05's review model; VOX-04 and R... (wave 6)
 
+### Phase 79.3: In-app bug reports (☰ Report a bug → Firestore → GitHub issue) (INSERTED)
+
+**Goal:** Players can report a bug from inside the game.
+- A REPORT A BUG row in the ☰ menu opens a sheet where they type what happened.
+- On Send, the report and the current run's Oracle go to the game's Firebase project (Firestore).
+- A scheduled GitHub Action in sheibeck/ddr files each new report as a public GitHub issue.
+
+The user's request (2026-09-28): "I want a way for my users to submit bugs. Add a report bug link in the dropdown from the user menu. It should let them type out what happened. Then when they submit, it should attach the oracle and submit it as an issue in the github repository for this repo."
+
+The user's rulings (2026-09-28):
+- Use Firebase: "Firestore + GitHub Action", which keeps the project on the free Spark plan, and no GitHub token ships in the app.
+- Reports post publicly to sheibeck/ddr, "with a notice".
+
+**Requirements**: BUG-01, BUG-02, BUG-03, BUG-04
+**Depends on:** Phase 79 (the ☰ menu and the Oracle). It runs before Phase 80's release build (80-04).
+**Success Criteria** (what must be TRUE):
+1. The ☰ menu has a REPORT A BUG row on every screen: the map, combat, every tab, and while dead. It opens a report sheet with a text box, Send and Cancel, and a plain notice that the report and the Oracle will be posted publicly on GitHub.
+2. Send writes one report to Firestore in delve-die-repeat-6ba5f. The report holds the player's text, the run's Oracle, the app version and build, the device and OS, and the run context. When a send fails or the phone is offline, the draft is kept and the sheet says so. Success says so too, in the house voice.
+3. The Firestore rules allow only a validated, size-bounded create of a new report. The app can't read, update or delete reports, and nothing secret ships in the app.
+4. A GitHub Action in sheibeck/ddr, run on a schedule or by hand, files each new report as an issue and marks it filed. A report is never filed twice. Each issue:
+   - is labelled player-report;
+   - keeps the player's text from @-mentioning anyone;
+   - holds the Oracle in a collapsed block, trimmed to fit.
+5. The rest is proven and recorded:
+   - a live end-to-end test passes: a report is sent, the Action runs, and an issue appears on ddr;
+   - the gate is green;
+   - the Play Data safety and privacy-policy changes are on the milestone-close checklist.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 79.3 to break down)
+
 ### Phase 79.2: Early-floor difficulty retune (floors 1-12 harder: fair-bot p50 death ~3-4) (INSERTED)
 
 **Goal:** Floors 1–12 play harder. The user found them "just too easy" on the Pixel 7 (2026-09-27), while the fair bot died at a p50 of floor 6. The bot plays far worse than a human, so the ruled yardstick moves: retune floors 1–12 so a typical FAIR-BOT run dies around floor 3–4, putting skilled human runs near floor 5–7. Floors 13+ keep the ruled tail targets (79.1-02). This is measured after the 2026-09-27 rule changes (universal spell resist, once-per-fight one-shot strikes) land.
@@ -1228,6 +1261,7 @@ Plans:
 **Plans:** 0 plans
 
 **Scope for the pass:**
+
 - **Every item audited end to end:** text vs engine vs canon for every treasure, armour, weapon, cloak, jewellery, staff, wand, potion and scroll. Whatever each promises must actually happen: its duration, charges, cooldown and numbers. Output an audit table (item / text / engine / canon / verdict) with the fixes, pinned by tests (authored-ranges style).
 - **Missing systems:** list any system the items need that doesn't exist yet: per-step heal-over-time, stack rules, slot limits, whatever turns up. Build or re-rule each one.
 - **Cloak of Regeneration (user example):** it should heal **every 10 steps for 30 steps** (three ticks) once used. Today (`content/treasure-tables.js:199`, engine/items.js "knit" case ~L1616) it gives a flat d6 at once, then a 20-square cooldown (260918-w4n's reading of the prototype's "d6 hp back every 20 squares"). It needs a per-step heal-over-time effect, with narration for each tick.
@@ -1239,4 +1273,5 @@ Plans:
 - **Related existing items to fold in:** backlog 999.15 (the spell and skill review) and the 2026-09-27 PARTY_WIDE_ITEM_EFFECTS (Crystal Staff).
 
 Plans:
+
 - [ ] TBD (promote with /gsd-review-backlog when ready)

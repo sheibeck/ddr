@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 80
-current_phase_name: Android Release Build & Tooling
+current_phase: 79.3
+current_phase_name: INSERTED
 status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-28T14:05:35.082Z"
+last_updated: "2026-09-28T16:24:30.012Z"
 last_activity: 2026-09-28
-last_activity_desc: Phase 79.2 complete, transitioned to Phase 80
+last_activity_desc: Phase 79.3 inserted (in-app bug reports); quick 260928-cos/-hrs/-abl merged (gate 7649/7649); 260928-nrf (class trims + Joiner resist) running
 progress:
-  total_phases: 15
+  total_phases: 16
   completed_phases: 13
   total_plans: 115
   completed_plans: 111
-  percent: 87
+  percent: 81
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 80 — Android Release Build & Tooling
+Phase: 79.3 — In-app bug reports (INSERTED)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-28 — Phase 79.2 complete, transitioned to Phase 80
+Last activity: 2026-09-28 — Phase 79.3 inserted (in-app bug reports); quick 260928-cos/-hrs/-abl merged (gate 7649/7649); 260928-nrf (class trims + Joiner resist) running
 
 ## Ground Truth (durable facts every session needs)
 
@@ -149,6 +149,7 @@ detail; the backlog phases are the index.
 - Phase 75.2 inserted after Phase 75.1: Hero Size Matters (RULES-11) — race sets size, items step it; damage, target size and size rules (user, 2026-09-25)
 - Phase 75.3 inserted after Phase 75.2: Deep-Floor Encounter Scaling (RULES-16) — solo fights fade with depth (user, 2026-09-25)
 - Phase 79.2 inserted after Phase 79: Early-floor difficulty retune (user 2026-09-27: floors 1-12 too easy; fair-bot p50 death ~3-4) (URGENT)
+- Phase 79.3 inserted after Phase 79: In-app bug reports: ☰ REPORT A BUG → Firestore (delve-die-repeat-6ba5f, Spark) → scheduled GitHub Action files public issues on sheibeck/ddr (user request + rulings 2026-09-28) (URGENT)
 
 ## Deferred Items
 
