@@ -19,3 +19,8 @@ User (2026-09-28), after learning that Freeze's "d6" is its damage die: "Oh, the
 - The 2026-09-27 intel resist runs first (a resisted Freeze does nothing), and the RULES-18 past-the-knee control resist still applies to the freeze part.
 - This covers the hero, Joiners, scrolls and the Birch Staff.
 - The engine change is folded into Plan 79.2-01 before its START measurement; the text is in quick 260928-tsx.
+
+## Refinement (user, 2026-09-28)
+- "if it hits and resists, deal damage, but no freeze." For Freeze only, the intel resist (and the past-the-knee control resist) blocks the FREEZE, not the damage.
+- The order is to-hit → damage → (survivor) intel resist → depth resist → frozen 1d4.
+- Every other spell keeps "a resist means no effect".
