@@ -4,17 +4,17 @@ milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 82
 current_phase_name: DAYS Farming Check
-status: executing
-stopped_at: "Completed 82-01-PLAN.md (DAYS farming instrument: playRun hooks, farmer policy/verdict, days-farm CLI); ready for 82-02 (200-seed run + docs/DAYS-FARMING.md)"
-last_updated: "2026-09-28T21:49:10.213Z"
+status: verifying
+stopped_at: Completed 82-02-PLAN.md (DAYS farming measurement, verdict=perFloorCap, DAYS rule recorded); Phase 82 complete, ready for verification
+last_updated: "2026-09-28T22:17:48.389Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 82 execution started
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
-  percent: 0
+  completed_plans: 2
+  percent: 20
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 Phase: 82 (DAYS Farming Check) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-28 — Phase 82 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -254,8 +254,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-28T21:49:10.180Z
-Stopped at: Completed 82-01-PLAN.md (DAYS farming instrument: playRun hooks, farmer policy/verdict, days-farm CLI); ready for 82-02 (200-seed run + docs/DAYS-FARMING.md)
+Last session: 2026-09-28T22:17:48.356Z
+Stopped at: Completed 82-02-PLAN.md (DAYS farming measurement, verdict=perFloorCap, DAYS rule recorded); Phase 82 complete, ready for verification
 
 - (history below is the pre-close record)
 
@@ -421,6 +421,7 @@ Resume file: None
 | Phase 59 P05 | 95min | 3 tasks | 8 files |
 | Phase 60 P03 | ~50min | 6 tasks | 5 files |
 | Phase 82 P01 | 25min | 3 tasks | 4 files |
+| Phase 82 P02 | 38min | 1 tasks | 3 files |
 
 ## Decisions
 
@@ -719,6 +720,8 @@ Resume file: None
 - [Phase ?]: User deferred UAT-v1.8 sections B-E (except 56-3) to their own play sessions rather than a full walkthrough; recorded verbatim, not inferred as pass (60-03)
 - [Phase ?]: 82-01: farmVerdict's corner case (floor 2 wins while floor 1 does not) is read as perFloorCap — the only rule that stops floor-2 farming; user can overrule before 82-02 records the final verdict
 - [Phase ?]: 82-01: hoarderStorePick has no GOLD_RESERVE (unlike chooseStorePurchase) — spends every gold piece on rations, per 82-CONTEXT.md
+- [Phase ?]: 82-02: farmVerdict fired perFloorCap mechanically (both floors won: floor-1 hoarder p90=73>=honest p99=17, 32 cap hits; floor-2 noStairs p90=28>=17, 12 cap hits) — DAYS ranks by daysKey=min(day,10*floor); user can overrule
+- [Phase ?]: 82-02: no harness-defect path taken — the run's one leftFloor row has boxedIn=1 (not the 0 defect signature), zero unboundedFrozenClock across all 22 unbounded rows
 
 ### Blockers
 

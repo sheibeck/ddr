@@ -80,7 +80,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. The user has reviewed the comparison and recorded a verdict: either DAYS ranks as the mock already shows (days, then floor), or a specific rule that stops the exploit is chosen and recorded.
   4. The recorded verdict is stated in terms Phase 83 can consume directly as SRV-03's DAYS ranking key.
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 
 Plans:
 **Wave 1**
@@ -89,7 +89,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 82-02-PLAN.md — One 200-seed measurement (floors 1 and 2 + honest baseline), docs/DAYS-FARMING.md ledger with the verdict and `## The DAYS rule`, ledger guard test (wave 2)
+- [x] 82-02-PLAN.md — One 200-seed measurement (floors 1 and 2 + honest baseline), docs/DAYS-FARMING.md ledger with the verdict and `## The DAYS rule`, ledger guard test (wave 2)
 
 ### Phase 83: Leaderboard Server
 
@@ -176,7 +176,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 82. DAYS Farming Check | 1/2 | In Progress|  |
+| 82. DAYS Farming Check | 2/2 | In Progress|  |
 | 83. Leaderboard Server | 0/TBD | Not started | - |
 | 84. Leaderboards Panel v3 | 0/TBD | Not started | - |
 | 85. Play Games Out, Our Board In | 0/TBD | Not started | - |
