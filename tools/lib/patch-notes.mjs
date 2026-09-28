@@ -191,6 +191,48 @@ export function notesModuleSource(version, md) {
   return `${header}${body}`;
 }
 
+/** SITE_NOTES_DIR — the website repo's own patch-notes data directory,
+ * posix-style (260928-web: `--site` writes here). */
+export const SITE_NOTES_DIR = "src/data/ddr-patch-notes";
+
+/** siteNotesPathFor(version, siteDir) — <siteDir>/src/data/ddr-patch-notes/
+ * <version>.md, the file `--site` writes. */
+export function siteNotesPathFor(version, siteDir) {
+  return path.join(siteDir, ...SITE_NOTES_DIR.split("/"), `${version}.md`);
+}
+
+/**
+ * validateSiteDir(siteDir) — throws a clear message when `siteDir` does not
+ * look like the website repo: missing entirely, or missing `package.json`
+ * or `src/` (260928-web).
+ */
+export function validateSiteDir(siteDir) {
+  if (!fs.existsSync(siteDir) || !fs.statSync(siteDir).isDirectory()) {
+    throw new Error(`${siteDir} is missing: --site expects the website repo's directory (e.g. ../darktier-studio)`);
+  }
+  if (!fs.existsSync(path.join(siteDir, "package.json"))) {
+    throw new Error(`${siteDir} has no package.json: --site expects the website repo's directory (e.g. ../darktier-studio)`);
+  }
+  const srcDir = path.join(siteDir, "src");
+  if (!fs.existsSync(srcDir) || !fs.statSync(srcDir).isDirectory()) {
+    throw new Error(`${siteDir} has no src/: --site expects the website repo's directory (e.g. ../darktier-studio)`);
+  }
+}
+
+/**
+ * writeSiteNotes(version, md, siteDir) — writes `md` byte-for-byte to
+ * <siteDir>/src/data/ddr-patch-notes/<version>.md, creating the folder when
+ * it does not exist yet. Throws via validateSiteDir when `siteDir` is not
+ * the website repo. Returns the written path (260928-web).
+ */
+export function writeSiteNotes(version, md, siteDir) {
+  validateSiteDir(siteDir);
+  const file = siteNotesPathFor(version, siteDir);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, typeof md === "string" ? md : "", "utf8");
+  return file;
+}
+
 function inlineText(inlines) {
   return (inlines || []).map((i) => i.text).join("");
 }

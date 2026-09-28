@@ -30,19 +30,22 @@ export const NOTES_PRIOR_DATA_KEYS = Object.freeze([
   "ddr.settings.v1",
 ]);
 
-/** PATCH_NOTES_RELEASES_URL — the "Past versions on GitHub" link target. */
-export const PATCH_NOTES_RELEASES_URL = "https://github.com/sheibeck/ddr/releases";
+/** PATCH_NOTES_RELEASES_URL — the "Past versions" link target: the public
+ * patch-notes page on the Delve, Die, Repeat website (260928-web). Every
+ * release's notes land there via `node tools/patch-notes.mjs --site <dir>`
+ * against the website repo, deployed at release time. */
+export const PATCH_NOTES_RELEASES_URL = "https://darktierstudios.com/delve-die-repeat/patch-notes";
 
 /**
  * PATCH_NOTES_COPY — every word this module adds of its own (the sheet's
- * title, its GitHub link text, and the fallback line when a build ships
- * without its notes file). The fact first, then the joke (D-15 voice).
- * British spelling ("organised"). No BANNED safety-wordlist term, no "wp"
- * or "WP".
+ * title, its past-versions link text, and the fallback line when a build
+ * ships without its notes file). The fact first, then the joke (D-15
+ * voice). British spelling ("organised"). No BANNED safety-wordlist term,
+ * no "wp" or "WP".
  */
 export const PATCH_NOTES_COPY = Object.freeze({
   title: "PATCH NOTES",
-  pastLink: "Past versions on GitHub",
+  pastLink: "Past versions",
   missing:
     "This build shipped without its patch notes. Every version's notes are on GitHub, which is better organised than the dungeon.",
 });

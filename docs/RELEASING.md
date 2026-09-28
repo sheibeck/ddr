@@ -32,6 +32,12 @@ npm run play:release     # = bump versionCode → build:www → cap sync → pin
    release notes.
 4. After the `v<versionName>` tag is pushed, run
    `node tools/patch-notes.mjs --release-body | gh release create v<versionName> --repo sheibeck/ddr --title "Delve, Die, Repeat <versionName>" --notes-file -`.
+5. Run `node tools/patch-notes.mjs --site ../darktier-studio` (the website repo,
+   `C:/projects/darktier-studio`, an Astro site on Firebase Hosting, project
+   `darktierstudios-b846f`), then commit it there. At release time, `npm run deploy`
+   in darktier-studio publishes the notes at
+   `https://darktierstudios.com/delve-die-repeat/patch-notes` — the page the in-game
+   "Past versions" link opens.
 
 Output: `android/app/build/outputs/bundle/release/app-release.aab`, signed with the upload key.
 Then Play Console → Testing → Internal testing → **Create new release** → drop the .aab →

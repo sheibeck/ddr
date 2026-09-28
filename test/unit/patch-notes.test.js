@@ -341,8 +341,8 @@ test("PATCH_NOTES_COPY: frozen with exactly title, pastLink and missing; no BANN
   }
 });
 
-test("PATCH_NOTES_RELEASES_URL is the public releases page", () => {
-  assert.equal(PATCH_NOTES_RELEASES_URL, "https://github.com/sheibeck/ddr/releases");
+test("PATCH_NOTES_RELEASES_URL is the public patch-notes page on the website", () => {
+  assert.equal(PATCH_NOTES_RELEASES_URL, "https://darktierstudios.com/delve-die-repeat/patch-notes");
 });
 
 test("purity: no window/document/localStorage/sessionStorage/navigator identifier and no global fetch; DOM only through host.ownerDocument", () => {

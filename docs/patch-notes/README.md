@@ -96,6 +96,13 @@ bullets, paragraphs, `**bold**` and https links.
    field (at most 500 characters).
 4. After the `v<versionName>` tag is pushed:
    `node tools/patch-notes.mjs --release-body | gh release create v<versionName> --repo sheibeck/ddr --title "Delve, Die, Repeat <versionName>" --notes-file -`
+5. `node tools/patch-notes.mjs --site ../darktier-studio` writes this
+   version's notes to the website repo
+   (`C:/projects/darktier-studio`, an Astro site on Firebase Hosting,
+   project `darktierstudios-b846f`), then commit it there. At release time,
+   `npm run deploy` in darktier-studio publishes
+   `https://darktierstudios.com/delve-die-repeat/patch-notes` — the page the
+   in-game "Past versions" link opens.
 
 See `docs/RELEASING.md` for this as a numbered step inside the full release
 recipe.
@@ -113,8 +120,10 @@ without a valid notes file for that version.
 The ☰ menu's **PATCH NOTES** row opens a sheet showing the current version's
 notes, rendered from `src/browser/patchNotesData.js` through
 `src/browser/patchNotes.js#renderPatchNotes` (no library — a minimal, pure
-Markdown-subset parser). The sheet also carries a "Past versions on GitHub"
-link to the public releases page. On the first launch after an update where
-the stamped version differs from the last version the player saw, the sheet
+Markdown-subset parser). The sheet also carries a "Past versions" link to
+the public patch-notes page on the website
+(`https://darktierstudios.com/delve-die-repeat/patch-notes`,
+`PATCH_NOTES_RELEASES_URL`). On the first launch after an update where the
+stamped version differs from the last version the player saw, the sheet
 opens once by itself; a genuinely fresh install marks the current version
 seen without ever popping the sheet.
