@@ -15,7 +15,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { FLEE_NEED, FLEE_THIEF_BONUS, ABILITY_BY_ID } from "../../content/index.js";
-import { fleeBreakdown, strikeDie, toHit, memberToHit } from "../../engine/derived.js";
+import { fleeBreakdown, strikeDie, toHit, memberToHit, foeToHitVs, foeToHitBreakdown } from "../../engine/derived.js";
 import { flee, pickMemberAbility, alliesTurn } from "../../engine/combat.js";
 import { useAbility, SWEEP_MIN_FOES, abilityUnavailableReason } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
@@ -250,4 +250,28 @@ test("(3) a Joiner's needShift never revives an untouchable foe", () => {
   s.combat.round = 2;
   const ev = alliesTurn(s, fakeRng(new Array(80).fill(1)), []);
   assert.equal(ev.some((e) => e.type === "allyStruck"), false, JSON.stringify(ev));
+});
+
+// ---------------------------------------------------------------------------
+// (4) Foes land on an Acrobat with their top four faces.
+// ---------------------------------------------------------------------------
+
+test("(4) foeToHitVs: a Human Acrobat hero is hit on the top 4 faces, and the breakdown agrees", () => {
+  const s = fightState({ cls: "Thief", sub: "Acrobat" });
+  assert.equal(foeToHitVs(s, "hero"), 4);
+  const b = foeToHitBreakdown(s, "hero");
+  assert.equal(b.need, 4);
+  assert.deepEqual(b.mods, [{ name: "Acrobat", delta: -1 }]);
+});
+
+test("(4) an Acrobat Joiner is hit on its own top 4 faces", () => {
+  const member = { name: "Tumble", cls: "Thief", sub: "Acrobat", race: "Human", intel: 10, level: 2, wp: 30, maxWP: 30, items: [], skills: {}, weapon: "Dagger", armor: "Nothing" };
+  const s = fightState({ cls: "Fighter", sub: "Soldier" }, { party: [member] });
+  assert.equal(foeToHitVs(s, "member", member), 4);
+  assert.equal(foeToHitBreakdown(s, "member", member).need, 4);
+});
+
+test("(4) the Acrobat's own strike is untouched: it still strikes as a fighter (5 faces)", () => {
+  const s = fightState({ cls: "Thief", sub: "Acrobat" });
+  assert.equal(toHit(s), 5 + 1, "5 as a fighter, +1 with the dagger (unchanged)");
 });
