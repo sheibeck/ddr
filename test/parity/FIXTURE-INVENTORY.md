@@ -5292,3 +5292,40 @@ fight").
 | Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
 |---|---|---|---|---|---|---|
 | *(none — measured zero)* | | | | | | |
+### Failed climb hurts at least 1 (user ruling 2026-09-28)
+
+Plan 79.2-01, folded in before the START measurement, base `10b3263e`.
+
+**The rule.** A failed climb or a failed leap ALWAYS costs at least 1 HP
+after `scaleHazard` (`engine/movement.js`, the `!ok` path:
+`hurt = Math.max(1, hurt)`). Before, a climb that failed on its first 10 ft
+segment and whose `d20 > 2` fall check missed hurt 0 ("−0 hp"). The draws
+are unchanged (same rolls, same order); only the post-draw amount moves.
+A fatal fall still dies as before.
+
+**The predictor.** A replay moves only if one of its climbs fails with every
+segment's d20 at 1 or 2 (a leap's 2d6 is already at least 2, and
+`scaleHazard` already floors a positive amount at 1). Prediction: zero.
+
+**The live scan (measured at the base, then with the rule).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical before and
+   after. The generated roster block above is not edited.
+2. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+   No carve-out: no replay hits the zero case.
+3. `test/parity/fixtures`, `test/parity/harness/comparables.js` and
+   `test/parity/prototype-master.js.txt` are untouched;
+   `git hash-object test/parity/prototype-master.js.txt` is
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. **State pins** (`test/unit/roll-high-state-pins.test.js`): all eight
+   labels byte-identical. Nothing re-pinned.
+5. The full `npm test` (`node --test`): 7,577 tests, 7,577 pass, 0 fail,
+   with the two new movement tests.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
