@@ -15,7 +15,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { FLEE_NEED, FLEE_THIEF_BONUS, ABILITY_BY_ID } from "../../content/index.js";
-import { fleeBreakdown } from "../../engine/derived.js";
+import { fleeBreakdown, strikeDie, toHit, memberToHit } from "../../engine/derived.js";
 import { flee, pickMemberAbility, alliesTurn } from "../../engine/combat.js";
 import { useAbility, SWEEP_MIN_FOES, abilityUnavailableReason } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
@@ -167,4 +167,87 @@ test("(2) the bot never picks Sweep with one living foe; it does with two", () =
   const two = sweeper([foe({ name: "A" }), foe({ name: "B" })]);
   two.combat.round = 2;
   assert.deepEqual(chooseAbility(two, makeBotContext()), { key: "sweep" });
+});
+
+// ---------------------------------------------------------------------------
+// (3) Kata and Feint roll to hit with three extra winning faces.
+// ---------------------------------------------------------------------------
+
+// fakeRng hands back the raw die face r; rollCheck reads roll = dieN + 1 - r.
+const rawFor = (roll, dieN) => dieN + 1 - roll;
+
+for (const [key, cOver] of [
+  ["kata", { cls: "Fighter", sub: "Soldier", weapon: "Sword" }],
+  ["feint", { cls: "Thief", sub: "Pilfer", weapon: "Dagger" }],
+]) {
+  test(`(3) the hero's ${key}: +3 winning faces, a miss is an ordinary miss and the ability is still spent`, () => {
+    const s = fightState({ ...cOver, abilities: [key] }, { foes: [foe({ asleep: 0 })] });
+    const dieN = strikeDie(s.c);
+    const base = toHit(s);
+    const faces = Math.min(dieN, base + 3);
+    const atLeast = dieN + 1 - faces;
+    assert.ok(atLeast > 1, "the shifted need still leaves a losing face at level 2");
+    // One below the shifted need: a miss, naming the ability and its +3.
+    const miss = useAbility(s, key, fakeRng([rawFor(atLeast - 1, dieN), ...FILL]), []);
+    const m = miss.find((e) => e.type === "strikeMissed");
+    assert.ok(m, JSON.stringify(miss.map((e) => e.type)));
+    assert.equal(m.via, key);
+    assert.equal(m.atLeast, atLeast);
+    assert.deepEqual(m.mods, [{ name: ABILITY_BY_ID[key].name, delta: faces - base }]);
+    assert.equal(miss.some((e) => e.type === "struck"), false);
+    assert.equal(isReady(s.c, `ability:${key}`), false, "a miss still spends the once-per-fight use");
+    // Exactly the shifted need: a hit that adds the level in damage.
+    const h = fightState({ ...cOver, abilities: [key] }, { foes: [foe({ asleep: 0 })] });
+    const hit = useAbility(h, key, fakeRng([rawFor(atLeast, dieN), ...new Array(80).fill(1)]), []);
+    assert.ok(hit.some((e) => e.type === "struck"), JSON.stringify(hit.map((e) => e.type)));
+  });
+}
+
+test("(3) the +3 never lifts a need past the die: a d6 striker with 5 faces reads 6, not 8", () => {
+  // Level 5 strikes on a d6. A Fighter's class need is 5 winning faces.
+  const s = fightState({ cls: "Fighter", sub: "Soldier", weapon: "Sword", level: 5, abilities: ["kata"] }, { foes: [foe()] });
+  assert.equal(strikeDie(s.c), 6);
+  const ev = useAbility(s, "kata", fakeRng(new Array(80).fill(1)), []);
+  const st = ev.find((e) => e.type === "struck");
+  assert.ok(st, JSON.stringify(ev.map((e) => e.type)));
+  assert.equal(st.atLeast, 1, "every face wins, and the need never reads 0 or below");
+});
+
+test("(3) an untouchable foe stays untouchable: Kata no longer lands on a magic-only foe", () => {
+  const s = fightState({ cls: "Fighter", sub: "Soldier", weapon: "Sword", abilities: ["kata"] }, { foes: [foe({ sp: { magicOnly: true } })] });
+  const ev = useAbility(s, "kata", fakeRng(new Array(80).fill(1)), []);
+  const m = ev.find((e) => e.type === "strikeMissed");
+  assert.ok(m && m.untouchable, JSON.stringify(ev));
+});
+
+test("(3) the descriptors: Kata and Feint carry needShift +3 and the level in damage, no autoHit", () => {
+  for (const key of ["kata", "feint"]) {
+    const s = fightState({ cls: ABILITY_BY_ID[key].cls, sub: key === "kata" ? "Soldier" : "Pilfer", abilities: [key] }, { foes: [foe()] });
+    // playerStrike clears the descriptor; read the strike event's via + mods instead.
+    const ev = useAbility(s, key, fakeRng(new Array(80).fill(20)), []);
+    const m = ev.find((e) => e.type === "strikeMissed");
+    assert.ok(m, `${key}: a raw 20 is the lowest roll-high face and must miss now`);
+  }
+});
+
+test("(3) a Joiner's Kata rolls with +3 faces and can miss", () => {
+  const sheet = fighterMember({ abilities: ["kata"] });
+  const s = fightState({}, { foes: [foe()], party: [sheet] });
+  s.combat.allies = [{ partyIdx: 0, name: "Brom", lvl: 2, sub: "Soldier", wp: 30, maxWP: 30 }];
+  s.combat.round = 2;
+  const ev = alliesTurn(s, fakeRng(new Array(80).fill(20)), []);
+  assert.ok(ev.some((e) => e.type === "memberAbilityUsed" && e.key === "kata"), JSON.stringify(ev.map((e) => e.type)));
+  const m = ev.find((e) => e.type === "allyMissed");
+  assert.ok(m && m.via === "kata", JSON.stringify(ev));
+  const dieN = 12; // level 2 strikes on a d12
+  assert.equal(m.atLeast, dieN + 1 - Math.min(dieN, memberToHit(sheet) + 3));
+});
+
+test("(3) a Joiner's needShift never revives an untouchable foe", () => {
+  const sheet = fighterMember({ abilities: ["kata"] });
+  const s = fightState({}, { foes: [foe({ sp: { magicOnly: true } })], party: [sheet] });
+  s.combat.allies = [{ partyIdx: 0, name: "Brom", lvl: 2, sub: "Soldier", wp: 30, maxWP: 30 }];
+  s.combat.round = 2;
+  const ev = alliesTurn(s, fakeRng(new Array(80).fill(1)), []);
+  assert.equal(ev.some((e) => e.type === "allyStruck"), false, JSON.stringify(ev));
 });
