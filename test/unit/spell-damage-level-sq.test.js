@@ -23,6 +23,8 @@ import { alliesTurn, foeTurn } from "../../engine/combat.js";
 import { spellLevelSq } from "../../engine/derived.js";
 import { SPELLS } from "../../content/index.js";
 import { actsWhere } from "./harness/spellResistActs.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 
 const LEVELS = [1, 3, 5];
 const idx = (n) => SPELLS.findIndex((s) => s.n === n);
@@ -287,4 +289,27 @@ test("the level² takes no rng draw: a Fireball hit draws the same count at leve
   });
   assert.equal(counts[0], counts[1]);
   assert.equal(counts[0], 3, "the to-hit d8 and the two damage d10s");
+});
+
+// --- the lines: the level² the damage already holds -----------------------------
+
+test("the Oracle and rail hit lines name the level² from level 2 up; a level-1 caster's +1 goes unsaid", () => {
+  const hit = { type: "spellHit", spell: "Fireball", target: "Viper", dmg: 23, levelSq: 9 };
+  assert.equal(EVENT_NARRATION.spellHit(hit), `<span class="hit">Hit.</span> Viper takes <span class="roll">23</span> hp (the roll +9, for your level).`);
+  assert.equal(LINE_FOR.spellHit(hit).text, "Fireball hits Viper (23, the roll +9 for your level)");
+  const low = { ...hit, dmg: 5, levelSq: 1 };
+  assert.equal(EVENT_NARRATION.spellHit(low), `<span class="hit">Hit.</span> Viper takes <span class="roll">5</span> hp.`);
+  assert.equal(LINE_FOR.spellHit(low).text, "Fireball hits Viper (5)");
+  assert.equal(EVENT_NARRATION.spellHit({ ...hit, mult: 3, levelSq: undefined }).includes("×"), false, "the retired ×mult is never printed");
+});
+
+test("Ice's landing line names the first tick's level² from level 2 up, from a real cast", () => {
+  for (const [level, clause, rail] of [[1, "", ""], [3, " (the first +9, for your level)", " (the first +9)"]]) {
+    const s = fight(caster("Ice", level), [foe("F1")], noResist("Ice"));
+    const events = castSpell(s, idx("Ice"), rngBy(() => 2), []);
+    const applied = events.find((e) => e.type === "iceApplied");
+    assert.equal(applied.levelSq, level * level);
+    assert.equal(EVENT_NARRATION.iceApplied(applied), `<span class="hit">Ice climbs F1: d6 a round for 3 rounds${clause}, then it stops moving.</span>`);
+    assert.equal(LINE_FOR.iceApplied(applied).text, `Ice climbs F1: d6 a round${rail}, 3 rounds.`);
+  }
 });

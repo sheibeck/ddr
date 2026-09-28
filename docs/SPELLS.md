@@ -1223,3 +1223,48 @@ measurement.
 
 Row 4 of the table above ("frozen solid on a hit") and the Phase 75.3
 section's Freeze rows are history. See docs/ROLL-LEDGER.md for the draw order.
+
+## Spell damage adds level² (quick 260928-sq2, user ruling 2026-09-28)
+
+The user asked: "What if we square spell damage just like we do with weapons
+damage. Having every spell be resistable then helps offset that if it's too
+powerful." They chose **dice + level²** and **each foe gets it**.
+
+- **The formula.** An offensive spell's damage is its dice (plus any flat
+  bonus in its `dmg`) + the CASTER's level squared, the same `levelSq` term a
+  weapon strike gets (`engine/derived.js#spellLevelSq`, beside
+  `weaponDamageTerms`). It replaces canon p.26's × max(1, caster level −
+  spell level) for damage. A thrown spell still adds a `spellDmg` item bonus
+  after it; the result then passes through `spellDamageFor` (the MU spell
+  power dial), `afraidDamage` and `damageFoe` exactly as before.
+- **Who the caster is.** The hero (a cast or a scroll's free cast) uses
+  `c.level`; a Joiner (`combat.js#allyCast`) uses its own level (`ally.lvl`,
+  through its member view).
+- **Each foe gets it, once per cast.** Freeze, Fireball and Mangle: the one
+  foe hit. Lightning: each foe its own throw hits. Earthquake: its one roll +
+  level² to every foe. Fireballs: the first bolt to strike each foe adds
+  level²; later bolts on the same foe are their dice alone. Acid and Ice
+  (damage over time): the first tick adds level² (stored on the record as
+  `levelSq`, spent by that tick); later ticks are their dice alone.
+- **What keeps the p.26 multiplier.** Everything that is not damage: Stun's
+  reach (d6 × max(1, level − spell level) foes). Freeze's hold is its own d4
+  (`FREEZE_HOLD_DIE`).
+- **What never adds level².** Heals (Heal, Major Heal, Regeneration);
+  Earthquake's backlash on the caster (half the roll alone); an Apprentice's
+  backfire (half the dice); a fumbled scroll's hurt to the reader and the
+  reader's side (`engine/scrollFumble.js` keeps its dice × the p.26
+  multiplier, since that damage is self-inflicted).
+- **Not a spell's damage.** The Pine Staff's fireballs are item damage
+  (`kind: "item"`, soakable, no caster identity, a free action), so they add
+  no level²; Noxious Vapor deals no damage (it kills or sleeps).
+- **No new draw.** The level² is arithmetic on the rolled dice; the draw
+  order is unchanged.
+- **Text.** Each damage spell's `txt` now says "<dice> + your level²
+  damage" (an area spell's "… apiece" or "once to each foe struck", a DOT's
+  "the first round adds your level²"). The Oracle's hit line reads "(the
+  roll +N, for your level)" from the event's `levelSq`, where it used to
+  print "×mult". test/unit/authored-ranges.test.js section 9 pins every
+  text against the engine.
+
+The "d6 × the level multiplier" wording in the Freeze section above is
+history: Freeze's damage is now d6 + level².

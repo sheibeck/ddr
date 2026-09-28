@@ -5415,3 +5415,83 @@ every depth), and roll-high-guard's `DRAW_INVENTORY` (combat.js amount
 | Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
 |---|---|---|---|---|---|---|
 | action-script.magic.json#cast-damage | magic, seed 8 | Illusionist (afraid) | action-path (23+31+54+79.2) | 0 | rations 4 → 6 (sp/gold/kills now equal both sides) | the record's own `rationale`, "User rulings 2026-09-28" |
+
+### Spell damage adds level² (user ruling 2026-09-28)
+
+Quick 260928-sq2, base `d98639e9` (the Phase 79.2 START).
+
+**The rule.** "What if we square spell damage just like we do with weapons
+damage." An offensive spell's damage is its dice (plus any flat bonus in its
+`dmg`) + the caster's level² (`engine/derived.js#spellLevelSq`), replacing
+canon p.26's × max(1, caster level − spell level) for damage. Each foe a
+spell damages gets it once per cast: a thrown hit (Lightning per foe),
+Earthquake's one roll on every foe, the first Fireballs bolt on each foe,
+and the first tick of Acid or Ice. A Joiner uses its own level. Stun's reach
+keeps the multiplier; heals, Earthquake's backlash, an Apprentice's backfire
+and a fumbled scroll's hurt add nothing. No new draw. The `spellHit` event
+carries `levelSq` in place of `mult`. See docs/ROLL-LEDGER.md.
+
+**The predictor.** A replay moves only where a damage spell lands on a foe
+at a caster level where dice + level² differs from dice × the multiplier in
+a way the replay records (a kill, a survivor's hp, a payout). The one parity
+replay that lands a damage spell is `action-script.magic.json`'s
+`cast-damage` (seed 8, the afraid level-1 Illusionist's Freeze on the
+Shriek). Prediction: no move, because the halved damage is the same (the
+d6 shows 3: ceil(3 / 2) = 2 before, ceil((3 + 1) / 2) = 2 now), so the
+Shriek still stands at 1 hp and is frozen for its d4.
+
+**The live scan (measured at the base, then with the rule).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical before and
+   after. The generated roster block above is not edited.
+2. **Declared records: none moved.** The `cast-damage` record stays as
+   79.2-01 declared it (`phase` 23+31+54+79.2, `fields` `rations`): its
+   Freeze still deals 2 and the replay's state is unchanged. No carve-out
+   was needed.
+3. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+   `test/parity/prototype-master.js.txt` and
+   `test/parity/harness/comparables.js` are untouched.
+4. **State pins** (`test/unit/roll-high-state-pins.test.js`): four of eight
+   labels moved, each traced (per-bot-step state hash against `git archive
+   d98639e9`) to its first Freeze hit:
+
+   | Label | First divergence (bot step) | Cause | actions / dead / depth |
+   |---|---|---|---|
+   | solo-1 | 103 | the hero's Freeze on a China Wolf: 6 → 7 damage | 400 / false / 4 → 5 |
+   | solo-2 | 9 | the hero's Freeze on Philly: 2 → 4 applied | 298 → 400 / true → false / 3 → 4 |
+   | party-1 | 186 | the Joiner Aldric Corrin's Freeze on a Gremlin: 6 → 7, now a kill (it was resisted and stood) | 400 → 375 / false → true / 3 |
+   | deep-8 | 10 | the level-5 hero's Freeze on a Poltergeist: 2 × 4 = 8 → 2 + 25 = 27, now a kill (it was frozen 2) | 117 → 262 / true / 9 → 10 |
+
+   solo-thief-pilfer, solo-magicuser-sorcerer, party-fighter-knight and
+   deep-14 re-measured byte-identical. Re-pinned with
+   `node tools/roll-high-baseline.mjs pins` (each hashed identically twice).
+5. **The pre-switch save** (`roll-high-save-compat.test.js`): `expected.hash`
+   re-recorded ONLY (false / 3 / 300 unchanged). First divergence:
+   dispatched index 100, the level-3 Joiner Denn's Freeze on Drekk, now
+   2 + 9 = 11 (was 2 × 2 = 4), a kill that clears the room where Drekk was
+   frozen for 4. Denn's earlier Freezes (indices 98 and 99) deal 13 (was 8)
+   but kill the same foes.
+6. **Event-order corpus.** Not regenerated: its synthetic `spellHit` events
+   carry no `mult` or `levelSq`, and every case folds and renders as before.
+
+**Re-pinned unit rows (declared).** afraid (Earthquake and Fireballs under
+fear), magic (Fireball, Earthquake and Fireballs damage; the CANON-04 rows'
+foes carry more hp so the same draw sequence holds), freeze-rule,
+freeze-pays-out, control-at-depth, control-spells-depth, party-combat
+(DFB-05), spell-resist (each Freeze now d6 + 1), authored-ranges section 9
+(the texts and the level-1 +1 / level-3 +9 walk; Freeze's d4 against
+`FREEZE_HOLD_DIE`), bot-tactics (the forced Sorcerer seed 3 now stalls under
+identity dials; swapped for seed 1), and the shell snapshot `mu.hero.txt`
+(Mangle's row text). New: test/unit/spell-damage-level-sq.test.js.
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
+
+**Shell snapshots.** Only `test/unit/fixtures/shell-snapshots/mu.hero.txt`
+moved, deliberately: its Grimoire shows Mangle's new text. Regenerated with
+`MZ_SNAPSHOT_UPDATE=1 node --test test/unit/shell-tab-snapshots.test.js`.

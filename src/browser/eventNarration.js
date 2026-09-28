@@ -1121,7 +1121,8 @@ export const EVENT_NARRATION = {
   // existing dotTick handles every round after (see dotTick's own `by`
   // branch above), and frozenSolid (below) narrates the payoff.
   // VOX-05 (Phase 79, plan 79-08): "1 round", never "1 rounds".
-  iceApplied: (e) => `<span class="hit">Ice climbs ${e.target ?? "it"}: d6 a round for ${plural(e.rounds ?? 0, "round")}, then it stops moving.</span>`,
+  // Quick 260928-sq2: the first tick adds the caster's level² (`levelSq`).
+  iceApplied: (e) => `<span class="hit">Ice climbs ${e.target ?? "it"}: d6 a round for ${plural(e.rounds ?? 0, "round")}${(e.levelSq ?? 0) > 1 ? ` (the first +${e.levelSq}, for your level)` : ""}, then it stops moving.</span>`,
   // VOX-05 (Phase 79, plan 79-08): the number is damage, and it lands on
   // every foe (the caster's own half is earthquakeSelfDamage's line).
   earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> damage to every foe in the room.`,
@@ -1202,11 +1203,12 @@ export const EVENT_NARRATION = {
   nothingToThrowAt: () => `<span class="miss">Nothing here to throw it at.</span>`,
   spellThrown: (e) =>
     `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}.`,
-  // VOX-05 (Phase 79, plan 79-08): names who took it, like the strike line,
-  // and the ×N is the level multiplier already inside the damage (a bare
-  // "6 hp (×2)" read as 12).
+  // VOX-05 (Phase 79, plan 79-08): names who took it, like the strike line.
+  // Quick 260928-sq2 (user ruling 2026-09-28): the damage is the roll + the
+  // caster's level² (the event's `levelSq`), already inside the number; the
+  // clause names it from level 2 up (a level-1 caster's +1 goes unsaid).
   spellHit: (e) =>
-    `<span class="hit">Hit.</span> ${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span> hp${(e.mult ?? 1) > 1 ? ` (the roll ×${e.mult}, for your level)` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
+    `<span class="hit">Hit.</span> ${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span> hp${(e.levelSq ?? 0) > 1 ? ` (the roll +${e.levelSq}, for your level)` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
   frozenSolid: (e) => `<span class="hit">${e.target ?? "It"} freezes solid.</span>`,
   // RULES-18 (Phase 75.3, Plan 04): past floor 12, a control (Freeze, Ice's
   // last tick, a Joiner's Doze/Stun/Weaken, a Bard song) increasingly gets

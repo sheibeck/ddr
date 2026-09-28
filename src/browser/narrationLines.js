@@ -2099,7 +2099,8 @@ export const LINE_FOR = {
   // Phase 40 (SPELL-01, Ice) — the cast-time line; dotTick's own `by` branch
   // (Phase 38's combat.js hooks section, below) narrates every round after.
   // VOX-05 (Phase 79, plan 79-08): "(3)" now says rounds, and the d6 a round.
-  iceApplied: (e) => ({ text: `Ice climbs ${e?.target ?? "it"}: d6 a round, ${railPlural(e?.rounds ?? 0, "round")}.`, tone: "magic", priority: PRIORITY.you }),
+  // Quick 260928-sq2: the first tick adds the caster's level² (`levelSq`).
+  iceApplied: (e) => ({ text: `Ice climbs ${e?.target ?? "it"}: d6 a round${(e?.levelSq ?? 0) > 1 ? ` (the first +${e.levelSq})` : ""}, ${railPlural(e?.rounds ?? 0, "round")}.`, tone: "magic", priority: PRIORITY.you }),
   // VOX-05 (Phase 79, plan 79-08): the number is damage to every foe.
   earthquake: (e) => ({ text: `The floor heaves: ${e?.amount ?? 0} to every foe.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -2179,8 +2180,8 @@ export const LINE_FOR = {
   nothingToThrowAt: () => block("Nothing here to throw it at."),
   spellThrown: (e) => ({ text: `${e?.spell ?? "It"} at ${e?.target ?? "it"}.`, tone: "magic", priority: PRIORITY.you }),
   spellHit: (e) => ({
-    // VOX-05 (Phase 79, plan 79-08): the ×N is inside the damage, not on top of it.
-    text: `${e?.spell ?? "It"} hits ${e?.target ?? "it"} (${e?.dmg ?? 0}${(e?.mult ?? 1) > 1 ? `, the roll ×${e.mult} for your level` : ""})`,
+    // Quick 260928-sq2: the damage is the roll + level² (`levelSq`), already inside the number.
+    text: `${e?.spell ?? "It"} hits ${e?.target ?? "it"} (${e?.dmg ?? 0}${(e?.levelSq ?? 0) > 1 ? `, the roll +${e.levelSq} for your level` : ""})`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
