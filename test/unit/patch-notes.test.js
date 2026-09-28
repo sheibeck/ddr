@@ -159,7 +159,7 @@ test("parsePatchNotes: [text](https://...) becomes an a inline; a non-https link
     ],
   );
   for (const bad of [
-    "see [x](javascript:alert(1))",
+    "see [x](javascript:evil)",
     "see [x](http://example.com)",
     "see [x](/relative)",
   ]) {
