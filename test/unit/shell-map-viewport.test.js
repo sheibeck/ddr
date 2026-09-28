@@ -264,9 +264,11 @@ test("(f) pointermove sub-region never recenters or keeps in view (no per-tick r
 // Phase 78 (HUD-06, 78-08): mzCenterMap 4 -> 5 — a floor change centres at
 // the stairs fade's dark point (dispatchWithNarration's onDark); stepWith's
 // branch now centres only a teleport.
-test("(f) camera call sites: mzCenterMap is 5 (boot, 2 new-run paths, stepWith's teleported branch, the stairs fade's dark point — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 10 (Phase 67: the account sheet's close; Phase 78 HUD-08: the arrow pad's place changing and a Movement/Pad settings write)", () => {
+// Phase 79.3 (BUG-01, D-09): closeReportSheet() is the 11th mzKeepPartyInView
+// site, the same pattern for the REPORT A BUG sheet.
+test("(f) camera call sites: mzCenterMap is 5 (boot, 2 new-run paths, stepWith's teleported branch, the stairs fade's dark point — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 11 (Phase 67: the account sheet's close; Phase 78 HUD-08: the arrow pad's place changing and a Movement/Pad settings write; Phase 79.3: the report sheet's close)", () => {
   assert.equal((CODE.match(/window\.mzCenterMap\?\.\(\)/g) || []).length, 5);
-  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 10);
+  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 11);
 });
 
 // ─── (g) the stair-down gate ─────────────────────────────────────────────────
