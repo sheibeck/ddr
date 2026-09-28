@@ -10,6 +10,9 @@
 //   node tools/patch-notes.mjs --release-body    print the GitHub Release body
 //   node tools/patch-notes.mjs --play            print the Play "What's new" cut (<= 500 chars)
 //   node tools/patch-notes.mjs --write-module     (re)generate src/browser/patchNotesData.js
+//   node tools/patch-notes.mjs --site <dir>       validate, then write this version's notes
+//                                                  byte-for-byte to <dir>/src/data/ddr-patch-notes/
+//                                                  <versionName>.md (260928-web); prints the path
 //   [--version <v>]  defaults to android/version.properties' versionName
 //   [--root <dir>]   defaults to the repo root
 //
@@ -27,25 +30,30 @@ import {
   notesModuleSource,
   releaseBody,
   playWhatsNew,
+  writeSiteNotes,
 } from "./lib/patch-notes.mjs";
 
-const ACTION_FLAGS = Object.freeze(["--check", "--release-body", "--play", "--write-module"]);
+const ACTION_FLAGS = Object.freeze(["--check", "--release-body", "--play", "--write-module", "--site"]);
 
 function usage() {
-  return "Usage: node tools/patch-notes.mjs (--check|--release-body|--play|--write-module) [--version <v>] [--root <dir>]";
+  return "Usage: node tools/patch-notes.mjs (--check|--release-body|--play|--write-module|--site <dir>) [--version <v>] [--root <dir>]";
 }
 
 function parseArgs(argv) {
   const actions = [];
   let version;
   let root;
+  let site;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (ACTION_FLAGS.includes(a)) actions.push(a);
+    if (a === "--site") {
+      actions.push(a);
+      site = argv[++i];
+    } else if (ACTION_FLAGS.includes(a)) actions.push(a);
     else if (a === "--version") version = argv[++i];
     else if (a === "--root") root = argv[++i];
   }
-  return { actions, version, root };
+  return { actions, version, root, site };
 }
 
 function fail(message, code) {
@@ -54,12 +62,16 @@ function fail(message, code) {
 }
 
 function main() {
-  const { actions, version, root } = parseArgs(process.argv.slice(2));
+  const { actions, version, root, site } = parseArgs(process.argv.slice(2));
   if (actions.length !== 1) {
     fail(usage(), 2);
     return;
   }
   const action = actions[0];
+  if (action === "--site" && !site) {
+    fail(usage(), 2);
+    return;
+  }
   const useRoot = root ? path.resolve(root) : REPO_ROOT;
 
   let v;
@@ -93,6 +105,20 @@ function main() {
       return;
     }
     process.stdout.write(`${cut}\n`);
+    process.exit(0);
+    return;
+  }
+
+  if (action === "--site") {
+    const siteDir = path.resolve(site);
+    let written;
+    try {
+      written = writeSiteNotes(v, md, siteDir);
+    } catch (err) {
+      fail(String((err && err.message) || err), 1);
+      return;
+    }
+    console.log(written);
     process.exit(0);
     return;
   }

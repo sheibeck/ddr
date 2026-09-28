@@ -18,6 +18,7 @@ import {
   PLAY_WHATS_NEW_MAX,
   DATA_MODULE_PATH,
   NOTES_DIR,
+  SITE_NOTES_DIR,
   REPO_ROOT,
   readVersionName,
   notesPathFor,
@@ -26,6 +27,9 @@ import {
   notesModuleSource,
   releaseBody,
   playWhatsNew,
+  siteNotesPathFor,
+  validateSiteDir,
+  writeSiteNotes,
 } from "../../tools/lib/patch-notes.mjs";
 import { BANK_REGISTRY, NON_COPY_EXPORTS } from "../../tools/lib/voice-corpus.mjs";
 
@@ -49,6 +53,15 @@ function makeTempRoot(files) {
   for (const [name, content] of Object.entries(files || {})) {
     fs.writeFileSync(path.join(dir, ...NOTES_DIR.split("/"), name), content, "utf8");
   }
+  return dir;
+}
+
+/** makeTempSite() — a temp dir laid out like the website repo: package.json
+ * and an src/ directory, nothing under SITE_NOTES_DIR yet. */
+function makeTempSite() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ddr-site-"));
+  fs.writeFileSync(path.join(dir, "package.json"), "{}\n", "utf8");
+  fs.mkdirSync(path.join(dir, "src"), { recursive: true });
   return dir;
 }
 
@@ -264,6 +277,54 @@ test("playWhatsNew: a crafted 600-character headline throws naming 500 and the l
   assert.throws(() => playWhatsNew(empty));
 });
 
+// ─── site notes (260928-web: --site) ────────────────────────────────────────
+
+test("siteNotesPathFor: <siteDir>/src/data/ddr-patch-notes/<version>.md", () => {
+  assert.equal(siteNotesPathFor("2.1.0", "/site"), path.join("/site", ...SITE_NOTES_DIR.split("/"), "2.1.0.md"));
+});
+
+test("validateSiteDir: throws a clear message when the dir is missing, has no package.json, or has no src/", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ddr-site-"));
+  try {
+    assert.throws(() => validateSiteDir(path.join(tmp, "nope")), /is missing/);
+
+    const noPkg = path.join(tmp, "no-pkg");
+    fs.mkdirSync(path.join(noPkg, "src"), { recursive: true });
+    assert.throws(() => validateSiteDir(noPkg), /package\.json/);
+
+    const noSrc = path.join(tmp, "no-src");
+    fs.mkdirSync(noSrc, { recursive: true });
+    fs.writeFileSync(path.join(noSrc, "package.json"), "{}\n", "utf8");
+    assert.throws(() => validateSiteDir(noSrc), /src\//);
+
+    const ok = makeTempSite();
+    assert.doesNotThrow(() => validateSiteDir(ok));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("writeSiteNotes: writes the markdown byte-for-byte, creating the folder, and returns the written path", () => {
+  const site = makeTempSite();
+  try {
+    const md = fs.readFileSync(notesPathFor("2.1.0", REPO_ROOT), "utf8");
+    const written = writeSiteNotes("2.1.0", md, site);
+    assert.equal(written, siteNotesPathFor("2.1.0", site));
+    assert.equal(fs.readFileSync(written, "utf8"), md);
+  } finally {
+    fs.rmSync(site, { recursive: true, force: true });
+  }
+});
+
+test("writeSiteNotes: propagates validateSiteDir's error for a non-website dir", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ddr-not-site-"));
+  try {
+    assert.throws(() => writeSiteNotes("2.1.0", "# x\n", tmp), /package\.json/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 // ─── CLI ────────────────────────────────────────────────────────────────────
 
 test("CLI: --check exits 0 on the repo and prints OK", () => {
@@ -292,6 +353,35 @@ test("CLI: --version 9.9.9 --check exits 1", () => {
 test("CLI: no flag, or two action flags, exits 2", () => {
   assert.equal(run([], { cwd: REPO_ROOT }).status, 2);
   assert.equal(run(["--check", "--play"], { cwd: REPO_ROOT }).status, 2);
+});
+
+test("CLI: --site <dir> validates, writes the file under the site dir, and prints its path", () => {
+  const site = makeTempSite();
+  try {
+    const res = run(["--site", site], { cwd: REPO_ROOT });
+    assert.equal(res.status, 0, res.stderr);
+    const written = res.stdout.trim();
+    assert.equal(written, siteNotesPathFor("2.1.0", site));
+    assert.equal(fs.readFileSync(written, "utf8"), readNotesFor("2.1.0", REPO_ROOT));
+  } finally {
+    fs.rmSync(site, { recursive: true, force: true });
+  }
+});
+
+test("CLI: --site <dir> with no package.json/src exits 1 naming the dir", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ddr-not-site-"));
+  try {
+    const res = run(["--site", tmp], { cwd: REPO_ROOT });
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /package\.json/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("CLI: --site with no directory value exits 2 with usage", () => {
+  const res = run(["--site"], { cwd: REPO_ROOT });
+  assert.equal(res.status, 2);
 });
 
 test("CLI: --check exits 1 with --write-module in its message when the committed module is stale", () => {
