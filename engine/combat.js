@@ -72,7 +72,7 @@ import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, AB
 // (abilities.js imports several combat.js functions; neither module reads
 // the other's binding at top-level module-evaluation time, only inside
 // function bodies, so the cycle is safe).
-import { abilityEffectTicks, abilityShortfall, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
+import { abilityEffectTicks, abilityShortfall, KATA_FEINT_NEED_SHIFT, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
 import { checkDeathPhobia } from "./phobias.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -92,6 +92,20 @@ const SONGS = [
 /** liveFoes(state) — the still-standing foes in the current encounter. */
 export function liveFoes(state) {
   return state.combat ? state.combat.foes.filter((f) => f.alive) : [];
+}
+
+/**
+ * shiftedFaces(faces, shift, dieN) — an ability's need shift applied to a
+ * strike's winning-face count, shared by the hero (playerStrike) and a
+ * Joiner (memberStrike). Floors at 1 (Overhead Blow's −2). Quick 260928-nrf
+ * (user ruling 2026-09-28): a POSITIVE shift (Kata and Feint, +3) is capped
+ * at the die — every face wins, the need never reads 0 or below — and never
+ * lowers a count already past the die. Callers skip a 0-face (untouchable)
+ * strike, so a shift never revives one. Pure, zero rng.
+ */
+export function shiftedFaces(faces, shift, dieN) {
+  const s = Math.max(1, faces + shift);
+  return shift > 0 ? Math.max(faces, Math.min(dieN, s)) : s;
 }
 
 /**
@@ -748,11 +762,19 @@ export function playerStrike(state, rng, events = []) {
     // on top of it like any other need rule. Floors at 1 (never revives an
     // untouchable need-0 foe, mirroring Afraid's own floor below); a no-op
     // (faces unchanged) when magicOnly has already zeroed faces.
+    //
+    // Quick 260928-nrf (user ruling 2026-09-28, "Kata and Feint roll to
+    // hit"): Kata and Feint carry needShift +3 — three MORE winning faces —
+    // instead of an auto-hit. shiftedFaces caps a positive shift at the die
+    // (every face wins, never a need of 0 or below). The mod is named for the
+    // ability ("Kata"/"Feint"); Overhead Blow keeps its "overhead" name,
+    // which rollRange.js#MOD_LABEL relabels.
     let abilityMods = [];
     if (AS && AS.needShift && faces > 0) {
       const before = faces;
-      faces = Math.max(1, faces + AS.needShift);
-      abilityMods = faces !== before ? [{ name: "overhead", delta: faces - before }] : [];
+      faces = shiftedFaces(faces, AS.needShift, dieN);
+      const name = AS.key === "overheadBlow" ? "overhead" : (ABILITY_BY_ID[AS.key]?.name ?? AS.key);
+      abilityMods = faces !== before ? [{ name, delta: faces - before }] : [];
     }
     // Phase 31 Afraid — pure arithmetic on the winning-face count, zero rng;
     // false (afraidMods empty) for every non-phobia fixture. The LAST
@@ -2208,7 +2230,9 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
   switch (meta.id) {
     case "kata":
     case "feint":
-      memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, autoHit: true, bonusDmg: ally.lvl });
+      // Quick 260928-nrf: +3 winning faces, not an auto-hit (the hero's own
+      // KATA_FEINT_NEED_SHIFT descriptor).
+      memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, needShift: KATA_FEINT_NEED_SHIFT, bonusDmg: ally.lvl });
       return;
     case "deathTouch":
       memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, forceCrit: true, finishUnder: 15 });
@@ -2352,7 +2376,10 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   if (t.sp && t.sp.magicOnly && !view.magicWpn) faces = 0; // only magic touches it
   if (t.sp && t.sp.daggerOnly && !view.magicWpn && view.weapon !== "Dagger") faces = 0; // only a dagger or magic touches it
   if (t.mirror > 0) faces = Math.min(faces, 1); // RULES-10 (Phase 75.1): Mirror Self — the top face only
-  if (mod && mod.needShift) faces = Math.max(1, faces + mod.needShift);
+  // Quick 260928-nrf: the SAME shiftedFaces the hero's strike uses, and the
+  // same `faces > 0` guard — a need shift never revives an untouchable foe
+  // (before this, a Joiner's Overhead Blow lifted a 0 to 1).
+  if (mod && mod.needShift && faces > 0) faces = shiftedFaces(faces, mod.needShift, dieN);
   // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike die,
   // then (for Philly) a second draw — same draw order as before (the strike
   // die, then Philly's).

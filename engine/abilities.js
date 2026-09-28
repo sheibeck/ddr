@@ -103,6 +103,16 @@ export function abilityEffectTicks(key) {
 export const SWEEP_MIN_FOES = 2;
 
 /**
+ * KATA_FEINT_NEED_SHIFT — quick 260928-nrf (user ruling 2026-09-28, "Kata
+ * and Feint roll to hit"): the winning faces Kata and Feint ADD to the
+ * strike roll, replacing their old auto-hit. The 260928-abl audit measured
+ * plain level-1 swings landing about 17% (Fighter) and 34% (Thief) of the
+ * time, which made a "cannot miss" strike most of the class's killing.
+ * Shared with combat.js#resolveMemberAbility (a Joiner's Kata/Feint).
+ */
+export const KATA_FEINT_NEED_SHIFT = 3;
+
+/**
  * abilityShortfall(key, liveCount) — the ONE ability-availability rule that
  * depends on the fight rather than the timers: `"tooFewFoes"` for Sweep
  * with fewer than SWEEP_MIN_FOES living foes, else `null`. The hero
@@ -247,12 +257,13 @@ export function useAbility(state, key, rng, events = []) {
   startAbilityTimer(c, meta);
 
   switch (key) {
+    // Quick 260928-nrf (user ruling 2026-09-28, "Kata and Feint roll to
+    // hit"): three more winning faces on the strike roll (the mirror of
+    // Overhead Blow's −2), not an auto-hit. A miss is an ordinary miss and
+    // the once-per-fight use is still spent (startAbilityTimer ran above).
     case "kata":
-      C.abilityStrike = { key, autoHit: true, bonusDmg: c.level };
-      playerStrike(state, rng, events);
-      return events;
     case "feint":
-      C.abilityStrike = { key, autoHit: true, bonusDmg: c.level };
+      C.abilityStrike = { key, needShift: KATA_FEINT_NEED_SHIFT, bonusDmg: c.level };
       playerStrike(state, rng, events);
       return events;
     case "deathTouch":
