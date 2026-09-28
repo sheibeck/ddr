@@ -113,6 +113,8 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 - [ ] **BUG-02**: Send stores one report in the game's Firebase project (Firestore): the player's text, the current run's Oracle, the app version and build, the device and OS, and the run context. A failed or offline send keeps the draft and says so, and nothing secret ships in the app.
 - [ ] **BUG-03**: Firestore rules allow only a validated, size-bounded create of a report. The app can't read, change or delete reports.
 - [ ] **BUG-04**: A GitHub Action in sheibeck/ddr, run on a schedule or by hand, files each new report as an issue labelled player-report. The player's text can't @-mention anyone, and the Oracle sits in a collapsed block, trimmed to fit. The report is marked filed and never filed twice. A live end-to-end test proves the path.
+- [ ] **NOTES-01**: Every Play release has one patch-notes file, `docs/patch-notes/<versionName>.md`, agreed with the user before the release build. The categories are: headline, classes, races, abilities and spells, items and gear, monsters and difficulty, interface, bug fixes. Each change reads old → new. The same file feeds the GitHub Release on the version tag, and Play's 500-character "What's new" is cut from it. (user, 2026-09-28)
+- [ ] **NOTES-02**: The notes ship in the app. A PATCH NOTES row in the ☰ menu opens a sheet with this version's notes, which works offline and links to past versions on GitHub. The sheet opens once by itself on the first launch of a new version. (user, 2026-09-28)
 
 ### Android & Play (DROID)
 
@@ -202,6 +204,8 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | BUG-02 | Phase 79.3 | Pending |
 | BUG-03 | Phase 79.3 | Pending |
 | BUG-04 | Phase 79.3 | Pending |
+| NOTES-01 | Phase 79.3 | Pending |
+| NOTES-02 | Phase 79.3 | Pending |
 | BOARD-12 | Phase 81 | Complete |
 | BOARD-13 | Phase 81 | Complete |
 | BOARD-14 | Phase 81 | Complete |

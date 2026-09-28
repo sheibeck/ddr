@@ -540,7 +540,9 @@ The user's rulings (2026-09-28):
 - Use Firebase: "Firestore + GitHub Action", which keeps the project on the free Spark plan, and no GitHub token ships in the app.
 - Reports post publicly to sheibeck/ddr, "with a notice".
 
-**Requirements**: BUG-01, BUG-02, BUG-03, BUG-04
+**Requirements**: BUG-01, BUG-02, BUG-03, BUG-04, NOTES-01, NOTES-02
+
+**Added 2026-09-28 (user rulings "In v2.1, before the build" and "Once per update"):** in-game patch notes, which share the ☰ menu and sheet pattern. The notes are bundled per version, open from a PATCH NOTES row, and open once by themselves after an update. The same file feeds the GitHub Release and Play's "What's new". The orchestrator writes the 2.1 notes with the user before the release build.
 **Depends on:** Phase 79 (the ☰ menu and the Oracle). It runs before Phase 80's release build (80-04).
 **Success Criteria** (what must be TRUE):
 1. The ☰ menu has a REPORT A BUG row on every screen: the map, combat, every tab, and while dead. It opens a report sheet with a text box, Send and Cancel, and a plain notice that the report and the Oracle will be posted publicly on GitHub.
