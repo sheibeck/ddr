@@ -7,6 +7,6 @@
 
 export const BUG_REPORT_CONFIG = Object.freeze({
   projectId: "delve-die-repeat-6ba5f",
-  apiKey: "",
+  apiKey: "AIzaSyBMevk4MUgW7enDgE9NR96ItJcaiDV-SaI",
   collection: "bugReports",
 });
