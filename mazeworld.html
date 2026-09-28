@@ -1053,10 +1053,33 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 #mw-rail .mw-rail-body{align-self:stretch;display:flex;flex-direction:column;min-height:0}
 #mw-rail .mw-rail-lines{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
 #mw-rail .mw-rail-lines>*{flex:none}
-#mw-rail .mw-rail-lines>.mw-find-drop{flex:0 1 auto;min-height:calc(5.5rem * var(--mw-text-scale))}
+#mw-rail .mw-rail-lines>.mw-find-drop{flex:0 100 auto;min-height:calc(8rem * var(--mw-text-scale))}
 #mw-rail>.mw-rail-actions{flex:none}
-.mw-find-drop{max-height:min(34vh, calc(15rem * var(--mw-text-scale)));overflow-y:auto;overscroll-behavior:contain;margin:8px 0 0}
-.mw-find-drop .g-n{min-width:0;overflow-wrap:anywhere}
+/* Quick task 260928-fcs (user, 2026-09-27, Pixel 7: "the Something Worth
+   Taking rail needs to be scrollable. And with the expanded equipment
+   descriptions, the equipment is running together on that rail").
+   Measured at 412x915, the largest bag full, text L: every drop row was
+   exactly 48px tall. The rows are buttons, and the app-wide
+   button{min-height:48px} replaces a flex item's automatic minimum, so in
+   the bounded .shelf column each row shrank to 48px and its wrapped stat
+   line spilled over the next row; the list's scroll height only covered
+   the squashed rows. Now a row never shrinks, carries a divider and
+   padding, reads as a bold name over a stat line clamped to two lines,
+   and stays one tap target. On the rail the found item's lines sit in a
+   head of their own (.mw-find-head, built by renderRail only for the
+   full-bag card), so the lines column holds two siblings and never has to
+   scroll: the list gives way first (a shrink weight of 100 to the head's 1),
+   down to its floor of about two rows, and only then does the head give
+   way, down to its own floor. Each region scrolls by touch on its own
+   (pan-y, contained). The loot screen's #loot-drop-shelf shares the row
+   rules. */
+#mw-rail .mw-rail-lines>.mw-find-head{flex:0 1 auto;min-height:calc(7rem * var(--mw-text-scale));overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
+.mw-find-drop{max-height:min(34vh, calc(15rem * var(--mw-text-scale)));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;gap:0;margin:8px 0 0}
+.mw-find-drop>.goods{flex:none;align-items:flex-start;border:0;border-bottom:1px solid var(--rule);padding:10px 6px}
+.mw-find-drop>.goods:first-child{border-top:1px solid var(--rule)}
+.mw-find-drop .g-n{min-width:0;overflow-wrap:anywhere;font-weight:700;color:var(--ink)}
+.mw-find-drop .g-n i{font-weight:400;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin-top:3px}
+.mw-find-drop .g-c{align-self:center}
 
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
@@ -4099,6 +4122,7 @@ function paint() {
    itemStatLines formatter); both callers mount the shelf as the bounded,
    scrolling .mw-find-drop region. */
 function renderDropShelf(shelf, entries) {
+  armDropShelfDrag(shelf);
   (entries || []).forEach(({ it: bi, i, stats }) => {
     const row = document.createElement("button");
     row.className = "goods";
@@ -4108,9 +4132,40 @@ function renderDropShelf(shelf, entries) {
     // formatter has nothing to say about.
     const biSub = stats || (bi.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(bi) : bi.txt);
     row.innerHTML = `<span class="g-n">${bi.n}${biSub ? `<i>${biSub}</i>` : ""}</span><span class="g-c">Drop</span>`;
-    row.onclick = () => window.mzDropItem?.(i);
+    row.onclick = () => { if (dropShelfDragged(shelf)) return; window.mzDropItem?.(i); };
     shelf.appendChild(row);
   });
+}
+
+// Quick task 260928-fcs: a drag that scrolls the drop list is never a row
+// press. The browser normally eats the click a scroll leaves behind, but a
+// short drag under the touch slop can still land one, and every row is a
+// Drop. The shelf remembers where the pointer went down; a move past
+// DROP_DRAG_SLOP_PX, or any scroll while the pointer is down, marks the
+// gesture as a drag, and the next row click reads and clears that mark.
+// Property handlers, rebound on every render, so a rebuilt shelf is armed
+// the same way. Presentation only: nothing here reaches S.
+const DROP_DRAG_SLOP_PX = 10;
+const dropShelfDrags = new WeakMap();
+function armDropShelfDrag(shelf) {
+  if (!shelf) return;
+  const g = { x: 0, y: 0, down: false, dragged: false };
+  dropShelfDrags.set(shelf, g);
+  shelf.onpointerdown = (e) => { g.x = e.clientX; g.y = e.clientY; g.down = true; g.dragged = false; };
+  shelf.onpointermove = (e) => {
+    if (g.down && (Math.abs(e.clientX - g.x) > DROP_DRAG_SLOP_PX || Math.abs(e.clientY - g.y) > DROP_DRAG_SLOP_PX)) g.dragged = true;
+  };
+  // The browser taking the gesture over for a scroll cancels the pointer.
+  shelf.onpointercancel = () => { if (g.down) g.dragged = true; };
+  shelf.onscroll = () => { if (g.down) g.dragged = true; };
+}
+function dropShelfDragged(shelf) {
+  const g = shelf ? dropShelfDrags.get(shelf) : null;
+  if (!g) return false;
+  const dragged = g.dragged;
+  g.down = false;
+  g.dragged = false;
+  return dragged;
 }
 
 
@@ -5811,21 +5866,39 @@ function renderRail() {
   // the fresh elements this render builds (adopt) instead of restarting it.
   const isNew = key !== lastRailKeyShown;
   const linesEl = document.getElementById("mw-rail-lines");
+  // Quick task 260928-fcs: a same-card re-render rebuilds the full-bag
+  // find card's two scroll regions, so it carries their scroll positions
+  // over; a finger mid-list never snaps back to the top.
+  const keepScroll = !isNew && shelfItems ? {
+    head: document.getElementById("find-head")?.scrollTop || 0,
+    drop: document.getElementById("find-drop-shelf")?.scrollTop || 0,
+  } : null;
   linesEl.textContent = "";
+  // Quick task 260928-fcs: on the full-bag find card the found item's
+  // lines (the narration, the item, its comparison and the bag-full line)
+  // go in a bounded head of their own, the drop list's sibling, so each
+  // scrolls on its own and the lines column itself never has to.
+  let lineHost = linesEl;
+  if (shelfItems) {
+    lineHost = document.createElement("div");
+    lineHost.className = "mw-find-head";
+    lineHost.id = "find-head";
+    linesEl.appendChild(lineHost);
+  }
   const typedTargets = [];
   const typedTexts = [];
   for (const line of lines) {
     const el = document.createElement("div");
     el.className = "mw-rail-line";
     el.textContent = line.text;
-    linesEl.appendChild(el);
+    lineHost.appendChild(el);
     typedTargets.push(el);
     typedTexts.push(line.text);
     if (line.roll) {
       const rollEl = document.createElement("div");
       rollEl.className = "mw-rail-roll";
       rollEl.textContent = line.roll;
-      linesEl.appendChild(rollEl);
+      lineHost.appendChild(rollEl);
       typedTargets.push(rollEl);
       typedTexts.push(line.roll);
     }
@@ -5841,6 +5914,10 @@ function renderRail() {
     shelfEl.id = "find-drop-shelf";
     linesEl.appendChild(shelfEl);
     renderDropShelf(document.getElementById("find-drop-shelf"), shelfItems);
+    if (keepScroll) {
+      lineHost.scrollTop = keepScroll.head;
+      shelfEl.scrollTop = keepScroll.drop;
+    }
   }
   const actionsEl = document.getElementById("mw-rail-actions");
   actionsEl.textContent = "";
@@ -5977,6 +6054,9 @@ document.getElementById("mw-rail").onclick = (e) => {
   const target = e && e.target;
   const btnTarget = target && typeof target.closest === "function" ? target.closest(".mw-rail-btn") : null;
   if (btnTarget) return;
+  // Quick task 260928-fcs: a tap or a drag inside the full-bag drop list
+  // belongs to the list (its rows, its scroll), never to the card body.
+  if (target && typeof target.closest === "function" && target.closest(".mw-find-drop")) return;
   if (!window.__mzInputGuards || !window.__mzInputGuards.isArmed(railShownAt, Date.now())) return;
   // Phase 58 (MOTION-04, D-13): a tap on typing text completes it instead
   // of dismissing — the next tap follows the rules below exactly.
