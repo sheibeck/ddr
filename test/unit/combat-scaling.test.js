@@ -142,12 +142,16 @@ function fixedFoe(overrides = {}) {
 
 // --- DIALS pins used by combat wiring ---------------------------------------
 
-test("USER RULING G (cycle 3, fitted DIALS): DIALS pins used by combat wiring are at their SHIPPED (fitted/held) values — fit/best.json, docs/DIFFICULTY-RETUNE.md's dial table", () => {
-  assert.deepStrictEqual(DIALS.FOE_LEVEL, { base: 0.9, perDepth: 0.29 });
+test("USER RULING G (cycle 3, fitted DIALS), Phase 79.2 early-floor lock (user ruling 2026-09-27): DIALS pins used by combat wiring are at their SHIPPED (fitted/locked/held) values — fit/best.json, 79.2's fit/early-lock.json, docs/DIFFICULTY-RETUNE.md's dial table", () => {
+  // Phase 79.2 early-floor lock (user ruling 2026-09-27): FOE_LEVEL.base
+  // 0.9 -> 1.0, FOE_HIT_SCALE { base 0.6, perDepth 0.01 } -> { 0.84, 0.02 }
+  // and FOE_HP_SCALE.base 0.9 -> 1.2 (fit/early-log-c2.jsonl #18, locked by
+  // RF-79.2-02-3); the knees and tail slopes are unchanged.
+  assert.deepStrictEqual(DIALS.FOE_LEVEL, { base: 1, perDepth: 0.29 });
   assert.equal(DIALS.TIER_SPREAD, 1);
   // RULES-17 (Phase 75.3, Plan 03): both dials gained the knee pair.
-  assert.deepStrictEqual(DIALS.FOE_HIT_SCALE, { base: 0.6, perDepth: 0.01, kneeDepth: 12, perDepthAfter: 0.02 });
-  assert.deepStrictEqual(DIALS.FOE_HP_SCALE, { base: 0.9, perDepth: 0.015, kneeDepth: 12, perDepthAfter: 0.03 });
+  assert.deepStrictEqual(DIALS.FOE_HIT_SCALE, { base: 0.84, perDepth: 0.02, kneeDepth: 12, perDepthAfter: 0.02 });
+  assert.deepStrictEqual(DIALS.FOE_HP_SCALE, { base: 1.2, perDepth: 0.015, kneeDepth: 12, perDepthAfter: 0.03 });
   assert.deepStrictEqual(DIALS.FOE_ELITE, { maxRank: 10, hpPerRank: 0.1, hitPerRank: 0.05 });
   assert.equal(DIALS.FOE_COUNT_SKEW, 1);
   assert.equal(DIALS.ROUND_DAMAGE_CEILING, 0.5);

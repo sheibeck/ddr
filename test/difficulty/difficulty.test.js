@@ -146,7 +146,44 @@ function withIdentity(overrides, fn) {
   }
 }
 
-test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3), RULES-16 (Phase 75.3): DIALS deepStrictEqual the merge of the identity column, the Phase 54 fit/best.json and the Phase 75.3 dial overlay (the shipped values are the evaluated ones, no rounding, no hand-tidying)", () => {
+// Phase 79.2's early-floor lock file (user ruling 2026-09-27, locked by
+// RF-79.2-02-3 on 2026-09-28): the live phase directory first, then the
+// v2.1 milestone archive, the same fallback shape as the lookups below, so
+// archiving the milestone never turns these pins red.
+function readEarlyLock() {
+  const lockRel = ["79.2-early-floor-difficulty-retune-floors-1-12-harder-fair-bot-p5", "fit", "early-lock.json"];
+  const planning = path.join(__dirname, "..", "..", ".planning");
+  const lockPath = [
+    path.join(planning, "phases", ...lockRel),
+    path.join(planning, "milestones", "v2.1-phases", ...lockRel),
+  ].find((p) => fs.existsSync(p));
+  assert.ok(lockPath, "79.2's fit/early-lock.json not found in .planning/phases/ or .planning/milestones/v2.1-phases/");
+  return JSON.parse(fs.readFileSync(lockPath, "utf8"));
+}
+
+test("Phase 79.2 (user ruling 2026-09-27): every leaf of the early-floor sweep's confirmed early-lock.json equals DIALS", () => {
+  // The lock is c2 #18 (fit/early-log-c2.jsonl), confirmed at 1,000 seeds
+  // (fit/confirm-1000-c3n1.jsonl) and on the 79.1 tail
+  // (fit/tail-confirm-c3n1.jsonl), and locked on the user's ruling
+  // RF-79.2-02-3 ("Lock the best result as-is.", fit/early-lock-ruling.json).
+  const lock = readEarlyLock();
+  let leaves = 0;
+  for (const [key, value] of Object.entries(lock)) {
+    assert.ok(key in DIALS, `early-lock.json names ${key}, which is not a DIALS key`);
+    if (value && typeof value === "object") {
+      for (const [leaf, leafValue] of Object.entries(value)) {
+        assert.equal(DIALS[key][leaf], leafValue, `DIALS.${key}.${leaf}`);
+        leaves++;
+      }
+    } else {
+      assert.equal(DIALS[key], value, `DIALS.${key}`);
+      leaves++;
+    }
+  }
+  assert.equal(leaves, 16, "early-lock.json carries the 9 SEARCH_PLAN coordinates plus the knees, tail slopes and held perDepths of the same seven dials (16 leaves)");
+});
+
+test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3), RULES-16 (Phase 75.3), Phase 79.2 (user ruling 2026-09-27): DIALS deepStrictEqual the merge of the identity column, the Phase 54 fit/best.json, the Phase 75.3 dial overlay and the Phase 79.2 early-lock.json overlay (the shipped values are the evaluated ones, no rounding, no hand-tidying)", () => {
   // The fit artifact lives in Phase 54's directory, which /gsd-complete-milestone
   // MOVES into .planning/milestones/v1.7-phases/ when the milestone is archived.
   // Try the live location first, then the archive, so archiving a milestone never
@@ -176,8 +213,13 @@ test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3), RULES-16 (Phase 75
   // name (any other unknown key still fails the key-set pin below).
   const { HERO_REGEN_PER_FLOOR: retiredRegen, ...bestLive } = best;
   assert.equal(retiredRegen, 0.25, "the Phase 54 fit artifact still records the retired regen");
-  const merged = { ...IDENTITY_COLUMN, ...bestLive, ...overlay };
-  assert.deepStrictEqual(Object.keys(DIALS).sort(), Object.keys(merged).sort(), "DIALS and the identity+best.json+overlay merge must cover the exact same key set");
+  // Phase 79.2 early-floor lock (user ruling 2026-09-27): the last layer.
+  // Its seven keys are whole dial objects (every leaf, knees included), so
+  // the shallow merge replaces the Phase 54 / 75.3 values for exactly those
+  // dials.
+  const earlyLock = readEarlyLock();
+  const merged = { ...IDENTITY_COLUMN, ...bestLive, ...overlay, ...earlyLock };
+  assert.deepStrictEqual(Object.keys(DIALS).sort(), Object.keys(merged).sort(), "DIALS and the identity+best.json+overlay+early-lock merge must cover the exact same key set");
   assert.deepStrictEqual(DIALS, merged);
 });
 
@@ -224,7 +266,14 @@ test("identity column: difficultyCurve(1) reads canon exactly (under an explicit
 // values (no coordinate touched them). Pasted verbatim from `node -e`
 // against the landed (fitted) engine; this is the "before" this plan's
 // parity re-measurement (Task 1, Part 5) declares as moved.
-test("USER RULING G (cycle 3, fitted DIALS): difficultyCurve(1) — the fitted curve at floor 1 (foeLevel still 1; foeHitScale/foeHpScale/hazardScale move off identity — declared per USER RULING D)", () => {
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): FOE_HIT_SCALE
+// { 0.6, 0.01 } -> { 0.84, 0.02 } moves foeHitScale 0.61 -> 0.86, and
+// FOE_HP_SCALE.base 0.9 -> 1.2 moves foeHpScale 0.915 -> 1.2149999999999999
+// (1.2 + 0.015, the raw IEEE-754 sum, pasted verbatim from `node -e`).
+// FOE_LEVEL.base 0.9 -> 1.0 leaves floor 1 at level 1 (round(1.29) = 1);
+// dots and hazardScale are unmoved (ENCOUNTER_DOTS and HAZARD_SCALE were
+// not changed by the lock).
+test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): difficultyCurve(1) — the locked curve at floor 1 (foeLevel still 1; foeHitScale/foeHpScale/hazardScale move off identity — declared per USER RULING D)", () => {
   assert.deepStrictEqual(difficultyCurve(1), {
     depth: 1,
     breather: false,
@@ -234,8 +283,8 @@ test("USER RULING G (cycle 3, fitted DIALS): difficultyCurve(1) — the fitted c
     waterPools: 1,
     storeTier: 0,
     foeLevel: 1,
-    foeHitScale: 0.61,
-    foeHpScale: 0.915,
+    foeHitScale: 0.86,
+    foeHpScale: 1.2149999999999999,
     hazardScale: 0.62,
     abilityThreat: 1,
   });
@@ -280,47 +329,51 @@ test("identity column: difficultyCurve(depth) for depths 2..25/35/50 deepStrictE
   });
 });
 
-// FITTED_CURVE_PINS — Phase 54-07 fit (USER RULING G cycle 3), depths
-// 2..25/35/50, pasted verbatim from `node -e` against the landed (fitted)
-// engine. `foeHitScale`/`foeHpScale`/`hazardScale` are rounded to 6dp (a
-// `round(x*1e6)/1e6` pass on the raw `node -e` output) to strip IEEE-754
-// representation noise (e.g. raw `0.9450000000000001`) without losing any
-// precision the dials themselves carry (every fitted/held value here has
-// <= 3 decimal digits).
+// FITTED_CURVE_PINS — depths 2..25/35/50, pasted verbatim from `node -e`
+// against the landed engine. `foeHitScale`/`foeHpScale`/`hazardScale` are
+// rounded to 6dp (a `round(x*1e6)/1e6` pass on the raw `node -e` output) to
+// strip IEEE-754 representation noise (e.g. raw `0.9450000000000001`)
+// without losing any precision the dials themselves carry (every
+// fitted/held value here has <= 3 decimal digits).
+//
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): EVERY row is
+// re-captured, because the searched dials are global (base + perDepth x d
+// from floor 1), not only past floor 12:
+// - FOE_HIT_SCALE { base 0.6, perDepth 0.01 } -> { 0.84, 0.02 }: foeHitScale
+//   is 0.84 + 0.02*d at every depth. perDepthAfter stays 0.02, now EQUAL to
+//   perDepth, so this dial's knee is its own identity (no bend at 12);
+// - FOE_HP_SCALE.base 0.9 -> 1.2: foeHpScale is 1.2 + 0.015*d through 12,
+//   then the unchanged perDepthAfter 0.03 past the knee (1.38 + 0.03*(d-12));
+// - FOE_LEVEL.base 0.9 -> 1.0: foeLevel moves at depth 2 only (1 -> 2).
+// dots, darkBlobs, darkRadius, waterPools, storeTier, hazardScale and
+// abilityThreat are unmoved (the lock did not change their dials).
 const FITTED_CURVE_PINS = {
-  2: { depth: 2, breather: false, dots: 8, darkBlobs: 1, darkRadius: 5, waterPools: 1, storeTier: 1, foeLevel: 1, foeHitScale: 0.62, foeHpScale: 0.93, hazardScale: 0.64, abilityThreat: 1 },
-  3: { depth: 3, breather: false, dots: 8, darkBlobs: 2, darkRadius: 6, waterPools: 1, storeTier: 1, foeLevel: 2, foeHitScale: 0.63, foeHpScale: 0.945, hazardScale: 0.66, abilityThreat: 1 },
-  4: { depth: 4, breather: false, dots: 8, darkBlobs: 2, darkRadius: 7, waterPools: 1, storeTier: 1, foeLevel: 2, foeHitScale: 0.64, foeHpScale: 0.96, hazardScale: 0.68, abilityThreat: 1 },
-  5: { depth: 5, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 2, foeHitScale: 0.65, foeHpScale: 0.975, hazardScale: 0.7, abilityThreat: 1 },
-  6: { depth: 6, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 2, foeLevel: 3, foeHitScale: 0.66, foeHpScale: 0.99, hazardScale: 0.72, abilityThreat: 1 },
-  7: { depth: 7, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 3, foeHitScale: 0.67, foeHpScale: 1.005, hazardScale: 0.74, abilityThreat: 1 },
-  8: { depth: 8, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 3, foeHitScale: 0.68, foeHpScale: 1.02, hazardScale: 0.76, abilityThreat: 1 },
-  9: { depth: 9, breather: false, dots: 10, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 0.69, foeHpScale: 1.035, hazardScale: 0.78, abilityThreat: 1 },
-  10: { depth: 10, breather: false, dots: 10, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 0.7, foeHpScale: 1.05, hazardScale: 0.8, abilityThreat: 1 },
-  11: { depth: 11, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 4, foeHitScale: 0.71, foeHpScale: 1.065, hazardScale: 0.82, abilityThreat: 1 },
-  12: { depth: 12, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 0.72, foeHpScale: 1.08, hazardScale: 0.84, abilityThreat: 1 },
-  // RULES-17 (Phase 75.3): depths 13+ are past kneeDepth 12 — foeHitScale/
-  // foeHpScale now read the SECOND slope (0.72 + 0.02*(d-12) /
-  // 1.08 + 0.03*(d-12)); every OTHER field (dots/darkBlobs/darkRadius/
-  // waterPools/storeTier/foeLevel/hazardScale/abilityThreat) is untouched —
-  // HAZARD_SCALE/ABILITY_THREAT carry no knee. Depths 2-12 above are
-  // UNCHANGED from before this plan (the knee's own identity below its own
-  // threshold).
-  13: { depth: 13, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.74, foeHpScale: 1.11, hazardScale: 0.86, abilityThreat: 1 },
-  14: { depth: 14, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.76, foeHpScale: 1.14, hazardScale: 0.88, abilityThreat: 1 },
-  15: { depth: 15, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.78, foeHpScale: 1.17, hazardScale: 0.9, abilityThreat: 1 },
-  16: { depth: 16, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 0.8, foeHpScale: 1.2, hazardScale: 0.92, abilityThreat: 1 },
-  17: { depth: 17, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.82, foeHpScale: 1.23, hazardScale: 0.94, abilityThreat: 1 },
-  18: { depth: 18, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.84, foeHpScale: 1.26, hazardScale: 0.96, abilityThreat: 1 },
-  19: { depth: 19, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.86, foeHpScale: 1.29, hazardScale: 0.98, abilityThreat: 1 },
-  20: { depth: 20, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.88, foeHpScale: 1.32, hazardScale: 1, abilityThreat: 1 },
-  21: { depth: 21, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 0.9, foeHpScale: 1.35, hazardScale: 1.02, abilityThreat: 1 },
-  22: { depth: 22, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.92, foeHpScale: 1.38, hazardScale: 1.04, abilityThreat: 1 },
-  23: { depth: 23, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.94, foeHpScale: 1.41, hazardScale: 1.06, abilityThreat: 1 },
-  24: { depth: 24, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.96, foeHpScale: 1.44, hazardScale: 1.08, abilityThreat: 1 },
-  25: { depth: 25, breather: false, dots: 15, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 0.98, foeHpScale: 1.47, hazardScale: 1.1, abilityThreat: 1 },
-  35: { depth: 35, breather: false, dots: 18, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.18, foeHpScale: 1.77, hazardScale: 1.3, abilityThreat: 1 },
-  50: { depth: 50, breather: false, dots: 22, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.48, foeHpScale: 2.22, hazardScale: 1.6, abilityThreat: 1 },
+  2: { depth: 2, breather: false, dots: 8, darkBlobs: 1, darkRadius: 5, waterPools: 1, storeTier: 1, foeLevel: 2, foeHitScale: 0.88, foeHpScale: 1.23, hazardScale: 0.64, abilityThreat: 1 },
+  3: { depth: 3, breather: false, dots: 8, darkBlobs: 2, darkRadius: 6, waterPools: 1, storeTier: 1, foeLevel: 2, foeHitScale: 0.9, foeHpScale: 1.245, hazardScale: 0.66, abilityThreat: 1 },
+  4: { depth: 4, breather: false, dots: 8, darkBlobs: 2, darkRadius: 7, waterPools: 1, storeTier: 1, foeLevel: 2, foeHitScale: 0.92, foeHpScale: 1.26, hazardScale: 0.68, abilityThreat: 1 },
+  5: { depth: 5, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 2, foeHitScale: 0.94, foeHpScale: 1.275, hazardScale: 0.7, abilityThreat: 1 },
+  6: { depth: 6, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 2, foeLevel: 3, foeHitScale: 0.96, foeHpScale: 1.29, hazardScale: 0.72, abilityThreat: 1 },
+  7: { depth: 7, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 3, foeHitScale: 0.98, foeHpScale: 1.305, hazardScale: 0.74, abilityThreat: 1 },
+  8: { depth: 8, breather: false, dots: 9, darkBlobs: 3, darkRadius: 7, waterPools: 2, storeTier: 2, foeLevel: 3, foeHitScale: 1, foeHpScale: 1.32, hazardScale: 0.76, abilityThreat: 1 },
+  9: { depth: 9, breather: false, dots: 10, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 1.02, foeHpScale: 1.335, hazardScale: 0.78, abilityThreat: 1 },
+  10: { depth: 10, breather: false, dots: 10, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 1.04, foeHpScale: 1.35, hazardScale: 0.8, abilityThreat: 1 },
+  11: { depth: 11, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 4, foeHitScale: 1.06, foeHpScale: 1.365, hazardScale: 0.82, abilityThreat: 1 },
+  12: { depth: 12, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 4, foeHitScale: 1.08, foeHpScale: 1.38, hazardScale: 0.84, abilityThreat: 1 },
+  13: { depth: 13, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.1, foeHpScale: 1.41, hazardScale: 0.86, abilityThreat: 1 },
+  14: { depth: 14, breather: false, dots: 11, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.12, foeHpScale: 1.44, hazardScale: 0.88, abilityThreat: 1 },
+  15: { depth: 15, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.14, foeHpScale: 1.47, hazardScale: 0.9, abilityThreat: 1 },
+  16: { depth: 16, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 1.16, foeHpScale: 1.5, hazardScale: 0.92, abilityThreat: 1 },
+  17: { depth: 17, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.18, foeHpScale: 1.53, hazardScale: 0.94, abilityThreat: 1 },
+  18: { depth: 18, breather: false, dots: 12, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.2, foeHpScale: 1.56, hazardScale: 0.96, abilityThreat: 1 },
+  19: { depth: 19, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.22, foeHpScale: 1.59, hazardScale: 0.98, abilityThreat: 1 },
+  20: { depth: 20, breather: false, dots: 13, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.24, foeHpScale: 1.62, hazardScale: 1, abilityThreat: 1 },
+  21: { depth: 21, breather: true, dots: 7, darkBlobs: 0, darkRadius: 7, waterPools: 1, storeTier: 3, foeLevel: 5, foeHitScale: 1.26, foeHpScale: 1.65, hazardScale: 1.02, abilityThreat: 1 },
+  22: { depth: 22, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.28, foeHpScale: 1.68, hazardScale: 1.04, abilityThreat: 1 },
+  23: { depth: 23, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.3, foeHpScale: 1.71, hazardScale: 1.06, abilityThreat: 1 },
+  24: { depth: 24, breather: false, dots: 14, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.32, foeHpScale: 1.74, hazardScale: 1.08, abilityThreat: 1 },
+  25: { depth: 25, breather: false, dots: 15, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.34, foeHpScale: 1.77, hazardScale: 1.1, abilityThreat: 1 },
+  35: { depth: 35, breather: false, dots: 18, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.54, foeHpScale: 2.07, hazardScale: 1.3, abilityThreat: 1 },
+  50: { depth: 50, breather: false, dots: 22, darkBlobs: 3, darkRadius: 7, waterPools: 3, storeTier: 3, foeLevel: 5, foeHitScale: 1.84, foeHpScale: 2.52, hazardScale: 1.6, abilityThreat: 1 },
 };
 
 function roundedCurve(curve) {
@@ -328,7 +381,7 @@ function roundedCurve(curve) {
   return { ...curve, foeHitScale: r(curve.foeHitScale), foeHpScale: r(curve.foeHpScale), hazardScale: r(curve.hazardScale), abilityThreat: r(curve.abilityThreat) };
 }
 
-test("USER RULING G (cycle 3, fitted DIALS): difficultyCurve(depth) for depths 2..25/35/50 deepStrictEqual to the pasted node -e capture (float fields rounded to 6dp)", () => {
+test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): difficultyCurve(depth) for depths 2..25/35/50 deepStrictEqual to the pasted node -e capture of the locked engine (float fields rounded to 6dp)", () => {
   for (const [depth, expected] of Object.entries(FITTED_CURVE_PINS)) {
     assert.deepStrictEqual(roundedCurve(difficultyCurve(Number(depth))), expected, `depth ${depth}`);
   }
@@ -341,9 +394,13 @@ test("foeLevelFor map 1..25 (identity, under an explicit identity override) === 
   });
 });
 
-test("USER RULING G (cycle 3, fitted DIALS): foeLevelFor map 1..25 === '1122233344445555555555555' (FOE_LEVEL fitted to { base: 0.9, perDepth: 0.29 })", () => {
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): FOE_LEVEL.base
+// 0.9 -> 1.0 moves the map from '1122233344445555555555555' (the Phase 54
+// fit) to the `node -e` capture below: only floor 2 gains a level
+// (round(1.58) = 2, was round(1.48) = 1); floor 1 stays level 1.
+test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): foeLevelFor map 1..25 === '1222233344445555555555555' (FOE_LEVEL locked at { base: 1.0, perDepth: 0.29 })", () => {
   const map = Array.from({ length: 25 }, (_, i) => foeLevelFor(i + 1)).join("");
-  assert.equal(map, "1122233344445555555555555");
+  assert.equal(map, "1222233344445555555555555");
 });
 
 test("dots(d) (identity, under an explicit identity override) === 9 + d for d in 1..5 (ENCOUNTER_DOTS identity, no cap) and 9 on every breather floor", () => {
@@ -403,9 +460,12 @@ test("heroMeanMaxWpFor(1..5) (identity, under an explicit identity override) ===
   });
 });
 
-test("USER RULING G (cycle 3, fitted DIALS): heroMeanMaxWpFor(1..5) === [52.08, 57.71, 62.50, 68.13, 75.00] (2dp, HERO_HP_SCALE fitted to 1.25 — 41.67*1.25=52.09 etc., 2dp rounding of the fitted mean, not the identity mean scaled after)", () => {
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): HERO_HP_SCALE
+// 1.25 -> 1.4 moves heroMeanMaxWpFor from [52.08, 57.71, 62.50, 68.13,
+// 75.00] to the `node -e` capture below.
+test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): heroMeanMaxWpFor(1..5) === [58.33, 64.63, 70.00, 76.30, 84.00] (2dp, HERO_HP_SCALE locked at 1.4 — 2dp rounding of the scaled mean, not the identity mean scaled after)", () => {
   const rounded = [1, 2, 3, 4, 5].map((l) => heroMeanMaxWpFor(l).toFixed(2));
-  assert.deepStrictEqual(rounded, ["52.08", "57.71", "62.50", "68.13", "75.00"]);
+  assert.deepStrictEqual(rounded, ["58.33", "64.63", "70.00", "76.30", "84.00"]);
 });
 
 test("roundDamageCapFor: Infinity at the ROUND_DAMAGE_CEILING-off identity value (under an explicit identity override); round(0.5 * 41.67) = 21 at level 1 under a 0.5 override (restored after)", () => {
@@ -417,9 +477,12 @@ test("roundDamageCapFor: Infinity at the ROUND_DAMAGE_CEILING-off identity value
   restore();
 });
 
-test("USER RULING G (cycle 3, fitted DIALS): roundDamageCapFor is ALREADY on (held at its start value 0.5, not identity 0) — round(0.5 * 52.09) = 26 at level 1, round(0.5 * 62.50) = 31 at level 3", () => {
-  assert.equal(roundDamageCapFor(1), 26);
-  assert.equal(roundDamageCapFor(3), 31);
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): HERO_HP_SCALE
+// 1.25 -> 1.4 moves the level-appropriate mean max HP the ceiling reads, so
+// the caps move 26 -> 29 (level 1) and 31 -> 35 (level 3), `node -e`.
+test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): roundDamageCapFor is ALREADY on (held at its start value 0.5, not identity 0) — round(0.5 * 58.33) = 29 at level 1, round(0.5 * 70.00) = 35 at level 3", () => {
+  assert.equal(roundDamageCapFor(1), 29);
+  assert.equal(roundDamageCapFor(3), 35);
 });
 
 test("setDialsForTuning throws on an unknown dial key and restore() returns live to DIALS", () => {
@@ -446,12 +509,17 @@ test("every helper's identity fast path returns its input by identity (under an 
   });
 });
 
-test("USER RULING G (cycle 3, fitted DIALS): every helper reflects the SHIPPED (non-identity) dial values, never the identity fast path, by default", () => {
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): FOE_HP_SCALE.base
+// 0.9 -> 1.2 (floor-1 scale 0.915 -> 1.215), FOE_HIT_SCALE { 0.6, 0.01 } ->
+// { 0.84, 0.02 } (0.61 -> 0.86), HERO_HP_SCALE 1.25 -> 1.4 and HERO_SP_SCALE
+// 0.28 -> 0.23 move the four first lines; `node -e` against the locked
+// engine gives 51 / 15 / 77 / 28, which these expressions reproduce.
+test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): every helper reflects the SHIPPED (non-identity) dial values, never the identity fast path, by default", () => {
   const curve = difficultyCurve(1);
-  assert.equal(foeWpFor(42, curve), Math.max(1, Math.round(42 * 0.915)), "FOE_HP_SCALE fitted (0.9 base) moves foeWpFor off identity");
-  assert.equal(foeHitFor(17, curve), Math.max(1, Math.round(17 * 0.61)), "FOE_HIT_SCALE fitted (0.6 base) moves foeHitFor off identity");
-  assert.equal(heroMaxWpFor(55, "Fighter"), Math.max(1, Math.round(55 * 1.25)), "HERO_HP_SCALE fitted (1.25) moves heroMaxWpFor off identity");
-  assert.equal(heroSpFor(123), Math.round(123 * 0.28), "HERO_SP_SCALE fitted (0.28) moves heroSpFor off identity");
+  assert.equal(foeWpFor(42, curve), Math.max(1, Math.round(42 * 1.215)), "FOE_HP_SCALE locked (1.2 base) moves foeWpFor off identity");
+  assert.equal(foeHitFor(17, curve), Math.max(1, Math.round(17 * 0.86)), "FOE_HIT_SCALE locked (0.84 base, 0.02 perDepth) moves foeHitFor off identity");
+  assert.equal(heroMaxWpFor(55, "Fighter"), Math.max(1, Math.round(55 * 1.4)), "HERO_HP_SCALE locked (1.4) moves heroMaxWpFor off identity");
+  assert.equal(heroSpFor(123), Math.round(123 * 0.23), "HERO_SP_SCALE locked (0.23) moves heroSpFor off identity");
   assert.equal(startingRationsFor(6), Math.max(1, Math.round(6 * 1.5)), "FOOD_CLOCK held at 1.5 moves startingRationsFor off identity");
   assert.equal(scaleHazard(9, curve), Math.max(1, Math.round(9 * 0.62)), "HAZARD_SCALE fitted (0.6 base) moves scaleHazard off identity");
 });
@@ -472,7 +540,7 @@ test("USER RULING G (cycle 3): campHealFor at the SHIPPED (held) CAMP_HEAL_FRACT
 test("USER RULING G (cycle 3): dotHpFor reads DOT_HP_BASE's flat canon value (10/15/25), scaled ONCE by HERO_HP_SCALE — never by the hero's own maxWP (no compounding)", () => {
   assert.deepStrictEqual(DOT_HP_BASE, { small: 10, mid: 15, large: 25 });
   // Identity (an explicit HERO_HP_SCALE:1 override — DIALS itself ships
-  // HERO_HP_SCALE fitted to 1.25): the flat canon numbers exactly, structural fast path.
+  // HERO_HP_SCALE locked at 1.4 by Phase 79.2): the flat canon numbers exactly, structural fast path.
   withIdentity({ HERO_HP_SCALE: 1 }, () => {
     assert.equal(dotHpFor("small"), 10);
     assert.equal(dotHpFor("mid"), 15);
@@ -480,10 +548,12 @@ test("USER RULING G (cycle 3): dotHpFor reads DOT_HP_BASE's flat canon value (10
     assert.equal(Object.is(dotHpFor("small"), 10), true, "identity returns the literal, not a rounded copy");
   });
 
-  // The SHIPPED default (HERO_HP_SCALE fitted to 1.25, no override needed).
-  assert.equal(dotHpFor("small"), Math.max(1, Math.round(10 * 1.25)));
-  assert.equal(dotHpFor("mid"), Math.max(1, Math.round(15 * 1.25)));
-  assert.equal(dotHpFor("large"), Math.max(1, Math.round(25 * 1.25)));
+  // The SHIPPED default (no override needed). Phase 79.2 early-floor lock
+  // (user ruling 2026-09-27): HERO_HP_SCALE 1.25 -> 1.4 moves the dots
+  // 13/19/31 -> 14/21/35 (`node -e` against the locked engine).
+  assert.equal(dotHpFor("small"), Math.max(1, Math.round(10 * 1.4)));
+  assert.equal(dotHpFor("mid"), Math.max(1, Math.round(15 * 1.4)));
+  assert.equal(dotHpFor("large"), Math.max(1, Math.round(25 * 1.4)));
 
   // The compounding bug this fix retires: dotHpFor no longer takes a maxWP
   // argument at all, so a dot's size can never depend on (and feed back
