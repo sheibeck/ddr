@@ -466,18 +466,18 @@ test("(xi) a landing thrown spell's damage halves while afraid (ceil), floor 1",
   const foeA = fixedFoe({ wp: 999, maxWP: 999, type: "Humans", lvl: 1 });
   const stateA = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 1, grimoire: ["Freeze"], wp: 40, maxWP: 40 } });
   stateA.combat = fixedCombat([foeA], { afraid: 2 });
-  // level 1 caster vs Freeze (lvl1) -> mult = max(1, 1-1) = 1; roll d10=1
-  // (need 3, hits); dmg d6=3 -> rollDice=3*1=3, afraid halves ceil(3/2)=2;
+  // level 1 caster vs Freeze (lvl1): quick 260928-sq2, damage = dice + level² (1); roll d10=1
+  // (need 3, hits); dmg d6=3 -> 3 + 1 = 4, afraid halves ceil(4/2)=2;
   // Freeze always kills on a hit (killFoe: sp d6=1, coin d10=1, loot d20=20 skip).
   const eventsA = castSpell(stateA, SPELL_IDX.Freeze, fakeRng([1, 3, 1, 1, 20]), []);
   const hitA = eventsA.find((e) => e.type === "spellHit");
-  assert.equal(hitA.dmg, 2, "ceil(3/2) = 2");
+  assert.equal(hitA.dmg, 2, "ceil(4/2) = 2");
   assert.equal(hitA.afraid, true);
 
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans", lvl: 1 });
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 1, grimoire: ["Freeze"], wp: 40, maxWP: 40 } });
   stateB.combat = fixedCombat([foeB], { afraid: 2 });
-  // dmg d6=1 -> rollDice=1*1=1, afraid halves Math.max(1, ceil(1/2)) = 1, never 0.
+  // dmg d6=1 -> 1 + 1 = 2, afraid halves Math.max(1, ceil(2/2)) = 1, never 0.
   const eventsB = castSpell(stateB, SPELL_IDX.Freeze, fakeRng([1, 1, 1, 1, 20]), []);
   const hitB = eventsB.find((e) => e.type === "spellHit");
   assert.equal(hitB.dmg, 1, "damage never floors below 1");
@@ -495,7 +495,8 @@ test("(xii) Earthquake halves its per-foe damage while afraid, drawing the same 
   // 3 quake dice, tail: foe miss(7) — no round-advance draws, Phase 51.
   const rngA = countingRng(fakeRng([10, 10, 10, 7]));
   castSpell(stateA, SPELL_IDX.Earthquake, rngA, []);
-  assert.equal(foeA.wp, 999 - 38, "unafraid: the foe takes the full 3d10+8 = 38");
+  // Quick 260928-sq2 (re-pinned): + the level-4 caster's level² (16) = 54.
+  assert.equal(foeA.wp, 999 - 54, "unafraid: the foe takes the full 3d10+8 = 38, + 16");
 
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans" });
   const stateB = fixedState({
@@ -505,7 +506,7 @@ test("(xii) Earthquake halves its per-foe damage while afraid, drawing the same 
   stateB.acts = stateA.acts;
   const rngB = countingRng(fakeRng([10, 10, 10, 7]));
   castSpell(stateB, SPELL_IDX.Earthquake, rngB, []);
-  assert.equal(foeB.wp, 999 - 19, "afraid: ceil(38/2) = 19");
+  assert.equal(foeB.wp, 999 - 27, "afraid: ceil(54/2) = 27");
 
   assert.equal(rngA.draws, rngB.draws, "identical rng consumption — halving is post-roll arithmetic only");
 });
@@ -519,8 +520,10 @@ test("(xii) Volley (Fireballs) halves each bolt's damage while afraid, drawing t
   // draws, initiative is rolled once, Phase 51.
   const rngA = countingRng(fakeRng([1, 1, 7]));
   const eventsA = castSpell(stateA, SPELL_IDX.Fireballs, rngA, []);
-  assert.equal(eventsA.find((e) => e.type === "volley").totalDamage, 3, "unafraid: 1+2=3");
-  assert.equal(foeA.wp, 999 - 3);
+  // Quick 260928-sq2 (re-pinned): the one bolt is the first to strike the
+  // foe, so it adds the level-4 caster's level² (16): 3 + 16 = 19.
+  assert.equal(eventsA.find((e) => e.type === "volley").totalDamage, 19, "unafraid: 1+2+16=19");
+  assert.equal(foeA.wp, 999 - 19);
 
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans" });
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Wizard", level: 4, grimoire: ["Fireballs"], wp: 50, maxWP: 50 } });
@@ -528,8 +531,8 @@ test("(xii) Volley (Fireballs) halves each bolt's damage while afraid, drawing t
   stateB.acts = stateA.acts;
   const rngB = countingRng(fakeRng([1, 1, 7]));
   const eventsB = castSpell(stateB, SPELL_IDX.Fireballs, rngB, []);
-  assert.equal(eventsB.find((e) => e.type === "volley").totalDamage, 2, "afraid: ceil(3/2) = 2");
-  assert.equal(foeB.wp, 999 - 2);
+  assert.equal(eventsB.find((e) => e.type === "volley").totalDamage, 10, "afraid: ceil(19/2) = 10");
+  assert.equal(foeB.wp, 999 - 10);
 
   assert.equal(rngA.draws, rngB.draws, "identical rng consumption — halving is post-roll arithmetic only");
 });

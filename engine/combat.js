@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -2411,7 +2411,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
  * live target. SELF-CONTAINED (magic.js already imports combat.js, so a
  * back-import here would be a cycle) — mirrors castSpell's dice shapes
  * exactly: thrown = d8 vs 4 (Freeze d10 vs 6) with the subclass school bonus
- * + eff(throw), damage = rollDice(sp.dmg) * max(1, level - sp.lvl) +
+ * + eff(throw), damage = rollDice(sp.dmg) + level² (quick 260928-sq2) +
  * eff(spellDmg) through damageFoe kind "spell" (no armor draw), Freeze
  * lands its damage and then freezes a survivor for d4 rounds through
  * freezeFoe, exactly like the hero's cast (user rulings 2026-09-28); every
@@ -2457,8 +2457,10 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
       // die's best face shatters a shatter-flagged foe (the Skeleton)
       // outright — skip the spell-damage roll.
       if (shatterIfBest(state, t, roll, dieN, ally.name, rng, events, { spell: sp.n })) return;
-      const mult = Math.max(1, view.level - sp.lvl);
-      const dmg = rollDice(rng, sp.dmg) * mult + eff(view, "spellDmg");
+      // Quick 260928-sq2 (user ruling 2026-09-28): the dice + the JOINER's
+      // own level² (view.level is ally.lvl), replacing × max(1, level −
+      // spell level) — the hero's rule. No new draw.
+      const dmg = rollDice(rng, sp.dmg) + spellLevelSq(view) + eff(view, "spellDmg");
       const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: view.sub }, rng, events);
       if (freeze) {
         // User rulings 2026-09-28: "freeze should never kill outright. It
@@ -3077,7 +3079,11 @@ export function foeTurn(state, rng, events = []) {
   }
   for (const f of C.foes) {
     if (f.acid && f.acid.rounds > 0) {
-      const d = rollDice(rng, f.acid.dmg);
+      // Quick 260928-sq2 (user ruling 2026-09-28): the first tick adds the
+      // caster's level² (stashed on the record by magic.js's acid branch),
+      // then spends it; every later tick is the dice alone. Zero draws.
+      const d = rollDice(rng, f.acid.dmg) + (f.acid.levelSq || 0);
+      delete f.acid.levelSq;
       // Acid is spell damage (bypasses armor, D-06; eligible for the
       // Walking Dead / Cleric-vs-Demons rows, D-11). `c.sub` is read live at
       // tick time — the hero cannot change class mid-fight — so no caster
@@ -3096,7 +3102,10 @@ export function foeTurn(state, rng, events = []) {
     // acid (kind "spell"). Absent on every fixture — only useAbility's
     // "poisonedEdge" case ever sets f.dot.
     if (f.dot && f.dot.left > 0 && f.alive) {
-      const d = rollDice(rng, f.dot.dmg);
+      // Quick 260928-sq2: an Ice record's first tick adds the caster's
+      // level² (then spends it); Poisoned Edge's dot carries none.
+      const d = rollDice(rng, f.dot.dmg) + (f.dot.levelSq || 0);
+      delete f.dot.levelSq;
       const tick = damageFoe(state, f, d, { kind: "spell", school: f.dot.by, casterSub: c.sub }, rng, events);
       // Captured before the delete below — `by` is the switch the ice payoff
       // reads (Phase 40, SPELL-01), so Poisoned Edge's own dot is unaffected.

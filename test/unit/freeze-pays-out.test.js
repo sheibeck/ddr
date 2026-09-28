@@ -228,13 +228,14 @@ test("castSpell: a non-Freeze thrown spell still kills via the plain t.wp<=0 pat
     c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
     combat: fixedCombat([foe]),
   });
-  // d8=1 (hit); dmg 2d10+4 = 5+5+4=14; killFoe: sp d6=1, coin d10=1,
+  // d8=1 (hit); dmg 2d10+4 = 5+5+4=14, + the level-3 caster's level² 9
+  // (quick 260928-sq2) = 23; killFoe: sp d6=1, coin d10=1,
   // treasure-check d20=20 (skips).
   const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 1, 1, 20]), []);
 
   assert.equal(foe.alive, false);
   assert.equal(foe.wp, 0);
-  assert.ok(events.some((e) => e.type === "spellHit" && e.dmg === 14));
+  assert.ok(events.some((e) => e.type === "spellHit" && e.dmg === 23));
   assert.ok(events.some((e) => e.type === "foeKilled"));
   assert.ok(!events.some((e) => e.type === "frozenSolid"), "a non-Freeze thrown spell never sets frozenSolid");
 });

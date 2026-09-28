@@ -403,7 +403,7 @@ test("Joiner Freeze (C2): floor 20, a resisted hit leaves the foe standing, dama
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
   const events = alliesTurn(state, fakeRng([5, 4, 3]), []);
   assert.equal(foe.alive, true);
-  assert.equal(foe.wp, 26, "the damage landed");
+  assert.equal(foe.wp, 25, "the damage landed (d6 4 + the level-1 Joiner's level² 1, quick 260928-sq2)");
   assert.equal("held" in foe, false);
   assert.equal(foe.resisted, "freeze");
   assert.ok(events.some((e) => e.type === "controlResisted"));

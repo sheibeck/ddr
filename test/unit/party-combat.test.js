@@ -441,7 +441,7 @@ test("DFB-05 Thief: Plate armor denies the backstab (hero's rule mirrored)", () 
 // User rulings 2026-09-28 (re-pinned): a Freeze never kills outright — the
 // d6 lands, then a survivor that fails its resists is frozen for a d4 (here
 // 3). The old frozen-solid kill (and killFoe's draws) is gone.
-test("DFB-05 Magic User: casts Freeze at the hero's current target — d10 5 with bonus 3 hits need 6, d6 4 damage, then frozen for the d4 (3) and alive, the SHEET pays the charge", () => {
+test("DFB-05 Magic User: casts Freeze at the hero's current target — d10 5 with bonus 3 hits need 6, d6 4 + level² 1 damage, then frozen for the d4 (3) and alive, the SHEET pays the charge", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
   const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })] });
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
@@ -455,13 +455,13 @@ test("DFB-05 Magic User: casts Freeze at the hero's current target — d10 5 wit
   assert.deepStrictEqual(cast.mods, [{ name: "school", delta: 3 }]);
   const hit = events.find((e) => e.type === "allySpellHit");
   assert.equal(hit.effect, "damage");
-  assert.equal(hit.dmg, 4);
+  assert.equal(hit.dmg, 5); // d6 4 + the level-1 Joiner's level² 1 (quick 260928-sq2)
   assert.ok(events.indexOf(hit) > events.indexOf(cast), "allySpellHit follows allyCast");
   assert.equal(foe.alive, true);
-  assert.equal(foe.wp, 26);
+  assert.equal(foe.wp, 25);
   assert.deepStrictEqual(foe.held, { kind: "frozen", left: 3 });
   const held = events.find((e) => e.type === "controlHeld");
-  assert.deepStrictEqual({ target: held.target, rounds: held.rounds, freeze: held.freeze, dmg: held.dmg }, { target: foe.name, rounds: 3, freeze: true, dmg: 4 });
+  assert.deepStrictEqual({ target: held.target, rounds: held.rounds, freeze: held.freeze, dmg: held.dmg }, { target: foe.name, rounds: 3, freeze: true, dmg: 5 });
   assert.equal(events.some((e) => e.type === "frozenSolid" || e.type === "foeKilled"), false);
   assert.equal(state.party[0].spellsUsed, 1);
   assert.equal(events.some((e) => e.type === "allyStruck"), false);
