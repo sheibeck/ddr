@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 79.1
-current_phase_name: Milestone Balance Check & Deep-Floor Tuning
+current_phase: 80
+current_phase_name: Android Release Build & Tooling
 status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-28T01:46:07.011Z"
-last_activity: 2026-09-27
-last_activity_desc: Phase 79 complete, transitioned to Phase 79.1
+last_updated: "2026-09-28T14:05:35.082Z"
+last_activity: 2026-09-28
+last_activity_desc: Phase 79.2 complete, transitioned to Phase 80
 progress:
   total_phases: 15
-  completed_phases: 12
-  total_plans: 111
-  completed_plans: 107
-  percent: 80
+  completed_phases: 13
+  total_plans: 115
+  completed_plans: 111
+  percent: 87
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 79.1 — Milestone Balance Check & Deep-Floor Tuning
+Phase: 80 — Android Release Build & Tooling
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-27 — Phase 79 complete, transitioned to Phase 79.1
+Last activity: 2026-09-28 — Phase 79.2 complete, transitioned to Phase 80
 
 ## Ground Truth (durable facts every session needs)
 

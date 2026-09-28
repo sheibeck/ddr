@@ -539,7 +539,7 @@ Plans:
 3. Class balance holds within the existing class constraint (|p50 − pooled| ≤ 2).
 4. The dial changes are locked with traced re-pins, declared fixture moves and a green gate, and recorded in docs/DIFFICULTY-RETUNE.md.
 
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -552,11 +552,11 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 79.2-03-PLAN.md — Lock the confirmed dials into DIALS with a traced test and the Phase 79.2 overlay, re-capture the dial-derived pins, and trace then re-pin every mover outside test/parity/ (wave 3)
+- [x] 79.2-03-PLAN.md — Lock the confirmed dials into DIALS with a traced test and the Phase 79.2 overlay, re-capture the dial-derived pins, and trace then re-pin every mover outside test/parity/ (wave 3) (completed 2026-09-28)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 79.2-04-PLAN.md — Re-measure and declare the parity moves (count stays 66, master unchanged), write FIXTURE-INVENTORY's Phase 79.2 section, record the before/after in DIFFICULTY-RETUNE.md, and prove npm test, parity and boot:check once (wave 4)
+- [x] 79.2-04-PLAN.md — Re-measure and declare the parity moves (count stays 66, master unchanged), write FIXTURE-INVENTORY's Phase 79.2 section, record the before/after in DIFFICULTY-RETUNE.md, and prove npm test, parity and boot:check once (wave 4)
 
 ### Phase 79.1: Milestone Balance Check & Deep-Floor Tuning (INSERTED)
 
