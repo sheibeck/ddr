@@ -300,7 +300,17 @@ test("a wandering startCombat consumes no count draw and builds 1 foe at depth 9
 });
 
 test("a Knight at depth 10 facing a drawn pair whose one foe has maxWP below 5 still routs that foe (the count governs the draw, the sub-class rule acts after it)", () => {
-  const restore = setDialsForTuning({ FOE_LEVEL: { base: 2, perDepth: 0 } }); // pins the tier to BESTIARY.Beasts[1] = [Cave Bear (wp 25), Zit (wp 4)]
+  // Phase 79.2 early-floor lock (user ruling 2026-09-27): FOE_HP_SCALE.base
+  // 0.9 -> 1.2 moved Zit's copied wp at depth 10 from round(4 * 1.05) = 4
+  // to round(4 * 1.35) = 5 (first divergence: startCombat's foeWpFor), which
+  // took away this scenario's premise (a drawn foe below 5 wp); traced under
+  // setDialsForTuning(79.2's fit/start.json), where Zit is 4 and the test
+  // passed. The override now pins FOE_HP_SCALE at identity too, so the
+  // scenario tests the count-then-rout order, not the HP dial.
+  const restore = setDialsForTuning({
+    FOE_LEVEL: { base: 2, perDepth: 0 }, // pins the tier to BESTIARY.Beasts[1] = [Cave Bear (wp 25), Zit (wp 4)]
+    FOE_HP_SCALE: { base: 1, perDepth: 0, kneeDepth: 12, perDepthAfter: 0 }, // Zit keeps its wp 4 (identity)
+  });
   try {
     let pickCount = 0;
     const pick = (arr) => arr[pickCount++ % arr.length]; // Cave Bear first, then Zit

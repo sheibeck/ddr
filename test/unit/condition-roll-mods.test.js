@@ -276,18 +276,31 @@ const STRIKE_SCENARIOS = {
   muFloored: { c: { cls: "Magic User", sub: "Sorcerer", foeEffect: { kind: "dazed", rounds: 2 } } },
   frenzyDazed: { c: { race: "Fridgian", foeEffect: { kind: "dazed", rounds: 3 } } },
 };
+// Phase 79.2 early-floor lock (user ruling 2026-09-27, locked by
+// RF-79.2-02-3): all eleven digests re-recorded. Traced with a scratch copy
+// of this loop run twice on the locked engine: under
+// setDialsForTuning(79.2's fit/start.json) it reproduces every old digest
+// (none 4762ee31, dazed 276b8e40, weakened 330fe5ed, inspired 98976971,
+// dark 90def8ec, darkLit bc9c079, blind 4acd5aa6, stacked 940e094,
+// afraidDazed 20661057, muFloored 43f49550, frenzyDazed fab9135a); under the
+// locked DIALS every scenario's `state` differs first in c.maxWP/c.wp
+// (BASE_RUN = newRun(1): heroMaxWpFor reads HERO_HP_SCALE 1.25 -> 1.4,
+// 73 -> 81), and the events differ only where the foe's return swing lands
+// (seed 8, or seed 5 for frenzyDazed: struckByFoe dmg 2 -> 3, foeHitFor
+// reads FOE_HIT_SCALE { 0.6, 0.01 } -> { 0.84, 0.02 }). Every roll, face,
+// outcome and draw count is unchanged.
 const STRIKE_DIGESTS = {
-  none: "4762ee31",
-  dazed: "276b8e40",
-  weakened: "330fe5ed",
-  inspired: "98976971",
-  dark: "90def8ec",
-  darkLit: "bc9c079",
-  blind: "4acd5aa6",
-  stacked: "940e094",
-  afraidDazed: "20661057",
-  muFloored: "43f49550",
-  frenzyDazed: "fab9135a",
+  none: "a93fc4fe",
+  dazed: "53dde3a3",
+  weakened: "4a210650",
+  inspired: "9658fd58",
+  dark: "939d2701",
+  darkLit: "fd8ee966",
+  blind: "84d1e71f",
+  stacked: "beb06a3b",
+  afraidDazed: "d02406de",
+  muFloored: "5ba11e7b",
+  frenzyDazed: "c0da3841",
 };
 
 test("measured zero: every strike's roll, faces, outcome, draw count and resulting state match the plan base (mods stripped)", () => {

@@ -193,11 +193,39 @@ const PINNED = {
   // solo-magicuser-sorcerer, party-fighter-knight and deep-14 re-measured
   // byte-identical. Regenerated via `node tools/roll-high-baseline.mjs pins`
   // (each hashed identically twice).
-  "solo-1": { actions: 400, dead: false, depth: 5, hash: "8d935c4bfec18faddf29f2905578466c9533aa2111d80baed57c2884c5552ce3" },
-  "solo-2": { actions: 400, dead: false, depth: 4, hash: "6160b0f66a38a7eb3d669bcf1ade77ecfeea364720dab3005d532b9f6fa72c7e" },
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "d2242ff2c65b463ad6236cc4d67fb95a59bc3b26eb29d96f64814c7f44d273ab" },
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "a2f21b04673ca8fbc28a466f6c1179b0f8404f503d68dadec0120c1597e64858" },
-  "party-1": { actions: 375, dead: true, depth: 3, hash: "ae0790562b1c982654f1bc93ff2e9e30a41e8815dc77cc46d0d04d15eb0e0e25" },
+  // Phase 79.2 early-floor lock (user ruling 2026-09-27, locked by
+  // RF-79.2-02-3): every one of the eight labels re-pinned. The lock moved
+  // HERO_HP_SCALE 1.25 -> 1.4, HERO_SP_SCALE 0.28 -> 0.23, FOE_HP_SCALE.base
+  // 0.9 -> 1.2, FOE_HIT_SCALE { 0.6, 0.01 } -> { 0.84, 0.02 } and
+  // FOE_LEVEL.base 0.9 -> 1.0. Traced with a scratch per-bot-step trace
+  // (playRun's onStep, stateHash of every step) run twice on the locked
+  // engine: once under setDialsForTuning(79.2's fit/start.json), which
+  // reproduced every old pin below byte for byte, and once under the locked
+  // DIALS. Every label's first differing state is bot step 1, and the only
+  // differing fields there are c.maxWP/c.wp: chargen's heroMaxWpFor reads
+  // HERO_HP_SCALE (solo-1 36 -> 41, solo-2 36 -> 41, solo-thief-pilfer
+  // 50 -> 56, solo-magicuser-sorcerer 38 -> 42, party-1 43 -> 48,
+  // party-fighter-knight 68 -> 76, deep-8 63 -> 70, deep-14 80 -> 89). The
+  // first differing EVENT is: solo-1 step 13 (a Shriek's wp 3 -> 4,
+  // FOE_HP_SCALE), solo-2 step 7 (Philly 5 -> 6, FOE_HP_SCALE),
+  // solo-thief-pilfer step 44 (Ned 7 -> 10, FOE_HP_SCALE),
+  // solo-magicuser-sorcerer step 86 (the descend spGained 20 -> 16,
+  // HERO_SP_SCALE), party-1 step 97 (a Bat/Rat kill's spGained 4 -> 3,
+  // HERO_SP_SCALE), party-fighter-knight step 98 (three Neds 7 -> 10,
+  // FOE_HP_SCALE), deep-8 step 9 (Poltergeist 10 -> 13 and Rinkle 16 -> 21,
+  // FOE_HP_SCALE) and deep-14 step 9 (Table 4's -10 HP row, dotHpFor 13 ->
+  // 14, HERO_HP_SCALE). Old -> new (actions / dead / depth): solo-1
+  // 400/false/5 -> 253/true/3; solo-2 400/false/4 -> 294/true/3;
+  // solo-thief-pilfer 400/false/4 (unchanged); solo-magicuser-sorcerer
+  // 400/false/4 -> 400/false/5; party-1 375/true/3 -> 373/true/3;
+  // party-fighter-knight 400/false/4 -> 200/true/2; deep-8 262/true/10 ->
+  // 225/true/10; deep-14 154/true/15 -> 50/true/14. Regenerated via
+  // `node tools/roll-high-baseline.mjs pins` (each hashed identically twice).
+  "solo-1": { actions: 253, dead: true, depth: 3, hash: "47082481220cb07ea9857d986d10ca090337de206997be53411bf393261fa91c" },
+  "solo-2": { actions: 294, dead: true, depth: 3, hash: "0f319aa8bc87aac8b3ba71b22a21f96108f8a7d12d52ff36539382422ada9c3f" },
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "845bfc4cc24d7e5201c5012bf4184cfaca52c08f06c7de20a04ea88d270eb3b0" },
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 5, hash: "3ae31ce819ca2a515d231e1a81d97bcc808096c62d31bf338f6285482d5f2689" },
+  "party-1": { actions: 373, dead: true, depth: 3, hash: "bb3e4f6b079e75a6232571ca0e27879befa51370e39889c15be8e3464e3b329d" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -244,7 +272,7 @@ const PINNED = {
   // value below was re-measured on the merged tree: depth 4 (the Joiner die) and the new item text, hashed identically twice.
   // Re-pinned again (quick fix 79-02c): per-floor heal removed (user ruling
   // 2026-09-27); first divergence bot step 318, see the "solo-1" block above.
-  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "f1da57d339d737b24623414e260591f1013a2ff04d6e612f1879e7f02b673a50" },
+  "party-fighter-knight": { actions: 200, dead: true, depth: 2, hash: "78644698316b137b3a0d5a8d9dd36e39e4da39feec6982b66cc2f90da4c701ac" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
@@ -284,7 +312,7 @@ const PINNED = {
   // Re-pinned again (quick 260928-sq2, spell damage adds level²): first
   // divergence bot step 10, the same Freeze now a kill; see the "solo-1"
   // block above.
-  "deep-8": { actions: 262, dead: true, depth: 10, hash: "2fed395c6f294c82294119ea7c50ef168911409cb0bd740de8e498b177cb65c5" },
+  "deep-8": { actions: 225, dead: true, depth: 10, hash: "0d9ca103d12007b9066ef0d5a5578995a4fc13f45dbde4419df5b2c817c9c263" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll
@@ -329,7 +357,7 @@ const PINNED = {
   // Edge where the old run drank a potion). 52 / dead / floor 14 -> 154 /
   // dead / floor 15. Regenerated via `node tools/roll-high-baseline.mjs
   // pins` (hashed identically twice).
-  "deep-14": { actions: 154, dead: true, depth: 15, hash: "349c64337f0a459e356b3278827a89ac43c1f01429c69cf25211287cc6e2ac0b" },
+  "deep-14": { actions: 50, dead: true, depth: 14, hash: "930b575e1cbfad83a7aa0221d4e756cca8398c22316128c9461047cb0a023631" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {
