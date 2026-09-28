@@ -1,0 +1,24 @@
+ability-ablation Magic User: 1000 paired seeds (i*7919+1), shipped dials, BOT_DEFAULTS, class forced (sub/race rolled); stuck runs excluded (band-readout convention)
+BASELINE p50=3.0 mean=3.62 reach5=30.0 reach8=2.7 stuck=63
+
+ablation                    aff |   p50   dP50 [95%]         |  dMean [95%]           | reach5    dR5 [95%]         | reach8    dR8 [95%]         | stk | affected seeds only: p50 base->abl, dMean [95%], dR5 [95%]
+
+
+Baseline by sub-class:
+  Apprentice      n= 125 stuck=  3 p50= 3.0 mean= 3.36 reach5= 20.5 reach8=  2.5
+  Cleric          n= 130 stuck=  6 p50= 3.0 mean= 3.79 reach5= 33.1 reach8=  3.2
+  Court Mage      n= 133 stuck= 12 p50= 3.0 mean= 3.83 reach5= 38.8 reach8=  1.7
+  Illusionist     n= 114 stuck=  2 p50= 3.0 mean= 3.50 reach5= 25.9 reach8=  3.6
+  Sorcerer        n= 114 stuck= 13 p50= 4.0 mean= 3.95 reach5= 36.6 reach8=  3.0
+  Summoner        n= 130 stuck=  9 p50= 3.0 mean= 3.03 reach5= 16.5 reach8=  0.8
+  Warlock         n= 117 stuck=  8 p50= 4.0 mean= 4.14 reach5= 42.2 reach8=  4.6
+  Wizard          n= 137 stuck= 10 p50= 3.0 mean= 3.46 reach5= 28.3 reach8=  2.4
+
+Damage per combat turn by hero level (foe HP removed on the step; Joiner/DoT damage rides along):
+  lvl    turns drop/turn taken/turn atk/atkTurn atkTurn% spell/cast  cast% abil/use  abil%
+  1      49778      1.11       1.84        0.84     47.3       2.83   23.8        -    0.0
+  2       2478      2.36       2.98        1.74     25.7       5.78   29.8        -    0.0
+  3        733      3.19       3.00        2.01     11.1       6.16   46.4        -    0.0
+  4        103      1.98       3.96        0.00      3.9       6.00   33.0        -    0.0
+  5          8      0.63       1.00           -      0.0       5.00   12.5        -    0.0
+  all: 53100 combat turns, 1.19 foe HP removed/turn, 1.92 hero HP lost/turn, 7.16 fights/run, 7.42 turns/fight

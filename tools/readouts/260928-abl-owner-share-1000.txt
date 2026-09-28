@@ -1,0 +1,22 @@
+fighter (1000-seed baseline): within the runs that own X — X's share of foe HP removed and of kills, uses per owned fight, and the owners' plain-strike HP per attack turn
+  secondWind     owners= 291 dmgShare=  0.2% killShare=  0.2% uses/ownedFight=0.18 dmg/use=0.12 plainAtk/turn=1.20
+  taunt          owners= 268 dmgShare=  0.2% killShare=  0.2% uses/ownedFight=0.18 dmg/use=0.17 plainAtk/turn=1.76
+  overheadBlow   owners= 295 dmgShare= 10.9% killShare=  8.5% uses/ownedFight=0.51 dmg/use=3.20 plainAtk/turn=1.33
+  pommelStrike   owners= 581 dmgShare=  3.7% killShare=  2.4% uses/ownedFight=0.63 dmg/use=0.56 plainAtk/turn=1.57
+  brace          owners= 275 dmgShare=  0.1% killShare=  0.2% uses/ownedFight=0.27 dmg/use=0.04 plainAtk/turn=1.37
+  sweep          owners= 307 dmgShare= 56.6% killShare= 37.3% uses/ownedFight=0.89 dmg/use=6.88 plainAtk/turn=1.38
+  lastStand      owners= 277 dmgShare=  0.7% killShare=  0.4% uses/ownedFight=0.01 dmg/use=13.05 plainAtk/turn=1.75
+  sidestep       owners= 140 dmgShare=  0.6% killShare=  0.4% uses/ownedFight=0.26 dmg/use=0.18 plainAtk/turn=1.56
+  deathTouch     owners= 157 dmgShare= 25.7% killShare= 21.3% uses/ownedFight=0.71 dmg/use=3.46 plainAtk/turn=1.56
+  riposte        owners= 280 dmgShare=  7.3% killShare=  8.3% uses/ownedFight=0.17 dmg/use=6.32 plainAtk/turn=1.74
+  battleRoar     owners= 191 dmgShare=  3.8% killShare=  2.3% uses/ownedFight=0.65 dmg/use=0.53 plainAtk/turn=1.07
+  kata           owners= 181 dmgShare= 60.4% killShare= 49.8% uses/ownedFight=0.73 dmg/use=9.59 plainAtk/turn=1.48
+thief (1000-seed baseline): within the runs that own X — X's share of foe HP removed and of kills, uses per owned fight, and the owners' plain-strike HP per attack turn
+  feint          owners= 288 dmgShare= 50.5% killShare= 42.2% uses/ownedFight=0.61 dmg/use=8.37 plainAtk/turn=1.43
+  poisonedEdge   owners= 384 dmgShare= 23.8% killShare=  4.4% uses/ownedFight=0.52 dmg/use=6.20 plainAtk/turn=2.25
+  cutpurse       owners= 366 dmgShare=  1.9% killShare=  1.4% uses/ownedFight=0.41 dmg/use=0.59 plainAtk/turn=1.82
+  dirtyTrick     owners= 466 dmgShare=  2.9% killShare=  2.0% uses/ownedFight=0.52 dmg/use=0.48 plainAtk/turn=1.81
+  smoke          owners= 384 dmgShare=  0.2% killShare=  0.5% uses/ownedFight=0.13 dmg/use=0.11 plainAtk/turn=1.83
+  mark           owners= 379 dmgShare=  0.8% killShare=  0.4% uses/ownedFight=0.19 dmg/use=0.56 plainAtk/turn=1.82
+  silentStep     owners= 323 dmgShare= 57.2% killShare= 43.9% uses/ownedFight=0.64 dmg/use=9.60 plainAtk/turn=1.73
+  hamstring      owners= 354 dmgShare=  0.5% killShare=  0.5% uses/ownedFight=0.16 dmg/use=0.43 plainAtk/turn=1.84

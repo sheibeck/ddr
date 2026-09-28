@@ -1,0 +1,10 @@
+Sweep crowd sample (quick 260928-abl; scratch replay of 100 Fighter seeds from the 1000-seed baseline whose bot used Sweep; fair bot BOT_DEFAULTS, shipped dials)
+live foes when the bot swept | sweeps | swept dmg (per-foe roll) | foes hit (not soaked) | HP applied
+1 | 747 | 4761 | 662 | 4346
+2 | 216 | 1461 | 393 | 2719
+3 | 65 | 426 | 192 | 1309
+total | 1028 | 6648 | 1247 | 8374
+
+Reading: 72.7% of sweeps hit a lone foe (51.9% of Sweep's applied damage). Against one foe Sweep is a
+no-roll, half-damage strike every 4 rounds; the fair bot's plain swing lands about 17% of the time at
+level 1, so a guaranteed half is worth about three plain swings.
