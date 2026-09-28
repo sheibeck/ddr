@@ -1,0 +1,36 @@
+{
+  "lock": "fit/early-lock.json",
+  "lockedBy": "USER RULING 2026-09-28 (RF-79.2-02-3), relayed by the orchestrator",
+  "ruling": "Lock the best result as-is.",
+  "row": {
+    "cycle2": {
+      "log": "fit/early-log-c2.jsonl",
+      "n": 18,
+      "seeds": 200,
+      "score": 4.547951,
+      "verdict": "MISS",
+      "misses": [
+        4
+      ]
+    },
+    "cycle3": {
+      "log": "fit/early-log-c3.jsonl",
+      "n": 1,
+      "seeds": 1000,
+      "score": 8.1395,
+      "verdict": "MISS",
+      "misses": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "p50Death": 5,
+      "shape": "ok",
+      "constraints": "ok (Magic User reach5 27.5 vs pooled 56.3 exempt)"
+    }
+  },
+  "band": "MISS on floors 3-6 at 1,000 seeds (+8.2/+14.4/+11.0/+8.5); p50 death 5 (outside [3, 4]); shape ok; class ok with the Magic User exemption. Accepted by the user; further tuning deferred.",
+  "tail": "PASS on every 79.1 ruled target (fit/tail-confirm-c3n1.jsonl, score 0, constraints.ok, fresh slice measured)",
+  "confirmationCommit": "4e2ba5ff0ced608413c566b7fec45299d9c10ad9"
+}

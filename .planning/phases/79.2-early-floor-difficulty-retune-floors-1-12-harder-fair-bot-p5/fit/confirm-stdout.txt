@@ -1,0 +1,2 @@
+== 79.2-02 band confirmation at 1,000 seeds (c2 #18 = c3 #1). Not a re-run: a copy of the cycle 3 start row, fit/early-log-c3.jsonl (RF-79.2-02-1, elapsed 497.3s, commit f93e35af), recorded here per the user ruling to lock it as-is (RF-79.2-02-3).
+#1 score=8.1395 verdict=MISS pass=1 deathP50=5 shape=ok S1=98.5 S2=82.4 S3=66.6 S4=53.1 S6=23.6 S8=7.2 S12=0.4 tail S15=0.0 S20=0.0 reach20=0.0 classes F/T/M p50=5/5/3 ok=true exempt=Magic User reach5 27.5 vs pooled 56.3 (|delta| > 20) — exempt

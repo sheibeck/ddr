@@ -1,2 +1,4 @@
 == fit-difficulty block 2026-09-28T04:43:35.810Z mode=single objective=tail budget=- seeds=200 log=.planning/phases/79.2-early-floor-difficulty-retune-floors-1-12-harder-fair-bot-p5/fit/tail-start.jsonl resume-from=none
 #1 score=0.0000 verdict=PASS fresh[reach20=0 reach21=0 reachCount30=0] deep12.reach20=0.5 deep20[p50=0 reach30=0] deep30[p50=0 p90=1] rot.p50[20/30/40]=0/0/0 guard=fresh p50Death 6 outside [3, 4] ok=true
+== fit-difficulty block 2026-09-28T13:02:33.477Z mode=single objective=tail budget=- seeds=200 log=.planning/phases/79.2-early-floor-difficulty-retune-floors-1-12-harder-fair-bot-p5/fit/tail-confirm-c3n1.jsonl resume-from=none
+#1 score=0.0000 verdict=PASS fresh[reach20=0 reach21=0 reachCount30=0] deep12.reach20=0.5 deep20[p50=0 reach30=0] deep30[p50=0 p90=1] rot.p50[20/30/40]=0/0/0 guard=fresh p50Death 5 outside [3, 4] ok=true
