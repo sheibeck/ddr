@@ -1646,6 +1646,39 @@ function snapshotFloor(s, afraidTriggers, diedAfraid) {
  * — a presentation-layer target selection, never an rng-bearing mutation.
  * `decideAction` itself never mutates `state` — this write happens here, in
  * the harness loop, exactly once per dispatch.
+ *
+ * Phase 82 (FARM-01): two opt-in hooks, read from `opts` only — NEITHER is a
+ * BOT_DEFAULTS key, so `makeBotContext`'s `{...BOT_DEFAULTS, ...opts}` spread
+ * never sets either one on its own.
+ *   `opts.policy(state, policyRng, ctx)` — when a function, replaces
+ *     `decideAction` as the loop's action chooser (resolved ONCE, before the
+ *     loop, into a local `chooseAction`). Absent/non-function (the default
+ *     for every existing caller) means `chooseAction` IS `decideAction`
+ *     itself — the unchanged D-05/HARN-02/BAL-01/BAL-02 policy.
+ *   `opts.stopWhen(state, actions)` — when a function, the while condition
+ *     calls it AFTER the existing `!state.dead && actions < ctx.opts.
+ *     maxActions` checks; a truthy return ends the loop before the next
+ *     action is chosen or dispatched. Absent/non-function leaves the while
+ *     condition's effect unchanged. A `stopWhen` stop is NOT a death and NOT
+ *     a `maxActions` hit, so it leaves `stuck: false` and `outcome:
+ *     "unknown"` below — Phase 82's `tools/lib/days-farm.mjs` classifies its
+ *     own rows from there (e.g. "left the farm floor"), never reusing
+ *     `stuck`/`outcome`'s existing meanings.
+ * Both default to `undefined`, which is the unchanged `decideAction`/
+ * `maxActions` loop this JSDoc already describes above. `tools/tune-
+ * difficulty.mjs`, `tools/tune-economy.mjs`, `tools/tune-classes.mjs`,
+ * `tools/fit-difficulty.mjs` and every Phase 73 state-pin (`test/unit/
+ * harness/rollHighBaseline.js#pinRun`/`botSteps`) never set either field, so
+ * every existing readout and state-hash pin stays byte-identical (proven by
+ * the `tune-difficulty --seeds=20 --json` before/after `cmp` in 82-01-
+ * SUMMARY.md). Neither hook is a write-path bypass or an engine call: a
+ * `policy` function returns a plain action object exactly like `decideAction`
+ * does, and `stopWhen` only reads `state`/`actions` — the dispatch, tallies,
+ * `onStep` and every other loop body line below run exactly as before either
+ * hook fires. A `policy` function is a closure and cannot cross a
+ * `worker_threads` boundary — a worker-thread caller (Phase 82's `tools/
+ * days-farm.mjs`) must build its own `policy` function locally inside the
+ * worker, never pass one in from the main thread.
  */
 export function playRun(seed, opts, onStep) {
   const policyRng = makeRng(seed ^ 0x9e3779b9);
@@ -1665,8 +1698,11 @@ export function playRun(seed, opts, onStep) {
   let wasAfraidBeforeStep = false;
   let actions = 0;
   let diedInCombat = false;
-  while (!state.dead && actions < ctx.opts.maxActions) {
-    const action = decideAction(state, policyRng, ctx);
+  // Phase 82 (FARM-01): opts.policy resolved ONCE, outside the loop; absent
+  // (or not a function) means the unchanged decideAction.
+  const chooseAction = typeof opts.policy === "function" ? opts.policy : decideAction;
+  while (!state.dead && actions < ctx.opts.maxActions && !(typeof opts.stopWhen === "function" && opts.stopWhen(state, actions))) {
+    const action = chooseAction(state, policyRng, ctx);
     const inCombat = !!state.combat;
     const before = state; // Phase 42 (BAL-02): pre-action state — applyAction returns a NEW object, so this reference stays valid after the reassignment below
     wasAfraidBeforeStep = !!(before.combat && before.combat.afraid > 0);
