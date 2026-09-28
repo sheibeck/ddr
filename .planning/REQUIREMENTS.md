@@ -26,8 +26,8 @@
 
 ### DAYS farming check (FARM) — user note, 2026-09-28
 
-- [ ] **FARM-01**: A reproducible measurement shows how many DAYS a hero banks by never leaving floor 1 (a scripted floor-1 farmer across seeds and classes: camping, resting, fighting wandering monsters, buying and finding food), compared with the DAYS of honest runs that descend. The numbers are recorded in a doc.
-- [ ] **FARM-02**: The verdict is recorded with the user. If starvation reliably ends floor-1 farming below an honest run's DAYS, DAYS ranks as the mock says (days, then floor). If it does not, the rule the user picks is recorded, and the server and panel rank DAYS by it.
+- [x] **FARM-01**: A reproducible measurement shows how many DAYS a hero banks by never leaving floor 1 (a scripted floor-1 farmer across seeds and classes: camping, resting, fighting wandering monsters, buying and finding food), compared with the DAYS of honest runs that descend. The numbers are recorded in a doc.
+- [x] **FARM-02**: The verdict is recorded with the user. If starvation reliably ends floor-1 farming below an honest run's DAYS, DAYS ranks as the mock says (days, then floor). If it does not, the rule the user picks is recorded, and the server and panel rank DAYS by it.
 
 ### Board server (SRV)
 
@@ -91,8 +91,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FARM-01 | Phase 82 | Pending |
-| FARM-02 | Phase 82 | Pending |
+| FARM-01 | Phase 82 | Complete |
+| FARM-02 | Phase 82 | Complete |
 | SRV-01 | Phase 83 | Pending |
 | SRV-02 | Phase 83 | Pending |
 | SRV-03 | Phase 83 | Pending |

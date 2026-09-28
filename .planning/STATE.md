@@ -5,15 +5,15 @@ milestone_name: Our Own Leaderboards
 current_phase: 82
 current_phase_name: DAYS Farming Check
 status: executing
-stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-28T21:15:17.965Z"
+stopped_at: "Completed 82-01-PLAN.md (DAYS farming instrument: playRun hooks, farmer policy/verdict, days-farm CLI); ready for 82-02 (200-seed run + docs/DAYS-FARMING.md)"
+last_updated: "2026-09-28T21:49:10.213Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 82 execution started
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 82 (DAYS Farming Check) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 82
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-09-28 — Phase 82 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -254,8 +254,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-24T19:30:00.000Z
-Stopped at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
+Last session: 2026-09-28T21:49:10.180Z
+Stopped at: Completed 82-01-PLAN.md (DAYS farming instrument: playRun hooks, farmer policy/verdict, days-farm CLI); ready for 82-02 (200-seed run + docs/DAYS-FARMING.md)
 
 - (history below is the pre-close record)
 
@@ -420,6 +420,7 @@ Resume file: None
 | Phase 59 P04 | 55min | 2 tasks | 5 files |
 | Phase 59 P05 | 95min | 3 tasks | 8 files |
 | Phase 60 P03 | ~50min | 6 tasks | 5 files |
+| Phase 82 P01 | 25min | 3 tasks | 4 files |
 
 ## Decisions
 
@@ -716,6 +717,8 @@ Resume file: None
 - [Phase ?]: PERF-03 Pixel 7 session: no regressions — cold start +5.1%, step p95 improved 22.0->16.6ms, AAB +4.5%, all under threshold (60-03)
 - [Phase ?]: A second fresh v1.8 install was needed for 56-3 (first install was spent on the A3 step walk before 56-3 ran) — recorded explicitly in the Device table and Session record (60-03)
 - [Phase ?]: User deferred UAT-v1.8 sections B-E (except 56-3) to their own play sessions rather than a full walkthrough; recorded verbatim, not inferred as pass (60-03)
+- [Phase ?]: 82-01: farmVerdict's corner case (floor 2 wins while floor 1 does not) is read as perFloorCap — the only rule that stops floor-2 farming; user can overrule before 82-02 records the final verdict
+- [Phase ?]: 82-01: hoarderStorePick has no GOLD_RESERVE (unlike chooseStorePurchase) — spends every gold piece on rations, per 82-CONTEXT.md
 
 ### Blockers
 
