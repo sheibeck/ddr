@@ -1010,6 +1010,25 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    It may cover the lower foe list; a body tap dismisses it. No new
    transition or animation. */
 #mw-rail[data-over="combat"]{z-index:8;bottom:var(--mw-rail-lift,0px);max-height:45%;overflow-y:auto}
+/* Quick task 260927-r4v (user, 2026-09-27: "raise it"): the store, the loot
+   screen and the stair prompt live in the same #enc-panel overlay (z 8), so
+   a card raised while one of them is open (a BUY's WELL THEN, a refusal, a
+   joiner or find decision over the loot) drew UNDER it and was never seen.
+   renderRail stamps data-over="panel" while one of those three screens is
+   on screen (panelScreenUp()) and a card is shown; the rail rises to the
+   overlay's z-index and, as with combat, DOM order paints it above. No lift:
+   the card keeps its place at the stage's bottom edge, and instead the
+   screen's bottom action row (the store's Leave, TAKE ALL / LEAVE ALL, GO
+   DOWN / NOT YET) is hidden in place while the card shows (the user's
+   260927-s7b rule: "hide the buttons while the bottom rails are visible.
+   Once they are dismissed, the buttons should show again."). renderRail
+   mirrors the stamp onto the persistent #enc-panel as data-rail-up, so a
+   body rebuild under the card keeps it: visibility only (each row keeps its
+   box, nothing reflows or moves) and the buttons take no taps. The ☰ scrim
+   (9) and wrap (10) and every sheet (45+) still open over the card. */
+#mw-rail[data-over="panel"]{z-index:8}
+#enc-panel[data-rail-up="1"] #enc-body>.actions,#enc-panel[data-rail-up="1"] .cb-over-actions,#enc-panel[data-rail-up="1"] .mw-major-actions{visibility:hidden}
+#enc-panel[data-rail-up="1"] #enc-body>.actions button,#enc-panel[data-rail-up="1"] .cb-over-actions button,#enc-panel[data-rail-up="1"] .mw-major-actions button{pointer-events:none}
 /* Phase 78 (HUD-09, user 2026-09-25: "if you have a larger bag, you only
    see what's in your bag to drop, and you can't scroll the rail back up to
    see the item you are trying to loot"). The map-side rail card never grows
@@ -4262,6 +4281,28 @@ function guardTap(btn, fn) {
 function combatScreenUp() {
   return !!(S && (S.combat || window.__mzBeat?.active?.()));
 }
+// Quick task 260927-r4v: "the store, the loot screen or the stair prompt is
+// on screen" — the three non-combat #enc-panel screens a rail card now rises
+// over (renderRail's data-over="panel"). Mirrors renderEncounter's own
+// branch conditions (the stair prompt, then the loot pile, then the store;
+// a fight, its last round's playback and death all take the panel first),
+// and only while the map tab is showing, since the panel lives there. The
+// THEY ARE DOWN over-panel with no drops (S.beats.over) is not one of them.
+function panelScreenUp() {
+  if (!S || S.dead || combatScreenUp() || mwActiveTab !== "maze") return false;
+  if (S.beats && S.beats.over && S.beats.groups && S.beats.groups.length && !window.__mzStair) return false;
+  return !!(window.__mzStair || S.store || (S.pendingLoot && S.pendingLoot.length));
+}
+// Quick task 260927-r4v: mirror the rail's data-over="panel" onto the
+// persistent #enc-panel as data-rail-up, which the CSS reads to hide the
+// panel's bottom action row in place while a card is shown over it. Set
+// from renderRail's data-over writes only, so every show and dismissal path
+// (the hold, a tap, a resolved decision, a card replacing a card, the panel
+// closing) lands here.
+function syncPanelRailUp(railEl) {
+  const panel = document.getElementById("enc-panel");
+  if (panel) panel.dataset.railUp = railEl.dataset.over === "panel" ? "1" : "0";
+}
 
 // Phase 71 (D-16, R-29): the status chits' arm guard. Reading a status is an
 // inspection (like 71-04's long press, R-17), not a decision: the card
@@ -5692,6 +5733,7 @@ function renderRail() {
   railEl.dataset.shown = railEl.hidden ? "0" : "1";
   if (fadeUp) {
     if (railEl.dataset.over) delete railEl.dataset.over;
+    syncPanelRailUp(railEl);
     lastRailKeyShown = "";
     clearTimeout(railTimer);
     railTimer = null;
@@ -5719,9 +5761,16 @@ function renderRail() {
       if (Number.isFinite(actTop) && Number.isFinite(stageBottom)) lift = Math.max(0, Math.round(stageBottom - actTop));
     }
     if (typeof railEl.style.setProperty === "function") railEl.style.setProperty("--mw-rail-lift", lift + "px");
+  } else if (!railEl.hidden && panelScreenUp()) {
+    // Quick task 260927-r4v: a card shown while the store, the loot screen
+    // or the stair prompt is open rises over that screen (the
+    // #mw-rail[data-over="panel"] CSS), and the screen's bottom action row
+    // hides in place under it (syncPanelRailUp, just below).
+    railEl.dataset.over = "panel";
   } else if (railEl.dataset.over) {
     delete railEl.dataset.over;
   }
+  syncPanelRailUp(railEl);
 
   // Phase 58 (MOTION-02, D-06): the rail must slide out showing the card
   // that is LEAVING, not the idle copy — an idle render (the card just
