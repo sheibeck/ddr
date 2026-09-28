@@ -6822,6 +6822,76 @@ The foe-side base levers come first because they act from floor 1 and weigh
 relatively most on the early floors. The two depth slopes go last because
 they steepen the tail most, and the tail already sits at its ruled limits.
 
+### Phase 79.2 — START (shipped dials, 2026-09-27 and 2026-09-28 rules) — commit 582cd6c7db4599f73c01daff348c36daee577116
+
+The shipped dials (`fit/start.json`, the seven SEARCH_PLAN dials from
+`engine/difficulty.js` DIALS) measured on the code with the 2026-09-27 rule
+changes (quick 260927-rsx: every foe-targeted spell resistible; quick
+260927-opf: one-shot strikes once per fight) AND the two 2026-09-28 rulings
+folded into plan 79.2-01 before this measurement (a failed climb or leap
+always hurts at least 1; Freeze deals its damage, then freezes 1d4 rounds and
+never kills outright). No dial moved.
+
+#### Phase 79.2 START — 1,000 seeds
+
+```
+#1 score=+Infinity verdict=MISS pass=1 deathP50=6 shape=ok S1=99.7 S2=97.5 S3=86.2 S4=75.7 S6=44.3 S8=18.6 S12=1.3 tail S15=0.0 S20=0.0 reach20=0.0 classes F/T/M p50=6/7/4 ok=false reason=Magic User reach5 49.3 vs pooled 83.5 (|delta| > 20)
+```
+
+#### Phase 79.2 START — tail row
+
+```
+#1 score=0.0000 verdict=PASS fresh[reach20=0 reach21=0 reachCount30=0] deep12.reach20=0.5 deep20[p50=0 reach30=0] deep30[p50=0 p90=1] rot.p50[20/30/40]=0/0/0 guard=fresh p50Death 6 outside [3, 4] ok=true
+```
+
+#### Phase 79.2 START — sweep row #1 (200 seeds)
+
+```
+#1 score=+Infinity verdict=MISS pass=1 deathP50=6 shape=ok S1=100.0 S2=98.0 S3=86.5 S4=77.5 S6=45.0 S8=15.9 S12=1.7 tail S15=0.0 S20=0.0 reach20=0.0 classes F/T/M p50=7/6/5 ok=false reason=Magic User reach5 54.5 vs pooled 83.6 (|delta| > 20)
+```
+
+The floors 1–12 table, built by script from `fit/start-1000.jsonl`:
+
+| Floor | Target S_L | Tolerance | START S_L (1,000) | START p_L | dS | Verdict |
+|---|---|---|---|---|---|---|
+| 1 | 95.1 % | ±8 | 99.7 % | 99.7 % | +4.6 | PASS |
+| 2 | 79.7 % | ±8 | 97.5 % | 97.8 % | +17.8 | MISS |
+| 3 | 58.4 % | ±8 | 86.2 % | 88.4 % | +27.8 | MISS |
+| 4 | 38.7 % | ±8 | 75.7 % | 87.9 % | +37.0 | MISS |
+| 5 | 24.3 % | ±8 | 61.6 % | 81.3 % | +37.3 | MISS |
+| 6 | 15.1 % | ±8 | 44.3 % | 72 % | +29.2 | MISS |
+| 7 | 9.5 % | ±8 | 29.7 % | 66.9 % | +20.2 | MISS |
+| 8 | 6.2 % | ±8 | 18.6 % | 62.6 % | +12.4 | MISS |
+| 9 | 4.2 % | ±8 | 9.9 % | 53.2 % | +5.7 | PASS |
+| 10 | 3.0 % | ±8 | 4.5 % | 45.3 % | +1.5 | PASS |
+| 11 | 2.2 % | ±3 | 2.6 % | 57.1 % | +0.4 | PASS |
+| 12 | 1.7 % | ±3 | 1.3 % | 50 % | −0.4 | PASS |
+
+- **p50 death depth:** 6 against P50_DEATH_BAND [3, 4] — OUTSIDE.
+- **Filter shape:** ok — largest drop 9.4 points on floor 3, p_1 − p_4 rise 11.8 points.
+- **Verdict:** MISS, score +Infinity; floors outside their band: 2, 3, 4, 5, 6, 7, 8.
+- **Class pools (fair bot, 1,000 seeds):** Fighter p50 6 (n 316, reach5 83.5%); Thief p50 7 (n 362, reach5 84.2%); Magic User p50 4 (n 322, reach5 49.3%). Pooled p50 6, pooled reach5 83.5%; constraints.ok false (Magic User reach5 49.3 vs pooled 83.5 (|delta| > 20)).
+- **Stuck runs:** the eval row does not carry a stuck count; the tail row's fresh slice (the same 1,000 floor-1 seeds, all runs counted) records 119 stuck of 1000.
+- **Tail floors (report only, no target):** S15 0 %, S20 0 %, reach-20 0 %.
+
+The ruled tail targets, built by script from `fit/tail-start.jsonl`:
+
+| Ruled target | Target | START | Verdict |
+|---|---|---|---|
+| fresh reach-20 (% of 1,000) | <= 1% | 0% | PASS |
+| fresh reach-21 (% of 1,000) | < 0.5% | 0% | PASS |
+| fresh count reaching 30 | <= 1 | 0 | PASS |
+| deep12 reach20 | <= 5% | 0.5% | PASS |
+| deep20 p50 floors gained | <= 2 | 0 | PASS |
+| deep20 reach30 | <= 1% | 0% | PASS |
+| deep30 p50 floors gained | <= 0 | 0 | PASS |
+| deep30 p90 floors gained | <= 1 | 1 | PASS |
+| rot20 p50 gained vs deep20 p50 | rot <= fair | 0 vs 0 | PASS |
+| rot30 p90 gained vs deep30 p90 | rot <= fair | 1 vs 1 | PASS |
+| guard: fresh p50 death depth (report only) | in [3, 4] | 6 | outside (guard, reported) |
+
+Tail row: score 0.0000, verdict PASS, misses none, constraints.ok true, guard fresh p50Death 6 outside [3, 4], freshMeasured true.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
