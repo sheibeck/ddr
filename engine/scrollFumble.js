@@ -43,8 +43,10 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
  * landing, with no armor or ward soak. Every effect kind the table can name:
  *
  *   - damage: the spell's dice, times max(1, reader level − spell level)
- *     (the same thrown-spell multiplier castSpell's own thrown branch
- *     applies), subtracted directly from c.wp. Real hp loss — CAN kill
+ *     (canon p.26's multiplier; quick 260928-sq2 replaced it with + level²
+ *     only for the damage a spell deals to FOES — a fumble's hurt to the
+ *     reader and the reader's side is self-inflicted and keeps this rule),
+ *     subtracted directly from c.wp. Real hp loss — CAN kill
  *     through the ordinary hp-reached-0 path, but this is never an
  *     INSTANT-kill mechanic (that is the "heavy" case below).
  *   - heavy: fumbleHeavyBlow (d10 + depth, unsoaked, plus Afraid) — the ONE

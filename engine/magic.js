@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome } from "./derived.js";
+import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe } from "./combat.js";
@@ -240,6 +240,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // Phase 54 (BAND-02, USER RULING D): spellDamageFor scales an MU's
     // offensive spell POWER — here, how many foes the stun affects.
     // Identity 1 (spellPowerFor) is a structural no-op.
+    // Quick 260928-sq2: the p.26 multiplier keeps scaling Stun's REACH (not
+    // damage), so this count is untouched by the level² damage ruling.
     const n = spellDamageFor(rng.d(6) * Math.max(1, c.level - sp.lvl), c); // roll:amount
     const affected = liveFoes(state).slice(0, n);
     // RULES-18 (Phase 75.3, audit C8): past the knee each affected foe gets
@@ -348,7 +350,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else if (sp.kind === "acid") {
     const t = C && C.foes[C.target];
     if (t && t.alive) {
-      t.acid = { rounds: rng.d(6), dmg: sp.dmg }; // roll:amount
+      // Quick 260928-sq2 (user ruling 2026-09-28): `levelSq` is the caster's
+      // level², added to the FIRST tick only (combat.js#foeTurn spends it)
+      // — once per cast, like every other damage spell. Zero draws.
+      t.acid = { rounds: rng.d(6), dmg: sp.dmg, levelSq: spellLevelSq(c) }; // roll:amount
       events.push({ type: "acidApplied", target: t.name, rounds: t.acid.rounds });
     }
   } else if (sp.kind === "dot") {
@@ -364,17 +369,25 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // tampered/unknown dot row missing it never writes a broken record.
     const t = C && C.foes[C.target];
     if (t && t.alive && sp.dmg) {
-      t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice" }; // roll:amount
-      events.push({ type: "iceApplied", target: t.name, rounds: t.dot.left });
+      // Quick 260928-sq2: the caster's level² rides the record to its first
+      // tick (as Acid's does); Poisoned Edge's dot never carries one.
+      t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice", levelSq: spellLevelSq(c) }; // roll:amount
+      events.push({ type: "iceApplied", target: t.name, rounds: t.dot.left, levelSq: t.dot.levelSq });
     }
   } else if (sp.kind === "quake") {
-    const mult = Math.max(1, c.level - sp.lvl);
+    // DELIBERATE RULES CHANGE (quick 260928-sq2, user ruling 2026-09-28):
+    // every foe takes the ONE roll + the caster's level² ("each foe gets
+    // it"), replacing the p.26 × max(1, level − spell level). The caster's
+    // own backlash below is half the roll alone — self-inflicted damage
+    // never adds level².
     // Phase 31 Afraid: post-roll arithmetic only — the dice are drawn
     // exactly as before (zero rng change); halves every point the hero
     // deals through Earthquake while combat.afraid > 0 (a no-op otherwise).
     // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1,
     // no-op) sits between the roll and afraidDamage.
-    const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) * mult, c));
+    const rolled = rollDice(rng, sp.dmg);
+    const d = afraidDamage(state, spellDamageFor(rolled + spellLevelSq(c), c));
+    const backlash = afraidDamage(state, spellDamageFor(rolled, c));
     // Quick 260927-rsx: every live foe rolls its intel resist up front (in
     // C.foes order, before any damage lands); a foe that resists takes none.
     // The one damage roll above is the cast's own and is drawn first; the
@@ -389,7 +402,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     });
     events.push({ type: "earthquake", amount: d });
     if (!c.ward) {
-      const self = Math.ceil(d / 2);
+      const self = Math.ceil(backlash / 2);
       c.wp -= self;
       // Phase 43 (CLAR-01, additive): spell names the cause for the
       // narration; fixtures compare state, so this moves none.
@@ -425,14 +438,22 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // (C.foes order, after the bolt count); a bolt that comes round to a foe
     // that resisted does nothing and draws no damage.
     const shrugged = new Set(foes.filter((f) => foeResistsSpell(state, f, sp.n, rng, events)));
+    // DELIBERATE RULES CHANGE (quick 260928-sq2, user ruling 2026-09-28,
+    // "each foe gets it"): the FIRST bolt to strike each foe adds the
+    // caster's level² to its dice; a later bolt on the same foe is its dice
+    // alone (level² once per foe per cast, like Lightning and Earthquake).
+    const levelSq = spellLevelSq(c);
+    const struck = new Set();
     let tot = 0;
     for (let k = 0; k < n && foes.length; k++) {
       const t = foes[k % foes.length];
       if (!t.alive || shrugged.has(t)) continue;
+      const first = !struck.has(t);
+      struck.add(t);
       // Phase 31 Afraid: halves each Volley bolt the hero deals (post-roll
       // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
       // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
-      const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg), c));
+      const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) + (first ? levelSq : 0), c));
       // Spell damage (CANON-04, D-11): route through the seam; the volley
       // total sums APPLIED damage (post multiplier/halfDmg/bypass), not raw.
       const hit = damageFoe(state, t, d, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
@@ -683,18 +704,23 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         // die's best face shatters a shatter-flagged foe (the Skeleton)
         // outright — skip the spell-damage roll.
         if (shatterIfBest(state, t, roll, dieN, "you", rng, events, { spell: sp.n })) continue;
-        // p.26: area, duration and effect are multiplied by (caster level − spell level)
-        const mult = Math.max(1, c.level - sp.lvl);
+        // DELIBERATE RULES CHANGE (quick 260928-sq2, user ruling 2026-09-28:
+        // "square spell damage just like we do with weapons damage"): the
+        // damage is the dice + the caster's level² (+ any spellDmg item
+        // bonus), replacing canon p.26's × max(1, caster level − spell
+        // level). Lightning's every-foe throw adds it to each foe it hits.
+        // No new draw.
+        const levelSq = spellLevelSq(c);
         // Phase 31 Afraid: halves the hero's thrown-spell damage (post-roll
         // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
         // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
-        const dmg = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) * mult + eff(c, "spellDmg"), c));
+        const dmg = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) + levelSq + eff(c, "spellDmg"), c));
         // Spell damage (D-06): bypasses foe armor entirely; eligible for the
-        // CANON-04 multiplier table. `mult` in the event stays the level
-        // multiplier above (unrelated to the seam's own multiplier); `dmg`
-        // switches to the APPLIED amount.
+        // CANON-04 multiplier table. `levelSq` in the event is the level
+        // term above (the narration says "the roll +N, for your level");
+        // `dmg` is the APPLIED amount.
         const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
-        events.push({ type: "spellHit", target: t.name, dmg: hit.applied, mult, ...(afraidMods.length ? { afraid: true } : {}) });
+        events.push({ type: "spellHit", target: t.name, dmg: hit.applied, levelSq, ...(afraidMods.length ? { afraid: true } : {}) });
         if (freeze) {
           // DELIBERATE RULES CHANGE (user rulings 2026-09-28): "freeze should
           // never kill outright. It should deal its damage and freeze an

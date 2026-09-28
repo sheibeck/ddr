@@ -14,6 +14,8 @@
 //   5. otherwise frozen (combat.js#holdFoe, kind "frozen") for the d4's rounds.
 // The fixtures below read the REAL derived resist streams (never mocked),
 // picking a `state.acts` where the foe resists or not as each case needs.
+// Quick 260928-sq2 (re-pinned): a hit's damage is the d6 + the caster's
+// level² (1 for these level-1 casters), so a d6 of 4 lands 5 (wp 30 -> 25).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -101,13 +103,13 @@ test("a Freeze that hits and does not kill freezes for the rolled d4 (walk 1..4)
     const events = castSpell(s, FREEZE, rng, []);
     const f = s.combat.foes[0];
     assert.equal(f.alive, true, `d4 ${d}`);
-    assert.equal(f.wp, 26, `d4 ${d}: the damage landed`);
+    assert.equal(f.wp, 25, `d4 ${d}: the damage landed`);
     assert.equal("frozen" in f, false, `d4 ${d}: never frozen solid`);
     assert.equal(events.some((e) => e.type === "frozenSolid" || e.type === "foeKilled"), false, `d4 ${d}`);
     const held = events.find((e) => e.type === "controlHeld");
     assert.deepEqual(
       { target: held.target, kind: held.kind, rounds: held.rounds, freeze: held.freeze, dmg: held.dmg, source: held.source },
-      { target: "F1", kind: "frozen", rounds: d, freeze: true, dmg: 4, source: "Freeze" },
+      { target: "F1", kind: "frozen", rounds: d, freeze: true, dmg: 5, source: "Freeze" },
       `d4 ${d}`,
     );
     // The same dispatch's foeTurn spends the first frozen visit.
@@ -134,7 +136,7 @@ test("a Freeze that hits a foe that resists: the damage lands, no freeze; the ev
   const rng = fakeRng([1, 4, 3, ...PAD(20)]);
   const events = castSpell(s, FREEZE, rng, []);
   const f = s.combat.foes[0];
-  assert.equal(f.wp, 26, "the damage landed");
+  assert.equal(f.wp, 25, "the damage landed");
   assert.equal("held" in f, false, "no freeze");
   assert.equal(events.some((e) => e.type === "controlHeld"), false);
   const r = events.find((e) => e.type === "spellResisted");
@@ -243,15 +245,15 @@ test("a Joiner's Freeze matches the hero's: damage, then frozen for the d4; a re
   const landed = joinerState(noResist("Freeze", [0], "Ada"));
   const ev1 = alliesTurn(landed, fakeRng([5, 4, 3]), []);
   const f1 = landed.combat.foes[0];
-  assert.equal(f1.wp, 26);
+  assert.equal(f1.wp, 25);
   assert.deepEqual(f1.held, { kind: "frozen", left: 3 });
-  assert.ok(ev1.some((e) => e.type === "allySpellHit" && e.effect === "damage" && e.dmg === 4));
+  assert.ok(ev1.some((e) => e.type === "allySpellHit" && e.effect === "damage" && e.dmg === 5));
   assert.ok(ev1.some((e) => e.type === "controlHeld" && e.freeze && e.rounds === 3));
 
   const shrugged = joinerState(resists("Freeze", 0, "Ada"));
   const ev2 = alliesTurn(shrugged, fakeRng([5, 4, 3]), []);
   const f2 = shrugged.combat.foes[0];
-  assert.equal(f2.wp, 26, "the damage landed");
+  assert.equal(f2.wp, 25, "the damage landed");
   assert.equal("held" in f2, false, "no freeze");
   const r = ev2.find((e) => e.type === "spellResisted");
   assert.deepEqual({ by: r.by, freeze: r.freeze }, { by: "Ada", freeze: true });
@@ -302,7 +304,7 @@ test("the lines: a Freeze that holds reads its damage and 'frozen for N rounds';
   for (const order of ["priority", "event"]) {
     const lines = linesForAction("castSpell", events, {}, { order });
     const texts = lines.map((l) => l.text);
-    assert.ok(texts.includes("Freeze hits F1 (4), frozen for 3 rounds"), `${order}: ${JSON.stringify(texts)}`);
+    assert.ok(texts.includes("Freeze hits F1 (5), frozen for 3 rounds"), `${order}: ${JSON.stringify(texts)}`);
     assert.equal(texts.some((t) => /fails to resist/.test(t)), false, `${order}: the failed resist folds behind the freeze`);
     assert.equal(texts.some((t) => /frozen solid/.test(t)), false, order);
   }

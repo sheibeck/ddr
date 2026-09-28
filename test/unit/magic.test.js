@@ -164,12 +164,13 @@ test("castSpell: a thrown damage spell (Fireball) applies rollDice damage and ki
     c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
     combat: fixedCombat([foe]),
   });
-  // toHit d8=1 (bonus 3 for Wizard offense, still a hit); dmg 2d10+4 = 5+5+4=14;
+  // toHit d8=1 (bonus 3 for Wizard offense, still a hit); dmg 2d10+4 = 5+5+4=14,
+  // + level² 9 (quick 260928-sq2) = 23;
   // killFoe: sp d6=1, coin d10=1, treasure-check d20=20 (skip, >2+lvl)
   const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 1, 1, 20]), []);
   assert.equal(foe.alive, false, "the foe died");
   assert.equal(foe.wp, 0);
-  assert.ok(events.some((e) => e.type === "spellHit" && e.dmg === 14));
+  assert.ok(events.some((e) => e.type === "spellHit" && e.dmg === 23 && e.levelSq === 9));
   assert.ok(events.some((e) => e.type === "foeKilled"));
 });
 
@@ -247,12 +248,14 @@ test("castSpell: Earthquake damages every foe AND the caster when unwarded", () 
   });
   state.acts = noResistActs("Earthquake"); // quick 260927-rsx: the foe does not resist
   // dmg 3d10+8: d10,d10,d10 = 10,10,10 -> 30+8=38; killFoe: sp d6=1, coin
-  // d10=1, treasure-check d20=20 (skip, >2+lvl)
+  // d10=1, treasure-check d20=20 (skip, >2+lvl). Quick 260928-sq2: the foe
+  // takes 38 + the level-4 caster's level² (16) = 54; the caster's half is
+  // the roll's alone.
   const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 1, 1, 20]), []);
-  assert.equal(foe.wp, 0, "the foe died to the full 38");
+  assert.equal(foe.wp, 0, "the foe died to the full 38 + 16");
   assert.equal(foe.alive, false);
   assert.equal(state.c.wp, 31, "the caster took half (ceil(38/2)=19), with no ward up");
-  assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 38));
+  assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 54));
   assert.ok(events.some((e) => e.type === "earthquakeSelfDamage" && e.amount === 19));
   assert.ok(events.some((e) => e.type === "foeKilled"));
 });
@@ -262,7 +265,7 @@ test("castSpell: Earthquake damages every foe AND the caster when unwarded", () 
 // self-damage that is derived FROM the already-scaled amount) via
 // engine/difficulty.js#spellDamageFor. Identity (1) reproduces the existing
 // pin above exactly; restored after.
-test("castSpell: spellPower 1.15 scales Earthquake's rolled damage (38 -> 44) and the self-damage derived from it (19 -> 22)", () => {
+test("castSpell: spellPower 1.15 scales Earthquake's damage (54 -> 62) and the self-damage derived from its roll (19 -> 22)", () => {
   const foe = fixedFoe({ wp: 30, maxWP: 30, type: "Humans" });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
@@ -273,8 +276,8 @@ test("castSpell: spellPower 1.15 scales Earthquake's rolled damage (38 -> 44) an
   try {
     const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 1, 1, 20]), []);
     assert.equal(foe.wp, 0, "the foe still dies to the scaled amount");
-    assert.equal(state.c.wp, 50 - 22, "the caster's self-damage is derived from the SCALED amount");
-    assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 44));
+    assert.equal(state.c.wp, 50 - 22, "the caster's self-damage is derived from the SCALED roll (38 -> 44, half 22)");
+    assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 62));
     assert.ok(events.some((e) => e.type === "earthquakeSelfDamage" && e.amount === 22));
   } finally {
     restore();
@@ -501,49 +504,52 @@ test("readScroll: no scrolls refuses out loud with a reason, zero draws, no muta
 // --- Phase 18: damageFoe routing (CANON-04 / CANON-03 / D-06) ---
 
 test("castSpell: a Cleric's Fireball deals double to a Demons foe (CANON-04, D-11)", () => {
-  const foe = fixedFoe({ type: "Demons", wp: 40, maxWP: 40, intel: 1 });
+  // Quick 260928-sq2 (re-pinned): every Fireball below is 2d10+4 = 14 + the
+  // level-3 caster's level² (9) = 23, so the foes carry 60 wp (not 40) to
+  // survive a doubled 46 and keep the 4-draw sequence.
+  const foe = fixedFoe({ type: "Demons", wp: 60, maxWP: 60, intel: 1 });
   const state = fixedState({
     c: { sub: "Cleric", grimoire: ["Fireball"], level: 3 },
     combat: fixedCombat([foe]),
   });
   // toHit d8=1 (Cleric offense bonus 0, 1-0<=4 hits); dmg 2d10+4 = 5+5+4=14,
-  // doubled to 28 vs Demons; then one foe-turn miss (7) — no round-advance
-  // draws, Phase 51 — 4 draws total, no armor-soak draw for a spell.
+  // + 9 = 23, doubled to 46 vs Demons; then one foe-turn miss (7) — no
+  // round-advance draws, Phase 51 — 4 draws total, no armor-soak draw.
   const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7]), []);
   const hit = events.find((e) => e.type === "spellHit");
-  assert.equal(hit.dmg, 28, "Cleric spell damage doubles vs Demons");
-  assert.equal(foe.wp, 12);
+  assert.equal(hit.dmg, 46, "Cleric spell damage doubles vs Demons");
+  assert.equal(foe.wp, 14);
   assert.ok(!events.some((e) => e.type === "foeArmorSoaked"));
 });
 
 test("castSpell: a Wizard's Fireball does NOT double against Demons (Cleric-only row)", () => {
-  const foe = fixedFoe({ type: "Demons", wp: 40, maxWP: 40, intel: 1 });
+  const foe = fixedFoe({ type: "Demons", wp: 60, maxWP: 60, intel: 1 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
     combat: fixedCombat([foe]),
   });
-  // toHit d8=1 (Wizard offense bonus 3, 1-3<=4 hits); same 14 raw damage,
+  // toHit d8=1 (Wizard offense bonus 3, 1-3<=4 hits); the same 14 + 9 = 23,
   // undoubled (Wizard is not a Cleric).
   const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7]), []);
   const hit = events.find((e) => e.type === "spellHit");
-  assert.equal(hit.dmg, 14, "no Cleric-only doubling for a Wizard");
-  assert.equal(foe.wp, 26);
+  assert.equal(hit.dmg, 23, "no Cleric-only doubling for a Wizard");
+  assert.equal(foe.wp, 37);
 });
 
 test("castSpell: any caster's Fireball doubles against Walking Dead (magic x2, D-11)", () => {
-  const foe = fixedFoe({ type: "Walking Dead", wp: 40, maxWP: 40, intel: 1 });
+  const foe = fixedFoe({ type: "Walking Dead", wp: 60, maxWP: 60, intel: 1 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
     combat: fixedCombat([foe]),
   });
   const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7]), []);
   const hit = events.find((e) => e.type === "spellHit");
-  assert.equal(hit.dmg, 28, "any spell doubles vs Walking Dead, not just Cleric-cast");
-  assert.equal(foe.wp, 12);
+  assert.equal(hit.dmg, 46, "any spell doubles vs Walking Dead, not just Cleric-cast");
+  assert.equal(foe.wp, 14);
 });
 
 test("castSpell: a spell never draws the armor soak (D-06) — Fireball vs sp.ar 15 lands in full", () => {
-  const foe = fixedFoe({ type: "Humans", sp: { ar: 15 }, wp: 40, maxWP: 40, intel: 1 });
+  const foe = fixedFoe({ type: "Humans", sp: { ar: 15 }, wp: 60, maxWP: 60, intel: 1 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Fireball"], level: 3 },
     combat: fixedCombat([foe]),
@@ -552,26 +558,27 @@ test("castSpell: a spell never draws the armor soak (D-06) — Fireball vs sp.ar
   // would throw fakeRng's underflow error if the spell ever reached it.
   const events = castSpell(state, SPELL_IDX.Fireball, fakeRng([1, 5, 5, 7]), []);
   const hit = events.find((e) => e.type === "spellHit");
-  assert.equal(hit.dmg, 14, "spells bypass foe armor entirely");
-  assert.equal(foe.wp, 26);
+  assert.equal(hit.dmg, 23, "spells bypass foe armor entirely");
+  assert.equal(foe.wp, 37);
   assert.ok(!events.some((e) => e.type === "foeArmorSoaked"));
 });
 
-test("castSpell: Earthquake is applied per foe — Walking Dead takes 2x, Humans 1x; earthquake.amount stays the rolled 38", () => {
-  const wd = fixedFoe({ type: "Walking Dead", wp: 100, maxWP: 100, intel: 1 });
-  const humans = fixedFoe({ name: "Target2", type: "Humans", wp: 100, maxWP: 100, intel: 1 });
+test("castSpell: Earthquake is applied per foe — Walking Dead takes 2x, Humans 1x; earthquake.amount stays the one pre-multiplier 54", () => {
+  const wd = fixedFoe({ type: "Walking Dead", wp: 150, maxWP: 150, intel: 1 });
+  const humans = fixedFoe({ name: "Target2", type: "Humans", wp: 150, maxWP: 150, intel: 1 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
     combat: fixedCombat([wd, humans]),
   });
   state.acts = noResistActs("Earthquake", 2); // quick 260927-rsx: neither foe resists
-  // dmg 3d10+8: 10+10+10+8=38 (mult = max(1,4-4)=1); Walking Dead doubles to
-  // 76 (wp 24), Humans stays at 38 (wp 62); then two foe-turn misses (7, 7)
-  // — no round-advance draws, Phase 51.
+  // dmg 3d10+8: 10+10+10+8=38, + the level-4 caster's level² (16) = 54
+  // (quick 260928-sq2; the foes carry 150 wp so both survive); Walking Dead
+  // doubles to 108 (wp 42), Humans stays at 54 (wp 96); then two foe-turn
+  // misses (7, 7) — no round-advance draws, Phase 51.
   const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 7, 7]), []);
-  assert.equal(wd.wp, 24, "Walking Dead took the doubled 76");
-  assert.equal(humans.wp, 62, "Humans took the unmultiplied 38");
-  assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 38), "the event reports the single rolled base");
+  assert.equal(wd.wp, 42, "Walking Dead took the doubled 108");
+  assert.equal(humans.wp, 96, "Humans took the unmultiplied 54");
+  assert.ok(events.some((e) => e.type === "earthquake" && e.amount === 54), "the event reports the one base every foe takes");
   assert.ok(events.some((e) => e.type === "earthquakeSelfDamage" && e.amount === 19));
   assert.equal(state.c.wp, 31, "caster took ceil(38/2)=19, unaffected by the per-foe multiplier");
 });
@@ -583,13 +590,14 @@ test("castSpell: Fireballs (volley) totals APPLIED damage — each ball on a hal
     combat: fixedCombat([foe]),
   });
   state.acts = noResistActs("Fireballs"); // quick 260927-rsx: the foe does not resist
-  // n=d8=2 balls; ball 1 d10=5 -> 5+2=7 -> ceil(7/2)=4; ball 2 d10=3 -> 3+2=5
-  // -> ceil(5/2)=3; total APPLIED = 7 (not the 12 raw); then one foe-turn
-  // miss (7) — no round-advance draws, Phase 51.
+  // n=d8=2 balls; ball 1 (the first to strike the foe) d10=5 -> 5+2 + the
+  // level-4 caster's level² 16 (quick 260928-sq2) = 23 -> ceil(23/2)=12;
+  // ball 2 d10=3 -> 3+2=5 -> ceil(5/2)=3; total APPLIED = 15 (not the 28
+  // raw); then one foe-turn miss (7) — no round-advance draws, Phase 51.
   const events = castSpell(state, SPELL_IDX.Fireballs, fakeRng([2, 5, 3, 7]), []);
   const volley = events.find((e) => e.type === "volley");
-  assert.deepStrictEqual(volley, { type: "volley", rolls: 2, totalDamage: 7 });
-  assert.equal(foe.wp, 43);
+  assert.deepStrictEqual(volley, { type: "volley", rolls: 2, totalDamage: 15 });
+  assert.equal(foe.wp, 35);
 });
 
 test("castSpell: Insanity r=2 — the foe-on-foe blow is physical and can be soaked by the victim's natural armor (one gated d20, no insaneStruckAlly)", () => {

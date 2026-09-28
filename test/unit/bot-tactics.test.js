@@ -1020,7 +1020,14 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
     // stall the same way, seed 6 dies naturally (depth 1, 102 actions) and
     // is the smallest untaken seed that does; seeds 2 and 3 still die
     // naturally. The Pilfer and Troll Knight trios are unaffected.
-    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [6, 2, 3] },
+    // Quick 260928-sq2 (user ruling 2026-09-28): Sorcerer seed 3 swapped for
+    // seed 1. A spell's damage is now its dice + the caster's level², so this
+    // caster's long run plays out differently and seed 3 now stalls
+    // (re-measured live under identity dials to 5000 actions). Seed 1 is the
+    // smallest untaken seed that dies naturally (374 actions); seeds 6 and 2
+    // still die naturally. The Pilfer and Troll Knight trios are unaffected
+    // (re-confirmed live).
+    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [6, 2, 1] },
     { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [5, 2, 4] },
   ];
   let sawItem = false;

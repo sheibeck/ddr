@@ -1630,6 +1630,24 @@ export function afraidNeed(state, need) {
 }
 
 /**
+ * spellLevelSq(caster) — DELIBERATE RULES CHANGE (quick 260928-sq2, user
+ * ruling 2026-09-28: "square spell damage just like we do with weapons
+ * damage"). An offensive spell's damage is its dice (plus any flat bonus in
+ * its `dmg`) + the CASTER's level squared — the same `levelSq` term
+ * weaponDamageTerms gives a strike — in place of canon p.26's
+ * max(1, caster level − spell level) multiplier, which now scales only what
+ * is not damage (Stun's reach). The caster is the hero, a Joiner's member
+ * view (its own level) or a scroll's reader. An area spell adds it to each
+ * foe it damages, once per cast; a damage-over-time spell adds it to its
+ * first tick. Heals, the Earthquake backlash, an Apprentice's backfire and a
+ * fumbled scroll's hurt never add it. Pure, zero rng.
+ */
+export function spellLevelSq(caster) {
+  const level = caster && Number.isFinite(caster.level) ? caster.level : 1;
+  return level * level;
+}
+
+/**
  * afraidDamage(state, dmg) — Phase 31 (user ruling 2026-09-16): halves the
  * player's already-rolled weapon damage while Afraid, floor 1 (Math.ceil).
  * Pure, zero rng.

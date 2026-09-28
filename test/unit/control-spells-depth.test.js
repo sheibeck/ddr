@@ -232,7 +232,7 @@ test("Freeze (C1) floor 20: a hit that leaves the foe standing and is not resist
   const events = castSpell(s, IDX.Freeze, rng, []);
   const f = s.combat.foes[0];
   assert.equal(f.alive, true);
-  assert.equal(f.wp, 26);
+  assert.equal(f.wp, 25); // d6 4 + the level-1 caster's level² 1 (quick 260928-sq2)
   assert.equal("frozen" in f, false);
   const held = events.find((e) => e.type === "controlHeld");
   assert.deepEqual({ kind: held.kind, rounds: held.rounds, source: held.source, freeze: held.freeze }, { kind: "frozen", rounds: 3, source: "Freeze", freeze: true });
@@ -248,7 +248,7 @@ test("Freeze (C1) floor 20: a resisted hit leaves the foe standing and damaged �
   const events = castSpell(s, IDX.Freeze, fakeRng([1, 4, ...PAD(10)]), []);
   const f = s.combat.foes[0];
   assert.equal(f.alive, true);
-  assert.equal(f.wp, 26);
+  assert.equal(f.wp, 25); // d6 4 + level² 1 (quick 260928-sq2)
   assert.equal(f.resisted, "freeze");
   assert.equal("held" in f, false);
   const r = events.find((e) => e.type === "controlResisted");

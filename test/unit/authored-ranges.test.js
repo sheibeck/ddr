@@ -47,7 +47,8 @@ import {
   SIZE_DAMAGE_PER_STEP,
   SIZE_FACES_PER_STEP,
 } from "../../engine/derived.js";
-import { playerStrike, parley } from "../../engine/combat.js";
+import { playerStrike, parley, FREEZE_HOLD_DIE } from "../../engine/combat.js";
+import { actsWhere } from "./harness/spellResistActs.js";
 import { drinkPotion, castSpell } from "../../engine/magic.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
@@ -575,22 +576,30 @@ test("FOE_DETAILS_COPY.resistsSpells and COMBAT_MENU_COPY.spellResist: the spell
 //    FIXED die (d10 for Freeze, d8 for the rest), so the text states its
 //    Phase 74 range "before bonuses" (the per-hero school and throw bonuses
 //    widen it); the damage dice are the row's own `dmg`, read as "damage".
+//    Quick 260928-sq2 (user ruling 2026-09-28): every damage spell's text
+//    says "<dice> + your level² damage", and the engine adds exactly the
+//    caster's level²: +1 for a no-bonus level-1 caster, +9 at level 3. The
+//    area and damage-over-time spells (Earthquake, Fireballs, Acid, Ice) are
+//    pinned the same way below. Freeze's "d4 rounds" is FREEZE_HOLD_DIE.
 // ---------------------------------------------------------------------------
 
 /** "d6", "2d10+4": the dice a `dmg` literal rolls, written the way the texts write them. */
 const diceText = ({ n, sides, bonus }) => `${n === 1 ? "" : n}d${sides}${bonus ? `+${bonus}` : ""}`;
 
 /**
- * A no-bonus caster's cast of thrown spell `n` at the spell's own level (the
- * p.26 level multiplier is 1), against one plain foe, with every draw after
- * the to-hit set to `fill` (the damage dice's face). Illusionist: offense
- * school bonus 0 on the chart, and no item grants a throw bonus.
+ * A no-bonus caster's cast of thrown spell `n` at caster level `level`
+ * (default the spell's own; a level below it is a scroll's free cast,
+ * c.scrollCast, which skips the level gate), against one plain foe, with
+ * every draw after the to-hit set to `fill` (the damage dice's face).
+ * Illusionist: offense school bonus 0 on the chart, and no item grants a
+ * throw bonus.
  */
-function thrownCast(n, toHitDraw, fill) {
+function thrownCast(n, toHitDraw, fill, level) {
   const sp = SPELLS.find((s) => s.n === n);
   const foe = fixedFoe({ intel: 0 });
+  const lvl = level ?? sp.lvl;
   const state = fixedState(
-    { cls: "Magic User", sub: "Illusionist", level: sp.lvl, grimoire: [n] },
+    { cls: "Magic User", sub: "Illusionist", level: lvl, grimoire: [n], scrollCast: lvl < sp.lvl },
     { combat: fixedCombat([foe]) },
   );
   const events = castSpell(state, SPELLS.indexOf(sp), fakeRng([toHitDraw], fill), []);
@@ -598,26 +607,91 @@ function thrownCast(n, toHitDraw, fill) {
 }
 
 for (const n of ["Freeze", "Fireball", "Lightning", "Mangle"]) {
-  test(`SPELLS.${n}.txt states its to-hit range and its damage dice from the engine`, () => {
+  test(`SPELLS.${n}.txt states its to-hit range and its damage dice + your level² from the engine`, () => {
     const { sp, events } = thrownCast(n, 2, 1);
     assert.equal(sp.kind, "thrown");
     const thrown = events.find((e) => e.type === "spellThrown");
     assert.ok(thrown, `${n}: a spellThrown event, got ${events.map((e) => e.type)}`);
     assert.equal(thrown.mods, undefined, `${n}: the pinned range is the one before any bonus`);
     const range = hitRangeText(thrown.dieN + 1 - thrown.atLeast, thrown.dieN);
-    assert.ok(sp.txt.includes(`on ${range} before bonuses, for ${diceText(sp.dmg)} damage`), `${n}: "${sp.txt}" should state ${range} and ${diceText(sp.dmg)} damage`);
+    assert.ok(sp.txt.includes(`on ${range} before bonuses, for ${diceText(sp.dmg)} + your level² damage`), `${n}: "${sp.txt}" should state ${range} and ${diceText(sp.dmg)} + your level² damage`);
     // Every face at or above atLeast hits, every face below misses.
     for (let face = 1; face <= thrown.dieN; face++) {
       const cast = thrownCast(n, thrown.dieN + 1 - face, 1).events;
       assert.equal(cast.find((e) => e.type === "spellThrown").roll, face);
       assert.equal(cast.some((e) => e.type === "spellHit"), face >= thrown.atLeast, `${n}: face ${face}`);
     }
-    // The damage the hit deals is the row's dice: every die low, then every die high.
-    for (const [fill, want] of [[1, sp.dmg.n + (sp.dmg.bonus || 0)], [sp.dmg.sides, sp.dmg.n * sp.dmg.sides + (sp.dmg.bonus || 0)]]) {
-      const hit = thrownCast(n, 2, fill).events.find((e) => e.type === "spellHit");
-      assert.ok(hit, `${n}: the throw hits`);
-      assert.equal(hit.mult, 1);
-      assert.equal(hit.dmg, want, `${n}: ${diceText(sp.dmg)} with every die on ${fill}`);
+    // The damage the hit deals is the row's dice + the caster's level²:
+    // every die low, then every die high, at level 1 (+1) and level 3 (+9).
+    for (const [level, levelSq] of [[1, 1], [3, 9]]) {
+      for (const [fill, want] of [[1, sp.dmg.n + (sp.dmg.bonus || 0)], [sp.dmg.sides, sp.dmg.n * sp.dmg.sides + (sp.dmg.bonus || 0)]]) {
+        const hit = thrownCast(n, 2, fill, level).events.find((e) => e.type === "spellHit");
+        assert.ok(hit, `${n} L${level}: the throw hits`);
+        assert.equal(hit.levelSq, levelSq);
+        assert.equal(hit.dmg, want + levelSq, `${n} L${level}: ${diceText(sp.dmg)} with every die on ${fill}, + ${levelSq}`);
+      }
+    }
+  });
+}
+
+test("SPELLS.Freeze.txt's 'frozen for d4 rounds' is the engine's FREEZE_HOLD_DIE", () => {
+  assert.equal(FREEZE_HOLD_DIE, 4);
+  assert.ok(spell("Freeze").includes(`frozen for d${FREEZE_HOLD_DIE} rounds`), spell("Freeze"));
+});
+
+/** A sides-aware fake rng: `.d(sides)` answers `fn(sides)`; the cursor is a fixed 0. */
+const rngBy = (fn) => ({ d: (sides) => fn(sides), pick: (arr) => arr[0], shuffle: (a) => a, getState: () => 0 });
+
+/** A level-`level` no-bonus caster's cast of `n` at two sleeping foes (a scroll's free cast below its level). */
+function areaCast(n, level, fn) {
+  const sp = SPELLS.find((s) => s.n === n);
+  const foes = [fixedFoe({ name: "A", intel: 0, asleep: 99 }), fixedFoe({ name: "B", intel: 0, asleep: 99 })];
+  const state = fixedState(
+    { cls: "Magic User", sub: "Illusionist", level, grimoire: [n], scrollCast: level < sp.lvl, wp: 999, maxWP: 999 },
+    // Neither foe resists (the 2026-09-27 intel resist, a derived stream).
+    { combat: fixedCombat(foes), acts: actsWhere(n, [[0, false], [1, false]], { intels: { 0: 0, 1: 0 } }) },
+  );
+  const events = castSpell(state, SPELLS.indexOf(sp), rngBy(fn), []);
+  return { sp, state, events };
+}
+
+test("SPELLS.Earthquake.txt: '3d10+8 + your level² damage to each foe', and half the 3d10+8 to you, from the engine", () => {
+  const sp = SPELLS.find((s) => s.n === "Earthquake");
+  assert.ok(sp.txt.includes(`${diceText(sp.dmg)} + your level² damage to each foe; you get half the ${diceText(sp.dmg)}`), sp.txt);
+  for (const [level, levelSq] of [[1, 1], [3, 9]]) {
+    for (const face of [1, sp.dmg.sides]) {
+      const { state, events } = areaCast("Earthquake", level, (sides) => (sides === sp.dmg.sides ? face : 1));
+      const rolled = sp.dmg.n * face + sp.dmg.bonus;
+      assert.deepEqual(state.combat.foes.map((f) => 999 - f.wp), [rolled + levelSq, rolled + levelSq], `L${level} face ${face}`);
+      assert.equal(events.find((e) => e.type === "earthquakeSelfDamage").amount, Math.ceil(rolled / 2));
+    }
+  }
+});
+
+test("SPELLS.Fireballs.txt: 'd10+2 damage each … + your level² damage once to each foe struck', from the engine", () => {
+  const sp = SPELLS.find((s) => s.n === "Fireballs");
+  assert.ok(sp.txt.includes(`d8 bolts · ${diceText(sp.dmg)} damage each, spread across the foes, + your level² damage once to each foe struck`), sp.txt);
+  for (const [level, levelSq] of [[1, 1], [3, 9]]) {
+    for (const face of [1, sp.dmg.sides]) {
+      // 3 bolts: A, B, A.
+      const { state } = areaCast("Fireballs", level, (sides) => (sides === 8 ? 3 : sides === sp.dmg.sides ? face : 1));
+      const per = face + sp.dmg.bonus;
+      assert.deepEqual(state.combat.foes.map((f) => 999 - f.wp), [2 * per + levelSq, per + levelSq], `L${level} face ${face}`);
+    }
+  }
+});
+
+for (const [n, tick, phrase] of [["Acid", "acidTick", "a round, d6 rounds; the first round adds your level² damage"], ["Ice", "dotTick", "a round for d4+1 rounds, the first adding your level² damage"]]) {
+  test(`SPELLS.${n}.txt: its first round adds your level², from the engine`, () => {
+    const sp = SPELLS.find((s) => s.n === n);
+    assert.ok(sp.txt.includes(`${diceText(sp.dmg)} ${phrase}`), sp.txt);
+    for (const [level, levelSq] of [[1, 1], [3, 9]]) {
+      for (const face of [1, sp.dmg.sides]) {
+        let drawn = 0;
+        const { events } = areaCast(n, level, (sides) => (drawn++ === 0 ? 4 : sides === sp.dmg.sides ? face : 4));
+        const first = events.find((e) => e.type === tick);
+        assert.equal(first.dmg, sp.dmg.n * face + sp.dmg.bonus + levelSq, `${n} L${level} face ${face}`);
+      }
     }
   });
 }

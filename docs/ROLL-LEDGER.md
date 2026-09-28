@@ -1050,3 +1050,31 @@ re-stated.
 The 2026-09-27 section above still holds for every other spell: a resist
 means no effect, and a resisting foe takes none of the draws that were only
 for it.
+
+## User ruling 2026-09-28: spell damage adds level² (quick 260928-sq2)
+
+"What if we square spell damage just like we do with weapons damage." An
+offensive spell's damage is now **its dice + the caster's level²**
+(`engine/derived.js#spellLevelSq`, the weapon's `levelSq` term), replacing
+canon p.26's `× max(1, caster level − spell level)` for damage. Stun's reach
+keeps the multiplier (it is not damage). **No new draw anywhere**: the level²
+is added to dice that were already rolled, so every site's draw order and
+count are unchanged, and `test/unit/roll-high-guard.test.js#DRAW_INVENTORY`
+does not move.
+
+| Site | Before | After |
+|---|---|---|
+| magic.js thrown (Freeze, Fireball, Mangle, Lightning per foe) | `rollDice(dmg) × mult + spellDmg` | `rollDice(dmg) + level² + spellDmg` |
+| magic.js quake (Earthquake) | every foe `rollDice(dmg) × mult`; self `ceil(that / 2)` | every foe `roll + level²`; self `ceil(roll / 2)` (no level²) |
+| magic.js volley (Fireballs) | each bolt `rollDice(dmg)` | each bolt `rollDice(dmg)`, the first bolt to strike each foe `+ level²` |
+| magic.js acid / dot (Acid, Ice) | each tick `rollDice(dmg)` | the first tick `+ level²` (the record's `levelSq`, then deleted) |
+| combat.js allyCast (a Joiner's thrown spell) | `rollDice(dmg) × max(1, level − spell level) + spellDmg` | `rollDice(dmg) + level² + spellDmg`, the Joiner's own level |
+| magic.js stun | `d6 × mult` foes | unchanged |
+| magic.js heal, backfire; scrollFumble.js | — | unchanged (self and healing never add level²) |
+
+Every amount still passes through `spellDamageFor` / `afraidDamage` (hero
+casts) and `damageFoe` exactly as before. The `spellHit` event's `mult`
+field is replaced by `levelSq` (the term added), which the Oracle and rail
+lines print as "the roll +N, for your level"; `iceApplied` gains `levelSq`
+for the same reason. Step 2 of the Freeze section above ("d6 × the level
+multiplier") now reads d6 + level².

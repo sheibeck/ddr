@@ -301,9 +301,9 @@ test("a Joiner's Freeze that hits a target that resists: the damage lands, spell
   assert.equal(res.spell, "Freeze");
   assert.equal(res.faces, 8);
   assert.equal(res.freeze, true);
-  assert.ok(events.some((e) => e.type === "allySpellHit" && e.effect === "damage" && e.dmg === 4));
+  assert.ok(events.some((e) => e.type === "allySpellHit" && e.effect === "damage" && e.dmg === 5)); // d6 4 + level² 1 (quick 260928-sq2)
   assert.ok(events.findIndex((e) => e.type === "allySpellHit") < events.indexOf(res), "the resist follows the damage");
-  assert.equal(s.combat.foes[0].wp, 26);
+  assert.equal(s.combat.foes[0].wp, 25);
   assert.equal("held" in s.combat.foes[0], false);
   assert.equal(s.party[0].spellsUsed, 1);
 });
