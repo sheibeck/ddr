@@ -5644,3 +5644,18 @@ Each item was traced on the locked engine under `setDialsForTuning(fit/start.jso
 | hp-growth-linear (3 tests) | shipped steps 13/19/31 → 14/21/35 | `dotHpFor` reads HERO_HP_SCALE | `node -e` |
 | foe-count-depth, the Knight at depth 10 | Zit's wp 4 → 5 (the scenario's premise gone) | startCombat's `foeWpFor` reads FOE_HP_SCALE | the scenario's own override also pins FOE_HP_SCALE at identity; assertion unchanged |
 | difficulty.test.js, combat-scaling, deep-curve | the curve, FITTED_CURVE_PINS (every row), the foeLevelFor map `1222233344445555555555555`, heroMeanMaxWpFor, roundDamageCapFor, the shipped-helper and dotHpFor pins, the DIALS pins, the deep-curve literals | the locked dials themselves | `node -e` against the locked engine; the traced lock test ties DIALS to `fit/early-lock.json` |
+
+### Hero resist half-intel; duration abilities last their stated rounds (user rulings 2026-09-28)
+
+Quick 260928-hrs, two rulings: "Use the same half-intel scale for heroes now" (the hero resists a foe's bolt, drain or debuff on `max(1, round(intel / 2))` faces of a d20, every hero rolling, from the main rng at the slot canon's gated d20 used), and the Smoke report ("the chit shows 1 rds"): a "for N rounds" ability now covers the use round's foe turn plus N full rounds (`engine/abilities.js#abilityEffectTicks`), Taunt still only its own round.
+
+**Parity fixtures: no moves.** `node tools/fixture-inventory.mjs --json` was byte-identical before the change, after the resist rule, and after the duration fix. No replay reaches a hero-targeted foe ability or a duration ability, so there is no carve-out, and parity stays 66/66.
+
+**Moved outside the parity suite** (each traced):
+
+| Item | old → new | cause |
+|---|---|---|
+| roll-high state pin `party-fighter-knight` | 200/dead/2 → 180/dead/2 (hash moved) | its Knight has intel 2 and never rolled under canon; the first hero resist is bot step 139 (Krupke's Weaken, roll 10 vs 20, failed), a new d20 in the main stream from there. The other seven labels meet no hero-targeted foe ability and stayed byte-identical. |
+| FOE-09 determinism (`test/determinism/foe-abilities.test.js`) | full fights magical-t4 35/4 → 35/3 won, walking-dead-t5 48/3 → 36/2 died, beasts-t5 73/6 won → 48/3 died (humans-t2, demons-t5 unchanged); all five per-visit logs | seed 1's intel-20 hero resisted on 2–20 under canon and now on 11–20; seed 3's intel-2 hero now rolls on every hero-targeted ability visit |
+| unit draw pins (foe-abilities, foe-turn-draw-count, foe-cadence, condition-roll-mods) | +1 d20 per hero-targeted bolt/drain/debuff | the resist d20, every hero |
+| ability timer pins (abilities.test.js, your-lot-chips.test.js) | Sidestep's abilityRoundsLeft 5 → 6 right after use; Riposte still live (1) after use; the Smoke chip 1 → 2 right after the throw | abilityEffectTicks |
