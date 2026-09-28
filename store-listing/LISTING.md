@@ -239,6 +239,25 @@ built-ins only — no new dependency in the app or the Action.
 The build-level half (Gradle `releaseRuntimeClasspath` and the merged release
 manifest) is recorded by 69-04 on the actual 2.0.0 build, below.
 
+**Phase 80 addendum, 2026-09-28, commit `acba40ed`.** `@capacitor/status-bar` is uninstalled
+(80-02, DROID-02): bar icon styling now goes through `SystemBars`, the plugin built into
+`@capacitor/core` (no separate npm package, so it adds no lockfile entry of its own). Re-ran
+the same case-insensitive grep of `package.json`'s dependencies plus `package-lock.json`'s
+non-dev package entries for the ad/analytics/crash-reporting terms the audit above lists
+(`firebase`, `admob`, `play-services-ads`, `ads-identifier`, `analytics`, `measurement`,
+`crashlytics`, `appsflyer`, `adjust`, `facebook`, `appcenter`, `sentry`, `bugsnag`): **0 hits**.
+The lockfile's non-dev package list is now 9 entries (down from 10 — `@capacitor/status-bar`
+removed, nothing added):
+
+`@capacitor/android`, `@capacitor/app`, `@capacitor/core`, `@capacitor/haptics`,
+`@capacitor/preferences`, `@capacitor/screen-orientation`, `@capacitor/splash-screen`,
+`@modbender/capacitor-play-games`, `tslib`.
+
+No ads, analytics or crash-reporting SDK. This is a source-level re-check only (this plan runs
+no build for the release-signed/dependency-tree half of the audit — see 80-04-PLAN.md's
+build-and-verify-only scope); the build-level `:app:dependencies` re-check happens the next
+time that audit section is refreshed against a signed build.
+
 ### Build-level audit (2.0.0, versionCode 9, 2026-09-24)
 
 Run in the main checkout on the signed release build made by
