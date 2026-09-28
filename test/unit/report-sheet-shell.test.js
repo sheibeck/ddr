@@ -52,7 +52,10 @@ function occurrences(source, literal) {
 // ═══════════════════════ (A) the markup ════════════════════════════════════
 
 test("(A1) SOURCE: #mw-report-sheet's markup is byte-for-byte the shipped legend-sheet chrome, with no aria-label/title/placeholder attribute and no non-whitespace text between tags", () => {
-  const markup = sliceBetween(MARKUP, '<div id="mw-report-sheet"', '<div class="mw-fade"');
+  // Phase 79.3 (NOTES-02): the PATCH NOTES sheet (79.3-07) now sits between
+  // the report sheet and the fade layer, so the end marker is the notes
+  // sheet's own opening div rather than the fade layer.
+  const markup = sliceBetween(MARKUP, '<div id="mw-report-sheet"', '<div id="mw-notes-sheet"');
   assert.match(markup, /^<div id="mw-report-sheet" class="mw-legend-sheet mw-report-sheet" hidden>$/m);
   assert.match(markup, /<div class="mw-legend-scrim" id="mw-report-scrim"><\/div>/);
   assert.match(markup, /<div class="mw-legend-panel" role="dialog" aria-modal="true" aria-labelledby="mw-report-title">/);

@@ -1949,6 +1949,27 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-report-btn.secondary{flex:0 0 auto;padding:15px 16px;background:transparent;border:2px solid #4a4032;color:#c9bda0;box-shadow:0 4px 0 #0d0b08}
 .mw-report-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 
+/* ---------- PATCH NOTES sheet (Phase 79.3, NOTES-02) ----------
+   #mw-notes-sheet stacks with the account and settings sheets (z-index 55):
+   the ☰ opens it over any screen, and D-21's auto-show opens it once over
+   the title. Reuses the legend-sheet chrome (.mw-legend-sheet/-scrim/-panel/
+   -head/-close, above); renderPatchNotes (src/browser/patchNotes.js) draws
+   the body's mw-pn-* classes below. */
+#mw-notes-sheet{z-index:55}
+.mw-notes-body{padding-top:4px}
+.mw-pn{display:block;color:#e6ddc6}
+.mw-pn-h1{margin:10px 0 6px;font-family:var(--disp);font-size:calc(0.625rem * var(--mw-text-scale));line-height:1.5;color:#e8c97a;overflow-wrap:anywhere}
+.mw-pn-h2{margin:14px 0 6px;font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:.08em;text-transform:uppercase;color:#c9bda0}
+.mw-pn-h3{margin:10px 0 4px;font-family:var(--mono);font-weight:700;font-size:calc(0.8125rem * var(--mw-text-scale));color:#e6ddc6}
+.mw-pn-p,.mw-pn-li{font-family:var(--mono);font-weight:700;font-size:calc(0.78125rem * var(--mw-text-scale));line-height:1.45;color:#e6ddc6;overflow-wrap:anywhere}
+.mw-pn-p{margin:4px 0}
+.mw-pn-ul{margin:4px 0;padding-left:18px}
+.mw-pn-li{margin:3px 0}
+.mw-pn-b{color:#e8c97a}
+.mw-pn-a,.mw-notes-past-link{color:#e8c97a;text-decoration:underline}
+.mw-notes-past{margin:16px 0 0;font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale))}
+.mw-notes-past-link{display:inline-block;min-height:44px;line-height:44px}
+
 /* ---------- MAKE CAMP bottom sheet (Phase 35, MAP-06/08) ----------
    Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
    -scrim/-panel/-head, above); only the copy + actions row differ. */
@@ -2395,6 +2416,21 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
       <button type="button" class="mw-report-btn secondary" id="mw-report-cancel"></button>
       <button type="button" class="mw-report-btn" id="mw-report-send"></button>
     </div>
+  </div>
+</div>
+
+<!-- ============ PATCH NOTES SHEET (Phase 79.3, NOTES-02, D-20/D-21) ============
+     The legend-sheet chrome (.mw-legend-sheet/-scrim/-panel/-head/-close,
+     above). The body is drawn by src/browser/patchNotes.js#renderPatchNotes
+     from the bundled PATCH_NOTES; every word comes from PATCH_NOTES_COPY.
+     Opened from the ☰ row #mw-menu-notes, from every screen, and once per
+     update over the title screen only (D-21) — never over play. -->
+<div id="mw-notes-sheet" class="mw-legend-sheet mw-notes-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-notes-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-modal="true" aria-labelledby="mw-notes-title">
+    <div class="mw-legend-head"><span id="mw-notes-title"></span><button type="button" class="mw-legend-close" id="mw-notes-close" aria-label="Close">Close</button></div>
+    <div class="mw-notes-body" id="mw-notes-body"></div>
+    <p class="mw-notes-past"><a class="mw-notes-past-link" id="mw-notes-past" target="_blank" rel="noreferrer"></a></p>
   </div>
 </div>
 
@@ -6969,6 +7005,11 @@ window.__mzClassicBoot = async function classicBoot() {
   import { buildReportPayload, sendBugReport } from "./src/browser/bugReport.js";
   import { BUG_REPORT_CONFIG } from "./src/browser/bugReportConfig.js";
   import { REPORT_SHEET_INITIAL, REPORT_SENT_HOLD_MS, reportSheetNext, reportSheetView } from "./src/browser/reportSheet.js";
+  // Phase 79.3 (NOTES-02, D-20/D-21): the bundled release notes and the
+  // pure Markdown-subset parser/renderer/auto-show decision they're read
+  // through — see openNotesSheet/showNotesOnTitle below.
+  import { PATCH_NOTES } from "./src/browser/patchNotesData.js";
+  import { parsePatchNotes, renderPatchNotes, readNotesLaunch, markNotesSeen, PATCH_NOTES_COPY, PATCH_NOTES_RELEASES_URL } from "./src/browser/patchNotes.js";
   // Phase 78 (HUD-08) — the opt-in arrow pad's pure view model (visibility,
   // side, the four labelled buttons); syncArrowPad below renders it.
   import { arrowPadModel } from "./src/browser/arrowPad.js";
@@ -7852,6 +7893,63 @@ window.__mzClassicBoot = async function classicBoot() {
     reportModel = reportSheetNext(reportModel, { type: "input", text: e.target.value });
     renderReportSheetNow();
   });
+
+  // Phase 79.3 (NOTES-02, D-20/D-21): the PATCH NOTES sheet — shell-only;
+  // reads and writes no S. The seen version goes through window.mzStorage,
+  // never raw localStorage.
+  let notesAutoPending = false;
+  function notesSheetOpen() {
+    const sheet = document.getElementById("mw-notes-sheet");
+    return !!sheet && !sheet.hidden;
+  }
+  function renderNotesSheetNow() {
+    const title = document.getElementById("mw-notes-title");
+    if (title) title.textContent = PATCH_NOTES_COPY.title;
+    const blocks = typeof PATCH_NOTES?.markdown === "string" ? parsePatchNotes(PATCH_NOTES.markdown) : [];
+    const body = document.getElementById("mw-notes-body");
+    if (body) {
+      if (blocks.length) {
+        renderPatchNotes(body, blocks);
+      } else {
+        const p = document.createElement("p");
+        p.className = "mw-pn-p";
+        p.textContent = PATCH_NOTES_COPY.missing;
+        body.replaceChildren(p);
+      }
+    }
+    const past = document.getElementById("mw-notes-past");
+    if (past) {
+      past.href = PATCH_NOTES_RELEASES_URL;
+      past.textContent = PATCH_NOTES_COPY.pastLink;
+    }
+    if (body) body.scrollTop = 0;
+  }
+  function openNotesSheet() {
+    renderNotesSheetNow();
+    const sheet = document.getElementById("mw-notes-sheet");
+    if (sheet) panelMotion.open(sheet);
+  }
+  function closeNotesSheet() {
+    const sheet = document.getElementById("mw-notes-sheet");
+    if (sheet && !sheet.hidden) panelMotion.close(sheet);
+    window.mzKeepPartyInView?.();
+  }
+  function titleScreenUp() {
+    const el = document.getElementById("mw-title-screen");
+    return !!el && !el.hidden;
+  }
+  function showNotesOnTitle() {
+    if (!titleScreenUp()) {
+      notesAutoPending = true;
+      return;
+    }
+    notesAutoPending = false;
+    markNotesSeen(window.mzStorage, PATCH_NOTES.version);
+    openNotesSheet();
+  }
+  document.getElementById("mw-menu-notes")?.addEventListener("click", closeMenuThen(openNotesSheet));
+  document.getElementById("mw-notes-scrim")?.addEventListener("click", closeNotesSheet);
+  document.getElementById("mw-notes-close")?.addEventListener("click", closeNotesSheet);
 
   // Phase 70 (POLISH-03, D-06/D-07): the ☰'s two quit rows. Both stop the
   // click from bubbling to the dropdown's own "select" safety net, because
@@ -9729,6 +9827,18 @@ window.__mzClassicBoot = async function classicBoot() {
     requestAnimationFrame(() => setTimeout(unlockAudioAndSync, 0));
   }
 
+  // Phase 79.3 (NOTES-02, D-21): once per update, over the title only. A
+  // fresh install is marked seen silently; this never blocks or awaits
+  // boot, and the notes can never pop over a live fight.
+  readNotesLaunch(window.mzStorage, PATCH_NOTES?.version).then((decision) => { if (decision === "mark") markNotesSeen(window.mzStorage, PATCH_NOTES.version); else if (decision === "show") requestAnimationFrame(showNotesOnTitle); }).catch(() => {});
+  if (typeof MutationObserver === "function") {
+    const notesTitleObserver = new MutationObserver(() => {
+      if (notesAutoPending && titleScreenUp()) showNotesOnTitle();
+    });
+    const notesTitleEl = document.getElementById("mw-title-screen");
+    if (notesTitleEl) notesTitleObserver.observe(notesTitleEl, { attributes: true, attributeFilter: ["hidden"] });
+  }
+
   // Phase 67 (PGS-02, D-01/D-02): the launch sign-in, deliberately not
   // awaited. It never blocks boot, the title or play; with Compete OFF the
   // controller calls no provider method at all, and on native the plugin
@@ -9771,7 +9881,7 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen() || finalSheetOpen() || reportSheetOpen(),
+        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen() || finalSheetOpen() || reportSheetOpen() || notesSheetOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
@@ -9798,6 +9908,10 @@ window.__mzClassicBoot = async function classicBoot() {
           // Phase 79.3: the REPORT A BUG sheet sits above everything it opens
           // over, so one back press closes only it; while sending it stays.
           if (reportSheetOpen()) { closeReportSheet(); return; }
+          // Phase 79.3 (NOTES-02, D-21): the PATCH NOTES sheet closes next,
+          // right after the report sheet, whether opened from the ☰ or by
+          // the once-per-update auto-show.
+          if (notesSheetOpen()) { closeNotesSheet(); return; }
           // Phase 78 (HUD-03): the FINAL SHEET sits over the DEAD tab or the
           // death card, so one back press closes only it.
           if (finalSheetOpen()) { closeFinalSheet(); return; }

@@ -335,6 +335,40 @@ model), `src/browser/bugReport.js` (`buildReportPayload`/`sendBugReport`,
 - **The z-ladder:** `#mw-report-sheet` stacks at 55, with the account and
   settings sheets.
 
+### PATCH NOTES sheet (Phase 79.3)
+
+The ☰ row `#mw-menu-notes` opens `#mw-notes-sheet` in the legend-sheet
+chrome, from every screen — `hudMenuRowStates` never disables it. Two
+modules meet in the shell: `src/browser/patchNotesData.js` (the generated,
+bundled `PATCH_NOTES = { version, markdown }`) and `src/browser/patchNotes.js`
+(`parsePatchNotes`/`renderPatchNotes`, the pure Markdown-subset parser and
+DOM renderer; `readNotesLaunch`/`markNotesSeen`, the once-per-update
+decision; `PATCH_NOTES_COPY` and `PATCH_NOTES_RELEASES_URL`).
+
+- **The sheet renders the current version's notes offline.** `openNotesSheet`
+  parses `PATCH_NOTES.markdown` and draws it into `#mw-notes-body` through
+  `renderPatchNotes`; a build shipped with no notes file shows
+  `PATCH_NOTES_COPY.missing` instead. The "Past versions on GitHub" link
+  (`PATCH_NOTES_RELEASES_URL`) opens outside the game — the system browser
+  on native, a new tab in the dev loop — and the game is exactly where it
+  was on return.
+- **The once-per-update auto-show (D-21).** Right before `account.boot()`,
+  `readNotesLaunch(window.mzStorage, PATCH_NOTES.version)` reads the last
+  version the player has seen the notes for, through `window.mzStorage`
+  (never raw `localStorage`), stored at the durable key `ddr.notes.seen.v1`.
+  A changed or absent-with-prior-data version calls `showNotesOnTitle`,
+  which opens the sheet and marks the version seen only while
+  `#mw-title-screen` is showing; if the title isn't up yet, `notesAutoPending`
+  stays true and a `MutationObserver` on the title's `hidden` attribute
+  retries the moment it appears. A fresh install marks the version seen
+  silently, with nothing shown. The auto-show can never pop over a live
+  fight, since it only ever fires over the title.
+- **The Android back button** closes the sheet next among the layers below
+  it (`getGameContext`'s `closeModal`, right after the report sheet and
+  before the FINAL SHEET). The scrim and Close close it too.
+- **The z-ladder:** `#mw-notes-sheet` stacks at 55, with the account,
+  settings and report sheets.
+
 ### Global boards, submissions and placement (Phase 68)
 
 **Encodings.** `src/browser/scoreTag.js` encodes a run into the 64-char
