@@ -22,7 +22,7 @@
 import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe, foeResistsSpell, roomWeakenResists } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -93,7 +93,7 @@ const LESSER_ALLY_NAMES = [
  *
  * Phase 40 (SPELL-01, research Pitfall 2): the thrown branch and the summon
  * branch read DATA FLAGS, never a spell name — Freeze's own `onHit` flag
- * (its frozen-solid kill), Lightning's own `aoe` flag (its every-foe case),
+ * (its damage-then-freeze tail), Lightning's own `aoe` flag (its every-foe case),
  * Lesser Summon's own `lesser` flag (its no-doubling/no-backfire rule) — so a
  * content-table rename can never silently break any of the three. See the
  * thrown branch and the summon branch below for the exact comparisons.
@@ -181,7 +181,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   // as canon's spellResisted did; a failed resist is narrated and the
   // spell proceeds. The roll is drawn from a derived stream
   // (foeResistsSpell), so it never moves the main rng itself.
-  const single = C && spellTargetsFoe(sp) && !(sp.kind === "thrown" && sp.aoe === "all") ? SINGLE_TARGET_KINDS[sp.kind] : undefined;
+  // User ruling 2026-09-28: a Freeze is the exception — it rolls its intel
+  // resist only after a hit's damage lands, and a resist stops just the
+  // freeze (combat.js#freezeFoe, from the thrown branch below).
+  const single =
+    C && spellTargetsFoe(sp) && !(sp.kind === "thrown" && sp.aoe === "all") && sp.onHit !== "freeze" ? SINGLE_TARGET_KINDS[sp.kind] : undefined;
   if (single) {
     const aimed = C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
     const t = single === "first" ? liveFoes(state)[0] : aimed || liveFoes(state)[0];
@@ -653,10 +657,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       // before the kind branch (SINGLE_TARGET_KINDS).
       if (sp.aoe === "all" && foeResistsSpell(state, t, sp.n, rng, events)) continue;
       // Phase 40 (SPELL-01): Freeze's own `onHit` data flag drives the
-      // frozen-solid case below — replaces the old name-keyed check (a
-      // direct comparison against the literal spell name "Freeze"), per
-      // research Pitfall 2. The frozenSolid/killFoe/revive machinery below
-      // is byte-identical to before this phase.
+      // freeze case below — replaces the old name-keyed check (a direct
+      // comparison against the literal spell name "Freeze"), per research
+      // Pitfall 2. Since the user rulings of 2026-09-28 that case is the
+      // damage-then-d4-freeze tail (combat.js#freezeFoe).
       const freeze = sp.onHit === "freeze";
       const dieN = freeze ? 10 : 8;
       // Phase 31 Afraid — to-hit is a count of winning faces, so the target
@@ -692,38 +696,25 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
         events.push({ type: "spellHit", target: t.name, dmg: hit.applied, mult, ...(afraidMods.length ? { afraid: true } : {}) });
         if (freeze) {
-          // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, user decision): Freeze kills awarded nothing in the prototype — a bug, not a rule.
-          // The prototype marked a frozen foe dead (alive=false, frozen=true, wp=0) and
-          // never called killFoe — a Freeze kill paid no experience, coin, treasure
-          // roll, kill count, or party split, even though Ice (level 3, the same
-          // "thrown, then frozen" flavor) was never special-cased this way. Now the
-          // same frozenSolid event and t.frozen flag still narrate the kill, but the
-          // kill itself routes through killFoe like any other, so it pays like a
-          // melee kill. Determinism: the extra draws (killFoe's d6 sp roll, d10 coin
-          // roll, d20 treasure check, and the Beasts cooking d6) happen ONLY after a
-          // successful Freeze hit — a miss draws exactly as before, and nothing draws
-          // outside this branch. The only parity scenario that casts Freeze is
-          // action-script.magic.json's cast-damage scenario (seed 8), declared under
-          // FID-06 in this phase's Plan 04. Kill-twice note: a lives-2 creature now
-          // shrugs off a Freeze once, per canon ("you have to kill it twice") — the
-          // prototype let Freeze bypass the lives rule entirely.
-          // RULES-18 (Phase 75.3, audit C1): a blow that already dropped the
-          // target to 0 hp kills exactly as today. Otherwise, past the knee,
-          // a resist first (the foe stands, damaged), then a frozen HOLD for
-          // controlHoldRoundsFor(depth) rounds instead of the kill (nothing
-          // dies, so none of killFoe's reward draws happen); at or below the
-          // knee this falls through to the frozen-solid kill exactly as before.
-          if (t.wp > 0) {
-            if (resistControl(state, t, "freeze", sp.n, C.foes.indexOf(t), rng, events)) continue;
-            if (controlHoldRoundsFor(state.floor.depth) > 0) {
-              holdFoe(state, t, "frozen", sp.n, events);
-              continue;
-            }
+          // DELIBERATE RULES CHANGE (user rulings 2026-09-28): "freeze should
+          // never kill outright. It should deal its damage and freeze an
+          // enemy for 1d4 rounds." and "if it hits and resists, deal damage,
+          // but no freeze." The frozen-solid kill (Phase 23's killFoe route
+          // at or below the knee) and the RULES-18 controlHoldRoundsFor hold
+          // past it are both retired. The damage has landed (above); a blow
+          // that drops the target to 0 hp is a normal kill (killFoe, no
+          // frozenSolid). A survivor draws one new d4 (the hold's rounds,
+          // right after the damage, resisted or not), then rolls its intel
+          // resist (the 2026-09-27 derived stream, rolled HERE, after the
+          // damage, never before the throw), then the RULES-18 control resist
+          // past the knee, then freezes for the d4's rounds
+          // (combat.js#freezeFoe, shared with a Joiner's cast and the Birch
+          // Staff). A miss rolls no resist at all.
+          if (t.wp <= 0) {
+            killFoe(state, t, rng, events);
+            continue;
           }
-          t.frozen = true;
-          events.push({ type: "frozenSolid", target: t.name });
-          killFoe(state, t, rng, events);
-          if (t.alive) t.frozen = false; // killFoe's kill-twice `lives` rule revived it — a standing foe is not frozen
+          freezeFoe(state, t, sp.n, rng, events, { dmg: hit.applied });
           continue;
         }
         if (t.wp <= 0) {

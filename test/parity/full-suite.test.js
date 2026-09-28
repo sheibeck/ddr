@@ -339,15 +339,18 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       }
 
       if (scenario.name === "cast-damage") {
-        // Phase 31 (CMB-01): the afraid caster still casts and still pays
-        // out; nothing is ever refused for fear.
+        // Phase 31 (CMB-01): the afraid caster still casts; nothing is ever
+        // refused for fear. User rulings 2026-09-28 (re-pinned, plan
+        // 79.2-01): a Freeze never kills outright — the Shriek survives the
+        // halved 2 damage and is frozen for its d4 (2) rounds; the fight goes on.
         assert.ok(allEventTypes.includes("phobiaAfraid"), "the Illusionist's Beasts phobia triggered Afraid");
         assert.ok(allEventTypes.includes("spellThrown"), "the afraid caster still casts");
-        assert.ok(allEventTypes.includes("frozenSolid"), "the frozen foe was narrated");
-        assert.ok(allEventTypes.includes("foeKilled"), "the Freeze kill paid out via killFoe");
+        assert.ok(allEventTypes.includes("controlHeld"), "the survivor was frozen for its d4");
+        assert.ok(!allEventTypes.includes("frozenSolid"), "a Freeze never freezes a foe solid");
+        assert.ok(!allEventTypes.includes("foeKilled"), "the Freeze did not kill");
         assert.ok(!allEventTypes.includes("castRefused"), "nothing is ever refused for fear");
         assert.ok(!allEventTypes.includes("strikeRefused"), "nothing is ever refused for fear");
-        assert.equal(engineState.combat, null);
+        assert.notEqual(engineState.combat, null);
       }
     }
   });

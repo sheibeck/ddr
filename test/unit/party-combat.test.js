@@ -438,11 +438,14 @@ test("DFB-05 Thief: Plate armor denies the backstab (hero's rule mirrored)", () 
   assert.equal("backstab" in ev, false);
 });
 
-test("DFB-05 Magic User: casts Freeze at the hero's current target — d10 5 with bonus 3 hits need 6, d6 4 damage, the target is frozen and killed through killFoe, the SHEET pays the charge", () => {
+// User rulings 2026-09-28 (re-pinned): a Freeze never kills outright — the
+// d6 lands, then a survivor that fails its resists is frozen for a d4 (here
+// 3). The old frozen-solid kill (and killFoe's draws) is gone.
+test("DFB-05 Magic User: casts Freeze at the hero's current target — d10 5 with bonus 3 hits need 6, d6 4 damage, then frozen for the d4 (3) and alive, the SHEET pays the charge", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30 });
   const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })] });
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
-  const events = alliesTurn(state, fakeRng([5, 4, 4, 1, 20]), []);
+  const events = alliesTurn(state, fakeRng([5, 4, 3]), []);
   const cast = events.find((e) => e.type === "allyCast");
   // faces 6 + school bonus 3 -> atLeastFor(9, 10) = 2; raw draw 5 mirrors to
   // roll 6 (6 >= 2 hits).
@@ -451,10 +454,15 @@ test("DFB-05 Magic User: casts Freeze at the hero's current target — d10 5 wit
   assert.equal(cast.dieN, 10);
   assert.deepStrictEqual(cast.mods, [{ name: "school", delta: 3 }]);
   const hit = events.find((e) => e.type === "allySpellHit");
-  assert.equal(hit.effect, "frozen");
+  assert.equal(hit.effect, "damage");
   assert.equal(hit.dmg, 4);
   assert.ok(events.indexOf(hit) > events.indexOf(cast), "allySpellHit follows allyCast");
-  assert.equal(foe.alive, false);
+  assert.equal(foe.alive, true);
+  assert.equal(foe.wp, 26);
+  assert.deepStrictEqual(foe.held, { kind: "frozen", left: 3 });
+  const held = events.find((e) => e.type === "controlHeld");
+  assert.deepStrictEqual({ target: held.target, rounds: held.rounds, freeze: held.freeze, dmg: held.dmg }, { target: foe.name, rounds: 3, freeze: true, dmg: 4 });
+  assert.equal(events.some((e) => e.type === "frozenSolid" || e.type === "foeKilled"), false);
   assert.equal(state.party[0].spellsUsed, 1);
   assert.equal(events.some((e) => e.type === "allyStruck"), false);
 });
@@ -587,16 +595,19 @@ test("DFB-05 Oracle + line: backstab, crit and weapon render", () => {
 });
 
 test("DFB-05 line: a cast is exactly one line naming the spell and the outcome", () => {
+  // User rulings 2026-09-28 (re-pinned): a Joiner's Freeze no longer ends a
+  // foe "frozen solid" — its hit line names the damage (the d4 hold, when
+  // there is one, is its own controlHeld line).
   let lines = linesForAction(
     "attack",
     [
       { type: "allyCast", name: "Ysolde", spell: "Freeze", target: "Goblin", roll: 5, need: 6, bonus: 3 },
-      { type: "allySpellHit", name: "Ysolde", spell: "Freeze", target: "Goblin", effect: "frozen", dmg: 4 },
+      { type: "allySpellHit", name: "Ysolde", spell: "Freeze", target: "Goblin", effect: "damage", dmg: 4 },
     ],
     {}
   );
   assert.equal(lines.length, 1);
-  assert.equal(lines[0].text, "Ysolde casts Freeze — Goblin frozen solid");
+  assert.equal(lines[0].text, "Ysolde casts Freeze — Goblin (4)");
   assert.equal(lines[0].tone, "magic");
 
   lines = linesForAction(

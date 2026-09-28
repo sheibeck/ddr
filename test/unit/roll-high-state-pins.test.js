@@ -157,11 +157,30 @@ const PINNED = {
   // stays 400 / alive / floor 5; solo-2 floor 5 -> 4; the Sorcerer floor
   // 4 -> 3. Regenerated via `node tools/roll-high-baseline.mjs pins`
   // (each hashed identically twice).
-  "solo-1": { actions: 400, dead: false, depth: 5, hash: "e9ef3000dffe34eca18bfbc9bf28b0af62f93a68da5e8abefe1ae291bcd61035" },
-  "solo-2": { actions: 400, dead: false, depth: 4, hash: "d7792288ef9678ddab403cf0d6322698c309ae4611f9893e19bd6e52d3a31a7f" },
+  // User rulings 2026-09-28 (plan 79.2-01, "freeze should never kill
+  // outright. It should deal its damage and freeze an enemy for 1d4 rounds";
+  // "if it hits and resists, deal damage, but no freeze"): "solo-1",
+  // "solo-2", "solo-magicuser-sorcerer", "party-1" and "deep-8" re-pinned.
+  // Traced against an extracted tree (git archive 992b1dfa, the base) with a
+  // per-bot-step state-hash trace: each label's first divergence is a
+  // Freeze — solo-1 bot step 103 (the hero's Freeze on a China Wolf, 6
+  // damage: it was frozen solid and killed, now frozen for its d4 of 3),
+  // solo-2 step 9 (the hero's Freeze on Philly, 2 damage, now frozen 3),
+  // solo-magicuser-sorcerer step 100 (the hero's Freeze on Drekk: resisted
+  // before the throw, now the 1 damage lands and the resist stops only the
+  // freeze), party-1 step 186 (the Joiner Aldric Corrin's Freeze on a
+  // Gremlin: 6 damage, then resisted, where it was frozen solid and killed)
+  // and deep-8 step 10 (the hero's Freeze on a Poltergeist, 8 damage, now
+  // frozen 2) — every earlier step byte-identical. solo-1 400/alive, floor
+  // 5 -> 4; solo-2 400/alive/4 -> 298/dead/3; the Sorcerer floor 3 -> 4;
+  // party-1 floor 4 -> 3; deep-8 262/dead/10 -> 117/dead/9. Every other
+  // label re-measured byte-identical. Regenerated via
+  // `node tools/roll-high-baseline.mjs pins` (each hashed identically twice).
+  "solo-1": { actions: 400, dead: false, depth: 4, hash: "e366b0606b33043f636d13016d116f71329e19eab94c30b34b96bc15bedefe63" },
+  "solo-2": { actions: 298, dead: true, depth: 3, hash: "2065cde4b8c3f46ca95b6d6da761416e9e92a934d58eeae27323d282243cc1e2" },
   "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "d2242ff2c65b463ad6236cc4d67fb95a59bc3b26eb29d96f64814c7f44d273ab" },
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 3, hash: "cfca73c0321365b9bde49dc23c848db9b03d46217b0f3f05d3631f783fd8d6fd" },
-  "party-1": { actions: 400, dead: false, depth: 4, hash: "0359263cea8eb7d2ca5f481e44b0c0120353f0021eb5ee6f9014fdddf392fb58" },
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "a2f21b04673ca8fbc28a466f6c1179b0f8404f503d68dadec0120c1597e64858" },
+  "party-1": { actions: 400, dead: false, depth: 3, hash: "dbb17b0fdc0c496914ea76174da29412d6c40556e00c3f40410e024d9581043b" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -243,7 +262,9 @@ const PINNED = {
   // 2026-09-27); first divergence bot step 77 (a floor-9 arrival that used
   // to heal +15), 250 -> 262 actions, still dead on floor 10. See the
   // "solo-1" block above.
-  "deep-8": { actions: 262, dead: true, depth: 10, hash: "2fed395c6f294c82294119ea7c50ef168911409cb0bd740de8e498b177cb65c5" },
+  // Re-pinned again (user rulings 2026-09-28, Freeze): first divergence bot
+  // step 10, see the "solo-1" block above.
+  "deep-8": { actions: 117, dead: true, depth: 9, hash: "7171259de0d09e94ef27f5a03f9ba57bc057779ba00428da2ca396b6c0848476" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll

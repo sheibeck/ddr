@@ -1136,12 +1136,15 @@ export function resistControl(state, foe, effect, source, idx, rng, events) {
  * (`resistControl` above) is a separate, later check for controls only —
  * reached only when this one returns false.
  */
-export function foeResistsSpell(state, foe, spell, rng, events, by) {
+export function foeResistsSpell(state, foe, spell, rng, events, by, extra) {
   const C = state.combat;
   const idx = C && Array.isArray(C.foes) ? C.foes.indexOf(foe) : -1;
   const intel = Number.isFinite(foe.intel) ? foe.intel : 0;
   const res = foeSpellResistCheck(state, rng, spell, idx, intel, by || "you");
-  const payload = { target: foe.name, spell, ...(by ? { by } : {}), roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel, faces: res.faces };
+  // User ruling 2026-09-28: `extra` (optional) rides on the event — a
+  // Freeze's post-damage resist carries `{ freeze: true }` (freezeFoe below),
+  // so the line says the damage landed and only the ice was shrugged off.
+  const payload = { target: foe.name, spell, ...(by ? { by } : {}), roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel, faces: res.faces, ...(extra || {}) };
   events.push({ type: res.resisted ? "spellResisted" : "resistFailed", ...payload });
   return res.resisted;
 }
@@ -1190,11 +1193,65 @@ export function roomWeakenResists(state, aimed, spell, rng, events, by) {
  * `controlHoldRoundsFor(depth) > 0` (never called at or below the knee,
  * where the cap is 0 and the old "lasts forever"/"kills outright" behavior
  * still applies).
+ *
+ * User ruling 2026-09-28 (Freeze): `freeze` (optional) is freezeFoe's own
+ * rolled hold, `{ rounds, dmg }` — the hold lasts the rolled `rounds` (a
+ * FREEZE_HOLD_DIE roll) at EVERY depth, instead of controlHoldRoundsFor, and
+ * the event carries `freeze: true` (plus `dmg`, the damage the same hit
+ * landed, when there was one) so the line reads "frozen for N rounds".
  */
-export function holdFoe(state, foe, kind, source, events) {
-  const left = controlHoldRoundsFor(state.floor?.depth);
+export function holdFoe(state, foe, kind, source, events, freeze) {
+  const left = freeze ? freeze.rounds : controlHoldRoundsFor(state.floor?.depth);
   foe.held = { kind, left };
-  events.push({ type: "controlHeld", target: foe.name, kind, rounds: left, source });
+  events.push({
+    type: "controlHeld",
+    target: foe.name,
+    kind,
+    rounds: left,
+    source,
+    ...(freeze ? { freeze: true, ...(Number.isFinite(freeze.dmg) ? { dmg: freeze.dmg } : {}) } : {}),
+  });
+}
+
+/**
+ * FREEZE_HOLD_DIE — user ruling 2026-09-28: "freeze should never kill
+ * outright. It should deal its damage and freeze an enemy for 1d4 rounds."
+ * The die a landed, unresisted Freeze rolls for its hold (freezeFoe below).
+ */
+export const FREEZE_HOLD_DIE = 4;
+
+/**
+ * freezeFoe(state, t, source, rng, events, opts) — user rulings 2026-09-28:
+ * the freeze tail every Freeze shares — the hero's cast (a scroll's free
+ * cast included), a Joiner's allyCast and the Birch Staff's freeze power.
+ * The caller has already landed the hit and its damage (none for the staff),
+ * and `t` is still standing (a Freeze whose damage kills is a normal kill,
+ * never frozen solid). In order:
+ *   1. one NEW main-rng draw, rng.d(FREEZE_HOLD_DIE) — the hold's rounds,
+ *      taken right after the damage, whenever the foe survives, resisted or
+ *      not (the RULES-18 main-draw parity: a resisted and a landed freeze
+ *      take the same main draws, like Doze's d4);
+ *   2. the foe's intel resist (foeResistsSpell, the 2026-09-27 derived
+ *      stream). A resist stops only the freeze: the damage already landed.
+ *      When the hit did damage (`opts.dmg` set) the event carries
+ *      `freeze: true` so the line says so;
+ *   3. past the knee, the RULES-18 control resist (resistControl), as
+ *      before — shaken off means no freeze;
+ *   4. otherwise a frozen hold (holdFoe, kind "frozen") for the rolled
+ *      rounds, at every depth.
+ * Both resists are derived streams, so neither moves the main rng. Returns
+ * the rounds held, or 0 when the foe resisted.
+ */
+export function freezeFoe(state, t, source, rng, events, opts = {}) {
+  const { by, dmg } = opts;
+  const hasDmg = Number.isFinite(dmg);
+  const rounds = rng.d(FREEZE_HOLD_DIE); // roll:amount
+  if (foeResistsSpell(state, t, source, rng, events, by, hasDmg ? { freeze: true } : undefined)) return 0;
+  const C = state.combat;
+  const idx = C && Array.isArray(C.foes) ? C.foes.indexOf(t) : -1;
+  if (resistControl(state, t, "freeze", source, idx, rng, events)) return 0;
+  holdFoe(state, t, "frozen", source, events, { rounds, ...(hasDmg ? { dmg } : {}) });
+  return rounds;
 }
 
 /**
@@ -2356,8 +2413,9 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
  * exactly: thrown = d8 vs 4 (Freeze d10 vs 6) with the subclass school bonus
  * + eff(throw), damage = rollDice(sp.dmg) * max(1, level - sp.lvl) +
  * eff(spellDmg) through damageFoe kind "spell" (no armor draw), Freeze
- * freezes and routes through killFoe with the kill-twice unfreeze exactly
- * like the hero's Phase 23 rule; every kind resist-checks first (quick
+ * lands its damage and then freezes a survivor for d4 rounds through
+ * freezeFoe, exactly like the hero's cast (user rulings 2026-09-28); every
+ * other kind resist-checks first (quick
  * 260927-rsx: foeResistsSpell, every targeted foe rolls; a Weaken rolls
  * per live foe through roomWeakenResists) then sleeps the target
  * (max(asleep, d4) rounds) or weaken the party's `C.weakened`/
@@ -2368,14 +2426,16 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   sheet.spellsUsed = (sheet.spellsUsed || 0) + 1;
   const base = { name: ally.name, spell: sp.n, target: t.name };
   if (sp.kind === "thrown") {
-    // Quick 260927-rsx (user ruling 2026-09-27): the target rolls its intel
-    // resist before the throw; a resisted spell does nothing to it (no
-    // to-hit, no damage draw) and the charge is still spent.
-    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
     // Phase 40 (SPELL-01): the THIRD name-keyed Freeze check (a member cast)
     // — repointed to the data flag alongside magic.js's own two sites
     // (research Pitfall 2).
     const freeze = sp.onHit === "freeze";
+    // Quick 260927-rsx (user ruling 2026-09-27): the target rolls its intel
+    // resist before the throw; a resisted spell does nothing to it (no
+    // to-hit, no damage draw) and the charge is still spent. User ruling
+    // 2026-09-28: a Freeze is the exception — it rolls the resist only after
+    // a hit's damage lands, and a resist stops just the freeze (freezeFoe).
+    if (!freeze && foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
     const dieN = freeze ? 10 : 8;
     // Phase 73 (ROLL-05): `need` -> `faces`; the school and throw bonuses
     // fold into the threshold the same way every other per-target term does
@@ -2401,32 +2461,19 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
       const dmg = rollDice(rng, sp.dmg) * mult + eff(view, "spellDmg");
       const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: view.sub }, rng, events);
       if (freeze) {
-        // RULES-18 (Phase 75.3, audit C2): a blow that already drops the
-        // target to 0 hp still kills outright, exactly as today. Otherwise,
-        // past the knee, a resist first, then a hold instead of the kill;
-        // at or below the knee (controlHoldRoundsFor 0) this falls through
-        // to the frozen-solid kill exactly as before this plan.
+        // User rulings 2026-09-28: "freeze should never kill outright. It
+        // should deal its damage and freeze an enemy for 1d4 rounds." — and
+        // "if it hits and resists, deal damage, but no freeze." The damage
+        // lands (above); a blow that drops the target to 0 hp is a normal
+        // kill. A survivor rolls its intel resist, then the RULES-18 control
+        // resist past the knee, then freezes for d4 rounds (freezeFoe) — the
+        // same tail as the hero's cast. No frozen-solid kill at any depth.
+        events.push({ type: "allySpellHit", ...base, effect: "damage", dmg: hit.applied });
         if (t.wp <= 0) {
-          events.push({ type: "allySpellHit", ...base, effect: "frozen", dmg: hit.applied });
-          t.frozen = true;
           killFoe(state, t, rng, events);
-          if (t.alive) t.frozen = false; // kill-twice revived it — a standing foe is not frozen
           return;
         }
-        const idx = state.combat.foes.indexOf(t);
-        if (resistControl(state, t, "freeze", sp.n, idx, rng, events)) {
-          events.push({ type: "allySpellHit", ...base, effect: "damage", dmg: hit.applied });
-          return;
-        }
-        if (controlHoldRoundsFor(state.floor.depth) > 0) {
-          events.push({ type: "allySpellHit", ...base, effect: "damage", dmg: hit.applied });
-          holdFoe(state, t, "frozen", sp.n, events);
-          return;
-        }
-        events.push({ type: "allySpellHit", ...base, effect: "frozen", dmg: hit.applied });
-        t.frozen = true;
-        killFoe(state, t, rng, events);
-        if (t.alive) t.frozen = false; // kill-twice revived it — a standing foe is not frozen
+        freezeFoe(state, t, sp.n, rng, events, { by: ally.name, dmg: hit.applied });
         return;
       }
       events.push({ type: "allySpellHit", ...base, effect: "damage", dmg: hit.applied });

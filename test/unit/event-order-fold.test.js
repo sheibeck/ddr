@@ -200,12 +200,17 @@ const SYNTHETIC = [
     { type: "spellHit", target: "Ned", dmg: 3 },
     { type: "foeKilled", name: "Ned", spGained: 3 },
   ]],
-  ["freeze-solid", "castSpell", [
+  // User rulings 2026-09-28 (declared, plan 79.2-01): a Freeze never freezes
+  // a foe solid (the engine no longer emits this case's old spellHit ->
+  // frozenSolid -> foeKilled chain); it lands its damage, then a survivor
+  // that fails its resist is frozen for a d4. This case replaced
+  // "freeze-solid" in the recorded corpus (that one case re-recorded).
+  ["freeze-hold", "castSpell", [
     { type: "spellThrown", spell: "Freeze", target: "Yeti", roll: 9, atLeast: 5, dieN: 10 },
     { type: "spellHit", target: "Yeti", dmg: 5 },
-    { type: "frozenSolid", target: "Yeti" },
-    { type: "foeKilled", name: "Yeti", spGained: 8 },
-    { type: "goldGained", amount: 4, why: "loot" },
+    { type: "resistFailed", target: "Yeti", spell: "Freeze", roll: 7, atLeast: 20, dieN: 20, intel: 1, faces: 1, freeze: true },
+    { type: "controlHeld", target: "Yeti", kind: "frozen", rounds: 3, source: "Freeze", freeze: true, dmg: 5 },
+    { type: "foeStillHeld", name: "Yeti", kind: "frozen", left: 2 },
   ]],
   ["resist-folds", "castSpell", [
     { type: "resistFailed", target: "Orc", roll: 3, atLeast: 12, dieN: 20 },
@@ -487,14 +492,16 @@ test("CMBUI-10: a single-target spell merges throw and outcome; Lightning gives 
     lineText({ type: "spellHit", target: "Ned", dmg: 3, spell: "Fire Bolt" }),
   ]);
 
-  // Freeze: frozen solid joins only when it comes right after the hit, and the kill right after it
+  // User rulings 2026-09-28 (re-pinned): a Freeze never freezes a foe solid;
+  // its d4 hold (controlHeld, freeze: true) joins the hit when it is the next
+  // line event after it, past a failed resist folded behind the hold.
   const frozen = evTexts("castSpell", [
     { type: "spellThrown", spell: "Freeze", target: "Yeti" },
     { type: "spellHit", target: "Yeti", dmg: 5 },
-    { type: "frozenSolid", target: "Yeti" },
-    { type: "foeKilled", name: "Yeti", spGained: 8 },
+    { type: "resistFailed", target: "Yeti", spell: "Freeze", roll: 7, atLeast: 20, dieN: 20, intel: 1, faces: 1, freeze: true },
+    { type: "controlHeld", target: "Yeti", kind: "frozen", rounds: 3, source: "Freeze", freeze: true, dmg: 5 },
   ]);
-  assert.deepEqual(frozen, ["Freeze — Yeti frozen solid"]);
+  assert.deepEqual(frozen, ["Freeze hits Yeti (5), frozen for 3 rounds"]);
 });
 
 test("CMBUI-10: a resistFailed folds only into an effect that directly follows it", () => {

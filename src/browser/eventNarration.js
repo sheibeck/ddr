@@ -699,7 +699,6 @@ export const EVENT_NARRATION = {
     // VOX-05 (Phase 79, plan 79-04): a bare event read "Your ally's The spell".
     const sp = e.spell ?? "spell";
     const t = e.target ?? "the foe";
-    if (e.effect === "frozen") return `<span class="hit">${who}'s ${sp} — ${t} frozen solid.</span> It will keep.`;
     if (e.effect === "asleep") return `<span class="hit">${who}'s ${sp} — ${t} nods off.</span> <span class="roll">${e.rounds ?? "?"} rounds.</span>`;
     if (e.effect === "weakened") return `<span class="hit">${who}'s ${sp} — the foes' arms go soft.</span>`;
     return `<span class="hit">${who}'s ${sp} hits ${t}</span> for <span class="roll">${e.dmg ?? 0}</span> hp.`;
@@ -1058,8 +1057,12 @@ export const EVENT_NARRATION = {
   // rolls the foe's resist (half its intel in faces on a d20), and every
   // roll, either way, gets its Oracle line with the roll. `by` names a
   // Joiner caster; the hero's own cast reads "your".
+  // User ruling 2026-09-28: a Freeze rolls its resist after the damage
+  // lands (`freeze: true`), and a resist stops only the ice.
   spellResisted: (e) =>
-    `<span class="miss">${e.target ?? "It"} resists ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}: no effect.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
+    e.freeze
+      ? `<span class="miss">${e.target ?? "It"} resists the freeze: the damage lands, the ice doesn't.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`
+      : `<span class="miss">${e.target ?? "It"} resists ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}: no effect.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
   resistFailed: (e) =>
     `${e.target ?? "It"} fails to resist ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -1215,8 +1218,12 @@ export const EVENT_NARRATION = {
   // The other half: an "indefinite" control (would have lasted the fight, or
   // ended the foe outright) holds for a few rounds instead, past the knee.
   // VOX-05 (Phase 79, plan 79-04): "1 round", never "1 rounds".
+  // User rulings 2026-09-28: a Freeze (`freeze: true`) holds for a rolled
+  // d4 at every depth, so its line is the plain count, never "not forever".
   controlHeld: (e) =>
-    `<span class="hit">${e.target ?? "It"} is ${CONTROL_HOLD_WORD[e.kind] ?? "held fast"} — ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}, not forever.</span>${e.source ? ` (${e.source})` : ""}`,
+    e.freeze
+      ? `<span class="hit">${e.target ?? "It"} is frozen for ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}.</span> Ice now, grudge later.${e.source ? ` (${e.source})` : ""}`
+      : `<span class="hit">${e.target ?? "It"} is ${CONTROL_HOLD_WORD[e.kind] ?? "held fast"} — ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}, not forever.</span>${e.source ? ` (${e.source})` : ""}`,
   foeStillHeld: (e) => `${e.name ?? "It"} is still ${CONTROL_HOLD_WORD[e.kind] ?? "held"}. <span class="roll">${e.left ?? "?"}</span> to go.`,
   foeHoldBroken: (e) => `<span class="beat">${e.name ?? "It"} shakes free and stands.</span>`,
   spellMissed: (e) => `<span class="miss">Missed ${e.target ?? "it"}.</span>`,

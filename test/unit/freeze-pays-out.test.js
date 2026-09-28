@@ -92,7 +92,11 @@ function fixedCombat(foes, overrides = {}) {
 
 // --- a successful Freeze kill pays out --------------------------------
 
-test("castSpell: a Freeze kill pays sp/coin/kill count exactly like a melee kill, and frozenSolid still narrates it", () => {
+// User rulings 2026-09-28 (re-pinned, plan 79.2-01): a Freeze never freezes
+// a foe solid — a Freeze whose damage drops the foe to 0 hp is a NORMAL
+// kill (it still pays exactly like a melee kill, the Phase 23 point), and
+// no frozenSolid narrates it.
+test("castSpell: a Freeze kill pays sp/coin/kill count exactly like a melee kill, as a normal kill (no frozenSolid)", () => {
   const foe = fixedFoe({ wp: 3, maxWP: 3, lvl: 1, intel: 1, lives: 1, type: "Beasts" });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Freeze"], level: 1 },
@@ -107,7 +111,7 @@ test("castSpell: a Freeze kill pays sp/coin/kill count exactly like a melee kill
   const types = events.map((e) => e.type);
   assert.ok(types.includes("spellThrown"));
   assert.ok(types.includes("spellHit"));
-  assert.ok(types.includes("frozenSolid"));
+  assert.ok(!types.includes("frozenSolid"), "a Freeze never freezes a foe solid");
   assert.ok(types.includes("foeKilled"));
   assert.ok(types.includes("goldGained"));
   assert.ok(types.includes("encounterCleared"));
@@ -119,20 +123,21 @@ test("castSpell: a Freeze kill pays sp/coin/kill count exactly like a melee kill
   assert.ok(state.c.sp > 0, "a Freeze kill pays skill points");
   assert.ok(state.c.gold > 50, "a Freeze kill pays coin");
   assert.equal(foe.alive, false);
-  assert.equal(foe.frozen, true);
+  assert.equal("frozen" in foe, false);
   assert.equal(foe.wp, 0);
 });
 
-test("castSpell: frozenSolid narrates before the kill is awarded (event order)", () => {
+test("castSpell: a killing Freeze reads hit, then the kill — no resist roll, no hold, no frozenSolid (event order)", () => {
   const foe = fixedFoe({ wp: 3, maxWP: 3, lvl: 1, intel: 1, lives: 1, type: "Beasts" });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Freeze"], level: 1 },
     combat: fixedCombat([foe]),
   });
   const events = castSpell(state, SPELL_IDX.Freeze, fakeRng([1, 3, 4, 5, 20, 1]), []);
-  const frozenIdx = events.findIndex((e) => e.type === "frozenSolid");
+  const hitIdx = events.findIndex((e) => e.type === "spellHit");
   const killedIdx = events.findIndex((e) => e.type === "foeKilled");
-  assert.ok(frozenIdx >= 0 && killedIdx >= 0 && frozenIdx < killedIdx);
+  assert.ok(hitIdx >= 0 && killedIdx >= 0 && hitIdx < killedIdx);
+  assert.equal(events.some((e) => ["frozenSolid", "controlHeld", "resistFailed", "spellResisted"].includes(e.type)), false);
 });
 
 // --- a missed Freeze pays nothing --------------------------------------
@@ -165,8 +170,12 @@ test("castSpell: a missed Freeze throw pays nothing (no frozenSolid, no foeKille
 
 // --- kill-twice (lives) creature: Freeze follows canon, not the old bypass --
 
+// User rulings 2026-09-28 (re-pinned): only a Freeze whose damage drops the
+// foe to 0 hp reaches killFoe now, so the foe starts at 3 hp (the d6 of 3
+// kills it once); killFoe's lives rule revives it to full, and nothing
+// freezes it.
 test("castSpell: a lives-2 (kill-twice) foe is revived by killFoe's lives rule instead of dying to Freeze", () => {
-  const foe = fixedFoe({ wp: 5, maxWP: 5, lvl: 1, intel: 1, lives: 2, asleep: 1 });
+  const foe = fixedFoe({ wp: 3, maxWP: 5, lvl: 1, intel: 1, lives: 2, asleep: 1 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Freeze"], level: 1 },
     combat: fixedCombat([foe]),
@@ -178,14 +187,15 @@ test("castSpell: a lives-2 (kill-twice) foe is revived by killFoe's lives rule i
   // zero rng — initiative is rolled once, Phase 51.
   const events = castSpell(state, SPELL_IDX.Freeze, fakeRng([1, 3]), []);
 
-  const frozenIdx = events.findIndex((e) => e.type === "frozenSolid");
+  const hitIdx = events.findIndex((e) => e.type === "spellHit");
   const revivedIdx = events.findIndex((e) => e.type === "foeRevived");
-  assert.ok(frozenIdx >= 0 && revivedIdx >= 0 && frozenIdx < revivedIdx);
-  assert.ok(!events.some((e) => e.type === "foeKilled"));
+  assert.ok(hitIdx >= 0 && revivedIdx >= 0 && hitIdx < revivedIdx);
+  assert.ok(!events.some((e) => e.type === "foeKilled" || e.type === "frozenSolid" || e.type === "controlHeld"));
 
   assert.equal(foe.alive, true);
   assert.equal(foe.wp, 5, "killFoe's lives rule restores the foe to full wp");
-  assert.equal(foe.frozen, false, "a standing (revived) foe is not frozen");
+  assert.ok(!foe.frozen, "a standing (revived) foe is not frozen");
+  assert.equal("held" in foe, false, "a revived foe is not held either");
   assert.equal(state.c.kills, 0);
 });
 

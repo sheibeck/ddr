@@ -289,13 +289,20 @@ for (const scenario of FIXTURE.scenarios) {
       // Beasts phobia triggers Afraid at Fight! — never a lost action. The
       // afraid caster still casts (spellThrown) and Freeze still pays out;
       // nothing is EVER refused for fear (no castRefused/strikeRefused).
+      // User rulings 2026-09-28 (re-pinned, plan 79.2-01): a Freeze never
+      // kills outright — the halved 2 damage leaves the Shriek standing, and
+      // the survivor is frozen for its d4 (2) rounds: no frozenSolid, no
+      // foeKilled, and the fight goes on.
       assert.ok(allEventTypes.includes("phobiaAfraid"), "the Illusionist's Beasts phobia triggered Afraid");
       assert.ok(allEventTypes.includes("spellThrown"), "the afraid caster still casts");
-      assert.ok(allEventTypes.includes("frozenSolid"), "the frozen foe was narrated");
-      assert.ok(allEventTypes.includes("foeKilled"), "the Freeze kill paid out via killFoe");
+      assert.ok(allEventTypes.includes("spellHit"), "the Freeze hit");
+      assert.ok(allEventTypes.includes("controlHeld"), "the survivor was frozen for its d4");
+      assert.ok(!allEventTypes.includes("frozenSolid"), "a Freeze never freezes a foe solid");
+      assert.ok(!allEventTypes.includes("foeKilled"), "the Freeze did not kill");
       assert.ok(!allEventTypes.includes("castRefused"), "nothing is ever refused for fear");
       assert.ok(!allEventTypes.includes("strikeRefused"), "nothing is ever refused for fear");
-      assert.equal(engineState.combat, null);
+      assert.notEqual(engineState.combat, null);
+      assert.deepEqual(engineState.combat.foes[0].held, { kind: "frozen", left: 1 });
     } else if (scenario.name === "heal") {
       assert.ok(allEventTypes.includes("healed"));
     } else if (scenario.name === "potion") {

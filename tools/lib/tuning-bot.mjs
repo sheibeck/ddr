@@ -35,9 +35,6 @@ import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, i
 import { isReady } from "../../engine/effects.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { SPELLS, RACES, ABILITY_BY_ID, WEAPONS } from "../../content/index.js";
-// RULES-18 (Phase 75.3): chooseSpell / hasCastableKillTier read the hold dial
-// so Freeze is a KILL-tier spell only where it still kills.
-import { controlHoldRoundsFor } from "../../engine/difficulty.js";
 
 // The four cardinal directions the movement domain understands. Defined
 // locally so this module only ever talks to the engine through its public
@@ -380,23 +377,21 @@ function lowestCastableUtilitySpellIdx(state) {
  * KILL tiers are byte-identical in both modes. In `offensive` mode every
  * tier is exactly as documented below (today's table, unchanged).
  *
- *   KILL    (400+): Freeze's own `onHit` data flag (Phase 40 SPELL-01, never
- *           the spell's name, per research Pitfall 2) 410 (frozenSolid on
- *           hit) — only where `controlHoldRoundsFor(depth) === 0` (floors
- *           1-12 at the shipped dials). RULES-18 (Phase 75.3): past the knee
- *           a landed Freeze HOLDS the foe for a few rounds instead of
- *           killing it, so there it scores in the DISABLE tier at Stun's
- *           score (230 offensive / 450 defensive), allowed against a single
- *           foe, and `hasCastableKillTier` ignores it (the bot plays the new
- *           rules); `kind==="death"` 405 only when the post-cost wp stays
+ *   KILL    (400+): user rulings 2026-09-28 — Freeze (its own `onHit` data
+ *           flag, never the spell's name) is a KILL spell at no depth any
+ *           more: a landed Freeze deals its damage and HOLDS the foe for d4
+ *           rounds, so it scores in the DISABLE tier at Stun's score (230
+ *           offensive / 450 defensive), allowed against a single foe, and
+ *           `hasCastableKillTier` ignores it (the bot plays the new rules);
+ *           `kind==="death"` 405 only when the post-cost wp stays
  *           above the flee line
  *           (`c.wp - 25 > fleeAt * c.maxWP` — the engine itself refuses at
  *           wp<=26 anyway); `kind==="turn"` 402 only vs Walking Dead;
  *           `kind==="gate"` 402 only vs Demons/Walking Dead.
  *   DAMAGE  (300 + expected damage, ties -> higher sp.lvl): expected(sp) =
  *           sp.dmg.n * (sp.dmg.sides + 1) / 2 + sp.dmg.bonus.
- *           `kind==="thrown"` (Mangle/Lightning/Fireball — Freeze is already
- *           KILL) or `kind==="dot"` (Ice, Phase 40): Lightning's own `aoe`
+ *           `kind==="thrown"` (Mangle/Lightning/Fireball — Freeze scores in
+ *           DISABLE) or `kind==="dot"` (Ice, Phase 40): Lightning's own `aoe`
  *           data flag (never the spell's name) multiplies the expected
  *           damage by liveFoes(state).length (it hits every foe).
  *           `kind==="volley"` (Fireballs) x4.5 (mean d8 balls). `kind==="acid"`
@@ -478,9 +473,8 @@ function hasCastableKillTier(state, ctx) {
   const fleeAt = liveFoesHaveAbilities(state) ? ctx.opts.casterFleeThreshold : ctx.opts.fleeThreshold;
   for (const sp of SPELLS) {
     if (!canCast(state, sp)) continue;
-    // RULES-18 (Phase 75.3): past the knee a Freeze holds instead of killing,
-    // so it is a KILL-tier spell only where controlHoldRoundsFor(depth) is 0.
-    if (sp.onHit === "freeze" && controlHoldRoundsFor(state.floor?.depth) === 0) return true;
+    // User rulings 2026-09-28: a Freeze never kills outright at any depth
+    // (its damage, then a d4-round hold), so it is never a KILL-tier spell.
     if (sp.kind === "death" && C && c.wp - 25 > fleeAt * c.maxWP) return true;
     if (sp.kind === "turn" && C && C.type === "Walking Dead") return true;
     if (sp.kind === "gate" && C && (C.type === "Demons" || C.type === "Walking Dead")) return true;
@@ -528,14 +522,13 @@ export function chooseSpell(state, ctx) {
     ) {
       score = 450;
       tier = "rotation";
-    } else if (sp.onHit === "freeze" && controlHoldRoundsFor(state.floor?.depth) === 0) {
-      score = 410;
-      tier = "kill";
     } else if (sp.onHit === "freeze") {
-      // RULES-18 (Phase 75.3): past the knee a landed Freeze is a
-      // controlHoldRoundsFor(depth)-round hold, not a kill — scored exactly
-      // like Stun's DISABLE (230 offensive / 450 defensive) and, like the
-      // hold it is, allowed against a single foe (no two-live-foe gate).
+      // User rulings 2026-09-28: a landed Freeze is its damage plus a
+      // d4-round hold at EVERY depth, never a kill — scored exactly like
+      // Stun's DISABLE (230 offensive / 450 defensive) and, like the hold it
+      // is, allowed against a single foe (no two-live-foe gate). RULES-18
+      // scored it this way past the knee only; the frozen-solid KILL tier
+      // at or below the knee left with the rule.
       if (!C) continue;
       score = mode === "defensive" ? 450 : 230;
       tier = "disable";

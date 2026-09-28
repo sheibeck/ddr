@@ -217,10 +217,12 @@ test("a freeze/gas use with no kill leaves combat open", () => {
   const freezeStaff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
   const foe = fixedFoe({ wp: 20, maxWP: 20 });
   const state = fixedState({ c: { cls: "Magic User", weapon: "Birch Staff", staff: freezeStaff, items: [] }, combat: fixedCombat([foe]) });
-  const events = useItem(state, { slot: "weapon" }, fakeRng([]), [], NOW);
+  // User rulings 2026-09-28 (re-pinned): the Birch Staff's freeze is a
+  // frozen hold for a rolled d4 (here 3), never asleep 99.
+  const events = useItem(state, { slot: "weapon" }, fakeRng([3]), [], NOW);
   assert.notEqual(state.combat, null);
   assert.equal(state.combat.foes[0].alive, true);
-  assert.equal(state.combat.foes[0].asleep, 99);
+  assert.deepEqual(state.combat.foes[0].held, { kind: "frozen", left: 3 });
   assert.equal(events.some((e) => e.type === "encounterCleared"), false);
 
   const gasStaff = { kind: "staff", n: "Test Gas Staff", use: "gas" };

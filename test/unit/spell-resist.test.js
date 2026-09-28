@@ -285,18 +285,26 @@ function muMember(overrides = {}) {
   };
 }
 
-test("a Joiner's Freeze that the target resists: spellResisted by the Joiner, no throw, the charge spent", () => {
+// User rulings 2026-09-28 (re-pinned, plan 79.2-01): "if it hits and
+// resists, deal damage, but no freeze." A Joiner's Freeze throws first; the
+// resist is rolled only after a hit's damage lands, and it stops only the
+// freeze. (A miss rolls no resist.)
+test("a Joiner's Freeze that hits a target that resists: the damage lands, spellResisted by the Joiner (freeze), no hold, the charge spent", () => {
   const acts = findActs("Freeze", [[0, true]], { 0: 16 }, "Ada");
   const s = fightState({ acts, foes: [foe("F1", { intel: 16 })], party: [muMember({ grimoire: ["Freeze"] })] });
   s.combat.allies = [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Wizard", wp: 20, maxWP: 20 }];
-  const events = alliesTurn(s, fakeRng(PAD(20)), []);
+  // to-hit d10 (raw 5 -> 6, hits), d6 = 4, the hold's d4 = 3.
+  const events = alliesTurn(s, fakeRng([5, 4, 3, ...PAD(20)]), []);
   const res = events.find((e) => e.type === "spellResisted");
   assert.ok(res);
   assert.equal(res.by, "Ada");
   assert.equal(res.spell, "Freeze");
   assert.equal(res.faces, 8);
-  assert.equal(events.some((e) => e.type === "allyCast" || e.type === "allySpellHit"), false);
-  assert.equal(s.combat.foes[0].wp, 30);
+  assert.equal(res.freeze, true);
+  assert.ok(events.some((e) => e.type === "allySpellHit" && e.effect === "damage" && e.dmg === 4));
+  assert.ok(events.findIndex((e) => e.type === "allySpellHit") < events.indexOf(res), "the resist follows the damage");
+  assert.equal(s.combat.foes[0].wp, 26);
+  assert.equal("held" in s.combat.foes[0], false);
   assert.equal(s.party[0].spellsUsed, 1);
 });
 
@@ -321,16 +329,18 @@ test("a scroll's free Fireball follows the rule: a resisting target takes nothin
   assert.equal(s.combat.foes[0].wp, 30);
 });
 
-test("the Birch Staff's freeze is a spell on each foe it reaches: the one that resists stays awake", () => {
+// User rulings 2026-09-28 (re-pinned): the staff's freeze is a frozen hold
+// for a rolled d4 (never a sleep); the resisting foe is not held.
+test("the Birch Staff's freeze is a spell on each foe it reaches: the one that resists is not frozen", () => {
   const acts = findActs("Birch Staff", [[0, true], [1, false]]);
   const s = fightState({ acts, foes: [foe("F1"), foe("F2"), foe("F3")] });
   const it = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };
   s.c.weapon = it.n;
   s.c.staff = it;
-  const events = useItem(s, { slot: "weapon" }, fakeRng(PAD(20)), [], () => 0);
+  const events = useItem(s, { slot: "weapon" }, fakeRng([2, 3, ...PAD(20)]), [], () => 0);
   assert.ok(events.some((e) => e.type === "spellResisted" && e.target === "F1" && e.spell === "Birch Staff"));
-  assert.equal(s.combat.foes[0].asleep, 0);
-  assert.ok(s.combat.foes[1].asleep > 0);
+  assert.equal("held" in s.combat.foes[0], false);
+  assert.deepEqual(s.combat.foes[1].held, { kind: "frozen", left: 3 });
 });
 
 test("the Pine Staff's fireballs skip a foe that resisted them", () => {

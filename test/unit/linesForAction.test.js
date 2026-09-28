@@ -372,16 +372,27 @@ test("FEED-03: every YOU-family output tone is hit/miss and text starts with 'Yo
 
 // ─── Spell chain (probe FEED-06 adjacency, probe FEED-06 ordering) ──────────
 
-test("probe FEED-06 adjacency: Freeze hit + frozenSolid + foeKilled fold into one combined line", () => {
+// User rulings 2026-09-28 (re-pinned, plan 79.2-01): a Freeze never freezes
+// a foe solid. Its hit, the failed resist and the d4 hold fold into one
+// line; a killing Freeze reads like any other spell kill (" · felled").
+test("probe FEED-06 adjacency: Freeze hit + failed resist + d4 hold fold into one combined line", () => {
   const events = [
     { type: "spellThrown", spell: "Freeze", target: "Dante", roll: 3, need: 6 },
     { type: "spellHit", target: "Dante", dmg: 9, mult: 1 },
-    { type: "frozenSolid", target: "Dante" },
-    { type: "foeKilled", name: "Dante", spGained: 10 },
+    { type: "resistFailed", target: "Dante", spell: "Freeze", roll: 4, atLeast: 18, dieN: 20, intel: 5, faces: 3, freeze: true },
+    { type: "controlHeld", target: "Dante", kind: "frozen", rounds: 2, source: "Freeze", freeze: true, dmg: 9 },
   ];
   const out = linesForAction("castSpell", events, {});
   assert.equal(out.length, 1);
-  assert.equal(out[0].text, "Freeze — Dante frozen solid");
+  assert.equal(out[0].text, "Freeze hits Dante (9), frozen for 2 rounds");
+
+  const kill = linesForAction("castSpell", [
+    { type: "spellThrown", spell: "Freeze", target: "Dante", roll: 3, need: 6 },
+    { type: "spellHit", target: "Dante", dmg: 9, mult: 1 },
+    { type: "foeKilled", name: "Dante", spGained: 10 },
+  ], {});
+  assert.equal(kill.length, 1);
+  assert.equal(kill[0].text, "Freeze hits Dante (9) · felled");
 });
 
 test("probe FEED-06 adjacency: Fireball spellHit + foeKilled fold into a felled suffix", () => {

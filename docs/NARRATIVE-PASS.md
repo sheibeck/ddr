@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz.
 
 ## How to ask for changes
 
@@ -40,12 +40,12 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | Surface | Keys judged | Changed | Kept word for word | New | Rows on this page | Lines removed |
 |---|---:|---:|---:|---:|---:|---:|
 | blurbs (class and race blurbs, and their mechanical footers) | 39 | 21 | 18 | 100 | 121 | 0 |
-| oracle (the Oracle log) | 327 | 93 | 234 | 0 | 99 | 1 |
-| rail (rail lines and the fight log) | 287 | 76 | 211 | 0 | 77 | 1 |
+| oracle (the Oracle log) | 327 | 93 | 234 | 0 | 102 | 2 |
+| rail (rail lines and the fight log) | 287 | 77 | 210 | 0 | 80 | 2 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 0 | 15 | 0 |
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
 | combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 3 | 24 | 1 |
-| items (item, gear and store text) | 110 | 10 | 100 | 0 | 13 | 0 |
+| items (item, gear and store text) | 110 | 11 | 99 | 0 | 14 | 0 |
 | spells (spells, abilities and skills) | 87 | 23 | 64 | 0 | 23 | 0 |
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
 | death (epitaphs and death) | 120 | 23 | 97 | 0 | 23 | 14 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 1 | 16 | 0 | 56 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **310** | **1561** | **113** | **503** | **79** |
+| **Total** | **1871** | **312** | **1559** | **113** | **510** | **81** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -186,13 +186,14 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## oracle — the Oracle log
 
-99 changed lines.
+102 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
 | `oracle:abilityLearned`<br>abilityLearned — a level-up rolls a new ability from the level pool | New trick: Viper — | New trick: Viper. | **79-11** (hygiene): An event with no ability text left a dangling dash; the dash now appears only before real text. |
 | `oracle:acidApplied`<br>acidApplied — the hero's Acid lands on a foe | Viper starts to dissolve. 1 rounds of it. | Viper starts to dissolve. 1 round of it. | **79-08** (reads aloud): "1 rounds" is now "1 round". |
 | `oracle:allySpellHit`<br>allySpellHit with no spell name on the event | Your ally's The spell hits the foe for 0 hp. | Your ally's spell hits the foe for 0 hp. | **79-04** (hygiene, reads aloud): The fallback name was capitalised mid-sentence, so a nameless cast read "Your ally's The spell". |
+| `oracle:allySpellHit`<br>allySpellHit — engine/combat.js#allyCast (a Joiner's cast) | Viper's Heal — Viper frozen solid. It will keep. | *(removed)* | **q-260928-frz** (accurate to the engine): User ruling 2026-09-28: a Joiner's Freeze never freezes a foe solid any more. Its hit reads as damage ("Viper's Freeze hits Viper for 6 hp."), and the d4 hold that follows is its own controlHeld line, so the frozen-solid branch is retired. |
 | `oracle:armorDestroyed`<br>armorDestroyed — engine/combat.js#applyFoeDamageToPlayer | Your armor gives out. | Your armour gives out. | **79-12** (naming ruling): House spelling: the player reads "armour" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word. |
 | `oracle:armorPatched`<br>armorPatched — Sewing or a Master of Arms mends worn armour overnight | poisonedEdge: +2 back into your kit. | poisonedEdge: +2 armour patched back into your kit. | **79-11** (what happened, to whom): A bare "+2" never said what came back; it is armour, as the rail twin already said. |
 | `oracle:armorSoaked`<br>armorSoaked — engine/combat.js#applyFoeDamageToPlayer | Your armor takes 0 from it so you do not have to. | Your armour takes 0 from it so you do not have to. | **79-12** (naming ruling): House spelling: the player reads British spellings ("armour", "honour", "rumour"), 79-12's decision by the corpus majority; the line is otherwise word for word. |
@@ -206,6 +207,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:chestLocked`<br>chestLocked — the lock roll on a chest fails | Not today. The lock wins this round. | The lock holds, and the box stays shut for good. Not today, and not any other day. | **79-11** (accurate to the engine, the joke after the fact): A chest gets one lock roll and its tile is cleared first, so "this round" promised a retry that never comes; the fact now comes before the joke. |
 | `oracle:cloakRegenerated`<br>cloakRegenerated { gained 0 } — the Cloak of Regeneration used at full hp | Flesh knits itself back — +2 hp. Ask again in twenty squares. | The cloak finds nothing to knit. You were already at full hp. Ask again in twenty squares. | **79-02** (honest number, accurate to the engine): Used at full hp it printed '+0 hp'; it now says there was nothing to knit. |
 | `oracle:controlHeld`<br>controlHeld { rounds 1 } — a control past the knee holds for a few rounds | Viper is held fast — 1 rounds, not forever. | Viper is held fast — 1 round, not forever. | **79-04** (hygiene): A one-round hold printed "1 rounds". |
+| `oracle:controlHeld`<br>controlHeld with freeze: true — engine/combat.js#holdFoe via freezeFoe (a landed Freeze or the Birch Staff) | *(new line)* | Viper is frozen for 3 rounds. Ice now, grudge later. | **q-260928-frz** (what happened, to whom, accurate to the engine, the joke after the fact): User ruling 2026-09-28: "freeze should never kill outright. It should deal its damage and freeze an enemy for 1d4 rounds." A Freeze now holds for its rolled d4 at every depth, so the line states the rounds plainly (never "not forever", which was the past-floor-12 hold's wording), then the joke. |
 | `oracle:cooked`<br>cooked { wp 4, gained 1 } — a Cooking hero eats the beast 1 hp below full | You cook what is left. +4 hp, +1 ration. | You cook what is left. +1 hp (worth 4, back to full), +1 ration. | **79-02** (honest number, accurate to the engine): The meal printed its full portion; it now prints the HP it restored and what the portion was worth. |
 | `oracle:cutpursed`<br>cutpursed { member } — a Joiner's Cutpurse lifts coin off a foe | the companion: You lift 8 wilmst off Viper mid-fight. It has other problems. | the companion lifts 8 wilmst off Viper mid-fight, into your purse. It has other problems. | **79-04** (accurate to the engine, what happened, to whom): A Joiner's cutpurse read "You lift", but the Joiner took the coin and it goes into the hero's purse. |
 | `oracle:damageHalved`<br>damageHalved with no foe name on the event | The pendant drinks half of that's blow before it reaches you. | The pendant drinks half of the blow before it reaches you. | **79-04** (hygiene, reads aloud): A nameless foe read "that's blow". |
@@ -264,6 +266,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:spGained`<br>spGained { reason parley } — experience for talking your way out | Talking your way out is worth 8 8 experience points. | Talking your way out is worth 8 experience points. | **79-04** (hygiene): The count printed twice, once in a roll span and once in the phrase. |
 | `oracle:spellHit`<br>spellHit — the hero's thrown spell lands | Hit. 6 hp (×2). | Hit. Viper takes 6 hp (the roll ×2, for your level). | **79-08** (what happened, to whom, accurate to the engine): The line never named who took it, and "6 hp (×2)" read as 12 when the level multiplier is already inside the 6. |
 | `oracle:spellResisted`<br>spellResisted — engine/combat.js#foeResistsSpell (every spell cast on a foe) | Viper shrugs it off. 7 vs 12–20 (intel 5). | Viper resists your Heal: no effect. 7 vs 12–20 (intel 5). | **q-260927-rsx** (what happened, to whom, accurate to the engine): User ruling 2026-09-27 (quick 260927-rsx): every spell cast on a foe can be resisted, and a resisted spell has no effect. The line now names whose spell it was (yours, or a Joiner's) and states the outcome before the roll. |
+| `oracle:spellResisted`<br>spellResisted with freeze: true — engine/combat.js#freezeFoe (a Freeze that hit, from the hero, a scroll or a Joiner) | *(new line)* | Viper resists the freeze: the damage lands, the ice doesn't. 7 vs 12–20 (intel 5). | **q-260928-frz** (what happened, to whom, accurate to the engine): User ruling 2026-09-28: "if it hits and resists, deal damage, but no freeze." A Freeze rolls its resist only after the hit's damage lands, so its resist line can no longer say "no effect": it says the damage landed and only the ice was shrugged off, then the roll. |
 | `oracle:spellSchoolLocked`<br>spellSchoolLocked — a known spell whose school the sub-class has not opened yet | Heal is not open to you yet. | Heal's school opens to you at level 5; you are 10. | **79-08** (what happened, to whom): The refusal never said why; it now names the level the school opens at and yours, like spellAboveLevel. |
 | `oracle:staffRecharged`<br>staffRecharged — a staff regains a charge | Crystal Staff hums. 2/5. | Crystal Staff hums: a charge is back (2/5). | **79-11** (what happened, to whom, hygiene): A bare "2/5" never said what it counted, and a bare event printed "?/?". |
 | `oracle:storeOpened`<br>storeOpened — the store opens | The shop is open. (A discount, as always.) | The shop is open. (Half price, as always.) | **79-11** (what happened, to whom, honest number): The discount never said how much (half), and a Pickpocket's ×1.25 buy and ×0.75 sell prices were on the rail but missing from the Oracle. |
@@ -292,7 +295,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail — rail lines and the fight log
 
-77 changed lines.
+80 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -300,6 +303,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:abilityLearned`<br>abilityLearned — a level-up rolls a new ability from the level pool | New trick: Viper — | New trick: Viper. | **79-11** (hygiene): The rail twin of the Oracle fix: no dangling dash when the event carries no text. |
 | `rail:acidApplied`<br>acidApplied — the hero's Acid lands on a foe | Viper starts to dissolve (3). | Viper starts to dissolve, 3 rounds. | **79-08** (what happened, to whom): A bare "(3)" did not say it counts rounds. |
 | `rail:afflictionTick`<br>afflictionTick — a poison or disease takes its hp on a step | Poison (−2 hp). | Poison: still in you (−2 hp). | **79-11** (what happened, to whom, accurate to the engine): The rail printed "(−0 hp)" where its Oracle twin says the sickness has nothing left to take and you are on one hp; the two now say the same thing, and a tick says what did it. |
+| `rail:allySpellHit`<br>allySpellHit — engine/combat.js#allyCast (a Joiner's cast) | Viper casts Heal — Viper frozen solid | *(removed)* | **q-260928-frz** (accurate to the engine): User ruling 2026-09-28: the rail twin. A Joiner's Freeze reads its damage ("Viper casts Freeze — Viper (6)"), and the hold is its own "frozen for N rounds" line; the frozen-solid branch is gone. |
 | `rail:battleRoarRaised`<br>battleRoarRaised — the hero or a Joiner uses Battle Roar | Loud enough. Two rounds of it. | Foes have two fewer faces to hit your side, for two rounds. | **79-04** (what happened, to whom): The rail line never said what the roar does; it now states the two faces it takes off every foe. |
 | `rail:beastsSoothed`<br>beastsSoothed { count 2 } — a Bard's Soothe the Savage clears a Beasts encounter | 2 stand down. | 2 beasts stand down and leave. | **79-04** (what happened, to whom): The rail twin now names the beasts and that they leave. |
 | `rail:blinded`<br>blinded — the hero's Blind lands on a foe | Viper cannot see a thing for 3 rounds. | Viper is blind for 3 rounds: it hits only on its top face. | **79-08** (what happened, to whom): The rail twin of the Oracle line, which now states what blindness does. |
@@ -310,6 +314,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:chestLocked`<br>chestLocked — the lock roll on a chest fails | The lock wins this round. | The lock holds. The box stays shut for good. | **79-11** (accurate to the engine): The rail twin of the Oracle fix: a failed lock is final. |
 | `rail:cloakRegenerated`<br>cloakRegenerated { gained 0 } — the Cloak of Regeneration used at full hp | Flesh knits +2 hp. | Cloak: you were already at full hp. | **79-02** (honest number, accurate to the engine): Used at full hp it printed '+0 hp'; it now says there was nothing to knit. |
 | `rail:controlHeld`<br>controlHeld { rounds 1 } — a control past the knee holds for a few rounds | Viper held 1 rounds. | Viper held 1 round. | **79-04** (hygiene): A one-round hold printed "1 rounds". |
+| `rail:controlHeld`<br>controlHeld with freeze: true — engine/combat.js#holdFoe via freezeFoe | *(new line)* | Viper frozen for 3 rounds. | **q-260928-frz** (what happened, to whom, accurate to the engine): User ruling 2026-09-28: the rail says "frozen for N rounds". On the hero's own cast the rail folds the hit, a failed resist and this hold into one line ("Freeze hits Viper (4), frozen for 3 rounds"), so the damage and the rounds read together. |
 | `rail:cooked`<br>cooked { wp 4, gained 1 } — a Cooking hero eats the beast 1 hp below full | Cooked: +4 hp, +1 ration. | Cooked: +1 hp (back to full), +1 ration. | **79-02** (honest number, accurate to the engine): The meal printed its full portion; it now prints the HP it restored and what the portion was worth. |
 | `rail:cutpursed`<br>cutpursed { member } — a Joiner's Cutpurse lifts coin off a foe | the companion: You lift 8 wilmst off Viper. | the companion lifts 8 wilmst off Viper for you. | **79-04** (accurate to the engine, what happened, to whom): The rail twin now credits the Joiner who lifted the coin. |
 | `rail:damageHalved`<br>damageHalved with no foe name on the event | The pendant halves that's blow. | The pendant halves the blow. | **79-04** (hygiene, reads aloud): A nameless foe read "that's blow". |
@@ -359,6 +364,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:smokeThrown`<br>smokeThrown — the hero or a Joiner uses Smoke | Gone. They need a natural 1 to find you (a 1–2 if you insulted them). | Gone. Foes find you only on their die's top face (top two if insulted) for two rounds, and a run just works. | **79-04** (roll-high (ROLL-04), accurate to the engine): The rail twin of the Oracle fix: faces, not a roll-under face count. |
 | `rail:spellHit`<br>spellHit — the hero's thrown spell lands | Heal hits Viper (6) ×2 | Heal hits Viper (6, the roll ×2 for your level) | **79-08** (accurate to the engine): "(6) ×2" read as 12 when the multiplier is already inside the 6. |
 | `rail:spellResisted`<br>spellResisted — engine/combat.js#foeResistsSpell (every spell cast on a foe) | Viper resists Heal | Viper resists your Heal: no effect | **q-260927-rsx** (what happened, to whom): User ruling 2026-09-27: a resisted spell does nothing to that foe, damage spells included; the rail says so and says whose spell it was, now that a Joiner's and a staff's casts are resisted too. |
+| `rail:spellResisted`<br>spellResisted with freeze: true — engine/combat.js#freezeFoe | *(new line)* | Viper resists the freeze: the damage lands, the ice doesn't | **q-260928-frz** (what happened, to whom, accurate to the engine): User ruling 2026-09-28: the rail twin of the Oracle line. A resisted Freeze still did its damage, so the rail must not read "no effect". |
 | `rail:spellSchoolLocked`<br>spellSchoolLocked — a known spell whose school the sub-class has not opened yet | Heal is not open to you yet. | Heal's school opens to you at level 5; you are 10. | **79-08** (what happened, to whom): The rail twin of the Oracle line. |
 | `rail:staffRecharged`<br>staffRecharged — a staff regains a charge | Crystal Staff hums. 2/5. | Crystal Staff hums: a charge is back (2/5). | **79-11** (what happened, to whom, hygiene): The rail twin of the Oracle fix. |
 | `rail:storeOpened`<br>storeOpened — the store opens | Shop open. (a discount, as always) | Shop open. (half price, as always) | **79-11** (what happened, to whom, honest number): The rail twin of the Oracle fix: the discount says how much. |
@@ -437,7 +443,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## items — item, gear and store text
 
-13 changed lines.
+14 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -447,6 +453,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `content:CLOAKS.Cloak of Invisibility.txt`<br>a cloak's item text | invisible for 50 squares, once every 100 | invisible for 50 squares, once every 100: foes hit you only on their die's top face (the top two faces if you insulted them) | **79-05** (roll-high (ROLL-04), what happened, to whom): It said invisible without saying what that buys; the engine lets foes hit only on their die's top face, the top two if insulted. |
 | `content:JEWELRY.Anklet of Invisibility.txt`<br>a jewelry piece's item text | used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight | used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight | **79-05** (roll-high (ROLL-04)): "Needs two better" was roll-under shorthand; the engine takes two faces off every foe's winning range, so the text says two fewer faces. |
 | `content:POTIONS.Invisible.txt`<br>a potion's item text | invisible for a day | invisible for a day: foes hit you only on their die's top face (the top two faces if you insulted them) | **79-05** (what happened, to whom): It said invisible without saying what that buys; the engine lets foes hit only on their die's top face, the top two if insulted. |
+| `content:STAVES.Birch Staff.txt`<br>the Birch Staff's item text | freezes up to 2 squares of opponents indefinitely; past floor 12, indefinitely means three rounds | freezes up to 2 squares of opponents for d4 rounds apiece, unless they resist; then they are just cold and angry | **q-260928-frz** (what happened, to whom, accurate to the engine): User rulings 2026-09-28: the Birch Staff's freeze follows the Freeze spell, a d4-round freeze on each foe it reaches unless that foe resists, at every depth. "Indefinitely" is no longer true anywhere, so the text states the d4 and the resist, then echoes Freeze's own "just cold and angry". |
 | `content:STAVES.Crystal Staff.txt`<br>a staff's item text | party invisible d10+5 squares; enemies need a 1 | party invisible d10+5 squares: foes hit only on their die's top face (the top two faces if you insulted them) | **79-05** (roll-high (ROLL-04)): The old text was a roll-under face count; foes roll high on a die that scales with their level, so it now names the top face, and the insulted top two, as the engine's override does. |
 | `raw:engine/economy.js#openStore`<br>inline literal in engine/economy.js#openStore | 1–5 on d10 against any lock | 6–10 on d10 against any lock | **79-05** (roll-high (ROLL-04)): The store's Lockpicks carry the same text as a found set: five winning faces on a d10 rolled high, 6–10. |
 | `raw:engine/economy.js#openStore`<br>inline literal in engine/economy.js#openStore | opens boxes on 1–5 | opens boxes on 6–10 | **79-05** (roll-high (ROLL-04)): The store row's line states the same roll-high range as the item it sells. |

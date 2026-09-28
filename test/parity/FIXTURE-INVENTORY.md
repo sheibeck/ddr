@@ -5329,3 +5329,89 @@ segment's d20 at 1 or 2 (a leap's 2d6 is already at least 2, and
 | Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
 |---|---|---|---|---|---|---|
 | *(none — measured zero)* | | | | | | |
+### Freeze deals damage and freezes 1d4 rounds (user ruling 2026-09-28)
+
+Plan 79.2-01, folded in before the START measurement, base `992b1dfa` (the
+min-1 fall rule above).
+
+**The rules.** "freeze should never kill outright. It should deal its damage
+and freeze an enemy for 1d4 rounds." Then: "if it hits and resists, deal
+damage, but no freeze." Every Freeze (the hero, a scroll's free cast, a
+Joiner's `allyCast`, the Birch Staff) runs `engine/combat.js#freezeFoe`
+after its hit: a kill is a normal kill (no `frozenSolid`); a survivor draws
+one new d4 (`FREEZE_HOLD_DIE`), rolls its intel resist (now after the
+damage, never before the throw; a resist stops only the freeze), then the
+RULES-18 control resist past the knee, then is held `frozen` for the d4's
+rounds at every depth. The staff has no to-hit or damage and now holds for
+a d4 instead of `asleep = 99`. See docs/ROLL-LEDGER.md for the draw order.
+
+**The predictor.** A replay moves only if it casts Freeze or uses the Birch
+Staff. The one parity replay that casts Freeze is `action-script.magic.json`'s
+`cast-damage` (seed 8, the afraid Illusionist's Freeze on the Shriek, the
+FID-06 record). Prediction: that one record moves (the Shriek survives the
+halved 2 damage and is frozen instead of killed and paid out).
+
+**The live scan (measured at the base, then with the rule).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical before and
+   after. The generated roster block above is not edited.
+2. **Declared record moved: `action-script.magic.json#cast-damage`.** Its
+   action-path record is re-measured live (seed 8 replayed): the Freeze
+   hits (roll 10 vs 8+, afraid −3) for 2, the Shriek stands at 1 hp, draws
+   the d4 (2), fails its intel resist (13 vs 20) and is frozen for 2 rounds.
+   Nothing dies, so killFoe's payouts are gone: sp 0, gold 50, kills 0
+   (each now equal to the prototype's, so `fields` narrows to `rations`,
+   4 → 6). `phase` gains `79.2` and `requirements` gains
+   `user-ruling-2026-09-28`. magic-parity's and full-suite's cast-damage
+   assertions are re-pinned to the new events (a `controlHeld`, no
+   `frozenSolid`, no `foeKilled`, combat still on).
+3. **The RULES-16/17/18 exposure guard**
+   (`test/parity/divergence-records.test.js`): a Freeze hold is a
+   `controlHeld` with `freeze: true` (plus its `foeStillHeld` /
+   `foeHoldBroken` of kind "frozen") at any depth, which is not a
+   control-at-depth event. The guard excludes those events and the foe's
+   `held` flag ONLY at a site a Phase 79.2 record declares, and asserts the
+   declared set is exactly `FREEZE792_EXPECTED_HOLDERS`
+   (`["action-script.magic.json#cast-damage"]`) and that each one really
+   shows a Freeze hold (not vacuous). The Phase 75.3 declared set stays empty.
+4. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+   `test/parity/prototype-master.js.txt` is untouched
+   (`a1f4d0dc29782218d8e5aab65bc5989c33f917f0`), as is
+   `test/parity/harness/comparables.js`.
+5. **State pins** (`test/unit/roll-high-state-pins.test.js`): five of eight
+   labels moved, each traced (per-bot-step state hash against `git archive
+   992b1dfa`) to its first Freeze:
+
+   | Label | First divergence (bot step) | Cause | actions / dead / depth |
+   |---|---|---|---|
+   | solo-1 | 103 | the hero's Freeze on a China Wolf: 6 damage, frozen 3 (was frozen solid and killed) | 400 / false / 5 → 4 |
+   | solo-2 | 9 | the hero's Freeze on Philly: 2 damage, frozen 3 (was frozen solid) | 400 → 298 / false → true / 4 → 3 |
+   | solo-magicuser-sorcerer | 100 | the hero's Freeze on Drekk: resisted before the throw, now the 1 damage lands and the resist stops only the freeze | 400 / false / 3 → 4 |
+   | party-1 | 186 | the Joiner Aldric Corrin's Freeze on a Gremlin: 6 damage, then resisted (was frozen solid and killed) | 400 / false / 4 → 3 |
+   | deep-8 | 10 | the hero's Freeze on a Poltergeist: 8 damage, frozen 2 (was frozen solid and killed) | 262 → 117 / true / 10 → 9 |
+
+   solo-thief-pilfer, party-fighter-knight and deep-14 re-measured
+   byte-identical. Re-pinned with `node tools/roll-high-baseline.mjs pins`
+   (each hashed identically twice).
+6. **The pre-switch save** (`roll-high-save-compat.test.js`): `expected.hash`
+   re-recorded ONLY (false / 3 / 300 unchanged). First divergence: dispatched
+   index 98, the Joiner Denn's Freeze kills Drekk with 8 damage, now a normal
+   kill (no up-front resist roll, no frozen flag on the dead foe).
+7. **Event-order corpus.** One synthetic case re-recorded: `freeze-solid`
+   (spellHit → frozenSolid → foeKilled, a chain the engine no longer emits)
+   became `freeze-hold` (spellHit → resistFailed → controlHeld →
+   foeStillHeld), its lines from the live fold. Every other case unchanged.
+
+**Re-pinned unit rows (declared).** control-spells-depth, control-at-depth
+(the Joiner C2 rows), party-combat (DFB-05), freeze-pays-out (a Freeze kill
+still pays, as a normal kill), afraid, spell-resist, item-combat-gate,
+staff-wield (the Birch Staff), linesForAction and event-order-fold (the
+rail fold), tuning-bot and control-rotation-bot (Freeze scores DISABLE at
+every depth), and roll-high-guard's `DRAW_INVENTORY` (combat.js amount
+19 → 20). New: test/unit/freeze-rule.test.js.
+
+#### Moved set — declared records
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| action-script.magic.json#cast-damage | magic, seed 8 | Illusionist (afraid) | action-path (23+31+54+79.2) | 0 | rations 4 → 6 (sp/gold/kills now equal both sides) | the record's own `rationale`, "User rulings 2026-09-28" |

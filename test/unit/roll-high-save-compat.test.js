@@ -37,6 +37,13 @@
 // the base the HERO's Acrobat override (3 faces, atLeast 18) shielded Denn,
 // so a 17 missed; now Denn reads his own 5 faces (atLeast 16) and the same
 // 17 lands (memberStruck, 4 damage). Same draw, same position.
+//
+// User rulings 2026-09-28 (plan 79.2-01, "freeze should never kill
+// outright"): `expected.hash` re-recorded (ONLY — `dead`/`depth`/`actions`
+// still false/3/300). Traced live (base 992b1dfa vs the rule): the first
+// divergence is dispatched index 98, the Joiner Denn's Freeze on Drekk; its
+// 8 damage kills Drekk, now a normal kill (no up-front intel resist, no
+// frozen-solid flag on the dead foe). Same draws, same position.
 
 import test from "node:test";
 import assert from "node:assert/strict";

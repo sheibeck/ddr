@@ -1206,6 +1206,23 @@ test("RULES-11 exposure guard has teeth: a doctored event list carrying one gian
 const RULES753_EXPECTED_HOLDERS = [];
 const RULES753_FIRST_FLOOR = 5;
 
+// User rulings 2026-09-28 (folded into plan 79.2-01): a Freeze never kills
+// outright — it deals its damage and freezes a survivor for 1d4 rounds at
+// EVERY depth, through the same holdFoe machinery (a `controlHeld` event
+// carrying `freeze: true`, then `foeStillHeld`/`foeHoldBroken` of kind
+// "frozen", and a foe `held` record). That is not a control-at-depth event,
+// so the guard below excludes it — but only at a site a Phase 79.2 record
+// declares, and exactly FREEZE792_EXPECTED_HOLDERS may declare one. Measured:
+// the one replay that casts Freeze (magic cast-damage, seed 8) freezes the
+// Shriek for 2 rounds; its action-path record carries "79.2".
+const FREEZE792_EXPECTED_HOLDERS = ["action-script.magic.json#cast-damage"];
+
+/** isFreezeHoldEvent(e) — a Freeze's d4 hold and its countdown (user rulings 2026-09-28). */
+function isFreezeHoldEvent(e) {
+  if (e.type === "controlHeld") return !!e.freeze;
+  return (e.type === "foeStillHeld" || e.type === "foeHoldBroken") && e.kind === "frozen";
+}
+
 /**
  * countPhase753Exposure(events) -> the per-event-type counts the 31-site
  * Phase 75.3 exposure guard below tallies (mirroring countPhase751Exposure's
@@ -1228,13 +1245,22 @@ test("RULES-16/17/18 (Phase 75.3): no replay site fights on floor 5 or deeper, n
   const deepFights = [];
   const flagged = [];
   let fightsSeen = 0;
+  // User rulings 2026-09-28: the Phase 79.2-declared sites and the Freeze
+  // holds each one actually shows (so the exclusion is never vacuous).
+  const freezeDeclared = new Set(
+    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("79.2")).map(({ holderId }) => holderId),
+  );
+  const freezeSeen = new Set();
 
   const tally = (holderId, r) => {
     fightsSeen += r.fightDepths.length;
-    const counts = countPhase753Exposure(r.events);
+    const freezeSite = freezeDeclared.has(holderId);
+    const events = freezeSite ? r.events.filter((e) => !isFreezeHoldEvent(e)) : r.events;
+    if (freezeSite && r.events.some((e) => e.type === "controlHeld" && e.freeze)) freezeSeen.add(holderId);
+    const counts = countPhase753Exposure(events);
     for (const key of Object.keys(totals)) totals[key] += counts[key];
     for (const d of r.fightDepths) if (d >= RULES753_FIRST_FLOOR) deepFights.push(`${holderId}@floor${d}`);
-    for (const [key, seen] of Object.entries(r.foeFlagsEver)) if (seen) flagged.push(`${holderId}:${key}`);
+    for (const [key, seen] of Object.entries(r.foeFlagsEver)) if (seen && !(freezeSite && key === "held")) flagged.push(`${holderId}:${key}`);
   };
 
   for (const seed of CHARGEN_FIXTURE.seeds) {
@@ -1281,6 +1307,10 @@ test("RULES-16/17/18 (Phase 75.3): no replay site fights on floor 5 or deeper, n
   for (const key of Object.keys(totals)) {
     assert.equal(totals[key], 0, `expected zero ${key} events across every replay site`);
   }
+  // User rulings 2026-09-28: the Freeze-hold exclusion covers exactly the
+  // declared sites, and each of them really shows a Freeze hold.
+  assert.deepStrictEqual([...freezeDeclared].sort(), FREEZE792_EXPECTED_HOLDERS, "the declared Phase 79.2 set is exactly FREEZE792_EXPECTED_HOLDERS");
+  assert.deepStrictEqual([...freezeSeen].sort(), FREEZE792_EXPECTED_HOLDERS, "every declared Phase 79.2 site shows a Freeze hold (the exclusion is not vacuous)");
 });
 
 test("RULES-16/17/18 exposure guard has teeth: a doctored event list carrying a controlResisted event (and an elite encounter) is caught by the same counting function", () => {

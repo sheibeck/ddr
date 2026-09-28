@@ -779,8 +779,29 @@ const RESIST_FOLD_EFFECTS = new Set([
 ]);
 
 /**
+ * foldsResist(oe) — RESIST_FOLD_EFFECTS, plus (user rulings 2026-09-28) a
+ * Freeze's own d4 hold: a `controlHeld` carrying `freeze: true`. A Freeze
+ * rolls its resist after the damage lands, so a failed resist folds behind
+ * the freeze it let through. Other holds keep their own resist line.
+ */
+function foldsResist(oe) {
+  return RESIST_FOLD_EFFECTS.has(oe.type) || (oe.type === "controlHeld" && !!oe.freeze);
+}
+
+/** isFreezeHold(e, target) — a Freeze's d4 hold on `target` (user rulings 2026-09-28). */
+function isFreezeHold(e, target) {
+  return e.type === "controlHeld" && !!e.freeze && e.target === target;
+}
+
+/** freezeHitLine(spell, target, hitE, heldE) — the hero's Freeze hit and its hold on one line. */
+function freezeHitLine(spell, target, hitE, heldE) {
+  const rounds = Number.isFinite(heldE.rounds) ? railPlural(heldE.rounds, "round") : "? rounds";
+  return `${spell} hits ${target} (${hitE.dmg ?? 0}), frozen for ${rounds}`;
+}
+
+/**
  * spellChain(events, consumed) — folds `spellThrown` -> its per-target
- * outcome (`spellHit`(+`frozenSolid`)(+`foeKilled`) | `spellMissed`) into
+ * outcome (`spellHit`(+ a Freeze's `controlHeld`)(+`foeKilled`) | `spellMissed`) into
  * ONE line per target; 3+ distinct targets (Lightning) collapse into one
  * "${spell}: ${T} targets, ${K} hit (${sum})" line instead. Also consumes
  * a bare `resistFailed` when a RESIST_FOLD_EFFECTS event follows it in this
@@ -793,7 +814,7 @@ function spellChain(events, consumed) {
   events.forEach((e, i) => {
     if (consumed.has(i) || e.type !== "resistFailed") return;
     const matched = events.some((oe, j) => {
-      if (j <= i || consumed.has(j) || !RESIST_FOLD_EFFECTS.has(oe.type)) return false;
+      if (j <= i || consumed.has(j) || !foldsResist(oe)) return false;
       return oe.target === undefined || oe.target === e.target;
     });
     if (matched) consumed.add(i);
@@ -843,15 +864,13 @@ function spellChain(events, consumed) {
     let hitIdx = -1;
     let missedIdx = -1;
     let frozenIdx = -1;
-    let killedIdx = -1;
     for (let j = ti + 1; j < events.length; j++) {
       if (consumed.has(j)) continue;
       const e = events[j];
       if (e.type === "spellThrown") break;
       if (e.type === "spellHit" && e.target === target && hitIdx === -1) hitIdx = j;
       else if (e.type === "spellMissed" && e.target === target && missedIdx === -1) missedIdx = j;
-      else if (e.type === "frozenSolid" && e.target === target && frozenIdx === -1) frozenIdx = j;
-      else if (e.type === "foeKilled" && e.name === target && killedIdx === -1) killedIdx = j;
+      else if (isFreezeHold(e, target) && frozenIdx === -1) frozenIdx = j;
     }
     if (missedIdx !== -1) {
       consumed.add(missedIdx);
@@ -863,10 +882,12 @@ function spellChain(events, consumed) {
     if (hitIdx === -1) continue;
     consumed.add(hitIdx);
     const hitE = events[hitIdx];
+    // User rulings 2026-09-28: a Freeze that lands and holds reads its
+    // damage and its d4 hold on one line (it never kills outright; a Freeze
+    // kill is a normal kill, felled below).
     if (frozenIdx !== -1) {
       consumed.add(frozenIdx);
-      if (killedIdx !== -1) consumed.add(killedIdx);
-      built.push({ text: `${e0.spell} — ${target} frozen solid`, tone: "magic", priority: PRIORITY.you, idx: ti });
+      built.push({ text: freezeHitLine(e0.spell, target, hitE, events[frozenIdx]), tone: "magic", priority: PRIORITY.you, idx: ti });
       continue;
     }
     // spellHit likewise carries no `spell` field (engine/magic.js) — borrow
@@ -886,8 +907,9 @@ function spellChain(events, consumed) {
  *     earliest idx), so the line still sits at its earliest event;
  *   - a `spellThrown` whose next line event is that target's `spellMissed` or
  *     `spellHit` is one line (the outcome's text, the throw's position); a
- *     hit's `frozenSolid` joins only when it is the next line event after the
- *     hit, and the kill only when it comes right after the frozenSolid;
+ *     Freeze's d4 hold (`controlHeld` with `freeze`, user rulings
+ *     2026-09-28) joins only when it is the next line event after the hit
+ *     (past a failed resist already folded behind it);
  *   - a throw with no contiguous outcome keeps its own LINE_FOR line, and the
  *     later spellHit/spellMissed for that target still names the spell
  *     (`patched`, idx -> the outcome event with the throw's `spell`).
@@ -911,7 +933,7 @@ function spellChainEvent(events, consumed, idxAt, patched) {
     }
     if (j === -1 || consumed.has(j)) return;
     const oe = events[j];
-    if (!RESIST_FOLD_EFFECTS.has(oe.type)) return;
+    if (!foldsResist(oe)) return;
     if (oe.target === undefined) {
       run.forEach((k) => consumed.add(k));
       idxAt.set(j, i);
@@ -938,12 +960,14 @@ function spellChainEvent(events, consumed, idxAt, patched) {
     if (oe && oe.type === "spellHit" && oe.target === target) {
       consumed.add(ti);
       consumed.add(j);
-      const k = nextLineIdx(events, j);
-      if (k !== -1 && !consumed.has(k) && events[k].type === "frozenSolid" && events[k].target === target) {
+      // User rulings 2026-09-28: a Freeze's d4 hold joins its hit when it is
+      // the next line event still standing (the failed resist between them
+      // was already folded behind the hold above).
+      let k = nextLineIdx(events, j);
+      while (k !== -1 && consumed.has(k) && events[k].type === "resistFailed") k = nextLineIdx(events, k);
+      if (k !== -1 && !consumed.has(k) && isFreezeHold(events[k], target)) {
         consumed.add(k);
-        const m = nextLineIdx(events, k);
-        if (m !== -1 && !consumed.has(m) && events[m].type === "foeKilled" && events[m].name === target) consumed.add(m);
-        built.push({ text: `${e0.spell} — ${target} frozen solid`, tone: "magic", priority: PRIORITY.you, idx: idxAt.get(ti) ?? ti });
+        built.push({ text: freezeHitLine(e0.spell, target, oe, events[k]), tone: "magic", priority: PRIORITY.you, idx: idxAt.get(ti) ?? ti });
         return;
       }
       built.push({ ...LINE_FOR.spellHit({ ...oe, spell: e0.spell }), idx: idxAt.get(ti) ?? ti });
@@ -1659,8 +1683,7 @@ export const LINE_FOR = {
     const who = e?.name ?? "Your ally";
     const sp = e?.spell ?? "a spell";
     const t = e?.target ?? "it";
-    const tail =
-      e?.effect === "frozen" ? `${t} frozen solid` : e?.effect === "asleep" ? `${t} nods off` : e?.effect === "weakened" ? "the foes weaken" : `${t} (${e?.dmg ?? 0})`;
+    const tail = e?.effect === "asleep" ? `${t} nods off` : e?.effect === "weakened" ? "the foes weaken" : `${t} (${e?.dmg ?? 0})`;
     return { text: `${who} casts ${sp} — ${tail}`, tone: "magic", priority: PRIORITY.feature };
   },
   allySpellMissed: (e) => ({
@@ -2021,7 +2044,15 @@ export const LINE_FOR = {
   // convention (struckByFoe/foeMissed/struck etc. carry none either) so a
   // resisted-spell line reads consistently with the rest of the pipeline.
   // Quick 260927-rsx: the rail twins name the spell and whose it was.
-  spellResisted: (e) => ({ text: `${e?.target ?? "It"} resists ${e?.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e?.spell ?? "spell"}: no effect`, tone: "miss", priority: PRIORITY.you }),
+  // User ruling 2026-09-28: a Freeze's resist (`freeze: true`) comes after
+  // its damage and stops only the ice.
+  spellResisted: (e) => ({
+    text: e?.freeze
+      ? `${e?.target ?? "It"} resists the freeze: the damage lands, the ice doesn't`
+      : `${e?.target ?? "It"} resists ${e?.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e?.spell ?? "spell"}: no effect`,
+    tone: "miss",
+    priority: PRIORITY.you,
+  }),
   resistFailed: (e) => ({ text: `${e?.target ?? "It"} fails to resist ${e?.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e?.spell ?? "spell"}.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   summonBackfired: (e) => ({ text: `Summoning: ${e?.spell ?? "The spell"} turned on you (−${e?.amount ?? 0} hp).`, tone: "hurt", priority: PRIORITY.you }),
@@ -2163,8 +2194,12 @@ export const LINE_FOR = {
     tone: "miss",
     priority: PRIORITY.them,
   }),
+  // User rulings 2026-09-28: a Freeze's d4 hold (`freeze: true`) reads
+  // "frozen for N rounds" (spellChain folds it onto the hero's hit line).
   controlHeld: (e) => ({
-    text: `${e?.target ?? "It"} held ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}.`,
+    text: e?.freeze
+      ? `${e?.target ?? "It"} frozen for ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}.`
+      : `${e?.target ?? "It"} held ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}.`,
     tone: "magic",
     priority: PRIORITY.them,
   }),
