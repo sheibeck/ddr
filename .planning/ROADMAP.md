@@ -556,11 +556,28 @@ The user's rulings (2026-09-28):
    - a live end-to-end test passes: a report is sent, the Action runs, and an issue appears on ddr;
    - the gate is green;
    - the Play Data safety and privacy-policy changes are on the milestone-close checklist.
-**Plans:** 0 plans
+**Plans**: 0/8 plans complete
 
 Plans:
+**Wave 1** (in parallel, no shared files)
 
-- [ ] TBD (run /gsd-plan-phase 79.3 to break down)
+- [ ] 79.3-01-PLAN.md — Client report core and Firestore rules (BUG-02/03): the pure, DOM-free bugReport.js (Oracle text, payload with caps, typed-value encoder, rules mirror, injected-fetch sender with a 15 s timeout that never throws), bugReportConfig.js (project id + empty key slot), create-only size-bounded firestore.rules with firebase.json/.firebaserc, and send-test-report.mjs (--dry-run, --probe-rules)
+- [ ] 79.3-02-PLAN.md — The Action (BUG-04): the pure issue formatter (neutralised @/#, escaped HTML, collapsed fence-safe Oracle trimmed under 65,536), the injected-fetch filer (service-account RS256 JWT, runQuery, updateTime-locked new → filing → filed, stale-filing reconcile, 20 per run, dry run), the */15 workflow with zero installs, .gitignore patterns and a no-committed-secrets scan
+- [ ] 79.3-03-PLAN.md — Patch-notes pipeline (NOTES-01, NOTES-02 pure pieces): patchNotes.js (Markdown-subset parser and DOM renderer, once-per-update decision through window.mzStorage), the generated patchNotesData.js, tools/patch-notes.mjs (--check, --release-body, the ≤500-char --play cut, --write-module), build-www bundling that fails without the version's notes, docs/patch-notes/README.md + 2.1.0.md, versionName 2.1.0, the RELEASING.md step
+- [ ] 79.3-04-PLAN.md — The two ☰ rows (BUG-01, NOTES-02): REPORT A BUG (✎) and PATCH NOTES (¶) after SETTINGS and before the split, always enabled on every screen, with the menu tests re-pinned
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 79.3-05-PLAN.md — The REPORT A BUG sheet (BUG-01/02): the public notice, a 2,000-character box with a near-limit counter, SEND/CANCEL, the idle/sending/sent/failed states with the draft kept in memory, send through bugReport.js, the back button and a keydown guard; the phase why-ledger (q-260928-z5-bug.json) and review page
+- [ ] 79.3-06-PLAN.md — Docs and compliance (BUG-02/03/04): docs/BUG-REPORTS.md (architecture, operations, key rotation, kill switch, the 60-day schedule note) and LISTING.md's Data safety answers plus the privacy-policy draft paragraph
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 79.3-07-PLAN.md — The PATCH NOTES sheet (NOTES-02): this version's bundled notes rendered offline, the "Past versions on GitHub" link, the once-per-update auto-show over the title only, and the back button; full gate with the notes bundled into www
+
+**Wave 4** *(blocked on Wave 3 completion; orchestrator-run)*
+
+- [ ] 79.3-08-PLAN.md — Orchestrator-run provisioning and the live test (D-17): Firestore (default) in nam5, the rules deployed, the Firestore-restricted API key committed, the ddr-bug-reports service account and the FIREBASE_BUG_REPORTS_SA secret, the player-report label, then push, the live rules probe, test report → dry run → real run → one issue → no duplicate → closed, and 79.3-VERIFICATION.md
 
 ### Phase 79.2: Early-floor difficulty retune (floors 1-12 harder: fair-bot p50 death ~3-4) (INSERTED)
 
