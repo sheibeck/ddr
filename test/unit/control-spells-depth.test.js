@@ -606,7 +606,10 @@ test("texts: every spell and item whose promise changes past the knee names floo
   const { kneeDepth, holdRounds } = DIALS.CONTROL_AT_DEPTH;
   const floorWords = `past floor ${kneeDepth}`;
   const roundWords = `${NUMBER_WORDS[holdRounds]} rounds`;
-  for (const n of ["Freeze", "Ice", "Stupidity", "Blind", "Petrify"]) {
+  // Quick 260928-tsx (user ruling 2026-09-28): Freeze no longer kills at any
+  // depth (d6 damage, then a d4-round freeze unless the foe resists), so its
+  // text carries no past-the-knee clause; authored-ranges.test.js pins it.
+  for (const n of ["Ice", "Stupidity", "Blind", "Petrify"]) {
     const sp = SPELLS.find((x) => x.n === n);
     assert.ok(sp.txt.includes(floorWords), `${n}: "${sp.txt}" names ${floorWords}`);
     assert.ok(sp.txt.includes(roundWords), `${n}: "${sp.txt}" names ${roundWords}`);
