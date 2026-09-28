@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 79.2
-current_phase_name: "floors 1-12 harder: fair-bot p50 death ~3-4"
+current_phase: 80
+current_phase_name: 80-04 release build, 80-05 emulator pass
 status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-28T18:56:08.146Z"
+last_updated: "2026-09-28T18:56:23.032Z"
 last_activity: 2026-09-28
-last_activity_desc: Phase 79.1 complete, transitioned to Phase 79.2
+last_activity_desc: "79.3 and 79.1 complete; bug reports live-tested (issue #2); 2.1.0 notes agreed; debug build with everything on the Pixel 7"
 progress:
   total_phases: 16
   completed_phases: 13
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 79.2 — Early-floor difficulty retune (floors 1-12 harder: fair-bot p50 death ~3-4)
-Plan: Not started
+Phase: 80 — Android Release Build & Tooling (80-04 release build, 80-05 emulator pass)
+Plan: 80-04 next
 Status: Ready to plan
-Last activity: 2026-09-28 — Phase 79.1 complete, transitioned to Phase 79.2
+Last activity: 2026-09-28 — 79.3 and 79.1 complete; bug reports live-tested (issue #2); 2.1.0 notes agreed; debug build with everything on the Pixel 7
 
 ## Ground Truth (durable facts every session needs)
 
