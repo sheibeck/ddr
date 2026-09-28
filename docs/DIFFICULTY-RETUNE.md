@@ -6921,6 +6921,240 @@ eval line prints it as `exempt=...`. Fighter and Thief are still held to
 no longer than the Fighter's) are unchanged. Every 79.2-02 row still carries
 the Magic User's p50 and reach5 in `classes`.
 
+### Phase 79.2 — the sweep
+
+Plan 79.2-02 walked the early-game dials with the checkpointed fit protocol: blocks of 10, a ruling-F trip (best improved < 10% over a block) returns to the orchestrator, and engine-shape changes go to the user. The confirmation commit is `4e2ba5ff0ced608413c566b7fec45299d9c10ad9`.
+
+**The objective.**
+- The Phase 79.2 target curve S_L for floors 1-12: 95.1 / 79.7 / 58.4 / 38.7 / 24.3 / 15.1 / 9.5 / 6.2 / 4.2 / 3 / 2.2 / 1.7, with tolerance ±8 on floors 1-10 and ±3 on floors 11-12.
+- P50_DEATH_BAND [3, 4].
+- FILTER_SHAPE: floors 1-5 have no single-floor drop above 20 points, and p_1 − p_4 rises by at least 10.
+- The class constraint: |class p50 − pooled| ≤ 2 and |class reach5 − pooled| ≤ 20. Magic User is exempt (user ruling 2026-09-28).
+
+**Coordinate order and seeds.**
+- Cycle 2 (`fit/early-log-c2.jsonl`, 200 seeds per candidate, start `fit/start.json`) used 79.2-01's SEARCH_PLAN: hit.b, lvl.b, haz.b, hp.b, dots.b, heroHP, heroSP, hit.pd, lvl.pd.
+- Cycle 3 (`fit/early-log-c3.jsonl`) evaluated c2 #18 once at 1,000 seeds (RF-79.2-02-1).
+- Cycle 3b (`fit/early-log-c3b.jsonl`, 200 seeds, row 1 = c2 #18, seeded and replayed) used the RF-79.2-02-2 SEARCH_PLAN: hp.b, dots.b, haz.b, hit.b, lvl.b, heroHP, heroSP, hit.pd, lvl.pd. It widened two bounds: FOE_HP_SCALE.base hi 1.5 and FOE_LEVEL.base hi 1.2.
+
+**Block classifications** (by script from the three logs):
+
+| Block | Rows | Best before → after | Improvement | Feasible | Rejections | Classification |
+|---|---|---|---|---|---|---|
+| START-c2 (200) | #1 | — → 86.8853 (#1) | — | 1/1 | none | start |
+| c2 block 1 (200) | #2-#11 | 86.8853 → 11.6642 (#10) | 86.6% | 8/10 | #7 Thief reach5 68.1 vs pooled 46.8 (|delta| > 20); #11 Thief reach5 75 vs pooled 52.3 (|delta| > 20) | converging (improvement 86.6%) |
+| c2 block 2 (200) | #12-#21 | 11.6642 → 3.8606 (#20) | 66.9% | 10/10 | none | converging (improvement 66.9%) |
+| c2 block 3 (200) | #22-#31 | 3.8606 → 3.5511 (#31) | 8.0% | 10/10 | none | failure (ruling F: improvement 8.0% < 10%) |
+| c3 start (1,000) | #1 | — → 8.1395 (#1) | — | 1/1 | none | 1,000-seed start: MISS on floors 3, 4, 5, 6, p50 5 → hand-back 2 |
+| c3b block 1 (200, seeded with c2 #18) | #2-#11 | 4.5480 → 3.8606 (#10) | 15.1% | 10/10 | none | converging (improvement 15.1%) |
+| c3b block 2 (200) | #12-#21 | 3.8606 → 3.5991 (#18) | 6.8% | 10/10 | none | failure (ruling F: improvement 6.8% < 10%) |
+
+**Hand-backs and their answers:**
+1. **Hand-back 1** (after c2 block 3). RF-79.2-02-1 (orchestrator, search parameters): start cycle 3 from c2 #18 and evaluate it at 1,000 seeds. Outcome: a MISS on floors 3-6 and on p50 (5). Hand back.
+2. **Hand-back 2** (after the c3 start). RF-79.2-02-2 (orchestrator, search parameters):
+   - continue at 200 seeds in cycle 3b, seeded with c2 #18;
+   - the SEARCH_PLAN base levers go first;
+   - FOE_HP_SCALE.base hi 1.5 and FOE_LEVEL.base hi 1.2;
+   - up to 20 extra evaluations, only while converging;
+   - a 3-point confirmation margin on floors 3-6.
+   Outcome: c3b block 2 tripped ruling F. Hand back.
+3. **Hand-back 3** (after c3b block 2). USER RULING 2026-09-28 (RF-79.2-02-3), relayed by the orchestrator: "Lock the best result as-is." c2 #18 (= c3 #1) is locked, over the other two proposals: moving `soloOnlyOnOneFrom` to 4 or loosening floor 4's tolerance.
+
+**Stop reason:** the user's ruling. No row reached PASS with `constraints.ok`, and none met the confirmation margin.
+
+**The structural finding** (79.2-02, by script over c2 #12-#31 and c3b #2-#21):
+- Floor 4 was never inside its tolerance. The lowest S4 was 47.5 against a required 46.7 or less.
+- Floors 3-4 stay too soft while floors 5-6 run too hard.
+- Two step changes land exactly at floor 5, and the walk may move neither of them:
+  - the ruled RULES-16 `FOE_COUNT_DEPTH.soloOnlyOnOneFrom = 5`: from floor 5, a first roll of 2 is no longer a solo fight;
+  - the foe-level step: floor 5 is the first level-3 floor on the best rows.
+- Every global dial that hardens floor 4 also walls floor 5.
+
+**The evaluation table** (every row of the three logs, by script; the moved coordinates are shown against `fit/start.json`):
+
+| cycle | n | score | verdict | moved coordinates (vs START) | S1 | S2 | S3 | S4 | deathP50 | shape ok / maxDrop / rise | F/T/M p50 | ok |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| c2 | 1 | 86.8853 | MISS | none (START) | 100 | 98 | 85 | 74 | 6 | ok / 11.3 / 12.9 | 7/6.5/4 | ok |
+| c2 | 2 | 65.7792 | MISS | hit.b 0.68 | 99.5 | 98 | 82.5 | 72.9 | 6 | ok / 14.3 / 11.2 | 6/6/4 | ok |
+| c2 | 3 | 42.4174 | MISS | hit.b 0.76 | 99.5 | 96 | 79.5 | 66.4 | 5 | ok / 13.7 / 16 | 6/6/4 | ok |
+| c2 | 4 | 34.4993 | MISS | hit.b 0.84 | 98.5 | 93.5 | 79 | 64.5 | 5 | ok / 10.4 / 16.9 | 5/6/4 | ok |
+| c2 | 5 | 18.6415 | MISS | hit.b 0.84, lvl.b 1 | 98.5 | 84 | 66.9 | 55.7 | 5 | ok / 13.2 / 15.3 | 5/6/3 | ok |
+| c2 | 6 | 20.9603 | MISS | hit.b 0.84, lvl.b 1, haz.b 0.7 | 99 | 84 | 67.3 | 55.5 | 5 | ok / 14.2 / 16.6 | 5/6/3 | ok |
+| c2 | 7 | +Inf | MISS | hit.b 0.84, lvl.b 1, haz.b 0.5 | 99.5 | 80.5 | 63.9 | 52.1 | 4 | ok / 18.6 / 17.9 | 4/6/3 | REJ: Thief reach5 68.1 vs pooled 46.8 (|delta| > 20) |
+| c2 | 8 | 14.3895 | MISS | hit.b 0.84, lvl.b 1, hp.b 1 | 98.5 | 84 | 67.5 | 53.3 | 5 | ok / 13.2 / 19.6 | 5/6/3 | ok |
+| c2 | 9 | 12.8640 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.1 | 99.5 | 83.5 | 67.9 | 55.8 | 5 | ok / 15.6 / 17.3 | 5/6/3 | ok |
+| c2 | 10 | 11.6642 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2 | 99.5 | 83 | 66 | 54 | 5 | ok / 16.1 / 17.7 | 5/5/3 | ok |
+| c2 | 11 | +Inf | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, dots.b 8 | 98 | 78 | 66.4 | 52.7 | 4 | ok / 18.4 / 18.6 | 5/5/2.5 | REJ: Thief reach5 75 vs pooled 52.3 (|delta| > 20) |
+| c2 | 12 | 14.3233 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, dots.b 6 | 98 | 84.5 | 70 | 56.6 | 5 | ok / 11.8 / 17.1 | 5/5/4 | ok |
+| c2 | 13 | 10.1516 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4 | 98 | 84.5 | 67 | 52.4 | 5 | ok / 11.8 / 19.8 | 5/5/3 | ok |
+| c2 | 14 | 32.3295 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.55 | 100 | 88 | 73 | 61.8 | 5 | ok / 12 / 15.3 | 6/6/3 | ok |
+| c2 | 15 | 11.4164 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.33 | 98 | 84.5 | 67 | 53.4 | 5 | ok / 11.8 / 18.3 | 5/5/3 | ok |
+| c2 | 16 | 9.4415 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23 | 98 | 84.5 | 67 | 52.4 | 5 | ok / 11.8 / 19.8 | 5/5/3 | ok |
+| c2 | 17 | 10.2123 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.18 | 98 | 84.5 | 67 | 52.4 | 5 | ok / 11.8 / 19.8 | 5/5/3 | ok |
+| c2 | 18 | 4.5480 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98 | 83.5 | 65 | 49.4 | 4 | ok / 12.8 / 22 | 5/5/3 | ok |
+| c2 | 19 | 8.7028 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.03 | 98 | 85 | 68 | 53.9 | 5 | ok / 13.6 / 18.7 | 5/5/3 | ok |
+| c2 | 20 | 3.8606 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 98 | 83.5 | 65 | 49.4 | 4 | MISS / 23.9 / 22 | 5/5/3 | ok |
+| c2 | 21 | 8.6853 | MISS | hit.b 0.88, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 99.5 | 88.5 | 70.5 | 54.3 | 5 | MISS / 21.6 / 22.5 | 5/5/4 | ok |
+| c2 | 22 | 6.5094 | MISS | hit.b 0.8, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 100 | 85.5 | 67 | 53.5 | 5 | MISS / 31.3 / 20.1 | 5/5/3 | ok |
+| c2 | 23 | 4.5480 | MISS | hit.b 0.84, lvl.b 0.925, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 98 | 83.5 | 65 | 49.4 | 4 | ok / 12.8 / 22 | 5/5/3 | ok |
+| c2 | 24 | 4.1315 | MISS | hit.b 0.84, lvl.b 1, haz.b 0.65, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 98 | 84 | 65 | 49.4 | 4 | MISS / 21.7 / 22 | 5/5/3 | ok |
+| c2 | 25 | 6.7092 | MISS | hit.b 0.84, lvl.b 1, haz.b 0.55, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 98 | 83.5 | 69.5 | 52.6 | 5 | MISS / 25.7 / 22.3 | 5/5/3.5 | ok |
+| c2 | 26 | 5.1623 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.15, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 98 | 83.5 | 68 | 52.5 | 5 | MISS / 24.7 / 20.8 | 5/5/3 | ok |
+| c2 | 27 | 5.6392 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, dots.b 7.5, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 98.5 | 85.5 | 69 | 47.5 | 4 | ok / 19.3 / 29.7 | 5/5/3 | ok |
+| c2 | 28 | 5.4634 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, dots.b 6.5, heroHP 1.4, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 98 | 82 | 64.5 | 52.4 | 4 | MISS / 25.4 / 16.7 | 5/5/3 | ok |
+| c2 | 29 | 8.1951 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.475, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 99.5 | 87.5 | 67.9 | 54.2 | 5 | MISS / 25.7 / 19.6 | 5/5/3 | ok |
+| c2 | 30 | 5.7636 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.325, heroSP 0.23, hit.pd 0.02, lvl.pd 0.3 | 99.5 | 84 | 64 | 54 | 5 | MISS / 26.3 / 15.1 | 5/5/3 | ok |
+| c2 | 31 | 3.5511 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.255, hit.pd 0.02, lvl.pd 0.3 | 98 | 83.5 | 65 | 49.4 | 4 | MISS / 22.8 / 22 | 5/5/3 | ok |
+| c3 | 1 | 8.1395 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98.5 | 82.4 | 66.6 | 53.1 | 5 | ok / 14.8 / 18.9 | 5/5/3 | ok |
+| c3b | 1 (seeded c2 #18) | 4.5480 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98 | 83.5 | 65 | 49.4 | 4 | ok / 12.8 / 22 | 5/5/3 | ok |
+| c3b | 2 | 5.8061 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.3, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98 | 84.5 | 67.5 | 52 | 4 | ok / 20 / 21 | 5/5/3 | ok |
+| c3b | 3 | 8.7192 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.1, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98.5 | 83 | 68.5 | 53.9 | 5 | ok / 14.6 / 19.8 | 4.5/5/3 | ok |
+| c3b | 4 | 12.7375 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, dots.b 8, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98.5 | 79.5 | 70.4 | 56.3 | 5 | ok / 17.8 / 18.6 | 5/6/2.5 | ok |
+| c3b | 5 | 18.1947 | MISS | hit.b 0.84, lvl.b 1, hp.b 1.2, dots.b 6, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98.5 | 87.5 | 76 | 58.9 | 5 | ok / 12 / 21 | 5/5.5/4 | ok |
+| c3b | 6 | 6.8153 | MISS | hit.b 0.84, lvl.b 1, haz.b 0.7, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98 | 84.5 | 66.5 | 50.9 | 4 | ok / 11.8 / 21.5 | 5/5/3 | ok |
+| c3b | 7 | 7.0337 | MISS | hit.b 0.84, lvl.b 1, haz.b 0.5, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98 | 83 | 67 | 52.4 | 5 | ok / 13.3 / 19.8 | 5/5/3 | ok |
+| c3b | 8 | 5.3807 | MISS | hit.b 0.92, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 99 | 82.5 | 61.5 | 51.5 | 4 | MISS / 21.1 / 15.3 | 4/5/3 | ok |
+| c3b | 9 | 17.2007 | MISS | hit.b 0.76, lvl.b 1, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 99.5 | 87.5 | 72 | 57.4 | 5 | ok / 11.6 / 19.8 | 6/5/3 | ok |
+| c3b | 10 | 3.8606 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98 | 83.5 | 65 | 49.4 | 4 | MISS / 23.9 / 22 | 5/5/3 | ok |
+| c3b | 11 | 4.0428 | MISS | hit.b 0.84, lvl.b 1.2, hp.b 1.2, heroHP 1.4, heroSP 0.23, hit.pd 0.02 | 98 | 83.5 | 65 | 49.4 | 4 | MISS / 23.9 / 22 | 5/5/3 | ok |
+| c3b | 12 | 13.1920 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, heroHP 1.55, heroSP 0.23, hit.pd 0.02 | 100 | 88.5 | 71 | 59.3 | 5 | MISS / 27.9 / 16.4 | 5/5/3.5 | ok |
+| c3b | 13 | 5.5587 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, heroSP 0.23, hit.pd 0.02 | 99.5 | 82.5 | 64.5 | 52.5 | 5 | MISS / 34.9 / 18.1 | 5/5/3 | ok |
+| c3b | 14 | 3.6047 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, heroHP 1.4, hit.pd 0.02 | 98 | 83.5 | 65 | 49.9 | 4 | MISS / 24.1 / 21.3 | 5/5/3 | ok |
+| c3b | 15 | 3.8675 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, heroHP 1.4, heroSP 0.33, hit.pd 0.02 | 98 | 83.5 | 65 | 49.9 | 4 | MISS / 23 / 21.3 | 5/5/3 | ok |
+| c3b | 16 | 7.2067 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, heroHP 1.4, hit.pd 0.03 | 98 | 85 | 68 | 53.4 | 5 | MISS / 22.7 / 19.5 | 5/5/3 | ok |
+| c3b | 17 | 5.9272 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, heroHP 1.4 | 98 | 84.5 | 67 | 52.4 | 5 | MISS / 28.2 / 19.8 | 5/5/3 | ok |
+| c3b | 18 | 3.5991 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, heroHP 1.4, hit.pd 0.02, lvl.pd 0.3 | 98 | 83.5 | 65 | 49.9 | 4 | MISS / 24.1 / 21.3 | 5/5/3 | ok |
+| c3b | 19 | 6.0160 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.25, heroHP 1.4, hit.pd 0.02, lvl.pd 0.3 | 98 | 84.5 | 68.5 | 52.4 | 4 | MISS / 29.6 / 21.5 | 5/5/3 | ok |
+| c3b | 20 | 5.6671 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.15, heroHP 1.4, hit.pd 0.02, lvl.pd 0.3 | 98 | 83.5 | 68 | 53 | 5 | MISS / 25 / 20.1 | 5/5/3 | ok |
+| c3b | 21 | 4.4870 | MISS | hit.b 0.84, lvl.b 1.15, hp.b 1.2, dots.b 7.5, heroHP 1.4, hit.pd 0.02, lvl.pd 0.3 | 98.5 | 85.5 | 69 | 47.5 | 4 | ok / 14 / 29.7 | 5/5/3 | ok |
+
+#### Phase 79.2 AFTER — 1,000 seeds (confirmed lock)
+
+The locked dials at 1,000 seeds: `fit/confirm-1000-c3n1.jsonl`, a copy of `fit/early-log-c3.jsonl` row #1 (RF-79.2-02-1, 497.3 s), recorded in `fit/confirm-stdout.txt`.
+
+```
+#1 score=8.1395 verdict=MISS pass=1 deathP50=5 shape=ok S1=98.5 S2=82.4 S3=66.6 S4=53.1 S6=23.6 S8=7.2 S12=0.4 tail S15=0.0 S20=0.0 reach20=0.0 classes F/T/M p50=5/5/3 ok=true exempt=Magic User reach5 27.5 vs pooled 56.3 (|delta| > 20) — exempt
+```
+
+#### Phase 79.2 AFTER — tail row
+
+The locked dials on the 79.1 tail, with the fresh slice always run: `fit/tail-confirm-c3n1.jsonl`, appended to `fit/tail-stdout.txt`.
+
+```
+#1 score=0.0000 verdict=PASS fresh[reach20=0 reach21=0 reachCount30=0] deep12.reach20=0.5 deep20[p50=0 reach30=0] deep30[p50=0 p90=1] rot.p50[20/30/40]=0/0/0 guard=fresh p50Death 5 outside [3, 4] ok=true
+```
+
+### Phase 79.2 — locked dials
+
+| Dial | Phase 54 value (START) | Locked (Phase 79.2) | Direction | Log row |
+|---|---|---|---|---|
+| FOE_HIT_SCALE.base | 0.6 | 0.84 | ↑ = harder | fit/early-log-c2.jsonl #18 (score 4.547951, MISS at 200 seeds); fit/confirm-1000-c3n1.jsonl; fit/tail-confirm-c3n1.jsonl |
+| FOE_LEVEL.base | 0.9 | 1 | ↑ = harder | fit/early-log-c2.jsonl #18 (score 4.547951, MISS at 200 seeds); fit/confirm-1000-c3n1.jsonl; fit/tail-confirm-c3n1.jsonl |
+| FOE_HP_SCALE.base | 0.9 | 1.2 | ↑ = harder (longer fights) | fit/early-log-c2.jsonl #18 (score 4.547951, MISS at 200 seeds); fit/confirm-1000-c3n1.jsonl; fit/tail-confirm-c3n1.jsonl |
+| HERO_HP_SCALE | 1.25 | 1.4 | ↑ = easier (a tankier hero) | fit/early-log-c2.jsonl #18 (score 4.547951, MISS at 200 seeds); fit/confirm-1000-c3n1.jsonl; fit/tail-confirm-c3n1.jsonl |
+| HERO_SP_SCALE | 0.28 | 0.23 | ↑ = faster leveling | fit/early-log-c2.jsonl #18 (score 4.547951, MISS at 200 seeds); fit/confirm-1000-c3n1.jsonl; fit/tail-confirm-c3n1.jsonl |
+| FOE_HIT_SCALE.perDepth | 0.01 | 0.02 | ↑ = harder | fit/early-log-c2.jsonl #18 (score 4.547951, MISS at 200 seeds); fit/confirm-1000-c3n1.jsonl; fit/tail-confirm-c3n1.jsonl |
+
+Every other dial is unchanged: HAZARD_SCALE, ENCOUNTER_DOTS, FOE_LEVEL.perDepth, FOE_HP_SCALE.perDepth, every knee (kneeDepth 12), both tail slopes (FOE_HIT_SCALE.perDepthAfter 0.02, FOE_HP_SCALE.perDepthAfter 0.03), FOE_COUNT_DEPTH, FOE_ELITE and CONTROL_AT_DEPTH.
+
+Two consequences:
+- **FOE_LEVEL.** Floor 1 stays level 1 (round(1.29) = 1). Only floor 2 gains a level: the map 1..25 is `1222233344445555555555555`.
+- **FOE_HIT_SCALE.** Its perDepth now equals its perDepthAfter (0.02), so the hit scale's RULES-17 knee is an identity knee: 0.84 + 0.02·d at every depth.
+
+The locks are in engine/difficulty.js DIALS (plan 79.2-03). A traced test holds every leaf of `fit/early-lock.json` equal to DIALS.
+
+### Phase 79.2 — before and after (1,000 seeds)
+
+START is `fit/start-1000.jsonl` (plan 79.2-01, the Phase 54 dials). AFTER is `fit/confirm-1000-c3n1.jsonl` (the locked dials). Both are 1,000 seeds, and the table is built by script.
+
+Caveat: START was measured before quick 260928-sq2 (spell damage + level²) and before the bot's level² scoring. 79.2-02's START-c2 row re-measured the shipped dials on that code at 200 seeds: p50 6, S1-S4 100 / 98 / 85 / 74. That is essentially START, so the before/after gap is the lock's.
+
+| Floor | Target S_L | Tol | START S_L | AFTER S_L | AFTER p_L | AFTER dS | AFTER verdict |
+|---|---|---|---|---|---|---|---|
+| 1 | 95.1 | ±8 | 99.7 | 98.5 | 98.5 | +3.4 | PASS |
+| 2 | 79.7 | ±8 | 97.5 | 82.4 | 83.7 | +2.7 | PASS |
+| 3 | 58.4 | ±8 | 86.2 | 66.6 | 80.9 | +8.2 | **MISS** |
+| 4 | 38.7 | ±8 | 75.7 | 53.1 | 79.6 | +14.4 | **MISS** |
+| 5 | 24.3 | ±8 | 61.6 | 35.3 | 66.5 | +11 | **MISS** |
+| 6 | 15.1 | ±8 | 44.3 | 23.6 | 66.9 | +8.5 | **MISS** |
+| 7 | 9.5 | ±8 | 29.7 | 13 | 55.2 | +3.5 | PASS |
+| 8 | 6.2 | ±8 | 18.6 | 7.2 | 55.7 | +1 | PASS |
+| 9 | 4.2 | ±8 | 9.9 | 3.8 | 51.8 | −0.4 | PASS |
+| 10 | 3 | ±8 | 4.5 | 1.7 | 46.4 | −1.3 | PASS |
+| 11 | 2.2 | ±3 | 2.6 | 1.2 | 66.7 | −1 | PASS |
+| 12 | 1.7 | ±3 | 1.3 | 0.4 | 37.5 | −1.3 | PASS |
+
+- **p50 death depth:** START 6 → AFTER 5, against [3, 4]: **outside**.
+- **Filter shape** (maxDrop ≤ 20, rise ≥ 10):
+  - START: largest drop 9.4 on floor 3, rise 11.8 (ok);
+  - AFTER: largest drop 14.8 on floor 2, rise 18.9 (ok).
+- **Verdict:** START MISS (floors 2, 3, 4, 5, 6, 7, 8 out of band) → AFTER MISS (floors 3, 4, 5, 6 out of band, score 8.1395). The user accepted the AFTER MISS (RF-79.2-02-3).
+
+**The class pools:**
+
+| Pool | START n | START p50 | START reach5 | AFTER n | AFTER p50 | AFTER reach5 |
+|---|---|---|---|---|---|---|
+| Fighter | 316 | 6 | 83.5 | 316 | 5 | 56.3 |
+| Thief | 362 | 7 | 84.2 | 362 | 5 | 65.2 |
+| Magic User | 322 | 4 | 49.3 | 322 | 3 | 27.5 |
+| pooled | | 6 | 83.5 | | 5 | 56.3 |
+
+- **constraints.ok:** START false (Magic User reach5 49.3 vs pooled 83.5 (|delta| > 20)), measured before the exemption ruling. AFTER true, with exempt: Magic User reach5 27.5 vs pooled 56.3 (|delta| > 20) — exempt.
+- **Stuck runs:** the eval rows carry no stuck count. The tail rows' fresh slice, the same 1,000 floor-1 seeds, has START 119 and AFTER 66 of 1,000 stuck.
+- **reach20:** START 0% → AFTER 0%.
+
+### Phase 79.2 — the tail after the lock
+
+| Ruled target | Target | START (`fit/tail-start.jsonl`) | AFTER (`fit/tail-confirm-c3n1.jsonl`) | Verdict (AFTER) |
+|---|---|---|---|---|
+| fresh reach-20 (% of 1,000) | <= 1% | 0% | 0% | PASS |
+| fresh reach-21 (% of 1,000) | < 0.5% | 0% | 0% | PASS |
+| fresh count reaching 30 | <= 1 | 0 | 0 | PASS |
+| deep12 reach20 | <= 5% | 0.5% | 0.5% | PASS |
+| deep20 p50 floors gained | <= 2 | 0 | 0 | PASS |
+| deep20 reach30 | <= 1% | 0% | 0% | PASS |
+| deep30 p50 floors gained | <= 0 | 0 | 0 | PASS |
+| deep30 p90 floors gained | <= 1 | 1 | 1 | PASS |
+| rot20 p50 gained vs deep20 p50 | rot <= fair | 0 vs 0 | 0 vs 0 | PASS |
+| rot30 p90 gained vs deep30 p90 | rot <= fair | 1 vs 1 | 1 vs 1 | PASS |
+| guard: fresh p50 death depth (report only) | in [3, 4] | 6 | 5 | outside (guard, reported) |
+
+- **Tail row:** score 0, verdict PASS, misses none, constraints.ok true, freshMeasured true.
+- **Nothing needed compensating.** No ruled tail target missed, and the same four targets sit at their bound as at START and in 79.1: deep30 p50, deep30 p90, rot20 and rot30.
+- **The confirmations ran at the confirmation commit `4e2ba5ff0ced608413c566b7fec45299d9c10ad9`,** with `--dials=fit/early-lock.json`. Plan 79.2-04 proved that is the shipped engine: `git diff --stat 4e2ba5ff HEAD -- engine content src mazeworld.html tools/lib/tuning-bot.mjs tools/lib/band-readout.mjs tools/lib/fit-score.mjs tools/lib/tail-score.mjs` lists only engine/difficulty.js, which changes only in DIALS values and their JSDoc. So the two AFTER rows are the post-lock readouts.
+
+### Phase 79.2 — reading and flags for the user
+
+**Against the ruling.** The ruling asked for a fair-bot p50 death depth of 3-4. The lock moved it from 6 to 5: one floor harder than START, and one floor short of the band.
+- Floors 1-2 are now inside their tolerance: S2 97.5 → 82.4 against 79.7.
+- The Filter keeps its shape (ok). Early deaths are spread over floors 1-4, with the largest single-floor drop 14.8 points on floor 2, so no single floor kills everyone.
+- **Hypothesis for the Pixel 7 play check** (deferred UAT): a skilled human, who plays much better than the fair bot, should now land around floor 5-7 rather than well past it. It is not measured by any bot.
+
+**Flags for the user:**
+
+**Flag 1: the band is a MISS, locked on your ruling.** At 1,000 seeds, floors 3-6 are +8.2 / +14.4 / +11 / +8.5 points above their targets (too easy) against a ±8 tolerance, and the p50 death depth is 5 against [3, 4]. 79.2-02's hand-back 3 offered three proposals. Your answer (RF-79.2-02-3), verbatim: "Lock the best result as-is." Further early-floor tuning is deferred.
+
+**Flag 2: the structural reason floor 4 would not close.** Two step changes land at floor 5: the ruled `soloOnlyOnOneFrom = 5` and the first level-3 floor. Any global dial that hardens floor 4 puts a wall on floor 5. Closing floors 3-4 without that wall needs one of two things, and each is your call:
+- a ruled-value change, such as `soloOnlyOnOneFrom` 5 → 4;
+- a looser floor-4 tolerance.
+
+**Flag 3: the Magic User is exempt from the class constraint.** Your ruling of 2026-09-28, verbatim: "This is fine for now. Magic users require much more tactical play." At the lock, the Magic User's p50 is 3 and reach5 27.5, against a pooled 5 / 56.3.
+
+**Flag 4: the hit scale's knee is now an identity knee.** The lock set FOE_HIT_SCALE.perDepth to 0.02, which equals its tail slope. Past floor 12 the hit scale is 0.36 higher than before at every depth: 1.10 against 0.74 at floor 13. Only the HP scale still bends at 12. The tail still PASSes every ruled target with this shape.
+
+**The fixture cost.** Plan 79.2-04 re-measured and re-declared 38 parity records across 31 holders:
+- every chargen maxWP/wp, under HERO_HP_SCALE;
+- the action-path sp (HERO_SP_SCALE) and wp (HERO_HP_SCALE and the foe scales);
+- win's and lose-plain's `fromAction` 1/2 → 0, because a floor-1 Shriek now has 4 wp.
+
+Parity stays 66/66, and the prototype master is unchanged. Everything that moved is listed in test/parity/FIXTURE-INVENTORY.md's "Phase 79.2: the early-floor dial lock" section, including 79.2-03's non-parity moves: 8 bot state pins, the pre-switch save hash and the strike digests.
+
+**Routing note for 79.1-04.** 79.1-04's floors 1-12 band verdicts must read the Phase 79.2 targets:
+- the 12-row TARGET_SURVIVAL curve;
+- P50_DEATH_BAND [3, 4];
+- FILTER_SHAPE.
+
+Those verdicts must not read the Ruling C curve and its 5-7 median ("Wall 5-8: PASS when rows 5-8 all PASS and the median is 5-7" predates this phase). The new fair-bot median is 5, so a 5-7 reading would pass by accident.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
