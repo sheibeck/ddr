@@ -1,0 +1,60 @@
+rules_version = '2';
+
+// Phase 79.3 (D-13, BUG-03). Create-only rules for bugReports: the
+// scheduled Action's service account (ddr-bug-reports, roles/datastore.user
+// on delve-die-repeat-6ba5f, D-17) bypasses this whole file through IAM,
+// not through a rule, so it can still read, flip status and patch every
+// report regardless of what clients may do here. A client gets exactly one
+// verb: create a report shaped exactly like
+// src/browser/bugReport.js#buildReportPayload builds it, kept equal to
+// this file by test/unit/firestore-rules.test.js. Every other verb, on
+// every path, is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Mirrors src/browser/bugReport.js#RUN_FIELDS, RUN_STRING_MAX_CHARS
+    // and RUN_INT_MAX.
+    function isValidRun(r) {
+      return r is map
+        && r.keys().hasOnly(['depth', 'cls', 'sub', 'race', 'level', 'steps', 'day', 'dead'])
+        && r.keys().hasAll(['depth', 'cls', 'sub', 'race', 'level', 'steps', 'day', 'dead'])
+        && r.depth is int && r.depth >= 0 && r.depth <= 1000000000
+        && r.level is int && r.level >= 0 && r.level <= 1000000000
+        && r.steps is int && r.steps >= 0 && r.steps <= 1000000000
+        && r.day is int && r.day >= 0 && r.day <= 1000000000
+        && r.cls is string && r.cls.size() <= 40
+        && r.sub is string && r.sub.size() <= 40
+        && r.race is string && r.race.size() <= 40
+        && r.dead is bool;
+    }
+
+    // Mirrors src/browser/bugReport.js#REPORT_FIELDS/REQUIRED_REPORT_FIELDS
+    // and every size/type bound (D-11). status must be 'new' and schema
+    // must be 1, so a client can never pre-mark a report filed.
+    function isValidReport(d) {
+      return d.keys().hasOnly(['schema', 'status', 'text', 'oracle', 'oracleLines', 'version', 'platform', 'device', 'clientTime', 'run'])
+        && d.keys().hasAll(['schema', 'status', 'text', 'oracle', 'oracleLines', 'version', 'platform', 'device', 'clientTime'])
+        && d.schema is int && d.schema == 1
+        && d.status is string && d.status == 'new'
+        && d.text is string && d.text.size() >= 1 && d.text.size() <= 2000
+        && d.oracle is string && d.oracle.size() <= 100000
+        && d.oracleLines is int && d.oracleLines >= 0 && d.oracleLines <= 1000
+        && d.version is string && d.version.size() >= 1 && d.version.size() <= 64
+        && d.platform is string && d.platform.size() >= 1 && d.platform.size() <= 16
+        && d.device is string && d.device.size() >= 1 && d.device.size() <= 400
+        && d.clientTime is string && d.clientTime.size() >= 1 && d.clientTime.size() <= 40
+        && (!('run' in d) || isValidRun(d.run));
+    }
+
+    match /bugReports/{reportId} {
+      allow create: if isValidReport(request.resource.data);
+      allow get, list, update, delete: if false;
+    }
+
+    // The catch-all: nothing else in this database is reachable by a
+    // client, now or after a later collection is added.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
