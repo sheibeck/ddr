@@ -1349,6 +1349,9 @@ html,body{height:100%}
 .mw-hud-menu-glyph[data-glyph="centre"]{color:#8fb08a;font-size:14px}
 .mw-hud-menu-glyph[data-glyph="camp"]{color:#b9a4ef;font-size:16px}
 .mw-hud-menu-glyph[data-glyph="settings"]{color:#9a8f76;font-size:15px}
+/* Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two always-enabled rows. */
+.mw-hud-menu-glyph[data-glyph="report"]{color:#d9826b;font-size:14px}
+.mw-hud-menu-glyph[data-glyph="notes"]{color:#8fb3c9;font-size:15px}
 /* Phase 70 (D-06): the two quit rows. They carry no glyph, so their labels
    start where the glyph rows' labels do: padding-left 42px = the row's
    14px + the 18px glyph + the 10px gap. .mw-hud-menu-split draws a heavier
@@ -2391,13 +2394,14 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
              just the label+number now (see .mw-hud-rations CSS comment). -->
         <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
       </div>
-      <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the hamburger menu. The four
-           rows keep the legacy chip ids (mw-chip-marks, mw-chip-centre,
+      <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the hamburger menu. The first
+           four rows keep the legacy chip ids (mw-chip-marks, mw-chip-centre,
            btn-camp, mw-gear-btn) so the classic script's existing listener
            lines (openMarksLegend, centerMap, openCampSheet,
            openSettingsSheet) keep their handlers — see
            src/browser/hudMenu.js's HUD_MENU_ITEMS for the label/glyph/colour
-           source of truth.
+           source of truth. Phase 79.3 (BUG-01 D-08, NOTES-02 D-20) adds two
+           more rows, REPORT A BUG and PATCH NOTES, with their own ids.
            Phase 70 (POLISH-02, D-03/D-04, superseding Phase 67 D-05): the
            button wears the Play Games account face (the initials avatar
            when signed in, this static plain ☰ otherwise; painted by
@@ -2418,6 +2422,11 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-centre"><span class="mw-hud-menu-glyph" data-glyph="centre" aria-hidden="true">&#8853;</span><span class="mw-hud-menu-label">CENTRE MAP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="btn-camp"><span class="mw-hud-menu-glyph" data-glyph="camp" aria-hidden="true">&#9790;</span><span class="mw-hud-menu-label">MAKE CAMP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn"><span class="mw-hud-menu-glyph" data-glyph="settings" aria-hidden="true">&#9881;</span><span class="mw-hud-menu-label">SETTINGS</span></button>
+          <!-- Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and
+               PATCH NOTES, always enabled; their sheets are wired by the
+               module script -->
+          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-menu-report"><span class="mw-hud-menu-glyph" data-glyph="report" aria-hidden="true">&#9998;</span><span class="mw-hud-menu-label">REPORT A BUG</span></button>
+          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-menu-notes"><span class="mw-hud-menu-glyph" data-glyph="notes" aria-hidden="true">&#182;</span><span class="mw-hud-menu-label">PATCH NOTES</span></button>
           <!-- Phase 70 (POLISH-03, D-06; user request 2026-09-24): Save & quit
                and Abandon moved here from the HERO tab's retired Delve
                panel. SAVE & QUIT is non-destructive and has no dialog.
@@ -6393,7 +6402,7 @@ function hudMenuEvent(kind) {
 // no hero, and CENTRE MAP while an encounter covers the map. The pure
 // src/browser/hudMenu.js#hudMenuRowStates (bridged as
 // window.__mzHudMenu.rows) owns the rule; this writes its answer onto the
-// six row buttons — the disabled property plus aria-disabled="true", both
+// eight row buttons — the disabled property plus aria-disabled="true", both
 // cleared when the row is live. TDZ-safe like hudMenuEvent: state comes
 // through window.__mzState, never a bare S, and the encounter is only
 // computed once that bridge exists. It never touches the ACCOUNT block

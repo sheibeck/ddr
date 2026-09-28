@@ -177,6 +177,9 @@ const ALLOWLIST = [
   { selector: '.mw-hud-menu-glyph[data-glyph="centre"]', value: "14px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
   { selector: '.mw-hud-menu-glyph[data-glyph="camp"]', value: "16px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
   { selector: '.mw-hud-menu-glyph[data-glyph="settings"]', value: "15px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two new always-enabled rows.
+  { selector: '.mw-hud-menu-glyph[data-glyph="report"]', value: "14px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
+  { selector: '.mw-hud-menu-glyph[data-glyph="notes"]', value: "15px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
   { selector: "#mw-dev-perf", value: "10px", reason: "the dev-only frame-timing readout, never shown in a release build" },
 ];
 // The `font:` shorthand's one fixed size (a dev-only chip).

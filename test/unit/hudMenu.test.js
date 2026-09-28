@@ -67,9 +67,11 @@ test("hudMenuNext: totality — every open/kind/ctx combination returns a strict
 
 // ─── HUD_MENU_ITEMS ──────────────────────────────────────────────────────
 
-test("HUD_MENU_ITEMS: four frozen rows in order marks, centre, camp, settings, with the four legacy chip ids and the mock's glyph codepoints", () => {
+test("HUD_MENU_ITEMS: six frozen rows in order marks, centre, camp, settings, report, notes, with the four legacy chip ids and the mock's glyph codepoints", () => {
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): report and notes are the two new
+  // rows appended after settings; the first four are unchanged, byte for byte.
   assert.ok(Object.isFrozen(HUD_MENU_ITEMS));
-  assert.equal(HUD_MENU_ITEMS.length, 4);
+  assert.equal(HUD_MENU_ITEMS.length, 6);
   for (const row of HUD_MENU_ITEMS) assert.ok(Object.isFrozen(row));
 
   const expected = [
@@ -77,10 +79,26 @@ test("HUD_MENU_ITEMS: four frozen rows in order marks, centre, camp, settings, w
     { key: "centre", id: "mw-chip-centre", glyph: "⊕" },
     { key: "camp", id: "btn-camp", glyph: "☾" },
     { key: "settings", id: "mw-gear-btn", glyph: "⚙" },
+    { key: "report", id: "mw-menu-report", glyph: "✎" },
+    { key: "notes", id: "mw-menu-notes", glyph: "¶" },
   ];
   assert.deepStrictEqual(
     HUD_MENU_ITEMS.map((r) => ({ key: r.key, id: r.id, glyph: r.glyph })),
     expected,
+  );
+});
+
+// Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two new rows' full shape.
+test("HUD_MENU_ITEMS (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES carry their label, colour and size", () => {
+  const report = HUD_MENU_ITEMS.find((r) => r.key === "report");
+  const notes = HUD_MENU_ITEMS.find((r) => r.key === "notes");
+  assert.deepStrictEqual(
+    { key: report.key, id: report.id, label: report.label, glyph: report.glyph, color: report.color, size: report.size },
+    { key: "report", id: "mw-menu-report", label: "REPORT A BUG", glyph: "✎", color: "#d9826b", size: 14 },
+  );
+  assert.deepStrictEqual(
+    { key: notes.key, id: notes.id, label: notes.label, glyph: notes.glyph, color: notes.color, size: notes.size },
+    { key: "notes", id: "mw-menu-notes", label: "PATCH NOTES", glyph: "¶", color: "#8fb3c9", size: 15 },
   );
 });
 
@@ -265,6 +283,9 @@ const ROW_ORDER = [
   { key: "centre", id: "mw-chip-centre" },
   { key: "camp", id: "btn-camp" },
   { key: "settings", id: "mw-gear-btn" },
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two new always-enabled rows.
+  { key: "report", id: "mw-menu-report" },
+  { key: "notes", id: "mw-menu-notes" },
   { key: "saveQuit", id: "mw-menu-save-quit" },
   { key: "abandon", id: "mw-menu-abandon" },
 ];
@@ -273,12 +294,22 @@ function enabledMap(rows) {
   return Object.fromEntries(rows.map((r) => [r.key, r.enabled]));
 }
 
-const ALL_ON = Object.freeze({ marks: true, centre: true, camp: true, settings: true, saveQuit: true, abandon: true });
+const ALL_ON = Object.freeze({
+  marks: true,
+  centre: true,
+  camp: true,
+  settings: true,
+  report: true,
+  notes: true,
+  saveQuit: true,
+  abandon: true,
+});
 
-test("row states (D-08): six frozen { key, id, enabled } entries in dropdown order; the first four ids equal HUD_MENU_ITEMS'", () => {
+test("row states (D-08): eight frozen { key, id, enabled } entries in dropdown order; the first six ids equal HUD_MENU_ITEMS'", () => {
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from six to eight rows.
   const rows = hudMenuRowStates({ hero: true });
   assert.ok(Object.isFrozen(rows));
-  assert.equal(rows.length, 6);
+  assert.equal(rows.length, 8);
   for (const r of rows) {
     assert.ok(Object.isFrozen(r));
     assert.deepStrictEqual(Object.keys(r).sort(), ["enabled", "id", "key"]);
@@ -289,12 +320,13 @@ test("row states (D-08): six frozen { key, id, enabled } entries in dropdown ord
     ROW_ORDER,
   );
   assert.deepStrictEqual(
-    rows.slice(0, 4).map((r) => r.id),
+    rows.slice(0, 6).map((r) => r.id),
     HUD_MENU_ITEMS.map((r) => r.id),
   );
 });
 
-test("row states (D-08): a live, idle hero enables all six rows", () => {
+test("row states (D-08): a live, idle hero enables all eight rows", () => {
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from six to eight rows.
   assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: false, encounter: false })), { ...ALL_ON });
 });
 
@@ -332,11 +364,70 @@ test("row states (D-08): no hero (hero not strictly true) disables MAKE CAMP onl
 
 // Phase 78 (HUD-02): MARKS left this always-on set (a dead hero locks it,
 // pinned above); SETTINGS and the two quit rows are the no-trap guarantee.
-test("row states (D-08, HUD-02): SETTINGS, SAVE & QUIT and ABANDON are always enabled, dead or alive", () => {
+test("row states (D-08, HUD-02): SETTINGS, REPORT A BUG, PATCH NOTES, SAVE & QUIT and ABANDON are always enabled, dead or alive", () => {
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): report and notes join the
+  // always-enabled set.
   const ctxs = [{ hero: true }, { hero: true, encounter: true }, { hero: true, dead: true }, { hero: false, dead: true, encounter: true }, {}];
   for (const ctx of ctxs) {
     const m = enabledMap(hudMenuRowStates(ctx));
-    for (const key of ["settings", "saveQuit", "abandon"]) assert.equal(m[key], true, `${key} ctx=${JSON.stringify(ctx)}`);
+    for (const key of ["settings", "report", "notes", "saveQuit", "abandon"]) assert.equal(m[key], true, `${key} ctx=${JSON.stringify(ctx)}`);
+  }
+});
+
+// Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and PATCH NOTES must
+// never be disabled by hudMenuRowStates, for any ctx — including hostile ones.
+test("row states (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES are enabled for every ctx, hostile included", () => {
+  const hostile = {
+    get hero() {
+      throw new Error("boom");
+    },
+    get dead() {
+      throw new Error("boom");
+    },
+    get encounter() {
+      throw new Error("boom");
+    },
+  };
+  const proxy = new Proxy(
+    {},
+    {
+      get() {
+        throw new Error("trap");
+      },
+    },
+  );
+  const ctxs = [
+    { hero: true },
+    { hero: true, encounter: true },
+    { hero: true, dead: true },
+    { hero: false, dead: true, encounter: true },
+    {},
+    undefined,
+    null,
+    42,
+    "hero",
+    true,
+    hostile,
+    proxy,
+  ];
+  const safeLabel = (ctx) => {
+    try {
+      return JSON.stringify(ctx);
+    } catch {
+      // A hostile getter or a throwing Proxy can make even String(ctx)
+      // throw (it also touches the object's properties) — fall back to a
+      // property-free label rather than risk a second throw.
+      return typeof ctx;
+    }
+  };
+  for (const ctx of ctxs) {
+    let rows;
+    assert.doesNotThrow(() => {
+      rows = hudMenuRowStates(ctx);
+    });
+    const m = enabledMap(rows);
+    assert.equal(m.report, true, `report ctx=${safeLabel(ctx)}`);
+    assert.equal(m.notes, true, `notes ctx=${safeLabel(ctx)}`);
   }
 });
 

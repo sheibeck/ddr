@@ -95,13 +95,14 @@ test("(2) the ☰ sits on band 2, outside .mw-hud-counters' clipping box: the ba
   }
 });
 
-// ─── (3) the four menu rows match HUD_MENU_ITEMS in order ───────────────
+// ─── (3) the six menu rows match HUD_MENU_ITEMS in order ────────────────
 
-test("(3) the four menu rows match HUD_MENU_ITEMS in order: id, label and glyph (decoded from the numeric character reference), and the [data-glyph] rule's colour/size", () => {
+test("(3) the six menu rows match HUD_MENU_ITEMS in order: id, label and glyph (decoded from the numeric character reference), and the [data-glyph] rule's colour/size", () => {
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from four to six rows.
   const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', "</header>");
   const rowRe = /<button type="button" role="menuitem" class="mw-hud-menu-item" id="([^"]+)"><span class="mw-hud-menu-glyph" data-glyph="([^"]+)" aria-hidden="true">&#(\d+);<\/span><span class="mw-hud-menu-label">([^<]+)<\/span><\/button>/g;
   const rows = [...menuSlice.matchAll(rowRe)].map((m) => ({ id: m[1], key: m[2], glyph: String.fromCodePoint(Number(m[3])), label: m[4] }));
-  assert.equal(rows.length, 4, "expected exactly four menu rows");
+  assert.equal(rows.length, 6, "expected exactly six menu rows");
   assert.deepStrictEqual(
     rows.map((r) => ({ id: r.id, key: r.key, glyph: r.glyph, label: r.label })),
     HUD_MENU_ITEMS.map((r) => ({ id: r.id, key: r.key, glyph: r.glyph, label: r.label })),
@@ -350,7 +351,18 @@ test("(9) BEHAVIOUR: every close trigger closes the menu (re-tap, select, a tab 
 
 // ─── (10) BEHAVIOUR: opens during an encounter, rows disabled by context ──
 
-const ROW_IDS = ["mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn", "mw-menu-save-quit", "mw-menu-abandon"];
+// Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): mw-menu-report and mw-menu-notes
+// join the row list — both must stay enabled in every scenario below.
+const ROW_IDS = [
+  "mw-chip-marks",
+  "mw-chip-centre",
+  "btn-camp",
+  "mw-gear-btn",
+  "mw-menu-report",
+  "mw-menu-notes",
+  "mw-menu-save-quit",
+  "mw-menu-abandon",
+];
 
 function rowEl(doc, id) {
   return doc.elementsById.get(id) || doc.document.getElementById(id);
@@ -370,7 +382,9 @@ function assertRows(doc, disabledIds, label) {
   }
 }
 
-test("(10) BEHAVIOUR (Phase 70 D-08): while window.__mzStair is truthy (hasActiveEncounter() true), the ☰ onclick OPENS the menu; MAKE CAMP and CENTRE MAP carry disabled + aria-disabled=\"true\", the other four rows carry neither, and the ACCOUNT block gets no row-sync writes", () => {
+test("(10) BEHAVIOUR (Phase 70 D-08): while window.__mzStair is truthy (hasActiveEncounter() true), the ☰ onclick OPENS the menu; MAKE CAMP and CENTRE MAP carry disabled + aria-disabled=\"true\", the other six rows carry neither, and the ACCOUNT block gets no row-sync writes", () => {
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned — ROW_IDS now has
+  // eight rows, so "the other" rows (not camp/centre) is six, not four.
   const { doc, sandbox } = freshSandbox(states.thief);
   sandbox.context.window.__mzStair = { dir: "N" };
   menuBtn(doc).onclick();
@@ -402,11 +416,12 @@ test("(11) BEHAVIOUR: with __mzHudMenu deleted from the sandbox window, the ☰ 
 
 // ─── (12) accessibility ───────────────────────────────────────────────────
 
-test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-label; the dropdown is role=menu; every row (the four legacy rows plus Phase 70's SAVE & QUIT and ABANDON) is role=menuitem; aria-expanded mirrors data-open across open and close", () => {
+test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-label; the dropdown is role=menu; every row (the four legacy rows, Phase 79.3's REPORT A BUG and PATCH NOTES, plus Phase 70's SAVE & QUIT and ABANDON) is role=menuitem; aria-expanded mirrors data-open across open and close", () => {
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from six to eight rows.
   assert.match(HTML, /id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"/);
   assert.match(HTML, /<div class="mw-hud-menu" id="mw-hud-menu" role="menu" aria-label="Map menu" data-open="0">/);
   const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', "</header>");
-  assert.equal((menuSlice.match(/role="menuitem"/g) || []).length, 6, "all six rows must be role=menuitem");
+  assert.equal((menuSlice.match(/role="menuitem"/g) || []).length, 8, "all eight rows must be role=menuitem");
 
   const { doc } = freshSandbox(states.thief);
   menuBtn(doc).onclick();
@@ -698,7 +713,8 @@ test("(18) BEHAVIOUR: an armed ABANDON row reads data-armed \"0\" after every cl
 // aria-disabled) when they cannot act, and an open menu re-syncs its rows
 // when the encounter state changes under it.
 
-test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead with MAKE CAMP and CENTRE MAP disabled, enables all six rows when idle, re-syncs an open menu, survives an ongoing encounter's re-render, ignores a tap on a disabled row, and a select on a closed menu is a no-op", () => {
+test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead with MAKE CAMP and CENTRE MAP disabled, enables all eight rows when idle, re-syncs an open menu, survives an ongoing encounter's re-render, ignores a tap on a disabled row, and a select on a closed menu is a no-op", () => {
+  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from six to eight rows.
   // combat: opens, camp + centre disabled
   {
     const { doc, sandbox } = freshSandbox(states.thief);
@@ -718,7 +734,7 @@ test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead wit
     assert.equal(rowEl(doc, "mw-menu-abandon").dataset.dead, "1", "dead: the last row reads NEW CHARACTER");
     assertRows(doc, ["btn-camp", "mw-chip-centre", "mw-chip-marks"], "dead");
   }
-  // a live, idle hero: all six enabled
+  // a live, idle hero: all eight enabled
   {
     const { doc } = freshSandbox(states.thief);
     menuBtn(doc).onclick();
@@ -822,4 +838,51 @@ test("(20) SOURCE (Phase 70 D-08): closeModal's menu-first early return precedes
   assert.ok(disabledRule, "a disabled-row rule is scoped under #mw-hud-menu");
   assert.match(disabledRule[1], /opacity:/);
   assert.doesNotMatch(disabledRule[1], /animation|transition/, "the disabled look carries no motion");
+});
+
+// ─── (22) BEHAVIOUR (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES are
+// always enabled, on every screen ────────────────────────────────────────
+
+test("(22) BEHAVIOUR (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES carry neither disabled nor aria-disabled idle, mid-encounter, or on any tab including dead; both rows sit after mw-gear-btn and before mw-menu-save-quit, which keeps its split", () => {
+  // idle on the map
+  {
+    const { doc } = freshSandbox(states.thief);
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    assert.ok(isRowEnabled(doc, "mw-menu-report"), "idle: REPORT A BUG must carry neither disabled nor aria-disabled");
+    assert.ok(isRowEnabled(doc, "mw-menu-notes"), "idle: PATCH NOTES must carry neither disabled nor aria-disabled");
+  }
+  // an encounter (window.__mzStair set)
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.context.window.__mzStair = { dir: "N" };
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    assert.ok(isRowEnabled(doc, "mw-menu-report"), "encounter: REPORT A BUG must carry neither disabled nor aria-disabled");
+    assert.ok(isRowEnabled(doc, "mw-menu-notes"), "encounter: PATCH NOTES must carry neither disabled nor aria-disabled");
+  }
+  // every tab, including dead
+  for (const tab of ["maze", "hero", "gear", "oracle", "dead"]) {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.context.window.__mzShowTab(tab);
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc), `tab=${tab}: the ☰ opens`);
+    assert.ok(isRowEnabled(doc, "mw-menu-report"), `tab=${tab}: REPORT A BUG must carry neither disabled nor aria-disabled`);
+    assert.ok(isRowEnabled(doc, "mw-menu-notes"), `tab=${tab}: PATCH NOTES must carry neither disabled nor aria-disabled`);
+  }
+
+  // markup order: mw-gear-btn, mw-menu-report, mw-menu-notes, mw-menu-save-quit
+  const idxOf = (id) => HTML.indexOf(`id="${id}"`);
+  const gearIdx = idxOf("mw-gear-btn");
+  const reportIdx = idxOf("mw-menu-report");
+  const notesIdx = idxOf("mw-menu-notes");
+  const saveQuitIdx = idxOf("mw-menu-save-quit");
+  assert.ok(gearIdx !== -1 && reportIdx !== -1 && notesIdx !== -1 && saveQuitIdx !== -1, "all four ids must be found");
+  assert.ok(
+    gearIdx < reportIdx && reportIdx < notesIdx && notesIdx < saveQuitIdx,
+    "mw-gear-btn, mw-menu-report, mw-menu-notes, mw-menu-save-quit must appear in that order",
+  );
+  // mw-menu-save-quit still carries the split (the two new rows land before it, not after)
+  const saveQuitTag = HTML.slice(saveQuitIdx - 200, saveQuitIdx + 40);
+  assert.match(saveQuitTag, /class="[^"]*\bmw-hud-menu-split\b[^"]*"/, "mw-menu-save-quit must keep mw-hud-menu-split");
 });
