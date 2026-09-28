@@ -32,31 +32,40 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 // ─── Task 1: the knee, FOE_ELITE and the tier/scaling helpers ─────────────
 
-test("USER RULING D, RULES-17: floors 1-12 are === to today's single-slope expression (no drift, byte-identical to before this dial carried a knee)", () => {
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): the literals below
+// are rewritten with the locked base and perDepth numbers —
+// FOE_HP_SCALE.base 0.9 -> 1.2 (perDepth 0.015 and perDepthAfter 0.03
+// unchanged) and FOE_HIT_SCALE { base 0.6, perDepth 0.01 } -> { 0.84, 0.02 }
+// (perDepthAfter 0.02 unchanged). With FOE_HIT_SCALE.perDepth now EQUAL to
+// its perDepthAfter, the hit scale's knee is its own identity (scaleField's
+// `perDepthAfter !== perDepth` guard): foeHitScale is the single slope
+// 0.84 + 0.02*d at EVERY depth, and only FOE_HP_SCALE still bends at 12.
+test("USER RULING D, RULES-17, Phase 79.2 early-floor lock: floors 1-12 are === to today's single-slope expression (no drift, byte-identical to before this dial carried a knee)", () => {
   for (let d = 1; d <= 12; d++) {
     const curve = difficultyCurve(d);
-    assert.equal(curve.foeHpScale, 0.9 + 0.015 * d, `depth ${d} foeHpScale`);
-    assert.equal(curve.foeHitScale, 0.6 + 0.01 * d, `depth ${d} foeHitScale`);
+    assert.equal(curve.foeHpScale, 1.2 + 0.015 * d, `depth ${d} foeHpScale`);
+    assert.equal(curve.foeHitScale, 0.84 + 0.02 * d, `depth ${d} foeHitScale`);
   }
 });
 
-test("RULES-17: floor 13 is the first floor either scale differs from the single-slope expression — the knee join formula, computed the same way as the engine", () => {
+test("RULES-17, Phase 79.2 early-floor lock: floor 13 is the first floor the HP scale differs from the single-slope expression — the knee join formula, computed the same way as the engine; the hit scale's knee is its own identity (perDepth === perDepthAfter) and stays on the single slope", () => {
+  assert.equal(DIALS.FOE_HIT_SCALE.perDepth, DIALS.FOE_HIT_SCALE.perDepthAfter, "the locked hit slope equals its tail slope (0.02)");
+  assert.notEqual(DIALS.FOE_HP_SCALE.perDepth, DIALS.FOE_HP_SCALE.perDepthAfter, "the HP scale still carries a real knee (0.015 -> 0.03)");
   for (const d of [13, 20, 42]) {
     const curve = difficultyCurve(d);
-    const expectedHp = 0.9 + 0.015 * 12 + 0.03 * (d - 12);
-    const expectedHit = 0.6 + 0.01 * 12 + 0.02 * (d - 12);
+    const expectedHp = 1.2 + 0.015 * 12 + 0.03 * (d - 12);
     assert.equal(curve.foeHpScale, expectedHp, `depth ${d} foeHpScale`);
-    assert.equal(curve.foeHitScale, expectedHit, `depth ${d} foeHitScale`);
-    // and each differs from the (wrong) single-slope expression once d > 12
-    assert.notEqual(curve.foeHpScale, 0.9 + 0.015 * d, `depth ${d} foeHpScale must have left the single slope`);
-    assert.notEqual(curve.foeHitScale, 0.6 + 0.01 * d, `depth ${d} foeHitScale must have left the single slope`);
+    // the HP scale differs from the (wrong) single-slope expression once d > 12
+    assert.notEqual(curve.foeHpScale, 1.2 + 0.015 * d, `depth ${d} foeHpScale must have left the single slope`);
+    // the hit scale's identity knee never engages: the single slope, exactly
+    assert.equal(curve.foeHitScale, 0.84 + 0.02 * d, `depth ${d} foeHitScale (identity knee, single slope)`);
   }
 });
 
-test("RULES-17: the two branches meet exactly AT kneeDepth — no jump", () => {
+test("RULES-17, Phase 79.2 early-floor lock: the two branches meet exactly AT kneeDepth — no jump", () => {
   const curve = difficultyCurve(12);
-  assert.equal(curve.foeHpScale, 0.9 + 0.015 * 12);
-  assert.equal(curve.foeHitScale, 0.6 + 0.01 * 12);
+  assert.equal(curve.foeHpScale, 1.2 + 0.015 * 12);
+  assert.equal(curve.foeHitScale, 0.84 + 0.02 * 12);
 });
 
 test("RULES-17 identity/no-op: perDepthAfter === perDepth (setDialsForTuning) reproduces the single-slope expression at every depth 1..60, including past 12", () => {

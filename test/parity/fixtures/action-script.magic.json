@@ -50,7 +50,7 @@
         "rationale": "Freeze pays out (user decision 2026-09-14) — the prototype's thrown branch marked a frozen foe dead without calling killFoe, so a Freeze kill awarded no experience, coin, treasure roll, kill count, or ration; the engine now routes the kill through killFoe after emitting frozenSolid. Seed 8's Illusionist freezes the Shriek on a d10 roll of 1 (a hit), so this is the one parity scenario that now pays out where the prototype did not. killFoe's four draws (d6 sp roll, d10 coin roll, d20 treasure check, Beasts cooking d6) happen after the last compared action in this scenario, so no earlier draw position moves — items/wp/level and combat-null-on-both-sides are unchanged. Phase 31 (user ruling 2026-09-16: phobia is a penalty, not a lost action): the seed-8 Illusionist fears Beasts, so at Fight! the prototype set its freeze flag while the engine sets combat.afraid = 2 — the compared combat objects differ from action 0, hence the action-path shape (fromAction 0, kind action-path). The prototype's castSpell had no fear check, so both sides cast Freeze on the same draws: d10 roll 1 vs need 6 (prototype) / need 3 (engine, afraid -3) — still a hit; the halved damage (3 -> 2) is irrelevant because Freeze kills through killFoe regardless of hp. No draw position moves relative to the Phase 23 measurement, so the declared end fields are unchanged: sp 5, gold 51, kills 1, rations 5. Re-measured live on 2026-09-16 and confirmed byte-identical to the Phase 23 record. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_SP_SCALE fitted to 0.28 rescales the killFoe sp grant (5 -> 1); FOOD_CLOCK held at 1.5 rescales the chargen ration base the +1 kill ration rides on (6 -> 7); gold/kills unaffected (measured). Re-measured live by replaying this scenario against the fitted engine, never hand-typed. User rulings 2026-09-28 (plan 79.2-01): \"freeze should never kill outright. It should deal its damage and freeze an enemy for 1d4 rounds\" and \"if it hits and resists, deal damage, but no freeze.\" The Illusionist's Freeze still hits on the same draw (d10 roll 10 vs 8+, afraid -3) for the halved 2 damage, which leaves the Shriek standing at 1 hp; the survivor draws the hold's d4 (2), fails its intel resist (13 vs 20), and is frozen for 2 rounds (controlHeld freeze, then foeStillHeld left 1 in the same dispatch). Nothing dies, so killFoe's sp/coin/treasure/cooking draws and payouts are gone: the engine's end fields are sp 0, gold 50, kills 0 (each now equal to the prototype's, so the record's fields narrow to rations alone: 4 -> 6, the chargen base with no kill ration), and the fight is still on (combat is not compared on an action-path record). The prototype side is untouched. Measured live by replaying seed 8 against the live engine, never hand-typed."
       },
       "chargenDivergence": {
-        "phase": "54",
+        "phase": "54+79.2",
         "requirements": [
           "BAND-02"
         ],
@@ -65,11 +65,11 @@
           "rations": 4
         },
         "after": {
-          "maxWP": 39,
-          "wp": 39,
+          "maxWP": 43,
+          "wp": 43,
           "rations": 6
         },
-        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -172,7 +172,7 @@
         }
       ],
       "chargenDivergence": {
-        "phase": "40+54",
+        "phase": "40+54+79.2",
         "requirements": [
           "SPELL-04",
           "BAND-02"
@@ -202,11 +202,11 @@
             "Heal",
             "Lesser Summon"
           ],
-          "maxWP": 39,
-          "wp": 39,
+          "maxWP": 43,
+          "wp": 43,
           "rations": 6
         },
-        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). The cast itself (Heal, idx 0) is unaffected — Heal's mechanic/txt position is byte-identical. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). The cast itself (Heal, idx 0) is unaffected — Heal's mechanic/txt position is byte-identical. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -308,7 +308,7 @@
         }
       ],
       "chargenDivergence": {
-        "phase": "38+54",
+        "phase": "38+54+79.2",
         "requirements": [
           "ABIL-02",
           "BAND-02"
@@ -334,11 +334,11 @@
             "Ambidextrous": 1,
             "Runes/Signs": 1
           },
-          "maxWP": 73,
-          "wp": 73,
+          "maxWP": 81,
+          "wp": 81,
           "rations": 9
         },
-        "rationale": "ABIL-02: as chargen seed 1 — Climbing was dropped outright by the reshape; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "ABIL-02: as chargen seed 1 — Climbing was dropped outright by the reshape; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 73 -> 81, wp 73 -> 81 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -440,7 +440,7 @@
         }
       ],
       "chargenDivergence": {
-        "phase": "40+54",
+        "phase": "40+54+79.2",
         "requirements": [
           "SPELL-04",
           "BAND-02"
@@ -470,11 +470,11 @@
             "Heal",
             "Lesser Summon"
           ],
-          "maxWP": 39,
-          "wp": 39,
+          "maxWP": 43,
+          "wp": 43,
           "rations": 6
         },
-        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). readScroll's own picked spell/option-list length is unaffected — measured live, see FIXTURE-INVENTORY.md's Phase 40 section. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "As chargen seed 7 (test/parity/fixtures/action-script.chargen.json's divergences[\"7\"]): the narrowed SPELL-04 day-one damage guarantee appends the derived-random Lesser Summon row to this Wizard's book (Stun no longer counts as damage). readScroll's own picked spell/option-list length is unaffected — measured live, see FIXTURE-INVENTORY.md's Phase 40 section. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",

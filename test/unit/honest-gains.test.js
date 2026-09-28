@@ -336,9 +336,14 @@ test("bought (a store meal): the purchase event carries `gained`, the HP the mea
 
 // ── 2. Table 4: row / stat / amount, number-free prose ─────────────────────
 
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): HERO_HP_SCALE
+// 1.25 -> 1.4 moves dotHpFor("mid") from round(15 * 1.25) = 19 to
+// round(15 * 1.4) = 21 (the tableFour "-15 HP" row's amount; no draw moves).
+// Traced: under setDialsForTuning(79.2's fit/start.json) the row reads 19,
+// as the user's device log did; the locked engine reads 21 (`node -e`).
 test("tableFour '-15 HP' at depth 3, shipped dials: row, stat 'hp', amount −dotHpFor('mid'), and HP drops by exactly that", () => {
   const n = dotHpFor("mid");
-  assert.equal(n, 19, "sanity: the user's device log read 19");
+  assert.equal(n, 21, "sanity: the shipped dials read 21 (the user's device log read 19 at the pre-79.2 HERO_HP_SCALE 1.25)");
   const state = fixedState({ c: { wp: 60 }, floor: { depth: 3 } });
   const rng = countingRng([]);
   const e = find(tableFour(state, "-15 HP", rng, []), "tableFour");
@@ -462,8 +467,9 @@ test("death log (engine): Table 4 roll 7 at depth 3 lands the '-15 HP' row; tabl
   const rolled = find(events, "encounterRolled");
   assert.deepEqual([rolled.table, rolled.roll, rolled.result], [4, 7, "-15 HP"]);
   const t4 = find(events, "tableFour");
-  assert.equal(t4.amount, -19);
-  assert.ok(state.dead, "15 hp against a 19 hp toll is fatal");
+  // Phase 79.2 early-floor lock: -19 -> -21 (HERO_HP_SCALE 1.25 -> 1.4, see above).
+  assert.equal(t4.amount, -21);
+  assert.ok(state.dead, "15 hp against a 21 hp toll is fatal");
   assert.ok(before + t4.amount <= 0, "the narrated loss explains the death");
 });
 
@@ -582,7 +588,8 @@ test("death log reproduction (depth 3, the '-15 HP' row) through the real engine
   // A survivor: the number printed is exactly the HP that left.
   const alive = run(40);
   const lost = 40 - alive.state.c.wp;
-  assert.equal(lost, 19);
+  // Phase 79.2 early-floor lock: 19 -> 21 (HERO_HP_SCALE 1.25 -> 1.4, see above).
+  assert.equal(lost, 21);
   assert.ok(alive.oracleLines.includes("Table 4, roll 7: The dice decide — a toll."), alive.oracleLines.join(" | "));
   assert.ok(alive.oracleLines.includes(`The maze extracts a toll you did not agree to. −${lost} hp.`), alive.oracleLines.join(" | "));
   assert.ok(alive.railLines.some((l) => l.includes(`−${lost} hp`)), alive.railLines.join(" | "));
@@ -591,6 +598,6 @@ test("death log reproduction (depth 3, the '-15 HP' row) through the real engine
   assert.ok(dead.state.dead);
   const all = [...dead.oracleLines, ...dead.railLines].join("\n");
   assert.doesNotMatch(all, /-15|15 HP|\b15\b/, all);
-  assert.match(all, /−19 hp/);
-  assert.equal(dead.oracleLines.filter((l) => /19/.test(l)).length, 1, "one Oracle line carries the number");
+  assert.match(all, /−21 hp/);
+  assert.equal(dead.oracleLines.filter((l) => /21/.test(l)).length, 1, "one Oracle line carries the number");
 });

@@ -10,7 +10,7 @@
         }
       ],
       "chargenDivergence": {
-        "phase": "38+54",
+        "phase": "38+54+79.2",
         "requirements": [
           "ABIL-02",
           "BAND-02"
@@ -36,11 +36,11 @@
             "Ambidextrous": 1,
             "Runes/Signs": 1
           },
-          "maxWP": 73,
-          "wp": 73,
+          "maxWP": 81,
+          "wp": 81,
           "rations": 9
         },
-        "rationale": "ABIL-02: as chargen seed 1 — Climbing dropped outright; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills. springTrap's dodge never read Climbing. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "ABIL-02: as chargen seed 1 — Climbing dropped outright; its table position is now Second Wind (an active), which lives in c.abilities (secondWind) instead of c.skills. springTrap's dodge never read Climbing. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 73 -> 81, wp 73 -> 81 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -142,7 +142,7 @@
         }
       ],
       "chargenDivergence": {
-        "phase": "38+45+54",
+        "phase": "38+45+54+79.2",
         "requirements": [
           "ABIL-02",
           "QUICK-260918-w4n",
@@ -194,11 +194,11 @@
               "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
             }
           },
-          "maxWP": 50,
-          "wp": 50,
+          "maxWP": 56,
+          "wp": 56,
           "rations": 8
         },
-        "rationale": "ABIL-02: as chargen seed 2 — Climbing (the Cat Burglar's FREE_SKILL grant, now Dirty Trick) and Leaping (dropped, now Smoke) both landed in c.abilities (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "ABIL-02: as chargen seed 2 — Climbing (the Cat Burglar's FREE_SKILL grant, now Dirty Trick) and Leaping (dropped, now Smoke) both landed in c.abilities (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -318,7 +318,7 @@
         }
       ],
       "chargenDivergence": {
-        "phase": "38+45+54",
+        "phase": "38+45+54+79.2",
         "requirements": [
           "ABIL-02",
           "HEDGE-03",
@@ -366,11 +366,11 @@
               "txt": "walk through walls, once every 100 squares"
             }
           },
-          "maxWP": 50,
-          "wp": 50,
+          "maxWP": 56,
+          "wp": 56,
           "rations": 8
         },
-        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active; it lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active; it lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -472,7 +472,7 @@
         }
       ],
       "chargenDivergence": {
-        "phase": "38+45+54",
+        "phase": "38+45+54+79.2",
         "requirements": [
           "ABIL-02",
           "HEDGE-03",
@@ -518,11 +518,11 @@
               "txt": "walk through walls, once every 100 squares"
             }
           },
-          "maxWP": 30,
-          "wp": 30,
+          "maxWP": 34,
+          "wp": 34,
           "rations": 8
         },
-        "rationale": "ABIL-02: Silence converted to Silent Step and the Thief's Kata converted to Feint; both landed in c.abilities (silentStep, feint) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "ABIL-02: Silence converted to Silent Step and the Thief's Kata converted to Feint; both landed in c.abilities (silentStep, feint) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 30 -> 34, wp 30 -> 34 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -624,7 +624,7 @@
         }
       ],
       "chargenDivergence": {
-        "phase": "38+45+54",
+        "phase": "38+45+54+79.2",
         "requirements": [
           "ABIL-02",
           "QUICK-260918-w4n",
@@ -675,11 +675,11 @@
               "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
             }
           },
-          "maxWP": 50,
-          "wp": 50,
+          "maxWP": 56,
+          "wp": 56,
           "rations": 8
         },
-        "rationale": "ABIL-02: the Thief's Kata converted to the Feint active, which lives in c.abilities (feint) instead of c.skills; Locks keeps its measured tier value untouched. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "ABIL-02: the Thief's Kata converted to the Feint active, which lives in c.abilities (feint) instead of c.skills; Locks keeps its measured tier value untouched. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Armor instead of Cloak of Regeneration. The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
       },
       "floorFeatureShift": {
         "phase": "54",

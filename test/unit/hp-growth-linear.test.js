@@ -121,10 +121,16 @@ test("RULES-01 boundary: 0/1/2/3 '+25 HP' pulls add exactly 0/1/2/3 flat steps a
   }
 });
 
-test("RULES-01 boundary: 0/1/2/3 '+25 HP' pulls add exactly 0/1/2/3 flat steps at shipped dials (step = dotHpFor('large') = 31)", () => {
+// Phase 79.2 early-floor lock (user ruling 2026-09-27): HERO_HP_SCALE
+// 1.25 -> 1.4 moves the shipped-dial Table 4 steps from 13/19/31 to 14/21/35
+// (dotHpFor = round(DOT_HP_BASE * HERO_HP_SCALE); no draw moves). Traced:
+// under setDialsForTuning(79.2's fit/start.json) dotHpFor reads 13/19/31,
+// and the locked engine reads 14/21/35 (`node -e`). The identity rows
+// (10/15/25) are unchanged.
+test("RULES-01 boundary: 0/1/2/3 '+25 HP' pulls add exactly 0/1/2/3 flat steps at shipped dials (step = dotHpFor('large') = 35)", () => {
   setDialsForTuning({});
   try {
-    const expectedByCount = [40, 71, 102, 133];
+    const expectedByCount = [40, 75, 110, 145];
     for (let n = 0; n <= 3; n++) {
       const state = fixedState({ c: { maxWP: 40, wp: 40 } });
       for (let i = 0; i < n; i++) tableFour(state, "+25 HP", fakeRng([]), []);
@@ -150,11 +156,12 @@ test("RULES-01 pool-independence: the toll ('-15 HP', dotHpFor('mid')) removes t
   try {
     const smallShip = fixedState({ c: { wp: 40, maxWP: 40 } });
     tableFour(smallShip, "-15 HP", fakeRng([]), []);
-    assert.equal(smallShip.c.wp, 40 - 19, "a 40-maxWP hero loses exactly 19 at shipped dials");
+    // Phase 79.2 early-floor lock: 19 -> 21 (HERO_HP_SCALE 1.25 -> 1.4).
+    assert.equal(smallShip.c.wp, 40 - 21, "a 40-maxWP hero loses exactly 21 at shipped dials");
 
     const largeShip = fixedState({ c: { wp: 392, maxWP: 392 } });
     tableFour(largeShip, "-15 HP", fakeRng([]), []);
-    assert.equal(largeShip.c.wp, 392 - 19, "a 392-maxWP hero loses exactly 19 at shipped dials");
+    assert.equal(largeShip.c.wp, 392 - 21, "a 392-maxWP hero loses exactly 21 at shipped dials");
   } finally {
     setIdentityDials();
   }
@@ -204,16 +211,17 @@ test("RULES-01 empty: a '+25 HP' pull on the smallest-maxWP hero still adds the 
 
 // --- precision: dotHpFor is Math.round(base * HERO_HP_SCALE), int >= 1 ----
 
-test("RULES-01 precision: dotHpFor(kind) is Math.round(DOT_HP_BASE[kind] * HERO_HP_SCALE) — 10/15/25 at identity, 13/19/31 at shipped dials, always an integer >= 1", () => {
+test("RULES-01 precision: dotHpFor(kind) is Math.round(DOT_HP_BASE[kind] * HERO_HP_SCALE) — 10/15/25 at identity, 14/21/35 at shipped dials (Phase 79.2 early-floor lock), always an integer >= 1", () => {
   assert.equal(dotHpFor("small"), 10);
   assert.equal(dotHpFor("mid"), 15);
   assert.equal(dotHpFor("large"), 25);
 
   setDialsForTuning({});
   try {
-    assert.equal(dotHpFor("small"), 13);
-    assert.equal(dotHpFor("mid"), 19);
-    assert.equal(dotHpFor("large"), 31);
+    // Phase 79.2 early-floor lock: 13/19/31 -> 14/21/35 (HERO_HP_SCALE 1.25 -> 1.4).
+    assert.equal(dotHpFor("small"), 14);
+    assert.equal(dotHpFor("mid"), 21);
+    assert.equal(dotHpFor("large"), 35);
     for (const kind of ["small", "mid", "large"]) {
       const n = dotHpFor(kind);
       assert.ok(Number.isInteger(n) && n >= 1, `dotHpFor("${kind}") must be an integer >= 1`);

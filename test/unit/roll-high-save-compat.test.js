@@ -44,6 +44,14 @@
 // divergence is dispatched index 98, the Joiner Denn's Freeze on Drekk; its
 // 8 damage kills Drekk, now a normal kill (no up-front intel resist, no
 // frozen-solid flag on the dead foe). Same draws, same position.
+//
+// Phase 79.2 early-floor lock (user ruling 2026-09-27, locked by
+// RF-79.2-02-3): `expected.hash` re-recorded (ONLY — `dead`/`depth`/
+// `actions` still false/3/300). Traced live on the locked engine: under
+// setDialsForTuning(79.2's fit/start.json) the replay reproduces the old
+// hash exactly; under the locked DIALS the first divergence is dispatched
+// index 27 (move N on floor 3), where a Poltergeist's starting wp reads
+// FOE_HP_SCALE (base 0.9 -> 1.2): 9 -> 12. Same draws, same position.
 
 import test from "node:test";
 import assert from "node:assert/strict";

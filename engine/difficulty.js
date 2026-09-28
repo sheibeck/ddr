@@ -75,8 +75,20 @@ export const DIALS = deepFreeze({
    * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
    * {0.6,0.2}/{0.9,0.26} -> { base: 0.9, perDepth: 0.29 } —
    * fit/fit-log.jsonl #13 (score 2.7113, PASS). map(1) = round(0.9+0.29) =
-   * 1 — floor 1 stays identical to canon (parity). */
-  FOE_LEVEL: { base: 0.9, perDepth: 0.29 },
+   * 1 — floor 1 stays identical to canon (parity).
+   * Refitted (Phase 79.2 early-floor sweep, user ruling 2026-09-27: fair-bot
+   * p50 death depth 3-4): base 0.9 -> 1.0 (perDepth 0.29 unchanged) —
+   * fit/early-log-c2.jsonl #18 (score 4.547951, verdict MISS at 200 seeds:
+   * floor 4); confirmed at 1,000 seeds (fit/early-log-c3.jsonl #1 =
+   * fit/confirm-1000-c3n1.jsonl: p50 5, verdict MISS on floors 3-6, shape ok)
+   * and on the 79.1 tail (fit/tail-confirm-c3n1.jsonl: verdict PASS); locked
+   * on the user's ruling (RF-79.2-02-3, 2026-09-28: "Lock the best result
+   * as-is.") despite floors 3-6 out of tolerance and p50 5 outside [3, 4];
+   * see docs/DIFFICULTY-RETUNE.md's Phase 79.2 record. map(1) =
+   * round(1.0+0.29) = 1 still, so floor 1 foes stay level 1; the map 1..25
+   * moves from 1122233344445555555555555 to 1222233344445555555555555 (only
+   * floor 2 gains a level, 1 -> 2). */
+  FOE_LEVEL: { base: 1, perDepth: 0.29 },
   /** TIER_SPREAD — the d4 "one tier lower" bleed threshold (canon: a roll of
    * 1 on a d4 knocks the tier down by one). Identity: 1 (unchanged from
    * canon `rng.d(4) === 1`). Direction: ↑ = more low-tier bleed (softer).
@@ -104,8 +116,21 @@ export const DIALS = deepFreeze({
    * harder floor — the Phase 54 fit boundary) — NEVER searched by any fit.
    * `perDepthAfter: 0.02`: set by 75.3-06's checkpointed tail sweep; this
    * plan's start value is twice the pre-knee slope (0.01), deliberately
-   * mild. */
-  FOE_HIT_SCALE: { base: 0.6, perDepth: 0.01, kneeDepth: 12, perDepthAfter: 0.02 },
+   * mild.
+   * Refitted (Phase 79.2 early-floor sweep, user ruling 2026-09-27: fair-bot
+   * p50 death depth 3-4): { base: 0.6, perDepth: 0.01 } -> { base: 0.84,
+   * perDepth: 0.02 } (kneeDepth 12 and perDepthAfter 0.02 unchanged) —
+   * fit/early-log-c2.jsonl #18 (score 4.547951, verdict MISS at 200 seeds:
+   * floor 4); confirmed at 1,000 seeds (fit/early-log-c3.jsonl #1 =
+   * fit/confirm-1000-c3n1.jsonl: p50 5, verdict MISS on floors 3-6, shape ok)
+   * and on the 79.1 tail (fit/tail-confirm-c3n1.jsonl: verdict PASS); locked
+   * on the user's ruling (RF-79.2-02-3, 2026-09-28: "Lock the best result
+   * as-is.") despite floors 3-6 out of tolerance and p50 5 outside [3, 4];
+   * see docs/DIFFICULTY-RETUNE.md's Phase 79.2 record. With perDepth now
+   * EQUAL to perDepthAfter (both 0.02), this dial's knee is its own identity:
+   * scaleField never takes the knee branch, and foeHitScale is the single
+   * slope 0.84 + 0.02*d at every depth. */
+  FOE_HIT_SCALE: { base: 0.84, perDepth: 0.02, kneeDepth: 12, perDepthAfter: 0.02 },
   /** FOE_HP_SCALE — scales a foe's starting wp/maxWP at copy time. Identity:
    * `{ base: 1, perDepth: 0 }`. Direction: ↑ = longer fights (harder).
    * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): base identity/
@@ -116,8 +141,18 @@ export const DIALS = deepFreeze({
    * FOE_HIT_SCALE above (see its JSDoc for the formula/identity/direction).
    * `kneeDepth: 12`: user-ruled 2026-09-25; NEVER searched. `perDepthAfter:
    * 0.03`: set by 75.3-06's checkpointed tail sweep; this plan's start value
-   * is twice the pre-knee slope (0.015). */
-  FOE_HP_SCALE: { base: 0.9, perDepth: 0.015, kneeDepth: 12, perDepthAfter: 0.03 },
+   * is twice the pre-knee slope (0.015).
+   * Refitted (Phase 79.2 early-floor sweep, user ruling 2026-09-27: fair-bot
+   * p50 death depth 3-4): base 0.9 -> 1.2 (perDepth 0.015, kneeDepth 12 and
+   * perDepthAfter 0.03 unchanged) — fit/early-log-c2.jsonl #18 (score
+   * 4.547951, verdict MISS at 200 seeds: floor 4); confirmed at 1,000 seeds
+   * (fit/early-log-c3.jsonl #1 = fit/confirm-1000-c3n1.jsonl: p50 5, verdict
+   * MISS on floors 3-6, shape ok) and on the 79.1 tail
+   * (fit/tail-confirm-c3n1.jsonl: verdict PASS); locked on the user's ruling
+   * (RF-79.2-02-3, 2026-09-28: "Lock the best result as-is.") despite floors
+   * 3-6 out of tolerance and p50 5 outside [3, 4]; see
+   * docs/DIFFICULTY-RETUNE.md's Phase 79.2 record. */
+  FOE_HP_SCALE: { base: 1.2, perDepth: 0.015, kneeDepth: 12, perDepthAfter: 0.03 },
   /** FOE_COUNT_SKEW — an index into FOE_COUNT_TABLE (below) shifting
    * P(1/2/3 foes) once the canon d4 roll is > 2; row 0 is canon. Identity: 0
    * (canon draw shape, no level-keyed cap). Direction: ↑ = more bodies.
@@ -203,16 +238,34 @@ export const DIALS = deepFreeze({
    * hero (easier).
    * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
    * 1/1.25 -> 1.25 (unmoved from the cycle-2 start this cycle) —
-   * fit/fit-log.jsonl #13 (score 2.7113, PASS). */
-  HERO_HP_SCALE: 1.25,
+   * fit/fit-log.jsonl #13 (score 2.7113, PASS).
+   * Refitted (Phase 79.2 early-floor sweep, user ruling 2026-09-27: fair-bot
+   * p50 death depth 3-4): 1.25 -> 1.4 — fit/early-log-c2.jsonl #18 (score
+   * 4.547951, verdict MISS at 200 seeds: floor 4); confirmed at 1,000 seeds
+   * (fit/early-log-c3.jsonl #1 = fit/confirm-1000-c3n1.jsonl: p50 5, verdict
+   * MISS on floors 3-6, shape ok) and on the 79.1 tail
+   * (fit/tail-confirm-c3n1.jsonl: verdict PASS); locked on the user's ruling
+   * (RF-79.2-02-3, 2026-09-28: "Lock the best result as-is.") despite floors
+   * 3-6 out of tolerance and p50 5 outside [3, 4]; see
+   * docs/DIFFICULTY-RETUNE.md's Phase 79.2 record. */
+  HERO_HP_SCALE: 1.4,
   /** HERO_SP_SCALE — scales every SP grant (kill share, parley, the descend
    * bonus, the table-four +10/+25 XP dots). Identity: 1 (canon). Direction:
    * ↑ = faster leveling (paces HERO_HP_SCALE's payoff sooner).
    * Fitted (Phase 54, USER RULING G cycle 3, 2026-09-21): identity/start
    * 1/0.28 -> 0.28 (unmoved from the cycle-2 start this cycle; evaluations
    * #6-7 probed 0.33/0.23 and both scored worse) — fit/fit-log.jsonl #13
-   * (score 2.7113, PASS). */
-  HERO_SP_SCALE: 0.28,
+   * (score 2.7113, PASS).
+   * Refitted (Phase 79.2 early-floor sweep, user ruling 2026-09-27: fair-bot
+   * p50 death depth 3-4): 0.28 -> 0.23 — fit/early-log-c2.jsonl #18 (score
+   * 4.547951, verdict MISS at 200 seeds: floor 4); confirmed at 1,000 seeds
+   * (fit/early-log-c3.jsonl #1 = fit/confirm-1000-c3n1.jsonl: p50 5, verdict
+   * MISS on floors 3-6, shape ok) and on the 79.1 tail
+   * (fit/tail-confirm-c3n1.jsonl: verdict PASS); locked on the user's ruling
+   * (RF-79.2-02-3, 2026-09-28: "Lock the best result as-is.") despite floors
+   * 3-6 out of tolerance and p50 5 outside [3, 4]; see
+   * docs/DIFFICULTY-RETUNE.md's Phase 79.2 record. */
+  HERO_SP_SCALE: 0.23,
   /** CAMP_HEAL_FRACTION — a rested night heals `round(fraction * maxWP) +
    * d10 - 5` (the SAME d10 draw canon always made, re-centered). No
    * identity exists (canon was `d10 + 2*level`, a level term, not a
