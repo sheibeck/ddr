@@ -5743,6 +5743,13 @@ The Phase 54 historical dial table (`## v1.2 retune (Phase 27)`'s own BEFORE/AFT
 - **Thief `evasion`** — the historical table's "first candidate Thief evasion −1" now reads **+1** (a positive evasion value is harder to hit, matching the dial's own name) after fix (d)'s sign flip (72-04). The historical row is left unedited (it is a record of what shipped at the time, not a live spec); this note is the correction.
 - **`PARLEY_NEED_MOD`** — the historical table's `FLEE_NEED_MOD / PARLEY_NEED_MOD … harder` annotation is now TRUE for both dials (it was already true for `FLEE_NEED_MOD`; `PARLEY_NEED_MOD` was silently inverted until F5, 72-07). Both dials share one direction now: up = harder, down = easier, for flee and parley alike.
 
+**Milestone-final record (Phase 79.1).** See
+`## v2.1 milestone balance check (Phase 79.1) — bot readouts` above for
+the FINAL readouts and every verdict. This phase's own BEFORE block
+above (`### BEFORE — commit 9197002`) is the milestone's 200-seed
+BASELINE (v2.0) — engine, content and tools are byte-identical to v2.0
+for this readout.
+
 ## v2.1 roll-high mirror (Phase 73) — bot readout
 
 ### Change under measurement
@@ -5884,6 +5891,11 @@ This readout is **identical, byte for byte (after CRLF normalisation), to the Ph
 It is also identical to **every recorded line of the Phase 72 `### AFTER — commit d2adfd6` block above**, verified via `node tools/readout-compare.mjs --recorded docs/DIFFICULTY-RETUNE.md "### AFTER — commit d2adfd6" <this-run>`, which confirms every one of that block's non-blank lines (the Phase 72 fixes already baked in) appears, in order, in this run — because Phase 73's base commit IS Phase 72's close commit, the two readouts describe the exact same engine state read two different ways.
 
 **No difficulty change and no retune owed.** This is exactly the outcome CONTEXT Area 3 predicts for a representation-only mirror: every `rng.d(N)` draw fires in the same position, in the same order, for every one of the 200 seeds, and every check's outcome (`roll >= atLeast`) is the arithmetic mirror of the old outcome (`r <= need`) for the SAME raw draw `r` — there is no path by which reading the die differently could move a death depth, a reach percentage, a per-floor survival number, or a death-cause count. This readout is the third and final proof (alongside the byte-identical parity suite and the unchanged Phase 72 direction tests) that Phase 73 changed representation, never outcome.
+
+**Milestone-final record (Phase 79.1).** See
+`## v2.1 milestone balance check (Phase 79.1) — bot readouts` above.
+Phase 73's own AFTER readout is byte-identical to Phase 72's BEFORE (no
+change), so it carries the same "BASELINE (v2.0)" status there.
 
 ## v2.1 engine rules (Phase 75) — bot readouts
 
@@ -6170,6 +6182,12 @@ The whole-phase move, end to end: mean death depth 7.87→7.54 (−0.33), p50 he
 
 **Against the floor 5–7 average run ending:** p50 death depth is 7 at every single measurement point across all six plans and the whole-phase BEFORE/FINAL — never left the floor 5–7 band for even one plan. Mean death depth ranges 7.51-7.88 across the phase, sitting at or just above the top of that band throughout, consistent with the pre-Phase-75 baseline (mean 7.87) and never crossing meaningfully out of it. **No flag for the user is needed** — the average run ending held inside floors 5-7 (by p50) for the whole phase, and this plan does not retune any dial regardless.
 
+**Milestone-final record (Phase 79.1).** See
+`## v2.1 milestone balance check (Phase 79.1) — bot readouts` above for
+the FINAL readouts and every verdict; this phase's own move
+(RULES-01/02/03/05/12/13/14/15) is measured only as part of the
+whole-milestone BASELINE → FINAL gap, not in isolation.
+
 ## v2.1 Pilfer fumbles & scroll reading (Phase 75.1) — bot readouts
 
 ### Change under measurement
@@ -6378,6 +6396,29 @@ MISS), and correcting it is an engine-change decision reserved for the
 user, not something an executor infers from one readout. Every other floor
 (1-10, 12-19) stays inside its own target band at both BEFORE and FINAL.
 
+**Milestone-final record (Phase 79.1).**
+
+See `## v2.1 milestone balance check (Phase 79.1) — bot readouts` above
+for the FINAL readouts and every verdict.
+
+**The floor-11 flag, closed out.** This phase's own FINAL readout above
+carries a genuine floor-11 per-floor-survival MISS (`dS -4.0`,
+`reached=31`, `deaths=6`), deliberately not retuned in this phase. At
+1,000 seeds:
+- BASELINE (v2.0): `L=11 reached=184 deaths=43 ... p_L=76.6% S_L=17.8%
+  target p_L=78.7% target S_L=19.1% dS=-1.3 PASS`
+  (tools/readouts/79.1-baseline-1000.txt:112).
+- FINAL (milestone-final code, 12aea234): `L=11 reached=8 deaths=2 ...
+  p_L=75.0% S_L=0.9% target p_L=73.3% target S_L=2.2% dS=-1.3 PASS`
+  (tools/readouts/79.1-final-1000.txt:109).
+
+Verdict: PASS at both BASELINE and FINAL. This phase's own flag was
+measured against the pre-Phase-79.2 Ruling-C per-floor target; Phase
+79.2 replaced that target curve for floors 1-12 (fair-bot p50 3-4), and
+floor 11 reads PASS under the new curve too. No user decision was
+needed on this specific flag — it never re-appeared as a MISS once the
+milestone-final code and target were both in place.
+
 ## v2.1 hero size (Phase 75.2) — bot readouts
 
 **ORCHESTRATOR RULING (2026-09-26, mid-milestone):** bot balance readouts
@@ -6455,6 +6496,26 @@ before vs. after) are deferred to Phase 79.1 (user ruling 2026-09-26)** —
 this section records only what was already measured at the phase's own
 BEFORE point. No dial in this repository was retuned in response to any
 number in this section, per the checkpointed fit protocol.
+
+**Milestone-final record (Phase 79.1).**
+
+At the milestone's FINAL readout
+(`## v2.1 milestone balance check (Phase 79.1) — bot readouts`, code
+12aea234), the per-race verdicts this phase deferred:
+
+| Race | races-before (75.2-01) | v2.0 (79.1 BASELINE) | FINAL (79.1) | Move vs races-before | Flag (>1 floor) |
+|---|---|---|---|---|---|
+| Elven | mean 5.35, p50 5.0 | mean 5.84, p50 5.0 | mean 3.47, p50 3.0 | -1.88 | FLAG |
+| Dwarven | mean 6.97, p50 6.0 | mean 7.00, p50 6.0 | mean 4.27, p50 4.0 | -2.70 | FLAG |
+| Troll | mean 8.09, p50 8.0 | mean 8.37, p50 8.0 | mean 4.53, p50 4.0 | -3.56 | FLAG |
+
+All three FLAG the ">1 floor since races-before" rule this phase itself
+set — expected, since the entire milestone (not just this phase's size
+rule) got harder by design. See "races and classes" and "reading and
+flags for the user" in the Phase 79.1 H2 for the full reading. This
+phase's own 75.2-02 per-plan AFTER readout was never taken separately,
+per the orchestrator ruling recorded above; its effect is inside this
+same whole-milestone BASELINE → FINAL gap.
 
 ## v2.1 deep-floor encounter scaling (Phase 75.3) — bot readouts
 
@@ -6578,6 +6639,27 @@ finished milestone code:
 
 No dial was retuned in response to any number, and none is recorded here.
 
+**Milestone-final record (Phase 79.1).**
+
+See `## v2.1 milestone balance check (Phase 79.1) — bot readouts` above
+for the full verdict tables. Summary against this phase's own ruled tail
+targets (`TAIL_TARGETS`), FINAL values:
+
+| Ruled target | Target | FINAL | Verdict |
+|---|---|---|---|
+| fresh reach-20 | <= 1.0% | 0.0% (1,000-seed FINAL) | PASS |
+| fresh reach-21 | < 0.5% | 0.0% | PASS |
+| fresh count reaching 30 | <= 1 | 0 | PASS |
+| deep12/20/30 reach/gained targets | see table above | not re-measured on the FINAL code; PASS at the Phase 79.2 lock (before quick fixes cos/hrs/nrf) | REPORT |
+| rotation (rot20/rot30 vs deep20/deep30) | rot <= fair | not re-measured on the FINAL code; PASS at the bound at the Phase 79.2 lock | REPORT |
+
+The shipped `FOE_COUNT_DEPTH`/`FOE_HP_SCALE`/`FOE_HIT_SCALE`/`FOE_ELITE`/
+`CONTROL_AT_DEPTH` values this phase's own table above records are
+unchanged: Phase 79.1's own checkpointed tail sweep scored them PASS at
+row #1 (START) and ran no sweep block (user ruling 2026-09-27, "measure,
+then ship"), so "locked (Phase 79.1)" equals "shipped (this phase)"
+exactly — no dial in this table moved.
+
 ## v2.1 darkness unification (Phase 76) — bot readout
 
 **USER RULING (2026-09-26):** bot balance runs happen once, at the
@@ -6633,6 +6715,26 @@ The 200-seed `tools/tune-difficulty.mjs` readout that measures this shift
 79.1, against the finished milestone code. The user judges the kinder dark
 there. If a difficulty band fails then, the rule is to stop and report: no
 band is loosened and no compensating nerf is made.
+
+**Milestone-final record (Phase 79.1).**
+
+See `## v2.1 milestone balance check (Phase 79.1) — bot readouts` above
+for the full readouts. This phase's darkness change is measured only
+milestone-wide (no isolated BEFORE/AFTER was taken). The death-cause
+share most directly tied to it, BASELINE (v2.0) against FINAL at 1,000
+seeds:
+
+| Death cause | BASELINE (v2.0) | FINAL (12aea234) |
+|---|---|---|
+| starved in the dark | 89 of 1,000 (8.9%) | 86 of 1,000 (8.6%) |
+
+(`tools/readouts/79.1-baseline-1000.txt:12`,
+`tools/readouts/79.1-final-1000.txt:13`.) No other death-cause label in
+either breakdown is explicitly darkness-tagged. The share held
+essentially flat (8.9% -> 8.6%) across a milestone that made the game
+harder overall (mean death depth 7.88 -> 4.49) — consistent with 76-01's
+own stated direction ("the dark got kinder to light carriers on
+purpose").
 
 ## v2.1 pre-roll wall/crevice decision (Phase 78) — bot readout
 
@@ -6696,6 +6798,25 @@ in Phase 79.1, against the finished milestone code. Expected effect: none
 on the bot's route (it always commits), a small one through the acts-keyed
 derived streams. If a difficulty band fails then, the rule is to stop and
 report: no band is loosened and no compensating nerf is made.
+
+**Milestone-final record (Phase 79.1).**
+
+See `## v2.1 milestone balance check (Phase 79.1) — bot readouts` above.
+This phase's change is measured only milestone-wide (no isolated BEFORE/
+AFTER was taken). The three death-cause shares most directly tied to it,
+BASELINE (v2.0) against FINAL at 1,000 seeds:
+
+| Death cause | BASELINE (v2.0) | FINAL (12aea234) |
+|---|---|---|
+| undone by a trap | 61 of 1,000 (6.1%) | 37 of 1,000 (3.7%) |
+| fell off a wall | 20 of 1,000 (2.0%) | 18 of 1,000 (1.8%) |
+| came up short on a leap | 16 of 1,000 (1.6%) | 11 of 1,000 (1.1%) |
+
+(`tools/readouts/79.1-baseline-1000.txt:14,23,30`,
+`tools/readouts/79.1-final-1000.txt:21,27,32`.) All three shares fell in
+absolute count and in share of a much smaller death pool (938 FINAL
+deaths vs 874 BASELINE), consistent with the pre-roll decision removing
+"gotcha" rolls rather than adding new hazard lethality.
 
 ## v2.1 per-floor regen removed (quick fix 79-02c, user ruling 2026-09-27)
 
@@ -7154,6 +7275,508 @@ Parity stays 66/66, and the prototype master is unchanged. Everything that moved
 - FILTER_SHAPE.
 
 Those verdicts must not read the Ruling C curve and its 5-7 median ("Wall 5-8: PASS when rows 5-8 all PASS and the median is 5-7" predates this phase). The new fair-bot median is 5, so a 5-7 reading would pass by accident.
+
+## v2.1 milestone balance check (Phase 79.1) — bot readouts
+
+**TRIMMED EXECUTION (2026-09-28, user ruling "measure, then ship").**
+This H2 was written by 79.1-04 in its trimmed form. The orchestrator ran
+the FINAL readouts (the 1,000-seed natural run and the class/race matrix,
+`node tools/tune-difficulty.mjs --seeds=1000` and
+`node tools/tune-classes.mjs --seeds 10 --workers 3`) on code `12aea234`
+and committed them at `b60e6585`; this section's executor ran no bot or
+readout tool itself and computed every verdict from files already on
+disk. The 200-seed FINAL, the plain Human Sorcerer from floor 20, and a
+re-run of the deep-start tail slices/rotation/Troll Summoner on the FINAL
+code were NOT taken — see "not re-run" notes throughout this section.
+
+### Phase 79.1 — what this measures
+
+The milestone's balance-moving changes, in landing order:
+
+- **Phase 72/73 (ROLL-04/05):** the roll-direction pass and its roll-high
+  mirror. 73 made no further balance move (`git diff --quiet` v72↔v73 on
+  engine/content/tools exits 0), so Phase 72's own BEFORE readout is this
+  ledger's earliest 200-seed point and doubles as the v2.0 baseline.
+- **Phase 75 (RULES-01/02/03/05/12/13/14/15):** the wilmst cache cut, the
+  Summoner's offense-school gate removed, Sense Presence/Bubble, a bagged
+  staff's inert charge, the Summoner's halved healing school, and the
+  wanderer-interrupted feature tile/spellbook-refill fixes.
+- **Phase 75.1 (RULES-09/10):** the Pilfer's item-use fumble risk, and
+  `canRead` removed so any class may attempt a scroll.
+- **Phase 75.2 (RULES-11):** hero size is a real stat (race base step plus
+  live size items), with the Dwarven/Elven/Troll signature-trait masks.
+- **Phase 75.3 (RULES-16/17/18):** foe count by depth, the deep hp/hit
+  curve's post-floor-12 knee, elite foe ranks, and control-at-depth resist
+  and hold rounds past floor 12.
+- **Phase 76 (DARK-01):** one darkness waiver (`darkLimited`) drives every
+  hero-side dark penalty, the reveal/render radii, and — by 2026-09-25
+  user ruling — the fight itself (toHit's dark cap, no-crit-in-the-dark,
+  the Darkness phobia).
+- **Phase 78 (CLIMB-01/02):** walls and crevices ask before they roll;
+  turning back costs nothing; Heights arms on the commit, not the step.
+- **Quick fix 79-02c (user ruling 2026-09-27):** the per-floor descent
+  heal (`HERO_REGEN_PER_FLOOR`, fitted 0.25 × maxHP) is removed outright.
+- **Phase 79.2 (user ruling 2026-09-27, "early floor difficulty change
+  now"):** floors 1-12 retuned to a fair-bot fresh p50 death depth of
+  3-4 (`P50_DEATH_BAND`), superseding the old 5-7 median band. Locked by
+  ruling RF-79.2-02-3 at a band MISS the user accepted (floors 3-6 still
+  easier than target); see the Phase 79.2 H2 above for the full sweep.
+- **Quick fixes 260927-rsx/opf** (folded into the Phase 79.2 measurement):
+  every foe-targeted spell is resistible on a half-intel scale, and
+  one-shot strikes fire once per fight.
+- **Quick fixes 260928-cos/hrs/nrf (all 2026-09-28, folded into the FINAL
+  readout, after the Phase 79.2 lock):** the Cloak of Strength wards foe
+  crits on the wearer (not the wearer's own crits); the hero resists on
+  the same half-intel scale as a foe, and "for N rounds" abilities now
+  cover the use round's foe turn plus their full N rounds; the Thief
+  flee bonus is +3 (was +5), Sweep refuses under 2 foes, Kata/Feint need
+  +3 faces to hit (was auto-hit), Acrobats are hit on the foe's top 4
+  faces (was 3), and a Joiner now resists a foe bolt or drain.
+
+RULES-16's threshold numbers (fresh reach-20 ≤ 1.0%, reach-21 < 0.5%,
+count reaching 30 ≤ 1 — "Living past floor 20 should be exceedingly
+rare... Player getting to depth 30 should basically never happen") are
+user-ruled and unfitted (75.3-CONTEXT.md, 2026-09-25); their effect on
+the numbers below is inside this milestone-wide move, not isolated.
+
+**No per-phase isolated effect is claimed.** Per CONTEXT.md's own
+ruling, no mid-milestone baseline was taken for any deferred plan
+(75.2-01/02/05, 75.3-01..07, 76-01/06, 78-01). Every change above is
+measured together, v2.0 → FINAL, and this record says so rather than
+inventing a split.
+
+### Phase 79.1 — parameters and refs
+
+- `node tools/tune-difficulty.mjs --seeds=200` / `--seeds=1000` (solo
+  bot, `--start-depth=1`, no `--party`) — the same command and dial set
+  every earlier v2.1 section above uses.
+- `node tools/tune-classes.mjs --seeds 10 --workers 4` (v2.0 baseline and
+  79.1's own BASELINE run) / `--workers 3` (the FINAL run, taken by the
+  orchestrator) — 143 cells × 10 seeds (1,430 runs), start depth 1.
+- v2.0 baseline ref: `git rev-parse v2.0^{commit}` = `8c30139079374d63de62d901b82d2640c74a9db4`
+  (79.1-01-SUMMARY.md). The 200-seed BASELINE reuses the committed Phase 72
+  BEFORE readout (commit `9197002`), because `git diff --quiet v2.0 9197002`
+  on engine/content/tools exits 0 (byte-identical).
+- FINAL commit measured: `12aea234` (`docs(quick): 260928-nrf summary`),
+  the last commit before the orchestrator's readout commit `b60e6585`.
+  `git diff --quiet 12aea234 b60e6585 -- engine content` exits 0 — the
+  only changes since are Phase 79.3's UI shell (bug report, patch
+  notes: mazeworld.html, src/browser/*, tools/lib/patch-notes.mjs), which
+  is engine-inert. The FINAL readouts stand for the release code.
+- The locked row (79.1-02, "measure, then ship"): `fit/tail-log.jsonl`
+  row #1 = `fit/tail-best.json` = the shipped `engine/difficulty.js`
+  DIALS, unchanged by this milestone's own tail sweep (no block ran).
+  The Phase 79.2 lock (`fit/early-lock.json`, RF-79.2-02-3) separately
+  moved six early-floor dials; see the Phase 79.2 H2 above.
+- **What this trim did NOT run:** the 200-seed FINAL natural run; the
+  plain Human Sorcerer from floor 20; a re-run, on the FINAL code, of
+  the deep-start tail slices (deep12/20/30/40), the Freeze/Weaken/Doze
+  rotation Sorcerer (rot20/30/40) or the Troll Summoner (troll20) — all
+  last measured at the Phase 79.2 lock confirmation, before quick fixes
+  260928-cos/hrs/nrf landed. Per user ruling 2026-09-27 ("measure, then
+  ship... we can tune more later"), this record does not compensate for
+  the gap; it says plainly where it exists.
+
+### Phase 79.1 BASELINE (v2.0) — 1,000 seeds
+
+```
+Death-depth distribution:
+  min=1  p50=7  p90=12  max=45
+
+Reach table (% of runs reaching floor N):
+  >=5: 80.7%  >=10: 26.1%  >=20: 1.5%  >=30: 0.5%  >=50: 0.0%
+
+  mean death depth=7.88  floors gained p50=6 mean=6.88  encounters survived mean=16.92
+  reach: >=5 80.7%  >=8 47.4%  >=9 38.3%  >=10 26.1%  >=13 9.2%  >=16 4.6%  >=20 1.5%
+  band share of deaths: Filter 1-4 19.3% | Wall 5-8 42.3% | Breakaway 9-15 33.8% | Endgame 16-20 3.2% | beyond 20 1.4%
+
+Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):
+  L=1  reached=1000  deaths=7 (combat 5 / dot 2 / starvation-exhaustion 0 / other 0)  p_L=99.3%  S_L=99.3%  target p_L=98.8%  target S_L=98.8%  dS=+0.5  PASS
+  L=2  reached=993  deaths=10 (combat 3 / dot 6 / starvation-exhaustion 1 / other 0)  p_L=99.0%  S_L=98.3%  target p_L=96.3%  target S_L=95.1%  dS=+3.2  PASS
+  L=3  reached=981  deaths=82 (combat 76 / dot 4 / starvation-exhaustion 2 / other 0)  p_L=91.6%  S_L=90.1%  target p_L=93.1%  target S_L=88.6%  dS=+1.5  PASS
+  L=4  reached=892  deaths=70 (combat 50 / dot 14 / starvation-exhaustion 6 / other 0)  p_L=92.2%  S_L=83.0%  target p_L=89.9%  target S_L=79.7%  dS=+3.3  PASS
+  L=5  reached=810  deaths=80 (combat 51 / dot 23 / starvation-exhaustion 6 / other 0)  p_L=90.1%  S_L=74.8%  target p_L=86.9%  target S_L=69.2%  dS=+5.6  PASS
+  L=6  reached=714  deaths=101 (combat 77 / dot 13 / starvation-exhaustion 11 / other 0)  p_L=85.9%  S_L=64.2%  target p_L=84.3%  target S_L=58.4%  dS=+5.8  PASS
+  L=7  reached=599  deaths=110 (combat 78 / dot 18 / starvation-exhaustion 14 / other 0)  p_L=81.6%  S_L=52.4%  target p_L=82.2%  target S_L=48.0%  dS=+4.4  PASS
+  L=8  reached=470  deaths=79 (combat 48 / dot 16 / starvation-exhaustion 15 / other 0)  p_L=83.2%  S_L=43.6%  target p_L=80.6%  target S_L=38.7%  dS=+4.9  PASS
+  L=9  reached=375  deaths=107 (combat 84 / dot 13 / starvation-exhaustion 10 / other 0)  p_L=71.5%  S_L=31.2%  target p_L=79.5%  target S_L=30.8%  dS=+0.4  PASS
+  L=10  reached=258  deaths=66 (combat 53 / dot 8 / starvation-exhaustion 5 / other 0)  p_L=74.4%  S_L=23.2%  target p_L=78.9%  target S_L=24.3%  dS=-1.1  PASS
+  L=11  reached=184  deaths=43 (combat 28 / dot 7 / starvation-exhaustion 8 / other 0)  p_L=76.6%  S_L=17.8%  target p_L=78.7%  target S_L=19.1%  dS=-1.3  PASS
+  L=12  reached=136  deaths=39 (combat 34 / dot 4 / starvation-exhaustion 1 / other 0)  p_L=71.3%  S_L=12.7%  target p_L=78.8%  target S_L=15.1%  dS=-2.4  PASS
+  reach-20: 1.5% (band 3.0-5.0%, reported — tail)
+  verdict: all floors 1-12 inside the pass band
+
+Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):
+  Fighter  n=316  p50=7  reach5=87.1%  reach10=22.6%  reach20=0.4%  dmgTaken/fight=10.97  rounds/fight=4.34  foeMiss=66.2%  casts(def/off)=0/0  potions/run=1.10  backstabs/run=0.00  flees/run=1.97
+  Thief  n=362  p50=8  reach5=88.1%  reach10=32.1%  reach20=1.6%  dmgTaken/fight=8.33  rounds/fight=3.62  foeMiss=69.1%  casts(def/off)=0/0  potions/run=2.11  backstabs/run=10.02  flees/run=3.92
+  Magic User  n=322  p50=6  reach5=66.1%  reach10=23.0%  reach20=2.5%  dmgTaken/fight=8.05  rounds/fight=3.27  foeMiss=67.2%  casts(def/off)=1401/7602  potions/run=4.07  backstabs/run=0.00  flees/run=1.36
+
+Outcome: 874 dead, 126 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Phase 79.1 BASELINE (v2.0) — tail slices
+
+`fit/baseline-tail-stdout.txt`:
+```
+#1 score=+Infinity verdict=MISS
+```
+
+| Slice | n | stuck | p50 / p90 / mean gained | p50 death | reach20 % | reach21 % | reach30 % | count reaching 30 |
+|---|---|---|---|---|---|---|---|---|
+| fresh (gate closed at v2.0 — read from the 1,000-seed run above instead) | — | — | — | — | — | — | — | — |
+| deep12 | 200 | 6 | 2 / 6 / 2.61 | 14 | 7 | 6 | 1 | 2 |
+| deep20 | 200 | 11 | 1 / 4 / 1.86 | 21 | 100 | 61.5 | 2.5 | 5 |
+| deep30 | 200 | 7 | 0 / 4 / 1.24 | 30 | 100 | 100 | 100 | 200 |
+| deep40 | 200 | 6 | 0 / 3 / 1.04 | 40 | 100 | 100 | 100 | 200 |
+| rot20 (plain Sorcerer — v2.0 has no rotation tier) | 40 | 1 | 2 / 9 / 3.15 | 22 | 100 | 75 | 7.5 | 3 |
+| rot30 (plain Sorcerer) | 40 | 0 | 2 / 8 / 2.75 | 32 | 100 | 100 | 100 | 40 |
+| rot40 (plain Sorcerer) | 40 | 2 | 0 / 3 / 1.11 | 40 | 100 | 100 | 100 | 40 |
+| troll20 (Troll Summoner, report only) | 40 | 1 | 2 / 6 / 2.28 | 22 | 100 | 65 | 0 | 0 |
+
+Source: `fit/baseline-tail.jsonl:1` (79.1-01-SUMMARY.md). Row score `null`
+(+Infinity): the rotation constraint rejected it (a plain Sorcerer
+outlasts the fair bot at v2.0, expected — v2.0 has no rotation tier and
+Freeze kills). deep12/20/30 miss their ruled targets at v2.0; see
+"verdicts against the ruled targets" below.
+
+### Phase 79.1 BASELINE (v2.0) — classes and races
+
+```
+BY CLASS:
+class  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Thief  480  65  7.90  7.0  12.0  86.3  24.3  ...
+Fighter  470  51  7.53  7.0  11.0  83.8  19.8  ...
+Magic User  480  56  7.36  6.0  13.0  71.2  22.2  ...
+
+BY RACE:
+race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Wilmsry  240  26  8.67  8.0  13.0  89.7  28.0  ...
+Troll  240  26  8.37  8.0  13.0  88.8  28.5  ...
+Fridgian  230  30  8.25  8.0  12.0  90.5  23.0  ...
+Human  240  43  7.50  7.0  13.0  80.2  24.4  ...
+Dwarven  240  22  7.00  6.0  11.0  72.0  18.8  ...
+Elven  240  25  5.84  5.0  10.0  61.9  10.2  ...
+```
+
+(Trimmed to the headline BY CLASS / BY RACE rows; the full 143-cell table
+is `tools/readouts/79.1-baseline-classes.txt`. This block is not proven
+by `readout-compare` — see the parameters section for which three blocks
+in this H2 are.)
+
+### Phase 79.1 FINAL — 1,000 seeds — commit 12aea234
+
+```
+Death-depth distribution:
+  min=1  p50=4  p90=7  max=17
+
+Reach table (% of runs reaching floor N):
+  >=5: 46.8%  >=10: 1.8%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+  mean death depth=4.49  floors gained p50=3 mean=3.49  encounters survived mean=8.72
+  reach: >=5 46.8%  >=8 9.4%  >=9 4.1%  >=10 1.8%  >=13 0.3%  >=16 0.1%  >=20 0.0%
+  band share of deaths: Filter 1-4 53.2% | Wall 5-8 42.8% | Breakaway 9-15 3.9% | Endgame 16-20 0.1% | beyond 20 0.0%
+
+Per-floor survival (Phase 79.2 target, user ruling 2026-09-27 — floor L is USER RULING C's floor 2L; p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):
+  L=1  reached=1000  deaths=18 (combat 13 / dot 4 / starvation-exhaustion 1 / other 0)  p_L=98.2%  S_L=98.2%  target p_L=95.1%  target S_L=95.1%  dS=+3.1  PASS
+  L=2  reached=982  deaths=183 (combat 170 / dot 8 / starvation-exhaustion 5 / other 0)  p_L=81.4%  S_L=79.9%  target p_L=83.8%  target S_L=79.7%  dS=+0.2  PASS
+  L=3  reached=797  deaths=149 (combat 132 / dot 6 / starvation-exhaustion 11 / other 0)  p_L=81.3%  S_L=65.0%  target p_L=73.3%  target S_L=58.4%  dS=+6.6  PASS
+  L=4  reached=639  deaths=149 (combat 105 / dot 24 / starvation-exhaustion 20 / other 0)  p_L=76.7%  S_L=49.8%  target p_L=66.3%  target S_L=38.7%  dS=+11.1  MISS
+  L=5  reached=478  deaths=164 (combat 121 / dot 25 / starvation-exhaustion 18 / other 0)  p_L=65.7%  S_L=32.7%  target p_L=62.8%  target S_L=24.3%  dS=+8.4  MISS
+  L=6  reached=298  deaths=122 (combat 91 / dot 22 / starvation-exhaustion 9 / other 0)  p_L=59.1%  S_L=19.3%  target p_L=62.1%  target S_L=15.1%  dS=+4.2  PASS
+  L=7  reached=164  deaths=65 (combat 52 / dot 8 / starvation-exhaustion 5 / other 0)  p_L=60.4%  S_L=11.7%  target p_L=62.9%  target S_L=9.5%  dS=+2.2  PASS
+  L=8  reached=94  deaths=50 (combat 35 / dot 4 / starvation-exhaustion 11 / other 0)  p_L=46.8%  S_L=5.5%  target p_L=65.3%  target S_L=6.2%  dS=-0.7  PASS
+  L=9  reached=38  deaths=21 (combat 16 / dot 1 / starvation-exhaustion 4 / other 0)  p_L=44.7%  S_L=2.4%  target p_L=67.7%  target S_L=4.2%  dS=-1.8  PASS
+  L=10  reached=17  deaths=9 (combat 9 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=47.1%  S_L=1.1%  target p_L=71.4%  target S_L=3.0%  dS=-1.9  PASS
+  L=11  reached=8  deaths=2 (combat 1 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=75.0%  S_L=0.9%  target p_L=73.3%  target S_L=2.2%  dS=-1.3  PASS
+  L=12  reached=6  deaths=3 (combat 2 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=50.0%  S_L=0.4%  target p_L=77.3%  target S_L=1.7%  dS=-1.3  PASS
+  reach-20: 0.0% (band 3.0-5.0%, reported — tail)
+  verdict: floors outside the pass band: 4 (dS +11.1), 5 (dS +8.4)
+
+Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):
+  Fighter  n=316  p50=5  reach5=52.2%  reach10=1.7%  reach20=0.0%  dmgTaken/fight=17.47  rounds/fight=6.10  foeMiss=66.5%  casts(def/off)=0/0  potions/run=1.06  backstabs/run=0.00  flees/run=2.31
+  Thief  n=362  p50=5  reach5=59.5%  reach10=2.7%  reach20=0.0%  dmgTaken/fight=12.25  rounds/fight=4.46  foeMiss=69.4%  casts(def/off)=0/0  potions/run=2.02  backstabs/run=5.72  flees/run=3.33
+  Magic User  n=322  p50=3  reach5=27.6%  reach10=1.0%  reach20=0.0%  dmgTaken/fight=16.80  rounds/fight=6.27  foeMiss=66.8%  casts(def/off)=1880/2984  potions/run=3.40  backstabs/run=0.00  flees/run=1.50
+
+Outcome: 938 dead, 62 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Phase 79.1 FINAL — tail slices (measure-then-ship trim: NOT re-run)
+
+**Not re-run.** The deep-start slices, the rotation Sorcerer and the
+Troll Summoner were not re-measured on the FINAL code (12aea234). The
+last measurement is the Phase 79.2 lock's own tail confirmation
+(`fit/tail-confirm-c3n1.jsonl`, commit `4e2ba5ff`), BEFORE quick fixes
+260928-cos/hrs/nrf landed:
+
+| Ruled target | Target | Last known (Phase 79.2 lock) | Verdict (as last measured) |
+|---|---|---|---|
+| fresh reach-20 (% of 1,000) | <= 1% | 0% | PASS |
+| fresh reach-21 (% of 1,000) | < 0.5% | 0% | PASS |
+| fresh count reaching 30 | <= 1 | 0 | PASS |
+| deep12 reach20 | <= 5% | 0.5% | PASS |
+| deep20 p50 floors gained | <= 2 | 0 | PASS |
+| deep20 reach30 | <= 1% | 0% | PASS |
+| deep30 p50 floors gained | <= 0 | 0 | PASS (at the bound) |
+| deep30 p90 floors gained | <= 1 | 1 | PASS (at the bound) |
+| rot20 p50 gained vs deep20 p50 | rot <= fair | 0 vs 0 | PASS (at the bound) |
+| rot30 p90 gained vs deep30 p90 | rot <= fair | 1 vs 1 | PASS (at the bound) |
+| guard: fresh p50 death depth (report only) | in [3, 4] | 5 | outside (guard, reported) |
+
+Source: `docs/DIFFICULTY-RETUNE.md` "Phase 79.2 — the tail after the
+lock" (above). The FINAL 1,000-seed fresh slice (this section's own
+readout) confirms the three fresh targets still PASS on the code that
+includes cos/hrs/nrf: reach-20 0.0%, reach-21 0.0%, count reaching 30 is
+0 (no run reached floor 20 out of 1,000 — see the FINAL block above,
+whose per-floor table has no row past L=17). The four deep-slice/
+rotation targets were not re-checked on this exact code; each already
+sat at or near its bound at the 79.2 lock, so a small further move is
+possible and unmeasured. `plain-sorcerer-20` and `troll20` were not run
+in this trim at all on the FINAL code; the last plain-Sorcerer-from-20
+reading on file is the pre-Phase-79.2 79.1-02 START row (`fit/tail-log.jsonl:1
+summaries.rot20`: n=40, gained p50/p90/mean 2/9/3.15).
+
+### Phase 79.1 FINAL — classes and races
+
+```
+BY CLASS:
+class  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Thief  480  28  5.02  5.0  7.0  59.5  1.8  7.81  1.40  554.39  starved in the dark(60),cut down by a Poltergeist(58),cut down by a Werebeast(34)
+Fighter  470  30  4.63  4.0  7.0  47.7  1.4  6.70  1.40  522.45  cut down by a Poltergeist(66),cut down by a Dante(53),starved in the dark(37)
+Magic User  480  14  3.53  3.0  6.0  25.1  0.0  5.00  1.13  376.63  cut down by a Poltergeist(79),cut down by a Dante(39),cut down by a Shadow(33)
+
+BY RACE:
+race  n  stuck  mean  p50  p90  >=5%  >=10%  kills  lvl  actions  top causes
+Wilmsry  240  9  5.38  5.0  8.0  66.2  2.6  5.58  1.39  599.69  cut down by a Poltergeist(27),cut down by a Werebeast(26),cut down by a Shadow(22)
+Troll  240  7  4.53  4.0  7.0  48.1  0.4  7.88  1.36  487.25  starved in the dark(52),cut down by a Poltergeist(28),cut down by a Dante(20)
+Fridgian  230  13  4.49  4.0  7.0  48.4  0.5  7.51  1.33  504.48  cut down by a Poltergeist(36),cut down by a Dante(25),starved in the dark(18)
+Dwarven  240  13  4.27  4.0  7.0  40.5  1.8  7.44  1.33  485.73  cut down by a Poltergeist(40),cut down by a Dante(25),cut down by a China Wolf(19)
+Human  240  13  4.11  4.0  7.0  35.2  0.9  6.10  1.26  458.88  cut down by a Poltergeist(34),cut down by a Dante(30),starved in the dark(17)
+Elven  240  17  3.47  3.0  6.0  24.2  0.0  4.39  1.16  358.81  cut down by a Poltergeist(38),cut down by a Shadow(21),undone by a trap(17)
+
+POOLED (all cells, run-weighted over completed runs):
+n  stuck  mean  p50  p90  >=5%  >=10%  >=20%  kills  lvl  actions  top causes
+1430  72  4.38  4.0  7.0  43.9  1.0  0.0  6.48  1.31  483.04  cut down by a Poltergeist(203),starved in the dark(128),cut down by a Dante(122)
+```
+
+### Phase 79.1 — the tail sweep (measure, then ship — no sweep block ran)
+
+**Objective.** The checkpointed tail sweep (formerly plan 75.3-06) walks
+`FOE_HP_SCALE.perDepthAfter`, `FOE_HIT_SCALE.perDepthAfter`,
+`FOE_ELITE.hpPerRank` and `CONTROL_AT_DEPTH.resistPerDepth` against every
+ruled tail target in `tools/lib/tail-score.mjs#TAIL_TARGETS`, in blocks of
+10, orchestrator-adjusted on a failure pattern, engine-shape changes to
+the user.
+
+**START row #1** (`fit/tail-log.jsonl:1`, `fit/tail-stdout.txt`):
+```
+#1 score=0.0000 verdict=PASS fresh[reach20=0 reach21=0 reachCount30=0] deep12.reach20=0 deep20[p50=0 reach30=0] deep30[p50=0 p90=1] rot.p50[20/30/40]=0/0/0 guard=none ok=true
+```
+
+**Stop reason: user ruling 2026-09-27 ("Measure, then ship... we can tune
+more later"), relayed mid-START by the orchestrator.** Row #1 already
+PASSed with `constraints.ok` true, so the plan's own stop rule ("PASS at
+START") agrees with the user's ruling — the two stop conditions
+coincide. No sweep block ran; `fit/tail-best.json` holds the shipped
+DIALS unchanged. Deep-floor dial tuning is deferred to a later
+milestone (79.1-02-SUMMARY.md).
+
+### Phase 79.1 — verdicts against the ruled targets
+
+From `.planning/phases/79.1-milestone-balance-check-deep-floor-tuning/fit/verdicts.json`'s
+`targets` array (built by script, not by eye):
+
+| Target | Ruled bound | BASELINE (v2.0) | START (79.1-02) | FINAL | Verdict |
+|---|---|---|---|---|---|
+| fresh reach-20 | <= 1.0% | 1.5% (MISS) | 0% (PASS) | 0.0% | PASS |
+| fresh reach-21 | < 0.5% | 1.4% (MISS) | 0% (PASS) | 0.0% | PASS |
+| fresh count reaching 30 | <= 1 | 4 (MISS) | 0 (PASS) | 0 | PASS |
+| deep12 reach20 | <= 5% | 7% (MISS) | 0% (PASS) | not re-measured | REPORT (0.5% PASS at the 79.2 lock) |
+| deep20 p50 floors gained | <= 2 | 1 (PASS) | 0 (PASS) | not re-measured | REPORT (0 PASS at the 79.2 lock) |
+| deep20 reach30 | <= 1% | 2.5% (MISS) | 0% (PASS) | not re-measured | REPORT (0% PASS at the 79.2 lock) |
+| deep30 p50 floors gained | <= 0 | 0 (PASS) | 0 (PASS) | not re-measured | REPORT (0, PASS at the bound, at the 79.2 lock) |
+| deep30 p90 floors gained | <= 1 | 4 (MISS) | 1 (PASS) | not re-measured | REPORT (1, PASS at the bound, at the 79.2 lock) |
+| rot20 p50 vs deep20 p50 | rot <= fair | 2 vs 1 (MISS) | 0 vs 0 (PASS) | not re-measured | REPORT (0 vs 0, PASS at the bound, at the 79.2 lock) |
+| rot30 p90 vs deep30 p90 | rot <= fair | 8 vs 4 (MISS) | 1 vs 1 (PASS) | not re-measured | REPORT (1 vs 1, PASS at the bound, at the 79.2 lock) |
+| guard: fresh p50 death depth (report only) | in [3, 4] | 7 (outside) | 6 (outside; pre-79.2) | 4 | PASS |
+
+**Every fresh target still PASSes on the FINAL code** (the same 1,000
+seeds this H2's own natural run measured). The four deep-slice/rotation
+targets are REPORT, not PASS/MISS, because they were last measured at
+the Phase 79.2 lock, before quick fixes cos/hrs/nrf; see "FINAL — tail
+slices" above for the caveat and the numbers.
+
+### Phase 79.1 — band verdicts at 1,000 seeds
+
+**The average run** (Phase 79.2's `P50_DEATH_BAND`, superseding the old
+5-7 band): target [3, 4]. FINAL p50 death depth is **4** (mean 4.49) —
+**PASS**. BASELINE (v2.0) was 7 (mean 7.88), well outside; the whole
+milestone-wide move (79.2's lock plus the per-floor-regen removal and
+the class/spell rulings) closed a 3-4 floor gap.
+
+**Per-floor rows 1-12** (BASELINE beside FINAL; floor 11 carries the
+Phase 75.1 flag watch):
+
+| L | Target S_L | BASELINE S_L | BASELINE verdict | FINAL S_L | FINAL dS | FINAL verdict |
+|---|---|---|---|---|---|---|
+| 1 | 95.1% | 99.3% | PASS | 98.2% | +3.1 | PASS |
+| 2 | 79.7% | 98.3% | PASS | 79.9% | +0.2 | PASS |
+| 3 | 58.4% | 90.1% | PASS | 65.0% | +6.6 | PASS |
+| 4 | 38.7% | 83.0% | PASS | 49.8% | +11.1 | **MISS** |
+| 5 | 24.3% | 74.8% | PASS | 32.7% | +8.4 | **MISS** |
+| 6 | 15.1% | 64.2% | PASS | 19.3% | +4.2 | PASS |
+| 7 | 9.5% | 52.4% | PASS | 11.7% | +2.2 | PASS |
+| 8 | 6.2% | 43.6% | PASS | 5.5% | -0.7 | PASS |
+| 9 | 4.2% | 31.2% | PASS | 2.4% | -1.8 | PASS |
+| 10 | 3.0% | 23.2% | PASS | 1.1% | -1.9 | PASS |
+| 11 | 2.2% | 17.8% | PASS | 0.9% | -1.3 | PASS |
+| 12 | 1.7% | 12.7% | PASS | 0.4% | -1.3 | PASS |
+
+**Floor 11 (Phase 75.1's flag watch): resolved PASS.** Phase 75.1-06's
+FINAL readout carried a genuine floor-11 MISS (dS -4.0) against the old
+Ruling-C per-floor target, never retuned in that phase ("an engine-change
+decision reserved for the user"). At this milestone's FINAL, floor 11
+reads PASS (dS -1.3) — but the target curve itself changed underneath
+it (Phase 79.2's harder floors 1-12 curve replaced Ruling C's), not a
+retune of floor 11 specifically. Reported plainly, not claimed as a fix.
+
+**Floors 4 and 5: MISS, reported, tune later.** This is already on the
+milestone-close questions list (79.2-VERIFICATION.md's "Flags carried
+to the milestone close": floors 3-6 easier than target, two ruled step
+changes land at floor 5 — `FOE_COUNT_DEPTH.soloOnlyOnOneFrom = 5` and the
+first level-3 floor). Nothing is compensated here; see "reading and
+flags for the user" below.
+
+**The four bands:**
+
+| Band | Rule | Verdict |
+|---|---|---|
+| Filter 1-4 | PASS when rows 1-4 all PASS | **MISS** (floor 4) |
+| Wall 5-8 | PASS when rows 5-8 all PASS and the median is inside [3,4] | **MISS** (floor 5; the median component alone PASSes at p50=4) |
+| Breakaway 9-15 | PASS when rows 9-12 all PASS and the p90 death depth is 10-13 (the pre-79.2 p90 target; never re-ruled for the Phase 79.2 curve) | REPORT (rows 9-12 all PASS; actual p90 is 7, under the un-reruled old target — no verdict assigned to the p90 component) |
+| Endgame 16-20 | PASS when fresh reach-20 is at 1.0% or less | PASS (0.0%) |
+
+**Floors 13-20: measured tail, not fitted.** At FINAL, n at these floors
+is 1-3 of 1,000 (L=13 n=3, L=14..16 n=1, L=17 n=1 with 1 death). No
+target or verdict applies; the numbers are in the FINAL block above.
+
+### Phase 79.1 — races and classes
+
+**Races** (`tune-classes`, forced-cell pools; a race is FLAGged when its
+mean moved more than 1 floor since the 75.2-01 races-before reading, per
+75.2's own rule):
+
+| Race | races-before mean/p50/reach5 | v2.0 mean/p50/reach5 | FINAL mean/p50/reach5 | Move vs races-before | Verdict |
+|---|---|---|---|---|---|
+| Elven | 5.35 / 5.0 / 59.0 | 5.84 / 5.0 / 61.9 | 3.47 / 3.0 / 24.2 | -1.88 | FLAG (expected, milestone-wide) |
+| Dwarven | 6.97 / 6.0 / 75.8 | 7.00 / 6.0 / 72.0 | 4.27 / 4.0 / 40.5 | -2.70 | FLAG (expected, milestone-wide) |
+| Troll | 8.09 / 8.0 / 86.4 | 8.37 / 8.0 / 88.8 | 4.53 / 4.0 / 48.1 | -3.56 | FLAG (expected, milestone-wide) |
+| Wilmsry | — (no races-before file) | 8.67 / 8.0 / 89.7 | 5.38 / 5.0 / 66.2 | — | REPORT |
+| Fridgian | — | 8.25 / 8.0 / 90.5 | 4.49 / 4.0 / 48.4 | — | REPORT |
+| Human (control) | — | 7.50 / 7.0 / 80.2 | 4.11 / 4.0 / 35.2 | — | REPORT |
+
+All three forced races FLAG on the ">1 floor" rule — expected, since the
+whole milestone (the 79.2 lock plus the class/spell quick fixes) made
+every race harder by design. No single race moved out of step with the
+others (a 1.9-3.6 floor mean drop across Elven/Dwarven/Troll, alongside
+a 3.1-4.6 floor drop for Wilmsry/Fridgian/Human/pooled). Not gated
+behind a checkpoint per this plan's trim.
+
+**Classes** (report; the class constraint is |class p50 - pooled p50| <=
+2, with the Magic User exempt by user ruling 2026-09-28):
+
+| Class | v2.0 mean/p50/reach5 | FINAL mean/p50/reach5 | FINAL p50 vs pooled (4) | Constraint |
+|---|---|---|---|---|
+| Fighter | 7.53 / 7.0 / 83.8 | 4.63 / 4.0 / 47.7 | 0 | PASS (\|4-4\|=0 <= 2) |
+| Thief | 7.90 / 7.0 / 86.3 | 5.02 / 5.0 / 59.5 | +1 | PASS (\|5-4\|=1 <= 2) |
+| Magic User | 7.36 / 6.0 / 71.2 | 3.53 / 3.0 / 25.1 | -1 | exempt (user ruling 2026-09-28: "This is fine for now. Magic users require much more tactical play.") |
+| POOLED | — | 4.38 / 4.0 / 43.9 (n=1430) | — | — |
+
+### Phase 79.1 — the milestone trajectory (200 seeds, reported)
+
+| Point | p50 | Mean | reach5 | reach10 | reach20 |
+|---|---|---|---|---|---|
+| Phase 72 BEFORE / BASELINE (v2.0), commit 9197002 | 7 | 7.74 | 80.5% | 23.6% | 1.1% |
+| Phase 75 Plan 02 BEFORE | 7 | 7.87 | 80.6% | — | 1.1% |
+| Phase 75.1 FINAL | 7 | 7.60 | 78.5% | 25.4% | 0.0% |
+| Phase 75.2-01 BEFORE (= Phase 75.1 FINAL) | 7 | 7.60 | — | — | 0.0% |
+| Phase 79.2 START (shipped Phase 54 dials, post-regen-removal, post cos/hrs) | 6 | — | S1-S4: 100/98/85/74 | — | — |
+| Phase 79.2 AFTER (locked dials, 200-seed sample) | 4 | — | S1-S4: 98/83.5/65/49.4 | — | — |
+| Phase 79.2 AFTER (locked dials), 1,000 seeds, before cos/hrs/nrf | 5 | — | — | — | — |
+| **Phase 79.1 FINAL** (code 12aea234: locked dials + cos/hrs/nrf), 1,000 seeds | **4** | 4.49 | 46.8% | 1.8% | 0.0% |
+
+**No 200-seed FINAL was taken** by this trim; the 1,000-seed FINAL above
+closes the trajectory. Its 200-seed neighbours (Phase 79.2's own START/
+AFTER rows) show the same direction of movement at n=200 as the 1,000-
+seed numbers confirm: the 79.2 AFTER 200-seed sample reads p50 4, its own
+1,000-seed confirmation read p50 5 (sample noise at n=200), and the FINAL
+1,000-seed reading (after cos/hrs/nrf) reads p50 4 again.
+
+### Phase 79.1 — rotation and builds (report; not re-measured on the FINAL code)
+
+| Build | Last measured | Value | Note |
+|---|---|---|---|
+| rot20 vs deep20 (p50 gained) | Phase 79.2 lock | 0 vs 0 | PASS at the bound; not re-run on 12aea234 |
+| rot30 vs deep30 (p90 gained) | Phase 79.2 lock | 1 vs 1 | PASS at the bound; not re-run on 12aea234 |
+| rot40 vs deep40 (p50/p90 gained) | 79.1-02 START | p50 0 vs 0, p90 1 vs 0 | report only, not a TAIL_TARGETS constraint |
+| plain Human Sorcerer from floor 20 | not run on the FINAL code | — | `tools/readouts/79.1-final-plain-sorcerer-20.*` do not exist; last plain-Sorcerer-from-20 reading is v2.0's rot20 row (BASELINE tail slices table above) |
+| Troll Summoner from floor 20 (troll20) | 79.1-02 START (pre-79.2) | p50/p90/mean gained 0/2/0.43, p50 death 20, reach20 100%, reach21 32.5% | not re-run since before the Phase 79.2 lock |
+
+### Phase 79.1 — reading and flags for the user
+
+**Against the depth-20 unicorn.** Fresh reach-20 is 0.0% of 1,000 runs —
+no run reached floor 20 at all (max death depth in the FINAL sample is
+17). "Exceedingly rare" now reads as "never happened in this sample,"
+comfortably inside the ruled <= 1.0% bound. 79.1-02 flagged this same
+reading at START ("Floor 20 may now be 'never' rather than 'unicorn'");
+the FINAL 1,000-seed run confirms it. Whether 0% (rather than an
+occasional unicorn run) is the intended feel is the user's own call —
+not retuned here.
+
+**Against the average run.** The Phase 79.2 target (fair-bot fresh p50
+death depth 3-4) PASSes: FINAL p50 is 4. This supersedes the milestone's
+earlier 5-7 average-run target (superseded per 79.2-04-SUMMARY's own
+routing note to this plan).
+
+**Flag 1: floors 4 and 5 MISS the Phase 79.2 per-floor targets — reported,
+tune later.** At 1,000 seeds, floor 4 is +11.1 points above target and
+floor 5 is +8.4, both outside the ±8 tolerance. This is not new: it is
+the same structural finding 79.2-02 already surfaced and the user already
+has on the milestone-close list (79.2-VERIFICATION.md's own "Flags
+carried to the milestone close"): two ruled step changes land at floor 5
+(`FOE_COUNT_DEPTH.soloOnlyOnOneFrom = 5`, and the first level-3 floor),
+and every global dial that hardens floor 4 also walls floor 5. Per user
+ruling 2026-09-27 ("measure, then ship... tune more later"), nothing is
+compensated in this plan. Closing it needs one of: a ruled-value change
+(e.g. `soloOnlyOnOneFrom` 5 -> 4), a looser floor-4 tolerance, or a
+further tail-sweep pass — all deferred to a later milestone.
+
+**Flag 2: every forced race FLAGs on the ">1 floor since races-before"
+rule.** Elven, Dwarven and Troll each moved 1.9-3.6 floors easier-to-
+die. This is the expected, by-design consequence of the whole milestone
+getting harder (the per-floor-regen removal, the Phase 79.2 lock and the
+class/spell quick fixes together), not a race-specific regression — no
+race moved out of step with the pooled/control movement. Reported, not
+gated.
+
+**Flag 3: the deep tail slices, the rotation builds, the Troll Summoner
+and the plain Sorcerer from 20 were not re-measured on the exact FINAL
+code.** The last reading (the Phase 79.2 lock, before quick fixes cos/
+hrs/nrf) had every one of those targets PASSing, four of them exactly at
+their bound. A small further move from cos/hrs/nrf (none of which touch
+deep-floor dials or the rotation/control mechanics directly) is possible
+but unmeasured. This is the specific gap this trim's "measure, then
+ship" ruling accepts.
+
+**Nothing was compensated.** No dial changed in this plan. Every number
+above is read from files already on disk or from the orchestrator's own
+FINAL readouts, computed by the script that wrote
+`fit/verdicts.json`, never by eye.
+
+**Phase 80 is unblocked** on this record: the code at commit `12aea234`
+(measured) / `b60e6585` (readouts committed) is the milestone-final
+balance the release build packages, with the gaps above reported, not
+hidden.
+
 
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
