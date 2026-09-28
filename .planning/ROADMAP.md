@@ -527,6 +527,22 @@ Plans:
 
 - [x] 79-13-PLAN.md — Produce the review page the user reads at milestone close, prove every changed line is on it, refresh the voice sample, and close the phase with the gates and one Pixel 7 checklist (VOX-05's review model; VOX-04 and R... (wave 6)
 
+### Phase 79.2: Early-floor difficulty retune (floors 1-12 harder: fair-bot p50 death ~3-4) (INSERTED)
+
+**Goal:** Floors 1–12 play harder. The user found them "just too easy" on the Pixel 7 (2026-09-27), while the fair bot died at a p50 of floor 6. The bot plays far worse than a human, so the ruled yardstick moves: retune floors 1–12 so a typical FAIR-BOT run dies around floor 3–4, putting skilled human runs near floor 5–7. Floors 13+ keep the ruled tail targets (79.1-02). This is measured after the 2026-09-27 rule changes (universal spell resist, once-per-fight one-shot strikes) land.
+**Requirements**: TBD (user ruling 2026-09-27; todo 2026-09-27-floors-1-12-too-easy-bring-difficulty-back-up)
+**Depends on:** Phase 79 and the 260927-rsx/opf rule changes. Phase 79.1-04 (the final readouts) and Phase 80's release build follow this phase.
+**Success criteria:**
+1. The fair bot's fresh p50 death depth sits at 3–4 at 1,000 seeds, and the early band shape is still sensible: floors 1–4 are variance-driven, not a flat wall.
+2. The 79.1 ruled tail targets still PASS, or any miss is put in front of the user with evidence.
+3. Class balance holds within the existing class constraint (|p50 − pooled| ≤ 2).
+4. The dial changes are locked with traced re-pins, declared fixture moves and a green gate, and recorded in docs/DIFFICULTY-RETUNE.md.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 79.2 to break down)
+
 ### Phase 79.1: Milestone Balance Check & Deep-Floor Tuning (INSERTED)
 
 **Goal:** Once all v2.1 code is in, the bots run once as the final check of the whole milestone's balance. The deep-floor dials from Phase 75.3 are tuned by the checkpointed sweep against the ruled tail targets.
@@ -1175,14 +1191,17 @@ Plans:
 **Plans:** 0 plans
 
 **What prompted it (scouted 2026-09-27):**
+
 - **Thrown attack spells have a to-hit roll.** In `engine/magic.js`'s thrown branch (~L598-630), Freeze hits on 6 faces of a d10, and every other thrown spell on 4 faces of a d8. Both are narrowed by Afraid and widened by the school and throw bonuses. The "d6" in Freeze's text (`content/spells.js:87`, "one foe · d6, and frozen solid on a hit") is its DAMAGE die. It reads like a to-hit roll, and the text never states the real to-hit odds.
 - The 2026-09-27 universal spell resist (quick 260927-rsx: every foe-targeted spell can be resisted on a half-intel scale) adds a second roll after a thrown spell's to-hit. Its interaction with the to-hit roll belongs in this review.
 
 **Scope for the review (decide at discuss time):**
+
 - **Every spell:** its to-hit roll (if any), damage dice, multipliers, duration, the resist checks (intel, RULES-18 depth control), the school gates, the backfire and fumble odds, and whether the text, the Grimoire, the chips and the foe card state each of those in roll-high form and agree with the engine.
 - **Every skill and ability:** its cooldown or once-per-fight rule, auto-hit or forced crit, its bonus terms, who can use it (the hero, Joiners), and the same text-vs-engine agreement.
 - **Canon check:** each against the 1994 rulebook. Deviations are recorded as deliberate rulings or fixed.
 - **Output:** a per-spell and per-skill audit table (text / engine / canon / verdict), the fixes, and pinned tests. That extends test/unit/authored-ranges.test.js and roll-sign-consistency.test.js to every roll a spell or skill makes.
 
 Plans:
+
 - [ ] TBD (promote with /gsd-review-backlog when ready)

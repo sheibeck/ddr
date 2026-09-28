@@ -6,15 +6,15 @@ current_phase: 79.1
 current_phase_name: Milestone Balance Check & Deep-Floor Tuning
 status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-27T22:45:00.987Z"
+last_updated: "2026-09-28T01:46:07.011Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 79 complete, transitioned to Phase 79.1
 progress:
-  total_phases: 14
+  total_phases: 15
   completed_phases: 12
   total_plans: 111
-  completed_plans: 104
-  percent: 86
+  completed_plans: 107
+  percent: 80
 ---
 
 # Project State
@@ -148,6 +148,7 @@ detail; the backlog phases are the index.
 - Run order changed (user, 2026-09-25): Phase 81 (Leaderboards, live Play bugs) runs right after Phase 72, then 73 → 80 in order. Discuss for every phase 73–81 was collected up front (all CONTEXT.md files written); RULES-07 amended to keep canon (ailment 5–6 = phobia, narrated honestly); Phase 78 now depends on 73/74 (climb card became an engine pending decision).
 - Phase 75.2 inserted after Phase 75.1: Hero Size Matters (RULES-11) — race sets size, items step it; damage, target size and size rules (user, 2026-09-25)
 - Phase 75.3 inserted after Phase 75.2: Deep-Floor Encounter Scaling (RULES-16) — solo fights fade with depth (user, 2026-09-25)
+- Phase 79.2 inserted after Phase 79: Early-floor difficulty retune (user 2026-09-27: floors 1-12 too easy; fair-bot p50 death ~3-4) (URGENT)
 
 ## Deferred Items
 
