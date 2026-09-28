@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
 
 ## How to ask for changes
 
@@ -52,9 +52,9 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | boards (leaderboards and account) | 182 | 5 | 177 | 0 | 5 | 0 |
 | panels (hero, gear, store and final-sheet panels) | 190 | 15 | 175 | 1 | 17 | 1 |
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
-| title (title, roller, settings and menus) | 17 | 1 | 16 | 0 | 56 | 55 |
+| title (title, roller, settings and menus) | 17 | 1 | 16 | 17 | 73 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **325** | **1546** | **120** | **534** | **81** |
+| **Total** | **1871** | **325** | **1546** | **137** | **551** | **81** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -613,10 +613,27 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## title — title, roller, settings and menus
 
-56 changed lines.
+73 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
+| `bank:BUG_REPORT_COPY.cancel`<br>the ☰ REPORT A BUG sheet | *(new line)* | CANCEL | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-09): the button's label states plainly what it does. |
+| `bank:BUG_REPORT_COPY.counter`<br>the ☰ REPORT A BUG sheet | *(new line)* | {left} characters left | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-09): the near-limit counter states the plain remaining count. |
+| `bank:BUG_REPORT_COPY.failed.offline`<br>the ☰ REPORT A BUG sheet | *(new line)* | Could not reach the server, so nothing was sent. Your report is still here; send it again when you have signal. Dungeons are not known for their reception. | **q-260928-z5-bug** (what happened, to whom, the joke after the fact): Phase 79.3 (BUG-02, D-04): the offline failure states what happened and that the draft is kept, then the house joke. |
+| `bank:BUG_REPORT_COPY.failed.refused`<br>the ☰ REPORT A BUG sheet | *(new line)* | The server turned this report away, so nothing was sent. Your report is still here; try again, and shorten it if it keeps refusing. | **q-260928-z5-bug** (what happened, to whom, the joke after the fact): Phase 79.3 (BUG-02, D-09): the refused failure states what happened and that the draft is kept, then the house joke. |
+| `bank:BUG_REPORT_COPY.failed.server`<br>the ☰ REPORT A BUG sheet | *(new line)* | The server is having a bad day, so nothing was sent. Your report is still here; try again in a little while. | **q-260928-z5-bug** (what happened, to whom, the joke after the fact): Phase 79.3 (BUG-02, D-09): the server failure states what happened and that the draft is kept, then the house joke. |
+| `bank:BUG_REPORT_COPY.failed.unavailable`<br>the ☰ REPORT A BUG sheet | *(new line)* | Bug reports are not switched on in this build, so nothing was sent. Your report is still here, waiting patiently like a mimic. | **q-260928-z5-bug** (what happened, to whom, the joke after the fact): Phase 79.3 (BUG-02, D-04): reporting is unavailable in this build until 79.3-08 fills in the key; the line states that fact and that the draft is kept, then the house joke. |
+| `bank:BUG_REPORT_COPY.notice`<br>the ☰ REPORT A BUG sheet | *(new line)* | Your report and this run's Oracle will be posted publicly on GitHub. Leave out anything private. The dungeon keeps no secrets, and neither does this form. | **q-260928-z5-bug** (what happened, to whom, reads aloud, the joke after the fact): Phase 79.3 (BUG-01, D-06): the plain fact comes first — the report and the run's Oracle go public on GitHub, and the player should leave out anything private — read naturally aloud, then the house joke lands after the fact, never instead of it. |
+| `bank:BUG_REPORT_COPY.placeholder`<br>the ☰ REPORT A BUG sheet | *(new line)* | What happened, and what did you expect instead? | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-09): the empty text box states plainly what it wants from the player. |
+| `bank:BUG_REPORT_COPY.send`<br>the ☰ REPORT A BUG sheet | *(new line)* | SEND | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-09): the button's label states plainly what it does. |
+| `bank:BUG_REPORT_COPY.sending`<br>the ☰ REPORT A BUG sheet | *(new line)* | Sending your report… | **q-260928-z5-bug** (what happened, to whom, reads aloud): Phase 79.3 (BUG-02, D-09): the locked sending state states plainly what is happening, read naturally aloud. |
+| `bank:BUG_REPORT_COPY.sent`<br>the ☰ REPORT A BUG sheet | *(new line)* | Report sent. Thank you: a real person will read it, which is more than the monsters ever did. | **q-260928-z5-bug** (what happened, to whom, the joke after the fact): Phase 79.3 (BUG-02, D-09): the send succeeded, stated first, then the house joke lands after the fact. |
+| `bank:BUG_REPORT_COPY.title`<br>the ☰ REPORT A BUG sheet | *(new line)* | REPORT A BUG | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-09): the sheet's title states plainly what it is, matching the row that opens it. |
+| `bank:HUD_MENU_ITEMS.4.label`<br>a ☰ menu row | *(new line)* | REPORT A BUG | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-08): the new ☰ row's label states plainly what it opens. |
+| `bank:HUD_MENU_ITEMS.5.label`<br>a ☰ menu row | *(new line)* | PATCH NOTES | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (NOTES-02, D-20): the new ☰ row's label states plainly what it opens. |
+| `bank:PATCH_NOTES_COPY.missing`<br>the ☰ PATCH NOTES sheet | *(new line)* | This build shipped without its patch notes. Every version's notes are on GitHub, which is better organised than the dungeon. | **q-260928-z5-bug** (what happened, to whom, the joke after the fact): Phase 79.3 (NOTES-02, D-19, D-20): states the fallback fact first, then the house joke (79.3-03's addendum Copy note). |
+| `bank:PATCH_NOTES_COPY.pastLink`<br>the ☰ PATCH NOTES sheet | *(new line)* | Past versions on GitHub | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (NOTES-02, D-20): the link's text states plainly where it goes (79.3-03's addendum Copy note). |
+| `bank:PATCH_NOTES_COPY.title`<br>the ☰ PATCH NOTES sheet | *(new line)* | PATCH NOTES | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (NOTES-02, D-20): the sheet's title states plainly what it is, matching the row that opens it (79.3-03's addendum Copy note). |
 | `raw:mazeworld.html#markup`<br>the Settings sheet's On/Off row for the ☰ ABANDON THIS CHARACTER confirm | Confirm before quit | Confirm abandon | **79-10** (accurate to the engine, what happened, to whom): The row only arms the ☰ Abandon row's second tap; SAVE & QUIT never asks and the back button always asks, so "quit" named the wrong control. |
 | `raw:mazeworld.html#markup`<br>mazeworld.html's hidden &lt;section class="notes"&gt; ("Where this prototype departs from the rulebook"), never shown: nothing unhid it | Confirm before quit | *(removed)* | **79-12** (accurate to the engine): Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate). |
 | `raw:mazeworld.html#markup`<br>mazeworld.html's hidden &lt;section class="notes"&gt; ("Where this prototype departs from the rulebook"), never shown: nothing unhid it | Where this prototype departs from the rulebook | *(removed)* | **79-12** (accurate to the engine): Deleted with the whole never-shown rulebook-notes section, which described rules the game no longer has (sleep healing, spell recharge, the smash fallback, a roll-under trap dodge, five floors and a Gate). |
