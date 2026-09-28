@@ -249,20 +249,38 @@ function runVisits(spec, visits) {
 // grace-band easing, a tier-5 Vampire pair at full canon strength is once
 // again lethal to this seed's hero; this is the correct, measured identity
 // behavior (54-06/54-07's fit is what re-softens the curve).
+// Quick 260928-hrs (user ruling 2026-09-28, "Use the same half-intel scale
+// for heroes now"): the hero's resist against a foe's bolt, drain or debuff
+// moved from canon p.25 (intel >= 12 only, on intel - 1 faces) to the
+// half-intel scale (every hero, on max(1, round(intel / 2)) faces), drawn at
+// the same main-rng slot. Re-measured live with this file's own helpers:
+//   - seed 1's hero has intel 20: canon resisted on 2–20 (95%), now 11–20
+//     (50%), so more bolts, drains and debuffs land and the fights shorten.
+//     magical-t4 35/4 won -> 35/3 won; demons-t5 unchanged in total (41/3
+//     won, the resists fell the same way); walking-dead-t5 48/3 died ->
+//     36/2 died; beasts-t5 73/6 won -> 48/3 died (a Stalka Beast's landed
+//     bolts now kill the hero).
+//   - seed 3's hero (humans-t2) has intel 2: canon never rolled, now it rolls
+//     one d20 on every hero-targeted Krupke ability (5%). Its one-attack full
+//     fight fires no ability (17/1 won, unchanged); its visit log gains one
+//     draw on each ability visit.
+//   - every per-visit log moved for the same two reasons (one d20 at an
+//     intel-2 hero's ability visits; different resist outcomes, so different
+//     damage/debuff dice, at intel 20).
 const FULL_FIGHT_PINS = {
   "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
-  "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 35, attacks: 4, outcome: "won" },
+  "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 35, attacks: 3, outcome: "won" },
   "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 41, attacks: 3, outcome: "won" },
-  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 48, attacks: 3, outcome: "died" },
-  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 73, attacks: 6, outcome: "won" },
+  "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 36, attacks: 2, outcome: "died" },
+  "beasts-t5": { foeNames: ["Stalka Beast", "Stalka Beast"], totalDraws: 48, attacks: 3, outcome: "died" },
 };
 
 const PER_VISIT_PINS = {
-  "humans-t2": [3, 2, 2, 3, 3, 4, 2, 3, 3, 2, 2, 3],
-  "magical-t4": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4],
-  "demons-t5": [4, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 5],
-  "walking-dead-t5": [4, 6, 4, 6, 7, 5, 10, 10, 8, 8, 7, 10],
-  "beasts-t5": [4, 6, 4, 6, 5, 4, 6, 8, 6, 4, 7, 5],
+  "humans-t2": [4, 3, 4, 4, 2, 3, 2, 4, 4, 4, 3, 4],
+  "magical-t4": [4, 3, 4, 3, 2, 2, 3, 4, 2, 3, 3, 6],
+  "demons-t5": [4, 5, 4, 5, 6, 5, 6, 5, 5, 5, 4, 5],
+  "walking-dead-t5": [8, 4, 6, 7, 4, 8, 5, 8, 10, 9, 8, 10],
+  "beasts-t5": [5, 4, 4, 6, 5, 6, 7, 9, 6, 7, 7, 6],
 };
 
 // --- Tests -------------------------------------------------------------------

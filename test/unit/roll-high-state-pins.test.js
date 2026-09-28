@@ -272,7 +272,19 @@ const PINNED = {
   // value below was re-measured on the merged tree: depth 4 (the Joiner die) and the new item text, hashed identically twice.
   // Re-pinned again (quick fix 79-02c): per-floor heal removed (user ruling
   // 2026-09-27); first divergence bot step 318, see the "solo-1" block above.
-  "party-fighter-knight": { actions: 200, dead: true, depth: 2, hash: "78644698316b137b3a0d5a8d9dd36e39e4da39feec6982b66cc2f90da4c701ac" },
+  // Re-pinned again (quick 260928-hrs, user ruling 2026-09-28, "Use the same
+  // half-intel scale for heroes now"): the hero resists a foe's spell or
+  // ability on max(1, round(intel / 2)) faces, and every hero rolls. This
+  // run's Knight has intel 2, so canon never rolled for it. Traced with a
+  // scratch playRun onStep trace of every heroResisted/heroResistFailed:
+  // the first is bot step 139, Krupke's Weaken at the hero (a new d20 in
+  // the main-rng slot canon's gated d20 used, roll 10 vs 20, failed), so the
+  // Weaken still lands and only the stream moves from there. It is the only
+  // label with a hero resist within its budget (the other seven heroes meet
+  // no hero-targeted foe ability and re-measured byte-identical). 200/dead/2
+  // -> 180/dead/2. Regenerated via `node tools/roll-high-baseline.mjs pins`
+  // (each hashed identically twice).
+  "party-fighter-knight": { actions: 180, dead: true, depth: 2, hash: "16c76b406cd5a8003ebd876a5eaa70f3f58f1b785c520fc9f75b674b9ead14c8" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see

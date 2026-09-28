@@ -1891,10 +1891,12 @@ export const LINE_FOR = {
     priority: PRIORITY.you,
   }),
   // VOX-05 (Phase 79, plan 79-08): a bare event read "its's spell".
-  heroResisted: (e) => ({ text: `You resist ${railPossessive(e?.name, "its")} spell.`, tone: "hit", priority: PRIORITY.you }),
+  // Quick 260928-hrs (user ruling 2026-09-28): the hero resists on the
+  // half-intel scale a foe does, so both twins state the roll and the range.
+  heroResisted: (e) => ({ text: `You resist ${railPossessive(e?.name, "its")} spell (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}, intel ${e?.intel ?? "?"}).`, tone: "hit", priority: PRIORITY.you }),
   // Phase 25 (FEED-03): starts with the foe's name (matches the THEM-family
   // tone-prefix contract every other foe-action builder follows).
-  heroResistFailed: (e) => ({ text: `${e?.name ?? "It"} gets through — you fail to resist.`, tone: "hurt", priority: PRIORITY.them }),
+  heroResistFailed: (e) => ({ text: `${e?.name ?? "It"} gets through — you fail to resist (${rollVsText(e?.roll, e?.atLeast, e?.dieN)}, intel ${e?.intel ?? "?"}).`, tone: "hurt", priority: PRIORITY.them }),
   foePursued: (e) => ({ text: `${e?.name ?? "It"} follows you out.`, tone: "hurt", priority: PRIORITY.them }),
   foeOutOfSpells: (e) => ({ text: `${e?.name ?? "It"} is out of spells.`, tone: "dodge", priority: PRIORITY.them }),
 

@@ -571,6 +571,27 @@ test("FOE_DETAILS_COPY.resistsSpells and COMBAT_MENU_COPY.spellResist: the spell
   }
 });
 
+// Quick 260928-hrs (user ruling 2026-09-28, "Use the same half-intel scale
+// for heroes now"): the hero's resist against a foe's spell or ability rolls
+// the same scale — intel 1–2 → 5%, 6 → 15%, 10 → 25%, 16 → 40%, 18 → 45%,
+// 20 → 50% — and the Oracle and rail lines for heroResisted /
+// heroResistFailed print the range the engine's own event carries.
+test("heroResisted / heroResistFailed: the hero's resist range is the half-intel scale, and the Oracle and rail lines print the engine's range", () => {
+  const ruling = { 1: 5, 2: 5, 6: 15, 10: 25, 16: 40, 18: 45, 20: 50 };
+  for (const [intel, pct] of Object.entries(ruling)) {
+    const faces = resistFaces(Number(intel));
+    assert.equal((faces / 20) * 100, pct, `intel ${intel}`);
+    const res = resistRoll(fakeRng([1]), Number(intel));
+    const range = `${21 - faces === 20 ? "20" : `${21 - faces}–20`}`;
+    const e = { type: "heroResisted", name: "Krupke", ability: "krupkeFreeze", roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel: Number(intel), faces };
+    assert.ok(EVENT_NARRATION.heroResisted(e).includes(`20 vs ${range} (intel ${intel})`), `oracle, intel ${intel}`);
+    assert.ok(LINE_FOR.heroResisted(e).text.includes(`20 vs ${range}, intel ${intel}`), `rail, intel ${intel}`);
+    const f = { ...e, type: "heroResistFailed", roll: 1 };
+    assert.ok(EVENT_NARRATION.heroResistFailed(f).includes(`1 vs ${range} (intel ${intel})`), `oracle fail, intel ${intel}`);
+    assert.ok(LINE_FOR.heroResistFailed(f).text.includes(`1 vs ${range}, intel ${intel}`), `rail fail, intel ${intel}`);
+  }
+});
+
 // ---------------------------------------------------------------------------
 // 9. Quick 260928-tsx (user request 2026-09-28): the thrown attack spells
 //    (Freeze, Fireball, Lightning, Mangle) label each die. The to-hit is a

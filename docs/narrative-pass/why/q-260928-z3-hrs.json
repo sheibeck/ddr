@@ -1,0 +1,10 @@
+[
+  { "key": "rail:heroResisted", "surface": "rail", "trigger": "heroResisted — engine/foeAbilities.js#heroResist (a foe's bolt, drain or debuff at the hero)",
+    "before": "You resist its spell.",
+    "after": "You resist Viper's spell (7 vs 12–20, intel 5).",
+    "reasons": ["fact", "accurate"], "why": "User ruling 2026-09-28 (quick 260928-hrs): \"Use the same half-intel scale for heroes now.\" Every hero now rolls to resist a foe's spell or ability, on the top max(1, round(intel / 2)) faces of a d20, so the rail line states the roll, the range and the intel like its Oracle twin." },
+  { "key": "rail:heroResistFailed", "surface": "rail", "trigger": "heroResistFailed — engine/foeAbilities.js#heroResist (a foe's bolt, drain or debuff at the hero)",
+    "before": "Viper gets through — you fail to resist.",
+    "after": "Viper gets through — you fail to resist (7 vs 12–20, intel 5).",
+    "reasons": ["fact", "accurate"], "why": "User ruling 2026-09-28: the hero's resist is on the same half-intel scale a foe's is, and every hero rolls it now, intel below 12 included. The failure line carries the roll and range too, so a low-intel hero can see the 5% they had." }
+]

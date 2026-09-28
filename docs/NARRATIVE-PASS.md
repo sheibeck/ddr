@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z3-hrs.
 
 ## How to ask for changes
 
@@ -41,7 +41,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 |---|---:|---:|---:|---:|---:|---:|
 | blurbs (class and race blurbs, and their mechanical footers) | 39 | 21 | 18 | 100 | 121 | 0 |
 | oracle (the Oracle log) | 327 | 93 | 234 | 0 | 102 | 2 |
-| rail (rail lines and the fight log) | 287 | 77 | 210 | 0 | 80 | 2 |
+| rail (rail lines and the fight log) | 287 | 78 | 209 | 0 | 81 | 2 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 0 | 15 | 0 |
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
 | combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 3 | 24 | 1 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 1 | 16 | 0 | 56 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **320** | **1551** | **113** | **518** | **81** |
+| **Total** | **1871** | **321** | **1550** | **113** | **519** | **81** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -295,7 +295,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail — rail lines and the fight log
 
-80 changed lines.
+81 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -337,7 +337,8 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:fumbleHeavyBlow`<br>fumbleHeavyBlow — a fumbled Freeze, Petrify, Death or Noxious Vapor lands as a heavy blow | Heal: a hard knock instead (−8 hp). Shaken. | Heal backfires: a heavy blow (−8 hp). Shaken. | **79-04** (accurate to the engine): The rail twin printed the flavor key as the outcome ("stone instead"); it now says heavy blow. |
 | `rail:fumbleOnFoe`<br>fumbleOnFoe — a fumbled helpful scroll lands on the foe instead | Heal helps Viper instead. | Heal heals Viper instead (+2 hp). | **79-08** (what happened, to whom): The rail twin of the Oracle line, which now says what the fumble did for the foe. |
 | `rail:healed`<br>healed { amount 2, gained 1 } — a Heal cast 1 hp below full | +2 hp (Heal). | +1 hp (Heal), back to full. | **79-02** (honest number, accurate to the engine): It printed the roll as the gain; it now leads with the HP actually restored and says the rest hit the ceiling. |
-| `rail:heroResisted`<br>heroResisted — the hero resists a foe's spell | You resist its's spell. | You resist its spell. | **79-08** (hygiene): A nameless event read "its's spell". |
+| `rail:heroResistFailed`<br>heroResistFailed — engine/foeAbilities.js#heroResist (a foe's bolt, drain or debuff at the hero) | Viper gets through — you fail to resist. | Viper gets through — you fail to resist (7 vs 12–20, intel 5). | **q-260928-z3-hrs** (what happened, to whom, accurate to the engine): User ruling 2026-09-28: the hero's resist is on the same half-intel scale a foe's is, and every hero rolls it now, intel below 12 included. The failure line carries the roll and range too, so a low-intel hero can see the 5% they had. |
+| `rail:heroResisted`<br>heroResisted — the hero resists a foe's spell | You resist its's spell. | You resist Viper's spell (7 vs 12–20, intel 5). | **79-08** (hygiene): A nameless event read "its's spell".<br>**q-260928-z3-hrs** (what happened, to whom, accurate to the engine): User ruling 2026-09-28 (quick 260928-hrs): "Use the same half-intel scale for heroes now." Every hero now rolls to resist a foe's spell or ability, on the top max(1, round(intel / 2)) faces of a d20, so the rail line states the roll, the range and the intel like its Oracle twin. |
 | `rail:iceApplied`<br>iceApplied — the hero's Ice lands on a foe | Ice climbs Viper (3). | Ice climbs Viper: d6 a round, 3 rounds. | **79-08** (what happened, to whom): A bare "(3)" did not say it counts rounds, or what the ice does. |
 | `rail:insaneNoTarget`<br>insaneNoTarget — Insanity is cast with no foe to target | No one here to turn insane at. | No one here to drive insane. | **79-08** (reads aloud): The rail twin of the Oracle fix. |
 | `rail:insaneRolled`<br>insaneRolled — the hero's Insanity rolls its d6 on a foe | Insanity takes Viper. | Insanity takes Viper (5): frenzy, twice the swings. | **79-08** (what happened, to whom): The rail twin of the Oracle line, which now says what the face did. |
