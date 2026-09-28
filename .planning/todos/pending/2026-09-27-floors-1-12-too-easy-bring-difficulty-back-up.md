@@ -27,3 +27,6 @@ Standing targets (memory "Depth 20 target + floor 5-7 average"): an AVERAGE run 
 - **Levers on floors 1-12:** foe HP and hit scales, the early foe level/tier, encounter density, trap damage, ration and potion supply, gold and store prices. Tune with the checkpointed fit protocol (blocks of 10; failure patterns go back to the orchestrator; engine-shape changes go to the user). Floors 13+ keep the ruled tail targets.
 - **Interactions:** the spell-resist change (quick 260927-rsx, every foe-targeted spell resistible) and once-per-fight one-shot strikes (260927-opf) both make the game harder, so measure after they land before tuning.
 - Record the before/after in docs/DIFFICULTY-RETUNE.md, with 1,000-seed readouts and a Pixel 7 play check by the user.
+
+## User ruling (2026-09-27)
+- "I want early floor difficulty change now. Before we do a new push to the closed test." This lands in THIS milestone, before the release build and the closed-test push.
