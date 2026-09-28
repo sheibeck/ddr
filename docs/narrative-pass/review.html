@@ -56,7 +56,7 @@ td.num,th.num{text-align:right}
 <li>An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. “…” stands for a value filled in at play time.</li>
 <li><span class="tag new">new line</span> means nothing was printed there before. <span class="tag gone">removed</span> means the line is gone, and the why says what replaced it.</li>
 <li><strong>Why</strong> lists every plan that changed the line, in order, with its reasons.</li>
-<li>Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos.</li>
+<li>Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs.</li>
 </ul>
 <h2 id="ask">How to ask for changes</h2>
 <p>Quote the line (or its key, the code in the first column) and the tone you want instead. Every tone change goes into one quick follow-up task, not a new phase.</p>
@@ -84,7 +84,7 @@ td.num,th.num{text-align:right}
 <tbody>
 <tr><td><a href="#s-blurbs">blurbs</a></td><td class="num">39</td><td class="num">21</td><td class="num">18</td><td class="num">100</td><td class="num">121</td><td class="num">0</td></tr>
 <tr><td><a href="#s-oracle">oracle</a></td><td class="num">327</td><td class="num">93</td><td class="num">234</td><td class="num">1</td><td class="num">103</td><td class="num">2</td></tr>
-<tr><td><a href="#s-rail">rail</a></td><td class="num">287</td><td class="num">77</td><td class="num">210</td><td class="num">1</td><td class="num">81</td><td class="num">2</td></tr>
+<tr><td><a href="#s-rail">rail</a></td><td class="num">287</td><td class="num">78</td><td class="num">209</td><td class="num">1</td><td class="num">82</td><td class="num">2</td></tr>
 <tr><td><a href="#s-refusals">refusals</a></td><td class="num">38</td><td class="num">13</td><td class="num">25</td><td class="num">0</td><td class="num">15</td><td class="num">0</td></tr>
 <tr><td><a href="#s-rail-cards">rail-cards</a></td><td class="num">140</td><td class="num">1</td><td class="num">139</td><td class="num">0</td><td class="num">1</td><td class="num">0</td></tr>
 <tr><td><a href="#s-combat-screen">combat-screen</a></td><td class="num">203</td><td class="num">11</td><td class="num">192</td><td class="num">3</td><td class="num">24</td><td class="num">1</td></tr>
@@ -97,13 +97,13 @@ td.num,th.num{text-align:right}
 <tr><td><a href="#s-map">map</a></td><td class="num">21</td><td class="num">3</td><td class="num">18</td><td class="num">0</td><td class="num">5</td><td class="num">0</td></tr>
 <tr><td><a href="#s-title">title</a></td><td class="num">17</td><td class="num">1</td><td class="num">16</td><td class="num">0</td><td class="num">56</td><td class="num">55</td></tr>
 <tr><td><a href="#s-other">other</a></td><td class="num">32</td><td class="num">5</td><td class="num">27</td><td class="num">9</td><td class="num">14</td><td class="num">0</td></tr>
-<tr><th>Total</th><th class="num">1871</th><th class="num">320</th><th class="num">1551</th><th class="num">115</th><th class="num">520</th><th class="num">81</th></tr>
+<tr><th>Total</th><th class="num">1871</th><th class="num">321</th><th class="num">1550</th><th class="num">115</th><th class="num">521</th><th class="num">81</th></tr>
 </tbody>
 </table>
 <nav aria-label="Surfaces"><ul>
 <li><a href="#s-blurbs">blurbs (121)</a></li>
 <li><a href="#s-oracle">oracle (103)</a></li>
-<li><a href="#s-rail">rail (81)</a></li>
+<li><a href="#s-rail">rail (82)</a></li>
 <li><a href="#s-refusals">refusals (15)</a></li>
 <li><a href="#s-rail-cards">rail-cards (1)</a></li>
 <li><a href="#s-combat-screen">combat-screen (24)</a></li>
@@ -358,7 +358,7 @@ td.num,th.num{text-align:right}
 </table>
 </section>
 <section id="s-rail">
-<h2>rail <small>rail lines and the fight log · 81 changed lines</small></h2>
+<h2>rail <small>rail lines and the fight log · 82 changed lines</small></h2>
 <table class="lines">
 <thead><tr><th>Line and trigger</th><th>Before</th><th>After</th><th>Why</th></tr></thead>
 <tbody>
@@ -401,7 +401,8 @@ td.num,th.num{text-align:right}
 <tr class="row"><td data-label="Line"><code>rail:fumbleHeavyBlow</code><span class="trig">fumbleHeavyBlow — a fumbled Freeze, Petrify, Death or Noxious Vapor lands as a heavy blow</span></td><td data-label="Before" class="before">Heal: a hard knock instead (−8 hp). Shaken.</td><td data-label="After">Heal backfires: a heavy blow (−8 hp). Shaken.</td><td data-label="Why"><p class="step"><span class="plan">79-04</span> <span class="tags">(accurate to the engine)</span>: The rail twin printed the flavor key as the outcome ("stone instead"); it now says heavy blow.</p></td></tr>
 <tr class="row"><td data-label="Line"><code>rail:fumbleOnFoe</code><span class="trig">fumbleOnFoe — a fumbled helpful scroll lands on the foe instead</span></td><td data-label="Before" class="before">Heal helps Viper instead.</td><td data-label="After">Heal heals Viper instead (+2 hp).</td><td data-label="Why"><p class="step"><span class="plan">79-08</span> <span class="tags">(what happened, to whom)</span>: The rail twin of the Oracle line, which now says what the fumble did for the foe.</p></td></tr>
 <tr class="row"><td data-label="Line"><code>rail:healed</code><span class="trig">healed { amount 2, gained 1 } — a Heal cast 1 hp below full</span></td><td data-label="Before" class="before">+2 hp (Heal).</td><td data-label="After">+1 hp (Heal), back to full.</td><td data-label="Why"><p class="step"><span class="plan">79-02</span> <span class="tags">(honest number, accurate to the engine)</span>: It printed the roll as the gain; it now leads with the HP actually restored and says the rest hit the ceiling.</p></td></tr>
-<tr class="row"><td data-label="Line"><code>rail:heroResisted</code><span class="trig">heroResisted — the hero resists a foe's spell</span></td><td data-label="Before" class="before">You resist its's spell.</td><td data-label="After">You resist its spell.</td><td data-label="Why"><p class="step"><span class="plan">79-08</span> <span class="tags">(hygiene)</span>: A nameless event read "its's spell".</p></td></tr>
+<tr class="row"><td data-label="Line"><code>rail:heroResistFailed</code><span class="trig">heroResistFailed — engine/foeAbilities.js#heroResist (a foe's bolt, drain or debuff at the hero)</span></td><td data-label="Before" class="before">Viper gets through — you fail to resist.</td><td data-label="After">Viper gets through — you fail to resist (7 vs 12–20, intel 5).</td><td data-label="Why"><p class="step"><span class="plan">q-260928-z3-hrs</span> <span class="tags">(what happened, to whom, accurate to the engine)</span>: User ruling 2026-09-28: the hero's resist is on the same half-intel scale a foe's is, and every hero rolls it now, intel below 12 included. The failure line carries the roll and range too, so a low-intel hero can see the 5% they had.</p></td></tr>
+<tr class="row"><td data-label="Line"><code>rail:heroResisted</code><span class="trig">heroResisted — the hero resists a foe's spell</span></td><td data-label="Before" class="before">You resist its's spell.</td><td data-label="After">You resist Viper's spell (7 vs 12–20, intel 5).</td><td data-label="Why"><p class="step"><span class="plan">79-08</span> <span class="tags">(hygiene)</span>: A nameless event read "its's spell".</p><p class="step"><span class="plan">q-260928-z3-hrs</span> <span class="tags">(what happened, to whom, accurate to the engine)</span>: User ruling 2026-09-28 (quick 260928-hrs): "Use the same half-intel scale for heroes now." Every hero now rolls to resist a foe's spell or ability, on the top max(1, round(intel / 2)) faces of a d20, so the rail line states the roll, the range and the intel like its Oracle twin.</p></td></tr>
 <tr class="row"><td data-label="Line"><code>rail:iceApplied</code><span class="trig">iceApplied — the hero's Ice lands on a foe</span></td><td data-label="Before" class="before">Ice climbs Viper (3).</td><td data-label="After">Ice climbs Viper: d6 a round, 3 rounds.</td><td data-label="Why"><p class="step"><span class="plan">79-08</span> <span class="tags">(what happened, to whom)</span>: A bare "(3)" did not say it counts rounds, or what the ice does.</p></td></tr>
 <tr class="row"><td data-label="Line"><code>rail:insaneNoTarget</code><span class="trig">insaneNoTarget — Insanity is cast with no foe to target</span></td><td data-label="Before" class="before">No one here to turn insane at.</td><td data-label="After">No one here to drive insane.</td><td data-label="Why"><p class="step"><span class="plan">79-08</span> <span class="tags">(reads aloud)</span>: The rail twin of the Oracle fix.</p></td></tr>
 <tr class="row"><td data-label="Line"><code>rail:insaneRolled</code><span class="trig">insaneRolled — the hero's Insanity rolls its d6 on a foe</span></td><td data-label="Before" class="before">Insanity takes Viper.</td><td data-label="After">Insanity takes Viper (5): frenzy, twice the swings.</td><td data-label="Why"><p class="step"><span class="plan">79-08</span> <span class="tags">(what happened, to whom)</span>: The rail twin of the Oracle line, which now says what the face did.</p></td></tr>

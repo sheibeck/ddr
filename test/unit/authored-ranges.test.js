@@ -63,8 +63,9 @@ import { openChest } from "../../engine/encounters.js";
 import { openStore } from "../../engine/economy.js";
 import { rollTreasureItem } from "../../engine/items.js";
 import { facesRangeText, hitRangeText } from "../../src/browser/rollRange.js";
-// Quick 260927-rsx: the spell resist faces and the foe card copy.
-import { foeSpellResistFaces, foeSpellResistRoll } from "../../engine/derived.js";
+// Quick 260927-rsx / 260928-hrs: the one resist scale (both sides) and the
+// foe card copy.
+import { resistFaces, resistRoll } from "../../engine/derived.js";
 import { FOE_DETAILS_COPY } from "../../src/browser/foeDetails.js";
 import {
   SPELLS, ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS, BESTIARY, POTIONS, JEWELRY, CLOAKS, STAVES,
@@ -554,7 +555,7 @@ test("GEAR_COPY.healingDesc: 'Heals 7–25 hp (double for a Wilmsry)' is drinkPo
 
 // Quick 260927-rsx (user ruling 2026-09-27): the foe card's "resists your
 // spells on {range}" and the spell row's "{target} resists on {range}" are
-// templates filled from engine/derived.js#foeSpellResistFaces; the numbers
+// templates filled from engine/derived.js#resistFaces; the numbers
 // the ruling states (intel 1–2 → 5%, 3 → 10%, 6 → 15%, 10 → 25%, 16 → 40%)
 // are the engine's faces over the d20, and the stated range is the top faces.
 test("FOE_DETAILS_COPY.resistsSpells and COMBAT_MENU_COPY.spellResist: the spell resist range is the engine's half-intel faces on a d20", () => {
@@ -562,11 +563,32 @@ test("FOE_DETAILS_COPY.resistsSpells and COMBAT_MENU_COPY.spellResist: the spell
   assert.equal(COMBAT_MENU_COPY.spellResist, "{target} resists on {range}");
   const ruling = { 1: 5, 2: 5, 3: 10, 6: 15, 10: 25, 16: 40 };
   for (const [intel, pct] of Object.entries(ruling)) {
-    const faces = foeSpellResistFaces(Number(intel));
+    const faces = resistFaces(Number(intel));
     assert.equal((faces / 20) * 100, pct, `intel ${intel}`);
-    const wins = [...Array(20).keys()].filter((raw) => foeSpellResistRoll(fakeRng([raw + 1]), Number(intel)).resisted).length;
+    const wins = [...Array(20).keys()].filter((raw) => resistRoll(fakeRng([raw + 1]), Number(intel)).resisted).length;
     assert.equal(wins, faces, `intel ${intel}: the roll's own winning faces`);
     assert.equal(hitRangeText(faces, 20), `${facesRangeText(faces, 20)} (d20)`);
+  }
+});
+
+// Quick 260928-hrs (user ruling 2026-09-28, "Use the same half-intel scale
+// for heroes now"): the hero's resist against a foe's spell or ability rolls
+// the same scale — intel 1–2 → 5%, 6 → 15%, 10 → 25%, 16 → 40%, 18 → 45%,
+// 20 → 50% — and the Oracle and rail lines for heroResisted /
+// heroResistFailed print the range the engine's own event carries.
+test("heroResisted / heroResistFailed: the hero's resist range is the half-intel scale, and the Oracle and rail lines print the engine's range", () => {
+  const ruling = { 1: 5, 2: 5, 6: 15, 10: 25, 16: 40, 18: 45, 20: 50 };
+  for (const [intel, pct] of Object.entries(ruling)) {
+    const faces = resistFaces(Number(intel));
+    assert.equal((faces / 20) * 100, pct, `intel ${intel}`);
+    const res = resistRoll(fakeRng([1]), Number(intel));
+    const range = `${21 - faces === 20 ? "20" : `${21 - faces}–20`}`;
+    const e = { type: "heroResisted", name: "Krupke", ability: "krupkeFreeze", roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel: Number(intel), faces };
+    assert.ok(EVENT_NARRATION.heroResisted(e).includes(`20 vs ${range} (intel ${intel})`), `oracle, intel ${intel}`);
+    assert.ok(LINE_FOR.heroResisted(e).text.includes(`20 vs ${range}, intel ${intel}`), `rail, intel ${intel}`);
+    const f = { ...e, type: "heroResistFailed", roll: 1 };
+    assert.ok(EVENT_NARRATION.heroResistFailed(f).includes(`1 vs ${range} (intel ${intel})`), `oracle fail, intel ${intel}`);
+    assert.ok(LINE_FOR.heroResistFailed(f).text.includes(`1 vs ${range}, intel ${intel}`), `rail fail, intel ${intel}`);
   }
 });
 

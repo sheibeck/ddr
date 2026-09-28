@@ -302,6 +302,30 @@ ability without a rounds figure.
   same foeTurn, not a window you can observe from outside afterward.
   `abilityRoundsLeft(c, key)` = the effect phase's remaining rounds + its
   `cd`, or just the cooldown's own remaining rounds.
+- **Quick 260928-hrs (user report and ruling 2026-09-28), superseding the
+  lengths above:** "Smoke ability says it lasts for 2 rounds, but whenever I
+  use it, the chit shows 1 rds." The one-tick invariant meant a "for two
+  rounds" ability covered the use round's foe turn plus only ONE more, and
+  its chip first read 1; Riposte ("for one round") covered only the use
+  round and never showed a chip. `engine/abilities.js#abilityEffectTicks`
+  now starts a "for N rounds" ability at N + 1: it still covers the foes'
+  swing in the round it was used, then N full rounds after it, and the chip
+  reads N right after use (N → … → 1 → gone). Taunt ("every foe swings at you
+  this round", `THIS_ROUND_ABILITIES`) keeps covering exactly the use round.
+  A Joiner's timer (`combat.js#startMemberAbilityTimer`) uses the same
+  length. `DURATION_ROUNDS` still holds the stated rounds (the events'
+  `rounds`, the text).
+
+  | Ability | Text | Foe turns covered before (use round + after) | After | Chip right after use, before → after |
+  |---|---|---|---|---|
+  | Sidestep | two rounds | 2 (1 + 1) | 3 (1 + 2) | 1 → 2 |
+  | Battle Roar | two rounds | 2 (1 + 1) | 3 (1 + 2) | 1 → 2 |
+  | Smoke | two rounds; a flee during it just works | 2 (1 + 1); 1 free flee | 3 (1 + 2); 2 free flees | 1 → 2 |
+  | Riposte | for one round | 1 (1 + 0) | 2 (1 + 1) | none → 1 |
+  | Taunt | this round | 1 (1 + 0) | 1 (unchanged) | none → none |
+
+  Pinned by `test/unit/ability-duration-rounds.test.js` (the hero and a
+  Joiner).
 
 ### Per-ability resolution (condensed — see `ability_effects_spec` in
 38-03-PLAN.md for the verbatim table)

@@ -110,7 +110,11 @@ export const DRAW_INVENTORY = {
   // Quick 260927-rsx (user ruling 2026-09-27): foeSpellResistRoll adds one
   // more rollCheck call (the foe's d20 against a spell cast on it, roll-high,
   // every foe, drawn from its own derived stream by foeSpellResistCheck).
-  "engine/derived.js": { rollCheck: 3, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
+  // Quick 260928-hrs (user ruling 2026-09-28): canon p.25's hero-side
+  // resistRoll and foeSpellResistRoll merged into the ONE resistRoll (the
+  // half-intel scale, both sides), so one rollCheck call goes (3 -> 2). The
+  // hero's draw still happens, from the main rng, at the same position.
+  "engine/derived.js": { rollCheck: 2, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/dice.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 2 },
   "engine/economy.js": { rollCheck: 0, amount: 0, selection: 1, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/encounters.js": { rollCheck: 3, amount: 10, selection: 13, "mishap-on-1": 0, "already-high": 1, primitive: 0 },

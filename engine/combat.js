@@ -67,12 +67,12 @@ import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeT
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT, ELITE_TITLES } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
-// DURATION_ROUNDS mapping and foe-flag appliers verbatim — the SAME
+// effect-length mapping (abilityEffectTicks) and foe-flag appliers verbatim — the SAME
 // combat.js <-> foeAbilities.js cycle precedent above applies here
 // (abilities.js imports several combat.js functions; neither module reads
 // the other's binding at top-level module-evaluation time, only inside
 // function bodies, so the cycle is safe).
-import { DURATION_ROUNDS, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
+import { abilityEffectTicks, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
 import { checkDeathPhobia } from "./phobias.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -2157,15 +2157,17 @@ export function pickMemberAbility(sheet, ally, round, target) {
 /**
  * startMemberAbilityTimer(sheet, meta) — the member-sheet analog of
  * abilities.js#useAbility's own startAbilityTimer: the EXACT SAME
- * DURATION_ROUNDS/ONCE_A_FIGHT mapping, applied to a Joiner's own
+ * abilityEffectTicks/ONCE_A_FIGHT mapping, applied to a Joiner's own
  * `sheet.timers` (Phase 36) instead of the hero's `c.timers`.
  */
 function startMemberAbilityTimer(sheet, meta) {
   const id = `ability:${meta.id}`;
   const cd = meta.cd === "fight" ? ONCE_A_FIGHT : meta.cd;
-  const durationRounds = DURATION_ROUNDS[meta.id];
-  if (durationRounds) {
-    startEffect(sheet, id, { rounds: durationRounds, cd });
+  // Quick 260928-hrs: abilities.js#abilityEffectTicks (the stated rounds
+  // AFTER the use round, plus the use round's own tick), the hero's length.
+  const ticks = abilityEffectTicks(meta.id);
+  if (ticks) {
+    startEffect(sheet, id, { rounds: ticks, cd });
   } else {
     startCooldown(sheet, id, { rounds: cd });
   }

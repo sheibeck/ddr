@@ -43,8 +43,8 @@ import { spellDamageFor, controlHoldRoundsFor } from "./difficulty.js";
 // spell cast on an enemy should have a chance to be resisted based on their
 // intelligence"). Canon p.25 (mazeworld.html line 2509) let only an
 // intel >= 12 target resist, and never a thrown spell. Now every foe a spell
-// targets rolls combat.js#foeResistsSpell (derived.js#foeSpellResistRoll,
-// half-intel faces on a d20), thrown damage included; a resisted spell has
+// targets rolls combat.js#foeResistsSpell (derived.js#resistRoll, half-intel
+// faces on a d20 — the hero's own scale too since quick 260928-hrs), thrown damage included; a resisted spell has
 // no effect on that foe. Only derived.js#SPELL_SELF_KINDS (the caster's own
 // body, side or map) is never resisted.
 //

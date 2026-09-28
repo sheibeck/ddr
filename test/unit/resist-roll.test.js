@@ -1,20 +1,17 @@
 // test/unit/resist-roll.test.js
 //
 // FOE-07 (D-07/D-17): resistRoll(rng, intel) — the ONE shared resistance
-// helper homed in engine/derived.js (a cycle-free leaf), reused by both
-// magic.js's castSpell (foe resists the player) and Phase 19's foe-ability
-// resolver (the hero resists a foe). Pins the exact gate (intel < 12 never
-// rolls, zero draws), the exact draw (exactly one d20 when intel >= 12), and
-// the exact comparison (resisted iff the raw draw < intel — a raw natural 1
-// always resists). Also pins toHit's D-10 dazed to-hit penalty (floored at
-// 1).
+// helper homed in engine/derived.js (a cycle-free leaf), used by both sides
+// again since quick 260928-hrs: a foe resisting a spell cast on it (through
+// foeSpellResistCheck's derived stream) and the hero resisting a foe's spell
+// or ability (foeAbilities.js, the main rng). Pins the draw (exactly one d20,
+// every intel) and the half-intel comparison. Also pins toHit's D-10 dazed
+// to-hit penalty (floored at 1).
 //
-// Phase 73 (ROLL-05): resistRoll now reads its d20 roll-high through
-// rollCheck — the raw draw fed to fakeRng is UNCHANGED (so "resisted iff raw
-// < intel" still holds for every scripted sequence below), but the `roll`
-// FIELD on the returned object is now the mirrored face (`21 - raw`), and
-// the object carries the new `atLeast`/`dieN` triple. Every expected `roll`
-// value below is `21 - <the old raw-roll expectation>`.
+// Phase 73 (ROLL-05): resistRoll reads its d20 roll-high through rollCheck —
+// the `roll` FIELD on the returned object is the mirrored face (`21 - raw`
+// for the raw draw fed to fakeRng), and the object carries the
+// `atLeast`/`dieN` triple (plus `faces`).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -37,31 +34,37 @@ function fakeRng(seq) {
   };
 }
 
-test("resistRoll: intel below 12 never rolls (0 draws) — 11, 0, undefined, null", () => {
-  for (const intel of [11, 0, undefined, null]) {
-    const result = resistRoll(fakeRng([]), intel);
-    assert.deepStrictEqual(result, { rolled: false, resisted: false, roll: undefined });
+// Quick 260928-hrs (user ruling 2026-09-28, "Use the same half-intel scale
+// for heroes now"): canon p.25's gate (intel >= 12) and its `intel - 1`
+// faces are retired. Every resistor rolls exactly one d20 and resists on the
+// top max(1, round(intel / 2)) faces — the scale a foe already resisted the
+// hero's spells on (quick 260927-rsx).
+
+test("resistRoll: every intel rolls exactly one d20 — 11, 0, undefined and null included (no intel-12 gate)", () => {
+  for (const intel of [11, 0, undefined, null, 1]) {
+    const rng = fakeRng([1]);
+    const result = resistRoll(rng, intel);
+    assert.equal(result.rolled, true, `intel ${intel}`);
+    assert.equal(result.resisted, true, `intel ${intel}: the top face always resists`);
+    assert.throws(() => rng.d(20), /exhausted/, `intel ${intel}: exactly one draw`);
   }
+  // A missing intel reads the one-face floor (5%): only the top face resists.
+  assert.equal(resistRoll(fakeRng([2]), undefined).resisted, false);
 });
 
-test("resistRoll: intel 12 draws exactly one d20 — raw 11 resists (mirrored roll 10), raw 12 does not (mirrored roll 9)", () => {
-  const resisted = resistRoll(fakeRng([11]), 12);
-  assert.deepStrictEqual(resisted, { rolled: true, resisted: true, roll: 10, atLeast: 10, dieN: 20 });
+test("resistRoll: intel 12 resists on 15–20 (6 faces) — raw 6 resists (mirrored roll 15), raw 7 does not (mirrored roll 14)", () => {
+  const resisted = resistRoll(fakeRng([6]), 12);
+  assert.deepStrictEqual(resisted, { rolled: true, resisted: true, roll: 15, atLeast: 15, dieN: 20, faces: 6 });
 
-  const notResisted = resistRoll(fakeRng([12]), 12);
-  assert.deepStrictEqual(notResisted, { rolled: true, resisted: false, roll: 9, atLeast: 10, dieN: 20 });
-
-  // Exactly one draw: a second .d() on an rng with only one value queued throws.
-  const rng = fakeRng([11]);
-  resistRoll(rng, 12);
-  assert.throws(() => rng.d(20));
+  const notResisted = resistRoll(fakeRng([7]), 12);
+  assert.deepStrictEqual(notResisted, { rolled: true, resisted: false, roll: 14, atLeast: 15, dieN: 20, faces: 6 });
 });
 
-test("resistRoll: intel 20 — raw 19 resists, raw 20 does not; a raw natural 1 always resists at any intel >= 12", () => {
-  assert.equal(resistRoll(fakeRng([19]), 20).resisted, true);
-  assert.equal(resistRoll(fakeRng([20]), 20).resisted, false);
-  assert.equal(resistRoll(fakeRng([1]), 12).resisted, true);
-  assert.equal(resistRoll(fakeRng([1]), 15).resisted, true);
+test("resistRoll: intel 20 resists on 11–20 (50%), intel 18 on 12–20 (45%); a raw natural 1 is the top face and always resists", () => {
+  assert.equal(resistRoll(fakeRng([10]), 20).resisted, true);
+  assert.equal(resistRoll(fakeRng([11]), 20).resisted, false);
+  assert.equal(resistRoll(fakeRng([9]), 18).resisted, true);
+  assert.equal(resistRoll(fakeRng([10]), 18).resisted, false);
   // a raw natural 1 mirrors to the die's TOP face (20) — the best possible
   // roll-high face, which always clears any atLeast on a d20.
   assert.equal(resistRoll(fakeRng([1]), 12).roll, 20);

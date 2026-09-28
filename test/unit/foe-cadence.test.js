@@ -193,14 +193,17 @@ function stalkaFoe(overrides = {}) {
   });
 }
 
-test("CAD-02 (SC2): an ability turn is exactly foeCast + its effect event, zero swings, 2 draws", () => {
+// Quick 260928-hrs (user ruling 2026-09-28): every hero rolls a resist d20
+// against a bolt (half-intel scale, no intel-12 gate), so an ability turn at
+// the hero is 3 draws; a raw 20 (mirrored roll 1) never resists.
+test("CAD-02 (SC2): an ability turn is exactly foeCast + the hero's resist + its effect event, zero swings, 3 draws", () => {
   const state = fixedState({ c: { wp: 999, maxWP: 999 } });
   const foe = stalkaFoe();
   state.combat = fixedCombat([foe]);
-  const events = foeTurn(state, fakeRng([4, 6]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted"]);
+  const events = foeTurn(state, fakeRng([4, 20, 6]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
   assert.equal(events[0].ability, "stalkaFreeze");
-  assert.equal(events[1].dmg, 6);
+  assert.equal(events[2].dmg, 6);
   assert.equal(attacksPerAction(events), 0);
 });
 
@@ -237,7 +240,7 @@ test("CAD-02 (SC2): a later visit with stalkaLightning ready casts it, zero swin
   const foe = stalkaFoe();
   foe.cd = { stalkaHeal: 1, stalkaLightning: 1, stalkaFireball: 1 };
   state.combat = fixedCombat([foe]);
-  const events = foeTurn(state, fakeRng([4, 5]), []);
+  const events = foeTurn(state, fakeRng([4, 20, 5]), []);
   assert.equal(events[0].type, "foeCast");
   assert.equal(events[0].ability, "stalkaLightning");
   assert.equal(attacksPerAction(events), 0);

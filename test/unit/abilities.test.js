@@ -287,8 +287,13 @@ test("timers: sidestep (duration 2, cd 4) ticks through its effect phase then it
   const state = fixedState({ c: fixedFighter({ abilities: ["sidestep"] }) });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   useAbility(state, "sidestep", fakeRng([...FILL]), []);
-  assert.equal(abilityRoundsLeft(state.c, "sidestep"), 5); // (2-1 effect) + 4 cd
+  // Quick 260928-hrs: the use round's foe turn spent one tick of 2 + 1, so
+  // the two stated rounds are both still to come.
+  assert.equal(abilityRoundsLeft(state.c, "sidestep"), 6); // 2 effect + 4 cd
   assert.equal(abilityEffectActive(state.c, "sidestep"), true);
+  foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(abilityEffectActive(state.c, "sidestep"), true, "one stated round still to go");
+  assert.equal(remaining(state.c, "ability:sidestep"), 1);
   foeTurn(state, fakeRng([...FILL]), []);
   // effect phase's last round just expired -> flips into its own 4-round cooldown
   assert.equal(abilityEffectActive(state.c, "sidestep"), false);
@@ -512,16 +517,27 @@ test("brace: sets C.braced and pushes braced", () => {
   assert.ok(events.some((e) => e.type === "braced"));
 });
 
-test("riposte: pushes riposteReady; its 1-round effect window is this same dispatch's own foeTurn, so by the time useAbility returns it has already ticked into its 4-round cooldown", () => {
+// Quick 260928-hrs (user ruling 2026-09-28): a "for N rounds" ability covers
+// the use round's foe turn, then N full rounds after it, so Riposte ("for
+// one round") is still live when useAbility returns, reading 1, and flips
+// into its 4-round cooldown after the next foe turn.
+test("riposte: pushes riposteReady; it covers this dispatch's own foeTurn and still reads 1 round when useAbility returns, then ticks into its 4-round cooldown", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["riposte"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   const events = useAbility(state, "riposte", fakeRng([...FILL]), []);
   assert.equal(isReady(state.c, "ability:riposte"), false);
-  assert.equal(remaining(state.c, "ability:riposte"), 4);
+  assert.equal(abilityEffectActive(state.c, "riposte"), true);
+  assert.equal(remaining(state.c, "ability:riposte"), 1);
   assert.ok(events.some((e) => e.type === "riposteReady" && e.rounds === 1));
+  foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(abilityEffectActive(state.c, "riposte"), false);
+  assert.equal(remaining(state.c, "ability:riposte"), 4);
 });
 
-test("taunt: pushes taunted; same one-tick-already-spent invariant as riposte", () => {
+// Taunt is a THIS-round ability ("every foe swings at you this round"): its
+// one round is this dispatch's own foeTurn, so it is already in cooldown when
+// useAbility returns (unchanged by quick 260928-hrs).
+test("taunt: pushes taunted; its one round is this dispatch's own foeTurn, so it is already cooling when useAbility returns", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["taunt"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   const events = useAbility(state, "taunt", fakeRng([...FILL]), []);

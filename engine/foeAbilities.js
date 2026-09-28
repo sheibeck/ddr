@@ -3,7 +3,8 @@
 // Phase 19 (FOE-01..09) — the foe-side ability resolver: readiness (every/
 // uses/heal/summon caps), the per-visit cooldown tick, and the five effect
 // kinds (bolt/drain/debuff/heal/summon), including the hero's Intelligence
-// resistance (via engine/derived.js#resistRoll) and party-member targeting
+// resistance (via engine/derived.js#resistRoll, the half-intel scale a foe
+// also resists on since quick 260928-hrs) and party-member targeting
 // (via engine/combat.js#pickFoeTarget). Pure: every function here takes an
 // explicit `state`/`f`/`rng`/`events` — no DOM, no Math.random, no Date, no
 // localStorage — and every rng draw is gated behind a foe's own `abilities`
@@ -30,7 +31,7 @@ import { difficultyCurve, abilityCadenceFor } from "./difficulty.js";
 import { pickFoeTarget, applyFoeDamageToPlayer, downMember, liveFoes } from "./combat.js";
 
 const BY_ID = new Map(FOE_ABILITIES.map((a) => [a.id, a]));
-// The three kinds p.25's resistance check can ever apply to (FOE-07/D-07) —
+// The three kinds the hero's resistance check can ever apply to (FOE-07/D-07) —
 // heal and summon are unresisted/untargeted by design (D-02/D-12).
 const RESISTIBLE = new Set(["bolt", "drain", "debuff"]);
 // FOE-04/D-12: a room never holds more than 4 live foes. Exported (Phase
@@ -131,21 +132,25 @@ export function firstReadyAbility(state, f) {
 /**
  * heroResist(rng, c, f, a, events) — FOE-07/D-07: the ONE resist check every
  * hero-targeted bolt/drain/debuff runs, via the shared `resistRoll` helper
- * (engine/derived.js). Pushes `heroResisted`/`heroResistFailed` only when a
- * roll actually happened (hero intel >= 12 — resistRoll's own gate); returns
+ * (engine/derived.js). User ruling 2026-09-28 (quick 260928-hrs, "Use the
+ * same half-intel scale for heroes now"): the hero rolls on the SAME scale a
+ * foe does against the hero's spells — `resistFaces(intel)` =
+ * `max(1, round(intel / 2))` winning faces of a d20, roll-high — and EVERY
+ * hero rolls (canon p.25's intel >= 12 gate is retired). The d20 comes from
+ * the MAIN rng, at the position canon's gated draw always sat (after the
+ * `foeCast` telegraph, before the effect's own dice), so a hero with intel
+ * 12+ draws exactly where it always did; a hero below 12 now draws one d20
+ * there too. Pushes `heroResisted` or `heroResistFailed` every time; returns
  * `true` when the effect is fully resisted (0 further effect, no further
- * draw). Never called for heal/summon or a member-targeted bolt/drain. Phase
- * 73 (ROLL-05): both events carry resistRoll's { roll, atLeast, dieN } triple
- * alongside `intel`.
+ * draw). Never called for heal/summon or a member-targeted bolt/drain. Both
+ * events carry resistRoll's { roll, atLeast, dieN } triple alongside `intel`
+ * and `faces`.
  */
 function heroResist(rng, c, f, a, events) {
   const res = resistRoll(rng, c.intel);
-  if (res.rolled && res.resisted) {
-    events.push({ type: "heroResisted", name: f.name, ability: a.id, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel: c.intel });
-  } else if (res.rolled) {
-    events.push({ type: "heroResistFailed", name: f.name, ability: a.id, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel: c.intel });
-  }
-  return res.rolled && res.resisted;
+  const fields = { name: f.name, ability: a.id, roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel: c.intel, faces: res.faces };
+  events.push({ type: res.resisted ? "heroResisted" : "heroResistFailed", ...fields });
+  return res.resisted;
 }
 
 /**
@@ -187,9 +192,10 @@ function heroResist(rng, c, f, a, events) {
  * immediately without touching `state.combat`/`C` again.
  *
  * Draws (see 19-03-PLAN.md's dice-budget table): heal/debuff/bolt/drain each
- * draw their own dice (`a.dmg`/`d4`), plus one gated `resistRoll` d20 (hero
- * intel >= 12 only) and one gated `pickFoeTarget` die (a live party member
- * only); summon draws exactly one `rng.pick`.
+ * draw their own dice (`a.dmg`/`d4`), plus one `resistRoll` d20 whenever the
+ * effect lands on the hero (every hero since quick 260928-hrs) and one gated
+ * `pickFoeTarget` die (a live party member only); summon draws exactly one
+ * `rng.pick`.
  *
  * DELIBERATE RULES CHANGE (Phase 21, TUNE-01, D-03/D-18): the cooldown
  * reset and uses decrement now go through `abilityCadenceFor` (curve-scaled

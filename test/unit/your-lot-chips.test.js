@@ -146,6 +146,9 @@ test("(a) Smoke: the hero card shows 'Smoke · n' (good) the round it is used, m
   assert.deepEqual(chipTexts(render(r, before)[0]), [], "no chip before the smoke");
 
   const remaining = conditionsOf(after).find((cn) => cn.key === "ability" && cn.ability === "smoke").remaining;
+  // Quick 260928-hrs (user report 2026-09-28, "the chit shows 1 rds"): the
+  // chip reads Smoke's full two rounds the moment it is thrown.
+  assert.equal(remaining, 2);
   const cards = render(r, after);
   assert.deepEqual(chipTexts(cards[0]), [`Smoke · ${remaining}`]);
   const [chip] = lotChipEls(cards[0]);
@@ -214,7 +217,9 @@ test("(c) a Smoke chip tap raises one card: the measured lead, Smoke's own text,
   assert.match(text, /^\+\d+ vs their swings\. /, "the measured lead first");
   const smokeTxt = ABILITY_BY_ID.smoke.txt;
   assert.ok(text.includes(smokeTxt[0].toUpperCase() + smokeTxt.slice(1)), "Smoke's own content text");
-  assert.match(text, /1 more round, from your Smoke\.$/, "the rounds left and where it came from");
+  // Quick 260928-hrs (user ruling 2026-09-28): Smoke's two rounds are both
+  // still ahead right after the throw.
+  assert.match(text, /2 more rounds, from your Smoke\.$/, "the rounds left and where it came from");
   const cn = conditionsOf(after).find((x) => x.key === "ability");
   assert.equal(text, r.ctx.conditionTapText(cn, "Smoke", after), "the one shared composition");
 
@@ -258,7 +263,11 @@ const durationFor = (text) => typeDurationMs(String(text ?? "").length);
 
 test("(e) mid-beat the chips read the beat's view state, once settled S; a chip tap mid-beat opens the card and never hurries the round", () => {
   const r = rig({ reducedMotion: false });
-  const { after: before } = smokeUsed(); // Smoke · 1 is live going into this round
+  // Quick 260928-hrs: Smoke reads 2 right after the throw and 1 after the
+  // next round, so one attack brings it to its last round.
+  const { after: used } = smokeUsed();
+  const { state: before } = applyAction(used, { type: "attack" }); // Smoke · 1 is live going into this round
+  assert.ok(before.combat, "the fight is still on after the first attack");
   const { state: after, events } = applyAction(before, { type: "attack" });
   assert.ok(after.combat, "a mid-fight round");
   assert.equal(conditionsOf(after).some((cn) => cn.key === "ability"), false, "the round ends the smoke");

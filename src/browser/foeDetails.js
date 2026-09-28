@@ -61,7 +61,7 @@ import { RAIL_HOLD } from "./rail.js";
 import { heroHitOddsVs, foeHitOddsVs } from "./rollOdds.js";
 // Quick 260927-rsx: the foe card states the foe's spell resist from the
 // engine's own faces helper, printed through the one range formatter.
-import { foeSpellResistFaces } from "../../engine/derived.js";
+import { resistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
 
 function deepFreeze(o) {
@@ -307,8 +307,8 @@ function resistLine(foe, type, name) {
   const intel = num(rd(foe, "intel"));
   parts.push(fill(C.int, { n: intel === null ? "?" : intel }));
   // Quick 260927-rsx: the foe's resist against a spell cast on it, from
-  // engine/derived.js#foeSpellResistFaces (a missing intel reads the floor).
-  parts.push(fill(C.resistsSpells, { range: hitRangeText(foeSpellResistFaces(intel === null ? undefined : intel), 20) }));
+  // engine/derived.js#resistFaces (a missing intel reads the floor).
+  parts.push(fill(C.resistsSpells, { range: hitRangeText(resistFaces(intel === null ? undefined : intel), 20) }));
   for (const row of DAMAGE_MULTIPLIERS) {
     const hit = (row.foeType && row.foeType === type) || (row.foeName && row.foeName === name);
     if (!hit) continue;

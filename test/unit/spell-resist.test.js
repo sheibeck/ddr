@@ -16,9 +16,10 @@
 //     Weaken);
 //   - every caster path: the hero, a Joiner (allyCast), a scroll (the free
 //     cast) and an item activation (the Birch Staff, the Pine Staff);
-//   - the hero side (a foe's spell at the hero) is unchanged canon:
-//     resistRoll, intel >= 12 only, and foeAbilities.js never reads the new
-//     function;
+//   - both sides share one resist (quick 260928-hrs, user ruling 2026-09-28):
+//     the hero resisting a foe's spell or ability rolls the same resistRoll
+//     on the same resistFaces scale, no intel-12 gate (this reverses
+//     260927-rsx's "the hero side is unchanged canon" pin);
 //   - (the Oracle and rail lines, the foe card and the spell rows live in
 //     test/unit/spell-resist-copy.test.js).
 //
@@ -37,8 +38,7 @@ import { castSpell, readScroll } from "../../engine/magic.js";
 import { useItem } from "../../engine/items.js";
 import { alliesTurn } from "../../engine/combat.js";
 import {
-  foeSpellResistFaces,
-  foeSpellResistRoll,
+  resistFaces,
   foeSpellResistCheck,
   foeWeakened,
   resistRoll,
@@ -129,31 +129,31 @@ function findActs(source, wants, intels = {}, caster = "you") {
 // The odds.
 // ---------------------------------------------------------------------------
 
-test("foeSpellResistFaces: half-intel faces on a d20 — intel 1, 2, 3, 6, 10, 16 resist on 1, 1, 2, 3, 5, 8 faces (5/5/10/15/25/40%)", () => {
-  const table = { 1: [1, 5], 2: [1, 5], 3: [2, 10], 6: [3, 15], 10: [5, 25], 16: [8, 40] };
+test("resistFaces: half-intel faces on a d20 — intel 1, 2, 3, 6, 10, 16, 18, 20 resist on 1, 1, 2, 3, 5, 8, 9, 10 faces (5/5/10/15/25/40/45/50%)", () => {
+  const table = { 1: [1, 5], 2: [1, 5], 3: [2, 10], 6: [3, 15], 10: [5, 25], 16: [8, 40], 18: [9, 45], 20: [10, 50] };
   for (const [intel, [faces, pct]] of Object.entries(table)) {
-    assert.equal(foeSpellResistFaces(Number(intel)), faces, `intel ${intel}`);
+    assert.equal(resistFaces(Number(intel)), faces, `intel ${intel}`);
     // Exhaustive d20: count the raw faces that resist through the real roll.
     let wins = 0;
-    for (let raw = 1; raw <= 20; raw++) if (foeSpellResistRoll(fakeRng([raw]), Number(intel)).resisted) wins++;
+    for (let raw = 1; raw <= 20; raw++) if (resistRoll(fakeRng([raw]), Number(intel)).resisted) wins++;
     assert.equal(wins, faces, `intel ${intel} winning faces`);
     assert.equal((wins / 20) * 100, pct, `intel ${intel} percent`);
   }
   // A missing or odd intel still gets the floor of one face.
-  assert.equal(foeSpellResistFaces(undefined), 1);
-  assert.equal(foeSpellResistFaces(0), 1);
+  assert.equal(resistFaces(undefined), 1);
+  assert.equal(resistFaces(0), 1);
 });
 
-test("foeSpellResistRoll: every foe rolls (no intel-12 gate) — one roll-high d20, resisted on roll >= 21 - faces", () => {
+test("resistRoll: every resistor rolls (no intel-12 gate) — one roll-high d20, resisted on roll >= 21 - faces", () => {
   const rng = fakeRng([1]);
-  const r = foeSpellResistRoll(rng, 1);
+  const r = resistRoll(rng, 1);
   assert.deepEqual(r, { rolled: true, resisted: true, roll: 20, atLeast: 20, dieN: 20, faces: 1 });
   assert.throws(() => rng.d(20), /exhausted/, "exactly one draw");
-  assert.equal(foeSpellResistRoll(fakeRng([2]), 1).resisted, false);
-  const sixteen = foeSpellResistRoll(fakeRng([8]), 16); // roll 13 vs 13–20
+  assert.equal(resistRoll(fakeRng([2]), 1).resisted, false);
+  const sixteen = resistRoll(fakeRng([8]), 16); // roll 13 vs 13–20
   assert.equal(sixteen.atLeast, 13);
   assert.equal(sixteen.resisted, true);
-  assert.equal(foeSpellResistRoll(fakeRng([9]), 16).resisted, false);
+  assert.equal(resistRoll(fakeRng([9]), 16).resisted, false);
 });
 
 test("foeSpellResistCheck draws from a derived stream: the caller's rng is never touched", () => {
@@ -356,19 +356,27 @@ test("the Pine Staff's fireballs skip a foe that resisted them", () => {
 });
 
 // ---------------------------------------------------------------------------
-// The hero side stays canon.
+// Both sides share the one helper (quick 260928-hrs, user ruling 2026-09-28:
+// "Use the same half-intel scale for heroes now"). This reverses 260927-rsx's
+// pin that foeAbilities.js never read the foe-side function: there is now one
+// scale (resistFaces) and one roll (resistRoll), and only the stream differs.
 // ---------------------------------------------------------------------------
 
-test("the hero side is unchanged: resistRoll still gates on intel >= 12, and foeAbilities.js never reads the foe-side function", () => {
-  assert.deepEqual(resistRoll(fakeRng([]), 11), { rolled: false, resisted: false, roll: undefined });
-  assert.equal(resistRoll(fakeRng([11]), 12).resisted, true);
-  assert.equal(resistRoll(fakeRng([12]), 12).resisted, false);
-  const src = fs.readFileSync(path.join(REPO_ROOT, "engine", "foeAbilities.js"), "utf8");
-  assert.match(src, /resistRoll\(rng, c\.intel\)/);
-  assert.doesNotMatch(src, /foeSpellResist/);
-  // And no spell cast ON a foe reads resistRoll any more.
-  for (const f of ["magic.js", "combat.js", "items.js"]) {
+test("both sides share one resist: the hero's resist (foeAbilities.js) and a foe's (foeSpellResistCheck) both roll resistRoll on resistFaces, with no intel-12 gate", () => {
+  // The hero side: an intel-11 hero now rolls (canon's gate is retired).
+  const rng = fakeRng([1]);
+  assert.deepEqual(resistRoll(rng, 11), { rolled: true, resisted: true, roll: 20, atLeast: 15, dieN: 20, faces: 6 });
+  assert.throws(() => rng.d(20), /exhausted/, "exactly one draw");
+  const src = fs.readFileSync(path.join(REPO_ROOT, "engine", "foeAbilities.js"), "utf8").replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.match(src, /resistRoll\(rng, c\.intel\)/, "the hero rolls resistRoll off the main rng");
+  // The foe side: the derived-stream wrapper returns resistRoll's own shape.
+  const r = foeSpellResistCheck({ acts: 0, combat: { round: 1 } }, { getState: () => 0 }, "Fireball", 0, 16);
+  assert.equal(r.faces, resistFaces(16));
+  assert.equal(r.atLeast, 21 - resistFaces(16));
+  // The one scale, read by nobody else: no engine file carries its own copy
+  // of the half-intel formula.
+  for (const f of ["magic.js", "combat.js", "items.js", "foeAbilities.js"]) {
     const s = fs.readFileSync(path.join(REPO_ROOT, "engine", f), "utf8").replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
-    assert.doesNotMatch(s, /resistRoll\(/, f);
+    assert.doesNotMatch(s, /intel\s*\/\s*2/, f);
   }
 });

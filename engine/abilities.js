@@ -28,7 +28,9 @@
 // Cooldown model (Phase 36 c.timers, id = "ability:<key>"): an immediate
 // (non-duration) ability is a plain startCooldown; a duration ability
 // (sidestep/battleRoar/riposte/taunt/smoke) is a startEffect carrying its
-// own `cd`, so effects.js's own duration -> cooldown transition (tickRounds,
+// own `cd` and abilityEffectTicks' length (quick 260928-hrs: the stated
+// rounds after the use round, plus the use round's own tick), so
+// effects.js's own duration -> cooldown transition (tickRounds,
 // already wired at foeTurn's tail since Phase 36) flips it the instant the
 // effect runs out — no bespoke bookkeeping here. `cd: "fight"` maps to
 // ONCE_A_FIGHT (999) rounds, cleared unconditionally by endCombat's existing
@@ -61,15 +63,46 @@ import { gainWilmst } from "./items.js";
 export const DURATION_ROUNDS = { sidestep: 2, battleRoar: 2, riposte: 1, taunt: 1, smoke: 2 };
 
 /**
+ * THIS_ROUND_ABILITIES — the duration abilities whose text promises THIS
+ * round, the one they are used in: Taunt ("every foe swings at you this
+ * round"). Their one round is the foe turn that follows the use in the same
+ * dispatch, and they are spent by the time the player looks again.
+ */
+export const THIS_ROUND_ABILITIES = Object.freeze(new Set(["taunt"]));
+
+/**
+ * abilityEffectTicks(key) — quick 260928-hrs (user ruling 2026-09-28: "Smoke
+ * ability says it lasts for 2 rounds, but whenever I use it, the chit shows
+ * 1 rds"): the effect-phase length a duration ability's timer starts with.
+ * Using an ability IS the round's action, so the same dispatch's foeTurn
+ * swings (covered by the effect) and then ticks the fresh timer once (the
+ * Phase 38 "one-tick-already-spent" invariant). A "for N rounds" ability
+ * (Sidestep, Battle Roar, Smoke: two; Riposte: one) therefore starts at
+ * N + 1: it covers the foes' swing in the round it was used, then N full
+ * rounds after it, and its chip reads N right after use, counting down
+ * N -> ... -> 1 -> gone. Before this ruling it started at N, so it covered
+ * the use round plus only N - 1 more and the chip first read N - 1 (Smoke's
+ * "1 rds"; a Riposte's chip never showed at all). A THIS_ROUND_ABILITIES
+ * entry starts at its DURATION_ROUNDS (1): the use round only, unchanged.
+ * 0 for a non-duration ability. Exported so combat.js#startMemberAbilityTimer
+ * applies the same length to a Joiner's own sheet.timers. Pure, no rng.
+ */
+export function abilityEffectTicks(key) {
+  const n = DURATION_ROUNDS[key];
+  if (!n) return 0;
+  return THIS_ROUND_ABILITIES.has(key) ? n : n + 1;
+}
+
+/**
  * startAbilityTimer(c, meta) — the ONE cooldown-dispatch site every
  * successful useAbility call runs, per this plan's cooldown_model.
  */
 function startAbilityTimer(c, meta) {
   const id = `ability:${meta.id}`;
   const cd = meta.cd === "fight" ? ONCE_A_FIGHT : meta.cd;
-  const durationRounds = DURATION_ROUNDS[meta.id];
-  if (durationRounds) {
-    startEffect(c, id, { rounds: durationRounds, cd });
+  const ticks = abilityEffectTicks(meta.id);
+  if (ticks) {
+    startEffect(c, id, { rounds: ticks, cd });
   } else {
     startCooldown(c, id, { rounds: cd });
   }
