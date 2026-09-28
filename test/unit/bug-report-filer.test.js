@@ -31,6 +31,7 @@ import { issueTitle, issueBody, markerFor } from "../../tools/bug-reports/issue-
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FILER_PATH = path.resolve(__dirname, "..", "..", "tools", "bug-reports", "file-issues.mjs");
+const WORKFLOW_PATH = path.resolve(__dirname, "..", "..", ".github", "workflows", "bug-reports.yml");
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -557,5 +558,41 @@ test("every import specifier in the filer and the formatter starts with node: or
         `${p} imports "${spec}", which is neither a node: builtin nor a relative path`,
       );
     }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Task 3: the workflow file
+// ---------------------------------------------------------------------------
+
+test("bug-reports.yml: the scheduled/manual workflow is shaped as documented, with no npm install and no unsafe run: interpolation", () => {
+  const yaml = fs.readFileSync(WORKFLOW_PATH, "utf8");
+
+  for (const needle of [
+    "*/15 * * * *",
+    "workflow_dispatch:",
+    "dry_run",
+    "issues: write",
+    "contents: read",
+    "concurrency:",
+    'node-version: "22"',
+    "node tools/bug-reports/file-issues.mjs",
+    "secrets.FIREBASE_BUG_REPORTS_SA",
+    "secrets.GITHUB_TOKEN",
+  ]) {
+    assert.ok(yaml.includes(needle), `bug-reports.yml should contain ${JSON.stringify(needle)}`);
+  }
+
+  // No package-manager install subcommand and no package runner.
+  assert.doesNotMatch(yaml, /npm (ci|install)/);
+  assert.doesNotMatch(yaml, /\bnpx\b/);
+  assert.doesNotMatch(yaml, /\byarn\b/);
+
+  // No run: line interpolates a workflow expression (dry_run reaches the
+  // script only through env:).
+  const runLines = yaml.split("\n").filter((line) => /^\s*run:/.test(line));
+  assert.ok(runLines.length > 0, "the workflow should have at least one run: step");
+  for (const line of runLines) {
+    assert.doesNotMatch(line, /\$\{\{/, `a run: line must not interpolate a workflow expression: ${line}`);
   }
 });

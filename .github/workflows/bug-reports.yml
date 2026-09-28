@@ -1,0 +1,53 @@
+# Player bug reports (Phase 79.3, BUG-04, D-14).
+#
+# Reads new reports written to Firestore (delve-die-repeat-6ba5f) by the
+# in-app REPORT A BUG sheet and files each one as a public, labelled issue
+# on this repo via tools/bug-reports/file-issues.mjs. Runs on Node 22 with
+# zero package installs: the script uses only Node built-ins plus
+# tools/bug-reports/issue-format.mjs.
+#
+# GitHub disables a scheduled workflow in a public repo after 60 days with
+# no repository activity. If that happens, reports simply wait safely in
+# Firestore (status "new") until this workflow is re-enabled from the
+# Actions tab — nothing is lost, and the next run picks them up.
+#
+# A dry run (reads and logs only, files nothing) can be triggered by hand:
+#   gh workflow run bug-reports.yml -f dry_run=true
+
+name: Player bug reports
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Read and log only; file nothing"
+        type: boolean
+        default: false
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: bug-reports
+  cancel-in-progress: false
+
+jobs:
+  file:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: File new player reports
+        run: node tools/bug-reports/file-issues.mjs
+        env:
+          FIREBASE_BUG_REPORTS_SA: ${{ secrets.FIREBASE_BUG_REPORTS_SA }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
