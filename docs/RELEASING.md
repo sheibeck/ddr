@@ -168,6 +168,22 @@ config in a code-part plan before building again; do not patch and rebuild on th
    table (owner by owner: androidx, Capacitor plugins, other) must match the audit in
    `docs/ANDROID-DISPLAY.md`. Exit 1 means a match, exit 2 a tooling problem.
 
+### Measured on the Phase 80 build
+
+The single Phase 80 release build (80-04), the first R8-shrunk build made under this
+milestone's build-part ruling:
+
+- **BUILD_COMMIT:** `acba40ed9259f2a107c5355f5937417c0b256720`
+- **`app-release.aab`:** 11,298,002 bytes.
+- **`app-release-unsigned.apk`:** 10,916,555 bytes.
+- **Pre-R8 baseline AAB** (`android/app/build/outputs/bundle/release/app-release.aab` in the
+  main checkout, built 2026-09-24, `minifyEnabled false`): 12,740,741 bytes.
+- **Delta:** 1,442,739 bytes smaller with R8 on, an 11.3% reduction.
+
+See `docs/ANDROID-DISPLAY.md` for the edge-to-edge/system-bars decisions (DROID-02) and the
+large-screen letterboxed-column decision (DROID-03), and its "Deprecated window API audit"
+section for the full scan table run against this same build.
+
 ### First release after R8: Pixel 7 smoke (milestone-close checklist)
 
 Install a **release-signed** build. Uninstall the Play-installed build first: the signers
