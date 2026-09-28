@@ -8,6 +8,10 @@
 // cited, the delete-data URL named and a dated source-level audit. The
 // pre-2.0 "collects nothing" answer and the claim that the INTERNET
 // permission is unused must stay gone.
+//
+// Phase 79.3 (BUG-02, D-16): also pins the 2.1.0 bug-report answers (Other
+// user-generated content, Diagnostics) and the darktierstudios.com/privacy/apps
+// draft paragraph.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -40,6 +44,11 @@ const DATA_SAFETY_REQUIRED = [
   "answer/10787469",
   "privacy/delete-data",
   "Source-level audit",
+  "Other user-generated content",
+  "Diagnostics",
+  "REPORT A BUG",
+  "posted publicly on GitHub",
+  "Firestore",
 ];
 
 test("Data safety section carries the 2.0 answers, both sources and the audit", () => {
@@ -96,4 +105,12 @@ test("the Privacy section records both URLs, the effective date and the website 
     /\b(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, 2026\b/,
   );
   assert.match(privacy, /darktier-studio commit [0-9a-f]{7,40}\b/);
+});
+
+test("the Privacy section carries the bug-report privacy-policy draft", () => {
+  const privacy = section("Privacy policy URL");
+  const required = ["Draft for darktierstudios.com/privacy/apps", "tap Send", "posted publicly", "deleted", "github.com/sheibeck/ddr"];
+  for (const needle of required) {
+    assert.ok(privacy.includes(needle), `Privacy policy URL section mentions "${needle}"`);
+  }
 });

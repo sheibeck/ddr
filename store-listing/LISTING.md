@@ -66,20 +66,46 @@ darktier-studio commit aaa0f4a (local, not yet deployed; the user deploys the
 site). Source: `C:/projects/darktier-studio/src/pages/privacy/apps.astro` and
 `delete-data.astro`; full hash `aaa0f4ad4822ebd43c58de205c0da210580c41df`.
 
+### Draft for darktierstudios.com/privacy/apps (79.3 bug reports)
+
+The paragraph below is a draft for the user to adapt and deploy to the
+privacy page (`https://darktierstudios.com/privacy/apps`) at milestone close.
+The delete-data page (`https://darktierstudios.com/privacy/delete-data`)
+needs a matching bug-report line of its own; the user deploys both at
+milestone close (see `.planning/MILESTONE-CLOSE-QUESTIONS.md`).
+
+> "Bug reports. Delve, Die, Repeat has a REPORT A BUG option in its menu.
+> Nothing is sent unless you type a report and tap Send. A report contains
+> what you typed, the game's in-run log (the Oracle, which may include your
+> adventurer's randomly generated name), the app version, your device model
+> and Android version, and a summary of the current run (floor, class, race,
+> level and turn count). It contains no account, Google Play Games identity,
+> email address or other contact detail. Reports are stored in the game's
+> Google Firebase project and posted publicly as issues on the game's GitHub
+> repository (https://github.com/sheibeck/ddr), where anyone can read them,
+> so please leave out anything private. To have a report deleted, follow
+> https://darktierstudios.com/privacy/delete-data or contact us, and we will
+> delete it from Firebase and GitHub."
+
 ## Data safety
 
-Answers for 2.0.0 (Leaderboards). Play Console → Delve, Die, Repeat → Policy
-and programs → App content → Data safety.
+Answers for 2.1.0: the 2.0 Leaderboards answers, plus 79.3's in-app bug
+reports. Play Console → Delve, Die, Repeat → Policy and programs → App
+content → Data safety.
 
 "Does your app collect or share any of the required user data types?" →
 **Yes.** Since 2.0 the game posts runs to Google Play Games leaderboards while
 the in-game Compete setting is on (it is on by default; the player can turn it
-off at any time from the account menu).
+off at any time from the account menu). Since 2.1 the game can also send a
+player-written bug report, with the run's Oracle attached, but only when the
+player taps Send in ☰ REPORT A BUG.
 
 | Data type | What it is | Collected | Shared | Optional | Purpose | Processed ephemerally |
 |---|---|---|---|---|---|---|
 | Personal info → **User IDs** | The Google Play Games player ID | Yes | No | Yes (Compete off) | App functionality | No |
 | App activity → **Other actions** | Per run: the four leaderboard scores (DEEPEST, LONGEST, BUTCHERY, PURSE) plus the score tag's gameplay details: race, sub-class, level, cause of death, floor, days, steps, kills, wilmst carried, experience, and the game-rolled adventurer name (possibly shortened) | Yes | No | Yes (Compete off) | App functionality | No (Google stores the scores) |
+| App activity → **Other user-generated content** | The bug report the player types in the ☰ REPORT A BUG sheet (up to 2,000 characters), sent only when they tap Send | Yes | No | Yes (sent only when the player taps Send) | App functionality | No (stored in Firestore and posted publicly on GitHub) |
+| App info and performance → **Diagnostics** | Attached to a bug report only: the run's Oracle log, the app version and build, the device model and Android version (the WebView user agent), and the run context (floor, race, sub-class, class, level, day, steps, alive or dead) | Yes | No | Yes (sent only when the player taps Send) | App functionality | No |
 
 "Other actions" is Play's App activity type for "any other user activity or
 actions in-app not listed here such as gameplay" (answer/10787469, checked
@@ -88,17 +114,30 @@ actions in-app not listed here such as gameplay" (answer/10787469, checked
 Since v2.1, LEANEST is no longer submitted (BOARD-17); the Data safety
 answers themselves are unchanged.
 
+**Bug reports (since 2.1.0):** nothing leaves the phone until the player taps
+Send in ☰ REPORT A BUG. The sheet states first that the report and the run's
+Oracle will be posted publicly on GitHub, and to leave out anything private.
+No account id, email, avatar or Play Games identity is attached, though the
+adventurer's generated name can appear inside the Oracle. The report goes
+over HTTPS to the game's Firebase project (Cloud Firestore,
+`delve-die-repeat-6ba5f`), and a GitHub Action files it as a public issue on
+sheibeck/ddr (`docs/BUG-REPORTS.md`).
+
 Every other data type: not collected, not shared. The epitaph, saves,
-settings, personal bests and the local graveyard never leave the phone.
-Android Advertising ID: not used. Data is not sold.
+settings, personal bests and the local graveyard never leave the phone; a
+bug report leaves it only when the player taps Send. Android Advertising ID:
+not used. Data is not sold.
 
 - **Security:** encrypted in transit. Play Games Services sends it over HTTPS
-  (Google's PGS disclosure page, below).
+  (Google's PGS disclosure page, below); bug reports are encrypted in transit
+  too, both to Firestore and from the Action to GitHub.
 - **Deletion:** users can request that data be deleted: yes. Through their
   Play Games profile (the Play Store's Play Games Profile settings or
   `https://play.google.com/games/profile`), with step-by-step instructions at
   `https://darktierstudios.com/privacy/delete-data` (Play Console's "Delete
-  data URL").
+  data URL"). A bug report is deleted the same way, on request, through the
+  delete-data URL page or by contacting the developer, who deletes the
+  Firestore document and the GitHub issue (`docs/BUG-REPORTS.md`).
 - **Why "optional":** every user, on every device and in every region, can turn
   Compete off from the account menu (STOP COMPETING, or COMPETE → OFF). With it
   off the game makes no sign-in, submit or fetch call and discards any runs
@@ -116,6 +155,12 @@ leaving Compete on and announced by the first-sign-in card ("Every death goes
 on the public record"), which is the user-initiated exemption. Google's PGS page
 adds that a PGS game "can only read/write the authenticated player's data" for
 that game.
+
+**Bug reports: not shared.** The report goes to Cloud Firestore, part of the
+game's own Firebase project (`delve-die-repeat-6ba5f`), processing it on the
+developer's behalf — the service-provider exemption. Posting the report
+publicly on GitHub is the player's own disclosure, stated plainly before
+Send (section above) — the user-initiated exemption (answer/10787469).
 
 Sources:
 
@@ -146,10 +191,23 @@ conservative answer is to also declare **App info and performance →
 Diagnostics** (collected, not optional, purpose App functionality, not shared).
 If the capture shows nothing, the table above stands as is.
 
+**Diagnostics interplay (79.3).** Bug reports now declare their own App info
+and performance → Diagnostics entry as optional (sent only when the player
+taps Send). Play keeps one entry per data type, not one per feature, so if
+the Compete-off capture above shows the Play Games SDK sending anything at
+launch, the combined Diagnostics entry becomes not optional, not just an
+addition alongside an optional one. The decision stays the user's, at
+console time, once the capture result is known.
+
 ### Source-level audit (2026-09-24, commit ebe4b05)
 
 Run in the 69-01 worktree after `npm ci` (lockfile only) and
 `npm run build:www`; raw outputs kept outside the repo.
+
+**Addendum, 2026-09-28, Phase 79.3.** The bug-report path adds no package.
+`src/browser/bugReport.js` sends one HTTPS POST to the Firestore REST API,
+only on Send. The Action (`tools/bug-reports/file-issues.mjs`) uses Node
+built-ins only — no new dependency in the app or the Action.
 
 - **Runtime packages.** `package.json` dependencies: `@capacitor/android`,
   `@capacitor/app`, `@capacitor/core`, `@capacitor/haptics`,
