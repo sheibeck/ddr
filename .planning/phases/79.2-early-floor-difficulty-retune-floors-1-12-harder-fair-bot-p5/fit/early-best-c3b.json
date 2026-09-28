@@ -7,7 +7,7 @@
   },
   "FOE_LEVEL": {
     "base": 1.15,
-    "perDepth": 0.29
+    "perDepth": 0.3
   },
   "HAZARD_SCALE": {
     "base": 0.6,
@@ -24,5 +24,5 @@
     "perDepth": 0.3
   },
   "HERO_HP_SCALE": 1.4,
-  "HERO_SP_SCALE": 0.23
+  "HERO_SP_SCALE": 0.28
 }
