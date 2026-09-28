@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-09-28T20:35:06.946Z"
 last_activity: 2026-09-28
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 82 (DAYS Farming Check) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-28 — Milestone v2.2 started
+Status: Ready to discuss
+Last activity: 2026-09-28 — v2.2 roadmap created (Phases 82–86)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -146,6 +146,7 @@ detail; the backlog phases are the index.
 - Phase 75.3 inserted after Phase 75.2: Deep-Floor Encounter Scaling (RULES-16) — solo fights fade with depth (user, 2026-09-25)
 - Phase 79.2 inserted after Phase 79: Early-floor difficulty retune (user 2026-09-27: floors 1-12 too easy; fair-bot p50 death ~3-4) (URGENT)
 - Phase 79.3 inserted after Phase 79: In-app bug reports: ☰ REPORT A BUG → Firestore (delve-die-repeat-6ba5f, Spark) → scheduled GitHub Action files public issues on sheibeck/ddr (user request + rulings 2026-09-28) (URGENT)
+- v2.2 roadmap created 2026-09-28: Phases 82–86 (30 requirements), promoted from backlog 999.13 by the user; order 82 DAYS farming check → 83 server (research flagged) → 84 panel v3 → 85 Play Games out → 86 compliance close.
 
 ## Deferred Items
 

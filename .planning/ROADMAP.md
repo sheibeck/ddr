@@ -14,9 +14,18 @@
 - ✅ **v1.9 The Gear Screen** — Phases 61–64 (code-complete 2026-09-23; override closeout: GSCR-12 device batch partial) → `.planning/milestones/v1.9-ROADMAP.md`
 - ✅ **v2.0 Leaderboards** — Phases 65–71 (shipped 2026-09-24 as Play 2.0.0 / vc10; override closeout: 38/38 requirements, 7/7 phases passed, 142-row Pixel 7 batch `docs/UAT-v2.0.md` spread over the user's play sessions) → `.planning/milestones/v2.0-ROADMAP.md`
 - ✅ **v2.1 Bug Fixes** — Phases 72–81, incl. 75.1–75.3 and 79.1–79.3 (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; override closeout: 68/68 requirements, 16/16 phases passed, audit tech_debt; UAT batch `docs/UAT-v2.1.md`, 80-05 emulator pass deferred) → `.planning/milestones/v2.1-ROADMAP.md`
+- 🚧 **v2.2 Our Own Leaderboards** — Phases 82–86 (started 2026-09-28; promoted from backlog 999.13)
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases
+
+### v2.2 Our Own Leaderboards (Phases 82–86) — IN PROGRESS
+
+- [ ] **Phase 82: DAYS Farming Check** - Measure whether floor-1 farming out-DAYS an honest descending run and settle the DAYS ranking rule.
+- [ ] **Phase 83: Leaderboard Server** - Stand up our own Firebase-hosted run table, rules, indexes, identity and queue, proven end to end.
+- [ ] **Phase 84: Leaderboards Panel v3** - Rebuild the DEAD tab and VIEW THE DEAD to the v3 mock, ranked by four stats with RACE/SUB-CLASS filters.
+- [ ] **Phase 85: Play Games Out, Our Board In** - Remove Play Games entirely and route every Compete-ON death to our own board.
+- [ ] **Phase 86: Compliance & Device Close** - Reconcile store, policy and website text and batch the milestone's device checks.
 
 <details>
 <summary>✅ v2.1 Bug Fixes (Phases 72–81) — SHIPPED 2026-09-28</summary>
@@ -57,6 +66,87 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 </details>
 
+## Phase Details
+
+### Phase 82: DAYS Farming Check
+
+**Goal**: Know whether a hero who never leaves floor 1 can farm the DAYS board, and settle the DAYS ranking rule before the server is built.
+**Depends on**: Nothing (first phase of v2.2; tooling + a doc only — a scripted floor-1 farmer bot policy in `tools/`, results recorded in a `docs/` ledger; engine untouched, zero parity fixtures). This is a one-off exploit measurement, not a balance/fit run: the engine does not change this milestone, so running it first measures the final rules and its verdict shapes SRV-03's DAYS key. Discuss with the user if farming wins.
+**Requirements**: FARM-01, FARM-02
+**Success Criteria** (what must be TRUE):
+
+  1. A scripted floor-1 farmer bot policy (in `tools/`) plays camp/rest/fight/buy/find-food loops across multiple seeds and classes without ever descending, touching no engine or content bytes.
+  2. The DAYS banked by floor-1 farming is measured and recorded in a `docs/` ledger alongside the DAYS from honest descending runs, so the two are directly comparable.
+  3. The user has reviewed the comparison and recorded a verdict: either DAYS ranks as the mock already shows (days, then floor), or a specific rule that stops the exploit is chosen and recorded.
+  4. The recorded verdict is stated in terms Phase 83 can consume directly as SRV-03's DAYS ranking key.
+
+**Plans**: TBD
+
+### Phase 83: Leaderboard Server
+
+**Goal**: Our own board is live on Firebase (Firestore run table, rules, indexes, anonymous identity, rolled handles, a durable queue, admin script, runbook) and proven end to end, with no Firebase SDK in the app.
+**Depends on**: Phase 82 (the DAYS ranking rule feeds SRV-03's tie-break key). Same Spark project as the Phase 79.3 bug reports (`delve-die-repeat-6ba5f`); precedent = `src/browser/bugReport.js` + `firebase/firestore.rules` + `test/unit/firestore-rules.test.js` — pure DOM-free modules with an injected `fetchFn`, a JS mirror of the security rules kept equal by tests. User console steps (enable Anonymous sign-in, API key API restrictions, deploy rules + `firestore.indexes.json`) are checkpoints. Zero parity fixtures; engine untouched.
+**Requirements**: SRV-01, SRV-02, SRV-03, SRV-04, SRV-05, SRV-06, SRV-07, SRV-08
+**Success Criteria** (what must be TRUE):
+
+  1. Each finished Compete-ON run is written once to a Firestore run collection in `delve-die-repeat-6ba5f`, carrying owner id, handle, season, hero identity, stats, cause, epitaph, run hash and app version; resubmitting the same run never creates a duplicate.
+  2. Firestore security rules — with a JS mirror kept equal by tests — let an anonymous signed-in player create only correctly-shaped runs owned by their own id, read in bounded pages, and never update; only the owner or the admin service account may delete, everything else is denied.
+  3. For each of DEPTH, DAYS, KILLS and WILMST, filtered by race, sub-class, both or neither within the current season, the board answers the top ten, a total count and one run's rank, backed by declared composite indexes, with DAYS ties following the Phase 82 ruling.
+  4. The game obtains and refreshes an anonymous Firebase identity over plain `fetch` (no SDK) only when Compete is ON, rolls a family-friendly @handle the player can re-roll, and queues every non-dev Compete-ON death durably through relaunches and offline play, retrying with backoff and never double-submitting.
+  5. An admin script lists and deletes suspicious runs (one run or one player's runs, with the service-account key never entering the repo or `www/`), an ops runbook covers rules/index deploys and quotas, and a smoke test against the live project proves create, read, rank and delete end to end with rules and indexes deployed, anonymous sign-in enabled and the API key restricted to only the APIs the game calls.
+
+**Plans**: TBD
+**Research**: yes — gsd-phase-researcher (Firestore REST `runQuery`/`runAggregationQuery` count + rank queries, anonymous auth over REST + token refresh, owner-scoped rules and bounded list rules, composite index count, Spark quotas)
+
+### Phase 84: Leaderboards Panel v3
+
+**Goal**: The DEAD tab and VIEW THE DEAD show the v3 mock — everyone's dead or just yours, ranked by DEPTH/DAYS/KILLS/WILMST with RACE and SUB-CLASS filters.
+**Depends on**: Phase 83. Mock files: `design/Mazeworld Leaderboards v3.dc.html` and `design/Mazeworld Boards Panel v3.dc.html` (UX/visual spec only — house rules win: PNG icons, the rail as the one feedback surface, tap-to-move, HP not WP). Rebuilds `src/browser/boardsPanel.js` + `boardsView.js` + `content/boards.js`; `engine/records.js` board lists and the local run store change (per-run records, tolerant load of old graveyard/bests). Zero parity fixtures; engine untouched.
+**Requirements**: BOARD-18, BOARD-19, BOARD-20, BOARD-21, BOARD-22, BOARD-23, BOARD-24, BOARD-25, BOARD-26
+**Success Criteria** (what must be TRUE):
+
+  1. The DEAD tab and the title's VIEW THE DEAD open one Leaderboards panel built to the v3 mock, opening on LEADERBOARD when Compete is ON and on YOUR DEAD when Compete is OFF, with back and footer routing matching the mock.
+  2. The header box switches views (YOURS› with your run count, EVERYONE› with the board's total; a static INTERRED count with Compete OFF), and the RANK BY / RACE / SUB-CLASS bottom sheets show per-option counts and re-rank the list, replacing the old board rail entirely.
+  3. Each row shows rank, an initials avatar, the handle (or hero name on YOUR DEAD), a YOU tag on your own runs, and the name/race/sub-class/level/value line; tapping a row expands its cause of death, epitaph and six stat chips, tapping again closes it.
+  4. A best run outside the top ten is pinned under a "NOT IN THE TOP TEN" divider with its real rank and standing line, and a filter with no runs shows NOBODY YET with a CLEAR FILTERS button.
+  5. LEADERBOARD shows deliberate in-voice states for loading, offline/unreachable and a stale cached result, while YOUR DEAD never waits on the network and ranks a generous local per-run history that the old graveyard and `ddr.bests.v1` records load into tolerantly.
+
+**Plans**: TBD
+**UI hint**: yes
+**Device check**: yes — batched into the milestone-close Pixel 7 checklist.
+
+### Phase 85: Play Games Out, Our Board In
+
+**Goal**: Play Games is gone from the app and every Compete-ON death reaches our board; the ☰ account block and title chip carry Compete plus your handle.
+**Depends on**: Phases 83 and 84. Deletes the plugin (`@modbender/capacitor-play-games`), APP_ID meta-data + `games-ids.xml`, `src/browser/playGames.js`, `pgsQueue.js`, `globalBoards.js`, `boardScores.js`, `scoreTag.js`, `content/leaderboards.js`, and rewrites `account.js`/`accountChip.js`/`content/account.js`; wires the new queue at death and "you placed X" from our board; tolerant load of old keys. Zero parity fixtures; engine untouched.
+**Requirements**: ACCT-03, ACCT-04, ACCT-05, ACCT-06, RETIRE-01, RETIRE-02, RETIRE-03
+**Success Criteria** (what must be TRUE):
+
+  1. The Play Games plugin, the APP_ID meta-data and `games-ids.xml` are gone from the Android build, and launch makes no Play Games call and shows no sign-in popup.
+  2. Every Play Games module (the provider, the PGS queue, global boards, score encodings, the score tag, the board IDs) and their tests, copy and docs are deleted or rewritten, and a sweep proves no Play Games identifier remains in shipped code.
+  3. Old stored data — the old PGS queue, the welcomed flag and any sign-in state — loads tolerantly and is dropped silently on first launch, while the local graveyard and bests are untouched.
+  4. The ☰ account block and the title's corner chip show the player's @handle and the Compete toggle, the ☰ face wears the handle's initials avatar while competing, and there is no sign-in, sign-out or Play Games wording anywhere.
+  5. Every non-dev Compete-ON death is queued and submitted to our board, the death card's "you placed X" reports the run's DEPTH rank once acknowledged (or on the next flush if offline), the player can erase every run they have on the board from the ☰ account block behind a two-tap confirm (starting a new identity on the next Compete-ON run), and with Compete OFF the game makes zero network calls and discards any queued runs.
+
+**Plans**: TBD
+**UI hint**: yes (☰ rows, title chip, erase confirm)
+**Device check**: yes — batched into the milestone-close Pixel 7 checklist.
+
+### Phase 86: Compliance & Device Close
+
+**Goal**: Every store, policy and website text matches what the game now sends, and the milestone's device checks are batched against one debug APK.
+**Depends on**: Phase 85. Includes the darktierstudios.com repo at `C:/projects/darktier-studio` (`src/pages/privacy/apps.astro`, `src/pages/privacy/delete-data.astro`, `src/pages/delve-die-repeat/terms.astro`) — the user asked for these on 2026-09-28. Keep release builds out of this phase: the debug APK is built after the last code lands, and any Play release build comes only after the user agrees patch notes (standing rule). Zero parity fixtures; engine untouched.
+**Requirements**: COMP-01, COMP-02, COMP-03, COMP-04
+**Success Criteria** (what must be TRUE):
+
+  1. The Data safety answers in `store-listing/LISTING.md` describe our board's data (an anonymous id, the handle, run stats; collected for app functionality; optional through Compete; deletable) and no longer mention Play Games.
+  2. The darktierstudios.com pages `/privacy/apps`, `/privacy/delete-data` and the Delve, Die, Repeat Terms of Service describe our own leaderboard instead of Play Games: what is sent, who sees it, Compete OFF, erasing your runs, and removal of forged runs.
+  3. `docs/PLAY-GAMES-SETUP.md` is retired in favor of the leaderboard-server runbook, and the Play Console cleanup (unpublish or delete the Season-1 boards and the Play Games configuration) is a listed user step.
+  4. One batched Pixel 7 checklist, `docs/UAT-v2.2.md`, covers the panel, submission, the handle, erasing your runs and Compete OFF in airplane mode, run against one debug APK built after the last code lands.
+
+**Plans**: TBD
+**Device check**: yes (this phase presents the batch)
+
 ## Deferred / Not This Milestone
 
 - **80-05 emulator pass** (tablet, foldable, nav modes on the R8 build) — deferred by the user 2026-09-28 until the features are in.
@@ -70,10 +160,18 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - Haptics polish; the unguarded button set from 32-03 (store rows, drop shelf, `a-evt`, `btn-again`, spell menu).
 - Climb dice payload (`roll`/`need` on the four climb events) — carried over from v1.4 as a post-UAT quick task. **Superseded 2026-09-24**: CLIMB-01/02 (v2.1 Phase 78) replaces the retry card with a pre-roll decision card, and ROLL-05 (Phase 73) makes every climb roll high-is-good natively.
 - Shell debt noted in the v1.5 audit but not in v1.6's requirements: the unreachable parley fluency-2 branch (`canParley`'s Magical tier, `wilmsryVsMagical`) and the `railCardFor` tie-break — fold into Phase 44's orphan sweep if they fall out for free, otherwise a quick task.
+- **Backlog 999.14 (our own friends list)** — not planned (user, 2026-09-28: no friends scope, everyone or just yours).
+- Replay verification of top runs, Firebase App Check and a season picker — see REQUIREMENTS.md Future Requirements.
 
 ## Progress
 
-No milestone in progress. Next: `/gsd-new-milestone`.
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 82. DAYS Farming Check | 0/TBD | Not started | - |
+| 83. Leaderboard Server | 0/TBD | Not started | - |
+| 84. Leaderboards Panel v3 | 0/TBD | Not started | - |
+| 85. Play Games Out, Our Board In | 0/TBD | Not started | - |
+| 86. Compliance & Device Close | 0/TBD | Not started | - |
 
 ## Backlog
 
@@ -277,7 +375,7 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.11: Per-sub-class leaderboards & global LINEAGE (BACKLOG — promote as its own milestone)
+### Phase 999.11: Per-sub-class leaderboards & global LINEAGE (SUPERSEDED by the Our Own Leaderboards milestone, Phases 82–86 — RACE/SUB-CLASS filters over one run table)
 
 **Goal:** [Captured 2026-09-24, user] Every sub-class has its own global DEEPEST board on Play Games. Claude creates all 24 boards in Play Console by script and captures their IDs; nobody fills in the Console form 24 times. The game submits each run to its sub-class board, and LINEAGE gets an honest global form back. **The user wants this promoted as its own milestone** (via `/gsd-new-milestone`, after v2.1), not folded into v2.1.
 **Requirements:** TBD
@@ -354,6 +452,7 @@ Plans:
 ### Phase 999.12: Achievements track (BACKLOG — promote as its own milestone)
 
 **Goal:** [Captured 2026-09-25, user] Add an achievements track to the game. Every achievement name and unlock line is written in the game's sarcastic, family-friendly voice. **The user wants this promoted as its own milestone** (via `/gsd-new-milestone`), not folded into a bug-fix milestone.
+**Note (2026-09-28):** v2.2 removes Play Games entirely, so achievements become a local list unless Play Games is re-added for them.
 **Requirements:** TBD
 **Plans:** 0 plans
 
@@ -489,7 +588,7 @@ Plans:
 
 - [ ] TBD (promote with /gsd-new-milestone when ready — user wants this as its own milestone)
 
-### Phase 999.13: Our own leaderboards instead of Google Play Games boards (BACKLOG)
+### Phase 999.13: Our own leaderboards instead of Google Play Games boards (PROMOTED → Phases 82–86)
 
 **Goal:** [Captured 2026-09-26, user] Stop relying on Google Play Games leaderboards and run our own global boards. The user's reasoning: "with the privacy being defaulted to on, the competition is ghost-town". Play Games hides a player's scores from other players unless their profile visibility allows it, so the ALL and FRIENDS boards look empty. Players must still be able to opt out; the Compete toggle stays. Our boards should be public by default, and Compete OFF means nothing is ever sent.
 **Requirements:** TBD
@@ -530,7 +629,7 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog or /gsd-new-milestone when ready)
 
-### Phase 999.14: Our own friends list (BACKLOG — pairs with 999.13)
+### Phase 999.14: Our own friends list (NOT PLANNED — user, 2026-09-28)
 
 **Goal:** [Captured 2026-09-26, user] "to go along with our own leaderboards, we'll do our own friends list as well. This is better solution than relying on google infrastructure." The FRIENDS scope on the Leaderboards panel reads from a friends list that we host, not from the Play Games friends list and its separate consent prompt. Built together with 999.13, on the same server and identity.
 **Requirements:** TBD
