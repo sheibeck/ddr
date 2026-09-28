@@ -44,12 +44,17 @@ function onTargetSurvival() {
 // Phase 54 steps and bounds, re-ordered so the early-weighted base levers
 // are walked first and the two depth slopes last.
 test("SEARCH_PLAN is exactly the core 9 in the Phase 79.2 order (early-weighted base levers first, depth slopes last; user ruling 2026-09-27 removed HERO_REGEN_PER_FLOOR), with pinned Phase 54 steps/bounds (USER RULING G, cycle 3: the Ruling F spellPower coordinate is dropped again — proved a structural no-op in cycle 2)", () => {
+  // RF-79.2-02-2 (ruling F, the orchestrator's search-parameter call,
+  // 2026-09-28): the four floor-1-6 base levers first (FOE_HP_SCALE,
+  // ENCOUNTER_DOTS, HAZARD_SCALE, FOE_HIT_SCALE), then FOE_LEVEL.base and the
+  // hero dials, slopes last; FOE_HP_SCALE.base hi 1.2 -> 1.5 and
+  // FOE_LEVEL.base hi 1.0 -> 1.2. Every other step and bound is unchanged.
   const expected = [
-    ["FOE_HIT_SCALE.base", 0.08, 0.4, 1.0],
-    ["FOE_LEVEL.base", 0.15, 0.3, 1.0],
-    ["HAZARD_SCALE.base", 0.1, 0.3, 1.0],
-    ["FOE_HP_SCALE.base", 0.1, 0.5, 1.2],
+    ["FOE_HP_SCALE.base", 0.1, 0.5, 1.5],
     ["ENCOUNTER_DOTS.base", 1, 5, 10],
+    ["HAZARD_SCALE.base", 0.1, 0.3, 1.0],
+    ["FOE_HIT_SCALE.base", 0.08, 0.4, 1.0],
+    ["FOE_LEVEL.base", 0.15, 0.3, 1.2],
     ["HERO_HP_SCALE", 0.15, 1.0, 1.8],
     ["HERO_SP_SCALE", 0.05, 0.15, 0.6],
     ["FOE_HIT_SCALE.perDepth", 0.01, 0, 0.05],

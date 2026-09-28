@@ -331,13 +331,26 @@ export function classConstraints(classIdentity) {
  * dials, which carry the largest parity re-declaration. The two depth slopes
  * (FOE_HIT_SCALE.perDepth, FOE_LEVEL.perDepth) go last, because they steepen
  * the tail most and the tail already sits at its ruled limits.
+ *
+ * RF-79.2-02-2 (Phase 79.2-02, the orchestrator's search-parameter call,
+ * 2026-09-28): cycle 2 froze floors 1-4 once the walk reached coordinates
+ * 6-9, and c2 #18 at 1,000 seeds missed floors 3-6 (+8.2/+14.4/+11.0/+8.5)
+ * with p50 5. So the four floor-1-6 base levers now go first (FOE_HP_SCALE,
+ * ENCOUNTER_DOTS, HAZARD_SCALE, FOE_HIT_SCALE), then FOE_LEVEL.base and the
+ * two hero dials, with the slopes last. Two upper bounds are widened, since
+ * both were pinned: FOE_HP_SCALE.base 1.2 -> 1.5 and FOE_LEVEL.base 1.0 ->
+ * 1.2. FOE_LEVEL.base is quantized (foeLevelFor rounds base + perDepth x d):
+ * at perDepth 0.29 the step 1.0 -> 1.15 lifts floors 5 and 12 by one level,
+ * and the clamp at 1.2 then lifts floor 8; floor 1 stays level 1 below
+ * base 1.21 (at perDepth 0.3, base 1.2 makes floor 1 level 2). Every other
+ * step and bound is unchanged.
  */
 export const SEARCH_PLAN = [
-  { path: ["FOE_HIT_SCALE", "base"], step: 0.08, lo: 0.4, hi: 1.0 },
-  { path: ["FOE_LEVEL", "base"], step: 0.15, lo: 0.3, hi: 1.0 },
-  { path: ["HAZARD_SCALE", "base"], step: 0.1, lo: 0.3, hi: 1.0 },
-  { path: ["FOE_HP_SCALE", "base"], step: 0.1, lo: 0.5, hi: 1.2 },
+  { path: ["FOE_HP_SCALE", "base"], step: 0.1, lo: 0.5, hi: 1.5 },
   { path: ["ENCOUNTER_DOTS", "base"], step: 1, lo: 5, hi: 10 },
+  { path: ["HAZARD_SCALE", "base"], step: 0.1, lo: 0.3, hi: 1.0 },
+  { path: ["FOE_HIT_SCALE", "base"], step: 0.08, lo: 0.4, hi: 1.0 },
+  { path: ["FOE_LEVEL", "base"], step: 0.15, lo: 0.3, hi: 1.2 },
   { path: ["HERO_HP_SCALE"], step: 0.15, lo: 1.0, hi: 1.8 },
   { path: ["HERO_SP_SCALE"], step: 0.05, lo: 0.15, hi: 0.6 },
   { path: ["FOE_HIT_SCALE", "perDepth"], step: 0.01, lo: 0, hi: 0.05 },

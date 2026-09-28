@@ -6822,6 +6822,15 @@ The foe-side base levers come first because they act from floor 1 and weigh
 relatively most on the early floors. The two depth slopes go last because
 they steepen the tail most, and the tail already sits at its ruled limits.
 
+**RF-79.2-02-2 (the orchestrator's search-parameter call, 2026-09-28).**
+Cycle 2 froze floors 1–4 once it reached the hero dials and slopes, and its
+row #18 missed floors 3–6 at 1,000 seeds. From cycle 3's 200-seed walk
+(`fit/early-log-c3b.jsonl`) the order is `FOE_HP_SCALE.base`,
+`ENCOUNTER_DOTS.base`, `HAZARD_SCALE.base`, `FOE_HIT_SCALE.base`,
+`FOE_LEVEL.base`, `HERO_HP_SCALE`, `HERO_SP_SCALE`, then the two slopes.
+Two pinned upper bounds are widened: `FOE_HP_SCALE.base` 1.2 → 1.5 and
+`FOE_LEVEL.base` 1.0 → 1.2. No target, tolerance or ruled value changed.
+
 ### Phase 79.2 — START (shipped dials, 2026-09-27 and 2026-09-28 rules) — commit 582cd6c7db4599f73c01daff348c36daee577116
 
 The shipped dials (`fit/start.json`, the seven SEARCH_PLAN dials from
