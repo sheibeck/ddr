@@ -177,12 +177,22 @@ test("ladder: notInCombat — no active encounter", () => {
   assert.deepEqual(events, [{ type: "abilityRefused", key: "kata", reason: "notInCombat", name: "Kata" }]);
 });
 
+// Quick 260927-opf (user ruling 2026-09-27): Kata is once per fight now (a
+// used one refuses `spent`, test/unit/once-per-fight.test.js), so the
+// numeric-cooldown ladder rung is pinned on Pommel Strike (cd 4).
 test("ladder: cooldown — an on-cooldown ability names itself and the rounds left", () => {
-  const state = fixedState({ c: fixedFighter({ abilities: ["kata"], timers: { "ability:kata": { cadence: "rounds", left: 2, phase: "cooldown" } } }) });
+  const state = fixedState({ c: fixedFighter({ abilities: ["pommelStrike"], timers: { "ability:pommelStrike": { cadence: "rounds", left: 2, phase: "cooldown" } } }) });
+  state.combat = fixedCombat([fixedFoe()]);
+  const events = useAbility(state, "pommelStrike", fakeRng([]), []);
+  assert.deepEqual(events, [{ type: "abilityRefused", key: "pommelStrike", reason: "cooldown", name: "Pommel Strike", left: 2 }]);
+  assert.equal(abilityRoundsLeft(state.c, "pommelStrike"), 2);
+});
+
+test("ladder: spent — a used once-per-fight ability (Kata) refuses spent, with no rounds figure", () => {
+  const state = fixedState({ c: fixedFighter({ abilities: ["kata"], timers: { "ability:kata": { cadence: "rounds", left: 998, phase: "cooldown" } } }) });
   state.combat = fixedCombat([fixedFoe()]);
   const events = useAbility(state, "kata", fakeRng([]), []);
-  assert.deepEqual(events, [{ type: "abilityRefused", key: "kata", reason: "cooldown", name: "Kata", left: 2 }]);
-  assert.equal(abilityRoundsLeft(state.c, "kata"), 2);
+  assert.deepEqual(events, [{ type: "abilityRefused", key: "kata", reason: "spent", name: "Kata" }]);
 });
 
 test("ladder: noTarget — a hand-built zero-foe combat (structurally unreachable in real play)", () => {
@@ -249,15 +259,27 @@ test("round economy: a strike ability (kata) advances the round by exactly 1 and
 // dispatch returns; this is correct (their one-round window IS that same
 // foeTurn), not a bug. Every assertion below accounts for this one tick.
 
-test("timers: kata starts a plain 3-round cooldown (one tick already spent by this dispatch's own foeTurn), ticks down, then is ready again", () => {
+// Quick 260927-opf: re-pinned from Kata (once per fight now) to Brace, the
+// same plain 3-round cooldown with no effect phase.
+test("timers: brace starts a plain 3-round cooldown (one tick already spent by this dispatch's own foeTurn), ticks down, then is ready again", () => {
+  const state = fixedState({ c: fixedFighter({ abilities: ["brace"], wp: 999, maxWP: 999 }) });
+  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
+  useAbility(state, "brace", fakeRng([...FILL]), []);
+  assert.equal(isReady(state.c, "ability:brace"), false);
+  assert.equal(abilityRoundsLeft(state.c, "brace"), 2);
+  foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(abilityRoundsLeft(state.c, "brace"), 1);
+  foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(isReady(state.c, "ability:brace"), true);
+});
+
+test("timers: kata (once per fight) stays spent however many rounds pass, until endCombat", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["kata"] }) });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   useAbility(state, "kata", fakeRng([3, 4, ...FILL]), []);
+  for (let r = 0; r < 20; r++) foeTurn(state, fakeRng([...FILL]), []);
   assert.equal(isReady(state.c, "ability:kata"), false);
-  assert.equal(abilityRoundsLeft(state.c, "kata"), 2);
-  foeTurn(state, fakeRng([...FILL]), []);
-  assert.equal(abilityRoundsLeft(state.c, "kata"), 1);
-  foeTurn(state, fakeRng([...FILL]), []);
+  endCombat(state, []);
   assert.equal(isReady(state.c, "ability:kata"), true);
 });
 
