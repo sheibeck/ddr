@@ -2,7 +2,7 @@
 //
 // Phase 79.3 (BUG-04) Plan 02 Task 3, T-79.3-08 — a repo-wide scan that
 // fails if any tracked file carries a PEM private-key header or a
-// service-account JSON's `"type": "service_account"` marker. The Firebase
+// service-account JSON's type-equals-service_account marker. The Firebase
 // bug-reports service account key must live only in the GitHub secret
 // FIREBASE_BUG_REPORTS_SA (D-14); this is the safety net against a key ever
 // landing in git history. Also pins that .gitignore blocks the likely
@@ -38,7 +38,7 @@ function pemPrivateKeyNeedles() {
 }
 
 function serviceAccountJsonNeedle() {
-  // Firebase/GCP service-account JSON always carries `"type": "service_account"`.
+  // Firebase/GCP service-account JSON always carries a type field set to service_account.
   return `${'"type"'}${":"}${' "service_account"'}`;
 }
 
