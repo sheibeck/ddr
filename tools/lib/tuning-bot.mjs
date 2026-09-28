@@ -35,6 +35,7 @@ import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, i
 import { isReady } from "../../engine/effects.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { SPELLS, RACES, ABILITY_BY_ID, WEAPONS } from "../../content/index.js";
+import { abilityAblated, applyStartAblation, applyStrikeAblation } from "./ablation.mjs";
 
 // The four cardinal directions the movement domain understands. Defined
 // locally so this module only ever talks to the engine through its public
@@ -267,7 +268,9 @@ export function chooseAbility(state, ctx) {
         ABILITY_BY_ID[id] &&
         ABILITY_BY_ID[id].cls === c.cls &&
         isReady(c, `ability:${id}`) &&
-        !ctx.abilityBlocked.has(id),
+        !ctx.abilityBlocked.has(id) &&
+        // Quick 260928-abl: the off-by-default ablation switch (tools/lib/ablation.mjs).
+        !abilityAblated(ctx.opts.ablate, id),
     )
     .map((id) => ABILITY_BY_ID[id]);
   if (!ready.length) return null;
@@ -1586,7 +1589,7 @@ function snapshotFloor(s, afraidTriggers, diedAfraid) {
  * playRun(seed, opts, onStep) — the shared auto-play loop both tools use.
  * `policyRng = makeRng(seed ^ 0x9e3779b9)` is a SEPARATE stream from the
  * engine's own rngState, so the policy's own dice-rolling never perturbs the
- * engine's seeded determinism. `onStep(events, state)`, if supplied, lets a
+ * engine's seeded determinism. `onStep(events, state, action)`, if supplied, lets a
  * caller layer its own per-tool tallies (e.g. the Phase 20 parley readout,
  * or tune-economy's gold readout) on top of the shared D-07 tallies below.
  *
@@ -1644,6 +1647,10 @@ export function playRun(seed, opts, onStep) {
   let state = newRun(seed, [], { startDepth: opts.startDepth, force: opts.force, ...RUN_FLAGS });
   const startDepth = state.floor.depth; // the sanitized value newRun actually used
   if (opts.party) forceParty(state);
+  // Quick 260928-abl: the off-by-default ablation switch's run-start write
+  // (tools/lib/ablation.mjs) — a no-op unless opts.ablate names a skill/sub
+  // this hero actually has.
+  applyStartAblation(state, opts.ablate);
   const memberAtStart = opts.party ? state.party.length : 0;
   const ctx = makeBotContext(opts);
   const tallies = makeTallies();
@@ -1659,6 +1666,9 @@ export function playRun(seed, opts, onStep) {
     const before = state; // Phase 42 (BAL-02): pre-action state — applyAction returns a NEW object, so this reference stays valid after the reassignment below
     wasAfraidBeforeStep = !!(before.combat && before.combat.afraid > 0);
     let dispatched = action;
+    // Quick 260928-abl: the off-by-default strike-flag ablation (a no-op
+    // unless opts.ablate names one), written before the dispatch.
+    applyStrikeAblation(state, action, opts.ablate);
     if (action.type === "useAbility" && Number.isInteger(action.target) && state.combat) {
       state.combat.target = action.target;
       dispatched = { type: "useAbility", key: action.key };
@@ -1671,7 +1681,9 @@ export function playRun(seed, opts, onStep) {
     tallyIdentity(identity, ctx, action, dispatched, inCombat, events, before, state); // USER RULING D
     for (const e of events) if (e.type === "phobiaAfraid") afraidTriggersThisFloor++;
     observe(ctx, events, state); // Phase 42 (BAL-01 second half): stateAfter for floorMapped
-    if (onStep) onStep(events, state);
+    // Quick 260928-abl: the chosen action rides along as a third argument
+    // (every existing two-argument caller ignores it).
+    if (onStep) onStep(events, state, action);
     actions++;
     // USER RULING D: one floorSnapshot row per floor LEFT, captured off the
     // PRE-change `before` state — its level/gold/gear is what the hero left
