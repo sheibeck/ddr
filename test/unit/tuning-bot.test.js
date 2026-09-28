@@ -31,12 +31,14 @@ import {
   botLine,
   chooseSpell,
   playRun,
+  expectedSpellDamage,
   BOT_DEFAULTS,
   BOT_TACTICS,
 } from "../../tools/lib/tuning-bot.mjs";
 import { newRun } from "../../engine/engine.js";
 import { SPELLS, RACES } from "../../content/index.js";
 import { maxCharges } from "../../engine/movement.js";
+import { spellLevelSq } from "../../engine/derived.js";
 import { stripVolatileFields } from "../parity/harness/diffState.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
@@ -512,28 +514,30 @@ test("Phase 42 (BAL-01 second half): a DOT (niche 'dot') is skipped when the tar
   const ctx = makeBotContext();
   const base = { sub: "Sorcerer", level: 5 };
   const grimoire = ["Fireball", "Acid"];
-  // Fireball's expected damage is 15 (2d10+4); BOT_TACTICS.dotToughMargin is
-  // 1, so bestBurstExpected(state)=15 makes the skip threshold exactly 16 —
-  // a CLOSED boundary (<=, not <). Acid's own plain score (318) would
-  // otherwise outscore Fireball's plain score (315), so this pair is chosen
-  // specifically because skipping Acid actually FLIPS the winner, rather
-  // than merely removing an already-losing option.
+  // Fireball's expected damage is 15 (2d10+4) + the level-5 caster's level²
+  // 25 = 40 (Phase 79.2-02 re-pin (traced: the bot scores level² spell damage, quick 260928-sq2); the boundary was 16/17 before);
+  // BOT_TACTICS.dotToughMargin is 1, so bestBurstExpected(state)=40 makes the
+  // skip threshold exactly 41 — a CLOSED boundary (<=, not <). Acid's own
+  // plain score (343 = 300 + 9 x2 + 25) would otherwise outscore Fireball's
+  // plain score (340), so this pair is chosen specifically because skipping
+  // Acid actually FLIPS the winner, rather than merely removing an
+  // already-losing option.
   assert.strictEqual(BOT_TACTICS.dotToughMargin, 1);
 
   const atBoundary = mkState({
-    combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 16, maxWP: 16 }] }),
+    combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 41, maxWP: 41 }] }),
     c: mu({ ...base, grimoire }),
   });
-  // 16 <= 15+1 -> Acid skipped; only Fireball scores (300+15=315, no finish
-  // since 15 < 16) -> Fireball wins by elimination, not by raw score.
+  // 41 <= 40+1 -> Acid skipped; only Fireball scores (300+40=340, no finish
+  // since 40 < 41) -> Fireball wins by elimination, not by raw score.
   assert.deepStrictEqual(decideAction(atBoundary, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Fireball") });
 
   const justOverBoundary = mkState({
-    combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 17, maxWP: 17 }] }),
+    combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 42, maxWP: 42 }] }),
     c: mu({ ...base, grimoire }),
   });
-  // 17 > 15+1 -> Acid is KEPT and outscores Fireball's plain 315 with its
-  // own 318 (expected 9 x2) -> Acid wins.
+  // 42 > 40+1 -> Acid is KEPT and outscores Fireball's plain 340 with its
+  // own 343 (expected 9 x2 + 25) -> Acid wins.
   assert.deepStrictEqual(decideAction(justOverBoundary, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Acid") });
 });
 
@@ -542,18 +546,21 @@ test("Phase 42 (BAL-01 second half): a burst spell (niche 'burst') expected to f
   const c = mu({ sub: "Sorcerer", level: 5, grimoire: ["Fireball"] });
   const fireballIdx = idx("Fireball");
 
+  // Phase 79.2-02 re-pin (traced: the bot scores level² spell damage, quick 260928-sq2): Fireball's
+  // expected is 15 (2d10+4) + the level-5 caster's 25 = 40 (was 15), so the
+  // tough target is 50 wp (was 20) and the exact match 40 (was 15).
   const weakTarget = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 10, maxWP: 10 }] }), c });
   const finishPick = chooseSpell(weakTarget, ctx);
-  assert.deepStrictEqual(finishPick, { idx: fireballIdx, tier: "damage", score: 365 }); // 350 + 15
+  assert.deepStrictEqual(finishPick, { idx: fireballIdx, tier: "damage", score: 390 }); // 350 + 40
 
-  const toughTarget = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 20, maxWP: 20 }] }), c });
+  const toughTarget = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 50, maxWP: 50 }] }), c });
   const plainPick = chooseSpell(toughTarget, ctx);
-  assert.deepStrictEqual(plainPick, { idx: fireballIdx, tier: "damage", score: 315 }); // 300 + 15
+  assert.deepStrictEqual(plainPick, { idx: fireballIdx, tier: "damage", score: 340 }); // 300 + 40
 
-  // The finish threshold is CLOSED (>=, not >): expected 15 exactly equals
+  // The finish threshold is CLOSED (>=, not >): expected 40 exactly equals
   // the target's wp -> still scores the finish bonus.
-  const exactMatch = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 15, maxWP: 15 }] }), c });
-  assert.deepStrictEqual(chooseSpell(exactMatch, ctx), { idx: fireballIdx, tier: "damage", score: 365 });
+  const exactMatch = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 40, maxWP: 40 }] }), c });
+  assert.deepStrictEqual(chooseSpell(exactMatch, ctx), { idx: fireballIdx, tier: "damage", score: 390 });
 });
 
 test("Phase 42 (BAL-01 second half): Summon in combat picks the highest-LEVEL castable summon spell — level 1 has only Lesser Summon, level 3 also has Summon", () => {
@@ -986,4 +993,28 @@ test("Phase 41 (TERR-02): the bot paths across water and never stalls", () => {
     assert.notStrictEqual(r.outcome, "stuck", `seed ${seed}: outcome must not be stuck`);
   }
   assert.ok(sawWaded, "at least one of seeds 1-3 must cross a water cell (a waded event) within 1000 actions");
+});
+
+// Phase 79.2-02 pre-step (the bot scores level² spell damage): since quick
+// 260928-sq2 the engine adds the caster's level² to spell damage
+// (engine/derived.js#spellLevelSq). The bot's expected spell damage uses that
+// same helper, so at levels 1, 3 and 5 Freeze scores d6 (3.5) + level² and
+// Fireball 2d10+4 (15) + level²; Lightning adds it per foe, Fireballs once
+// per foe struck, Acid and Ice on their first tick. Heals never add it.
+test("expectedSpellDamage: Freeze and Fireball include the caster's level² at levels 1, 3 and 5", () => {
+  const byName = (n) => SPELLS.find((sp) => sp.n === n);
+  const freeze = byName("Freeze");
+  const fireball = byName("Fireball");
+  for (const level of [1, 3, 5]) {
+    const caster = { level };
+    assert.equal(spellLevelSq(caster), level * level);
+    assert.equal(expectedSpellDamage(freeze, caster), 3.5 + level * level, `Freeze at level ${level}`);
+    assert.equal(expectedSpellDamage(fireball, caster), 15 + level * level, `Fireball at level ${level}`);
+  }
+  const c3 = { level: 3 };
+  assert.equal(expectedSpellDamage(byName("Lightning"), c3, 2), (11.5 + 9) * 2, "Lightning: level² per foe");
+  assert.equal(expectedSpellDamage(byName("Fireballs"), c3, 1), 7.5 * 4.5 + 9, "Fireballs vs 1 foe: level² once");
+  assert.equal(expectedSpellDamage(byName("Fireballs"), c3, 2), 7.5 * 4.5 + 9 * 1.875, "Fireballs vs 2 foes: level² per foe struck, E[min(2, d8)]");
+  assert.equal(expectedSpellDamage(byName("Acid"), c3), 9 * 2 + 9, "Acid: level² on the first tick");
+  assert.equal(expectedSpellDamage(byName("Ice"), c3), 3.5 * 3 + 9, "Ice: level² on the first tick");
 });

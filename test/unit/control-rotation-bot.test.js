@@ -86,7 +86,10 @@ test("ROTATION off by default: chooseSpell returns the same pick with controlRot
 
   const damageState = mkState(mu({ grimoire: ["Fireball"] }), fight(1));
   assert.deepStrictEqual(chooseSpell(damageState, ctxOff), chooseSpell(damageState, ctxOmitted));
-  assert.deepStrictEqual(chooseSpell(damageState, ctxOmitted), { idx: idx("Fireball"), tier: "damage", score: 315 });
+  // Phase 79.2-02 re-pin (traced: the bot scores level² spell damage, quick 260928-sq2): Fireball's
+  // expected is 15 + the level-5 caster's 25 = 40, which meets the foe's 20
+  // wp, so it scores the burst finish 350 + 40 (was 300 + 15).
+  assert.deepStrictEqual(chooseSpell(damageState, ctxOmitted), { idx: idx("Fireball"), tier: "damage", score: 390 });
 
   const disableState = mkState(mu({ grimoire: ["Weaken"] }), fight(2));
   assert.deepStrictEqual(chooseSpell(disableState, ctxOff), chooseSpell(disableState, ctxOmitted));
@@ -120,7 +123,8 @@ test("ROTATION on, Freeze uncastable, the combat weakened AND the target already
   const combat = fight(1, { weakened: true });
   combat.foes[0].asleep = 3;
   const state = mkState(mu({ grimoire: ["Weaken", "Doze", "Fireball"] }), combat);
-  assert.deepStrictEqual(chooseSpell(state, ctx), { idx: idx("Fireball"), tier: "damage", score: 315 });
+  // Phase 79.2-02 re-pin (traced: the bot scores level² spell damage, quick 260928-sq2): 350 + (15 + 25), was 300 + 15.
+  assert.deepStrictEqual(chooseSpell(state, ctx), { idx: idx("Fireball"), tier: "damage", score: 390 });
 });
 
 test("ROTATION on, below the potion threshold with Heal castable: Heal (defensive, 460 + expected) still outranks the rotation", () => {
