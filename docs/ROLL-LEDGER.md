@@ -83,7 +83,7 @@ One row per **CHECK site** — a die roll compared against a threshold that deci
 | 43 | movement.js affliction cure (L708) | d20 | hero | `<= 10 + (Hardiness?4:0)` | LOW | `[cure:hardiness]` | 32 | OK |
 | 44 | movement.js wandering wake (L785, ×8/hour) | d20 | n/a (bad for hero) | `<= wakeOn` | n/a | `[wake:bard]`, `[wake:wander-rate]` | 33 | OK |
 | 45 | movement.js d20===1 event (L950) | d20 | n/a | `=== 1` | n/a | none (flat; classified per interfaces "classify it" — a rare wandering/travel event gate) | — | OK / N/A (new since Phase 31) |
-| 46 | derived.js#resistRoll (L1429) | d20 | resistor (hero or foe) | `roll < intel`, gated `intel>=12` | YES (resistor wants a LOW roll under intel — a roll-high-style "beat the stat" read) | `[resist:intel]`, `[resist:intel-gate]` | 34 | OK |
+| 46 | derived.js#resistRoll (L1429) | d20 | resistor (hero or foe) | `roll < intel`, gated `intel>=12` (quick 260928-hrs: now roll-high `roll >= 21 - resistFaces(intel)`, half-intel faces, no gate, both sides) | YES (resistor wants a LOW roll under intel — a roll-high-style "beat the stat" read) | `[resist:intel]`, `[resist:foe-intel]` (`[resist:intel-gate]` retired) | 34 | OK |
 | 47 | items.js lockpick wear (L250) | d12 | n/a (item-loss gate) | `=== 1` (gated `!hasPicks`) | n/a | none (flat) | — | OK / N/A (new since Phase 31) |
 | 48 | character.js#checkLevel Sorcerer spell-loss (L657) | d8 | n/a (chargen/level-up gate) | `=== 1` | n/a | none (flat) | — | OK / N/A (new since Phase 31; not a combat/dungeon check, included for CONTEXT's "every non-comment `rng.d(` call" completeness) |
 
@@ -337,8 +337,8 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 
 | Id | Site | Source | Kind | Claimed direction | Verified today | Phase 73 reading | Verdict |
 |---|---|---|---|---|---|---|---|
-| `[resist:intel]` | resist | `intel` stat | stat | a smarter resistor shrugs off more effects, p.25 canon | `resisted = roll < intel`; a higher intel widens the resisting range | wider resist range for a higher-intel character | OK |
-| `[resist:intel-gate]` | resist | `intel >= 12` gate | stat | below the threshold, resistance is never rolled for | no draw at all below the gate | no resist attempt below intel 12 | OK |
+| `[resist:intel]` | resist | the hero's `intel` against a foe's spell or ability | stat | a smarter hero shrugs off more effects; quick 260928-hrs (user ruling 2026-09-28): the same half-intel scale a foe resists on | roll-high: `resisted = roll >= 21 - faces`, `faces = resistFaces(intel) = max(1, round(intel / 2))`, every hero rolls (no gate) | wider resist range for a higher-intel hero; intel 1–2 still resists on one face | OK (quick 260928-hrs) |
+| `[resist:intel-gate]` | resist | `intel >= 12` gate | stat | below the threshold, resistance is never rolled for | retired: every hero rolls since quick 260928-hrs | no gate | N/A (retired by quick 260928-hrs, user ruling 2026-09-28: the gate no longer exists, so there is nothing to probe) |
 | `[resist:depth]` | resist | floor depth past CONTROL_AT_DEPTH.kneeDepth | depth | RULES-18 (Phase 75.3, user ruling 2026-09-25): from floor 12, foes increasingly RESIST control | roll-high: `resisted = roll >= 21 - faces`, faces growing with depth past the knee | wider resist range for a deeper foe past the knee | OK (RULES-18, Phase 75.3) |
 | `[resist:foe-intel]` | resist | a foe's `intel` against a spell cast on it | stat | quick 260927-rsx (user ruling 2026-09-27): every spell cast on an enemy can be resisted, more often by a smarter foe; half-intel scale | roll-high: `resisted = roll >= 21 - faces`, `faces = max(1, round(intel / 2))`, every foe rolls (no gate) | wider resist range for a higher-intel foe; intel 1–2 still resists on one face | OK (quick 260927-rsx) |
 | `[initiative:samurai]` | initiative | Samurai forced-foe | sub-class | Samurai never gets the jump on a fight's first round (a documented BAD trait) | forces `first="foe"` | the foe always acts first | OK |
@@ -1078,3 +1078,44 @@ field is replaced by `levelSq` (the term added), which the Oracle and rail
 lines print as "the roll +N, for your level"; `iceApplied` gains `levelSq`
 for the same reason. Step 2 of the Freeze section above ("d6 × the level
 multiplier") now reads d6 + level².
+
+## User ruling 2026-09-28: the hero resists on the half-intel scale (quick 260928-hrs)
+
+"Use the same half-intel scale for heroes now." When a foe's bolt, drain or
+debuff (`engine/foeAbilities.js#heroResist`) lands on the hero, the hero now
+resists exactly as a foe resists a spell cast on it: a roll-high d20,
+`resisted = roll >= 21 - faces`, `faces = resistFaces(intel) = max(1,
+round(intel / 2))`. Intel 1–2 resists on 20 (5%), 6 on 18–20 (15%), 10 on
+16–20 (25%), 12 on 15–20 (30%), 16 on 13–20 (40%), 18 on 12–20 (45%), 20 on
+11–20 (50%). There is no intel-12 gate any more, so every hero has at least
+5%. This retires canon p.25 (only intel >= 12 rolled, on `intel - 1` faces:
+intel 12 used to resist on 10–20, 55%, and intel 18 on 4–20, 85%), which is
+the "the hero side is unchanged" paragraph of the 2026-09-27 section above.
+
+**One helper.** `engine/derived.js#resistFaces` and `#resistRoll` are the
+one scale and the one roll for both sides. `foeSpellResistFaces` and
+`foeSpellResistRoll` were folded into them (renamed, since they are no
+longer foe-only); the old gated `resistRoll` body is gone.
+`foeSpellResistCheck` keeps its name: it is still the foe-only derived-stream
+wrapper.
+
+**Draw position (the stream question).** The two sides draw from different
+streams, and each keeps its own:
+
+| Side | Stream | Position | Change |
+|---|---|---|---|
+| A foe resisting a spell cast on it | derived (`spellResist`, via `foeSpellResistCheck`) | never on the main rng | none |
+| The hero resisting a foe's bolt, drain or debuff | MAIN rng | after the ability gate's d6 (or first, for a never-melee caster), before the effect's own dice (damage, the debuff's d4) | an intel 12+ hero draws exactly where it always did, and only the threshold moved; a hero below intel 12 now draws one d20 in that same slot, where canon drew nothing |
+
+Moving the hero onto a derived stream was the other option. It would have
+taken the d20 away from every intel 12+ hero and moved their rng instead, so
+the main-rng slot canon already used was kept. A member-targeted bolt or
+drain still has no resist (unchanged: `pickFoeTarget` picks the member before
+the resist, and a member never rolls).
+
+**Rows.** Row 46 and `[resist:intel]` above now describe this rule;
+`[resist:intel-gate]` is retired (N/A). `test/unit/roll-high-guard.test.js`'s
+DRAW_INVENTORY drops one `rollCheck` call in derived.js (3 → 2), the merge.
+The Oracle line for `heroResisted` / `heroResistFailed` already printed the
+roll, the event's range and the intel; the rail twins now print them too
+(`test/unit/authored-ranges.test.js` pins both against the engine's range).

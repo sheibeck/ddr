@@ -35,6 +35,11 @@ function fakeRng(seq, { pick = (arr) => arr[0] } = {}) {
   };
 }
 
+// Quick 260928-hrs (user ruling 2026-09-28): every hero now rolls a resist
+// d20 against a foe's bolt, drain or debuff. FAIL is a raw draw that never
+// resists (raw 20 mirrors to roll 1, below any half-intel range).
+const FAIL = 20;
+
 function fixedFighter(overrides = {}) {
   return {
     cls: "Fighter", sub: "Soldier", race: "Human", level: 1, sp: 0,
@@ -120,8 +125,8 @@ test("gate: kit with a ready bolt — d6 1..4 casts (foeCast then foeBolted), 5.
   const state = fixedState();
   const foe = fixedFoe({ abilities: ["krupkeFreeze"] });
   state.combat = fixedCombat([foe]);
-  const events = foeTurn(state, fakeRng([4, 6]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted"]);
+  const events = foeTurn(state, fakeRng([4, FAIL, 6]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
   // Phase 73 (ROLL-05): the ability gate's own d6 (raw 4, dieN 6, atLeast 3
   // for 4 faces) now spreads its roll-high triple onto foeCast.
   assert.deepStrictEqual(events[0], {
@@ -134,8 +139,8 @@ test("gate: kit with a ready bolt — d6 1..4 casts (foeCast then foeBolted), 5.
     atLeast: 3,
     dieN: 6,
   });
-  assert.equal(events[1].dmg, 6);
-  assert.equal(events[1].ignoresArmor, false);
+  assert.equal(events[2].dmg, 6);
+  assert.equal(events[2].ignoresArmor, false);
   assert.equal(state.c.wp, 49);
 
   const state2 = fixedState();
@@ -151,9 +156,9 @@ test("never_melee: casts with no d6; with nothing ready pushes foeOutOfSpells an
   const state = fixedState();
   const foe = fixedFoe({ abilities: ["drudgeFreeze"], sp: { never_melee: true } });
   state.combat = fixedCombat([foe]);
-  const events = foeTurn(state, fakeRng([3]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted"]);
-  assert.equal(events[1].dmg, 3);
+  const events = foeTurn(state, fakeRng([FAIL, 3]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
+  assert.equal(events[2].dmg, 3);
 
   const state2 = fixedState();
   const foe2 = fixedFoe({ abilities: ["drakeBreath"], sp: { never_melee: true } });
@@ -176,9 +181,9 @@ test("cooldown cadence (D-20): every:4 fires on the 4th visit, resets, fires on 
     assert.equal(foe.cd.drakeBreath, 4 - visit);
   }
 
-  let events = foeTurn(state, fakeRng([1, 5, 5]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted"]);
-  assert.equal(events[1].dmg, 14);
+  let events = foeTurn(state, fakeRng([1, FAIL, 5, 5]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
+  assert.equal(events[2].dmg, 14);
   assert.equal(foe.cd.drakeBreath, 4);
 
   for (let visit = 5; visit <= 7; visit++) {
@@ -190,8 +195,8 @@ test("cooldown cadence (D-20): every:4 fires on the 4th visit, resets, fires on 
   assert.deepEqual(events.map((e) => e.type), ["foeMissed"]);
   assert.equal(foe.cd.drakeBreath, 0);
 
-  events = foeTurn(state, fakeRng([2, 3, 3]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted"]);
+  events = foeTurn(state, fakeRng([2, FAIL, 3, 3]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
   assert.equal(foe.cd.drakeBreath, 4);
 });
 
@@ -202,9 +207,9 @@ test("uses (D-05): four casts then never again this encounter — the 5th visit 
   const foe = fixedFoe({ abilities: ["djinniLightning"] });
   state.combat = fixedCombat([foe]);
   for (let i = 0; i < 4; i++) {
-    const events = foeTurn(state, fakeRng([1, 5]), []);
-    assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted"]);
-    assert.equal(events[1].dmg, 11);
+    const events = foeTurn(state, fakeRng([1, FAIL, 5]), []);
+    assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
+    assert.equal(events[2].dmg, 11);
     assert.equal(foe.uses.djinniLightning, 3 - i);
   }
   const events = foeTurn(state, fakeRng([7]), []);
@@ -231,7 +236,7 @@ test("kit order + interleave (D-04): the Drudge kit casts Freeze, Fireball, Ligh
     { seq: [7], ability: "drudgeLightning" },
   ];
   for (const { seq, ability } of visits) {
-    const events = foeTurn(state, fakeRng(seq), []);
+    const events = foeTurn(state, fakeRng([FAIL, ...seq]), []);
     const cast = events.find((e) => e.type === "foeCast");
     assert.ok(cast, `expected a foeCast event (wanted ${ability})`);
     assert.equal(cast.ability, ability);
@@ -246,33 +251,51 @@ test("kit order + interleave (D-04): the Drudge kit casts Freeze, Fireball, Ligh
 
 // --- 7: resist (D-07) ----------------------------------------------------------
 
-test("resist (D-07): intel 12 hero — raw d20 11 resists a bolt (mirrored roll 10, no damage die), raw d20 12 fails (mirrored roll 9) then the bolt lands; intel 11 never rolls", () => {
+// Quick 260928-hrs (user ruling 2026-09-28): the hero resists on the
+// half-intel scale — intel 12 resists on the top 6 faces (15–20) — and every
+// hero rolls, intel 11 and below included.
+test("resist (D-07, quick 260928-hrs): intel 12 hero — raw d20 6 resists a bolt (mirrored roll 15, no damage die), raw d20 7 fails (mirrored roll 14) then the bolt lands; intel 11 and intel 2 roll too", () => {
   const state = fixedState({ c: { intel: 12 } });
   const foe = fixedFoe({ abilities: ["krupkeFreeze"] });
   state.combat = fixedCombat([foe]);
-  const events = foeTurn(state, fakeRng([1, 11]), []);
+  const events = foeTurn(state, fakeRng([1, 6]), []);
   assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResisted"]);
-  assert.equal(events[1].roll, 10);
-  assert.equal(events[1].atLeast, 10);
+  assert.equal(events[1].roll, 15);
+  assert.equal(events[1].atLeast, 15);
   assert.equal(events[1].dieN, 20);
   assert.equal(events[1].intel, 12);
+  assert.equal(events[1].faces, 6);
   assert.equal(state.c.wp, 55);
 
   const state2 = fixedState({ c: { intel: 12 } });
   const foe2 = fixedFoe({ abilities: ["krupkeFreeze"] });
   state2.combat = fixedCombat([foe2]);
-  const events2 = foeTurn(state2, fakeRng([1, 12, 4]), []);
+  const events2 = foeTurn(state2, fakeRng([1, 7, 4]), []);
   assert.deepEqual(events2.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
-  assert.equal(events2[1].roll, 9);
-  assert.equal(events2[1].atLeast, 10);
+  assert.equal(events2[1].roll, 14);
+  assert.equal(events2[1].atLeast, 15);
   assert.equal(events2[1].dieN, 20);
   assert.equal(events2[2].dmg, 4);
 
+  // intel 11: 6 faces (round(5.5)); a raw 6 resists where canon never rolled.
   const state3 = fixedState({ c: { intel: 11 } });
   const foe3 = fixedFoe({ abilities: ["krupkeFreeze"] });
   state3.combat = fixedCombat([foe3]);
-  const events3 = foeTurn(state3, fakeRng([1, 4]), []);
-  assert.deepEqual(events3.map((e) => e.type), ["foeCast", "foeBolted"]);
+  const events3 = foeTurn(state3, fakeRng([1, 6]), []);
+  assert.deepEqual(events3.map((e) => e.type), ["foeCast", "heroResisted"]);
+
+  // intel 2: the one-face floor (5%) — only the top face resists.
+  const state4 = fixedState({ c: { intel: 2 } });
+  const foe4 = fixedFoe({ abilities: ["krupkeFreeze"] });
+  state4.combat = fixedCombat([foe4]);
+  const events4 = foeTurn(state4, fakeRng([1, 1]), []);
+  assert.deepEqual(events4.map((e) => e.type), ["foeCast", "heroResisted"]);
+  assert.equal(events4[1].atLeast, 20);
+  const state5 = fixedState({ c: { intel: 2 } });
+  const foe5 = fixedFoe({ abilities: ["krupkeFreeze"] });
+  state5.combat = fixedCombat([foe5]);
+  const events5 = foeTurn(state5, fakeRng([1, 2, 4]), []);
+  assert.deepEqual(events5.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
 });
 
 // --- 8: bolt through the hero pipeline (D-02) -----------------------------------
@@ -281,15 +304,15 @@ test("bolt through the pipeline (D-02): armor soak d20 applies to a bolt, Hardin
   const armored = fixedState({ c: { ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" } });
   const foeA = fixedFoe({ abilities: ["krupkeFreeze"] });
   armored.combat = fixedCombat([foeA]);
-  const eventsA = foeTurn(armored, fakeRng([1, 4, 10]), []);
-  assert.deepEqual(eventsA.map((e) => e.type), ["foeCast", "armorSoaked"]);
+  const eventsA = foeTurn(armored, fakeRng([1, FAIL, 4, 10]), []);
+  assert.deepEqual(eventsA.map((e) => e.type), ["foeCast", "heroResistFailed", "armorSoaked"]);
 
   const hardy = fixedState({ c: { skills: { Hardiness: 1 } } });
   const foeB = fixedFoe({ abilities: ["krupkeFreeze"] });
   hardy.combat = fixedCombat([foeB]);
-  const eventsB = foeTurn(hardy, fakeRng([1, 6]), []);
-  assert.deepEqual(eventsB.map((e) => e.type), ["foeCast", "foeBolted"]);
-  assert.equal(eventsB[1].dmg, 3);
+  const eventsB = foeTurn(hardy, fakeRng([1, FAIL, 6]), []);
+  assert.deepEqual(eventsB.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted"]);
+  assert.equal(eventsB[2].dmg, 3);
 
   // RULES-14 (Phase 75, user 2026-09-25): re-pinned for the armed-mirror
   // shape — a foe ability bolt triggers the mirror exactly like a plain
@@ -298,10 +321,10 @@ test("bolt through the pipeline (D-02): armor soak d20 applies to a bolt, Hardin
   const warded = fixedState({ c: { ward: { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null } } });
   const foeC = fixedFoe({ abilities: ["krupkeFreeze"], wp: 10, maxWP: 10 });
   warded.combat = fixedCombat([foeC]);
-  const eventsC = foeTurn(warded, fakeRng([1, 4]), []);
-  assert.deepEqual(eventsC.map((e) => e.type), ["foeCast", "wardReflected", "wardFaded"]);
-  assert.equal(eventsC[1].amount, 4);
-  assert.equal(eventsC[1].mirror, true);
+  const eventsC = foeTurn(warded, fakeRng([1, FAIL, 4]), []);
+  assert.deepEqual(eventsC.map((e) => e.type), ["foeCast", "heroResistFailed", "wardReflected", "wardFaded"]);
+  assert.equal(eventsC[2].amount, 4);
+  assert.equal(eventsC[2].mirror, true);
   assert.equal(foeC.wp, 6);
   assert.equal(eventsC.some((e) => e.type === "foeBolted"), false);
   assert.equal(warded.c.ward, null, "the popped pool faded at the tail of this same foe turn");
@@ -313,18 +336,18 @@ test("drain (D-11): no soak roll on an armoured hero; heals the foe by the appli
   const armored = fixedState({ c: { ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" } });
   const foe = fixedFoe({ abilities: ["vampireDrain"], wp: 60, maxWP: 65 });
   armored.combat = fixedCombat([foe]);
-  const events = foeTurn(armored, fakeRng([2, 3, 4]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted", "foeDrained"]);
-  assert.equal(events[1].dmg, 7);
-  assert.equal(events[1].ignoresArmor, true);
-  assert.deepEqual(events[2], { type: "foeDrained", name: "Target", ability: "vampireDrain", stolen: 5, wp: 65, maxWP: 65 });
+  const events = foeTurn(armored, fakeRng([2, FAIL, 3, 4]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted", "foeDrained"]);
+  assert.equal(events[2].dmg, 7);
+  assert.equal(events[2].ignoresArmor, true);
+  assert.deepEqual(events[3], { type: "foeDrained", name: "Target", ability: "vampireDrain", stolen: 5, wp: 65, maxWP: 65 });
   assert.equal(armored.c.wp, 48);
 
   const warded = fixedState({ c: { ward: { pool: 20, rounds: 3 } } });
   const foe2 = fixedFoe({ abilities: ["vampireDrain"], wp: 60, maxWP: 65 });
   warded.combat = fixedCombat([foe2]);
-  const events2 = foeTurn(warded, fakeRng([2, 3, 4]), []);
-  assert.deepEqual(events2.map((e) => e.type), ["foeCast", "wardAbsorbed"]);
+  const events2 = foeTurn(warded, fakeRng([2, FAIL, 3, 4]), []);
+  assert.deepEqual(events2.map((e) => e.type), ["foeCast", "heroResistFailed", "wardAbsorbed"]);
   assert.equal(foe2.wp, 60);
 });
 
@@ -332,7 +355,7 @@ test("drain kills: a lethal drain runs die() and foeTurn returns { died }", () =
   const state = fixedState({ c: { wp: 5 } });
   const foe = fixedFoe({ abilities: ["vampireDrain"] });
   state.combat = fixedCombat([foe]);
-  const events = foeTurn(state, fakeRng([2, 3, 4]), []);
+  const events = foeTurn(state, fakeRng([2, FAIL, 3, 4]), []);
   assert.equal(state.dead, true);
   assert.ok(events.some((e) => e.type === "died"));
   assert.equal(events.some((e) => e.type === "foeDrained"), false);
@@ -351,7 +374,7 @@ test("debuff (D-09/D-10): sets a NEW foeEffect with d4 rounds; same kind refresh
   state.combat = fixedCombat([foe]);
 
   const events1 = [];
-  resolveFoeAbility(state, foe, djinniDaze, fakeRng([3]), events1);
+  resolveFoeAbility(state, foe, djinniDaze, fakeRng([FAIL, 3]), events1);
   assert.ok(events1.some((e) => e.type === "foeDebuffed" && e.kind === "dazed" && e.rounds === 3));
   // CMBUI-13 (Phase 77, plan 77-07): a daze's payload carries the engine's
   // own to-hit delta so the onset line states it (payload only).
@@ -360,7 +383,7 @@ test("debuff (D-09/D-10): sets a NEW foeEffect with d4 rounds; same kind refresh
   assert.notEqual(state.c.foeEffect, preset, "a fresh object, never a mutated reuse");
 
   const events2 = [];
-  resolveFoeAbility(state, foe, krupkeWeaken, fakeRng([2]), events2);
+  resolveFoeAbility(state, foe, krupkeWeaken, fakeRng([FAIL, 2]), events2);
   assert.deepStrictEqual(state.c.foeEffect, { kind: "weakened", rounds: 2 });
   // CMBUI-13: a weakening is not a to-hit term, so its payload has no toHit.
   assert.equal("toHit" in events2.find((e) => e.type === "foeDebuffed"), false);
@@ -377,8 +400,8 @@ test("debuff never targets a member; a debuff applied this foeTurn does not tick
   const state = fixedState({ party: [fixedMember()] });
   const foe = fixedFoe({ abilities: ["krupkeWeaken"], cd: { krupkeWeaken: 1 } });
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
-  const events = foeTurn(state, fakeRng([1, 1]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeDebuffed"]);
+  const events = foeTurn(state, fakeRng([1, FAIL, 1]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeDebuffed"]);
   assert.deepEqual(state.c.foeEffect, { kind: "weakened", rounds: 1 });
 });
 
@@ -539,15 +562,15 @@ test("two casters in one foeTurn act in order; a hero death stops the turn", () 
   const foeA = fixedFoe({ name: "A", abilities: ["krupkeFreeze"] });
   const foeB = fixedFoe({ name: "B", abilities: ["krupkeFreeze"] });
   state.combat = fixedCombat([foeA, foeB]);
-  const events = foeTurn(state, fakeRng([1, 4, 1, 4]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted", "foeCast", "foeBolted"]);
+  const events = foeTurn(state, fakeRng([1, FAIL, 4, 1, FAIL, 4]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "heroResistFailed", "foeBolted", "foeCast", "heroResistFailed", "foeBolted"]);
   assert.equal(state.c.wp, 47);
 
   const state2 = fixedState({ c: { wp: 5 } });
   const foeA2 = fixedFoe({ name: "A", abilities: ["krupkeFreeze"] });
   const foeB2 = fixedFoe({ name: "B", abilities: ["krupkeFreeze"] });
   state2.combat = fixedCombat([foeA2, foeB2]);
-  const events2 = foeTurn(state2, fakeRng([1, 5]), []);
+  const events2 = foeTurn(state2, fakeRng([1, FAIL, 5]), []);
   assert.equal(events2.filter((e) => e.type === "foeCast").length, 1);
   assert.ok(events2.some((e) => e.type === "died"));
   assert.equal(events2.some((e) => e.type === "foeEffectFaded"), false);

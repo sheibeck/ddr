@@ -581,18 +581,23 @@ test("Phase 19 / RESEARCH Pitfall 3: a caster with nothing ready draws only its 
 // via countingRng on the fixed unarmoured intel-1 Fighter (unless a row
 // overrides `c`). Mirrors 19-03-SUMMARY.md's "Draws per fired ability" table
 // exactly; a mismatch here is a 19-03 engine defect to report, never a pin
-// to edit.
+// to edit. Quick 260928-hrs (user ruling 2026-09-28, "Use the same half-intel
+// scale for heroes now"): every hero rolls its resist d20 against a bolt,
+// drain or debuff (canon p.25's intel-12 gate is retired), so each of those
+// rows gains exactly one d20 after the ability gate's d6; raw 20 (mirrored
+// roll 1) never resists, raw 1 (the top face) always does.
 const GATED_DRAWS = [
-  { label: "bolt cast: d6 + d6 dmg = 2", foe: { abilities: ["krupkeFreeze"] }, seq: [1, 4], draws: 2, types: ["foeCast", "foeBolted"] },
+  { label: "bolt cast: d6 + resist d20 + d6 dmg = 3", foe: { abilities: ["krupkeFreeze"] }, seq: [1, 20, 4], draws: 3, types: ["foeCast", "heroResistFailed", "foeBolted"] },
   { label: "bolt declined by the d6 (5): d6 + to-hit miss = 2", foe: { abilities: ["krupkeFreeze"] }, seq: [5, 7], draws: 2, types: ["foeMissed"] },
-  { label: "drain: d6 + 2d6 = 3", foe: { abilities: ["vampireDrain"], wp: 5, maxWP: 10 }, seq: [1, 3, 4], draws: 3, types: ["foeCast", "foeBolted", "foeDrained"] },
-  { label: "debuff: d6 + d4 = 2", foe: { abilities: ["krupkeWeaken"], cd: { krupkeWeaken: 1 } }, seq: [1, 2], draws: 2, types: ["foeCast", "foeDebuffed"] },
+  { label: "drain: d6 + resist d20 + 2d6 = 4", foe: { abilities: ["vampireDrain"], wp: 5, maxWP: 10 }, seq: [1, 20, 3, 4], draws: 4, types: ["foeCast", "heroResistFailed", "foeBolted", "foeDrained"] },
+  { label: "debuff: d6 + resist d20 + d4 = 3", foe: { abilities: ["krupkeWeaken"], cd: { krupkeWeaken: 1 } }, seq: [1, 20, 2], draws: 3, types: ["foeCast", "heroResistFailed", "foeDebuffed"] },
   { label: "heal: d6 + d10 = 2", foe: { abilities: ["stalkaHeal"], wp: 5, maxWP: 10, cd: { stalkaHeal: 1 } }, seq: [1, 6], draws: 2, types: ["foeCast", "foeHealed"] },
   { label: "summon: d6 + pick = 2", foe: { abilities: ["vampireSummon"], lvl: 5, cd: { vampireSummon: 1 } }, seq: [1], pick: (arr) => arr[0], draws: 2, types: ["foeCast", "foeSummoned"] },
-  { label: "never_melee bolt: dmg only = 1", foe: { abilities: ["drudgeFreeze"], sp: { never_melee: true } }, seq: [3], draws: 1, types: ["foeCast", "foeBolted"] },
-  { label: "intel-12 hero resists: d6 + d20 = 2", foe: { abilities: ["krupkeFreeze"] }, c: { intel: 12 }, seq: [1, 11], draws: 2, types: ["foeCast", "heroResisted"] },
-  { label: "intel-12 hero fails to resist: d6 + d20 + dmg = 3", foe: { abilities: ["krupkeFreeze"] }, c: { intel: 12 }, seq: [1, 12, 4], draws: 3, types: ["foeCast", "heroResistFailed", "foeBolted"] },
-  { label: "armoured hero bolt: d6 + dmg + soak d20 = 3", foe: { abilities: ["krupkeFreeze"] }, c: { ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" }, seq: [1, 4, 10], draws: 3, types: ["foeCast", "armorSoaked"] },
+  { label: "never_melee bolt: resist d20 + dmg = 2", foe: { abilities: ["drudgeFreeze"], sp: { never_melee: true } }, seq: [20, 3], draws: 2, types: ["foeCast", "heroResistFailed", "foeBolted"] },
+  { label: "intel-1 hero resists on the top face: d6 + d20 = 2", foe: { abilities: ["krupkeFreeze"] }, seq: [1, 1], draws: 2, types: ["foeCast", "heroResisted"] },
+  { label: "intel-12 hero resists (15–20): d6 + d20 = 2", foe: { abilities: ["krupkeFreeze"] }, c: { intel: 12 }, seq: [1, 6], draws: 2, types: ["foeCast", "heroResisted"] },
+  { label: "intel-12 hero fails to resist: d6 + d20 + dmg = 3", foe: { abilities: ["krupkeFreeze"] }, c: { intel: 12 }, seq: [1, 7, 4], draws: 3, types: ["foeCast", "heroResistFailed", "foeBolted"] },
+  { label: "armoured hero bolt: d6 + resist d20 + dmg + soak d20 = 4", foe: { abilities: ["krupkeFreeze"] }, c: { ar: 15, armorWP: 20, armorMax: 20, armorMin: 0, armor: "Studded" }, seq: [1, 20, 4, 10], draws: 4, types: ["foeCast", "heroResistFailed", "armorSoaked"] },
 ];
 
 for (const row of GATED_DRAWS) {

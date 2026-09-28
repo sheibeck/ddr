@@ -518,8 +518,9 @@ resolves it against the table below.
 - **A non-Magic-User holding Runes/Signs** always succeeds too, but gets
   the free cast only — the grimoire copy stays Magic-User-only.
 - **Everyone else** rolls a d20 against their own intelligence. There is no
-  intel-12 floor (`resistRoll`'s gate is for foe abilities and does not
-  carry over here) — low intelligence just means worse odds.
+  intel-12 floor (canon's resist gate never carried over here, and it is
+  retired everywhere since quick 260928-hrs) — low intelligence just means
+  worse odds.
 
 ### The target, roll-high
 
@@ -1187,8 +1188,11 @@ A room spell rolls per foe (a Weaken lands on the foes that did not resist).
 The hero, a Joiner, a scroll and the foe-targeted staves and amulet all
 follow it; self and ally spells (Heal, Shield, Bubble, Strength, Regenerate,
 Map the Floor, Sense Danger, Sense Presence, Mirror Self, the summons) never
-roll. A foe casting at the HERO still uses canon p.25 (`resistRoll`, intel
-12+). Every roll, either way, is an Oracle line. The foe card and each
+roll. A foe casting at the HERO used canon p.25 (intel 12+ only) until quick
+260928-hrs (user ruling 2026-09-28, "Use the same half-intel scale for heroes
+now"): the hero now resists a foe's bolt, drain or debuff on the same scale,
+every hero rolling (`engine/derived.js#resistRoll`, one helper for both
+sides). Every roll, either way, is an Oracle line. The foe card and each
 foe-targeted spell row state the range. See docs/ROLL-LEDGER.md for the site,
 the stream and the draw order.
 

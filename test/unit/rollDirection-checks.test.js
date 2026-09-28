@@ -39,7 +39,7 @@ import { playerStrike, foeTurn, flee, parley, killFoe, resolveInitiative, allies
 import { castSpell } from "../../engine/magic.js";
 import { startEffect } from "../../engine/effects.js";
 import { setDialsForTuning, DIALS } from "../../engine/difficulty.js";
-import { resistRoll, controlResistRoll, foeSpellResistRoll } from "../../engine/derived.js";
+import { resistRoll, controlResistRoll } from "../../engine/derived.js";
 import { controlResistFacesFor } from "../../engine/difficulty.js";
 import { springTrap, openChest } from "../../engine/encounters.js";
 import { move, newDay, resolveHazard } from "../../engine/movement.js";
@@ -343,14 +343,14 @@ test('[ally-thrown:school-bonus] a Magic User member throws with its OWN subclas
 
 // --- Resist [the resistor] ----------------------------------------------------
 
-test('[resist:intel] a higher intel resists more often — a stat, not a threshold, engine/derived.js#resistRoll ~L1427', () => {
+// Quick 260928-hrs (user ruling 2026-09-28): the hero resists a foe's spell
+// or ability on the same half-intel scale a foe does (resistFaces), with no
+// intel-12 gate — so an intel-6 hero now resists too, just less often.
+// `[resist:intel-gate]` is retired (its ledger row reads N/A).
+test('[resist:intel] a smarter hero resists a foe\'s spell or ability more often, engine/derived.js#resistRoll', () => {
   const withMod = faceOdds((rng) => resistRoll(rng, 18).resisted, { label: "resist:intel (18)" });
-  const without = faceOdds((rng) => resistRoll(rng, 12).resisted, { label: "resist:intel (12)" });
+  const without = faceOdds((rng) => resistRoll(rng, 6).resisted, { label: "resist:intel (6)" });
   assertBonus(withMod, without, { label: "resist:intel" });
-});
-
-test('[resist:intel-gate] intel < 12 never rolls and never resists, engine/derived.js#resistRoll ~L1428', () => {
-  assert.throws(() => faceOdds((rng) => resistRoll(rng, 11).resisted, { label: "resist:intel-gate" }));
 });
 
 // RULES-18 (Phase 75.3, Plan 04): a deeper foe resists a past-the-knee
@@ -364,11 +364,11 @@ test('[resist:depth] a deeper foe resists more often, engine/difficulty.js#contr
 });
 
 // Quick 260927-rsx (user ruling 2026-09-27): a foe resists every spell cast
-// on it, on half its intel in faces (foeSpellResistFaces), roll-high on a
-// d20 — no intel-12 gate, so even an intel-1 beast rolls (one face).
-test('[resist:foe-intel] a smarter foe resists a spell cast on it more often, engine/derived.js#foeSpellResistRoll', () => {
-  const withMod = faceOdds((rng) => foeSpellResistRoll(rng, 16).resisted, { label: "resist:foe-intel (16)" });
-  const without = faceOdds((rng) => foeSpellResistRoll(rng, 6).resisted, { label: "resist:foe-intel (6)" });
+// on it, on half its intel in faces (resistFaces), roll-high on a d20 — no
+// intel-12 gate, so even an intel-1 beast rolls (one face).
+test('[resist:foe-intel] a smarter foe resists a spell cast on it more often, engine/derived.js#resistRoll', () => {
+  const withMod = faceOdds((rng) => resistRoll(rng, 16).resisted, { label: "resist:foe-intel (16)" });
+  const without = faceOdds((rng) => resistRoll(rng, 6).resisted, { label: "resist:foe-intel (6)" });
   assertBonus(withMod, without, { label: "resist:foe-intel" });
 });
 

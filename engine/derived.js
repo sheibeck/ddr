@@ -2209,59 +2209,13 @@ export function intelBonus(c) {
 }
 
 /**
- * resistRoll(rng, intel) — p.25's intelligent-target spell/ability
- * resistance. User ruling 2026-09-27 (quick 260927-rsx): this is now the
- * HERO side only — engine/foeAbilities.js reads the HERO's `c.intel` when a
- * foe's spell or ability lands on the hero, unchanged canon. A spell cast
- * ON a foe (the hero's, a Joiner's, a scroll's or an item's) rolls
- * `foeSpellResistRoll` below instead; the two functions are split so the
- * hero side cannot drift with the foe side. (History: FOE-07 once shared
- * this helper for both directions, the player's `castSpell` reading a FOE's
- * `intel` in magic.js.)
- * Homed here (D-07, relocated by D-17) because `engine/derived.js` is the
- * only cycle-free leaf module — `engine/magic.js` already imports from
- * `engine/combat.js`, and `engine/combat.js` will import
- * `engine/foeAbilities.js`, so a helper living in either `magic.js` or
- * `combat.js` would create an import cycle once both callers exist.
- *
- * Canon rule (p.25): a target with intel >= 12 gets a resistance check — a
- * single d20 that resists the effect on 22 − intel through 20 (`intel - 1`
- * winning faces, the top of the die). Below that threshold, NOTHING is
- * rolled at all — this early-out is the DETERMINISM GATE: callers are
- * expected to invoke this only when a resistible spell/ability is actually
- * firing, so the draw stays fully gated (e.g. the cast-damage parity
- * fixture's Shriek has intel 1, so it never enters the `rolled` branch and
- * consumes zero extra rng).
- *
- * Phase 73 (ROLL-05): the draw itself now goes through the ONE roll-high
- * check helper below (`rollCheck` on a d20, threshold `atLeastFor(intel - 1,
- * 20)`) — draws exactly the same single d20, in the same position, as the
- * old `rng.d(20)`; the mirrored `roll` (dieN + 1 − the raw draw) resists at
- * `roll >= atLeast`, which is `raw <= intel - 1`, i.e. `raw < intel` —
- * byte-identical to the old `roll < intel` reading for every possible draw.
- *
- * Returns `{ rolled, resisted, roll, atLeast, dieN }`: `rolled` is an
- * additive field beyond p.25's `{ resisted, roll }` so a caller can tell "no
- * roll happened" (intel < 12) apart from "rolled and failed to resist"
- * (`roll` would otherwise be indistinguishable from `undefined` in an
- * untyped caller); `atLeast`/`dieN` are the roll-high triple every
- * roll-carrying event now spreads (see engine/dice.js#rollFields). Pure
- * w.r.t. everything but the single gated rng.d(20) draw; never mutates its
- * arguments.
- */
-export function resistRoll(rng, intel) {
-  if ((intel ?? 0) < 12) return { rolled: false, resisted: false, roll: undefined };
-  const check = rollCheck(rng, 20, atLeastFor(intel - 1, 20));
-  return { rolled: true, resisted: check.ok, roll: check.roll, atLeast: check.atLeast, dieN: check.dieN };
-}
-
-/**
  * SPELL_SELF_KINDS — the spell kinds that never target a foe (the caster's
  * own body, its side, or the map): Summon, Shield/Bubble (ward), Strength
  * (might), Regenerate, Heal, Map the Floor (reveal), Foresee, Mirror Self
  * and Sense Presence (senses). User ruling 2026-09-27 (quick 260927-rsx):
  * every OTHER kind is a spell cast on an enemy, so every foe it targets
- * rolls `foeSpellResistRoll`; these kinds are never resisted.
+ * rolls `resistRoll` (through `foeSpellResistCheck`); these kinds are never
+ * resisted.
  */
 export const SPELL_SELF_KINDS = Object.freeze(new Set(["summon", "ward", "might", "regen", "heal", "reveal", "foresee", "mirror", "senses"]));
 
@@ -2274,31 +2228,44 @@ export function spellTargetsFoe(sp) {
 }
 
 /**
- * foeSpellResistFaces(intel) — user ruling 2026-09-27 (quick 260927-rsx,
- * "every spell cast on an enemy should have a chance to be resisted based
- * on their intelligence"; scale: half-intel): the winning faces a foe gets
- * on its d20 against a spell cast on it — `max(1, round(intel / 2))`, so
- * intel 1–2 resists on 1 face (5%), 3 on 2 (10%), 6 on 3 (15%), 10 on 5
- * (25%), 16 on 8 (40%). A missing or non-finite intel reads as 0 (1 face).
- * THE one number the foe card and the spell rows print, through
+ * resistFaces(intel) — THE one resist scale, both sides. User ruling
+ * 2026-09-27 (quick 260927-rsx, "every spell cast on an enemy should have a
+ * chance to be resisted based on their intelligence"; scale: half-intel) set
+ * it for a foe resisting a spell cast on it; user ruling 2026-09-28 (quick
+ * 260928-hrs, "Use the same half-intel scale for heroes now") put the hero on
+ * it too, when a foe's spell or ability lands on the hero. The winning faces
+ * on the resistor's d20 are `max(1, round(intel / 2))`: intel 1–2 resists on
+ * 1 face (5%), 3 on 2 (10%), 6 on 3 (15%), 10 on 5 (25%), 16 on 8 (40%), 18
+ * on 9 (45%), 20 on 10 (50%). There is no gate, so every resistor has at
+ * least 5%. A missing or non-finite intel reads as 0 (1 face). THE one
+ * number the foe card and the spell rows print, through
  * rollRange.js#facesRangeText. Pure, no rng.
  */
-export function foeSpellResistFaces(intel) {
+export function resistFaces(intel) {
   const i = Number.isFinite(intel) ? intel : 0;
   return Math.max(1, Math.round(i / 2));
 }
 
 /**
- * foeSpellResistRoll(rng, intel) — the ONE roll a foe makes against a spell
- * cast on it (user ruling 2026-09-27): one roll-high d20 through `rollCheck`,
- * `resisted = roll >= 21 - faces` (`atLeastFor(foeSpellResistFaces(intel),
- * 20)`). Unlike the hero-side `resistRoll` above (canon p.25, intel >= 12
- * only, kept for foe spells cast AT the hero), EVERY foe rolls — there is
- * no gate. Returns `{ rolled: true, resisted, roll, atLeast, dieN, faces }`.
- * Pure w.r.t. everything but the one draw.
+ * resistRoll(rng, intel) — the ONE resist roll, both sides (quick
+ * 260927-rsx for a foe, quick 260928-hrs for the hero): one roll-high d20
+ * through `rollCheck`, `resisted = roll >= 21 - faces`
+ * (`atLeastFor(resistFaces(intel), 20)`). Every resistor rolls; there is no
+ * gate (canon p.25's intel >= 12 gate and its `intel - 1` faces are
+ * retired). Draws exactly one d20 from whatever `rng` it is handed: the
+ * hero's resist (engine/foeAbilities.js#heroResist) hands it the MAIN rng,
+ * at the position canon's gated d20 always sat; a foe's resist hands it a
+ * derived stream (`foeSpellResistCheck` below). Returns `{ rolled: true,
+ * resisted, roll, atLeast, dieN, faces }` (`rolled` is always true now, kept
+ * so the shape still matches `controlResistRoll`'s). Pure w.r.t. everything
+ * but the one draw; never mutates its arguments.
+ *
+ * Homed here (D-07, relocated by D-17) because `engine/derived.js` is the
+ * only cycle-free leaf module: `engine/magic.js` imports from
+ * `engine/combat.js`, which imports `engine/foeAbilities.js`.
  */
-export function foeSpellResistRoll(rng, intel) {
-  const faces = foeSpellResistFaces(intel);
+export function resistRoll(rng, intel) {
+  const faces = resistFaces(intel);
   const check = rollCheck(rng, 20, atLeastFor(faces, 20));
   return { rolled: true, resisted: check.ok, roll: check.roll, atLeast: check.atLeast, dieN: check.dieN, faces };
 }
@@ -2306,7 +2273,7 @@ export function foeSpellResistRoll(rng, intel) {
 /**
  * foeSpellResistCheck(state, rng, source, idx, intel, caster = "you") — the
  * derived-stream wrapper `engine/combat.js#foeResistsSpell` calls for every
- * foe a spell targets. Draws `foeSpellResistRoll` from a FRESH keyed stream —
+ * foe a spell targets. Draws `resistRoll` from a FRESH keyed stream —
  * `derivedRng(<the main rng's cursor, or 0 for a test double with no
  * getState>, "spellResist", source, caster, <state.acts, or 0>, <the combat
  * round, or 0>, idx)`, the same idiom `controlResistCheck` below uses — never
@@ -2315,15 +2282,14 @@ export function foeSpellResistRoll(rng, intel) {
  * duration draws — can). A different `idx` (another foe) or `caster` (the
  * hero "you", or a Joiner's name — so a Joiner casting the hero's spell in
  * the same round never copies the hero's roll) draws independently; the
- * same key always yields the same result. Returns `foeSpellResistRoll`'s
- * shape.
+ * same key always yields the same result. Returns `resistRoll`'s shape.
  */
 export function foeSpellResistCheck(state, rng, source, idx, intel, caster = "you") {
   const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
   const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
   const round = state.combat && Number.isInteger(state.combat.round) ? state.combat.round : 0;
   const stream = derivedRng(cursor, "spellResist", source, caster, acts, round, idx);
-  return foeSpellResistRoll(stream, intel);
+  return resistRoll(stream, intel);
 }
 
 /**
@@ -2343,9 +2309,9 @@ export function foeWeakened(combat, f) {
  * `resisted = roll >= 21 - faces` (`atLeastFor(faces, 20)`). At `faces <= 0`
  * (at or below `CONTROL_AT_DEPTH.kneeDepth`, or the identity dial) this draws
  * NOTHING and returns `{ rolled: false, resisted: false, roll: undefined }` —
- * the same "no roll at all below the gate" shape `resistRoll` above uses for
- * `intel < 12`, so a caller can tell "no roll happened" apart from "rolled
- * and failed to resist". Otherwise `{ rolled: true, resisted, roll, atLeast,
+ * the "no roll at all below the gate" shape canon p.25's intel-12 resist
+ * once had (retired by quick 260928-hrs), so a caller can tell "no roll
+ * happened" apart from "rolled and failed to resist". Otherwise `{ rolled: true, resisted, roll, atLeast,
  * dieN }` — the SAME roll-high triple `rollFields` spreads. Pure w.r.t.
  * everything but the single gated draw; never mutates `rng`'s caller-visible
  * state beyond that one draw.
@@ -2406,9 +2372,9 @@ export function scrollReaderOf(c) {
  * "intel" reader, on a d20, roll-high (Phase 73, ROLL-05). `atLeast` is the
  * lowest winning face — `atLeastFor(intel - 1, 20)`, i.e. `22 - intel` —
  * exactly `intel - 1` winning faces, mirroring today's `roll < intel`
- * canon shape. There is NO intel-12 floor here — unlike `resistRoll` above
- * (a foe/ability resistance gate), low intel just means worse odds, all the
- * way down; a scroll reader with intel 1 practically never reads. A fumble
+ * canon shape. There is NO intel-12 floor here (canon p.25's resist gate,
+ * retired by quick 260928-hrs, never applied to reading); low intel just
+ * means worse odds, all the way down; a scroll reader with intel 1 practically never reads. A fumble
  * is any roll BELOW half the target: `fumbleAtLeast = Math.ceil(atLeast /
  * 2)` — a roll of EXACTLY half the target is a plain failure, never a
  * fumble (the user's own worked example: intel 14 reads 8-20, fails 4-7,

@@ -330,14 +330,16 @@ const plain = (html) => String(html ?? "").replace(/<[^>]+>/g, "").replace(/\s+/
 const DJINNI_DAZE = FOE_ABILITIES.find((a) => a.id === "djinniDaze");
 const KRUPKE_WEAKEN = FOE_ABILITIES.find((a) => a.id === "krupkeWeaken");
 
-/** A real debuff through the engine's own resolver (intel 5: no resist
- * roll), the rounds die scripted. */
+/** A real debuff through the engine's own resolver, the rounds die
+ * scripted. Quick 260928-hrs (user ruling 2026-09-28): every hero rolls a
+ * resist d20 first (intel 5: 18–20); a raw 20 mirrors to roll 1, which
+ * never resists. */
 function realDebuff(ability, roundsFace) {
   const state = strikeState({ c: { intel: 5 } });
   const foe = plainFoe({ name: ability === DJINNI_DAZE ? "Djinni" : "Krupke" });
   state.combat.foes = [foe];
   const events = [];
-  resolveFoeAbility(state, foe, ability, fakeRng([roundsFace]), events);
+  resolveFoeAbility(state, foe, ability, fakeRng([20, roundsFace]), events);
   const e = events.find((ev) => ev.type === "foeDebuffed");
   assert.ok(e, "expected a foeDebuffed event");
   return { state, e };

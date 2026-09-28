@@ -28,7 +28,7 @@ import url from "node:url";
 
 import { newRun } from "../../engine/engine.js";
 import { playerStrike, foeTurn, flee } from "../../engine/combat.js";
-import { gearCompareParts, strikeDie, conditionsOf, foeSpellResistFaces } from "../../engine/derived.js";
+import { gearCompareParts, strikeDie, conditionsOf, resistFaces } from "../../engine/derived.js";
 import { castSpell } from "../../engine/magic.js";
 
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
@@ -336,10 +336,10 @@ test("scroll reading range: the Gear tab SCROLLS row and the combat ITEMS SCROLL
 // User ruling 2026-09-27: every spell cast on a foe can be resisted, half its
 // intel in faces on a d20. The foe card, the combat SPELLS row and a real
 // cast's spellResisted/resistFailed event (Oracle and rail) must state the
-// SAME range, and it must be engine/derived.js#foeSpellResistFaces's.
-test("spell resist range: the foe card, the combat spell row and a real cast's resist event agree with foeSpellResistFaces for intel 1, 3, 10 and 16", () => {
+// SAME range, and it must be engine/derived.js#resistFaces's.
+test("spell resist range: the foe card, the combat spell row and a real cast's resist event agree with resistFaces for intel 1, 3, 10 and 16", () => {
   for (const intel of [1, 3, 10, 16]) {
-    const expected = rangeText(21 - foeSpellResistFaces(intel), 20);
+    const expected = rangeText(21 - resistFaces(intel), 20);
     const foe = plainFoe({ intel, wp: 999, maxWP: 999 });
     const state = fullHeroState(foe, { c: { cls: "Magic User", sub: "Wizard", level: 3, grimoire: ["Fireball"], spellsUsed: 0 } });
     const card = foeDetailsCard(0, state).lines.map((l) => l.text).join(" | ");
