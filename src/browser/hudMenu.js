@@ -14,11 +14,12 @@
 // C) in place of the shipped chip's "CENTRE" — the menu now opens from
 // every tab, so the row names what it centres.
 //
-// The four row ids ARE the routing: they are the four legacy chip ids
+// The first four row ids are the routing: they are the four legacy chip ids
 // (mw-chip-marks, mw-chip-centre, btn-camp, mw-gear-btn), kept so the
 // shell's existing listener lines (openMarksLegend, centerMap, openCampSheet,
 // openSettingsSheet) route unchanged — a rename here would silently
-// disconnect a handler.
+// disconnect a handler. The two Phase 79.3 rows carry their own ids
+// (mw-menu-report, mw-menu-notes) and handlers (79.3-05, 79.3-07).
 //
 // Phase 70 (POLISH-02/03): the ☰ glyph is also the account face's
 // signed-out look (D-03) — signed in, the button wears the initials avatar
@@ -33,24 +34,39 @@
 // combat and every other encounter, the Oracle, all five tabs and while
 // dead. Rows that cannot act in the current context are shown disabled
 // (dimmed, not hidden, no action) by hudMenuRowStates below; the shell's
-// syncHudMenuRows writes its answer onto the six row buttons.
+// syncHudMenuRows writes its answer onto the eight row buttons.
+//
+// Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and PATCH NOTES join
+// the dropdown after SETTINGS and before the split line. hudMenuRowStates
+// returns x8, and both new rows are always enabled — never disabled, for
+// any ctx, including a hostile one.
 //
 // Pure, DOM-free, timer-free, storage-free — same house shape as
 // src/browser/hudBands.js. Bridged onto the shell as
 // `{ next: hudMenuNext, rows: hudMenuRowStates }`.
 
 /**
- * HUD_MENU_ITEMS — the four menu rows, frozen, in the mock's own order:
- * MARKS, CENTRE MAP, MAKE CAMP, SETTINGS. Each row's `id` is the legacy chip
- * id the shell's existing listener already binds; `glyph` is the mock's
- * codepoint (written as a \u escape so the source file stays ASCII); `color`
- * and `size` (px) are the mock's own per-row glyph style.
+ * HUD_MENU_ITEMS — the six menu rows, frozen, in dropdown order: MARKS,
+ * CENTRE MAP, MAKE CAMP, SETTINGS, REPORT A BUG, PATCH NOTES. The first four
+ * rows' `id` is the legacy chip id the shell's existing listener already
+ * binds; the two Phase 79.3 rows (report, notes) carry their own ids
+ * (mw-menu-report, mw-menu-notes) and handlers (79.3-05, 79.3-07). `glyph`
+ * is the mock's codepoint (written as a literal character so the source
+ * stays readable); `color` and `size` (px) are the mock's own per-row glyph
+ * style.
+ *
+ * Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and PATCH NOTES sit
+ * after SETTINGS and before the split line that starts the quit rows. Both
+ * are always enabled (see hudMenuRowStates below) — never disabled, on any
+ * screen, dead or alive.
  */
 export const HUD_MENU_ITEMS = Object.freeze([
   Object.freeze({ key: "marks", id: "mw-chip-marks", label: "MARKS", glyph: "◈", color: "#e8c97a", size: 13 }),
   Object.freeze({ key: "centre", id: "mw-chip-centre", label: "CENTRE MAP", glyph: "⊕", color: "#8fb08a", size: 14 }),
   Object.freeze({ key: "camp", id: "btn-camp", label: "MAKE CAMP", glyph: "☾", color: "#b9a4ef", size: 16 }),
   Object.freeze({ key: "settings", id: "mw-gear-btn", label: "SETTINGS", glyph: "⚙", color: "#9a8f76", size: 15 }),
+  Object.freeze({ key: "report", id: "mw-menu-report", label: "REPORT A BUG", glyph: "✎", color: "#d9826b", size: 14 }),
+  Object.freeze({ key: "notes", id: "mw-menu-notes", label: "PATCH NOTES", glyph: "¶", color: "#8fb3c9", size: 15 }),
 ]);
 
 /**
@@ -165,13 +181,17 @@ export function abandonRowNext(armed, kind, ctx) {
 const QUIT_ROW_IDS = Object.freeze({ saveQuit: "mw-menu-save-quit", abandon: "mw-menu-abandon" });
 
 /**
- * hudMenuRowStates(ctx) -> frozen [{ key, id, enabled }] x6, in dropdown
- * order: MARKS, CENTRE MAP, MAKE CAMP, SETTINGS (HUD_MENU_ITEMS' ids), then
- * SAVE & QUIT and ABANDON / NEW CHARACTER (the 70-03 quit-row ids).
+ * hudMenuRowStates(ctx) -> frozen [{ key, id, enabled }] x8, in dropdown
+ * order: MARKS, CENTRE MAP, MAKE CAMP, SETTINGS, REPORT A BUG, PATCH NOTES
+ * (HUD_MENU_ITEMS' ids), then SAVE & QUIT and ABANDON / NEW CHARACTER (the
+ * 70-03 quit-row ids).
  *
  * ctx is { encounter, dead, hero } (D-08, planner ruling R-A):
  *   - SETTINGS, SAVE & QUIT and ABANDON are always enabled — the way back
  *     to the title never closes, dead or alive (HUD-02's no-trap rule);
+ *   - REPORT A BUG and PATCH NOTES are always enabled (Phase 79.3 BUG-01
+ *     D-08, NOTES-02 D-20) — on every screen, dead or alive, hostile ctx
+ *     included; hudMenuRowStates must never disable them;
  *   - MARKS is disabled while the hero is dead (ctx.dead strictly true).
  *     Phase 78 (HUD-02, the user's words: "once the hero is dead ... camp,
  *     marks and centre-map are inert");
@@ -195,6 +215,8 @@ export function hudMenuRowStates(ctx) {
     centre: !encounter && !dead,
     camp: hero && !dead && !encounter,
     settings: true,
+    report: true,
+    notes: true,
     saveQuit: true,
     abandon: true,
   };
