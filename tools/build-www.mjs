@@ -36,6 +36,13 @@
 //      loop) with "<versionName> (<versionCode>)". Throws if either
 //      property or the placeholder itself is missing, so a stale/renamed
 //      element can never silently ship an unstamped "dev" string.
+//   6. Phase 79.3 (NOTES-01/02, D-19): bundle the current versionName's
+//      patch notes into www/src/browser/patchNotesData.js
+//      (bundlePatchNotes(), via tools/lib/patch-notes.mjs#readNotesFor /
+//      #notesModuleSource), overwriting the dev-loop copy copySourceDirs()
+//      just copied in. Fails the build when the current versionName has no
+//      docs/patch-notes/<versionName>.md file — the release-gate hook a
+//      Play build can never skip.
 //
 // Run: node tools/build-www.mjs  (also wired as `npm run build:www`)
 
@@ -51,6 +58,8 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { readNotesFor, notesModuleSource, DATA_MODULE_PATH } from "./lib/patch-notes.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -99,6 +108,20 @@ function copySourceDirs() {
     cpSync(src, path.join(WWW, dir), { recursive: true });
   }
   step("copied engine/, content/, src/ into www/");
+}
+
+// Phase 79.3 (NOTES-01/02, D-19): bundle the current versionName's patch
+// notes into www/src/browser/patchNotesData.js, overwriting the dev-loop
+// copy copySourceDirs() just copied verbatim. readNotesFor() throws when
+// docs/patch-notes/<versionName>.md is missing or malformed, which fails
+// this build (and therefore `npm run play:release`) outright — a Play
+// release can never ship without its own patch notes.
+function bundlePatchNotes() {
+  const { versionName } = readVersionProperties();
+  const md = readNotesFor(versionName, ROOT);
+  const dest = path.join(WWW, ...DATA_MODULE_PATH.split("/"));
+  writeFileSync(dest, notesModuleSource(versionName, md), "utf8");
+  step(`bundled patch notes ${versionName} into www/${DATA_MODULE_PATH}`);
 }
 
 // 02-04: self-hosted fonts (offline correctness — a paid, fully-offline app
@@ -317,6 +340,7 @@ function writeIndexHtml(importMap) {
 function main() {
   cleanWww();
   copySourceDirs();
+  bundlePatchNotes();
   copyFonts();
   copyIcons();
   copySplash();

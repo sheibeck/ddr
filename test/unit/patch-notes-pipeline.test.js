@@ -326,3 +326,44 @@ test("NOTES_CATEGORIES is the fixed 8-category order with Headline first", () =>
     "Bug fixes",
   ]);
 });
+
+// ─── build-www source-scan (Task 3, D-19) ──────────────────────────────────
+// Following test/unit/sfx-assets.test.js's copySfx() pattern: pins the
+// bundlePatchNotes() wiring by source scan rather than by actually running
+// the build (the full build:www + boot:check run is the gate step below).
+
+test("build-www: defines bundlePatchNotes(), whose body calls readNotesFor( and notesModuleSource(", () => {
+  const code = fs.readFileSync(BUILD_WWW_PATH, "utf8");
+  assert.match(code, /function bundlePatchNotes\s*\(/, "expected a function bundlePatchNotes( definition");
+  const fnStart = code.indexOf("function bundlePatchNotes(");
+  const nextFnStart = code.indexOf("\nfunction ", fnStart + 1);
+  const fnBody = nextFnStart === -1 ? code.slice(fnStart) : code.slice(fnStart, nextFnStart);
+  assert.match(fnBody, /readNotesFor\(/, "expected bundlePatchNotes() to call readNotesFor(");
+  assert.match(fnBody, /notesModuleSource\(/, "expected bundlePatchNotes() to call notesModuleSource(");
+});
+
+test("build-www: bundlePatchNotes(); is called after copySourceDirs(); and before writeIndexHtml(", () => {
+  const code = fs.readFileSync(BUILD_WWW_PATH, "utf8");
+  const copySourceIdx = code.indexOf("copySourceDirs();");
+  const bundleIdx = code.indexOf("bundlePatchNotes();");
+  const writeIndexCallIdx = code.indexOf("writeIndexHtml(importMap);");
+  assert.ok(copySourceIdx !== -1 && bundleIdx !== -1 && writeIndexCallIdx !== -1);
+  assert.ok(bundleIdx > copySourceIdx, "expected bundlePatchNotes(); to be called after copySourceDirs();");
+  assert.ok(bundleIdx < writeIndexCallIdx, "expected bundlePatchNotes(); to be called before the writeIndexHtml(importMap); call");
+});
+
+test("build-www: the CAPACITOR_PACKAGES literal is untouched (still includes @capacitor/core)", () => {
+  const code = fs.readFileSync(BUILD_WWW_PATH, "utf8");
+  assert.match(code, /"@capacitor\/core"/);
+});
+
+// ─── RELEASING.md step (Task 3, D-22) ──────────────────────────────────────
+
+test("RELEASING.md: carries the patch-notes step (docs/patch-notes/, --check, --play, --release-body, gh release create)", () => {
+  const doc = fs.readFileSync(RELEASING_PATH, "utf8");
+  assert.match(doc, /docs\/patch-notes\//);
+  assert.match(doc, /node tools\/patch-notes\.mjs --check/);
+  assert.match(doc, /node tools\/patch-notes\.mjs --play/);
+  assert.match(doc, /node tools\/patch-notes\.mjs --release-body/);
+  assert.match(doc, /gh release create/);
+});
