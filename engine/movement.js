@@ -394,6 +394,12 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
         // Phase 54 (USER RULING D): hazardScale — post-draw arithmetic, 0
         // new draws; the global HAZARD_SCALE dial, literal 1 at identity.
         hurt = scaleHazard(hurt, difficultyCurve(state.floor.depth));
+        // DELIBERATE RULES CHANGE (user ruling 2026-09-28, "Always hurt
+        // (min 1)"): a failed climb or leap ALWAYS costs at least 1 HP after
+        // scaling. A first-segment climb fail whose d20 came up <= 2 used to
+        // hurt 0 ("−0 hp"). Post-draw arithmetic only: the same rolls, in the
+        // same order, as before.
+        hurt = Math.max(1, hurt);
         state.c.wp -= hurt;
         events.push({
           type: climbing ? "fellClimbing" : "fellInGorge",

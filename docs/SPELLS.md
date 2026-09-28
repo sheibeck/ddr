@@ -1191,3 +1191,35 @@ roll. A foe casting at the HERO still uses canon p.25 (`resistRoll`, intel
 12+). Every roll, either way, is an Oracle line. The foe card and each
 foe-targeted spell row state the range. See docs/ROLL-LEDGER.md for the site,
 the stream and the draw order.
+
+## Freeze deals its damage, then freezes 1d4 rounds (user rulings 2026-09-28)
+
+The user ruled: "freeze should never kill outright. It should deal its damage
+and freeze an enemy for 1d4 rounds." Then: "if it hits and resists, deal
+damage, but no freeze." Folded into plan 79.2-01, before its START
+measurement.
+
+- **A hit deals its damage** (d6 × the level multiplier), as before. If that
+  kills the foe, it is a normal kill: no frozen-solid, at any depth.
+- **A survivor is frozen for 1d4 rounds** (it skips that many turns, and it
+  is easier to hit meanwhile), then it thaws. The d4 is drawn right after the
+  damage.
+- **Resists.** The foe's intel resist (2026-09-27) is rolled after the damage,
+  never before the throw, and a resist stops only the freeze: the damage
+  stays. Past floor 12 the RULES-18 control resist also applies to the
+  freeze. A miss rolls no resist.
+- **Everywhere Freeze is cast**: the hero, a scroll's free cast, a Joiner's
+  cast (`combat.js#allyCast`) and the Birch Staff's freeze power
+  (`items.js`, no to-hit and no damage: each foe it reaches rolls its resists
+  and is frozen for its own d4). One shared tail, `combat.js#freezeFoe`;
+  the hold die is `FREEZE_HOLD_DIE` (4).
+- **The bot** (`tools/lib/tuning-bot.mjs#chooseSpell`) scores Freeze in the
+  DISABLE tier (Stun's score) at every depth; its old KILL tier below the
+  knee is gone with the rule.
+- **Text.** Freeze's `txt` is quick 260928-tsx's ("…for d6 damage; unless it
+  resists, a survivor is frozen for d4 rounds…"). The Birch Staff's now
+  reads "freezes up to 2 squares of opponents for d4 rounds apiece, unless
+  they resist; then they are just cold and angry".
+
+Row 4 of the table above ("frozen solid on a hit") and the Phase 75.3
+section's Freeze rows are history. See docs/ROLL-LEDGER.md for the draw order.

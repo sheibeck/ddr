@@ -376,28 +376,34 @@ test("held skip: a held foe's asleep count runs down alongside — asleep 5 read
 
 // --- C2: allyCast thrown Freeze (a Joiner's Freeze) -------------------------
 
-test("Joiner Freeze (C2): floor 20, a hit that leaves the foe standing and is not resisted holds it — no killFoe, no kill draws", () => {
+// User rulings 2026-09-28 (re-pinned, plan 79.2-01): "freeze should never
+// kill outright. It should deal its damage and freeze an enemy for 1d4
+// rounds" — at every depth. A survivor draws the hold's d4 right after the
+// damage (resisted or not), then the intel resist, then (past the knee) the
+// RULES-18 control resist; a Freeze kill is a normal kill.
+test("Joiner Freeze (C2): floor 20, a hit that leaves the foe standing and is not resisted holds it for the rolled d4 — no killFoe, no kill draws", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })], floor: { depth: 20 } });
   state.acts = forceControlResist("freeze:Freeze", 0, 20, 1, 0, false);
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
-  // check roll (d10, raw 5 -> mirrored 6, hits need 6 with school+3), dmg (d6, raw 4).
-  const events = alliesTurn(state, fakeRng([5, 4]), []);
+  // check roll (d10, raw 5 -> mirrored 6, hits need 6 with school+3), dmg (d6, raw 4), hold d4 (3).
+  const events = alliesTurn(state, fakeRng([5, 4, 3]), []);
   assert.equal(foe.alive, true);
   assert.deepEqual(foe.held, { kind: "frozen", left: 3 });
   assert.equal(events.some((e) => e.type === "foeKilled"), false);
   const hit = events.find((e) => e.type === "allySpellHit");
   assert.equal(hit.effect, "damage");
-  assert.ok(events.some((e) => e.type === "controlHeld"));
+  assert.ok(events.some((e) => e.type === "controlHeld" && e.freeze === true && e.rounds === 3));
 });
 
-test("Joiner Freeze (C2): floor 20, a resisted hit leaves the foe standing, damaged, with no hold", () => {
+test("Joiner Freeze (C2): floor 20, a resisted hit leaves the foe standing, damaged, with no hold (the d4 is drawn either way)", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })], floor: { depth: 20 } });
   state.acts = forceControlResist("freeze:Freeze", 0, 20, 1, 0, true);
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
-  const events = alliesTurn(state, fakeRng([5, 4]), []);
+  const events = alliesTurn(state, fakeRng([5, 4, 3]), []);
   assert.equal(foe.alive, true);
+  assert.equal(foe.wp, 26, "the damage landed");
   assert.equal("held" in foe, false);
   assert.equal(foe.resisted, "freeze");
   assert.ok(events.some((e) => e.type === "controlResisted"));
@@ -405,7 +411,7 @@ test("Joiner Freeze (C2): floor 20, a resisted hit leaves the foe standing, dama
   assert.equal(hit.effect, "damage");
 });
 
-test("Joiner Freeze (C2): a hit that drops the foe to 0 hp kills it exactly as today, on floor 20 and floor 12 alike", () => {
+test("Joiner Freeze (C2): a hit that drops the foe to 0 hp is a normal kill (no frozen-solid), on floor 20 and floor 12 alike", () => {
   for (const depth of [12, 20]) {
     const foe = fixedFoe({ type: "Humans", wp: 3, maxWP: 30, intel: 1 });
     const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })], floor: { depth } });
@@ -413,19 +419,23 @@ test("Joiner Freeze (C2): a hit that drops the foe to 0 hp kills it exactly as t
     const events = alliesTurn(state, fakeRng([5, 4, 4, 1, 20]), []);
     assert.equal(foe.alive, false, `depth ${depth}`);
     const hit = events.find((e) => e.type === "allySpellHit");
-    assert.equal(hit.effect, "frozen", `depth ${depth}`);
+    assert.equal(hit.effect, "damage", `depth ${depth}`);
+    assert.equal("frozen" in foe, false, `depth ${depth}`);
     assert.ok(events.some((e) => e.type === "foeKilled"), `depth ${depth}`);
+    assert.equal(events.some((e) => e.type === "frozenSolid" || e.type === "controlHeld"), false, `depth ${depth}`);
   }
 });
 
-test("Joiner Freeze (C2): floor 12, a standing hit is frozen-solid killed exactly as today (no resist roll, no hold)", () => {
+test("Joiner Freeze (C2): floor 12, a standing hit is frozen for its d4 and survives (no control resist roll at the knee, no kill)", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })], floor: { depth: 12 } });
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
-  const events = alliesTurn(state, fakeRng([5, 4, ...PAD(10)]), []);
-  assert.equal(foe.alive, false);
-  assert.equal("held" in foe, false);
-  assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false);
+  const events = alliesTurn(state, fakeRng([5, 4, 2, ...PAD(10)]), []);
+  assert.equal(foe.alive, true);
+  assert.deepEqual(foe.held, { kind: "frozen", left: 2 });
+  assert.equal(events.some((e) => e.type === "controlResisted"), false);
+  assert.ok(events.some((e) => e.type === "controlHeld" && e.freeze === true && e.rounds === 2));
+  assert.equal(events.some((e) => e.type === "foeKilled" || e.type === "frozenSolid"), false);
 });
 
 // --- C9: allyCast status/stun (Doze/Stun) and weaken (a Joiner's) ----------

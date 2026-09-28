@@ -1000,3 +1000,53 @@ now describe the HERO resisting a foe's spell or ability
 (`engine/foeAbilities.js#heroResist` → `resistRoll`, intel >= 12, canon). The
 foe side reads the separate function above, so neither can drift with the
 other.
+
+## User rulings 2026-09-28: Freeze deals its damage, then freezes 1d4 rounds (plan 79.2-01)
+
+The user ruled: "freeze should never kill outright. It should deal its damage
+and freeze an enemy for 1d4 rounds." and "if it hits and resists, deal damage,
+but no freeze." Every Freeze (the hero's cast, a scroll's free cast, a
+Joiner's `allyCast`, and the Birch Staff's freeze power) now resolves through
+`engine/combat.js#freezeFoe`, in this order:
+
+1. **To-hit**, as before (d10, six winning faces plus the school and throw
+   bonuses). The staff has no to-hit.
+2. **Damage** on a hit, as before (d6 × the level multiplier, through
+   `damageFoe`). The staff has no damage. A blow that drops the foe to 0 hp is
+   a normal kill (`killFoe`, no `frozenSolid`), and nothing below is drawn.
+3. **The hold's d4** — ONE NEW main-rng draw, `rng.d(FREEZE_HOLD_DIE)`
+   (`FREEZE_HOLD_DIE = 4`, exported from `engine/combat.js`, tagged
+   `// roll:amount`). It is taken right after the damage, whenever the hit
+   foe survives, resisted or not (the RULES-18 main-draw parity: a resisted
+   and a landed Freeze take the same main draws, like Doze's d4). The staff
+   draws one per foe it reaches.
+4. **The intel resist** (`[resist:foe-intel]`, `foeResistsSpell`, the
+   2026-09-27 derived stream). For Freeze it is no longer rolled before the
+   throw: it comes after the damage and the d4, so its stream key reads the
+   main cursor at that point. A resist stops only the freeze; the damage
+   already landed. The event carries `freeze: true` when the hit did damage,
+   and the line reads "<foe> resists the freeze: the damage lands, the ice
+   doesn't." A miss rolls no resist at all.
+5. **The control resist** past the knee (`[resist:depth]`, `resistControl`),
+   unchanged: shaken off means no freeze.
+6. **Frozen** — `holdFoe(..., { rounds })`: `foe.held = { kind: "frozen",
+   left: <the d4> }` at EVERY depth (it was `controlHoldRoundsFor(depth)`,
+   past the knee only), and `controlHeld` carries `freeze: true` (plus `dmg`
+   on a spell hit). The foe skips that many of its own visits
+   (`foeStillHeld`), then thaws (`foeHoldBroken`).
+
+**Retired.** The frozen-solid kill at or below the knee (the Phase 23
+`killFoe` route, audit rows C1 and C2) and the staff's `asleep = 99` (row C4)
+are gone. `frozenSolid` stays: Ice's last tick (C3) still emits it.
+
+**Draw count.** A hit that leaves the foe standing now takes to-hit, damage
+and the d4 (3 main draws, was 2 past the knee); a Freeze kill takes to-hit,
+damage and killFoe's reward draws, as before. The Birch Staff takes one d4
+per foe it reaches (was none). `engine/combat.js`'s tagged amount-draw count
+rises by one (`test/unit/roll-high-guard.test.js#DRAW_INVENTORY`). The
+per-file count table above is the Phase 72 snapshot at `9197002` and is not
+re-stated.
+
+The 2026-09-27 section above still holds for every other spell: a resist
+means no effect, and a resisting foe takes none of the draws that were only
+for it.

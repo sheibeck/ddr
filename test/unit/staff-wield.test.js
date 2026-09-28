@@ -320,10 +320,12 @@ test("useItem({slot:'weapon'}): a wielded Birch Staff freezes foes and spends it
     c: { weapon: "Birch Staff", staff, items: [] },
     combat: fixedCombat([fixedFoe(), fixedFoe()]),
   });
-  const events = useItem(state, { slot: "weapon" }, fakeRng([]), []);
+  // User rulings 2026-09-28 (re-pinned): the freeze is a frozen hold for a
+  // rolled d4 per foe it reaches (here 3 and 3), never asleep 99.
+  const events = useItem(state, { slot: "weapon" }, fakeRng([3, 3]), []);
   assert.equal(staff.charges, 1);
   assert.ok(events.some((e) => e.type === "itemUsed"));
-  assert.ok(state.combat.foes[0].asleep >= 99);
+  assert.deepEqual(state.combat.foes[0].held, { kind: "frozen", left: 3 });
 });
 
 test("useItem({slot:'weapon'}): with no staff wielded, a silent no-op", () => {
@@ -444,7 +446,8 @@ test("useItem({slot:'weapon'}): the WIELDED staff (not addressed by bag index) s
     c: { weapon: "Birch Staff", staff, items: [] },
     combat: fixedCombat([fixedFoe(), fixedFoe()]),
   });
-  const events = useItem(state, { slot: "weapon" }, fakeRng([]), []);
+  // User rulings 2026-09-28: one d4 per foe the freeze reaches (two foes).
+  const events = useItem(state, { slot: "weapon" }, fakeRng([3, 3]), []);
   assert.equal(staff.charges, 1);
   assert.ok(events.some((e) => e.type === "itemUsed"));
   assert.ok(!events.some((e) => e.type === "useRefused"));

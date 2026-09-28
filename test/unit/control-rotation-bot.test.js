@@ -74,9 +74,15 @@ test("ROTATION off by default: chooseSpell returns the same pick with controlRot
   const ctxOff = makeBotContext({ controlRotation: false });
   const ctxOmitted = makeBotContext();
 
-  const killState = mkState(mu({ grimoire: ["Freeze"] }), fight(1));
+  // User rulings 2026-09-28 (re-pinned): Freeze never kills outright any
+  // more, so the KILL-tier example is a Wizard's Plane Gate against Demons
+  // (402); a lone Freeze is a DISABLE (230 offensive) at every depth.
+  const killState = mkState(mu({ sub: "Wizard", grimoire: ["Plane Gate"] }), fight(1, { type: "Demons" }));
   assert.deepStrictEqual(chooseSpell(killState, ctxOff), chooseSpell(killState, ctxOmitted));
-  assert.deepStrictEqual(chooseSpell(killState, ctxOmitted), { idx: idx("Freeze"), tier: "kill", score: 410 });
+  assert.deepStrictEqual(chooseSpell(killState, ctxOmitted), { idx: idx("Plane Gate"), tier: "kill", score: 402 });
+  const freezeState = mkState(mu({ grimoire: ["Freeze"] }), fight(1));
+  assert.deepStrictEqual(chooseSpell(freezeState, ctxOff), chooseSpell(freezeState, ctxOmitted));
+  assert.deepStrictEqual(chooseSpell(freezeState, ctxOmitted), { idx: idx("Freeze"), tier: "disable", score: 230 });
 
   const damageState = mkState(mu({ grimoire: ["Fireball"] }), fight(1));
   assert.deepStrictEqual(chooseSpell(damageState, ctxOff), chooseSpell(damageState, ctxOmitted));
@@ -166,30 +172,33 @@ function atDepth(state, depth) {
   return { ...state, floor: { depth } };
 }
 
-test("RULES-18 default bot: Freeze + Fireball vs one foe picks Freeze (KILL 410) on floor 12 and Fireball on floor 20", () => {
+// User rulings 2026-09-28 (re-pinned, plan 79.2-01): a Freeze never kills
+// outright at any depth (its damage, then a d4 hold), so the default bot
+// scores it as a DISABLE on floor 12 exactly as on floor 20 — the bot plays
+// the new rule.
+test("default bot (user rulings 2026-09-28): Freeze + Fireball vs one foe picks Fireball (DAMAGE) on floor 12 and floor 20 alike — Freeze is no KILL", () => {
   withIdentity(SHIPPED_CONTROL, () => {
     const ctx = makeBotContext();
     const base = mkState(mu({ grimoire: ["Freeze", "Fireball"] }), fight(1));
-    assert.deepStrictEqual(chooseSpell(atDepth(base, 12), ctx), { idx: idx("Freeze"), tier: "kill", score: 410 });
-    const deep = chooseSpell(atDepth(base, 20), ctx);
-    assert.equal(deep.idx, idx("Fireball"));
-    assert.equal(deep.tier, "damage");
+    for (const depth of [12, 20]) {
+      const pick = chooseSpell(atDepth(base, depth), ctx);
+      assert.equal(pick.idx, idx("Fireball"), `depth ${depth}`);
+      assert.equal(pick.tier, "damage", `depth ${depth}`);
+    }
   });
 });
 
-test("RULES-18 default bot: past the knee a lone castable Freeze scores Stun's DISABLE (230 offensive, 450 defensive), even against one foe", () => {
+test("default bot (user rulings 2026-09-28): a lone castable Freeze scores Stun's DISABLE (230 offensive, 450 defensive) at every depth, even against one foe", () => {
   withIdentity(SHIPPED_CONTROL, () => {
     const ctx = makeBotContext();
-    const one = atDepth(mkState(mu({ grimoire: ["Freeze"] }), fight(1)), 20);
-    assert.deepStrictEqual(chooseSpell(one, ctx), { idx: idx("Freeze"), tier: "disable", score: 230 });
-    // Two foes and no castable KILL tier (Freeze no longer counts): defensive.
-    const two = atDepth(mkState(mu({ grimoire: ["Freeze"] }), fight(2)), 20);
-    assert.deepStrictEqual(chooseSpell(two, ctx), { idx: idx("Freeze"), tier: "disable", score: 450 });
-    assert.equal(ctx.lastSpellMode, "defensive");
-    // Floor 12: Freeze is still the castable KILL, so two foes stay offensive.
-    const twoShallow = atDepth(mkState(mu({ grimoire: ["Freeze"] }), fight(2)), 12);
-    assert.deepStrictEqual(chooseSpell(twoShallow, ctx), { idx: idx("Freeze"), tier: "kill", score: 410 });
-    assert.equal(ctx.lastSpellMode, "offensive");
+    for (const depth of [12, 20]) {
+      const one = atDepth(mkState(mu({ grimoire: ["Freeze"] }), fight(1)), depth);
+      assert.deepStrictEqual(chooseSpell(one, ctx), { idx: idx("Freeze"), tier: "disable", score: 230 }, `depth ${depth}`);
+      // Two foes and no castable KILL tier (Freeze never counts): defensive.
+      const two = atDepth(mkState(mu({ grimoire: ["Freeze"] }), fight(2)), depth);
+      assert.deepStrictEqual(chooseSpell(two, ctx), { idx: idx("Freeze"), tier: "disable", score: 450 }, `depth ${depth}`);
+      assert.equal(ctx.lastSpellMode, "defensive", `depth ${depth}`);
+    }
   });
 });
 

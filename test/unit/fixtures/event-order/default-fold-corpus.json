@@ -468,7 +468,7 @@
    ]
   },
   {
-   "name": "freeze-solid",
+   "name": "freeze-hold",
    "type": "castSpell",
    "narrate": false,
    "events": [
@@ -486,45 +486,57 @@
      "dmg": 5
     },
     {
-     "type": "frozenSolid",
-     "target": "Yeti"
+     "type": "resistFailed",
+     "target": "Yeti",
+     "spell": "Freeze",
+     "roll": 7,
+     "atLeast": 20,
+     "dieN": 20,
+     "intel": 1,
+     "faces": 1,
+     "freeze": true
     },
     {
-     "type": "foeKilled",
+     "type": "controlHeld",
+     "target": "Yeti",
+     "kind": "frozen",
+     "rounds": 3,
+     "source": "Freeze",
+     "freeze": true,
+     "dmg": 5
+    },
+    {
+     "type": "foeStillHeld",
      "name": "Yeti",
-     "spGained": 8
-    },
-    {
-     "type": "goldGained",
-     "amount": 4,
-     "why": "loot"
+     "kind": "frozen",
+     "left": 2
     }
    ],
    "lines": [
     {
-     "text": "Freeze — Yeti frozen solid",
+     "text": "Freeze hits Yeti (5), frozen for 3 rounds",
      "tone": "magic",
      "priority": 1
     },
     {
-     "text": "+4 wilmst",
-     "tone": "hit",
-     "priority": 3
+     "text": "Yeti still held (2).",
+     "tone": "dodge",
+     "priority": 2
     }
    ],
    "linesIdx": [
     {
-     "text": "Freeze — Yeti frozen solid",
+     "text": "Freeze hits Yeti (5), frozen for 3 rounds",
      "tone": "magic",
      "priority": 1,
      "idx": 0
     },
     {
-     "text": "+4 wilmst",
-     "tone": "hit",
-     "priority": 3,
+     "text": "Yeti still held (2).",
+     "tone": "dodge",
+     "priority": 2,
      "idx": 4,
-     "type": "goldGained"
+     "type": "foeStillHeld"
     }
    ]
   },

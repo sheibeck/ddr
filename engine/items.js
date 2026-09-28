@@ -50,7 +50,7 @@ import { derivedRng } from "./rng.js";
 // bookkeeping for stone/fire since killFoe didn't exist yet); now that
 // combat.js owns the real killFoe, useItem calls it for full parity (loot,
 // skill points, checkLevel) instead of the old bookkeeping-only stand-in.
-import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe, foeResistsSpell, roomWeakenResists } from "./combat.js";
+import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe } from "./combat.js";
 // RULES-18 (Phase 75.3): the control-at-depth dials the freeze / gas / stone /
 // weaken cases below read (difficulty.js imports nothing from engine/).
 import { controlHoldRoundsFor, controlCapRounds } from "./difficulty.js";
@@ -1671,11 +1671,15 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // Quick 260927-rsx (user ruling 2026-09-27): a staff's freeze is a
       // spell cast on each foe it reaches, so each first rolls its intel
       // resist (foeResistsSpell), then the depth resist above.
-      const freezeRounds = controlCapRounds(state.floor?.depth, 99);
+      // User rulings 2026-09-28 (Freeze): the staff's freeze follows the
+      // Freeze spell — it never locks a foe "indefinitely" (asleep 99) any
+      // more. Each foe it reaches goes through combat.js#freezeFoe: a new d4
+      // (its rounds, drawn for every foe reached, resisted or not), the intel
+      // resist, the RULES-18 control resist past the knee, then a frozen hold
+      // for the d4's rounds. The staff has no to-hit and no damage of its
+      // own, so a resist means no effect.
       foes.slice(0, it.aoe ?? 2).forEach((f) => {
-        if (foeResistsSpell(state, f, it.n, rng, events)) return;
-        if (resistControl(state, f, "freeze", it.n, combat.foes.indexOf(f), rng, events)) return;
-        f.asleep = freezeRounds;
+        freezeFoe(state, f, it.n, rng, events);
       });
       break;
     }

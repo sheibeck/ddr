@@ -297,6 +297,50 @@ test("move: a failed climb hurts the character AND still crosses (one and done) 
   assert.ok(events.some((e) => e.type === "moved"), "the clean-step tail still runs (cost/position/reveal/cadence)");
 });
 
+// DELIBERATE RULES CHANGE (user ruling 2026-09-28, "Always hurt (min 1)"):
+// a failed climb whose fall checks (d20 > 2) all miss used to hurt 0 and
+// print "−0 hp". It now costs at least 1 HP, with the same draws.
+test("move: a failed climb whose every segment d20 is <= 2 still hurts 1 (user ruling 2026-09-28), with the same draws", () => {
+  // First-segment fail: feet = 10*(1+d(2)=1) = 20; rung d(10)=9 fails; g=0 d(20)=2 -> no dice.
+  const s1 = fixedState();
+  open(s1.floor.g, 5, 4, { feat: "climb" });
+  const ev1 = moveAndCommit(s1, "N", fakeRng([1, 9, 2]), []);
+  assert.equal(s1.c.wp, 54, "took the 1 HP floor");
+  const fell1 = ev1.find((e) => e.type === "fellClimbing");
+  assert.ok(fell1 && fell1.hurt === 1, JSON.stringify(fell1));
+  assert.ok(ev1.some((e) => e.type === "draggedOver"), "a survived fall still crosses");
+
+  // Second-segment fail: feet = 10*(1+d(2)=2) = 30; rung 1 d(10)=5 clears,
+  // rung 2 d(10)=9 fails; g=0 d(20)=1, g=10 d(20)=2 -> no dice on either.
+  const s2 = fixedState();
+  open(s2.floor.g, 5, 4, { feat: "climb" });
+  const ev2 = moveAndCommit(s2, "N", fakeRng([2, 5, 9, 1, 2]), []);
+  assert.equal(s2.c.wp, 54);
+  assert.ok(ev2.some((e) => e.type === "fellClimbing" && e.hurt >= 1));
+
+  // A 1-HP hero dies of the minimum fall, as any fatal fall does.
+  const s3 = fixedState({ c: { wp: 1 } });
+  open(s3.floor.g, 5, 4, { feat: "climb" });
+  const ev3 = moveAndCommit(s3, "N", fakeRng([1, 9, 2]), []);
+  assert.equal(s3.dead, true);
+  assert.ok(ev3.some((e) => e.type === "died" && e.cause === "fall"));
+});
+
+test("move: a failed leap always hurts at least 1 (user ruling 2026-09-28): the smallest 2d6 at the lowest hazard scale still costs HP", () => {
+  const restore = setDials({ HAZARD_SCALE: { base: 0.3, perDepth: 0 } });
+  try {
+    const state = fixedState();
+    open(state.floor.g, 5, 4, { feat: "gorge" });
+    // LEAP_TABLE[0]; d(10)=11 fails; fall = d6(1) + d6(1) = 2, scaled x0.3.
+    const events = moveAndCommit(state, "N", fakeRng([1, 11, 1, 1]), []);
+    const fell = events.find((e) => e.type === "fellInGorge");
+    assert.ok(fell && fell.hurt >= 1, JSON.stringify(fell));
+    assert.equal(state.c.wp, 55 - fell.hurt);
+  } finally {
+    restore();
+  }
+});
+
 test("move: a fatal climb fall kills the character via die('fall')", () => {
   const state = fixedState({ c: { wp: 3 } });
   open(state.floor.g, 5, 4, { feat: "climb" });

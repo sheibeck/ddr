@@ -170,6 +170,9 @@ const PHASE_79_TOGGLES = [
   { g: 25 }, { key: "sidestep" }, { weapon: "Dagger" }, { source: "Freeze" }, { toHit: -2 },
   { round: 2 }, { fumbleAtLeast: 4 }, { via: "kata" }, { ability: "Kata" }, { foe: "Viper" }, { race: "Troll" },
   { txt: "a line of item text" }, { effect: "summon", spell: "Summon" },
+  // User rulings 2026-09-28: a Freeze's post-damage resist and its d4 hold
+  // (scoped, so no other type's line list moves).
+  { only: ["spellResisted", "controlHeld"], freeze: true }, { only: ["controlHeld"], freeze: true, rounds: 1 },
   // encounterRolled's own table cell: the Table 4 rows print their cell
   // verbatim at the base ("The dice decide — -15 HP."). Scoped (`only`): on
   // any other type the cell would land in an unrelated `result` field.

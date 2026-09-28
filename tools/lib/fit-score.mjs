@@ -8,51 +8,132 @@
 // fit-score.test.js) without spinning up the bot or the worker-thread
 // machinery at all.
 //
-// `scoreSurvival` reads its `survival` argument's OWN `targetS`/`pL` fields
-// (already computed by tools/lib/band-readout.mjs#survivalReadout against
-// TARGET_SURVIVAL) for floors that WERE reached; for a floor beyond the
-// run's own reach (never in `survival.floors` at all), this module carries
-// its OWN small local copy of the Ruling C target S_L curve (floors 1-25,
-// transcribed verbatim from 54-CONTEXT.md's `## USER RULING C` table) so a
-// "never reached" floor can still be scored (S_L = 0) against its target —
-// this is the ONLY reason this file holds a copy of that data rather than
-// importing it from band-readout.mjs (which would pull the whole engine in
-// through tools/lib/tuning-bot.mjs).
+// `scoreSurvival` reads its `survival` argument's OWN `SL`/`pL` fields
+// (already computed by tools/lib/band-readout.mjs#survivalReadout) and
+// scores them against this module's OWN engine-free copy of the Phase 79.2
+// target (EARLY_TARGET_S, floors 1-12 — user ruling 2026-09-27: floor L is
+// USER RULING C's floor 2L, so the fair bot's p50 death depth lands at 3-4),
+// so a "never reached" floor can still be scored (S_L = 0) against its
+// target. This is the ONLY reason this file holds a copy of that data rather
+// than importing band-readout.mjs#TARGET_SURVIVAL (which would pull the
+// whole engine in through tools/lib/tuning-bot.mjs);
+// test/unit/early-floor-targets.test.js proves the two copies agree.
 //
 // TUNING FIT — not a gate; the fair bot's solo run is the objective; the
 // class smoke is run by 54-04 (BEFORE) and 54-07 (AFTER) only.
 
 /**
- * TARGET_S_1_25 — USER RULING C's per-floor cumulative survival target
- * (`S_L`, floors 1-25), transcribed verbatim from 54-CONTEXT.md. Index 0 is
- * floor 1. Only floors 1-12 ever enter `scoreSurvival`'s score/verdict;
- * floors 13-20 are the tail (dS only, informational); 21-25 are informational
- * only, never surfaced by this file's own exports (evalRow reports 1-20).
+ * EARLY_TARGET_S — the Phase 79.2 per-floor cumulative survival target
+ * (`S_L`, floors 1-12; index 0 is floor 1). User ruling 2026-09-27: the
+ * fair bot's fresh p50 death depth is 3-4 at 1,000 seeds. The rule: floor
+ * L's target is USER RULING C's target at floor 2L (Ruling C at twice the
+ * pace — every S_L is one of the user's own ruled digits). Supersedes USER
+ * RULING D's fair-bot 5-7 for floors 1-12. Floors 13+ carry no survival
+ * target: TAIL_TARGETS (tools/lib/tail-score.mjs) governs the tail. The
+ * engine-free copy of tools/lib/band-readout.mjs#TARGET_SURVIVAL's S_L
+ * column (test/unit/early-floor-targets.test.js ties them).
  */
-const TARGET_S_1_25 = [
-  98.8, 95.1, 88.6, 79.7, 69.2, 58.4, 48.0, 38.7, 30.8, 24.3, 19.1, 15.1, 11.9, 9.5, 7.6, 6.2, 5.0, 4.2, 3.5, 3.0, 2.5, 2.2, 1.9, 1.7, 1.5,
-];
+export const EARLY_TARGET_S = [95.1, 79.7, 58.4, 38.7, 24.3, 15.1, 9.5, 6.2, 4.2, 3.0, 2.2, 1.7];
+
+/**
+ * P50_DEATH_BAND — user ruling 2026-09-27 ("Lower the bot target"): the fair
+ * bot's p50 death depth (survivalReadout's `p50Death`, nearest-rank over
+ * completed runs) must land inside [3, 4], inclusive, for a PASS verdict.
+ */
+export const P50_DEATH_BAND = [3, 4];
+
+/**
+ * FILTER_SHAPE — Phase 79.2's "the Filter is variance-driven, not a flat
+ * wall" gate. Anchored on the user's Phase 54 words "that curve is not a
+ * curve, that's a wall", said of an 81 -> 55 drop in per-floor survival:
+ *   - a WALL is a single-floor cliff: p_(L-1) - p_L above `maxDrop` (20
+ *     points) on any floor in `floors` (1-5), with p_0 = 100;
+ *   - a FLAT Filter is p_1 - p_4 (`riseFloors`) under `minRise` (10 points):
+ *     the per-floor death rate must climb through the Filter.
+ * The Phase 79.2 target itself passes with room (largest drop 11.3 on floor
+ * 2, rise 28.8).
+ */
+export const FILTER_SHAPE = { floors: [1, 5], maxDrop: 20, riseFloors: [1, 4], minRise: 10 };
 
 /** REACH20_BAND — the pass band on the % of runs reaching floor 20 (a rate, tail-only, never part of the score/verdict). */
 export const REACH20_BAND = [3.0, 5.0];
 
 function targetSFor(L) {
-  return L >= 1 && L <= TARGET_S_1_25.length ? TARGET_S_1_25[L - 1] : null;
+  return L >= 1 && L <= EARLY_TARGET_S.length ? EARLY_TARGET_S[L - 1] : null;
+}
+
+function round1(x) {
+  return Math.round(x * 10) / 10;
+}
+
+/**
+ * filterShape(survival) — the FILTER_SHAPE gate over survival.floors' own
+ * `pL` values (floors 1-5, p_0 = 100). Returns `{ ok, maxDrop, maxDropFloor,
+ * rise, reasons }` (maxDrop and rise rounded to 1 dp; null when unmeasured).
+ * A missing or null p_L fails with "floor L unmeasured".
+ */
+export function filterShape(survival) {
+  const byL = new Map((survival?.floors || []).map((f) => [f.floor, f]));
+  const [lo, hi] = FILTER_SHAPE.floors;
+  const reasons = [];
+  let ok = true;
+  let maxDrop = null;
+  let maxDropFloor = null;
+  const pOf = (L) => {
+    const f = byL.get(L);
+    return f && typeof f.pL === "number" ? f.pL : null;
+  };
+  let prev = 100;
+  for (let L = lo; L <= hi; L++) {
+    const p = pOf(L);
+    if (p === null) {
+      ok = false;
+      reasons.push(`floor ${L} unmeasured`);
+      prev = null;
+      continue;
+    }
+    if (prev !== null) {
+      const drop = round1(prev - p);
+      if (maxDrop === null || drop > maxDrop) {
+        maxDrop = drop;
+        maxDropFloor = L;
+      }
+      if (drop > FILTER_SHAPE.maxDrop) {
+        ok = false;
+        reasons.push(`floor ${L} drops ${drop} points (> ${FILTER_SHAPE.maxDrop}): a wall`);
+      }
+    }
+    prev = p;
+  }
+  const [r1, r2] = FILTER_SHAPE.riseFloors;
+  const p1 = pOf(r1);
+  const p4 = pOf(r2);
+  const rise = p1 !== null && p4 !== null ? round1(p1 - p4) : null;
+  if (rise !== null && rise < FILTER_SHAPE.minRise) {
+    ok = false;
+    reasons.push(`floors ${r1}-${r2} rise ${rise} points (< ${FILTER_SHAPE.minRise}): flat`);
+  }
+  return { ok, maxDrop, maxDropFloor, rise, reasons };
 }
 
 /**
  * scoreSurvival(survival) — the fit's objective. `survival` is
  * tools/lib/band-readout.mjs#survivalReadout's own return shape (`{
  * startDepth, runs, stuck, reach20, floors: [{ floor, pL, SL, ... }] }`).
- * Returns `{ score, terms, tail, reach20, verdict, misses }`:
+ * Returns `{ score, terms, tail, reach20, verdict, misses, p50Death,
+ * p50InBand, shape }` (Phase 79.2 targets, user ruling 2026-09-27):
  *   - `score` = Σ_{L=1..10} ((S_L - T_L)/8)^2 + Σ_{L=11..12} ((S_L - T_L)/3)^2
  *     (floors 1-12 ONLY; a floor never reached by this run counts S_L = 0)
  *   - `terms` = one row per floor 1-12: { floor, SL, target, tolerance, term }
- *   - `tail` = one row per floor 13-20 (informational, dS only, never scored)
+ *   - `tail` = one row per floor 13-20 (informational, never scored; `target`
+ *     and `dS` are null — floors 13+ carry no survival target since Phase
+ *     79.2, TAIL_TARGETS governs the tail)
  *   - `reach20` = the run's own reach-20 rate (informational, never scored)
- *   - `verdict` = "PASS" when every floor 1-12 is within its tolerance band,
- *     else "MISS"
+ *   - `verdict` = "PASS" only when every floor 1-12 is within its tolerance
+ *     band AND `p50InBand` AND `shape.ok`, else "MISS"
  *   - `misses` = the floors (1-12) outside their tolerance band
+ *   - `p50Death` = survival.p50Death (or null); `p50InBand` = a number
+ *     inside P50_DEATH_BAND (inclusive); `shape` = filterShape(survival)
  */
 export function scoreSurvival(survival) {
   const floorsByL = new Map((survival?.floors || []).map((f) => [f.floor, f]));
@@ -75,15 +156,21 @@ export function scoreSurvival(survival) {
     const f = floorsByL.get(L);
     const SL = f && typeof f.SL === "number" ? f.SL : 0;
     const target = targetSFor(L);
-    tail.push({ floor: L, SL, target, dS: Math.round((SL - target) * 10) / 10 });
+    tail.push({ floor: L, SL, target, dS: target === null ? null : round1(SL - target) });
   }
+  const p50Death = typeof survival?.p50Death === "number" ? survival.p50Death : null;
+  const p50InBand = p50Death !== null && p50Death >= P50_DEATH_BAND[0] && p50Death <= P50_DEATH_BAND[1];
+  const shape = filterShape(survival);
   return {
     score: Math.round(score * 1e6) / 1e6,
     terms,
     tail,
     reach20: survival?.reach20 ?? 0,
-    verdict: misses.length === 0 ? "PASS" : "MISS",
+    verdict: misses.length === 0 && p50InBand && shape.ok ? "PASS" : "MISS",
     misses,
+    p50Death,
+    p50InBand,
+    shape,
   };
 }
 
@@ -209,17 +296,28 @@ export function classConstraints(classIdentity) {
  * now 9. A dial set (a --start file, an old fit log) that still names it
  * fails loudly: engine/difficulty.js#setDialsForTuning throws on an
  * unknown dial.
+ *
+ * Phase 79.2 (user ruling 2026-09-27; the coordinate order is the planner's
+ * call under 79.2-CONTEXT.md's discretion): the SAME 9 coordinates with the
+ * SAME Phase 54 steps and bounds, re-ordered for the early-floor retune.
+ * The foe-side base levers come first, because they act from floor 1 and
+ * weigh relatively most on the early floors (FOE_HIT_SCALE.base, then
+ * FOE_LEVEL.base). Hazards come next, for the Filter's bad-drop variance
+ * (HAZARD_SCALE.base). Then foe HP and encounter density, then the two hero
+ * dials, which carry the largest parity re-declaration. The two depth slopes
+ * (FOE_HIT_SCALE.perDepth, FOE_LEVEL.perDepth) go last, because they steepen
+ * the tail most and the tail already sits at its ruled limits.
  */
 export const SEARCH_PLAN = [
-  { path: ["FOE_LEVEL", "perDepth"], step: 0.03, lo: 0.12, hi: 0.3 },
-  { path: ["FOE_LEVEL", "base"], step: 0.15, lo: 0.3, hi: 1.0 },
-  { path: ["HERO_SP_SCALE"], step: 0.05, lo: 0.15, hi: 0.6 },
   { path: ["FOE_HIT_SCALE", "base"], step: 0.08, lo: 0.4, hi: 1.0 },
-  { path: ["FOE_HIT_SCALE", "perDepth"], step: 0.01, lo: 0, hi: 0.05 },
-  { path: ["FOE_HP_SCALE", "base"], step: 0.1, lo: 0.5, hi: 1.2 },
-  { path: ["HERO_HP_SCALE"], step: 0.15, lo: 1.0, hi: 1.8 },
+  { path: ["FOE_LEVEL", "base"], step: 0.15, lo: 0.3, hi: 1.0 },
   { path: ["HAZARD_SCALE", "base"], step: 0.1, lo: 0.3, hi: 1.0 },
+  { path: ["FOE_HP_SCALE", "base"], step: 0.1, lo: 0.5, hi: 1.2 },
   { path: ["ENCOUNTER_DOTS", "base"], step: 1, lo: 5, hi: 10 },
+  { path: ["HERO_HP_SCALE"], step: 0.15, lo: 1.0, hi: 1.8 },
+  { path: ["HERO_SP_SCALE"], step: 0.05, lo: 0.15, hi: 0.6 },
+  { path: ["FOE_HIT_SCALE", "perDepth"], step: 0.01, lo: 0, hi: 0.05 },
+  { path: ["FOE_LEVEL", "perDepth"], step: 0.03, lo: 0.12, hi: 0.3 },
 ];
 
 /**
@@ -322,7 +420,9 @@ export function applyStep(dials, coord, dir, stepScale = 1) {
  * return), elapsedMs, walkPass }`. A constraint-rejected candidate
  * (`constraints.ok === false`) is scored `Infinity` with its `verdict`
  * forced to "MISS" and a `reason` field joining `constraints.reasons` — the
- * REJECTED candidate rule from this plan's own truths.
+ * REJECTED candidate rule from this plan's own truths. Phase 79.2: floors
+ * with no target (13-20) carry `dS: null`; the row carries `p50Death`,
+ * `p50InBand` and `shape` from `scored`.
  */
 export function evalRow(n, dials, result) {
   const { survival, scored, classIdentity, constraints, pace, elapsedMs, walkPass = 1 } = result;
@@ -336,7 +436,7 @@ export function evalRow(n, dials, result) {
       L,
       pL: f && typeof f.pL === "number" ? f.pL : null,
       SL,
-      dS: Math.round((SL - target) * 10) / 10,
+      dS: target === null ? null : round1(SL - target),
       tail: L >= 13,
     });
   }
@@ -350,6 +450,9 @@ export function evalRow(n, dials, result) {
     score,
     verdict,
     misses: scored.misses,
+    p50Death: scored.p50Death ?? null,
+    p50InBand: scored.p50InBand ?? false,
+    shape: scored.shape ?? null,
     reach20: survival?.reach20 ?? 0,
     floors,
     classes: classIdentity,
@@ -362,7 +465,8 @@ export function evalRow(n, dials, result) {
 
 /**
  * formatEvalLine(row) — one STDOUT line per evaluation. Begins `#n score=`
- * (never any other prefix — the dry-run/search CLI's own guarantee).
+ * (never any other prefix — the dry-run/search CLI's own guarantee). Phase
+ * 79.2: carries `deathP50=`, `shape=` and the early floors S1-S4.
  */
 export function formatEvalLine(row) {
   const S = (L) => {
@@ -375,7 +479,9 @@ export function formatEvalLine(row) {
     return row2 && row2.p50 !== null && row2.p50 !== undefined ? row2.p50 : "n/a";
   };
   const classesStr = `${p50For("Fighter")}/${p50For("Thief")}/${p50For("Magic User")}`;
-  let line = `#${row.n} score=${scoreStr} verdict=${row.verdict} pass=${row.pass} S5=${S(5)} S8=${S(8)} S10=${S(10)} S12=${S(12)} tail S15=${S(15)} S20=${S(20)} reach20=${row.reach20.toFixed(1)} classes F/T/M p50=${classesStr} ok=${row.constraints.ok}`;
+  const deathStr = typeof row.p50Death === "number" ? row.p50Death : "n/a";
+  const shapeStr = row.shape && row.shape.ok ? "ok" : "MISS";
+  let line = `#${row.n} score=${scoreStr} verdict=${row.verdict} pass=${row.pass} deathP50=${deathStr} shape=${shapeStr} S1=${S(1)} S2=${S(2)} S3=${S(3)} S4=${S(4)} S6=${S(6)} S8=${S(8)} S12=${S(12)} tail S15=${S(15)} S20=${S(20)} reach20=${row.reach20.toFixed(1)} classes F/T/M p50=${classesStr} ok=${row.constraints.ok}`;
   if (row.reason) line += ` reason=${row.reason}`;
   return line;
 }

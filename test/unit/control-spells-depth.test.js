@@ -194,8 +194,10 @@ function castScenario(key, depth, acts = quietActs(SPELL_SCENARIOS[key][0])) {
 }
 
 // Pre-plan engine (base 15d08ab), floor 12 — see the header.
+// User rulings 2026-09-28 (declared): Freeze no longer kills at or below the
+// knee (damage, then a d4-round freeze at every depth), so its floor-12 row
+// is gone from this pre-plan table; test/unit/freeze-rule.test.js pins it.
 const PRE_PLAN_FLOOR_12 = {
-  Freeze: { n: 7, ev: ["spellThrown", "spellHit", "frozenSolid", "foeKilled", "goldGained", "cooked", "foeMissed"], cast: [{ type: "spellHit", target: "F1", dmg: 4, mult: 1 }, { type: "frozenSolid", target: "F1" }], foes: [{ wp: 0, maxWP: 30, alive: false, asleep: 0, frozen: true }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: [] },
   Doze: { n: 1, ev: ["dozed", "foeSlept"], cast: [{ type: "dozed", target: "F1", rounds: 3 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 2 }], weakened: false, timers: [] },
   Stun: { n: 4, ev: ["stunned", "foeSlept", "foeSlept", "foeSlept"], cast: [{ type: "stunned", count: 3 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 1 }, { wp: 30, maxWP: 30, alive: true, asleep: 2 }, { wp: 30, maxWP: 30, alive: true, asleep: 3 }], weakened: false, timers: [] },
   Weaken: { n: 3, ev: ["weakened", "foeMissed", "foeMissed"], cast: [{ type: "weakened", rounds: 4 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: true, timers: ["spell:weaken"] },
@@ -211,29 +213,33 @@ const PRE_PLAN_FLOOR_12 = {
 // Task 1: the hero's control spells (engine/magic.js#castSpell).
 // ---------------------------------------------------------------------------
 
-test("floor 12: every hero control spell matches the pre-plan engine exactly (events, foes, draws)", () => {
+test("floor 12: every hero control spell (Freeze excepted, user rulings 2026-09-28) matches the pre-plan engine exactly (events, foes, draws)", () => {
   for (const key of Object.keys(SPELL_SCENARIOS)) {
+    if (key === "Freeze") continue; // moved by the 2026-09-28 rulings: freeze-rule.test.js
     const { s, rng, events } = castScenario(key, 12);
     assert.deepEqual(digest(s, events, rng), PRE_PLAN_FLOOR_12[key], key);
     assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false, key);
   }
 });
 
-test("Freeze (C1) floor 20: a hit that leaves the foe standing and is not resisted holds it — frozen 3, alive, none of killFoe's draws", () => {
+// User rulings 2026-09-28 (re-pinned): the hold is the rolled d4 at every
+// depth (FREEZE_HOLD_DIE), not controlHoldRoundsFor; the d4 is one new main
+// draw right after the damage. This row rolls a 3, the old hold's number.
+test("Freeze (C1) floor 20: a hit that leaves the foe standing and is not resisted holds it for the rolled d4 (3) — alive, none of killFoe's draws", () => {
   const s = spellState(20, "Freeze", 1, 1);
   s.acts = findActs(20, [["freeze:Freeze", 0, false]]);
-  const rng = fakeRng([1, 4]); // to-hit d10 (raw 1 -> 10), damage d6 = 4 — nothing else may draw
+  const rng = fakeRng([1, 4, 3]); // to-hit d10 (raw 1 -> 10), damage d6 = 4, hold d4 = 3 — nothing else may draw
   const events = castSpell(s, IDX.Freeze, rng, []);
   const f = s.combat.foes[0];
   assert.equal(f.alive, true);
   assert.equal(f.wp, 26);
   assert.equal("frozen" in f, false);
   const held = events.find((e) => e.type === "controlHeld");
-  assert.deepEqual({ kind: held.kind, rounds: held.rounds, source: held.source }, { kind: "frozen", rounds: 3, source: "Freeze" });
+  assert.deepEqual({ kind: held.kind, rounds: held.rounds, source: held.source, freeze: held.freeze }, { kind: "frozen", rounds: 3, source: "Freeze", freeze: true });
   // The same dispatch's foeTurn spends the first held visit (one-tick-already-spent).
   assert.deepEqual(f.held, { kind: "frozen", left: 2 });
   assert.equal(events.some((e) => e.type === "frozenSolid" || e.type === "foeKilled"), false);
-  assert.equal(rng.count(), 2);
+  assert.equal(rng.count(), 3);
 });
 
 test("Freeze (C1) floor 20: a resisted hit leaves the foe standing and damaged — controlResisted, no hold, no kill", () => {
@@ -251,12 +257,15 @@ test("Freeze (C1) floor 20: a resisted hit leaves the foe standing and damaged �
   assert.equal(events.some((e) => e.type === "frozenSolid" || e.type === "foeKilled"), false);
 });
 
-test("Freeze (C1): a blow that drops the foe to 0 hp still kills exactly as today, on floor 20 and floor 12", () => {
+// User rulings 2026-09-28 (re-pinned): a Freeze whose damage kills is a
+// NORMAL kill at every depth — never frozen solid.
+test("Freeze (C1): a blow that drops the foe to 0 hp is a normal kill (no frozenSolid, not frozen), on floor 20 and floor 12", () => {
   for (const depth of [12, 20]) {
     const s = spellState(depth, "Freeze", 1, 2, { wp: 3 });
     const events = castSpell(s, IDX.Freeze, fakeRng([1, 4, ...PAD(10)]), []);
     assert.equal(s.combat.foes[0].alive, false, `depth ${depth}`);
-    assert.ok(events.some((e) => e.type === "frozenSolid"), `depth ${depth}`);
+    assert.equal(events.some((e) => e.type === "frozenSolid"), false, `depth ${depth}`);
+    assert.equal("frozen" in s.combat.foes[0], false, `depth ${depth}`);
     assert.ok(events.some((e) => e.type === "foeKilled"), `depth ${depth}`);
     assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false, `depth ${depth}`);
   }
@@ -419,8 +428,11 @@ test("main-draw parity: for every control spell on floor 20, a resisted and a la
   // run and none in the other (Freeze: resisted vs held). The last column is
   // the cast's own main draws in the pre-plan code (Freeze: to-hit + damage,
   // before any kill; Stun: d6 + a d4 per foe; Vapor: d6 + a d6 per foe; ...).
+  // User rulings 2026-09-28 (re-pinned): Freeze's cast now takes 3 main
+  // draws either way — to-hit, damage and the hold's d4 (drawn resisted or
+  // not, like Doze's d4).
   const CASES = [
-    ["Freeze", "freeze:Freeze", [0], 2],
+    ["Freeze", "freeze:Freeze", [0], 3],
     ["Doze", "sleep:Doze", [0], 1],
     ["Stun", "sleep:Stun", [0, 1, 2], 4],
     ["Weaken", "weaken:Weaken", [0], 1],
@@ -454,10 +466,11 @@ test("a scroll of Freeze read in combat on floor 20 meets the same rule (castSpe
   const s = spellState(20, "Freeze", 1, 1);
   s.c.scrolls = 1;
   s.acts = findActs(20, [["freeze:Freeze", 0, false]]);
-  const rng = { ...fakeRng([1, 4]), pick: (arr) => arr.find((sp) => sp.n === "Freeze") };
+  // User rulings 2026-09-28: plus the hold's d4 (3).
+  const rng = { ...fakeRng([1, 4, 3]), pick: (arr) => arr.find((sp) => sp.n === "Freeze") };
   const events = readScroll(s, rng, []);
   assert.ok(events.some((e) => e.type === "scrollCast" && e.spell === "Freeze"));
-  assert.ok(events.some((e) => e.type === "controlHeld" && e.kind === "frozen"));
+  assert.ok(events.some((e) => e.type === "controlHeld" && e.kind === "frozen" && e.rounds === 3));
   assert.equal(s.combat.foes[0].alive, true);
   assert.equal(events.some((e) => e.type === "foeKilled"), false);
 });
@@ -498,31 +511,40 @@ function useScenario(key, depth, acts = quietActs(ITEM_SCENARIOS[key][0]().n), s
 }
 
 // Pre-plan engine (base 15d08ab), floor 12 — see the header.
+// User rulings 2026-09-28 (declared): the Birch Staff's freeze follows the
+// Freeze spell (a d4-round hold at every depth, never asleep 99), so its
+// floor-12 row is gone from this pre-plan table; freeze-rule.test.js pins it.
 const PRE_PLAN_ITEMS_FLOOR_12 = {
-  Birch: { n: 0, ev: ["itemUsed"], cast: [], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 99 }, { wp: 30, maxWP: 30, alive: true, asleep: 99 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: ["charges:Birch Staff"] },
   Cedar: { n: 0, ev: ["itemUsed"], cast: [], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 99 }, { wp: 30, maxWP: 30, alive: true, asleep: 99 }, { wp: 30, maxWP: 30, alive: true, asleep: 99 }], weakened: false, timers: ["charges:Cedar Staff"] },
   Oak: { n: 8, ev: ["itemUsed", "foeStoned", "foeKilled", "goldGained", "cooked", "foeKilled", "goldGained", "cooked"], cast: [{ type: "foeStoned", names: ["F1", "F2"] }], foes: [{ wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: ["charges:Oak Staff"] },
   Walnut: { n: 0, ev: ["itemUsed"], cast: [], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: true, timers: ["charges:Walnut Staff"] },
   Amulet: { n: 16, ev: ["itemUsed", "foeStoned", "foeKilled", "goldGained", "cooked", "foeKilled", "goldGained", "cooked", "foeKilled", "goldGained", "cooked", "foeKilled", "goldGained", "cooked"], cast: [{ type: "foeStoned", names: ["F1", "F2", "F3", "F4"] }], foes: [{ wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 0, maxWP: 30, alive: false, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: ["item:Amulet of Stone"] },
 };
 
-test("floor 12: every control item matches the pre-plan engine exactly (events, foes, draws)", () => {
+test("floor 12: every control item (the Birch Staff excepted, user rulings 2026-09-28) matches the pre-plan engine exactly (events, foes, draws)", () => {
   for (const key of Object.keys(ITEM_SCENARIOS)) {
+    if (key === "Birch") continue; // moved by the 2026-09-28 rulings: freeze-rule.test.js
     const { s, rng, events } = useScenario(key, 12);
     assert.deepEqual(digest(s, events, rng), PRE_PLAN_ITEMS_FLOOR_12[key], key);
   }
 });
 
-test("Birch Staff (C4) floor 20: the first target resists (awake, Unmoved), the second sleeps 3 (not 99); no main draw either way", () => {
+// User rulings 2026-09-28 (re-pinned): the staff's freeze is a frozen hold
+// for a rolled d4 (one main draw per foe reached, resisted or not), never a
+// 99-round (or 3-round) sleep.
+test("Birch Staff (C4) floor 20: the first target resists (awake, Unmoved, not held), the second is frozen for its d4 (3); one d4 per foe reached", () => {
   const acts = findActs(20, [["freeze:Birch Staff", 0, true], ["freeze:Birch Staff", 1, false]]);
-  const { s, rng, events } = useScenario("Birch", 20, acts);
+  const { s, rng, events } = useScenario("Birch", 20, acts, [2, 3, ...PAD(40)]);
   const [f1, f2, f3] = s.combat.foes;
   assert.equal(f1.asleep, 0);
   assert.equal(f1.resisted, "freeze");
-  assert.equal(f2.asleep, 3);
+  assert.equal("held" in f1, false);
+  assert.equal(f2.asleep, 0);
+  assert.equal(events.find((e) => e.type === "controlHeld" && e.target === "F2").rounds, 3);
   assert.equal(f3.asleep, 0, "outside the staff's two squares");
+  assert.equal("held" in f3, false, "outside the staff's two squares");
   assert.equal(events.filter((e) => e.type === "controlResisted").length, 1);
-  assert.equal(rng.count(), 0);
+  assert.equal(rng.count(), 2);
 });
 
 test("Cedar Staff (C12) floor 20: every non-resisting foe sleeps 3 (not 99); a resisting one stays awake", () => {
@@ -580,17 +602,16 @@ test("Walnut Staff (C16): floor 20 resisted -> no weakened flag, every live foe 
   assert.equal(t.s.c.timers["spell:weaken"], undefined, "at or below the knee the weaken lasts the fight");
 });
 
-test("floors 1-12: a Freeze, a Petrify and an Oak Staff stone are today's kill / removal on every floor — no resist roll, no hold", () => {
+// User rulings 2026-09-28 (re-pinned): Freeze left this list — it never
+// kills outright at any depth now (freeze-rule.test.js).
+test("floors 1-12: a Petrify and an Oak Staff stone are today's kill / removal on every floor — no resist roll, no hold", () => {
   for (let depth = 1; depth <= 12; depth++) {
-    const fr = castScenario("Freeze", depth);
-    assert.equal(fr.s.combat.foes[0].alive, false, `Freeze depth ${depth}`);
-    assert.ok(fr.events.some((e) => e.type === "frozenSolid"), `Freeze depth ${depth}`);
     const pe = castScenario("Petrify", depth);
     assert.equal(pe.s.combat.foes[0].alive, false, `Petrify depth ${depth}`);
     assert.ok(pe.events.some((e) => e.type === "petrified"), `Petrify depth ${depth}`);
     const oak = useScenario("Oak", depth);
     assert.deepEqual(oak.events.find((e) => e.type === "foeStoned").names, ["F1", "F2"], `Oak depth ${depth}`);
-    for (const run of [fr, pe, oak]) {
+    for (const run of [pe, oak]) {
       assert.equal(run.events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false, `depth ${depth}`);
       assert.equal(run.s.combat?.foes.some((f) => "held" in f || "resisted" in f) ?? false, false, `depth ${depth}`);
     }
@@ -617,8 +638,10 @@ test("texts: every spell and item whose promise changes past the knee names floo
   // The Walnut Staff's text ("all hits on the weakened do double damage")
   // never promised a duration, so it carries no clause (its timed weaken
   // past the knee is taught by the weakenFaded line in play).
-  const items = [...STAVES.filter((s) => ["Birch Staff", "Oak Staff", "Cedar Staff"].includes(s.n)), JEWELRY.find((j) => j.n === "Amulet of Stone")];
-  assert.equal(items.length, 4);
+  // User rulings 2026-09-28: the Birch Staff's freeze is a d4 hold at every
+  // depth (its text says so), so it left this list.
+  const items = [...STAVES.filter((s) => ["Oak Staff", "Cedar Staff"].includes(s.n)), JEWELRY.find((j) => j.n === "Amulet of Stone")];
+  assert.equal(items.length, 3);
   for (const it of items) {
     assert.ok(it.txt.includes(floorWords), `${it.n}: "${it.txt}" names ${floorWords}`);
     assert.ok(it.txt.includes(roundWords), `${it.n}: "${it.txt}" names ${roundWords}`);

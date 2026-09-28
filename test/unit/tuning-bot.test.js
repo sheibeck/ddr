@@ -256,15 +256,15 @@ test("HARN-02: chooseSpell casts the highest-scoring castable spell; no charges 
   const fighterState = mkState({ combat, c: { cls: "Fighter", sub: "Soldier", grimoire: ["Freeze", "Heal"], level: 1, spellsUsed: 0, wp: 40, maxWP: 40 } });
   assert.deepStrictEqual(decideAction(fighterState, fixedPolicyRng, ctx), { type: "attack" });
 
-  // HARN-02: under the scoring table Freeze is KILL-tier (410) and wins over
-  // any DAMAGE-tier spell regardless of level — this is the OLD thrown-only
-  // rule's level-3 case ([Freeze, Fireball] used to pick the higher-lvl
-  // Fireball; the table now picks Freeze).
+  // User rulings 2026-09-28 (re-pinned): a Freeze never kills outright any
+  // more (its damage, then a d4 hold), so it scores in the DISABLE tier (230
+  // offensive), not KILL (410) — [Freeze, Fireball] at level 3 now picks
+  // Fireball's DAMAGE tier (300 + 15), the bot playing the new rule.
   const highLevelState = mkState({
     combat,
     c: { cls: "Magic User", sub: "Sorcerer", grimoire: ["Freeze", "Fireball"], level: 3, spellsUsed: 0, wp: 40, maxWP: 40, items: [] },
   });
-  assert.deepStrictEqual(decideAction(highLevelState, fixedPolicyRng, ctx), { type: "castSpell", idx: freezeIdx });
+  assert.deepStrictEqual(decideAction(highLevelState, fixedPolicyRng, ctx), { type: "castSpell", idx: fireballIdx });
 
   // DAMAGE-tier ordering with no KILL-tier spell in the grimoire: Fireball's
   // expected damage (15) outscores Ice's (3.5).

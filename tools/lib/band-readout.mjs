@@ -140,44 +140,44 @@ export function formatBandReadout(r) {
   return lines;
 }
 
-// Phase 54 (USER RULING C): the per-floor survival block — the tuning target
-// is the 25-row p_L / S_L curve in TARGET_SURVIVAL below; report-only, bot
-// policy (tools/lib/tuning-bot.mjs) untouched.
+// Phase 54 (USER RULING C) introduced the per-floor survival block; Phase
+// 79.2 (user ruling 2026-09-27) re-derived its target — the 12-row p_L / S_L
+// curve in TARGET_SURVIVAL below; report-only, bot policy
+// (tools/lib/tuning-bot.mjs) untouched.
 
 /**
- * TARGET_SURVIVAL — the user's per-floor survival curve (2026-09-21,
- * verbatim from 54-CONTEXT.md's `## USER RULING C`). `pL` = individual
- * floor survival chance given the floor was reached; `SL` = cumulative
- * chance a run reaches the END of that floor, from floor 1. Floor 20 carries
- * `reach20Band` — the pass band on the % of runs REACHING floor 20 (not a
- * tolerance on SL itself, since that number is a rate, not a delta target).
+ * TARGET_SURVIVAL — the Phase 79.2 per-floor survival target, floors 1-12
+ * (user ruling 2026-09-27: "we need to bring the difficulty back up on
+ * floors 1 - 12. Just too easy." — the fair bot's fresh p50 death depth
+ * lands at 3-4 at 1,000 seeds). The rule: floor L's target is USER RULING
+ * C's target at floor 2L — Ruling C at twice the pace, so every S_L is one
+ * of the user's own ruled digits and nothing is invented. `SL` = cumulative
+ * chance a run reaches the END of floor L, from floor 1; `pL` =
+ * round1(100 x S_L / S_(L-1)) with S_0 = 100, the individual floor survival
+ * chance given the floor was reached. The curve's own median death floor
+ * (the first L with S_L <= 50) is 4.
+ *
+ * This supersedes USER RULING D's fair-bot p50 5-7 for floors 1-12. Floors
+ * 13+ carry NO survival target any more (Ruling C at twice the pace would
+ * need its floors 26-40, which don't exist): TAIL_TARGETS
+ * (tools/lib/tail-score.mjs) governs the tail on its own slices, and a tail
+ * row prints `target S_L=n/a`. Ruling C's own 25-row table stays on record
+ * in docs/DIFFICULTY-RETUNE.md. tools/lib/fit-score.mjs#EARLY_TARGET_S holds
+ * an engine-free copy; test/unit/early-floor-targets.test.js ties the two.
  */
 export const TARGET_SURVIVAL = [
-  { floor: 1, pL: 98.8, SL: 98.8, note: "High early survival" },
-  { floor: 2, pL: 96.3, SL: 95.1, note: "" },
-  { floor: 3, pL: 93.1, SL: 88.6, note: "Degradation accelerates" },
-  { floor: 4, pL: 89.9, SL: 79.7, note: "" },
-  { floor: 5, pL: 86.9, SL: 69.2, note: "" },
-  { floor: 6, pL: 84.3, SL: 58.4, note: "The 50/50 flip occurs here" },
-  { floor: 7, pL: 82.2, SL: 48.0, note: "" },
-  { floor: 8, pL: 80.6, SL: 38.7, note: "Maximum bottleneck pressure" },
-  { floor: 9, pL: 79.5, SL: 30.8, note: "Lowest individual survival" },
-  { floor: 10, pL: 78.9, SL: 24.3, note: "Less than 1 in 4 remain" },
-  { floor: 11, pL: 78.7, SL: 19.1, note: "Curve stabilizes" },
-  { floor: 12, pL: 78.8, SL: 15.1, note: "" },
-  { floor: 13, pL: 79.1, SL: 11.9, note: "" },
-  { floor: 14, pL: 79.6, SL: 9.5, note: "Single-digit survival begins" },
-  { floor: 15, pL: 80.2, SL: 7.6, note: "" },
-  { floor: 16, pL: 81.0, SL: 6.2, note: "" },
-  { floor: 17, pL: 81.8, SL: 5.0, note: "" },
-  { floor: 18, pL: 82.7, SL: 4.2, note: "" },
-  { floor: 19, pL: 83.6, SL: 3.5, note: "" },
-  { floor: 20, pL: 84.5, SL: 3.0, note: "🦄 The Unicorn Milestone", reach20Band: [3.0, 5.0] },
-  { floor: 21, pL: 85.4, SL: 2.5, note: "The infinite crawl begins" },
-  { floor: 22, pL: 86.4, SL: 2.2, note: "" },
-  { floor: 23, pL: 87.2, SL: 1.9, note: "Less than 2% survival" },
-  { floor: 24, pL: 88.1, SL: 1.7, note: "" },
-  { floor: 25, pL: 88.9, SL: 1.5, note: "" },
+  { floor: 1, pL: 95.1, SL: 95.1, note: "Ruling C floor 2" },
+  { floor: 2, pL: 83.8, SL: 79.7, note: "Ruling C floor 4" },
+  { floor: 3, pL: 73.3, SL: 58.4, note: "Ruling C floor 6" },
+  { floor: 4, pL: 66.3, SL: 38.7, note: "Ruling C floor 8" },
+  { floor: 5, pL: 62.8, SL: 24.3, note: "Ruling C floor 10" },
+  { floor: 6, pL: 62.1, SL: 15.1, note: "Ruling C floor 12" },
+  { floor: 7, pL: 62.9, SL: 9.5, note: "Ruling C floor 14" },
+  { floor: 8, pL: 65.3, SL: 6.2, note: "Ruling C floor 16" },
+  { floor: 9, pL: 67.7, SL: 4.2, note: "Ruling C floor 18" },
+  { floor: 10, pL: 71.4, SL: 3.0, note: "Ruling C floor 20" },
+  { floor: 11, pL: 73.3, SL: 2.2, note: "Ruling C floor 22" },
+  { floor: 12, pL: 77.3, SL: 1.7, note: "Ruling C floor 24" },
 ];
 
 /**
@@ -217,7 +217,7 @@ function targetFor(floor) {
 /**
  * survivalReadout(results, opts) — over ALL results (stuck runs count as
  * reached at every floor <= their current depth, never as deaths). Returns
- * `{ startDepth, runs, stuck, reach20, floors: [...] }`. Internally chains
+ * `{ startDepth, runs, stuck, reach20, p50Death, floors: [...] }`. Internally chains
  * S_L from UNROUNDED p_L fractions (only the returned/printed values are
  * rounded to 1 decimal) so the cumulative product does not compound
  * rounding error across floors.
@@ -303,7 +303,14 @@ export function survivalReadout(results, opts = {}) {
     });
   }
 
-  return { startDepth: start, runs, stuck, reach20, floors };
+  // Phase 79.2 (user ruling 2026-09-27): the fair bot's p50 death depth —
+  // nearest-rank over COMPLETED (non-stuck) runs, the same arithmetic as
+  // tools/tune-difficulty.mjs's "Death-depth distribution: p50=" line
+  // (tuning-bot.mjs#distribution). null when every run is stuck.
+  const completedDepths = results.filter((r) => !r.stuck).map((r) => r.deathDepth).sort((a, b) => a - b);
+  const p50Death = completedDepths.length ? percentile(completedDepths, 0.5) : null;
+
+  return { startDepth: start, runs, stuck, reach20, p50Death, floors };
 }
 
 /**
@@ -371,7 +378,7 @@ function fmtVerdictLabel(pass) {
 export function formatSurvivalReadout(r) {
   const lines = [];
   lines.push(
-    "Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):",
+    "Per-floor survival (Phase 79.2 target, user ruling 2026-09-27 — floor L is USER RULING C's floor 2L; p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):",
   );
   for (const f of r.floors) {
     const label = f.tail ? "tail" : fmtVerdictLabel(f.pass);

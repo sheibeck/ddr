@@ -41,8 +41,9 @@
 // in tools/lib/tuning-bot.mjs is untouched.
 //
 // Phase 54 (USER RULING C): the per-floor survival block — the tuning target
-// is the 25-row p_L / S_L curve in TARGET_SURVIVAL; report-only, bot policy
-// untouched.
+// is now the 12-row Phase 79.2 p_L / S_L curve in TARGET_SURVIVAL (user
+// ruling 2026-09-27: floor L is USER RULING C's floor 2L, fair-bot p50 death
+// depth 3-4); report-only, bot policy untouched.
 
 import { playRun, distribution, percentile, sharedJson, printSharedReadout, BOT_DEFAULTS } from "./lib/tuning-bot.mjs";
 import {

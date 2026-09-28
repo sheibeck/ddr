@@ -52,7 +52,9 @@ test("TAIL_TARGETS carries the user's ruled numbers verbatim (75.3-CONTEXT.md, 2
   assert.deepStrictEqual(TAIL_TARGETS.deep20, { p50GainedMax: 2, reach30Max: 1 });
   assert.deepStrictEqual(TAIL_TARGETS.deep30, { p50GainedMax: 0, p90GainedMax: 1 });
   assert.deepStrictEqual(TAIL_TARGETS.rotation, { p50Slack: 0, p90Slack: 0 });
-  assert.deepStrictEqual(TAIL_TARGETS.guard, { freshP50Death: [5, 7] });
+  // Phase 79.2 (user ruling 2026-09-27): the report-only guard moved from
+  // USER RULING D's fair-bot [5, 7] to [3, 4]; every other number above is unchanged.
+  assert.deepStrictEqual(TAIL_TARGETS.guard, { freshP50Death: [3, 4] });
 });
 
 test("TAIL_SEARCH_PLAN is exactly the four coordinates, in order, with pinned steps/bounds", () => {
@@ -112,7 +114,8 @@ test("summarizeSlice: an empty or missing rows array returns null, never throws"
 /** A synthetic all-pass slice set matching every ruled target exactly or with room to spare. */
 function allPassSummaries() {
   return {
-    fresh: { n: 1000, stuck: 0, p50Gained: 4, p90Gained: 8, meanGained: 4, p50Death: 6, reach20: 0.8, reach21: 0.3, reach30: 0.1, reachCount30: 1 },
+    // Phase 79.2 (user ruling 2026-09-27): fresh p50Death 4, inside the guard's [3,4] (was 6 inside [5,7]).
+    fresh: { n: 1000, stuck: 0, p50Gained: 4, p90Gained: 8, meanGained: 4, p50Death: 4, reach20: 0.8, reach21: 0.3, reach30: 0.1, reachCount30: 1 },
     deep12: { n: 200, stuck: 0, p50Gained: 8, p90Gained: 14, meanGained: 8, p50Death: 20, reach20: 4, reach21: 2, reach30: 0.5, reachCount30: 1 },
     deep20: { n: 200, stuck: 0, p50Gained: 2, p90Gained: 4, meanGained: 2, p50Death: 22, reach20: 100, reach21: 60, reach30: 0.5, reachCount30: 1 },
     deep30: { n: 200, stuck: 0, p50Gained: 0, p90Gained: 1, meanGained: 0.2, p50Death: 30, reach20: 100, reach21: 100, reach30: 100, reachCount30: 200 },
@@ -130,7 +133,7 @@ test("scoreTail: a synthetic all-pass set (every rotation slice at or under its 
   assert.equal(result.verdict, "PASS");
   assert.deepStrictEqual(result.misses, []);
   assert.equal(result.freshMeasured, true);
-  assert.equal(result.guard, null); // p50Death 6 is inside [5,7]
+  assert.equal(result.guard, null); // p50Death 4 is inside [3,4]
   assert.equal(result.constraints.ok, true);
 });
 
@@ -209,15 +212,17 @@ test("scoreTail: the rotation constraint rejects rot20 p50 above deep20's, or ro
   assert.ok(r2.constraints.reasons.some((r) => r.startsWith("rot30")));
 });
 
-test("scoreTail: a fresh p50Death outside [5, 7] sets a guard note but never changes score or verdict", () => {
+// Phase 79.2 (user ruling 2026-09-27): the guard band is [3, 4]; p50Death 6
+// (inside the old [5, 7]) is now outside it.
+test("scoreTail: a fresh p50Death outside [3, 4] sets a guard note but never changes score or verdict", () => {
   const passing = allPassSummaries();
   const baseline = scoreTail(passing);
   const outside = allPassSummaries();
-  outside.fresh.p50Death = 3;
+  outside.fresh.p50Death = 6;
   const result = scoreTail(outside);
   assert.equal(result.score, baseline.score);
   assert.equal(result.verdict, baseline.verdict);
-  assert.ok(result.guard && result.guard.includes("3"));
+  assert.ok(result.guard && result.guard.includes("6"));
 });
 
 test("scoreTail: troll20 and deep40 never affect score or verdict (deep40 is only rot40's pair)", () => {

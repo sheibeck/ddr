@@ -246,7 +246,7 @@ const STAVES_ROWS = [
     act: { kind: "dome", charges: 2, recharge: 100 },
   },
   {
-    n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents indefinitely; past floor 12, indefinitely means three rounds",
+    n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents for d4 rounds apiece, unless they resist; then they are just cold and angry",
     act: { kind: "freeze", charges: 2, recharge: 100 },
   },
   {

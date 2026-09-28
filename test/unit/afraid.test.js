@@ -432,17 +432,19 @@ test("(x) Freeze's need shrinks 6 -> 3 while afraid — a d10 roll of 3 lands, a
   const foeA = fixedFoe({ wp: 999, maxWP: 999, type: "Humans", lvl: 1 });
   const stateA = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Freeze"], wp: 40, maxWP: 40 } });
   stateA.combat = fixedCombat([foeA], { afraid: 2 });
-  // roll d10=3 (need 3, hits: 3<=3); dmg d6=4; Freeze always kills through
-  // killFoe on a hit — sp d6=1, coin d10=1, loot-gate d20=20 (skip, >2+lvl);
-  // the sole foe dies, so afterPlayerAction clears with zero further draws.
-  const eventsA = castSpell(stateA, SPELL_IDX.Freeze, fakeRng([3, 4, 1, 1, 20]), []);
+  // roll d10=3 (need 3, hits: 3<=3); dmg d6=4 (halved while afraid). User
+  // rulings 2026-09-28 (re-pinned): a Freeze never kills outright — the
+  // 999-hp foe survives, the hold's d4 (2) is drawn, and a foe turn may
+  // follow (the trailing 7s are its draws if it resisted and acts).
+  const eventsA = castSpell(stateA, SPELL_IDX.Freeze, fakeRng([3, 4, 2, 7, 7, 7]), []);
   const thrownA = eventsA.find((e) => e.type === "spellThrown");
   // faces shrinks 6 -> 3 (afraid), atLeastFor(3, 10) = 8; raw draw 3 mirrors
   // to roll 8 (8 >= 8 lands).
   assert.equal(thrownA.roll, 8);
   assert.equal(thrownA.atLeast, 8);
   assert.equal(thrownA.dieN, 10);
-  assert.ok(eventsA.some((e) => e.type === "frozenSolid"), "the mirrored top face lands");
+  assert.ok(eventsA.some((e) => e.type === "spellHit" && e.afraid === true), "the mirrored top face lands");
+  assert.equal(eventsA.some((e) => e.type === "frozenSolid"), false, "a Freeze never freezes a foe solid");
 
   const foeB = fixedFoe({ wp: 999, maxWP: 999, type: "Humans", lvl: 1 });
   const stateB = fixedState({ c: { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Freeze"], wp: 40, maxWP: 40 } });
