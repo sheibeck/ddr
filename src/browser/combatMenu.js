@@ -44,7 +44,10 @@ export const COMBAT_MENU_COPY = Object.freeze({
   noAbilitiesDesc: "Hit it with the pointy end.",
   // Phase 38 (ABIL-01/04) — the melee ABILITIES branch's cost/sub vocabulary.
   abilityReady: "READY",
-  abilityUsedUp: "ONCE A FIGHT · USED",
+  // Quick 260927-opf (user ruling 2026-09-27): a once-per-fight ability
+  // (`cd: "fight"`) says so ready, and reads spent once used.
+  abilityReadyOnce: "READY · ONCE PER FIGHT",
+  abilityUsedUp: "ONCE PER FIGHT · SPENT",
   abilityRound: "1 ROUND",
   abilityRounds: "{n} ROUNDS",
   abilitiesSub: "{ready}/{n} READY",
@@ -123,9 +126,11 @@ export const COMBAT_MENU_COPY = Object.freeze({
  * to SPELLS, not this branch: a tap on cooldown dispatches `useAbility`
  * exactly like a ready one, and the engine's own `abilityRefused { reason:
  * "cooldown" }` lands the canon refusal line in the fight log (a deliberate
- * departure from SPELLS' castable-gated `enabled`). `cost` reads READY /
+ * departure from SPELLS' castable-gated `enabled`). `cost` reads READY (or
+ * abilityReadyOnce for a ready `cd: "fight"` ability, quick 260927-opf) /
  * "N ROUND(S)" / the abilityUsedUp copy (a `cd: "fight"` ability that is not
- * ready, regardless of its remaining phase). An id absent from the catalog
+ * ready, regardless of its remaining phase; the engine refuses it `spent`).
+ * An id absent from the catalog
  * (a tampered save) is silently dropped. Pure, no rng.
  */
 function abilityRows(c) {
@@ -137,7 +142,7 @@ function abilityRows(c) {
       const ready = isReady(c, id);
       let cost;
       if (ready) {
-        cost = COMBAT_MENU_COPY.abilityReady;
+        cost = meta.cd === "fight" ? COMBAT_MENU_COPY.abilityReadyOnce : COMBAT_MENU_COPY.abilityReady;
       } else if (meta.cd === "fight") {
         cost = COMBAT_MENU_COPY.abilityUsedUp;
       } else {
@@ -310,7 +315,7 @@ function combatMenuViewModelUnlocked(state) {
     // rolled ability. An empty/absent c.abilities falls through to the
     // fallback branch below, byte-identical to before this phase.
     const rows = abilityRows(c);
-    const readyCount = rows.filter((r) => r.cost === COMBAT_MENU_COPY.abilityReady).length;
+    const readyCount = rows.filter((r) => r.cost === COMBAT_MENU_COPY.abilityReady || r.cost === COMBAT_MENU_COPY.abilityReadyOnce).length;
     secondAction = {
       key: "abilities",
       num: 2,

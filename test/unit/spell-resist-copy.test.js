@@ -84,6 +84,7 @@ test("weakened with spared foes says so instead of 'every foe' (Oracle and rail)
   assert.match(strip(EVENT_NARRATION.weakened({ type: "weakened", rounds: 3, spared: 1 })), /^Every foe but the one that resisted is weakened for 3 rounds/);
   assert.match(strip(EVENT_NARRATION.weakened({ type: "weakened", rounds: 3, spared: 2 })), /^Every foe but the 2 that resisted is weakened/);
   assert.match(strip(EVENT_NARRATION.weakened({ type: "weakened", rounds: 3 })), /^Every foe is weakened for 3 rounds/);
-  assert.match(LINE_FOR.weakened({ type: "weakened", rounds: 3, spared: 1 }).text, /^Every foe but 1 weakened, 3 rounds/);
+  assert.match(LINE_FOR.weakened({ type: "weakened", rounds: 3, spared: 1 }).text, /^Every foe but one weakened, 3 rounds/);
+  assert.match(LINE_FOR.weakened({ type: "weakened", rounds: 3, spared: 2 }).text, /^Every foe but 2 weakened, 3 rounds/);
   assert.match(LINE_FOR.weakened({ type: "weakened", rounds: 3 }).text, /^Every foe weakened, 3 rounds/);
 });

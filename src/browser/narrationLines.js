@@ -1887,6 +1887,8 @@ export const LINE_FOR = {
       unknown: `${e?.name ?? e?.key ?? "That"}? You do not know that one.`,
       // VOX-05 (Phase 79, plan 79-08): the Oracle twin's wording.
       cooldown: `${name}: ready again in ${e?.left ?? "?"} round${e?.left === 1 ? "" : "s"}. Your arm has opinions.`,
+      // Quick 260927-opf: a used once-per-fight ability, until the fight ends.
+      spent: `${name}: spent for this fight.`,
       notInCombat: `${name}: nothing to use it on out here.`,
       noTarget: `${name}: nothing left standing to use it on.`,
       notLowEnough: `Last Stand: only at a quarter of your hp or less (you have ${e?.have ?? "?"} of ${e?.max ?? "?"}).`,
@@ -2039,7 +2041,7 @@ export const LINE_FOR = {
   // VOX-05 (Phase 79, plan 79-08): what Weaken does, and "(3)" now says rounds.
   weakened: (e) => ({
     // Quick 260927-rsx: `spared` counts the foes that resisted the cast.
-    text: `${e?.spared ? `Every foe but ${e.spared} weakened` : "Every foe weakened"}${e?.rounds ? `, ${railPlural(e.rounds, "round")}` : ""}: top three faces to hit, half damage.`,
+    text: `${e?.spared ? `Every foe but ${e.spared === 1 ? "one" : e.spared} weakened` : "Every foe weakened"}${e?.rounds ? `, ${railPlural(e.rounds, "round")}` : ""}: top three faces to hit, half damage.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),

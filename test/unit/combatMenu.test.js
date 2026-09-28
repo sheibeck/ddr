@@ -610,7 +610,8 @@ test("Fighter with c.abilities = ['kata', 'brace']: grid sub, submenu rows; an e
 
   assert.deepEqual(vm.actions[1], { key: "abilities", num: 2, label: "2 · ABILITIES", sub: "2/2 READY", enabled: true, accent: false, opens: "abilities" });
   assert.deepEqual(vm.submenus.abilities.rows, [
-    { id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, dispatch: { type: "useAbility", key: "kata" } },
+    // Quick 260927-opf: Kata is once per fight, and its ready row says so.
+    { id: "ability-kata", label: "KATA", cost: "READY · ONCE PER FIGHT", desc: ABILITY_BY_ID.kata.txt, enabled: true, dispatch: { type: "useAbility", key: "kata" } },
     { id: "ability-brace", label: "BRACE", cost: "READY", desc: ABILITY_BY_ID.brace.txt, enabled: true, dispatch: { type: "useAbility", key: "brace" } },
   ]);
 
@@ -628,18 +629,21 @@ test("Fighter with c.abilities = ['kata', 'brace']: grid sub, submenu rows; an e
   ]);
 });
 
-test("ABILITIES cost text: '3 ROUNDS' / '1 ROUND' on a plain cooldown; 'ONCE A FIGHT · USED' on a used once-a-fight ability; '6 ROUNDS' on a sidestep effect record (left 2, cd 4); a row stays enabled on cooldown", () => {
-  const c = { cls: "Fighter", sub: "Soldier", abilities: ["kata", "brace"] };
+// Quick 260927-opf (user ruling 2026-09-27): Kata is once per fight now, so
+// the plain-cooldown rows are pinned on Pommel Strike (cd 4), and a used
+// once-per-fight ability reads "ONCE PER FIGHT · SPENT".
+test("ABILITIES cost text: '3 ROUNDS' / '1 ROUND' on a plain cooldown; 'ONCE PER FIGHT · SPENT' on a used once-per-fight ability; '6 ROUNDS' on a sidestep effect record (left 2, cd 4); a row stays enabled on cooldown", () => {
+  const c = { cls: "Fighter", sub: "Soldier", abilities: ["pommelStrike", "brace"] };
   const state = fixedState({ c, combat: fixedCombat([]) });
-  startCooldown(state.c, "ability:kata", { rounds: 3 });
+  startCooldown(state.c, "ability:pommelStrike", { rounds: 3 });
   const vm = combatMenuViewModel(state);
-  const kataRow = vm.submenus.abilities.rows.find((r) => r.id === "ability-kata");
-  assert.equal(kataRow.cost, "3 ROUNDS");
-  assert.equal(kataRow.enabled, true);
+  const pommelRow = vm.submenus.abilities.rows.find((r) => r.id === "ability-pommelStrike");
+  assert.equal(pommelRow.cost, "3 ROUNDS");
+  assert.equal(pommelRow.enabled, true);
   assert.equal(vm.actions[1].sub, "1/2 READY");
 
-  const state1 = fixedState({ c: { cls: "Fighter", sub: "Soldier", abilities: ["kata"] }, combat: fixedCombat([]) });
-  startCooldown(state1.c, "ability:kata", { rounds: 1 });
+  const state1 = fixedState({ c: { cls: "Fighter", sub: "Soldier", abilities: ["pommelStrike"] }, combat: fixedCombat([]) });
+  startCooldown(state1.c, "ability:pommelStrike", { rounds: 1 });
   assert.equal(combatMenuViewModel(state1).submenus.abilities.rows[0].cost, "1 ROUND");
 
   const c2 = { cls: "Fighter", sub: "Soldier", abilities: ["secondWind", "sidestep"] };
@@ -647,7 +651,7 @@ test("ABILITIES cost text: '3 ROUNDS' / '1 ROUND' on a plain cooldown; 'ONCE A F
   startCooldown(state2.c, "ability:secondWind", { rounds: 999 });
   startEffect(state2.c, "ability:sidestep", { rounds: 2, cd: 4 });
   const vm2 = combatMenuViewModel(state2);
-  assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-secondWind").cost, "ONCE A FIGHT · USED");
+  assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-secondWind").cost, "ONCE PER FIGHT · SPENT");
   assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-sidestep").cost, "6 ROUNDS");
 });
 
@@ -659,7 +663,7 @@ test("Bard: ABILITIES rows are [sing row, ...ability rows], sing row/sub-line by
     id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, dispatch: { type: "sing" },
   });
   assert.deepEqual(vm.submenus.abilities.rows[1], {
-    id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, dispatch: { type: "useAbility", key: "kata" },
+    id: "ability-kata", label: "KATA", cost: "READY · ONCE PER FIGHT", desc: ABILITY_BY_ID.kata.txt, enabled: true, dispatch: { type: "useAbility", key: "kata" },
   });
 
   const noAbilities = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }));

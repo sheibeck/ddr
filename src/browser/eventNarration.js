@@ -938,6 +938,9 @@ export const EVENT_NARRATION = {
       // VOX-05 (Phase 79, plan 79-08): the rounds are the wait until it is
       // ready again, and Last Stand names its quarter-hp line.
       cooldown: `<span class="miss">${name}: ready again in ${e.left ?? "?"} round${e.left === 1 ? "" : "s"}. Your arm has opinions.</span>`,
+      // Quick 260927-opf (user ruling 2026-09-27): a once-per-fight ability
+      // that has been used is spent until this fight ends.
+      spent: `<span class="miss">${name}: spent for this fight.</span> It works once, and you have had your once.`,
       notInCombat: `<span class="miss">${name}: nothing to use it on out here.</span>`,
       noTarget: `<span class="miss">${name}: nothing left standing to use it on.</span>`,
       notLowEnough: `<span class="miss">Last Stand: only at a quarter of your hp or less, and you have ${e.have ?? "?"} of ${e.max ?? "?"}.</span> You are not desperate enough yet.`,

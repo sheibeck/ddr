@@ -80,7 +80,7 @@
     <i>
       text="gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works"
     <span>
-      text="once a fight"
+      text="once per fight"
   <li>
     <b>
       text="Poisoned Edge"

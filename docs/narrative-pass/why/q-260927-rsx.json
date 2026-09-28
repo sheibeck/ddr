@@ -22,5 +22,13 @@
   { "key": "bank:COMBAT_MENU_COPY.spellResist", "surface": "combat-screen", "trigger": "the combat action grid and its submenus",
     "before": "",
     "after": "{target} resists on {range}",
-    "reasons": ["fact"], "why": "User ruling 2026-09-27: a spell cast on a foe can be resisted, so each foe-targeted spell row states the current target's resist range (engine/derived.js#foeSpellResistFaces), and self spells state none." }
+    "reasons": ["fact"], "why": "User ruling 2026-09-27: a spell cast on a foe can be resisted, so each foe-targeted spell row states the current target's resist range (engine/derived.js#foeSpellResistFaces), and self spells state none." },
+  { "key": "oracle:weakened", "surface": "oracle", "trigger": "weakened — engine/magic.js#castSpell (a Weaken some foes resisted)",
+    "before": "",
+    "after": "Every foe but the one that resisted is weakened for 3 rounds: no more than its die's top three faces hit, and it does half damage. They hit softer now.",
+    "reasons": ["fact", "accurate"], "why": "User ruling 2026-09-27: every foe rolls its own resist against a Weaken, and a landed Weaken skips the ones that resisted; the line no longer claims every foe when it was not." },
+  { "key": "rail:weakened", "surface": "rail", "trigger": "weakened — engine/magic.js#castSpell (a Weaken some foes resisted)",
+    "before": "",
+    "after": "Every foe but one weakened, 3 rounds: top three faces to hit, half damage.",
+    "reasons": ["fact", "accurate"], "why": "User ruling 2026-09-27: a Weaken lands only on the foes that did not resist it, so the rail counts the ones it spared." }
 ]

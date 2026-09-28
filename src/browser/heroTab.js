@@ -161,9 +161,10 @@ function quirkText(c) {
 export const ABILITY_VIEW_COPY = Object.freeze({
   ready: "READY",
   rounds: "{n} rounds",
-  used: "once a fight · used",
+  // Quick 260927-opf: the ruling's wording, "once per fight".
+  used: "once per fight · spent",
   cd: "cd {n} rounds",
-  once: "once a fight",
+  once: "once per fight",
   tagTable: "special skill · active",
   tagPool: "trick",
   noAbilitiesCaster: "No abilities. Spells are the trick.",
