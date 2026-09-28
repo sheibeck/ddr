@@ -1196,6 +1196,10 @@ Plans:
 - **Scopes.** ME stays local and ALL comes from our server. FRIENDS comes from our own friends list: the user decided on 2026-09-26 to drop Google's friends list too. That work is **Phase 999.14**, which is built together with this item.
 - **Store compliance.** The Data Safety form and the privacy policy change, because a score, a handle and an id now leave the device and go to our server, not Google's. The Compete opt-out copy is updated too.
 - **Migration.** Keep or retire the Season-1 Play Games boards, and decide what happens to queued `pgsQueue` entries. Play Games achievements (999.12) can stay on Play Games regardless.
+- **DAYS farming (to check; captured 2026-09-28, user).** "We need a way to prevent someone from wandering around floor 1 endless to wrack up DAYS on the leaderboard. I'd expect that they would eventually starve to death ... so, maybe it's fine, but let's note it as something to check."
+  - **The check:** measure how many DAYS a hero can bank by staying on floor 1 and never descending. Count rations, foraging or healing on floor 1, camp and rest loops, store restocks, and anything else that refills food.
+  - **If starvation reliably ends it** at a DAYS count below an honest deep run, it's fine; record the number.
+  - **If it doesn't:** candidate fixes are to rank DAYS only with depth (e.g. ties broken by depth, or days counted only after floor N), to cap days per floor, or to let the server's run check (above) flag runs with a long days-to-depth ratio.
 
 **What it touches / supersedes:**
 
