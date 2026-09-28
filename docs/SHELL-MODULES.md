@@ -304,6 +304,37 @@ by context, not hidden.
 - `renderEncounter` closes an open menu only when an encounter STARTS; a
   re-render of an ongoing encounter leaves it open.
 
+### REPORT A BUG sheet (Phase 79.3)
+
+The ☰ row `#mw-menu-report` opens `#mw-report-sheet` in the legend-sheet
+chrome, from every screen — `hudMenuRowStates` never disables it. Three
+modules meet in the shell: `src/browser/reportSheet.js` (the pure
+`BUG_REPORT_COPY`, `reportSheetNext` reducer and `reportSheetView` view
+model), `src/browser/bugReport.js` (`buildReportPayload`/`sendBugReport`,
+79.3-01) and `src/browser/bugReportConfig.js` (`BUG_REPORT_CONFIG`).
+
+- **Four states.** idle (SEND disabled until the draft holds text), sending
+  (the textarea, SEND and CANCEL locked), sent (a short thank-you, then the
+  shell's own `REPORT_SENT_HOLD_MS` timer auto-closes the sheet and clears
+  the draft) and failed (the draft kept, the line naming offline, refused,
+  server trouble or reporting-unavailable, SEND available again).
+- **The draft is in-memory only** (`reportModel`, D-09 "in memory is
+  enough") — it never reaches storage and does not survive the app process.
+- **The shell makes no network call of its own.** `sendReportNow` builds the
+  payload (the Oracle's `#log` entries, the stamped `#mw-app-version`,
+  `navigator.userAgent`, the Capacitor platform and the live state through
+  `window.__mzState.get()`), then hands it to `sendBugReport` with
+  `globalThis.fetch.bind(globalThis)` — this block never writes `S`,
+  dispatches, persists or adds a `window.__mz*` bridge.
+- **The Android back button** closes the sheet first among the layers below
+  it (`getGameContext`'s `closeModal`, right after the ☰ escape and before
+  the FINAL SHEET), except while sending. The scrim and CANCEL close it too.
+- **The classic keydown listener** returns early while the sheet is shown —
+  Escape triggers CANCEL, and every other key types into the textarea; no
+  key reaches the party or a combat button.
+- **The z-ladder:** `#mw-report-sheet` stacks at 55, with the account and
+  settings sheets.
+
 ### Global boards, submissions and placement (Phase 68)
 
 **Encodings.** `src/browser/scoreTag.js` encodes a run into the 64-char

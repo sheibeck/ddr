@@ -1929,6 +1929,26 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 #mw-dev-perf{margin-top:8px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;line-height:1.5;color:#c9bda0;opacity:.85;overflow-wrap:anywhere}
 #mw-dev-perf:empty{display:none}
 
+/* ---------- REPORT A BUG sheet (Phase 79.3, BUG-01/02) ----------
+   #mw-report-sheet stacks with the account and settings sheets (z-index 55):
+   the ☰ opens it over any screen. Reuses the legend-sheet chrome
+   (.mw-legend-sheet/-scrim/-panel/-head, above); only the notice, textarea,
+   counter, status and actions differ. */
+#mw-report-sheet{z-index:55}
+.mw-report-notice{margin:12px 0 10px;font-family:var(--mono);font-weight:700;font-size:calc(0.78125rem * var(--mw-text-scale));line-height:1.4;color:#e8c97a}
+.mw-report-text{display:block;width:100%;box-sizing:border-box;min-height:132px;max-height:40vh;resize:none;padding:10px;font-family:var(--mono);font-size:calc(0.875rem * var(--mw-text-scale));line-height:1.4;color:#e6ddc6;background:#0f0d09;border:2px solid #4a4032;border-radius:0;-webkit-user-select:text;user-select:text}
+.mw-report-text:focus-visible{outline:2px solid #e8c97a;outline-offset:2px}
+.mw-report-text:read-only{opacity:.7}
+.mw-report-count{margin:6px 0 0;text-align:right;font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));color:#a89c82}
+.mw-report-count[hidden]{display:none}
+.mw-report-status{min-height:1.4em;margin:8px 0 0;font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale));line-height:1.4;color:#c9bda0}
+.mw-report-status[data-tone="ok"]{color:#8fb08a}
+.mw-report-status[data-tone="warn"]{color:#e0876a}
+.mw-report-actions{display:flex;gap:10px;margin-top:14px}
+.mw-report-btn{flex:1;white-space:pre-line;text-align:center;font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));line-height:1.6;letter-spacing:0;padding:15px 8px;min-height:48px;background:#e8c97a;color:#14110c;border:0;border-radius:0;box-shadow:0 4px 0 #6b5c3c;cursor:pointer}
+.mw-report-btn.secondary{flex:0 0 auto;padding:15px 16px;background:transparent;border:2px solid #4a4032;color:#c9bda0;box-shadow:0 4px 0 #0d0b08}
+.mw-report-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
 /* ---------- MAKE CAMP bottom sheet (Phase 35, MAP-06/08) ----------
    Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
    -scrim/-panel/-head, above); only the copy + actions row differ. */
@@ -2354,6 +2374,27 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
       <button type="button" class="mw-fl-close" id="mw-fightlog-sheet-close"></button>
     </div>
     <div class="mw-fl-rows" id="mw-fightlog-sheet-rows"></div>
+  </div>
+</div>
+
+<!-- ============ REPORT A BUG SHEET (Phase 79.3, BUG-01/02, D-06/D-09/D-10) ============
+     The legend-sheet chrome (.mw-legend-sheet/-scrim/-panel/-head, above).
+     Every word comes from src/browser/reportSheet.js#BUG_REPORT_COPY through
+     the module script — this markup carries no copy-like literal. Opened
+     from the ☰ row #mw-menu-report, from every screen; closed by CANCEL,
+     the scrim and the Android back button, except while sending. -->
+<div id="mw-report-sheet" class="mw-legend-sheet mw-report-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-report-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-modal="true" aria-labelledby="mw-report-title">
+    <div class="mw-legend-head"><span id="mw-report-title"></span></div>
+    <p class="mw-report-notice" id="mw-report-notice"></p>
+    <textarea class="mw-report-text" id="mw-report-text" maxlength="2000" rows="6" autocapitalize="sentences" aria-labelledby="mw-report-title" aria-describedby="mw-report-notice"></textarea>
+    <p class="mw-report-count" id="mw-report-count" hidden></p>
+    <p class="mw-report-status" id="mw-report-status" role="status" aria-live="polite"></p>
+    <div class="mw-report-actions">
+      <button type="button" class="mw-report-btn secondary" id="mw-report-cancel"></button>
+      <button type="button" class="mw-report-btn" id="mw-report-send"></button>
+    </div>
   </div>
 </div>
 
@@ -6723,6 +6764,10 @@ addEventListener("keydown", e => {
   // is open — checked before any other key handling below (the encounter
   // gate included), mirroring the mock's dropdown convention.
   if (k === "escape" && hudMenuIsOpen()) { e.preventDefault(); hudMenuEvent("escape"); return; }
+  // Phase 79.3: while the REPORT A BUG sheet is up, keys type into its box
+  // and never step the party or press a combat button; Escape is its
+  // CANCEL.
+  if (document.getElementById("mw-report-sheet")?.hidden === false) { if (k === "escape") { e.preventDefault(); document.getElementById("mw-report-cancel")?.click(); } return; }
   // Phase 71 (71-06): THE FIGHT SO FAR is modal over the combat screen, so
   // no key reaches the actions under it; Escape closes it.
   if (fightLogSheetOpen()) {
@@ -6918,6 +6963,12 @@ window.__mzClassicBoot = async function classicBoot() {
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
+  // Phase 79.3 (BUG-01/02, D-03, D-10, D-12): the report sheet's client and
+  // pure reducer/view model — the shell gathers inputs and renders states,
+  // and never calls fetch directly (see sendReportNow below).
+  import { buildReportPayload, sendBugReport } from "./src/browser/bugReport.js";
+  import { BUG_REPORT_CONFIG } from "./src/browser/bugReportConfig.js";
+  import { REPORT_SHEET_INITIAL, REPORT_SENT_HOLD_MS, reportSheetNext, reportSheetView } from "./src/browser/reportSheet.js";
   // Phase 78 (HUD-08) — the opt-in arrow pad's pure view model (visibility,
   // side, the four labelled buttons); syncArrowPad below renders it.
   import { arrowPadModel } from "./src/browser/arrowPad.js";
@@ -7694,6 +7745,113 @@ window.__mzClassicBoot = async function classicBoot() {
   document.getElementById("mw-title-acct-chip")?.addEventListener("click", () => openAccountSheet());
   document.getElementById("mw-acct-scrim")?.addEventListener("click", closeAccountSheet);
   document.getElementById("mw-acct-close")?.addEventListener("click", closeAccountSheet);
+
+  // Phase 79.3 (BUG-01/02, D-09/D-10/D-12): the REPORT A BUG sheet —
+  // shell-only. It never writes S, dispatches an engine action, persists or
+  // adds a window.__mz* bridge; the draft lives only in reportModel, for the
+  // session (D-09's "in memory is enough"). Sending gathers the Oracle, the
+  // stamped version, navigator.userAgent, the Capacitor platform and the
+  // live state, then hands them to src/browser/bugReport.js with
+  // globalThis.fetch bound — this block never calls fetch itself.
+  let reportModel = REPORT_SHEET_INITIAL;
+  let reportSentTimer = null;
+  function reportSheetOpen() {
+    const sheet = document.getElementById("mw-report-sheet");
+    return !!sheet && !sheet.hidden;
+  }
+  function renderReportSheetNow() {
+    const view = reportSheetView(reportModel);
+    const title = document.getElementById("mw-report-title");
+    const notice = document.getElementById("mw-report-notice");
+    const text = document.getElementById("mw-report-text");
+    const count = document.getElementById("mw-report-count");
+    const status = document.getElementById("mw-report-status");
+    const cancel = document.getElementById("mw-report-cancel");
+    const send = document.getElementById("mw-report-send");
+    if (title) title.textContent = view.title;
+    if (notice) notice.textContent = view.notice;
+    if (text) {
+      text.placeholder = view.placeholder;
+      if (text.value !== reportModel.draft) text.value = reportModel.draft;
+      text.readOnly = view.locked;
+    }
+    if (count) {
+      count.textContent = view.counterText ?? "";
+      count.hidden = view.counterText === null;
+    }
+    if (status) {
+      status.textContent = view.status;
+      status.dataset.tone = view.tone;
+    }
+    if (cancel) {
+      cancel.textContent = view.cancelLabel;
+      cancel.disabled = !view.cancelEnabled;
+    }
+    if (send) {
+      send.textContent = view.sendLabel;
+      send.disabled = !view.sendEnabled;
+    }
+  }
+  function openReportSheet() {
+    reportModel = reportSheetNext(reportModel, { type: "open" });
+    renderReportSheetNow();
+    const sheet = document.getElementById("mw-report-sheet");
+    // No autofocus: the notice is read before the keyboard rises.
+    if (sheet) panelMotion.open(sheet);
+  }
+  function closeReportSheet() {
+    if (reportModel.phase === "sending") return;
+    if (reportSentTimer !== null) {
+      clearTimeout(reportSentTimer);
+      reportSentTimer = null;
+    }
+    reportModel = reportSheetNext(reportModel, { type: "close" });
+    const sheet = document.getElementById("mw-report-sheet");
+    if (sheet && !sheet.hidden) panelMotion.close(sheet);
+    window.mzKeepPartyInView?.();
+  }
+  async function sendReportNow() {
+    reportModel = reportSheetNext(reportModel, { type: "send" });
+    renderReportSheetNow();
+    if (reportModel.phase !== "sending") return;
+    let result;
+    try {
+      const built = buildReportPayload({
+        text: reportModel.draft,
+        oracleEntries: Array.from(document.getElementById("log")?.children ?? [], (p) => p.innerHTML),
+        version: document.getElementById("mw-app-version")?.textContent ?? "",
+        userAgent: navigator.userAgent,
+        platform: window.Capacitor?.getPlatform?.() ?? "web",
+        state: window.__mzState?.get?.(),
+        now: new Date(),
+      });
+      result = built.ok
+        ? await sendBugReport(built.report, {
+            fetchFn: typeof globalThis.fetch === "function" ? globalThis.fetch.bind(globalThis) : null,
+            config: BUG_REPORT_CONFIG,
+            online: navigator.onLine !== false,
+          })
+        : { ok: false, reason: "refused" };
+    } catch {
+      result = { ok: false, reason: "offline" };
+    }
+    reportModel = reportSheetNext(reportModel, { type: "result", ...result });
+    renderReportSheetNow();
+    if (reportModel.phase === "sent") {
+      reportSentTimer = setTimeout(() => {
+        reportSentTimer = null;
+        closeReportSheet();
+      }, REPORT_SENT_HOLD_MS);
+    }
+  }
+  document.getElementById("mw-menu-report")?.addEventListener("click", closeMenuThen(openReportSheet));
+  document.getElementById("mw-report-scrim")?.addEventListener("click", closeReportSheet);
+  document.getElementById("mw-report-cancel")?.addEventListener("click", closeReportSheet);
+  document.getElementById("mw-report-send")?.addEventListener("click", () => { sendReportNow(); });
+  document.getElementById("mw-report-text")?.addEventListener("input", (e) => {
+    reportModel = reportSheetNext(reportModel, { type: "input", text: e.target.value });
+    renderReportSheetNow();
+  });
 
   // Phase 70 (POLISH-03, D-06/D-07): the ☰'s two quit rows. Both stop the
   // click from bubbling to the dropdown's own "select" safety net, because
@@ -9613,7 +9771,7 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen() || finalSheetOpen(),
+        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen() || finalSheetOpen() || reportSheetOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
@@ -9637,6 +9795,9 @@ window.__mzClassicBoot = async function classicBoot() {
           // returns at once — the rest of this handler would otherwise
           // clear the store/beats/stair underneath on the same press.
           if (hudMenuIsOpen()) { hudMenuEvent("escape"); return; }
+          // Phase 79.3: the REPORT A BUG sheet sits above everything it opens
+          // over, so one back press closes only it; while sending it stays.
+          if (reportSheetOpen()) { closeReportSheet(); return; }
           // Phase 78 (HUD-03): the FINAL SHEET sits over the DEAD tab or the
           // death card, so one back press closes only it.
           if (finalSheetOpen()) { closeFinalSheet(); return; }
