@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Bug Fixes
-current_phase: 79.3
-current_phase_name: INSERTED
+current_phase: 79.2
+current_phase_name: "floors 1-12 harder: fair-bot p50 death ~3-4"
 status: planning
 stopped_at: v2.0 Leaderboards CLOSED and archived (override closeout; audit re-run with Phases 70–71 → milestones/v2.0-MILESTONE-AUDIT.md). The user published 2.0.0 / vc10 and keeps testing over play sessions.
-last_updated: "2026-09-28T16:24:30.012Z"
+last_updated: "2026-09-28T18:56:08.146Z"
 last_activity: 2026-09-28
-last_activity_desc: Phase 79.3 inserted (in-app bug reports); quick 260928-cos/-hrs/-abl merged (gate 7649/7649); 260928-nrf (class trims + Joiner resist) running
+last_activity_desc: Phase 79.1 complete, transitioned to Phase 79.2
 progress:
   total_phases: 16
   completed_phases: 13
-  total_plans: 115
-  completed_plans: 111
+  total_plans: 123
+  completed_plans: 118
   percent: 81
 ---
 
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-24 — v2.0 Leaderboards shipped as P
 
 ## Current Position
 
-Phase: 79.3 — In-app bug reports (INSERTED)
+Phase: 79.2 — Early-floor difficulty retune (floors 1-12 harder: fair-bot p50 death ~3-4)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-28 — Phase 79.3 inserted (in-app bug reports); quick 260928-cos/-hrs/-abl merged (gate 7649/7649); 260928-nrf (class trims + Joiner resist) running
+Last activity: 2026-09-28 — Phase 79.1 complete, transitioned to Phase 79.2
 
 ## Ground Truth (durable facts every session needs)
 

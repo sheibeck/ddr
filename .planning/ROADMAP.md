@@ -530,6 +530,7 @@ Plans:
 ### Phase 79.3: In-app bug reports (☰ Report a bug → Firestore → GitHub issue) (INSERTED)
 
 **Goal:** Players can report a bug from inside the game.
+
 - A REPORT A BUG row in the ☰ menu opens a sheet where they type what happened.
 - On Send, the report and the current run's Oracle go to the game's Firebase project (Firestore).
 - A scheduled GitHub Action in sheibeck/ddr files each new report as a public GitHub issue.
@@ -537,6 +538,7 @@ Plans:
 The user's request (2026-09-28): "I want a way for my users to submit bugs. Add a report bug link in the dropdown from the user menu. It should let them type out what happened. Then when they submit, it should attach the oracle and submit it as an issue in the github repository for this repo."
 
 The user's rulings (2026-09-28):
+
 - Use Firebase: "Firestore + GitHub Action", which keeps the project on the free Spark plan, and no GitHub token ships in the app.
 - Reports post publicly to sheibeck/ddr, "with a notice".
 
@@ -545,6 +547,7 @@ The user's rulings (2026-09-28):
 **Added 2026-09-28 (user rulings "In v2.1, before the build" and "Once per update"):** in-game patch notes, which share the ☰ menu and sheet pattern. The notes are bundled per version, open from a PATCH NOTES row, and open once by themselves after an update. The same file feeds the GitHub Release and Play's "What's new". The orchestrator writes the 2.1 notes with the user before the release build.
 **Depends on:** Phase 79 (the ☰ menu and the Oracle). It runs before Phase 80's release build (80-04).
 **Success Criteria** (what must be TRUE):
+
 1. The ☰ menu has a REPORT A BUG row on every screen: the map, combat, every tab, and while dead. It opens a report sheet with a text box, Send and Cancel, and a plain notice that the report and the Oracle will be posted publicly on GitHub.
 2. Send writes one report to Firestore in delve-die-repeat-6ba5f. The report holds the player's text, the run's Oracle, the app version and build, the device and OS, and the run context. When a send fails or the phone is offline, the draft is kept and the sheet says so. Success says so too, in the house voice.
 3. The Firestore rules allow only a validated, size-bounded create of a new report. The app can't read, update or delete reports, and nothing secret ships in the app.
@@ -556,24 +559,25 @@ The user's rulings (2026-09-28):
    - a live end-to-end test passes: a report is sent, the Action runs, and an issue appears on ddr;
    - the gate is green;
    - the Play Data safety and privacy-policy changes are on the milestone-close checklist.
+
 **Plans**: 0/8 plans complete
 
 Plans:
 **Wave 1** (in parallel, no shared files)
 
-- [ ] 79.3-01-PLAN.md — Client report core and Firestore rules (BUG-02/03): the pure, DOM-free bugReport.js (Oracle text, payload with caps, typed-value encoder, rules mirror, injected-fetch sender with a 15 s timeout that never throws), bugReportConfig.js (project id + empty key slot), create-only size-bounded firestore.rules with firebase.json/.firebaserc, and send-test-report.mjs (--dry-run, --probe-rules)
-- [ ] 79.3-02-PLAN.md — The Action (BUG-04): the pure issue formatter (neutralised @/#, escaped HTML, collapsed fence-safe Oracle trimmed under 65,536), the injected-fetch filer (service-account RS256 JWT, runQuery, updateTime-locked new → filing → filed, stale-filing reconcile, 20 per run, dry run), the */15 workflow with zero installs, .gitignore patterns and a no-committed-secrets scan
-- [ ] 79.3-03-PLAN.md — Patch-notes pipeline (NOTES-01, NOTES-02 pure pieces): patchNotes.js (Markdown-subset parser and DOM renderer, once-per-update decision through window.mzStorage), the generated patchNotesData.js, tools/patch-notes.mjs (--check, --release-body, the ≤500-char --play cut, --write-module), build-www bundling that fails without the version's notes, docs/patch-notes/README.md + 2.1.0.md, versionName 2.1.0, the RELEASING.md step
-- [ ] 79.3-04-PLAN.md — The two ☰ rows (BUG-01, NOTES-02): REPORT A BUG (✎) and PATCH NOTES (¶) after SETTINGS and before the split, always enabled on every screen, with the menu tests re-pinned
+- [x] 79.3-01-PLAN.md — Client report core and Firestore rules (BUG-02/03): the pure, DOM-free bugReport.js (Oracle text, payload with caps, typed-value encoder, rules mirror, injected-fetch sender with a 15 s timeout that never throws), bugReportConfig.js (project id + empty key slot), create-only size-bounded firestore.rules with firebase.json/.firebaserc, and send-test-report.mjs (--dry-run, --probe-rules)
+- [x] 79.3-02-PLAN.md — The Action (BUG-04): the pure issue formatter (neutralised @/#, escaped HTML, collapsed fence-safe Oracle trimmed under 65,536), the injected-fetch filer (service-account RS256 JWT, runQuery, updateTime-locked new → filing → filed, stale-filing reconcile, 20 per run, dry run), the */15 workflow with zero installs, .gitignore patterns and a no-committed-secrets scan
+- [x] 79.3-03-PLAN.md — Patch-notes pipeline (NOTES-01, NOTES-02 pure pieces): patchNotes.js (Markdown-subset parser and DOM renderer, once-per-update decision through window.mzStorage), the generated patchNotesData.js, tools/patch-notes.mjs (--check, --release-body, the ≤500-char --play cut, --write-module), build-www bundling that fails without the version's notes, docs/patch-notes/README.md + 2.1.0.md, versionName 2.1.0, the RELEASING.md step
+- [x] 79.3-04-PLAN.md — The two ☰ rows (BUG-01, NOTES-02): REPORT A BUG (✎) and PATCH NOTES (¶) after SETTINGS and before the split, always enabled on every screen, with the menu tests re-pinned
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [ ] 79.3-05-PLAN.md — The REPORT A BUG sheet (BUG-01/02): the public notice, a 2,000-character box with a near-limit counter, SEND/CANCEL, the idle/sending/sent/failed states with the draft kept in memory, send through bugReport.js, the back button and a keydown guard; the phase why-ledger (q-260928-z5-bug.json) and review page
-- [ ] 79.3-06-PLAN.md — Docs and compliance (BUG-02/03/04): docs/BUG-REPORTS.md (architecture, operations, key rotation, kill switch, the 60-day schedule note) and LISTING.md's Data safety answers plus the privacy-policy draft paragraph
+- [x] 79.3-06-PLAN.md — Docs and compliance (BUG-02/03/04): docs/BUG-REPORTS.md (architecture, operations, key rotation, kill switch, the 60-day schedule note) and LISTING.md's Data safety answers plus the privacy-policy draft paragraph
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 79.3-07-PLAN.md — The PATCH NOTES sheet (NOTES-02): this version's bundled notes rendered offline, the "Past versions on GitHub" link, the once-per-update auto-show over the title only, and the back button; full gate with the notes bundled into www
+- [x] 79.3-07-PLAN.md — The PATCH NOTES sheet (NOTES-02): this version's bundled notes rendered offline, the "Past versions on GitHub" link, the once-per-update auto-show over the title only, and the back button; full gate with the notes bundled into www
 
 **Wave 4** *(blocked on Wave 3 completion; orchestrator-run)*
 
@@ -625,7 +629,7 @@ Plans:
      - The rotation Sorcerer never outlasts the fair bot. Every target gets a PASS or MISS verdict.
   3. Floors 1–12 are measured, not refitted. The average run still ends on floors 5–7. Any band miss, including the floor-11 survival miss flagged in Phase 75.1, is reported to the user with 1,000-seed evidence rather than silently compensated.
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -642,7 +646,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 79.1-04-PLAN.md — Take the milestone-final readouts on the locked code, compute a PASS or MISS verdict for every ruled tail target and every band at 1,000 seeds, put any MISS in front of the user with its evidence, and write the whole ... (wave 4)
+- [x] 79.1-04-PLAN.md — Take the milestone-final readouts on the locked code, compute a PASS or MISS verdict for every ruled tail target and every band at 1,000 seeds, put any MISS in front of the user with its evidence, and write the whole ... (wave 4)
 
 ### Phase 80: Android Release Build & Tooling
 
