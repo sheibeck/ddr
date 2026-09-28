@@ -15,8 +15,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { FLEE_NEED, FLEE_THIEF_BONUS, ABILITY_BY_ID } from "../../content/index.js";
-import { fleeBreakdown, strikeDie, toHit, memberToHit, foeToHitVs, foeToHitBreakdown } from "../../engine/derived.js";
-import { flee, pickMemberAbility, alliesTurn } from "../../engine/combat.js";
+import { fleeBreakdown, strikeDie, toHit, memberToHit, foeToHitVs, foeToHitBreakdown, resistFaces } from "../../engine/derived.js";
+import { flee, pickMemberAbility, alliesTurn, foeTurn } from "../../engine/combat.js";
 import { useAbility, SWEEP_MIN_FOES, abilityUnavailableReason } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { chooseAbility, makeBotContext } from "../../tools/lib/tuning-bot.mjs";
@@ -274,4 +274,79 @@ test("(4) an Acrobat Joiner is hit on its own top 4 faces", () => {
 test("(4) the Acrobat's own strike is untouched: it still strikes as a fighter (5 faces)", () => {
   const s = fightState({ cls: "Thief", sub: "Acrobat" });
   assert.equal(toHit(s), 5 + 1, "5 as a fighter, +1 with the dagger (unchanged)");
+});
+
+// ---------------------------------------------------------------------------
+// (5) A Joiner resists a foe's bolt or drain on the half-intel scale.
+// ---------------------------------------------------------------------------
+
+// A d20 raw face for a roll-high result: roll = 21 - raw.
+const d20raw = (roll) => 21 - roll;
+
+function joinerFight({ intel, heroIntel = 20, ability = "krupkeFreeze", foeOver = {}, memberWp = 20 } = {}) {
+  const member = fighterMember({ name: "Ada", abilities: [], wp: memberWp, maxWP: 20, ...(intel === undefined ? {} : { intel }) });
+  if (intel === undefined) delete member.intel;
+  const s = fightState({ cls: "Fighter", sub: "Soldier", intel: heroIntel }, { foes: [foe({ abilities: [ability], wp: 10, maxWP: 10, ...foeOver })], party: [member] });
+  s.combat.allies = [{ partyIdx: 0, name: "Ada", lvl: 2, sub: "Soldier", wp: memberWp, maxWP: 20 }];
+  return s;
+}
+
+test("(5) a Joiner with intel 10 resists a bolt on 16-20 (5 faces): no damage, nothing else drawn", () => {
+  const s = joinerFight({ intel: 10 });
+  // gate d6 1 (cast), target d2 = 2 (the member), resist d20 rolls 16.
+  const rng = fakeRng([1, 2, d20raw(16)]);
+  const ev = foeTurn(s, rng, []);
+  assert.deepEqual(ev.map((e) => e.type), ["foeCast", "memberResisted"]);
+  assert.deepEqual(ev[1], { type: "memberResisted", name: "Target", ability: "krupkeFreeze", member: "Ada", roll: 16, atLeast: 16, dieN: 20, intel: 10, faces: 5 });
+  assert.equal(s.combat.allies[0].wp, 20, "no damage");
+  assert.equal(rng.count(), 3, "no damage dice after a resist");
+});
+
+test("(5) a Joiner with intel 10 fails on 15: the resist d20 sits between the target pick and the damage dice", () => {
+  const s = joinerFight({ intel: 10 });
+  const ev = foeTurn(s, fakeRng([1, 2, d20raw(15), 4]), []);
+  assert.deepEqual(ev.map((e) => e.type), ["foeCast", "memberResistFailed", "foeBolted"]);
+  assert.equal(ev[1].roll, 15);
+  assert.equal(ev[1].atLeast, 16);
+  assert.equal(ev[1].member, "Ada");
+  assert.equal(ev[2].member, "Ada");
+  assert.equal(ev[2].dmg, 4);
+  assert.equal(s.combat.allies[0].wp, 16);
+});
+
+test("(5) the Joiner rolls on its OWN intel, never the hero's", () => {
+  // Hero intel 20 (10 faces, 11-20); the Joiner's intel 2 is 1 face (20 only).
+  const s = joinerFight({ intel: 2, heroIntel: 20 });
+  const ev = foeTurn(s, fakeRng([1, 2, d20raw(19), 4]), []);
+  const r = ev.find((e) => e.type === "memberResistFailed");
+  assert.ok(r, JSON.stringify(ev.map((e) => e.type)));
+  assert.equal(r.intel, 2);
+  assert.equal(r.faces, 1);
+  assert.equal(r.atLeast, 20);
+});
+
+test("(5) a resisted drain heals the foe nothing", () => {
+  const s = joinerFight({ intel: 20, ability: "vampireDrain", foeOver: { wp: 3, maxWP: 10 } });
+  const ev = foeTurn(s, fakeRng([1, 2, d20raw(20)]), []);
+  assert.deepEqual(ev.map((e) => e.type), ["foeCast", "memberResisted"]);
+  assert.equal(s.combat.foes[0].wp, 3);
+});
+
+test("(5) a Joiner sheet with no intel reads 0: one face, a 20 resists", () => {
+  const s = joinerFight({});
+  const ev = foeTurn(s, fakeRng([1, 2, d20raw(20)]), []);
+  const r = ev.find((e) => e.type === "memberResisted");
+  assert.ok(r, JSON.stringify(ev.map((e) => e.type)));
+  assert.equal(r.intel, 0);
+  assert.equal(r.faces, 1);
+});
+
+test("(5) the resist odds match resistFaces for every intel", () => {
+  for (const intel of [1, 2, 3, 6, 10, 16, 18, 20]) {
+    const s = joinerFight({ intel });
+    const ev = foeTurn(s, fakeRng([1, 2, d20raw(1), 1]), []);
+    const r = ev.find((e) => e.type === "memberResisted" || e.type === "memberResistFailed");
+    assert.equal(r.faces, resistFaces(intel), `intel ${intel}`);
+    assert.equal(r.atLeast, 21 - resistFaces(intel), `intel ${intel}`);
+  }
 });
