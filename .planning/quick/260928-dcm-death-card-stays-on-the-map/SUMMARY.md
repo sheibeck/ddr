@@ -38,3 +38,6 @@ The death card is the full `#enc-panel` overlay with a solid background, so whil
 2. Repeat via DEAD and via the ☰.
 3. Relaunch while dead: the card shows.
 4. Each button works.
+
+## User ruling on the open point (2026-09-28)
+"No need for the map when you're dead. Full screen." The full-screen death card stays as merged. The 2026-09-26 "look at the map where you died" ruling is retired; the input-gate drag/pinch path is harmless and stays.
