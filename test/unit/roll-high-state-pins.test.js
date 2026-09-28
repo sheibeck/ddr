@@ -143,10 +143,24 @@ const PINNED = {
   // still dead on floor 10). "deep-14" re-measured byte-identical (it dies
   // on floor 14 before any descent). Regenerated via
   // `node tools/roll-high-baseline.mjs pins` (hashed identically twice).
-  "solo-1": { actions: 400, dead: false, depth: 5, hash: "e89b8af04db94dee24781e95c770f26c614be6bee0d7865052d80a89159cddeb" },
-  "solo-2": { actions: 400, dead: false, depth: 5, hash: "0b1b52857880fa7058c673fe60c87c3030c01066732ceef037b48ebf0e84f0cd" },
+  //
+  // "solo-1", "solo-2" and "solo-magicuser-sorcerer" re-pinned (quick
+  // 260927-rsx, user ruling 2026-09-27: every spell cast on a foe can be
+  // resisted, half its intel in faces on a d20, from a derived stream).
+  // Traced against extracted trees (git archive 4407e350, the base, and
+  // e1f9dc0c, the resist rule alone) with a per-step state-hash trace: the
+  // first divergence is the hero's own Freeze resisted by its target —
+  // solo-1 bot step 111 (Dante, 6 faces, rolled 20), solo-2 step 10
+  // (Philly, 2 faces, rolled 19), solo-magicuser-sorcerer step 100 (Drekk,
+  // 2 faces, rolled 19) — every earlier step byte-identical. Quick
+  // 260927-opf (once-per-fight strikes) moves none of the three. solo-1
+  // stays 400 / alive / floor 5; solo-2 floor 5 -> 4; the Sorcerer floor
+  // 4 -> 3. Regenerated via `node tools/roll-high-baseline.mjs pins`
+  // (each hashed identically twice).
+  "solo-1": { actions: 400, dead: false, depth: 5, hash: "e9ef3000dffe34eca18bfbc9bf28b0af62f93a68da5e8abefe1ae291bcd61035" },
+  "solo-2": { actions: 400, dead: false, depth: 4, hash: "d7792288ef9678ddab403cf0d6322698c309ae4611f9893e19bd6e52d3a31a7f" },
   "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "d2242ff2c65b463ad6236cc4d67fb95a59bc3b26eb29d96f64814c7f44d273ab" },
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "a0f6456fd3df9395d3254a0d372a1d342af8ccbbae2387c7e1f30d9cf1c14e97" },
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 3, hash: "cfca73c0321365b9bde49dc23c848db9b03d46217b0f3f05d3631f783fd8d6fd" },
   "party-1": { actions: 400, dead: false, depth: 4, hash: "0359263cea8eb7d2ca5f481e44b0c0120353f0021eb5ee6f9014fdddf392fb58" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
@@ -263,7 +277,18 @@ const PINNED = {
   // opener kills this run 52 actions in, instead of surviving 300 and
   // reaching floor 16), not a bug. Regenerated via `node
   // tools/roll-high-baseline.mjs pins` (hashed identically twice).
-  "deep-14": { actions: 52, dead: true, depth: 14, hash: "be6f151aaf66ebb692f35bfca80ec48476b486db5a2b05e42f3f73efe3b3989c" },
+  // "deep-14" re-pinned (quick 260927-opf, user ruling 2026-09-27: the
+  // one-shot strikes are once per fight). Traced against e1f9dc0c (the
+  // spell-resist rule alone, byte-identical to the base for this Thief):
+  // at bot step 19 this Acrobat's Silent Step is once per fight, so its
+  // record is the per-fight mark (998 rounds left) instead of a 3-round
+  // cooldown, and the bot aims it like every once-a-fight foe ability
+  // (tools/lib/tuning-bot.mjs#hardestFoeIndex: the second Drarl, not the
+  // first); the fight plays out differently from there (step 21: a Poisoned
+  // Edge where the old run drank a potion). 52 / dead / floor 14 -> 154 /
+  // dead / floor 15. Regenerated via `node tools/roll-high-baseline.mjs
+  // pins` (hashed identically twice).
+  "deep-14": { actions: 154, dead: true, depth: 15, hash: "349c64337f0a459e356b3278827a89ac43c1f01429c69cf25211287cc6e2ac0b" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

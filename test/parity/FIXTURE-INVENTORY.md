@@ -5202,3 +5202,93 @@ RATING", the "ARMOR" slot label → "ARMOUR", and on the Thief's bag card
 "ARMOR · SWAP" → "ARMOUR · SWAP"), and `thief.hero.txt` (the Thief class
 note: "studded leather at the very best (mail, if you learn Heft)"). The
 77-02 event-order corpus did not move.
+
+### Spell resist and once-per-fight strikes (user rulings 2026-09-27)
+
+Quick fixes 260927-rsx and 260927-opf, base `4407e350`, one worktree.
+
+**The rules.** (1) Every spell cast on a foe can be resisted: every targeted
+foe rolls a roll-high d20 and resists on the top `max(1, round(intel / 2))`
+faces (`engine/derived.js#foeSpellResistRoll`), thrown damage included; a
+resisted spell has no effect on that foe. The roll comes from a derived
+stream keyed `(main cursor, "spellResist", spell, caster, acts, round, foe
+index)`, so it never draws from the main rng; only the draws a resisting foe
+would have taken for itself (its to-hit, damage or duration) are skipped. The
+hero, a Joiner, a scroll's free cast and the foe-targeted staff and amulet
+powers all follow it; a foe casting at the hero keeps canon p.25
+(`resistRoll`, intel 12+). A deliberate change from canon p.25 (only an
+intel >= 12 target resisted, never a thrown spell). (2) Feint, Kata, Death
+Touch, Silent Step and Overhead Blow are once per fight (`cd: "fight"`,
+beside Last Stand); a used one refuses `spent` until endCombat.
+
+**The predictor.** A parity replay moves only if one of its foes actually
+resists a cast (the derived roll is otherwise invisible to the main stream
+and the comparables carry no events), or if it uses a Phase 38 ability (no
+replay does: abilities are stripped from every comparable). Prediction: zero
+moved fixtures, no carve-out.
+
+**The live scan (measured at the base, then after both rules).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical before and
+   after. The generated roster block above is not edited.
+2. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**.
+   No parity carve-out was needed or added: no replay's foe resisted, so
+   every replay's state is byte-identical; `roll-high-invariant.test.js`
+   reads the new `spellResisted` / `resistFailed` rolls roll-high.
+3. `git diff --quiet 4407e350 -- test/parity/fixtures test/parity/prototype-master.js.txt test/parity/harness/comparables.js`
+   exits 0; `git hash-object test/parity/prototype-master.js.txt` is
+   `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+4. **State pins** (`test/unit/roll-high-state-pins.test.js`): four of eight
+   labels moved. Traced against extracted trees (`git archive 4407e350`, the
+   base, and `e1f9dc0c`, the resist rule alone) with a per-bot-step state
+   hash; every earlier step is byte-identical.
+
+   | Label | Rule | First divergence (bot step) | Cause | actions / dead / depth |
+   |---|---|---|---|---|
+   | solo-1 | 260927-rsx | 111 | the hero's Freeze resisted by Dante (6 faces, rolled 20) | 400 / false / 5 (unchanged) |
+   | solo-2 | 260927-rsx | 10 | the hero's Freeze resisted by Philly (2 faces, rolled 19) | 400 / false / 5 → 4 |
+   | solo-magicuser-sorcerer | 260927-rsx | 100 | the hero's Freeze resisted by Drekk (2 faces, rolled 19) | 400 / false / 4 → 3 |
+   | deep-14 | 260927-opf | 19 | Silent Step is once per fight: the per-fight mark replaces its 3-round cooldown, and the bot aims it at `hardestFoeIndex` (the second Drarl) like every once-a-fight foe ability | 52 → 154 / true / 14 → 15 |
+
+   solo-thief-pilfer, party-1, party-fighter-knight and deep-8 re-measured
+   byte-identical. Re-pinned with `node tools/roll-high-baseline.mjs pins`
+   (each hashed identically twice).
+5. `roll-high-save-compat.test.js` (the pre-switch save), `foe-turn-draw-count.test.js`
+   and `test/determinism/**` pass unchanged; the save's `expected` is not
+   re-recorded.
+6. **Event-order corpus.** `test/unit/fixtures/event-order/default-fold-corpus.json`
+   passes unchanged, so it was not regenerated.
+7. **Bot stall seeds (declared).** `test/unit/bot-tactics.test.js`'s two
+   no-stall proofs swap one seed each, re-measured live under identity dials:
+   Fighter/Knight seed 5 → 7 (seed 5 now outlives the 2000-action cap, alive
+   on floor 16: a longer survival, not a loop; seed 4 still stalls), and
+   Magic User/Sorcerer seed 4 → 6 (seed 4 now falls into the pre-existing
+   `campFailed` (noRations) loop; seeds 1 and 5 stall the same way). Every
+   other seed still dies naturally.
+
+**Re-pinned unit rows (declared).** Tests that pin something else about a
+spell cast on a foe now pick a `state.acts` where no foe resists
+(`test/unit/harness/spellResistActs.js`, the real derived check, never a
+mocked stream): afraid (Earthquake, Fireballs), magic (Earthquake ×3,
+Fireballs, Insanity), spell-mechanics (Ice), item-wiring and
+item-combat-gate (Amulet of Stone, Oak Staff), control-spells-depth (its
+`findActs` also requires every foe to fail the intel resist, and its
+pre-plan floor-12 digests drop the new `resistFailed` lines). The Phase 19
+resist blocks in magic.test.js, spell-mechanics.test.js and
+party-combat.test.js are rewritten to the new rule. `roll-high-guard.test.js`'s
+`DRAW_INVENTORY` for engine/derived.js gains one `rollCheck`
+(`foeSpellResistRoll`). The Kata cooldown pins in abilities.test.js,
+combatMenu.test.js and characterSheetViewModel.test.js move to Pommel
+Strike, Brace or Dirty Trick (numeric cooldowns); the canon ability texts in
+abilities-catalog.test.js gain "; once per fight"; bot-tactics.test.js's
+Kata pick carries `target: 0`. The shell snapshot `thief.hero.txt` was
+regenerated (its one changed line: the Hero tab's "once a fight" → "once per
+fight").
+
+#### Moved set — declared records
+
+**Empty — a measured zero.**
+
+| Holder | Site / seed | Hero | record | fromAction | fields before → after | rationale pointer |
+|---|---|---|---|---|---|---|
+| *(none — measured zero)* | | | | | | |
