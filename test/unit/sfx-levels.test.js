@@ -8,7 +8,12 @@
 //    clipGain(id), applied per voice BEFORE the effects bus. foe-die keeps
 //    the default: the hero-death cue is `death` (the `died` event), and
 //    foe-die is `foeKilled` (R-03).
-//  - D-02: MUSIC_GAIN is 0.9, still below the one-shots' unity level.
+//  - D-02: MUSIC_GAIN was 0.9, below the one-shots' unity level (R-09).
+//    Quick task 260928-mus: the user ruling of 2026-09-27 ("Double the volume
+//    of the music. Users can always turn it down in settings.") doubles it to
+//    1.8 and SUPERSEDES R-09 — the theme now sits above unity by design.
+//    sfx/theme.mp3 measures a sample peak of about -28.7 dBFS, so x1.8
+//    (+5.1 dB) peaks near -23.6 dBFS and cannot clip.
 //  - D-03: volumeLevels(settings) turns the volMaster / volMusic / volEffects
 //    integers (0-100) into gains; the device gets them through the OPTIONAL
 //    backend.setLevels, a live loop through the OPTIONAL backend.setLoopLevel,
@@ -88,9 +93,20 @@ test("sfx-levels (D-01): clipGain reads the table, defaults to 1.0 for any other
 
 // ─── D-02: MUSIC_GAIN ────────────────────────────────────────────────────
 
-test("sfx-levels (D-02): MUSIC_GAIN is 0.9, still below the one-shots' unity level", () => {
-  assert.equal(MUSIC_GAIN, 0.9);
-  assert.ok(MUSIC_GAIN > 0 && MUSIC_GAIN < 1);
+// The old R-09 pin ("MUSIC_GAIN is 0.9, still below the one-shots' unity
+// level") is superseded by the user ruling of 2026-09-27: "Double the volume
+// of the music." (quick task 260928-mus).
+test("sfx-levels (D-02, 260928-mus): MUSIC_GAIN is 1.8 — double the old 0.9, by user ruling (supersedes R-09)", () => {
+  assert.equal(MUSIC_GAIN, 1.8);
+  assert.equal(MUSIC_GAIN, 0.9 * 2, "exactly twice the pre-ruling default");
+  assert.ok(MUSIC_GAIN > 1, "above the one-shots' unity level on purpose now");
+});
+
+test("sfx-levels (260928-mus): the MUSIC slider still scales the doubled theme — 0 silent, 50 the old default, 100 the new default", () => {
+  assert.equal(MUSIC_GAIN * volumeLevels({ volMusic: 0 }).music, 0);
+  assert.equal(MUSIC_GAIN * volumeLevels({ volMusic: 50 }).music, 0.9);
+  assert.equal(MUSIC_GAIN * volumeLevels({ volMusic: 100 }).music, MUSIC_GAIN);
+  assert.equal(MUSIC_GAIN * volumeLevels({}).music, MUSIC_GAIN, "the default slider is the new default level");
 });
 
 // ─── D-03: volumeLevels ──────────────────────────────────────────────────
@@ -273,7 +289,7 @@ test("sfx-levels (D-03): startMusic passes MUSIC_GAIN * music; no vol keys pass 
     startMusic();
     assert.equal(fake.calls.loops.length, 1);
     assert.equal(fake.calls.loops[0].gain, MUSIC_GAIN * 0.5);
-    assert.equal(fake.calls.loops[0].gain, 0.45);
+    assert.equal(fake.calls.loops[0].gain, 0.9);
     stopMusic();
     applySfxSettings({ sound: true });
     startMusic();
@@ -434,8 +450,17 @@ function makeAudioWorld({ mediaSource = true } = {}) {
       this.src = "";
       this.paused = true;
       this.currentTime = 0;
-      this.volume = 1;
+      this._volume = 1;
       world.elements.push(this);
+    }
+    // Like the real HTMLMediaElement.volume: 0..1 only, anything else throws
+    // (an IndexSizeError in a browser) and leaves the old value in place.
+    get volume() {
+      return this._volume;
+    }
+    set volume(v) {
+      if (!(v >= 0 && v <= 1)) throw new RangeError(`volume ${v} is outside [0, 1]`);
+      this._volume = v;
     }
     play() {
       this.paused = false;
@@ -578,14 +603,35 @@ test("sfx-levels (default backend): setLoopLevel does nothing while a fade is pe
   });
 });
 
-test("sfx-levels (default backend): the bare-element fallback takes the live music level on el.volume", async () => {
+test("sfx-levels (default backend): the bare-element fallback takes the live music level on el.volume, clamped to the element's 0..1 range (260928-mus)", async () => {
   const world = makeAudioWorld({ mediaSource: false });
   await withDefaultBackend(world, async () => {
-    await unlockedWith({ sound: true, volMusic: 50 });
+    await unlockedWith({ sound: true, volMusic: 20 });
     startMusic();
     const el = world.elements[0];
-    assert.equal(el.volume, MUSIC_GAIN * 0.5);
+    assert.equal(el.volume, MUSIC_GAIN * 0.2);
+    // MUSIC_GAIN * 1 = 1.8 would throw on a real element and strand the old
+    // level; the backend clamps it to full volume instead.
     applySfxSettings({ sound: true, volMusic: 100 });
-    assert.equal(el.volume, MUSIC_GAIN);
+    assert.equal(el.volume, 1);
+    applySfxSettings({ sound: true, volMusic: 30 });
+    assert.ok(Math.abs(el.volume - MUSIC_GAIN * 0.3) < 1e-12, "the slider still turns it down");
+    applySfxSettings({ sound: true, volMusic: 0 });
+    assert.equal(el.volume, 0, "MUSIC 0 stays silent");
+  });
+});
+
+test("sfx-levels (default backend, 260928-mus): the theme's Web Audio gain node takes the doubled level above 1, under the MASTER gain", async () => {
+  const world = makeAudioWorld();
+  await withDefaultBackend(world, async () => {
+    await unlockedWith({ sound: true, volMaster: 50 });
+    startMusic();
+    const ctx = world.contexts[0];
+    const master = masterOf(ctx);
+    const musicGain = world.mediaSources[0].connectedTo;
+    assert.equal(musicGain.gain.value, 1.8, "the default MUSIC 100 plays at twice the old 0.9");
+    assert.equal(musicGain.connectedTo, master, "MASTER still sits on top");
+    assert.equal(master.gain.value, 0.5);
+    assert.equal(world.elements[0].volume, 1, "the streamed element itself is left at full volume");
   });
 });
