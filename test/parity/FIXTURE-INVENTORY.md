@@ -32,13 +32,13 @@ intent artifact).
 |---|---|---|---|---|---|
 | action-script.chargen.json | (14 seeds, no actions) | 20260907 | none | — | — |
 | action-script.movement.json | (script) | 256 | none | — | — |
-| action-script.combat.json | win | 3 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | lose | 14 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | lose-plain | 1119 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3); Shriek (Beasts lvl 1, wp 3) |
-| action-script.combat.json | parley | 303 | startCombat | Humans | Ned (Humans lvl 1, wp 7); Ned (Humans lvl 1, wp 7) |
-| action-script.magic.json | cast-damage | 8 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 3) |
+| action-script.combat.json | win | 3 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 4) |
+| action-script.combat.json | lose | 14 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 4) |
+| action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 4); Shriek (Beasts lvl 1, wp 4) |
+| action-script.combat.json | lose-plain | 1119 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 4) |
+| action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 4); Shriek (Beasts lvl 1, wp 4); Shriek (Beasts lvl 1, wp 4) |
+| action-script.combat.json | parley | 303 | startCombat | Humans | Ned (Humans lvl 1, wp 10); Ned (Humans lvl 1, wp 10) |
+| action-script.magic.json | cast-damage | 8 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 4) |
 | action-script.magic.json | heal | 7 | none | — | — |
 | action-script.magic.json | potion | 1 | none | — | — |
 | action-script.magic.json | scroll | 7 | none | — | — |
@@ -5495,3 +5495,152 @@ identity dials; swapped for seed 1), and the shell snapshot `mu.hero.txt`
 **Shell snapshots.** Only `test/unit/fixtures/shell-snapshots/mu.hero.txt`
 moved, deliberately: its Grimoire shows Mangle's new text. Regenerated with
 `MZ_SNAPSHOT_UPDATE=1 node --test test/unit/shell-tab-snapshots.test.js`.
+
+## Phase 79.2: the early-floor dial lock (user ruling 2026-09-27) — measured
+
+Plan 79.2-04. The base is `5260deda`: 79.2-03's lock `6085f4c3` plus its non-parity re-pins `bd644d0e`.
+
+The ruling: "we need to bring the difficulty back up on floors 1 - 12. Just too easy." The yardstick is a fair-bot p50 death depth of 3-4. The sweep (79.2-02) found no set that PASSes the band objective. On USER RULING 2026-09-28 (RF-79.2-02-3), "Lock the best result as-is.", c2 #18's dials were locked. At 1,000 seeds that set has:
+- p50 5;
+- floors 3-6 out of tolerance, accepted by the user;
+- a shape that holds;
+- the class constraint OK, with the Magic User exempt;
+- every 79.1 tail target PASS.
+
+**The rule** (each leaf from `fit/early-log-c2.jsonl` #18, confirmed in `fit/confirm-1000-c3n1.jsonl` and `fit/tail-confirm-c3n1.jsonl`):
+
+| Dial leaf | Phase 54 (START) | Locked (Phase 79.2) |
+|---|---|---|
+| FOE_HIT_SCALE.base | 0.6 | 0.84 |
+| FOE_HIT_SCALE.perDepth | 0.01 | 0.02 |
+| FOE_LEVEL.base | 0.9 | 1.0 |
+| FOE_HP_SCALE.base | 0.9 | 1.2 |
+| HERO_HP_SCALE | 1.25 | 1.4 |
+| HERO_SP_SCALE | 0.28 | 0.23 |
+
+HAZARD_SCALE, ENCOUNTER_DOTS, every knee, both tail slopes, FOE_COUNT_DEPTH, FOE_ELITE and CONTROL_AT_DEPTH are unchanged. FOE_HIT_SCALE's perDepth now equals its perDepthAfter (0.02), so the hit scale's knee is an identity knee.
+
+**The predictor** (from `fit/early-lock.json` against `fit/start.json`, with every fixture fight on floor 1):
+- **HERO_HP_SCALE** moves every chargen `maxWP`/`wp`: all 14 chargen seeds and all 17 scenario/script heroes (31 holders).
+- **HERO_SP_SCALE** moves every end-state `sp` of an action-path record that gains SP: a kill, a descend or a parley grant.
+- **FOE_HP_SCALE** moves every floor-1 foe's copied wp: base + perDepth at floor 1 is 1.215, where it was 0.915. That covers:
+  - the fixture roster's wp;
+  - the end-state `wp`/`sp` of fights that last longer;
+  - a record whose `fromAction` is past a fight's start.
+- **FOE_HIT_SCALE** moves the end-state `wp` of any fight where the hero is hit (0.86 at floor 1, was 0.61).
+- **FOE_LEVEL** moves nothing at floor 1 (round(1.29) = 1).
+- **HAZARD_SCALE and ENCOUNTER_DOTS are unchanged,** so no `floorFeatureShift` cell and no hazard site moves.
+
+**Did it hold? Yes.** The measured detail:
+- **Every chargen record moved** (maxWP/wp).
+- **Action-path records that moved:**
+  - `sp` on win, lose, lose-apprentice and the movement script;
+  - `wp` on lose, lose-apprentice, lose-plain, flee and parley;
+  - win's and lose-plain's `fromAction` was lowered to 0. At action 0 (startCombat) the engine's Shriek now copies 4 wp where the prototype's has 3.
+- **Measured unmoved:**
+  - three action-path records: magic cast-damage (`rations`), encounters chest (`gold`) and economy (`gold`/`weapon`/`items`/`worn`; its only difference is the carved-out Lockpicks `txt`, see `stripCloakArmorTxt`);
+  - no `floorFeatureShift` cell;
+  - no record's `stateAfter`.
+- **No new field and no new holder** needed a record.
+
+**The live scan** (measured at the base, then after the re-declaration):
+
+1. `node --test "test/parity/**/*.test.js"`: **27 failures at the base → 66 tests, 66 pass, 0 fail.**
+   - `git diff --quiet 5260deda -- test/parity/prototype-master.js.txt` exits 0.
+   - The master's hash is `a1f4d0dc29782218d8e5aab65bc5989c33f917f0` (unchanged).
+   - A scratch check of all six fixtures found every `before`, `stateBefore`, `actions`, `seed`/`seeds`, `floorFeatureShift` and scenario list byte-identical to the base (146 items, 0 differ).
+2. **Re-measurement.** Each record's engine side was replayed live, twice:
+   - under `setDialsForTuning(fit/start.json)`, which reproduced every declared `after` before the edit (economy's only exception is the carved-out Lockpicks `txt`);
+   - under the locked DIALS, which gave the new `after`.
+   - The prototype side was replayed in the sandbox for win and lose-plain, to measure the new first divergent action. The set of end fields that differ from the prototype is the same as before the lock.
+3. **`tools/fixture-inventory.mjs`.** The seven fight rows' foe wp moved:
+   - Shriek and Viper 3 → 4, and Ned 7 → 10 (FOE_HP_SCALE);
+   - Bat/Rat stays 1;
+   - the creatures, their order and their levels are unchanged.
+
+   The generated block above was regenerated per its own "How to regenerate". `fixture-inventory.test.js`'s FID-01 pinned array was updated in the same commit.
+4. **`tools/initiative-fixture-scan.mjs`:**
+   - **What the lock and the re-declaration move:** only the `fields.after (engine @end)` lines of lose, lose-apprentice, lose-plain and cast-damage, plus the phase column (`+79.2`). **The MOVED SET is not moved by the lock:** it reads the same at the pre-lock dials and at the locked dials.
+   - **Pre-existing staleness (not regenerated).** The committed `tools/initiative-fixture-scan-output.txt` was already stale at the base. Since the 79.2-01 Freeze ruling, cast-damage reaches round 2, and the live MOVED SET is 4 holders, not 3. Regenerating the file would make INIT-01 require a Phase 51 declaration on cast-damage. That belongs to the Freeze ruling, not this lock, so it is logged in the phase's `deferred-items.md` for the orchestrator.
+   - **`tools/worn-fixture-scan.mjs`:** the lock moves nothing. The file's one stale line (the Lockpicks `txt`) predates this phase.
+5. **`test/parity/divergence-records.test.js`** (the count stays 66, and the BAND-02 test is extended, not added):
+   - part (b) pins `PHASE_79_2_FLOOR1_CURVE` (foeHitScale 0.86, foeHpScale 1.2149999999999999), with the Phase 54 curve kept as a comment;
+   - a new part (e) asserts that the holders declaring "79.2" (any record kind) are exactly `EXPECTED_79_2`, the 31 measured holders above;
+   - the RULES-16/17/18 guard's Freeze exclusion now identifies a Freeze site by `FREEZE792_EXPECTED_HOLDERS` and its action-path record's "79.2" tag, because "79.2" is no longer a Freeze-only tag;
+   - `freezeSeen` is now measured at every site, not only the declared ones, so no other site may show a Freeze hold.
+
+#### Moved set — declared records
+
+38 records across 31 holders, built by script from the fixtures' diff against `5260deda`:
+
+| Holder | Record | Fields before → after | Cause dial |
+|---|---|---|---|
+| action-script.chargen.json#seed-1 | chargen divergences (phase 38+54 → 38+54+79.2) | maxWP 73 → 81; wp 73 → 81 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-2 | chargen divergences (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-3 | chargen divergences (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-4 | chargen divergences (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-6 | chargen divergences (phase 38+54 → 38+54+79.2) | maxWP 94 → 105; wp 94 → 105 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-7 | chargen divergences (phase 40+54 → 40+54+79.2) | maxWP 39 → 43; wp 39 → 43 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-8 | chargen divergences (phase 54 → 54+79.2) | maxWP 39 → 43; wp 39 → 43 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-13 | chargen divergences (phase 38+54 → 38+54+79.2) | maxWP 39 → 43; wp 39 → 43 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-15 | chargen divergences (phase 40+54 → 40+54+79.2) | maxWP 35 → 39; wp 35 → 39 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-19 | chargen divergences (phase 54 → 54+79.2) | maxWP 44 → 49; wp 44 → 49 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-24 | chargen divergences (phase 40+54+75 → 40+54+75+79.2) | maxWP 39 → 43; wp 39 → 43 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-29 | chargen divergences (phase 40+54+75 → 40+54+75+79.2) | maxWP 36 → 41; wp 36 → 41 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-32 | chargen divergences (phase 38+54 → 38+54+79.2) | maxWP 69 → 77; wp 69 → 77 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.chargen.json#seed-35 | chargen divergences (phase 54 → 54+79.2) | maxWP 94 → 105; wp 94 → 105 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.combat.json#win | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.combat.json#win | action-path (phase 54 → 54+79.2) | sp 6 → 5; fromAction 1 → 0 | HERO_SP_SCALE 0.28 → 0.23; FOE_HP_SCALE.base 0.9 → 1.2 (the Shriek's copied wp 3 → 4 at action 0) |
+| action-script.combat.json#lose | chargenDivergence (phase 38+54 → 38+54+79.2) | maxWP 65 → 73; wp 65 → 73 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.combat.json#lose | action-path (phase 24+31+51+52+54 → 24+31+51+52+54+79.2) | wp 64 → 72; sp 12 → 10 | HERO_HP_SCALE 1.25 → 1.4 (the same damage taken as before the lock); HERO_SP_SCALE 0.28 → 0.23 |
+| action-script.combat.json#lose-apprentice | chargenDivergence (phase 40+54+75 → 40+54+75+79.2) | maxWP 41 → 46; wp 41 → 46 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.combat.json#lose-apprentice | action-path (phase 31+51+54 → 31+51+54+79.2) | wp 35 → 36; sp 17 → 14 | HERO_HP_SCALE 1.25 → 1.4 with FOE_HIT_SCALE {0.6, 0.01} → {0.84, 0.02} / FOE_HP_SCALE.base 0.9 → 1.2; HERO_SP_SCALE 0.28 → 0.23 |
+| action-script.combat.json#lose-plain | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.combat.json#lose-plain | action-path (phase 51+54 → 51+54+79.2) | wp 47 → 51; fromAction 2 → 0 | HERO_HP_SCALE 1.25 → 1.4 with FOE_HIT_SCALE {0.6, 0.01} → {0.84, 0.02} / FOE_HP_SCALE.base 0.9 → 1.2; FOE_HP_SCALE.base 0.9 → 1.2 (the Shriek's copied wp 3 → 4 at action 0) |
+| action-script.combat.json#flee | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.combat.json#flee | action-path (phase 54 → 54+79.2) | wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 (the same damage taken as before the lock) |
+| action-script.combat.json#parley | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.combat.json#parley | action-path (phase 27+31+54 → 27+31+54+79.2) | wp 46 → 51 | HERO_HP_SCALE 1.25 → 1.4 with FOE_HIT_SCALE {0.6, 0.01} → {0.84, 0.02} / FOE_HP_SCALE.base 0.9 → 1.2 |
+| action-script.economy.json#script | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.encounters.json#trap | chargenDivergence (phase 38+54 → 38+54+79.2) | maxWP 73 → 81; wp 73 → 81 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.encounters.json#chest | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.encounters.json#tablefour | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.encounters.json#faerie | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 30 → 34; wp 30 → 34 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.encounters.json#affliction | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.magic.json#cast-damage | chargenDivergence (phase 54 → 54+79.2) | maxWP 39 → 43; wp 39 → 43 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.magic.json#heal | chargenDivergence (phase 40+54 → 40+54+79.2) | maxWP 39 → 43; wp 39 → 43 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.magic.json#potion | chargenDivergence (phase 38+54 → 38+54+79.2) | maxWP 73 → 81; wp 73 → 81 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.magic.json#scroll | chargenDivergence (phase 40+54 → 40+54+79.2) | maxWP 39 → 43; wp 39 → 43 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.movement.json#script | chargenDivergence (phase 38+45+54 → 38+45+54+79.2) | maxWP 50 → 56; wp 50 → 56 | HERO_HP_SCALE 1.25 → 1.4 |
+| action-script.movement.json#script | action-path (phase 54 → 54+79.2) | sp 20 → 16 | HERO_SP_SCALE 0.28 → 0.23 |
+
+#### Moved outside the parity suite (79.2-03)
+
+Each item was traced on the locked engine under `setDialsForTuning(fit/start.json)`, which reproduced the old pin byte for byte, and under the locked DIALS. Every other test passed unchanged:
+- bot-tactics and control-rotation-bot (no seed stalls);
+- the event-order corpus and the shell snapshots;
+- maze, floor-gen, movement, encounters, fairness and foe-abilities.
+
+**Roll-high state pins** (`node tools/roll-high-baseline.mjs pins`, each hashed identically twice). For every label, the first differing state is bot step 1, in `c.maxWP`/`c.wp` only: chargen's `heroMaxWpFor` reads HERO_HP_SCALE.
+
+| Label | old (actions/dead/depth) | new | chargen maxWP | first differing event (bot step, dial) |
+|---|---|---|---|---|
+| solo-1 | 400/false/5 | 253/true/3 | 36 → 41 | 13: a Shriek's wp 3 → 4 (FOE_HP_SCALE) |
+| solo-2 | 400/false/4 | 294/true/3 | 36 → 41 | 7: Philly 5 → 6 (FOE_HP_SCALE) |
+| solo-thief-pilfer | 400/false/4 | 400/false/4 | 50 → 56 | 44: Ned 7 → 10 (FOE_HP_SCALE) |
+| solo-magicuser-sorcerer | 400/false/4 | 400/false/5 | 38 → 42 | 86: descend spGained 20 → 16 (HERO_SP_SCALE) |
+| party-1 | 375/true/3 | 373/true/3 | 43 → 48 | 97: a kill's spGained 4 → 3 (HERO_SP_SCALE) |
+| party-fighter-knight | 400/false/4 | 200/true/2 | 68 → 76 | 98: three Neds 7 → 10 (FOE_HP_SCALE) |
+| deep-8 | 262/true/10 | 225/true/10 | 63 → 70 | 9: Poltergeist 10 → 13, Rinkle 16 → 21 (FOE_HP_SCALE) |
+| deep-14 | 154/true/15 | 50/true/14 | 80 → 89 | 9: Table 4 -10 HP, 13 → 14 (HERO_HP_SCALE) |
+
+**Other movers:**
+
+| Item | old → new | first divergence and dial | regeneration |
+|---|---|---|---|
+| pre-switch save `expected.hash` | `ab8b28cb…` → `b390924b…` (false/3/300 unchanged) | dispatched index 27: a Poltergeist's wp 9 → 12 (FOE_HP_SCALE) | `expected.hash` only; `save`/`dispatched` untouched |
+| condition-roll-mods `STRIKE_DIGESTS` (11) | e.g. none 4762ee31 → a93fc4fe | `state`: newRun(1) maxWP 73 → 81 (HERO_HP_SCALE); events only at the foe's return swing, dmg 2 → 3 (FOE_HIT_SCALE); no roll, face or draw moved | re-recorded from a scratch copy of the loop |
+| honest-gains (3 tests) | the "-15 HP" toll 19 → 21 | `dotHpFor("mid")` reads HERO_HP_SCALE | `node -e` |
+| hp-growth-linear (3 tests) | shipped steps 13/19/31 → 14/21/35 | `dotHpFor` reads HERO_HP_SCALE | `node -e` |
+| foe-count-depth, the Knight at depth 10 | Zit's wp 4 → 5 (the scenario's premise gone) | startCombat's `foeWpFor` reads FOE_HP_SCALE | the scenario's own override also pins FOE_HP_SCALE at identity; assertion unchanged |
+| difficulty.test.js, combat-scaling, deep-curve | the curve, FITTED_CURVE_PINS (every row), the foeLevelFor map `1222233344445555555555555`, heroMeanMaxWpFor, roundDamageCapFor, the shipped-helper and dotHpFor pins, the DIALS pins, the deep-curve literals | the locked dials themselves | `node -e` against the locked engine; the traced lock test ties DIALS to `fit/early-lock.json` |

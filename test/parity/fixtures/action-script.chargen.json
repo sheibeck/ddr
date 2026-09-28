@@ -20,7 +20,7 @@
   "_note": "Character generation happens entirely at newRun/newGame with no further actions, so `actions` is empty (per action-script.schema.md, an empty actions array is valid). The `seeds` array is the covering set this chargen fixture iterates: across it every class (Fighter/Thief/Magic User), all six races (Human/Elven/Dwarven/Wilmsry/Fridgian/Troll), a Samurai (plate + magic weapon), and the special-grant grimoire branches (Wizard/Illusionist/Summoner/Sorcerer/Apprentice/Warlock/Cleric) are exercised at least once. `seed` is the schema-required scalar (a representative single seed); the parity and determinism tests iterate `seeds`. See `divergences` below: Phase 23 (IDENT-02/IDENT-03) originally declared seeds 15/24, both since UPDATED (after/rationale) by Phase 40's spell table reshape + day-one damage guarantee (SPELL-04/SPELL-05), which also adds seeds 7 and 29; Phase 38 (ABIL-02, the Special Skills table reshape) contributed seeds 1/2/3/4/6/13/32.",
   "divergences": {
     "1": {
-      "phase": "38+54",
+      "phase": "38+54+79.2",
       "requirements": [
         "ABIL-02",
         "BAND-02"
@@ -46,14 +46,14 @@
           "Ambidextrous": 1,
           "Runes/Signs": 1
         },
-        "maxWP": 73,
-        "wp": 73,
+        "maxWP": 81,
+        "wp": 81,
         "rations": 9
       },
-      "rationale": "ABIL-02: Climbing was dropped outright by the Special Skills table reshape; the table position it occupied is now Second Wind, an active split into c.abilities (secondWind) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "ABIL-02: Climbing was dropped outright by the Special Skills table reshape; the table position it occupied is now Second Wind, an active split into c.abilities (secondWind) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 73 -> 81, wp 73 -> 81 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "2": {
-      "phase": "38+45+54",
+      "phase": "38+45+54+79.2",
       "requirements": [
         "ABIL-02",
         "QUICK-260918-w4n",
@@ -104,14 +104,14 @@
             "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
           }
         },
-        "maxWP": 50,
-        "wp": 50,
+        "maxWP": 56,
+        "wp": 56,
         "rations": 8
       },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "3": {
-      "phase": "38+45+54",
+      "phase": "38+45+54+79.2",
       "requirements": [
         "ABIL-02",
         "HEDGE-03",
@@ -158,14 +158,14 @@
             "txt": "walk through walls, once every 100 squares"
           }
         },
-        "maxWP": 50,
-        "wp": 50,
+        "maxWP": 56,
+        "wp": 56,
         "rations": 8
       },
-      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "4": {
-      "phase": "38+45+54",
+      "phase": "38+45+54+79.2",
       "requirements": [
         "ABIL-02",
         "HEDGE-03",
@@ -213,14 +213,14 @@
             "txt": "used, a d6 hp back at once; then twenty squares of rest before it works again"
           }
         },
-        "maxWP": 50,
-        "wp": 50,
+        "maxWP": 56,
+        "wp": 56,
         "rations": 8
       },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "6": {
-      "phase": "38+54",
+      "phase": "38+54+79.2",
       "requirements": [
         "ABIL-02",
         "BAND-02"
@@ -244,14 +244,14 @@
         "skills": {
           "Hardiness": 1
         },
-        "maxWP": 94,
-        "wp": 94,
+        "maxWP": 105,
+        "wp": 105,
         "rations": 9
       },
-      "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep, an active split into c.abilities (sweep) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep, an active split into c.abilities (sweep) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "7": {
-      "phase": "40+54",
+      "phase": "40+54+79.2",
       "requirements": [
         "SPELL-04",
         "BAND-02"
@@ -281,14 +281,14 @@
           "Heal",
           "Lesser Summon"
         ],
-        "maxWP": 39,
-        "wp": 39,
+        "maxWP": 43,
+        "wp": 43,
         "rations": 6
       },
-      "rationale": "Phase 40 (SPELL-04): this Wizard's book (Sense Presence/Mirror Self/Stun/Heal) has no damage-dealing spell under the narrowed day-one guarantee (Stun no longer counts — control, not damage). content/spells.js's Lesser Summon (roll: \"derived\", lesser: true, so dealsDamage is true) is spliced into the day-one pool at a derived-random position for this seed and itself satisfies the guarantee, so it is appended — no Freeze needed. Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "Phase 40 (SPELL-04): this Wizard's book (Sense Presence/Mirror Self/Stun/Heal) has no damage-dealing spell under the narrowed day-one guarantee (Stun no longer counts — control, not damage). content/spells.js's Lesser Summon (roll: \"derived\", lesser: true, so dealsDamage is true) is spliced into the day-one pool at a derived-random position for this seed and itself satisfies the guarantee, so it is appended — no Freeze needed. Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "8": {
-      "phase": "54",
+      "phase": "54+79.2",
       "requirements": [
         "BAND-02"
       ],
@@ -303,14 +303,14 @@
         "rations": 4
       },
       "after": {
-        "maxWP": 39,
-        "wp": 39,
+        "maxWP": 43,
+        "wp": 43,
         "rations": 6
       },
-      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "13": {
-      "phase": "38+54",
+      "phase": "38+54+79.2",
       "requirements": [
         "ABIL-02",
         "BAND-02"
@@ -332,14 +332,14 @@
       },
       "after": {
         "skills": {},
-        "maxWP": 39,
-        "wp": 39,
+        "maxWP": 43,
+        "wp": 43,
         "rations": 9
       },
-      "rationale": "ABIL-02: Death-touch was converted to the Death Touch active and Tracking was dropped outright; Death Touch landed in c.abilities (deathTouch) instead of c.skills, and Tracking's table position is now Battle Roar (also an active). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "ABIL-02: Death-touch was converted to the Death Touch active and Tracking was dropped outright; Death Touch landed in c.abilities (deathTouch) instead of c.skills, and Tracking's table position is now Battle Roar (also an active). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "15": {
-      "phase": "40+54",
+      "phase": "40+54+79.2",
       "requirements": [
         "SPELL-04",
         "FID-06",
@@ -371,14 +371,14 @@
           "Shield",
           "Summon"
         ],
-        "maxWP": 35,
-        "wp": 35,
+        "maxWP": 39,
+        "wp": 39,
         "rations": 6
       },
-      "rationale": "Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, 2026-09-18): the Phase 23 Summoner/Summon level-1 override is retired — Summon is spell level 2 again, no longer usable-now, so it no longer counts toward the two-usable-now top-up on its own. content/spells.js's Lesser Summon (roll: \"derived\") is spliced into this seed's shuffled low-level pool at a derived-random position, displacing Heal from the final book; the Summoner is also deterministically granted Lesser Summon (already present here from the splice, so no duplicate is pushed). Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, 2026-09-18): the Phase 23 Summoner/Summon level-1 override is retired — Summon is spell level 2 again, no longer usable-now, so it no longer counts toward the two-usable-now top-up on its own. content/spells.js's Lesser Summon (roll: \"derived\") is spliced into this seed's shuffled low-level pool at a derived-random position, displacing Heal from the final book; the Summoner is also deterministically granted Lesser Summon (already present here from the splice, so no duplicate is pushed). Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 35 -> 39, wp 35 -> 39 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "19": {
-      "phase": "54",
+      "phase": "54+79.2",
       "requirements": [
         "BAND-02"
       ],
@@ -393,14 +393,14 @@
         "rations": 4
       },
       "after": {
-        "maxWP": 44,
-        "wp": 44,
+        "maxWP": 49,
+        "wp": 49,
         "rations": 6
       },
-      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 44 -> 49, wp 44 -> 49 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "24": {
-      "phase": "40+54+75",
+      "phase": "40+54+75+79.2",
       "requirements": [
         "SPELL-04",
         "SPELL-05",
@@ -435,14 +435,14 @@
           "Weaken",
           "Freeze"
         ],
-        "maxWP": 39,
-        "wp": 39,
+        "maxWP": 43,
+        "wp": 43,
         "rations": 6
       },
-      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. RULES-03 (Phase 75, user 2026-09-25): the Apprentice's divination gate is 3 — Map the Floor (divination) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Weaken (offense, ungated) instead — zero new/reordered rng draws, matching test/unit/chargen-rng-pin.test.js's unmoved cursor for this seed. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. RULES-03 (Phase 75, user 2026-09-25): the Apprentice's divination gate is 3 — Map the Floor (divination) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Weaken (offense, ungated) instead — zero new/reordered rng draws, matching test/unit/chargen-rng-pin.test.js's unmoved cursor for this seed. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "29": {
-      "phase": "40+54+75",
+      "phase": "40+54+75+79.2",
       "requirements": [
         "SPELL-05",
         "BAND-02",
@@ -478,14 +478,14 @@
           "Doze",
           "Sense Danger"
         ],
-        "maxWP": 36,
-        "wp": 36,
+        "maxWP": 41,
+        "wp": 41,
         "rations": 6
       },
-      "rationale": "Phase 40 (SPELL-05): pure rename at the same table position — Detect Magic becomes Map the Floor. The Warlock cannot learn the special school (content/mu-chart.js: special: null), so Lesser Summon is never in its learnable pool; Freeze already satisfied the day-one damage guarantee before and after this phase. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. RULES-03 (Phase 75, user 2026-09-25): the Warlock's protection gate is 4 — Shield (protection) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Doze (offense, ungated) instead. Zero new/reordered rng draws. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "Phase 40 (SPELL-05): pure rename at the same table position — Detect Magic becomes Map the Floor. The Warlock cannot learn the special school (content/mu-chart.js: special: null), so Lesser Summon is never in its learnable pool; Freeze already satisfied the day-one damage guarantee before and after this phase. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. RULES-03 (Phase 75, user 2026-09-25): the Warlock's protection gate is 4 — Shield (protection) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Doze (offense, ungated) instead. Zero new/reordered rng draws. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 36 -> 41, wp 36 -> 41 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "32": {
-      "phase": "38+54",
+      "phase": "38+54+79.2",
       "requirements": [
         "ABIL-02",
         "BAND-02"
@@ -510,14 +510,14 @@
         "skills": {
           "Runes/Signs": 1
         },
-        "maxWP": 69,
-        "wp": 69,
+        "maxWP": 77,
+        "wp": 77,
         "rations": 9
       },
-      "rationale": "ABIL-02: Agility was converted to Sidestep and Language was dropped outright; Sidestep's table position (now an active) and Language's replacement (Pommel Strike, also an active) both landed in c.abilities instead of c.skills. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "ABIL-02: Agility was converted to Sidestep and Language was dropped outright; Sidestep's table position (now an active) and Language's replacement (Pommel Strike, also an active) both landed in c.abilities instead of c.skills. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 69 -> 77, wp 69 -> 77 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "35": {
-      "phase": "54",
+      "phase": "54+79.2",
       "requirements": [
         "BAND-02"
       ],
@@ -532,11 +532,11 @@
         "rations": 4
       },
       "after": {
-        "maxWP": 94,
-        "wp": 94,
+        "maxWP": 105,
+        "wp": 105,
         "rations": 6
       },
-      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged)."
     }
   }
 }

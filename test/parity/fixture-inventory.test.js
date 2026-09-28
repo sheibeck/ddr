@@ -35,13 +35,20 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
     .filter((r) => r.foes.length)
     .map(({ fixture, scenario, seed, forced, foes }) => ({ fixture, scenario, seed, forced, foes }));
 
+  // Phase 79.2 early-floor lock (user ruling 2026-09-27, locked by
+  // RF-79.2-02-3): FOE_HP_SCALE.base 0.9 -> 1.2 scales every foe's copy-time
+  // wp at depth 1 by 1.215 (was 0.915): Shriek and Viper round(3 x 1.215) = 4
+  // (was 3), Ned round(8 x 1.215) = 10 (was 7); Bat/Rat stays
+  // round(1 x 1.215) = 1. The creatures, their order and levels are
+  // unchanged. Regenerated together with FIXTURE-INVENTORY.md's generated
+  // block (`node tools/fixture-inventory.mjs`), same commit.
   assert.deepStrictEqual(fightRows, [
     {
       fixture: "action-script.combat.json",
       scenario: "win",
       seed: 3,
       forced: "Beasts",
-      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 3 }],
+      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 4 }],
     },
     {
       fixture: "action-script.combat.json",
@@ -50,7 +57,7 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       forced: "Beasts",
       foes: [
         { name: "Bat/Rat", type: "Beasts", lvl: 1, wp: 1 },
-        { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 4 },
       ],
     },
     // Phase 24 (2026-09-14, race pass, FID-07): added alongside `lose`'s
@@ -70,8 +77,8 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       forced: "Beasts",
       foes: [
         { name: "Bat/Rat", type: "Beasts", lvl: 1, wp: 1 },
-        { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
-        { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 4 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 4 },
       ],
     },
     // Phase 31 (2026-09-16, CMB-01): added because the Afraid ruling (phobia
@@ -87,7 +94,7 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       scenario: "lose-plain",
       seed: 1119,
       forced: "Beasts",
-      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 3 }],
+      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 4 }],
     },
     // Phase 54 (BAND-02, 2026-09-21, USER RULING D): the retired
     // level-keyed foe-count cap is gone — this seed's count draw now rolls
@@ -99,9 +106,9 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       seed: 17,
       forced: "Beasts",
       foes: [
-        { name: "Viper", type: "Beasts", lvl: 1, wp: 3 },
-        { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
-        { name: "Shriek", type: "Beasts", lvl: 1, wp: 3 },
+        { name: "Viper", type: "Beasts", lvl: 1, wp: 4 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 4 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 4 },
       ],
     },
     // Phase 27 (2026-09-15, TUNE-06): was Dante x2 (wp 20) — Dante demoted
@@ -120,8 +127,8 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       seed: 303,
       forced: "Humans",
       foes: [
-        { name: "Ned", type: "Humans", lvl: 1, wp: 7 },
-        { name: "Ned", type: "Humans", lvl: 1, wp: 7 },
+        { name: "Ned", type: "Humans", lvl: 1, wp: 10 },
+        { name: "Ned", type: "Humans", lvl: 1, wp: 10 },
       ],
     },
     {
@@ -129,7 +136,7 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
       scenario: "cast-damage",
       seed: 8,
       forced: "Beasts",
-      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 3 }],
+      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 4 }],
     },
   ]);
 

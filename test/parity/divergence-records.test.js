@@ -426,7 +426,23 @@ test("JOIN-02: the holders declaring Phase 53 are exactly the measured moved set
 // values because their fitted `perDepth` != 0 (the structural `=== 1`/
 // `perDepth === 0` fast paths in engine/difficulty.js never engage once a
 // dial is genuinely fitted, at ANY depth including 1).
-const PHASE_54_FITTED_FLOOR1_CURVE = {
+//
+// History (kept as a comment; part (b) below now asserts the Phase 79.2
+// curve):
+//   PHASE_54_FITTED_FLOOR1_CURVE = { depth: 1, breather: false, dots: 7,
+//     darkBlobs: 0, darkRadius: 4, waterPools: 1, storeTier: 0, foeLevel: 1,
+//     foeHitScale: 0.61, foeHpScale: 0.915, hazardScale: 0.62,
+//     abilityThreat: 1 }
+//
+// PHASE_79_2_FLOOR1_CURVE — Phase 79.2 early-floor lock (user ruling
+// 2026-09-27, locked by RF-79.2-02-3): difficultyCurve(1) under the locked
+// DIALS, pasted verbatim from a `node -e` capture against the locked
+// engine/difficulty.js. FOE_HIT_SCALE { base 0.6, perDepth 0.01 } ->
+// { 0.84, 0.02 } moves foeHitScale 0.61 -> 0.86; FOE_HP_SCALE.base 0.9 -> 1.2
+// moves foeHpScale 0.915 -> 1.2149999999999999 (the raw sum). FOE_LEVEL.base
+// 0.9 -> 1.0 still maps floor 1 to level 1 (round(1.29) = 1); dots and
+// hazardScale are unmoved (ENCOUNTER_DOTS and HAZARD_SCALE were not changed).
+const PHASE_79_2_FLOOR1_CURVE = {
   depth: 1,
   breather: false,
   dots: 7,
@@ -435,13 +451,56 @@ const PHASE_54_FITTED_FLOOR1_CURVE = {
   waterPools: 1,
   storeTier: 0,
   foeLevel: 1,
-  foeHitScale: 0.61,
-  foeHpScale: 0.915,
+  foeHitScale: 0.86,
+  foeHpScale: 1.2149999999999999,
   hazardScale: 0.62,
   abilityThreat: 1,
 };
 
-test("BAND-02 (USER RULING D/G): the holders declaring Phase 54 are exactly the measured moved set of the FITTED (54-07) commit; difficultyCurve(1) reads the fitted curve (floor 1 is no longer parity-exact — declared, per Ruling D); the count roll keeps the canon draw shape", () => {
+// EXPECTED_79_2 — the holders whose records declare Phase 79.2 (any record
+// kind), MEASURED: the Freeze ruling's magic cast-damage record (plan
+// 79.2-01) plus every holder the early-floor lock moved (plan 79.2-04). Each
+// was re-measured live against the frozen prototype; see
+// test/parity/FIXTURE-INVENTORY.md's "Phase 79.2: the early-floor dial lock"
+// section for the per-record table. HERO_HP_SCALE 1.25 -> 1.4 moves every
+// chargen maxWP/wp (all 14 chargen seeds and all 17 scenario/script heroes);
+// HERO_SP_SCALE and the foe scales move the end-state sp/wp of the
+// action-path records.
+const EXPECTED_79_2 = [
+  "action-script.chargen.json#seed-1",
+  "action-script.chargen.json#seed-13",
+  "action-script.chargen.json#seed-15",
+  "action-script.chargen.json#seed-19",
+  "action-script.chargen.json#seed-2",
+  "action-script.chargen.json#seed-24",
+  "action-script.chargen.json#seed-29",
+  "action-script.chargen.json#seed-3",
+  "action-script.chargen.json#seed-32",
+  "action-script.chargen.json#seed-35",
+  "action-script.chargen.json#seed-4",
+  "action-script.chargen.json#seed-6",
+  "action-script.chargen.json#seed-7",
+  "action-script.chargen.json#seed-8",
+  "action-script.combat.json#flee",
+  "action-script.combat.json#lose",
+  "action-script.combat.json#lose-apprentice",
+  "action-script.combat.json#lose-plain",
+  "action-script.combat.json#parley",
+  "action-script.combat.json#win",
+  "action-script.economy.json#script",
+  "action-script.encounters.json#affliction",
+  "action-script.encounters.json#chest",
+  "action-script.encounters.json#faerie",
+  "action-script.encounters.json#tablefour",
+  "action-script.encounters.json#trap",
+  "action-script.magic.json#cast-damage",
+  "action-script.magic.json#heal",
+  "action-script.magic.json#potion",
+  "action-script.magic.json#scroll",
+  "action-script.movement.json#script",
+].sort();
+
+test("BAND-02 (USER RULING D/G), Phase 79.2 early-floor lock (user ruling 2026-09-27): the holders declaring Phase 54 are exactly the measured moved set of the FITTED (54-07) commit; difficultyCurve(1) reads the locked Phase 79.2 curve (floor 1 is no longer parity-exact — declared, per Ruling D); the count roll keeps the canon draw shape; the holders declaring Phase 79.2 are exactly the measured moved set", () => {
   // Part (a): EXPECTED is the MEASURED moved set — everything that moves
   // under the FITTED dials is declared (USER RULING D's "everything that
   // moves is declared" guard). This grows substantially from the identity
@@ -492,11 +551,13 @@ test("BAND-02 (USER RULING D/G): the holders declaring Phase 54 are exactly the 
 
   assert.deepStrictEqual([...declared].sort(), EXPECTED);
 
-  // Part (b): difficultyCurve(1) reads the FITTED curve exactly — floor 1
+  // Part (b): difficultyCurve(1) reads the SHIPPED curve exactly — floor 1
   // is a declared mover under the global model (USER RULING D), not a
   // never-moved invariant; this pin proves the shipped DIALS produce
-  // EXACTLY this floor-1 shape, measured, never hand-typed.
-  assert.deepStrictEqual(difficultyCurve(1), PHASE_54_FITTED_FLOOR1_CURVE);
+  // EXACTLY this floor-1 shape, measured, never hand-typed. Phase 79.2
+  // early-floor lock: the pin is PHASE_79_2_FLOOR1_CURVE (the Phase 54
+  // curve is kept above as a comment).
+  assert.deepStrictEqual(difficultyCurve(1), PHASE_79_2_FLOOR1_CURVE);
 
   // Part (c): the count roll keeps the canon draw shape — a first d4 <= 2
   // draws exactly one d4; a first d4 > 2 draws exactly two — regardless of
@@ -550,6 +611,16 @@ test("BAND-02 (USER RULING D/G): the holders declaring Phase 54 are exactly the 
     replaySiteEvents(scenario.seed, scenario.actions);
   }
   assert.equal(totalSites, 31, "the guard covers every one of the 31 replay sites the scan reports");
+
+  // Part (e): Phase 79.2 (user ruling 2026-09-27) — the holders whose
+  // records (any kind: chargen `divergences`, `chargenDivergence`,
+  // action-path `divergence`) carry "79.2" in `phase` are exactly the
+  // MEASURED moved set EXPECTED_79_2 above (every holder the early-floor
+  // lock moved, plus the Freeze ruling's cast-damage record).
+  const declared792 = new Set(
+    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("79.2")).map(({ holderId }) => holderId),
+  );
+  assert.deepStrictEqual([...declared792].sort(), EXPECTED_79_2, "the holders declaring Phase 79.2 are exactly the measured moved set");
 });
 
 // Phase 61 (GRULE-01): the combat gear lock moves zero fixtures — no replay
@@ -1245,10 +1316,23 @@ test("RULES-16/17/18 (Phase 75.3): no replay site fights on floor 5 or deeper, n
   const deepFights = [];
   const flagged = [];
   let fightsSeen = 0;
-  // User rulings 2026-09-28: the Phase 79.2-declared sites and the Freeze
-  // holds each one actually shows (so the exclusion is never vacuous).
+  // User rulings 2026-09-28: the Freeze sites (a FREEZE792_EXPECTED_HOLDERS
+  // holder whose action-path record declares Phase 79.2) and the Freeze
+  // holds each replay site actually shows (so the exclusion is never
+  // vacuous). Phase 79.2 early-floor lock (plan 79.2-04): "79.2" is no
+  // longer a Freeze-only tag — the lock re-declared 31 holders' records with
+  // "+79.2" (BAND-02's part (e) asserts that exact set) — so a Freeze site is
+  // now identified by FREEZE792_EXPECTED_HOLDERS AND its action-path record's
+  // "79.2" tag, and `freezeSeen` is measured at EVERY site (not only the
+  // declared ones): no other site may show a Freeze hold.
   const freezeDeclared = new Set(
-    RECORDS.filter(({ record }) => String(record.phase ?? "").split("+").includes("79.2")).map(({ holderId }) => holderId),
+    RECORDS.filter(
+      ({ kind, record, holderId }) =>
+        kind === "divergence" &&
+        record.kind === "action-path" &&
+        String(record.phase ?? "").split("+").includes("79.2") &&
+        FREEZE792_EXPECTED_HOLDERS.includes(holderId),
+    ).map(({ holderId }) => holderId),
   );
   const freezeSeen = new Set();
 
@@ -1256,7 +1340,7 @@ test("RULES-16/17/18 (Phase 75.3): no replay site fights on floor 5 or deeper, n
     fightsSeen += r.fightDepths.length;
     const freezeSite = freezeDeclared.has(holderId);
     const events = freezeSite ? r.events.filter((e) => !isFreezeHoldEvent(e)) : r.events;
-    if (freezeSite && r.events.some((e) => e.type === "controlHeld" && e.freeze)) freezeSeen.add(holderId);
+    if (r.events.some((e) => e.type === "controlHeld" && e.freeze)) freezeSeen.add(holderId);
     const counts = countPhase753Exposure(events);
     for (const key of Object.keys(totals)) totals[key] += counts[key];
     for (const d of r.fightDepths) if (d >= RULES753_FIRST_FLOOR) deepFights.push(`${holderId}@floor${d}`);
@@ -1308,9 +1392,10 @@ test("RULES-16/17/18 (Phase 75.3): no replay site fights on floor 5 or deeper, n
     assert.equal(totals[key], 0, `expected zero ${key} events across every replay site`);
   }
   // User rulings 2026-09-28: the Freeze-hold exclusion covers exactly the
-  // declared sites, and each of them really shows a Freeze hold.
-  assert.deepStrictEqual([...freezeDeclared].sort(), FREEZE792_EXPECTED_HOLDERS, "the declared Phase 79.2 set is exactly FREEZE792_EXPECTED_HOLDERS");
-  assert.deepStrictEqual([...freezeSeen].sort(), FREEZE792_EXPECTED_HOLDERS, "every declared Phase 79.2 site shows a Freeze hold (the exclusion is not vacuous)");
+  // declared Freeze sites, each of them really shows a Freeze hold, and no
+  // other replay site shows one.
+  assert.deepStrictEqual([...freezeDeclared].sort(), FREEZE792_EXPECTED_HOLDERS, "every FREEZE792_EXPECTED_HOLDERS holder declares Phase 79.2 on its action-path record");
+  assert.deepStrictEqual([...freezeSeen].sort(), FREEZE792_EXPECTED_HOLDERS, "exactly the declared Freeze sites show a Freeze hold (the exclusion is not vacuous, and no other site freezes)");
 });
 
 test("RULES-16/17/18 exposure guard has teeth: a doctored event list carrying a controlResisted event (and an elite encounter) is caught by the same counting function", () => {
