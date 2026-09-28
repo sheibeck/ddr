@@ -145,9 +145,13 @@ test("sfx-music: MUSIC_IDS is frozen ['theme'], disjoint from CLIP_IDS, and ever
   }
 });
 
-test("sfx-music: MUSIC_GAIN is 0.9 — still below the one-shot level (R-09; Phase 71 D-02)", () => {
-  assert.equal(MUSIC_GAIN, 0.9);
-  assert.ok(MUSIC_GAIN > 0 && MUSIC_GAIN < 1);
+// Quick task 260928-mus: the user ruling (2026-09-27, "Double the volume of
+// the music. Users can always turn it down in settings.") doubles the theme
+// from 0.9 to 1.8 and supersedes R-09 (the loop below the one-shots' unity
+// level). sfx/theme.mp3 peaks about -28.7 dBFS, so x1.8 cannot clip.
+test("sfx-music: MUSIC_GAIN is 1.8 — doubled from 0.9 by the 2026-09-27 user ruling (supersedes R-09)", () => {
+  assert.equal(MUSIC_GAIN, 1.8);
+  assert.equal(MUSIC_GAIN, 0.9 * 2);
 });
 
 test("sfx-music: isSfxUnlocked() is false before unlock, true after, false again after Sound Off", async () => {
@@ -581,14 +585,15 @@ test("sfx-music (default backend): a rejected play() is swallowed; the next nudg
   assert.equal(unhandled, 0);
 });
 
-test("sfx-music (default backend): without createMediaElementSource it falls back to the bare element — volume = MUSIC_GAIN, stop pauses at once", async () => {
+test("sfx-music (default backend): without createMediaElementSource it falls back to the bare element — volume = MUSIC_GAIN clamped to 1, stop pauses at once", async () => {
   const world = makeAudioWorld({ mediaSource: false });
   await withDefaultBackend(world, async () => {
     applySfxSettings({ sound: true });
     await unlockSfx();
     startMusic();
     const el = world.elements[0];
-    assert.equal(el.volume, MUSIC_GAIN);
+    // HTMLMediaElement.volume only takes 0..1 (quick task 260928-mus).
+    assert.equal(el.volume, Math.min(1, MUSIC_GAIN));
     assert.equal(el.paused, false);
     stopMusic({ fadeMs: 500 });
     assert.equal(el.paused, true, "no graph, no ramp — the fallback cuts at once");

@@ -502,7 +502,11 @@ function setMusicLevel(handle, voice, gain) {
       param.cancelScheduledValues(now);
       param.setValueAtTime(gain, now);
     } else {
-      voice.el.volume = gain;
+      // The bare-element fallback (no Web Audio graph): HTMLMediaElement.volume
+      // only takes 0..1 and THROWS above 1, which would leave the old level in
+      // place. MUSIC_GAIN is above 1 since quick task 260928-mus, so clamp —
+      // the fallback tops out at the element's full volume.
+      voice.el.volume = Math.min(1, Math.max(0, gain));
     }
   } catch {
     // never throw.
@@ -1087,12 +1091,19 @@ export function applySfxSettings(settings) {
 // one-shot. test/unit/sfx-assets.test.js pins sfx/ as 30 clips + this 1.
 export const MUSIC_IDS = Object.freeze(["theme"]);
 
-// MUSIC_GAIN — R-09: the loop still sits below the one-shots' unity level.
-// Raised from 0.5 to 0.9 on the 2026-09-24 Pixel 7 device round (Phase 71
-// D-02: the theme was too soft). The loop runs through its own gain node
-// into the device's masterGain (not the effects bus, R-04); its live level is
-// MUSIC_GAIN times the player's MUSIC slider (volumeLevels().music, D-03).
-export const MUSIC_GAIN = 0.9;
+// MUSIC_GAIN — the theme's default level. Raised from 0.5 to 0.9 on the
+// 2026-09-24 Pixel 7 device round (Phase 71 D-02: the theme was too soft),
+// then DOUBLED to 1.8 by user ruling (2026-09-27, quick task 260928-mus:
+// "Double the volume of the music. Users can always turn it down in
+// settings."). That ruling supersedes R-09 (the loop used to sit below the
+// one-shots' unity level). A gain above 1 is safe here: sfx/theme.mp3
+// measures a sample peak of about -28.7 dBFS (RMS about -42.7 dBFS), so
+// x1.8 (+5.1 dB) peaks near -23.6 dBFS, far from clipping. The loop runs
+// through its own Web Audio gain node (which takes values above 1) into the
+// device's masterGain (not the effects bus, R-04); its live level is
+// MUSIC_GAIN times the player's MUSIC slider (volumeLevels().music, D-03), so
+// MUSIC 0 is silent and MUSIC 100 is this default.
+export const MUSIC_GAIN = 1.8;
 
 // Module state for the music half:
 //  - musicVoice: the live loop (the backend's voice), or null.
