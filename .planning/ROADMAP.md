@@ -1220,3 +1220,19 @@ Plans:
 Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.16: Itemization pass: every item works as intended, and benefits need the item worn (BACKLOG)
+
+**Goal:** [Captured 2026-09-28, user] "we need to run an itemization pass to make sure all items are working as intended, we have all required systems, etc. For instance, the cloak of regeneration should actually heal every 10 steps for 30 steps. Also, when you use an item and then take that item off, you should lose the items benefit. For instance, if I wear the cloak of flying and use it, I gain flying, and then if I take it off, I should lose that flying condition. We don't want people just putting everything on and stacking benefits without actually wearing the item for the benefit."
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Scope for the pass:**
+- **Every item audited end to end:** text vs engine vs canon for every treasure, armour, weapon, cloak, jewellery, staff, wand, potion and scroll. Whatever each promises must actually happen: its duration, charges, cooldown and numbers. Output an audit table (item / text / engine / canon / verdict) with the fixes, pinned by tests (authored-ranges style).
+- **Missing systems:** list any system the items need that doesn't exist yet: per-step heal-over-time, stack rules, slot limits, whatever turns up. Build or re-rule each one.
+- **Cloak of Regeneration (user example):** it should heal **every 10 steps for 30 steps** (three ticks) once used. Today (`content/treasure-tables.js:199`, engine/items.js "knit" case ~L1616) it gives a flat d6 at once, then a 20-square cooldown (260918-w4n's reading of the prototype's "d6 hp back every 20 squares"). It needs a per-step heal-over-time effect, with narration for each tick.
+- **Benefits end when the item comes off (user rule):** an item's activated benefit lasts only while that item is worn or held. Take off a used Cloak of Flying and the flying condition ends at once, with narration. This applies to every use-activated worn item (cloaks, rings, amulets, armour activations such as plated, invisibility, flying, regeneration ticks, etc.), so a player can't put everything on, use it all, and stack benefits from items they no longer wear. That needs an "effect source" link from each timed effect to its item and slot, cleared on unequip, drop, sell, swap or destruction, with save/load and a relaunch covered. Joiners are covered too, if their gear activates.
+- **Related existing items to fold in:** backlog 999.15 (the spell and skill review) and the 2026-09-27 PARTY_WIDE_ITEM_EFFECTS (Crystal Staff).
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
