@@ -118,13 +118,13 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 
 ### Android & Play (DROID)
 
-- [ ] **DROID-01**: The release AAB is built with R8 minify, shrink and obfuscation on AGP 8.13, and ships a deobfuscation mapping. A release-signed build on the Pixel 7 boots, saves and resumes, handles back, and plays sound and haptics as before. (todo 2026-09-23 enable-r8)
-- [ ] **DROID-02**: The game draws correctly edge-to-edge on Android 15+, in both gesture and 3-button navigation and with a display cutout, and uses no deprecated window or status-bar APIs Play flags. (backlog 999.9)
-- [ ] **DROID-03**: On large screens (tablets, foldables, Chromebooks), the game presents a deliberate, documented layout, such as a letterboxed portrait column, rather than a broken one, and Play's display-configuration warning is addressed or consciously accepted. (backlog 999.9)
+- [x] **DROID-01**: The release AAB is built with R8 minify, shrink and obfuscation on AGP 8.13, and ships a deobfuscation mapping. A release-signed build on the Pixel 7 boots, saves and resumes, handles back, and plays sound and haptics as before. (todo 2026-09-23 enable-r8)
+- [x] **DROID-02**: The game draws correctly edge-to-edge on Android 15+, in both gesture and 3-button navigation and with a display cutout, and uses no deprecated window or status-bar APIs Play flags. (backlog 999.9)
+- [x] **DROID-03**: On large screens (tablets, foldables, Chromebooks), the game presents a deliberate, documented layout, such as a letterboxed portrait column, rather than a broken one, and Play's display-configuration warning is addressed or consciously accepted. (backlog 999.9)
 
 ### Tooling (TOOL)
 
-- [ ] **TOOL-01**: A fit-tool run resumed from its JSONL log retraces the same walk as the live run, including after an infeasible (`+Infinity`) point. Per-block stdout is appended, not truncated. (todo 2026-09-21 fit-tool-replay)
+- [x] **TOOL-01**: A fit-tool run resumed from its JSONL log retraces the same walk as the live run, including after an infeasible (`+Infinity`) point. Per-block stdout is appended, not truncated. (todo 2026-09-21 fit-tool-replay)
 
 ## Future Requirements
 
@@ -196,10 +196,10 @@ Audit findings (2026-09-24, checked against Phase 31's `31-ROLL-DIRECTION-AUDIT.
 | VOX-04 | Phase 79 | Complete |
 | ROLL-04 | Phase 79 | Complete |
 | VOX-05 | Phase 79 | Complete |
-| DROID-01 | Phase 80 | Pending |
-| DROID-02 | Phase 80 | Pending |
-| DROID-03 | Phase 80 | Pending |
-| TOOL-01 | Phase 80 | Pending |
+| DROID-01 | Phase 80 | Complete |
+| DROID-02 | Phase 80 | Complete |
+| DROID-03 | Phase 80 | Complete |
+| TOOL-01 | Phase 80 | Complete |
 | BUG-01 | Phase 79.3 | Complete |
 | BUG-02 | Phase 79.3 | Complete |
 | BUG-03 | Phase 79.3 | Complete |

@@ -54,7 +54,10 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [x] **Phase 77: Combat Screen & Oracle Readability** - submenu rows, spell sort, foe family, Oracle order, scroll narration, the last fight-log row, and active effect indicators (completed 2026-09-26)
 - [x] **Phase 78: HUD, Dead State & Climb Decisions** - band-1 identity, dead-state lockdown, the DEAD-screen character sheet, text-size/settings/stairs-fade fixes, and the climb/leap decision card (completed 2026-09-27)
 - [x] **Phase 79: Content & Narrative Pass** - sub-class/race blurbs, roll-direction phrasing, and the full narrative clarity sweep (completed 2026-09-27)
-- [ ] **Phase 80: Android Release Build & Tooling** - R8 minify/shrink, edge-to-edge and large-screen handling, and the fit tool's replay-resume fix
+- [x] **Phase 79.3: In-app bug reports and patch notes** (INSERTED) - ☰ REPORT A BUG → Firestore → a GitHub issue via a scheduled Action; PATCH NOTES in game, on GitHub, Play and the website (completed 2026-09-28)
+- [x] **Phase 79.2: Early-floor difficulty retune** (INSERTED) - floors 1–12 harder; fair-bot p50 death ~3–4 (completed 2026-09-28)
+- [x] **Phase 79.1: Milestone Balance Check & Deep-Floor Tuning** (INSERTED) - the bots run once at the milestone end; deep-floor dials tuned and measured (completed 2026-09-28)
+- [x] **Phase 80: Android Release Build & Tooling** - R8 minify/shrink, edge-to-edge and large-screen handling, and the fit tool's replay-resume fix (completed 2026-09-28)
 - [x] **Phase 81: Leaderboards Panel Fixes** - YOU tag, standing card, ME | ALL | FRIENDS scopes with ALL default when signed in, LINEAGE ME-only, GRAVEYARD and LEANEST removed (completed 2026-09-25)
 
 ## Phase Details
@@ -572,7 +575,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 79.3-05-PLAN.md — The REPORT A BUG sheet (BUG-01/02): the public notice, a 2,000-character box with a near-limit counter, SEND/CANCEL, the idle/sending/sent/failed states with the draft kept in memory, send through bugReport.js, the back button and a keydown guard; the phase why-ledger (q-260928-z5-bug.json) and review page
+- [x] 79.3-05-PLAN.md — The REPORT A BUG sheet (BUG-01/02): the public notice, a 2,000-character box with a near-limit counter, SEND/CANCEL, the idle/sending/sent/failed states with the draft kept in memory, send through bugReport.js, the back button and a keydown guard; the phase why-ledger (q-260928-z5-bug.json) and review page
 - [x] 79.3-06-PLAN.md — Docs and compliance (BUG-02/03/04): docs/BUG-REPORTS.md (architecture, operations, key rotation, kill switch, the 60-day schedule note) and LISTING.md's Data safety answers plus the privacy-policy draft paragraph
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -581,7 +584,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion; orchestrator-run)*
 
-- [ ] 79.3-08-PLAN.md — Orchestrator-run provisioning and the live test (D-17): Firestore (default) in nam5, the rules deployed, the Firestore-restricted API key committed, the ddr-bug-reports service account and the FIREBASE_BUG_REPORTS_SA secret, the player-report label, then push, the live rules probe, test report → dry run → real run → one issue → no duplicate → closed, and 79.3-VERIFICATION.md
+- [x] 79.3-08-PLAN.md — Orchestrator-run provisioning and the live test (D-17): Firestore (default) in nam5, the rules deployed, the Firestore-restricted API key committed, the ddr-bug-reports service account and the FIREBASE_BUG_REPORTS_SA secret, the player-report label, then push, the live rules probe, test report → dry run → real run → one issue → no duplicate → closed, and 79.3-VERIFICATION.md
 
 ### Phase 79.2: Early-floor difficulty retune (floors 1-12 harder: fair-bot p50 death ~3-4) (INSERTED)
 
@@ -672,11 +675,11 @@ Plans:
 
 **Wave 2: BUILD PART, the one release build; milestone end, after Phase 79.1**
 
-- [ ] 80-04-PLAN.md — BUILD PART (milestone end, after Phase 79.1): make Phase 80's ONE release build and run every build-dependent check against it (R8 keeps, the embedded mapping, shrink survivors, the status-bar plugin gone, the deprecated-API sc...
+- [x] 80-04-PLAN.md — BUILD PART (milestone end, after Phase 79.1): make Phase 80's ONE release build and run every build-dependent check against it (R8 keeps, the embedded mapping, shrink survivors, the status-bar plugin gone, the deprecated-API sc...
 
 **Wave 3: BUILD PART, the emulator pass on that same build**
 
-- [ ] 80-05-PLAN.md — BUILD PART (milestone end, after Phase 79.1): run the emulator pass on 80-04's single release build without rebuilding: an R8 release smoke, edge-to-edge in gesture and 3-button navigation and with a display cutout, and the tab...
+- [x] 80-05-PLAN.md — BUILD PART (milestone end, after Phase 79.1): run the emulator pass on 80-04's single release build without rebuilding: an R8 release smoke, edge-to-edge in gesture and 3-button navigation and with a display cutout, and the tab...
 
 **UI hint**: yes
 **Device check**: yes — DROID-02/03 recommended for `--research-phase` (Android 15/16 edge-to-edge + large-screen handling); needs device checks in both navigation modes plus an emulator tablet/foldable, batched into the milestone-close Pixel 7 checklist.
@@ -743,7 +746,7 @@ Plans:
 | 77. Combat Screen & Oracle Readability | v2.1 | 8/8 | Complete    | 2026-09-26 |
 | 78. HUD, Dead State & Climb Decisions | v2.1 | 9/9 | Complete    | 2026-09-27 |
 | 79. Content & Narrative Pass | v2.1 | 15/13 | Complete    | 2026-09-27 |
-| 80. Android Release Build & Tooling | v2.1 | 4/6 | In Progress|  |
+| 80. Android Release Build & Tooling | v2.1 | 6/6 | Complete    | 2026-09-28 |
 | 81. Leaderboards Panel Fixes | v2.1 | 6/6 | Complete    | 2026-09-25 |
 | 65. Run Record & Personal Bests | v2.0 | 5/5 | Complete    | 2026-09-23 |
 | 66. Leaderboards Panel — Local | v2.0 | 7/7 | Complete    | 2026-09-23 |

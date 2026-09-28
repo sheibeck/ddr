@@ -6,7 +6,7 @@
 
 **Install note:** the Play build and a debug APK have different signers. Installing one over the other needs an uninstall first, and the uninstall deletes saves.
 
-**Sources:** the `human_verification` list of each v2.1 phase VERIFICATION.md (102 items), plus the quick-task checks in section Q.
+**Sources:** the `human_verification` list of each v2.1 phase VERIFICATION.md (108 items, with Phase 80), plus the quick-task checks in section Q.
 
 ## 0. User tasks (console and store) (3)
 
@@ -222,6 +222,19 @@ Source: `.planning/phases/81-leaderboards-panel-fixes/81-VERIFICATION.md`
 | 15.6 | LEANEST is gone from the rail; an old save with LEANEST bests and queued runs loads cleanly and nothing is submitted to it | open |
 | 15.7 | A new deeper run lands on ME DEEPEST above older ones (a depth-10 run tops a depth-9); if the earlier missing depth-10 run's gravestone is still stored, it reappears on ME DEEPEST after the update's first launch | open |
 | 15.8 | After the update ships: delete the Season-1 LEANEST board (CgkIlvbN0YYPEAIQAw) in Play Console per docs/PLAY-GAMES-SETUP.md §13 (leave it if the console refuses) | open |
+
+## 16. Phase 80: Android release build tooling (6)
+
+The emulator pass (80-05) was cancelled by the user on 2026-09-28 and deferred until the features are in. These are the Pixel 7 checks on the uploaded 2.1.0 (vc11) R8 build.
+
+| # | Check | Result |
+|---|-------|--------|
+| 16.1 | The Play build (2.1.0, R8-minified) installs, boots to the title and plays a run with no crash. | open |
+| 16.2 | Force-stop mid-run and relaunch: the same hero resumes. | open |
+| 16.3 | The back gesture on the map shows the confirm-quit prompt; in a sheet or menu it closes that first. | open |
+| 16.4 | Sound, music and haptics work as in 2.0. | open |
+| 16.5 | In gesture navigation and in 3-button navigation, the HUD sits below the status bar and camera cutout, and the bottom dock clears the navigation bar or gesture handle. | open |
+| 16.6 | After Play's next pre-launch report: the edge-to-edge and deprecated-API warnings are gone, or name only the androidx/splashscreen back-compat rows recorded in docs/ANDROID-DISPLAY.md. | open |
 
 ## Q. Quick tasks since 2.0 (device checks)
 
