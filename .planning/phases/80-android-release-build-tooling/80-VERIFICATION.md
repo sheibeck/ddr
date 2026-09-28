@@ -20,4 +20,6 @@ deferred:
 | DROID-02 (edge-to-edge, no deprecated APIs) | 80-02 swapped @capacitor/status-bar for the SystemBars core plugin. 80-04: status-bar is gone from mapping.txt and capacitor.plugins.json; the deprecated-API scan exits 0 with no `--fail-on` matches; the splash-screen legacy calls are unreachable with this config. | passed (nav-mode and cutout checks are in UAT §16.5–16.6) |
 | DROID-03 (large-screen layout) | 80-03 letterbox column plus appCategory=game and a portrait lock. 80-04's manifest check: appCategory 0, screenOrientation 1. The browser letterbox passes 5/5 viewports (phone, tablet, foldable, Chromebook, the newer overlays), with screenshots in 80-screens/. | passed (emulator tablet/fold checks deferred with 80-05) |
 
+| TOOL-01 (fit-tool resume retraces) | 80-06: `appendTranscript`, `--transcript`, and the `--force-infeasible` test seam. test/difficulty/fit-difficulty-cli.test.js proves a two-block resume retraces the live search exactly, including through a forced +Infinity point. It is in the full gate (7,902 pass). | passed |
+
 Plans: 80-01, 02, 03, 04 and 06 are complete; 80-05 is deferred (see 80-05-SUMMARY.md).
