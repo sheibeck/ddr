@@ -1,0 +1,45 @@
+ability-ablation Thief: 1000 paired seeds (i*7919+1), shipped dials, BOT_DEFAULTS, class forced (sub/race rolled); stuck runs INCLUDED at the depth reached
+BASELINE p50=5.0 mean=5.42 reach5=65.6 reach8=14.8 stuck=85
+
+ablation                    aff |   p50   dP50 [95%]         |  dMean [95%]           | reach5    dR5 [95%]         | reach8    dR8 [95%]         | stk | affected seeds only: p50 base->abl, dMean [95%], dR5 [95%]
+ability:silentStep          269 |   5.0   +0.0 [-1.0,+0.0]   |  -0.11 [-0.20,-0.04]   |   63.6   -2.0 [-3.8,-0.2]   |   13.4   -1.4 [-2.9,+0.1]   |  76 | p50 6.0->5.0 dMean -0.43 [-0.72,-0.13] dR5 -7.4 [-14.5,-0.7]
+ability:feint               286 |   5.0   +0.0 [-1.0,+0.0]   |  -0.11 [-0.19,-0.03]   |   63.9   -1.7 [-3.7,+0.3]   |   13.9   -0.9 [-2.5,+0.6]   |  78 | p50 6.0->5.0 dMean -0.38 [-0.69,-0.08] dR5 -5.9 [-13.3,+1.0]
+sub:Acrobat                 125 |   5.0   +0.0 [-1.0,+0.0]   |  -0.09 [-0.15,-0.04]   |   64.3   -1.3 [-2.6,-0.1]   |   13.3   -1.5 [-2.6,-0.4]   |  81 | p50 6.0->5.0 dMean -0.76 [-1.17,-0.37] dR5 -10.4 [-20.0,-1.6]
+
+Usage and damage share (baseline, 1000 runs, 11751 fights, 104741 foe HP removed, 8165 kills):
+  ability        ownRuns useRuns ownFights   uses use/ownFight fightsUsed%   dmg% kills% dmg/use
+  silentStep         323     269      3948   2537         0.64        64.3   23.2   17.3     9.6
+  feint              288     286      3497   2148         0.61        61.4   17.2   14.0     8.4
+  dirtyTrick         466     379      5404   2794         0.52        51.7    1.3    0.9     0.5
+  smoke              384     285      4631    604         0.13        13.0    0.1    0.2     0.1
+  cutpurse           366     296      3375   1391         0.41        41.2    0.8    0.6     0.6
+  poisonedEdge       384     326      3997   2059         0.52        44.5   12.4    2.2     6.3
+  hamstring          354      88      3454    556         0.16        16.1    0.2    0.2     0.4
+  mark               379     104      3672    696         0.19        19.0    0.4    0.2     0.6
+  attack (hero plain strikes; Joiner damage rides along): dmg 44.0%  kills 64.0%
+  spell  (hero casts; Joiner damage rides along): dmg 0.0%  kills 0.0%
+  other  (hero items/flees/waits; Joiner damage rides along): dmg 0.5%  kills 0.5%
+Hero strike damage by source (struck events): silentStep 26.7%, feint 20.7%, backstab 16.8%, plain 13.9%, crit 13.2%, cutthroat 4.9%, ninja 3.8%
+Flee: 3635/5907 attempts succeeded (61.5%), 5.91 attempts per run
+
+Baseline by sub-class:
+  Acrobat         n= 125 stuck= 11 p50= 6.0 mean= 5.94 reach5= 74.4 reach8= 23.2
+  Cat Burglar     n= 114 stuck= 10 p50= 5.0 mean= 4.90 reach5= 62.3 reach8=  7.9
+  Cloaker         n= 130 stuck= 14 p50= 5.0 mean= 5.57 reach5= 69.2 reach8= 16.9
+  Con Artist      n= 133 stuck= 11 p50= 5.0 mean= 5.32 reach5= 61.7 reach8= 12.0
+  Cutthroat       n= 130 stuck= 10 p50= 5.0 mean= 5.15 reach5= 58.5 reach8= 12.3
+  Ninja           n= 114 stuck= 11 p50= 6.0 mean= 6.03 reach5= 74.6 reach8= 21.9
+  Pickpocket      n= 137 stuck=  7 p50= 5.0 mean= 4.98 reach5= 58.4 reach8= 10.9
+  Pilfer          n= 117 stuck= 11 p50= 6.0 mean= 5.54 reach5= 67.5 reach8= 13.7
+
+Damage per combat turn by hero level (foe HP removed on the step; Joiner/DoT damage rides along):
+  lvl    turns drop/turn taken/turn atk/atkTurn atkTurn% spell/cast  cast% abil/use  abil%
+  1      55729      1.48       1.93        1.59     49.8          -    0.0     3.49   19.2
+  2       5636      2.82       3.17        4.28     21.8          -    0.0     7.79   24.0
+  3       1983      2.83       2.96        4.28     22.0          -    0.0     5.77   32.1
+  4        308      3.12       3.48        6.16     18.8          -    0.0     5.99   32.8
+  5         36      2.11       1.03       15.75     11.1          -    0.0     1.30   27.8
+  all: 63692 combat turns, 1.64 foe HP removed/turn, 2.08 hero HP lost/turn, 11.75 fights/run, 5.42 turns/fight
+
+Defensives: hero HP lost per combat turn in the use step + the next (all combat turns: 2.08; the bot presses these only under half HP, so the window is biased toward hard fights):
+  smoke          window turns=  1195 lost/turn=1.26

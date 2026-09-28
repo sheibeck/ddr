@@ -1,0 +1,76 @@
+ability-ablation Fighter: 200 paired seeds (i*7919+1), shipped dials, BOT_DEFAULTS, class forced (sub/race rolled); stuck runs INCLUDED at the depth reached
+BASELINE p50=5.0 mean=4.80 reach5=53.0 reach8=10.5 stuck=9
+
+ablation                    aff |   p50   dP50 [95%]         |  dMean [95%]           | reach5    dR5 [95%]         | reach8    dR8 [95%]         | stk | affected seeds only: p50 base->abl, dMean [95%], dR5 [95%]
+ability:*                   199 |   4.0   -1.0 [-1.0,+0.0]   |  -0.35 [-0.65,-0.04]   |   47.0   -6.0 [-14.5,+2.5]  |    6.0   -4.5 [-9.5,+0.5]   |   6 | p50 5.0->4.0 dMean -0.35 [-0.67,-0.04] dR5 -6.0 [-14.6,+2.5]
+ability:kata                 31 |   4.5   -0.5 [-1.0,+0.0]   |  -0.13 [-0.28,-0.00]   |   50.0   -3.0 [-6.5,+0.5]   |    9.0   -1.5 [-4.0,+0.5]   |  10 | p50 5.0->4.0 dMean -0.87 [-1.71,-0.06] dR5 -19.4 [-41.9,+3.2]
+ability:deathTouch           39 |   5.0   +0.0 [+0.0,+1.0]   |  +0.04 [-0.07,+0.17]   |   54.5   +1.5 [-1.0,+4.0]   |   11.0   +0.5 [-2.0,+3.0]   |  11 | p50 4.0->4.0 dMean +0.23 [-0.36,+0.85] dR5 +7.7 [-5.1,+20.5]
+ability:sidestep             16 |   5.0   +0.0 [-1.0,+0.0]   |  -0.02 [-0.08,+0.03]   |   52.5   -0.5 [-2.5,+1.0]   |   10.0   -0.5 [-1.5,+0.0]   |   8 | p50 4.5->4.0 dMean -0.25 [-1.00,+0.38] dR5 -6.3 [-31.3,+12.5]
+ability:pommelStrike        102 |   4.0   -1.0 [-1.0,+0.0]   |  -0.18 [-0.38,+0.01]   |   48.5   -4.5 [-10.0,+1.0]  |    9.5   -1.0 [-5.0,+2.5]   |   9 | p50 5.0->4.0 dMean -0.36 [-0.75,+0.03] dR5 -8.8 [-19.6,+2.0]
+ability:battleRoar           29 |   5.0   +0.0 [+0.0,+1.0]   |  +0.08 [-0.05,+0.23]   |   54.5   +1.5 [-2.0,+5.0]   |   11.5   +1.0 [-0.5,+3.0]   |   8 | p50 4.0->4.0 dMean +0.59 [-0.41,+1.55] dR5 +10.3 [-13.8,+34.5]
+ability:secondWind           48 |   5.0   +0.0 [-1.0,+0.0]   |  +0.00 [-0.11,+0.13]   |   51.5   -1.5 [-5.0,+2.0]   |   11.0   +0.5 [-1.5,+3.0]   |   8 | p50 4.5->4.0 dMean +0.02 [-0.44,+0.50] dR5 -6.3 [-18.8,+6.3]
+ability:sweep                65 |   5.0   +0.0 [-1.0,+0.0]   |  -0.13 [-0.29,+0.05]   |   50.5   -2.5 [-7.5,+2.5]   |    9.5   -1.0 [-3.5,+1.5]   |   9 | p50 5.0->5.0 dMean -0.38 [-0.88,+0.11] dR5 -7.7 [-21.5,+7.7]
+ability:brace                46 |   5.0   +0.0 [+0.0,+1.0]   |  +0.06 [-0.06,+0.18]   |   54.5   +1.5 [-1.5,+5.0]   |   10.5   +0.0 [-3.0,+3.0]   |  11 | p50 5.0->5.5 dMean +0.24 [-0.28,+0.76] dR5 +6.5 [-6.5,+21.7]
+ability:riposte              26 |   5.0   +0.0 [-1.0,+0.0]   |  -0.00 [-0.08,+0.08]   |   51.5   -1.5 [-4.0,+1.0]   |   10.0   -0.5 [-1.5,+0.0]   |   7 | p50 6.0->6.0 dMean -0.04 [-0.65,+0.62] dR5 -11.5 [-30.8,+7.7]
+ability:taunt                34 |   5.0   +0.0 [-1.0,+0.0]   |  -0.07 [-0.18,+0.02]   |   51.5   -1.5 [-4.5,+1.0]   |    9.5   -1.0 [-3.0,+1.0]   |   8 | p50 5.5->6.0 dMean -0.44 [-1.09,+0.15] dR5 -8.8 [-26.5,+5.9]
+ability:overheadBlow         66 |   5.0   +0.0 [-1.0,+0.0]   |  -0.02 [-0.12,+0.08]   |   52.0   -1.0 [-3.0,+1.0]   |   10.5   +0.0 [-3.0,+3.0]   |   9 | p50 5.0->5.5 dMean -0.06 [-0.36,+0.21] dR5 -3.0 [-9.1,+3.0]
+ability:lastStand             3 |   5.0   +0.0 [+0.0,+0.0]   |  -0.02 [-0.06,+0.00]   |   53.0   +0.0 [+0.0,+0.0]   |   10.0   -0.5 [-1.5,+0.0]   |  10 | p50 3.0->3.0 dMean -1.33 [-4.00,+0.00] dR5 +0.0 [+0.0,+0.0]
+skill:Stealth                45 |   5.0   +0.0 [+0.0,+0.0]   |  +0.00 [-0.04,+0.04]   |   53.0   +0.0 [+0.0,+0.0]   |   10.5   +0.0 [-1.5,+1.5]   |   9 | p50 5.0->5.0 dMean +0.00 [-0.18,+0.16] dR5 +0.0 [+0.0,+0.0]
+skill:Hardiness              21 |   5.0   +0.0 [-1.0,+0.0]   |  -0.10 [-0.21,+0.00]   |   50.5   -2.5 [-5.5,+0.5]   |    8.5   -2.0 [-4.0,-0.5]   |  10 | p50 5.0->5.0 dMean -0.95 [-1.86,+0.00] dR5 -23.8 [-52.4,+4.8]
+skill:Ambidextrous           31 |   5.0   +0.0 [-1.0,+1.0]   |  -0.04 [-0.15,+0.05]   |   52.5   -0.5 [-4.0,+3.0]   |   10.5   +0.0 [-2.0,+2.0]   |   8 | p50 5.0->5.0 dMean -0.29 [-0.97,+0.35] dR5 -3.2 [-25.8,+19.4]
+sub:Knight                   27 |   5.0   +0.0 [-1.0,+1.0]   |  +0.02 [-0.12,+0.15]   |   53.0   +0.0 [-3.5,+3.0]   |   11.5   +1.0 [-1.5,+4.0]   |  13 | p50 4.0->4.0 dMean +0.11 [-0.81,+1.11] dR5 +0.0 [-22.2,+25.9]
+sub:Guard                    27 |   4.0   -1.0 [-1.0,+0.0]   |  -0.07 [-0.19,+0.03]   |   49.5   -3.5 [-6.5,-0.5]   |   10.5   +0.0 [-1.5,+1.5]   |  11 | p50 5.0->4.0 dMean -0.56 [-1.37,+0.26] dR5 -25.9 [-48.1,-3.7]
+sub:Woodsman                 19 |   5.0   +0.0 [-1.0,+0.5]   |  -0.05 [-0.17,+0.04]   |   52.5   -0.5 [-3.0,+2.0]   |   10.0   -0.5 [-1.5,+0.0]   |   8 | p50 4.0->4.0 dMean -0.53 [-1.74,+0.42] dR5 -5.3 [-31.6,+21.1]
+sub:Soldier                  31 |   5.0   +0.0 [-1.0,+0.5]   |  -0.03 [-0.17,+0.09]   |   52.0   -1.0 [-4.5,+2.5]   |   10.0   -0.5 [-1.5,+0.0]   |  10 | p50 5.0->4.0 dMean -0.19 [-1.03,+0.65] dR5 -6.5 [-29.0,+16.1]
+sub:Barbarian                24 |   5.0   +0.0 [+0.0,+1.0]   |  -0.02 [-0.13,+0.09]   |   55.0   +2.0 [-0.5,+5.0]   |    9.0   -1.5 [-4.0,+0.5]   |  11 | p50 5.0->5.0 dMean -0.17 [-1.08,+0.79] dR5 +16.7 [-4.2,+37.5]
+sub:Master of Arms           22 |   5.0   +0.0 [-0.5,+1.0]   |  +0.02 [-0.10,+0.13]   |   53.5   +0.5 [-2.5,+3.5]   |   10.5   +0.0 [-1.5,+1.5]   |  10 | p50 5.0->5.5 dMean +0.14 [-0.91,+1.05] dR5 +4.5 [-22.7,+31.8]
+sub:Samurai                  25 |   5.0   +0.0 [-0.5,+1.0]   |  +0.10 [-0.04,+0.25]   |   54.0   +1.0 [-2.5,+4.5]   |   11.5   +1.0 [-1.5,+3.5]   |  10 | p50 5.0->6.0 dMean +0.80 [-0.32,+1.92] dR5 +8.0 [-20.0,+36.0]
+sub:Bard                     25 |   5.0   +0.0 [-1.0,+0.5]   |  -0.04 [-0.14,+0.05]   |   52.0   -1.0 [-4.0,+1.5]   |   10.0   -0.5 [-1.5,+0.0]   |   6 | p50 4.0->3.0 dMean -0.32 [-1.12,+0.44] dR5 -8.0 [-32.0,+12.0]
+samuraiBlade                 25 |   4.0   -1.0 [-1.0,+0.0]   |  -0.17 [-0.26,-0.08]   |   49.5   -3.5 [-6.0,-1.0]   |    8.5   -2.0 [-4.0,-0.5]   |  10 | p50 5.0->3.0 dMean -1.32 [-1.96,-0.76] dR5 -28.0 [-44.0,-12.0]
+
+Usage and damage share (baseline, 200 runs, 2037 fights, 20710 foe HP removed, 1620 kills):
+  ability        ownRuns useRuns ownFights   uses use/ownFight fightsUsed%   dmg% kills% dmg/use
+  kata                31      31       319    239         0.75        74.9   10.6    8.6     9.2
+  deathTouch          40      39       384    253         0.66        65.9    4.2    3.6     3.4
+  sidestep            20      16       188     40         0.21        20.2    0.0    0.0     0.0
+  pommelStrike       111     102      1111    746         0.67        67.1    2.1    1.3     0.6
+  battleRoar          34      29       312    216         0.69        69.2    0.6    0.7     0.6
+  secondWind          62      48       575    103         0.18        17.6    0.0    0.1     0.1
+  sweep               65      65       636    650         1.02        76.6   21.0   14.8     6.7
+  brace               65      46       642    163         0.25        14.6    0.0    0.2     0.1
+  riposte             44      26       406     62         0.15        15.0    2.0    2.1     6.8
+  taunt               55      34       501     88         0.18        15.0    0.2    0.1     0.5
+  overheadBlow        70      66       604    305         0.50        50.2    3.8    2.8     2.6
+  lastStand           46       3       405      6         0.01         1.5    0.5    0.2    16.2
+  attack (hero plain strikes; Joiner damage rides along): dmg 53.3%  kills 65.0%
+  spell  (hero casts; Joiner damage rides along): dmg 0.0%  kills 0.0%
+  other  (hero items/flees/waits; Joiner damage rides along): dmg 0.8%  kills 0.6%
+Hero strike damage by source (struck events): plain 50.2%, crit 21.3%, kata 13.4%, overheadBlow 9.5%, stealth 3.2%, deathTouch 1.9%, lastStand 0.6%
+Second Wind healed 576 HP in total (5.6 per use)
+Flee: 460/1502 attempts succeeded (30.6%), 7.51 attempts per run
+
+Baseline by sub-class:
+  Barbarian       n=  24 stuck=  1 p50= 5.0 mean= 5.08 reach5= 54.2 reach8= 16.7
+  Bard            n=  25 stuck=  3 p50= 4.0 mean= 4.12 reach5= 36.0 reach8=  4.0
+  Guard           n=  27 stuck=  0 p50= 5.0 mean= 4.70 reach5= 66.7 reach8=  3.7
+  Knight          n=  27 stuck=  2 p50= 4.0 mean= 4.96 reach5= 44.4 reach8= 14.8
+  Master of Arms  n=  22 stuck=  0 p50= 5.0 mean= 4.91 reach5= 63.6 reach8=  4.5
+  Samurai         n=  25 stuck=  1 p50= 5.0 mean= 5.04 reach5= 60.0 reach8= 16.0
+  Soldier         n=  31 stuck=  1 p50= 5.0 mean= 4.77 reach5= 51.6 reach8= 12.9
+  Woodsman        n=  19 stuck=  1 p50= 4.0 mean= 4.89 reach5= 47.4 reach8= 10.5
+
+Damage per combat turn by hero level (foe HP removed on the step; Joiner/DoT damage rides along):
+  lvl    turns drop/turn taken/turn atk/atkTurn atkTurn% spell/cast  cast% abil/use  abil%
+  1      15113      1.05       2.03        0.99     61.8          -    0.0     2.76   15.8
+  2       1041      2.96       5.03        4.15     28.5          -    0.0     6.46   27.4
+  3        522      2.79       2.59        3.26     30.5          -    0.0     5.43   30.1
+  4        132      1.99       4.23        6.26     14.4          -    0.0     3.20   34.1
+  5         13      0.00       1.46           -      0.0          -    0.0        -    0.0
+  all: 16821 combat turns, 1.23 foe HP removed/turn, 2.25 hero HP lost/turn, 10.19 fights/run, 8.26 turns/fight
+
+Defensives: hero HP lost per combat turn in the use step + the next (all combat turns: 2.25; the bot presses these only under half HP, so the window is biased toward hard fights):
+  sidestep       window turns=    80 lost/turn=2.75
+  secondWind     window turns=   206 lost/turn=2.59
+  brace          window turns=   323 lost/turn=2.04
+  riposte        window turns=    99 lost/turn=5.08
+  taunt          window turns=   174 lost/turn=3.07

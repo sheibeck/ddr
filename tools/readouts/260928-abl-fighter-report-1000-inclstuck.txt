@@ -1,0 +1,56 @@
+ability-ablation Fighter: 1000 paired seeds (i*7919+1), shipped dials, BOT_DEFAULTS, class forced (sub/race rolled); stuck runs INCLUDED at the depth reached
+BASELINE p50=5.0 mean=4.92 reach5=56.0 reach8=10.9 stuck=51
+
+ablation                    aff |   p50   dP50 [95%]         |  dMean [95%]           | reach5    dR5 [95%]         | reach8    dR8 [95%]         | stk | affected seeds only: p50 base->abl, dMean [95%], dR5 [95%]
+ability:kata                180 |   5.0   +0.0 [-1.0,+0.0]   |  -0.18 [-0.26,-0.11]   |   52.2   -3.8 [-5.6,-2.1]   |    9.5   -1.4 [-2.5,-0.2]   |  43 | p50 5.0->4.0 dMean -1.01 [-1.39,-0.65] dR5 -21.1 [-30.6,-11.7]
+ability:pommelStrike        503 |   5.0   +0.0 [+0.0,+0.0]   |  -0.09 [-0.19,+0.00]   |   53.4   -2.6 [-5.0,-0.1]   |   10.2   -0.7 [-2.2,+0.9]   |  43 | p50 5.0->5.0 dMean -0.18 [-0.38,+0.02] dR5 -5.2 [-10.5,-0.2]
+ability:sweep               304 |   5.0   +0.0 [-1.0,+0.0]   |  -0.19 [-0.27,-0.10]   |   52.6   -3.4 [-5.5,-1.3]   |    8.8   -2.1 [-3.4,-0.8]   |  43 | p50 5.0->5.0 dMean -0.61 [-0.88,-0.36] dR5 -11.2 [-18.1,-4.6]
+skill:Hardiness             106 |   5.0   +0.0 [+0.0,+0.0]   |  -0.10 [-0.16,-0.05]   |   53.9   -2.1 [-3.4,-0.8]   |    9.2   -1.7 [-2.8,-0.7]   |  57 | p50 5.0->5.0 dMean -0.98 [-1.47,-0.48] dR5 -19.8 [-31.1,-8.5]
+samuraiBlade                117 |   5.0   +0.0 [+0.0,+0.0]   |  -0.11 [-0.16,-0.06]   |   53.1   -2.9 [-4.1,-1.7]   |   10.2   -0.7 [-1.5,+0.0]   |  51 | p50 5.0->3.0 dMean -0.93 [-1.33,-0.55] dR5 -24.8 [-35.0,-15.4]
+
+Usage and damage share (baseline, 1000 runs, 10598 fights, 105167 foe HP removed, 8230 kills):
+  ability        ownRuns useRuns ownFights   uses use/ownFight fightsUsed%   dmg% kills% dmg/use
+  kata               181     180      2088   1528         0.73        73.2   13.9   11.0     9.6
+  deathTouch         157     156      1511   1075         0.71        71.1    3.5    3.0     3.5
+  sidestep           140     118      1314    344         0.26        23.1    0.1    0.0     0.2
+  pommelStrike       581     503      6056   3794         0.63        62.6    2.0    1.3     0.6
+  battleRoar         191     169      1897   1236         0.65        65.2    0.6    0.4     0.5
+  secondWind         291     234      2972    543         0.18        18.2    0.1    0.0     0.1
+  sweep              307     304      3433   3065         0.89        70.2   20.1   12.6     6.9
+  brace              275     186      2550    691         0.27        16.1    0.0    0.1     0.0
+  riposte            280     184      2729    458         0.17        15.9    2.8    3.0     6.3
+  taunt              268     175      2429    429         0.18        15.2    0.1    0.1     0.2
+  overheadBlow       295     261      2518   1277         0.51        50.6    3.9    2.9     3.2
+  lastStand          277      15      2504     19         0.01         0.8    0.2    0.1    13.1
+  attack (hero plain strikes; Joiner damage rides along): dmg 51.7%  kills 65.1%
+  spell  (hero casts; Joiner damage rides along): dmg 0.0%  kills 0.0%
+  other  (hero items/flees/waits; Joiner damage rides along): dmg 0.4%  kills 0.3%
+Hero strike damage by source (struck events): plain 48.2%, crit 21.2%, kata 16.9%, overheadBlow 7.2%, stealth 4.4%, deathTouch 1.8%, lastStand 0.3%
+Second Wind healed 3084 HP in total (5.7 per use)
+Flee: 2407/7753 attempts succeeded (31.0%), 7.75 attempts per run
+
+Baseline by sub-class:
+  Barbarian       n= 133 stuck= 10 p50= 5.0 mean= 5.31 reach5= 61.7 reach8= 15.8
+  Bard            n= 129 stuck=  8 p50= 4.0 mean= 4.35 reach5= 45.0 reach8=  4.7
+  Guard           n= 120 stuck=  2 p50= 5.0 mean= 4.72 reach5= 53.3 reach8=  6.7
+  Knight          n= 137 stuck= 10 p50= 5.0 mean= 4.79 reach5= 50.4 reach8=  7.3
+  Master of Arms  n= 117 stuck=  4 p50= 5.0 mean= 5.20 reach5= 62.4 reach8= 15.4
+  Samurai         n= 117 stuck=  7 p50= 5.0 mean= 4.98 reach5= 60.7 reach8= 13.7
+  Soldier         n= 133 stuck=  3 p50= 5.0 mean= 5.04 reach5= 60.2 reach8= 13.5
+  Woodsman        n= 114 stuck=  7 p50= 5.0 mean= 4.99 reach5= 55.3 reach8= 10.5
+
+Damage per combat turn by hero level (foe HP removed on the step; Joiner/DoT damage rides along):
+  lvl    turns drop/turn taken/turn atk/atkTurn atkTurn% spell/cast  cast% abil/use  abil%
+  1      65473      1.25       2.15        1.31     53.7          -    0.0     2.91   18.6
+  2       5881      2.89       4.28        3.97     27.6          -    0.0     6.48   27.2
+  3       2015      2.94       3.52        3.30     30.5          -    0.0     6.30   30.1
+  4        161      1.92       4.83        7.40     12.4          -    0.0     3.50   28.6
+  5         13      0.00       1.46           -      0.0          -    0.0        -    0.0
+  all: 73543 combat turns, 1.43 foe HP removed/turn, 2.36 hero HP lost/turn, 10.60 fights/run, 6.94 turns/fight
+
+Defensives: hero HP lost per combat turn in the use step + the next (all combat turns: 2.36; the bot presses these only under half HP, so the window is biased toward hard fights):
+  sidestep       window turns=   684 lost/turn=2.25
+  secondWind     window turns=  1084 lost/turn=2.92
+  brace          window turns=  1372 lost/turn=2.27
+  riposte        window turns=   763 lost/turn=4.05
+  taunt          window turns=   840 lost/turn=3.46

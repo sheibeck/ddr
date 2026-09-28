@@ -1,0 +1,10 @@
+HP what-if (quick 260928-abl, scratch harness write of the hero's starting maxWP/wp on the run's first step, NOT a rule change; fair bot BOT_DEFAULTS, class forced, stuck runs excluded)
+Magic User with starting HP x1.553 (Fighter's mean 76.1): 200 paired seeds
+  baseline p50=3 mean=3.57 reach5=32.6 reach8=1.6 stuck=13
+  what-if  p50=4 mean=4.34 reach5=46.7 reach8=5.4 stuck=16
+Magic User with starting HP x1.218 (Thief's mean 59.7): 200 paired seeds
+  baseline p50=3 mean=3.57 reach5=32.6 reach8=1.6 stuck=13
+  what-if  p50=4 mean=3.97 reach5=37.8 reach8=4.1 stuck=7
+Fighter with starting HP x0.644 (Magic User's mean 49.0): 200 paired seeds
+  baseline p50=5 mean=4.78 reach5=51.8 reach8=11.0 stuck=9
+  what-if  p50=4 mean=3.90 reach5=34.8 reach8=1.6 stuck=13
