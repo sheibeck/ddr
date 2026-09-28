@@ -31,3 +31,8 @@ android/**/build/
 
 # Play upload-keystore credentials (machine-local, never commit)
 android/keystore.properties
+
+# Phase 79.3: service-account keys never enter the repo
+ddr-bug-reports*.json
+*service-account*.json
+*-sa-key*.json
