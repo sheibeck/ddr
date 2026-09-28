@@ -398,7 +398,8 @@ test("probe FEED-06 adjacency: Fireball spellHit + foeKilled fold into a felled 
 test("probe FEED-06 adjacency: a resisted spell shows only the resist line, no magic-hit line", () => {
   const out = linesForAction("castSpell", [{ type: "spellResisted", target: "Dante", spell: "Doze", roll: 3, intel: 4 }], {});
   assert.equal(out.length, 1);
-  assert.equal(out[0].text, "Dante resists Doze");
+  // Quick 260927-rsx: the line names whose spell it was and that it did nothing.
+  assert.equal(out[0].text, "Dante resists your Doze: no effect");
   assert.equal(out[0].tone, "miss");
   assert.ok(!out.some((t) => t.tone === "magic"));
 });

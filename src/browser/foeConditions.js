@@ -269,7 +269,8 @@ export const FOE_CONDITIONS = Object.freeze(
     { key: "senses", label: C.senses, desc: D.senses, tone: "bad", fields: ["senses"], when: (f) => !!f.senses, rounds: none },
     // Weaken is COMBAT-WIDE (C.weakened halves every foe's damage); its
     // duration lives on the hero's own c.timers["spell:weaken"] record.
-    { key: "weakened", label: C.weakened, desc: D.weakened, tone: "good", fields: ["weakened"], when: (f, s) => !!(s && s.combat && s.combat.weakened), rounds: (f, s) => weakenLeft(s) },
+    // Quick 260927-rsx: a foe that resisted the landed Weaken shows no chip.
+    { key: "weakened", label: C.weakened, desc: D.weakened, tone: "good", fields: ["weakened"], when: (f, s) => !!(s && s.combat && s.combat.weakened && !(f && f.weakenResisted)), rounds: (f, s) => weakenLeft(s) },
     // RULES-18 (Phase 75.3, Plan 04): resistControl marks `foe.resisted` with
     // the effect it just shook off — the ONE foe-card sign a control was
     // even attempted; tone "bad" (unlike every other entry here) because a

@@ -762,6 +762,20 @@ const RESIST_FOLD_EFFECTS = new Set([
   "insaneRolled",
   "insaneFled",
   "frozenSolid",
+  // Quick 260927-rsx (user ruling 2026-09-27): every spell cast on a foe now
+  // rolls a resist, thrown damage and a Joiner's cast and a staff's power
+  // included. A failed resist folds behind the throw, the Joiner's outcome,
+  // the Death spell's cast, the room-wide damage (Earthquake, Fireballs) and
+  // a staff's stone or fireballs, so the rail and the fight log never
+  // double a cast; the Oracle keeps every roll, either way.
+  "spellThrown",
+  "allySpellHit",
+  "allySpellMissed",
+  "deathCast",
+  "earthquake",
+  "volley",
+  "foeStoned",
+  "itemBurned",
 ]);
 
 /**
@@ -882,14 +896,31 @@ function spellChain(events, consumed) {
 function spellChainEvent(events, consumed, idxAt, patched) {
   const built = [];
 
+  // Quick 260927-rsx: a room-wide cast rolls one resist per foe, so a RUN of
+  // contiguous resistFailed lines for the same spell folds whole into an
+  // untargeted effect that follows it (Stun's "stunned", Weaken's
+  // "weakened"); a targeted effect folds only the resist right before it,
+  // for its own target, exactly as before.
   events.forEach((e, i) => {
     if (consumed.has(i) || e.type !== "resistFailed") return;
-    const j = nextLineIdx(events, i);
+    const run = [i];
+    let j = nextLineIdx(events, i);
+    while (j !== -1 && !consumed.has(j) && events[j].type === "resistFailed" && events[j].spell === e.spell) {
+      run.push(j);
+      j = nextLineIdx(events, j);
+    }
     if (j === -1 || consumed.has(j)) return;
     const oe = events[j];
-    if (RESIST_FOLD_EFFECTS.has(oe.type) && (oe.target === undefined || oe.target === e.target)) {
-      consumed.add(i);
+    if (!RESIST_FOLD_EFFECTS.has(oe.type)) return;
+    if (oe.target === undefined) {
+      run.forEach((k) => consumed.add(k));
       idxAt.set(j, i);
+      return;
+    }
+    const last = run[run.length - 1];
+    if (oe.target === events[last].target) {
+      consumed.add(last);
+      idxAt.set(j, last);
     }
   });
 
@@ -901,7 +932,7 @@ function spellChainEvent(events, consumed, idxAt, patched) {
     if (oe && oe.type === "spellMissed" && oe.target === target) {
       consumed.add(ti);
       consumed.add(j);
-      built.push({ ...LINE_FOR.spellMissed({ ...oe, spell: e0.spell }), idx: ti });
+      built.push({ ...LINE_FOR.spellMissed({ ...oe, spell: e0.spell }), idx: idxAt.get(ti) ?? ti });
       return;
     }
     if (oe && oe.type === "spellHit" && oe.target === target) {
@@ -912,10 +943,10 @@ function spellChainEvent(events, consumed, idxAt, patched) {
         consumed.add(k);
         const m = nextLineIdx(events, k);
         if (m !== -1 && !consumed.has(m) && events[m].type === "foeKilled" && events[m].name === target) consumed.add(m);
-        built.push({ text: `${e0.spell} — ${target} frozen solid`, tone: "magic", priority: PRIORITY.you, idx: ti });
+        built.push({ text: `${e0.spell} — ${target} frozen solid`, tone: "magic", priority: PRIORITY.you, idx: idxAt.get(ti) ?? ti });
         return;
       }
-      built.push({ ...LINE_FOR.spellHit({ ...oe, spell: e0.spell }), idx: ti });
+      built.push({ ...LINE_FOR.spellHit({ ...oe, spell: e0.spell }), idx: idxAt.get(ti) ?? ti });
       return;
     }
     for (let x = ti + 1; x < events.length; x++) {
@@ -1987,8 +2018,9 @@ export const LINE_FOR = {
   // Phase 25 (25-03): no trailing period — matches the aggregate-format
   // convention (struckByFoe/foeMissed/struck etc. carry none either) so a
   // resisted-spell line reads consistently with the rest of the pipeline.
-  spellResisted: (e) => ({ text: `${e?.target ?? "It"} resists ${e?.spell ?? "it"}`, tone: "miss", priority: PRIORITY.you }),
-  resistFailed: (e) => ({ text: `${e?.target ?? "It"} fails to resist.`, tone: "hit", priority: PRIORITY.you }),
+  // Quick 260927-rsx: the rail twins name the spell and whose it was.
+  spellResisted: (e) => ({ text: `${e?.target ?? "It"} resists ${e?.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e?.spell ?? "spell"}: no effect`, tone: "miss", priority: PRIORITY.you }),
+  resistFailed: (e) => ({ text: `${e?.target ?? "It"} fails to resist ${e?.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e?.spell ?? "spell"}.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   summonBackfired: (e) => ({ text: `Summoning: ${e?.spell ?? "The spell"} turned on you (−${e?.amount ?? 0} hp).`, tone: "hurt", priority: PRIORITY.you }),
   // Phase 40 (SPELL-04): `e?.lesser` (Lesser Summon) swaps the short form.
@@ -2006,7 +2038,8 @@ export const LINE_FOR = {
   // Phase 40 (SPELL-01, Weaken): the rounds count, when the payload carries one.
   // VOX-05 (Phase 79, plan 79-08): what Weaken does, and "(3)" now says rounds.
   weakened: (e) => ({
-    text: `Every foe weakened${e?.rounds ? `, ${railPlural(e.rounds, "round")}` : ""}: top three faces to hit, half damage.`,
+    // Quick 260927-rsx: `spared` counts the foes that resisted the cast.
+    text: `${e?.spared ? `Every foe but ${e.spared} weakened` : "Every foe weakened"}${e?.rounds ? `, ${railPlural(e.rounds, "round")}` : ""}: top three faces to hit, half damage.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),

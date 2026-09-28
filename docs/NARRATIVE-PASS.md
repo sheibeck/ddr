@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12.
+- Ledgers read: 260927-rsx, 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12.
 
 ## How to ask for changes
 
@@ -40,11 +40,11 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | Surface | Keys judged | Changed | Kept word for word | New | Rows on this page | Lines removed |
 |---|---:|---:|---:|---:|---:|---:|
 | blurbs (class and race blurbs, and their mechanical footers) | 39 | 21 | 18 | 100 | 121 | 0 |
-| oracle (the Oracle log) | 327 | 91 | 236 | 0 | 96 | 1 |
-| rail (rail lines and the fight log) | 287 | 74 | 213 | 0 | 74 | 1 |
+| oracle (the Oracle log) | 327 | 93 | 234 | 0 | 98 | 1 |
+| rail (rail lines and the fight log) | 287 | 76 | 211 | 0 | 76 | 1 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 0 | 13 | 0 |
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
-| combat-screen (the combat screen and its chips) | 203 | 10 | 193 | 0 | 20 | 1 |
+| combat-screen (the combat screen and its chips) | 203 | 10 | 193 | 2 | 22 | 1 |
 | items (item, gear and store text) | 110 | 10 | 100 | 0 | 13 | 0 |
 | spells (spells, abilities and skills) | 87 | 16 | 71 | 0 | 16 | 0 |
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 1 | 16 | 0 | 56 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **296** | **1575** | **110** | **482** | **79** |
+| **Total** | **1871** | **300** | **1571** | **112** | **488** | **79** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -186,7 +186,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## oracle — the Oracle log
 
-96 changed lines.
+98 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -253,6 +253,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:potionDrunk`<br>potionDrunk { amount 2, gained 1 } — a potion drunk 1 hp below full | +2 hp (1 potion left). | +1 hp (2 rolled, back to full; 1 potion left). | **79-02** (honest number, accurate to the engine): A potion near full printed the whole dose; it now leads with the HP it really restored, then the roll and 'back to full'. |
 | `oracle:purchaseBagged`<br>purchaseBagged — engine/economy.js#buyFrom stows a legal buy that is not an upgrade (the upgradeWhyText clause) | Into the bag: Dagger. Not an upgrade — d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing · loses your +2 practiced bonus. It is yours all the same; equip it from Gear if you know something the arithmetic does not. | Into the bag: Dagger. Not an upgrade — d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 average damage a swing · loses your +2 damage from practice. It is yours all the same; equip it from Gear if you know something the arithmetic does not. | **79-09** (what happened, to whom): UPGRADE\_WHY\_COPY's rewording reaches this line: the swing numbers now say they are average damage, and the lost proficiency says it is damage from practice. |
 | `oracle:regenerated`<br>regenerated { amount 2, gained 1 } — a Regeneration tick 1 hp below full | +2 hp knits itself shut. | +1 hp knits itself shut (2 rolled, back to full). | **79-02** (honest number, accurate to the engine): The tick printed its roll; it now prints the HP that actually knit, and names the roll when full cut it short. |
+| `oracle:resistFailed`<br>resistFailed — engine/combat.js#foeResistsSpell (every spell cast on a foe) | Viper tries to resist and fails. 7 vs 12–20. | Viper fails to resist your Heal. 7 vs 12–20 (intel 5). | **260927-rsx** (what happened, to whom, accurate to the engine): User ruling 2026-09-27: every resist roll, success and failure, is noted in the Oracle with its roll. The failure line now names the spell and whose it was, and carries the foe's intel like its twin, since intel sets the range. |
 | `oracle:rested`<br>rested — engine/movement.js#newDay's rest (synthetic { amount 8, gained 3 }; in play \`gained\` equals \`amount\`) | Rest restores +8 hp. | Rest restores +3 hp. | **79-02** (honest number): The rest line now prints \`gained\`, the HP the engine says it really added, instead of \`amount\`; 79-02 stamps \`gained\` on every gain event and here it always equals \`amount\`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source). |
 | `oracle:riposteReady`<br>riposteReady — the hero or a Joiner uses Riposte | Every miss is an invitation. | For one round every foe that misses you takes your weapon's damage. Every miss is an invitation. | **79-04** (what happened, to whom, the joke after the fact): The joke was the whole line; it now states the counter first, and a Joiner's reads "them". |
 | `oracle:secondWindHealed`<br>secondWindHealed { gained 0 } — a second wind at full hp | You remember why you came. +2 hp. | You remember why you came. You were already at full hp, so it is mostly a mood. | **79-02** (honest number, accurate to the engine): At full hp it would have printed '+0 hp'; it now says nothing came back. |
@@ -262,6 +263,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:smokeThrown`<br>smokeThrown — the hero or a Joiner uses Smoke | Gone. For two rounds they need a natural 1 to find you — a 1–2 if you insulted them. | For two rounds a foe finds you only on its die's top face (the top two if you insulted them), and a run just works. Gone, as far as anyone can tell. | **79-04** (roll-high (ROLL-04), accurate to the engine): "A natural 1" was roll-under for a die that scales with the foe's level, so it now speaks in faces; the hero's own Smoke also names its free flee, and a Joiner's covers only the Joiner. |
 | `oracle:spGained`<br>spGained { reason parley } — experience for talking your way out | Talking your way out is worth 8 8 experience points. | Talking your way out is worth 8 experience points. | **79-04** (hygiene): The count printed twice, once in a roll span and once in the phrase. |
 | `oracle:spellHit`<br>spellHit — the hero's thrown spell lands | Hit. 6 hp (×2). | Hit. Viper takes 6 hp (the roll ×2, for your level). | **79-08** (what happened, to whom, accurate to the engine): The line never named who took it, and "6 hp (×2)" read as 12 when the level multiplier is already inside the 6. |
+| `oracle:spellResisted`<br>spellResisted — engine/combat.js#foeResistsSpell (every spell cast on a foe) | Viper shrugs it off. 7 vs 12–20 (intel 5). | Viper resists your Heal: no effect. 7 vs 12–20 (intel 5). | **260927-rsx** (what happened, to whom, accurate to the engine): User ruling 2026-09-27 (quick 260927-rsx): every spell cast on a foe can be resisted, and a resisted spell has no effect. The line now names whose spell it was (yours, or a Joiner's) and states the outcome before the roll. |
 | `oracle:spellSchoolLocked`<br>spellSchoolLocked — a known spell whose school the sub-class has not opened yet | Heal is not open to you yet. | Heal's school opens to you at level 5; you are 10. | **79-08** (what happened, to whom): The refusal never said why; it now names the level the school opens at and yours, like spellAboveLevel. |
 | `oracle:staffRecharged`<br>staffRecharged — a staff regains a charge | Crystal Staff hums. 2/5. | Crystal Staff hums: a charge is back (2/5). | **79-11** (what happened, to whom, hygiene): A bare "2/5" never said what it counted, and a bare event printed "?/?". |
 | `oracle:storeOpened`<br>storeOpened — the store opens | The shop is open. (A discount, as always.) | The shop is open. (Half price, as always.) | **79-11** (what happened, to whom, honest number): The discount never said how much (half), and a Pickpocket's ×1.25 buy and ×0.75 sell prices were on the rail but missing from the Oracle. |
@@ -289,7 +291,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail — rail lines and the fight log
 
-74 changed lines.
+76 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -346,6 +348,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:purchaseBagged`<br>purchaseBagged — engine/economy.js#buyFrom stows a legal buy that is not an upgrade (the upgradeWhyText clause) | Into the bag: Dagger — not an upgrade: d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing · loses your +2 practiced bonus. | Into the bag: Dagger — not an upgrade: d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 average damage a swing · loses your +2 damage from practice. | **79-09** (what happened, to whom): UPGRADE\_WHY\_COPY's rewording reaches this line: the swing numbers now say they are average damage, and the lost proficiency says it is damage from practice. |
 | `rail:rationsBought`<br>rationsBought — rations bought at the store | Stocked up: +1 rations. | Stocked up: +1 ration. | **79-11** (reads aloud): "+1 rations" is now "+1 ration", as on the Oracle. |
 | `rail:regenerated`<br>regenerated { amount 2, gained 1 } — a Regeneration tick 1 hp below full | +2 hp knits shut. | +1 hp knits shut, back to full. | **79-02** (honest number, accurate to the engine): The tick printed its roll; it now prints the HP that actually knit, and names the roll when full cut it short. |
+| `rail:resistFailed`<br>resistFailed — engine/combat.js#foeResistsSpell (every spell cast on a foe) | Viper fails to resist. | Viper fails to resist your Heal. | **260927-rsx** (what happened, to whom): User ruling 2026-09-27: every cast on a foe now rolls a resist, so the rail names which spell the foe failed to resist. It folds behind the effect it let through (a throw, a Joiner's outcome, a room spell's summary), so it never doubles a cast. |
 | `rail:rested`<br>rested — engine/movement.js#newDay's rest (synthetic { amount 8, gained 3 }; in play \`gained\` equals \`amount\`) | Camp +8 hp | Camp +3 hp | **79-02** (honest number): The camp line now prints \`gained\`, the HP the engine says it really added, instead of \`amount\`; 79-02 stamps \`gained\` on every gain event and here it always equals \`amount\`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source). |
 | `rail:riposteReady`<br>riposteReady — the hero or a Joiner uses Riposte | Every miss is an invitation. | For one round every foe that misses you takes your weapon's damage. | **79-04** (what happened, to whom): The rail line now states what Riposte does. |
 | `rail:secondWindHealed`<br>secondWindHealed { gained 0 } — a second wind at full hp | +2 hp. | Second wind: you were already at full hp. | **79-02** (honest number, accurate to the engine): At full hp it would have printed '+0 hp'; it now says nothing came back. |
@@ -354,6 +357,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:sidestepped`<br>sidestepped — the hero or a Joiner uses Sidestep | Not where the blade is. Two rounds of that. | Foes have two fewer faces to hit you, for two rounds. | **79-04** (what happened, to whom): The rail twin now states the effect. |
 | `rail:smokeThrown`<br>smokeThrown — the hero or a Joiner uses Smoke | Gone. They need a natural 1 to find you (a 1–2 if you insulted them). | Gone. Foes find you only on their die's top face (top two if insulted) for two rounds, and a run just works. | **79-04** (roll-high (ROLL-04), accurate to the engine): The rail twin of the Oracle fix: faces, not a roll-under face count. |
 | `rail:spellHit`<br>spellHit — the hero's thrown spell lands | Heal hits Viper (6) ×2 | Heal hits Viper (6, the roll ×2 for your level) | **79-08** (accurate to the engine): "(6) ×2" read as 12 when the multiplier is already inside the 6. |
+| `rail:spellResisted`<br>spellResisted — engine/combat.js#foeResistsSpell (every spell cast on a foe) | Viper resists Heal | Viper resists your Heal: no effect | **260927-rsx** (what happened, to whom): User ruling 2026-09-27: a resisted spell does nothing to that foe, damage spells included; the rail says so and says whose spell it was, now that a Joiner's and a staff's casts are resisted too. |
 | `rail:spellSchoolLocked`<br>spellSchoolLocked — a known spell whose school the sub-class has not opened yet | Heal is not open to you yet. | Heal's school opens to you at level 5; you are 10. | **79-08** (what happened, to whom): The rail twin of the Oracle line. |
 | `rail:staffRecharged`<br>staffRecharged — a staff regains a charge | Crystal Staff hums. 2/5. | Crystal Staff hums: a charge is back (2/5). | **79-11** (what happened, to whom, hygiene): The rail twin of the Oracle fix. |
 | `rail:storeOpened`<br>storeOpened — the store opens | Shop open. (a discount, as always) | Shop open. (half price, as always) | **79-11** (what happened, to whom, honest number): The rail twin of the Oracle fix: the discount says how much. |
@@ -398,7 +402,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## combat-screen — the combat screen and its chips
 
-20 changed lines.
+22 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -407,8 +411,10 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `bank:COMBAT_MENU_COPY.parleyDesc`<br>the combat action grid and its submenus | Talk it down. An insult is permanent. | One try per fight. Fail and they take it personally: every foe hits you and yours one face easier until it ends. | **79-07** (accurate to the engine, what happened, to whom): The insult lasts only the rest of the fight (C.parleyInsulted, +1 face on every foe swing at the hero and the party), and the one-attempt rule was never stated. |
 | `bank:COMBAT_MENU_COPY.potionDesc`<br>the combat action grid and its submenus | Heals. Wasted at full health. | Heals 2d10+5 hp, doubled for a Wilmsry, and takes your turn. Greyed out at full health, where it would be wasted. | **79-07** (what happened, to whom, accurate to the engine): The row never said how much a potion heals or that drinking costs the turn, and it is disabled at full health, so it is never actually wasted there. |
 | `bank:COMBAT_MENU_COPY.singDesc`<br>the combat action grid and its submenus | One song per hundred squares. Pick the moment. | Sings the best song your level knows, then a hundred squares before the next. Pick the moment. | **79-07** (what happened, to whom): The row gave the cooldown but never said what tapping it does: sing the highest song the Bard's level allows. |
+| `bank:COMBAT_MENU_COPY.spellResist`<br>the combat action grid and its submenus | *(new line)* | {target} resists on {range} | **260927-rsx** (what happened, to whom): User ruling 2026-09-27: a spell cast on a foe can be resisted, so each foe-targeted spell row states the current target's resist range (engine/derived.js#foeSpellResistFaces), and self spells state none. |
 | `bank:FOE_CONDITION_DESC.blind`<br>a foe condition's line on the long-press foe card | It swings at where you were a moment ago and almost never lands. A count on the chip is how long until it can see again. | It hits only on its die's top face until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago. | **79-07** (what happened, to whom, the joke after the fact, roll-high (ROLL-04)): A blind foe swings on exactly one face (foeSwingChain), a spell blindness has no count and lasts the fight, and the line now states that before its flavour. |
 | `bank:FOE_CONDITION_DESC.weakened`<br>a foe condition's line on the long-press foe card | Every one of them does half damage while it lasts. They are not taking it well. | Every one of them hits on no more than its die's top three faces, and does half damage, while it lasts. They are not taking it well. | **79-07** (accurate to the engine, roll-high (ROLL-04)): Weaken also caps every foe swing at three winning faces (C.foeToHitPenalty = 3), which the old line left out; stated in faces because a foe's die scales with its level. |
+| `bank:FOE_DETAILS_COPY.resistsSpells`<br>the long-press foe card | *(new line)* | resists your spells on {range} | **260927-rsx** (what happened, to whom): User ruling 2026-09-27: every foe resists a spell cast on it on half its intel in faces of a d20. The foe card's INT line now states that range, filled from engine/derived.js#foeSpellResistFaces. |
 | `bank:HERO_CHIP_COPY.lasts.untilCured`<br>a hero or member condition chip's tap sheet | until something cures it | until it runs its course or something cures it | **79-07** (accurate to the engine): Poison and disease also end on their own when their count runs out (engine/movement.js), so a cure is not the only way out. |
 | `raw:mazeworld.html#CONDITION_COPY`<br>inline literal in mazeworld.html#CONDITION\_COPY | Can't act | *(removed)* | **79-07** (what happened, to whom): Verdict on the 77-08 flag: the two-word label said what but not why; the chip now names its kind in one word (Asleep, Stupefied, Maddened; Helpless as the fallback), too short for the corpus, and the tap card opens with "You cannot act". |
 | `raw:mazeworld.html#CONDITION_EXPLAIN`<br>inline literal in mazeworld.html#CONDITION\_EXPLAIN | You strike first on a d6. The maze is briefly unfair in your favour. | You strike on a d6, the best die there is, while it lasts. The maze is briefly unfair in your favour. | **79-07** (accurate to the engine): Acuteness swaps the strike die to a d6 (strikeDie) and does nothing to who goes first; "strike first" read as initiative. |

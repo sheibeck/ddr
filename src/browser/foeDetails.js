@@ -59,6 +59,10 @@ import { foeConditionChips } from "./foeConditions.js";
 import { FOE_GLYPHS, playerNote } from "./combatPanel.js";
 import { RAIL_HOLD } from "./rail.js";
 import { heroHitOddsVs, foeHitOddsVs } from "./rollOdds.js";
+// Quick 260927-rsx: the foe card states the foe's spell resist from the
+// engine's own faces helper, printed through the one range formatter.
+import { foeSpellResistFaces } from "../../engine/derived.js";
+import { hitRangeText } from "./rollRange.js";
 
 function deepFreeze(o) {
   for (const v of Object.values(o)) if (v && typeof v === "object") deepFreeze(v);
@@ -101,6 +105,9 @@ export const FOE_DETAILS_COPY = deepFreeze({
   noMelee: "Never swings; casts instead",
   noTricks: "No tricks worth mentioning",
   int: "INT {n}",
+  // Quick 260927-rsx (user ruling 2026-09-27): every spell cast on a foe
+  // can be resisted, on half its intel in faces of a d20.
+  resistsSpells: "resists your spells on {range}",
   spells: "Spells",
   spellsBy: "{who} spells",
   blows: "Blows",
@@ -299,6 +306,9 @@ function resistLine(foe, type, name) {
   const parts = [];
   const intel = num(rd(foe, "intel"));
   parts.push(fill(C.int, { n: intel === null ? "?" : intel }));
+  // Quick 260927-rsx: the foe's resist against a spell cast on it, from
+  // engine/derived.js#foeSpellResistFaces (a missing intel reads the floor).
+  parts.push(fill(C.resistsSpells, { range: hitRangeText(foeSpellResistFaces(intel === null ? undefined : intel), 20) }));
   for (const row of DAMAGE_MULTIPLIERS) {
     const hit = (row.foeType && row.foeType === type) || (row.foeName && row.foeName === name);
     if (!hit) continue;
