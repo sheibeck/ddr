@@ -15,7 +15,8 @@
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel } from "./heroTab.js";
 import { itemRowState } from "./gearTab.js";
-import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor } from "../../engine/derived.js";
+import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, foeSpellResistFaces } from "../../engine/derived.js";
+import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
@@ -43,10 +44,16 @@ export const COMBAT_MENU_COPY = Object.freeze({
   noAbilitiesDesc: "Hit it with the pointy end.",
   // Phase 38 (ABIL-01/04) — the melee ABILITIES branch's cost/sub vocabulary.
   abilityReady: "READY",
-  abilityUsedUp: "ONCE A FIGHT · USED",
+  // Quick 260927-opf (user ruling 2026-09-27): a once-per-fight ability
+  // (`cd: "fight"`) says so ready, and reads spent once used.
+  abilityReadyOnce: "READY · ONCE PER FIGHT",
+  abilityUsedUp: "ONCE PER FIGHT · SPENT",
   abilityRound: "1 ROUND",
   abilityRounds: "{n} ROUNDS",
   abilitiesSub: "{ready}/{n} READY",
+  // Quick 260927-rsx: appended to a foe-targeted spell's row, the current
+  // target's resist against it (every foe rolls; a resist means no effect).
+  spellResist: "{target} resists on {range}",
   noSpells: "NOTHING IN THE GRIMOIRE",
   noSpellsDesc: "Not one spell. Bold.",
   // Phase 75 (RULES-04, user ruling 2026-09-21): the book holds spells, but
@@ -119,9 +126,11 @@ export const COMBAT_MENU_COPY = Object.freeze({
  * to SPELLS, not this branch: a tap on cooldown dispatches `useAbility`
  * exactly like a ready one, and the engine's own `abilityRefused { reason:
  * "cooldown" }` lands the canon refusal line in the fight log (a deliberate
- * departure from SPELLS' castable-gated `enabled`). `cost` reads READY /
+ * departure from SPELLS' castable-gated `enabled`). `cost` reads READY (or
+ * abilityReadyOnce for a ready `cd: "fight"` ability, quick 260927-opf) /
  * "N ROUND(S)" / the abilityUsedUp copy (a `cd: "fight"` ability that is not
- * ready, regardless of its remaining phase). An id absent from the catalog
+ * ready, regardless of its remaining phase; the engine refuses it `spent`).
+ * An id absent from the catalog
  * (a tampered save) is silently dropped. Pure, no rng.
  */
 function abilityRows(c) {
@@ -133,7 +142,7 @@ function abilityRows(c) {
       const ready = isReady(c, id);
       let cost;
       if (ready) {
-        cost = COMBAT_MENU_COPY.abilityReady;
+        cost = meta.cd === "fight" ? COMBAT_MENU_COPY.abilityReadyOnce : COMBAT_MENU_COPY.abilityReady;
       } else if (meta.cd === "fight") {
         cost = COMBAT_MENU_COPY.abilityUsedUp;
       } else {
@@ -242,12 +251,20 @@ function combatMenuViewModelUnlocked(state) {
       .filter((sp) => canCast(state, sp))
       .map((sp) => ({ sp, lvl: spellLevelFor(c.sub, sp), name: sp.n.toUpperCase(), idx: SPELLS.indexOf(sp) }))
       .sort((a, b) => a.lvl - b.lvl || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) || a.idx - b.idx);
+    // Quick 260927-rsx (user ruling 2026-09-27): a spell cast on a foe can be
+    // resisted, so its row states the current target's resist range, read
+    // from engine/derived.js#foeSpellResistFaces (the number the engine rolls
+    // against) and printed through rollRange.js's one range formatter.
+    const liveTarget = Array.isArray(C.foes) ? (C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : C.foes.find((f) => f && f.alive)) : null;
+    const resistHint = liveTarget
+      ? COMBAT_MENU_COPY.spellResist.replace("{target}", liveTarget.name).replace("{range}", hitRangeText(foeSpellResistFaces(liveTarget.intel), 20))
+      : "";
     const spellRows = castableSpells.map(({ sp, idx }) => {
       return {
         id: `spell-${idx}`,
         label: sp.n.toUpperCase(),
         cost: `LVL ${spellLevelFor(c.sub, sp)}`,
-        desc: sp.txt || "",
+        desc: `${sp.txt || ""}${resistHint && spellTargetsFoe(sp) ? ` · ${resistHint}` : ""}`,
         // Phase 40 (SPELL-01): the same niche/nicheLabel pair the Hero-tab
         // Grimoire rows carry (src/browser/heroTab.js#grimoireViewModel) —
         // desc stays sp.txt, unchanged.
@@ -298,7 +315,7 @@ function combatMenuViewModelUnlocked(state) {
     // rolled ability. An empty/absent c.abilities falls through to the
     // fallback branch below, byte-identical to before this phase.
     const rows = abilityRows(c);
-    const readyCount = rows.filter((r) => r.cost === COMBAT_MENU_COPY.abilityReady).length;
+    const readyCount = rows.filter((r) => r.cost === COMBAT_MENU_COPY.abilityReady || r.cost === COMBAT_MENU_COPY.abilityReadyOnce).length;
     secondAction = {
       key: "abilities",
       num: 2,

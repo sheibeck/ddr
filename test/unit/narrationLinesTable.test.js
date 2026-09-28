@@ -224,7 +224,8 @@ test("both directions: your spell outcomes and their outcomes", () => {
   assert.equal(LINE_FOR.spellHit({ type: "spellHit", spell: "Fireball", target: "Dante", dmg: 12 }).text, "Fireball hits Dante (12)");
   assert.equal(LINE_FOR.spellMissed({ type: "spellMissed", spell: "Fireball", target: "Dante" }).tone, "miss");
   assert.ok(LINE_FOR.spellMissed({ type: "spellMissed", spell: "Fireball", target: "Dante" }).text.includes("Fireball misses Dante"));
-  assert.ok(LINE_FOR.spellResisted({ type: "spellResisted", target: "Dante", spell: "Doze" }).text.includes("Dante resists Doze"));
+  // Quick 260927-rsx: "your" (or the Joiner's name) and "no effect" join the line.
+  assert.ok(LINE_FOR.spellResisted({ type: "spellResisted", target: "Dante", spell: "Doze" }).text.includes("Dante resists your Doze"));
   assert.ok(LINE_FOR.frozenSolid({ type: "frozenSolid", target: "Dante" }).text.includes("frozen solid"));
   assert.equal(LINE_FOR.foeBolted({ type: "foeBolted", name: "Drudge", dmg: 7 }).text, "Drudge bolts you (7)");
   assert.equal(LINE_FOR.foeBolted({ type: "foeBolted", name: "Drudge", dmg: 7 }).tone, "hurt");

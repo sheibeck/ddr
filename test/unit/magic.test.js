@@ -17,6 +17,8 @@ import { castSpell, drinkPotion, readScroll } from "../../engine/magic.js";
 import { SPELLS } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
 import { setDialsForTuning } from "../../engine/difficulty.js";
+// Quick 260927-rsx: forced resist outcomes come from the real derived check.
+import { actsWhere, noResistActs } from "./harness/spellResistActs.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -243,6 +245,7 @@ test("castSpell: Earthquake damages every foe AND the caster when unwarded", () 
     c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
     combat: fixedCombat([foe]),
   });
+  state.acts = noResistActs("Earthquake"); // quick 260927-rsx: the foe does not resist
   // dmg 3d10+8: d10,d10,d10 = 10,10,10 -> 30+8=38; killFoe: sp d6=1, coin
   // d10=1, treasure-check d20=20 (skip, >2+lvl)
   const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 1, 1, 20]), []);
@@ -265,6 +268,7 @@ test("castSpell: spellPower 1.15 scales Earthquake's rolled damage (38 -> 44) an
     c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
     combat: fixedCombat([foe]),
   });
+  state.acts = noResistActs("Earthquake"); // quick 260927-rsx: the foe does not resist
   const restore = setDialsForTuning({ CLASS_MITIGATION: { "Magic User": { spellPower: 1.15 } } });
   try {
     const events = castSpell(state, SPELL_IDX.Earthquake, fakeRng([10, 10, 10, 1, 1, 20]), []);
@@ -347,70 +351,72 @@ test("castSpell: Sense Danger (non-combat) sets foresight and picks the next enc
   assert.ok(events.some((e) => e.type === "senseDanger"));
 });
 
-// --- Phase 19: resistance via the shared resistRoll (FOE-07) ---------------
+// --- Quick 260927-rsx: every foe rolls its resist (user ruling 2026-09-27) --
+//
+// Re-pinned from the Phase 19 canon block (an intel >= 12 target rolled one
+// main-rng d20; an intel-1 target never rolled). The ruling: every spell cast
+// on an enemy can be resisted, half its intel in faces on a d20, from a
+// derived stream (engine/derived.js#foeSpellResistCheck), so the main
+// sequences below carry only the Weaken's own d4 and the foe's turn. The
+// forced outcome is found with the real check (harness/spellResistActs.js).
 
-test("castSpell: an intel-12 foe resists Weaken on a raw d20 of 11 (mirrored roll 10 vs atLeast 10) — spellResisted, one d20 then the foe turn", () => {
+test("castSpell: an intel-12 foe that resists Weaken (6 faces, 15–20) — spellResisted, nothing lands, the turn is spent", () => {
   const foe = fixedFoe({ intel: 12, wp: 10, maxWP: 10 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
     combat: fixedCombat([foe]),
   });
-  // raw 11 -> resistRoll resists (11 < 12; mirrored roll 21-11=10 >= atLeast
-  // 22-12=10); tail 7 = foe miss — no round-advance draws, initiative is
-  // rolled once, Phase 51 (exactly 2 draws total).
-  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([11, 7]), []);
-  assert.ok(
-    events.some(
-      (e) =>
-        e.type === "spellResisted" &&
-        e.target === "Target" &&
-        e.spell === "Weaken" &&
-        e.roll === 10 &&
-        e.atLeast === 10 &&
-        e.dieN === 20 &&
-        e.intel === 12,
-    ),
-  );
+  state.acts = actsWhere("Weaken", [[0, true]], { intels: { 0: 12 } });
+  // d4 = 2 (the Weaken's own duration, drawn first), then the foe-miss tail (7).
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([2, 7]), []);
+  const res = events.find((e) => e.type === "spellResisted");
+  assert.ok(res);
+  assert.equal(res.target, "Target");
+  assert.equal(res.spell, "Weaken");
+  assert.equal(res.intel, 12);
+  assert.equal(res.faces, 6);
+  assert.equal(res.atLeast, 15);
+  assert.equal(res.dieN, 20);
+  assert.ok(res.roll >= 15);
   assert.ok(!events.some((e) => e.type === "weakened"));
   assert.ok(!state.combat.weakened, "the resisted Weaken never lands");
   assert.equal(state.c.spellsUsed, 1);
 });
 
-test("castSpell: a raw d20 of 12 fails to resist — resistFailed { target, roll: 9 (mirrored), atLeast: 10, dieN: 20 } then Weaken lands", () => {
+test("castSpell: an intel-12 foe that fails to resist — resistFailed { target, spell, roll, atLeast: 15, dieN: 20 } then Weaken lands", () => {
   const foe = fixedFoe({ intel: 12, wp: 10, maxWP: 10 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
     combat: fixedCombat([foe]),
   });
-  // raw 12 -> resistRoll fails to resist (12 is NOT < 12; mirrored roll
-  // 21-12=9 < atLeast 22-12=10); Phase 40 (SPELL-01) adds ONE d4 draw for
-  // the new spell:weaken duration (2 -> rounds 3) between the resist roll
-  // and the same foe-miss tail (7) — no round-advance draws, Phase 51.
-  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([12, 2, 7]), []);
-  assert.ok(
-    events.some(
-      (e) => e.type === "resistFailed" && e.target === "Target" && e.roll === 9 && e.atLeast === 10 && e.dieN === 20,
-    ),
-  );
+  state.acts = actsWhere("Weaken", [[0, false]], { intels: { 0: 12 } });
+  const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([2, 7]), []);
+  const rf = events.find((e) => e.type === "resistFailed");
+  assert.ok(rf);
+  assert.equal(rf.target, "Target");
+  assert.equal(rf.spell, "Weaken");
+  assert.equal(rf.atLeast, 15);
+  assert.equal(rf.dieN, 20);
+  assert.ok(rf.roll < 15);
   const weakened = events.find((e) => e.type === "weakened");
   assert.ok(weakened);
   assert.equal(weakened.rounds, 3, "d4(2)+1");
   assert.equal(state.combat.weakened, true, "an unresisted Weaken sets the foe-side weakened flag");
 });
 
-test("castSpell: an intel-1 foe never triggers a resist roll (the cast-damage fixture shape)", () => {
+test("castSpell: an intel-1 foe rolls too (one face, 20) — from a derived stream, so the main sequence is unchanged", () => {
   const foe = fixedFoe({ intel: 1, wp: 10, maxWP: 10 });
   const state = fixedState({
     c: { sub: "Wizard", grimoire: ["Weaken"], level: 1, wp: 10 },
     combat: fixedCombat([foe]),
   });
-  // No leading d20 in the sequence at all — a resist draw here would throw
-  // (fakeRng underflow), proving zero draws for an intel-below-12 target.
-  // Phase 40 (SPELL-01) adds the ONE d4 duration draw (3 -> rounds 4) ahead
-  // of the same foe-miss tail (7) — no round-advance draws, Phase 51.
+  state.acts = actsWhere("Weaken", [[0, false]]);
+  // No resist d20 in the main sequence at all: d4 (3 -> rounds 4), then the
+  // foe-miss tail (7) — a main-rng resist draw here would underflow.
   const events = castSpell(state, SPELL_IDX.Weaken, fakeRng([3, 7]), []);
-  assert.ok(!events.some((e) => e.type === "spellResisted"));
-  assert.ok(!events.some((e) => e.type === "resistFailed"));
+  const rf = events.find((e) => e.type === "resistFailed");
+  assert.ok(rf, "an intel-1 foe still rolls");
+  assert.equal(rf.atLeast, 20);
   const weakened = events.find((e) => e.type === "weakened");
   assert.ok(weakened);
   assert.equal(weakened.rounds, 4, "d4(3)+1");
@@ -558,6 +564,7 @@ test("castSpell: Earthquake is applied per foe — Walking Dead takes 2x, Humans
     c: { sub: "Wizard", grimoire: ["Earthquake"], level: 4, wp: 50, maxWP: 50, ward: null },
     combat: fixedCombat([wd, humans]),
   });
+  state.acts = noResistActs("Earthquake", 2); // quick 260927-rsx: neither foe resists
   // dmg 3d10+8: 10+10+10+8=38 (mult = max(1,4-4)=1); Walking Dead doubles to
   // 76 (wp 24), Humans stays at 38 (wp 62); then two foe-turn misses (7, 7)
   // — no round-advance draws, Phase 51.
@@ -575,6 +582,7 @@ test("castSpell: Fireballs (volley) totals APPLIED damage — each ball on a hal
     c: { sub: "Wizard", grimoire: ["Fireballs"], level: 4 },
     combat: fixedCombat([foe]),
   });
+  state.acts = noResistActs("Fireballs"); // quick 260927-rsx: the foe does not resist
   // n=d8=2 balls; ball 1 d10=5 -> 5+2=7 -> ceil(7/2)=4; ball 2 d10=3 -> 3+2=5
   // -> ceil(5/2)=3; total APPLIED = 7 (not the 12 raw); then one foe-turn
   // miss (7) — no round-advance draws, Phase 51.
@@ -591,6 +599,7 @@ test("castSpell: Insanity r=2 — the foe-on-foe blow is physical and can be soa
     c: { sub: "Wizard", grimoire: ["Insane"], level: 2 },
     combat: fixedCombat([a, b], { target: 0 }),
   });
+  state.acts = noResistActs("Insane"); // quick 260927-rsx: the target does not resist
   // d6=2 (r=2, the foe-on-foe blow); d = 1*1 + d6=4 = 5; armor-soak d20=5,
   // 5<=12 soaks entirely -> no insaneStruckAlly, B.wp untouched; then two
   // foe-turn misses (7, 7) — no round-advance draws, Phase 51.
@@ -605,6 +614,7 @@ test("castSpell: Insanity r=2 — the foe-on-foe blow is physical and can be soa
     c: { sub: "Wizard", grimoire: ["Insane"], level: 2 },
     combat: fixedCombat([a2, b2], { target: 0 }),
   });
+  control.acts = state.acts;
   const controlEvents = castSpell(control, SPELL_IDX.Insane, fakeRng([2, 4, 7, 7]), []);
   assert.ok(controlEvents.some((e) => e.type === "insaneStruckAlly" && e.target === "B" && e.dmg === 5));
   assert.equal(b2.wp, 5, "the unsoaked blow applied the full 5");

@@ -24,9 +24,9 @@
 // must never break.
 
 export const FIGHTER_SKILLS = {
-  "Kata": { cost: 4, active: "kata", txt: "one perfect form: this strike cannot miss and adds your level in damage" },
+  "Kata": { cost: 4, active: "kata", txt: "one perfect form: this strike cannot miss and adds your level in damage; once per fight" },
   "Stealth": { cost: 3, txt: "critical on your die's top two faces when you open a fight; never in plate" },
-  "Death Touch": { cost: 4, active: "deathTouch", txt: "call it: your next landed blow doubles, and finishes anything under 15 hp" },
+  "Death Touch": { cost: 4, active: "deathTouch", txt: "call it: your next landed blow doubles, and finishes anything under 15 hp; once per fight" },
   "Sidestep": { cost: 5, active: "sidestep", txt: "two rounds of not being where the blade is: every foe has two fewer faces that hit you" },
   "Hardiness": { cost: 6, txt: "−3 to all damage taken; phobias halved" },
   "Ambidextrous": { cost: 4, txt: "a second weapon at the end of every round" },
@@ -47,7 +47,7 @@ export const FIGHTER_SKILLS = {
 };
 
 export const THIEF_SKILLS = {
-  "Feint": { cost: 5, active: "feint", txt: "look left, stab right: this strike cannot miss and adds your level in damage" },
+  "Feint": { cost: 5, active: "feint", txt: "look left, stab right: this strike cannot miss and adds your level in damage; once per fight" },
   "Locks": { cost: 2, up: 1, txt: "6–10 on d10 to open a lock", txt2: "4–10 on d10 to open a lock" },
   "Sewing": { cost: 4, up: 2, txt: "patch any armour, d6 back, 4 times", txt2: "patch any armour, d6+3 back, 6 times" },
   "Night Vision": { cost: 3, txt: "darkness costs you nothing" },
@@ -65,5 +65,5 @@ export const THIEF_SKILLS = {
   "Acute Hearing": { cost: 5, txt: "never surprised; hears an encounter up to three squares away, walls or no walls, without learning what it is" },
   "Dirty Trick": { cost: 3, active: "dirtyTrick", txt: "sand, thumb, elbow: the target is blinded for two rounds" },
   "Smoke": { cost: 4, active: "smoke", txt: "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works" },
-  "Silent Step": { cost: 6, active: "silentStep", txt: "nobody heard that: your next attack is an automatic critical, any round" },
+  "Silent Step": { cost: 6, active: "silentStep", txt: "nobody heard that: your next attack is an automatic critical, any round; once per fight" },
 };

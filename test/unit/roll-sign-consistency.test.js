@@ -28,7 +28,8 @@ import url from "node:url";
 
 import { newRun } from "../../engine/engine.js";
 import { playerStrike, foeTurn, flee } from "../../engine/combat.js";
-import { gearCompareParts, strikeDie, conditionsOf } from "../../engine/derived.js";
+import { gearCompareParts, strikeDie, conditionsOf, foeSpellResistFaces } from "../../engine/derived.js";
+import { castSpell } from "../../engine/magic.js";
 
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR, oracleDetailText } from "../../src/browser/narrationLines.js";
@@ -328,6 +329,33 @@ test("scroll reading range: the Gear tab SCROLLS row and the combat ITEMS SCROLL
     assert.ok(!/\d\+(?!\d)/.test(gearDesc), `intel ${intel}: must not contain an "N+" shorthand -> "${gearDesc}"`);
     assert.doesNotMatch(gearDesc, /\d-\d/, `intel ${intel}: must not use a hyphen-minus between digits -> "${gearDesc}"`);
   }
+});
+
+// ─── Scenario 8b: the spell resist range (quick 260927-rsx) ─────────────────
+
+// User ruling 2026-09-27: every spell cast on a foe can be resisted, half its
+// intel in faces on a d20. The foe card, the combat SPELLS row and a real
+// cast's spellResisted/resistFailed event (Oracle and rail) must state the
+// SAME range, and it must be engine/derived.js#foeSpellResistFaces's.
+test("spell resist range: the foe card, the combat spell row and a real cast's resist event agree with foeSpellResistFaces for intel 1, 3, 10 and 16", () => {
+  for (const intel of [1, 3, 10, 16]) {
+    const expected = rangeText(21 - foeSpellResistFaces(intel), 20);
+    const foe = plainFoe({ intel, wp: 999, maxWP: 999 });
+    const state = fullHeroState(foe, { c: { cls: "Magic User", sub: "Wizard", level: 3, grimoire: ["Fireball"], spellsUsed: 0 } });
+    const card = foeDetailsCard(0, state).lines.map((l) => l.text).join(" | ");
+    assert.ok(card.includes(`resists your spells on ${expected} (d20)`), `intel ${intel}: foe card "${card}"`);
+    const row = combatMenuViewModel(state).submenus.spells.rows.find((r) => r.label === "FIREBALL");
+    assert.ok(row && row.desc.includes(`Target resists on ${expected} (d20)`), `intel ${intel}: spell row "${row && row.desc}"`);
+    const events = castSpell(state, CONTENT.SPELLS.findIndex((sp) => sp.n === "Fireball"), fakeRng(new Array(40).fill(20)), []);
+    const e = events.find((x) => x.type === "spellResisted" || x.type === "resistFailed");
+    assert.ok(e, `intel ${intel}: the cast rolled a resist`);
+    assert.equal(rangeText(e.atLeast, e.dieN), expected, `intel ${intel}: the event's range`);
+    assert.ok(stripTags(EVENT_NARRATION[e.type](e)).includes(`vs ${expected}`), `intel ${intel}: the Oracle line`);
+  }
+  // A self spell's row carries no resist clause.
+  const heal = fullHeroState(plainFoe({ intel: 10 }), { c: { cls: "Magic User", sub: "Wizard", level: 3, grimoire: ["Heal"] } });
+  const healRow = combatMenuViewModel(heal).submenus.spells.rows.find((r) => r.label === "HEAL");
+  assert.ok(healRow && !healRow.desc.includes("resists"), `Heal row "${healRow && healRow.desc}"`);
 });
 
 // ─── Scenario 9: the range pin ──────────────────────────────────────────────

@@ -340,6 +340,7 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 | `[resist:intel]` | resist | `intel` stat | stat | a smarter resistor shrugs off more effects, p.25 canon | `resisted = roll < intel`; a higher intel widens the resisting range | wider resist range for a higher-intel character | OK |
 | `[resist:intel-gate]` | resist | `intel >= 12` gate | stat | below the threshold, resistance is never rolled for | no draw at all below the gate | no resist attempt below intel 12 | OK |
 | `[resist:depth]` | resist | floor depth past CONTROL_AT_DEPTH.kneeDepth | depth | RULES-18 (Phase 75.3, user ruling 2026-09-25): from floor 12, foes increasingly RESIST control | roll-high: `resisted = roll >= 21 - faces`, faces growing with depth past the knee | wider resist range for a deeper foe past the knee | OK (RULES-18, Phase 75.3) |
+| `[resist:foe-intel]` | resist | a foe's `intel` against a spell cast on it | stat | quick 260927-rsx (user ruling 2026-09-27): every spell cast on an enemy can be resisted, more often by a smarter foe; half-intel scale | roll-high: `resisted = roll >= 21 - faces`, `faces = max(1, round(intel / 2))`, every foe rolls (no gate) | wider resist range for a higher-intel foe; intel 1–2 still resists on one face | OK (quick 260927-rsx) |
 | `[initiative:samurai]` | initiative | Samurai forced-foe | sub-class | Samurai never gets the jump on a fight's first round (a documented BAD trait) | forces `first="foe"` | the foe always acts first | OK |
 | `[initiative:fridgian-slow]` | initiative | Fridgian `slow` forced-foe | race | Fridgians are slow to react | forces `first="foe"` | the foe always acts first | OK |
 | `[initiative:knight-big-foe]` | initiative | Knight vs a big foe, forced-foe | sub-class | a Knight is cautious against a large foe | forces `first="foe"` | the foe always acts first | OK |
@@ -946,3 +947,56 @@ Every item this ledger's `## Handoffs → Phase 79 (roll-direction phrasing)` li
 - **(b), the condition chip example.** The chip's measured lead now reads "−3 to hit (19–20 instead of 16–20)" for Afraid (Phase 77, CMBUI-13), not "(now 19–20)". `test/unit/roll-sign-consistency.test.js` pins the "(… instead of …)" shape.
 - **Phase 77's audit gaps (77-07).** Acuteness swaps the strike die to a d6 rather than moving the face count, so it has no signed modifier; every roll line already prints the die and its range, and the chip's measured lead states it. Not a gap. The Anklet of Invisibility's foe-swing term (`engine/derived.js#foeToHitBreakdown`'s summed `foeToHit` gear effect, which only the Anklet carries) read "gear +2" on every roll line and the foe card; 79-12 relabels it "unseen +2" through `src/browser/rollRange.js#MOD_LABEL`, the name on the Anklet's own chip. `test/unit/roll-sign-consistency.test.js` fails if a second item ever gains a `foeToHit` effect and the label would stop being true.
 - **Phase 77's `heroOut` label (77-08).** "Can't act" states what happened to whom, so it passes the Phase 79 rubric and stays; its exemption from the one-word label style keeps its reason.
+
+## Quick 260927-rsx: every spell cast on a foe can be resisted (user ruling 2026-09-27)
+
+**The ruling.** "Every spell cast on an enemy should have a chance to be
+resisted based on their intelligence. High intelligence is more chance to
+resist. I'd like this in now. I want the resist rolls noted in the Oracle,
+too." A resisted damage spell has no effect; scale half-intel. A deliberate
+change from canon p.25 (only an intel >= 12 target resisted, and never a
+thrown spell).
+
+**The rule.** Every foe a spell targets rolls a roll-high d20 and resists on
+`roll >= 21 - faces`, `faces = max(1, round(intel / 2))`: intel 1–2 resist on
+20 (5%), 3 on 19–20 (10%), 6 on 18–20 (15%), 10 on 16–20 (25%), 16 on 13–20
+(40%). No gate: every foe rolls. A resisted spell does nothing to that foe
+(damage included); the caster's turn and charge are spent. Spells that do
+not target a foe (`engine/derived.js#SPELL_SELF_KINDS`: Summon, ward, Strength,
+Regenerate, Heal, Map the Floor, Foresee, Mirror Self, Sense Presence) never
+roll.
+
+### Spell-resist site
+
+| Site | Draw | Resistor | Resisted when | Direction row | Stream | Events |
+|---|---|---|---|---|---|---|
+| `engine/derived.js#foeSpellResistCheck` (wrapping `foeSpellResistRoll`), reached only through `engine/combat.js#foeResistsSpell` | d20 (`rollCheck`) | the foe | `roll >= 21 - faces` (`atLeast = 21 - faces`), `faces = foeSpellResistFaces(intel)` | `[resist:foe-intel]` (Modifier ledger) | `spellResist`, keyed `(main cursor, "spellResist", <spell or item name>, <caster: "you" or the Joiner's name>, acts, round, foe index)` | `spellResisted` / `resistFailed`, both with `{ target, spell, by?, roll, atLeast, dieN, intel, faces }` — every roll, either way, is its own Oracle line |
+
+**Callers.** The hero's `castSpell` (a one-foe spell rolls before its kind
+branch, where canon's check sat; a room spell rolls per foe inside its
+branch), a scroll's free cast (the same `castSpell`), a Joiner's `allyCast`,
+and the foe-targeted staff and amulet powers in `engine/items.js#useItem`
+(Birch freeze, Walnut weaken, Oak and Amulet of Stone, Pine fire, Cedar gas).
+A fumbled scroll (`engine/scrollFumble.js`) is not a spell cast on a foe (it
+turns on the reader, or helps the foe) and never rolls.
+
+**Draw order.** The resist itself never touches the main rng. A resisting
+foe takes none of the draws that were only for it (a thrown spell's to-hit
+and damage, Doze's and Stun's d4, Noxious Vapor's d10 or d6, a Fireballs or
+Pine Staff ball's damage). Draws that belong to the whole cast stay first and
+unchanged (Stun's and Shrink's reach, Weaken's d4 + 1, Earthquake's damage,
+the Fireballs count, Noxious Vapor's table roll, Plane Gate's reach).
+
+**Stacking with RULES-18.** The intel resist comes first; the depth resist
+(`[resist:depth]`, `resistControl`) is unchanged and is reached only for a
+control the foe did not resist. A room Weaken (`engine/combat.js#roomWeakenResists`)
+rolls every live foe's intel resist, then the room's one depth resist keyed
+on the aimed foe exactly as before; a landed Weaken skips each foe that
+resisted it (`f.weakenResisted`, read by `derived.js#foeWeakened` and the
+`foeToHitPenalty` cap).
+
+**The hero side is unchanged.** Row 46 and `[resist:intel]` / `[resist:intel-gate]`
+now describe the HERO resisting a foe's spell or ability
+(`engine/foeAbilities.js#heroResist` → `resistRoll`, intel >= 12, canon). The
+foe side reads the separate function above, so neither can drift with the
+other.

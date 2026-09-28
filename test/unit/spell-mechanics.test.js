@@ -32,6 +32,8 @@ import { SPELLS } from "../../content/index.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { setIdentityDials } from "./harness/identityDials.js";
+// Quick 260927-rsx: forced resist outcomes come from the real derived check.
+import { actsWhere, noResistActs } from "./harness/spellResistActs.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
 // this file's own pins are canon-mechanic numbers written before the fit
@@ -161,6 +163,7 @@ test("Fireball (a plain thrown spell, no aoe flag) targets only C.target, not ev
 test("Ice (dot cast): one draw for the duration, no to-hit roll; the SAME dispatch's trailing foeTurn ticks it once", () => {
   const foe = fixedFoe({ name: "Target", intel: 1, wp: 100, maxWP: 100 });
   const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
+  state.acts = noResistActs("Ice"); // quick 260927-rsx: the foe does not resist
   // d4=3 -> rounds 4 (the cast draw); the SAME dispatch's trailing foeTurn
   // ticks the freshly-applied ice dot once (d6=1 tick dmg) before its own
   // swing misses (20 vs need 5), then the round-advance initiative (15/10)
@@ -175,24 +178,29 @@ test("Ice (dot cast): one draw for the duration, no to-hit roll; the SAME dispat
   assert.equal(foe.dot.left, 3, "the SAME dispatch's trailing foeTurn already ticked it once");
 });
 
-test("Ice: an intel>=12 foe can resist (raw d20 below intel, mirrored roll 10) before any dot draw", () => {
+// Quick 260927-rsx (user ruling 2026-09-27): re-pinned from the Phase 19
+// canon (an intel >= 12 target's main-rng d20). Every foe now rolls half its
+// intel in faces on a derived-stream d20 (intel 12: 6 faces, 15–20), so the
+// main sequence carries no resist draw; the outcome is forced with the real
+// check (harness/spellResistActs.js).
+test("Ice: a foe that resists (intel 12, 15–20 on a d20) takes no dot and draws no duration", () => {
   const foe = fixedFoe({ name: "Target", intel: 12, wp: 100, maxWP: 100 });
   const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
-  // raw 11 -> resistRoll resists (11 < 12; mirrored roll 21-11=10 >= atLeast
-  // 22-12=10); tail: foe miss (20) + initiative (15/10).
-  const events = castSpell(state, SPELL_IDX.Ice, fakeRng([11, 20, 15, 10]), []);
-  assert.ok(events.some((e) => e.type === "spellResisted" && e.spell === "Ice" && e.roll === 10 && e.atLeast === 10 && e.dieN === 20));
+  state.acts = actsWhere("Ice", [[0, true]], { intels: { 0: 12 } });
+  // tail only: foe miss (20) + initiative (15/10).
+  const events = castSpell(state, SPELL_IDX.Ice, fakeRng([20, 15, 10]), []);
+  assert.ok(events.some((e) => e.type === "spellResisted" && e.spell === "Ice" && e.roll >= 15 && e.atLeast === 15 && e.dieN === 20));
   assert.equal(foe.dot, undefined, "a resisted Ice never lands");
 });
 
-test("Ice: an intel>=12 foe that fails to resist still gets the dot (resistFailed then iceApplied)", () => {
+test("Ice: a foe that fails to resist still gets the dot (resistFailed then iceApplied)", () => {
   const foe = fixedFoe({ name: "Target", intel: 12, wp: 100, maxWP: 100 });
   const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
-  // raw 12 -> fails to resist (12 is NOT < 12; mirrored roll 21-12=9 <
-  // atLeast 10); d4=2 (rounds 3, cast draw); tail ticks once (d6=1), foe
-  // miss (20), initiative (15/10).
-  const events = castSpell(state, SPELL_IDX.Ice, fakeRng([12, 2, 1, 20, 15, 10]), []);
-  assert.ok(events.some((e) => e.type === "resistFailed" && e.roll === 9 && e.atLeast === 10 && e.dieN === 20));
+  state.acts = actsWhere("Ice", [[0, false]], { intels: { 0: 12 } });
+  // d4=2 (rounds 3, cast draw); tail ticks once (d6=1), foe miss (20),
+  // initiative (15/10).
+  const events = castSpell(state, SPELL_IDX.Ice, fakeRng([2, 1, 20, 15, 10]), []);
+  assert.ok(events.some((e) => e.type === "resistFailed" && e.roll < 15 && e.atLeast === 15 && e.dieN === 20));
   const applied = events.find((e) => e.type === "iceApplied");
   assert.ok(applied);
   assert.equal(applied.rounds, 3, "d4(2)+1");

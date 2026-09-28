@@ -39,7 +39,7 @@ import { playerStrike, foeTurn, flee, parley, killFoe, resolveInitiative, allies
 import { castSpell } from "../../engine/magic.js";
 import { startEffect } from "../../engine/effects.js";
 import { setDialsForTuning, DIALS } from "../../engine/difficulty.js";
-import { resistRoll, controlResistRoll } from "../../engine/derived.js";
+import { resistRoll, controlResistRoll, foeSpellResistRoll } from "../../engine/derived.js";
 import { controlResistFacesFor } from "../../engine/difficulty.js";
 import { springTrap, openChest } from "../../engine/encounters.js";
 import { move, newDay, resolveHazard } from "../../engine/movement.js";
@@ -361,6 +361,15 @@ test('[resist:depth] a deeper foe resists more often, engine/difficulty.js#contr
   const withMod = faceOdds((rng) => controlResistRoll(rng, controlResistFacesFor(20)).resisted, { label: "resist:depth (floor 20)" });
   const without = faceOdds((rng) => controlResistRoll(rng, controlResistFacesFor(13)).resisted, { label: "resist:depth (floor 13)" });
   assertBonus(withMod, without, { label: "resist:depth" });
+});
+
+// Quick 260927-rsx (user ruling 2026-09-27): a foe resists every spell cast
+// on it, on half its intel in faces (foeSpellResistFaces), roll-high on a
+// d20 — no intel-12 gate, so even an intel-1 beast rolls (one face).
+test('[resist:foe-intel] a smarter foe resists a spell cast on it more often, engine/derived.js#foeSpellResistRoll', () => {
+  const withMod = faceOdds((rng) => foeSpellResistRoll(rng, 16).resisted, { label: "resist:foe-intel (16)" });
+  const without = faceOdds((rng) => foeSpellResistRoll(rng, 6).resisted, { label: "resist:foe-intel (6)" });
+  assertBonus(withMod, without, { label: "resist:foe-intel" });
 });
 
 // --- Initiative [hero]: jointOdds over the two d20s; success = first === "you" ---

@@ -7,7 +7,8 @@
 //
 // Refusal ladder (CMB-01/CMB-02 discipline, mirroring castSpell): notFought
 // (refuseIfPending, FIRST) -> unknown (not in the catalog, or not owned) ->
-// notInCombat -> cooldown -> noTarget (structurally unreachable in combat,
+// notInCombat -> cooldown (or spent, a used once-per-fight ability — quick
+// 260927-opf) -> noTarget (structurally unreachable in combat,
 // same reasoning castSpell's own comment documents — normalizeTarget always
 // finds a live foe while state.combat exists) -> notLowEnough (Last Stand's
 // own gate). A refusal is a single event, spends no action, starts no timer,
@@ -142,8 +143,13 @@ export function useAbility(state, key, rng, events = []) {
     return events;
   }
   const id = `ability:${key}`;
+  // Quick 260927-opf (user ruling 2026-09-27): a once-per-fight ability
+  // (`cd: "fight"`) that has been used is SPENT until the fight ends — its
+  // record is cleared only by endCombat, so it refuses with `spent`, never a
+  // rounds count (the ONCE_A_FIGHT figure is bookkeeping, not a wait).
   if (!isReady(c, id)) {
-    events.push({ type: "abilityRefused", key, reason: "cooldown", name: meta.name, left: abilityRoundsLeft(c, key) });
+    if (meta.cd === "fight") events.push({ type: "abilityRefused", key, reason: "spent", name: meta.name });
+    else events.push({ type: "abilityRefused", key, reason: "cooldown", name: meta.name, left: abilityRoundsLeft(c, key) });
     return events;
   }
   // Phase 36 (TGT-01) precedent, same reasoning castSpell documents: a

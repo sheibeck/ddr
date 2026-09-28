@@ -50,7 +50,7 @@ import { derivedRng } from "./rng.js";
 // bookkeeping for stone/fire since killFoe didn't exist yet); now that
 // combat.js owns the real killFoe, useItem calls it for full parity (loot,
 // skill points, checkLevel) instead of the old bookkeeping-only stand-in.
-import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe } from "./combat.js";
+import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe, foeResistsSpell, roomWeakenResists } from "./combat.js";
 // RULES-18 (Phase 75.3): the control-at-depth dials the freeze / gas / stone /
 // weaken cases below read (difficulty.js imports nothing from engine/).
 import { controlHoldRoundsFor, controlCapRounds } from "./difficulty.js";
@@ -1668,8 +1668,12 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // RULES-18 (Phase 75.3, audit C4): past the knee each target gets its
       // own resist, and a landed freeze sleeps controlHoldRoundsFor(depth)
       // rounds instead of 99; at or below the knee exactly as before.
+      // Quick 260927-rsx (user ruling 2026-09-27): a staff's freeze is a
+      // spell cast on each foe it reaches, so each first rolls its intel
+      // resist (foeResistsSpell), then the depth resist above.
       const freezeRounds = controlCapRounds(state.floor?.depth, 99);
       foes.slice(0, it.aoe ?? 2).forEach((f) => {
+        if (foeResistsSpell(state, f, it.n, rng, events)) return;
         if (resistControl(state, f, "freeze", it.n, combat.foes.indexOf(f), rng, events)) return;
         f.asleep = freezeRounds;
       });
@@ -1682,11 +1686,13 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // as before) and controlHoldRoundsFor(depth) rounds past it, through
       // the same `spell:weaken` timer whose expiry (combat.js#foeTurn's tail)
       // clears the flag and narrates weakenFaded.
+      // Quick 260927-rsx: every live foe first rolls its own intel resist
+      // (roomWeakenResists); the room's one depth resist follows, keyed on
+      // the first live foe as before, and a landed weaken skips the foes
+      // that resisted it.
       if (combat) {
         const aimed = foes[0];
-        if (aimed && resistControl(state, aimed, "weaken", it.n, combat.foes.indexOf(aimed), rng, events)) {
-          foes.forEach((f) => (f.resisted = "weaken"));
-        } else {
+        if (roomWeakenResists(state, aimed, it.n, rng, events)) {
           combat.weakened = true;
           const weakenRounds = controlHoldRoundsFor(state.floor?.depth);
           if (weakenRounds > 0) startEffect(c, "spell:weaken", { rounds: weakenRounds });
@@ -1712,7 +1718,9 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // stays in the fight) instead of the kill; only the foes the stone
       // actually kills are named below. At or below the knee no resist rolls
       // and no hold lands, so `stoned` is every target — exactly as before.
+      // Quick 260927-rsx: each target first rolls its intel resist.
       const stoned = targets.filter((f) => {
+        if (foeResistsSpell(state, f, it.n, rng, events)) return false;
         if (resistControl(state, f, "stone", it.n, combat.foes.indexOf(f), rng, events)) return false;
         if (controlHoldRoundsFor(state.floor?.depth) > 0) {
           holdFoe(state, f, "stone", it.n, events);
@@ -1733,10 +1741,15 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     }
     case "fire": {
       const n = rng.d(6); // roll:amount
+      // Quick 260927-rsx: the Pine Staff's fireballs are a spell cast on
+      // every live foe — each rolls its intel resist once, up front (after
+      // the fireball count); a fireball that comes round to a foe that
+      // resisted does nothing and draws no damage.
+      const shrugged = new Set(foes.filter((f) => foeResistsSpell(state, f, it.n, rng, events)));
       let tot = 0;
       for (let k = 0; k < n && foes.length; k++) {
         const t = foes[k % foes.length];
-        if (!t.alive) continue;
+        if (!t.alive || shrugged.has(t)) continue;
         // Phase 31 Afraid: halves the hero's item-dealt fire damage
         // (post-roll arithmetic, zero rng change; a no-op unless
         // combat.afraid > 0).
@@ -1755,7 +1768,9 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // resist, and a landed gas sleeps controlHoldRoundsFor(depth) rounds
       // instead of 99; at or below the knee exactly as before.
       const gasRounds = controlCapRounds(state.floor?.depth, 99);
+      // Quick 260927-rsx: each foe first rolls its intel resist.
       foes.forEach((f) => {
+        if (foeResistsSpell(state, f, it.n, rng, events)) return;
         if (resistControl(state, f, "sleep", it.n, combat.foes.indexOf(f), rng, events)) return;
         f.asleep = gasRounds;
       });

@@ -176,11 +176,22 @@ test("chooseAbility: round 1 prefers a ready opener even when a damage ability i
   assert.deepStrictEqual(chooseAbility(state, ctx), { key: "pommelStrike" });
 });
 
+// Quick 260927-opf (user ruling 2026-09-27): Kata is once per fight now, so
+// the bot aims it like every once-a-fight foe ability — at hardestFoeIndex
+// (the only foe here, index 0). isReady keeps it from ever re-trying a spent
+// one.
 test("chooseAbility: round 2, target above half hp, a damage ability (kata) is picked", () => {
   const ctx = makeBotContext();
   const combat = fight("Beasts", 1, 2); // target foe0 wp:20/maxWP:20 -> above half
   const state = mkState({ combat, c: fighter({ abilities: ["kata"] }) });
-  assert.deepStrictEqual(chooseAbility(state, ctx), { key: "kata" });
+  assert.deepStrictEqual(chooseAbility(state, ctx), { key: "kata", target: 0 });
+});
+
+test("chooseAbility: a spent once-per-fight Kata is never picked again this fight", () => {
+  const ctx = makeBotContext();
+  const combat = fight("Beasts", 1, 3);
+  const state = mkState({ combat, c: fighter({ abilities: ["kata"], timers: { "ability:kata": { cadence: "rounds", left: 996, phase: "cooldown" } } }) });
+  assert.equal(chooseAbility(state, ctx), null);
 });
 
 test("chooseAbility: target below half hp AND the hero below half hp with only a defensive ability ready picks it", () => {
@@ -333,8 +344,18 @@ test("playRun: a forced Fighter/Knight cell uses at least one ability and never 
   // document). Re-measured live: seed 6 dies naturally (depth 2, 296
   // actions) and is the smallest untaken seed for this force; seeds 1, 2, 3
   // and 5 are unaffected (still die naturally, re-confirmed live).
+  //
+  // Seed 5 swapped for seed 7 (quick 260927-rsx / 260927-opf, user rulings
+  // 2026-09-27: every spell cast on a foe can be resisted; the one-shot
+  // strikes are once per fight): this Knight's own abilities are now spent
+  // per fight, so the run plays out differently — seed 5 now outlives the
+  // 2000-action cap (alive on depth 16 at action 2000: a longer survival,
+  // not a loop). Re-measured live under identity dials (never hand-typed):
+  // seed 4 still stalls (depth 5), seed 7 dies naturally (depth 1, 99
+  // actions, 5 abilityUsed) and is the smallest untaken seed that does;
+  // seeds 1, 2, 3 and 6 still die naturally.
   let sawAbility = false;
-  for (const seed of [1, 2, 3, 5, 6]) {
+  for (const seed of [1, 2, 3, 6, 7]) {
     const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 2000, force: { cls: "Fighter", sub: "Knight", race: "Human" } }, (events) => {
       if (events.some((e) => e.type === "abilityUsed")) sawAbility = true;
     });
@@ -990,7 +1011,16 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
   // size step.
   const forces = [
     { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [2, 3, 4] },
-    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [4, 2, 3] },
+    // Quick 260927-rsx / 260927-opf (user rulings 2026-09-27): Sorcerer
+    // seed 4 swapped for seed 6. Every spell cast on a foe can now be
+    // resisted, so this caster's long run plays out differently and seed 4
+    // now falls into the pre-existing campFailed (noRations) loop the Phase
+    // 72 note above describes (stuck at depth 5, day 6, re-measured live to
+    // 5000 actions). Re-measured live under identity dials: seeds 1 and 5
+    // stall the same way, seed 6 dies naturally (depth 1, 102 actions) and
+    // is the smallest untaken seed that does; seeds 2 and 3 still die
+    // naturally. The Pilfer and Troll Knight trios are unaffected.
+    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [6, 2, 3] },
     { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [5, 2, 4] },
   ];
   let sawItem = false;

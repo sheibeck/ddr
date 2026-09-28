@@ -421,6 +421,7 @@ const NOT_A_CONDITION = Object.freeze({
   turned: "R-12: Turn Undead and Gate set it together with alive = false, so the card reads DOWN",
   cd: "the foe's own ability cooldowns (engine/foeAbilities.js), not a condition on it",
   uses: "the foe's own ability use counts (engine/foeAbilities.js), not a condition on it",
+  weakenResisted: "quick 260927-rsx: the foe resisted the room's Weaken, so its Weakened chip is simply absent (the when() reads this flag)",
   // ── combat-wide flags ──
   foeToHitPenalty: "the to-hit half of Weaken, shown by the Weakened chip",
   afraid: "the HERO's fear, not a foe condition",

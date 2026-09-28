@@ -2047,7 +2047,8 @@ function foeSwingChain(state, f, faces, mods) {
     if (faces !== before) mods.push({ name: "blind", delta: faces - before });
   }
   const C = state.combat;
-  if (C && C.foeToHitPenalty) {
+  // Quick 260927-rsx: a foe that resisted the landed Weaken keeps its faces.
+  if (C && C.foeToHitPenalty && !(f && f.weakenResisted)) {
     const before = faces;
     faces = Math.min(faces, C.foeToHitPenalty);
     if (faces !== before) mods.push({ name: "penalty", delta: faces - before });
@@ -2191,9 +2192,14 @@ export function intelBonus(c) {
 
 /**
  * resistRoll(rng, intel) — p.25's intelligent-target spell/ability
- * resistance, the ONE shared helper for BOTH directions (FOE-07): the
- * player's `castSpell` reads a FOE's `intel` (magic.js), and Phase 19's
- * foe-ability resolver reads the HERO's `c.intel` (engine/foeAbilities.js).
+ * resistance. User ruling 2026-09-27 (quick 260927-rsx): this is now the
+ * HERO side only — engine/foeAbilities.js reads the HERO's `c.intel` when a
+ * foe's spell or ability lands on the hero, unchanged canon. A spell cast
+ * ON a foe (the hero's, a Joiner's, a scroll's or an item's) rolls
+ * `foeSpellResistRoll` below instead; the two functions are split so the
+ * hero side cannot drift with the foe side. (History: FOE-07 once shared
+ * this helper for both directions, the player's `castSpell` reading a FOE's
+ * `intel` in magic.js.)
  * Homed here (D-07, relocated by D-17) because `engine/derived.js` is the
  * only cycle-free leaf module — `engine/magic.js` already imports from
  * `engine/combat.js`, and `engine/combat.js` will import
@@ -2229,6 +2235,87 @@ export function resistRoll(rng, intel) {
   if ((intel ?? 0) < 12) return { rolled: false, resisted: false, roll: undefined };
   const check = rollCheck(rng, 20, atLeastFor(intel - 1, 20));
   return { rolled: true, resisted: check.ok, roll: check.roll, atLeast: check.atLeast, dieN: check.dieN };
+}
+
+/**
+ * SPELL_SELF_KINDS — the spell kinds that never target a foe (the caster's
+ * own body, its side, or the map): Summon, Shield/Bubble (ward), Strength
+ * (might), Regenerate, Heal, Map the Floor (reveal), Foresee, Mirror Self
+ * and Sense Presence (senses). User ruling 2026-09-27 (quick 260927-rsx):
+ * every OTHER kind is a spell cast on an enemy, so every foe it targets
+ * rolls `foeSpellResistRoll`; these kinds are never resisted.
+ */
+export const SPELL_SELF_KINDS = Object.freeze(new Set(["summon", "ward", "might", "regen", "heal", "reveal", "foresee", "mirror", "senses"]));
+
+/**
+ * spellTargetsFoe(sp) — true when SPELLS row `sp` is cast on an enemy (its
+ * kind is not in SPELL_SELF_KINDS). A missing row reads false. Pure.
+ */
+export function spellTargetsFoe(sp) {
+  return !!sp && typeof sp.kind === "string" && !SPELL_SELF_KINDS.has(sp.kind);
+}
+
+/**
+ * foeSpellResistFaces(intel) — user ruling 2026-09-27 (quick 260927-rsx,
+ * "every spell cast on an enemy should have a chance to be resisted based
+ * on their intelligence"; scale: half-intel): the winning faces a foe gets
+ * on its d20 against a spell cast on it — `max(1, round(intel / 2))`, so
+ * intel 1–2 resists on 1 face (5%), 3 on 2 (10%), 6 on 3 (15%), 10 on 5
+ * (25%), 16 on 8 (40%). A missing or non-finite intel reads as 0 (1 face).
+ * THE one number the foe card and the spell rows print, through
+ * rollRange.js#facesRangeText. Pure, no rng.
+ */
+export function foeSpellResistFaces(intel) {
+  const i = Number.isFinite(intel) ? intel : 0;
+  return Math.max(1, Math.round(i / 2));
+}
+
+/**
+ * foeSpellResistRoll(rng, intel) — the ONE roll a foe makes against a spell
+ * cast on it (user ruling 2026-09-27): one roll-high d20 through `rollCheck`,
+ * `resisted = roll >= 21 - faces` (`atLeastFor(foeSpellResistFaces(intel),
+ * 20)`). Unlike the hero-side `resistRoll` above (canon p.25, intel >= 12
+ * only, kept for foe spells cast AT the hero), EVERY foe rolls — there is
+ * no gate. Returns `{ rolled: true, resisted, roll, atLeast, dieN, faces }`.
+ * Pure w.r.t. everything but the one draw.
+ */
+export function foeSpellResistRoll(rng, intel) {
+  const faces = foeSpellResistFaces(intel);
+  const check = rollCheck(rng, 20, atLeastFor(faces, 20));
+  return { rolled: true, resisted: check.ok, roll: check.roll, atLeast: check.atLeast, dieN: check.dieN, faces };
+}
+
+/**
+ * foeSpellResistCheck(state, rng, source, idx, intel, caster = "you") — the
+ * derived-stream wrapper `engine/combat.js#foeResistsSpell` calls for every
+ * foe a spell targets. Draws `foeSpellResistRoll` from a FRESH keyed stream —
+ * `derivedRng(<the main rng's cursor, or 0 for a test double with no
+ * getState>, "spellResist", source, caster, <state.acts, or 0>, <the combat
+ * round, or 0>, idx)`, the same idiom `controlResistCheck` below uses — never
+ * from the caller's `rng`, so the resist itself never moves the main cursor
+ * (only what a resisted foe then does NOT take — its own to-hit, damage or
+ * duration draws — can). A different `idx` (another foe) or `caster` (the
+ * hero "you", or a Joiner's name — so a Joiner casting the hero's spell in
+ * the same round never copies the hero's roll) draws independently; the
+ * same key always yields the same result. Returns `foeSpellResistRoll`'s
+ * shape.
+ */
+export function foeSpellResistCheck(state, rng, source, idx, intel, caster = "you") {
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  const round = state.combat && Number.isInteger(state.combat.round) ? state.combat.round : 0;
+  const stream = derivedRng(cursor, "spellResist", source, caster, acts, round, idx);
+  return foeSpellResistRoll(stream, intel);
+}
+
+/**
+ * foeWeakened(combat, f) — whether the room's Weaken (`combat.weakened`)
+ * reaches foe `f`: every live foe except one that resisted the Weaken cast
+ * that landed (`f.weakenResisted`, set by combat.js#roomWeakenResists). Read
+ * by every foe-damage halving site and the `foeToHitPenalty` cap. Pure.
+ */
+export function foeWeakened(combat, f) {
+  return !!(combat && combat.weakened && !(f && f.weakenResisted));
 }
 
 /**

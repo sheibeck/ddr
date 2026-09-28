@@ -198,29 +198,35 @@ test("characterSheetViewModel(state): ARMOR row reflects a no-armor Fridgian (re
 
 // ─── Phase 38 (ABIL-01/04): abilities[] ────────────────────────────────────
 
-test("characterSheetViewModel(state): abilities[] out of combat reads the ability's OWN cd/once-a-fight text, tagged table/pool by source", () => {
+// Quick 260927-opf (user ruling 2026-09-27): Feint is once per fight now, and
+// the once-a-fight wording reads "once per fight" (the ruling's words); the
+// numeric-cooldown row is pinned on Dirty Trick (cd 4).
+test("characterSheetViewModel(state): abilities[] out of combat reads the ability's OWN cd/once-per-fight text, tagged table/pool by source", () => {
   const state = newRun(42); // Fighter/Soldier/Human
-  state.c.abilities = ["feint", "mark"];
+  state.c.abilities = ["dirtyTrick", "feint", "mark"];
   state.combat = null;
   const vm = characterSheetViewModel(state);
   assert.deepEqual(vm.abilities, [
-    { id: "feint", name: "Feint", description: ABILITY_BY_ID.feint.txt, source: "table", state: "cd 3 rounds" },
-    { id: "mark", name: "Mark", description: ABILITY_BY_ID.mark.txt, source: "pool", state: "once a fight" },
+    { id: "dirtyTrick", name: "Dirty Trick", description: ABILITY_BY_ID.dirtyTrick.txt, source: "table", state: "cd 4 rounds" },
+    { id: "feint", name: "Feint", description: ABILITY_BY_ID.feint.txt, source: "table", state: "once per fight" },
+    { id: "mark", name: "Mark", description: ABILITY_BY_ID.mark.txt, source: "pool", state: "once per fight" },
   ]);
 });
 
-test("characterSheetViewModel(state): abilities[] in combat reads READY / N rounds / once a fight · used", () => {
+test("characterSheetViewModel(state): abilities[] in combat reads READY / N rounds / once per fight · spent", () => {
   const state = newRun(42);
-  state.c.abilities = ["feint", "secondWind"];
+  state.c.abilities = ["dirtyTrick", "feint", "secondWind"];
   state.combat = {};
   const readyVm = characterSheetViewModel(state);
   assert.equal(readyVm.abilities.find((a) => a.id === "feint").state, "READY");
 
-  startCooldown(state.c, "ability:feint", { rounds: 2 });
+  startCooldown(state.c, "ability:dirtyTrick", { rounds: 2 });
+  startCooldown(state.c, "ability:feint", { rounds: 999 });
   startCooldown(state.c, "ability:secondWind", { rounds: 999 });
   const vm = characterSheetViewModel(state);
-  assert.equal(vm.abilities.find((a) => a.id === "feint").state, "2 rounds");
-  assert.equal(vm.abilities.find((a) => a.id === "secondWind").state, "once a fight · used");
+  assert.equal(vm.abilities.find((a) => a.id === "dirtyTrick").state, "2 rounds");
+  assert.equal(vm.abilities.find((a) => a.id === "feint").state, "once per fight · spent");
+  assert.equal(vm.abilities.find((a) => a.id === "secondWind").state, "once per fight · spent");
 });
 
 test("characterSheetViewModel(state): abilities[] is [] for a Magic User", () => {

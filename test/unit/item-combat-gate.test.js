@@ -12,6 +12,10 @@ import assert from "node:assert/strict";
 import { useItem, TARGETED_KINDS } from "../../engine/items.js";
 import { killFoe } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
+// Quick 260927-rsx: a staff or amulet power is a spell on each foe it
+// reaches, and each foe rolls its resist; a test that pins the reach picks a
+// state.acts where no foe resists.
+import { noResistActs } from "./harness/spellResistActs.js";
 
 /** fakeRng(seq) — verbatim copy of test/unit/magic.test.js's helper. */
 function fakeRng(seq, { pick = (arr) => arr[0] } = {}) {
@@ -168,6 +172,7 @@ test("Amulet of Stone on 5 foes stones only 4 (aoe:4), leaving combat open with 
   const AMULET_STONE = { n: "Amulet of Stone", use: "stone", every: 200, aoe: 4 };
   const foes = [1, 2, 3, 4, 5].map((n) => fixedFoe({ name: `F${n}`, wp: 10, maxWP: 10, type: "Humans" }));
   const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", items: [AMULET_STONE] }, combat: fixedCombat(foes) });
+  state.acts = noResistActs("Amulet of Stone", 4, { cursor: makeRng(7).getState() });
   const events = useItem(state, 0, makeRng(7), [], NOW);
 
   const stoned = events.find((e) => e.type === "foeStoned");

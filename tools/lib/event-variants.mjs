@@ -193,6 +193,13 @@ const PHASE_79_TOGGLES = [
   { only: ["bought"], gained: 3, meal: 8 },
   { only: ["darknessFell"], duration: 30, nightVision: false },
   { only: ["darknessFell"], duration: 30, nightVision: true },
+  // Quick 260927-rsx / 260927-opf (user rulings 2026-09-27), appended so every
+  // earlier toggle keeps its id: a Joiner's cast being resisted (the resist
+  // lines name the caster), a Weaken some foes resisted (`spared`), and a
+  // spent once-per-fight ability's refusal — so the voice guards read them.
+  { only: ["spellResisted", "resistFailed"], by: "Ada", spell: "Fireball" },
+  { only: ["weakened"], spared: 1 },
+  { only: ["abilityRefused"], reason: "spent", name: "Feint" },
 ];
 
 /**

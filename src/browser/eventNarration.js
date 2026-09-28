@@ -938,6 +938,9 @@ export const EVENT_NARRATION = {
       // VOX-05 (Phase 79, plan 79-08): the rounds are the wait until it is
       // ready again, and Last Stand names its quarter-hp line.
       cooldown: `<span class="miss">${name}: ready again in ${e.left ?? "?"} round${e.left === 1 ? "" : "s"}. Your arm has opinions.</span>`,
+      // Quick 260927-opf (user ruling 2026-09-27): a once-per-fight ability
+      // that has been used is spent until this fight ends.
+      spent: `<span class="miss">${name}: spent for this fight.</span> It works once, and you have had your once.`,
       notInCombat: `<span class="miss">${name}: nothing to use it on out here.</span>`,
       noTarget: `<span class="miss">${name}: nothing left standing to use it on.</span>`,
       notLowEnough: `<span class="miss">Last Stand: only at a quarter of your hp or less, and you have ${e.have ?? "?"} of ${e.max ?? "?"}.</span> You are not desperate enough yet.`,
@@ -1051,9 +1054,14 @@ export const EVENT_NARRATION = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   backfireSelfDamage: (e) =>
     `<span class="hurt">Backfire: ${e.spell ?? "The spell"} went wrong in your hands — the ${e.sub ?? "Apprentice"} tax, one time in eight.</span> −${e.amount ?? 0} hp.`,
+  // Quick 260927-rsx (user ruling 2026-09-27): every spell cast on a foe
+  // rolls the foe's resist (half its intel in faces on a d20), and every
+  // roll, either way, gets its Oracle line with the roll. `by` names a
+  // Joiner caster; the hero's own cast reads "your".
   spellResisted: (e) =>
-    `${e.target ?? "It"} shrugs it off. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
-  resistFailed: (e) => `${e.target ?? "It"} tries to resist and fails. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)}.</span>`,
+    `<span class="miss">${e.target ?? "It"} resists ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}: no effect.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
+  resistFailed: (e) =>
+    `${e.target ?? "It"} fails to resist ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   summonBackfired: (e) =>
     `<span class="hurt">Summoning: ${e.spell ?? "The spell"} answered, then turned on you — a ${e.sub ?? "Summoner"}'s doubled creatures come with a grudge.</span> −${e.amount ?? 0} hp.`,
@@ -1078,8 +1086,10 @@ export const EVENT_NARRATION = {
   // VOX-05 (Phase 79, plan 79-08): who and what, in the grimoire's own
   // roll-high terms (C.foeToHitPenalty caps a foe at its die's top three
   // faces; C.weakened halves its damage), and "1 round", never "1 rounds".
+  // Quick 260927-rsx: `spared` counts the foes that resisted the cast; the
+  // line names them instead of claiming every foe.
   weakened: (e) =>
-    `<span class="hit">Every foe is weakened${e.rounds ? ` for ${plural(e.rounds, "round")}` : ""}: no more than its die's top three faces hit, and it does half damage.</span> They hit softer now.`,
+    `<span class="hit">${e.spared ? `Every foe but the ${e.spared === 1 ? "one" : e.spared} that resisted is weakened` : "Every foe is weakened"}${e.rounds ? ` for ${plural(e.rounds, "round")}` : ""}: no more than its die's top three faces hit, and it does half damage.</span> They hit softer now.`,
   // Phase 40 (SPELL-01) — combat.js#foeTurn's tail narrates this on the
   // `spell:weaken` timer's own effect->null transition.
   weakenFaded: () => `<span class="hit">Their arms remember how to swing.</span>`,
