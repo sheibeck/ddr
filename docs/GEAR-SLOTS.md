@@ -333,7 +333,9 @@ exact value:
   (weaponDamage); `:544` `2 * eff(c, "size")` (Gauntlet); `:556` `eff(c,
   "upkeep")` (upkeep); `:642` `eff(c, "tongue")` (fluency / Helm of
   Knowledge)
-- `engine/combat.js:553` `eff(c, "noCrit")` (Cloak of Strength); `:1391`
+- `engine/combat.js:553` `eff(c, "noCrit")` (Cloak of Strength; retired by
+  quick 260928-cos — the cloak's payload is now `critWard`, read by
+  `engine/derived.js#critWardOf` at the foe-crit sites); `:1391`
   `eff(view, "throw")`; `:1396` `eff(view, "spellDmg")` (party-member casts
   — member sheets never carry `worn`, so they stay on the legacy path)
 - `engine/items.js:89` `eff(c, "greed")` (gainWilmst)

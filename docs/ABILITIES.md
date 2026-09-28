@@ -198,7 +198,8 @@ any later dispatch):
   delta }` needMods entry alongside any Afraid penalty.
 - `autoHit` never touches `C.opened` — the Cat Burglar/Ninja free opener
   (`subAuto`) is a structurally separate flag from an ability's own auto-hit.
-- `forceCrit` obeys the Guard/Soldier/dark/noCrit-gear rule exactly like a
+- `forceCrit` obeys the Guard/Soldier/dark rule (the noCrit-gear clause was
+  retired by quick 260928-cos) exactly like a
   natural 1 (a Guard's Death Touch still finishes under 15 via `finishUnder`,
   it just never doubles); Silent Step's forced crit is additionally denied by
   heavy armour on a Thief, exactly like the old Silence branch, pushing

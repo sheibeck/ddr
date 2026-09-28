@@ -98,7 +98,7 @@ function fixedCombat(foes, overrides = {}) {
 }
 
 const HELM = { kind: "jewel", n: "Helm of Knowledge", eff: { tongue: 1 }, txt: "" };
-const CLOAK_STRENGTH = { kind: "cloak", n: "Cloak of Strength", eff: { noCrit: 1 }, txt: "" };
+const CLOAK_STRENGTH = { kind: "cloak", n: "Cloak of Strength", eff: { critWard: 1 }, txt: "" };
 const PENDANT = { kind: "jewel", n: "Pendant of Fortitude", eff: {}, use: "half", txt: "" };
 const AMULET_LIGHT = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: "" };
 const CLOAK_REGEN = { kind: "cloak", n: "Cloak of Regeneration", eff: { cloakRegen: 1 }, txt: "" };
@@ -146,39 +146,42 @@ test("Helm of Knowledge grants Language: worn AND used makes a TALKATIVE encount
   assert.equal(canParley(wornUsed), true, "worn AND used — the Helm's live tongue effect grants Language -> parley Humans");
 });
 
-// --- 2. Cloak of Strength noCrit ------------------------------------------
-// 260918-w4n: worn AND used suppresses the crit; worn-but-unused does not.
+// --- 2. Cloak of Strength critWard ----------------------------------------
+// 260918-w4n: worn AND used; worn-but-unused grants nothing. Quick
+// 260928-cos (user-approved fix 2026-09-28): this test used to pin the
+// INVERTED rule — the cloak suppressing the WEARER's own crit. The cloak
+// protects the wearer: a foe's critical lands as an ordinary hit, and the
+// wearer's own crits are untouched (the full proof is
+// test/unit/cloak-crit-ward.test.js).
 
-test("Cloak of Strength suppresses the player's own critical (a natural 1 no longer doubles damage) only worn AND used", () => {
-  // Shared rng sequence: strike roll = 1 (crit), weapon d6 = 5, foe miss roll
-  // — no round-advance draws, initiative is rolled once, Phase 51.
-  const seq = () => [1, 5, 10];
-  // Phase 24 (IDENT-05) collision-avoidance: this file's fixedFighter
-  // defaults to sub: "Knight" and fixedFoe defaults to maxWP: 100 — the
-  // Knight-big-foe rule would otherwise force a live maxWP >= 20 foe to win
-  // the (now once-per-fight) initiative roll, and this test never calls
-  // fight() to consume that roll's own draws. maxWP: 19 keeps the crit/soak
-  // math this test actually proves untouched.
-  const foeOverrides = { wp: 19, maxWP: 19 };
+test("Cloak of Strength turns a foe's critical into an ordinary hit only worn AND used, and never touches the wearer's own crit", () => {
+  // foeTurn draws: to-hit raw 1 (the foe die's top face: a crit), damage d6 = 4.
+  const control = fixedState({ combat: fixedCombat([fixedFoe()]) });
+  const cHit = foeTurn(control, fakeRng([1, 4]), []).find((e) => e.type === "struckByFoe");
+  assert.equal(cHit.critical, true, "without the cloak, the foe's top face crits");
+  assert.equal(cHit.dmg, 9, "1 + 2*4");
 
-  const control = fixedState({ combat: fixedCombat([fixedFoe(foeOverrides)]) });
-  const cEvents = playerStrike(control, fakeRng(seq()), []);
-  const cStruck = cEvents.find((e) => e.type === "struck");
-  assert.equal(cStruck.critical, true, "without the cloak, a natural 1 crits");
-  assert.equal(cStruck.dmg, 12, "crit doubles (1 + d6=5) => 6*2 = 12");
-
-  const wornUnused = fixedState({ c: { worn: { cloak: CLOAK_STRENGTH } }, combat: fixedCombat([fixedFoe(foeOverrides)]) });
-  const uEvents = playerStrike(wornUnused, fakeRng(seq()), []);
-  const uStruck = uEvents.find((e) => e.type === "struck");
-  assert.equal(uStruck.critical, true, "worn but UNUSED — still crits, grants nothing");
+  const wornUnused = fixedState({ c: { worn: { cloak: CLOAK_STRENGTH } }, combat: fixedCombat([fixedFoe()]) });
+  const uHit = foeTurn(wornUnused, fakeRng([1, 4]), []).find((e) => e.type === "struckByFoe");
+  assert.equal(uHit.critical, true, "worn but UNUSED — the crit still lands, the cloak grants nothing");
 
   const wornUsed = fixedState({ c: { worn: { cloak: CLOAK_STRENGTH } } });
   useItem(wornUsed, { slot: "cloak" }, noDrawRng(), []);
-  wornUsed.combat = fixedCombat([fixedFoe(foeOverrides)]);
-  const wEvents = playerStrike(wornUsed, fakeRng(seq()), []);
-  const wStruck = wEvents.find((e) => e.type === "struck");
-  assert.equal(wStruck.critical, false, "worn AND used — the Cloak of Strength suppresses the crit");
-  assert.equal(wStruck.dmg, 6, "no crit => 1 + d6=5 = 6 (undoubled)");
+  wornUsed.combat = fixedCombat([fixedFoe()]);
+  const wEvents = foeTurn(wornUsed, fakeRng([1, 4]), []);
+  const wHit = wEvents.find((e) => e.type === "struckByFoe");
+  assert.equal(wHit.critical, false, "worn AND used — the foe's crit is turned aside");
+  assert.equal(wHit.dmg, 5, "1 + 4: the dice count once");
+  assert.ok(wEvents.some((e) => e.type === "critWarded"), "and the Oracle is told");
+
+  // The wearer's own strike: raw 1 (the top face), club d6 = 5, foe miss.
+  // maxWP 19 keeps the Knight-big-foe initiative rule out of it (Phase 24).
+  const own = fixedState({ c: { worn: { cloak: CLOAK_STRENGTH } } });
+  useItem(own, { slot: "cloak" }, noDrawRng(), []);
+  own.combat = fixedCombat([fixedFoe({ wp: 19, maxWP: 19 })]);
+  const struck = playerStrike(own, fakeRng([1, 5, 10]), []).find((e) => e.type === "struck");
+  assert.equal(struck.critical, true, "the wearer's own crit lands");
+  assert.equal(struck.dmg, 12, "(1 + d6=5) * 2");
 });
 
 // --- 3. Pendant of Fortitude halfNext -------------------------------------

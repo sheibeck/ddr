@@ -360,6 +360,9 @@ const railFull = (gained, offered) => (Number.isFinite(offered) && gained > 0 &&
 // possessive, or the caller's fallback ("its", never "it's") for a bare event.
 const railPlural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const railPossessive = (name, fallback) => (name ? `${name}'s` : fallback);
+/** railWardName(item) — eventNarration.js's wardName twin for critWarded
+ * (quick 260928-cos): the warding item's name, an object's `n`, or "cloak". */
+const railWardName = (item) => (typeof item === "string" && item ? item : typeof item?.n === "string" && item.n ? item.n : "cloak");
 // VOX-05 (Phase 79, plan 79-11): the rail twin of eventNarration.js's
 // squaresText — "1 square", and no leaked "undefined squares".
 const railSquares = (n) => (Number.isFinite(n) ? railPlural(n, "square") : "a few squares");
@@ -1759,6 +1762,13 @@ export const LINE_FOR = {
   // VOX-05 (Phase 79, plan 79-08): "Its armour", never "It's armour".
   foeArmorSoaked: (e) => ({ text: `${railPossessive(e?.name, "Its")} armour shrugs it off.`, tone: "miss", priority: PRIORITY.them }),
   damageHalved: (e) => ({ text: `The pendant halves ${railPossessive(e?.name, "the")} blow.`, tone: "hit", priority: PRIORITY.them }),
+  // Quick 260928-cos: the rail twin of the Oracle's critWarded line — a
+  // live Cloak of Strength turned a foe's critical into an ordinary hit.
+  critWarded: (e) => ({
+    text: `${e?.member ? `${railPossessive(e.member, "Their")} ${railWardName(e?.item)}` : `Your ${railWardName(e?.item)}`} turns ${railPossessive(e?.name, "the")} critical into an ordinary hit${Number.isFinite(e?.roll) && Number.isFinite(e?.dieN) ? ` (${e.roll} on the d${e.dieN})` : ""}.`,
+    tone: "hit",
+    priority: PRIORITY.them,
+  }),
   // Phase 25 (FEED-01): `soldierCrit` renders exactly like `critical`;
   // `soaked` names what absorbed the blow.
   struckByFoe: (e) => {
@@ -2510,7 +2520,7 @@ export const LINE_FOR = {
       glow: `Fifty squares of being your own lantern.`,
       unseen: `Unseen for ${sq}: every foe has two fewer faces that hit you.`,
       tongue: `${sq} of perfect fluency. Do not waste it on small talk.`,
-      brace: `${sq} with nothing critical landing on you.`,
+      critWard: `${sq} with nothing critical landing on you.`,
       plate: `${sq} of weightless plate.`,
     };
     return { text: map[e?.kind] ?? `${e?.item ?? "It"} is in effect for ${sq}.`, tone: "magic", priority: PRIORITY.you };

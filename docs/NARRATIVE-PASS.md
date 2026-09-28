@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos.
 
 ## How to ask for changes
 
@@ -40,8 +40,8 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | Surface | Keys judged | Changed | Kept word for word | New | Rows on this page | Lines removed |
 |---|---:|---:|---:|---:|---:|---:|
 | blurbs (class and race blurbs, and their mechanical footers) | 39 | 21 | 18 | 100 | 121 | 0 |
-| oracle (the Oracle log) | 327 | 93 | 234 | 0 | 102 | 2 |
-| rail (rail lines and the fight log) | 287 | 77 | 210 | 0 | 80 | 2 |
+| oracle (the Oracle log) | 327 | 93 | 234 | 1 | 103 | 2 |
+| rail (rail lines and the fight log) | 287 | 77 | 210 | 1 | 81 | 2 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 0 | 15 | 0 |
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
 | combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 3 | 24 | 1 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 1 | 16 | 0 | 56 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **320** | **1551** | **113** | **518** | **81** |
+| **Total** | **1871** | **320** | **1551** | **115** | **520** | **81** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -186,7 +186,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## oracle — the Oracle log
 
-102 changed lines.
+103 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -209,6 +209,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:controlHeld`<br>controlHeld { rounds 1 } — a control past the knee holds for a few rounds | Viper is held fast — 1 rounds, not forever. | Viper is held fast — 1 round, not forever. | **79-04** (hygiene): A one-round hold printed "1 rounds". |
 | `oracle:controlHeld`<br>controlHeld with freeze: true — engine/combat.js#holdFoe via freezeFoe (a landed Freeze or the Birch Staff) | *(new line)* | Viper is frozen for 3 rounds. Ice now, grudge later. | **q-260928-frz** (what happened, to whom, accurate to the engine, the joke after the fact): User ruling 2026-09-28: "freeze should never kill outright. It should deal its damage and freeze an enemy for 1d4 rounds." A Freeze now holds for its rolled d4 at every depth, so the line states the rounds plainly (never "not forever", which was the past-floor-12 hold's wording), then the joke. |
 | `oracle:cooked`<br>cooked { wp 4, gained 1 } — a Cooking hero eats the beast 1 hp below full | You cook what is left. +4 hp, +1 ration. | You cook what is left. +1 hp (worth 4, back to full), +1 ration. | **79-02** (honest number, accurate to the engine): The meal printed its full portion; it now prints the HP it restored and what the portion was worth. |
+| `oracle:critWarded`<br>critWarded — engine/combat.js#wardCrit (a foe rolled a critical against a hero or Joiner whose Cloak of Strength is live) | *(new line)* | Your cloak turns the critical aside, an ordinary hit instead. The cloak will not let anyone forget it. | **q-260928-z2-cos** (what happened, to whom, accurate to the engine, the joke after the fact): User-approved fix 2026-09-28 (quick 260928-cos). The user was wearing a live Cloak of Strength and was still critted by a wolf: the cloak had been wired to stop the wearer's own crits. It now turns a foe's critical into an ordinary hit, and this new line says so before the blow lands. It names whose cloak, whose critical and the roll ("Your Cloak of Strength turns the Wolf's critical aside: 20 on the d20"), then the joke. The line shows even when armour then soaks the ordinary hit. The synthetic corpus event carries no item or foe name, so it renders the bare form shown here. |
 | `oracle:cutpursed`<br>cutpursed { member } — a Joiner's Cutpurse lifts coin off a foe | the companion: You lift 8 wilmst off Viper mid-fight. It has other problems. | the companion lifts 8 wilmst off Viper mid-fight, into your purse. It has other problems. | **79-04** (accurate to the engine, what happened, to whom): A Joiner's cutpurse read "You lift", but the Joiner took the coin and it goes into the hero's purse. |
 | `oracle:damageHalved`<br>damageHalved with no foe name on the event | The pendant drinks half of that's blow before it reaches you. | The pendant drinks half of the blow before it reaches you. | **79-04** (hygiene, reads aloud): A nameless foe read "that's blow". |
 | `oracle:darknessFell`<br>darknessFell — a Darkness result on the dot falls on the hero | The dark closes in around you. | The dark closes in around you for 30 squares. Your Night Vision sees straight through it. | **79-11** (what happened, to whom): The line never said what the dark does or how long it lasts; it now states the cost, the event's duration in squares, and that Night Vision waives it.<br>**79-12** (what happened, to whom): 79-11's Oracle line says how long the dark lasts and that Night Vision waives it; no synthetic event carried those fields, so 79-12's darknessFell variants now put them in the corpus and on the review page. |
@@ -295,7 +296,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail — rail lines and the fight log
 
-80 changed lines.
+81 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -316,6 +317,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:controlHeld`<br>controlHeld { rounds 1 } — a control past the knee holds for a few rounds | Viper held 1 rounds. | Viper held 1 round. | **79-04** (hygiene): A one-round hold printed "1 rounds". |
 | `rail:controlHeld`<br>controlHeld with freeze: true — engine/combat.js#holdFoe via freezeFoe | *(new line)* | Viper frozen for 3 rounds. | **q-260928-frz** (what happened, to whom, accurate to the engine): User ruling 2026-09-28: the rail says "frozen for N rounds". On the hero's own cast the rail folds the hit, a failed resist and this hold into one line ("Freeze hits Viper (4), frozen for 3 rounds"), so the damage and the rounds read together. |
 | `rail:cooked`<br>cooked { wp 4, gained 1 } — a Cooking hero eats the beast 1 hp below full | Cooked: +4 hp, +1 ration. | Cooked: +1 hp (back to full), +1 ration. | **79-02** (honest number, accurate to the engine): The meal printed its full portion; it now prints the HP it restored and what the portion was worth. |
+| `rail:critWarded`<br>critWarded — engine/combat.js#wardCrit | *(new line)* | Your cloak turns the critical into an ordinary hit. | **q-260928-z2-cos** (what happened, to whom, accurate to the engine): User-approved fix 2026-09-28 (quick 260928-cos). The rail twin of the Oracle line: a live Cloak of Strength turned a foe's critical into an ordinary hit. With a real event it names the item, the foe and the roll ("Your Cloak of Strength turns Wolf's critical into an ordinary hit (20 on the d20)."). |
 | `rail:cutpursed`<br>cutpursed { member } — a Joiner's Cutpurse lifts coin off a foe | the companion: You lift 8 wilmst off Viper. | the companion lifts 8 wilmst off Viper for you. | **79-04** (accurate to the engine, what happened, to whom): The rail twin now credits the Joiner who lifted the coin. |
 | `rail:damageHalved`<br>damageHalved with no foe name on the event | The pendant halves that's blow. | The pendant halves the blow. | **79-04** (hygiene, reads aloud): A nameless foe read "that's blow". |
 | `rail:darknessFell`<br>darknessFell { duration 30, nightVision } — engine/encounters.js#fallDark (the variant 79-12 added) | The dark closes in. | The dark closes in for 30 squares. Night Vision sees through it. | **79-12** (what happened, to whom): 79-11's rail line says how long the dark lasts and that Night Vision waives it; no synthetic event carried those fields, so 79-12's darknessFell variants now put them in the corpus and on the review page. |

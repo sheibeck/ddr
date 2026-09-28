@@ -249,7 +249,8 @@ is the sole `-2` weapon in the whole table and it is Fighter-only.
 blade.** The hero's crit line (`engine/combat.js`, `playerStrike`) is
 `roll <= weaponCrit(c) && !noCrit`, and `noCrit` is true for
 `c.sub === "Soldier"` (and `"Guard"`, and darkness without Night Vision,
-and a `noCrit`-carrying item) — a Soldier's own blows NEVER crit,
+and, until quick 260928-cos, a `noCrit`-carrying item — that clause was the
+inverted Cloak of Strength and is gone) — a Soldier's own blows NEVER crit,
 regardless of the weapon's `crit` axis. The line
 `roll <= 2 && c.sub === "Soldier"` (`engine/combat.js`, the foe-turn
 damage-doubling check) is the FOE'S crit chance AGAINST a Soldier hero
@@ -462,7 +463,7 @@ where noted above:
 | Helm of Knowledge (260918-w4n) | tongue | 50 | 50 | `{ tongue: 1 }` while live |
 | Bracelet of Flight (260918-w4n) | fly | 20 | 50 | `{ fly: 1 }` while live — mirrors the Cloak of Flying exactly |
 | Cloak of Regeneration (260918-w4n) | knit | 0 (instant: one `rng.d(6)` back) | 20 | the once-per-use faithful reading of "d6 hp back every 20 squares" |
-| Cloak of Strength (260918-w4n) | brace | 50 | 50 | `{ noCrit: 1 }` while live |
+| Cloak of Strength (260918-w4n; quick 260928-cos) | critWard (was brace) | 50 | 50 | `{ critWard: 1 }` while live: a foe's critical on the wearer lands as an ordinary hit (was `{ noCrit: 1 }`, misread as the wearer's own crit ban) |
 | Cloak of Armor (260918-w4n) | plate | 50 | 50 | `{ cloakArmor: 1 }` while live |
 
 **Charges + recharge** (STAVES rows; `effect` only where the use has its

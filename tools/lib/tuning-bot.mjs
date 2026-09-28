@@ -844,7 +844,7 @@ export function hardFight(state) {
  *       (Xtra Healing preferred) drunk BEFORE the flee/parley decision;
  *   (2) "buff" — round 1 of a `hardFight`, a bag Speed/Strength/Enlarge
  *       potion (in that preference order) whose activation kind is not
- *       already active, or the first ready worn buff (haste/brace/plate/
+ *       already active, or the first ready worn buff (haste/critWard/plate/
  *       unseen/power/giant, in WORN_SLOTS order) whose kind is not already
  *       live;
  *   (3) "staff" — a Magic User's ready WIELDED staff (RULES-13, Phase 75,
@@ -890,7 +890,7 @@ export function chooseCombatItem(state, ctx) {
 
   // (2) round-1 buff before a hard fight. RULES-09 (Phase 75.1): the Pilfer
   // skip that used to sit here is gone — potions never fumble for anyone,
-  // and this tier's worn buffs (haste/brace/plate/unseen/power/giant) carry
+  // and this tier's worn buffs (haste/critWard/plate/unseen/power/giant) carry
   // the same RULES-09 fumble risk for a Pilfer that any other use does.
   if (C.round === 1 && hardFight(state)) {
     for (const eff2 of ["speed", "strength", "enlarge"]) {
@@ -905,14 +905,15 @@ export function chooseCombatItem(state, ctx) {
     }
     // 260918-w4n: the first ready worn combat buff, in WORN_SLOTS order,
     // among the kinds a round-1 buff should ever fire for — haste (Cloak of
-    // Speed), brace (Cloak of Strength), plate (Cloak of Armor), unseen
+    // Speed), critWard (Cloak of Strength; "brace" until quick 260928-cos),
+    // plate (Cloak of Armor), unseen
     // (Anklet of Invisibility), power (Ring of Power), giant (Gauntlet of
     // the Giant) — skipped when that kind is already live. 260918-wy1:
     // readyWornOfKind itself now scans WORN_SLOTS (jewelry1/jewelry2/cloak)
     // and (via skipIfActive) keeps scanning past an already-live match, so
     // this collapses to a single call — the first ready, not-yet-live buff
     // in EITHER jewelry key or the cloak.
-    const buffKinds = ["haste", "brace", "plate", "unseen", "power", "giant"];
+    const buffKinds = ["haste", "critWard", "plate", "unseen", "power", "giant"];
     const buffFound = readyWornOfKind(state, ctx, buffKinds, { skipIfActive: true });
     if (buffFound) return { action: { type: "useItem", slot: buffFound.slot }, reason: "buff" };
   }

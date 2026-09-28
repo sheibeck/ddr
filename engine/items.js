@@ -1589,7 +1589,8 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     // 260918-w4n: the 7 newly use-activated JEWELRY/CLOAKS kinds join this
     // plain-break list — power (Ring of Power), giant (Gauntlet of the
     // Giant), unseen (Anklet of Invisibility), tongue (Helm of Knowledge),
-    // brace (Cloak of Strength), plate (Cloak of Armor), fly (Cloak of
+    // critWard (Cloak of Strength; "brace" until quick 260928-cos),
+    // plate (Cloak of Armor), fly (Cloak of
     // Flying / Bracelet of Flight) — each is pure eff-payload data
     // (content/treasure-tables.js), so applyActivation starting the record
     // is the item's entire effect; nothing else fires here.
@@ -1604,7 +1605,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     case "giant":
     case "unseen":
     case "tongue":
-    case "brace":
+    case "critWard":
     case "plate":
     case "fly": {
       break;

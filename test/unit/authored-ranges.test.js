@@ -714,6 +714,10 @@ const PINNED_OUTSIDE_CONTENT = Object.freeze([
   { match: "oracle:weakened", proof: "test/unit/roll-sign-consistency.test.js", token: "EVENT_NARRATION.weakened" },
   { match: "rail:weakened", proof: "test/unit/roll-sign-consistency.test.js", token: "LINE_FOR.weakened" },
   { match: "bank:FOE_CONDITION_DESC.weakened", proof: "test/unit/roll-sign-consistency.test.js", token: "FOE_CONDITION_DESC.weakened" },
+  // Quick 260928-cos: the Cloak of Strength's save names the foe's roll on
+  // its die, read off the event (the top face the ward turned aside).
+  { match: "oracle:critWarded", proof: "test/unit/cloak-crit-ward.test.js", token: "EVENT_NARRATION.critWarded" },
+  { match: "rail:critWarded", proof: "test/unit/cloak-crit-ward.test.js", token: "LINE_FOR.critWarded" },
   { match: "raw:engine/items.js#rollTreasureItem", proof: "here" },
   { match: "raw:engine/economy.js#openStore", proof: "here" },
   { match: "raw:mazeworld.html#CONDITION_EXPLAIN", proof: "here" },

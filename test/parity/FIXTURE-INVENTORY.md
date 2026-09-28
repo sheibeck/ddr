@@ -5644,3 +5644,54 @@ Each item was traced on the locked engine under `setDialsForTuning(fit/start.jso
 | hp-growth-linear (3 tests) | shipped steps 13/19/31 → 14/21/35 | `dotHpFor` reads HERO_HP_SCALE | `node -e` |
 | foe-count-depth, the Knight at depth 10 | Zit's wp 4 → 5 (the scenario's premise gone) | startCombat's `foeWpFor` reads FOE_HP_SCALE | the scenario's own override also pins FOE_HP_SCALE at identity; assertion unchanged |
 | difficulty.test.js, combat-scaling, deep-curve | the curve, FITTED_CURVE_PINS (every row), the foeLevelFor map `1222233344445555555555555`, heroMeanMaxWpFor, roundDamageCapFor, the shipped-helper and dotHpFor pins, the DIALS pins, the deep-curve literals | the locked dials themselves | `node -e` against the locked engine; the traced lock test ties DIALS to `fit/early-lock.json` |
+
+### Cloak of Strength blocks crits on the wearer (user-approved fix 2026-09-28)
+
+Quick 260928-cos, base `1c5e0455` (gate 7,623/7,623, parity 66/66).
+
+**The rule.** The cloak's text is "used, no critical damage lands on you for
+fifty squares". Since Phase 15 (ECON-08), `playerStrike` had read its
+`eff: { noCrit: 1 }` as the wearer's OWN crit ban. The payload is now
+`critWard`, under its own activation kind `critWard` (was `brace`), and it is
+read only at the foe-crit sites through `engine/derived.js#critWardOf`: foeTurn's
+hero branch, foeTurn's member branch (the Joiner's own sheet) and
+pursuitStrike. A crit the foe rolled against a warded body lands as an
+ordinary hit, and a `critWarded` event is told. The wearer's own crits are
+back. Guard, Soldier and the dark keep their ban. **No draw moves**: the crit
+is read off the to-hit roll already drawn, and the damage dice are drawn once,
+in the same position (see docs/ROLL-LEDGER.md).
+
+**The predictor.** A replay moves only if a Cloak of Strength's effect is
+live during a fight, or if a replay compares the worn cloak's item data. No
+parity script uses an item. `action-script.movement.json#script`'s Thief
+starts wearing the Cloak of Strength (Phase 45), and its declared chargen
+record compares the worn item, so only that item's `eff` key should move.
+
+**The live scan (measured at the base, then with the fix).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical before and
+   after. The generated roster block above is not edited.
+2. **One declared record moved (data only).** In
+   `action-script.movement.json#script`'s chargenDivergence record,
+   `after.worn.cloak.eff` changed from `{ noCrit: 1 }` to `{ critWard: 1 }`.
+   The engine builds the worn item from the renamed CLOAKS row. The cloak is
+   never used in the 101-move script and no draw moves. The record was
+   re-declared and its rationale extended. The measured failure before the
+   re-declare was `worn.cloak.eff (key set mismatch: [critWard] vs [noCrit])`.
+3. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**,
+   with no carve-out. `test/parity/prototype-master.js.txt` and
+   `test/parity/harness/comparables.js` are untouched.
+4. **State pins** (`node tools/roll-high-baseline.mjs pins`, each label
+   hashed identically twice): all eight labels are byte-identical to the
+   base (actions/dead/depth and hash). The bot's round-1 buff list
+   (`tools/lib/tuning-bot.mjs`) only renames the kind `brace` to `critWard`,
+   and no pinned run has a foe crit or a hero crit inside a live cloak
+   window that changes a recorded state.
+5. **The pre-switch save** (`roll-high-save-compat.test.js`): its hero wears
+   a Cloak of Strength whose item still carries the retired
+   `eff: { noCrit: 1 }`. The save loads and `expected.hash` is unchanged. The
+   stale item copy is inert, because `eff()`/`critWardOf()` read the content
+   payload through the live timer record.
+6. The hazard-commit golden (`test/unit/fixtures/hazard-commit/golden.json`)
+   carries old cloak item objects as input and is unchanged. It is never
+   regenerated.

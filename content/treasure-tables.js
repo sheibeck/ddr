@@ -177,9 +177,16 @@ const CLOAKS_ROWS = [
   {
     // Use-activated (260918-w4n): worn + used, no critical lands on you for
     // 50 squares, 50 to leave itself vulnerable again.
-    n: "Cloak of Strength", slot: "cloak", eff: { noCrit: 1 },
+    // Quick 260928-cos (user-approved fix 2026-09-28): the payload was
+    // `noCrit`, the same word as the Guard/Soldier "your blows never crit"
+    // ban, and combat.js read it that way — the cloak stopped the WEARER's
+    // crits while foe crits still landed. It is now `critWard`, read only by
+    // engine/derived.js#critWardOf at the foe-crit sites (combat.js foeTurn's
+    // hero and member branches, pursuitStrike), under its own activation kind
+    // and chip (Crit-proof), no longer the "brace" the Fighter's Brace shares.
+    n: "Cloak of Strength", slot: "cloak", eff: { critWard: 1 },
     txt: "used, no critical damage lands on you for fifty squares; then fifty squares of ordinary luck",
-    act: { kind: "brace", effect: 50, cd: 50 },
+    act: { kind: "critWard", effect: 50, cd: 50 },
   },
   {
     // Once-a-day rule: 100 effect / 100 cd -> 50 effect / 50 cd (50+50 = one day).

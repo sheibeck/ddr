@@ -232,7 +232,9 @@ test("purity: two calls are deep-equal; c and it are never mutated", () => {
 
 // ─── noCritFor mirrors expectedStrike's own inline rule ────────────────
 
-test("noCritFor(c): true for Guard/Soldier or a live noCrit effect, false otherwise; expectedStrike unaffected by the extraction", () => {
+// Quick 260928-cos: the "live noCrit effect" clause is gone (its only source,
+// the Cloak of Strength, wards foe crits and never banned the wearer's own).
+test("noCritFor(c): true for Guard/Soldier, false otherwise; expectedStrike unaffected by the extraction", () => {
   assert.equal(noCritFor(guard), true);
   const soldier = { ...knight, sub: "Soldier" };
   assert.equal(noCritFor(soldier), true);
