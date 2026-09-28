@@ -149,7 +149,15 @@ test("(b) the largest bag full, a weapon found: item lines first, then the bound
   const state = bagState();
   const find = rollBlade(makeRng(5), 4, true);
   const r = findScenario(state, find);
-  const kids = r.linesEl.children;
+  // Re-pinned by quick 260928-fcs: on the full-bag card the found item's
+  // lines sit in their own bounded head (.mw-find-head), the drop region's
+  // sibling, so the lines are read from the head and the region is still
+  // the lines column's last child.
+  const head = r.linesEl.children.find((el) => String(el.className).includes("mw-find-head"));
+  assert.ok(head, "the found item's lines sit in their own head");
+  assert.equal(r.linesEl.children.indexOf(head), 0, "the head comes first");
+  assert.equal(r.linesEl.children.indexOf(r.region), r.linesEl.children.length - 1, "the drop region comes after the head");
+  const kids = [...head.children, r.region];
   assert.ok(r.region, "the drop region is rendered");
   assert.equal(kids.indexOf(r.region), kids.length - 1, "the drop region comes after every line");
   assert.ok(String(kids[0].textContent).startsWith(find.n), "the found item's name is the first line");
@@ -198,7 +206,8 @@ test("(d) after a drop the card re-renders with the found item still first and t
   const after = dropShelfRows(state.c);
   assert.deepEqual(after.map((r) => r.name), [...before.slice(0, 2), ...before.slice(3), rope.n]);
   const r = findScenario(state, find);
-  assert.ok(String(r.linesEl.children[0].textContent).startsWith(find.n), "the found item is still first");
+  // Re-pinned by quick 260928-fcs: the first line is the head's first child.
+  assert.ok(String(r.linesEl.children[0].children[0].textContent).startsWith(find.n), "the found item is still first");
   assert.equal(r.region.children.length, after.length);
   r.region.children.forEach((el, n) => assert.ok(el.innerHTML.includes(after[n].name), `row ${n} is ${after[n].name}`));
 });
@@ -234,7 +243,10 @@ test("(e) the map-side rail never grows past the stage; rows wrap (no nowrap or 
   assert.match(rule("#mw-rail .mw-rail-body"), /align-self:stretch;display:flex;flex-direction:column;min-height:0/);
   assert.match(rule("#mw-rail .mw-rail-lines"), /min-height:0;display:flex;flex-direction:column;overflow-y:auto/);
   assert.match(rule("#mw-rail .mw-rail-lines>*"), /flex:none/);
-  assert.match(rule("#mw-rail .mw-rail-lines>.mw-find-drop"), /flex:0 1 auto;min-height:calc\([\d.]+rem \* var\(--mw-text-scale\)\)/);
+  // Re-pinned by quick 260928-fcs: the region now gives way before
+  // the found item's head (its sibling) does, to a floor of about two
+  // full rows (find-card-scroll-rows.test.js pins the head).
+  assert.match(rule("#mw-rail .mw-rail-lines>.mw-find-drop"), /flex:0 100 auto;min-height:calc\([\d.]+rem \* var\(--mw-text-scale\)\)/);
   assert.match(rule("#mw-rail>.mw-rail-actions"), /flex:none/);
   const names = rule(".mw-find-drop .g-n");
   assert.match(names, /overflow-wrap:anywhere/);
