@@ -48,7 +48,7 @@ import {
   SIZE_FACES_PER_STEP,
 } from "../../engine/derived.js";
 import { playerStrike, parley } from "../../engine/combat.js";
-import { drinkPotion } from "../../engine/magic.js";
+import { drinkPotion, castSpell } from "../../engine/magic.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { FOE_CONDITION_DESC } from "../../src/browser/foeConditions.js";
@@ -568,6 +568,59 @@ test("FOE_DETAILS_COPY.resistsSpells and COMBAT_MENU_COPY.spellResist: the spell
     assert.equal(hitRangeText(faces, 20), `${facesRangeText(faces, 20)} (d20)`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// 9. Quick 260928-tsx (user request 2026-09-28): the thrown attack spells
+//    (Freeze, Fireball, Lightning, Mangle) label each die. The to-hit is a
+//    FIXED die (d10 for Freeze, d8 for the rest), so the text states its
+//    Phase 74 range "before bonuses" (the per-hero school and throw bonuses
+//    widen it); the damage dice are the row's own `dmg`, read as "damage".
+// ---------------------------------------------------------------------------
+
+/** "d6", "2d10+4": the dice a `dmg` literal rolls, written the way the texts write them. */
+const diceText = ({ n, sides, bonus }) => `${n === 1 ? "" : n}d${sides}${bonus ? `+${bonus}` : ""}`;
+
+/**
+ * A no-bonus caster's cast of thrown spell `n` at the spell's own level (the
+ * p.26 level multiplier is 1), against one plain foe, with every draw after
+ * the to-hit set to `fill` (the damage dice's face). Illusionist: offense
+ * school bonus 0 on the chart, and no item grants a throw bonus.
+ */
+function thrownCast(n, toHitDraw, fill) {
+  const sp = SPELLS.find((s) => s.n === n);
+  const foe = fixedFoe({ intel: 0 });
+  const state = fixedState(
+    { cls: "Magic User", sub: "Illusionist", level: sp.lvl, grimoire: [n] },
+    { combat: fixedCombat([foe]) },
+  );
+  const events = castSpell(state, SPELLS.indexOf(sp), fakeRng([toHitDraw], fill), []);
+  return { sp, events };
+}
+
+for (const n of ["Freeze", "Fireball", "Lightning", "Mangle"]) {
+  test(`SPELLS.${n}.txt states its to-hit range and its damage dice from the engine`, () => {
+    const { sp, events } = thrownCast(n, 2, 1);
+    assert.equal(sp.kind, "thrown");
+    const thrown = events.find((e) => e.type === "spellThrown");
+    assert.ok(thrown, `${n}: a spellThrown event, got ${events.map((e) => e.type)}`);
+    assert.equal(thrown.mods, undefined, `${n}: the pinned range is the one before any bonus`);
+    const range = hitRangeText(thrown.dieN + 1 - thrown.atLeast, thrown.dieN);
+    assert.ok(sp.txt.includes(`on ${range} before bonuses, for ${diceText(sp.dmg)} damage`), `${n}: "${sp.txt}" should state ${range} and ${diceText(sp.dmg)} damage`);
+    // Every face at or above atLeast hits, every face below misses.
+    for (let face = 1; face <= thrown.dieN; face++) {
+      const cast = thrownCast(n, thrown.dieN + 1 - face, 1).events;
+      assert.equal(cast.find((e) => e.type === "spellThrown").roll, face);
+      assert.equal(cast.some((e) => e.type === "spellHit"), face >= thrown.atLeast, `${n}: face ${face}`);
+    }
+    // The damage the hit deals is the row's dice: every die low, then every die high.
+    for (const [fill, want] of [[1, sp.dmg.n + (sp.dmg.bonus || 0)], [sp.dmg.sides, sp.dmg.n * sp.dmg.sides + (sp.dmg.bonus || 0)]]) {
+      const hit = thrownCast(n, 2, fill).events.find((e) => e.type === "spellHit");
+      assert.ok(hit, `${n}: the throw hits`);
+      assert.equal(hit.mult, 1);
+      assert.equal(hit.dmg, want, `${n}: ${diceText(sp.dmg)} with every die on ${fill}`);
+    }
+  });
+}
 
 // Every non-content corpus key stating a face count or a fixed-die range,
 // and where it is pinned. "here" rows are the tests above; a file names the

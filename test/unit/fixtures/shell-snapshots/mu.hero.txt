@@ -115,7 +115,7 @@
       text="Needs level 3"
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L5</span>Mangle</b><i>burst · one foe · 2d20+15</i>"
+      html="<b><span class=\"grim-lvl\">L5</span>Mangle</b><i>burst · one foe · hits on 5–8 (d8) before bonuses, for 2d20+15 damage</i>"
     <span class="grim-hint">
       text="Combat only"
 ## #doss-who

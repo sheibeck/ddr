@@ -1,0 +1,18 @@
+[
+  { "key": "content:SPELLS.Freeze.txt", "surface": "spells", "trigger": "a spell's Grimoire and scroll text",
+    "before": "burst · one foe · d6, and frozen solid on a hit; past floor 12 the ice holds three rounds, then it is just cold and angry",
+    "after": "burst · one foe · hits on 5–10 (d10) before bonuses, for d6 damage; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry",
+    "reasons": ["fact", "accurate"], "why": "User request 2026-09-28: the bare d6 read like a to-hit roll when it is the damage die, so the text now states the to-hit range on the d10 and labels the d6 as damage; the user's ruling the same day ends the outright kill, so a survivor that fails its resist is frozen for d4 rounds at every depth." },
+  { "key": "content:SPELLS.Fireball.txt", "surface": "spells", "trigger": "a spell's Grimoire and scroll text",
+    "before": "burst · one foe · 2d10+4",
+    "after": "burst · one foe · hits on 5–8 (d8) before bonuses, for 2d10+4 damage",
+    "reasons": ["fact"], "why": "User request 2026-09-28: a thrown spell's text says what each die is for; the throw hits on the d8's top four faces before the school and throw bonuses, and the 2d10+4 is its damage." },
+  { "key": "content:SPELLS.Lightning.txt", "surface": "spells", "trigger": "a spell's Grimoire and scroll text",
+    "before": "multi-target · every foe · d10+6 each",
+    "after": "multi-target · every foe · hits each on 5–8 (d8) before bonuses, for d10+6 damage apiece",
+    "reasons": ["fact"], "why": "User request 2026-09-28: Lightning rolls a separate d8 throw at every foe, hitting on its top four faces before bonuses, and each hit deals d10+6 damage; the text now labels both dice." },
+  { "key": "content:SPELLS.Mangle.txt", "surface": "spells", "trigger": "a spell's Grimoire and scroll text",
+    "before": "burst · one foe · 2d20+15",
+    "after": "burst · one foe · hits on 5–8 (d8) before bonuses, for 2d20+15 damage",
+    "reasons": ["fact"], "why": "User request 2026-09-28: a thrown spell's text says what each die is for; the throw hits on the d8's top four faces before bonuses, and the 2d20+15 is its damage." }
+]

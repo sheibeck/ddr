@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-tsx.
 
 ## How to ask for changes
 
@@ -46,7 +46,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
 | combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 3 | 24 | 1 |
 | items (item, gear and store text) | 110 | 10 | 100 | 0 | 13 | 0 |
-| spells (spells, abilities and skills) | 87 | 23 | 64 | 0 | 23 | 0 |
+| spells (spells, abilities and skills) | 87 | 27 | 60 | 0 | 27 | 0 |
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
 | death (epitaphs and death) | 120 | 23 | 97 | 0 | 23 | 14 |
 | boards (leaderboards and account) | 182 | 5 | 177 | 0 | 5 | 0 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 1 | 16 | 0 | 56 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **310** | **1561** | **113** | **503** | **79** |
+| **Total** | **1871** | **314** | **1557** | **113** | **507** | **79** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -457,7 +457,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## spells — spells, abilities and skills
 
-23 changed lines.
+27 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -476,6 +476,10 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `content:FIGHTER_SKILLS.Kata.txt`<br>a Fighter skill's text | one perfect form: this strike cannot miss and adds your level in damage | one perfect form: this strike cannot miss and adds your level in damage; once per fight | **q-260927-opf** (what happened, to whom): The Kata skill carries the ability's text verbatim; once per fight, per the ruling. |
 | `content:FIGHTER_SKILLS.Sidestep.txt`<br>a Fighter skill's text | two rounds of not being where the blade is: every foe needs two better | two rounds of not being where the blade is: every foe has two fewer faces that hit you | **79-05** (roll-high (ROLL-04)): "Needs two better" was roll-under shorthand; the engine takes two faces off every foe's winning range, so the text says two fewer faces. |
 | `content:FIGHTER_SKILLS.Stealth.txt`<br>a Fighter skill's text | critical on a 2 when you open a fight; never in plate | critical on your die's top two faces when you open a fight; never in plate | **79-05** (roll-high (ROLL-04)): "Critical on a 2" was the roll-under face count; the opener crits on the strike die's top two faces, and that die scales with level. |
+| `content:SPELLS.Fireball.txt`<br>a spell's Grimoire and scroll text | burst · one foe · 2d10+4 | burst · one foe · hits on 5–8 (d8) before bonuses, for 2d10+4 damage | **q-260928-tsx** (what happened, to whom): User request 2026-09-28: a thrown spell's text says what each die is for; the throw hits on the d8's top four faces before the school and throw bonuses, and the 2d10+4 is its damage. |
+| `content:SPELLS.Freeze.txt`<br>a spell's Grimoire and scroll text | burst · one foe · d6, and frozen solid on a hit; past floor 12 the ice holds three rounds, then it is just cold and angry | burst · one foe · hits on 5–10 (d10) before bonuses, for d6 damage; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry | **q-260928-tsx** (what happened, to whom, accurate to the engine): User request 2026-09-28: the bare d6 read like a to-hit roll when it is the damage die, so the text now states the to-hit range on the d10 and labels the d6 as damage; the user's ruling the same day ends the outright kill, so a survivor that fails its resist is frozen for d4 rounds at every depth. |
+| `content:SPELLS.Lightning.txt`<br>a spell's Grimoire and scroll text | multi-target · every foe · d10+6 each | multi-target · every foe · hits each on 5–8 (d8) before bonuses, for d10+6 damage apiece | **q-260928-tsx** (what happened, to whom): User request 2026-09-28: Lightning rolls a separate d8 throw at every foe, hitting on its top four faces before bonuses, and each hit deals d10+6 damage; the text now labels both dice. |
+| `content:SPELLS.Mangle.txt`<br>a spell's Grimoire and scroll text | burst · one foe · 2d20+15 | burst · one foe · hits on 5–8 (d8) before bonuses, for 2d20+15 damage | **q-260928-tsx** (what happened, to whom): User request 2026-09-28: a thrown spell's text says what each die is for; the throw hits on the d8's top four faces before bonuses, and the 2d20+15 is its damage. |
 | `content:SPELLS.Mirror Self.txt`<br>a spell's Grimoire and scroll text | defensive · you · foes need a 1 to hit, d6 rounds | defensive · you · foes hit you only on their die's top face (the top two faces if you insulted them), d6 rounds | **79-05** (roll-high (ROLL-04), accurate to the engine): The old text was a roll-under face count; foes roll high on a die that scales with their level, so it now names the top face, and the insulted top two, as the engine's override does. |
 | `content:SPELLS.Sense Danger.txt`<br>a spell's Grimoire and scroll text | sight · the next encounter · names it before you meet it, and you act first | sight · your next fight · you act first, whatever turns up (the family it hints at is a hunch, not a promise) | **79-12** (accurate to the engine): The spell names a random family that is never tied to the next fight, so it cannot "name it before you meet it"; the text now promises only what the engine does (you act first) and calls the name a hunch. |
 | `content:SPELLS.Weaken.txt`<br>a spell's Grimoire and scroll text | control · every foe · they hit on a 3 and do half, d4+1 rounds | control · every foe · no more than their die's top three faces hit, and they do half, d4+1 rounds | **79-05** (roll-high (ROLL-04)): "Hit on a 3" was the roll-under face count; Weaken caps every foe at three winning faces from the top of a die that scales with the foe's level. |
