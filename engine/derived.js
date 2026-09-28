@@ -1378,7 +1378,8 @@ export function armorBulk(c) {
  * roll-high before Phase 73 (`d20 + bonus >= need`) — the mirror leaves this
  * function untouched; its caller folds `bonus` into the threshold the same
  * way every other modifier does. Builds `mods` in this fixed order, pushing
- * an entry ONLY when it is non-zero: Thief (+5, "the whole trade") -> class
+ * an entry ONLY when it is non-zero: Thief (+3 since quick 260928-nrf,
+ * canon +5; "the whole trade") -> class
  * (content/flee.js#FLEE_CLASS_MOD) -> race (content/flee.js#FLEE_RACE_MOD)
  * -> armor (-armorBulk(c), only when bulk > 0). A race/class missing from
  * its table (a tampered save) contributes 0, never throws. `bonus` is the

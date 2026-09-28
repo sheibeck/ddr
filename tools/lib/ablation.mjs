@@ -43,7 +43,7 @@
 // chooseAbility that never returned <id> returns the same thing with <id>
 // filtered out.
 
-import { ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS, CLASSES } from "../../content/index.js";
+import { ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS, CLASSES, FLEE_THIEF_BONUS } from "../../content/index.js";
 
 /** The sub-class string an `ablate: "sub:<Sub>"` run's hero carries instead. */
 export const SUB_ABLATED = "(ablated)";
@@ -62,14 +62,15 @@ const STRIKE_FLAGS = {
  * applies `dials` through engine/difficulty.js#setDialsForTuning around the
  * one run, and ONLY when the hero is `cls` — the run is class-forced, so
  * nobody else in it is touched by the override except through the same
- * rule. `thiefFlee`: content/flee.js's FLEE_THIEF_BONUS (+5 to the flee
- * roll) — FLEE_NEED_MOD +5 raises the need by exactly what the bonus
+ * rule. `thiefFlee`: content/flee.js's FLEE_THIEF_BONUS (+3 to the flee
+ * roll since quick 260928-nrf; +5 when the audit ran) — FLEE_NEED_MOD set
+ * to the bonus raises the need by exactly what the bonus
  * lowers it by (combat.js#flee: atLeast = need - bonus), so the flee
  * outcome is the one a Thief without the bonus would roll (only the
  * fleeRolled event's `mods` narration differs).
  */
 const DIAL_ABLATIONS = {
-  thiefFlee: { cls: "Thief", dials: { FLEE_NEED_MOD: 5 } },
+  thiefFlee: { cls: "Thief", dials: { FLEE_NEED_MOD: FLEE_THIEF_BONUS } },
 };
 
 /**
