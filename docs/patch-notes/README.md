@@ -96,6 +96,13 @@ bullets, paragraphs, `**bold**` and https links.
    field (at most 500 characters).
 4. After the `v<versionName>` tag is pushed:
    `node tools/patch-notes.mjs --release-body | gh release create v<versionName> --repo sheibeck/ddr --title "Delve, Die, Repeat <versionName>" --notes-file -`
+5. `node tools/patch-notes.mjs --site ../darktier-studio` writes this
+   version's notes to the website repo
+   (`C:/projects/darktier-studio`, an Astro site on Firebase Hosting,
+   project `darktierstudios-b846f`), then commit it there. At release time,
+   `npm run deploy` in darktier-studio publishes
+   `https://darktierstudios.com/delve-die-repeat/patch-notes` — the page the
+   in-game "Past versions" link opens.
 
 See `docs/RELEASING.md` for this as a numbered step inside the full release
 recipe.
