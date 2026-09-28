@@ -14,7 +14,11 @@
    - run `gsd-tools query phase.complete 80`.
 2. **Delete `C:/projects/mazeworld-build/phase80-acba40ed/`.** The user asked for it once 80-05 is done.
 3. **Milestone lifecycle** (/gsd-autonomous step 5): Skill gsd-audit-milestone → Skill gsd-complete-milestone v2.1 → Skill gsd-cleanup (it asks the user). Then bring the user MILESTONE-CLOSE-QUESTIONS.md and docs/UAT-v2.1.md.
-4. **Discord (user request):** in the user's Discord server "The Bat Cave", create a text channel **#delve-die-repeat**. Its first post is the patch-notes link https://darktierstudios.com/delve-die-repeat/patch-notes. There is no Discord tool, so use the claude-in-chrome browser tools on discord.com in the user's signed-in Chrome. Creating a channel and posting were explicitly requested.
+4. **Discord (user request):** create a text channel **#delve-die-repeat** in "The Bat Cave" and make its first post the link https://darktierstudios.com/delve-die-repeat/patch-notes. The Discord MCP (@quadslab.io/discord-mcp) is configured ONLY in C:/projects/batcave-discord (.mcp.json + .env token; read that CLAUDE.md: never print the token, log changes in CHANGELOG.md).
+   - Run it as a headless `claude -p` in that directory with `--allowedTools "mcp__discord" "Read" "Edit" --permission-mode acceptEdits`.
+   - Attempt 1 failed: the MCP startup timed out at 30 s, so nothing changed.
+   - Attempt 2 is RUNNING with MCP_TIMEOUT=180000 (background task). If it also fails, ask the user to run `npx @quadslab.io/discord-mcp check` there interactively.
+   - Also: orphan cleanup done at ~16:20 (the stale Gradle and Kotlin daemons were killed).
 
 ## Where we are
 - **Complete:** 72, 73, 74, 75, 75.1, 75.2, 75.3, 76, 77, 78, **79**, and **79.2**, which was inserted for the early-floor retune and locked by user ruling.
