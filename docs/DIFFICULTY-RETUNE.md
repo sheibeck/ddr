@@ -6892,6 +6892,26 @@ The ruled tail targets, built by script from `fit/tail-start.jsonl`:
 
 Tail row: score 0.0000, verdict PASS, misses none, constraints.ok true, guard fresh p50Death 6 outside [3, 4], freshMeasured true.
 
+### Phase 79.2 — the class constraint's Magic User exemption (user ruling 2026-09-28)
+
+**2026-09-28.** START's only constraint rejection was the Magic User's
+reach5 (49.3 against a pooled 83.5 at 1,000 seeds). The user ruled: "This is
+fine for now. Magic users require much more tactical play."
+
+- `CLASS_CONSTRAINT_EXEMPT`: ["Magic User"]
+
+`tools/lib/fit-score.mjs#classConstraints` still measures every eligible
+class against the pooled p50 and reach5, and the pooled values are computed
+exactly as before (the median of every eligible class, the Magic User
+included). A breach by a class in `CLASS_CONSTRAINT_EXEMPT` goes to the
+result's `exempt` list (the reason text + " — exempt") and never to
+`reasons`: it does not set `ok` false and never rejects a candidate. The
+eval line prints it as `exempt=...`. Fighter and Thief are still held to
+|class p50 − pooled| ≤ 2 and reach5 within 20, and the two identity rules
+(Fighter takes at least the Thief's damage per fight; the Thief's fights are
+no longer than the Fighter's) are unchanged. Every 79.2-02 row still carries
+the Magic User's p50 and reach5 in `classes`.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases

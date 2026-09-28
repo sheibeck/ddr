@@ -19,6 +19,7 @@ import {
   evalRow,
   formatEvalLine,
   CLASS_POOL_MIN_N,
+  CLASS_CONSTRAINT_EXEMPT,
 } from "../../tools/lib/fit-score.mjs";
 import { DIALS } from "../../engine/difficulty.js";
 
@@ -197,6 +198,56 @@ test("classConstraints: rejects Thief roundsPerFight > Fighter's", () => {
   const result = classConstraints(classIdentity);
   assert.equal(result.ok, false);
   assert.ok(result.reasons.some((r) => r.includes("roundsPerFight")), result.reasons.join(" | "));
+});
+
+// USER RULING 2026-09-28 (Phase 79.2-02): "This is fine for now. Magic users
+// require much more tactical play." The Magic User's breach is reported in
+// `exempt`, never rejects; Fighter and Thief breaches still reject against
+// the same pooled values (computed from all eligible classes, unchanged).
+test("classConstraints (user ruling 2026-09-28): CLASS_CONSTRAINT_EXEMPT is exactly the Magic User", () => {
+  assert.deepStrictEqual([...CLASS_CONSTRAINT_EXEMPT], ["Magic User"]);
+});
+
+test("classConstraints (user ruling 2026-09-28): a Magic-User-only p50 and reach5 breach now PASSES, reported as exempt", () => {
+  const classIdentity = [
+    classRow("Fighter", { p50: 6, reach5: 83.5 }),
+    classRow("Thief", { p50: 7, reach5: 84.2 }),
+    classRow("Magic User", { p50: 2, reach5: 49.3 }),
+  ];
+  const result = classConstraints(classIdentity);
+  assert.equal(result.ok, true, result.reasons.join(" | "));
+  assert.deepStrictEqual(result.reasons, []);
+  assert.equal(result.pooledP50, 6, "pooled p50 is the median of all three classes, the Magic User included");
+  assert.equal(result.pooledReach5, 83.5, "pooled reach5 is the median of all three classes, the Magic User included");
+  assert.deepStrictEqual(result.exempt, [
+    "Magic User p50 2 vs pooled 6 (|delta| > 2) — exempt",
+    "Magic User reach5 49.3 vs pooled 83.5 (|delta| > 20) — exempt",
+  ]);
+  const row = evalRow(1, {}, { survival: { floors: [], reach20: 0 }, scored: { score: 1, verdict: "MISS", misses: [] }, classIdentity, constraints: result, pace: { floors: [] }, elapsedMs: 1 });
+  assert.equal(row.score, 1, "an exempt breach never scores the row +Infinity");
+  assert.equal("reason" in row, false);
+  const line = formatEvalLine(row);
+  assert.ok(line.includes("ok=true exempt=Magic User p50 2 vs pooled 6 (|delta| > 2) — exempt; Magic User reach5 49.3 vs pooled 83.5 (|delta| > 20) — exempt"), line);
+});
+
+test("classConstraints (user ruling 2026-09-28): a Fighter or a Thief breach still rejects while the Magic User is exempt", () => {
+  const fighterBreach = classConstraints([
+    classRow("Fighter", { p50: 5, reach5: 20 }),
+    classRow("Thief", { p50: 5, reach5: 60 }),
+    classRow("Magic User", { p50: 5, reach5: 50 }),
+  ]);
+  assert.equal(fighterBreach.ok, false);
+  assert.deepStrictEqual(fighterBreach.reasons, ["Fighter reach5 20 vs pooled 50 (|delta| > 20)"]);
+  assert.deepStrictEqual(fighterBreach.exempt, []);
+
+  const thiefBreach = classConstraints([
+    classRow("Fighter", { p50: 5, reach5: 50 }),
+    classRow("Thief", { p50: 8, reach5: 50 }),
+    classRow("Magic User", { p50: 2, reach5: 50 }),
+  ]);
+  assert.equal(thiefBreach.ok, false);
+  assert.deepStrictEqual(thiefBreach.reasons, ["Thief p50 8 vs pooled 5 (|delta| > 2)"]);
+  assert.deepStrictEqual(thiefBreach.exempt, ["Magic User p50 2 vs pooled 5 (|delta| > 2) — exempt"]);
 });
 
 test("classConstraints: a pool with n < 20 is unconstrained (ok stays true, a reason is recorded)", () => {

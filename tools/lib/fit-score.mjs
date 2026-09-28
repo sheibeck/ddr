@@ -200,6 +200,17 @@ export const CLASS_P50_TOLERANCE = 2.0;
 export const CLASS_REACH5_TOLERANCE = 20;
 
 /**
+ * CLASS_CONSTRAINT_EXEMPT — the class pools whose p50/reach5 breach of the
+ * pooled values is REPORTED but never rejects a candidate. USER RULING
+ * 2026-09-28 (Phase 79.2-02, on the START row's Magic User reach5 49.3 vs
+ * pooled 83.5): "This is fine for now. Magic users require much more
+ * tactical play." The pooled values are unchanged (the median of every
+ * eligible class, the Magic User included); Fighter and Thief are still held
+ * to them; the identity rules (3-4) never involved the Magic User.
+ */
+export const CLASS_CONSTRAINT_EXEMPT = Object.freeze(["Magic User"]);
+
+/**
  * classConstraints(classIdentity) — the class-pool fairness + identity
  * constraint gate. `classIdentity` is tools/lib/band-readout.mjs
  * #classIdentityReadout's own return shape (an array of exactly the three
@@ -227,12 +238,18 @@ export const CLASS_REACH5_TOLERANCE = 20;
  * of cycle-2's candidates (a 1-floor median swing is common noise at 200
  * seeds/class, not a real fairness violation).
  *
- * Returns `{ ok, reasons, pooledP50, pooledReach5, rows }`.
+ * USER RULING 2026-09-28 (Phase 79.2-02): a class in CLASS_CONSTRAINT_EXEMPT
+ * (the Magic User) never fails rules 1-2. Its breach is still measured and
+ * listed in `exempt` (the same reason text + " — exempt"), never in
+ * `reasons`, so it neither sets `ok` false nor counts as a rejection.
+ *
+ * Returns `{ ok, reasons, exempt, pooledP50, pooledReach5, rows }`.
  */
 export function classConstraints(classIdentity) {
   const rows = {};
   for (const row of classIdentity || []) rows[row.cls] = row;
   const reasons = [];
+  const exempt = [];
   let ok = true;
 
   const eligible = (cls) => !!(rows[cls] && rows[cls].n >= CLASS_POOL_MIN_N);
@@ -246,13 +263,20 @@ export function classConstraints(classIdentity) {
 
   for (const cls of eligibleClasses) {
     const row = rows[cls];
+    const isExempt = CLASS_CONSTRAINT_EXEMPT.includes(cls);
+    const breach = (text) => {
+      if (isExempt) {
+        exempt.push(`${text} — exempt`);
+      } else {
+        ok = false;
+        reasons.push(text);
+      }
+    };
     if (pooledP50 !== null && row.p50 !== null && Math.abs(row.p50 - pooledP50) > CLASS_P50_TOLERANCE) {
-      ok = false;
-      reasons.push(`${cls} p50 ${row.p50} vs pooled ${pooledP50} (|delta| > ${CLASS_P50_TOLERANCE})`);
+      breach(`${cls} p50 ${row.p50} vs pooled ${pooledP50} (|delta| > ${CLASS_P50_TOLERANCE})`);
     }
     if (pooledReach5 !== null && row.reach5 !== null && Math.abs(row.reach5 - pooledReach5) > CLASS_REACH5_TOLERANCE) {
-      ok = false;
-      reasons.push(`${cls} reach5 ${row.reach5} vs pooled ${pooledReach5} (|delta| > ${CLASS_REACH5_TOLERANCE})`);
+      breach(`${cls} reach5 ${row.reach5} vs pooled ${pooledReach5} (|delta| > ${CLASS_REACH5_TOLERANCE})`);
     }
   }
 
@@ -269,7 +293,7 @@ export function classConstraints(classIdentity) {
     }
   }
 
-  return { ok, reasons, pooledP50, pooledReach5, rows };
+  return { ok, reasons, exempt, pooledP50, pooledReach5, rows };
 }
 
 /**
@@ -482,6 +506,8 @@ export function formatEvalLine(row) {
   const deathStr = typeof row.p50Death === "number" ? row.p50Death : "n/a";
   const shapeStr = row.shape && row.shape.ok ? "ok" : "MISS";
   let line = `#${row.n} score=${scoreStr} verdict=${row.verdict} pass=${row.pass} deathP50=${deathStr} shape=${shapeStr} S1=${S(1)} S2=${S(2)} S3=${S(3)} S4=${S(4)} S6=${S(6)} S8=${S(8)} S12=${S(12)} tail S15=${S(15)} S20=${S(20)} reach20=${row.reach20.toFixed(1)} classes F/T/M p50=${classesStr} ok=${row.constraints.ok}`;
+  // USER RULING 2026-09-28: an exempt class's breach is reported, not scored.
+  if (row.constraints.exempt && row.constraints.exempt.length) line += ` exempt=${row.constraints.exempt.join("; ")}`;
   if (row.reason) line += ` reason=${row.reason}`;
   return line;
 }
