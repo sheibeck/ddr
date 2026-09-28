@@ -257,29 +257,42 @@ test("USER RULING D: the three-class death split classifies one death per class,
   assert.deepStrictEqual(STARVATION_CAUSES, ["starved in the dark"]);
 });
 
-test("TARGET_SURVIVAL: 25 rows; floor 1 p 98.8 S 98.8; floor 10 p 78.9 S 24.3; floor 20 p 84.5 with reach20Band [3, 5]; floor 25 p 88.9 S 1.5", () => {
-  assert.equal(TARGET_SURVIVAL.length, 25);
-  assert.deepStrictEqual(TARGET_SURVIVAL[0], { floor: 1, pL: 98.8, SL: 98.8, note: "High early survival" });
+// Phase 79.2 (user ruling 2026-09-27): TARGET_SURVIVAL is the 12-row
+// Phase 79.2 curve (floor L = USER RULING C floor 2L); it was Ruling C's 25
+// rows. Floors 13+ carry no survival target (TAIL_TARGETS governs the tail);
+// the full derivation is pinned in test/unit/early-floor-targets.test.js.
+test("TARGET_SURVIVAL (Phase 79.2): 12 rows; floor 1 p 95.1 S 95.1 'Ruling C floor 2'; floor 10 p 71.4 S 3.0; floor 12 p 77.3 S 1.7; no floor 13+ row", () => {
+  assert.equal(TARGET_SURVIVAL.length, 12);
+  assert.deepStrictEqual(TARGET_SURVIVAL[0], { floor: 1, pL: 95.1, SL: 95.1, note: "Ruling C floor 2" });
   const f10 = TARGET_SURVIVAL.find((t) => t.floor === 10);
-  assert.equal(f10.pL, 78.9);
-  assert.equal(f10.SL, 24.3);
-  const f20 = TARGET_SURVIVAL.find((t) => t.floor === 20);
-  assert.equal(f20.pL, 84.5);
-  assert.deepStrictEqual(f20.reach20Band, [3, 5]);
-  const f25 = TARGET_SURVIVAL.find((t) => t.floor === 25);
-  assert.equal(f25.pL, 88.9);
-  assert.equal(f25.SL, 1.5);
+  assert.equal(f10.pL, 71.4);
+  assert.equal(f10.SL, 3.0);
+  const f12 = TARGET_SURVIVAL.find((t) => t.floor === 12);
+  assert.equal(f12.pL, 77.3);
+  assert.equal(f12.SL, 1.7);
+  assert.equal(TARGET_SURVIVAL.some((t) => t.floor >= 13), false);
 });
 
 test("survivalVerdict: USER RULING D (plan-approval cut #3) — the verdict covers ONLY floors 1-12 (shallow 1-10 beyond 8 points, deep 11-12 beyond 3); floor 13+ is tail (never in missing, never PASS/MISS); reach-20 is reported but never part of the verdict; empty missing list when all of 1-12 are inside", () => {
   const r = survivalReadout(makeSurvivalResults(), {});
   const verdict = survivalVerdict(r);
-  // Pasted from the implementation's own output on this fixture.
+  // Pasted from the implementation's own output on this fixture. Phase 79.2
+  // (user ruling 2026-09-27): re-pasted against the Phase 79.2 targets (the
+  // fixture's own S_L is unchanged; the harder target moves every floor 2-12
+  // outside its band).
   assert.deepStrictEqual(verdict, {
     missing: [
-      { floor: 10, deltaS: 10.7 },
-      { floor: 11, deltaS: 15.9 },
-      { floor: 12, deltaS: 19.9 },
+      { floor: 2, deltaS: 12 },
+      { floor: 3, deltaS: 24.9 },
+      { floor: 4, deltaS: 44.6 },
+      { floor: 5, deltaS: 42.4 },
+      { floor: 6, deltaS: 43.2 },
+      { floor: 7, deltaS: 37.2 },
+      { floor: 8, deltaS: 40.5 },
+      { floor: 9, deltaS: 30.8 },
+      { floor: 10, deltaS: 32 },
+      { floor: 11, deltaS: 32.8 },
+      { floor: 12, deltaS: 33.3 },
     ],
   });
   assert.ok(!verdict.missing.some((m) => m.floor === 1));
@@ -342,11 +355,13 @@ test("formatSurvivalReadout: the header line is exact, one line per floor carrie
   const lines = formatSurvivalReadout(r);
   assert.equal(
     lines[0],
-    "Per-floor survival (USER RULING C target — p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):",
+    // Phase 79.2 (user ruling 2026-09-27): the header names the Phase 79.2 target.
+    "Per-floor survival (Phase 79.2 target, user ruling 2026-09-27 — floor L is USER RULING C's floor 2L; p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):",
   );
+  // Phase 79.2: re-pasted from the live output (floor 1's target is now 95.1).
   assert.match(
     lines[1],
-    /^  L=1  reached=12  deaths=1 \(combat 1 \/ dot 0 \/ starvation-exhaustion 0 \/ other 0\)  p_L=91\.7%  S_L=91\.7%  target p_L=98\.8%  target S_L=98\.8%  dS=-7\.1  PASS$/,
+    /^  L=1  reached=12  deaths=1 \(combat 1 \/ dot 0 \/ starvation-exhaustion 0 \/ other 0\)  p_L=91\.7%  S_L=91\.7%  target p_L=95\.1%  target S_L=95\.1%  dS=-3\.4  PASS$/,
   );
   // Floor 16 (tail territory) prints "tail", never PASS/MISS, and is absent
   // from the verdict line below.

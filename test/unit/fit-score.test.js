@@ -22,15 +22,19 @@ import {
 } from "../../tools/lib/fit-score.mjs";
 import { DIALS } from "../../engine/difficulty.js";
 
-// The Ruling C target S_L curve for floors 1-12, transcribed from
-// 54-CONTEXT.md (the same numbers fit-score.mjs's own TARGET_S_1_25 holds
-// internally — this is an independent paste, not an import, so a drift
-// between the two would fail this test rather than hide behind a shared
-// constant).
-const TARGET_S_1_12 = [98.8, 95.1, 88.6, 79.7, 69.2, 58.4, 48.0, 38.7, 30.8, 24.3, 19.1, 15.1];
+// Phase 79.2 (user ruling 2026-09-27): the target S_L curve for floors 1-12
+// is USER RULING C's floor 2L (the same numbers fit-score.mjs's own
+// EARLY_TARGET_S holds — this is an independent paste, not an import, so a
+// drift between the two would fail this test rather than hide behind a
+// shared constant). Was Ruling C's floors 1-12.
+const TARGET_S_1_12 = [95.1, 79.7, 58.4, 38.7, 24.3, 15.1, 9.5, 6.2, 4.2, 3.0, 2.2, 1.7];
+// Phase 79.2 (user ruling 2026-09-27): the target's own p_L, so the
+// on-target survival also passes the Filter-shape gate (a flat pL 90 would
+// now fail it as "flat"), and p50Death 4 sits inside P50_DEATH_BAND [3, 4].
+const TARGET_P_1_12 = [95.1, 83.8, 73.3, 66.3, 62.8, 62.1, 62.9, 65.3, 67.7, 71.4, 73.3, 77.3];
 
 function onTargetSurvival() {
-  return { reach20: 4.0, floors: TARGET_S_1_12.map((SL, i) => ({ floor: i + 1, pL: 90, SL })) };
+  return { reach20: 4.0, p50Death: 4, floors: TARGET_S_1_12.map((SL, i) => ({ floor: i + 1, pL: TARGET_P_1_12[i], SL })) };
 }
 
 // --- SEARCH_PLAN / HELD_DIALS ------------------------------------------
@@ -79,7 +83,7 @@ test("HELD_DIALS names every DIALS key not in SEARCH_PLAN (no MAZE_SIZE — cut;
 
 // --- scoreSurvival --------------------------------------------------------
 
-test("scoreSurvival: a synthetic survival exactly on the Ruling C curve scores 0 and PASSes", () => {
+test("scoreSurvival: a synthetic survival exactly on the Phase 79.2 curve (p50Death 4) scores 0 and PASSes", () => {
   const result = scoreSurvival(onTargetSurvival());
   assert.equal(result.score, 0);
   assert.equal(result.verdict, "PASS");
@@ -121,7 +125,8 @@ test("scoreSurvival: a null (never-reached) S_L counts as 0", () => {
   const result = scoreSurvival(survival);
   const floor1 = result.terms.find((t) => t.floor === 1);
   assert.equal(floor1.SL, 0);
-  assert.equal(floor1.term, Math.round((((0 - 98.8) ** 2) / 64) * 1e6) / 1e6);
+  // Phase 79.2 (user ruling 2026-09-27): floor 1's target is 95.1 (was 98.8).
+  assert.equal(floor1.term, Math.round((((0 - 95.1) ** 2) / 64) * 1e6) / 1e6);
   assert.equal(result.verdict, "MISS");
   assert.ok(result.misses.length > 0);
 });
