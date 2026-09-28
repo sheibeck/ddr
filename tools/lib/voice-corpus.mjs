@@ -160,6 +160,7 @@ export const BANK_REGISTRY = Object.freeze([
   bank("src/browser/hudMenu.js", "HUD_MENU_QUIT_COPY", "title", "the ☰ menu's Save & quit and Abandon rows"),
   bank("src/browser/mapMarks.js", "MARKS_LEGEND", "map", "the MARKS legend sheet", { pick: ["name", "desc"] }),
   bank("src/browser/missLines.js", "MISS_LINES", "rail", "a fledgling's miss quip"),
+  bank("src/browser/patchNotes.js", "PATCH_NOTES_COPY", "title", "the ☰ PATCH NOTES sheet"),
   bank("src/browser/rail.js", "RAIL_COPY", "rail-cards", "the rail card chrome and the idle card"),
   bank("src/browser/rail.js", "RAIL_FAMILY", "rail-cards", "a rail card's family title", { pick: ["title"] }),
   bank("src/browser/rollOdds.js", "HAZARD_ODDS_COPY", "rail-cards", "the odds lines on the wall and crevice card"),
@@ -250,6 +251,10 @@ export const NON_COPY_EXPORTS = Object.freeze([
   nonCopy("src/browser/foeConditions.js", "FOE_CONDITIONS", "rows point at FOE_CONDITION_COPY and FOE_CONDITION_DESC; the text is walked through those banks"),
   nonCopy("src/browser/heroConditions.js", "HERO_CONDITIONS", "the condition table: keys, fields, timers and source item names; the copy is HERO_CHIP_COPY"),
   nonCopy("src/browser/motion.js", "REDUCED_MOTION_QUERY", "a CSS media query"),
+  // 79.3: the bundled release notes for this version, generated from
+  // docs/patch-notes/<versionName>.md by tools/patch-notes.mjs --write-module:
+  // release content, not UI copy (D-18/D-19 and the addendum's Copy note).
+  nonCopy("src/browser/patchNotesData.js", "PATCH_NOTES", "the bundled release notes for this version, generated from docs/patch-notes/<versionName>.md by tools/patch-notes.mjs --write-module: release content, not UI copy (79.3 D-18/D-19 and the addendum's Copy note)"),
   nonCopy("src/browser/playGames.js", "FAKE_PLAYER", "the dev-only fake Play Games player"),
   nonCopy("src/browser/scoreTag.js", "TAG_SUBS", "sub-class name ids in the score-tag codec"),
   nonCopy("src/browser/uiTap.js", "UI_TAP_SELECTOR", "a CSS selector"),

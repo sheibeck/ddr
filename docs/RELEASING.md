@@ -20,6 +20,19 @@ npm test                 # must be green
 npm run play:release     # = bump versionCode → build:www → cap sync → pin-jdk → bundleRelease
 ```
 
+### Patch notes (NOTES-01, every Play release)
+
+1. Write `docs/patch-notes/<versionName>.md` with the user before the release build (format in
+   docs/patch-notes/README.md). Use `node tools/bump-version.mjs --name <versionName>` first
+   when the human-readable version changes.
+2. `node tools/patch-notes.mjs --write-module`, then `node tools/patch-notes.mjs --check`.
+   `npm run build:www`, and therefore `play:release`, fails when the current versionName has no
+   notes file.
+3. Paste `node tools/patch-notes.mjs --play` (at most 500 characters) into Play Console's
+   release notes.
+4. After the `v<versionName>` tag is pushed, run
+   `node tools/patch-notes.mjs --release-body | gh release create v<versionName> --repo sheibeck/ddr --title "Delve, Die, Repeat <versionName>" --notes-file -`.
+
 Output: `android/app/build/outputs/bundle/release/app-release.aab`, signed with the upload key.
 Then Play Console → Testing → Internal testing → **Create new release** → drop the .aab →
 release notes → Save + Start rollout. Testers get it within minutes (no review on internal).
@@ -41,6 +54,9 @@ Leaderboards panel fixes). Family-friendly deadpan, no internal ids:
 - LINEAGE and GRAVEYARD now live under ME at the end of the board rail, and GRAVEYARD still
   lists every stored run with its epitaph.
 - Every finished run lands on your own boards.
+
+These lines move into `docs/patch-notes/2.1.0.md` when the 2.1.0 notes are written with the
+user (79.3 D-18).
 
 ## After the push: console checklist
 
