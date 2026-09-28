@@ -24,3 +24,7 @@ Today Feint is a Thief ability with a 3-round cooldown (`cd: 3`). Each use is a 
 - **Ask the user:** Kata (the non-Thief twin, same strike) keeps its cooldown unless they say otherwise. Should other strike abilities (Silent Step, Death Touch, Overhead Blow) follow the same rule?
 - Save/load: a fight saved mid-combat keeps the spent flag (Phase 76 keeps live combat through a relaunch).
 - It moves balance slightly for Thieves: measure the parity fixtures, re-pin with traced causes, and re-measure the class matrix.
+
+## User rulings (2026-09-27)
+- **Now, before this release.** The user re-captured it: "feint ability should only be usable once per fight."
+- **Scope widened:** "Skills that can essentially one shot should be once per combat." That covers Feint and every strike ability that can plausibly kill a foe in one use. Candidates: Kata (Feint's twin), Death Touch (forced crit plus a finisher under 15), Silent Step (auto-hit plus a forced crit), Overhead Blow (double damage) and Last Stand (three attacks). Pommel Strike (a stun) is not a one-shot.

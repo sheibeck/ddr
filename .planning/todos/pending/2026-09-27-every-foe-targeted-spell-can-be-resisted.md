@@ -33,3 +33,9 @@ A rule change against canon p.25, so it's a deliberate design decision (the user
 - **Foe casters vs the hero:** engine/foeAbilities.js uses resistRoll for the hero's side. Decide whether the hero gets the same universal chance.
 - Every resist gets its Oracle and rail line (the existing spellResisted / resistFailed events), and the roll-high phrasing plus the chip and foe-card ranges must agree (roll-sign-consistency, authored-ranges).
 - It moves balance: it's a big lever for casters. It needs parity measurement, re-pins with traced causes, and a bot re-measure of the tail and class matrix (Phase 79.1's START row passed at the limit on four targets).
+
+## User rulings (2026-09-27)
+- **Now, before this release.** "Every spell cast on an enemy should have a chance to be resisted based on their intelligence. High intelligence is more chance to resist. I'd like this in now. I want the resist rolls noted in the Oracle, too."
+- **A resisted damage spell has no effect** (the whole spell fizzles, like other spells).
+- **Scale: half-intel.** The resist faces on a d20 are max(1, round(intel / 2)), so the chance is faces / 20: intel 1–2 → 5%, 6 → 15%, 10 → 25%, 16 → 40%.
+- Every resist roll, whether it succeeds or fails, is noted in the Oracle with its roll.
