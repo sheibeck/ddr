@@ -1049,7 +1049,10 @@ const CONTRACT = [
       name: "harder to land a blow on, easier to land one",
       run() {
         const state = hero("Acrobat");
-        assert.equal(foeToHitVs(state), 3);
+        // Quick 260928-nrf (user ruling 2026-09-28): foes land on an
+        // Acrobat with their top four faces (was three) — still one fewer
+        // than the plain five.
+        assert.equal(foeToHitVs(state), 4);
         // Phase 39 (GEAR-01): an Acrobat's Dagger (KIT-issued) now carries
         // its own need:+1 modifier (a light, precise blade) on top of the
         // Acrobat's classNeed-5 floor, so toHit is 6, not 5 — the Acrobat's

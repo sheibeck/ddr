@@ -284,7 +284,17 @@ const PINNED = {
   // no hero-targeted foe ability and re-measured byte-identical). 200/dead/2
   // -> 180/dead/2. Regenerated via `node tools/roll-high-baseline.mjs pins`
   // (each hashed identically twice).
-  "party-fighter-knight": { actions: 180, dead: true, depth: 2, hash: "16c76b406cd5a8003ebd876a5eaa70f3f58f1b785c520fc9f75b674b9ead14c8" },
+  // Re-pinned again (quick 260928-nrf, user ruling 2026-09-28, Joiners
+  // resist: "Yes, same scale"). Bisected per rule commit (a scratch tree per
+  // commit, the same playRun onStep trace): the Thief flee, Sweep, Kata/Feint
+  // and Acrobat commits leave this run byte-identical; the Joiner-resist
+  // commit moves it. First divergence bot step 134: Krupke's Freeze at the
+  // Joiner Hilda Stonecut (a Woodsman, intel 9) now rolls her resist, a new
+  // main-rng d20 between the target pick and the damage dice (roll 12 vs
+  // 16–20, failed), so the Freeze still lands but its damage die moves (3 ->
+  // 6) and the stream moves from there. 180/dead/2 -> 400/alive/3.
+  // Regenerated via `node tools/roll-high-baseline.mjs pins`.
+  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "6e756e013f0b745e1863bf9c341bb818d8df314cbab02d8f5d1acd554d1a03c1" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
@@ -369,7 +379,17 @@ const PINNED = {
   // Edge where the old run drank a potion). 52 / dead / floor 14 -> 154 /
   // dead / floor 15. Regenerated via `node tools/roll-high-baseline.mjs
   // pins` (hashed identically twice).
-  "deep-14": { actions: 50, dead: true, depth: 14, hash: "930b575e1cbfad83a7aa0221d4e756cca8398c22316128c9461047cb0a023631" },
+  // Re-pinned (quick 260928-nrf, user ruling 2026-09-28, "Acrobat: foes hit
+  // on top 4"). This run's hero is an Acrobat. Bisected per rule commit: the
+  // Thief flee +3 commit changes only the step-50 fleeRolled range (7 vs
+  // 9–20 -> 7 vs 11–20, a fail either way; the hash does not move), Sweep,
+  // Kata/Feint and the Joiner resist leave it byte-identical, and the
+  // Acrobat commit moves it. First divergence bot step 20: a Drarl's swing
+  // rolls 5, which missed against the old 6-or-better (top three faces of
+  // its d8) and now lands against 5-or-better (top four) for 21, so the
+  // fight plays out differently from there. 50/dead/14 -> 35/dead/14.
+  // Regenerated via `node tools/roll-high-baseline.mjs pins`.
+  "deep-14": { actions: 35, dead: true, depth: 14, hash: "20cec0b202a6c373cb6eff068d72045cd43c0524ac492e75bcdc2e2c01ed8d75" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

@@ -22,22 +22,26 @@ import {
 import { chooseAbility, makeBotContext, playRun, BOT_DEFAULTS, botLine } from "../../tools/lib/tuning-bot.mjs";
 import { fleeBreakdown } from "../../engine/derived.js";
 import { setDialsForTuning } from "../../engine/difficulty.js";
+import { FLEE_THIEF_BONUS } from "../../content/index.js";
 
-test("ablation: thiefFlee is a Thief-only dial override that exactly cancels the +5 flee bonus", () => {
+// Quick 260928-nrf (user ruling 2026-09-28): the bonus is +3 now; the
+// override reads FLEE_THIEF_BONUS, so it cancels whatever the bonus is.
+test("ablation: thiefFlee is a Thief-only dial override that exactly cancels the Thief flee bonus", () => {
   const a = parseAblation("thiefFlee");
   assert.equal(a.kind, "dial");
   assert.equal(a.cls, "Thief");
   assert.equal(dialOverridesFor(null, thief()), null);
   assert.equal(dialOverridesFor("thiefFlee", fighter()), null);
   assert.equal(dialOverridesFor("ability:feint", thief()), null);
-  assert.deepEqual(dialOverridesFor("thiefFlee", thief()), { FLEE_NEED_MOD: 5 });
+  assert.deepEqual(dialOverridesFor("thiefFlee", thief()), { FLEE_NEED_MOD: FLEE_THIEF_BONUS });
+  assert.equal(FLEE_THIEF_BONUS, 3);
   assert.equal(affectsRow({ cls: "Thief", sub: "Pilfer", startSkills: [], usage: {} }, "thiefFlee"), true);
   assert.equal(affectsRow({ cls: "Fighter", sub: "Knight", startSkills: [], usage: {} }, "thiefFlee"), false);
   // the override's lowest winning roll equals a no-bonus hero's, for every race
   for (const race of ["Human", "Elven", "Dwarven", "Troll"]) {
     const t = thief({ race, armor: "Leather" });
     const plain = fleeBreakdown(t);
-    const noBonus = plain.need - (plain.bonus - 5);
+    const noBonus = plain.need - (plain.bonus - FLEE_THIEF_BONUS);
     try {
       setDialsForTuning(dialOverridesFor("thiefFlee", t));
       const abl = fleeBreakdown(t);

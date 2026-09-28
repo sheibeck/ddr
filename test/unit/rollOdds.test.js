@@ -181,14 +181,15 @@ test("fleeOdds: a Human Fighter in unarmoured kit reads its plain flee range wit
   assert.equal(odds.modsText, "");
 });
 
-test("fleeOdds: a Human Thief reads the +5 Thief bonus, both in its range and its standalone modsText", () => {
+// Quick 260928-nrf (user ruling 2026-09-28): the Thief's flee bonus is +3.
+test("fleeOdds: a Human Thief reads the +3 Thief bonus, both in its range and its standalone modsText", () => {
   const c = fixedFighter({ cls: "Thief", sub: "Pilfer" });
   const odds = fleeOdds(c);
   const fb = fleeBreakdown(c);
   assert.equal(odds.atLeast, fb.need - fb.bonus);
-  assert.equal(odds.atLeast, 9);
-  assert.equal(odds.text, "9–20 (d20)");
-  assert.equal(odds.modsText, "Thief +5");
+  assert.equal(odds.atLeast, 11);
+  assert.equal(odds.text, "11–20 (d20)");
+  assert.equal(odds.modsText, "Thief +3");
 });
 
 test("fleeOdds: atLeast always equals fleeBreakdown(c).need − fleeBreakdown(c).bonus (Troll Fighter in Plate)", () => {

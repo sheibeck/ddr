@@ -122,8 +122,10 @@ test("the hero's Acrobat, Guard, gear, Mirror Self and invisibility leave no mod
 });
 
 test("a Joiner's own sub-class, gear and Mirror Self are named in its own mods, as the hero's are", () => {
+  // Quick 260928-nrf (user ruling 2026-09-28): the Acrobat override is four
+  // faces (was three), so its delta off the plain five is −1 (was −2).
   const cases = [
-    ["Acrobat", "Acrobat", -2],
+    ["Acrobat", "Acrobat", -1],
     ["Guard", "Guard", -1],
     ["Anklet", "gear", -2],
     ["Mirror Self", "Mirror Self", -4],

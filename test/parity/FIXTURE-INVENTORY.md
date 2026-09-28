@@ -5710,3 +5710,26 @@ Quick 260928-hrs, two rulings: "Use the same half-intel scale for heroes now" (t
 | FOE-09 determinism (`test/determinism/foe-abilities.test.js`) | full fights magical-t4 35/4 → 35/3 won, walking-dead-t5 48/3 → 36/2 died, beasts-t5 73/6 won → 48/3 died (humans-t2, demons-t5 unchanged); all five per-visit logs | seed 1's intel-20 hero resisted on 2–20 under canon and now on 11–20; seed 3's intel-2 hero now rolls on every hero-targeted ability visit |
 | unit draw pins (foe-abilities, foe-turn-draw-count, foe-cadence, condition-roll-mods) | +1 d20 per hero-targeted bolt/drain/debuff | the resist d20, every hero |
 | ability timer pins (abilities.test.js, your-lot-chips.test.js) | Sidestep's abilityRoundsLeft 5 → 6 right after use; Riposte still live (1) after use; the Smoke chip 1 → 2 right after the throw | abilityEffectTicks |
+
+### Class trims and Joiner resist (user rulings 2026-09-28)
+
+Quick 260928-nrf, five rulings answering the 260928-abl Fighter/Thief ability audit: (1) the Thief's flee bonus is +3 (canon +5, a deliberate deviation); (2) Sweep refuses with fewer than two living foes (no turn, no cooldown, no draw); (3) Kata and Feint roll to hit with three extra winning faces (`needShift: +3`) instead of auto-hitting; (4) foes land on an Acrobat with their top 4 faces (was 3); (5) a Joiner resists a foe's bolt or drain on the half-intel scale, its own intel, from the main rng between the target pick and the damage dice.
+
+**Parity fixtures: no moves.** `node tools/fixture-inventory.mjs --json` was byte-identical before and after all five rules. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**, with no new carve-out and no declared divergence. `test/parity/prototype-master.js.txt` is untouched. Which replays reach a changed rule:
+
+| Rule | Replay that reaches it | Outcome |
+|---|---|---|
+| (1) Thief flee +3 | `action-script.combat.json#flee` (seed 17, a Fridgian Pilfer Thief in no armour) | the one fixture that flees. Its roll of 18 escapes either way: `18 + 5 − 1 = 22 ≥ 14` before, `18 + 3 − 1 = 20 ≥ 14` now. Only the fleeRolled event's `mods` narration differs (Thief +5 → +3), and the prototype has no such payload, so the compared state does not move and no carve-out is needed. |
+| (2) Sweep, (3) Kata/Feint | none | the prototype has no ability actions; no fixture dispatches `useAbility`. |
+| (4) Acrobat | none | no fixture hero is an Acrobat (seeds 3, 14, 127, 1119, 17, 303 and 8 roll a Pickpocket, a Soldier, an Apprentice, a Cutthroat, a Pilfer, a Con Artist and an Illusionist). |
+| (5) Joiner resist | none | no fixture has a party (the combat `allies` key is absent on every fixture). |
+
+**Moved outside the parity suite** (each traced by bisecting the five rule commits, one scratch tree per commit, with the same playRun onStep trace):
+
+| Item | old → new | cause |
+|---|---|---|
+| roll-high state pin `party-fighter-knight` | 180/dead/2 → 400/alive/3 (hash moved) | rule (5) only. Bot step 134: Krupke's Freeze at the Joiner Hilda Stonecut (intel 9) now rolls her resist, a new main-rng d20 (roll 12 vs 16–20, failed); the Freeze still lands, but its damage die moves (3 → 6) and the stream moves from there. |
+| roll-high state pin `deep-14` | 50/dead/14 → 35/dead/14 (hash moved) | rule (4) only (rule (1) changes only this run's step-50 fleeRolled range, 7 vs 9–20 → 7 vs 11–20, a fail either way, and does not move the hash). Bot step 20: a Drarl's swing rolls 5 on its d8, a miss against the Acrobat's old 6–8 and a hit against the new 5–8 (21 damage). |
+| bot-tactics no-stall seed (forced Fighter/Knight) | seed 3 → seed 4 | rule (3) only. Bot step 385: a Joiner's Feint rolls 12 against 14 or better and misses where the auto-hit landed; seed 3 now survives to the 2,000-action cap (alive on depth 6). Seed 4 dies naturally (depth 10, 910 actions, 41 abilityUsed). |
+| DIALS merge pin (`test/difficulty/difficulty.test.js`) | `CLASS_MITIGATION.Thief.fleeBonus` 5 → 3 | rule (1): the dial mirrors `FLEE_THIEF_BONUS` (no engine code reads it); Phase 54's fit artifact still records 5, so the merge applies the ruling on top. |
+| unit pins | flee rows (flee-retune, combat, combatMenu, roll-sign-consistency, rollOdds, ablation-switch, flee-ledger via docs/FLEE.md), the Kata/Feint auto-hit pins (abilities, party-abilities), the one-foe Sweep armour pin (abilities), the member-bolt draw pin (foe-abilities: +1 d20), the Acrobat need pins (identity-contract, identity-footer, joiner-defences, hero-size) | the rule each names; every new value is the engine's own number. |

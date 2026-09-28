@@ -242,14 +242,17 @@ test("zero-draw fall-through: every ability on cooldown falls through", () => {
 // 3. Strike-kind resolutions via memberStrike(mod)
 // ---------------------------------------------------------------------------
 
-test("kata/feint: auto-hit, +level damage, memberAbilityUsed is the first event, timer starts on the SHEET not `ally`", () => {
+// Quick 260928-nrf (user ruling 2026-09-28, "Kata and Feint roll to hit"):
+// no auto-hit; three more winning faces. Need 5 on the level-1 d20 becomes
+// 8 faces, 13–20: a raw 8 (roll-high 13) lands, a raw 9 (12) misses.
+test("kata/feint: +3 faces, +level damage, memberAbilityUsed is the first event, timer starts on the SHEET not `ally`", () => {
   const foe = fixedFoe({ wp: 30, maxWP: 30 });
   const sheet = classedMember({ abilities: ["kata"] });
   const state = fixedState({ party: [sheet] });
   const ally = fixedAlly();
   state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
-  // roll=20 would normally miss (need 5) — autoHit ignores it; weaponDamage d6=4.
-  const events = alliesTurn(state, fakeRng([20, 4]), []);
+  // raw 8 = roll 13, the lowest winning face of 13–20; weaponDamage d6=4.
+  const events = alliesTurn(state, fakeRng([8, 4]), []);
   assert.equal(events[0].type, "memberAbilityUsed");
   assert.equal(events[0].name, "Ada");
   assert.equal(events[0].key, "kata");
@@ -258,6 +261,15 @@ test("kata/feint: auto-hit, +level damage, memberAbilityUsed is the first event,
   assert.equal(foe.wp, 22);
   assert.equal(isReady(sheet, "ability:kata"), false);
   assert.equal("timers" in ally, false, "the transient C.allies entry never gains a timers key");
+
+  const foe2 = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet2 = classedMember({ abilities: ["kata"] });
+  const state2 = fixedState({ party: [sheet2] });
+  state2.combat = fixedCombat([foe2], { allies: [fixedAlly()], round: 2 });
+  const missed = alliesTurn(state2, fakeRng([9]), []).find((e) => e.type === "allyMissed");
+  assert.ok(missed && missed.via === "kata" && missed.roll === 12 && missed.atLeast === 13, "one face below the shifted need misses");
+  assert.equal(foe2.wp, 30);
+  assert.equal(isReady(sheet2, "ability:kata"), false, "a miss still spends the use");
 });
 
 test("silentStep: auto-hit + forced crit, denied by heavy armor for a Thief (round 1, opener)", () => {

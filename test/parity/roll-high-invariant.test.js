@@ -96,6 +96,8 @@ const OUTCOME = {
   resistFailed: () => false, // the FOE's own resist check failed
   heroResisted: () => true, // the HERO's own resist check succeeded
   heroResistFailed: () => false, // the HERO's own resist check failed
+  memberResisted: () => true, // a JOINER's own resist check succeeded (quick 260928-nrf)
+  memberResistFailed: () => false, // a JOINER's own resist check failed (quick 260928-nrf)
   // allySpellMissed only ever carries atLeast/roll on its resisted:true form
   // (the target's OWN resist roll); the resisted:false form (the caster's
   // own to-hit miss) carries no roll fields, so I3 never evaluates this row

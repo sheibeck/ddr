@@ -43,22 +43,28 @@
 // Blow (borderline, flagged to the user), Silent Step and Feint, beside Last
 // Stand (already once a fight) — are `cd: "fight"`, and their text says so.
 // Pommel Strike (a stun) keeps its cooldown.
+//
+// Quick 260928-nrf (user rulings 2026-09-28, after the 260928-abl audit):
+// Kata and Feint roll to hit with three more winning faces instead of never
+// missing (engine/abilities.js#KATA_FEINT_NEED_SHIFT), and Sweep needs two or
+// more living foes (engine/abilities.js#SWEEP_MIN_FOES). Their text says so;
+// no text may promise a Kata or Feint cannot miss.
 
 export const ABILITIES = [
-  { id: "kata", name: "Kata", cls: "Fighter", source: "table", skillKey: "Kata", cd: "fight", target: "foe", tag: "damage", txt: "one perfect form: this strike cannot miss and adds your level in damage; once per fight" },
+  { id: "kata", name: "Kata", cls: "Fighter", source: "table", skillKey: "Kata", cd: "fight", target: "foe", tag: "damage", txt: "one perfect form: your die has three more faces that land this strike, and it adds your level in damage; once per fight" },
   { id: "deathTouch", name: "Death Touch", cls: "Fighter", source: "table", skillKey: "Death Touch", cd: "fight", target: "foe", tag: "damage", txt: "call it: your next landed blow doubles, and finishes anything under 15 hp; once per fight" },
   { id: "sidestep", name: "Sidestep", cls: "Fighter", source: "table", skillKey: "Sidestep", cd: 4, target: "self", tag: "defensive", txt: "two rounds of not being where the blade is: every foe has two fewer faces that hit you" },
   { id: "pommelStrike", name: "Pommel Strike", cls: "Fighter", source: "table", skillKey: "Pommel Strike", cd: 4, target: "foe", tag: "opener", txt: "the blunt end, to the temple: the target loses its next turn" },
   { id: "battleRoar", name: "Battle Roar", cls: "Fighter", source: "table", skillKey: "Battle Roar", cd: 5, target: "self", tag: "opener", txt: "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side" },
   { id: "secondWind", name: "Second Wind", cls: "Fighter", source: "table", skillKey: "Second Wind", cd: "fight", target: "self", tag: "defensive", txt: "remember why you came: heal d8 + level" },
-  { id: "sweep", name: "Sweep", cls: "Fighter", source: "table", skillKey: "Sweep", cd: 4, target: "foes", tag: "damage", txt: "one wide arc: every living foe takes half damage" },
+  { id: "sweep", name: "Sweep", cls: "Fighter", source: "table", skillKey: "Sweep", cd: 4, target: "foes", tag: "damage", txt: "one wide arc: every living foe takes half damage; needs two or more foes" },
   { id: "brace", name: "Brace", cls: "Fighter", source: "pool", cd: 3, target: "self", tag: "defensive", txt: "halve the next blow that lands on you" },
   { id: "riposte", name: "Riposte", cls: "Fighter", source: "pool", cd: 4, target: "self", tag: "defensive", txt: "for one round every foe that misses you eats your weapon damage" },
   { id: "taunt", name: "Taunt", cls: "Fighter", source: "pool", cd: 4, target: "self", tag: "defensive", txt: "every foe swings at you this round and your armour soaks double" },
   { id: "overheadBlow", name: "Overhead Blow", cls: "Fighter", source: "pool", cd: "fight", target: "foe", tag: "damage", txt: "everything into one swing: double damage, but your die has two fewer faces that land it; once per fight" },
   { id: "lastStand", name: "Last Stand", cls: "Fighter", source: "pool", cd: "fight", target: "foe", tag: "damage", txt: "under a quarter hp: three attacks this round; once per fight" },
   { id: "silentStep", name: "Silent Step", cls: "Thief", source: "table", skillKey: "Silent Step", cd: "fight", target: "foe", tag: "opener", txt: "nobody heard that: your next attack is an automatic critical, any round; once per fight" },
-  { id: "feint", name: "Feint", cls: "Thief", source: "table", skillKey: "Feint", cd: "fight", target: "foe", tag: "damage", txt: "look left, stab right: this strike cannot miss and adds your level in damage; once per fight" },
+  { id: "feint", name: "Feint", cls: "Thief", source: "table", skillKey: "Feint", cd: "fight", target: "foe", tag: "damage", txt: "look left, stab right: your die has three more faces that land this strike, and it adds your level in damage; once per fight" },
   { id: "dirtyTrick", name: "Dirty Trick", cls: "Thief", source: "table", skillKey: "Dirty Trick", cd: 4, target: "foe", tag: "opener", txt: "sand, thumb, elbow: the target is blinded for two rounds" },
   { id: "smoke", name: "Smoke", cls: "Thief", source: "table", skillKey: "Smoke", cd: "fight", target: "self", tag: "defensive", txt: "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works" },
   { id: "cutpurse", name: "Cutpurse", cls: "Thief", source: "pool", cd: "fight", target: "foe", tag: "damage", txt: "lift d10 × level gold off the target mid-fight; it has other problems" },

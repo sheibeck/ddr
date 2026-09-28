@@ -171,7 +171,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
     "Acrobat": side(
       [
-        trait("acrobat-dodge", "foes land only on their top three faces", CONTRACT, "harder to land a blow on, easier to land one"),
+        trait("acrobat-dodge", "foes land only on their top four faces", CONTRACT, "harder to land a blow on, easier to land one"),
         trait("acrobat-hit", "your top five faces hit, like a Fighter's (six with the dagger)", CONTRACT, "harder to land a blow on, easier to land one"),
       ],
       [trait("acrobat-dagger", "a dagger and nothing else", CONTRACT, "a dagger, and only a dagger")],

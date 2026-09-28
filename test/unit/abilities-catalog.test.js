@@ -132,7 +132,9 @@ test("FREE_SKILL is repointed to the keys sitting at the OLD free key's exact po
 // Quick 260927-opf (user ruling 2026-09-27): the one-shot strike abilities
 // are once per fight, and their text says so (declared re-pin of six rows).
 const CATALOG_TXT = {
-  kata: "one perfect form: this strike cannot miss and adds your level in damage; once per fight",
+  // Quick 260928-nrf (user rulings 2026-09-28): Kata and Feint roll to hit
+  // with three more faces; Sweep needs two or more foes.
+  kata: "one perfect form: your die has three more faces that land this strike, and it adds your level in damage; once per fight",
   deathTouch: "call it: your next landed blow doubles, and finishes anything under 15 hp; once per fight",
   // VOX-05/ROLL-04 (79-05): sidestep, battleRoar, overheadBlow and smoke read
   // roll-high in faces; feint and mark name what they add (damage).
@@ -140,14 +142,14 @@ const CATALOG_TXT = {
   pommelStrike: "the blunt end, to the temple: the target loses its next turn",
   battleRoar: "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side",
   secondWind: "remember why you came: heal d8 + level",
-  sweep: "one wide arc: every living foe takes half damage",
+  sweep: "one wide arc: every living foe takes half damage; needs two or more foes",
   brace: "halve the next blow that lands on you",
   riposte: "for one round every foe that misses you eats your weapon damage",
   taunt: "every foe swings at you this round and your armour soaks double",
   overheadBlow: "everything into one swing: double damage, but your die has two fewer faces that land it; once per fight",
   lastStand: "under a quarter hp: three attacks this round; once per fight",
   silentStep: "nobody heard that: your next attack is an automatic critical, any round; once per fight",
-  feint: "look left, stab right: this strike cannot miss and adds your level in damage; once per fight",
+  feint: "look left, stab right: your die has three more faces that land this strike, and it adds your level in damage; once per fight",
   dirtyTrick: "sand, thumb, elbow: the target is blinded for two rounds",
   smoke: "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works",
   cutpurse: "lift d10 × level gold off the target mid-fight; it has other problems",

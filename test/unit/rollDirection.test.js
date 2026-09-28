@@ -477,6 +477,21 @@ test('[hero-strike:overhead-blow] "your die has two fewer faces that land it" �
   assertPenalty(withMod, without, { label: "hero-strike:overhead-blow" });
 });
 
+// Quick 260928-nrf (user ruling 2026-09-28, "Kata and Feint roll to hit"):
+// three MORE winning faces, the mirror of Overhead Blow's two fewer.
+test('[hero-strike:kata-feint] "your die has three more faces that land this strike" — a strict bonus, engine/abilities.js#KATA_FEINT_NEED_SHIFT', () => {
+  const kata = () => {
+    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+    s.combat.abilityStrike = { key: "kata", needShift: 3, bonusDmg: 1 };
+    return s;
+  };
+  const plain = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
+  const withMod = faceOdds((rng) => landed(kata(), rng), { label: "hero-strike:kata-feint" });
+  const without = faceOdds((rng) => landed(plain(), rng), { label: "hero-strike:kata-feint (baseline)" });
+  assertBonus(withMod, without, { label: "hero-strike:kata-feint" });
+  assert.ok(withMod.wins < withMod.n, "[hero-strike:kata-feint] a Kata can still miss (no auto-hit)");
+});
+
 test("[hero-strike:afraid] a live combat.afraid penalty is a strict self-penalty, engine/derived.js#afraidNeed", () => {
   const afraid = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()], { afraid: 2 }));
   const plain = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
@@ -718,7 +733,7 @@ test('[foe-vs-hero:elven] "easy to hit" (content/races.js:23, deliberate Phase 3
   assertBonus(withMod, without, { label: "foe-vs-hero:elven" });
 });
 
-test("[foe-vs-hero:acrobat] Acrobat harder to hit (need 3, not 5), a strict penalty to the foe", () => {
+test("[foe-vs-hero:acrobat] Acrobat harder to hit (need 4, not 5; quick 260928-nrf), a strict penalty to the foe", () => {
   const acrobat = () => inCombat(heroState({ cls: "Thief", sub: "Acrobat", race: "Human" }), [NEUTRAL_FOE()]);
   const pickpocket = () => inCombat(heroState({ cls: "Thief", sub: "Pickpocket", race: "Human" }), [NEUTRAL_FOE()]);
   const withMod = faceOdds((rng) => foeHitsHero(acrobat(), rng), { label: "foe-vs-hero:acrobat" });
@@ -1207,7 +1222,7 @@ test('[foe-vs-member:elven] an Elven member is thin-boned from its own race — 
   assertBonus(withMod, without, { label: "foe-vs-member:elven" });
 });
 
-test("[foe-vs-member:acrobat] a member's own Acrobat is harder to hit (3 faces, not 5) — a strict penalty to the foe", () => {
+test("[foe-vs-member:acrobat] a member's own Acrobat is harder to hit (4 faces, not 5; quick 260928-nrf) — a strict penalty to the foe", () => {
   const hero = { cls: "Fighter", sub: "Soldier", race: "Human" };
   const acrobat = () => memberCombatState(hero, { cls: "Thief", sub: "Acrobat", race: "Human" }, NEUTRAL_FOE());
   const pickpocket = () => memberCombatState(hero, { cls: "Thief", sub: "Pickpocket", race: "Human" }, NEUTRAL_FOE());

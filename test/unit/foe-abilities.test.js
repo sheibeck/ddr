@@ -524,14 +524,20 @@ test("summoned foe accounting: killFoe pays normal XP and it targets like any fo
 
 // --- 17: member path (D-13) ------------------------------------------------------
 
-test("member path (D-13): a bolt on a live member skips resist/ward/armor, hits member.wp, and can down it; a drain on a member heals the foe by the raw dmg", () => {
+// Quick 260928-nrf (user ruling 2026-09-28, Joiners resist: "Yes, same
+// scale"): a member now rolls its own intel resist (memberResist, the
+// hero's half-intel scale) right after the target pick, before the damage
+// dice. fixedMember carries no intel (reads 0: one face, a raw 1 resists),
+// so a raw d20 of 20 (roll-high 1) fails and the rest is unchanged.
+test("member path (D-13): a bolt on a live member rolls its resist, then skips ward/armor, hits member.wp, and can down it; a drain on a member heals the foe by the raw dmg", () => {
   const state = fixedState({ c: { intel: 14 }, party: [fixedMember({ wp: 3, maxWP: 20 })] });
   const ally = fixedAlly({ wp: 3, maxWP: 20 });
   const foe = fixedFoe({ abilities: ["krupkeFreeze"] });
   state.combat = fixedCombat([foe], { allies: [ally] });
-  const events = foeTurn(state, fakeRng([1, 2, 4]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foeCast", "foeBolted", "memberDowned"]);
-  assert.deepEqual(events[1], { type: "foeBolted", name: "Target", ability: "krupkeFreeze", dmg: 4, ignoresArmor: false, member: "Ada" });
+  const events = foeTurn(state, fakeRng([1, 2, 20, 4]), []);
+  assert.deepEqual(events.map((e) => e.type), ["foeCast", "memberResistFailed", "foeBolted", "memberDowned"]);
+  assert.deepEqual(events[1], { type: "memberResistFailed", name: "Target", ability: "krupkeFreeze", member: "Ada", roll: 1, atLeast: 20, dieN: 20, intel: 0, faces: 1 });
+  assert.deepEqual(events[2], { type: "foeBolted", name: "Target", ability: "krupkeFreeze", dmg: 4, ignoresArmor: false, member: "Ada" });
   assert.equal(state.combat.allies.length, 0);
   assert.equal(state.party[0].status, "downed");
   assert.equal(events.some((e) => e.type === "heroResisted" || e.type === "heroResistFailed"), false);
@@ -540,11 +546,11 @@ test("member path (D-13): a bolt on a live member skips resist/ward/armor, hits 
   const ally2 = fixedAlly({ wp: 20, maxWP: 20 });
   const foe2 = fixedFoe({ abilities: ["vampireDrain"], wp: 3, maxWP: 10 });
   state2.combat = fixedCombat([foe2], { allies: [ally2] });
-  const events2 = foeTurn(state2, fakeRng([1, 2, 3, 4]), []);
-  assert.deepEqual(events2.map((e) => e.type), ["foeCast", "foeBolted", "foeDrained"]);
-  assert.equal(events2[1].dmg, 7);
-  assert.equal(events2[1].ignoresArmor, true);
-  assert.deepEqual(events2[2], { type: "foeDrained", name: "Target", ability: "vampireDrain", stolen: 7, wp: 10, maxWP: 10 });
+  const events2 = foeTurn(state2, fakeRng([1, 2, 20, 3, 4]), []);
+  assert.deepEqual(events2.map((e) => e.type), ["foeCast", "memberResistFailed", "foeBolted", "foeDrained"]);
+  assert.equal(events2[2].dmg, 7);
+  assert.equal(events2[2].ignoresArmor, true);
+  assert.deepEqual(events2[3], { type: "foeDrained", name: "Target", ability: "vampireDrain", stolen: 7, wp: 10, maxWP: 10 });
   assert.equal(ally2.wp, 13);
 
   const state3 = fixedState({ c: { intel: 14 }, party: [fixedMember({ wp: 20, maxWP: 20 })] });

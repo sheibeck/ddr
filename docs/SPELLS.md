@@ -1192,7 +1192,10 @@ roll. A foe casting at the HERO used canon p.25 (intel 12+ only) until quick
 260928-hrs (user ruling 2026-09-28, "Use the same half-intel scale for heroes
 now"): the hero now resists a foe's bolt, drain or debuff on the same scale,
 every hero rolling (`engine/derived.js#resistRoll`, one helper for both
-sides). Every roll, either way, is an Oracle line. The foe card and each
+sides). Since quick 260928-nrf (user ruling 2026-09-28, "Yes, same scale") a
+Joiner a foe's bolt or drain lands on resists the same way, on its own intel
+(`engine/foeAbilities.js#memberResist`; see the section at the end). Every
+roll, either way, is an Oracle line. The foe card and each
 foe-targeted spell row state the range. See docs/ROLL-LEDGER.md for the site,
 the stream and the draw order.
 
@@ -1272,3 +1275,32 @@ powerful." They chose **dice + level²** and **each foe gets it**.
 
 The "d6 × the level multiplier" wording in the Freeze section above is
 history: Freeze's damage is now d6 + level².
+
+## Joiners resist foe spells and abilities (quick 260928-nrf, user ruling 2026-09-28)
+
+Asked whether Joiners should resist foe spells and abilities on the same
+half-intel scale as the hero and the foes, the user said "Yes, same scale."
+
+- **Which effects.** A foe's bolt or drain that `pickFoeTarget` aims at a
+  live Joiner (a debuff is hero-only and never targets a Joiner; heals and
+  summons are never resisted by anyone). Every foe spell and ability is a
+  content/foe-abilities.js kit entry of one of those five kinds.
+- **The roll.** `resistRoll(rng, intel)` on the Joiner's OWN intel (its
+  persistent sheet; a sheet with no intel reads 0, one face): resisted on the
+  top `resistFaces(intel) = max(1, round(intel / 2))` faces of a d20. Intel
+  1–2 resists on 20 (5%), 6 on 18–20 (15%), 10 on 16–20 (25%), 16 on 13–20
+  (40%), 20 on 11–20 (50%). The hero's intel never reaches a Joiner's roll.
+- **What a resist blocks.** Everything the hero's does: no damage, and no
+  drain heal for the foe. The turn is still the foe's.
+- **The draw.** One main-rng d20 in the hero's slot: after the ability gate's
+  d6 and the target pick, before the damage dice. A Joiner-targeted bolt or
+  drain draws one more d20 than it did.
+- **The lines.** `memberResisted`: "Ada resists Krupke's spell. 16 vs 16–20
+  (intel 10). Somebody on your side was paying attention." (rail: "Ada
+  resists Krupke's spell (16 vs 16–20, intel 10).").
+  `memberResistFailed`: "Ada fails to resist Krupke's spell. 12 vs 16–20
+  (intel 10). Shrugging it off is harder than it looks." (rail: "Krupke gets
+  through — Ada fails to resist (12 vs 16–20, intel 10).").
+
+See docs/ROLL-LEDGER.md (`[resist:member-intel]`) for the site and the draw
+order.
