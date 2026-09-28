@@ -542,7 +542,7 @@ Plans:
      - The rotation Sorcerer never outlasts the fair bot. Every target gets a PASS or MISS verdict.
   3. Floors 1–12 are measured, not refitted. The average run still ends on floors 5–7. Any band miss, including the floor-11 survival miss flagged in Phase 75.1, is reported to the user with 1,000-seed evidence rather than silently compensated.
 
-**Plans:** 1/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 **Wave 1**
@@ -551,11 +551,11 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 79.1-02-PLAN.md — Tune the four deep-floor dials from Phase 75.3 against the user's ruled tail targets under the checkpointed fit protocol (wave 2)
+- [x] 79.1-02-PLAN.md — Tune the four deep-floor dials from Phase 75.3 against the user's ruled tail targets under the checkpointed fit protocol (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 79.1-03-PLAN.md — Lock the sweep's best dial set into the engine with a traced test, re-pin exactly what the new values move after tracing each move past floor 12, declare the moved set, and prove the whole suite green once (wave 3)
+- [x] 79.1-03-PLAN.md — Lock the sweep's best dial set into the engine with a traced test, re-pin exactly what the new values move after tracing each move past floor 12, declare the moved set, and prove the whole suite green once (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
