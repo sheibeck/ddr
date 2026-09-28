@@ -1779,6 +1779,14 @@ export function raceFoeToHit(sheet) {
 }
 
 /**
+ * ACROBAT_FOE_FACES — quick 260928-nrf (user ruling 2026-09-28, "Acrobat:
+ * foes hit on top 4"): the winning faces a foe's swing has against an
+ * Acrobat, an override like canon's (canon: 3). The 260928-abl audit found
+ * the old 3 worth about a floor of mean depth to its owners.
+ */
+export const ACROBAT_FOE_FACES = 4;
+
+/**
  * foeToHitVs(state, vs, sheet) — the foe's to-hit need against this character: a
  * count of winning faces on the foe's strike die (Phase 73, ROLL-05, read
  * roll-high via `atLeastFor(need, dieN)` — a bigger need is more winning
@@ -1840,7 +1848,10 @@ export function foeToHitVs(state, vs = "hero", sheet) {
   // Phase 79 (plan 79-02): the race's to-be-hit trait belongs to the body
   // being swung at (raceFoeToHit, one seam).
   h += raceFoeToHit(body);
-  if (body.sub === "Acrobat") h = 3;
+  // Quick 260928-nrf (user ruling 2026-09-28, "Acrobat: foes hit on top
+  // 4"): ACROBAT_FOE_FACES (was 3). The Acrobat's own strike need (5, "as a
+  // fighter with the dagger") is a different rule and is untouched.
+  if (body.sub === "Acrobat") h = ACROBAT_FOE_FACES;
   if (body.sub === "Guard") h -= 1;
   // RULES-11 (Phase 75.2, "Hero Size Matters", user ruling 2026-09-25): each
   // applied size step moves a foe's winning faces against the body's OWN
@@ -1875,8 +1886,8 @@ export function foeToHitVs(state, vs = "hero", sheet) {
  * foe's need is a count of winning faces, read roll-high — see foeToHitVs),
  * reproducing every step in the SAME order and recording a `{ name, delta }`
  * entry for every step that actually changed the running value (delta =
- * after − before, so an override such as Acrobat's `h = 3` records `3 -
- * hBefore`, not a raw assignment). Returns `{ need, mods }` where `need`
+ * after − before, so an override such as Acrobat's `h = ACROBAT_FOE_FACES`
+ * (4) records `4 - hBefore`, not a raw assignment). Returns `{ need, mods }` where `need`
  * MUST always equal `foeToHitVs(state, vs)` — this function reads exactly
  * the same fields (`c.race`, `c.sub`, skill/eff reads, the three
  * `abilityEffectActive` terms, `c.mirror`, `c.invis`) via the same helpers,
@@ -1915,7 +1926,7 @@ export function foeToHitBreakdown(state, vs = "hero", sheet) {
   }
   if (body.sub === "Acrobat") {
     const before = h;
-    h = 3;
+    h = ACROBAT_FOE_FACES;
     if (h !== before) mods.push({ name: "Acrobat", delta: h - before });
   }
   if (body.sub === "Guard") {
