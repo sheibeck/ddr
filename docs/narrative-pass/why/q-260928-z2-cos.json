@@ -1,0 +1,10 @@
+[
+  { "key": "oracle:critWarded", "surface": "oracle", "trigger": "critWarded — engine/combat.js#wardCrit (a foe rolled a critical against a hero or Joiner whose Cloak of Strength is live)",
+    "before": "",
+    "after": "Your cloak turns the critical aside, an ordinary hit instead. The cloak will not let anyone forget it.",
+    "reasons": ["fact", "accurate", "joke"], "why": "User-approved fix 2026-09-28 (quick 260928-cos). The user was wearing a live Cloak of Strength and was still critted by a wolf: the cloak had been wired to stop the wearer's own crits. It now turns a foe's critical into an ordinary hit, and this new line says so before the blow lands. It names whose cloak, whose critical and the roll (\"Your Cloak of Strength turns the Wolf's critical aside: 20 on the d20\"), then the joke. The line shows even when armour then soaks the ordinary hit. The synthetic corpus event carries no item or foe name, so it renders the bare form shown here." },
+  { "key": "rail:critWarded", "surface": "rail", "trigger": "critWarded — engine/combat.js#wardCrit",
+    "before": "",
+    "after": "Your cloak turns the critical into an ordinary hit.",
+    "reasons": ["fact", "accurate"], "why": "User-approved fix 2026-09-28 (quick 260928-cos). The rail twin of the Oracle line: a live Cloak of Strength turned a foe's critical into an ordinary hit. With a real event it names the item, the foe and the roll (\"Your Cloak of Strength turns Wolf's critical into an ordinary hit (20 on the d20).\")." }
+]

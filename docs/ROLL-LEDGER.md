@@ -1078,3 +1078,42 @@ field is replaced by `levelSq` (the term added), which the Oracle and rail
 lines print as "the roll +N, for your level"; `iceApplied` gains `levelSq`
 for the same reason. Step 2 of the Freeze section above ("d6 × the level
 multiplier") now reads d6 + level².
+
+## Quick 260928-cos: the Cloak of Strength wards foe crits (user-approved fix 2026-09-28)
+
+The user, on a Pixel 7: "the cloak of strength is supposed to stop critical
+hits, but I'm still getting critted. just now I had Braced on from my cloak,
+and I took a critical hit from a [wolf]." The cloak's text is "used, no
+critical damage lands on you for fifty squares". Since Phase 15 (ECON-08),
+`combat.js#playerStrike` had read its `eff: { noCrit: 1 }` as the WEARER's
+own crit ban (the `[hero-crit:*]` family's fourth clause), so the cloak
+stopped the hero's crits while every foe crit still landed.
+
+The fix. The cloak's payload is now `critWard` under its own activation kind
+`critWard` (it was `brace`, which the Fighter's Brace also uses).
+`engine/derived.js#critWardOf(body)` names the live item that wards `body`. At
+each foe-crit site, a crit the foe **rolled** against a warded body is dropped
+to an ordinary hit, and one `critWarded` event is told before the blow lands.
+
+**No draw moves.** The crit is read off the to-hit roll that was already
+drawn, and the damage dice are drawn once in the same position whether they
+count once or twice. The ward only chooses "once". `DRAW_INVENTORY` does not
+move.
+
+| Site | Before | After |
+|---|---|---|
+| combat.js#foeTurn hero branch (#26/#29) | `crit = roll >= atLeastFor(Soldier ? 2 : 1, dieN)` | the same roll decides `rolledCrit`; `crit = rolledCrit && !critWardOf(c)` |
+| combat.js#foeTurn member branch (#27) | `mCritical = isBestFace(mRoll, mDieN)` | `mCritical = rolled && !critWardOf(memberSheet)`: the Joiner's own sheet, never the hero's |
+| combat.js#pursuitStrike (#16) | the hero-branch rule | the hero-branch rule, warded the same way |
+| combat.js#playerStrike own crit (#11) | banned for Guard/Soldier, the dark, **or `eff(c,"noCrit")`** | banned for Guard/Soldier and the dark only (`[hero-crit:no-crit-sub]`, `[hero-crit:dark]` unchanged) |
+| derived.js#noCritFor (gear compare) | Guard/Soldier or `eff(c,"noCrit")` | Guard/Soldier |
+
+`struckByFoe` / `memberStruck` carry `critical: false`, no `critAtLeast` or
+`soldierCrit`, and `critWarded: true` for a warded blow. The `critWarded
+{ name, item, roll, dieN, member? }` event reads roll-high on the Oracle
+("… turns the Wolf's critical aside: 20 on the d20, an ordinary hit
+instead") and on the rail. An old save loads unchanged. Its worn item may
+still carry the retired `eff.noCrit`, but `eff()` and `critWardOf()` read the
+content payload through the live `item:Cloak of Strength` timer record, so
+the stale copy on the item is inert. Pinned in
+`test/unit/cloak-crit-ward.test.js`.
