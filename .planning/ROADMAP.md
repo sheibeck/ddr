@@ -1201,6 +1201,16 @@ Plans:
   - **If starvation reliably ends it** at a DAYS count below an honest deep run, it's fine; record the number.
   - **If it doesn't:** candidate fixes are to rank DAYS only with depth (e.g. ties broken by depth, or days counted only after floor N), to cap days per floor, or to let the server's run check (above) flag runs with a long days-to-depth ratio.
 
+**The new leaderboard UX (design handed over 2026-09-28, user):** "This is the new UX for leaderboards." Implement it when this item is promoted. It replaces the Phase 81 panel layout described below.
+
+- **The design:** the Claude Design project https://claude.ai/design/p/fed8909e-860d-496e-9d31-04dd31f14a3c?file=Mazeworld+Leaderboards+v3.dc.html
+- **Import it** with the claude_design MCP (https://api.anthropic.com/v1/design/mcp, auth via `/design-login`). The whole project is readable.
+- **Focus file:** `Mazeworld Leaderboards v3.dc.html`. Also read the files it imports: `ios-frame.jsx` and `support.js`.
+- **Implement:** `Mazeworld Leaderboards v3.dc.html`.
+  - Its frame is iOS, but the target is Android only, so treat the frame as presentation.
+  - Keep the house rules: PNG icons, the rail rules, tap-to-move.
+  - Plan the UI phase against the design (the UI-SPEC from it).
+
 **What it touches / supersedes:**
 
 - The shell leaderboard stack: `src/browser/playGames.js`, `globalBoards.js`, `pgsQueue.js`, `boardScores.js`, `boardsPanel.js`, `boardsView.js`, `account.js`, `accountChip.js`; plus `content/leaderboards.js` (the Play Games board ids). The Phase 81 panel (ME | ALL | FRIENDS, YOU tag, standing card) is kept as the UI; only its global data source changes.
