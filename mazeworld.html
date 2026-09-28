@@ -503,11 +503,18 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
    and the party sprite (3, earlier in the DOM), and below the rail (4), the
    encounter overlay (8) and the body-level sheets (45+). The container
    passes pointer events through (the map under its empty corners stays
-   pannable); only the buttons take them. --mw-pad-lift (set by the module
-   script's syncArrowPad) raises the pad above a shown rail card. The press
-   feedback is a colour, border and shadow change only (no movement), and
-   its short fade falls to the blanket reduced-motion rule. */
-.mw-arrow-pad{--mw-pad-btn:max(48px, calc(3.25rem * var(--mw-text-scale)));position:absolute;bottom:calc(12px + var(--mw-pad-lift, 0px));z-index:3;display:grid;grid-template-columns:repeat(3,var(--mw-pad-btn));grid-template-rows:repeat(3,var(--mw-pad-btn));gap:4px;pointer-events:none}
+   pannable); only the buttons take them. The press feedback is a colour,
+   border and shadow change only (no movement), and its short fade falls to
+   the blanket reduced-motion rule.
+   Quick task 260927-s7b (user, 2026-09-27, replacing the Phase 78 lift that
+   raised the pad above a shown rail card): "hide the buttons while the
+   bottom rails are visible. Once they are dismissed, the buttons should
+   show again." The pad never moves. While a rail card is shown the module
+   script's syncArrowPad stamps data-rail-up="1" (from the rail's own
+   data-shown), and the pad is hidden in place: visibility only, so it keeps
+   its box (nothing reflows, and the camera's pad edge is unchanged), and
+   its buttons take no taps. */
+.mw-arrow-pad{--mw-pad-btn:max(48px, calc(3.25rem * var(--mw-text-scale)));position:absolute;bottom:12px;z-index:3;display:grid;grid-template-columns:repeat(3,var(--mw-pad-btn));grid-template-rows:repeat(3,var(--mw-pad-btn));gap:4px;pointer-events:none}
 .mw-arrow-pad[hidden]{display:none}
 .mw-arrow-pad[data-side="right"]{right:calc(12px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
 .mw-arrow-pad[data-side="left"]{left:calc(12px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)))}
@@ -517,6 +524,8 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
 .mw-arrow-btn[data-step="E"]{grid-row:2;grid-column:3}
 .mw-arrow-btn[data-step="S"]{grid-row:3;grid-column:2}
 .mw-arrow-btn[data-step="W"]{grid-row:2;grid-column:1}
+.mw-arrow-pad[data-rail-up="1"]{visibility:hidden}
+.mw-arrow-pad[data-rail-up="1"] .mw-arrow-btn{pointer-events:none}
 
 /* Phase 78 (HUD-06, user 2026-09-24): the stairs descent's fade to black.
    A body-level, fixed, full-screen black layer over everything (the HUD,
@@ -2468,7 +2477,8 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
              window.move(dir), the one movement choke point. The trailing
              module script's syncArrowPad (src/browser/arrowPad.js's
              arrowPadModel) shows it only in arrow mode while the map takes
-             input, and lifts it above a shown rail card (--mw-pad-lift). The
+             input, and hides it in place while a rail card is shown
+             (data-rail-up, quick task 260927-s7b; it never moves). The
              labels mirror ARROW_PAD_COPY (shell-arrow-pad.test.js pins it). -->
         <div class="mw-arrow-pad" id="mw-arrow-pad" role="group" aria-label="Arrow pad" data-side="right" hidden>
           <button type="button" class="mw-arrow-btn" data-step="N" aria-label="Step north"><span aria-hidden="true">▲</span></button>
@@ -5851,9 +5861,9 @@ function renderRail() {
     // the timer running and leaves it alone).
     startHold();
   }
-  // Phase 78 (HUD-08): with the card painted (its height is final), the
-  // arrow pad lifts above a shown rail card or drops back when it hides —
-  // the rail and the pad are never stacked.
+  // Phase 78 (HUD-08); quick task 260927-s7b: with the card painted, the
+  // arrow pad hides in place while a rail card is shown and shows again
+  // when it goes — the rail and the pad are never both visible.
   window.mzSyncArrowPad?.();
 }
 
@@ -7371,13 +7381,17 @@ window.__mzClassicBoot = async function classicBoot() {
   // (hasActiveEncounter: combat, a store, the stair prompt, any over-map
   // overlay) and no sheet (Settings, MARKS, camp, gear, FINAL SHEET, ...)
   // covers it. It lives inside the map screen, so other tabs never show it.
-  // While a rail card is shown the pad lifts above the card's resting top
-  // edge (--mw-pad-lift, from the rail's layout height, so the rail's slide
-  // transform never skews it), and it never covers the card's text or
-  // buttons. Called from applySettings, the classic renderRail (both exits
-  // after its data-shown write) and renderEncounter, and by the observers
-  // below. When the pad's place changes (shown, side, lift) the camera
-  // re-runs the keep-in-view rule, which reads the pad's rect as an edge.
+  // Quick task 260927-s7b (user, 2026-09-27, replacing the Phase 78 lift):
+  // the pad never moves. While a rail card is shown (the rail's own
+  // data-shown, written only by renderRail) it is hidden in place through
+  // data-rail-up="1" (visibility only, its buttons take no taps), and the
+  // card going (hold, tap, a resolved decision) shows it again, so it never
+  // covers the card's text or buttons. Called from applySettings, the
+  // classic renderRail (every exit after its data-shown write) and
+  // renderEncounter, and by the observers below. When the pad's place
+  // changes (shown, side) the camera re-runs the keep-in-view rule, which
+  // reads the pad's rect as an edge; a rail card showing or going changes
+  // nothing there, since the hidden pad keeps its box.
   // arrowPadKey is declared BEFORE the first applySettings call (TDZ).
   let arrowPadKey = "";
   function syncArrowPad() {
@@ -7394,17 +7408,9 @@ window.__mzClassicBoot = async function classicBoot() {
     pad.dataset.side = model.side;
     pad.setAttribute("aria-label", model.label);
     for (const b of model.buttons) pad.querySelector(`[data-step="${b.dir}"]`)?.setAttribute("aria-label", b.label);
-    let lift = 0;
     const railEl = document.getElementById("mw-rail");
-    const stageEl = document.getElementById("mw-stage");
-    const box = pad.parentElement;
-    if (model.visible && railEl && railEl.dataset.shown === "1" && stageEl && box) {
-      const railTop = stageEl.getBoundingClientRect().bottom - railEl.offsetHeight;
-      const boxBottom = box.getBoundingClientRect().bottom;
-      if (Number.isFinite(railTop) && Number.isFinite(boxBottom)) lift = Math.max(0, Math.round(boxBottom - railTop));
-    }
-    pad.style.setProperty("--mw-pad-lift", lift + "px");
-    const key = model.visible ? `${model.side}|${lift}` : "";
+    pad.dataset.railUp = model.visible && railEl && railEl.dataset.shown === "1" ? "1" : "0";
+    const key = model.visible ? model.side : "";
     if (key !== arrowPadKey) {
       arrowPadKey = key;
       if (key) window.mzKeepPartyInView?.();

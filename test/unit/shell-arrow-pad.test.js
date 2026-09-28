@@ -9,8 +9,10 @@
 //       four `data-step` buttons labelled from ARROW_PAD_COPY, sized with
 //       the S/M/L scale, z-ordered under the rail
 //   (c) syncArrowPad: hidden while dead / in an encounter / under a sheet /
-//       in tap mode, the side from padSide, the rail lift, the keep-in-view
-//       call when the pad's place changes
+//       in tap mode, the side from padSide, the keep-in-view call when the
+//       pad's place changes, and (quick task 260927-s7b, replacing the Phase
+//       78 rail lift) hidden in place while a rail card is shown, through the
+//       REAL renderRail's every dismissal path and a relaunch
 //   (d) presses: each click is ONE window.move(dir), the one choke point;
 //       two quick presses are two calls in order; a press during a pending
 //       rail decision pulses the card and never steps
@@ -29,10 +31,12 @@ import vm from "node:vm";
 import { ARROW_PAD_COPY, ARROW_PAD_DIRS, arrowPadModel } from "../../src/browser/arrowPad.js";
 import { screenToCell, keepInViewAxis, keepInViewRect } from "../../src/browser/controls.js";
 import { resolveStep, inspectCell, HOLD_MS, TAP_MAX_TRAVEL_PX, DIR_VECTORS } from "../../src/browser/tapStep.js";
-import { RAIL_COPY } from "../../src/browser/rail.js";
+import { RAIL_COPY, RAIL_HOLD, railPush, railLineCard, emptyRail, holdForCard } from "../../src/browser/rail.js";
+import { ARM_DELAY_MS } from "../../src/browser/inputGuards.js";
 import { newRun } from "../../engine/state.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox } from "./harness/shellSandbox.js";
+import { createFakeClock } from "./harness/fakeClock.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -127,9 +131,16 @@ test("(b) CSS: each button is max(48px, 3.25rem x the text scale) — 48px at S,
   assert.match(STYLE, /\.mw-arrow-pad\[hidden\]\{display:none\}/);
 });
 
-test("(b) CSS: the pad sits in the chosen bottom corner clear of the safe area, above the canvas and under the rail, lifted by --mw-pad-lift", () => {
+// Quick task 260927-s7b (user, 2026-09-27, Pixel 7): "when the rails show up
+// on bottom it pushes the buttons up. Instead, hide the buttons while the
+// bottom rails are visible. Once they are dismissed, the buttons should show
+// again." Re-pinned from the Phase 78 lift (bottom:calc(12px +
+// var(--mw-pad-lift, 0px))): the pad now stays at a fixed 12px, never moves,
+// and a shown rail card hides it in place instead.
+test("(b) CSS: the pad sits in the chosen bottom corner clear of the safe area, above the canvas and under the rail, at a fixed bottom (no lift: it never moves)", () => {
   const padRule = STYLE.match(/\.mw-arrow-pad\{([^}]*)\}/)[1];
-  assert.match(padRule, /position:absolute;bottom:calc\(12px \+ var\(--mw-pad-lift, 0px\)\);z-index:3;/);
+  assert.match(padRule, /position:absolute;bottom:12px;z-index:3;/);
+  assert.equal(count(HTML, "--mw-pad-lift"), 0, "the Phase 78 lift is gone from the CSS and the script");
   const railZ = Number(STYLE.match(/\.mw-rail\{[^}]*z-index:(\d+)/)[1]);
   const padZ = Number(padRule.match(/z-index:(\d+)/)[1]);
   assert.ok(padZ < railZ, `pad z ${padZ} < rail z ${railZ}`);
@@ -142,6 +153,17 @@ test("(b) CSS: the pad sits in the chosen bottom corner clear of the safe area, 
   assert.doesNotMatch(active[1], /transform|animation/);
   assert.doesNotMatch(STYLE.match(/\.mw-arrow-btn\{([^}]*)\}/)[1], /animation|transform/);
   assert.equal(count(STYLE, "prefers-reduced-motion"), 1, "the one blanket rule covers the pad");
+});
+
+test("(b) CSS: while a rail card is shown (data-rail-up=\"1\") the pad is hidden in place, not tappable, and nothing reflows (visibility, never display or a position change)", () => {
+  const up = STYLE.match(/\.mw-arrow-pad\[data-rail-up="1"\]\{([^}]*)\}/);
+  assert.ok(up, "the rail-up rule exists");
+  assert.equal(up[1], "visibility:hidden", "only visibility changes: the pad keeps its box, so nothing moves");
+  const btns = STYLE.match(/\.mw-arrow-pad\[data-rail-up="1"\] \.mw-arrow-btn\{([^}]*)\}/);
+  assert.ok(btns, "the rail-up button rule exists");
+  assert.equal(btns[1], "pointer-events:none", "a hidden button can never take a tap");
+  // The shown rule is the pad's own resting state: no rail-up="0" rule is needed.
+  assert.doesNotMatch(STYLE, /\.mw-arrow-pad\[data-rail-up="0"\]/);
 });
 
 // ─── (c) syncArrowPad, run in a small vm over the shipped source ────────────
@@ -169,7 +191,7 @@ function fakeEl(extra = {}) {
  * fake pad/rail/stage and the REAL arrowPadModel. Returns the pad, the
  * sync function, and the recorded keep-in-view and move calls.
  */
-function bootSync({ settings = { movement: "arrows", padSide: "right" }, state = { dead: false }, encounter = false, sheet = false, railShown = false, railHeight = 180 } = {}) {
+function bootSync({ settings = { movement: "arrows", padSide: "right" }, state = { dead: false }, encounter = false, sheet = false, railShown = false, railHeight = 180, railEl = null, encounterFn = null, stateFn = null } = {}) {
   const buttons = Object.fromEntries(ARROW_PAD_DIRS.map((d) => [d.dir, fakeEl({ dataset: { step: d.dir } })]));
   const box = fakeEl({ getBoundingClientRect: () => ({ top: 100, bottom: 700, left: 0, right: 400, width: 400, height: 600 }) });
   const pad = fakeEl({
@@ -179,7 +201,9 @@ function bootSync({ settings = { movement: "arrows", padSide: "right" }, state =
       return m ? buttons[m[1]] : null;
     },
   });
-  const rail = fakeEl({ offsetHeight: railHeight, dataset: { shown: railShown ? "1" : "0" } });
+  // `railEl` (optional): a REAL #mw-rail from a shell sandbox, so the shipped
+  // renderRail's own data-shown writes drive the pad (quick task 260927-s7b).
+  const rail = railEl || fakeEl({ offsetHeight: railHeight, dataset: { shown: railShown ? "1" : "0" } });
   const stage = fakeEl({ getBoundingClientRect: () => ({ top: 60, bottom: 700, left: 0, right: 400, width: 400, height: 640 }) });
   const byId = { "mw-arrow-pad": pad, "mw-rail": rail, "mw-stage": stage };
   const env = { encounter, sheet, state };
@@ -187,7 +211,7 @@ function bootSync({ settings = { movement: "arrows", padSide: "right" }, state =
   const moves = [];
   const pulses = [];
   const win = {
-    __mzState: { get: () => env.state },
+    __mzState: { get: () => (stateFn ? stateFn() : env.state) },
     __mzSettings: settings,
     mzKeepPartyInView: () => keeps.push(true),
     move: (dir) => moves.push(dir),
@@ -201,7 +225,7 @@ function bootSync({ settings = { movement: "arrows", padSide: "right" }, state =
       querySelectorAll: () => [],
     },
     arrowPadModel,
-    hasActiveEncounter: () => env.encounter,
+    hasActiveEncounter: () => (encounterFn ? encounterFn() : env.encounter),
   });
   vm.runInContext(SYNC_SRC, context, { filename: "mazeworld.html#syncArrowPad" });
   const click = (dir) => {
@@ -219,7 +243,9 @@ test("(c) arrow mode with the map open: the pad shows on the chosen side, labell
     assert.equal(r.pad.dataset.side, side);
     assert.equal(r.pad.attrs["aria-label"], ARROW_PAD_COPY.pad);
     for (const d of ARROW_PAD_DIRS) assert.equal(r.buttons[d.dir].attrs["aria-label"], ARROW_PAD_COPY[d.dir]);
-    assert.equal(r.pad.style.props["--mw-pad-lift"], "0px");
+    // Quick task 260927-s7b: no lift is ever written (re-pinned from "0px").
+    assert.equal(r.pad.style.props["--mw-pad-lift"], undefined);
+    assert.equal(r.pad.dataset.railUp, "0");
     assert.equal(r.keeps.length, 1, "the pad appearing re-runs keep-in-view");
     r.sync();
     assert.equal(r.keeps.length, 1, "an unchanged pad does not re-run it");
@@ -264,17 +290,137 @@ test("(c) a death, a fight or a sheet mid-run hides the pad; its end shows it ag
   assert.equal(r.pad.hidden, true, "dead stays hidden");
 });
 
-test("(c) a shown rail card lifts the pad above the card's resting top edge; the rail hiding drops it back", () => {
+// Quick task 260927-s7b (user, 2026-09-27): re-pinned from the Phase 78
+// "a shown rail card lifts the pad above the card's resting top edge" (a
+// 180px --mw-pad-lift here). The user saw that lift as the rail pushing the
+// buttons up; the ruling is to hide them while a card shows instead.
+test("(c) a shown rail card hides the pad in place (data-rail-up=\"1\"): it never moves, never un-lays-out, and the camera does not re-check; the card going shows it again", () => {
   const r = bootSync({ railShown: true, railHeight: 180 });
   r.sync();
-  // The stage and .mazebox share a bottom edge (700): the card's resting
-  // top is 700 - 180 = 520, so the pad lifts 180px.
-  assert.equal(r.pad.style.props["--mw-pad-lift"], "180px");
-  assert.equal(r.keeps.length, 1);
+  assert.equal(r.pad.hidden, false, "the pad keeps its box (hidden by visibility, not display), so the camera's pad edge is unchanged");
+  assert.equal(r.pad.dataset.railUp, "1");
+  assert.equal(r.pad.style.props["--mw-pad-lift"], undefined, "no lift: the pad never moves");
+  assert.equal(r.keeps.length, 1, "the pad appearing re-runs keep-in-view once");
   r.rail.dataset.shown = "0";
   r.sync();
-  assert.equal(r.pad.style.props["--mw-pad-lift"], "0px");
-  assert.equal(r.keeps.length, 2, "the lift changing re-runs keep-in-view (the pad is an edge)");
+  assert.equal(r.pad.dataset.railUp, "0", "the card dismissed: the pad shows again");
+  assert.equal(r.pad.hidden, false);
+  assert.equal(r.keeps.length, 1, "nothing moved, so the camera does not re-check");
+  r.rail.dataset.shown = "1";
+  r.sync();
+  assert.equal(r.pad.dataset.railUp, "1");
+  assert.equal(r.keeps.length, 1);
+});
+
+test("(c) a pad hidden for another reason (an encounter, a sheet, dead, tap mode) never reads as rail-up", () => {
+  for (const opts of [{ encounter: true }, { sheet: true }, { state: { dead: true } }, { settings: { movement: "tap" } }]) {
+    const r = bootSync({ ...opts, railShown: true });
+    r.sync();
+    assert.equal(r.pad.hidden, true);
+    assert.equal(r.pad.dataset.railUp, "0", JSON.stringify(opts));
+  }
+});
+
+// ─── (c) the REAL renderRail drives the pad through every dismissal path ────
+
+/**
+ * bootRailPad(state) — the REAL classic renderRail (shellSandbox stubRail:
+ * false, a fake clock so the hold timer fires) wired to the REAL shipped
+ * syncArrowPad (bootSync over the sandbox's own #mw-rail and its real
+ * hasActiveEncounter), exactly as the module script wires
+ * window.mzSyncArrowPad. Quick task 260927-s7b.
+ */
+function bootRailPad(state) {
+  const clock = createFakeClock({ start: 1_000_000 });
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, clock, stubRail: false });
+  sandbox.setState(state);
+  const r = bootSync({
+    railEl: doc.document.getElementById("mw-rail"),
+    stateFn: () => vm.runInContext("S", sandbox.context),
+    encounterFn: () => sandbox.context.hasActiveEncounter(),
+  });
+  sandbox.context.window.mzSyncArrowPad = r.sync;
+  const w = sandbox.context.window;
+  const pushCard = (title = "A TRAP") => {
+    w.__mzRail = railPush(w.__mzRail || emptyRail(), railLineCard(title, "Patient as furniture.", "bad", RAIL_HOLD.default, "✕"));
+  };
+  const bodyTap = () => doc.document.getElementById("mw-rail").onclick({ target: { closest: () => null } });
+  const shown = () => doc.document.getElementById("mw-rail").dataset.shown;
+  return { clock, doc, sandbox, w, r, pushCard, bodyTap, shown, render: () => sandbox.context.renderRail() };
+}
+
+test("(c) real renderRail: a card showing hides the pad, and its hold running out shows it again", () => {
+  const t = bootRailPad(newRun(21));
+  t.render();
+  assert.equal(t.shown(), "0");
+  assert.equal(t.r.pad.hidden, false);
+  assert.equal(t.r.pad.dataset.railUp, "0", "no card: the pad shows");
+  t.pushCard();
+  t.render();
+  assert.equal(t.shown(), "1");
+  assert.equal(t.r.pad.hidden, false, "still laid out");
+  assert.equal(t.r.pad.dataset.railUp, "1", "a card is up: the pad is hidden in place");
+  t.clock.advance(holdForCard(t.w.__mzRail.card) + 64);
+  assert.equal(t.w.__mzRail.card, null, "the hold cleared the card");
+  assert.equal(t.shown(), "0");
+  assert.equal(t.r.pad.dataset.railUp, "0", "the hold ran out: the pad shows again");
+});
+
+test("(c) real renderRail: an armed tap dismissing the card shows the pad again; a card replacing a card keeps it hidden", () => {
+  const t = bootRailPad(newRun(22));
+  t.pushCard("A TRAP");
+  t.render();
+  assert.equal(t.r.pad.dataset.railUp, "1");
+  t.pushCard("WELL THEN");
+  t.render();
+  assert.equal(t.r.pad.dataset.railUp, "1", "a card replacing a card: still hidden");
+  t.clock.advance(ARM_DELAY_MS + 60);
+  t.bodyTap();
+  assert.equal(t.w.__mzRail.card, null, "the tap dismissed the card");
+  assert.equal(t.shown(), "0");
+  assert.equal(t.r.pad.dataset.railUp, "0", "dismissed by a tap: the pad shows again");
+});
+
+test("(c) real renderRail: a pending decision card hides the pad; the decision resolving (the next paint with no card) shows it", () => {
+  const s = newRun(23);
+  s.pendingJoiner = { name: "A Wanderer", race: "Human", sub: null, lvl: 1 };
+  const t = bootRailPad(s);
+  t.render();
+  assert.equal(t.shown(), "1");
+  assert.equal(t.r.pad.dataset.railUp, "1", "a decision card is up: the pad is hidden");
+  t.clock.advance(ARM_DELAY_MS + 60);
+  t.bodyTap();
+  assert.equal(t.r.pad.dataset.railUp, "1", "a locked decision card is never tap-dismissed, so the pad stays hidden");
+  vm.runInContext("S.pendingJoiner = null;", t.sandbox.context);
+  t.render();
+  assert.equal(t.shown(), "0");
+  assert.equal(t.r.pad.dataset.railUp, "0", "the decision resolved: the pad shows again");
+});
+
+test("(c) relaunch: a run restored with no card shows the pad; one restored with its decision card up keeps it hidden; one restored into an open store hides it until the store closes, then it shows", () => {
+  const plain = bootRailPad(newRun(24));
+  plain.render();
+  assert.equal(plain.r.pad.hidden, false);
+  assert.equal(plain.r.pad.dataset.railUp, "0");
+
+  const s = newRun(25);
+  s.pendingJoiner = { name: "A Wanderer", race: "Human", sub: null, lvl: 1 };
+  const decided = bootRailPad(s);
+  decided.render();
+  assert.equal(decided.r.pad.hidden, false);
+  assert.equal(decided.r.pad.dataset.railUp, "1");
+
+  const st = newRun(26);
+  st.store = { stock: [], haggle: false, race: "Human" };
+  const shop = bootRailPad(st);
+  shop.render();
+  assert.equal(shop.r.pad.hidden, true, "the store owns the screen: the pad is hidden");
+  assert.equal(shop.r.pad.dataset.railUp, "0");
+  vm.runInContext("S.store = null;", shop.sandbox.context);
+  shop.render();
+  assert.equal(shop.r.pad.hidden, false, "the store closed: the pad is back");
+  assert.equal(shop.r.pad.dataset.railUp, "0", "and visible, no card being up");
 });
 
 test("(c) the classic renderRail (all three exits after its data-shown write) and renderEncounter re-sync the pad, always optional-chained", () => {
