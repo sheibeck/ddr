@@ -373,16 +373,35 @@ function buildBoardStanding(board, docsLen, race, sub) {
   return { place: ordinal(board.you.rank), note };
 }
 
-/**
- * buildBoardBody({board, stat, race, sub, openKey, now, tzOffsetMinutes}) —
- * LEADERBOARD's body/standing/staleLine. Task 1 (this commit) implements
- * only the loading note per this plan's own <action> allowance ("board mode
- * may return the loading note" until Task 2); Task 2 completes every other
- * board state, board rows, YOU, the pinned best, the standing card and the
- * stale line.
- */
-function buildBoardBody() {
-  return { body: { kind: "note", line: C.state.loading, action: null }, standing: null, staleLine: "" };
+/** buildBoardBody({board, stat, race, sub, openKey, now, tzOffsetMinutes}) — LEADERBOARD's body/standing/staleLine. */
+function buildBoardBody({ board, stat, race, sub, openKey, now, tzOffsetMinutes }) {
+  if (!board || board.status === "loading") {
+    return { body: { kind: "note", line: C.state.loading, action: null }, standing: null, staleLine: "" };
+  }
+  if (board.status !== "ready") {
+    return {
+      body: { kind: "note", line: C.state.unreachable, action: { id: "seeMine", label: C.state.seeMine } },
+      standing: null,
+      staleLine: "",
+    };
+  }
+
+  const docs = Array.isArray(board.rows) ? board.rows : [];
+  const rows = docs.map((doc, i) => buildBoardRow(doc, i, false, board.uid, stat, openKey, null, tzOffsetMinutes));
+  if (board.you && board.you.listed !== true) {
+    rows.push(buildBoardRow(board.you.run, null, true, board.uid, stat, openKey, board.you.rank, tzOffsetMinutes));
+  }
+
+  const hasFilter = race !== null || sub !== null;
+  const body = rows.length ? { kind: "rows", rows } : emptyBody("board", hasFilter, lineNameOf(race, sub));
+  const standing = buildBoardStanding(board, docs.length, race, sub);
+
+  let staleLine = "";
+  if (board.stale === true && typeof now === "number" && Number.isFinite(board.fetchedAt)) {
+    staleLine = fill(C.state.stale, { age: ageWords(now - board.fetchedAt) });
+  }
+
+  return { body, standing, staleLine };
 }
 
 // ─── header, pickers, sheets, dock ───────────────────────────────────────────

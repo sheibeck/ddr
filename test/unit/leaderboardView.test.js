@@ -380,6 +380,193 @@ test("mine mode never carries a standing card", () => {
   assert.equal(leaderboardView({ history: [] }).standing, null);
 });
 
+// ─── Task 2: LEADERBOARD (board mode) ─────────────────────────────────────
+
+test("board mode, loading (null or {status:'loading'}): note body, season line, standing null, staleLine ''", () => {
+  const forNull = leaderboardView({ compete: true, mode: "board", board: null, season: 1 });
+  assert.equal(forNull.mode, "board");
+  assert.equal(forNull.header.title, C.title.board);
+  assert.equal(forNull.header.scopeLine, C.scope.board);
+  assert.equal(forNull.header.seasonLine, "SEASON OF THE ALPHA");
+  assert.deepEqual(forNull.body, { kind: "note", line: C.state.loading, action: null });
+  assert.equal(forNull.standing, null);
+  assert.equal(forNull.staleLine, "");
+
+  const forLoading = leaderboardView({ compete: true, mode: "board", board: { status: "loading" }, season: 1 });
+  assert.deepEqual(forLoading.body, { kind: "note", line: C.state.loading, action: null });
+
+  const unnamedSeason = leaderboardView({ compete: true, mode: "board", board: null, season: 2 });
+  assert.equal(unnamedSeason.header.seasonLine, "SEASON 2");
+});
+
+test("board mode, status unreachable/off: note body with SEE YOUR DEAD, standing null", () => {
+  for (const status of ["unreachable", "off"]) {
+    const view = leaderboardView({ compete: true, mode: "board", board: { status } });
+    assert.deepEqual(view.body, { kind: "note", line: C.state.unreachable, action: { id: "seeMine", label: C.state.seeMine } });
+    assert.equal(view.standing, null);
+  }
+});
+
+test("board mode, ready with ten rows: server order, keys=doc ids, YOU tag/avatar-on, top", () => {
+  const docs = Array.from({ length: 10 }, (_, i) =>
+    boardDoc({ id: `d${i}`, uid: i === 3 ? "me" : `other${i}`, handle: i === 3 ? "@lanternjaw" : `@other${i}gloom`, name: `Hero${i}` })
+  );
+  const board = { status: "ready", rows: docs, total: 10, filteredTotal: 10, you: null, youKnown: true, uid: "me", stale: false, fetchedAt: null };
+  const view = leaderboardView({ compete: true, mode: "board", board, stat: "deep" });
+  assert.equal(view.body.kind, "rows");
+  assert.equal(view.body.rows.length, 10);
+  assert.deepEqual(view.body.rows.map((r) => r.key), docs.map((d) => d.id));
+  assert.equal(view.body.rows[0].top, true);
+  assert.equal(view.body.rows[0].podium, true);
+  const meRow = view.body.rows[3];
+  assert.equal(meRow.you, true);
+  assert.equal(meRow.tag, C.you);
+  assert.equal(meRow.avatar.on, true);
+  assert.equal(meRow.headline, "@lanternjaw");
+  assert.equal(meRow.avatar.initials, "LJ");
+  assert.equal(meRow.line, `HERO3${C.sep}HUMAN KNIGHT${C.sep}I`);
+  const otherRow = view.body.rows[0];
+  assert.equal(otherRow.you, false);
+  assert.equal(otherRow.tag, "");
+  assert.equal(otherRow.avatar.on, false);
+});
+
+test("board mode header box: YOURS with the history count; back false on tab entry, true on title entry", () => {
+  const history = [historyRun({ hash: "00000001" }), historyRun({ hash: "00000002" })];
+  const board = { status: "ready", rows: [], total: 0, filteredTotal: 0, you: null, youKnown: true, uid: null, stale: false, fetchedAt: null };
+  const tabView = leaderboardView({ compete: true, mode: "board", entry: "tab", history, board });
+  assert.deepEqual(tabView.header.box, { n: "2", label: C.box.yours, action: "mine" });
+  assert.equal(tabView.header.back, false);
+  const titleView = leaderboardView({ compete: true, mode: "board", entry: "title", history, board });
+  assert.equal(titleView.header.back, true);
+});
+
+test("pinned best: not listed -> eleventh divider row with the real rank; listed -> no extra row", () => {
+  const docs = Array.from({ length: 3 }, (_, i) => boardDoc({ id: `d${i}`, uid: `other${i}`, handle: `@other${i}gloom` }));
+  const yourRun = boardDoc({ id: "mine", uid: "me", handle: "@lanternjaw", name: "My Hero" });
+  const notListedBoard = {
+    status: "ready", rows: docs, total: 40, filteredTotal: 40,
+    you: { id: "mine", rank: 37, listed: false, run: yourRun },
+    youKnown: true, uid: "me", stale: false, fetchedAt: null,
+  };
+  const view = leaderboardView({ compete: true, mode: "board", board: notListedBoard });
+  assert.equal(view.body.rows.length, 4);
+  const pinned = view.body.rows[3];
+  assert.equal(pinned.divider, C.divider);
+  assert.equal(pinned.rank, "37");
+  assert.equal(pinned.you, true);
+  assert.equal(pinned.top, false);
+  assert.equal(pinned.key, "mine");
+
+  const listedBoard = {
+    ...notListedBoard,
+    you: { id: "d1", rank: 2, listed: true, run: docs[1] },
+  };
+  const view2 = leaderboardView({ compete: true, mode: "board", board: listedBoard });
+  assert.equal(view2.body.rows.length, 3);
+});
+
+test("standing card: real rank/note; None of yours yet; youKnown false -> null; zero rows -> null", () => {
+  const yourRun = boardDoc({ id: "mine", uid: "me", handle: "@lanternjaw" });
+  const withYou = {
+    status: "ready", rows: [boardDoc({ id: "d0" })], total: 5000, filteredTotal: 1234,
+    you: { id: "mine", rank: 4, listed: false, run: yourRun },
+    youKnown: true, uid: "me", stale: false, fetchedAt: null,
+  };
+  const view = leaderboardView({ compete: true, mode: "board", board: withYou, race: "Troll", sub: null });
+  assert.deepEqual(view.standing, { place: "4TH", note: "@lanternjaw’s best, of 1,234 interred as Troll, any sub-class." });
+
+  const noYou = { ...withYou, you: null };
+  const view2 = leaderboardView({ compete: true, mode: "board", board: noYou });
+  assert.deepEqual(view2.standing, { place: C.standing.noPlace, note: C.standing.none });
+
+  const unknown = { ...withYou, youKnown: false };
+  const view3 = leaderboardView({ compete: true, mode: "board", board: unknown });
+  assert.equal(view3.standing, null);
+
+  const zeroRows = { ...withYou, rows: [] };
+  const view4 = leaderboardView({ compete: true, mode: "board", board: zeroRows });
+  assert.equal(view4.standing, null);
+});
+
+test("zero rows: filtered -> empty note + CLEAR FILTERS; unfiltered -> boardAll note, no clear", () => {
+  const board = { status: "ready", rows: [], total: 0, filteredTotal: 0, you: null, youKnown: true, uid: null, stale: false, fetchedAt: null };
+  const filtered = leaderboardView({ compete: true, mode: "board", board, race: "Troll", sub: "Ninja" });
+  assert.equal(filtered.body.kind, "empty");
+  assert.equal(filtered.body.note, "Nobody has died as Troll, Ninja.");
+  assert.deepEqual(filtered.body.clear, { id: "clearFilters", label: C.empty.clear });
+
+  const unfiltered = leaderboardView({ compete: true, mode: "board", board });
+  assert.equal(unfiltered.body.note, C.empty.boardAll);
+  assert.equal(unfiltered.body.clear, null);
+});
+
+test("stale line: age phrases at 30s/1min/12min/90min/3h", () => {
+  const now = 10_000_000_000;
+  const boardAt = (agoMs) => ({
+    status: "ready", rows: [boardDoc()], total: 1, filteredTotal: 1, you: null, youKnown: true, uid: null,
+    stale: true, fetchedAt: now - agoMs,
+  });
+  assert.equal(leaderboardView({ compete: true, mode: "board", board: boardAt(30_000), now }).staleLine, fill(C.state.stale, { age: C.state.ageMoment }));
+  assert.equal(leaderboardView({ compete: true, mode: "board", board: boardAt(60_000), now }).staleLine, fill(C.state.stale, { age: C.state.ageMinute }));
+  assert.equal(leaderboardView({ compete: true, mode: "board", board: boardAt(12 * 60_000), now }).staleLine, fill(C.state.stale, { age: fill(C.state.ageMinutes, { n: 12 }) }));
+  assert.equal(leaderboardView({ compete: true, mode: "board", board: boardAt(90 * 60_000), now }).staleLine, fill(C.state.stale, { age: C.state.ageHour }));
+  assert.equal(leaderboardView({ compete: true, mode: "board", board: boardAt(3 * 3600_000), now }).staleLine, fill(C.state.stale, { age: fill(C.state.ageHours, { n: 3 }) }));
+
+  function fill(template, vars) {
+    return String(template).replace(/\{(\w+)\}/g, (_, k) => String(vars[k]));
+  }
+});
+
+test("stale is false, or now is missing -> staleLine ''", () => {
+  const board = { status: "ready", rows: [boardDoc()], total: 1, filteredTotal: 1, you: null, youKnown: true, uid: null, stale: false, fetchedAt: 100 };
+  assert.equal(leaderboardView({ compete: true, mode: "board", board, now: 200 }).staleLine, "");
+  const staleNoNow = { ...board, stale: true, fetchedAt: 100 };
+  assert.equal(leaderboardView({ compete: true, mode: "board", board: staleNoNow }).staleLine, "");
+});
+
+test("board row detail: note used when present; cause fallback with the generic foe otherwise; dateLine uses when else createdAt", () => {
+  const withNote = boardDoc({ note: "cut down by a Werebeast", epitaph: "Epitaph text." });
+  const board = { status: "ready", rows: [withNote], total: 1, filteredTotal: 1, you: null, youKnown: true, uid: null, stale: false, fetchedAt: null };
+  const view = leaderboardView({ compete: true, mode: "board", board });
+  assert.equal(view.body.rows[0].detail, "Cut down by a Werebeast. Epitaph text.");
+
+  const noNote = boardDoc({ note: "", cause: "combat", epitaph: "Epitaph text." });
+  const board2 = { ...board, rows: [noNote] };
+  const view2 = leaderboardView({ compete: true, mode: "board", board: board2 });
+  assert.equal(view2.body.rows[0].detail, `Cut down by a ${C.foe}. Epitaph text.`);
+
+  const noWhen = boardDoc({ when: undefined, createdAt: "2026-09-28T20:00:00.000Z", version: "2.1.0 (11)" });
+  delete noWhen.when;
+  const board3 = { ...board, rows: [noWhen] };
+  const view3 = leaderboardView({ compete: true, mode: "board", board: board3, tzOffsetMinutes: 0 });
+  assert.equal(view3.body.rows[0].dateLine, `Died 28 Sep 2026${C.sep}2.1.0 (11)`);
+});
+
+test("board sheets: race/sub-class options carry n '' and dim false; stat sheet matches mine mode", () => {
+  const view = leaderboardView({ compete: true, mode: "board", sheet: "race" });
+  for (const o of view.sheet.opts) {
+    assert.equal(o.n, "");
+    assert.equal(o.dim, false);
+  }
+  const subView = leaderboardView({ compete: true, mode: "board", sheet: "sub" });
+  for (const o of subView.sheet.opts) {
+    assert.equal(o.n, "");
+    assert.equal(o.dim, false);
+  }
+  const statView = leaderboardView({ compete: true, mode: "board", sheet: "stat", stat: "purse" });
+  const purseOpt = statView.sheet.opts.find((o) => o.value === "purse");
+  assert.equal(purseOpt.on, true);
+  assert.equal(purseOpt.col, C.stats.purse.col);
+});
+
+test("every stat shows its own colour in view.col and on the stat picker", () => {
+  for (const stat of Object.keys(C.stats)) {
+    const view = leaderboardView({ stat });
+    assert.equal(view.col, C.stats[stat].col);
+    assert.equal(view.pickers[0].col, C.stats[stat].col);
+  }
+});
 
 // ─── purity ────────────────────────────────────────────────────────────────
 

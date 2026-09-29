@@ -320,7 +320,7 @@ export const RAW_SURFACES = Object.freeze([
   Object.freeze({ files: ["src/browser/heroTab.js", "src/browser/gearTab.js", "src/browser/gearSheet.js", "src/browser/storeScreen.js", "src/browser/finalSheet.js"], surface: "panels" }),
   Object.freeze({ files: ["src/browser/viewModels.js", "src/browser/upgradeWhy.js", "src/browser/rollOdds.js"], surface: "items" }),
   Object.freeze({
-    files: ["src/browser/boardsPanel.js", "src/browser/boardsView.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/scoreTag.js", "src/browser/account.js", "src/browser/accountChip.js", "src/browser/playGames.js", "src/browser/placement.js", "src/browser/newBest.js"],
+    files: ["src/browser/boardsPanel.js", "src/browser/boardsView.js", "src/browser/leaderboardView.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/scoreTag.js", "src/browser/account.js", "src/browser/accountChip.js", "src/browser/playGames.js", "src/browser/placement.js", "src/browser/newBest.js"],
     surface: "boards",
   }),
   Object.freeze({ files: ["src/browser/mapMarks.js", "src/browser/darknessView.js"], surface: "map" }),
@@ -374,7 +374,7 @@ export const OWNER_RULES = Object.freeze([
   rule("79-09", {
     modules: [
       "src/browser/heroTab.js", "src/browser/gearTab.js", "src/browser/gearSheet.js", "src/browser/storeScreen.js", "src/browser/viewModels.js", "src/browser/upgradeWhy.js",
-      "src/browser/boardsPanel.js", "src/browser/boardsView.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/finalSheet.js",
+      "src/browser/boardsPanel.js", "src/browser/boardsView.js", "src/browser/leaderboardView.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/finalSheet.js",
     ],
   }, "hero, gear, store, boards and final-sheet panel copy"),
   rule("79-10", {
