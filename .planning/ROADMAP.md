@@ -24,7 +24,7 @@
 - [x] **Phase 82: DAYS Farming Check** - Measure whether floor-1 farming out-DAYS an honest descending run and settle the DAYS ranking rule. (completed 2026-09-28)
 - [x] **Phase 83: Leaderboard Server** - Stand up our own Firebase-hosted run table, rules, indexes, identity and queue, proven end to end. (completed 2026-09-29)
 - [x] **Phase 84: Leaderboards Panel v3** - Rebuild the DEAD tab and VIEW THE DEAD to the v3 mock, ranked by four stats with RACE/SUB-CLASS filters. (completed 2026-09-29)
-- [ ] **Phase 85: Play Games Out, Our Board In** - Remove Play Games entirely and route every Compete-ON death to our own board.
+- [x] **Phase 85: Play Games Out, Our Board In** - Remove Play Games entirely and route every Compete-ON death to our own board. (completed 2026-09-29)
 - [ ] **Phase 86: Compliance & Device Close** - Reconcile store, policy and website text and batch the milestone's device checks.
 
 <details>
@@ -206,7 +206,7 @@ Plans:
   4. The ☰ account block and the title's corner chip show the player's @handle and the Compete toggle, the ☰ face wears the handle's initials avatar while competing, and there is no sign-in, sign-out or Play Games wording anywhere.
   5. Every non-dev Compete-ON death is queued and submitted to our board, the death card's "you placed X" reports the run's DEPTH rank once acknowledged (or on the next flush if offline), the player can erase every run they have on the board from the ☰ account block behind a two-tap confirm (starting a new identity on the next Compete-ON run), and with Compete OFF the game makes zero network calls and discards any queued runs.
 
-**Plans:** 6/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 **Wave 1**
@@ -285,7 +285,7 @@ Plans:
 | 82. DAYS Farming Check | 2/2 | Complete    | 2026-09-28 |
 | 83. Leaderboard Server | 12/12 | Complete    | 2026-09-29 |
 | 84. Leaderboards Panel v3 | 9/9 | Complete    | 2026-09-29 |
-| 85. Play Games Out, Our Board In | 6/6 | In Progress|  |
+| 85. Play Games Out, Our Board In | 6/6 | Complete    | 2026-09-29 |
 | 86. Compliance & Device Close | 0/TBD | Not started | - |
 
 ## Backlog

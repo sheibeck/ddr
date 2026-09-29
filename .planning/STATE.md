@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
-current_phase: 85
-current_phase_name: Play Games Out, Our Board In
-status: verifying
+current_phase: 86
+current_phase_name: Compliance & Device Close
+status: planning
 stopped_at: "Completed 85-06-PLAN.md (Play Games deleted: modules, Android plugin, RETIRE-02 sweep); phase 85 all plans complete"
-last_updated: "2026-09-29T18:33:06.766Z"
+last_updated: "2026-09-29T18:34:53.753Z"
 last_activity: 2026-09-29
-last_activity_desc: merged 85-01, 85-02, 85-03 into master (npm test 8341 pass / 0 fail)
+last_activity_desc: Phase 85 complete, transitioned to Phase 86
 progress:
   total_phases: 5
   completed_phases: 4
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 ## Current Position
 
-Phase: 85 (Play Games Out, Our Board In) — EXECUTING
-Plan: 6 of 6
+Phase: 86 — Compliance & Device Close
+Plan: Not started
 Progress: [█████████░] 85%
-Status: Phase complete — ready for verification
-Last activity: 2026-09-29 — merged 85-01, 85-02, 85-03 into master (npm test 8341 pass / 0 fail)
+Status: Ready to plan
+Last activity: 2026-09-29 — Phase 85 complete, transitioned to Phase 86
 
 ## Ground Truth (durable facts every session needs)
 
