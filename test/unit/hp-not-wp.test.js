@@ -36,9 +36,11 @@ import {
   RACES, FIGHTER_SKILLS, THIEF_SKILLS, POTIONS, JEWELRY, CLOAKS, STAVES, SPELLS, ABILITIES, TOOLS,
   RACE_NOTE, CLASS_NOTE, SUB_NOTE,
 } from "../../content/index.js";
-// Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy — walked
-// the same way the other COPY objects in banks (below) are.
-import { BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, GLOBAL_STANDING_LINES, LEADERBOARD_COPY } from "../../content/boards.js";
+// Phase 84 (BOARD-18..25, BOARD-20), 84-09: the old panel's BOARD_FOOTNOTES,
+// BOARDS_PANEL_COPY, STANDING_LINES and GLOBAL_STANDING_LINES exports are
+// retired along with the panel. LEADERBOARD_COPY is walked instead, the
+// same way the other COPY objects in banks (below) are.
+import { LEADERBOARD_COPY } from "../../content/boards.js";
 // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 Leaderboards
 // panel's own copy and the season-name table, walked the same way.
 import { SEASON_NAMES } from "../../content/season.js";
@@ -170,8 +172,6 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
   const banks = {
     // Phase 61 (STORE-02/03): STORE_ROW_COPY added to the walked copy-object list.
     RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY, UPGRADE_WHY_COPY, STORE_ROW_COPY, GEAR_SHEET_COPY,
-    // Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy banks.
-    BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES,
     // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 panel's own
     // copy bank and the season-name table it shows.
     LEADERBOARD_COPY, SEASON_NAMES,
@@ -191,8 +191,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     // SO FAR sheet's title, dice hint, CLOSE, ROUND n header, no-round
     // fallback and the strip's open-the-log name, which share that object.
     ROUND_STRIP_COPY,
-    // Phase 68 (PLACE-01/02): the global standing quips and the placement copy.
-    GLOBAL_STANDING_LINES, PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,
+    // Phase 68 (PLACE-01/02): the placement copy.
+    PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,
     // Phase 74 (ROLL-02/03), 74-08: the hero condition-chip effect copy and
     // rollRange.js's own mod-relabel and template banks.
     CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY,
@@ -410,9 +410,9 @@ test("PLAYER_WP self-check: excludes code identifiers, matches real player copy"
   }
 });
 
-test("Phase 68: BOARDS_PANEL_COPY.global is covered by the BOARDS_PANEL_COPY walk", () => {
-  const leaves = collectStringLeaves(BOARDS_PANEL_COPY).map(([p]) => p);
-  assert.ok(leaves.includes("global.scope.all") && leaves.includes("global.ofWorld"));
+test("Phase 68 (retired global equivalent): LEADERBOARD_COPY.scope and .state are covered by the LEADERBOARD_COPY walk", () => {
+  const leaves = collectStringLeaves(LEADERBOARD_COPY).map(([p]) => p);
+  assert.ok(leaves.includes("scope.board") && leaves.includes("state.unreachable"));
 });
 
 // ─── (f) Phase 79 (VOX-05), plan 79-12: the whole narration corpus ────────

@@ -175,14 +175,14 @@ export const BANK_REGISTRY = Object.freeze([
   bank("src/browser/viewModels.js", "STORE_ROW_COPY", "items", "a store row's reason"),
   bank("src/browser/viewModels.js", "USABLE_COPY", "items", "an item's usable-state line"),
   bank("content/account.js", "ACCOUNT_COPY", "boards", "the account chip, sheet and rail card"),
-  bank("content/boards.js", "BOARDS_PANEL_COPY", "boards", "the Leaderboards panel"),
-  bank("content/boards.js", "BOARD_COPY", "boards", "a board's title, rule and unit"),
-  bank("content/boards.js", "BOARD_FOOTNOTES", "boards", "the Leaderboards footnotes"),
+  // Phase 84 (BOARD-18..25, BOARD-20), 84-09: the old panel's BOARDS_PANEL_COPY,
+  // BOARD_FOOTNOTES, STANDING_LINES and GLOBAL_STANDING_LINES rows are
+  // retired along with the panel itself. BOARD_COPY is trimmed to the four
+  // NEW PERSONAL BEST rows; LEADERBOARD_COPY is the only panel copy bank.
+  bank("content/boards.js", "BOARD_COPY", "boards", "a NEW PERSONAL BEST row's title and unit"),
   bank("content/boards.js", "FIRST_DEATH_LINES", "boards", "the first-death quip"),
-  bank("content/boards.js", "GLOBAL_STANDING_LINES", "boards", "the global standing quip"),
   bank("content/boards.js", "NEW_BEST_HEAD", "boards", "the new-best card head"),
   bank("content/boards.js", "NEW_BEST_LINES", "boards", "the new-best quip"),
-  bank("content/boards.js", "STANDING_LINES", "boards", "the local standing quip"),
   // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 Leaderboards
   // panel's own copy and the season-name table it shows under the title.
   bank("content/boards.js", "LEADERBOARD_COPY", "boards", "the Leaderboards panel v3"),
@@ -250,7 +250,6 @@ const nonCopy = (module, exp, reason) => Object.freeze({ module, export: exp, re
 
 /** Exports holding copy-like strings that are not player copy, each with why. */
 export const NON_COPY_EXPORTS = Object.freeze([
-  nonCopy("src/browser/boardsView.js", "LINEAGE_SUBS", "sub-class names used as lineage ids (name vocabulary, not sentences)"),
   nonCopy("src/browser/bridge.js", "BRIDGE", "the developer registry of window.__mz* bridges; its owner, consumer and purpose notes are never rendered"),
   nonCopy("src/browser/combatPanel.js", "ENC_TYPES", "encounter family ids"),
   nonCopy("src/browser/foeConditions.js", "FOE_CONDITIONS", "rows point at FOE_CONDITION_COPY and FOE_CONDITION_DESC; the text is walked through those banks"),
@@ -258,8 +257,9 @@ export const NON_COPY_EXPORTS = Object.freeze([
   // Phase 84, Plan 07: exported (from an already-existing module-private
   // const) so leaderboardPanel.js's controller can validate a SUB-CLASS
   // sheet pick without importing content/classes.js directly (its own
-  // source-pin test forbids a direct /content/ import) — sub-class name ids,
-  // same disposition as the pre-existing boardsView.js#LINEAGE_SUBS row.
+  // source-pin test forbids a direct /content/ import) — sub-class name ids
+  // (name vocabulary, not sentences). 84-09 retired the old panel's own
+  // boardsView.js#LINEAGE_SUBS row this disposition used to mirror.
   nonCopy("src/browser/leaderboardView.js", "SUB_IDS", "sub-class name ids used to validate a SUB-CLASS sheet pick (name vocabulary, not sentences)"),
   nonCopy("src/browser/motion.js", "REDUCED_MOTION_QUERY", "a CSS media query"),
   // 79.3: the bundled release notes for this version, generated from
@@ -326,7 +326,7 @@ export const RAW_SURFACES = Object.freeze([
   Object.freeze({ files: ["src/browser/heroTab.js", "src/browser/gearTab.js", "src/browser/gearSheet.js", "src/browser/storeScreen.js", "src/browser/finalSheet.js"], surface: "panels" }),
   Object.freeze({ files: ["src/browser/viewModels.js", "src/browser/upgradeWhy.js", "src/browser/rollOdds.js"], surface: "items" }),
   Object.freeze({
-    files: ["src/browser/boardsPanel.js", "src/browser/boardsView.js", "src/browser/leaderboardView.js", "src/browser/leaderboardPanel.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/scoreTag.js", "src/browser/account.js", "src/browser/accountChip.js", "src/browser/playGames.js", "src/browser/placement.js", "src/browser/newBest.js"],
+    files: ["src/browser/leaderboardView.js", "src/browser/leaderboardPanel.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/scoreTag.js", "src/browser/account.js", "src/browser/accountChip.js", "src/browser/playGames.js", "src/browser/placement.js", "src/browser/newBest.js"],
     surface: "boards",
   }),
   Object.freeze({ files: ["src/browser/mapMarks.js", "src/browser/darknessView.js"], surface: "map" }),
@@ -380,7 +380,7 @@ export const OWNER_RULES = Object.freeze([
   rule("79-09", {
     modules: [
       "src/browser/heroTab.js", "src/browser/gearTab.js", "src/browser/gearSheet.js", "src/browser/storeScreen.js", "src/browser/viewModels.js", "src/browser/upgradeWhy.js",
-      "src/browser/boardsPanel.js", "src/browser/boardsView.js", "src/browser/leaderboardView.js", "src/browser/leaderboardPanel.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/finalSheet.js",
+      "src/browser/leaderboardView.js", "src/browser/leaderboardPanel.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/finalSheet.js",
     ],
   }, "hero, gear, store, boards and final-sheet panel copy"),
   rule("79-10", {

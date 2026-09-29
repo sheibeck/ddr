@@ -49,12 +49,12 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | spells (spells, abilities and skills) | 87 | 33 | 54 | 0 | 33 | 0 |
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
 | death (epitaphs and death) | 120 | 23 | 97 | 0 | 23 | 14 |
-| boards (leaderboards and account) | 182 | 5 | 177 | 0 | 5 | 0 |
+| boards (leaderboards and account) | 182 | 5 | 177 | 0 | 5 | 4 |
 | panels (hero, gear, store and final-sheet panels) | 190 | 15 | 175 | 1 | 17 | 1 |
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 1 | 16 | 17 | 73 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **325** | **1546** | **137** | **551** | **81** |
+| **Total** | **1871** | **325** | **1546** | **137** | **551** | **85** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -569,11 +569,11 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
-| `bank:BOARDS_PANEL_COPY.scope.ranked`<br>the Leaderboards panel | Your dead only. The world has not been told. | Your dead only, from this phone. Nobody else is counted here. | **79-06** (accurate to the engine): The ME scope also shows with Compete on, when every death has been sent, so the world has been told; the line now says only what the view holds. |
-| `bank:BOARD_COPY.yard.rule`<br>a board's title, rule and unit | Everyone you have rolled and lost, deepest first, with what was said over them. Not ranked against anybody. | Your sixty most recent dead, deepest first, with what was said over them. Not ranked against anybody. | **79-06** (accurate to the engine): The graveyard keeps only the newest sixty stones, so everyone was untrue past sixty deaths. |
-| `bank:GLOBAL_STANDING_LINES.ten.0`<br>the global standing quip | Top ten. Strangers are studying your corpse. | Top ten. Other delvers are studying your corpse. | **79-06** (accurate to the engine): The same bank serves the FRIENDS board, where the people ahead are not strangers. |
+| `bank:BOARDS_PANEL_COPY.scope.ranked`<br>the Leaderboards panel (BOARDS\_PANEL\_COPY removed by Phase 84 84-09) | Your dead only. The world has not been told. | *(removed)* | **79-06** (accurate to the engine): The ME scope also shows with Compete on, when every death has been sent, so the world has been told; the line now says only what the view holds. Phase 84 (BOARD-18..25, 84-09) retired the old Leaderboards panel and its BOARDS\_PANEL\_COPY bank in favour of the v3 panel's LEADERBOARD\_COPY; this line is no longer printed. |
+| `bank:BOARD_COPY.yard.rule`<br>a board's title, rule and unit (removed by Phase 84 84-09: BOARD\_COPY is trimmed to the four NEW PERSONAL BEST rows — title/unit/unitOne only) | Everyone you have rolled and lost, deepest first, with what was said over them. Not ranked against anybody. | *(removed)* | **79-06** (accurate to the engine): The graveyard keeps only the newest sixty stones, so everyone was untrue past sixty deaths. Phase 84 (BOARD-20, 84-09) retired GRAVEYARD and the BOARD\_COPY.yard entry (and every board's mark/col/unitLabel/rule/tab fields) along with the old Leaderboards panel; this line is no longer printed. |
+| `bank:GLOBAL_STANDING_LINES.ten.0`<br>the global standing quip (GLOBAL\_STANDING\_LINES removed by Phase 84 84-09) | Top ten. Strangers are studying your corpse. | *(removed)* | **79-06** (accurate to the engine): The same bank served the FRIENDS board, where the people ahead were not strangers. Phase 84 (84-09) retired the old panel's global strip and its GLOBAL\_STANDING\_LINES bank along with it; this line is no longer printed. |
 | `bank:PLACEMENT_LINES.rest.1`<br>the DEEPEST rank quip | You placed {rank} of {total}. Somewhere in the middle of the heap. It is warm there, at least. | You placed {rank} of {total}. Somewhere in the heap. It is warm in there, at least. | **79-06** (accurate to the engine): The band covers every place below the top hundred, including last, so the middle was not always true. |
-| `bank:STANDING_LINES.rest.2`<br>the local standing quip | Somewhere in the middle of the pile. Literally. | Somewhere in the pile. Literally. | **79-06** (accurate to the engine): The band covers every place below tenth, including last, so the middle was not always true. |
+| `bank:STANDING_LINES.rest.2`<br>the local standing quip (STANDING\_LINES removed by Phase 84 84-09) | Somewhere in the middle of the pile. Literally. | *(removed)* | **79-06** (accurate to the engine): The band covers every place below tenth, including last, so the middle was not always true. Phase 84 (84-09) retired the old panel's STANDING\_LINES bank along with the panel; this line is no longer printed. |
 
 ## panels — hero, gear, store and final-sheet panels
 

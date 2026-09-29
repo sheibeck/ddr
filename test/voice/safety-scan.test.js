@@ -72,17 +72,17 @@ import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 // Phase 65 (RUN-04): the shared board table's voice half — board copy and
 // both new-best/first-death quip banks, scanned alongside every other
 // presentation COPY bank in collectAuthoredStrings.
-// Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy — the
-// footnotes, the panel copy bank and the standing-quip bank — join the same
-// walk so they participate in the completeness/load-bearing meta-tests too.
-import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES, GLOBAL_STANDING_LINES, LEADERBOARD_COPY } from "../../content/boards.js";
+// Phase 84 (BOARD-18..25, BOARD-20), 84-09: the old panel's BOARD_FOOTNOTES,
+// BOARDS_PANEL_COPY, STANDING_LINES and GLOBAL_STANDING_LINES exports are
+// retired along with the panel. LEADERBOARD_COPY (the v3 panel's own copy)
+// joins the same walk.
+import { BOARD_COPY, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES, LEADERBOARD_COPY } from "../../content/boards.js";
 // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 Leaderboards
 // panel's own copy bank and the season-name table it shows, walked the same
-// way BOARDS_PANEL_COPY is.
+// way LEADERBOARD_COPY is.
 import { SEASON_NAMES } from "../../content/season.js";
 // Phase 68 (PLACE-01/02): the DEEPEST rank-quip bank, the deferred rail-card
-// copy and the season-drop Oracle line join the same walk; BOARDS_PANEL_COPY
-// .global rides the existing BOARDS_PANEL_COPY walk.
+// copy and the season-drop Oracle line join the same walk.
 import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../content/placement.js";
 // RULES-10 (Phase 75.1), 75.1-07: the scroll-reading odds copy bank joins
 // the same walk.
@@ -414,33 +414,9 @@ function collectAuthoredStrings() {
   push("NEW_BEST_HEAD", NEW_BEST_HEAD);
   NEW_BEST_LINES.forEach((s, i) => push(`NEW_BEST_LINES[${i}]`, s));
   FIRST_DEATH_LINES.forEach((s, i) => push(`FIRST_DEATH_LINES[${i}]`, s));
-  // Phase 66 (BOARD-02/03/07/08): BOARD_FOOTNOTES, BOARDS_PANEL_COPY and
-  // STANDING_LINES join the same recursive string-leaf walk used for
-  // BOARD_COPY, so the panel's own new copy is scanned and counted here too.
-  (function walkBoardCopy(obj, pathLabel) {
-    for (const [k, v] of Object.entries(obj)) {
-      const label = `${pathLabel}.${k}`;
-      if (typeof v === "string") push(label, v);
-      else if (v && typeof v === "object") walkBoardCopy(v, label);
-    }
-  })(BOARD_FOOTNOTES, "BOARD_FOOTNOTES");
-  (function walkBoardCopy(obj, pathLabel) {
-    for (const [k, v] of Object.entries(obj)) {
-      const label = `${pathLabel}.${k}`;
-      if (typeof v === "string") push(label, v);
-      else if (v && typeof v === "object") walkBoardCopy(v, label);
-    }
-  })(BOARDS_PANEL_COPY, "BOARDS_PANEL_COPY");
-  (function walkBoardCopy(obj, pathLabel) {
-    for (const [k, v] of Object.entries(obj)) {
-      const label = `${pathLabel}.${k}`;
-      if (typeof v === "string") push(label, v);
-      else if (v && typeof v === "object") walkBoardCopy(v, label);
-    }
-  })(STANDING_LINES, "STANDING_LINES");
   // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): LEADERBOARD_COPY and
   // SEASON_NAMES join the same recursive string-leaf walk used for
-  // BOARDS_PANEL_COPY, so the v3 panel's copy is scanned and counted here too.
+  // BOARD_COPY, so the v3 panel's copy is scanned and counted here too.
   (function walkBoardCopy(obj, pathLabel) {
     for (const [k, v] of Object.entries(obj)) {
       const label = `${pathLabel}.${k}`;
@@ -471,10 +447,9 @@ function collectAuthoredStrings() {
       else if (v && typeof v === "object") walkQuitCopy(v, label);
     }
   })(HUD_MENU_QUIT_COPY, "HUD_MENU_QUIT_COPY");
-  // Phase 68 (PLACE-01/02): the global standing quips, the rank-quip bank,
-  // the deferred rail card and the season-drop line, same recursive walk.
+  // Phase 68 (PLACE-01/02): the rank-quip bank, the deferred rail card and
+  // the season-drop line, same recursive walk.
   for (const [bankName, bank] of [
-    ["GLOBAL_STANDING_LINES", GLOBAL_STANDING_LINES],
     ["PLACEMENT_LINES", PLACEMENT_LINES],
     ["PLACEMENT_CARD", PLACEMENT_CARD],
     ["SEASON_DROP_LINES", SEASON_DROP_LINES],
@@ -501,11 +476,11 @@ test("Flavor banks: all remaining authored player-facing copy is family-friendly
   assert.deepStrictEqual(offenders, [], `Banned copy in flavor banks:\n${offenders.join("\n")}`);
 });
 
-test("Phase 68: BOARDS_PANEL_COPY.global and the placement banks are in the authored-string walk", () => {
+test("Phase 68: the LEADERBOARD_COPY.global-equivalent and the placement banks are in the authored-string walk", () => {
   const labels = new Set(collectAuthoredStrings().map(([label]) => label));
   for (const l of [
-    "BOARDS_PANEL_COPY.global.scope.all", "BOARDS_PANEL_COPY.global.ofWorld",
-    "PLACEMENT_LINES.rest.0", "PLACEMENT_CARD.many.0", "SEASON_DROP_LINES.many", "GLOBAL_STANDING_LINES.first.0",
+    "LEADERBOARD_COPY.scope.board", "LEADERBOARD_COPY.state.unreachable",
+    "PLACEMENT_LINES.rest.0", "PLACEMENT_CARD.many.0", "SEASON_DROP_LINES.many",
   ]) {
     assert.ok(labels.has(l), `missing ${l}`);
   }

@@ -83,38 +83,38 @@
   {
     "key": "bank:BOARD_COPY.yard.rule",
     "surface": "boards",
-    "trigger": "a board's title, rule and unit",
+    "trigger": "a board's title, rule and unit (removed by Phase 84 84-09: BOARD_COPY is trimmed to the four NEW PERSONAL BEST rows — title/unit/unitOne only)",
     "before": "Everyone you have rolled and lost, deepest first, with what was said over them. Not ranked against anybody.",
-    "after": "Your sixty most recent dead, deepest first, with what was said over them. Not ranked against anybody.",
+    "after": "",
     "reasons": ["accurate"],
-    "why": "The graveyard keeps only the newest sixty stones, so everyone was untrue past sixty deaths."
+    "why": "The graveyard keeps only the newest sixty stones, so everyone was untrue past sixty deaths. Phase 84 (BOARD-20, 84-09) retired GRAVEYARD and the BOARD_COPY.yard entry (and every board's mark/col/unitLabel/rule/tab fields) along with the old Leaderboards panel; this line is no longer printed."
   },
   {
     "key": "bank:BOARDS_PANEL_COPY.scope.ranked",
     "surface": "boards",
-    "trigger": "the Leaderboards panel",
+    "trigger": "the Leaderboards panel (BOARDS_PANEL_COPY removed by Phase 84 84-09)",
     "before": "Your dead only. The world has not been told.",
-    "after": "Your dead only, from this phone. Nobody else is counted here.",
+    "after": "",
     "reasons": ["accurate"],
-    "why": "The ME scope also shows with Compete on, when every death has been sent, so the world has been told; the line now says only what the view holds."
+    "why": "The ME scope also shows with Compete on, when every death has been sent, so the world has been told; the line now says only what the view holds. Phase 84 (BOARD-18..25, 84-09) retired the old Leaderboards panel and its BOARDS_PANEL_COPY bank in favour of the v3 panel's LEADERBOARD_COPY; this line is no longer printed."
   },
   {
     "key": "bank:STANDING_LINES.rest.2",
     "surface": "boards",
-    "trigger": "the local standing quip",
+    "trigger": "the local standing quip (STANDING_LINES removed by Phase 84 84-09)",
     "before": "Somewhere in the middle of the pile. Literally.",
-    "after": "Somewhere in the pile. Literally.",
+    "after": "",
     "reasons": ["accurate"],
-    "why": "The band covers every place below tenth, including last, so the middle was not always true."
+    "why": "The band covers every place below tenth, including last, so the middle was not always true. Phase 84 (84-09) retired the old panel's STANDING_LINES bank along with the panel; this line is no longer printed."
   },
   {
     "key": "bank:GLOBAL_STANDING_LINES.ten.0",
     "surface": "boards",
-    "trigger": "the global standing quip",
+    "trigger": "the global standing quip (GLOBAL_STANDING_LINES removed by Phase 84 84-09)",
     "before": "Top ten. Strangers are studying your corpse.",
-    "after": "Top ten. Other delvers are studying your corpse.",
+    "after": "",
     "reasons": ["accurate"],
-    "why": "The same bank serves the FRIENDS board, where the people ahead are not strangers."
+    "why": "The same bank served the FRIENDS board, where the people ahead were not strangers. Phase 84 (84-09) retired the old panel's global strip and its GLOBAL_STANDING_LINES bank along with it; this line is no longer printed."
   },
   {
     "key": "bank:PLACEMENT_LINES.rest.1",

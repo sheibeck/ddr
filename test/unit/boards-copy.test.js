@@ -1,84 +1,34 @@
 // test/unit/boards-copy.test.js
 //
-// Phase 66 (BOARD-02/03/07/08), Task 2 — pins content/boards.js's Phase 66
-// additions verbatim against the mock (design/Mazeworld Boards Panel.dc.html)
-// and the 66-02-PLAN.md Task 1 <action> list, and proves the panel copy's
-// shape (deep-frozen, no functions, tokens from the closed set only, no
-// signed-out board claiming a global/friends rank).
+// Phase 66 (BOARD-02/03/07/08), Task 2 — originally pinned content/boards.js's
+// old-panel exports (BOARD_COPY's mark/col/unitLabel/rule fields,
+// BOARDS_PANEL_COPY, STANDING_LINES, GLOBAL_STANDING_LINES). Phase 84
+// (BOARD-18..25, BOARD-20) retired the old Leaderboards panel and its copy
+// (84-09): those exports are gone, so their pins are deleted below. What
+// remains pinned here: BOARD_COPY's trimmed shape and its title/unit/
+// unitOne values (unchanged since Phase 65, read by src/browser/newBest.js)
+// and the NEW_BEST_HEAD/NEW_BEST_LINES/FIRST_DEATH_LINES shapes.
 //
-// TDD RED: written before this task extends content/boards.js's exports; the
-// assertions below are pinned to 66-02-PLAN.md Task 2's <behavior> bullets.
+// (LEADERBOARD_COPY, the v3 panel's own copy bank, is pinned separately in
+// test/unit/leaderboard-copy.test.js.)
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, GLOBAL_STANDING_LINES } from "../../content/boards.js";
+import { BOARD_COPY, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES } from "../../content/boards.js";
 
-const MOCK_RULE = {
-  deep: "Lowest floor reached before dying. Ties broken by the fewer squares walked to get there.",
-  // Phase 70 (D-09): LINEAGE re-voiced for one race + sub-class's top ten.
-  combo: "One race, one sub-class, the ten deepest of them. Ties go to whoever walked less.",
-  days: "Days survived underground. Rations are the real opponent.",
-  kills: "Things killed before being killed. Not correlated with depth, which is the joke.",
-  purse: "Wilmst carried at the moment of death. All of it still down there.",
-  // VOX-05 (79-06): the graveyard holds the newest sixty stones (GRAVE_CAP).
-  yard: "Your sixty most recent dead, deepest first, with what was said over them. Not ranked against anybody.",
-};
+// ─── BOARD_COPY: exactly the four NEW PERSONAL BEST rows ────────────────────
 
-const MOCK_MARK_COL = {
-  deep: { mark: "▼", col: "#d3c49f" },
-  combo: { mark: "◆", col: "#b9a4ef" },
-  days: { mark: "⧗", col: "#8fb08a" },
-  kills: { mark: "✕", col: "#e07260" },
-  purse: { mark: "●", col: "#e8c97a" },
-  yard: { mark: "✝", col: "#c9bda0" },
-};
-
-const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
-const TOKENS = new Set(["n", "name", "floor", "steps", "epitaph", "lineage"]);
-
-/** Every `{token}` in a string, without the braces. */
-function tokensIn(s) {
-  const out = [];
-  const re = /\{([a-zA-Z]+)\}/g;
-  let m;
-  while ((m = re.exec(s))) out.push(m[1]);
-  return out;
-}
-
-/** Recursively collect [path, value] for every leaf in a plain object/array tree. */
-function collectLeaves(obj, pathLabel = "") {
-  const leaves = [];
-  if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") {
-    leaves.push([pathLabel, obj]);
-    return leaves;
-  }
-  if (Array.isArray(obj)) {
-    obj.forEach((v, i) => leaves.push(...collectLeaves(v, `${pathLabel}[${i}]`)));
-    return leaves;
-  }
-  if (obj && typeof obj === "object") {
-    for (const [k, v] of Object.entries(obj)) {
-      leaves.push(...collectLeaves(v, pathLabel ? `${pathLabel}.${k}` : k));
-    }
-  }
-  return leaves;
-}
-
-// ─── BOARD_COPY key order + Phase 65 fields untouched ───────────────────────
-
-test("Object.keys(BOARD_COPY) equals the panel's tab order (LEANEST retired, BOARD-17)", () => {
-  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "days", "kills", "purse", "combo", "yard"]);
+test("Object.keys(BOARD_COPY) is exactly deep, days, kills, purse (LEANEST retired BOARD-17; LINEAGE/GRAVEYARD retired Phase 84 84-09)", () => {
+  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "days", "kills", "purse"]);
 });
 
-test("BOARD_COPY tab/title/unit/unitOne match their Phase 65 values", () => {
+test("BOARD_COPY title/unit/unitOne match their Phase 65 values, unchanged by the Phase 84 trim", () => {
   const pinned = {
-    deep: { tab: "DEEPEST", title: "DEEPEST DESCENT", unit: "floor" },
-    combo: { tab: "LINEAGE", title: "BY RACE & SUB-CLASS", unit: "floor" },
-    days: { tab: "LONGEST", title: "LONGEST HELD OUT", unit: "days", unitOne: "day" },
-    kills: { tab: "BUTCHERY", title: "MOST KILLS", unit: "kills", unitOne: "kill" },
-    purse: { tab: "PURSE", title: "RICHEST CORPSE", unit: "wilmst" },
-    yard: { tab: "GRAVEYARD", title: "YOUR GRAVEYARD", unit: "floor" },
+    deep: { title: "DEEPEST DESCENT", unit: "floor" },
+    days: { title: "LONGEST HELD OUT", unit: "days", unitOne: "day" },
+    kills: { title: "MOST KILLS", unit: "kills", unitOne: "kill" },
+    purse: { title: "RICHEST CORPSE", unit: "wilmst" },
   };
   for (const [id, fields] of Object.entries(pinned)) {
     for (const [field, value] of Object.entries(fields)) {
@@ -87,296 +37,45 @@ test("BOARD_COPY tab/title/unit/unitOne match their Phase 65 values", () => {
   }
 });
 
-// ─── mark/col/unitLabel/title/rule shape and verbatim mock pins ─────────────
-
-test("Every board has a one-character mark, a #rrggbb col, a non-empty unitLabel, title and rule", () => {
+test("Every BOARD_COPY entry holds only title, unit and (where applicable) unitOne — no mark/col/unitLabel/rule/tab leftovers", () => {
   for (const [id, b] of Object.entries(BOARD_COPY)) {
-    assert.equal(typeof b.mark, "string", `${id}.mark`);
-    assert.equal([...b.mark].length, 1, `${id}.mark should be one character, got ${JSON.stringify(b.mark)}`);
-    assert.match(b.col, HEX_COLOR_RE, `${id}.col should be #rrggbb`);
-    assert.ok(typeof b.unitLabel === "string" && b.unitLabel.length > 0, `${id}.unitLabel non-empty`);
+    const keys = Object.keys(b).sort();
+    assert.ok(keys.every((k) => k === "title" || k === "unit" || k === "unitOne"), `${id} carries an unexpected field: ${keys.join(",")}`);
     assert.ok(typeof b.title === "string" && b.title.length > 0, `${id}.title non-empty`);
-    assert.ok(typeof b.rule === "string" && b.rule.length > 0, `${id}.rule non-empty`);
+    assert.ok(typeof b.unit === "string" && b.unit.length > 0, `${id}.unit non-empty`);
   }
 });
 
-test("Every board's mark and col match the mock verbatim (D-11)", () => {
-  for (const [id, expected] of Object.entries(MOCK_MARK_COL)) {
-    assert.equal(BOARD_COPY[id].mark, expected.mark, `${id}.mark`);
-    assert.equal(BOARD_COPY[id].col, expected.col, `${id}.col`);
-  }
-});
-
-test("Every remaining board's rule line equals the mock string verbatim (LEANEST retired, BOARD-17)", () => {
-  for (const [id, rule] of Object.entries(MOCK_RULE)) {
-    assert.equal(BOARD_COPY[id].rule, rule, `${id}.rule`);
-  }
+test("No retired board id (lean, combo, yard) is a BOARD_COPY key", () => {
   assert.ok(!("lean" in BOARD_COPY));
+  assert.ok(!("combo" in BOARD_COPY));
+  assert.ok(!("yard" in BOARD_COPY));
 });
 
-// ─── BOARD_FOOTNOTES ─────────────────────────────────────────────────────────
+// ─── NEW_BEST_HEAD / NEW_BEST_LINES / FIRST_DEATH_LINES shapes ──────────────
 
-test("BOARD_FOOTNOTES.ranked and .yard equal the mock verbatim", () => {
-  assert.equal(
-    BOARD_FOOTNOTES.ranked,
-    "Top ten only. Boards count the dead — living characters are provisional and the dungeon keeps no provisional records.",
-  );
-  assert.equal(
-    BOARD_FOOTNOTES.yard,
-    "Epitaphs are written by the dungeon, not by you. There is no appeal.",
-  );
+test("NEW_BEST_HEAD is the mock's head string verbatim", () => {
+  assert.equal(NEW_BEST_HEAD, "NEW PERSONAL BEST");
 });
 
-// ─── BOARDS_PANEL_COPY: frozen, string leaves, token universe ───────────────
-
-test("BOARDS_PANEL_COPY is deep-frozen", () => {
-  (function walk(obj) {
-    if (obj && typeof obj === "object") {
-      assert.ok(Object.isFrozen(obj), "every nested object in BOARDS_PANEL_COPY must be frozen");
-      for (const v of Object.values(obj)) walk(v);
-    }
-  })(BOARDS_PANEL_COPY);
-});
-
-test("Every BOARDS_PANEL_COPY leaf is a non-empty string", () => {
-  for (const [path, value] of collectLeaves(BOARDS_PANEL_COPY)) {
-    assert.equal(typeof value, "string", `${path} should be a string`);
-    assert.ok(value.length > 0, `${path} should be non-empty`);
+test("NEW_BEST_LINES is a non-empty array of non-empty strings", () => {
+  assert.ok(Array.isArray(NEW_BEST_LINES) && NEW_BEST_LINES.length > 0);
+  for (const line of NEW_BEST_LINES) {
+    assert.equal(typeof line, "string");
+    assert.ok(line.length > 0);
   }
 });
 
-test("Every BOARDS_PANEL_COPY template's tokens are only from {n,name,floor,steps,epitaph,lineage}", () => {
-  for (const [path, value] of collectLeaves(BOARDS_PANEL_COPY)) {
-    for (const t of tokensIn(value)) {
-      assert.ok(TOKENS.has(t), `${path} uses unexpected token {${t}}`);
-    }
+test("FIRST_DEATH_LINES is a non-empty array of non-empty strings", () => {
+  assert.ok(Array.isArray(FIRST_DEATH_LINES) && FIRST_DEATH_LINES.length > 0);
+  for (const line of FIRST_DEATH_LINES) {
+    assert.equal(typeof line, "string");
+    assert.ok(line.length > 0);
   }
 });
 
-test("BOARDS_PANEL_COPY carries the D-01/D-06/D-07/D-12 fields the plan specifies", () => {
-  assert.equal(BOARDS_PANEL_COPY.head.title, "LEADERBOARDS");
-  assert.equal(BOARDS_PANEL_COPY.head.interred, "INTERRED");
-  assert.equal(BOARDS_PANEL_COPY.strip.label, "PLAY GAMES · SIGNED OUT");
-  assert.equal(BOARDS_PANEL_COPY.strip.source, "Your dead only");
-  assert.equal(BOARDS_PANEL_COPY.chips.me, "ME");
-  assert.equal(BOARDS_PANEL_COPY.chips.all, "ALL");
-  assert.equal(BOARDS_PANEL_COPY.chips.friends, "FRIENDS");
-  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.chips), ["me", "all", "friends"]);
-  assert.equal(BOARDS_PANEL_COPY.empty, "Nobody of yours has qualified for this board yet.");
-  assert.equal(BOARDS_PANEL_COPY.standing.noEntry, "NO ENTRY");
-  assert.equal(BOARDS_PANEL_COPY.dock.title, "BACK TO TITLE");
-  assert.equal(BOARDS_PANEL_COPY.dock.roll, "ROLL A NEW HERO");
-  assert.equal(BOARDS_PANEL_COPY.dock.dungeon, "BACK TO THE DUNGEON");
-  // Phase 78 (HUD-03): the dead-hero dock on the in-game DEAD tab.
-  assert.equal(BOARDS_PANEL_COPY.dock.finalSheet, "FINAL SHEET");
-  assert.equal(BOARDS_PANEL_COPY.dock.bury, "BURY THEM");
-  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.dock), ["title", "roll", "dungeon", "finalSheet", "bury"]);
-});
-
-// ─── STANDING_LINES: frozen, shape, bank sizes, forbidden wording ───────────
-
-test("STANDING_LINES is deep-frozen", () => {
-  assert.ok(Object.isFrozen(STANDING_LINES));
-  for (const arr of Object.values(STANDING_LINES)) {
-    assert.ok(Object.isFrozen(arr), "each bank array must be frozen");
-  }
-});
-
-test("STANDING_LINES has first/ten/rest arrays of at least 2 each and at least 6 lines total", () => {
-  assert.ok(Array.isArray(STANDING_LINES.first) && STANDING_LINES.first.length >= 2);
-  assert.ok(Array.isArray(STANDING_LINES.ten) && STANDING_LINES.ten.length >= 2);
-  assert.ok(Array.isArray(STANDING_LINES.rest) && STANDING_LINES.rest.length >= 2);
-  const total = STANDING_LINES.first.length + STANDING_LINES.ten.length + STANDING_LINES.rest.length;
-  assert.ok(total >= 6, `expected at least 6 standing lines total, got ${total}`);
-});
-
-test("No STANDING_LINES entry mentions a pin, worldwide, friends, or another player", () => {
+test("No NEW_BEST_LINES or FIRST_DEATH_LINES entry mentions a pin, worldwide, friends, or another player", () => {
   const forbidden = /worldwide|friend|pinned|@/i;
-  for (const [bank, lines] of Object.entries(STANDING_LINES)) {
-    lines.forEach((line, i) => {
-      assert.doesNotMatch(line, forbidden, `STANDING_LINES.${bank}[${i}] -> "${line}"`);
-    });
-  }
-});
-
-// ─── Phase 67 (D-08): the signed-in strip (Phase 68 retires the coming-online notes) ─
-
-test("BOARDS_PANEL_COPY.strip.live: the signed-in source line verbatim and a non-empty fallback name", () => {
-  assert.equal(BOARDS_PANEL_COPY.strip.live.source, "PLAY GAMES · SIGNED IN");
-  assert.equal(BOARDS_PANEL_COPY.strip.live.unnamed, "A player with no name");
-  // The Phase 66 signed-out strip is untouched.
-  assert.equal(BOARDS_PANEL_COPY.strip.glyph, "?");
-  assert.equal(BOARDS_PANEL_COPY.strip.label, "PLAY GAMES · SIGNED OUT");
-  assert.equal(BOARDS_PANEL_COPY.strip.source, "Your dead only");
-});
-
-test("BOARDS_PANEL_COPY.note: exactly the Phase 66 signed-out notes (Phase 68 retired 67-04's coming-online notes)", () => {
-  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.note), ["all", "friends"]);
-  assert.equal(BOARDS_PANEL_COPY.note.all, "Nobody out there can see you yet.");
-  assert.equal(
-    BOARDS_PANEL_COPY.note.friends,
-    "Your friends have not been told you exist. It may be kinder that way.",
-  );
-  assert.ok(Object.isFrozen(BOARDS_PANEL_COPY.note));
-});
-
-// ─── Phase 68 (D-05..D-09): the global board copy ───────────────────────────
-
-const GLOBAL_PINS = {
-  season: "SEASON {n}",
-  loading: "Asking the world who died. It keeps records, slowly.",
-  unreachable: "The world is unreachable. Your own dead are still here.",
-  closed: "This board has not opened yet. The ledger is still being ruled.",
-  empty: "Nobody has died on this board yet this season. Somebody has to go first.",
-  consent: "Play Games will not show us your friends until you say so.",
-  consentButton: "SHOW MY FRIENDS",
-  you: "YOU",
-  friend: "FRIEND",
-  anon: "A nameless delver",
-  foe: "foe",
-  noEntry: "Nothing of yours on this board yet this season.",
-  ofWorld: "of {n} interred worldwide.",
-  ofFriends: "of {n} among friends.",
-  // Phase 81 (BOARD-13): the per-lineage global lines (ofLineage, noLineage,
-  // lineageEmpty, sampledFoot) are gone — LINEAGE is ME-only and never reads
-  // a global sample.
-  // Phase 81 (BOARD-10, R-16c): the honest note for a record Play Games
-  // withholds from the public list entirely (no rank at all).
-  hiddenYou: "Play Games won't show your score here — your profile keeps game activity private.",
-};
-
-test("BOARDS_PANEL_COPY.global is deep-frozen and sits after note", () => {
-  const g = BOARDS_PANEL_COPY.global;
-  assert.ok(g && typeof g === "object");
-  (function walk(obj) {
-    if (obj && typeof obj === "object") {
-      assert.ok(Object.isFrozen(obj), "every nested object in BOARDS_PANEL_COPY.global must be frozen");
-      for (const v of Object.values(obj)) walk(v);
-    }
-  })(g);
-  const keys = Object.keys(BOARDS_PANEL_COPY);
-  assert.equal(keys.indexOf("global"), keys.indexOf("note") + 1);
-});
-
-test("BOARDS_PANEL_COPY.global.scope pins the ALL / FRIENDS scope lines verbatim (D-05, D-06)", () => {
-  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.global.scope), ["all", "friends"]);
-  assert.equal(BOARDS_PANEL_COPY.global.scope.all, "Global. Every delve this season.");
-  assert.equal(BOARDS_PANEL_COPY.global.scope.friends, "Your friends’ dead only. This season.");
-});
-
-test("BOARDS_PANEL_COPY.global pins every other string verbatim (D-05..D-09)", () => {
-  for (const [k, v] of Object.entries(GLOBAL_PINS)) {
-    assert.equal(BOARDS_PANEL_COPY.global[k], v, `global.${k}`);
-  }
-  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY.global).sort(), ["scope", ...Object.keys(GLOBAL_PINS)].sort());
-});
-
-test("BOARDS_PANEL_COPY.global token rules: season/ofWorld/ofFriends/ofLineage/sampledFoot carry {n}; lineageEmpty carries {lineage} then {n}; nothing else carries a token", () => {
-  const withN = new Set(["season", "ofWorld", "ofFriends", "ofLineage", "sampledFoot"]);
-  for (const [p, v] of collectLeaves(BOARDS_PANEL_COPY.global)) {
-    const t = tokensIn(v);
-    if (withN.has(p)) assert.deepStrictEqual(t, ["n"], `global.${p}`);
-    else if (p === "lineageEmpty") assert.deepStrictEqual(t, ["lineage", "n"], `global.${p}`);
-    else assert.deepStrictEqual(t, [], `global.${p}`);
-  }
-  assert.match(BOARDS_PANEL_COPY.global.ofWorld, /worldwide/);
-  assert.match(BOARDS_PANEL_COPY.global.ofFriends, /among friends/);
-});
-
-test("No BOARDS_PANEL_COPY.global string has a markup character, WP or a handle marker", () => {
-  for (const [p, v] of collectLeaves(BOARDS_PANEL_COPY.global)) {
-    assert.doesNotMatch(v, /[<>&@]/, `global.${p} -> "${v}"`);
-    assert.doesNotMatch(v, /\bWP\b/i, `global.${p} -> "${v}"`);
-  }
-});
-
-test("The Phase 66/67 keys of BOARDS_PANEL_COPY are unchanged by the Phase 68 addition", () => {
-  assert.deepStrictEqual(Object.keys(BOARDS_PANEL_COPY), [
-    "head", "scope", "strip", "chips", "note", "global", "empty", "divider", "standing", "stats", "lineage", "level", "sep", "dock",
-  ]);
-  // VOX-05 (79-06): true under Compete ON as well as OFF.
-  assert.equal(BOARDS_PANEL_COPY.scope.ranked, "Your dead only, from this phone. Nobody else is counted here.");
-  assert.equal(BOARDS_PANEL_COPY.divider, "NOT IN THE TOP TEN · YOUR BEST RUN");
-});
-
-// ─── Phase 70 (D-09, D-10): the race + sub-class LINEAGE copy ───────────────
-
-test("BOARDS_PANEL_COPY.lineage is exactly the picker labels and the empty note (the Phase 65 one/many/detail lines are retired)", () => {
-  assert.deepStrictEqual({ ...BOARDS_PANEL_COPY.lineage }, {
-    race: "RACE",
-    sub: "SUB-CLASS",
-    empty: "No {lineage} of yours has died yet. The dungeon is patient.",
-  });
-  assert.ok(Object.isFrozen(BOARDS_PANEL_COPY.lineage));
-});
-
-test("BOARDS_PANEL_COPY.standing: ofLineage replaces ofCombos", () => {
-  assert.equal(BOARDS_PANEL_COPY.standing.ofLineage, "of {n} of this lineage.");
-  assert.ok(!("ofCombos" in BOARDS_PANEL_COPY.standing));
-  assert.ok(!("ofSampled" in BOARDS_PANEL_COPY.global));
-});
-
-test("BOARD_COPY.combo is re-voiced for race + sub-class", () => {
-  assert.equal(BOARD_COPY.combo.title, "BY RACE & SUB-CLASS");
-  assert.equal(BOARD_COPY.combo.rule, "One race, one sub-class, the ten deepest of them. Ties go to whoever walked less.");
-  assert.equal(BOARD_COPY.combo.tab, "LINEAGE");
-  assert.equal(BOARD_COPY.combo.unitLabel, "FLOOR");
-});
-
-test("No Phase 70 LINEAGE string has a markup character, WP or a handle marker", () => {
-  const strings = [
-    ...collectLeaves(BOARDS_PANEL_COPY.lineage).map(([p, v]) => [`lineage.${p}`, v]),
-    ["standing.ofLineage", BOARDS_PANEL_COPY.standing.ofLineage],
-    // combo.title keeps the mock's "&" (BY RACE & SUB-CLASS), drawn via textContent.
-    ["combo.rule", BOARD_COPY.combo.rule],
-  ];
-  for (const [p, v] of strings) {
-    assert.doesNotMatch(v, /[<>&@]/, `${p} -> "${v}"`);
-    assert.doesNotMatch(v, /\bWP\b/i, `${p} -> "${v}"`);
-  }
-});
-
-const GLOBAL_STANDING_PINS = {
-  first: [
-    "First place. The others have been told, and are not thrilled.",
-    "Top of the heap. Mind the drop.",
-    "Nobody has done better. Nobody will admit it, either.",
-  ],
-  ten: [
-    "Top ten. Other delvers are studying your corpse.", // VOX-05 (79-06): true on FRIENDS too
-    "In the top ten. Your ghost has earned a small nod.",
-    "Top ten. The rest are taking notes, grudgingly.",
-  ],
-  hundred: [
-    "Top hundred. A large room, but a respectable one.",
-    "Somewhere in the top hundred. The view is mostly other graves.",
-    "Top hundred. Frame it before the season ends.",
-  ],
-  rest: [
-    "Out in the crowd. Everyone here is dead too, if that helps.",
-    "Not near the top. Not near the bottom either, probably.",
-    "A face in a very large, very quiet crowd.",
-  ],
-};
-
-test("GLOBAL_STANDING_LINES is deep-frozen { first, ten, hundred, rest } with at least 3 lines each", () => {
-  assert.ok(Object.isFrozen(GLOBAL_STANDING_LINES));
-  assert.deepStrictEqual(Object.keys(GLOBAL_STANDING_LINES), ["first", "ten", "hundred", "rest"]);
-  for (const [bank, lines] of Object.entries(GLOBAL_STANDING_LINES)) {
-    assert.ok(Object.isFrozen(lines), `${bank} must be frozen`);
-    assert.ok(lines.length >= 3, `${bank} has at least 3 lines`);
-  }
-});
-
-test("GLOBAL_STANDING_LINES pins the plan's lines verbatim, with no {token}, markup, WP or handle marker", () => {
-  for (const [bank, lines] of Object.entries(GLOBAL_STANDING_PINS)) {
-    lines.forEach((line, i) => assert.equal(GLOBAL_STANDING_LINES[bank][i], line, `${bank}[${i}]`));
-  }
-  for (const [bank, lines] of Object.entries(GLOBAL_STANDING_LINES)) {
-    lines.forEach((line, i) => {
-      assert.deepStrictEqual(tokensIn(line), [], `${bank}[${i}]`);
-      assert.doesNotMatch(line, /[<>&@{}]/, `${bank}[${i}] -> "${line}"`);
-      assert.doesNotMatch(line, /\bWP\b/i, `${bank}[${i}] -> "${line}"`);
-    });
-  }
+  NEW_BEST_LINES.forEach((line, i) => assert.doesNotMatch(line, forbidden, `NEW_BEST_LINES[${i}] -> "${line}"`));
+  FIRST_DEATH_LINES.forEach((line, i) => assert.doesNotMatch(line, forbidden, `FIRST_DEATH_LINES[${i}] -> "${line}"`));
 });

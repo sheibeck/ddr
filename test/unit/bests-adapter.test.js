@@ -34,7 +34,7 @@ import {
 import { flush as flushStorage } from "../../src/browser/storage.js";
 import { newRun } from "../../engine/engine.js";
 import { serializeRun } from "../../engine/saveState.js";
-import { emptyBests, updateBests, runHash, normalizeStone, BOARD_IDS } from "../../engine/records.js";
+import { emptyBests, updateBests, runHash, normalizeStone, RANKED_BOARDS } from "../../engine/records.js";
 import { BOARD_COPY } from "../../content/boards.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -490,6 +490,6 @@ test("source scan: engineAdapter.js has no ddr.best.v1 literal, no removed best-
   assert.ok(!/\bdocument\b/.test(stripped));
 });
 
-test("the shared board table: BOARD_COPY's keys (content/boards.js) deepStrictEqual BOARD_IDS (engine/records.js)", () => {
-  assert.deepStrictEqual(Object.keys(BOARD_COPY), [...BOARD_IDS]);
+test("the shared board table: BOARD_COPY's keys (content/boards.js) deepStrictEqual RANKED_BOARDS (engine/records.js, Phase 84 84-09 trim)", () => {
+  assert.deepStrictEqual(Object.keys(BOARD_COPY), [...RANKED_BOARDS]);
 });

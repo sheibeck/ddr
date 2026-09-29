@@ -74,11 +74,11 @@ test("newBestView with several boards returns ordered rows (mock tab order) and 
   assert.equal(view.quip, NEW_BEST_LINES[expectedPick]);
 });
 
-test("newBestValueText formats every board id per the plan's rules; the retired LEANEST id returns \"\" (BOARD-17)", () => {
+test("newBestValueText formats every remaining board id per the plan's rules; retired ids (lean, combo, yard) and unknown ids return \"\" (BOARD-17, Phase 84 84-09)", () => {
   assert.equal(newBestValueText("deep", { floor: 9 }), "floor 9");
   assert.equal(newBestValueText("lean", { floor: 9, steps: 312 }), "");
-  // Phase 70 (D-10): LINEAGE reads race + sub-class, never the base class.
-  assert.equal(newBestValueText("combo", { race: "Dwarven", sub: "Knight", cls: "Fighter", floor: 4 }), "Dwarven Knight · floor 4");
+  // Phase 84 (84-09): LINEAGE (combo) is retired — no longer a BOARD_COPY key.
+  assert.equal(newBestValueText("combo", { race: "Dwarven", sub: "Knight", cls: "Fighter", floor: 4 }), "");
   assert.equal(newBestValueText("days", { day: 1 }), "1 day");
   assert.equal(newBestValueText("days", { day: 14 }), "14 days");
   assert.equal(newBestValueText("kills", { kills: 1 }), "1 kill");
@@ -88,11 +88,11 @@ test("newBestValueText formats every board id per the plan's rules; the retired 
   assert.equal(newBestValueText("yard", {}), "");
 });
 
-test("Unknown ids (yard, bogus) in newBests are skipped; only-unknown + first:false stays silent", () => {
+test("Unknown ids (combo, yard, bogus) in newBests are skipped; only-unknown + first:false stays silent", () => {
   const summary = { ...baseSummary };
-  assert.equal(newBestView({ first: false, newBests: ["yard", "bogus"], summary }), null);
+  assert.equal(newBestView({ first: false, newBests: ["yard", "combo", "bogus"], summary }), null);
 
-  const view = newBestView({ first: false, newBests: ["yard", "deep", "bogus"], summary });
+  const view = newBestView({ first: false, newBests: ["yard", "deep", "combo", "bogus"], summary });
   assert.ok(view);
   assert.deepStrictEqual(view.rows, [`DEEPEST DESCENT · floor ${summary.floor}`]);
 });
@@ -129,7 +129,7 @@ test("Determinism: calling newBestView twice with the same report returns deepSt
 test("No produced string matches /\\bWP\\b/ (player-facing text says HP, never WP)", () => {
   const reports = [
     { first: true, newBests: [], summary: baseSummary },
-    { first: false, newBests: ["deep", "combo", "days", "kills", "purse"], summary: baseSummary },
+    { first: false, newBests: ["deep", "days", "kills", "purse"], summary: baseSummary },
   ];
   for (const report of reports) {
     const view = newBestView(report);
@@ -160,6 +160,6 @@ test("src/browser/newBest.js is pure: no Math.random, no document, exactly one c
   assert.equal(importMatches.length, 1, "expected exactly one import from ../../content/boards.js");
 });
 
-test("BOARD_COPY key order matches the panel's tab order used for row ordering (LEANEST retired, BOARD-17)", () => {
-  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "days", "kills", "purse", "combo", "yard"]);
+test("BOARD_COPY holds exactly the four NEW PERSONAL BEST rows (LEANEST retired BOARD-17; LINEAGE/GRAVEYARD retired Phase 84 84-09)", () => {
+  assert.deepStrictEqual(Object.keys(BOARD_COPY), ["deep", "days", "kills", "purse"]);
 });

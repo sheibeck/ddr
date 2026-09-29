@@ -19,17 +19,14 @@ function n(x) {
 /**
  * newBestValueText(board, summary) — the value half of a new-best row.
  * Returns "" for any board id this module does not know how to format
- * (including "yard", which the caller never passes since GRAVEYARD never
- * announces).
+ * (Phase 84, 84-09: "combo" and "yard" are retired board ids and are no
+ * longer in BOARD_COPY, so both fall through to "" here).
  */
 export function newBestValueText(board, summary) {
   const s = summary && typeof summary === "object" ? summary : {};
   switch (board) {
     case "deep":
       return `floor ${n(s.floor)}`;
-    case "combo":
-      // Phase 70 (D-10): a lineage is race + sub-class, the same key LINEAGE ranks by.
-      return `${s.race || ""} ${s.sub || ""}${SEP}floor ${n(s.floor)}`;
     case "days": {
       const d = n(s.day);
       return `${d} ${d === 1 ? BOARD_COPY.days.unitOne : BOARD_COPY.days.unit}`;
@@ -57,7 +54,10 @@ function pickIndex(hash, bankLength) {
 
 /**
  * newBestView(report) — the pure view model. See 65-03-PLAN.md Task 2's
- * <behavior> list for the exact contract. Never throws.
+ * <behavior> list for the exact contract. Never throws. Phase 84 (84-09):
+ * the retired combo (LINEAGE) and yard (GRAVEYARD) board ids are no longer
+ * BOARD_COPY keys, so the id filter below excludes them without a special
+ * case — any id not in BOARD_COPY (combo, yard, bogus, ...) is dropped.
  */
 export function newBestView(report) {
   if (!report || typeof report !== "object") return null;
@@ -72,7 +72,7 @@ export function newBestView(report) {
   const requested = Array.isArray(report.newBests) ? report.newBests : [];
   const boardKeys = Object.keys(BOARD_COPY);
   const known = new Set(requested);
-  const ids = boardKeys.filter((id) => id !== "yard" && known.has(id));
+  const ids = boardKeys.filter((id) => known.has(id));
 
   if (ids.length === 0) return null;
 
