@@ -26,6 +26,7 @@ import {
 import {
   RUN_COLLECTION,
   RUN_CLIENT_FIELDS,
+  WHEN_SKEW_MS,
   rankKeys,
   runDocId,
   createRunCommit,
@@ -71,7 +72,9 @@ function baseValidPartial(overrides = {}) {
     gold: 100,
     sp: 40,
     cause: "combat",
+    note: "cut down by a Rat",
     epitaph: "",
+    when: 0,
     hash: "0a1b2c3d",
     version: "2.2.0 (12)",
     seed: 12345,
@@ -344,6 +347,32 @@ test("commit run create: admin bypasses ownership/banned checks (still validates
   const id = runDocId("any-uid", doc.hash);
   const res = await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), FAKE_ADMIN_TOKEN);
   assert.equal(res.status, 200);
+});
+
+test("commit run create: when bound uses the fake's own clock — one ms past now()+WHEN_SKEW_MS is denied, exactly at the bound is accepted", async () => {
+  const NOW_MS = 1000000;
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => NOW_MS });
+  const u = await newUser(server);
+
+  const atBound = docFrom({ uid: u.uid, when: NOW_MS + WHEN_SKEW_MS, hash: "0a1b2c3d" });
+  const idAt = runDocId(u.uid, atBound.hash);
+  const resAt = await postCommit(server, createRunCommit(VALID_CONFIG, idAt, atBound), u.idToken);
+  assert.equal(resAt.status, 200);
+
+  const overBound = docFrom({ uid: u.uid, when: NOW_MS + WHEN_SKEW_MS + 1, hash: "0a1b2c3e" });
+  const idOver = runDocId(u.uid, overBound.hash);
+  const resOver = await postCommit(server, createRunCommit(VALID_CONFIG, idOver, overBound), u.idToken);
+  assert.equal(resOver.status, 403);
+});
+
+test("commit run create: a doc that omits note -> 403", async () => {
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newUser(server);
+  const doc = docFrom({ uid: u.uid });
+  const { note, ...withoutNote } = doc;
+  const id = runDocId(u.uid, doc.hash);
+  const res = await postCommit(server, createRunCommit(VALID_CONFIG, id, withoutNote), u.idToken);
+  assert.equal(res.status, 403);
 });
 
 /* ================================================================

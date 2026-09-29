@@ -65,6 +65,7 @@ const SMOKE_SHARED = Object.freeze({
   sub: "Court Mage",
   name: "Smoke Probe",
   cause: "combat",
+  note: "cut down by a smoke test",
   epitaph: "Smoke test run. Safe to delete.",
   season: SEASON,
   version: "smoke",
@@ -76,12 +77,14 @@ const SMOKE_SHARED = Object.freeze({
  * ban-step-only submit that must be refused). Each carries a hash computed
  * via engine/records.js#runHash after every field is set, and every one
  * passes src/browser/runDoc.js#buildRunDoc for a plausible {uid, handle}.
- * The shared `seed` is read once from `now()` so every field of a given
- * smoke run is fixed for the whole call. Never throws.
+ * The shared `seed` (and Phase 84's `when`, the same value — `when` is
+ * outside the hash, so reusing it changes nothing about hash computation
+ * order) is read once from `now()` so every field of a given smoke run is
+ * fixed for the whole call. Never throws.
  */
 export function smokeSummaries(now = Date.now) {
   const seed = Math.trunc(now());
-  const base = { ...SMOKE_SHARED, seed };
+  const base = { ...SMOKE_SHARED, seed, when: seed };
   const a = { ...base, floor: 7, steps: 400, day: 5, kills: 3, gold: 50, sp: 250, level: 2, acts: 500 };
   const b = { ...base, floor: 3, steps: 150, day: 2, kills: 1, gold: 10, sp: 40, level: 1, acts: 200 };
   const c = { ...base, floor: 2, steps: 90, day: 1, kills: 0, gold: 5, sp: 10, level: 1, acts: 120 };

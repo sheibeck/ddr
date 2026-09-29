@@ -55,7 +55,9 @@ function baseValidPartial(overrides = {}) {
     gold: 100,
     sp: 40,
     cause: "combat",
+    note: "cut down by a Rat",
     epitaph: "",
+    when: 0,
     hash: "0a1b2c3d",
     version: "2.2.0 (12)",
     seed: 12345,
@@ -206,6 +208,24 @@ test("topTen: each row is frozen with every run field decoded plus id", async ()
   assert.equal(typeof row.gold, "number");
   assert.equal(typeof row.createdAt, "string");
   assert.equal(typeof row.id, "string");
+});
+
+test("topTen: a seeded older-shape doc (no note, no when) decodes without throwing — note/when come back undefined, createdAt an ISO string", async () => {
+  const merged = baseValidPartial({ uid: "olderu1", hash: "0000000a" });
+  const { note, when, ...oldShape } = merged;
+  const keys = rankKeys(oldShape);
+  const doc = { ...oldShape, ...keys };
+  const id = runDocId(doc.uid, doc.hash);
+  const { client } = makeClient({ runs: [{ id, doc }] });
+
+  const res = await client.topTen("deep", doc.race, doc.sub);
+  assert.equal(res.ok, true);
+  const row = res.rows.find((r) => r.id === id);
+  assert.ok(row, "the older-shape doc must appear in topTen");
+  assert.equal(row.note, undefined);
+  assert.equal(row.when, undefined);
+  assert.equal(typeof row.createdAt, "string");
+  assert.doesNotThrow(() => decodeRunDocument({ name: `runs/${id}`, fields: {} }));
 });
 
 /* ================================================================

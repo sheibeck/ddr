@@ -17,6 +17,11 @@
 // mirrors equal; this file is a third, hand-written mirror of the same
 // contract, exercised by test/unit/fakeBoardServer.test.js instead).
 //
+// Phase 84 (BOARD-20, BOARD-22): a run create's `note`/`when` fields are
+// enforced the same way here as by the live rules — commitRunCreate passes
+// this factory's own injected `now()` into validateRunDoc so the fake's
+// `when` upper bound tracks its own clock, not the live server's.
+//
 // `existsResponse` exists because the live answer to a duplicate run create
 // (400 FAILED_PRECONDITION, 403 PERMISSION_DENIED or 409 ALREADY_EXISTS) is
 // unverified until 83-08's live smoke test confirms which one Firestore
@@ -374,9 +379,9 @@ export function createFakeBoardFetch(opts = {}) {
       if (clientDoc.uid !== authUid) return denied();
       if (id !== runDocId(authUid, clientDoc.hash)) return denied();
       if (banned.has(authUid)) return denied();
-      if (validateRunDoc(clientDoc, { uid: authUid }).length > 0) return denied();
+      if (validateRunDoc(clientDoc, { uid: authUid, now: now() }).length > 0) return denied();
     } else if (authKind === "admin") {
-      if (validateRunDoc(clientDoc, {}).length > 0) return denied();
+      if (validateRunDoc(clientDoc, { now: now() }).length > 0) return denied();
     } else {
       return denied();
     }

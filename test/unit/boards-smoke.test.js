@@ -85,6 +85,10 @@ test("smokeSummaries: three frozen RunSummaries, each with a valid hash, each pa
     assert.equal(s.season, SEASON);
     assert.equal(s.seed, 5000000);
     assert.equal(s.hash, runHash(s));
+    assert.equal(typeof s.note, "string");
+    assert.ok(s.note.length > 0);
+    assert.equal(Number.isInteger(s.when), true);
+    assert.equal(s.when, 5000000);
     const built = buildRunDoc(s, { uid: "fakeuid000001", handle: validHandle(), version: s.version });
     assert.equal(built.ok, true, JSON.stringify(built.fails));
   }

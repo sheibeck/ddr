@@ -58,7 +58,10 @@ function makeStorage() {
   };
 }
 
-function clockBox(start = 1000000) {
+// Phase 84 (BOARD-20, BOARD-22): the fake board's own `when` bound compares
+// against this clock, so it must sit at or after BACKFILL_SINCE_MS — every
+// summary() fixture below carries a `when` at or shortly past that cutoff.
+function clockBox(start = BACKFILL_SINCE_MS) {
   let t = start;
   const now = () => t;
   now.set = (v) => {
