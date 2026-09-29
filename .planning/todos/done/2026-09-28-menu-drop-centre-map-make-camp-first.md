@@ -24,3 +24,5 @@ The ☰ dropdown (`#mw-hud-menu`, mazeworld.html ~2489) lists, under the account
 - Update the menu tests that pin the row list/order (hud-menu-layout, hudMenu, shell-gear-toolbar, shell-map-hud) and any keyboard/arrow-key focus order through the rows.
 - Shell only (no engine). Device check: the ☰ menu on the Pixel 7.
 - Timing: plan 83-09 is editing mazeworld.html now. Fits Phase 85 (it rebuilds the ☰ account block anyway) or a quick task after Phase 83.
+
+Shipped in 85-01.

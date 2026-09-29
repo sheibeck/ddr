@@ -180,7 +180,7 @@ test("UIF-02 pinch: the pointermove handler never recenters or keeps in view, an
 test("the centerMap bridge itself is untouched: anchorCamOnParty/positionCanvas only, never S.floor", () => {
   assert.equal((CODE.match(/function centerMap\(\) \{/g) || []).length, 1);
   assert.equal((CODE.match(/window\.mzCenterMap = centerMap;/g) || []).length, 1);
-  const body = sliceBetween(CODE, "function centerMap() {", 'document.getElementById("mw-chip-centre")');
+  const body = sliceBetween(CODE, "function centerMap() {", "window.mzCenterMap = centerMap;");
   assert.match(body, /anchorCamOnParty\(\{ x: 0, y: 0 \}\);/);
   assert.match(body, /positionCanvas\(\);/);
   // centerMap's own body reads S.floor only through partyCentre() — no

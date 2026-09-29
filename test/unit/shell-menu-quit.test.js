@@ -211,7 +211,7 @@ test("(8) BEHAVIOUR: re-arming clears the previous timer, so only one arm window
 
 // ─── D-07: the close-first helper ─────────────────────────────────────────
 
-test("(9) BEHAVIOUR + SOURCE (D-07): closeMenuThen(fn) raises select, then runs fn with the click's arguments; the four legacy rows pass their existing handlers through it", () => {
+test("(9) BEHAVIOUR + SOURCE (D-07): closeMenuThen(fn) raises select, then runs fn with the click's arguments; the three legacy rows pass their existing handlers through it", () => {
   const region = sliceBetween(CODE, "function closeMenuThen(fn) {", '\ndocument.getElementById("mw-hud-menu-btn").onclick');
   const order = [];
   const closeMenuThen = new Function("hudMenuEvent", region + "\nreturn closeMenuThen;")((kind) => order.push(kind));
@@ -223,7 +223,6 @@ test("(9) BEHAVIOUR + SOURCE (D-07): closeMenuThen(fn) raises select, then runs 
   assert.deepStrictEqual(order, ["select", "fn"]);
 
   assert.match(CODE, /document\.getElementById\("mw-chip-marks"\)\.addEventListener\("click", closeMenuThen\(openMarksLegend\)\);/);
-  assert.match(CODE, /document\.getElementById\("mw-chip-centre"\)\.addEventListener\("click", closeMenuThen\(glideCenterMap\)\);/);
   assert.match(CODE, /document\.getElementById\("btn-camp"\)\.onclick = closeMenuThen\(openCampSheet\);/);
   assert.match(MODULE, /document\.getElementById\("mw-gear-btn"\)\?\.addEventListener\("click", closeMenuThen\(openSettingsSheet\)\);/);
   // closeMenuThen is a hoisted classic declaration, defined once, directly

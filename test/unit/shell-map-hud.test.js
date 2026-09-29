@@ -454,20 +454,19 @@ test("(g) paint(): writes the WP text/fill with the 25/50/22 thresholds; the ban
 
 // ─── (h) viewport chrome ────────────────────────────────────────────────
 
-test("(h) chrome: menu row ids/order/classes (MARKS, CENTRE MAP, MAKE CAMP, SETTINGS) matching HUD_MENU_ITEMS, sliced from the ☰ menu wrap on band 2 (Phase 57 LAYOUT-04/05, Plan 05), zero retired chip-row/flash literals, the [data-glyph] colour rules, no .mw-map-chip rule survives", () => {
+test("(h) chrome: menu row ids/order/classes (MAKE CAMP, MARKS, SETTINGS) matching HUD_MENU_ITEMS, sliced from the ☰ menu wrap on band 2 (Phase 57 LAYOUT-04/05, Plan 05; Phase 85 85-01 ACCT-03 order), zero retired chip-row/flash literals, the [data-glyph] colour rules, no .mw-map-chip rule survives, no centring glyph rule survives", () => {
   const wrapStart = HTML.indexOf('<div class="mw-hud-menu-wrap">');
   const wrapEnd = HTML.indexOf("</header>");
   assert.ok(wrapStart !== -1 && wrapEnd !== -1 && wrapEnd > wrapStart);
   const region = HTML.slice(wrapStart, wrapEnd);
-  const marksIdx = region.indexOf('id="mw-chip-marks"');
-  const centreIdx = region.indexOf('id="mw-chip-centre"');
   const campIdx = region.indexOf('id="btn-camp"');
+  const marksIdx = region.indexOf('id="mw-chip-marks"');
   const gearIdx = region.indexOf('id="mw-gear-btn"');
-  assert.ok(marksIdx !== -1 && centreIdx !== -1 && campIdx !== -1 && gearIdx !== -1);
-  assert.ok(marksIdx < centreIdx && centreIdx < campIdx && campIdx < gearIdx, "MARKS, CENTRE MAP, MAKE CAMP, then SETTINGS — HUD_MENU_ITEMS' order");
+  assert.ok(campIdx !== -1 && marksIdx !== -1 && gearIdx !== -1);
+  assert.ok(campIdx < marksIdx && marksIdx < gearIdx, "MAKE CAMP, MARKS, then SETTINGS — HUD_MENU_ITEMS' order");
   assert.match(region, /class="mw-hud-menu-item" id="btn-camp"/);
   assert.match(region, /class="mw-hud-menu-item" id="mw-gear-btn"/);
-  assert.match(region, />CENTRE MAP</, "the centre row reads CENTRE MAP (USER RULING 2026-09-22)");
+  assert.doesNotMatch(region, /id="mw-chip-centre"/, "no centring row exists");
   // Phase 57 (LAYOUT-04): the party-pulse ring stayed INSIDE the viewport
   // when the chips left it — it is no longer in this region, but it still
   // exists exactly once in the file (inside .mw-maze-viewport now).
@@ -482,12 +481,13 @@ test("(h) chrome: menu row ids/order/classes (MARKS, CENTRE MAP, MAKE CAMP, SETT
   assert.doesNotMatch(HTML, /\.mw-map-chip/, ".mw-map-chip rules are retired");
   assert.equal((HTML.match(/@keyframes mwglow/g) || []).length, 1);
 
-  // Phase 57 (Plan 05): the four [data-glyph] rules carry HUD_MENU_ITEMS'
-  // own colour/size per row.
+  // Phase 57 (Plan 05): the [data-glyph] rules carry HUD_MENU_ITEMS' own
+  // colour/size per row. Phase 85 (85-01, ACCT-03): the centring glyph rule
+  // is gone.
   assert.equal((HTML.match(/^\.mw-hud-menu-glyph\[data-glyph="marks"\]\{color:#e8c97a;font-size:13px\}$/gm) || []).length, 1);
-  assert.equal((HTML.match(/^\.mw-hud-menu-glyph\[data-glyph="centre"\]\{color:#8fb08a;font-size:14px\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-menu-glyph\[data-glyph="camp"\]\{color:#b9a4ef;font-size:16px\}$/gm) || []).length, 1);
   assert.equal((HTML.match(/^\.mw-hud-menu-glyph\[data-glyph="settings"\]\{color:#9a8f76;font-size:15px\}$/gm) || []).length, 1);
+  assert.equal((HTML.match(/\.mw-hud-menu-glyph\[data-glyph="centre"\]/g) || []).length, 0, "the centre-glyph rule is gone");
 });
 
 // ─── (h) PERF 2026-09-17: composited party pulse ───────────────────────────

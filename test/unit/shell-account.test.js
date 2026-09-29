@@ -377,20 +377,20 @@ test("(F1) every ACCOUNT_CLASSES entry has a rule in mazeworld.html's style bloc
   }
 });
 
-test("(F2) the ☰ menu keeps its four legacy rows (ids and listener lines) in order, with the Phase 70 ACCOUNT host as the dropdown's first child", () => {
-  for (const id of ["mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn"]) {
+test("(F2) the ☰ menu keeps its three legacy rows (ids and listener lines) in order, MAKE CAMP first (Phase 85, 85-01, ACCT-03), with the Phase 70 ACCOUNT host as the dropdown's first child; no centring listener remains", () => {
+  for (const id of ["btn-camp", "mw-chip-marks", "mw-gear-btn"]) {
     assert.equal(occurrences(HTML, `id="${id}"`), 1, `row id ${id}`);
   }
   const menu = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', "</header>");
-  const order = ["mw-hud-menu-acct", "mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn"].map((id) => menu.indexOf(`id="${id}"`));
+  const order = ["mw-hud-menu-acct", "btn-camp", "mw-chip-marks", "mw-gear-btn"].map((id) => menu.indexOf(`id="${id}"`));
   for (let i = 0; i < order.length; i++) assert.ok(order[i] !== -1, `row ${i} present`);
   for (let i = 1; i < order.length; i++) assert.ok(order[i - 1] < order[i], `row ${i} out of order`);
-  assert.equal(menu.indexOf("<button"), menu.indexOf('id="mw-chip-marks"') - '<button type="button" role="menuitem" class="mw-hud-menu-item" '.length, "no row precedes the ACCOUNT host");
+  assert.equal(menu.indexOf("<button"), menu.indexOf('id="btn-camp"') - '<button type="button" role="menuitem" class="mw-hud-menu-item" '.length, "no row precedes the ACCOUNT host");
   // Phase 70 (D-07): every row closes the menu before its action.
   assert.match(CODE, /document\.getElementById\("mw-chip-marks"\)\.addEventListener\("click", closeMenuThen\(openMarksLegend\)\);/);
-  assert.match(CODE, /document\.getElementById\("mw-chip-centre"\)\.addEventListener\("click", closeMenuThen\(glideCenterMap\)\);/);
   assert.match(CODE, /document\.getElementById\("btn-camp"\)\.onclick = closeMenuThen\(openCampSheet\);/);
   assert.match(CODE, /document\.getElementById\("mw-gear-btn"\)\?\.addEventListener\("click", closeMenuThen\(openSettingsSheet\)\);/);
+  assert.doesNotMatch(CODE, /getElementById\("mw-chip-centre"\)/, "no centring listener remains");
 });
 
 test("(F3) no new window.__mz bridge in the account wiring, and the comment-stripped shell has no network-capable call", () => {

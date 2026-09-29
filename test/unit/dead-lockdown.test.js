@@ -357,7 +357,7 @@ test("HUD-02 no trap: while dead the death card offers ORACLE, FINAL SHEET and B
   for (const id of ["btn-death-oracle", "btn-death-sheet", "btn-death-confirm"]) assert.ok(r.doc.elementsById.get(id), `${id} is on the death card`);
   r.el("mw-hud-menu-btn").onclick();
   for (const id of ["mw-gear-btn", "mw-menu-report", "mw-menu-notes", "mw-menu-save-quit", "mw-menu-abandon"]) assert.ok(isLive(r.el(id)), `${id} live while dead`);
-  for (const id of ["mw-chip-marks", "mw-chip-centre", "btn-camp"]) assert.ok(isDisabled(r.el(id)), `${id} inert while dead`);
+  for (const id of ["mw-chip-marks", "btn-camp"]) assert.ok(isDisabled(r.el(id)), `${id} inert while dead`);
   const confirm = sliceBetween(CODE, "function wireDeathConfirm()", "function foeStatusBadges(");
   assert.match(confirm, /guardTap\(btn, \(\) => \{\s*window\.mzReturnToTitle\(\);\s*\}\);/);
 });

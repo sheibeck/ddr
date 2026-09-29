@@ -67,17 +67,16 @@ test("hudMenuNext: totality — every open/kind/ctx combination returns a strict
 
 // ─── HUD_MENU_ITEMS ──────────────────────────────────────────────────────
 
-test("HUD_MENU_ITEMS: six frozen rows in order marks, centre, camp, settings, report, notes, with the four legacy chip ids and the mock's glyph codepoints", () => {
-  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): report and notes are the two new
-  // rows appended after settings; the first four are unchanged, byte for byte.
+test("HUD_MENU_ITEMS: five frozen rows in order camp, marks, settings, report, notes, with the three legacy chip ids and the mock's glyph codepoints", () => {
+  // Phase 85 (85-01, ACCT-03): the user's 2026-09-28 todo dropped the CENTRE
+  // MAP row and put MAKE CAMP first under the account block.
   assert.ok(Object.isFrozen(HUD_MENU_ITEMS));
-  assert.equal(HUD_MENU_ITEMS.length, 6);
+  assert.equal(HUD_MENU_ITEMS.length, 5);
   for (const row of HUD_MENU_ITEMS) assert.ok(Object.isFrozen(row));
 
   const expected = [
-    { key: "marks", id: "mw-chip-marks", glyph: "◈" },
-    { key: "centre", id: "mw-chip-centre", glyph: "⊕" },
     { key: "camp", id: "btn-camp", glyph: "☾" },
+    { key: "marks", id: "mw-chip-marks", glyph: "◈" },
     { key: "settings", id: "mw-gear-btn", glyph: "⚙" },
     { key: "report", id: "mw-menu-report", glyph: "✎" },
     { key: "notes", id: "mw-menu-notes", glyph: "¶" },
@@ -100,10 +99,6 @@ test("HUD_MENU_ITEMS (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES carry their
     { key: notes.key, id: notes.id, label: notes.label, glyph: notes.glyph, color: notes.color, size: notes.size },
     { key: "notes", id: "mw-menu-notes", label: "PATCH NOTES", glyph: "¶", color: "#8fb3c9", size: 15 },
   );
-});
-
-test("HUD_MENU_ITEMS: the centre row reads CENTRE MAP (USER RULING 2026-09-22)", () => {
-  assert.equal(HUD_MENU_ITEMS.find((r) => r.key === "centre").label, "CENTRE MAP");
 });
 
 // ─── HUD_MENU_EVENTS ─────────────────────────────────────────────────────
@@ -279,9 +274,8 @@ test("quit rows (D-06): the five new names are each exported exactly once", () =
 // that cannot act in the current context ─────────────────────────────────
 
 const ROW_ORDER = [
-  { key: "marks", id: "mw-chip-marks" },
-  { key: "centre", id: "mw-chip-centre" },
   { key: "camp", id: "btn-camp" },
+  { key: "marks", id: "mw-chip-marks" },
   { key: "settings", id: "mw-gear-btn" },
   // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two new always-enabled rows.
   { key: "report", id: "mw-menu-report" },
@@ -295,9 +289,8 @@ function enabledMap(rows) {
 }
 
 const ALL_ON = Object.freeze({
-  marks: true,
-  centre: true,
   camp: true,
+  marks: true,
   settings: true,
   report: true,
   notes: true,
@@ -305,11 +298,12 @@ const ALL_ON = Object.freeze({
   abandon: true,
 });
 
-test("row states (D-08): eight frozen { key, id, enabled } entries in dropdown order; the first six ids equal HUD_MENU_ITEMS'", () => {
-  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from six to eight rows.
+test("row states (D-08): seven frozen { key, id, enabled } entries in dropdown order; the first five ids equal HUD_MENU_ITEMS'", () => {
+  // Phase 85 (85-01, ACCT-03): re-pinned from eight to seven rows — the
+  // CENTRE MAP row is gone.
   const rows = hudMenuRowStates({ hero: true });
   assert.ok(Object.isFrozen(rows));
-  assert.equal(rows.length, 8);
+  assert.equal(rows.length, 7);
   for (const r of rows) {
     assert.ok(Object.isFrozen(r));
     assert.deepStrictEqual(Object.keys(r).sort(), ["enabled", "id", "key"]);
@@ -320,31 +314,32 @@ test("row states (D-08): eight frozen { key, id, enabled } entries in dropdown o
     ROW_ORDER,
   );
   assert.deepStrictEqual(
-    rows.slice(0, 6).map((r) => r.id),
+    rows.slice(0, 5).map((r) => r.id),
     HUD_MENU_ITEMS.map((r) => r.id),
   );
 });
 
-test("row states (D-08): a live, idle hero enables all eight rows", () => {
-  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from six to eight rows.
+test("row states (D-08): a live, idle hero enables all seven rows", () => {
+  // Phase 85 (85-01, ACCT-03): re-pinned from eight to seven rows.
   assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: false, encounter: false })), { ...ALL_ON });
 });
 
-test("row states (D-08): an over-map encounter disables MAKE CAMP and CENTRE MAP only", () => {
+test("row states (D-08): an over-map encounter disables MAKE CAMP only", () => {
+  // Phase 85 (85-01, ACCT-03): CENTRE MAP is gone, so an encounter no longer
+  // disables a second row.
   assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: false, encounter: true })), {
     ...ALL_ON,
-    centre: false,
     camp: false,
   });
 });
 
 // Phase 78 (HUD-02): "once the hero is dead, only the Oracle, the DEAD/
 // Leaderboards screen and the ☰ menu (Settings, the way back to the title)
-// accept input ... camp, marks and centre-map are inert". Before 78-06 a dead
-// hero disabled MAKE CAMP only (MARKS stayed live and CENTRE MAP followed the
-// encounter flag alone); now MARKS, CENTRE MAP and MAKE CAMP are all off.
-test("row states (HUD-02): a dead hero disables MARKS, CENTRE MAP and MAKE CAMP; SETTINGS and both quit rows stay live", () => {
-  const DEAD = { ...ALL_ON, marks: false, centre: false, camp: false };
+// accept input ... camp, marks and centre-map are inert". Phase 85 (85-01)
+// removed the centre-map row entirely; a dead hero now disables MARKS and
+// MAKE CAMP.
+test("row states (HUD-02): a dead hero disables MARKS and MAKE CAMP; SETTINGS and both quit rows stay live", () => {
+  const DEAD = { ...ALL_ON, marks: false, camp: false };
   assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: true, encounter: true })), DEAD);
   assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: true, encounter: false })), DEAD);
   assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: false, dead: true, encounter: true })), DEAD);
