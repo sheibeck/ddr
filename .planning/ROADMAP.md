@@ -151,7 +151,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
   1. The DEAD tab and the title's VIEW THE DEAD open one Leaderboards panel built to the v3 mock, opening on LEADERBOARD when Compete is ON and on YOUR DEAD when Compete is OFF, with back and footer routing matching the mock.
-  2. The header box switches views (YOURS› with your run count, EVERYONE› with the board's total; a static INTERRED count with Compete OFF), and the RANK BY / RACE / SUB-CLASS bottom sheets show per-option counts and re-rank the list, replacing the old board rail entirely.
+  2. The header box switches views (YOURS› with your run count, EVERYONE› with the board's total; a static INTERRED count with Compete OFF), and the RANK BY / RACE / SUB-CLASS bottom sheets re-rank the list (per-option counts on YOUR DEAD only), replacing the old board rail entirely.
   3. Each row shows rank, an initials avatar, the handle (or hero name on YOUR DEAD), a YOU tag on your own runs, and the name/race/sub-class/level/value line; tapping a row expands its cause of death, epitaph and six stat chips, tapping again closes it.
   4. A best run outside the top ten is pinned under a "NOT IN THE TOP TEN" divider with its real rank and standing line, and a filter with no runs shows NOBODY YET with a CLEAR FILTERS button.
   5. LEADERBOARD shows deliberate in-voice states for loading, offline/unreachable and a stale cached result, while YOUR DEAD never waits on the network and ranks a generous local per-run history that starts with runs from the 2.1.0 release on (versionCode 11, `when` ≥ 2026-09-28T19:41:01Z, `BACKFILL_SINCE_MS` in `src/browser/runBackfill.js`); older runs are not imported or shown.
