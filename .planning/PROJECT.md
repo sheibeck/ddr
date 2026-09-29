@@ -21,6 +21,7 @@
 
 ### Validated
 
+- ✓ **Our own leaderboards** — v2.2 Phases 82–86 (Firestore run table + rules + 19 indexes over plain REST, anonymous identity with a rolled @handle, offline queue, admin tooling; the v3 panel — LEADERBOARD / YOUR DEAD with RANK BY, RACE and SUB-CLASS; Play Games removed entirely; DAYS capped at 10 per floor; compliance texts; release pending)
 - ✓ Native, store-installable **Android app** (Capacitor 8) — v1.0, on the Play internal-testing track with real testers
 - ✓ Prototype's **full ruleset** preserved as canon — v1.0 (frozen golden-master parity suite, byte-identical every commit; deliberate deviations logged per phase)
 - ✓ **100%-dice-rolled character creation** — v1.0 ("THE TABLES DECIDE" roller)
@@ -85,7 +86,6 @@
 - ✓ **Gear screen UX redo** — v1.9 (Phases 62–63): slim AR/WILMST header, five fixed WORN rows, bag meter + tagged cards, per-type consumables, ALSO ON YOU, and one bottom action sheet for every equip/swap/unequip/use/drop (engine-true reasons, combat greying, back/TalkBack/reduced motion). Device batch `docs/UAT-v1.9.md`: 3/24 walked
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
-- [ ] **Our own leaderboards** — v2.2 (Phases 82–86): the DAYS farming check, a Firebase run table with a rolled @handle, the v3 Leaderboards panel (everyone or just yours), Play Games removed entirely, and the compliance close
 
 ### Out of Scope
 
@@ -96,39 +96,13 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v2.2 Our Own Leaderboards (started 2026-09-28)
+## Last Milestone: v2.2 Our Own Leaderboards (code-complete 2026-09-29; release to closed testing pending)
 
-Promoted from backlog 999.13 by the user on 2026-09-28 and run by `/gsd-autonomous`.
+Promoted from backlog 999.13 by the user on 2026-09-28 and run by `/gsd-autonomous` across Phases 82–86. 34/35 requirements (SRV-09's live proof is a release step), 5/5 phases passed; the audit is `tech_debt` with zero blockers. Full record: `.planning/milestones/v2.2-ROADMAP.md`, `v2.2-REQUIREMENTS.md`, `v2.2-MILESTONE-AUDIT.md`.
 
-**Goal:** Replace Google Play Games with our own Firebase-hosted leaderboard and the v3 Leaderboards design: one board of everyone's dead, or just yours, so the global board stops being a ghost town.
+**Goal (met in code):** replace Google Play Games with our own Firebase-hosted leaderboard and the v3 Leaderboards design — everyone's dead or just yours — so the global board stops being a ghost town. Season 1 is "Season of the Alpha"; the board starts from the 2.1.0 release (runs since 2026-09-28T19:41:01Z upload once, only if Compete is on at the first 2.2 launch); runs played with Compete off are never uploaded.
 
-**Target features:**
-- **DAYS farming check** (user note, 2026-09-28): measure how many DAYS a hero can bank by never leaving floor 1. If starvation doesn't end it below an honest deep run, the DAYS board gets a rule that stops it.
-- **Our board server on Firebase**, in the same Spark project as bug reports (`delve-die-repeat-6ba5f`):
-  - one Firestore run table, created only by the run's owner and publicly readable in bounded pages;
-  - composite indexes for the four stats, filtered by race and sub-class;
-  - an anonymous Firebase identity over REST (no SDK) with a rolled, family-friendly @handle;
-  - a durable offline submission queue, an admin/moderation script and an ops runbook.
-- **Leaderboards panel v3, built to the mock** (`design/Mazeworld Leaderboards v3.dc.html` and `design/Mazeworld Boards Panel v3.dc.html`):
-  - LEADERBOARD (everyone's dead, top ten) or YOUR DEAD (just yours), switched by the YOURS › / EVERYONE › box;
-  - RANK BY (DEPTH, DAYS, KILLS, WILMST), RACE and SUB-CLASS pickers with bottom sheets and counts;
-  - rows with rank, avatar, handle, YOU tag, run line and value, which tap open to the cause, the epitaph and six stat chips;
-  - your best pinned under NOT IN THE TOP TEN, a standing card, and NOBODY YET with CLEAR FILTERS;
-  - it opens from the DEAD tab and from the title's VIEW THE DEAD.
-- **Play Games removed entirely**: the plugin, sign-in, APP_ID, provider, PGS queue, score tags and board IDs go. The ☰ account rows and the title chip become Compete plus your handle. Every Compete-ON death is submitted to our server, and "you placed X" reads from it.
-- **Compliance close**: Data safety and privacy text for our server's data, the Play Console Play Games cleanup, the runbook and the batched Pixel 7 checklist.
-
-**Key context:**
-- **Decided (user, 2026-09-28):**
-  - There is no FRIENDS scope. It is everyone or just yours, as the mock shows.
-  - Play Games is removed entirely.
-  - Identity is a rolled @handle over an anonymous Firebase id.
-  - Research runs only for the server phase.
-- **The mock is the UX and visual spec only**, the same stance as every earlier import. Its iOS frame is preview chrome, and its toy data maps to shipped canon: squares → `steps`, WILMST → `gold`, EXP → `sp`, Roman level. The house rules win: PNG icons, the rail as the one feedback surface, tap-to-move, HP never WP.
-- **Offline:** Compete OFF means zero network calls, and the panel shows YOUR DEAD only; the whole YOUR DEAD view works in airplane mode. Compete stays ON by default (the v2.0 ruling).
-- **No new client SDK.** Firestore and Firebase Auth are reached with plain `fetch` against their REST APIs, as bug reports are (Phase 79.3). The API key is a public identifier.
-- **Engine untouched:** this is shell, server and tooling work, with zero parity fixtures. The DAYS check is a one-off measurement, not a balance run; the engine doesn't change this milestone, so it measures the final rules.
-- **Backlog:** this supersedes 999.11 (per-sub-class boards and a global LINEAGE become RACE and SUB-CLASS filters over one run table). 999.14 (our own friends list) is not planned.
+**Pending (release):** agree the DRAFT 2.2.0 patch notes, `npm run android:release`, the Play upload, then the final Firebase rules + ten-probe SRV-09 proof, the website deploy, the Data safety form and the Play Console Play Games cleanup (`docs/RELEASING.md`); the 42-row Pixel 7 batch `docs/UAT-v2.2.md`.
 
 ## Last Milestone: v2.1 Bug Fixes (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; device UAT spread over the user's play sessions)
 
@@ -354,6 +328,10 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
+## Current State (2026-09-29, v2.2 Our Own Leaderboards code-complete; release pending; next milestone not yet chosen)
+
+**Built and archived, not yet released:** v2.2 is on master at 2.2.0 / versionCode 12 with a debug APK (sha256 6d869088…5e60) for the Pixel 7 batch `docs/UAT-v2.2.md`. The live Firebase project carries the board (transition rules, indexes, anonymous sign-in, per-IP cap) with 2.1.0's bug reports still accepted until the release-day rules swap. Players on Play still run 2.1.0 / vc11 with Play Games until 2.2 ships. Pending todos for a balance milestone: stores stock up to d10 rations; stores can still be bought out at depth 7 (with backlog 999.15/999.16).
+
 ## Current State (2026-09-28, v2.1 Bug Fixes shipped; next milestone not yet chosen)
 
 **On Play's closed test, device UAT spread over play sessions:** v2.1 "Bug Fixes" (Phases 72–81, incl. 75.1–75.3 and 79.1–79.3) is uploaded as 2.1.0 / versionCode 11 (tags `v2.1.0`, `v2.1.0-play11`; GitHub Release v2.1.0 carries the patch notes, mirrored at darktierstudios.com/delve-die-repeat/patch-notes). Bug reports are live (Firestore → the "Player bug reports" Action on sheibeck/ddr). Tests 7,902, parity 66/66. Open device batches: UAT-v2.1 (108 + 12), v2.0 (142), v1.9 (21), v1.8 (30), v1.7 (25 + DR bar), v1.6 (26), v1.5 (140). Open design questions: `.planning/MILESTONE-CLOSE-QUESTIONS.md`. The next Play build needs versionCode 12+ and agreed patch notes first. Next: `/gsd-new-milestone` (candidates: 999.13 own leaderboards with the new UX design, 999.15 skill/spell review, 999.16 itemization pass, the UX-06 tutorial and production launch).
@@ -390,6 +368,15 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Our own leaderboard on Firebase (Firestore + anonymous auth over plain REST, no SDK) replaces Google Play Games — v2.2, 2026-09-28 (user) | Play Games' private-by-default profiles made the global board a ghost town; REST keeps the no-SDK rule | ✓ Live board proven (smoke 17/17); release pending |
+| Rolled family-friendly @handle over an anonymous uid; unlimited re-roll rewrites every run; erase keeps the same handle on a new account — v2.2 (user) | Public but safe names, no login form | — Pending device UAT |
+| No friends scope: everyone or just yours — v2.2, 2026-09-28 (user) | Matches the mock; friends lists are out of scope | ✓ Good |
+| DAYS ranks by min(day, 10 × floor) — v2.2 Phase 82 (mechanical verdict) | Floor-1 hoarding out-DAYS'd honest runs (p90 73 vs honest p99 17) | ✓ Good |
+| Season 1 = "Season of the Alpha" for closed testing; reset to "Season 1" (SEASON 2) at go-live — v2.2, 2026-09-28 (user) | Alpha runs stay for balance export | — Pending go-live |
+| The board starts from the 2.1.0 release (cutoff 2026-09-28T19:41:01Z, approved); runs played with Compete off are never uploaded; the backfill is decided at the first 2.2 launch — v2.2 (user) | A fresh start without losing the current release's runs | ✓ Good |
+| Transition Firebase rules keep 2.1.0's REPORT A BUG working until 2.2 ships; the final rules + probes are a release step — v2.2, 2026-09-29 (user) | Testers on 2.1.0 must still be able to report bugs | — Pending release |
+| Play Console Play Games boards/config stay up until 2.2 reaches testers; all Play Games code removed from the app now — v2.2, 2026-09-29 (user) | 2.1.0 players still use them | — Pending release |
+| Parallel git worktrees for independent plans (85 wave 1, 86-02/03) — v2.2, 2026-09-29 (user) | Saved ~1.5 h; merges clean with full tests after | ✓ Good |
 | Android / Google Play only; no iOS | Avoid Apple's account/Mac/Xcode/review overhead; author's explicit choice | ✓ Good — shipped to internal testing in 7 days on Windows only |
 | Solo-only MVP; multiplayer post-MVP add-on | Ship value fast; multiplayer is a large, separable layer | ⚠️ Revisit — the *party* half was pulled into v1.0 (Joiners) because the engine seam made it cheap; only networking remains deferred |
 | Endless descent replaces fixed 5-floor Gate | "Descend forever + chase depth" fits roguelike + quick sessions | ✓ Good — curve is bounded/tested; feel-tuning owed to the consolidated retune |
@@ -454,7 +441,7 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 | The HUD chip strip was retired for a ☰ menu on the counters band, per the user's mock; the shipped PNG icons stay, and the mock's icons are used only inside the ☰ menu — Phase 57, 2026-09-22 (user) | Too many buttons and too many top rails; the mock folds them into one control and saves a band | ✓ Landed in 57-05; LAYOUT-04/05 amended; a ~34 px Rations clip at text size L was accepted |
 | Combat HUD `paint()` deferred until the beat settles, so the top HP bar doesn't give the outcome away; the beat's final hero-HP frame is pinned to the true after-state — Phase 58 + post-close fix, 2026-09-22 | A readable exchange-by-exchange round should not be spoiled by the HUD, and must never overstate survival | ✓ `42f0f8d`, with a regression test that failed before the fix; mid-round frames on folded multi-hit lines can still briefly under-count (tracked) |
 | Device UAT for v1.8 spread over the user's own play sessions instead of one sitting — 2026-09-22 (user) | "Generally everything looks good… I'll uat over playing several sessions and report back" | — Pending: 30 of 31 checks open in `docs/UAT-v1.8.md` |
-| Opt-in PGS v2 via the vendored `@modbender/capacitor-play-games`; Compete ON by default on a fresh install, OFF = SDK never initialized, zero network calls — v2.0 Phase 67, 2026-09-23 (user + research) | The user's 2026-09-17 ruling (auto sign-in, opt-out-able, non-blocking); PGS v2 has no programmatic sign-out, so "Stop competing" replaces it | ✓ Good — shipped in 2.0.0 (10); on-device sign-in checks in UAT-v2.0 |
+| [Superseded by v2.2: Play Games removed] Opt-in PGS v2 via the vendored `@modbender/capacitor-play-games`; Compete ON by default on a fresh install, OFF = SDK never initialized, zero network calls — v2.0 Phase 67, 2026-09-23 (user + research) | The user's 2026-09-17 ruling (auto sign-in, opt-out-able, non-blocking); PGS v2 has no programmatic sign-out, so "Stop competing" replaces it | ✓ Good — shipped in 2.0.0 (10); on-device sign-in checks in UAT-v2.0 |
 | Seasons from day one: every run summary and board carries the rules/season version; personal bests stay all-time locally, tagged by season — v2.0, 2026-09-17 (user) | A balance change must never poison the all-time boards | ✓ Good — Season-1 board IDs live |
 | Global display name = the Play Games profile name; adventurer name + epitaph ride in the 64-char score tag and the local graveyard — v2.0, 2026-09-17 (user) | No adventurer-name composite on public boards | ✓ Good |
 | LINEAGE's global form = client-side grouping of a top-25 DEEPEST sample (the plugin binds no paging) — v2.0 Phase 68; the board ranks race + sub-class since Phase 70 | No per-combo board explosion in Play Console | — Revisit if the sample proves too thin |
@@ -484,4 +471,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-28 at the start of the v2.2 Our Own Leaderboards milestone*
+*Last updated: 2026-09-29 after the v2.2 Our Own Leaderboards milestone (code-complete; release pending)*

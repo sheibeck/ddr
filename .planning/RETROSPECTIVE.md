@@ -291,6 +291,44 @@
 - Model mix: Opus planners and orchestrator, Sonnet executors. No verification agents.
 - Sessions: one long autonomous run with several compactions, plus device rounds.
 
+## v2.2 Our Own Leaderboards (2026-09-28 → 2026-09-29)
+
+**Phases:** 5 (82–86) · **Plans:** 34 · **Tasks:** 76 · code-complete, release pending
+
+### What Was Built
+- A DAYS-farming measurement tool and the mechanical DAYS rule (min(day, 10 × floor)).
+- Our own leaderboard server on the existing Spark Firebase project: Firestore run table, rules with a JS mirror, 19 indexes, anonymous identity over plain REST with a rolled @handle, an offline queue, admin tooling, a runbook and a live smoke; bug-report quota protection (per-player limit, Action retention cleanup).
+- The v3 Leaderboards panel (LEADERBOARD / YOUR DEAD, RANK BY + RACE/SUB-CLASS) with a 500-run local history.
+- Play Games removed entirely (plugin, six modules, Android pieces) behind a standing sweep test; the ☰ account block with handle, Compete, re-roll and two-tap erase; "You placed Nth of M".
+- Compliance texts (Data safety, three website pages), the ordered release checklist, a 2.2.0 (12) debug APK and a 42-row Pixel 7 batch.
+
+### What Worked
+- Smart discuss for Phases 84–86 run in parallel with Phase 83's execution, then planners running while earlier phases built — nearly no idle orchestrator time.
+- Parallel git worktrees for independent plans (85 wave 1, 86-02/03), merged by the orchestrator with a full test run after; saved about 1.5 hours with zero merge conflicts.
+- The fake board server built early (83-04) let every later plan test against the exact REST and rules contract; the live smoke then caught the one live-only rules difference (limit-less count queries).
+- Recording each user ruling immediately in CONTEXT/STATE/runbook kept eight mid-run reversals (backfill, fresh start, cutoff, Compete-off uploads, transition rules) from leaking into built code.
+
+### What Was Inefficient
+- The backfill ruling changed three times in an hour (none → none-at-all → from 2.1.0); plans were rewritten each time. Asking one precise question up front ("which runs should the new board show?") would have saved a round.
+- Executors rewrote their own final commits (amend / soft reset) to add attribution trailers because the gsd commit helper omits them; harmless only because the orchestrator waited for hand-backs. Telling executors to use plain `git commit` fixed it.
+- gcloud on this Windows machine is the bash-archive install (no gcloud.cmd); Node tools had to retry through Git Bash — found only when a user asked to sample the board.
+- Deploying final rules would have broken the shipped build's bug reports; caught only at dispatch time of the live plan. Live-deploy plans should check what the currently shipped client sends.
+
+### Patterns Established
+- Transition rules: a byte-identical-but-one-clause rules file deployed via a second firebase config, pinned by a test, with the final rules as a release step.
+- Wait for each executor's hand-back before dispatching the next sequential plan.
+- Worktree executors never touch STATE/ROADMAP/REQUIREMENTS; the orchestrator updates them after merging.
+
+### Key Lessons
+1. Before any live backend change, check what the currently shipped client sends and keep it working until the next build reaches players.
+2. When a data-visibility rule is being decided, ask for the exact cutoff and scope in one question with concrete examples.
+3. Pin the attribution/commit mechanism in executor prompts rather than relying on the workflow's commit helper.
+
+### Cost Observations
+- Model mix: Opus orchestrator + Opus planners; Sonnet executors and scouts.
+- Sessions: 1 long autonomous run (compacted once).
+- Notable: parallel discuss/plan/execute overlap plus worktrees kept a 34-plan milestone to about two days.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -309,6 +347,7 @@
 | v1.9 | 1 (autonomous, no compaction) | 4 | Engine rule fixes first so the UI reads real refusal reasons; cross-screen agreement sweeps; in-session wireless-adb device walk (partial) and a Play closed-test build |
 | v2.0 | several | 7 (two device-round phases added) | First network feature behind an opt-in provider seam with a fake; seasons from day one; publish-then-close with UAT over play sessions |
 | v2.1 | 1 long run (several compactions) | 16 (six inserted) | Bots only at the milestone end; build part last; live cloud E2E from the orchestrator; patch notes agreed before every release build |
+| v2.2 | 1 long run (1 compaction) | 5 | Discuss/plan of later phases overlapped with execution; parallel worktree waves merged by the orchestrator; transition rules for a live backend swap; live setup by Claude with one console checkpoint |
 
 ### Cumulative Quality
 
@@ -326,6 +365,7 @@
 | v1.9 | 4197 | one declared fixture (economy); cross-screen agreement sweeps (432 / 117 / 17 pairs) | 0 |
 | v2.0 | 5483 | parity master untouched; `acts` carved out (measured-zero); fake PGS provider + recording Proxy (zero calls Compete OFF); boardsView 43 tests | 1 vendored Capacitor plugin (`@modbender/capacitor-play-games`, pinned) |
 | v2.1 | 7902 | parity 66/66 re-baselined for roll-high with declared moves; roll-ledger sync guard; mirror-theorem property test; no-committed-secrets scan | 0 (Firestore via plain fetch, no SDK) |
+| v2.2 | 8068 | engine/parity untouched; rules contract + transition-rules equality tests; fake board server; live smoke 17/17; RETIRE-02 sweep | −1 (the Play Games plugin removed; Firebase via plain fetch) |
 
 ### Top Lessons (Verified Across Milestones)
 

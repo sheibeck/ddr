@@ -1,5 +1,32 @@
 # Milestones
 
+## v2.2 Our Own Leaderboards (Shipped: 2026-09-29)
+
+**Closeout type:** override_closeout (known verification overrides: SRV-09 live proof deferred to the release by user ruling; UAT-v2.2 not yet walked — see STATE.md Deferred Items)
+**Phases:** 5 (82–86) · **Plans:** 34 · **Tasks:** 76
+**Timeline:** 2026-09-28 → 2026-09-29 (2 days, ~165 commits); Phase 85 wave 1 and 86-02/86-03 ran in parallel git worktrees
+**Tests:** 8068 pass / 0 fail at close (≈440 old-panel and Play Games tests deleted with their code); engine and parity untouched (`git diff v2.1..HEAD -- engine test/parity` empty)
+**Delivered:** Google Play Games is gone; every Compete-ON death now reaches our own Firebase leaderboard (Firestore over plain REST, anonymous identity, rolled @handle), shown in the v3 Leaderboards panel — everyone's dead or just yours — ranked by DEPTH/DAYS/KILLS/WILMST with RACE and SUB-CLASS filters. Season 1 is "Season of the Alpha"; the board starts from the 2.1.0 release.
+
+**Key accomplishments:**
+
+1. **DAYS farming settled** — a measurement tool proved floor-1 hoarding beats honest runs, so DAYS ranks by `min(day, 10 × floor)` (Phase 82).
+2. **Our own leaderboard server, live** — Firestore run table + rules (with a JS mirror), 19 composite indexes, anonymous REST identity with a rolled @handle, an offline submission queue, admin/moderation tooling, a runbook, and a live smoke (17/17); the key restricted, anonymous sign-in on, per-IP sign-ups capped (Phase 83).
+3. **Bug reports share the quota safely** — per-player cooldown and daily cap, Action retention cleanup, schedule proven; transition rules keep 2.1.0's REPORT A BUG working until 2.2 ships (Phase 83).
+4. **Leaderboards panel v3** — LEADERBOARD / YOUR DEAD from the mock, a 500-run local history seeded from the 2.1.0 release, the killer's name and death time on board runs, in-voice loading/stale/offline states (Phase 84).
+5. **Play Games out, our board in** — plugin and six modules deleted with a standing sweep test; the ☰ account block and title chip carry the handle, Compete, re-roll and two-tap erase; "You placed Nth of M"; runs played with Compete off are never uploaded; CENTRE MAP dropped, MAKE CAMP first (Phase 85).
+6. **Compliance** — Data safety, the darktierstudios.com privacy/delete-data/terms pages (pushed, deploy at release), the ordered 2.2.0 release checklist, a 2.2.0 (12) debug APK and the batched Pixel 7 checklist docs/UAT-v2.2.md (Phase 86).
+
+### Known Gaps (carried forward)
+
+| Req / item | Gap | Where it lands |
+|-----|-----|----------------|
+| SRV-09 | Live ten-probe proof of the final bug-report rules | Release day: deploy firebase.json, --probe-rules, delete the transition files (docs/RELEASING.md) |
+| UAT | docs/UAT-v2.2.md (42 device checks + 8 user tasks) not yet walked | The user's Pixel 7 sessions on the 2.2.0 debug APK |
+| Release | DRAFT 2.2.0 patch notes, release build, Play upload, website deploy, Data safety form, Play Console Play Games cleanup | docs/RELEASING.md 2.2.0 checklist |
+
+**Archived:** `milestones/v2.2-ROADMAP.md`, `milestones/v2.2-REQUIREMENTS.md`, `milestones/v2.2-MILESTONE-AUDIT.md`, `milestones/v2.2-phases/`
+
 ## v2.1 Bug Fixes (Shipped: 2026-09-28; Play 2.1.0 / vc11 uploaded to closed testing; device UAT spread over the user's play sessions)
 
 **Closeout type:** override closeout. 68/68 requirements are complete and 16/16 phases `passed`. The audit is `tech_debt` with zero blockers (`.planning/milestones/v2.1-MILESTONE-AUDIT.md`). The user uploaded 2.1.0 (versionCode 11, tags `v2.1.0` and `v2.1.0-play11`) and said: *"I'm all done. Build uploaded. Cleanup the milestone."* They cancelled the 80-05 emulator pass "for now ... once we have all our features in". Known verification overrides: the deferred UAT batch `docs/UAT-v2.1.md`, 80-05, and 4 old quick-task stubs (see STATE.md Deferred Items).

@@ -2,37 +2,36 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
-status: planning
+status: Awaiting next milestone
 stopped_at: Completed 86-05-PLAN.md
-last_updated: "2026-09-29T19:27:29.863Z"
+last_updated: "2026-09-29T20:05:52.713Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase 86 complete, transitioned to Phase 999.1
+last_activity_desc: Milestone v2.2 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
   total_plans: 34
   completed_plans: 34
   percent: 100
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards started, promoted from backlog 999.13; v2.1 shipped as Play 2.1.0 / vc11; open Pixel 7 UAT batches: v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards code-complete and archived; release to closed testing pending (docs/RELEASING.md); open Pixel 7 UAT batches: v2.2 42 + 8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase null
+**Current focus:** Planning the next milestone (`/gsd-new-milestone`); v2.2 release steps and the Pixel 7 batch are the user's
 
 ## Current Position
 
-Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
-Plan: Not started
-Progress: [██████████] 100%
-Status: Ready to plan
-Last activity: 2026-09-29 — Phase 86 complete, transitioned to Phase 999.1
+Phase: Milestone v2.2 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-29 — Milestone v2.2 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -157,6 +156,15 @@ detail; the backlog phases are the index.
 - v2.2 roadmap created 2026-09-28: Phases 82–86 (30 requirements), promoted from backlog 999.13 by the user; order 82 DAYS farming check → 83 server (research flagged) → 84 panel v3 → 85 Play Games out → 86 compliance close.
 
 ## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-09-29 (v2.2 Our Own Leaderboards; 5/5 phases `passed`, 34/35 requirements — SRV-09's live proof is a release step by user ruling; audit `tech_debt` with zero blockers; the user chose "Continue with tech debt" and "Acknowledge all"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | docs/UAT-v2.2.md: 42 device checks + 8 user tasks, debug APK 2.2.0 (12) sha256 6d869088…5e60 | install on the Pixel 7 pending (user asked for it after Phase 85; needs the Wireless-debugging IP:port) |
+| release | DRAFT docs/patch-notes/2.2.0.md; npm run android:release; Play upload (ask first); final rules + --probe-rules (SRV-09); delete transition files; darktier-studio npm run deploy; Data safety form; Play Console Play Games cleanup after 2.2 reaches testers | docs/RELEASING.md 2.2.0 checklist |
+| todo | 2026-09-28-stores-stock-up-to-d10-rations, 2026-09-28-store-still-bought-out-at-depth-7 | pending — engine work for a balance milestone (with 999.15/999.16) |
+| quick_task | 260924-56z, 260924-5b8 (superseded by Phase 70); rules-text-audit-pass (20260909), 260908-kkq (v1.0-era stubs) | re-acknowledged |
 
 Items acknowledged and deferred at milestone close on 2026-09-28 (v2.1 override closeout: 16/16 phases `passed`, 68/68 requirements; audit `tech_debt` with zero blockers; the user uploaded Play 2.1.0 / vc11 and said "I'm all done. Build uploaded. Cleanup the milestone", then cancelled the 80-05 emulator pass "for now ... once we have all our features in"):
 
