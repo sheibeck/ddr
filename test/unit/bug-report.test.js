@@ -39,6 +39,16 @@ import {
   sendBugReport,
 } from "../../src/browser/bugReport.js";
 import { BUG_REPORT_CONFIG } from "../../src/browser/bugReportConfig.js";
+import { firestoreUrl } from "../../src/browser/firestoreRest.js";
+import {
+  REPORT_COOLDOWN_MS,
+  REPORT_DAILY_CAP,
+  REPORT_LIMITS_COLLECTION,
+  nextLimitState,
+  utcDayMs,
+} from "../../src/browser/reportLimits.js";
+import { createFakeBoardFetch, FAKE_ADMIN_TOKEN } from "../../src/browser/fakeBoardServer.js";
+import { createIdentity } from "../../src/browser/firebaseAuth.js";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -324,6 +334,13 @@ test("reportIdFromName: the last slash segment, else null", () => {
 });
 
 /* ---------------- sendBugReport ---------------- */
+//
+// Phase 83 (SRV-09): sendBugReport now signs the report through the shared
+// anonymous identity, reads the player's own reportLimits/{uid} via a GET,
+// and writes the report + limit step in one documents:commit
+// (reportLimits.js#buildReportCommit). The plain unauthenticated create
+// tested above (79.3) no longer exists — old builds up to 2.1.0/vc11 that
+// still post it are refused by the live rules by design (no legacy path).
 
 function validReport() {
   return buildReportPayload({ text: "bug report body" }).report;
@@ -341,88 +358,216 @@ function makeRecordingFetch(sequence) {
   return { fetchFn, calls };
 }
 
-test("sendBugReport: unavailable config, missing fetchFn, offline and an invalid report never call fetch", async () => {
-  const report = validReport();
+/** stubIdentity — a hand-rolled identity object (not the real createIdentity) for status-code-mapping tests that don't need the fake board server. */
+function stubIdentity({ uid = "u1", idToken = "tok1", handle = "@handle", getToken, forceRefresh } = {}) {
+  const calls = { getToken: [], forceRefresh: [] };
+  return {
+    calls,
+    getToken:
+      getToken ??
+      (async (opts) => {
+        calls.getToken.push(opts);
+        return { ok: true, uid, idToken, handle };
+      }),
+    forceRefresh:
+      forceRefresh ??
+      (async (opts) => {
+        calls.forceRefresh.push(opts);
+        return { ok: true, uid, idToken: `${idToken}-refreshed`, handle };
+      }),
+  };
+}
 
-  const r1 = await sendBugReport(report, { fetchFn: async () => ({ ok: true, status: 200, json: async () => ({}) }), config: { apiKey: "", projectId: "delve-die-repeat-6ba5f", collection: "bugReports" } });
+function clockBox(start = 0) {
+  let t = start;
+  const now = () => t;
+  now.advance = (d) => {
+    t += d;
+  };
+  return now;
+}
+
+/** lcgRandom(seed) — a tiny deterministic PRNG so repeated calls (randomDocId draws 20 per report) don't collide the way a constant-returning stub does. */
+function lcgRandom(seed = 1) {
+  let s = seed;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+function makeFakeSetup(fakeOpts = {}) {
+  const clock = clockBox(0);
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, ...fakeOpts });
+  const storageMap = new Map();
+  const storage = {
+    async getItem(key) {
+      return storageMap.has(key) ? storageMap.get(key) : null;
+    },
+    async setItem(key, value) {
+      storageMap.set(key, String(value));
+    },
+    async removeItem(key) {
+      storageMap.delete(key);
+    },
+  };
+  const identity = createIdentity({ storage, fetchFn: fake.fetchFn, config: VALID_CONFIG, competeOn: () => false, now: clock, random: () => 0.42 });
+  return { fake, storage, clock, identity };
+}
+
+test("sendBugReport: unavailable config, missing fetchFn, missing identity, offline and an invalid report never call fetch or identity.getToken", async () => {
+  const report = validReport();
+  const identity = stubIdentity();
+
+  const r1 = await sendBugReport(report, {
+    fetchFn: async () => ({ ok: true, status: 200, json: async () => ({}) }),
+    identity,
+    config: { apiKey: "", projectId: "delve-die-repeat-6ba5f", collection: "bugReports" },
+  });
   assert.deepEqual(r1, { ok: false, reason: "unavailable" });
 
-  const r2 = await sendBugReport(report, { config: VALID_CONFIG });
+  const r2 = await sendBugReport(report, { identity, config: VALID_CONFIG });
   assert.deepEqual(r2, { ok: false, reason: "unavailable" });
 
   const { fetchFn: neverCalled, calls } = makeRecordingFetch([]);
-  const r3 = await sendBugReport(report, { fetchFn: neverCalled, config: VALID_CONFIG, online: false });
-  assert.deepEqual(r3, { ok: false, reason: "offline" });
+  const r3 = await sendBugReport(report, { fetchFn: neverCalled, config: VALID_CONFIG });
+  assert.deepEqual(r3, { ok: false, reason: "unavailable" });
   assert.equal(calls.length, 0);
 
-  const r4 = await sendBugReport({ ...report, status: "filed" }, { fetchFn: neverCalled, config: VALID_CONFIG });
-  assert.deepEqual(r4, { ok: false, reason: "refused" });
+  const r4 = await sendBugReport(report, { fetchFn: neverCalled, config: VALID_CONFIG, identity, online: false });
+  assert.deepEqual(r4, { ok: false, reason: "offline" });
   assert.equal(calls.length, 0);
+  assert.equal(identity.calls.getToken.length, 0);
+
+  const r5 = await sendBugReport({ ...report, status: "filed" }, { fetchFn: neverCalled, config: VALID_CONFIG, identity });
+  assert.deepEqual(r5, { ok: false, reason: "refused" });
+  assert.equal(calls.length, 0);
+  assert.equal(identity.calls.getToken.length, 0);
 });
 
-test("sendBugReport: a 200 resolves ok with the id from the document name, one POST with the right header and body", async () => {
-  const report = validReport();
+test("sendBugReport: identity.getToken's own offline/server/refused pass through unchanged; anything else (including 'off') reads unavailable", async () => {
+  for (const reason of ["offline", "server", "refused"]) {
+    const identity = stubIdentity({
+      getToken: async () => ({ ok: false, reason }),
+    });
+    const neverCalled = async () => {
+      throw new Error("must not be called");
+    };
+    const result = await sendBugReport(validReport(), { fetchFn: neverCalled, config: VALID_CONFIG, identity });
+    assert.deepEqual(result, { ok: false, reason }, `getToken reason ${reason}`);
+  }
+  for (const reason of ["off", "unavailable", undefined]) {
+    const identity = stubIdentity({ getToken: async () => ({ ok: false, reason }) });
+    const neverCalled = async () => {
+      throw new Error("must not be called");
+    };
+    const result = await sendBugReport(validReport(), { fetchFn: neverCalled, config: VALID_CONFIG, identity });
+    assert.deepEqual(result, { ok: false, reason: "unavailable" }, `getToken reason ${reason}`);
+  }
+});
+
+test("sendBugReport: getToken is always called with { explicit: true }", async () => {
+  const identity = stubIdentity();
+  const { fetchFn } = makeRecordingFetch([{ ok: false, status: 404 }, { ok: true, status: 200, json: async () => ({}) }]);
+  await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG, identity, now: () => 1000, random: () => 0.1 });
+  assert.deepEqual(identity.calls.getToken, [{ explicit: true }]);
+});
+
+test("sendBugReport: a 404 limit GET is a first report; a 2xx commit resolves ok with the built id and the first-report limit", async () => {
+  const identity = stubIdentity({ uid: "u1", idToken: "tok1" });
+  const { fetchFn, calls } = makeRecordingFetch([{ ok: false, status: 404 }, { ok: true, status: 200, json: async () => ({}) }]);
+  const result = await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG, identity, now: () => 5000, random: () => 0.25 });
+  assert.equal(result.ok, true);
+  assert.equal(typeof result.id, "string");
+  assert.equal(result.id.length, 20);
+  assert.deepEqual(result.limit, { lastMs: 5000, dayMs: utcDayMs(5000), count: 1 });
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].url, firestoreUrl(VALID_CONFIG, `/${REPORT_LIMITS_COLLECTION}/u1`));
+  assert.equal(calls[0].init.method, "GET");
+  assert.equal(calls[0].init.headers.Authorization, "Bearer tok1");
+  assert.equal(calls[1].url, firestoreUrl(VALID_CONFIG, ":commit"));
+  assert.equal(calls[1].init.method, "POST");
+  const body = JSON.parse(calls[1].init.body);
+  assert.equal(body.writes.length, 2);
+});
+
+test("sendBugReport: a stub commit answer of 403 resolves limited; 429/503 read as server; 400 reads refused", async () => {
+  for (const [status, reason] of [
+    [403, "limited"],
+    [429, "server"],
+    [503, "server"],
+    [400, "refused"],
+  ]) {
+    const identity = stubIdentity();
+    const { fetchFn } = makeRecordingFetch([{ ok: false, status: 404 }, { ok: false, status }]);
+    const result = await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG, identity });
+    assert.deepEqual(result, { ok: false, reason }, `commit status ${status}`);
+  }
+});
+
+test("sendBugReport: a 401 on the commit forces exactly one refresh and one retry, then succeeds with the refreshed token", async () => {
+  const identity = stubIdentity({ idToken: "tok1" });
   const { fetchFn, calls } = makeRecordingFetch([
-    { ok: true, status: 200, json: async () => ({ name: "projects/p/databases/(default)/documents/bugReports/abc123" }) },
+    { ok: false, status: 404 },
+    { ok: false, status: 401 },
+    { ok: true, status: 200, json: async () => ({}) },
   ]);
-  const result = await sendBugReport(report, { fetchFn, config: VALID_CONFIG });
-  assert.deepEqual(result, { ok: true, id: "abc123" });
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, reportsEndpoint(VALID_CONFIG));
-  assert.equal(calls[0].init.method, "POST");
-  assert.equal(calls[0].init.headers["Content-Type"], "application/json");
-  const decoded = JSON.parse(calls[0].init.body);
-  assert.deepEqual(decoded, { fields: toFirestoreFields(report) });
+  const result = await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG, identity });
+  assert.equal(result.ok, true);
+  assert.deepEqual(identity.calls.forceRefresh, [{ explicit: true }]);
+  assert.equal(calls.length, 3);
+  assert.equal(calls[1].init.headers.Authorization, "Bearer tok1");
+  assert.equal(calls[2].init.headers.Authorization, "Bearer tok1-refreshed");
 });
 
-test("sendBugReport: a 200 whose json() rejects still resolves ok with a null id", async () => {
-  const report = validReport();
+test("sendBugReport: a second 401 after the one retry resolves refused, with no further retry", async () => {
+  const identity = stubIdentity();
   const { fetchFn } = makeRecordingFetch([
-    {
-      ok: true,
-      status: 200,
-      json: async () => {
-        throw new Error("bad json");
-      },
-    },
+    { ok: false, status: 404 },
+    { ok: false, status: 401 },
+    { ok: false, status: 401 },
   ]);
-  const result = await sendBugReport(report, { fetchFn, config: VALID_CONFIG });
-  assert.deepEqual(result, { ok: true, id: null });
+  const result = await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG, identity });
+  assert.deepEqual(result, { ok: false, reason: "refused" });
+  assert.equal(identity.calls.forceRefresh.length, 1);
 });
 
-test("sendBugReport: 400/403/404 refuse, 429/500/503 read as server", async () => {
-  for (const status of [400, 403, 404]) {
-    const { fetchFn } = makeRecordingFetch([{ ok: false, status }]);
-    const result = await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG });
-    assert.deepEqual(result, { ok: false, reason: "refused" }, `status ${status}`);
-  }
-  for (const status of [429, 500, 503]) {
-    const { fetchFn } = makeRecordingFetch([{ ok: false, status }]);
-    const result = await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG });
-    assert.deepEqual(result, { ok: false, reason: "server" }, `status ${status}`);
-  }
+test("sendBugReport: a 401 on the limit GET itself forces one refresh and one retry before the commit", async () => {
+  const identity = stubIdentity();
+  const { fetchFn, calls } = makeRecordingFetch([
+    { ok: false, status: 401 },
+    { ok: false, status: 404 },
+    { ok: true, status: 200, json: async () => ({}) },
+  ]);
+  const result = await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG, identity });
+  assert.equal(result.ok, true);
+  assert.deepEqual(identity.calls.forceRefresh, [{ explicit: true }]);
+  assert.equal(calls.length, 3);
 });
 
-test("sendBugReport: a fetchFn that rejects, or throws synchronously, resolves offline and never throws", async () => {
+test("sendBugReport: a rejecting/throwing fetchFn on either request resolves offline and never throws", async () => {
   const rejecting = async () => {
     throw new Error("network down");
   };
-  const r1 = await sendBugReport(validReport(), { fetchFn: rejecting, config: VALID_CONFIG });
+  const r1 = await sendBugReport(validReport(), { fetchFn: rejecting, config: VALID_CONFIG, identity: stubIdentity() });
   assert.deepEqual(r1, { ok: false, reason: "offline" });
 
-  const throwingSync = () => {
-    throw new Error("boom");
-  };
-  const r2 = await sendBugReport(validReport(), { fetchFn: throwingSync, config: VALID_CONFIG });
+  const { fetchFn: rejectsOnCommit } = makeRecordingFetch([
+    { ok: false, status: 404 },
+    () => {
+      throw new Error("boom");
+    },
+  ]);
+  const r2 = await sendBugReport(validReport(), { fetchFn: rejectsOnCommit, config: VALID_CONFIG, identity: stubIdentity() });
   assert.deepEqual(r2, { ok: false, reason: "offline" });
 });
 
 test("sendBugReport: a fetchFn that never settles times out, aborts and clears the timer", async () => {
   let pendingTimer = null;
   const cleared = [];
-  const setTimer = (fn, ms) => {
+  const setTimer = (fn) => {
     pendingTimer = fn;
-    assert.equal(ms, SEND_TIMEOUT_MS);
     return "timer-1";
   };
   const clearTimer = (id) => cleared.push(id);
@@ -441,11 +586,17 @@ test("sendBugReport: a fetchFn that never settles times out, aborts and clears t
   const resultPromise = sendBugReport(validReport(), {
     fetchFn: neverSettles,
     config: VALID_CONFIG,
+    identity: stubIdentity(),
     setTimer,
     clearTimer,
     AbortCtl: FakeAbortController,
   });
-  assert.ok(pendingTimer, "the timer must be armed synchronously");
+  // sendBugReport awaits identity.getToken() (itself async) before the
+  // timedFetch race even starts, so the timer is armed a few microtask
+  // ticks in rather than perfectly synchronously — a macrotask tick is
+  // enough to guarantee it has run.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(pendingTimer, "the timer must be armed");
   pendingTimer();
   const result = await resultPromise;
   assert.deepEqual(result, { ok: false, reason: "offline" });
@@ -453,27 +604,107 @@ test("sendBugReport: a fetchFn that never settles times out, aborts and clears t
   assert.deepEqual(cleared, ["timer-1"]);
 });
 
-test("sendBugReport: the timer is cleared on every settled path (success and refusal)", async () => {
+test("sendBugReport: the timer is cleared on every settled request (limit GET and commit)", async () => {
   const cleared = [];
   const setTimer = (fn, ms) => setTimeout(fn, ms);
   const clearTimer = (id) => {
     cleared.push(id);
     clearTimeout(id);
   };
-
-  const { fetchFn: ok200 } = makeRecordingFetch([{ ok: true, status: 200, json: async () => ({ name: "x/abc" }) }]);
-  await sendBugReport(validReport(), { fetchFn: ok200, config: VALID_CONFIG, setTimer, clearTimer });
-  assert.equal(cleared.length, 1);
-
-  const { fetchFn: refused } = makeRecordingFetch([{ ok: false, status: 400 }]);
-  await sendBugReport(validReport(), { fetchFn: refused, config: VALID_CONFIG, setTimer, clearTimer });
+  const { fetchFn } = makeRecordingFetch([{ ok: false, status: 404 }, { ok: true, status: 200, json: async () => ({}) }]);
+  await sendBugReport(validReport(), { fetchFn, config: VALID_CONFIG, identity: stubIdentity(), setTimer, clearTimer });
   assert.equal(cleared.length, 2);
+});
+
+/* ---------------- sendBugReport against the fake board server ---------------- */
+
+test("sendBugReport against the fake board: the first send signs up, reads the absent limit doc, and writes the report + limit in one commit with no uid on the report", async () => {
+  const { fake, identity } = makeFakeSetup();
+  const report = validReport();
+  const result = await sendBugReport(report, { fetchFn: fake.fetchFn, config: VALID_CONFIG, identity, now: () => 0, random: () => 0.5 });
+  assert.equal(result.ok, true);
+  assert.equal(typeof result.id, "string");
+  assert.deepEqual(result.limit, { lastMs: 0, dayMs: utcDayMs(0), count: 1 });
+
+  assert.equal(fake.users().length, 1);
+  const reports = fake.reports();
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].id, result.id);
+  const { id, ...storedReport } = reports[0];
+  assert.deepEqual(storedReport, report);
+  assert.ok(!("uid" in storedReport));
+
+  const commitCalls = fake.calls().filter((c) => c.method === "POST" && c.url.includes(":commit"));
+  assert.equal(commitCalls.length, 1);
+});
+
+test("sendBugReport against the fake board: cooldown, the daily cap and the next UTC day", async () => {
+  const { fake, identity, clock } = makeFakeSetup();
+  const report = validReport();
+  const random = lcgRandom(7);
+
+  const r1 = await sendBugReport(report, { fetchFn: fake.fetchFn, config: VALID_CONFIG, identity, now: clock, random });
+  assert.equal(r1.ok, true);
+
+  clock.advance(60 * 1000); // 1 minute later: still inside the 2-minute cooldown
+  const r2 = await sendBugReport(report, { fetchFn: fake.fetchFn, config: VALID_CONFIG, identity, now: clock, random });
+  assert.deepEqual(r2, { ok: false, reason: "cooldown", waitMs: 60000, limit: r1.limit });
+  assert.equal(fake.calls().filter((c) => c.method === "POST" && c.url.includes(":commit")).length, 1);
+
+  clock.advance(60 * 1000); // total 2 minutes since r1: cooldown clears
+  const r3 = await sendBugReport(report, { fetchFn: fake.fetchFn, config: VALID_CONFIG, identity, now: clock, random });
+  assert.equal(r3.ok, true);
+  assert.equal(r3.limit.count, 2);
+
+  let last = r3;
+  for (let i = 0; i < 3; i++) {
+    clock.advance(REPORT_COOLDOWN_MS);
+    last = await sendBugReport(report, { fetchFn: fake.fetchFn, config: VALID_CONFIG, identity, now: clock, random });
+    assert.equal(last.ok, true);
+  }
+  assert.equal(last.limit.count, REPORT_DAILY_CAP);
+
+  clock.advance(REPORT_COOLDOWN_MS);
+  const r6 = await sendBugReport(report, { fetchFn: fake.fetchFn, config: VALID_CONFIG, identity, now: clock, random });
+  assert.equal(r6.ok, false);
+  assert.equal(r6.reason, "daily");
+  assert.deepEqual(r6.limit, last.limit);
+  const today = utcDayMs(clock());
+  assert.equal(r6.waitMs, today + 24 * 60 * 60 * 1000 - clock());
+
+  const nextDayMs = utcDayMs(clock()) + 24 * 60 * 60 * 1000;
+  clock.advance(nextDayMs - clock() + 1000);
+  const r7 = await sendBugReport(report, { fetchFn: fake.fetchFn, config: VALID_CONFIG, identity, now: clock, random });
+  assert.equal(r7.ok, true);
+  assert.equal(r7.limit.count, 1);
+});
+
+test("sendBugReport against the fake board: an existing server-side limit doc (no prior local record) is read via GET and enforced", async () => {
+  const { fake, identity, clock } = makeFakeSetup();
+  const token = await identity.getToken({ explicit: true });
+  assert.ok(token.ok);
+  const seeded = { lastMs: clock() - 60 * 1000, dayMs: utcDayMs(clock()), count: 3 };
+  const patchRes = await fake.fetchFn(firestoreUrl(VALID_CONFIG, `/${REPORT_LIMITS_COLLECTION}/${token.uid}`), {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${FAKE_ADMIN_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fields: {
+        last: { timestampValue: new Date(seeded.lastMs).toISOString() },
+        day: { timestampValue: new Date(seeded.dayMs).toISOString() },
+        count: { integerValue: String(seeded.count) },
+      },
+    }),
+  });
+  assert.equal(patchRes.status, 200);
+
+  const result = await sendBugReport(validReport(), { fetchFn: fake.fetchFn, config: VALID_CONFIG, identity, now: clock, random: () => 0.6 });
+  assert.deepEqual(result, { ok: false, reason: "cooldown", waitMs: REPORT_COOLDOWN_MS - 60000, limit: seeded });
 });
 
 /* ---------------- REPORT_REASONS / SEND_TIMEOUT_MS sanity ---------------- */
 
-test("REPORT_REASONS lists the four reasons; SEND_TIMEOUT_MS matches the plan", () => {
-  assert.deepEqual([...REPORT_REASONS].sort(), ["offline", "refused", "server", "unavailable"]);
+test("REPORT_REASONS lists the seven reasons; SEND_TIMEOUT_MS matches the plan", () => {
+  assert.deepEqual([...REPORT_REASONS].sort(), ["cooldown", "daily", "limited", "offline", "refused", "server", "unavailable"]);
   assert.equal(SEND_TIMEOUT_MS, 15000);
   assert.equal(TEXT_MAX_CHARS, 2000);
   assert.equal(ORACLE_MAX_CHARS, 100000);

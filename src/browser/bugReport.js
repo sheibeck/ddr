@@ -22,9 +22,26 @@
 // firestoreRest.js (the one shared encoder every board module reuses); this
 // module imports and re-exports both so every existing caller/test keeps
 // working unchanged.
+//
+// Phase 83 (SRV-09, the todo "Bug report per-player limit and automatic
+// Firestore cleanup"): sendBugReport no longer posts a plain, unauthenticated
+// create. It signs the report through the shared anonymous identity
+// (opts.identity, src/browser/firebaseAuth.js#createIdentity), reads the
+// player's own reportLimits/{uid} doc, and writes the report plus the limit
+// step in ONE documents:commit (reportLimits.js#buildReportCommit) — the
+// report itself still carries no uid anywhere (D-07 still holds). The
+// identity is only ever touched with { explicit: true }, since this call
+// only ever happens on a player-tapped Send, so a first report creates the
+// identity even with Compete OFF. Old clients up to 2.1.0/vc11 that still
+// post the old plain create are refused by the live rules by design — there
+// is no legacy fallback path here (greenfield-no-legacy-paths).
+// reportsEndpoint stays exported: tools/bug-reports/send-test-report.mjs's
+// unauthenticated-create probe still needs the old create URL to prove the
+// rules refuse it.
 
 import { BUG_REPORT_CONFIG } from "./bugReportConfig.js";
-import { FIRESTORE_BASE, toFirestoreFields } from "./firestoreRest.js";
+import { FIRESTORE_BASE, toFirestoreFields, firestoreUrl, timedFetch, readJson } from "./firestoreRest.js";
+import { REPORT_LIMITS_COLLECTION, decodeLimitDoc, nextLimitState, randomDocId, buildReportCommit, recordLocalSend } from "./reportLimits.js";
 
 export { FIRESTORE_BASE, toFirestoreFields };
 
@@ -57,7 +74,7 @@ export const RUN_STRING_MAX_CHARS = 40;
 export const RUN_INT_MAX = 1000000000;
 export const SEND_TIMEOUT_MS = 15000;
 
-export const REPORT_REASONS = Object.freeze(["unavailable", "offline", "refused", "server"]);
+export const REPORT_REASONS = Object.freeze(["unavailable", "offline", "refused", "server", "limited", "cooldown", "daily"]);
 
 const HIGH_SURROGATE_MIN = 0xd800;
 const HIGH_SURROGATE_MAX = 0xdbff;
@@ -301,69 +318,131 @@ export function reportIdFromName(name) {
 }
 
 /**
- * sendBugReport(report, opts) — POSTs report through opts.fetchFn as a
- * Firestore REST create. Never throws or rejects: resolves { ok: true, id }
- * on success, or { ok: false, reason } with reason one of REPORT_REASONS.
- * Checks, in order: config availability, fetchFn presence, online, then
- * validateReport. The abort/timeout race always clears its timer.
+ * sendBugReport(report, opts) — signs the report through the shared
+ * anonymous identity (opts.identity, src/browser/firebaseAuth.js
+ * #createIdentity, always called with { explicit: true } since this only
+ * ever happens on a player-tapped Send — SRV-09), reads the player's own
+ * reportLimits/{uid} doc, and writes the report plus the limit step in ONE
+ * documents:commit (reportLimits.js#buildReportCommit). Never throws or
+ * rejects: resolves { ok: true, id, limit } on success, or
+ * { ok: false, reason, ... } with reason one of REPORT_REASONS. A local
+ * cooldown/daily refusal (nextLimitState) resolves
+ * { ok: false, reason: "cooldown" | "daily", waitMs, limit: before } with no
+ * network call to :commit at all — `limit` is the before-state read from
+ * the server, so the sheet can restore its own local record from it.
+ * Checks, in order: config availability, fetchFn presence, identity
+ * presence, online, then validateReport. Every request (the limit GET and
+ * the commit POST) gets its own independent one-shot 401 -> forceRefresh ->
+ * retry budget. The timedFetch race always clears its timer.
  */
 export async function sendBugReport(report, opts = {}) {
   const {
     fetchFn,
     config = BUG_REPORT_CONFIG,
     online = true,
-    timeoutMs = SEND_TIMEOUT_MS,
-    setTimer = globalThis.setTimeout,
-    clearTimer = globalThis.clearTimeout,
-    AbortCtl = globalThis.AbortController,
+    identity,
+    now = Date.now,
+    random = Math.random,
+    timeoutMs,
+    setTimer,
+    clearTimer,
+    AbortCtl,
   } = opts;
+
+  function timedOpts() {
+    const o = {};
+    if (timeoutMs !== undefined) o.timeoutMs = timeoutMs;
+    if (setTimer !== undefined) o.setTimer = setTimer;
+    if (clearTimer !== undefined) o.clearTimer = clearTimer;
+    if (AbortCtl !== undefined) o.AbortCtl = AbortCtl;
+    return o;
+  }
+
+  function authedInit(method, body, idToken) {
+    const init = { method, headers: { Authorization: `Bearer ${idToken}` } };
+    if (body !== undefined) {
+      init.headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(body);
+    }
+    return init;
+  }
+
+  // identityReason(result) — identity.getToken/forceRefresh's own offline/
+  // server/refused pass straight through; anything else (unavailable, or
+  // the Compete "off" gate — unreachable here since every call passes
+  // explicit:true) reads unavailable.
+  function identityReason(result) {
+    const r = result && result.reason;
+    return r === "offline" || r === "server" || r === "refused" ? r : "unavailable";
+  }
+
   try {
     if (!reportingAvailable(config)) return { ok: false, reason: "unavailable" };
     if (typeof fetchFn !== "function") return { ok: false, reason: "unavailable" };
+    if (typeof identity !== "object" || identity === null || typeof identity.getToken !== "function") return { ok: false, reason: "unavailable" };
     if (online === false) return { ok: false, reason: "offline" };
     if (validateReport(report).length > 0) return { ok: false, reason: "refused" };
 
-    const url = reportsEndpoint(config);
-    const body = JSON.stringify({ fields: toFirestoreFields(report) });
-    let controller = null;
-    let signal;
-    if (AbortCtl) {
-      controller = new AbortCtl();
-      signal = controller.signal;
-    }
-    const init = { method: "POST", headers: { "Content-Type": "application/json" }, body };
-    if (signal) init.signal = signal;
+    const token = await identity.getToken({ explicit: true });
+    if (!token.ok) return { ok: false, reason: identityReason(token) };
+    const uid = token.uid;
+    let idToken = token.idToken;
 
-    let timerId = null;
-    const timeoutPromise = new Promise((resolve) => {
-      timerId = setTimer(() => {
-        if (controller) controller.abort();
-        resolve({ timedOut: true });
-      }, timeoutMs);
-    });
-
-    try {
-      const raced = await Promise.race([
-        fetchFn(url, init).then((res) => ({ timedOut: false, res })).catch((err) => ({ timedOut: false, err })),
-        timeoutPromise,
-      ]);
-      if (raced.timedOut || raced.err) return { ok: false, reason: "offline" };
+    async function getLimit() {
+      const url = firestoreUrl(config, `/${REPORT_LIMITS_COLLECTION}/${uid}`);
+      const raced = await timedFetch(fetchFn, url, authedInit("GET", undefined, idToken), timedOpts());
+      if (!raced.ok) return { kind: "offline" };
       const res = raced.res;
+      if (res.status === 404) return { kind: "none" };
+      if (res.status === 401) return { kind: "auth" };
       if (res.ok) {
-        let json = null;
-        try {
-          json = await res.json();
-        } catch {
-          json = null;
-        }
-        return { ok: true, id: reportIdFromName(json?.name) };
+        const json = await readJson(res);
+        return { kind: "ok", before: decodeLimitDoc(json?.fields) };
       }
-      if (res.status === 429 || res.status >= 500) return { ok: false, reason: "server" };
-      if (res.status >= 400) return { ok: false, reason: "refused" };
-      return { ok: false, reason: "server" };
-    } finally {
-      if (timerId !== null) clearTimer(timerId);
+      if (res.status === 429 || res.status >= 500) return { kind: "server" };
+      return { kind: "refused" };
     }
+
+    let limitResult = await getLimit();
+    if (limitResult.kind === "auth") {
+      const refreshed = await identity.forceRefresh({ explicit: true });
+      if (!refreshed.ok) return { ok: false, reason: identityReason(refreshed) };
+      idToken = refreshed.idToken;
+      limitResult = await getLimit();
+    }
+    if (limitResult.kind === "offline") return { ok: false, reason: "offline" };
+    if (limitResult.kind === "server") return { ok: false, reason: "server" };
+    if (limitResult.kind === "refused" || limitResult.kind === "auth") return { ok: false, reason: "refused" };
+
+    const before = limitResult.kind === "none" ? null : limitResult.before;
+    const nowMs = now();
+    const step = nextLimitState(before, nowMs);
+    if (!step.ok) return { ok: false, reason: step.reason, waitMs: step.waitMs, limit: before };
+
+    const reportId = randomDocId(random);
+    const commitBody = buildReportCommit(config, reportId, report, uid, step);
+    const commitUrl = firestoreUrl(config, ":commit");
+
+    async function postCommit() {
+      return timedFetch(fetchFn, commitUrl, authedInit("POST", commitBody, idToken), timedOpts());
+    }
+
+    let raced = await postCommit();
+    if (!raced.ok) return { ok: false, reason: "offline" };
+    let res = raced.res;
+    if (res.status === 401) {
+      const refreshed = await identity.forceRefresh({ explicit: true });
+      if (!refreshed.ok) return { ok: false, reason: identityReason(refreshed) };
+      idToken = refreshed.idToken;
+      raced = await postCommit();
+      if (!raced.ok) return { ok: false, reason: "offline" };
+      res = raced.res;
+    }
+    if (res.ok) return { ok: true, id: reportId, limit: recordLocalSend(before, nowMs, step) };
+    if (res.status === 403) return { ok: false, reason: "limited" };
+    if (res.status === 429 || res.status >= 500) return { ok: false, reason: "server" };
+    if (res.status >= 400) return { ok: false, reason: "refused" };
+    return { ok: false, reason: "server" };
   } catch {
     return { ok: false, reason: "offline" };
   }
