@@ -10,9 +10,9 @@
 // `tzOffsetMinutes` are supplied inputs, never read from the system clock.
 // Every word of copy comes from content/boards.js#LEADERBOARD_COPY and
 // content/season.js#SEASON_NAMES; this module holds no player-facing
-// literal of its own. No network, and it imports nothing from the Play
-// Games modules (src/browser/playGames.js, account.js, globalBoards.js) —
-// those retire in 84-09.
+// literal of its own. No network, and it imports nothing from the retired
+// v2.0 leaderboard modules — those retired in 84-09 and were deleted
+// outright in Phase 85 (RETIRE-02).
 //
 // Mock-to-canon mapping (design/Mazeworld Boards Panel v3.dc.html is the
 // UX/visual spec only): the mock's toy races/classes map to the 6 canon

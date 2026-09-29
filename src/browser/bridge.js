@@ -67,7 +67,7 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze([
       "mazeworld.html (classic: showTab — the DEAD tab opens the v3 Leaderboards panel, or re-centres its rail when the panel is already open from the title)",
     ]),
-    purpose: "Bridges the module-owned v3 Leaderboards panel (Phase 84, src/browser/leaderboardPanel.js's createLeaderboardPanel over leaderboardView.js) so the classic tab switch opens it without importing a module; the panel itself reads the adapter's per-run history and a board feed over Phase 83's read client, never Play Games. Presentation only, never a field on state.",
+    purpose: "Bridges the module-owned v3 Leaderboards panel (Phase 84, src/browser/leaderboardPanel.js's createLeaderboardPanel over leaderboardView.js) so the classic tab switch opens it without importing a module; the panel itself reads the adapter's per-run history and a board feed over Phase 83's read client, never a third-party game service. Presentation only, never a field on state.",
   }),
   __mzCameraGlide: Object.freeze({
     owner: "mazeworld.html (module)",

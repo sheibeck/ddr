@@ -3,7 +3,7 @@
 // Phase 65 (RUN-04; the shared board table's voice half, per CONTEXT). The
 // orderings and values live in engine/records.js; this file holds only
 // player-facing copy. Phase 84 (BOARD-18..25, BOARD-20) retired the old
-// board rail, LEANEST/LINEAGE/GRAVEYARD and the Play Games global strip
+// board rail, LEANEST/LINEAGE/GRAVEYARD and the third-party global strip
 // (84-09) — LEADERBOARD_COPY is the only panel copy left; `BOARD_COPY` now
 // names only the four NEW PERSONAL BEST rows the death panel still shows
 // (src/browser/newBest.js reads its `title`, `unit` and, where present,
