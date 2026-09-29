@@ -1,10 +1,17 @@
-# Player bug reports (Phase 79.3, BUG-04, D-14).
+# Player bug reports (Phase 79.3, BUG-04, D-14; Phase 83 Plan 10, SRV-11
+# retention cleanup).
 #
 # Reads new reports written to Firestore (delve-die-repeat-6ba5f) by the
 # in-app REPORT A BUG sheet and files each one as a public, labelled issue
-# on this repo via tools/bug-reports/file-issues.mjs. Runs on Node 22 with
-# zero package installs: the script uses only Node built-ins plus
-# tools/bug-reports/issue-format.mjs.
+# on this repo via tools/bug-reports/file-issues.mjs. The same run also
+# deletes filed and failed reports and stale reportLimits/{uid} documents
+# on their retention schedule (docs/BUG-REPORTS.md "Retention"): a filed
+# report whose Oracle fit whole is deleted right after filing; one whose
+# Oracle was trimmed keeps its document for 30 days after it was filed; a
+# failed report is deleted 30 days after it failed; a reportLimits document
+# is deleted 2 days after its last write. The public GitHub issues are
+# never deleted. Runs on Node 22 with zero package installs: the script
+# uses only Node built-ins plus tools/bug-reports/issue-format.mjs.
 #
 # GitHub disables a scheduled workflow in a public repo after 60 days with
 # no repository activity. If that happens, reports simply wait safely in
