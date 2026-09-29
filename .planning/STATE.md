@@ -5,15 +5,15 @@ milestone_name: Our Own Leaderboards
 current_phase: 83
 current_phase_name: Leaderboard Server
 status: executing
-stopped_at: Completed 83-06-PLAN.md (boardWrites.js + runQueue.js -- idempotent submit/rewriteHandle/erase and the durable ddr.runQueue.v1 queue; Task 3 backfill removed by user direction); ready for 83-07
-last_updated: "2026-09-29T02:34:44.617Z"
+stopped_at: Completed 83-12-PLAN.md (runBackfill.js -- once-only backfill of runs from the 2.1.0 release on)
+last_updated: "2026-09-29T02:47:23.441Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 83 execution started
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 13
-  completed_plans: 8
+  total_plans: 14
+  completed_plans: 9
   percent: 20
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 83 (Leaderboard Server) — EXECUTING
-Plan: 7 of 11
+Plan: 8 of 11
 Status: Ready to execute
 Last activity: 2026-09-28 — Phase 83 execution started
 
@@ -257,8 +257,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T02:34:44.577Z
-Stopped at: Completed 83-06-PLAN.md (boardWrites.js + runQueue.js -- idempotent submit/rewriteHandle/erase and the durable ddr.runQueue.v1 queue; Task 3 backfill removed by user direction); ready for 83-07
+Last session: 2026-09-29T02:47:23.407Z
+Stopped at: Completed 83-12-PLAN.md (runBackfill.js -- once-only backfill of runs from the 2.1.0 release on)
 
 - (history below is the pre-close record)
 
@@ -431,6 +431,7 @@ Resume file: None
 | Phase 83 P04 | 55min | 2 tasks | 4 files |
 | Phase 83 P05 | 30min | 2 tasks | 4 files |
 | Phase 83 P06 | 55min | 2 tasks | 4 files |
+| Phase 83 P12 | 15min | 1 tasks | 3 files |
 
 ## Decisions
 
@@ -743,6 +744,8 @@ Resume file: None
 - [Phase ?]: 83-04: fakeBoardServer.js generalizes commit handling to N-write atomic batches (handle re-roll across all runs, multi-id delete) beyond the plan's single-write examples, since CONTEXT's re-roll rule needs it
 - [Phase ?]: 83-05: deleteRunsOf uses the single-document admin DELETE endpoint (waves of <=100 concurrent requests) instead of a :commit batch delete, since fakeBoardServer.js scopes the admin token's :commit bypass to run create only (commit-based delete/handle-update stay owner-gated even for admin) — matches live IAM-bypass behavior identically either way.
 - [Phase ?]: 83-06: Task 3 (runBackfill.js) removed by user direction 2026-09-28 -- leaderboards start fresh, no one-time backfill of pre-board runs (superseded same day: backfill from the 2.1.0 release on, plan 83-12)
+- [Phase ?]: 83-12: runBackfill() fires queue.flush() without awaiting it before marking ddr.boardBackfill.v1 done, mirroring runQueue.js#enqueue's own fire-and-continue posture
+- [Phase ?]: 83-12: the done marker is written unconditionally on the first run, even with zero collected runs (corrupt/missing local stores), so a device never re-checks on every boot
 
 ### Blockers
 
