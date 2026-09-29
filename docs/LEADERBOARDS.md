@@ -437,7 +437,77 @@ waiting to resubmit once the switch lifts. Restore by deploying the normal
 
 ## 14. Live setup record
 
-Filled in by 83-08.
+**Status: IN PROGRESS (83-08).** Deploy, indexes, service APIs and the API
+key restriction are done and verified live. Anonymous sign-in and the
+per-IP sign-up limit are **blocked on a console step** — see below.
+
+### Deploy and configuration (2026-09-29)
+
+- **Rules deployed (transition, not final — see the Transition amendment in
+  `.planning/phases/83-leaderboard-server/83-08-PLAN.md`):**
+  `firebase deploy --only firestore:rules,firestore:indexes --config
+  firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive`
+  — deploy complete, `firebase/firestore.transition.rules` released to
+  `cloud.firestore`. The **transition** rules are live: the `bugReports`
+  create clause keeps the legacy unauthenticated form so the shipped 2.1.0
+  build (vc11) keeps filing reports; `runs`/`banned`/`reportLimits` are the
+  final rules unchanged. Two compiler warnings only (not errors): unused
+  function `limitPath` and an `Invalid type` note on `isValidLimitStep`'s
+  `before == null` check — both pre-existing to the transition swap (the
+  legacy `bugReports` create no longer calls `limitPath`/`isValidLimitStep`,
+  but `reportLimits`'s own create/update rules still do). **Release-day
+  step:** when the 2.2 build reaches testers, deploy `firebase.json` (the
+  final rules), run `node tools/bug-reports/send-test-report.mjs
+  --probe-rules` (expect ten PASS), then delete
+  `firebase/firestore.transition.rules`, `firebase.transition.json` and
+  `test/unit/firestore-transition-rules.test.js` (section 6).
+- **Indexes:** all **19 of 19** composite indexes reached `READY` (polled
+  `gcloud firestore indexes composite list`, 4 polls at 60s intervals, ~4
+  minutes to build) — matches `firebase/firestore.indexes.json`'s declared
+  count exactly.
+- **Services enabled:** `firestore.googleapis.com`,
+  `identitytoolkit.googleapis.com` and `securetoken.googleapis.com` were
+  **already enabled** on `delve-die-repeat-6ba5f` (no `gcloud services
+  enable` call needed).
+- **API key restriction:** key resource
+  `projects/262391895405/locations/global/keys/729a18b6-…` (the same public
+  key `src/browser/firebaseConfig.js` ships, display name "DDR bug reports
+  (Firestore only)"). Before: `apiTargets: [firestore.googleapis.com]`, no
+  other restriction fields set. Updated with all three targets in one
+  `gcloud services api-keys update --api-target=...` call (Pitfall 8 — the
+  flag replaces, not adds). After: `apiTargets: [firestore.googleapis.com,
+  identitytoolkit.googleapis.com, securetoken.googleapis.com]`, still no
+  other restriction fields — confirmed via a second `describe` call.
+
+### Anonymous sign-in — BLOCKED, needs a console step
+
+`GET
+https://identitytoolkit.googleapis.com/admin/v2/projects/delve-die-repeat-6ba5f/config`
+returned `404 { "message": "CONFIGURATION_NOT_FOUND", "status": "NOT_FOUND"
+}`. The matching `PATCH ...?updateMask=signIn.anonymous.enabled` (Research
+Open Question 1) returned the **same 404** rather than creating the config
+— this project's Firebase Authentication has never been opened in the
+console, so there is no Auth config document yet for the admin v2 API to
+patch. `identityPlatform:initializeAuth` is **never** called (it would
+upgrade the project to paid Identity Platform, out of scope). Per
+CONTEXT/RESEARCH's documented fallback, this needs one console click:
+Firebase Console → project `delve-die-repeat-6ba5f` → Build → Authentication
+→ **Get started** (first-time only, creates the Auth config) → Sign-in
+method → Add new provider → **Anonymous** → Enable → Save. Once the console
+is opened once, the same admin v2 GET/PATCH is expected to start working
+for future changes (e.g. the per-IP limit below) without another console
+visit.
+
+### Per-IP sign-up limit — not yet attempted (blocked behind the same config)
+
+SRV-10's `quota.signUpQuotaConfig` PATCH targets the same
+`identitytoolkit.googleapis.com/admin/v2/.../config` resource that is
+currently `CONFIGURATION_NOT_FOUND` — attempting it before Authentication is
+initialized would fail the same way. Deferred until the console step above
+is done.
+
+**Human verification (deferred to end of run):** none yet recorded — this
+plan is not yet complete.
 
 ## 15. Troubleshooting
 
