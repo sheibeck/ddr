@@ -1,14 +1,27 @@
 rules_version = '2';
 
-// Phase 79.3 (D-13, BUG-03). Create-only rules for bugReports: the
-// scheduled Action's service account (ddr-bug-reports, roles/datastore.user
-// on delve-die-repeat-6ba5f, D-17) bypasses this whole file through IAM,
-// not through a rule, so it can still read, flip status and patch every
-// report regardless of what clients may do here. A client gets exactly one
-// verb: create a report shaped exactly like
-// src/browser/bugReport.js#buildReportPayload builds it, kept equal to
-// this file by test/unit/firestore-rules.test.js. Every other verb, on
-// every path, is denied.
+// Phase 79.3 (D-13, BUG-03) + Phase 83 (SRV-01..03, SRV-09). One rules file
+// for the whole project — the Action's service account (ddr-bug-reports,
+// roles/datastore.user on delve-die-repeat-6ba5f, D-17) and tools/
+// boards-admin.mjs (a second service account, moderation) both bypass this
+// entire file through IAM, not through a rule, so they can still read, flip
+// bugReports.status, delete a run or ban a uid regardless of what clients
+// may do here.
+//
+// A client gets exactly three verbs, each an `allow create`:
+//   - bugReports/{reportId}: create a report shaped exactly like
+//     src/browser/bugReport.js#buildReportPayload builds it (the report
+//     shape below is byte-identical to Phase 79.3 — no uid field is
+//     possible), gated on a signed-in uid and a same-commit reportLimits
+//     step (SRV-09: a 2-minute cooldown, 5 reports a day).
+//   - reportLimits/{uid}: the owner's own cooldown/daily-count document,
+//     created or updated only as a valid step; the owner may also read it
+//     back (so local storage can be wiped and the count recovered).
+//   - runs/{runId}: create the owner's own leaderboard run, shaped and
+//     bounded exactly like src/browser/runDoc.js builds it (SRV-02); reads
+//     are public and bounded (list limit <= 50); the owner may re-roll their
+//     handle across all their runs, and delete any of their own runs.
+// Every other verb, on every path, is denied by the catch-all at the end.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -46,9 +59,139 @@ service cloud.firestore {
         && (!('run' in d) || isValidRun(d.run));
     }
 
+    // Phase 83 (SRV-09). Mirrors src/browser/reportLimits.js#REPORT_COOLDOWN_
+    // MINUTES/REPORT_DAILY_CAP/LIMIT_FIELDS/validateLimitStep — kept equal by
+    // test/unit/firestore-rules.test.js. A report create must land in the
+    // same documents:commit as a valid reportLimits/{uid} step (proven by
+    // getAfter, below): a fresh player's first report creates the limit
+    // document; every later report needs the previous `last` to be at least
+    // reportCooldownMinutes() old, and either continues the same UTC day's
+    // count (capped at reportDailyCap()) or starts a new day at 1.
+    function reportCooldownMinutes() {
+      return 2;
+    }
+
+    function reportDailyCap() {
+      return 5;
+    }
+
+    function limitPath(uid) {
+      return /databases/$(database)/documents/reportLimits/$(uid);
+    }
+
+    function isValidLimitStep(before, after) {
+      return after.keys().hasOnly(['last', 'day', 'count'])
+        && after.keys().hasAll(['last', 'day', 'count'])
+        && after.last is timestamp && after.last == request.time
+        && after.day is timestamp
+        && after.count is int
+        && (before == null
+          ? (after.day == request.time.date() && after.count == 1)
+          : (before.last + duration.value(reportCooldownMinutes(), 'm') <= request.time
+            && (before.day == request.time.date()
+              ? (after.day == before.day && after.count == before.count + 1 && after.count <= reportDailyCap())
+              : (after.day == request.time.date() && after.count == 1))));
+    }
+
     match /bugReports/{reportId} {
-      allow create: if isValidReport(request.resource.data);
+      allow create: if request.auth != null
+                    && isValidReport(request.resource.data)
+                    && isValidLimitStep(
+                         exists(limitPath(request.auth.uid)) ? get(limitPath(request.auth.uid)).data : null,
+                         getAfter(limitPath(request.auth.uid)).data
+                       );
       allow get, list, update, delete: if false;
+    }
+
+    match /reportLimits/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && isValidLimitStep(null, request.resource.data);
+      allow update: if request.auth != null && request.auth.uid == uid
+                    && isValidLimitStep(resource.data, request.resource.data);
+      allow list, delete: if false;
+    }
+
+    // Phase 83 (SRV-02, SRV-03). Mirrors src/browser/runDoc.js#RUN_DOC_FIELDS,
+    // every bound constant, and the four rank-key formulas — kept equal by
+    // test/unit/firestore-rules.test.js. season is pinned to content/season.js's
+    // SEASON; bumping it needs a rules deploy (docs/LEADERBOARDS.md).
+    function isValidBoardRun(d) {
+      return d.keys().hasOnly(['uid', 'handle', 'season', 'name', 'race', 'sub', 'cls', 'level', 'floor', 'day', 'steps', 'kills', 'gold', 'sp', 'cause', 'epitaph', 'hash', 'version', 'seed', 'acts', 'deepKey', 'daysKey', 'killsKey', 'goldKey', 'createdAt'])
+        && d.keys().hasAll(['uid', 'handle', 'season', 'name', 'race', 'sub', 'cls', 'level', 'floor', 'day', 'steps', 'kills', 'gold', 'sp', 'cause', 'epitaph', 'hash', 'version', 'seed', 'acts', 'deepKey', 'daysKey', 'killsKey', 'goldKey', 'createdAt'])
+        && d.uid is string && d.uid.size() >= 1 && d.uid.size() <= 128
+        && d.handle is string && d.handle.matches('^@(lantern|moss|soot|gloom|rusty|candle|cellar|crypt|torch|mildew|cobweb|gravel|barrel|dusty|toad|slug|grub|damp|grim|shadow|ember|brine|murky|tomb|ashen|briar|hollow|wretch|musty|grave)(jaw|toe|knee|nose|boot|sock|hood|beard|elbow|spoon|ladle|mop|kettle|mitten|bonnet|knuckle|thumb|chin|shin|wrist|apron|bucket|skillet|tunic|cloak|helmet|buckle|sandal|goblet|pouch)$')
+        && d.season is int && d.season == 1
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 40
+        && d.race is string && d.race in ['Human', 'Elven', 'Dwarven', 'Wilmsry', 'Fridgian', 'Troll']
+        && d.cls is string && d.sub is string && isSubOfClass(d.cls, d.sub)
+        && d.level is int && d.level >= 1 && d.level <= 5
+        && d.floor is int && d.floor >= 1 && d.floor <= 200
+        && d.steps is int && d.steps >= 0 && d.steps <= 999999
+        && d.day is int && d.day >= 1 && d.day * 100 <= d.steps + 30000
+        && d.kills is int && d.kills >= 0 && d.kills <= d.steps
+        && d.gold is int && d.gold >= 0 && d.gold <= 10000000
+        && d.sp is int && d.sp >= 0 && d.sp <= 1000000000
+        && d.cause is string && d.cause in ['combat', 'starve', 'trap', 'fall', 'gorge', 'backfire', 'summon', 'maze', 'quake', 'potion', 'insanity', 'abandon', 'entombed', 'pilferFumble', 'scrollFumble']
+        && d.epitaph is string && d.epitaph.size() <= 400
+        && d.hash is string && d.hash.matches('^[0-9a-f]{8}$')
+        && d.version is string && d.version.size() >= 1 && d.version.size() <= 64
+        && d.seed is int && d.seed >= 0 && d.seed <= 9007199254740991
+        && d.acts is int && d.acts >= 0 && d.acts <= 1000000000
+        && d.deepKey is int && d.deepKey == deepKeyOf(d)
+        && d.daysKey is int && d.daysKey == daysKeyOf(d)
+        && d.killsKey is int && d.killsKey == killsKeyOf(d)
+        && d.goldKey is int && d.goldKey == goldKeyOf(d)
+        && d.createdAt == request.time;
+    }
+
+    // deepKey: floor desc, then fewer steps. daysKey: the Phase 82 DAYS rule
+    // — min(day, 10 * floor) desc, then floor desc (the ternary stands in
+    // for math.min, which Firestore rules do not have). killsKey: kills
+    // desc, then floor desc. goldKey: gold desc.
+    function deepKeyOf(d) {
+      return d.floor * 1000000 + (999999 - d.steps);
+    }
+
+    function daysKeyOf(d) {
+      return (d.day < 10 * d.floor ? d.day : 10 * d.floor) * 1000 + d.floor;
+    }
+
+    function killsKeyOf(d) {
+      return d.kills * 1000 + d.floor;
+    }
+
+    function goldKeyOf(d) {
+      return d.gold;
+    }
+
+    // Mirrors content/classes.js#CLASSES[cls].subs.
+    function isSubOfClass(cls, sub) {
+      return (cls == 'Magic User' && sub in ['Wizard', 'Warlock', 'Sorcerer', 'Summoner', 'Cleric', 'Illusionist', 'Court Mage', 'Apprentice'])
+        || (cls == 'Fighter' && sub in ['Knight', 'Guard', 'Woodsman', 'Soldier', 'Barbarian', 'Master of Arms', 'Samurai', 'Bard'])
+        || (cls == 'Thief' && sub in ['Pickpocket', 'Pilfer', 'Cat Burglar', 'Cutthroat', 'Cloaker', 'Ninja', 'Con Artist', 'Acrobat']);
+    }
+
+    match /runs/{runId} {
+      allow get: if true;
+      allow list: if request.query.limit <= 50;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && runId == request.auth.uid + '_' + request.resource.data.hash
+                    && isValidBoardRun(request.resource.data)
+                    && !exists(/databases/$(database)/documents/banned/$(request.auth.uid));
+      allow update: if request.auth != null
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['handle'])
+                    && request.resource.data.handle is string
+                    && request.resource.data.handle.matches('^@(lantern|moss|soot|gloom|rusty|candle|cellar|crypt|torch|mildew|cobweb|gravel|barrel|dusty|toad|slug|grub|damp|grim|shadow|ember|brine|murky|tomb|ashen|briar|hollow|wretch|musty|grave)(jaw|toe|knee|nose|boot|sock|hood|beard|elbow|spoon|ladle|mop|kettle|mitten|bonnet|knuckle|thumb|chin|shin|wrist|apron|bucket|skillet|tunic|cloak|helmet|buckle|sandal|goblet|pouch)$');
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    match /banned/{uid} {
+      // the admin (IAM service account, tools/boards-admin.mjs) is the only
+      // writer of this collection; no rule below grants a client access.
+      allow read, write: if false;
     }
 
     // The catch-all: nothing else in this database is reachable by a
