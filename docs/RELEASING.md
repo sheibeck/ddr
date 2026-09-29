@@ -48,38 +48,78 @@ After the build, before the upload:
 - Run the scan from "Verifying a release build" below: `node tools/android-api-scan.mjs --fail-on com.capacitorjs.plugins.statusbar,com.darktierstudios.delvedierepeat` must exit 0.
 - Archive `android/app/build/outputs/mapping/release/mapping.txt` outside the repo, in a folder named for the versionName and versionCode (see "R8" below).
 
-## Next Play push: release notes
+## Release notes
 
-Tester-facing text to paste into Play Console's release notes for the next push (v2.1
-Leaderboards panel fixes). Family-friendly deadpan, no internal ids:
+The notes live in `docs/patch-notes/<versionName>.md` (format in
+`docs/patch-notes/README.md`; the pipeline is the "Patch notes" section
+above). `docs/patch-notes/2.2.0.md` is a **DRAFT** until the user agrees it
+— checklist step 1 below.
 
-- The Leaderboards panel now has ME | ALL | FRIENDS; signed in, it opens on ALL.
-- Your own score is tagged YOU and appears once.
-- The boards refresh when you open them.
-- LEANEST is gone.
-- LINEAGE and GRAVEYARD now live under ME at the end of the board rail, and GRAVEYARD still
-  lists every stored run with its epitaph.
-- Every finished run lands on your own boards.
+## Release 2.2.0: the ordered checklist
 
-These lines move into `docs/patch-notes/2.1.0.md` when the 2.1.0 notes are written with the
-user (79.3 D-18).
+A hard-ordered sequence (86-CONTEXT "Release steps"): 2.1.0 keeps filing bug
+reports until the rules cutover in step 4, and `play:release` would
+double-bump the versionCode `86-01` already set. Do not skip ahead.
 
-## After the push: console checklist
+1. **Agree the patch notes.** Walk `docs/patch-notes/2.2.0.md` with the
+   user, apply their edits, delete the paragraph that starts
+   `**DRAFT, not yet agreed.**`, confirm `grep -c DRAFT docs/patch-notes/2.2.0.md`
+   prints `0`, run `node tools/patch-notes.mjs --write-module` then
+   `node tools/patch-notes.mjs --check`, commit. No release build before
+   this (standing rule).
+2. **Release build, versionCode 12.** `npm test`, then
+   `npm run android:release` — **not `npm run play:release`**:
+   `android/version.properties` already reads 2.2.0 / 12 from the debug APK
+   build (86-01), and `play:release` would bump it to 13. After the build,
+   before the upload: run the scan from "Verifying a release build" below
+   (must exit 0), archive `mapping.txt` to
+   `C:/Users/Dell/android_releases/2.2.0-vc12/`, re-run the build-level
+   audit on this AAB and record it in `store-listing/LISTING.md`, and tag
+   `v2.2.0` and `v2.2.0-play12`.
+3. **Ask the user before the Play upload** (standing rule). The user
+   uploads the AAB to the testing track by hand and pastes
+   `node tools/patch-notes.mjs --play` into the release notes. Push master
+   and the tags; publish the GitHub Release with
+   `node tools/patch-notes.mjs --release-body | gh release create v2.2.0 --repo sheibeck/ddr --title "Delve, Die, Repeat 2.2.0" --notes-file -`.
+4. **When 2.2 reaches testers** (the user confirms the update is live on
+   their track): deploy the final rules with the default config —
+   `firebase deploy --only firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f --non-interactive`.
+   From this moment, 2.1.0's REPORT A BUG is refused by the live rules
+   (accepted by the user, 2026-09-29).
+5. **`node tools/bug-reports/send-test-report.mjs --probe-rules`**: all ten
+   probes must PASS (exit 0) — this is SRV-09's live proof. Record the
+   table in `docs/BUG-REPORTS.md`'s release-day subsection and check SRV-09
+   in `.planning/REQUIREMENTS.md`. If any probe fails: stop, keep the
+   transition files, redeploy the transition config
+   (`docs/LEADERBOARDS.md` section 6) if 2.1.0 reporting must be restored,
+   and investigate before continuing.
+6. **Delete the transition files**: `firebase/firestore.transition.rules`,
+   `firebase.transition.json` and `test/unit/firestore-transition-rules.test.js`
+   — update the docs that name them (`docs/LEADERBOARDS.md` section 6's
+   transition subsection becomes history); `npm test`; commit.
+7. **The website.** `node tools/patch-notes.mjs --site ../darktier-studio`,
+   commit it there, then `npm run deploy` in `C:/projects/darktier-studio`
+   (publishes `/privacy/apps`, `/privacy/delete-data`,
+   `/delve-die-repeat/terms`, `/delve-die-repeat` and the 2.2.0 patch
+   notes); open each page and confirm it serves the new text.
+8. **Play Console: Data safety and store text.** Enter the Data safety
+   answers and both URLs from `store-listing/LISTING.md`, and paste the
+   full description (if Play Console asks for the Data safety form during
+   step 3's release review, enter it then instead).
+9. **Play Console cleanup of the old game service** —
+   `docs/LEADERBOARDS.md` section 16.
 
-1. Delete LEANEST, Season 1 (`CgkIlvbN0YYPEAIQAw`) in Play Console once the new build is live
-   (docs/PLAY-GAMES-SETUP.md section 13).
-2. With two signed-in accounts (you and a friend), confirm a new DEEPEST score from one shows
-   on the other's ALL board after reopening the Leaderboards panel (the milestone-close device
-   check).
+At go-live (a later release, not 2.2): the Season 1 reset,
+`docs/LEADERBOARDS.md` section 10.
 
-The push itself follows the standing ask-first rule (after every update, ask before pushing a
-versionCode-bumped signed AAB to the internal-testing track).
+The push itself follows the standing ask-first rule (after every update,
+ask before pushing a versionCode-bumped signed AAB to the testing track).
 
 - `android/version.properties` is the single source of `versionCode` / `versionName`. Play
   rejects a re-used versionCode, so `play:release` always bumps it; use
   `node tools/bump-version.mjs --name 1.1.0` when the human-readable version should change too.
-- `npm run android:release` builds WITHOUT bumping (rebuild the same version after a fix that
-  never went up).
+- `npm run android:release` builds WITHOUT bumping (checklist step 2 uses
+  this — rebuild the same version after a fix that never went up).
 - Local review on the Pixel 7 still uses the debug APK (`npm run android:debug` + `adb install -r`).
   A Play-installed build and a locally-signed build have different signers, so one must be
   uninstalled before the other installs — the phone can't hold both.
@@ -87,19 +127,13 @@ versionCode-bumped signed AAB to the internal-testing track).
 ## Android toolchain pin (AGP 8.13.0, D-21)
 
 The build stays on **AGP 8.13.0 / Gradle 8.14.3 / JDK 21 / compileSdk 36** (Phase 67, D-21).
-The Play Games plugin (`@modbender/capacitor-play-games`, pinned at exactly 0.5.0, installed
-unmodified) declares AGP 9.3.1 + Kotlin Gradle Plugin 2.4.10 in its own `buildscript {}`, but
-the root project's AGP 8.13.0 shadows them and the plugin builds cleanly on the pinned toolchain
-with **no Gradle fix** (67-AGP9-SPIKE.md; confirmed again by 67-06's `npm run android:debug`).
-A whole-build move to AGP 9.3.1 / Gradle 9.5.0 failed in the spike (the plugin's Kotlin
-sources do not compile once its KGP 2.4.10 actually takes effect), so:
+The plugin that originally motivated this pin, the Play Games plugin
+(`@modbender/capacitor-play-games`, `67-AGP9-SPIKE.md`), was removed from
+the app in 2.2 (Phase 85, RETIRE-01). The pin itself stays in place until
+the deferred AGP 9 / Gradle 9 upgrade is taken up as its own reviewed
+change:
 
 - Do **not** let Android Studio's upgrade assistant bump AGP/Gradle.
-- The only expected build noise from the plugin is the KGP warning "Gradle 8.14.3 is
-  deprecated ..." (advisory).
-- A plugin version bump is a deliberate, reviewed change (D-17): re-review the tarball, update
-  the pin and lock integrity in `test/unit/play-games-intake.test.js`, and re-run the
-  `:app:dependencies --configuration releaseRuntimeClasspath` audit for ads/analytics SDKs.
 
 ## R8: minify, shrink, obfuscate (Phase 80, DROID-01)
 
@@ -114,9 +148,8 @@ are unchanged.
   (AGP 9 no longer accepts the non-optimising file).
 - **Where the keep rules come from.** The real rules ship with the dependencies as consumer rules:
   Capacitor core keeps every `com.getcapacitor.Plugin` subclass and its `@PluginMethod` members
-  (plugins are loaded by name from `capacitor.plugins.json`, so R8 can't see them); the Play Games
-  plugin keeps its whole `com.idleflowgames.playgames` package; AGP's default file keeps every
-  `@JavascriptInterface` method (the JS bridge). `android/app/proguard-rules.pro` mirrors all of
+  (plugins are loaded by name from `capacitor.plugins.json`, so R8 can't see them); AGP's default
+  file keeps every `@JavascriptInterface` method (the JS bridge). `android/app/proguard-rules.pro` mirrors all of
   them, so a dependency update that drops its own rules cannot silently break a release. It adds
   `-keepattributes SourceFile,LineNumberTable` so crash traces keep line numbers.
 - **`android/app/src/main/res/raw/keep.xml`** keeps `@drawable/splash_screen`: the splash-screen
@@ -158,7 +191,7 @@ config in a code-part plan before building again; do not patch and rebuild on th
 3. **The mapping travels with the bundle.** `jar tf app-release.aab` lists
    `BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map`.
 4. **Resources survived shrinking.** `aapt2 dump resources <apk>` (build-tools 36.0.0) lists
-   `drawable/splash_screen` and `string/game_services_project_id`.
+   `drawable/splash_screen`.
 5. **The web app is packed.** The APK carries `assets/public/index.html` and
    `assets/capacitor.config.json`.
 6. **No deprecated window APIs from us.**
@@ -195,8 +228,8 @@ differ, so the phone refuses to update in place, and uninstalling loses its Pref
 3. **Back button:** back closes an open sheet, and asks before quitting a live run.
 4. **Sound and music:** sound effects play, and the title music plays.
 5. **Haptics:** a hit buzzes.
-6. **Play Games sign-in:** signing in works and the avatar shows.
-7. **Global boards:** the Leaderboards panel loads ME / ALL / FRIENDS.
+6. **Account:** the ☰ account block shows your @handle.
+7. **Leaderboard:** a Compete-ON death appears on LEADERBOARD, with "You placed Nth of M." on the death card.
 
 ## Uploading from the CLI (not set up yet)
 
