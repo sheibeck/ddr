@@ -19,7 +19,6 @@ import { foeTurn, fumbleHeavyBlow } from "../../engine/combat.js";
 import { AFRAID_ROUNDS } from "../../engine/derived.js";
 import { derivedRng, makeRng } from "../../engine/rng.js";
 import { CAUSE_TEXT, CAUSE_TEXT_TOKENS, EPITAPHS } from "../../content/epitaphs.js";
-import { TAG_CAUSES } from "../../src/browser/scoreTag.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count. Throws if the sequence underflows — this doubles
@@ -247,9 +246,8 @@ test("fumbleHeavyBlow: a hero with 11 + depth hp can never die of it, whatever t
 // content: the scrollFumble death cause
 // ══════════════════════════════════════════════════════════════════════════
 
-test("content: CAUSE_TEXT.scrollFumble names {foe}; EPITAPHS.scrollFumble is non-empty; TAG_CAUSES ends with pilferFumble, scrollFumble", () => {
+test("content: CAUSE_TEXT.scrollFumble names {foe}; EPITAPHS.scrollFumble is non-empty", () => {
   assert.ok(CAUSE_TEXT.scrollFumble.includes("{foe}"));
   assert.deepEqual(CAUSE_TEXT_TOKENS.scrollFumble, ["foe"]);
   assert.ok(Array.isArray(EPITAPHS.scrollFumble) && EPITAPHS.scrollFumble.length > 0);
-  assert.deepEqual(TAG_CAUSES.slice(-2), ["pilferFumble", "scrollFumble"]);
 });

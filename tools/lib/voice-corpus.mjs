@@ -265,8 +265,6 @@ export const NON_COPY_EXPORTS = Object.freeze([
   // docs/patch-notes/<versionName>.md by tools/patch-notes.mjs --write-module:
   // release content, not UI copy (D-18/D-19 and the addendum's Copy note).
   nonCopy("src/browser/patchNotesData.js", "PATCH_NOTES", "the bundled release notes for this version, generated from docs/patch-notes/<versionName>.md by tools/patch-notes.mjs --write-module: release content, not UI copy (79.3 D-18/D-19 and the addendum's Copy note)"),
-  nonCopy("src/browser/playGames.js", "FAKE_PLAYER", "the dev-only fake Play Games player"),
-  nonCopy("src/browser/scoreTag.js", "TAG_SUBS", "sub-class name ids in the score-tag codec"),
   nonCopy("src/browser/uiTap.js", "UI_TAP_SELECTOR", "a CSS selector"),
   nonCopy("content/abilities.js", "ABILITY_BY_ID", "an index of ABILITIES, which is walked as a content table"),
   nonCopy("content/bestiary.js", "ELITE_TITLES", "name prefixes for elite foes (proper-noun vocabulary)"),
@@ -325,7 +323,7 @@ export const RAW_SURFACES = Object.freeze([
   Object.freeze({ files: ["src/browser/heroTab.js", "src/browser/gearTab.js", "src/browser/gearSheet.js", "src/browser/storeScreen.js", "src/browser/finalSheet.js"], surface: "panels" }),
   Object.freeze({ files: ["src/browser/viewModels.js", "src/browser/upgradeWhy.js", "src/browser/rollOdds.js"], surface: "items" }),
   Object.freeze({
-    files: ["src/browser/leaderboardView.js", "src/browser/leaderboardPanel.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/scoreTag.js", "src/browser/account.js", "src/browser/accountChip.js", "src/browser/playGames.js", "src/browser/placement.js", "src/browser/newBest.js"],
+    files: ["src/browser/leaderboardView.js", "src/browser/leaderboardPanel.js", "src/browser/account.js", "src/browser/accountChip.js", "src/browser/placement.js", "src/browser/newBest.js"],
     surface: "boards",
   }),
   Object.freeze({ files: ["src/browser/mapMarks.js", "src/browser/darknessView.js"], surface: "map" }),
@@ -355,7 +353,7 @@ export const OWNER_RULES = Object.freeze([
   rule("79-03", { exports: ["JOINER_EXIT_LINES", "JOINER_MURDER_LINES", "JOINER_PARTING_LINES"] }, "the Joiner lines"),
   rule("79-06", { exports: ["EPITAPHS", "CAUSE_TEXT", "MISS_LINES"] }, "epitaphs, death causes and the miss quips"),
   rule("79-06", {
-    modules: ["content/boards.js", "content/placement.js", "content/account.js", "content/epitaphs.js", "src/browser/missLines.js", "src/browser/scoreTag.js", "src/browser/placement.js", "src/browser/account.js", "src/browser/newBest.js"],
+    modules: ["content/boards.js", "content/placement.js", "content/account.js", "content/epitaphs.js", "src/browser/missLines.js", "src/browser/placement.js", "src/browser/account.js", "src/browser/newBest.js"],
   }, "boards, placement, account and score-tag copy"),
   rule("79-04", { kind: "builder", domains: ["fight"] }, "fight-domain Oracle and rail lines"),
   rule("79-04", { modules: ["src/browser/fightLog.js", "engine/combat.js"] }, "the fight log and engine/combat.js literals"),
@@ -379,11 +377,11 @@ export const OWNER_RULES = Object.freeze([
   rule("79-09", {
     modules: [
       "src/browser/heroTab.js", "src/browser/gearTab.js", "src/browser/gearSheet.js", "src/browser/storeScreen.js", "src/browser/viewModels.js", "src/browser/upgradeWhy.js",
-      "src/browser/leaderboardView.js", "src/browser/leaderboardPanel.js", "src/browser/globalBoards.js", "src/browser/boardScores.js", "src/browser/finalSheet.js",
+      "src/browser/leaderboardView.js", "src/browser/leaderboardPanel.js", "src/browser/finalSheet.js",
     ],
   }, "hero, gear, store, boards and final-sheet panel copy"),
   rule("79-10", {
-    modules: ["src/browser/mapMarks.js", "src/browser/roller.js", "src/browser/settings.js", "src/browser/hudMenu.js", "src/browser/arrowPad.js", "src/browser/accountChip.js", "src/browser/playGames.js", "mazeworld.html"],
+    modules: ["src/browser/mapMarks.js", "src/browser/roller.js", "src/browser/settings.js", "src/browser/hudMenu.js", "src/browser/arrowPad.js", "src/browser/accountChip.js", "mazeworld.html"],
   }, "map, legend, title, roller, settings, menu and remaining shell copy"),
   rule("79-11", { kind: "builder", domains: ["world"] }, "world-domain Oracle and rail lines"),
   rule("79-11", { modules: ["src/browser/rail.js", "src/browser/hazardCard.js"] }, "the rail cards and the hazard card"),

@@ -172,18 +172,19 @@ const APP_VERSION_MAX_CHARS = 64; // matches src/browser/runDoc.js's VERSION_MAX
 // earlier reference stays a stable snapshot.
 let graveyard = null;
 
-// Phase 68 (PGS-03/04, D-01/D-02): the one registered run-recorded listener.
-// dispatch()'s non-dev death branch hands it a frozen copy of the run summary
-// exactly once per death (the shell's submission queue, wired by 68-07). Dev
-// start-at-depth deaths never reach it, and a listener failure (sync throw or
-// async rejection) is swallowed so it can never reach dispatch()'s fail-closed
+// Phase 68 / Phase 85: the one run-recorded listener; the shell hands each
+// non-dev death to boardSync. dispatch()'s non-dev death branch hands it a
+// frozen copy of the run summary exactly once per death. Dev start-at-depth
+// deaths never reach it, and a listener failure (sync throw or async
+// rejection) is swallowed so it can never reach dispatch()'s fail-closed
 // catch or touch the tombstone/bests writes.
 let runRecordedListener = null;
 
 /**
- * setRunRecordedListener(fn) — Phase 68 (PGS-03/04): registers the one
- * run-recorded listener (replacing any earlier one). A non-function (e.g.
- * null) unregisters it.
+ * setRunRecordedListener(fn) — Phase 68 / Phase 85: the one run-recorded
+ * listener; the shell hands each non-dev death to boardSync. Registers the
+ * one run-recorded listener (replacing any earlier one). A non-function
+ * (e.g. null) unregisters it.
  */
 export function setRunRecordedListener(fn) {
   runRecordedListener = typeof fn === "function" ? fn : null;
@@ -948,7 +949,8 @@ export function dispatch(action) {
         // returns — the death panel never waits on the storage write below.
         const when = typeof currentState.deathAt === "number" ? currentState.deathAt : Date.now();
         const { summary, bestsJson, historyJson } = recordDeath(currentState, diedEvent.cause, when);
-        // Phase 68 (PGS-03/04): the run-recorded listener, once per non-dev death.
+        // Phase 68 / Phase 85: the one run-recorded listener; the shell hands
+        // each non-dev death to boardSync, once per non-dev death.
         notifyRunRecorded(summary);
         track(persistGrave(currentState, diedEvent.cause, when, summary, bestsJson, historyJson));
       }

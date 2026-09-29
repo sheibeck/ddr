@@ -21,8 +21,6 @@
 // ever did ("all five floors", "two hp per square").
 // test/unit/death-copy.test.js pins both directions: every cause die() is
 // passed has a bucket, and every bucket is a cause die() is passed.
-// src/browser/scoreTag.js#TAG_CAUSES keeps their codec indices
-// (append-only), and boardsView.js reads an unknown cause as "".
 export const EPITAPHS = {
   combat: [
     "Killed by a {foe}. The {foe} has since been promoted.",
