@@ -44,7 +44,7 @@ The game is based on the 1994 tabletop Mazeworld rules, adapted for a phone with
 Made for phones, not ported to them
 - Tap or swipe to move; every decision is a large button.
 - One screen for the map, one for your hero, one for gear, one for the Oracle's log, and one for the dead.
-- Plays fully offline. Optional Google Play Games leaderboards, if you want the whole world to see how you died. No ads, no in-app purchases.
+- Plays fully offline. An optional public leaderboard, if you want the whole world to see how you died. No ads, no in-app purchases.
 - Your run saves itself. Put the phone down mid-fight and the monster will wait.
 
 Delve, Die, Repeat is a paid game with nothing else to buy. You get the whole dungeon, and the dungeon gets the whole you.
@@ -66,118 +66,83 @@ darktier-studio commit aaa0f4a (local, not yet deployed; the user deploys the
 site). Source: `C:/projects/darktier-studio/src/pages/privacy/apps.astro` and
 `delete-data.astro`; full hash `aaa0f4ad4822ebd43c58de205c0da210580c41df`.
 
-### Draft for darktierstudios.com/privacy/apps (79.3 bug reports)
-
-The paragraph below is a draft for the user to adapt and deploy to the
-privacy page (`https://darktierstudios.com/privacy/apps`) at milestone close.
-The delete-data page (`https://darktierstudios.com/privacy/delete-data`)
-needs a matching bug-report line of its own; the user deploys both at
-milestone close (see `.planning/MILESTONE-CLOSE-QUESTIONS.md`).
-
-> "Bug reports. Delve, Die, Repeat has a REPORT A BUG option in its menu.
-> Nothing is sent unless you type a report and tap Send. A report contains
-> what you typed, the game's in-run log (the Oracle, which may include your
-> adventurer's randomly generated name), the app version, your device model
-> and Android version, and a summary of the current run (floor, class, race,
-> level and turn count). It contains no account, Google Play Games identity,
-> email address or other contact detail. Reports are stored in the game's
-> Google Firebase project and posted publicly as issues on the game's GitHub
-> repository (https://github.com/sheibeck/ddr), where anyone can read them,
-> so please leave out anything private. Reports are deleted from our database
-> once filed, or within 30 days at most. The public GitHub issue remains.
-> To have a report deleted, follow
-> https://darktierstudios.com/privacy/delete-data or contact us, and we will
-> delete it from Firebase and GitHub."
-
 ## Data safety
 
-Answers for 2.1.0: the 2.0 Leaderboards answers, plus 79.3's in-app bug
-reports. Play Console → Delve, Die, Repeat → Policy and programs → App
+Answers for 2.2.0: our own Firebase leaderboard replaces the retired Google
+leaderboard service; the 2.1.0 in-app bug reports are unchanged in
+substance. Play Console → Delve, Die, Repeat → Policy and programs → App
 content → Data safety.
 
 "Does your app collect or share any of the required user data types?" →
-**Yes.** Since 2.0 the game posts runs to Google Play Games leaderboards while
-the in-game Compete setting is on (it is on by default; the player can turn it
-off at any time from the account menu). Since 2.1 the game can also send a
-player-written bug report, with the run's Oracle attached, but only when the
-player taps Send in ☰ REPORT A BUG.
+**Yes.** Since 2.2 the game posts each finished run to its own public
+leaderboard while the in-game Compete setting is on (it is on by default; the
+player can turn it off at any time from the account block). A bug report is
+sent only when the player taps Send in ☰ REPORT A BUG.
 
 | Data type | What it is | Collected | Shared | Optional | Purpose | Processed ephemerally |
 |---|---|---|---|---|---|---|
-| Personal info → **User IDs** | The Google Play Games player ID | Yes | No | Yes (Compete off) | App functionality | No |
-| App activity → **Other actions** | Per run: the four leaderboard scores (DEEPEST, LONGEST, BUTCHERY, PURSE) plus the score tag's gameplay details: race, sub-class, level, cause of death, floor, days, steps, kills, wilmst carried, experience, and the game-rolled adventurer name (possibly shortened) | Yes | No | Yes (Compete off) | App functionality | No (Google stores the scores) |
+| Personal info → **User IDs** | An anonymous game ID: a random Firebase account ID the game creates, carrying no name, email, phone number, device identifier or advertising ID | Yes | No | Yes (created only when Compete is ON and a run is sent, or when the player sends a bug report) | App functionality | No |
+| App activity → **Other actions** | Per finished run while Compete is on: the rolled @handle and every field of the run document — hero name rolled by the game, race, class, sub-class, level, floor, days survived, squares walked, kills, wilmst carried, experience, cause of death, what killed you, epitaph, time of death, app version, dungeon seed, turn count, a fingerprint of the run, season, and the ranking numbers derived from them; plus, once, the runs finished on 2.1.0 since its release, sent when 2.2 first starts, only if Compete is on at that moment | Yes | No | Yes (Compete off) | App functionality | No (stored on the public board) |
 | App activity → **Other user-generated content** | The bug report the player types in the ☰ REPORT A BUG sheet (up to 2,000 characters), sent only when they tap Send | Yes | No | Yes (sent only when the player taps Send) | App functionality | No (stored in Firestore and posted publicly on GitHub) |
 | App info and performance → **Diagnostics** | Attached to a bug report only: the run's Oracle log, the app version and build, the device model and Android version (the WebView user agent), and the run context (floor, race, sub-class, class, level, day, steps, alive or dead) | Yes | No | Yes (sent only when the player taps Send) | App functionality | No |
 
 "Other actions" is Play's App activity type for "any other user activity or
 actions in-app not listed here such as gameplay" (answer/10787469, checked
-2026-09-24), so game scores go there.
+2026-09-24), so board runs go there.
 
-Since v2.1, LEANEST is no longer submitted (BOARD-17); the Data safety
-answers themselves are unchanged.
-
-**Bug reports (since 2.1.0):** nothing leaves the phone until the player taps
-Send in ☰ REPORT A BUG. The sheet states first that the report and the run's
-Oracle will be posted publicly on GitHub, and to leave out anything private.
-No account id, email, avatar or Play Games identity is attached, though the
+**Bug reports:** nothing leaves the phone until the player taps Send in
+☰ REPORT A BUG. The sheet states first that the report and the run's Oracle
+will be posted publicly on GitHub, and to leave out anything private. No
+account id, email, avatar or personal identity is attached, though the
 adventurer's generated name can appear inside the Oracle. The report goes
 over HTTPS to the game's Firebase project (Cloud Firestore,
 `delve-die-repeat-6ba5f`), and a GitHub Action files it as a public issue on
 sheibeck/ddr (`docs/BUG-REPORTS.md`). Reports are deleted from Firestore
 once filed (or within 30 days at most, if the Oracle had to be trimmed to
 fit the issue); the public GitHub issue itself is not deleted by this
-process (`docs/BUG-REPORTS.md` "Retention").
+process (`docs/BUG-REPORTS.md` "Retention"). Sending uses the anonymous game
+ID (the User IDs row above) only as the key of a small per-player limit
+record (`reportLimits/{uid}`: a last-sent timestamp, a day bucket, and a
+report count) enforcing a 2-minute cooldown and 5 reports a day, deleted
+automatically 2 days after the last report; the report document itself
+carries no id of any kind.
 
-**Anonymous identifier (since Phase 83, folded in with Leaderboards):**
-sending a report now also creates the same anonymous Firebase identity
-(a device-scoped uid, no personal information) the leaderboards use, silently
-and only on the first Send — never before. That uid is stored only as the
-key of a small per-player rate-limit record (`reportLimits/{uid}`: a last-sent
-timestamp, a day bucket, and a report count), deleted automatically within 2
-days, and never appears inside the bug report document itself. Whether this
-uid changes the Data safety declaration above (a new "User IDs" collected
-entry, or coverage under the existing leaderboard row) is a console-time
-decision, to be settled together with Leaderboards' own Data safety answers
-in Phase 86 (COMP-01) — not answered here.
+Every other data type: not collected, not shared. Saves, settings, personal
+bests and the local run history never leave the phone; a run's details,
+including its epitaph, leave it only as a Compete-ON board run; a bug report
+leaves it only on Send. Android Advertising ID: not used. Data is not sold.
 
-Every other data type: not collected, not shared. The epitaph, saves,
-settings, personal bests and the local graveyard never leave the phone; a
-bug report leaves it only when the player taps Send. Android Advertising ID:
-not used. Data is not sold.
-
-- **Security:** encrypted in transit. Play Games Services sends it over HTTPS
-  (Google's PGS disclosure page, below); bug reports are encrypted in transit
-  too, both to Firestore and from the Action to GitHub.
-- **Deletion:** users can request that data be deleted: yes. Through their
-  Play Games profile (the Play Store's Play Games Profile settings or
-  `https://play.google.com/games/profile`), with step-by-step instructions at
-  `https://darktierstudios.com/privacy/delete-data` (Play Console's "Delete
-  data URL"). A bug report is deleted the same way, on request, through the
-  delete-data URL page or by contacting the developer, who deletes the
-  Firestore document and the GitHub issue (`docs/BUG-REPORTS.md`).
-- **Why "optional":** every user, on every device and in every region, can turn
-  Compete off from the account menu (STOP COMPETING, or COMPETE → OFF). With it
-  off the game makes no sign-in, submit or fetch call and discards any runs
-  still queued. Play counts an opt-out as optional collection ("all users …
+- **Security:** encrypted in transit. The board and identity calls go over
+  HTTPS to Cloud Firestore, Identity Toolkit and Secure Token; bug reports go
+  over HTTPS too, both to Firestore and from the Action to GitHub.
+- **Deletion:** users can request that data be deleted: yes. In the game,
+  ERASE MY RUNS in the ☰ account block (a two-tap confirm) deletes every one
+  of the player's runs on the board, in every season, and deletes the
+  anonymous game account; local run history stays on the phone. Without the
+  game (for example after an uninstall), the delete-data URL page's email
+  route works from the player's own @handle. A bug report is deleted the same
+  way, on request, through the delete-data URL page or by contacting the
+  developer, who deletes the Firestore document and the GitHub issue
+  (`docs/BUG-REPORTS.md`).
+- **Why "optional":** with Compete OFF the game makes zero network calls for
+  the board, creates no game ID, and discards any runs still queued. The game
+  never uploads runs finished while Compete was off, even once Compete is
+  turned back on. Play counts an opt-out as optional collection ("all users …
   can either optionally provide information, opt-out, or opt-in",
   answer/10787469).
 
 ### Shared: the finding and its sources
 
-**Not shared.** The data goes to Google Play Games Services, which processes it
-to run this game's leaderboards. That is a transfer to a service provider
-processing data on the developer's behalf, which Play excludes from "sharing".
-Posting a run to a public leaderboard is also the player's own choice, made by
-leaving Compete on and announced by the first-sign-in card ("Every death goes
-on the public record"), which is the user-initiated exemption. Google's PGS page
-adds that a PGS game "can only read/write the authenticated player's data" for
-that game.
-
-**Bug reports: not shared.** The report goes to Cloud Firestore, part of the
-game's own Firebase project (`delve-die-repeat-6ba5f`), processing it on the
-developer's behalf — the service-provider exemption. Posting the report
-publicly on GitHub is the player's own disclosure, stated plainly before
-Send (section above) — the user-initiated exemption (answer/10787469).
+**Not shared.** The board and the bug reports live in Cloud Firestore and
+Firebase Authentication, in the game's own Firebase project
+(`delve-die-repeat-6ba5f`), which Google operates as our service provider on
+the developer's behalf — the service-provider exemption. Showing the handle
+and runs on the public board is the player's own choice, made by leaving
+Compete on and announced by the first-run welcome card ("Every death from
+here goes on the board under this handle, for anyone to find") — the
+user-initiated exemption. Bug reports: unchanged finding, the same two
+exemptions apply (posting publicly on GitHub is the player's own disclosure,
+stated plainly before Send, section above).
 
 Sources:
 
@@ -186,136 +151,87 @@ Sources:
   (fetched 2026-09-24): the service-provider and user-initiated exemptions
   from "sharing", the optional rule, the App activity and App info and
   performance type definitions.
-- Android Developers, "Prepare for Google Play's data disclosure
-  requirements" for Play Games Services,
-  `https://developer.android.com/games/pgs/data-collection` (page last
-  updated 2026-06-16; fetched 2026-09-24; the old
-  `developers.google.com/games/services/data-collection` URL redirects
-  here): encrypted in transit over HTTPS; the authenticated-player rule; users
-  delete through their Play Games profile; "as the app developer, you are
-  solely responsible for deciding how to respond".
 
-### Open decision for the console step (user)
+### Notes for the console step (user)
 
-Google's PGS page lists data its SDK collects **automatically**: Gamer
-Identity, plus Analytics and Diagnostics "to improve the stability of our
-SDKs". Per 67 D-20 the SDK initializes at every app start, even with Compete
-off (the game itself makes no Play Games call then, but Google's software
-starts). The answers above stay as locked in 69-CONTEXT D-04. **The user
-decides at console time:** if the release-blocking Compete-off network capture
-in `docs/UAT-v2.0.md` shows the SDK sending anything at launch, the
-conservative answer is to also declare **App info and performance →
-Diagnostics** (collected, not optional, purpose App functionality, not shared).
-If the capture shows nothing, the table above stands as is.
+- The one-time upload of runs finished on 2.1.0 (since its 2026-09-28
+  release) is covered by the Other actions row above, not a separate data
+  type — it carries the same fields as any other run and uploads only once,
+  only if Compete is on the first time 2.2 starts (`docs/LEADERBOARDS.md`
+  section 8).
+- The developer's own balance export (`tools/boards-admin.mjs export`,
+  `docs/LEADERBOARDS.md` section 12) reads board runs by hand to track game
+  balance across builds. Its locked purpose is App functionality
+  (86-CONTEXT); decide at console time whether Play's Analytics purpose
+  should also be checked for the Other actions row.
 
-**Diagnostics interplay (79.3).** Bug reports now declare their own App info
-and performance → Diagnostics entry as optional (sent only when the player
-taps Send). Play keeps one entry per data type, not one per feature, so if
-the Compete-off capture above shows the Play Games SDK sending anything at
-launch, the combined Diagnostics entry becomes not optional, not just an
-addition alongside an optional one. The decision stays the user's, at
-console time, once the capture result is known.
+### Source-level audit (2.2.0, September 29, 2026, commit 7a08a774)
 
-### Source-level audit (2026-09-24, commit ebe4b05)
+Run in the main checkout, working tree at HEAD.
 
-Run in the 69-01 worktree after `npm ci` (lockfile only) and
-`npm run build:www`; raw outputs kept outside the repo.
-
-**Addendum, 2026-09-28, Phase 79.3.** The bug-report path adds no package.
-`src/browser/bugReport.js` sends one HTTPS POST to the Firestore REST API,
-only on Send. The Action (`tools/bug-reports/file-issues.mjs`) uses Node
-built-ins only — no new dependency in the app or the Action.
-
-- **Runtime packages.** `package.json` dependencies: `@capacitor/android`,
+- **Runtime packages.** `package.json` dependencies (7): `@capacitor/android`,
   `@capacitor/app`, `@capacitor/core`, `@capacitor/haptics`,
   `@capacitor/preferences`, `@capacitor/screen-orientation`,
-  `@capacitor/splash-screen`, `@capacitor/status-bar`, and
-  `@modbender/capacitor-play-games` pinned at exactly `0.5.0`. One
-  devDependency, `@capacitor/cli`. The lockfile's non-dev package entries are
-  those nine plus `tslib` (10 in all). A case-insensitive grep of those names
-  for firebase, admob, play-services-ads, ads-identifier, analytics,
-  measurement, crashlytics, appsflyer, adjust, facebook, appcenter, sentry and
-  bugsnag: **0 hits**. No ads, analytics or crash-reporting SDK.
+  `@capacitor/splash-screen`. One devDependency, `@capacitor/cli`. The
+  lockfile's non-dev package entries are those seven plus `tslib` (8 in
+  all) — down from the 2.0.0 audit's ten (the native leaderboard plugin
+  package removed in Phase 85; `@capacitor/status-bar` already gone since
+  Phase 80).
+  A case-insensitive grep of those names for firebase, admob,
+  play-services-ads, ads-identifier, analytics, measurement, crashlytics,
+  appsflyer, adjust, facebook, appcenter, sentry and bugsnag: **0 hits**. No
+  `firebase` package appears because Firebase is reached over plain REST,
+  with no SDK (`src/browser/firebaseAuth.js`, `firestoreRest.js`) — no ads,
+  analytics or crash-reporting SDK either.
 - **Permissions.** `android/app/src/main/AndroidManifest.xml` declares one
-  `uses-permission`: `android.permission.INTERNET`, used by Google Play
-  services for Play Games while Compete is on (and by Google's own SDK start-up,
-  67 D-20). No `AD_ID`. The only other Play Games entry is the
-  `com.google.android.gms.games.APP_ID` meta-data.
-- **Network APIs in `www/`.** `grep -rlE` for `fetch(`, `XMLHttpRequest`,
-  `WebSocket`, `sendBeacon` and `EventSource` over the freshly built `www/`:
+  `uses-permission`: `android.permission.INTERNET`, used for our own board
+  while Compete is on and for bug reports on Send. No `AD_ID`. No
+  `com.google.android.gms.games.APP_ID` meta-data (removed in Phase 85).
+- **Network APIs in `www/`.** The literal `grep -rlE
+  "fetch\(|XMLHttpRequest|WebSocket|sendBeacon|EventSource"` over a freshly
+  built `www/` finds only `www/src/browser/sfx.js` (same-origin `fetch` of a
+  bundled sound file; no network) and Capacitor's own inert `CapacitorHttp`
+  web patch (unused — `capacitor.config.json` does not enable it). Because
+  the board/identity/bug-report code injects `fetchFn` rather than calling
+  `fetch(` directly (by design, so every module stays unit-testable with no
+  network), the real traffic is found instead by a widened
+  `grep -nE "fetch\.bind|XMLHttpRequest|WebSocket|sendBeacon|EventSource"`:
 
   | File hit | Classification |
   |---|---|
-  | `www/src/browser/sfx.js` | Same-origin `fetch` of a bundled `./sfx/<clip>.mp3` file inside the app; no network |
-  | `www/vendor/@capacitor/core/capacitor.js`, `index.js`, `index.cjs.js` (and their `.map` files) | Capacitor's own `CapacitorHttp` web patch; inert, because `capacitor.config.json` does not enable `CapacitorHttp` |
+  | `www/index.html` `boardFetchFn()` | the live board read/write path against Firestore REST on a native build, gated on `window.Capacitor?.isNativePlatform?.()` |
+  | `www/index.html` `sharedIdentity()` | the one anonymous-identity request (Identity Toolkit / Secure Token), shared by bug reports and the board, created lazily on first use |
+  | `www/index.html` `sendBugReport(...)` | REPORT A BUG's one Firestore REST write, only on Send |
 
-  No hit in the vendored Play Games plugin's web code, and none in
-  `src/browser/playGames.js` (it calls the native plugin, which loads lazily
-  and only with Compete on). **Defect findings: none.**
+  **Defect findings: none** — every network call is either inert,
+  same-origin, or an explicit board/identity/bug-report call gated on
+  Compete or a player's own Send action.
 
-The build-level half (Gradle `releaseRuntimeClasspath` and the merged release
-manifest) is recorded by 69-04 on the actual 2.0.0 build, below.
+### Build-level audit (2.2.0 debug build, versionCode 12)
 
-**Phase 80 addendum, 2026-09-28, commit `acba40ed`.** `@capacitor/status-bar` is uninstalled
-(80-02, DROID-02): bar icon styling now goes through `SystemBars`, the plugin built into
-`@capacitor/core` (no separate npm package, so it adds no lockfile entry of its own). Re-ran
-the same case-insensitive grep of `package.json`'s dependencies plus `package-lock.json`'s
-non-dev package entries for the ad/analytics/crash-reporting terms the audit above lists
-(`firebase`, `admob`, `play-services-ads`, `ads-identifier`, `analytics`, `measurement`,
-`crashlytics`, `appsflyer`, `adjust`, `facebook`, `appcenter`, `sentry`, `bugsnag`): **0 hits**.
-The lockfile's non-dev package list is now 9 entries (down from 10 — `@capacitor/status-bar`
-removed, nothing added):
+From the debug build 86-01 produced and identified
+(`android/app/build/outputs/apk/debug/app-debug.apk`, sha256
+`6d8690884110b0e481a31a7389cdb47c148b409d8caa2934a309fb15a08f5e60`, build
+commit `61617177`):
 
-`@capacitor/android`, `@capacitor/app`, `@capacitor/core`, `@capacitor/haptics`,
-`@capacitor/preferences`, `@capacitor/screen-orientation`, `@capacitor/splash-screen`,
-`@modbender/capacitor-play-games`, `tslib`.
+- **Dependency tree** (`node tools/gradle.mjs :app:dependencies
+  --configuration releaseRuntimeClasspath`). A case-insensitive grep for the
+  same ad/analytics/crash terms above: **0 hits**. `play-services-games`:
+  **0 hits**. No `com.google.android.gms` artifact remains — the prior
+  five-row Google Play services table (`play-services-games-v2`,
+  `play-services-base`, `play-services-basement`, `play-services-tasks`,
+  `kotlin-stdlib`) is now empty.
+- **Merged debug manifest.** `versionCode="12"`, `versionName="2.2.0"`;
+  three `uses-permission` entries (`INTERNET`, `VIBRATE`, the androidx
+  `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`), no `AD_ID`; no
+  `com.google.android.gms.games.APP_ID` meta-data.
+- **`capacitor.plugins.json`.** 5 entries, Capacitor's own plugins only:
+  `@capacitor/app`, `@capacitor/haptics`, `@capacitor/preferences`,
+  `@capacitor/screen-orientation`, `@capacitor/splash-screen`.
+- **Network APIs in the built `www/`.** Same file list and classification as
+  the source-level audit above; no new file.
 
-No ads, analytics or crash-reporting SDK. This is a source-level re-check only (this plan runs
-no build for the release-signed/dependency-tree half of the audit — see 80-04-PLAN.md's
-build-and-verify-only scope); the build-level `:app:dependencies` re-check happens the next
-time that audit section is refreshed against a signed build.
-
-### Build-level audit (2.0.0, versionCode 9, 2026-09-24)
-
-Run in the main checkout on the signed release build made by
-`npm run android:release` (AGP 8.13.0 / Gradle 8.14.3 / JDK 21, toolchain
-files unchanged). The AAB it was run against:
-`android/app/build/outputs/bundle/release/app-release.aab`, 10,352,033 bytes,
-sha256 `bcaaa1b30fcf0b4683c2c78236880bb03becafbd9239edcf1ff6366664813f97`.
-Raw outputs kept outside the repo.
-
-- **Dependency tree.** `node tools/gradle.mjs :app:dependencies --configuration releaseRuntimeClasspath`.
-  A case-insensitive grep of the report for firebase, admob,
-  play-services-ads, ads-identifier, analytics, measurement, crashlytics,
-  appsflyer, adjust, facebook, appcenter, sentry and bugsnag: **0 hits**.
-  The Google Play services artifacts, unchanged from 67-06's audit:
-
-  | Artifact | Resolved version |
-  |---|---|
-  | `com.google.android.gms:play-services-games-v2` | 22.0.0 |
-  | `com.google.android.gms:play-services-base` | 18.5.0 |
-  | `com.google.android.gms:play-services-basement` | 18.9.0 (18.4.0 requested) |
-  | `com.google.android.gms:play-services-tasks` | 18.2.0 |
-  | `org.jetbrains.kotlin:kotlin-stdlib` | 2.4.10 |
-
-- **google-services not applied.** `android/app/google-services.json` does not
-  exist, so the google-services plugin (on the buildscript classpath) is never
-  applied. No Firebase.
-- **Merged release manifest**
-  (`android/app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml`):
-  `android:versionCode="9"`, `android:versionName="2.0.0"`, the
-  `com.google.android.gms.games.APP_ID` meta-data, and exactly three
-  `uses-permission` entries: `android.permission.INTERNET`,
-  `android.permission.VIBRATE` and the androidx
-  `com.darktierstudios.delvedierepeat.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
-  No `AD_ID`.
-- **Network APIs in the bundled `www/`.** The same `grep -rlE` as the
-  source-level audit, over the `www/` this build produced: 7 files,
-  `www/src/browser/sfx.js` and the six `www/vendor/@capacitor/core/` files
-  (`capacitor.js`, `index.js`, `index.cjs.js` and their `.map` files).
-  Identical to the source-level list above; no new file.
-- **Bundle contents.** 30 `.mp3` entries under `base/assets/public/sfx/`, the
-  delivered clips only. **Defect findings: none.**
+The release AAB re-check is `docs/RELEASING.md` checklist step 2.
 
 ## Screenshots
 
