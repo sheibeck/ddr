@@ -1,70 +1,76 @@
 // content/account.js
 //
-// Phase 67 (ACCT-01/02) — every word the account chip, its bottom sheet and
-// its two rail cards show. The chip sits in the top bar beside the menu
-// button (D-05); signed in it wears the initials avatar, otherwise the
-// deliberate "nobody" glyph (D-07). The sheet lists an identity line, the one
-// action the current state allows, the Compete toggle and Settings (D-10).
-// There is no sign-out wording anywhere: Play Games has no programmatic
-// sign-out, so STOP COMPETING only turns Compete off, and the helper line
-// sends the player to the Play Games app for a real disconnect (D-03). The
-// welcome card is the first-sign-in notice (D-04); the failed card covers a
-// failed or declined sign-in (D-11). Both are rail cards, never modals.
+// Phase 85 (ACCT-03/05, 85-CONTEXT group 1) — every word the account
+// surfaces show: the title chip, its sheet, the ☰ block's own copy of the
+// same rows, and the three rail cards a handle earns from the board (going
+// up for the first time, being swept clean of it, or the erase call not
+// landing). The account is your rolled @handle and the Compete toggle —
+// there is no login flow, no account-creation screen and no third-party
+// identity of any kind, and this table carries none of that wording. The
+// handle exists from the moment the app first launches
+// (identity.ensureHandle(), fully offline); nothing is created anywhere
+// until the first run reaches the board.
 //
-// Phase 70 (POLISH-02): in play, the ☰ menu button now wears the account face
-// (70 D-03): the initials avatar when signed in, the plain ☰ otherwise, with
-// menuLabel as its accessible label. The dropdown carries the ACCOUNT block
-// (identity, action, helper line, Compete; no title and no Settings row). The
-// title keeps its own chip and account sheet (70 D-04). The failed card now
-// points at "the menu in the corner", since the band-2 face it named is gone.
+// The previous phases' account block — its own welcome/failure cards and a
+// linked, provider-backed identity this app no longer has — is retired in
+// full; every row here is new copy for our own board, not a rename of the
+// old one.
 //
-// `content/` holds pure data only: the `{name}` placeholder below is filled
-// by src/browser/account.js, never here.
+// The chip sits in the title's corner and opens the sheet; in the dungeon
+// the same rows live inside the ☰ dropdown (the account block). Both read
+// from this one table through src/browser/account.js, never a literal of
+// their own.
+//
+// `content/` holds pure data only: the `{handle}` placeholder below is
+// filled by src/browser/account.js, never here.
 
 export const ACCOUNT_COPY = Object.freeze({
-  // D-07: the dim question mark inside the hollow "nobody" square.
+  // The dim question mark inside the hollow pending/off-board square.
   glyph: "?",
-  // The chip's accessible label, one per face.
+  // The title chip's accessible label, one per face.
   chipLabel: Object.freeze({
-    signedIn: "Play Games account: {name}",
-    signedOut: "Play Games account: nobody signed in",
-    pending: "Play Games account: signing in",
-    off: "Play Games account: Compete is off",
+    on: "Account: {handle}",
+    off: "Account: Compete is off",
+    pending: "Account: rolling your handle",
   }),
-  // Phase 70 (D-03): the ☰ menu button's accessible label — naming the
-  // player when signed in, plain otherwise.
+  // The ☰ menu button's accessible label — naming the handle once Compete
+  // is on and the handle is known, plain otherwise.
   menuLabel: Object.freeze({
-    signedIn: "Menu — signed in as {name}",
+    on: "Menu — {handle}",
     plain: "Menu",
   }),
   sheet: Object.freeze({
-    title: "PLAY GAMES",
+    title: "ACCOUNT",
+    // The identity name shown before a handle exists (a beat, offline).
+    pending: "Rolling your handle…",
     status: Object.freeze({
-      signedIn: "PLAY GAMES · SIGNED IN",
-      signedOut: "PLAY GAMES · SIGNED OUT",
-      pending: "PLAY GAMES · SIGNING IN",
-      off: "PLAY GAMES · COMPETE OFF",
+      on: "ON THE BOARD",
+      off: "COMPETE OFF",
+      pending: "ROLLING YOUR HANDLE…",
     }),
-    nobody: "Nobody in particular",
-    unnamed: "A player with no name",
-    signIn: "SIGN IN",
-    signingIn: "SIGNING IN…",
-    stopCompeting: "STOP COMPETING",
-    stopHelp: "To forget you entirely, disconnect this game in the Play Games app. It will pretend not to miss you.",
-    offHelp: "Nothing leaves this phone. Nobody is keeping score but you, and you were always going to.",
     compete: "COMPETE",
     on: "ON",
     off: "OFF",
+    onHelp: "Every death from here goes on the board under this handle, for anyone to find. Turn it off any time, right here.",
+    offHelp: "Nothing leaves this phone. Compete must be on to reach the board — and so to erase anything already sitting there.",
+    reroll: "RE-ROLL HANDLE",
+    erase: "ERASE MY RUNS",
+    eraseArmed: "TAP AGAIN TO ERASE",
+    erasing: "ERASING…",
     settings: "SETTINGS",
   }),
   cards: Object.freeze({
     welcome: Object.freeze({
-      title: "ON THE PUBLIC RECORD",
-      line: "Play Games is watching now. Every death goes on the public record. Turn Compete off from the little face in the corner.",
+      title: "ON THE BOARD",
+      line: "{handle} just went on the board. Every death from here is public record. Turn Compete off any time from the menu in the corner.",
     }),
-    failed: Object.freeze({
-      title: "PLAY GAMES DID NOT ANSWER",
-      line: "Sign-in failed, or was declined. You stay unrecorded and fully playable. Try again, or turn Compete off, from the menu in the corner.",
+    erased: Object.freeze({
+      title: "SWEPT CLEAN",
+      line: "Every run {handle} ever posted is off the board now. The handle stays; the record does not.",
+    }),
+    eraseFailed: Object.freeze({
+      title: "THE BOARD DIDN'T ANSWER",
+      line: "Nothing was erased. The board did not answer this time. Try again from the menu in the corner.",
     }),
   }),
 });

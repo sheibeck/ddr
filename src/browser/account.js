@@ -1,43 +1,37 @@
 // src/browser/account.js
 //
-// Phase 67 (ACCT-01/02) — the account chip and its bottom sheet's pure view
-// model. No DOM, storage, clock, randomness or network anywhere in this
-// module. Every word comes from content/account.js; the avatar's initials
-// and colour come from the same helpers the v3 Leaderboards panel uses
-// and are never re-implemented here. Phase 84 (84-09) repointed this import
-// from the retired boardsView module to its own — the avatar hash and
-// initials rule are unchanged.
-// The controller (67-07) owns every transition (sign-in, Stop competing, the
-// Compete toggle, the welcomed flag); this module only reads a state:
+// Phase 85 (ACCT-03/05, 85-CONTEXT group 1) — the account layer for our own
+// board: the rolled @handle, the Compete toggle, re-rolling and the two-tap
+// erase. No login flow of any kind — the account is the handle, and the
+// handle exists from the first launch (identity.ensureHandle(), the
+// controller's own concern, not this module's).
 //
-//   { compete: boolean, status: "off" | "pending" | "signedIn" | "signedOut",
-//     player: { id, displayName } | null, welcomed: boolean }
+//   { compete: boolean, handle: string | null, erase: "idle" | "armed" | "busy",
+//     welcomed: boolean }
 //
-// Compete OFF always wins: a stale signed-in status under Compete OFF reads
-// as "off", with no player. There is no sign-out row anywhere (D-03): Play
-// Games has no programmatic sign-out, so a signed-in sheet offers STOP
-// COMPETING plus the helper line pointing at the Play Games app.
+// The sheet and the ☰ block always show the handle's avatar once a handle
+// exists, whether Compete is ON or OFF (85-CONTEXT: "the handle is yours
+// with Compete ON or OFF") — identity.face is "avatar" with a handle, else
+// "pending", never a Compete-gated dim look; that distinction lives only on
+// the title chip and the ☰ button's own face (accountChipView,
+// accountMenuView), which fall back to the dim glyph while Compete is OFF.
 //
-// Phase 70 (POLISH-02, D-03): accountMenuView() gives the ☰ menu button the
-// same avatar when signed in, and the plain ☰ glyph otherwise.
+// ERASE MY RUNS is disabled while Compete is OFF: every board call is
+// Compete-gated, so there is nothing to reach from off the board.
 //
-// Every export is total (never throws) and returns frozen objects.
+// The avatar's initials and colour come from the same helpers the v3
+// Leaderboards panel uses (handleInitials/avatarColour, Phase 84) and are
+// never re-implemented here. Every export is total (never throws) and
+// returns frozen objects. No DOM, storage, clock, randomness or network
+// anywhere in this module.
 
-import { initialsOf, avatarColour } from "./leaderboardView.js";
+import { handleInitials, avatarColour } from "./leaderboardView.js";
+import { isValidHandle } from "./handles.js";
 import { RAIL_HOLD } from "./rail.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
 import { HUD_MENU_GLYPH } from "./hudMenu.js";
 
-/** ACCOUNT_STATUS — the four account statuses the controller moves between. */
-export const ACCOUNT_STATUS = Object.freeze({
-  OFF: "off",
-  PENDING: "pending",
-  SIGNED_IN: "signedIn",
-  SIGNED_OUT: "signedOut",
-});
-
-// The statuses valid while Compete is ON ("off" only exists with Compete OFF).
-const ON_STATUSES = Object.freeze([ACCOUNT_STATUS.PENDING, ACCOUNT_STATUS.SIGNED_IN, ACCOUNT_STATUS.SIGNED_OUT]);
+const ERASE_STATES = Object.freeze(["idle", "armed", "busy"]);
 
 /** Read one field of an arbitrary value; a hostile getter reads as undefined. */
 function field(obj, key) {
@@ -49,120 +43,88 @@ function field(obj, key) {
   }
 }
 
-/** A string field, or "" for anything else. */
-function str(obj, key) {
-  const v = field(obj, key);
-  return typeof v === "string" ? v : "";
+/** fillHandle(template, handle) — the only token this module ever fills, via a function replacer so a $-pattern handle is never special-cased by String#replace. */
+function fillHandle(template, handle) {
+  return template.replace("{handle}", () => handle);
 }
 
 /**
- * normalizeAccountState(input) — any value in, a frozen well-formed state out.
- * compete is true unless exactly false. Compete OFF forces status "off" and
- * no player. With Compete ON, an unknown, missing or "off" status reads as
- * "signedOut". A player is kept only for "signedIn", as a frozen
- * { id, displayName } of strings (empty strings when the profile is missing:
- * the chip then falls back to the unnamed line). welcomed is true only when
- * exactly true.
+ * normalizeAccountState(input) — any value in, a frozen well-formed state
+ * out. compete is true unless exactly false. handle is a valid handle
+ * (handles.js#isValidHandle) or null — an invalid or missing handle always
+ * reads as null, never thrown. erase is "idle", "armed" or "busy"; anything
+ * else reads as "idle". welcomed is true only when exactly true.
  */
 export function normalizeAccountState(input) {
   const compete = field(input, "compete") !== false;
   const welcomed = field(input, "welcomed") === true;
-  if (!compete) {
-    return Object.freeze({ compete: false, status: ACCOUNT_STATUS.OFF, player: null, welcomed });
-  }
-  const raw = field(input, "status");
-  const status = typeof raw === "string" && ON_STATUSES.includes(raw) ? raw : ACCOUNT_STATUS.SIGNED_OUT;
-  let player = null;
-  if (status === ACCOUNT_STATUS.SIGNED_IN) {
-    const p = field(input, "player");
-    player = Object.freeze({ id: str(p, "id"), displayName: str(p, "displayName") });
-  }
-  return Object.freeze({ compete: true, status, player, welcomed });
+  const rawHandle = field(input, "handle");
+  const handle = isValidHandle(rawHandle) ? rawHandle : null;
+  const rawErase = field(input, "erase");
+  const erase = ERASE_STATES.includes(rawErase) ? rawErase : "idle";
+  return Object.freeze({ compete, handle, erase, welcomed });
 }
 
-/** The name a signed-in player goes by: the trimmed display name, or the unnamed line. */
-function nameOf(state) {
-  const name = state.player ? state.player.displayName.trim() : "";
-  return name || ACCOUNT_COPY.sheet.unnamed;
-}
-
-/** The face block shared by the chip and the sheet's identity line. */
-function faceOf(state) {
-  if (state.status === ACCOUNT_STATUS.SIGNED_IN) {
-    const name = nameOf(state);
-    return { face: "avatar", initials: initialsOf(name), bg: avatarColour(name), glyph: "" };
-  }
-  const face = state.status === ACCOUNT_STATUS.PENDING ? "pending" : "nobody";
-  return { face, initials: "", bg: "", glyph: ACCOUNT_COPY.glyph };
+/** The face block shared by the title chip and the ☰ button: the handle's avatar while Compete is ON, the dim glyph otherwise. A handle-less state is always "pending", whatever Compete reads. */
+function chipFaceOf(state) {
+  if (state.handle === null) return Object.freeze({ face: "pending", initials: "", bg: "", glyph: ACCOUNT_COPY.glyph });
+  if (state.compete) return Object.freeze({ face: "avatar", initials: handleInitials(state.handle), bg: avatarColour(state.handle), glyph: "" });
+  return Object.freeze({ face: "nobody", initials: "", bg: "", glyph: ACCOUNT_COPY.glyph });
 }
 
 /**
- * accountChipView(state) — { face, initials, bg, glyph, label }. Signed in
- * (Compete ON) gives the initials avatar; pending gives the "pending" face;
- * signed out and Compete OFF give the deliberate "nobody" glyph (D-07). Each
- * status has its own accessible label.
+ * accountChipView(state) — { face, initials, bg, glyph, label } for the
+ * title chip. No handle yet gives the pending face; Compete ON gives the
+ * handle's initials avatar; Compete OFF gives the dim glyph — the handle
+ * stays yours either way, but the chip's whole job is to say whether you
+ * are on the board right now.
  */
 export function accountChipView(input) {
   const state = normalizeAccountState(input);
-  const face = faceOf(state);
-  let label = ACCOUNT_COPY.chipLabel[state.status];
-  if (state.status === ACCOUNT_STATUS.SIGNED_IN) {
-    const name = nameOf(state);
-    label = label.replace("{name}", () => name);
-  }
+  const face = chipFaceOf(state);
+  let label = ACCOUNT_COPY.chipLabel.pending;
+  if (state.handle !== null) label = state.compete ? fillHandle(ACCOUNT_COPY.chipLabel.on, state.handle) : ACCOUNT_COPY.chipLabel.off;
   return Object.freeze({ ...face, label });
 }
 
 /**
- * accountMenuView(state) — the ☰ menu button's face, { face, initials, bg,
- * glyph, label } (Phase 70 D-03, superseding Phase 67 D-05's separate band-2
- * chip). Signed in (Compete ON) it is the same initials avatar the chip
- * wears — faceOf() does the maths, never re-implemented — with a label that
- * names the player. Signed out, signing in and Compete OFF all show the
- * plain ☰ glyph (face "menu") labelled "Menu": the "?" nobody face stays on
- * the title chip and the Leaderboards strip only (D-04).
+ * accountMenuView(state) — the ☰ menu button's face. Compete ON with a
+ * handle wears the same avatar the chip does; every other state (no handle
+ * yet, or Compete OFF) wears the plain ☰ glyph labelled "Menu".
  */
 export function accountMenuView(input) {
   const state = normalizeAccountState(input);
-  if (state.status === ACCOUNT_STATUS.SIGNED_IN) {
-    const name = nameOf(state);
-    const label = ACCOUNT_COPY.menuLabel.signedIn.replace("{name}", () => name);
-    return Object.freeze({ ...faceOf(state), label });
+  if (state.compete && state.handle !== null) {
+    return Object.freeze({ ...chipFaceOf(state), label: fillHandle(ACCOUNT_COPY.menuLabel.on, state.handle) });
   }
   return Object.freeze({ face: "menu", initials: "", bg: "", glyph: HUD_MENU_GLYPH, label: ACCOUNT_COPY.menuLabel.plain });
 }
 
-/** The single action row the sheet offers for a status, or null (D-10). */
-function actionOf(status) {
+/** The sheet/☰ identity block: the avatar once a handle exists, else the pending face — never Compete-gated (85-CONTEXT: the handle is yours ON or OFF). */
+function identityOf(state) {
   const s = ACCOUNT_COPY.sheet;
-  if (status === ACCOUNT_STATUS.SIGNED_OUT) return Object.freeze({ id: "signIn", label: s.signIn, disabled: false });
-  if (status === ACCOUNT_STATUS.SIGNED_IN) return Object.freeze({ id: "stopCompeting", label: s.stopCompeting, disabled: false });
-  if (status === ACCOUNT_STATUS.PENDING) return Object.freeze({ id: "pending", label: s.signingIn, disabled: true });
-  return null;
-}
-
-/** The helper line under the action row: the D-03 line when signed in, the offHelp line with Compete OFF. */
-function helpOf(status) {
-  if (status === ACCOUNT_STATUS.SIGNED_IN) return ACCOUNT_COPY.sheet.stopHelp;
-  if (status === ACCOUNT_STATUS.OFF) return ACCOUNT_COPY.sheet.offHelp;
-  return "";
+  if (state.handle === null) {
+    return { face: "pending", initials: "", bg: "", glyph: ACCOUNT_COPY.glyph, name: s.pending, status: s.status.pending };
+  }
+  return {
+    face: "avatar",
+    initials: handleInitials(state.handle),
+    bg: avatarColour(state.handle),
+    glyph: "",
+    name: state.handle,
+    status: state.compete ? s.status.on : s.status.off,
+  };
 }
 
 /**
- * accountSheetView(state) — the bottom sheet's rows (D-10): the identity
- * line, the one action the status allows (Sign in / Stop competing / a
- * disabled SIGNING IN…, none with Compete OFF), the helper line, the Compete
- * toggle and Settings.
+ * accountSheetView(state) — the ☰ block / title sheet's rows: the identity
+ * line, COMPETE, the help line, RE-ROLL HANDLE and ERASE MY RUNS (the
+ * title sheet adds SETTINGS on top of this same view — the renderer's job,
+ * not this module's).
  */
 export function accountSheetView(input) {
   const state = normalizeAccountState(input);
   const s = ACCOUNT_COPY.sheet;
-  const signedIn = state.status === ACCOUNT_STATUS.SIGNED_IN;
-  const identity = Object.freeze({
-    ...faceOf(state),
-    name: signedIn ? nameOf(state) : s.nobody,
-    status: s.status[state.status],
-  });
   const compete = Object.freeze({
     label: s.compete,
     on: state.compete,
@@ -171,41 +133,38 @@ export function accountSheetView(input) {
       Object.freeze({ value: false, label: s.off }),
     ]),
   });
+  const eraseLabel = state.erase === "armed" ? s.eraseArmed : state.erase === "busy" ? s.erasing : s.erase;
   return Object.freeze({
     title: s.title,
-    identity,
-    action: actionOf(state.status),
-    help: helpOf(state.status),
+    identity: Object.freeze(identityOf(state)),
     compete,
+    help: state.compete ? s.onHelp : s.offHelp,
+    reroll: Object.freeze({ id: "reroll", label: s.reroll, disabled: state.handle === null }),
+    erase: Object.freeze({
+      id: "erase",
+      label: eraseLabel,
+      armed: state.erase === "armed",
+      disabled: !state.compete || state.handle === null || state.erase === "busy",
+    }),
     settings: Object.freeze({ label: s.settings }),
   });
 }
 
 /**
- * accountCard(kind) — the two account rail cards, { title, line, tone, hold }.
- * "welcome" is the first-sign-in notice (D-04), a big update held long;
- * "failed" is the failure/decline card (D-11). Rail cards, never modals.
- * Any other kind gives null.
+ * accountCard(kind, handle) — the account rail cards: "welcome" (once,
+ * naming the handle), "erased" (the erase-succeeded card, naming the
+ * handle) and "eraseFailed" (no token). "welcome"/"erased" with an invalid
+ * handle, or any other kind, gives null.
  */
-export function accountCard(kind) {
-  if (kind === "welcome") {
-    const c = ACCOUNT_COPY.cards.welcome;
-    return Object.freeze({ title: c.title, line: c.line, tone: "odd", hold: RAIL_HOLD.floor });
+export function accountCard(kind, handle) {
+  if (kind === "welcome" || kind === "erased") {
+    if (!isValidHandle(handle)) return null;
+    const c = ACCOUNT_COPY.cards[kind];
+    return Object.freeze({ title: c.title, line: fillHandle(c.line, handle), tone: kind === "welcome" ? "odd" : "dull", hold: kind === "welcome" ? RAIL_HOLD.floor : RAIL_HOLD.default });
   }
-  if (kind === "failed") {
-    const c = ACCOUNT_COPY.cards.failed;
+  if (kind === "eraseFailed") {
+    const c = ACCOUNT_COPY.cards.eraseFailed;
     return Object.freeze({ title: c.title, line: c.line, tone: "dull", hold: RAIL_HOLD.default });
   }
   return null;
-}
-
-/**
- * accountIdentity(state) — the Leaderboards identity strip's input (D-08):
- * { signedIn: true, player } only when Compete is ON and signed in, else
- * { signedIn: false, player: null }.
- */
-export function accountIdentity(input) {
-  const state = normalizeAccountState(input);
-  if (state.status === ACCOUNT_STATUS.SIGNED_IN) return Object.freeze({ signedIn: true, player: state.player });
-  return Object.freeze({ signedIn: false, player: null });
 }
