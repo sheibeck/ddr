@@ -7,38 +7,39 @@
 // save space; too many buttons; we don't need more rails on the top;
 // consolidate the buttons into a hamburger menu."
 //
-// USER ICON RULE: the mock's glyphs (☰/◈/⊕/☾/⚙) are
-// allowed ONLY in this menu — every other surface keeps the app's own PNG
-// icons and wording. The one exception is the centre row's label: "CENTRE
-// MAP" is the mock's wording, adopted by USER RULING 2026-09-22 (discovery
-// C) in place of the shipped chip's "CENTRE" — the menu now opens from
-// every tab, so the row names what it centres.
+// USER ICON RULE: the mock's glyphs (☰/◈/☾/⚙) are allowed ONLY in this
+// menu — every other surface keeps the app's own PNG icons and wording.
 //
-// The first four row ids are the routing: they are the four legacy chip ids
-// (mw-chip-marks, mw-chip-centre, btn-camp, mw-gear-btn), kept so the
-// shell's existing listener lines (openMarksLegend, centerMap, openCampSheet,
-// openSettingsSheet) route unchanged — a rename here would silently
-// disconnect a handler. The two Phase 79.3 rows carry their own ids
-// (mw-menu-report, mw-menu-notes) and handlers (79.3-05, 79.3-07).
+// The first three row ids are the routing: they are the three legacy chip
+// ids (btn-camp, mw-chip-marks, mw-gear-btn), kept so the shell's existing
+// listener lines (openCampSheet, openMarksLegend, openSettingsSheet) route
+// unchanged — a rename here would silently disconnect a handler. The two
+// Phase 79.3 rows carry their own ids (mw-menu-report, mw-menu-notes) and
+// handlers (79.3-05, 79.3-07).
 //
-// Phase 70 (POLISH-02/03): the ☰ glyph is also the account face's
-// signed-out look (D-03) — signed in, the button wears the initials avatar
-// instead (src/browser/account.js#accountMenuView). Per D-06 the two quit
-// rows (SAVE & QUIT and ABANDON THIS CHARACTER, NEW CHARACTER once the hero
-// is dead) live in this menu too. Abandon has an in-row two-tap arm with no
-// modal (abandonRowNext below); Settings › Confirm abandon governs the
-// arm (draft DISC-1): On means two taps, Off means one. The shell owns the
-// ABANDON_ARM_MS timer and feeds its expiry back in as a "timeout" event.
+// Phase 85 (85-01, ACCT-03): the user dropped the CENTRE MAP row and its
+// wiring on 2026-09-28 and put MAKE CAMP first under the account block —
+// the map re-centres on its own at the stairs, at a teleport, on a new run
+// and on the boot paint, so a menu row for it was redundant.
+//
+// Phase 85 (85-01, ACCT-03): the ☰ face wears the handle's initials avatar
+// while Compete is ON (src/browser/account.js#accountMenuView), and the
+// plain ☰ glyph otherwise. Per D-06 the two quit rows (SAVE & QUIT and
+// ABANDON THIS CHARACTER, NEW CHARACTER once the hero is dead) live in this
+// menu too. Abandon has an in-row two-tap arm with no modal (abandonRowNext
+// below); Settings › Confirm abandon governs the arm (draft DISC-1): On
+// means two taps, Off means one. The shell owns the ABANDON_ARM_MS timer
+// and feeds its expiry back in as a "timeout" event.
 //
 // Phase 70 (POLISH-03, D-08): the menu opens on every screen — the map,
 // combat and every other encounter, the Oracle, all five tabs and while
 // dead. Rows that cannot act in the current context are shown disabled
 // (dimmed, not hidden, no action) by hudMenuRowStates below; the shell's
-// syncHudMenuRows writes its answer onto the eight row buttons.
+// syncHudMenuRows writes its answer onto the seven row buttons.
 //
 // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and PATCH NOTES join
 // the dropdown after SETTINGS and before the split line. hudMenuRowStates
-// returns x8, and both new rows are always enabled — never disabled, for
+// returns x7, and both new rows are always enabled — never disabled, for
 // any ctx, including a hostile one.
 //
 // Pure, DOM-free, timer-free, storage-free — same house shape as
@@ -46,14 +47,17 @@
 // `{ next: hudMenuNext, rows: hudMenuRowStates }`.
 
 /**
- * HUD_MENU_ITEMS — the six menu rows, frozen, in dropdown order: MARKS,
- * CENTRE MAP, MAKE CAMP, SETTINGS, REPORT A BUG, PATCH NOTES. The first four
- * rows' `id` is the legacy chip id the shell's existing listener already
- * binds; the two Phase 79.3 rows (report, notes) carry their own ids
+ * HUD_MENU_ITEMS — the five menu rows, frozen, in dropdown order: MAKE
+ * CAMP, MARKS, SETTINGS, REPORT A BUG, PATCH NOTES. The first three rows'
+ * `id` is the legacy chip id the shell's existing listener already binds;
+ * the two Phase 79.3 rows (report, notes) carry their own ids
  * (mw-menu-report, mw-menu-notes) and handlers (79.3-05, 79.3-07). `glyph`
  * is the mock's codepoint (written as a literal character so the source
  * stays readable); `color` and `size` (px) are the mock's own per-row glyph
  * style.
+ *
+ * Phase 85 (85-01, ACCT-03): MAKE CAMP moved to the first row under the
+ * account block, above MARKS, and the CENTRE MAP row is gone entirely.
  *
  * Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and PATCH NOTES sit
  * after SETTINGS and before the split line that starts the quit rows. Both
@@ -61,9 +65,8 @@
  * screen, dead or alive.
  */
 export const HUD_MENU_ITEMS = Object.freeze([
-  Object.freeze({ key: "marks", id: "mw-chip-marks", label: "MARKS", glyph: "◈", color: "#e8c97a", size: 13 }),
-  Object.freeze({ key: "centre", id: "mw-chip-centre", label: "CENTRE MAP", glyph: "⊕", color: "#8fb08a", size: 14 }),
   Object.freeze({ key: "camp", id: "btn-camp", label: "MAKE CAMP", glyph: "☾", color: "#b9a4ef", size: 16 }),
+  Object.freeze({ key: "marks", id: "mw-chip-marks", label: "MARKS", glyph: "◈", color: "#e8c97a", size: 13 }),
   Object.freeze({ key: "settings", id: "mw-gear-btn", label: "SETTINGS", glyph: "⚙", color: "#9a8f76", size: 15 }),
   Object.freeze({ key: "report", id: "mw-menu-report", label: "REPORT A BUG", glyph: "✎", color: "#d9826b", size: 14 }),
   Object.freeze({ key: "notes", id: "mw-menu-notes", label: "PATCH NOTES", glyph: "¶", color: "#8fb3c9", size: 15 }),
@@ -109,8 +112,9 @@ export function hudMenuNext(open, kind, ctx) {
 
 /**
  * HUD_MENU_GLYPH — the ☰ codepoint (U+2630, 9776), written as an escape so
- * the source stays ASCII. The menu button's face whenever the player is not
- * signed in to Play Games (signed out, signing in, Compete OFF) — D-03.
+ * the source stays ASCII. The menu button's face while Compete is OFF; the
+ * button wears the handle's initials avatar instead while Compete is ON
+ * (src/browser/account.js#accountMenuView) — Phase 85 (85-01, ACCT-03).
  */
 export const HUD_MENU_GLYPH = "☰";
 
@@ -181,10 +185,11 @@ export function abandonRowNext(armed, kind, ctx) {
 const QUIT_ROW_IDS = Object.freeze({ saveQuit: "mw-menu-save-quit", abandon: "mw-menu-abandon" });
 
 /**
- * hudMenuRowStates(ctx) -> frozen [{ key, id, enabled }] x8, in dropdown
- * order: MARKS, CENTRE MAP, MAKE CAMP, SETTINGS, REPORT A BUG, PATCH NOTES
+ * hudMenuRowStates(ctx) -> frozen [{ key, id, enabled }] x7, in dropdown
+ * order: MAKE CAMP, MARKS, SETTINGS, REPORT A BUG, PATCH NOTES
  * (HUD_MENU_ITEMS' ids), then SAVE & QUIT and ABANDON / NEW CHARACTER (the
- * 70-03 quit-row ids).
+ * 70-03 quit-row ids). Phase 85 (85-01, ACCT-03): the CENTRE MAP row is
+ * gone, so it no longer appears here.
  *
  * ctx is { encounter, dead, hero } (D-08, planner ruling R-A):
  *   - SETTINGS, SAVE & QUIT and ABANDON are always enabled — the way back
@@ -194,10 +199,8 @@ const QUIT_ROW_IDS = Object.freeze({ saveQuit: "mw-menu-save-quit", abandon: "mw
  *     included; hudMenuRowStates must never disable them;
  *   - MARKS is disabled while the hero is dead (ctx.dead strictly true).
  *     Phase 78 (HUD-02, the user's words: "once the hero is dead ... camp,
- *     marks and centre-map are inert");
- *   - CENTRE MAP is disabled while an over-map encounter covers the map
- *     (ctx.encounter strictly true) — there is no visible map to centre —
- *     and, from Phase 78 (HUD-02), while the hero is dead;
+ *     marks and centre-map are inert" — the centre-map disable retired with
+ *     the row itself in Phase 85);
  *   - MAKE CAMP, the one engine-refused row, is enabled only with a hero
  *     (ctx.hero strictly true) who is not dead and not mid-encounter. Its
  *     short-on-food dim (Phase 25.1 DFB-06) is a separate shell state and
@@ -211,9 +214,8 @@ export function hudMenuRowStates(ctx) {
   const dead = flag(ctx, "dead") === true;
   const hero = flag(ctx, "hero") === true;
   const enabled = {
-    marks: !dead,
-    centre: !encounter && !dead,
     camp: hero && !dead && !encounter,
+    marks: !dead,
     settings: true,
     report: true,
     notes: true,
