@@ -569,7 +569,7 @@ test("bug-reports.yml: the scheduled/manual workflow is shaped as documented, wi
   const yaml = fs.readFileSync(WORKFLOW_PATH, "utf8");
 
   for (const needle of [
-    "*/15 * * * *",
+    "7,19,33,52 * * * *", // user, 2026-09-28: four off-peak runs an hour
     "workflow_dispatch:",
     "dry_run",
     "issues: write",

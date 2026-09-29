@@ -37,11 +37,13 @@
 // integer from 0 to 100 inclusive) rather than an allowed-values list.
 //
 // Phase 78 (HUD-08, the user's 2026-09-25 request) fields: `movement`
-// ("tap" | "arrows", default "tap") and `padSide` ("left" | "right", default
-// "right"). The opt-in reversal of the v1.4/v1.5 tap-only ruling:
-// tap-to-move stays the default and complete, and ARROWS shows an on-screen
-// pad (src/browser/arrowPad.js) in the chosen bottom corner, with map taps
-// no longer stepping. These are NEW names; the Phase 46 retired key and
+// ("tap" | "arrows") and `padSide` ("left" | "right", default
+// "right"). ARROWS shows an on-screen pad (src/browser/arrowPad.js) in the
+// chosen bottom corner, with map taps no longer stepping; TAP TO MOVE is the
+// other, complete mode. The default is "arrows" since 2026-09-28 (user:
+// "Default to arrow movement instead of tap to move", new installs only): an
+// existing install keeps "tap" (LEGACY_MOVEMENT) — see readSettings. These
+// are NEW names; the Phase 46 retired key and
 // value stay retired (settings.test.js pins both).
 //
 // Fail-open posture (matches engineAdapter.js's persist()/boot()):
@@ -82,7 +84,8 @@ export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
  * only) are appended after `dressing`, in that order.
  * Phase 71 (D-03): `volMaster`, `volMusic` and `volEffects` (integers 0-100,
  * default 100) are appended after `pgsDevSignedIn`, in that order.
- * Phase 78 (HUD-08): `movement` (default "tap", tap-to-move) and `padSide`
+ * Phase 78 (HUD-08): `movement` (default "arrows" since 2026-09-28; existing
+ * installs keep "tap" through readSettings) and `padSide`
  * (default "right", the arrow pad's bottom corner, read only in arrow mode)
  * are appended after `volEffects`, in that order.
  */
@@ -98,7 +101,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   volMaster: 100,
   volMusic: 100,
   volEffects: 100,
-  movement: "tap",
+  movement: "arrows",
   padSide: "right",
 });
 
@@ -126,6 +129,16 @@ const ALLOWED_VALUES = {
   movement: ["tap", "arrows"],
   padSide: ["left", "right"],
 };
+
+/** LEGACY_MOVEMENT — what an existing install keeps when it has no valid
+ * stored `movement` (user, 2026-09-28: the arrow default is for new installs
+ * only). */
+export const LEGACY_MOVEMENT = "tap";
+
+/** EXISTING_INSTALL_KEYS — durable keys that prove this device played a build
+ * before the arrow default (the same proof patchNotes.js uses): a save, a
+ * graveyard or a bests record. The settings blob itself is checked first. */
+export const EXISTING_INSTALL_KEYS = Object.freeze(["ddr.delve.v1", "ddr.graveyard.v1", "ddr.bests.v1"]);
 
 function isValidSettingValue(key, value) {
   if (!Object.prototype.hasOwnProperty.call(ALLOWED_VALUES, key)) return false;
@@ -156,8 +169,35 @@ export async function readSettings() {
     for (const key of Object.keys(SETTINGS_DEFAULTS)) {
       if (isValidSettingValue(key, parsed[key])) merged[key] = parsed[key];
     }
+    // An existing settings blob without a valid movement is an existing
+    // install: it keeps tap-to-move (new installs only get arrows).
+    if (!isValidSettingValue("movement", parsed.movement)) merged.movement = LEGACY_MOVEMENT;
+    return merged;
+  }
+  // No settings blob: a new install unless an older build left a save,
+  // graveyard or bests record. An existing install keeps tap-to-move, and
+  // that choice is written once so later reads are stable.
+  if (await hasPriorInstallData()) {
+    merged.movement = LEGACY_MOVEMENT;
+    try {
+      await setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
+    } catch {
+      // never-throw posture: the next read re-derives the same answer
+    }
   }
   return merged;
+}
+
+async function hasPriorInstallData() {
+  for (const key of EXISTING_INSTALL_KEYS) {
+    try {
+      const raw = await getItem(key);
+      if (typeof raw === "string" && raw.length > 0) return true;
+    } catch {
+      // unreadable key: keep looking
+    }
+  }
+  return false;
 }
 
 /**

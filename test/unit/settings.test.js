@@ -47,9 +47,9 @@ test("readSettings(): unset store yields full defaults", async () => {
 });
 
 test("SETTINGS_DEFAULTS: the thirteen fields' defaults", () => {
-  // Phase 78 (HUD-08): Movement defaults to tap-to-move, the pad to the
-  // bottom right.
-  assert.equal(SETTINGS_DEFAULTS.movement, "tap");
+  // Phase 78 (HUD-08) + the 2026-09-28 user ruling: Movement defaults to the
+  // arrow pad for new installs, the pad to the bottom right.
+  assert.equal(SETTINGS_DEFAULTS.movement, "arrows");
   assert.equal(SETTINGS_DEFAULTS.padSide, "right");
   assert.equal(SETTINGS_DEFAULTS.textSize, "M");
   assert.equal(SETTINGS_DEFAULTS.sound, true);
@@ -92,8 +92,9 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       volMaster: 100,
       volMusic: 100,
       volEffects: 100,
-      // Phase 78 (HUD-08): Movement and Pad keep theirs.
-      movement: "tap",
+      // Phase 78 (HUD-08): Movement and Pad keep theirs (a fresh install
+      // gets the arrow pad, 2026-09-28).
+      movement: "arrows",
       padSide: "right",
     });
 
@@ -156,7 +157,8 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
   await withFakeLocalStorage(async (_ls, store) => {
     store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "S", handedness: "right" }));
     const settings = await readSettings();
-    assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S" });
+    assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S", movement: "tap" });
+    // (an existing blob without `movement` is an existing install: tap-to-move, 2026-09-28)
     assert.equal("handedness" in settings, false);
 
     // Phase 59 (DRESS-05) appended `dressing`; Phase 67 (PGS-02) appended
@@ -205,7 +207,7 @@ test("Phase 46 (NAME-02): a stored control-scheme key is ignored silently", asyn
   await withFakeLocalStorage(async (_ls, store) => {
     store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "S", [RETIRED_KEY]: RETIRED_VALUE }));
     const settings = await readSettings();
-    assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S" });
+    assert.deepEqual(settings, { ...SETTINGS_DEFAULTS, textSize: "S", movement: "tap" });
     assert.equal(RETIRED_KEY in settings, false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -462,14 +464,14 @@ test("Phase 78 (HUD-04): effectiveTextScale stays within 0.85..1.25 inclusive, a
 
 test("HUD-08: writeSetting accepts tap/arrows and left/right, each changing only its own field", async () => {
   await withFakeLocalStorage(async () => {
-    const before = await readSettings();
-    await writeSetting("movement", "arrows");
+    const before = await readSettings(); // a fresh install: arrows/right
+    await writeSetting("movement", "tap");
     await flushStorage();
-    assert.deepEqual(await readSettings(), { ...before, movement: "arrows" });
+    assert.deepEqual(await readSettings(), { ...before, movement: "tap" });
     await writeSetting("padSide", "left");
     await flushStorage();
-    assert.deepEqual(await readSettings(), { ...before, movement: "arrows", padSide: "left" });
-    await writeSetting("movement", "tap");
+    assert.deepEqual(await readSettings(), { ...before, movement: "tap", padSide: "left" });
+    await writeSetting("movement", "arrows");
     await writeSetting("padSide", "right");
     await flushStorage();
     assert.deepEqual(await readSettings(), before);
@@ -491,6 +493,25 @@ test("HUD-08: an invalid movement or padSide is rejected (the stored value is un
     await flushStorage();
     assert.deepEqual(await readSettings(), current);
   });
+});
+
+test("2026-09-28: a fresh install (no settings, save, graveyard or bests) gets the arrow pad", async () => {
+  await withFakeLocalStorage(async () => {
+    const settings = await readSettings();
+    assert.equal(settings.movement, "arrows");
+  });
+});
+
+test("2026-09-28: an existing install without a settings blob keeps tap-to-move, written once", async () => {
+  for (const key of ["ddr.delve.v1", "ddr.graveyard.v1", "ddr.bests.v1"]) {
+    await withFakeLocalStorage(async (_ls, store) => {
+      store.set(key, "{\"x\":1}");
+      const settings = await readSettings();
+      assert.equal(settings.movement, "tap", key);
+      await flushStorage();
+      assert.equal(JSON.parse(store.get(SETTINGS_STORAGE_KEY)).movement, "tap", key);
+    });
+  }
 });
 
 test("HUD-08: a tampered stored movement or padSide reads its default (an unknown movement falls back to tap-to-move)", async () => {
