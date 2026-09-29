@@ -206,7 +206,7 @@ Plans:
   4. The ☰ account block and the title's corner chip show the player's @handle and the Compete toggle, the ☰ face wears the handle's initials avatar while competing, and there is no sign-in, sign-out or Play Games wording anywhere.
   5. Every non-dev Compete-ON death is queued and submitted to our board, the death card's "you placed X" reports the run's DEPTH rank once acknowledged (or on the next flush if offline), the player can erase every run they have on the board from the ☰ account block behind a two-tap confirm (starting a new identity on the next Compete-ON run), and with Compete OFF the game makes zero network calls and discards any queued runs.
 
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 **Wave 1**
@@ -221,7 +221,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 85-05-PLAN.md — Death screen: "You placed 12th of 340." from our board (placementOutcome), the deferred rail card, the welcome card on the first acknowledged run; standing band and season-drop line removed (wave 3)
+- [x] 85-05-PLAN.md — Death screen: "You placed 12th of 340." from our board (placementOutcome), the deferred rail card, the welcome card on the first acknowledged run; standing band and season-drop line removed (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -285,7 +285,7 @@ Plans:
 | 82. DAYS Farming Check | 2/2 | Complete    | 2026-09-28 |
 | 83. Leaderboard Server | 12/12 | Complete    | 2026-09-29 |
 | 84. Leaderboards Panel v3 | 9/9 | Complete    | 2026-09-29 |
-| 85. Play Games Out, Our Board In | 4/6 | In Progress|  |
+| 85. Play Games Out, Our Board In | 5/6 | In Progress|  |
 | 86. Compliance & Device Close | 0/TBD | Not started | - |
 
 ## Backlog
