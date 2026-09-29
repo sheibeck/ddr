@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
+current_phase: 85
+current_phase_name: Play Games Out, Our Board In
 status: executing
-stopped_at: Completed 84-09-PLAN.md (final plan of Phase 84)
-last_updated: "2026-09-29T17:21:49.469Z"
+stopped_at: Completed 85-04-PLAN.md (shell switch to our board); 85-05 next
+last_updated: "2026-09-29T17:56:38.143Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase null execution started
+last_activity_desc: merged 85-01, 85-02, 85-03 into master (npm test 8341 pass / 0 fail)
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 34
-  completed_plans: 26
+  completed_plans: 27
   percent: 60
-current_phase: 85
-current_phase_name: Play Games Out, Our Board In
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 85 (Play Games Out, Our Board In) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Progress: [████████░░] 79%
-Status: Executing Phase 85 — wave 1 (85-01/02/03) ran in parallel worktrees and is merged; 85-04 next
+Status: Ready to execute
 Last activity: 2026-09-29 — merged 85-01, 85-02, 85-03 into master (npm test 8341 pass / 0 fail)
 
 ## Ground Truth (durable facts every session needs)
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T16:28:10.441Z
-Stopped at: Completed 84-09-PLAN.md (final plan of Phase 84)
+Last session: 2026-09-29T17:56:38.090Z
+Stopped at: Completed 85-04-PLAN.md (shell switch to our board); 85-05 next
 
 - (history below is the pre-close record)
 
@@ -448,6 +448,7 @@ Resume file: None
 | Phase 84 P07 | 45min | 2 tasks | 4 files |
 | Phase 84 P08 | 31min | 2 tasks | 9 files |
 | Phase 84 P09 | 50min | 2 tasks | 22 files |
+| Phase 85 P04 | 80min | 3 tasks | 12 files |
 
 ## Decisions
 
@@ -795,6 +796,8 @@ Resume file: None
 - [Phase ?]: refreshTitleDead moved off getGraveyard().total onto getRunHistory().length > 0 || competeIsOn(), re-checked on every account-controller change
 - [Phase ?]: 84-09: BOARD_COPY trimmed to only the fields newBest.js reads (title/unit/unitOne); mark/col/unitLabel/rule/tab removed with the retired rail renderer
 - [Phase ?]: 84-09: a retired copy bank's historical why-ledger rows (docs/narrative-pass/why/*.json) are marked after:"" so the Phase 79 VOX-05 live tripwire stays true instead of chasing a deleted line
+- [Phase ?]: 85-04: one Compete gate (competeIsOn) shared by the board client, both identities and boardSync; boardIdentity() splits native (sharedIdentity) vs browser dev loop (a separate dev-prefixed identity over the shared fake board fetch)
+- [Phase ?]: 85-04: pendingPgsCard/parkPgsCard renamed pendingPlacementCard/parkPlacementCard now (not deferred to 85-05) since the rail-card delivery machinery is generic; 85-05 only wires boardSync's onPlacement into the already-renamed function
 
 ### Blockers
 
