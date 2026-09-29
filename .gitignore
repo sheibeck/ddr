@@ -41,3 +41,6 @@ ddr-bug-reports*.json
 # locally) and admin exports of player run data, both never committed
 ddr-boards*.json
 boards-export*
+
+# Claude Code agent worktrees (parallel executors)
+.claude/worktrees/
