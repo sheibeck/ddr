@@ -5,8 +5,8 @@ milestone_name: Our Own Leaderboards
 current_phase: 83
 current_phase_name: Leaderboard Server
 status: executing
-stopped_at: Completed 83-01-PLAN.md (shared Firebase config, Firestore REST helpers, rolled @handle); ready for 83-02
-last_updated: "2026-09-29T00:31:18.416Z"
+stopped_at: Completed 83-02-PLAN.md (runDoc.js, reportLimits.js, extended firestore.rules + 19 indexes); ready for 83-03
+last_updated: "2026-09-29T01:08:48.363Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 83 execution started
 progress:
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 83 (Leaderboard Server) — EXECUTING
-Plan: 2 of 11
+Plan: 3 of 11
 Status: Ready to execute
 Last activity: 2026-09-28 — Phase 83 execution started
 
@@ -257,8 +257,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T00:31:18.358Z
-Stopped at: Completed 83-01-PLAN.md (shared Firebase config, Firestore REST helpers, rolled @handle); ready for 83-02
+Last session: 2026-09-29T01:08:38.890Z
+Stopped at: Completed 83-02-PLAN.md (runDoc.js, reportLimits.js, extended firestore.rules + 19 indexes); ready for 83-03
 
 - (history below is the pre-close record)
 
@@ -426,6 +426,7 @@ Resume file: None
 | Phase 82 P01 | 25min | 3 tasks | 4 files |
 | Phase 82 P02 | 38min | 1 tasks | 3 files |
 | Phase 83 P01 | 30min | 2 tasks | 8 files |
+| Phase 83 P02 | 40min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -728,6 +729,8 @@ Resume file: None
 - [Phase ?]: 82-02: no harness-defect path taken — the run's one leftFloor row has boxedIn=1 (not the 0 defect signature), zero unboundedFrozenClock across all 22 unbounded rows
 - [Phase ?]: timedFetch is a non-async function returning new Promise(...) so its export line matches the plan's literal grep acceptance criterion, while keeping the same never-throwing abort/timeout race as sendBugReport
 - [Phase ?]: HANDLE_FIRST/HANDLE_SECOND ship 30 words each, chosen conservatively to clear both the word-boundary safety scan and the cross-boundary substring check on the first pass
+- [Phase ?]: 83-02: single-Write createRunCommit (update+updateTransforms+currentDocument) per RESEARCH Pitfall 1 / CONTEXT's atomic-equivalent instruction, not the two-Write form
+- [Phase ?]: 83-02: SUB_UNIVERSE fallback isolates validateRunDoc's cls/sub fail ids so breaking one field never cascades into the other
 
 ### Blockers
 
