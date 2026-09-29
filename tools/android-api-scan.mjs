@@ -7,8 +7,8 @@
 // Android 15+ (status/navigation-bar colours, setDecorFitsSystemWindows,
 // system-UI visibility flags, display-cutout-mode writes), de-obfuscates the
 // callers through R8's mapping.txt, groups them by owner (app, Capacitor
-// core, a named Capacitor plugin, Play Games plugin, androidx, Google,
-// other) and gates on --fail-on prefixes.
+// core, a named Capacitor plugin, androidx, Google, other) and gates on
+// --fail-on prefixes.
 //
 // Dependencies: Node 22 built-ins ONLY, plus two tools already on the build
 // machine — the pinned JDK's `jar` (android/gradle.properties
@@ -261,7 +261,6 @@ export function ownerOf(name) {
     const plugin = name.slice("com.capacitorjs.plugins.".length).split(".")[0];
     return `Capacitor plugin: ${plugin}`;
   }
-  if (inPkg(name, "com.idleflowgames.playgames")) return "Play Games plugin";
   if (inPkg(name, "androidx")) return "androidx";
   if (inPkg(name, "com.google")) return "Google";
   return "other";

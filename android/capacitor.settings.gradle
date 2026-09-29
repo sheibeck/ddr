@@ -16,6 +16,3 @@ project(':capacitor-screen-orientation').projectDir = new File('../node_modules/
 
 include ':capacitor-splash-screen'
 project(':capacitor-splash-screen').projectDir = new File('../node_modules/@capacitor/splash-screen/android')
-
-include ':modbender-capacitor-play-games'
-project(':modbender-capacitor-play-games').projectDir = new File('../node_modules/@modbender/capacitor-play-games/android')

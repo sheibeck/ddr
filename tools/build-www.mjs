@@ -84,11 +84,6 @@ const CAPACITOR_PACKAGES = [
   // that fail-open seam (never a network fetch), keeping the offline/no-SDK
   // posture — a first-party Capacitor plugin, not an ad/analytics SDK.
   "@capacitor/haptics",
-  // Phase 67 (D-12/D-17): the Play Games Services plugin, vendored and
-  // import-mapped so src/browser/playGames.js's guarded dynamic import
-  // resolves in the Android WebView. Reached only on native with Compete ON;
-  // the exact 0.5.0 pin was reviewed in 67-01 (installed as-is, D-20).
-  "@modbender/capacitor-play-games",
 ];
 
 function step(msg) {

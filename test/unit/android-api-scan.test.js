@@ -259,7 +259,6 @@ test("ownerOf groups original names by package prefix", () => {
   assert.equal(ownerOf("com.getcapacitor.plugin.SystemBars"), "Capacitor core");
   assert.equal(ownerOf("com.capacitorjs.plugins.statusbar.StatusBar"), "Capacitor plugin: statusbar");
   assert.equal(ownerOf("com.capacitorjs.plugins.splashscreen.SplashScreen"), "Capacitor plugin: splashscreen");
-  assert.equal(ownerOf("com.idleflowgames.playgames.PlayGamesPlugin"), "Play Games plugin");
   assert.equal(ownerOf("androidx.activity.EdgeToEdgeApi28"), "androidx");
   assert.equal(ownerOf("com.google.android.material.internal.EdgeToEdgeUtils"), "Google");
   assert.equal(ownerOf("kotlin.jvm.internal.Intrinsics"), "other");

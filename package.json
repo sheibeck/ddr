@@ -22,8 +22,7 @@
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/screen-orientation": "^8.0.1",
-    "@capacitor/splash-screen": "^8.0.2",
-    "@modbender/capacitor-play-games": "0.5.0"
+    "@capacitor/splash-screen": "^8.0.2"
   },
   "engines": {
     "node": ">=22"

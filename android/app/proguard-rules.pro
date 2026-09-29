@@ -1,10 +1,9 @@
 # Phase 80 DROID-01 — the real rules ship with the dependencies (Capacitor
-# core's and the Play Games plugin's own consumerProguardFiles, plus AGP's
-# bundled proguard-android.txt for the WebView JS bridge); this file mirrors
-# them so a dependency update that drops its own rules cannot silently break
-# the release. Verify any change against
-# android/app/build/outputs/mapping/release/mapping.txt using the
-# RELEASING.md verification recipe.
+# core's own consumerProguardFiles, plus AGP's bundled proguard-android.txt
+# for the WebView JS bridge); this file mirrors them so a dependency update
+# that drops its own rules cannot silently break the release. Verify any
+# change against android/app/build/outputs/mapping/release/mapping.txt using
+# the RELEASING.md verification recipe.
 
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
@@ -33,10 +32,6 @@
   public <methods>;
   public <fields>;
 }
-
-# Mirrors node_modules/@modbender/capacitor-play-games/android/consumer-rules.pro
-# (the plugin is instantiated reflectively by class name).
--keep class com.idleflowgames.playgames.** { *; }
 
 # Mirrors AGP's default proguard-android.txt @JavascriptInterface rule.
 # Covers Capacitor's MessageHandler JS bridge and SystemBars'

@@ -89,8 +89,6 @@ const REQUIRED_RULE_FRAGMENTS = [
   "@com.getcapacitor.NativePlugin public class *",
   // Cordova-plugin keep
   "-keep public class * extends org.apache.cordova.* {",
-  // Play Games consumer-rules.pro package keep
-  "-keep class com.idleflowgames.playgames.** { *; }",
   // JavascriptInterface keepclassmembers rule (AGP default file already
   // covers this; this is the defensive mirror)
   "@android.webkit.JavascriptInterface <methods>",

@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <!-- Phase 67 (D-15): the Play Games Services APP_ID (the 12-digit project
-         ID from Play Console → Play Games Services → Configuration), set
-         2026-09-24 per docs/PLAY-GAMES-SETUP.md. Not translatable. -->
-    <string name="game_services_project_id" translatable="false">517177834262</string>
-</resources>
