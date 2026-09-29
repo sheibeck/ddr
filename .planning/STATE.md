@@ -4,15 +4,15 @@ milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 84
 status: executing
-stopped_at: Completed 84-01-PLAN.md (note/when run-doc contract, rankKeyOf, live transition-rules redeploy + smoke)
-last_updated: "2026-09-29T12:25:59.818Z"
+stopped_at: Completed 84-02-PLAN.md (LEADERBOARD_COPY, SEASON_NAMES, voice/safety/HP-not-WP registration)
+last_updated: "2026-09-29T12:44:50.258Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 84 Plan 01 (run-doc note/when contract) complete
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 28
-  completed_plans: 15
+  total_plans: 29
+  completed_plans: 16
   percent: 40
 current_phase_name: Leaderboards Panel v3
 ---
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 84 — EXECUTING
-Plan: 2 of 9
-Progress: [█████░░░░░] 54%
+Plan: 3 of 9
+Progress: [██████░░░░] 55%
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 84 Plan 01 (run-doc note/when contract) complete
 
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T12:25:59.768Z
-Stopped at: Completed 84-01-PLAN.md (note/when run-doc contract, rankKeyOf, live transition-rules redeploy + smoke)
+Last session: 2026-09-29T12:44:50.224Z
+Stopped at: Completed 84-02-PLAN.md (LEADERBOARD_COPY, SEASON_NAMES, voice/safety/HP-not-WP registration)
 
 - (history below is the pre-close record)
 
@@ -440,6 +440,7 @@ Resume file: None
 | Phase 83 P08 | 1h 40min | 2 tasks | 6 files |
 | Phase 83 P11 | 30min | 2 tasks | 2 files |
 | Phase 84 P01 | 41min | 3 tasks | 14 files |
+| Phase 84 P02 | 22min | 2 tasks | 6 files |
 
 ## Decisions
 
@@ -770,6 +771,8 @@ Resume file: None
 - [Phase ?]: 83-11: SRV-11/SRV-12 proven live (Action deletes Firestore docs on retention schedule; a scheduled run already fires on the pinned cron); SRV-09 stays unchecked -- full ten-PASS probe proof deferred to the Phase 86 release-day rules cutover
 - [Phase 84]: when's upper bound carries a one-day clock-skew allowance (WHEN_SKEW_MS), enforced server-side (request.time) and by the fake's own injected clock, never a bare client Date.now()
 - [Phase 84]: rankKeyOf(stat, run) dispatches to the four existing *KeyOf formulas rather than new key math, so both Leaderboards views (84-05..09) share one entry point
+- [Phase ?]: 84-02: LEADERBOARD_COPY.stats key order pinned equal to runDoc.js#BOARD_STATS so the copy bank and rankKeyOf can never drift apart
+- [Phase ?]: 84-02: nine LEADERBOARD state.* in-voice notes + two empty.*All lines are Claude's Discretion (mock has no loading/stale/unreachable/unfiltered-empty copy), proved against the same voice/safety/HP-not-WP tests
 
 ### Blockers
 
