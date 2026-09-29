@@ -37,7 +37,7 @@
 - [x] **SRV-04**: The game gets an anonymous Firebase identity through the REST API with plain `fetch` (no Firebase SDK), keeps it in durable storage and refreshes its token. With Compete OFF it never creates or refreshes one.
 - [x] **SRV-05**: Each install rolls an @handle from family-friendly word tables in `content/`, the way heroes are rolled, and the player can re-roll it. Every handle passes `content/safety-wordlist.js` by construction.
 - [ ] **SRV-06**: A durable submission queue holds every non-dev Compete-ON death until the server acknowledges it. It survives relaunches and offline play, retries with backoff, never double-submits, and is discarded when Compete turns OFF.
-- [ ] **SRV-07**: An admin script lists suspicious runs and deletes one run, or every run of one player. Its service-account key never enters the repo or `www/`. An ops runbook covers the rules and index deploys, the console settings, quotas and moderation.
+- [x] **SRV-07**: An admin script lists suspicious runs and deletes one run, or every run of one player. Its service-account key never enters the repo or `www/`. An ops runbook covers the rules and index deploys, the console settings, quotas and moderation.
 - [ ] **SRV-08**: The live project is configured and proven end to end. The rules and indexes are deployed, anonymous sign-in is enabled, and the API key allows only the APIs the game calls. A smoke test creates, reads, ranks and deletes a run against the live project.
 - [ ] **SRV-09**: Sending a bug report needs the shared anonymous identity (created on the first send; still zero network until the player taps Send) and is rate-limited per player: the report and a `reportLimits/{uid}` document ({ last, day, count }) are written in one commit, and the rules enforce a 2-minute cooldown and 5 reports a day (named constants in the rules and the JS mirror). The report itself carries no uid. `reportLimits` allows only the owner's own create/update/get. Over a limit, the report sheet keeps the draft and says so in voice. Old builds' plain creates are rejected (accepted, no legacy path). (User, 2026-09-28 — todo 2026-09-28-bug-report-per-player-limit-and-automatic-firestore-cleanup.)
 - [ ] **SRV-10**: Firebase Auth's per-IP new-account limit is checked and set to about 10 an hour during live setup, and the value is recorded in the runbook.
@@ -103,7 +103,7 @@
 | SRV-04 | Phase 83 | Complete |
 | SRV-05 | Phase 83 | Complete |
 | SRV-06 | Phase 83 | Pending |
-| SRV-07 | Phase 83 | Pending |
+| SRV-07 | Phase 83 | Complete |
 | SRV-08 | Phase 83 | Pending |
 | SRV-09 | Phase 83 | Pending |
 | SRV-10 | Phase 83 | Pending |

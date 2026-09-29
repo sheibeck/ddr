@@ -105,7 +105,7 @@ Plans:
   5. An admin script lists and deletes suspicious runs (one run or one player's runs, with the service-account key never entering the repo or `www/`), an ops runbook covers rules/index deploys and quotas, and a smoke test against the live project proves create, read, rank and delete end to end with rules and indexes deployed, anonymous sign-in enabled and the API key restricted to only the APIs the game calls.
   6. Bug reports share the quota safely (added by the user 2026-09-28): a report needs the anonymous identity and is limited per player (2-minute cooldown, 5 a day) by rules proven with live 403 probes; the Action deletes filed/failed reports and stale limit documents on the retention schedule, and its 15-minute schedule is proven to fire.
 
-**Plans:** 4/11 plans executed
+**Plans:** 5/11 plans executed
 
 Plans:
 **Wave 1**
@@ -123,7 +123,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 83-05-PLAN.md — tools/boards-admin.mjs (top/suspicious/delete-run/ban/unban/export) and docs/LEADERBOARDS.md runbook (wave 4)
+- [x] 83-05-PLAN.md — tools/boards-admin.mjs (top/suspicious/delete-run/ban/unban/export) and docs/LEADERBOARDS.md runbook (wave 4)
 - [ ] 83-06-PLAN.md — boardWrites.js (idempotent submit, handle rewrite, erase), runQueue.js (ddr.runQueue.v1), runBackfill.js (wave 4)
 - [ ] 83-09-PLAN.md — Bug reports on the shared identity: one-commit limited send, rate-limited sheet UX, shell wiring, ten-probe test tool (wave 4)
 
@@ -212,7 +212,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 82. DAYS Farming Check | 2/2 | Complete    | 2026-09-28 |
-| 83. Leaderboard Server | 4/11 | In Progress|  |
+| 83. Leaderboard Server | 5/11 | In Progress|  |
 | 84. Leaderboards Panel v3 | 0/TBD | Not started | - |
 | 85. Play Games Out, Our Board In | 0/TBD | Not started | - |
 | 86. Compliance & Device Close | 0/TBD | Not started | - |
