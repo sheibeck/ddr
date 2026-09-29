@@ -316,13 +316,24 @@ export async function runProbeRules({ fetchFn, adminToken, config = BUG_REPORT_C
   return { results, allPass: results.length === probes.length && results.every((r) => r.ok), signInFailed: false };
 }
 
-/** adminAccessToken() — `gcloud auth print-access-token`, or null on any failure. Never throws. */
+/**
+ * adminAccessToken() — `gcloud auth print-access-token`, or null on any
+ * failure. On Windows a Cloud SDK installed from the bash archive ships
+ * only the `gcloud` shell script (no gcloud.cmd), which cmd.exe cannot run,
+ * so a failed plain run is retried once through Git Bash — the same
+ * tools/boards-admin.mjs#execGcloud pattern. Never throws.
+ */
 function adminAccessToken() {
+  const cmd = "gcloud auth print-access-token";
   try {
-    const token = execSync("gcloud auth print-access-token", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
-    return token || null;
-  } catch {
-    return null;
+    return execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || null;
+  } catch (err) {
+    if (process.platform !== "win32") return null;
+    try {
+      return execSync(cmd, { encoding: "utf8", shell: "bash", stdio: ["ignore", "pipe", "ignore"] }).trim() || null;
+    } catch {
+      return null;
+    }
   }
 }
 

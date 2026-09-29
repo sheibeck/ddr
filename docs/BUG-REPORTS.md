@@ -201,10 +201,26 @@ Firebase Identity Toolkit's default per-IP sign-up quota is far higher than
 this game needs — an anonymous `accounts:signUp` call happens at most once
 per device, ever (section 2). Live setup (83-08) lowers it to about 10 new
 accounts per IP per hour: tight enough to blunt a scripted sign-up burst
-without affecting real players. The value actually set live is recorded in
-`docs/LEADERBOARDS.md` section 14 ("Live setup record"), filled in by
-83-08; 83-11 copies the same figure here once it has run against the live
-project.
+without affecting real players.
+
+**Live value (copied from `docs/LEADERBOARDS.md` section 14, 83-08):**
+default is 100 accounts/hour/IP (`cloud.google.com/identity-platform/quotas`);
+`quota.signUpQuotaConfig` was set to **10 accounts/hour**, `startTime:
+2026-09-29T09:57:57Z`, `quotaDuration: 31536000s` (365 days) — **expires
+2027-09-29T09:57:57Z**. Anonymous `accounts:signUp` (the only sign-up path
+this game ever calls) hits the same "new account creation" quota as every
+other sign-up method, so it counts against this same limit. Renewal command
+(before the expiry above, or any time the value needs changing):
+
+```bash
+TOKEN=$(gcloud auth print-access-token)
+NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+curl -s -X PATCH "https://identitytoolkit.googleapis.com/admin/v2/projects/delve-die-repeat-6ba5f/config?updateMask=quota.signUpQuotaConfig" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Goog-User-Project: delve-die-repeat-6ba5f" \
+  -H "Content-Type: application/json" \
+  -d "{\"quota\":{\"signUpQuotaConfig\":{\"quota\":\"10\",\"startTime\":\"${NOW}\",\"quotaDuration\":\"31536000s\"}}}"
+```
 
 ## 5. The Action
 
@@ -361,7 +377,100 @@ gh issue delete <n> --repo sheibeck/ddr --yes
 
 ## Live proof
 
-Filled in by 83-11.
+Run 2026-09-29 (83-11), after `git push origin master` landed the phase's
+code at `8d187f56` (verified `git log origin/master -1` == `git log master
+-1`).
+
+### Transition-period `--probe-rules` results
+
+**Amendment (user ruling 2026-09-29):** the live project runs the
+**transition** rules (section 4's "Old builds" clause — `bugReports` create
+still accepts the legacy unauthenticated form the shipped 2.1.0/vc11 build
+sends), so an unauthenticated create and a signed-in create with no
+same-commit `reportLimits` step are *expected* to succeed under transition
+rules, not refused. The full ten-PASS proof is a release-day step (after
+`firebase.json`'s final rules are deployed — section 4, and
+`docs/LEADERBOARDS.md` section 14's "Release-day step"); this run records
+what the transition rules actually do today, without loosening or tightening
+anything to make a probe pass.
+
+`node tools/bug-reports/send-test-report.mjs --probe-rules` (exit 1 — 8/10,
+as expected under transition rules):
+
+| Probe | Result | Note |
+|---|---|---|
+| list-read | PASS (403) | |
+| extra-field | PASS (403) | |
+| wrong-status | PASS (403) | |
+| no-auth | **FAIL (200)** | expected — the transition `bugReports` create clause still accepts the legacy unauthenticated form; refused only after the release-day cutover to `firebase.json` |
+| no-limit-write | **FAIL (200)** | expected — the legacy create path never required a same-commit `reportLimits` step; refused only after the cutover |
+| cooldown | PASS (403) | |
+| forged-count | PASS (403) | |
+| sixth-today | PASS (403) | |
+| other-limit-doc | PASS (403) | |
+| list-limits | PASS (403) | |
+
+Both unexpected 200s created a probe document (`probenoauth1790678083512`,
+`probenolimitwrite1790678083512`); the tool's own best-effort cleanup
+deleted both (`created <id>, deleted` printed for each) — nothing left
+behind. SRV-09's checkbox stays unchecked per the Transition amendment; the
+release-day run of this same command, expected all-PASS, is what checks it.
+
+**Deviation (Rule 1/3):** `send-test-report.mjs#adminAccessToken()` called
+`gcloud auth print-access-token` through a plain `execSync`, which fails on
+this Windows machine's bash-archive Cloud SDK install (ships only the
+`gcloud` shell script, no `gcloud.cmd`, so `cmd.exe` can't run it) — the tool
+exited 2 ("no gcloud admin token available") even with a working `gcloud`
+login. Fixed to retry once through Git Bash on a Windows failure, the same
+pattern `tools/boards-admin.mjs#execGcloud` already uses; verified by a
+successful `--probe-rules` run immediately after.
+
+### Live cleanup proof
+
+1. `node tools/bug-reports/send-test-report.mjs` → `{"ok":true,"id":"4zGI3tzp9sJOhwQB0shx"}`
+2. `gh workflow run bug-reports.yml --repo sheibeck/ddr` (not a dry run) → run
+   [`36556480792`](https://github.com/sheibeck/ddr/actions/runs/36556480792),
+   watched to `success`.
+3. Run log's summary line: `filed 1 [4zGI3tzp9sJOhwQB0shx] | reconciled 0 []
+   | skipped 0 [] | failed 0 [] | deleted 1 [4zGI3tzp9sJOhwQB0shx
+   (filed-full)]` — the report was filed and its Firestore document deleted
+   in the same run, immediately after filing (Oracle fit whole,
+   `oracleTrimmed: false`).
+4. Issue [#7](https://github.com/sheibeck/ddr/issues/7) (`[Player report]
+   [TEST] Phase 83 live end-to-end check...`) exists, body starts with the
+   marker for id `4zGI3tzp9sJOhwQB0shx`.
+5. Admin GET `bugReports/4zGI3tzp9sJOhwQB0shx` → **404**, confirming the
+   document is gone.
+6. Issue #7 closed with a comment recording this was the Phase 83 live
+   cleanup proof and that its Firestore document was deleted after filing.
+
+### Legacy pass (pre-Phase-83 documents)
+
+- **Failed reports without `failedAt`:** admin `runQuery` for
+  `bugReports` where `status == "failed"` (limit 100) → **0 documents**.
+  Nothing to patch; every failed report already carries `failedAt` (or none
+  exist yet).
+- **Filed reports with no `oracleTrimmed` field (pre-Phase-83):** admin
+  `runQuery` for `bugReports` where `status == "filed"` → **5 documents**,
+  all missing `oracleTrimmed` (pre-dates Phase 83's field) but all already
+  carrying `filedAt` — no patch needed. `cleanupRun`'s Q2 sweep
+  (`status == "filed" AND filedAt < cutoff`) does not require
+  `oracleTrimmed` to be present, so these 5 retire on their own 30 days
+  after their existing `filedAt`, same as any other filed report.
+
+### Scheduled run
+
+`gh run list --repo sheibeck/ddr --workflow bug-reports.yml --event schedule
+--limit 5 --json databaseId,createdAt,conclusion`:
+
+| Run id | createdAt | conclusion |
+|---|---|---|
+| `36529349414` | 2026-09-29T06:05:58Z | success |
+
+A schedule-triggered run already exists (fired on the `7,19,33,52 * * * *`
+cron before this plan's own push — the cron was pinned in 83-10) — SRV-12 is
+proven directly, no fix was needed. Every non-schedule run in the same
+`gh run list` window (`workflow_dispatch`) also completed `success`.
 
 ## 8. Keys and rotation
 
