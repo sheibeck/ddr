@@ -4,15 +4,15 @@ milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 84
 status: executing
-stopped_at: Completed 84-02-PLAN.md (LEADERBOARD_COPY, SEASON_NAMES, voice/safety/HP-not-WP registration)
-last_updated: "2026-09-29T12:44:50.258Z"
+stopped_at: Completed 84-03-PLAN.md (per-run history + history-based NEW PERSONAL BEST)
+last_updated: "2026-09-29T13:23:44.756Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 84 Plan 01 (run-doc note/when contract) complete
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 29
-  completed_plans: 16
+  total_plans: 34
+  completed_plans: 17
   percent: 40
 current_phase_name: Leaderboards Panel v3
 ---
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 84 — EXECUTING
-Plan: 3 of 9
-Progress: [██████░░░░] 55%
+Plan: 4 of 9
+Progress: [█████░░░░░] 50%
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 84 Plan 01 (run-doc note/when contract) complete
 
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T12:44:50.224Z
-Stopped at: Completed 84-02-PLAN.md (LEADERBOARD_COPY, SEASON_NAMES, voice/safety/HP-not-WP registration)
+Last session: 2026-09-29T13:23:44.680Z
+Stopped at: Completed 84-03-PLAN.md (per-run history + history-based NEW PERSONAL BEST)
 
 - (history below is the pre-close record)
 
@@ -441,6 +441,7 @@ Resume file: None
 | Phase 83 P11 | 30min | 2 tasks | 2 files |
 | Phase 84 P01 | 41min | 3 tasks | 14 files |
 | Phase 84 P02 | 22min | 2 tasks | 6 files |
+| Phase 84 P03 | 35min | 2 tasks | 7 files |
 
 ## Decisions
 
@@ -773,6 +774,8 @@ Resume file: None
 - [Phase 84]: rankKeyOf(stat, run) dispatches to the four existing *KeyOf formulas rather than new key math, so both Leaderboards views (84-05..09) share one entry point
 - [Phase ?]: 84-02: LEADERBOARD_COPY.stats key order pinned equal to runDoc.js#BOARD_STATS so the copy bank and rankKeyOf can never drift apart
 - [Phase ?]: 84-02: nine LEADERBOARD state.* in-voice notes + two empty.*All lines are Claude's Discretion (mock has no loading/stale/unreachable/unfiltered-empty copy), proved against the same voice/safety/HP-not-WP tests
+- [Phase ?]: 84-03: recordDeath's bests fold still runs unconditionally (ddr.bests.v1 untouched) but no longer sets deathRecord — the death panel's new-best answer now comes from newBestsAgainst against the new per-run history
+- [Phase ?]: 84-03: persistGrave's RUN_HISTORY_KEY read is isolated behind safeGetItem() so a read failure on that one key can never abort the graveyard/bests writes; merge-on-write means the stored history can only ever grow
 
 ### Blockers
 
