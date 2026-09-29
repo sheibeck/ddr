@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
+current_phase: 84
 status: executing
-stopped_at: Completed 83-11-PLAN.md (live bug-report probes, cleanup proof, schedule check; SRV-11/SRV-12 complete, SRV-09 deferred to Phase 86 release-day cutover)
-last_updated: "2026-09-29T11:26:08.203Z"
+stopped_at: Completed 84-01-PLAN.md (note/when run-doc contract, rankKeyOf, live transition-rules redeploy + smoke)
+last_updated: "2026-09-29T12:25:59.818Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase null execution started
+last_activity_desc: Phase 84 Plan 01 (run-doc note/when contract) complete
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 28
-  completed_plans: 14
+  completed_plans: 15
   percent: 40
-current_phase: 84
 current_phase_name: Leaderboards Panel v3
 ---
 
@@ -28,10 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 ## Current Position
 
-Phase: null — EXECUTING
-Plan: 1 of ?
-Status: Executing Phase null
-Last activity: 2026-09-29 — Phase null execution started
+Phase: 84 — EXECUTING
+Plan: 2 of 9
+Progress: [█████░░░░░] 54%
+Status: Ready to execute
+Last activity: 2026-09-29 — Phase 84 Plan 01 (run-doc note/when contract) complete
 
 ## Ground Truth (durable facts every session needs)
 
@@ -258,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T10:51:04.559Z
-Stopped at: Completed 83-11-PLAN.md (live bug-report probes, cleanup proof, schedule check; SRV-11/SRV-12 complete, SRV-09 deferred to Phase 86 release-day cutover)
+Last session: 2026-09-29T12:25:59.768Z
+Stopped at: Completed 84-01-PLAN.md (note/when run-doc contract, rankKeyOf, live transition-rules redeploy + smoke)
 
 - (history below is the pre-close record)
 
@@ -438,6 +439,7 @@ Resume file: None
 | Phase 83 P10 | 120min | 3 tasks | 7 files |
 | Phase 83 P08 | 1h 40min | 2 tasks | 6 files |
 | Phase 83 P11 | 30min | 2 tasks | 2 files |
+| Phase 84 P01 | 41min | 3 tasks | 14 files |
 
 ## Decisions
 
@@ -766,6 +768,8 @@ Resume file: None
 - [Phase ?]: Per-IP sign-up quota set to 10/hour for 365 days via quota.signUpQuotaConfig; default is 100/hour/IP (cloud.google.com/identity-platform/quotas); no billing/Identity Platform upgrade required
 - [Phase ?]: Live-only fix: runs list rule widened to accept a null request.query.limit (a runAggregationQuery shape) so total()/rankOf() are no longer refused; deny-list-51 still refuses an explicit limit above 50
 - [Phase ?]: 83-11: SRV-11/SRV-12 proven live (Action deletes Firestore docs on retention schedule; a scheduled run already fires on the pinned cron); SRV-09 stays unchecked -- full ten-PASS probe proof deferred to the Phase 86 release-day rules cutover
+- [Phase 84]: when's upper bound carries a one-day clock-skew allowance (WHEN_SKEW_MS), enforced server-side (request.time) and by the fake's own injected clock, never a bare client Date.now()
+- [Phase 84]: rankKeyOf(stat, run) dispatches to the four existing *KeyOf formulas rather than new key math, so both Leaderboards views (84-05..09) share one entry point
 
 ### Blockers
 
