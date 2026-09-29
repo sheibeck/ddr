@@ -240,6 +240,9 @@ test("(B2) SOURCE: subscribe re-renders the three account surfaces, the open she
   // Phase 84 (BOARD-26): a Compete change on the title re-checks VIEW THE
   // DEAD's history-or-Compete gate at once.
   assert.match(region, /refreshTitleDead\(\);/);
+  // Phase 85 (ACCT-04, 85-05): the rank line never outlives consent —
+  // Compete OFF clears any placement still waiting on the death panel.
+  assert.match(region, /if \(account\.state\(\)\.compete !== true\) window\.__mzPlacement = null;/);
   assert.equal(occurrences(MODULE, "renderAccountChips"), 0, "the Phase 67 two-chip renderer is retired");
   const surfaces = sliceBetween(MODULE, "function renderAccountSurfaces() {", "\n  account.subscribe(");
   assert.match(surfaces, /renderAccountChip\(document\.getElementById\("mw-title-acct-chip"\), account\.chipView\(\)\);/);
@@ -260,6 +263,11 @@ test("(C1) SOURCE: `let account = null;` precedes the v3 Leaderboards panel inst
   assert.doesNotMatch(region, /\bidentity:/);
   const gate = sliceBetween(MODULE, "function competeIsOn() {", "\n  }");
   assert.match(gate, /account \? account\.state\(\)\.compete === true : currentSettings\?\.compete === true/);
+});
+
+test("(C2) SOURCE: createBoardSync's onAcked calls account.boardAcked() — the welcome card fires once on the first acknowledged run (85-05)", () => {
+  const region = sliceBetween(MODULE, "const boardSync = createBoardSync({", "\n  });");
+  assert.match(region, /onAcked: \(\) => account\?\.boardAcked\(\),/);
 });
 
 // ═══════════════════════ (D) the account sheet ══════════════════════════════

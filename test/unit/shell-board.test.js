@@ -236,7 +236,7 @@ test("(R8) SOURCE: the module resets window.__mzPlacement to null in the bridge 
   assert.match(title, /window\.__mzPlacement = null;/);
 });
 
-test("(R9) REGISTRY: __mzPlacement is registered as a module-owned presentation bridge naming its consumers", () => {
+test("(R9) REGISTRY: __mzPlacement is registered as a module-owned presentation bridge naming its consumers, including handlePlacement", () => {
   const entry = BRIDGE.__mzPlacement;
   assert.ok(entry, "registered");
   assert.equal(entry.owner, "mazeworld.html (module)");
@@ -245,6 +245,7 @@ test("(R9) REGISTRY: __mzPlacement is registered as a module-owned presentation 
   assert.match(consumers, /renderRankLine/);
   assert.match(consumers, /onRunRecorded/);
   assert.match(consumers, /showTitleScreen/);
+  assert.match(consumers, /handlePlacement/);
   assert.match(entry.purpose, /never a field on state/);
 });
 
@@ -254,7 +255,7 @@ test("(R10) no S.placement/S.rank/S.pgs* field is ever assigned in the shell", (
 
 // ═══════════════════════ (S) boardSync SOURCE pins ══════════════════════════
 
-test("(S1) SOURCE: exactly one createBoardSync block wires storage/fetchFn/identity/client/competeOn, the version read from #mw-app-version and an onChange that clears the feed and refreshes the panel", () => {
+test("(S1) SOURCE: exactly one createBoardSync block wires storage/fetchFn/identity/client/competeOn, the version read from #mw-app-version, liveHash/onAcked/onPlacement (85-05) and an onChange that clears the feed and refreshes the panel", () => {
   assert.equal(occurrences(MODULE, "createBoardSync({"), 1);
   const region = sliceBetween(MODULE, "const boardSync = createBoardSync({", "\n  });");
   assert.match(region, /storage: window\.mzStorage,/);
@@ -264,9 +265,29 @@ test("(S1) SOURCE: exactly one createBoardSync block wires storage/fetchFn/ident
   assert.match(region, /competeOn: competeIsOn,/);
   assert.match(region, /online: \(\) => navigator\.onLine !== false,/);
   assert.match(region, /version: \(\) => document\.getElementById\("mw-app-version"\)\?\.textContent \|\| "dev",/);
+  assert.match(region, /liveHash: \(\) => liveDeathHash,/);
+  assert.match(region, /onAcked: \(\) => account\?\.boardAcked\(\),/);
+  assert.match(region, /onPlacement: handlePlacement,/);
   assert.match(region, /onChange: \(\) => \{/);
   assert.match(region, /boardFeed\.clear\(\);/);
   assert.match(region, /boardsPanel\.refresh\(\);/);
+});
+
+test("(S1b) SOURCE: the placement import line imports only placementOutcome (85-05 dropped placementLine/deferredPlacementCard/seasonDropLine from the shell's own import)", () => {
+  assert.equal(occurrences(MODULE, 'import { placementOutcome } from "./src/browser/placement.js";'), 1);
+  assert.equal(occurrences(MODULE, "placementLine, deferredPlacementCard"), 0);
+  assert.equal(occurrences(MODULE, "seasonDropLine"), 0);
+});
+
+test("(S1c) SOURCE: handlePlacement calls placementOutcome, then renderRankLine for a line and parkPlacementCard for a card, wrapped in try/catch", () => {
+  const region = sliceBetween(MODULE, "function handlePlacement(report) {", "\n  function onRunRecorded");
+  assert.match(region, /try \{/);
+  assert.match(region, /placementOutcome\(\{/);
+  assert.match(region, /liveHash: liveDeathHash,/);
+  assert.match(region, /panelUp: window\.__mzState\?\.get\?\.\(\)\?\.dead === true,/);
+  assert.match(region, /renderRankLine\(document\.getElementById\("cb-over"\), window\.__mzPlacement\);/);
+  assert.match(region, /parkPlacementCard\(outcome\.card\);/);
+  assert.match(region, /\} catch \{/);
 });
 
 test("(S2) SOURCE: setRunRecordedListener(onRunRecorded) is wired and onRunRecorded calls boardSync.record", () => {
@@ -307,6 +328,113 @@ test("(S6) SOURCE: no import of any retired game-service module, and the shell o
   for (const bad of [/fetch\(/, /XMLHttpRequest/, /WebSocket/, /EventSource/, /sendBeacon/]) {
     assert.doesNotMatch(CODE, bad);
   }
+});
+
+/** handlePlacementFns(opts) — the shipped handlePlacement over fakes for
+ * placementOutcome/renderRankLine/parkPlacementCard/document, and a fixed
+ * liveDeathHash/window.__mzState.dead. opts.outcome is the fake
+ * placementOutcome's return value (or a function of its input). */
+function handlePlacementFns(opts = {}) {
+  const region = sliceBetween(MODULE, "function handlePlacement(report) {", "\n  function onRunRecorded");
+  const calls = { outcome: null, renderRankLine: [], parkPlacementCard: [] };
+  const win = { __mzPlacement: "stale", __mzState: { get: () => ({ dead: opts.dead === true }) } };
+  const doc = { getElementById: (id) => ({ id }) };
+  const placementOutcome = (input) => {
+    calls.outcome = input;
+    return typeof opts.outcome === "function" ? opts.outcome(input) : opts.outcome;
+  };
+  const renderRankLine = (...args) => calls.renderRankLine.push(args);
+  const parkPlacementCard = (...args) => calls.parkPlacementCard.push(args);
+  const make = new Function(
+    "window",
+    "document",
+    "placementOutcome",
+    "renderRankLine",
+    "parkPlacementCard",
+    "liveDeathHash",
+    region + "\nreturn handlePlacement;",
+  );
+  const handlePlacement = make(win, doc, placementOutcome, renderRankLine, parkPlacementCard, opts.liveDeathHash ?? null);
+  return { handlePlacement, win, calls };
+}
+
+test("(H1) BEHAVIOUR: a matching live run with the panel up draws one fresh rank line and parks no card", () => {
+  const { handlePlacement, win, calls } = handlePlacementFns({
+    liveDeathHash: "aaa11111",
+    dead: true,
+    outcome: () => ({ line: { hash: "aaa11111", line: "You placed 12th of 340." }, card: null }),
+  });
+  handlePlacement({ live: { hash: "aaa11111", rank: 12, total: 340 }, rest: null });
+  assert.deepEqual(calls.outcome, {
+    live: { hash: "aaa11111", rank: 12, total: 340 },
+    rest: null,
+    liveHash: "aaa11111",
+    panelUp: true,
+  });
+  assert.equal(calls.renderRankLine.length, 1);
+  assert.deepEqual(win.__mzPlacement, { hash: "aaa11111", line: "You placed 12th of 340.", fresh: true });
+  assert.match(win.__mzPlacement.line, /^You placed/);
+  assert.equal(calls.parkPlacementCard.length, 0);
+});
+
+test("(H2) BEHAVIOUR: the same report once the panel is gone parks one card (count 1) and sets no placement", () => {
+  const card = { title: "THE LEDGER CAUGHT UP", line: "Your earlier death placed 12th of 340 on DEPTH.", tone: "good", hold: 12000 };
+  const { handlePlacement, win, calls } = handlePlacementFns({
+    liveDeathHash: "aaa11111",
+    dead: false,
+    outcome: () => ({ line: null, card }),
+  });
+  handlePlacement({ live: { hash: "aaa11111", rank: 12, total: 340 }, rest: null });
+  assert.equal(calls.outcome.panelUp, false);
+  assert.equal(calls.renderRankLine.length, 0);
+  assert.equal(win.__mzPlacement, "stale", "left untouched");
+  assert.deepEqual(calls.parkPlacementCard, [[card]]);
+});
+
+test("(H3) BEHAVIOUR: live plus a rest batch draws the line and still parks the rest's own card (count 2)", () => {
+  const restCard = { title: "THE LEDGER CAUGHT UP", line: "2 earlier deaths reached the ledger. The best placed 40th of 340 on DEPTH.", tone: "good", hold: 12000 };
+  const { handlePlacement, calls, win } = handlePlacementFns({
+    liveDeathHash: "aaa11111",
+    dead: true,
+    outcome: () => ({ line: { hash: "aaa11111", line: "You placed 12th of 340." }, card: restCard }),
+  });
+  handlePlacement({ live: { hash: "aaa11111", rank: 12, total: 340 }, rest: { count: 2, hash: "bbb22222", rank: 40, total: 340 } });
+  assert.equal(calls.outcome.rest.count, 2);
+  assert.equal(calls.renderRankLine.length, 1);
+  assert.deepEqual(calls.parkPlacementCard, [[restCard]]);
+  assert.equal(win.__mzPlacement.line, "You placed 12th of 340.");
+});
+
+test("(H4) BEHAVIOUR: a live hash that no longer matches liveDeathHash parks a card instead of drawing", () => {
+  const card = { title: "THE LEDGER CAUGHT UP", line: "Your earlier death placed 12th of 340 on DEPTH.", tone: "good", hold: 12000 };
+  const { handlePlacement, calls, win } = handlePlacementFns({
+    liveDeathHash: "different-hash",
+    dead: true,
+    outcome: (input) => (input.live && input.live.hash !== input.liveHash ? { line: null, card } : { line: null, card: null }),
+  });
+  handlePlacement({ live: { hash: "aaa11111", rank: 12, total: 340 }, rest: null });
+  assert.equal(calls.outcome.liveHash, "different-hash");
+  assert.equal(calls.renderRankLine.length, 0);
+  assert.deepEqual(calls.parkPlacementCard, [[card]]);
+  assert.equal(win.__mzPlacement, "stale");
+});
+
+test("(H5) BEHAVIOUR: an incomplete or garbage report — or a placementOutcome that throws — draws nothing, parks nothing and never throws", () => {
+  const { handlePlacement: throwing, calls: throwingCalls } = handlePlacementFns({
+    outcome: () => {
+      throw new Error("boom");
+    },
+  });
+  assert.doesNotThrow(() => throwing({ live: null, rest: null }));
+  assert.equal(throwingCalls.renderRankLine.length, 0);
+  assert.equal(throwingCalls.parkPlacementCard.length, 0);
+
+  const { handlePlacement, calls } = handlePlacementFns({ outcome: () => ({ line: null, card: null }) });
+  for (const report of [null, undefined, {}, { live: null, rest: null }, "garbage", 42]) {
+    assert.doesNotThrow(() => handlePlacement(report));
+  }
+  assert.equal(calls.renderRankLine.length, 0);
+  assert.equal(calls.parkPlacementCard.length, 0);
 });
 
 // ═══════════════════════ (D) the death listener ═════════════════════════════

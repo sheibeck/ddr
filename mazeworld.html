@@ -6994,11 +6994,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // retired queue-key drop, DEPTH-rank placement reports) lives here; the
   // shell only wires taps and lifecycle events into it.
   import { createBoardSync } from "./src/browser/boardSync.js";
-  // Phase 68 (PLACE-01/02): the adapter's run-recorded hook and the
-  // placement copy views — each on its own line per this file's import
+  // Phase 85 (ACCT-04, 85-CONTEXT group 2): the adapter's run-recorded hook
+  // and placementOutcome, the one rule that turns boardSync's placement
+  // report into the death panel's rank line or the deferred rail card
+  // (handlePlacement, below) — each on its own line per this file's import
   // convention.
   import { setRunRecordedListener } from "./src/browser/engineAdapter.js";
-  import { placementLine, deferredPlacementCard, seasonDropLine } from "./src/browser/placement.js";
+  import { placementOutcome } from "./src/browser/placement.js";
   import { SEASON } from "./content/season.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
@@ -8468,6 +8470,15 @@ window.__mzClassicBoot = async function classicBoot() {
     competeOn: competeIsOn,
     online: () => navigator.onLine !== false,
     version: () => document.getElementById("mw-app-version")?.textContent || "dev",
+    // Phase 85 (ACCT-04, 85-CONTEXT group 2): liveHash lets boardSync tell
+    // the just-acknowledged live death apart from every other run a flush
+    // settled; onAcked raises the one-time welcome card on the first
+    // acknowledged run ever; onPlacement turns the settled batch into the
+    // death panel's rank line or the deferred rail card (handlePlacement,
+    // below).
+    liveHash: () => liveDeathHash,
+    onAcked: () => account?.boardAcked(),
+    onPlacement: handlePlacement,
     onChange: () => {
       boardFeed.clear();
       boardsPanel.refresh();
@@ -8519,6 +8530,10 @@ window.__mzClassicBoot = async function classicBoot() {
     // Compete gate at once — a fresh install with Compete just turned ON
     // must show the entry without waiting for the title to re-open.
     refreshTitleDead();
+    // Phase 85 (ACCT-04, 85-CONTEXT group 2): the rank line never outlives
+    // consent — Compete OFF clears any placement still waiting on the
+    // death panel.
+    if (account.state().compete !== true) window.__mzPlacement = null;
   });
   // The pending faces until boot() settles the first state.
   renderAccountSurfaces();
@@ -8551,6 +8566,30 @@ window.__mzClassicBoot = async function classicBoot() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") boardSync.flush();
   });
+
+  // Phase 85 (ACCT-04, 85-CONTEXT group 2): boardSync's placement report
+  // for an acknowledged flush becomes either the death panel's fading rank
+  // line (drawn while that panel is up and the report still names the live
+  // death) or one deferred rail card (every other case: the panel already
+  // gone, the hashes no longer matching, or no live run in this batch).
+  // Wrapped so a bad report never breaks the queue.
+  function handlePlacement(report) {
+    try {
+      const outcome = placementOutcome({
+        live: report && report.live ? report.live : null,
+        rest: report && report.rest ? report.rest : null,
+        liveHash: liveDeathHash,
+        panelUp: window.__mzState?.get?.()?.dead === true,
+      });
+      if (outcome.line) {
+        window.__mzPlacement = { hash: outcome.line.hash, line: outcome.line.line, fresh: true };
+        renderRankLine(document.getElementById("cb-over"), window.__mzPlacement);
+      }
+      if (outcome.card) parkPlacementCard(outcome.card);
+    } catch {
+      // a bad report never breaks the queue
+    }
+  }
 
   // A death was recorded (never a dev death: the adapter skips those). It is
   // now the live death whose panel may show the rank line; any earlier rank
