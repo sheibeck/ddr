@@ -42,7 +42,7 @@ Builds on Phase 83 (identity, handles, boardWrites, runQueue, runBackfill, board
 - **Old data (RETIRE-03):** drop `ddr.pgsqueue.v1` silently on first launch; remove `pgsWelcomed` / `pgsDevSignedIn` from `SETTINGS_DEFAULTS` and strip them from the stored settings blob on the next write; keep `compete`. The local graveyard and bests keys stay untouched.
 
 ### Claude's Discretion
-- Exact copy for the account rows, erase confirm, welcome card, placement lines, the off-time-runs offer card — house voice, voice-corpus and safety tests.
+- Exact copy for the account rows, erase confirm, welcome card, placement lines — house voice, voice-corpus and safety tests.
 - How the handle survives erase (identity API shape), and how a re-roll made offline is retried.
 - Plan split (removal vs. account UI vs. death wiring), keeping mazeworld.html edits in as few plans as practical.
 
