@@ -24,6 +24,7 @@ import {
   BACKFILL_VERSION,
   BACKFILL_SINCE_MS,
   collectBackfillRuns,
+  preReleaseHashes,
   runBackfill,
 } from "../../src/browser/runBackfill.js";
 
@@ -273,7 +274,8 @@ test("runBackfill: the first Compete-ON call enqueues eligible runs stamped BACK
   const graveOnly = summary({ when: BACKFILL_SINCE_MS + 120000, steps: 604 });
   await storage.setItem("ddr.graveyard.v1", JSON.stringify([graveOnly, before]));
 
-  const res = await runBackfill({ storage, queue, competeOn: () => true });
+  const allowHashes = [atCutoff.hash, after.hash, graveOnly.hash];
+  const res = await runBackfill({ storage, queue, competeOn: () => true, allowHashes });
   assert.equal(res.ok, true);
   assert.equal(res.queued, 3); // atCutoff, after, graveOnly — `before` is dropped
   assert.equal(typeof res.flushed.then, "function");
@@ -292,9 +294,96 @@ test("runBackfill: the first Compete-ON call enqueues eligible runs stamped BACK
   assert.deepEqual(JSON.parse(storedRaw), { v: 1, done: true, count: 3 });
 
   // a second call is a no-op
-  const res2 = await runBackfill({ storage, queue, competeOn: () => true });
+  const res2 = await runBackfill({ storage, queue, competeOn: () => true, allowHashes });
   assert.deepEqual(res2, { ok: true, skipped: true });
   assert.equal(stack.fake.docs().length, 3, "the second call enqueued nothing new");
+});
+
+test("runBackfill: allowHashes bounds the upload to the local history's pre-2.2 imports — a run not in allowHashes is never queued even though it passes collectBackfillRuns", async () => {
+  const stack = makeFullStack();
+  const storage = makeStorage();
+  const queueStorage = makeStorage();
+  const queue = createRunQueue({
+    storage: queueStorage,
+    writes: stack.writes,
+    competeOn: () => true,
+    online: () => true,
+    now: stack.clock,
+  });
+
+  // Both runs are eligible by collectBackfillRuns' own rules (season, cutoff,
+  // hash integrity) — only `legacy`'s hash is in allowHashes, simulating a
+  // local run history where only `legacy` was ever imported/stamped "2.1.0
+  // (11)"; `laterRun` stands in for a 2.2 run played with Compete OFF, which
+  // must never reach the board through this module.
+  const legacy = summary({ when: BACKFILL_SINCE_MS + 1000, steps: 901 });
+  const laterRun = summary({ when: BACKFILL_SINCE_MS + 2000, steps: 902 });
+  await storage.setItem("ddr.graveyard.v1", JSON.stringify([legacy, laterRun]));
+
+  const res = await runBackfill({ storage, queue, competeOn: () => true, allowHashes: [legacy.hash] });
+  assert.equal(res.ok, true);
+  assert.equal(res.queued, 1);
+  await res.flushed;
+
+  const docs = stack.fake.docs();
+  assert.equal(docs.length, 1);
+  assert.equal(docs[0].hash, legacy.hash);
+});
+
+test("runBackfill: a missing, non-array, non-Set allowHashes counts as empty — nothing is queued", async () => {
+  const run = summary({ when: BACKFILL_SINCE_MS + 1000, steps: 903 });
+
+  for (const bad of [undefined, null, 42, {}]) {
+    const stack = makeFullStack();
+    const storage = makeStorage();
+    const queueStorage = makeStorage();
+    const queue = createRunQueue({ storage: queueStorage, writes: stack.writes, competeOn: () => true, online: () => true, now: stack.clock });
+    await storage.setItem("ddr.graveyard.v1", JSON.stringify([run]));
+
+    const res = await runBackfill({ storage, queue, competeOn: () => true, allowHashes: bad });
+    assert.equal(res.ok, true);
+    assert.equal(res.queued, 0);
+    assert.equal(stack.fake.docs().length, 0);
+  }
+});
+
+test("runBackfill: a Set of allowed hashes works exactly like an array", async () => {
+  const stack = makeFullStack();
+  const storage = makeStorage();
+  const queueStorage = makeStorage();
+  const queue = createRunQueue({ storage: queueStorage, writes: stack.writes, competeOn: () => true, online: () => true, now: stack.clock });
+
+  const run = summary({ when: BACKFILL_SINCE_MS + 1000, steps: 904 });
+  await storage.setItem("ddr.graveyard.v1", JSON.stringify([run]));
+
+  const res = await runBackfill({ storage, queue, competeOn: () => true, allowHashes: new Set([run.hash]) });
+  assert.equal(res.ok, true);
+  assert.equal(res.queued, 1);
+  await res.flushed;
+  assert.equal(stack.fake.docs().length, 1);
+});
+
+/* ================================================================
+   preReleaseHashes
+   ================================================================ */
+
+test("preReleaseHashes: keeps only valid, unique hashes stamped exactly BACKFILL_VERSION, in history order", () => {
+  const out = preReleaseHashes([
+    { hash: "00000001", version: BACKFILL_VERSION },
+    { hash: "00000002", version: "2.2.0 (12)" }, // wrong version, dropped
+    { hash: "not-a-hash", version: BACKFILL_VERSION }, // invalid hash, dropped
+    { hash: "00000001", version: BACKFILL_VERSION }, // duplicate, dropped
+    { hash: "00000003", version: BACKFILL_VERSION },
+  ]);
+  assert.deepEqual(out, ["00000001", "00000003"]);
+  assert.ok(Object.isFrozen(out));
+});
+
+test("preReleaseHashes: null, a non-array, or garbage entries give []", () => {
+  for (const bad of [null, undefined, 42, "x", {}]) {
+    assert.deepEqual(preReleaseHashes(bad), []);
+  }
+  assert.deepEqual(preReleaseHashes([null, 42, "x", { version: BACKFILL_VERSION }]), []);
 });
 
 test("runBackfill: corrupt or missing local stores enqueue nothing but still mark the backfill done", async () => {
@@ -353,7 +442,7 @@ test("runBackfill: a run already settled in the queue is not queued again", asyn
   await storage.setItem("ddr.bests.v1", JSON.stringify(bests));
   await storage.setItem("ddr.graveyard.v1", JSON.stringify([]));
 
-  const res = await runBackfill({ storage, queue, competeOn: () => true });
+  const res = await runBackfill({ storage, queue, competeOn: () => true, allowHashes: [already.hash, fresh.hash] });
   assert.equal(res.ok, true);
   assert.equal(res.queued, 1, "only `fresh` was genuinely new");
   await res.flushed;
@@ -405,6 +494,8 @@ test("purity: runBackfill.js never touches DOM globals and never calls the bare 
 test("purity: exports and required literals match the plan's artifact contract", () => {
   assert.equal((RUN_BACKFILL_SRC.match(/export async function runBackfill/g) || []).length, 1);
   assert.equal((RUN_BACKFILL_SRC.match(/export function collectBackfillRuns/g) || []).length, 1);
+  assert.equal((RUN_BACKFILL_SRC.match(/export function preReleaseHashes/g) || []).length, 1);
   assert.ok((RUN_BACKFILL_SRC.match(/ddr\.boardBackfill\.v1/g) || []).length >= 1);
   assert.ok((RUN_BACKFILL_SRC.match(/2\.1\.0 \(11\)/g) || []).length >= 1);
+  assert.ok((RUN_BACKFILL_SRC.match(/allowHashes/g) || []).length >= 2);
 });

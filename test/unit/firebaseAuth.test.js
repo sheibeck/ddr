@@ -23,6 +23,7 @@ import {
   parseRefresh,
   createIdentity,
 } from "../../src/browser/firebaseAuth.js";
+import { rollHandle } from "../../src/browser/handles.js";
 import { isValidHandle } from "../../src/browser/handles.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -222,6 +223,61 @@ test("drop: calls storage.removeItem(ddr.identity.v1); a later ensureHandle roll
   assert.deepEqual(snap, { handle: null, uid: null });
   const h = await identity.ensureHandle();
   assert.ok(isValidHandle(h));
+});
+
+/* ---------------- setHandle (Phase 85, no network) ---------------- */
+
+test("setHandle: on an empty record persists {handle, uid:null, tokens null} and resolves {ok:true, handle}", async () => {
+  const storage = makeStorage();
+  const identity = createIdentity({ storage, fetchFn: neverCalled, random: stubRandom(0, 0) });
+  const handle = rollHandle(() => 0.6, null);
+
+  const res = await identity.setHandle(handle);
+  assert.deepEqual(res, { ok: true, handle });
+
+  const snap = await identity.snapshot();
+  assert.deepEqual(snap, { handle, uid: null });
+  const raw = JSON.parse(storage.map.get(IDENTITY_KEY));
+  assert.deepEqual(raw, { v: 1, handle, uid: null, refreshToken: null, idToken: null, expiresAtMs: 0 });
+});
+
+test("setHandle: on a record with a uid keeps uid/tokens and replaces only the handle", async () => {
+  const storage = makeStorage(JSON.stringify({ v: 1, handle: "@grimtoe", uid: "u1", refreshToken: "rt1", idToken: "it1", expiresAtMs: 999 }));
+  const identity = createIdentity({ storage, fetchFn: neverCalled, random: stubRandom(0, 0) });
+  const newHandle = rollHandle(() => 0.9, "@grimtoe");
+
+  const res = await identity.setHandle(newHandle);
+  assert.deepEqual(res, { ok: true, handle: newHandle });
+
+  const raw = JSON.parse(storage.map.get(IDENTITY_KEY));
+  assert.equal(raw.handle, newHandle);
+  assert.equal(raw.uid, "u1");
+  assert.equal(raw.refreshToken, "rt1");
+  assert.equal(raw.idToken, "it1");
+  assert.equal(raw.expiresAtMs, 999);
+});
+
+test("setHandle: an invalid handle resolves {ok:false, reason:'invalid'} and writes nothing", async () => {
+  const storage = makeStorage();
+  const identity = createIdentity({ storage, fetchFn: neverCalled, random: stubRandom(0, 0) });
+
+  for (const bad of ["not-a-handle", "", null, undefined, 42, "@", "@nowhere"]) {
+    const res = await identity.setHandle(bad);
+    assert.deepEqual(res, { ok: false, reason: "invalid" });
+  }
+  assert.equal(storage.calls.setItem, 0);
+});
+
+test("setHandle: makes zero fetchFn calls with Compete ON or OFF", async () => {
+  for (const competeOn of [() => true, () => false]) {
+    const storage = makeStorage();
+    const fetchFn = makeFetch(() => jsonRes(200, {}));
+    const identity = createIdentity({ storage, fetchFn, competeOn, random: stubRandom(0, 0) });
+    const handle = rollHandle(() => 0.4, null);
+    const res = await identity.setHandle(handle);
+    assert.equal(res.ok, true);
+    assert.equal(fetchFn.calls.length, 0);
+  }
 });
 
 /* ---------------- snapshot ---------------- */

@@ -256,9 +256,29 @@ refresh error messages (`TOKEN_EXPIRED`, `USER_DISABLED`, `USER_NOT_FOUND`,
 up again, but **keep the same rolled handle**. Every other failure (timeout,
 429/5xx, another 4xx) is transient and leaves the stored identity untouched.
 
-**Erasing your runs** (Phase 85 UI): the owner deletes every one of their own
-`runs` docs, then the local `ddr.identity.v1` record is dropped and the
-anonymous Identity Toolkit account itself is deleted (`accounts:delete`).
+**Erasing your runs.** ERASE MY RUNS in the ☰ account block (a two-tap
+arm-in-row confirm, Compete ON only) deletes every one of the player's own
+`runs` docs across every season, then deletes the anonymous Identity Toolkit
+account (`accounts:delete`) — but keeps the player's rolled `@handle`:
+`src/browser/boardSync.js#erase` calls `identity.setHandle(handle)`
+immediately after the drop, re-seeding `ddr.identity.v1` with the SAME
+handle and no `uid` (user choice, 2026-09-29), so the next Compete-ON run
+signs up a brand-new anonymous account under that same handle. Any unsent
+queued runs are discarded the moment the erase succeeds, so nothing of the
+erased account can post moments later under the new one; a failed erase
+changes nothing (the old identity and queue stay exactly as they were).
+Erase is board-only — YOUR DEAD (`ddr.runs.v1`), the old graveyard and bests
+keys all stay on the phone untouched.
+
+**Re-roll.** RE-ROLL HANDLE is unlimited and rolls a new handle locally, at
+once — even offline, even with Compete OFF — and leaves a pending-rewrite
+mark (`ddr.handleRewrite.v1`) that a later Compete-ON flush clears only once
+it has rewritten the new handle onto every one of the player's board runs;
+several offline re-rolls collapse into a single rewrite carrying whatever
+handle is current when the flush finally runs.
+
+The ☰ account block and the title's corner sheet are this UI (Phase 85);
+`boardSync.js` decides all of it, so the shell only wires taps to calls.
 
 The identity is **shared with bug reports** (SRV-09) — a player-tapped
 **Send** on the bug-report sheet may create this same identity even with
@@ -272,22 +292,42 @@ control. Recorded live in section 14 by 83-08.
 ## 8. The queue and the backfill
 
 **`ddr.runQueue.v1`** (83-06): a durable, pure, DOM-free queue.
-Enqueue on death — non-dev, Compete ON only. Flush on enqueue, on app
-resume, and on the browser/OS `online` event. Exponential backoff between
-flush attempts. A rules **rejection** (400/403, permission or validation)
-drops that queue entry with a log line — it will never become valid by
-retrying. An "already exists" response (the run's own idempotent create)
-is treated as **acknowledged**, not a failure. 15-second request timeouts.
-Never double-submits the same run. `purge()` empties the queue the moment
-Compete goes OFF.
+Enqueue on death — non-dev, Compete ON only — through
+`src/browser/boardSync.js#record` at the moment `engineAdapter.js`
+reports a run. Flush on enqueue, on app resume (`visibilitychange`
+turning visible) and forced on the browser/OS `online` event. Exponential
+backoff between unforced flush attempts. A rules **rejection** (400/403,
+permission or validation) drops that queue entry with a log line — it will
+never become valid by retrying. An "already exists" response (the run's own
+idempotent create) is treated as **acknowledged**, not a failure. 15-second
+request timeouts. Never double-submits the same run. `purge()` empties the
+queue the moment Compete goes OFF. The native pause path awaits
+`boardSync.js#waitForPending` — storage writes only, never a flush's own
+network call.
 
-**`ddr.boardBackfill.v1`** (83-12): the boards start from the 2.1.0 release
-(user, 2026-09-28). Once, on the first Compete-ON launch, the player's local
-runs with `when` at or after `BACKFILL_SINCE_MS` (2026-09-28T19:41:01Z, the
-`v2.1.0-play11` tag) are queued, stamped version `"2.1.0 (11)"`. Local
-records carry no version, so the cutoff is the death time. Anything older is
-never uploaded, and YOUR DEAD and the INTERRED count import only the same
-runs (Phase 84). The shell call site is Phase 85's.
+**`ddr.boardBackfill.v1`** (83-12, bounded by 85-02): the boards start from
+the 2.1.0 release (user, 2026-09-28). Once, at the first launch with Compete
+ON, the player's local runs with `when` at or after `BACKFILL_SINCE_MS`
+(2026-09-28T19:41:01Z, the `v2.1.0-play11` tag) are queued, stamped version
+`"2.1.0 (11)"` — but only the ones whose hash the local run history
+(`src/browser/runHistory.js`, `ddr.runs.v1`) already imported under that
+same `"2.1.0 (11)"` label (`preReleaseHashes(history)`, an orchestrator
+decision, 2026-09-29). This closes a gap a timestamp-only cutoff would
+leave open: without it, a 2.2 run played with Compete OFF would still land
+in the old graveyard/bests stores with a post-cutoff `when` and could be
+queued stamped `"2.1.0 (11)"` the first time Compete turned ON, breaking the
+"a run played with Compete OFF is never uploaded" ruling (user, 2026-09-29).
+A device whose very first 2.2 launch has Compete OFF marks the backfill
+done-as-skipped right there (a local write, zero network) — the Compete
+setting at that first launch stands in for the per-run flag 2.1.0-era runs
+never carried, so a **later** Compete-ON launch never uploads them either.
+YOUR DEAD and the INTERRED count import the same pre-cutoff runs, unbounded
+by the local-history check (Phase 84) — only the board upload is bounded.
+The call site is `src/browser/boardSync.js#boot`, at launch.
+
+The retired pre-2.2 submission-queue key (`ddr.pgsqueue.v1`, the old Play
+Games queue) is removed silently at every launch, Compete ON or OFF
+(RETIRE-03) — also in `boardSync.js#boot`.
 
 ## 9. Live setup and the API key
 
