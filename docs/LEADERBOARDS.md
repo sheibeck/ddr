@@ -238,34 +238,17 @@ gcloud firestore indexes composite list --project=delve-die-repeat-6ba5f --datab
 Every composite index's `state` reaches `READY` before relying on the
 queries it backs (`topTen`, `rankOf`) live.
 
-### Until the 2.2 release: the transition config
+### The transition period (over, 2026-09-29)
 
-While 2.1.0 (vc11) is still the build testers run, every rules or index
-deploy uses the transition config, never the plain command above — the
-transition rules keep 2.1.0's unauthenticated `bugReports` create working
-(`docs/BUG-REPORTS.md` section 4 "Old builds"; STATE decision 2026-09-29):
-
-```
-firebase deploy --only firestore:rules,firestore:indexes --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive
-```
-
-The plain command already above this subsection (default `firebase.json`,
-the final rules, no `--config`) is the **release-day cutover** — do not run
-it until 2.2 reaches testers (next subsection).
-
-### Release-day cutover (2.2)
-
-`docs/RELEASING.md`'s "Release 2.2.0: the ordered checklist" carries the
-full sequence; the three steps that live here:
-
-- Once 2.2 reaches testers, deploy the final rules with the plain command
-  above (default `firebase.json`, no `--config`).
-- `node tools/bug-reports/send-test-report.mjs --probe-rules` — expect all
-  **ten PASS**; record the table in `docs/BUG-REPORTS.md`'s release-day
-  subsection.
-- Delete `firebase/firestore.transition.rules`, `firebase.transition.json`
-  and `test/unit/firestore-transition-rules.test.js` — the transition
-  period is over once the ten-PASS run is recorded.
+While 2.1.0 (vc11) was the build testers ran, every rules or index deploy
+used a transition config (`firebase.transition.json`, pointing at a
+`firebase/firestore.transition.rules` copy whose `bugReports` create clause
+kept 2.1.0's unauthenticated form; `docs/BUG-REPORTS.md` section 4 "Old
+builds"). On 2026-09-29, once 2.2.0 (vc12) was live on the testing track,
+the final rules were deployed with the plain command above, `--probe-rules`
+came back ten PASS (`docs/BUG-REPORTS.md`'s release-day subsection), and the
+transition rules, their config and their test were deleted. The plain
+command above is now the only deploy command.
 
 ## 7. Identity
 

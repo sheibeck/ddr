@@ -13,10 +13,10 @@
 | # | Step | Result |
 |---|------|--------|
 | 0.1 | Agree `docs/patch-notes/2.2.0.md` with Claude and delete the paragraph starting `**DRAFT, not yet agreed.**` (docs/RELEASING.md step 1). (user) | passed (agreed by the user 2026-09-29) |
-| 0.2 | Release build, versionCode 12 (`npm run android:release`, not `play:release`), then ask before the Play upload to the testing track (docs/RELEASING.md steps 2-3). (user) | open |
-| 0.3 | When 2.2 reaches testers: deploy `firebase.json` (the final rules) and run `send-test-report.mjs --probe-rules` for ten PASS, recorded in `docs/BUG-REPORTS.md` — SRV-09's live proof (docs/RELEASING.md steps 4-5). (Claude, on the user's go) | open |
-| 0.4 | Delete the three transition files: `firebase/firestore.transition.rules`, `firebase.transition.json`, `test/unit/firestore-transition-rules.test.js` (docs/RELEASING.md step 6). (Claude, on the user's go) | open |
-| 0.5 | Deploy the website (`npm run deploy` in darktier-studio) and check `/privacy/apps`, `/privacy/delete-data`, the Terms and `/delve-die-repeat` live (docs/RELEASING.md step 7). (user) | open |
+| 0.2 | Release build, versionCode 12 (`npm run android:release`, not `play:release`), then ask before the Play upload to the testing track (docs/RELEASING.md steps 2-3). (user) | passed (built 2026-09-29 from 66c4757e; the user uploaded it to the testing track; tags v2.2.0 and v2.2.0-play12) |
+| 0.3 | When 2.2 reaches testers: deploy `firebase.json` (the final rules) and run `send-test-report.mjs --probe-rules` for ten PASS, recorded in `docs/BUG-REPORTS.md` — SRV-09's live proof (docs/RELEASING.md steps 4-5). (Claude, on the user's go) | passed (2026-09-29: final rules deployed after the user confirmed 2.2 is live on the testing track; ten PASS) |
+| 0.4 | Delete the three transition files: `firebase/firestore.transition.rules`, `firebase.transition.json`, `test/unit/firestore-transition-rules.test.js` (docs/RELEASING.md step 6). (Claude, on the user's go) | passed (2026-09-29) |
+| 0.5 | Deploy the website (`npm run deploy` in darktier-studio) and check `/privacy/apps`, `/privacy/delete-data`, the Terms and `/delve-die-repeat` live (docs/RELEASING.md step 7). (user) | passed (2026-09-29: deployed with the 2.2.0 patch notes; all five pages serve the new text) |
 | 0.6 | Enter the Data safety answers and the full description from `store-listing/LISTING.md` in Play Console (docs/RELEASING.md step 8; this also closes UAT-v2.1 row 0.1). (user) | open |
 | 0.7 | The Play Console Play Games cleanup, `docs/LEADERBOARDS.md` section 16 (the Season-1 boards and the Play Games configuration; docs/RELEASING.md step 9; this also closes UAT-v2.1 row 15.8). (user) | open |
 | 0.8 | Once the Play build reaches the phone, walk docs/RELEASING.md's "First release after R8: Pixel 7 smoke" (docs/RELEASING.md). (user) | open |

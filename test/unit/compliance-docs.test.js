@@ -85,10 +85,12 @@ test("docs/LEADERBOARDS.md carries the Play Console cleanup section and all five
   }
 });
 
-test("docs/LEADERBOARDS.md section 6 carries the transition-config and release-day-cutover subsections", () => {
+test("docs/LEADERBOARDS.md section 6 records the finished transition period and the transition files are gone", () => {
   const doc = read(LEADERBOARDS_PATH);
-  assert.match(doc, /Until the 2\.2 release: the transition config/);
-  assert.match(doc, /Release-day cutover \(2\.2\)/);
+  assert.match(doc, /The transition period \(over, 2026-09-29\)/);
+  for (const gone of ["firebase.transition.json", "firebase/firestore.transition.rules", "test/unit/firestore-transition-rules.test.js"]) {
+    assert.ok(!fs.existsSync(path.join(REPO_ROOT, gone)), `${gone} was deleted at the 2.2 cutover`);
+  }
 });
 
 // ─── docs/RELEASING.md: no stale runbook link, one ordered checklist ────────

@@ -427,26 +427,30 @@ successful `--probe-rules` run immediately after.
 
 ### Release-day `--probe-rules` results (2.2.0)
 
-**Status: pending.** Run at `docs/RELEASING.md`'s "Release 2.2.0: the
-ordered checklist" step 5, once the final rules (`firebase.json`) are
-deployed. All ten probes are expected `PASS` this time — the transition
-`bugReports` create clause (and the loosened `no-limit-write` case above)
-is gone once the final rules are live, so `no-auth` and `no-limit-write`
-flip from the expected `FAIL (200)` above to `PASS (403)`. SRV-09 is
-checked once this table reads ten PASS.
+**Status: done, ten PASS (2026-09-29).** Run at `docs/RELEASING.md`'s
+"Release 2.2.0: the ordered checklist" step 5, right after the user
+confirmed 2.2.0 (vc12) is live on the testing track and the final rules
+were deployed with `firebase deploy --only firestore:rules,firestore:indexes
+--project delve-die-repeat-6ba5f --non-interactive` (default `firebase.json`,
+`firebase/firestore.rules`). `no-auth` and `no-limit-write` flipped from the
+transition-period `FAIL (200)` above to `PASS (403)`, as expected. From this
+deploy on, the 2.1.0 build's unauthenticated REPORT A BUG is refused
+(accepted by the user, 2026-09-29). SRV-09 is satisfied.
+
+`node tools/bug-reports/send-test-report.mjs --probe-rules` (exit 0):
 
 | Probe | Result |
 |---|---|
-| list-read | pending |
-| extra-field | pending |
-| wrong-status | pending |
-| no-auth | pending |
-| no-limit-write | pending |
-| cooldown | pending |
-| forged-count | pending |
-| sixth-today | pending |
-| other-limit-doc | pending |
-| list-limits | pending |
+| list-read | PASS (403) |
+| extra-field | PASS (403) |
+| wrong-status | PASS (403) |
+| no-auth | PASS (403) |
+| no-limit-write | PASS (403) |
+| cooldown | PASS (403) |
+| forged-count | PASS (403) |
+| sixth-today | PASS (403) |
+| other-limit-doc | PASS (403) |
+| list-limits | PASS (403) |
 
 ### Live cleanup proof
 
