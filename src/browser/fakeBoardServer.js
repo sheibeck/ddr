@@ -539,6 +539,14 @@ export function createFakeBoardFetch(opts = {}) {
         const body = parseJsonBody(init.body);
         return commitDispatch(body, auth.kind, auth.uid);
       }
+      // A bare collection-level GET (no document id) is a list attempt.
+      // bugReports and reportLimits both deny list unconditionally in
+      // firebase/firestore.rules ("list: if false") — modeled here (Phase
+      // 83-09) so tools/bug-reports/send-test-report.mjs's list-read and
+      // list-limits probes can prove the same deny against this fake.
+      if (method === "GET" && (suffix === `/${BUG_REPORTS_COLLECTION}` || suffix === `/${REPORT_LIMITS_COLLECTION}`)) {
+        return denied();
+      }
       if (suffix.startsWith("/runs/")) {
         const id = suffix.slice("/runs/".length);
         if (method === "GET") return handleRunGet(id);

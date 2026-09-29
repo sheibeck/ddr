@@ -706,6 +706,20 @@ test("reportLimits: runQuery and DELETE are 403 for users", async () => {
   assert.equal(del.status, 403);
 });
 
+test("Phase 83-09: a bare collection GET (no id) on bugReports or reportLimits — a list attempt — is 403, for a user, admin or no auth at all", async () => {
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newUser(server);
+  for (const collection of ["bugReports", REPORT_LIMITS_COLLECTION]) {
+    const url = firestoreUrl(VALID_CONFIG, `/${collection}`);
+    const noAuth = await server.fetchFn(url, { method: "GET" });
+    assert.equal(noAuth.status, 403, `${collection}: no auth`);
+    const asUser = await server.fetchFn(url, authInit("GET", u.idToken));
+    assert.equal(asUser.status, 403, `${collection}: as a signed-in user`);
+    const asAdmin = await server.fetchFn(url, authInit("GET", FAKE_ADMIN_TOKEN));
+    assert.equal(asAdmin.status, 403, `${collection}: even the admin token`);
+  }
+});
+
 test("admin PATCH reportLimits/{uid} seeds a limit doc; DELETE removes it", async () => {
   const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const fields = { last: { timestampValue: new Date(1000).toISOString() }, day: { timestampValue: new Date(0).toISOString() }, count: { integerValue: "3" } };
