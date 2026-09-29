@@ -425,6 +425,29 @@ login. Fixed to retry once through Git Bash on a Windows failure, the same
 pattern `tools/boards-admin.mjs#execGcloud` already uses; verified by a
 successful `--probe-rules` run immediately after.
 
+### Release-day `--probe-rules` results (2.2.0)
+
+**Status: pending.** Run at `docs/RELEASING.md`'s "Release 2.2.0: the
+ordered checklist" step 5, once the final rules (`firebase.json`) are
+deployed. All ten probes are expected `PASS` this time — the transition
+`bugReports` create clause (and the loosened `no-limit-write` case above)
+is gone once the final rules are live, so `no-auth` and `no-limit-write`
+flip from the expected `FAIL (200)` above to `PASS (403)`. SRV-09 is
+checked once this table reads ten PASS.
+
+| Probe | Result |
+|---|---|
+| list-read | pending |
+| extra-field | pending |
+| wrong-status | pending |
+| no-auth | pending |
+| no-limit-write | pending |
+| cooldown | pending |
+| forged-count | pending |
+| sixth-today | pending |
+| other-limit-doc | pending |
+| list-limits | pending |
+
 ### Live cleanup proof
 
 1. `node tools/bug-reports/send-test-report.mjs` → `{"ok":true,"id":"4zGI3tzp9sJOhwQB0shx"}`
@@ -521,9 +544,9 @@ cleanup; no separate role or grant is needed.
 
 ## 10. Privacy and Play
 
-The Data safety answers and the privacy-policy draft for this data path live
-in `store-listing/LISTING.md` (the `## Data safety` section and the
-`### Draft for darktierstudios.com/privacy/apps` subsection under
-`## Privacy policy URL`). The user applies both — the Play Console Data
-safety form and the darktierstudios.com privacy page — at milestone close
-(`.planning/MILESTONE-CLOSE-QUESTIONS.md`).
+The Data safety answers live in `store-listing/LISTING.md`'s `## Data
+safety` section (reconciled for 2.2 in Phase 86), and the privacy text
+lives in darktier-studio `src/pages/privacy/apps.astro` (pushed to its
+`main` in Phase 86, deployed at the 2.2 release — `docs/RELEASING.md`
+step 7). The user enters the Data safety answers in Play Console at
+`docs/RELEASING.md`'s checklist step 8.
