@@ -14,7 +14,7 @@
 |---|------|--------|
 | 0.1 | Play Console → App content → Data safety: add the bug-report data types from `store-listing/LISTING.md` (Other user-generated content and Diagnostics; collected, optional, user-initiated, encrypted in transit, deletable on request). The privacy page already says this (deployed 2026-09-28). | open |
 | 0.2 | After Play processes the 2.1.0 (11) upload, open its pre-launch report and confirm the edge-to-edge and deprecated-window-API warnings are gone, or name only the androidx/splashscreen back-compat rows recorded in `docs/ANDROID-DISPLAY.md`. | open |
-| 0.3 | Carry forward the still-open v2.0 rows, above all F1 (the Compete-OFF cold-boot capture) in `docs/UAT-v2.0.md`. | open |
+| 0.3 | **Superseded by 2.2 (Play Games removed): see `docs/UAT-v2.2.md` §2.** Carry forward the still-open v2.0 rows, above all F1 (the Compete-OFF cold-boot capture) in `docs/UAT-v2.0.md`. | superseded |
 
 ## 1. Phase 72: roll direction sign audit fixes (6)
 
@@ -214,14 +214,14 @@ Source: `.planning/phases/81-leaderboards-panel-fixes/81-VERIFICATION.md`
 
 | # | Check | Result |
 |---|-------|--------|
-| 15.1 | Signed in with Compete ON, the Leaderboards panel opens on ALL; the ME | ALL | FRIENDS chips switch every board; signed out or Compete OFF it opens on ME and ALL/FRIENDS show the sign-in note | open |
-| 15.2 | On ALL and FRIENDS your own score reads YOU, never FRIEND, and appears once — no duplicate under the 'not in the top ten' divider when you are already listed | open |
-| 15.3 | The standing card appears only when you are ranked but off the visible list; when Play Games hides your score (gameplay activity not shared publicly) the panel says so honestly | open |
-| 15.4 | Two signed-in devices (you + a friend): after a run and reopening the panel, each sees the other's score on ALL, and each own row reads YOU (BOARD-16 backstop truth) | open |
+| 15.1 | **Superseded by 2.2 (Play Games removed): see `docs/UAT-v2.2.md` §1.** Signed in with Compete ON, the Leaderboards panel opens on ALL; the ME | ALL | FRIENDS chips switch every board; signed out or Compete OFF it opens on ME and ALL/FRIENDS show the sign-in note | superseded |
+| 15.2 | **Superseded by 2.2 (Play Games removed): see `docs/UAT-v2.2.md` §1.** On ALL and FRIENDS your own score reads YOU, never FRIEND, and appears once — no duplicate under the 'not in the top ten' divider when you are already listed | superseded |
+| 15.3 | **Superseded by 2.2 (Play Games removed): see `docs/UAT-v2.2.md` §1.** The standing card appears only when you are ranked but off the visible list; when Play Games hides your score (gameplay activity not shared publicly) the panel says so honestly | superseded |
+| 15.4 | **Superseded by 2.2 (Play Games removed): see `docs/UAT-v2.2.md` §1.** Two signed-in devices (you + a friend): after a run and reopening the panel, each sees the other's score on ALL, and each own row reads YOU (BOARD-16 backstop truth) | superseded |
 | 15.5 | Under ME the rail ends LINEAGE, GRAVEYARD; neither appears under ALL/FRIENDS; GRAVEYARD lists every stored run (newest 60) with tap-to-expand epitaphs; VIEW THE DEAD opens GRAVEYARD | open |
 | 15.6 | LEANEST is gone from the rail; an old save with LEANEST bests and queued runs loads cleanly and nothing is submitted to it | open |
 | 15.7 | A new deeper run lands on ME DEEPEST above older ones (a depth-10 run tops a depth-9); if the earlier missing depth-10 run's gravestone is still stored, it reappears on ME DEEPEST after the update's first launch | open |
-| 15.8 | After the update ships: delete the Season-1 LEANEST board (CgkIlvbN0YYPEAIQAw) in Play Console per docs/PLAY-GAMES-SETUP.md §13 (leave it if the console refuses) | open |
+| 15.8 | **Superseded by 2.2 (Play Games removed): see `docs/UAT-v2.2.md` §0.** After the update ships: delete the Season-1 LEANEST board (CgkIlvbN0YYPEAIQAw) in Play Console per docs/PLAY-GAMES-SETUP.md §13 (leave it if the console refuses) | superseded |
 
 ## 16. Phase 80: Android release build tooling (6)
 
