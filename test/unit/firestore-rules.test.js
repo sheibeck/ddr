@@ -51,6 +51,8 @@ import {
   SEED_MAX,
   ACTS_MAX,
   HASH_PATTERN,
+  NOTE_MAX_CHARS,
+  WHEN_SKEW_MS,
   deepKeyOf,
   daysKeyOf,
   killsKeyOf,
@@ -305,7 +307,9 @@ test("every bound literal in isValidBoardRun equals its runDoc.js constant", () 
   assert.match(isValidBoardRunBody, new RegExp(`d\\.kills\\s*<=\\s*d\\.steps\\b`));
   assert.match(isValidBoardRunBody, new RegExp(`d\\.gold\\s*<=\\s*${GOLD_MAX}\\b`));
   assert.match(isValidBoardRunBody, new RegExp(`d\\.sp\\s*<=\\s*${SP_MAX}\\b`));
+  assert.match(isValidBoardRunBody, new RegExp(`d\\.note\\.size\\(\\)\\s*<=\\s*${NOTE_MAX_CHARS}\\b`));
   assert.match(isValidBoardRunBody, new RegExp(`d\\.epitaph\\.size\\(\\)\\s*<=\\s*${EPITAPH_MAX_CHARS}\\b`));
+  assert.match(isValidBoardRunBody, new RegExp(`d\\.when\\s*<=\\s*request\\.time\\.toMillis\\(\\)\\s*\\+\\s*${WHEN_SKEW_MS}\\b`));
   assert.match(isValidBoardRunBody, new RegExp(`d\\.version\\.size\\(\\)\\s*<=\\s*${VERSION_MAX_CHARS}\\b`));
   assert.match(isValidBoardRunBody, new RegExp(`d\\.seed\\s*<=\\s*${SEED_MAX}\\b`));
   assert.match(isValidBoardRunBody, new RegExp(`d\\.acts\\s*<=\\s*${ACTS_MAX}\\b`));

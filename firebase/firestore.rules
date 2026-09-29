@@ -21,6 +21,9 @@ rules_version = '2';
 //     bounded exactly like src/browser/runDoc.js builds it (SRV-02); reads
 //     are public and bounded (list limit <= 50); the owner may re-roll their
 //     handle across all their runs, and delete any of their own runs.
+//     Phase 84 (BOARD-20, BOARD-22) adds `note` (the killer's name, bounded
+//     to 120 chars) and `when` (the death time in ms, bounded to no later
+//     than request.time plus a one-day clock-skew allowance).
 // Every other verb, on every path, is denied by the catch-all at the end.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -112,13 +115,15 @@ service cloud.firestore {
       allow list, delete: if false;
     }
 
-    // Phase 83 (SRV-02, SRV-03). Mirrors src/browser/runDoc.js#RUN_DOC_FIELDS,
+    // Phase 83 (SRV-02, SRV-03) + Phase 84 (BOARD-20, BOARD-22: note is the
+    // killer's name on board rows, when is the death time feeding the
+    // expanded row's date line). Mirrors src/browser/runDoc.js#RUN_DOC_FIELDS,
     // every bound constant, and the four rank-key formulas — kept equal by
     // test/unit/firestore-rules.test.js. season is pinned to content/season.js's
     // SEASON; bumping it needs a rules deploy (docs/LEADERBOARDS.md).
     function isValidBoardRun(d) {
-      return d.keys().hasOnly(['uid', 'handle', 'season', 'name', 'race', 'sub', 'cls', 'level', 'floor', 'day', 'steps', 'kills', 'gold', 'sp', 'cause', 'epitaph', 'hash', 'version', 'seed', 'acts', 'deepKey', 'daysKey', 'killsKey', 'goldKey', 'createdAt'])
-        && d.keys().hasAll(['uid', 'handle', 'season', 'name', 'race', 'sub', 'cls', 'level', 'floor', 'day', 'steps', 'kills', 'gold', 'sp', 'cause', 'epitaph', 'hash', 'version', 'seed', 'acts', 'deepKey', 'daysKey', 'killsKey', 'goldKey', 'createdAt'])
+      return d.keys().hasOnly(['uid', 'handle', 'season', 'name', 'race', 'sub', 'cls', 'level', 'floor', 'day', 'steps', 'kills', 'gold', 'sp', 'cause', 'note', 'epitaph', 'when', 'hash', 'version', 'seed', 'acts', 'deepKey', 'daysKey', 'killsKey', 'goldKey', 'createdAt'])
+        && d.keys().hasAll(['uid', 'handle', 'season', 'name', 'race', 'sub', 'cls', 'level', 'floor', 'day', 'steps', 'kills', 'gold', 'sp', 'cause', 'note', 'epitaph', 'when', 'hash', 'version', 'seed', 'acts', 'deepKey', 'daysKey', 'killsKey', 'goldKey', 'createdAt'])
         && d.uid is string && d.uid.size() >= 1 && d.uid.size() <= 128
         && d.handle is string && d.handle.matches('^@(lantern|moss|soot|gloom|rusty|candle|cellar|crypt|torch|mildew|cobweb|gravel|barrel|dusty|toad|slug|grub|damp|grim|shadow|ember|brine|murky|tomb|ashen|briar|hollow|wretch|musty|grave)(jaw|toe|knee|nose|boot|sock|hood|beard|elbow|spoon|ladle|mop|kettle|mitten|bonnet|knuckle|thumb|chin|shin|wrist|apron|bucket|skillet|tunic|cloak|helmet|buckle|sandal|goblet|pouch)$')
         && d.season is int && d.season == 1
@@ -133,7 +138,9 @@ service cloud.firestore {
         && d.gold is int && d.gold >= 0 && d.gold <= 10000000
         && d.sp is int && d.sp >= 0 && d.sp <= 1000000000
         && d.cause is string && d.cause in ['combat', 'starve', 'trap', 'fall', 'gorge', 'backfire', 'summon', 'maze', 'quake', 'potion', 'insanity', 'abandon', 'entombed', 'pilferFumble', 'scrollFumble']
+        && d.note is string && d.note.size() <= 120
         && d.epitaph is string && d.epitaph.size() <= 400
+        && d.when is int && d.when >= 0 && d.when <= request.time.toMillis() + 86400000
         && d.hash is string && d.hash.matches('^[0-9a-f]{8}$')
         && d.version is string && d.version.size() >= 1 && d.version.size() <= 64
         && d.seed is int && d.seed >= 0 && d.seed <= 9007199254740991

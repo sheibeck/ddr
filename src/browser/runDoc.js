@@ -21,6 +21,18 @@
 // The client never builds a doc the rules would refuse: buildRunDoc always
 // runs its output back through validateRunDoc before returning ok:true.
 //
+// Phase 84 (BOARD-20, BOARD-22) adds `note` (the killer's name on board rows
+// — engine/death.js#buildRunSummary's death note, e.g. "cut down by a
+// Werebeast", filled from content banks and the bestiary, never free text)
+// and `when` (the death time in ms, feeding the expanded row's date line).
+// `when`'s upper bound carries a one-day clock-skew allowance
+// (WHEN_SKEW_MS): a phone whose clock runs a little fast must not lose its
+// run. The bound is enforced by the server clock (firebase/firestore.rules,
+// request.time) and, in the browser dev loop, by fakeBoardServer.js's own
+// injected clock — validateRunDoc only checks it client-side when an
+// explicit `now` is passed in. rankKeyOf(stat, run) is the one shared
+// rank-key function both Leaderboards views (Phase 84) rank by.
+//
 // Pure, DOM-free: no window, document, navigator, localStorage,
 // sessionStorage or bare global fetch. Never throws.
 
@@ -43,8 +55,8 @@ export const BANNED_COLLECTION = "banned";
 /** RUN_CLIENT_FIELDS — every field a client-built run doc carries, in order. */
 export const RUN_CLIENT_FIELDS = Object.freeze([
   "uid", "handle", "season", "name", "race", "sub", "cls", "level", "floor",
-  "day", "steps", "kills", "gold", "sp", "cause", "epitaph", "hash",
-  "version", "seed", "acts", "deepKey", "daysKey", "killsKey", "goldKey",
+  "day", "steps", "kills", "gold", "sp", "cause", "note", "epitaph", "when",
+  "hash", "version", "seed", "acts", "deepKey", "daysKey", "killsKey", "goldKey",
 ]);
 
 /** RUN_DOC_FIELDS — RUN_CLIENT_FIELDS plus the server-set createdAt. */
@@ -64,6 +76,8 @@ export const SEED_MAX = Number.MAX_SAFE_INTEGER;
 export const NAME_MAX_CHARS = 40;
 export const EPITAPH_MAX_CHARS = 400;
 export const VERSION_MAX_CHARS = 64;
+export const NOTE_MAX_CHARS = 120;
+export const WHEN_SKEW_MS = 86400000;
 export const UID_MAX_CHARS = 128;
 export const LIST_LIMIT_MAX = 50;
 export const TOP_N = 10;
@@ -88,8 +102,9 @@ export function isBoardStat(stat) {
 
 export const RUN_FAIL_IDS = Object.freeze([
   "keys", "uid", "handle", "season", "name", "race", "sub", "cls", "level",
-  "floor", "day", "steps", "kills", "gold", "sp", "cause", "epitaph", "hash",
-  "version", "seed", "acts", "deepkey", "dayskey", "killskey", "goldkey",
+  "floor", "day", "steps", "kills", "gold", "sp", "cause", "note", "epitaph",
+  "when", "hash", "version", "seed", "acts", "deepkey", "dayskey", "killskey",
+  "goldkey",
 ]);
 
 // Module-private content lists (never exported — a "Magic User"/"Court Mage"
@@ -141,6 +156,20 @@ export function rankKeys(run) {
   };
 }
 
+/**
+ * rankKeyOf(stat, run) — Phase 84 (CONTEXT area 4): the one shared rank-key
+ * function both Leaderboards views (the board and YOUR DEAD) rank by,
+ * dispatching to the same four formulas above. Returns null for any stat
+ * that is not one of the four ranked board stats. Never throws.
+ */
+export function rankKeyOf(stat, run) {
+  if (stat === "deep") return deepKeyOf(run);
+  if (stat === "days") return daysKeyOf(run);
+  if (stat === "kills") return killsKeyOf(run);
+  if (stat === "purse") return goldKeyOf(run);
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Doc id, build, validate
 // ---------------------------------------------------------------------------
@@ -151,13 +180,16 @@ export function runDocId(uid, hash) {
 }
 
 /**
- * validateRunDoc(doc, {uid}) — the JS mirror of
+ * validateRunDoc(doc, {uid, now}) — the JS mirror of
  * firebase/firestore.rules#isValidBoardRun. Returns [] when the rules would
  * accept a create with this data; otherwise an array of RUN_FAIL_IDS
  * entries, one per failing clause (a bad/missing/extra key set short-circuits
- * to exactly ["keys"]). Never throws.
+ * to exactly ["keys"]). `now`, when a finite number, bounds `when` the same
+ * way the live rules' request.time does (Phase 84's WHEN_SKEW_MS
+ * clock-skew allowance); without `now` the upper bound is not checked
+ * client-side (the server/fake clock is the source of truth). Never throws.
  */
-export function validateRunDoc(doc, { uid } = {}) {
+export function validateRunDoc(doc, { uid, now } = {}) {
   try {
     if (typeof doc !== "object" || doc === null || Array.isArray(doc)) return ["keys"];
     const keys = Object.keys(doc);
@@ -215,7 +247,16 @@ export function validateRunDoc(doc, { uid } = {}) {
 
     if (!(typeof doc.cause === "string" && CAUSE_LIST.includes(doc.cause))) fails.push("cause");
 
+    if (!(typeof doc.note === "string" && doc.note.length <= NOTE_MAX_CHARS)) fails.push("note");
+
     if (!(typeof doc.epitaph === "string" && doc.epitaph.length <= EPITAPH_MAX_CHARS)) fails.push("epitaph");
+
+    const nowMs = typeof now === "number" && Number.isFinite(now) ? now : undefined;
+    const whenOk =
+      Number.isSafeInteger(doc.when) &&
+      doc.when >= 0 &&
+      (nowMs === undefined || doc.when <= nowMs + WHEN_SKEW_MS);
+    if (!whenOk) fails.push("when");
 
     if (!(typeof doc.hash === "string" && HASH_RE.test(doc.hash))) fails.push("hash");
 
@@ -239,16 +280,17 @@ export function validateRunDoc(doc, { uid } = {}) {
 
 /**
  * buildRunDoc(summary, {uid, handle, version}) — copies summary's run fields
- * (epitaph coerced to "" when not a string; every other field copied without
- * coercion), adds uid/handle/version, computes the four rank keys, orders by
- * RUN_CLIENT_FIELDS and validates. Returns {ok:true, id, doc} (both frozen)
- * or {ok:false, reason:"invalid", fails}. Never throws.
+ * (epitaph and note coerced to "" when not a string; every other field
+ * copied without coercion), adds uid/handle/version, computes the four rank
+ * keys, orders by RUN_CLIENT_FIELDS and validates. Returns {ok:true, id, doc}
+ * (both frozen) or {ok:false, reason:"invalid", fails}. Never throws.
  */
 export function buildRunDoc(summary, opts = {}) {
   try {
     const s = summary && typeof summary === "object" ? summary : {};
     const { uid, handle, version } = opts && typeof opts === "object" ? opts : {};
     const epitaph = typeof s.epitaph === "string" ? s.epitaph : "";
+    const note = typeof s.note === "string" ? s.note : "";
     const partial = {
       uid,
       handle,
@@ -265,7 +307,9 @@ export function buildRunDoc(summary, opts = {}) {
       gold: s.gold,
       sp: s.sp,
       cause: s.cause,
+      note,
       epitaph,
+      when: s.when,
       hash: s.hash,
       version,
       seed: s.seed,

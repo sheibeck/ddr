@@ -45,6 +45,8 @@ import {
   TOP_N,
   DAYS_PER_FLOOR_CAP,
   HASH_PATTERN,
+  NOTE_MAX_CHARS,
+  WHEN_SKEW_MS,
   RANK_FIELD,
   BOARD_STATS,
   isBoardStat,
@@ -53,6 +55,7 @@ import {
   killsKeyOf,
   goldKeyOf,
   rankKeys,
+  rankKeyOf,
   runDocId,
   buildRunDoc,
   validateRunDoc,
@@ -64,6 +67,8 @@ import {
   countQuery,
   ownRunsQuery,
 } from "../../src/browser/runDoc.js";
+import { BESTIARY, ELITE_TITLES } from "../../content/bestiary.js";
+import { CAUSE_TEXT, CAUSE_TEXT_TOKENS } from "../../content/epitaphs.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -91,7 +96,9 @@ function baseValidPartial() {
     gold: 100,
     sp: 40,
     cause: "combat",
+    note: "cut down by a Rat",
     epitaph: "",
+    when: 1790624461000,
     hash: "0a1b2c3d",
     version: "2.2.0 (12)",
     seed: 12345,
@@ -136,14 +143,17 @@ test("constants: field lists, bounds and RANK_FIELD", () => {
   assert.equal(TOP_N, 10);
   assert.equal(DAYS_PER_FLOOR_CAP, 10);
   assert.equal(HASH_PATTERN, "^[0-9a-f]{8}$");
+  assert.equal(NOTE_MAX_CHARS, 120);
+  assert.equal(WHEN_SKEW_MS, 86400000);
   assert.deepEqual(RANK_FIELD, { deep: "deepKey", days: "daysKey", kills: "killsKey", purse: "goldKey" });
   assert.deepEqual([...BOARD_STATS], ["deep", "days", "kills", "purse"]);
   assert.equal(isBoardStat("deep"), true);
   assert.equal(isBoardStat("yard"), false);
   assert.deepEqual([...RUN_FAIL_IDS], [
     "keys", "uid", "handle", "season", "name", "race", "sub", "cls", "level",
-    "floor", "day", "steps", "kills", "gold", "sp", "cause", "epitaph", "hash",
-    "version", "seed", "acts", "deepkey", "dayskey", "killskey", "goldkey",
+    "floor", "day", "steps", "kills", "gold", "sp", "cause", "note", "epitaph",
+    "when", "hash", "version", "seed", "acts", "deepkey", "dayskey", "killskey",
+    "goldkey",
   ]);
 });
 
@@ -158,13 +168,14 @@ test("buildRunDoc: ok for engine-built summaries at seeds 1-40", () => {
     assert.equal(result.ok, true, `seed ${seed}: ${JSON.stringify(result)}`);
     assert.equal(result.id, `u1_${summary.hash}`);
     assert.deepEqual(Object.keys(result.doc), [...RUN_CLIENT_FIELDS]);
-    for (const f of ["season", "name", "race", "sub", "cls", "level", "floor", "day", "steps", "kills", "gold", "sp", "cause", "hash", "seed", "acts"]) {
+    for (const f of ["season", "name", "race", "sub", "cls", "level", "floor", "day", "steps", "kills", "gold", "sp", "cause", "hash", "seed", "acts", "when"]) {
       assert.equal(result.doc[f], summary[f], `seed ${seed} field ${f}`);
     }
     assert.equal(result.doc.uid, "u1");
     assert.equal(result.doc.handle, handle);
     assert.equal(result.doc.version, "2.2.0 (12)");
     assert.equal(result.doc.epitaph, typeof summary.epitaph === "string" ? summary.epitaph : "");
+    assert.equal(result.doc.note, typeof summary.note === "string" ? summary.note : "");
     assert.deepEqual(validateRunDoc(result.doc), []);
   }
 });
@@ -228,6 +239,9 @@ const FIELD_BREAKS = [
   ["level", 0, "level"],
   ["sp", -1, "sp"],
   ["cause", "curse", "cause"],
+  ["note", 123, "note"],
+  ["when", -1, "when"],
+  ["when", 1.5, "when"],
   ["hash", "NOTHEX!!", "hash"],
   ["version", "", "version"],
   ["seed", -1, "seed"],
@@ -309,6 +323,56 @@ test("bound edges: version empty and 65 chars fail, 64 passes", () => {
   assert.deepEqual(validateRunDoc(docFrom({ version: "" })), ["version"]);
   assert.deepEqual(validateRunDoc(docFrom({ version: "x".repeat(65) })), ["version"]);
   assert.deepEqual(validateRunDoc(docFrom({ version: "x".repeat(64) })), []);
+});
+
+test("bound edges: note 121 chars fails, 120 passes, empty passes", () => {
+  assert.deepEqual(validateRunDoc(docFrom({ note: "x".repeat(121) })), ["note"]);
+  assert.deepEqual(validateRunDoc(docFrom({ note: "x".repeat(120) })), []);
+  assert.deepEqual(validateRunDoc(docFrom({ note: "" })), []);
+});
+
+test("bound edges: when — a safe integer >= 0 passes with no now given; without now the upper bound is not checked client-side", () => {
+  assert.deepEqual(validateRunDoc(docFrom({ when: 0 })), []);
+  assert.deepEqual(validateRunDoc(docFrom({ when: Number.MAX_SAFE_INTEGER })), []);
+  assert.deepEqual(validateRunDoc(docFrom({ when: -1 })), ["when"]);
+  assert.deepEqual(validateRunDoc(docFrom({ when: 1.5 })), ["when"]);
+});
+
+test("bound edges: when with a now option — at the bound passes, one ms past fails", () => {
+  const now = 1790624461000;
+  assert.deepEqual(validateRunDoc(docFrom({ when: now + WHEN_SKEW_MS }), { now }), []);
+  assert.deepEqual(validateRunDoc(docFrom({ when: now + WHEN_SKEW_MS + 1 }), { now }), ["when"]);
+});
+
+// --- rankKeyOf ---------------------------------------------------------
+
+test("rankKeyOf: dispatches to deepKeyOf/daysKeyOf/killsKeyOf/goldKeyOf; null for anything else", () => {
+  const run = { floor: 5, steps: 500, day: 3, kills: 10, gold: 100 };
+  assert.equal(rankKeyOf("deep", run), deepKeyOf(run));
+  assert.equal(rankKeyOf("days", run), daysKeyOf(run));
+  assert.equal(rankKeyOf("kills", run), killsKeyOf(run));
+  assert.equal(rankKeyOf("purse", run), goldKeyOf(run));
+  assert.equal(rankKeyOf("combo", run), null);
+  assert.equal(rankKeyOf(undefined, run), null);
+});
+
+// --- CAUSE_TEXT never overflows NOTE_MAX_CHARS with the longest foe name ---
+
+test("every CAUSE_TEXT template, filled with the longest elite-titled bestiary name, is at most NOTE_MAX_CHARS", () => {
+  const names = [];
+  for (const group of Object.values(BESTIARY)) {
+    for (const tier of group) {
+      for (const m of tier) if (typeof m?.n === "string") names.push(m.n);
+    }
+  }
+  const longestName = [...names].sort((a, b) => b.length - a.length)[0];
+  const longestTitle = [...ELITE_TITLES].sort((a, b) => b.length - a.length)[0];
+  const longestFoe = `${longestTitle} ${longestName}`;
+  for (const [cause, template] of Object.entries(CAUSE_TEXT)) {
+    const tokens = CAUSE_TEXT_TOKENS[cause] || [];
+    const filled = tokens.includes("foe") ? template.replace("{foe}", longestFoe) : template;
+    assert.ok(filled.length <= NOTE_MAX_CHARS, `${cause}: "${filled}" is ${filled.length} chars`);
+  }
 });
 
 // --- 2,000-pair rank-key ordering property --------------------------------
