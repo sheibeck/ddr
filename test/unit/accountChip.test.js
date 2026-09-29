@@ -1,13 +1,24 @@
 // test/unit/accountChip.test.js
 //
-// Phase 67 (ACCT-01/02, PGS-02), Plan 07 Task 2 — the account controller
-// (createAccountController): boot (D-01/D-02), the welcome card once (D-04),
-// the single failed card with no automatic retry (D-11), Stop competing as
-// Compete OFF with no sign-out (D-03), the silent attempt's timeout, and the
-// ACCT-02 edge rows (idempotency and concurrency). Every collaborator is a
-// fake: a scripted provider whose calls return deferred promises the test
-// settles, recording settings { read, write }, a recording notify and a
-// manual timer (setTimer/clearTimer).
+// Phase 85 (ACCT-03/05, 85-CONTEXT group 1), Plan 03 Task 2 — the account
+// controller (createAccountController) for our own board: boot (the handle
+// from identity.ensureHandle(), Compete from settings unless the player
+// already chose), setCompete (purge the board queue on OFF, flush on ON),
+// reroll (board.reroll()), the two-tap erase (arm/expire/erase/notify),
+// boardAcked's welcome-once card, and subscribe. Replaces every test of the
+// retired sign-on flow (its silent-attempt timeout and its injected
+// game-service seam): "boot with Compete OFF/ON", "the silent result",
+// "the silent timeout", "the interactive attempt (Sign in)", "signIn is
+// ignored while pending...", "Compete OFF chosen while boot is still
+// reading settings wins over the stored value" survive in spirit (renamed
+// for the new seams); "silent sign-in ...", "signIn from signed out ...",
+// "signIn declined ...", "a malformed init result ..." and every
+// provider-shaped test are gone with the provider they scripted.
+//
+// Every collaborator is a fake: a scripted identity/board pair whose calls
+// return deferred promises the test settles, recording settings
+// { read, write }, a recording notify and a manual timer
+// (setTimer/clearTimer).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -16,7 +27,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripJs } from "../../tools/ident-sweep.mjs";
-import { createAccountController } from "../../src/browser/accountChip.js";
+import { createAccountController, ERASE_ARM_MS } from "../../src/browser/accountChip.js";
 import { accountCard, accountChipView, accountSheetView, accountMenuView } from "../../src/browser/account.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -24,8 +35,8 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const MODULE_SRC = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "accountChip.js"), "utf8").replace(/\r\n/g, "\n");
 const STRIPPED = stripJs(MODULE_SRC);
 
-const PLAYER = Object.freeze({ id: "g-8817-secret", displayName: "Hilda Ferrow" });
-const OTHER = Object.freeze({ id: "g-0002-other", displayName: "Lanternjaw" });
+const HANDLE = "@lanternjaw";
+const HANDLE2 = "@sootboot";
 
 // Every settings.write made by any controller in this file, for the
 // write-keys pin at the bottom.
@@ -41,46 +52,57 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-/** scriptedProvider() — every method logs its name; init()/signIn() return deferreds the test settles. */
-function scriptedProvider() {
+/** scriptedIdentity(handle) — ensureHandle() returns a deferred the test settles; resolveNext() settles the latest call. */
+function scriptedIdentity(handle = HANDLE) {
   const calls = [];
-  const pending = { init: [], signIn: [] };
-  const settleable = (name) => () => {
-    calls.push(name);
-    const d = deferred();
-    pending[name].push(d);
-    return d.promise;
-  };
+  const pending = { ensureHandle: [] };
   return {
     calls,
     pending,
-    init: settleable("init"),
-    signIn: settleable("signIn"),
-    isAuthenticated: () => {
-      calls.push("isAuthenticated");
-      return Promise.resolve(false);
+    ensureHandle: () => {
+      calls.push("ensureHandle");
+      const d = deferred();
+      pending.ensureHandle.push(d);
+      return d.promise;
     },
-    getPlayer: () => {
-      calls.push("getPlayer");
-      return Promise.resolve(null);
+    resolveNext(h = handle) {
+      pending.ensureHandle[pending.ensureHandle.length - 1].resolve(h);
     },
   };
 }
 
-/** A Proxy over a provider that records every property read at all. */
-function touchRecording(provider) {
-  const touched = [];
-  const proxy = new Proxy(provider, {
-    get(target, prop, receiver) {
-      touched.push(prop);
-      return Reflect.get(target, prop, receiver);
+/** scriptedBoard() — reroll()/erase() return deferreds the test settles; purge()/flush() resolve at once but are logged. */
+function scriptedBoard() {
+  const calls = [];
+  const pending = { reroll: [], erase: [] };
+  return {
+    calls,
+    pending,
+    reroll: () => {
+      calls.push("reroll");
+      const d = deferred();
+      pending.reroll.push(d);
+      return d.promise;
     },
-  });
-  return { proxy, touched };
+    erase: () => {
+      calls.push("erase");
+      const d = deferred();
+      pending.erase.push(d);
+      return d.promise;
+    },
+    purge: () => {
+      calls.push("purge");
+      return Promise.resolve();
+    },
+    flush: (opts) => {
+      calls.push(`flush:${JSON.stringify(opts)}`);
+      return Promise.resolve();
+    },
+  };
 }
 
 function recordingSettings(initial = {}) {
-  const values = { compete: true, pgsWelcomed: false, ...initial };
+  const values = { compete: true, boardWelcomed: false, ...initial };
   const writes = [];
   let reads = 0;
   return {
@@ -128,542 +150,451 @@ async function flush() {
   for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
 }
 
-function make({ settingsInit = {}, timeoutMs, provider } = {}) {
-  const prov = provider || scriptedProvider();
+function make({ settingsInit = {}, identity, board, compete } = {}) {
+  const ident = identity || scriptedIdentity();
+  const brd = board || scriptedBoard();
   const settings = recordingSettings(settingsInit);
   const notes = [];
   const timers = fakeTimers();
   const opts = {
-    provider: prov,
+    identity: ident,
+    board: brd,
     settings: { read: settings.read, write: settings.write },
     notify: (card) => notes.push(card),
     setTimer: timers.setTimer,
     clearTimer: timers.clearTimer,
   };
-  if (timeoutMs !== undefined) opts.timeoutMs = timeoutMs;
+  if (compete !== undefined) opts.compete = compete;
   const ctl = createAccountController(opts);
   const changes = [];
   ctl.subscribe((s) => changes.push(s));
-  return { ctl, provider: prov, settings, notes, timers, changes };
+  return { ctl, identity: ident, board: brd, settings, notes, timers, changes };
 }
 
 // ─── the API shape ───────────────────────────────────────────────────────
 
-test("createAccountController returns a frozen API with the ten methods (Phase 70 adds menuView)", () => {
+test("createAccountController returns a frozen API with the eleven methods", () => {
   const { ctl } = make();
   assert.ok(Object.isFrozen(ctl));
-  const keys = ["boot", "signIn", "setCompete", "stopCompeting", "state", "identity", "chipView", "sheetView", "menuView", "subscribe"];
-  for (const m of keys) {
-    assert.equal(typeof ctl[m], "function", m);
-  }
+  const keys = ["boot", "setCompete", "reroll", "eraseTap", "disarmErase", "boardAcked", "state", "chipView", "sheetView", "menuView", "subscribe"];
+  for (const m of keys) assert.equal(typeof ctl[m], "function", m);
   assert.deepStrictEqual(Object.keys(ctl).sort(), [...keys].sort());
 });
 
-test("menuView (Phase 70 D-03): equals accountMenuView(state()) before boot, signed in and with Compete OFF", async () => {
-  const { ctl, provider } = make();
-  assert.deepEqual(ctl.menuView(), accountMenuView(ctl.state()));
-  assert.equal(ctl.menuView().face, "menu");
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.deepEqual(ctl.menuView(), accountMenuView(ctl.state()));
-  assert.equal(ctl.menuView().face, "avatar");
-  assert.equal(ctl.menuView().label, "Menu — signed in as Hilda Ferrow");
-  ctl.stopCompeting();
-  assert.deepEqual(ctl.menuView(), accountMenuView(ctl.state()));
-  assert.equal(ctl.menuView().face, "menu");
-});
-
-test("before boot: the state is pending with Compete ON, and the chip shows the pending face", () => {
-  const { ctl, provider } = make();
-  assert.equal(ctl.state().status, "pending");
+test("before boot: handle null, erase idle, welcomed false, and the views agree with the pure model; the identity seam is untouched", () => {
+  const { ctl, identity } = make({ compete: true });
+  assert.equal(ctl.state().handle, null);
+  assert.equal(ctl.state().erase, "idle");
+  assert.equal(ctl.state().welcomed, false);
   assert.equal(ctl.state().compete, true);
-  assert.equal(ctl.chipView().face, "pending");
   assert.deepEqual(ctl.chipView(), accountChipView(ctl.state()));
   assert.deepEqual(ctl.sheetView(), accountSheetView(ctl.state()));
-  assert.equal(provider.calls.length, 0);
+  assert.deepEqual(ctl.menuView(), accountMenuView(ctl.state()));
+  assert.equal(identity.calls.length, 0);
 });
 
-// ─── boot (D-01 / D-02) ──────────────────────────────────────────────────
-
-test("boot with Compete OFF: status off, zero provider calls or reads, no notify, no write, one change", async () => {
-  const { proxy, touched } = touchRecording(scriptedProvider());
-  const { ctl, settings, notes, changes, timers } = make({ settingsInit: { compete: false }, provider: proxy });
-  await ctl.boot();
-  await flush();
-  assert.equal(ctl.state().status, "off");
+test("the seeded compete value survives until boot() runs", () => {
+  const { ctl } = make({ compete: false });
   assert.equal(ctl.state().compete, false);
-  assert.deepEqual(touched, [], "the provider is never touched with Compete OFF (D-02)");
-  assert.equal(notes.length, 0);
-  assert.equal(settings.writes.length, 0);
-  assert.equal(changes.length, 1);
-  assert.equal(changes[0].status, "off");
-  assert.equal(timers.live.size, 0);
-  assert.equal(ctl.chipView().face, "nobody");
 });
 
-test("boot with Compete ON: emits pending, calls init() once, and resolves without waiting on init", async () => {
-  const { ctl, provider, changes } = make();
-  await ctl.boot();
-  assert.deepEqual(provider.calls, ["init"]);
-  assert.equal(ctl.state().status, "pending");
-  assert.equal(changes.length, 1);
-  assert.equal(changes[0].status, "pending");
-  // init has not settled yet — boot resolved anyway (D-01: non-blocking)
-  assert.equal(provider.pending.init.length, 1);
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
+// ─── boot ────────────────────────────────────────────────────────────────
+
+test("boot: reads settings once, sets the handle from identity.ensureHandle(), never touches the board", async () => {
+  const { ctl, identity, board, settings, changes } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  assert.equal(ctl.state().handle, HANDLE);
+  assert.equal(settings.reads, 1);
+  assert.deepEqual(board.calls, []);
+  assert.ok(changes.length >= 1);
 });
 
-test("boot called twice returns the same promise and starts one attempt", async () => {
-  const { ctl, provider } = make();
-  const a = ctl.boot();
-  const b = ctl.boot();
-  assert.strictEqual(a, b);
-  await a;
-  await ctl.boot();
-  assert.deepEqual(provider.calls, ["init"]);
+test("boot: applies the stored compete value unless the player already chose", async () => {
+  const { ctl, identity } = make({ settingsInit: { compete: false } });
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  assert.equal(ctl.state().compete, false);
 });
 
-test("boot tolerates a settings read that rejects: Compete ON, one silent attempt", async () => {
-  const provider = scriptedProvider();
-  const ctl = createAccountController({
-    provider,
-    settings: { read: () => Promise.reject(new Error("storage gone")), write: () => Promise.resolve() },
-    notify: () => {},
-    setTimer: () => 1,
-    clearTimer: () => {},
-  });
-  await ctl.boot();
-  assert.deepEqual(provider.calls, ["init"]);
-  assert.equal(ctl.state().status, "pending");
-});
-
-// ─── the silent result (D-01 / D-04 / D-11) ─────────────────────────────
-
-test("silent sign-in, not yet welcomed: signedIn, identity set, one welcome card, pgsWelcomed persisted once, timer cleared", async () => {
-  const { ctl, provider, settings, notes, timers } = make();
-  await ctl.boot();
-  assert.equal(timers.live.size, 1, "the silent attempt arms its timeout");
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.deepEqual(ctl.identity(), { signedIn: true, player: { id: PLAYER.id, displayName: PLAYER.displayName } });
-  assert.deepEqual(notes, [accountCard("welcome")]);
-  assert.deepEqual(settings.writes, [["pgsWelcomed", true]]);
-  assert.equal(ctl.state().welcomed, true);
-  assert.equal(timers.live.size, 0, "the timeout is cleared when init settles first");
-  assert.equal(ctl.chipView().face, "avatar");
-});
-
-test("silent sign-in, already welcomed: signedIn with no card and no write", async () => {
-  const { ctl, provider, settings, notes } = make({ settingsInit: { pgsWelcomed: true } });
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.equal(notes.length, 0);
-  assert.equal(settings.writes.length, 0);
-});
-
-test("silent signed-out result: signedOut, one failed card, no further provider call, no timer left", async () => {
-  const { ctl, provider, settings, notes, timers } = make();
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: false, player: null });
-  await flush();
-  assert.equal(ctl.state().status, "signedOut");
-  assert.deepEqual(ctl.identity(), { signedIn: false, player: null });
-  assert.deepEqual(notes, [accountCard("failed")]);
-  assert.deepEqual(provider.calls, ["init"]);
-  assert.equal(timers.live.size, 0, "no retry is scheduled (D-11)");
-  assert.equal(settings.writes.length, 0);
-});
-
-test("init rejects: treated as signed out with the failed card; the controller never rejects", async () => {
-  const { ctl, provider, notes } = make();
-  await ctl.boot();
-  provider.pending.init[0].reject(new Error("SDK exploded"));
-  await flush();
-  assert.equal(ctl.state().status, "signedOut");
-  assert.deepEqual(notes, [accountCard("failed")]);
-});
-
-test("init throws synchronously: treated as signed out with the failed card; boot still resolves", async () => {
-  const provider = {
-    calls: [],
-    init() {
-      this.calls.push("init");
-      throw new Error("sync boom");
-    },
-    signIn() {
-      this.calls.push("signIn");
-      throw new Error("sync boom");
-    },
-  };
-  const { ctl, notes, timers } = make({ provider });
-  await assert.doesNotReject(ctl.boot());
-  await flush();
-  assert.equal(ctl.state().status, "signedOut");
-  assert.deepEqual(notes, [accountCard("failed")]);
-  assert.equal(timers.live.size, 0);
-  // and the interactive path swallows a throw too
-  await assert.doesNotReject(Promise.resolve(ctl.signIn()));
-  await flush();
-  assert.equal(ctl.state().status, "signedOut");
-  assert.equal(notes.length, 2);
-});
-
-test("a malformed init result (null, a string, signedIn truthy but not true) reads as signed out", async () => {
-  for (const bad of [null, "yes", { signedIn: 1, player: PLAYER }, undefined]) {
-    const { ctl, provider, notes } = make();
-    await ctl.boot();
-    provider.pending.init[0].resolve(bad);
-    await flush();
-    assert.equal(ctl.state().status, "signedOut", JSON.stringify(bad));
-    assert.deepEqual(notes, [accountCard("failed")]);
-  }
-});
-
-// ─── the silent timeout ──────────────────────────────────────────────────
-
-test("silent timeout: the default is 20000ms; firing it signs out with the failed card; a late signed-in init is discarded", async () => {
-  const { ctl, provider, notes, timers } = make();
-  await ctl.boot();
-  assert.equal(timers.live.size, 1);
-  assert.equal([...timers.live.values()][0].ms, 20000);
-  timers.fireAll();
-  await flush();
-  assert.equal(ctl.state().status, "signedOut");
-  assert.deepEqual(notes, [accountCard("failed")]);
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedOut", "the late result is dropped");
-  assert.equal(notes.length, 1, "no welcome card from a discarded result");
-  assert.deepEqual(provider.calls, ["init"], "no retry after the timeout");
-});
-
-test("silent timeout honours an injected timeoutMs", async () => {
-  const { ctl, timers } = make({ timeoutMs: 1234 });
-  await ctl.boot();
-  assert.equal([...timers.live.values()][0].ms, 1234);
-});
-
-// ─── the interactive attempt (Sign in, D-11) ────────────────────────────
-
-async function signedOutController(opts) {
-  const h = make(opts);
-  await h.ctl.boot();
-  h.provider.pending.init[0].resolve({ signedIn: false, player: null });
-  await flush();
-  h.notes.length = 0;
-  h.changes.length = 0;
-  return h;
-}
-
-test("signIn from signed out: one provider.signIn(), pending, then signedIn with the welcome card (first time)", async () => {
-  const { ctl, provider, notes, settings, timers } = await signedOutController();
-  ctl.signIn();
-  assert.equal(ctl.state().status, "pending");
-  assert.deepEqual(provider.calls, ["init", "signIn"]);
-  assert.equal(timers.live.size, 0, "no timeout applies to the interactive attempt");
-  provider.pending.signIn[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.deepEqual(notes, [accountCard("welcome")]);
-  assert.deepEqual(settings.writes, [["pgsWelcomed", true]]);
-});
-
-test("signIn when already welcomed: signedIn with no card", async () => {
-  const { ctl, provider, notes, settings } = await signedOutController({ settingsInit: { pgsWelcomed: true } });
-  ctl.signIn();
-  provider.pending.signIn[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.equal(notes.length, 0);
-  assert.equal(settings.writes.length, 0);
-});
-
-test("signIn declined: signedOut with one failed card, and nothing scheduled", async () => {
-  const { ctl, provider, notes, timers } = await signedOutController();
-  ctl.signIn();
-  provider.pending.signIn[0].resolve({ signedIn: false, player: null });
-  await flush();
-  assert.equal(ctl.state().status, "signedOut");
-  assert.deepEqual(notes, [accountCard("failed")]);
-  assert.equal(timers.live.size, 0);
-  assert.deepEqual(provider.calls, ["init", "signIn"]);
-});
-
-test("the welcome card shows at most once per controller: sign in, stop, compete again, sign in again → one card", async () => {
-  const { ctl, provider, notes, settings } = make();
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  ctl.setCompete(false);
-  ctl.setCompete(true);
-  provider.pending.init[1].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.deepEqual(notes, [accountCard("welcome")]);
-  assert.equal(settings.writes.filter(([k]) => k === "pgsWelcomed").length, 1);
-});
-
-// ─── concurrency (ACCT-02 edge rows) ────────────────────────────────────
-
-test("signIn is ignored while pending (before and during boot), when signed in, and with Compete OFF", async () => {
-  // pending before boot
-  const a = make();
-  a.ctl.signIn();
-  assert.deepEqual(a.provider.calls, []);
-  // pending during the silent attempt
-  await a.ctl.boot();
-  a.ctl.signIn();
-  assert.deepEqual(a.provider.calls, ["init"]);
-  // signed in
-  a.provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  a.ctl.signIn();
-  assert.deepEqual(a.provider.calls, ["init"]);
-  // Compete OFF
-  const b = make({ settingsInit: { compete: false } });
-  await b.ctl.boot();
-  b.ctl.signIn();
-  assert.deepEqual(b.provider.calls, []);
-  assert.equal(b.ctl.state().status, "off");
-});
-
-test("two rapid signIn() calls make one provider call", async () => {
-  const { ctl, provider } = await signedOutController();
-  ctl.signIn();
-  ctl.signIn();
-  assert.deepEqual(provider.calls, ["init", "signIn"]);
-});
-
-test("a result from an older attempt is discarded once a newer attempt began", async () => {
-  const { ctl, provider, notes } = make();
-  await ctl.boot();
-  // Compete OFF then ON starts a second silent attempt while the first is in flight
-  ctl.setCompete(false);
-  ctl.setCompete(true);
-  assert.deepEqual(provider.calls, ["init", "init"]);
-  provider.pending.init[0].resolve({ signedIn: true, player: OTHER });
-  await flush();
-  assert.equal(ctl.state().status, "pending", "the first attempt's result is stale");
-  assert.equal(notes.length, 0);
-  provider.pending.init[1].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.equal(ctl.identity().player.displayName, PLAYER.displayName);
-});
-
-// ─── Compete (D-02 / D-03) ───────────────────────────────────────────────
-
-test("setCompete(false) while pending: off at once, compete false persisted, the later signed-in result is discarded", async () => {
-  const { ctl, provider, settings, notes, timers } = make();
-  await ctl.boot();
-  ctl.setCompete(false);
-  assert.equal(ctl.state().status, "off");
-  assert.deepEqual(settings.writes, [["compete", false]]);
-  assert.equal(timers.live.size, 0, "the silent timeout is cancelled with the attempt");
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "off", "Compete OFF always wins");
-  assert.equal(notes.length, 0);
-  assert.deepEqual(settings.writes, [["compete", false]]);
-});
-
-test("setCompete(false) when signed in: off, identity signed out, compete false persisted, no provider call of any kind", async () => {
-  const { ctl, provider, settings, notes } = make({ settingsInit: { pgsWelcomed: true } });
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  const before = [...provider.calls];
-  ctl.setCompete(false);
-  await flush();
-  assert.equal(ctl.state().status, "off");
-  assert.equal(ctl.state().player, null);
-  assert.deepEqual(ctl.identity(), { signedIn: false, player: null });
-  assert.deepEqual(settings.writes, [["compete", false]]);
-  assert.deepEqual(provider.calls, before, "no sign-out call: the provider has none (D-03)");
-  assert.equal(notes.length, 0);
-  assert.equal(ctl.chipView().face, "nobody");
-});
-
-test("stopCompeting() behaves exactly like setCompete(false)", async () => {
-  const { ctl, provider, settings } = make({ settingsInit: { pgsWelcomed: true } });
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  ctl.stopCompeting();
-  assert.equal(ctl.state().status, "off");
-  assert.deepEqual(settings.writes, [["compete", false]]);
-  assert.deepEqual(provider.calls, ["init"]);
-  // and a second stop is a no-op
-  ctl.stopCompeting();
-  assert.deepEqual(settings.writes, [["compete", false]]);
-});
-
-test("setCompete to its current value is a no-op: no write, no provider call, no emit", async () => {
-  const on = make();
-  await on.ctl.boot();
-  on.changes.length = 0;
-  on.ctl.setCompete(true);
-  assert.equal(on.settings.writes.length, 0);
-  assert.deepEqual(on.provider.calls, ["init"]);
-  assert.equal(on.changes.length, 0);
-
-  const off = make({ settingsInit: { compete: false } });
-  await off.ctl.boot();
-  off.changes.length = 0;
-  off.ctl.setCompete(false);
-  assert.equal(off.settings.writes.length, 0);
-  assert.deepEqual(off.provider.calls, []);
-  assert.equal(off.changes.length, 0);
-});
-
-test("setCompete(true) from off: compete true persisted, one silent init, and a failure raises the failed card", async () => {
-  const { ctl, provider, settings, notes, timers } = make({ settingsInit: { compete: false } });
-  await ctl.boot();
-  ctl.setCompete(true);
-  assert.deepEqual(settings.writes, [["compete", true]]);
-  assert.deepEqual(provider.calls, ["init"], "silent, never the interactive signIn()");
-  assert.equal(ctl.state().status, "pending");
-  assert.equal(ctl.state().compete, true);
-  assert.equal(timers.live.size, 1, "the silent timeout applies");
-  provider.pending.init[0].resolve({ signedIn: false, player: null });
-  await flush();
-  assert.equal(ctl.state().status, "signedOut");
-  assert.deepEqual(notes, [accountCard("failed")]);
-});
-
-test("setCompete(true) from off, signing in silently, applies the result as at boot", async () => {
-  const { ctl, provider, notes } = make({ settingsInit: { compete: false, pgsWelcomed: true } });
-  await ctl.boot();
-  ctl.setCompete(true);
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.equal(notes.length, 0);
-});
-
-test("setCompete coerces: only true (or the string \"true\") turns Compete on", async () => {
-  const { ctl, provider, settings } = make({ settingsInit: { compete: false } });
-  await ctl.boot();
-  ctl.setCompete("false");
-  ctl.setCompete(0);
-  ctl.setCompete(undefined);
-  assert.equal(ctl.state().status, "off");
-  assert.equal(settings.writes.length, 0);
-  assert.deepEqual(provider.calls, []);
-  ctl.setCompete("true");
-  assert.equal(ctl.state().compete, true);
-  assert.deepEqual(settings.writes, [["compete", true]]);
-});
-
-test("Compete OFF chosen while boot is still reading settings wins over the stored value", async () => {
-  const provider = scriptedProvider();
+test("boot: a setCompete() call before boot resolves wins over the stored value", async () => {
+  const settings = recordingSettings({ compete: true });
   const read = deferred();
-  const writes = [];
+  settings.read = () => {
+    settings.reads = (settings.reads || 0) + 1;
+    return read.promise;
+  };
+  const identity = scriptedIdentity();
+  const board = scriptedBoard();
   const ctl = createAccountController({
-    provider,
-    settings: { read: () => read.promise, write: (k, v) => (writes.push([k, v]), ALL_WRITES.push([k, v]), Promise.resolve()) },
+    identity,
+    board,
+    settings: { read: settings.read, write: settings.write },
     notify: () => {},
     setTimer: () => 1,
     clearTimer: () => {},
   });
   const booting = ctl.boot();
   ctl.setCompete(false);
-  read.resolve({ compete: true, pgsWelcomed: false });
+  read.resolve({ compete: true, boardWelcomed: false });
+  identity.resolveNext(HANDLE);
   await booting;
   await flush();
-  assert.equal(ctl.state().status, "off");
-  assert.deepEqual(provider.calls, []);
-  assert.deepEqual(writes, [["compete", false]]);
+  assert.equal(ctl.state().compete, false);
+  assert.deepEqual(board.calls, ["purge"]);
 });
 
-test("a settings.write that throws or rejects never breaks the controller", async () => {
-  const provider = scriptedProvider();
-  const notes = [];
+test("boot: welcomed becomes true when settings carries boardWelcomed true", async () => {
+  const { ctl, identity } = make({ settingsInit: { boardWelcomed: true } });
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  assert.equal(ctl.state().welcomed, true);
+});
+
+test("boot: a throwing/rejecting identity seam leaves the handle null; boot still resolves", async () => {
+  const identity = { ensureHandle: () => Promise.reject(new Error("offline")) };
+  const { ctl } = make({ identity });
+  await assert.doesNotReject(ctl.boot());
+  assert.equal(ctl.state().handle, null);
+});
+
+test("boot: a settings read that rejects is tolerated (handle still set, compete stays seeded)", async () => {
+  const identity = scriptedIdentity();
+  const board = scriptedBoard();
   const ctl = createAccountController({
-    provider,
+    identity,
+    board,
+    settings: { read: () => Promise.reject(new Error("storage gone")), write: () => Promise.resolve() },
+    notify: () => {},
+    setTimer: () => 1,
+    clearTimer: () => {},
+    compete: true,
+  });
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  assert.equal(ctl.state().handle, HANDLE);
+  assert.equal(ctl.state().compete, true);
+});
+
+test("boot called twice returns the same promise and reads settings once", async () => {
+  const { ctl, identity, settings } = make();
+  const a = ctl.boot();
+  const b = ctl.boot();
+  assert.strictEqual(a, b);
+  identity.resolveNext(HANDLE);
+  await a;
+  await ctl.boot();
+  assert.equal(settings.reads, 1);
+});
+
+// ─── setCompete ──────────────────────────────────────────────────────────
+
+test("setCompete(false): emits at once, disarms an armed erase row, persists compete false, calls board.purge() once, no flush", async () => {
+  const { ctl, identity, board, settings, timers } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.eraseTap(); // arm it
+  assert.equal(ctl.state().erase, "armed");
+  ctl.setCompete(false);
+  assert.equal(ctl.state().compete, false);
+  assert.equal(ctl.state().erase, "idle", "the erase row disarms with Compete off");
+  assert.deepEqual(settings.writes, [["compete", false]]);
+  assert.deepEqual(board.calls, ["purge"]);
+  assert.equal(timers.live.size, 0, "the erase-arm timer is cleared");
+});
+
+test("setCompete(true) from off: emits, persists, calls board.flush({force:true}) once", async () => {
+  const { ctl, identity, board, settings } = make({ settingsInit: { compete: false } });
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.setCompete(true);
+  assert.equal(ctl.state().compete, true);
+  assert.deepEqual(settings.writes, [["compete", true]]);
+  assert.deepEqual(board.calls, ['flush:{"force":true}']);
+});
+
+test("setCompete to its current value is a no-op: no write, no board call, no emit", async () => {
+  const { ctl, identity, board, settings, changes } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  changes.length = 0;
+  ctl.setCompete(true);
+  assert.equal(settings.writes.length, 0);
+  assert.deepEqual(board.calls, []);
+  assert.equal(changes.length, 0);
+});
+
+test('setCompete coerces: only true (or the string "true") turns Compete on', async () => {
+  const { ctl, identity, board, settings } = make({ settingsInit: { compete: false } });
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.setCompete("false");
+  ctl.setCompete(0);
+  ctl.setCompete(undefined);
+  assert.equal(ctl.state().compete, false);
+  assert.equal(settings.writes.length, 0);
+  assert.deepEqual(board.calls, []);
+  ctl.setCompete("true");
+  assert.equal(ctl.state().compete, true);
+  assert.deepEqual(settings.writes, [["compete", true]]);
+});
+
+test("a settings.write or board call that throws or rejects never breaks the controller", async () => {
+  const identity = scriptedIdentity();
+  const board = {
+    calls: [],
+    reroll: () => Promise.reject(new Error("x")),
+    erase: () => Promise.reject(new Error("x")),
+    purge: () => {
+      throw new Error("sync purge failure");
+    },
+    flush: () => Promise.reject(new Error("async flush failure")),
+  };
+  const ctl = createAccountController({
+    identity,
+    board,
     settings: {
-      read: async () => ({ compete: true, pgsWelcomed: false }),
+      read: async () => ({ compete: true, boardWelcomed: false }),
       write: (key) => {
         if (key === "compete") throw new Error("sync write failure");
         return Promise.reject(new Error("async write failure"));
       },
     },
-    notify: (c) => notes.push(c),
+    notify: () => {},
     setTimer: () => 1,
     clearTimer: () => {},
   });
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.equal(ctl.state().status, "signedIn");
-  assert.deepEqual(notes, [accountCard("welcome")]);
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
   assert.doesNotThrow(() => ctl.setCompete(false));
-  assert.equal(ctl.state().status, "off");
+  assert.equal(ctl.state().compete, false);
+  assert.doesNotThrow(() => ctl.setCompete(true));
+  assert.equal(ctl.state().compete, true);
 });
 
-test("a notify that throws never breaks the controller", async () => {
-  const provider = scriptedProvider();
-  const ctl = createAccountController({
-    provider,
-    settings: { read: async () => ({ compete: true, pgsWelcomed: false }), write: () => Promise.resolve() },
-    notify: () => {
-      throw new Error("rail is down");
-    },
-    setTimer: () => 1,
-    clearTimer: () => {},
-  });
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
+// ─── reroll ──────────────────────────────────────────────────────────────
+
+test("reroll(): calls board.reroll() once, and a valid returned handle replaces the state's handle", async () => {
+  const { ctl, identity, board } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.reroll();
+  assert.deepEqual(board.calls, ["reroll"]);
+  board.pending.reroll[0].resolve({ handle: HANDLE2, previous: HANDLE });
   await flush();
-  assert.equal(ctl.state().status, "signedIn");
+  assert.equal(ctl.state().handle, HANDLE2);
 });
 
-// ─── subscriptions ───────────────────────────────────────────────────────
+test("reroll(): a second call while one is in flight is ignored", async () => {
+  const { ctl, identity, board } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.reroll();
+  ctl.reroll();
+  assert.deepEqual(board.calls, ["reroll"]);
+  board.pending.reroll[0].resolve({ handle: HANDLE2 });
+  await flush();
+  ctl.reroll();
+  assert.deepEqual(board.calls, ["reroll", "reroll"]);
+});
+
+test("reroll(): with no handle yet, does nothing", () => {
+  const { ctl, board } = make();
+  ctl.reroll();
+  assert.deepEqual(board.calls, []);
+});
+
+test("reroll(): an invalid or rejected result leaves the handle unchanged", async () => {
+  const { ctl, identity, board } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.reroll();
+  board.pending.reroll[0].resolve({ handle: "not-a-handle" });
+  await flush();
+  assert.equal(ctl.state().handle, HANDLE);
+  ctl.reroll();
+  board.pending.reroll[1].reject(new Error("offline"));
+  await flush();
+  assert.equal(ctl.state().handle, HANDLE);
+});
+
+// ─── eraseTap / disarmErase ──────────────────────────────────────────────
+
+test("eraseTap(): idle -> armed, arming a single timer of armMs", async () => {
+  const { ctl, identity, timers } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.eraseTap();
+  assert.equal(ctl.state().erase, "armed");
+  assert.equal(timers.live.size, 1);
+  assert.equal([...timers.live.values()][0].ms, ERASE_ARM_MS);
+});
+
+test("eraseTap(): armed -> a second tap calls board.erase() once; ok -> one erased card naming the handle, then idle", async () => {
+  const { ctl, identity, board, notes } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.eraseTap();
+  ctl.eraseTap();
+  assert.equal(ctl.state().erase, "busy");
+  assert.deepEqual(board.calls, ["erase"]);
+  board.pending.erase[0].resolve({ ok: true, deleted: 3 });
+  await flush();
+  assert.equal(ctl.state().erase, "idle");
+  assert.deepEqual(notes, [accountCard("erased", HANDLE)]);
+});
+
+test("eraseTap(): a failure result raises one eraseFailed card, then idle; a rejection does the same", async () => {
+  const { ctl, identity, board, notes } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.eraseTap();
+  ctl.eraseTap();
+  board.pending.erase[0].resolve({ ok: false, reason: "offline" });
+  await flush();
+  assert.equal(ctl.state().erase, "idle");
+  assert.deepEqual(notes, [accountCard("eraseFailed")]);
+
+  ctl.eraseTap();
+  ctl.eraseTap();
+  board.pending.erase[1].reject(new Error("boom"));
+  await flush();
+  assert.equal(ctl.state().erase, "idle");
+  assert.deepEqual(notes, [accountCard("eraseFailed"), accountCard("eraseFailed")]);
+});
+
+test("eraseTap(): busy ignores taps", async () => {
+  const { ctl, identity, board } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.eraseTap();
+  ctl.eraseTap();
+  assert.equal(ctl.state().erase, "busy");
+  ctl.eraseTap();
+  assert.deepEqual(board.calls, ["erase"], "no second board.erase() call while busy");
+});
+
+test("eraseTap(): with Compete off or no handle, does nothing", async () => {
+  const off = make({ settingsInit: { compete: false } });
+  const boot1 = off.ctl.boot();
+  off.identity.resolveNext(HANDLE);
+  await boot1;
+  off.ctl.eraseTap();
+  assert.equal(off.ctl.state().erase, "idle");
+  assert.deepEqual(off.board.calls, []);
+
+  const noHandle = make();
+  noHandle.ctl.eraseTap();
+  assert.equal(noHandle.ctl.state().erase, "idle");
+});
+
+test("the erase-arm timer firing disarms back to idle with no board call", async () => {
+  const { ctl, identity, board, timers } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.eraseTap();
+  timers.fireAll();
+  assert.equal(ctl.state().erase, "idle");
+  assert.deepEqual(board.calls, []);
+});
+
+test("disarmErase(): returns an armed row to idle and clears the timer; a no-op when idle or busy", async () => {
+  const { ctl, identity, timers } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.disarmErase();
+  assert.equal(ctl.state().erase, "idle");
+  ctl.eraseTap();
+  assert.equal(ctl.state().erase, "armed");
+  ctl.disarmErase();
+  assert.equal(ctl.state().erase, "idle");
+  assert.equal(timers.live.size, 0);
+});
+
+// ─── boardAcked (the welcome-once card) ───────────────────────────────────
+
+test("boardAcked(): the first call ever persists boardWelcomed true and raises one welcome card naming the handle", async () => {
+  const { ctl, identity, settings, notes } = make();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.boardAcked();
+  assert.equal(ctl.state().welcomed, true);
+  assert.deepEqual(settings.writes, [["boardWelcomed", true]]);
+  assert.deepEqual(notes, [accountCard("welcome", HANDLE)]);
+  ctl.boardAcked();
+  assert.equal(notes.length, 1, "a second call raises nothing");
+  assert.equal(settings.writes.length, 1);
+});
+
+test("boardAcked(): boot having read boardWelcomed true raises nothing", async () => {
+  const { ctl, identity, settings, notes } = make({ settingsInit: { boardWelcomed: true } });
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  ctl.boardAcked();
+  assert.equal(notes.length, 0);
+  assert.equal(settings.writes.length, 0);
+});
+
+// ─── subscribe ─────────────────────────────────────────────────────────
 
 test("subscribe: each listener receives every new state snapshot; unsubscribe stops delivery", async () => {
-  const { ctl, provider } = make({ settingsInit: { pgsWelcomed: true } });
+  const { ctl, identity } = make();
   const seen = [];
-  const off = ctl.subscribe((s) => seen.push(s.status));
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.deepEqual(seen, ["pending", "signedIn"]);
+  const off = ctl.subscribe((s) => seen.push(s.handle));
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  assert.deepEqual(seen, [HANDLE]);
   off();
   ctl.setCompete(false);
-  assert.deepEqual(seen, ["pending", "signedIn"]);
-  assert.equal(ctl.state().status, "off");
+  assert.deepEqual(seen, [HANDLE]);
+  assert.equal(ctl.state().compete, false);
 });
 
 test("subscribe: the snapshot a listener receives is the frozen current state", async () => {
-  const { ctl } = make({ settingsInit: { compete: false } });
+  const { ctl, identity } = make();
   let got = null;
   ctl.subscribe((s) => {
     got = s;
   });
-  await ctl.boot();
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
   assert.ok(Object.isFrozen(got));
   assert.strictEqual(got, ctl.state());
 });
 
 test("subscribe: a throwing listener does not stop the others or the controller", async () => {
-  const { ctl, provider } = make({ settingsInit: { pgsWelcomed: true } });
+  const { ctl, identity } = make();
   const seen = [];
   ctl.subscribe(() => {
     throw new Error("listener bug");
   });
-  ctl.subscribe((s) => seen.push(s.status));
-  await ctl.boot();
-  provider.pending.init[0].resolve({ signedIn: true, player: PLAYER });
-  await flush();
-  assert.deepEqual(seen, ["pending", "signedIn"]);
-  assert.equal(ctl.state().status, "signedIn");
+  ctl.subscribe((s) => seen.push(s.handle));
+  const booting = ctl.boot();
+  identity.resolveNext(HANDLE);
+  await booting;
+  assert.deepEqual(seen, [HANDLE]);
 });
 
 test("subscribe with a non-function returns a harmless unsubscribe", () => {
@@ -675,26 +606,20 @@ test("subscribe with a non-function returns a harmless unsubscribe", () => {
 
 // ─── persistence pins ────────────────────────────────────────────────────
 
-test("write-keys pin: every settings.write in this file used compete or pgsWelcomed with a boolean, never the player's id or name", () => {
+test("write-keys pin: every settings.write in this file used compete or boardWelcomed with a boolean, never a handle", () => {
   assert.ok(ALL_WRITES.length > 0, "the suite exercised writes");
   for (const [key, value] of ALL_WRITES) {
-    assert.ok(key === "compete" || key === "pgsWelcomed", `unexpected settings key: ${key}`);
+    assert.ok(key === "compete" || key === "boardWelcomed", `unexpected settings key: ${key}`);
     assert.equal(typeof value, "boolean", `non-boolean written for ${key}`);
-    for (const p of [PLAYER, OTHER]) {
-      assert.notEqual(value, p.id);
-      assert.notEqual(value, p.displayName);
-    }
+    assert.notEqual(value, HANDLE);
+    assert.notEqual(value, HANDLE2);
   }
 });
 
-test("source pins: the controller calls only provider.init() and provider.signIn(), writes only compete/pgsWelcomed, and names no plugin", () => {
+test("source pins: the controller persists only compete/boardWelcomed, names no plugin or sign-on method, and imports account.js", () => {
   assert.equal((MODULE_SRC.match(/export function createAccountController/g) || []).length, 1);
-  const providerCalls = [...STRIPPED.matchAll(/provider\.(\w+)\s*\(/g)].map((m) => m[1]);
-  assert.ok(providerCalls.length > 0);
-  for (const m of providerCalls) assert.ok(m === "init" || m === "signIn", `unexpected provider call: ${m}`);
-  assert.doesNotMatch(STRIPPED, /signOut/);
+  const persisted = [...STRIPPED.matchAll(/persist\(\s*"(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual([...new Set(persisted)].sort(), ["boardWelcomed", "compete"]);
   assert.doesNotMatch(STRIPPED, /capacitor-play-games/);
   assert.match(STRIPPED, /from "\.\/account\.js"/);
-  const persisted = [...STRIPPED.matchAll(/persist\(\s*"(\w+)"/g)].map((m) => m[1]);
-  assert.deepEqual([...new Set(persisted)].sort(), ["compete", "pgsWelcomed"]);
 });

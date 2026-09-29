@@ -1,12 +1,12 @@
 // test/unit/account.test.js
 //
-// Phase 67 (ACCT-01/02), 67-03 Task 2 — pins src/browser/account.js, the
-// account chip and sheet's pure view model: state normalization (Compete OFF
-// always wins over a stale signed-in status), the chip's initials avatar vs
-// the "nobody" glyph (D-07), the sheet's rows for every status (D-10), the
-// D-03 helper line with no sign-out row, the D-04/D-11 rail cards, the
-// Leaderboards identity input (D-08), totality over malformed input, and
-// purity (comment-stripped source pins, the boardsPanel-dom.test.js way).
+// Phase 85 (ACCT-03/05, 85-CONTEXT group 1), Plan 03 Task 1 — pins
+// src/browser/account.js, the account chip/menu/sheet's pure view model for
+// our own board: normalizeAccountState (compete/handle/erase/welcomed), the
+// chip and ☰ faces (pending/avatar/nobody), the sheet's identity/compete/
+// help/reroll/erase rows, the two handle-bearing rail cards plus the
+// token-free failure card, totality over malformed input, and purity
+// (comment-stripped source pins, the boardsPanel-dom.test.js way).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -15,17 +15,16 @@ import path from "node:path";
 import url from "node:url";
 
 import {
-  ACCOUNT_STATUS,
   normalizeAccountState,
   accountChipView,
+  accountMenuView,
   accountSheetView,
   accountCard,
-  accountIdentity,
-  accountMenuView,
 } from "../../src/browser/account.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
 import { HUD_MENU_GLYPH } from "../../src/browser/hudMenu.js";
-import { avatarColour, initialsOf } from "../../src/browser/leaderboardView.js";
+import { avatarColour, handleInitials } from "../../src/browser/leaderboardView.js";
+import { isValidHandle } from "../../src/browser/handles.js";
 import { RAIL_HOLD, RAIL_TONES } from "../../src/browser/rail.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 
@@ -55,43 +54,14 @@ function assertDeepFrozen(o, label) {
   for (const [p, x] of objectsIn(o, label)) assert.ok(Object.isFrozen(x), `${p} should be frozen`);
 }
 
-const HILDA = { id: "p-1", displayName: "Hilda Ferrow" };
-const SIGNED_IN = { compete: true, status: "signedIn", player: HILDA, welcomed: true };
-const SIGNED_OUT = { compete: true, status: "signedOut", player: null, welcomed: false };
-const PENDING = { compete: true, status: "pending", player: null, welcomed: false };
-const OFF = { compete: false, status: "off", player: null, welcomed: false };
-const STALE_OFF = { compete: false, status: "signedIn", player: HILDA, welcomed: true };
+// "lantern" + "jaw" and "soot" + "boot" are both real HANDLE_FIRST/SECOND pairs (content/handles.js).
+const HANDLE = "@lanternjaw";
+assert.ok(isValidHandle(HANDLE), "test fixture HANDLE must be a real rolled handle");
 
 const MALFORMED = [
-  null,
-  undefined,
-  0,
-  42,
-  NaN,
-  "signedIn",
-  true,
-  [],
-  [1, 2, 3],
-  {},
-  { compete: "yes" },
-  { compete: 0, status: "signedIn", player: HILDA },
-  { status: 7 },
-  { status: "weird" },
-  { status: "signedIn", player: "Hilda" },
-  { status: "signedIn", player: { id: 5, displayName: 9 } },
-  { status: "signedIn", player: [] },
-  { status: "signedIn", player: null },
-  { status: "toString" },
-  { welcomed: "true" },
-  Object.create(null),
+  null, undefined, 0, 42, NaN, "handle", true, [], [1, 2, 3], {}, Object.create(null),
+  { compete: "yes" }, { handle: "not-a-handle" }, { handle: "@lantern" }, { erase: "explode" }, { welcomed: "true" },
 ];
-
-// ─── ACCOUNT_STATUS ────────────────────────────────────────────────────────
-
-test("ACCOUNT_STATUS is the frozen four-status table", () => {
-  assert.deepStrictEqual({ ...ACCOUNT_STATUS }, { OFF: "off", PENDING: "pending", SIGNED_IN: "signedIn", SIGNED_OUT: "signedOut" });
-  assert.ok(Object.isFrozen(ACCOUNT_STATUS));
-});
 
 // ─── normalizeAccountState ─────────────────────────────────────────────────
 
@@ -103,35 +73,16 @@ test("normalize: compete is true unless exactly false", () => {
   assert.equal(normalizeAccountState({ compete: false }).compete, false);
 });
 
-test("normalize: Compete OFF forces status off and player null, even over a stale signedIn", () => {
-  const s = normalizeAccountState(STALE_OFF);
-  assert.equal(s.compete, false);
-  assert.equal(s.status, "off");
-  assert.equal(s.player, null);
-});
-
-test("normalize: unknown, missing or contradictory status becomes signedOut with Compete ON", () => {
-  for (const status of [undefined, null, 7, "weird", "SIGNEDIN", "toString", "off"]) {
-    assert.equal(normalizeAccountState({ compete: true, status }).status, "signedOut", String(status));
+test("normalize: handle is a valid rolled handle, or null", () => {
+  assert.equal(normalizeAccountState({ handle: HANDLE }).handle, HANDLE);
+  for (const bad of [null, undefined, "", "lanternjaw", "@lantern", "@lanternjawx", "@nope nope", 42, {}]) {
+    assert.equal(normalizeAccountState({ handle: bad }).handle, null, JSON.stringify(bad));
   }
-  assert.equal(normalizeAccountState({ status: "pending" }).status, "pending");
-  assert.equal(normalizeAccountState({ status: "signedIn", player: HILDA }).status, "signedIn");
 });
 
-test("normalize: a player is kept only for signedIn, as a frozen { id, displayName } of strings", () => {
-  const s = normalizeAccountState({ status: "signedIn", player: { id: "p-1", displayName: "Hilda Ferrow", extra: "x" } });
-  assert.deepStrictEqual({ ...s.player }, { id: "p-1", displayName: "Hilda Ferrow" });
-  assert.ok(Object.isFrozen(s.player));
-  const odd = normalizeAccountState({ status: "signedIn", player: { id: 5, displayName: 9 } });
-  assert.deepStrictEqual({ ...odd.player }, { id: "", displayName: "" });
-  assert.equal(normalizeAccountState({ status: "signedOut", player: HILDA }).player, null);
-  assert.equal(normalizeAccountState({ status: "pending", player: HILDA }).player, null);
-});
-
-test("normalize: signedIn with a missing player still carries an empty player (the unnamed fallback)", () => {
-  const s = normalizeAccountState({ status: "signedIn", player: null });
-  assert.equal(s.status, "signedIn");
-  assert.deepStrictEqual({ ...s.player }, { id: "", displayName: "" });
+test("normalize: erase is idle/armed/busy; anything else reads as idle", () => {
+  for (const v of ["idle", "armed", "busy"]) assert.equal(normalizeAccountState({ erase: v }).erase, v);
+  for (const v of [undefined, null, "weird", 1, {}]) assert.equal(normalizeAccountState({ erase: v }).erase, "idle");
 });
 
 test("normalize: welcomed is true only when exactly true", () => {
@@ -143,249 +94,172 @@ test("normalize: every malformed input returns a frozen, well-formed state witho
   for (const input of MALFORMED) {
     const s = normalizeAccountState(input);
     assert.ok(Object.isFrozen(s));
-    assert.deepStrictEqual(Object.keys(s).sort(), ["compete", "player", "status", "welcomed"]);
+    assert.deepStrictEqual(Object.keys(s).sort(), ["compete", "erase", "handle", "welcomed"]);
     assert.equal(typeof s.compete, "boolean");
-    assert.ok(Object.values(ACCOUNT_STATUS).includes(s.status));
+    assert.ok(s.handle === null || typeof s.handle === "string");
+    assert.ok(["idle", "armed", "busy"].includes(s.erase));
     assert.equal(typeof s.welcomed, "boolean");
   }
   const hostile = new Proxy({}, { get() { throw new Error("boom"); } });
   assert.doesNotThrow(() => normalizeAccountState(hostile));
-  assert.equal(normalizeAccountState(hostile).status, "signedOut");
+  assert.equal(normalizeAccountState(hostile).handle, null);
 });
 
-// ─── accountChipView ───────────────────────────────────────────────────────
+// ─── accountChipView ────────────────────────────────────────────────────────
 
-test("chip: signed in gives the initials avatar from the display name", () => {
-  const v = accountChipView(SIGNED_IN);
-  assert.equal(v.face, "avatar");
-  assert.equal(v.initials, "HF");
-  assert.equal(v.initials, initialsOf("Hilda Ferrow"));
-  assert.equal(v.bg, avatarColour("Hilda Ferrow"));
-  assert.equal(v.glyph, "");
-  assert.match(v.label, /Hilda Ferrow/);
-  assert.equal(v.label, ACCOUNT_COPY.chipLabel.signedIn.replace("{name}", "Hilda Ferrow"));
-});
-
-test("chip: the display name is trimmed before initials, colour and label", () => {
-  const v = accountChipView({ status: "signedIn", player: { id: "p", displayName: "  Hilda Ferrow  " } });
-  assert.equal(v.bg, avatarColour("Hilda Ferrow"));
-  assert.equal(v.label, ACCOUNT_COPY.chipLabel.signedIn.replace("{name}", "Hilda Ferrow"));
-});
-
-test("chip: signed in with an empty display name falls back to the unnamed line", () => {
-  const unnamed = ACCOUNT_COPY.sheet.unnamed;
-  for (const displayName of ["", "   "]) {
-    const v = accountChipView({ status: "signedIn", player: { id: "p", displayName } });
-    assert.equal(v.face, "avatar");
-    assert.equal(v.initials, initialsOf(unnamed));
-    assert.equal(v.bg, avatarColour(unnamed));
-    assert.match(v.label, new RegExp(unnamed));
+test("chip: no handle yet gives the pending face, whatever Compete reads", () => {
+  for (const compete of [true, false]) {
+    const v = accountChipView({ compete, handle: null });
+    assert.deepStrictEqual({ ...v }, { face: "pending", initials: "", bg: "", glyph: "?", label: ACCOUNT_COPY.chipLabel.pending });
   }
 });
 
-test("chip: a name with $ patterns fills {name} literally", () => {
-  const v = accountChipView({ status: "signedIn", player: { id: "p", displayName: "$& $1 Cash" } });
-  assert.equal(v.label, ACCOUNT_COPY.chipLabel.signedIn.split("{name}").join("$& $1 Cash"));
+test("chip: Compete ON with a handle gives the initials avatar and the handle's own label", () => {
+  const v = accountChipView({ compete: true, handle: HANDLE });
+  assert.equal(v.face, "avatar");
+  assert.equal(v.initials, handleInitials(HANDLE));
+  assert.equal(v.bg, avatarColour(HANDLE));
+  assert.equal(v.glyph, "");
+  assert.equal(v.label, ACCOUNT_COPY.chipLabel.on.replace("{handle}", HANDLE));
 });
 
-test("chip: Compete OFF, even with a stale signed-in status and player, gives the nobody glyph and the off label", () => {
-  const v = accountChipView(STALE_OFF);
+test("chip: Compete OFF with a handle gives the dim nobody glyph and the off label, never the handle itself", () => {
+  const v = accountChipView({ compete: false, handle: HANDLE });
   assert.deepStrictEqual({ ...v }, { face: "nobody", initials: "", bg: "", glyph: "?", label: ACCOUNT_COPY.chipLabel.off });
-  assert.doesNotMatch(v.label, /Hilda/);
+  assert.doesNotMatch(v.label, new RegExp(HANDLE.slice(1)));
 });
 
-test("chip: signed out gives nobody with the signedOut label", () => {
-  assert.deepStrictEqual({ ...accountChipView(SIGNED_OUT) }, { face: "nobody", initials: "", bg: "", glyph: "?", label: ACCOUNT_COPY.chipLabel.signedOut });
+test("chip: the three states give three distinct accessible labels", () => {
+  const labels = [
+    accountChipView({ compete: true, handle: null }).label,
+    accountChipView({ compete: true, handle: HANDLE }).label,
+    accountChipView({ compete: false, handle: HANDLE }).label,
+  ];
+  assert.equal(new Set(labels).size, 3);
 });
 
-test("chip: pending gives the pending face, the glyph and the pending label", () => {
-  assert.deepStrictEqual({ ...accountChipView(PENDING) }, { face: "pending", initials: "", bg: "", glyph: "?", label: ACCOUNT_COPY.chipLabel.pending });
+// ─── accountMenuView ────────────────────────────────────────────────────────
+
+test("menu: Compete ON with a handle wears the same avatar the chip does, labelled with the handle", () => {
+  const v = accountMenuView({ compete: true, handle: HANDLE });
+  const chip = accountChipView({ compete: true, handle: HANDLE });
+  assert.equal(v.face, "avatar");
+  assert.equal(v.initials, chip.initials);
+  assert.equal(v.bg, chip.bg);
+  assert.equal(v.label, ACCOUNT_COPY.menuLabel.on.replace("{handle}", HANDLE));
 });
 
-test("chip: the four statuses give four distinct accessible labels", () => {
-  const labels = [SIGNED_IN, SIGNED_OUT, PENDING, OFF].map((s) => accountChipView(s).label);
-  assert.equal(new Set(labels).size, 4);
+test("menu: no handle yet, or Compete OFF, wears the plain ☰ labelled Menu", () => {
+  for (const state of [{ compete: true, handle: null }, { compete: false, handle: null }, { compete: false, handle: HANDLE }]) {
+    const v = accountMenuView(state);
+    assert.deepStrictEqual({ ...v }, { face: "menu", initials: "", bg: "", glyph: HUD_MENU_GLYPH, label: "Menu" });
+  }
 });
 
-// ─── accountSheetView ──────────────────────────────────────────────────────
+test("menu: total over malformed input, frozen, and never the avatar without Compete ON and a handle", () => {
+  for (const input of MALFORMED) {
+    let v;
+    assert.doesNotThrow(() => { v = accountMenuView(input); });
+    assertDeepFrozen(v, "menu");
+    assert.ok(["avatar", "menu"].includes(v.face));
+    if (v.face === "menu") assert.equal(v.glyph, HUD_MENU_GLYPH);
+  }
+});
+
+// ─── accountSheetView ───────────────────────────────────────────────────────
 
 function assertCommonSheet(v, competeOn) {
-  assert.equal(v.title, "PLAY GAMES");
+  assert.equal(v.title, "ACCOUNT");
   assert.equal(v.compete.label, "COMPETE");
   assert.equal(v.compete.on, competeOn);
   assert.deepStrictEqual(v.compete.options.map((o) => ({ ...o })), [{ value: true, label: "ON" }, { value: false, label: "OFF" }]);
   assert.deepStrictEqual({ ...v.settings }, { label: "SETTINGS" });
-  assert.deepStrictEqual(Object.keys(v).sort(), ["action", "compete", "help", "identity", "settings", "title"]);
+  assert.deepStrictEqual(Object.keys(v).sort(), ["compete", "erase", "help", "identity", "reroll", "settings", "title"]);
   assert.deepStrictEqual(Object.keys(v.identity).sort(), ["bg", "face", "glyph", "initials", "name", "status"]);
 }
 
-test("sheet: signed out with Compete ON offers Sign in, no help line", () => {
-  const v = accountSheetView(SIGNED_OUT);
+test("sheet: no handle yet — pending identity, disabled reroll and erase, the on-help line", () => {
+  const v = accountSheetView({ compete: true, handle: null });
   assertCommonSheet(v, true);
-  assert.deepStrictEqual({ ...v.action }, { id: "signIn", label: "SIGN IN", disabled: false });
-  assert.equal(v.help, "");
-  assert.equal(v.identity.face, "nobody");
-  assert.equal(v.identity.name, ACCOUNT_COPY.sheet.nobody);
-  assert.equal(v.identity.status, "PLAY GAMES · SIGNED OUT");
-});
-
-test("sheet: signed in offers Stop competing and the Play Games app helper line (D-03)", () => {
-  const v = accountSheetView(SIGNED_IN);
-  assertCommonSheet(v, true);
-  assert.deepStrictEqual({ ...v.action }, { id: "stopCompeting", label: "STOP COMPETING", disabled: false });
-  assert.equal(v.help, ACCOUNT_COPY.sheet.stopHelp);
-  assert.equal(v.identity.face, "avatar");
-  assert.equal(v.identity.initials, "HF");
-  assert.equal(v.identity.bg, avatarColour("Hilda Ferrow"));
-  assert.equal(v.identity.glyph, "");
-  assert.equal(v.identity.name, "Hilda Ferrow");
-  assert.equal(v.identity.status, "PLAY GAMES · SIGNED IN");
-});
-
-test("sheet: signed in with no name shows the unnamed line", () => {
-  const v = accountSheetView({ status: "signedIn", player: { id: "p", displayName: "" } });
-  assert.equal(v.identity.name, ACCOUNT_COPY.sheet.unnamed);
-  assert.equal(v.action.id, "stopCompeting");
-});
-
-test("sheet: pending shows a disabled SIGNING IN… row", () => {
-  const v = accountSheetView(PENDING);
-  assertCommonSheet(v, true);
-  assert.deepStrictEqual({ ...v.action }, { id: "pending", label: "SIGNING IN…", disabled: true });
-  assert.equal(v.help, "");
   assert.equal(v.identity.face, "pending");
-  assert.equal(v.identity.status, "PLAY GAMES · SIGNING IN");
+  assert.equal(v.identity.name, ACCOUNT_COPY.sheet.pending);
+  assert.equal(v.identity.status, ACCOUNT_COPY.sheet.status.pending);
+  assert.deepStrictEqual({ ...v.reroll }, { id: "reroll", label: "RE-ROLL HANDLE", disabled: true });
+  assert.equal(v.erase.disabled, true);
+  assert.equal(v.help, ACCOUNT_COPY.sheet.onHelp);
 });
 
-test("sheet: Compete OFF has no action, the offHelp line and the COMPETE OFF status, even over a stale signedIn", () => {
-  for (const s of [OFF, STALE_OFF]) {
-    const v = accountSheetView(s);
-    assertCommonSheet(v, false);
-    assert.equal(v.action, null);
-    assert.equal(v.help, ACCOUNT_COPY.sheet.offHelp);
-    assert.equal(v.identity.face, "nobody");
-    assert.equal(v.identity.name, ACCOUNT_COPY.sheet.nobody);
-    assert.equal(v.identity.status, "PLAY GAMES · COMPETE OFF");
+test("sheet: a handle with Compete ON — avatar identity ON THE BOARD, reroll enabled, erase enabled when idle", () => {
+  const v = accountSheetView({ compete: true, handle: HANDLE, erase: "idle" });
+  assertCommonSheet(v, true);
+  assert.equal(v.identity.face, "avatar");
+  assert.equal(v.identity.initials, handleInitials(HANDLE));
+  assert.equal(v.identity.bg, avatarColour(HANDLE));
+  assert.equal(v.identity.name, HANDLE);
+  assert.equal(v.identity.status, ACCOUNT_COPY.sheet.status.on);
+  assert.deepStrictEqual({ ...v.reroll }, { id: "reroll", label: "RE-ROLL HANDLE", disabled: false });
+  assert.deepStrictEqual({ ...v.erase }, { id: "erase", label: "ERASE MY RUNS", armed: false, disabled: false });
+  assert.equal(v.help, ACCOUNT_COPY.sheet.onHelp);
+});
+
+test("sheet: a handle with Compete OFF — the handle's avatar still shows (85-CONTEXT: yours either way), COMPETE OFF status, erase disabled, the off-help line", () => {
+  const v = accountSheetView({ compete: false, handle: HANDLE });
+  assertCommonSheet(v, false);
+  assert.equal(v.identity.face, "avatar");
+  assert.equal(v.identity.name, HANDLE);
+  assert.equal(v.identity.status, ACCOUNT_COPY.sheet.status.off);
+  assert.equal(v.reroll.disabled, false, "re-roll stays available with Compete off");
+  assert.equal(v.erase.disabled, true, "erase needs Compete on");
+  assert.equal(v.help, ACCOUNT_COPY.sheet.offHelp);
+});
+
+test("sheet: erase armed/busy change only the erase row's label and flags", () => {
+  const armed = accountSheetView({ compete: true, handle: HANDLE, erase: "armed" });
+  assert.deepStrictEqual({ ...armed.erase }, { id: "erase", label: "TAP AGAIN TO ERASE", armed: true, disabled: false });
+  const busy = accountSheetView({ compete: true, handle: HANDLE, erase: "busy" });
+  assert.deepStrictEqual({ ...busy.erase }, { id: "erase", label: ACCOUNT_COPY.sheet.erasing, armed: false, disabled: true });
+});
+
+test("sheet: every view is deep-frozen", () => {
+  for (const s of [{ compete: true, handle: null }, { compete: true, handle: HANDLE }, { compete: false, handle: HANDLE }]) {
+    assertDeepFrozen(accountSheetView(s), "sheet");
   }
 });
 
-test("sheet: no state, malformed ones included, ever offers a sign-out row (D-03)", () => {
-  const allowed = new Set(["signIn", "stopCompeting", "pending"]);
-  for (const s of [SIGNED_IN, SIGNED_OUT, PENDING, OFF, STALE_OFF, ...MALFORMED]) {
-    const v = accountSheetView(s);
-    if (v.action !== null) assert.ok(allowed.has(v.action.id), `unexpected action ${v.action.id}`);
-  }
-});
+// ─── accountCard ────────────────────────────────────────────────────────────
 
-test("sheet: only a signed-in state reports SIGNED IN, and a signed-in state never reports SIGNED OUT", () => {
-  for (const s of [SIGNED_OUT, PENDING, OFF, STALE_OFF, ...MALFORMED]) {
-    const n = normalizeAccountState(s);
-    if (n.status !== "signedIn") assert.notEqual(accountSheetView(s).identity.status, ACCOUNT_COPY.sheet.status.signedIn);
-  }
-  assert.notEqual(accountSheetView(SIGNED_IN).identity.status, ACCOUNT_COPY.sheet.status.signedOut);
-});
-
-// ─── accountCard ───────────────────────────────────────────────────────────
-
-test("card: welcome is the D-04 rail card, tone odd, held for RAIL_HOLD.floor", () => {
-  const c = accountCard("welcome");
-  assert.deepStrictEqual({ ...c }, { ...ACCOUNT_COPY.cards.welcome, tone: "odd", hold: RAIL_HOLD.floor });
+test("card: welcome names the handle, tone odd, held for RAIL_HOLD.floor", () => {
+  const c = accountCard("welcome", HANDLE);
+  assert.equal(c.title, ACCOUNT_COPY.cards.welcome.title);
+  assert.equal(c.line, ACCOUNT_COPY.cards.welcome.line.replace("{handle}", HANDLE));
+  assert.equal(c.tone, "odd");
+  assert.equal(c.hold, RAIL_HOLD.floor);
   assert.ok(Object.isFrozen(c));
   assert.ok(RAIL_TONES.includes(c.tone));
 });
 
-test("card: failed is the D-11 rail card, tone dull, held for RAIL_HOLD.default", () => {
-  const c = accountCard("failed");
-  assert.deepStrictEqual({ ...c }, { ...ACCOUNT_COPY.cards.failed, tone: "dull", hold: RAIL_HOLD.default });
-  assert.ok(Object.isFrozen(c));
+test("card: erased names the handle, tone dull, held for RAIL_HOLD.default", () => {
+  const c = accountCard("erased", HANDLE);
+  assert.equal(c.line, ACCOUNT_COPY.cards.erased.line.replace("{handle}", HANDLE));
+  assert.equal(c.tone, "dull");
+  assert.equal(c.hold, RAIL_HOLD.default);
   assert.ok(RAIL_TONES.includes(c.tone));
 });
 
-test("card: any other kind gives null", () => {
-  for (const k of [undefined, null, "", "toString", "constructor", "WELCOME", 1, {}, []]) assert.equal(accountCard(k), null, String(k));
+test("card: eraseFailed carries no handle token, tone dull, held for RAIL_HOLD.default", () => {
+  const c = accountCard("eraseFailed");
+  assert.deepStrictEqual({ ...c }, { ...ACCOUNT_COPY.cards.eraseFailed, tone: "dull", hold: RAIL_HOLD.default });
+  assert.ok(Object.isFrozen(c));
 });
 
-// ─── accountIdentity ───────────────────────────────────────────────────────
-
-test("identity: signed in with Compete ON gives { signedIn: true, player }", () => {
-  const id = accountIdentity(SIGNED_IN);
-  assert.equal(id.signedIn, true);
-  assert.deepStrictEqual({ ...id.player }, HILDA);
-  assert.ok(Object.isFrozen(id));
-  assert.ok(Object.isFrozen(id.player));
-});
-
-test("identity: every other state gives { signedIn: false, player: null }", () => {
-  for (const s of [SIGNED_OUT, PENDING, OFF, STALE_OFF, ...MALFORMED]) {
-    if (normalizeAccountState(s).status === "signedIn") continue;
-    const id = accountIdentity(s);
-    assert.deepStrictEqual({ ...id }, { signedIn: false, player: null });
-    assert.ok(Object.isFrozen(id));
+test("card: welcome/erased with an invalid handle, or any other kind, gives null", () => {
+  for (const kind of ["welcome", "erased"]) {
+    for (const bad of [null, undefined, "", "not-a-handle", "lanternjaw"]) {
+      assert.equal(accountCard(kind, bad), null, `${kind}(${bad})`);
+    }
   }
-});
-
-// ─── the ☰ face (Phase 70 D-03) ────────────────────────────────────────────
-
-test("menu (D-03): signed in gives the initials avatar and a label naming the player", () => {
-  const v = accountMenuView(SIGNED_IN);
-  assert.deepStrictEqual({ ...v }, {
-    face: "avatar",
-    initials: initialsOf("Hilda Ferrow"),
-    bg: avatarColour("Hilda Ferrow"),
-    glyph: "",
-    label: "Menu — signed in as Hilda Ferrow",
-  });
-  assert.ok(Object.isFrozen(v));
-});
-
-test("menu (D-03): the avatar maths matches the account chip's exactly", () => {
-  const menu = accountMenuView(SIGNED_IN);
-  const chip = accountChipView(SIGNED_IN);
-  assert.equal(menu.initials, chip.initials);
-  assert.equal(menu.bg, chip.bg);
-  assert.equal(menu.face, chip.face);
-});
-
-test("menu (D-03): signed in with no display name uses the unnamed line in the label", () => {
-  const v = accountMenuView({ ...SIGNED_IN, player: { id: "p-1", displayName: "   " } });
-  assert.equal(v.face, "avatar");
-  assert.equal(v.label, `Menu — signed in as ${ACCOUNT_COPY.sheet.unnamed}`);
-  assert.equal(v.initials, initialsOf(ACCOUNT_COPY.sheet.unnamed));
-});
-
-test("menu (D-03): a non-Latin name takes its initials from initialsOf, unchanged", () => {
-  const name = "Ærwyn Đorđević";
-  const v = accountMenuView({ ...SIGNED_IN, player: { id: "p-2", displayName: name } });
-  assert.equal(v.initials, initialsOf(name));
-  assert.equal(v.bg, avatarColour(name));
-  assert.equal(v.label, `Menu — signed in as ${name}`);
-});
-
-test("menu (D-03): a name with $ patterns fills {name} literally", () => {
-  const v = accountMenuView({ ...SIGNED_IN, player: { id: "p-3", displayName: "$& $1 $'" } });
-  assert.equal(v.label, "Menu — signed in as $& $1 $'");
-});
-
-test("menu (D-03): signed out, pending, Compete OFF and a stale signed-in under OFF all wear the plain ☰", () => {
-  for (const state of [SIGNED_OUT, PENDING, OFF, STALE_OFF]) {
-    const v = accountMenuView(state);
-    assert.deepStrictEqual(
-      { ...v },
-      { face: "menu", initials: "", bg: "", glyph: HUD_MENU_GLYPH, label: ACCOUNT_COPY.menuLabel.plain },
-      JSON.stringify(state),
-    );
-    assert.equal(v.label, "Menu");
-    assert.ok(Object.isFrozen(v));
-  }
-});
-
-test("menu (D-03): total over malformed input, frozen, and never the avatar without a signed-in status", () => {
-  for (const input of MALFORMED) {
-    let v;
-    assert.doesNotThrow(() => { v = accountMenuView(input); }, `menu(${JSON.stringify(input) ?? typeof input})`);
-    assertDeepFrozen(v, "menu");
-    assert.ok(["avatar", "menu"].includes(v.face));
-    if (v.face === "menu") assert.equal(v.glyph, HUD_MENU_GLYPH);
+  for (const k of [undefined, null, "", "toString", "constructor", "WELCOME", 1, {}, []]) {
+    assert.equal(accountCard(k, HANDLE), null, String(k));
   }
 });
 
@@ -393,7 +267,7 @@ test("menu (D-03): total over malformed input, frozen, and never the avatar with
 
 test("every view is total over malformed input and returns deep-frozen results", () => {
   for (const input of MALFORMED) {
-    for (const [name, fn] of [["chip", accountChipView], ["sheet", accountSheetView], ["identity", accountIdentity]]) {
+    for (const [name, fn] of [["chip", accountChipView], ["sheet", accountSheetView], ["menu", accountMenuView]]) {
       let v;
       assert.doesNotThrow(() => { v = fn(input); }, `${name}(${JSON.stringify(input) ?? typeof input})`);
       assertDeepFrozen(v, name);
@@ -402,18 +276,20 @@ test("every view is total over malformed input and returns deep-frozen results",
 });
 
 test("deep-frozen inputs are never mutated, and equal inputs give deepStrictEqual views", () => {
-  const frozen = deepFreeze(structuredClone(SIGNED_IN));
-  const copy = structuredClone(SIGNED_IN);
-  for (const fn of [normalizeAccountState, accountChipView, accountSheetView, accountIdentity]) {
+  const state = { compete: true, handle: HANDLE, erase: "idle", welcomed: true };
+  const frozen = deepFreeze(structuredClone(state));
+  const copy = structuredClone(state);
+  for (const fn of [normalizeAccountState, accountChipView, accountSheetView, accountMenuView]) {
     assert.doesNotThrow(() => fn(frozen));
     assert.deepStrictEqual(fn(frozen), fn(copy));
   }
-  assert.deepStrictEqual(frozen, SIGNED_IN);
-  assert.deepStrictEqual(accountCard("welcome"), accountCard("welcome"));
+  assert.deepStrictEqual(frozen, state);
+  assert.deepStrictEqual(accountCard("welcome", HANDLE), accountCard("welcome", HANDLE));
 });
 
-test("source: imports the avatar helpers from leaderboardView.js and the copy from content/account.js", () => {
+test("source: imports the avatar helpers from leaderboardView.js, isValidHandle from handles.js, and the copy from content/account.js", () => {
   assert.match(STRIPPED, /from\s*"\.\/leaderboardView\.js"/);
+  assert.match(STRIPPED, /from\s*"\.\/handles\.js"/);
   assert.match(STRIPPED, /from\s*"\.\.\/\.\.\/content\/account\.js"/);
   assert.doesNotMatch(STRIPPED, />>>\s*0/, "the avatar hash is imported, never re-implemented");
 });
@@ -422,4 +298,13 @@ test("source: no DOM, storage, clock, randomness or network reference", () => {
   for (const re of [/\bdocument\./, /\bwindow\./, /\blocalStorage\b/, /\bmzStorage\b/, /\bDate\./, /\bnew Date\b/, /Math\.random/, /\bfetch\b/, /XMLHttpRequest/, /WebSocket/, /EventSource/, /sendBeacon/]) {
     assert.doesNotMatch(STRIPPED, re, `account.js must not reference ${re}`);
   }
+});
+
+test("source: no Play-Games or sign-in/sign-out wording anywhere in the file, including comments", () => {
+  assert.doesNotMatch(MODULE_SRC, /play[ _-]?games/i);
+  assert.doesNotMatch(MODULE_SRC, /\bsign(s|ed|ing)?[ -]?(in|out)\b/i);
+});
+
+test("source: handleInitials is used at least once", () => {
+  assert.ok((MODULE_SRC.match(/handleInitials/g) || []).length >= 1);
 });
