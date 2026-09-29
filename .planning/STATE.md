@@ -5,15 +5,15 @@ milestone_name: Our Own Leaderboards
 current_phase: 83
 current_phase_name: Leaderboard Server
 status: executing
-stopped_at: Completed 83-03-PLAN.md (firebaseAuth.js — anonymous identity, handle lifecycle, token refresh, Compete gate); ready for 83-04
-last_updated: "2026-09-29T01:23:53.715Z"
+stopped_at: Completed 83-04-PLAN.md (fakeBoardServer.js + boardClient.js — board read client and its in-memory REST fake); ready for 83-05
+last_updated: "2026-09-29T01:53:51.527Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 83 execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 13
-  completed_plans: 4
+  completed_plans: 6
   percent: 20
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 83 (Leaderboard Server) — EXECUTING
-Plan: 4 of 11
+Plan: 5 of 11
 Status: Ready to execute
 Last activity: 2026-09-28 — Phase 83 execution started
 
@@ -257,8 +257,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T01:23:53.680Z
-Stopped at: Completed 83-03-PLAN.md (firebaseAuth.js — anonymous identity, handle lifecycle, token refresh, Compete gate); ready for 83-04
+Last session: 2026-09-29T01:53:51.487Z
+Stopped at: Completed 83-04-PLAN.md (fakeBoardServer.js + boardClient.js — board read client and its in-memory REST fake); ready for 83-05
 
 - (history below is the pre-close record)
 
@@ -428,6 +428,7 @@ Resume file: None
 | Phase 83 P01 | 30min | 2 tasks | 8 files |
 | Phase 83 P02 | 40min | 3 tasks | 9 files |
 | Phase 83 P03 | 45min | 2 tasks | 2 files |
+| Phase 83 P04 | 55min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -733,6 +734,7 @@ Resume file: None
 - [Phase ?]: 83-02: single-Write createRunCommit (update+updateTransforms+currentDocument) per RESEARCH Pitfall 1 / CONTEXT's atomic-equivalent instruction, not the two-Write form
 - [Phase ?]: 83-02: SUB_UNIVERSE fallback isolates validateRunDoc's cls/sub fail ids so breaking one field never cascades into the other
 - [Phase ?]: firebaseAuth.js splits its single-flight sign-up/refresh promises per module instance and restarts the identity (new sign-up, same handle) on any of six terminal refresh error messages or a uid mismatch, rather than surfacing a retryable failure
+- [Phase ?]: 83-04: fakeBoardServer.js generalizes commit handling to N-write atomic batches (handle re-roll across all runs, multi-id delete) beyond the plan's single-write examples, since CONTEXT's re-roll rule needs it
 
 ### Blockers
 
