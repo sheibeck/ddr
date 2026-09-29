@@ -191,7 +191,23 @@ Plans:
   4. One batched Pixel 7 checklist, `docs/UAT-v2.2.md`, covers the panel, submission, the handle, erasing your runs and Compete OFF in airplane mode, run against one debug APK built after the last code lands.
   5. The bug-report rules swap is a listed release step (user, 2026-09-29: keep 2.1.0's REPORT A BUG working until 2.2 ships): when the 2.2 build reaches testers, deploy the final `firebase/firestore.rules` over 83-08's transition rules, run `send-test-report.mjs --probe-rules` live (ten PASS, SRV-09's live proof), record it in docs/BUG-REPORTS.md, and delete the transition files.
 
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 86-01-PLAN.md — Debug APK 2.2.0 (12) right after Phase 85: version bump, DRAFT docs/patch-notes/2.2.0.md, notes module + pipeline pin, `npm run android:debug`, APK identity and build-level audit facts (wave 1)
+- [ ] 86-02-PLAN.md — darktierstudios.com: apps privacy policy, delete-data (ERASE MY RUNS), Terms §5/§6, landing line; "one small database"; committed and pushed to darktier-studio main, not deployed (wave 1)
+- [ ] 86-03-PLAN.md — Retire docs/PLAY-GAMES-SETUP.md; LEADERBOARDS.md Play Console cleanup + transition/cutover text; RELEASING.md ordered 2.2.0 release checklist (rules swap, ten-PASS probes, transition-file deletion, site deploy, cleanup); BUG-REPORTS.md release-day target; compliance-docs pin (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 86-04-PLAN.md — store-listing/LISTING.md Data safety for our board (User IDs = anonymous game ID, Other actions = handle + run fields, bug-report rows), refreshed audits, description, privacy record + pin test; the phase's one full `npm test` (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 86-05-PLAN.md — docs/UAT-v2.2.md assembled last from 84/85/83 verification lists against the one debug APK; UAT-v2.1/v2.0 Play Games rows marked superseded; rebuild check (wave 3)
+
 **Device check**: yes (this phase presents the batch)
 
 ## Deferred / Not This Milestone
