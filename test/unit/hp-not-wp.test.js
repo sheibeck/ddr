@@ -44,8 +44,8 @@ import { LEADERBOARD_COPY } from "../../content/boards.js";
 // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 Leaderboards
 // panel's own copy and the season-name table, walked the same way.
 import { SEASON_NAMES } from "../../content/season.js";
-// Phase 68 (PLACE-01/02): the rank-quip bank, deferred card and season-drop line.
-import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../content/placement.js";
+// Phase 85 (ACCT-04): the DEPTH rank-line bank and the deferred rail card.
+import { PLACEMENT_LINES, PLACEMENT_CARD } from "../../content/placement.js";
 // Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy, walked the same way.
 import { ACCOUNT_COPY } from "../../content/account.js";
 // Phase 70 (D-06): the ☰ menu's Save & quit / Abandon row copy, walked the same way.
@@ -191,8 +191,8 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     // SO FAR sheet's title, dice hint, CLOSE, ROUND n header, no-round
     // fallback and the strip's open-the-log name, which share that object.
     ROUND_STRIP_COPY,
-    // Phase 68 (PLACE-01/02): the placement copy.
-    PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES,
+    // Phase 85 (ACCT-04): the placement copy.
+    PLACEMENT_LINES, PLACEMENT_CARD,
     // Phase 74 (ROLL-02/03), 74-08: the hero condition-chip effect copy and
     // rollRange.js's own mod-relabel and template banks.
     CONDITION_EFFECT_COPY, MOD_LABEL, ROLL_COPY,

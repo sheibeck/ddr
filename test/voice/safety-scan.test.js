@@ -81,9 +81,10 @@ import { BOARD_COPY, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES, LEADERBOA
 // panel's own copy bank and the season-name table it shows, walked the same
 // way LEADERBOARD_COPY is.
 import { SEASON_NAMES } from "../../content/season.js";
-// Phase 68 (PLACE-01/02): the DEEPEST rank-quip bank, the deferred rail-card
-// copy and the season-drop Oracle line join the same walk.
-import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../content/placement.js";
+// Phase 85 (ACCT-04): the DEPTH rank-line bank and the deferred rail-card
+// copy join the same walk. Every run has its own rank now, so there is no
+// standing band and no season-drop line.
+import { PLACEMENT_LINES, PLACEMENT_CARD } from "../../content/placement.js";
 // RULES-10 (Phase 75.1), 75.1-07: the scroll-reading odds copy bank joins
 // the same walk.
 import { SCROLL_ODDS_COPY } from "../../src/browser/rollOdds.js";
@@ -447,12 +448,11 @@ function collectAuthoredStrings() {
       else if (v && typeof v === "object") walkQuitCopy(v, label);
     }
   })(HUD_MENU_QUIT_COPY, "HUD_MENU_QUIT_COPY");
-  // Phase 68 (PLACE-01/02): the rank-quip bank, the deferred rail card and
-  // the season-drop line, same recursive walk.
+  // Phase 85 (ACCT-04): the rank-line bank and the deferred rail card, same
+  // recursive walk.
   for (const [bankName, bank] of [
     ["PLACEMENT_LINES", PLACEMENT_LINES],
     ["PLACEMENT_CARD", PLACEMENT_CARD],
-    ["SEASON_DROP_LINES", SEASON_DROP_LINES],
     // RULES-10 (Phase 75.1), 75.1-07: the scroll-reading odds copy bank.
     ["SCROLL_ODDS_COPY", SCROLL_ODDS_COPY],
   ]) {
@@ -476,11 +476,11 @@ test("Flavor banks: all remaining authored player-facing copy is family-friendly
   assert.deepStrictEqual(offenders, [], `Banned copy in flavor banks:\n${offenders.join("\n")}`);
 });
 
-test("Phase 68: the LEADERBOARD_COPY.global-equivalent and the placement banks are in the authored-string walk", () => {
+test("Phase 85: the LEADERBOARD_COPY.global-equivalent and the placement banks are in the authored-string walk", () => {
   const labels = new Set(collectAuthoredStrings().map(([label]) => label));
   for (const l of [
     "LEADERBOARD_COPY.scope.board", "LEADERBOARD_COPY.state.unreachable",
-    "PLACEMENT_LINES.rest.0", "PLACEMENT_CARD.many.0", "SEASON_DROP_LINES.many",
+    "PLACEMENT_LINES.rest.0", "PLACEMENT_CARD.many.0",
   ]) {
     assert.ok(labels.has(l), `missing ${l}`);
   }
