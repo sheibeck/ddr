@@ -59,15 +59,15 @@
 
 ### Account & submission (ACCT)
 
-- [ ] **ACCT-03**: The ☰ account block and the title's corner chip show your @handle and the Compete toggle. The ☰ face wears the handle's initials avatar while competing. There is no sign-in, no sign-out and no Play Games wording anywhere.
+- [x] **ACCT-03**: The ☰ account block and the title's corner chip show your @handle and the Compete toggle. The ☰ face wears the handle's initials avatar while competing. There is no sign-in, no sign-out and no Play Games wording anywhere.
 - [x] **ACCT-04**: Every non-dev Compete-ON death is queued and submitted to our board. Once the board acknowledges it, the death card's "you placed X" line reports the run's DEPTH rank; offline, it reports on the next flush.
 - [x] **ACCT-05**: From the ☰ account block the player can erase every run they have on the board, behind a two-tap confirm. Afterwards the board no longer shows them, and a new identity starts on the next Compete-ON run.
 - [x] **ACCT-06**: With Compete OFF the game makes zero network calls (no identity, no submission, no board read) and discards any queued runs.
 
 ### Play Games removed (RETIRE)
 
-- [ ] **RETIRE-01**: The Play Games plugin, the APP_ID meta-data and `games-ids.xml` are gone from the Android build (package.json, cap sync, manifest). Launch makes no Play Games call and shows no sign-in popup.
-- [ ] **RETIRE-02**: The Play Games modules (the provider, the PGS queue, global boards, score encodings, the score tag, the board IDs) and their tests, copy and docs are deleted or rewritten. A sweep proves no Play Games identifier remains in shipped code.
+- [x] **RETIRE-01**: The Play Games plugin, the APP_ID meta-data and `games-ids.xml` are gone from the Android build (package.json, cap sync, manifest). Launch makes no Play Games call and shows no sign-in popup.
+- [x] **RETIRE-02**: The Play Games modules (the provider, the PGS queue, global boards, score encodings, the score tag, the board IDs) and their tests, copy and docs are deleted or rewritten. A sweep proves no Play Games identifier remains in shipped code.
 - [x] **RETIRE-03**: Old stored data loads tolerantly. The old PGS queue, the welcomed flag and any sign-in state are dropped silently on first launch, and the local graveyard and bests are untouched.
 
 ### Compliance & close (COMP)
@@ -120,12 +120,12 @@
 | BOARD-25 | Phase 84 | Complete |
 | BOARD-26 | Phase 84 | Complete |
 | BOARD-27 | Phase 84 | Complete |
-| ACCT-03 | Phase 85 | Pending |
+| ACCT-03 | Phase 85 | Complete |
 | ACCT-04 | Phase 85 | Complete |
 | ACCT-05 | Phase 85 | Complete |
 | ACCT-06 | Phase 85 | Complete |
-| RETIRE-01 | Phase 85 | Pending |
-| RETIRE-02 | Phase 85 | Pending |
+| RETIRE-01 | Phase 85 | Complete |
+| RETIRE-02 | Phase 85 | Complete |
 | RETIRE-03 | Phase 85 | Complete |
 | COMP-01 | Phase 86 | Pending |
 | COMP-02 | Phase 86 | Pending |

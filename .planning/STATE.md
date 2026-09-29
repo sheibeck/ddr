@@ -4,17 +4,17 @@ milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 85
 current_phase_name: Play Games Out, Our Board In
-status: executing
-stopped_at: Completed 85-05-PLAN.md (placement rank line, deferred rail card, welcome card wired end to end); 85-06 next
-last_updated: "2026-09-29T18:12:54.435Z"
+status: verifying
+stopped_at: "Completed 85-06-PLAN.md (Play Games deleted: modules, Android plugin, RETIRE-02 sweep); phase 85 all plans complete"
+last_updated: "2026-09-29T18:33:06.766Z"
 last_activity: 2026-09-29
 last_activity_desc: merged 85-01, 85-02, 85-03 into master (npm test 8341 pass / 0 fail)
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 34
-  completed_plans: 28
-  percent: 60
+  completed_plans: 29
+  percent: 80
 ---
 
 # Project State
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 Phase: 85 (Play Games Out, Our Board In) — EXECUTING
 Plan: 6 of 6
-Progress: [████████░░] 82%
-Status: Ready to execute
+Progress: [█████████░] 85%
+Status: Phase complete — ready for verification
 Last activity: 2026-09-29 — merged 85-01, 85-02, 85-03 into master (npm test 8341 pass / 0 fail)
 
 ## Ground Truth (durable facts every session needs)
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T18:12:54.398Z
-Stopped at: Completed 85-05-PLAN.md (placement rank line, deferred rail card, welcome card wired end to end); 85-06 next
+Last session: 2026-09-29T18:33:06.726Z
+Stopped at: Completed 85-06-PLAN.md (Play Games deleted: modules, Android plugin, RETIRE-02 sweep); phase 85 all plans complete
 
 - (history below is the pre-close record)
 
@@ -450,6 +450,7 @@ Resume file: None
 | Phase 84 P09 | 50min | 2 tasks | 22 files |
 | Phase 85 P04 | 80min | 3 tasks | 12 files |
 | Phase 85 P05 | ~40min | 2 tasks | 11 files |
+| Phase 85 P06 | ~100min | 3 tasks | 31 files |
 
 ## Decisions
 
@@ -800,6 +801,8 @@ Resume file: None
 - [Phase ?]: 85-04: one Compete gate (competeIsOn) shared by the board client, both identities and boardSync; boardIdentity() splits native (sharedIdentity) vs browser dev loop (a separate dev-prefixed identity over the shared fake board fetch)
 - [Phase ?]: 85-04: pendingPgsCard/parkPgsCard renamed pendingPlacementCard/parkPlacementCard now (not deferred to 85-05) since the rail-card delivery machinery is generic; 85-05 only wires boardSync's onPlacement into the already-renamed function
 - [Phase ?]: 85-05: placementOutcome's merge rule for a live run that misses the death panel folds it into the deferred card using count = rest.count + 1 and whichever of live/rest has the smaller (better) rank
+- [Phase ?]: RETIRE-02 sweep is a raw text match (comments included) over shipped code, distinct from tools/ident-sweep.mjs's comment-stripped identifier grep, with a self-check that plants a matching line per pattern to prove the sweep can't pass vacuously
+- [Phase ?]: test/unit/play-games-runbook.test.js left untouched (a docs pin for docs/PLAY-GAMES-SETUP.md, reserved for Phase 86-03) even though it string-references the deleted content/leaderboards.js path
 
 ### Blockers
 

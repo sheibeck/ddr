@@ -206,7 +206,7 @@ Plans:
   4. The ☰ account block and the title's corner chip show the player's @handle and the Compete toggle, the ☰ face wears the handle's initials avatar while competing, and there is no sign-in, sign-out or Play Games wording anywhere.
   5. Every non-dev Compete-ON death is queued and submitted to our board, the death card's "you placed X" reports the run's DEPTH rank once acknowledged (or on the next flush if offline), the player can erase every run they have on the board from the ☰ account block behind a two-tap confirm (starting a new identity on the next Compete-ON run), and with Compete OFF the game makes zero network calls and discards any queued runs.
 
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans executed
 
 Plans:
 **Wave 1**
@@ -225,7 +225,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 85-06-PLAN.md — Play Games removal: six modules and their tests deleted, plugin/APP_ID/games-ids.xml/proguard/vendoring removed with cap sync, build-www vendoring guard kept, RETIRE-02 sweep + ACCT-03 wording test; the phase's last full npm test (wave 4)
+- [x] 85-06-PLAN.md — Play Games removal: six modules and their tests deleted, plugin/APP_ID/games-ids.xml/proguard/vendoring removed with cap sync, build-www vendoring guard kept, RETIRE-02 sweep + ACCT-03 wording test; the phase's last full npm test (wave 4)
 
 **UI hint**: yes (☰ rows, title chip, erase confirm)
 **Device check**: yes — batched into the milestone-close Pixel 7 checklist.
@@ -285,7 +285,7 @@ Plans:
 | 82. DAYS Farming Check | 2/2 | Complete    | 2026-09-28 |
 | 83. Leaderboard Server | 12/12 | Complete    | 2026-09-29 |
 | 84. Leaderboards Panel v3 | 9/9 | Complete    | 2026-09-29 |
-| 85. Play Games Out, Our Board In | 5/6 | In Progress|  |
+| 85. Play Games Out, Our Board In | 6/6 | In Progress|  |
 | 86. Compliance & Device Close | 0/TBD | Not started | - |
 
 ## Backlog
