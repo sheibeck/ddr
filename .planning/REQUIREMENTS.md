@@ -48,7 +48,7 @@
 
 - [x] **BOARD-18**: The DEAD tab and the title's VIEW THE DEAD open one Leaderboards panel built to the v3 mock. With Compete ON it opens on LEADERBOARD ("Everyone's dead. Top ten shown."); with Compete OFF it opens on YOUR DEAD ("Compete is off. Only your heroes."). The back button and the title-entry footer (BACK TO TITLE / ROLL A NEW HERO, or BACK TO THE DUNGEON) route as the mock does.
 - [x] **BOARD-19**: The header box switches views. On the board it reads "YOURS ›" with your run count; on your view it reads "EVERYONE ›" with the board's total, and back also returns to the board. With Compete OFF it is a static INTERRED count.
-- [ ] **BOARD-20**: The RANK BY (DEPTH, DAYS, KILLS, WILMST), RACE and SUB-CLASS pickers open bottom sheets. On YOUR DEAD each option shows its local count under the other filter and zero-count options are dimmed; on LEADERBOARD the options carry no counts (user, 2026-09-29: no per-option count queries). A choice re-ranks the list. The board rail and the LEANEST, LINEAGE and GRAVEYARD boards are gone; LINEAGE becomes RACE plus SUB-CLASS on any stat.
+- [x] **BOARD-20**: The RANK BY (DEPTH, DAYS, KILLS, WILMST), RACE and SUB-CLASS pickers open bottom sheets. On YOUR DEAD each option shows its local count under the other filter and zero-count options are dimmed; on LEADERBOARD the options carry no counts (user, 2026-09-29: no per-option count queries). A choice re-ranks the list. The board rail and the LEANEST, LINEAGE and GRAVEYARD boards are gone; LINEAGE becomes RACE plus SUB-CLASS on any stat.
 - [x] **BOARD-21**: Each row shows the rank, an initials avatar, the handle (the hero's name on YOUR DEAD), a YOU tag on your own runs, the name · race sub-class · level line, and the value with its unit. The leading row wears the stat's colour.
 - [x] **BOARD-22**: Tapping a row opens its cause of death, epitaph and six stat chips (FLOOR, DAYS, SQUARES, KILLS, EXP, WILMST), plus a small line with the date the run was recorded and the app version it was played on (user, 2026-09-28: kept for balance tracking). Tapping it again closes it.
 - [x] **BOARD-23**: When your best run is outside the top ten, it is pinned under a "NOT IN THE TOP TEN · YOUR BEST" divider with its real rank. The standing card reads "{handle}'s best, of N interred as {race}, {sub-class}." with the ordinal place, or "None of yours on this board yet."
@@ -112,7 +112,7 @@
 | SRV-12 | Phase 83 | Complete |
 | BOARD-18 | Phase 84 | Complete |
 | BOARD-19 | Phase 84 | Complete |
-| BOARD-20 | Phase 84 | Pending |
+| BOARD-20 | Phase 84 | Complete |
 | BOARD-21 | Phase 84 | Complete |
 | BOARD-22 | Phase 84 | Complete |
 | BOARD-23 | Phase 84 | Complete |

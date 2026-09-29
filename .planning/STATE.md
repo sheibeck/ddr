@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 84
-status: executing
-stopped_at: Completed 84-08-PLAN.md
-last_updated: "2026-09-29T15:50:40.205Z"
+status: verifying
+stopped_at: Completed 84-09-PLAN.md (final plan of Phase 84)
+last_updated: "2026-09-29T16:28:10.566Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 84 Plan 01 (run-doc note/when contract) complete
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 34
-  completed_plans: 22
-  percent: 40
+  completed_plans: 23
+  percent: 60
 current_phase_name: Leaderboards Panel v3
 ---
 
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 Phase: 84 — EXECUTING
 Plan: 9 of 9
-Progress: [███████░░░] 65%
-Status: Ready to execute
+Progress: [███████░░░] 68%
+Status: Phase complete — ready for verification
 Last activity: 2026-09-29 — Phase 84 Plan 01 (run-doc note/when contract) complete
 
 ## Ground Truth (durable facts every session needs)
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T15:50:40.148Z
-Stopped at: Completed 84-08-PLAN.md
+Last session: 2026-09-29T16:28:10.441Z
+Stopped at: Completed 84-09-PLAN.md (final plan of Phase 84)
 
 - (history below is the pre-close record)
 
@@ -447,6 +447,7 @@ Resume file: None
 | Phase 84 P06 | ~50min | 2 tasks | 5 files |
 | Phase 84 P07 | 45min | 2 tasks | 4 files |
 | Phase 84 P08 | 31min | 2 tasks | 9 files |
+| Phase 84 P09 | 50min | 2 tasks | 22 files |
 
 ## Decisions
 
@@ -792,6 +793,8 @@ Resume file: None
 - [Phase ?]: devBoardSeed.js builds fixture board runs via real engine newRun()/die() with post-roll field overrides, then validates every doc through buildRunDoc/validateRunDoc
 - [Phase ?]: boardFetchFn() selects the live fetch only when Capacitor reports a native platform, else the seeded dev-loop fake — the panel's only network seam
 - [Phase ?]: refreshTitleDead moved off getGraveyard().total onto getRunHistory().length > 0 || competeIsOn(), re-checked on every account-controller change
+- [Phase ?]: 84-09: BOARD_COPY trimmed to only the fields newBest.js reads (title/unit/unitOne); mark/col/unitLabel/rule/tab removed with the retired rail renderer
+- [Phase ?]: 84-09: a retired copy bank's historical why-ledger rows (docs/narrative-pass/why/*.json) are marked after:"" so the Phase 79 VOX-05 live tripwire stays true instead of chasing a deleted line
 
 ### Blockers
 
