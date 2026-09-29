@@ -26,6 +26,14 @@
 // Nothing in this module logs. A failure result carries only a reason id
 // (from IDENTITY_REASONS) and an optional short status string (e.g.
 // "OPERATION_NOT_ALLOWED") — never a token.
+//
+// Phase 85 adds setHandle(handle) so erasing your runs keeps your handle
+// (85-CONTEXT group 3, user choice): the board-side erase drops the whole
+// identity record (uid, tokens, handle), and setHandle re-seeds it with the
+// SAME handle and no uid, so the next Compete-ON run signs up a fresh
+// anonymous account under the player's existing @handle. Local only, no
+// Compete gate (like ensureHandle/rerollHandle) — it never touches the
+// network.
 
 import { IDENTITY_BASE, SECURETOKEN_BASE, timedFetch, readJson, restError } from "./firestoreRest.js";
 import { FIREBASE_CONFIG, firebaseConfigured } from "./firebaseConfig.js";
@@ -110,7 +118,8 @@ export function parseRefresh(json, nowMs) {
  * createIdentity(opts) — the identity factory. opts: { storage, fetchFn,
  * config = FIREBASE_CONFIG, competeOn, now = Date.now, random = Math.random,
  * timeoutMs, setTimer, clearTimer, AbortCtl }. Returns { snapshot,
- * ensureHandle, rerollHandle, getToken, forceRefresh, deleteAccount, drop }.
+ * ensureHandle, rerollHandle, setHandle, getToken, forceRefresh,
+ * deleteAccount, drop }.
  * `storage` is the only durable side effect (async getItem/setItem/
  * removeItem, per src/browser/storage.js's contract); `fetchFn` is the only
  * network side effect. Never throws.
@@ -201,6 +210,19 @@ export function createIdentity(opts = {}) {
     const handle = rollHandle(random, previous);
     await persist({ ...rec, handle });
     return { handle, previous };
+  }
+
+  /**
+   * setHandle(handle) — Phase 85 (erase-keeps-the-handle). With an invalid
+   * handle, resolves { ok: false, reason: "invalid" } and writes nothing.
+   * Otherwise persists { ...record, handle } (uid/tokens untouched when
+   * present) and resolves { ok: true, handle }. No Compete gate, no network.
+   */
+  async function setHandle(handle) {
+    if (!isValidHandle(handle)) return { ok: false, reason: "invalid" };
+    const rec = await load();
+    await persist({ ...rec, handle });
+    return { ok: true, handle };
   }
 
   function competeGateOk(explicit) {
@@ -333,5 +355,5 @@ export function createIdentity(opts = {}) {
     return message ? { ok: false, reason: "refused", status: message } : { ok: false, reason: "refused" };
   }
 
-  return { snapshot, ensureHandle, rerollHandle, getToken, forceRefresh, deleteAccount, drop };
+  return { snapshot, ensureHandle, rerollHandle, setHandle, getToken, forceRefresh, deleteAccount, drop };
 }

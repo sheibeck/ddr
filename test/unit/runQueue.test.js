@@ -496,6 +496,89 @@ test("enqueueMany: Compete OFF resolves off and stores nothing", async () => {
 });
 
 /* ================================================================
+   waitForPending
+   ================================================================ */
+
+test("waitForPending: resolves immediately with no pending writes", async () => {
+  const storage = makeStorage();
+  const writes = stubWrites([]);
+  const queue = createRunQueue({ storage, writes, competeOn: () => true, online: () => true });
+  await queue.waitForPending(); // must not hang
+});
+
+test("waitForPending: resolves only after the write an enqueue started (not awaited by the caller) has settled", async () => {
+  const storage = makeStorage();
+  let releaseSetItem;
+  const gate = new Promise((resolve) => {
+    releaseSetItem = resolve;
+  });
+  const realStorage = makeStorage();
+  const slowStorage = {
+    map: realStorage.map,
+    calls: realStorage.calls,
+    async getItem(key) {
+      return realStorage.getItem(key);
+    },
+    async setItem(key, value) {
+      await gate;
+      return realStorage.setItem(key, value);
+    },
+    async removeItem(key) {
+      return realStorage.removeItem(key);
+    },
+  };
+  const writes = stubWrites([]);
+  const queue = createRunQueue({ storage: slowStorage, writes, competeOn: () => true, online: () => false });
+
+  // Fire-and-forget: the caller does not await enqueue() itself.
+  const enqueuePromise = queue.enqueue(baseSummary(), { version: "1" });
+
+  // Let enqueue()'s internal load()/persist() chain reach the (gated)
+  // storage.setItem call before checking waitForPending().
+  await new Promise((r) => setTimeout(r, 0));
+
+  let settled = false;
+  const waitPromise = queue.waitForPending().then(() => {
+    settled = true;
+  });
+
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(settled, false, "waitForPending must not resolve while the storage write is still pending");
+
+  releaseSetItem();
+  await waitPromise;
+  assert.equal(settled, true);
+  await enqueuePromise;
+});
+
+test("waitForPending: a write started WHILE it is already waiting is also awaited", async () => {
+  const storage = makeStorage();
+  const writes = stubWrites([]);
+  const queue = createRunQueue({ storage, writes, competeOn: () => true, online: () => false });
+
+  await queue.enqueue(baseSummary({ steps: 501 }), { version: "1" }); // settles immediately, nothing pending
+
+  const waitPromise = queue.waitForPending();
+  // Start a second write in the same tick waitForPending begins looping.
+  const secondEnqueue = queue.enqueue(baseSummary({ steps: 502 }), { version: "1" });
+  await waitPromise;
+  await secondEnqueue;
+  assert.equal(storage.calls.setItem >= 2, true);
+});
+
+test("waitForPending: purge()'s own write is also tracked", async () => {
+  const storage = makeStorage();
+  const writes = stubWrites([{ ok: true, status: "created" }]);
+  const queue = createRunQueue({ storage, writes, competeOn: () => true, online: () => false });
+  await queue.enqueue(baseSummary(), { version: "1" });
+
+  const purgePromise = queue.purge();
+  await queue.waitForPending();
+  await purgePromise;
+  assert.equal(storage.map.has(RUN_QUEUE_KEY), false);
+});
+
+/* ================================================================
    purity
    ================================================================ */
 
@@ -511,4 +594,5 @@ test("purity: runQueue.js never touches DOM globals and never calls the bare glo
 test("purity: exports createRunQueue exactly once, and RUN_QUEUE_KEY appears", () => {
   assert.equal((RUN_QUEUE_SRC.match(/export function createRunQueue/g) || []).length, 1);
   assert.ok((RUN_QUEUE_SRC.match(/ddr\.runQueue\.v1/g) || []).length >= 1);
+  assert.ok((RUN_QUEUE_SRC.match(/waitForPending/g) || []).length >= 2);
 });

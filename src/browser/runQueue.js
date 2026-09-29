@@ -15,12 +15,16 @@
 // a rules rejection drops that entry with a log line; "already exists" is
 // acknowledged; never double-submits; purge() for Compete OFF.
 //
-// Pure record shape, injected side effects (the bugReport.js/pgsQueue.js
+// Pure record shape, injected side effects (the src/browser/bugReport.js
 // pattern): `storage` is the only durable side effect (async
 // getItem/setItem/removeItem, src/browser/storage.js's contract), `writes`
 // (src/browser/boardWrites.js#createBoardWrites's return value) is the only
 // network side effect (through its own injected fetchFn — this module never
 // touches fetch). Never throws.
+//
+// Phase 85's shell awaits waitForPending() in the native pause path; flushes
+// are never awaited there (an entry is always persisted before its network
+// call, and a resubmit is acknowledged as "exists").
 //
 // Record: { v: 1, entries: Entry[], settled: string[], failures, retryAt }
 //   Entry = { hash, summary, version, enqueuedAt, attempts }
@@ -113,9 +117,10 @@ export function sanitizeQueue(raw) {
 /**
  * createRunQueue({ storage, writes, competeOn, online = () => true,
  * now = Date.now, log = (line) => console.warn(line), onAck }) — returns
- * frozen { enqueue, enqueueMany, flush, purge, snapshot }. `writes` is the
- * object returned by src/browser/boardWrites.js#createBoardWrites (only
- * `submitRun` is called). Never throws.
+ * frozen { enqueue, enqueueMany, flush, purge, snapshot, waitForPending }.
+ * `writes` is the object returned by
+ * src/browser/boardWrites.js#createBoardWrites (only `submitRun` is
+ * called). Never throws.
  */
 export function createRunQueue(opts = {}) {
   const { storage, writes, competeOn, online = () => true, now = Date.now, log = (line) => console.warn(line), onAck } = opts;
@@ -123,6 +128,24 @@ export function createRunQueue(opts = {}) {
   let record = emptyQueue();
   let loadPromise = null;
   let flushPromise = null;
+  const pendingWrites = new Set();
+
+  // trackedWrite(run) — every storage write persist()/purge() start is
+  // registered here (even when the caller never awaits it), so
+  // waitForPending() can await whatever is currently in flight, including a
+  // write started while it is already waiting.
+  function trackedWrite(run) {
+    const p = (async () => {
+      try {
+        await run();
+      } catch {
+        // best-effort: the in-memory copy already reflects this session
+      }
+    })();
+    pendingWrites.add(p);
+    p.finally(() => pendingWrites.delete(p));
+    return p;
+  }
 
   function load() {
     if (loadPromise === null) {
@@ -153,11 +176,7 @@ export function createRunQueue(opts = {}) {
 
   async function persist() {
     loadPromise = Promise.resolve(record);
-    try {
-      await storage.setItem(RUN_QUEUE_KEY, JSON.stringify(record));
-    } catch {
-      // best-effort: the in-memory copy above still reflects this session
-    }
+    await trackedWrite(() => storage.setItem(RUN_QUEUE_KEY, JSON.stringify(record)));
   }
 
   function competeGateOk() {
@@ -352,11 +371,7 @@ export function createRunQueue(opts = {}) {
     await load();
     record = emptyQueue();
     loadPromise = Promise.resolve(record);
-    try {
-      await storage.removeItem(RUN_QUEUE_KEY);
-    } catch {
-      // best-effort
-    }
+    await trackedWrite(() => storage.removeItem(RUN_QUEUE_KEY));
   }
 
   /** snapshot() — a frozen read-only view of the current record. */
@@ -370,5 +385,19 @@ export function createRunQueue(opts = {}) {
     });
   }
 
-  return Object.freeze({ enqueue, enqueueMany, flush, purge, snapshot });
+  /**
+   * waitForPending() — resolves once every storage write persist()/purge()
+   * started has settled, including one started while this call is still
+   * waiting. Never awaits the network (a flush's own writes.submitRun call
+   * is not a storage write). Never throws.
+   */
+  async function waitForPending() {
+    let batch = [...pendingWrites];
+    while (batch.length > 0) {
+      await Promise.allSettled(batch);
+      batch = [...pendingWrites];
+    }
+  }
+
+  return Object.freeze({ enqueue, enqueueMany, flush, purge, snapshot, waitForPending });
 }
