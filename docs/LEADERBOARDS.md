@@ -238,6 +238,35 @@ gcloud firestore indexes composite list --project=delve-die-repeat-6ba5f --datab
 Every composite index's `state` reaches `READY` before relying on the
 queries it backs (`topTen`, `rankOf`) live.
 
+### Until the 2.2 release: the transition config
+
+While 2.1.0 (vc11) is still the build testers run, every rules or index
+deploy uses the transition config, never the plain command above — the
+transition rules keep 2.1.0's unauthenticated `bugReports` create working
+(`docs/BUG-REPORTS.md` section 4 "Old builds"; STATE decision 2026-09-29):
+
+```
+firebase deploy --only firestore:rules,firestore:indexes --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive
+```
+
+The plain command already above this subsection (default `firebase.json`,
+the final rules, no `--config`) is the **release-day cutover** — do not run
+it until 2.2 reaches testers (next subsection).
+
+### Release-day cutover (2.2)
+
+`docs/RELEASING.md`'s "Release 2.2.0: the ordered checklist" carries the
+full sequence; the three steps that live here:
+
+- Once 2.2 reaches testers, deploy the final rules with the plain command
+  above (default `firebase.json`, no `--config`).
+- `node tools/bug-reports/send-test-report.mjs --probe-rules` — expect all
+  **ten PASS**; record the table in `docs/BUG-REPORTS.md`'s release-day
+  subsection.
+- Delete `firebase/firestore.transition.rules`, `firebase.transition.json`
+  and `test/unit/firestore-transition-rules.test.js` — the transition
+  period is over once the ten-PASS run is recorded.
+
 ## 7. Identity
 
 Every board write needs an anonymous Firebase identity, created lazily —
@@ -513,7 +542,9 @@ and verified live. Board smoke (Task 2) follows below once run.
   final rules), run `node tools/bug-reports/send-test-report.mjs
   --probe-rules` (expect ten PASS), then delete
   `firebase/firestore.transition.rules`, `firebase.transition.json` and
-  `test/unit/firestore-transition-rules.test.js` (section 6).
+  `test/unit/firestore-transition-rules.test.js` (section 6). The full
+  ordered sequence is `docs/RELEASING.md`'s "Release 2.2.0: the ordered
+  checklist".
 - **Indexes:** all **19 of 19** composite indexes reached `READY` (polled
   `gcloud firestore indexes composite list`, 4 polls at 60s intervals, ~4
   minutes to build) — matches `firebase/firestore.indexes.json`'s declared
@@ -774,3 +805,54 @@ live board.
   limit keeps working. Confirm the rule still reads `request.query.limit ==
   null || request.query.limit <= 50` before suspecting an index or a rank
   key.
+
+## 16. Retiring Google Play Games (Play Console cleanup)
+
+2.2.0 removed Google Play Games from the app (Phase 85, RETIRE-01/RETIRE-02):
+sign-in, the four/five Season-1 boards and the plugin are all gone from the
+shipped build. This cleanup is a **user step in Play Console**, and it waits
+until **2.2 reaches testers** — until then, testers are still on 2.1.0, which
+still signs in through Play Games and still posts to these boards (the same
+trigger as the rules cutover, section 6). Deleting anything here earlier
+would break sign-in and board posting for every tester still on the old
+build.
+
+### The Season-1 boards
+
+| Board | Internal key | ID |
+|---|---|---|
+| DEEPEST | `deep` | `CgkIlvbN0YYPEAIQAg` |
+| LONGEST | `days` | `CgkIlvbN0YYPEAIQBA` |
+| BUTCHERY | `kills` | `CgkIlvbN0YYPEAIQBQ` |
+| PURSE | `gold` | `CgkIlvbN0YYPEAIQBg` |
+| LEANEST | `lean` | `CgkIlvbN0YYPEAIQAw` — retired in v2.1; delete it too if `docs/UAT-v2.1.md` row 15.8 never recorded the delete |
+
+Plus the Play Games Services configuration itself (not a leaderboard —
+the sign-in setup).
+
+### Steps
+
+1. **Delete each leaderboard.** Play Console → **Delve, Die, Repeat** →
+   **Grow users** → **Play Games Services** → **Setup and management** →
+   **Leaderboards**: open each board above and delete it. If the console
+   refuses to delete a published board, leave it — nothing submits to it any
+   more, and it still counts toward the 70-board cap either way (this is
+   the same "if the console refuses" outcome the former runbook's section 13
+   already documented for LEANEST).
+2. **Remove the Play Games Services configuration.** Unpublish it where the
+   console allows, then delete or unlink the configuration and its
+   credentials. Console labels move over time — verify the exact current
+   menu names; the former runbook's publishing path was **Setup and
+   management** → **Publishing**.
+3. **Optional, the user's call.** The Google Cloud project `517177834262`
+   that held the Play Games credentials and its OAuth consent-screen
+   branding can be cleaned up in Google Cloud Console. **Never touch the
+   Firebase project `delve-die-repeat-6ba5f`** — it is a different project
+   and it is what this whole runbook (and bug reports) runs on.
+
+**Source:** the full former Play Games Services runbook, at git commit
+`a217d032b0f53fd75640e15dbefd7e0a9d8d336f`:
+
+```
+git show a217d032:docs/PLAY-GAMES-SETUP.md
+```
