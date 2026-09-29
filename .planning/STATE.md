@@ -439,6 +439,8 @@ Resume file: None
 
 ## Decisions
 
+- 2026-09-29 (v2.2, user): **Keep 2.1.0's REPORT A BUG working until 2.2 ships.** 2.1.0 files reports unauthenticated; the final rules require the anonymous identity + limit. 83-08 deploys *transition* rules (final rules, bugReports create left at the legacy isValidReport clause) via `firebase.transition.json`; 83-11 records transition-period probe results; the final rules deploy + ten-PASS probe run + deleting the transition files is a release step (Phase 86 criterion 5, runbook §6). SRV-09's live proof moves to the release.
+
 - 2026-09-28 (v2.2, user): **The first season on our own board is "Season of the Alpha"**, running through closed testing. `SEASON` stays 1 (0 already means an untagged legacy stone in `engine/records.js`); a season-name table in `content/season.js` supplies the label (BOARD-27, Phase 84). **At go-live the boards reset for Season 1:** bump `SEASON` to 2 named "Season 1" together with the rules literal and a rules deploy (runbook §10). Alpha runs stay in Firestore under season 1 for balance export unless deleted with boards-admin.
 
 - 2026-09-28 (v2.2, user, final after two revisions): **The boards start from the 2.1.0 release.** "Actually, any runs from the current version that we released just today, should show up on the new leaderboard, but nothing prior to that." Local records carry no version, so the cutoff is the death time `when` ≥ 2026-09-28T19:41:01Z (the `v2.1.0-play11` tag; cutoff time approved by the user). Plan 83-12 (`runBackfill.js`, once, stamped "2.1.0 (11)"); Phase 85 calls it at boot; Phase 84's YOUR DEAD history and INTERRED count import only the same runs (BOARD-26). Older graveyard/bests keys stay on the device unread (RETIRE-03).

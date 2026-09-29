@@ -189,6 +189,7 @@ Plans:
   2. The darktierstudios.com pages `/privacy/apps`, `/privacy/delete-data` and the Delve, Die, Repeat Terms of Service describe our own leaderboard instead of Play Games: what is sent, who sees it, Compete OFF, erasing your runs, and removal of forged runs.
   3. `docs/PLAY-GAMES-SETUP.md` is retired in favor of the leaderboard-server runbook, and the Play Console cleanup (unpublish or delete the Season-1 boards and the Play Games configuration) is a listed user step.
   4. One batched Pixel 7 checklist, `docs/UAT-v2.2.md`, covers the panel, submission, the handle, erasing your runs and Compete OFF in airplane mode, run against one debug APK built after the last code lands.
+  5. The bug-report rules swap is a listed release step (user, 2026-09-29: keep 2.1.0's REPORT A BUG working until 2.2 ships): when the 2.2 build reaches testers, deploy the final `firebase/firestore.rules` over 83-08's transition rules, run `send-test-report.mjs --probe-rules` live (ten PASS, SRV-09's live proof), record it in docs/BUG-REPORTS.md, and delete the transition files.
 
 **Plans**: TBD
 **Device check**: yes (this phase presents the batch)
