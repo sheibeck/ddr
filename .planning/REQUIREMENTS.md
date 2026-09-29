@@ -41,8 +41,8 @@
 - [x] **SRV-08**: The live project is configured and proven end to end. The rules and indexes are deployed, anonymous sign-in is enabled, and the API key allows only the APIs the game calls. A smoke test creates, reads, ranks and deletes a run against the live project.
 - [ ] **SRV-09**: Sending a bug report needs the shared anonymous identity (created on the first send; still zero network until the player taps Send) and is rate-limited per player: the report and a `reportLimits/{uid}` document ({ last, day, count }) are written in one commit, and the rules enforce a 2-minute cooldown and 5 reports a day (named constants in the rules and the JS mirror). The report itself carries no uid. `reportLimits` allows only the owner's own create/update/get. Over a limit, the report sheet keeps the draft and says so in voice. Old builds' plain creates are rejected (accepted, no legacy path). (User, 2026-09-28 — todo 2026-09-28-bug-report-per-player-limit-and-automatic-firestore-cleanup.)
 - [x] **SRV-10**: Firebase Auth's per-IP new-account limit is checked and set to about 10 an hour during live setup, and the value is recorded in the runbook.
-- [ ] **SRV-11**: The bug-report Action deletes reports from Firestore: fully-filed reports right after filing; reports with a trimmed Oracle 30 days after `filedAt` (the issue says "…until <date>"; `oracleTrimmed` recorded at filing); `failed` reports 30 days after `failedAt`; `reportLimits` documents 2 days after `last`; never `new` or `filing` reports; at most 100 deletes a run, oldest first, with index-backed timestamp queries and a dry run. Retention lengths are named constants; the GitHub issues stay.
-- [ ] **SRV-12**: The bug-report workflow's schedule (`7,19,33,52 * * * *`, four runs an hour, user 2026-09-28) actually fires (a `schedule`-triggered run is seen in `gh run list`), fixed if it never has.
+- [x] **SRV-11**: The bug-report Action deletes reports from Firestore: fully-filed reports right after filing; reports with a trimmed Oracle 30 days after `filedAt` (the issue says "…until <date>"; `oracleTrimmed` recorded at filing); `failed` reports 30 days after `failedAt`; `reportLimits` documents 2 days after `last`; never `new` or `filing` reports; at most 100 deletes a run, oldest first, with index-backed timestamp queries and a dry run. Retention lengths are named constants; the GitHub issues stay.
+- [x] **SRV-12**: The bug-report workflow's schedule (`7,19,33,52 * * * *`, four runs an hour, user 2026-09-28) actually fires (a `schedule`-triggered run is seen in `gh run list`), fixed if it never has.
 
 ### Leaderboards panel v3 (BOARD) — the mock, `design/Mazeworld Boards Panel v3.dc.html`
 
@@ -108,8 +108,8 @@
 | SRV-08 | Phase 83 | Complete |
 | SRV-09 | Phase 83 | Pending |
 | SRV-10 | Phase 83 | Complete |
-| SRV-11 | Phase 83 | Pending |
-| SRV-12 | Phase 83 | Pending |
+| SRV-11 | Phase 83 | Complete |
+| SRV-12 | Phase 83 | Complete |
 | BOARD-18 | Phase 84 | Pending |
 | BOARD-19 | Phase 84 | Pending |
 | BOARD-20 | Phase 84 | Pending |

@@ -5,16 +5,16 @@ milestone_name: Our Own Leaderboards
 current_phase: 83
 current_phase_name: Leaderboard Server
 status: verifying
-stopped_at: Completed 83-08-PLAN.md (live Firebase setup + live smoke, SRV-01/02/03/08/10 complete)
-last_updated: "2026-09-29T10:16:07.615Z"
+stopped_at: Completed 83-11-PLAN.md (live bug-report probes, cleanup proof, schedule check; SRV-11/SRV-12 complete, SRV-09 deferred to Phase 86 release-day cutover)
+last_updated: "2026-09-29T10:51:04.625Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 83 execution started
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 14
-  completed_plans: 13
-  percent: 20
+  completed_plans: 14
+  percent: 40
 ---
 
 # Project State
@@ -258,8 +258,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T10:16:07.577Z
-Stopped at: Completed 83-08-PLAN.md (live Firebase setup + live smoke, SRV-01/02/03/08/10 complete)
+Last session: 2026-09-29T10:51:04.559Z
+Stopped at: Completed 83-11-PLAN.md (live bug-report probes, cleanup proof, schedule check; SRV-11/SRV-12 complete, SRV-09 deferred to Phase 86 release-day cutover)
 
 - (history below is the pre-close record)
 
@@ -437,6 +437,7 @@ Resume file: None
 | Phase 83 P07 | 50min | 2 tasks | 2 files |
 | Phase 83 P10 | 120min | 3 tasks | 7 files |
 | Phase 83 P08 | 1h 40min | 2 tasks | 6 files |
+| Phase 83 P11 | 30min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -764,6 +765,7 @@ Resume file: None
 - [Phase ?]: Deployed transition Firestore rules (firebase.transition.json) instead of the final rules, keeping the shipped 2.1.0 build's unauthenticated bug-report create working until 2.2 ships (user ruling 2026-09-29)
 - [Phase ?]: Per-IP sign-up quota set to 10/hour for 365 days via quota.signUpQuotaConfig; default is 100/hour/IP (cloud.google.com/identity-platform/quotas); no billing/Identity Platform upgrade required
 - [Phase ?]: Live-only fix: runs list rule widened to accept a null request.query.limit (a runAggregationQuery shape) so total()/rankOf() are no longer refused; deny-list-51 still refuses an explicit limit above 50
+- [Phase ?]: 83-11: SRV-11/SRV-12 proven live (Action deletes Firestore docs on retention schedule; a scheduled run already fires on the pinned cron); SRV-09 stays unchecked -- full ten-PASS probe proof deferred to the Phase 86 release-day rules cutover
 
 ### Blockers
 
