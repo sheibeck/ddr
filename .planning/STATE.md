@@ -5,15 +5,15 @@ milestone_name: Our Own Leaderboards
 current_phase: 83
 current_phase_name: Leaderboard Server
 status: executing
-stopped_at: Completed 83-09-PLAN.md (sendBugReport over the shared identity, the rate-limited report sheet, the ten-probe test tool)
-last_updated: "2026-09-29T03:21:20.846Z"
+stopped_at: Completed 83-07-PLAN.md (tools/boards-smoke.mjs end-to-end board smoke test, proven offline; the CLI 83-08 runs live)
+last_updated: "2026-09-29T03:40:01.394Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 83 execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 14
-  completed_plans: 10
+  completed_plans: 11
   percent: 20
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 83 (Leaderboard Server) — EXECUTING
-Plan: 9 of 11
+Plan: 10 of 11
 Status: Ready to execute
 Last activity: 2026-09-28 — Phase 83 execution started
 
@@ -258,8 +258,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T03:21:20.811Z
-Stopped at: Completed 83-09-PLAN.md (sendBugReport over the shared identity, the rate-limited report sheet, the ten-probe test tool)
+Last session: 2026-09-29T03:40:01.361Z
+Stopped at: Completed 83-07-PLAN.md (tools/boards-smoke.mjs end-to-end board smoke test, proven offline; the CLI 83-08 runs live)
 
 - (history below is the pre-close record)
 
@@ -434,6 +434,7 @@ Resume file: None
 | Phase 83 P06 | 55min | 2 tasks | 4 files |
 | Phase 83 P12 | 15min | 1 tasks | 3 files |
 | Phase 83 P09 | 70min | 3 tasks | 10 files |
+| Phase 83 P07 | 50min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -751,6 +752,8 @@ Resume file: None
 - [Phase ?]: sendBugReport gives the reportLimits GET and the :commit POST each their own independent one-shot 401 retry budget rather than sharing one across the call
 - [Phase ?]: reportSheetNext's result event only sets a non-null wait for cooldown/daily with a positive finite waitMs; limited never carries a wait
 - [Phase ?]: send-test-report.mjs's CLI main() stays a thin wrapper over exported, independently-unit-testable async helpers (sendOnce, runProbeRules)
+- [Phase ?]: 83-07: runSmoke's ranks step reads 3 shapes with run A's key and the race+sub shape with run B's key (since every smoke run shares race/sub) to prove rankOf(deep,A) < rankOf(deep,B) without an extra uncounted read
+- [Phase ?]: 83-07: cleanup always prefers the shipped owner path (eraseMyRuns) when the identity is alive, falling back to per-id admin.api.deleteRun only when the identity is already gone and an admin api is available
 
 ### Blockers
 
