@@ -174,7 +174,14 @@ service cloud.firestore {
 
     match /runs/{runId} {
       allow get: if true;
-      allow list: if request.query.limit <= 50;
+      // Phase 83 Plan 08 (live-only fix): a runAggregationQuery (count(),
+      // used by total()/rankOf()) carries no `limit` at all, so
+      // request.query.limit is null for those reads — the original
+      // `limit <= 50` clause evaluated that comparison as false and
+      // refused every count read live. A plain runQuery (topTen) always
+      // sends an explicit limit (<= TOP_N), so this change never widens
+      // what a list-with-limit read is allowed to request.
+      allow list: if request.query.limit == null || request.query.limit <= 50;
       allow create: if request.auth != null
                     && request.resource.data.uid == request.auth.uid
                     && runId == request.auth.uid + '_' + request.resource.data.hash

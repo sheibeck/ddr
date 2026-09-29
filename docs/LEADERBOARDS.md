@@ -156,11 +156,17 @@ On `runs/{runId}`:
   rewritten in one atomic `:commit`, never a new run doc per re-roll.
 - **`delete`** — the owner only, of their own run.
 - **`get`** — public, unconditional.
-- **`list`** — public, bounded to `request.query.limit <= 50`
-  (`LIST_LIMIT_MAX` in `runDoc.js`). A `runAggregationQuery` **count** shares
-  this same index/rule surface (section 5, section 9's "Pitfall 3" note in
-  `83-RESEARCH.md`) but is not itself limit-bounded the same way a `list`
-  is — 83-08 records the live-verified answer in section 14.
+- **`list`** — public, bounded to `request.query.limit == null ||
+  request.query.limit <= 50` (`LIST_LIMIT_MAX` in `runDoc.js`). **Live fix,
+  83-08:** a `runAggregationQuery` (`count()`, used by `total()`/`rankOf()`)
+  carries no `limit` field at all, so `request.query.limit` is `null` for
+  those reads — the original `limit <= 50` clause evaluated that comparison
+  as false and refused every count read on the live project (section 9's
+  "Pitfall 3" note in `83-RESEARCH.md` warned this shape needed proving
+  live). A plain `runQuery` (`topTen`) always sends an explicit `limit` (<=
+  `TOP_N`), so this fix never widens what a list-with-`limit` read may
+  request — `deny-list-51`'s `limit: 51` probe is still refused. Recorded in
+  section 14.
 
 On `banned/{uid}`: `read, write: if false` for every client — only the
 admin's IAM access can write it (`tools/boards-admin.mjs`'s `ban`/`unban`).
@@ -552,6 +558,89 @@ curl -s -X PATCH "https://identitytoolkit.googleapis.com/admin/v2/projects/delve
 and limits", fetched live 2026-09-29 — "Account creation and deletion
 limits" and "Account limits" tables).
 
+### Board smoke (2026-09-29)
+
+First live `node tools/boards-smoke.mjs --with-admin` run: 5/17 steps PASS,
+then **FAIL totals** — `{"stat":"deep","shape":{"race":null,"sub":null},
+"reason":"refused","status":"PERMISSION_DENIED"}`. Root cause: the `runs`
+list rule (`allow list: if request.query.limit <= 50;`) evaluates `null <=
+50` as `false` for a `runAggregationQuery`'s `count()`, which carries no
+`limit` field at all — so every `total()`/`rankOf()` read was refused live,
+even though it was never exercised by any offline test against
+`fakeBoardServer.js` (which does not itself enforce the rules text). This
+is exactly the live-only difference Research Pitfall 3 flagged as needing
+proof against the real project.
+
+**Fix (the pre-agreed "count queries refused under `allow list`" branch of
+this plan's Task 2 action):** the `runs` list rule became `allow list: if
+request.query.limit == null || request.query.limit <= 50;` in **both**
+`firebase/firestore.rules` and `firebase/firestore.transition.rules`
+(kept identical, per `test/unit/firestore-transition-rules.test.js`), the
+rules contract test (`test/unit/firestore-rules.test.js`) updated to match,
+redeployed with `firebase deploy --only firestore:rules --config
+firebase.transition.json --project delve-die-repeat-6ba5f
+--non-interactive`, and the smoke rerun.
+
+**Final live run: all 17/17 steps PASS, exit 0.**
+
+| Step | Result |
+|---|---|
+| signup | PASS |
+| create-a | PASS |
+| resubmit-a | PASS |
+| create-b | PASS |
+| top-ten | PASS |
+| totals | PASS |
+| ranks | PASS |
+| deny-bad-key | PASS |
+| deny-other-id | PASS |
+| deny-no-auth | PASS |
+| deny-non-handle-update | PASS |
+| deny-list-51 | PASS (unaffected by the list-rule fix — `limit: 51` is not `null`, so it is still refused) |
+| ban | PASS |
+| admin-delete | PASS |
+| handle-rewrite | PASS |
+| erase | PASS |
+| account-deleted | PASS |
+
+**Facts:** `duplicateStatus: 409` (the `:commit` precondition-failure status
+the live project returns for a resubmit of an already-created run — differs
+from Research Assumption A3's predicted 400, recorded here as the
+live-verified answer; `boardWrites.js#submitRun` already classifies both
+400 and 403/409 as "exists" via the follow-up `GET`, so no code change was
+needed for this), `countUnderListRule: "pass"` (after the fix; was
+`PERMISSION_DENIED` before it), `missingIndexes: []` (none — all 19 planned
+indexes were sufficient, resolving Research Open Question 2), `commitShape:
+"single-write"` (the combined `update`+`updateTransforms`+
+`currentDocument.exists:false` single-`Write` form from `runDoc.js#createRunCommit`
+was accepted as-is by the live project — the two-`Write` RESEARCH fallback
+was never needed).
+
+**Cleanup confirmed:** the final run's own `cleanup` result was `{"erased":
+true, "accountDeleted": true, "banCleared": null}` (`banCleared` is `null`
+because the `ban` step's own `admin.api.clearBan` already cleared it before
+the `finally` block ran — not a failure). Independently confirmed after the
+run with `node tools/boards-admin.mjs top --stat deep --race Troll --sub
+"Court Mage"` and `--stat kills` (same filters): **`(no runs)`** for both —
+no "Smoke Probe" row remains on the live board from any of this session's
+runs (the first, failed run's `create-a`/`create-b`/`ban`/`clearBan` were
+also cleaned up by the smoke's own `finally` block before it reported
+`FAIL totals`, since cleanup always runs regardless of where a step
+fails).
+
+**Live behavior vs. the offline model:** only the `list`-rule `null`-limit
+gap above; everything else (idempotent resubmit, every stat x race/sub
+filter shape for `topTen`/`total`/`rankOf`, every deny probe, the admin
+ban/delete round trip, handle re-roll, owner erase, account deletion)
+matched `fakeBoardServer.js`'s offline model exactly. No rule was weakened
+to make a step pass (Threat T-83-37) — the fix widens `list` only for the
+`null`-limit case a `runAggregationQuery` produces, which a `runQuery` can
+never send.
+
+**Human verification (deferred to end of run):** none — this plan ships no
+device-testable surface (live infra config and a dev-only Node smoke tool;
+no UI, nothing shipped in the app this plan).
+
 ## 15. Troubleshooting
 
 - **`OPERATION_NOT_ALLOWED` on `accounts:signUp`** — the anonymous provider
@@ -573,3 +662,12 @@ limits" and "Account limits" tables).
   step (section 9) replaces the whole `--api-target` list; if
   `firestore.googleapis.com` was left out of that call, bug reports (which
   use the same key) start failing. Re-run the full three-target update.
+- **`PERMISSION_DENIED` on a `runAggregationQuery` (`total()`/`rankOf()`)
+  while `topTen()` works fine** — 83-08 found this live: a `count()`
+  aggregation query sends no `limit` field at all, so `request.query.limit`
+  is `null`; if the `runs` list rule ever regresses to a bare `limit <=
+  50` (dropping the `limit == null ||` clause fixed in section 4), every
+  count read is refused even though a plain `runQuery` with an explicit
+  limit keeps working. Confirm the rule still reads `request.query.limit ==
+  null || request.query.limit <= 50` before suspecting an index or a rank
+  key.

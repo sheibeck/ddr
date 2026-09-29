@@ -242,7 +242,7 @@ test("reportLimits: owner get/update are not if false; create is a fresh step; l
 test("runs: get is public, list is bounded, update/delete are owner-gated; none of these four is if false", () => {
   const block = blockBody(RULES, /match\s+\/runs\/\{runId\}\s*\{/);
   assert.match(block, /allow get:\s*if true;/);
-  assert.match(block, /allow list:\s*if request\.query\.limit <= 50;/);
+  assert.match(block, /allow list:\s*if request\.query\.limit == null \|\| request\.query\.limit <= 50;/);
   assert.match(block, /allow update:\s*if[\s\S]*affectedKeys\(\)\.hasOnly\(\['handle'\]\)/);
   assert.match(block, /allow delete:\s*if request\.auth != null && resource\.data\.uid == request\.auth\.uid;/);
   assert.doesNotMatch(block, /allow (get|list|update|delete):\s*if false;/);
