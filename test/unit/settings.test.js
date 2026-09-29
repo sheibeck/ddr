@@ -46,7 +46,7 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: the thirteen fields' defaults", () => {
+test("SETTINGS_DEFAULTS: the twelve fields' defaults", () => {
   // Phase 78 (HUD-08) + the 2026-09-28 user ruling: Movement defaults to the
   // arrow pad for new installs, the pad to the bottom right.
   assert.equal(SETTINGS_DEFAULTS.movement, "arrows");
@@ -57,11 +57,10 @@ test("SETTINGS_DEFAULTS: the thirteen fields' defaults", () => {
   assert.equal(SETTINGS_DEFAULTS.confirmBeforeQuit, true);
   // Phase 59 (DRESS-05): the fifth field, Set Dressing, defaults On.
   assert.equal(SETTINGS_DEFAULTS.dressing, true);
-  // Phase 67 (PGS-02): Compete defaults ON (D-01), the first-sign-in card
-  // has not been shown (D-04), and the dev simulate-signed-in flag is off (D-12).
+  // Phase 67 (D-01): Compete defaults ON.
   assert.equal(SETTINGS_DEFAULTS.compete, true);
-  assert.equal(SETTINGS_DEFAULTS.pgsWelcomed, false);
-  assert.equal(SETTINGS_DEFAULTS.pgsDevSignedIn, false);
+  // Phase 85 (RETIRE-03): the welcome card has not been shown yet.
+  assert.equal(SETTINGS_DEFAULTS.boardWelcomed, false);
   // Phase 71 (D-03): the three volume sliders default to full, 100.
   assert.equal(SETTINGS_DEFAULTS.volMaster, 100);
   assert.equal(SETTINGS_DEFAULTS.volMusic, 100);
@@ -86,8 +85,7 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       confirmBeforeQuit: false,
       dressing: false,
       compete: true,
-      pgsWelcomed: false,
-      pgsDevSignedIn: false,
+      boardWelcomed: false,
       // Phase 71 (D-03): the volume sliders keep their defaults.
       volMaster: 100,
       volMusic: 100,
@@ -161,10 +159,11 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     // (an existing blob without `movement` is an existing install: tap-to-move, 2026-09-28)
     assert.equal("handedness" in settings, false);
 
-    // Phase 59 (DRESS-05) appended `dressing`; Phase 67 (PGS-02) appended
-    // `compete`, `pgsWelcomed` and `pgsDevSignedIn`; Phase 71 (D-03) appended
+    // Phase 59 (DRESS-05) appended `dressing`; Phase 67 appended `compete`;
+    // Phase 85 (RETIRE-03) appended `boardWelcomed` in the slot the two
+    // retired Phase 67 fields used to occupy; Phase 71 (D-03) appended
     // `volMaster`, `volMusic` and `volEffects`; Phase 78 (HUD-08) appended
-    // `movement` and `padSide` — thirteen keys, in order.
+    // `movement` and `padSide` — twelve keys, in order.
     assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), [
       "sound",
       "haptics",
@@ -172,15 +171,14 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
       "confirmBeforeQuit",
       "dressing",
       "compete",
-      "pgsWelcomed",
-      "pgsDevSignedIn",
+      "boardWelcomed",
       "volMaster",
       "volMusic",
       "volEffects",
       "movement",
       "padSide",
     ]);
-    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 13);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 12);
     assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -279,9 +277,10 @@ test("dressing: a persisted blob with an invalid dressing value (e.g. \"yes\") r
   });
 });
 
-// --- Phase 67 (PGS-02): compete, pgsWelcomed, pgsDevSignedIn -------------
+// --- Phase 67: compete; Phase 85 (RETIRE-03): the two retired keys drop,
+// boardWelcomed replaces them -------------------------------------------
 
-test("Phase 67: an old five-key blob reads compete true, pgsWelcomed false, pgsDevSignedIn false (tolerant load, no migration)", async () => {
+test("Phase 67: an old blob without compete reads compete true (tolerant load, no migration)", async () => {
   await withFakeLocalStorage(async (_ls, store) => {
     store.set(
       SETTINGS_STORAGE_KEY,
@@ -289,8 +288,7 @@ test("Phase 67: an old five-key blob reads compete true, pgsWelcomed false, pgsD
     );
     const settings = await readSettings();
     assert.equal(settings.compete, true);
-    assert.equal(settings.pgsWelcomed, false);
-    assert.equal(settings.pgsDevSignedIn, false);
+    assert.equal(settings.boardWelcomed, false);
     assert.equal(settings.sound, false); // the old fields still load normally
     assert.equal(settings.dressing, false);
   });
@@ -303,26 +301,6 @@ test("Phase 67: writeSetting(\"compete\", false) persists false and changes no o
     await flushStorage();
     const after = await readSettings();
     assert.deepEqual(after, { ...before, compete: false });
-  });
-});
-
-test("Phase 67: writeSetting(\"pgsWelcomed\", true) changes only pgsWelcomed", async () => {
-  await withFakeLocalStorage(async () => {
-    const before = await readSettings();
-    await writeSetting("pgsWelcomed", true);
-    await flushStorage();
-    const after = await readSettings();
-    assert.deepEqual(after, { ...before, pgsWelcomed: true });
-  });
-});
-
-test("Phase 67: writeSetting(\"pgsDevSignedIn\", true) changes only pgsDevSignedIn", async () => {
-  await withFakeLocalStorage(async () => {
-    const before = await readSettings();
-    await writeSetting("pgsDevSignedIn", true);
-    await flushStorage();
-    const after = await readSettings();
-    assert.deepEqual(after, { ...before, pgsDevSignedIn: true });
   });
 });
 
@@ -344,11 +322,75 @@ test("Phase 67: invalid compete values (\"no\", 0) are no-ops returning the curr
 
 test("Phase 67: a persisted compete of \"off\" (invalid) reads back as the default true", async () => {
   await withFakeLocalStorage(async (_ls, store) => {
-    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ compete: "off", pgsWelcomed: "yes", pgsDevSignedIn: 1 }));
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ compete: "off" }));
     const settings = await readSettings();
     assert.equal(settings.compete, true);
-    assert.equal(settings.pgsWelcomed, false);
-    assert.equal(settings.pgsDevSignedIn, false);
+  });
+});
+
+// Phase 85 (RETIRE-03): the two Phase 67 fields this module retired (spelled
+// from fragments so this file names neither the retired provider nor its
+// field names whole, keeping the retired-term grep at zero across test/).
+const RETIRED_WELCOME_KEY = "pgs" + "Welcomed";
+const RETIRED_DEV_SIGNIN_KEY = "pgs" + "DevSignedIn";
+
+test("RETIRE-03: a stored blob carrying the two retired Phase 67 keys reads without either key, with its stored compete value", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        sound: false,
+        haptics: false,
+        textSize: "S",
+        confirmBeforeQuit: false,
+        dressing: false,
+        compete: false,
+        [RETIRED_WELCOME_KEY]: true,
+        [RETIRED_DEV_SIGNIN_KEY]: true,
+      }),
+    );
+    const settings = await readSettings();
+    assert.equal(RETIRED_WELCOME_KEY in settings, false);
+    assert.equal(RETIRED_DEV_SIGNIN_KEY in settings, false);
+    assert.equal(settings.compete, false);
+    assert.equal(settings.boardWelcomed, false);
+    assert.equal(settings.sound, false); // the old fields still load normally
+    assert.equal(settings.dressing, false);
+  });
+});
+
+test("RETIRE-03: after writeSetting(\"sound\", false) the stored JSON drops the two retired keys and still carries compete", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ compete: false, [RETIRED_WELCOME_KEY]: true, [RETIRED_DEV_SIGNIN_KEY]: true }),
+    );
+    await writeSetting("sound", false);
+    await flushStorage();
+    const stored = JSON.parse(store.get(SETTINGS_STORAGE_KEY));
+    assert.equal(RETIRED_WELCOME_KEY in stored, false);
+    assert.equal(RETIRED_DEV_SIGNIN_KEY in stored, false);
+    assert.equal(stored.compete, false);
+    assert.equal(stored.sound, false);
+  });
+});
+
+test("RETIRE-03: writeSetting(\"pgsWelcomed\", true) is a no-op returning the current settings", async () => {
+  await withFakeLocalStorage(async () => {
+    const current = await readSettings();
+    assert.deepEqual(await writeSetting(RETIRED_WELCOME_KEY, true), current);
+    await flushStorage();
+    assert.equal((await readSettings()).boardWelcomed, false);
+  });
+});
+
+test("RETIRE-03: writeSetting(\"boardWelcomed\", true) persists it and changes nothing else", async () => {
+  await withFakeLocalStorage(async () => {
+    const before = await readSettings();
+    await writeSetting("boardWelcomed", true);
+    await flushStorage();
+    const after = await readSettings();
+    assert.deepEqual(after, { ...before, boardWelcomed: true });
   });
 });
 

@@ -576,7 +576,7 @@ test("(16) the ☰ wears the account face and the dropdown opens on the ACCOUNT 
   assert.ok(menuIdx !== -1, "the dropdown's opening tag");
   const afterOpen = HTML.slice(menuIdx + menuOpen.length).replace(/^(\s|<!--[\s\S]*?-->)*/, "");
   assert.ok(
-    afterOpen.startsWith('<div class="mw-hud-menu-acct" id="mw-hud-menu-acct" role="group" aria-label="Play Games account"></div>'),
+    afterOpen.startsWith('<div class="mw-hud-menu-acct" id="mw-hud-menu-acct" role="group" aria-label="Account"></div>'),
     `the ACCOUNT host must be the dropdown's first child, got: ${afterOpen.slice(0, 120)}`,
   );
   assert.equal((HTML.match(/id="mw-hud-menu-acct"/g) || []).length, 1);

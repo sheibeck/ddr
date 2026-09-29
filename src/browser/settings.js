@@ -1,13 +1,13 @@
 // src/browser/settings.js
 //
-// The single source of truth for the thirteen persisted settings (UX-07;
+// The single source of truth for the twelve persisted settings (UX-07;
 // DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
 // former control-bar side option, Phase 46 NAME-02 removed the on-screen
 // movement-control-scheme field; Phase 59 DRESS-05 added `dressing`, the Set
-// Dressing On/Off row; Phase 67 PGS-02 added the three Play Games fields
-// below; Phase 71 D-03 added the three volume levels; Phase 78 HUD-08 added
-// `movement` and `padSide`, the opt-in arrow pad) plus the pure
-// text-scaling (UX-08) and
+// Dressing On/Off row; Phase 67 added `compete` plus two fields Phase 85
+// later retired; Phase 71 D-03 added the three volume levels; Phase 78
+// HUD-08 added `movement` and `padSide`, the opt-in arrow pad; Phase 85
+// RETIRE-03 added `boardWelcomed`) plus the pure text-scaling (UX-08) and
 // confirm-before-quit-gate helpers. All persistence goes through
 // src/browser/storage.js's shared async abstraction (which itself installs
 // `window.mzStorage` for the classic non-module script) — never any raw
@@ -18,16 +18,19 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All thirteen fields are persisted as ONE JSON object under a single
+// All twelve fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never thirteen separate keys racing each other.
+// per settings change, never twelve separate keys racing each other.
 //
-// Phase 67 (PGS-02) fields:
+// Phase 67 field kept by Phase 85:
 //   - `compete` (D-01, D-02): the Compete toggle, default ON on a fresh
-//     install; OFF means the Play Games provider is never called at all.
-//   - `pgsWelcomed` (D-04): the one-time first-sign-in card has been shown.
-//   - `pgsDevSignedIn` (D-12): dev-only; seeds the in-memory fake Play Games
-//     provider as signed in, in the browser dev loop only — ignored on native.
+//     install; OFF means every board network call (the client, both
+//     identities and boardSync) is gated shut (Phase 85 ACCT-06).
+//
+// Phase 85 (RETIRE-03) field:
+//   - `boardWelcomed`: the one-time welcome card has been shown, raised when
+//     your first run reaches our board (replaces the Phase 67 field that
+//     named the retired third-party provider this build no longer uses).
 //
 // Phase 71 (POLISH-05, D-03) fields: `volMaster`, `volMusic`, `volEffects`
 // — the MASTER / MUSIC / EFFECTS volume sliders under the Sound row, each an
@@ -55,15 +58,19 @@
 // unknown keys — no migration needed. Phase 59 (DRESS-05): the same tolerant
 // posture covers `dressing` going forward — an OLD blob with no `dressing`
 // key at all reads as On (its default) through this exact merge, no
-// migration step needed either. Phase 67 (PGS-02): the same again for
-// `compete`, `pgsWelcomed` and `pgsDevSignedIn` — an old blob without them
-// reads their defaults (true / false / false), no migration. Phase 71
-// (D-03): the three volume levels read their default 100 from an old blob
-// through the same tolerant merge — and a non-integer, out-of-range or
-// string stored value reads 100 too — with no migration. Phase 78 (HUD-08):
-// an old blob without `movement`/`padSide`, or with a tampered value, reads
-// "tap"/"right" through the same merge, so an unknown movement falls back to
-// tap-to-move.
+// migration step needed either. Phase 71 (D-03): the three volume levels
+// read their default 100 from an old blob through the same tolerant merge —
+// and a non-integer, out-of-range or string stored value reads 100 too —
+// with no migration. Phase 78 (HUD-08): an old blob without
+// `movement`/`padSide`, or with a tampered value, reads "tap"/"right"
+// through the same merge, so an unknown movement falls back to tap-to-move.
+// Phase 85 (RETIRE-03): the two Phase 67 fields this module retired are
+// gone from SETTINGS_DEFAULTS, so the SAME tolerant merge just drops them on
+// read — a stored blob that still carries either one loses it the next time
+// writeSetting() persists (readSettings only merges recognized keys,
+// writeSetting only ever writes the merged object back); `compete` keeps its
+// Phase 67 meaning untouched, and a blob without `boardWelcomed` reads its
+// default false, no migration.
 
 import { getItem, setItem } from "./storage.js";
 
@@ -71,19 +78,21 @@ import { getItem, setItem } from "./storage.js";
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
 /**
- * The five UX-07 fields plus the three Phase 67 fields, and their defaults
- * (04-UI-SPEC.md / 04-CONTEXT.md; 67-CONTEXT.md D-01, D-04, D-12).
+ * The five UX-07 fields plus `compete` and `boardWelcomed`, and their
+ * defaults (04-UI-SPEC.md / 04-CONTEXT.md; 67-CONTEXT.md D-01; Phase 85
+ * RETIRE-03).
  * Phase 59 (DRESS-05): `dressing` (Set Dressing On/Off, default true) is the
  * fifth field, persisted in this SAME blob as `sound` and every other field
  * — but fully independent of it: writing one never changes the other (see
  * the settings.test.js "independence" pin). It's read by
  * src/browser/dressing.js#createDressingArt's lazy-load controller, so
  * turning it Off both draws nothing AND never loads the 54 dressing images.
- * Phase 67 (PGS-02): `compete` (D-01, default true), `pgsWelcomed` (D-04,
- * default false) and `pgsDevSignedIn` (D-12, default false, browser dev loop
- * only) are appended after `dressing`, in that order.
+ * Phase 67 (D-01): `compete` (default true) is appended after `dressing`.
+ * Phase 85 (RETIRE-03): `boardWelcomed` (default false, the welcome card
+ * shown once when your first run reaches the board) is appended right after
+ * `compete`, in the slot the two retired Phase 67 fields used to occupy.
  * Phase 71 (D-03): `volMaster`, `volMusic` and `volEffects` (integers 0-100,
- * default 100) are appended after `pgsDevSignedIn`, in that order.
+ * default 100) are appended after `boardWelcomed`, in that order.
  * Phase 78 (HUD-08): `movement` (default "arrows" since 2026-09-28; existing
  * installs keep "tap" through readSettings) and `padSide`
  * (default "right", the arrow pad's bottom corner, read only in arrow mode)
@@ -96,8 +105,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   confirmBeforeQuit: true,
   dressing: true,
   compete: true,
-  pgsWelcomed: false,
-  pgsDevSignedIn: false,
+  boardWelcomed: false,
   volMaster: 100,
   volMusic: 100,
   volEffects: 100,
@@ -121,8 +129,7 @@ const ALLOWED_VALUES = {
   confirmBeforeQuit: [true, false],
   dressing: [true, false],
   compete: [true, false],
-  pgsWelcomed: [true, false],
-  pgsDevSignedIn: [true, false],
+  boardWelcomed: [true, false],
   volMaster: isVolumeLevel,
   volMusic: isVolumeLevel,
   volEffects: isVolumeLevel,
@@ -148,7 +155,7 @@ function isValidSettingValue(key, value) {
 }
 
 /**
- * readSettings() — resolves the full thirteen-field settings object: persisted
+ * readSettings() — resolves the full twelve-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled

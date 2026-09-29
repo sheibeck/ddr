@@ -63,7 +63,7 @@ test("(2) the title chip carries the button type, the aria contract and the stat
   assert.equal((HTML.match(/id="mw-acct-chip"/g) || []).length, 0, "the band-2 chip is retired (Phase 70 D-03)");
   assert.equal((HTML.match(/id="mw-title-acct-chip"/g) || []).length, 1);
   assert.ok(
-    HTML.includes(`<button type="button" class="mw-acct-chip mw-title-acct" id="mw-title-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Play Games account">${CHIP_FACE}</button>`),
+    HTML.includes(`<button type="button" class="mw-acct-chip mw-title-acct" id="mw-title-acct-chip" aria-haspopup="dialog" aria-controls="mw-acct-sheet" aria-label="Account">${CHIP_FACE}</button>`),
     "title chip markup",
   );
 });
@@ -87,13 +87,15 @@ test("(4) the account sheet: legend-sheet family classes, hidden by default, scr
   assert.ok(HTML.indexOf('id="mw-settings-sheet"') < HTML.indexOf('id="mw-acct-sheet"'));
 });
 
-test("(5) the dev option: a pgsDevSignedIn group with false/true values inside the hidden #mw-dev-row", () => {
-  assert.equal((HTML.match(/data-setting="pgsDevSignedIn"/g) || []).length, 1);
-  const devRow = sliceBetween(HTML, 'id="mw-dev-row" hidden>', 'id="mw-dev-perf"');
-  const group = sliceBetween(devRow, 'data-setting="pgsDevSignedIn"', "</div>");
-  const values = [...group.matchAll(/class="mw-settings-opt" data-value="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepStrictEqual(values, ["false", "true"]);
-  assert.ok(devRow.indexOf('id="mw-dev-start-btn"') < devRow.indexOf('data-setting="pgsDevSignedIn"'), "the dev group follows the start-depth options");
+test("(5) the dev row carries no game-service group and still holds #mw-dev-perf and the start-depth controls", () => {
+  assert.equal((HTML.match(/data-setting="pgsDevSignedIn"/g) || []).length, 0, "the retired dev sign-in group is gone");
+  const devRow = sliceBetween(HTML, 'id="mw-dev-row" hidden>', 'id="mw-dev-perf">');
+  assert.ok(devRow.includes('id="mw-dev-start-depth"'), "the start-depth input stays");
+  assert.ok(devRow.includes('id="mw-dev-start-btn"'), "the start-depth button stays");
+  for (const token of ["pgsDevSignedIn", "Play Games"]) {
+    assert.equal(devRow.includes(token), false, `the dev row must not mention ${token}`);
+  }
+  assert.equal((HTML.match(/id="mw-dev-perf"/g) || []).length, 1, "the perf readout host stays, exactly once");
 });
 
 test("(6) the title chip and the sheet sit outside .mw-maze-viewport's hit path", () => {
