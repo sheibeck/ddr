@@ -106,7 +106,7 @@
 | SRV-06 | Phase 83 | Complete |
 | SRV-07 | Phase 83 | Complete |
 | SRV-08 | Phase 83 | Complete |
-| SRV-09 | Phase 83 | Pending |
+| SRV-09 | Phase 83 (live proof: 2.2 release step, Phase 86) | Pending |
 | SRV-10 | Phase 83 | Complete |
 | SRV-11 | Phase 83 | Complete |
 | SRV-12 | Phase 83 | Complete |

@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
-current_phase: 83
-current_phase_name: Leaderboard Server
-status: verifying
+current_phase: 84
+current_phase_name: Leaderboards Panel v3
+status: planning
 stopped_at: Completed 83-11-PLAN.md (live bug-report probes, cleanup proof, schedule check; SRV-11/SRV-12 complete, SRV-09 deferred to Phase 86 release-day cutover)
-last_updated: "2026-09-29T10:51:04.625Z"
-last_activity: 2026-09-28
-last_activity_desc: Phase 83 execution started
+last_updated: "2026-09-29T10:54:57.030Z"
+last_activity: 2026-09-29
+last_activity_desc: Phase 83 complete, transitioned to Phase 84
 progress:
   total_phases: 5
   completed_phases: 2
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 ## Current Position
 
-Phase: 83 (Leaderboard Server) — EXECUTING
-Plan: 11 of 11
-Status: Phase complete — ready for verification
-Last activity: 2026-09-28 — Phase 83 execution started
+Phase: 84 — Leaderboards Panel v3
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-29 — Phase 83 complete, transitioned to Phase 84
 
 ## Ground Truth (durable facts every session needs)
 
