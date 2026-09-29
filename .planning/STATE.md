@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
-current_phase: 85
-current_phase_name: Play Games Out, Our Board In
-status: planning
+status: executing
 stopped_at: Completed 84-09-PLAN.md (final plan of Phase 84)
-last_updated: "2026-09-29T16:30:56.384Z"
+last_updated: "2026-09-29T17:21:49.469Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase 84 complete, transitioned to Phase 85
+last_activity_desc: Phase null execution started
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 34
-  completed_plans: 23
+  completed_plans: 26
   percent: 60
+current_phase: 85
+current_phase_name: Play Games Out, Our Board In
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 ## Current Position
 
-Phase: 85 — Play Games Out, Our Board In
-Plan: Not started
-Progress: [███████░░░] 68%
-Status: Ready to plan
-Last activity: 2026-09-29 — Phase 84 complete, transitioned to Phase 85
+Phase: 85 (Play Games Out, Our Board In) — EXECUTING
+Plan: 4 of 6
+Progress: [████████░░] 79%
+Status: Executing Phase 85 — wave 1 (85-01/02/03) ran in parallel worktrees and is merged; 85-04 next
+Last activity: 2026-09-29 — merged 85-01, 85-02, 85-03 into master (npm test 8341 pass / 0 fail)
 
 ## Ground Truth (durable facts every session needs)
 

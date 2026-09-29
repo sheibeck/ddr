@@ -206,14 +206,14 @@ Plans:
   4. The ☰ account block and the title's corner chip show the player's @handle and the Compete toggle, the ☰ face wears the handle's initials avatar while competing, and there is no sign-in, sign-out or Play Games wording anywhere.
   5. Every non-dev Compete-ON death is queued and submitted to our board, the death card's "you placed X" reports the run's DEPTH rank once acknowledged (or on the next flush if offline), the player can erase every run they have on the board from the ☰ account block behind a two-tap confirm (starting a new identity on the next Compete-ON run), and with Compete OFF the game makes zero network calls and discards any queued runs.
 
-**Plans:** 6 plans
+**Plans:** 3/6 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 85-01-PLAN.md — ☰ menu todo: CENTRE MAP row and its glide removed, MAKE CAMP first under the account block; hudMenu.js five items / seven row states; todo moved to done (wave 1)
-- [ ] 85-02-PLAN.md — Board sync core: boardSync.js (record, flush with the offline handle-rewrite mark, re-roll, erase keeping the SAME handle, boot with the retired-key drop and the backfill bounded to "2.1.0 (11)" history runs, DEPTH placement reports, waitForPending); identity.setHandle; runQueue.waitForPending; LEADERBOARDS.md §7-8 (wave 1)
-- [ ] 85-03-PLAN.md — Account layer rewrite: ACCOUNT_COPY (@handle, COMPETE, RE-ROLL HANDLE, ERASE MY RUNS, TAP AGAIN TO ERASE, welcome/erase cards), handle-avatar views, renderers and the new controller (wave 1)
+- [x] 85-01-PLAN.md — ☰ menu todo: CENTRE MAP row and its glide removed, MAKE CAMP first under the account block; hudMenu.js five items / seven row states; todo moved to done (wave 1)
+- [x] 85-02-PLAN.md — Board sync core: boardSync.js (record, flush with the offline handle-rewrite mark, re-roll, erase keeping the SAME handle, boot with the retired-key drop and the backfill bounded to "2.1.0 (11)" history runs, DEPTH placement reports, waitForPending); identity.setHandle; runQueue.waitForPending; LEADERBOARDS.md §7-8 (wave 1)
+- [x] 85-03-PLAN.md — Account layer rewrite: ACCOUNT_COPY (@handle, COMPETE, RE-ROLL HANDLE, ERASE MY RUNS, TAP AGAIN TO ERASE, welcome/erase cards), handle-avatar views, renderers and the new controller (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -285,7 +285,7 @@ Plans:
 | 82. DAYS Farming Check | 2/2 | Complete    | 2026-09-28 |
 | 83. Leaderboard Server | 12/12 | Complete    | 2026-09-29 |
 | 84. Leaderboards Panel v3 | 9/9 | Complete    | 2026-09-29 |
-| 85. Play Games Out, Our Board In | 0/6 | Planned | - |
+| 85. Play Games Out, Our Board In | 3/6 | In Progress|  |
 | 86. Compliance & Device Close | 0/TBD | Not started | - |
 
 ## Backlog
