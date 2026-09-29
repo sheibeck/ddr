@@ -83,7 +83,9 @@ milestone close (see `.planning/MILESTONE-CLOSE-QUESTIONS.md`).
 > email address or other contact detail. Reports are stored in the game's
 > Google Firebase project and posted publicly as issues on the game's GitHub
 > repository (https://github.com/sheibeck/ddr), where anyone can read them,
-> so please leave out anything private. To have a report deleted, follow
+> so please leave out anything private. Reports are deleted from our database
+> once filed, or within 30 days at most. The public GitHub issue remains.
+> To have a report deleted, follow
 > https://darktierstudios.com/privacy/delete-data or contact us, and we will
 > delete it from Firebase and GitHub."
 
@@ -121,7 +123,22 @@ No account id, email, avatar or Play Games identity is attached, though the
 adventurer's generated name can appear inside the Oracle. The report goes
 over HTTPS to the game's Firebase project (Cloud Firestore,
 `delve-die-repeat-6ba5f`), and a GitHub Action files it as a public issue on
-sheibeck/ddr (`docs/BUG-REPORTS.md`).
+sheibeck/ddr (`docs/BUG-REPORTS.md`). Reports are deleted from Firestore
+once filed (or within 30 days at most, if the Oracle had to be trimmed to
+fit the issue); the public GitHub issue itself is not deleted by this
+process (`docs/BUG-REPORTS.md` "Retention").
+
+**Anonymous identifier (since Phase 83, folded in with Leaderboards):**
+sending a report now also creates the same anonymous Firebase identity
+(a device-scoped uid, no personal information) the leaderboards use, silently
+and only on the first Send — never before. That uid is stored only as the
+key of a small per-player rate-limit record (`reportLimits/{uid}`: a last-sent
+timestamp, a day bucket, and a report count), deleted automatically within 2
+days, and never appears inside the bug report document itself. Whether this
+uid changes the Data safety declaration above (a new "User IDs" collected
+entry, or coverage under the existing leaderboard row) is a console-time
+decision, to be settled together with Leaderboards' own Data safety answers
+in Phase 86 (COMP-01) — not answered here.
 
 Every other data type: not collected, not shared. The epitaph, saves,
 settings, personal bests and the local graveyard never leave the phone; a
