@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
-current_phase: 84
-current_phase_name: Leaderboards Panel v3
-status: planning
+status: executing
 stopped_at: Completed 83-11-PLAN.md (live bug-report probes, cleanup proof, schedule check; SRV-11/SRV-12 complete, SRV-09 deferred to Phase 86 release-day cutover)
-last_updated: "2026-09-29T10:54:57.030Z"
+last_updated: "2026-09-29T11:26:08.203Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase 83 complete, transitioned to Phase 84
+last_activity_desc: Phase null execution started
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 14
+  total_plans: 28
   completed_plans: 14
   percent: 40
+current_phase: 84
+current_phase_name: Leaderboards Panel v3
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards started, promoted from backlog 999.13; v2.1 shipped as Play 2.1.0 / vc11; open Pixel 7 UAT batches: v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 83 — Leaderboard Server
+**Current focus:** Phase null
 
 ## Current Position
 
-Phase: 84 — Leaderboards Panel v3
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-29 — Phase 83 complete, transitioned to Phase 84
+Phase: null — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase null
+Last activity: 2026-09-29 — Phase null execution started
 
 ## Ground Truth (durable facts every session needs)
 
