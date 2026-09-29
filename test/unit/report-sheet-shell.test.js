@@ -129,6 +129,17 @@ test("(C1) SOURCE: the three Phase 79.3 import lines appear exactly once each, r
   assert.ok(settingsIdx !== -1 && bugReportIdx !== -1 && settingsIdx < bugReportIdx, "the report imports follow the settings.js import");
 });
 
+test("(C2) SOURCE: Phase 83 (SRV-09) adds createIdentity and the reportLimits.js imports exactly once each, right after the reportSheet.js import", () => {
+  assert.equal(occurrences(HTML, 'import { createIdentity } from "./src/browser/firebaseAuth.js";'), 1);
+  assert.equal(occurrences(HTML, 'import { LOCAL_LIMIT_KEY, sanitizeLocalLimit, checkLocalLimit } from "./src/browser/reportLimits.js";'), 1);
+  const reportSheetIdx = MODULE.indexOf('from "./src/browser/reportSheet.js";');
+  const firebaseAuthIdx = MODULE.indexOf('from "./src/browser/firebaseAuth.js";');
+  const reportLimitsIdx = MODULE.indexOf('from "./src/browser/reportLimits.js";');
+  assert.ok(reportSheetIdx !== -1 && firebaseAuthIdx !== -1 && reportLimitsIdx !== -1);
+  assert.ok(reportSheetIdx < firebaseAuthIdx, "createIdentity's import follows the reportSheet.js import");
+  assert.ok(firebaseAuthIdx < reportLimitsIdx, "the reportLimits.js import follows the firebaseAuth.js import");
+});
+
 // ═══════════════════════ (D) the module functions and listeners ════════════
 
 test("(D1) SOURCE: closeMenuThen(openReportSheet) occurs exactly once", () => {
@@ -165,6 +176,30 @@ test("(D4) SOURCE: sendReportNow's region calls buildReportPayload and sendBugRe
   assert.match(region, /navigator\.onLine/);
   assert.match(region, /globalThis\.fetch\.bind\(globalThis\)/);
   assert.match(region, /BUG_REPORT_CONFIG/);
+});
+
+test("(D4b) SOURCE (Phase 83, SRV-09): sendReportNow reads the local limit record through window.mzStorage, checks it with checkLocalLimit before sendBugReport, passes identity: sharedIdentity(), and writes result.limit back", () => {
+  const region = sliceBetween(MODULE, "async function sendReportNow() {", "\n  document.getElementById(\"mw-menu-report\")");
+  assert.match(region, /LOCAL_LIMIT_KEY/);
+  assert.match(region, /window\.mzStorage/);
+  assert.match(region, /sanitizeLocalLimit\(/);
+  assert.match(region, /checkLocalLimit\(/);
+  assert.match(region, /identity:\s*sharedIdentity\(\)/);
+  assert.match(region, /result\.limit/);
+  const checkIdx = region.indexOf("checkLocalLimit(");
+  const sendIdx = region.indexOf("sendBugReport(");
+  assert.ok(checkIdx !== -1 && sendIdx !== -1 && checkIdx < sendIdx, "checkLocalLimit runs before sendBugReport");
+});
+
+test("(D4c) SOURCE (Phase 83, SRV-09): sharedIdentity() lazily creates one createIdentity instance (window.mzStorage, bound fetch, competeOn () => false) and returns the same instance afterwards", () => {
+  assert.equal(occurrences(MODULE, "function sharedIdentity() {"), 1);
+  const fn = sliceBetween(MODULE, "function sharedIdentity() {", "\n  }");
+  assert.match(fn, /createIdentity\(/);
+  assert.match(fn, /storage:\s*window\.mzStorage/);
+  assert.match(fn, /globalThis\.fetch\.bind\(globalThis\)/);
+  assert.match(fn, /competeOn:\s*\(\)\s*=>\s*false/);
+  const region = sliceBetween(MODULE, "let reportModel = REPORT_SHEET_INITIAL;", '\n  document.getElementById("mw-report-text")?.addEventListener("input"');
+  assert.match(region, /function sharedIdentity\(\)/);
 });
 
 test("(D5) SOURCE: the report block writes no S, no dispatch, no persist, no localStorage, no innerHTML assignment and no window.__mz bridge", () => {

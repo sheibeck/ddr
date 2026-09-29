@@ -7005,6 +7005,12 @@ window.__mzClassicBoot = async function classicBoot() {
   import { buildReportPayload, sendBugReport } from "./src/browser/bugReport.js";
   import { BUG_REPORT_CONFIG } from "./src/browser/bugReportConfig.js";
   import { REPORT_SHEET_INITIAL, REPORT_SENT_HOLD_MS, reportSheetNext, reportSheetView } from "./src/browser/reportSheet.js";
+  // Phase 83 (SRV-09): the shared anonymous identity a report's Send signs
+  // in through, and the local pre-network cooldown/daily record the sheet
+  // checks before ever calling sendBugReport — see sharedIdentity() and
+  // sendReportNow below.
+  import { createIdentity } from "./src/browser/firebaseAuth.js";
+  import { LOCAL_LIMIT_KEY, sanitizeLocalLimit, checkLocalLimit } from "./src/browser/reportLimits.js";
   // Phase 79.3 (NOTES-02, D-20/D-21): the bundled release notes and the
   // pure Markdown-subset parser/renderer/auto-show decision they're read
   // through — see openNotesSheet/showNotesOnTitle below.
@@ -7796,6 +7802,22 @@ window.__mzClassicBoot = async function classicBoot() {
   // globalThis.fetch bound — this block never calls fetch itself.
   let reportModel = REPORT_SHEET_INITIAL;
   let reportSentTimer = null;
+  // Phase 83 (SRV-09): one anonymous identity for bug reports now, and for
+  // the board once Phase 85 wires Compete — created lazily so nothing
+  // touches the network until the player's own explicit Send (sendBugReport
+  // always calls getToken({explicit: true})). competeOn stays () => false
+  // here until Phase 85 reads the real Compete setting.
+  let sharedIdentityInstance = null;
+  function sharedIdentity() {
+    if (!sharedIdentityInstance) {
+      sharedIdentityInstance = createIdentity({
+        storage: window.mzStorage,
+        fetchFn: typeof globalThis.fetch === "function" ? globalThis.fetch.bind(globalThis) : null,
+        competeOn: () => false,
+      });
+    }
+    return sharedIdentityInstance;
+  }
   function reportSheetOpen() {
     const sheet = document.getElementById("mw-report-sheet");
     return !!sheet && !sheet.hidden;
@@ -7866,15 +7888,39 @@ window.__mzClassicBoot = async function classicBoot() {
         state: window.__mzState?.get?.(),
         now: new Date(),
       });
-      result = built.ok
-        ? await sendBugReport(built.report, {
-            fetchFn: typeof globalThis.fetch === "function" ? globalThis.fetch.bind(globalThis) : null,
-            config: BUG_REPORT_CONFIG,
-            online: navigator.onLine !== false,
-          })
-        : { ok: false, reason: "refused" };
+      if (!built.ok) {
+        result = { ok: false, reason: "refused" };
+      } else {
+        // Phase 83 (SRV-09): check the player's own local cooldown/daily
+        // record BEFORE ever touching the network — a saved refusal costs
+        // nothing and keeps the draft; the server rules are still the real
+        // enforcement (sendBugReport's own limited/cooldown/daily reasons).
+        let localRecord = null;
+        try {
+          const raw = await window.mzStorage.getItem(LOCAL_LIMIT_KEY);
+          localRecord = sanitizeLocalLimit(raw ? JSON.parse(raw) : null);
+        } catch {
+          localRecord = null;
+        }
+        const localCheck = checkLocalLimit(localRecord, Date.now());
+        result = localCheck.ok
+          ? await sendBugReport(built.report, {
+              fetchFn: typeof globalThis.fetch === "function" ? globalThis.fetch.bind(globalThis) : null,
+              config: BUG_REPORT_CONFIG,
+              online: navigator.onLine !== false,
+              identity: sharedIdentity(),
+            })
+          : { ok: false, reason: localCheck.reason, waitMs: localCheck.waitMs };
+      }
     } catch {
       result = { ok: false, reason: "offline" };
+    }
+    if (result?.limit) {
+      try {
+        await window.mzStorage.setItem(LOCAL_LIMIT_KEY, JSON.stringify(result.limit));
+      } catch {
+        // best-effort: a lost local record only costs one refused send later
+      }
     }
     reportModel = reportSheetNext(reportModel, { type: "result", ...result });
     renderReportSheetNow();
