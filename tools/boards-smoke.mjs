@@ -41,9 +41,9 @@
 //
 // Dev-only: never shipped (tools/ is never copied into www/ by
 // tools/build-www.mjs). Node built-ins only; zero new dependencies.
-//
-// Task 1 delivers smokeSummaries and runSmoke; the CLI (--with-admin,
-// --dry-run, the PASS/FAIL table and exit codes) is Task 2.
+
+import { execSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 import { SEASON } from "../content/season.js";
 import { runHash } from "../engine/records.js";
@@ -518,4 +518,89 @@ export async function runSmoke(opts = {}) {
 
   const allPass = steps.length > 0 && steps.every((s) => s.pass);
   return { ok: allPass, steps: Object.freeze([...steps]), facts: Object.freeze({ ...facts }), cleanup };
+}
+
+// ---------------------------------------------------------------------------
+// CLI
+// ---------------------------------------------------------------------------
+
+function plannedStepNames(withAdmin) {
+  const names = [
+    "signup", "create-a", "resubmit-a", "create-b", "top-ten", "totals", "ranks",
+    "deny-bad-key", "deny-other-id", "deny-no-auth", "deny-non-handle-update", "deny-list-51",
+  ];
+  if (withAdmin) names.push("ban", "admin-delete");
+  names.push("handle-rewrite", "erase", "account-deleted");
+  return names;
+}
+
+function usage() {
+  console.log("usage: node tools/boards-smoke.mjs [--with-admin | --dry-run]");
+  console.log("  (no flag)     runs the client-only smoke against the live project (FIREBASE_CONFIG)");
+  console.log("  --with-admin  also proves the banned check and an admin delete (needs gcloud auth)");
+  console.log("  --dry-run     prints the planned steps and the three smoke summaries, touches nothing");
+}
+
+export async function main(argv = process.argv) {
+  const args = argv.slice(2);
+  if (args.length > 1) {
+    usage();
+    return 2;
+  }
+  const flag = args[0];
+  if (flag !== undefined && flag !== "--with-admin" && flag !== "--dry-run") {
+    usage();
+    return 2;
+  }
+
+  if (flag === "--dry-run") {
+    for (const name of plannedStepNames(true)) console.log(name);
+    console.log(JSON.stringify(smokeSummaries(Date.now), null, 2));
+    console.log(JSON.stringify({ projectId: FIREBASE_CONFIG.projectId, apiKey: "<key>" }));
+    return 0;
+  }
+
+  if (!firebaseConfigured(FIREBASE_CONFIG)) {
+    console.log("boards-smoke unavailable: FIREBASE_CONFIG is not configured (src/browser/firebaseConfig.js).");
+    return 2;
+  }
+
+  let admin = null;
+  if (flag === "--with-admin") {
+    const auth = await resolveAdminAuth({ env: process.env, execFn: (cmd) => execSync(cmd, { encoding: "utf8" }) });
+    if (!auth.ok) {
+      console.log(auth.message);
+      return 2;
+    }
+    const api = createAdminApi({ projectId: FIREBASE_CONFIG.projectId, fetchFn: globalThis.fetch.bind(globalThis), headers: auth.headers });
+    admin = { api };
+  }
+
+  const result = await runSmoke({
+    fetchFn: globalThis.fetch.bind(globalThis),
+    config: FIREBASE_CONFIG,
+    now: Date.now,
+    log: () => {},
+    admin,
+  });
+
+  for (const s of result.steps) {
+    console.log(s.pass ? `PASS ${s.name}` : `FAIL ${s.name}${s.detail != null ? ` (${JSON.stringify(s.detail)})` : ""}`);
+  }
+  console.log(`facts ${JSON.stringify(result.facts)}`);
+  console.log(`cleanup ${JSON.stringify(result.cleanup)}`);
+
+  const cleanupOk = result.cleanup.erased !== false && result.cleanup.accountDeleted !== false;
+  return result.ok && cleanupOk ? 0 : 1;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main(process.argv)
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exitCode = 1;
+    });
 }

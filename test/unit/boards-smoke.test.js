@@ -1,13 +1,20 @@
 // test/unit/boards-smoke.test.js
 //
-// Phase 83 Plan 07 Task 1. Covers tools/boards-smoke.mjs's runSmoke and
-// smokeSummaries against src/browser/fakeBoardServer.js (83-04) in both
-// client-only and --with-admin modes, all three existsResponse
-// duplicate-create answers, a failure path with complete cleanup, and the
-// no-token-leak proof. The CLI (--dry-run, bad-flag handling) is Task 2.
+// Phase 83 Plan 07. Covers tools/boards-smoke.mjs against
+// src/browser/fakeBoardServer.js (83-04) in both client-only and
+// --with-admin modes, all three existsResponse duplicate-create answers, a
+// failure path with complete cleanup, and the CLI's --dry-run / bad-flag
+// paths. No live network call here: the CLI is only ever driven with
+// --dry-run or an unrecognized flag, both of which touch nothing — a bare
+// invocation would use the REAL FIREBASE_CONFIG and must never run in a
+// test (the live run is 83-08's job).
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import url from "node:url";
+
 import { SEASON } from "../../content/season.js";
 import { runHash } from "../../engine/records.js";
 import { buildRunDoc } from "../../src/browser/runDoc.js";
@@ -15,6 +22,10 @@ import { rollHandle } from "../../src/browser/handles.js";
 import { createFakeBoardFetch, FAKE_ADMIN_TOKEN } from "../../src/browser/fakeBoardServer.js";
 import { resolveAdminAuth, createAdminApi } from "../../tools/boards-admin.mjs";
 import { smokeSummaries, runSmoke } from "../../tools/boards-smoke.mjs";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const TOOL_PATH = path.join(REPO_ROOT, "tools", "boards-smoke.mjs");
 
 const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey: `AIza${"A".repeat(35)}` });
 
@@ -29,6 +40,9 @@ function clockBox(start = 1000000) {
   return now;
 }
 
+function runTool(args) {
+  return spawnSync(process.execPath, [TOOL_PATH, ...args], { cwd: REPO_ROOT, encoding: "utf8" });
+}
 
 function validHandle(seed = 0.15) {
   return rollHandle(() => seed, null);
@@ -188,4 +202,26 @@ test("runSmoke: no step, log line or fact contains the API key, an id token or a
   assert.ok(!/Bearer\s+\S+/.test(blob));
   assert.ok(!/\bidtok\d+/.test(blob));
   assert.ok(!/\brtok\d+/.test(blob));
+});
+
+/* ---------------- CLI: --dry-run and a bad flag ---------------- */
+
+test("CLI --dry-run: exits 0, lists every step, prints the three summaries, never the key", () => {
+  const res = runTool(["--dry-run"]);
+  assert.equal(res.status, 0, res.stderr);
+  assert.ok(res.stdout.includes("signup"));
+  assert.ok(res.stdout.includes("erase"));
+  assert.ok(res.stdout.includes("ban"));
+  assert.ok(res.stdout.includes("Smoke Probe"));
+  assert.ok(!res.stdout.includes("AIza"));
+});
+
+test("CLI --bogus: usage + exit 2, no network", () => {
+  const res = runTool(["--bogus"]);
+  assert.equal(res.status, 2);
+});
+
+test("CLI too many args: usage + exit 2", () => {
+  const res = runTool(["--dry-run", "extra"]);
+  assert.equal(res.status, 2);
 });
