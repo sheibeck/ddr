@@ -36,3 +36,8 @@ android/keystore.properties
 ddr-bug-reports*.json
 *service-account*.json
 *-sa-key*.json
+
+# Phase 83: a boards service-account key (should one ever be created
+# locally) and admin exports of player run data, both never committed
+ddr-boards*.json
+boards-export*
