@@ -51,7 +51,7 @@
 - [ ] **BOARD-20**: The RANK BY (DEPTH, DAYS, KILLS, WILMST), RACE and SUB-CLASS pickers open bottom sheets. On YOUR DEAD each option shows its local count under the other filter and zero-count options are dimmed; on LEADERBOARD the options carry no counts (user, 2026-09-29: no per-option count queries). A choice re-ranks the list. The board rail and the LEANEST, LINEAGE and GRAVEYARD boards are gone; LINEAGE becomes RACE plus SUB-CLASS on any stat.
 - [ ] **BOARD-21**: Each row shows the rank, an initials avatar, the handle (the hero's name on YOUR DEAD), a YOU tag on your own runs, the name · race sub-class · level line, and the value with its unit. The leading row wears the stat's colour.
 - [ ] **BOARD-22**: Tapping a row opens its cause of death, epitaph and six stat chips (FLOOR, DAYS, SQUARES, KILLS, EXP, WILMST), plus a small line with the date the run was recorded and the app version it was played on (user, 2026-09-28: kept for balance tracking). Tapping it again closes it.
-- [ ] **BOARD-23**: When your best run is outside the top ten, it is pinned under a "NOT IN THE TOP TEN · YOUR BEST" divider with its real rank. The standing card reads "{handle}'s best, of N interred as {race}, {sub-class}." with the ordinal place, or "None of yours on this board yet."
+- [x] **BOARD-23**: When your best run is outside the top ten, it is pinned under a "NOT IN THE TOP TEN · YOUR BEST" divider with its real rank. The standing card reads "{handle}'s best, of N interred as {race}, {sub-class}." with the ordinal place, or "None of yours on this board yet."
 - [ ] **BOARD-24**: A filter with no runs shows NOBODY YET, the in-voice note and a CLEAR FILTERS button.
 - [ ] **BOARD-25**: LEADERBOARD has deliberate in-voice states for loading, offline or unreachable, and a stale cached result (the mock has none). YOUR DEAD never waits on the network.
 - [ ] **BOARD-26**: YOUR DEAD ranks your runs from local storage by any stat and filter. Every run recorded from now on is kept as a lean per-run record under a generous cap (not just the last 60 graves). **It starts with runs from the 2.1.0 release on (versionCode 11, `when` ≥ 2026-09-28T19:41:01Z, `BACKFILL_SINCE_MS` in `src/browser/runBackfill.js`) and nothing older** (user, 2026-09-28): older graveyard and `ddr.bests.v1` runs and the old lifetime INTERRED total are not imported or shown. The old keys stay on the device untouched (RETIRE-03).
@@ -115,7 +115,7 @@
 | BOARD-20 | Phase 84 | Pending |
 | BOARD-21 | Phase 84 | Pending |
 | BOARD-22 | Phase 84 | Pending |
-| BOARD-23 | Phase 84 | Pending |
+| BOARD-23 | Phase 84 | Complete |
 | BOARD-24 | Phase 84 | Pending |
 | BOARD-25 | Phase 84 | Pending |
 | BOARD-26 | Phase 84 | Pending |

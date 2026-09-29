@@ -4,15 +4,15 @@ milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 84
 status: executing
-stopped_at: Completed 84-04-PLAN.md (boardClient.ownRuns + boardFeed.js)
-last_updated: "2026-09-29T13:52:08.439Z"
+stopped_at: Completed 84-05-PLAN.md (leaderboardView.js pure view model)
+last_updated: "2026-09-29T14:30:03.679Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 84 Plan 01 (run-doc note/when contract) complete
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 34
-  completed_plans: 18
+  completed_plans: 19
   percent: 40
 current_phase_name: Leaderboards Panel v3
 ---
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 84 — EXECUTING
-Plan: 5 of 9
-Progress: [█████░░░░░] 53%
+Plan: 6 of 9
+Progress: [██████░░░░] 56%
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 84 Plan 01 (run-doc note/when contract) complete
 
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T13:52:08.139Z
-Stopped at: Completed 84-04-PLAN.md (boardClient.ownRuns + boardFeed.js)
+Last session: 2026-09-29T14:30:03.631Z
+Stopped at: Completed 84-05-PLAN.md (leaderboardView.js pure view model)
 
 - (history below is the pre-close record)
 
@@ -443,6 +443,7 @@ Resume file: None
 | Phase 84 P02 | 22min | 2 tasks | 6 files |
 | Phase 84 P03 | 35min | 2 tasks | 7 files |
 | Phase 84 P04 | 25min | 2 tasks | 4 files |
+| Phase 84 P05 | 35min | 2 tasks | 3 files |
 
 ## Decisions
 
@@ -780,6 +781,7 @@ Resume file: None
 - [Phase ?]: 84-04: boardFeed's total() reads always pass stat deep (stat-independent count), sharing one cached count across RANK BY switches
 - [Phase ?]: 84-04: boardClient.ownRuns(uid) is public/unauthenticated — own-runs are public board data by design (Compete ON consent)
 - [Phase ?]: 84-04: boardFeed never calls rankOf to search for the best run — the local candidate is chosen first via rankKeyOf, then rankOf is asked once for that one candidate
+- [Phase ?]: leaderboardView.js: one pure view model rankKeyOf-drives both YOUR DEAD and LEADERBOARD; Task 1 commit stubs board mode to the loading note (matching the plan's own allowance), Task 2 completes it — two independently-revertible commits
 
 ### Blockers
 
