@@ -27,6 +27,19 @@ import { maxCharges } from "../../engine/movement.js";
 // Phase 65 (RUN-02/RUN-03): the pure bests-record operations — this adapter
 // owns the durable ddr.bests.v1 storage, engine/records.js owns the shape.
 import { emptyBests, sanitizeBests, updateBests, backfillBests, reconcileBests } from "../../engine/records.js";
+// Phase 84 (BOARD-26): YOUR DEAD's own durable per-run history (ddr.runs.v1),
+// separate from the 60-stone graveyard and the bests-only board record —
+// see src/browser/runHistory.js's header comment for the full picture.
+import {
+  RUN_HISTORY_KEY,
+  historyRecordOf,
+  sanitizeHistory,
+  appendRun,
+  mergeHistories,
+  importLegacy,
+  newBestsAgainst,
+  serializeHistory,
+} from "./runHistory.js";
 // 04-04: the data-driven event->narration lookup table (UX-05) that replaces
 // this file's former ~26-case monolithic switch. EVENT_NARRATION covers the
 // full ~162-type engine vocabulary; test/unit/formatEventsCoverage.test.js
@@ -140,6 +153,17 @@ let missSeq = 0;
 // bootWornReport's one-shot posture above.
 let bests = null;
 let deathRecord = null;
+
+// Phase 84 (BOARD-26): the in-memory per-run history (src/browser/
+// runHistory.js), and the app version stamp every non-dev death's history
+// record carries. `runHistory` is null until loadRunHistory() has run at
+// least once this session (boot() calls it once, right after
+// loadGraveyard()); `appVersion` defaults to "dev" until the shell calls
+// setAppVersion() with the stamped #mw-app-version text, so a Node test or
+// a dev-loop session with no shell wiring still produces a valid record.
+let runHistory = null;
+let appVersion = "dev";
+const APP_VERSION_MAX_CHARS = 64; // matches src/browser/runDoc.js's VERSION_MAX_CHARS bound
 
 // Phase 66 (BOARD-02, D-08/D-15): the in-memory { graves, total } the
 // Leaderboards panel and the title's VIEW THE DEAD gate read; adapter-owned
@@ -319,6 +343,116 @@ export function getGraveyard() {
 }
 
 /**
+ * setAppVersion(v) — Phase 84 (BOARD-26): stamps the app version every
+ * non-dev death's history record carries (the expanded YOUR DEAD row's
+ * "Died ... · {version}" line). Called by mazeworld.html with the shell's
+ * stamped #mw-app-version text, before boot()'s module script runs. A
+ * non-string, empty, or over-APP_VERSION_MAX_CHARS value falls back to
+ * "dev" (the default before any call, and the value every Node test/
+ * dev-loop session without shell wiring keeps).
+ */
+export function setAppVersion(v) {
+  appVersion = typeof v === "string" && v.length >= 1 && v.length <= APP_VERSION_MAX_CHARS ? v : "dev";
+}
+
+/** safeGetItem(key) — module-private: storage.getItem(key), tolerant to a
+ * storage read that throws — resolves to null instead, never throws. Used
+ * anywhere a single key's read failure must not cascade and abort a
+ * Promise.all of otherwise-independent reads (persistGrave()'s
+ * RUN_HISTORY_KEY read, below). */
+async function safeGetItem(key) {
+  try {
+    return await storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** readJsonTolerant(key) — module-private: safeGetItem(key), tolerant also
+ * to unparseable JSON — resolves to null either way, never throws. */
+async function readJsonTolerant(key) {
+  const raw = await safeGetItem(key);
+  if (typeof raw !== "string") return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * loadRunHistory() — Phase 84 (BOARD-26): loads the durable ddr.runs.v1
+ * per-run history into memory, running the once-only 2.1.0-cutoff import
+ * (src/browser/runHistory.js#importLegacy, reading GRAVE_KEY/BESTS_KEY raw
+ * and tolerant of corrupt JSON) the first time it finds an absent key,
+ * unparseable JSON, or a stored history whose `imported` flag is not
+ * `true` — a pre-Phase-84 device, or a corrupt store, both land here and
+ * both come out the other side with `imported: true` so a later boot never
+ * re-imports. A storage read that throws for RUN_HISTORY_KEY itself is the
+ * ONE case that skips the import outright: the in-memory history is left
+ * empty and non-imported, and nothing is written — persistGrave()'s own
+ * merge-on-write (see below) is the safety net that keeps a later write
+ * from losing anything already on disk. Never rejects. Idempotent to call
+ * more than once (each call re-reads storage); boot() calls this once,
+ * right after loadGraveyard().
+ */
+export async function loadRunHistory() {
+  try {
+    let raw;
+    try {
+      raw = await storage.getItem(RUN_HISTORY_KEY);
+    } catch {
+      runHistory = sanitizeHistory(null);
+      return runHistory;
+    }
+
+    let parsed = null;
+    if (typeof raw === "string") {
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+    }
+
+    if (parsed !== null) {
+      const sanitized = sanitizeHistory(parsed);
+      if (sanitized.imported === true) {
+        runHistory = sanitized;
+        return runHistory;
+      }
+    }
+
+    // Absent key, unparseable JSON, or a stored history whose `imported`
+    // flag is not true: run the once-only 2.1.0-cutoff import.
+    const bests = await readJsonTolerant(BESTS_KEY);
+    const gravesRaw = await readJsonTolerant(GRAVE_KEY);
+    const graves = Array.isArray(gravesRaw) ? gravesRaw : [];
+    const base = parsed !== null ? sanitizeHistory(parsed) : sanitizeHistory(null);
+    const imported = importLegacy(base, { bests, graves });
+    runHistory = imported;
+    // Fire-and-enqueue, like loadBests()'s own backfill write: the imported
+    // history is already in memory and returned below regardless of
+    // whether this write lands.
+    track(storage.setItem(RUN_HISTORY_KEY, serializeHistory(imported)));
+    return runHistory;
+  } catch {
+    runHistory = sanitizeHistory(null);
+    return runHistory;
+  }
+}
+
+/**
+ * getRunHistory() — the adapter's current in-memory per-run history's
+ * `runs` array (frozen, newest first), or an empty frozen array before the
+ * first loadRunHistory()/boot() call this session. Callers treat the
+ * returned array as read-only.
+ */
+export function getRunHistory() {
+  return runHistory !== null ? runHistory.runs : Object.freeze([]);
+}
+
+/**
  * takeDeathRecord() — Phase 65 (RUN-04): returns the most recent death's
  * `{ first, newBests, summary }` report exactly once, then resets it to
  * null (consumed on read) — mirrors takeBootWornReport()'s one-shot
@@ -445,28 +579,36 @@ async function readRecentNames() {
 }
 
 /**
- * recordDeath(state, cause, when) — Phase 65 (RUN-02/RUN-04): the
- * synchronous in-memory fold of one death into the personal-bests record.
- * Synchronous and never throws, so a failure here can never reach
- * dispatch()'s fail-closed catch and replace the dead run with a fresh one
- * — the death panel and the graveyard write must both survive a bug in this
- * path. Builds the SAME summary (via engine/death.js#buildRunSummary) that
+ * recordDeath(state, cause, when) — Phase 65 (RUN-02/RUN-04), Phase 84
+ * (BOARD-26): the synchronous in-memory fold of one death into the
+ * personal-bests record AND (Phase 84) the per-run history. Synchronous
+ * and never throws, so a failure here can never reach dispatch()'s
+ * fail-closed catch and replace the dead run with a fresh one — the death
+ * panel and the graveyard write must both survive a bug in this path.
+ * Builds the SAME summary (via engine/death.js#buildRunSummary) that
  * persistGrave()'s bury() call below also builds — same `state`/`cause`/
- * `when` in, same hash out. Returns `{ summary, bestsJson }`: `bestsJson`
- * is the record already JSON.stringify'd (ready for persistGrave() to
- * enqueue, so dispatch() never awaits an extra read there), or null if
- * `bests` has not been loaded yet this session (persistGrave()'s lazy path
- * handles that).
+ * `when` in, same hash out. Returns `{ summary, bestsJson, historyJson }`:
+ * `bestsJson`/`historyJson` are each already JSON.stringify'd (ready for
+ * persistGrave() to enqueue, so dispatch() never awaits an extra read
+ * there), or null when `bests`/`runHistory` has not been loaded yet this
+ * session (persistGrave()'s own lazy paths handle that).
+ *
+ * The bests fold (updateBests) still runs, unconditionally, exactly as
+ * before — the old ddr.bests.v1 store is left untouched by this phase —
+ * but it no longer sets `deathRecord`: the death panel's "new best?"
+ * question (BOARD-26) now compares against the history instead
+ * (newBestsAgainst), via historyRecordOf/appendRun below.
  */
 function recordDeath(state, cause, when) {
   try {
     const summary = buildRunSummary(state, cause, when);
 
     // Phase 66 (BOARD-02, D-08/D-15): fold this death into the in-memory
-    // graveyard synchronously, before the bests branch below, so it runs
-    // whether or not `bests` has been loaded yet this session. recordDeath()
-    // is only reached for non-dev deaths (dispatch()'s caller below excludes
-    // dev deaths entirely), so a dev run's death never touches this.
+    // graveyard synchronously, before the bests/history branches below, so
+    // it runs whether or not `bests`/`runHistory` have been loaded yet this
+    // session. recordDeath() is only reached for non-dev deaths
+    // (dispatch()'s caller below excludes dev deaths entirely), so a dev
+    // run's death never touches any of this.
     if (graveyard !== null) {
       graveyard = {
         graves: [summary, ...graveyard.graves].slice(0, GRAVE_CAP),
@@ -474,41 +616,62 @@ function recordDeath(state, cause, when) {
       };
     }
 
+    let bestsJson = null;
     if (bests !== null) {
       const r = updateBests(bests, summary);
       bests = r.record;
-      deathRecord = { first: r.first, newBests: r.newBests, summary };
-      return { summary, bestsJson: JSON.stringify(bests) };
+      bestsJson = JSON.stringify(bests);
     }
-    deathRecord = null;
-    return { summary, bestsJson: null };
+
+    let historyJson = null;
+    if (runHistory !== null) {
+      const record = historyRecordOf(summary, appVersion);
+      if (record) {
+        const { first, newBests } = newBestsAgainst(runHistory.runs, record);
+        runHistory = appendRun(runHistory, record);
+        deathRecord = { first, newBests, summary };
+        historyJson = serializeHistory(runHistory);
+      } else {
+        // Should never happen for a real buildRunSummary() output, but a
+        // malformed record must fail closed rather than crash the death
+        // path — no report this time, persistGrave()'s lazy path below
+        // will retry with a freshly loaded history.
+        deathRecord = null;
+      }
+    } else {
+      deathRecord = null;
+    }
+
+    return { summary, bestsJson, historyJson };
   } catch {
     deathRecord = null;
-    return { summary: null, bestsJson: null };
+    return { summary: null, bestsJson: null, historyJson: null };
   }
 }
 
 /**
- * persistGrave(state, cause, when, summary, bestsJson) — CR-01: builds this
- * death's tombstone via engine/death.js#bury() (which already has
- * state.deathNote/state.epitaph set by die()) and appends it to the
- * adapter-owned graveyard at GRAVE_KEY, alongside the never-trimmed total
- * (GRAVE_TOTAL_KEY), the recent-names dedup window (RECENT_NAMES_KEY) and
- * — Phase 65 (RUN-02) — the personal-bests record (BESTS_KEY). Try/catch-
- * and-swallow, like every other write in this file: a private window or a
- * full storage quota just means the tombstone (and/or the bests record)
- * won't persist — never throws.
+ * persistGrave(state, cause, when, summary, bestsJson, historyJson) —
+ * CR-01: builds this death's tombstone via engine/death.js#bury() (which
+ * already has state.deathNote/state.epitaph set by die()) and appends it
+ * to the adapter-owned graveyard at GRAVE_KEY, alongside the never-trimmed
+ * total (GRAVE_TOTAL_KEY), the recent-names dedup window
+ * (RECENT_NAMES_KEY), the personal-bests record (BESTS_KEY, Phase 65
+ * RUN-02) and — Phase 84 (BOARD-26) — the per-run history (RUN_HISTORY_KEY).
+ * Try/catch-and-swallow, like every other write in this file: a private
+ * window or a full storage quota just means the tombstone (and/or the
+ * bests/history records) won't persist — never throws.
  *
  * `cause` is read from the `died` event dispatch() just pushed (see below)
  * rather than from `state` itself, because GameState has no persisted
  * `cause` field (only `deathNote`/`epitaph`, already derived from it by
  * die()) — the event is the only place the raw cause string is still
- * available by the time dispatch() returns. `when`/`summary`/`bestsJson`
- * come from recordDeath()'s synchronous fold, called BEFORE this function
- * (so the death panel can read getBests()/takeDeathRecord() the instant
- * dispatch() returns, without waiting on this async write).
+ * available by the time dispatch() returns. `when`/`summary`/`bestsJson`/
+ * `historyJson` come from recordDeath()'s synchronous fold, called BEFORE
+ * this function (so the death panel can read getBests()/getRunHistory()/
+ * takeDeathRecord() the instant dispatch() returns, without waiting on
+ * this async write).
  */
-async function persistGrave(state, cause, when, summary, bestsJson) {
+async function persistGrave(state, cause, when, summary, bestsJson, historyJson) {
   try {
     // Lazy path: recordDeath() ran before bests was ever loaded this
     // session (a death raced ahead of boot()'s loadBests(), or something
@@ -522,14 +685,29 @@ async function persistGrave(state, cause, when, summary, bestsJson) {
       bestsJson = JSON.stringify(bests);
     }
 
-    // Read all three graveyard keys up front. getItem() is NOT queued behind
+    // Phase 84 (BOARD-26): the history's own lazy path, mirroring the
+    // bests lazy path immediately above — recordDeath() only appends into
+    // the in-memory history when it was already loaded (historyJson !==
+    // null); otherwise load (or import) it now and fold this death in.
+    if (summary && historyJson === null) {
+      await loadRunHistory();
+      const record = historyRecordOf(summary, appVersion);
+      if (record) runHistory = appendRun(runHistory, record);
+    }
+
+    // Read all four keys up front. getItem() is NOT queued behind
     // in-flight writes (storage.js contract), so a caller needing read-after-
     // write ordering across deaths flushes between them (see the adapter test);
     // reading them together here keeps the subsequent writes contiguous.
-    const [rawGraves, rawTotal, rawRecent] = await Promise.all([
+    // RUN_HISTORY_KEY's own read is wrapped (safeGetItem) so a failure
+    // isolated to that one key can never abort the other three reads —
+    // mergeHistories() below is the safety net that keeps a failed read
+    // from ever shrinking what's already on disk.
+    const [rawGraves, rawTotal, rawRecent, rawRunHistory] = await Promise.all([
       storage.getItem(GRAVE_KEY),
       storage.getItem(GRAVE_TOTAL_KEY),
       storage.getItem(RECENT_NAMES_KEY),
+      safeGetItem(RUN_HISTORY_KEY),
     ]);
 
     // Part 1 — append the tombstone, then TRIM to the most-recent GRAVE_CAP.
@@ -557,13 +735,32 @@ async function persistGrave(state, cause, when, summary, bestsJson) {
     const name = state.c && state.c.name;
     if (name) recent = [name, ...recent].slice(0, RECENT_NAMES_CAP);
 
+    // Part 5 — Phase 84 (BOARD-26): merge-on-write. The stored history can
+    // only ever GROW — never overwritten with just this session's
+    // in-memory copy, which may have raced ahead of, fallen behind, or
+    // (via safeGetItem's RUN_HISTORY_KEY isolation above) simply failed to
+    // read whatever is actually on disk. A malformed/unparseable stored
+    // value sanitizes to empty via mergeHistories' own sanitizeHistory
+    // call, never throws.
+    let storedHistory = null;
+    if (typeof rawRunHistory === "string") {
+      try {
+        storedHistory = JSON.parse(rawRunHistory);
+      } catch {
+        storedHistory = null;
+      }
+    }
+    const mergedHistory = mergeHistories(storedHistory, runHistory);
+    runHistory = mergedHistory;
+
     // Enqueue all writes back-to-back (no await between them) so a single
     // flush()/waitForPending() drain settles the whole tombstone (and the
-    // bests record, when present) atomically.
+    // bests/history records, when present) atomically.
     const writes = [
       storage.setItem(GRAVE_KEY, JSON.stringify(graves)),
       storage.setItem(GRAVE_TOTAL_KEY, String(total)),
       storage.setItem(RECENT_NAMES_KEY, JSON.stringify(recent)),
+      storage.setItem(RUN_HISTORY_KEY, serializeHistory(mergedHistory)),
     ];
     if (bestsJson !== null) writes.push(storage.setItem(BESTS_KEY, bestsJson));
 
@@ -629,6 +826,12 @@ export async function startNewRun(seed, options = {}) {
  * save — is stashed for `takeBootWornReport()`; the rail card filters on
  * `bagged.length`, so an empty report shows nothing. The fresh-run fallback
  * below leaves it `null`.
+ *
+ * Phase 84 (BOARD-26): the per-run history (loadRunHistory()) is loaded —
+ * running its own once-only 2.1.0-cutoff import the first time — right
+ * after the graveyard, so getRunHistory() and the death panel's
+ * history-based "new best?" answer are both populated before boot()
+ * resolves too.
  */
 export async function boot(freshSeed) {
   await storage.migrateLegacyKeys();
@@ -641,6 +844,9 @@ export async function boot(freshSeed) {
   // VIEW THE DEAD gate read the graveyard synchronously via getGraveyard()
   // from here on, so it must be populated before boot() resolves too.
   await loadGraveyard();
+  // Phase 84 (BOARD-26): YOUR DEAD's own per-run history, loaded (and
+  // once-only imported from the stores above) before boot() resolves.
+  await loadRunHistory();
   let raw = null;
   try {
     raw = await storage.getItem(SAVE_KEY);
@@ -735,15 +941,16 @@ export function dispatch(action) {
       if (currentState.dev) {
         deathRecord = null;
       } else {
-        // Phase 65 (RUN-02/RUN-04): fold the death into the in-memory bests
-        // record SYNCHRONOUSLY (recordDeath, not awaited) so getBests()/
+        // Phase 65 (RUN-02/RUN-04), Phase 84 (BOARD-26): fold the death into
+        // the in-memory bests record AND the per-run history SYNCHRONOUSLY
+        // (recordDeath, not awaited) so getBests()/getRunHistory()/
         // takeDeathRecord() already reflect it the instant dispatch()
         // returns — the death panel never waits on the storage write below.
         const when = typeof currentState.deathAt === "number" ? currentState.deathAt : Date.now();
-        const { summary, bestsJson } = recordDeath(currentState, diedEvent.cause, when);
+        const { summary, bestsJson, historyJson } = recordDeath(currentState, diedEvent.cause, when);
         // Phase 68 (PGS-03/04): the run-recorded listener, once per non-dev death.
         notifyRunRecorded(summary);
-        track(persistGrave(currentState, diedEvent.cause, when, summary, bestsJson));
+        track(persistGrave(currentState, diedEvent.cause, when, summary, bestsJson, historyJson));
       }
     }
     // Phase 25 (FEED-05): stamp the rotating fledgling-miss quip onto any

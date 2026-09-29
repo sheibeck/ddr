@@ -26,6 +26,7 @@ import {
   startNewRun,
   loadBests,
   getBests,
+  loadRunHistory,
   takeDeathRecord,
   waitForPending,
   setRunRecordedListener,
@@ -201,8 +202,14 @@ test("boot with a corrupt ddr.bests.v1 falls back to backfill from the graveyard
 // --- the death report (RUN-04) --------------------------------------------
 
 test("first-ever death: takeDeathRecord() returns { first: true, newBests: [], summary } once, then null", async () => {
+  // Phase 84 (BOARD-26): the death report now compares against the
+  // per-run history (newBestsAgainst), not the bests record — awaits
+  // loadRunHistory() so this test's own (empty, freshly-imported) history
+  // is in memory before the death, rather than relying on state a
+  // different test happened to leave behind.
   await withFakeLocalStorage(async () => {
     await loadBests();
+    await loadRunHistory();
     await startNewRun(555);
     dispatch({ type: "abandon" });
 
@@ -229,8 +236,11 @@ test("getBests() reflects a new death synchronously, before any await (the synch
 });
 
 test("a deeper run announces new bests on deep (and days where it qualifies); a shallower run after that announces nothing", async () => {
+  // Phase 84 (BOARD-26): newBestsAgainst compares this death against the
+  // in-memory per-run history's runs, not the bests record's boards.
   await withFakeLocalStorage(async () => {
     await loadBests();
+    await loadRunHistory();
 
     await startNewRun(1);
     getState().floor.depth = 3;
@@ -241,10 +251,8 @@ test("a deeper run announces new bests on deep (and days where it qualifies); a 
     getState().floor.depth = 9; // deeper
     dispatch({ type: "abandon" });
     const deeperReport = takeDeathRecord();
-    // A tie on day/kills is itself broken by floor desc (compareRuns), so a
-    // deeper run with unchanged day/kills can ALSO take #1 on those boards —
-    // the behavior only requires deep to be among the boards beaten (BOARD-17:
-    // LEANEST is retired, so it is never in newBests).
+    // newBestsAgainst only ever lists BOARD_STATS ids (deep/days/kills/
+    // purse — BOARD-17: LEANEST is retired and was never one of them).
     assert.ok(deeperReport.newBests.includes("deep"), "deeper floor beats DEEPEST");
     assert.ok(!deeperReport.newBests.includes("lean"), "LEANEST is retired and never announced");
 
@@ -408,6 +416,7 @@ test("blocked storage: boot resolves, a death never throws and never falls close
 test("starting a new run clears any pending one-shot death report", async () => {
   await withFakeLocalStorage(async () => {
     await loadBests();
+    await loadRunHistory();
     await startNewRun(401);
     dispatch({ type: "abandon" });
     await startNewRun(402); // starts a new run, clearing the previous death's report

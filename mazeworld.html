@@ -6975,6 +6975,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // died event into the classic renderCombatOver's NEW PERSONAL BEST block.
   import { takeDeathRecord } from "./src/browser/engineAdapter.js";
   import { newBestView } from "./src/browser/newBest.js";
+  // Phase 84 (BOARD-26): stamps the app version onto every non-dev death's
+  // per-run history record — its own import line so the pinned
+  // boot/dispatch import line above stays byte-identical.
+  import { setAppVersion } from "./src/browser/engineAdapter.js";
   // Phase 66 (BOARD-01..08): the Leaderboards panel's adapter read seam,
   // controller and pure view model — each on its own line per this file's
   // import convention.
@@ -8777,6 +8781,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // via `>>> 0`, so a wall-clock timestamp is a fine one-shot seed here (the
   // engine itself never reads the clock again once a run exists).
   const freshSeed = Date.now();
+  // Phase 84 (BOARD-26): stamp the shell's app version before boot() loads
+  // (and, on a first launch, imports) the per-run history — every death
+  // this session records carries it.
+  setAppVersion(document.getElementById("mw-app-version")?.textContent ?? "");
   const engineState = await boot(freshSeed);
   window.__mzState.set(engineState);
   // Phase 44 (DEAD-01): the two resume-banner Oracle lines moved here from

@@ -22,6 +22,7 @@ import {
   getBests,
   loadGraveyard,
   getGraveyard,
+  loadRunHistory,
   takeDeathRecord,
   waitForPending,
   setRunRecordedListener,
@@ -76,8 +77,11 @@ test("the listener fires on a death before the bests record was ever loaded (the
 // --- the normal path --------------------------------------------------------
 
 test("a non-dev death calls the listener exactly once with a frozen copy equal to the death record's summary", async () => {
+  // Phase 84 (BOARD-26): takeDeathRecord() now reads the per-run history's
+  // newBestsAgainst report — await loadRunHistory() so it's in memory.
   await withFakeLocalStorage(async () => {
     await loadBests();
+    await loadRunHistory();
     await startNewRun(555);
     const r = recorder();
     setRunRecordedListener(r.fn);
@@ -125,6 +129,7 @@ test("a throwing listener changes nothing: the dead state, the died event, the t
   await withFakeLocalStorage(async (store) => {
     await loadBests();
     await loadGraveyard();
+    await loadRunHistory();
     await startNewRun(9001);
     let calls = 0;
     setRunRecordedListener(() => {
