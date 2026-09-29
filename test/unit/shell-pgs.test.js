@@ -376,23 +376,24 @@ test("(S1) SOURCE: one import line each for the Phase 68 modules; the pinned eng
   assert.equal(occurrences(HTML, 'import { boot, dispatch, startNewRun, waitForPending, takeBootWornReport } from "./src/browser/engineAdapter.js";'), 1);
 });
 
-test("(S2) SOURCE: the four Phase 68 lets are declared before the Leaderboards panel instance, which gets the global, seasons and onFriendsConsent seams", () => {
-  const panelAt = MODULE.indexOf("const boardsPanel = createBoardsPanel({");
+test("(S2) SOURCE: the four Phase 68 lets are declared before the v3 Leaderboards panel instance, whose block carries none of the retired Play Games seams (global/seasons/onFriendsConsent/onOpen)", () => {
+  const panelAt = MODULE.indexOf("const boardsPanel = createLeaderboardPanel({");
   assert.ok(panelAt !== -1);
   for (const decl of ["let globalBoards = null;", "let pgsQueue = null;", "let liveDeathHash = null;", "let pendingPgsCard = null;"]) {
     const at = MODULE.indexOf(decl);
     assert.ok(at !== -1 && at < panelAt, `${decl} before the panel instance`);
     assert.equal(occurrences(MODULE, decl), 1, decl);
   }
-  const panel = sliceBetween(MODULE, "const boardsPanel = createBoardsPanel({", "\n  });");
-  assert.match(panel, /global: \(q\) => \(globalBoards \? globalBoards\.view\(q\) : null\),/);
-  assert.match(panel, /seasons: \(\) => \(\{ current: SEASON, all: knownSeasons\(\) \}\),/);
-  assert.match(panel, /onFriendsConsent: \(\) => /);
-  assert.equal(occurrences(HTML, "onFriendsConsent:"), 1);
-  // Phase 81 (BOARD-16, R-16b): the panel's onOpen seam invalidates the
-  // global boards cache on every fresh open.
-  assert.match(panel, /onOpen: \(\) => \{ globalBoards\?\.invalidate\(\); \},/);
-  assert.equal(occurrences(HTML, "onOpen:"), 1);
+  // Phase 84 (BOARD-18): the panel no longer reads globalBoards/seasons/
+  // friends-consent/onOpen at all — the Play Games queue and globalBoards
+  // controller stay wired below for Phase 85 to remove, but the panel
+  // itself never sees them.
+  const panel = sliceBetween(MODULE, "const boardsPanel = createLeaderboardPanel({", "\n  });");
+  for (const retired of [/\bglobal:/, /\bseasons:/, /\bonFriendsConsent:/, /\bonOpen:/]) {
+    assert.doesNotMatch(panel, retired, `expected no retired Play Games seam matching ${retired}`);
+  }
+  assert.equal(occurrences(HTML, "onFriendsConsent:"), 0);
+  assert.equal(occurrences(HTML, "onOpen:"), 0);
 });
 
 test("(S3) SOURCE: the queue gets window.mzStorage, the IDs map and the SEASON; the death listener, online and visibility triggers are wired", () => {
@@ -684,31 +685,8 @@ test("(C6) BEHAVIOUR: an account card alone still goes straight to the rail (Pha
   assert.equal(p.timers.length, 0);
 });
 
-// ═══════════════════════ (P) the panel's global seams (D-05..D-08) ═════════
-
-function panelSeams(boards) {
-  const panel = sliceBetween(MODULE, "const boardsPanel = createBoardsPanel({", "\n  });") + "\n";
-  const seams = ["global", "seasons", "onFriendsConsent"].map((k) => {
-    const m = panel.match(new RegExp(`\\n\\s*${k}: ([^\\n]*?),\\n`));
-    assert.ok(m, `${k} seam`);
-    return `${k}: ${m[1]}`;
-  });
-  return new Function("globalBoards", "SEASON", "knownSeasons", `return { ${seams.join(", ")} };`)(boards, 3, () => [1, 2, 3]);
-}
-
-test("(P1) BEHAVIOUR: the global seam returns null before the controller exists and forwards the query otherwise", () => {
-  assert.equal(panelSeams(null).global({ board: "deep", scope: "all", season: 1 }), null);
-  const boards = recordingBoards();
-  const q = { board: "deep", scope: "all", season: 1 };
-  assert.deepEqual(panelSeams(boards).global(q), { status: "loading" });
-  assert.deepEqual(boards.calls, [["view", q]]);
-});
-
-test("(P2) BEHAVIOUR: seasons reports the current SEASON and the known seasons; onFriendsConsent requests access", () => {
-  const boards = recordingBoards();
-  const s = panelSeams(boards);
-  assert.deepEqual(s.seasons(), { current: 3, all: [1, 2, 3] });
-  s.onFriendsConsent();
-  assert.deepEqual(boards.calls, [["consent"]]);
-  assert.doesNotThrow(() => panelSeams(null).onFriendsConsent());
-});
+// Phase 84 (BOARD-18): the panel's own global/seasons/onFriendsConsent
+// seams (and their panelSeams()/P1/P2 tests) are retired along with the v1
+// panel wiring — shell-boards-panel.test.js's (S2)-equivalent SOURCE pin
+// (shell-pgs.test.js's own S2, above) now proves their absence instead. The
+// globalBoards controller itself stays wired (S3, below) for Phase 85.

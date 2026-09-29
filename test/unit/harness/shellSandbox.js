@@ -124,11 +124,12 @@ import { combatMenuViewModel } from "../../../src/browser/combatMenu.js";
 import { foeConditionChips } from "../../../src/browser/foeConditions.js";
 import { foeDetailsCard, detailsLabel } from "../../../src/browser/foeDetails.js";
 import { planBeat, createBeat, createBeatRunner } from "../../../src/browser/combatBeat.js";
-// Phase 66 (BOARD-01, D-14/D-15) — the REAL Leaderboards panel and view
-// model, only the data source injected (like the dressing art source):
-// wired below as window.__mzBoards exactly as the module script assigns it.
-import { createBoardsPanel } from "../../../src/browser/boardsPanel.js";
-import { boardsView } from "../../../src/browser/boardsView.js";
+// Phase 84 (BOARD-18) — the REAL v3 Leaderboards panel and view model, only
+// the history/board/compete data sources injected (like the dressing art
+// source): wired below as window.__mzBoards exactly as the module script
+// assigns it.
+import { createLeaderboardPanel } from "../../../src/browser/leaderboardPanel.js";
+import { leaderboardView } from "../../../src/browser/leaderboardView.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -406,18 +407,25 @@ function wireBridges(context, { dressing = null } = {}) {
  * `{ enabled, images }` to control exactly what the real window.__mzDressing
  * bridge's art source answers.
  *
- * Phase 66 (BOARD-01, D-14/D-15) — `boards` (default null) feeds the REAL
- * `createBoardsPanel`/`boardsView` panel and view model, only the data
- * source injected (the same pattern as `dressing` above): pass
- * `{ bests, graves, total }` to control exactly what the panel's
- * `readData()` answers; the default mirrors an empty adapter
- * (`{ bests: null, graves: [], total: 0 }`). `host` is the sandbox
- * document's `#screen-dead`, `prefs` is the sandbox's own fake
- * `localStorage`, and `reducedMotion` always answers true (this harness has
- * no scroll geometry, so `centreRail()`'s `behavior` branch is otherwise
- * untestable). `onRoute` pushes `{ action, hasHero }` into the returned
- * `boardsRoutes` array rather than routing a real screen — never a stub of
- * the panel or view model itself.
+ * Phase 84 (BOARD-18) — `boards` (default null) feeds the REAL
+ * `createLeaderboardPanel`/`leaderboardView` v3 panel and view model, only
+ * the history/board/compete data sources injected (the same pattern as
+ * `dressing` above): pass `{ history, compete, board }` — `history`
+ * (default `[]`) is read live on every call (so a test can push a new run
+ * and reopen the panel), `compete` (default `false`) likewise, and `board`
+ * (default `null`) replaces the default stub board seam entirely when
+ * given. The default board seam's `cached()` always answers `null` and its
+ * `load()` always resolves an honest `unreachable`/`offline` snapshot (zero
+ * rows, `youKnown: false`) — a test that needs LEADERBOARD data supplies
+ * its own `board: { load, cached, clear }` (e.g. a real `createBoardFeed`
+ * over `createFakeBoardFetch`, mirroring 84-08's shell wiring). `host` is
+ * the sandbox document's `#screen-dead`, `prefs` is the sandbox's own fake
+ * `localStorage`, `now`/`tzOffset` are fixed (`Date.UTC(2026, 8, 29, 12, 0)`
+ * / `0`), `season` is `1`, and `reducedMotion` always answers true (this
+ * harness has no scroll geometry, so `centreRail()`'s `behavior` branch is
+ * otherwise untestable). `onRoute` pushes `{ action, hasHero }` into the
+ * returned `boardsRoutes` array rather than routing a real screen — never a
+ * stub of the panel or view model itself.
  */
 export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stubRail = true, stubDraw = true, canvasContext = null, dressing = null, boards = null }) {
   const raw = fs.readFileSync(HTML_PATH, "utf8").replace(/\r\n/g, "\n");
@@ -525,15 +533,40 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
     context.window.__mzRail = emptyRail();
   }
 
-  // Phase 66 (BOARD-01, D-14/D-15) — the REAL panel and view model, only the
-  // data source injected (see this function's own doc comment above).
-  const boardsData = boards || { bests: null, graves: [], total: 0 };
+  // Phase 84 (BOARD-18) — the REAL v3 panel and view model, only the
+  // history/board/compete data sources injected (see this function's own
+  // doc comment above). `history`/`compete` are read live (a getter into
+  // `boardsOpts`, not a one-time snapshot) so a test can mutate them
+  // between panel opens.
+  const boardsOpts = boards || {};
+  const defaultBoardSeam = {
+    load: () =>
+      Promise.resolve({
+        status: "unreachable",
+        reason: "offline",
+        stale: false,
+        fetchedAt: null,
+        rows: [],
+        total: null,
+        filteredTotal: null,
+        you: null,
+        youKnown: false,
+        uid: null,
+      }),
+    cached: () => null,
+    clear: () => {},
+  };
   const boardsRoutes = [];
-  const realBoardsPanel = createBoardsPanel({
+  const realBoardsPanel = createLeaderboardPanel({
     host: context.window.document.getElementById("screen-dead"),
-    buildView: boardsView,
-    readData: () => boardsData,
+    buildView: leaderboardView,
+    history: () => boardsOpts.history || [],
+    board: boardsOpts.board || defaultBoardSeam,
+    competeOn: () => boardsOpts.compete === true,
     prefs: context.window.localStorage,
+    now: () => Date.UTC(2026, 8, 29, 12, 0),
+    tzOffset: () => 0,
+    season: 1,
     reducedMotion: () => true,
     onRoute: (action, opts) => boardsRoutes.push({ action, ...opts }),
   });
@@ -549,8 +582,8 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
     // beatRunner.start(planBeat({...})), reproducing engineCombatAction's
     // own module-script-only handoff.
     beatRunner: context.__mzBeatRunnerInstance,
-    // Phase 66 (BOARD-01) — the REAL boardsPanel controller instance and the
-    // routes onRoute pushed into, so a test can drive
+    // Phase 84 (BOARD-18) — the REAL v3 boardsPanel controller instance and
+    // the routes onRoute pushed into, so a test can drive
     // boardsPanel.openFromTitle(...)/inspect boardsRoutes directly.
     boardsPanel: realBoardsPanel,
     boardsRoutes,

@@ -1,14 +1,15 @@
 // test/unit/shell-boards-entry.test.js
 //
-// Phase 66 (BOARD-01, D-01/D-03/D-04/D-14, D-16), Plan 07 — pins the title's
-// VIEW THE DEAD entry (opens the Leaderboards panel in TITLE mode, D-01/
-// D-04), the Android back button's mirror of the chevron on a title-opened
-// panel (D-03), and the classic graveyard loader/saver/harness retirement
-// (D-14). Uses the comment-stripping and region-extraction technique from
-// test/unit/shell-boards-panel.test.js (itself borrowed from
+// Phase 66 (BOARD-01, D-01/D-03/D-04/D-14, D-16), Plan 07; rewired for the
+// v3 panel by Phase 84 (BOARD-18, BOARD-19, BOARD-25), Plan 08. Pins the
+// title's VIEW THE DEAD entry (opens the v3 Leaderboards panel in TITLE
+// mode, D-01/D-04), the Android back button's mirror of the chevron on a
+// title-opened panel (D-03), and the classic graveyard loader/saver/harness
+// retirement (D-14). Uses the comment-stripping and region-extraction
+// technique from test/unit/shell-boards-panel.test.js (itself borrowed from
 // test/unit/shell-combat-over.test.js — mazeworld.html has no ESM surface a
 // test could import directly) for every SOURCE pin, and drives a REAL
-// createBoardsPanel + the REAL boardsView (never a stub) over
+// createLeaderboardPanel + the REAL leaderboardView (never a stub) over
 // createRecordingDocument() for the routing BEHAVIOUR tests.
 
 import test from "node:test";
@@ -18,8 +19,8 @@ import path from "node:path";
 import url from "node:url";
 
 import { createRecordingDocument } from "./harness/recordingDom.js";
-import { createBoardsPanel } from "../../src/browser/boardsPanel.js";
-import { boardsView } from "../../src/browser/boardsView.js";
+import { createLeaderboardPanel } from "../../src/browser/leaderboardPanel.js";
+import { leaderboardView } from "../../src/browser/leaderboardView.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -138,30 +139,53 @@ test("(C2) BEHAVIOUR: with a tab-open (isTitleOpen false) boardsPanel, the extra
 
 // ═══════════════════ (D) real-controller routing (D-01/D-03) ═══════════════
 
-/** openBoardsPanel(routeCalls) — a fresh createRecordingDocument()-backed panel over #screen-boards, the REAL boardsView, empty adapter data, and onRoute pushing into routeCalls. */
-function openBoardsPanel(routeCalls) {
+// Phase 84: the default board seam never resolves usable LEADERBOARD data
+// (an honest unreachable/offline snapshot with zero rows) — every test
+// below either stays on YOUR DEAD (Compete off, the board seam is never
+// called) or only asserts the synchronous "board" mode/title switch a
+// Compete-on open makes before any load() settles.
+const UNREACHABLE_SNAPSHOT = Object.freeze({
+  status: "unreachable",
+  reason: "offline",
+  stale: false,
+  fetchedAt: null,
+  rows: [],
+  total: null,
+  filteredTotal: null,
+  you: null,
+  youKnown: false,
+  uid: null,
+});
+
+/** openBoardsPanel(routeCalls, { compete = false } = {}) — a fresh createRecordingDocument()-backed v3 panel over #screen-boards, the REAL leaderboardView, an empty history and a never-resolving board seam, and onRoute pushing into routeCalls. */
+function openBoardsPanel(routeCalls, { compete = false } = {}) {
   const doc = createRecordingDocument();
   const host = doc.document.getElementById("screen-boards");
-  const panel = createBoardsPanel({
+  const panel = createLeaderboardPanel({
     host,
-    buildView: boardsView,
-    readData: () => ({ bests: null, graves: [], total: 0 }),
+    buildView: leaderboardView,
+    history: () => [],
+    board: { load: () => Promise.resolve(UNREACHABLE_SNAPSHOT), cached: () => null, clear: () => {} },
+    competeOn: () => compete === true,
     prefs: null,
+    now: () => Date.UTC(2026, 8, 29, 12, 0),
+    tzOffset: () => 0,
+    season: 1,
     reducedMotion: () => true,
     onRoute: (action, opts) => routeCalls.push({ action, ...opts }),
   });
   return { doc, host, panel };
 }
 
-test("(D1) BEHAVIOUR: openFromTitle({ hasHero: false }) opens on GRAVEYARD with the chevron, two dock buttons (title, roll) and the title-entry body marker", () => {
+test("(D1) BEHAVIOUR: openFromTitle({ hasHero: false }) with Compete off opens on YOUR DEAD with the chevron, two dock buttons (title, roll) and the title-entry body marker", () => {
   const { doc, host, panel } = openBoardsPanel([]);
   panel.openFromTitle({ hasHero: false });
 
-  const root = host.querySelector(".mw-bd");
-  assert.equal(root.dataset.board, "yard");
+  const root = host.querySelector(".mw-lb");
+  assert.equal(root.dataset.mode, "mine");
   assert.equal(root.dataset.entry, "title");
-  assert.equal(host.querySelectorAll(".mw-bd-back").length, 1);
-  const dockBtns = host.querySelector(".mw-bd-dock").querySelectorAll(".mw-bd-dock-btn");
+  assert.equal(host.querySelectorAll(".mw-lb-back").length, 1);
+  const dockBtns = host.querySelector(".mw-lb-dock").querySelectorAll(".mw-lb-dock-btn");
   assert.deepStrictEqual(
     dockBtns.map((b) => b.dataset.action),
     ["title", "roll"],
@@ -175,7 +199,7 @@ test("(D2) BEHAVIOUR: the chevron's onclick routes (\"title\", { hasHero: false 
   const { doc, host, panel } = openBoardsPanel(routeCalls);
   panel.openFromTitle({ hasHero: false });
 
-  host.querySelector(".mw-bd-back").onclick();
+  host.querySelector(".mw-lb-back").onclick();
 
   assert.deepStrictEqual(routeCalls, [{ action: "title", hasHero: false }]);
   assert.equal(doc.document.body.dataset.boardsEntry, undefined);
@@ -186,7 +210,7 @@ test("(D3) BEHAVIOUR: openFromTitle({ hasHero: true }) renders exactly one dock 
   const { host, panel } = openBoardsPanel(routeCalls);
   panel.openFromTitle({ hasHero: true });
 
-  const dockBtns = host.querySelector(".mw-bd-dock").querySelectorAll(".mw-bd-dock-btn");
+  const dockBtns = host.querySelector(".mw-lb-dock").querySelectorAll(".mw-lb-dock-btn");
   assert.deepStrictEqual(
     dockBtns.map((b) => b.dataset.action),
     ["dungeon"],
@@ -200,14 +224,14 @@ test("(D4) BEHAVIOUR: after either exit, isTitleOpen() is false and a later onDe
   {
     const { host, panel } = openBoardsPanel([]);
     panel.openFromTitle({ hasHero: false });
-    host.querySelector(".mw-bd-back").onclick();
+    host.querySelector(".mw-lb-back").onclick();
     assert.equal(panel.isTitleOpen(), false);
 
     panel.onDeadTab();
-    const root = host.querySelector(".mw-bd");
+    const root = host.querySelector(".mw-lb");
     assert.equal(root.dataset.entry, "tab");
-    assert.equal(host.querySelectorAll(".mw-bd-back").length, 0);
-    assert.equal(host.querySelector(".mw-bd-dock").hidden, true);
+    assert.equal(host.querySelectorAll(".mw-lb-back").length, 0);
+    assert.equal(host.querySelector(".mw-lb-dock").hidden, true);
   }
   {
     const { host, panel } = openBoardsPanel([]);
@@ -216,11 +240,20 @@ test("(D4) BEHAVIOUR: after either exit, isTitleOpen() is false and a later onDe
     assert.equal(panel.isTitleOpen(), false);
 
     panel.onDeadTab();
-    const root = host.querySelector(".mw-bd");
+    const root = host.querySelector(".mw-lb");
     assert.equal(root.dataset.entry, "tab");
-    assert.equal(host.querySelectorAll(".mw-bd-back").length, 0);
-    assert.equal(host.querySelector(".mw-bd-dock").hidden, true);
+    assert.equal(host.querySelectorAll(".mw-lb-back").length, 0);
+    assert.equal(host.querySelector(".mw-lb-dock").hidden, true);
   }
+});
+
+test("(D5) BEHAVIOUR: openFromTitle({ hasHero: false }) with Compete ON opens on LEADERBOARD (board mode)", () => {
+  const { host, panel } = openBoardsPanel([], { compete: true });
+  panel.openFromTitle({ hasHero: false });
+
+  const root = host.querySelector(".mw-lb");
+  assert.equal(root.dataset.mode, "board");
+  assert.equal(root.querySelector(".mw-lb-title").textContent, "LEADERBOARD");
 });
 
 // ═══════════════════ (E) classic graveyard retirement pins (D-14) ══════════

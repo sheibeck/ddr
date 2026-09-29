@@ -204,11 +204,14 @@ test("(B1) SOURCE: account.boot() runs once, after the initTitleScreen IIFE, and
   assert.doesNotMatch(MODULE, /await\s+account\./);
 });
 
-test("(B2) SOURCE: subscribe re-renders the three account surfaces, the open sheet and the Leaderboards panel; renderAccountSurfaces paints the title chip (chipView), the ☰ face (menuView via renderMenuFace) and the ACCOUNT host (sheetView via renderAccountMenu), once before boot too", () => {
+test("(B2) SOURCE: subscribe re-renders the three account surfaces, the open sheet, the Leaderboards panel and the title's VIEW THE DEAD gate; renderAccountSurfaces paints the title chip (chipView), the ☰ face (menuView via renderMenuFace) and the ACCOUNT host (sheetView via renderAccountMenu), once before boot too", () => {
   const region = sliceBetween(MODULE, "account.subscribe(() => {", "});");
   assert.match(region, /renderAccountSurfaces\(\);/);
   assert.match(region, /if \(accountSheetOpen\(\)\) renderAccountSheetNow\(\);/);
   assert.match(region, /boardsPanel\.refresh\(\);/);
+  // Phase 84 (BOARD-26): a Compete change on the title re-checks VIEW THE
+  // DEAD's history-or-Compete gate at once.
+  assert.match(region, /refreshTitleDead\(\);/);
   assert.equal(occurrences(MODULE, "renderAccountChips"), 0, "the Phase 67 two-chip renderer is retired");
   const surfaces = sliceBetween(MODULE, "function renderAccountSurfaces() {", "\n  account.subscribe(");
   assert.match(surfaces, /renderAccountChip\(document\.getElementById\("mw-title-acct-chip"\), account\.chipView\(\)\);/);
@@ -221,12 +224,12 @@ test("(B2) SOURCE: subscribe re-renders the three account surfaces, the open she
 
 // ═══════════════════════ (C) the Leaderboards identity seam (D-08) ═════════
 
-test("(C1) SOURCE: `let account = null;` precedes the Leaderboards panel instance, which reads identity() from it", () => {
+test("(C1) SOURCE: `let account = null;` precedes the v3 Leaderboards panel instance, and the panel block carries no identity seam (the board identity is read by the feed, not the panel)", () => {
   const letIdx = MODULE.indexOf("let account = null;");
-  const panelIdx = MODULE.indexOf("const boardsPanel = createBoardsPanel({");
+  const panelIdx = MODULE.indexOf("const boardsPanel = createLeaderboardPanel({");
   assert.ok(letIdx !== -1 && panelIdx !== -1 && letIdx < panelIdx);
-  const region = sliceBetween(MODULE, "const boardsPanel = createBoardsPanel({", "});");
-  assert.match(region, /identity: \(\) => \(account \? account\.identity\(\) : \{ signedIn: false, player: null \}\),/);
+  const region = sliceBetween(MODULE, "const boardsPanel = createLeaderboardPanel({", "\n  });");
+  assert.doesNotMatch(region, /\bidentity:/);
 });
 
 // ═══════════════════════ (D) the account sheet (D-09/D-10) ═════════════════

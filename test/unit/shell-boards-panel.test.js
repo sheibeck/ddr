@@ -1,16 +1,19 @@
 // test/unit/shell-boards-panel.test.js
 //
-// Phase 66 (BOARD-01..08, D-13/D-14/D-15/D-16), Plan 06 — wires the REAL
-// Leaderboards panel (src/browser/boardsPanel.js + boardsView.js) into the
-// shell sandbox and pins the DEAD tab end to end: sandbox rendering/
-// interaction behaviour through window.__mzShowTab("dead"), routeFromBoards'
-// dock/back routing (extracted from the module script and evaluated with a
-// fake window/showTitleScreen/surfaceWornReconcile), the deletion of the
-// classic graveyard screen/renderers/bridge, and the zero-network pin
-// (BOARD-08). Uses the comment-stripping and region-extraction helpers from
-// test/unit/shell-combat-over.test.js (mazeworld.html has no ESM surface a
-// test could import directly), and builds fixture runs with
-// engine/records.js the same way test/unit/boardsView.test.js does.
+// Phase 66 (BOARD-01..08, D-13/D-14/D-15/D-16), Plan 06 — original v1 panel
+// pins. Rewired for the v3 panel by Phase 84 (BOARD-18, BOARD-19, BOARD-25,
+// BOARD-27), Plan 08: wires the REAL v3 Leaderboards panel
+// (src/browser/leaderboardPanel.js + leaderboardView.js) into the shell
+// sandbox and pins the DEAD tab end to end: sandbox rendering/interaction
+// behaviour through window.__mzShowTab("dead"), routeFromBoards' dock/back
+// routing (extracted from the module script and evaluated with a fake
+// window/showTitleScreen/surfaceWornReconcile — unchanged by this plan),
+// the deletion of the classic graveyard screen/renderers/bridge, and the
+// zero-network pin (BOARD-08). Uses the comment-stripping and
+// region-extraction helpers from test/unit/shell-combat-over.test.js
+// (mazeworld.html has no ESM surface a test could import directly), and
+// builds fixture history records with runHistory.js#historyRecordOf the way
+// test/unit/runHistory.test.js does.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -20,7 +23,8 @@ import url from "node:url";
 
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox } from "./harness/shellSandbox.js";
-import { emptyBests, updateBests, runHash } from "../../engine/records.js";
+import { runHash } from "../../engine/records.js";
+import { historyRecordOf } from "../../src/browser/runHistory.js";
 import { newRun } from "../../engine/state.js";
 import { die } from "../../engine/death.js";
 import { makeRng } from "../../engine/rng.js";
@@ -53,9 +57,10 @@ function sliceBetween(source, startMarker, endMarker) {
   return source.slice(start, end);
 }
 
-// ─── fixtures (the same shape test/unit/boardsView.test.js's makeSummary
-// builds) ───────────────────────────────────────────────────────────────
-function makeSummary(overrides = {}) {
+// ─── fixtures — YOUR DEAD history records (runHistory.js#historyRecordOf
+// over a RunSummary-shaped object, the same construction
+// test/unit/runHistory.test.js uses) ─────────────────────────────────────
+function historyRun(overrides = {}) {
   const base = {
     season: 1,
     seed: 1,
@@ -74,17 +79,20 @@ function makeSummary(overrides = {}) {
     cause: "combat",
     note: "died to a rat",
     epitaph: "The rat remembers.",
+    when: 1700000000000,
     ...overrides,
   };
-  return { ...base, hash: runHash(base) };
+  const record = historyRecordOf({ ...base, hash: runHash(base) }, overrides.version || "2.1.0 (11)");
+  assert.ok(record, `expected a valid history record for ${JSON.stringify(overrides)}`);
+  return record;
 }
 
-/** twelveRuns() — 12 distinctly-floored summaries, so DEEPEST's top-ten cap is exercised. */
-function twelveRuns() {
+/** twelveHistoryRuns() — 12 distinctly-floored history records, so YOUR DEAD's top-ten cap is exercised. */
+function twelveHistoryRuns() {
   const runs = [];
   for (let i = 0; i < 12; i++) {
     runs.push(
-      makeSummary({
+      historyRun({
         name: `Runner ${i}`,
         floor: 20 - i,
         steps: 200 + i,
@@ -92,80 +100,125 @@ function twelveRuns() {
         kills: i,
         gold: 1000 - i * 10,
         level: (i % 5) + 1,
+        when: 1700000000000 - i * 3600000,
       }),
     );
   }
   return runs;
 }
 
-function bestsFromRuns(runs) {
-  let record = emptyBests();
-  for (const run of runs) record = updateBests(record, run).record;
-  return record;
+/** boardDoc(overrides) — a minimal, valid LEADERBOARD row doc (the shape runDoc.js#buildRunDoc produces). */
+function boardDoc(overrides = {}) {
+  return {
+    id: overrides.id || "doc1",
+    uid: overrides.uid || "uidOther",
+    handle: overrides.handle || "@mossjaw",
+    name: overrides.name || "Runner",
+    race: overrides.race || "Human",
+    sub: overrides.sub || "Wizard",
+    cls: overrides.cls || "Magic User",
+    level: overrides.level ?? 3,
+    floor: overrides.floor ?? 10,
+    day: overrides.day ?? 8,
+    steps: overrides.steps ?? 400,
+    kills: overrides.kills ?? 15,
+    gold: overrides.gold ?? 900,
+    sp: overrides.sp ?? 50,
+    cause: overrides.cause || "combat",
+    note: overrides.note || "cut down by a Werebeast",
+    epitaph: overrides.epitaph || "The dungeon remembers.",
+    when: overrides.when ?? Date.UTC(2026, 8, 28, 12, 0),
+    version: overrides.version || "2.1.0 (11)",
+  };
 }
 
-/** openDeadTab(boardsData) — a fresh sandbox with the real panel wired over `boardsData`, already on the DEAD tab. */
-function openDeadTab(boardsData) {
+/** READY_SNAPSHOT — a resolved, cache-hit LEADERBOARD board snapshot: two rows, no pinned own-best row. */
+const READY_SNAPSHOT = Object.freeze({
+  status: "ready",
+  stale: false,
+  fetchedAt: Date.UTC(2026, 8, 29, 11, 0),
+  rows: Object.freeze([boardDoc({ id: "doc1", handle: "@mossjaw" }), boardDoc({ id: "doc2", handle: "@sootknee", uid: "uidOther2" })]),
+  total: 2,
+  filteredTotal: null,
+  you: null,
+  youKnown: true,
+  uid: "uidSelf",
+});
+
+/** openDeadTab(boardsOpts) — a fresh sandbox with the real v3 panel wired over `{ history, compete, board }`, already on the DEAD tab. */
+function openDeadTab(boardsOpts) {
   const doc = createRecordingDocument();
-  const sandbox = loadShellSandbox({ doc, boards: boardsData });
+  const sandbox = loadShellSandbox({ doc, boards: boardsOpts });
   sandbox.context.window.__mzShowTab("dead");
   const screenDead = doc.elementsById.get("screen-dead");
-  return { doc, sandbox, screenDead, root: screenDead.querySelector(".mw-bd") };
+  return { doc, sandbox, screenDead, root: screenDead.querySelector(".mw-lb") };
+}
+
+/** statPicker(root) — the RANK BY picker button (recordingDom has no attribute-selector support, so filter .mw-lb-picker by dataset). */
+function statPicker(root) {
+  const picker = root.querySelectorAll(".mw-lb-picker").find((p) => p.dataset.picker === "stat");
+  assert.ok(picker, "expected the RANK BY picker");
+  return picker;
+}
+
+/** pickStat(root, label) — opens the RANK BY sheet and taps the option whose label matches. */
+function pickStat(root, label) {
+  statPicker(root).onclick();
+  const opt = root.querySelectorAll(".mw-lb-opt").find((o) => o.querySelector(".mw-lb-opt-label").textContent === label);
+  assert.ok(opt, `expected a RANK BY option labelled ${label}`);
+  opt.onclick();
 }
 
 // ═══════════════════════ (A) sandbox: the DEAD tab entry ═══════════════════
 
-test("(A1) BEHAVIOUR: __mzShowTab(\"dead\") leaves #screen-dead holding exactly one .mw-bd root, tab-entered, INTERRED reading the lifetime total", () => {
-  const runs = twelveRuns();
-  const { screenDead, root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  assert.equal(screenDead.querySelectorAll(".mw-bd").length, 1);
-  assert.ok(root, "expected a .mw-bd root");
+test("(A1) BEHAVIOUR: __mzShowTab(\"dead\") leaves #screen-dead holding exactly one .mw-lb root, tab-entered, on YOUR DEAD with INTERRED reading the history count", () => {
+  const runs = twelveHistoryRuns();
+  const { screenDead, root } = openDeadTab({ history: runs, compete: false });
+  assert.equal(screenDead.querySelectorAll(".mw-lb").length, 1);
+  assert.ok(root, "expected a .mw-lb root");
   assert.equal(root.dataset.entry, "tab");
-  assert.equal(root.querySelector(".mw-bd-interred-n").textContent, "37");
+  assert.equal(root.dataset.mode, "mine");
+  assert.equal(root.querySelector(".mw-lb-box-n").textContent, String(runs.length));
 });
 
-test("(A2) BEHAVIOUR: the rail carries all six chips (LEANEST retired, BOARD-17), and DEEPEST is the default active chip", () => {
-  const runs = twelveRuns();
-  const { root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  const chips = root.querySelectorAll(".mw-bd-chip");
-  assert.equal(chips.length, 6);
-  const active = chips.filter((c) => c.dataset.on === "1");
-  assert.equal(active.length, 1);
-  assert.equal(active[0].dataset.board, "deep");
+test("(A2) BEHAVIOUR: YOUR DEAD lists exactly ten rows (the history's own top-ten cap over 12 runs)", () => {
+  const runs = twelveHistoryRuns();
+  const { root } = openDeadTab({ history: runs, compete: false });
+  assert.equal(root.querySelectorAll(".mw-lb-row").length, 10);
 });
 
-test("(A3) BEHAVIOUR: DEEPEST lists exactly ten rows (bests.boards.deep's top-ten cap over 12 folded runs)", () => {
-  const runs = twelveRuns();
-  const { root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  assert.equal(root.querySelectorAll(".mw-bd-row").length, 10);
+test("(A3) BEHAVIOUR: a tab-opened panel has no chevron and a hidden dock", () => {
+  const runs = twelveHistoryRuns();
+  const { root } = openDeadTab({ history: runs, compete: false });
+  assert.equal(root.querySelectorAll(".mw-lb-back").length, 0);
+  assert.equal(root.querySelector(".mw-lb-dock").hidden, true);
 });
 
-test("(A4) BEHAVIOUR: a tab-opened panel has no chevron and a hidden dock", () => {
-  const runs = twelveRuns();
-  const { root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  assert.equal(root.querySelectorAll(".mw-bd-back").length, 0);
-  assert.equal(root.querySelector(".mw-bd-dock").hidden, true);
+test("(A4) BEHAVIOUR: a tab-opened panel never sets body[data-boards-entry]", () => {
+  const runs = twelveHistoryRuns();
+  const { sandbox } = openDeadTab({ history: runs, compete: false });
+  assert.equal(sandbox.context.window.document.body.dataset.boardsEntry, undefined);
 });
 
 // Phase 78 (HUD-03): showTab("dead") passes { dead } to onDeadTab, so a dead
 // hero's DEAD tab docks FINAL SHEET and BURY THEM; a live hero's stays hidden.
 function openDeadTabWith(state) {
   const doc = createRecordingDocument();
-  const sandbox = loadShellSandbox({ doc, boards: { bests: null, graves: [], total: 0 } });
+  const sandbox = loadShellSandbox({ doc, boards: { history: [], compete: false } });
   sandbox.setState(state);
   sandbox.paint();
   sandbox.context.window.__mzShowTab("dead");
-  const root = doc.elementsById.get("screen-dead").querySelector(".mw-bd");
+  const root = doc.elementsById.get("screen-dead").querySelector(".mw-lb");
   return { doc, sandbox, root };
 }
 
-test("(A6) BEHAVIOUR (HUD-03): a dead hero's DEAD tab docks FINAL SHEET then BURY THEM, and each routes through onRoute", () => {
+test("(A5) BEHAVIOUR (HUD-03): a dead hero's DEAD tab docks FINAL SHEET then BURY THEM, and each routes through onRoute", () => {
   const s = newRun(5, [], { force: { cls: "Thief" } });
   die(s, "combat", "a rat", makeRng(4), [], () => 1);
   const { root, sandbox } = openDeadTabWith(s);
-  const dock = root.querySelector(".mw-bd-dock");
+  const dock = root.querySelector(".mw-lb-dock");
   assert.equal(dock.hidden, false);
-  const btns = dock.querySelectorAll(".mw-bd-dock-btn");
+  const btns = dock.querySelectorAll(".mw-lb-dock-btn");
   assert.deepStrictEqual(btns.map((b) => [b.dataset.action, b.textContent, b.dataset.primary]), [
     ["finalSheet", "FINAL SHEET", "0"],
     ["bury", "BURY THEM", "1"],
@@ -175,23 +228,17 @@ test("(A6) BEHAVIOUR (HUD-03): a dead hero's DEAD tab docks FINAL SHEET then BUR
   assert.deepStrictEqual(sandbox.boardsRoutes.map((r) => r.action), ["finalSheet", "bury"]);
 });
 
-test("(A7) BEHAVIOUR (HUD-03): a live hero's DEAD tab keeps a hidden dock", () => {
+test("(A6) BEHAVIOUR (HUD-03): a live hero's DEAD tab keeps a hidden dock", () => {
   const { root } = openDeadTabWith(newRun(5, [], { force: { cls: "Thief" } }));
-  assert.equal(root.querySelector(".mw-bd-dock").hidden, true);
+  assert.equal(root.querySelector(".mw-lb-dock").hidden, true);
 });
 
-test("(A5) BEHAVIOUR: a tab-opened panel never sets body[data-boards-entry]", () => {
-  const runs = twelveRuns();
-  const { sandbox } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  assert.equal(sandbox.context.window.document.body.dataset.boardsEntry, undefined);
-});
-
-test("(A6) BEHAVIOUR: the in-game DEAD tab keeps the HUD and the condition strip (Phase 70 D-08); only the title-opened panel hides them, through the body marker", () => {
-  const runs = twelveRuns();
-  const { doc, sandbox } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
+test("(A7) BEHAVIOUR: the in-game DEAD tab keeps the HUD and the condition strip (Phase 70 D-08); only the title-opened panel hides them, through the body marker", () => {
+  const runs = twelveHistoryRuns();
+  const { doc, sandbox } = openDeadTab({ history: runs, compete: false });
   assert.notEqual(doc.elementsById.get("mw-hud")?.dataset?.offtab, "1");
   assert.notEqual(doc.elementsById.get("mm-conditions")?.dataset?.offtab, "1");
-  // Tab mode sets no body marker (A5), so the title-mode hide rules below
+  // Tab mode sets no body marker (A4), so the title-mode hide rules below
   // never apply to the in-game tab. shell-boards-entry.test.js (D1) proves
   // openFromTitle sets the "title" marker these rules key on.
   assert.equal(sandbox.context.window.document.body.dataset.boardsEntry, undefined);
@@ -200,83 +247,76 @@ test("(A6) BEHAVIOUR: the in-game DEAD tab keeps the HUD and the condition strip
   assert.match(html, /^body\[data-boards-entry="title"\] #mm-conditions\{display:none\}$/m);
 });
 
-// ═══════════════════════ (B) board memory (D-04) ════════════════════════════
+// ═══════════════════════ (B) RANK BY stat memory (D-04) ═════════════════════
 
-test("(B1) BEHAVIOUR: tapping the LONGEST chip makes it active and stores \"days\" under ddr.boards.last.v1 (LEANEST retired, BOARD-17)", () => {
-  const runs = twelveRuns();
-  const { sandbox, screenDead, root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  const daysChip = root.querySelectorAll(".mw-bd-chip").find((c) => c.dataset.board === "days");
-  assert.ok(daysChip, "expected a LONGEST chip");
-  daysChip.onclick();
+test("(B1) BEHAVIOUR: picking DAYS in the RANK BY sheet makes it the active picker value and stores \"days\" under ddr.boards.last.v1", () => {
+  const runs = twelveHistoryRuns();
+  const { sandbox, root } = openDeadTab({ history: runs, compete: false });
+  pickStat(root, "DAYS");
 
-  const after = screenDead.querySelector(".mw-bd");
-  const active = after.querySelectorAll(".mw-bd-chip").filter((c) => c.dataset.on === "1");
-  assert.equal(active.length, 1);
-  assert.equal(active[0].dataset.board, "days");
+  assert.equal(statPicker(root).querySelector(".mw-lb-picker-val").textContent, "DAYS");
   assert.equal(sandbox.context.window.localStorage.getItem("ddr.boards.last.v1"), "days");
 });
 
-test("(B2) BEHAVIOUR: the DEAD tab reopens on the last board viewed after a detour through the map", () => {
-  const runs = twelveRuns();
-  const { sandbox, screenDead, root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  root.querySelectorAll(".mw-bd-chip").find((c) => c.dataset.board === "days").onclick();
+test("(B2) BEHAVIOUR: the DEAD tab reopens on the last RANK BY stat after a detour through the map", () => {
+  const runs = twelveHistoryRuns();
+  const { sandbox, screenDead, root } = openDeadTab({ history: runs, compete: false });
+  pickStat(root, "DAYS");
 
   sandbox.context.window.__mzShowTab("maze");
   sandbox.context.window.__mzShowTab("dead");
 
-  const reopened = screenDead.querySelector(".mw-bd");
-  const active = reopened.querySelectorAll(".mw-bd-chip").filter((c) => c.dataset.on === "1");
-  assert.equal(active.length, 1);
-  assert.equal(active[0].dataset.board, "days");
+  const reopened = screenDead.querySelector(".mw-lb");
+  assert.equal(statPicker(reopened).querySelector(".mw-lb-picker-val").textContent, "DAYS");
 });
 
 // ═══════════════════════ (C) row tap-expand (D-13) ══════════════════════════
 
-test("(C1) BEHAVIOUR: tapping a row opens exactly one .mw-bd-detail carrying six .mw-bd-stat chips", () => {
-  const runs = twelveRuns();
-  const { screenDead, root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [], total: 12 });
-  assert.equal(root.querySelectorAll(".mw-bd-detail").length, 0);
+test("(C1) BEHAVIOUR: tapping a row opens exactly one .mw-lb-detail carrying six .mw-lb-stat chips", () => {
+  const runs = twelveHistoryRuns();
+  const { screenDead, root } = openDeadTab({ history: runs, compete: false });
+  assert.equal(root.querySelectorAll(".mw-lb-detail").length, 0);
 
-  root.querySelectorAll(".mw-bd-row")[0].onclick();
+  root.querySelectorAll(".mw-lb-row")[0].onclick();
 
-  const after = screenDead.querySelector(".mw-bd");
-  const details = after.querySelectorAll(".mw-bd-detail");
+  const after = screenDead.querySelector(".mw-lb");
+  const details = after.querySelectorAll(".mw-lb-detail");
   assert.equal(details.length, 1);
-  assert.equal(details[0].querySelectorAll(".mw-bd-stat").length, 6);
+  assert.equal(details[0].querySelectorAll(".mw-lb-stat").length, 6);
 });
 
-test("(C2) BEHAVIOUR: opening a different row leaves exactly one .mw-bd-detail open (the previous row's detail closes)", () => {
-  const runs = twelveRuns();
-  const { screenDead, root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [], total: 12 });
-  root.querySelectorAll(".mw-bd-row")[0].onclick();
+test("(C2) BEHAVIOUR: opening a different row leaves exactly one .mw-lb-detail open (the previous row's detail closes)", () => {
+  const runs = twelveHistoryRuns();
+  const { screenDead, root } = openDeadTab({ history: runs, compete: false });
+  root.querySelectorAll(".mw-lb-row")[0].onclick();
 
-  const afterFirst = screenDead.querySelector(".mw-bd");
-  afterFirst.querySelectorAll(".mw-bd-row")[1].onclick();
+  const afterFirst = screenDead.querySelector(".mw-lb");
+  afterFirst.querySelectorAll(".mw-lb-row")[1].onclick();
 
-  const afterSecond = screenDead.querySelector(".mw-bd");
-  assert.equal(afterSecond.querySelectorAll(".mw-bd-detail").length, 1);
+  const afterSecond = screenDead.querySelector(".mw-lb");
+  assert.equal(afterSecond.querySelectorAll(".mw-lb-detail").length, 1);
 });
 
-test("(C3) BEHAVIOUR: tapping the same (already-open) row again closes it — zero .mw-bd-detail remain", () => {
-  const runs = twelveRuns();
-  const { screenDead, root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [], total: 12 });
-  root.querySelectorAll(".mw-bd-row")[0].onclick();
-  let current = screenDead.querySelector(".mw-bd");
-  current.querySelectorAll(".mw-bd-row")[1].onclick();
-  current = screenDead.querySelector(".mw-bd");
-  current.querySelectorAll(".mw-bd-row")[1].onclick();
+test("(C3) BEHAVIOUR: tapping the same (already-open) row again closes it — zero .mw-lb-detail remain", () => {
+  const runs = twelveHistoryRuns();
+  const { screenDead, root } = openDeadTab({ history: runs, compete: false });
+  root.querySelectorAll(".mw-lb-row")[0].onclick();
+  let current = screenDead.querySelector(".mw-lb");
+  current.querySelectorAll(".mw-lb-row")[1].onclick();
+  current = screenDead.querySelector(".mw-lb");
+  current.querySelectorAll(".mw-lb-row")[1].onclick();
 
-  const finalRoot = screenDead.querySelector(".mw-bd");
-  assert.equal(finalRoot.querySelectorAll(".mw-bd-detail").length, 0);
+  const finalRoot = screenDead.querySelector(".mw-lb");
+  assert.equal(finalRoot.querySelectorAll(".mw-lb-detail").length, 0);
 });
 
 // ═══════════════════════ (D) empty state (D-12) ═════════════════════════════
 
-test("(D1) BEHAVIOUR: empty data (null bests, no graves, total 0) shows INTERRED \"0\", a .mw-bd-empty line, and a NO ENTRY standing card", () => {
-  const { root } = openDeadTab({ bests: null, graves: [], total: 0 });
-  assert.equal(root.querySelector(".mw-bd-interred-n").textContent, "0");
-  assert.equal(root.querySelectorAll(".mw-bd-empty").length, 1);
-  assert.equal(root.querySelector(".mw-bd-standing-label").textContent, "NO ENTRY");
+test("(D1) BEHAVIOUR: an empty history shows INTERRED \"0\" and NOBODY YET", () => {
+  const { root } = openDeadTab({ history: [], compete: false });
+  assert.equal(root.querySelector(".mw-lb-box-n").textContent, "0");
+  assert.equal(root.querySelectorAll(".mw-lb-empty").length, 1);
+  assert.equal(root.querySelector(".mw-lb-empty-title").textContent, "NOBODY YET");
 });
 
 // ═══════════════════════ (E) routeFromBoards (D-01) ═════════════════════════
@@ -361,69 +401,68 @@ test("(F1) SOURCE: the classic graveyard renderers, its copy and its bridge are 
   assert.doesNotMatch(CODE, /Showing last/);
 });
 
-test("(F2) SOURCE: showTab's DEAD branch calls the boards bridge, refreshTitleDead reads getGraveyard(), and the module script carries the three Phase 66 import lines", () => {
-  // Phase 78 (HUD-03): the call now carries { dead } (it was
-  // `onDeadTab?.();`), so a dead hero's tab docks FINAL SHEET and BURY THEM.
+test("(F2) SOURCE: showTab's DEAD branch calls the boards bridge, refreshTitleDead reads getRunHistory()/competeIsOn(), and the module script carries the v3 Phase 84 import lines", () => {
+  // Phase 78 (HUD-03): the call carries { dead }, so a dead hero's tab docks
+  // FINAL SHEET and BURY THEM.
   assert.match(CODE, /if \(name === "dead"\) window\.__mzBoards\?\.onDeadTab\?\.\(\{ dead \}\);/);
   const refreshTitleDeadRegion = sliceBetween(CODE, "function refreshTitleDead()", "function showTitleScreen(");
-  assert.match(refreshTitleDeadRegion, /getGraveyard\(\)/);
-  assert.match(CODE, /import \{ getBests, getGraveyard \} from "\.\/src\/browser\/engineAdapter\.js";/);
-  assert.match(CODE, /import \{ createBoardsPanel \} from "\.\/src\/browser\/boardsPanel\.js";/);
-  assert.match(CODE, /import \{ boardsView \} from "\.\/src\/browser\/boardsView\.js";/);
+  assert.match(refreshTitleDeadRegion, /getRunHistory\(\)\.length > 0 \|\| competeIsOn\(\)/);
+  assert.match(CODE, /import \{ getRunHistory \} from "\.\/src\/browser\/engineAdapter\.js";/);
+  assert.match(CODE, /import \{ createLeaderboardPanel \} from "\.\/src\/browser\/leaderboardPanel\.js";/);
+  assert.match(CODE, /import \{ leaderboardView \} from "\.\/src\/browser\/leaderboardView\.js";/);
 });
 
-// ═══════════════════════ (G) Phase 70 (D-11): the LINEAGE hero seam ═════════
+// ═══════════════════════ (G) Compete ON: LEADERBOARD (BOARD-18/19/27) ═══════
 
-test("(G1) SOURCE: the createBoardsPanel block carries exactly one hero seam, reading window.__mzState and the dead flag", () => {
-  const panel = sliceBetween(CODE, "const boardsPanel = createBoardsPanel({", "\n  });");
-  const seams = panel.split("\n").filter((line) => /^\s*hero:/.test(line));
-  assert.equal(seams.length, 1, "exactly one hero seam");
-  const [seam] = seams;
-  assert.match(seam, /window\.__mzState\?\.get\?\.\(\)/);
-  assert.match(seam, /!st\.dead/);
-  assert.match(seam, /\{ race: st\.c\.race, sub: st\.c\.sub \}/);
-  assert.match(seam, /: null; \},$/);
+test("(G1) BEHAVIOUR: Compete ON with a board seam answering a ready snapshot opens on LEADERBOARD, rendering its rows", () => {
+  const history = twelveHistoryRuns();
+  const board = { load: () => Promise.resolve(READY_SNAPSHOT), cached: () => READY_SNAPSHOT, clear: () => {} };
+  const { root } = openDeadTab({ history, compete: true, board });
+
+  assert.equal(root.dataset.mode, "board");
+  assert.equal(root.querySelector(".mw-lb-title").textContent, "LEADERBOARD");
+  const rows = root.querySelectorAll(".mw-lb-row");
+  assert.equal(rows.length, 2);
+  assert.deepStrictEqual(
+    rows.map((r) => r.querySelector(".mw-lb-handle").textContent),
+    ["@mossjaw", "@sootknee"],
+  );
 });
 
-/** heroSeam(window) — the shipped `hero:` seam, extracted from the createBoardsPanel block and evaluated over a fake window. */
-function heroSeam(fakeWindow) {
-  const panel = sliceBetween(CODE, "const boardsPanel = createBoardsPanel({", "\n  });") + "\n";
-  const m = panel.match(/\n\s*hero: ([^\n]*?),\n/);
-  assert.ok(m, "hero seam");
-  return new Function("window", `return (${m[1]});`)(fakeWindow);
-}
+test("(G2) BEHAVIOUR: the YOURS › box on LEADERBOARD reads the local history count", () => {
+  const history = twelveHistoryRuns();
+  const board = { load: () => Promise.resolve(READY_SNAPSHOT), cached: () => READY_SNAPSHOT, clear: () => {} };
+  const { root } = openDeadTab({ history, compete: true, board });
 
-test("(G2) BEHAVIOUR: the hero seam answers the living hero's { race, sub }, and null when S is absent, heroless or dead", () => {
-  const withS = (S) => ({ __mzState: { get: () => S } });
-  const hero = { race: "Troll", sub: "Acrobat", cls: "Thief", name: "Grub" };
-  assert.deepStrictEqual(heroSeam(withS({ c: hero, dead: false }))(), { race: "Troll", sub: "Acrobat" });
-  assert.deepStrictEqual(heroSeam(withS({ c: hero }))(), { race: "Troll", sub: "Acrobat" });
-  assert.equal(heroSeam(withS({ c: hero, dead: true }))(), null);
-  assert.equal(heroSeam(withS(null))(), null);
-  assert.equal(heroSeam(withS({ dead: false }))(), null);
-  assert.equal(heroSeam({})(), null, "no __mzState yet");
+  assert.equal(root.querySelector(".mw-lb-box-label").textContent, "YOURS ›");
+  assert.equal(root.querySelector(".mw-lb-box-n").textContent, String(history.length));
 });
 
-test("(G3) BEHAVIOUR: in the real DEAD tab, tapping LINEAGE shows the RACE / SUB-CLASS picker (the sandbox panel has no hero seam: the newest grave's lineage is on)", () => {
-  const runs = twelveRuns().map((r, i) => makeSummary({ ...r, race: "Dwarven", sub: i % 2 ? "Knight" : "Soldier" }));
-  const { root } = openDeadTab({ bests: bestsFromRuns(runs), graves: [...runs].reverse(), total: 37 });
-  const section = root.querySelector(".mw-bd-lineage");
-  assert.equal(section.hidden, true, "hidden off LINEAGE");
-  root.querySelector(".mw-bd-rail").children.find((c) => c.dataset.board === "combo").onclick();
-  assert.equal(section.hidden, false);
-  assert.deepStrictEqual(section.children.map((r) => r.dataset.kind), ["race", "sub"]);
-  const onId = (kind) =>
-    section.children.find((r) => r.dataset.kind === kind).children[1].children.find((c) => c.dataset.on === "1").dataset.id;
-  const newest = runs[runs.length - 1];
-  assert.deepStrictEqual([onId("race"), onId("sub")], [newest.race, newest.sub]);
-  const rows = root.querySelectorAll(".mw-bd-row");
-  assert.equal(rows.length, 6, "the six runs of that lineage");
-  // A SUB-CLASS chip tap re-lists the board.
-  section.children[1].children[1].children.find((c) => c.dataset.id === (newest.sub === "Knight" ? "Soldier" : "Knight")).onclick();
-  assert.equal(root.querySelectorAll(".mw-bd-row").length, 6);
-  section.children[1].children[1].children.find((c) => c.dataset.id === "Acrobat").onclick();
-  assert.equal(root.querySelectorAll(".mw-bd-row").length, 0);
-  assert.equal(root.querySelector(".mw-bd-empty").textContent, "No Dwarven Acrobat of yours has died yet. The dungeon is patient.");
+test("(G3) BEHAVIOUR: LEADERBOARD shows the SEASON OF THE ALPHA line under the title", () => {
+  const board = { load: () => Promise.resolve(READY_SNAPSHOT), cached: () => READY_SNAPSHOT, clear: () => {} };
+  const { root } = openDeadTab({ history: [], compete: true, board });
+
+  assert.equal(root.querySelector(".mw-lb-season").textContent, "SEASON OF THE ALPHA");
+});
+
+// ═══ (H) SOURCE pins: the createLeaderboardPanel block and boardFetchFn ═════
+
+test("(H1) SOURCE: the createLeaderboardPanel block carries history, board, competeOn and season seams, and none of the retired Play Games seams", () => {
+  const panel = sliceBetween(CODE, "const boardsPanel = createLeaderboardPanel({", "\n  });");
+  assert.match(panel, /history: \(\) => getRunHistory\(\)/);
+  assert.match(panel, /board: boardFeed/);
+  assert.match(panel, /competeOn: competeIsOn/);
+  assert.match(panel, /season: SEASON/);
+  for (const retired of [/\bidentity:/, /\bglobal:/, /\bseasons:/, /\bonFriendsConsent:/, /\bhero:/, /\bonOpen:/]) {
+    assert.doesNotMatch(panel, retired, `expected no retired Play Games seam matching ${retired}`);
+  }
+});
+
+test("(H2) SOURCE (T-84-11): boardFetchFn selects the live fetch only on a native platform, else the seeded dev-loop fake", () => {
+  const region = sliceBetween(CODE, "function boardFetchFn()", "\n  }");
+  assert.match(region, /window\.Capacitor\?\.isNativePlatform\?\.\(\)/);
+  assert.match(region, /globalThis\.fetch\.bind\(globalThis\)/);
+  assert.match(region, /createFakeBoardFetch\(\{ runs: devBoardRuns\(\) \}\)\.fetchFn/);
 });
 
 test("(F3) SOURCE (BOARD-08): the comment-stripped shell makes zero network calls", () => {
