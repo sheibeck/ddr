@@ -440,10 +440,11 @@ canvas{display:block;margin:0 auto;max-width:100%;background:#0d0b08;border:1px 
    USER MOCK RULING 2026-09-22 (Plan 05, amending the 2026-09-21 ruling
    above): "too many buttons; we don't need more rails on the top; get rid
    of clutter." The chip band is retired outright — no band 4 at all. The
-   four controls (MARKS, CENTRE MAP, MAKE CAMP, SETTINGS) move into a ☰
-   dropdown menu that hangs from band 2 (see .mw-hud-menu-wrap below and
-   src/browser/hudMenu.js); the four legacy chip ids stay as the menu rows'
-   own ids so the classic listener lines below are byte-identical. */
+   controls (MAKE CAMP, MARKS, SETTINGS) move into a ☰ dropdown menu that
+   hangs from band 2 (see .mw-hud-menu-wrap below and
+   src/browser/hudMenu.js); the legacy chip ids stay as the menu rows'
+   own ids so the classic listener lines below are byte-identical. Phase 85
+   (85-01, ACCT-03): the centring row that once sat here is gone. */
 /* Phase 35 (MAP-07): the pulsing gold ring over the party's canvas cell — a
    DOM element (not a canvas rAF loop), so the blanket prefers-reduced-motion
    rule (~L814) zeroes its animation for reduced-motion users (the ring then
@@ -1217,10 +1218,10 @@ html,body{height:100%}
         is a one-time layout change, not a camera move).
      3. Band 2 (.mw-hud-band2) — the counters (.mw-hud-counters:
         Depth/Day/Squares/Rations) on the left, and the ☰ HUD menu
-        (.mw-hud-menu-wrap) flush right on the same row. MARKS, CENTRE MAP,
-        MAKE CAMP and SETTINGS — the former band 4 — live in the menu's
-        dropdown now (src/browser/hudMenu.js); each row keeps its legacy
-        chip id so the classic listener lines below route unchanged.
+        (.mw-hud-menu-wrap) flush right on the same row. MAKE CAMP, MARKS
+        and SETTINGS — the former band 4 — live in the menu's dropdown now
+        (src/browser/hudMenu.js); each row keeps its legacy chip id so the
+        classic listener lines below route unchanged.
      4. Condition chips (.mw-cond-strip) — unchanged: still hidden when
         nothing is active.
    The HUD (bands 1-3 + conditions) shows on all five in-game tabs,
@@ -1341,12 +1342,12 @@ html,body{height:100%}
    with the account sheet's own .mw-acct-* rows (identity, the one action,
    the helper line, Compete ON/OFF), so no menu row is ever :first-child
    now and the old border-top reset is gone. The block carries the rows'
-   14px inset and a divider before MARKS; flex:none keeps the scrolling
-   dropdown from squeezing it. */
+   14px inset and a divider before MAKE CAMP (Phase 85, 85-01: the first
+   row under the account block); flex:none keeps the scrolling dropdown
+   from squeezing it. */
 .mw-hud-menu-acct{flex:none;padding:0 14px;border-bottom:2px solid #3a3226}
 .mw-hud-menu-glyph{flex:none;width:18px;height:14px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);line-height:1}
 .mw-hud-menu-glyph[data-glyph="marks"]{color:#e8c97a;font-size:13px}
-.mw-hud-menu-glyph[data-glyph="centre"]{color:#8fb08a;font-size:14px}
 .mw-hud-menu-glyph[data-glyph="camp"]{color:#b9a4ef;font-size:16px}
 .mw-hud-menu-glyph[data-glyph="settings"]{color:#9a8f76;font-size:15px}
 /* Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two always-enabled rows. */
@@ -1369,10 +1370,9 @@ html,body{height:100%}
 .mw-hud-menu-quit[data-dead="0"][data-armed="1"] .mw-hud-menu-label[data-when="armed"]{display:inline}
 .mw-hud-menu-quit[data-dead="1"] .mw-hud-menu-label[data-when="dead"]{display:inline}
 /* Phase 70 (D-08): a row that cannot act in the current context (MAKE CAMP
-   mid-encounter, dead or with no hero; CENTRE MAP while an encounter covers
-   the map) is shown, dimmed, never hidden. syncHudMenuRows sets the
-   disabled property (plus the ARIA flag); the generic button:active rule
-   already skips
+   mid-encounter, dead or with no hero) is shown, dimmed, never hidden.
+   syncHudMenuRows sets the disabled property (plus the ARIA flag); the
+   generic button:active rule already skips
    :disabled, so it shows no press. Scoped under #mw-hud-menu (1,2,0) so it
    outranks #btn-camp[data-short="1"] (1,1,0). The glyph greys with the
    label. No motion. */
@@ -2471,13 +2471,15 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
         <div class="mw-hud-item mw-hud-rations" id="m-rat-wrap">Rations<b id="m-rations">5</b></div>
       </div>
       <!-- Phase 57 (LAYOUT-04/05), Plan 05 — the hamburger menu. The first
-           four rows keep the legacy chip ids (mw-chip-marks, mw-chip-centre,
-           btn-camp, mw-gear-btn) so the classic script's existing listener
-           lines (openMarksLegend, centerMap, openCampSheet,
-           openSettingsSheet) keep their handlers — see
-           src/browser/hudMenu.js's HUD_MENU_ITEMS for the label/glyph/colour
-           source of truth. Phase 79.3 (BUG-01 D-08, NOTES-02 D-20) adds two
-           more rows, REPORT A BUG and PATCH NOTES, with their own ids.
+           three rows keep the legacy chip ids (btn-camp, mw-chip-marks,
+           mw-gear-btn) so the classic script's existing listener lines
+           (openCampSheet, openMarksLegend, openSettingsSheet) keep their
+           handlers — see src/browser/hudMenu.js's HUD_MENU_ITEMS for the
+           label/glyph/colour source of truth. Phase 79.3 (BUG-01 D-08,
+           NOTES-02 D-20) adds two more rows, REPORT A BUG and PATCH NOTES,
+           with their own ids. Phase 85 (85-01, ACCT-03): MAKE CAMP is the
+           first row under the account block, above MARKS; the order is
+           MAKE CAMP, MARKS, SETTINGS, REPORT A BUG, PATCH NOTES.
            Phase 70 (POLISH-02, D-03/D-04, superseding Phase 67 D-05): the
            button wears the Play Games account face (the initials avatar
            when signed in, this static plain ☰ otherwise; painted by
@@ -2489,14 +2491,8 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
         <button type="button" class="mw-hud-menu-btn" id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"><span class="mw-hud-menu-face" data-state="menu" aria-hidden="true">&#9776;</span></button>
         <div class="mw-hud-menu" id="mw-hud-menu" role="menu" aria-label="Map menu" data-open="0">
           <div class="mw-hud-menu-acct" id="mw-hud-menu-acct" role="group" aria-label="Play Games account"></div>
-          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-marks"><span class="mw-hud-menu-glyph" data-glyph="marks" aria-hidden="true">&#9672;</span><span class="mw-hud-menu-label">MARKS</span></button>
-          <!-- USER RULING 2026-09-22: "CENTRE MAP" (not the shipped chip's
-               "CENTRE") — the menu opens from every tab now, so the row
-               names what it centres. The one wording change adopted from
-               the mock (discovery C); every other row/surface keeps the
-               app's own wording. -->
-          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-centre"><span class="mw-hud-menu-glyph" data-glyph="centre" aria-hidden="true">&#8853;</span><span class="mw-hud-menu-label">CENTRE MAP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="btn-camp"><span class="mw-hud-menu-glyph" data-glyph="camp" aria-hidden="true">&#9790;</span><span class="mw-hud-menu-label">MAKE CAMP</span></button>
+          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-marks"><span class="mw-hud-menu-glyph" data-glyph="marks" aria-hidden="true">&#9672;</span><span class="mw-hud-menu-label">MARKS</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn"><span class="mw-hud-menu-glyph" data-glyph="settings" aria-hidden="true">&#9881;</span><span class="mw-hud-menu-label">SETTINGS</span></button>
           <!-- Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and
                PATCH NOTES, always enabled; their sheets are wired by the
@@ -2554,12 +2550,12 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
     <section class="mw-screen" id="screen-maze" data-screen="maze">
       <!-- Phase 57 (LAYOUT-04), Plan 05 (USER MOCK RULING 2026-09-22): the
            former band-4 map chip strip is retired outright — #screen-maze
-           opens straight onto .mazebox now. MARKS, CENTRE MAP, MAKE CAMP
-           and SETTINGS moved into the ☰ HUD menu on band 2 (see the
-           header above and src/browser/hudMenu.js); the four chip ids
-           (mw-chip-marks, mw-chip-centre, btn-camp, mw-gear-btn) live on
-           the menu's rows now, unchanged, so paint()'s short-state block
-           and the classic listener lines below still find them. -->
+           opens straight onto .mazebox now. MAKE CAMP, MARKS and SETTINGS
+           moved into the ☰ HUD menu on band 2 (see the header above and
+           src/browser/hudMenu.js); the three chip ids (btn-camp,
+           mw-chip-marks, mw-gear-btn) live on the menu's rows now,
+           unchanged, so paint()'s short-state block and the classic
+           listener lines below still find them. -->
       <!-- DR13: the "MAP" heading row is gone — its vitals (level, HP, status)
            moved up into the persistent HUD character line, and the map viewport
            now claims that reclaimed vertical space. -->
@@ -3046,8 +3042,8 @@ let CELL = 28;
 // every step; this model pins a GRID POINT under the centre instead, so a
 // step only moves the party's own screen position (via cameraPan(), below)
 // until keepPartyInView() decides the party is nearing a visible edge.
-// CENTRE (and the other allowed centring triggers — stairs/teleport/new
-// run/boot) snap `cam` onto the party via anchorCamOnParty({x:0,y:0}).
+// The allowed centring triggers (a floor change/teleport, a new run, boot)
+// snap `cam` onto the party via anchorCamOnParty({x:0,y:0}).
 // positionCanvas() (forward transform) and the tap handler below (which
 // feeds cameraPan() into controls.js's screenToCell — one shared transform,
 // per 04-RESEARCH.md's Anti-Pattern warning) both read this same state.
@@ -5368,9 +5364,9 @@ function renderEncounter() {
   // encounter STARTING (the false -> true edge) closes an open menu — a
   // safety net, since the scrim above the overlay makes it practically
   // unreachable. A re-render of an ongoing encounter leaves the menu alone,
-  // and an open menu re-syncs its rows (MAKE CAMP, CENTRE MAP) whenever the
-  // encounter state changes under it. Supersedes Phase 57's T-57-17 close on
-  // every active render.
+  // and an open menu re-syncs its rows (MAKE CAMP) whenever the encounter
+  // state changes under it. Supersedes Phase 57's T-57-17 close on every
+  // active render.
   if (active && !encWasActive) hudMenuEvent("encounter");
   if (hudMenuIsOpen()) syncHudMenuRows();
   // Phase 32 (CMBUI-05, design §6.3 rule 2): stamp lastDismissAt on the
@@ -6200,10 +6196,9 @@ document.getElementById("enc-panel")?.addEventListener("click", beatHurryTap, tr
 
 // DR4 group 2: MARKS opens the mock's "WHAT THE MARKS MEAN" bottom sheet
 // (design/Mazeworld Map Panel.dc.html's legendOpen block) — replaces the
-// prototype's inline .legend strip toggle. CENTRE still just snaps the
-// camera pan back onto the player. Both were >=48dp chips per the 48dp
-// Corrections table; Phase 57 (Plan 05) moved both into the ☰ HUD menu as
-// rows, each still a >=48dp tap target (.mw-hud-menu-item's min-height).
+// prototype's inline .legend strip toggle. It was a >=48dp chip per the
+// 48dp Corrections table; Phase 57 (Plan 05) moved it into the ☰ HUD menu
+// as a row, still a >=48dp tap target (.mw-hud-menu-item's min-height).
 //
 // Rows come from src/browser/mapMarks.js's MARKS_LEGEND data via the
 // window.__mzMapMarks bridge; each row's icon is the same
@@ -6395,20 +6390,6 @@ function centerMap() {
   anchorCamOnParty({ x: 0, y: 0 });
   positionCanvas();
 }
-// Phase 58 (MOTION-01, D-01/D-03): the CENTRE row of the ☰ menu glides to
-// the party instead of snapping. centerMap() itself, and window.mzCenterMap
-// below, stay the SNAP — stairs, teleport, a new run and boot have no
-// meaningful path to pan along, so they keep calling centerMap()/
-// window.mzCenterMap directly, unchanged.
-function glideCenterMap() {
-  if (!S) return;
-  if (window.__mzCameraGlide) {
-    window.__mzCameraGlide.to(cam, partyCentre(), applyCam);
-  } else {
-    centerMap();
-  }
-}
-document.getElementById("mw-chip-centre").addEventListener("click", closeMenuThen(glideCenterMap));
 // Device-review Pass B1 item 4: bridged onto window (same pattern as
 // window.move/window.newGame/window.__mzState) so the trailing module
 // script can auto-recenter the viewport on the party without duplicating
@@ -6417,8 +6398,11 @@ document.getElementById("mw-chip-centre").addEventListener("click", closeMenuThe
 // in this SAME non-module <script>, so centerMap() (a plain function
 // declaration) is already an implicit `window.centerMap` global too, but
 // naming the bridge explicitly keeps the pattern consistent and greppable.
-// This bridge stays the SNAP (D-03) — the stair overlay, teleport, a new
-// run and boot's first paint all call window.mzCenterMap?.() unchanged.
+// This bridge stays the SNAP (D-03) — a floor change or teleport, a new run
+// and boot's first paint all call window.mzCenterMap?.() unchanged. Phase 85
+// (85-01, ACCT-03): the ☰ menu's centring row and its glide-to-party helper
+// are gone; the map re-centres on its own at those triggers, so a manual
+// row was redundant.
 window.mzCenterMap = centerMap;
 
 // Phase 57 (LAYOUT-04/05), Plan 05 — the ☰ HUD menu. Three top-level
@@ -6476,10 +6460,9 @@ function hudMenuEvent(kind) {
 // Phase 70 (D-08): the ☰ opens everywhere, and the rows that cannot act in
 // the current context are shown disabled (dimmed, not hidden, no action):
 // MAKE CAMP while an over-map encounter is up, the hero is dead or there is
-// no hero, and CENTRE MAP while an encounter covers the map. The pure
-// src/browser/hudMenu.js#hudMenuRowStates (bridged as
+// no hero. The pure src/browser/hudMenu.js#hudMenuRowStates (bridged as
 // window.__mzHudMenu.rows) owns the rule; this writes its answer onto the
-// eight row buttons — the disabled property plus aria-disabled="true", both
+// seven row buttons — the disabled property plus aria-disabled="true", both
 // cleared when the row is live. TDZ-safe like hudMenuEvent: state comes
 // through window.__mzState, never a bare S, and the encounter is only
 // computed once that bridge exists. It never touches the ACCOUNT block
@@ -6532,11 +6515,11 @@ document.getElementById("mw-hud-menu").onclick = (e) => {
 // keep the party inside a margin near a visible edge (src/browser/controls.js
 // #keepInViewAxis), never snapping to centre. Called after a genuine step, a
 // tab return, an overlay dismiss, a pinch-end, a Settings close, a textSize
-// change or a resize (wired at each of those call sites, below). The four
-// centring triggers — the CENTRE MAP row (Phase 57 Plan 05: the ☰ HUD
-// menu's, formerly the CENTRE chip), a floorChanged/teleported event, a new
-// run (including the dev start-at-depth run) and the boot first paint — call
-// window.mzCenterMap instead; nothing else calls it.
+// change or a resize (wired at each of those call sites, below). The
+// centring triggers — a floorChanged/teleported event, a new run (including
+// the dev start-at-depth run) and the boot first paint — call
+// window.mzCenterMap instead; nothing else calls it. Phase 85 (85-01,
+// ACCT-03): the ☰ menu's centring row, once a fourth trigger here, is gone.
 // Phase 58 (MOTION-01, D-01/D-04): this decides WHEN exactly as before —
 // only the edge rule above triggers it, and the stationary-camera ruling is
 // unchanged. What changes is HOW: the nudge now glides `cam` to its target
@@ -7046,9 +7029,8 @@ window.__mzClassicBoot = async function classicBoot() {
   import { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis, keepInViewRect } from "./src/browser/controls.js";
   // Phase 58 (MOTION-01/05) — the live reduced-motion predicate/subscription
   // and the retargetable ease-out camera tween, bridged below (beside
-  // window.__mzControls) so the classic keepPartyInView/glideCenterMap/
-  // anchorCamOnParty/pointerdown can ease `cam` without a second copy of
-  // the math.
+  // window.__mzControls) so the classic keepPartyInView/anchorCamOnParty/
+  // pointerdown can ease `cam` without a second copy of the math.
   import { prefersReducedMotion, onReducedMotionChange, createPanelMotion } from "./src/browser/motion.js";
   import { createCameraGlide } from "./src/browser/cameraGlide.js";
   // Phase 78 (HUD-06) — the stairs descent's fade to black, bridged below as
@@ -8595,9 +8577,10 @@ window.__mzClassicBoot = async function classicBoot() {
   window.__mzControls = { screenToCell, resolveTapDirection, classifyPointerGesture, keepInViewAxis, keepInViewRect };
   // Phase 58 (MOTION-01) — the map camera's ~200ms ease-out tween (D-04).
   // The classic keepPartyInView (the glided keep-in-view nudge),
-  // glideCenterMap (the CENTRE row), anchorCamOnParty (every snap and
-  // pinch frame) and the viewport's pointerdown handler (the finger wins)
-  // all read this bridge at call time; drag and pinch never call into it.
+  // anchorCamOnParty (every snap and pinch frame) and the viewport's
+  // pointerdown handler (the finger wins) all read this bridge at call
+  // time; drag and pinch never call into it. Phase 85 (85-01, ACCT-03):
+  // the glide-to-party helper for the ☰ menu's centring row is gone.
   window.__mzCameraGlide = createCameraGlide({
     now: () => performance.now(),
     raf: (fn) => requestAnimationFrame(fn),

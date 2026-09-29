@@ -92,16 +92,6 @@ test("reduced-motion/pan: with the default (reduced) sandbox, keepPartyInView() 
   assert.equal(scn.context.window.__mzCameraGlide.active(), false, "reduced motion must never leave a run in flight");
 });
 
-test("reduced-motion/pan: with the default (reduced) sandbox, glideCenterMap() lands cam on the party centre synchronously", () => {
-  const scn = buildScenario({ reducedMotion: true });
-  scn.context.positionCanvas(); // establish the {0,0} baseline transform
-  const target = scn.context.partyCentre();
-
-  scn.context.glideCenterMap();
-  assert.equal(scn.cv.style.transform, expectedTransformStr(target, 1));
-  assert.equal(scn.context.window.__mzCameraGlide.active(), false);
-});
-
 test("reduced-motion/pan: prefersReducedMotion is read LIVE — flipping the OS preference to reduced mid-session lands the very next nudge synchronously", () => {
   const clock = createFakeClock();
   const scn = buildScenario({ reducedMotion: false, clock });

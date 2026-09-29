@@ -174,7 +174,6 @@ const ALLOWLIST = [
   { selector: ".mw-acct-initials", value: "10px", reason: "the account monogram inside the fixed 34px avatar disc it replaces the ☰ in" },
   { selector: ".mw-acct-glyph", value: "15px", reason: "the '?' avatar glyph inside the title chip's fixed disc" },
   { selector: '.mw-hud-menu-glyph[data-glyph="marks"]', value: "13px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
-  { selector: '.mw-hud-menu-glyph[data-glyph="centre"]', value: "14px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
   { selector: '.mw-hud-menu-glyph[data-glyph="camp"]', value: "16px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
   { selector: '.mw-hud-menu-glyph[data-glyph="settings"]', value: "15px", reason: "a ☰ dropdown row's icon glyph, beside the scaled row label" },
   // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two new always-enabled rows.

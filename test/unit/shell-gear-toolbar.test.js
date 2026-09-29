@@ -169,16 +169,16 @@ test("UIF-01: engine/actions.js still whitelists dropItem (no new engine action 
   assert.match(actionsSrc, /"dropItem"/);
 });
 
-// ─── UIF-05: Make Camp joins the Marks/Centre row; handedness is gone ────
+// ─── UIF-05: Make Camp joins the Marks row; handedness is gone ───────────
 
-test("the ☰ menu holds MARKS, CENTRE MAP, MAKE CAMP, then SETTINGS, in that order (2026-09-16 UAT chip order, carried into the Phase 57 Plan 05 menu)", () => {
+test("the ☰ menu holds MAKE CAMP, MARKS, then SETTINGS, in that order, and no centring row exists (Phase 85, 85-01, ACCT-03: the user's 2026-09-28 todo)", () => {
   const markup = chipsMarkup();
-  const marksIdx = markup.indexOf('id="mw-chip-marks"');
-  const centreIdx = markup.indexOf('id="mw-chip-centre"');
   const campIdx = markup.indexOf('id="btn-camp"');
+  const marksIdx = markup.indexOf('id="mw-chip-marks"');
   const gearIdx = markup.indexOf('id="mw-gear-btn"');
-  assert.ok(marksIdx !== -1 && centreIdx !== -1 && campIdx !== -1 && gearIdx !== -1, "all four rows found in the menu");
-  assert.ok(marksIdx < centreIdx && centreIdx < campIdx && campIdx < gearIdx, "Marks, then Centre Map, then Make Camp, then Settings");
+  assert.ok(campIdx !== -1 && marksIdx !== -1 && gearIdx !== -1, "all three rows found in the menu");
+  assert.ok(campIdx < marksIdx && marksIdx < gearIdx, "Make Camp, then Marks, then Settings");
+  assert.doesNotMatch(markup, /id="mw-chip-centre"/, "no centring row exists");
 
   const campButtonMatch = markup.match(/<button[^>]*id="btn-camp"[^>]*>/);
   assert.ok(campButtonMatch, "camp button tag found in the menu");

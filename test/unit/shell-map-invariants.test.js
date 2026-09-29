@@ -223,16 +223,16 @@ test("MAP-08: condition chips are wired through an arm guard (Phase 71 D-16: gua
   assert.match(region, /, condArmed\);/);
 });
 
-test("MAP-08: the four map chips' listeners exist exactly once each", () => {
+test("MAP-08: the three map chips' listeners exist exactly once each, and the retired centring listener is gone", () => {
   // Phase 70 (D-07): each ☰ row closes the menu before its action, so every
   // listener wraps its existing handler in closeMenuThen(...).
   assert.equal(countOf(CODE, "document.getElementById(\"mw-chip-marks\").addEventListener(\"click\", closeMenuThen(openMarksLegend))"), 1);
-  // Phase 58 (MOTION-01, D-01): the CENTRE row of the ☰ menu now glides
-  // (glideCenterMap) instead of snapping (centerMap) — re-pinned from
-  // `centerMap` to `glideCenterMap` here.
-  assert.equal(countOf(CODE, "document.getElementById(\"mw-chip-centre\").addEventListener(\"click\", closeMenuThen(glideCenterMap))"), 1);
   assert.equal(countOf(CODE, "document.getElementById(\"btn-camp\").onclick = closeMenuThen(openCampSheet)"), 1);
   assert.equal(countOf(CODE, "document.getElementById(\"mw-gear-btn\")?.addEventListener(\"click\", closeMenuThen(openSettingsSheet))"), 1);
+  // Phase 85 (85-01, ACCT-03): the CENTRE MAP row and its glide listener are
+  // gone entirely.
+  assert.equal(countOf(CODE, "getElementById(\"mw-chip-centre\")"), 0);
+  assert.equal(countOf(CODE, "glideCenterMap"), 0);
 });
 
 test("MAP-08/MOTION-01: window.mzCenterMap = centerMap; is still exactly once — the bridge stays the SNAP (D-03)", () => {
@@ -441,15 +441,15 @@ test("SC-3 (encounters/descents/out-of-combat death use the major overlay; FIGHT
   assert.equal(countOf(CODE, "renderMajorOverlay(body"), 2);
 });
 
-test("SC-4 (HUD + condition chips match the mock; MARKS/CENTRE/MAKE CAMP/SETTINGS work from the ☰ HUD menu with sheets, Phase 57 Plan 05): each row id is a role=menuitem inside #mw-hud-menu", () => {
+test("SC-4 (HUD + condition chips match the mock; MAKE CAMP/MARKS/SETTINGS work from the ☰ HUD menu with sheets, Phase 57 Plan 05; Phase 85 85-01 ACCT-03 order, no centring row): each row id is a role=menuitem inside #mw-hud-menu", () => {
   assert.match(RAW, /id="mw-chip-marks"/);
-  assert.match(RAW, /id="mw-chip-centre"/);
   assert.match(RAW, /id="btn-camp"/);
+  assert.doesNotMatch(RAW, /id="mw-chip-centre"/, "no centring row exists");
   const menuStart = RAW.indexOf('id="mw-hud-menu"');
   assert.ok(menuStart !== -1, "#mw-hud-menu must exist");
   const menuEnd = RAW.indexOf("</header>", menuStart);
   const menuRegion = RAW.slice(menuStart, menuEnd);
-  for (const id of ["mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn"]) {
+  for (const id of ["mw-chip-marks", "btn-camp", "mw-gear-btn"]) {
     assert.match(menuRegion, new RegExp(`role="menuitem" class="mw-hud-menu-item" id="${id}"`), `"${id}" must be a role=menuitem row inside #mw-hud-menu`);
   }
 });

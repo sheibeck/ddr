@@ -73,7 +73,6 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze([
       "mazeworld.html (classic: keepPartyInView — the glided keep-in-view nudge)",
-      "mazeworld.html (classic: glideCenterMap — the CENTRE row of the ☰ menu)",
       "mazeworld.html (classic: anchorCamOnParty — cancels before a snap or a pinch frame)",
       "mazeworld.html (classic: the viewport's pointerdown handler — cancels so the finger wins)",
     ]),

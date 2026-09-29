@@ -59,7 +59,7 @@ test("(2) a menu row tap can never reach the canvas gesture tracker because the 
   const viewportRegion = sliceBetween(HTML, '<div class="mw-maze-viewport" id="mw-maze-viewport">', '<!-- DR5: the encounter/feature-event panel');
   assert.doesNotMatch(viewportRegion, /id="mw-map-chips"/, "the chip band id must not appear inside the viewport");
   assert.doesNotMatch(viewportRegion, /mw-map-chip/, "no .mw-map-chip class occurrence must appear inside the viewport");
-  assert.doesNotMatch(viewportRegion, /id="mw-chip-marks"|id="mw-chip-centre"|id="btn-camp"|id="mw-gear-btn"/, "none of the four chip ids may appear inside the viewport");
+  assert.doesNotMatch(viewportRegion, /id="mw-chip-marks"|id="btn-camp"|id="mw-gear-btn"/, "none of the three chip ids may appear inside the viewport");
   // Phase 57 (LAYOUT-04/05), Plan 05: the ☰ HUD menu and its scrim must
   // be equally absent from the viewport's hit path — a menu row tap can
   // never reach the canvas gesture tracker either.

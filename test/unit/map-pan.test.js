@@ -222,31 +222,6 @@ test("map-pan (4): window.mzCenterMap() mid-glide snaps cam to the party centre 
   assert.equal(scn.cv.style.transform, snappedTransform, "no further frame may land after the snap cancelled the glide");
 });
 
-// ─── (5) glideCenterMap() glides to the party centre over 200ms ─────────
-
-test("map-pan (5): glideCenterMap() glides cam to the party centre over ~200ms ease-out", () => {
-  const clock = createFakeClock();
-  const scn = buildScenario({ reducedMotion: false, clock });
-  // cam starts at its classic-script default {x:0,y:0} — never touched yet
-  // in this fresh sandbox. Call positionCanvas() once directly to establish
-  // a known baseline transform (nothing else has painted yet).
-  scn.context.positionCanvas();
-  const before = { x: 0, y: 0 };
-  const target = scn.context.partyCentre(); // {40.5, 40.5}
-  assert.equal(scn.cv.style.transform, expectedTransformStr(before, 1));
-
-  scn.context.glideCenterMap();
-  assert.equal(scn.cv.style.transform, expectedTransformStr(before, 1), "must not land synchronously");
-
-  clock.advance(100);
-  const mid = glidePoint(before, target, 100 / PAN_MS);
-  assert.equal(scn.cv.style.transform, expectedTransformStr(mid, 1));
-
-  clock.advance(PAN_MS - 100 + 16);
-  assert.equal(scn.cv.style.transform, expectedTransformStr(target, 1));
-  assert.equal(scn.context.window.__mzCameraGlide.active(), false);
-});
-
 // ─── (6) the pointerdown cancel ──────────────────────────────────────────
 //
 // recordingDom.js's addEventListener is an unconditional no-op (never

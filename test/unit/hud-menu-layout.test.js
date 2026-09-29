@@ -1,7 +1,7 @@
 // test/unit/hud-menu-layout.test.js
 //
 // Phase 57 (LAYOUT-04/05), Plan 05 — the structural and behavioural proof
-// for the 2026-09-22 mock: the map chip strip is retired, its four controls
+// for the 2026-09-22 mock: the map chip strip is retired, its controls
 // live in a ☰ dropdown on band 2, the outside tap that closes it is
 // structurally consumed (never reaching tapStep()), the menu can never be
 // open over an encounter, opening/closing never moves the viewport, no
@@ -95,14 +95,15 @@ test("(2) the ☰ sits on band 2, outside .mw-hud-counters' clipping box: the ba
   }
 });
 
-// ─── (3) the six menu rows match HUD_MENU_ITEMS in order ────────────────
+// ─── (3) the five menu rows match HUD_MENU_ITEMS in order ────────────────
 
-test("(3) the six menu rows match HUD_MENU_ITEMS in order: id, label and glyph (decoded from the numeric character reference), and the [data-glyph] rule's colour/size", () => {
-  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from four to six rows.
+test("(3) the five menu rows match HUD_MENU_ITEMS in order: id, label and glyph (decoded from the numeric character reference), and the [data-glyph] rule's colour/size", () => {
+  // Phase 85 (85-01, ACCT-03): re-pinned from six to five rows — the
+  // centring row is gone and MAKE CAMP is first.
   const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', "</header>");
   const rowRe = /<button type="button" role="menuitem" class="mw-hud-menu-item" id="([^"]+)"><span class="mw-hud-menu-glyph" data-glyph="([^"]+)" aria-hidden="true">&#(\d+);<\/span><span class="mw-hud-menu-label">([^<]+)<\/span><\/button>/g;
   const rows = [...menuSlice.matchAll(rowRe)].map((m) => ({ id: m[1], key: m[2], glyph: String.fromCodePoint(Number(m[3])), label: m[4] }));
-  assert.equal(rows.length, 6, "expected exactly six menu rows");
+  assert.equal(rows.length, 5, "expected exactly five menu rows");
   assert.deepStrictEqual(
     rows.map((r) => ({ id: r.id, key: r.key, glyph: r.glyph, label: r.label })),
     HUD_MENU_ITEMS.map((r) => ({ id: r.id, key: r.key, glyph: r.glyph, label: r.label })),
@@ -119,7 +120,7 @@ test("(3) the six menu rows match HUD_MENU_ITEMS in order: id, label and glyph (
 test("(4) the menu, the ☰ and the scrim are outside .mw-maze-viewport's hit path: none of their ids/row ids appear in the viewport slice; all precede <main class=\"mw-screens\">; the gesture tracker still binds pointerdown to its viewport local alone", () => {
   const viewportRegion = sliceBetween(HTML, '<div class="mw-maze-viewport" id="mw-maze-viewport">', "<!-- DR5: the encounter/feature-event panel");
   // Phase 70 (D-04): the ACCOUNT host inside the dropdown joins both id lists.
-  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-chip-marks", "mw-chip-centre", "btn-camp", "mw-gear-btn", "mw-hud-menu-acct"]) {
+  for (const id of ["mw-hud-menu-btn", "mw-hud-menu", "mw-hud-menu-scrim", "mw-chip-marks", "btn-camp", "mw-gear-btn", "mw-hud-menu-acct"]) {
     assert.doesNotMatch(viewportRegion, new RegExp(`id="${id}"`), `#${id} must not appear inside the viewport`);
   }
   const mainIdx = HTML.indexOf('<main class="mw-screens"');
@@ -353,10 +354,10 @@ test("(9) BEHAVIOUR: every close trigger closes the menu (re-tap, select, a tab 
 
 // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): mw-menu-report and mw-menu-notes
 // join the row list — both must stay enabled in every scenario below.
+// Phase 85 (85-01, ACCT-03): the centring row is gone and MAKE CAMP is first.
 const ROW_IDS = [
-  "mw-chip-marks",
-  "mw-chip-centre",
   "btn-camp",
+  "mw-chip-marks",
   "mw-gear-btn",
   "mw-menu-report",
   "mw-menu-notes",
@@ -382,14 +383,14 @@ function assertRows(doc, disabledIds, label) {
   }
 }
 
-test("(10) BEHAVIOUR (Phase 70 D-08): while window.__mzStair is truthy (hasActiveEncounter() true), the ☰ onclick OPENS the menu; MAKE CAMP and CENTRE MAP carry disabled + aria-disabled=\"true\", the other six rows carry neither, and the ACCOUNT block gets no row-sync writes", () => {
-  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned — ROW_IDS now has
-  // eight rows, so "the other" rows (not camp/centre) is six, not four.
+test("(10) BEHAVIOUR (Phase 70 D-08): while window.__mzStair is truthy (hasActiveEncounter() true), the ☰ onclick OPENS the menu; MAKE CAMP carries disabled + aria-disabled=\"true\", the other six rows carry neither, and the ACCOUNT block gets no row-sync writes", () => {
+  // Phase 85 (85-01, ACCT-03): re-pinned — ROW_IDS now has seven rows, so
+  // "the other" rows (not camp) is six.
   const { doc, sandbox } = freshSandbox(states.thief);
   sandbox.context.window.__mzStair = { dir: "N" };
   menuBtn(doc).onclick();
   assert.ok(isOpen(doc), "the menu must open over an encounter (D-08)");
-  assertRows(doc, ["btn-camp", "mw-chip-centre"], "stair prompt");
+  assertRows(doc, ["btn-camp"], "stair prompt");
   const acct = rowEl(doc, "mw-hud-menu-acct");
   assert.notEqual(acct.disabled, true, "the ACCOUNT host is never disabled by the row sync");
   assert.equal(acct.getAttribute("aria-disabled"), null, "the ACCOUNT host never carries aria-disabled from the row sync");
@@ -416,12 +417,12 @@ test("(11) BEHAVIOUR: with __mzHudMenu deleted from the sandbox window, the ☰ 
 
 // ─── (12) accessibility ───────────────────────────────────────────────────
 
-test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-label; the dropdown is role=menu; every row (the four legacy rows, Phase 79.3's REPORT A BUG and PATCH NOTES, plus Phase 70's SAVE & QUIT and ABANDON) is role=menuitem; aria-expanded mirrors data-open across open and close", () => {
-  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from six to eight rows.
+test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-label; the dropdown is role=menu; every row (the three legacy rows, Phase 79.3's REPORT A BUG and PATCH NOTES, plus Phase 70's SAVE & QUIT and ABANDON) is role=menuitem; aria-expanded mirrors data-open across open and close", () => {
+  // Phase 85 (85-01, ACCT-03): re-pinned from eight to seven rows.
   assert.match(HTML, /id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"/);
   assert.match(HTML, /<div class="mw-hud-menu" id="mw-hud-menu" role="menu" aria-label="Map menu" data-open="0">/);
   const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', "</header>");
-  assert.equal((menuSlice.match(/role="menuitem"/g) || []).length, 8, "all eight rows must be role=menuitem");
+  assert.equal((menuSlice.match(/role="menuitem"/g) || []).length, 7, "all seven rows must be role=menuitem");
 
   const { doc } = freshSandbox(states.thief);
   menuBtn(doc).onclick();
@@ -628,7 +629,7 @@ test("(16) the ☰ wears the account face and the dropdown opens on the ACCOUNT 
 
 const decodeAmp = (t) => t.replace(/&amp;/g, "&");
 
-test("(17) the dropdown's rows are the ACCOUNT host, the four HUD_MENU_ITEMS rows, SAVE & QUIT, then ABANDON THIS CHARACTER last (danger look, data-armed/data-dead 0, three labels equal to HUD_MENU_QUIT_COPY); the label-switch CSS exists; the HERO tab's Delve panel and its two legacy ids are gone", () => {
+test("(17) the dropdown's rows are the ACCOUNT host, the five HUD_MENU_ITEMS rows, SAVE & QUIT, then ABANDON THIS CHARACTER last (danger look, data-armed/data-dead 0, three labels equal to HUD_MENU_QUIT_COPY); the label-switch CSS exists; the HERO tab's Delve panel and its two legacy ids are gone", () => {
   const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', '<div class="mw-hud-menu-scrim"');
   const ids =[...menuSlice.replace(/<!--[\s\S]*?-->/g, "").matchAll(/<(?:div|button)\b[^>]*\bid="([^"]+)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(ids, ["mw-hud-menu", "mw-hud-menu-acct", ...HUD_MENU_ITEMS.map((r) => r.id), "mw-menu-save-quit", "mw-menu-abandon"]);
@@ -709,32 +710,33 @@ test("(18) BEHAVIOUR: an armed ABANDON row reads data-armed \"0\" after every cl
 
 // ─── (19) BEHAVIOUR: the ☰ opens everywhere, rows disabled by context ────
 // Phase 70 D-08 (POLISH-03): the ☰ opens on the map, in combat and every
-// other encounter, and while dead; MAKE CAMP and CENTRE MAP dim (disabled +
-// aria-disabled) when they cannot act, and an open menu re-syncs its rows
-// when the encounter state changes under it.
+// other encounter, and while dead; MAKE CAMP dims (disabled + aria-disabled)
+// when it cannot act, and an open menu re-syncs its rows when the encounter
+// state changes under it.
 
-test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead with MAKE CAMP and CENTRE MAP disabled, enables all eight rows when idle, re-syncs an open menu, survives an ongoing encounter's re-render, ignores a tap on a disabled row, and a select on a closed menu is a no-op", () => {
-  // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): re-pinned from six to eight rows.
-  // combat: opens, camp + centre disabled
+test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead with MAKE CAMP disabled, enables all seven rows when idle, re-syncs an open menu, survives an ongoing encounter's re-render, ignores a tap on a disabled row, and a select on a closed menu is a no-op", () => {
+  // Phase 85 (85-01, ACCT-03): re-pinned from eight to seven rows — the
+  // centring row is gone.
+  // combat: opens, camp disabled
   {
     const { doc, sandbox } = freshSandbox(states.thief);
     sandbox.setState({ ...states.thief, combat: { round: 1 } });
     menuBtn(doc).onclick();
     assert.ok(isOpen(doc), "combat: the ☰ opens");
-    assertRows(doc, ["btn-camp", "mw-chip-centre"], "combat");
+    assertRows(doc, ["btn-camp"], "combat");
   }
-  // dead: opens, data-dead "1", camp + centre disabled — and, from Phase 78
-  // (HUD-02: "camp, marks and centre-map are inert" once the hero is dead),
-  // MARKS too; before 78-06 this block expected MARKS enabled.
+  // dead: opens, data-dead "1", camp disabled — and, from Phase 78 (HUD-02:
+  // "camp, marks and centre-map are inert" once the hero is dead), MARKS
+  // too; before 78-06 this block expected MARKS enabled.
   {
     const { doc, sandbox } = freshSandbox(states.thief);
     sandbox.setState({ ...states.thief, dead: true });
     menuBtn(doc).onclick();
     assert.ok(isOpen(doc), "dead: the ☰ opens");
     assert.equal(rowEl(doc, "mw-menu-abandon").dataset.dead, "1", "dead: the last row reads NEW CHARACTER");
-    assertRows(doc, ["btn-camp", "mw-chip-centre", "mw-chip-marks"], "dead");
+    assertRows(doc, ["btn-camp", "mw-chip-marks"], "dead");
   }
-  // a live, idle hero: all eight enabled
+  // a live, idle hero: all seven enabled
   {
     const { doc } = freshSandbox(states.thief);
     menuBtn(doc).onclick();
@@ -748,7 +750,7 @@ test("(19) BEHAVIOUR (Phase 70 D-08): the ☰ opens in combat and while dead wit
     sandbox.renderEncounter();
     menuBtn(doc).onclick();
     assert.ok(isOpen(doc));
-    assertRows(doc, ["btn-camp", "mw-chip-centre"], "stair up");
+    assertRows(doc, ["btn-camp"], "stair up");
     sandbox.context.window.__mzStair = null;
     sandbox.renderEncounter();
     assert.ok(isOpen(doc), "the encounter ending leaves the menu open");
