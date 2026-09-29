@@ -4,15 +4,15 @@ milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 84
 status: executing
-stopped_at: Completed 84-03-PLAN.md (per-run history + history-based NEW PERSONAL BEST)
-last_updated: "2026-09-29T13:23:44.756Z"
+stopped_at: Completed 84-04-PLAN.md (boardClient.ownRuns + boardFeed.js)
+last_updated: "2026-09-29T13:52:08.439Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 84 Plan 01 (run-doc note/when contract) complete
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 34
-  completed_plans: 17
+  completed_plans: 18
   percent: 40
 current_phase_name: Leaderboards Panel v3
 ---
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 84 — EXECUTING
-Plan: 4 of 9
-Progress: [█████░░░░░] 50%
+Plan: 5 of 9
+Progress: [█████░░░░░] 53%
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 84 Plan 01 (run-doc note/when contract) complete
 
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T13:23:44.680Z
-Stopped at: Completed 84-03-PLAN.md (per-run history + history-based NEW PERSONAL BEST)
+Last session: 2026-09-29T13:52:08.139Z
+Stopped at: Completed 84-04-PLAN.md (boardClient.ownRuns + boardFeed.js)
 
 - (history below is the pre-close record)
 
@@ -442,6 +442,7 @@ Resume file: None
 | Phase 84 P01 | 41min | 3 tasks | 14 files |
 | Phase 84 P02 | 22min | 2 tasks | 6 files |
 | Phase 84 P03 | 35min | 2 tasks | 7 files |
+| Phase 84 P04 | 25min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -776,6 +777,9 @@ Resume file: None
 - [Phase ?]: 84-02: nine LEADERBOARD state.* in-voice notes + two empty.*All lines are Claude's Discretion (mock has no loading/stale/unreachable/unfiltered-empty copy), proved against the same voice/safety/HP-not-WP tests
 - [Phase ?]: 84-03: recordDeath's bests fold still runs unconditionally (ddr.bests.v1 untouched) but no longer sets deathRecord — the death panel's new-best answer now comes from newBestsAgainst against the new per-run history
 - [Phase ?]: 84-03: persistGrave's RUN_HISTORY_KEY read is isolated behind safeGetItem() so a read failure on that one key can never abort the graveyard/bests writes; merge-on-write means the stored history can only ever grow
+- [Phase ?]: 84-04: boardFeed's total() reads always pass stat deep (stat-independent count), sharing one cached count across RANK BY switches
+- [Phase ?]: 84-04: boardClient.ownRuns(uid) is public/unauthenticated — own-runs are public board data by design (Compete ON consent)
+- [Phase ?]: 84-04: boardFeed never calls rankOf to search for the best run — the local candidate is chosen first via rankKeyOf, then rankOf is asked once for that one candidate
 
 ### Blockers
 

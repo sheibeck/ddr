@@ -157,7 +157,7 @@ Plans:
   5. LEADERBOARD shows deliberate in-voice states for loading, offline/unreachable and a stale cached result, while YOUR DEAD never waits on the network and ranks a generous local per-run history that starts with runs from the 2.1.0 release on (versionCode 11, `when` ≥ 2026-09-28T19:41:01Z, `BACKFILL_SINCE_MS` in `src/browser/runBackfill.js`); older runs are not imported or shown.
   6. The LEADERBOARD view names the current season from `content/season.js`: SEASON OF THE ALPHA for season 1, the closed-testing season (user, 2026-09-28).
 
-**Plans:** 3/9 plans executed
+**Plans:** 4/9 plans executed
 
 Plans:
 **Wave 1**
@@ -168,7 +168,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 84-03-PLAN.md — Local per-run history `ddr.runs.v1` (cap 500, one-time 2.1.0-cutoff import stamped "2.1.0 (11)", version stamp), adapter wiring, NEW PERSONAL BEST against the history (wave 2)
-- [ ] 84-04-PLAN.md — boardClient.ownRuns + boardFeed.js: one BoardSnapshot per query (top ten, totals, your best with its real rank, stale/unreachable) (wave 2)
+- [x] 84-04-PLAN.md — boardClient.ownRuns + boardFeed.js: one BoardSnapshot per query (top ten, totals, your best with its real rank, stale/unreachable) (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -284,7 +284,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 82. DAYS Farming Check | 2/2 | Complete    | 2026-09-28 |
 | 83. Leaderboard Server | 12/12 | Complete    | 2026-09-29 |
-| 84. Leaderboards Panel v3 | 3/9 | In Progress|  |
+| 84. Leaderboards Panel v3 | 4/9 | In Progress|  |
 | 85. Play Games Out, Our Board In | 0/6 | Planned | - |
 | 86. Compliance & Device Close | 0/TBD | Not started | - |
 
