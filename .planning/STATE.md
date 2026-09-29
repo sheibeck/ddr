@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
-current_phase: 86
-current_phase_name: Compliance & Device Close
-status: planning
+status: executing
 stopped_at: "Completed 85-06-PLAN.md (Play Games deleted: modules, Android plugin, RETIRE-02 sweep); phase 85 all plans complete"
-last_updated: "2026-09-29T18:34:53.753Z"
+last_updated: "2026-09-29T18:35:14.179Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase 85 complete, transitioned to Phase 86
+last_activity_desc: Phase null execution started
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 34
   completed_plans: 29
   percent: 80
+current_phase: 86
+current_phase_name: Compliance & Device Close
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 ## Current Position
 
-Phase: 86 — Compliance & Device Close
-Plan: Not started
-Progress: [█████████░] 85%
-Status: Ready to plan
-Last activity: 2026-09-29 — Phase 85 complete, transitioned to Phase 86
+Phase: 86 (Compliance & Device Close) — EXECUTING
+Plan: 1 of 5
+Progress: [█████████░] 88%
+Status: Executing Phase 86 — 86-01 (debug APK 2.2.0) on master; 86-02 (site pages) and 86-03 (docs) in parallel worktrees
+Last activity: 2026-09-29 — Phase 85 complete (92da7584)
 
 ## Ground Truth (durable facts every session needs)
 
