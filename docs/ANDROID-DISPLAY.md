@@ -289,7 +289,8 @@ because the manifest audit ran alongside this scan against the same build).
 
 **Re-run the scan after every release build.** A new caller appearing here — especially one
 under `androidx` at a different API level, or any row under `app` or the removed
-`com.capacitorjs.plugins.statusbar` prefix — means a dependency (Capacitor core, a plugin, or
-the Play Games plugin) changed its own deprecated-API usage and needs a fresh review before the
-next upload; it is not something this plan's `--fail-on` list would silently miss, since it
-only gates on the two known-bad prefixes, not on every androidx back-compat row.
+`com.capacitorjs.plugins.statusbar` prefix — means a dependency (Capacitor core or a plugin;
+the app carried no Play Games plugin as of v2.2) changed its own deprecated-API usage and needs
+a fresh review before the next upload; it is not something this plan's `--fail-on` list would
+silently miss, since it only gates on the two known-bad prefixes, not on every androidx
+back-compat row.

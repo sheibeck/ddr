@@ -6,14 +6,18 @@ and `storeScreen.js` (Phase 47), and the character roller mounts from
 `roller.js` (Phase 50). The GEAR tab's bottom action sheet renders from
 `gearSheet.js` (Phase 63). The DEAD tab's Leaderboards panel renders from
 `boardsPanel.js` over the pure `boardsView.js` view model (Phase 66). The
-Play Games account (Phase 67) comes from three modules: `playGames.js` (the
-provider seam), `account.js` (the pure view model) and `accountChip.js`
-(the chip and sheet renderers plus the account controller). The global
-boards (Phase 68) add five: `scoreTag.js` (the score tag), `boardScores.js`
-(the per-board score encodings and leaderboard IDs), `pgsQueue.js` (the
-durable submission queue), `globalBoards.js` (the fetch-and-cache
-controller for ALL and FRIENDS) and `placement.js` (the rank line and rail
-card views). The
+rolled-`@handle` account comes from two modules: `account.js` (the pure
+view model) and `accountChip.js` (the renderers plus
+`createAccountController`). Our own Firebase-backed leaderboard — which
+replaced Phases 67/68's Play Games modules in v2.2 Phase 85
+(`docs/LEADERBOARDS.md` is the ops runbook) — adds `firebaseAuth.js`/
+`handles.js` (the anonymous identity and the rolled handle),
+`boardClient.js`/`boardFeed.js` (cached reads and the panel's data feed),
+`boardWrites.js`/`runQueue.js`/`runBackfill.js`/`boardSync.js` (writes, the
+durable queue, the once-only backfill and the controller wiring them
+together), `runDoc.js` (the run-document contract), the LEADERBOARD/YOUR
+DEAD panel (`leaderboardView.js`, `leaderboardPanel.js`, `runHistory.js`)
+and the death panel's `placement.js`. The
 contract below is what those modules implement, and every `window.__mz*`
 bridge crossing the classic-script/module-script seam is listed in one
 place, with an owner.
@@ -175,78 +179,84 @@ its only caller. The panel reads only the adapter's in-memory
 that just happened already shows when the DEAD tab opens.
 
 Phases 67 (Play Games sign-in, the account chip) and 68 (global/friends
-boards, submissions) add real sources behind this same `boardsView` seam.
+boards, submissions) were removed in v2.2 Phase 85, replaced by the account
+and leaderboard modules below.
 LINEAGE never reads a global sample (Phase 81, BOARD-13 — it is ME-only), and
 GRAVEYARD never asks the global controller at all (Phase 81, BOARD-14).
 
-### Play Games account (Phase 67)
+### The account (Phase 83, Phase 85)
 
-`src/browser/playGames.js` is the D-12 provider seam and the one module
-that names the Play Games plugin package. `createPlayGames()` wraps the
-Capacitor plugin on a native build and loads it lazily, on the first
-provider call only. `createFakePlayGames({ signedIn })` is the in-memory
-twin used by `node --test` and the browser dev loop. Both expose `init()`
-(the silent launch attempt), `signIn()` (the interactive attempt, which
-passes `silent: false`), `isAuthenticated()` and `getPlayer()` →
-`{ id, displayName }`. Every method resolves and never rejects. There is no
-sign-out, because PGS v2 has none (D-03). Phase 68 binds the leaderboard
-methods: `submitScore`, `loadTopScores`, `loadPlayerScore`, `loadStanding`
-and `friendsAccess`. `PLUGIN_METHODS_USED` is the allow-list of the only
-plugin methods the wrapper ever calls.
+`src/browser/firebaseAuth.js#createIdentity` is the anonymous player
+identity: a lazy, DOM-free anonymous Firebase sign-up over plain REST (no
+SDK), kept in durable storage under `ddr.identity.v1`
+(`sanitizeIdentity`, a tolerant load). `ensureHandle()` rolls the
+`@handle` locally, with no network, the first time it is asked;
+`rerollHandle()` and `setHandle(handle)` (which re-seeds the SAME handle
+with no uid, so erasing a player's runs keeps their handle) never touch the
+network either. `getToken()`/`forceRefresh()`/`deleteAccount()` are
+Compete-gated — every call checks `competeOn()` first, unless the caller
+passes `{ explicit: true }`, the one exception reserved for a player-tapped
+Send on the bug-report sheet. `src/browser/handles.js` (`rollHandle`,
+`isValidHandle`, `handlePatternSource`) builds and validates the handle
+from `content/handles.js`'s `HANDLE_FIRST`/`HANDLE_SECOND` word tables —
+`@` plus two words, shell-side randomness only, never the engine rng.
 
 `src/browser/account.js` is the pure view model: the account state
-(`ACCOUNT_STATUS`, `normalizeAccountState`), the two rail cards
-(`accountCard("welcome" | "failed")`), the boards identity
-(`accountIdentity`) and the chip, sheet and ☰ face views (`accountChipView`,
-`accountSheetView`, and Phase 70's `accountMenuView`: the initials avatar
-when signed in, the plain ☰ otherwise). It has no DOM, no storage and no
-provider access.
+(`normalizeAccountState`: `compete`, `handle`, `erase`, `welcomed`), the
+title chip and ☰-face views (`accountChipView`, `accountMenuView` — the
+handle's initials avatar with Compete ON, a dim glyph otherwise; the handle
+itself shows whether Compete is ON or OFF), the sheet/☰-block rows
+(`accountSheetView`: identity, COMPETE ON/OFF, RE-ROLL HANDLE, ERASE MY
+RUNS) and the rail cards (`accountCard("welcome" | "erased" |
+"eraseFailed")`). It has no DOM, no storage and no network.
 
-`src/browser/accountChip.js` exports `renderAccountChip(button, view)`,
-`renderAccountSheet({ rows, title }, view, handlers)`, Phase 70's
-`renderMenuFace(button, view)` (repaints the ☰ button's static
-`.mw-hud-menu-face` and its aria-label) and `renderAccountMenu(host, view,
-handlers)` (the sheet's rows without its title or Settings row). All build
-DOM only through the host's `ownerDocument`; `ACCOUNT_CLASSES` lists every
-class they emit. `createAccountController({ provider, settings, notify })`
-returns `{ boot, signIn, setCompete, stopCompeting, state, identity,
-chipView, sheetView, menuView, subscribe }`. `boot()` reads the settings and, with
-Compete ON, starts one silent `init()` without waiting for it. Only one
-attempt runs at a time, and a superseded or late result is dropped.
-Compete OFF always wins: it persists `compete: false`, cancels the silent
-timeout and never touches the provider (D-02). `subscribe(fn)` hears every
-state change.
+`src/browser/accountChip.js` exports the DOM renderers
+(`renderAccountChip(button, view)`, `renderAccountSheet({ rows, title },
+view, handlers)`, `renderMenuFace(button, view)` — repaints the ☰ button's
+static `.mw-hud-menu-face` — and `renderAccountMenu(host, view,
+handlers)`, the ☰ dropdown's ACCOUNT block; `ACCOUNT_CLASSES` lists every
+class they emit) and `createAccountController({ identity, board, settings,
+notify, compete, armMs })`, the one place every account transition is
+decided: `boot()` (reads settings, rolls the handle via
+`identity.ensureHandle()`), `setCompete(value)` (OFF purges the board queue
+and persists at once, ON flushes it), `reroll()` (one `board.reroll()` in
+flight at a time), `eraseTap()`/`disarmErase()` (the two-tap ERASE MY RUNS
+arm/expire/erase, `ERASE_ARM_MS` shared with the ☰ menu's own ABANDON arm
+window) and `boardAcked()` (the once-ever welcome card, `boardWelcomed`
+persisted). Returns `{ boot, setCompete, reroll, eraseTap, disarmErase,
+boardAcked, state, chipView, sheetView, menuView, subscribe }`. The `board`
+seam it is handed is `src/browser/boardSync.js#createBoardSync`'s return
+value (below).
 
 The shell wiring (mazeworld.html's module script):
 
-- The provider is chosen by `window.Capacitor?.isNativePlatform?.()`:
-  native gets `createPlayGames()`, the browser dev loop gets the fake,
-  seeded signed in only when the dev setting `pgsDevSignedIn` is on. The
-  seed is read once, at launch.
+- A native build gives the account its own `sharedIdentity()` (the same
+  identity a bug report uses); the browser dev loop gives it a separate
+  `boardIdentity()` over `dev.`-prefixed storage keys, so dev-loop board
+  play can never sign up or touch a live account.
+- `account = createAccountController({ identity: boardIdentity(), board:
+  boardSync, settings: { read: readSettings, write: writeAccountSetting },
+  notify: parkAccountCard, compete: currentSettings?.compete !== false })`
+  is assigned once, after `boardSync`.
 - `account.boot()` starts right after the title screen is initialized and
-  is never awaited, so boot, the title and play never wait on Play Games.
+  is never awaited, so boot, the title and play never wait on the network.
 - `renderAccountSurfaces()` runs on every account change and once before
   boot. It paints three surfaces from the controller's views: the title's
   corner chip `#mw-title-acct-chip` (`chipView`), the ☰ button
   `#mw-hud-menu-btn` (`menuView` through `renderMenuFace`) and the ☰
   dropdown's ACCOUNT block `#mw-hud-menu-acct` (`sheetView` through
   `renderAccountMenu`).
-- Phase 70 (D-03, superseding Phase 67 D-05) retired the band-2 account
-  chip. In the dungeon the ☰ wears the account face, and its dropdown opens
-  on the ACCOUNT block: identity, Sign in / Stop competing / a disabled
-  SIGNING IN…, the helper line and Compete ON/OFF. Each ACCOUNT row closes
-  the menu first (`hudMenuEvent("select")`, D-07) and then calls the
-  controller. The block follows the ☰'s own availability rule.
-- Only the title chip opens `#mw-acct-sheet` now, with no encounter guard.
-  The Settings row closes the account sheet and opens the settings sheet.
-  The scrim, Close and the Android back button close it; the back button
-  closes it first, ahead of every other layer.
-- The controller's `notify` parks the welcome and failed cards until the
-  dungeon is visible (no title, no roller, no title-mode Leaderboards
-  panel), then hands them to `window.mzRailLine`. The latest card wins, and
-  each is delivered once.
-- The Leaderboards panel reads the account through its `identity()` seam,
-  and every account change calls `boardsPanel.refresh()`.
+- The same `account.subscribe` callback also re-renders an open account
+  sheet, refreshes the Leaderboards panel, re-checks VIEW THE DEAD's gate
+  and clears `window.__mzPlacement` the moment Compete turns off.
+- Only the title chip opens `#mw-acct-sheet`. The Settings row closes the
+  account sheet and opens the settings sheet. The scrim, Close and the
+  Android back button close it; the back button closes it first, ahead of
+  every other layer. COMPETE and RE-ROLL HANDLE keep the ☰ open; only the
+  confirming ERASE tap closes it.
+- The controller's `notify` parks the welcome/erased/eraseFailed cards
+  (`parkAccountCard`) until the dungeon is visible, then hands them to
+  `window.mzRailLine`; a parked placement card (below) waits behind it.
 
 No new `window.__mz` bridge: the account lives in the module script.
 
@@ -369,74 +379,112 @@ decision; `PATCH_NOTES_COPY` and `PATCH_NOTES_RELEASES_URL`).
 - **The z-ladder:** `#mw-notes-sheet` stacks at 55, with the account,
   settings and report sheets.
 
-### Global boards, submissions and placement (Phase 68)
+### The board, the panel and placement (Phase 83, Phase 84, Phase 85)
 
-**Encodings.** `src/browser/scoreTag.js` encodes a run into the 64-char
-Play Games score tag (versioned, no epitaph) and decodes it tolerantly;
-global rows are drawn from the tag, not from the score.
-`src/browser/boardScores.js` turns a run summary into the four submitted
-scores (DEEPEST, LONGEST, BUTCHERY, PURSE; LINEAGE and GRAVEYARD are never
-submitted) and resolves leaderboard IDs per season and board from
-`content/leaderboards.js`. Those IDs are placeholders until the Play
-Console setup in Phase 69, and a placeholder or missing ID skips its board
-silently. LEANEST was retired in v2.1 (BOARD-17). LINEAGE and GRAVEYARD are
-ME-only boards at the end of the rail (BOARD-13/BOARD-14) — neither is ever
-submitted to Play Games, and GRAVEYARD still lists every stored run with its
-epitaph, exactly as before.
+**Identity and writes.** `src/browser/boardWrites.js#createBoardWrites`
+exports `submitRun` (idempotent run create — the doc id is always
+`{uid}_{hash}`, `runDoc.js`'s stable identity for a run, so a resubmit never
+duplicates), `rewriteHandle` (rewrites `handle` onto every one of the
+caller's own runs, paged) and `eraseMyRuns` (deletes every one of the
+caller's own runs, then the anonymous account best-effort, then drops
+`ddr.identity.v1`). A 401 forces exactly one `identity.forceRefresh()` and
+one retry, shared across a whole call. `src/browser/runDoc.js` is the one
+definition of the run document: its field set and bounds
+(`RUN_CLIENT_FIELDS`, `FLOOR_MAX`, `GOLD_MAX`, …), the four integer rank
+keys (`deepKeyOf`/`daysKeyOf`/`killsKeyOf`/`goldKeyOf`, and the shared
+`rankKeyOf(stat, run)` both Leaderboards views rank by — `daysKeyOf` applies
+the DAYS anti-farming cap, `docs/DAYS-FARMING.md`), `validateRunDoc` (the JS
+mirror of `firebase/firestore.rules`) and the REST query/commit builders
+(`topTenQuery`, `countQuery`, `ownRunsQuery`, `createRunCommit`,
+`handleUpdateCommit`, `deleteCommit`). `src/browser/firestoreRest.js` is the
+one shared Firestore/Identity REST helper (the typed-value encoder/decoder,
+the URL builders, a never-throwing `timedFetch`); `src/browser/
+firebaseConfig.js` holds the one shared `FIREBASE_CONFIG` (project id and
+the public, API-restricted key).
 
-**The queue.** `src/browser/pgsQueue.js` exports
-`createSubmissionQueue({ storage, provider, ids, season, isCompeting,
-isSignedIn, onFlushed, onSeasonDrop })`. Its record lives in
-`ddr.pgsqueue.v1` through `window.mzStorage`: cross-run shell data, never
-game state. The adapter's `setRunRecordedListener` reports every non-dev
-death. The shell's `onRunRecorded` enqueues it: the queue refuses while
-Compete is OFF, otherwise it stores the entry and then starts a flush.
-Flushes also run when sign-in succeeds (at launch or from the Sign in row),
-when the device comes back `online` (forced) and when the app becomes
-visible again (the backoff applies). Each (run, board) is acknowledged and
-stored before the next submission, so a crash or retry never sends a score
-twice. An entry from an older season is dropped, not submitted, and the
-drop is noted once in the Oracle through `window.logLine`. Turning Compete
-OFF purges the queue. The native background flush (`registerNativeChrome`'s
-`waitForPending`) awaits the queue's pending writes alongside the
-adapter's.
+**Reads.** `src/browser/boardClient.js#createBoardClient` exports `topTen`,
+`total`, `rankOf` and `ownRuns` — every read is Compete-gated, cached for
+five minutes (`BOARD_CACHE_TTL_MS`), served stale on a failed refresh when a
+cached copy exists, and joins concurrent identical in-flight reads.
+`src/browser/boardFeed.js#createBoardFeed` turns those reads into one
+`BoardSnapshot` per RANK BY/RACE/SUB-CLASS query for the LEADERBOARD view —
+one `topTen`, one unfiltered `total`, an optional filtered `total`, and
+`ownRuns` (only when a uid is known) for "your best," at most four network
+reads per `load()`.
 
-**Global views.** `src/browser/globalBoards.js` exports
-`createGlobalBoards({ provider, ids, isActive, playerId, onChange })`,
-which returns `{ view, requestFriendsAccess, clear }`. `view({ board,
-scope, season })` answers at once from a cache kept per season, board and
-scope for about 5 minutes and starts at most one background fetch.
-`onChange` redraws the open panel when a fetch finishes. Friends consent is
-requested only by `requestFriendsAccess()`, which only the panel's SHOW MY
-FRIENDS button calls. While signed out or with Compete OFF, `isActive()` is
-false and no leaderboard call is made; the cache is cleared on sign-out and
-on Compete OFF. The Leaderboards panel reads it through three
-`createBoardsPanel` seams: `global` (the controller's `view`, or null
-before it exists), `seasons` (`{ current: SEASON, all: knownSeasons() }`)
-and `onFriendsConsent`.
+**The queue.** `src/browser/runQueue.js#createRunQueue` is the durable
+submission queue: every non-dev, Compete-ON, current-season death is
+enqueued under `ddr.runQueue.v1` and held until `boardWrites.js#submitRun`
+acknowledges it, surviving relaunch and offline play. `flush({force})` is
+single-flight; a transient failure backs off (`backoffMs`: 30 s doubling to
+a 30-minute cap); a rules refusal drops the entry with one logged line;
+`purge()` discards the queue for Compete OFF. `src/browser/runBackfill.js`
+is the once-only import of local runs from the 2.1.0 release on
+(`BACKFILL_SINCE_MS`, the `v2.1.0-play11` tag time; `BACKFILL_VERSION`,
+`"2.1.0 (11)"`), bounded to the hashes `src/browser/runHistory.js`'s own
+pre-2.2 import already recognizes (`preReleaseHashes`) so a 2.2 run played
+with Compete OFF can never ride the backfill onto the board.
+
+**The controller.** `src/browser/boardSync.js#createBoardSync` is the board
+engine room the shell only has to wire up: `boot()` (drops the retired
+`ddr.pgsqueue.v1` key, runs the once-only backfill), `record(summary)` (the
+death-time enqueue), `flush`/`purge`, `reroll()` (the offline-safe handle
+re-roll: `ddr.handleRewrite.v1` marks a pending rewrite until a Compete-ON
+flush rewrites it onto every board run), `erase()` (keeps the handle —
+`identity.setHandle` re-seeds the dropped record with the SAME handle) and
+`waitForPending()` (awaited by the native background-pause path). Every
+board call is Compete-gated, including a player-tapped erase.
+
+**The panel.** `src/browser/leaderboardView.js#leaderboardView(input)` is
+the pure view model behind both DEAD-tab views: LEADERBOARD (`mode:
+"board"`, Compete ON) and YOUR DEAD (`mode: "mine"`, always forced with
+Compete OFF), fed by `runHistory.js`'s local per-run history and
+`boardFeed.js`'s `BoardSnapshot`. `RACE_IDS`/`SUB_IDS`, `handleInitials` and
+`avatarColour` are shared with `account.js`'s own avatar. Every word comes
+from `content/boards.js#LEADERBOARD_COPY` and
+`content/season.js#SEASON`/`SEASON_NAMES`. `src/browser/leaderboardPanel.js`
+exports `renderLeaderboardPanel(host, view, handlers)` (the DOM renderer;
+`LEADERBOARD_CLASSES` lists every class it emits) and
+`createLeaderboardPanel({ host, buildView, history, board, competeOn,
+prefs, ... })`, the stateful controller — the same seam names
+(`openFromTab`/`openFromTitle`/`onDeadTab`/`back`/`isTitleOpen`/`refresh`/
+`state`) the retired `boardsPanel.js` had, so the DEAD tab and the Android
+back mirror kept working unchanged. Only the RANK BY stat is remembered
+between opens (`BOARDS_LAST_KEY`, the same prefs key the retired panel
+used); RACE and SUB-CLASS filters reset on every open. `src/browser/
+runHistory.js` is YOUR DEAD's own history: `ddr.runs.v1`, capped at
+`RUN_HISTORY_CAP` (500) runs, imported from the graveyard/bests stores at
+first launch (`importLegacy`, the same 2.1.0 cutoff `runBackfill.js` uses)
+and appended to on every death (`appendRun`).
 
 **Placement.** `src/browser/placement.js` holds the pure views:
-`placementLine`, `deferredPlacementCard` and `seasonDropLine`. A flush that
-submitted DEEPEST scores reads the player's DEEPEST standing once and calls
-the shell's `handlePgsFlush`:
+`placementLine` (the death panel's DEPTH rank line, "You placed 12th of
+340."), `deferredPlacementCard` (the rail card covering every other
+acknowledged run) and `placementOutcome({ live, rest, liveHash, panelUp })`
+— the one rule deciding which of the two a `boardSync` placement report
+becomes, never both for the same run:
 
 - The live death, while its THAT IS THAT panel is up, gets the rank line.
   `window.__mzPlacement` (`{ hash, line, fresh }`) is set and the classic
   `renderRankLine` draws it under the NEW PERSONAL BEST block. It fades in
   once, and the blanket reduced-motion rule removes the fade. Nothing shows
   while the rank is on its way or when the read fails.
-- Every other submitted run folds into one rail card, covering the
-  best-placed run and the count. The card is parked until the dungeon is
-  visible and the party is not dead. It is delivered after any parked
-  account card's hold, never on top of it.
+- Every other acknowledged run folds into one rail card, covering the
+  best-placed run and the count. The card is parked (`parkPlacementCard`)
+  until the dungeon is visible and the party is not dead, delivered after
+  any parked account card's hold, never on top of it.
 
-A signed-out or Compete-OFF run shows no rank line, no card and no error.
+A Compete-OFF run shows no rank line, no card and no error. The words live
+in `content/placement.js`.
 
-**Dev loop.** The browser gets the fake provider with dev leaderboard IDs
-(`leaderboardIdsFor({ native: false })`, built once) and the real score
-orders (`scoreOrdersFor`). With the dev setting `pgsDevSignedIn` on,
-submissions, the rank line, the card and the ALL/FRIENDS views all work
-without a device.
+**Dev loop.** `src/browser/fakeBoardServer.js#createFakeBoardFetch` is the
+browser dev loop's in-memory stand-in for the live Firestore/Identity
+Toolkit/Secure Token REST surfaces, enforcing the same rules
+`firebase/firestore.rules` deploys (kept equal by
+`test/unit/firestore-rules.test.js`). `src/browser/devBoardSeed.js#devBoardRuns()`
+seeds it with twelve fixed runs across six dev uids so the LEADERBOARD has
+rows to show without ever touching a live project. Android debug and
+release builds always talk to the live project instead.
 
 `window.__mzPlacement` is the one new bridge (see the table below).
 
