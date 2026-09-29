@@ -17,8 +17,16 @@
 // the plain report into the REST API's typed-value JSON. sendBugReport
 // races an injected fetchFn against a timeout and never throws or rejects:
 // it resolves ok, or one of REPORT_REASONS.
+//
+// Phase 83: the typed-value encoder and FIRESTORE_BASE now live in
+// firestoreRest.js (the one shared encoder every board module reuses); this
+// module imports and re-exports both so every existing caller/test keeps
+// working unchanged.
 
 import { BUG_REPORT_CONFIG } from "./bugReportConfig.js";
+import { FIRESTORE_BASE, toFirestoreFields } from "./firestoreRest.js";
+
+export { FIRESTORE_BASE, toFirestoreFields };
 
 export const REPORT_SCHEMA = 1;
 
@@ -50,8 +58,6 @@ export const RUN_INT_MAX = 1000000000;
 export const SEND_TIMEOUT_MS = 15000;
 
 export const REPORT_REASONS = Object.freeze(["unavailable", "offline", "refused", "server"]);
-
-export const FIRESTORE_BASE = "https://firestore.googleapis.com/v1";
 
 const HIGH_SURROGATE_MIN = 0xd800;
 const HIGH_SURROGATE_MAX = 0xdbff;
@@ -272,25 +278,6 @@ export function validateReport(report) {
   if (!(typeof report.clientTime === "string" && report.clientTime.length >= 1 && report.clientTime.length <= CLIENT_TIME_MAX_CHARS)) fails.push("clienttime");
   if ("run" in report && !isValidRunShape(report.run)) fails.push("run");
   return fails;
-}
-
-function toFirestoreValue(v) {
-  if (typeof v === "string") return { stringValue: v };
-  if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
-  if (typeof v === "boolean") return { booleanValue: v };
-  if (v === null) return { nullValue: null };
-  if (Array.isArray(v)) return { arrayValue: { values: v.map(toFirestoreValue) } };
-  return { mapValue: { fields: toFirestoreFields(v) } };
-}
-
-/** toFirestoreFields(obj) — obj's own keys through the Firestore REST typed-value encoder. Undefined values are skipped. */
-export function toFirestoreFields(obj) {
-  const fields = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (v === undefined) continue;
-    fields[k] = toFirestoreValue(v);
-  }
-  return fields;
 }
 
 /** reportingAvailable(config) — a restricted-looking key and a plausible project id, both present. */
