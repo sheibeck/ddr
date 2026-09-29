@@ -102,7 +102,9 @@ equal by `test/unit/firestore-rules.test.js`.
 | `gold` | int | 0–10,000,000 |
 | `sp` | int | 0–1,000,000,000 |
 | `cause` | string | one of the sixteen death-cause ids (`content/epitaphs.js`) |
+| `note` | string | ≤120 chars, may be empty — the RunSummary's death note (e.g. "cut down by a Werebeast"), filled from content banks and the bestiary, never free text; board rows show it as the cause of death |
 | `epitaph` | string | ≤400 chars |
+| `when` | int | 0 to `request.time.toMillis() + 86,400,000` (a one-day clock-skew allowance) — the death time in ms, shown as the expanded row's date; board docs written before Phase 84 lack it and the panel falls back to `createdAt` |
 | `hash` | string | matches `^[0-9a-f]{8}$` |
 | `version` | string | 1–64 chars, the stamped build string (e.g. `"2.2.0 (12)"`) |
 | `seed` | safe integer | 0 to `Number.MAX_SAFE_INTEGER` |
@@ -134,6 +136,11 @@ a client can never lie about its own rank:
   itself, only the true `day`.
 - `killsKey = kills * 1,000 + floor` — kills desc, ties by floor desc.
 - `goldKey = gold` — gold desc.
+
+`src/browser/runDoc.js#rankKeyOf(stat, run)` is the one shared rank-key
+function both Phase 84 Leaderboards views (the board and YOUR DEAD) call —
+dispatching to the four formulas above so a run holds the same rank-key
+value, and the same place, in either view.
 
 ## 4. The rules
 
@@ -640,6 +647,62 @@ never send.
 **Human verification (deferred to end of run):** none — this plan ships no
 device-testable surface (live infra config and a dev-only Node smoke tool;
 no UI, nothing shipped in the app this plan).
+
+### Run-doc fields note and when (Phase 84, 2026-09-29)
+
+**Deploy command (transition rules only, never `firebase.json` this
+milestone):**
+```
+firebase deploy --only firestore:rules --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive
+```
+Result: **"Deploy complete!"** — `firebase/firestore.transition.rules`
+(carrying the new `note`/`when` clauses in `isValidBoardRun`, identical to
+`firebase/firestore.rules` outside the transition header and the
+`bugReports` create clause) released to `cloud.firestore`. Same two
+pre-existing compiler warnings as 83-08's transition deploy (unused
+`limitPath`, an `Invalid type` note on `isValidLimitStep`'s `before == null`
+check) — neither is new, neither is an error.
+
+**Smoke command:** `node tools/boards-smoke.mjs --with-admin`, run twice
+(both to prove a clean re-run). **Both runs: all 17/17 steps PASS, exit
+0.**
+
+| Step | Result |
+|---|---|
+| signup | PASS |
+| create-a | PASS |
+| resubmit-a | PASS |
+| create-b | PASS |
+| top-ten | PASS |
+| totals | PASS |
+| ranks | PASS |
+| deny-bad-key | PASS |
+| deny-other-id | PASS |
+| deny-no-auth | PASS |
+| deny-non-handle-update | PASS |
+| deny-list-51 | PASS |
+| ban | PASS |
+| admin-delete | PASS |
+| handle-rewrite | PASS |
+| erase | PASS |
+| account-deleted | PASS |
+
+Every run of `writes.submitRun`/`buildRunDoc` in this smoke carries a
+`note` ("cut down by a smoke test") and a `when` (the same timestamp the
+run's `seed` already reads from `now()`), so `create-a`/`create-b`/
+`resubmit-a` prove the live transition rules accept the new fields exactly
+as `src/browser/runDoc.js#validateRunDoc` predicts. `facts`:
+`duplicateStatus: 409` (unchanged from 83-08's live-verified answer),
+`countUnderListRule: "pass"`, `missingIndexes: []`, `commitShape:
+"single-write"`.
+
+**Cleanup confirmed:** `cleanup: {"erased": true, "accountDeleted": true,
+"banCleared": null}` on both runs (`banCleared: null` because the `ban`
+step's own `clearBan` already cleared it before the `finally` block ran).
+Independently confirmed after both runs with `node tools/boards-admin.mjs
+top --stat deep --race Troll --sub "Court Mage"` and `--stat kills` (same
+filters): **`(no runs)`** for both — no "Smoke Probe" row remains on the
+live board.
 
 ## 15. Troubleshooting
 
