@@ -105,7 +105,40 @@ Plans:
   5. An admin script lists and deletes suspicious runs (one run or one player's runs, with the service-account key never entering the repo or `www/`), an ops runbook covers rules/index deploys and quotas, and a smoke test against the live project proves create, read, rank and delete end to end with rules and indexes deployed, anonymous sign-in enabled and the API key restricted to only the APIs the game calls.
   6. Bug reports share the quota safely (added by the user 2026-09-28): a report needs the anonymous identity and is limited per player (2-minute cooldown, 5 a day) by rules proven with live 403 probes; the Action deletes filed/failed reports and stale limit documents on the retention schedule, and its 15-minute schedule is proven to fire.
 
-**Plans**: TBD
+**Plans:** 11 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 83-01-PLAN.md — Shared Firebase config + Firestore REST helpers (encoder moved, decoder, timedFetch) and the rolled @handle (content/handles.js, safety proof) (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 83-02-PLAN.md — runDoc.js (run doc, rank keys, JS mirror), reportLimits.js (cooldown/daily-cap mirror, report + limit commit), firestore.rules for runs/banned/reportLimits/limited bugReports, 19 composite indexes, contract tests (wave 2)
+- [ ] 83-03-PLAN.md — firebaseAuth.js: lazy anonymous sign-up, proactive refresh, ddr.identity.v1, handle roll/re-roll, Compete gate with the explicit Send exception (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 83-04-PLAN.md — fakeBoardServer.js (in-memory REST model of the rules, runs and reports) and boardClient.js (topTen/total/rankOf, 5-min cache, stale) (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 83-05-PLAN.md — tools/boards-admin.mjs (top/suspicious/delete-run/ban/unban/export) and docs/LEADERBOARDS.md runbook (wave 4)
+- [ ] 83-06-PLAN.md — boardWrites.js (idempotent submit, handle rewrite, erase), runQueue.js (ddr.runQueue.v1), runBackfill.js (wave 4)
+- [ ] 83-09-PLAN.md — Bug reports on the shared identity: one-commit limited send, rate-limited sheet UX, shell wiring, ten-probe test tool (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 83-07-PLAN.md — tools/boards-smoke.mjs end-to-end smoke, proven offline against the fake (wave 5)
+- [ ] 83-10-PLAN.md — Action cleanup on the retention schedule (30 d / 2 d / 100 a run), "until <date>" trim note, BUG-REPORTS.md and LISTING.md (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 83-08-PLAN.md — Live setup: deploy rules + indexes, enable APIs, restrict the key, anonymous sign-in, per-IP sign-up limit, live board smoke (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 83-11-PLAN.md — Live bug-report proof: push, ten 403 probes, report-to-issue-to-deleted cleanup proof, scheduled run proven (wave 7)
 **Research**: yes — gsd-phase-researcher (Firestore REST `runQuery`/`runAggregationQuery` count + rank queries, anonymous auth over REST + token refresh, owner-scoped rules and bounded list rules, composite index count, Spark quotas)
 
 ### Phase 84: Leaderboards Panel v3
