@@ -25,7 +25,7 @@
 - [x] **Phase 83: Leaderboard Server** - Stand up our own Firebase-hosted run table, rules, indexes, identity and queue, proven end to end. (completed 2026-09-29)
 - [x] **Phase 84: Leaderboards Panel v3** - Rebuild the DEAD tab and VIEW THE DEAD to the v3 mock, ranked by four stats with RACE/SUB-CLASS filters. (completed 2026-09-29)
 - [x] **Phase 85: Play Games Out, Our Board In** - Remove Play Games entirely and route every Compete-ON death to our own board. (completed 2026-09-29)
-- [ ] **Phase 86: Compliance & Device Close** - Reconcile store, policy and website text and batch the milestone's device checks.
+- [x] **Phase 86: Compliance & Device Close** - Reconcile store, policy and website text and batch the milestone's device checks. (completed 2026-09-29)
 
 <details>
 <summary>✅ v2.1 Bug Fixes (Phases 72–81) — SHIPPED 2026-09-28</summary>
@@ -243,7 +243,7 @@ Plans:
   4. One batched Pixel 7 checklist, `docs/UAT-v2.2.md`, covers the panel, submission, the handle, erasing your runs and Compete OFF in airplane mode, run against one debug APK built after the last code lands.
   5. The bug-report rules swap is a listed release step (user, 2026-09-29: keep 2.1.0's REPORT A BUG working until 2.2 ships): when the 2.2 build reaches testers, deploy the final `firebase/firestore.rules` over 83-08's transition rules, run `send-test-report.mjs --probe-rules` live (ten PASS, SRV-09's live proof), record it in docs/BUG-REPORTS.md, and delete the transition files.
 
-**Plans:** 5/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -286,7 +286,7 @@ Plans:
 | 83. Leaderboard Server | 12/12 | Complete    | 2026-09-29 |
 | 84. Leaderboards Panel v3 | 9/9 | Complete    | 2026-09-29 |
 | 85. Play Games Out, Our Board In | 6/6 | Complete    | 2026-09-29 |
-| 86. Compliance & Device Close | 5/5 | In Progress|  |
+| 86. Compliance & Device Close | 5/5 | Complete    | 2026-09-29 |
 
 ## Backlog
 
