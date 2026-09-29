@@ -16,6 +16,11 @@
 // share one in-flight request. Phase 84's panel and Phase 85's "you placed
 // X" both consume this client unchanged.
 //
+// Phase 84 (BOARD-19, BOARD-23): the LEADERBOARD view's "your best" reads
+// the player's own runs publicly by uid (ownRuns) — it never needs an
+// identity token; own-runs are public board data by design (Compete ON
+// consent), read and cached exactly like topTen/total/rankOf.
+//
 // Pure, DOM-free, never throws: no window/document/navigator/localStorage,
 // no bare global fetch — the network is reached only through the injected
 // fetchFn (the shell passes the live fetch on Android; the browser dev loop
@@ -26,10 +31,12 @@ import { CLASSES } from "../../content/classes.js";
 import { SEASON } from "../../content/season.js";
 import { FIREBASE_CONFIG, firebaseConfigured } from "./firebaseConfig.js";
 import { firestoreUrl, timedFetch, readJson, restError, fromFirestoreFields } from "./firestoreRest.js";
-import { isBoardStat, topTenQuery, countQuery } from "./runDoc.js";
+import { isBoardStat, topTenQuery, countQuery, ownRunsQuery, UID_MAX_CHARS, LIST_LIMIT_MAX } from "./runDoc.js";
 
 export const BOARD_CACHE_TTL_MS = 300000;
 export const BOARD_REASONS = Object.freeze(["off", "offline", "server", "refused", "invalid", "unavailable"]);
+/** OWN_RUNS_MAX_PAGES — ownRuns(uid) pages at most this many times (10 * 50 = 500 rows). */
+export const OWN_RUNS_MAX_PAGES = 10;
 
 // Module-private content lists (never exported — a copy-like array export
 // is flagged by the voice-corpus completeness audit).
@@ -46,6 +53,10 @@ function isValidSubArg(sub) {
 
 function isValidKeyArg(key) {
   return Number.isSafeInteger(key) && key >= 0;
+}
+
+function isValidUidArg(uid) {
+  return typeof uid === "string" && uid.length >= 1 && uid.length <= UID_MAX_CHARS;
 }
 
 /**
@@ -209,9 +220,41 @@ export function createBoardClient(opts = {}) {
     });
   }
 
+  /**
+   * ownRuns(uid) — every one of `uid`'s own run docs, public and
+   * unauthenticated. Gate order: competeOn -> config/fetchFn -> uid
+   * validation (string, 1..128 chars) -> cache -> in-flight -> network.
+   * Pages ownRunsQuery({uid, afterName}) through doPost, decoding each
+   * hit with decodeRunDocument; a page's afterName is the previous page's
+   * last hit's full document name (document.name). Stops when a page
+   * returns fewer than LIST_LIMIT_MAX hits, or after OWN_RUNS_MAX_PAGES
+   * pages (at most 500 rows). Any failed page fails the whole read —
+   * cached, single-flight and stale-fallback exactly like the other reads.
+   */
+  async function ownRuns(uid) {
+    if (!competeGateOk()) return { ok: false, reason: "off" };
+    if (!firebaseConfigured(config) || typeof fetchFn !== "function") return { ok: false, reason: "unavailable" };
+    if (!isValidUidArg(uid)) return { ok: false, reason: "invalid" };
+    const cKey = `ownRuns|${uid}`;
+    return runRead(cKey, async () => {
+      const rows = [];
+      let afterName = null;
+      for (let page = 0; page < OWN_RUNS_MAX_PAGES; page++) {
+        const body = ownRunsQuery({ uid, afterName });
+        const outcome = await doPost(":runQuery", body);
+        if (!outcome.ok) return outcome;
+        const hits = Array.isArray(outcome.json) ? outcome.json.filter((h) => h && h.document) : [];
+        for (const h of hits) rows.push(decodeRunDocument(h.document));
+        if (hits.length < LIST_LIMIT_MAX) break;
+        afterName = hits[hits.length - 1].document.name;
+      }
+      return { ok: true, value: { ok: true, rows: Object.freeze(rows) } };
+    });
+  }
+
   function clear() {
     cache.clear();
   }
 
-  return Object.freeze({ topTen, total, rankOf, clear });
+  return Object.freeze({ topTen, total, rankOf, ownRuns, clear });
 }

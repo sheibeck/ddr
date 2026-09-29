@@ -17,11 +17,12 @@ import { stripJs } from "../../tools/ident-sweep.mjs";
 import { rollHandle } from "../../src/browser/handles.js";
 import { SEASON } from "../../content/season.js";
 import { firestoreUrl, docName } from "../../src/browser/firestoreRest.js";
-import { RUN_COLLECTION, RUN_CLIENT_FIELDS, rankKeys, runDocId, topTenQuery, countQuery } from "../../src/browser/runDoc.js";
+import { RUN_COLLECTION, RUN_CLIENT_FIELDS, rankKeys, runDocId, topTenQuery, countQuery, ownRunsQuery } from "../../src/browser/runDoc.js";
 import { createFakeBoardFetch } from "../../src/browser/fakeBoardServer.js";
 import {
   BOARD_CACHE_TTL_MS,
   BOARD_REASONS,
+  OWN_RUNS_MAX_PAGES,
   decodeRunDocument,
   createBoardClient,
 } from "../../src/browser/boardClient.js";
@@ -87,6 +88,15 @@ function spy(fetchFn) {
   };
   fn.calls = calls;
   return fn;
+}
+
+function manyRunsFor(uid, count, startHashIndex = 0) {
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const hashN = startHashIndex + i + 1;
+    out.push(seedOf({ uid, hash: hashN.toString(16).padStart(8, "0"), floor: 1 + (i % 50), steps: i }));
+  }
+  return out;
 }
 
 function makeSeeds() {
@@ -438,6 +448,173 @@ test("unavailable: a bad config or missing fetchFn resolves 'unavailable' with z
 
   const client2 = createBoardClient({ fetchFn: async () => jsonRes(200, []), config: { projectId: "x", apiKey: "bad" }, competeOn: () => true, now: () => 0, season: SEASON });
   assert.deepEqual(await client2.topTen("deep"), { ok: false, reason: "unavailable" });
+});
+
+/* ================================================================
+   ownRuns: paged, cached, public own-runs read (Phase 84 Plan 04 Task 1)
+   ================================================================ */
+
+test("constants: OWN_RUNS_MAX_PAGES", () => {
+  assert.equal(OWN_RUNS_MAX_PAGES, 10);
+});
+
+test("ownRuns(uid): resolves exactly that uid's runs, decoded, stale false, fetchedAt set", async () => {
+  const mine = manyRunsFor("u1", 3);
+  const others = manyRunsFor("other1", 5, 1000);
+  const { client } = makeClient({ runs: [...mine, ...others] });
+  const res = await client.ownRuns("u1");
+  assert.equal(res.ok, true);
+  assert.equal(res.rows.length, 3);
+  assert.ok(res.rows.every((r) => r.uid === "u1"));
+  assert.equal(res.stale, false);
+  assert.equal(typeof res.fetchedAt, "number");
+  for (const row of res.rows) assert.ok(Object.isFrozen(row));
+});
+
+test("ownRuns: 120 seeded runs for one uid come back in three pages (50,50,20) as 120 rows", async () => {
+  const uid = "pageuid";
+  const runs = manyRunsFor(uid, 120);
+  const { client, fetchFn } = makeClient({ runs });
+  const res = await client.ownRuns(uid);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows.length, 120);
+  assert.equal(fetchFn.calls.length, 3);
+});
+
+test("ownRuns: OWN_RUNS_MAX_PAGES (10) stops paging at 500 rows even with more available", async () => {
+  const uid = "capuid";
+  const runs = manyRunsFor(uid, 550);
+  const { client, fetchFn } = makeClient({ runs });
+  const res = await client.ownRuns(uid);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows.length, 500);
+  assert.equal(fetchFn.calls.length, OWN_RUNS_MAX_PAGES);
+});
+
+test("ownRuns: request bodies equal ownRunsQuery({uid}) then ownRunsQuery({uid, afterName}); no Authorization header; API key on every URL", async () => {
+  const uid = "pageuid2";
+  const runs = manyRunsFor(uid, 60); // exactly two pages: 50 + 10
+  const { client, fetchFn } = makeClient({ runs });
+  const res = await client.ownRuns(uid);
+  assert.equal(res.ok, true);
+  assert.equal(res.rows.length, 60);
+  assert.equal(fetchFn.calls.length, 2);
+  for (const call of fetchFn.calls) {
+    assert.ok(call.url.includes(`key=${encodeURIComponent(VALID_CONFIG.apiKey)}`));
+    const headerKeys = Object.keys(call.init.headers || {}).map((k) => k.toLowerCase());
+    assert.ok(!headerKeys.includes("authorization"));
+  }
+
+  const body1 = JSON.parse(fetchFn.calls[0].init.body);
+  assert.deepEqual(body1, ownRunsQuery({ uid }));
+
+  const hash50 = (50).toString(16).padStart(8, "0");
+  const expectedAfterName = docName(VALID_CONFIG, RUN_COLLECTION, runDocId(uid, hash50));
+  const body2 = JSON.parse(fetchFn.calls[1].init.body);
+  assert.deepEqual(body2, ownRunsQuery({ uid, afterName: expectedAfterName }));
+});
+
+test("ownRuns: a second call within 5 minutes makes no new request; after 300000ms it refetches", async () => {
+  const uid = "ttluid";
+  const runs = manyRunsFor(uid, 3);
+  const { client, fetchFn, setClock } = makeClient({ runs });
+  await client.ownRuns(uid);
+  assert.equal(fetchFn.calls.length, 1);
+  await client.ownRuns(uid);
+  assert.equal(fetchFn.calls.length, 1);
+
+  setClock(299999);
+  await client.ownRuns(uid);
+  assert.equal(fetchFn.calls.length, 1);
+
+  setClock(300000);
+  await client.ownRuns(uid);
+  assert.equal(fetchFn.calls.length, 2);
+});
+
+test("ownRuns: two concurrent calls to the same uid share one set of requests", async () => {
+  const uid = "concurrentuid";
+  const runs = manyRunsFor(uid, 3);
+  const { client, fetchFn } = makeClient({ runs });
+  const [a, b] = await Promise.all([client.ownRuns(uid), client.ownRuns(uid)]);
+  assert.equal(fetchFn.calls.length, 1);
+  assert.deepEqual(a, b);
+});
+
+test("ownRuns: clear() forces a refetch", async () => {
+  const uid = "clearuid";
+  const runs = manyRunsFor(uid, 3);
+  const { client, fetchFn } = makeClient({ runs });
+  await client.ownRuns(uid);
+  assert.equal(fetchFn.calls.length, 1);
+  client.clear();
+  await client.ownRuns(uid);
+  assert.equal(fetchFn.calls.length, 2);
+});
+
+test("ownRuns: stale fallback — a refresh failure with a cached copy returns the copy flagged stale:true", async () => {
+  let clockMs = 0;
+  let call = 0;
+  const uid = "staleuid";
+  const name = `projects/${VALID_CONFIG.projectId}/databases/(default)/documents/runs/${uid}_00000001`;
+  const hits = [{ document: { name, fields: { uid: { stringValue: uid } } } }];
+  const responses = [
+    jsonRes(200, hits),
+    () => {
+      throw new Error("network down");
+    },
+  ];
+  const fetchFn = async () => {
+    const r = responses[Math.min(call, responses.length - 1)];
+    call++;
+    if (typeof r === "function") return r();
+    return r;
+  };
+  const client = createBoardClient({ fetchFn, config: VALID_CONFIG, competeOn: () => true, now: () => clockMs, season: SEASON });
+
+  const first = await client.ownRuns(uid);
+  assert.equal(first.ok, true);
+  assert.equal(first.rows.length, 1);
+  assert.equal(first.stale, false);
+
+  clockMs = 300000; // force expiry so the second call refetches
+  const second = await client.ownRuns(uid);
+  assert.equal(second.ok, true);
+  assert.equal(second.rows.length, 1);
+  assert.equal(second.stale, true);
+});
+
+test("ownRuns: no cached copy — offline for a timeout or network failure", async () => {
+  const offlineFetch = async () => {
+    throw new Error("boom");
+  };
+  const client = createBoardClient({ fetchFn: offlineFetch, config: VALID_CONFIG, competeOn: () => true, now: () => 0, season: SEASON });
+  const res = await client.ownRuns("u1");
+  assert.deepEqual(res, { ok: false, reason: "offline" });
+});
+
+test("ownRuns: Compete OFF resolves {ok:false, reason:'off'} with zero calls", async () => {
+  const runs = manyRunsFor("u1", 3);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs, now: () => 0 });
+  const fetchFn = spy(server.fetchFn);
+  const client = createBoardClient({ fetchFn, config: VALID_CONFIG, competeOn: () => false, now: () => 0, season: SEASON });
+  const res = await client.ownRuns("u1");
+  assert.deepEqual(res, { ok: false, reason: "off" });
+  assert.equal(fetchFn.calls.length, 0);
+});
+
+test("ownRuns: an invalid uid (not a string of 1..128 chars) resolves {ok:false, reason:'invalid'} with zero calls", async () => {
+  const { client, fetchFn } = makeClient();
+  assert.deepEqual(await client.ownRuns(""), { ok: false, reason: "invalid" });
+  assert.deepEqual(await client.ownRuns(123), { ok: false, reason: "invalid" });
+  assert.deepEqual(await client.ownRuns(null), { ok: false, reason: "invalid" });
+  assert.deepEqual(await client.ownRuns("x".repeat(129)), { ok: false, reason: "invalid" });
+  assert.equal(fetchFn.calls.length, 0);
+});
+
+test("ownRuns: unavailable — a bad config or missing fetchFn resolves 'unavailable' with zero calls", async () => {
+  const client1 = createBoardClient({ fetchFn: undefined, config: VALID_CONFIG, competeOn: () => true, now: () => 0, season: SEASON });
+  assert.deepEqual(await client1.ownRuns("u1"), { ok: false, reason: "unavailable" });
 });
 
 /* ================================================================
