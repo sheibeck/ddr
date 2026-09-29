@@ -74,8 +74,8 @@
 
 - [x] **COMP-01**: The Data safety answers in `store-listing/LISTING.md` describe our board's data (an anonymous id, the handle, run stats; collected for app functionality; optional through Compete; deletable) and drop Play Games.
 - [ ] **COMP-02**: The darktierstudios.com pages `/privacy/apps`, `/privacy/delete-data` and the Delve, Die, Repeat Terms of Service (`C:/projects/darktier-studio`) describe our own leaderboard instead of Play Games: what is sent, who sees it, Compete OFF, erasing your runs, and removal of forged runs. (User, 2026-09-28.)
-- [ ] **COMP-03**: `docs/PLAY-GAMES-SETUP.md` is retired in favour of the leaderboard-server runbook. The Play Console cleanup (unpublish or delete the Season-1 boards and the Play Games configuration) is a listed user step.
-- [ ] **COMP-04**: One batched Pixel 7 checklist, `docs/UAT-v2.2.md`, covers the panel, submission, the handle, erasing your runs, and Compete OFF in airplane mode. It runs against one debug APK built after the last code lands.
+- [x] **COMP-03**: `docs/PLAY-GAMES-SETUP.md` is retired in favour of the leaderboard-server runbook. The Play Console cleanup (unpublish or delete the Season-1 boards and the Play Games configuration) is a listed user step.
+- [x] **COMP-04**: One batched Pixel 7 checklist, `docs/UAT-v2.2.md`, covers the panel, submission, the handle, erasing your runs, and Compete OFF in airplane mode. It runs against one debug APK built after the last code lands.
 
 ## Future Requirements
 
@@ -129,5 +129,5 @@
 | RETIRE-03 | Phase 85 | Complete |
 | COMP-01 | Phase 86 | Complete |
 | COMP-02 | Phase 86 | Pending |
-| COMP-03 | Phase 86 | Pending |
-| COMP-04 | Phase 86 | Pending |
+| COMP-03 | Phase 86 | Complete |
+| COMP-04 | Phase 86 | Complete |

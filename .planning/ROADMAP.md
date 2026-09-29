@@ -243,7 +243,7 @@ Plans:
   4. One batched Pixel 7 checklist, `docs/UAT-v2.2.md`, covers the panel, submission, the handle, erasing your runs and Compete OFF in airplane mode, run against one debug APK built after the last code lands.
   5. The bug-report rules swap is a listed release step (user, 2026-09-29: keep 2.1.0's REPORT A BUG working until 2.2 ships): when the 2.2 build reaches testers, deploy the final `firebase/firestore.rules` over 83-08's transition rules, run `send-test-report.mjs --probe-rules` live (ten PASS, SRV-09's live proof), record it in docs/BUG-REPORTS.md, and delete the transition files.
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans executed
 
 Plans:
 **Wave 1**
@@ -258,7 +258,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 86-05-PLAN.md — docs/UAT-v2.2.md assembled last from 84/85/83 verification lists against the one debug APK; UAT-v2.1/v2.0 Play Games rows marked superseded; rebuild check (wave 3)
+- [x] 86-05-PLAN.md — docs/UAT-v2.2.md assembled last from 84/85/83 verification lists against the one debug APK; UAT-v2.1/v2.0 Play Games rows marked superseded; rebuild check (wave 3)
 
 **Device check**: yes (this phase presents the batch)
 
@@ -286,7 +286,7 @@ Plans:
 | 83. Leaderboard Server | 12/12 | Complete    | 2026-09-29 |
 | 84. Leaderboards Panel v3 | 9/9 | Complete    | 2026-09-29 |
 | 85. Play Games Out, Our Board In | 6/6 | Complete    | 2026-09-29 |
-| 86. Compliance & Device Close | 4/5 | In Progress|  |
+| 86. Compliance & Device Close | 5/5 | In Progress|  |
 
 ## Backlog
 
