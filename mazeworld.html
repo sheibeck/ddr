@@ -2877,9 +2877,9 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
       </section>
     </section>
 
-    <!-- DEAD — Phase 66 (BOARD-01, D-14): the Leaderboards panel mounts
-         here, rendered by src/browser/boardsPanel.js through
-         window.__mzBoards. -->
+    <!-- DEAD — Phase 84 (BOARD-18): the v3 Leaderboards panel mounts here,
+         rendered by src/browser/leaderboardPanel.js's createLeaderboardPanel
+         through window.__mzBoards. -->
     <section class="mw-screen" id="screen-dead" data-screen="dead" hidden></section>
 
   </main>
@@ -3102,12 +3102,13 @@ function syncDeadTabLock() {
     // with its three buttons. `dead` implies the state bridge exists, so S
     // is past its TDZ here.
     if (name === "maze" && dead) renderEncounter();
-    // Phase 66 (BOARD-01, D-02/D-04/D-15): the DEAD tab opens the
-    // module-owned Leaderboards panel, which reads the adapter's in-memory
-    // bests and graveyard synchronously (a death is already folded in by the
-    // time the tab opens), so there is no storage re-fetch here any more.
-    // Optional-chained because the initial showTab("maze") runs before the
-    // module script assigns window.__mzBoards.
+    // Phase 84 (BOARD-18): the DEAD tab opens the module-owned v3
+    // Leaderboards panel, which reads the adapter's per-run history
+    // synchronously (a death is already folded in by the time the tab
+    // opens) and the board feed asynchronously (cache-first, so a repeat
+    // view often needs no network call). Optional-chained because the
+    // initial showTab("maze") runs before the module script assigns
+    // window.__mzBoards.
     // Phase 78 (HUD-03): it passes whether the hero is dead, so a dead
     // hero's DEAD tab docks FINAL SHEET and BURY THEM.
     if (name === "dead") window.__mzBoards?.onDeadTab?.({ dead });
@@ -7076,12 +7077,18 @@ window.__mzClassicBoot = async function classicBoot() {
   // per-run history record — its own import line so the pinned
   // boot/dispatch import line above stays byte-identical.
   import { setAppVersion } from "./src/browser/engineAdapter.js";
-  // Phase 66 (BOARD-01..08): the Leaderboards panel's adapter read seam,
-  // controller and pure view model — each on its own line per this file's
-  // import convention.
-  import { getBests, getGraveyard } from "./src/browser/engineAdapter.js";
-  import { createBoardsPanel } from "./src/browser/boardsPanel.js";
-  import { boardsView } from "./src/browser/boardsView.js";
+  // Phase 84 (BOARD-18..27): the v3 Leaderboards panel's adapter read seam,
+  // controller, pure view model and network read layer — each on its own
+  // line per this file's import convention. getRunHistory() replaces the
+  // old getBests()/getGraveyard() read seam; createLeaderboardPanel and
+  // leaderboardView replace createBoardsPanel/boardsView.
+  import { getRunHistory } from "./src/browser/engineAdapter.js";
+  import { createLeaderboardPanel } from "./src/browser/leaderboardPanel.js";
+  import { leaderboardView } from "./src/browser/leaderboardView.js";
+  import { createBoardClient } from "./src/browser/boardClient.js";
+  import { createBoardFeed } from "./src/browser/boardFeed.js";
+  import { createFakeBoardFetch } from "./src/browser/fakeBoardServer.js";
+  import { devBoardRuns } from "./src/browser/devBoardSeed.js";
   // Phase 67 (PGS-02, ACCT-01/02, D-12): the Play Games provider seam (the
   // only module that names the plugin) and the account chip, sheet and
   // controller.
@@ -7425,19 +7432,31 @@ window.__mzClassicBoot = async function classicBoot() {
   // openGearSheet/refreshGearSheet (classic) render through it.
   window.__mzGearSheet = renderGearSheet;
 
-  // Phase 66 (D-14/D-15): the Leaderboards panel reads only the adapter's
-  // in-memory records through boardsView; presentation only, never a field
-  // on state.
-  function readBoardsData() {
-    const g = getGraveyard();
-    return { bests: getBests(), graves: (g && g.graves) || [], total: (g && g.total) || 0 };
-  }
   function boardsPrefs() {
     try {
       return window.localStorage;
     } catch {
       return null;
     }
+  }
+  // Phase 84 (T-84-10): the board client's ONE Compete gate — reads the
+  // live setting off currentSettings (assigned below, re-applied on every
+  // writeAccountSetting), so every board read reflects the current Compete
+  // value with zero staleness. competeIsOn() is called at read time, never
+  // cached.
+  function competeIsOn() {
+    return currentSettings?.compete === true;
+  }
+  // Phase 84 (T-84-11): the board's ONE network seam. On a native platform
+  // (Android debug or release) this is the live fetch against the deployed
+  // project; in the browser dev loop it is Phase 83's in-memory fake,
+  // seeded with src/browser/devBoardSeed.js's deterministic dev runs.
+  // Selected once, at panel-construction time — a SOURCE test
+  // (shell-boards-panel.test.js) pins that the selection is gated on
+  // Capacitor's native-platform report.
+  function boardFetchFn() {
+    if (window.Capacitor?.isNativePlatform?.()) return globalThis.fetch.bind(globalThis);
+    return createFakeBoardFetch({ runs: devBoardRuns() }).fetchFn;
   }
   // Phase 67 (D-08): the one account controller, assigned after the
   // settings load (below). Declared here, before the Leaderboards panel
@@ -7453,30 +7472,26 @@ window.__mzClassicBoot = async function classicBoot() {
   let pgsQueue = null;
   let liveDeathHash = null;
   let pendingPgsCard = null;
-  const boardsPanel = createBoardsPanel({
+  // Phase 84 (BOARD-19, T-84-10/T-84-11): the board client (Phase 83) and
+  // the LEADERBOARD data feed (84-04), wired once here and handed to the
+  // panel below as its `board` seam. The client's own competeOn gate means
+  // every read resolves "off" with zero network calls while Compete is off.
+  const boardClient = createBoardClient({ fetchFn: boardFetchFn(), competeOn: competeIsOn });
+  const boardFeed = createBoardFeed({ client: boardClient, identity: () => sharedIdentity() });
+  const boardsPanel = createLeaderboardPanel({
     host: document.getElementById("screen-dead"),
-    buildView: boardsView,
-    readData: readBoardsData,
+    buildView: leaderboardView,
+    // Phase 84 (BOARD-26): YOUR DEAD reads the adapter's own per-run
+    // history — never the retired bests/graveyard read seam.
+    history: () => getRunHistory(),
+    board: boardFeed,
+    competeOn: competeIsOn,
     prefs: boardsPrefs(),
+    now: () => Date.now(),
+    tzOffset: () => new Date().getTimezoneOffset(),
+    season: SEASON,
     reducedMotion: () => prefersReducedMotion(window),
     onRoute: routeFromBoards,
-    // Phase 67 (D-08): the identity strip reads the live account; the
-    // account block below calls boardsPanel.refresh() on every change.
-    identity: () => (account ? account.identity() : { signedIn: false, player: null }),
-    // Phase 68 (D-05..D-08): ALL and FRIENDS read the global-boards
-    // controller's cached snapshot (null until it exists; it makes no call
-    // while signed out or with Compete OFF); the SEASON label and picker
-    // read the current season and the seasons in the IDs map; the SHOW MY
-    // FRIENDS button is the only place friends consent is requested.
-    global: (q) => (globalBoards ? globalBoards.view(q) : null),
-    seasons: () => ({ current: SEASON, all: knownSeasons() }),
-    onFriendsConsent: () => { globalBoards?.requestFriendsAccess()?.catch?.(() => {}); },
-    // Phase 70 (D-11): LINEAGE defaults to the living hero's race + sub-class (null when absent or dead).
-    hero: () => { const st = window.__mzState?.get?.(); return st && st.c && !st.dead ? { race: st.c.race, sub: st.c.sub } : null; },
-    // Phase 81 (BOARD-16, R-16b): every fresh panel open marks the global
-    // boards cache due for a refetch, so a friend's score that landed since
-    // the last look is never served from a pre-open snapshot.
-    onOpen: () => { globalBoards?.invalidate(); },
   });
   window.__mzBoards = Object.freeze({ onDeadTab: boardsPanel.onDeadTab });
 
@@ -8556,6 +8571,11 @@ window.__mzClassicBoot = async function classicBoot() {
     renderAccountSurfaces();
     if (accountSheetOpen()) renderAccountSheetNow();
     boardsPanel.refresh();
+    // Phase 84 (BOARD-26): a Compete change on the title (or anywhere the
+    // account controller fires) re-checks VIEW THE DEAD's history-or-
+    // Compete gate at once — a fresh install with Compete just turned ON
+    // must show the entry without waiting for the title to re-open.
+    refreshTitleDead();
   });
   // The pending faces until boot() settles the first state.
   renderAccountSurfaces();
@@ -9526,18 +9546,19 @@ window.__mzClassicBoot = async function classicBoot() {
     return !!(S && S.c && !S.dead);
   }
   let resumeIntent = false;
-  // DR18 (DR15-C): show the title screen's "View the Dead" entry ONLY when the
-  // graveyard is non-empty. Phase 66 (D-14): reads the adapter's lifetime
-  // total directly (getGraveyard()) instead of the retired classic
-  // window.__mzGravesCount bridge; re-checked every time the title screen
-  // shows so a death mid-session (which folds into the adapter's graveyard
-  // synchronously) makes the entry appear on the next title return.
+  // DR18 (DR15-C): show the title screen's "View the Dead" entry. Phase 84
+  // (BOARD-26, CONTEXT area 3): the gate moved off the old graveyard total
+  // onto "at least one run in the local history OR Compete is ON" — the
+  // board has other players' runs even on a fresh install, so Compete alone
+  // is enough to make LEADERBOARD worth opening. Re-checked every time the
+  // title screen shows (a death mid-session folds into the adapter's
+  // history synchronously) and on every account-controller change
+  // (refreshTitleDead()'s other call site, account.subscribe above), so a
+  // Compete flip on the title updates the entry at once.
   function refreshTitleDead() {
     const deadBtn = document.getElementById("mw-title-dead");
     if (!deadBtn) return;
-    const g = getGraveyard();
-    const n = (g && g.total) || 0;
-    deadBtn.hidden = !(n > 0);
+    deadBtn.hidden = !(getRunHistory().length > 0 || competeIsOn());
   }
   function showTitleScreen({ allowResume } = {}) {
     // Phase 65 (RUN-04): the title shows after BURY THEM, abandon and
@@ -9910,18 +9931,19 @@ window.__mzClassicBoot = async function classicBoot() {
       if (resumeIntent) { surfaceWornReconcile(); return; } // boot() already rehydrated the live delve underneath
       window.mzStartRoll();
     };
-    // DR18 (DR15-C), Phase 66 (BOARD-01, D-01/D-04): "View the Dead" —
-    // dismiss the title gate and open the Leaderboards panel in TITLE mode
-    // on GRAVEYARD (boardsPanel.openFromTitle), then switch the DEAD tab
-    // active so its onDeadTab() branch only re-centres the rail (title mode
-    // is already set by the time the tab switch runs). hasHero is the
-    // title's OWN resume decision (ENTER's resumeIntent), never recomputed
-    // from S — boot() always leaves a throwaway fresh-run character in S
-    // that is not a live hero, so reading S here would misreport "no live
-    // hero" as one. The adapter's graveyard is already loaded here (boot()
+    // DR18 (DR15-C), Phase 84 (BOARD-18, BOARD-26): "View the Dead" —
+    // dismiss the title gate and open the v3 Leaderboards panel in TITLE
+    // mode (boardsPanel.openFromTitle — LEADERBOARD with Compete on, YOUR
+    // DEAD with it off), then switch the DEAD tab active so its
+    // onDeadTab() branch only re-centres the rail (title mode is already
+    // set by the time the tab switch runs). hasHero is the title's OWN
+    // resume decision (ENTER's resumeIntent), never recomputed from S —
+    // boot() always leaves a throwaway fresh-run character in S that is
+    // not a live hero, so reading S here would misreport "no live hero" as
+    // one. The adapter's per-run history is already loaded here (boot()
     // ran inside the awaited __mzClassicBoot() above), so
-    // refreshTitleDead()'s non-empty gate is authoritative on this first
-    // paint.
+    // refreshTitleDead()'s history-or-Compete gate is authoritative on
+    // this first paint.
     const deadBtn = document.getElementById("mw-title-dead");
     if (deadBtn) {
       deadBtn.onclick = () => {
