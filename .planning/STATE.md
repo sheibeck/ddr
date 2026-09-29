@@ -4,15 +4,15 @@ milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 84
 status: executing
-stopped_at: Completed 84-07-PLAN.md
-last_updated: "2026-09-29T15:17:49.869Z"
+stopped_at: Completed 84-08-PLAN.md
+last_updated: "2026-09-29T15:50:40.205Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 84 Plan 01 (run-doc note/when contract) complete
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 34
-  completed_plans: 21
+  completed_plans: 22
   percent: 40
 current_phase_name: Leaderboards Panel v3
 ---
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 84 — EXECUTING
-Plan: 8 of 9
-Progress: [██████░░░░] 62%
+Plan: 9 of 9
+Progress: [███████░░░] 65%
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 84 Plan 01 (run-doc note/when contract) complete
 
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T15:17:49.831Z
-Stopped at: Completed 84-07-PLAN.md
+Last session: 2026-09-29T15:50:40.148Z
+Stopped at: Completed 84-08-PLAN.md
 
 - (history below is the pre-close record)
 
@@ -446,6 +446,7 @@ Resume file: None
 | Phase 84 P05 | 35min | 2 tasks | 3 files |
 | Phase 84 P06 | ~50min | 2 tasks | 5 files |
 | Phase 84 P07 | 45min | 2 tasks | 4 files |
+| Phase 84 P08 | 31min | 2 tasks | 9 files |
 
 ## Decisions
 
@@ -788,6 +789,9 @@ Resume file: None
 - [Phase ?]: 84-06: .mw-lb-sheet-panel is position:relative so it paints above the position:absolute .mw-lb-scrim from CSS positioning + DOM order alone, no z-index needed
 - [Phase ?]: 84-07: mode (LEADERBOARD vs YOUR DEAD) is explicit controller state that refresh() flips on Compete-off, not silently re-derived every render
 - [Phase ?]: 84-07: RACE_IDS/SUB_IDS exported from leaderboardView.js (not content/ imported directly) so leaderboardPanel.js's 84-06 source-pin test keeps holding
+- [Phase ?]: devBoardSeed.js builds fixture board runs via real engine newRun()/die() with post-roll field overrides, then validates every doc through buildRunDoc/validateRunDoc
+- [Phase ?]: boardFetchFn() selects the live fetch only when Capacitor reports a native platform, else the seeded dev-loop fake — the panel's only network seam
+- [Phase ?]: refreshTitleDead moved off getGraveyard().total onto getRunHistory().length > 0 || competeIsOn(), re-checked on every account-controller change
 
 ### Blockers
 

@@ -46,16 +46,16 @@
 
 ### Leaderboards panel v3 (BOARD) — the mock, `design/Mazeworld Boards Panel v3.dc.html`
 
-- [ ] **BOARD-18**: The DEAD tab and the title's VIEW THE DEAD open one Leaderboards panel built to the v3 mock. With Compete ON it opens on LEADERBOARD ("Everyone's dead. Top ten shown."); with Compete OFF it opens on YOUR DEAD ("Compete is off. Only your heroes."). The back button and the title-entry footer (BACK TO TITLE / ROLL A NEW HERO, or BACK TO THE DUNGEON) route as the mock does.
-- [ ] **BOARD-19**: The header box switches views. On the board it reads "YOURS ›" with your run count; on your view it reads "EVERYONE ›" with the board's total, and back also returns to the board. With Compete OFF it is a static INTERRED count.
+- [x] **BOARD-18**: The DEAD tab and the title's VIEW THE DEAD open one Leaderboards panel built to the v3 mock. With Compete ON it opens on LEADERBOARD ("Everyone's dead. Top ten shown."); with Compete OFF it opens on YOUR DEAD ("Compete is off. Only your heroes."). The back button and the title-entry footer (BACK TO TITLE / ROLL A NEW HERO, or BACK TO THE DUNGEON) route as the mock does.
+- [x] **BOARD-19**: The header box switches views. On the board it reads "YOURS ›" with your run count; on your view it reads "EVERYONE ›" with the board's total, and back also returns to the board. With Compete OFF it is a static INTERRED count.
 - [ ] **BOARD-20**: The RANK BY (DEPTH, DAYS, KILLS, WILMST), RACE and SUB-CLASS pickers open bottom sheets. On YOUR DEAD each option shows its local count under the other filter and zero-count options are dimmed; on LEADERBOARD the options carry no counts (user, 2026-09-29: no per-option count queries). A choice re-ranks the list. The board rail and the LEANEST, LINEAGE and GRAVEYARD boards are gone; LINEAGE becomes RACE plus SUB-CLASS on any stat.
 - [x] **BOARD-21**: Each row shows the rank, an initials avatar, the handle (the hero's name on YOUR DEAD), a YOU tag on your own runs, the name · race sub-class · level line, and the value with its unit. The leading row wears the stat's colour.
 - [x] **BOARD-22**: Tapping a row opens its cause of death, epitaph and six stat chips (FLOOR, DAYS, SQUARES, KILLS, EXP, WILMST), plus a small line with the date the run was recorded and the app version it was played on (user, 2026-09-28: kept for balance tracking). Tapping it again closes it.
 - [x] **BOARD-23**: When your best run is outside the top ten, it is pinned under a "NOT IN THE TOP TEN · YOUR BEST" divider with its real rank. The standing card reads "{handle}'s best, of N interred as {race}, {sub-class}." with the ordinal place, or "None of yours on this board yet."
 - [x] **BOARD-24**: A filter with no runs shows NOBODY YET, the in-voice note and a CLEAR FILTERS button.
-- [ ] **BOARD-25**: LEADERBOARD has deliberate in-voice states for loading, offline or unreachable, and a stale cached result (the mock has none). YOUR DEAD never waits on the network.
-- [ ] **BOARD-26**: YOUR DEAD ranks your runs from local storage by any stat and filter. Every run recorded from now on is kept as a lean per-run record under a generous cap (not just the last 60 graves). **It starts with runs from the 2.1.0 release on (versionCode 11, `when` ≥ 2026-09-28T19:41:01Z, `BACKFILL_SINCE_MS` in `src/browser/runBackfill.js`) and nothing older** (user, 2026-09-28): older graveyard and `ddr.bests.v1` runs and the old lifetime INTERRED total are not imported or shown. The old keys stay on the device untouched (RETIRE-03).
-- [ ] **BOARD-27**: The LEADERBOARD view names the current season, read from a season-name table in `content/season.js` next to `SEASON`. Season 1, the closed-testing season, is **SEASON OF THE ALPHA** (user, 2026-09-28). At go-live the boards reset: `SEASON` bumps to 2, named "Season 1" (runbook `docs/LEADERBOARDS.md` §10), and the alpha runs stay in Firestore for balance export.
+- [x] **BOARD-25**: LEADERBOARD has deliberate in-voice states for loading, offline or unreachable, and a stale cached result (the mock has none). YOUR DEAD never waits on the network.
+- [x] **BOARD-26**: YOUR DEAD ranks your runs from local storage by any stat and filter. Every run recorded from now on is kept as a lean per-run record under a generous cap (not just the last 60 graves). **It starts with runs from the 2.1.0 release on (versionCode 11, `when` ≥ 2026-09-28T19:41:01Z, `BACKFILL_SINCE_MS` in `src/browser/runBackfill.js`) and nothing older** (user, 2026-09-28): older graveyard and `ddr.bests.v1` runs and the old lifetime INTERRED total are not imported or shown. The old keys stay on the device untouched (RETIRE-03).
+- [x] **BOARD-27**: The LEADERBOARD view names the current season, read from a season-name table in `content/season.js` next to `SEASON`. Season 1, the closed-testing season, is **SEASON OF THE ALPHA** (user, 2026-09-28). At go-live the boards reset: `SEASON` bumps to 2, named "Season 1" (runbook `docs/LEADERBOARDS.md` §10), and the alpha runs stay in Firestore for balance export.
 
 ### Account & submission (ACCT)
 
@@ -110,16 +110,16 @@
 | SRV-10 | Phase 83 | Complete |
 | SRV-11 | Phase 83 | Complete |
 | SRV-12 | Phase 83 | Complete |
-| BOARD-18 | Phase 84 | Pending |
-| BOARD-19 | Phase 84 | Pending |
+| BOARD-18 | Phase 84 | Complete |
+| BOARD-19 | Phase 84 | Complete |
 | BOARD-20 | Phase 84 | Pending |
 | BOARD-21 | Phase 84 | Complete |
 | BOARD-22 | Phase 84 | Complete |
 | BOARD-23 | Phase 84 | Complete |
 | BOARD-24 | Phase 84 | Complete |
-| BOARD-25 | Phase 84 | Pending |
-| BOARD-26 | Phase 84 | Pending |
-| BOARD-27 | Phase 84 | Pending |
+| BOARD-25 | Phase 84 | Complete |
+| BOARD-26 | Phase 84 | Complete |
+| BOARD-27 | Phase 84 | Complete |
 | ACCT-03 | Phase 85 | Pending |
 | ACCT-04 | Phase 85 | Pending |
 | ACCT-05 | Phase 85 | Pending |
