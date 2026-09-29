@@ -776,8 +776,9 @@ test("purity: fakeBoardServer.js never touches DOM globals and never calls the b
   }
   // "document" appears only as the Firestore REST response shape's object
   // key (`document: { name, fields, ... }`, mirroring the real API) and in
-  // `documentsPath` — never as a DOM global reference (`document.<member>`).
-  assert.doesNotMatch(code, /\bdocument\s*\.(?!\w*Path)/, "must not use the DOM global `document`");
+  // `documentsPath` — never as a DOM global reference (`document.<member>`,
+  // with no preceding `.` and not an object-literal key).
+  assert.doesNotMatch(code, /(?<!\.)\bdocument\b(?!\s*:)/, "must not use the DOM global `document`");
   assert.doesNotMatch(code, /(?<!\w)fetch\(/, "must never call the global fetch directly");
 });
 
