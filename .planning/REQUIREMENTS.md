@@ -54,7 +54,7 @@
 - [ ] **BOARD-23**: When your best run is outside the top ten, it is pinned under a "NOT IN THE TOP TEN · YOUR BEST" divider with its real rank. The standing card reads "{handle}'s best, of N interred as {race}, {sub-class}." with the ordinal place, or "None of yours on this board yet."
 - [ ] **BOARD-24**: A filter with no runs shows NOBODY YET, the in-voice note and a CLEAR FILTERS button.
 - [ ] **BOARD-25**: LEADERBOARD has deliberate in-voice states for loading, offline or unreachable, and a stale cached result (the mock has none). YOUR DEAD never waits on the network.
-- [ ] **BOARD-26**: YOUR DEAD ranks your runs from local storage by any stat and filter. Every run recorded from now on is kept as a lean per-run record under a generous cap (not just the last 60 graves), and the existing graveyard and `ddr.bests.v1` records load into it tolerantly.
+- [ ] **BOARD-26**: YOUR DEAD ranks your runs from local storage by any stat and filter. Every run recorded from now on is kept as a lean per-run record under a generous cap (not just the last 60 graves). **It starts empty with this version** (user, 2026-09-28: "a full fresh start"): the old graveyard, `ddr.bests.v1` and the lifetime INTERRED total are not imported or shown. They stay on the device untouched (RETIRE-03), just unread by the panel.
 - [ ] **BOARD-27**: The LEADERBOARD view names the current season, read from a season-name table in `content/season.js` next to `SEASON`. Season 1, the closed-testing season, is **SEASON OF THE ALPHA** (user, 2026-09-28). At go-live the boards reset: `SEASON` bumps to 2, named "Season 1" (runbook `docs/LEADERBOARDS.md` §10), and the alpha runs stay in Firestore for balance export.
 
 ### Account & submission (ACCT)

@@ -269,7 +269,9 @@ Compete goes OFF.
 
 **No backfill (user, 2026-09-28).** The boards start fresh: runs recorded
 locally before the update are never uploaded. Only runs that finish after it
-(Compete ON, non-dev) reach the board. Local history still ranks on YOUR DEAD.
+(Compete ON, non-dev) reach the board. It is a full fresh start: YOUR DEAD
+and the INTERRED count also begin empty with this version (Phase 84); the
+old local graveyard and bests stay on the device, unread.
 
 ## 9. Live setup and the API key
 
