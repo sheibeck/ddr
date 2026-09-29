@@ -109,10 +109,13 @@ export function detailsTable(report, meta, deviceOverride) {
  * Oracle in a collapsed `<details>` block inside a fence longer than any
  * backtick run it contains. Trims the Oracle's oldest lines, one at a
  * time, until the body fits GITHUB_BODY_MAX; the note this adds names the
- * dropped-line count. If even an empty Oracle doesn't fit (impossible
- * under the D-11/D-13 field caps), the Device cell is clamped as a last
- * resort. */
-export function issueBody(report, meta) {
+ * dropped-line count and, when `meta.keepUntil` is a "YYYY-MM-DD" string
+ * (Phase 83, SRV-11), the date the full Oracle stops being kept in
+ * Firestore. If even an empty Oracle doesn't fit (impossible under the
+ * D-11/D-13 field caps), the Device cell is clamped as a last resort.
+ * Returns `{ body, trimmed, dropped }`: `trimmed` is true exactly when at
+ * least one Oracle line was dropped. */
+export function issueBodyInfo(report, meta) {
   const marker = markerFor(meta?.docId);
   const quote = quoteBlock(report?.text ?? "");
 
@@ -127,16 +130,17 @@ export function issueBody(report, meta) {
     const kept = dropped >= oracleAllLines.length ? [] : oracleAllLines.slice(dropped);
     const keptText = kept.join("\n");
     const fence = fenceFor(keptText);
+    const untilClause = meta?.keepUntil ? ` until ${meta.keepUntil}` : "";
     const trimNote =
       dropped > 0
-        ? `The oldest ${dropped} lines are trimmed here to fit GitHub; the full Oracle is in the Firestore report \`${meta?.docId}\`.\n\n`
+        ? `The oldest ${dropped} lines are trimmed here to fit GitHub; the full Oracle is in the Firestore report \`${meta?.docId}\`${untilClause}.\n\n`
         : "";
     const detailsBlock =
       `<details><summary>Oracle (${kept.length} lines)</summary>\n\n` +
       `${trimNote}${fence}text\n${keptText}\n${fence}\n\n</details>`;
     const body = head() + detailsBlock;
 
-    if (body.length <= GITHUB_BODY_MAX) return body;
+    if (body.length <= GITHUB_BODY_MAX) return { body, trimmed: dropped > 0, dropped };
 
     if (kept.length === 0) {
       if (deviceOverride === undefined) {
@@ -147,10 +151,16 @@ export function issueBody(report, meta) {
         deviceOverride = "(clamped)";
         continue;
       }
-      return body;
+      return { body, trimmed: dropped > 0, dropped };
     }
     dropped++;
   }
+}
+
+/** `issueBodyInfo(report, meta).body` — the plain-string form used wherever
+ * only the rendered body is needed. */
+export function issueBody(report, meta) {
+  return issueBodyInfo(report, meta).body;
 }
 
 /** Decodes one Firestore REST typed value (`{ stringValue }`,

@@ -19,6 +19,7 @@ import {
   issueTitle,
   detailsTable,
   issueBody,
+  issueBodyInfo,
   decodeFirestoreValue,
   decodeFirestoreFields,
 } from "../../tools/bug-reports/issue-format.mjs";
@@ -175,7 +176,7 @@ test("issueBody: an oversized Oracle is trimmed from the oldest lines to fit GIT
   assert.ok(body.length <= GITHUB_BODY_MAX, `body length ${body.length} must be <= ${GITHUB_BODY_MAX}`);
 
   const noteMatch = body.match(
-    /The oldest (\d+) lines are trimmed here to fit GitHub; the full Oracle is in the Firestore report `abc`\./,
+    /The oldest (\d+) lines are trimmed here to fit GitHub; the full Oracle is in the Firestore report `abc`(?: until \d{4}-\d{2}-\d{2})?\./,
   );
   assert.ok(noteMatch, "trim note should be present");
   const dropped = Number(noteMatch[1]);
@@ -193,6 +194,58 @@ test("issueBody: an oversized Oracle is trimmed from the oldest lines to fit GIT
 test("issueBody: a report under the limit has no trim note", () => {
   const body = issueBody(BASE_REPORT, BASE_META);
   assert.doesNotMatch(body, /trimmed here to fit GitHub/);
+});
+
+// ---------------------------------------------------------------------------
+// issueBodyInfo (Phase 83 Plan 10, Task 1)
+// ---------------------------------------------------------------------------
+
+test("issueBodyInfo: a report under the limit has trimmed false, dropped 0, and no trim note", () => {
+  const info = issueBodyInfo(BASE_REPORT, BASE_META);
+  assert.equal(info.trimmed, false);
+  assert.equal(info.dropped, 0);
+  assert.doesNotMatch(info.body, /trimmed here to fit GitHub/);
+});
+
+test("issueBody(report, meta) equals issueBodyInfo(report, meta).body", () => {
+  const report = {
+    ...BASE_REPORT,
+    run: { depth: 5, cls: "Fighter", sub: "Berserker", race: "Human", level: 3, steps: 42, day: 2, dead: false },
+  };
+  assert.equal(issueBody(report, BASE_META), issueBodyInfo(report, BASE_META).body);
+});
+
+test("issueBodyInfo: an oversized Oracle sets trimmed true, dropped > 0, and no keepUntil gives a note ending at the report id and a period", () => {
+  const totalLines = 3000;
+  const lines = [];
+  for (let i = 0; i < totalLines; i++) {
+    lines.push(`line ${String(i).padStart(4, "0")} ${"x".repeat(33)}`);
+  }
+  const report = { ...BASE_REPORT, oracle: lines.join("\n") };
+  const info = issueBodyInfo(report, BASE_META);
+  assert.equal(info.trimmed, true);
+  assert.ok(info.dropped > 0 && info.dropped < totalLines);
+  assert.match(
+    info.body,
+    /The oldest \d+ lines are trimmed here to fit GitHub; the full Oracle is in the Firestore report `abc`\.\n\n/,
+  );
+  assert.doesNotMatch(info.body, / until \d{4}-\d{2}-\d{2}/);
+});
+
+test("issueBodyInfo: with meta.keepUntil, the trim note names the expiry date", () => {
+  const totalLines = 3000;
+  const lines = [];
+  for (let i = 0; i < totalLines; i++) {
+    lines.push(`line ${String(i).padStart(4, "0")} ${"x".repeat(33)}`);
+  }
+  const report = { ...BASE_REPORT, oracle: lines.join("\n") };
+  const meta = { ...BASE_META, keepUntil: "2026-10-28" };
+  const info = issueBodyInfo(report, meta);
+  assert.equal(info.trimmed, true);
+  assert.match(
+    info.body,
+    /The oldest \d+ lines are trimmed here to fit GitHub; the full Oracle is in the Firestore report `abc` until 2026-10-28\.\n\n/,
+  );
 });
 
 test("decodeFirestoreValue / decodeFirestoreFields round-trip the 79.3-01 typed-value encoding", () => {
