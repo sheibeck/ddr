@@ -144,13 +144,13 @@ test("title-music-shell (9): registerNativeChrome passes the lifecycle hooks and
   const slice = html.slice(start, end);
   assert.ok(slice.includes("onBackground: () => setAppActive(false)"));
   assert.ok(slice.includes("onForeground: () => setAppActive(true)"));
-  assert.ok(slice.includes("waitForPending: () => Promise.all([waitForPending(), pgsQueue?.waitForPending()]),"));
+  assert.ok(slice.includes("waitForPending: () => Promise.all([waitForPending(), boardSync.waitForPending()]),"));
 });
 
-test("title-music-shell (10): a visibilitychange listener drives setAppActive, and the FIRST visibilitychange listener is still the pgsQueue one", () => {
+test("title-music-shell (10): a visibilitychange listener drives setAppActive, and the FIRST visibilitychange listener is still boardSync's own", () => {
   assert.ok(html.includes('document.addEventListener("visibilitychange", () => setAppActive(document.visibilityState !== "hidden"));'));
   const first = html.indexOf('addEventListener("visibilitychange"');
-  assert.ok(html.slice(first, first + 200).includes("pgsQueue"), "shell-pgs.test.js requires the pgsQueue listener to stay first");
+  assert.ok(html.slice(first, first + 200).includes("boardSync"), "shell-board.test.js requires boardSync's own listener to stay first");
 });
 
 test("title-music-shell (11): native launch — after boot settings, the device is opened one frame after first paint, native only", () => {

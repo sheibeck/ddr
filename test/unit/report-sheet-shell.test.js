@@ -191,13 +191,13 @@ test("(D4b) SOURCE (Phase 83, SRV-09): sendReportNow reads the local limit recor
   assert.ok(checkIdx !== -1 && sendIdx !== -1 && checkIdx < sendIdx, "checkLocalLimit runs before sendBugReport");
 });
 
-test("(D4c) SOURCE (Phase 83, SRV-09): sharedIdentity() lazily creates one createIdentity instance (window.mzStorage, bound fetch, competeOn () => false) and returns the same instance afterwards", () => {
+test("(D4c) SOURCE (Phase 83, SRV-09; Phase 85, T-85-05): sharedIdentity() lazily creates one createIdentity instance (window.mzStorage, bound fetch, competeOn: competeIsOn — the same one Compete gate boardSync/boardIdentity read) and returns the same instance afterwards", () => {
   assert.equal(occurrences(MODULE, "function sharedIdentity() {"), 1);
   const fn = sliceBetween(MODULE, "function sharedIdentity() {", "\n  }");
   assert.match(fn, /createIdentity\(/);
   assert.match(fn, /storage:\s*window\.mzStorage/);
   assert.match(fn, /globalThis\.fetch\.bind\(globalThis\)/);
-  assert.match(fn, /competeOn:\s*\(\)\s*=>\s*false/);
+  assert.match(fn, /competeOn:\s*competeIsOn/);
   const region = sliceBetween(MODULE, "let reportModel = REPORT_SHEET_INITIAL;", '\n  document.getElementById("mw-report-text")?.addEventListener("input"');
   assert.match(region, /function sharedIdentity\(\)/);
 });

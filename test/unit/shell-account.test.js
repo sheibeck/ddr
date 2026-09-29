@@ -1,13 +1,15 @@
 // test/unit/shell-account.test.js
 //
-// Phase 67 (PGS-02, ACCT-01/02; D-01/D-02, D-04..D-12), Plan 08 — pins the
-// shell's Play Games account wiring in mazeworld.html's module script: the
-// provider chosen by platform (D-12), the non-awaited launch sign-in (D-01),
-// the title chip and the account sheet (D-06..D-10), the Phase 70 account
-// surfaces (the ☰ face and the ACCOUNT block, D-03/D-04/D-07), the Android
-// back button, the Leaderboards identity seam (D-08) and the rail-card
-// parking (D-04, D-11). mazeworld.html has no ESM surface a test could
-// import, so this uses the comment-stripping and region-extraction technique of
+// Phase 85 (ACCT-03/04/05/06, RETIRE-03; 85-CONTEXT groups 1 and 3), Plan 04
+// — pins the shell's account wiring in mazeworld.html's module script: our
+// own @handle-and-Compete identity (boardIdentity(), created once and shared
+// by the board client and boardSync), the non-awaited launch boot
+// (account.boot() then boardSync.boot()), the title chip and the account
+// sheet, the Phase 70 account surfaces (the ☰ face and the ACCOUNT block,
+// D-03/D-04/D-07) now driven by COMPETE/RE-ROLL/ERASE, the Android back
+// button, the one Compete gate (competeIsOn) and the rail-card parking
+// (D-04, D-11). mazeworld.html has no ESM surface a test could import, so
+// this uses the comment-stripping and region-extraction technique of
 // test/unit/shell-boards-panel.test.js / shell-boards-entry.test.js: SOURCE
 // pins over the comment-stripped text, and BEHAVIOUR tests that evaluate the
 // exact shipped source of a region with fakes threaded in.
@@ -52,10 +54,6 @@ function occurrences(source, literal) {
   return source.split(literal).length - 1;
 }
 
-// The plugin's npm package name, built from two halves so no other scan of
-// this file ever counts it (D-12: only playGames.js may name it).
-const PLUGIN_PACKAGE = "@modbender/" + "capacitor-play-games";
-
 // ─── fakes ─────────────────────────────────────────────────────────────────
 
 /** fakeDocument({ title, roller, sheet }) — ids mapped to { hidden } nodes, a body with a dataset. */
@@ -74,23 +72,17 @@ function fakeDocument({ title = false, roller = false, sheet = false } = {}) {
   };
 }
 
-/** cardParking(doc) — the shipped dungeonVisible/parkAccountCard/flushAccountCard over a fake document and a recording window.mzRailLine. */
+/** cardParking(doc) — the shipped dungeonVisible/parkAccountCard/flushAccountCard over a fake document and a recording window.mzRailLine. pendingPlacementCard/placementCardTimer are declared inside this same slice (85-04 renamed them from the retired pgs card). */
 function cardParking(doc) {
-  const region = sliceBetween(CODE, "let pendingAccountCard = null;", "\n  account = createAccountController({");
+  const region = sliceBetween(CODE, "let pendingAccountCard = null;", "\n  const boardSync = createBoardSync({");
   const rail = [];
   const win = { mzRailLine: (...args) => rail.push(args) };
-  // Phase 68 (D-12): flushAccountCard also delivers the placement card, whose
-  // slot (pendingPgsCard) is declared beside `let account` before the panel.
-  const make = new Function(
-    "document",
-    "window",
-    "let pendingPgsCard = null;\n" + region + "\nreturn { dungeonVisible, parkAccountCard, flushAccountCard };",
-  );
+  const make = new Function("document", "window", region + "\nreturn { dungeonVisible, parkAccountCard, flushAccountCard };");
   return { ...make(doc, win), rail };
 }
 
-const WELCOME = Object.freeze({ title: "ON THE PUBLIC RECORD", line: "welcome line", tone: "good", hold: 9000 });
-const FAILED = Object.freeze({ title: "PLAY GAMES DID NOT ANSWER", line: "failed line", tone: "dull", hold: 8000 });
+const WELCOME = Object.freeze({ title: "WELCOME TO THE BOARD", line: "welcome line", tone: "good", hold: 9000 });
+const RANKED = Object.freeze({ title: "THE LEDGER CAUGHT UP", line: "ranked line", tone: "dull", hold: 8000 });
 
 /** accountSheet(opts) — the shipped accountSheetOpen/renderAccountSheetNow/openAccountSheet/closeAccountSheet with fakes. */
 function accountSheet({ encounter = false, hasState = true, sheetOpen = false } = {}) {
@@ -104,9 +96,10 @@ function accountSheet({ encounter = false, hasState = true, sheetOpen = false } 
   };
   const account = {
     sheetView: () => ({ view: "sheet" }),
-    signIn: () => calls.push(["signIn"]),
-    stopCompeting: () => calls.push(["stopCompeting"]),
     setCompete: (v) => calls.push(["setCompete", v]),
+    reroll: () => calls.push(["reroll"]),
+    eraseTap: () => calls.push(["eraseTap"]),
+    disarmErase: () => calls.push(["disarmErase"]),
   };
   const panelMotion = {
     open: (el) => {
@@ -138,40 +131,70 @@ function accountSheet({ encounter = false, hasState = true, sheetOpen = false } 
   return { ...fns, doc, calls, handlers: () => handlers };
 }
 
-// ═══════════════════════ (A) imports and provider (D-12) ═══════════════════
+/** acctMenuDisarmObserver() — the shipped ☰-close MutationObserver block, with a fake MutationObserver class, document and account threaded in. */
+function acctMenuDisarmObserver() {
+  const region = sliceBetween(
+    CODE,
+    'if (typeof MutationObserver === "function") {\n    const acctMenuObserver = new MutationObserver(() => {',
+    "\n  setRunRecordedListener(",
+  );
+  const menu = { dataset: { open: "1" } };
+  const doc = { getElementById: (id) => (id === "mw-hud-menu" ? menu : null) };
+  let callback = null;
+  class FakeMutationObserver {
+    constructor(cb) {
+      callback = cb;
+    }
+    observe() {}
+  }
+  const calls = [];
+  const account = { disarmErase: () => calls.push("disarmErase") };
+  new Function("document", "MutationObserver", "account", region)(doc, FakeMutationObserver, account);
+  return { menu, fire: () => callback(), calls };
+}
 
-test("(A1) SOURCE: the two Phase 67 import lines (the accountChip.js line extended in place by Phase 70 with renderMenuFace and renderAccountMenu) appear exactly once each, and the pinned engineAdapter line is byte-identical", () => {
-  assert.equal(occurrences(HTML, 'import { createPlayGames, createFakePlayGames } from "./src/browser/playGames.js";'), 1);
-  assert.equal(occurrences(HTML, 'import { createAccountController, renderAccountChip, renderAccountSheet, renderMenuFace, renderAccountMenu } from "./src/browser/accountChip.js";'), 1);
-  assert.equal(occurrences(HTML, 'from "./src/browser/playGames.js";'), 1);
+// ═══════════════════════ (A) imports and the board identity ════════════════
+
+test("(A1) SOURCE: the accountChip.js import line (byte-identical) and the boardSync.js import line each appear exactly once; the pinned engineAdapter line is unchanged", () => {
+  assert.equal(
+    occurrences(
+      HTML,
+      'import { createAccountController, renderAccountChip, renderAccountSheet, renderMenuFace, renderAccountMenu } from "./src/browser/accountChip.js";',
+    ),
+    1,
+  );
+  assert.equal(occurrences(HTML, 'import { createBoardSync } from "./src/browser/boardSync.js";'), 1);
   assert.equal(occurrences(HTML, 'from "./src/browser/accountChip.js";'), 1);
+  assert.equal(occurrences(HTML, 'from "./src/browser/boardSync.js";'), 1);
   assert.equal(occurrences(HTML, 'import { boot, dispatch, startNewRun, waitForPending, takeBootWornReport } from "./src/browser/engineAdapter.js";'), 1);
 });
 
-test("(A2) SOURCE: the provider is chosen by isNativePlatform — createPlayGames() on native, the fake seeded by pgsDevSignedIn in the browser", () => {
-  assert.match(MODULE, /const pgsNative = !!window\.Capacitor\?\.isNativePlatform\?\.\(\);/);
-  assert.match(
-    MODULE,
-    // Phase 68 (68-07): the fake also gets the real score orders for the dev IDs.
-    /const pgsProvider = pgsNative \? createPlayGames\(\) : createFakePlayGames\(\{ signedIn: currentSettings\?\.pgsDevSignedIn === true, orders: scoreOrdersFor\(pgsIds\) \}\);/,
-  );
-  assert.equal(occurrences(MODULE, "createPlayGames("), 1);
-  assert.equal(occurrences(MODULE, "createFakePlayGames("), 1);
-  // The seed is read after the settings load.
-  assert.ok(MODULE.indexOf("applySettings(await readSettings());") < MODULE.indexOf("const pgsProvider ="));
+test("(A2) SOURCE: boardIdentity() returns sharedIdentity() on a native platform, and a SEPARATE identity over the shared dev-loop fetch (dev-prefixed storage) otherwise; boardFetch is created once, ahead of `account`, and shared by the client and boardSync", () => {
+  assert.equal(occurrences(MODULE, "const boardFetch = boardFetchFn();"), 1);
+  assert.equal(occurrences(MODULE, "createBoardClient({ fetchFn: boardFetch, competeOn: competeIsOn })"), 1);
+  assert.equal(occurrences(MODULE, "function boardIdentity()"), 1);
+  const region = sliceBetween(MODULE, "function boardIdentity() {", "\n  }");
+  assert.match(region, /if \(window\.Capacitor\?\.isNativePlatform\?\.\(\)\) return sharedIdentity\(\);/);
+  assert.match(region, /fetchFn: boardFetch/);
+  assert.match(region, /`dev\.\$\{key\}`/);
+  assert.match(region, /competeOn: competeIsOn/);
+  assert.ok(MODULE.indexOf("const boardFetch = boardFetchFn();") < MODULE.indexOf("let account = null;"));
 });
 
-test("(A3) SOURCE: the shell never names the plugin package (D-12), not even in a comment", () => {
-  assert.equal(occurrences(CODE, PLUGIN_PACKAGE), 0);
-  assert.equal(occurrences(HTML, PLUGIN_PACKAGE), 0);
+test("(A3) SOURCE: the shell names no retired game-service provider or plugin package anywhere, not even in a comment", () => {
+  for (const pattern of [/play[ _-]?games/i, /\bpgs\w*/i, /globalBoards/, /boardScores/, /scoreTag/]) {
+    assert.doesNotMatch(HTML, pattern, `must not match ${pattern}`);
+  }
 });
 
-test("(A4) SOURCE: one controller, wired to the provider, readSettings, writeAccountSetting and the card parker", () => {
+test("(A4) SOURCE: one controller, wired to boardIdentity(), boardSync, readSettings/writeAccountSetting, the card parker and the seeded compete value", () => {
   assert.equal(occurrences(MODULE, "createAccountController({"), 1);
   const region = sliceBetween(MODULE, "account = createAccountController({", "});");
-  assert.match(region, /provider: pgsProvider,/);
+  assert.match(region, /identity: boardIdentity\(\),/);
+  assert.match(region, /board: boardSync,/);
   assert.match(region, /settings: \{ read: readSettings, write: writeAccountSetting \},/);
   assert.match(region, /notify: parkAccountCard,/);
+  assert.match(region, /compete: currentSettings\?\.compete !== false,/);
 });
 
 test("(A5) BEHAVIOUR: writeAccountSetting awaits writeSetting, then re-applies the settings mirror", async () => {
@@ -191,17 +214,22 @@ test("(A5) BEHAVIOUR: writeAccountSetting awaits writeSetting, then re-applies t
   ]);
 });
 
-// ═══════════════════════ (B) the non-blocking boot (D-01/D-02) ═════════════
+// ═══════════════════════ (B) the non-blocking boot ══════════════════════════
 
-test("(B1) SOURCE: account.boot() runs once, after the initTitleScreen IIFE, and is never awaited", () => {
+test("(B1) SOURCE: account.boot() runs once after the initTitleScreen IIFE, immediately followed by boardSync.boot({ history: getRunHistory() }); neither is ever awaited", () => {
   assert.equal(occurrences(MODULE, "account.boot()"), 1);
   assert.equal(occurrences(MODULE, "account.boot().catch(() => {});"), 1);
+  assert.equal(occurrences(MODULE, "boardSync.boot({ history: getRunHistory() })"), 1);
+  assert.equal(occurrences(MODULE, "boardSync.boot({ history: getRunHistory() }).catch(() => {});"), 1);
   const iifeEnd = MODULE.indexOf("refreshTitleDead();\n  })();");
   const bootIdx = MODULE.indexOf("account.boot()");
+  const syncBootIdx = MODULE.indexOf("boardSync.boot(");
   assert.ok(iifeEnd !== -1 && bootIdx > iifeEnd, "account.boot() must come after initTitleScreen");
+  assert.ok(syncBootIdx > bootIdx, "boardSync.boot() must come after account.boot()");
   assert.ok(MODULE.indexOf("(function initTitleScreen() {") < iifeEnd);
   assert.doesNotMatch(MODULE, /await\s+account\.boot\(/);
   assert.doesNotMatch(MODULE, /await\s+account\./);
+  assert.doesNotMatch(MODULE, /await\s+boardSync\.boot\(/);
 });
 
 test("(B2) SOURCE: subscribe re-renders the three account surfaces, the open sheet, the Leaderboards panel and the title's VIEW THE DEAD gate; renderAccountSurfaces paints the title chip (chipView), the ☰ face (menuView via renderMenuFace) and the ACCOUNT host (sheetView via renderAccountMenu), once before boot too", () => {
@@ -222,17 +250,19 @@ test("(B2) SOURCE: subscribe re-renders the three account surfaces, the open she
   assert.match(after, /\}\);\n\s*renderAccountSurfaces\(\);/);
 });
 
-// ═══════════════════════ (C) the Leaderboards identity seam (D-08) ═════════
+// ═══════════════════════ (C) the one Compete gate ═══════════════════════════
 
-test("(C1) SOURCE: `let account = null;` precedes the v3 Leaderboards panel instance, and the panel block carries no identity seam (the board identity is read by the feed, not the panel)", () => {
+test("(C1) SOURCE: `let account = null;` precedes the v3 Leaderboards panel instance and competeIsOn's controller fallback; the panel block carries no identity seam (the board identity is read by the feed, not the panel)", () => {
   const letIdx = MODULE.indexOf("let account = null;");
   const panelIdx = MODULE.indexOf("const boardsPanel = createLeaderboardPanel({");
   assert.ok(letIdx !== -1 && panelIdx !== -1 && letIdx < panelIdx);
   const region = sliceBetween(MODULE, "const boardsPanel = createLeaderboardPanel({", "\n  });");
   assert.doesNotMatch(region, /\bidentity:/);
+  const gate = sliceBetween(MODULE, "function competeIsOn() {", "\n  }");
+  assert.match(gate, /account \? account\.state\(\)\.compete === true : currentSettings\?\.compete === true/);
 });
 
-// ═══════════════════════ (D) the account sheet (D-09/D-10) ═════════════════
+// ═══════════════════════ (D) the account sheet ══════════════════════════════
 
 test("(D1) SOURCE: only the title chip opens the sheet (Phase 70 D-03: the band-2 chip is retired), with no options and no encounter guard; scrim and Close close it", () => {
   assert.match(MODULE, /document\.getElementById\("mw-title-acct-chip"\)\?\.addEventListener\("click", \(\) => openAccountSheet\(\)\);/);
@@ -255,19 +285,19 @@ test("(D2) BEHAVIOUR: the title chip opens the sheet even with an encounter flag
   assert.equal(s.accountSheetOpen(), true);
 });
 
-test("(D4) BEHAVIOUR: the rows go through the controller, and Settings closes the account sheet before opening the settings sheet", () => {
+test("(D4) BEHAVIOUR: the rows go through the controller, and Settings closes the account sheet (also disarming an erase in progress) before opening the settings sheet", () => {
   const s = accountSheet();
   s.openAccountSheet();
   const h = s.handlers();
   s.calls.length = 0;
-  h.onSignIn();
-  h.onStopCompeting();
   h.onCompete(false);
   h.onCompete(true);
-  assert.deepStrictEqual(s.calls, [["signIn"], ["stopCompeting"], ["setCompete", false], ["setCompete", true]]);
+  h.onReroll();
+  h.onErase();
+  assert.deepStrictEqual(s.calls, [["setCompete", false], ["setCompete", true], ["reroll"], ["eraseTap"]]);
   s.calls.length = 0;
   h.onSettings();
-  assert.deepStrictEqual(s.calls, [["close", true], ["keepInView"], ["openSettings"]]);
+  assert.deepStrictEqual(s.calls, [["close", true], ["keepInView"], ["disarmErase"], ["openSettings"]]);
   assert.equal(s.accountSheetOpen(), false);
 });
 
@@ -285,7 +315,7 @@ test("(D5) SOURCE: the Android back button — hasOpenModal includes the account
   );
 });
 
-// ═══════════════════════ (E) rail-card parking (D-04/D-11) ═════════════════
+// ═══════════════════════ (E) rail-card parking ══════════════════════════════
 
 test("(E1) BEHAVIOUR: a card parked while the title is up is not delivered; hiding the title and flushing delivers it once", () => {
   const doc = fakeDocument({ title: true });
@@ -303,10 +333,10 @@ test("(E2) BEHAVIOUR: two cards parked before a flush deliver only the latest", 
   const doc = fakeDocument({ title: true });
   const p = cardParking(doc);
   p.parkAccountCard(WELCOME);
-  p.parkAccountCard(FAILED);
+  p.parkAccountCard(RANKED);
   doc.nodes["mw-title-screen"].hidden = true;
   p.flushAccountCard();
-  assert.deepStrictEqual(p.rail, [[FAILED.title, FAILED.line, FAILED.tone, FAILED.hold]]);
+  assert.deepStrictEqual(p.rail, [[RANKED.title, RANKED.line, RANKED.tone, RANKED.hold]]);
 });
 
 test("(E3) BEHAVIOUR: a flush with nothing parked does nothing; a null card is ignored", () => {
@@ -320,14 +350,14 @@ test("(E4) BEHAVIOUR: a card waits while the title-mode Leaderboards panel or th
   const doc = fakeDocument({ roller: true });
   doc.body.dataset.boardsEntry = "title";
   const p = cardParking(doc);
-  p.parkAccountCard(FAILED);
+  p.parkAccountCard(RANKED);
   assert.deepStrictEqual(p.rail, []);
   delete doc.body.dataset.boardsEntry;
   p.flushAccountCard();
   assert.deepStrictEqual(p.rail, [], "the roller still covers the map");
   doc.nodes["mw-roller-screen"].hidden = true;
   p.flushAccountCard();
-  assert.deepStrictEqual(p.rail, [[FAILED.title, FAILED.line, FAILED.tone, FAILED.hold]]);
+  assert.deepStrictEqual(p.rail, [[RANKED.title, RANKED.line, RANKED.tone, RANKED.hold]]);
 });
 
 test("(E5) BEHAVIOUR: with the dungeon visible, a card goes straight to the rail", () => {
@@ -394,7 +424,7 @@ test("(F2) the ☰ menu keeps its three legacy rows (ids and listener lines) in 
 });
 
 test("(F3) no new window.__mz bridge in the account wiring, and the comment-stripped shell has no network-capable call", () => {
-  const block = sliceBetween(MODULE, "const pgsNative =", "renderAccountSurfaces();\n");
+  const block = sliceBetween(MODULE, "async function writeAccountSetting(key, value) {", "renderAccountSurfaces();\n");
   assert.doesNotMatch(block, /window\.__mz\w*\s*=/);
   const sheet = sliceBetween(MODULE, "function accountSheetOpen() {", '\n  document.getElementById("mw-acct-close")');
   assert.doesNotMatch(sheet, /window\.__mz\w*\s*=/);
@@ -403,7 +433,7 @@ test("(F3) no new window.__mz bridge in the account wiring, and the comment-stri
   }
 });
 
-// ═══════════════════════ (G) Phase 70: the ☰ face and the ACCOUNT block ═════
+// ═══════════════════════ (G) Phase 70/85: the ☰ face and the ACCOUNT block ══
 
 /** accountSurfaces() — the shipped renderAccountSurfaces with recording renderers, a fake account and a recording hudMenuEvent. */
 function accountSurfaces() {
@@ -412,13 +442,15 @@ function accountSurfaces() {
   const renders = [];
   let handlers = null;
   const doc = { getElementById: (id) => ({ id }) };
+  let eraseState = "idle";
   const account = {
     chipView: () => ({ view: "chip" }),
     menuView: () => ({ view: "menu" }),
     sheetView: () => ({ view: "sheet" }),
-    signIn: () => log.push("signIn"),
-    stopCompeting: () => log.push("stopCompeting"),
     setCompete: (v) => log.push(`setCompete:${v}`),
+    reroll: () => log.push("reroll"),
+    eraseTap: () => log.push("eraseTap"),
+    state: () => ({ erase: eraseState }),
   };
   const renderAccountChip = (el, view) => renders.push(["chip", el.id, view.view]);
   const renderMenuFace = (el, view) => renders.push(["face", el.id, view.view]);
@@ -436,10 +468,15 @@ function accountSurfaces() {
     "hudMenuEvent",
     region + "\nreturn renderAccountSurfaces;",
   )(doc, account, renderAccountChip, renderMenuFace, renderAccountMenu, hudMenuEvent);
-  return { render: fn, log, renders, handlers: () => handlers };
+  return { render: fn, log, renders, handlers: () => handlers, setErase: (v) => { eraseState = v; } };
 }
 
-test("(G1) BEHAVIOUR: renderAccountSurfaces renders the three surfaces from the controller's views, and every ACCOUNT handler closes the ☰ (select) BEFORE routing to the controller (D-07)", () => {
+function fakeClickEvent() {
+  let stopped = false;
+  return { stopPropagation: () => { stopped = true; }, wasStopped: () => stopped };
+}
+
+test("(G1) BEHAVIOUR: renderAccountSurfaces renders the three surfaces from the controller's views; onCompete/onReroll stop the click event's propagation and never raise \"select\"; onErase on an idle row arms without \"select\", and on an armed row calls eraseTap then raises \"select\"", () => {
   const s = accountSurfaces();
   s.render();
   assert.deepStrictEqual(s.renders, [
@@ -448,13 +485,42 @@ test("(G1) BEHAVIOUR: renderAccountSurfaces renders the three surfaces from the 
     ["menu", "mw-hud-menu-acct", "sheet"],
   ]);
   const h = s.handlers();
-  assert.deepStrictEqual(Object.keys(h).sort(), ["onCompete", "onSignIn", "onStopCompeting"], "no Settings handler: the ☰ already has SETTINGS");
-  h.onSignIn();
-  assert.deepStrictEqual(s.log.splice(0), ["select", "signIn"]);
-  h.onStopCompeting();
-  assert.deepStrictEqual(s.log.splice(0), ["select", "stopCompeting"]);
-  h.onCompete(false);
-  assert.deepStrictEqual(s.log.splice(0), ["select", "setCompete:false"]);
-  h.onCompete(true);
-  assert.deepStrictEqual(s.log.splice(0), ["select", "setCompete:true"]);
+  assert.deepStrictEqual(Object.keys(h).sort(), ["onCompete", "onErase", "onReroll"], "no Settings handler: the ☰ already has SETTINGS");
+
+  let e = fakeClickEvent();
+  h.onCompete(false, e);
+  assert.equal(e.wasStopped(), true);
+  assert.deepStrictEqual(s.log.splice(0), ["setCompete:false"]);
+
+  e = fakeClickEvent();
+  h.onCompete(true, e);
+  assert.equal(e.wasStopped(), true);
+  assert.deepStrictEqual(s.log.splice(0), ["setCompete:true"]);
+
+  e = fakeClickEvent();
+  h.onReroll(e);
+  assert.equal(e.wasStopped(), true);
+  assert.deepStrictEqual(s.log.splice(0), ["reroll"]);
+
+  s.setErase("idle");
+  e = fakeClickEvent();
+  h.onErase(e);
+  assert.equal(e.wasStopped(), true);
+  assert.deepStrictEqual(s.log.splice(0), ["eraseTap"], "an idle row arms without raising select");
+
+  s.setErase("armed");
+  e = fakeClickEvent();
+  h.onErase(e);
+  assert.equal(e.wasStopped(), true);
+  assert.deepStrictEqual(s.log.splice(0), ["eraseTap", "select"], "an armed row calls eraseTap then raises select");
+});
+
+test("(G2) BEHAVIOUR: the ☰'s MutationObserver calls account.disarmErase() only when #mw-hud-menu's data-open leaves \"1\"", () => {
+  const o = acctMenuDisarmObserver();
+  o.menu.dataset.open = "1";
+  o.fire();
+  assert.deepStrictEqual(o.calls, [], "still open: no disarm");
+  o.menu.dataset.open = "0";
+  o.fire();
+  assert.deepStrictEqual(o.calls, ["disarmErase"]);
 });
