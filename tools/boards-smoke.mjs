@@ -42,7 +42,6 @@
 // Dev-only: never shipped (tools/ is never copied into www/ by
 // tools/build-www.mjs). Node built-ins only; zero new dependencies.
 
-import { execSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 import { SEASON } from "../content/season.js";
@@ -54,7 +53,7 @@ import { createBoardClient, decodeRunDocument } from "../src/browser/boardClient
 import { createBoardWrites } from "../src/browser/boardWrites.js";
 import { createIdentity } from "../src/browser/firebaseAuth.js";
 import { rollHandle } from "../src/browser/handles.js";
-import { resolveAdminAuth, createAdminApi } from "./boards-admin.mjs";
+import { resolveAdminAuth, createAdminApi, execGcloud } from "./boards-admin.mjs";
 
 // ---------------------------------------------------------------------------
 // smokeSummaries — the three fixed runs described in the plan's own context
@@ -567,7 +566,7 @@ export async function main(argv = process.argv) {
 
   let admin = null;
   if (flag === "--with-admin") {
-    const auth = await resolveAdminAuth({ env: process.env, execFn: (cmd) => execSync(cmd, { encoding: "utf8" }) });
+    const auth = await resolveAdminAuth({ env: process.env, execFn: execGcloud });
     if (!auth.ok) {
       console.log(auth.message);
       return 2;

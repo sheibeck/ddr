@@ -42,6 +42,21 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+/**
+ * execGcloud(cmd) — run a gcloud command and return its stdout. On Windows a
+ * Cloud SDK installed from the bash archive ships only the `gcloud` shell
+ * script (no gcloud.cmd), which cmd.exe cannot run, so a failed plain run is
+ * retried once through Git Bash. Throws when both fail.
+ */
+export function execGcloud(cmd) {
+  try {
+    return execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  } catch (err) {
+    if (process.platform !== "win32") throw err;
+    return execSync(cmd, { encoding: "utf8", shell: "bash", stdio: ["ignore", "pipe", "ignore"] });
+  }
+}
+
 import { getAccessToken } from "./bug-reports/file-issues.mjs";
 import { FIREBASE_CONFIG } from "../src/browser/firebaseConfig.js";
 import { FIRESTORE_BASE, documentsPath, docName, fromFirestoreFields } from "../src/browser/firestoreRest.js";
@@ -457,6 +472,7 @@ async function cmdTop(api, flags, out) {
 
   const rows = await api.query(structuredQuery);
   rows.forEach((row, i) => out(formatRunRow(i + 1, row)));
+  if (rows.length === 0) out("(no runs)");
   return 0;
 }
 
@@ -651,7 +667,7 @@ async function main() {
     argv: process.argv.slice(2),
     env: process.env,
     fetchFn: globalThis.fetch,
-    execFn: (cmd) => execSync(cmd, { encoding: "utf8" }),
+    execFn: execGcloud,
     now: Date.now,
     out: (line) => console.log(line),
     err: (line) => console.error(line),
