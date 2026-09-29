@@ -6,9 +6,10 @@
 // it (created or exists), survives relaunch and offline play, backs off
 // exponentially, never double-submits, and is discarded wholesale when
 // Compete turns OFF (purge()). CONTEXT "Queue, backfill & live setup" (the
-// queue half only — this milestone ships with no one-time backfill of runs
-// recorded before boards existed, per user direction 2026-09-28: leaderboards
-// start fresh):
+// queue half only — the once-only backfill of runs from the 2.1.0 release on
+// lives in src/browser/runBackfill.js, Phase 83 plan 12, which calls
+// enqueueMany() below; this milestone's earlier "start fresh, no backfill"
+// posture was superseded by the user's same-day 2026-09-28 ruling):
 // enqueue on death; flush on enqueue, on app resume and on `online` (the
 // shell wires resume/online in Phase 85 — this module only exposes flush());
 // a rules rejection drops that entry with a log line; "already exists" is
