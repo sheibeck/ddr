@@ -3,9 +3,11 @@
 // Phase 67 (ACCT-01/02) — the account chip and its bottom sheet's pure view
 // model. No DOM, storage, clock, randomness or network anywhere in this
 // module. Every word comes from content/account.js; the avatar's initials
-// and colour come from the Phase 66 port of the mock's INITIALS/AVATAR
-// (src/browser/boardsView.js) and are never re-implemented here. The
-// controller (67-07) owns every transition (sign-in, Stop competing, the
+// and colour come from the same helpers the v3 Leaderboards panel uses
+// and are never re-implemented here. Phase 84 (84-09) repointed this import
+// from the retired boardsView module to its own — the avatar hash and
+// initials rule are unchanged.
+// The controller (67-07) owns every transition (sign-in, Stop competing, the
 // Compete toggle, the welcomed flag); this module only reads a state:
 //
 //   { compete: boolean, status: "off" | "pending" | "signedIn" | "signedOut",
@@ -21,7 +23,7 @@
 //
 // Every export is total (never throws) and returns frozen objects.
 
-import { initialsOf, avatarColour } from "./boardsView.js";
+import { initialsOf, avatarColour } from "./leaderboardView.js";
 import { RAIL_HOLD } from "./rail.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
 import { HUD_MENU_GLYPH } from "./hudMenu.js";

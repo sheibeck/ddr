@@ -201,9 +201,9 @@ test("CSS: @keyframes mwrise and @keyframes mwfade are each defined exactly once
   assert.equal(fadeCount, 1, `expected exactly one @keyframes mwfade, found ${fadeCount}`);
 });
 
-// ─── (8): the old .mw-bd-* block is untouched ──────────────────────────────
+// ─── (8): the old .mw-bd-* block is gone (84-09) ────────────────────────────
 
-test("CSS: the old .mw-bd-* block still has at least 50 lines (untouched, 84-09 removes it)", () => {
+test("CSS: the old .mw-bd-* block is gone (84-09 removed it; .mw-lb is the only Leaderboards CSS)", () => {
   const lines = STYLE_BLOCK.split("\n").filter((line) => line.trim().startsWith(".mw-bd"));
-  assert.ok(lines.length >= 50, `expected at least 50 .mw-bd style lines, found ${lines.length}`);
+  assert.equal(lines.length, 0, `expected zero .mw-bd style lines, found ${lines.length}`);
 });

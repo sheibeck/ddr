@@ -25,7 +25,7 @@ import {
 } from "../../src/browser/account.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
 import { HUD_MENU_GLYPH } from "../../src/browser/hudMenu.js";
-import { avatarColour, initialsOf } from "../../src/browser/boardsView.js";
+import { avatarColour, initialsOf } from "../../src/browser/leaderboardView.js";
 import { RAIL_HOLD, RAIL_TONES } from "../../src/browser/rail.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 
@@ -412,8 +412,8 @@ test("deep-frozen inputs are never mutated, and equal inputs give deepStrictEqua
   assert.deepStrictEqual(accountCard("welcome"), accountCard("welcome"));
 });
 
-test("source: imports the avatar helpers from boardsView.js and the copy from content/account.js", () => {
-  assert.match(STRIPPED, /from\s*"\.\/boardsView\.js"/);
+test("source: imports the avatar helpers from leaderboardView.js and the copy from content/account.js", () => {
+  assert.match(STRIPPED, /from\s*"\.\/leaderboardView\.js"/);
   assert.match(STRIPPED, /from\s*"\.\.\/\.\.\/content\/account\.js"/);
   assert.doesNotMatch(STRIPPED, />>>\s*0/, "the avatar hash is imported, never re-implemented");
 });
