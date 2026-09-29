@@ -5,15 +5,15 @@ milestone_name: Our Own Leaderboards
 current_phase: 86
 current_phase_name: Compliance & Device Close
 status: executing
-stopped_at: Completed 86-01-PLAN.md (debug APK 2.2.0/vc12 built; DRAFT patch notes; audit facts recorded for 86-04)
-last_updated: "2026-09-29T18:48:13.236Z"
+stopped_at: Completed 86-04-PLAN.md (store-listing/LISTING.md Data safety rewritten for 2.2.0, COMP-01 delivered; cross-check against apps.astro clean; npm test 8068 pass)
+last_updated: "2026-09-29T19:03:45.840Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 85 complete (92da7584)
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 34
-  completed_plans: 30
+  completed_plans: 33
   percent: 80
 ---
 
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 86 (Compliance & Device Close) — EXECUTING
-Plan: 2 of 5
-Progress: [█████████░] 88%
+Plan: 3 of 5
+Progress: [██████████] 97%
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 85 complete (92da7584)
 
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T18:48:13.196Z
-Stopped at: Completed 86-01-PLAN.md (debug APK 2.2.0/vc12 built; DRAFT patch notes; audit facts recorded for 86-04)
+Last session: 2026-09-29T19:03:45.803Z
+Stopped at: Completed 86-04-PLAN.md (store-listing/LISTING.md Data safety rewritten for 2.2.0, COMP-01 delivered; cross-check against apps.astro clean; npm test 8068 pass)
 
 - (history below is the pre-close record)
 
@@ -452,6 +452,7 @@ Resume file: None
 | Phase 85 P05 | ~40min | 2 tasks | 11 files |
 | Phase 85 P06 | ~100min | 3 tasks | 31 files |
 | Phase 86 P01 | 45min | 2 tasks | 4 files |
+| Phase 86 P04 | 27min | 2 tasks | 2 files |
 
 ## Decisions
 
@@ -806,6 +807,8 @@ Resume file: None
 - [Phase ?]: test/unit/play-games-runbook.test.js left untouched (a docs pin for docs/PLAY-GAMES-SETUP.md, reserved for Phase 86-03) even though it string-references the deleted content/leaderboards.js path
 - [Phase ?]: docs/patch-notes/2.2.0.md drops the Bug fixes category (Phases 84/85 shipped no player-visible bug fix) and describes the retired service only as "the old boards", never by product name, and never with sign-on wording
 - [Phase ?]: The www/ network-API audit for 86-04 was widened beyond the plan's literal fetch\( grep to also catch fetch.bind( call sites, since board/identity/bug-report code injects fetchFn rather than calling fetch( directly
+- [Phase ?]: 86-04: Cross-checked LISTING.md's Data safety rows against darktier-studio's pushed apps.astro (86-02, commit 82912a9) — no mismatch found, apps.astro left untouched
+- [Phase ?]: 86-04: Kept LISTING.md's 'rules came from a binder' framing (unlike the website copy) — left for the user's discretion, not changed
 
 ### Blockers
 
