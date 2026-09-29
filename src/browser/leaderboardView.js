@@ -108,11 +108,18 @@ export function handleInitials(handle) {
   return (s[0] + (s[1] || "")).toUpperCase();
 }
 
-// ─── content-order lists (module-private) ───────────────────────────────────
+// ─── content-order lists ─────────────────────────────────────────────────────
+//
+// RACE_IDS/SUB_IDS are exported (Phase 84, Plan 07) so leaderboardPanel.js's
+// controller can validate a RACE/SUB-CLASS sheet pick without importing
+// content/races.js or content/classes.js directly — leaderboardPanel.js's
+// own source-pin test (84-06) forbids any direct `/content/` import in that
+// file, since board rows there carry untrusted text and the pin keeps that
+// file's import surface auditable at a glance.
 
-const RACE_IDS = Object.freeze(Object.keys(RACES));
+export const RACE_IDS = Object.freeze(Object.keys(RACES));
 const CLASS_IDS = Object.keys(CLASSES);
-const SUB_IDS = Object.freeze(CLASS_IDS.flatMap((cls) => CLASSES[cls].subs));
+export const SUB_IDS = Object.freeze(CLASS_IDS.flatMap((cls) => CLASSES[cls].subs));
 const SUB_CLASS_OF = Object.freeze(
   CLASS_IDS.reduce((acc, cls) => {
     for (const sub of CLASSES[cls].subs) acc[sub] = cls;

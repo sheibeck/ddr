@@ -255,6 +255,12 @@ export const NON_COPY_EXPORTS = Object.freeze([
   nonCopy("src/browser/combatPanel.js", "ENC_TYPES", "encounter family ids"),
   nonCopy("src/browser/foeConditions.js", "FOE_CONDITIONS", "rows point at FOE_CONDITION_COPY and FOE_CONDITION_DESC; the text is walked through those banks"),
   nonCopy("src/browser/heroConditions.js", "HERO_CONDITIONS", "the condition table: keys, fields, timers and source item names; the copy is HERO_CHIP_COPY"),
+  // Phase 84, Plan 07: exported (from an already-existing module-private
+  // const) so leaderboardPanel.js's controller can validate a SUB-CLASS
+  // sheet pick without importing content/classes.js directly (its own
+  // source-pin test forbids a direct /content/ import) — sub-class name ids,
+  // same disposition as the pre-existing boardsView.js#LINEAGE_SUBS row.
+  nonCopy("src/browser/leaderboardView.js", "SUB_IDS", "sub-class name ids used to validate a SUB-CLASS sheet pick (name vocabulary, not sentences)"),
   nonCopy("src/browser/motion.js", "REDUCED_MOTION_QUERY", "a CSS media query"),
   // 79.3: the bundled release notes for this version, generated from
   // docs/patch-notes/<versionName>.md by tools/patch-notes.mjs --write-module:

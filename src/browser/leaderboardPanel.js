@@ -17,6 +17,28 @@
 // skeleton-reuse approach (ensureSkeleton replaces only section CHILDREN,
 // never the sections themselves), so a row tap or picker change never
 // resets the body's own scroll position.
+//
+// Phase 84, Plan 07 adds createLeaderboardPanel — the stateful controller
+// the shell (84-08) drives, keeping the exact seam names createBoardsPanel
+// already has (openFromTab, openFromTitle, onDeadTab, back, isTitleOpen,
+// refresh, state) so the DEAD tab, VIEW THE DEAD, the Android back mirror
+// and routeFromBoards keep working unchanged. Compete decides the starting
+// view (ON -> LEADERBOARD, OFF -> YOUR DEAD, CONTEXT area 1); only the
+// RANK BY stat is remembered between opens, under the same BOARDS_LAST_KEY
+// prefs key boardsPanel.js used, tolerant of a retired board id; RACE and
+// SUB-CLASS filters reset on every open. The dead-hero dock (FINAL SHEET,
+// BURY THEM) is kept for the in-game DEAD tab. With Compete OFF the board
+// seam is never called at all — YOUR DEAD renders at once from the local
+// history and never waits on the network.
+//
+// The controller validates a RACE/SUB-CLASS sheet pick against RACE_IDS/
+// SUB_IDS re-exported from leaderboardView.js (not content/races.js or
+// content/classes.js directly) so this file's own source-pin test (below,
+// "no import from content/") keeps holding — board rows carry untrusted
+// text, and that pin keeps the import surface auditable at a glance.
+
+import { BOARD_STATS } from "./runDoc.js";
+import { RACE_IDS, SUB_IDS } from "./leaderboardView.js";
 
 /**
  * LEADERBOARD_CLASSES — every class name renderLeaderboardPanel emits, in
@@ -389,4 +411,430 @@ export function renderLeaderboardPanel(host, view, handlers = {}) {
   buildSheet(doc, view, handlers, sheet);
 
   return root;
+}
+
+// ═══════════════════════ Plan 07: the controller ═══════════════════════════
+
+/**
+ * BOARDS_LAST_KEY — the same per-viewer prefs key boardsPanel.js used for
+ * the last-viewed board (CONTEXT area 1: "Remembered between opens: the
+ * RANK BY stat only" reuses this key). Not game data — read and written
+ * only through the injected `prefs`, always inside try/catch (a throwing
+ * prefs implementation must never break a tab switch or a stat pick).
+ */
+export const BOARDS_LAST_KEY = "ddr.boards.last.v1";
+
+/** currentQuery({stat, race, sub}) — the board query shape the board seam and buildView both read. */
+function currentQuery(stat, race, sub) {
+  return { stat, race, sub };
+}
+
+/**
+ * createLeaderboardPanel({host, buildView, history, board, competeOn, prefs,
+ * now, tzOffset, season, reducedMotion, onRoute}) — the v3 Leaderboards
+ * panel's stateful controller (BOARD-18, BOARD-19, BOARD-20, BOARD-22,
+ * BOARD-23, BOARD-25). Mirrors createBoardsPanel's shape: a frozen object of
+ * methods closing over module-private state, no window/document globals —
+ * only `host`, `host.ownerDocument` and the injected seams.
+ *
+ * `history()` is the local per-run history array (engineAdapter's
+ * getRunHistory, 84-03); `board` is the LEADERBOARD data source
+ * ({load(query) -> Promise<BoardSnapshot>, cached(query) -> BoardSnapshot |
+ * null}, boardFeed.js, 84-04) — asked only while `competeOn()` is true, and
+ * every call sits inside try/catch so a throwing seam never breaks a render.
+ * `competeOn()` decides the opening view (true -> LEADERBOARD/"board" mode,
+ * false -> YOUR DEAD/"mine" mode) and gates every network read; `season` is
+ * a plain integer (content/season.js's SEASON) passed straight through to
+ * buildView, which falls back to the real current season on its own when
+ * this value is missing or invalid.
+ *
+ * A load's answer is applied only when it is still the most recent request
+ * for the currently-open panel (a load token) and the panel has not been
+ * routed away since (`entry` back to null) — an older or late answer never
+ * overwrites a newer view (CONTEXT area 1, "a stale answer from an older
+ * query never overwrites a newer one").
+ */
+export function createLeaderboardPanel({
+  host,
+  buildView,
+  history = () => [],
+  board = {},
+  competeOn = () => false,
+  prefs = null,
+  now = () => Date.now(),
+  tzOffset = () => 0,
+  season = null,
+  reducedMotion = () => false,
+  onRoute,
+} = {}) {
+  const doc = host.ownerDocument;
+
+  let entry = null; // null | "tab" | "title"
+  let mode = "mine"; // "board" | "mine" — the panel's own selected view; buildView still forces "mine" whenever Compete is off
+  let stat = "deep";
+  let race = null;
+  let sub = null;
+  let open = null; // an open row's key, or null
+  let sheet = null; // "stat" | "race" | "sub" | null
+  let hasHero = false;
+  let dead = false; // true only while the in-game DEAD tab is open with a dead hero (CONTEXT area 1, "dead-hero dock stays")
+  let competePrev = null; // the last competeOn() refresh() saw, so an OFF->ON transition fetches the EVERYONE total exactly once
+
+  let currentSnapshot = null; // the BoardSnapshot (or {status:"loading"}) LEADERBOARD renders
+  let lastReadySnapshot = null; // the last ready BoardSnapshot — YOUR DEAD's EVERYONE box reads its total while Compete is on
+  let loadToken = 0;
+
+  /** safeCompeteOn() — competeOn(), defaulting to false on a throw or a non-true answer. */
+  function safeCompeteOn() {
+    try {
+      return competeOn() === true;
+    } catch {
+      return false; // a throwing competeOn() must never break a render — default to no network.
+    }
+  }
+
+  /** readStoredStat() — the remembered RANK BY stat; "deep" for anything missing, unknown or a throw. */
+  function readStoredStat() {
+    if (!prefs) return "deep";
+    try {
+      const v = prefs.getItem(BOARDS_LAST_KEY);
+      return typeof v === "string" && BOARD_STATS.includes(v) ? v : "deep";
+    } catch {
+      return "deep"; // a throwing getItem must never break the open.
+    }
+  }
+
+  /** storeStat(v) — remembers the RANK BY stat; a throwing setItem never breaks the pick. */
+  function storeStat(v) {
+    if (!prefs) return;
+    try {
+      prefs.setItem(BOARDS_LAST_KEY, v);
+    } catch {
+      // a throwing setItem must never break the stat pick.
+    }
+  }
+
+  /** clearTitleMarker() — drops body[data-boards-entry]; a malformed body element must never throw. */
+  function clearTitleMarker() {
+    try {
+      delete doc.body.dataset.boardsEntry;
+    } catch {
+      // a malformed body element must never throw.
+    }
+  }
+
+  /**
+   * render({reset}) — reads the history (falling back to [] on a throwing
+   * history()), builds the view (the current snapshot on LEADERBOARD, the
+   * last ready snapshot on YOUR DEAD) and draws it, inside one try/catch so
+   * a throwing buildView or renderer leaves the PREVIOUS DOM in place rather
+   * than breaking the tab switch. `reset` zeroes .mw-lb-body's scrollTop (an
+   * open, a view switch or a filter/stat change); a row toggle passes false
+   * so the list never jumps; a resolved load also passes false.
+   */
+  function render({ reset }) {
+    let hist = [];
+    try {
+      const h = typeof history === "function" ? history() : [];
+      hist = Array.isArray(h) ? h : [];
+    } catch {
+      hist = []; // a throwing history() must never break the tab switch.
+    }
+
+    const compete = safeCompeteOn();
+    const boardField = mode === "board" ? currentSnapshot : lastReadySnapshot;
+
+    let nowVal = null;
+    try {
+      nowVal = typeof now === "function" ? now() : null;
+    } catch {
+      nowVal = null;
+    }
+    let tz = 0;
+    try {
+      tz = typeof tzOffset === "function" ? tzOffset() : 0;
+    } catch {
+      tz = 0;
+    }
+
+    try {
+      const view = buildView({
+        compete,
+        mode,
+        entry,
+        hasHero,
+        dead,
+        stat,
+        race,
+        sub,
+        open,
+        sheet,
+        history: hist,
+        board: boardField,
+        now: nowVal,
+        tzOffsetMinutes: tz,
+        season,
+      });
+      renderLeaderboardPanel(host, view, handlers);
+      if (reset) {
+        const bodyEl = host.querySelector(".mw-lb-body");
+        if (bodyEl) bodyEl.scrollTop = 0;
+      }
+    } catch {
+      // a throwing buildView or renderer must never break the tab switch —
+      // the previous DOM (if any) is left exactly as it was.
+    }
+  }
+
+  /**
+   * requestBoard({reset}) — LEADERBOARD's data source (BOARD-19, BOARD-25):
+   * a fresh cached snapshot (board.cached(query)) renders at once with no
+   * network read; otherwise the loading note renders, board.load(query) is
+   * called exactly once, and the render on resolve never resets the scroll.
+   * A rejecting or misbehaving board.load resolves to an unreachable
+   * snapshot. Never called while Compete is off.
+   */
+  function requestBoard({ reset }) {
+    if (!safeCompeteOn()) return;
+    const query = currentQuery(stat, race, sub);
+
+    let cachedSnap = null;
+    try {
+      cachedSnap = board && typeof board.cached === "function" ? board.cached(query) : null;
+    } catch {
+      cachedSnap = null; // a throwing cached() must never break the request.
+    }
+
+    if (cachedSnap && typeof cachedSnap === "object") {
+      currentSnapshot = cachedSnap;
+      if (cachedSnap.status === "ready") lastReadySnapshot = cachedSnap;
+      render({ reset });
+      return;
+    }
+
+    currentSnapshot = { status: "loading" };
+    render({ reset });
+
+    loadToken += 1;
+    const token = loadToken;
+
+    let loadPromise;
+    try {
+      loadPromise = board && typeof board.load === "function" ? board.load(query) : Promise.resolve(null);
+    } catch {
+      loadPromise = Promise.resolve(null); // a throwing load() must never break the request.
+    }
+
+    Promise.resolve(loadPromise)
+      .then((snap) => {
+        // a stale answer (superseded by a newer query, or the panel routed
+        // away since) never overwrites a newer view.
+        if (token !== loadToken || entry === null) return;
+        currentSnapshot = snap && typeof snap === "object" ? snap : { status: "unreachable", reason: "offline" };
+        if (currentSnapshot.status === "ready") lastReadySnapshot = currentSnapshot;
+        render({ reset: false });
+      })
+      .catch(() => {
+        if (token !== loadToken || entry === null) return;
+        currentSnapshot = { status: "unreachable", reason: "offline" };
+        render({ reset: false });
+      });
+  }
+
+  /** resetForOpen() — the state every open re-derives: the remembered stat, reset filters, the compete-decided view. */
+  function resetForOpen() {
+    stat = readStoredStat();
+    race = null;
+    sub = null;
+    open = null;
+    sheet = null;
+    mode = safeCompeteOn() ? "board" : "mine";
+    competePrev = safeCompeteOn();
+  }
+
+  /** openBoardOrMine() — the shared tail of every open: fetch LEADERBOARD data on "board", else just render. */
+  function openBoardOrMine() {
+    if (mode === "board") requestBoard({ reset: true });
+    else render({ reset: true });
+  }
+
+  const handlers = {
+    onBack() {
+      back();
+    },
+    onBox(action) {
+      if (action === "mine") {
+        mode = "mine";
+        open = null;
+        sheet = null;
+        render({ reset: true });
+      } else if (action === "board") {
+        mode = "board";
+        open = null;
+        sheet = null;
+        requestBoard({ reset: true });
+      }
+    },
+    onSeeMine() {
+      mode = "mine";
+      open = null;
+      sheet = null;
+      render({ reset: true });
+    },
+    onPicker(id) {
+      if (id !== "stat" && id !== "race" && id !== "sub") return;
+      sheet = id;
+      render({ reset: false });
+    },
+    onSheetClose() {
+      if (sheet === null) return;
+      sheet = null;
+      render({ reset: false });
+    },
+    onSheetPick(sheetId, value) {
+      if (sheetId === "stat") {
+        if (!BOARD_STATS.includes(value)) return;
+        stat = value;
+        storeStat(stat);
+        sheet = null;
+        if (mode === "board") requestBoard({ reset: true });
+        else render({ reset: true });
+        return;
+      }
+      if (sheetId === "race") {
+        if (value !== null && !RACE_IDS.includes(value)) return;
+        race = value;
+        sheet = null;
+        if (mode === "board") requestBoard({ reset: true });
+        else render({ reset: true });
+        return;
+      }
+      if (sheetId === "sub") {
+        if (value !== null && !SUB_IDS.includes(value)) return;
+        sub = value;
+        sheet = null;
+        if (mode === "board") requestBoard({ reset: true });
+        else render({ reset: true });
+        return;
+      }
+      // an unknown sheetId is ignored.
+    },
+    onRow(key) {
+      open = open === key ? null : key;
+      render({ reset: false });
+    },
+    onClear() {
+      race = null;
+      sub = null;
+      open = null;
+      if (mode === "board") requestBoard({ reset: true });
+      else render({ reset: true });
+    },
+    onDock(id) {
+      if (id === "title" || id === "roll" || id === "dungeon") {
+        route(id);
+        return;
+      }
+      // the dead-hero dock: BURY THEM leaves the panel like any other route;
+      // FINAL SHEET opens over the panel, so the panel keeps its entry (a
+      // later refresh still renders it).
+      if (dead && id === "bury") {
+        route(id);
+        return;
+      }
+      if (dead && id === "finalSheet") {
+        onRoute?.(id, { hasHero });
+      }
+    },
+  };
+
+  /** route(action) — closes the panel and routes; a throwing onRoute is the shell's own concern, not guarded here (matches createBoardsPanel). */
+  function route(action) {
+    const routedHasHero = hasHero;
+    entry = null;
+    clearTitleMarker();
+    onRoute?.(action, { hasHero: routedHasHero });
+  }
+
+  /**
+   * back() — a sheet open closes it; YOUR DEAD with Compete on returns to
+   * LEADERBOARD; a title open routes to the dungeon (a live hero) or the
+   * title, clearing the marker; a tab open with nothing to close returns
+   * false. Never called before any open (entry null) beyond returning false.
+   */
+  function back() {
+    if (entry === null) return false;
+    if (sheet !== null) {
+      sheet = null;
+      render({ reset: false });
+      return true;
+    }
+    if (mode === "mine" && safeCompeteOn()) {
+      mode = "board";
+      requestBoard({ reset: true });
+      return true;
+    }
+    if (entry === "title") {
+      route(hasHero ? "dungeon" : "title");
+      return true;
+    }
+    return false;
+  }
+
+  function isTitleOpen() {
+    return entry === "title";
+  }
+
+  function openFromTab({ dead: d } = {}) {
+    entry = "tab";
+    dead = d === true;
+    resetForOpen();
+    clearTitleMarker();
+    openBoardOrMine();
+  }
+
+  function openFromTitle({ hasHero: h } = {}) {
+    entry = "title";
+    hasHero = h === true;
+    dead = false;
+    resetForOpen();
+    doc.body.dataset.boardsEntry = "title";
+    openBoardOrMine();
+  }
+
+  function onDeadTab(opts) {
+    if (entry === "title") return; // a title-opened panel is left exactly as it is.
+    openFromTab(opts && typeof opts === "object" ? opts : {});
+  }
+
+  /**
+   * refresh() — does nothing while closed. While on LEADERBOARD, a Compete
+   * OFF switches to YOUR DEAD (no board call). While on YOUR DEAD, an
+   * OFF->ON Compete transition fetches the EVERYONE total exactly once
+   * (cache-first, like any other requestBoard call); a plain re-render
+   * follows otherwise.
+   */
+  function refresh() {
+    if (entry === null) return;
+    const compete = safeCompeteOn();
+    if (mode === "board" && !compete) {
+      mode = "mine";
+      competePrev = compete;
+      render({ reset: true });
+      return;
+    }
+    if (mode === "mine" && compete && competePrev === false) {
+      competePrev = compete;
+      requestBoard({ reset: false });
+      return;
+    }
+    competePrev = compete;
+    render({ reset: false });
+  }
+
+  function state() {
+    return Object.freeze({ entry, mode, stat, race, sub, open, sheet, hasHero, dead });
+  }
+
+  return Object.freeze({ openFromTab, openFromTitle, onDeadTab, back, isTitleOpen, refresh, state });
 }
