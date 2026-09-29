@@ -95,6 +95,7 @@ Last activity: 2026-09-28 — Phase 83 execution started
 
 ### Pending Todos
 
+- 2026-09-28 — **☰ menu: drop CENTRE MAP, MAKE CAMP first** (user): remove the CENTRE MAP row (keep centerMap() for its other callers); MAKE CAMP becomes the first row under the account block; shell only, fits Phase 85 or a quick task after 83 — `todos/pending/2026-09-28-menu-drop-centre-map-make-camp-first.md`
 - 2026-09-28 — **Store can still be bought out at depth 7** (user, on device): gold income still outruns store prices mid-run despite v2.1 RULES-02; measure gold-on-arrival vs stock price by depth (tune-economy, milestone-end), then retune prices/sources; engine change, outside v2.2 unless pulled in — `todos/pending/2026-09-28-store-still-bought-out-at-depth-7.md`
 - 2026-09-28 — **Stores stock up to d10 rations** (user): each store rolls 1–10 rations (derived rng stream, declared fixtures, bot buys the new way, count shown in the store); engine rule change, outside v2.2 unless pulled in — `todos/pending/2026-09-28-stores-stock-up-to-d10-rations.md`
 - 2026-09-28 — **Bug report per-player limit and automatic Firestore cleanup** (user; folded into Phase 83 as SRV-09..SRV-12): sign-in + reportLimits cooldown/daily cap, per-IP sign-up limit, Action retention cleanup, prove the 15-min schedule fires — `todos/pending/2026-09-28-bug-report-per-player-limit-and-automatic-firestore-cleanup.md`
