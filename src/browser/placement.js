@@ -1,19 +1,20 @@
 // src/browser/placement.js
 //
-// Phase 68 (PLACE-01/02; D-10..D-13, D-03): the DEEPEST rank quip on the
-// THAT IS THAT death panel ("You placed 3,117th of 9,044. The 3,116 ahead of
-// you are also dead."), the one deferred rail card that covers every run a
-// queued-submission flush delivered later, and the one Oracle line for
-// queued deaths dropped at a season bump. DEEPEST is the only ranked quip
-// (D-10); the words live in content/placement.js.
+// Phase 85 (ACCT-04, 85-CONTEXT group 2): the DEPTH rank line on the THAT
+// IS THAT death panel ("You placed 12th of 340."), the one deferred rail
+// card that covers every run a flush delivered after the panel was already
+// gone, and placementOutcome, the one rule that decides which of the two a
+// boardSync placement report ({ live, rest }) becomes. The words live in
+// content/placement.js.
 //
 // Pure, deterministic, never throws: no DOM, no storage, no randomness. The
-// quip is picked by the run hash (the same rule as src/browser/newBest.js),
-// so re-renders are stable. Anything incomplete returns null, so a rank that
-// is still loading, or a request that failed, shows nothing at all (D-11).
-// Numbers use en-US digit grouping to match the panel's PURSE values.
+// line/card is picked by the run's own hash (the same rule as
+// src/browser/newBest.js), so re-renders are stable. Anything incomplete
+// returns null, so a rank that is still loading, or a request that failed,
+// shows nothing at all. Numbers use en-US digit grouping to match the
+// panel's PURSE values.
 
-import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../content/placement.js";
+import { PLACEMENT_LINES, PLACEMENT_CARD } from "../../content/placement.js";
 
 const HASH_RE = /^[0-9a-f]{8}$/;
 
@@ -26,6 +27,12 @@ function isCount(x) {
  * total an integer of at least rank. */
 function validRank(rank, total) {
   return isCount(rank) && Number.isInteger(total) && total >= rank;
+}
+
+/** validReport(r) — module-private: a plain object carrying a valid
+ * rank/total pair (a live or rest half of a boardSync placement report). */
+function validReport(r) {
+  return !!r && typeof r === "object" && validRank(r.rank, r.total);
 }
 
 /** group(n) — module-private: en-US digit grouping ("9,044"). */
@@ -80,18 +87,17 @@ export function placementBand(rank) {
 }
 
 /**
- * placementLine({ rank, total, newBest, hash }) — the death panel's DEEPEST
- * rank quip, or null unless rank is an integer of at least 1 and total an
- * integer of at least rank (D-11). newBest === false means this run did not
- * beat the player's best, so the rank is the best run's and the "standing"
- * band says so; true, null or missing uses the rank's own band.
+ * placementLine({ rank, total, hash }) — the death panel's DEPTH rank line,
+ * or null unless rank is an integer of at least 1 and total an integer of
+ * at least rank. Every run has its own rank, so the band always follows
+ * the rank itself; any other field on the input (e.g. a caller-supplied
+ * newBest) is ignored.
  */
 export function placementLine(input) {
   if (!input || typeof input !== "object") return null;
-  const { rank, total, newBest, hash } = input;
+  const { rank, total, hash } = input;
   if (!validRank(rank, total)) return null;
-  const band = newBest === false ? "standing" : placementBand(rank);
-  return fill(pick(PLACEMENT_LINES[band], hash), {
+  return fill(pick(PLACEMENT_LINES[placementBand(rank)], hash), {
     rank: ordinalText(rank),
     total: group(total),
     ahead: group(rank - 1),
@@ -99,16 +105,17 @@ export function placementLine(input) {
 }
 
 /**
- * deferredPlacementCard({ count, rank, total, newBest, hash }) — one frozen
- * rail card { title, line, tone, hold } for every run a flush delivered
- * (D-12): one or many, a new best or standing. Null unless count is an
- * integer of at least 1 and the rank is complete.
+ * deferredPlacementCard({ count, rank, total, hash }) — one frozen rail
+ * card { title, line, tone, hold } for every run a flush delivered after
+ * the death panel was already gone: one line for a single run, many for
+ * several folded together. Null unless count is an integer of at least 1
+ * and the rank is complete.
  */
 export function deferredPlacementCard(input) {
   if (!input || typeof input !== "object") return null;
-  const { count, rank, total, newBest, hash } = input;
+  const { count, rank, total, hash } = input;
   if (!isCount(count) || !validRank(rank, total)) return null;
-  const variant = (count === 1 ? "one" : "many") + (newBest === false ? "Standing" : "");
+  const variant = count === 1 ? "one" : "many";
   const line = fill(pick(PLACEMENT_CARD[variant], hash), {
     rank: ordinalText(rank),
     total: group(total),
@@ -123,11 +130,55 @@ export function deferredPlacementCard(input) {
 }
 
 /**
- * seasonDropLine(count) — the one Oracle line for queued deaths dropped at
- * a season bump (D-03), singular or plural; null for anything but an
- * integer of at least 1.
+ * placementOutcome({ live, rest, liveHash, panelUp }) — the one rule that
+ * turns a boardSync placement report into either the death panel's fading
+ * rank line or one deferred rail card, and never both for the same run.
+ * `live` and `rest` are boardSync's report halves: live = { hash, rank,
+ * total } | null for the run whose hash equals liveHash at settle time;
+ * rest = { count, hash, rank, total } | null folding every other
+ * acknowledged run (the best-ranked one's hash/rank/total). `liveHash` is
+ * the death panel's own liveDeathHash; `panelUp` is whether that panel is
+ * currently shown.
+ *
+ * A valid live run whose hash still matches liveHash, read while the panel
+ * is up, draws the line — and any valid rest still parks its own card. In
+ * every other case (the panel already gone, the hashes no longer matching,
+ * or simply no live run) a valid live folds into the card: count is rest's
+ * count plus one, and the reported rank is whichever of live/rest is
+ * better (the smaller rank). With no valid live, a valid rest parks its
+ * own card unchanged. Nothing valid gives { line: null, card: null}.
+ * Never throws on garbage.
  */
-export function seasonDropLine(count) {
-  if (!isCount(count)) return null;
-  return count === 1 ? SEASON_DROP_LINES.one : fill(SEASON_DROP_LINES.many, { count: group(count) });
+export function placementOutcome(input) {
+  try {
+    const { live, rest, liveHash, panelUp } = input && typeof input === "object" ? input : {};
+    const liveValid = validReport(live);
+    const restValid = validReport(rest);
+
+    if (liveValid && panelUp === true && typeof liveHash === "string" && live.hash === liveHash) {
+      const line = placementLine({ rank: live.rank, total: live.total, hash: live.hash });
+      const card = restValid
+        ? deferredPlacementCard({ count: rest.count, rank: rest.rank, total: rest.total, hash: rest.hash })
+        : null;
+      return { line: line ? { hash: live.hash, line } : null, card };
+    }
+
+    if (liveValid) {
+      const restCount = restValid && isCount(rest.count) ? rest.count : 0;
+      const best = restValid && rest.rank < live.rank
+        ? { rank: rest.rank, total: rest.total, hash: rest.hash }
+        : { rank: live.rank, total: live.total, hash: live.hash };
+      const card = deferredPlacementCard({ count: restCount + 1, ...best });
+      return { line: null, card };
+    }
+
+    if (restValid) {
+      const card = deferredPlacementCard({ count: rest.count, rank: rest.rank, total: rest.total, hash: rest.hash });
+      return { line: null, card };
+    }
+
+    return { line: null, card: null };
+  } catch {
+    return { line: null, card: null };
+  }
 }
