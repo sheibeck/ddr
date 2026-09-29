@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Our Own Leaderboards
+current_phase: 86
+current_phase_name: Compliance & Device Close
 status: executing
-stopped_at: "Completed 85-06-PLAN.md (Play Games deleted: modules, Android plugin, RETIRE-02 sweep); phase 85 all plans complete"
-last_updated: "2026-09-29T18:35:14.179Z"
+stopped_at: Completed 86-01-PLAN.md (debug APK 2.2.0/vc12 built; DRAFT patch notes; audit facts recorded for 86-04)
+last_updated: "2026-09-29T18:48:13.236Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase null execution started
+last_activity_desc: Phase 85 complete (92da7584)
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 34
-  completed_plans: 29
+  completed_plans: 30
   percent: 80
-current_phase: 86
-current_phase_name: Compliance & Device Close
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 ## Current Position
 
 Phase: 86 (Compliance & Device Close) — EXECUTING
-Plan: 1 of 5
+Plan: 2 of 5
 Progress: [█████████░] 88%
-Status: Executing Phase 86 — 86-01 (debug APK 2.2.0) on master; 86-02 (site pages) and 86-03 (docs) in parallel worktrees
+Status: Ready to execute
 Last activity: 2026-09-29 — Phase 85 complete (92da7584)
 
 ## Ground Truth (durable facts every session needs)
@@ -259,8 +259,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T18:33:06.726Z
-Stopped at: Completed 85-06-PLAN.md (Play Games deleted: modules, Android plugin, RETIRE-02 sweep); phase 85 all plans complete
+Last session: 2026-09-29T18:48:13.196Z
+Stopped at: Completed 86-01-PLAN.md (debug APK 2.2.0/vc12 built; DRAFT patch notes; audit facts recorded for 86-04)
 
 - (history below is the pre-close record)
 
@@ -451,6 +451,7 @@ Resume file: None
 | Phase 85 P04 | 80min | 3 tasks | 12 files |
 | Phase 85 P05 | ~40min | 2 tasks | 11 files |
 | Phase 85 P06 | ~100min | 3 tasks | 31 files |
+| Phase 86 P01 | 45min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -803,6 +804,8 @@ Resume file: None
 - [Phase ?]: 85-05: placementOutcome's merge rule for a live run that misses the death panel folds it into the deferred card using count = rest.count + 1 and whichever of live/rest has the smaller (better) rank
 - [Phase ?]: RETIRE-02 sweep is a raw text match (comments included) over shipped code, distinct from tools/ident-sweep.mjs's comment-stripped identifier grep, with a self-check that plants a matching line per pattern to prove the sweep can't pass vacuously
 - [Phase ?]: test/unit/play-games-runbook.test.js left untouched (a docs pin for docs/PLAY-GAMES-SETUP.md, reserved for Phase 86-03) even though it string-references the deleted content/leaderboards.js path
+- [Phase ?]: docs/patch-notes/2.2.0.md drops the Bug fixes category (Phases 84/85 shipped no player-visible bug fix) and describes the retired service only as "the old boards", never by product name, and never with sign-on wording
+- [Phase ?]: The www/ network-API audit for 86-04 was widened beyond the plan's literal fetch\( grep to also catch fetch.bind( call sites, since board/identity/bug-report code injects fetchFn rather than calling fetch( directly
 
 ### Blockers
 
